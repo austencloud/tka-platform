@@ -25,13 +25,26 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  * way to tighten the lens without moving the rig, no way to tilt the
  * horizon. Scene 3 states all three in one breath: a truck, a zoom, and a
  * roll, each proven by an invariant the old moves couldn't produce.
+ *
+ * Gap 3, the camera tracks a walker. Before this wave the camera framed the
+ * cast where it stood when the scene opened and stayed aimed there, so a
+ * performer who walked out of that framing walked out of the film. Scene 4
+ * says `track: "follow"` on its subject: camera and target both travel with
+ * the walker, so the framing holds while the forest slides past behind them.
+ *
+ * Gap 4, mid-scene cuts. Before this wave a scene held one framing for its
+ * whole length: to cut, a director had to split the shot into separate scenes
+ * and rebuild the cast in each. Scene 5 states three framings inside one scene
+ * under `camera.shots`. The frame jumps at each boundary — a step keyframe
+ * holds the outgoing framing until the incoming one starts at the same
+ * instant, and the spline is forbidden from bending across it.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
   version: 5,
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
-    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll.",
+    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
   // The grammar only guarantees distinctness PER axis; three blues and three
@@ -158,6 +171,91 @@ export const provingGroundsFilm: FilmDirectorInput = {
           { move: "zoom", direction: "in", amount: { degrees: 15 }, durationBeats: 8 },
           { move: "roll", direction: "cw", amount: { degrees: 10 }, durationBeats: 4 },
           { move: "hold", durationBeats: 4 },
+        ],
+      },
+    },
+    {
+      id: "tracking-shot",
+      title: "Tracking Shot",
+      intent:
+        "Gap 3: the camera follows a walking performer. A medium shot on the walker holds the same framing for the whole crossing — the walker stays put in frame while the forest slides past behind them — then the frame stops when they do.",
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      performance: {
+        bpm: 120,
+        formation: "side-by-side",
+        cast: {
+          count: 2,
+          defaults: { effect: "none" },
+          performers: [
+            {
+              id: "performer-2",
+              // Side-by-side puts performer-2 at (0.9, 0). A 3 m crossing in
+              // the four seconds eight beats buy is 0.75 m/s, a walk. The
+              // path runs downstage of the partner's mark at (-0.9, 0); a
+              // straight walk along z = 0 passed through their body.
+              blocking: [
+                {
+                  move: "walk",
+                  to: { x: -1.5, z: -1.8 },
+                  durationBeats: 8,
+                  facing: "travel",
+                },
+                { move: "stand" },
+              ],
+            },
+          ],
+        },
+      },
+      camera: {
+        subject: {
+          kind: "performer",
+          performerId: "performer-2",
+          track: "follow",
+        },
+        shotSize: "medium",
+        angle: "eye",
+        position: "front",
+        moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "three-shots",
+      title: "Three Shots",
+      intent:
+        "Gap 4: one scene, three framings, two hard cuts. A wide front two-shot for six beats, then a cut to a low close-up on performer 1 (the pink one, screen right from the front) that pushes in for six beats, then a cut to a high medium shot from behind for the last four. The frame jumps at each cut; nothing glides between framings.",
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "cosmic" },
+      performance: {
+        bpm: 120,
+        formation: "side-by-side",
+        cast: { count: 2, defaults: { effect: "none" } },
+      },
+      camera: {
+        shots: [
+          {
+            subject: { kind: "group" },
+            shotSize: "wide",
+            angle: "eye",
+            position: "front",
+            durationBeats: 6,
+          },
+          {
+            subject: { kind: "performer", performerId: "performer-1" },
+            shotSize: "close-up",
+            angle: "low",
+            position: "front",
+            moves: [{ move: "push-in", amount: { meters: 0.4 } }],
+            durationBeats: 6,
+          },
+          {
+            subject: { kind: "group" },
+            shotSize: "medium",
+            angle: "high",
+            position: "behind",
+          },
         ],
       },
     },

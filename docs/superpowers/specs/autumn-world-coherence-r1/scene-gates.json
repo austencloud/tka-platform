@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "autumn-world-coherence-r1",
+  "title": "Autumn World Coherence R1",
+  "domainProofRequired": false,
+  "currentGate": 2,
+  "authority": {
+    "experienceSpec": "docs/superpowers/specs/autumn-world-coherence-r1/scene-development.md",
+    "roomShellSource": "scripts/build-autumn-environment.py",
+    "planContract": "scripts/autumn-ground-layout.json",
+    "museumTrackerItems": ["zrcMZZ2cTirzQKeK2m21", "7sEuyJVa9ufvYpcpdbi1"]
+  },
+  "sequenceFingerprints": [],
+  "claims": [
+    {
+      "id": "C-001",
+      "class": "literal",
+      "statement": "The pre-R1 Autumn GLB is 18,189,772 bytes, uses 48 KTX2 textures, retains EXT_mesh_gpu_instancing and EXT_meshopt_compression, and renders 1,977,667 source triangles after instance expansion.",
+      "evidence": [
+        "docs/superpowers/specs/autumn-world-coherence-r1/scene-development.md#baseline-evidence"
+      ]
+    },
+    {
+      "id": "C-002",
+      "class": "literal",
+      "statement": "The pre-R1 grounding contract sinks the four exported HeroTreeA placements between 1.036 and 1.430 metres and has no maximum-depth invariant.",
+      "evidence": [
+        "docs/superpowers/specs/autumn-world-coherence-r1/scene-development.md#baseline-evidence"
+      ]
+    },
+    {
+      "id": "C-003",
+      "class": "invention",
+      "statement": "Autumn keeps its sculptural Meshy hero grove while botanical descendants provide believable middle and far support.",
+      "evidence": [
+        "Museum tracker proposal 7sEuyJVa9ufvYpcpdbi1",
+        "Austen approval, 2026-09-01: I'll take your recommendation."
+      ]
+    },
+    {
+      "id": "C-004",
+      "class": "literal",
+      "statement": "The R1 GLB is 18,340,028 bytes, expands to 2,063,055 source triangles, contains 48/48 KTX2 textures, and retains GPU instancing and meshopt compression.",
+      "evidence": [
+        "scripts/verify-autumn-environment-performance.mjs",
+        "static/models/autumn/autumn-environment.glb"
+      ]
+    },
+    {
+      "id": "C-005",
+      "class": "literal",
+      "statement": "The R1 production graph renders three performers with trail, fire, and LED effects at 2.497 million triangles and 303 draw calls; GPU P95 measured 7.36 ms at 1920x1080 and 8.10 ms at 3840x2160 in the shared debug Chrome.",
+      "evidence": [
+        "docs/superpowers/specs/autumn-world-coherence-r1/scene-development.md#implementation-evidence",
+        "src/routes/test/autumn-scene/AutumnProductionHarness.svelte"
+      ]
+    },
+    {
+      "id": "C-006",
+      "class": "literal",
+      "statement": "The R1 grounding verifier covers 103 placements and 909 central-root samples; hero automatic sink is capped at 0.76 m with a measured 0.703 m maximum, and the restored underground URL is recovered to 0.35 m above its local surface.",
+      "evidence": [
+        "scripts/build-autumn-environment.py",
+        "scripts/verify-autumn-environment-performance.mjs",
+        "tests/unit/3d-viewer/environment-review-camera.test.ts"
+      ]
+    }
+  ],
+  "exemptions": [
+    {
+      "gateId": "measured-plan",
+      "type": "evidence",
+      "name": "floor-plan",
+      "rationale": "R1 preserves the approved Autumn terrain, stage, pond, cabin, paths, and performer clearing; it corrects camera integrity and asset tiers rather than changing the spatial plan.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-09-01T20:44:03.767Z",
+      "museumTrackerItem": "7sEuyJVa9ufvYpcpdbi1"
+    },
+    {
+      "gateId": "measured-plan",
+      "type": "evidence",
+      "name": "vertical-section",
+      "rationale": "The user identified the below-ground failure from the existing section; R1 preserves terrain elevations and repairs camera/root contracts instead of proposing a new section.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-09-01T20:44:03.767Z",
+      "museumTrackerItem": "7sEuyJVa9ufvYpcpdbi1"
+    },
+    {
+      "gateId": "measured-plan",
+      "type": "evidence",
+      "name": "route-storyboard",
+      "rationale": "The existing free-orbit and walk review routes remain unchanged; R1 changes what those routes may expose.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-09-01T20:44:03.767Z",
+      "museumTrackerItem": "7sEuyJVa9ufvYpcpdbi1"
+    },
+    {
+      "gateId": "measured-plan",
+      "type": "evidence",
+      "name": "sightline-study",
+      "rationale": "The registered Autumn camera set is already encoded in the live review route and becomes the visual regression matrix for R1.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-09-01T20:44:03.767Z",
+      "museumTrackerItem": "7sEuyJVa9ufvYpcpdbi1"
+    },
+    {
+      "gateId": "measured-plan",
+      "type": "check",
+      "name": "walkability",
+      "rationale": "R1 does not move the protected performer clearing, paths, cabin, pond, or walk bounds.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-09-01T20:44:03.767Z",
+      "museumTrackerItem": "7sEuyJVa9ufvYpcpdbi1"
+    },
+    {
+      "gateId": "measured-plan",
+      "type": "check",
+      "name": "clearance",
+      "rationale": "The deterministic builder's existing performer, path, pond, tree-footprint, and settlement-clearance checks remain authoritative.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-09-01T20:44:03.767Z",
+      "museumTrackerItem": "7sEuyJVa9ufvYpcpdbi1"
+    },
+    {
+      "gateId": "measured-plan",
+      "type": "check",
+      "name": "sightlines",
+      "rationale": "R1 preserves the approved camera origins and evaluates tree-tier changes against that locked set rather than changing sightlines.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-09-01T20:44:03.767Z",
+      "museumTrackerItem": "7sEuyJVa9ufvYpcpdbi1"
+    },
+    {
+      "gateId": "measured-plan",
+      "type": "check",
+      "name": "final-view",
+      "rationale": "The hero clearing and cabin destination remain the approved final visual hierarchy.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-09-01T20:44:03.767Z",
+      "museumTrackerItem": "7sEuyJVa9ufvYpcpdbi1"
+    }
+  ],
+  "gates": [
+    {
+      "id": "evidence-preflight",
+      "status": "verified",
+      "evidence": [
+        {
+          "kind": "canon-audit",
+          "path": "docs/superpowers/specs/autumn-world-coherence-r1/scene-development.md"
+        },
+        {
+          "kind": "room-shell",
+          "path": "scripts/build-autumn-environment.py",
+          "sha256": "697812263b6dc778b478511a58cd18f6fb14e58fcb1e4c42e39a7c6ed40df561"
+        }
+      ],
+      "checks": [
+        {
+          "name": "canon-conflicts",
+          "status": "passed",
+          "evidence": "The R1 contract records that Austen's current approval supersedes the 2026-08-10 delivery restriction against changing the authored image while preserving every existing capability owner."
+        },
+        {
+          "name": "source-digests",
+          "status": "passed",
+          "evidence": "Pre-R1 builder sha256 697812263b6dc778b478511a58cd18f6fb14e58fcb1e4c42e39a7c6ed40df561; pre-R1 GLB sha256 c21e9216a6c4a9274d32b9532e23bc9c3abff05afbafb7f3f372faf2d9106921."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "measured-plan",
+      "status": "approved",
+      "evidence": [],
+      "checks": [],
+      "approval": {
+        "approvedBy": "Austen",
+        "approvedAt": "2026-09-01T20:44:03.767Z",
+        "quote": "I'll take your recommendation",
+        "museumTrackerItem": "7sEuyJVa9ufvYpcpdbi1",
+        "visualComprehensionConfirmed": true,
+        "note": "Austen identified the realism-tier collision, excessive underground root mass, underground camera access, placeholder props, and incoherent hues before approving the hybrid enchanted-realism direction."
+      }
+    },
+    {
+      "id": "playable-graybox",
+      "status": "in-progress",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "registered-visual-target",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "production-slice",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "integrated-room",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "final-acceptance",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    }
+  ]
+}

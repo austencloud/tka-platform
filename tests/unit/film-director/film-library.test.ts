@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 
 import { FILM_LIBRARY } from "../../../src/routes/test/film-director/_films/index";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
+import { sampleFilmDirector } from "../../../src/routes/test/film-director/_lib/sample-film-director";
 
 /** What scripts/build-film-posters.mjs writes. */
 const POSTER_WIDTH = 960;
@@ -251,6 +252,79 @@ describe("film library", () => {
     expect(at(10).rollDeg).toBe(10);
     // Scenes that never roll stay sparse:
     expect(onBeat.camera.keyframes.every((frame) => !("rollDeg" in frame))).toBe(true);
+
+    const tracking = resolved.scenes.find((s) => s.id === "tracking-shot")!;
+    expect(tracking.camera.tracking).toEqual({
+      performerId: "performer-2",
+      mode: "follow",
+    });
+    // Only the scene that asked carries the key at all, so the other three
+    // resolve exactly as they did before tracking existed.
+    for (const scene of [combined, onBeat, edges]) {
+      expect("tracking" in scene.camera).toBe(false);
+    }
+
+    const trackedWalker = tracking.performance.performers.find(
+      (performer) => performer.id === "performer-2"
+    )!;
+    const arrivalMark = trackedWalker.blocking.at(-1)!.position;
+    const walked = {
+      x: arrivalMark.x - trackedWalker.position.x,
+      z: arrivalMark.z - trackedWalker.position.z,
+    };
+    expect(Math.hypot(walked.x, walked.z)).toBeCloseTo(3, 6);
+
+    const sampleAt = (offset: number) =>
+      sampleFilmDirector(resolved, tracking.startSeconds + offset).camera;
+    const opening = sampleAt(0);
+    const crossed = sampleAt(4);
+    expect(crossed.target[0]! - opening.target[0]!).toBeCloseTo(walked.x, 6);
+    expect(crossed.target[2]! - opening.target[2]!).toBeCloseTo(walked.z, 6);
+    expect(crossed.position[0]! - opening.position[0]!).toBeCloseTo(walked.x, 6);
+    expect(crossed.position[2]! - opening.position[2]!).toBeCloseTo(walked.z, 6);
+    // The frame stops when the walker does: the standing half of the scene
+    // holds the offset the crossing produced rather than drifting on.
+    const standing = sampleAt(6);
+    expect(standing.position).toEqual(crossed.position);
+    expect(standing.target).toEqual(crossed.target);
+
+    const shots = resolved.scenes.find((s) => s.id === "three-shots")!;
+    expect(shots.durationSeconds).toBe(8);
+    const shotKeyframes = shots.camera.keyframes;
+    const atCut = (t: number) =>
+      shotKeyframes.filter((frame) => Math.abs(frame.atSeconds - t) < 1e-6);
+    // Six beats at 120bpm is 3s; the third shot takes what is left.
+    expect(atCut(3)).toHaveLength(2);
+    expect(atCut(6)).toHaveLength(2);
+    expect(atCut(3)[0]!.interpolation).toBe("step");
+    expect(atCut(6)[0]!.interpolation).toBe("step");
+
+    const shotSample = (offset: number) =>
+      sampleFilmDirector(resolved, shots.startSeconds + offset).camera;
+    const jump = (a: number, b: number) => {
+      const from = shotSample(a).position;
+      const to = shotSample(b).position;
+      return Math.hypot(to[0]! - from[0]!, to[1]! - from[1]!, to[2]! - from[2]!);
+    };
+    // A cut, not a glide: a metre of travel inside ten milliseconds.
+    expect(jump(2.99, 3)).toBeGreaterThan(1);
+    expect(jump(5.99, 6)).toBeGreaterThan(1);
+
+    const opener = shotKeyframes[0]!;
+    expect(opener.atSeconds).toBe(0);
+    const range = (frame: (typeof shotKeyframes)[number]) =>
+      Math.hypot(
+        frame.position[0]! - frame.target[0]!,
+        frame.position[1]! - frame.target[1]!,
+        frame.position[2]! - frame.target[2]!
+      );
+    // Shot one is wide; shot two is a close-up, so it sits nearer its subject.
+    expect(range(opener)).toBeGreaterThan(range(atCut(3)[1]!));
+
+    // Every scene that says "cut" cuts: no dissolve window anywhere.
+    for (const scene of [onBeat, tracking, shots]) {
+      expect(scene.transition).toEqual({ kind: "cut", durationSeconds: 0 });
+    }
   });
 
   it("Chance Suite's identical directives on different scenes draw from different streams", () => {

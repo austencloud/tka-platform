@@ -281,6 +281,7 @@
           destinationId="autumn-scene-review"
           preset={cameraPreset}
           walk={view === "walk" || Boolean(replayPose)}
+          terrainSafeOrbit
         />
       {/key}
 

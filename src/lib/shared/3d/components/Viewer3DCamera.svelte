@@ -10,8 +10,8 @@
 
   import { onMount, onDestroy } from "svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import { T, useTask } from "@threlte/core";
-  import { PerspectiveCamera, Vector3 } from "three";
+  import { T, useTask, useThrelte } from "@threlte/core";
+  import { PerspectiveCamera, Vector3, type Object3D } from "three";
   import type CameraControls from "camera-controls";
   import OrbitControls from "./OrbitControls.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
@@ -26,6 +26,10 @@
     type TimedTransition,
   } from "../camera/transitions";
   import { getViewerFrontStageCameraZ } from "../domain/viewer-formation-facing";
+  import {
+    collectEnvironmentCameraCollisionMeshes,
+    keepEnvironmentReviewOrbitAboveSurface,
+  } from "../environments/review/environment-review-camera";
 
   interface Props {
     /** Camera player avatar for fly/walk modes (WASD writes here, not the performer). */
@@ -48,7 +52,11 @@
   }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
+  const { scene } = useThrelte();
   const navMode = $derived(viewer3DState.navMode);
+  const terrainSafeOrbit = $derived(
+    viewer3DState.seededBackgroundType === BackgroundType.AUTUMN
+  );
   const resolvedMaxOrbitDistance = $derived(
     maxOrbitDistance ??
       (viewer3DState.seededBackgroundType === BackgroundType.BLOSSOM ? 82 : 25)
@@ -222,6 +230,18 @@
   // snapTo to imperatively move the camera with the library's built-in
   // smoothing instead of a hand-rolled rAF lerp.
   let controlsInstance: CameraControls | null = null;
+  let collisionMeshes = $state<Object3D[]>([]);
+  let collisionScanElapsed = 0.5;
+  let recoveredInitialTerrainOrbit = false;
+
+  function refreshCollisionMeshes(): void {
+    const next = collectEnvironmentCameraCollisionMeshes(
+      scene as unknown as Object3D
+    );
+    const currentKey = collisionMeshes.map((mesh) => mesh.uuid).join("|");
+    const nextKey = next.map((mesh) => mesh.uuid).join("|");
+    if (currentKey !== nextKey) collisionMeshes = next;
+  }
 
   interface ActiveCameraReframe {
     timing: TimedTransition;
@@ -503,6 +523,27 @@
     if (viewer3DState.isExporting) return;
     updateCameraReframe(performance.now());
     viewer3DState.cameraChoreography.tick(delta);
+
+    if (!terrainSafeOrbit || navMode !== "orbit") {
+      if (collisionMeshes.length > 0) collisionMeshes = [];
+      recoveredInitialTerrainOrbit = false;
+      return;
+    }
+
+    collisionScanElapsed += delta;
+    if (collisionScanElapsed >= 0.5) {
+      collisionScanElapsed = 0;
+      refreshCollisionMeshes();
+    }
+    if (!controlsInstance || collisionMeshes.length === 0) return;
+    if (!recoveredInitialTerrainOrbit || controlsInstance.active) {
+      const corrected = keepEnvironmentReviewOrbitAboveSurface(
+        controlsInstance,
+        collisionMeshes
+      );
+      recoveredInitialTerrainOrbit = true;
+      if (corrected) scheduleCameraSave(controlsInstance);
+    }
   });
 
   // camera-controls rewrites position + lookAt every tick, so roll has to be
@@ -542,6 +583,7 @@
     minDistance={1}
     maxDistance={resolvedMaxOrbitDistance}
     maxPolarAngle={Math.PI / 2}
+    colliderMeshes={terrainSafeOrbit ? collisionMeshes : []}
     paused={viewer3DState.isExporting}
     taskKey={ORBIT_UPDATE_TASK}
     autoRotate={viewer3DState.seededAutoOrbit}

@@ -389,6 +389,20 @@
     const cardSettings = elementBounds(
       '[aria-label="Card settings"] .panel-center-inner'
     );
+    // Content drift: the settings panels are persistent layers inside the
+    // animating inspector track. Measuring the panel root (width/left) and its
+    // first content block (top) proves whether a panel is composed at its own
+    // destination width and revealed through PanelGroup's moving clip, or is
+    // re-laying itself out on every frame while the seam travels.
+    const cardSettingsPanel = elementBounds(
+      ".card-settings-layer .export-panel"
+    );
+    const artSettingsPanel = elementBounds(
+      "[data-viewer-art-inspector-target] .art-settings-panel"
+    );
+    const artSettingsContent = elementBounds(
+      "[data-viewer-art-inspector-target] .sidebar-rail-layout"
+    );
     const mandalaCanvas = document.querySelector<HTMLCanvasElement>(
       '.animation-column canvas[data-animation-layer="mandala"]'
     );
@@ -559,6 +573,11 @@
         '[data-viewer-art-inspector-target] [data-active="true"][data-art-settings]'
       ).length,
       artSettingsOpacity: elementOpacity(".art-settings-layer"),
+      artSettingsWidth: artSettingsPanel.width,
+      artSettingsLeft: artSettingsPanel.left,
+      artSettingsContentTop: artSettingsContent.top,
+      cardSettingsLeft: cardSettingsPanel.left,
+      cardSettingsContentTop: cardSettings.top,
       tunnelBackingWidth: activeTunnelCanvas
         ? activeTunnelCanvas.width / Math.max(1, window.devicePixelRatio || 1)
         : 0,

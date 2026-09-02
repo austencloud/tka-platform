@@ -67,9 +67,9 @@ export function patchForestGroundDetailMaterial(
   return patchMaskedGroundDetailMaterial(
     material,
     {
-      right: detailMaps.neutral,
+      red: detailMaps.neutral,
       green: detailMaps.meadow,
-      left: detailMaps.litter,
+      blue: detailMaps.litter,
       fourth: detailMaps.damp,
     },
     familyMask,

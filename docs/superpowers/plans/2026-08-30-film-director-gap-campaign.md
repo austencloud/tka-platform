@@ -83,18 +83,31 @@ proving-film scenes author at version 4.
       zoom. Visual proof: camera x-axis 9.975° off horizontal at `rollDeg: 10`,
       performers leaning left (camera rolled cw, picture counter-rotates), fov
       35.17 at zoom end, horizon level through the truck. 596/596 unit tests.
-- [ ] **Gap 3 — camera tracks a walking performer.** Resolved camera track
-      gains `tracking: { performerId, mode: "aim" | "follow", height? } | null`
-      spoken as `subject: {kind:"performer", performerId, track: true|"follow"}`.
-      Sampling-layer composition in `sampleFilmDirector`: after sampling camera
-      + blocking, offset target (aim) or target+position (follow) by the
-      tracked performer's live displacement from their opening mark. Keyframe
-      compiler untouched.
-- [ ] **Gap 4 — mid-scene cut.** `camera.shots: [...]` — a list of framing
+- [x] **Gap 3 — camera tracks a walking performer.** Closed 2026-09-01.
+      Spoken as `subject: {kind:"performer", performerId, track: true|"follow"}`;
+      resolved as optional `camera.tracking: {performerId, mode:"aim"|"follow"}`
+      (absent, not null, when unused so the eight shipped snapshots stay
+      byte-identical). `applyCameraTracking` in `sample-film-director.ts`
+      offsets target (aim) or target+position (follow) by the walker's live
+      displacement from their resolved opening mark; keyframe compiler
+      untouched. `track` on preset/keyframe targets rejects. Proving scene 4
+      `tracking-shot`: a 3 m downstage crossing under a following medium shot.
+      Visual gate at 1920×1080: walker centered at 0 s, mid-walk (≈3 s) and
+      standing (≈7 s) frames with the forest sliding behind; the first staging
+      walked through the partner's mark along z = 0 and was moved downstage
+      to (-1.5, -1.8). 611/611 tests.
+- [x] **Gap 4 — mid-scene cut.** `camera.shots: [...]` — a list of framing
       blocks each with its own subject/shotSize/angle/position/moves and a
       duration (seconds or beats); hard cut between consecutive shots.
       Exclusive with single-framing fields, presets, and raw keyframes.
       Compiles to one keyframe track with step-interpolation boundaries.
+      **Accepted 2026-09-02** (worktree `c5b004dcec` + close-out): suite
+      632/632; proving scene 5 sampled on the running workbench at 1920×1080 —
+      wide front hold through scene time 2.99 s, close-up at 3.01 s pushing
+      0.4 m to 5.99 s, high-behind at 6.01 s; three frames read wide two-shot /
+      low close-up on performer 1 / high behind two-shot with no glide. Cut
+      transition default duration is now 0, which changed only
+      `transition.durationSeconds` in five shipped films' snapshots.
 - [ ] **Gap 5 — sequence transforms + library source.** Sequence sources gain
       `{transformOf: performer, transforms: [...]}` for the operations
       `sequence-transformer.ts` already owns (rotate/invert/swap/retrograde…;

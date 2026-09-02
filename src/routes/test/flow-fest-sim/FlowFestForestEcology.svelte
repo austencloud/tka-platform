@@ -21,20 +21,16 @@
     type InstanceFrustumCuller,
     type InstanceFrustumCullingStats,
   } from "$lib/shared/3d/rendering/instance-frustum-culling";
+  import { prepareCoveragePreservingAlphaMipmaps } from "$lib/shared/3d/rendering/alpha-coverage-mipmaps";
   import ForestClearingWind from "$lib/shared/3d/environments/scenes/forest/ForestClearingWind.svelte";
   import {
-    buildFlowFestCanopyShellGeometry,
     deriveFlowFestTreeInstanceTint,
-    FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION,
-    FLOW_FEST_CANOPY_SHELL_TIERS,
     FLOW_FEST_FOREST_GRASS_ASSET,
     FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS,
     FLOW_FEST_FOREST_GROUND_LIFE_ASSETS,
-    FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY,
     FLOW_FEST_FOREST_DISTANCE_LOD,
     FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS,
     FLOW_FEST_FOREST_TREE_ASSETS,
-    flattenFlowFestDistanceTierMaterial,
     isFlowFestForestFoliageMaterial,
     summarizeFlowFestForestEcologyAssets,
     type FlowFestForestEcologyAssetEntry,
@@ -83,81 +79,32 @@
     dracoLoader: useDraco("/draco/"),
     meshoptDecoder: useMeshopt(),
   };
-  const islandTree01 = useGltf(
-    FLOW_FEST_FOREST_TREE_ASSETS["island-tree-01"],
-    loaderOptions
-  );
-  const islandTree02 = useGltf(
-    FLOW_FEST_FOREST_TREE_ASSETS["island-tree-02"],
-    loaderOptions
-  );
-  const islandTree03 = useGltf(
-    FLOW_FEST_FOREST_TREE_ASSETS["island-tree-03"],
-    loaderOptions
-  );
-  const treeSmall02 = useGltf(
-    FLOW_FEST_FOREST_TREE_ASSETS["tree-small-02"],
-    loaderOptions
-  );
-  const plantCatalogAesculusCarnea = useGltf(
-    FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-aesculus-carnea"],
-    loaderOptions
-  );
-  const plantCatalogOakUrban = useGltf(
-    FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-oak-urban"],
-    loaderOptions
-  );
-  const plantCatalogOakColonised = useGltf(
-    FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-oak-colonised"],
-    loaderOptions
-  );
-  const plantCatalogWillow = useGltf(
-    FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-willow"],
-    loaderOptions
-  );
-  const plantCatalogBuckeye31 = useGltf(
-    FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-buckeye-31"],
-    loaderOptions
-  );
-  const plantCatalogBuckeye79 = useGltf(
-    FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-buckeye-79"],
-    loaderOptions
-  );
-  const plantCatalogHabitatSnag = useGltf(
-    FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-habitat-snag"],
-    loaderOptions
-  );
-  const islandTree01Mid = useGltf(
-    FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-01"],
-    loaderOptions
-  );
-  const islandTree02Mid = useGltf(
-    FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-02"],
-    loaderOptions
-  );
-  const islandTree03Mid = useGltf(
-    FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-03"],
-    loaderOptions
-  );
-  const treeSmall02Mid = useGltf(
-    FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["tree-small-02"],
-    loaderOptions
-  );
-  const islandTree01Far = useGltf(
-    FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-01"],
-    loaderOptions
-  );
-  const islandTree02Far = useGltf(
-    FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-02"],
-    loaderOptions
-  );
-  const islandTree03Far = useGltf(
-    FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-03"],
-    loaderOptions
-  );
-  const treeSmall02Far = useGltf(
-    FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["tree-small-02"],
-    loaderOptions
+  const treeFamilyIds = Object.keys(
+    FLOW_FEST_FOREST_TREE_ASSETS
+  ) as FlowFestForestTreeFamilyId[];
+  // Every family loads its near source plus its own mid and far tier. The
+  // records are keyed `near:`/`mid:`/`far:` + familyId so the ledger, the
+  // scene maps, and the tier builders all address the same load.
+  const treeAssetUrlByKey = new Map<string, string>();
+  for (const familyId of treeFamilyIds) {
+    treeAssetUrlByKey.set(
+      `near:${familyId}`,
+      FLOW_FEST_FOREST_TREE_ASSETS[familyId]
+    );
+    treeAssetUrlByKey.set(
+      `mid:${familyId}`,
+      FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid[familyId]
+    );
+    treeAssetUrlByKey.set(
+      `far:${familyId}`,
+      FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far[familyId]
+    );
+  }
+  const treeGltfByKey = new Map(
+    [...treeAssetUrlByKey].map(([key, url]) => [
+      key,
+      useGltf(url, loaderOptions),
+    ])
   );
   const grassPrototypes = useGltf(FLOW_FEST_FOREST_GRASS_ASSET, loaderOptions);
   const grassMidPrototypes = useGltf(
@@ -189,66 +136,30 @@
     url: string;
     source: EcologyAssetSource;
   }> = [
-    ["near:island-tree-01", FLOW_FEST_FOREST_TREE_ASSETS["island-tree-01"], islandTree01],
-    ["near:island-tree-02", FLOW_FEST_FOREST_TREE_ASSETS["island-tree-02"], islandTree02],
-    ["near:island-tree-03", FLOW_FEST_FOREST_TREE_ASSETS["island-tree-03"], islandTree03],
-    ["near:tree-small-02", FLOW_FEST_FOREST_TREE_ASSETS["tree-small-02"], treeSmall02],
+    ...[...treeGltfByKey].map(
+      ([key, source]) => [key, treeAssetUrlByKey.get(key)!, source] as const
+    ),
+    ["grass:near", FLOW_FEST_FOREST_GRASS_ASSET, grassPrototypes] as const,
     [
-      "near:plantcatalog-aesculus-carnea",
-      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-aesculus-carnea"],
-      plantCatalogAesculusCarnea,
-    ],
+      "grass:mid",
+      FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS.mid,
+      grassMidPrototypes,
+    ] as const,
     [
-      "near:plantcatalog-oak-urban",
-      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-oak-urban"],
-      plantCatalogOakUrban,
-    ],
-    [
-      "near:plantcatalog-oak-colonised",
-      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-oak-colonised"],
-      plantCatalogOakColonised,
-    ],
-    [
-      "near:plantcatalog-willow",
-      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-willow"],
-      plantCatalogWillow,
-    ],
-    [
-      "near:plantcatalog-buckeye-31",
-      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-buckeye-31"],
-      plantCatalogBuckeye31,
-    ],
-    [
-      "near:plantcatalog-buckeye-79",
-      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-buckeye-79"],
-      plantCatalogBuckeye79,
-    ],
-    [
-      "near:plantcatalog-habitat-snag",
-      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-habitat-snag"],
-      plantCatalogHabitatSnag,
-    ],
-    ["mid:island-tree-01", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-01"], islandTree01Mid],
-    ["mid:island-tree-02", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-02"], islandTree02Mid],
-    ["mid:island-tree-03", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-03"], islandTree03Mid],
-    ["mid:tree-small-02", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["tree-small-02"], treeSmall02Mid],
-    ["far:island-tree-01", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-01"], islandTree01Far],
-    ["far:island-tree-02", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-02"], islandTree02Far],
-    ["far:island-tree-03", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-03"], islandTree03Far],
-    ["far:tree-small-02", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["tree-small-02"], treeSmall02Far],
-    ["grass:near", FLOW_FEST_FOREST_GRASS_ASSET, grassPrototypes],
-    ["grass:mid", FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS.mid, grassMidPrototypes],
-    ["grass:far", FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS.far, grassFarPrototypes],
+      "grass:far",
+      FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS.far,
+      grassFarPrototypes,
+    ] as const,
     [
       "ground-life:damp-sedge-tussock",
       FLOW_FEST_FOREST_GROUND_LIFE_ASSETS["damp-sedge-tussock"],
       dampSedge,
-    ],
+    ] as const,
     [
       "ground-life:woodland-hazel-shrub",
       FLOW_FEST_FOREST_GROUND_LIFE_ASSETS["woodland-hazel-shrub"],
       hazelShrub,
-    ],
+    ] as const,
   ].map(([key, url, source]) => ({
     key: key as string,
     url: url as string,
@@ -262,6 +173,7 @@
     ])
   );
   let assetLedgerRevision = $state(0);
+  const loadedTreeScenes = new Map<string, Object3D>();
 
   $effect(() => {
     const unsubscribers: Array<() => void> = [];
@@ -270,6 +182,10 @@
         source.subscribe((value) => {
           const entry = assetLedger.get(key);
           if (!entry || !value || entry.state === "ready") return;
+          const scene = (value as { scene?: Object3D }).scene;
+          if (scene && treeAssetUrlByKey.has(key)) {
+            loadedTreeScenes.set(key, scene);
+          }
           entry.state = "ready";
           entry.message = null;
           assetLedgerRevision += 1;
@@ -369,61 +285,82 @@
       foliage: [0, -0.08, 0.06],
       bark: [0.015, -0.08, 0.08],
     },
+    "plantcatalog-oak-forest-41": {
+      foliage: [-0.012, 0.015, -0.02],
+      bark: [-0.008, 0.005, -0.01],
+    },
+    "plantcatalog-oak-forest-67": {
+      foliage: [0.01, -0.02, 0.025],
+      bark: [0.008, -0.015, 0.012],
+    },
+    "plantcatalog-oak-forest-89": {
+      foliage: [0.022, 0.03, -0.04],
+      bark: [0.012, 0.01, -0.02],
+    },
+    "plantcatalog-oak-forest-101": {
+      foliage: [-0.02, 0.028, 0.015],
+      bark: [-0.01, 0.012, 0.008],
+    },
+    "plantcatalog-oak-forest-113": {
+      foliage: [0.016, -0.03, 0.03],
+      bark: [0.01, -0.018, 0.015],
+    },
+    "plantcatalog-oak-lone-57": {
+      foliage: [0.03, 0.018, -0.05],
+      bark: [0.016, 0.008, -0.022],
+    },
+    "plantcatalog-oak-urban-71": {
+      foliage: [0.014, -0.035, -0.02],
+      bark: [0.012, -0.022, 0.015],
+    },
+    "plantcatalog-oak-colonised-61": {
+      foliage: [0.024, 0.008, -0.058],
+      bark: [0.013, 0.012, -0.02],
+    },
+    "plantcatalog-carnea-47": {
+      foliage: [-0.024, 0.05, 0.032],
+      bark: [-0.012, 0.022, 0.012],
+    },
+    "plantcatalog-buckeye-103": {
+      foliage: [-0.03, 0.035, 0.028],
+      bark: [-0.012, 0.014, 0.004],
+    },
+    "plantcatalog-willow-53": {
+      foliage: [0.045, -0.06, 0.062],
+      bark: [0.022, -0.035, 0.036],
+    },
+    "plantcatalog-weeping-willow-19": {
+      foliage: [0.05, -0.08, 0.07],
+      bark: [0.018, -0.03, 0.03],
+    },
+    "plantcatalog-weeping-willow-43": {
+      foliage: [0.04, -0.05, 0.05],
+      bark: [0.014, -0.028, 0.024],
+    },
   };
 
-  const treeSources = $derived.by(() => {
+  function collectTreeScenes(
+    tier: "near" | "mid" | "far"
+  ): Map<FlowFestForestTreeFamilyId, Object3D> {
     const sources = new Map<FlowFestForestTreeFamilyId, Object3D>();
-    const candidates: Array<
-      readonly [FlowFestForestTreeFamilyId, Object3D | undefined]
-    > = [
-      ["island-tree-01", $islandTree01?.scene],
-      ["island-tree-02", $islandTree02?.scene],
-      ["island-tree-03", $islandTree03?.scene],
-      ["tree-small-02", $treeSmall02?.scene],
-      ["plantcatalog-aesculus-carnea", $plantCatalogAesculusCarnea?.scene],
-      ["plantcatalog-oak-urban", $plantCatalogOakUrban?.scene],
-      ["plantcatalog-oak-colonised", $plantCatalogOakColonised?.scene],
-      ["plantcatalog-willow", $plantCatalogWillow?.scene],
-      ["plantcatalog-buckeye-31", $plantCatalogBuckeye31?.scene],
-      ["plantcatalog-buckeye-79", $plantCatalogBuckeye79?.scene],
-      ["plantcatalog-habitat-snag", $plantCatalogHabitatSnag?.scene],
-    ];
-    for (const [familyId, source] of candidates) {
-      if (source) sources.set(familyId, source);
+    for (const familyId of treeFamilyIds) {
+      const scene = loadedTreeScenes.get(`${tier}:${familyId}`);
+      if (scene) sources.set(familyId, scene);
     }
     return sources;
-  });
+  }
 
+  const treeSources = $derived.by(() => {
+    void assetLedgerRevision;
+    return collectTreeScenes("near");
+  });
   const midTreeSources = $derived.by(() => {
-    const sources = new Map<FlowFestForestDistanceTreeFamilyId, Object3D>();
-    const candidates: Array<
-      readonly [FlowFestForestDistanceTreeFamilyId, Object3D | undefined]
-    > = [
-      ["island-tree-01", $islandTree01Mid?.scene],
-      ["island-tree-02", $islandTree02Mid?.scene],
-      ["island-tree-03", $islandTree03Mid?.scene],
-      ["tree-small-02", $treeSmall02Mid?.scene],
-    ];
-    for (const [familyId, source] of candidates) {
-      if (source) sources.set(familyId, source);
-    }
-    return sources;
+    void assetLedgerRevision;
+    return collectTreeScenes("mid");
   });
-
   const farTreeSources = $derived.by(() => {
-    const sources = new Map<FlowFestForestDistanceTreeFamilyId, Object3D>();
-    const candidates: Array<
-      readonly [FlowFestForestDistanceTreeFamilyId, Object3D | undefined]
-    > = [
-      ["island-tree-01", $islandTree01Far?.scene],
-      ["island-tree-02", $islandTree02Far?.scene],
-      ["island-tree-03", $islandTree03Far?.scene],
-      ["tree-small-02", $treeSmall02Far?.scene],
-    ];
-    for (const [familyId, source] of candidates) {
-      if (source) sources.set(familyId, source);
-    }
-    return sources;
+    void assetLedgerRevision;
+    return collectTreeScenes("far");
   });
 
   function extractGrassSources(scene: Object3D | undefined) {
@@ -449,6 +386,13 @@
     extractGrassSources($grassFarPrototypes?.scene)
   );
 
+  /**
+   * A distance tier renders every family with its own simplified GLB. The tier
+   * geometry keeps the near asset's material names and UVs, so borrowing the
+   * near materials by name re-textures it — the same bark and the same leaf
+   * atlas at every distance, which is what keeps a tree from turning into a
+   * different tree as the camera approaches.
+   */
   function buildDistanceTierRoot(
     tier: "mid" | "far",
     geometrySources: ReadonlyMap<FlowFestForestDistanceTreeFamilyId, Object3D>,
@@ -460,18 +404,15 @@
       const materialSource = materialSources.get(familyId);
       if (!materialSource) continue;
       const placements = layout.trees.filter(
-        (placement) =>
-          FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY[placement.familyId] ===
-          familyId
+        (placement) => placement.familyId === familyId
       );
+      if (placements.length === 0) continue;
       const tierInstances = createForestRuntimeTreeInstances(
         geometrySource,
         placements,
         familyId,
         { materialSource, distanceTier: tier }
       );
-      substituteDistanceTierCanopy(tierInstances, familyId, tier);
-      flattenUntexturedDistanceMaterials(tierInstances);
       applyTreeInstanceTints(tierInstances, placements);
       root.add(tierInstances);
     }
@@ -507,78 +448,6 @@
         mesh.setColorAt(index, scratch.setRGB(tint.r, tint.g, tint.b));
       });
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    });
-  }
-
-  /**
-   * Swap every decimated canopy in a distance tier for a solid crown shell.
-   * The simplified leaf atlas that ships in `distance-lod/*.glb` has no
-   * coverage left to grade, so the tier is rebuilt as mass. Runs before the
-   * material flatten, and the shell carries no UVs, so the flatten still
-   * strips the borrowed atlas and the moment tint owns the colour.
-   */
-  function substituteDistanceTierCanopy(
-    root: Object3D,
-    familyId: FlowFestForestDistanceTreeFamilyId,
-    tier: "mid" | "far"
-  ): number {
-    let replaced = 0;
-    root.traverse((object) => {
-      const mesh = object as InstancedMesh;
-      if (!mesh.isMesh || !mesh.geometry) return;
-      const materials = Array.isArray(mesh.material)
-        ? mesh.material
-        : [mesh.material];
-      const isFoliage = materials.some((candidate) =>
-        isFlowFestForestFoliageMaterial(candidate as MeshStandardMaterial)
-      );
-      if (!isFoliage) return;
-      if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
-      const bounds = mesh.geometry.boundingBox;
-      if (!bounds) return;
-      // The source geometry belongs to the loaded GLB and is shared with every
-      // other consumer of that asset, so it is replaced, never disposed.
-      mesh.geometry = buildFlowFestCanopyShellGeometry(
-        bounds,
-        `${familyId}-${tier}-${mesh.name}`,
-        FLOW_FEST_CANOPY_SHELL_TIERS[tier]
-      );
-      // The shell bakes its canopy self-shadow as vertex colours; the materials
-      // here are this mesh's own clones, so the near tier keeps its atlas path.
-      for (const candidate of materials) {
-        const material = candidate as MeshStandardMaterial;
-        material.vertexColors = true;
-        material.needsUpdate = true;
-      }
-      mesh.userData.ownsGeometry = true;
-      mesh.computeBoundingSphere();
-      replaced += 1;
-    });
-    return replaced;
-  }
-
-  /**
-   * Distance-tier geometry ships without UVs while the near-tier materials it
-   * borrows are textured and alpha-cut. Sampling those maps with no UVs reads
-   * one transparent texel and discards the whole canopy, so strip the atlas
-   * and the cutout and let the tint own the mass. Meshes that do carry UVs are
-   * left alone, so a future textured LOD keeps its maps.
-   */
-  function flattenUntexturedDistanceMaterials(root: Object3D): void {
-    root.traverse((object) => {
-      const mesh = object as Mesh;
-      if (!mesh.isMesh || !mesh.geometry) return;
-      if (mesh.geometry.getAttribute("uv")) return;
-      const materials = Array.isArray(mesh.material)
-        ? mesh.material
-        : [mesh.material];
-      for (const candidate of materials) {
-        flattenFlowFestDistanceTierMaterial(
-          candidate as unknown as Parameters<
-            typeof flattenFlowFestDistanceTierMaterial
-          >[0]
-        );
-      }
     });
   }
 
@@ -722,12 +591,6 @@
     };
   });
 
-  const shellAtlasCompensation = new Color(
-    FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION.r,
-    FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION.g,
-    FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION.b
-  );
-
   $effect(() => {
     for (const root of [...treeRoots, groundLifeRoot]) {
       root?.traverse((object) => {
@@ -747,11 +610,13 @@
           material.color.set(isFoliage ? foliageTint : barkTint);
           const adjustment = grade?.[isFoliage ? "foliage" : "bark"];
           if (adjustment) material.color.offsetHSL(...adjustment);
-          // Foliage with no map is a flattened distance shell — near-tier
-          // canopies multiply their leaf atlas over the tint; shells must
-          // multiply the atlas's stand-in instead or they render pale.
-          if (isFoliage && material.map == null) {
-            material.color.multiply(shellAtlasCompensation);
+          // Without this the leaf maps' box-filtered mips fall under the
+          // cutoff a few tiers out and every crown past ~30 m thins to twigs.
+          if (isFoliage && material.map) {
+            prepareCoveragePreservingAlphaMipmaps(
+              material.map,
+              material.alphaTest
+            );
           }
         }
       });

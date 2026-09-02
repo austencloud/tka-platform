@@ -755,6 +755,8 @@
           class:export-active={layout.isWorkspaceInspectorActive}
           class:record-scene-active={layout.isRecordSceneActive}
           class:card-inspector={layout.inspectorProfile === "card"}
+          class:performance-inspector={layout.inspectorProfile ===
+            "performance"}
           class:desktop={!layout.effectiveMobile}
           class:stacked-rail={layout.stackedExportWithRail}
           class:sidebar-collapsed={layout.exportSidebarCollapsed &&
@@ -1449,6 +1451,7 @@
   .viewer-and-export {
     --export-sidebar-width: 560px;
     --card-sidebar-width: clamp(480px, 28vw, 640px);
+    --performance-sidebar-width: clamp(380px, 24vw, 520px);
     --active-inspector-width: var(--export-sidebar-width);
     position: relative;
     display: flex;
@@ -1461,6 +1464,14 @@
 
   .viewer-and-export.card-inspector {
     --active-inspector-width: var(--card-sidebar-width);
+  }
+
+  /* Performances keeps a narrower column than the effects inspector so the
+     landscape video gets the width. The difference between the two tokens is
+     the seam travel PanelGroup animates on the structural clock when the mode
+     changes. */
+  .viewer-and-export.performance-inspector {
+    --active-inspector-width: var(--performance-sidebar-width);
   }
 
   .viewer-stage-container {
@@ -1619,16 +1630,62 @@
     flex: 0 0 var(--export-sidebar-width);
   }
 
-  /* Motion and Performances deliberately share one inspector allocation.
-     Their contents are composed at that destination width before the mode
-     changes, so the stage source and the right-hand information swap together
-     without a late text-wrap or a second panel glide. */
+  /* The Performances inspector is composed at its own destination width
+     before the mode changes. PanelGroup then slides the seam from the effects
+     width to this width and reveals the already-laid-out column through the
+     moving clip, so nothing rewraps while the stage source crossfades. */
   .viewer-and-export.desktop
     .performance-inspector-layer
     > :global(.performance-inspector) {
+    width: var(--performance-sidebar-width);
+    min-width: var(--performance-sidebar-width);
+    flex: 0 0 var(--performance-sidebar-width);
+  }
+
+  /* Art settings are portaled into their layer as an absolutely positioned
+     host, so `width: 100%` made them stretch and re-wrap on every frame of the
+     seam animation. Compose them at the same destination width the Effects
+     inspector uses and anchor them to the layer's right edge, so PanelGroup
+     reveals a stationary column instead of dragging its left edge along. */
+  .viewer-and-export.desktop
+    .art-settings-layer
+    > :global(.art-settings-host.external) {
+    left: auto;
+    right: 0;
     width: var(--export-sidebar-width);
     min-width: var(--export-sidebar-width);
-    flex: 0 0 var(--export-sidebar-width);
+    max-width: var(--export-sidebar-width);
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .art-settings-layer
+    > :global(.art-settings-host.external) {
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  /* The card pin below is keyed to a mode-conditional container class, which
+     Svelte removes the instant the mode changes. The departing Card panel then
+     falls back to its intrinsic width and follows the closing seam. Keying the
+     same destination width to the persistent layer keeps it composed on the
+     way out as well as on the way in. */
+  .viewer-and-export.desktop
+    .card-settings-layer
+    :global(.export-panel:not(.inline)) {
+    width: var(--card-sidebar-width);
+    min-width: var(--card-sidebar-width);
+    flex: 0 0 var(--card-sidebar-width);
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .card-settings-layer
+    :global(.export-panel:not(.inline)) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
   }
 
   :global(.panel-wrapper[data-manually-sized="true"])

@@ -120,8 +120,10 @@ const BIGSTAFF_TIP_POINTS: PropTipConfig = {
 // The regular club is center-pivoted inside a 258.67-unit viewBox. Using its
 // exact half-width keeps the mandala and live trails on the resized visible tip.
 // This is the reach every other regular prop is tuned against.
+export const CLUB_TIP_REACH = 258.67 / 2;
+
 const CLUB_TIP_POINTS: PropTipConfig = {
-  points: [{ dx: 129.335, dy: 0 }],
+  points: [{ dx: CLUB_TIP_REACH, dy: 0 }],
 };
 
 // Big club is bilateral — two mirror-symmetric ends (Knob / Bulb). Prop width is
@@ -156,13 +158,14 @@ const BIGFAN_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-export const TRIAD_TIP_POINTS: PropTipConfig = {
-  points: [
-    { dx: 107.8, dy: 0 },
-    { dx: -53.9, dy: -93.7 },
-    { dx: -53.9, dy: 93.7 },
-  ],
-};
+// Preserve the saved effect-point order (upper-left, primary/right,
+// lower-left) while putting all three arms on the club's canonical reach.
+// Keeping this order stable prevents per-tip effects from jumping arms.
+export const TRIAD_TIP_POINTS: PropTipConfig = radialTipConfig(
+  CLUB_TIP_REACH,
+  -120,
+  3
+);
 
 const BIGTRIAD_TIP_POINTS: PropTipConfig = {
   points: [
@@ -372,7 +375,7 @@ const POI_TIP_POINTS: PropTipConfig = {
   // The light/wick lives in the head, so the head CENTRE is the tracked point —
   // and it sits at the club's 129.335 reach, so a poi mandala and a club mandala
   // come out the same size (see static/images/props/*/poi.svg).
-  points: [{ dx: 129.335, dy: 0 }],
+  points: [{ dx: CLUB_TIP_REACH, dy: 0 }],
 };
 
 const EMPTY_TIP_POINTS: PropTipConfig = {

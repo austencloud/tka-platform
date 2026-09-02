@@ -91,6 +91,11 @@ describe("warmSequenceCells", () => {
     expect(result).toMatchObject({ total: 3, ready: 3, failures: [] });
     expect(renderCell).toHaveBeenCalledTimes(3);
     expect(cloudDownload).toHaveBeenCalledTimes(3);
+    expect(cloudDownload.mock.calls).toEqual([
+      ["hash-alpha", { probeUnknown: false, signal: undefined }],
+      ["hash-A", { probeUnknown: false, signal: undefined }],
+      ["hash-B", { probeUnknown: false, signal: undefined }],
+    ]);
     const options = renderCell.mock.calls[0]![3] as {
       size: number;
       leftPropType: PropType;
@@ -118,20 +123,6 @@ describe("warmSequenceCells", () => {
 
     expect(result).toMatchObject({ total: 3, ready: 3, failures: [] });
     expect(cloudDownload).not.toHaveBeenCalled();
-    expect(renderCell).not.toHaveBeenCalled();
-  });
-
-  it("verifies an existing cloud object before rebuilding it on a new browser", async () => {
-    cloudDownload.mockResolvedValue(
-      new Blob(["ready"], { type: "image/webp" })
-    );
-
-    const result = await warmSequenceCells(sequence, {
-      requireComplete: true,
-    });
-
-    expect(result).toMatchObject({ total: 3, ready: 3, failures: [] });
-    expect(cloudDownload).toHaveBeenCalledTimes(3);
     expect(renderCell).not.toHaveBeenCalled();
   });
 

@@ -187,3 +187,123 @@ describe("rollDeg sampling", () => {
     expect(midZoom).toBeLessThan(50);
   });
 });
+
+describe("camera tracking resolution", () => {
+  const grammar = (track?: true | "follow") => ({
+    subject: {
+      kind: "performer" as const,
+      performerId: "performer-2",
+      ...(track ? { track } : {}),
+    },
+    shotSize: "medium" as const,
+    moves: [{ move: "hold" as const }],
+  });
+
+  it("carries an aim request into the resolved track", () => {
+    expect(resolveDirectorCameraTrack(grammar(true), CONTEXT).tracking).toEqual({
+      performerId: "performer-2",
+      mode: "aim",
+    });
+  });
+
+  it("carries a follow request into the resolved track", () => {
+    expect(
+      resolveDirectorCameraTrack(grammar("follow"), CONTEXT).tracking
+    ).toEqual({ performerId: "performer-2", mode: "follow" });
+  });
+
+  it("leaves the key absent when nothing asked to be tracked", () => {
+    const resolved = resolveDirectorCameraTrack(grammar(), CONTEXT);
+    expect("tracking" in resolved).toBe(false);
+  });
+});
+
+describe("camera shots resolution and sampling", () => {
+  const shotsInput = {
+    shots: [
+      { subject: { kind: "group" as const }, shotSize: "wide" as const },
+      {
+        subject: { kind: "performer" as const, performerId: "performer-1" },
+        shotSize: "close-up" as const,
+        moves: [{ move: "push-in" as const, amount: { meters: 0.4 } }],
+      },
+      {
+        subject: { kind: "group" as const },
+        shotSize: "medium" as const,
+        position: "behind" as const,
+      },
+    ],
+  };
+  const context12 = { ...CONTEXT, durationSeconds: 12 };
+
+  it("resolves shots to one custom track", () => {
+    const resolved = resolveDirectorCameraTrack(shotsInput, context12);
+    expect(resolved.preset).toBe("custom");
+    expect(resolved.substitutedFor).toBeNull();
+    expect("tracking" in resolved).toBe(false);
+  });
+
+  it("holds the outgoing framing right up to the cut, then jumps", () => {
+    const { keyframes } = resolveDirectorCameraTrack(shotsInput, context12);
+    const shotOneEnd = keyframes.find(
+      (frame) => Math.abs(frame.atSeconds - 4) < 1e-6
+    )!;
+    const before = sampleDirectorCameraTrack(keyframes, 3.999);
+    const after = sampleDirectorCameraTrack(keyframes, 4);
+    expect(before.position).toEqual(shotOneEnd.position);
+    expect(
+      Math.hypot(
+        after.position[0] - before.position[0],
+        after.position[1] - before.position[1],
+        after.position[2] - before.position[2]
+      )
+    ).toBeGreaterThan(1);
+  });
+
+  it("does not bend the incoming shot's spline toward the outgoing one", () => {
+    const { keyframes } = resolveDirectorCameraTrack(shotsInput, context12);
+    const shotTwo = keyframes.filter(
+      (frame) => frame.atSeconds >= 4 - 1e-6 && frame.atSeconds <= 8 + 1e-6
+    );
+    // Both cut instants carry two frames; shot two owns the inner pair.
+    const from = shotTwo.at(1)!.position;
+    const to = shotTwo.at(-2)!.position;
+    const sampled = sampleDirectorCameraTrack(keyframes, 4.5).position;
+    // On the straight segment: one shared parameter t across all three axes.
+    // Read t off the axis that actually travels — a near-degenerate axis
+    // divides float noise by float noise.
+    const widest = [0, 1, 2].reduce((best, axis) =>
+      Math.abs(to[axis]! - from[axis]!) > Math.abs(to[best]! - from[best]!)
+        ? axis
+        : best
+    );
+    const t = (sampled[widest]! - from[widest]!) / (to[widest]! - from[widest]!);
+    for (const axis of [0, 1, 2]) {
+      expect(sampled[axis]).toBeCloseTo(
+        from[axis]! + (to[axis]! - from[axis]!) * t,
+        6
+      );
+    }
+  });
+
+  it("rejects tracking inside a shot", () => {
+    expect(() =>
+      resolveDirectorCameraTrack(
+        {
+          shots: [
+            {
+              subject: {
+                kind: "performer" as const,
+                performerId: "performer-1",
+                track: "follow" as const,
+              },
+              shotSize: "medium" as const,
+            },
+            { subject: { kind: "group" as const } },
+          ],
+        },
+        context12
+      )
+    ).toThrow(/Tracking and shots do not combine/);
+  });
+});
