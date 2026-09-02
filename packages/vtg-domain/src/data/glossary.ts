@@ -94,7 +94,7 @@ export const VTG_GLOSSARY: FlowArtsGlossaryEntry[] = [
 		term: "pattern",
 		aliases: ["shape"],
 		definition:
-			"The flower shape traced by the prop over a full 360-degree cycle. Categorized by the prop-to-hand rotation ratio (1:1, 1:3, 1:5). The 1:1 set contains 40 patterns; the 1:3 set contains 64.",
+			"The flower shape traced by the prop over a full 360-degree cycle. This app normalizes ratios as prop:hand, so the classic families are 1:1, 3:1, and 5:1. Original VTG materials and the legacy app display the latter two in the inverse order as 1:3 and 1:5. The source-native 1:1 set contains 40 patterns; the source-native 1:3 set contains 64.",
 		source: {
 			claim:
 				"Patterns/Shapes: the shapes made from timing and direction, categorized by rotation ratios",

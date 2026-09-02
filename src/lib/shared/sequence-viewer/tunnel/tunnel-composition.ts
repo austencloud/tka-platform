@@ -149,13 +149,26 @@ const TunnelConfigSchema = z.object({
   speedOverrides: z.record(z.string(), z.number()),
 });
 
-const FlowerSchema = z.object({
+const RotatingFlowerSchema = z.object({
   style: z.enum(["pro", "anti"]),
-  turns: z.number().nonnegative(),
+  turns: z.number(),
   ori: z.enum(["in", "out"]),
   grid: z.enum(["diamond", "box"]),
   petals: z.number().int().nonnegative(),
 });
+
+const FloatFlowerSchema = z.object({
+  style: z.literal("float"),
+  turns: z.literal("fl"),
+  ori: z.enum(["in", "out", "clock", "counter"]),
+  grid: z.literal("diamond"),
+  petals: z.literal(0),
+});
+
+const FlowerSchema = z.discriminatedUnion("style", [
+  RotatingFlowerSchema,
+  FloatFlowerSchema,
+]);
 
 export const TunnelSourceProvenanceSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -163,6 +176,7 @@ export const TunnelSourceProvenanceSchema = z.discriminatedUnion("kind", [
     version: z.literal(1),
     baseSequenceId: z.string().min(1),
     mode: z.enum(["SS", "TS", "QS", "SO", "TO", "QO"]),
+    propMode: z.enum(["SS", "TS", "QS", "SO", "TO", "QO"]).optional(),
     leftFlower: FlowerSchema,
     rightFlower: FlowerSchema,
   }),

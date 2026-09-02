@@ -74,27 +74,45 @@ translation point between them.
 
 ## 5. Turn ratio (props:hands) and the TKA↔VTG turn map
 
-- **Ratio convention is `props:hands` (N:1)** = N prop rotations per one hand
+- **Ratio convention is `props:hands` (P:Q)** = P prop rotations per Q hand
   revolution. Confirmed canonical across VTG1, VTG2 Index, VTG2 Ch.1–2; *"every
   one rotation of the hand corresponds to one rotation of the prop"* = 1:1.
   [VTG1 p4]
 - Our app uses `props:hands` everywhere; the old VTG app's `1:3` is just the
   inverse (hands:props) display order. We're aligned with Yee. [code:
   vtg-pattern-data.ts; you]
-- **TKA turns → VTG ratio** [code: `TND_TURNS_RATIO_MAP`]:
+- **TKA turns → VTG ratio:**
 
   | TKA turns | VTG ratio |
   |-----------|-----------|
+  | Float | 0:1 |
+  | -0.25 | 1:2 |
   | 0   | 1:1 |
+  | 0.25 | 3:2 |
   | 0.5 | 2:1 |
+  | 0.75 | 5:2 |
   | 1   | 3:1 |
+  | 1.25 | 7:2 |
   | 1.5 | 4:1 |
+  | 1.75 | 9:2 |
   | 2   | 5:1 |
+  | 2.25 | 11:2 |
   | 2.5 | 6:1 |
+  | 2.75 | 13:2 |
   | 3   | 7:1 |
 
-  Formula: **ratio N = 2·turns + 1** (since 1 turn = 180° = half a prop revolution
-  added). [infer from the map + 180° rule]
+  For a positive reduced ratio **P:Q**, the two directions of the conversion are:
+
+  - **P/Q = 2·turns + 1**
+  - **turns = (P/Q - 1) / 2**
+
+  Float is the zero-ratio exception: **0:1 maps to the binary Float state, not
+  numeric -0.5 turns**. At Level 4, turns move in 0.25 increments, so every
+  reduced positive ratio has denominator 1 or 2. Between Float and 0, that
+  leaves exactly one directly representable numeric ratio: **1:2 = -0.25**.
+  Ratios such as 1:3 and 2:3 convert to -1/3 and -1/6, but those angles do not
+  land on TKA's current eight-orientation wheel. [infer from the 180° rule and
+  current Level 4 orientation algebra]
 
 ---
 
@@ -178,7 +196,7 @@ different measurements against two different references.** [you]
 
 ---
 
-## 11. Confirm these (most likely to be wrong)
+## 11. Remaining fact checks
 
 1. **out = antispin reference, in = inspin reference** — for *petals only*. (You
    said "true enough.") Correct framing?
@@ -186,5 +204,4 @@ different measurements against two different references.** [you]
    staff doubles both. Right? (Is our `TURN_RATIO_MAPPINGS` petal column already
    single-ended, or does it assume staff?)
 3. **VTG = 4 modes (T/S,T/O,S/S,S/O); Quarter is a TKA-only addition.** Correct?
-4. **Ratio N = 2·turns + 1.** Holds for all your cases?
-5. Anything in §2 (center vs gravity frame) stated too strongly?
+4. Anything in §2 (center vs gravity frame) stated too strongly?

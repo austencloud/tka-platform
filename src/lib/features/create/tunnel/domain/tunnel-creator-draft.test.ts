@@ -84,19 +84,20 @@ describe("tunnel creator draft", () => {
       version: 1 as const,
       baseSequenceId: "base-sequence",
       mode: "QO" as const,
+      propMode: "SS" as const,
       leftFlower: {
-        style: "pro" as const,
-        turns: 1,
-        ori: "in" as const,
+        style: "float" as const,
+        turns: "fl" as const,
+        ori: "clock" as const,
         grid: "diamond" as const,
-        petals: 2,
+        petals: 0 as const,
       },
       rightFlower: {
-        style: "anti" as const,
-        turns: 1,
+        style: "pro" as const,
+        turns: -0.25,
         ori: "out" as const,
-        grid: "diamond" as const,
-        petals: 4,
+        grid: "box" as const,
+        petals: 1,
       },
     };
     const draft: TunnelCreatorDraft = {
