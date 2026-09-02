@@ -90,13 +90,42 @@ describe("staff grip contact contract", () => {
   });
 
   it("publishes measured shaft-axis and palm-contact errors", () => {
-    expect(gripTestPage).toContain("diagnostics.leftGripAxis");
-    expect(gripTestPage).toContain("diagnostics.rightGripAxis");
+    expect(gripTestPage).toContain("gripDiagnostics.leftGripAxis");
+    expect(gripTestPage).toContain("gripDiagnostics.rightGripAxis");
     expect(gripTestPage).toContain("data-left-axis-error-deg");
     expect(gripTestPage).toContain("data-right-axis-error-deg");
+    expect(gripTestPage).toContain("data-requested-yaw-deg");
+    expect(gripTestPage).toContain("data-achieved-yaw-deg");
+    expect(gripTestPage).toContain("data-collision-zones");
+    expect(gripTestPage).toContain("data-deepest-collision-mm");
+    expect(gripTestPage).toContain("data-audience-grip-separation-mm");
+    expect(gripTestPage).toContain("data-rendered-step-number");
     expect(liveSequencePerformer).toContain(
       "onCollisionEvents={props.onCollisionEvents}"
     );
+  });
+
+  it("uses the same upper-body stance plan as the production viewer", () => {
+    expect(liveSequencePerformer).toContain("planUpperBodyStanceForPropStates");
+    expect(liveSequencePerformer).toContain(
+      "stanceYaw={upperBodyStance.yawRad}"
+    );
+    expect(liveSequencePerformer).toContain(
+      "spinePitchOffset={upperBodyStance.pitchRad}"
+    );
+    expect(liveSequencePerformer).toContain(
+      "redHandDepthOffset={upperBodyStance.rightDepthOffsetM}"
+    );
+  });
+
+  it("maps a live phase through the state owner's motion-step offset", () => {
+    expect(liveSequencePerformer).toContain(
+      "Math.floor(wrapped) + performerState.motionStepOffset"
+    );
+    expect(liveSequencePerformer).not.toContain("Math.floor(wrapped) + 1");
+    // Ambient hosts pass no phase and keep the owner's default seek.
+    expect(liveSequencePerformer).toContain("if (phase == null) {");
+    expect(liveSequencePerformer).toContain("performerState.goToStep(0);");
   });
 
   it("maps sequence hands into the rig's blue and red prop inputs", () => {

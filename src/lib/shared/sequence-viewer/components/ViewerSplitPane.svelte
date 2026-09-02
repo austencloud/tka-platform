@@ -127,7 +127,8 @@
   const tunnelStage = createViewerTunnelStageState(tunnelController);
   setViewerTunnelStageContext(tunnelStage);
 
-  const captureTn = () => captureTnSlice(tunnelController);
+  const captureTn = (options: { full?: boolean } = {}) =>
+    captureTnSlice(tunnelController, options);
   if (viewerUrlSession) {
     onDestroy(viewerUrlSession.registerSlice("tn", captureTn));
     // The orchestrator never constructs tunnel state, so nothing upstream can

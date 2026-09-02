@@ -42,9 +42,17 @@ function canonicalTipMap(active: string): TipEffectMap {
 
 const DEFAULT_EFFECTIVE_ACTIVE = effectiveActive(DEFAULT_EFFECTS_CONFIG);
 
+/**
+ * `full` emits every config key and the active effect even at defaults (the
+ * Share/Copy Link snapshot); the default diff form elides them (address bar).
+ * The canonical tipEffectMap stays implied by `active` in both modes — only an
+ * exotic per-tip map rides in tuning.
+ */
 export function captureFxSlice(
-  state: Pick<EffectsConfigState, "snapshot">
+  state: Pick<EffectsConfigState, "snapshot">,
+  options: { full?: boolean } = {}
 ): FxSlicePayload | null {
+  const full = options.full === true;
   const snap = state.snapshot();
   const active = effectiveActive(snap);
   const tuning: Record<string, unknown> = {};
@@ -59,13 +67,13 @@ export function captureFxSlice(
       }
       continue;
     }
-    if (!deepEqual(snap[key], DEFAULT_EFFECTS_CONFIG[key])) {
+    if (full || !deepEqual(snap[key], DEFAULT_EFFECTS_CONFIG[key])) {
       tuning[key] = snap[key];
     }
   }
 
   const payload: FxSlicePayload = {};
-  if (active !== DEFAULT_EFFECTIVE_ACTIVE) {
+  if (full || active !== DEFAULT_EFFECTIVE_ACTIVE) {
     payload.active = active;
   }
   if (Object.keys(tuning).length > 0) payload.tuning = tuning;

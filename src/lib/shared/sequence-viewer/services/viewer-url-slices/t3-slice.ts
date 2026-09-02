@@ -117,27 +117,38 @@ export function postNormalizeSceneFeatureDefaults(): Record<string, boolean> {
 }
 
 function captureFeatures(
-  features: NonNullable<T3SliceSource["features"]>
+  features: NonNullable<T3SliceSource["features"]>,
+  full: boolean
 ): Record<string, boolean> | null {
   const patch: Record<string, boolean> = {};
   for (const feature of SCENE_FEATURES) {
     const live = features.isEnabled(feature.key);
-    if (live !== feature.defaultEnabled) patch[feature.key] = live;
+    if (full || live !== feature.defaultEnabled) patch[feature.key] = live;
   }
   return Object.keys(patch).length > 0 ? patch : null;
 }
 
-export function captureT3Slice(source: T3SliceSource): T3SlicePayload | null {
+/**
+ * `full` emits the environment and every registry feature (Share/Copy Link);
+ * the default diff form elides what matches the baselines.
+ */
+export function captureT3Slice(
+  source: T3SliceSource,
+  options: { full?: boolean } = {}
+): T3SlicePayload | null {
+  const full = options.full === true;
   const payload: T3SlicePayload = {};
 
-  if (source.environmentId !== DEFAULT_SCENE_ENVIRONMENT_ID) {
+  if (full || source.environmentId !== DEFAULT_SCENE_ENVIRONMENT_ID) {
     payload.env = source.environmentId;
   }
   // A closed 3D pane has no feature state. The session's pass-through keeps
   // whatever the URL already held for `t3` while nothing is registered, so an
-  // unmounted pane is silent rather than emitting a half payload.
+  // unmounted pane is silent rather than emitting a half payload. (The
+  // orchestrator's full-snapshot fallback supplies the seed-or-disk feature
+  // map for Share while the pane is closed.)
   if (source.features) {
-    const features = captureFeatures(source.features);
+    const features = captureFeatures(source.features, full);
     if (features) payload.features = features;
   }
 
@@ -184,7 +195,8 @@ export function seedFromT3Slice(payload: T3SlicePayload): T3SliceSeed {
  * contract requires before any override decision has been made.
  */
 export function persistedT3SliceFromStorage(
-  firstUseEnvironment: SceneEnvironmentId = DEFAULT_SCENE_ENVIRONMENT_ID
+  firstUseEnvironment: SceneEnvironmentId = DEFAULT_SCENE_ENVIRONMENT_ID,
+  options: { full?: boolean } = {}
 ): T3SlicePayload | null {
   if (typeof localStorage === "undefined") return null;
 
@@ -206,8 +218,55 @@ export function persistedT3SliceFromStorage(
   // Same three-tier resolution `createSceneFeatureState` runs, minus the
   // overrides tier a persistent viewer never supplies: stored > registry
   // default, and stale keys outside the registry are ignored.
-  return captureT3Slice({
-    environmentId,
+  return captureT3Slice(
+    {
+      environmentId,
+      features: {
+        isEnabled(key: string): boolean {
+          const stored = storedFeatures[key];
+          if (typeof stored === "boolean") return stored;
+          return SCENE_FEATURES.find((f) => f.key === key)?.defaultEnabled ?? false;
+        },
+      },
+    },
+    options
+  );
+}
+
+/**
+ * Full-snapshot source for the `t3` slice while the 3D pane is closed. A
+ * seeded (view-only) session reports the seed it was built from, expanded
+ * onto the defaults; a persistent session reports what its own disk holds.
+ * Either way the payload is the complete state the pane WOULD show if
+ * opened, which is what a copied link must pin.
+ */
+export function unmountedT3SliceSource(
+  seed: T3SliceSeed | null,
+  firstUseEnvironment: SceneEnvironmentId
+): T3SliceSource | null {
+  if (seed) {
+    return {
+      environmentId: seed.environmentId,
+      features: {
+        isEnabled: (key) => seed.sceneFeatures[key] ?? false,
+      },
+    };
+  }
+  if (typeof localStorage === "undefined") return null;
+  let storedEnvironment: string | null = null;
+  let storedFeatures: Record<string, unknown> = {};
+  try {
+    storedEnvironment = localStorage.getItem(VIEWER_3D_ENVIRONMENT_STORAGE_KEY);
+    const raw = localStorage.getItem(SCENE_FEATURES_STORAGE_KEY);
+    if (raw) storedFeatures = JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    // Unreadable storage reads as "nothing persisted" — registry defaults.
+  }
+  return {
+    environmentId: normalizeSceneEnvironmentId(
+      storedEnvironment,
+      firstUseEnvironment
+    ),
     features: {
       isEnabled(key: string): boolean {
         const stored = storedFeatures[key];
@@ -215,5 +274,5 @@ export function persistedT3SliceFromStorage(
         return SCENE_FEATURES.find((f) => f.key === key)?.defaultEnabled ?? false;
       },
     },
-  });
+  };
 }

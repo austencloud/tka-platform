@@ -15,12 +15,14 @@ import {
   resolvePresetForFormation,
   type DirectorFormation,
 } from "./director-camera-presets";
+import { axisSeedValue, resolveFilmSeed, type FilmSeed } from "./directive-random";
 import type {
   DirectorCameraInput,
   DirectorCameraPreset,
   DirectorCameraTargetInput,
   DirectorEasing,
   ResolvedDirectorCameraKeyframe,
+  ResolvedDirectorHandheld,
   ResolvedDirectorPerformer,
 } from "./film-director-schema";
 
@@ -65,8 +67,43 @@ interface CameraTrackContext {
   groundOffset: number;
   performers: readonly ResolvedDirectorPerformer[];
   formation: DirectorFormation;
-  /** The owning scene's id, for error messages only — not resolution math. */
+  /** The owning scene's id, for error messages and the handheld seed. */
   sceneId: string;
+  /**
+   * The film's seed, so handheld noise is stable per (film, scene) and
+   * rerollable through `seed.axes.handheld`. Optional: a caller that resolves
+   * a camera outside a film (tests, tooling) falls back to seeding from the
+   * scene id alone, which is still deterministic.
+   */
+  filmSeed?: FilmSeed;
+}
+
+/** Drift envelopes for the three spoken handheld rigs. */
+const HANDHELD_PRESETS: Record<
+  "subtle" | "steady" | "rough",
+  { meters: number; degrees: number }
+> = {
+  subtle: { meters: 0.02, degrees: 0.4 },
+  steady: { meters: 0.05, degrees: 1 },
+  rough: { meters: 0.12, degrees: 2.5 },
+};
+
+function resolveHandheld(
+  input: DirectorCameraInput["handheld"],
+  context: CameraTrackContext
+): ResolvedDirectorHandheld | undefined {
+  if (!input) return undefined;
+  const envelope =
+    typeof input === "string" ? HANDHELD_PRESETS[input] : input;
+  return {
+    meters: envelope.meters,
+    degrees: envelope.degrees,
+    seed: axisSeedValue(
+      context.filmSeed ?? resolveFilmSeed(context.sceneId),
+      context.sceneId,
+      "handheld"
+    ),
+  };
 }
 
 export interface ResolvedDirectorCameraTrack {
@@ -80,6 +117,12 @@ export interface ResolvedDirectorCameraTrack {
    * that never track resolve byte-identically to their earlier snapshots.
    */
   tracking?: { performerId: string; mode: "aim" | "follow" };
+  /**
+   * Present only when the scene came off the tripod. The sampler adds drift
+   * inside these envelopes after tracking; absent (not null) otherwise, so
+   * films that stay on the tripod resolve byte-identically.
+   */
+  handheld?: ResolvedDirectorHandheld;
 }
 
 function vec3(value: {
@@ -160,6 +203,10 @@ export function resolveDirectorCameraTrack(
 
   const { durationSeconds, aspectRatio, groundOffset, performers, sceneId } =
     context;
+  // Handheld is a modifier on the sampled frame, not a framing, so it rides
+  // along with whichever of the four camera spellings below resolves.
+  const handheld = resolveHandheld(input?.handheld, context);
+  const shake = handheld ? { handheld } : {};
   const baseShot = computeFramingShot({
     performers: performers.map((performer) => performer.position),
     plane: "wall",
@@ -211,7 +258,7 @@ export function resolveDirectorCameraTrack(
         throw new Error("Camera keyframes cannot share the same time.");
       }
     }
-    return { preset: "custom", substitutedFor: null, keyframes: resolved };
+    return { preset: "custom", substitutedFor: null, keyframes: resolved, ...shake };
   }
 
   if (input?.shots) {
@@ -231,6 +278,7 @@ export function resolveDirectorCameraTrack(
       preset: "custom",
       substitutedFor: null,
       keyframes: compileCameraShots(input.shots, context),
+      ...shake,
     };
   }
 
@@ -262,6 +310,7 @@ export function resolveDirectorCameraTrack(
         context
       ),
       ...(tracking ? { tracking } : {}),
+      ...shake,
     };
   }
 
@@ -306,6 +355,7 @@ export function resolveDirectorCameraTrack(
         definition.motion.kind === "orbit" ? "linear" : "ease-in-out"
       )
     ),
+    ...shake,
   };
 }
 

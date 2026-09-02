@@ -220,8 +220,9 @@ export const FLOW_FEST_LOWER_CAMPGROUND_LOOP = Object.freeze(
 export const FLOW_FEST_LOWER_CAMPGROUND_OCCUPANCY = Object.freeze({
   evidence: "austen-observed-topology" as const,
   circulationRoadId: "lower-campground-loop",
-  centerVehicleCount: 32,
-  centerTentCount: 4,
+  centerVehicleCount: 44,
+  centerTentCount: 10,
+  centerCanopyCount: 8,
   innerRoadsideTentCount: 8,
   outerTreeLineTentCount: 14,
   sourceNote:

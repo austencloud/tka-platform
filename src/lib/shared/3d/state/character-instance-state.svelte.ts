@@ -259,6 +259,7 @@ export function createCharacterInstanceState(
   // Sequence mode state
   let loadedSequence = $state<SequenceData | null>(null);
   let stepConfigs = $state<StepMotionConfigs[]>([]);
+  let hasStartPose = $state(false);
   let currentStepIndex = $state(0);
   // Persist plane mode and rotation variant across HMR / page reloads
   const PLANE_MODE_KEY = `tka-3d-planeMode-${id}`;
@@ -482,6 +483,7 @@ export function createCharacterInstanceState(
       modeConfig
     );
     stepConfigs = startConfig ? [startConfig, ...motionConfigs] : motionConfigs;
+    hasStartPose = startConfig !== null;
 
     // DIAG: Dump raw start position and configs
     if (sequence.startPosition) {
@@ -764,6 +766,7 @@ export function createCharacterInstanceState(
       modeConfig
     );
     stepConfigs = startConfig ? [startConfig, ...motionConfigs] : motionConfigs;
+    hasStartPose = startConfig !== null;
 
     updateVisibilityFromStep(stepConfigs[currentStepIndex] ?? stepConfigs[0]);
   }
@@ -1355,6 +1358,14 @@ export function createCharacterInstanceState(
     },
     get totalSteps() {
       return totalSteps;
+    },
+    /**
+     * Index of the first motion step in `stepConfigs`. 1 when the loaded
+     * sequence contributed a static start pose at index 0, otherwise 0. Live
+     * phase math is motion-relative and adds this to reach a beat.
+     */
+    get motionStepOffset() {
+      return hasStartPose ? 1 : 0;
     },
 
     // Visibility

@@ -110,16 +110,28 @@ export interface CdSliceStore {
   getSettings(): ImageCompositionSettings;
 }
 
+/**
+ * `full` emits every encoded flat field (Share/Copy Link); the default diff
+ * form elides what matches the defaults. The per-length choices are the same
+ * in both modes: `cols` only when a real number (Auto is the absence of a
+ * key, which the seed writes as an explicit null), `startLayout`/`infoCell`
+ * only when an explicit override exists (the derived value would duplicate
+ * showQRCode/showMandala). `customName` has no default and is emitted only
+ * when the sender set one.
+ */
 export function captureCdSlice(
   store: CdSliceStore,
-  stepCount: number
+  stepCount: number,
+  options: { full?: boolean } = {}
 ): CdSlicePayload | null {
+  const full = options.full === true;
   const live = store.getSettings();
   const key = String(stepCount);
 
   const settings: CdSliceSettingsPatch = {};
   for (const field of ENCODED_FIELDS) {
-    if (!deepEqual(live[field], DEFAULT_IMAGE_COMPOSITION_SETTINGS[field])) {
+    if (full && live[field] === undefined) continue;
+    if (full || !deepEqual(live[field], DEFAULT_IMAGE_COMPOSITION_SETTINGS[field])) {
       (settings as Record<string, unknown>)[field] = live[field];
     }
   }

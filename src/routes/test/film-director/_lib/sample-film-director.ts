@@ -105,6 +105,73 @@ export function applyCameraTracking(
   };
 }
 
+/**
+ * Three incommensurate rates, in cycles per second. Their sum never repeats
+ * over a scene's length, so the drift reads as a person holding a rig rather
+ * than as a loop.
+ */
+const HANDHELD_RATES = [0.29, 0.71, 1.63] as const;
+
+/**
+ * One noise phase, fixed by the scene's handheld seed and which of the six
+ * (axis, rate) slots it belongs to. Arithmetic rather than a hash stream so a
+ * frame costs nothing to sample and never depends on sampling order.
+ */
+function handheldPhase(seed: number, slot: number): number {
+  const mixed = Math.imul((seed ^ (slot + 1)) >>> 0, 2654435761) >>> 0;
+  return ((mixed % 100003) / 100003) * Math.PI * 2;
+}
+
+/** Smooth drift on one axis, always inside [-1, 1]. */
+function handheldNoise(seed: number, axis: number, seconds: number): number {
+  let sum = 0;
+  for (let rate = 0; rate < HANDHELD_RATES.length; rate += 1) {
+    const slot = axis * HANDHELD_RATES.length + rate;
+    sum += Math.sin(
+      2 * Math.PI * HANDHELD_RATES[rate]! * seconds + handheldPhase(seed, slot)
+    );
+  }
+  return sum / HANDHELD_RATES.length;
+}
+
+/**
+ * Gap 11. Take it off the tripod. The compiled track is what the rig would do
+ * on sticks; this adds the operator. Position drifts inside a metres envelope
+ * and the aim drifts inside a degrees envelope, converted to metres at the
+ * current shooting distance so a long lens shakes as much on screen as a wide
+ * one does. Applied after tracking, so following a walker still follows them.
+ */
+export function applyHandheld(
+  camera: DirectorCameraFrame,
+  scene: ResolvedDirectorScene,
+  sceneTimeSeconds: number
+): DirectorCameraFrame {
+  const handheld = scene.camera.handheld;
+  if (!handheld) return camera;
+
+  const distance = Math.hypot(
+    camera.position[0] - camera.target[0],
+    camera.position[1] - camera.target[1],
+    camera.position[2] - camera.target[2]
+  );
+  const aimMeters = distance * Math.tan((handheld.degrees * Math.PI) / 180);
+  const drift = (axis: number): number =>
+    handheldNoise(handheld.seed, axis, sceneTimeSeconds);
+
+  const position: [number, number, number] = [0, 1, 2].map(
+    (axis) => camera.position[axis]! + handheld.meters * drift(axis)
+  ) as [number, number, number];
+  return {
+    ...camera,
+    position,
+    target: [0, 1, 2].map(
+      (axis) =>
+        camera.target[axis]! + position[axis]! - camera.position[axis]! +
+        aimMeters * drift(axis + 3)
+    ) as [number, number, number],
+  };
+}
+
 export function sampleFilmDirector(
   film: ResolvedFilmDirectorSpec,
   requestedSeconds: number
@@ -126,10 +193,14 @@ export function sampleFilmDirector(
   const performerMotion = scene.performance.performers.map((performer) =>
     sampleDirectorBlockingTrack(performer.blocking, sceneTimeSeconds)
   );
-  const camera = applyCameraTracking(
-    sampleDirectorCameraTrack(scene.camera.keyframes, sceneTimeSeconds),
+  const camera = applyHandheld(
+    applyCameraTracking(
+      sampleDirectorCameraTrack(scene.camera.keyframes, sceneTimeSeconds),
+      scene,
+      performerMotion
+    ),
     scene,
-    performerMotion
+    sceneTimeSeconds
   );
 
   return {

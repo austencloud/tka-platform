@@ -67,13 +67,30 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  * clockwise. Scenes 9 and 10 stage the same three characters in the same
  * line, the same wide front shot, the same 90-degree orbit. Direction is
  * the only thing that differs between them.
+ *
+ * Round 2, wave A adds three.
+ *
+ * Gap 10, two camera gestures at once. Every move had its own disjoint window,
+ * so the most recognisable camera move in cinema was unsayable. Scene 11 puts a
+ * zoom inside a push-in's `with` and lets it state `match: "subject-size"`
+ * instead of a number: the compiler solves the fov so the performer's size on
+ * screen never changes while the rig travels toward her.
+ *
+ * Gap 11, off the tripod. Scene 12 says `handheld: "steady"` on an otherwise
+ * ordinary wide front shot. The drift is seeded from the film and the scene,
+ * so it is the same shake every run, and it costs the shot none of its
+ * framing vocabulary.
+ *
+ * Gap 28, a pan that names its destination. `pan` took degrees, so aiming at a
+ * performer meant doing the trigonometry by hand. Scene 13 whips between two
+ * marks five meters apart with two pans that state only `to`.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
   version: 5,
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
-    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all. An eighth scene changes one performer's effect and effort partway through while another's prop stops for four counts. A ninth and tenth scene repeat one staging twice, an orbit clockwise then the same orbit counterclockwise, so the two can be judged side by side.",
+    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all. An eighth scene changes one performer's effect and effort partway through while another's prop stops for four counts. A ninth and tenth scene repeat one staging twice, an orbit clockwise then the same orbit counterclockwise, so the two can be judged side by side. Then an eleventh scene pushes in and widens the lens in the same breath, holding the performer's size while the world stretches behind her; a twelfth takes the same wide shot off the tripod; and a thirteenth whips between two performers with pans that name where to aim instead of how far to turn.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
   // The grammar only guarantees distinctness PER axis; three blues and three
@@ -487,6 +504,108 @@ export const provingGroundsFilm: FilmDirectorInput = {
         angle: "eye",
         position: "front",
         moves: [{ move: "orbit", amount: { degrees: 90 }, direction: "ccw" }],
+      },
+    },
+    {
+      id: "dolly-zoom",
+      title: "Dolly Zoom",
+      intent:
+        "Gap 10: two camera gestures in one window. The rig pushes 1.2 meters in over six seconds while the lens widens by exactly as much as the travel took away, so the performer holds her size in frame and the forest behind her stretches. One statement, not two moves: the zoom lives in the push's `with` and states `match: \"subject-size\"` instead of a number, so the compiler solves the fov rather than the director doing the trigonometry. Then two seconds to sit in it.",
+      durationSeconds: 8,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      performance: {
+        formation: "solo",
+        cast: { count: 1, defaults: { effect: "none" } },
+      },
+      camera: {
+        subject: { kind: "performer", performerId: "performer-1" },
+        shotSize: "medium",
+        angle: "eye",
+        position: "front",
+        moves: [
+          {
+            move: "push-in",
+            // 1.2 meters, not 2: a medium shot on one performer sits about
+            // 2.9 m out, and closing all but 0.9 m of that needs a 114-degree
+            // lens to hold her size, past the 100-degree ceiling. 1.2 lands
+            // the solve near 77 degrees, wide enough to stretch the forest.
+            amount: { meters: 1.2 },
+            durationSeconds: 6,
+            with: [{ move: "zoom", amount: { match: "subject-size" } }],
+          },
+          { move: "hold", durationSeconds: 2 },
+        ],
+      },
+    },
+    {
+      id: "handheld",
+      title: "Handheld",
+      intent:
+        "Gap 11: the same wide front shot every other scene here uses, off the tripod. `handheld: \"steady\"` adds five centimeters of body sway and a degree of aim drift, smooth and never repeating, seeded from the film and this scene so it shakes the same way every run. Nothing else about the shot changes: handheld is a modifier on the sampled frame, so the framing grammar still says everything it said before.",
+      durationSeconds: 7,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      performance: {
+        formation: "line",
+        cast: { count: 3, defaults: { effect: "none" } },
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "wide",
+        angle: "eye",
+        position: "front",
+        handheld: "steady",
+        moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "whip-pans",
+      title: "Whip Pans",
+      intent:
+        "Gap 28: a pan spoken as a destination. Two performers stand five meters apart. The camera opens on the one at screen right, then snaps to the other in three tenths of a second, sits, and snaps back. Neither pan states an angle: each says `to` that performer, and the compiler reads the shortest way round from where the camera currently aims to their mark.",
+      durationSeconds: 8,
+      transition: { kind: "cut" },
+      location: { environmentId: "cosmic" },
+      performance: {
+        formation: "custom",
+        performers: [
+          {
+            id: "him",
+            position: { x: -2.5, z: 0 },
+            facingDegrees: 180,
+            effect: "none",
+          },
+          {
+            id: "her",
+            position: { x: 2.5, z: 0 },
+            facingDegrees: 180,
+            effect: "none",
+          },
+        ],
+      },
+      camera: {
+        subject: { kind: "performer", performerId: "him" },
+        shotSize: "medium",
+        angle: "eye",
+        position: "front",
+        moves: [
+          { move: "hold", durationSeconds: 2.5 },
+          {
+            move: "pan",
+            to: { kind: "performer", performerId: "her" },
+            durationSeconds: 0.3,
+            easing: "linear",
+          },
+          { move: "hold", durationSeconds: 2.4 },
+          {
+            move: "pan",
+            to: { kind: "performer", performerId: "him" },
+            durationSeconds: 0.3,
+            easing: "linear",
+          },
+          { move: "hold", durationSeconds: 2.5 },
+        ],
       },
     },
   ],

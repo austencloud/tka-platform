@@ -93,10 +93,21 @@ function morphUnavailable(): boolean {
  * caller has already decided the motion is wanted — e.g. the landing↔workspace
  * morph, which is not gated on a results grid).
  *
+ * `settle`, when given, is awaited inside the update callback after the DOM
+ * is current. The page stays frozen on the old snapshot while it runs, so a
+ * caller whose destination element only gets its geometry or raster at the
+ * next rendering opportunity (a pane mounted collapsed, sized by a
+ * ResizeObserver) can let that frame happen before the browser captures the
+ * new state. Without it the capture sees a 0x0 endpoint and the morph
+ * shrinks to nothing.
+ *
  * Returns the transition so a caller can await `ready`/`finished`, or null when
  * it ran plainly.
  */
-export function startMorph(mutate: () => void): ViewTransition | null {
+export function startMorph(
+  mutate: () => void,
+  settle?: () => Promise<void>
+): ViewTransition | null {
   if (morphUnavailable()) {
     mutate();
     return null;
@@ -108,9 +119,10 @@ export function startMorph(mutate: () => void): ViewTransition | null {
   const before = captureResultsMotionState();
   // Svelte batches; the browser captures the "after" frame the moment this
   // callback returns, so the DOM has to be current BEFORE it does.
-  const transition = document.startViewTransition(() => {
+  const transition = document.startViewTransition(async () => {
     flushSync(mutate);
     stabilizeResultsLayouts();
+    if (settle) await settle();
   });
   // A skipped transition rejects `ready`; unhandled, that becomes a console
   // error and a PostHog $exception. See ignoreViewTransitionSkip.

@@ -42,6 +42,9 @@
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import MandalaHeroLayer from "./MandalaHeroLayer.svelte";
+  import WordHeader from "$lib/shared/animation-engine/components/layers/WordHeader.svelte";
+  import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+  import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import { MANDALA_GUIDE_FLOOR_OPACITY } from "$lib/shared/mandala/domain/mandala-overlay-types";
   import ElementChipRow from "./ElementChipRow.svelte";
   import PropRelationshipChipRow from "./PropRelationshipChipRow.svelte";
@@ -484,6 +487,45 @@
       !activeReal
   );
   const captionRealization = $derived(visibleRealization ?? activeReal);
+
+  // The word header lives in a drill-owned band ABOVE the square, not inside
+  // the player. Inside the player it sits over the top of the frame and the
+  // live canvas letterboxes beneath it, so the still floor's centered square
+  // and the canvas's square disagree by half the header's height. With the
+  // band outside, `.hero-frame` IS the canvas region and MandalaHeroLayer's
+  // inscribed square is the canvas's inscribed square. The band reserves its
+  // height with a ghost header so the frame's geometry is identical before a
+  // realization exists (the shared-element morph snapshots that moment).
+  let wordHeaderVisible = $state(true);
+  let headerDarkMode = $state(true);
+  $effect(() => {
+    const visibility = animationState.scope.visibility;
+    const sync = () => {
+      wordHeaderVisible = visibility.getVisibility("wordHeader");
+      headerDarkMode = visibility.isDarkMode();
+    };
+    sync();
+    visibility.registerObserver(sync);
+    return () => visibility.unregisterObserver(sync);
+  });
+  const headerSequence = $derived(captionRealization?.seq ?? null);
+  const headerDifficulty = $derived(
+    headerSequence?.steps?.length
+      ? calculateDifficultyLevel([...headerSequence.steps])
+      : null
+  );
+  const headerLoopDisplay = $derived.by(() => {
+    if (!headerSequence) return null;
+    const resolver = tryGetLoopDisplayResolver();
+    return resolver ? resolver(headerSequence) : null;
+  });
+  const headerStepNumber = $derived(
+    headerSequence?.steps?.length &&
+      visibleStep >= 1 &&
+      visibleStep < headerSequence.steps.length + 0.99
+      ? Math.floor(visibleStep)
+      : null
+  );
   const visibleStep = $derived(
     visibleSource === "first"
       ? firstStep
@@ -1001,7 +1043,9 @@
             disassemblyLayout: "auto",
             disassemblyTarget: animationState.disassembled,
             onDisassemblyTargetChange: animationState.requestDisassembled,
-            showWordHeader: true,
+            // The drill owns the word header band above the square; the
+            // player's own header would push its canvas below the floor.
+            showWordHeader: false,
             beatIndicators: false,
             leftPropType: layer.propType,
             rightPropType: layer.propType,
@@ -1076,6 +1120,30 @@
 
   <div class="media-stage">
     <div class="hero-stage">
+      <div class="hero-header">
+        <div class="hero-header-ghost" aria-hidden="true">
+          <WordHeader word="A" visible={true} darkMode={headerDarkMode} />
+        </div>
+        {#if headerSequence}
+          <div class="hero-header-live">
+            <WordHeader
+              word={headerSequence.word}
+              visible={wordHeaderVisible}
+              darkMode={headerDarkMode}
+              activeStepNumber={headerStepNumber}
+              difficultyLevel={headerDifficulty}
+              loopComponents={headerLoopDisplay &&
+              headerLoopDisplay.components.size > 0
+                ? headerLoopDisplay.components
+                : null}
+              rotationPeriod={headerLoopDisplay?.rotationPeriod}
+              inversionPeriod={headerLoopDisplay?.inversionPeriod}
+              reflectionAxis={headerLoopDisplay?.reflectionAxis}
+              overlayComponents={headerLoopDisplay?.overlayComponents}
+            />
+          </div>
+        {/if}
+      </div>
       <div class="hero-frame">
         {#if pair && heroPaths}
           <!-- The still mandala is a cold-load floor only. Once the canonical
@@ -1248,6 +1316,7 @@
     position: relative;
     min-height: 0;
     display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     place-items: center;
     container-type: size;
     overflow: hidden;
@@ -1298,6 +1367,26 @@
     height: 100%;
     min-width: 0;
     min-height: 0;
+  }
+
+  /* Ghost-sizer: the live header and a hidden one-letter header share one
+     grid cell, so the band keeps its height while no realization exists and
+     the square below never moves when the word arrives. */
+  .hero-header {
+    width: 100%;
+    display: grid;
+    align-items: center;
+  }
+  /* Both wrappers are drill-owned elements, so the scoped child selector
+     matches them (a child component's root would not carry this scope). */
+  .hero-header-ghost,
+  .hero-header-live {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+  .hero-header-ghost {
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .player-layer {
