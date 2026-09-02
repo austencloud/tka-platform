@@ -44,13 +44,22 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  * Scene 6 spends all three of the new spellings: one performer plays a saved
  * public-library sequence by its id, and two more derive from it through
  * `transformOf` chains the Create module's Actions panel already owns.
+ *
+ * Gap 7, the edges of the stage. Before this wave a walk was a straight line
+ * between two marks, and a performer who was meant to enter had nowhere to
+ * enter from. Scene 7 opens performer 3 five meters off the right of the
+ * frame — legal all along, because nothing clamps a position and the ground
+ * grows to include it — and walks them in along an arc that bows to their
+ * left, compiled into chords whose speed is measured along the curve rather
+ * than across the chord. A third performer stands and watches with no
+ * sequence at all.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
   version: 5,
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
-    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde.",
+    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
   // The grammar only guarantees distinctness PER axis; three blues and three
@@ -304,6 +313,54 @@ export const provingGroundsFilm: FilmDirectorInput = {
                 transformOf: "performer-1",
                 transforms: [{ op: "rewind" }],
               },
+            },
+          ],
+        },
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "wide",
+        angle: "eye",
+        position: "front",
+        moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "edges-of-the-stage",
+      title: "Edges of the Stage",
+      intent:
+        "Gap 7: performer 3 opens off camera at (5, -1), five meters out past the right edge of a three-wide line, and walks in along a left-bending arc to their mark at (1.8, -0.3) over eight beats — about 3.8 meters of curve in four seconds, a 0.95 m/s walk. Nothing clamps a position to the stage, so the ground grows to include the opening mark and the entrance is simply a walk from outside the frame. Watch the path bow: a straight walk would cut the corner. Performer 1 stands and watches: `{source: \"none\"}`, no prop phrase, body idling while the other two spin.",
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      performance: {
+        bpm: 120,
+        // side-by-side, not custom: a per-performer `position` overrides its
+        // formation slot under any preset (resolve-film-director-spec.ts,
+        // `buildResolvedPerformers`), and "custom" would demand a position
+        // from all three when only one of them starts somewhere unusual.
+        formation: "side-by-side",
+        cast: {
+          count: 3,
+          defaults: { effect: "none" },
+          performers: [
+            { id: "performer-1", sequence: { source: "none" } },
+            { id: "performer-2" },
+            {
+              id: "performer-3",
+              // Off camera at the top of the scene. side-by-side puts the
+              // third slot at (1.8, -0.3), which is where the arc lands.
+              position: { x: 5, z: -1 },
+              blocking: [
+                {
+                  move: "walk",
+                  to: { x: 1.8, z: -0.3 },
+                  along: { arc: "left", bulge: 0.25 },
+                  facing: "travel",
+                  durationBeats: 8,
+                },
+                { move: "stand" },
+              ],
             },
           ],
         },
