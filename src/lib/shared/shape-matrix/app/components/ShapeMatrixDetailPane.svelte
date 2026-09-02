@@ -1,20 +1,13 @@
 <script lang="ts">
   import ShapeMatrixDrill from "$lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte";
-  import { createShapeMatrixAnimationState } from "../state/shape-matrix-animation-state.svelte";
-  import { setShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
-  import { setAnimationScopeContext } from "$lib/shared/animation-engine/state/animation-scope-context";
-  import { setAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
-  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { getShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
 
   const state = getShapeMatrixAppContext();
-  const animationState = setShapeMatrixAnimationContext(
-    createShapeMatrixAnimationState()
-  );
-  setAnimationScopeContext(animationState.scope);
-  setAnimationVisibilityContext(animationState.scope.visibility);
-  setEffectsConfigContext(animationState.scope.effects);
+  // The shell owns the animation state so its compact topbar can host the
+  // relationships toggle; this pane only presents it.
+  const animationState = getShapeMatrixAnimationContext();
 
   const controlLabels = {
     grid: "Grid",
@@ -44,8 +37,12 @@
 
 <aside
   class="detail-pane"
+  class:compact={state.compact}
   aria-label="Shape animation and element relationships"
 >
+  <!-- Wide layouts carry the relationships toggle here. Compact detail keeps
+       the topbar as the only chrome row, so the shell hosts the toggle. -->
+  {#if !state.compact}
   <header class="pane-heading">
     <div
       class="relationship-entry"
@@ -56,12 +53,7 @@
         ariaExpanded={animationState.activeSection === null}
         onclick={animationState.showRelationships}
       >
-        <i
-          class={animationState.activeSection === null
-            ? "fas fa-shapes"
-            : "fas fa-arrow-left"}
-          aria-hidden="true"
-        ></i>
+        <i class="fas fa-shapes" aria-hidden="true"></i>
         <span>Element relationships</span>
       </PanelButton>
     </div>
@@ -72,6 +64,7 @@
       </span>
     {/if}
   </header>
+  {/if}
 
   <div class="drill-stage">
     {#if state.data}
@@ -106,6 +99,10 @@
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
     border-radius: 16px;
     background: var(--theme-panel-bg, rgb(16 23 33 / 0.82));
+  }
+
+  .detail-pane.compact {
+    grid-template-rows: minmax(0, 1fr);
   }
 
   .pane-heading {

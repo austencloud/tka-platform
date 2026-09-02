@@ -130,7 +130,7 @@ covers the library.
 
 ### Gap 13: scene inheritance — R16, R17, R20, R21, R22, R24, R30, R32
 
-- [ ] `sceneSchema.extends: string` names an EARLIER scene id in the same
+- [x] `sceneSchema.extends: string` names an EARLIER scene id in the same
       film. The raw input of the child is deep-merged over the raw input of the
       parent before resolution: plain objects merge key by key, arrays replace
       wholesale, `null` on the child deletes the parent's key. `id` is always
@@ -138,48 +138,48 @@ covers the library.
       defaults to the parent's title. Chains are allowed (parent may itself
       extend). Rejections name the scene: unknown parent, forward or self
       reference.
-- [ ] Implement in `resolveFilmDirectorSpec` before `resolveScene` (or in a
+- [x] Implement in `resolveFilmDirectorSpec` before `resolveScene` (or in a
       new `expand-scene-inheritance.ts`), on the validated input; the resolved
       scene records `extends: parentId | null`.
-- [ ] Tests: callback scene equals its parent except camera; null deletes;
+- [x] Tests: callback scene equals its parent except camera; null deletes;
       arrays replace; error cases.
 
 ### Gap 14: seed sharing — R21
 
-- [ ] `sceneSchema.seedAs: string` (an earlier scene id). Every axis stream
+- [x] `sceneSchema.seedAs: string` (an earlier scene id). Every axis stream
       for the scene uses the named scene's id as its scene key, so a quoted
       scene with `pick` draws the same values. Rejections as for `extends`.
       `extends` does NOT imply `seedAs`; document why (a callback usually
       wants the same draws, so the matrix example shows both).
-- [ ] Tests: two scenes with `pick: "any"` character and `seedAs` resolve the
+- [x] Tests: two scenes with `pick: "any"` character and `seedAs` resolve the
       same cast; without it they differ for at least one axis.
 
 ### Gap 21: a cast of zero — R23
 
-- [ ] `castSchema.count` min 0 and `performanceSchema.performers` min 0 (an
+- [x] `castSchema.count` min 0 and `performanceSchema.performers` min 0 (an
       explicit empty array). `resolveScene` produces an empty cast; group
       framing targets the stage origin at the group's default height; stage
       extent is the origin. Adapter with zero directed performers idles the
       whole pool. The default when nothing is stated stays one performer.
-- [ ] Tests: resolve, sample and (contract-level) adapter path with zero
+- [x] Tests: resolve, sample and (contract-level) adapter path with zero
       performers; camera keyframes finite.
 
 ### Gap 22: bars — R18, R19
 
-- [ ] `performanceSchema.meter: { beatsPerBar: int 2..12 }` (default 4).
+- [x] `performanceSchema.meter: { beatsPerBar: int 2..12 }` (default 4).
       Everywhere `durationBeats`/`atBeats` is accepted, `durationBars`/`atBars`
       is accepted too and converts through the meter in
       `convertSceneBeatTimes`; the at-most-one-time-unit refine covers three
       units. Error text follows the existing beats wording.
-- [ ] Tests: 3/4 at 90 bpm, 8 bars = 16 s; mixing bars and beats rejected.
+- [x] Tests: 3/4 at 90 bpm, 8 bars = 16 s; mixing bars and beats rejected.
 
 ### Wave B close
 
-- [ ] Proving Grounds scenes: `callback` (extends + seedAs an earlier scene,
+- [x] Proving Grounds scenes: `callback` (extends + seedAs an earlier scene,
       camera from behind), `empty-stage` (count 0, 3 s), `waltz` (3/4, 4 bars).
-- [ ] Matrix rows; rejection rows for "environment change within a scene" and
+- [x] Matrix rows; rejection rows for "environment change within a scene" and
       "more than 24 scenes / 60 s scene" (already caps; state them).
-- [ ] Suite green, snapshot reviewed, pathspec commit.
+- [x] Suite green, snapshot reviewed, pathspec commit.
 
 ---
 
@@ -187,66 +187,89 @@ covers the library.
 
 ### Gap 15: named cues — R10, R14, R19, R38, R40
 
-- [ ] `sceneSchema.cues: Record<name, { atSeconds } | { atBeats } | { atBars }>`
+- [x] `sceneSchema.cues: Record<name, { atSeconds } | { atBeats } | { atBars }>`
       (max 16 names, names `^[a-z][a-z0-9-]*$`). A cue is a moment in scene
       time.
-- [ ] Anywhere a `step` integer is spoken (`stepPlanes`, `stepEffects`,
+- [x] Anywhere a `step` integer is spoken (`stepPlanes`, `stepEffects`,
       `stepEfforts`, `stepStaffLengths`, `holds.fromStep`) a cue name is
       accepted; it must land on an integer step at the scene bpm (tolerance
       1e-6) or reject naming the cue and the fractional step.
-- [ ] Camera moves, camera shots, and blocking moves accept `until: cueName`
+- [x] Camera moves, camera shots, and blocking moves accept `until: cueName`
       as their duration: the window ends at the cue. Rejection when combined
       with a duration unit, or when the cue precedes the window start.
-- [ ] Camera keyframes accept `at: cueName`.
-- [ ] Tests: one cue drives a stepEffect, a shot boundary and a blocking stop
+- [x] Camera keyframes accept `at: cueName`.
+- [x] Tests: one cue drives a stepEffect, a shot boundary and a blocking stop
       to the same second; rejections.
 
 ### Gap 16: phrase continuity — R16, R20, R22, R24
 
-- [ ] `performanceSchema.phrase: "restart" | "continue"` (default restart).
+- [x] `performanceSchema.phrase: "restart" | "continue"` (default restart).
       `continue` means the shared step clock starts where the previous scene's
       clock ended (previous `stepOffset + duration * bpm / 60`). Resolved scene
       gets `performance.stepOffset`. `sampleFilmDirector` adds it to
       `sequenceStep`. First scene with `continue` is rejected by name.
-- [ ] Tests: 8-beat scene followed by a continue scene starts at step 8; a
+- [x] Tests: 8-beat scene followed by a continue scene starts at step 8; a
       bpm change with continue keeps the step continuous.
-- [ ] Proving Grounds scene pair `tempo-slow` / `tempo-double` (continue).
+- [x] Proving Grounds scene pair `tempo-slow` / `tempo-double` (continue).
 
 ### Gap 17: staff length over time — R02
 
-- [ ] `stepStaffLengths: [{ step | cue, staffLengthCm, ease?: boolean }]` on
+- [x] `stepStaffLengths: [{ step | cue, staffLengthCm, ease?: boolean }]` on
       performer and cast defaults (same replace-not-merge rule as stepEffects).
       Between entries the length interpolates linearly from the previous
       entry's step to the entry's step when `ease` is true (default true);
       false steps at the entry.
-- [ ] Adapter: `applyDirectorStepChanges` writes `setStaffLengthCm` when the
+- [x] Adapter: `applyDirectorStepChanges` writes `setStaffLengthCm` when the
       value changes by 0.5 cm or more (extend `DirectorAppliedStepChange`).
-- [ ] Tests and Proving Grounds scene `growing-staff` (100 cm to 250 cm over
+- [x] Tests and Proving Grounds scene `growing-staff` (100 cm to 250 cm over
       the scene).
 
 ### Gap 18: blocking timeline — R11, R22
 
-- [ ] `performanceSchema.blocking` accepts either the current single object
+- [x] `performanceSchema.blocking` accepts either the current single object
       or an array of them, each with optional `atSeconds|atBeats|atBars|cue`
       start (default: the end of the previous entry, 0 for the first). Each
       entry names an `endFormation`; performers hold their marks between
       entries. Rejection: overlapping windows, an entry ending after the scene.
-- [ ] Tests: two-line to circle at halfway; two successive formation changes.
-- [ ] Proving Grounds scene `two-lines-one-circle`.
+- [x] Tests: two-line to circle at halfway; two successive formation changes.
+- [x] Proving Grounds scene `two-lines-one-circle`.
 
 ### Gap 19: hold at a chosen point in the arc — R32
 
-- [ ] `holdSchema.progress: 0..1` (default 0): the held step is pinned at
+- [x] `holdSchema.progress: 0..1` (default 0): the held step is pinned at
       that fraction through the step instead of its start.
-- [ ] Tests on `resolveHeldStep`; matrix row.
+- [x] Tests on `resolveHeldStep`; matrix row.
 
 ### Wave C close
 
-- [ ] Matrix rows; rejection row for a bpm curve inside one scene (spell it as
+- [x] Matrix rows; rejection row for a bpm curve inside one scene (spell it as
       two scenes with `phrase: "continue"`).
-- [ ] Suite green, snapshot reviewed, pathspec commit.
+- [x] Suite green, snapshot reviewed, pathspec commit.
 
 ---
+
+### Wave C notes (executor, 2026-09-02)
+
+Deviations from the section text above, all deliberate:
+
+- `stepStaffLengths` bounds are 40-300 cm, matching the existing
+  `staffLengthCm` field in the same schema. `setStaffLengthCm` in
+  `character-instance-state.svelte.ts` clamps nothing, so the grammar's own
+  neighbouring field is the only honest bound available.
+- `ease` is `"cut" | "linear"` (default `"linear"`) rather than a boolean, so
+  the resolved entry says what it does.
+- `stepOffset` is scene-scoped, not per performer. Per-performer variation is
+  already carried by `beatOffset` and `holds`, and a second per-performer
+  offset would double-count it.
+- A blocking phase starts with `startSeconds | startStep | startCue` rather
+  than `atSeconds|atBeats|atBars|cue`; `startStep` and `startCue` cover counted
+  and named starts, and a phase length still takes the beats and bars twins.
+
+Evidence: 793 film-director tests pass (771 before, 22 added in
+`tests/unit/film-director/wave-c-timing.test.ts`).
+`npx tsc --noEmit -p tsconfig.json` reports nothing under film-director. The
+snapshot diff is three hunks, all inside the `"Proving Grounds" (proving)`
+block; every other film is byte-identical.
 
 ## Wave D: runtime-gated (scope fixed by the 2026-09-02 runtime census)
 

@@ -14,6 +14,10 @@
   import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
   import { createHeroAct } from "$lib/shared/landing/data/hero-act.svelte";
+  import {
+    HERO_TRAIL_PRESET,
+    HERO_TIP_EFFECT_MAP,
+  } from "$lib/shared/landing/data/hero-trail-preset";
   import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
   import { runAfterNamedRouteMorphIdle } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -296,6 +300,8 @@
         rightPropType={heroAct.propType}
         onSequenceBoundary={heroAct.offerSequenceBoundary}
         note="a real sequence playing in Composer"
+        trailSettingsOverride={HERO_TRAIL_PRESET}
+        tipEffectMap={HERO_TIP_EFFECT_MAP}
         showNotationStrip={true}
         showWordHeader={true}
         autoPlay={!reduceMotion.current}
@@ -306,6 +312,13 @@
            place the page shows that the whole interface retunes to it. -->
       <ComposerBackgroundCycle />
     </div>
+
+    <!-- Absolutely positioned, so revealing it cannot move the hero content.
+         It marks where the fold is; the section below starts under it. -->
+    <a class="scroll-cue" href="#making-title" aria-label="Scroll to Build the sequence">
+      <span>Scroll</span>
+      <i class="fas fa-chevron-down" aria-hidden="true"></i>
+    </a>
   </section>
 
   <!-- One heading, then the thing itself. An earlier version explained Build and
@@ -465,13 +478,61 @@
     font-family: "Inter", system-ui, sans-serif;
   }
 
+  /* The hero owns the first screen: one viewport minus the fixed marketing
+     header and the page's own top padding, so the next section starts below
+     the fold instead of peeking in. min-height, never height — short and
+     narrow viewports below let it grow rather than clip the player. */
   .opening {
-    min-height: min(50rem, calc(100svh - 6.5rem));
+    position: relative;
+    min-height: calc(100dvh - var(--marketing-header-h, 64px) - 1.25rem);
     display: grid;
     grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
     align-items: center;
     gap: clamp(2rem, 4.5vw, 80px);
-    padding: clamp(1rem, 2.5vw, 36px) 0 clamp(3rem, 6vw, 100px);
+    padding: clamp(0.75rem, 2vw, 28px) 0 clamp(3rem, 4vw, 3.5rem);
+  }
+
+  /* Quiet fold marker. Sits in the hero's bottom padding, out of flow. */
+  .scroll-cue {
+    position: absolute;
+    left: 50%;
+    bottom: 0.65rem;
+    transform: translateX(-50%);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--settings-radius-lg, 0.85rem);
+    color: oklch(0.72 0.018 270);
+    font-size: var(--font-size-compact, 0.75rem);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: color 160ms ease;
+  }
+
+  .scroll-cue:hover {
+    color: oklch(0.88 0.02 270);
+  }
+
+  .scroll-cue:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b8cff);
+    outline-offset: 3px;
+  }
+
+  .scroll-cue i {
+    animation: scroll-cue-drift 2.4s ease-in-out infinite;
+  }
+
+  @keyframes scroll-cue-drift {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(0.28rem);
+    }
   }
 
   .opening-copy {
@@ -591,10 +652,18 @@
     font-size: var(--font-size-min, 0.875rem);
   }
 
+  /* The svh term is what keeps the hero inside one screen: the player is a
+     tall stack (square + notation strip + controls), so on a short desktop
+     window its width has to come down or it would push the fold away. */
+  /* The svh terms are what keep the hero inside one screen: the demo is a tall
+     stack (square + notation strip + controls + background row), so on a short
+     desktop window its width has to come down rather than push the fold away.
+     Sizing goes through the demo's own max-width tokens, as HomeHero does. */
   .opening-player {
     position: relative;
     width: min(100%, 45rem);
     margin-inline: auto;
+    --hero-demo-max-width: min(100%, 45rem, 47svh);
   }
 
   .opening-player::before {
@@ -647,6 +716,7 @@
   }
 
   .making-title {
+    scroll-margin-top: calc(var(--marketing-header-h, 64px) + 1rem);
     max-width: 18ch;
   }
 
@@ -894,7 +964,7 @@
     }
 
     .opening {
-      min-height: 0;
+      min-height: calc(100dvh - var(--marketing-header-h, 64px) - 1.25rem);
       gap: 2.5rem;
       padding-top: 1.5rem;
     }
@@ -914,6 +984,7 @@
 
     .opening-player {
       width: min(100%, 38rem);
+      --hero-demo-max-width: min(100%, 38rem, 31svh);
     }
 
     .construct-placeholder {
@@ -943,6 +1014,25 @@
     }
   }
 
+  /* Phones: the player is the whole point of this screen, so it keeps its
+     width and the hero grows past the fold instead of shrinking it. */
+  @media (max-width: 48rem) {
+    .opening {
+      min-height: 0;
+    }
+
+    .opening-player {
+      --hero-demo-max-width: min(100%, 22rem);
+    }
+
+    .scroll-cue {
+      position: static;
+      transform: none;
+      justify-self: center;
+      margin-top: 0.5rem;
+    }
+  }
+
   @media (max-width: 37.4375rem), (max-height: 37.4375rem) {
     .viewer-output {
       display: none;
@@ -959,7 +1049,7 @@
     }
 
     .opening {
-      min-height: calc(100svh - 4.8rem);
+      min-height: calc(100dvh - 4.8rem);
       grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
       gap: 1.8rem;
       padding: 0.25rem 0 1rem;
@@ -991,8 +1081,11 @@
       font-size: var(--font-size-compact, 0.75rem);
     }
 
+    /* Short and wide: the fold is not worth a shrunken player here, so the
+       hero grows past the viewport and the demo keeps a legible size. */
     .opening-player {
       width: min(100%, 18rem);
+      --hero-demo-max-width: min(100%, 18rem);
     }
   }
 
@@ -1002,15 +1095,20 @@
     }
 
     .opening {
-      min-height: min(58rem, calc(100svh - 7rem));
+      min-height: calc(100dvh - var(--marketing-header-h, 64px) - 1.25rem);
     }
 
     .opening-player {
       width: min(100%, 52rem);
+      --hero-demo-wide-max-width: min(52rem, 51svh);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .scroll-cue i {
+      animation: none;
+    }
+
     :global(html:has(.composer-page)) {
       scroll-behavior: auto;
     }

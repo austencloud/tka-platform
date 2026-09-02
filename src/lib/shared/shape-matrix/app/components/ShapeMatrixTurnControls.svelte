@@ -235,28 +235,22 @@
     font-weight: 500;
   }
 
-  /* The tray stacks the two cells full-width; captions always show. */
+  /* The tray stacks the two cells at their content width so the popover
+     that holds it hugs the controls; captions always show. */
   .turn-editor.tray {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.6rem;
+    gap: 0.5rem;
   }
 
   .turn-editor.tray .control-cell {
-    justify-items: stretch;
-    padding: 0.55rem 0.65rem 0.6rem;
-  }
-
-  .turn-editor.tray .axis-control :global(.segmented-control) {
-    width: 100%;
+    justify-items: start;
+    padding: 0.5rem 0.6rem 0.55rem;
   }
 
   .turn-editor.tray .turn-control {
-    width: max(100%, calc(var(--turn-option-count, 4) * 3rem));
-  }
-
-  .turn-editor.tray .fixed-turn-value {
-    width: 100%;
+    width: calc(var(--turn-option-count, 4) * 3rem);
+    max-width: 100%;
   }
 
   @container shape-matrix-app (max-width: 74.99rem) or (max-height: 41.99rem) {

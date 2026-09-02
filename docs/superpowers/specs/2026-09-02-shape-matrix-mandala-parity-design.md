@@ -128,9 +128,47 @@ endpoint and the return trip landed on a 55px tile that then grew to 65px.
    342.7)`, back `227.875px @ (74, 343.3)` to `64.656px @ (156, 470.7)`,
    tile after the trip 66px at (155, 470).
 
+6. **The whole rectangle flies, and the tiles keep their size.** The third
+   review asked for the clicked square to become the animation canvas, not
+   just the mandala inside it, and rejected the smaller tiles the engine fit
+   had produced. Two nested shared elements now travel: `button.cell` and
+   `.hero-stage` share `shape-matrix-active-stage`, and inside each the tile
+   art and the hero's `.mandala-extent` box share `shape-matrix-active-mandala`.
+   A named descendant is cut out of its ancestor's snapshot, so the stage
+   group is the frame and the mandala group is the drawing, painted in DOM
+   order. Tiles are back on the `extent` fit (`renderExtentFit`), and the hero
+   floor sits in a box scaled by `engineExtentBoxRatio(paths, tipDx)` so the
+   extent-fit picture lands exactly where the engine draws it (ratio 0.611 for
+   the reviewed pair). The live player is `visibility: hidden` while its pair
+   key differs or the handoff runs, so no stale canvas shows under the
+   arriving frame. Measured at 375x667: stage `66x66 @ (145.3, 470)` to
+   `343.2x271.4 @ (11.3, 300)`, mandala `64.66px @ (146, 470.7)` to
+   `140.27px @ (112.7, 386.7)`, landing art inside the stage; back trip
+   returns to `66px @ (145.3, 470)`.
+
 Both endpoints are now the same painter's output. The View Transition morphs
 one drawing between two positions and sizes; the only remaining change across
 the morph is the tile's full opacity easing to the floor's 0.55.
+
+## Compact detail header
+
+The same review rejected the compact detail chrome: a bottom drawer of
+full-width segmented controls for turns, an "Element relationships" button
+alone on a second row, and that button's back arrow reading like the Matrix
+button. The compact detail view now has one chrome row:
+
+- `← Matrix` stays the only arrow. The relationships toggle keeps the shapes
+  glyph in every layout.
+- The turn chip (`L2 2 · 2`) opens `ShapeMatrixTurnPopover`, a bits-ui popover
+  anchored under the chip and sized `max-content` to the notation and turn
+  controls. The tray layout of `ShapeMatrixTurnControls` sizes to content
+  instead of stretching to the drawer.
+- The shell owns `createShapeMatrixAnimationState()` and its scope contexts,
+  so the topbar can show a `Relationships` pill only while a control section
+  covers the relationships (it is the way back; it has nothing to do
+  otherwise). Under 30rem it drops the word and keeps the glyph plus its
+  aria-label so the chip beside it never clips. The detail pane hides its
+  heading in compact and renders it unchanged in wide layouts.
 
 ## Tests
 
@@ -140,7 +178,9 @@ the morph is the tile's full opacity easing to the floor's 0.55.
   stroke, exact DPR rasters, extent fit, engine fit, empty box.
 - `tests/unit/shape-matrix/shape-matrix-mandala-continuity-contract.test.ts` —
   one painter across overlay and stills; no align scale or glow on the hero;
-  the shared floor opacity in both the drill and the render loop.
+  the shared floor opacity in both the drill and the render loop; the nested
+  stage and mandala names; the offstage player; the popover and one-row
+  compact header.
 - `tests/unit/mandala-overlay-guide-crossfade.test.ts` — unchanged, proves the
   overlay's behavior survived the extraction.
 

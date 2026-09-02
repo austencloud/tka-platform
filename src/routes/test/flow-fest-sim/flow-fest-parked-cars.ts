@@ -44,6 +44,25 @@ export interface FlowFestParkedCarAttribution {
   license: string;
 }
 
+/**
+ * Where the tyres actually touch, in body metres after the GLB is normalised
+ * to `lengthMeters`. `+along` is the nose, and the two axles are measured
+ * separately because a body's wheels are not centred on its bounding box: an
+ * '80 sedan carries more overhang behind the rear axle than ahead of the front
+ * one. Grounding a car on its bounding box instead of these patches sampled
+ * the field a metre past each bumper, so a body bridging a hollow hovered on
+ * its own wheels.
+ *
+ * Measured from the shipped GLBs by clustering the lowest 4 cm of tyre
+ * geometry into four corners; `tests/unit/flow-fest-parked-cars.test.ts`
+ * guards the values that grounding depends on.
+ */
+export interface FlowFestParkedCarWheelContacts {
+  frontAlongMeters: number;
+  rearAlongMeters: number;
+  halfTrackMeters: number;
+}
+
 export interface FlowFestParkedCarModel {
   id: string;
   label: string;
@@ -52,65 +71,163 @@ export interface FlowFestParkedCarModel {
   widthMeters: number;
   heightMeters: number;
   sourceYawRadians: number;
+  wheels: FlowFestParkedCarWheelContacts;
   paint?: FlowFestParkedCarPaint;
   attribution?: FlowFestParkedCarAttribution;
 }
 
+const ZHABOTINSKY = {
+  author: "Daniel Zhabotinsky",
+  license: "CC BY 4.0",
+} as const;
+
+/**
+ * Five generic bodies by one artist so the lot reads as one style, plus a
+ * classic camper. All CC Attribution; credits are repeated in
+ * `static/models/flow-fest/cars/CREDITS.md`. Dimensions are the measured
+ * source bounds in metres (length x width x height).
+ */
 export const FLOW_FEST_PARKED_CAR_MODELS: readonly FlowFestParkedCarModel[] =
   Object.freeze([
     {
-      id: "sedan-silver",
-      label: "silver sedan",
-      url: "/models/flow-fest/cars/sedan-silver.glb",
-      lengthMeters: 4.75,
-      widthMeters: 2.05,
-      heightMeters: 1.57,
-      sourceYawRadians: Math.PI,
+      id: "fairheaven-sedan",
+      label: "'80 sedan",
+      url: "/models/flow-fest/cars/fairheaven-sedan.glb",
+      lengthMeters: 5.0,
+      widthMeters: 1.83,
+      heightMeters: 1.35,
+      sourceYawRadians: 0,
+      wheels: {
+        frontAlongMeters: 1.433,
+        rearAlongMeters: -1.218,
+        halfTrackMeters: 0.749,
+      },
+      paint: {
+        materialNames: ["Fairheaven_LT80_Bodymat"],
+        variants: ["#641c26", "#c9c5bb", "#2c3d5e", "#8a8f93"],
+        mode: "recolor",
+      },
+      attribution: {
+        ...ZHABOTINSKY,
+        title: "Fairheaven LT '80",
+        url: "https://sketchfab.com/3d-models/e2678da920cc4be68dbc193727919ffb",
+      },
     },
     {
-      id: "crossover-white",
-      label: "white crossover",
-      url: "/models/flow-fest/cars/crossover-white.glb",
-      lengthMeters: 4.45,
-      widthMeters: 2.05,
-      heightMeters: 1.62,
-      sourceYawRadians: Math.PI,
+      id: "fairheaven-wagon",
+      label: "'84 wagon",
+      url: "/models/flow-fest/cars/fairheaven-wagon.glb",
+      lengthMeters: 5.03,
+      widthMeters: 1.86,
+      heightMeters: 1.4,
+      sourceYawRadians: 0,
+      wheels: {
+        frontAlongMeters: 1.443,
+        rearAlongMeters: -1.21,
+        halfTrackMeters: 0.749,
+      },
+      paint: {
+        materialNames: ["Fairheaven_LT80_Bodymat"],
+        variants: ["#33505a", "#d8d3c4", "#4a5a2f", "#1f2530"],
+        mode: "recolor",
+      },
+      attribution: {
+        ...ZHABOTINSKY,
+        title: "Fairheaven SW '84",
+        url: "https://sketchfab.com/3d-models/aa0becb6e854422596cac6b21bf79787",
+      },
     },
     {
-      id: "wagon-green",
-      label: "green outdoor wagon",
-      url: "/models/flow-fest/cars/wagon-green.glb",
-      lengthMeters: 4.7,
-      widthMeters: 2.15,
-      heightMeters: 1.85,
-      sourceYawRadians: Math.PI,
+      id: "lightbody-pickup",
+      label: "lifted '85 pickup",
+      url: "/models/flow-fest/cars/lightbody-pickup.glb",
+      lengthMeters: 4.93,
+      widthMeters: 2.14,
+      heightMeters: 1.92,
+      sourceYawRadians: 0,
+      wheels: {
+        frontAlongMeters: 1.587,
+        rearAlongMeters: -1.316,
+        halfTrackMeters: 0.781,
+      },
+      paint: {
+        materialNames: ["krmlgtbdy85_Bodymat"],
+        variants: ["#14121f", "#b7b2a8", "#7a1e1e", "#3b4a3a"],
+        mode: "recolor",
+      },
+      attribution: {
+        ...ZHABOTINSKY,
+        title: "Lightbody Lifted '85",
+        url: "https://sketchfab.com/3d-models/67beae18c3d24be68f9c8f0ec382d8e3",
+      },
     },
     {
-      id: "pickup-grey",
-      label: "grey crew-cab pickup",
-      url: "/models/flow-fest/cars/pickup-grey.glb",
-      lengthMeters: 5.85,
-      widthMeters: 2.4,
-      heightMeters: 1.9,
-      sourceYawRadians: Math.PI,
+      id: "bokaroo-suv",
+      label: "'67 SUV",
+      url: "/models/flow-fest/cars/bokaroo-suv.glb",
+      lengthMeters: 4.59,
+      widthMeters: 2.21,
+      heightMeters: 1.96,
+      sourceYawRadians: 0,
+      wheels: {
+        frontAlongMeters: 1.425,
+        rearAlongMeters: -1.189,
+        halfTrackMeters: 0.794,
+      },
+      paint: {
+        materialNames: ["BUCKAROO_67_Bodymat"],
+        variants: ["#348bb0", "#e6e1d3", "#b8482c", "#6f7a52"],
+        mode: "recolor",
+      },
+      attribution: {
+        ...ZHABOTINSKY,
+        title: "Bokaroo '67",
+        url: "https://sketchfab.com/3d-models/22015d1863d6455aa31cfd738b972c50",
+      },
     },
     {
-      id: "camper-van-white",
-      label: "white camper van",
-      url: "/models/flow-fest/cars/camper-van-white.glb",
-      lengthMeters: 5.95,
-      widthMeters: 2.5,
-      heightMeters: 3.25,
-      sourceYawRadians: Math.PI,
+      id: "ace-hatchback",
+      label: "'11 hatchback",
+      url: "/models/flow-fest/cars/ace-hatchback.glb",
+      lengthMeters: 3.84,
+      widthMeters: 1.83,
+      heightMeters: 1.45,
+      sourceYawRadians: 0,
+      wheels: {
+        frontAlongMeters: 1.101,
+        rearAlongMeters: -1.302,
+        halfTrackMeters: 0.721,
+      },
+      paint: {
+        materialNames: ["Ace11_Bodymat"],
+        variants: ["#cf9a24", "#e8e6e1", "#1e2a44", "#a13a3a"],
+        mode: "recolor",
+      },
+      attribution: {
+        ...ZHABOTINSKY,
+        title: "Ace '11",
+        url: "https://sketchfab.com/3d-models/055ff8a21b8d4d279debca089e2fafcd",
+      },
     },
     {
-      id: "hatchback-blue",
-      label: "blue hatchback",
-      url: "/models/flow-fest/cars/hatchback-blue.glb",
-      lengthMeters: 3.7,
-      widthMeters: 1.85,
-      heightMeters: 1.76,
-      sourceYawRadians: Math.PI,
+      id: "t2-camper",
+      label: "classic campervan",
+      url: "/models/flow-fest/cars/t2-camper.glb",
+      lengthMeters: 4.28,
+      widthMeters: 1.97,
+      heightMeters: 1.93,
+      sourceYawRadians: Math.PI / 2,
+      wheels: {
+        frontAlongMeters: 1.132,
+        rearAlongMeters: -1.247,
+        halfTrackMeters: 0.706,
+      },
+      attribution: {
+        title: "Volkswagen T2 Campervan",
+        author: "TheoClarke",
+        license: "CC BY 4.0",
+        url: "https://sketchfab.com/3d-models/96ec638bcdbd44a08be3197d9dece5d5",
+      },
     },
   ]);
 
@@ -142,14 +259,6 @@ export interface FlowFestParkedCarPlacement {
   paintIndex: number;
 }
 
-/**
- * Wheel contact points relative to the body centre, in the body's own frame
- * (nose along +X, right side along +Z). Catalogue bodies do not expose their
- * axles, so the contact patch is taken as a share of the footprint, which is
- * what a real wheelbase and track work out to within a few centimetres.
- */
-const WHEELBASE_SHARE = 0.62;
-const TRACK_SHARE = 0.84;
 /** How far the tyres press into the field, so no car floats on a grass tip. */
 const TYRE_SINK_METERS = 0.03;
 
@@ -159,12 +268,17 @@ const TYRE_SINK_METERS = 0.03;
  * hovering over the highest one.
  */
 export function settleFlowFestParkedCarOnGround(
-  model: Pick<FlowFestParkedCarModel, "lengthMeters" | "widthMeters">,
+  model: Pick<FlowFestParkedCarModel, "wheels">,
   placement: { x: number; z: number; rotation: number },
   sampleGroundY: (x: number, z: number) => number
 ): { y: number; pitch: number; roll: number } {
-  const halfWheelbase = (model.lengthMeters * WHEELBASE_SHARE) / 2;
-  const halfTrack = (model.widthMeters * TRACK_SHARE) / 2;
+  // The axle line is not centred on the body, so the pitch pivot is the
+  // midpoint of the real contact patches rather than the body origin.
+  const halfWheelbase =
+    (model.wheels.frontAlongMeters - model.wheels.rearAlongMeters) / 2;
+  const alongOffset =
+    (model.wheels.frontAlongMeters + model.wheels.rearAlongMeters) / 2;
+  const halfTrack = model.wheels.halfTrackMeters;
   const nose = {
     x: Math.cos(placement.rotation),
     z: -Math.sin(placement.rotation),
@@ -173,26 +287,27 @@ export function settleFlowFestParkedCarOnGround(
     x: Math.sin(placement.rotation),
     z: Math.cos(placement.rotation),
   };
-  const wheel = (alongSign: number, rightSign: number) =>
+  const wheel = (along: number, rightSign: number) =>
     sampleGroundY(
-      placement.x +
-        nose.x * alongSign * halfWheelbase +
-        right.x * rightSign * halfTrack,
-      placement.z +
-        nose.z * alongSign * halfWheelbase +
-        right.z * rightSign * halfTrack
+      placement.x + nose.x * along + right.x * rightSign * halfTrack,
+      placement.z + nose.z * along + right.z * rightSign * halfTrack
     );
-  const frontLeft = wheel(1, -1);
-  const frontRight = wheel(1, 1);
-  const rearLeft = wheel(-1, -1);
-  const rearRight = wheel(-1, 1);
+  const { frontAlongMeters: frontAlong, rearAlongMeters: rearAlong } =
+    model.wheels;
+  const frontLeft = wheel(frontAlong, -1);
+  const frontRight = wheel(frontAlong, 1);
+  const rearLeft = wheel(rearAlong, -1);
+  const rearRight = wheel(rearAlong, 1);
   const front = (frontLeft + frontRight) / 2;
   const rear = (rearLeft + rearRight) / 2;
   const left = (frontLeft + rearLeft) / 2;
   const rightSide = (frontRight + rearRight) / 2;
+  const pitch = Math.atan2(front - rear, 2 * halfWheelbase);
   return {
-    y: (front + rear) / 2 - TYRE_SINK_METERS,
-    pitch: Math.atan2(front - rear, 2 * halfWheelbase),
+    // `(front + rear) / 2` is the ground under the axle midpoint, which the
+    // pitch rotates about; the body origin sits `alongOffset` ahead of it.
+    y: (front + rear) / 2 - alongOffset * Math.sin(pitch) - TYRE_SINK_METERS,
+    pitch,
     // A positive rotation about local X drops the right side, so a higher
     // right-hand pair rolls the body the other way.
     roll: -Math.atan2(rightSide - left, 2 * halfTrack),
@@ -246,6 +361,29 @@ function paintMaterial(
   return Array.isArray(material) ? material.map(convert) : convert(material);
 }
 
+const WHEEL_MESH_NAME = /wheel|tire|tyre/i;
+
+/**
+ * The height the tyres actually rest on, in source units.
+ *
+ * These bodies are modelled with an underbody pan and bumper valances hanging
+ * below the contact patch, so the scene's lowest point is not the road. The
+ * wagon sat 19 cm and the SUV 14 cm clear of the field because both were
+ * grounded on that pan. Where the source names its wheels, they own the datum;
+ * a single merged body (the camper) falls back to the full bounds.
+ */
+function sourceRoadLevel(source: Object3D, fallbackY: number): number {
+  const wheels = new Box3();
+  wheels.makeEmpty();
+  source.traverse((child) => {
+    const mesh = child as Mesh;
+    if (!mesh.isMesh || !mesh.geometry) return;
+    if (!WHEEL_MESH_NAME.test(mesh.name)) return;
+    wheels.union(new Box3().setFromObject(mesh));
+  });
+  return wheels.isEmpty() ? fallbackY : wheels.min.y;
+}
+
 /**
  * Build GPU instances of one loaded car body over its stalls. The source is
  * measured, not trusted: it is re-centred on its footprint, grounded at y=0,
@@ -266,8 +404,9 @@ export function createFlowFestParkedCarInstances(
   const yawQuarterTurns = Math.round(model.sourceYawRadians / (Math.PI / 2));
   const sourceLength = yawQuarterTurns % 2 === 0 ? size.x : size.z;
   const scale = model.lengthMeters / Math.max(sourceLength, 0.001);
+  const roadY = sourceRoadLevel(source, bounds.min.y);
   const normalize = new Matrix4()
-    .makeTranslation(0, -bounds.min.y * scale, 0)
+    .makeTranslation(0, -roadY * scale, 0)
     .multiply(new Matrix4().makeRotationY(model.sourceYawRadians))
     .multiply(new Matrix4().makeScale(scale, scale, scale))
     .multiply(new Matrix4().makeTranslation(-center.x, 0, -center.z));

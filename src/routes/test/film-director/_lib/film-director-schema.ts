@@ -171,19 +171,103 @@ const finiteNumber = z.number().finite();
  * clock, so stating neither is just as invalid as stating both.
  */
 const atMostOneTimeUnit = (
-  value: { durationSeconds?: number; durationBeats?: number },
+  value: {
+    durationSeconds?: number;
+    durationBeats?: number;
+    durationBars?: number;
+  },
   ctx: z.RefinementCtx
 ) => {
-  if (
-    value.durationSeconds !== undefined &&
-    value.durationBeats !== undefined
-  ) {
+  const stated = [
+    value.durationSeconds !== undefined,
+    value.durationBeats !== undefined,
+    value.durationBars !== undefined,
+  ].filter(Boolean).length;
+  if (stated > 1) {
     ctx.addIssue({
       code: "custom",
-      message: 'State exactly one of "durationSeconds" or "durationBeats".',
+      message:
+        'State exactly one of "durationSeconds", "durationBeats", or "durationBars".',
     });
   }
 };
+
+/**
+ * Gap 15. A cue is a named moment in scene time, so "until the drop" is a
+ * fourth way of stating how long something runs and contradicts the other
+ * three exactly as they contradict each other.
+ */
+const atMostOneMoveLength = (
+  value: {
+    durationSeconds?: number;
+    durationBeats?: number;
+    durationBars?: number;
+    until?: string;
+  },
+  ctx: z.RefinementCtx
+) => {
+  const stated = [
+    value.durationSeconds !== undefined,
+    value.durationBeats !== undefined,
+    value.durationBars !== undefined,
+    value.until !== undefined,
+  ].filter(Boolean).length;
+  if (stated > 1) {
+    ctx.addIssue({
+      code: "custom",
+      message:
+        'State exactly one of "durationSeconds", "durationBeats", "durationBars", or "until".',
+    });
+  }
+};
+
+/**
+ * Gap 15. Cue names. Lowercase words joined by hyphens, always opening with a
+ * letter, which is what keeps a cue name from ever being read as a number:
+ * every field that accepts a cue also accepts a step or a count, and "4" must
+ * mean the count four in both spellings.
+ */
+const CUE_NAME_PATTERN = /^[a-z][a-z0-9-]*$/;
+export const CUE_NAME_MESSAGE =
+  'A cue name is lowercase letters, digits and hyphens, starting with a letter, like "drop" or "chorus-2".';
+const cueNameSchema = z
+  .string()
+  .refine((value) => CUE_NAME_PATTERN.test(value), {
+    error: () => CUE_NAME_MESSAGE,
+  });
+
+/** One named moment in scene time, stated in any of the three clocks. */
+const cueSchema = z.union(
+  [
+    z.object({ atSeconds: finiteNumber.nonnegative() }).strict(),
+    z.object({ atBeats: finiteNumber.nonnegative() }).strict(),
+    z.object({ atBars: finiteNumber.nonnegative() }).strict(),
+  ],
+  {
+    error:
+      'A cue is a moment: {atSeconds}, {atBeats}, or {atBars}.',
+  }
+);
+
+export const MAX_SCENE_CUES = 16;
+
+/**
+ * Gap 15. Wherever a whole count is spoken, the name of a cue is spoken
+ * instead. `convertSceneBeatTimes` resolves it to that count before anything
+ * downstream reads the list, so no resolver learns cues exist.
+ */
+const stepRefSchema = z.union([z.number().int().min(0), cueNameSchema], {
+  error: 'A step is a whole count or the name of a cue.',
+});
+
+/**
+ * Gap 22. Bars are the unit a director actually counts off, and they are just
+ * beats multiplied by the scene's meter, so every field that accepts beats
+ * accepts bars on the same terms: syntactic bounds here, the real seconds
+ * bound at resolve time. The caps are the beats caps divided by the smallest
+ * meter, which keeps a bars figure from parsing when its beats twin could not.
+ */
+const durationBarsField = finiteNumber.positive().optional();
 
 const vector3Schema = z.tuple([finiteNumber, finiteNumber, finiteNumber]);
 const position2Schema = z.object({ x: finiteNumber, z: finiteNumber }).strict();
@@ -255,7 +339,7 @@ const visiblePlanesSchema = z
 // and formation.
 const stepPlaneEntrySchema = z
   .object({
-    step: z.number().int().min(0),
+    step: stepRefSchema,
     hand: z.preprocess(
       (value) =>
         value === "blue" ? "left" : value === "red" ? "right" : value,
@@ -272,15 +356,33 @@ const stepPlaneEntrySchema = z
 // carried by the whole performer.
 const stepEffectEntrySchema = z
   .object({
-    step: z.number().int().min(0),
+    step: stepRefSchema,
     effect: directiveSchema(effectIdSchema),
   })
   .strict();
 
 const stepEffortEntrySchema = z
   .object({
-    step: z.number().int().min(0),
+    step: stepRefSchema,
     effort: directiveSchema(effortIdSchema),
+  })
+  .strict();
+
+/**
+ * Gap 17. A prop that grows or shrinks while the phrase runs. Literal only,
+ * unlike the whole-scene `staffLengthCm` above: a length has no catalog, and
+ * the whole point of the list is the shape of the ramp, which a random draw
+ * per entry would destroy.
+ *
+ * `ease` says how the value gets from the previous entry to this one:
+ * "linear" (the default) grows continuously across the counts between them,
+ * "cut" holds the previous length and changes on this entry's count.
+ */
+const stepStaffLengthEntrySchema = z
+  .object({
+    step: stepRefSchema,
+    staffLengthCm: finiteNumber.min(40).max(300),
+    ease: z.enum(["cut", "linear"]).optional(),
   })
   .strict();
 
@@ -294,8 +396,15 @@ const stepEffortEntrySchema = z
  */
 const holdSchema = z
   .object({
-    fromStep: z.number().int().min(0),
+    fromStep: stepRefSchema,
     steps: z.number().int().min(1, { error: "A hold lasts at least one step." }),
+    /**
+     * Gap 19. Where inside the frozen count the pose sits. A hold freezes at
+     * the top of `fromStep` by default, which is the pose the step opens on;
+     * 0.5 freezes it halfway through the step instead, which is where a shape
+     * a director actually wants to look at usually lives.
+     */
+    progress: finiteNumber.min(0).max(1).optional(),
   })
   .strict();
 
@@ -324,6 +433,9 @@ const cameraKeyframeSchema = z
     // inline just below rather than reusing that helper.
     atSeconds: finiteNumber.nonnegative().optional(),
     atBeats: finiteNumber.nonnegative().optional(),
+    atBars: finiteNumber.nonnegative().optional(),
+    /** Gap 15. The name of a cue, which is a fourth way of saying when. */
+    at: cueNameSchema.optional(),
     position: vector3Schema,
     target: cameraTargetSchema.optional(),
     fovDeg: finiteNumber.min(20).max(100).optional(),
@@ -333,11 +445,17 @@ const cameraKeyframeSchema = z
   })
   .strict()
   .superRefine((frame, ctx) => {
-    if ((frame.atSeconds !== undefined) === (frame.atBeats !== undefined)) {
+    const stated = [
+      frame.atSeconds !== undefined,
+      frame.atBeats !== undefined,
+      frame.atBars !== undefined,
+      frame.at !== undefined,
+    ].filter(Boolean).length;
+    if (stated !== 1) {
       ctx.addIssue({
         code: "custom",
         message:
-          'A camera keyframe states exactly one of "atSeconds" or "atBeats".',
+          'A camera keyframe states exactly one of "atSeconds", "atBeats", "atBars", or "at".',
       });
     }
   });
@@ -636,23 +754,31 @@ const blockingMoveSchema = z
       .optional(),
     durationSeconds: finiteNumber.positive().optional(),
     durationBeats: finiteNumber.positive().optional(),
+    durationBars: durationBarsField,
+    /** Gap 15. This move runs until the named cue. */
+    until: cueNameSchema.optional(),
     easing: z.enum(DIRECTOR_EASINGS).optional(),
   })
   .strict()
-  .superRefine(atMostOneTimeUnit);
+  .superRefine(atMostOneMoveLength);
 
 const blockingSchema = z.array(blockingMoveSchema).min(1).max(16);
 
-/**
- * Cast-wide staging. `endFormation` walks everyone from their opening slot
- * into the named formation — the spoken "and then they all form a line". A
- * performer with their own `blocking` list ignores it.
- */
-const sceneBlockingSchema = z
+/** One phase of cast-wide staging: everyone walks into the named formation. */
+const sceneBlockingPhaseSchema = z
   .object({
     endFormation: formationIdSchema,
+    /**
+     * Gap 18. When this phase begins, in any of the clocks the scene already
+     * speaks. Unstated means the moment the previous phase arrives, and 0 for
+     * the first phase, which is what a single staging has always meant.
+     */
+    startSeconds: finiteNumber.nonnegative().optional(),
+    startStep: finiteNumber.nonnegative().optional(),
+    startCue: cueNameSchema.optional(),
     durationSeconds: finiteNumber.positive().optional(),
     durationBeats: finiteNumber.positive().optional(),
+    durationBars: durationBarsField,
     easing: z.enum(DIRECTOR_EASINGS).optional(),
     facing: z
       .union([
@@ -662,7 +788,35 @@ const sceneBlockingSchema = z
       .optional(),
   })
   .strict()
-  .superRefine(atMostOneTimeUnit);
+  .superRefine(atMostOneTimeUnit)
+  .superRefine((phase, ctx) => {
+    const stated = [
+      phase.startSeconds !== undefined,
+      phase.startStep !== undefined,
+      phase.startCue !== undefined,
+    ].filter(Boolean).length;
+    if (stated > 1) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          'A blocking phase states at most one of "startSeconds", "startStep", or "startCue".',
+      });
+    }
+  });
+
+/**
+ * Cast-wide staging. `endFormation` walks everyone from their opening slot
+ * into the named formation — the spoken "and then they all form a line". A
+ * performer with their own `blocking` list ignores it.
+ *
+ * Gap 18. An array is a timeline of those: two lines that become one circle
+ * halfway through, then a diagonal on the last phrase. Between phases the cast
+ * holds the marks it just reached.
+ */
+const sceneBlockingSchema = z.union([
+  sceneBlockingPhaseSchema,
+  z.array(sceneBlockingPhaseSchema).min(1).max(8),
+]);
 
 /**
  * Spoken but not real. A director will plausibly ask for one performer's
@@ -714,6 +868,7 @@ const performerSchema = z
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
     stepEffects: z.array(stepEffectEntrySchema).optional(),
     stepEfforts: z.array(stepEffortEntrySchema).optional(),
+    stepStaffLengths: z.array(stepStaffLengthEntrySchema).max(16).optional(),
     holds: z.array(holdSchema).max(16).optional(),
     ...performerEffectConfigKeys,
   })
@@ -734,6 +889,7 @@ const castDefaultsSchema = z
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
     stepEffects: z.array(stepEffectEntrySchema).optional(),
     stepEfforts: z.array(stepEffortEntrySchema).optional(),
+    stepStaffLengths: z.array(stepStaffLengthEntrySchema).max(16).optional(),
     holds: z.array(holdSchema).max(16).optional(),
     ...performerEffectConfigKeys,
   })
@@ -742,7 +898,13 @@ const castDefaultsSchema = z
 
 const castSchema = z
   .object({
-    count: z.number().int().min(1).max(8),
+    /**
+     * Gap 21. Zero is a real answer. An establishing shot of an empty stage,
+     * a held environment before anyone walks on, a beat of nothing: the
+     * director says nobody is in this one and the scene still has a location,
+     * a duration, and a camera.
+     */
+    count: z.number().int().min(0).max(8),
     defaults: castDefaultsSchema.optional(),
     performers: z.array(performerSchema).max(8).optional(),
   })
@@ -751,6 +913,23 @@ const castSchema = z
 const performanceSchema = z
   .object({
     bpm: finiteNumber.min(20).max(300).optional(),
+    /**
+     * Gap 22. How many beats make a bar here. Only meaningful alongside a
+     * bars-stated duration, and 4 when unstated, which is what an unmarked
+     * count-off means.
+     */
+    meter: z
+      .object({ beatsPerBar: z.number().int().min(2).max(12) })
+      .strict()
+      .optional(),
+    /**
+     * Gap 16. Whether the prop phrase starts over at this cut or carries on.
+     * "restart" (the default, and what every film did before this word
+     * existed) opens the scene on step zero. "continue" opens it on whatever
+     * count the previous scene ended on, so a tempo change reads as the same
+     * phrase taken faster rather than as a new one.
+     */
+    phrase: z.enum(["restart", "continue"]).optional(),
     sequence: z
       .object({ source: z.literal("demo"), loop: z.boolean().optional() })
       .strict()
@@ -758,7 +937,9 @@ const performanceSchema = z
     formation: directiveSchema(formationIdSchema).optional(),
     blocking: sceneBlockingSchema.optional(),
     cast: castSchema.optional(),
-    performers: z.array(performerSchema).min(1).max(8).optional(),
+    // Gap 21. An explicit empty array is a stated empty stage, the long way
+    // round from `cast: { count: 0 }`, and means the same thing.
+    performers: z.array(performerSchema).min(0).max(8).optional(),
   })
   .strict()
   .refine((value) => !(value.cast && value.performers), {
@@ -811,6 +992,9 @@ const cameraMoveFields = {
   to: cameraPanDestinationSchema.optional(),
   durationSeconds: finiteNumber.positive().optional(),
   durationBeats: finiteNumber.positive().optional(),
+  durationBars: durationBarsField,
+  /** Gap 15. This move runs until the named cue. */
+  until: cueNameSchema.optional(),
   easing: z.enum(DIRECTOR_EASINGS).optional(),
 };
 
@@ -865,7 +1049,9 @@ const cameraMoveMemberSchema = z
     }
     if (
       member.durationSeconds !== undefined ||
-      member.durationBeats !== undefined
+      member.durationBeats !== undefined ||
+      member.durationBars !== undefined ||
+      member.until !== undefined
     ) {
       ctx.addIssue({ code: "custom", message: MOVE_GROUP_MEMBER_DURATION });
     }
@@ -882,7 +1068,7 @@ const cameraMoveSchema = z
     with: z.array(cameraMoveMemberSchema).min(1).max(4).optional(),
   })
   .strict()
-  .superRefine(atMostOneTimeUnit)
+  .superRefine(atMostOneMoveLength)
   .superRefine((move, ctx) => {
     rejectPanContradiction(move, ctx);
     if (hasMatchAmount(move)) {
@@ -947,9 +1133,12 @@ const cameraShotSchema = z
     ...cameraFramingFields,
     durationSeconds: finiteNumber.positive().optional(),
     durationBeats: finiteNumber.positive().optional(),
+    durationBars: durationBarsField,
+    /** Gap 15. This shot stays on screen until the named cue. */
+    until: cueNameSchema.optional(),
   })
   .strict()
-  .superRefine(atMostOneTimeUnit);
+  .superRefine(atMostOneMoveLength);
 
 const cameraSchema = z
   .object({
@@ -1086,6 +1275,7 @@ const transitionSchema = z
     // still convert to more than the 3-second ceiling this transition
     // actually enforces; convertSceneBeatTimes catches that at resolve time.
     durationBeats: finiteNumber.min(0).max(32).optional(),
+    durationBars: finiteNumber.min(0).max(16).optional(),
   })
   .strict()
   .superRefine(atMostOneTimeUnit);
@@ -1095,12 +1285,37 @@ const sceneSchema = z
     id: z.string().min(1),
     title: z.string().min(1),
     intent: z.string().min(1).optional(),
+    /**
+     * Gap 13. The earlier scene this one is a variation of. Already expanded
+     * by `expandSceneInheritance` at the input boundary, so what arrives here
+     * is a whole scene and this field is only the record of where it came
+     * from. That expansion is also why `title` above stays required: a child
+     * inherits its parent's title before the schema ever sees it.
+     */
+    extends: z.string().min(1).optional(),
+    /**
+     * Gap 14. Draw this scene's seeded directives as if it were the named
+     * earlier scene, so a callback picks the same character, prop, and planes
+     * the original did. Deliberately NOT implied by `extends`: a second angle
+     * on the same moment wants the same draws, while a later verse that reuses
+     * a scene's staging usually wants fresh ones. Two different intentions,
+     * two separate words.
+     */
+    seedAs: z.string().min(1).optional(),
+    /**
+     * Gap 15. Named moments in this scene's own time. A cue name is accepted
+     * anywhere a count is spoken, as a move's `until`, as a keyframe's `at`,
+     * and as a blocking phase's `startCue`, so one number written once drives
+     * the effect change, the cut, and the formation change together.
+     */
+    cues: z.record(z.string(), cueSchema).optional(),
     durationSeconds: finiteNumber.min(1).max(60).optional(),
     // max 240 beats is a syntactic cap, not the real one — see the
     // two-layer contract note on atMostOneTimeUnit above. At a slow bpm,
     // 240 beats can still convert to more than the scene's 60-second
     // ceiling; convertSceneBeatTimes catches that at resolve time.
     durationBeats: finiteNumber.positive().max(240).optional(),
+    durationBars: finiteNumber.positive().max(120).optional(),
     transition: transitionSchema.optional(),
     location: locationSchema.optional(),
     performance: performanceSchema.optional(),
@@ -1119,7 +1334,25 @@ const sceneSchema = z
     camera: cameraSchema.optional(),
   })
   .strict()
-  .superRefine(atMostOneTimeUnit);
+  .superRefine(atMostOneTimeUnit)
+  .superRefine((scene, ctx) => {
+    const names = Object.keys(scene.cues ?? {});
+    if (names.length > MAX_SCENE_CUES) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["cues"],
+        message: `Scene "${scene.id}" names ${names.length} cues; ${MAX_SCENE_CUES} is the limit.`,
+      });
+    }
+    for (const name of names) {
+      if (CUE_NAME_PATTERN.test(name)) continue;
+      ctx.addIssue({
+        code: "custom",
+        path: ["cues", name],
+        message: `Scene "${scene.id}" names a cue "${name}". ${CUE_NAME_MESSAGE}`,
+      });
+    }
+  });
 
 const filmDirectorInputSchema = z
   .object({
@@ -1173,6 +1406,9 @@ export type DirectorCameraInput = z.infer<typeof cameraSchema>;
 export type DirectorCameraTargetInput = z.infer<typeof cameraTargetSchema>;
 export type DirectorBlockingInput = z.infer<typeof blockingSchema>;
 export type DirectorSceneBlockingInput = z.infer<typeof sceneBlockingSchema>;
+export type DirectorSceneBlockingPhaseInput = z.infer<
+  typeof sceneBlockingPhaseSchema
+>;
 export type DirectorCameraPreset = (typeof DIRECTOR_CAMERA_PRESETS)[number];
 export type DirectorInterpolation = (typeof DIRECTOR_INTERPOLATIONS)[number];
 export type DirectorEasing = (typeof DIRECTOR_EASINGS)[number];
@@ -1193,9 +1429,25 @@ export interface ResolvedDirectorStepEffort {
   effort: EffortId;
 }
 
+/**
+ * Gap 17. One waypoint on a performer's prop-length ramp. `ease` says how the
+ * length arrives here from the previous waypoint.
+ */
+export interface ResolvedDirectorStepStaffLength {
+  step: number;
+  staffLengthCm: number;
+  ease: "cut" | "linear";
+}
+
 export interface ResolvedDirectorHold {
   fromStep: number;
   steps: number;
+  /**
+   * Gap 19. Where inside the frozen step the pose sits, 0 to 1. Absent (not
+   * zero) when the director did not say, so a film written before this word
+   * existed resolves byte-identically to its snapshot.
+   */
+  progress?: number;
 }
 
 export interface ResolvedDirectorPerformer {
@@ -1219,6 +1471,11 @@ export interface ResolvedDirectorPerformer {
   stepPlanes: ResolvedDirectorStepPlane[];
   stepEffects: ResolvedDirectorStepEffect[];
   stepEfforts: ResolvedDirectorStepEffort[];
+  /**
+   * Gap 17. Absent (not an empty array) when the prop keeps one length, so
+   * every film written before this word existed resolves as it did.
+   */
+  stepStaffLengths?: ResolvedDirectorStepStaffLength[];
   holds: ResolvedDirectorHold[];
 }
 
@@ -1241,6 +1498,15 @@ export interface ResolvedDirectorScene {
   id: string;
   title: string;
   intent: string | null;
+  /**
+   * Gap 13. The earlier scene this one was expanded from. Absent (not null)
+   * when the scene stands alone, and likewise for `seedSource` below, so
+   * films that use neither resolve byte-identically to their pre-round-2
+   * snapshots. Same convention as `camera.tracking` and `camera.handheld`.
+   */
+  extends?: string;
+  /** Gap 14. The scene id this scene's seeded directives were drawn under. */
+  seedSource?: string;
   startSeconds: number;
   durationSeconds: number;
   transition: {
@@ -1259,6 +1525,12 @@ export interface ResolvedDirectorScene {
     sequence: { source: "demo"; loop: boolean };
     formation: FormationPreset;
     performers: ResolvedDirectorPerformer[];
+    /**
+     * Gap 16. The count this scene's shared clock opens on. Present only when
+     * the scene said `phrase: "continue"`; absent otherwise, which is the zero
+     * every earlier film resolved with.
+     */
+    stepOffset?: number;
     /**
      * Every mark the cast reaches during this scene, opening positions and
      * blocking waypoints alike. The viewer sizes the ground to this instead of
