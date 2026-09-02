@@ -123,6 +123,12 @@ export interface TransitionGeometrySample {
   animatorCanvasCount: number;
   activeArtSettingsCount: number;
   artSettingsOpacity: number;
+  artSettingsWidth: number;
+  artSettingsLeft: number;
+  inspectorReveal: Record<InspectorLayerId, InspectorRevealSample>;
+  artSettingsContentTop: number;
+  cardSettingsLeft: number;
+  cardSettingsContentTop: number;
   tunnelBackingWidth: number;
   tunnelBackingHeight: number;
   tunnelDisplayWidth: number;
@@ -234,6 +240,11 @@ export interface TransitionGeometrySummary {
   cardStageInspectorSize: TransitionValueRange | null;
   cardStageInspectorExit: TransitionTravelSummary | null;
   cardStageInspectorEntry: TransitionTravelSummary | null;
+  artSettingsContentDrift: TransitionContentDrift | null;
+  inspectorReveal: InspectorRevealSummary[];
+  inspectorSurfaceStep: InspectorSurfaceStep | null;
+  cardSettingsContentDrift: TransitionContentDrift | null;
+  longestSampleGap: number;
   performanceStageIdentityChanges: number;
   performanceGalleryIdentityChanges: number;
   performanceInspectorIdentityChanges: number;
@@ -275,6 +286,86 @@ export interface TransitionValueRange {
   minimum: number;
   maximum: number;
   variation: number;
+}
+
+/**
+ * The four persistent inspector layers, by the surface each one presents.
+ * Every one of them is a fixed-size clip box whose width PanelGroup animates,
+ * holding a settings panel composed at its own destination width.
+ */
+export type InspectorLayerId = "motion" | "art" | "card" | "performance";
+
+/**
+ * One frame of the relationship between an inspector layer's clip box and the
+ * panel composed inside it. The panel is wider than the clip box for as long as
+ * the seam is still travelling, so exactly one of two things is true on every
+ * intermediate frame: part of the panel is cut off, or part of the clip box has
+ * no panel behind it.
+ */
+export interface InspectorRevealSample {
+  layerLeft: number;
+  layerWidth: number;
+  panelLeft: number;
+  panelWidth: number;
+  opacity: number;
+  layerSurfaceAlpha: number;
+  panelSurfaceAlpha: number;
+}
+
+/**
+ * The widest lighter strip the inspector track showed in any single frame.
+ *
+ * A crossfade dims the whole track for a moment, and a uniform dim reads as a
+ * fade. What reads as a defect is a band: one stretch of the track noticeably
+ * more transparent than the stretch beside it, with a hard vertical edge
+ * between them. This measures that difference within a frame, so an honest
+ * crossfade scores zero however deep it dips.
+ */
+export interface InspectorSurfaceStep {
+  widthPx: number;
+  alphaDrop: number;
+  ms: number;
+  frames: number;
+}
+
+/**
+ * What a person could actually see of one inspector layer while it was legible.
+ *
+ * `clippedLeft` is the band of the panel cut off by the clip box's left edge —
+ * on a right-anchored layer that is the label and selector column, which is
+ * what "the selectors take a second to pull in" describes. `clippedRight` is
+ * the same defect mirrored on a left-anchored layer, where the values column
+ * is the part that goes missing. `uncovered` is the opposite failure: the clip
+ * box is wider than the panel, so a band of the inspector track has nothing
+ * drawn in it and the workspace behind shows through.
+ *
+ * A transition that resizes the inspector while swapping its contents cannot
+ * report zero on all three unless the panel and the track change width
+ * together. The millisecond figures say how long each defect was on screen,
+ * which is what separates a one-frame rounding artifact from a visible hole.
+ */
+export interface InspectorRevealSummary {
+  layer: InspectorLayerId;
+  readableFrames: number;
+  maxClippedLeft: number;
+  maxClippedRight: number;
+  maxUncovered: number;
+  clippedMs: number;
+  uncoveredMs: number;
+}
+
+/**
+ * How far a settings surface re-laid itself out while a person could see it.
+ * A panel composed at its own destination width and revealed through
+ * PanelGroup's moving clip reports zero on all three axes: its rows never
+ * rewrap, its right edge never leaves the viewport edge, and its content never
+ * rides up or down. Any non-zero value is the surface following the animating
+ * inspector track instead of being revealed by it.
+ */
+export interface TransitionContentDrift {
+  width: number;
+  origin: number;
+  vertical: number;
 }
 
 export const READABLE_PANE_SIZE = 180;
@@ -676,6 +767,187 @@ function uniquePerformanceSurfacePath(
       return "Blank";
     })
   );
+}
+
+function contentDrift(
+  samples: TransitionGeometrySample[],
+  isReadable: (sample: TransitionGeometrySample) => boolean,
+  width: (sample: TransitionGeometrySample) => number,
+  left: (sample: TransitionGeometrySample) => number,
+  top: (sample: TransitionGeometrySample) => number
+): TransitionContentDrift | null {
+  const readable = samples.filter(
+    (sample) => isReadable(sample) && width(sample) > 0
+  );
+  if (readable.length < 2) return null;
+
+  const spread = (value: (sample: TransitionGeometrySample) => number) => {
+    const values = readable.map(value);
+    return Math.max(...values) - Math.min(...values);
+  };
+
+  return {
+    width: spread(width),
+    origin: spread(left),
+    vertical: spread(top),
+  };
+}
+
+const INSPECTOR_LAYER_IDS: InspectorLayerId[] = [
+  "motion",
+  "art",
+  "card",
+  "performance",
+];
+
+/**
+ * Opacity below which a layer contributes nothing a person could see.
+ *
+ * A layer at exactly zero is still in the DOM with its geometry resolved, so
+ * without this floor a fully faded-out surface would be counted as painting
+ * the track it no longer contributes to.
+ */
+const PARTICIPATING_LAYER_OPACITY = 0.02;
+
+/**
+ * Measure the widest lighter strip the inspector track showed within a frame.
+ *
+ * Every layer is inset to the same track, so the track box is any layer's box.
+ * The track is cut at every panel edge, and each band composites the layers
+ * covering it: the layer's own fill everywhere, plus its panel's fill where
+ * the panel reaches. Bands are then compared with the strongest band in the
+ * same frame, so a crossfade that dims the whole track uniformly scores zero
+ * and only a hard-edged step between neighbouring bands is reported.
+ */
+function summarizeInspectorSurfaceStep(
+  samples: TransitionGeometrySample[]
+): InspectorSurfaceStep | null {
+  const summary: InspectorSurfaceStep = {
+    widthPx: 0,
+    alphaDrop: 0,
+    ms: 0,
+    frames: 0,
+  };
+  let measured = false;
+  for (let index = 0; index < samples.length; index += 1) {
+    const sample = samples[index];
+    if (!sample.desktopInspectorExpected || !sample.inspectorReveal) continue;
+    const layers = INSPECTOR_LAYER_IDS.map(
+      (layer) => sample.inspectorReveal[layer]
+    ).filter((reveal) => reveal && reveal.layerWidth > 0);
+    if (!layers.length) continue;
+    const trackLeft = layers[0].layerLeft;
+    const trackRight = trackLeft + layers[0].layerWidth;
+    if (trackRight - trackLeft <= 0) continue;
+    measured = true;
+    summary.frames += 1;
+
+    // Every layer covers the whole track, so a layer contributes its own fill
+    // everywhere and the panel's fill only where the panel reaches.
+    const contributors = layers
+      .filter((reveal) => reveal.opacity > PARTICIPATING_LAYER_OPACITY)
+      .map((reveal) => ({
+        opacity: Math.min(1, reveal.opacity),
+        layerAlpha: reveal.layerSurfaceAlpha,
+        panelAlpha: reveal.panelSurfaceAlpha,
+        from: Math.max(trackLeft, reveal.panelLeft),
+        to: Math.min(trackRight, reveal.panelLeft + reveal.panelWidth),
+      }));
+
+    const edges = new Set<number>([trackLeft, trackRight]);
+    for (const contributor of contributors) {
+      if (contributor.to <= contributor.from) continue;
+      edges.add(contributor.from);
+      edges.add(contributor.to);
+    }
+    const ordered = [...edges].sort((a, b) => a - b);
+
+    const bands: { width: number; alpha: number }[] = [];
+    for (let edge = 1; edge < ordered.length; edge += 1) {
+      const from = ordered[edge - 1];
+      const to = ordered[edge];
+      if (to <= from) continue;
+      const middle = (from + to) / 2;
+      let transparency = 1;
+      for (const contributor of contributors) {
+        const onPanel = contributor.from <= middle && middle < contributor.to;
+        const fill = onPanel
+          ? 1 - (1 - contributor.layerAlpha) * (1 - contributor.panelAlpha)
+          : contributor.layerAlpha;
+        transparency *= 1 - contributor.opacity * fill;
+      }
+      bands.push({ width: to - from, alpha: 1 - transparency });
+    }
+    if (bands.length < 2) continue;
+
+    const strongest = Math.max(...bands.map((band) => band.alpha));
+    // A step this shallow is a rounding artefact of compositing, not an edge a
+    // reader can see against a dark workspace.
+    const visible = bands.filter((band) => strongest - band.alpha > 0.02);
+    if (!visible.length) continue;
+    const width = visible.reduce((total, band) => total + band.width, 0);
+    const drop = Math.max(...visible.map((band) => strongest - band.alpha));
+    summary.widthPx = Math.max(summary.widthPx, width);
+    summary.alphaDrop = Math.max(summary.alphaDrop, drop);
+    const previous = samples[index - 1];
+    if (previous) summary.ms += sample.time - previous.time;
+  }
+  return measured ? summary : null;
+}
+
+/**
+ * Grade one inspector layer's reveal across the frames a person could read it.
+ *
+ * Sub-pixel layout rounding routinely puts a fraction of a pixel outside the
+ * clip box, so a band only counts once it exceeds one pixel. Durations are
+ * accumulated from the real frame spacing rather than a frame count, because a
+ * starved measurement host stretches frames and would otherwise understate how
+ * long a hole was on screen.
+ */
+function summarizeInspectorReveal(
+  samples: TransitionGeometrySample[],
+  layer: InspectorLayerId
+): InspectorRevealSummary {
+  const summary: InspectorRevealSummary = {
+    layer,
+    readableFrames: 0,
+    maxClippedLeft: 0,
+    maxClippedRight: 0,
+    maxUncovered: 0,
+    clippedMs: 0,
+    uncoveredMs: 0,
+  };
+  for (let index = 0; index < samples.length; index += 1) {
+    const sample = samples[index];
+    if (!sample.desktopInspectorExpected) continue;
+    const reveal = sample.inspectorReveal?.[layer];
+    if (!reveal || reveal.layerWidth <= 0 || reveal.panelWidth <= 0) continue;
+    if (reveal.opacity < VISIBLE_PANE_OPACITY) continue;
+    summary.readableFrames += 1;
+    const layerRight = reveal.layerLeft + reveal.layerWidth;
+    const panelRight = reveal.panelLeft + reveal.panelWidth;
+    const clippedLeft = Math.max(0, reveal.layerLeft - reveal.panelLeft);
+    const clippedRight = Math.max(0, panelRight - layerRight);
+    const uncovered =
+      Math.max(0, reveal.panelLeft - reveal.layerLeft) +
+      Math.max(0, layerRight - panelRight);
+    summary.maxClippedLeft = Math.max(summary.maxClippedLeft, clippedLeft);
+    summary.maxClippedRight = Math.max(summary.maxClippedRight, clippedRight);
+    summary.maxUncovered = Math.max(summary.maxUncovered, uncovered);
+    const previous = samples[index - 1];
+    const span = previous ? sample.time - previous.time : 0;
+    if (clippedLeft > 1 || clippedRight > 1) summary.clippedMs += span;
+    if (uncovered > 1) summary.uncoveredMs += span;
+  }
+  return summary;
+}
+
+function longestSampleGap(samples: TransitionGeometrySample[]): number {
+  let longest = 0;
+  for (let index = 1; index < samples.length; index += 1) {
+    longest = Math.max(longest, samples[index].time - samples[index - 1].time);
+  }
+  return longest;
 }
 
 export function summarizeTransitionGeometry(
@@ -1156,6 +1428,29 @@ export function summarizeTransitionGeometry(
           (sample) => sample.inspectorSize
         )
       : null,
+    artSettingsContentDrift: contentDrift(
+      trace.samples,
+      (sample) =>
+        sample.desktopInspectorExpected &&
+        sample.artSettingsOpacity >= VISIBLE_PANE_OPACITY,
+      (sample) => sample.artSettingsWidth,
+      (sample) => sample.artSettingsLeft,
+      (sample) => sample.artSettingsContentTop
+    ),
+    cardSettingsContentDrift: contentDrift(
+      trace.samples,
+      (sample) =>
+        sample.desktopInspectorExpected &&
+        sample.cardSettingsOpacity >= VISIBLE_PANE_OPACITY,
+      (sample) => sample.cardSettingsWidth,
+      (sample) => sample.cardSettingsLeft,
+      (sample) => sample.cardSettingsContentTop
+    ),
+    longestSampleGap: longestSampleGap(trace.samples),
+    inspectorReveal: INSPECTOR_LAYER_IDS.map((layer) =>
+      summarizeInspectorReveal(trace.samples, layer)
+    ).filter((entry) => entry.readableFrames > 0),
+    inspectorSurfaceStep: summarizeInspectorSurfaceStep(trace.samples),
     performanceStageIdentityChanges: isPerformanceTrace
       ? identityChanges(trace.samples, (sample) => sample.stageLayerIdentity)
       : 0,

@@ -1,8 +1,26 @@
-import { describe, expect, it } from "vitest";
+/**
+ * The Shape Matrix stills are painted by the animation canvas's guide
+ * painter. These tests pin the contract that makes a tile and the live guide
+ * the same drawing: the animator's colors and stroke, an exact-size raster at
+ * the device pixel ratio, and the engine-aligned scale for the hero floor.
+ */
+import { describe, expect, it, vi } from "vitest";
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
+import { DEFAULT_MANDALA_OVERLAY_CONFIG } from "$lib/shared/mandala/domain/mandala-overlay-types";
+import type { MandalaGuideImageDependencies } from "$lib/shared/mandala/services/mandala-guide-image";
+import type {
+  MandalaGuidePaintOptions,
+  MandalaGuidePaintTarget,
+} from "$lib/shared/mandala/services/mandala-guide-painter";
+import { computeEngineAlignedMandalaScale } from "$lib/shared/mandala/services/mandala-path-preparer";
+import { resolveMandalaRenderExtent } from "$lib/shared/mandala/services/mandala-renderer";
+import type { PreparedMandalaPath } from "$lib/shared/mandala/services/types";
+import { HERO_TRAIL_PRESET } from "$lib/shared/landing/data/hero-trail-preset";
 import {
   renderCell,
+  renderEngineAligned,
   renderHeader,
+  SHAPE_MATRIX_GUIDE_COLORS,
 } from "$lib/shared/shape-matrix/services/shape-matrix-render";
 
 const left: MandalaPaths = {
@@ -17,25 +35,93 @@ const right: MandalaPaths = {
   purple: [],
 };
 
-function decodeSvg(dataUrl: string): string {
-  const prefix = "data:image/svg+xml;charset=utf-8,";
-  expect(dataUrl.startsWith(prefix)).toBe(true);
-  return decodeURIComponent(dataUrl.slice(prefix.length));
+interface Captured {
+  target: MandalaGuidePaintTarget;
+  options: MandalaGuidePaintOptions;
 }
 
-describe("shape matrix image rendering", () => {
-  it("keeps combined cells resolution-independent", () => {
-    const svg = decodeSvg(renderCell(left, right, 128, 100));
+function harness() {
+  const calls: Captured[] = [];
+  const canvas = {
+    width: 0,
+    height: 0,
+    getContext: vi.fn(() => ({})),
+    toDataURL: vi.fn(() => "data:image/png;base64,painted"),
+  };
+  const deps: MandalaGuideImageDependencies = {
+    createCanvas: () => canvas as unknown as HTMLCanvasElement,
+    prepare: (svgPaths, color, hand): PreparedMandalaPath[] =>
+      svgPaths.map(() => ({
+        path2d: {} as Path2D,
+        totalLength: 1,
+        color,
+        hand,
+      })),
+    paint: (target, options) => {
+      calls.push({ target, options });
+    },
+  };
+  return { calls, canvas, deps };
+}
 
-    expect(svg).toContain('viewBox="0 0 128 128"');
-    expect(svg).toContain(left.left[0]!.d);
-    expect(svg).toContain(right.right[0]!.d);
+describe("shape matrix stills use the animator's guide painter", () => {
+  it("paints with the animator's hand colors and stroke", () => {
+    expect(SHAPE_MATRIX_GUIDE_COLORS.left).toBe(HERO_TRAIL_PRESET.leftColor);
+    expect(SHAPE_MATRIX_GUIDE_COLORS.right).toBe(HERO_TRAIL_PRESET.rightColor);
+
+    const { calls, deps } = harness();
+    renderCell(left, right, 128, 100, { dpr: 1, deps });
+    const [call] = calls;
+    expect(call?.options.strokeWidth).toBe(
+      DEFAULT_MANDALA_OVERLAY_CONFIG.strokeWidth
+    );
+    expect(call?.options.paths.map((p) => [p.hand, p.color])).toEqual([
+      ["left", HERO_TRAIL_PRESET.leftColor],
+      ["right", HERO_TRAIL_PRESET.rightColor],
+    ]);
+    expect(call?.options.reveal ?? false).toBe(false);
   });
 
-  it("keeps axis headers resolution-independent", () => {
-    const svg = decodeSvg(renderHeader(left, "left", 128, 100));
+  it("rasterizes at the exact requested size and device pixel ratio", () => {
+    const { calls, canvas, deps } = harness();
+    const url = renderCell(left, right, 150, 100, { dpr: 2, deps });
+    expect(url).toBe("data:image/png;base64,painted");
+    expect(canvas.width).toBe(300);
+    expect(canvas.height).toBe(300);
+    expect(calls[0]?.target).toMatchObject({
+      pixelWidth: 300,
+      pixelHeight: 300,
+      dpr: 2,
+    });
+  });
 
-    expect(svg).toContain('viewBox="0 0 128 128"');
-    expect(svg).toContain(left.left[0]!.d);
+  it("fits a cell to its full extent so busy tiles never clip", () => {
+    const { calls, deps } = harness();
+    renderCell(left, right, 128, 100, { dpr: 1, deps });
+    const merged: MandalaPaths = { left: left.left, right: right.right, purple: [] };
+    const extent = resolveMandalaRenderExtent(merged, { show: "both", tipDx: 100 });
+    expect(calls[0]?.options.scale).toBeCloseTo(64 / (extent * 1.05), 10);
+  });
+
+  it("paints a header with only its own hand", () => {
+    const { calls, deps } = harness();
+    renderHeader(left, "left", 128, 100, { dpr: 1, deps });
+    expect(calls[0]?.options.paths.map((p) => p.hand)).toEqual(["left"]);
+  });
+
+  it("aligns the hero floor to the engine hand orbit for its square", () => {
+    const { calls, deps } = harness();
+    const merged: MandalaPaths = { left: left.left, right: right.right, purple: [] };
+    renderEngineAligned(merged, 470, { dpr: 1, deps });
+    expect(calls[0]?.options.scale).toBeCloseTo(
+      computeEngineAlignedMandalaScale(470),
+      10
+    );
+  });
+
+  it("paints nothing for a box with no size yet", () => {
+    const { calls, deps } = harness();
+    expect(renderCell(left, right, 0, 100, { dpr: 1, deps })).toBe("");
+    expect(calls).toHaveLength(0);
   });
 });

@@ -108,9 +108,13 @@
     leftPropType = null,
     rightPropType = null,
     externalBpm = null,
+    externalPlaying = null,
+    onExternalPlayingChange = undefined,
     chrome = "full",
     fill = false,
     disassemblyLayout = "stacked",
+    disassemblyTarget = null,
+    onDisassemblyTargetChange = undefined,
     showWordHeader = false,
     showPositionGlyph = false,
     onStepChange = undefined,
@@ -155,6 +159,10 @@
     rightPropType?: string | null;
     /** When provided, overrides internal BPM and controls playback speed externally */
     externalBpm?: number | null;
+    /** Shared host playback intent. When present, hidden retained players pause
+     *  without changing this value and resume to match it when visible again. */
+    externalPlaying?: boolean | null;
+    onExternalPlayingChange?: (playing: boolean) => void;
     /**
      * Reports the live 1-based fractional playback step (`currentStep`) and the
      * sequence identity currently loaded in the engine. The identity lets a
@@ -188,7 +196,11 @@
     /** Arrangement used when the canonical canvas is disassembled. The default
      *  vertical stack preserves viewer behavior; square embedded stages can
      *  keep all three canvases inside one atmosphere with the sidecar layout. */
-    disassemblyLayout?: "stacked" | "sidecar";
+    disassemblyLayout?: "stacked" | "sidecar" | "auto";
+    /** Shared stage-level disassembly intent. The canvas still owns the visual
+     *  state machine; the host owns whether every retained canvas is open. */
+    disassemblyTarget?: boolean | null;
+    onDisassemblyTargetChange?: (disassembled: boolean) => void;
     /** Show the sequence word above the canvas and highlight its live step.
      *  Explicit opt-in keeps existing fill-mode embeds canvas-only. */
     showWordHeader?: boolean;
@@ -361,8 +373,17 @@
   let pausedByPlaybackGate = false;
 
   $effect(() => {
-    if (!servicesReady || !playbackController) return;
+    if (!servicesReady || !animationState.sequenceData || !playbackController)
+      return;
     const controller = playbackController;
+
+    if (externalPlaying !== null) {
+      const shouldPlay = externalPlaying && playbackAllowed;
+      if (animationState.isPlaying !== shouldPlay) {
+        untrack(() => controller.togglePlayback());
+      }
+      return;
+    }
 
     if (!playbackAllowed) {
       if (!isPlaying) return;
@@ -548,6 +569,7 @@
     // and never retry.
     if (
       !autoPlay ||
+      externalPlaying !== null ||
       !playbackAllowed ||
       !servicesReady ||
       !animationState.sequenceData
@@ -701,6 +723,10 @@
   });
 
   function togglePlayback() {
+    if (externalPlaying !== null) {
+      onExternalPlayingChange?.(!externalPlaying);
+      return;
+    }
     if (!playbackController) return;
     // Single-play rests on the end pose instead of looping — tapping/hover-
     // badge "play" from there must replay from the start, not silently no-op
@@ -791,6 +817,8 @@
         hoverHint={minimal && interactive ? hoverHint : "none"}
         fillContainer={fill}
         {disassemblyLayout}
+        {disassemblyTarget}
+        {onDisassemblyTargetChange}
         {hideTkaGlyph}
         {hideStepNumbers}
         hideHeader={fill && !showWordHeader}

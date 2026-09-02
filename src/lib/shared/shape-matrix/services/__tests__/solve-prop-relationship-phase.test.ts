@@ -340,4 +340,61 @@ describe("exact flower parity", () => {
       solvePropRelationshipPhase(base, floating, "SS", edges, emptyTarget)
     ).toBeNull();
   });
+
+  it("keeps the exact hand-to-prop graph complete across level bands", () => {
+    const variants = [
+      ["pro", "in"],
+      ["pro", "out"],
+      ["anti", "in"],
+      ["anti", "out"],
+    ] as const;
+    let checkedPairs = 0;
+
+    for (const turns of [0, 0.25, 0.5, 1]) {
+      for (const [leftStyle, leftOri] of variants) {
+        for (const [rightStyle, rightOri] of variants) {
+          const pair = {
+            left: flower(leftStyle, turns, leftOri),
+            right: flower(rightStyle, turns, rightOri),
+          };
+          const target = overlayFor(pair);
+          const graph: Record<string, string[]> = {};
+          for (const handMode of MODE_ORDER) {
+            const base = resolveBase(index, handMode, leftStyle, rightStyle);
+            if (!base) continue;
+            graph[handMode] = [
+              ...new Set(
+                buildExactFlowerPhases(base, pair, edges, target).map(
+                  (phase) => {
+                    const relationship = derivePropRelationship(
+                      phase.sequence,
+                      pair
+                    );
+                    return relationship.kind === "full"
+                      ? relationship.element.familyId
+                      : relationship.kind;
+                  }
+                )
+              ),
+            ];
+          }
+          const targets = Object.values(graph);
+          const edgeCount = targets.reduce(
+            (total, targets) => total + targets.length,
+            0
+          );
+          const branchingHands = targets.filter(
+            (propModes) => propModes.length > 1
+          );
+
+          expect(Object.keys(graph)).toEqual(MODE_ORDER);
+          expect(edgeCount).toBe(turns === 0.25 ? 8 : 6);
+          expect(branchingHands).toHaveLength(turns === 0.25 ? 2 : 0);
+          checkedPairs += 1;
+        }
+      }
+    }
+
+    expect(checkedPairs).toBe(64);
+  }, 180_000);
 });

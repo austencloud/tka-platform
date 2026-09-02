@@ -31,7 +31,25 @@ export interface ShapeMatrixCompactFocusRequest {
   target: ShapeMatrixAppView;
 }
 export type ShapeMatrixAxisTarget = "left" | "both" | "right";
-export type ShapeMatrixRelationshipDriver = "hands" | "props";
+
+export interface ShapeMatrixSelectPairOptions {
+  /**
+   * False records the selection without moving a compact layout to the
+   * detail pane. The host then navigates itself (through the shared-element
+   * morph), which needs the clicked tile to be the selection BEFORE the
+   * view flips so the morph starts from that tile.
+   */
+  navigate?: boolean;
+}
+
+export interface ShapeMatrixSetTurnOptions {
+  /**
+   * Keep the compact layout on the detail pane after the edit. The matrix
+   * ribbon returns to the matrix (existing navigation); the detail pane's own
+   * turn tray stays put so the animator restages under the user's eyes.
+   */
+  stayOnDetail?: boolean;
+}
 
 export interface ShapeMatrixAppSnapshot {
   level: TurnLevel;
@@ -40,7 +58,6 @@ export interface ShapeMatrixAppSnapshot {
   activeAxis: ShapeMatrixAxisTarget;
   labelMode: MatrixLabelMode;
   propType: PropType;
-  relationshipDriver: ShapeMatrixRelationshipDriver;
   pair: { left: Flower; right: Flower } | null;
   mode: VtgMode | null;
   propMode: VtgMode | null;
@@ -135,9 +152,6 @@ export function createShapeMatrixAppState(
   let activeAxis = $state<ShapeMatrixAxisTarget>(initial.activeAxis);
   let labelMode = $state(initial.labelMode);
   let propType = $state(initial.propType);
-  let relationshipDriver = $state<ShapeMatrixRelationshipDriver>(
-    initial.relationshipDriver
-  );
   let selectedPair = $state(initial.pair);
   let rememberedVariants = $state<{
     left: SemanticVariant;
@@ -150,10 +164,7 @@ export function createShapeMatrixAppState(
     initial.pair ? (initial.mode ?? MODE_ORDER[0] ?? null) : null
   );
   let selectedPropMode = $state<VtgMode | null>(
-    initial.relationshipDriver === "props" &&
-      supportsTimedPropRelationship(initial.pair)
-      ? initial.propMode
-      : null
+    supportsTimedPropRelationship(initial.pair) ? initial.propMode : null
   );
   let data = $state<ShapeMatrixData | null>(null);
   let loading = $state(false);
@@ -165,6 +176,7 @@ export function createShapeMatrixAppState(
   let compactFocusRequest = $state<ShapeMatrixCompactFocusRequest | null>(null);
   let aboutOpen = $state(false);
   let propPickerOpen = $state(false);
+  let mandalaHandoff = $state(false);
 
   const availableTurns = $derived(turnValuesForLevel(level));
   const filters = $derived(matrixFiltersForTurns(leftTurn, rightTurn));
@@ -222,7 +234,10 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
-  function setTurn(nextTurn: TurnValue): void {
+  function setTurn(
+    nextTurn: TurnValue,
+    options: ShapeMatrixSetTurnOptions = {}
+  ): void {
     if (!availableTurns.includes(nextTurn)) return;
     if (selectedPair) {
       rememberedVariants = {
@@ -246,7 +261,7 @@ export function createShapeMatrixAppState(
     }
     leftTurn = nextLeftTurn;
     rightTurn = nextRightTurn;
-    if (compact) activeView = "matrix";
+    if (compact && !options.stayOnDetail) activeView = "matrix";
     syncState();
   }
 
@@ -259,15 +274,6 @@ export function createShapeMatrixAppState(
   function setLabelMode(nextMode: MatrixLabelMode): void {
     if (labelMode === nextMode) return;
     labelMode = nextMode;
-    syncState();
-  }
-
-  function setRelationshipDriver(
-    nextDriver: ShapeMatrixRelationshipDriver
-  ): void {
-    if (relationshipDriver === nextDriver) return;
-    relationshipDriver = nextDriver;
-    if (nextDriver === "hands") selectedPropMode = null;
     syncState();
   }
 
@@ -290,7 +296,6 @@ export function createShapeMatrixAppState(
     activeAxis = snapshot.activeAxis;
     labelMode = snapshot.labelMode;
     propType = snapshot.propType;
-    relationshipDriver = snapshot.relationshipDriver;
     if (snapshot.pair) {
       rememberedVariants = {
         left: semanticVariant(snapshot.pair.left),
@@ -306,14 +311,15 @@ export function createShapeMatrixAppState(
     selectedMode = selectedPair
       ? (snapshot.mode ?? MODE_ORDER[0] ?? null)
       : null;
-    selectedPropMode =
-      snapshot.relationshipDriver === "props" &&
-      supportsTimedPropRelationship(selectedPair)
-        ? snapshot.propMode
-        : null;
+    selectedPropMode = supportsTimedPropRelationship(selectedPair)
+      ? snapshot.propMode
+      : null;
   }
 
-  function selectPair(pair: { left: Flower; right: Flower }): void {
+  function selectPair(
+    pair: { left: Flower; right: Flower },
+    options: ShapeMatrixSelectPairOptions = {}
+  ): void {
     selectedPair = pair;
     rememberedVariants = {
       left: semanticVariant(pair.left),
@@ -321,7 +327,7 @@ export function createShapeMatrixAppState(
     };
     selectedMode ??= MODE_ORDER[0] ?? null;
     if (!supportsTimedPropRelationship(pair)) selectedPropMode = null;
-    if (compact) {
+    if (compact && options.navigate !== false) {
       activeView = "detail";
       requestCompactFocus("detail");
     }
@@ -332,16 +338,13 @@ export function createShapeMatrixAppState(
     selectedMode = selectedPair
       ? (mode ?? selectedMode ?? MODE_ORDER[0] ?? null)
       : null;
-    if (relationshipDriver === "hands") selectedPropMode = null;
     syncState();
   }
 
   function setPropMode(mode: VtgMode | null): void {
-    selectedPropMode =
-      relationshipDriver === "props" &&
-      supportsTimedPropRelationship(selectedPair)
-        ? mode
-        : null;
+    selectedPropMode = supportsTimedPropRelationship(selectedPair)
+      ? mode
+      : null;
     syncState();
   }
 
@@ -378,6 +381,13 @@ export function createShapeMatrixAppState(
   function closePropPicker(): void {
     propPickerOpen = false;
   }
+  /** A tile-to-hero shared-element transition is capturing or animating. */
+  function beginMandalaHandoff(): void {
+    mandalaHandoff = true;
+  }
+  function endMandalaHandoff(): void {
+    mandalaHandoff = false;
+  }
 
   function syncState(): void {
     dependencies.syncState({
@@ -387,7 +397,6 @@ export function createShapeMatrixAppState(
       activeAxis,
       labelMode,
       propType,
-      relationshipDriver,
       pair: selectedPair,
       mode: selectedMode,
       propMode: selectedPropMode,
@@ -415,9 +424,6 @@ export function createShapeMatrixAppState(
     },
     get propType() {
       return propType;
-    },
-    get relationshipDriver() {
-      return relationshipDriver;
     },
     get availableTurns() {
       return availableTurns;
@@ -455,6 +461,9 @@ export function createShapeMatrixAppState(
     get propPickerOpen() {
       return propPickerOpen;
     },
+    get mandalaHandoff() {
+      return mandalaHandoff;
+    },
     get rowAxis() {
       return rowAxis;
     },
@@ -467,7 +476,6 @@ export function createShapeMatrixAppState(
     setTurn,
     setActiveAxis,
     setLabelMode,
-    setRelationshipDriver,
     setPropType,
     selectPair,
     setMode,
@@ -479,6 +487,8 @@ export function createShapeMatrixAppState(
     closeAbout,
     openPropPicker,
     closePropPicker,
+    beginMandalaHandoff,
+    endMandalaHandoff,
   };
 }
 

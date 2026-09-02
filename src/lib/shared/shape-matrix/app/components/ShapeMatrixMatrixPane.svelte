@@ -1,6 +1,13 @@
 <script lang="ts">
   import ShapeMatrixGrid from "$lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte";
+  import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+
+  interface Props {
+    /** The shell owns navigation (and the compact tile-to-hero morph). */
+    onselect?: (pair: { left: Flower; right: Flower }) => void;
+  }
+  let { onselect }: Props = $props();
 
   const state = getShapeMatrixAppContext();
 </script>
@@ -21,7 +28,8 @@
         colAxis={state.colAxis}
         maxCellPx={320}
         selectedPair={state.selectedPair}
-        onselect={state.selectPair}
+        claimSelected={state.compact && state.activeView === "matrix"}
+        onselect={onselect ?? state.selectPair}
       />
     {/if}
   </div>

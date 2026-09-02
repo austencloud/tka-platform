@@ -638,6 +638,24 @@ export function createViewerShellInteractionState(
     ctx.handleStopRecording();
   }
 
+  function handleConfirmFilmRender(): void {
+    const ctx = inputs.getContext();
+    dependencies.captureScanAction("film_render_confirm", {
+      duration_seconds: Math.round(ctx.pendingFilmRender?.durationSeconds ?? 0),
+      render_mode: "3d",
+    });
+    ctx.handleConfirmFilmRender();
+  }
+
+  function handleDiscardFilmRender(): void {
+    const ctx = inputs.getContext();
+    dependencies.captureScanAction("film_render_discard", {
+      duration_seconds: Math.round(ctx.pendingFilmRender?.durationSeconds ?? 0),
+      render_mode: "3d",
+    });
+    ctx.handleDiscardFilmRender();
+  }
+
   function handleDismissExportedVideo(): void {
     dependencies.captureScanAction("exported_video_dismiss");
     inputs.getContext().dismissPreview();
@@ -729,6 +747,8 @@ export function createViewerShellInteractionState(
     handleArtExportEvent,
     handleCancelVideoExport,
     handleStopRecording,
+    handleConfirmFilmRender,
+    handleDiscardFilmRender,
     handleDismissExportedVideo,
     handleRedownloadExportedVideo,
     handleVideoUploadSaveFirst,

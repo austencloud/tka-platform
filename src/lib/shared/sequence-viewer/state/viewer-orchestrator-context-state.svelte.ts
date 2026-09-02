@@ -174,6 +174,9 @@ export function createViewerOrchestratorContextState(
     isRecording3D: inputs.exportCoordinator.isRecording3D,
     recordingElapsed: inputs.exportCoordinator.recordingElapsed,
     handleStopRecording: inputs.exportCoordinator.handleStopRecording,
+    pendingFilmRender: inputs.exportCoordinator.pendingFilmRender,
+    handleConfirmFilmRender: inputs.exportCoordinator.handleConfirmFilmRender,
+    handleDiscardFilmRender: inputs.exportCoordinator.handleDiscardFilmRender,
 
     isLoggedIn: inputs.getIsLoggedIn(),
     isOwned: inputs.getIsOwned(),

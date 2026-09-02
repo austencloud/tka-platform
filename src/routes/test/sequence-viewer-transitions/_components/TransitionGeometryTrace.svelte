@@ -10,6 +10,8 @@
     type TransitionGeometryTrace,
     type TransitionTravelSummary,
     type TransitionValueRange,
+    type TransitionContentDrift,
+    type InspectorRevealSummary,
   } from "../transition-geometry-trace";
 
   interface Props {
@@ -85,6 +87,39 @@
   function formatTravel(value: TransitionTravelSummary | null): string {
     if (!value) return "n/a";
     return `${Math.round(value.start)} → ${Math.round(value.end)} px · ${Math.round(value.backtrack)} px backtrack · ${Math.round(value.overshoot)} px overshoot`;
+  }
+
+  function formatReveal(value: InspectorRevealSummary): string {
+    const parts = [
+      `${Math.round(value.maxClippedLeft)} px left cut`,
+      `${Math.round(value.maxClippedRight)} px right cut`,
+      `${Math.round(value.maxUncovered)} px undrawn`,
+    ];
+    const held = [
+      value.clippedMs > 0 ? `${Math.round(value.clippedMs)} ms cut` : "",
+      value.uncoveredMs > 0
+        ? `${Math.round(value.uncoveredMs)} ms undrawn`
+        : "",
+    ].filter(Boolean);
+    return `${parts.join(" · ")}${held.length ? ` · ${held.join(" · ")}` : ""}`;
+  }
+
+  function revealBroken(value: InspectorRevealSummary): boolean {
+    return (
+      value.maxClippedLeft > 1 ||
+      value.maxClippedRight > 1 ||
+      value.maxUncovered > 1
+    );
+  }
+
+  function formatDrift(value: TransitionContentDrift | null): string {
+    if (!value) return "n/a";
+    return `${Math.round(value.width)} px width · ${Math.round(value.origin)} px origin · ${Math.round(value.vertical)} px vertical`;
+  }
+
+  function drifted(value: TransitionContentDrift | null): boolean {
+    if (!value) return false;
+    return value.width > 1 || value.origin > 1 || value.vertical > 1;
   }
 
   function formatRange(value: TransitionValueRange | null): string {
@@ -427,6 +462,19 @@
           (summary.cardStageInspectorEntry?.overshoot ?? 0) > 1}
         >Inspector return: {formatTravel(summary.cardStageInspectorEntry)}</span
       >
+      <span data-problem={drifted(summary.artSettingsContentDrift)}
+        >Art settings drift: {formatDrift(
+          summary.artSettingsContentDrift
+        )}</span
+      >
+      <span data-problem={drifted(summary.cardSettingsContentDrift)}
+        >Card settings drift: {formatDrift(
+          summary.cardSettingsContentDrift
+        )}</span
+      >
+      <span data-problem={summary.longestSampleGap > 80}
+        >Longest sample gap: {Math.round(summary.longestSampleGap)} ms</span
+      >
       <span data-dissolve={summary.dissolveFrames > 0}
         >Workspace dissolve frames: {summary.dissolveFrames}</span
       >
@@ -747,6 +795,22 @@
         >
       {/if}
     {/if}
+    <!-- Reveal geometry applies to every gate that resizes the inspector, so it
+         is rendered outside the per-gate metric branches. -->
+    {#if summary.inspectorSurfaceStep}
+      <span data-problem={summary.inspectorSurfaceStep.widthPx > 1}
+        >Inspector surface step: {Math.round(
+          summary.inspectorSurfaceStep.widthPx
+        )} px · {summary.inspectorSurfaceStep.alphaDrop.toFixed(2)} alpha · {Math.round(
+          summary.inspectorSurfaceStep.ms
+        )} ms</span
+      >
+    {/if}
+    {#each summary.inspectorReveal as reveal (reveal.layer)}
+      <span data-problem={revealBroken(reveal)}
+        >{reveal.layer} reveal: {formatReveal(reveal)}</span
+      >
+    {/each}
   </div>
 
   {#if firstTinyCardSample}
