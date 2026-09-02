@@ -146,6 +146,60 @@ station sweep every 40 m, and lateral sweeps at 10–320 m on both sides.
 Recording this in the source lock alongside ODOT, NAIP, and 3DEP belongs to the
 sub-project 1 implementation, not to this roadmap.
 
+### On May 8 the corn is not standing
+
+Austen set the festival on **May 8**. That is a fact about the fields, not just
+the light. Ohio corn is roughly a quarter to a third planted in the week of
+May 8 (NASS crop progress: 25% by 2025-05-12, 36% by 2024-05-12, 33% by
+2026-05-03), and what is planted went in days earlier, so nothing has grown.
+
+The cached NAIP orthophoto settles it directly. It was flown **2023-05-22** —
+two weeks *after* the target date, in a **corn year** — and the field south of
+the road is bare tilled soil with visible tillage lines. Measured from the
+4-band raster over 50×50 px patches:
+
+| Sample | NDVI | Reading |
+| --- | --- | --- |
+| South field, station 240 | **+0.044** | bare soil |
+| South field, station 440 | **+0.047** | bare soil |
+| North hay, station 240 | +0.411 | actively growing |
+| Woods, station 750 | +0.356 | fully leafed out |
+
+So on May 8: **cornfields with no corn in them.** The name of the place is
+right and the wall of green is a late-summer memory. The deciduous woods at the
+gate, by contrast, are fully leafed out — Ohio leaf-out is mid-to-late April.
+
+Sun at the gate on May 8 (NOAA, 39.59005 N / 84.78218 W, EDT): sunrise 06:32,
+solar noon 13:35, **sunset 20:39**, civil dusk 21:08, 14.11 h of daylight. The
+road runs east, so **from 15:05 until dark the sun is behind the driver** — low
+warm light on the fields and woods ahead, and no glare at any point on the
+approach.
+
+### The terrain already writes the arrival
+
+Elevation sampled from the registered 1 m DTM along the 886.9 m approach, with
+bare-earth line-of-sight to the entrance:
+
+- **0 → 640 m: a flat plateau at 296–298 m.** Grades under 1.5%, heading pinned
+  at 87° — dead straight east. Open, exposed, long views over bare field.
+- **640 → 800 m: the ground falls away.** The grade steepens to **−9.5%** as the
+  road drops off the plateau edge into the valley.
+- **800 → 887 m: a 60° left-hand bend** — heading swings 81° → 63° → 40° → 27° —
+  still descending, with woods on both sides.
+- **Net −20.95 m from the west edge to the gate.**
+- **The entrance is invisible until station 800.** From 0, 200, 400, 600 and
+  700 m the bare earth alone blocks the sightline, before any tree canopy is
+  added. It comes into view **86 m out**, about four seconds at 15 mph.
+
+Exposure, then descent, then a blind bend, then the gate. None of that is
+authored — it falls out of the ODOT centerline and the DTM. It also vindicates
+Austen's "drive carefully and slowly into the front gate": a 9.5% downgrade into
+a blind 60° left-hander is exactly where a driver lifts off.
+
+The DTM is bare earth, so the built road surface may sit slightly above or below
+these samples where it was cut or filled. Treat the profile as the landform, and
+take the driving surface from the road geometry.
+
 ## Decomposition
 
 Six independent subsystems, in dependency order. Each gets its own spec, plan,
@@ -201,9 +255,24 @@ Depends on nothing. Its consequences land across sub-projects 1, 3, 4, and 5.
 
 ### 1. Drive in — SELECTED, designing next
 
-Car vehicle simulation on the EUC pattern; the road extended west through the
-cornfields; careful, slow entry at the front gate; temporary parking off to the
-side; getting out of the car.
+Car simulation on the EUC pattern; the ODOT centerline re-clipped to the terrain
+square; careful, slow entry at the front gate; temporary parking off to the side;
+getting out of the car.
+
+Settled with Austen on 2026-09-02:
+
+- **Driving model: grounded but forgiving.** Throttle, brake, speed-sensitive
+  steering on the EUC pattern, plus weight transfer, mild understeer, and a
+  loose gravel shoulder. Automatic; it cannot stall. The pickup must feel
+  heavier than the hatchback so the loadout car choice is felt, not stated.
+- **Camera: chase, behind the car.**
+- **Date: May 8.** Bare fields, fully leafed woods, sun behind the driver from
+  15:05 to sunset at 20:39.
+- **The slice ends parked at the gate, out of the car.** The canopy exists as
+  geometry you can walk up to; nobody is behind it until sub-project 2.
+- **Traffic: the road is essentially yours.** A few cars that may or may not be
+  going to the festival. There may be someone ahead of you in line at the gate,
+  or you may be first — it depends on when you left.
 
 Prerequisite for sub-project 3. Self-contained and independently verifiable.
 Austen: *"that's the whole thing."*
