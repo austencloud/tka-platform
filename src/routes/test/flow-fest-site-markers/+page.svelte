@@ -26,19 +26,17 @@
   type NoticeKind = "quiet" | "success" | "error";
 
   const STORAGE_KEY = "flow-fest-site-markers-v1";
-  const FULL_VIEW = {
-    x: 0,
-    y: 0,
-    width: FLOW_FEST_IMAGE.width,
-    height: FLOW_FEST_IMAGE.height,
-  } as const;
+  /**
+   * The window is stored as its top-left corner plus a width. Its HEIGHT comes
+   * from the rendered element's aspect ratio, so the viewBox always matches the
+   * box it is drawn in. That is not cosmetic: `pointFromEvent` maps a screen
+   * position into image space linearly, which is only true when the SVG is not
+   * letterboxing to preserve a mismatched ratio. Get it wrong and every marker
+   * lands somewhere other than where it was pressed.
+   */
+  const FULL_VIEW = { x: 0, y: 0, width: FLOW_FEST_IMAGE.width } as const;
   /** Middle Earth sits near image (1224, 794); this frames it and the ground east of it. */
-  const MIDDLE_EARTH_VIEW = {
-    x: 940,
-    y: 560,
-    width: 900,
-    height: 900,
-  } as const;
+  const MIDDLE_EARTH_VIEW = { x: 940, y: 620, width: 900 } as const;
   const HIT_RADIUS_PIXELS = 14;
 
   const MODE_OPTIONS = [
@@ -52,6 +50,8 @@
   let interactionMode = $state<InteractionMode>("place");
   let view = $state({ ...MIDDLE_EARTH_VIEW });
   let svgElement = $state<SVGSVGElement | null>(null);
+  let mapWidth = $state(1);
+  let mapHeight = $state(1);
   let notice = $state(
     "Pick what you are placing, then press on the map and drag the way it faces."
   );
@@ -64,6 +64,9 @@
     null;
   let history: FlowFestSiteMarkerDraft[] = [];
 
+  const viewHeight = $derived((view.width * mapHeight) / Math.max(mapWidth, 1));
+  /** Screen pixels to viewBox units, so strokes and dots keep a constant size. */
+  const pixelScale = $derived(view.width / Math.max(mapWidth, 1));
   const activePreset = $derived(getMarkerPreset(activePresetId));
   const selectedMarker = $derived(
     draft.markers.find((marker) => marker.id === selectedMarkerId) ?? null
@@ -147,12 +150,9 @@
     if (bounds.width === 0 || bounds.height === 0) return null;
     return {
       x: view.x + ((event.clientX - bounds.left) / bounds.width) * view.width,
-      y: view.y + ((event.clientY - bounds.top) / bounds.height) * view.height,
+      y: view.y + ((event.clientY - bounds.top) / bounds.height) * viewHeight,
     };
   }
-
-  /** Scale a screen-constant size into the current viewBox units. */
-  const pixelScale = $derived(view.width / FLOW_FEST_IMAGE.width);
 
   function markerNear(point: ImagePoint): FlowFestSiteMarker | null {
     const reach = HIT_RADIUS_PIXELS * pixelScale;
@@ -171,10 +171,26 @@
     return closest;
   }
 
+  /**
+   * Capture keeps the drag alive when the pointer leaves the map, which matters
+   * when a circle's radius runs past the edge. It throws for a pointer the
+   * element never owned, and losing capture is not a reason to lose the drag.
+   */
+  function capturePointer(event: PointerEvent, capture: boolean): void {
+    const target = event.currentTarget as Element | null;
+    if (!target) return;
+    try {
+      if (capture) target.setPointerCapture(event.pointerId);
+      else target.releasePointerCapture(event.pointerId);
+    } catch {
+      /* The drag continues on the document-level move and up handlers. */
+    }
+  }
+
   function handlePointerDown(event: PointerEvent): void {
     const point = pointFromEvent(event);
     if (!point) return;
-    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    capturePointer(event, true);
     pointerId = event.pointerId;
 
     if (interactionMode === "pan") {
@@ -223,7 +239,7 @@
         ((event.clientX - panOrigin.x) / bounds.width) * view.width;
       view.y =
         panOrigin.viewY -
-        ((event.clientY - panOrigin.y) / bounds.height) * view.height;
+        ((event.clientY - panOrigin.y) / bounds.height) * viewHeight;
       clampView();
       return;
     }
@@ -238,9 +254,7 @@
 
   function finishPointer(event: PointerEvent): void {
     if (pointerId !== event.pointerId) return;
-    (event.currentTarget as HTMLElement).releasePointerCapture?.(
-      event.pointerId
-    );
+    capturePointer(event, false);
     pointerId = null;
     panOrigin = null;
     if (draggingHandleFor) {
@@ -256,31 +270,26 @@
   }
 
   function clampView(): void {
-    view.width = Math.min(
-      Math.max(view.width, 120),
-      FLOW_FEST_IMAGE.width
-    );
-    view.height = Math.min(
-      Math.max(view.height, 120),
-      FLOW_FEST_IMAGE.height
-    );
-    view.x = Math.min(
-      Math.max(view.x, 0),
-      FLOW_FEST_IMAGE.width - view.width
-    );
+    view.width = Math.min(Math.max(view.width, 120), FLOW_FEST_IMAGE.width);
+    /** A window taller than the picture just shows the void; keep it inside. */
+    if (viewHeight > FLOW_FEST_IMAGE.height) {
+      view.width =
+        (FLOW_FEST_IMAGE.height * Math.max(mapWidth, 1)) / Math.max(mapHeight, 1);
+    }
+    view.x = Math.min(Math.max(view.x, 0), FLOW_FEST_IMAGE.width - view.width);
     view.y = Math.min(
       Math.max(view.y, 0),
-      FLOW_FEST_IMAGE.height - view.height
+      Math.max(FLOW_FEST_IMAGE.height - viewHeight, 0)
     );
   }
 
   function zoom(factor: number): void {
     const centreX = view.x + view.width / 2;
-    const centreY = view.y + view.height / 2;
+    const centreY = view.y + viewHeight / 2;
     view.width *= factor;
-    view.height *= factor;
     view.x = centreX - view.width / 2;
-    view.y = centreY - view.height / 2;
+    clampView();
+    view.y = centreY - viewHeight / 2;
     clampView();
   }
 
@@ -330,7 +339,7 @@
   function focusMarker(marker: FlowFestSiteMarker): void {
     selectedMarkerId = marker.id;
     view.x = marker.anchor.x - view.width / 2;
-    view.y = marker.anchor.y - view.height / 2;
+    view.y = marker.anchor.y - viewHeight / 2;
     clampView();
   }
 
@@ -428,13 +437,15 @@
       </p>
     </div>
     <div class="head-actions">
-      <SegmentedControl
-        options={MODE_OPTIONS}
-        value={interactionMode}
-        onchange={(next) => (interactionMode = next as InteractionMode)}
-        ariaLabel="Map interaction"
-        size="sm"
-      />
+      <div class="mode-switch">
+        <SegmentedControl
+          options={MODE_OPTIONS}
+          value={interactionMode}
+          onchange={(next) => (interactionMode = next as InteractionMode)}
+          ariaLabel="Map interaction"
+          size="sm"
+        />
+      </div>
       <PanelButton variant="secondary" onclick={() => zoom(1 / 1.35)}>
         Zoom in
       </PanelButton>
@@ -498,9 +509,11 @@
       <p class="instruction">{activePreset.instruction}</p>
       <svg
         bind:this={svgElement}
+        bind:clientWidth={mapWidth}
+        bind:clientHeight={mapHeight}
         class="map"
         class:map--pan={interactionMode === "pan"}
-        viewBox="{view.x} {view.y} {view.width} {view.height}"
+        viewBox="{view.x} {view.y} {view.width} {viewHeight}"
         role="application"
         aria-label="Registered Flow Fest orthophoto with placed site markers"
         onpointerdown={handlePointerDown}
@@ -874,11 +887,21 @@
     color: var(--theme-text-secondary, #9aa7b4);
   }
 
+  /**
+   * SegmentedControl stretches to its container by default, so two five-letter
+   * labels would each take a third of a 4K header. `flex-basis: auto` resolves
+   * to `width`, so the width has to be capped, not just the basis.
+   */
+  .mode-switch {
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 220px;
+  }
+
   .map {
     display: block;
     width: 100%;
-    aspect-ratio: 1 / 1;
-    max-height: calc(100vh - 200px);
+    height: clamp(320px, calc(100vh - 210px), 2100px);
     border-radius: 10px;
     border: 1px solid var(--theme-border, #30363d);
     background: #000;
@@ -975,17 +998,110 @@
     color: var(--semantic-warning, #d29922);
   }
 
+  /**
+   * Wide canvas buys a second preset column, not larger controls: seventeen
+   * presets stop scrolling and the roads group becomes visible without a hunt.
+   */
+  @media (min-width: 2200px) {
+    .workspace {
+      grid-template-columns: minmax(0, 420px) minmax(0, 1fr) minmax(0, 400px);
+    }
+
+    .preset-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+  }
+
+  /**
+   * Stacked, the picker must not push the map off screen — that is hiding the
+   * workspace, not recomposing for it. The presets flow into as many columns as
+   * fit and the rail keeps a short capped height, so the map stays in view.
+   */
   @media (max-width: 1200px) {
     .workspace {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    .rail {
+    .rail--left {
+      max-height: 30vh;
+    }
+
+    .rail--right {
       max-height: none;
     }
 
+    .preset-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 4px;
+    }
+
     .map {
-      max-height: 70vh;
+      height: 58vh;
+    }
+  }
+
+  /**
+   * On a phone the map is the workspace, so it leads and the picker follows it.
+   * The lede folds away because the instruction line above the map already says
+   * what the current preset wants.
+   */
+  @media (max-width: 700px) {
+    .lede {
+      display: none;
+    }
+
+    .map-shell {
+      order: -1;
+    }
+
+    .rail--left {
+      max-height: 34vh;
+    }
+
+    .map {
+      height: 46vh;
+    }
+  }
+
+  /**
+   * Short and wide (a folded phone in landscape) is a height problem, not a
+   * width problem. Stacking there buries the map under the picker, so the
+   * columns come back, the lede folds away, and the placed-marker rail moves
+   * under the map where it can scroll without stealing map height.
+   */
+  @media (max-height: 620px) {
+    .marker-page {
+      gap: 8px;
+      padding: 10px;
+    }
+
+    .lede {
+      display: none;
+    }
+
+    .workspace {
+      grid-template-columns: minmax(0, 210px) minmax(0, 1fr);
+    }
+
+    .rail--left {
+      max-height: none;
+    }
+
+    .rail--right {
+      grid-column: 1 / -1;
+      max-height: 40vh;
+    }
+
+    .preset-list {
+      display: flex;
+      grid-template-columns: none;
+    }
+
+    .map {
+      height: calc(100vh - 150px);
     }
   }
 </style>
