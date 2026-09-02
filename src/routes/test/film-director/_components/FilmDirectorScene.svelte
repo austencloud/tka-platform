@@ -18,8 +18,11 @@
     applyDirectorEffectPresets,
     applyDirectorPerformerMotion,
     applyDirectorSceneToViewer,
+    applyDirectorStepChanges,
     buildDirectorViewerSeed,
+    type DirectorAppliedStepChange,
   } from "../_lib/director-viewer-adapter";
+  import { resolveHeldStep } from "../_lib/director-step-holds";
   import { sampleDirectorBlockingTrack } from "../_lib/director-blocking-track";
   import { getPreviewCameraFov } from "../_lib/director-camera-track";
   import { createDirectorSequenceLibrary } from "../_lib/director-sequence-library";
@@ -106,6 +109,57 @@
           (performer) => performer.beatOffset
         )
   );
+  /**
+   * Each performer's own playhead once their holds are applied, or null for a
+   * performer who states none — null falls through to the viewer's shared
+   * clock plus `performerStepOffsets`, so a film with no holds drives the
+   * viewer exactly as it did before this existed.
+   *
+   * The fractional value is deliberate: `Viewer3DScene` floors it for
+   * `goToStep` and passes the remainder to `setProgress`, so one number pins
+   * both the step and how far into it the performer sits.
+   *
+   * Sequence length is unknown here — the sequence lives in the viewer — so
+   * `resolveHeldStep` is called with 0 and the viewer's
+   * `resolvePerformerStepSource` does the wrapping it already does.
+   */
+  const presentedHeldSteps = $derived(
+    presentedScene.performance.performers.map((performer, index) => {
+      if (performer.holds.length === 0) return null;
+      const shared = director.preparation.complete
+        ? director.frame.sequenceStep
+        : 0;
+      const whole = Math.floor(shared);
+      const held = resolveHeldStep(
+        whole,
+        shared - whole,
+        presentedStepOffsets[index] ?? 0,
+        performer.holds,
+        0
+      );
+      return held.step + held.progress;
+    })
+  );
+
+  /**
+   * The step each performer's per-step effect and effort read from: the held
+   * playhead where one exists, the shared clock plus their offset where it
+   * does not.
+   */
+  const presentedEffectiveSteps = $derived(
+    presentedScene.performance.performers.map((_, index) => {
+      const held = presentedHeldSteps[index];
+      if (held !== null && held !== undefined) return held;
+      const shared = director.preparation.complete
+        ? director.frame.sequenceStep
+        : 0;
+      return shared + (presentedStepOffsets[index] ?? 0);
+    })
+  );
+
+  /** Last per-step effect/effort written per performer id — see applyDirectorStepChanges. */
+  const appliedStepChanges = new Map<string, DirectorAppliedStepChange>();
+
   // Warmup renders a scene the playhead is not on, so its cast stands at its
   // own opening marks rather than wherever scene one's track happens to be.
   const presentedMotion = $derived(
@@ -191,6 +245,11 @@
 
   function applyScene(scene: ResolvedDirectorScene): void {
     appliedSceneId = scene.id;
+
+    // A cut re-establishes every performer from the scene document, so the
+    // next frame must write its per-step values rather than trust what the
+    // previous scene left in this map.
+    appliedStepChanges.clear();
 
     for (const [feature, enabled] of Object.entries(scene.location.sceneFeatures)) {
       if (sceneFeatures.isEnabled(feature) !== enabled)
@@ -455,6 +514,12 @@
     applyDirectorPerformerMotion(viewer, motion);
   });
 
+  $effect(() => {
+    const steps = presentedEffectiveSteps;
+    director.sceneReady;
+    applyDirectorStepChanges(viewer, presentedScene, steps, appliedStepChanges);
+  });
+
   onDestroy(() => {
     activeTransitionToken += 1;
     director.setTransitionHolding(false);
@@ -485,6 +550,7 @@
     {effectQualityTier}
     waitForPerformersOnInitialReveal={true}
     performerStepOffsets={presentedStepOffsets}
+    performerSteps={presentedHeldSteps}
     visiblePerformerCount={presentedScene.performance.performers.length}
     stageBoundsPositions={presentedScene.performance.stageExtent}
     {retainedEnvironmentTypes}

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   compileCameraMoves,
+  compileCameraShots,
   computeCameraFraming,
   directorFloorY,
 } from "../../../src/routes/test/film-director/_lib/camera-language";
@@ -175,8 +176,28 @@ describe("compileCameraMoves", () => {
         frame.position[0] - frame.target[0],
         frame.position[2] - frame.target[2]
       );
-    const sweep = Math.abs(angle(frames.at(-1)!) - angle(frames[0]!));
+    // The front camera sits at -z, so the raw atan2 difference can wrap past
+    // ±π; measure the shorter way round.
+    const raw = Math.abs(angle(frames.at(-1)!) - angle(frames[0]!)) % (2 * Math.PI);
+    const sweep = Math.min(raw, 2 * Math.PI - raw);
     expect(sweep).toBeCloseTo(Math.PI / 2, 1);
+  });
+
+  it("cw from the front ends on the performers' screen-left side (Austen's felt convention, 2026-09-02)", () => {
+    // The front camera sits at -z looking toward +z, so its screen-left is +x.
+    const cw = compileCameraMoves(
+      [{ move: "orbit", direction: "cw", amount: { degrees: 90 } }],
+      framing,
+      CONTEXT
+    );
+    const ccw = compileCameraMoves(
+      [{ move: "orbit", direction: "ccw", amount: { degrees: 90 } }],
+      framing,
+      CONTEXT
+    );
+    expect(cw[0]!.position[2]).toBeLessThan(cw[0]!.target[2]);
+    expect(cw.at(-1)!.position[0]).toBeGreaterThan(cw.at(-1)!.target[0]);
+    expect(ccw.at(-1)!.position[0]).toBeLessThan(ccw.at(-1)!.target[0]);
   });
 
   it("moves chain: explicit durations consume time, the rest split evenly", () => {
@@ -375,5 +396,75 @@ describe("roll", () => {
   it("keyframes from scenes that never roll carry no rollDeg key", () => {
     const frames = compileCameraMoves([{ move: "hold" }], framing50, context({ durationSeconds: 4 }));
     for (const frame of frames) expect("rollDeg" in frame).toBe(false);
+  });
+});
+
+describe("compileCameraShots", () => {
+  const wide = { subject: { kind: "group" as const }, shotSize: "wide" as const };
+  const closeUp = {
+    subject: { kind: "performer" as const, performerId: "performer-1" },
+    shotSize: "close-up" as const,
+  };
+  const behind = {
+    subject: { kind: "group" as const },
+    shotSize: "medium" as const,
+    position: "behind" as const,
+  };
+
+  it("splits an unstated scene evenly and never runs time backwards", () => {
+    const frames = compileCameraShots(
+      [wide, closeUp, behind],
+      context({ durationSeconds: 12 })
+    );
+    expect(frames[0]!.atSeconds).toBe(0);
+    expect(frames.at(-1)!.atSeconds).toBeCloseTo(12, 6);
+    for (let i = 1; i < frames.length; i += 1) {
+      expect(frames[i]!.atSeconds).toBeGreaterThanOrEqual(frames[i - 1]!.atSeconds);
+    }
+    expect(frames.filter((frame) => Math.abs(frame.atSeconds - 4) < 1e-6)).toHaveLength(2);
+    expect(frames.filter((frame) => Math.abs(frame.atSeconds - 8) < 1e-6)).toHaveLength(2);
+  });
+
+  it("steps out of every shot but the last, at the instant the next begins", () => {
+    const frames = compileCameraShots(
+      [wide, closeUp, behind],
+      context({ durationSeconds: 12 })
+    );
+    const atCut = frames.filter((frame) => Math.abs(frame.atSeconds - 4) < 1e-6);
+    expect(atCut[0]!.interpolation).toBe("step");
+    // The incoming shot's framing is a different place entirely — the cut.
+    expect(distance(atCut[1]!.position, atCut[0]!.position)).toBeGreaterThan(1);
+    const last = frames.at(-1)!;
+    const secondLast = frames.at(-2)!;
+    // The final shot keeps whatever compileCameraMoves gave it (a hold's step),
+    // not a forced barrier: nothing follows it to cut to.
+    expect(last.interpolation).toBe(secondLast.interpolation);
+  });
+
+  it("honors stated durations and leaves the rest to the open shots", () => {
+    const frames = compileCameraShots(
+      [
+        { ...wide, durationSeconds: 2 },
+        closeUp,
+        { ...behind, durationSeconds: 4 },
+      ],
+      context({ durationSeconds: 12 })
+    );
+    const cuts = frames
+      .map((frame) => frame.atSeconds)
+      .filter((at, index, all) => all.indexOf(at) !== index);
+    expect(cuts).toEqual([2, 8]);
+  });
+
+  it("rejects shots that ask for more time than the scene has", () => {
+    expect(() =>
+      compileCameraShots(
+        [
+          { ...wide, durationSeconds: 10 },
+          { ...closeUp, durationSeconds: 10 },
+        ],
+        context({ durationSeconds: 16 })
+      )
+    ).toThrow(/Camera shots total/);
   });
 });

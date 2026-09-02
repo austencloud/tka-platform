@@ -497,3 +497,658 @@ describe("beats as a time unit", () => {
     ).toThrow(/exactly one of/i);
   });
 });
+
+describe("camera tracking grammar", () => {
+  const trackingFilm = (camera: Record<string, unknown>) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "tracking-film",
+    title: "Tracking",
+    scenes: [{ id: "s1", title: "S1", camera }],
+  });
+
+  it("accepts track on a framing subject", () => {
+    const parsed = FilmDirectorInputSchema.parse(
+      trackingFilm({
+        subject: {
+          kind: "performer",
+          performerId: "performer-1",
+          track: "follow",
+        },
+        shotSize: "medium",
+      })
+    );
+    expect(parsed.scenes[0]!.camera?.subject).toMatchObject({
+      track: "follow",
+    });
+  });
+
+  it("accepts the aim spelling but no other string", () => {
+    expect(
+      FilmDirectorInputSchema.parse(
+        trackingFilm({
+          subject: { kind: "performer", performerId: "performer-1", track: true },
+          shotSize: "medium",
+        })
+      ).scenes[0]!.camera?.subject
+    ).toMatchObject({ track: true });
+
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        trackingFilm({
+          subject: {
+            kind: "performer",
+            performerId: "performer-1",
+            track: "aim",
+          },
+          shotSize: "medium",
+        })
+      )
+    ).toThrow();
+  });
+
+  it("rejects track on a preset's target", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        trackingFilm({
+          preset: "group-orbit",
+          target: {
+            kind: "performer",
+            performerId: "performer-1",
+            track: true,
+          },
+        })
+      )
+    ).toThrow(/spoken on \\"subject\\"/);
+  });
+
+  it("rejects track on a raw keyframe target", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        trackingFilm({
+          keyframes: [
+            {
+              atSeconds: 0,
+              position: [0, 1, -4],
+              target: {
+                kind: "performer",
+                performerId: "performer-1",
+                track: "follow",
+              },
+            },
+          ],
+        })
+      )
+    ).toThrow(/spoken on \\"subject\\"/);
+  });
+});
+
+describe("camera shots grammar", () => {
+  const shotsFilm = (camera: Record<string, unknown>) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "shots-film",
+    title: "Shots",
+    scenes: [{ id: "s1", title: "S1", camera }],
+  });
+
+  const twoShots = [
+    { subject: { kind: "group" }, shotSize: "wide", durationBeats: 8 },
+    { subject: { kind: "group" }, shotSize: "medium" },
+  ];
+
+  it("accepts two shots", () => {
+    const parsed = FilmDirectorInputSchema.parse(shotsFilm({ shots: twoShots }));
+    expect(parsed.scenes[0]!.camera?.shots).toHaveLength(2);
+    expect(parsed.scenes[0]!.camera?.shots?.[0]?.durationBeats).toBe(8);
+  });
+
+  it("rejects a single shot and says why", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(shotsFilm({ shots: [twoShots[0]] }))
+    ).toThrow(/at least two/);
+  });
+
+  it("rejects shots alongside a top-level framing", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        shotsFilm({ shots: twoShots, shotSize: "close-up" })
+      )
+    ).toThrow(/exclusive/);
+  });
+
+  it("rejects shots alongside a preset", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        shotsFilm({ shots: twoShots, preset: "group-orbit" })
+      )
+    ).toThrow(/exclusive/);
+  });
+
+  it("rejects shots alongside raw keyframes", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        shotsFilm({
+          shots: twoShots,
+          keyframes: [{ atSeconds: 0, position: [0, 1, -4] }],
+        })
+      )
+    ).toThrow(/exclusive/);
+  });
+
+  it("rejects shots alongside a target", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        shotsFilm({ shots: twoShots, target: { kind: "group" } })
+      )
+    ).toThrow(/not \\"target\\"/);
+  });
+
+  it("rejects a shot stating both time units", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        shotsFilm({
+          shots: [
+            {
+              subject: { kind: "group" },
+              durationSeconds: 2,
+              durationBeats: 4,
+            },
+            { subject: { kind: "group" } },
+          ],
+        })
+      )
+    ).toThrow(/exactly one of/i);
+  });
+
+  it("rejects tracking inside a shot", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        shotsFilm({
+          shots: [
+            {
+              subject: {
+                kind: "performer",
+                performerId: "performer-1",
+                track: "follow",
+              },
+              shotSize: "medium",
+            },
+            { subject: { kind: "group" } },
+          ],
+        })
+      )
+    ).toThrow(/Tracking and shots do not combine/);
+  });
+});
+
+describe("sequence sources: transformOf and library", () => {
+  function parse(performers: Record<string, unknown>[]) {
+    return resolveFilmDirectorSpec({
+      version: 2,
+      id: "source-film",
+      title: "Source Film",
+      scenes: [{ id: "s1", title: "S1", performance: { performers } }],
+    });
+  }
+  const sequences = (performers: Record<string, unknown>[]) =>
+    parse(performers).scenes[0]!.performance.performers.map((p) => p.sequence);
+
+  it("accepts a transform chain", () => {
+    expect(
+      sequences([
+        { id: "lead", sequence: { word: "SAILOR" } },
+        {
+          id: "second",
+          sequence: {
+            transformOf: "lead",
+            transforms: [
+              { op: "rotate", degrees: 90, direction: "cw" },
+              { op: "swap-hands" },
+              { op: "start-at", step: 2 },
+            ],
+          },
+        },
+      ])[1]
+    ).toEqual({
+      transformOf: "lead",
+      transforms: [
+        { op: "rotate", degrees: 90, direction: "cw" },
+        { op: "swap-hands" },
+        { op: "start-at", step: 2 },
+      ],
+    });
+  });
+
+  it("accepts a library sequence", () => {
+    expect(
+      sequences([
+        {
+          id: "solo",
+          sequence: { library: "0c7e6529-1dca-4254-903e-7068e38c030c" },
+        },
+      ])[0]
+    ).toEqual({ library: "0c7e6529-1dca-4254-903e-7068e38c030c" });
+  });
+
+  it("rejects transformOf without transforms", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB" } },
+        { id: "b", sequence: { transformOf: "a" } },
+      ])
+    ).toThrow(/transforms.{0,3} says what changes/);
+  });
+
+  it("rejects transforms without transformOf", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB", transforms: [{ op: "mirror" }] } },
+      ])
+    ).toThrow(/transforms.{0,3} only means something on a/);
+  });
+
+  it("rejects an empty transform chain", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB" } },
+        { id: "b", sequence: { transformOf: "a", transforms: [] } },
+      ])
+    ).toThrow(/at least one/);
+  });
+
+  it("rejects a rotation that is not a 45-degree step", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB" } },
+        {
+          id: "b",
+          sequence: {
+            transformOf: "a",
+            transforms: [{ op: "rotate", degrees: 60, direction: "cw" }],
+          },
+        },
+      ])
+    ).toThrow(/45/);
+  });
+
+  it("rejects a hand on swap-hands", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB" } },
+        {
+          id: "b",
+          sequence: {
+            transformOf: "a",
+            transforms: [{ op: "swap-hands", hand: "left" }],
+          },
+        },
+      ])
+    ).toThrow();
+  });
+
+  it("rejects start-at step 1", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB" } },
+        {
+          id: "b",
+          sequence: {
+            transformOf: "a",
+            transforms: [{ op: "start-at", step: 1 }],
+          },
+        },
+      ])
+    ).toThrow(/already starts/);
+  });
+
+  it("rejects controls on a library sequence", () => {
+    expect(() =>
+      parse([{ id: "a", sequence: { library: "x", level: 2 } }])
+    ).toThrow(/already finished/);
+  });
+
+  it("rejects controls on a transformed sequence", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB" } },
+        {
+          id: "b",
+          sequence: {
+            transformOf: "a",
+            transforms: [{ op: "flip" }],
+            level: 2,
+          },
+        },
+      ])
+    ).toThrow(/carries no controls of its own/);
+  });
+
+  it("rejects two sources", () => {
+    expect(() =>
+      parse([{ id: "a", sequence: { library: "x", mirrorOf: "b" } }])
+    ).toThrow(/names one source, but this one names .*mirrorOf.*library/);
+  });
+});
+
+describe("per-performer effect config (spoken but not real)", () => {
+  function filmWithPerformers(performers: Record<string, unknown>[]) {
+    return {
+      version: 2,
+      id: "effect-config-film",
+      title: "Effect Config Film",
+      scenes: [{ id: "s1", title: "S1", performance: { performers } }],
+    };
+  }
+
+  function filmWithCastDefaults(defaults: Record<string, unknown>) {
+    return {
+      version: 2,
+      id: "effect-config-film",
+      title: "Effect Config Film",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: { cast: { count: 1, defaults } },
+        },
+      ],
+    };
+  }
+
+  function filmWithScene(sceneExtra: Record<string, unknown>) {
+    return {
+      version: 2,
+      id: "effect-config-film",
+      title: "Effect Config Film",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: { performers: [{ id: "performer-1" }] },
+          ...sceneExtra,
+        },
+      ],
+    };
+  }
+
+  it("rejects effectPresets on a performer with the scene-wide constraint", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        filmWithPerformers([
+          {
+            id: "performer-1",
+            effect: "trails",
+            effectPresets: { trails: "comet" },
+          },
+        ])
+      )
+    ).toThrow(/Effect presets and overrides are scene-wide/);
+  });
+
+  it("rejects effectOverrides on a performer with the same message", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        filmWithPerformers([
+          {
+            id: "performer-1",
+            effect: "trails",
+            effectOverrides: { trails: { length: 2 } },
+          },
+        ])
+      )
+    ).toThrow(/Effect presets and overrides are scene-wide/);
+  });
+
+  it("rejects effectPresets in cast defaults with the same message", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        filmWithCastDefaults({ effectPresets: { trails: "comet" } })
+      )
+    ).toThrow(/Effect presets and overrides are scene-wide/);
+  });
+
+  it("still accepts scene-scoped effectPresets", () => {
+    const parsed = FilmDirectorInputSchema.parse(
+      filmWithScene({ effectPresets: { trails: "trail-neon" } })
+    );
+    expect(parsed.scenes[0]!.effectPresets).toEqual({ trails: "trail-neon" });
+  });
+});
+
+describe("blocking edges", () => {
+  const edgesFilm = (blocking: unknown[]) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "edges-film",
+    title: "Edges",
+    scenes: [
+      {
+        id: "s1",
+        title: "S1",
+        performance: { performers: [{ id: "a", blocking }] },
+      },
+    ],
+  });
+  const parseBlocking = (blocking: unknown[]) =>
+    FilmDirectorInputSchema.parse(edgesFilm(blocking));
+
+  it("parses a run move so the compiler can reject it by name", () => {
+    const parsed = parseBlocking([{ move: "run", to: { x: 0, z: 2 } }]);
+    expect(
+      parsed.scenes[0]!.performance!.performers![0]!.blocking![0]!.move
+    ).toBe("run");
+  });
+  it("accepts an arc on a walk", () => {
+    const parsed = parseBlocking([
+      { move: "walk", to: { x: 2, z: 0 }, along: { arc: "left", bulge: 0.25 } },
+    ]);
+    expect(
+      parsed.scenes[0]!.performance!.performers![0]!.blocking![0]!.along
+    ).toEqual({ arc: "left", bulge: 0.25 });
+  });
+
+  it("rejects a bulge outside its bounds", () => {
+    for (const bulge of [0, -0.5, 1.6]) {
+      expect(() =>
+        parseBlocking([
+          { move: "walk", to: { x: 2, z: 0 }, along: { arc: "left", bulge } },
+        ])
+      ).toThrow();
+    }
+  });
+
+  it("rejects an unknown arc side", () => {
+    expect(() =>
+      parseBlocking([
+        { move: "walk", to: { x: 2, z: 0 }, along: { arc: "wide" } },
+      ])
+    ).toThrow();
+  });
+});
+
+describe("standing and watching", () => {
+  const watcherFilm = (sequence: unknown) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "watcher-film",
+    title: "Watcher",
+    scenes: [
+      {
+        id: "s1",
+        title: "S1",
+        performance: { performers: [{ id: "a", sequence }] },
+      },
+    ],
+  });
+
+  it("accepts a performer who stands and watches", () => {
+    const parsed = FilmDirectorInputSchema.parse(
+      watcherFilm({ source: "none" })
+    );
+    expect(parsed.scenes[0]!.performance!.performers![0]!.sequence).toEqual({
+      source: "none",
+    });
+  });
+
+  it("rejects controls on a performer who is not spinning", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(watcherFilm({ source: "none", level: 2 }))
+    ).toThrow(/is not spinning anything/);
+  });
+});
+
+describe("per-step changes: stepEffects, stepEfforts, holds", () => {
+  // This file has no shared film/parse helper — the stepPlanes parse tests
+  // build a whole document inline each time. These wrap that same shape once.
+  const film = (scene: Record<string, unknown>) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "per-step",
+    title: "Per step",
+    scenes: [{ id: "s1", title: "S1", ...scene }],
+  });
+  const parse = (doc: unknown) => FilmDirectorInputSchema.parse(doc);
+
+  it("accepts a step effect list, a step effort list, and holds", () => {
+    const parsed = parse(
+      film({
+        performance: {
+          cast: {
+            count: 2,
+            performers: [
+              {
+                id: "performer-1",
+                stepEffects: [
+                  { step: 0, effect: "none" },
+                  { step: 4, effect: "trails" },
+                ],
+                stepEfforts: [{ step: 8, effort: "punch" }],
+              },
+              { id: "performer-2", holds: [{ fromStep: 4, steps: 4 }] },
+            ],
+          },
+        },
+      })
+    );
+    const cast = parsed.scenes[0]!.performance!.cast!.performers!;
+    expect(cast[0]!.stepEffects).toEqual([
+      { step: 0, effect: "none" },
+      { step: 4, effect: "trails" },
+    ]);
+    expect(cast[0]!.stepEfforts).toEqual([{ step: 8, effort: "punch" }]);
+    expect(cast[1]!.holds).toEqual([{ fromStep: 4, steps: 4 }]);
+  });
+
+  it("accepts the same three lists on cast defaults", () => {
+    const parsed = parse(
+      film({
+        performance: {
+          cast: {
+            count: 2,
+            defaults: {
+              stepEffects: [{ step: 2, effect: { pick: "any", not: ["fire"] } }],
+              stepEfforts: [{ step: 2, effort: { oneOf: ["punch", "dab"] } }],
+              holds: [{ fromStep: 0, steps: 2 }],
+            },
+          },
+        },
+      })
+    );
+    expect(parsed.scenes[0]!.performance!.cast!.defaults!.holds).toEqual([
+      { fromStep: 0, steps: 2 },
+    ]);
+  });
+
+  it("rejects an unknown effect on a step entry", () => {
+    expect(() =>
+      parse(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [
+                { id: "a", stepEffects: [{ step: 0, effect: "glitter" }] },
+              ],
+            },
+          },
+        })
+      )
+    ).toThrow(/Unknown effect .{0,2}glitter/);
+  });
+
+  it("rejects an unknown effort on a step entry", () => {
+    expect(() =>
+      parse(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [
+                { id: "a", stepEfforts: [{ step: 0, effort: "swagger" }] },
+              ],
+            },
+          },
+        })
+      )
+    ).toThrow(/Unknown effort .{0,2}swagger/);
+  });
+
+  it("rejects a negative step and a fractional step", () => {
+    for (const step of [-1, 1.5]) {
+      expect(() =>
+        parse(
+          film({
+            performance: {
+              cast: {
+                count: 1,
+                performers: [
+                  { id: "a", stepEffects: [{ step, effect: "trails" }] },
+                ],
+              },
+            },
+          })
+        )
+      ).toThrow();
+    }
+  });
+
+  it("rejects a hold of zero steps and a negative fromStep", () => {
+    expect(() =>
+      parse(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [{ id: "a", holds: [{ fromStep: 0, steps: 0 }] }],
+            },
+          },
+        })
+      )
+    ).toThrow(/at least one step/);
+    expect(() =>
+      parse(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [{ id: "a", holds: [{ fromStep: -1, steps: 2 }] }],
+            },
+          },
+        })
+      )
+    ).toThrow();
+  });
+
+  it("rejects an unknown key inside a hold", () => {
+    expect(() =>
+      parse(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [
+                { id: "a", holds: [{ fromStep: 0, steps: 2, beats: 4 }] },
+              ],
+            },
+          },
+        })
+      )
+    ).toThrow();
+  });
+});

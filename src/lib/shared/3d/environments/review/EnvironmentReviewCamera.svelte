@@ -1,8 +1,8 @@
 <script lang="ts">
   /** Shared fixed-shot and first-person camera for environment review routes. */
   import { onDestroy } from "svelte";
-  import { T } from "@threlte/core";
-  import { Vector3 } from "three";
+  import { T, useTask, useThrelte } from "@threlte/core";
+  import { Vector3, type Object3D } from "three";
   import type CameraControls from "camera-controls";
   import {
     CAMERA_DEFAULTS,
@@ -14,6 +14,8 @@
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import {
     DEFAULT_ENVIRONMENT_REVIEW_BOUNDS,
+    collectEnvironmentCameraCollisionMeshes,
+    keepEnvironmentReviewOrbitAboveSurface,
     resolveEnvironmentReviewWalkPose,
     type EnvironmentReviewBounds,
     type EnvironmentReviewCameraPreset,
@@ -26,6 +28,8 @@
     walk?: boolean;
     walkBounds?: EnvironmentReviewBounds;
     maxOrbitDistance?: number;
+    /** Keep normal review orbit on the authored side of tagged terrain. */
+    terrainSafeOrbit?: boolean;
   }
 
   let {
@@ -34,7 +38,10 @@
     walk = false,
     walkBounds = DEFAULT_ENVIRONMENT_REVIEW_BOUNDS,
     maxOrbitDistance = 70,
+    terrainSafeOrbit = false,
   }: Props = $props();
+
+  const { scene } = useThrelte();
 
   const walkPose = resolveEnvironmentReviewWalkPose(preset);
   const cameraPlayer = createViewerCameraPlayerState({
@@ -60,6 +67,24 @@
   const scratchPosition = new Vector3();
   const scratchTarget = new Vector3();
   let poseSyncTimer: ReturnType<typeof setTimeout> | null = null;
+  let orbitControls = $state<CameraControls | null>(null);
+  let collisionMeshes = $state<Object3D[]>([]);
+  let collisionScanElapsed = 0.5;
+  let recoveredInitialOrbit = false;
+
+  function refreshCollisionMeshes(): void {
+    if (!terrainSafeOrbit) return;
+    collisionMeshes = collectEnvironmentCameraCollisionMeshes(
+      scene as unknown as Object3D
+    );
+  }
+
+  function constrainAndSyncOrbit(controls: CameraControls): void {
+    if (terrainSafeOrbit && collisionMeshes.length > 0) {
+      keepEnvironmentReviewOrbitAboveSurface(controls, collisionMeshes);
+    }
+    schedulePoseSync(controls);
+  }
 
   function schedulePoseSync(controls: CameraControls) {
     if (poseSyncTimer !== null) clearTimeout(poseSyncTimer);
@@ -78,6 +103,24 @@
     });
     window.history.replaceState(window.history.state, "", url);
   }
+
+  useTask((delta) => {
+    if (walk || !terrainSafeOrbit || !orbitControls) return;
+    collisionScanElapsed += delta;
+    if (collisionMeshes.length === 0 && collisionScanElapsed >= 0.5) {
+      collisionScanElapsed = 0;
+      refreshCollisionMeshes();
+    }
+    if (collisionMeshes.length === 0) return;
+    if (!recoveredInitialOrbit || orbitControls.active) {
+      const corrected = keepEnvironmentReviewOrbitAboveSurface(
+        orbitControls,
+        collisionMeshes
+      );
+      recoveredInitialOrbit = true;
+      if (corrected) schedulePoseSync(orbitControls);
+    }
+  });
 
   onDestroy(() => {
     if (poseSyncTimer !== null) clearTimeout(poseSyncTimer);
@@ -112,12 +155,14 @@
     fov={preset.fov}
   >
     <OrbitControls
+      bind:ref={orbitControls}
       enableDamping
       target={[preset.target[0], preset.target[1], preset.target[2]]}
       minDistance={2}
       maxDistance={maxOrbitDistance}
-      maxPolarAngle={Math.PI / 2 + 0.04}
-      onchange={schedulePoseSync}
+      maxPolarAngle={terrainSafeOrbit ? Math.PI / 2 - 0.02 : Math.PI / 2 + 0.04}
+      {collisionMeshes}
+      onchange={constrainAndSyncOrbit}
     />
   </T.PerspectiveCamera>
 {/if}

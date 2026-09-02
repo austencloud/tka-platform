@@ -60,6 +60,7 @@
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import PostShareSheet from "$lib/shared/share/components/PostShareSheet.svelte";
   import { VIDEO_UPLOAD_ENABLED } from "../config/viewer-feature-flags";
+  import { uploadRenderedFilm } from "$lib/shared/video-collaboration/services/upload-rendered-film";
   import { canAccessPostStudio } from "../services/post-studio-access";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import {
@@ -597,6 +598,31 @@
     awaitingSceneTake = false;
     share.resumeAfterSceneTake();
   });
+  // Opt-in cloud save for a film rendered here: the same performance-video
+  // pipeline the upload sheet uses, minus the file picker. Local retention and
+  // the download stay untouched — this is an extra destination, not a
+  // replacement.
+  const canSaveFilmToSequence = $derived(
+    ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED && !!(ctx.effectiveSequence ?? sequence)
+  );
+
+  async function saveFilmToSequence(): Promise<void> {
+    const target = ctx.effectiveSequence ?? sequence;
+    const url = ctx.previewBlobUrl;
+    if (!target || !url) return;
+    try {
+      const blob = await (await fetch(url)).blob();
+      await uploadRenderedFilm({ sequence: target, blob });
+      toast.success("Film saved to this sequence");
+    } catch (error) {
+      console.warn("[RenderedFilm] Cloud save failed:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Could not save the film"
+      );
+      throw error;
+    }
+  }
+
 </script>
 
 <div
@@ -729,6 +755,8 @@
           class:export-active={layout.isWorkspaceInspectorActive}
           class:record-scene-active={layout.isRecordSceneActive}
           class:card-inspector={layout.inspectorProfile === "card"}
+          class:performance-inspector={layout.inspectorProfile ===
+            "performance"}
           class:desktop={!layout.effectiveMobile}
           class:stacked-rail={layout.stackedExportWithRail}
           class:sidebar-collapsed={layout.exportSidebarCollapsed &&
@@ -943,7 +971,7 @@
                     duration={DURATION.emphasis}
                   />
                 {/if}
-                {#if ctx.renderMode === "3d" && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
+                {#if ctx.renderMode === "3d" && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting || ctx.pendingFilmRender)}
                   <Recording3DOverlay
                     countdownValue={ctx.countdownValue}
                     isRecording={ctx.isRecording3D}
@@ -952,6 +980,9 @@
                     exportProgress={ctx.exportProgress}
                     isExporting={ctx.isExporting}
                     onCancelExport={interactions.handleCancelVideoExport}
+                    pendingRender={ctx.pendingFilmRender}
+                    onConfirmRender={interactions.handleConfirmFilmRender}
+                    onDiscardRender={interactions.handleDiscardFilmRender}
                   />
                 {/if}
                 {#if ctx.renderMode !== "3d" && shellRendersTakeover && animTakeover.phase !== "idle"}
@@ -992,9 +1023,9 @@
                   stepCount={sequence?.steps?.length ?? 0}
                   onAction={interactions.handleCardContextAction}
                 />
-                {#if layout.isRecordSceneActive && ctx.effectiveSequence && sceneReady3d}
+                {#if layout.isRecordSceneActive && ctx.effectiveSequence && sceneReady3d && ctx.countdownValue === 0 && !ctx.isRecording3D}
                   <RecordSceneChrome
-                    isExporting={ctx.isExporting}
+                    isExporting={ctx.isExporting || !!ctx.pendingFilmRender}
                     canvasReady={ctx.canvasReady}
                     onExport={() => interactions.handleVideoExport()}
                     choreography={ctx.viewer3DState.cameraChoreography}
@@ -1032,6 +1063,9 @@
                       onDismiss={interactions.handleDismissExportedVideo}
                       onRedownload={() =>
                         void interactions.handleRedownloadExportedVideo()}
+                      onSaveToCloud={canSaveFilmToSequence
+                        ? saveFilmToSequence
+                        : undefined}
                     />
                   {:else}
                     <!-- No tempo and no playback mode on the Motion page: the
@@ -1058,6 +1092,7 @@
                       sequence={ctx.effectiveSequence}
                       showInlineExportProgress={false}
                       showTempoControls={false}
+                      showPathShape={false}
                       onPropChange={(prop) =>
                         interactions.handlePropChange(prop, "video_export")}
                       onPlaybackToggle={() =>
@@ -1417,6 +1452,7 @@
   .viewer-and-export {
     --export-sidebar-width: 560px;
     --card-sidebar-width: clamp(480px, 28vw, 640px);
+    --performance-sidebar-width: clamp(380px, 24vw, 520px);
     --active-inspector-width: var(--export-sidebar-width);
     position: relative;
     display: flex;
@@ -1429,6 +1465,14 @@
 
   .viewer-and-export.card-inspector {
     --active-inspector-width: var(--card-sidebar-width);
+  }
+
+  /* Performances keeps a narrower column than the effects inspector so the
+     landscape video gets the width. The difference between the two tokens is
+     the seam travel PanelGroup animates on the structural clock when the mode
+     changes. */
+  .viewer-and-export.performance-inspector {
+    --active-inspector-width: var(--performance-sidebar-width);
   }
 
   .viewer-stage-container {
@@ -1533,12 +1577,20 @@
     overflow: hidden;
   }
 
+  /* Each layer paints the inspector surface across the whole track, and the
+     panel it holds paints none. A composed panel is narrower than the track
+     for as long as the seam is travelling, so leaving the surface on the panel
+     left the remaining band showing the workspace through the container's
+     partly transparent fill: a lighter vertical strip that appeared, held, and
+     vanished. Stacking container and layer reproduces the resting fill exactly
+     while covering the track at every intermediate width. */
   .inspector-content-layer {
     position: absolute;
     inset: 0;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -1571,11 +1623,34 @@
 
   .card-settings-layer {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
     overflow: hidden;
   }
 
-  /* The persistent Effects workspace is already composed at its destination
+  /* Art settings paint the card fill rather than the panel fill, so their layer
+     has to carry that token instead. Painting the shared one here would change
+     the inspector's colour under any theme whose card and panel fills differ. */
+  .art-settings-layer {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .inspector-content-layer :global(.export-panel),
+  .inspector-content-layer :global(.performance-inspector),
+  .inspector-content-layer :global(.art-settings-panel) {
+    background: transparent;
+  }
+
+  /* Every composed panel is pushed to the closing edge by an automatic start
+     margin, which is the one declaration that gets both directions right. A
+     panel narrower than the track keeps its place at the viewport edge and
+     simply fades, so a departing surface never slides its contents sideways on
+     the way out. A panel wider than the track has no free space for the margin
+     to absorb, so it collapses to zero and the panel is revealed from the seam
+     with its overflow spilling past the screen edge, where the cut cannot be
+     seen. Anchoring either direction by hand cuts a leading label column off or
+     drags a fading panel across the workspace.
+
+     The persistent Effects workspace is already composed at its destination
      width while the zero-width inspector track is closed. PanelGroup then
      reveals that stable surface through a moving clip instead of asking every
      control row to rewrap at each intermediate width. */
@@ -1585,18 +1660,65 @@
     width: var(--export-sidebar-width);
     min-width: var(--export-sidebar-width);
     flex: 0 0 var(--export-sidebar-width);
+    margin-left: auto;
   }
 
-  /* Motion and Performances deliberately share one inspector allocation.
-     Their contents are composed at that destination width before the mode
-     changes, so the stage source and the right-hand information swap together
-     without a late text-wrap or a second panel glide. */
+  /* The Performances inspector is composed at its own destination width
+     before the mode changes. PanelGroup then slides the seam from the effects
+     width to this width and reveals the already-laid-out column through the
+     moving clip, so nothing rewraps while the stage source crossfades. */
   .viewer-and-export.desktop
     .performance-inspector-layer
     > :global(.performance-inspector) {
+    width: var(--performance-sidebar-width);
+    min-width: var(--performance-sidebar-width);
+    flex: 0 0 var(--performance-sidebar-width);
+    margin-left: auto;
+  }
+
+  /* Art settings are portaled in as an absolutely positioned host that already
+     fills the track, so `width: 100%` on the panel inside made it stretch and
+     re-wrap on every frame of the seam animation. Compose it at the same
+     destination width the Effects inspector uses. */
+  .viewer-and-export.desktop
+    .art-settings-layer
+    > :global(.art-settings-host.external)
+    > :global(.art-settings-panel) {
     width: var(--export-sidebar-width);
     min-width: var(--export-sidebar-width);
     flex: 0 0 var(--export-sidebar-width);
+    margin-left: auto;
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .art-settings-layer
+    > :global(.art-settings-host.external)
+    > :global(.art-settings-panel) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
+  /* The card pin below is keyed to a mode-conditional container class, which
+     Svelte removes the instant the mode changes. The departing Card panel then
+     falls back to its intrinsic width and follows the closing seam. Keying the
+     same destination width to the persistent layer keeps it composed on the
+     way out as well as on the way in. */
+  .viewer-and-export.desktop
+    .card-settings-layer
+    :global(.export-panel:not(.inline)) {
+    width: var(--card-sidebar-width);
+    min-width: var(--card-sidebar-width);
+    flex: 0 0 var(--card-sidebar-width);
+    margin-left: auto;
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .card-settings-layer
+    :global(.export-panel:not(.inline)) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
   }
 
   :global(.panel-wrapper[data-manually-sized="true"])

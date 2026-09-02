@@ -1,58 +1,50 @@
 <!-- src/lib/shared/shape-matrix/components/MandalaHeroLayer.svelte
-  Static engine-aligned mandala canvas. Fills its parent (which must be the
+  Engine-aligned still mandala floor. Fills its parent (which must be the
   SAME square AnimatorCanvas renders into — that shared frame is the whole
-  alignment contract). Opacity animates via CSS so the still-mandala → ghost
-  transition never re-rasterizes. -->
+  alignment contract) and renders the shared ShapeMatrixMandalaArt primitive
+  painted at engine alignment by the animator's own guide painter, so the
+  floor is pixel-for-pixel the guide the live canvas will draw over it.
+  Opacity animates via CSS so the still-mandala → live-guide transition never
+  re-rasterizes. During a shared-element handoff the floor is forced fully
+  visible with no transition so the transition snapshot has artwork in it. -->
 <script lang="ts">
   import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
   import { motionDuration } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
-  import { drawAlignedMandala } from "../services/mandala-hero";
+  import { pathsArtworkSrc } from "../services/shape-matrix-artwork";
+  import ShapeMatrixMandalaArt from "./ShapeMatrixMandalaArt.svelte";
 
   let {
     paths,
-    clubTipDx,
+    artKey,
     opacity = 1,
-    glowColor,
+    claim = false,
+    handoff = false,
   }: {
     paths: MandalaPaths;
-    clubTipDx: number;
+    /** Identity of the pair these paths belong to; a change crossfades. */
+    artKey: string;
     opacity?: number;
-    glowColor?: string;
+    /** This floor owns the shared tile↔hero transition name right now. */
+    claim?: boolean;
+    /** A shared-element transition is capturing: show the artwork, instantly. */
+    handoff?: boolean;
   } = $props();
 
-  let canvas = $state<HTMLCanvasElement | null>(null);
   let box = $state<HTMLDivElement | null>(null);
+  let side = $state(0);
   const transitionDuration = motionDuration(DURATION.normal);
+  const effectiveOpacity = $derived(handoff ? 1 : opacity);
+  const paint = $derived((sizePx: number) => pathsArtworkSrc(paths, sizePx));
 
   $effect(() => {
-    const el = canvas,
-      host = box;
-    const p = paths; // reactive dep: redraw when the cell changes
-    if (!el || !host) return;
-    const draw = () => {
-      const sizeCss = Math.min(host.clientWidth, host.clientHeight);
-      const dpr = window.devicePixelRatio || 1;
-      const sizePx = Math.max(1, Math.round(sizeCss * dpr));
-      el.width = sizePx;
-      el.height = sizePx;
-      el.style.width = `${sizeCss}px`;
-      el.style.height = `${sizeCss}px`;
-      const ctx = el.getContext("2d");
-      if (ctx) {
-        const startedAt = import.meta.env.DEV ? performance.now() : 0;
-        ctx.clearRect(0, 0, sizePx, sizePx);
-        drawAlignedMandala(ctx, p, sizePx, { clubTipDx });
-        if (import.meta.env.DEV) {
-          performance.measure(`shape-matrix:hero-draw:${sizePx}`, {
-            start: startedAt,
-            end: performance.now(),
-          });
-        }
-      }
+    const host = box;
+    if (!host) return;
+    const measure = () => {
+      side = Math.min(host.clientWidth, host.clientHeight);
     };
-    draw();
-    const ro = new ResizeObserver(draw);
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(host);
     return () => ro.disconnect();
   });
@@ -60,11 +52,14 @@
 
 <div
   class="mandala-layer"
+  class:handoff
   bind:this={box}
-  style={`opacity: ${opacity}; --mandala-duration: ${transitionDuration}ms; --mandala-glow: ${glowColor ?? "var(--theme-accent, #f59e0b)"}`}
+  style={`opacity: ${effectiveOpacity}; --mandala-duration: ${transitionDuration}ms; --mandala-side: ${side}px`}
   aria-hidden="true"
 >
-  <canvas bind:this={canvas}></canvas>
+  <div class="mandala-square">
+    <ShapeMatrixMandalaArt {paint} {artKey} {claim} instant={handoff} />
+  </div>
 </div>
 
 <style>
@@ -74,11 +69,17 @@
     display: grid;
     place-items: center;
     pointer-events: none;
-    filter: drop-shadow(
-      0 0 0.3rem
-        color-mix(in srgb, var(--mandala-glow) 34%, transparent)
-    );
     transition: opacity var(--mandala-duration) var(--transition-easing, ease);
+  }
+  /* The snapshot for a shared-element transition is taken the frame the
+     floor is asked to show; a fade-in would capture a half-transparent tile. */
+  .mandala-layer.handoff {
+    transition: none;
+  }
+  .mandala-square {
+    width: var(--mandala-side);
+    height: var(--mandala-side);
+    overflow: visible;
   }
   @media (prefers-reduced-motion: reduce) {
     .mandala-layer {

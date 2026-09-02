@@ -1,6 +1,6 @@
 # Film Director Capability Matrix
 
-<!-- directive-axes: characterId,prop,effect,effort,staffLengthCm,environmentId,formation,leftPlane,rightPlane,stepPlane -->
+<!-- directive-axes: characterId,prop,effect,effort,staffLengthCm,environmentId,formation,leftPlane,rightPlane,stepPlane,stepEffect,stepEffort -->
 
 One row per speakable axis of the `/test/film-director` schema (v4). "Source
 of truth" is the live registry/enum — never copy value lists here.
@@ -32,13 +32,20 @@ not}` and still reject `distinct`, with or without `not`.
 | leftPlane     | performer                            | literal, pick any/distinct, oneOf, not, sameAs                                                                                                                                            | `Plane` enum, `@austencloud/scene-3d` `dist/lib/domain/enums/Plane.d.ts` — nine values: `wall`, `wheel`, `floor`, `right-shield`, `left-shield`, `forward-ramp`, `backward-ramp`, `right-wing`, `left-wing`. Precedence: `performer.leftPlane ?? cast?.defaults?.leftPlane ?? "wall"`. Reroll knob: `seed.axes.leftPlane`; the resolver retains the historical blue-plane hash namespace so existing films do not reshuffle.                                                                                                                                                                                          | unknown value: `Unknown plane "<value>". Planes: wall, wheel, floor, right-shield, left-shield, forward-ramp, backward-ramp, right-wing, left-wing.` (lists the full catalog — there's no "closest" plane the way there's an obvious closest prop)                        |
 | rightPlane    | performer                            | literal, pick any/distinct, oneOf, not, sameAs                                                                                                                                            | Same `Plane` catalog and precedence as leftPlane, resolved as its own independent axis (a `sameAs` on rightPlane copies the other performer's rightPlane, never their leftPlane). Reroll knob: `seed.axes.rightPlane`; the historical red-plane hash namespace remains stable.                                                                                                                                                                                                                                                                                                                                        | same catalog message as leftPlane                                                                                                                                                                                                                                         |
 | stepPlanes    | performer, array of per-step entries | scene-scoped directive per entry: literal, pick any, oneOf, not (distinct/sameAs rejected — pinned to a single (performer, step, hand) triple, same reasoning as environmentId/formation) | Each entry is `{step: int ≥ 0, hand: "left" \| "right", plane: <Plane directive>}`. Effective list: `performer.stepPlanes ?? cast?.defaults?.stepPlanes ?? []` — a performer's own list REPLACES the cast-default list, it does not merge with it. Reroll knob: `seed.axes.stepPlane` (shared across every stepPlanes entry in the film; each (performer, step, hand) triple still draws its own stream via a distinguishing key, so bumping this salt doesn't collapse every entry to the same value). Legacy blue/red hand values normalize at the schema boundary without changing their historical random stream. | unknown plane: same catalog message as leftPlane; `distinct`/`sameAs` on an entry: `Scene "<id>": "stepPlane" supports literals, pick:any, oneOf, and not — distinct/sameAs are performer-scoped.`; bad `hand`: zod enum rejection; negative `step`: zod bounds rejection |
+| stepEffects   | performer, array of per-step entries | scene-scoped directive per entry: literal, pick any, oneOf, not (distinct/sameAs rejected — pinned to a single (performer, step) pair) | Each entry is `{step: int ≥ 0, effect: <effect directive>}`, `"none"` a legal literal. Effective list: `performer.stepEffects ?? cast?.defaults?.stepEffects ?? []` — a performer's own list REPLACES the cast-default list. Catalog is `EFFECT_CATALOG` in `resolve-film-director-spec.ts` (`"none"` plus every `EFFECTS` id). Reroll knob: `seed.axes.stepEffect`; each (performer, step) pair draws its own stream. Applied per frame by `applyDirectorStepChanges` (`director-viewer-adapter.ts`) with `equipBuild: false` and `recordUndo: false`, written only when the value changes. | unknown effect: catalog message above; `distinct`/`sameAs`: `Scene "<id>": "stepEffect" supports literals, pick:any, oneOf, and not — distinct/sameAs are performer-scoped.`; two entries on one step: `Scene "<id>": performer "<id>" stepEffects names step <n> twice.` |
+| stepEfforts   | performer, array of per-step entries | same scene-scoped subset as stepEffects | Each entry is `{step: int ≥ 0, effort: <effort directive>}`. Same replace-not-merge rule and the `DIRECTOR_EFFORT_IDS` catalog. Reroll knob: `seed.axes.stepEffort`. Applied per frame beside stepEffects, `recordUndo: false`. | unknown effort: catalog message above; `distinct`/`sameAs`: same message with `"stepEffort"`; duplicate step: `... stepEfforts names step <n> twice.` |
+| holds | performer, array of `{fromStep: int ≥ 0, steps: int ≥ 1}` (max 16) | Time stops for that performer's prop phrase. While the shared clock, after their `beatOffset`, is inside `[fromStep, fromStep + steps)`, they are pinned to `fromStep` at progress 0; afterwards they resume from `fromStep`, so every later step lags by `steps`, accumulated across several holds. Blocking is authored geometry and is NOT paused — a performer who holds mid-walk keeps walking. Literal only: a hold states this performer's clock and has no catalog to draw from. `performer.holds ?? cast?.defaults?.holds ?? []`, replace not merge; resolved sorted by `fromStep`. | `director-step-holds.ts` (`resolveHeldStep`), driven into the viewer's existing `performerSteps` host-override seam (`performer-step-timing.ts` `resolvePerformerStepSource`) — the value is fractional, which pins step and progress together. | overlapping holds: `Scene "<id>": performer "<id>" holds overlap: step <n> for <n> steps and step <n> for <n> steps.`; `steps: 0`: `A hold lasts at least one step.`; negative `fromStep`: zod bounds rejection |
 
-`stepPlanes` is the first speakable axis that addresses an individual step
-rather than a whole performer or a whole scene. Every other axis in this table
-resolves once per (scene, performer) or once per scene; `stepPlanes` resolves
-once per (scene, performer, step, hand). Before 2026-08-24, director scenes had
-no way to address individual beats at all — the setter existed
-(`performer.setStepHandPlane`) but nothing in the schema could reach it.
+`stepPlanes` was the first speakable axis that addresses an individual step
+rather than a whole performer or a whole scene, and `stepEffects` and
+`stepEfforts` now join it: all three resolve once per (scene, performer, step)
+— stepPlanes once per hand as well. They differ in how they reach the runtime.
+A plane has a per-step setter (`performer.setStepHandPlane`), so the whole list
+is handed over once when the scene is applied. Effect and effort do not:
+`setEffect` and `setEffort` set the whole performer, so the film reads the
+playhead every frame, decides which entry is in force
+(`director-step-changes.ts`), and writes only on change. Before 2026-08-24
+director scenes could not address individual beats at all.
 
 ## Literal-only axes (not directive-capable)
 
@@ -68,12 +75,12 @@ downstream with the existing seconds-speaking message.)
 | performer `position`            | performer                  | literal `{x, z}`                                                                                                                                   | `performerSchema`                                                                                                                                                                            | Only required (and only meaningful) for `formation: "custom"`; otherwise the formation preset's slot geometry places the performer.                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | performer `facingDegrees`       | performer                  | literal number (degrees)                                                                                                                           | `performerSchema`                                                                                                                                                                            | Falls back to the formation slot's computed facing angle when omitted.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | performer `beatOffset`          | performer                  | literal number                                                                                                                                     | `performerSchema`                                                                                                                                                                            | Defaults to 0.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| performer `blocking`            | performer                  | literal array of 1–16 moves: `{move: "stand" \| "walk" \| "turn", to?, direction?, amount?, facing?, durationSeconds? \| durationBeats?, easing?}` | `blockingMoveSchema` in `film-director-schema.ts` (shape); `src/routes/test/film-director/_lib/blocking-language.ts` (meaning + resolution)                                                  | A move states its length in seconds or in beats — one unit per move, converted at the scene bpm (see "Counted time"). `walk` takes `to: {x, z}` (world point) or `direction` + `amount` (performer-relative); `facing` ∈ `travel`/`hold`/`audience`/`{degrees}` (`audience` faces the default camera side at −Z, NOT the seated crowd at +Z). Travel speed is capped at `MAX_TRAVEL_SPEED` (2.6 m/s) — a faster leg rejects — and below ~0.47 m/s the walk clip hits its playback-rate floor and the feet skate. Deliberately not directive-capable: a path is authored geometry, not a pick. |
+| performer `blocking`            | performer                  | literal array of 1–16 moves: `{move: "stand" \| "walk" \| "turn" \| "run", to?, along?, direction?, amount?, facing?, durationSeconds? \| durationBeats?, easing?}` | `blockingMoveSchema` in `film-director-schema.ts` (shape); `src/routes/test/film-director/_lib/blocking-language.ts` (meaning + resolution)                                                  | A move states its length in seconds or in beats — one unit per move, converted at the scene bpm (see "Counted time"). `walk` takes `to: {x, z}` (world point) or `direction` + `amount` (performer-relative); `facing` ∈ `travel`/`hold`/`audience`/`{degrees}` (`audience` faces the default camera side at −Z, NOT the seated crowd at +Z). Travel speed is capped at `MAX_TRAVEL_SPEED` (2.6 m/s) — a faster leg rejects — and below ~0.47 m/s the walk clip hits its playback-rate floor and the feet skate. Deliberately not directive-capable: a path is authored geometry, not a pick. `walk` may bow along a circular path with `along: {arc: "left" \| "right", bulge?}` — `arc` names the side the path bends toward from the traveller's own point of view, `bulge` is the sagitta as a fraction of the chord (default 0.5, a semicircle; bounds (0, 1.5]). The arc compiles into 4–16 straight chords inside `compileBlockingMoves`, targeting 0.5m per chord, so everything downstream still sees ordinary keyframes and `collectStageExtent`'s straight-segment invariant holds. Speed is checked against the ARC length, not the chord. `facing: "travel"` follows the tangent round the curve; any other facing eases from the opening angle to the stated one across the move. Positions and `to` are unbounded — nothing clamps a mark to a stage rectangle, and `stageExtent` grows the ground to include whatever the cast touches — so an entrance is an opening mark outside the frame plus a walk in (`/test/film-director?film=proving` scene 7). `move: "run"` parses and rejects by name; see "Spoken but not real". |
 | `performance.blocking`          | scene                      | literal `{endFormation, durationSeconds? \| durationBeats?, easing?, facing?}`                                                                     | `sceneBlockingSchema` in `film-director-schema.ts`                                                                                                                                           | Beats convert at the scene bpm; state exactly one unit (see "Counted time"). Cast-wide staging: walks every performer from their opening slot into the named formation's slots — the spoken "and then they all form a line". A performer with their own `blocking` list ignores it. `endFormation` validates against the same formation catalog (and per-count validity) as the `formation` axis.                                                                                                                                                                                             |
-| performer `sequence`            | performer                  | one source (`{source:"demo"}` \| `word` \| `length` \| `mirrorOf`) plus, for the two generated sources, any of the twelve controls below           | `src/routes/test/film-director/_lib/sequence-language.ts` (grammar + meaning), `film-director-schema.ts` `performerSequenceSchema` (shape); resolved async by `director-sequence-library.ts` | Defaults to `{source:"demo"}` (the film's shared sequence). See "Sequence directives" below. Deliberately not directive-capable: `mirrorOf` names one specific performer, so a random pick would have nothing to mean. Rejections: `A sequence names one source…`; `performer "<id>" cannot mirror themselves.`; `mirrors "<id>", who is not in this scene.`; `mirrors "<id>", who is already a mirror. Mirror the original instead.` Generation happens after the first frame, so a scene opens on the shared sequence and re-applies when the library resolves.                             |
+| performer `sequence`            | performer                  | one source (`{source:"demo"}` \| `{source:"none"}` \| `word` \| `length` \| `mirrorOf` \| `transformOf` + `transforms` \| `library`) plus, for the two generated sources, any of the twelve controls below           | `src/routes/test/film-director/_lib/sequence-language.ts` (grammar + meaning), `film-director-schema.ts` `performerSequenceSchema` (shape); resolved async by `director-sequence-library.ts` | Defaults to `{source:"demo"}` (the film's shared sequence). See "Sequence directives" below. Deliberately not directive-capable: `mirrorOf` and `transformOf` name one specific performer and `library` names one specific document, so a random pick would have nothing to mean. Rejections: `A sequence names one source…`; `performer "<id>" cannot mirror themselves.`; `mirrors "<id>", who is not in this scene.`; `<verb>s "<id>", whose sequence is already derived from another performer's. Derive from the original instead.` Generation happens after the first frame, so a scene opens on the shared sequence and re-applies when the library resolves. `{source:"none"}` is a performer who stands and watches: `director-sequence-library.ts` gives them no map entry, and `director-viewer-adapter.ts` skips both load paths for their index (`idlePerformerIndices`) and clears any sequence `enter3D` or an earlier scene left on them, so the body idles and no prop renders. Blocking still applies, so a watcher can walk on and stand. Controls reject on it, same as on the demo.                             |
 | bpm                             | scene (`performance.bpm`)  | literal number, 20–300                                                                                                                             | `performanceSchema`                                                                                                                                                                          | Defaults to 90.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | durationSeconds / durationBeats | scene                      | literal number, 1–60 seconds or a positive beat count up to 240                                                                                    | `sceneSchema`                                                                                                                                                                                | Defaults to 8s when neither is stated. Beats convert at this scene's own bpm (default 90) and the converted seconds must still land in 1–60; state exactly one unit (see "Counted time").                                                                                                                                                                                                                                                                                                                                                                                                     |
-| transition                      | scene                      | literal `{kind, durationSeconds \| durationBeats}`                                                                                                 | `transitionSchema`                                                                                                                                                                           | `kind` ∈ `cut` / `environment-dissolve` / `fade-through-black`. First scene defaults to `cut` (0s); later scenes default to `environment-dissolve` (0.8s). Seconds bound 0–3, beats 0–32, and beats convert at the scene bpm into that seconds range — one unit per transition (see "Counted time").                                                                                                                                                                                                                                                                                          |
+| transition                      | scene                      | literal `{kind, durationSeconds \| durationBeats}`                                                                                                 | `transitionSchema`                                                                                                                                                                           | `kind` ∈ `cut` / `environment-dissolve` / `fade-through-black`. First scene defaults to `cut` (0s); later scenes default to `environment-dissolve` (0.8s). A `cut` is instantaneous: it resolves to 0s unless a duration is stated. Seconds bound 0–3, beats 0–32, and beats convert at the scene bpm into that seconds range — one unit per transition (see "Counted time").                                                                                                                                                                                                                                                                                          |
 | showStage / showAudience        | scene (`location`)         | literal booleans                                                                                                                                   | `sceneSchema`                                                                                                                                                                                | Both default `false`. Applied through the scene-feature context in `FilmDirectorScene.svelte`, not through `director-viewer-adapter.ts`.                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | location.visiblePlanes          | scene (`location`)         | literal `Plane[]`, default `[]`                                                                                                                    | `sceneSchema`, `Plane` enum (`@austencloud/scene-3d`)                                                                                                                                        | Not directive-capable — a director names an exact set of grid planes to show, not a pick. Duplicate rejected: `location.visiblePlanes lists "<value>" twice.`; unknown value: same catalog message as leftPlane.                                                                                                                                                                                                                                                                                                                                                                              |
 | sceneFeatures                   | scene (`location`)         | literal `Record<string, boolean>`                                                                                                                  | `sceneSchema`                                                                                                                                                                                | Merges onto the built-in defaults (`environment: true`, `campfire`/`tent`: false, `stage`/`audience` from `showStage`/`showAudience`). Feature keys are whatever the active environment's `scene-feature-registry.ts` recognizes; unknown keys are silently inert (no rejection).                                                                                                                                                                                                                                                                                                             |
@@ -83,7 +90,7 @@ downstream with the existing seconds-speaking message.)
 | effectPresets                   | scene                      | `Record<effectId, presetId \| {pick:"any"}>`                                                                                                       | effect registry preset groups (`effect-registry.ts`, `getRegistration(effectId).presetGroup.presets`)                                                                                        | unknown effect: `Effect preset references unknown effect "<id>".`; unknown preset: `Effect "<id>" has no preset named "<preset>".`; `{pick:"any"}` with no registered presets: `has no registered presets to pick from.`                                                                                                                                                                                                                                                                                                                                                                      |
 | effectOverrides                 | scene                      | `Record<effectId, Record<string, unknown>>`                                                                                                        | validated against `effect-registry.ts` registration only (property-level values are NOT validated against the effect's own schema)                                                           | unknown effect: `Effect overrides reference unknown effect "<id>".`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | camera keyframes                | scene                      | literal array of `{atSeconds \| atBeats, position, target?, fovDeg?, interpolation?, easing?}`                                                     | `film-director-schema.ts` `cameraKeyframeSchema`                                                                                                                                             | A keyframe states its cue in seconds or in beats — exactly one, converted at the scene bpm (see "Counted time"). Mutually exclusive with the framing grammar (`shotSize`/`angle`/`position`/`moves`/`subject`) and with `preset` (unless `preset: "custom"`, which requires at least one keyframe).                                                                                                                                                                                                                                                                                           |
-| camera framing grammar          | scene                      | `subject` + `shotSize`/`angle`/`position` + `moves[]`, each move `{move, amount?, direction?, durationSeconds? \| durationBeats?, easing?}`        | `src/routes/test/film-director/_lib/camera-language.ts`                                                                                                                                      | A move's length is stated in seconds or beats, one unit per move, converted at the scene bpm (see "Counted time"); moves that state neither split the scene's remaining time evenly. Exclusivity rules enforced by `cameraSchema`'s `.refine()`s (keyframes vs. framing; preset vs. framing; `subject` vs. `target`). Per-move unit/direction contradictions enforced by `validateMove()` in `camera-language.ts` (e.g. `orbit` takes degrees + cw/ccw only, `push-in`/`pull-back` take meters and no direction). `move` ∈ `hold`/`push-in`/`pull-back`/`orbit`/`crane`/`pan`/`truck`/`zoom`/`roll`: `truck` takes meters + left/right, `zoom` takes degrees + in/out and rejects outside 20–100, `roll` takes degrees + cw/ccw. |
+| camera framing grammar          | scene                      | `subject` + `shotSize`/`angle`/`position` + `moves[]`, each move `{move, amount?, direction?, durationSeconds? \| durationBeats?, easing?}`        | `src/routes/test/film-director/_lib/camera-language.ts`                                                                                                                                      | A move's length is stated in seconds or beats, one unit per move, converted at the scene bpm (see "Counted time"); moves that state neither split the scene's remaining time evenly. Exclusivity rules enforced by `cameraSchema`'s `.refine()`s (keyframes vs. framing; preset vs. framing; `subject` vs. `target`; `track` only on `subject`; `shots` vs. each of framing/preset/keyframes/target). A performer `subject` may add `track: true` (aim) or `track: "follow"` to stay framed while they walk. Per-move unit/direction contradictions enforced by `validateMove()` in `camera-language.ts` (e.g. `orbit` takes degrees + cw/ccw only, `push-in`/`pull-back` take meters and no direction). `move` ∈ `hold`/`push-in`/`pull-back`/`orbit`/`crane`/`pan`/`truck`/`zoom`/`roll`: `truck` takes meters + left/right, `zoom` takes degrees + in/out and rejects outside 20–100, `roll` takes degrees + cw/ccw. Several framings in one scene are spoken as `shots: [...]` (2-16), each a full framing plus an optional duration, joined by hard cuts - see "Mid-scene cuts" under Grammar gaps. |
 | cast block                      | scene (`performance.cast`) | `{count: 1-8, defaults?, performers?: override[]}`                                                                                                 | `castSchema`                                                                                                                                                                                 | Mutually exclusive with `performance.performers` (schema `.refine()`). Overrides addressed by `id` (`performer-<n>`) fill their named slot; overrides with no `id` fill remaining slots in array order. An `id` that doesn't match any of the cast's performers rejects: `Cast override "<id>" does not match any of the <n> performers.`                                                                                                                                                                                                                                                     |
 
 ## Sequence directives
@@ -95,7 +102,9 @@ sources take controls. "DJ, starting at beta at south, one turn every step" is
 | Source                         | Shape      | Meaning                                                                                                                                                                                                                             |
 | ------------------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `{source: "demo"}`             | literal    | The film's shared sequence. Takes no controls.                                                                                                                                                                                      |
-| `{mirrorOf: "<performer id>"}` | literal    | That performer's sequence reflected across the north-south axis (`mirrorSequence`). Takes no controls — a mirror reflects its source exactly, so a control written here would have to disagree with the thing it claims to reflect. |
+| `{mirrorOf: "<performer id>"}` | literal    | That performer's sequence reflected across the north-south axis (`mirrorSequence`). Takes no controls — a mirror reflects its source exactly, so a control written here would have to disagree with the thing it claims to reflect. Sugar for `{transformOf, transforms: [{op: "mirror"}]}`; it is not rewritten, so existing films resolve unchanged. |
+| `{transformOf: "<performer id>", transforms: [...]}` | literal | That performer's sequence with a chain of 1-8 transforms applied in order, each an operation the Create module's Actions panel already owns. Ops: `mirror`, `flip`, `rotate` (`degrees` 45/90/135/180/225/270/315 plus `direction` `cw`/`ccw`), `swap-hands`, `invert`, `rewind`, `start-at` (`step` >= 2). `mirror`, `flip`, `rotate`, `invert`, and `rewind` take an optional `hand` (`left`/`right`/`both`, default `both`); `swap-hands` and `start-at` do not. Takes no controls. |
+| `{library: "<publicSequences id>"}` | literal | A saved sequence in the public library, by its document id. Read world-readable and signed out. Takes no controls — a library sequence is already finished. |
 | `{word: "DJDJDJ"}`             | 1–24 chars | Spell it. `length` echoes the spelled length.                                                                                                                                                                                       |
 | `{length: 8}`                  | 1–64       | Improvise that many steps.                                                                                                                                                                                                          |
 
@@ -141,14 +150,15 @@ n, right s). Name one, or give a {left, right} pair.` Locations accept `n`,
 
 ## Camera orbit direction convention
 
-`orbit` moves take `direction: "cw" | "ccw"`. The sign convention follows the
-azimuth math in `camera-language.ts` (see the comment above the `orbit`
-branch in `resolveDirectorCameraTrack`): increasing azimuth rotates +z toward
-+x, which is clockwise viewed from above, so `cw` increases the angle and
-`ccw` decreases it. The felt on-screen direction has not been visually
-confirmed against this convention yet — if Austen reads a `cw` orbit as
-turning the wrong way on screen, the fix is flipping the sign in that one
-branch, not the schema.
+`orbit` moves take `direction: "cw" | "ccw"`. The convention is the FELT one,
+confirmed by Austen on 2026-09-02 against Proving Grounds scenes 9 and 10:
+a `cw` orbit that starts from the front ends on the performers' screen-left
+end of the line, and `ccw` ends on the screen-right end. In the azimuth math
+of `camera-language.ts` (`resolveDirectorCameraTrack`, `orbit` branch) that
+means `cw` DECREASES the angle and `ccw` increases it, the opposite of the
+"clockwise viewed from above" reading the code originally shipped with. The
+two Proving Grounds scenes stay in the film as the standing reference for
+this convention.
 
 ## Camera roll direction convention
 
@@ -200,6 +210,25 @@ and each got an explicit ruling, not a "maybe later":
 
 None open. Closed so far:
 
+- **Per-step changes: effect, effort, and holds** (closed 2026-09-02). Before
+  this gap closed a performer carried one effect and one effort for a whole
+  scene and every performer counted the same clock, so changing either meant
+  cutting to a new scene. `stepEffects` and `stepEfforts` copy `stepPlanes`
+  exactly at the schema and resolver — a per-step entry whose value is a
+  scene-scope directive, a performer's list replacing the cast-default list —
+  and differ only at the runtime, where no per-step setter exists: the film
+  reads the playhead each frame and calls `setEffect`/`setEffort` when the
+  value in force changes, with `equipBuild: false` so a step-level effect never
+  swaps the prop and `recordUndo: false` so a looping film does not flood the
+  undo history (the option added to `character-instance-state.svelte.ts` for
+  this). `holds` is literal only and remaps one performer's playhead:
+  `resolveHeldStep` pins them at `fromStep` for the stated counts and leaves
+  them that far behind afterwards, driven into the viewer's existing
+  `performerSteps` host-override seam. Blocking does not pause during a hold,
+  and per-step effects read the HELD step, so an entry scheduled inside a hold
+  applies for its whole length. `/test/film-director?film=proving` scene 8
+  ("per-step-changes") shows both halves side by side.
+
 - **Beats as a time unit** (closed 2026-08-30). Before this gap closed, every
   duration field in the scene schema accepted only `durationSeconds` — a
   director who counts music had to do the beats-to-seconds arithmetic
@@ -244,6 +273,93 @@ None open. Closed so far:
   framing that looks straight up or down rejects (no sideways to slide along),
   and the sampler holds a flat fov or roll segment exactly instead of letting
   Catmull-Rom bow it toward the neighbouring keyframes.
+- **Camera tracks a walking performer** (closed 2026-09-01). Before this gap
+  closed, the compiler framed the cast where it stood when the scene opened and
+  the camera stayed aimed there, so a performer who walked left the frame
+  behind. A performer `subject` now takes `track: true` or `track: "follow"`.
+  `true` aims: the camera stays put and turns its target with the walker.
+  `"follow"` travels: target and position both move with them, so the framing
+  holds constant. The keyframe compiler is untouched — resolution records
+  `camera.tracking: {performerId, mode}` and `applyCameraTracking` in
+  `sample-film-director.ts` offsets the sampled camera by the performer's live
+  displacement from their resolved opening mark (measured from that mark, not
+  the first blocking keyframe, so blocking that opens on a hold still tracks).
+  `tracking` is optional and absent when unused, so every film that does not
+  track resolves byte-identically to its pre-tracking snapshot. Grammar only:
+  `track` on a preset's `target` or on a raw keyframe target rejects, because
+  those aim exactly where their target says.
+  `/test/film-director?film=proving` scene 4 ("tracking-shot") follows a
+  three-meter crossing with a medium shot that holds its framing throughout.
+- **Mid-scene cuts** (closed 2026-09-01). Before this gap closed a scene held
+  one framing for its whole length: to cut, a director split the shot into
+  separate scenes and rebuilt cast, location, and blocking in each. `camera`
+  now takes `shots: [...]`, 2–16 entries, each a complete framing (`subject`,
+  `shotSize`, `angle`, `position`, `moves`) plus an optional `durationSeconds`
+  or `durationBeats`. Shots that state no duration split the scene's remaining
+  time evenly, exactly as moves do; a stated total longer than the scene
+  rejects by name (`Camera shots total 20s but the scene's duration is 16s.`).
+  `compileCameraShots` (`camera-language.ts`) frames and compiles each shot in
+  its own window with the existing `computeCameraFraming` +
+  `compileCameraMoves`, shifts the result to where that window sits, and marks
+  the last keyframe of every shot but the final one `interpolation: "step"`.
+  The sampler holds that step until the next shot's first keyframe, which sits
+  at the same instant — the cut — and treats a step as a tangent barrier so the
+  Catmull-Rom spline on either side never bends toward framing that belongs to
+  another shot. One track out; nothing downstream of the keyframes changed.
+  Exclusive with a single top-level framing (`subject`/`shotSize`/`angle`/
+  `position`/`moves`), with `preset`, with raw `keyframes`, and with `target`
+  (`subject` is spoken inside each shot); a lone shot rejects, because one shot
+  is just a framing. Limit: `track` inside a shot rejects. Tracking offsets the
+  whole resolved track by one walker's displacement, which cannot describe a
+  walker followed in one shot and dropped in the next. Closing this gap also
+  made `transition: {kind: "cut"}` instantaneous — it had defaulted to a 0.8s
+  dissolve window, which is not a cut. A stated `durationSeconds` still wins.
+  `/test/film-director?film=proving` scene 5 ("three-shots") cuts twice inside
+  one scene: a wide front two-shot, a low close-up that pushes in, and a high
+  medium shot from behind.
+
+- **Sequence transforms and library source** (closed 2026-09-02). Before this
+  gap closed a performer could spin the film's demo, a generated sequence, or a
+  mirror of a neighbour's, and nothing else. `transformOf` plus `transforms`
+  now applies any chain of the Create module's Actions-panel transforms to
+  another performer's resolved sequence, and `library` plays a saved public
+  sequence by its `publicSequences` document id. `mirrorOf` stays as the
+  one-word spelling of a single mirror and is not rewritten, so every shipped
+  film resolves byte-identically. The derived graph is validated exactly one
+  level deep, the same rule mirrors already followed: a transform of a
+  transform has no original of its own to change.
+  `director-sequence-library.ts` takes injectable `generate`,
+  `loadLibrarySequence`, and `transforms` dependencies with the production
+  owners as defaults, caches each chain by its source's directive key plus the
+  chain itself, and falls back to the demo with a named reason when a library
+  id is missing. `/test/film-director?film=proving` scene 6
+  ("derived-sequences") plays one library sequence beside a 90-degree rotation
+  with swapped hands and a retrograde of it.
+
+- **Per-performer effect config** (ruled 2026-09-02). Investigated and
+  declined rather than built: see "Per-performer effect presets or overrides"
+  under "Spoken but not real". The grammar now names the constraint when asked.
+
+- **Blocking edges** (closed 2026-09-02). Four edges of the staging grammar,
+  three of which turned out to be one real capability and two documented
+  truths. A `walk` now takes `along: {arc, bulge?}` and bows to the
+  traveller's left or right on the way to its mark: the arc is the circle
+  through both marks whose sagitta is `bulge` chord-fractions high, sampled
+  into 4–16 chords of about half a meter each, with `facing: "travel"`
+  following the tangent and the speed check reading the curve's length rather
+  than the straight line between its ends. Nothing downstream changed —
+  a bowed walk is still a list of keyframes joined by straight segments, which
+  is exactly what `sampleDirectorBlockingTrack` and `collectStageExtent`
+  already assume. Offstage entrances needed no grammar at all: positions and
+  `to` were never bounded, and `stageExtent` already grows the ground to
+  include every mark, so an entrance is an opening mark outside the frame
+  followed by a walk in. `/test/film-director?film=proving` scene 7
+  ("edges-of-the-stage") does both at once: a performer opens five meters off
+  the right of the frame and walks in along a left-bending arc to their place
+  in the line. The fourth edge, standing and watching, is real:
+  `{source: "none"}` gives a performer no sequence, no prop phrase, and an
+  idling body, with blocking still applying so a watcher can walk on and
+  stand. `run` remains a rejection — see "Spoken but not real".
 
 ## Spoken but not real (proven rejections)
 
@@ -257,6 +373,19 @@ exist in the app's control surface at all:
   (`src/lib/shared/3d/components/controls/PropPopover.svelte`'s
   `getPerformerColor(index)`) are a fixed index-based UI accent, not a
   material property that can be assigned.
+- **Per-performer effect presets or overrides.** `effectPresets` and
+  `effectOverrides` are scene-scoped only. `EffectsConfigState`
+  (`src/lib/shared/effects/state/effects-config-state.svelte.ts`) holds one
+  configuration per effect id for the whole scene, `applyDirectorEffectPresets`
+  (`director-viewer-adapter.ts`) replaces that single state once per scene, and
+  `EffectOrchestrator3D.svelte` reads the same config for every performer's
+  tips. Two performers on the same effect always look the same; only different
+  effect ids look different. Written on a performer or in cast defaults, either
+  key rejects with: `Effect presets and overrides are scene-wide: ...` (full
+  text in `PERFORMER_EFFECT_CONFIG_MESSAGE`). Making this real means adding a
+  performer dimension to the effects state and threading the performer id
+  through the orchestrator's resolve calls. That is an effects-engine task,
+  ruled out of the director-language campaign on 2026-09-02.
 - **Character scale / height, per performer.** `setScale(scale)` exists on
   `AvatarSkeletonBuilder` (`@austencloud/scene-3d`), but nothing in this app
   calls it per performer — the only caller path is the global
@@ -278,3 +407,16 @@ exist in the app's control surface at all:
 - **A nonexistent character, prop, effect, effort, environment, or formation
   name.** Every axis validates against its live catalog and rejects by name
   (see the "Rejection behavior" column above) — there is no silent fallback.
+- **`run` (and any gait faster than a walk).** `move: "run"` parses and then
+  rejects by name. `@austencloud/scene-3d`'s `LocomotionAnimator` has one walk
+  clip bank and no run or jog state — its own state machine comment reads
+  `idle <-> walk (4-way directional) <-> jump/fall/land/crouch` — and
+  `analyzeClipGait` time-warps that single clip's playback rate to match ground
+  speed rather than switching gaits. `MAX_TRAVEL_SPEED` (2.6 m/s) is the point
+  where that warp gives out and the feet skate, so "faster than a walk" is
+  already the failure the blocking compiler guards against, not a mode it can
+  select. Rejection: `Performer "<id>": "run" is not a gait the 3D locomotion
+  has. There is one walk clip, time-warped to the ground, and past 2.6 m/s the
+  feet skate. Write a "walk".` Adding a run would mean importing run clips into
+  the scene package first, which `.claude/rules/locomotion.md` puts outside this
+  workbench.

@@ -10,8 +10,12 @@ import { resolve as resolvePath } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { resolveStepChange } from "../../../src/routes/test/film-director/_lib/director-step-changes";
+import { resolveHeldStep } from "../../../src/routes/test/film-director/_lib/director-step-holds";
+
 import { FILM_LIBRARY } from "../../../src/routes/test/film-director/_films/index";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
+import { sampleFilmDirector } from "../../../src/routes/test/film-director/_lib/sample-film-director";
 
 /** What scripts/build-film-posters.mjs writes. */
 const POSTER_WIDTH = 960;
@@ -251,6 +255,210 @@ describe("film library", () => {
     expect(at(10).rollDeg).toBe(10);
     // Scenes that never roll stay sparse:
     expect(onBeat.camera.keyframes.every((frame) => !("rollDeg" in frame))).toBe(true);
+
+    const tracking = resolved.scenes.find((s) => s.id === "tracking-shot")!;
+    expect(tracking.camera.tracking).toEqual({
+      performerId: "performer-2",
+      mode: "follow",
+    });
+    // Only the scene that asked carries the key at all, so the other three
+    // resolve exactly as they did before tracking existed.
+    for (const scene of [combined, onBeat, edges]) {
+      expect("tracking" in scene.camera).toBe(false);
+    }
+
+    const trackedWalker = tracking.performance.performers.find(
+      (performer) => performer.id === "performer-2"
+    )!;
+    const arrivalMark = trackedWalker.blocking.at(-1)!.position;
+    const walked = {
+      x: arrivalMark.x - trackedWalker.position.x,
+      z: arrivalMark.z - trackedWalker.position.z,
+    };
+    expect(Math.hypot(walked.x, walked.z)).toBeCloseTo(3, 6);
+
+    const sampleAt = (offset: number) =>
+      sampleFilmDirector(resolved, tracking.startSeconds + offset).camera;
+    const opening = sampleAt(0);
+    const crossed = sampleAt(4);
+    expect(crossed.target[0]! - opening.target[0]!).toBeCloseTo(walked.x, 6);
+    expect(crossed.target[2]! - opening.target[2]!).toBeCloseTo(walked.z, 6);
+    expect(crossed.position[0]! - opening.position[0]!).toBeCloseTo(walked.x, 6);
+    expect(crossed.position[2]! - opening.position[2]!).toBeCloseTo(walked.z, 6);
+    // The frame stops when the walker does: the standing half of the scene
+    // holds the offset the crossing produced rather than drifting on.
+    const standing = sampleAt(6);
+    expect(standing.position).toEqual(crossed.position);
+    expect(standing.target).toEqual(crossed.target);
+
+    const shots = resolved.scenes.find((s) => s.id === "three-shots")!;
+    expect(shots.durationSeconds).toBe(8);
+    const shotKeyframes = shots.camera.keyframes;
+    const atCut = (t: number) =>
+      shotKeyframes.filter((frame) => Math.abs(frame.atSeconds - t) < 1e-6);
+    // Six beats at 120bpm is 3s; the third shot takes what is left.
+    expect(atCut(3)).toHaveLength(2);
+    expect(atCut(6)).toHaveLength(2);
+    expect(atCut(3)[0]!.interpolation).toBe("step");
+    expect(atCut(6)[0]!.interpolation).toBe("step");
+
+    const shotSample = (offset: number) =>
+      sampleFilmDirector(resolved, shots.startSeconds + offset).camera;
+    const jump = (a: number, b: number) => {
+      const from = shotSample(a).position;
+      const to = shotSample(b).position;
+      return Math.hypot(to[0]! - from[0]!, to[1]! - from[1]!, to[2]! - from[2]!);
+    };
+    // A cut, not a glide: a metre of travel inside ten milliseconds.
+    expect(jump(2.99, 3)).toBeGreaterThan(1);
+    expect(jump(5.99, 6)).toBeGreaterThan(1);
+
+    const opener = shotKeyframes[0]!;
+    expect(opener.atSeconds).toBe(0);
+    const range = (frame: (typeof shotKeyframes)[number]) =>
+      Math.hypot(
+        frame.position[0]! - frame.target[0]!,
+        frame.position[1]! - frame.target[1]!,
+        frame.position[2]! - frame.target[2]!
+      );
+    // Shot one is wide; shot two is a close-up, so it sits nearer its subject.
+    expect(range(opener)).toBeGreaterThan(range(atCut(3)[1]!));
+
+    const derived = resolved.scenes.find((s) => s.id === "derived-sequences")!;
+    expect(
+      derived.performance.performers.map((performer) => performer.sequence)
+    ).toEqual([
+      { library: "0c7e6529-1dca-4254-903e-7068e38c030c" },
+      {
+        transformOf: "performer-1",
+        transforms: [
+          { op: "rotate", degrees: 90, direction: "cw" },
+          { op: "swap-hands" },
+        ],
+      },
+      { transformOf: "performer-1", transforms: [{ op: "rewind" }] },
+    ]);
+    expect(derived.durationSeconds).toBe(8);
+
+    const edgesOfStage = resolved.scenes.find(
+      (s) => s.id === "edges-of-the-stage"
+    )!;
+    expect(edgesOfStage.durationSeconds).toBe(8);
+    const entrant = edgesOfStage.performance.performers.find(
+      (performer) => performer.id === "performer-3"
+    )!;
+    // The opening mark is off camera and unclamped, and the stage extent
+    // stretched to include it rather than pulling it in.
+    expect(entrant.position).toEqual({ x: 8, z: -1 });
+    expect(edgesOfStage.performance.stageExtent).toContainEqual({ x: 8, z: -1 });
+
+    const walkFrames = entrant.blocking.filter((frame) => frame.walking);
+    // Fifteen chords: about 7.2m of arc at a 0.5m target chord length.
+    expect(walkFrames).toHaveLength(15);
+    expect(entrant.blocking.at(-1)!.position).toEqual({ x: 1.8, z: -0.3 });
+
+    // The path is a bow, not a line: the halfway keyframe sits well off the
+    // straight route between the two marks (the sagitta is a quarter of the
+    // 6.24m chord, about 1.56m).
+    const from = entrant.position;
+    const to = { x: 1.8, z: -0.3 };
+    const chord = Math.hypot(to.x - from.x, to.z - from.z);
+    const halfway = entrant.blocking[7]!.position;
+    const offChord =
+      Math.abs(
+        (to.x - from.x) * (from.z - halfway.z) -
+          (from.x - halfway.x) * (to.z - from.z)
+      ) / chord;
+    expect(offChord).toBeGreaterThan(1.4);
+
+    // Constant ground speed: every chord is the same length and lands on the
+    // same time step.
+    const legLengths = walkFrames.map((frame, index) => {
+      const next = entrant.blocking[index + 1]!;
+      return Math.hypot(
+        next.position.x - frame.position.x,
+        next.position.z - frame.position.z
+      );
+    });
+    for (const leg of legLengths) expect(leg).toBeCloseTo(legLengths[0]!, 6);
+    // Arc length over the six seconds twelve beats buy, under the 2.6 ceiling.
+    const arcLength = legLengths.reduce((sum, leg) => sum + leg, 0);
+    expect(arcLength / 6).toBeLessThan(2.6);
+    expect(arcLength).toBeGreaterThan(chord);
+
+    // The watcher spins nothing at all, beside two performers who do.
+    expect(
+      edgesOfStage.performance.performers.find((p) => p.id === "performer-1")!
+        .sequence
+    ).toEqual({ source: "none" });
+
+    const perStep = resolved.scenes.find((s) => s.id === "per-step-changes")!;
+    expect(perStep.durationSeconds).toBe(8);
+    const [changer, holder] = perStep.performance.performers;
+    expect(changer!.stepEffects).toEqual([
+      { step: 0, effect: "none" },
+      { step: 4, effect: "trails" },
+      { step: 8, effect: "fire" },
+    ]);
+    expect(changer!.stepEfforts).toEqual([{ step: 8, effort: "punch" }]);
+    expect(changer!.holds).toEqual([]);
+    expect(holder!.holds).toEqual([{ fromStep: 4, steps: 4 }]);
+    expect(holder!.stepEffects).toEqual([]);
+
+    // The lookup the frame loop performs: base value before the first entry,
+    // then each entry holding until the next supersedes it.
+    const effectAt = (step: number) =>
+      resolveStepChange(
+        changer!.stepEffects.map((entry) => ({
+          step: entry.step,
+          value: entry.effect,
+        })),
+        step,
+        changer!.effect
+      );
+    expect(effectAt(3)).toBe("none");
+    expect(effectAt(4)).toBe("trails");
+    expect(effectAt(7)).toBe("trails");
+    expect(effectAt(8)).toBe("fire");
+
+    // The hold, read the way the scene component reads it: pinned through its
+    // window, then four steps behind the shared clock for good.
+    const holdAt = (step: number) =>
+      resolveHeldStep(step, 0, holder!.beatOffset, holder!.holds, 0);
+    expect(holdAt(3)).toEqual({ step: 3, progress: 0 });
+    expect(holdAt(4)).toEqual({ step: 4, progress: 0 });
+    expect(holdAt(7)).toEqual({ step: 4, progress: 0 });
+    expect(holdAt(8)).toEqual({ step: 4, progress: 0 });
+    expect(holdAt(12)).toEqual({ step: 8, progress: 0 });
+
+    // Every scene that says "cut" cuts: no dissolve window anywhere.
+    for (const scene of [onBeat, tracking, shots, derived, edgesOfStage, perStep]) {
+      expect(scene.transition).toEqual({ kind: "cut", durationSeconds: 0 });
+    }
+  });
+
+  it("proving grounds stages the orbit direction pair identically except for the sign", () => {
+    const proving = FILM_LIBRARY.find((entry) => entry.key === "proving")!;
+    const resolved = resolveFilmDirectorSpec(proving.film);
+
+    const cw = resolved.scenes.find((scene) => scene.id === "orbit-clockwise")!;
+    const ccw = resolved.scenes.find(
+      (scene) => scene.id === "orbit-counterclockwise"
+    )!;
+    expect(cw).toBeDefined();
+    expect(ccw).toBeDefined();
+    expect(cw.performance.performers.map((p) => p.characterId)).toEqual(
+      ccw.performance.performers.map((p) => p.characterId)
+    );
+
+    const cwStart = cw.camera.keyframes[0]!.position;
+    const cwEnd = cw.camera.keyframes.at(-1)!.position;
+    const ccwEnd = ccw.camera.keyframes.at(-1)!.position;
+    // Same start, mirrored end: a 90 degree orbit each way from the same
+    // front framing lands on opposite sides of the line.
+    expect(ccw.camera.keyframes[0]!.position).toEqual(cwStart);
+    expect(cwEnd[0]).toBeCloseTo(-ccwEnd[0], 6);
+    expect(cwEnd[2]).toBeCloseTo(ccwEnd[2], 6);
   });
 
   it("Chance Suite's identical directives on different scenes draw from different streams", () => {

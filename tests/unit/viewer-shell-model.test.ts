@@ -33,6 +33,19 @@ describe("viewer shell model", () => {
     });
   });
 
+  it("gives Performances a narrower inspector than the effects inspector", () => {
+    // The default gap is the seam travel the Motion -> Performances transition
+    // animates. Losing it turns Gate 5 back into a flat crossfade.
+    expect(viewerInspectorConstraints("performance")).toEqual({
+      minWidth: 360,
+      maxWidth: 900,
+    });
+    expect(resolveExportSidebarMinWidth(null, "performance")).toBe(1188);
+    expect(resolveExportSidebarMinWidth(null, "performance")).toBeLessThan(
+      resolveExportSidebarMinWidth(null, "motion")
+    );
+  });
+
   it("keeps copied-link feedback in the open share menu", () => {
     const idle = buildViewerShareActions(false);
     const copied = buildViewerShareActions(true);

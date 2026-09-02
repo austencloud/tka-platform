@@ -21,6 +21,7 @@ import {
   DIRECTOR_MOTION_TYPE_FILTERS,
   DIRECTOR_ORIENTATIONS,
   DIRECTOR_POSITION_GROUPS,
+  DIRECTOR_ROTATION_DEGREES,
   DIRECTOR_SEQUENCE_LEVELS,
   type DirectorPerformerSequence,
 } from "./sequence-language";
@@ -43,6 +44,8 @@ export const FILM_DIRECTOR_DIRECTIVE_AXES = [
   "leftPlane",
   "rightPlane",
   "stepPlane",
+  "stepEffect",
+  "stepEffort",
 ] as const;
 
 const seedSchema = z
@@ -262,6 +265,40 @@ const stepPlaneEntrySchema = z
   })
   .strict();
 
+// Per-step effect and effort are scene-scope directives for the same reason
+// stepPlanes is: the value is pinned to one (performer, step) pair, so
+// distinct has no cast to spread across and sameAs has no matching pair to
+// copy from. Unlike a plane there is no hand — an effect and an effort are
+// carried by the whole performer.
+const stepEffectEntrySchema = z
+  .object({
+    step: z.number().int().min(0),
+    effect: directiveSchema(effectIdSchema),
+  })
+  .strict();
+
+const stepEffortEntrySchema = z
+  .object({
+    step: z.number().int().min(0),
+    effort: directiveSchema(effortIdSchema),
+  })
+  .strict();
+
+/**
+ * Time stops for one performer's prop phrase. Literal only: a hold is a
+ * statement about this performer's clock, and there is no catalog of holds to
+ * draw one from. `fromStep` is where the phrase freezes; `steps` is how long
+ * it stays frozen, in the same counts the rest of the cast keeps dancing.
+ * Overlap is checked at resolve time, where the scene and performer are known
+ * and the rejection can name them.
+ */
+const holdSchema = z
+  .object({
+    fromStep: z.number().int().min(0),
+    steps: z.number().int().min(1, { error: "A hold lasts at least one step." }),
+  })
+  .strict();
+
 const cameraTargetSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("group") }).strict(),
   z
@@ -269,6 +306,11 @@ const cameraTargetSchema = z.discriminatedUnion("kind", [
       kind: z.literal("performer"),
       performerId: z.string().min(1),
       height: finiteNumber.optional(),
+      // Keep this performer in frame while they walk. `true` aims: the camera
+      // stays put and turns its target with the walker. "follow" travels:
+      // camera and target both move with them, holding the framing constant.
+      // Only meaningful on `subject` — see the cameraSchema refine below.
+      track: z.union([z.literal(true), z.literal("follow")]).optional(),
     })
     .strict(),
   z.object({ kind: z.literal("point"), position: vector3Schema }).strict(),
@@ -381,7 +423,60 @@ const loopSchema = z.union([
     .strict(),
 ]);
 
-const SEQUENCE_SOURCE_KEYS = ["source", "mirrorOf", "word", "length"] as const;
+const transformHandSchema = z.enum(["left", "right", "both"]);
+
+/**
+ * One operation in a `transforms` chain. Each branch is strict, so a `hand` on
+ * `swap-hands` (which has no per-hand form) is named rather than ignored.
+ */
+const sequenceTransformSchema = z.discriminatedUnion("op", [
+  z
+    .object({ op: z.literal("mirror"), hand: transformHandSchema.optional() })
+    .strict(),
+  z
+    .object({ op: z.literal("flip"), hand: transformHandSchema.optional() })
+    .strict(),
+  z
+    .object({
+      op: z.literal("rotate"),
+      degrees: z.literal(DIRECTOR_ROTATION_DEGREES, {
+        error:
+          "A sequence rotates in 45-degree steps: 45, 90, 135, 180, 225, 270, or 315.",
+      }),
+      direction: z.enum(["cw", "ccw"]),
+      hand: transformHandSchema.optional(),
+    })
+    .strict(),
+  z.object({ op: z.literal("swap-hands") }).strict(),
+  z
+    .object({ op: z.literal("invert"), hand: transformHandSchema.optional() })
+    .strict(),
+  z
+    .object({ op: z.literal("rewind"), hand: transformHandSchema.optional() })
+    .strict(),
+  z
+    .object({
+      op: z.literal("start-at"),
+      step: z
+        .number()
+        .int()
+        .min(2, {
+          error:
+            "A sequence already starts at step 1. Name a later step to start from.",
+        })
+        .max(64),
+    })
+    .strict(),
+]);
+
+const SEQUENCE_SOURCE_KEYS = [
+  "source",
+  "mirrorOf",
+  "transformOf",
+  "library",
+  "word",
+  "length",
+] as const;
 const SEQUENCE_CONTROL_KEYS = [
   "startPosition",
   "startOrientation",
@@ -403,10 +498,12 @@ const quoted = (keys: readonly string[]) =>
 /**
  * What one performer spins. `demo` is the film's shared sequence, `word` and
  * `length` generate a new one through the same pipeline the Create module
- * uses, and `mirrorOf` reflects another performer's sequence across the
- * north-south axis — the transform that makes a pair read as mirrored rather
- * than merely synchronized. Deliberately not a directive axis: "mirror her"
- * names one specific performer, so a random pick would have nothing to mean.
+ * uses, `mirrorOf` reflects another performer's sequence across the
+ * north-south axis, `transformOf` plus `transforms` applies any chain of the
+ * Actions-panel transforms to another performer's sequence, and `library`
+ * plays a saved public sequence by its id. Deliberately not directive axes:
+ * "mirror her" names one specific performer, and a library id is a literal
+ * reference, so a random pick would have nothing to mean.
  *
  * One flat object rather than a union of four, because a union reports every
  * branch's failure at once: a misspelled `flow` would arrive buried under
@@ -417,8 +514,15 @@ const quoted = (keys: readonly string[]) =>
  */
 const performerSequenceSchema = z
   .object({
-    source: z.literal("demo").optional(),
+    source: z.enum(["demo", "none"]).optional(),
     mirrorOf: z.string().min(1).optional(),
+    transformOf: z.string().min(1).optional(),
+    transforms: z
+      .array(sequenceTransformSchema)
+      .min(1, { error: 'A "transforms" list needs at least one operation.' })
+      .max(8)
+      .optional(),
+    library: z.string().min(1).optional(),
     word: z.string().min(1).max(24).optional(),
     length: z.number().int().min(1).max(64).optional(),
     startPosition: positionRefSchema.optional(),
@@ -445,7 +549,7 @@ const performerSequenceSchema = z
       ctx.addIssue({
         code: "custom",
         message:
-          'A sequence names one source: {source: "demo"}, a "word" to spell, a "length" to improvise, or a "mirrorOf" to reflect.',
+          'A sequence names one source: {source: "demo"}, {source: "none"} to stand and watch, a "word" to spell, a "length" to improvise, a "mirrorOf" to reflect, a "transformOf" to change, or a "library" id to play.',
       });
       return;
     }
@@ -456,19 +560,41 @@ const performerSequenceSchema = z
       });
       return;
     }
+    if (named[0] === "transformOf" && value.transforms === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          '"transformOf" names whose sequence to change; "transforms" says what changes. Add a "transforms" list.',
+      });
+      return;
+    }
+    if (named[0] !== "transformOf" && value.transforms !== undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          '"transforms" only means something on a "transformOf" sequence. Name the performer to transform, or remove the list.',
+      });
+      return;
+    }
     if (named[0] === "word" || named[0] === "length") return;
 
     const controls = SEQUENCE_CONTROL_KEYS.filter(
       (key) => value[key] !== undefined
     );
     if (controls.length === 0) return;
-    ctx.addIssue({
-      code: "custom",
-      message:
-        named[0] === "mirrorOf"
-          ? `A mirror reflects another performer's sequence exactly, so it carries no controls of its own. Move ${quoted(controls)} to the performer being mirrored.`
-          : `The demo sequence is the film's shared one, so it carries no controls of its own. Remove ${quoted(controls)}, or spell a "word" of your own.`,
-    });
+    // `source` covers two spellings under one key, so it branches on the
+    // value while the rest branch on the key.
+    const sourceRejection =
+      value.source === "none"
+        ? `A performer who stands and watches is not spinning anything, so there is nothing for ${quoted(controls)} to shape. Remove it, or give them a "word" of their own.`
+        : `The demo sequence is the film's shared one, so it carries no controls of its own. Remove ${quoted(controls)}, or spell a "word" of your own.`;
+    const CONTROL_REJECTIONS: Record<string, string> = {
+      mirrorOf: `A mirror reflects another performer's sequence exactly, so it carries no controls of its own. Move ${quoted(controls)} to the performer being mirrored.`,
+      transformOf: `A transformed sequence is another performer's sequence changed in a stated way, so it carries no controls of its own. Move ${quoted(controls)} to the performer being transformed.`,
+      library: `A library sequence is already finished, so it carries no controls of its own. Remove ${quoted(controls)}, or spell a "word" of your own.`,
+      source: sourceRejection,
+    };
+    ctx.addIssue({ code: "custom", message: CONTROL_REJECTIONS[named[0]!]! });
   })
   // The refinement above is the proof that exactly one source key is present,
   // which is what makes the narrower union type true.
@@ -483,8 +609,18 @@ export type { DirectorPerformerSequence };
  */
 const blockingMoveSchema = z
   .object({
-    move: z.enum(["stand", "walk", "turn"]),
+    move: z.enum(["stand", "walk", "turn", "run"]),
     to: position2Schema.optional(),
+    along: z
+      .object({
+        arc: z.enum(["left", "right"]),
+        // Sagitta as a fraction of the chord: 0.5 is a semicircle, 1.5 loops
+        // most of the way round. The meaning and the geometry live in
+        // `blocking-language.ts`.
+        bulge: finiteNumber.gt(0).max(1.5).optional(),
+      })
+      .strict()
+      .optional(),
     direction: z.enum(["forward", "backward", "left", "right"]).optional(),
     amount: z
       .union([
@@ -528,6 +664,37 @@ const sceneBlockingSchema = z
   .strict()
   .superRefine(atMostOneTimeUnit);
 
+/**
+ * Spoken but not real. A director will plausibly ask for one performer's
+ * trails to be long and another's short. The effects engine cannot do it:
+ * `EffectsConfigState` holds one configuration per effect id for the whole
+ * scene and `EffectOrchestrator3D` reads that single config for every
+ * performer's tips. Accept the keys so the rejection can explain the
+ * constraint instead of zod's "unrecognized key".
+ */
+export const PERFORMER_EFFECT_CONFIG_MESSAGE =
+  'Effect presets and overrides are scene-wide: the effects engine keeps one configuration per effect id for the whole scene, so two performers using the same effect always look the same. Move "effectPresets"/"effectOverrides" to the scene, or give the performers different effects.';
+
+const performerEffectConfigKeys = {
+  effectPresets: z.unknown().optional(),
+  effectOverrides: z.unknown().optional(),
+};
+
+function rejectPerformerEffectConfig(
+  value: { effectPresets?: unknown; effectOverrides?: unknown },
+  ctx: z.RefinementCtx
+): void {
+  for (const key of ["effectPresets", "effectOverrides"] as const) {
+    if (value[key] !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [key],
+        message: PERFORMER_EFFECT_CONFIG_MESSAGE,
+      });
+    }
+  }
+}
+
 const performerSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -545,8 +712,13 @@ const performerSchema = z
     leftPlane: directiveSchema(planeSchema).optional(),
     rightPlane: directiveSchema(planeSchema).optional(),
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
+    stepEffects: z.array(stepEffectEntrySchema).optional(),
+    stepEfforts: z.array(stepEffortEntrySchema).optional(),
+    holds: z.array(holdSchema).max(16).optional(),
+    ...performerEffectConfigKeys,
   })
-  .strict();
+  .strict()
+  .superRefine(rejectPerformerEffectConfig);
 
 const castDefaultsSchema = z
   .object({
@@ -560,8 +732,13 @@ const castDefaultsSchema = z
     leftPlane: directiveSchema(planeSchema).optional(),
     rightPlane: directiveSchema(planeSchema).optional(),
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
+    stepEffects: z.array(stepEffectEntrySchema).optional(),
+    stepEfforts: z.array(stepEffortEntrySchema).optional(),
+    holds: z.array(holdSchema).max(16).optional(),
+    ...performerEffectConfigKeys,
   })
-  .strict();
+  .strict()
+  .superRefine(rejectPerformerEffectConfig);
 
 const castSchema = z
   .object({
@@ -599,53 +776,76 @@ const locationSchema = z
   })
   .strict();
 
+const cameraMoveSchema = z
+  .object({
+    move: z.enum([
+      "hold",
+      "push-in",
+      "pull-back",
+      "orbit",
+      "crane",
+      "pan",
+      "truck",
+      "zoom",
+      "roll",
+    ]),
+    direction: z
+      .enum(["cw", "ccw", "up", "down", "left", "right", "in", "out"])
+      .optional(),
+    amount: z
+      .union([
+        z.object({ degrees: finiteNumber }).strict(),
+        z.object({ meters: finiteNumber.positive() }).strict(),
+      ])
+      .optional(),
+    durationSeconds: finiteNumber.positive().optional(),
+    durationBeats: finiteNumber.positive().optional(),
+    easing: z.enum(DIRECTOR_EASINGS).optional(),
+  })
+  .strict()
+  .superRefine(atMostOneTimeUnit);
+
+/**
+ * One framing, spelled the same whether it is the scene's only framing or one
+ * shot among several. Shared so a shot can never drift from what the top-level
+ * camera accepts.
+ */
+const cameraFramingFields = {
+  subject: cameraTargetSchema.optional(),
+  shotSize: z.enum(["close-up", "medium", "wide", "extreme-wide"]).optional(),
+  angle: z.enum(["low", "eye", "high", "top"]).optional(),
+  position: z
+    .union([
+      z.enum(["front", "left", "right", "behind"]),
+      z.object({ degrees: finiteNumber.min(-360).max(360) }).strict(),
+    ])
+    .optional(),
+  moves: z.array(cameraMoveSchema).min(1).max(16).optional(),
+};
+
+/** A framing plus how long it stays on screen. Consecutive shots hard-cut. */
+const cameraShotSchema = z
+  .object({
+    ...cameraFramingFields,
+    durationSeconds: finiteNumber.positive().optional(),
+    durationBeats: finiteNumber.positive().optional(),
+  })
+  .strict()
+  .superRefine(atMostOneTimeUnit);
+
 const cameraSchema = z
   .object({
     preset: z.enum(DIRECTOR_CAMERA_PRESETS).optional(),
     target: cameraTargetSchema.optional(),
     orbitDegrees: finiteNumber.min(-720).max(720).optional(),
     keyframes: z.array(cameraKeyframeSchema).min(1).max(32).optional(),
-    subject: cameraTargetSchema.optional(),
-    shotSize: z.enum(["close-up", "medium", "wide", "extreme-wide"]).optional(),
-    angle: z.enum(["low", "eye", "high", "top"]).optional(),
-    position: z
-      .union([
-        z.enum(["front", "left", "right", "behind"]),
-        z.object({ degrees: finiteNumber.min(-360).max(360) }).strict(),
-      ])
-      .optional(),
-    moves: z
-      .array(
-        z
-          .object({
-            move: z.enum([
-              "hold",
-              "push-in",
-              "pull-back",
-              "orbit",
-              "crane",
-              "pan",
-              "truck",
-              "zoom",
-              "roll",
-            ]),
-            direction: z
-              .enum(["cw", "ccw", "up", "down", "left", "right", "in", "out"])
-              .optional(),
-            amount: z
-              .union([
-                z.object({ degrees: finiteNumber }).strict(),
-                z.object({ meters: finiteNumber.positive() }).strict(),
-              ])
-              .optional(),
-            durationSeconds: finiteNumber.positive().optional(),
-            durationBeats: finiteNumber.positive().optional(),
-            easing: z.enum(DIRECTOR_EASINGS).optional(),
-          })
-          .strict()
-          .superRefine(atMostOneTimeUnit)
-      )
-      .min(1)
+    ...cameraFramingFields,
+    shots: z
+      .array(cameraShotSchema)
+      .min(2, {
+        message:
+          "One shot is just a framing. State it directly on camera, or give shots at least two entries to cut between.",
+      })
       .max(16)
       .optional(),
   })
@@ -686,7 +886,64 @@ const cameraSchema = z
     message:
       'Use "subject" with framing grammar, "target" with presets/keyframes.',
     path: ["subject"],
-  });
+  })
+  // cameraTargetSchema is shared by subject, target, and keyframe targets, so
+  // `track` is syntactically sayable in all three. It only means something on
+  // `subject`: a preset or a raw keyframe aims exactly where its target says,
+  // and silently ignoring the word would read as a camera that refused to move.
+  .refine(
+    (camera) =>
+      !(camera.target?.kind === "performer" && camera.target.track) &&
+      !camera.keyframes?.some(
+        (frame) => frame.target?.kind === "performer" && frame.target.track
+      ),
+    {
+      message:
+        'Tracking is spoken on "subject" with framing grammar. Presets and raw keyframes aim where their targets say.',
+      path: ["target"],
+    }
+  )
+  .refine(
+    (camera) =>
+      !camera.shots ||
+      !(
+        camera.subject ||
+        camera.shotSize ||
+        camera.angle ||
+        camera.position ||
+        camera.moves
+      ),
+    {
+      message:
+        'Shots and a single framing are exclusive. Put every framing inside "shots".',
+      path: ["shots"],
+    }
+  )
+  .refine((camera) => !(camera.shots && camera.preset), {
+    message: "A preset and shots are exclusive. Shots are their own framing.",
+    path: ["shots"],
+  })
+  .refine((camera) => !(camera.shots && camera.keyframes), {
+    message: "Raw keyframes and shots are exclusive. Use one.",
+    path: ["shots"],
+  })
+  .refine((camera) => !(camera.shots && camera.target), {
+    message: 'Use "subject" inside each shot, not "target".',
+    path: ["shots"],
+  })
+  // Tracking offsets the WHOLE resolved track by a walker's displacement, so
+  // it cannot describe a walker followed in one shot and ignored in the next.
+  .refine(
+    (camera) =>
+      !camera.shots?.some(
+        (shot) => shot.subject?.kind === "performer" && shot.subject.track
+      ),
+    {
+      message:
+        'Tracking and shots do not combine yet. Track a walker with a single framing, or cut between shots without "track".',
+      path: ["shots"],
+    }
+  );
 
 const transitionSchema = z
   .object({
@@ -794,6 +1051,21 @@ export interface ResolvedDirectorStepPlane {
   plane: Plane;
 }
 
+export interface ResolvedDirectorStepEffect {
+  step: number;
+  effect: EffectType;
+}
+
+export interface ResolvedDirectorStepEffort {
+  step: number;
+  effort: EffortId;
+}
+
+export interface ResolvedDirectorHold {
+  fromStep: number;
+  steps: number;
+}
+
 export interface ResolvedDirectorPerformer {
   id: string;
   name: string;
@@ -813,6 +1085,9 @@ export interface ResolvedDirectorPerformer {
   leftPlane: Plane;
   rightPlane: Plane;
   stepPlanes: ResolvedDirectorStepPlane[];
+  stepEffects: ResolvedDirectorStepEffect[];
+  stepEfforts: ResolvedDirectorStepEffort[];
+  holds: ResolvedDirectorHold[];
 }
 
 export interface ResolvedDirectorCameraKeyframe {
@@ -872,6 +1147,14 @@ export interface ResolvedDirectorScene {
      */
     substitutedFor: DirectorCameraPreset | null;
     keyframes: ResolvedDirectorCameraKeyframe[];
+    /**
+     * Present only when the scene's subject asked to be tracked. The sampler
+     * offsets the compiled camera by this performer's live displacement from
+     * their opening mark: "aim" moves the target, "follow" moves target and
+     * position together. Absent (not null) on every other scene so films that
+     * never track resolve byte-identically to their pre-tracking snapshots.
+     */
+    tracking?: { performerId: string; mode: "aim" | "follow" };
   };
 }
 

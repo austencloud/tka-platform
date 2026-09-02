@@ -27,6 +27,9 @@ const shellLayoutState = read(
   "src/lib/shared/sequence-viewer/state/viewer-shell-layout-state.svelte.ts"
 );
 const panelGroup = read("src/lib/shared/panels/PanelGroup.svelte");
+const shellModel = read(
+  "src/lib/shared/sequence-viewer/services/viewer-shell-model.ts"
+);
 const viewerModeDissolve = read(
   "src/lib/shared/transitions/viewer-mode-dissolve.ts"
 );
@@ -338,6 +341,76 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Non-singleton canvas frames:");
   });
 
+  it("lets every inspector panel choose its own anchor and surfaces the track", () => {
+    // An automatic start margin absorbs free space when the panel fits, so a
+    // departing surface stays at the viewport edge and fades without sliding,
+    // and collapses to zero when it does not, so an arriving surface is
+    // revealed from the seam with its overflow past the screen edge. Anchoring
+    // by hand gets one direction right and the other wrong.
+    const autoAnchored = (marker: string) => {
+      const index = shell.indexOf(marker);
+      expect(index, `${marker} has no composed-width rule`).toBeGreaterThan(-1);
+      expect(shell.slice(index, index + 320)).toContain("margin-left: auto");
+    };
+    autoAnchored("> :global(.export-panel.sidebar) {");
+    autoAnchored("> :global(.performance-inspector) {");
+    autoAnchored(":global(.export-panel:not(.inline)) {");
+    autoAnchored("> :global(.art-settings-panel) {");
+
+    // The surface belongs to the layer, which spans the whole track, not to the
+    // panel, which does not. Otherwise the band the panel does not reach shows
+    // the workspace through the container's partly transparent fill.
+    const layerIndex = shell.indexOf(".inspector-content-layer {");
+    expect(layerIndex).toBeGreaterThan(-1);
+    expect(shell.slice(layerIndex, layerIndex + 320)).toContain(
+      "background: var(--theme-panel-bg"
+    );
+    const resetIndex = shell.indexOf(
+      ".inspector-content-layer :global(.export-panel),"
+    );
+    expect(resetIndex, "panels still paint their own surface").toBeGreaterThan(
+      -1
+    );
+    expect(shell.slice(resetIndex, resetIndex + 260)).toContain(
+      "background: transparent"
+    );
+  });
+
+  it("composes every inspector layer at its destination width", () => {
+    // A settings surface that is width-100% of the animating inspector track
+    // re-wraps on every frame of the seam animation, which reads as the panel
+    // sliding and settling rather than being revealed. Each persistent layer
+    // pins its own destination width instead.
+    const composed = (layer: string, token: string) => {
+      const index = shell.indexOf(`.${layer}
+`);
+      expect(index, `${layer} has no composed-width rule`).toBeGreaterThan(-1);
+      const block = shell.slice(index, index + 400);
+      expect(block).toContain(`width: var(--${token})`);
+    };
+    composed("motion-settings-layer", "export-sidebar-width");
+    composed("performance-inspector-layer", "performance-sidebar-width");
+    composed("art-settings-layer", "export-sidebar-width");
+    // The card pin must hang off the persistent layer, not the mode-conditional
+    // container class: Svelte removes that class the instant the mode changes,
+    // so the departing Card panel loses its width mid-transition.
+    composed("card-settings-layer", "card-sidebar-width");
+    // Direct manipulation still wins over the composed width.
+    for (const layer of [
+      "motion-settings-layer",
+      "performance-inspector-layer",
+      "art-settings-layer",
+      "card-settings-layer",
+    ]) {
+      const index = shell.indexOf(`"true"])
+    .${layer}`);
+      expect(index, `${layer} has no manual-resize override`).toBeGreaterThan(
+        -1
+      );
+      expect(shell.slice(index, index + 400)).toContain("width: 100%");
+    }
+  });
+
   it("composes Performances through the persistent stage and inspector tracks", () => {
     expect(workspacePanels).toContain("data-persistent-viewer-stage");
     expect(shell).toContain("data-persistent-performance-stage");
@@ -353,8 +426,13 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(shell).toContain("performance-inspector-layer");
     expect(shell).toContain("takeoverActive={performanceEditorActive}");
     expect(shellLayoutState).toContain("showVideoGallery ||");
-    expect(shellLayoutState).toContain(
-      "isVideoExportActive || showVideoGallery"
+    // Performances owns its own inspector profile. The gap between its width
+    // and the effects inspector width is the seam travel Gate 5 animates.
+    expect(shellLayoutState).toContain('? "performance"');
+    expect(shellModel).toContain("performance: { defaultWidth: 400");
+    expect(shell).toContain("--performance-sidebar-width");
+    expect(shell).toContain(
+      "class:performance-inspector={layout.inspectorProfile ==="
     );
     expect(workspacePanels).toContain("<DualSourceCrossfade");
     expect(shell).toContain("<DualSourceCrossfade");

@@ -49,6 +49,7 @@
   } from "$lib/features/flow-fest-sim/domain/flow-fest-population";
   import type { FlowFestPerformerSequenceProof } from "./flow-fest-performer-sequences";
   import FlowFestForestEcology from "./FlowFestForestEcology.svelte";
+  import FlowFestParkedCars from "./FlowFestParkedCars.svelte";
   import FlowFestGroundSurface from "./FlowFestGroundSurface.svelte";
   import FlowFestHeroFire from "./FlowFestHeroFire.svelte";
   import { getFlowFestVisualProfile } from "./flow-fest-visual-system";
@@ -307,6 +308,12 @@
         groundLifeAssetsReady: 0,
       },
       groundSurface: next.groundSurface.audit,
+      parkedCars: {
+        placements: next.parkedCars.length,
+        models: new Set(next.parkedCars.map((car) => car.modelId)).size,
+        carInstancesReady: 0,
+        carModelsReady: 0,
+      } as Record<string, unknown>,
     };
     (globalThis as Record<string, unknown>).__flowFestProduction = proof;
     props.onReady?.({
@@ -444,6 +451,50 @@
     props.onError?.(
       `Forest ecology assets failed to load (${report.failed.length} of ${report.expected}): ${detail}`
     );
+  }
+
+  let reportedParkedCarAssetFailure = "";
+
+  function recordParkedCarAssets(
+    report: FlowFestForestEcologyAssetReport
+  ): void {
+    const proof = (globalThis as Record<string, unknown>)
+      .__flowFestProduction as
+      | { parkedCars?: Record<string, unknown> }
+      | undefined;
+    if (proof?.parkedCars) {
+      proof.parkedCars.assetStatus = report.status;
+      proof.parkedCars.assetsExpected = report.expected;
+      proof.parkedCars.assetsLoaded = report.ready;
+      proof.parkedCars.assetsPending = report.pending;
+      proof.parkedCars.assetsFailed = report.failed;
+    }
+    if (report.status !== "failed") return;
+    const signature = report.failed.map((entry) => entry.key).join(",");
+    if (signature === reportedParkedCarAssetFailure) return;
+    reportedParkedCarAssetFailure = signature;
+    const detail = report.failed
+      .map((entry) => `${entry.key} (${entry.url}): ${entry.message}`)
+      .join("; ");
+    console.error(
+      `[flow-fest-sim] Parked cars are incomplete — ${report.failed.length} of ${report.expected} bodies failed to load. ${detail}`
+    );
+    props.onError?.(
+      `Parked-car assets failed to load (${report.failed.length} of ${report.expected}): ${detail}`
+    );
+  }
+
+  function recordParkedCarsReady(details: {
+    carInstances: number;
+    carModels: number;
+  }): void {
+    const proof = (globalThis as Record<string, unknown>)
+      .__flowFestProduction as
+      | { parkedCars?: Record<string, unknown> }
+      | undefined;
+    if (!proof?.parkedCars) return;
+    proof.parkedCars.carInstancesReady = details.carInstances;
+    proof.parkedCars.carModelsReady = details.carModels;
   }
 
   function recordForestEcologyCulling(
@@ -731,6 +782,12 @@
     onReady={recordForestEcologyReady}
     onCullingSample={recordForestEcologyCulling}
     onGrassCullingSample={recordForestGrassCulling}
+  />
+  <FlowFestParkedCars
+    placements={dressing.parkedCars}
+    visible={props.showCampDressing !== false}
+    onAssetReport={recordParkedCarAssets}
+    onReady={recordParkedCarsReady}
   />
 {/if}
 

@@ -91,7 +91,99 @@ describe("per-performer sequence axis", () => {
           { id: "c", sequence: { mirrorOf: "b" } },
         ])
       )
-    ).toThrow(/already a mirror/);
+    ).toThrow(/already derived from another performer's/);
+  });
+
+  it("resolves a transform chain that names another performer", () => {
+    const spec = resolveFilmDirectorSpec(
+      named([
+        { id: "lead", sequence: { word: "SAILOR" } },
+        {
+          id: "second",
+          sequence: { transformOf: "lead", transforms: [{ op: "rewind" }] },
+        },
+      ])
+    );
+    expect(spec.scenes[0]!.performance.performers[1]!.sequence).toEqual({
+      transformOf: "lead",
+      transforms: [{ op: "rewind" }],
+    });
+  });
+
+  it("resolves a transform of a library performer", () => {
+    const spec = resolveFilmDirectorSpec(
+      named([
+        {
+          id: "lead",
+          sequence: { library: "0c7e6529-1dca-4254-903e-7068e38c030c" },
+        },
+        {
+          id: "second",
+          sequence: { transformOf: "lead", transforms: [{ op: "flip" }] },
+        },
+      ])
+    );
+    expect(
+      spec.scenes[0]!.performance.performers.map((p) => p.sequence)
+    ).toEqual([
+      { library: "0c7e6529-1dca-4254-903e-7068e38c030c" },
+      { transformOf: "lead", transforms: [{ op: "flip" }] },
+    ]);
+  });
+
+  it("rejects a performer transforming themselves", () => {
+    expect(() =>
+      resolveFilmDirectorSpec(
+        named([
+          {
+            id: "solo",
+            sequence: { transformOf: "solo", transforms: [{ op: "invert" }] },
+          },
+        ])
+      )
+    ).toThrow(/cannot transform themselves/);
+  });
+
+  it("rejects a transform of a performer who is not in the scene", () => {
+    expect(() =>
+      resolveFilmDirectorSpec(
+        named([
+          {
+            id: "solo",
+            sequence: { transformOf: "ghost", transforms: [{ op: "invert" }] },
+          },
+        ])
+      )
+    ).toThrow(/transforms "ghost", who is not in this scene/);
+  });
+
+  it("rejects a transform of a mirror, and a mirror of a transform", () => {
+    expect(() =>
+      resolveFilmDirectorSpec(
+        named([
+          { id: "a", sequence: { word: "AB" } },
+          { id: "b", sequence: { mirrorOf: "a" } },
+          {
+            id: "c",
+            sequence: { transformOf: "b", transforms: [{ op: "flip" }] },
+          },
+        ])
+      )
+    ).toThrow(
+      /"b", whose sequence is already derived from another performer's\. Derive from the original instead/
+    );
+    expect(() =>
+      resolveFilmDirectorSpec(
+        named([
+          { id: "a", sequence: { word: "AB" } },
+          {
+            id: "b",
+            sequence: { transformOf: "a", transforms: [{ op: "flip" }] },
+          },
+          { id: "c", sequence: { mirrorOf: "b" } },
+        ])
+      )
+    ).toThrow(/already derived from another performer's/);
   });
 
   it("rejects a sequence that names more than one source", () => {

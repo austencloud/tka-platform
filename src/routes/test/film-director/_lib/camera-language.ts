@@ -287,13 +287,16 @@ export function compileCameraMoves(
     }
 
     if (move.move === "orbit") {
-      // Azimuth here follows the same convention as computeCameraFraming's
-      // vantage math above: increasing azimuth rotates +z toward +x, which
-      // is clockwise viewed from above. So cw increases the angle, ccw
-      // decreases it.
+      // Azimuth here follows computeCameraFraming's vantage math: increasing
+      // azimuth rotates +z toward +x. Austen watched the two signs side by
+      // side (Proving Grounds scenes 9 and 10, 2026-09-02) and called the
+      // DECREASING direction clockwise: from the front, a "cw" orbit ends on
+      // the performers' screen-left end of the line. So cw decreases the
+      // angle and ccw increases it. This is the felt convention, not the
+      // math-from-above one.
       const degrees =
         (move.amount && "degrees" in move.amount ? move.amount.degrees : 90) *
-        (move.direction === "cw" ? 1 : -1);
+        (move.direction === "cw" ? -1 : 1);
       const radius = Math.hypot(position[0] - target[0], position[2] - target[2]);
       const height = position[1];
       const startAngle = Math.atan2(position[0] - target[0], position[2] - target[2]);
@@ -404,6 +407,67 @@ export function compileCameraMoves(
   if (frames[0]!.atSeconds !== 0) {
     frames.unshift({ ...frames[0]!, atSeconds: 0 });
   }
+  return frames;
+}
+
+export interface DirectorCameraShot extends DirectorFramingInput {
+  moves?: DirectorCameraMove[];
+  durationSeconds?: number;
+}
+
+/**
+ * Gap 4. Several framings inside one scene, joined by hard cuts. Each shot is
+ * framed and its moves compiled exactly as a single-framing camera would be,
+ * inside its own time window, then shifted to where that window sits in the
+ * scene. The last keyframe of every shot but the final one is a step so the
+ * sampler holds it until the next shot's first keyframe, which starts at the
+ * same instant: the cut.
+ */
+export function compileCameraShots(
+  shots: readonly DirectorCameraShot[],
+  context: CameraLanguageContext
+): ResolvedDirectorCameraKeyframe[] {
+  const windows = allocateMoveWindows(
+    shots,
+    context.durationSeconds,
+    "Camera shots"
+  );
+  const frames: ResolvedDirectorCameraKeyframe[] = [];
+  shots.forEach((shot, index) => {
+    const { start, end } = windows[index]!;
+    const length = end - start;
+    if (length <= 1e-6) {
+      throw new Error(
+        `Camera shot ${index + 1} has no time. Every shot needs a duration, stated or left over.`
+      );
+    }
+    const shotContext = { ...context, durationSeconds: length };
+    const framing = computeCameraFraming(
+      {
+        subject: shot.subject,
+        shotSize: shot.shotSize,
+        angle: shot.angle,
+        position: shot.position,
+      },
+      shotContext
+    );
+    const compiled = compileCameraMoves(
+      shot.moves ?? [{ move: "hold" }],
+      framing,
+      shotContext
+    );
+    const isLast = index === shots.length - 1;
+    compiled.forEach((frame, frameIndex) => {
+      const shifted: ResolvedDirectorCameraKeyframe = {
+        ...frame,
+        atSeconds: frame.atSeconds + start,
+      };
+      if (!isLast && frameIndex === compiled.length - 1) {
+        shifted.interpolation = "step";
+      }
+      frames.push(shifted);
+    });
+  });
   return frames;
 }
 
