@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick } from "svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
+  import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
@@ -17,6 +18,8 @@
   import ShapeMatrixOverflowMenu from "./ShapeMatrixOverflowMenu.svelte";
   import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
   import ShapeMatrixTurnPopover from "./ShapeMatrixTurnPopover.svelte";
+  import ShapeMatrixSurfaceControl from "./ShapeMatrixSurfaceControl.svelte";
+  import ShapeMatrixTheoryAtlas from "./ShapeMatrixTheoryAtlas.svelte";
   import { runMandalaMorph } from "../services/shape-matrix-mandala-morph";
   import { growFade } from "$lib/shared/transitions/motion";
 
@@ -127,14 +130,54 @@
   </div>
 {/snippet}
 
+{#snippet matrixWorkspace()}
+  <PanelGroup
+    direction="horizontal"
+    bind:sizes
+    gap={appState.compact ? 0 : 8}
+    panels={[
+      {
+        id: "matrix",
+        content: matrixPane,
+        defaultSize: 1.28,
+        minSize: 440,
+        fixedSize: appState.compact
+          ? appState.activeView === "matrix"
+            ? "100%"
+            : "0px"
+          : undefined,
+        resizable: !appState.compact,
+      },
+      {
+        id: "realization",
+        content: detailPane,
+        defaultSize: 0.82,
+        minSize: 380,
+        fixedSize: appState.compact
+          ? appState.activeView === "detail"
+            ? "100%"
+            : "0px"
+          : undefined,
+      },
+    ]}
+  />
+{/snippet}
+
+{#snippet theoryWorkspace()}
+  <ShapeMatrixTheoryAtlas />
+{/snippet}
+
 <main
   class="shape-app"
-  class:compact-detail={appState.compact && appState.activeView === "detail"}
+  class:compact-detail={appState.surface === "matrix" &&
+    appState.compact &&
+    appState.activeView === "detail"}
+  class:theory={appState.surface === "theory"}
 >
   <header class="topbar">
     {#if appState.compact}
       <div class="compact-context">
-        {#if appState.activeView === "detail"}
+        {#if appState.surface === "matrix" && appState.activeView === "detail"}
           <button
             type="button"
             class="back-to-matrix"
@@ -145,13 +188,20 @@
             <span>Matrix</span>
           </button>
         {:else}
-          <strong>Shape Matrix</strong>
+          <strong
+            >{appState.surface === "theory"
+              ? "Ratio Atlas"
+              : "Shape Matrix"}</strong
+          >
         {/if}
         <!-- One level-and-turns chip on both compact panes. The full ribbon
              stacked four control groups above the grid on a phone and let
              the turn scroller run past the right edge; the chip keeps the
              matrix the hero and opens every control in its popover. -->
-        <ShapeMatrixTurnPopover />
+        <ShapeMatrixSurfaceControl compact />
+        {#if appState.surface === "matrix"}
+          <ShapeMatrixTurnPopover />
+        {/if}
       </div>
     {:else if variant === "standalone"}
       <div class="identity">
@@ -162,37 +212,49 @@
 
     {#if !appState.compact}
       <div class="matrix-controls">
-        <div class="control-cell level-control">
-          <span class="control-label">Difficulty</span>
-          <LevelSelector
-            value={appState.level}
-            levels={SHAPE_MATRIX_LEVELS}
-            describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
-            onchange={appState.setLevel}
-            compact={true}
-            ariaLabel="Kinetic Alphabet level"
-          />
+        <div class="control-cell surface-control-cell">
+          <span class="control-label">Explore</span>
+          <ShapeMatrixSurfaceControl />
         </div>
-        <div class="control-cell label-control neutral-accent">
-          <span class="control-label">Notation</span>
-          <SegmentedControl
-            options={LABEL_OPTIONS}
-            value={appState.labelMode}
-            onchange={(mode: MatrixLabelMode) => appState.setLabelMode(mode)}
-            size="sm"
-            density="tight"
-            color="accent"
-            semantics="radiogroup"
-            ariaLabel="Turn label system"
-          />
-        </div>
-        <ShapeMatrixTurnControls onturn={appState.setTurn} />
+        {#if appState.surface === "matrix"}
+          <div
+            class="matrix-context-controls"
+            transition:growFade={{ axis: "x" }}
+          >
+            <div class="control-cell level-control">
+              <span class="control-label">Difficulty</span>
+              <LevelSelector
+                value={appState.level}
+                levels={SHAPE_MATRIX_LEVELS}
+                describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
+                onchange={appState.setLevel}
+                compact={true}
+                ariaLabel="Kinetic Alphabet level"
+              />
+            </div>
+            <div class="control-cell label-control neutral-accent">
+              <span class="control-label">Notation</span>
+              <SegmentedControl
+                options={LABEL_OPTIONS}
+                value={appState.labelMode}
+                onchange={(mode: MatrixLabelMode) =>
+                  appState.setLabelMode(mode)}
+                size="sm"
+                density="tight"
+                color="accent"
+                semantics="radiogroup"
+                ariaLabel="Turn label system"
+              />
+            </div>
+            <ShapeMatrixTurnControls onturn={appState.setTurn} />
+          </div>
+        {/if}
       </div>
     {/if}
 
     <div class="top-actions">
       {#if appState.compact}
-        {#if appState.activeView === "matrix" && appState.selectedPair}
+        {#if appState.surface === "matrix" && appState.activeView === "matrix" && appState.selectedPair}
           <button
             type="button"
             class="top-action compact-detail-action"
@@ -206,7 +268,7 @@
         <!-- Only while a control section covers the relationships: the button
              is the way back to them, so it has nothing to do when they are
              already showing, and it never competes with Matrix for the tap. -->
-        {#if appState.activeView === "detail" && animationState.activeSection !== null}
+        {#if appState.surface === "matrix" && appState.activeView === "detail" && animationState.activeSection !== null}
           <button
             type="button"
             class="top-action relationships-action"
@@ -243,35 +305,10 @@
   </header>
 
   <div class="workspace">
-    <PanelGroup
-      direction="horizontal"
-      bind:sizes
-      gap={appState.compact ? 0 : 8}
-      panels={[
-        {
-          id: "matrix",
-          content: matrixPane,
-          defaultSize: 1.28,
-          minSize: 440,
-          fixedSize: appState.compact
-            ? appState.activeView === "matrix"
-              ? "100%"
-              : "0px"
-            : undefined,
-          resizable: !appState.compact,
-        },
-        {
-          id: "realization",
-          content: detailPane,
-          defaultSize: 0.82,
-          minSize: 380,
-          fixedSize: appState.compact
-            ? appState.activeView === "detail"
-              ? "100%"
-              : "0px"
-            : undefined,
-        },
-      ]}
+    <DualSourceCrossfade
+      active={appState.surface === "matrix" ? "first" : "second"}
+      first={matrixWorkspace}
+      second={theoryWorkspace}
     />
   </div>
 </main>
@@ -477,6 +514,17 @@
     min-width: 0;
   }
 
+  .matrix-context-controls {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .surface-control-cell {
+    flex: 0 0 auto;
+  }
+
   /* The bento cell: a caption row over its control, each cell carrying its
      own card chrome. The caption names the control so the band reads as
      labeled instruments instead of a strip of anonymous widgets. */
@@ -590,6 +638,10 @@
 
     .matrix-controls {
       grid-area: controls;
+      gap: 0.4rem;
+    }
+
+    .matrix-context-controls {
       gap: 0.4rem;
     }
 
@@ -755,8 +807,8 @@
     }
   }
   :global(html.shape-matrix-morph::view-transition-new(shape-matrix-strip)) {
-    animation: shape-matrix-strip-rise var(--duration-emphasis)
-      var(--ease-out) both;
+    animation: shape-matrix-strip-rise var(--duration-emphasis) var(--ease-out)
+      both;
     animation-delay: calc(var(--duration-dramatic) * 0.6);
   }
   :global(html.shape-matrix-morph::view-transition-old(shape-matrix-strip)) {
