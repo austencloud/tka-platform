@@ -1577,12 +1577,20 @@
     overflow: hidden;
   }
 
+  /* Each layer paints the inspector surface across the whole track, and the
+     panel it holds paints none. A composed panel is narrower than the track
+     for as long as the seam is travelling, so leaving the surface on the panel
+     left the remaining band showing the workspace through the container's
+     partly transparent fill: a lighter vertical strip that appeared, held, and
+     vanished. Stacking container and layer reproduces the resting fill exactly
+     while covering the track at every intermediate width. */
   .inspector-content-layer {
     position: absolute;
     inset: 0;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -1615,11 +1623,34 @@
 
   .card-settings-layer {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
     overflow: hidden;
   }
 
-  /* The persistent Effects workspace is already composed at its destination
+  /* Art settings paint the card fill rather than the panel fill, so their layer
+     has to carry that token instead. Painting the shared one here would change
+     the inspector's colour under any theme whose card and panel fills differ. */
+  .art-settings-layer {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .inspector-content-layer :global(.export-panel),
+  .inspector-content-layer :global(.performance-inspector),
+  .inspector-content-layer :global(.art-settings-panel) {
+    background: transparent;
+  }
+
+  /* Every composed panel is pushed to the closing edge by an automatic start
+     margin, which is the one declaration that gets both directions right. A
+     panel narrower than the track keeps its place at the viewport edge and
+     simply fades, so a departing surface never slides its contents sideways on
+     the way out. A panel wider than the track has no free space for the margin
+     to absorb, so it collapses to zero and the panel is revealed from the seam
+     with its overflow spilling past the screen edge, where the cut cannot be
+     seen. Anchoring either direction by hand cuts a leading label column off or
+     drags a fading panel across the workspace.
+
+     The persistent Effects workspace is already composed at its destination
      width while the zero-width inspector track is closed. PanelGroup then
      reveals that stable surface through a moving clip instead of asking every
      control row to rewrap at each intermediate width. */
@@ -1629,6 +1660,7 @@
     width: var(--export-sidebar-width);
     min-width: var(--export-sidebar-width);
     flex: 0 0 var(--export-sidebar-width);
+    margin-left: auto;
   }
 
   /* The Performances inspector is composed at its own destination width
@@ -1641,31 +1673,30 @@
     width: var(--performance-sidebar-width);
     min-width: var(--performance-sidebar-width);
     flex: 0 0 var(--performance-sidebar-width);
+    margin-left: auto;
   }
 
-  /* Art settings are portaled into their layer as an absolutely positioned
-     host, so `width: 100%` made them stretch and re-wrap on every frame of the
-     seam animation. Compose them at the same destination width the Effects
-     inspector uses and anchor them to the layer's right edge, so PanelGroup
-     reveals a stationary column instead of dragging its left edge along. */
+  /* Art settings are portaled in as an absolutely positioned host that already
+     fills the track, so `width: 100%` on the panel inside made it stretch and
+     re-wrap on every frame of the seam animation. Compose it at the same
+     destination width the Effects inspector uses. */
   .viewer-and-export.desktop
     .art-settings-layer
-    > :global(.art-settings-host.external) {
-    left: auto;
-    right: 0;
+    > :global(.art-settings-host.external)
+    > :global(.art-settings-panel) {
     width: var(--export-sidebar-width);
     min-width: var(--export-sidebar-width);
-    max-width: var(--export-sidebar-width);
+    flex: 0 0 var(--export-sidebar-width);
+    margin-left: auto;
   }
 
   :global(.panel-wrapper[data-manually-sized="true"])
     .art-settings-layer
-    > :global(.art-settings-host.external) {
-    left: 0;
-    right: 0;
+    > :global(.art-settings-host.external)
+    > :global(.art-settings-panel) {
     width: 100%;
     min-width: 0;
-    max-width: none;
+    flex-basis: 100%;
   }
 
   /* The card pin below is keyed to a mode-conditional container class, which
@@ -1679,6 +1710,7 @@
     width: var(--card-sidebar-width);
     min-width: var(--card-sidebar-width);
     flex: 0 0 var(--card-sidebar-width);
+    margin-left: auto;
   }
 
   :global(.panel-wrapper[data-manually-sized="true"])
