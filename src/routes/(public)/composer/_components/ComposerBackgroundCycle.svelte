@@ -96,7 +96,7 @@
     </SegmentedControl>
   </div>
   <p class="bg-cycle-note">
-    The app has ten backgrounds. Each one retunes the interface colors.
+    Pick a background. The whole interface follows it.
   </p>
 </div>
 

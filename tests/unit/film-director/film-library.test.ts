@@ -10,6 +10,9 @@ import { resolve as resolvePath } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { getSceneEnvironmentRendererKey } from "../../../src/lib/shared/3d/environments/domain/scene-environment";
+import { getStageCoordinateFrame } from "../../../src/lib/shared/3d/environments/domain/stage-coordinate-frame";
+import { directorFloorY } from "../../../src/routes/test/film-director/_lib/camera-language";
 import { resolveStepChange } from "../../../src/routes/test/film-director/_lib/director-step-changes";
 import { resolveHeldStep } from "../../../src/routes/test/film-director/_lib/director-step-holds";
 
@@ -61,7 +64,9 @@ describe("film library", () => {
         const resolved = resolveFilmDirectorSpec(entry.film);
         expect(resolved.scenes.length).toBeGreaterThan(0);
         for (const scene of resolved.scenes) {
-          expect(scene.performance.performers.length).toBeGreaterThan(0);
+          // Gap 21 made zero a legal cast, so this is a sanity floor on the
+          // shape of the resolved list rather than a minimum head count.
+          expect(scene.performance.performers.length).toBeGreaterThanOrEqual(0);
         }
       });
 
@@ -553,5 +558,75 @@ describe("proving grounds: wave A scenes", () => {
     aimedAt(2.5, "him");
     aimedAt(5, "her");
     aimedAt(7.9, "him");
+  });
+});
+
+describe("proving grounds: wave B scenes", () => {
+  const resolved = resolveFilmDirectorSpec(
+    FILM_LIBRARY.find((entry) => entry.key === "proving")!.film
+  );
+  const scene = (id: string) => resolved.scenes.find((entry) => entry.id === id)!;
+
+  it("adds three scenes, each with a stated intent", () => {
+    expect(scene("callback").durationSeconds).toBe(6);
+    expect(scene("empty-stage").durationSeconds).toBe(3);
+    // Gap 22. Four bars of three at 90 bpm is twelve beats, which is 8s.
+    expect(scene("waltz").durationSeconds).toBe(8);
+    for (const id of ["callback", "empty-stage", "waltz"]) {
+      expect(scene(id).intent.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("the callback inherits its parent's staging and draw, changing only the camera", () => {
+    const parent = scene("combined-draw");
+    const child = scene("callback");
+    expect(child.extends).toBe("combined-draw");
+    expect(child.seedSource).toBe("combined-draw");
+    expect(child.location).toEqual(parent.location);
+    expect(child.performance.formation).toBe(parent.performance.formation);
+    // Gap 14's whole point: the same distinct-and-not draw, dealt again under
+    // the parent's name, lands on the same six planes.
+    expect(
+      child.performance.performers.map((performer) => [
+        performer.leftPlane,
+        performer.rightPlane,
+      ])
+    ).toEqual(
+      parent.performance.performers.map((performer) => [
+        performer.leftPlane,
+        performer.rightPlane,
+      ])
+    );
+    // The one word that was stated: the camera moved to the other side.
+    expect(child.camera.keyframes[0]!.position[2]).toBeGreaterThan(0);
+    expect(parent.camera.keyframes[0]!.position[2]).toBeLessThan(0);
+  });
+
+  it("the empty stage casts nobody and frames the origin at head height", () => {
+    const empty = scene("empty-stage");
+    expect(empty.performance.performers).toEqual([]);
+    expect(empty.performance.stageExtent).toEqual([{ x: 0, z: 0 }]);
+    const frame = empty.camera.keyframes[0]!;
+    expect(frame.target[0]).toBeCloseTo(0, 6);
+    expect(frame.target[2]).toBeCloseTo(0, 6);
+    const floorY = directorFloorY(
+      getStageCoordinateFrame(
+        getSceneEnvironmentRendererKey(empty.location.environmentId),
+        empty.location.showStage
+      ).performerAnchorY
+    );
+    expect(frame.target[1] - floorY).toBeCloseTo(1.4, 6);
+    expect(frame.position.every(Number.isFinite)).toBe(true);
+  });
+
+  it("the waltz counts its scene and its push in bars", () => {
+    const waltz = scene("waltz");
+    expect(waltz.performance.bpm).toBe(90);
+    // Two bars of three at 90 bpm is six beats, which is 4s, so the push
+    // finishes halfway through the scene and the hold carries the rest.
+    const keyframes = waltz.camera.keyframes;
+    expect(keyframes.at(-1)!.atSeconds).toBeCloseTo(8, 6);
+    const settled = keyframes.find((frame) => frame.atSeconds >= 4)!;
+    expect(settled.atSeconds).toBeCloseTo(4, 6);
   });
 });

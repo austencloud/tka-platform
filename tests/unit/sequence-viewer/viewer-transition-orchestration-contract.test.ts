@@ -27,6 +27,7 @@ const shellLayoutState = read(
   "src/lib/shared/sequence-viewer/state/viewer-shell-layout-state.svelte.ts"
 );
 const panelGroup = read("src/lib/shared/panels/PanelGroup.svelte");
+const panelFlex = read("src/lib/shared/panels/panel-flex.ts");
 const shellModel = read(
   "src/lib/shared/sequence-viewer/services/viewer-shell-model.ts"
 );
@@ -148,7 +149,21 @@ describe("Sequence Viewer transition orchestration contract", () => {
     );
     expect(workspacePanels).toContain("direction={workspaceDirection}");
     expect(panelGroup).toContain("style={getFlexStyle(panel, i)}");
-    expect(panelGroup).toContain("const fixedSize = panel.fixedSize;");
+    // Fixed still outranks preferred, and both still hold the panel so its
+    // basis is its size. That decision moved to the panel-flex owner, which is
+    // where the measured-handoff rule can be tested without a layout engine.
+    expect(panelFlex).toContain("if (panel.fixedSize)");
+    expect(panelFlex).toContain("if (panel.preferredSize && !options.manuallySized)");
+    expect(panelGroup).toContain("resolvePanelFlex(panel, {");
+    // A held dock that swaps `480px` for `auto` cannot be interpolated by CSS,
+    // so PanelGroup measures both ends rather than letting the group re-lay out
+    // in one frame and teleport everything below the dock.
+    expect(panelFlex).toContain("export function needsMeasuredBasisHandoff(");
+    expect(panelFlex).toContain("isHeldPanel(previous) && isHeldPanel(next)");
+    expect(panelGroup).toContain("needsMeasuredBasisHandoff(previous, next)");
+    expect(panelGroup).toContain("startBasisHandoff");
+    expect(panelGroup).toContain('element.style.flexBasis = `${from}px`');
+    expect(panelGroup).toContain("prefersReducedMotion()");
     expect(panelGroup).toContain("data-manually-sized=");
     expect(panelGroup).toContain("panel.resizeLabel ??");
     expect(shell).toContain("data-effects-inspector");

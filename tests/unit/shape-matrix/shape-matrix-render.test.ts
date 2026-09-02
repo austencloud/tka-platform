@@ -12,12 +12,15 @@ import type {
   MandalaGuidePaintOptions,
   MandalaGuidePaintTarget,
 } from "$lib/shared/mandala/services/mandala-guide-painter";
+import { mandalaGuideScale } from "$lib/shared/mandala/services/mandala-guide-image";
 import { computeEngineAlignedMandalaScale } from "$lib/shared/mandala/services/mandala-path-preparer";
 import type { PreparedMandalaPath } from "$lib/shared/mandala/services/types";
 import { HERO_TRAIL_PRESET } from "$lib/shared/landing/data/hero-trail-preset";
 import {
+  engineExtentBoxRatio,
   renderCell,
   renderEngineAligned,
+  renderExtentFit,
   renderHeader,
   SHAPE_MATRIX_GUIDE_COLORS,
 } from "$lib/shared/shape-matrix/services/shape-matrix-render";
@@ -94,22 +97,43 @@ describe("shape matrix stills use the animator's guide painter", () => {
     });
   });
 
-  it("paints a cell at engine alignment so a tile is the hero floor shrunk", () => {
+  it("paints a cell filling its tile (extent fit)", () => {
     const { calls, deps } = harness();
     renderCell(left, right, 128, 100, { dpr: 1, deps });
+    const merged: MandalaPaths = { left: left.left, right: right.right, purple: [] };
     expect(calls[0]?.options.scale).toBeCloseTo(
-      computeEngineAlignedMandalaScale(128),
+      mandalaGuideScale(merged, { size: 128, fit: "extent", show: "both", tipDx: 100 }),
       10
     );
   });
 
-  it("paints a header at the same engine alignment as the cells", () => {
+  it("paints a header filling its box like the cells", () => {
     const { calls, deps } = harness();
     renderHeader(left, "left", 128, 100, { dpr: 1, deps });
     expect(calls[0]?.options.scale).toBeCloseTo(
-      computeEngineAlignedMandalaScale(128),
+      mandalaGuideScale(left, { size: 128, fit: "extent", show: "left", tipDx: 100 }),
       10
     );
+  });
+
+  it("sizes the hero's extent box so its drawing is the engine's drawing in the full square", () => {
+    const merged: MandalaPaths = { left: left.left, right: right.right, purple: [] };
+    const ratio = engineExtentBoxRatio(merged, 100);
+    expect(ratio).toBeGreaterThan(0);
+    expect(ratio).toBeLessThan(1);
+    for (const square of [64, 228, 470, 1400]) {
+      const { calls, deps } = harness();
+      renderExtentFit(merged, square * ratio, 100, { dpr: 1, deps });
+      expect(calls[0]?.options.scale).toBeCloseTo(
+        computeEngineAlignedMandalaScale(square),
+        10
+      );
+    }
+    // The ratio does not depend on the square: both fits are linear.
+    expect(
+      computeEngineAlignedMandalaScale(1000) /
+        mandalaGuideScale(merged, { size: 1000, fit: "extent", show: "both", tipDx: 100 })
+    ).toBeCloseTo(ratio, 12);
   });
 
   it("paints a header with only its own hand", () => {

@@ -5,10 +5,12 @@
     flowerLabel,
     type Flower,
   } from "../domain/flower-signature";
+  import { claimedViewTransitionName } from "$lib/shared/transitions/claimed-view-transition-name";
   import {
     CLUB_ARTWORK_PAINTER,
     cellArtworkSrc,
     headerArtworkSrc,
+    SHAPE_MATRIX_ACTIVE_STAGE_NAME,
     type ShapeMatrixArtworkPainter,
   } from "../services/shape-matrix-artwork";
   import ShapeMatrixMandalaArt from "./ShapeMatrixMandalaArt.svelte";
@@ -146,6 +148,10 @@
                   class:v-unsure={verdict === "unsure"}
                   class:dim={dimFor?.(bf, rf) ?? false}
                   use:watch={slotKey}
+                  use:claimedViewTransitionName={{
+                    name: SHAPE_MATRIX_ACTIVE_STAGE_NAME,
+                    enabled: claimSelected && selectedKey === key,
+                  }}
                   aria-label={`left ${flowerLabel(bf)} over right ${flowerLabel(rf)}`}
                   aria-pressed={selectedKey === key}
                   onclick={() => {
@@ -312,6 +318,18 @@
     box-shadow: inset 0 0 0.8rem
       color-mix(in srgb, var(--theme-accent, #f59e0b) 16%, transparent);
     pointer-events: none;
+    transition: opacity var(--duration-fast, 150ms)
+      var(--transition-easing, ease);
+  }
+  /* The selected tile's box is the rectangle that flies to the detail stage.
+     Its hairline rings would scale into thick bands mid-flight; the flat
+     wash scales cleanly, so only the rings step aside for the morph. */
+  :global(html.shape-matrix-morph) .cell.sel::after {
+    opacity: 0;
+  }
+  :global(html.shape-matrix-morph) .cell:hover,
+  :global(html.shape-matrix-morph) .cell:focus-visible {
+    box-shadow: none;
   }
   .cell:focus-visible {
     outline: 2px solid var(--theme-text, #fff);

@@ -16,7 +16,7 @@ import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 import { flowerKey, type Flower } from "../domain/flower-signature";
 import {
   renderCell,
-  renderEngineAligned,
+  renderExtentFit,
   renderHeader,
 } from "./shape-matrix-render";
 import type { ShapeMatrixData } from "./shape-matrix-flowers";
@@ -27,6 +27,16 @@ import type { ShapeMatrixData } from "./shape-matrix-flowers";
  * layout currently shows — so the View Transitions API never sees a duplicate.
  */
 export const SHAPE_MATRIX_ACTIVE_MANDALA_NAME = "shape-matrix-active-mandala";
+
+/**
+ * The shared-element name of the rectangle around that mandala: the selected
+ * matrix tile's box and the detail hero stage (header band, canvas region,
+ * and its corner annotations). The mandala is a named descendant, so it is
+ * left out of this rectangle's snapshot and travels as its own picture on
+ * top: the whole stage flies between the tile and the detail view, and the
+ * mandala rides it.
+ */
+export const SHAPE_MATRIX_ACTIVE_STAGE_NAME = "shape-matrix-active-stage";
 
 export interface ShapeMatrixArtworkPainter {
   cell: (
@@ -143,17 +153,21 @@ function pathsId(paths: MandalaPaths): number {
 }
 
 /**
- * Engine-aligned artwork for already-merged paths (the detail hero floor).
- * Painted for a square of `sizePx` — the SAME square the AnimatorCanvas
- * renders into — so the floor's strokes and the live guide's strokes are the
- * same pixels.
+ * Extent-fit artwork for already-merged paths (the detail hero floor), the
+ * tile's own fit. The hero paints it in a box of `engineExtentBoxRatio`
+ * times the animator's square, which puts the strokes on the same pixels
+ * the live guide draws in that square.
  */
-export function pathsArtworkSrc(paths: MandalaPaths, sizePx: number): string {
+export function pathsArtworkSrc(
+  paths: MandalaPaths,
+  sizePx: number,
+  tipDx: number
+): string {
   const size = Math.round(sizePx);
   if (!(size > 0)) return "";
-  const key = `paths|${pathsId(paths)}|${size}|${currentDpr()}`;
+  const key = `paths|${pathsId(paths)}|${size}|${tipDx}|${currentDpr()}`;
   return cacheFor(CLUB_ARTWORK_PAINTER).get(key, () =>
-    renderEngineAligned(paths, size)
+    renderExtentFit(paths, size, tipDx)
   );
 }
 

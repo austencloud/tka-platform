@@ -603,7 +603,7 @@
     max-width: var(--shell-w, min(1720px, 92vw));
     margin: 0 auto;
     padding: 0 1.4rem;
-    height: 64px;
+    height: var(--marketing-header-h, 64px);
     display: flex;
     align-items: center;
     justify-content: space-between;
