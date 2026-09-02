@@ -11,6 +11,8 @@ import { SHAPE_MATRIX_ACTIVE_MANDALA_NAME } from "$lib/shared/shape-matrix/servi
 const ROOT = resolve(process.cwd(), "src/lib/shared/shape-matrix");
 const read = (relative: string) =>
   readFileSync(resolve(ROOT, relative), "utf8");
+const readSrc = (relative: string) =>
+  readFileSync(resolve(process.cwd(), "src", relative), "utf8");
 
 describe("shape matrix mandala continuity", () => {
   it("uses one fixed shared-element name", () => {
@@ -24,6 +26,39 @@ describe("shape matrix mandala continuity", () => {
     expect(hero).toContain("ShapeMatrixMandalaArt");
     expect(grid).not.toMatch(/renderCell\(/);
     expect(hero).not.toMatch(/getContext\("2d"\)|drawAlignedMandala/);
+  });
+
+  it("paints every still with the animation canvas's own guide painter", () => {
+    // One painter: the live overlay and the still image renderer both stroke
+    // through paintMandalaGuide, so a tile IS the animator's guide.
+    const overlay = readSrc("lib/shared/mandala/services/mandala-overlay-canvas.ts");
+    const image = readSrc("lib/shared/mandala/services/mandala-guide-image.ts");
+    expect(overlay).toContain("paintMandalaGuide(");
+    expect(image).toContain("paintMandalaGuide");
+    expect(overlay).not.toMatch(/paintPurpleOverlap|paintHandMask/);
+
+    const render = read("services/shape-matrix-render.ts");
+    expect(render).toContain("renderMandalaGuideImage");
+    expect(render).toContain("HERO_TRAIL_PRESET.leftColor");
+    expect(render).toContain("DEFAULT_MANDALA_OVERLAY_CONFIG.strokeWidth");
+    expect(render).not.toMatch(/renderMandalaSVG|strokeWidth:\s*2\.4/);
+
+    // The hero floor is painted at engine alignment; no CSS align scale, no
+    // glow the live guide does not have.
+    const hero = read("components/MandalaHeroLayer.svelte");
+    const art = read("components/ShapeMatrixMandalaArt.svelte");
+    expect(hero).toContain("pathsArtworkSrc(paths, sizePx)");
+    expect(hero).not.toMatch(/alignScale|glowColor/);
+    expect(art).not.toMatch(/--art-scale|drop-shadow|glow/);
+    expect(art).toContain("new ResizeObserver");
+    expect(art).toMatch(/paint\(side\)/);
+  });
+
+  it("shows the still floor at the live guide's opacity so the handoff is invisible", () => {
+    const drill = read("components/ShapeMatrixDrill.svelte");
+    const loop = readSrc("lib/shared/animation-engine/services/animation-render-loop.ts");
+    expect(drill).toContain("visibleSource ? 0 : MANDALA_GUIDE_FLOOR_OPACITY");
+    expect(loop).toContain("opacity: MANDALA_GUIDE_FLOOR_OPACITY");
   });
 
   it("claims the name only through the primitive, only on the active endpoint", () => {
