@@ -468,3 +468,152 @@ describe("compileCameraShots", () => {
     ).toThrow(/Camera shots total/);
   });
 });
+
+describe("compileCameraMoves: concurrent moves (with)", () => {
+  it("a dolly zoom holds the subject the same size at every keyframe", () => {
+    const frames = compileCameraMoves(
+      [
+        {
+          move: "push-in",
+          amount: { meters: 1.5 },
+          durationSeconds: 8,
+          with: [{ move: "zoom", amount: { match: "subject-size" } }],
+        },
+      ],
+      framing50,
+      context({ durationSeconds: 8 })
+    );
+    const size = (frame: (typeof frames)[number]) =>
+      Math.tan((frame.fovDeg * Math.PI) / 360) * distance(frame.position, frame.target);
+    const opening = size(frames[0]!);
+    for (const frame of frames) {
+      expect(Math.abs(size(frame) - opening) / opening).toBeLessThan(0.01);
+    }
+    // It really did travel, and the lens really did answer.
+    expect(distance(frames.at(-1)!.position, frames.at(-1)!.target)).toBeLessThan(
+      distance(frames[0]!.position, frames[0]!.target) - 1
+    );
+    expect(frames.at(-1)!.fovDeg).toBeGreaterThan(frames[0]!.fovDeg + 5);
+  });
+
+  it("a truck riding with a crane ends diagonally, both deltas applied", () => {
+    const solo = (move: Parameters<typeof compileCameraMoves>[0][number]) =>
+      compileCameraMoves([move], framing50, context({ durationSeconds: 4 })).at(-1)!;
+    const truck = solo({
+      move: "truck",
+      direction: "right",
+      amount: { meters: 2 },
+      durationSeconds: 4,
+    });
+    const crane = solo({
+      move: "crane",
+      direction: "up",
+      amount: { meters: 1 },
+      durationSeconds: 4,
+    });
+    const both = solo({
+      move: "truck",
+      direction: "right",
+      amount: { meters: 2 },
+      durationSeconds: 4,
+      with: [{ move: "crane", direction: "up", amount: { meters: 1 } }],
+    });
+    expect(both.position[0]).toBeCloseTo(truck.position[0], 6);
+    expect(both.position[1]).toBeCloseTo(crane.position[1], 6);
+    expect(both.position[2]).toBeCloseTo(truck.position[2], 6);
+  });
+
+  it("an orbit riding with a zoom keeps its segments and interpolates the lens", () => {
+    const frames = compileCameraMoves(
+      [
+        {
+          move: "orbit",
+          direction: "cw",
+          amount: { degrees: 90 },
+          durationSeconds: 6,
+          with: [{ move: "zoom", direction: "in", amount: { degrees: 10 } }],
+        },
+      ],
+      framing50,
+      context({ durationSeconds: 6 })
+    );
+    // 90 degrees at 30 per segment is 3 samples plus the opening frame.
+    expect(frames).toHaveLength(4);
+    expect(frames.at(-1)!.fovDeg).toBeCloseTo(40, 6);
+    for (let index = 1; index < frames.length; index += 1) {
+      expect(frames[index]!.fovDeg).toBeLessThan(frames[index - 1]!.fovDeg);
+      // The orbit radius survives the zoom riding alongside it.
+      expect(distance(frames[index]!.position, frames[index]!.target)).toBeCloseTo(
+        distance(frames[0]!.position, frames[0]!.target),
+        6
+      );
+    }
+  });
+
+  it("rejects a group whose combined lens leaves the usable range", () => {
+    expect(() =>
+      compileCameraMoves(
+        [
+          {
+            move: "push-in",
+            amount: { meters: 5.5 },
+            durationSeconds: 4,
+            with: [{ move: "zoom", amount: { match: "subject-size" } }],
+          },
+        ],
+        framing50,
+        context({ durationSeconds: 4 })
+      )
+    ).toThrow(/outside the 20-100 degree range/);
+  });
+});
+
+describe("compileCameraMoves: pan to a destination", () => {
+  it("ends aimed at the named performer", () => {
+    const frames = compileCameraMoves(
+      [
+        {
+          move: "pan",
+          to: { kind: "performer", performerId: "performer-2" },
+          durationSeconds: 4,
+        },
+      ],
+      { position: [0, 1.6, 6], target: [-1, 1.2, 0], fovDeg: 50 },
+      context({ durationSeconds: 4 })
+    );
+    const last = frames.at(-1)!;
+    const aim = Math.atan2(last.target[0] - last.position[0], last.target[2] - last.position[2]);
+    const want = Math.atan2(1 - last.position[0], 0 - last.position[2]);
+    expect(aim).toBeCloseTo(want, 6);
+    // A pan turns in place: the rig never moved.
+    expect(last.position).toEqual([0, 1.6, 6]);
+  });
+
+  it("ends aimed at a stated point", () => {
+    const frames = compileCameraMoves(
+      [
+        {
+          move: "pan",
+          to: { kind: "point", position: [3, 1.2, 1] },
+          durationSeconds: 4,
+        },
+      ],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    const last = frames.at(-1)!;
+    const aim = Math.atan2(last.target[0] - last.position[0], last.target[2] - last.position[2]);
+    const want = Math.atan2(3 - last.position[0], 1 - last.position[2]);
+    expect(aim).toBeCloseTo(want, 6);
+  });
+
+  it("names the performer it cannot find", () => {
+    expect(() =>
+      compileCameraMoves(
+        [{ move: "pan", to: { kind: "performer", performerId: "ghost" } }],
+        framing50,
+        context({ durationSeconds: 4 })
+      )
+    ).toThrow(/missing performer "ghost"/);
+  });
+});

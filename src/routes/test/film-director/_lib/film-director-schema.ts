@@ -776,34 +776,152 @@ const locationSchema = z
   })
   .strict();
 
+/** Where a `pan` aims when it is spoken as a destination instead of an angle. */
+const cameraPanDestinationSchema = z.discriminatedUnion("kind", [
+  z
+    .object({ kind: z.literal("performer"), performerId: z.string().min(1) })
+    .strict(),
+  z.object({ kind: z.literal("point"), position: vector3Schema }).strict(),
+]);
+
+const cameraMoveFields = {
+  move: z.enum([
+    "hold",
+    "push-in",
+    "pull-back",
+    "orbit",
+    "crane",
+    "pan",
+    "truck",
+    "zoom",
+    "roll",
+  ]),
+  direction: z
+    .enum(["cw", "ccw", "up", "down", "left", "right", "in", "out"])
+    .optional(),
+  amount: z
+    .union([
+      z.object({ degrees: finiteNumber }).strict(),
+      z.object({ meters: finiteNumber.positive() }).strict(),
+      // A zoom that answers the move it runs with rather than a number: keep
+      // the subject the same size on screen while the rig travels.
+      z.object({ match: z.literal("subject-size") }).strict(),
+    ])
+    .optional(),
+  to: cameraPanDestinationSchema.optional(),
+  durationSeconds: finiteNumber.positive().optional(),
+  durationBeats: finiteNumber.positive().optional(),
+  easing: z.enum(DIRECTOR_EASINGS).optional(),
+};
+
+const MOVE_GROUP_NESTED =
+  'A move inside "with" already runs alongside another move. State every concurrent move in the outer move\'s "with".';
+const MOVE_GROUP_MEMBER_DURATION =
+  'A move inside "with" shares the window of the move it runs with. Give the duration to that outer move.';
+const MOVE_GROUP_HOLD =
+  'A "hold" runs with nothing and nothing runs with a hold. Give the "with" to a move that actually moves.';
+const MATCH_NEEDS_A_TRAVEL =
+  'A zoom that matches subject size runs inside a push-in or a pull-back, spoken in that move\'s "with". On its own there is no travel for it to answer.';
+const MATCH_IS_A_ZOOM = 'Only a zoom can match subject size.';
+const MATCH_HAS_NO_DIRECTION =
+  'A zoom that matches subject size takes its direction from the move it runs with. Drop the direction.';
+const PAN_TO_OR_ANGLE =
+  'A pan states where to aim or how far to turn, not both. Drop "to", or drop the direction and amount.';
+const TO_IS_A_PAN = 'Only a "pan" takes a "to". Other moves state an amount.';
+
+const hasMatchAmount = (move: { amount?: unknown }): boolean =>
+  Boolean(move.amount && typeof move.amount === "object" && "match" in move.amount);
+
+const rejectPanContradiction = (
+  move: { move: string; to?: unknown; direction?: unknown; amount?: unknown },
+  ctx: z.RefinementCtx
+) => {
+  if (move.to === undefined) return;
+  if (move.move !== "pan") {
+    ctx.addIssue({ code: "custom", message: TO_IS_A_PAN, path: ["to"] });
+    return;
+  }
+  if (move.direction !== undefined || move.amount !== undefined) {
+    ctx.addIssue({ code: "custom", message: PAN_TO_OR_ANGLE, path: ["to"] });
+  }
+};
+
+/**
+ * One move inside another move's `with`. It shares the outer move's window,
+ * so it states no duration of its own, and it cannot carry a `with` of its
+ * own: concurrency is one flat group, not a tree.
+ */
+const cameraMoveMemberSchema = z
+  // The `with` key is declared only so a nested group rejects by name rather
+  // than as an unknown key. `z.any()` rather than `z.unknown()` so a member
+  // stays structurally a camera move for the compiler's own move type; the
+  // superRefine below rejects the key outright, so nothing is ever read.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  .object({ ...cameraMoveFields, with: z.array(z.any()).optional() })
+  .strict()
+  .superRefine((member, ctx) => {
+    if (member.with !== undefined) {
+      ctx.addIssue({ code: "custom", message: MOVE_GROUP_NESTED, path: ["with"] });
+    }
+    if (
+      member.durationSeconds !== undefined ||
+      member.durationBeats !== undefined
+    ) {
+      ctx.addIssue({ code: "custom", message: MOVE_GROUP_MEMBER_DURATION });
+    }
+    if (member.move === "hold") {
+      ctx.addIssue({ code: "custom", message: MOVE_GROUP_HOLD, path: ["move"] });
+    }
+    rejectPanContradiction(member, ctx);
+  });
+
 const cameraMoveSchema = z
   .object({
-    move: z.enum([
-      "hold",
-      "push-in",
-      "pull-back",
-      "orbit",
-      "crane",
-      "pan",
-      "truck",
-      "zoom",
-      "roll",
-    ]),
-    direction: z
-      .enum(["cw", "ccw", "up", "down", "left", "right", "in", "out"])
-      .optional(),
-    amount: z
-      .union([
-        z.object({ degrees: finiteNumber }).strict(),
-        z.object({ meters: finiteNumber.positive() }).strict(),
-      ])
-      .optional(),
-    durationSeconds: finiteNumber.positive().optional(),
-    durationBeats: finiteNumber.positive().optional(),
-    easing: z.enum(DIRECTOR_EASINGS).optional(),
+    ...cameraMoveFields,
+    // Gap 10. Moves that run at the same time as this one, in the same window.
+    with: z.array(cameraMoveMemberSchema).min(1).max(4).optional(),
   })
   .strict()
-  .superRefine(atMostOneTimeUnit);
+  .superRefine(atMostOneTimeUnit)
+  .superRefine((move, ctx) => {
+    rejectPanContradiction(move, ctx);
+    if (hasMatchAmount(move)) {
+      ctx.addIssue({
+        code: "custom",
+        message: MATCH_NEEDS_A_TRAVEL,
+        path: ["amount"],
+      });
+    }
+    if (!move.with) return;
+    if (move.move === "hold") {
+      ctx.addIssue({ code: "custom", message: MOVE_GROUP_HOLD, path: ["with"] });
+    }
+    move.with.forEach((member, index) => {
+      if (!hasMatchAmount(member)) return;
+      if (member.move !== "zoom") {
+        ctx.addIssue({
+          code: "custom",
+          message: MATCH_IS_A_ZOOM,
+          path: ["with", index, "amount"],
+        });
+        return;
+      }
+      if (move.move !== "push-in" && move.move !== "pull-back") {
+        ctx.addIssue({
+          code: "custom",
+          message: MATCH_NEEDS_A_TRAVEL,
+          path: ["with", index, "amount"],
+        });
+      }
+      if (member.direction !== undefined) {
+        ctx.addIssue({
+          code: "custom",
+          message: MATCH_HAS_NO_DIRECTION,
+          path: ["with", index, "direction"],
+        });
+      }
+    });
+  });
 
 /**
  * One framing, spelled the same whether it is the scene's only framing or one
@@ -839,6 +957,20 @@ const cameraSchema = z
     target: cameraTargetSchema.optional(),
     orbitDegrees: finiteNumber.min(-720).max(720).optional(),
     keyframes: z.array(cameraKeyframeSchema).min(1).max(32).optional(),
+    // Gap 11. Take it off the tripod. Handheld is a modifier on the sampled
+    // frame, not a framing, so it combines with framing grammar, shots,
+    // presets and raw keyframes alike.
+    handheld: z
+      .union([
+        z.enum(["subtle", "steady", "rough"]),
+        z
+          .object({
+            meters: finiteNumber.min(0).max(0.3),
+            degrees: finiteNumber.min(0).max(5),
+          })
+          .strict(),
+      ])
+      .optional(),
     ...cameraFramingFields,
     shots: z
       .array(cameraShotSchema)
@@ -1155,7 +1287,21 @@ export interface ResolvedDirectorScene {
      * never track resolve byte-identically to their pre-tracking snapshots.
      */
     tracking?: { performerId: string; mode: "aim" | "follow" };
+    /**
+     * Present only when the scene took the camera off the tripod. `meters`
+     * and `degrees` are the drift envelopes the sampler stays inside;
+     * `seed` fixes the noise phases so one film always shakes the same way.
+     * Absent (not null) otherwise, so films that never go handheld resolve
+     * byte-identically to their earlier snapshots.
+     */
+    handheld?: ResolvedDirectorHandheld;
   };
+}
+
+export interface ResolvedDirectorHandheld {
+  meters: number;
+  degrees: number;
+  seed: number;
 }
 
 export interface ResolvedFilmDirectorSpec {

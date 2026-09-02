@@ -938,6 +938,7 @@ function resolveScene(
     groundOffset,
     formation,
     sceneId: scene.id,
+    filmSeed,
     performers: performers.map((performer) => ({
       ...performer,
       position: {

@@ -1152,3 +1152,175 @@ describe("per-step changes: stepEffects, stepEfforts, holds", () => {
     ).toThrow();
   });
 });
+
+describe("camera: concurrent moves, handheld, pan destinations", () => {
+  const film = (camera: Record<string, unknown>) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "wave-a",
+    title: "Wave A",
+    scenes: [{ id: "s1", title: "S1", camera }],
+  });
+  const parse = (doc: unknown) => FilmDirectorInputSchema.parse(doc);
+  const moves = (list: unknown) => film({ shotSize: "medium", moves: list });
+
+  it("accepts a dolly zoom, a crane riding a truck, and a pan to a performer", () => {
+    expect(() =>
+      parse(
+        moves([
+          {
+            move: "push-in",
+            amount: { meters: 1 },
+            durationSeconds: 4,
+            with: [{ move: "zoom", amount: { match: "subject-size" } }],
+          },
+          {
+            move: "truck",
+            direction: "right",
+            amount: { meters: 1 },
+            with: [{ move: "crane", direction: "up", amount: { meters: 0.5 } }],
+          },
+          { move: "pan", to: { kind: "performer", performerId: "performer-2" } },
+          { move: "pan", to: { kind: "point", position: [1, 1, 1] } },
+        ])
+      )
+    ).not.toThrow();
+  });
+
+  it("accepts handheld as a preset and as a stated envelope", () => {
+    expect(() => parse(film({ shotSize: "wide", handheld: "rough" }))).not.toThrow();
+    expect(() =>
+      parse(film({ shotSize: "wide", handheld: { meters: 0.04, degrees: 0.8 } }))
+    ).not.toThrow();
+  });
+
+  it("rejects a handheld envelope past what an operator could hold", () => {
+    expect(() =>
+      parse(film({ shotSize: "wide", handheld: { meters: 1, degrees: 0.8 } }))
+    ).toThrow();
+    expect(() =>
+      parse(film({ shotSize: "wide", handheld: { meters: 0.04, degrees: 20 } }))
+    ).toThrow();
+    expect(() => parse(film({ shotSize: "wide", handheld: "violent" }))).toThrow();
+  });
+
+  it("rejects a group inside a group", () => {
+    expect(() =>
+      parse(
+        moves([
+          {
+            move: "push-in",
+            amount: { meters: 1 },
+            with: [{ move: "truck", direction: "right", with: [{ move: "roll" }] }],
+          },
+        ])
+      )
+    ).toThrow(/already runs alongside/);
+  });
+
+  it("rejects a member that states its own duration", () => {
+    expect(() =>
+      parse(
+        moves([
+          {
+            move: "push-in",
+            amount: { meters: 1 },
+            durationSeconds: 4,
+            with: [{ move: "crane", direction: "up", amount: { meters: 1 }, durationSeconds: 2 }],
+          },
+        ])
+      )
+    ).toThrow(/shares the window/);
+  });
+
+  it("rejects a hold on either side of a group", () => {
+    expect(() =>
+      parse(moves([{ move: "hold", with: [{ move: "roll", amount: { degrees: 5 } }] }]))
+    ).toThrow(/hold/);
+    expect(() =>
+      parse(moves([{ move: "push-in", amount: { meters: 1 }, with: [{ move: "hold" }] }]))
+    ).toThrow(/hold/);
+  });
+
+  it("rejects a subject-size match anywhere it cannot be answered", () => {
+    // On the move itself rather than on a zoom riding with it.
+    expect(() =>
+      parse(moves([{ move: "push-in", amount: { match: "subject-size" } }]))
+    ).toThrow();
+    // On a member that is not a zoom.
+    expect(() =>
+      parse(
+        moves([
+          {
+            move: "push-in",
+            amount: { meters: 1 },
+            with: [{ move: "truck", direction: "right", amount: { match: "subject-size" } }],
+          },
+        ])
+      )
+    ).toThrow();
+    // On a zoom whose parent does not travel toward or away from the subject.
+    expect(() =>
+      parse(
+        moves([
+          {
+            move: "truck",
+            direction: "right",
+            amount: { meters: 1 },
+            with: [{ move: "zoom", amount: { match: "subject-size" } }],
+          },
+        ])
+      )
+    ).toThrow();
+    // On a zoom that also states a direction.
+    expect(() =>
+      parse(
+        moves([
+          {
+            move: "push-in",
+            amount: { meters: 1 },
+            with: [{ move: "zoom", direction: "in", amount: { match: "subject-size" } }],
+          },
+        ])
+      )
+    ).toThrow();
+  });
+
+  it("rejects a pan that states both a destination and an angle", () => {
+    expect(() =>
+      parse(
+        moves([
+          {
+            move: "pan",
+            direction: "left",
+            to: { kind: "performer", performerId: "performer-2" },
+          },
+        ])
+      )
+    ).toThrow();
+    expect(() =>
+      parse(
+        moves([
+          {
+            move: "pan",
+            amount: { degrees: 30 },
+            to: { kind: "performer", performerId: "performer-2" },
+          },
+        ])
+      )
+    ).toThrow();
+  });
+
+  it("rejects a destination on a move that is not a pan", () => {
+    expect(() =>
+      parse(
+        moves([
+          {
+            move: "orbit",
+            direction: "cw",
+            to: { kind: "performer", performerId: "performer-2" },
+          },
+        ])
+      )
+    ).toThrow();
+  });
+});
