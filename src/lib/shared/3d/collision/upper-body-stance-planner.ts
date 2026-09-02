@@ -1,4 +1,8 @@
 import {
+  planHugReachGeometry,
+  type PerformerReachMeasurements,
+} from "$lib/shared/3d/domain/performer-reach-measurements";
+import {
   GRID_OFFSETS,
   PLANE_MODE_CONFIGS,
   type PlaneMode,
@@ -47,6 +51,25 @@ const SIDE_ON_YAW_KNEE_RAD = MAX_STANCE_YAW_RAD * 0.8;
 const SAME_SIDE_DEPTH_SEPARATION_M = 0.32;
 const SAME_SIDE_DEPTH_LANE_M = SAME_SIDE_DEPTH_SEPARATION_M / 2;
 
+/**
+ * The hug reach. Once a rig has been measured, the pair no longer straddles
+ * the chest at a fixed 16 cm: each grip converges to its body's own hug lane,
+ * so the two outstretched arms close toward the chest-forward midline. The
+ * shaft that used to pass beside the chest now sits inside the torso's depth
+ * band, which is why the prop seam shortens the staff by the same
+ * measurements — see `fitStaffLengthForHug`. Without measurements the planner
+ * keeps the wider un-measured lane rather than guessing at a body.
+ */
+function sameSideLaneM(
+  measurements: PerformerReachMeasurements | null
+): number {
+  if (!measurements) return SAME_SIDE_DEPTH_LANE_M;
+  return Math.min(
+    SAME_SIDE_DEPTH_LANE_M,
+    planHugReachGeometry(measurements).laneM
+  );
+}
+
 const SQUARE_STANCE: UpperBodyStancePlan = {
   yawRad: 0,
   pitchRad: 0,
@@ -73,7 +96,8 @@ function smoothstep01(value: number): number {
  * toward the props and both arms remain in front of the chest.
  */
 export function planUpperBodyStance(
-  targets: UpperBodyStanceTargets
+  targets: UpperBodyStanceTargets,
+  measurements: PerformerReachMeasurements | null = null
 ): UpperBodyStancePlan {
   const active = [targets.left, targets.right].filter(
     (target): target is GripTargetXZ => target !== null
@@ -124,7 +148,7 @@ export function planUpperBodyStance(
   );
   // Rig convention: the performer's left is rig-local +X, so a positive stance
   // yaw swings the left shoulder toward negative depth.
-  const leftLaneM = -Math.sign(yawRad) * SAME_SIDE_DEPTH_LANE_M;
+  const leftLaneM = -Math.sign(yawRad) * sameSideLaneM(measurements);
   return {
     yawRad,
     // Same-side reaches need shoulder facing, not a permanent bow. Cross-body
@@ -152,22 +176,26 @@ type GripPropState = Pick<PropState3D, "worldPosition">;
 export function planUpperBodyStanceForPropStates(
   planeMode: PlaneMode,
   left: GripPropState | null,
-  right: GripPropState | null
+  right: GripPropState | null,
+  measurements: PerformerReachMeasurements | null = null
 ): UpperBodyStancePlan {
   const mode = PLANE_MODE_CONFIGS[planeMode];
   const gridOffset = GRID_OFFSETS[planeMode];
-  return planUpperBodyStance({
-    left: left
-      ? {
-          x: mode.blueLateralOffset + left.worldPosition.x,
-          z: gridOffset + left.worldPosition.z,
-        }
-      : null,
-    right: right
-      ? {
-          x: mode.redLateralOffset + right.worldPosition.x,
-          z: gridOffset + right.worldPosition.z,
-        }
-      : null,
-  });
+  return planUpperBodyStance(
+    {
+      left: left
+        ? {
+            x: mode.blueLateralOffset + left.worldPosition.x,
+            z: gridOffset + left.worldPosition.z,
+          }
+        : null,
+      right: right
+        ? {
+            x: mode.redLateralOffset + right.worldPosition.x,
+            z: gridOffset + right.worldPosition.z,
+          }
+        : null,
+    },
+    measurements
+  );
 }

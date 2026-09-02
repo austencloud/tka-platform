@@ -40,6 +40,23 @@
     redGripDepthMm: number | null;
     /** Half the shoulder span: the elbow line the grips must stay inside. */
     shoulderHalfSpanMm: number | null;
+    /** Straight-line distance between the two palms: the hug measurement. */
+    palmSeparationMm: number | null;
+    /** Palm separation along the audience-depth axis alone. */
+    palmDepthSeparationMm: number | null;
+    /**
+     * Distance between the two rendered grips. Unlike the palms this exists on
+     * every rig, so it is the portable hand-convergence measurement.
+     */
+    gripSeparationMm: number | null;
+    /** Elbow world positions, for proving the hug kept them put. */
+    leftElbow: string;
+    rightElbow: string;
+    /** Measured arm segments and the staff length they permit. */
+    upperArmMm: number | null;
+    forearmMm: number | null;
+    reachMm: number | null;
+    renderedStaffLengthMm: number | null;
     renderedStepNumber: number;
     renderedBeatProgress: number;
   }
@@ -48,8 +65,7 @@
   // `?character=<catalog id>` swaps the posed rig so the same frozen frames can
   // be swept across materially different bodies.
   const characterId = $derived(
-    (page.url.searchParams.get("character") as CharacterId | null) ??
-      undefined
+    (page.url.searchParams.get("character") as CharacterId | null) ?? undefined
   );
   const VIEWS: CameraView[] = [
     {
@@ -108,6 +124,15 @@
     blueGripDepthMm: null,
     redGripDepthMm: null,
     shoulderHalfSpanMm: null,
+    palmSeparationMm: null,
+    palmDepthSeparationMm: null,
+    gripSeparationMm: null,
+    leftElbow: "",
+    rightElbow: "",
+    upperArmMm: null,
+    forearmMm: null,
+    reachMm: null,
+    renderedStaffLengthMm: null,
     renderedStepNumber: 0,
     renderedBeatProgress: 0,
   });
@@ -208,6 +233,56 @@
         ? gripDiagnostics.authoredRedGrip.z * 1000
         : null,
       shoulderHalfSpanMm: (diagnostics.shoulderWidth / 2) * 1000,
+      palmSeparationMm:
+        gripDiagnostics.leftPalm && gripDiagnostics.rightPalm
+          ? Math.hypot(
+              gripDiagnostics.leftPalm.x - gripDiagnostics.rightPalm.x,
+              gripDiagnostics.leftPalm.y - gripDiagnostics.rightPalm.y,
+              gripDiagnostics.leftPalm.z - gripDiagnostics.rightPalm.z
+            ) * 1000
+          : null,
+      palmDepthSeparationMm:
+        gripDiagnostics.leftPalm && gripDiagnostics.rightPalm
+          ? Math.abs(gripDiagnostics.leftPalm.z - gripDiagnostics.rightPalm.z) *
+            1000
+          : null,
+      gripSeparationMm:
+        gripDiagnostics.renderedBlueGrip && gripDiagnostics.renderedRedGrip
+          ? Math.hypot(
+              gripDiagnostics.renderedBlueGrip.x -
+                gripDiagnostics.renderedRedGrip.x,
+              gripDiagnostics.renderedBlueGrip.y -
+                gripDiagnostics.renderedRedGrip.y,
+              gripDiagnostics.renderedBlueGrip.z -
+                gripDiagnostics.renderedRedGrip.z
+            ) * 1000
+          : null,
+      leftElbow: formatPoint(diagnostics.leftElbowWorld),
+      rightElbow: formatPoint(diagnostics.rightElbowWorld),
+      upperArmMm:
+        ((diagnostics.leftUpperArmLength + diagnostics.rightUpperArmLength) /
+          2) *
+        1000,
+      forearmMm:
+        ((diagnostics.leftForearmLength + diagnostics.rightForearmLength) / 2) *
+        1000,
+      reachMm:
+        ((diagnostics.leftUpperArmLength +
+          diagnostics.leftForearmLength +
+          diagnostics.rightUpperArmLength +
+          diagnostics.rightForearmLength) /
+          2) *
+        1000,
+      renderedStaffLengthMm: gripDiagnostics.blueStaffSegment
+        ? Math.hypot(
+            gripDiagnostics.blueStaffSegment.b.x -
+              gripDiagnostics.blueStaffSegment.a.x,
+            gripDiagnostics.blueStaffSegment.b.y -
+              gripDiagnostics.blueStaffSegment.a.y,
+            gripDiagnostics.blueStaffSegment.b.z -
+              gripDiagnostics.blueStaffSegment.a.z
+          ) * 1000
+        : null,
       renderedStepNumber: gripDiagnostics.stepNumber,
       renderedBeatProgress: gripDiagnostics.beatProgress,
     };
@@ -230,6 +305,15 @@
         gripDiagnostics.rightPalm.z,
       ]);
     }
+  }
+
+  function formatPoint(
+    point: Readonly<{ x: number; y: number; z: number }> | null | undefined
+  ): string {
+    if (!point) return "";
+    return `${(point.x * 1000).toFixed(1)},${(point.y * 1000).toFixed(1)},${(
+      point.z * 1000
+    ).toFixed(1)}`;
   }
 
   function radiansToDegrees(radians: number): number {
@@ -295,6 +379,21 @@
   data-collision-zones={poseMetric.collisionZones}
   data-deepest-collision-mm={formatMetric(poseMetric.deepestCollisionMm, 3)}
   data-collision-descriptions={poseMetric.collisionDescriptions}
+  data-palm-separation-mm={formatMetric(poseMetric.palmSeparationMm, 2)}
+  data-palm-depth-separation-mm={formatMetric(
+    poseMetric.palmDepthSeparationMm,
+    2
+  )}
+  data-grip-separation-mm={formatMetric(poseMetric.gripSeparationMm, 2)}
+  data-left-elbow-mm={poseMetric.leftElbow}
+  data-right-elbow-mm={poseMetric.rightElbow}
+  data-upper-arm-mm={formatMetric(poseMetric.upperArmMm, 2)}
+  data-forearm-mm={formatMetric(poseMetric.forearmMm, 2)}
+  data-reach-mm={formatMetric(poseMetric.reachMm, 2)}
+  data-rendered-staff-length-mm={formatMetric(
+    poseMetric.renderedStaffLengthMm,
+    2
+  )}
   data-audience-grip-separation-mm={formatMetric(
     poseMetric.audienceGripSeparationMm,
     3

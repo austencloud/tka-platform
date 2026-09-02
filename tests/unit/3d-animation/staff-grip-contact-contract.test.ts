@@ -100,9 +100,13 @@ describe("staff grip contact contract", () => {
     expect(gripTestPage).toContain("data-deepest-collision-mm");
     expect(gripTestPage).toContain("data-audience-grip-separation-mm");
     expect(gripTestPage).toContain("data-rendered-step-number");
+    // The rig's collision callback is also where the performer reads its own
+    // skeleton measurements, so the binding is a wrapper. It must still forward
+    // all three diagnostic arguments to the consumer unchanged.
     expect(liveSequencePerformer).toContain(
-      "onCollisionEvents={props.onCollisionEvents}"
+      "props.onCollisionEvents?.(events, diagnostics, gripDiagnostics)"
     );
+    expect(liveSequencePerformer).toContain("captureReach(diagnostics)");
   });
 
   it("uses the same upper-body stance plan as the production viewer", () => {
