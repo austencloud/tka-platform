@@ -146,12 +146,14 @@ station sweep every 40 m, and lateral sweeps at 10–320 m on both sides.
 Recording this in the source lock alongside ODOT, NAIP, and 3DEP belongs to the
 sub-project 1 implementation, not to this roadmap.
 
-### On May 8 the corn is not standing
+### On May 14 the corn is not standing
 
-Austen set the festival on **May 8**. That is a fact about the fields, not just
-the light. Ohio corn is roughly a quarter to a third planted in the week of
-May 8 (NASS crop progress: 25% by 2025-05-12, 36% by 2024-05-12, 33% by
-2026-05-03), and what is planted went in days earlier, so nothing has grown.
+Austen set the festival on **May 14** (chosen 2026-09-02, with "no corn
+necessarily" — the bare fields are accepted, not worked around). That is a fact
+about the fields, not just the light. Ohio corn is roughly a quarter to a third
+planted in that week (NASS crop progress: 25% by 2025-05-12, 36% by 2024-05-12,
+33% by 2026-05-03), and what is planted went in days earlier, so nothing has
+grown.
 
 The cached NAIP orthophoto settles it directly. It was flown **2023-05-22** —
 two weeks *after* the target date, in a **corn year** — and the field south of
@@ -165,12 +167,12 @@ the road is bare tilled soil with visible tillage lines. Measured from the
 | North hay, station 240 | +0.411 | actively growing |
 | Woods, station 750 | +0.356 | fully leafed out |
 
-So on May 8: **cornfields with no corn in them.** The name of the place is
+So on May 14: **cornfields with no corn in them.** The name of the place is
 right and the wall of green is a late-summer memory. The deciduous woods at the
 gate, by contrast, are fully leafed out — Ohio leaf-out is mid-to-late April.
 
-Sun at the gate on May 8 (NOAA, 39.59005 N / 84.78218 W, EDT): sunrise 06:32,
-solar noon 13:35, **sunset 20:39**, civil dusk 21:08, 14.11 h of daylight. The
+Sun at the gate on May 14 (NOAA, 39.59005 N / 84.78218 W, EDT): sunrise 06:26,
+solar noon 13:35, **sunset 20:44**, civil dusk 21:15, 14.31 h of daylight. The
 road runs east, so **from 15:05 until dark the sun is behind the driver** — low
 warm light on the fields and woods ahead, and no glare at any point on the
 approach.
@@ -199,6 +201,80 @@ a blind 60° left-hander is exactly where a driver lifts off.
 The DTM is bare earth, so the built road surface may sit slightly above or below
 these samples where it was cut or filled. Treat the profile as the landform, and
 take the driving surface from the road geometry.
+
+## Open: the trees are the content of this drive, and the tree pipeline is EOL
+
+With the fields bare, the woods are the only three-dimensional thing on the
+approach — the treeline you see across the field for 640 m, then 350 m inside
+it, then the gate. So the tree pipeline is load-bearing for this sub-project.
+
+Austen asked on 2026-09-02 why the project uses PlantFactory rather than
+[ez-tree](https://github.com/dgreenheck/ez-tree). Investigated the same day.
+
+**What we actually use.** `scripts/forest-plantcatalog-bridge.json` drives
+`PlantFactory.exe` **4.8.0.0** from `C:/Program Files/e-on software/...` against
+the local `PlantCatalog`. `flow-fest-forest-ecology.ts` loads 19 candidate GLBs
+from `/models/forest/trees/candidates/plantcatalog-r1/`.
+
+**Four problems, in increasing order of severity:**
+
+1. **The tool is end-of-life.** Bentley Systems ceased sales and development of
+   Vue, PlantFactory and PlantCatalog in May 2024, releasing them free for
+   commercial use with support limited to critical security fixes. Version
+   4.8.0.0 is where it stops.
+2. **It builds on exactly one machine.** A Windows GUI application at a
+   hardcoded absolute path. No CI, no second machine, no agent can regenerate
+   the forest.
+3. **The assets cannot be redistributed.** The bridge records
+   `standaloneAssetRedistributionAllowed: false`.
+4. **The species are the wrong continent.** The loaded candidates are *Quercus
+   robur* (English oak), *Salix alba* (white willow), *Salix babylonica*
+   (weeping willow), and *Aesculus carnea* (a European hybrid). The reference
+   forest for this county is **beech–maple**: Hueston Woods, in Preble County,
+   is a National Natural Landmark old-growth beech–maple remnant. Everything
+   else in this sim is surveyed to the metre and the woods are European.
+
+**ez-tree, verified rather than assumed** (v1.1.0, published 2026-01-15, **MIT**,
+zero dependencies, one peer dependency on `three` which the project already
+has):
+
+- **It generates headless in Node.** It touches `document` at import, but a
+  ~15-line DOM shim (`document`, `Image`, `FileReader`) is enough. No WebGL
+  context required. Verified by generating and exporting six presets.
+- **Its output already matches our conditioning contract.** Every tree is two
+  meshes with named materials — `branches` (opaque) and `leaves`
+  (`alphaTest` 0.5, 0.3 for pine). That is precisely the opaque-wood versus
+  cutout-card split `build_flow_fest_tree_lods.mjs` is written around, and
+  `alpha-coverage-mipmaps.ts` already owns coverage-preserving mips for exactly
+  this kind of alpha-tested foliage.
+- **Textureless GLB export works**, which is the same contract the distance
+  tiers already ship: geometry, UVs, original material names, materials
+  re-bound at runtime by name.
+
+| Preset | Meshes | Verts | Tris | GLB |
+| --- | --- | --- | --- | --- |
+| Oak Large | 2 | 30,104 | 22,566 | 1075 KB |
+| Ash Medium | 2 | 28,399 | 20,000 | 1007 KB |
+| Pine Large | 2 | 22,217 | 19,392 | 810 KB |
+| Bush 1 | 2 | 16,315 | 13,872 | 594 KB |
+| Oak Small | 2 | 9,544 | 6,806 | 341 KB |
+| Aspen Medium | 2 | 7,600 | 7,200 | 282 KB |
+
+**Two honest costs.** Its units are not metres — Oak Large exports 102 units
+tall against a real oak's 20–25 m, so scale needs calibrating. And its presets
+are Ash, Aspen, Oak, Pine, Bush and Trellis: **it does not hand you beech or
+sugar maple either.** Neither tool ships the Ohio canopy. The difference is that
+ez-tree is parametric and scriptable, so the canopy can be authored toward
+*Fagus grandifolia* and *Acer saccharum*; PlantCatalog is a fixed European
+library.
+
+**Not yet judged: visual quality.** The plumbing, licence, and species facts
+above are measured. Whether an ez-tree beech at 15 m reads as well as a
+PlantFactory oak is a side-by-side render that has not been done, and it is the
+thing that actually decides this. Do that before committing.
+
+This is its own decision with its own spec, not part of the arrival arc. The arc
+consumes it.
 
 ## Decomposition
 
@@ -266,8 +342,14 @@ Settled with Austen on 2026-09-02:
   loose gravel shoulder. Automatic; it cannot stall. The pickup must feel
   heavier than the hatchback so the loadout car choice is felt, not stated.
 - **Camera: chase, behind the car.**
-- **Date: May 8.** Bare fields, fully leafed woods, sun behind the driver from
-  15:05 to sunset at 20:39.
+- **Date: May 14.** Bare fields, fully leafed woods, sun behind the driver from
+  15:05 to sunset at 20:44.
+- **Departure time is a dial on the loadout screen.** Early, midday or late
+  afternoon. It sets the arrival light, whether there is a queue at the gate,
+  and how much daylight is left to make camp. This is the only piece of the
+  economy that must exist for slice 1.
+- **The surveyed 887 m is the whole drive.** The game opens at the west edge of
+  the terrain square with the player's hands already on the wheel.
 - **The slice ends parked at the gate, out of the car.** The canopy exists as
   geometry you can walk up to; nobody is behind it until sub-project 2.
 - **Traffic: the road is essentially yours.** A few cars that may or may not be
