@@ -344,6 +344,58 @@ None open. Closed so far:
   declined rather than built: see "Per-performer effect presets or overrides"
   under "Spoken but not real". The grammar now names the constraint when asked.
 
+- **Scene inheritance** (closed 2026-09-02). Before this gap closed, a callback
+  to an earlier look meant retyping the whole scene: cast, location, formation,
+  planes, blocking, all of it, with a one-line camera change buried in the copy.
+  `extends` names an EARLIER scene id in the same film and the child's raw
+  input is deep-merged over the parent's before validation
+  (`expand-scene-inheritance.ts`, called at the end of
+  `normalizeFilmDirectorInput`): plain objects merge key by key, arrays replace
+  wholesale, an explicit `null` on the child deletes the parent's key. `id` is
+  always the child's, and `title` becomes optional under `extends` and defaults
+  to the parent's. Chains work because the parent is already expanded when the
+  child merges over it; cycles cannot exist, because only an earlier scene can
+  be named. Expansion runs at the boundary rather than after validation so a
+  child can genuinely omit `title` without loosening the schema for every other
+  scene. Rejections name both scenes: an unknown parent, a forward reference,
+  and a self reference. `/test/film-director?film=proving` scene 14
+  ("callback") is scene 12 with one line changed, the camera moved behind.
+
+- **Seed sharing** (closed 2026-09-02). A scene's random draws are keyed by its
+  own id, so two scenes asking for the same `pick` got different answers, and a
+  callback could not bring the same cast back. `seedAs` names an earlier scene
+  id and every axis stream for the scene uses that id in
+  `createAxisStream(filmSeed, seedAs, axis)`, so a quoted scene draws exactly
+  what the original drew. The resolved scene records `seedSource`. `extends`
+  deliberately does not imply `seedAs`: inheriting a scene's text and inheriting
+  its dice are separate questions, and a variation that reuses the staging with
+  a fresh cast is as reasonable as a callback that reuses both. The Proving
+  Grounds callback states both, which is the common case. Rejections match
+  `extends`, naming both scenes.
+
+- **A cast of zero** (closed 2026-09-02). `cast.count` bottomed out at 1 and
+  `performers` needed one entry, so an empty stage (a location beat, a breath
+  between numbers) was unsayable. `count: 0` and `performers: []` now resolve
+  to no performers. Group framing has nothing to measure, so it targets the
+  stage origin 1.4 m above the floor (`EMPTY_STAGE_TARGET_HEIGHT` in
+  `camera-language.ts`), the height a standing performer's chest would have
+  occupied, and stage extent is the single origin point. The adapter clears the
+  sequence off every pooled performer rather than backfilling them, so a cut to
+  an empty stage empties the rigs the previous scene left standing. The default
+  when nothing is stated is still one performer.
+
+- **Bars** (closed 2026-09-02). Beats closed the gap between music and seconds
+  but left the director counting bars in their head. `performance.meter:
+  {beatsPerBar}` (2 to 12, default 4) sets the meter, and every field that
+  accepts `durationBeats` or `atBeats` accepts `durationBars` or `atBars`,
+  converted through the meter in `convertSceneBeatTimes` at the same single
+  point where beats become seconds. Nothing downstream learns bars exist. The
+  at-most-one-time-unit refine now covers three units, and a bar count that
+  converts outside its field's valid seconds range rejects in bars, naming the
+  meter and the bpm: `40 bars of 3 at 66 bpm is 109.09s`.
+  `/test/film-director?film=proving` scene 16 ("waltz") states a 4-bar scene in
+  3/4 at 90 bpm with a 2-bar camera push.
+
 - **Blocking edges** (closed 2026-09-02). Four edges of the staging grammar,
   three of which turned out to be one real capability and two documented
   truths. A `walk` now takes `along: {arc, bulge?}` and bows to the
@@ -410,16 +462,26 @@ exist in the app's control surface at all:
   build settings. There is no per-performer entry point to override it.
 - **Lighting** (per-scene or per-environment light rig control). No schema
   axis, no adapter hook, no setter surfaced to the director path.
-- **9+ performers.** `castSchema.count` caps at 8 (`z.number().int().min(1).max(8)`);
-  `performanceSchema.performers` caps at 8 as well.
+- **9+ performers.** `castSchema.count` caps at 8 (`z.number().int().min(0).max(8)`);
+  `performanceSchema.performers` caps at 8 as well. Zero is legal; nine is not.
 - **`distinct`/`sameAs` on a scene-scoped axis** (`environmentId`, `formation`).
   These concepts require multiple performers to be meaningful; a scene has
   exactly one resolved value. Rejects with the message in the axis table
   above — including `{pick: "distinct", not}`, where the combined spelling
   does not buy `distinct` a scope it never had.
-- **Two time units on one field.** `durationSeconds` and `durationBeats`
-  together, or a keyframe's `atSeconds` with `atBeats`, reject rather than
-  picking a winner. See "Counted time" above.
+- **Two time units on one field.** `durationSeconds`, `durationBeats` and
+  `durationBars` together in any pair, or a keyframe's `atSeconds` with
+  `atBeats` or `atBars`, reject rather than picking a winner. See "Counted
+  time" above.
+- **An environment change within a scene.** `location` is one value per scene:
+  the environment is resolved once and handed to the adapter with the scene.
+  Mid-scene cuts (`camera.shots`) move the frame, not the world. Cut to a new
+  scene to change the place, and `extends` makes that cheap.
+- **More than 24 scenes, or a scene longer than 60 seconds.**
+  `filmSchema.scenes` caps at 24 entries and a scene's `durationSeconds` caps
+  at 60 (`durationBars` at 120 bars, `durationBeats` at 240, both converting
+  into the same seconds bound). These are workbench limits, not physics: a
+  film is a demonstration reel here, not a feature.
 - **A nonexistent character, prop, effect, effort, environment, or formation
   name.** Every axis validates against its live catalog and rejects by name
   (see the "Rejection behavior" column above) — there is no silent fallback.

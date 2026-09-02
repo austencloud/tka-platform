@@ -9694,7 +9694,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
   "version": 5,
   "id": "proving-grounds-r1",
   "title": "Proving Grounds",
-  "brief": "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all. An eighth scene changes one performer's effect and effort partway through while another's prop stops for four counts. A ninth and tenth scene repeat one staging twice, an orbit clockwise then the same orbit counterclockwise, so the two can be judged side by side. Then an eleventh scene pushes in and widens the lens in the same breath, holding the performer's size while the world stretches behind her; a twelfth takes the same wide shot off the tripod; and a thirteenth whips between two performers with pans that name where to aim instead of how far to turn.",
+  "brief": "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all. An eighth scene changes one performer's effect and effort partway through while another's prop stops for four counts. A ninth and tenth scene repeat one staging twice, an orbit clockwise then the same orbit counterclockwise, so the two can be judged side by side. Then an eleventh scene pushes in and widens the lens in the same breath, holding the performer's size while the world stretches behind her; a twelfth takes the same wide shot off the tripod; and a thirteenth whips between two performers with pans that name where to aim instead of how far to turn. A fourteenth scene calls the first one back from behind, inheriting its staging and its draw rather than restating either. A fifteenth holds three seconds on a stage with nobody on it. A sixteenth counts itself in bars: four bars of three at 90.",
   "format": {
     "width": 1920,
     "height": 1080,
@@ -13235,9 +13235,499 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           }
         ]
       }
+    },
+    {
+      "id": "callback",
+      "title": "Callback",
+      "intent": "Gaps 13 and 14: the opening scene again, from the other side. \`extends\` brings the cast, the forest, the lit planes, and the wide front framing across, and the only thing stated here is \`position: \\"behind\\"\`, which lands on the inherited camera without disturbing the rest of it. \`seedAs\` is the second half: without it the same distinct-and-not draw would run under a new scene name and deal six different planes, and the callback would be a different moment rather than the same one seen from the back.",
+      "extends": "combined-draw",
+      "seedSource": "combined-draw",
+      "startSeconds": 111,
+      "durationSeconds": 6,
+      "transition": {
+        "kind": "cut",
+        "durationSeconds": 0
+      },
+      "location": {
+        "environmentId": "forest",
+        "showStage": false,
+        "showAudience": false,
+        "sceneFeatures": {
+          "environment": true,
+          "stage": false,
+          "audience": false,
+          "campfire": false,
+          "tent": false
+        },
+        "visiblePlanes": [
+          "wheel",
+          "floor",
+          "right-shield",
+          "left-shield",
+          "forward-ramp",
+          "backward-ramp",
+          "right-wing",
+          "left-wing"
+        ]
+      },
+      "performance": {
+        "bpm": 90,
+        "sequence": {
+          "source": "demo",
+          "loop": true
+        },
+        "formation": "line",
+        "performers": [
+          {
+            "id": "performer-1",
+            "name": "Performer 1",
+            "characterId": "x-bot",
+            "prop": "staff",
+            "effect": "none",
+            "effort": "linear",
+            "sequence": {
+              "source": "demo"
+            },
+            "position": {
+              "x": -2,
+              "z": 0
+            },
+            "facingAngle": 3.141593,
+            "blocking": [
+              {
+                "atSeconds": 0,
+                "position": {
+                  "x": -2,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 6,
+                "position": {
+                  "x": -2,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              }
+            ],
+            "beatOffset": 0,
+            "staffLengthCm": null,
+            "leftPlane": "wheel",
+            "rightPlane": "right-wing",
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
+          },
+          {
+            "id": "performer-2",
+            "name": "Performer 2",
+            "characterId": "y-bot",
+            "prop": "staff",
+            "effect": "none",
+            "effort": "linear",
+            "sequence": {
+              "source": "demo"
+            },
+            "position": {
+              "x": 0,
+              "z": 0
+            },
+            "facingAngle": 3.141593,
+            "blocking": [
+              {
+                "atSeconds": 0,
+                "position": {
+                  "x": 0,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 6,
+                "position": {
+                  "x": 0,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              }
+            ],
+            "beatOffset": 0,
+            "staffLengthCm": null,
+            "leftPlane": "floor",
+            "rightPlane": "left-wing",
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
+          },
+          {
+            "id": "performer-3",
+            "name": "Performer 3",
+            "characterId": "remy",
+            "prop": "staff",
+            "effect": "none",
+            "effort": "linear",
+            "sequence": {
+              "source": "demo"
+            },
+            "position": {
+              "x": 2,
+              "z": 0
+            },
+            "facingAngle": 3.141593,
+            "blocking": [
+              {
+                "atSeconds": 0,
+                "position": {
+                  "x": 2,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 6,
+                "position": {
+                  "x": 2,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              }
+            ],
+            "beatOffset": 0,
+            "staffLengthCm": null,
+            "leftPlane": "backward-ramp",
+            "rightPlane": "right-shield",
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
+          }
+        ],
+        "stageExtent": [
+          {
+            "x": -2,
+            "z": 0
+          },
+          {
+            "x": -2,
+            "z": 0
+          },
+          {
+            "x": -2,
+            "z": 0
+          },
+          {
+            "x": 0,
+            "z": 0
+          },
+          {
+            "x": 0,
+            "z": 0
+          },
+          {
+            "x": 0,
+            "z": 0
+          },
+          {
+            "x": 2,
+            "z": 0
+          },
+          {
+            "x": 2,
+            "z": 0
+          },
+          {
+            "x": 2,
+            "z": 0
+          }
+        ]
+      },
+      "effectPresets": {},
+      "effectOverrides": {},
+      "camera": {
+        "preset": "custom",
+        "substitutedFor": null,
+        "keyframes": [
+          {
+            "atSeconds": 0,
+            "position": [
+              0,
+              0.999369,
+              5.906988
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          },
+          {
+            "atSeconds": 6,
+            "position": [
+              0,
+              0.999369,
+              5.906988
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-stage",
+      "title": "Empty Stage",
+      "intent": "Gap 21: nobody. A cast of zero used to be a schema rejection, so holding on a place before anyone walked into it meant casting someone and hoping they stayed out of frame. The shot frames the stage origin at head height, the ground is still under the camera, and every rig in the pool stands empty handed.",
+      "startSeconds": 117,
+      "durationSeconds": 3,
+      "transition": {
+        "kind": "fade-through-black",
+        "durationSeconds": 0.8
+      },
+      "location": {
+        "environmentId": "forest",
+        "showStage": false,
+        "showAudience": false,
+        "sceneFeatures": {
+          "environment": true,
+          "stage": false,
+          "audience": false,
+          "campfire": false,
+          "tent": false
+        },
+        "visiblePlanes": []
+      },
+      "performance": {
+        "bpm": 90,
+        "sequence": {
+          "source": "demo",
+          "loop": true
+        },
+        "formation": "custom",
+        "performers": [],
+        "stageExtent": [
+          {
+            "x": 0,
+            "z": 0
+          }
+        ]
+      },
+      "effectPresets": {},
+      "effectOverrides": {},
+      "camera": {
+        "preset": "custom",
+        "substitutedFor": null,
+        "keyframes": [
+          {
+            "atSeconds": 0,
+            "position": [
+              0,
+              0.707874,
+              -4.575837
+            ],
+            "target": [
+              0,
+              0.3879,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          },
+          {
+            "atSeconds": 3,
+            "position": [
+              0,
+              0.707874,
+              -4.575837
+            ],
+            "target": [
+              0,
+              0.3879,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          }
+        ]
+      }
+    },
+    {
+      "id": "waltz",
+      "title": "Waltz",
+      "intent": "Gap 22: counted in bars. The meter is three, the tempo is 90, and the scene states its length as four bars rather than the twelve beats or the eight seconds those work out to. The push-in is two bars of the same clock. A director counting a waltz says \\"four bars\\", never \\"twelve beats\\", and now the film can hear it.",
+      "startSeconds": 120,
+      "durationSeconds": 8,
+      "transition": {
+        "kind": "cut",
+        "durationSeconds": 0
+      },
+      "location": {
+        "environmentId": "cosmic",
+        "showStage": false,
+        "showAudience": false,
+        "sceneFeatures": {
+          "environment": true,
+          "stage": false,
+          "audience": false,
+          "campfire": false,
+          "tent": false
+        },
+        "visiblePlanes": []
+      },
+      "performance": {
+        "bpm": 90,
+        "sequence": {
+          "source": "demo",
+          "loop": true
+        },
+        "formation": "solo",
+        "performers": [
+          {
+            "id": "performer-1",
+            "name": "Performer 1",
+            "characterId": "x-bot",
+            "prop": "staff",
+            "effect": "none",
+            "effort": "linear",
+            "sequence": {
+              "source": "demo"
+            },
+            "position": {
+              "x": 0,
+              "z": 0
+            },
+            "facingAngle": 3.141593,
+            "blocking": [
+              {
+                "atSeconds": 0,
+                "position": {
+                  "x": 0,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 8,
+                "position": {
+                  "x": 0,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              }
+            ],
+            "beatOffset": 0,
+            "staffLengthCm": null,
+            "leftPlane": "wall",
+            "rightPlane": "wall",
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
+          }
+        ],
+        "stageExtent": [
+          {
+            "x": 0,
+            "z": 0
+          },
+          {
+            "x": 0,
+            "z": 0
+          },
+          {
+            "x": 0,
+            "z": 0
+          }
+        ]
+      },
+      "effectPresets": {},
+      "effectOverrides": {},
+      "camera": {
+        "preset": "custom",
+        "substitutedFor": null,
+        "keyframes": [
+          {
+            "atSeconds": 0,
+            "position": [
+              0,
+              0.718559,
+              -2.614694
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "ease-in-out"
+          },
+          {
+            "atSeconds": 4,
+            "position": [
+              0,
+              0.676705,
+              -2.016156
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          },
+          {
+            "atSeconds": 8,
+            "position": [
+              0,
+              0.676705,
+              -2.016156
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          }
+        ]
+      }
     }
   ],
-  "durationSeconds": 111
+  "durationSeconds": 128
 }"
 `;
 
