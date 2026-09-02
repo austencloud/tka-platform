@@ -105,6 +105,47 @@ speed on **entirely measured geometry**. No bearing extrapolation, no authored
 road, and no terrain outside the survey. The work is to re-clip the source to
 the terrain square rather than the camp-plan bounds.
 
+## It really is corn — in odd years
+
+Austen: *"you'll find that the corn situation is kind of what we have going on
+in reality."* Confirmed against the **USDA Cropland Data Layer**, the annual
+30 m national crop classification (public domain; NASS CropScape
+`GetCDLValue`, queried 2026-09-02). Google's imagery is licensed against
+derivative works, so it stays a human reference — as it already was for the
+entrance panorama — and the crop layer is the better source anyway, because it
+names the crop instead of leaving it to be eyeballed.
+
+Sampled along the 886.9 m approach, reprojected EPSG:26916 → EPSG:5070:
+
+| Year | Field south of the road |
+| --- | --- |
+| 2021 | Corn |
+| 2022 | Soybeans |
+| 2023 | Corn |
+| 2024 | Soybeans |
+| 2025 | Corn |
+
+A textbook two-year corn/soy rotation. **Odd years are corn.** The 2023 NAIP
+orthophoto already in the source lock is a corn year, so the cached imagery and
+the corn reading agree.
+
+The corridor has real structure, and it is measured rather than authored:
+
+- **0 → 540 m: open corn on the right.** Unbroken south of the road, from the
+  square's west edge, extending past 240 m deep and giving way to alfalfa around
+  320 m. At 45 m off the centreline every 40 m station reads Corn.
+- **The left is not corn.** North of the road: the road corridor itself out to
+  ~40 m, deciduous forest 60–100 m, then alfalfa and hay beyond 160 m.
+- **540 → 887 m: deciduous forest, both sides.** The fields end and the woods
+  close in for the last ~350 m. **The gate is in the trees, not in the corn.**
+
+At a careful 15 mph that is roughly **80 s of open corn, then 50 s of woods,
+then the gate** — an approach that already narrows on its own. Verified twice:
+station sweep every 40 m, and lateral sweeps at 10–320 m on both sides.
+
+Recording this in the source lock alongside ODOT, NAIP, and 3DEP belongs to the
+sub-project 1 implementation, not to this roadmap.
+
 ## Decomposition
 
 Six independent subsystems, in dependency order. Each gets its own spec, plan,
