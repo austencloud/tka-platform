@@ -612,6 +612,37 @@ const sceneBlockingSchema = z
   .strict()
   .superRefine(atMostOneTimeUnit);
 
+/**
+ * Spoken but not real. A director will plausibly ask for one performer's
+ * trails to be long and another's short. The effects engine cannot do it:
+ * `EffectsConfigState` holds one configuration per effect id for the whole
+ * scene and `EffectOrchestrator3D` reads that single config for every
+ * performer's tips. Accept the keys so the rejection can explain the
+ * constraint instead of zod's "unrecognized key".
+ */
+export const PERFORMER_EFFECT_CONFIG_MESSAGE =
+  'Effect presets and overrides are scene-wide: the effects engine keeps one configuration per effect id for the whole scene, so two performers using the same effect always look the same. Move "effectPresets"/"effectOverrides" to the scene, or give the performers different effects.';
+
+const performerEffectConfigKeys = {
+  effectPresets: z.unknown().optional(),
+  effectOverrides: z.unknown().optional(),
+};
+
+function rejectPerformerEffectConfig(
+  value: { effectPresets?: unknown; effectOverrides?: unknown },
+  ctx: z.RefinementCtx
+): void {
+  for (const key of ["effectPresets", "effectOverrides"] as const) {
+    if (value[key] !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [key],
+        message: PERFORMER_EFFECT_CONFIG_MESSAGE,
+      });
+    }
+  }
+}
+
 const performerSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -629,8 +660,10 @@ const performerSchema = z
     leftPlane: directiveSchema(planeSchema).optional(),
     rightPlane: directiveSchema(planeSchema).optional(),
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
+    ...performerEffectConfigKeys,
   })
-  .strict();
+  .strict()
+  .superRefine(rejectPerformerEffectConfig);
 
 const castDefaultsSchema = z
   .object({
@@ -644,8 +677,10 @@ const castDefaultsSchema = z
     leftPlane: directiveSchema(planeSchema).optional(),
     rightPlane: directiveSchema(planeSchema).optional(),
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
+    ...performerEffectConfigKeys,
   })
-  .strict();
+  .strict()
+  .superRefine(rejectPerformerEffectConfig);
 
 const castSchema = z
   .object({

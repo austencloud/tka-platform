@@ -828,3 +828,88 @@ describe("sequence sources: transformOf and library", () => {
     ).toThrow(/names one source, but this one names .*mirrorOf.*library/);
   });
 });
+
+describe("per-performer effect config (spoken but not real)", () => {
+  function filmWithPerformers(performers: Record<string, unknown>[]) {
+    return {
+      version: 2,
+      id: "effect-config-film",
+      title: "Effect Config Film",
+      scenes: [{ id: "s1", title: "S1", performance: { performers } }],
+    };
+  }
+
+  function filmWithCastDefaults(defaults: Record<string, unknown>) {
+    return {
+      version: 2,
+      id: "effect-config-film",
+      title: "Effect Config Film",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: { cast: { count: 1, defaults } },
+        },
+      ],
+    };
+  }
+
+  function filmWithScene(sceneExtra: Record<string, unknown>) {
+    return {
+      version: 2,
+      id: "effect-config-film",
+      title: "Effect Config Film",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: { performers: [{ id: "performer-1" }] },
+          ...sceneExtra,
+        },
+      ],
+    };
+  }
+
+  it("rejects effectPresets on a performer with the scene-wide constraint", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        filmWithPerformers([
+          {
+            id: "performer-1",
+            effect: "trails",
+            effectPresets: { trails: "comet" },
+          },
+        ])
+      )
+    ).toThrow(/Effect presets and overrides are scene-wide/);
+  });
+
+  it("rejects effectOverrides on a performer with the same message", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        filmWithPerformers([
+          {
+            id: "performer-1",
+            effect: "trails",
+            effectOverrides: { trails: { length: 2 } },
+          },
+        ])
+      )
+    ).toThrow(/Effect presets and overrides are scene-wide/);
+  });
+
+  it("rejects effectPresets in cast defaults with the same message", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        filmWithCastDefaults({ effectPresets: { trails: "comet" } })
+      )
+    ).toThrow(/Effect presets and overrides are scene-wide/);
+  });
+
+  it("still accepts scene-scoped effectPresets", () => {
+    const parsed = FilmDirectorInputSchema.parse(
+      filmWithScene({ effectPresets: { trails: "trail-neon" } })
+    );
+    expect(parsed.scenes[0]!.effectPresets).toEqual({ trails: "trail-neon" });
+  });
+});

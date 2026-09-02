@@ -309,6 +309,10 @@ None open. Closed so far:
   ("derived-sequences") plays one library sequence beside a 90-degree rotation
   with swapped hands and a retrograde of it.
 
+- **Per-performer effect config** (ruled 2026-09-02). Investigated and
+  declined rather than built: see "Per-performer effect presets or overrides"
+  under "Spoken but not real". The grammar now names the constraint when asked.
+
 ## Spoken but not real (proven rejections)
 
 Things a director might plausibly ask for that the schema correctly rejects
@@ -321,6 +325,19 @@ exist in the app's control surface at all:
   (`src/lib/shared/3d/components/controls/PropPopover.svelte`'s
   `getPerformerColor(index)`) are a fixed index-based UI accent, not a
   material property that can be assigned.
+- **Per-performer effect presets or overrides.** `effectPresets` and
+  `effectOverrides` are scene-scoped only. `EffectsConfigState`
+  (`src/lib/shared/effects/state/effects-config-state.svelte.ts`) holds one
+  configuration per effect id for the whole scene, `applyDirectorEffectPresets`
+  (`director-viewer-adapter.ts`) replaces that single state once per scene, and
+  `EffectOrchestrator3D.svelte` reads the same config for every performer's
+  tips. Two performers on the same effect always look the same; only different
+  effect ids look different. Written on a performer or in cast defaults, either
+  key rejects with: `Effect presets and overrides are scene-wide: ...` (full
+  text in `PERFORMER_EFFECT_CONFIG_MESSAGE`). Making this real means adding a
+  performer dimension to the effects state and threading the performer id
+  through the orchestrator's resolve calls. That is an effects-engine task,
+  ruled out of the director-language campaign on 2026-09-02.
 - **Character scale / height, per performer.** `setScale(scale)` exists on
   `AvatarSkeletonBuilder` (`@austencloud/scene-3d`), but nothing in this app
   calls it per performer — the only caller path is the global
