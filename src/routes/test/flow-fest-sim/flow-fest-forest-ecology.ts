@@ -63,6 +63,10 @@ export const FLOW_FEST_FOREST_TREE_ASSETS = {
     "/models/forest/trees/candidates/plantcatalog-r1/aesculus-pavia-ld-s103.glb",
   "plantcatalog-willow-53":
     "/models/forest/trees/candidates/plantcatalog-r1/salix-alba-ld-s53.glb",
+  "plantcatalog-weeping-willow-19":
+    "/models/forest/trees/candidates/plantcatalog-r1/salix-babylonica-ld-s19.glb",
+  "plantcatalog-weeping-willow-43":
+    "/models/forest/trees/candidates/plantcatalog-r1/salix-babylonica-ld-s43.glb",
 } as const;
 
 /**
@@ -89,9 +93,18 @@ export const FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS: Record<
   far: deriveDistanceTierAssets("far"),
 };
 
+/**
+ * Tier seams are measured from the ride camera. At 55 m the near band held
+ * only the handful of trees beside the road, so nearly every tree in a
+ * ground-level frame was a mid-tier crown; 60 m keeps the first rank of the
+ * woodland edge on the full asset, and 150 m holds the mid tier through the
+ * ridge line before the far tier's card-thinned crowns take over. Pushing the
+ * mid seam to 180 m moved several hundred ridge trees onto the mid asset and
+ * cost more frame time than it returned in crown detail at that range.
+ */
 export const FLOW_FEST_FOREST_DISTANCE_LOD = {
-  nearMaximumMeters: 55,
-  midMaximumMeters: 130,
+  nearMaximumMeters: 60,
+  midMaximumMeters: 150,
   grassNearMaximumMeters: 22,
   grassMidMaximumMeters: 40,
   grassMaximumMeters: 58,
@@ -159,6 +172,8 @@ export const FLOW_FEST_FOREST_TRUNK_PROFILES: Record<
   "plantcatalog-carnea-47": 0.032,
   "plantcatalog-buckeye-103": 0.276,
   "plantcatalog-willow-53": 0.022,
+  "plantcatalog-weeping-willow-19": 0.023,
+  "plantcatalog-weeping-willow-43": 0.031,
 };
 
 /**
@@ -725,6 +740,11 @@ const FLOW_FEST_DAMP_FAMILIES = [
   "plantcatalog-willow",
   "island-tree-02",
   "plantcatalog-willow-53",
+  // Weeping willows are the damp-hollow signature: pendulous crowns beside
+  // the low ground read as water even where the pond is out of frame.
+  "plantcatalog-weeping-willow-19",
+  "plantcatalog-oak-colonised",
+  "plantcatalog-weeping-willow-43",
 ] as const satisfies readonly FlowFestForestTreeFamilyId[];
 const FLOW_FEST_UNDERSTORY_FAMILIES = [
   "plantcatalog-buckeye-31",

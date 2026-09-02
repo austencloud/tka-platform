@@ -191,10 +191,13 @@ describe("Flow Fest Forest ecology integration", () => {
           entry.outputTriangles,
           `${family.id} ${tier} triangles`
         ).toBeLessThan(family.sourceTriangles);
-        // The instance budget: a mid tree stays under ~20k triangles and a far
-        // tree under ~5k, or a few hundred instances of it stop being cheap.
+        // The instance budget: a mid tree stays under ~26k triangles and a far
+        // tree under ~7k, or a few hundred instances of it stop being cheap.
+        // The budgets are what let a tier keep enough whole leaf cards to hold
+        // most of the near crown's coverage (`build_flow_fest_tree_lods.mjs`
+        // TIERS).
         expect(entry.outputTriangles).toBeLessThanOrEqual(
-          tier === "mid" ? 20_000 : 5_000
+          tier === "mid" ? 26_000 : 7_000
         );
       }
       expect(family.tiers.far.outputTriangles).toBeLessThanOrEqual(
@@ -238,7 +241,7 @@ describe("Flow Fest Forest ecology integration", () => {
     const first = deriveFlowFestForestEcology(contract, terrain, canopy);
     const second = deriveFlowFestForestEcology(contract, terrain, canopy);
 
-    expect(Object.values(FLOW_FEST_FOREST_TREE_ASSETS)).toHaveLength(22);
+    expect(Object.values(FLOW_FEST_FOREST_TREE_ASSETS)).toHaveLength(24);
     expect(
       Object.values(FLOW_FEST_FOREST_TREE_ASSETS).every(
         (path) =>

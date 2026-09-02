@@ -1,11 +1,11 @@
 [
   {
-    "id": "quercus-robur-forest-ld-s101",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-forest-ld-s101-proof.glb",
+    "id": "salix-babylonica-ld-s19",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/salix-babylonica-ld-s19-proof.glb",
     "dimensionsMetres": [
-      7.408810615539551,
-      7.400753498077393,
-      16.5
+      12.84077262878418,
+      10.876664161682129,
+      11.944148063659668
     ],
     "views": [
       "front",
@@ -17,114 +17,12 @@
     ]
   },
   {
-    "id": "quercus-robur-forest-ld-s113",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-forest-ld-s113-proof.glb",
+    "id": "salix-babylonica-ld-s43",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/salix-babylonica-ld-s43-proof.glb",
     "dimensionsMetres": [
-      6.446476936340332,
-      6.248111248016357,
-      12.999673843383789
-    ],
-    "views": [
-      "front",
-      "three-quarter",
-      "silhouette",
-      "human-height",
-      "bark-close",
-      "canopy"
-    ]
-  },
-  {
-    "id": "quercus-robur-lone-ld-s57",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-lone-ld-s57-proof.glb",
-    "dimensionsMetres": [
-      6.991637229919434,
-      6.782890796661377,
-      15.0
-    ],
-    "views": [
-      "front",
-      "three-quarter",
-      "silhouette",
-      "human-height",
-      "bark-close",
-      "canopy"
-    ]
-  },
-  {
-    "id": "quercus-robur-urban-ld-s71",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-urban-ld-s71-proof.glb",
-    "dimensionsMetres": [
-      9.293693542480469,
-      8.664935111999512,
-      11.999151229858398
-    ],
-    "views": [
-      "front",
-      "three-quarter",
-      "silhouette",
-      "human-height",
-      "bark-close",
-      "canopy"
-    ]
-  },
-  {
-    "id": "quercus-robur-colonised-ld-s61",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-colonised-ld-s61-proof.glb",
-    "dimensionsMetres": [
-      6.762749195098877,
-      6.987975597381592,
-      15.0
-    ],
-    "views": [
-      "front",
-      "three-quarter",
-      "silhouette",
-      "human-height",
-      "bark-close",
-      "canopy"
-    ]
-  },
-  {
-    "id": "aesculus-carnea-ld-s47",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/aesculus-carnea-ld-s47-proof.glb",
-    "dimensionsMetres": [
-      10.591708183288574,
-      10.72507381439209,
-      11.5
-    ],
-    "views": [
-      "front",
-      "three-quarter",
-      "silhouette",
-      "human-height",
-      "bark-close",
-      "canopy"
-    ]
-  },
-  {
-    "id": "aesculus-pavia-ld-s103",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/aesculus-pavia-ld-s103-proof.glb",
-    "dimensionsMetres": [
-      12.939141273498535,
-      14.931390762329102,
-      10.000436782836914
-    ],
-    "views": [
-      "front",
-      "three-quarter",
-      "silhouette",
-      "human-height",
-      "bark-close",
-      "canopy"
-    ]
-  },
-  {
-    "id": "salix-alba-ld-s53",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/salix-alba-ld-s53-proof.glb",
-    "dimensionsMetres": [
-      9.286690711975098,
-      8.65831470489502,
-      14.499999046325684
+      12.820761680603027,
+      14.70982551574707,
+      13.499530792236328
     ],
     "views": [
       "front",

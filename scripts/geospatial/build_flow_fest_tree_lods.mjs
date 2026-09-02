@@ -98,13 +98,23 @@ const OPTIONAL_FAMILIES = [
 
 /**
  * Plantcatalog foliage prims are per-leaf billboards (~2 triangles per card),
- * so card pruning behaves as leaf thinning: aggressive keep ratios with
- * scaled-up survivors read as the same tree, thinner. Ratios are sized to the
- * instance budget — mid renders ~150 trees, far ~250 — not to per-tree looks.
+ * so card pruning behaves as leaf thinning: scaled-up survivors read as the
+ * same tree, thinner. The keep ratio and scale cap are paired through
+ * `keepRatio * scaleCap^2`: that product is the fraction of the near crown's
+ * leaf coverage the tier retains. The earlier 0.12 / 2.2 mid pairing kept 58%
+ * of the coverage and the 0.035 / 3.2 far pairing 36%, which is what made
+ * every ridge tree read as a bare crown with a few clumps from the ride
+ * camera. The cost side is fill: the cards cast no shadows here but every one
+ * is rasterised at full size, so total card area, not triangle count, is what
+ * the GPU pays for. A 0.3 / 1.9 mid pairing (108% coverage) doubled that area
+ * against the mid tier's ~1,300 visible instances and halved the frame rate
+ * on the RTX-class target; 0.2 / 2.0 keeps 80% of the coverage at 1.4x the
+ * original fill, and 0.06 / 3.2 keeps 61% at the far band where instances
+ * are few.
  */
 const TIERS = [
-  { id: "mid", woodRatio: 0.22, woodError: 0.25, foliageKeepRatio: 0.12, scaleCap: 2.2, maxTriangles: 20_000 },
-  { id: "far", woodRatio: 0.08, woodError: 0.6, foliageKeepRatio: 0.035, scaleCap: 3.2, maxTriangles: 5_000 },
+  { id: "mid", woodRatio: 0.3, woodError: 0.25, foliageKeepRatio: 0.2, scaleCap: 2.0, maxTriangles: 26_000 },
+  { id: "far", woodRatio: 0.1, woodError: 0.6, foliageKeepRatio: 0.06, scaleCap: 3.2, maxTriangles: 7_000 },
 ];
 
 /**

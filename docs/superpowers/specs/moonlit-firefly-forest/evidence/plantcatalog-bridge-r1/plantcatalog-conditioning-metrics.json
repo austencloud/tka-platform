@@ -2839,5 +2839,311 @@
       "epiphyteTrianglesDropped": 0,
       "foliageTrianglesConditioned": 46864
     }
+  },
+  {
+    "id": "salix-babylonica-ld-s19",
+    "species": "Salix babylonica",
+    "sourceFbx": "E:\\worktrees\\tka-platform\\forest-pass-2\\blender\\plantcatalog-bridge-r1\\raw\\salix-babylonica-ld-s19\\salix-babylonica-ld-s19.fbx",
+    "sourceFbxSha256": "68689c816f9080fc7dcdb5903d3882348fee79ae6537a539798495d346933b10",
+    "reviewGlb": "blender/plantcatalog-bridge-r1/conditioned/salix-babylonica-ld-s19-review.glb",
+    "reviewGlbSha256": "d6f5f2b6c9c6075f6acfd7eceacb313f478a16540d2bed28e9fc56844b2a80c7",
+    "reviewGlbBytes": 103630840,
+    "meshObjects": 1,
+    "vertices": 415854,
+    "triangles": 385877,
+    "materials": [
+      {
+        "originalName": "Salix babyl bark",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s19_Wood_Opaque_01",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Wood_Opaque_01_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Salix  babyl dead branch",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s19_Wood_Opaque_02",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Wood_Opaque_02_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Salix  babyl br cut",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s19_Wood_Opaque_03",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Wood_Opaque_03_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Salix babyl twig 01",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s19_Wood_Opaque_04",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Wood_Opaque_04_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Salix babyl twig 02",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s19_Wood_Opaque_05",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Wood_Opaque_05_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Salix babyl LD leaf 01b front",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_06",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_06_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_06_BaseColor"
+      },
+      {
+        "originalName": "Salix babyl LD leaf 01b back_back",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_07",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_07_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_07_BaseColor"
+      },
+      {
+        "originalName": "Salix babyl LD leaf 01c front",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_08",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_08_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_08_BaseColor"
+      },
+      {
+        "originalName": "Salix babyl LD leaf 01c back_back",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_09",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_09_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_09_BaseColor"
+      },
+      {
+        "originalName": "Salix babyl LD leaf 01a front",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_10",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_10_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_10_BaseColor"
+      },
+      {
+        "originalName": "Salix babyl LD leaf 01a back_back",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_11",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_11_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_salix_babylonica_ld_s19_Foliage_Cutout_11_BaseColor"
+      }
+    ],
+    "minimumMetres": [
+      -6.42038631439209,
+      -5.438229084014893,
+      1.6631759081064956e-08
+    ],
+    "maximumMetres": [
+      6.42038631439209,
+      5.438229084014893,
+      12.0
+    ],
+    "dimensionsMetres": [
+      12.84077262878418,
+      10.876458168029785,
+      12.0
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 253077,
+      "totalVertices": 415854
+    },
+    "reduction": {
+      "trianglesBefore": 385877,
+      "trianglesAfter": 385877,
+      "epiphyteTrianglesDropped": 0,
+      "foliageTrianglesConditioned": 84359
+    }
+  },
+  {
+    "id": "salix-babylonica-ld-s43",
+    "species": "Salix babylonica",
+    "sourceFbx": "E:\\worktrees\\tka-platform\\forest-pass-2\\blender\\plantcatalog-bridge-r1\\raw\\salix-babylonica-ld-s43\\salix-babylonica-ld-s43.fbx",
+    "sourceFbxSha256": "2ab3753efe200ace810035d475eac52ab5b8dc9df3ccaf0548f637c1f6076275",
+    "reviewGlb": "blender/plantcatalog-bridge-r1/conditioned/salix-babylonica-ld-s43-review.glb",
+    "reviewGlbSha256": "bdc4786ce54b35d5e6ebc512456b7f6a7cdddfd2912110d7b296d559c941ccab",
+    "reviewGlbBytes": 118251716,
+    "meshObjects": 1,
+    "vertices": 654750,
+    "triangles": 604334,
+    "materials": [
+      {
+        "originalName": "Salix babyl bark",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s43_Wood_Opaque_01",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Wood_Opaque_01_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Salix  babyl dead branch",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s43_Wood_Opaque_02",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Wood_Opaque_02_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Salix  babyl br cut",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s43_Wood_Opaque_03",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Wood_Opaque_03_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Salix babyl twig 01",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s43_Wood_Opaque_04",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Wood_Opaque_04_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Salix babyl twig 02",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s43_Wood_Opaque_05",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Wood_Opaque_05_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Salix babyl LD leaf 01b front",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_06",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_06_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_06_BaseColor"
+      },
+      {
+        "originalName": "Salix babyl LD leaf 01b back_back",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_07",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_07_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_07_BaseColor"
+      },
+      {
+        "originalName": "Salix babyl LD leaf 01c front",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_08",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_08_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_08_BaseColor"
+      },
+      {
+        "originalName": "Salix babyl LD leaf 01c back_back",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_09",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_09_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_09_BaseColor"
+      },
+      {
+        "originalName": "Salix babyl LD leaf 01a front",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_10",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_10_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_10_BaseColor"
+      },
+      {
+        "originalName": "Salix babyl LD leaf 01a back_back",
+        "name": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_11",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_11_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_salix_babylonica_ld_s43_Foliage_Cutout_11_BaseColor"
+      }
+    ],
+    "minimumMetres": [
+      -6.410434246063232,
+      -7.354913234710693,
+      1.2181487818452297e-08
+    ],
+    "maximumMetres": [
+      6.410434246063232,
+      7.354913234710693,
+      13.5
+    ],
+    "dimensionsMetres": [
+      12.820868492126465,
+      14.709826469421387,
+      13.5
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 399705,
+      "totalVertices": 654750
+    },
+    "reduction": {
+      "trianglesBefore": 604334,
+      "trianglesAfter": 604334,
+      "epiphyteTrianglesDropped": 0,
+      "foliageTrianglesConditioned": 133235
+    }
   }
 ]
