@@ -1,11 +1,11 @@
 [
   {
-    "id": "aesculus-pavia-ld-s31",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/aesculus-pavia-ld-s31-proof.glb",
+    "id": "salix-babylonica-ld-s19",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/salix-babylonica-ld-s19-proof.glb",
     "dimensionsMetres": [
-      14.159605979919434,
-      14.213394165039062,
-      9.457088470458984
+      12.84077262878418,
+      10.876664161682129,
+      11.944148063659668
     ],
     "views": [
       "front",
@@ -17,29 +17,12 @@
     ]
   },
   {
-    "id": "aesculus-pavia-ld-s79",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/aesculus-pavia-ld-s79-proof.glb",
+    "id": "salix-babylonica-ld-s43",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/salix-babylonica-ld-s43-proof.glb",
     "dimensionsMetres": [
-      13.984679222106934,
-      15.19198989868164,
-      11.000248908996582
-    ],
-    "views": [
-      "front",
-      "three-quarter",
-      "silhouette",
-      "human-height",
-      "bark-close",
-      "canopy"
-    ]
-  },
-  {
-    "id": "quercus-robur-dead-ld-s37",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-dead-ld-s37-proof.glb",
-    "dimensionsMetres": [
-      9.656089782714844,
-      12.19102954864502,
-      13.499492645263672
+      12.820761680603027,
+      14.70982551574707,
+      13.499530792236328
     ],
     "views": [
       "front",

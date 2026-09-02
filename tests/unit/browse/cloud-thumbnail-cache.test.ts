@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => {
   return {
     auth,
     getAuthInstance: vi.fn(),
+    ensureGuestIdentity: vi.fn(),
     getStorageInstance: vi.fn(),
     ref: vi.fn(),
     uploadBytes: vi.fn(),
@@ -22,6 +23,10 @@ const mocks = vi.hoisted(() => {
 vi.mock("$lib/shared/auth/firebase", () => ({
   getAuthInstance: mocks.getAuthInstance,
   getStorageInstance: mocks.getStorageInstance,
+}));
+
+vi.mock("$lib/shared/auth/services/guest-identity", () => ({
+  ensureGuestIdentity: mocks.ensureGuestIdentity,
 }));
 
 vi.mock("firebase/storage", () => ({
@@ -53,6 +58,7 @@ beforeEach(() => {
   localStorage.clear();
   mocks.auth.currentUser = null;
   mocks.auth.authStateReady.mockResolvedValue(undefined);
+  mocks.ensureGuestIdentity.mockResolvedValue(undefined);
   mocks.getAuthInstance.mockResolvedValue(mocks.auth);
   mocks.getStorageInstance.mockResolvedValue({ bucket: "test" });
   mocks.ref.mockReturnValue({ fullPath: "thumbnail.webp" });
@@ -66,6 +72,33 @@ afterEach(() => {
 });
 
 describe("cloud-thumbnail-cache upload authorization", () => {
+  it("mints a guest identity before deciding whether it can upload", async () => {
+    mocks.ensureGuestIdentity.mockImplementationOnce(async () => {
+      mocks.auth.currentUser = { uid: "guest-1" };
+    });
+
+    const url = await upload(key, new Blob(["webp"], { type: "image/webp" }));
+
+    expect(url).toBe("https://storage.test/thumbnail.webp");
+    expect(mocks.ensureGuestIdentity).toHaveBeenCalledWith("thumbnail_upload");
+    expect(mocks.uploadBytes).toHaveBeenCalledOnce();
+    expect(mocks.ensureGuestIdentity.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.uploadBytes.mock.invocationCallOrder[0]!
+    );
+  });
+
+  it("stays silent when the guest provider cannot mint an identity", async () => {
+    // ensureGuestIdentity swallows provider failures, so it resolves while
+    // currentUser stays null. The upload must still not be attempted.
+    mocks.ensureGuestIdentity.mockResolvedValueOnce(undefined);
+
+    const url = await upload(key, new Blob(["webp"], { type: "image/webp" }));
+
+    expect(url).toBeNull();
+    expect(mocks.ensureGuestIdentity).toHaveBeenCalledOnce();
+    expect(mocks.uploadBytes).not.toHaveBeenCalled();
+  });
+
   it("does not send an upload when the settled auth state is signed out", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
