@@ -3,7 +3,8 @@
 **Date:** 2026-09-02
 **Status:** Decomposition agreed. Sub-project 1 (Drive in) selected for the first design.
 **Settled so far:** chase camera behind the car; approach extended along the real
-ODOT bearing to the survey west edge (~885 m, ~130 s at a careful 15 mph), fully
+ODOT centerline re-clipped to the terrain square (886.9 m of measured road, 132 s
+at a careful 15 mph), fully
 player-steered.
 **Scope:** This is a roadmap, not an implementation spec. Each sub-project below
 gets its own `YYYY-MM-DD-<topic>-design.md` and its own implementation plan.
@@ -74,21 +75,35 @@ mount and dismount, battery, odometer, parked collider, snapshot and restore.
 - Anyone you know from past years.
 - Daytime jam circles that form on their own.
 
-## Standing constraint: how long the approach drive can be
+## The approach drive is already surveyed — re-clip, do not extrapolate
 
-Measured against the registered geometry, not estimated:
+`FLOW_FEST_CAMDEN_COLLEGE_CORNER_ROAD` holds 18 points running x −170 → 370,
+about 540 m. That is not the extent of the source data. The centerline was
+clipped to `FLOW_FEST_CAMP_PLAN_BOUNDS` (`minX: -170`), not to the terrain
+square, and the doc comment saying "clipped to the registered terrain frame" is
+inaccurate about which bounds were used.
 
-- The ODOT centerline as authored runs x −170 → 370 and affords about **540 m**.
-- Extended along its real bearing to the west edge of the surveyed terrain
-  square, the distance from that edge to the gate is about **885 m**.
-- That is roughly **80 s at 25 mph**, **100 s at 20 mph**, **130 s at 15 mph**.
+Re-queried from the recorded source on 2026-09-02 — ODOT TIMS Road Inventory
+FeatureServer 0, `OBJECTID=3019609`, `outSR=26916`, converted with the terrain
+manifest's own transform (`worldX = easting − 690142`, `worldZ = 4384552 −
+northing`):
 
-So "a couple of minutes through the cornfields" is reachable, but only at a
-genuinely careful rural speed. The 1024 m terrain square cannot afford a fast
-two-minute approach without extending coverage outside the survey. Any design
-that wants a longer approach has to choose deliberately between a slower
-authored speed, a curved or looping alignment that uses more of the square, or
-new terrain west of the current bounds. Do not quietly assume one of these.
+- The official feature carries **81 points** spanning worldX −2245 → 445.
+- **30 of them fall inside the terrain square**, giving 961.6 m of centerline.
+- The road crosses the square's west edge at **(−512.0, 38.0)** and reaches the
+  registered camp entrance after **886.9 m**.
+- It continues a further 189 m past the gate to the square's east edge, so the
+  drive does not end at a dead end and an overshoot is recoverable.
+- **The registered entrance projects onto the official centerline at 0.00 m
+  offset**, independently confirming the Street View survey.
+
+Approach times over that 886.9 m: **165 s at 12 mph**, **132 s at 15 mph**,
+**99 s at 20 mph**, **79 s at 25 mph**.
+
+So "a couple of minutes through the cornfields" is reachable at a careful rural
+speed on **entirely measured geometry**. No bearing extrapolation, no authored
+road, and no terrain outside the survey. The work is to re-clip the source to
+the terrain square rather than the camp-plan bounds.
 
 ## Decomposition
 
