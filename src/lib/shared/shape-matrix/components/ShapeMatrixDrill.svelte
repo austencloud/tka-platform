@@ -1260,7 +1260,7 @@
           />
         {:else if railRealization}
           <p class="quarter-status">
-            Quarter-turn pictograph arrows are in visual calibration.
+            Level 4 pictograph are in visual calibration.
           </p>
         {/if}
       </div>
