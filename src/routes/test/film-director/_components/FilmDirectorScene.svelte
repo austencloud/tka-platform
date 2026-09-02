@@ -35,6 +35,7 @@
   import SceneControlWorkspace from "$lib/shared/3d/components/controls/SceneControlWorkspace.svelte";
   import type { PerformerHubEdit } from "$lib/shared/3d/components/controls/performer-hub-types";
   import type { SceneControlTool } from "$lib/shared/3d/domain/scene-control-layout";
+  import FilmDirectorCapabilityPanel from "./FilmDirectorCapabilityPanel.svelte";
 
   const director = getFilmDirectorContext();
   const sequence = demoSequenceJson as unknown as SequenceData;
@@ -95,7 +96,11 @@
     director.film.format.width / director.film.format.height
   );
   const warmupPlan = $derived(
-    createFilmDirectorWarmupPlan(director.film.scenes.length)
+    createFilmDirectorWarmupPlan(
+      director.film.scenes.length,
+      undefined,
+      director.warmupSceneIndex
+    )
   );
   const presentedScene = $derived(
     director.preparation.complete
@@ -436,15 +441,25 @@
   $effect(() => {
     const film = director.film;
     let active = true;
-    void sequenceLibrary.prepare(film).then(() => {
-      if (!active) return;
-      const scene = film.scenes.find(
-        (candidate) => candidate.id === appliedSceneId
-      );
-      // Full re-application, not a bare loadSequence sweep: loading a sequence
-      // resets that performer's per-step plane overrides, so the scene's plane
-      // direction has to go back on afterwards.
-      if (scene) applyScene(scene);
+    // A film opened on one scene resolves that scene's sequences first, so the
+    // scene the viewer is actually watching stops spinning the shared demo
+    // without waiting behind twenty-three it is not showing.
+    const warmed = director.warmupSceneIndex;
+    void sequenceLibrary.prepare(film, {
+      focusSceneId: warmed === null ? null : (film.scenes[warmed]?.id ?? null),
+      // Per scene rather than once at the end: the scenes behind the focused
+      // one land later, and whichever is on screen when its turn comes still
+      // needs to pick them up.
+      onSceneResolved: (sceneId) => {
+        if (!active || sceneId !== appliedSceneId) return;
+        const scene = film.scenes.find(
+          (candidate) => candidate.id === sceneId
+        );
+        // Full re-application, not a bare loadSequence sweep: loading a
+        // sequence resets that performer's per-step plane overrides, so the
+        // scene's plane direction has to go back on afterwards.
+        if (scene) applyScene(scene);
+      },
     });
     return () => {
       active = false;
@@ -500,6 +515,11 @@
    */
   function handleInspectorChange(tool: SceneControlTool | null): void {
     if (tool) director.pause();
+  }
+
+  /** The chair edits the scene on screen too, so it stops the film the same way. */
+  function handleChairChange(open: boolean): void {
+    if (open) director.pause();
   }
 
   $effect(() => {
@@ -588,7 +608,17 @@
     allowSaveScene={false}
     onPerformerEdit={handlePerformerEdit}
     onInspectorChange={handleInspectorChange}
-  />
+    hostTool={{
+      id: "director-chair",
+      label: "Director's chair",
+      icon: "fa-clapperboard",
+    }}
+    onHostPanelChange={handleChairChange}
+  >
+    {#snippet hostPanel(close: () => void)}
+      <FilmDirectorCapabilityPanel onClose={close} />
+    {/snippet}
+  </SceneControlWorkspace>
 {/if}
 
 <style>

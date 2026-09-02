@@ -94,12 +94,26 @@ const PRODUCTION_DEPS: DirectorSequenceLibraryDeps = {
   },
 };
 
+export interface DirectorSequencePrepareOptions {
+  /**
+   * Resolve this scene before any other. Generating a spelled sequence is real
+   * CPU work, and a viewer who opened on one scene should not wait behind the
+   * twenty-three they are not watching.
+   */
+  focusSceneId?: string | null;
+  /** Called as each scene's sequences land, in resolution order. */
+  onSceneResolved?: (sceneId: string) => void;
+}
+
 export interface DirectorSequenceLibrary {
   /**
    * Resolve every sequence the film names. Calling it again with the same
    * film returns the first call's promise rather than regenerating.
    */
-  prepare(film: ResolvedFilmDirectorSpec): Promise<void>;
+  prepare(
+    film: ResolvedFilmDirectorSpec,
+    options?: DirectorSequencePrepareOptions
+  ): Promise<void>;
   /** Performer id → sequence, for a scene that has finished resolving. */
   forScene(sceneId: string): ReadonlyMap<string, SequenceData>;
   /** Human-readable reasons a directed sequence fell back to the demo. */
@@ -251,13 +265,36 @@ export function createDirectorSequenceLibrary(
     byScene.set(scene.id, resolved);
   }
 
-  function prepare(film: ResolvedFilmDirectorSpec): Promise<void> {
+  function prepare(
+    film: ResolvedFilmDirectorSpec,
+    options: DirectorSequencePrepareOptions = {}
+  ): Promise<void> {
     if (preparedFilmId === film.id && preparing) return preparing;
 
     preparedFilmId = film.id;
     byScene.clear();
     failures.length = 0;
-    preparing = Promise.all(film.scenes.map(resolveScene)).then(() => undefined);
+
+    const announce = async (scene: ResolvedDirectorScene): Promise<void> => {
+      await resolveScene(scene);
+      options.onSceneResolved?.(scene.id);
+    };
+
+    const focused = options.focusSceneId
+      ? (film.scenes.find((scene) => scene.id === options.focusSceneId) ?? null)
+      : null;
+
+    if (!focused) {
+      preparing = Promise.all(film.scenes.map(announce)).then(() => undefined);
+      return preparing;
+    }
+
+    // Ordered, not merely prioritized: the rest start only once the focused
+    // scene has its sequences, so nothing competes with the one on screen.
+    const rest = film.scenes.filter((scene) => scene !== focused);
+    preparing = announce(focused)
+      .then(() => Promise.all(rest.map(announce)))
+      .then(() => undefined);
     return preparing;
   }
 
