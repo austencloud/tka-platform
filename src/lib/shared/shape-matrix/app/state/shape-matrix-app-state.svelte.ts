@@ -1,6 +1,8 @@
 import { applyFilter } from "$lib/shared/shape-matrix/domain/filter-flower-axis";
 import {
   matrixFiltersForTurns,
+  clampMatrixTurnToLevel,
+  matrixTurnsForLevel,
   type MatrixLabelMode,
 } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
 import {
@@ -12,10 +14,6 @@ import {
 import type {
   TurnLevel,
   TurnValue,
-} from "$lib/shared/create/services/level-turn-values";
-import {
-  clampTurnToLevel,
-  turnValuesForLevel,
 } from "$lib/shared/create/services/level-turn-values";
 import type { ShapeMatrixData } from "$lib/shared/shape-matrix/services/shape-matrix-flowers";
 import {
@@ -145,10 +143,10 @@ export function createShapeMatrixAppState(
 ) {
   let level = $state(initial.level);
   let leftTurn = $state<TurnValue>(
-    clampTurnToLevel(initial.leftTurn, initial.level)
+    clampMatrixTurnToLevel(initial.leftTurn, initial.level)
   );
   let rightTurn = $state<TurnValue>(
-    clampTurnToLevel(initial.rightTurn, initial.level)
+    clampMatrixTurnToLevel(initial.rightTurn, initial.level)
   );
   let activeAxis = $state<ShapeMatrixAxisTarget>(initial.activeAxis);
   let labelMode = $state(initial.labelMode);
@@ -179,7 +177,7 @@ export function createShapeMatrixAppState(
   let propPickerOpen = $state(false);
   let mandalaHandoff = $state(false);
 
-  const availableTurns = $derived(turnValuesForLevel(level));
+  const availableTurns = $derived(matrixTurnsForLevel(level));
   const filters = $derived(matrixFiltersForTurns(leftTurn, rightTurn));
   const rowAxis = $derived(
     data ? applyFilter(data.axis, filters.left, false) : []
@@ -225,9 +223,13 @@ export function createShapeMatrixAppState(
     // around the current Level 1 matrix. Move the edited axis into the new
     // vocabulary while preserving the other axis whenever it remains legal.
     const nextLeftTurn =
-      activeAxis === "right" ? clampTurnToLevel(leftTurn, level) : landingTurn;
+      activeAxis === "right"
+        ? clampMatrixTurnToLevel(leftTurn, level)
+        : landingTurn;
     const nextRightTurn =
-      activeAxis === "left" ? clampTurnToLevel(rightTurn, level) : landingTurn;
+      activeAxis === "left"
+        ? clampMatrixTurnToLevel(rightTurn, level)
+        : landingTurn;
     if (
       selectedPair &&
       (nextLeftTurn !== leftTurn || nextRightTurn !== rightTurn)
@@ -289,22 +291,21 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
+  /*
+   * The picker stays open. It sits beside the animation rather than over it,
+   * so a choice is meant to be watched: pick a prop, see the shape traced by
+   * it, pick the next one. Closing is its own action.
+   */
   async function setPropType(nextPropType: PropType): Promise<void> {
-    if (propType === nextPropType) {
-      propPickerOpen = false;
-      return;
-    }
+    if (propType === nextPropType) return;
     await load(nextPropType);
-    if (!loadError) {
-      propPickerOpen = false;
-      syncState();
-    }
+    if (!loadError) syncState();
   }
 
   function restoreState(snapshot: ShapeMatrixAppSnapshot): void {
     level = snapshot.level;
-    leftTurn = clampTurnToLevel(snapshot.leftTurn, snapshot.level);
-    rightTurn = clampTurnToLevel(snapshot.rightTurn, snapshot.level);
+    leftTurn = clampMatrixTurnToLevel(snapshot.leftTurn, snapshot.level);
+    rightTurn = clampMatrixTurnToLevel(snapshot.rightTurn, snapshot.level);
     activeAxis = snapshot.activeAxis;
     labelMode = snapshot.labelMode;
     propType = snapshot.propType;
@@ -387,9 +388,14 @@ export function createShapeMatrixAppState(
   function closeAbout(): void {
     aboutOpen = false;
   }
-  function openPropPicker(): void {
-    propPickerOpen = true;
+  /**
+   * One entry point. The Props control under the animation is a disclosure:
+   * pressing it again puts the stage back the way it was.
+   */
+  function togglePropPicker(): void {
+    propPickerOpen = !propPickerOpen;
   }
+  /** For the drill, when another dock section claims the space. */
   function closePropPicker(): void {
     propPickerOpen = false;
   }
@@ -497,7 +503,7 @@ export function createShapeMatrixAppState(
     setCompact,
     openAbout,
     closeAbout,
-    openPropPicker,
+    togglePropPicker,
     closePropPicker,
     beginMandalaHandoff,
     endMandalaHandoff,

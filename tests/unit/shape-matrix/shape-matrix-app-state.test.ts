@@ -16,6 +16,7 @@ import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
 const LEVEL_FOUR_TURNS = [
   "fl",
+  -0.25,
   0,
   0.25,
   0.5,
@@ -72,6 +73,7 @@ describe("shape matrix app state", () => {
     state.setLevel(4);
     expect(state.leftTurn).toBe(0.25);
     expect(state.rightTurn).toBe(0.25);
+    expect(state.availableTurns).toEqual(LEVEL_FOUR_TURNS);
 
     state.setLevel(1);
     expect(state.leftTurn).toBe(0);

@@ -13,8 +13,11 @@
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
-  import { ratioLabel } from "$lib/shared/shape-matrix/domain/flower-signature";
-  import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
+  import {
+    matrixTurnSpokenLabel,
+    matrixTurnVisibleLabel,
+    type MatrixLabelMode,
+  } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
   import type {
     TurnLevel,
     TurnValue,
@@ -35,14 +38,10 @@
   ];
 
   function visible(turn: TurnValue): string {
-    if (turn === "fl") return "Float";
-    return appState.labelMode === "ratios" ? ratioLabel(turn) : String(turn);
+    return matrixTurnVisibleLabel(turn, appState.labelMode);
   }
   function spoken(turn: TurnValue): string {
-    if (turn === "fl") return "Float";
-    return appState.labelMode === "ratios"
-      ? `${ratioLabel(turn)} ratio`
-      : `${turn} turn${turn === 1 ? "" : "s"}`;
+    return matrixTurnSpokenLabel(turn, appState.labelMode);
   }
 
   const leftVisible = $derived(visible(appState.leftTurn));

@@ -144,3 +144,75 @@ describe("planUpperBodyStanceYaw", () => {
     );
   });
 });
+
+describe("hug reach at a same-side hold", () => {
+  // A mid-size adult rig: 44 cm shoulder span, 60 cm shoulder-to-grip reach.
+  const MEASURED = {
+    upperArmM: 0.28,
+    forearmM: 0.32,
+    shoulderWidthM: 0.44,
+    reachM: 0.6,
+  };
+  const EAST = {
+    left: { x: 0.48, z: GRID_DEPTH },
+    right: { x: 0.44, z: GRID_DEPTH },
+  };
+
+  it("draws the two hands closer together than the un-measured stance", () => {
+    const before = planUpperBodyStance(EAST);
+    const after = planUpperBodyStance(EAST, MEASURED);
+
+    const separation = (plan: ReturnType<typeof planUpperBodyStance>) =>
+      Math.abs(
+        plan.leftDepthOffsetM +
+          EAST.left.z -
+          (plan.rightDepthOffsetM + EAST.right.z)
+      );
+
+    expect(separation(after)).toBeLessThan(separation(before));
+    // Still two distinct lanes, so the grips never occupy one point.
+    expect(separation(after)).toBeGreaterThan(0.05);
+  });
+
+  it("keeps both grips inside the shoulder span", () => {
+    const plan = planUpperBodyStance(EAST, MEASURED);
+    const shoulderHalfSpan = MEASURED.shoulderWidthM / 2;
+
+    for (const lane of [
+      plan.leftDepthOffsetM + EAST.left.z,
+      plan.rightDepthOffsetM + EAST.right.z,
+    ]) {
+      expect(Math.abs(lane)).toBeLessThan(shoulderHalfSpan);
+    }
+  });
+
+  it("keeps the grips straddling the chest midline", () => {
+    const plan = planUpperBodyStance(EAST, MEASURED);
+    const leftLane = plan.leftDepthOffsetM + EAST.left.z;
+    const rightLane = plan.rightDepthOffsetM + EAST.right.z;
+
+    expect(Math.sign(leftLane)).toBe(-Math.sign(rightLane));
+    expect(Math.abs(leftLane)).toBeCloseTo(Math.abs(rightLane), 8);
+  });
+
+  it("leaves the square stance untouched", () => {
+    const targets = {
+      left: { x: -0.44, z: GRID_DEPTH },
+      right: { x: 0.44, z: GRID_DEPTH },
+    };
+    const plan = planUpperBodyStance(targets, MEASURED);
+
+    expect(plan.yawRad).toBe(0);
+    expect(plan.leftDepthOffsetM).toBe(0);
+    expect(plan.rightDepthOffsetM).toBe(0);
+  });
+
+  it("never widens past the un-measured lane on a very broad rig", () => {
+    const broad = { ...MEASURED, shoulderWidthM: 0.9, reachM: 0.75 };
+    const plan = planUpperBodyStance(EAST, broad);
+
+    expect(Math.abs(plan.leftDepthOffsetM + EAST.left.z)).toBeLessThanOrEqual(
+      LANE + 1e-9
+    );
+  });
+});

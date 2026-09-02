@@ -21,6 +21,7 @@ export type SceneUndoOperationType =
   | "spatial-edit"
   | "change-character"
   | "change-prop"
+  | "change-prop-build"
   | "change-staff-length"
   | "change-effort"
   // Effects
@@ -76,6 +77,7 @@ export interface PerformerDomainSnapshot {
     prop: PropType | null;
     effortId: EffortId | null;
     effect: EffectType | null;
+    handEffects: { left: EffectType; right: EffectType } | null;
     staffLengthCm: number | null;
     propBuild: Partial<import("@austencloud/scene-3d").PropBuild> | null;
   };

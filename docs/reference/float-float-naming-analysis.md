@@ -26,7 +26,7 @@ When one hand floats (zero rotation) and the other rotates, the rotating hand's 
 
 The problem: when BOTH hands float, there is no rotation direction to read. The property that distinguishes A from B from C has been removed from the system.
 
-This is the **0:1 VTG timing ratio** -- both props have zero rotation relative to each other because neither is rotating at all.
+This is the **0:1 VTG prop-to-hand rotation ratio**: each prop makes zero rotations while its hand completes one cycle.
 
 ---
 

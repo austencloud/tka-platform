@@ -211,6 +211,7 @@ export function createCharacterInstanceState(
   // effects-config in scope. This state factory deliberately doesn't reach into
   // that context.
   const rawEffect = $derived(_settings.effect);
+  const rawHandEffects = $derived(_settings.handEffects);
   // effectivePlaneMode/BluePlane/RedPlane defined after plane state declarations below
 
   // Override Detection
@@ -923,6 +924,7 @@ export function createCharacterInstanceState(
         prop: _settings.prop,
         effortId: _settings.effortId,
         effect: _settings.effect,
+        handEffects: $state.snapshot(_settings.handEffects),
         staffLengthCm: _settings.staffLengthCm,
         propBuild: $state.snapshot(_settings.propBuild),
       },
@@ -940,6 +942,7 @@ export function createCharacterInstanceState(
       prop: snap.settings.prop,
       effortId: snap.settings.effortId,
       effect: snap.settings.effect,
+      handEffects: snap.settings.handEffects,
       staffLengthCm: snap.settings.staffLengthCm,
       propBuild: snap.settings.propBuild,
     };
@@ -1041,6 +1044,9 @@ export function createCharacterInstanceState(
     _settings = {
       ..._settings,
       effect,
+      // Radio semantics reach both hands: one effect for the performer means
+      // there is no longer a pair, so a stale pair must not survive it.
+      handEffects: null,
       ...(equip?.prop ? { prop: equip.prop } : {}),
       ...(equip?.propBuild
         ? { propBuild: { ...(_settings.propBuild ?? {}), ...equip.propBuild } }
@@ -1060,6 +1066,39 @@ export function createCharacterInstanceState(
         _settings = after;
       },
     });
+  }
+
+  /**
+   * Give this performer's hands different effects. The renderer already
+   * resolves an effect per prop, so the pair only has to reach the tip map
+   * `Viewer3DScene` builds: prop 0 is the left hand, prop 1 the right.
+   *
+   * `effect` is set to the left hand's value so every consumer that reads one
+   * whole-performer effect (the Performer Hub's selection, the environment
+   * this film picks from its effects) still gets a real answer rather than a
+   * silent "none".
+   */
+  function setHandEffects(
+    left: EffectType,
+    right: EffectType,
+    options?: { recordUndo?: boolean }
+  ): void {
+    const before = $state.snapshot(_settings);
+    _settings = { ..._settings, effect: left, handEffects: { left, right } };
+    if (options?.recordUndo === false) return;
+    const after = $state.snapshot(_settings);
+    sceneUndo.pushSelfRestoringEntry(
+      "toggle-effect",
+      `Effects: ${left} / ${right}`,
+      {
+        undo: () => {
+          _settings = before;
+        },
+        redo: () => {
+          _settings = after;
+        },
+      }
+    );
   }
 
   function setStaffLengthCm(cm: number | null): void {
@@ -1151,7 +1190,7 @@ export function createCharacterInstanceState(
 
   function resetEffects(): void {
     const before = $state.snapshot(_settings);
-    _settings = { ..._settings, effect: null };
+    _settings = { ..._settings, effect: null, handEffects: null };
     const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry(
       "toggle-effect",
@@ -1191,6 +1230,7 @@ export function createCharacterInstanceState(
       propBuild: null,
       effortId: null,
       effect: null,
+      handEffects: null,
       staffLengthCm: _settings.staffLengthCm,
     };
     planeMode = null;
@@ -1445,6 +1485,7 @@ export function createCharacterInstanceState(
     setEffort,
     setProp,
     setEffect,
+    setHandEffects,
     setStaffLengthCm,
     setPropBuild,
 
@@ -1461,6 +1502,14 @@ export function createCharacterInstanceState(
     /** Per-performer effect override; null = inherit the global default. */
     get rawEffect() {
       return rawEffect;
+    },
+    /**
+     * One effect per hand, or null when both hands take `rawEffect`. Consumers
+     * that build a tip map read this first: a pair keys the map per prop, a
+     * null keys it with the wildcard exactly as it always has.
+     */
+    get rawHandEffects() {
+      return rawHandEffects;
     },
     get effectivePlaneMode() {
       return effectivePlaneMode;

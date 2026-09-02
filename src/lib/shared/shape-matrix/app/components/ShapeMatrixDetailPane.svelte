@@ -26,13 +26,9 @@
       : null
   );
 
-  $effect(() => {
-    if (state.propPickerOpen) {
-      animationState.setActiveSection("props");
-    } else if (animationState.activeSection === "props") {
-      animationState.setActiveSection(null);
-    }
-  });
+  // Prop choosing is NOT one of the dock's tray sections. It recomposes the
+  // drill instead, so the element relationships and the dock stay where they
+  // are while the catalogue opens beside the animation.
 </script>
 
 <aside
@@ -77,7 +73,9 @@
         onpropmodechange={state.setPropMode}
         propType={state.propType}
         onproptypechange={(propType) => void state.setPropType(propType)}
-        onopenproppicker={state.openPropPicker}
+        propPickerOpen={state.propPickerOpen}
+        onproppickertoggle={state.togglePropPicker}
+        onproppickerclose={state.closePropPicker}
         mandalaTransition={{
           claim: state.compact && state.activeView === "detail",
           handoff: state.mandalaHandoff,
