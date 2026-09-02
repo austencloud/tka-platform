@@ -136,3 +136,56 @@ describe("solo playback", () => {
     expect(state.playheadSeconds).toBe(0);
   });
 });
+
+describe("opening on one scene", () => {
+  it("opens soloed and parks at that scene's head", () => {
+    const state = createFilmDirectorState(threeSceneFilm(), {
+      soloSceneId: "second",
+    });
+
+    expect(state.soloSceneIndex).toBe(1);
+    expect(state.frame.sceneIndex).toBe(1);
+    expect(state.playheadSeconds).toBeGreaterThan(10);
+    expect(state.playheadSeconds).toBeLessThan(10.1);
+  });
+
+  it("warms only that scene", () => {
+    const state = createFilmDirectorState(threeSceneFilm(), {
+      soloSceneId: "third",
+    });
+
+    expect(state.warmupSceneIndex).toBe(2);
+    expect(state.preparation.totalSteps).toBe(1);
+    expect(state.preparation.sceneIndex).toBe(2);
+    expect(state.preparation.sceneTitle).toBe("Third");
+  });
+
+  it("opens the whole film when the address names no scene it has", () => {
+    const state = createFilmDirectorState(threeSceneFilm(), {
+      soloSceneId: "fourth",
+    });
+
+    expect(state.soloSceneIndex).toBeNull();
+    expect(state.warmupSceneIndex).toBeNull();
+    expect(state.playheadSeconds).toBe(0);
+    expect(state.preparation.totalSteps).toBe(6);
+  });
+
+  it("opens the whole film when no scene is named", () => {
+    const state = createFilmDirectorState(threeSceneFilm());
+
+    expect(state.soloSceneIndex).toBeNull();
+    expect(state.warmupSceneIndex).toBeNull();
+    expect(state.preparation.totalSteps).toBe(6);
+  });
+
+  it("stops warming one scene once a different film is loaded", () => {
+    const state = createFilmDirectorState(threeSceneFilm(), {
+      soloSceneId: "second",
+    });
+    state.loadFilm(threeSceneFilm());
+
+    expect(state.warmupSceneIndex).toBeNull();
+    expect(state.preparation.totalSteps).toBe(6);
+  });
+});
