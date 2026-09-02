@@ -483,3 +483,75 @@ describe("film library", () => {
     }
   });
 });
+
+describe("proving grounds: wave A scenes", () => {
+  const resolved = resolveFilmDirectorSpec(
+    FILM_LIBRARY.find((entry) => entry.key === "proving")!.film
+  );
+  const scene = (id: string) => resolved.scenes.find((entry) => entry.id === id)!;
+
+  it("adds three scenes, each inside the six to eight second window", () => {
+    expect(scene("dolly-zoom").durationSeconds).toBe(8);
+    expect(scene("handheld").durationSeconds).toBe(7);
+    expect(scene("whip-pans").durationSeconds).toBe(8);
+    for (const id of ["dolly-zoom", "handheld", "whip-pans"]) {
+      expect(scene(id).intent.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("the dolly zoom holds subject size while the rig travels", () => {
+    const keyframes = scene("dolly-zoom").camera.keyframes;
+    const size = (frame: (typeof keyframes)[number]) =>
+      Math.tan((frame.fovDeg * Math.PI) / 360) *
+      Math.hypot(
+        frame.position[0]! - frame.target[0]!,
+        frame.position[1]! - frame.target[1]!,
+        frame.position[2]! - frame.target[2]!
+      );
+    const opening = size(keyframes[0]!);
+    for (const frame of keyframes) {
+      expect(Math.abs(size(frame) - opening) / opening).toBeLessThan(0.01);
+    }
+    expect(keyframes.at(-1)!.fovDeg).toBeGreaterThan(keyframes[0]!.fovDeg + 10);
+  });
+
+  it("only the handheld scene carries a handheld envelope", () => {
+    expect(scene("handheld").camera.handheld).toMatchObject({
+      meters: 0.05,
+      degrees: 1,
+    });
+    for (const other of resolved.scenes) {
+      if (other.id === "handheld") continue;
+      expect("handheld" in other.camera).toBe(false);
+    }
+  });
+
+  it("the whip pans end aimed at each performer in turn", () => {
+    const target = scene("whip-pans");
+    const marks = new Map(
+      target.performance.performers.map((performer) => [
+        performer.id,
+        performer.position,
+      ])
+    );
+    const aimedAt = (offset: number, performerId: string) => {
+      const camera = sampleFilmDirector(
+        resolved,
+        target.startSeconds + offset
+      ).camera;
+      const mark = marks.get(performerId)!;
+      const aim = Math.atan2(
+        camera.target[0]! - camera.position[0]!,
+        camera.target[2]! - camera.position[2]!
+      );
+      const want = Math.atan2(
+        mark.x - camera.position[0]!,
+        mark.z - camera.position[2]!
+      );
+      expect(aim).toBeCloseTo(want, 3);
+    };
+    aimedAt(2.5, "him");
+    aimedAt(5, "her");
+    aimedAt(7.9, "him");
+  });
+});

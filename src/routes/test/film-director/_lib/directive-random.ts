@@ -32,11 +32,24 @@ export function createAxisStream(
   sceneId: string,
   axis: string
 ): () => number {
+  return mulberry32(axisSeedValue(seed, sceneId, axis));
+}
+
+/**
+ * The single number a (film, scene, axis) hashes to. `createAxisStream` turns
+ * it into a generator; an axis that wants one stable value rather than a
+ * sequence of draws (handheld's noise phases) takes the number directly.
+ */
+export function axisSeedValue(
+  seed: FilmSeed,
+  sceneId: string,
+  axis: string
+): number {
   const salt = seed.axes[axis] ?? 0;
   // Field values (e.g. axis names like "effectPreset:${effectId}") may
   // themselves contain ":", so a colon-joined key is ambiguous. NUL can't
   // appear in authored ids, so it's a safe unambiguous separator.
-  return mulberry32(hashString(`${seed.base}\u0000${salt}\u0000${sceneId}\u0000${axis}`));
+  return hashString(`${seed.base}\u0000${salt}\u0000${sceneId}\u0000${axis}`);
 }
 
 export function seededShuffle<T>(

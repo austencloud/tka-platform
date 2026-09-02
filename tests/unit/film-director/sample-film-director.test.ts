@@ -123,3 +123,80 @@ describe("camera tracking sampling", () => {
     );
   });
 });
+
+/**
+ * Gap 11. Handheld is a sampled-frame modifier, so these read whole frames out
+ * of a resolved film rather than inspecting keyframes.
+ */
+describe("handheld", () => {
+  function handheldFilm(handheld?: unknown, camera: Record<string, unknown> = {}) {
+    return resolveFilmDirectorSpec({
+      version: 5,
+      id: "handheld-proof",
+      title: "Handheld proof",
+      scenes: [
+        {
+          id: "operator",
+          title: "Operator",
+          durationSeconds: 8,
+          location: { environmentId: "forest" },
+          performance: { bpm: 120, cast: { count: 2 } },
+          camera: { shotSize: "medium", ...camera, ...(handheld ? { handheld } : {}) },
+        },
+      ],
+    });
+  }
+
+  const frames = (film: ReturnType<typeof resolveFilmDirectorSpec>) =>
+    Array.from({ length: 33 }, (_, index) => sampleFilmDirector(film, index / 4));
+
+  it("leaves a scene that never asked for it byte identical", () => {
+    const plain = frames(handheldFilm());
+    const again = frames(handheldFilm());
+    expect(plain.map((frame) => frame.camera)).toEqual(
+      again.map((frame) => frame.camera)
+    );
+    expect(handheldFilm().scenes[0]!.camera.handheld).toBeUndefined();
+  });
+
+  it("moves the rig, and repeats exactly on a second pass", () => {
+    const shaken = frames(handheldFilm("rough"));
+    const steady = frames(handheldFilm());
+    const moved = shaken.some(
+      (frame, index) =>
+        frame.camera.position[0] !== steady[index]!.camera.position[0]
+    );
+    expect(moved).toBe(true);
+    expect(shaken.map((frame) => frame.camera)).toEqual(
+      frames(handheldFilm("rough")).map((frame) => frame.camera)
+    );
+  });
+
+  it("stays inside the envelope it was given", () => {
+    const film = handheldFilm({ meters: 0.05, degrees: 1 });
+    const steady = frames(handheldFilm());
+    for (const [index, frame] of frames(film).entries()) {
+      for (const axis of [0, 1, 2]) {
+        const drift = Math.abs(
+          frame.camera.position[axis]! - steady[index]!.camera.position[axis]!
+        );
+        expect(drift).toBeLessThanOrEqual(0.05 + 1e-9);
+      }
+    }
+  });
+
+  it("shakes a scene that cuts between shots too", () => {
+    const film = handheldFilm("subtle", {
+      shots: [{ shotSize: "wide" }, { shotSize: "close-up" }],
+      shotSize: undefined,
+    });
+    const steady = frames(
+      handheldFilm(undefined, { shots: [{ shotSize: "wide" }, { shotSize: "close-up" }], shotSize: undefined })
+    );
+    const moved = frames(film).some(
+      (frame, index) =>
+        frame.camera.position[0] !== steady[index]!.camera.position[0]
+    );
+    expect(moved).toBe(true);
+  });
+});
