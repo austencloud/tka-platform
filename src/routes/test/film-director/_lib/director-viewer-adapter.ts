@@ -17,6 +17,7 @@ import type { DirectorBlockingFrame } from "./director-blocking-track";
 import type { DirectorCameraFrame } from "./director-camera-track";
 import type { ResolvedDirectorScene } from "./film-director-schema";
 import { resolveDirectorPerformerPoolSize } from "./film-director-performance-policy";
+import { isIdleSequence } from "./sequence-language";
 
 interface ApplyDirectorSceneOptions {
   /** Keep a stable rig pool so a cut never destroys and rebuilds half the cast. */
@@ -25,9 +26,28 @@ interface ApplyDirectorSceneOptions {
    * Performer id → the sequence that performer spins in this scene, from
    * `director-sequence-library`. A performer with no entry — or a scene applied
    * before the library has finished generating — falls back to the film's
-   * shared sequence.
+   * shared sequence. The one exception is a performer whose scene sequence is
+   * `{source: "none"}`: they are skipped by name rather than falling back,
+   * because they are standing and watching rather than waiting on a load.
    */
   sequences?: ReadonlyMap<string, SequenceData>;
+}
+
+/**
+ * Cast slots that spin nothing this scene. Their performers must be left with
+ * no loaded sequence: both the pooled backfill and the per-performer load
+ * below otherwise hand every performer the film's shared sequence, which is
+ * the right default for a performer whose own sequence has not resolved yet
+ * and exactly wrong for one who is standing and watching.
+ */
+export function idlePerformerIndices(
+  scene: ResolvedDirectorScene
+): ReadonlySet<number> {
+  const idle = new Set<number>();
+  scene.performance.performers.forEach((performer, index) => {
+    if (isIdleSequence(performer.sequence)) idle.add(index);
+  });
+  return idle;
 }
 
 export function buildDirectorViewerSeed(
@@ -90,6 +110,7 @@ export function applyDirectorSceneToViewer(
     options.reservedPerformerCount
   );
   viewer.setEnvironmentId(scene.location.environmentId);
+  const idle = idlePerformerIndices(scene);
 
   getSceneUndoManager().withoutUndo(() => {
     manager.ensurePerformerCount(performerPoolSize);
@@ -108,7 +129,8 @@ export function applyDirectorSceneToViewer(
     // Load once, the first time each pooled performer is touched.
     const sequenceData = viewer.currentSequenceData;
     if (sequenceData) {
-      for (const performer of manager.performers) {
+      for (const [index, performer] of manager.performers.entries()) {
+        if (idle.has(index)) continue;
         if (!performer.hasSequence) performer.loadSequence(sequenceData);
       }
     }
@@ -139,10 +161,19 @@ export function applyDirectorSceneToViewer(
       // per-step overrides, so a load that lands after `setHandPlane` would
       // discard both. Identity-compared because the library hands back the
       // same cached object every scene — reloading would reset playback.
-      const directedSequence =
-        options.sequences?.get(directed.id) ?? sequenceData;
-      if (directedSequence && performer.loadedSequence !== directedSequence) {
-        performer.loadSequence(directedSequence);
+      //
+      // Skipping the load is not enough for a watcher: `enter3D` hands the
+      // film's shared sequence to every performer at mount, and a performer
+      // reused from an earlier scene carries whatever they spun there. Clear
+      // it so the body idles and the props stop rendering.
+      if (idle.has(index)) {
+        if (performer.hasSequence) performer.clearSequence();
+      } else {
+        const directedSequence =
+          options.sequences?.get(directed.id) ?? sequenceData;
+        if (directedSequence && performer.loadedSequence !== directedSequence) {
+          performer.loadSequence(directedSequence);
+        }
       }
 
       performer.setHandPlane("left", directed.leftPlane);

@@ -963,3 +963,33 @@ describe("blocking edges", () => {
     ).toThrow();
   });
 });
+
+describe("standing and watching", () => {
+  const watcherFilm = (sequence: unknown) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "watcher-film",
+    title: "Watcher",
+    scenes: [
+      {
+        id: "s1",
+        title: "S1",
+        performance: { performers: [{ id: "a", sequence }] },
+      },
+    ],
+  });
+
+  it("accepts a performer who stands and watches", () => {
+    const parsed = FilmDirectorInputSchema.parse(
+      watcherFilm({ source: "none" })
+    );
+    expect(parsed.scenes[0]!.performance!.performers![0]!.sequence).toEqual({
+      source: "none",
+    });
+  });
+
+  it("rejects controls on a performer who is not spinning", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(watcherFilm({ source: "none", level: 2 }))
+    ).toThrow(/is not spinning anything/);
+  });
+});

@@ -478,7 +478,7 @@ const quoted = (keys: readonly string[]) =>
  */
 const performerSequenceSchema = z
   .object({
-    source: z.literal("demo").optional(),
+    source: z.enum(["demo", "none"]).optional(),
     mirrorOf: z.string().min(1).optional(),
     transformOf: z.string().min(1).optional(),
     transforms: z
@@ -513,7 +513,7 @@ const performerSequenceSchema = z
       ctx.addIssue({
         code: "custom",
         message:
-          'A sequence names one source: {source: "demo"}, a "word" to spell, a "length" to improvise, a "mirrorOf" to reflect, a "transformOf" to change, or a "library" id to play.',
+          'A sequence names one source: {source: "demo"}, {source: "none"} to stand and watch, a "word" to spell, a "length" to improvise, a "mirrorOf" to reflect, a "transformOf" to change, or a "library" id to play.',
       });
       return;
     }
@@ -546,11 +546,17 @@ const performerSequenceSchema = z
       (key) => value[key] !== undefined
     );
     if (controls.length === 0) return;
+    // `source` covers two spellings under one key, so it branches on the
+    // value while the rest branch on the key.
+    const sourceRejection =
+      value.source === "none"
+        ? `A performer who stands and watches is not spinning anything, so there is nothing for ${quoted(controls)} to shape. Remove it, or give them a "word" of their own.`
+        : `The demo sequence is the film's shared one, so it carries no controls of its own. Remove ${quoted(controls)}, or spell a "word" of your own.`;
     const CONTROL_REJECTIONS: Record<string, string> = {
       mirrorOf: `A mirror reflects another performer's sequence exactly, so it carries no controls of its own. Move ${quoted(controls)} to the performer being mirrored.`,
       transformOf: `A transformed sequence is another performer's sequence changed in a stated way, so it carries no controls of its own. Move ${quoted(controls)} to the performer being transformed.`,
       library: `A library sequence is already finished, so it carries no controls of its own. Remove ${quoted(controls)}, or spell a "word" of your own.`,
-      source: `The demo sequence is the film's shared one, so it carries no controls of its own. Remove ${quoted(controls)}, or spell a "word" of your own.`,
+      source: sourceRejection,
     };
     ctx.addIssue({ code: "custom", message: CONTROL_REJECTIONS[named[0]!]! });
   })
