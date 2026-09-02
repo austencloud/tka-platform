@@ -145,6 +145,9 @@
        One token each, so neither face can drift per-page. */
     --page-title-font: "Fraunces", Georgia, serif;
     --landing-heading-font: "Playfair Display", Georgia, serif;
+    /* The fixed SiteHeader bar's height, published once so a page that wants
+       to own the first viewport can subtract it instead of guessing. */
+    --marketing-header-h: 64px;
   }
 
   .mkt-bg {
