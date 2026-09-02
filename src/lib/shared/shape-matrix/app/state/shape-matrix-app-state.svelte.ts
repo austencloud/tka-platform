@@ -289,16 +289,15 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
+  /*
+   * The picker stays open. It sits beside the animation rather than over it,
+   * so a choice is meant to be watched: pick a prop, see the shape traced by
+   * it, pick the next one. Closing is its own action.
+   */
   async function setPropType(nextPropType: PropType): Promise<void> {
-    if (propType === nextPropType) {
-      propPickerOpen = false;
-      return;
-    }
+    if (propType === nextPropType) return;
     await load(nextPropType);
-    if (!loadError) {
-      propPickerOpen = false;
-      syncState();
-    }
+    if (!loadError) syncState();
   }
 
   function restoreState(snapshot: ShapeMatrixAppSnapshot): void {
@@ -387,9 +386,14 @@ export function createShapeMatrixAppState(
   function closeAbout(): void {
     aboutOpen = false;
   }
-  function openPropPicker(): void {
-    propPickerOpen = true;
+  /**
+   * One entry point. The Props control under the animation is a disclosure:
+   * pressing it again puts the stage back the way it was.
+   */
+  function togglePropPicker(): void {
+    propPickerOpen = !propPickerOpen;
   }
+  /** For the drill, when another dock section claims the space. */
   function closePropPicker(): void {
     propPickerOpen = false;
   }
@@ -497,7 +501,7 @@ export function createShapeMatrixAppState(
     setCompact,
     openAbout,
     closeAbout,
-    openPropPicker,
+    togglePropPicker,
     closePropPicker,
     beginMandalaHandoff,
     endMandalaHandoff,

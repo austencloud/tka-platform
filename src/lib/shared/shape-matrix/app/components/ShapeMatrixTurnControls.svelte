@@ -94,7 +94,41 @@
       ? "mixed"
       : turnValueToKey(appState.activeTurn)
   );
+
+  /*
+   * Level 3 lists eight values and Level 4 lists fourteen. One row of those in
+   * a popover is a long thin scroller: the values run off the edge, and the
+   * ones still on screen are the narrowest, hardest targets in the app. The
+   * tray wraps them onto two rows and spends the room it saves on full-size
+   * segments. The ribbon has real width on a wide screen, so it keeps one row.
+   */
+  const TRAY_SINGLE_ROW_LIMIT = 6;
+  /** The narrowest a wrapped segment may get, holding the touch-target floor. */
+  const TRAY_MIN_SEGMENT_PX = 48;
+  /*
+   * The popover is portalled and sized by its own content, so its box cannot
+   * say how much room the row has. The window can: the popover caps itself at
+   * the viewport less its collision padding.
+   */
+  let viewportWidth = $state(1280);
+  const trayColumns = $derived.by(() => {
+    if (layout !== "tray") return undefined;
+    const count = turnOptions.length;
+    if (count <= TRAY_SINGLE_ROW_LIMIT) return undefined;
+    const room = Math.max(
+      2,
+      Math.floor((viewportWidth - 44) / TRAY_MIN_SEGMENT_PX)
+    );
+    const twoRows = Math.ceil(count / 2);
+    if (room >= twoRows) return twoRows;
+    // A phone cannot hold seven full-size segments side by side, so it takes a
+    // third row rather than shrink them under the floor.
+    const rows = Math.min(4, Math.ceil(count / room));
+    return Math.ceil(count / rows);
+  });
 </script>
+
+<svelte:window bind:innerWidth={viewportWidth} />
 
 <div class="turn-editor" class:tray={layout === "tray"}>
   <div class="control-cell axis-control">
@@ -123,7 +157,8 @@
     {:else}
       <div
         class="turn-control"
-        style="--turn-option-count: {turnOptions.length}"
+        style="--turn-option-count: {turnOptions.length}; --turn-columns: {trayColumns ??
+          turnOptions.length}"
       >
         <SegmentedControl
           options={turnOptions}
@@ -131,8 +166,9 @@
           onchange={(key: string) => {
             if (key !== "mixed") onturn(keyToTurnValue(key));
           }}
-          size="sm"
-          density="tight"
+          columns={trayColumns}
+          size={trayColumns ? "md" : "sm"}
+          density={trayColumns ? "standard" : "tight"}
           color="accent"
           semantics="radiogroup"
           ariaLabel={turnControlLabel}
@@ -207,7 +243,10 @@
     transition: width var(--transition-normal);
   }
 
-  .turn-control :global(.segmented-control) {
+  /* Ribbon only: the row is allowed to grow past its cell and scroll. In the
+     tray the same floor would force a fourteen-value palette to 42rem, which
+     is what made the popover a horizontal scroller. */
+  .turn-editor:not(.tray) .turn-control :global(.segmented-control) {
     min-width: calc(var(--count) * 3rem);
   }
 
@@ -248,8 +287,13 @@
     padding: 0.5rem 0.6rem 0.55rem;
   }
 
+  /* Sized by COLUMNS, not by option count, and capped so the popover it sits
+     in still fits a 375px phone beside its own padding. */
   .turn-editor.tray .turn-control {
-    width: calc(var(--turn-option-count, 4) * 3rem);
+    width: min(
+      calc(100vw - 2.75rem),
+      calc(var(--turn-columns, 4) * 3.4rem)
+    );
     max-width: 100%;
   }
 

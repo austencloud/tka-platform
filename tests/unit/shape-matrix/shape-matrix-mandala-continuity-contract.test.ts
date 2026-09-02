@@ -154,7 +154,7 @@ describe("shape matrix mandala continuity", () => {
     );
     const drill = read("components/ShapeMatrixDrill.svelte");
     expect(drill).toMatch(
-      /class="hero-stage"\s*use:claimedViewTransitionName=\{\{\s*name: SHAPE_MATRIX_ACTIVE_STAGE_NAME,\s*enabled: mandalaTransition\.claim,/
+      /class="hero-stage"[\s\S]{0,120}?use:claimedViewTransitionName=\{\{\s*name: SHAPE_MATRIX_ACTIVE_STAGE_NAME,\s*enabled: mandalaTransition\.claim,/
     );
     const shell = read("app/components/ShapeMatrixAppShell.svelte");
     expect(shell).toMatch(
