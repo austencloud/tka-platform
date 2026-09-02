@@ -22,6 +22,8 @@
   } from "$lib/features/flow-fest-sim/domain/flow-fest-electric-unicycle";
   import type { FlowFestEucMountedPoseDiagnostic } from "$lib/features/flow-fest-sim/domain/flow-fest-euc-mounted-pose";
   import { FlowFestEucMountedPoseRig } from "$lib/features/flow-fest-sim/services/flow-fest-euc-mounted-pose-rig";
+  import { repairFadeLeftoverMaterials } from "$lib/features/flow-fest-sim/services/flow-fest-avatar-material-repair";
+  import { refreshSkinnedSkeletons } from "$lib/features/flow-fest-sim/services/flow-fest-avatar-skeleton-refresh";
 
   interface Props {
     dynamics: FlowFestElectricUnicycleDynamics;
@@ -52,6 +54,9 @@
 
   const rig = new FlowFestEucMountedPoseRig();
   let elapsedSeconds = 0;
+  const MATERIAL_REPAIR_INTERVAL_SECONDS = 1;
+  // Starts at the interval so the first frame the model exists is repaired.
+  let repairAccumulator = MATERIAL_REPAIR_INTERVAL_SECONDS;
 
   /**
    * `Avatar3D` publishes no handle to its skeleton, so the performer group is
@@ -102,6 +107,14 @@
           if ((node as SkinnedMesh).isSkinnedMesh) node.frustumCulled = false;
         });
       }
+      // The package's mount fade can leave the clothes in its transparent,
+      // non-depth-writing render state; the sweep below runs each second
+      // because the fade re-runs whenever the avatar's opacity changes.
+      repairAccumulator += delta;
+      if (repairAccumulator >= MATERIAL_REPAIR_INTERVAL_SECONDS) {
+        repairAccumulator %= MATERIAL_REPAIR_INTERVAL_SECONDS;
+        repairFadeLeftoverMaterials(performerRoot);
+      }
 
       rig.update({
         deltaSeconds: delta,
@@ -114,6 +127,7 @@
         elapsedSeconds,
         idle: Math.abs(props.dynamics.speedMetersPerSecond) < 0.05,
       });
+      refreshSkinnedSkeletons(performerRoot);
       props.onDiagnostic?.(rig.diagnostic());
     },
     { stage: mountedPoseStage }
