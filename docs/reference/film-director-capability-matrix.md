@@ -159,6 +159,11 @@ confirmed against this convention yet — if Austen reads a `cw` orbit as
 turning the wrong way on screen, the fix is flipping the sign in that one
 branch, not the schema.
 
+`/test/film-director?film=proving` now ends with two scenes, `orbit-clockwise`
+and `orbit-counterclockwise`, identical except for the sign, staged so the
+direction of travel reads at a glance. The convention stays unconfirmed until
+Austen says which one he would call clockwise (added 2026-09-02).
+
 ## Camera roll direction convention
 
 `roll` moves take `direction: "cw" | "ccw"` and accumulate into a resolved

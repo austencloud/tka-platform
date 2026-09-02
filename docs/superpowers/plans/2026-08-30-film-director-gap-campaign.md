@@ -183,9 +183,28 @@ proving-film scenes author at version 4.
       proving-grounds (one cw, one ccw orbit over distinguishable staging);
       pane delivery asking Austen which reads clockwise. One-line flip in
       `camera-language.ts` if wrong. This is the only gap gated on his eyes.
-- [ ] **Final — showcase + docs + memory.** Bake proving-grounds poster
+      Demo shipped 2026-09-02 (`0bccc101f5`): scenes 9 and 10 of Proving
+      Grounds, `orbit-clockwise` and `orbit-counterclockwise`, x-bot / remy /
+      ch01 in a line, forest, wide front shot, 90-degree orbit each; film is
+      now 88 s. `film-library.test.ts` asserts the two scenes share a start
+      and end mirrored in x. 718/718.
+      Acceptance (main-loop review, 2026-09-02): canvas frames on :5201 at
+      1920×1080. 80.9 s (scene 10 start, identical to scene 9 start): the
+      three characters read left to right x-bot, remy, ch01 from the front.
+      79.3 s (end of `cw`): the camera looks down the line from the ch01
+      (screen-right) end. 87.3 s (end of `ccw`): the camera looks down the
+      line from the x-bot (screen-left) end. Opposite sides confirmed;
+      which one Austen calls clockwise is still his call. Console clean.
+- [x] **Final — showcase + docs + memory.** Bake proving-grounds poster
       (`node scripts/build-film-posters.mjs --only proving` on :5173),
       capability-matrix sweep, memory file update, worktree cleanup.
+      Closed 2026-09-02. Poster not rebaked: the cue is `combined-draw` at
+      6 s and scene 1 has not changed since the 2026-08-30 bake, so the frame
+      would be identical; `has a baked poster` passes. Capability-matrix
+      sweep: every closed gap has a row or section (stepEffects, stepEfforts,
+      holds, arc paths, `{source:"none"}`, offstage entrances, `run` and
+      per-performer effect presets as named rejections, orbit pair note).
+      Memory `project_film_director_directive_language.md` updated.
 
 ## Wave 1 acceptance record (Phase 0 + Gap 9 + Gap 1)
 
