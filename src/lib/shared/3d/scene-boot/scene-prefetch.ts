@@ -6,6 +6,8 @@ import {
   getSceneEnvironmentRendererKey,
   normalizeSceneEnvironmentId,
 } from "../environments/domain/scene-environment";
+import { isDesktop } from "$lib/shared/desktop/is-desktop";
+
 import { DECODER_RUNTIME_URLS, sceneAssetUrls } from "./scene-asset-manifest";
 
 const warmed = new Set<string>();
@@ -16,6 +18,9 @@ interface SaveDataConnection {
 
 function shouldSkipWarming(): boolean {
   if (!browser) return true;
+  // The desktop build reads its scenes from the local asset bundle; there is
+  // no network transfer to hide.
+  if (isDesktop()) return true;
   if (navigator.onLine === false) return true;
   // Warming spends bandwidth the user has not asked to spend yet. Data Saver is
   // an explicit request not to.
