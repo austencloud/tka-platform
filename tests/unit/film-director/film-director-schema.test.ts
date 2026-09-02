@@ -936,4 +936,30 @@ describe("blocking edges", () => {
       parsed.scenes[0]!.performance!.performers![0]!.blocking![0]!.move
     ).toBe("run");
   });
+  it("accepts an arc on a walk", () => {
+    const parsed = parseBlocking([
+      { move: "walk", to: { x: 2, z: 0 }, along: { arc: "left", bulge: 0.25 } },
+    ]);
+    expect(
+      parsed.scenes[0]!.performance!.performers![0]!.blocking![0]!.along
+    ).toEqual({ arc: "left", bulge: 0.25 });
+  });
+
+  it("rejects a bulge outside its bounds", () => {
+    for (const bulge of [0, -0.5, 1.6]) {
+      expect(() =>
+        parseBlocking([
+          { move: "walk", to: { x: 2, z: 0 }, along: { arc: "left", bulge } },
+        ])
+      ).toThrow();
+    }
+  });
+
+  it("rejects an unknown arc side", () => {
+    expect(() =>
+      parseBlocking([
+        { move: "walk", to: { x: 2, z: 0 }, along: { arc: "wide" } },
+      ])
+    ).toThrow();
+  });
 });

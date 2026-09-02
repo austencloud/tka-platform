@@ -569,6 +569,16 @@ const blockingMoveSchema = z
   .object({
     move: z.enum(["stand", "walk", "turn", "run"]),
     to: position2Schema.optional(),
+    along: z
+      .object({
+        arc: z.enum(["left", "right"]),
+        // Sagitta as a fraction of the chord: 0.5 is a semicircle, 1.5 loops
+        // most of the way round. The meaning and the geometry live in
+        // `blocking-language.ts`.
+        bulge: finiteNumber.gt(0).max(1.5).optional(),
+      })
+      .strict()
+      .optional(),
     direction: z.enum(["forward", "backward", "left", "right"]).optional(),
     amount: z
       .union([
