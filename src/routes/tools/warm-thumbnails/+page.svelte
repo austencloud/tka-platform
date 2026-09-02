@@ -1,11 +1,17 @@
 <!--
-  Gallery Thumbnail Warm — full-control admin page.
+  Gallery Thumbnail Warm — full-control page.
 
   Renders + uploads the selected scope of gallery thumbnails through the REAL
   ThumbnailRenderOrchestrator (zero parity risk), warming the shared cloud cache
   so cold-cache 404s stop. The AdminToolbar "Warm Gallery (lean)" button runs a
   fixed staff + fan/dark/QR subset; this page exposes the full prop × mode × QR matrix
   for a deliberate leave-it-running pass.
+
+  Not an admin route. The Storage rules for thumbnails/ and pictograph-cells/
+  accept any authenticated writer, anonymous guests included, so the page mints
+  a guest identity on mount and only needs that. It used to live under /admin,
+  whose layout guard bounced every non-admin session (including the in-app
+  browser pane) to the home page before the tool could render.
 
   After a run, index + bundle the results (credentialed, outside the browser):
     npm run thumbnails:manifest
@@ -14,8 +20,14 @@
   Spec: docs/superpowers/specs/active/2026-07-02-gallery-thumbnail-warm-pass-design.md
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
+  import {
+    PROP_PICKER_SECTIONS,
+    isPropActive,
+  } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
+  import { getAuthInstance } from "$lib/shared/auth/firebase";
   import {
     startGalleryWarm,
     type WarmHandle,
@@ -30,22 +42,26 @@
     type CellWarmProgress,
   } from "$lib/features/library/services/warm-all-scan-cells";
 
+  // Every prop a visitor can actually pick, in picker order, plus bare hands.
+  // Sourced from the picker registry so a newly added prop shows up here
+  // without anyone remembering this page exists. Deactivated props are hidden
+  // from pickers, so nobody can browse the gallery with them; skip them.
   const ALL_PROPS: PropType[] = [
-    PropType.STAFF,
-    PropType.FAN,
-    PropType.CLUB,
-    PropType.BUUGENG,
-    PropType.TRIAD,
-    PropType.MINIHOOP,
-    PropType.BIGHOOP,
-    PropType.DOUBLESTAR,
+    ...PROP_PICKER_SECTIONS.flatMap((section) => section.props),
     PropType.HAND,
-    PropType.SWORD,
-    PropType.CHICKEN,
-    PropType.QUIAD,
-  ];
+  ].filter((prop, index, list) => isPropActive(prop) && list.indexOf(prop) === index);
 
-  const isAdmin = $derived(featureFlagService.isAdmin);
+  // Uploads need request.auth != null. Anonymous is enough, so mint it here
+  // and report the resolved state; the write site re-checks on its own.
+  let identityState = $state<"pending" | "ready" | "unavailable">("pending");
+  onMount(() => {
+    void (async () => {
+      await ensureGuestIdentity("thumbnail_upload");
+      const auth = await getAuthInstance();
+      await auth.authStateReady();
+      identityState = auth.currentUser ? "ready" : "unavailable";
+    })();
+  });
 
   // Scope selection — lean defaults (matches the observed cold set).
   let selectedProps = $state<Set<PropType>>(
@@ -181,8 +197,11 @@
     </p>
   </header>
 
-  {#if !isAdmin}
-    <div class="gate">Admin only.</div>
+  {#if identityState === "unavailable"}
+    <div class="gate">
+      Sign-in is unavailable, so uploads would be rejected. Check that anonymous
+      auth is enabled for this Firebase project, then reload.
+    </div>
   {:else}
     <section class="scope">
       <div class="scope-row">
