@@ -145,7 +145,7 @@ Search terms: `Shape Matrix`, `realization pane`, `detail pane`, `ControlDock`,
 - Level 1 exposes 0 turns.
 - Level 2 exposes whole turns from 0 through 3.
 - Level 3 adds half turns and Float.
-- Level 4 exposes every quarter step from 0 through 3 and retains Float.
+- Level 4 exposes every quarter step from -0.25 through 3 and retains Float.
 - Choosing a level lands the edited axis on the first rotating turn that level
   introduces: Level 1 at 0, Level 2 at 1, Level 3 at 0.5, and Level 4 at 0.25.
   Earlier values remain selectable because the level vocabulary is cumulative.
@@ -158,8 +158,10 @@ Search terms: `Shape Matrix`, `realization pane`, `detail pane`, `ControlDock`,
   four descriptors, so Float × Float is also 4×4. Clock/counter supply the
   lateral circle placements missing from the former 2×2 treatment.
 - Turn labels may be read as TKA turn values or reduced prop-to-hand VTG
-  pattern ratios. Quarter ratios use `3:2`, `5:2`, and the corresponding
-  odd-over-two series. When the axes differ, the app names both explicitly,
+  pattern ratios. TKA Float reads as `0:1` in ratio mode, and TKA `-0.25`
+  reduces from `0.5:1` to `1:2`. Positive quarter ratios use `3:2`, `5:2`,
+  and the corresponding odd-over-two series. When the axes differ, the app
+  names both explicitly,
   for example `Blue 3:1 × Red 1:1`. Primary VTG sources establish the individual
   pattern ratios but not `3::1` as a canonical hybrid abbreviation, so the app
   does not invent that shorthand.

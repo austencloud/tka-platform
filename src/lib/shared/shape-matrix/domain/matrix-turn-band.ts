@@ -2,13 +2,45 @@ import type {
   TurnLevel,
   TurnValue,
 } from "$lib/shared/create/services/level-turn-values";
-import { turnValuesForLevel } from "$lib/shared/create/services/level-turn-values";
+import {
+  clampTurnToLevel,
+  turnValuesForLevel,
+} from "$lib/shared/create/services/level-turn-values";
 import type { AxisFilter, MatrixFilters } from "./filter-flower-axis";
+import { ratioLabel } from "./flower-signature";
 
 export type MatrixLabelMode = "turns" | "ratios";
 
 export function matrixTurnsForLevel(level: TurnLevel): readonly TurnValue[] {
-  return turnValuesForLevel(level);
+  const standardTurns = turnValuesForLevel(level);
+  if (level !== 4) return standardTurns;
+  return ["fl", -0.25, ...standardTurns.filter((turn) => turn !== "fl")];
+}
+
+export function clampMatrixTurnToLevel(
+  value: TurnValue,
+  level: TurnLevel
+): TurnValue {
+  return matrixTurnsForLevel(level).includes(value)
+    ? value
+    : clampTurnToLevel(value, level);
+}
+
+export function matrixTurnVisibleLabel(
+  turn: TurnValue,
+  labelMode: MatrixLabelMode
+): string {
+  if (labelMode === "ratios") return ratioLabel(turn);
+  return turn === "fl" ? "Float" : String(turn);
+}
+
+export function matrixTurnSpokenLabel(
+  turn: TurnValue,
+  labelMode: MatrixLabelMode
+): string {
+  if (labelMode === "ratios") return `${ratioLabel(turn)} ratio`;
+  if (turn === "fl") return "Float";
+  return `${turn} turn${turn === 1 ? "" : "s"}`;
 }
 
 function axisFilterForTurn(turn: TurnValue): AxisFilter {

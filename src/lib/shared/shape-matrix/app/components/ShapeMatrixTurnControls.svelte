@@ -6,7 +6,10 @@
   the host decides that through `onturn`. -->
 <script lang="ts">
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-  import { ratioLabel } from "$lib/shared/shape-matrix/domain/flower-signature";
+  import {
+    matrixTurnSpokenLabel,
+    matrixTurnVisibleLabel,
+  } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
   import {
     keyToTurnValue,
     turnValueToKey,
@@ -49,8 +52,7 @@
     turn: TurnValue,
     labelMode: "turns" | "ratios"
   ): string {
-    if (turn === "fl") return "Float";
-    return labelMode === "ratios" ? ratioLabel(turn) : String(turn);
+    return matrixTurnVisibleLabel(turn, labelMode);
   }
 
   const turnControlLabel = $derived(
@@ -70,12 +72,7 @@
       : []),
     ...appState.availableTurns.map((turn) => {
       const key = turnValueToKey(turn);
-      const turnLabel =
-        turn === "fl"
-          ? "Float"
-          : appState.labelMode === "ratios"
-            ? `${ratioLabel(turn)} ratio`
-            : `${turn} turn${turn === 1 ? "" : "s"}`;
+      const turnLabel = matrixTurnSpokenLabel(turn, appState.labelMode);
       return {
         value: key,
         label: turnLabel,
