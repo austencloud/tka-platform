@@ -54,6 +54,29 @@ describe("shape matrix mandala continuity", () => {
     expect(art).toMatch(/paint\(side\)/);
   });
 
+  it("moves one picture between tile and hero: same fit, same square, no overshoot", () => {
+    // Tiles and headers paint at engine fit, the hero floor's fit, so the
+    // shared-element morph scales one drawing instead of crossfading two.
+    const render = read("services/shape-matrix-render.ts");
+    expect(render).not.toMatch(/"extent"/);
+    expect(render.match(/"engine"/g)?.length).toBeGreaterThanOrEqual(3);
+
+    // The word header lives above the square in a drill-owned band, so the
+    // hero frame IS the canvas region and both inscribed squares coincide.
+    const drill = read("components/ShapeMatrixDrill.svelte");
+    expect(drill).toContain("showWordHeader: false");
+    expect(drill).toContain('class="hero-header"');
+    expect(drill).toContain('class="hero-header-ghost"');
+    expect(drill).toMatch(/\.hero-stage \{[^}]*grid-template-rows: auto minmax\(0, 1fr\)/s);
+
+    // The group animation settles; a spring would overshoot the square.
+    const shell = read("app/components/ShapeMatrixAppShell.svelte");
+    expect(shell).not.toContain("--ease-spring");
+    expect(shell).toMatch(
+      /view-transition-group\(shape-matrix-active-mandala\)[\s\S]*?--ease-in-out/
+    );
+  });
+
   it("shows the still floor at the live guide's opacity so the handoff is invisible", () => {
     const drill = read("components/ShapeMatrixDrill.svelte");
     const loop = readSrc("lib/shared/animation-engine/services/animation-render-loop.ts");
