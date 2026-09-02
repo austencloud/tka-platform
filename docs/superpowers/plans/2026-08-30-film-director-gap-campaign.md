@@ -128,11 +128,18 @@ proving-film scenes author at version 4.
       stepPlanes shape; freeze/hold on a beat only if the playback seam
       supports per-performer step remapping cheaply. Design task reads
       `director-viewer-adapter.ts` + `FilmDirectorScene.svelte` fully first.
-- [ ] **Gap 6 — per-performer effect presets/overrides.** Design task first:
+- [x] **Gap 6 — per-performer effect presets/overrides.** Design task first:
       determine whether the effects engine can hold two configs of one effect
       id in one scene. If yes: `performer.effectPreset`/`effectOverrides`
       override scene-scoped ones. If no: a clear rejection message naming the
       constraint, plus capability-matrix documentation. No pretending.
+      **Ruled NO and closed 2026-09-02** (commit `2998cb963b`). The design
+      pass found `EffectsConfigState` is one `Record<effectId, Intent>` per
+      scene, replaced once by `applyDirectorEffectPresets`, and read flat by
+      `EffectOrchestrator3D` for every performer's tips. `effectPresets` /
+      `effectOverrides` on a performer or in cast defaults now reject with
+      `PERFORMER_EFFECT_CONFIG_MESSAGE`; documented under "Spoken but not
+      real". 663/663 tests; snapshot untouched. Non-visual, no frame needed.
 - [ ] **Gap 7 — blocking edges.** `run` (only if the locomotion owner has a
       run gait — locomotion.md forbids inventing one), arc paths
       (`along: "arc"` resolved into chord segments at compile time, no runtime
