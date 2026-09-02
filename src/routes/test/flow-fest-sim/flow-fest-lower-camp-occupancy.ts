@@ -6,6 +6,7 @@ import {
   FLOW_FEST_LOWER_CAMPGROUND_OCCUPANCY,
   type FlowFestCampPlanLine,
 } from "./flow-fest-camp-plan";
+import { FLOW_FEST_PARKED_CAR_MODELS } from "./flow-fest-parked-cars";
 
 export interface FlowFestLowerCampPlacement2D {
   x: number;
@@ -13,17 +14,55 @@ export interface FlowFestLowerCampPlacement2D {
   rotation: number;
 }
 
+export interface FlowFestLowerCampVehiclePlacement2D
+  extends FlowFestLowerCampPlacement2D {
+  modelId: string;
+  row: number;
+  stall: number;
+  facing: "nose-in" | "backed-in";
+  crooked: boolean;
+}
+
 export interface FlowFestLowerCampOccupancyLayout {
-  centerVehicles: FlowFestLowerCampPlacement2D[];
+  centerVehicles: FlowFestLowerCampVehiclePlacement2D[];
   centerTents: FlowFestLowerCampPlacement2D[];
   innerRoadsideTents: FlowFestLowerCampPlacement2D[];
   outerTreeLineTents: FlowFestLowerCampPlacement2D[];
   audit: {
     centerVehicleOutsideLoopCount: number;
+    centerVehicleAisleIntrusionCount: number;
+    centerVehicleEmptyStallCount: number;
     innerRoadsideTentOutsideLoopCount: number;
     outerTreeLineTentInsideLoopCount: number;
   };
 }
+
+/**
+ * How the open middle of the loop is parked. Three rows of stalls run along
+ * the loop's long axis; the two drive aisles between them are what a car
+ * actually needs to get in and out. Outer rows park off their aisle, so the
+ * back of an outer-row car faces open field, which is where its tent goes.
+ */
+const LOWER_CAMP_PARKING_LANES = Object.freeze({
+  rowAcrossMeters: [-11.4, 0, 11.4] as const,
+  aisleCenterAcrossMeters: [-5.7, 5.7] as const,
+  aisleWidthMeters: 6,
+  stallPitchMeters: 3.55,
+  stallReachMeters: 31,
+  stallJitterMeters: 0.12,
+  carHalfLengthMeters: 2.35,
+  /** The middle row sits between two aisles, so only short bodies park there. */
+  middleRowMaxLengthMeters: 4.8,
+  loopClearanceMeters: 7.4,
+  tentLoopClearanceMeters: 6,
+  routeClearanceMeters: 2.5,
+  /** Clear ground between a rear bumper and the tent pitched behind it. */
+  tentBehindCarMeters: 1.6,
+  emptyStallShare: 0.1,
+  backedInShare: 0.35,
+  straightYawJitter: 0.035,
+  crookedYawJitter: 0.2,
+});
 
 /**
  * Derive festival dressing from the registered lower loop. Exact pitches are
@@ -59,25 +98,14 @@ export function deriveFlowFestLowerCampOccupancy(options: {
         side: "inner",
       })
   );
-  const occupiedTents = [...outerTreeLineTents, ...innerRoadsideTents];
-  const centerTents = Array.from(
-    { length: FLOW_FEST_LOWER_CAMPGROUND_OCCUPANCY.centerTentCount },
-    (_, index) => {
-      const placement = findCenterTentPlacement({
-        ...options,
-        peers: occupiedTents,
-        index,
-        count: FLOW_FEST_LOWER_CAMPGROUND_OCCUPANCY.centerTentCount,
-      });
-      occupiedTents.push(placement);
-      return placement;
-    }
-  );
-  const centerVehicles = buildCenterVehiclePlacements({
+  const lanes = buildCenterParkingLanes({
     ...options,
-    tents: centerTents,
-    count: FLOW_FEST_LOWER_CAMPGROUND_OCCUPANCY.centerVehicleCount,
+    peers: [...outerTreeLineTents, ...innerRoadsideTents],
+    vehicleCount: FLOW_FEST_LOWER_CAMPGROUND_OCCUPANCY.centerVehicleCount,
+    tentCount: FLOW_FEST_LOWER_CAMPGROUND_OCCUPANCY.centerTentCount,
   });
+  const centerVehicles = lanes.vehicles;
+  const centerTents = lanes.tents;
 
   return {
     centerVehicles,
@@ -88,6 +116,8 @@ export function deriveFlowFestLowerCampOccupancy(options: {
       centerVehicleOutsideLoopCount: centerVehicles.filter(
         (placement) => !pointInsidePlanLoop(placement, options.loop)
       ).length,
+      centerVehicleAisleIntrusionCount: lanes.aisleIntrusionCount,
+      centerVehicleEmptyStallCount: lanes.emptyStallCount,
       innerRoadsideTentOutsideLoopCount: innerRoadsideTents.filter(
         (placement) => !pointInsidePlanLoop(placement, options.loop)
       ).length,
@@ -148,102 +178,232 @@ function findLoopTentPlacement(options: {
   );
 }
 
-function findCenterTentPlacement(options: {
+interface ParkingStall {
+  row: number;
+  stall: number;
+  along: number;
+  across: number;
+  /** +1 or -1 along `cross`: the side of this stall away from its aisle. */
+  outward: 1 | -1;
+}
+
+interface ParkedCar extends ParkingStall {
+  modelIndex: number;
+  facing: "nose-in" | "backed-in";
+  crooked: boolean;
+  rotation: number;
+  x: number;
+  z: number;
+}
+
+/**
+ * Park the loop's middle the way people actually do it: side by side in rows,
+ * a drive aisle between rows, a mix of nose-in and backed-in, a few stalls
+ * still empty, one car per row parked crooked, and the handful of centre
+ * tents pitched off the back of a car rather than dropped at random.
+ */
+function buildCenterParkingLanes(options: {
   rng: () => number;
   loop: FlowFestCampPlanLine;
   routes: FlowFestRuntimeSegment[];
   peers: FlowFestLowerCampPlacement2D[];
-  index: number;
-  count: number;
-}): FlowFestLowerCampPlacement2D {
-  const center = planLoopCenter(options.loop);
-  for (let attempt = 0; attempt < 96; attempt += 1) {
-    const angle =
-      (options.index / options.count) * Math.PI * 2 +
-      (options.rng() - 0.5) * 0.35 +
-      attempt * 0.41;
-    const radius = 8 + options.rng() * 7;
-    const x = center.x + Math.cos(angle) * radius;
-    const z = center.z + Math.sin(angle) * radius;
-    if (!pointInsidePlanLoop({ x, z }, options.loop)) continue;
-    if (distanceToPlanLine(x, z, options.loop) < 12) continue;
-    if (pointNearRoutes(x, z, options.routes, 1.4)) continue;
-    if (
-      options.peers.some((peer) => Math.hypot(peer.x - x, peer.z - z) < 3.4)
-    ) {
-      continue;
-    }
-    return {
-      x,
-      z,
-      rotation: Math.atan2(center.x - x, center.z - z),
-    };
-  }
-  throw new Error(
-    `Could not place lower-center tent ${options.index + 1}/${options.count}`
-  );
-}
-
-function buildCenterVehiclePlacements(options: {
-  rng: () => number;
-  loop: FlowFestCampPlanLine;
-  routes: FlowFestRuntimeSegment[];
+  vehicleCount: number;
+  tentCount: number;
+}): {
+  vehicles: FlowFestLowerCampVehiclePlacement2D[];
   tents: FlowFestLowerCampPlacement2D[];
-  count: number;
-}): FlowFestLowerCampPlacement2D[] {
-  const center = planLoopCenter(options.loop);
-  const axis = planLoopPrincipalAxis(options.loop, center);
+  emptyStallCount: number;
+  aisleIntrusionCount: number;
+} {
+  const lanes = LOWER_CAMP_PARKING_LANES;
+  const { rng, loop, routes } = options;
+  const center = planLoopCenter(loop);
+  const axis = planLoopPrincipalAxis(loop, center);
   const cross = { x: -axis.z, z: axis.x };
-  const candidates: Array<{ x: number; z: number; order: number }> = [];
+  const toWorld = (along: number, across: number) => ({
+    x: center.x + axis.x * along + cross.x * across,
+    z: center.z + axis.z * along + cross.z * across,
+  });
+  const jitter = () => (rng() - 0.5) * 2 * lanes.stallJitterMeters;
 
-  for (let row = -3; row <= 3; row += 1) {
-    for (let column = -4; column <= 4; column += 1) {
-      const along = column * 6.25 + (options.rng() - 0.5) * 0.34;
-      const across = row * 4.45 + (options.rng() - 0.5) * 0.28;
-      candidates.push({
-        x: center.x + axis.x * along + cross.x * across,
-        z: center.z + axis.z * along + cross.z * across,
-        order: Math.hypot(column / 4, row / 3),
-      });
+  const stalls: ParkingStall[] = [];
+  const stallsPerRow = Math.floor(
+    (2 * lanes.stallReachMeters) / lanes.stallPitchMeters
+  );
+  lanes.rowAcrossMeters.forEach((rowAcross, row) => {
+    for (let stall = 0; stall < stallsPerRow; stall += 1) {
+      const along =
+        -lanes.stallReachMeters + (stall + 0.5) * lanes.stallPitchMeters + jitter();
+      const across = rowAcross + jitter();
+      const point = toWorld(along, across);
+      if (!pointInsidePlanLoop(point, loop)) continue;
+      if (
+        distanceToPlanLine(point.x, point.z, loop) < lanes.loopClearanceMeters
+      ) {
+        continue;
+      }
+      if (pointNearRoutes(point.x, point.z, routes, lanes.routeClearanceMeters)) {
+        continue;
+      }
+      const outward: 1 | -1 =
+        rowAcross === 0 ? (rng() < 0.5 ? 1 : -1) : rowAcross > 0 ? 1 : -1;
+      stalls.push({ row, stall, along, across, outward });
     }
+  });
+  if (stalls.length < options.vehicleCount) {
+    throw new Error(
+      `Only ${stalls.length} parking stalls fit inside the road loop; ${options.vehicleCount} vehicles were requested`
+    );
   }
-  candidates.sort((first, second) => first.order - second.order);
 
-  const placements: FlowFestLowerCampPlacement2D[] = [];
-  const baseRotation = -Math.atan2(axis.z, axis.x);
-  for (const candidate of candidates) {
-    if (placements.length === options.count) break;
-    if (!pointInsidePlanLoop(candidate, options.loop)) continue;
-    if (distanceToPlanLine(candidate.x, candidate.z, options.loop) < 7.4) {
-      continue;
-    }
-    if (pointNearRoutes(candidate.x, candidate.z, options.routes, 2.5)) {
-      continue;
-    }
-    if (
-      options.tents.some(
-        (tent) => Math.hypot(tent.x - candidate.x, tent.z - candidate.z) < 3.2
-      ) ||
-      placements.some(
-        (vehicle) =>
-          Math.hypot(vehicle.x - candidate.x, vehicle.z - candidate.z) < 4.05
-      )
-    ) {
-      continue;
-    }
-    placements.push({
-      x: candidate.x,
-      z: candidate.z,
-      rotation: baseRotation + (options.rng() - 0.5) * 0.09,
+  // Leave a few stalls empty, then trim the row ends until the count is exact.
+  const spareStalls = stalls.length - options.vehicleCount;
+  const emptyTarget = Math.min(
+    spareStalls,
+    Math.round(stalls.length * lanes.emptyStallShare)
+  );
+  const emptyIndices = new Set<number>();
+  while (emptyIndices.size < emptyTarget) {
+    emptyIndices.add(Math.floor(rng() * stalls.length));
+  }
+  let occupied = stalls.filter((_, index) => !emptyIndices.has(index));
+  while (occupied.length > options.vehicleCount) {
+    let farthest = 0;
+    occupied.forEach((stall, index) => {
+      if (Math.abs(stall.along) > Math.abs(occupied[farthest]!.along)) {
+        farthest = index;
+      }
+    });
+    occupied = occupied.filter((_, index) => index !== farthest);
+  }
+
+  const cars: ParkedCar[] = [];
+  const modelIndices = FLOW_FEST_PARKED_CAR_MODELS.map((_, index) => index);
+  lanes.rowAcrossMeters.forEach((rowAcross, row) => {
+    const rowStalls = occupied
+      .filter((stall) => stall.row === row)
+      .sort((first, second) => first.along - second.along);
+    const crookedIndex = Math.floor(rng() * rowStalls.length);
+    let previousModel = -1;
+    rowStalls.forEach((stall, index) => {
+      const allowedModels = modelIndices.filter(
+        (candidate) =>
+          candidate !== previousModel &&
+          (rowAcross !== 0 ||
+            FLOW_FEST_PARKED_CAR_MODELS[candidate]!.lengthMeters <=
+              lanes.middleRowMaxLengthMeters)
+      );
+      const modelIndex =
+        allowedModels[Math.floor(rng() * allowedModels.length)]!;
+      previousModel = modelIndex;
+      const facing = rng() < lanes.backedInShare ? "backed-in" : "nose-in";
+      const crooked = index === crookedIndex;
+      const yawJitter =
+        (rng() - 0.5) *
+        2 *
+        (crooked ? lanes.crookedYawJitter : lanes.straightYawJitter);
+      // A longer body is pulled further off the aisle inside its stall, the
+      // way a pickup gets nosed up to the field edge so the lane stays open.
+      const model = FLOW_FEST_PARKED_CAR_MODELS[modelIndex]!;
+      const acrossShift =
+        (Math.max(model.lengthMeters, 2 * lanes.carHalfLengthMeters) -
+          2 * lanes.carHalfLengthMeters) /
+        2;
+      const across = stall.across + stall.outward * acrossShift;
+      const along = stall.along + (crooked ? (rng() - 0.5) * 0.3 : 0);
+      const noseSign = facing === "nose-in" ? stall.outward : -stall.outward;
+      const nose = { x: cross.x * noseSign, z: cross.z * noseSign };
+      cars.push({
+        ...stall,
+        along,
+        across,
+        modelIndex,
+        facing,
+        crooked,
+        rotation: Math.atan2(-nose.z, nose.x) + yawJitter,
+        ...toWorld(along, across),
+      });
+    });
+  });
+
+  // Centre tents pitch behind an outer-row car, in the open ground that row
+  // backs onto, never in the aisle a neighbour needs to leave by.
+  const tentCandidates = cars
+    .filter((car) => car.row !== 1 && !car.crooked)
+    .map((car) => {
+      const model = FLOW_FEST_PARKED_CAR_MODELS[car.modelIndex]!;
+      const across =
+        car.across +
+        car.outward * (model.lengthMeters / 2 + lanes.tentBehindCarMeters);
+      const point = toWorld(car.along, across);
+      return { car, point };
+    })
+    .filter(({ point }) => {
+      if (!pointInsidePlanLoop(point, loop)) return false;
+      if (
+        distanceToPlanLine(point.x, point.z, loop) < lanes.tentLoopClearanceMeters
+      ) {
+        return false;
+      }
+      if (pointNearRoutes(point.x, point.z, routes, 1.4)) return false;
+      return !options.peers.some(
+        (peer) => Math.hypot(peer.x - point.x, peer.z - point.z) < 3.4
+      );
+    })
+    .sort((first, second) => first.car.along - second.car.along);
+  if (tentCandidates.length < options.tentCount) {
+    throw new Error(
+      `Only ${tentCandidates.length} cars have room for a tent behind them; ${options.tentCount} centre tents were requested`
+    );
+  }
+  const tents: FlowFestLowerCampPlacement2D[] = [];
+  for (let index = 0; index < options.tentCount; index += 1) {
+    const pick = Math.floor(
+      ((index + 0.5) / options.tentCount) * tentCandidates.length
+    );
+    const { car, point } = tentCandidates[pick]!;
+    tents.push({
+      ...point,
+      rotation: Math.atan2(car.x - point.x, car.z - point.z),
     });
   }
 
-  if (placements.length !== options.count) {
-    throw new Error(
-      `Could only place ${placements.length}/${options.count} lower-center vehicles inside the road loop`
+  const aisleIntrusionCount = cars.filter((car) => {
+    const model = FLOW_FEST_PARKED_CAR_MODELS[car.modelIndex]!;
+    const halfLength = model.lengthMeters / 2;
+    const halfWidth = model.widthMeters / 2;
+    const cos = Math.cos(car.rotation);
+    const sin = Math.sin(car.rotation);
+    return [-1, 1].some((lengthSign) =>
+      [-1, 1].some((widthSign) => {
+        const localX = lengthSign * halfLength;
+        const localZ = widthSign * halfWidth;
+        const worldX = car.x + localX * cos + localZ * sin;
+        const worldZ = car.z - localX * sin + localZ * cos;
+        const across =
+          (worldX - center.x) * cross.x + (worldZ - center.z) * cross.z;
+        return lanes.aisleCenterAcrossMeters.some(
+          (aisle) => Math.abs(across - aisle) < lanes.aisleWidthMeters / 2
+        );
+      })
     );
-  }
-  return placements;
+  }).length;
+
+  return {
+    vehicles: cars.map((car) => ({
+      x: car.x,
+      z: car.z,
+      rotation: car.rotation,
+      modelId: FLOW_FEST_PARKED_CAR_MODELS[car.modelIndex]!.id,
+      row: car.row,
+      stall: car.stall,
+      facing: car.facing,
+      crooked: car.crooked,
+    })),
+    tents,
+    emptyStallCount: emptyIndices.size,
+    aisleIntrusionCount,
+  };
 }
 
 function openPlanLoopPoints(

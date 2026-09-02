@@ -83,49 +83,128 @@ proving-film scenes author at version 4.
       zoom. Visual proof: camera x-axis 9.975° off horizontal at `rollDeg: 10`,
       performers leaning left (camera rolled cw, picture counter-rotates), fov
       35.17 at zoom end, horizon level through the truck. 596/596 unit tests.
-- [ ] **Gap 3 — camera tracks a walking performer.** Resolved camera track
-      gains `tracking: { performerId, mode: "aim" | "follow", height? } | null`
-      spoken as `subject: {kind:"performer", performerId, track: true|"follow"}`.
-      Sampling-layer composition in `sampleFilmDirector`: after sampling camera
-      + blocking, offset target (aim) or target+position (follow) by the
-      tracked performer's live displacement from their opening mark. Keyframe
-      compiler untouched.
-- [ ] **Gap 4 — mid-scene cut.** `camera.shots: [...]` — a list of framing
+- [x] **Gap 3 — camera tracks a walking performer.** Closed 2026-09-01.
+      Spoken as `subject: {kind:"performer", performerId, track: true|"follow"}`;
+      resolved as optional `camera.tracking: {performerId, mode:"aim"|"follow"}`
+      (absent, not null, when unused so the eight shipped snapshots stay
+      byte-identical). `applyCameraTracking` in `sample-film-director.ts`
+      offsets target (aim) or target+position (follow) by the walker's live
+      displacement from their resolved opening mark; keyframe compiler
+      untouched. `track` on preset/keyframe targets rejects. Proving scene 4
+      `tracking-shot`: a 3 m downstage crossing under a following medium shot.
+      Visual gate at 1920×1080: walker centered at 0 s, mid-walk (≈3 s) and
+      standing (≈7 s) frames with the forest sliding behind; the first staging
+      walked through the partner's mark along z = 0 and was moved downstage
+      to (-1.5, -1.8). 611/611 tests.
+- [x] **Gap 4 — mid-scene cut.** `camera.shots: [...]` — a list of framing
       blocks each with its own subject/shotSize/angle/position/moves and a
       duration (seconds or beats); hard cut between consecutive shots.
       Exclusive with single-framing fields, presets, and raw keyframes.
       Compiles to one keyframe track with step-interpolation boundaries.
-- [ ] **Gap 5 — sequence transforms + library source.** Sequence sources gain
+      **Accepted 2026-09-02** (worktree `c5b004dcec` + close-out): suite
+      632/632; proving scene 5 sampled on the running workbench at 1920×1080 —
+      wide front hold through scene time 2.99 s, close-up at 3.01 s pushing
+      0.4 m to 5.99 s, high-behind at 6.01 s; three frames read wide two-shot /
+      low close-up on performer 1 / high behind two-shot with no glide. Cut
+      transition default duration is now 0, which changed only
+      `transition.durationSeconds` in five shipped films' snapshots.
+- [x] **Gap 5 — sequence transforms + library source.** Sequence sources gain
       `{transformOf: performer, transforms: [...]}` for the operations
       `sequence-transformer.ts` already owns (rotate/invert/swap/retrograde…;
       exact speakable list fixed at design time after reading the transformer),
       with `mirrorOf` kept as sugar. Plus a saved-library-sequence source if
       the loader seam is workbench-safe (async like word generation) — verify
       first, descope honestly if not.
-- [ ] **Gap 2 — per-beat changes.** Per-performer `stepEffects` (and
+      **Accepted 2026-09-02** (commits `8ee379c537`..`08f34afe1c`): ops
+      mirror/flip/invert/rewind (optional hand), rotate (45° multiples, cw/ccw),
+      swap-hands, start-at; `{library: <publicSequences id>}` loads through
+      `batchFetchPublicSequences` (world-readable). Suite 659/659; snapshot
+      changed only in the proving block. Visual gate on the workbench at
+      1920×1080, film time 50 s and 53.2 s: Firestore fetch observed, no
+      fallback warning in the console, and the three performers show three
+      different pictures (library source, rotated + swapped hands, retrograde).
+- [x] **Gap 2 — per-beat changes.** Per-performer `stepEffects` (and
       `stepEfforts` if the adapter seam allows live effort swap) following the
       stepPlanes shape; freeze/hold on a beat only if the playback seam
       supports per-performer step remapping cheaply. Design task reads
       `director-viewer-adapter.ts` + `FilmDirectorScene.svelte` fully first.
-- [ ] **Gap 6 — per-performer effect presets/overrides.** Design task first:
+      Shipped 2026-09-02 (`b09d7a696f`..`73ff889a75`): `stepEffects`,
+      `stepEfforts`, and `holds` resolve per frame and write through
+      `setEffect`/`setEffort` on each performer; Proving Grounds scene 8
+      (64–72 s) demonstrates all three.
+      Acceptance (main-loop review, 2026-09-02): runtime state on :5201 showed
+      performer 1 `rawEffect` none → trails at step 4 → fire at step 8 with
+      `effectiveEffortId` punch, while performer 2 held step 4 for four beats.
+      The visual gate first FAILED: no effect drew anywhere in the workbench,
+      even when set by hand. Root cause was outside the gap — Viewer3DScene's
+      `effectsSlot` snippet destructured `leftPropState`/`rightPropState` while
+      `PerformerRig` publishes `bluePropState`/`redPropState`, so the
+      orchestrator received `undefined` prop states and every 3D effect was
+      silently disabled for every viewer host (pre-existing on `main`). Fixed
+      by renaming at the seam; locked by
+      `tests/unit/3d-viewer/viewer3d-effects-slot-contract.test.ts`. After the
+      fix, canvas frames at 67.0 s show blue and red trails on performer 1 with
+      performer 2 clean, and at 69.5 s fire on all four staff ends of
+      performer 1 only. Console clean.
+- [x] **Gap 6 — per-performer effect presets/overrides.** Design task first:
       determine whether the effects engine can hold two configs of one effect
       id in one scene. If yes: `performer.effectPreset`/`effectOverrides`
       override scene-scoped ones. If no: a clear rejection message naming the
       constraint, plus capability-matrix documentation. No pretending.
-- [ ] **Gap 7 — blocking edges.** `run` (only if the locomotion owner has a
+      **Ruled NO and closed 2026-09-02** (commit `2998cb963b`). The design
+      pass found `EffectsConfigState` is one `Record<effectId, Intent>` per
+      scene, replaced once by `applyDirectorEffectPresets`, and read flat by
+      `EffectOrchestrator3D` for every performer's tips. `effectPresets` /
+      `effectOverrides` on a performer or in cast defaults now reject with
+      `PERFORMER_EFFECT_CONFIG_MESSAGE`; documented under "Spoken but not
+      real". 663/663 tests; snapshot untouched. Non-visual, no frame needed.
+- [x] **Gap 7 — blocking edges.** `run` (only if the locomotion owner has a
       run gait — locomotion.md forbids inventing one), arc paths
       (`along: "arc"` resolved into chord segments at compile time, no runtime
       change), offstage entrances (positions outside stage bounds + walk in —
       verify stage-extent handling), stand-and-watch (`sequence: {source:"none"}`
       — performer idles, no prop phrase; needs adapter support for a
       sequence-less performer).
+      Closed 2026-09-02: arc paths and stand-and-watch shipped as capability,
+      offstage entrances were already legal and are now documented, `run`
+      shipped as a named rejection. The Task 1 spike took branch A — a
+      performer with no loaded sequence renders an idle body, throws nothing,
+      and holds no prop.
+      Acceptance (main-loop review, 2026-09-02): 683/683 film-director tests.
+      Visual gate on :5201 at 1920×1080, film time 56.0 s: two bodies in the
+      medium shot, the idle performer empty-handed, the entrant reported at
+      (8, -1) and outside the frame. At 59.5 s the entrant is inside the
+      frame edge at (4.14, -2.08), 1.2 m/s, downstage of the straight chord.
+      No console errors or warnings. The executor's staging (opening mark at
+      x = 5, wide group shot) was inside the frame from the first beat, so
+      the scene was restaged to x = 8 over twelve beats under a medium shot
+      on performer 2 before commit.
 - [ ] **Gap 8b — orbit cw/ccw felt-direction confirmation.** Two-scene demo in
       proving-grounds (one cw, one ccw orbit over distinguishable staging);
       pane delivery asking Austen which reads clockwise. One-line flip in
       `camera-language.ts` if wrong. This is the only gap gated on his eyes.
-- [ ] **Final — showcase + docs + memory.** Bake proving-grounds poster
+      Demo shipped 2026-09-02 (`0bccc101f5`): scenes 9 and 10 of Proving
+      Grounds, `orbit-clockwise` and `orbit-counterclockwise`, x-bot / remy /
+      ch01 in a line, forest, wide front shot, 90-degree orbit each; film is
+      now 88 s. `film-library.test.ts` asserts the two scenes share a start
+      and end mirrored in x. 718/718.
+      Acceptance (main-loop review, 2026-09-02): canvas frames on :5201 at
+      1920×1080. 80.9 s (scene 10 start, identical to scene 9 start): the
+      three characters read left to right x-bot, remy, ch01 from the front.
+      79.3 s (end of `cw`): the camera looks down the line from the ch01
+      (screen-right) end. 87.3 s (end of `ccw`): the camera looks down the
+      line from the x-bot (screen-left) end. Opposite sides confirmed;
+      which one Austen calls clockwise is still his call. Console clean.
+- [x] **Final — showcase + docs + memory.** Bake proving-grounds poster
       (`node scripts/build-film-posters.mjs --only proving` on :5173),
       capability-matrix sweep, memory file update, worktree cleanup.
+      Closed 2026-09-02. Poster not rebaked: the cue is `combined-draw` at
+      6 s and scene 1 has not changed since the 2026-08-30 bake, so the frame
+      would be identical; `has a baked poster` passes. Capability-matrix
+      sweep: every closed gap has a row or section (stepEffects, stepEfforts,
+      holds, arc paths, `{source:"none"}`, offstage entrances, `run` and
+      per-performer effect presets as named rejections, orbit pair note).
+      Memory `project_film_director_directive_language.md` updated.
 
 ## Wave 1 acceptance record (Phase 0 + Gap 9 + Gap 1)
 

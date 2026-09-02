@@ -378,3 +378,38 @@ describe("beats resolve through the scene bpm", () => {
     ).toThrow(/96 beats at 66 bpm/);
   });
 });
+
+describe("scene transition defaults", () => {
+  const twoScenes = (transition?: Record<string, unknown>) => ({
+    version: 2,
+    id: "transition-film",
+    title: "Transition Film",
+    scenes: [
+      { id: "s1", title: "S1" },
+      { id: "s2", title: "S2", ...(transition ? { transition } : {}) },
+    ],
+  });
+
+  it("gives a cut no window at all", () => {
+    const spec = resolveFilmDirectorSpec(twoScenes({ kind: "cut" }));
+    expect(spec.scenes[1]!.transition).toEqual({
+      kind: "cut",
+      durationSeconds: 0,
+    });
+  });
+
+  it("still dissolves for 0.8s when the scene says nothing", () => {
+    const spec = resolveFilmDirectorSpec(twoScenes());
+    expect(spec.scenes[1]!.transition).toEqual({
+      kind: "environment-dissolve",
+      durationSeconds: 0.8,
+    });
+  });
+
+  it("keeps a duration a director stated on a cut", () => {
+    const spec = resolveFilmDirectorSpec(
+      twoScenes({ kind: "cut", durationSeconds: 0.5 })
+    );
+    expect(spec.scenes[1]!.transition.durationSeconds).toBe(0.5);
+  });
+});

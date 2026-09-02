@@ -361,4 +361,34 @@ describe("cd slice", () => {
     // ...and it is adopted once the visitor's own state is back.
     expect(store.addWord).toBe(false);
   });
+
+  describe("full snapshot", () => {
+    it("emits every encoded flat field at defaults (customName only when set) and round-trips", async () => {
+      const store = await loadManager();
+      const full = captureCdSlice(store, STEPS, { full: true });
+      expect(full).not.toBeNull();
+      expect(Object.keys(full!.rest!.settings!).sort()).toEqual(
+        [
+          "addWord",
+          "addStepNumbers",
+          "addDifficultyLevel",
+          "includeStartPosition",
+          "showLoopGlyph",
+          "showNotes",
+          "customNotesText",
+          "showQRCode",
+          "showMandala",
+          "startPositionLayout",
+        ].sort()
+      );
+      // Auto columns stay absent -- the seed writes them as an explicit null.
+      expect("cols" in full!).toBe(false);
+
+      store.setPersistenceSuspended(true);
+      store.replaceAll(seedFromCdSlice(full!, STEPS, store.getSettings()));
+      expect(captureCdSlice(store, STEPS, { full: true })).toEqual(full);
+      expect(captureCdSlice(store, STEPS)).toBeNull();
+      store.setPersistenceSuspended(false);
+    });
+  });
 });

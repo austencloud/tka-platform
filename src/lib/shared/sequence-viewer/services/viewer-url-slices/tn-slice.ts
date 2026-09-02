@@ -100,25 +100,40 @@ export interface TnSliceSource {
   presetRecipe: TunnelPresetRecipe | null;
 }
 
-export function captureTnSlice(source: TnSliceSource): TnSlicePayload | null {
+/**
+ * `full` emits every config field, the grid flag, the colors, and the section
+ * (Share/Copy Link); the default diff form elides what matches
+ * `DEFAULT_TUNNEL_VIEW_STATE`. `presetRecipe` rides whenever non-null in both.
+ */
+export function captureTnSlice(
+  source: TnSliceSource,
+  options: { full?: boolean } = {}
+): TnSlicePayload | null {
+  const full = options.full === true;
   const defaults = DEFAULT_TUNNEL_VIEW_STATE;
   const config: TnConfigPatch = {};
-  if (source.config.fold !== defaults.config.fold) config.fold = source.config.fold;
-  if (source.config.mirror !== defaults.config.mirror)
+  if (full || source.config.fold !== defaults.config.fold)
+    config.fold = source.config.fold;
+  if (full || source.config.mirror !== defaults.config.mirror)
     config.mirror = source.config.mirror;
-  if (source.config.flip !== defaults.config.flip) config.flip = source.config.flip;
-  if (source.config.invert !== defaults.config.invert)
+  if (full || source.config.flip !== defaults.config.flip)
+    config.flip = source.config.flip;
+  if (full || source.config.invert !== defaults.config.invert)
     config.invert = source.config.invert;
-  if (source.config.echo !== defaults.config.echo) config.echo = source.config.echo;
-  if (source.config.staggerSteps !== defaults.config.staggerSteps)
+  if (full || source.config.echo !== defaults.config.echo)
+    config.echo = source.config.echo;
+  if (full || source.config.staggerSteps !== defaults.config.staggerSteps)
     config.staggerSteps = source.config.staggerSteps;
-  if (!deepEqual(source.config.speedOverrides, defaults.config.speedOverrides)) {
+  if (
+    full ||
+    !deepEqual(source.config.speedOverrides, defaults.config.speedOverrides)
+  ) {
     config.speedOverrides = { ...source.config.speedOverrides };
   }
 
   const payload: TnSlicePayload = {};
   if (Object.keys(config).length > 0) payload.config = config;
-  if (source.gridVisible !== defaults.gridVisible) {
+  if (full || source.gridVisible !== defaults.gridVisible) {
     payload.gridVisible = source.gridVisible;
   }
   // Compare in normalized space: the palette constants behind the default
@@ -126,10 +141,13 @@ export function captureTnSlice(source: TnSliceSource): TnSlicePayload | null {
   // any stored string, so a raw-constant compare would flag every loaded
   // state as non-default (the fx/t3 baseline trap, in casing form).
   const sourceColors = resolveTunnelPropColorState(source.colors);
-  if (!deepEqual(sourceColors, resolveTunnelPropColorState(defaults.colors))) {
+  if (
+    full ||
+    !deepEqual(sourceColors, resolveTunnelPropColorState(defaults.colors))
+  ) {
     payload.colors = sourceColors;
   }
-  if (source.section !== defaults.section) payload.section = source.section;
+  if (full || source.section !== defaults.section) payload.section = source.section;
   // Verbatim — see the module doc comment: the recipe's config is already a
   // frozen clone of concrete values, never a live reference into the user's
   // preset list, so no id-to-value resolution step is needed here.
@@ -182,6 +200,8 @@ export function seedFromTnSlice(payload: TnSlicePayload): TunnelViewState {
  * `DEFAULT_TUNNEL_VIEW_STATE` on a fresh visitor — unlike `t3`'s environment
  * store, there is no first-use fallback parameter to thread through here.
  */
-export function persistedTnSliceFromStorage(): TnSlicePayload | null {
-  return captureTnSlice(loadTunnelViewState());
+export function persistedTnSliceFromStorage(
+  options: { full?: boolean } = {}
+): TnSlicePayload | null {
+  return captureTnSlice(loadTunnelViewState(), options);
 }

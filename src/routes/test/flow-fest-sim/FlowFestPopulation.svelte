@@ -14,6 +14,7 @@
     type FlowFestPopulationSite,
   } from "$lib/features/flow-fest-sim/domain/flow-fest-population";
   import { flowFestHomeAnchorIds } from "./flow-fest-population-site";
+  import { sweepFlowFestAvatarMaterials } from "$lib/features/flow-fest-sim/services/flow-fest-avatar-material-repair";
 
   interface Props {
     site: FlowFestPopulationSite;
@@ -25,7 +26,7 @@
   }
 
   const props: Props = $props();
-  const { camera } = useThrelte();
+  const { camera, scene } = useThrelte();
 
   /** Fixed render slots, so a walker never remounts its GLTF mid-stride. */
   const SLOT_COUNT = 18;
@@ -214,6 +215,10 @@
     if (reassignAccumulator >= REASSIGN_INTERVAL_SECONDS) {
       reassignAccumulator %= REASSIGN_INTERVAL_SECONDS;
       reassignSlots(frame);
+      // Covers every avatar in the scene, not only the slots: the fire-circle
+      // community and the rider share characters with the walkers, and a
+      // shared character is exactly how the fade leftover spreads.
+      sweepFlowFestAvatarMaterials(scene);
     }
     pushTransforms(frame);
     props.onFrame?.(frame);

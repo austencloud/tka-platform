@@ -3,20 +3,17 @@
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
-  import { ratioLabel } from "$lib/shared/shape-matrix/domain/flower-signature";
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
-  import {
-    keyToTurnValue,
-    turnValueToKey,
-    type TurnLevel,
-  } from "$lib/shared/create/services/level-turn-values";
+  import type { TurnLevel } from "$lib/shared/create/services/level-turn-values";
+  import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import ShapeMatrixDetailPane from "./ShapeMatrixDetailPane.svelte";
   import ShapeMatrixMatrixPane from "./ShapeMatrixMatrixPane.svelte";
   import ShapeMatrixOverflowMenu from "./ShapeMatrixOverflowMenu.svelte";
-  import type { ShapeMatrixAxisTarget } from "../state/shape-matrix-app-state.svelte";
-  import { getPropTypeDisplayInfo } from "$lib/shared/settings/components/tabs/prop-type/prop-type-registry";
+  import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
+  import ShapeMatrixTurnTray from "./ShapeMatrixTurnTray.svelte";
+  import { runMandalaMorph } from "../services/shape-matrix-mandala-morph";
   import { growFade } from "$lib/shared/transitions/motion";
 
   interface Props {
@@ -38,90 +35,40 @@
         blurb: "Adds quarter turns",
       },
     };
-  const AXIS_OPTIONS = [
-    {
-      value: "left" as const,
-      label: "Left-hand rows",
-      shortLabel: "Left",
-      tone: "blue" as const,
-    },
-    {
-      value: "both" as const,
-      label: "Both axes",
-      shortLabel: "Both",
-      tone: "both" as const,
-    },
-    {
-      value: "right" as const,
-      label: "Right-hand columns",
-      shortLabel: "Right",
-      tone: "red" as const,
-    },
-  ];
   const LABEL_OPTIONS = [
     { value: "turns" as const, label: "TKA turns", shortLabel: "Turns" },
     { value: "ratios" as const, label: "VTG ratios", shortLabel: "Ratios" },
   ];
-  const turnControlLabel = $derived(
-    appState.labelMode === "ratios" ? "VTG ratio" : "TKA turn"
-  );
-  const turnOptions = $derived([
-    ...(appState.activeAxis === "both" &&
-    appState.leftTurn !== appState.rightTurn
-      ? [
-          {
-            value: "mixed",
-            label: "Mixed axis values",
-            shortLabel: "Mixed",
-            disabled: true,
-          },
-        ]
-      : []),
-    ...appState.availableTurns.map((turn) => {
-      const key = turnValueToKey(turn);
-      const turnLabel =
-        turn === "fl"
-          ? "Float"
-          : appState.labelMode === "ratios"
-            ? `${ratioLabel(turn)} ratio`
-            : `${turn} turn${turn === 1 ? "" : "s"}`;
-      const visible =
-        appState.labelMode === "ratios"
-          ? turn === "fl"
-            ? "Float"
-            : ratioLabel(turn)
-          : turn === "fl"
-            ? "Float"
-            : String(turn);
-      return {
-        value: key,
-        label: turnLabel,
-        shortLabel: visible,
-        tone:
-          appState.activeAxis === "left"
-            ? "blue"
-            : appState.activeAxis === "right"
-              ? "red"
-              : "both",
-      };
-    }),
-  ]);
-  const selectedTurnKey = $derived(
-    appState.activeAxis === "both" && appState.leftTurn !== appState.rightTurn
-      ? "mixed"
-      : turnValueToKey(appState.activeTurn)
-  );
-  const selectedProp = $derived(getPropTypeDisplayInfo(appState.propType));
-  const selectedPropLabel = $derived(selectedProp.label);
-  const compactSelectionSummary = $derived.by(() => {
-    const selected = turnOptions.find(
-      (option) => option.value === selectedTurnKey
-    );
-    return `Level ${appState.level} · ${selected?.label ?? "Mixed axis values"}`;
-  });
   let sizes = $state([1.28, 0.82]);
   let matrixPaneElement: HTMLDivElement;
   let detailPaneElement: HTMLDivElement;
+
+  // Compact navigation runs as a shared-element morph between the selected
+  // tile and the hero. Wide layouts show both panes at once, so the same
+  // calls fall through to the plain state mutation.
+  function selectPair(pair: { left: Flower; right: Flower }): void {
+    if (!appState.compact) {
+      appState.selectPair(pair);
+      return;
+    }
+    runMandalaMorph(appState, () => appState.showDetail(), {
+      before: () => appState.selectPair(pair, { navigate: false }),
+    });
+  }
+  function showDetail(): void {
+    if (!appState.compact) {
+      appState.showDetail();
+      return;
+    }
+    runMandalaMorph(appState, () => appState.showDetail());
+  }
+  function showMatrix(): void {
+    if (!appState.compact) {
+      appState.showMatrix();
+      return;
+    }
+    runMandalaMorph(appState, () => appState.showMatrix());
+  }
 
   $effect(() => {
     const request = appState.compactFocusRequest;
@@ -160,7 +107,7 @@
     inert={appState.compact && appState.activeView !== "matrix"}
     aria-hidden={appState.compact && appState.activeView !== "matrix"}
   >
-    <ShapeMatrixMatrixPane />
+    <ShapeMatrixMatrixPane onselect={selectPair} />
   </div>
 {/snippet}
 
@@ -187,12 +134,12 @@
             type="button"
             class="back-to-matrix"
             aria-label="Back to the shape matrix"
-            onclick={appState.showMatrix}
+            onclick={showMatrix}
           >
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
             <span>Matrix</span>
           </button>
-          <span class="selection-summary">{compactSelectionSummary}</span>
+          <ShapeMatrixTurnTray />
         {:else}
           <strong>Shape Matrix</strong>
         {/if}
@@ -230,68 +177,7 @@
             ariaLabel="Turn label system"
           />
         </div>
-        <div class="turn-editor">
-          <div class="control-cell axis-control">
-            <span class="control-label">Apply to</span>
-            <SegmentedControl
-              options={AXIS_OPTIONS}
-              value={appState.activeAxis}
-              onchange={(axis: ShapeMatrixAxisTarget) =>
-                appState.setActiveAxis(axis)}
-              size="sm"
-              density="tight"
-              color="accent"
-              semantics="radiogroup"
-              ariaLabel="Axis edited by the turn control"
-            />
-          </div>
-          <div class="control-cell turn-scroller themed-scrollbar-accent">
-            <span class="control-label">{turnControlLabel}</span>
-            {#if appState.availableTurns.length === 1}
-              <output
-                class="fixed-turn-value"
-                aria-label={`${turnControlLabel}: ${turnOptions[0]?.label ?? "Zero"}`}
-              >
-                {turnOptions[0]?.shortLabel ?? "0"}
-                <span>Only value at Level 1</span>
-              </output>
-            {:else}
-              <div
-                class="turn-control"
-                style="--turn-option-count: {turnOptions.length}"
-              >
-                <SegmentedControl
-                  options={turnOptions}
-                  value={selectedTurnKey}
-                  onchange={(key: string) => {
-                    if (key !== "mixed") appState.setTurn(keyToTurnValue(key));
-                  }}
-                  size="sm"
-                  density="tight"
-                  color="accent"
-                  semantics="radiogroup"
-                  ariaLabel={turnControlLabel}
-                />
-              </div>
-            {/if}
-          </div>
-        </div>
-        {#if !appState.compact}
-          <div class="control-cell prop-control">
-            <span class="control-label">Prop</span>
-            <button
-              class="prop-action"
-              type="button"
-              aria-label={`Choose prop. Current prop: ${selectedPropLabel}`}
-              onclick={appState.openPropPicker}
-            >
-              <img class="selected-prop-icon" src={selectedProp.image} alt="" />
-              <span>{selectedPropLabel}</span>
-              <i class="fas fa-chevron-down disclosure-icon" aria-hidden="true"
-              ></i>
-            </button>
-          </div>
-        {/if}
+        <ShapeMatrixTurnControls onturn={appState.setTurn} />
       </div>
     {/if}
 
@@ -301,7 +187,7 @@
           <button
             type="button"
             class="top-action compact-detail-action"
-            onclick={appState.showDetail}
+            onclick={showDetail}
             transition:growFade={{ axis: "x", x: 4 }}
           >
             <span>Detail</span>
@@ -438,19 +324,6 @@
     text-overflow: ellipsis;
   }
 
-  .selected-prop-icon {
-    width: 1.45rem;
-    height: 1.45rem;
-    flex: 0 0 auto;
-    object-fit: contain;
-  }
-
-  .disclosure-icon {
-    flex: 0 0 auto;
-    font-size: 0.62rem;
-    opacity: 0.55;
-  }
-
   .top-action:hover {
     color: var(--theme-text, #fff);
     border-color: color-mix(
@@ -559,15 +432,6 @@
     outline-offset: 2px;
   }
 
-  .selection-summary {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-min, 0.875rem);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .matrix-controls {
     grid-area: controls;
     /* One shared control height for all ribbon cells: a one-line sm
@@ -645,114 +509,8 @@
     width: 7.5rem;
   }
 
-  .axis-control {
-    flex: 0 0 auto;
-  }
-
-  .axis-control :global(.segmented-control) {
-    width: 9.75rem;
-  }
-
-  .turn-editor {
+  .matrix-controls :global(.turn-editor) {
     grid-area: turns;
-    display: flex;
-    flex: 0 1 auto;
-    align-items: stretch;
-    gap: 0.5rem;
-    min-width: 0;
-  }
-
-  .turn-scroller {
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow-x: auto;
-    scrollbar-gutter: stable;
-  }
-
-  .turn-control {
-    width: min(100%, calc(var(--turn-option-count, 4) * 3rem));
-    justify-self: start;
-    /* Level changes rewrite the option count, so the control's width is an
-       intentional structural change — ease it instead of snapping. */
-    transition: width var(--transition-normal);
-  }
-
-  .turn-control :global(.segmented-control) {
-    min-width: calc(var(--count) * 3rem);
-  }
-
-  .fixed-turn-value {
-    display: inline-flex;
-    width: fit-content;
-    min-width: 7rem;
-    min-height: var(--ribbon-control-h);
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    padding: 0.35rem 0.75rem;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 8px;
-    background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .fixed-turn-value span {
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 500;
-  }
-
-  .prop-control {
-    flex: 0 0 auto;
-  }
-
-  .prop-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: var(--ribbon-control-h);
-    max-width: 11rem;
-    padding: 0.35rem 0.7rem;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
-    color: var(--theme-text, #fff);
-    cursor: pointer;
-    font: inherit;
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 600;
-    white-space: nowrap;
-    transition:
-      color var(--duration-fast, 150ms) ease,
-      border-color var(--duration-fast, 150ms) ease,
-      background var(--duration-fast, 150ms) ease;
-  }
-
-  .prop-action span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .prop-action:hover {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #f59e0b) 55%,
-      transparent
-    );
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #f59e0b) 8%,
-      transparent
-    );
-  }
-
-  .prop-action:focus-visible {
-    outline: 2px solid var(--theme-accent, #f59e0b);
-    outline-offset: 2px;
   }
 
   .top-actions {
@@ -846,9 +604,6 @@
       justify-items: start;
     }
 
-    .turn-editor {
-      grid-area: turns;
-    }
   }
 
   @container shape-matrix-app (max-width: 99.99rem) {
@@ -892,11 +647,6 @@
       justify-items: start;
     }
 
-    .turn-editor {
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-
     /* The vertical stack has room for captions again, and a first-time
        phone viewer needs them more than anyone. */
     .control-label {
@@ -906,14 +656,6 @@
     .control-cell {
       gap: 0.25rem;
       padding: 0.35rem 0.45rem 0.45rem;
-    }
-
-    .fixed-turn-value span {
-      display: none;
-    }
-
-    .selection-summary {
-      display: none;
     }
   }
 
@@ -928,12 +670,51 @@
     }
   }
 
+  /* While the tile-to-hero morph runs, the panes must land in place at once:
+     the browser snapshots the new layout the frame it changes, and a pane
+     still sliding open would be captured at zero width. The morph is the
+     continuity cue; PanelGroup keeps owning the geometry. */
+  :global(html.shape-matrix-morph) .workspace :global(.panel-wrapper) {
+    transition: none;
+  }
+
+  :global(
+    html.shape-matrix-morph::view-transition-group(shape-matrix-active-mandala)
+  ) {
+    /* One picture travels between the tile and the hero. It settles onto
+       its destination without overshoot; a spring would swing the mandala
+       past the square the live canvas is about to paint in. */
+    animation-duration: var(--duration-dramatic);
+    animation-timing-function: var(--ease-in-out);
+  }
+  :global(
+    html.shape-matrix-morph::view-transition-old(shape-matrix-active-mandala)
+  ),
+  :global(
+    html.shape-matrix-morph::view-transition-new(shape-matrix-active-mandala)
+  ) {
+    animation-duration: var(--duration-emphasis);
+    animation-timing-function: var(--ease-in-out);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .top-action,
-    .prop-action,
-    .back-to-matrix,
-    .turn-control {
+    .back-to-matrix {
       transition: none;
+    }
+
+    :global(
+      html.shape-matrix-morph::view-transition-group(
+          shape-matrix-active-mandala
+        )
+    ),
+    :global(
+      html.shape-matrix-morph::view-transition-old(shape-matrix-active-mandala)
+    ),
+    :global(
+      html.shape-matrix-morph::view-transition-new(shape-matrix-active-mandala)
+    ) {
+      animation: none;
     }
   }
 </style>

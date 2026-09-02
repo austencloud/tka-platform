@@ -11,7 +11,8 @@ import {
  * no-op once any user (anonymous or full) is present.
  *
  * Call from every "first persistable action" entry point — committing a first
- * beat, saving, favoriting. Uses getAuthInstance() (HMR-safe) rather than the
+ * beat, saving, favoriting — and from the crowd-sourced thumbnail upload, which
+ * is a persistable action the visitor never consciously takes. Uses getAuthInstance() (HMR-safe) rather than the
  * static `auth` export to avoid the dev-cycle app-rotation argument-error.
  */
 let inFlight: Promise<void> | null = null;
@@ -19,14 +20,19 @@ let warnedDisabled = false;
 let restoredRecorded = false;
 let createdRecorded = false;
 
-export async function ensureGuestIdentity(): Promise<void> {
+export type GuestIdentitySource =
+  | "first_persistable_action"
+  | "gallery_mount"
+  | "thumbnail_upload";
+
+export async function ensureGuestIdentity(
+  source: GuestIdentitySource = "first_persistable_action"
+): Promise<void> {
   const auth = await getAuthInstance();
   if (auth.currentUser) {
     if (auth.currentUser.isAnonymous && !restoredRecorded) {
       restoredRecorded = true;
-      captureWhenReady("guest_identity_restored", {
-        source: "first_persistable_action",
-      });
+      captureWhenReady("guest_identity_restored", { source });
     }
     return;
   }
@@ -35,9 +41,7 @@ export async function ensureGuestIdentity(): Promise<void> {
     .then(() => {
       if (!createdRecorded) {
         createdRecorded = true;
-        captureWhenReady("guest_identity_created", {
-          source: "first_persistable_action",
-        });
+        captureWhenReady("guest_identity_created", { source });
       }
     })
     .catch((err: unknown) => {
@@ -53,7 +57,7 @@ export async function ensureGuestIdentity(): Promise<void> {
             ? String((err as { code: string }).code).slice(0, 80)
             : "unknown";
         captureWhenReady("guest_identity_failed", {
-          source: "first_persistable_action",
+          source,
           failure_code: failureCode,
         });
         captureExceptionWhenReady(err, {

@@ -485,10 +485,26 @@ mounted through the mode change. Inside the stage track, the motion stage and
 `PerformanceStage` are persistent sibling sources of one `DualSourceCrossfade`;
 selecting Performances changes which source is active and, on the same mode
 commit, the inspector track changes its information from Motion settings to
-`PerformanceInspector`. Neither track changes shape: the stage keeps its
-allocation and the inspector keeps its prepared width, so the selected
-performance replaces the moving source inside pixels the user is already
-looking at.
+`PerformanceInspector`.
+
+The seam between those two tracks travels. Performances owns its own inspector
+profile (`performance` in `viewer-shell-model.ts`, default 400 px, bounds
+360–900 px) and its own width token (`--performance-sidebar-width`,
+`clamp(380px, 24vw, 520px)`), narrower than the effects inspector because the
+take list is a column and the video is landscape. `PanelGroup` slides the seam
+from the Motion width to the Performances width on the structural clock while
+the stage sources and inspector contents crossfade on the same emphasis
+duration, which is the Gate 1 and Gate 4 vocabulary rather than a flat
+dissolve. The Performances inspector is composed at its destination width
+before the mode changes and is revealed through the moving clip, so nothing
+rewraps mid-glide. A seam the person has dragged by hand keeps that width for
+the session. Nominal desktop travel: 180 px at 1440×900, 339 px at 1920×1080,
+280 px at 2560×1440, and 480 px at 3840×2160.
+
+The first version of this workspace shared one inspector allocation between
+Motion and Performances. Austen reviewed it on 2026-09-01 and found it read as
+a plain crossfade next to the approved gates; the travelling seam is the
+response.
 
 One `performance-workspace-state` owns selection, the single registered player,
 upload and timing-map work mode, deletion, and the shared playhead. Upload and
@@ -516,15 +532,18 @@ Acceptance requires:
    rapid-reversal round trips.
 2. The two stage sources keep complementary opacity, with no blank or
    double-opaque frame.
-3. Both stage sources occupy the same stage box on every sampled frame.
-4. The inspector changes contents without a visible layout change; the stage
-   allocation stays fixed and the inspector width does not travel.
+3. Both stage sources occupy the same stage box on every sampled frame, and
+   that box grows or shrinks with the seam rather than after it.
+4. The stage and desktop inspector allocations travel monotonically on the
+   structural clock in both directions, with zero backtrack and zero overshoot,
+   and the inspector changes contents without a visible layout change inside
+   its moving clip.
 5. Exactly one Performance player exists at any time, and the inactive source
    neither drives media playback nor the shared sequence playhead.
 6. Reduced motion uses the existing opacity-only workspace dissolve with no
    delayed mode commit or spatial tween.
 7. Every required viewport passes overflow, responsive-axis, identity,
-   readiness, opacity, layer-size, and inspector-stability checks. 3D remains
+   readiness, opacity, layer-size, and allocation-travel checks. 3D remains
    disabled where the production viewport capability gate does not pass.
 
 ### Gate 5 evidence · 2026-09-01
@@ -573,6 +592,195 @@ Acceptance requires:
   across the 29 sequence-viewer and shell-contract files, and
   `https://localhost:5173/test/sequence-viewer-transitions?gate=performances`
   returned HTTP 200 from the integrated `main` checkout.
+
+### Gate 5 evidence · 2026-09-01 (seam travel)
+
+- Austen's 2026-09-01 review read the shared-allocation version as a plain
+  crossfade. Performances now owns a `performance` inspector profile
+  (`400 px` default, `360–900 px` bounds) and the
+  `--performance-sidebar-width` token (`clamp(380px, 24vw, 520px)`), so the
+  existing `PanelGroup` structural clock slides the stage/inspector seam while
+  `DualSourceCrossfade` swaps the sources. No new motion owner was added.
+- Full-motion 2D round trips on the worktree server, measured through the
+  review harness at every required viewport, all report zero viewer-stage,
+  Performance-stage, and inspector remounts; zero blank, double-opaque,
+  unready, and visible inspector-layout-change frames; one maximum player;
+  `0 px` layer-width mismatch; no viewport overflow; and monotonic allocation
+  travel with `0 px` backtrack and `0 px` overshoot on every leg:
+
+  | Viewport  | Stage travel   | Inspector travel | Crossfade frames |
+  | --------- | -------------- | ---------------- | ---------------- |
+  | 1440×900  | 692 → 872 px   | 560 → 380 px     | 15               |
+  | 1920×1080 | 932 → 1271 px  | 800 → 461 px     | 18               |
+  | 2560×1440 | 1572 → 1852 px | 800 → 520 px     | 13               |
+  | 3840×2160 | 2652 → 3132 px | 1000 → 520 px    | 16               |
+  | 820×1180  | vertical axis  | vertical axis    | 17               |
+  | 960×412   | vertical axis  | vertical axis    | 9                |
+  | 375×667   | vertical axis  | vertical axis    | 16               |
+
+- Rapid reversal at 1440×900 travels
+  `animation → videos → animation → videos → animation` through 30 crossfade
+  frames with the same zero counts. Reduced motion commits through 21
+  workspace-dissolve frames, zero crossfade frames, and the same seam
+  endpoints (`692 → 872 px` stage, `560 → 380 px` inspector) with zero
+  backtrack or overshoot. The ready-3D round trip
+  (`animation-3d → videos → animation-3d`, 7,546 ms) records 16 crossfade
+  frames, a `1260 → 872 → 1260 px` stage, and zero defects.
+- Endpoint frames at 1440×900, 3840×2160, and 375×667 were inspected: the
+  Performances inspector composes at its destination width on desktop and
+  the mobile vertical composition is unchanged.
+- Focused Vitest (`tests/config/vitest.config.ts`): 29 files, 229 tests pass,
+  including the new narrower-inspector model test and the updated
+  orchestration contract. Prettier and `git diff --check` are clean. Gate 5
+  remains ready for Austen's visual review.
+
+### Gate 4 follow-up · 2026-09-02 (inspector content drift)
+
+Austen reported that switching between Card and Tunnel made the right-hand
+pane's contents shift up and to the right before settling. Instrumented first,
+then fixed.
+
+- The harness now measures **content drift** per settings surface: the spread
+  of a panel's width, its horizontal origin, and its first content block's top
+  across every frame the surface was actually readable. A panel composed at its
+  destination width and revealed through `PanelGroup`'s moving clip reports
+  zero on all three axes. `longestSampleGap` was added alongside it so a starved
+  measurement host cannot be mistaken for smooth motion.
+- Baseline at 1440×900 reproduced the complaint: **art settings drift of 77 px
+  width and 77 px origin**, and **card settings drift of 4 px** on both. The art
+  panel is portaled into its layer as an absolutely positioned host at
+  `width: 100%`, so it stretched and rewrapped on every frame of the seam
+  animation. The Card pin was keyed to `.export-panel-container.card-settings`,
+  a mode-conditional class Svelte removes the instant the mode changes, so the
+  departing Card panel dropped to its intrinsic width and then followed the
+  closing seam.
+- Both surfaces now pin their destination width on the **persistent layer**,
+  matching what the Effects and Performances layers already did. The art host is
+  additionally right-anchored (`left: auto; right: 0`) at
+  `--export-sidebar-width`, and the Card panel pins `--card-sidebar-width` on
+  `.card-settings-layer`. The `data-manually-sized="true"` overrides are
+  preserved on both, so dragging the seam still resizes the panel.
+- Post-fix `card-tunnel` replays report `0 px` drift on both surfaces at every
+  desktop viewport, with zero Card/Animator/inspector remounts, zero blank,
+  squashed, or transformed-cell frames, and monotonic seam travel:
+
+  | Viewport  | Art drift | Card drift | Longest sample gap |
+  | --------- | --------- | ---------- | ------------------ |
+  | 1440×900  | 0 px      | 0 px       | 58 ms              |
+  | 1920×1080 | 0 px      | 0 px       | 71 ms              |
+  | 2560×1440 | 0 px      | 0 px       | 64 ms              |
+  | 3840×2160 | 0 px      | 0 px       | 483 ms (host)      |
+  | 820×1180  | n/a       | n/a        | 57 ms              |
+  | 960×412   | n/a       | n/a        | 84 ms              |
+  | 375×667   | n/a       | n/a        | 82 ms              |
+
+  The three narrow viewports report `n/a` because mobile has no desktop
+  inspector layer. The 4K sample gap is emulation-host jank, not product
+  motion: 2560 and 1920 measured 64 ms and 71 ms in the same pass.
+
+- The orchestration contract test now asserts that all four persistent
+  inspector layers pin a destination width and keep their manual-resize
+  override, so a future layer cannot silently go back to `width: 100%`.
+- Focused Vitest (`tests/config/vitest.config.ts`): 28 files, 224 tests pass.
+  Prettier and `git diff --check` are clean.
+
+### Inspector follow-up · 2026-09-02 (seam anchoring and track surface)
+
+Austen reviewed the content-drift fix and reported a second defect on the same
+transition: _"when I go to tunnel mode there's a brief moment where the panel on
+the left is occluding the left edge of the right panel so that you can't see the
+selectors."_ Instrumented first, then fixed.
+
+**What the instrument was missing.** The Gate 4 follow-up measured whether a
+panel moved. It could not see a panel that stayed perfectly still while the clip
+box in front of it cut a column off. Two measurements were added:
+
+- **Inspector reveal**, per layer: the band of the panel cut off by the clip
+  box's left edge, the band cut off by its right edge, and the band of the clip
+  box with no panel behind it, each with the milliseconds it was on screen.
+- **Inspector surface step**: the widest _lighter strip_ the track showed within
+  a single frame. The track is cut at every panel edge, each band composites the
+  layer fill and the panel fill actually read from the DOM, and bands are
+  compared with the strongest band in the same frame. A crossfade that dims the
+  whole track uniformly scores zero; only a hard-edged step is reported.
+
+**What they found at 1920×1080 on the pre-fix build.**
+
+- `art reveal: 261 px left cut · 290 ms`. The arriving Tunnel inspector was
+  pinned to the viewport edge while the seam was still travelling, so its
+  leading label and selector column sat outside the clip for a third of a
+  second. That is precisely the reported symptom.
+- `Inspector surface step: 167 px · 190 ms`. `.export-panel-container` paints
+  `rgba(0, 0, 0, 0.75)`. A band that no panel reached was therefore a genuine
+  25%-transparent window onto the moving workspace: a lighter vertical strip
+  that appeared, held, and vanished.
+
+**Why hand-anchoring cannot fix it.** The track is narrower than the arriving
+panel for the whole time the seam travels. Anchoring every layer to the viewport
+edge keeps content still but cuts the leading column, which is the reported bug.
+Anchoring every layer to the seam shows the leading column but drags a
+_departing_ fading panel sideways, which is the bug the previous follow-up
+fixed. Neither anchor is right for both directions.
+
+**The fix.** Two independent changes:
+
+1. **Automatic start margins.** Every composed panel now carries
+   `margin-left: auto`. When the panel fits the track the margin absorbs the
+   free space and the panel stays pinned at the viewport edge, so a departing
+   surface fades without sliding. When the panel is wider than the track there
+   is no free space, the margin collapses to zero, and the panel is revealed
+   from the seam with its overflow spilling past the viewport edge where the cut
+   cannot be seen. One declaration, both directions correct.
+2. **The layer owns the surface.** Each `.inspector-content-layer` paints the
+   inspector fill across the whole track and the panel inside paints none, so a
+   band the panel does not reach is never a lighter strip. The resting composite
+   is unchanged: container `0.75` over layer `0.75` is the same `0.9375` as
+   container `0.75` over panel `0.75`. `.art-settings-layer` carries
+   `--theme-card-bg` rather than `--theme-panel-bg`, because that is the token
+   its panel used.
+
+**Post-fix, Gate 4 `card-tunnel` full-motion replays.** Every desktop viewport
+reports `0 px` art left cut and `0 px · 0.00 alpha · 0 ms` surface step:
+
+| Viewport  | Art left cut | Surface step | Art drift (origin) | Card drift (origin) |
+| --------- | ------------ | ------------ | ------------------ | ------------------- |
+| 1440×900  | 0 px         | 0 px         | 539 px             | 1 px                |
+| 1920×1080 | 0 px         | 0 px         | 252 px             | 1 px                |
+| 2560×1440 | 0 px         | 0 px         | 157 px             | 5 px                |
+| 3840×2160 | 0 px         | 0 px         | 324 px             | 1 px                |
+
+Art's origin figure is now the _intended_ motion, not the defect: width drift
+and vertical drift are both `0 px`, so the panel translates rigidly with the
+seam and is revealed as a drawer rather than rewrapping. The 2560 Card figure of
+`5 px` is `clamp(480px, 28vw, 640px)` capping at `640 px` against a `636 px`
+track, not motion.
+
+**Anchor resolution, measured in the production viewer at a 799 px track.** The
+rule is deterministic and was read back from computed style rather than assumed:
+
+| Layer           | Panel width | Resolved `margin-left` | Result                    |
+| --------------- | ----------- | ---------------------- | ------------------------- |
+| Motion settings | 800 px      | `0px`                  | revealed from the seam    |
+| Performances    | 461 px      | `338.5px`              | pinned at the screen edge |
+| Card settings   | 538 px      | `261.7px`              | pinned at the screen edge |
+
+**No regression on approved gates.** Gate 7 (Export inspector) replays
+`Inspector surface step: 0 px · 0.00 alpha · 0 ms` and
+`motion reveal: 0 px left cut · 1 px right cut · 0 px undrawn`; the 1 px right
+cut is the 800 px Motion panel spilling past a 799 px track, off the screen edge.
+Gate 5's motion could not be replayed in this checkout: the harness fixture has
+no performance video, so the viewer never commits `videos` mode and the trace
+records `Mode path: animation` with zero crossfade frames. Gate 5's inspector
+behaviour is covered by the anchor table above, which is the only thing this
+change alters there.
+
+**Checks.** The orchestration contract test now asserts that all four composed
+panels carry `margin-left: auto`, that the layer paints `--theme-panel-bg`, and
+that the panels reset their own background, so a future layer cannot silently go
+back to a hand-anchored edge. Focused Vitest
+(`tests/config/vitest.config.ts`, `tests/unit/sequence-viewer` plus
+`viewer-shell-model`): 29 files, 231 tests pass. Prettier and
+`git diff --check` are clean.
 
 ## Gate 6 baseline · 2026-09-01
 
@@ -660,14 +868,14 @@ ingress.
 
 ## Approval ledger
 
-| Gate                           | Status            | Approved by | Approved at          | Notes                                                              |
-| ------------------------------ | ----------------- | ----------- | -------------------- | ------------------------------------------------------------------ |
-| 1. Side by Side ⇄ 2D / Card    | Approved          | Austen      | 2026-08-29 09:57 CDT | Approved after full/reduced, mobile-to-4K, and transformed-cell QA |
-| 2. 2D ⇄ 3D                     | Approved          | Austen      | 2026-08-30 16:27 CDT | Approved after shared-clock crossfade and canvas-settle QA         |
-| 3. 2D / 3D ⇄ Tunnel            | Ready for review  |             |                      | Single-owner fade; 3D, reversal, reduced, mobile-to-4K green       |
-| 4. Card ⇄ left-side modes      | Approved          | Austen      | 2026-09-01           | Direct paths; persistent surfaces; mobile-to-4K geometry green     |
-| 5. Viewer stage ⇄ Performances | Ready for review  |             |                      | Persistent layers; 2D/3D/reversal/reduced/mobile-to-4K green       |
-| 6. Viewer stage ⇄ Post Studio  | Contract proposed |             |                      | Baseline D measured 2026-09-01; recommended contract awaits Austen |
-| 7. Export inspector            | Pending           |             |                      |                                                                    |
-| 8. Practice                    | Pending           |             |                      |                                                                    |
-| 9. Mode switchers              | Pending           |             |                      |                                                                    |
+| Gate                           | Status            | Approved by | Approved at          | Notes                                                                                |
+| ------------------------------ | ----------------- | ----------- | -------------------- | ------------------------------------------------------------------------------------ |
+| 1. Side by Side ⇄ 2D / Card    | Approved          | Austen      | 2026-08-29 09:57 CDT | Approved after full/reduced, mobile-to-4K, and transformed-cell QA                   |
+| 2. 2D ⇄ 3D                     | Approved          | Austen      | 2026-08-30 16:27 CDT | Approved after shared-clock crossfade and canvas-settle QA                           |
+| 3. 2D / 3D ⇄ Tunnel            | Ready for review  |             |                      | Single-owner fade; 3D, reversal, reduced, mobile-to-4K green                         |
+| 4. Card ⇄ left-side modes      | Approved          | Austen      | 2026-09-01           | Direct paths; persistent surfaces; mobile-to-4K geometry green                       |
+| 5. Viewer stage ⇄ Performances | Ready for review  |             |                      | Seam travel added 2026-09-01 after review; 2D/3D/reversal/reduced/mobile-to-4K green |
+| 6. Viewer stage ⇄ Post Studio  | Contract proposed |             |                      | Baseline D measured 2026-09-01; recommended contract awaits Austen                   |
+| 7. Export inspector            | Pending           |             |                      |                                                                                      |
+| 8. Practice                    | Pending           |             |                      |                                                                                      |
+| 9. Mode switchers              | Pending           |             |                      |                                                                                      |

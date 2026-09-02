@@ -35,6 +35,7 @@
     Sphere,
     Raycaster,
     MathUtils,
+    type Object3D,
   } from "three";
   import type { PerspectiveCamera, WebGLRenderer } from "three";
   import CameraControls from "camera-controls";
@@ -83,6 +84,13 @@
     maxPolarAngle?: number;
     minAzimuthAngle?: number;
     maxAzimuthAngle?: number;
+    /**
+     * Camera-controls casts from the target toward the camera's near-plane
+     * corners, keeping orbit and dolly movement on the authored side of these
+     * meshes. Callers should pass only real collision surfaces, never an entire
+     * decorated scene graph.
+     */
+    colliderMeshes?: Object3D[];
     /** Applied to both azimuth + polar rotation. */
     rotateSpeed?: number;
     /** Mapped to `truckSpeed`. */
@@ -137,6 +145,7 @@
     maxPolarAngle,
     minAzimuthAngle,
     maxAzimuthAngle,
+    colliderMeshes = [],
     rotateSpeed,
     panSpeed,
     zoomSpeed,
@@ -227,6 +236,9 @@
   $effect(() => {
     if (controls && maxAzimuthAngle != null)
       controls.maxAzimuthAngle = maxAzimuthAngle;
+  });
+  $effect(() => {
+    if (controls) controls.colliderMeshes = colliderMeshes;
   });
   $effect(() => {
     if (!controls || rotateSpeed == null) return;

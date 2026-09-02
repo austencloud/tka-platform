@@ -259,6 +259,7 @@ export function createCharacterInstanceState(
   // Sequence mode state
   let loadedSequence = $state<SequenceData | null>(null);
   let stepConfigs = $state<StepMotionConfigs[]>([]);
+  let hasStartPose = $state(false);
   let currentStepIndex = $state(0);
   // Persist plane mode and rotation variant across HMR / page reloads
   const PLANE_MODE_KEY = `tka-3d-planeMode-${id}`;
@@ -482,6 +483,7 @@ export function createCharacterInstanceState(
       modeConfig
     );
     stepConfigs = startConfig ? [startConfig, ...motionConfigs] : motionConfigs;
+    hasStartPose = startConfig !== null;
 
     // DIAG: Dump raw start position and configs
     if (sequence.startPosition) {
@@ -764,6 +766,7 @@ export function createCharacterInstanceState(
       modeConfig
     );
     stepConfigs = startConfig ? [startConfig, ...motionConfigs] : motionConfigs;
+    hasStartPose = startConfig !== null;
 
     updateVisibilityFromStep(stepConfigs[currentStepIndex] ?? stepConfigs[0]);
   }
@@ -951,9 +954,16 @@ export function createCharacterInstanceState(
   // are captured in the entry itself, avoiding the "last registration wins"
   // problem that a shared "performer" domain would have.
 
-  function setEffort(effortId: EffortId): void {
+  function setEffort(
+    effortId: EffortId,
+    options?: { recordUndo?: boolean }
+  ): void {
     const before = $state.snapshot(_settings);
     _settings = { ..._settings, effortId };
+    // A frame-driven write is not a performer choosing an effort. The film
+    // director changes effort at authored steps, every scene, on a loop; one
+    // history entry per step boundary would bury every real edit under them.
+    if (options?.recordUndo === false) return;
     const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("change-effort", `Effort: ${effortId}`, {
       undo: () => {
@@ -1011,7 +1021,7 @@ export function createCharacterInstanceState(
    */
   function setEffect(
     effect: EffectType | null,
-    options?: { equipBuild?: boolean }
+    options?: { equipBuild?: boolean; recordUndo?: boolean }
   ): void {
     const before = $state.snapshot(_settings);
 
@@ -1036,6 +1046,8 @@ export function createCharacterInstanceState(
         ? { propBuild: { ...(_settings.propBuild ?? {}), ...equip.propBuild } }
         : {}),
     };
+    // See setEffort: frame-driven writes stay out of the undo history.
+    if (options?.recordUndo === false) return;
     const after = $state.snapshot(_settings);
     const label = equip
       ? `Effect: ${effect ?? "inherit"} (build equipped)`
@@ -1346,6 +1358,14 @@ export function createCharacterInstanceState(
     },
     get totalSteps() {
       return totalSteps;
+    },
+    /**
+     * Index of the first motion step in `stepConfigs`. 1 when the loaded
+     * sequence contributed a static start pose at index 0, otherwise 0. Live
+     * phase math is motion-relative and adds this to reach a beat.
+     */
+    get motionStepOffset() {
+      return hasStartPose ? 1 : 0;
     },
 
     // Visibility

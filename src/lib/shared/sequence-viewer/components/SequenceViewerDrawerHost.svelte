@@ -400,6 +400,7 @@
           {playbackReleased}
           onReadyForReveal={handleViewerReady}
           onClose={handleDismiss}
+          shortCode={overlay.activeShortCode}
         >
           {#snippet children(ctx)}
             <SequenceViewerShell

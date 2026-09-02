@@ -4,7 +4,6 @@
   import { onMount, onDestroy, tick, type Snippet } from "svelte";
   import {
     PerformerRig,
-    PLANE_MODE_CONFIGS,
     type AvatarGripDiagnostics,
     type AvatarPoseDiagnostics,
     type CollisionEvent,
@@ -66,7 +65,7 @@
     createPerformerPointerInteraction,
     type PerformerPointerInteraction,
   } from "./performer-interaction/performer-pointer-interaction.svelte";
-  import { planUpperBodyStance } from "../collision/upper-body-stance-planner";
+  import { planUpperBodyStanceForPropStates } from "../collision/upper-body-stance-planner";
   import { getAvatarSequenceCollisionAudit } from "../collision/avatar-sequence-collision-audit";
   import { getAvatarGripMotionAudit } from "../diagnostics/avatar-grip-motion-audit";
 
@@ -84,22 +83,11 @@
     : null;
 
   function resolveUpperBodyStance(performer: CharacterInstanceState) {
-    const mode = PLANE_MODE_CONFIGS[performer.planeMode];
-    const gridOffset = GRID_OFFSETS[performer.planeMode];
-    return planUpperBodyStance({
-      left: performer.leftPropState
-        ? {
-            x: mode.blueLateralOffset + performer.leftPropState.worldPosition.x,
-            z: gridOffset + performer.leftPropState.worldPosition.z,
-          }
-        : null,
-      right: performer.rightPropState
-        ? {
-            x: mode.redLateralOffset + performer.rightPropState.worldPosition.x,
-            z: gridOffset + performer.rightPropState.worldPosition.z,
-          }
-        : null,
-    });
+    return planUpperBodyStanceForPropStates(
+      performer.planeMode,
+      performer.leftPropState,
+      performer.rightPropState
+    );
   }
 
   interface Props {
@@ -841,6 +829,8 @@
               terminalStepPlan={performer.terminalStepPlan}
               stanceYaw={upperBodyStance.yawRad}
               spinePitchOffset={upperBodyStance.pitchRad}
+              blueHandDepthOffset={upperBodyStance.leftDepthOffsetM}
+              redHandDepthOffset={upperBodyStance.rightDepthOffsetM}
               headDodge={true}
               onCollisionEvents={collisionAudit || gripMotionAudit
                 ? (
@@ -878,11 +868,16 @@
                   </T.Group>
                 {/if}
               {/snippet}
+              <!-- PerformerRig's external compatibility API still names the
+                 snippet payload blue/red. Rename at this seam so the
+                 orchestrator receives real prop states; destructuring the
+                 app-side left/right names here left both undefined and
+                 silently disabled every 3D effect. -->
               {#snippet effectsSlot({
-                leftPropState,
-                rightPropState,
-                leftHandPos,
-                rightHandPos,
+                bluePropState: leftPropState,
+                redPropState: rightPropState,
+                blueHandPos: leftHandPos,
+                redHandPos: rightHandPos,
                 isPlaying: rigPlaying,
                 staffHalfLength,
                 effectsParentRef,

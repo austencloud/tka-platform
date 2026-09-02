@@ -8,9 +8,9 @@ import type {
 } from "three";
 
 export interface MaskedGroundDetailMaps {
-  right: Texture;
+  red: Texture;
   green: Texture;
-  left: Texture;
+  blue: Texture;
   fourth: Texture;
 }
 
@@ -160,9 +160,9 @@ export function patchMaskedGroundDetailMaterial(
     renderer: WebGLRenderer
   ) => {
     previousCompile.call(material, shader, renderer);
-    shader.uniforms.uMaskedGroundRightMap = { value: detailMaps.right };
+    shader.uniforms.uMaskedGroundRedMap = { value: detailMaps.red };
     shader.uniforms.uMaskedGroundGreenMap = { value: detailMaps.green };
-    shader.uniforms.uMaskedGroundLeftMap = { value: detailMaps.left };
+    shader.uniforms.uMaskedGroundBlueMap = { value: detailMaps.blue };
     shader.uniforms.uMaskedGroundFourthMap = { value: detailMaps.fourth };
     shader.uniforms.uMaskedGroundFamilyMask = { value: familyMask };
     shader.uniforms.uMaskedGroundDetailStrength = { value: strength };
@@ -193,13 +193,13 @@ export function patchMaskedGroundDetailMaterial(
     shader.uniforms.uMaskedGroundWorldAxisSign = {
       value: options.worldAxisSign.clone(),
     };
-    shader.uniforms.uMaskedGroundBaselineRight = {
+    shader.uniforms.uMaskedGroundBaselineRed = {
       value: options.familyBaselines[0].clone(),
     };
     shader.uniforms.uMaskedGroundBaselineGreen = {
       value: options.familyBaselines[1].clone(),
     };
-    shader.uniforms.uMaskedGroundBaselineLeft = {
+    shader.uniforms.uMaskedGroundBaselineBlue = {
       value: options.familyBaselines[2].clone(),
     };
     shader.uniforms.uMaskedGroundBaselineFourth = {

@@ -275,11 +275,14 @@
   // is then a no-op. The seed half of the slice was already applied upstream,
   // through `viewOnlyEnvironmentId` / `viewOnlySceneFeatures`.
   const viewerUrlSession = tryGetViewerUrlSessionContext();
-  const captureT3 = () =>
-    captureT3Slice({
-      environmentId: viewer3DState.environmentId,
-      features: sceneFeatureState,
-    });
+  const captureT3 = (options: { full?: boolean } = {}) =>
+    captureT3Slice(
+      {
+        environmentId: viewer3DState.environmentId,
+        features: sceneFeatureState,
+      },
+      options
+    );
   if (viewerUrlSession) {
     const unregisterT3Slice = viewerUrlSession.registerSlice("t3", captureT3);
     onDestroy(unregisterT3Slice);

@@ -15,12 +15,28 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import { scene3dCollectionState } from "./state/scene-3d-collection-state.svelte";
+  import { markFilmSceneKept } from "./services/save-film-recipe";
   import {
     getScene3DEnvironmentId,
+    scene3DHasFilm,
     type Collected3DScene,
   } from "./domain/scene-3d-collection-types";
   import { getSceneEnvironmentDefinition } from "$lib/shared/3d/environments/domain/scene-environment";
-  import { openScene3DInStudio, applyScene3DLook, scene3DHasSteps } from "./services/open-3d-scene";
+  import {
+    openScene3DInStudio,
+    openScene3DFilmInStudio,
+    applyScene3DLook,
+    scene3DHasSteps,
+  } from "./services/open-3d-scene";
+  import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
+  import {
+    getRenderedFilmsForEntry,
+    type RenderedFilmRecord,
+  } from "$lib/shared/video-export/services/rendered-film-store";
+  import {
+    sanitizeFilename,
+    shareOrDownloadBlob,
+  } from "$lib/shared/foundation/services/file-downloader";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
   import CollectionGalleryDetail from "$lib/shared/modules/CollectionGalleryDetail.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
@@ -58,6 +74,42 @@
   );
 
   const hasSteps = $derived(selected ? scene3DHasSteps(selected) : false);
+  const hasFilm = $derived(selected ? scene3DHasFilm(selected) : false);
+
+  // The finished video, when this device still has it. Recipes live in the
+  // collection; the rendered file lives in local retention, so a scene can
+  // legitimately have a film and no retained render (rendered elsewhere, or
+  // pruned).
+  let retainedFilm = $state<RenderedFilmRecord | null>(null);
+  let retainedFilmUrl = $state<string | null>(null);
+  let previewDismissed = $state(false);
+
+  function releaseRetainedFilm(): void {
+    if (retainedFilmUrl) URL.revokeObjectURL(retainedFilmUrl);
+    retainedFilmUrl = null;
+    retainedFilm = null;
+  }
+
+  async function loadRetainedFilm(scene: Collected3DScene): Promise<void> {
+    releaseRetainedFilm();
+    previewDismissed = false;
+    if (!scene3DHasFilm(scene)) return;
+    const [newest] = await getRenderedFilmsForEntry(scene.id);
+    // The detail view may have moved on while the read was in flight.
+    if (!newest || selected?.id !== scene.id) return;
+    retainedFilm = newest;
+    retainedFilmUrl = URL.createObjectURL(newest.blob);
+  }
+
+  async function saveRetainedFilm(): Promise<void> {
+    if (!retainedFilm) return;
+    const name =
+      sanitizeFilename(simplifyRepeatedWord(retainedFilm.word || "")) || "film";
+    const extension = retainedFilm.mimeType.includes("webm") ? "webm" : "mp4";
+    await shareOrDownloadBlob(retainedFilm.blob, `${name}.${extension}`, {
+      title: "TKA 3D Film",
+    });
+  }
 
   // What the scene IS, at a glance — derived from the snapshot.
   const meta = $derived.by(() => {
@@ -97,6 +149,7 @@
     renaming = false;
     phase = "detail";
     announce = `Opened ${s.name}`;
+    void loadRetainedFilm(s);
     await tick();
     backBtnEl?.focus();
   }
@@ -104,6 +157,7 @@
   async function back() {
     phase = "gallery";
     selected = null;
+    releaseRetainedFilm();
     confirmingDelete = null;
     renaming = false;
     clearTimeout(deleteTimer);
@@ -169,7 +223,14 @@
     if (!next || next === selected.name) return;
     try {
       const renamed = await scene3dCollectionState.rename(selected.id, next);
-      if (renamed) selected = renamed;
+      if (renamed) {
+        // Naming a recording is how someone says they want to keep it, so it
+        // stops counting against the automatic-recording limit.
+        await markFilmSceneKept(renamed.id);
+        selected =
+          scene3dCollectionState.collection.find((e) => e.id === renamed.id) ??
+          renamed;
+      }
     } catch (error) {
       console.warn("[Scene3DCollection] Rename failed:", error);
       toast.error("Couldn't rename the scene — try again");
@@ -196,7 +257,10 @@
     // Guest sessions hydrate from localStorage (signed-in boot goes through
     // auth-boot-orchestrator's init(uid) instead — initLocal no-ops then).
     scene3dCollectionState.initLocal();
-    return () => clearTimeout(deleteTimer);
+    return () => {
+      clearTimeout(deleteTimer);
+      releaseRetainedFilm();
+    };
   });
 </script>
 
@@ -251,6 +315,12 @@
                     <i class="fas fa-cube thumb-fallback" aria-hidden="true"></i>
                   {/if}
                 </div>
+                {#if scene3DHasFilm(item)}
+                  <span class="film-badge">
+                    <i class="fas fa-clapperboard" aria-hidden="true"></i>
+                    Film
+                  </span>
+                {/if}
                 <span class="card-label">{item.name}</span>
               </button>
             {/each}
@@ -335,7 +405,26 @@
             {/if}
           </div>
 
+          {#if retainedFilmUrl && !previewDismissed}
+            <VideoPreviewPanel
+              blobUrl={retainedFilmUrl}
+              saveLabel="Save"
+              onRedownload={() => void saveRetainedFilm()}
+              onDismiss={() => (previewDismissed = true)}
+            />
+          {/if}
+
           <div class="detail-actions">
+            {#if hasFilm}
+              <button
+                type="button"
+                class="action-btn film-btn"
+                onclick={() => openScene3DFilmInStudio(selected!)}
+              >
+                <i class="fas fa-clapperboard" aria-hidden="true"></i>
+                <span>Render film</span>
+              </button>
+            {/if}
             {#if hasSteps}
               <button
                 type="button"
@@ -355,9 +444,11 @@
               <span>Apply look</span>
             </button>
             <p class="action-hint">
-              {hasSteps
-                ? "Open reproduces this scene with its sequence. Apply look sets the scene for any sequence."
-                : "Applies this scene’s look — open any sequence in 3D to see it."}
+              {hasFilm
+                ? "Render film replays the camera you recorded, at any quality."
+                : hasSteps
+                  ? "Open reproduces this scene with its sequence. Apply look sets the scene for any sequence."
+                  : "Applies this scene’s look — open any sequence in 3D to see it."}
             </p>
           </div>
 
@@ -446,6 +537,7 @@
   }
 
   .gallery-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -748,6 +840,26 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+
+  .film-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #22d3ee) 82%,
+      transparent
+    );
+    color: #061014;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    pointer-events: none;
   }
 
   .action-hint {

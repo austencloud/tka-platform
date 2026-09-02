@@ -39,7 +39,10 @@ import {
   type FilmSeed,
 } from "./directive-random";
 import { resolveCastAxis } from "./resolve-directives";
-import { assertSequenceDirective } from "./sequence-language";
+import {
+  assertSequenceDirective,
+  transformSourceId,
+} from "./sequence-language";
 import {
   DIRECTOR_EFFORT_IDS,
   DIRECTOR_FORMATIONS,
@@ -51,6 +54,9 @@ import {
   type FilmDirectorInput,
   type ResolvedDirectorPerformer,
   type ResolvedDirectorScene,
+  type ResolvedDirectorHold,
+  type ResolvedDirectorStepEffect,
+  type ResolvedDirectorStepEffort,
   type ResolvedDirectorStepPlane,
   type ResolvedFilmDirectorSpec,
 } from "./film-director-schema";
@@ -133,6 +139,9 @@ interface ResolvedPerformerFields {
   leftPlane: Plane;
   rightPlane: Plane;
   stepPlanes: ResolvedDirectorStepPlane[];
+  stepEffects: ResolvedDirectorStepEffect[];
+  stepEfforts: ResolvedDirectorStepEffort[];
+  holds: ResolvedDirectorHold[];
 }
 
 function contextualEnvironmentFromEffects(
@@ -271,6 +280,112 @@ function resolveStepPlanesForPerformer(
       `${sceneId}\u0000${performerId}\u0000${entry.step}\u0000${entry.hand === "left" ? "blue" : "red"}`
     ),
   }));
+}
+
+/**
+ * Rejects two entries that address the same step. Directors write these lists
+ * by hand and a duplicate is always a mistake: whichever entry the reader
+ * believes is in force, the other one is dead text.
+ */
+function assertOneEntryPerStep(
+  entries: readonly { step: number }[],
+  field: string,
+  performerId: string,
+  sceneId: string
+): void {
+  const seen = new Set<number>();
+  for (const entry of entries) {
+    if (seen.has(entry.step)) {
+      throw new Error(
+        `Scene "${sceneId}": performer "${performerId}" ${field} names step ${entry.step} twice.`
+      );
+    }
+    seen.add(entry.step);
+  }
+}
+
+/**
+ * Resolves one performer's effective stepEffects list. Each entry's value is a
+ * scene-scoped directive on axis "stepEffect", so a single
+ * `seed.axes.stepEffect` reroll reshuffles every stepEffects entry in the
+ * film, while each (performer, step) pair still draws from its own stream via
+ * a distinguishing streamKey — the same arrangement stepPlanes uses.
+ */
+function resolveStepEffectsForPerformer(
+  entries: readonly { step: number; effect: DirectiveValue<string> }[],
+  performerId: string,
+  sceneId: string,
+  seed: FilmSeed
+): ResolvedDirectorStepEffect[] {
+  assertOneEntryPerStep(entries, "stepEffects", performerId, sceneId);
+  return entries.map((entry) => ({
+    step: entry.step,
+    effect: resolveSceneDirective<string>(
+      entry.effect,
+      "stepEffect",
+      () => {
+        throw new Error(
+          `Scene "${sceneId}": stepEffects entry for "${performerId}" at step ${entry.step} is missing an effect.`
+        );
+      },
+      sceneId,
+      seed,
+      EFFECT_CATALOG,
+      // NUL-separated like createAxisStream's own key: authored ids may
+      // contain spaces, so a space-joined key would be ambiguous.
+      `${sceneId}\u0000${performerId}\u0000${entry.step}\u0000stepEffect`
+    ) as EffectType,
+  }));
+}
+
+/** The effort twin of resolveStepEffectsForPerformer, axis "stepEffort". */
+function resolveStepEffortsForPerformer(
+  entries: readonly { step: number; effort: DirectiveValue<EffortId> }[],
+  performerId: string,
+  sceneId: string,
+  seed: FilmSeed
+): ResolvedDirectorStepEffort[] {
+  assertOneEntryPerStep(entries, "stepEfforts", performerId, sceneId);
+  return entries.map((entry) => ({
+    step: entry.step,
+    effort: resolveSceneDirective<EffortId>(
+      entry.effort,
+      "stepEffort",
+      () => {
+        throw new Error(
+          `Scene "${sceneId}": stepEfforts entry for "${performerId}" at step ${entry.step} is missing an effort.`
+        );
+      },
+      sceneId,
+      seed,
+      EFFORT_CATALOG,
+      `${sceneId}\u0000${performerId}\u0000${entry.step}\u0000stepEffort`
+    ),
+  }));
+}
+
+/**
+ * Sorts a performer's holds by where they start and proves none overlaps the
+ * next. Overlapping holds have no honest meaning: the lag the first one adds
+ * would move the second one's window out from under the number the director
+ * wrote.
+ */
+function resolveHoldsForPerformer(
+  holds: readonly { fromStep: number; steps: number }[],
+  performerId: string,
+  sceneId: string
+): ResolvedDirectorHold[] {
+  const sorted = [...holds].sort((a, b) => a.fromStep - b.fromStep);
+  for (let index = 1; index < sorted.length; index += 1) {
+    const previous = sorted[index - 1]!;
+    const current = sorted[index]!;
+    if (current.fromStep < previous.fromStep + previous.steps) {
+      throw new Error(
+        `Scene "${sceneId}": performer "${performerId}" holds overlap: step ${previous.fromStep} for ${previous.steps} steps and step ${current.fromStep} for ${current.steps} steps.`
+      );
+    }
+  }
+  return sorted.map((hold) => ({ fromStep: hold.fromStep, steps: hold.steps }));
 }
 
 function resolveEffectPresets(
@@ -491,6 +606,9 @@ function buildResolvedPerformers(
       leftPlane: input.leftPlane,
       rightPlane: input.rightPlane,
       stepPlanes: input.stepPlanes,
+      stepEffects: input.stepEffects,
+      stepEfforts: input.stepEfforts,
+      holds: input.holds,
     };
   });
 }
@@ -671,11 +789,40 @@ function resolveScene(
     }
   );
 
-  // Sequences resolve as literals, not through resolveCastAxis: the mirror
-  // form names one specific performer, so there is no catalog to pick from.
-  // The mirror graph is validated exactly one level deep — a mirror of a
-  // mirror has no original of its own to reflect, and letting it resolve
-  // would silently hand both performers the same reflection.
+  // Same replace-not-merge rule as stepPlanes above: naming a performer's
+  // steps is dictation, not an addition to what the cast shares.
+  const resolvedStepEffects: ResolvedDirectorStepEffect[][] = rawInputs.map(
+    (input, index) =>
+      resolveStepEffectsForPerformer(
+        input.stepEffects ?? cast?.defaults?.stepEffects ?? [],
+        performerIds[index]!,
+        scene.id,
+        filmSeed
+      )
+  );
+  const resolvedStepEfforts: ResolvedDirectorStepEffort[][] = rawInputs.map(
+    (input, index) =>
+      resolveStepEffortsForPerformer(
+        input.stepEfforts ?? cast?.defaults?.stepEfforts ?? [],
+        performerIds[index]!,
+        scene.id,
+        filmSeed
+      )
+  );
+  const resolvedHolds: ResolvedDirectorHold[][] = rawInputs.map(
+    (input, index) =>
+      resolveHoldsForPerformer(
+        input.holds ?? cast?.defaults?.holds ?? [],
+        performerIds[index]!,
+        scene.id
+      )
+  );
+
+  // Sequences resolve as literals, not through resolveCastAxis: the derived
+  // forms name one specific performer, so there is no catalog to pick from.
+  // The derived graph is validated exactly one level deep — a sequence derived
+  // from a derived one has no original of its own to change, and letting it
+  // resolve would silently hand both performers the same result.
   const resolvedSequences: DirectorPerformerSequence[] = rawInputs.map(
     (input) => input.sequence ?? cast?.defaults?.sequence ?? { source: "demo" }
   );
@@ -685,21 +832,23 @@ function resolveScene(
       sequence,
       `Scene "${scene.id}", performer "${self}"`
     );
-    if (!("mirrorOf" in sequence)) return;
-    const targetIndex = performerIds.indexOf(sequence.mirrorOf);
-    if (sequence.mirrorOf === self) {
+    const sourceId = transformSourceId(sequence);
+    if (sourceId === null) return;
+    const verb = "mirrorOf" in sequence ? "mirror" : "transform";
+    if (sourceId === self) {
       throw new Error(
-        `Scene "${scene.id}": performer "${self}" cannot mirror themselves.`
+        `Scene "${scene.id}": performer "${self}" cannot ${verb} themselves.`
       );
     }
+    const targetIndex = performerIds.indexOf(sourceId);
     if (targetIndex < 0) {
       throw new Error(
-        `Scene "${scene.id}": performer "${self}" mirrors "${sequence.mirrorOf}", who is not in this scene.`
+        `Scene "${scene.id}": performer "${self}" ${verb}s "${sourceId}", who is not in this scene.`
       );
     }
-    if ("mirrorOf" in resolvedSequences[targetIndex]!) {
+    if (transformSourceId(resolvedSequences[targetIndex]!) !== null) {
       throw new Error(
-        `Scene "${scene.id}": performer "${self}" mirrors "${sequence.mirrorOf}", who is already a mirror. Mirror the original instead.`
+        `Scene "${scene.id}": performer "${self}" ${verb}s "${sourceId}", whose sequence is already derived from another performer's. Derive from the original instead.`
       );
     }
   });
@@ -721,6 +870,9 @@ function resolveScene(
       leftPlane: resolvedLeftPlanes[index]!,
       rightPlane: resolvedRightPlanes[index]!,
       stepPlanes: resolvedStepPlanes[index]!,
+      stepEffects: resolvedStepEffects[index]!,
+      stepEfforts: resolvedStepEfforts[index]!,
+      holds: resolvedHolds[index]!,
     })
   );
 
@@ -795,6 +947,11 @@ function resolveScene(
     })),
   });
 
+  // A cut is instantaneous by definition: it has no window to dissolve over.
+  // Only a stated duration can give one a length.
+  const transitionKind =
+    scene.transition?.kind ?? (sceneIndex === 0 ? "cut" : "environment-dissolve");
+
   return {
     id: scene.id,
     title: scene.title,
@@ -802,11 +959,10 @@ function resolveScene(
     startSeconds,
     durationSeconds,
     transition: {
-      kind:
-        scene.transition?.kind ??
-        (sceneIndex === 0 ? "cut" : "environment-dissolve"),
+      kind: transitionKind,
       durationSeconds:
-        scene.transition?.durationSeconds ?? (sceneIndex === 0 ? 0 : 0.8),
+        scene.transition?.durationSeconds ??
+        (sceneIndex === 0 || transitionKind === "cut" ? 0 : 0.8),
     },
     location: {
       environmentId,

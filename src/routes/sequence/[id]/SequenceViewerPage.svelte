@@ -36,6 +36,7 @@
   import SequenceViewerOrchestrator from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
   import SequenceViewerShell from "$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { initialViewerModeForUrl } from "$lib/shared/sequence-viewer/services/viewer-modes";
 
   import {
@@ -161,6 +162,8 @@
 
   // Sequence loading state
   let sequence = $state<SequenceData | null>(null);
+  /** The route id, when it resolved as a short code. Share reuses it. */
+  let resolvedShortCode = $state<string | null>(null);
   let isLoading = $state(true);
   let loadError = $state<string | null>(null);
   let handoffData = $state<SequenceRouteHandoff | null>(null);
@@ -489,6 +492,7 @@
   async function loadSequenceFromId(id: string) {
     isLoading = true;
     loadError = null;
+    resolvedShortCode = null;
 
     try {
       if (isInlineEncoded(id)) {
@@ -508,6 +512,7 @@
 
       const shortCodeManager = getShortCodeManager();
       let resolvedSequence = await shortCodeManager.resolveShortCode(id);
+      if (resolvedSequence) resolvedShortCode = id;
 
       if (!resolvedSequence) {
         resolvedSequence = await loadByIdentifier(id);
@@ -622,6 +627,7 @@
     onUrlParamChange={updateUrlParam}
     onBpmChange={scanOriginCode ? handleScanBpmChange : undefined}
     onGatedDownload={scanOriginCode ? resumeGatedScanExport : undefined}
+    shortCode={resolvedShortCode}
   >
     {#snippet children(ctx)}
       <main
@@ -663,6 +669,21 @@
       </main>
     {/snippet}
   </SequenceViewerOrchestrator>
+{/if}
+
+<!-- The take-it-home export gate (ensureFullAccountForExport) opens this drawer
+     through authDrawerState. MainApplication mounts it for the in-app viewer;
+     this standalone route has no shell, so without its own mount a guest
+     clicking Record Scene or Share saw nothing happen at all. -->
+{#if !authState.isFullAccount}
+  {#await import("$lib/shared/auth/components/AuthModal.svelte") then mod}
+    <mod.default
+      open={authDrawerState.open}
+      initialMode={authDrawerState.initialMode}
+      reason={authDrawerState.reason}
+      onClose={() => authDrawerState.hide()}
+    />
+  {/await}
 {/if}
 
 <style>

@@ -4,6 +4,8 @@
   import ExportPopover from "$lib/shared/sequence-viewer/components/ExportPopover.svelte";
   import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
   import type { SceneVideoExportState } from "../services/create-scene-video-export.svelte";
+  import RenderFilmCard from "$lib/shared/sequence-viewer/components/record-scene/RenderFilmCard.svelte";
+  import type { Scene3DFilm } from "$lib/features/scene-3d-collection/domain/scene-3d-collection-types";
 
   interface Props {
     open: boolean;
@@ -11,6 +13,10 @@
     bpm: number;
     exporter: SceneVideoExportState;
     onClose: () => void;
+    /** Present when this modal was opened to re-render a recorded camera
+     *  performance. The film replaces the current static angle, and the card's
+     *  quality presets replace the full export settings. */
+    film?: Scene3DFilm | undefined;
   }
 
   let {
@@ -19,6 +25,7 @@
     bpm,
     exporter,
     onClose,
+    film = undefined,
   }: Props = $props();
 
   const state = $derived(exporter.state);
@@ -48,7 +55,7 @@
 
   async function render(): Promise<void> {
     exporter.clearError();
-    await exporter.render(sequence, bpm);
+    await exporter.render(sequence, bpm, film);
   }
 </script>
 
@@ -87,14 +94,20 @@
       />
     {:else}
       <div class="shot-summary">
-        <i class="fas fa-video" aria-hidden="true"></i>
+        <i class="fas {film ? 'fa-clapperboard' : 'fa-video'}" aria-hidden="true"></i>
         <div>
-          <strong>Export the current shot</strong>
-          <span>Your camera angle, performers, effects, and environment.</span>
+          <strong>{film ? "Render this recording" : "Export the current shot"}</strong>
+          <span>
+            {film
+              ? "The camera path you recorded, at whatever quality you pick."
+              : "Your camera angle, performers, effects, and environment."}
+          </span>
         </div>
       </div>
 
-      <ExportPopover />
+      {#if !film}
+        <ExportPopover />
+      {/if}
 
       {#if state.error}
         <p class="export-error" role="alert">{state.error}</p>
@@ -127,6 +140,17 @@
             {state.isCancelling ? "Cancelling..." : "Cancel"}
           </button>
         </div>
+      {:else if film}
+        <RenderFilmCard
+          presentation="inline"
+          durationSeconds={film.durationSeconds}
+          exportOptions={exporter.options}
+          title="Quality"
+          renderLabel="Render film"
+          discardLabel="Cancel"
+          onRender={() => void render()}
+          onDiscard={close}
+        />
       {:else}
         <button
           type="button"
