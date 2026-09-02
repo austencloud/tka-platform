@@ -65,7 +65,7 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  * with a `cw`/`ccw` direction since gap 8a, but nobody has watched the two
  * signs side by side to check which one an audience would actually call
  * clockwise. Scenes 9 and 10 stage the same three characters in the same
- * line, the same wide front shot, the same 90-degree orbit — direction is
+ * line, the same wide front shot, the same 90-degree orbit. Direction is
  * the only thing that differs between them.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
