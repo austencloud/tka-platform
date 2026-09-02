@@ -231,8 +231,15 @@ export function applyDirectorCameraFrame(
     false
   );
 
+  // The viewer re-applies roll after its orbit controls update each frame;
+  // writing the camera's quaternion here would be overwritten next tick.
+  viewer.cameraRollDeg = frame.rollDeg;
+
   const camera = viewer.threlteCamera as PerspectiveCamera | null;
-  if (!camera || Math.abs(camera.fov - previewFovDeg) < 0.001) return;
-  camera.fov = previewFovDeg;
-  camera.updateProjectionMatrix();
+  if (!camera) return;
+
+  if (Math.abs(camera.fov - previewFovDeg) >= 0.001) {
+    camera.fov = previewFovDeg;
+    camera.updateProjectionMatrix();
+  }
 }

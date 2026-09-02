@@ -123,7 +123,8 @@ export function createViewerShellLayoutState(
   const performanceInspectorNarrow = $derived(
     showVideoGallery &&
       !isMobile &&
-      bodyWidth < resolveExportSidebarMinWidth(persistedRailWidth, "motion")
+      bodyWidth <
+        resolveExportSidebarMinWidth(persistedRailWidth, "performance")
   );
   const effectiveMobile = $derived(
     isMobile ||
@@ -135,9 +136,11 @@ export function createViewerShellLayoutState(
   const inspectorProfile = $derived<ViewerInspectorProfile>(
     isImageExportActive
       ? "card"
-      : isVideoExportActive || showVideoGallery
+      : isVideoExportActive
         ? "motion"
-        : "art"
+        : showVideoGallery
+          ? "performance"
+          : "art"
   );
   const isWorkspaceInspectorActive = $derived(
     isSidebarExportActive ||

@@ -176,17 +176,29 @@ export interface AnSliceSeed {
   visibility: AnimationVisibilitySettings;
 }
 
+/**
+ * Merges only keys the target already has. The blob is user-editable JSON, and
+ * `Object.assign` with an own `__proto__` key would re-parent the target.
+ */
+function assignKnownKeys<T extends object>(target: T, patch: object): void {
+  for (const key of Object.keys(target)) {
+    if (key in patch) {
+      (target as Record<string, unknown>)[key] = (patch as Record<string, unknown>)[key];
+    }
+  }
+}
+
 /** Full store payloads ready for `replaceAll`, merged onto the diff baselines. */
 export function seedFromAnSlice(payload: AnSlicePayload): AnSliceSeed {
   const settings = postNormalizeAnimationDefaults();
   if (payload.settings) {
     const { trail, ...top } = payload.settings;
-    Object.assign(settings, top);
-    if (trail) Object.assign(settings.trail, trail);
+    assignKnownKeys(settings, top);
+    if (trail) assignKnownKeys(settings.trail, trail);
   }
 
   const visibility = structuredClone(postNormalizeVisibilityDefaults());
-  if (payload.visibility) Object.assign(visibility, payload.visibility);
+  if (payload.visibility) assignKnownKeys(visibility, payload.visibility);
 
   return { settings, visibility: normalizedVisibility(visibility) };
 }

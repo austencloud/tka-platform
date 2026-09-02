@@ -478,29 +478,68 @@ Acceptance requires:
 
 ## Gate 5 contract
 
-The production viewer stage and `SequenceVideos` are persistent sibling layers
-inside the same shell-owned `PanelGroup` stage. Selecting Performances changes
-the outer stage allocation and the two layers' complementary opacity in one
-mode commit. The gallery therefore inherits the exact pixels released by the
-inspector instead of mounting after the workspace has already changed shape.
+Performance browsing is a two-pane workspace, governed by
+[`2026-09-01-performance-two-pane-workspace-design.md`](../2026-09-01-performance-two-pane-workspace-design.md).
+`SequenceViewerShell` keeps one outer stage track and one inspector track
+mounted through the mode change. Inside the stage track, the motion stage and
+`PerformanceStage` are persistent sibling sources of one `DualSourceCrossfade`;
+selecting Performances changes which source is active and, on the same mode
+commit, the inspector track changes its information from Motion settings to
+`PerformanceInspector`.
 
-The inactive gallery stays inert and retains browsing state, but it does not
-load its shared store, attach a timing map to the shared playhead, or leave a
-video playing. The hidden motion stage also receives paused playback while
-Performances owns the workspace. Full motion uses the canonical emphasis clock;
-reduced motion removes local interpolation and lets the existing named viewer
-snapshot dissolve carry the state change.
+The seam between those two tracks travels. Performances owns its own inspector
+profile (`performance` in `viewer-shell-model.ts`, default 400 px, bounds
+360–900 px) and its own width token (`--performance-sidebar-width`,
+`clamp(380px, 24vw, 520px)`), narrower than the effects inspector because the
+take list is a column and the video is landscape. `PanelGroup` slides the seam
+from the Motion width to the Performances width on the structural clock while
+the stage sources and inspector contents crossfade on the same emphasis
+duration, which is the Gate 1 and Gate 4 vocabulary rather than a flat
+dissolve. The Performances inspector is composed at its destination width
+before the mode changes and is revealed through the moving clip, so nothing
+rewraps mid-glide. A seam the person has dragged by hand keeps that width for
+the session. Nominal desktop travel: 180 px at 1440×900, 339 px at 1920×1080,
+280 px at 2560×1440, and 480 px at 3840×2160.
+
+The first version of this workspace shared one inspector allocation between
+Motion and Performances. Austen reviewed it on 2026-09-01 and found it read as
+a plain crossfade next to the approved gates; the travelling seam is the
+response.
+
+One `performance-workspace-state` owns selection, the single registered player,
+upload and timing-map work mode, deletion, and the shared playhead. Upload and
+timing mapping are focused full-workspace editors that reuse that owner and
+return to the still-mounted browse workspace. The inactive source stays inert:
+the motion stage receives paused playback while Performances owns the
+workspace, and the hidden Performance player is paused and released when the
+motion stage returns. A performance whose poster has painted counts as a
+visually ready destination; the transition does not wait for decoded video.
+
+Full motion uses the canonical emphasis clock with the standard crossfade
+profile. Reduced motion removes local interpolation and lets the existing named
+viewer snapshot dissolve carry the state change, with final geometry committed
+immediately.
+
+Narrow layouts stack the stage above a bounded inspector.
+`ViewerWorkspacePanels` receives `--performance-inspector-height` as the
+inspector's explicit stacked destination, the inspector owns its own list
+scroll, and no Performance capability disappears on mobile.
 
 Acceptance requires:
 
-1. Stage and Performances retain one DOM identity through 2D, ready 3D, and
+1. The outer stage, the motion stage, `PerformanceStage`, and the inspector
+   track each retain one DOM identity through 2D, ready 3D, and
    rapid-reversal round trips.
-2. Their opacity remains complementary, with no blank or double-opaque frame.
-3. Both layers occupy the same stage box on every sampled frame.
-4. The stage and desktop inspector allocations move monotonically on the same
-   structural clock and return to their prior endpoints.
-5. The inactive gallery neither fetches nor drives media playback or the shared
-   sequence playhead.
+2. The two stage sources keep complementary opacity, with no blank or
+   double-opaque frame.
+3. Both stage sources occupy the same stage box on every sampled frame, and
+   that box grows or shrinks with the seam rather than after it.
+4. The stage and desktop inspector allocations travel monotonically on the
+   structural clock in both directions, with zero backtrack and zero overshoot,
+   and the inspector changes contents without a visible layout change inside
+   its moving clip.
+5. Exactly one Performance player exists at any time, and the inactive source
+   neither drives media playback nor the shared sequence playhead.
 6. Reduced motion uses the existing opacity-only workspace dissolve with no
    delayed mode commit or spatial tween.
 7. Every required viewport passes overflow, responsive-axis, identity,
@@ -538,16 +577,157 @@ Acceptance requires:
   warnings, `git diff --check` is clean, and the final in-app-browser console
   contains no warnings or errors. Gate 5 is ready for Austen's visual review.
 
+- The two-pane redesign (`46a1007dc6`, merged by `889bc92a87`) replaced the
+  whole-body gallery with `PerformanceStage` plus a persistent
+  `PerformanceInspector`. Its final full-motion 2D replay recorded zero
+  viewer-stage, Performance-stage, or inspector remounts; zero blank,
+  double-opaque, unready, or visible inspector-layout-change frames; one
+  maximum Performance player; and `0 px` layer-width mismatch along
+  `Motion stage → both → Performance stage → both → Motion stage`. Rapid
+  reversal, reduced motion, and a 20,660 ms cold 3D round trip kept the same
+  zero counts and one player. The seven-size sweep reported no viewport
+  overflow. 55 focused tests, `svelte-check` (0 errors, 0 warnings), and the
+  repository finish gate were green before integration.
+- Re-audit on 2026-09-01 (pickup): the configured Vitest run passed 223/223
+  across the 29 sequence-viewer and shell-contract files, and
+  `https://localhost:5173/test/sequence-viewer-transitions?gate=performances`
+  returned HTTP 200 from the integrated `main` checkout.
+
+### Gate 5 evidence · 2026-09-01 (seam travel)
+
+- Austen's 2026-09-01 review read the shared-allocation version as a plain
+  crossfade. Performances now owns a `performance` inspector profile
+  (`400 px` default, `360–900 px` bounds) and the
+  `--performance-sidebar-width` token (`clamp(380px, 24vw, 520px)`), so the
+  existing `PanelGroup` structural clock slides the stage/inspector seam while
+  `DualSourceCrossfade` swaps the sources. No new motion owner was added.
+- Full-motion 2D round trips on the worktree server, measured through the
+  review harness at every required viewport, all report zero viewer-stage,
+  Performance-stage, and inspector remounts; zero blank, double-opaque,
+  unready, and visible inspector-layout-change frames; one maximum player;
+  `0 px` layer-width mismatch; no viewport overflow; and monotonic allocation
+  travel with `0 px` backtrack and `0 px` overshoot on every leg:
+
+  | Viewport  | Stage travel   | Inspector travel | Crossfade frames |
+  | --------- | -------------- | ---------------- | ---------------- |
+  | 1440×900  | 692 → 872 px   | 560 → 380 px     | 15               |
+  | 1920×1080 | 932 → 1271 px  | 800 → 461 px     | 18               |
+  | 2560×1440 | 1572 → 1852 px | 800 → 520 px     | 13               |
+  | 3840×2160 | 2652 → 3132 px | 1000 → 520 px    | 16               |
+  | 820×1180  | vertical axis  | vertical axis    | 17               |
+  | 960×412   | vertical axis  | vertical axis    | 9                |
+  | 375×667   | vertical axis  | vertical axis    | 16               |
+
+- Rapid reversal at 1440×900 travels
+  `animation → videos → animation → videos → animation` through 30 crossfade
+  frames with the same zero counts. Reduced motion commits through 21
+  workspace-dissolve frames, zero crossfade frames, and the same seam
+  endpoints (`692 → 872 px` stage, `560 → 380 px` inspector) with zero
+  backtrack or overshoot. The ready-3D round trip
+  (`animation-3d → videos → animation-3d`, 7,546 ms) records 16 crossfade
+  frames, a `1260 → 872 → 1260 px` stage, and zero defects.
+- Endpoint frames at 1440×900, 3840×2160, and 375×667 were inspected: the
+  Performances inspector composes at its destination width on desktop and
+  the mobile vertical composition is unchanged.
+- Focused Vitest (`tests/config/vitest.config.ts`): 29 files, 229 tests pass,
+  including the new narrower-inspector model test and the updated
+  orchestration contract. Prettier and `git diff --check` are clean. Gate 5
+  remains ready for Austen's visual review.
+
+## Gate 6 baseline · 2026-09-01
+
+Measured on the integrated `main` checkout through the production iframe of
+`/test/sequence-viewer-transitions` at the review page's 1440×900 frame, with
+Post Studio reached through the production rail. The shell mounts
+`PostStudioPane` inside an `{#if layout.showPostStudio}` branch that replaces
+the motion/Performance `DualSourceCrossfade` block, and the layout state closes
+any open inspector on the same commit.
+
+- **Surface identity breaks in both directions.** The motion stage element
+  (`[data-persistent-motion-stage]`) is destroyed when the studio opens and a
+  new instance is mounted on return; the studio pane is created on every entry.
+  The 2D canvas count inside the stage container fell to zero on the return
+  leg before the Animator re-created its canvases.
+- **The studio pops instead of arriving.** While the inspector track animated
+  closed (motion stage width `692 → 1062 → 1260 px`), the studio pane sat at
+  `x = 1440 px, width 0` for roughly 0.7 s, then appeared at its full
+  `1260 × 847 px` box in one frame. There is no crossfade, no shared clock, and
+  no readiness gate; the card preview and additional preview canvases start
+  rendering after the studio is already visible.
+- **Structure.** Inside the viewer body the studio composes its own action bar,
+  a canvas panel (`614 px` wide at 1440), a `646 px` inspector rail, and a
+  timeline dock, in a `data-mobile-panel` compact layout below its own
+  breakpoint. It is a whole-body workspace with its own inspector, not a stage
+  source with shell-owned inspector contents.
+- **Mobile ingress is unverified.** At the review page's 375×667 frame the
+  bottom-bar switcher listed Side by Side, 2D, Card, Performances, and Tunnel
+  and no Post Studio entry, although `ViewerModeBottomBar` filters through the
+  same `canAccessPostStudio()` gate as the rail. Whether this is the feature
+  flag service overwriting the local role override after Firestore load or a
+  compact-layout omission must be confirmed with a real early-access grant
+  before the Gate 6 contract is approved.
+- Sampling ran in a background DevTools page, so frame timing is directional
+  (roughly 4 to 15 samples per second); identity and geometry findings do not
+  depend on the frame rate.
+
+Baseline grade stays **D**: remount on both legs, a zero-width destination
+followed by a one-frame pop, no reduced-motion path of its own, and no
+instrumentation.
+
+## Gate 6 contract · recommended, awaiting approval
+
+Post Studio enters as an intentional whole-workspace change, as the review map
+already describes. The recommended contract keeps the studio's own composition
+and gives it the same persistence and clock discipline as Performances,
+without adding a second motion system.
+
+1. **One persistent studio layer.** `PostStudioPane` mounts on first entry and
+   stays mounted through the session, using the existing `createPaneKeepAlive`
+   owner (`pane-keep-alive.svelte.ts`) so the rendered card preview, timeline,
+   and selected layer survive a round trip. The motion/Performance crossfade
+   block is never unmounted; it becomes the first source of an outer
+   `DualSourceCrossfade` whose second source is the studio layer. Nesting the
+   existing primitive is the extension; a third-source variant is not
+   introduced unless the nested form measurably fails.
+2. **One clock.** The inspector track closing and the outer crossfade run on
+   the canonical emphasis duration from the same mode commit. The studio does
+   not reserve width at `0 px`; it occupies the full stage box from its first
+   visible frame while the inspector releases its allocation.
+3. **Readiness.** The studio counts as visually ready when its section and
+   action bar have painted, mirroring the Gate 5 poster rule. The transition
+   never waits for the card preview or an animation preview to render.
+4. **Inert inactive layers.** While the studio owns the workspace the motion
+   stage receives paused playback and the Performance player is released; while
+   the motion stage owns it the studio's preview playback is paused and its
+   export state is preserved but idle.
+5. **Reduced motion** commits final geometry immediately and lets the existing
+   named viewer snapshot dissolve carry the change; nothing waits inside the
+   View Transition update callback.
+6. **Mobile.** Post Studio remains reachable from the bottom-bar switcher for
+   any user who has access, and its compact `data-mobile-panel` layout stacks
+   inside the same bounded stage box the shell already provides.
+7. **Instrumentation** extends `transition-geometry-trace.ts` with
+   `post-studio-2d`, `post-studio-3d`, and `post-studio-interrupt` commands and
+   `stage-to-studio` / `studio-to-stage` / `interrupt-studio` phases, sampling
+   studio and motion identity, complementary opacity, layer box equality,
+   inspector allocation travel, canvas count continuity, and readiness. The
+   review map marks Gate 6 `ready` only when those replays exist.
+
+Acceptance requires zero remount, blank, double-opaque, zero-width-destination,
+unready, backtrack, or overshoot frames across 2D, ready 3D, rapid reversal,
+reduced motion, and all seven required viewports, plus a confirmed mobile
+ingress.
+
 ## Approval ledger
 
-| Gate                           | Status           | Approved by | Approved at          | Notes                                                              |
-| ------------------------------ | ---------------- | ----------- | -------------------- | ------------------------------------------------------------------ |
-| 1. Side by Side ⇄ 2D / Card    | Approved         | Austen      | 2026-08-29 09:57 CDT | Approved after full/reduced, mobile-to-4K, and transformed-cell QA |
-| 2. 2D ⇄ 3D                     | Approved         | Austen      | 2026-08-30 16:27 CDT | Approved after shared-clock crossfade and canvas-settle QA         |
-| 3. 2D / 3D ⇄ Tunnel            | Ready for review |             |                      | Single-owner fade; 3D, reversal, reduced, mobile-to-4K green       |
-| 4. Card ⇄ left-side modes      | Approved         | Austen      | 2026-09-01           | Direct paths; persistent surfaces; mobile-to-4K geometry green     |
-| 5. Viewer stage ⇄ Performances | Ready for review |             |                      | Persistent layers; 2D/3D/reversal/reduced/mobile-to-4K green       |
-| 6. Viewer stage ⇄ Post Studio  | Pending          |             |                      |                                                                    |
-| 7. Export inspector            | Pending          |             |                      |                                                                    |
-| 8. Practice                    | Pending          |             |                      |                                                                    |
-| 9. Mode switchers              | Pending          |             |                      |                                                                    |
+| Gate                           | Status            | Approved by | Approved at          | Notes                                                                                |
+| ------------------------------ | ----------------- | ----------- | -------------------- | ------------------------------------------------------------------------------------ |
+| 1. Side by Side ⇄ 2D / Card    | Approved          | Austen      | 2026-08-29 09:57 CDT | Approved after full/reduced, mobile-to-4K, and transformed-cell QA                   |
+| 2. 2D ⇄ 3D                     | Approved          | Austen      | 2026-08-30 16:27 CDT | Approved after shared-clock crossfade and canvas-settle QA                           |
+| 3. 2D / 3D ⇄ Tunnel            | Ready for review  |             |                      | Single-owner fade; 3D, reversal, reduced, mobile-to-4K green                         |
+| 4. Card ⇄ left-side modes      | Approved          | Austen      | 2026-09-01           | Direct paths; persistent surfaces; mobile-to-4K geometry green                       |
+| 5. Viewer stage ⇄ Performances | Ready for review  |             |                      | Seam travel added 2026-09-01 after review; 2D/3D/reversal/reduced/mobile-to-4K green |
+| 6. Viewer stage ⇄ Post Studio  | Contract proposed |             |                      | Baseline D measured 2026-09-01; recommended contract awaits Austen                   |
+| 7. Export inspector            | Pending           |             |                      |                                                                                      |
+| 8. Practice                    | Pending           |             |                      |                                                                                      |
+| 9. Mode switchers              | Pending           |             |                      |                                                                                      |
