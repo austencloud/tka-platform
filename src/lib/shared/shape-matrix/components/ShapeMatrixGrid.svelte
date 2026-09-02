@@ -277,9 +277,12 @@
   }
   .cell:hover,
   .cell:focus-visible {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
-    box-shadow: inset 0 0 0 2px
-      color-mix(in srgb, var(--theme-accent, #f59e0b) 55%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 18%,
+      transparent
+    );
+    box-shadow: inset 0 0 0 2px var(--theme-accent, #f59e0b);
     z-index: 2;
   }
   /* The artwork itself answers the pointer, but only where hovering is a
