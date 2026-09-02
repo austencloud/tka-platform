@@ -10857,7 +10857,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
     {
       "id": "edges-of-the-stage",
       "title": "Edges of the Stage",
-      "intent": "Gap 7: performer 3 opens off camera at (5, -1), five meters out past the right edge of a three-wide line, and walks in along a left-bending arc to their mark at (1.8, -0.3) over eight beats — about 3.8 meters of curve in four seconds, a 0.95 m/s walk. Nothing clamps a position to the stage, so the ground grows to include the opening mark and the entrance is simply a walk from outside the frame. Watch the path bow: a straight walk would cut the corner. Performer 1 stands and watches: \`{source: \\"none\\"}\`, no prop phrase, body idling while the other two spin.",
+      "intent": "Gap 7: performer 3 opens off camera at (8, -1), eight meters out past the edge of a three-wide line and outside a medium shot aimed at its centre, and walks in along a left-bending arc to their mark at (1.8, -0.3) over twelve beats — about 6.5 meters of curve in six seconds, a 1.1 m/s walk. Nothing clamps a position to the stage, so the ground grows to include the opening mark and the entrance is simply a walk from outside the frame. Watch the path bow: a straight walk would cut the corner. Performer 1 stands and watches: \`{source: \\"none\\"}\`, no prop phrase, body idling while the other two spin.",
       "startSeconds": 56,
       "durationSeconds": 8,
       "transition": {
@@ -10982,7 +10982,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
               "source": "demo"
             },
             "position": {
-              "x": 5,
+              "x": 8,
               "z": -1
             },
             "facingAngle": 3.141593,
@@ -10990,90 +10990,160 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
               {
                 "atSeconds": 0,
                 "position": {
-                  "x": 5,
+                  "x": 8,
                   "z": -1
                 },
-                "facingAngle": -2.282734,
+                "facingAngle": -2.385664,
                 "walking": true,
                 "easing": "linear"
               },
               {
-                "atSeconds": 0.5,
+                "atSeconds": 0.4,
                 "position": {
-                  "x": 4.608103,
-                  "z": -1.26583
+                  "x": 7.648446,
+                  "z": -1.329514
                 },
-                "facingAngle": -2.05091,
+                "facingAngle": -2.262025,
                 "walking": true,
                 "easing": "linear"
               },
               {
-                "atSeconds": 1,
+                "atSeconds": 0.8,
                 "position": {
-                  "x": 4.165615,
-                  "z": -1.43451
+                  "x": 7.258939,
+                  "z": -1.613157
                 },
-                "facingAngle": -1.819086,
+                "facingAngle": -2.138386,
                 "walking": true,
                 "easing": "linear"
               },
               {
-                "atSeconds": 1.5,
+                "atSeconds": 1.2,
                 "position": {
-                  "x": 3.696209,
-                  "z": -1.497015
+                  "x": 6.837425,
+                  "z": -1.846599
                 },
-                "facingAngle": -1.587262,
+                "facingAngle": -2.014746,
+                "walking": true,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 1.6,
+                "position": {
+                  "x": 6.39034,
+                  "z": -2.026276
+                },
+                "facingAngle": -1.891107,
                 "walking": true,
                 "easing": "linear"
               },
               {
                 "atSeconds": 2,
                 "position": {
-                  "x": 3.225,
-                  "z": -1.45
+                  "x": 5.924508,
+                  "z": -2.149444
                 },
-                "facingAngle": -1.355439,
+                "facingAngle": -1.767468,
                 "walking": true,
                 "easing": "linear"
               },
               {
-                "atSeconds": 2.5,
+                "atSeconds": 2.4,
                 "position": {
-                  "x": 2.777198,
-                  "z": -1.295981
+                  "x": 5.447044,
+                  "z": -2.214224
                 },
-                "facingAngle": -1.123615,
+                "facingAngle": -1.643828,
                 "walking": true,
                 "easing": "linear"
               },
               {
-                "atSeconds": 3,
+                "atSeconds": 2.8,
                 "position": {
-                  "x": 2.376761,
-                  "z": -1.043198
+                  "x": 4.965234,
+                  "z": -2.219627
                 },
-                "facingAngle": -0.891791,
+                "facingAngle": -1.520189,
                 "walking": true,
                 "easing": "linear"
               },
               {
-                "atSeconds": 3.5,
+                "atSeconds": 3.2,
                 "position": {
-                  "x": 2.045114,
-                  "z": -0.705176
+                  "x": 4.486437,
+                  "z": -2.165569
                 },
-                "facingAngle": -0.659967,
+                "facingAngle": -1.39655,
+                "walking": true,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 3.6,
+                "position": {
+                  "x": 4.017961,
+                  "z": -2.052876
+                },
+                "facingAngle": -1.27291,
                 "walking": true,
                 "easing": "linear"
               },
               {
                 "atSeconds": 4,
                 "position": {
+                  "x": 3.566959,
+                  "z": -1.883269
+                },
+                "facingAngle": -1.149271,
+                "walking": true,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 4.4,
+                "position": {
+                  "x": 3.140317,
+                  "z": -1.659338
+                },
+                "facingAngle": -1.025631,
+                "walking": true,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 4.8,
+                "position": {
+                  "x": 2.744548,
+                  "z": -1.3845
+                },
+                "facingAngle": -0.901992,
+                "walking": true,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 5.2,
+                "position": {
+                  "x": 2.385694,
+                  "z": -1.062952
+                },
+                "facingAngle": -0.778353,
+                "walking": true,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 5.6,
+                "position": {
+                  "x": 2.069234,
+                  "z": -0.699603
+                },
+                "facingAngle": -0.654713,
+                "walking": true,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 6,
+                "position": {
                   "x": 1.8,
                   "z": -0.3
                 },
-                "facingAngle": -0.428143,
+                "facingAngle": -0.531074,
                 "walking": false,
                 "easing": "linear"
               },
@@ -11083,7 +11153,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
                   "x": 1.8,
                   "z": -0.3
                 },
-                "facingAngle": -0.428143,
+                "facingAngle": -0.531074,
                 "walking": false,
                 "easing": "linear"
               }
@@ -11121,40 +11191,68 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "z": 0
           },
           {
-            "x": 5,
+            "x": 8,
             "z": -1
           },
           {
-            "x": 5,
+            "x": 8,
             "z": -1
           },
           {
-            "x": 4.608103,
-            "z": -1.26583
+            "x": 7.648446,
+            "z": -1.329514
           },
           {
-            "x": 4.165615,
-            "z": -1.43451
+            "x": 7.258939,
+            "z": -1.613157
           },
           {
-            "x": 3.696209,
-            "z": -1.497015
+            "x": 6.837425,
+            "z": -1.846599
           },
           {
-            "x": 3.225,
-            "z": -1.45
+            "x": 6.39034,
+            "z": -2.026276
           },
           {
-            "x": 2.777198,
-            "z": -1.295981
+            "x": 5.924508,
+            "z": -2.149444
           },
           {
-            "x": 2.376761,
-            "z": -1.043198
+            "x": 5.447044,
+            "z": -2.214224
           },
           {
-            "x": 2.045114,
-            "z": -0.705176
+            "x": 4.965234,
+            "z": -2.219627
+          },
+          {
+            "x": 4.486437,
+            "z": -2.165569
+          },
+          {
+            "x": 4.017961,
+            "z": -2.052876
+          },
+          {
+            "x": 3.566959,
+            "z": -1.883269
+          },
+          {
+            "x": 3.140317,
+            "z": -1.659338
+          },
+          {
+            "x": 2.744548,
+            "z": -1.3845
+          },
+          {
+            "x": 2.385694,
+            "z": -1.062952
+          },
+          {
+            "x": 2.069234,
+            "z": -0.699603
           },
           {
             "x": 1.8,
@@ -11175,14 +11273,14 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 0,
             "position": [
-              1.066667,
-              1.391299,
-              -9.912679
+              0,
+              1.390019,
+              -7.636489
             ],
             "target": [
-              1.066667,
-              0.721446,
-              -0.333333
+              0,
+              0.856024,
+              0
             ],
             "fovDeg": 50,
             "interpolation": "step",
@@ -11191,14 +11289,14 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 8,
             "position": [
-              1.066667,
-              1.391299,
-              -9.912679
+              0,
+              1.390019,
+              -7.636489
             ],
             "target": [
-              1.066667,
-              0.721446,
-              -0.333333
+              0,
+              0.856024,
+              0
             ],
             "fovDeg": 50,
             "interpolation": "step",

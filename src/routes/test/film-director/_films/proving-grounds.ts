@@ -329,7 +329,7 @@ export const provingGroundsFilm: FilmDirectorInput = {
       id: "edges-of-the-stage",
       title: "Edges of the Stage",
       intent:
-        "Gap 7: performer 3 opens off camera at (5, -1), five meters out past the right edge of a three-wide line, and walks in along a left-bending arc to their mark at (1.8, -0.3) over eight beats — about 3.8 meters of curve in four seconds, a 0.95 m/s walk. Nothing clamps a position to the stage, so the ground grows to include the opening mark and the entrance is simply a walk from outside the frame. Watch the path bow: a straight walk would cut the corner. Performer 1 stands and watches: `{source: \"none\"}`, no prop phrase, body idling while the other two spin.",
+        "Gap 7: performer 3 opens off camera at (8, -1), eight meters out past the edge of a three-wide line and outside a medium shot aimed at its centre, and walks in along a left-bending arc to their mark at (1.8, -0.3) over twelve beats — about 6.5 meters of curve in six seconds, a 1.1 m/s walk. Nothing clamps a position to the stage, so the ground grows to include the opening mark and the entrance is simply a walk from outside the frame. Watch the path bow: a straight walk would cut the corner. Performer 1 stands and watches: `{source: \"none\"}`, no prop phrase, body idling while the other two spin.",
       durationBeats: 16,
       transition: { kind: "cut" },
       location: { environmentId: "forest" },
@@ -348,16 +348,17 @@ export const provingGroundsFilm: FilmDirectorInput = {
             { id: "performer-2" },
             {
               id: "performer-3",
-              // Off camera at the top of the scene. side-by-side puts the
-              // third slot at (1.8, -0.3), which is where the arc lands.
-              position: { x: 5, z: -1 },
+              // Off camera at the top of the scene, past the edge of the
+              // medium shot below. side-by-side puts the third slot at
+              // (1.8, -0.3), which is where the arc lands.
+              position: { x: 8, z: -1 },
               blocking: [
                 {
                   move: "walk",
                   to: { x: 1.8, z: -0.3 },
                   along: { arc: "left", bulge: 0.25 },
                   facing: "travel",
-                  durationBeats: 8,
+                  durationBeats: 12,
                 },
                 { move: "stand" },
               ],
@@ -366,8 +367,13 @@ export const provingGroundsFilm: FilmDirectorInput = {
         },
       },
       camera: {
-        subject: { kind: "group" },
-        shotSize: "wide",
+        // A medium shot aimed at the centre of the line, not a wide on the
+        // group: a group framing widens to include every opening mark, and
+        // even a wide on one performer sees about 11 m either side of centre
+        // at this depth (measured 2026-09-02), so both put the entrance inside
+        // the frame from the first beat and make "off camera" a lie.
+        subject: { kind: "performer", performerId: "performer-2" },
+        shotSize: "medium",
         angle: "eye",
         position: "front",
         moves: [{ move: "hold" }],

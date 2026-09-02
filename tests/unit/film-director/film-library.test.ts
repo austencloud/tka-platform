@@ -346,26 +346,27 @@ describe("film library", () => {
     )!;
     // The opening mark is off camera and unclamped, and the stage extent
     // stretched to include it rather than pulling it in.
-    expect(entrant.position).toEqual({ x: 5, z: -1 });
-    expect(edgesOfStage.performance.stageExtent).toContainEqual({ x: 5, z: -1 });
+    expect(entrant.position).toEqual({ x: 8, z: -1 });
+    expect(edgesOfStage.performance.stageExtent).toContainEqual({ x: 8, z: -1 });
 
     const walkFrames = entrant.blocking.filter((frame) => frame.walking);
-    // Eight chords: 3.8m of arc at a 0.5m target chord length.
-    expect(walkFrames).toHaveLength(8);
+    // Fifteen chords: about 7.2m of arc at a 0.5m target chord length.
+    expect(walkFrames).toHaveLength(15);
     expect(entrant.blocking.at(-1)!.position).toEqual({ x: 1.8, z: -0.3 });
 
     // The path is a bow, not a line: the halfway keyframe sits well off the
-    // straight route between the two marks.
+    // straight route between the two marks (the sagitta is a quarter of the
+    // 6.24m chord, about 1.56m).
     const from = entrant.position;
     const to = { x: 1.8, z: -0.3 };
     const chord = Math.hypot(to.x - from.x, to.z - from.z);
-    const halfway = entrant.blocking[4]!.position;
+    const halfway = entrant.blocking[7]!.position;
     const offChord =
       Math.abs(
         (to.x - from.x) * (from.z - halfway.z) -
           (from.x - halfway.x) * (to.z - from.z)
       ) / chord;
-    expect(offChord).toBeGreaterThan(0.5);
+    expect(offChord).toBeGreaterThan(1.4);
 
     // Constant ground speed: every chord is the same length and lands on the
     // same time step.
@@ -377,9 +378,9 @@ describe("film library", () => {
       );
     });
     for (const leg of legLengths) expect(leg).toBeCloseTo(legLengths[0]!, 6);
-    // Arc length over the four seconds eight beats buy, under the 2.6 ceiling.
+    // Arc length over the six seconds twelve beats buy, under the 2.6 ceiling.
     const arcLength = legLengths.reduce((sum, leg) => sum + leg, 0);
-    expect(arcLength / 4).toBeLessThan(2.6);
+    expect(arcLength / 6).toBeLessThan(2.6);
     expect(arcLength).toBeGreaterThan(chord);
 
     // The watcher spins nothing at all, beside two performers who do.
