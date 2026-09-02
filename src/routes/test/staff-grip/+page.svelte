@@ -35,6 +35,11 @@
     collisionDescriptions: string;
     audienceGripSeparationMm: number | null;
     depthGripSeparationMm: number | null;
+    /** Each grip's offset along the chest-lateral (audience depth) axis. */
+    blueGripDepthMm: number | null;
+    redGripDepthMm: number | null;
+    /** Half the shoulder span: the elbow line the grips must stay inside. */
+    shoulderHalfSpanMm: number | null;
     renderedStepNumber: number;
     renderedBeatProgress: number;
   }
@@ -100,6 +105,9 @@
     collisionDescriptions: "",
     audienceGripSeparationMm: null,
     depthGripSeparationMm: null,
+    blueGripDepthMm: null,
+    redGripDepthMm: null,
+    shoulderHalfSpanMm: null,
     renderedStepNumber: 0,
     renderedBeatProgress: 0,
   });
@@ -193,6 +201,13 @@
                 gripDiagnostics.authoredRedGrip.z
             ) * 1000
           : null,
+      blueGripDepthMm: gripDiagnostics.authoredBlueGrip
+        ? gripDiagnostics.authoredBlueGrip.z * 1000
+        : null,
+      redGripDepthMm: gripDiagnostics.authoredRedGrip
+        ? gripDiagnostics.authoredRedGrip.z * 1000
+        : null,
+      shoulderHalfSpanMm: (diagnostics.shoulderWidth / 2) * 1000,
       renderedStepNumber: gripDiagnostics.stepNumber,
       renderedBeatProgress: gripDiagnostics.beatProgress,
     };
@@ -288,6 +303,9 @@
     poseMetric.depthGripSeparationMm,
     3
   )}
+  data-blue-grip-depth-mm={formatMetric(poseMetric.blueGripDepthMm, 3)}
+  data-red-grip-depth-mm={formatMetric(poseMetric.redGripDepthMm, 3)}
+  data-shoulder-half-span-mm={formatMetric(poseMetric.shoulderHalfSpanMm, 3)}
   data-rendered-step-number={poseMetric.renderedStepNumber}
   data-rendered-beat-progress={formatMetric(poseMetric.renderedBeatProgress, 3)}
 >
@@ -344,6 +362,14 @@
     <span>
       <b>Head</b>
       {formatMetric(poseMetric.headDodgeDeg, 0)}°
+    </span>
+    <span>
+      <b>Grip depth</b>
+      {formatMetric(poseMetric.blueGripDepthMm, 0)} /
+      {formatMetric(poseMetric.redGripDepthMm, 0)} mm of ±{formatMetric(
+        poseMetric.shoulderHalfSpanMm,
+        0
+      )}
     </span>
     <span>
       <b>Hits</b>
