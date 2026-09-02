@@ -854,13 +854,20 @@ The sliver protection still holds: `card-stage-interrupt` and `gate1-card` at
 1920 report a minimum Card box of 705 × 1019 px with zero tiny or squashed
 frames, and `gate1-card` at 375 reports 336 × 280 px with zero tiny frames.
 
+The Card-playback pin tests that landed on `main` while this was in flight
+encoded the old 480 ms lifetime and a same-tick release; they now assert the
+extended lifetime and the settled-paint release, plus a new case proving an
+interrupting transition cancels the pending release rather than clearing its own
+pin.
+
 **Checks.** The orchestration contract test asserts the frozen size is gone, the
 sliver floor and its two guards are present, the extended pin lifetime and its
 cancellation are wired, and the harness carries the settle tail, the
 `card-performances` command, the sampled attribute, and the released-pin
 readout. Focused Vitest (`tests/config/vitest.config.ts`,
 `tests/unit/sequence-viewer` plus `viewer-shell-model` and
-`sequence-viewer-escape-ownership`): 29 files, 231 tests pass.
+`sequence-viewer-escape-ownership`): 29 files, 234 tests pass on the branch
+merged up to `main`, with `svelte-check` reporting 0 errors and 0 warnings.
 
 ## Gate 6 baseline · 2026-09-01
 
