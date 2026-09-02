@@ -130,7 +130,7 @@ covers the library.
 
 ### Gap 13: scene inheritance — R16, R17, R20, R21, R22, R24, R30, R32
 
-- [ ] `sceneSchema.extends: string` names an EARLIER scene id in the same
+- [x] `sceneSchema.extends: string` names an EARLIER scene id in the same
       film. The raw input of the child is deep-merged over the raw input of the
       parent before resolution: plain objects merge key by key, arrays replace
       wholesale, `null` on the child deletes the parent's key. `id` is always
@@ -138,48 +138,48 @@ covers the library.
       defaults to the parent's title. Chains are allowed (parent may itself
       extend). Rejections name the scene: unknown parent, forward or self
       reference.
-- [ ] Implement in `resolveFilmDirectorSpec` before `resolveScene` (or in a
+- [x] Implement in `resolveFilmDirectorSpec` before `resolveScene` (or in a
       new `expand-scene-inheritance.ts`), on the validated input; the resolved
       scene records `extends: parentId | null`.
-- [ ] Tests: callback scene equals its parent except camera; null deletes;
+- [x] Tests: callback scene equals its parent except camera; null deletes;
       arrays replace; error cases.
 
 ### Gap 14: seed sharing — R21
 
-- [ ] `sceneSchema.seedAs: string` (an earlier scene id). Every axis stream
+- [x] `sceneSchema.seedAs: string` (an earlier scene id). Every axis stream
       for the scene uses the named scene's id as its scene key, so a quoted
       scene with `pick` draws the same values. Rejections as for `extends`.
       `extends` does NOT imply `seedAs`; document why (a callback usually
       wants the same draws, so the matrix example shows both).
-- [ ] Tests: two scenes with `pick: "any"` character and `seedAs` resolve the
+- [x] Tests: two scenes with `pick: "any"` character and `seedAs` resolve the
       same cast; without it they differ for at least one axis.
 
 ### Gap 21: a cast of zero — R23
 
-- [ ] `castSchema.count` min 0 and `performanceSchema.performers` min 0 (an
+- [x] `castSchema.count` min 0 and `performanceSchema.performers` min 0 (an
       explicit empty array). `resolveScene` produces an empty cast; group
       framing targets the stage origin at the group's default height; stage
       extent is the origin. Adapter with zero directed performers idles the
       whole pool. The default when nothing is stated stays one performer.
-- [ ] Tests: resolve, sample and (contract-level) adapter path with zero
+- [x] Tests: resolve, sample and (contract-level) adapter path with zero
       performers; camera keyframes finite.
 
 ### Gap 22: bars — R18, R19
 
-- [ ] `performanceSchema.meter: { beatsPerBar: int 2..12 }` (default 4).
+- [x] `performanceSchema.meter: { beatsPerBar: int 2..12 }` (default 4).
       Everywhere `durationBeats`/`atBeats` is accepted, `durationBars`/`atBars`
       is accepted too and converts through the meter in
       `convertSceneBeatTimes`; the at-most-one-time-unit refine covers three
       units. Error text follows the existing beats wording.
-- [ ] Tests: 3/4 at 90 bpm, 8 bars = 16 s; mixing bars and beats rejected.
+- [x] Tests: 3/4 at 90 bpm, 8 bars = 16 s; mixing bars and beats rejected.
 
 ### Wave B close
 
-- [ ] Proving Grounds scenes: `callback` (extends + seedAs an earlier scene,
+- [x] Proving Grounds scenes: `callback` (extends + seedAs an earlier scene,
       camera from behind), `empty-stage` (count 0, 3 s), `waltz` (3/4, 4 bars).
-- [ ] Matrix rows; rejection rows for "environment change within a scene" and
+- [x] Matrix rows; rejection rows for "environment change within a scene" and
       "more than 24 scenes / 60 s scene" (already caps; state them).
-- [ ] Suite green, snapshot reviewed, pathspec commit.
+- [x] Suite green, snapshot reviewed, pathspec commit.
 
 ---
 
