@@ -526,6 +526,114 @@ only at the scheduled fire jam — sits on top of these.
 Depends on 2, and reads best after 4 exists to wander through. This sub-project
 is now large enough that it will decompose again when it is reached.
 
+## The fire circle, as Austen described it — ADDED 2026-09-02
+
+Asked what was wrong with the fire circle, Austen answered that it *"just looks
+completely wrong"* and then described what one actually is. This is the only
+first-hand account of this site in the project. Recorded close to verbatim,
+because almost none of it is inferable and several details contradict what is
+built.
+
+**Getting there.** The road runs straight through Middle Earth. At the top of
+the hill, just past the boundary between Middle Earth and the lower campground,
+the road veers uphill — steeply — up to a road and a series of houses. **You do
+not go straight through.** You veer left at the top of that hill and it opens
+onto a big grass field. *"We're going to have to figure that out"* — whether the
+left turn and the uphill-to-houses are the same veer or two different ones is
+ambiguous in the description and is a thing to resolve on the map, not by
+guessing.
+
+**The field.** Plain grass, and **most of the field is the fire circle.**
+
+**The circle itself** is demarcated by an **LED rope lying on the ground** —
+placed so nobody steps on it. **Safeties** sit at designated spots *just inside*
+the perimeter, and they sit facing out; sitting there is how they signal they are
+watching.
+
+**Getting in is a route, not a radius.** This is the part the current proximity
+observer cannot express:
+
+1. A line that sometimes runs around the edge of the field, leading to
+2. the **dip station** — sometimes with a queue immediately before it,
+3. then another queue leading around to
+4. **the archway** — a big arch that is *the* official entrance, the one point
+   where you are supposed to enter to spin,
+5. then you are in, and you spin,
+6. and you leave by one of **several designated exit points** around the
+   perimeter.
+
+**Outside the perimeter is where most people are.** Wagons full of props.
+Folding chairs. People's own electric unicycles. Standing, sitting, sitting
+cross-legged. Laid-out blankets. Inflatable couches. Everyone talking and
+interacting. Possibly a canopy at the edge where someone is storing props.
+
+**The stage.** On the left side of the field, near the fire circle but offset
+from it, and *"it's not immediately apparent that's where the showcase is going
+to happen."*
+
+**The showcase is a whole feature nobody has raised yet.** Austen: *"The
+showcase is a big part of a Flow Fest and is usually a Friday night or Saturday
+night or both kind of thing and surely should be part of the game."* Undesigned.
+
+**Other named sites for this field:** first aid tent, volunteer HQ, the stage,
+the fuel station. Volunteer HQ ties directly to the volunteer system in
+sub-project 5, and first aid and fuel/dip tie to the safety role.
+
+## Three corrections to what is already built
+
+Separate from the fire circle, and separate from the arrival arc:
+
+1. **The Middle Earth canopy is roughly a tenth of the size it should be.** What
+   is built is one canopy with makeshift lights inside. It should be *"like a
+   square circus tent — a massive canopy where lots of people can fit."* Austen
+   owes the actual placement.
+2. **Delete the hand-rolled LED sculpture in the Causeway.** Austen's words:
+   *"that hand rolled crappy LED sculpture that we put in Causeway"* — it is not
+   useful. Removing it, rather than improving it, is the instruction.
+3. **The performers belong inside the canopy**, not wherever they are now.
+
+And a domain constraint that applies to every performer in the sim: **if a
+performer is spinning poi, the move has to be poi-legal.** See
+`project_poi_legality` in memory — Poi Lab is planned rather than built, and
+poi is a restricted subset of TKA rather than an equal sibling of the static
+props (`.claude/rules/tka-domain.md`).
+
+## The map pass, and the tool for it — ADDED 2026-09-02
+
+Austen asked for another strict pass over the road maps, and offered the thing
+that actually unblocks it:
+
+> You want to instrument me up a page I can place the approximate location of
+> these items in, like a bird's eye view, and even give you information on which
+> way they face. Then I can create things such as first aid tent, volunteer HQ,
+> the stage, the fuel station. [...] If we could systematize that whole process
+> the sky's the limit in terms of what we could build as a representation of
+> reality.
+
+**That page mostly exists.** `/test/flow-fest-path-tracer` is a 2407-line
+workspace with three modes (`layout`, `paths`, `plan`), three interactions
+(`draw`, `place`, `pan`), an aerial background with `worldPointToImage` /
+`imagePointToWorld` transforms, localStorage drafts, validation, and a
+`save-plan` server endpoint that writes corrections back to disk. Per
+`never-hand-roll.md` the answer is to extend it, not to build a second placement
+tool.
+
+Two things it lacks for this job:
+
+- **Facing.** Every feature is a point or a polyline. Austen explicitly needs to
+  say which way a thing faces — the stage, the archway, each safety position,
+  each exit.
+- **The vocabulary.** Its editable features are `lower-road-loop`,
+  `tent-perimeter-band`, `car-camping-area`, `lower-loop-entrance`. Nothing for
+  the field, the circle, the LED rope, the archway, the dip station, the queues,
+  the exits, the stage, first aid, volunteer HQ, or the big canopy.
+
+Austen also raised walking Google Earth's street-level view to read building
+placement. Google's imagery stays a human reference — it is licensed against
+derivative works, so it informs where Austen puts a marker and never becomes a
+build source. What he places is authored data he is the authority for, which is
+a different and legitimate thing from tracing their imagery.
+
 ## Rules that bind this work
 
 - `.claude/rules/never-hand-roll.md` — the EUC is the existing ground-vehicle
