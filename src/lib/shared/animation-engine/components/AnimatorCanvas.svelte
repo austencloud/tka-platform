@@ -113,6 +113,8 @@ Last audit: 2025-12-27
     disableContextMenu = false,
     fillContainer = false,
     disassemblyLayout = "stacked",
+    disassemblyTarget = null,
+    onDisassemblyTargetChange = undefined,
     prewarmEffects = undefined,
     showNonRadialPoints = true,
     resizePaused = false,
@@ -203,7 +205,11 @@ Last audit: 2025-12-27
     fillContainer?: boolean;
     /** How the combined hero and two isolated canvases share their host while
      *  disassembled. Sidecar is designed for square, fill-mode embeds. */
-    disassemblyLayout?: "stacked" | "sidecar";
+    disassemblyLayout?: "stacked" | "sidecar" | "auto";
+    /** Controlled target for the built-in disassembly state machine. Unlike
+     *  externalToggleDisassemble, this keeps AnimatorCanvas as rendering owner. */
+    disassemblyTarget?: boolean | null;
+    onDisassemblyTargetChange?: (disassembled: boolean) => void;
     /** WebGL overlay effects (today: "fire") to warm at engine startup so the
      *  first switch never freezes. Forwarded to CanvasSurface → AnimationEngine. */
     prewarmEffects?: EffectType[];
@@ -313,6 +319,8 @@ Last audit: 2025-12-27
     | "disassembled"
     | "reassembling";
   let viewState = $state<ViewState>("assembled");
+  let autoLayoutCandidate = $state<"stacked" | "sidecar">("stacked");
+  let disassemblySessionLayout = $state<"stacked" | "sidecar">("stacked");
   let contentWrapperEl: HTMLDivElement | undefined = $state();
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   let longPressFired = false;
@@ -336,21 +344,70 @@ Last audit: 2025-12-27
   // settled "disassembled" state.
   const splitResizePaused = $derived(viewState !== "disassembled");
 
+  const resolvedDisassemblyLayout = $derived(
+    disassemblyLayout === "auto"
+      ? viewState === "assembled"
+        ? autoLayoutCandidate
+        : disassemblySessionLayout
+      : disassemblyLayout
+  );
+
+  function observeDisassemblyHost(node: HTMLElement) {
+    const update = () => {
+      const { width, height } = node.getBoundingClientRect();
+      if (width <= 0 || height <= 0) return;
+      autoLayoutCandidate = width >= height * 1.15 ? "sidecar" : "stacked";
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return {
+      destroy() {
+        observer.disconnect();
+      },
+    };
+  }
+
+  function beginDisassembly(): void {
+    if (viewState !== "assembled") return;
+    disassemblySessionLayout = autoLayoutCandidate;
+    engine?.pauseResize();
+    viewState = "disassembling";
+  }
+
+  function beginReassembly(): void {
+    if (viewState !== "disassembled") return;
+    engine?.pauseResize();
+    viewState = "reassembling";
+  }
+
   function toggleDisassemble() {
     if (viewState === "assembled") {
-      // Pause ResizeObserver so the CSS width transition doesn't clear the canvas buffer
-      engine?.pauseResize();
-      viewState = "disassembling";
-      // The split view mounts collapsed and fires onBothReady when its engines render.
+      beginDisassembly();
     } else if (viewState === "disassembled") {
-      // Pause ResizeObserver before CSS width transition back to full size
-      engine?.pauseResize();
-      // Collapse the split view (splitExpandRequested flips false); remove it when
-      // its collapse transition ends (onCollapseComplete).
-      viewState = "reassembling";
+      beginReassembly();
     }
     // Ignore during active transitions
   }
+
+  function requestDisassemblyToggle(): void {
+    if (externalToggleDisassemble) {
+      externalToggleDisassemble();
+      return;
+    }
+    if (disassemblyTarget !== null) {
+      onDisassemblyTargetChange?.(!disassemblyTarget);
+      return;
+    }
+    toggleDisassemble();
+  }
+
+  $effect(() => {
+    const target = disassemblyTarget;
+    if (target === null) return;
+    if (target && viewState === "assembled") beginDisassembly();
+    if (!target && viewState === "disassembled") beginReassembly();
+  });
 
   // The split view finished its expand (open) transition: settle into the
   // disassembled state and resume the hero engine's ResizeObserver so it catches
@@ -632,9 +689,10 @@ Last audit: 2025-12-27
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="animation-container"
+  use:observeDisassemblyHost
   data-focused={focused || undefined}
   data-fill={fillContainer || undefined}
-  data-disassembly-layout={disassemblyLayout}
+  data-disassembly-layout={resolvedDisassemblyLayout}
   data-glyph-frame={glyphFrame}
   data-no-progress={hideProgressBar || undefined}
   data-hide-header={hideHeader || undefined}
@@ -739,7 +797,7 @@ Last audit: 2025-12-27
         {gridVisible}
         {gridMode}
         {backgroundAlpha}
-        layout={disassemblyLayout}
+        layout={resolvedDisassemblyLayout}
         {letter}
         {stepData}
         {sequenceData}
@@ -839,8 +897,8 @@ Last audit: 2025-12-27
       {onSaveToLibrary}
       disassembled={externalToggleDisassemble
         ? externalDisassembled
-        : isDisassembledView}
-      onToggleDisassemble={externalToggleDisassemble ?? toggleDisassemble}
+        : (disassemblyTarget ?? isDisassembledView)}
+      onToggleDisassemble={requestDisassemblyToggle}
       captureEffectDiagnostics={() => engine?.captureEffectDiagnostics() ?? {}}
       {onToggle3DView}
       extraItems={extraContextMenuItems}

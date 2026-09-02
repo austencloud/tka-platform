@@ -16,19 +16,12 @@ import {
   type VtgMode,
 } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
 import type { ShapeMatrixAppSnapshot } from "$lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte";
-import type {
-  ShapeMatrixAxisTarget,
-  ShapeMatrixRelationshipDriver,
-} from "$lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte";
+import type { ShapeMatrixAxisTarget } from "$lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const MODES = new Set<VtgMode>(MODE_ORDER);
 const LABEL_MODES = new Set<MatrixLabelMode>(["turns", "ratios"]);
 const AXIS_TARGETS = new Set<ShapeMatrixAxisTarget>(["left", "both", "right"]);
-const RELATIONSHIP_DRIVERS = new Set<ShapeMatrixRelationshipDriver>([
-  "hands",
-  "props",
-]);
 const PROP_TYPES = new Set<PropType>(Object.values(PropType));
 const LEGACY_SIZE_TURNS = { small: 0, medium: 1, large: 2 } as const;
 
@@ -89,14 +82,7 @@ export function readShapeMatrixRouteState(
   const requestedAxis = (
     rawAxis === "blue" ? "left" : rawAxis === "red" ? "right" : rawAxis
   ) as ShapeMatrixAxisTarget | null;
-  const requestedDriver = params.get(
-    "driver"
-  ) as ShapeMatrixRelationshipDriver | null;
   const requestedProp = params.get("prop") as PropType | null;
-  const relationshipDriver =
-    requestedDriver && RELATIONSHIP_DRIVERS.has(requestedDriver)
-      ? requestedDriver
-      : "hands";
 
   return {
     level,
@@ -109,13 +95,11 @@ export function readShapeMatrixRouteState(
       requestedProp && PROP_TYPES.has(requestedProp)
         ? requestedProp
         : PropType.STAFF,
-    relationshipDriver,
     pair,
     mode:
       pair && requestedMode && MODES.has(requestedMode) ? requestedMode : null,
     propMode:
       pair &&
-      relationshipDriver === "props" &&
       leftTurn !== "fl" &&
       leftTurn === rightTurn &&
       requestedPropMode &&
@@ -139,7 +123,10 @@ export function writeShapeMatrixRouteState(
   url.searchParams.set("axis", state.activeAxis);
   url.searchParams.set("labels", state.labelMode);
   url.searchParams.set("prop", state.propType);
-  url.searchParams.set("driver", state.relationshipDriver);
+  // Older links used this parameter to switch between two different picker
+  // modes. The coordinated selector no longer has a driver, so new URLs remove
+  // it while `propMode` continues to restore the exact relationship edge.
+  url.searchParams.delete("driver");
 
   if (!state.pair) {
     url.searchParams.delete("left");

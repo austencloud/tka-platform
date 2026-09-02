@@ -1092,6 +1092,7 @@
                       sequence={ctx.effectiveSequence}
                       showInlineExportProgress={false}
                       showTempoControls={false}
+                      showPathShape={false}
                       onPropChange={(prop) =>
                         interactions.handlePropChange(prop, "video_export")}
                       onPlaybackToggle={() =>
