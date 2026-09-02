@@ -372,11 +372,11 @@ describe("landing shared-element contract", () => {
     expect(composer).toContain("error={constructLoadError}");
     expect(composer).toContain("error={tunnelLoadError}");
     expect(composer).toContain("error={viewerLoadError}");
-    expect(composer).toContain("error={shelfLoadError}");
+    expect(composer).toContain("error={galleryLoadError}");
     expect(composer).toContain("The step-by-step demonstration did not load.");
     expect(composer).toContain("The tunnel demonstration did not load.");
     expect(composer).toContain("The 3D demonstration did not load.");
-    expect(composer).toContain("The gallery shelf did not load.");
+    expect(composer).toContain("The community gallery did not load.");
     expect(generate).toContain("classifyComposerGenerationFailure(error)");
     expect(generate).toContain('result === "no-result"');
     expect(generate).toContain("The generator couldn't run. Try again.");
