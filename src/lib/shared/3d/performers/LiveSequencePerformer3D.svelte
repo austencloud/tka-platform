@@ -5,6 +5,7 @@
    */
   import { onDestroy, untrack } from "svelte";
   import {
+    cmToUnits,
     PerformerRig,
     Plane,
     PlaneMode,
@@ -24,6 +25,11 @@
   } from "$lib/shared/3d/state/character-instance-state.svelte";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
   import { planUpperBodyStanceForPropStates } from "$lib/shared/3d/collision/upper-body-stance-planner";
+  import {
+    fitStaffLengthForHug,
+    measurePerformerReach,
+    type PerformerReachMeasurements,
+  } from "$lib/shared/3d/domain/performer-reach-measurements";
   import { buildTipEffectMap } from "$lib/shared/animation-engine/domain/tip-effect-map";
   import EffectOrchestrator3D from "$lib/shared/3d/effects/EffectOrchestrator3D.svelte";
 
@@ -66,14 +72,39 @@
     },
     makeStandaloneDeps()
   );
+  // Measured off the rig's own skeleton the first frame the arm chains report
+  // real lengths. Held rather than re-derived per frame so the prop length and
+  // the hug lane stay stable while the arms move.
+  let reachMeasurements = $state<PerformerReachMeasurements | null>(null);
+  const staffFit = $derived(
+    reachMeasurements ? fitStaffLengthForHug(reachMeasurements) : null
+  );
+  // A body that cannot hold any supported staff keeps the global default
+  // rather than rendering a nonsense prop; the fit result says so explicitly.
+  const propLength = $derived(
+    staffFit?.fits ? cmToUnits(staffFit.recommendedStaffLengthCm) : undefined
+  );
   const upperBodyStance = $derived(
     planUpperBodyStanceForPropStates(
       PlaneMode.WALL,
       performerState.leftPropState,
-      performerState.rightPropState
+      performerState.rightPropState,
+      reachMeasurements
     )
   );
   let readyReported = false;
+
+  function captureReach(diagnostics: AvatarPoseDiagnostics): void {
+    if (reachMeasurements) return;
+    const measured = measurePerformerReach({
+      leftUpperArmM: diagnostics.leftUpperArmLength,
+      leftForearmM: diagnostics.leftForearmLength,
+      rightUpperArmM: diagnostics.rightUpperArmLength,
+      rightForearmM: diagnostics.rightForearmLength,
+      shoulderWidthM: diagnostics.shoulderWidth,
+    });
+    if (measured) reachMeasurements = measured;
+  }
 
   $effect(() => {
     const sequence = props.sequence;
@@ -129,6 +160,7 @@
   enableLocomotion={props.enableLocomotion ?? true}
   enableFootPlanting={props.enableFootPlanting ?? true}
   weldGrip={props.weldGrip ?? false}
+  {propLength}
   headDodge={true}
   stanceYaw={upperBodyStance.yawRad}
   spinePitchOffset={upperBodyStance.pitchRad}
@@ -137,7 +169,10 @@
   showEffects={props.showEffects ?? true}
   {tipEffectMap}
   isPlaying={performerState.isPlaying}
-  onCollisionEvents={props.onCollisionEvents}
+  onCollisionEvents={(events, diagnostics, gripDiagnostics) => {
+    captureReach(diagnostics);
+    props.onCollisionEvents?.(events, diagnostics, gripDiagnostics);
+  }}
   onAvatarSwapped={() => {
     if (readyReported) return;
     readyReported = true;
