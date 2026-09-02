@@ -59,7 +59,13 @@ function paint(
   );
 }
 
-/** Overlay one left-hand flower (rows) with one right-hand flower (columns). */
+/**
+ * Overlay one left-hand flower (rows) with one right-hand flower (columns).
+ * Painted at engine alignment: a tile is the detail hero's floor, and the
+ * live animation canvas behind it, shrunk to the tile. The shared-element
+ * morph between them is therefore a uniform scale and translate of one
+ * picture, never a crossfade between two fits.
+ */
 export function renderCell(
   left: MandalaPaths,
   right: MandalaPaths,
@@ -68,10 +74,10 @@ export function renderCell(
   options?: ShapeMatrixPaintOptions
 ): string {
   const merged: MandalaPaths = { left: left.left, right: right.right, purple: [] };
-  return paint(merged, "both", sizePx, tipDx, "extent", options);
+  return paint(merged, "both", sizePx, tipDx, "engine", options);
 }
 
-/** A single axis-header flower. */
+/** A single axis-header flower, at the same engine alignment as the cells. */
 export function renderHeader(
   paths: MandalaPaths,
   hand: "left" | "right",
@@ -79,7 +85,7 @@ export function renderHeader(
   tipDx: number,
   options?: ShapeMatrixPaintOptions
 ): string {
-  return paint(paths, hand, sizePx, tipDx, "extent", options);
+  return paint(paths, hand, sizePx, tipDx, "engine", options);
 }
 
 /**
