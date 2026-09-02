@@ -20,6 +20,15 @@ import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/t
 import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
+import {
+  saveFilmRecipe,
+  updateFilmRenderOptions,
+} from "$lib/features/scene-3d-collection/services/save-film-recipe";
+import type { Scene3DFilmRender } from "$lib/features/scene-3d-collection/domain/scene-3d-collection-types";
+import {
+  putRenderedFilm,
+  pruneRenderedFilms,
+} from "$lib/shared/video-export/services/rendered-film-store";
 import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
 import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
 import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
@@ -62,6 +71,60 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
   let recordingElapsed = $state(0);
   let recordingTimer: ReturnType<typeof setInterval> | null = null;
   let resolveRecording: (() => void) | null = null;
+
+  // Between Stop and the offline render, the person picks how good the render
+  // should be. The recording is already saved by then, so backing out here
+  // costs them nothing.
+  let pendingFilmRender = $state<{ durationSeconds: number } | null>(null);
+  let resolvePendingRender: ((render: boolean) => void) | null = null;
+  let lastFilmEntryId: string | null = null;
+
+  function handleConfirmFilmRender(): void {
+    resolvePendingRender?.(true);
+  }
+
+  function handleDiscardFilmRender(): void {
+    resolvePendingRender?.(false);
+  }
+
+  /**
+   * Put the film that just finished rendering into local retention, and drop
+   * the oldest ones once the cap is reached. Never throws: the export already
+   * succeeded, and the person is looking at the preview.
+   */
+  async function retainRenderedFilm(input: {
+    filmEntryId: string | null;
+    sequence: SequenceData | null;
+    render: Scene3DFilmRender;
+    durationSeconds: number;
+  }): Promise<void> {
+    try {
+      const url = sequenceModalExporter.state.previewBlobUrl;
+      if (!url) return;
+      const blob = await (await fetch(url)).blob();
+      const word = simplifyRepeatedWord(
+        input.sequence?.displayName ||
+          input.sequence?.intendedWord ||
+          input.sequence?.word ||
+          ""
+      );
+      await putRenderedFilm({
+        id: `film-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        filmEntryId: input.filmEntryId,
+        sequenceId: input.sequence?.id ?? null,
+        word,
+        blob,
+        mimeType: blob.type || "video/mp4",
+        byteSize: blob.size,
+        render: { ...input.render },
+        durationSeconds: input.durationSeconds,
+        createdAt: Date.now(),
+      });
+      await pruneRenderedFilms();
+    } catch (error) {
+      console.warn("[RenderedFilms] Could not keep the finished film:", error);
+    }
+  }
 
   function handleCanvasReady(canvas: HTMLCanvasElement | null) {
     animationCanvas = canvas;
@@ -462,23 +525,68 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       resolveRecording = null;
       if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
 
-      // ── Pass 2: Deterministic Offline Render ──
       const recordedDuration = cameraKeyframes.duration;
       if (recordedDuration <= 0) {
         showToast("Recording too short. Please try again.", "error");
         return false;
       }
 
+      // Save the recipe first: the scene, the camera path, and the render
+      // settings. From here on the performance survives even if the person
+      // backs out of rendering, or dismisses the finished video.
+      const recipeRender: Scene3DFilmRender = {
+        fps: opts.fps,
+        resolution: opts.resolution,
+        quality: opts.quality,
+        includeStartPosition: opts.includeStartPosition,
+        includeEndHold: opts.includeEndHold,
+      };
+      const filmEntry = await saveFilmRecipe({
+        viewer3DState,
+        sequence: effectiveSequence,
+        bpm: bpmLocal,
+        keyframes: cameraKeyframes.keyframes,
+        cameraMode: useOrbit ? "auto-orbit" : "free",
+        render: recipeRender,
+      });
+      lastFilmEntryId = filmEntry?.id ?? null;
+
+      // ── The render card: how good, or not at all ──
+      pendingFilmRender = { durationSeconds: recordedDuration };
+      const wantsRender = await new Promise<boolean>((resolve) => {
+        resolvePendingRender = resolve;
+      });
+      pendingFilmRender = null;
+      resolvePendingRender = null;
+      if (!wantsRender) {
+        showToast("Recording kept in your scenes. Render it any time.", "info");
+        return false;
+      }
+
+      // ── Pass 2: Deterministic Offline Render ──
+      // Read the options AFTER the card, so the preset just chosen is the one
+      // that renders.
+      const renderOpts = exportOptions.getVideoOptions();
+      if (lastFilmEntryId) {
+        void updateFilmRenderOptions(lastFilmEntryId, {
+          fps: renderOpts.fps,
+          resolution: renderOpts.resolution,
+          quality: renderOpts.quality,
+          includeStartPosition: renderOpts.includeStartPosition,
+          includeEndHold: renderOpts.includeEndHold,
+        });
+      }
+
       let exported3DOk = false;
       try {
         await sequenceModalExporter.export3DAnimation(
           {
-            fps: opts.fps,
+            fps: renderOpts.fps,
             loopCount: 1,
-            resolution: opts.resolution,
-            includeStartPosition: opts.includeStartPosition,
-            includeEndHold: opts.includeEndHold,
-            quality: opts.quality,
+            resolution: renderOpts.resolution,
+            includeStartPosition: renderOpts.includeStartPosition,
+            includeEndHold: renderOpts.includeEndHold,
+            quality: renderOpts.quality,
           },
           {
             webglCanvas,
@@ -500,6 +608,23 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         isRecording3D = false;
         recordingElapsed = 0;
         if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
+      }
+      // Keep the finished file on the device so dismissing the preview costs
+      // nothing. Fire and forget: retention is a convenience, and a storage
+      // failure must not read as a failed export.
+      if (exported3DOk) {
+        void retainRenderedFilm({
+          filmEntryId: lastFilmEntryId,
+          sequence: effectiveSequence,
+          render: {
+            fps: renderOpts.fps,
+            resolution: renderOpts.resolution,
+            quality: renderOpts.quality,
+            includeStartPosition: renderOpts.includeStartPosition,
+            includeEndHold: renderOpts.includeEndHold,
+          },
+          durationSeconds: recordedDuration,
+        });
       }
       // Auto-download on finish (focused tab) + toast/preview fallback.
       if (exported3DOk && autoDeliver) autoDeliverExportedVideo(effectiveSequence);
@@ -549,6 +674,9 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
   }
 
   function dispose() {
+    // A viewer torn down while the render card is up must not leave the export
+    // waiting forever on a choice nobody can make any more.
+    resolvePendingRender?.(false);
     sequenceModalExporter.dispose();
     if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
   }
@@ -563,6 +691,10 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     get countdownValue() { return countdownValue; },
     get isRecording3D() { return isRecording3D; },
     get recordingElapsed() { return recordingElapsed; },
+    get pendingFilmRender() { return pendingFilmRender; },
+    get lastFilmEntryId() { return lastFilmEntryId; },
+    handleConfirmFilmRender,
+    handleDiscardFilmRender,
     handleCanvasReady,
     handleCancelExport,
     handleRetryExport,

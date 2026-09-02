@@ -7,6 +7,7 @@ import {
   type SceneEnvironmentId,
 } from "$lib/shared/3d/environments/domain/scene-environment";
 import { normalizeLegacyScene3DSnapshot } from "$lib/shared/3d/state/legacy-viewer-3d-snapshots";
+import type { CameraKeyframe } from "$lib/shared/video-export/domain/camera-keyframe";
 
 /**
  * A reproducible snapshot of the 3D viewer configuration. Aggregates the four
@@ -81,6 +82,35 @@ export interface StoredPerformerSnapshot {
   settings?: StoredPerformerSettings;
 }
 
+
+/** How the camera was driven while the film was recorded. */
+export type FilmCameraMode = "free" | "auto-orbit";
+
+/** The render settings the film was first rendered with. Pass 2 is
+ *  deterministic, so these plus the keyframes reproduce the same film later. */
+export interface Scene3DFilmRender {
+  fps: number;
+  resolution: number;
+  quality: "standard" | "cinema";
+  includeStartPosition: boolean;
+  includeEndHold: boolean;
+}
+
+/** The recorded camera performance saved alongside a scene. Having this means
+ *  a recording is never lost when the rendered video is dismissed: the film can
+ *  be re-rendered at any resolution from the recipe. */
+export interface Scene3DFilm {
+  version: 1;
+  recordedAt: number;
+  durationSeconds: number;
+  cameraMode: FilmCameraMode;
+  keyframes: CameraKeyframe[];
+  render: Scene3DFilmRender;
+  /** Written by the Stop hook without the user asking, so it may be pruned
+   *  when newer recordings arrive. Naming the entry clears this. */
+  autoSaved: boolean;
+}
+
 export interface Collected3DScene {
   id: string;
   name: string;
@@ -95,6 +125,9 @@ export interface Collected3DScene {
    *  its library id. Optional: old entries simply lack them. */
   sourceWord?: string;
   sourceSequenceId?: string;
+  /** Present → this entry also carries a recorded camera performance that can
+   *  be re-rendered into a video. */
+  film?: Scene3DFilm;
 }
 
 // External-enum fields (camera vectors, planes, formation, backgroundType) are
@@ -177,6 +210,36 @@ export function getScene3DEnvironmentId(
   );
 }
 
+
+const CameraKeyframeSchema = z.object({
+  timestamp: z.number(),
+  position: z.tuple([z.number(), z.number(), z.number()]),
+  quaternion: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+  fov: z.number(),
+});
+
+export const Scene3DFilmSchema = z.object({
+  version: z.literal(1),
+  recordedAt: z.number(),
+  durationSeconds: z.number(),
+  cameraMode: z.enum(["free", "auto-orbit"]),
+  // A film with no camera samples cannot be rendered, so it is not a film.
+  keyframes: z.array(CameraKeyframeSchema).min(1),
+  render: z.object({
+    fps: z.number(),
+    resolution: z.number(),
+    quality: z.enum(["standard", "cinema"]),
+    includeStartPosition: z.boolean(),
+    includeEndHold: z.boolean(),
+  }),
+  autoSaved: z.boolean(),
+});
+
+/** Whether this saved scene can be re-rendered into a video. */
+export function scene3DHasFilm(scene: Collected3DScene): boolean {
+  return (scene.film?.keyframes.length ?? 0) > 0;
+}
+
 export const Collected3DSceneSchema = z.object({
   id: z.string().min(1),
   name: z.string(),
@@ -189,6 +252,7 @@ export const Collected3DSceneSchema = z.object({
   steps: z.array(StepDataSchema).optional(),
   sourceWord: z.string().optional(),
   sourceSequenceId: z.string().optional(),
+  film: Scene3DFilmSchema.optional(),
 });
 
 export const SCENE_3D_COLLECTION_STORAGE_KEY = "tka:scene-3d-collection";

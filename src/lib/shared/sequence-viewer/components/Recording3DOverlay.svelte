@@ -8,6 +8,8 @@
 -->
 <script lang="ts">
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
+  import RenderFilmCard from "./record-scene/RenderFilmCard.svelte";
+  import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   interface Props {
     countdownValue: number;
     isRecording: boolean;
@@ -17,6 +19,11 @@
     exportProgress: VideoExportProgress | null;
     isExporting: boolean;
     onCancelExport: () => void;
+    /** Non-null between Stop and the offline render: the person is choosing
+     *  how good the render should be, or backing out to record again. */
+    pendingRender: { durationSeconds: number } | null;
+    onConfirmRender: () => void;
+    onDiscardRender: () => void;
   }
 
   let {
@@ -27,7 +34,12 @@
     exportProgress,
     isExporting,
     onCancelExport,
+    pendingRender,
+    onConfirmRender,
+    onDiscardRender,
   }: Props = $props();
+
+  const exportOptions = getExportOptionsState();
 
   const progressPercent = $derived(
     exportProgress ? Math.round(exportProgress.progress * 100) : 0
@@ -68,6 +80,17 @@
     <button class="stop-btn" onclick={onStop} aria-label="Stop recording">
       <div class="stop-icon"></div>
     </button>
+  </div>
+{/if}
+
+{#if pendingRender && !isRecording}
+  <div class="overlay export-overlay">
+    <RenderFilmCard
+      durationSeconds={pendingRender.durationSeconds}
+      {exportOptions}
+      onRender={onConfirmRender}
+      onDiscard={onDiscardRender}
+    />
   </div>
 {/if}
 
