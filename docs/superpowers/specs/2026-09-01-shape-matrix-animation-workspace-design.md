@@ -160,10 +160,11 @@ Search terms: `ControlDock`, `AnimationPanel`, `playbackAllowed`,
 - Component container queries own recomposition. Ordinary control and type
   sizes remain stable at native 4K.
 
-## Proposed mobile continuity phase
+## Delegated mobile continuity phase
 
-This phase records Austen's 2026-09-01 follow-up and is not yet approved for
-implementation.
+This phase records Austen's 2026-09-01 follow-up. On 2026-09-02, Austen
+delegated its implementation to Fable and added a visible grid-hover
+requirement.
 
 The compact detail screen should expose independent left-hand and right-hand
 turn values without forcing a return to the matrix. The existing
@@ -200,6 +201,12 @@ native shared-element transition. Reparenting one live canvas would couple the
 grid, PanelGroup, readiness crossfade, and animation engine into a second
 rendering system. The proposed composition produces the continuous-object
 effect without creating a competing mandala owner.
+
+Pointer users also need a clear preview of which mandala they are about to
+choose. Strengthen the existing grid-cell hover and focus treatment within the
+cell's reserved bounds, and let the mandala artwork participate in the response
+without moving neighboring cells. Hover, keyboard focus, and selection must
+remain distinguishable; reduced motion should retain the non-motion cue.
 
 ## Approved release-boundary follow-up
 
