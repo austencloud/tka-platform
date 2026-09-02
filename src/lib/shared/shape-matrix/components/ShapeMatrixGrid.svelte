@@ -1,13 +1,17 @@
 <script lang="ts">
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
-  import { DURATION, STAGGER } from "$lib/shared/transitions/transitions";
   import type { ShapeMatrixData } from "../services/shape-matrix-flowers";
   import {
     flowerKey,
     flowerLabel,
     type Flower,
   } from "../domain/flower-signature";
-  import { renderCell, renderHeader } from "../services/shape-matrix-render";
+  import {
+    CLUB_ARTWORK_PAINTER,
+    cellArtworkSrc,
+    headerArtworkSrc,
+    type ShapeMatrixArtworkPainter,
+  } from "../services/shape-matrix-artwork";
+  import ShapeMatrixMandalaArt from "./ShapeMatrixMandalaArt.svelte";
 
   type CellVerdict = "legal" | "illegal" | "unsure";
 
@@ -23,14 +27,17 @@
     /** Optional externally-owned selection for restored/shared app state. */
     selectedPair?: { left: Flower; right: Flower } | null;
     /** Alternative cell/header painter (e.g. the poi trail painter). Defaults to the club-style painter. */
-    painter?: {
-      cell: typeof renderCell;
-      header: typeof renderHeader;
-    };
+    painter?: ShapeMatrixArtworkPainter;
     /** Per-cell verdict tint (poi-legality curation). Null/undefined = no tint. */
     overlayFor?: (left, right) => CellVerdict | null | undefined;
     /** Cells to de-emphasize (e.g. already-judged cells in a curation focus view). */
     dimFor?: (left, right) => boolean;
+    /**
+     * The selected tile owns the shared tile-to-hero `view-transition-name`
+     * while this grid is the visible endpoint. Hosts that show the hero at the
+     * same time (wide layouts) leave this off so the name is never doubled.
+     */
+    claimSelected?: boolean;
   }
   let {
     data,
@@ -39,12 +46,11 @@
     maxCellPx = 100,
     onselect,
     selectedPair,
-    painter,
+    painter = CLUB_ARTWORK_PAINTER,
     overlayFor,
     dimFor,
+    claimSelected = false,
   }: Props = $props();
-  const paintCell = painter?.cell ?? renderCell;
-  const paintHeader = painter?.header ?? renderHeader;
 
   // Measured viewport of the scroll container.
   let wrapW = $state(0);
@@ -61,42 +67,14 @@
     return Math.max(44, Math.min(maxCellPx, fit));
   });
 
-  // Cells and headers are cached as vector images. They can follow the grid
-  // from the 44px touch-target floor through the 320px 4K layout without
-  // stretching a small raster image or rebuilding geometry during resize.
-  const VECTOR_VIEWBOX_PX = 128;
-
-  const headerCache = new Map<string, string>();
-  function headerSrc(f: Flower, hand: "left" | "right"): string {
-    const k = `${data.propType}__${hand}__${flowerKey(f)}`;
-    let url = headerCache.get(k);
-    if (!url) {
-      url = paintHeader(
-        (hand === "left" ? data.left : data.right).get(flowerKey(f))!,
-        hand,
-        VECTOR_VIEWBOX_PX,
-        data.clubTipDx
-      );
-      headerCache.set(k, url);
-    }
-    return url;
-  }
-
-  const cellCache = new Map<string, string>();
-  function cellSrc(b: Flower, r: Flower): string {
-    const k = `${data.propType}__${flowerKey(b)}__${flowerKey(r)}`;
-    let url = cellCache.get(k);
-    if (!url) {
-      url = paintCell(
-        data.left.get(flowerKey(b))!,
-        data.right.get(flowerKey(r))!,
-        VECTOR_VIEWBOX_PX,
-        data.clubTipDx
-      );
-      cellCache.set(k, url);
-    }
-    return url;
-  }
+  // Cells and headers are cached vector images owned by shape-matrix-artwork,
+  // the same source the detail hero renders. They follow the grid from the
+  // 44px touch-target floor through the 320px 4K layout without stretching a
+  // raster or rebuilding geometry during resize.
+  const headerSrc = (f: Flower, hand: "left" | "right") =>
+    headerArtworkSrc(data, f, hand, painter);
+  const cellSrc = (b: Flower, r: Flower) =>
+    cellArtworkSrc(data, b, r, painter);
 
   let observed = $state(new Set<string>());
   function watch(node: HTMLElement, key: string) {
@@ -144,14 +122,10 @@
           {#each colAxis as rf, colIndex (colIndex)}
             {@const source = headerSrc(rf, "right")}
             <th class="colhead" scope="col" title={flowerLabel(rf)}>
-              <Crossfade
-                key={source}
-                fill
-                duration={DURATION.emphasis}
-                delay={STAGGER.micro}
-              >
-                <img src={source} alt={`right ${flowerLabel(rf)}`} />
-              </Crossfade>
+              <ShapeMatrixMandalaArt
+                src={source}
+                alt={`right ${flowerLabel(rf)}`}
+              />
             </th>
           {/each}
         </tr>
@@ -161,14 +135,10 @@
           {@const rowSource = headerSrc(bf, "left")}
           <tr>
             <th class="rowhead" scope="row" title={flowerLabel(bf)}>
-              <Crossfade
-                key={rowSource}
-                fill
-                duration={DURATION.emphasis}
-                delay={STAGGER.micro}
-              >
-                <img src={rowSource} alt={`left ${flowerLabel(bf)}`} />
-              </Crossfade>
+              <ShapeMatrixMandalaArt
+                src={rowSource}
+                alt={`left ${flowerLabel(bf)}`}
+              />
             </th>
             {#each colAxis as rf, colIndex (colIndex)}
               {@const key = `${flowerKey(bf)}__${flowerKey(rf)}`}
@@ -193,14 +163,12 @@
                 >
                   {#if observed.has(slotKey)}
                     {@const source = cellSrc(bf, rf)}
-                    <Crossfade
-                      key={source}
-                      fill
-                      duration={DURATION.emphasis}
-                      delay={STAGGER.micro}
-                    >
-                      <img src={source} alt="" />
-                    </Crossfade>
+                    <span class="artwork">
+                      <ShapeMatrixMandalaArt
+                        src={source}
+                        claim={claimSelected && selectedKey === key}
+                      />
+                    </span>
                   {/if}
                 </button>
               </td>
@@ -271,11 +239,10 @@
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-card-bg, #111922);
   }
-  .colhead img,
-  .rowhead img {
+  .colhead :global(.mandala-art),
+  .rowhead :global(.mandala-art) {
     width: var(--cell);
     height: var(--cell);
-    display: block;
     aspect-ratio: 1;
   }
 
@@ -294,11 +261,34 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     background: transparent;
     cursor: pointer;
-    transition: background var(--duration-fast, 150ms)
+    /* Hover and focus answer inside the cell's own box: a background wash and
+       an inset ring, so the grid never shifts. Named properties only. */
+    transition:
+      background var(--duration-fast, 150ms) var(--transition-easing, ease),
+      box-shadow var(--duration-fast, 150ms) var(--transition-easing, ease);
+  }
+  .artwork {
+    position: absolute;
+    inset: 0;
+    display: block;
+    transform-origin: 50% 50%;
+    transition: transform var(--duration-fast, 150ms)
       var(--transition-easing, ease);
   }
-  .cell:hover {
+  .cell:hover,
+  .cell:focus-visible {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    box-shadow: inset 0 0 0 2px
+      color-mix(in srgb, var(--theme-accent, #f59e0b) 55%, transparent);
+    z-index: 2;
+  }
+  /* The artwork itself answers the pointer, but only where hovering is a
+     deliberate act. Touch pointers get the ring and wash alone. */
+  @media (hover: hover) and (pointer: fine) {
+    .cell:hover .artwork,
+    .cell:focus-visible .artwork {
+      transform: scale(1.08);
+    }
   }
   .cell.sel {
     outline: none;
@@ -320,11 +310,6 @@
     outline-offset: -2px;
     z-index: 2;
     position: relative;
-  }
-  .cell img {
-    width: 100%;
-    height: 100%;
-    display: block;
   }
 
   /* Verdict tints: inset ring + wash, so the cell box never changes size. */
@@ -360,8 +345,14 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cell {
+    .cell,
+    .artwork {
       transition: none;
+    }
+    /* The ring and wash still answer; only the artwork motion is dropped. */
+    .cell:hover .artwork,
+    .cell:focus-visible .artwork {
+      transform: none;
     }
   }
 </style>

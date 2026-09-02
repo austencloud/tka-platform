@@ -322,4 +322,64 @@ describe("shape matrix app state", () => {
       );
     }
   });
+  it("keeps a compact visitor on the detail pane for a stay-on-detail turn edit", () => {
+    const axis = buildFlowerAxis([0]).filter(
+      (flower) => flower.grid === "diamond"
+    );
+    for (let variant = 0; variant < 4; variant += 1) {
+      const left = axis[variant];
+      const right = axis[3 - variant];
+      if (!left || !right) throw new Error("Expected four semantic variants");
+      const { state } = createState(true);
+      state.setLevel(3);
+      state.selectPair({ left, right });
+      expect(state.activeView).toBe("detail");
+
+      state.setActiveAxis("both");
+      for (const turn of ["fl", 0, 1.5, 3] as const) {
+        state.setTurn(turn, { stayOnDetail: true });
+        expect(state.activeView).toBe("detail");
+        expect(state.leftTurn).toBe(turn);
+        expect(state.rightTurn).toBe(turn);
+        expect(semanticVariant(state.selectedPair!.left)).toBe(variant);
+        expect(semanticVariant(state.selectedPair!.right)).toBe(3 - variant);
+      }
+
+      state.setActiveAxis("left");
+      state.setTurn(0.5, { stayOnDetail: true });
+      expect(state.activeView).toBe("detail");
+      expect(state.leftTurn).toBe(0.5);
+      expect(state.rightTurn).toBe(3);
+      expect(semanticVariant(state.selectedPair!.left)).toBe(variant);
+      expect(semanticVariant(state.selectedPair!.right)).toBe(3 - variant);
+
+      // The matrix-side editor keeps its existing navigation.
+      state.setTurn(1);
+      expect(state.activeView).toBe("matrix");
+    }
+  });
+
+  it("records a compact selection without navigating when the host asks", () => {
+    const { state } = createState(true);
+    const [left, right] = buildFlowerAxis();
+    if (!left || !right) throw new Error("Shape Matrix axis is empty");
+
+    state.selectPair({ left, right }, { navigate: false });
+
+    expect(state.selectedPair).toEqual({ left, right });
+    expect(state.activeView).toBe("matrix");
+    expect(state.compactFocusRequest).toBeNull();
+
+    state.showDetail();
+    expect(state.activeView).toBe("detail");
+  });
+
+  it("tracks the mandala handoff window", () => {
+    const { state } = createState(true);
+    expect(state.mandalaHandoff).toBe(false);
+    state.beginMandalaHandoff();
+    expect(state.mandalaHandoff).toBe(true);
+    state.endMandalaHandoff();
+    expect(state.mandalaHandoff).toBe(false);
+  });
 });

@@ -32,6 +32,25 @@ export interface ShapeMatrixCompactFocusRequest {
 }
 export type ShapeMatrixAxisTarget = "left" | "both" | "right";
 
+export interface ShapeMatrixSelectPairOptions {
+  /**
+   * False records the selection without moving a compact layout to the
+   * detail pane. The host then navigates itself (through the shared-element
+   * morph), which needs the clicked tile to be the selection BEFORE the
+   * view flips so the morph starts from that tile.
+   */
+  navigate?: boolean;
+}
+
+export interface ShapeMatrixSetTurnOptions {
+  /**
+   * Keep the compact layout on the detail pane after the edit. The matrix
+   * ribbon returns to the matrix (existing navigation); the detail pane's own
+   * turn tray stays put so the animator restages under the user's eyes.
+   */
+  stayOnDetail?: boolean;
+}
+
 export interface ShapeMatrixAppSnapshot {
   level: TurnLevel;
   leftTurn: TurnValue;
@@ -157,6 +176,7 @@ export function createShapeMatrixAppState(
   let compactFocusRequest = $state<ShapeMatrixCompactFocusRequest | null>(null);
   let aboutOpen = $state(false);
   let propPickerOpen = $state(false);
+  let mandalaHandoff = $state(false);
 
   const availableTurns = $derived(turnValuesForLevel(level));
   const filters = $derived(matrixFiltersForTurns(leftTurn, rightTurn));
@@ -214,7 +234,10 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
-  function setTurn(nextTurn: TurnValue): void {
+  function setTurn(
+    nextTurn: TurnValue,
+    options: ShapeMatrixSetTurnOptions = {}
+  ): void {
     if (!availableTurns.includes(nextTurn)) return;
     if (selectedPair) {
       rememberedVariants = {
@@ -238,7 +261,7 @@ export function createShapeMatrixAppState(
     }
     leftTurn = nextLeftTurn;
     rightTurn = nextRightTurn;
-    if (compact) activeView = "matrix";
+    if (compact && !options.stayOnDetail) activeView = "matrix";
     syncState();
   }
 
@@ -293,7 +316,10 @@ export function createShapeMatrixAppState(
       : null;
   }
 
-  function selectPair(pair: { left: Flower; right: Flower }): void {
+  function selectPair(
+    pair: { left: Flower; right: Flower },
+    options: ShapeMatrixSelectPairOptions = {}
+  ): void {
     selectedPair = pair;
     rememberedVariants = {
       left: semanticVariant(pair.left),
@@ -301,7 +327,7 @@ export function createShapeMatrixAppState(
     };
     selectedMode ??= MODE_ORDER[0] ?? null;
     if (!supportsTimedPropRelationship(pair)) selectedPropMode = null;
-    if (compact) {
+    if (compact && options.navigate !== false) {
       activeView = "detail";
       requestCompactFocus("detail");
     }
@@ -354,6 +380,13 @@ export function createShapeMatrixAppState(
   }
   function closePropPicker(): void {
     propPickerOpen = false;
+  }
+  /** A tile-to-hero shared-element transition is capturing or animating. */
+  function beginMandalaHandoff(): void {
+    mandalaHandoff = true;
+  }
+  function endMandalaHandoff(): void {
+    mandalaHandoff = false;
   }
 
   function syncState(): void {
@@ -428,6 +461,9 @@ export function createShapeMatrixAppState(
     get propPickerOpen() {
       return propPickerOpen;
     },
+    get mandalaHandoff() {
+      return mandalaHandoff;
+    },
     get rowAxis() {
       return rowAxis;
     },
@@ -451,6 +487,8 @@ export function createShapeMatrixAppState(
     closeAbout,
     openPropPicker,
     closePropPicker,
+    beginMandalaHandoff,
+    endMandalaHandoff,
   };
 }
 

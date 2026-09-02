@@ -86,6 +86,13 @@
     propType?: PropType;
     onproptypechange?: (propType: PropType) => void;
     onopenproppicker?: () => void;
+    /**
+     * Shared tile-to-hero transition seam. `claim` makes the cold floor the
+     * owner of the shared view-transition name (the host's compact layout is
+     * showing this pane); `handoff` forces the floor visible while a
+     * shared-element transition captures its snapshot.
+     */
+    mandalaTransition?: { claim: boolean; handoff: boolean };
   }
   let {
     pair,
@@ -99,6 +106,7 @@
     propType = PropType.STAFF,
     onproptypechange,
     onopenproppicker,
+    mandalaTransition = { claim: false, handoff: false },
   }: Props = $props();
 
   const animationState = getShapeMatrixAnimationContext();
@@ -1077,6 +1085,8 @@
             clubTipDx={data.clubTipDx}
             opacity={visibleSource ? 0 : 1}
             glowColor={captionRealization?.element.accentColor}
+            claim={mandalaTransition.claim}
+            handoff={mandalaTransition.handoff}
           />
           <DualSourceCrossfade
             active={visibleSource}

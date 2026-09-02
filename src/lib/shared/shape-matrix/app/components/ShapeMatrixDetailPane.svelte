@@ -85,6 +85,10 @@
         propType={state.propType}
         onproptypechange={(propType) => void state.setPropType(propType)}
         onopenproppicker={state.openPropPicker}
+        mandalaTransition={{
+          claim: state.compact && state.activeView === "detail",
+          handoff: state.mandalaHandoff,
+        }}
       />
     {:else}
       <p class="status">Building the matrix…</p>
