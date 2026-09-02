@@ -113,19 +113,20 @@ export function postNormalizeAnimationDefaults(): AnimationSettings {
 }
 
 function captureSettings(
-  snapshot: AnimationSettings
+  snapshot: AnimationSettings,
+  full: boolean
 ): AnimationSettingsPatch | null {
   const base = postNormalizeAnimationDefaults();
   const patch: AnimationSettingsPatch = {};
 
-  if (snapshot.bpm !== base.bpm) patch.bpm = snapshot.bpm;
-  if (snapshot.shouldLoop !== base.shouldLoop) {
+  if (full || snapshot.bpm !== base.bpm) patch.bpm = snapshot.bpm;
+  if (full || snapshot.shouldLoop !== base.shouldLoop) {
     patch.shouldLoop = snapshot.shouldLoop;
   }
 
   const trail: Partial<TrailSettings> = {};
   for (const key of Object.keys(base.trail) as (keyof TrailSettings)[]) {
-    if (!deepEqual(snapshot.trail[key], base.trail[key])) {
+    if (full || !deepEqual(snapshot.trail[key], base.trail[key])) {
       (trail as Record<string, unknown>)[key] = snapshot.trail[key];
     }
   }
@@ -135,7 +136,8 @@ function captureSettings(
 }
 
 function captureVisibility(
-  snapshot: AnimationVisibilitySettings
+  snapshot: AnimationVisibilitySettings,
+  full: boolean
 ): Partial<AnimationVisibilitySettings> | null {
   const base = postNormalizeVisibilityDefaults();
   const live = normalizedVisibility(snapshot);
@@ -144,12 +146,13 @@ function captureVisibility(
   for (const key of Object.keys(base) as (keyof AnimationVisibilitySettings)[]) {
     // The mirror pair is one quantity, handled below: both fields or neither.
     if (key === "effortPreset" || key === "tipEffortMap") continue;
-    if (!deepEqual(live[key], base[key])) {
+    if (full || !deepEqual(live[key], base[key])) {
       (patch as Record<string, unknown>)[key] = live[key];
     }
   }
 
   if (
+    full ||
     live.effortPreset !== base.effortPreset ||
     !deepEqual(live.tipEffortMap, base.tipEffortMap)
   ) {
@@ -160,9 +163,17 @@ function captureVisibility(
   return Object.keys(patch).length > 0 ? patch : null;
 }
 
-export function captureAnSlice(stores: AnSliceStores): AnSlicePayload | null {
-  const settings = captureSettings(stores.settings.snapshot());
-  const visibility = captureVisibility(stores.visibility.snapshot());
+/**
+ * `full` emits every settings and visibility key (Share/Copy Link); the
+ * default diff form elides what matches the post-normalize baseline.
+ */
+export function captureAnSlice(
+  stores: AnSliceStores,
+  options: { full?: boolean } = {}
+): AnSlicePayload | null {
+  const full = options.full === true;
+  const settings = captureSettings(stores.settings.snapshot(), full);
+  const visibility = captureVisibility(stores.visibility.snapshot(), full);
 
   const payload: AnSlicePayload = {};
   if (settings) payload.settings = settings;

@@ -542,14 +542,17 @@
   // (never cached), because it is the LIVE per-session baseline `propType`
   // diffs against — see `ps-slice.ts`, "Diff baseline: per-session live
   // value, not a fixed constant".
-  const capturePs = () =>
-    capturePsSlice({
-      propType: selectedPropType,
-      defaultPropType: settingsService.settings.leftPropType ?? PropType.STAFF,
-      audioMode,
-      audioModeTouched,
-      notationMirrored,
-    });
+  const capturePs = (options: { full?: boolean } = {}) =>
+    capturePsSlice(
+      {
+        propType: selectedPropType,
+        defaultPropType: settingsService.settings.leftPropType ?? PropType.STAFF,
+        audioMode,
+        audioModeTouched,
+        notationMirrored,
+      },
+      options
+    );
 
   if (viewerUrlSession) {
     const unregisterPsSlice = viewerUrlSession.registerSlice("ps", capturePs);
