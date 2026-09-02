@@ -10,6 +10,9 @@ import { resolve as resolvePath } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { resolveStepChange } from "../../../src/routes/test/film-director/_lib/director-step-changes";
+import { resolveHeldStep } from "../../../src/routes/test/film-director/_lib/director-step-holds";
+
 import { FILM_LIBRARY } from "../../../src/routes/test/film-director/_films/index";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
 import { sampleFilmDirector } from "../../../src/routes/test/film-director/_lib/sample-film-director";
@@ -389,8 +392,47 @@ describe("film library", () => {
         .sequence
     ).toEqual({ source: "none" });
 
+    const perStep = resolved.scenes.find((s) => s.id === "per-step-changes")!;
+    expect(perStep.durationSeconds).toBe(8);
+    const [changer, holder] = perStep.performance.performers;
+    expect(changer!.stepEffects).toEqual([
+      { step: 0, effect: "none" },
+      { step: 4, effect: "trails" },
+      { step: 8, effect: "fire" },
+    ]);
+    expect(changer!.stepEfforts).toEqual([{ step: 8, effort: "punch" }]);
+    expect(changer!.holds).toEqual([]);
+    expect(holder!.holds).toEqual([{ fromStep: 4, steps: 4 }]);
+    expect(holder!.stepEffects).toEqual([]);
+
+    // The lookup the frame loop performs: base value before the first entry,
+    // then each entry holding until the next supersedes it.
+    const effectAt = (step: number) =>
+      resolveStepChange(
+        changer!.stepEffects.map((entry) => ({
+          step: entry.step,
+          value: entry.effect,
+        })),
+        step,
+        changer!.effect
+      );
+    expect(effectAt(3)).toBe("none");
+    expect(effectAt(4)).toBe("trails");
+    expect(effectAt(7)).toBe("trails");
+    expect(effectAt(8)).toBe("fire");
+
+    // The hold, read the way the scene component reads it: pinned through its
+    // window, then four steps behind the shared clock for good.
+    const holdAt = (step: number) =>
+      resolveHeldStep(step, 0, holder!.beatOffset, holder!.holds, 0);
+    expect(holdAt(3)).toEqual({ step: 3, progress: 0 });
+    expect(holdAt(4)).toEqual({ step: 4, progress: 0 });
+    expect(holdAt(7)).toEqual({ step: 4, progress: 0 });
+    expect(holdAt(8)).toEqual({ step: 4, progress: 0 });
+    expect(holdAt(12)).toEqual({ step: 8, progress: 0 });
+
     // Every scene that says "cut" cuts: no dissolve window anywhere.
-    for (const scene of [onBeat, tracking, shots, derived, edgesOfStage]) {
+    for (const scene of [onBeat, tracking, shots, derived, edgesOfStage, perStep]) {
       expect(scene.transition).toEqual({ kind: "cut", durationSeconds: 0 });
     }
   });

@@ -47,19 +47,26 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  *
  * Gap 7, the edges of the stage. Before this wave a walk was a straight line
  * between two marks, and a performer who was meant to enter had nowhere to
- * enter from. Scene 7 opens performer 3 five meters off the right of the
- * frame — legal all along, because nothing clamps a position and the ground
+ * enter from. Scene 7 opens performer 3 eight meters out, past the edge of a
+ * medium shot — legal all along, because nothing clamps a position and the ground
  * grows to include it — and walks them in along an arc that bows to their
  * left, compiled into chords whose speed is measured along the curve rather
  * than across the chord. A third performer stands and watches with no
  * sequence at all.
+ *
+ * Gap 2, changes partway through a scene. Before this wave a performer carried
+ * one effect and one effort for a whole scene, and every performer counted the
+ * same clock: to change either, a director had to cut to a new scene. Scene 8
+ * states `stepEffects` and `stepEfforts` on one performer and `holds` on
+ * another. Nothing about the scene changes at those counts except what that
+ * one performer carries, and what the held performer's prop is doing.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
   version: 5,
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
-    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all.",
+    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all. An eighth scene changes one performer's effect and effort partway through while another's prop stops for four counts.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
   // The grammar only guarantees distinctness PER axis; three blues and three
@@ -374,6 +381,44 @@ export const provingGroundsFilm: FilmDirectorInput = {
         // the frame from the first beat and make "off camera" a lie.
         subject: { kind: "performer", performerId: "performer-2" },
         shotSize: "medium",
+        angle: "eye",
+        position: "front",
+        moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "per-step-changes",
+      title: "Per-Step Changes",
+      intent:
+        "Gap 2: two things change partway through one scene. Performer 1 starts bare, picks up trails at step 4, and catches fire at step 8, switching to a punched effort at the same count. Performer 2 states no changes at all, but holds: at step 4 their prop stops for four counts while performer 1 keeps going, and afterwards they carry on from where they froze, four steps behind the clock.",
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "cosmic" },
+      performance: {
+        bpm: 120,
+        formation: "side-by-side",
+        cast: {
+          count: 2,
+          performers: [
+            {
+              id: "performer-1",
+              stepEffects: [
+                { step: 0, effect: "none" },
+                { step: 4, effect: "trails" },
+                { step: 8, effect: "fire" },
+              ],
+              stepEfforts: [{ step: 8, effort: "punch" }],
+            },
+            {
+              id: "performer-2",
+              holds: [{ fromStep: 4, steps: 4 }],
+            },
+          ],
+        },
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "wide",
         angle: "eye",
         position: "front",
         moves: [{ move: "hold" }],

@@ -44,6 +44,8 @@ export const FILM_DIRECTOR_DIRECTIVE_AXES = [
   "leftPlane",
   "rightPlane",
   "stepPlane",
+  "stepEffect",
+  "stepEffort",
 ] as const;
 
 const seedSchema = z
@@ -260,6 +262,40 @@ const stepPlaneEntrySchema = z
       z.enum(["left", "right"])
     ),
     plane: directiveSchema(planeSchema),
+  })
+  .strict();
+
+// Per-step effect and effort are scene-scope directives for the same reason
+// stepPlanes is: the value is pinned to one (performer, step) pair, so
+// distinct has no cast to spread across and sameAs has no matching pair to
+// copy from. Unlike a plane there is no hand — an effect and an effort are
+// carried by the whole performer.
+const stepEffectEntrySchema = z
+  .object({
+    step: z.number().int().min(0),
+    effect: directiveSchema(effectIdSchema),
+  })
+  .strict();
+
+const stepEffortEntrySchema = z
+  .object({
+    step: z.number().int().min(0),
+    effort: directiveSchema(effortIdSchema),
+  })
+  .strict();
+
+/**
+ * Time stops for one performer's prop phrase. Literal only: a hold is a
+ * statement about this performer's clock, and there is no catalog of holds to
+ * draw one from. `fromStep` is where the phrase freezes; `steps` is how long
+ * it stays frozen, in the same counts the rest of the cast keeps dancing.
+ * Overlap is checked at resolve time, where the scene and performer are known
+ * and the rejection can name them.
+ */
+const holdSchema = z
+  .object({
+    fromStep: z.number().int().min(0),
+    steps: z.number().int().min(1, { error: "A hold lasts at least one step." }),
   })
   .strict();
 
@@ -676,6 +712,9 @@ const performerSchema = z
     leftPlane: directiveSchema(planeSchema).optional(),
     rightPlane: directiveSchema(planeSchema).optional(),
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
+    stepEffects: z.array(stepEffectEntrySchema).optional(),
+    stepEfforts: z.array(stepEffortEntrySchema).optional(),
+    holds: z.array(holdSchema).max(16).optional(),
     ...performerEffectConfigKeys,
   })
   .strict()
@@ -693,6 +732,9 @@ const castDefaultsSchema = z
     leftPlane: directiveSchema(planeSchema).optional(),
     rightPlane: directiveSchema(planeSchema).optional(),
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
+    stepEffects: z.array(stepEffectEntrySchema).optional(),
+    stepEfforts: z.array(stepEffortEntrySchema).optional(),
+    holds: z.array(holdSchema).max(16).optional(),
     ...performerEffectConfigKeys,
   })
   .strict()
@@ -1009,6 +1051,21 @@ export interface ResolvedDirectorStepPlane {
   plane: Plane;
 }
 
+export interface ResolvedDirectorStepEffect {
+  step: number;
+  effect: EffectType;
+}
+
+export interface ResolvedDirectorStepEffort {
+  step: number;
+  effort: EffortId;
+}
+
+export interface ResolvedDirectorHold {
+  fromStep: number;
+  steps: number;
+}
+
 export interface ResolvedDirectorPerformer {
   id: string;
   name: string;
@@ -1028,6 +1085,9 @@ export interface ResolvedDirectorPerformer {
   leftPlane: Plane;
   rightPlane: Plane;
   stepPlanes: ResolvedDirectorStepPlane[];
+  stepEffects: ResolvedDirectorStepEffect[];
+  stepEfforts: ResolvedDirectorStepEffort[];
+  holds: ResolvedDirectorHold[];
 }
 
 export interface ResolvedDirectorCameraKeyframe {

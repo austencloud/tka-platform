@@ -113,7 +113,10 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "fan-left",
@@ -176,7 +179,10 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "fan-right",
@@ -239,7 +245,10 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "back-left",
@@ -302,7 +311,10 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "back-right",
@@ -365,7 +377,10 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -641,7 +656,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "wheel",
             "rightPlane": "wheel",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -684,7 +702,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "left-wing",
             "rightPlane": "left-wing",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -727,7 +748,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "right-shield",
             "rightPlane": "backward-ramp",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-4",
@@ -770,7 +794,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "floor",
             "rightPlane": "right-wing",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -953,7 +980,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "floor",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -996,7 +1026,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "right-shield",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -1039,7 +1072,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "right-wing",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-4",
@@ -1082,7 +1118,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "left-wing",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-5",
@@ -1125,7 +1164,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "forward-ramp",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -1363,7 +1405,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
                 "hand": "right",
                 "plane": "backward-ramp"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -1417,7 +1462,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
                 "hand": "right",
                 "plane": "right-shield"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -1471,7 +1519,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
                 "hand": "right",
                 "plane": "left-wing"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-4",
@@ -1525,7 +1576,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
                 "hand": "right",
                 "plane": "right-wing"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-5",
@@ -1579,7 +1633,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
                 "hand": "right",
                 "plane": "forward-ramp"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-6",
@@ -1633,7 +1690,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
                 "hand": "right",
                 "plane": "right-shield"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -1904,7 +1964,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "left-shield",
             "rightPlane": "left-wing",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -1947,7 +2010,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "backward-ramp",
             "rightPlane": "right-wing",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -1990,7 +2056,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "left-wing",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-4",
@@ -2033,7 +2102,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "forward-ramp",
             "rightPlane": "wheel",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-5",
@@ -2076,7 +2148,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "floor",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-6",
@@ -2119,7 +2194,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "right-shield",
             "rightPlane": "right-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-7",
@@ -2162,7 +2240,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "right-wing",
             "rightPlane": "left-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-8",
@@ -2205,7 +2286,10 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "staffLengthCm": null,
             "leftPlane": "wheel",
             "rightPlane": "backward-ramp",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -2594,7 +2678,10 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             "staffLengthCm": 150,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -2802,7 +2889,10 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             "staffLengthCm": 150,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "apprentice",
@@ -2879,7 +2969,10 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             "staffLengthCm": 120,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -3114,7 +3207,10 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
                 "hand": "right",
                 "plane": "wheel"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "master",
@@ -3191,7 +3287,10 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             "staffLengthCm": 150,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -3405,7 +3504,10 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             "staffLengthCm": 120,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "master",
@@ -3452,7 +3554,10 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             "staffLengthCm": 150,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -3692,7 +3797,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -3883,7 +3991,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "far",
@@ -3926,7 +4037,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -4249,7 +4363,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "wheel-in-b",
@@ -4384,7 +4501,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "wheel-in-c",
@@ -4519,7 +4639,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "wheel-out-a",
@@ -4654,7 +4777,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "wheel-out-b",
@@ -4789,7 +4915,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "wheel-out-c",
@@ -4924,7 +5053,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -5551,7 +5683,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": 140,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "hey-2",
@@ -5715,7 +5850,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": 140,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "hey-3",
@@ -5878,7 +6016,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": 140,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "hey-4",
@@ -6041,7 +6182,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": 140,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -6462,7 +6606,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -6517,7 +6664,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -6572,7 +6722,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-4",
@@ -6627,7 +6780,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-5",
@@ -6682,7 +6838,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-6",
@@ -6737,7 +6896,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-7",
@@ -6792,7 +6954,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-8",
@@ -6847,7 +7012,10 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -7169,7 +7337,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "wheel",
             "rightPlane": "wheel",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -7212,7 +7383,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "wheel",
             "rightPlane": "wheel",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -7255,7 +7429,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "wheel",
             "rightPlane": "wheel",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-4",
@@ -7298,7 +7475,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "wheel",
             "rightPlane": "wheel",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-5",
@@ -7341,7 +7521,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "wheel",
             "rightPlane": "wheel",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-6",
@@ -7384,7 +7567,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "wheel",
             "rightPlane": "wheel",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-7",
@@ -7427,7 +7613,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "wheel",
             "rightPlane": "wheel",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-8",
@@ -7470,7 +7659,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "wheel",
             "rightPlane": "wheel",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -7735,7 +7927,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "left-wing",
             "rightPlane": "left-wing",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -7778,7 +7973,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "backward-ramp",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -7821,7 +8019,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "forward-ramp",
             "rightPlane": "forward-ramp",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-4",
@@ -7864,7 +8065,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "right-wing",
             "rightPlane": "right-wing",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-5",
@@ -7907,7 +8111,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "left-shield",
             "rightPlane": "right-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-6",
@@ -7950,7 +8157,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "left-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-7",
@@ -7993,7 +8203,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "wheel",
             "rightPlane": "floor",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-8",
@@ -8036,7 +8249,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "floor",
             "rightPlane": "backward-ramp",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -8290,7 +8506,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
                 "hand": "right",
                 "plane": "floor"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -8354,7 +8573,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
                 "hand": "right",
                 "plane": "left-shield"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -8418,7 +8640,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
                 "hand": "right",
                 "plane": "right-shield"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-4",
@@ -8482,7 +8707,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
                 "hand": "right",
                 "plane": "left-shield"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-5",
@@ -8546,7 +8774,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
                 "hand": "right",
                 "plane": "wheel"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-6",
@@ -8610,7 +8841,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
                 "hand": "right",
                 "plane": "left-shield"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-7",
@@ -8674,7 +8908,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
                 "hand": "right",
                 "plane": "left-shield"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-8",
@@ -8738,7 +8975,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
                 "hand": "right",
                 "plane": "backward-ramp"
               }
-            ]
+            ],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -8958,7 +9198,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "left-shield",
             "rightPlane": "left-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -9001,7 +9244,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "left-shield",
             "rightPlane": "left-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -9044,7 +9290,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "left-shield",
             "rightPlane": "left-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-4",
@@ -9087,7 +9336,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "left-shield",
             "rightPlane": "left-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-5",
@@ -9130,7 +9382,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "right-shield",
             "rightPlane": "right-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-6",
@@ -9173,7 +9428,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "right-shield",
             "rightPlane": "right-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-7",
@@ -9216,7 +9474,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "right-shield",
             "rightPlane": "right-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-8",
@@ -9259,7 +9520,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "staffLengthCm": null,
             "leftPlane": "right-shield",
             "rightPlane": "right-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -9430,7 +9694,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
   "version": 5,
   "id": "proving-grounds-r1",
   "title": "Proving Grounds",
-  "brief": "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all.",
+  "brief": "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all. An eighth scene changes one performer's effect and effort partway through while another's prop stops for four counts.",
   "format": {
     "width": 1920,
     "height": 1080,
@@ -9522,7 +9786,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wheel",
             "rightPlane": "right-wing",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -9565,7 +9832,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "floor",
             "rightPlane": "left-wing",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -9608,7 +9878,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "backward-ramp",
             "rightPlane": "right-shield",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -9763,7 +10036,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -9816,7 +10092,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -9979,7 +10258,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -10022,7 +10304,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -10216,7 +10501,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -10269,7 +10557,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -10420,7 +10711,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -10463,7 +10757,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -10670,7 +10967,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -10723,7 +11023,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -10771,7 +11074,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -10926,7 +11232,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -10969,7 +11278,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -11162,7 +11474,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -11304,9 +11619,224 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           }
         ]
       }
+    },
+    {
+      "id": "per-step-changes",
+      "title": "Per-Step Changes",
+      "intent": "Gap 2: two things change partway through one scene. Performer 1 starts bare, picks up trails at step 4, and catches fire at step 8, switching to a punched effort at the same count. Performer 2 states no changes at all, but holds: at step 4 their prop stops for four counts while performer 1 keeps going, and afterwards they carry on from where they froze, four steps behind the clock.",
+      "startSeconds": 64,
+      "durationSeconds": 8,
+      "transition": {
+        "kind": "cut",
+        "durationSeconds": 0
+      },
+      "location": {
+        "environmentId": "cosmic",
+        "showStage": false,
+        "showAudience": false,
+        "sceneFeatures": {
+          "environment": true,
+          "stage": false,
+          "audience": false,
+          "campfire": false,
+          "tent": false
+        },
+        "visiblePlanes": []
+      },
+      "performance": {
+        "bpm": 120,
+        "sequence": {
+          "source": "demo",
+          "loop": true
+        },
+        "formation": "side-by-side",
+        "performers": [
+          {
+            "id": "performer-1",
+            "name": "Performer 1",
+            "characterId": "x-bot",
+            "prop": "staff",
+            "effect": "none",
+            "effort": "linear",
+            "sequence": {
+              "source": "demo"
+            },
+            "position": {
+              "x": -0.9,
+              "z": 0
+            },
+            "facingAngle": 3.141593,
+            "blocking": [
+              {
+                "atSeconds": 0,
+                "position": {
+                  "x": -0.9,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 8,
+                "position": {
+                  "x": -0.9,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              }
+            ],
+            "beatOffset": 0,
+            "staffLengthCm": null,
+            "leftPlane": "wall",
+            "rightPlane": "wall",
+            "stepPlanes": [],
+            "stepEffects": [
+              {
+                "step": 0,
+                "effect": "none"
+              },
+              {
+                "step": 4,
+                "effect": "trails"
+              },
+              {
+                "step": 8,
+                "effect": "fire"
+              }
+            ],
+            "stepEfforts": [
+              {
+                "step": 8,
+                "effort": "punch"
+              }
+            ],
+            "holds": []
+          },
+          {
+            "id": "performer-2",
+            "name": "Performer 2",
+            "characterId": "y-bot",
+            "prop": "staff",
+            "effect": "none",
+            "effort": "linear",
+            "sequence": {
+              "source": "demo"
+            },
+            "position": {
+              "x": 0.9,
+              "z": 0
+            },
+            "facingAngle": 3.141593,
+            "blocking": [
+              {
+                "atSeconds": 0,
+                "position": {
+                  "x": 0.9,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 8,
+                "position": {
+                  "x": 0.9,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              }
+            ],
+            "beatOffset": 0,
+            "staffLengthCm": null,
+            "leftPlane": "wall",
+            "rightPlane": "wall",
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": [
+              {
+                "fromStep": 4,
+                "steps": 4
+              }
+            ]
+          }
+        ],
+        "stageExtent": [
+          {
+            "x": -0.9,
+            "z": 0
+          },
+          {
+            "x": -0.9,
+            "z": 0
+          },
+          {
+            "x": -0.9,
+            "z": 0
+          },
+          {
+            "x": 0.9,
+            "z": 0
+          },
+          {
+            "x": 0.9,
+            "z": 0
+          },
+          {
+            "x": 0.9,
+            "z": 0
+          }
+        ]
+      },
+      "effectPresets": {},
+      "effectOverrides": {},
+      "camera": {
+        "preset": "custom",
+        "substitutedFor": null,
+        "keyframes": [
+          {
+            "atSeconds": 0,
+            "position": [
+              0,
+              0.852639,
+              -4.532137
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          },
+          {
+            "atSeconds": 8,
+            "position": [
+              0,
+              0.852639,
+              -4.532137
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          }
+        ]
+      }
     }
   ],
-  "durationSeconds": 64
+  "durationSeconds": 72
 }"
 `;
 
@@ -11398,7 +11928,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "ember-2",
@@ -11441,7 +11974,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "ember-3",
@@ -11484,7 +12020,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "ember-4",
@@ -11527,7 +12066,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "ember-5",
@@ -11570,7 +12112,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "ember-6",
@@ -11613,7 +12158,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "ember-7",
@@ -11656,7 +12204,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "ember-8",
@@ -11699,7 +12250,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -12017,7 +12571,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "left-support",
@@ -12060,7 +12617,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "right-support",
@@ -12103,7 +12663,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -12266,7 +12829,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "ocean-2",
@@ -12309,7 +12875,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "ocean-3",
@@ -12352,7 +12921,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "ocean-4",
@@ -12395,7 +12967,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -12564,7 +13139,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "canon-2",
@@ -12607,7 +13185,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "canon-3",
@@ -12650,7 +13231,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "canon-4",
@@ -12693,7 +13277,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "canon-5",
@@ -12736,7 +13323,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "canon-6",
@@ -12779,7 +13369,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "canon-7",
@@ -12822,7 +13415,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "canon-8",
@@ -12865,7 +13461,10 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -13119,7 +13718,10 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "fan-left",
@@ -13162,7 +13764,10 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "fan-right",
@@ -13205,7 +13810,10 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "buugeng-left",
@@ -13248,7 +13856,10 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "buugeng-right",
@@ -13291,7 +13902,10 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -13527,7 +14141,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -13570,7 +14187,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -13613,7 +14233,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-4",
@@ -13656,7 +14279,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-5",
@@ -13699,7 +14325,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -13928,7 +14557,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -13971,7 +14603,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -14014,7 +14649,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-4",
@@ -14057,7 +14695,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-5",
@@ -14100,7 +14741,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-6",
@@ -14143,7 +14787,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-7",
@@ -14186,7 +14833,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-8",
@@ -14229,7 +14879,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -14478,7 +15131,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": 110,
             "leftPlane": "wheel",
             "rightPlane": "floor",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -14521,7 +15177,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": 150,
             "leftPlane": "wheel",
             "rightPlane": "floor",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
@@ -14666,7 +15325,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-2",
@@ -14709,7 +15371,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-3",
@@ -14752,7 +15417,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-4",
@@ -14795,7 +15463,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-5",
@@ -14838,7 +15509,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           },
           {
             "id": "performer-6",
@@ -14881,7 +15555,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "staffLengthCm": null,
             "leftPlane": "wall",
             "rightPlane": "wall",
-            "stepPlanes": []
+            "stepPlanes": [],
+            "stepEffects": [],
+            "stepEfforts": [],
+            "holds": []
           }
         ],
         "stageExtent": [
