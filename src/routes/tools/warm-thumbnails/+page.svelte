@@ -318,7 +318,6 @@
                     label="Lean"
                     mode="action"
                     size="sm"
-                    icon="fa-wand-magic-sparkles"
                     ariaLabel="Reset to the lean preset"
                     onclick={selectStaffAndFan}
                   />
@@ -595,6 +594,7 @@
      provides: the saved background behind a theme-derived wash. */
   .warm-surface {
     position: relative;
+    display: flex;
     min-height: 100vh;
     min-height: 100dvh;
     color: var(--theme-text, #ffffff);
@@ -620,7 +620,11 @@
     position: relative;
     z-index: 2;
     width: min(100%, var(--shell-w, 1440px));
-    margin-inline: auto;
+    /* Auto margins on a flex child centre the tool in a canvas taller than it
+       needs, and collapse to zero once the content overflows — so a 4K screen
+       gets a composed page instead of a block stranded in the top corner, and
+       a phone still scrolls from the top. */
+    margin: auto;
     display: flex;
     flex-direction: column;
     gap: clamp(16px, 2vw, 28px);
