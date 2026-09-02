@@ -162,6 +162,8 @@
 
   // Sequence loading state
   let sequence = $state<SequenceData | null>(null);
+  /** The route id, when it resolved as a short code. Share reuses it. */
+  let resolvedShortCode = $state<string | null>(null);
   let isLoading = $state(true);
   let loadError = $state<string | null>(null);
   let handoffData = $state<SequenceRouteHandoff | null>(null);
@@ -490,6 +492,7 @@
   async function loadSequenceFromId(id: string) {
     isLoading = true;
     loadError = null;
+    resolvedShortCode = null;
 
     try {
       if (isInlineEncoded(id)) {
@@ -509,6 +512,7 @@
 
       const shortCodeManager = getShortCodeManager();
       let resolvedSequence = await shortCodeManager.resolveShortCode(id);
+      if (resolvedSequence) resolvedShortCode = id;
 
       if (!resolvedSequence) {
         resolvedSequence = await loadByIdentifier(id);
@@ -623,6 +627,7 @@
     onUrlParamChange={updateUrlParam}
     onBpmChange={scanOriginCode ? handleScanBpmChange : undefined}
     onGatedDownload={scanOriginCode ? resumeGatedScanExport : undefined}
+    shortCode={resolvedShortCode}
   >
     {#snippet children(ctx)}
       <main

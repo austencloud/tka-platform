@@ -150,19 +150,15 @@ n, right s). Name one, or give a {left, right} pair.` Locations accept `n`,
 
 ## Camera orbit direction convention
 
-`orbit` moves take `direction: "cw" | "ccw"`. The sign convention follows the
-azimuth math in `camera-language.ts` (see the comment above the `orbit`
-branch in `resolveDirectorCameraTrack`): increasing azimuth rotates +z toward
-+x, which is clockwise viewed from above, so `cw` increases the angle and
-`ccw` decreases it. The felt on-screen direction has not been visually
-confirmed against this convention yet — if Austen reads a `cw` orbit as
-turning the wrong way on screen, the fix is flipping the sign in that one
-branch, not the schema.
-
-`/test/film-director?film=proving` now ends with two scenes, `orbit-clockwise`
-and `orbit-counterclockwise`, identical except for the sign, staged so the
-direction of travel reads at a glance. The convention stays unconfirmed until
-Austen says which one he would call clockwise (added 2026-09-02).
+`orbit` moves take `direction: "cw" | "ccw"`. The convention is the FELT one,
+confirmed by Austen on 2026-09-02 against Proving Grounds scenes 9 and 10:
+a `cw` orbit that starts from the front ends on the performers' screen-left
+end of the line, and `ccw` ends on the screen-right end. In the azimuth math
+of `camera-language.ts` (`resolveDirectorCameraTrack`, `orbit` branch) that
+means `cw` DECREASES the angle and `ccw` increases it, the opposite of the
+"clockwise viewed from above" reading the code originally shipped with. The
+two Proving Grounds scenes stay in the film as the standing reference for
+this convention.
 
 ## Camera roll direction convention
 

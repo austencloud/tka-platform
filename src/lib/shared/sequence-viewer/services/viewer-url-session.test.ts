@@ -77,4 +77,55 @@ describe("ViewerUrlSession", () => {
     vi.advanceTimersByTime(1000);
     expect(writeParams).not.toHaveBeenCalled();
   });
+
+  describe("full snapshot", () => {
+    it("passes { full: true } to live captures and prefers them over fallbacks", () => {
+      const session = createViewerUrlSession(new URLSearchParams(), {
+        writeParams: vi.fn(),
+      });
+      const live = vi.fn((o: { full: boolean }) => ({ mode: o.full ? "full" : "diff" }));
+      const fallback = vi.fn(() => ({ mode: "fallback" }));
+      session.registerSlice("vw", live);
+      session.registerFullFallback("vw", fallback);
+      expect(session.captureNow({ full: true })).toEqual({ vw: { mode: "full" } });
+      expect(session.captureNow()).toEqual({ vw: { mode: "diff" } });
+      expect(fallback).not.toHaveBeenCalled();
+    });
+
+    it("fallback outranks the seed pass-through only in full mode", () => {
+      const session = createViewerUrlSession(new URLSearchParams({ fx: "fire" }), {
+        writeParams: vi.fn(),
+      });
+      session.registerFullFallback("fx", () => ({ active: "fire", tuning: { fire: {} } }));
+      // Address bar (diff): the unmounted seed passes through verbatim.
+      expect(session.captureNow()).toEqual({ fx: { active: "fire" } });
+      // Share (full): the fallback expands it.
+      expect(session.captureNow({ full: true })).toEqual({
+        fx: { active: "fire", tuning: { fire: {} } },
+      });
+    });
+
+    it("unregistering a fallback restores pass-through; a null fallback clears the slice", () => {
+      const session = createViewerUrlSession(new URLSearchParams({ fx: "fire" }), {
+        writeParams: vi.fn(),
+      });
+      const off = session.registerFullFallback("fx", () => null);
+      expect(session.captureNow({ full: true })).toEqual({});
+      off();
+      expect(session.captureNow({ full: true })).toEqual({ fx: { active: "fire" } });
+    });
+
+    it("captureNowAsParams({ full: true }) encodes the full snapshot", () => {
+      const session = createViewerUrlSession(new URLSearchParams(), {
+        writeParams: vi.fn(),
+      });
+      session.registerSlice("vw", (o) =>
+        o.full ? { mode: "split", split: { leftPane: "animation", rightPane: "card" } } : null
+      );
+      expect(session.captureNowAsParams().set).toEqual({});
+      const full = session.captureNowAsParams({ full: true });
+      expect(full.set.pane).toBe("split");
+      expect(full.set.split).toBe("animation,card");
+    });
+  });
 });

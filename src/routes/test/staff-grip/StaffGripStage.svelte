@@ -22,6 +22,8 @@
     id: string;
     phase: number;
     sequence: SequenceData;
+    /** Catalog character to pose; defaults to the local intake rig. */
+    characterId?: CharacterId;
     onCollisionEvents?: (
       events: CollisionEvent[],
       diagnostics: AvatarPoseDiagnostics,
@@ -29,7 +31,8 @@
     ) => void;
   }
 
-  let { id, phase, sequence, onCollisionEvents }: Props = $props();
+  let { id, phase, sequence, characterId, onCollisionEvents }: Props =
+    $props();
 
   const INTAKE_CHARACTER_ID = "intake-current" as AvatarId;
   const INTAKE_CHARACTER: AvatarDefinition = {
@@ -68,7 +71,7 @@
   {id}
   position={{ x: 0, y: 0, z: 0 }}
   facingAngle={0}
-  characterId={INTAKE_CHARACTER_ID as CharacterId}
+  characterId={characterId ?? (INTAKE_CHARACTER_ID as CharacterId)}
   propType={PropType.STAFF}
   {sequence}
   effectId="led"

@@ -166,4 +166,25 @@ describe("ex slice", () => {
     expect(store.snapshot()).toEqual(before);
     expect(captureExSlice(store)).toEqual(ownSlice);
   });
+
+  describe("full snapshot", () => {
+    it("emits every key of all three sub-stores at defaults, and round-trips", () => {
+      const store = createExportOptionsState();
+      const full = captureExSlice(store, { full: true });
+      expect(full).not.toBeNull();
+      expect(Object.keys(full!.video!).sort()).toEqual(
+        Object.keys(DEFAULT_VIDEO_OPTIONS).sort()
+      );
+      expect(Object.keys(full!.image!).sort()).toEqual(
+        Object.keys(DEFAULT_IMAGE_OPTIONS).sort()
+      );
+      const splitKeys = Object.keys(DEFAULT_SPLIT_OPTIONS).filter((k) => k !== "quality");
+      expect(Object.keys(full!.split!).sort()).toEqual(splitKeys.sort());
+
+      const next = createExportOptionsState();
+      next.replaceAll(seedFromExSlice(full!));
+      expect(captureExSlice(next, { full: true })).toEqual(full);
+      expect(captureExSlice(next)).toBeNull();
+    });
+  });
 });

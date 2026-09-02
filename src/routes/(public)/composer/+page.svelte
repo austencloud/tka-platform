@@ -15,6 +15,7 @@
   import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
+  import ComposerBackgroundCycle from "./_components/ComposerBackgroundCycle.svelte";
   import "$lib/shared/landing/styles/editorial-measure.css";
 
   const TITLE = "Flow Arts Composer | Free Flow Arts Software for Choreography";
@@ -98,7 +99,6 @@
   let constructActive = $state(false);
   let outputsActive = $state(false);
   let shelfActive = $state(false);
-  let composed = $state(false);
   let webglChecked = $state(false);
   let webglAvailable = $state(false);
 
@@ -113,7 +113,6 @@
 
   function carryVisitorSequence(next: SequenceData): void {
     carriedSequence = next;
-    composed = true;
   }
 
   function activateConstruct(node: HTMLElement) {
@@ -162,9 +161,16 @@
 </Seo>
 
 {#snippet tunnelPlaceholder()}
+  <!-- Same two-column band the tunnel renders into (stage left, controls
+       right; stacked under 60rem), so the LazyMount swap cannot shift layout. -->
   <div class="tunnel-placeholder" aria-hidden="true">
     <div class="placeholder-square"></div>
-    <div class="placeholder-control"></div>
+    <div class="placeholder-band-controls">
+      <div class="placeholder-line placeholder-line-title"></div>
+      <div class="placeholder-line"></div>
+      <div class="placeholder-control"></div>
+      <div class="placeholder-control"></div>
+    </div>
   </div>
 {/snippet}
 
@@ -211,18 +217,20 @@
   </div>
 {/snippet}
 
-{#snippet shelfPlaceholder()}
-  <div class="shelf-placeholder" aria-hidden="true">
-    {#each Array.from({ length: 10 }, (_, i) => i) as i (i)}
+{#snippet galleryPlaceholder()}
+  <!-- Same bounded frame ComposerGalleryDemo owns, so the swap cannot move
+       the footer. Keep the height in step with its .gallery-frame. -->
+  <div class="gallery-placeholder" aria-hidden="true">
+    {#each Array.from({ length: 12 }, (_, i) => i) as i (i)}
       <div class="placeholder-card"></div>
     {/each}
   </div>
 {/snippet}
 
-{#snippet shelfLoadError(_error: unknown, retry: () => void)}
-  <div class="demo-load-error" role="alert">
-    <p>The gallery shelf did not load.</p>
-    <button type="button" onclick={retry}>Try the shelf again</button>
+{#snippet galleryLoadError(_error: unknown, retry: () => void)}
+  <div class="demo-load-error gallery-error" role="alert">
+    <p>The community gallery did not load.</p>
+    <button type="button" onclick={retry}>Try the gallery again</button>
   </div>
 {/snippet}
 
@@ -268,6 +276,9 @@
         cornerToggle={true}
         loadPriority="immediate"
       />
+      <!-- The page background is the app's own. Cycling it here is the one
+           place the page shows that the whole interface retunes to it. -->
+      <ComposerBackgroundCycle />
     </div>
   </section>
 
@@ -313,39 +324,33 @@
     aria-labelledby="changing-title"
     use:activateOutputs
   >
-    <!-- The tunnel is a square, so it rides beside the heading instead of
-         leaving a rail of empty space there and forcing the 3D viewer to share
-         a row it is too wide for. The viewer then gets the full band below. -->
-    <div class="changing-head">
-      <div class="changing-intro">
-        <h2 id="changing-title">See what you made.</h2>
-        <p>
-          The sequence above carries into the tunnel and the 3D player below.
-          Its notation comes with it.
-        </p>
-      </div>
+    <div class="changing-intro">
+      <h2 id="changing-title">See what you made.</h2>
+      <p>
+        The sequence above carries into the tunnel and the 3D player below.
+        Its notation comes with it.
+      </p>
+    </div>
 
-      <figure class="tunnel-output">
-        <div class="product-frame square-frame">
-          {#key carriedSequence.id}
-            <LazyMount
-              loader={() => import("./_components/ComposerTunnelDemo.svelte")}
-              active={outputsActive}
-              props={{ sequence: carriedSequence }}
-              error={tunnelLoadError}
-              debugName="composer tunnel"
-            >
-              {#snippet placeholder()}
-                {@render tunnelPlaceholder()}
-              {/snippet}
-            </LazyMount>
-          {/key}
-        </div>
-        <figcaption>
-          <strong>Tunnel</strong>
-          <span>The same movement, repeated around the ring.</span>
-        </figcaption>
-      </figure>
+    <!-- The tunnel gets its own full-width band: the square stage on the left,
+         the performer count and arrangement controls on the right. The 3D
+         viewer takes the next band. -->
+    <div class="tunnel-band">
+      <div class="product-frame band-frame">
+        {#key carriedSequence.id}
+          <LazyMount
+            loader={() => import("./_components/ComposerTunnelDemo.svelte")}
+            active={outputsActive}
+            props={{ sequence: carriedSequence, layout: "band" }}
+            error={tunnelLoadError}
+            debugName="composer tunnel"
+          >
+            {#snippet placeholder()}
+              {@render tunnelPlaceholder()}
+            {/snippet}
+          </LazyMount>
+        {/key}
+      </div>
     </div>
 
     <div class="viewer-output">
@@ -383,7 +388,9 @@
       <h2 id="keeping-title">Keep the sequence you made.</h2>
       <div class="keeping-lede">
         <p>
-          Your sequence stays first. The rest are public sequences to study.
+          Guests keep three sequences on this device. A full account keeps a
+          cloud library and collections. The gallery below is everyone's public
+          work, with the same filters the app uses.
         </p>
         <div class="keeping-actions">
           <a href="/browse" class="primary-action">Browse the Gallery</a>
@@ -393,14 +400,14 @@
 
     <div class="keeping-shelf">
       <LazyMount
-        loader={() => import("./_components/ComposerGalleryShelf.svelte")}
+        loader={() => import("./_components/ComposerGalleryDemo.svelte")}
         active={shelfActive}
-        props={{ sequence: carriedSequence, composed }}
-        error={shelfLoadError}
-        debugName="composer gallery shelf"
+        props={{}}
+        error={galleryLoadError}
+        debugName="composer gallery"
       >
         {#snippet placeholder()}
-          {@render shelfPlaceholder()}
+          {@render galleryPlaceholder()}
         {/snippet}
       </LazyMount>
     </div>
@@ -699,28 +706,24 @@
     padding: clamp(2.75rem, 4vw, 4rem) 0 clamp(3rem, 5vw, 5rem);
   }
 
-  /* The Tunnel stays a square, so its column sets the row height. Keep that
-     column deliberately narrower than the explanation, then cap both tracks
-     together on ultrawide screens so the pair reads as one composition. */
-  .changing-head {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(22rem, 0.72fr);
-    gap: clamp(1.75rem, 5vw, 5rem);
-    align-items: center;
-    margin-bottom: clamp(2.5rem, 4vw, 4rem);
-  }
-
   .changing-intro {
     min-width: 0;
   }
 
-  .tunnel-output {
-    width: 100%;
+  .tunnel-band {
+    min-width: 0;
+    margin-top: clamp(2rem, 3.5vw, 3.5rem);
   }
 
-  figure {
-    min-width: 0;
-    margin: 0;
+  /* The frame hugs the stage-plus-controls composition instead of spanning a
+     wide shell with dark margins on both sides of it. */
+  .band-frame {
+    max-width: min(100%, 92rem);
+    margin-inline: auto;
+  }
+
+  .viewer-output {
+    margin-top: clamp(2rem, 3.5vw, 3.5rem);
   }
 
   .product-frame {
@@ -730,25 +733,6 @@
     border-radius: clamp(1rem, 1.5vw, 1.5rem);
     background: var(--theme-panel-bg, oklch(0.13 0.025 270 / 0.94));
     box-shadow: 0 1.5rem 4rem oklch(0.04 0.03 270 / 0.3);
-  }
-
-  figcaption {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.95rem 0.35rem 0;
-  }
-
-  figcaption strong {
-    color: oklch(0.9 0.06 278);
-    font-size: var(--font-size-min, 0.875rem);
-  }
-
-  figcaption span {
-    color: oklch(0.74 0.018 270);
-    font-size: var(--font-size-compact, 0.75rem);
-    text-align: right;
   }
 
   .placeholder-square,
@@ -761,10 +745,37 @@
     );
   }
 
+  /* Mirrors ComposerTunnelDemo's band: stage width min(46rem, 62vh), a
+     controls column beside it, stacked under 60rem. */
+  .tunnel-placeholder {
+    display: grid;
+    grid-template-columns: minmax(0, min(46rem, 62vh)) minmax(16rem, 30rem);
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+    justify-content: center;
+  }
+
   .placeholder-square {
-    width: min(100%, 30rem);
+    width: 100%;
     aspect-ratio: 1;
-    margin-inline: auto;
+  }
+
+  .placeholder-band-controls {
+    display: grid;
+    gap: 0.9rem;
+    align-content: center;
+  }
+
+  .placeholder-line {
+    height: 0.9rem;
+    width: min(100%, 22rem);
+    border-radius: 0.45rem;
+    background: var(--theme-card-bg, oklch(0.2 0.025 270 / 0.75));
+  }
+
+  .placeholder-line-title {
+    height: 1.4rem;
+    width: 7rem;
   }
 
   .placeholder-wide {
@@ -775,7 +786,6 @@
   .placeholder-control {
     width: min(100%, 24rem);
     height: 3.25rem;
-    margin: 1rem auto 0;
     border-radius: 0.85rem;
     background: var(--theme-card-bg, oklch(0.2 0.025 270 / 0.75));
   }
@@ -816,55 +826,28 @@
     border-bottom: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
   }
 
-  /* Same tracks the shelf renders into, so the LazyMount swap cannot shift
-     layout. Keep the breakpoints in step with ComposerGalleryShelf. */
-  .shelf-placeholder {
+  /* Same bounded frame ComposerGalleryDemo renders into, so the LazyMount
+     swap cannot shift layout. Keep the height in step with its .gallery-frame. */
+  .gallery-placeholder,
+  .gallery-error {
+    box-sizing: border-box;
+    height: min(80vh, 56rem);
+    padding: clamp(0.75rem, 1.7vw, 1.4rem);
+    border: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
+    border-radius: clamp(1rem, 1.5vw, 1.5rem);
+    background: var(--theme-panel-bg, oklch(0.13 0.025 270 / 0.94));
+    box-shadow: 0 1.5rem 4rem oklch(0.04 0.03 270 / 0.3);
+  }
+
+  .gallery-placeholder {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    grid-auto-rows: minmax(0, 1fr);
     gap: clamp(0.8rem, 1.4vw, 1.4rem);
-  }
-
-  .shelf-placeholder > :nth-child(n + 5) {
-    display: none;
-  }
-
-  @container (min-width: 800px) {
-    .shelf-placeholder {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .shelf-placeholder > :nth-child(n + 5) {
-      display: block;
-    }
-    .shelf-placeholder > :nth-child(n + 7) {
-      display: none;
-    }
-  }
-
-  @container (min-width: 1200px) {
-    .shelf-placeholder {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-    .shelf-placeholder > :nth-child(n + 7) {
-      display: block;
-    }
-    .shelf-placeholder > :nth-child(n + 9) {
-      display: none;
-    }
-  }
-
-  @container (min-width: 1600px) {
-    .shelf-placeholder {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-    .shelf-placeholder > :nth-child(n + 9) {
-      display: block;
-    }
+    overflow: hidden;
   }
 
   .placeholder-card {
-    /* Matches SHELF_CARD_ASPECT_RATIO — the shape a gallery card actually
-       renders at, so the shelf does not resize when the cards arrive. */
-    aspect-ratio: 0.73;
     border-radius: 0.9rem;
     background: radial-gradient(
       circle at 50% 42%,
@@ -915,10 +898,16 @@
     .placeholder-pane:last-child {
       display: none;
     }
+  }
 
-    .changing-head {
+  @media (max-width: 60rem) {
+    .tunnel-placeholder {
       grid-template-columns: 1fr;
-      gap: 2.5rem;
+    }
+
+    .placeholder-square {
+      width: min(46rem, 62vh, 100%);
+      margin-inline: auto;
     }
   }
 
@@ -992,11 +981,6 @@
 
     .opening-player {
       width: min(100%, 52rem);
-    }
-
-    .changing-head {
-      grid-template-columns: minmax(0, 44rem) minmax(22rem, 32rem);
-      justify-content: center;
     }
   }
 

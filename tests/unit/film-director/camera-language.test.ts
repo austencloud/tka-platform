@@ -176,8 +176,28 @@ describe("compileCameraMoves", () => {
         frame.position[0] - frame.target[0],
         frame.position[2] - frame.target[2]
       );
-    const sweep = Math.abs(angle(frames.at(-1)!) - angle(frames[0]!));
+    // The front camera sits at -z, so the raw atan2 difference can wrap past
+    // ±π; measure the shorter way round.
+    const raw = Math.abs(angle(frames.at(-1)!) - angle(frames[0]!)) % (2 * Math.PI);
+    const sweep = Math.min(raw, 2 * Math.PI - raw);
     expect(sweep).toBeCloseTo(Math.PI / 2, 1);
+  });
+
+  it("cw from the front ends on the performers' screen-left side (Austen's felt convention, 2026-09-02)", () => {
+    // The front camera sits at -z looking toward +z, so its screen-left is +x.
+    const cw = compileCameraMoves(
+      [{ move: "orbit", direction: "cw", amount: { degrees: 90 } }],
+      framing,
+      CONTEXT
+    );
+    const ccw = compileCameraMoves(
+      [{ move: "orbit", direction: "ccw", amount: { degrees: 90 } }],
+      framing,
+      CONTEXT
+    );
+    expect(cw[0]!.position[2]).toBeLessThan(cw[0]!.target[2]);
+    expect(cw.at(-1)!.position[0]).toBeGreaterThan(cw.at(-1)!.target[0]);
+    expect(ccw.at(-1)!.position[0]).toBeLessThan(ccw.at(-1)!.target[0]);
   });
 
   it("moves chain: explicit durations consume time, the rest split evenly", () => {

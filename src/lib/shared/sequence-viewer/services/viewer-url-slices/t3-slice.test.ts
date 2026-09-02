@@ -250,4 +250,55 @@ describe("t3 slice", () => {
     localStorage.setItem(ENVIRONMENT_KEY, DEFAULT_SCENE_ENVIRONMENT_ID);
     expect(persistedT3SliceFromStorage()).toBeNull();
   });
+
+  describe("full snapshot", () => {
+    it("emits env and every registry feature at defaults, and round-trips", () => {
+      const full = captureT3Slice(
+        {
+          environmentId: DEFAULT_SCENE_ENVIRONMENT_ID,
+          features: createSceneFeatureState(undefined, { isolated: true }),
+        },
+        { full: true }
+      );
+      expect(full?.env).toBe(DEFAULT_SCENE_ENVIRONMENT_ID);
+      expect(Object.keys(full!.features!).sort()).toEqual(
+        SCENE_FEATURES.map((f) => f.key).sort()
+      );
+      const seed = seedFromT3Slice(full!);
+      expect(seed.sceneFeatures).toEqual(postNormalizeSceneFeatureDefaults());
+      expect(
+        captureT3Slice(
+          {
+            environmentId: seed.environmentId,
+            features: { isEnabled: (k) => seed.sceneFeatures[k] ?? false },
+          },
+          { full: true }
+        )
+      ).toEqual(full);
+    });
+
+    it("unmountedT3SliceSource expands a seed, else reads disk read-only", async () => {
+      const { unmountedT3SliceSource } = await import("./t3-slice");
+      const seed = seedFromT3Slice({ env: SceneEnvironmentId.BLOSSOM });
+      const fromSeed = unmountedT3SliceSource(seed, DEFAULT_SCENE_ENVIRONMENT_ID)!;
+      expect(fromSeed.environmentId).toBe(SceneEnvironmentId.BLOSSOM);
+      expect(captureT3Slice(fromSeed, { full: true })).toEqual(
+        captureT3Slice(
+          {
+            environmentId: SceneEnvironmentId.BLOSSOM,
+            features: createSceneFeatureState(undefined, { isolated: true }),
+          },
+          { full: true }
+        )
+      );
+
+      localStorage.setItem(ENVIRONMENT_KEY, SceneEnvironmentId.BLOSSOM);
+      const setItem = vi.spyOn(Storage.prototype, "setItem");
+      const fromDisk = unmountedT3SliceSource(null, DEFAULT_SCENE_ENVIRONMENT_ID)!;
+      expect(captureT3Slice(fromDisk, { full: true })).toEqual(
+        persistedT3SliceFromStorage(DEFAULT_SCENE_ENVIRONMENT_ID, { full: true })
+      );
+      expect(setItem).not.toHaveBeenCalled();
+    });
+  });
 });
