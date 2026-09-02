@@ -387,6 +387,22 @@ loadout screen on day one and grows on its own as the catalog grows. The catalog
 is the single owner of what exists; the loadout screen reads it rather than
 keeping its own list.
 
+**The money is the ticket first, then the weekend** (Austen, 2026-09-02). You
+start with what you saved, the ticket comes out before anything else, and what
+is left buys the car, the props, the tent and the food strategy. That is what
+makes a cheap car a real option rather than a punishment, and it puts the stakes
+on screen before the first turn of the wheel.
+
+**The energy bar starts on the drive** (Austen, 2026-09-02), not at camp
+arrival. So the departure dial has teeth immediately: leaving at six in the
+morning means arriving with less in the tank. It also means energy is a
+slice-1 system, not a sub-project 3 system — the loadout screen's dial and the
+bar it feeds both have to exist for the drive to mean anything.
+
+**Veteran or first-timer is a loadout choice too.** It gates who recognizes you
+at the gate and what you already own. Its downstream systems are in
+sub-project 5.
+
 **The discipline that keeps this honest:** a choice may only appear on the
 loadout screen once at least one of its consequences is implemented. Otherwise
 it is a menu that lies. The budget and the car qualify immediately; the tent
@@ -417,6 +433,12 @@ Settled with Austen on 2026-09-02:
   afternoon. It sets the arrival light, whether there is a queue at the gate,
   and how much daylight is left to make camp. This is the only piece of the
   economy that must exist for slice 1.
+- **You pick your character from the deployed roster.** The scene package ships
+  17 (`CHARACTER_DEFINITIONS` — Marcus, Jade, Viktor, Luna, Nora, Felix, Maya,
+  Leo, Suki, Blake, Sage, Quinn, Character 26, Remy, X-Bot, Y-Bot, Austen), the
+  same catalog the NPCs draw from, so the player is visibly one of the crowd.
+- **The energy bar is live on the drive**, so the departure dial costs something
+  from the first minute.
 - **The loadout screen comes first, then the road.** Not a cold open on the
   highway. You pack, you pick, then the first thing you see in the world is the
   road — so the drive is the first *place*, and the choices you made are already
@@ -461,12 +483,48 @@ walk to Middle Earth.
 
 Depends on 2 for anything interactive.
 
-### 5. People you know
+### 5. People you know — and the systems behind them
 
-Returning acquaintances with memory of past years. Greetings. Jam circles that
-form on their own during the day, not only at the scheduled fire jam.
+Austen, 2026-09-02, when asked whether the game covers one festival or many:
 
-Depends on 2, and reads best after 4 exists to wander through.
+> I think you either need to pick if you're a Flow Fest veteran or a first
+> timer, because we can have a social dynamic where we keep track of all the
+> people you've met and your relationship with them if we build this out enough.
+> You might gain some notoriety and we have a notoriety tracker — there's
+> several, you could gain notoriety for always going to classes or for always
+> volunteering. Shit, we don't even have a volunteer system, we should add a
+> whole way you can volunteer to work at gate or to work as a safety. The fire
+> circle needs a whole redesign. So a lot of these things still need to be
+> talked about.
+
+That is four systems, three of which have no code at all. **None of them is
+settled** — recorded here so the context is not lost, not because they are
+designed.
+
+- **Veteran or first-timer is a loadout choice**, not a fixed frame for the
+  game. It sets who knows you at the gate, what you already own, and whether the
+  arc is returning or discovering.
+- **A relationship tracker** — every person you have met, and your standing with
+  them. This is what makes sub-project 5 earn its ending instead of asserting it.
+- **A notoriety tracker, and there is more than one axis.** Named so far: always
+  going to classes; always volunteering. Notoriety is a different quantity from
+  friendship — it is what people who have *not* met you have heard.
+- **A volunteer system.** Working a gate shift, working as safety. Nothing like
+  this exists. It is also the most interesting possible answer to "what do you
+  do at a festival all weekend", because it is the one that puts you on the
+  other side of the canopy in sub-project 2.
+- **The fire circle needs a whole redesign.** Today it is
+  `flow-fest-living-fire-jam.ts` plus `observeFlowFestFireJam`, a proximity
+  observer hardcoded to the fire's coordinates with a fixed join radius, and a
+  population whose roles already include `fire-dancer`, `fire-rotation`,
+  `join-fire` and `watch-fire`. Scope of the redesign is undiscussed.
+
+The original sub-project 5 content — returning acquaintances with memory of past
+years, greetings, jam circles that form on their own during the day rather than
+only at the scheduled fire jam — sits on top of these.
+
+Depends on 2, and reads best after 4 exists to wander through. This sub-project
+is now large enough that it will decompose again when it is reached.
 
 ## Rules that bind this work
 
