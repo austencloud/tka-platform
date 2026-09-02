@@ -341,6 +341,41 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Non-singleton canvas frames:");
   });
 
+  it("lets every inspector panel choose its own anchor and surfaces the track", () => {
+    // An automatic start margin absorbs free space when the panel fits, so a
+    // departing surface stays at the viewport edge and fades without sliding,
+    // and collapses to zero when it does not, so an arriving surface is
+    // revealed from the seam with its overflow past the screen edge. Anchoring
+    // by hand gets one direction right and the other wrong.
+    const autoAnchored = (marker: string) => {
+      const index = shell.indexOf(marker);
+      expect(index, `${marker} has no composed-width rule`).toBeGreaterThan(-1);
+      expect(shell.slice(index, index + 320)).toContain("margin-left: auto");
+    };
+    autoAnchored("> :global(.export-panel.sidebar) {");
+    autoAnchored("> :global(.performance-inspector) {");
+    autoAnchored(":global(.export-panel:not(.inline)) {");
+    autoAnchored("> :global(.art-settings-panel) {");
+
+    // The surface belongs to the layer, which spans the whole track, not to the
+    // panel, which does not. Otherwise the band the panel does not reach shows
+    // the workspace through the container's partly transparent fill.
+    const layerIndex = shell.indexOf(".inspector-content-layer {");
+    expect(layerIndex).toBeGreaterThan(-1);
+    expect(shell.slice(layerIndex, layerIndex + 320)).toContain(
+      "background: var(--theme-panel-bg"
+    );
+    const resetIndex = shell.indexOf(
+      ".inspector-content-layer :global(.export-panel),"
+    );
+    expect(resetIndex, "panels still paint their own surface").toBeGreaterThan(
+      -1
+    );
+    expect(shell.slice(resetIndex, resetIndex + 260)).toContain(
+      "background: transparent"
+    );
+  });
+
   it("composes every inspector layer at its destination width", () => {
     // A settings surface that is width-100% of the animating inspector track
     // re-wraps on every frame of the seam animation, which reads as the panel

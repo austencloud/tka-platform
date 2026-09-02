@@ -684,6 +684,104 @@ then fixed.
 - Focused Vitest (`tests/config/vitest.config.ts`): 28 files, 224 tests pass.
   Prettier and `git diff --check` are clean.
 
+### Inspector follow-up · 2026-09-02 (seam anchoring and track surface)
+
+Austen reviewed the content-drift fix and reported a second defect on the same
+transition: _"when I go to tunnel mode there's a brief moment where the panel on
+the left is occluding the left edge of the right panel so that you can't see the
+selectors."_ Instrumented first, then fixed.
+
+**What the instrument was missing.** The Gate 4 follow-up measured whether a
+panel moved. It could not see a panel that stayed perfectly still while the clip
+box in front of it cut a column off. Two measurements were added:
+
+- **Inspector reveal**, per layer: the band of the panel cut off by the clip
+  box's left edge, the band cut off by its right edge, and the band of the clip
+  box with no panel behind it, each with the milliseconds it was on screen.
+- **Inspector surface step**: the widest _lighter strip_ the track showed within
+  a single frame. The track is cut at every panel edge, each band composites the
+  layer fill and the panel fill actually read from the DOM, and bands are
+  compared with the strongest band in the same frame. A crossfade that dims the
+  whole track uniformly scores zero; only a hard-edged step is reported.
+
+**What they found at 1920×1080 on the pre-fix build.**
+
+- `art reveal: 261 px left cut · 290 ms`. The arriving Tunnel inspector was
+  pinned to the viewport edge while the seam was still travelling, so its
+  leading label and selector column sat outside the clip for a third of a
+  second. That is precisely the reported symptom.
+- `Inspector surface step: 167 px · 190 ms`. `.export-panel-container` paints
+  `rgba(0, 0, 0, 0.75)`. A band that no panel reached was therefore a genuine
+  25%-transparent window onto the moving workspace: a lighter vertical strip
+  that appeared, held, and vanished.
+
+**Why hand-anchoring cannot fix it.** The track is narrower than the arriving
+panel for the whole time the seam travels. Anchoring every layer to the viewport
+edge keeps content still but cuts the leading column, which is the reported bug.
+Anchoring every layer to the seam shows the leading column but drags a
+_departing_ fading panel sideways, which is the bug the previous follow-up
+fixed. Neither anchor is right for both directions.
+
+**The fix.** Two independent changes:
+
+1. **Automatic start margins.** Every composed panel now carries
+   `margin-left: auto`. When the panel fits the track the margin absorbs the
+   free space and the panel stays pinned at the viewport edge, so a departing
+   surface fades without sliding. When the panel is wider than the track there
+   is no free space, the margin collapses to zero, and the panel is revealed
+   from the seam with its overflow spilling past the viewport edge where the cut
+   cannot be seen. One declaration, both directions correct.
+2. **The layer owns the surface.** Each `.inspector-content-layer` paints the
+   inspector fill across the whole track and the panel inside paints none, so a
+   band the panel does not reach is never a lighter strip. The resting composite
+   is unchanged: container `0.75` over layer `0.75` is the same `0.9375` as
+   container `0.75` over panel `0.75`. `.art-settings-layer` carries
+   `--theme-card-bg` rather than `--theme-panel-bg`, because that is the token
+   its panel used.
+
+**Post-fix, Gate 4 `card-tunnel` full-motion replays.** Every desktop viewport
+reports `0 px` art left cut and `0 px · 0.00 alpha · 0 ms` surface step:
+
+| Viewport  | Art left cut | Surface step | Art drift (origin) | Card drift (origin) |
+| --------- | ------------ | ------------ | ------------------ | ------------------- |
+| 1440×900  | 0 px         | 0 px         | 539 px             | 1 px                |
+| 1920×1080 | 0 px         | 0 px         | 252 px             | 1 px                |
+| 2560×1440 | 0 px         | 0 px         | 157 px             | 5 px                |
+| 3840×2160 | 0 px         | 0 px         | 324 px             | 1 px                |
+
+Art's origin figure is now the _intended_ motion, not the defect: width drift
+and vertical drift are both `0 px`, so the panel translates rigidly with the
+seam and is revealed as a drawer rather than rewrapping. The 2560 Card figure of
+`5 px` is `clamp(480px, 28vw, 640px)` capping at `640 px` against a `636 px`
+track, not motion.
+
+**Anchor resolution, measured in the production viewer at a 799 px track.** The
+rule is deterministic and was read back from computed style rather than assumed:
+
+| Layer           | Panel width | Resolved `margin-left` | Result                    |
+| --------------- | ----------- | ---------------------- | ------------------------- |
+| Motion settings | 800 px      | `0px`                  | revealed from the seam    |
+| Performances    | 461 px      | `338.5px`              | pinned at the screen edge |
+| Card settings   | 538 px      | `261.7px`              | pinned at the screen edge |
+
+**No regression on approved gates.** Gate 7 (Export inspector) replays
+`Inspector surface step: 0 px · 0.00 alpha · 0 ms` and
+`motion reveal: 0 px left cut · 1 px right cut · 0 px undrawn`; the 1 px right
+cut is the 800 px Motion panel spilling past a 799 px track, off the screen edge.
+Gate 5's motion could not be replayed in this checkout: the harness fixture has
+no performance video, so the viewer never commits `videos` mode and the trace
+records `Mode path: animation` with zero crossfade frames. Gate 5's inspector
+behaviour is covered by the anchor table above, which is the only thing this
+change alters there.
+
+**Checks.** The orchestration contract test now asserts that all four composed
+panels carry `margin-left: auto`, that the layer paints `--theme-panel-bg`, and
+that the panels reset their own background, so a future layer cannot silently go
+back to a hand-anchored edge. Focused Vitest
+(`tests/config/vitest.config.ts`, `tests/unit/sequence-viewer` plus
+`viewer-shell-model`): 29 files, 231 tests pass. Prettier and
+`git diff --check` are clean.
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of

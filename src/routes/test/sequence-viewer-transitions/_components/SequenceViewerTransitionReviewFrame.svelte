@@ -22,6 +22,8 @@
   } from "$lib/shared/transitions/viewer-mode-dissolve";
   import { TRANSITION_REVIEW_SEQUENCE } from "../transition-review-fixture";
   import type {
+    InspectorLayerId,
+    InspectorRevealSample,
     TransitionGeometrySample,
     TransitionGeometryTrace,
     TransitionTraceCommand,
@@ -187,6 +189,48 @@
       height: bounds.height,
       left: bounds.left,
       top: bounds.top,
+    };
+  }
+
+  /**
+   * Sample one inspector layer's clip box against the panel composed inside it.
+   * The layer is the animating track; the panel is the surface pinned at its
+   * own destination width. Comparing the two is what reveals a cut-off label
+   * column or an undrawn band, neither of which shows up in a width or drift
+   * measurement taken on the panel alone.
+   */
+  /**
+   * Alpha of an element's own painted fill, 0 when it paints none.
+   *
+   * The inspector surface can live on the layer or on the panel inside it, and
+   * which one holds it decides whether a band the panel does not reach looks
+   * the same as the rest of the track. Reading it rather than assuming it keeps
+   * the trace honest if the surface moves again.
+   */
+  function elementSurfaceAlpha(selector: string): number {
+    const element = document.querySelector<HTMLElement>(selector);
+    if (!element) return 0;
+    const fill = getComputedStyle(element).backgroundColor;
+    if (!fill || fill === "transparent") return 0;
+    const channels = fill.match(/[\d.]+/g);
+    if (!channels) return 0;
+    return channels.length > 3 ? Number.parseFloat(channels[3]) || 0 : 1;
+  }
+
+  function revealBounds(
+    layerSelector: string,
+    panelSelector: string
+  ): InspectorRevealSample {
+    const layer = elementBounds(layerSelector);
+    const panel = elementBounds(panelSelector);
+    return {
+      layerLeft: layer.left,
+      layerWidth: layer.width,
+      panelLeft: panel.left,
+      panelWidth: panel.width,
+      opacity: layer.width > 0 ? elementOpacity(layerSelector) : 0,
+      layerSurfaceAlpha: elementSurfaceAlpha(layerSelector),
+      panelSurfaceAlpha: elementSurfaceAlpha(panelSelector),
     };
   }
 
@@ -397,6 +441,21 @@
     const cardSettingsPanel = elementBounds(
       ".card-settings-layer .export-panel"
     );
+    const inspectorReveal: Record<InspectorLayerId, InspectorRevealSample> = {
+      motion: revealBounds(".motion-settings-layer", ".export-panel.sidebar"),
+      art: revealBounds(
+        ".art-settings-layer",
+        "[data-viewer-art-inspector-target] .art-settings-panel"
+      ),
+      card: revealBounds(
+        ".card-settings-layer",
+        ".card-settings-layer .export-panel"
+      ),
+      performance: revealBounds(
+        ".performance-inspector-layer",
+        ".performance-inspector-layer .performance-inspector"
+      ),
+    };
     const artSettingsPanel = elementBounds(
       "[data-viewer-art-inspector-target] .art-settings-panel"
     );
@@ -575,6 +634,7 @@
       artSettingsOpacity: elementOpacity(".art-settings-layer"),
       artSettingsWidth: artSettingsPanel.width,
       artSettingsLeft: artSettingsPanel.left,
+      inspectorReveal,
       artSettingsContentTop: artSettingsContent.top,
       cardSettingsLeft: cardSettingsPanel.left,
       cardSettingsContentTop: cardSettings.top,
