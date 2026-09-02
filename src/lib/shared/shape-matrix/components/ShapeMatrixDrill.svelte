@@ -1125,20 +1125,23 @@
           <WordHeader word="A" visible={true} darkMode={headerDarkMode} />
         </div>
         {#if headerSequence}
-          <WordHeader
-            word={headerSequence.word}
-            visible={wordHeaderVisible}
-            darkMode={headerDarkMode}
-            activeStepNumber={headerStepNumber}
-            difficultyLevel={headerDifficulty}
-            loopComponents={headerLoopDisplay && headerLoopDisplay.components.size > 0
-              ? headerLoopDisplay.components
-              : null}
-            rotationPeriod={headerLoopDisplay?.rotationPeriod}
-            inversionPeriod={headerLoopDisplay?.inversionPeriod}
-            reflectionAxis={headerLoopDisplay?.reflectionAxis}
-            overlayComponents={headerLoopDisplay?.overlayComponents}
-          />
+          <div class="hero-header-live">
+            <WordHeader
+              word={headerSequence.word}
+              visible={wordHeaderVisible}
+              darkMode={headerDarkMode}
+              activeStepNumber={headerStepNumber}
+              difficultyLevel={headerDifficulty}
+              loopComponents={headerLoopDisplay &&
+              headerLoopDisplay.components.size > 0
+                ? headerLoopDisplay.components
+                : null}
+              rotationPeriod={headerLoopDisplay?.rotationPeriod}
+              inversionPeriod={headerLoopDisplay?.inversionPeriod}
+              reflectionAxis={headerLoopDisplay?.reflectionAxis}
+              overlayComponents={headerLoopDisplay?.overlayComponents}
+            />
+          </div>
         {/if}
       </div>
       <div class="hero-frame">
@@ -1374,7 +1377,10 @@
     display: grid;
     align-items: center;
   }
-  .hero-header > * {
+  /* Both wrappers are drill-owned elements, so the scoped child selector
+     matches them (a child component's root would not carry this scope). */
+  .hero-header-ghost,
+  .hero-header-live {
     grid-area: 1 / 1;
     min-width: 0;
   }
