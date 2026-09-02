@@ -21,6 +21,7 @@ import {
   DIRECTOR_MOTION_TYPE_FILTERS,
   DIRECTOR_ORIENTATIONS,
   DIRECTOR_POSITION_GROUPS,
+  DIRECTOR_ROTATION_DEGREES,
   DIRECTOR_SEQUENCE_LEVELS,
   type DirectorPerformerSequence,
 } from "./sequence-language";
@@ -386,7 +387,60 @@ const loopSchema = z.union([
     .strict(),
 ]);
 
-const SEQUENCE_SOURCE_KEYS = ["source", "mirrorOf", "word", "length"] as const;
+const transformHandSchema = z.enum(["left", "right", "both"]);
+
+/**
+ * One operation in a `transforms` chain. Each branch is strict, so a `hand` on
+ * `swap-hands` (which has no per-hand form) is named rather than ignored.
+ */
+const sequenceTransformSchema = z.discriminatedUnion("op", [
+  z
+    .object({ op: z.literal("mirror"), hand: transformHandSchema.optional() })
+    .strict(),
+  z
+    .object({ op: z.literal("flip"), hand: transformHandSchema.optional() })
+    .strict(),
+  z
+    .object({
+      op: z.literal("rotate"),
+      degrees: z.literal(DIRECTOR_ROTATION_DEGREES, {
+        error:
+          "A sequence rotates in 45-degree steps: 45, 90, 135, 180, 225, 270, or 315.",
+      }),
+      direction: z.enum(["cw", "ccw"]),
+      hand: transformHandSchema.optional(),
+    })
+    .strict(),
+  z.object({ op: z.literal("swap-hands") }).strict(),
+  z
+    .object({ op: z.literal("invert"), hand: transformHandSchema.optional() })
+    .strict(),
+  z
+    .object({ op: z.literal("rewind"), hand: transformHandSchema.optional() })
+    .strict(),
+  z
+    .object({
+      op: z.literal("start-at"),
+      step: z
+        .number()
+        .int()
+        .min(2, {
+          error:
+            "A sequence already starts at step 1. Name a later step to start from.",
+        })
+        .max(64),
+    })
+    .strict(),
+]);
+
+const SEQUENCE_SOURCE_KEYS = [
+  "source",
+  "mirrorOf",
+  "transformOf",
+  "library",
+  "word",
+  "length",
+] as const;
 const SEQUENCE_CONTROL_KEYS = [
   "startPosition",
   "startOrientation",
@@ -408,10 +462,12 @@ const quoted = (keys: readonly string[]) =>
 /**
  * What one performer spins. `demo` is the film's shared sequence, `word` and
  * `length` generate a new one through the same pipeline the Create module
- * uses, and `mirrorOf` reflects another performer's sequence across the
- * north-south axis — the transform that makes a pair read as mirrored rather
- * than merely synchronized. Deliberately not a directive axis: "mirror her"
- * names one specific performer, so a random pick would have nothing to mean.
+ * uses, `mirrorOf` reflects another performer's sequence across the
+ * north-south axis, `transformOf` plus `transforms` applies any chain of the
+ * Actions-panel transforms to another performer's sequence, and `library`
+ * plays a saved public sequence by its id. Deliberately not directive axes:
+ * "mirror her" names one specific performer, and a library id is a literal
+ * reference, so a random pick would have nothing to mean.
  *
  * One flat object rather than a union of four, because a union reports every
  * branch's failure at once: a misspelled `flow` would arrive buried under
@@ -424,6 +480,13 @@ const performerSequenceSchema = z
   .object({
     source: z.literal("demo").optional(),
     mirrorOf: z.string().min(1).optional(),
+    transformOf: z.string().min(1).optional(),
+    transforms: z
+      .array(sequenceTransformSchema)
+      .min(1, { error: 'A "transforms" list needs at least one operation.' })
+      .max(8)
+      .optional(),
+    library: z.string().min(1).optional(),
     word: z.string().min(1).max(24).optional(),
     length: z.number().int().min(1).max(64).optional(),
     startPosition: positionRefSchema.optional(),
@@ -450,7 +513,7 @@ const performerSequenceSchema = z
       ctx.addIssue({
         code: "custom",
         message:
-          'A sequence names one source: {source: "demo"}, a "word" to spell, a "length" to improvise, or a "mirrorOf" to reflect.',
+          'A sequence names one source: {source: "demo"}, a "word" to spell, a "length" to improvise, a "mirrorOf" to reflect, a "transformOf" to change, or a "library" id to play.',
       });
       return;
     }
@@ -461,19 +524,35 @@ const performerSequenceSchema = z
       });
       return;
     }
+    if (named[0] === "transformOf" && value.transforms === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          '"transformOf" names whose sequence to change; "transforms" says what changes. Add a "transforms" list.',
+      });
+      return;
+    }
+    if (named[0] !== "transformOf" && value.transforms !== undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          '"transforms" only means something on a "transformOf" sequence. Name the performer to transform, or remove the list.',
+      });
+      return;
+    }
     if (named[0] === "word" || named[0] === "length") return;
 
     const controls = SEQUENCE_CONTROL_KEYS.filter(
       (key) => value[key] !== undefined
     );
     if (controls.length === 0) return;
-    ctx.addIssue({
-      code: "custom",
-      message:
-        named[0] === "mirrorOf"
-          ? `A mirror reflects another performer's sequence exactly, so it carries no controls of its own. Move ${quoted(controls)} to the performer being mirrored.`
-          : `The demo sequence is the film's shared one, so it carries no controls of its own. Remove ${quoted(controls)}, or spell a "word" of your own.`,
-    });
+    const CONTROL_REJECTIONS: Record<string, string> = {
+      mirrorOf: `A mirror reflects another performer's sequence exactly, so it carries no controls of its own. Move ${quoted(controls)} to the performer being mirrored.`,
+      transformOf: `A transformed sequence is another performer's sequence changed in a stated way, so it carries no controls of its own. Move ${quoted(controls)} to the performer being transformed.`,
+      library: `A library sequence is already finished, so it carries no controls of its own. Remove ${quoted(controls)}, or spell a "word" of your own.`,
+      source: `The demo sequence is the film's shared one, so it carries no controls of its own. Remove ${quoted(controls)}, or spell a "word" of your own.`,
+    };
+    ctx.addIssue({ code: "custom", message: CONTROL_REJECTIONS[named[0]!]! });
   })
   // The refinement above is the proof that exactly one source key is present,
   // which is what makes the narrower union type true.
@@ -533,6 +612,37 @@ const sceneBlockingSchema = z
   .strict()
   .superRefine(atMostOneTimeUnit);
 
+/**
+ * Spoken but not real. A director will plausibly ask for one performer's
+ * trails to be long and another's short. The effects engine cannot do it:
+ * `EffectsConfigState` holds one configuration per effect id for the whole
+ * scene and `EffectOrchestrator3D` reads that single config for every
+ * performer's tips. Accept the keys so the rejection can explain the
+ * constraint instead of zod's "unrecognized key".
+ */
+export const PERFORMER_EFFECT_CONFIG_MESSAGE =
+  'Effect presets and overrides are scene-wide: the effects engine keeps one configuration per effect id for the whole scene, so two performers using the same effect always look the same. Move "effectPresets"/"effectOverrides" to the scene, or give the performers different effects.';
+
+const performerEffectConfigKeys = {
+  effectPresets: z.unknown().optional(),
+  effectOverrides: z.unknown().optional(),
+};
+
+function rejectPerformerEffectConfig(
+  value: { effectPresets?: unknown; effectOverrides?: unknown },
+  ctx: z.RefinementCtx
+): void {
+  for (const key of ["effectPresets", "effectOverrides"] as const) {
+    if (value[key] !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [key],
+        message: PERFORMER_EFFECT_CONFIG_MESSAGE,
+      });
+    }
+  }
+}
+
 const performerSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -550,8 +660,10 @@ const performerSchema = z
     leftPlane: directiveSchema(planeSchema).optional(),
     rightPlane: directiveSchema(planeSchema).optional(),
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
+    ...performerEffectConfigKeys,
   })
-  .strict();
+  .strict()
+  .superRefine(rejectPerformerEffectConfig);
 
 const castDefaultsSchema = z
   .object({
@@ -565,8 +677,10 @@ const castDefaultsSchema = z
     leftPlane: directiveSchema(planeSchema).optional(),
     rightPlane: directiveSchema(planeSchema).optional(),
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
+    ...performerEffectConfigKeys,
   })
-  .strict();
+  .strict()
+  .superRefine(rejectPerformerEffectConfig);
 
 const castSchema = z
   .object({

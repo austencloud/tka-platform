@@ -77,6 +77,25 @@ describe("Vite dev watch policy", () => {
     );
   });
 
+  it("watches the generated SvelteKit manifest so new routes hot-load", () => {
+    expect(isIgnored(projectPath(".svelte-kit"), directoryStats)).toBe(false);
+    expect(
+      isIgnored(projectPath(".svelte-kit", "generated"), directoryStats)
+    ).toBe(false);
+    expect(
+      isIgnored(
+        projectPath(".svelte-kit", "generated", "client", "app.js"),
+        fileStats
+      )
+    ).toBe(false);
+    expect(isIgnored(projectPath(".svelte-kit", "types"), directoryStats)).toBe(
+      true
+    );
+    expect(
+      isIgnored(projectPath(".svelte-kit", "output"), directoryStats)
+    ).toBe(true);
+  });
+
   it("prunes new top-level directories and junctions after stat", () => {
     expect(isIgnored(projectPath(".codex-source-link"))).toBe(false);
     expect(isIgnored(projectPath(".codex-source-link"), directoryStats)).toBe(

@@ -146,8 +146,11 @@
   }
 
   .recording-badge {
-    top: 16px;
-    left: 16px;
+    /* Anchored where the Record Scene pill lives, so recording reads as that
+       control changing state. The top-left corner belongs to the performer
+       selector and must stay visible while the camera path is captured. */
+    bottom: var(--record-scene-bottom, 80px);
+    right: var(--record-scene-right, 12px);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -289,6 +292,12 @@
   .cancel-btn:hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
     color: white;
+  }
+
+  @media (max-width: 600px) {
+    .recording-badge {
+      right: 8px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
