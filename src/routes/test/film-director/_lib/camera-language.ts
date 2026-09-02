@@ -287,13 +287,16 @@ export function compileCameraMoves(
     }
 
     if (move.move === "orbit") {
-      // Azimuth here follows the same convention as computeCameraFraming's
-      // vantage math above: increasing azimuth rotates +z toward +x, which
-      // is clockwise viewed from above. So cw increases the angle, ccw
-      // decreases it.
+      // Azimuth here follows computeCameraFraming's vantage math: increasing
+      // azimuth rotates +z toward +x. Austen watched the two signs side by
+      // side (Proving Grounds scenes 9 and 10, 2026-09-02) and called the
+      // DECREASING direction clockwise: from the front, a "cw" orbit ends on
+      // the performers' screen-left end of the line. So cw decreases the
+      // angle and ccw increases it. This is the felt convention, not the
+      // math-from-above one.
       const degrees =
         (move.amount && "degrees" in move.amount ? move.amount.degrees : 90) *
-        (move.direction === "cw" ? 1 : -1);
+        (move.direction === "cw" ? -1 : 1);
       const radius = Math.hypot(position[0] - target[0], position[2] - target[2]);
       const height = position[1];
       const startAngle = Math.atan2(position[0] - target[0], position[2] - target[2]);

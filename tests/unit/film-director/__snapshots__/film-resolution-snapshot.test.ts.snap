@@ -1258,9 +1258,9 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "atSeconds": 2.5,
             "position": [
-              0.681035,
+              2.384785,
               1.957665,
-              -2.38968
+              -0.960064
             ],
             "target": [
               0,
@@ -1274,9 +1274,9 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "atSeconds": 5,
             "position": [
-              -0.456924,
+              2.631319,
               1.957665,
-              -2.439364
+              0.151979
             ],
             "target": [
               0,
@@ -1290,9 +1290,9 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "atSeconds": 7.5,
             "position": [
-              -1.509263,
+              2.384785,
               1.957665,
-              -2.003471
+              1.264023
             ],
             "target": [
               0,
@@ -1306,9 +1306,9 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "atSeconds": 10,
             "position": [
-              -2.278789,
+              1.691379,
               1.957665,
-              -1.16368
+              2.167687
             ],
             "target": [
               0,
@@ -1796,7 +1796,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "atSeconds": 1.666667,
             "position": [
-              2.19289,
+              -2.19289,
               -0.277988,
               3.798198
             ],
@@ -1812,7 +1812,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "atSeconds": 3.333333,
             "position": [
-              3.798198,
+              -3.798198,
               -0.277988,
               2.19289
             ],
@@ -1828,7 +1828,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "atSeconds": 5,
             "position": [
-              4.385781,
+              -4.385781,
               -0.277988,
               0
             ],
@@ -1844,7 +1844,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "atSeconds": 6.666667,
             "position": [
-              3.798198,
+              -3.798198,
               -0.277988,
               -2.19289
             ],
@@ -1860,7 +1860,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "atSeconds": 8.333333,
             "position": [
-              2.19289,
+              -2.19289,
               -0.277988,
               -3.798198
             ],
@@ -2742,7 +2742,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "atSeconds": 5,
             "position": [
-              0.894278,
+              -0.894278,
               0.718559,
               -2.457009
             ],
@@ -2758,7 +2758,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "atSeconds": 8,
             "position": [
-              1.680693,
+              -1.680693,
               0.718559,
               -2.002972
             ],
@@ -2774,7 +2774,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "atSeconds": 11,
             "position": [
-              0.911227,
+              -0.911227,
               0.634851,
               -1.085958
             ],
@@ -2790,7 +2790,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "atSeconds": 13,
             "position": [
-              0.911227,
+              -0.911227,
               0.634851,
               -1.085958
             ],
@@ -3375,7 +3375,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "atSeconds": 4.5,
             "position": [
-              -1.113561,
+              0.213561,
               -0.009232,
               -2.276443
             ],
@@ -3391,7 +3391,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "atSeconds": 7,
             "position": [
-              -1.731901,
+              0.831901,
               -0.009232,
               -2.020318
             ],
@@ -3407,7 +3407,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "atSeconds": 14,
             "position": [
-              -1.731901,
+              0.831901,
               -0.009232,
               -2.020318
             ],
@@ -3869,7 +3869,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "atSeconds": 5.9,
             "position": [
-              1.263898,
+              -1.263898,
               0.763188,
               9.502193
             ],
@@ -3885,7 +3885,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "atSeconds": 8.4,
             "position": [
-              2.481354,
+              -2.481354,
               0.763188,
               9.141566
             ],
@@ -3901,7 +3901,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "atSeconds": 11,
             "position": [
-              2.481354,
+              -2.481354,
               0.763188,
               9.141566
             ],
@@ -4119,7 +4119,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "atSeconds": 3.7,
             "position": [
-              -1.915364,
+              1.915364,
               0.852639,
               -4.107511
             ],
@@ -4135,7 +4135,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "atSeconds": 5,
             "position": [
-              -3.471818,
+              3.471818,
               0.852639,
               -2.913201
             ],
@@ -4151,7 +4151,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "atSeconds": 6.3,
             "position": [
-              -4.377708,
+              4.377708,
               0.852639,
               -1.173003
             ],
@@ -4167,7 +4167,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "atSeconds": 7.6,
             "position": [
-              -4.463283,
+              4.463283,
               0.852639,
               0.786997
             ],
@@ -4183,7 +4183,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "atSeconds": 10,
             "position": [
-              -4.463283,
+              4.463283,
               0.852639,
               0.786997
             ],
@@ -5426,7 +5426,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "atSeconds": 10.5,
             "position": [
-              2.189968,
+              -2.189968,
               6.815919,
               -5.076918
             ],
@@ -5442,7 +5442,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "atSeconds": 12,
             "position": [
-              4.021729,
+              -4.021729,
               6.815919,
               -3.794305
             ],
@@ -5458,7 +5458,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "atSeconds": 13.5,
             "position": [
-              5.195664,
+              -5.195664,
               6.815919,
               -1.891067
             ],
@@ -5474,7 +5474,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "atSeconds": 15,
             "position": [
-              5.195664,
+              -5.195664,
               6.815919,
               -1.891067
             ],
@@ -7791,9 +7791,9 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "atSeconds": 2.25,
             "position": [
-              0.602748,
+              -5.665053,
               1.107029,
-              -6.889436
+              -3.966713
             ],
             "target": [
               0,
@@ -7807,9 +7807,9 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "atSeconds": 4.5,
             "position": [
-              3.966713,
+              -6.889436,
               1.107029,
-              -5.665053
+              -0.602748
             ],
             "target": [
               0,
@@ -7823,9 +7823,9 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "atSeconds": 6.75,
             "position": [
-              6.2678,
+              -6.2678,
               1.107029,
-              -2.922723
+              2.922723
             ],
             "target": [
               0,
@@ -7839,9 +7839,9 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "atSeconds": 9,
             "position": [
-              6.889436,
+              -3.966713,
               1.107029,
-              0.602748
+              5.665053
             ],
             "target": [
               0,
@@ -12069,7 +12069,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 2.666667,
             "position": [
-              -2.953494,
+              2.953494,
               0.999369,
               -5.115602
             ],
@@ -12085,7 +12085,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 5.333333,
             "position": [
-              -5.115602,
+              5.115602,
               0.999369,
               -2.953494
             ],
@@ -12101,7 +12101,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 8,
             "position": [
-              -5.906988,
+              5.906988,
               0.999369,
               0
             ],
@@ -12351,7 +12351,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 2.666667,
             "position": [
-              2.953494,
+              -2.953494,
               0.999369,
               -5.115602
             ],
@@ -12367,7 +12367,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 5.333333,
             "position": [
-              5.115602,
+              -5.115602,
               0.999369,
               -2.953494
             ],
@@ -12383,7 +12383,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 8,
             "position": [
-              5.906988,
+              -5.906988,
               0.999369,
               0
             ],
@@ -15001,7 +15001,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "atSeconds": 6.666667,
             "position": [
-              -0.30994,
+              0.30994,
               0.271571,
               0.481479
             ],
@@ -15017,7 +15017,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "atSeconds": 8.333333,
             "position": [
-              -0.569183,
+              0.569183,
               0.271571,
               0.663004
             ],
@@ -15033,7 +15033,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "atSeconds": 10,
             "position": [
-              -0.735326,
+              0.735326,
               0.271571,
               0.932363
             ],
