@@ -170,6 +170,39 @@ button. The compact detail view now has one chrome row:
   aria-label so the chip beside it never clips. The detail pane hides its
   heading in compact and renders it unchanged in wide layouts.
 
+## Carousel and level picker
+
+The next review asked how the carousel relates to the flying rectangle, and
+why the popover showed the level as plain text with no way to change it.
+
+- The pictograph carousel is its own container. `.media-stage` is a bare grid
+  with a gap; `.hero-stage` carries the border, radius, and card background,
+  so the rectangle that flies is exactly the canvas box. `.strip-zone` is a
+  separate rounded card that claims `shape-matrix-strip` during the morph.
+  Its new snapshot rises from below after the stage has landed (delayed by
+  sixty percent of the group flight); its old snapshot sinks first on the
+  way back. Reduced motion drops both animations.
+- The popover is now "Level and turns". It opens with the shared
+  `LevelSelector` (levels and blurbs from `shape-matrix-levels.ts`, the same
+  list the ribbon uses), then Notation, then the turn controls. The chip
+  shows the level as `DifficultyBadge`, the color-coded circular numeral.
+  `setLevel` accepts `{ stayOnDetail: true }` like `setTurn`, so a level edit
+  restages the animator in place.
+- A configuration that could not pick anything: at Level 4, a whole or half
+  turn hand paired with a quarter-turn hand built zero realizations in every
+  mode. The pair closes its orientation cycle on the eight-step wheel, so
+  the whole-turn hand traces its four-step flower twice and `loopDistance`
+  refused the doubled sample count. It now compares lap by lap when one loop
+  is a whole number of laps of the other, and every mixed-turn cell builds.
+
+- Every compact pane, matrix and detail alike, carries the one level-and-turns
+  chip in its header. The four-group ribbon is wide-only: on a phone it stacked
+  above the grid and let the turn scroller run past the right edge, so the
+  matrix stopped being the hero of its own view. The chip's popover holds
+  every control the ribbon held. The grid's tile formula also leaves room for
+  the header row and column strokes, which had overflowed the viewport by a
+  few pixels and grown a scrollbar under a grid that fit.
+
 ## Tests
 
 - `tests/unit/mandala-guide-painter.test.ts` — transform, constant stroke,
@@ -180,7 +213,12 @@ button. The compact detail view now has one chrome row:
   one painter across overlay and stills; no align scale or glow on the hero;
   the shared floor opacity in both the drill and the render loop; the nested
   stage and mandala names; the offstage player; the popover and one-row
-  compact header.
+  compact header; the carousel outside the flying rectangle; the popover
+  level picker and badge.
+- `src/lib/shared/shape-matrix/services/__tests__/verify-realization-parity.test.ts`
+  and `tests/unit/shape-matrix/shape-matrix-mixed-turn-realizations.test.ts` —
+  lap folding in `loopDistance`, and a real-data build of a whole-turn hand
+  against a quarter-turn hand.
 - `tests/unit/mandala-overlay-guide-crossfade.test.ts` — unchanged, proves the
   overlay's behavior survived the extraction.
 

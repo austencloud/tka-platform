@@ -64,7 +64,10 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { growFade } from "$lib/shared/transitions/motion";
   import { claimedViewTransitionName } from "$lib/shared/transitions/claimed-view-transition-name";
-  import { SHAPE_MATRIX_ACTIVE_STAGE_NAME } from "../services/shape-matrix-artwork";
+  import {
+    SHAPE_MATRIX_ACTIVE_STAGE_NAME,
+    SHAPE_MATRIX_STRIP_NAME,
+  } from "../services/shape-matrix-artwork";
   import { getShapeMatrixTransitionRecorder } from "../debug/shape-matrix-transition-recorder";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
@@ -1217,10 +1220,17 @@
     </div>
 
     {#if animationState.activeSection === null}
+      <!-- The carousel is its own card below the canvas box, never part of
+           the rectangle that flies. During the morph it carries its own
+           name and rises in once the stage has landed. -->
       <div
         class="strip-zone"
         role="group"
         aria-label="Pictograph timeline"
+        use:claimedViewTransitionName={{
+          name: SHAPE_MATRIX_STRIP_NAME,
+          enabled: mandalaTransition.claim,
+        }}
         transition:growFade={{ axis: "y" }}
       >
         {#if railRealization && pictographRailReady}
@@ -1331,16 +1341,15 @@
     min-height: 0;
   }
 
+  /* Two containers, not one frame: the canvas box the tile flies into, and
+     the carousel card under it. Chrome on this wrapper would make the strip
+     read as part of the travelling rectangle. */
   .media-stage {
     grid-area: media;
     min-width: 0;
     min-height: 0;
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
-    border-radius: 16px;
-    background: var(--theme-card-bg, #0a0f14);
   }
 
   /* container-type: size makes cqw/cqh resolve against the animation region,
@@ -1353,6 +1362,8 @@
     place-items: center;
     container-type: size;
     overflow: hidden;
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    border-radius: 16px;
     background:
       radial-gradient(
         circle at 32% 42%,
@@ -1371,8 +1382,11 @@
     height: clamp(4.25rem, 13cqh, 6.5rem);
     min-width: 0;
     min-height: 0;
+    /* Its own gap, so a tier that hides the strip leaves no empty track. */
+    margin-top: 0.5rem;
     overflow: hidden;
-    border-top: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    border-radius: 12px;
     background: color-mix(
       in srgb,
       var(--theme-panel-bg, #101721) 74%,

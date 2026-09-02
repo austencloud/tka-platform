@@ -38,6 +38,14 @@ export const SHAPE_MATRIX_ACTIVE_MANDALA_NAME = "shape-matrix-active-mandala";
  */
 export const SHAPE_MATRIX_ACTIVE_STAGE_NAME = "shape-matrix-active-stage";
 
+/**
+ * The pictograph carousel under the detail stage. It is its own container,
+ * not part of the canvas box the tile flies into, so it carries its own name
+ * during the morph: it rises in under the landed stage instead of riding
+ * inside the travelling rectangle or popping in with the page crossfade.
+ */
+export const SHAPE_MATRIX_STRIP_NAME = "shape-matrix-strip";
+
 export interface ShapeMatrixArtworkPainter {
   cell: (
     left: MandalaPaths,

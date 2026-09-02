@@ -44,9 +44,10 @@ export interface ShapeMatrixSelectPairOptions {
 
 export interface ShapeMatrixSetTurnOptions {
   /**
-   * Keep the compact layout on the detail pane after the edit. The matrix
-   * ribbon returns to the matrix (existing navigation); the detail pane's own
-   * turn tray stays put so the animator restages under the user's eyes.
+   * Keep the compact layout on the detail pane after a turn or level edit.
+   * The matrix ribbon returns to the matrix (existing navigation); the detail
+   * pane's own popover stays put so the animator restages under the user's
+   * eyes.
    */
   stayOnDetail?: boolean;
 }
@@ -213,7 +214,10 @@ export function createShapeMatrixAppState(
     };
   }
 
-  function setLevel(nextLevel: TurnLevel): void {
+  function setLevel(
+    nextLevel: TurnLevel,
+    options: ShapeMatrixSetTurnOptions = {}
+  ): void {
     if (level === nextLevel) return;
     level = nextLevel;
     const landingTurn = LEVEL_LANDING_TURN[level];
@@ -224,13 +228,21 @@ export function createShapeMatrixAppState(
       activeAxis === "right" ? clampTurnToLevel(leftTurn, level) : landingTurn;
     const nextRightTurn =
       activeAxis === "left" ? clampTurnToLevel(rightTurn, level) : landingTurn;
+    if (
+      selectedPair &&
+      (nextLeftTurn !== leftTurn || nextRightTurn !== rightTurn)
+    ) {
+      requestShapeMatrixTransition(
+        `level:${level}:${String(nextLeftTurn)}:${String(nextRightTurn)}`
+      );
+    }
     updateSelectedPairTurns(nextLeftTurn, nextRightTurn);
     if (nextLeftTurn === "fl" || nextLeftTurn !== nextRightTurn) {
       selectedPropMode = null;
     }
     leftTurn = nextLeftTurn;
     rightTurn = nextRightTurn;
-    if (compact) activeView = "matrix";
+    if (compact && !options.stayOnDetail) activeView = "matrix";
     syncState();
   }
 
