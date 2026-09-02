@@ -322,6 +322,27 @@ describe("shape matrix app state", () => {
       );
     }
   });
+  it("keeps a compact visitor on the detail pane for a stay-on-detail level edit", () => {
+    const axis = buildFlowerAxis([0]).filter(
+      (flower) => flower.grid === "diamond"
+    );
+    const left = axis[0];
+    const right = axis[1];
+    if (!left || !right) throw new Error("Expected two flowers");
+    const { state } = createState(true);
+    state.selectPair({ left, right });
+    expect(state.activeView).toBe("detail");
+
+    state.setLevel(3, { stayOnDetail: true });
+    expect(state.level).toBe(3);
+    expect(state.activeView).toBe("detail");
+    expect(state.selectedPair).not.toBeNull();
+
+    // The ribbon's plain call still returns to the matrix.
+    state.setLevel(2);
+    expect(state.activeView).toBe("matrix");
+  });
+
   it("keeps a compact visitor on the detail pane for a stay-on-detail turn edit", () => {
     const axis = buildFlowerAxis([0]).filter(
       (flower) => flower.grid === "diamond"

@@ -1,7 +1,8 @@
 <!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixTurnPopover.svelte
-  Compact detail turn editor. The trigger names the pair by its two hand
-  turns (blue left, red right); it opens a popover anchored under it that
-  holds the canonical turn controls plus the notation toggle, sized to
+  Compact detail level and turn editor. The trigger shows the level as the
+  shared difficulty badge and the pair's two hand turns (blue left, red
+  right); it opens a popover anchored under it that holds the level
+  selector, the notation toggle, and the canonical turn controls, sized to
   those controls and nothing more. An edit here stays on the detail pane,
   so the animator restages under the user's eyes and the matrix is already
   rebuilt when they go back. -->
@@ -10,9 +11,18 @@
   import { flyFade } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
+  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import { ratioLabel } from "$lib/shared/shape-matrix/domain/flower-signature";
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
-  import type { TurnValue } from "$lib/shared/create/services/level-turn-values";
+  import type {
+    TurnLevel,
+    TurnValue,
+  } from "$lib/shared/create/services/level-turn-values";
+  import {
+    SHAPE_MATRIX_LEVELS,
+    SHAPE_MATRIX_LEVEL_DESCRIPTIONS,
+  } from "../shape-matrix-levels";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
 
@@ -38,11 +48,14 @@
   const leftVisible = $derived(visible(appState.leftTurn));
   const rightVisible = $derived(visible(appState.rightTurn));
   const triggerLabel = $derived(
-    `Edit turns. Level ${appState.level}. Left ${spoken(appState.leftTurn)}, right ${spoken(appState.rightTurn)}.`
+    `Edit level and turns. Level ${appState.level}. Left ${spoken(appState.leftTurn)}, right ${spoken(appState.rightTurn)}.`
   );
 
   function applyTurn(turn: TurnValue): void {
     appState.setTurn(turn, { stayOnDetail: true });
+  }
+  function applyLevel(level: TurnLevel): void {
+    appState.setLevel(level, { stayOnDetail: true });
   }
 </script>
 
@@ -55,7 +68,7 @@
         class="turn-trigger"
         aria-label={triggerLabel}
       >
-        <span class="level">L{appState.level}</span>
+        <DifficultyBadge level={appState.level} size="1.5rem" />
         <span class="hand blue" aria-hidden="true">{leftVisible}</span>
         <span class="divider" aria-hidden="true">·</span>
         <span class="hand red" aria-hidden="true">{rightVisible}</span>
@@ -80,22 +93,33 @@
               {...props}
               class="turn-popover themed-scrollbar"
               role="dialog"
-              aria-label="Edit turns"
+              aria-label="Edit level and turns"
               transition:flyFade={{ y: -6, duration: DURATION.normal }}
             >
               <div class="popover-head">
-                <span class="popover-title">Turns</span>
+                <span class="popover-title">Level and turns</span>
                 <button
                   type="button"
                   class="popover-close"
-                  aria-label="Close turn editor"
+                  aria-label="Close level and turn editor"
                   onclick={() => (open = false)}
                 >
                   <i class="fas fa-xmark" aria-hidden="true"></i>
                 </button>
               </div>
+              <div class="level-row">
+                <span class="row-label">Level</span>
+                <LevelSelector
+                  value={appState.level}
+                  levels={SHAPE_MATRIX_LEVELS}
+                  describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
+                  onchange={applyLevel}
+                  compact={true}
+                  ariaLabel="Kinetic Alphabet level"
+                />
+              </div>
               <div class="notation">
-                <span class="notation-label">Notation</span>
+                <span class="row-label">Notation</span>
                 <SegmentedControl
                   options={LABEL_OPTIONS}
                   value={appState.labelMode}
@@ -157,11 +181,6 @@
   .turn-trigger:focus-visible {
     outline: 2px solid var(--theme-accent, #f59e0b);
     outline-offset: 2px;
-  }
-
-  .level {
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-weight: 650;
   }
 
   .hand {
@@ -267,6 +286,7 @@
     outline-offset: 2px;
   }
 
+  .level-row,
   .notation {
     display: grid;
     gap: 0.3rem;
@@ -277,7 +297,7 @@
     width: 9rem;
   }
 
-  .notation-label {
+  .row-label {
     color: var(--theme-text-dim, rgb(255 255 255 / 0.52));
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 650;

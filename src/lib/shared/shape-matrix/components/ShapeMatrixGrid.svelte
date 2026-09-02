@@ -186,6 +186,10 @@
     place-content: safe center;
     background: var(--theme-panel-bg, #0a0f14);
     container-type: size;
+    /* The header row and column each carry a 1px stroke outside the tile
+       tracks; the fit formula leaves room for it or the table overflows by
+       a pixel and grows a scrollbar. */
+    --header-stroke: 2px;
     /* Fit the whole grid (headers + cells) into the viewport at whole pixels,
        never below the 44px AAA touch-target floor. When it cannot fit at 44px
        (a large axis on a small viewport) it overflows and scrolls. */
@@ -193,7 +197,10 @@
       down,
       clamp(
         44px,
-        min(100cqw / var(--cols), 100cqh / var(--rows)),
+        min(
+          (100cqw - var(--header-stroke)) / var(--cols),
+          (100cqh - var(--header-stroke)) / var(--rows)
+        ),
         var(--cell-max)
       ),
       1px
@@ -250,10 +257,13 @@
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-card-bg, #111922);
   }
+  /* The art fills the header's content box. Sized to the tile itself it sat
+     one border wider than its cell and the whole table overflowed its
+     viewport by a few pixels, which is a scrollbar under a grid that fits. */
   .colhead :global(.mandala-art),
   .rowhead :global(.mandala-art) {
-    width: var(--cell);
-    height: var(--cell);
+    width: 100%;
+    height: 100%;
     aspect-ratio: 1;
   }
 

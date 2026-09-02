@@ -4,7 +4,6 @@
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
-  import type { TurnLevel } from "$lib/shared/create/services/level-turn-values";
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
@@ -37,17 +36,10 @@
   setAnimationScopeContext(animationState.scope);
   setAnimationVisibilityContext(animationState.scope.visibility);
   setEffectsConfigContext(animationState.scope.effects);
-  const LEVELS: readonly TurnLevel[] = [1, 2, 3, 4];
-  const LEVEL_DESCRIPTIONS: Record<TurnLevel, { name: string; blurb: string }> =
-    {
-      1: { name: "Base Motions", blurb: "Zero turns" },
-      2: { name: "Whole Turns", blurb: "Adds whole turns" },
-      3: { name: "Half Turns + Float", blurb: "Adds half turns and Float" },
-      4: {
-        name: "Quarter Turns",
-        blurb: "Adds quarter turns",
-      },
-    };
+  import {
+    SHAPE_MATRIX_LEVELS,
+    SHAPE_MATRIX_LEVEL_DESCRIPTIONS,
+  } from "../shape-matrix-levels";
   const LABEL_OPTIONS = [
     { value: "turns" as const, label: "TKA turns", shortLabel: "Turns" },
     { value: "ratios" as const, label: "VTG ratios", shortLabel: "Ratios" },
@@ -152,10 +144,14 @@
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
             <span>Matrix</span>
           </button>
-          <ShapeMatrixTurnPopover />
         {:else}
           <strong>Shape Matrix</strong>
         {/if}
+        <!-- One level-and-turns chip on both compact panes. The full ribbon
+             stacked four control groups above the grid on a phone and let
+             the turn scroller run past the right edge; the chip keeps the
+             matrix the hero and opens every control in its popover. -->
+        <ShapeMatrixTurnPopover />
       </div>
     {:else if variant === "standalone"}
       <div class="identity">
@@ -164,14 +160,14 @@
       </div>
     {/if}
 
-    {#if !appState.compact || appState.activeView === "matrix"}
+    {#if !appState.compact}
       <div class="matrix-controls">
         <div class="control-cell level-control">
           <span class="control-label">Difficulty</span>
           <LevelSelector
             value={appState.level}
-            levels={LEVELS}
-            describe={(level) => LEVEL_DESCRIPTIONS[level]}
+            levels={SHAPE_MATRIX_LEVELS}
+            describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
             onchange={appState.setLevel}
             compact={true}
             ariaLabel="Kinetic Alphabet level"
@@ -622,22 +618,11 @@
     }
   }
 
-  /* The 800–1024px band is tall enough for hierarchy but too narrow for four
-     dense tool groups in one ribbon. Give turn selection its own line there;
-     short-wide hosts keep the single-row composition to protect the canvas. */
-  @container shape-matrix-app (max-width: 64rem) and (min-width: 25.01rem) and (min-height: 30.01rem) {
-    .matrix-controls {
-      width: 100%;
-      display: grid;
-      grid-template-columns: max-content 1fr;
-      grid-template-areas:
-        "level labels"
-        "turns turns";
-      justify-items: start;
+  @container shape-matrix-app (max-width: 25rem) {
+    .topbar {
+      gap: 0.3rem;
     }
-
   }
-
   @container shape-matrix-app (max-width: 99.99rem) {
     .identity span {
       display: none;
@@ -666,6 +651,12 @@
   /* Phone widths: the relationships pill keeps its glyph and aria-label and
      drops the word so the turn chip beside it never clips. */
   @container shape-matrix-app (max-width: 30rem) {
+    /* The chip already names the surface; a title that truncates to
+       "Sha..." beside it is noise. */
+    .compact-context > strong {
+      display: none;
+    }
+
     .relationships-action {
       padding-inline: 0;
     }
@@ -679,38 +670,11 @@
     .topbar {
       gap: 0.3rem;
     }
-
-    .matrix-controls {
-      width: 100%;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas:
-        "level"
-        "labels"
-        "turns";
-      justify-items: start;
-    }
-
-    /* The vertical stack has room for captions again, and a first-time
-       phone viewer needs them more than anyone. */
-    .control-label {
-      display: inline;
-    }
-
-    .control-cell {
-      gap: 0.25rem;
-      padding: 0.35rem 0.45rem 0.45rem;
-    }
   }
 
   @container shape-matrix-app (min-width: 50.01rem) and (max-height: 30rem) {
     .shape-app:not(.compact-detail) .topbar {
-      grid-template-areas: "controls actions";
       padding-block: 0.3rem;
-    }
-
-    .shape-app:not(.compact-detail) .compact-context {
-      display: none;
     }
   }
 
@@ -766,10 +730,49 @@
     object-fit: cover;
   }
 
+  /* The carousel is not in the flying rectangle. It has its own name, so
+     the root crossfade leaves it alone; it rises from below once the stage
+     has landed, and sinks away first on the trip back. Only one side of the
+     morph has a strip, so the group has nothing to interpolate. */
+  @keyframes -global-shape-matrix-strip-rise {
+    from {
+      opacity: 0;
+      transform: translateY(1.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes -global-shape-matrix-strip-sink {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+  }
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-strip)) {
+    animation: shape-matrix-strip-rise var(--duration-emphasis)
+      var(--ease-out) both;
+    animation-delay: calc(var(--duration-dramatic) * 0.6);
+  }
+  :global(html.shape-matrix-morph::view-transition-old(shape-matrix-strip)) {
+    animation: shape-matrix-strip-sink var(--duration-normal) var(--ease-in)
+      both;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .top-action,
     .back-to-matrix {
       transition: none;
+    }
+
+    :global(html.shape-matrix-morph::view-transition-new(shape-matrix-strip)),
+    :global(html.shape-matrix-morph::view-transition-old(shape-matrix-strip)) {
+      animation: none;
     }
 
     :global(

@@ -101,7 +101,7 @@ describe("shape matrix mandala continuity", () => {
     // the tile at its real size instead of a stale measured one.
     const grid = read("components/ShapeMatrixGrid.svelte");
     expect(grid).not.toMatch(/bind:clientWidth|new ResizeObserver/);
-    expect(grid).toContain("100cqw / var(--cols)");
+    expect(grid).toContain("(100cqw - var(--header-stroke)) / var(--cols)");
     // The player's first mount does not run inside the morph's capture window.
     expect(drill).toContain("active={!mandalaTransition.handoff}");
     const heroLayer = read("components/MandalaHeroLayer.svelte");
@@ -215,7 +215,41 @@ describe("shape matrix mandala continuity", () => {
       "<ShapeMatrixTurnControls onturn={appState.setTurn} />"
     );
     expect(shell).toContain("<ShapeMatrixTurnPopover />");
+    // The chip serves both compact panes; the four-group ribbon is wide-only,
+    // so a phone matrix view keeps the grid as the hero.
+    expect(shell).toMatch(/\{#if !appState\.compact\}\s*<div class="matrix-controls">/);
+    expect(shell).not.toMatch(/activeView === "matrix"\}\s*<div class="matrix-controls">/);
     expect(shell).toContain("runMandalaMorph");
+  });
+
+  it("keeps the carousel out of the flying rectangle", () => {
+    // The canvas box is the stage; the strip is its own card with its own
+    // shared name, so it rises in after the stage lands instead of riding
+    // inside the travelling rectangle or popping in with the page.
+    const drill = read("components/ShapeMatrixDrill.svelte");
+    expect(drill).toMatch(
+      /class="strip-zone"[\s\S]*?use:claimedViewTransitionName=\{\{\s*name: SHAPE_MATRIX_STRIP_NAME/
+    );
+    expect(drill).toMatch(/\.hero-stage \{[^}]*border-radius: 16px/);
+    expect(drill).not.toMatch(/\.media-stage \{[^}]*border-radius/);
+    expect(drill).not.toMatch(/\.strip-zone \{[^}]*border-top/);
+    const shell = read("app/components/ShapeMatrixAppShell.svelte");
+    expect(shell).toContain("::view-transition-new(shape-matrix-strip)");
+    expect(shell).toContain("::view-transition-old(shape-matrix-strip)");
+    expect(shell).toContain("@keyframes -global-shape-matrix-strip-rise");
+  });
+
+  it("lets the compact popover pick the level, shown as the difficulty badge", () => {
+    const popover = read("app/components/ShapeMatrixTurnPopover.svelte");
+    expect(popover).toContain("<LevelSelector");
+    expect(popover).toContain("<DifficultyBadge level={appState.level}");
+    expect(popover).not.toMatch(/L\{appState\.level\}/);
+    expect(popover).toContain("appState.setLevel(level, { stayOnDetail: true })");
+    // One list of levels and blurbs for the ribbon and the popover.
+    expect(popover).toContain("SHAPE_MATRIX_LEVEL_DESCRIPTIONS");
+    const shell = read("app/components/ShapeMatrixAppShell.svelte");
+    expect(shell).toContain("SHAPE_MATRIX_LEVEL_DESCRIPTIONS");
+    expect(shell).not.toContain("const LEVEL_DESCRIPTIONS");
   });
 
   it("keeps the compact topbar as the only chrome row on the detail view", () => {
