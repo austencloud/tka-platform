@@ -296,11 +296,14 @@ describe("landing shared-element contract", () => {
     expect(launchpad).toContain('typeof IntersectionObserver === "undefined"');
     expect(launchpad).toContain("active={mediaActive.has(tile.id)}");
     expect(launchpad).toContain("visible={visible.has(tile.id)}");
+    // /composer rolls live sequences the way the home hero does. No baked
+    // example may be seeded here — the hero shows its pending state until the
+    // first generated draw lands.
+    expect(composer).not.toContain("FALLBACK_DEMO");
+    expect(composer).toContain("const heroAct = createHeroAct()");
+    expect(composer).toContain("runAfterNamedRouteMorphIdle(heroAct.start)");
     expect(composer).toContain(
-      'import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo"'
-    );
-    expect(composer).toContain(
-      "let carriedSequence = $state<SequenceData>(FALLBACK_DEMO)"
+      "const carriedSequence = $derived(visitorSequence ?? heroAct.sequence)"
     );
     expect(composer).toContain(
       'loader={() => import("./_sections/ConstructSection.svelte")}'

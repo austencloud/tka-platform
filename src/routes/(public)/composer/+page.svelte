@@ -6,13 +6,16 @@
   import Seo from "$lib/shared/components/Seo.svelte";
   import {
     trackCtaClick,
+    trackDemoInteraction,
     trackSectionView,
   } from "$lib/shared/analytics/landing-events";
   import { analyticsRoute } from "$lib/shared/analytics/analytics-context";
   import { isWebGL2Available } from "$lib/shared/3d/capabilities/webgl-capabilities";
   import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
-  import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo";
+  import { createHeroAct } from "$lib/shared/landing/data/hero-act.svelte";
+  import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
+  import { runAfterNamedRouteMorphIdle } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
   import ComposerBackgroundCycle from "./_components/ComposerBackgroundCycle.svelte";
@@ -94,7 +97,15 @@
     });
   }
 
-  let carriedSequence = $state<SequenceData>(FALLBACK_DEMO);
+  // The hero rolls live sequences exactly as HomeHero does — no baked example
+  // is ever shown here. `sequence` is null until the first draw lands, which
+  // SequenceHeroDemo renders as its "Preparing a live sequence..." state.
+  const heroAct = createHeroAct();
+
+  // A sequence the visitor composed or generated further down the page takes
+  // over the carry; until then the hero's current draw is what carries.
+  let visitorSequence = $state<SequenceData | null>(null);
+  const carriedSequence = $derived(visitorSequence ?? heroAct.sequence);
   const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
   let constructActive = $state(false);
   let outputsActive = $state(false);
@@ -109,10 +120,19 @@
   onMount(() => {
     webglAvailable = isWebGL2Available();
     webglChecked = true;
+    if (isConstrainedConnection()) return;
+    return runAfterNamedRouteMorphIdle(heroAct.start);
   });
 
   function carryVisitorSequence(next: SequenceData): void {
-    carriedSequence = next;
+    visitorSequence = next;
+  }
+
+  // Same handler HomeHero uses: report the interaction, then roll now.
+  function handleReroll(): void {
+    trackDemoInteraction("try_another");
+    visitorSequence = null;
+    void heroAct.advanceNow();
   }
 
   function activateConstruct(node: HTMLElement) {
@@ -269,6 +289,12 @@
     <div class="opening-player">
       <SequenceHeroDemo
         sequence={carriedSequence}
+        element={heroAct.element}
+        onReroll={handleReroll}
+        rerolling={heroAct.rerolling}
+        leftPropType={heroAct.propType}
+        rightPropType={heroAct.propType}
+        onSequenceBoundary={heroAct.offerSequenceBoundary}
         note="a real sequence playing in Composer"
         showNotationStrip={true}
         showWordHeader={true}
@@ -337,10 +363,10 @@
          viewer takes the next band. -->
     <div class="tunnel-band">
       <div class="product-frame band-frame">
-        {#key carriedSequence.id}
+        {#key carriedSequence?.id}
           <LazyMount
             loader={() => import("./_components/ComposerTunnelDemo.svelte")}
-            active={outputsActive}
+            active={outputsActive && !!carriedSequence}
             props={{ sequence: carriedSequence, layout: "band" }}
             error={tunnelLoadError}
             debugName="composer tunnel"
@@ -361,10 +387,10 @@
             <p>3D is unavailable in this browser.</p>
           </div>
         {:else}
-          {#key carriedSequence.id}
+          {#key carriedSequence?.id}
             <LazyMount
               loader={() => import("./_components/Composer3DViewerDemo.svelte")}
-              active={outputsActive && canShow3D}
+              active={outputsActive && canShow3D && !!carriedSequence}
               props={{ sequence: carriedSequence }}
               error={viewerLoadError}
               debugName="composer 3D viewer"
