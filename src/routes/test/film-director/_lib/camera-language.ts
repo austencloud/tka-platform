@@ -221,7 +221,14 @@ export interface DirectorCameraMove {
   easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
 }
 
-const MOVE_RULES: Record<
+/**
+ * What each move measures, and which directions it accepts.
+ *
+ * Exported because it is the only authority on a legal move: any surface that
+ * offers moves to a director has to read this rather than restate it, or it
+ * will offer one that fails validation the moment it is written into a film.
+ */
+export const CAMERA_MOVE_RULES: Record<
   DirectorCameraMove["move"],
   { unit: "degrees" | "meters" | null; directions: readonly string[] | null }
 > = {
@@ -235,6 +242,8 @@ const MOVE_RULES: Record<
   zoom: { unit: "degrees", directions: ["in", "out"] },
   roll: { unit: "degrees", directions: ["cw", "ccw"] },
 };
+
+const MOVE_RULES = CAMERA_MOVE_RULES;
 
 const ORBIT_SEGMENT_DEG = 30;
 

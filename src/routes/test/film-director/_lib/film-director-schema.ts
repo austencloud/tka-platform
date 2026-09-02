@@ -1248,17 +1248,37 @@ const cameraMoveSchema = z
   });
 
 /**
+ * The framing vocabulary, named rather than written inline into the enums
+ * below. A surface that shows a director their framing options reads these, so
+ * the offered set and the accepted set cannot drift apart — the same reason
+ * `CAMERA_MOVE_RULES` and the axis catalogs are exported.
+ */
+export const DIRECTOR_SHOT_SIZES = [
+  "close-up",
+  "medium",
+  "wide",
+  "extreme-wide",
+] as const;
+export const DIRECTOR_CAMERA_ANGLES = ["low", "eye", "high", "top"] as const;
+export const DIRECTOR_CAMERA_POSITIONS = [
+  "front",
+  "left",
+  "right",
+  "behind",
+] as const;
+
+/**
  * One framing, spelled the same whether it is the scene's only framing or one
  * shot among several. Shared so a shot can never drift from what the top-level
  * camera accepts.
  */
 const cameraFramingFields = {
   subject: cameraTargetSchema.optional(),
-  shotSize: z.enum(["close-up", "medium", "wide", "extreme-wide"]).optional(),
-  angle: z.enum(["low", "eye", "high", "top"]).optional(),
+  shotSize: z.enum(DIRECTOR_SHOT_SIZES).optional(),
+  angle: z.enum(DIRECTOR_CAMERA_ANGLES).optional(),
   position: z
     .union([
-      z.enum(["front", "left", "right", "behind"]),
+      z.enum(DIRECTOR_CAMERA_POSITIONS),
       z.object({ degrees: finiteNumber.min(-360).max(360) }).strict(),
     ])
     .optional(),
@@ -1404,9 +1424,16 @@ const cameraSchema = z
     }
   );
 
+/** How one scene may reach the next. Exported for the same reason as above. */
+export const DIRECTOR_TRANSITION_KINDS = [
+  "cut",
+  "environment-dissolve",
+  "fade-through-black",
+] as const;
+
 const transitionSchema = z
   .object({
-    kind: z.enum(["cut", "environment-dissolve", "fade-through-black"]),
+    kind: z.enum(DIRECTOR_TRANSITION_KINDS),
     durationSeconds: finiteNumber.min(0).max(3).optional(),
     // max 32 beats is a syntactic cap, not the real one — see the two-layer
     // contract note on atMostOneTimeUnit above. At a slow bpm, 32 beats can

@@ -111,17 +111,21 @@ function createHandPlaneAxisStream(
 // because their schema fields are un-narrowed `z.string()` refinements —
 // the registry-type cast happens once, on the resolved concrete value, same
 // as this file did before directives existed.
-const PROP_CATALOG = Object.values(PropType);
-const EFFECT_CATALOG: readonly string[] = [
+//
+// Exported because they are what a directive may actually resolve to. Any
+// surface that shows a director their options reads these, so the offered set
+// and the accepted set cannot drift apart.
+export const PROP_CATALOG = Object.values(PropType);
+export const EFFECT_CATALOG: readonly string[] = [
   "none",
   ...EFFECTS.map((effect) => effect.id),
 ];
-const EFFORT_CATALOG = [...DIRECTOR_EFFORT_IDS] as EffortId[];
-const ENVIRONMENT_CATALOG = Object.values(SceneEnvironmentId);
-const PLANE_CATALOG = Object.values(Plane) as Plane[];
+export const EFFORT_CATALOG = [...DIRECTOR_EFFORT_IDS] as EffortId[];
+export const ENVIRONMENT_CATALOG = Object.values(SceneEnvironmentId);
+export const PLANE_CATALOG = Object.values(Plane) as Plane[];
 // "custom" needs per-performer positions, so an open formation pick never
 // selects it — the count filter below narrows further, per scene.
-const FORMATION_CATALOG = DIRECTOR_FORMATIONS.filter(
+export const FORMATION_CATALOG = DIRECTOR_FORMATIONS.filter(
   (preset) => preset !== "custom"
 ) as FormationPreset[];
 
