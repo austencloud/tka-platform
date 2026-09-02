@@ -341,6 +341,41 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Non-singleton canvas frames:");
   });
 
+  it("composes every inspector layer at its destination width", () => {
+    // A settings surface that is width-100% of the animating inspector track
+    // re-wraps on every frame of the seam animation, which reads as the panel
+    // sliding and settling rather than being revealed. Each persistent layer
+    // pins its own destination width instead.
+    const composed = (layer: string, token: string) => {
+      const index = shell.indexOf(`.${layer}
+`);
+      expect(index, `${layer} has no composed-width rule`).toBeGreaterThan(-1);
+      const block = shell.slice(index, index + 400);
+      expect(block).toContain(`width: var(--${token})`);
+    };
+    composed("motion-settings-layer", "export-sidebar-width");
+    composed("performance-inspector-layer", "performance-sidebar-width");
+    composed("art-settings-layer", "export-sidebar-width");
+    // The card pin must hang off the persistent layer, not the mode-conditional
+    // container class: Svelte removes that class the instant the mode changes,
+    // so the departing Card panel loses its width mid-transition.
+    composed("card-settings-layer", "card-sidebar-width");
+    // Direct manipulation still wins over the composed width.
+    for (const layer of [
+      "motion-settings-layer",
+      "performance-inspector-layer",
+      "art-settings-layer",
+      "card-settings-layer",
+    ]) {
+      const index = shell.indexOf(`"true"])
+    .${layer}`);
+      expect(index, `${layer} has no manual-resize override`).toBeGreaterThan(
+        -1
+      );
+      expect(shell.slice(index, index + 400)).toContain("width: 100%");
+    }
+  });
+
   it("composes Performances through the persistent stage and inspector tracks", () => {
     expect(workspacePanels).toContain("data-persistent-viewer-stage");
     expect(shell).toContain("data-persistent-performance-stage");

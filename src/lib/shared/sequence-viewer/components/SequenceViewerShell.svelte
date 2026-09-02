@@ -1610,6 +1610,52 @@
     flex: 0 0 var(--performance-sidebar-width);
   }
 
+  /* Art settings are portaled into their layer as an absolutely positioned
+     host, so `width: 100%` made them stretch and re-wrap on every frame of the
+     seam animation. Compose them at the same destination width the Effects
+     inspector uses and anchor them to the layer's right edge, so PanelGroup
+     reveals a stationary column instead of dragging its left edge along. */
+  .viewer-and-export.desktop
+    .art-settings-layer
+    > :global(.art-settings-host.external) {
+    left: auto;
+    right: 0;
+    width: var(--export-sidebar-width);
+    min-width: var(--export-sidebar-width);
+    max-width: var(--export-sidebar-width);
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .art-settings-layer
+    > :global(.art-settings-host.external) {
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  /* The card pin below is keyed to a mode-conditional container class, which
+     Svelte removes the instant the mode changes. The departing Card panel then
+     falls back to its intrinsic width and follows the closing seam. Keying the
+     same destination width to the persistent layer keeps it composed on the
+     way out as well as on the way in. */
+  .viewer-and-export.desktop
+    .card-settings-layer
+    :global(.export-panel:not(.inline)) {
+    width: var(--card-sidebar-width);
+    min-width: var(--card-sidebar-width);
+    flex: 0 0 var(--card-sidebar-width);
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .card-settings-layer
+    :global(.export-panel:not(.inline)) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
   :global(.panel-wrapper[data-manually-sized="true"])
     .motion-settings-layer
     > :global(.export-panel.sidebar) {
