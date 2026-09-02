@@ -679,3 +679,152 @@ describe("camera shots grammar", () => {
     ).toThrow(/Tracking and shots do not combine/);
   });
 });
+
+describe("sequence sources: transformOf and library", () => {
+  function parse(performers: Record<string, unknown>[]) {
+    return resolveFilmDirectorSpec({
+      version: 2,
+      id: "source-film",
+      title: "Source Film",
+      scenes: [{ id: "s1", title: "S1", performance: { performers } }],
+    });
+  }
+  const sequences = (performers: Record<string, unknown>[]) =>
+    parse(performers).scenes[0]!.performance.performers.map((p) => p.sequence);
+
+  it("accepts a transform chain", () => {
+    expect(
+      sequences([
+        { id: "lead", sequence: { word: "SAILOR" } },
+        {
+          id: "second",
+          sequence: {
+            transformOf: "lead",
+            transforms: [
+              { op: "rotate", degrees: 90, direction: "cw" },
+              { op: "swap-hands" },
+              { op: "start-at", step: 2 },
+            ],
+          },
+        },
+      ])[1]
+    ).toEqual({
+      transformOf: "lead",
+      transforms: [
+        { op: "rotate", degrees: 90, direction: "cw" },
+        { op: "swap-hands" },
+        { op: "start-at", step: 2 },
+      ],
+    });
+  });
+
+  it("accepts a library sequence", () => {
+    expect(
+      sequences([
+        {
+          id: "solo",
+          sequence: { library: "0c7e6529-1dca-4254-903e-7068e38c030c" },
+        },
+      ])[0]
+    ).toEqual({ library: "0c7e6529-1dca-4254-903e-7068e38c030c" });
+  });
+
+  it("rejects transformOf without transforms", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB" } },
+        { id: "b", sequence: { transformOf: "a" } },
+      ])
+    ).toThrow(/transforms.{0,3} says what changes/);
+  });
+
+  it("rejects transforms without transformOf", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB", transforms: [{ op: "mirror" }] } },
+      ])
+    ).toThrow(/transforms.{0,3} only means something on a/);
+  });
+
+  it("rejects an empty transform chain", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB" } },
+        { id: "b", sequence: { transformOf: "a", transforms: [] } },
+      ])
+    ).toThrow(/at least one/);
+  });
+
+  it("rejects a rotation that is not a 45-degree step", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB" } },
+        {
+          id: "b",
+          sequence: {
+            transformOf: "a",
+            transforms: [{ op: "rotate", degrees: 60, direction: "cw" }],
+          },
+        },
+      ])
+    ).toThrow(/45/);
+  });
+
+  it("rejects a hand on swap-hands", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB" } },
+        {
+          id: "b",
+          sequence: {
+            transformOf: "a",
+            transforms: [{ op: "swap-hands", hand: "left" }],
+          },
+        },
+      ])
+    ).toThrow();
+  });
+
+  it("rejects start-at step 1", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB" } },
+        {
+          id: "b",
+          sequence: {
+            transformOf: "a",
+            transforms: [{ op: "start-at", step: 1 }],
+          },
+        },
+      ])
+    ).toThrow(/already starts/);
+  });
+
+  it("rejects controls on a library sequence", () => {
+    expect(() =>
+      parse([{ id: "a", sequence: { library: "x", level: 2 } }])
+    ).toThrow(/already finished/);
+  });
+
+  it("rejects controls on a transformed sequence", () => {
+    expect(() =>
+      parse([
+        { id: "a", sequence: { word: "AB" } },
+        {
+          id: "b",
+          sequence: {
+            transformOf: "a",
+            transforms: [{ op: "flip" }],
+            level: 2,
+          },
+        },
+      ])
+    ).toThrow(/carries no controls of its own/);
+  });
+
+  it("rejects two sources", () => {
+    expect(() =>
+      parse([{ id: "a", sequence: { library: "x", mirrorOf: "b" } }])
+    ).toThrow(/names one source, but this one names .*mirrorOf.*library/);
+  });
+});
