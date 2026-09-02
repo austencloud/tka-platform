@@ -13,7 +13,6 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 const COMMON = {
   activeAxis: "both" as const,
   propType: PropType.STAFF,
-  relationshipDriver: "hands" as const,
   propMode: null,
 };
 
@@ -98,7 +97,7 @@ describe("shape matrix URL state", () => {
     });
   });
 
-  it("round-trips independent axis bands and the prop-first driver", () => {
+  it("reads independent axis bands without restoring the legacy driver mode", () => {
     const state = readShapeMatrixRouteState(
       "?level=4&leftTurn=0.75&rightTurn=1.5&axis=right&labels=ratios&prop=fan&driver=props"
     );
@@ -110,7 +109,6 @@ describe("shape matrix URL state", () => {
       activeAxis: "right",
       labelMode: "ratios",
       propType: PropType.FAN,
-      relationshipDriver: "props",
       pair: null,
       mode: null,
       propMode: null,
@@ -143,14 +141,31 @@ describe("shape matrix URL state", () => {
       activeAxis: "both",
       labelMode: "turns",
       propType: PropType.CLUB,
-      relationshipDriver: "props",
       pair: { left, right },
       mode: "TS",
       propMode: "SS",
     });
 
     expect(url.searchParams.get("propMode")).toBe("SS");
+    expect(url.searchParams.get("driver")).toBeNull();
     expect(readShapeMatrixRouteState(url.search).propMode).toBe("SS");
+  });
+
+  it("restores the exact prop edge from a legacy prop-first link", () => {
+    const flowers = buildFlowerAxis([0.25]).filter(
+      (flower) => flower.grid === "diamond"
+    );
+    const left = flowers[0];
+    const right = flowers[1];
+    if (!left || !right) throw new Error("Expected quarter-turn flowers");
+
+    const state = readShapeMatrixRouteState(
+      `?level=4&leftTurn=0.25&rightTurn=0.25&driver=props&left=${flowerKey(left)}&right=${flowerKey(right)}&mode=TS&propMode=SS`
+    );
+
+    expect(state.mode).toBe("TS");
+    expect(state.propMode).toBe("SS");
+    expect("relationshipDriver" in state).toBe(false);
   });
 
   it("rejects timed prop state for unequal turns", () => {
