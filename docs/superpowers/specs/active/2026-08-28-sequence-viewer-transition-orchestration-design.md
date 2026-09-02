@@ -869,6 +869,88 @@ readout. Focused Vitest (`tests/config/vitest.config.ts`,
 `sequence-viewer-escape-ownership`): 29 files, 234 tests pass on the branch
 merged up to `main`, with `svelte-check` reporting 0 errors and 0 warnings.
 
+### Follow-up · the Card climbing in from below the fold (2026-09-02)
+
+**Report.** "As I switch to a card from performances it seems as the card seems
+to jump up from below as though it was hiding below the screen."
+
+**Root cause: a held dock swapping a length for a keyword.**
+`SequenceViewerShell` supplies `stackedInspectorSize` as
+`var(--performance-inspector-height)` in Performances and `"auto"` in Card.
+`ViewerWorkspacePanels` forwards it as the `export-inspector-stacked` panel's
+`preferredSize`, which `PanelGroup` renders as
+`flex-grow: 0; flex-shrink: 0; flex-basis: <value>` — a **held** panel, whose
+basis alone is its size.
+
+CSS has no interpolable midpoint between a length and a content keyword, so
+`flex-basis: 480px -> auto` is a discrete change and the whole outer group
+re-laid out in **one frame**: the dock went `[741.3, 480] -> [1220.7, 0.7]` and
+`viewer-stage` went `688.7 -> 1168`. That single frame relocated the collapsed
+`preview` column — which holds the Card — 479.3 px downward, to top 1220.7 in a
+1221 px viewport. The inner `flex-grow` animation then swept the Card up roughly
+820 px from off-screen. The reported climb was real, and it was the dock's snap
+that put the Card below the fold to climb from.
+
+**The fix: a measured-endpoint basis handoff, owned by `PanelGroup`.** The
+decision logic moved to `src/lib/shared/panels/panel-flex.ts`, so it is testable
+without a layout engine. `needsMeasuredBasisHandoff` fires only when **both**
+endpoints are held; a panel with a live flex share keeps today's behaviour,
+because there its basis is not its size and pinning it would fight the share.
+When it fires, `$effect.pre` measures the start box before the DOM update, the
+post-DOM effect reads the destination through a forced synchronous layout, pins
+the start with `transition: none`, reflows, and animates to the measured target
+in pixels. `transitionend` hands the declarative basis back so a content-sized
+dock resumes following its contents. Reduced motion opts out entirely, and a
+`DURATION.emphasis + DURATION.instant` safety settle covers a dropped
+`transitionend`.
+
+**Measured on the real route** (`/sequence/EHWE`, 1118×1221 — the in-app pane's
+exact viewport):
+
+| Run | Dock max step | Dock moving frames | Card centre max step | Card ever offscreen |
+| --- | --- | --- | --- | --- |
+| Performances -> Card | 74.8 px | **17** (was 1) | 19.1 px (was a 479.3 px teleport) | **no** (was yes) |
+| Card -> Performances | 74.9 px | 17 | 31.7 px | departure only, clipped by `overflow: hidden` |
+| 2D Animation -> Card | 0 px | 0 | 92.4 px | unchanged from before the fix |
+
+Post-fix basis frames: `480px -> 476.0 -> 461.7 -> 431.6 -> 380.0 -> 307.1 ->
+231.8 -> 170.4 -> 123.5 -> 88.4 -> 62.1 -> 42.1 -> 27.2 -> 16.3 -> 8.6 -> 3.8 ->
+1.26 -> auto`. The trailing `auto` is the proof the declarative basis is handed
+back rather than frozen at whatever pixel value it landed on.
+
+**No regression on the other held-panel consumers.** They are
+`ViewerWorkspacePanels`, `ViewerSplitPane`, `StageModule`, and
+`ShapeMatrixAppShell`. At 1920×1080 the desktop `export-inspector` already
+transitioned over 14–16 frames for Card <-> 2D (537.6 <-> 800) and Card <->
+Performances (537.6 <-> 460.8), and it still does: the desktop path's declarative
+basis **string** is identical across modes (`var(--active-inspector-width)`) and
+only the variable's value changes, so `needsMeasuredBasisHandoff` returns false
+and CSS keeps handling it natively. Confirmed by reading the inline style
+mid-flight — `inlineBasis: "var(--active-inspector-width)"`, computed 705.453 px
+mid-interpolation.
+
+**New instrument.** `transition-geometry-trace.ts` gained `summarizeDockCollapse`
+and the harness readout `Dock collapse: <step> px step · <travel> px over
+<frames> frames · <ms> ms`, flagged when a collapse of more than 24 px completes
+in a single frame. The pre-existing `Card arrival` filter was also relaxed: it
+had required a measurable panel height, which discarded exactly the frames where
+the Card is parked in a collapsed panel — the frames that carry this defect. Both
+readouts return `null` when the trace contains no held-dock resize, which is the
+honest result for a replay whose dock mounts and unmounts through `flexPresence`
+rather than changing its basis.
+
+**Checks.** `tests/unit/panel-flex.test.ts` covers the precedence order (fixed >
+preferred > flex share) and every handoff decision, including the two directions
+of this dock swap and the four cases that must stay false. The orchestration
+contract test now asserts the ownership move and the handoff wiring rather than
+the old inline `fixedSize` line. Vitest (`tests/config/vitest.config.ts`): 30
+files, 243 tests pass. `svelte-check`: 0 errors, 0 warnings. Resting composition
+captured at all seven required viewports — 375×667, 960×412, 820×1180, 1440×900,
+1920×1080, 2560×1440, 3840×2160 — and is unchanged, which the implementation
+guarantees by construction: the inline basis exists only for the duration of the
+transition.
+
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of
