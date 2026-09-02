@@ -2,6 +2,9 @@
 
 **Date:** 2026-09-02
 **Status:** Decomposition agreed. Sub-project 1 (Drive in) selected for the first design.
+**Settled so far:** chase camera behind the car; approach extended along the real
+ODOT bearing to the survey west edge (~885 m, ~130 s at a careful 15 mph), fully
+player-steered.
 **Scope:** This is a roadmap, not an implementation spec. Each sub-project below
 gets its own `YYYY-MM-DD-<topic>-design.md` and its own implementation plan.
 
@@ -89,8 +92,56 @@ new terrain west of the current bounds. Do not quietly assume one of these.
 
 ## Decomposition
 
-Five independent subsystems, in dependency order. Each gets its own spec, plan,
+Six independent subsystems, in dependency order. Each gets its own spec, plan,
 and implementation cycle.
+
+### 0. Loadout and economy — ADDED 2026-09-02
+
+Austen, when asked whether the player picks their car:
+
+> If the very first thing in your game is picking your car, well why aren't you
+> going to pick the one prop that you come in with, and the tent that you pick it
+> in with? Why not have a finite set of money that allows you to pick your
+> favourite things? For example if you get a bigger and better tent then you're
+> going to sleep more, because we're eventually going to have an energy bar which
+> is going to keep track of how much you've been moving around and how much you
+> need to go rest. Also you could pick whether you want to eat from the vendors
+> which costs more money, or if you want to prepare food ahead of time which
+> actually saves you money — but I don't know how that game mechanic would make
+> sense, because obviously everyone would just prepare ahead of time.
+
+A finite budget spent before the drive, on the things you arrive with: car,
+prop, tent, food strategy. The tent feeds a future energy and rest system. The
+car caps cargo.
+
+**The prepare-versus-buy balance.** Prepared food is cheaper in money and more
+expensive in everything else, so neither play dominates:
+
+- **Time and distance.** Eating from your cooler means walking back to camp,
+  cooking, and cleaning up — time away from the festival, and the walk spends
+  the same energy the tent exists to protect. Vendor food is where you already
+  are.
+- **Cargo.** A cooler takes room in the car and time to unload; room not spent
+  on a bigger tent. The car you picked caps both.
+- **Decay.** Ice melts. Day 3 cooler food restores less than day 1. Vendor food
+  does not degrade.
+- **Where the people are.** Vendor Village is where you run into people you
+  know. Eating alone at camp is the cheapest meal and the one where nothing
+  happens to you.
+
+A pickup with a big cooler and a cheap tent is a coherent build; so is a
+hatchback with a great tent and a vendor budget. Every one of those costs is
+something the sim needs for other reasons, so none of it is a balance tax
+invented to prop up the mechanic.
+
+**The discipline that keeps this honest:** a choice may only appear on the
+loadout screen once at least one of its consequences is implemented. Otherwise
+it is a menu that lies. The budget and the car qualify immediately; the tent
+qualifies when it becomes cargo you carry and pitch; food qualifies when Vendor
+Village and the energy bar exist. The data model is designed once, in full, and
+the screen reveals choices as their consequences land.
+
+Depends on nothing. Its consequences land across sub-projects 1, 3, 4, and 5.
 
 ### 1. Drive in — SELECTED, designing next
 
