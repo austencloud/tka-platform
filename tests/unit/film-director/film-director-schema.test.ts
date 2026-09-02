@@ -581,3 +581,101 @@ describe("camera tracking grammar", () => {
     ).toThrow(/spoken on \\"subject\\"/);
   });
 });
+
+describe("camera shots grammar", () => {
+  const shotsFilm = (camera: Record<string, unknown>) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "shots-film",
+    title: "Shots",
+    scenes: [{ id: "s1", title: "S1", camera }],
+  });
+
+  const twoShots = [
+    { subject: { kind: "group" }, shotSize: "wide", durationBeats: 8 },
+    { subject: { kind: "group" }, shotSize: "medium" },
+  ];
+
+  it("accepts two shots", () => {
+    const parsed = FilmDirectorInputSchema.parse(shotsFilm({ shots: twoShots }));
+    expect(parsed.scenes[0]!.camera?.shots).toHaveLength(2);
+    expect(parsed.scenes[0]!.camera?.shots?.[0]?.durationBeats).toBe(8);
+  });
+
+  it("rejects a single shot and says why", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(shotsFilm({ shots: [twoShots[0]] }))
+    ).toThrow(/at least two/);
+  });
+
+  it("rejects shots alongside a top-level framing", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        shotsFilm({ shots: twoShots, shotSize: "close-up" })
+      )
+    ).toThrow(/exclusive/);
+  });
+
+  it("rejects shots alongside a preset", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        shotsFilm({ shots: twoShots, preset: "group-orbit" })
+      )
+    ).toThrow(/exclusive/);
+  });
+
+  it("rejects shots alongside raw keyframes", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        shotsFilm({
+          shots: twoShots,
+          keyframes: [{ atSeconds: 0, position: [0, 1, -4] }],
+        })
+      )
+    ).toThrow(/exclusive/);
+  });
+
+  it("rejects shots alongside a target", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        shotsFilm({ shots: twoShots, target: { kind: "group" } })
+      )
+    ).toThrow(/not \\"target\\"/);
+  });
+
+  it("rejects a shot stating both time units", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        shotsFilm({
+          shots: [
+            {
+              subject: { kind: "group" },
+              durationSeconds: 2,
+              durationBeats: 4,
+            },
+            { subject: { kind: "group" } },
+          ],
+        })
+      )
+    ).toThrow(/exactly one of/i);
+  });
+
+  it("rejects tracking inside a shot", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        shotsFilm({
+          shots: [
+            {
+              subject: {
+                kind: "performer",
+                performerId: "performer-1",
+                track: "follow",
+              },
+              shotSize: "medium",
+            },
+            { subject: { kind: "group" } },
+          ],
+        })
+      )
+    ).toThrow(/Tracking and shots do not combine/);
+  });
+});

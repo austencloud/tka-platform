@@ -31,13 +31,20 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  * performer who walked out of that framing walked out of the film. Scene 4
  * says `track: "follow"` on its subject: camera and target both travel with
  * the walker, so the framing holds while the forest slides past behind them.
+ *
+ * Gap 4, mid-scene cuts. Before this wave a scene held one framing for its
+ * whole length: to cut, a director had to split the shot into separate scenes
+ * and rebuild the cast in each. Scene 5 states three framings inside one scene
+ * under `camera.shots`. The frame jumps at each boundary — a step keyframe
+ * holds the outgoing framing until the incoming one starts at the same
+ * instant, and the spline is forbidden from bending across it.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
   version: 5,
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
-    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them.",
+    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
   // The grammar only guarantees distinctness PER axis; three blues and three
@@ -211,6 +218,45 @@ export const provingGroundsFilm: FilmDirectorInput = {
         angle: "eye",
         position: "front",
         moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "three-shots",
+      title: "Three Shots",
+      intent:
+        "Gap 4: one scene, three framings, two hard cuts. A wide front two-shot for six beats, then a cut to a low close-up on performer 1 (the pink one, screen right from the front) that pushes in for six beats, then a cut to a high medium shot from behind for the last four. The frame jumps at each cut; nothing glides between framings.",
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "cosmic" },
+      performance: {
+        bpm: 120,
+        formation: "side-by-side",
+        cast: { count: 2, defaults: { effect: "none" } },
+      },
+      camera: {
+        shots: [
+          {
+            subject: { kind: "group" },
+            shotSize: "wide",
+            angle: "eye",
+            position: "front",
+            durationBeats: 6,
+          },
+          {
+            subject: { kind: "performer", performerId: "performer-1" },
+            shotSize: "close-up",
+            angle: "low",
+            position: "front",
+            moves: [{ move: "push-in", amount: { meters: 0.4 } }],
+            durationBeats: 6,
+          },
+          {
+            subject: { kind: "group" },
+            shotSize: "medium",
+            angle: "high",
+            position: "behind",
+          },
+        ],
       },
     },
   ],
