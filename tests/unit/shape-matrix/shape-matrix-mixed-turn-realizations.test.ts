@@ -61,6 +61,17 @@ describe("mixed whole-turn and quarter-turn cells", () => {
     }
   }, 60_000);
 
+  it("builds every hand relationship for a half-turn hand against a quarter-turn hand", async () => {
+    // Austen's 4:1 against 3:2 report: 1.5 turns beside 0.25 turns.
+    const counts = await candidatesFor(
+      "pro-1.5-in-diamond",
+      "pro-0.25-out-diamond"
+    );
+    for (const mode of MODE_ORDER) {
+      expect(counts[mode], mode).toBeGreaterThanOrEqual(1);
+    }
+  }, 60_000);
+
   it("still builds the pure whole-turn and pure quarter-turn cells", async () => {
     const whole = await candidatesFor("pro-2-in-diamond", "pro-2-out-diamond");
     const quarter = await candidatesFor(
