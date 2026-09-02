@@ -454,4 +454,74 @@ export const entries: CorpusEntry[] = [
       messageIncludes: "Camera keyframes cannot share the same time.",
     },
   },
+  {
+    id: "camera-truck-right-two-meters",
+    utterance: "Truck right two meters.",
+    film: corpusFilm("camera-truck-right-two-meters", {
+      performance: { cast: { count: 2 } },
+      camera: { moves: [{ move: "truck", direction: "right", amount: { meters: 2 } }] },
+    }),
+    expect: { outcome: "resolves" },
+  },
+  {
+    id: "camera-zoom-in-fifteen-degrees",
+    utterance: "Zoom in fifteen degrees.",
+    film: corpusFilm("camera-zoom-in-fifteen-degrees", {
+      performance: { cast: { count: 2 } },
+      camera: { moves: [{ move: "zoom", direction: "in", amount: { degrees: 15 } }] },
+    }),
+    expect: { outcome: "resolves" },
+  },
+  {
+    id: "camera-roll-ccw-ten-degrees",
+    utterance: "Roll counterclockwise ten degrees over eight beats.",
+    film: corpusFilm("camera-roll-ccw-ten-degrees", {
+      performance: { cast: { count: 2 } },
+      camera: {
+        moves: [
+          { move: "roll", direction: "ccw", amount: { degrees: 10 }, durationBeats: 8 },
+        ],
+      },
+    }),
+    expect: { outcome: "resolves" },
+  },
+  {
+    id: "camera-keyframe-carries-roll",
+    utterance: "Start the camera here, twelve degrees rolled.",
+    film: corpusFilm("camera-keyframe-carries-roll", {
+      performance: { cast: { count: 1 } },
+      camera: { keyframes: [{ atSeconds: 0, position: [0, 1.6, -3], rollDeg: 12 }] },
+    }),
+    expect: { outcome: "resolves" },
+  },
+  {
+    id: "camera-truck-wrong-unit-degrees",
+    utterance: "Truck right thirty degrees.",
+    film: corpusFilm("camera-truck-wrong-unit-degrees", {
+      performance: { cast: { count: 2 } },
+      camera: { moves: [{ move: "truck", amount: { degrees: 30 } }] },
+    }),
+    expect: { outcome: "rejects", messageIncludes: '"truck" takes meters, not degrees' },
+  },
+  {
+    id: "camera-zoom-wrong-direction-cw",
+    utterance: "Zoom the camera clockwise.",
+    film: corpusFilm("camera-zoom-wrong-direction-cw", {
+      performance: { cast: { count: 2 } },
+      camera: { moves: [{ move: "zoom", direction: "cw" }] },
+    }),
+    expect: {
+      outcome: "rejects",
+      messageIncludes: '"zoom" direction must be one of in/out, got "cw"',
+    },
+  },
+  {
+    id: "camera-keyframe-roll-out-of-range",
+    utterance: "Start the camera rolled two hundred seventy degrees.",
+    film: corpusFilm("camera-keyframe-roll-out-of-range", {
+      performance: { cast: { count: 1 } },
+      camera: { keyframes: [{ atSeconds: 0, position: [0, 1.6, -3], rollDeg: 270 }] },
+    }),
+    expect: { outcome: "rejects", messageIncludes: "Too big: expected number to be <=180" },
+  },
 ];

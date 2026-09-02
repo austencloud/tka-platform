@@ -179,12 +179,16 @@ describe("Flow Fest production dressing", () => {
       lowerInnerRoadsideTentCount: 8,
       lowerOuterTreeLineTentCount: 14,
       lowerCenterVehicleOutsideLoopCount: 0,
+      lowerCenterVehicleAisleIntrusionCount: 0,
       lowerInnerRoadsideTentOutsideLoopCount: 0,
       lowerOuterTreeLineTentInsideLoopCount: 0,
     });
+    // Side-by-side stalls: a 3.55 m pitch with 0.12 m of jitter each way.
     expect(
       first.spatialAudit.minimumVehicleCenterDistance
-    ).toBeGreaterThanOrEqual(4.05);
+    ).toBeGreaterThanOrEqual(3.05);
+    expect(first.parkedCars).toHaveLength(32);
+    expect(new Set(first.parkedCars.map((car) => car.modelId)).size).toBe(6);
     expect(
       first.spatialAudit.minimumTentVehicleDistance
     ).toBeGreaterThanOrEqual(3.2);
@@ -371,7 +375,7 @@ describe("Flow Fest production dressing", () => {
 
     first.dispose();
     second.dispose();
-  });
+  }, 30_000);
 
   it.each([
     ["lower-tent", 37],

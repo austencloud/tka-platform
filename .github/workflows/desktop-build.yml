@@ -8,14 +8,37 @@ permissions:
   contents: write
 
 jobs:
+  release-preflight:
+    name: Validate desktop release signing
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Validate signing secrets for tagged releases
+        if: github.ref_type == 'tag'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          missing=()
+          [[ -n "$TAURI_SIGNING_PRIVATE_KEY" ]] || missing+=(TAURI_SIGNING_PRIVATE_KEY)
+          [[ -n "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" ]] || missing+=(TAURI_SIGNING_PRIVATE_KEY_PASSWORD)
+          if (( ${#missing[@]} )); then
+            printf '::error::Missing required desktop release secret(s): %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+      - name: Confirm unsigned smoke-build mode
+        if: github.ref_type != 'tag'
+        run: echo "Branch dispatch uses unsigned packages and does not create a GitHub release."
+
   prepare-sequence-bundle:
     name: Export and verify offline sequence data
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
-    env:
-      GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
     steps:
       - uses: actions/checkout@v6
 
@@ -31,13 +54,22 @@ jobs:
       - name: Create Firebase credential file
         env:
           SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-        run: printf '%s' "$SERVICE_ACCOUNT_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+        run: |
+          credential_path="$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$SERVICE_ACCOUNT_KEY" > "$credential_path"
+          printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "$credential_path" >> "$GITHUB_ENV"
 
       - name: Export desktop sequence bundle
         run: pnpm export:deck-bundle
 
       - name: Verify desktop sequence bundle
         run: pnpm verify:desktop-sequence-bundle
+
+      - name: Export public gallery index
+        run: pnpm export:gallery-bundle
+
+      - name: Verify public gallery index
+        run: pnpm verify:desktop-gallery-bundle
 
       - name: Remove Firebase credential file
         if: always()
@@ -52,8 +84,17 @@ jobs:
           retention-days: 1
           compression-level: 9
 
+      - name: Upload public gallery index
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-gallery-bundle
+          path: data/gallery/
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 9
+
   build:
-    needs: prepare-sequence-bundle
+    needs: [release-preflight, prepare-sequence-bundle]
     strategy:
       fail-fast: false
       matrix:
@@ -92,10 +133,42 @@ jobs:
       - name: Verify downloaded desktop sequence bundle
         run: pnpm verify:desktop-sequence-bundle
 
+      - name: Download public gallery index
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-gallery-bundle
+          path: data/gallery
+
+      - name: Verify downloaded public gallery index
+        run: pnpm verify:desktop-gallery-bundle
+
+      # Copies tracked static assets and mirrors R2 characters/reef into
+      # src-tauri/desktop-assets (~230 MB). tauri-build-frontend.cjs runs the
+      # same step again and finds everything cached.
+      - name: Collect offline desktop assets
+        run: pnpm collect:desktop-assets
+
+      - name: Verify offline desktop assets
+        run: pnpm verify:desktop-assets
+
       - name: Create .env from example
         run: cp .env.example .env
 
-      - uses: tauri-apps/tauri-action@v0
+      # Windows ships its own WebView2 engine (fixed runtime) so the installer
+      # never depends on the machine's Evergreen runtime or an install-time download.
+      - name: Fetch WebView2 fixed runtime
+        if: matrix.platform == 'windows-latest'
+        run: pnpm fetch:webview2-runtime
+
+      - name: Build unsigned desktop packages
+        if: github.ref_type != 'tag'
+        uses: tauri-apps/tauri-action@v0
+        with:
+          args: ${{ matrix.args }} --config src-tauri/tauri.ci.conf.json
+
+      - name: Build and publish signed desktop release
+        if: github.ref_type == 'tag'
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}

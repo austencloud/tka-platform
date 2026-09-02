@@ -868,11 +868,16 @@
                   </T.Group>
                 {/if}
               {/snippet}
+              <!-- PerformerRig's external compatibility API still names the
+                 snippet payload blue/red. Rename at this seam so the
+                 orchestrator receives real prop states; destructuring the
+                 app-side left/right names here left both undefined and
+                 silently disabled every 3D effect. -->
               {#snippet effectsSlot({
-                leftPropState,
-                rightPropState,
-                leftHandPos,
-                rightHandPos,
+                bluePropState: leftPropState,
+                redPropState: rightPropState,
+                blueHandPos: leftHandPos,
+                redHandPos: rightHandPos,
                 isPlaying: rigPlaying,
                 staffHalfLength,
                 effectsParentRef,

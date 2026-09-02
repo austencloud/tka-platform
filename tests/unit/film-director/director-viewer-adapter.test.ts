@@ -13,14 +13,19 @@
  *  (c) `applyDirectorSceneToViewer` sets whole-sequence hand planes on a
  *      REUSED performer instance across a scene transition.
  */
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { Plane } from "@austencloud/scene-3d";
 
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
 import {
   applyDirectorSceneToViewer,
+  applyDirectorStepChanges,
   buildDirectorViewerSeed,
+  idlePerformerIndices,
+  type DirectorAppliedStepChange,
 } from "../../../src/routes/test/film-director/_lib/director-viewer-adapter";
+import type { Viewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+import type { ResolvedDirectorScene } from "../../../src/routes/test/film-director/_lib/film-director-schema";
 import { createViewer3DStateForTest } from "../3d-viewer/viewer3d-test-helpers.svelte";
 import { __resetWebGL2CapabilityForTests } from "$lib/shared/3d/capabilities/webgl-capabilities";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -252,5 +257,114 @@ describe("applyDirectorSceneToViewer wires planes onto real character instances"
     } finally {
       dispose();
     }
+  });
+});
+
+describe("idle performers", () => {
+  it("names the cast slots that spin nothing", () => {
+    const scene = {
+      performance: {
+        performers: [
+          { id: "a", sequence: { source: "demo" } },
+          { id: "b", sequence: { source: "none" } },
+          { id: "c", sequence: { word: "AB" } },
+        ],
+      },
+    } as unknown as ResolvedDirectorScene;
+    expect([...idlePerformerIndices(scene)]).toEqual([1]);
+  });
+});
+
+describe("applyDirectorStepChanges", () => {
+  // The plane tests above drive a real Viewer3DState because they assert on
+  // real character-instance plane state. This one asserts on CALLS, so it uses
+  // a stub carrying only what applyDirectorStepChanges reaches for:
+  // viewer.performerManager.performers[i].setEffect/setEffort.
+  function fakeViewer(count: number) {
+    const performers = Array.from({ length: count }, () => ({
+      setEffect: vi.fn(),
+      setEffort: vi.fn(),
+    }));
+    return {
+      viewer: { performerManager: { performers } } as unknown as Viewer3DState,
+      performers,
+    };
+  }
+
+  function stepScene() {
+    return resolveFilmDirectorSpec({
+      version: 5,
+      id: "step-film",
+      title: "Step Film",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: {
+            cast: {
+              count: 2,
+              performers: [
+                {
+                  id: "performer-1",
+                  effect: "none",
+                  effort: "linear",
+                  stepEffects: [
+                    { step: 4, effect: "trails" },
+                    { step: 8, effect: "fire" },
+                  ],
+                  stepEfforts: [{ step: 8, effort: "punch" }],
+                },
+                { id: "performer-2" },
+              ],
+            },
+          },
+        },
+      ],
+    }).scenes[0]!;
+  }
+
+  it("writes only when the value changes, and never for a performer with no entries", () => {
+    const scene = stepScene();
+    const { viewer, performers } = fakeViewer(2);
+    const applied = new Map<string, DirectorAppliedStepChange>();
+    const calls = () =>
+      performers.map((performer) => ({
+        effect: performer.setEffect.mock.calls.length,
+        effort: performer.setEffort.mock.calls.length,
+      }));
+
+    applyDirectorStepChanges(viewer, scene, [3, 3], applied);
+    expect(calls()[0]).toEqual({ effect: 0, effort: 0 });
+
+    applyDirectorStepChanges(viewer, scene, [4, 4], applied);
+    applyDirectorStepChanges(viewer, scene, [5, 5], applied);
+    applyDirectorStepChanges(viewer, scene, [6, 6], applied);
+    expect(calls()[0]).toEqual({ effect: 1, effort: 0 });
+    const performer = performers[0]!;
+    expect(performer.setEffect).toHaveBeenLastCalledWith("trails", {
+      equipBuild: false,
+      recordUndo: false,
+    });
+
+    applyDirectorStepChanges(viewer, scene, [8, 8], applied);
+    expect(calls()[0]).toEqual({ effect: 2, effort: 1 });
+    expect(performer.setEffort).toHaveBeenLastCalledWith("punch", {
+      recordUndo: false,
+    });
+
+    // performer-2 states no per-step entries, so no frame ever writes to it.
+    expect(calls()[1]).toEqual({ effect: 0, effort: 0 });
+  });
+
+  it("returns to the scene's base value when the playhead loops back", () => {
+    const scene = stepScene();
+    const { viewer, performers } = fakeViewer(2);
+    const applied = new Map<string, DirectorAppliedStepChange>();
+    applyDirectorStepChanges(viewer, scene, [8, 8], applied);
+    applyDirectorStepChanges(viewer, scene, [0, 0], applied);
+    expect(performers[0]!.setEffect).toHaveBeenLastCalledWith("none", {
+      equipBuild: false,
+      recordUndo: false,
+    });
   });
 });

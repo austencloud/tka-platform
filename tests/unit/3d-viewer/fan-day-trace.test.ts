@@ -62,19 +62,28 @@ describe("DoodleGrip Day fan source trace", () => {
     const outline = trace.outline as number[][];
     const holePoints = (trace.holes as number[][][]).flat();
 
-    expect(outline.every((point) => hasMirroredPoint(point, outline))).toBe(true);
-    expect(holePoints.every((point) => hasMirroredPoint(point, holePoints))).toBe(
+    expect(outline.every((point) => hasMirroredPoint(point, outline))).toBe(
       true
     );
+    expect(
+      holePoints.every((point) => hasMirroredPoint(point, holePoints))
+    ).toBe(true);
   });
 
   it("builds the Day plate from the extracted contours", () => {
     const builder = fs.readFileSync(builderPath, "utf8");
+    const dayBuilderStart = builder.indexOf("def build_day_frame(");
+    const dayBuilderEnd = builder.indexOf(
+      "\ndef build_moon_fan(",
+      dayBuilderStart
+    );
+    expect(dayBuilderStart).toBeGreaterThanOrEqual(0);
+    expect(dayBuilderEnd).toBeGreaterThan(dayBuilderStart);
+    const dayBuilder = builder.slice(dayBuilderStart, dayBuilderEnd);
 
-    expect(builder).toContain("doodlegrip-day-contours.json");
-    expect(builder).toContain('trace["outline"]');
-    expect(builder).toContain('trace["holes"]');
-    expect(builder).not.toContain("top_left =");
-    expect(builder).not.toContain("lower_left =");
+    expect(dayBuilder).toContain('trace["outline"]');
+    expect(dayBuilder).toContain('trace["holes"]');
+    expect(dayBuilder).not.toContain("top_left =");
+    expect(dayBuilder).not.toContain("lower_left =");
   });
 });

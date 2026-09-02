@@ -37,6 +37,13 @@
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { mirrorSequence } from "$lib/shared/create/services/sequence-transformer";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { tryGetViewerUrlSessionContext } from "$lib/shared/sequence-viewer/services/viewer-url-session";
+  import {
+    capturePsSlice,
+    persistedPsSlice,
+    seedFromPsSlice,
+    type PsSlicePayload,
+  } from "$lib/shared/sequence-viewer/services/viewer-url-slices/ps-slice";
   import PostStudioActionBar from "./PostStudioActionBar.svelte";
   import PostStudioPreview from "./PostStudioPreview.svelte";
   import PostStudioInspector from "./PostStudioInspector.svelte";
@@ -103,8 +110,22 @@
     getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
   setAnimationVisibilityContext(animationVisibility);
 
+  // ps slice: setup-state seed. `PostStudioPane.svelte` mounts this component
+  // via `{#if layout.showPostStudio}`, so `tryGetViewerUrlSessionContext()`
+  // resolves the same session `SequenceViewerOrchestrator.svelte` publishes
+  // to every pane. `persistedPsSlice()` always returns null (no encoded field
+  // has a disk-backed form), so `isOverride` degenerates to "any non-null URL
+  // payload is an override" — see `ps-slice.ts`'s doc comment, "Own-link rule".
+  const viewerUrlSession = tryGetViewerUrlSessionContext();
+  const psSeedPayload =
+    (viewerUrlSession?.getSeed("ps") as PsSlicePayload | null) ?? null;
+  const psSeed =
+    psSeedPayload && viewerUrlSession?.isOverride("ps", persistedPsSlice())
+      ? seedFromPsSlice(psSeedPayload)
+      : null;
+
   let selectedPropType = $state<PropType>(
-    settingsService.settings.leftPropType ?? PropType.STAFF
+    psSeed?.propType ?? settingsService.settings.leftPropType ?? PropType.STAFF
   );
   const synchronizedCardRenderOptions = $derived(
     withPostStudioPropType(cardRenderOptions, selectedPropType)
@@ -407,6 +428,16 @@
     }
   }
 
+  // Seeded mirror: `toggleNotationMirror` FLIPS (it un-mirrors when already
+  // mirrored), so a seeded `notationMirrored: true` cannot call it as-is.
+  // `notationMirrored`/`mirrorCache` both still hold their fresh-mount values
+  // at this point in setup, so this call always takes the function's own
+  // async-build "turn on" branch above — reusing that branch rather than
+  // duplicating its cache-population logic here.
+  if (psSeed?.notationMirrored) {
+    void toggleNotationMirror();
+  }
+
   // Tunnel and mandala controllers live here, above both the slot that draws
   // them and the inspector that steers them, so the Look / Spin / Colors
   // controls change the instance the canvas is reading. Same ownership as
@@ -420,8 +451,11 @@
   setPostStudioArtContext(artControllers);
 
   let previewRoot = $state<HTMLElement | null>(null);
-  let audioMode = $state<"original" | "instagram">("original");
-  let audioModeTouched = $state(false);
+  // Seeded as touched when the URL carried an explicit choice: the untouched
+  // `$effect` below (line ~486) would otherwise overwrite it the instant
+  // `canKeepOriginalAudio` resolves. See `ps-slice.ts`, "Touched-flag diffing".
+  let audioMode = $state<"original" | "instagram">(psSeed?.audioMode ?? "original");
+  let audioModeTouched = $state(psSeed?.audioMode !== undefined);
   let exportProgress = $state<PostStudioExportProgress | null>(null);
   let exportError = $state("");
   let exportedUrl = $state<string | null>(null);
@@ -502,6 +536,33 @@
     exportCancelled = true;
     if (exportedUrl) URL.revokeObjectURL(exportedUrl);
     if (localPerformanceUrl) URL.revokeObjectURL(localPerformanceUrl);
+  });
+
+  // ps slice: live capture. `defaultPropType` is read fresh on every capture
+  // (never cached), because it is the LIVE per-session baseline `propType`
+  // diffs against — see `ps-slice.ts`, "Diff baseline: per-session live
+  // value, not a fixed constant".
+  const capturePs = (options: { full?: boolean } = {}) =>
+    capturePsSlice(
+      {
+        propType: selectedPropType,
+        defaultPropType: settingsService.settings.leftPropType ?? PropType.STAFF,
+        audioMode,
+        audioModeTouched,
+        notationMirrored,
+      },
+      options
+    );
+
+  if (viewerUrlSession) {
+    const unregisterPsSlice = viewerUrlSession.registerSlice("ps", capturePs);
+    onDestroy(unregisterPsSlice);
+  }
+
+  $effect(() => {
+    if (!viewerUrlSession) return;
+    void capturePs();
+    viewerUrlSession.scheduleUrlWrite();
   });
 
   function setPreviewRoot(root: HTMLElement | null): void {

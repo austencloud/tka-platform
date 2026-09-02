@@ -47,7 +47,8 @@ describe("Shape Matrix app boundary", () => {
     );
 
     expect(drillSource).toContain("disableContextMenu: false");
-    expect(drillSource).toContain('disassemblyLayout: "sidecar"');
+    // The drill lets the animator pick sidecar vs stacked from its host box.
+    expect(drillSource).toContain('disassemblyLayout: "auto"');
     expect(drillSource).toContain(
       'import("$lib/shared/timeline/StepStrip.svelte")'
     );
@@ -64,10 +65,18 @@ describe("Shape Matrix app boundary", () => {
     expect(drillSource).not.toContain("fadeSettlementTimer");
     expect(drillSource).toContain("retryPlayerLoad");
     expect(drillSource).toContain("railLoadError");
-    expect(drillSource).toContain(
-      '<i class="fas fa-arrow-right derivation-arrow" aria-hidden="true"></i>'
+    // The Hands -> Props derivation lives in the shared relationship bridge.
+    const bridgeSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/components/PropRelationshipChipRow.svelte"
+      ),
+      "utf8"
     );
-    expect(drillSource).toContain('<span class="sr-only">produces</span>');
+    expect(drillSource).toContain("PropRelationshipChipRow");
+    expect(bridgeSource).toContain(
+      '<i class="fas fa-arrow-right bridge-arrow" aria-hidden="true"></i>'
+    );
+    expect(bridgeSource).toContain('<span class="sr-only">produces</span>');
   });
 
   it("threads the optional prop element through the canonical animation overlay", () => {
@@ -143,9 +152,9 @@ describe("Shape Matrix app boundary", () => {
 
     expect(inlinePlayerSource).toContain("{disassemblyLayout}");
     expect(animatorSource).toContain(
-      "data-disassembly-layout={disassemblyLayout}"
+      "data-disassembly-layout={resolvedDisassemblyLayout}"
     );
-    expect(animatorSource).toContain("layout={disassemblyLayout}");
+    expect(animatorSource).toContain("layout={resolvedDisassemblyLayout}");
     expect(animatorSource).toContain("{backgroundAlpha}");
     expect(splitSource.match(/\{backgroundAlpha\}/g)).toHaveLength(2);
     expect(splitSource).not.toContain("backgroundAlpha={1}");
@@ -175,11 +184,11 @@ describe("Shape Matrix app boundary", () => {
       "utf8"
     );
 
+    // The relationship bridge swaps its prop result in a fixed stage; no
+    // reserved hand-path row and no in-flow slot that could reflow the stage.
     expect(propPickerSource).not.toContain("hand-choice-slot");
-    expect(propPickerSource).toContain(
-      "selectedGroup && selectedGroup.candidates.length > 1"
-    );
-    expect(propPickerSource).toContain('transition:growFade={{ axis: "y" }}');
+    expect(propPickerSource).toContain('<Crossfade key={resultKey} fill');
+    expect(propPickerSource).not.toContain("transition:growFade");
   });
 
   it("keeps each elemental button's visible mode and name in its accessible name", () => {

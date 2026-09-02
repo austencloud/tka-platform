@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import groundLayout from "../../../../../../../../../scripts/autumn-ground-layout.json";
 import {
   AUTUMN_CABIN_LANE_GLSL,
+  AUTUMN_HORIZON_FOG_FRAGMENT,
   isAutumnGroundMaterial,
 } from "./autumn-ground-detail";
 
@@ -27,5 +28,15 @@ describe("Autumn ground-detail route source", () => {
     expect(isAutumnGroundMaterial(livingFloor)).toBe(true);
     expect(isAutumnGroundMaterial(fogApron)).toBe(true);
     expect(isAutumnGroundMaterial(unrelated)).toBe(false);
+  });
+
+  it("retains a floor signal under the tree belt and hides the mesh edge", () => {
+    expect(AUTUMN_HORIZON_FOG_FRAGMENT).toContain("0.88");
+    expect(AUTUMN_HORIZON_FOG_FRAGMENT).toContain("smoothstep(");
+    expect(AUTUMN_HORIZON_FOG_FRAGMENT).toContain("180.0");
+    expect(AUTUMN_HORIZON_FOG_FRAGMENT).toContain("650.0");
+    expect(AUTUMN_HORIZON_FOG_FRAGMENT).toContain(
+      "min(fogFactor, autumnGroundFogCeiling)"
+    );
   });
 });

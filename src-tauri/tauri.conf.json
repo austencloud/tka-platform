@@ -37,18 +37,21 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "../data/sequences/": "data/sequences/"
+      "../data/sequences/": "data/sequences/",
+      "../data/gallery/": "data/gallery/",
+      "desktop-assets/": "assets/"
     },
     "createUpdaterArtifacts": true,
     "windows": {
       "webviewInstallMode": {
-        "type": "downloadBootstrapper"
+        "type": "fixedRuntime",
+        "path": "./webview2-runtime/"
       }
     }
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU3Nzg3MzQzQzcyN0FGMUMKUldRY3J5ZkhRM040VndTYklDV1o2RjZqaW5VWVdWOG1OSnhDL3ZUT2lRSExnWEQ5ZVRLZ2U1U1cK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM4OTdDNTdFQ0U0Q0YyQzgKUldUSThrek9mc1dYeUM5bTN4ZW1xVW5NTEVpK3FFV212UmJsOE9DdEs1WlNtN1d2em9OYmFrRU0K",
       "endpoints": [
         "https://github.com/austencloud/tka-platform/releases/latest/download/latest.json"
       ]

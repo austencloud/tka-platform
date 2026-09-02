@@ -34,45 +34,42 @@
   never remounted before its replacement is moving.
 
   The drill owns its own empty state now (pair is nullable): chips disabled,
-  "Pick a cell" hint in the hero, caption line reserved but empty — the panel
-  structure is constant from load, so first selection causes no layout shift.
+  "Pick a cell" hint in the hero. The relationship workspace above the stage
+  owns the hands-to-props explanation, so the animation area does not repeat it.
 -->
 <script lang="ts">
   import { onDestroy, untrack } from "svelte";
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import MandalaHeroLayer from "./MandalaHeroLayer.svelte";
+  import { MANDALA_GUIDE_FLOOR_OPACITY } from "$lib/shared/mandala/domain/mandala-overlay-types";
   import ElementChipRow from "./ElementChipRow.svelte";
   import PropRelationshipChipRow from "./PropRelationshipChipRow.svelte";
   import {
     buildModeRealizationCandidates,
     type ModeRealization,
   } from "../services/build-mode-realizations";
-  import {
-    flowerKey,
-    flowerLabel,
-    type Flower,
-  } from "../domain/flower-signature";
+  import { flowerKey, type Flower } from "../domain/flower-signature";
   import type { ShapeMatrixData } from "../services/shape-matrix-flowers";
   import {
     MODE_ORDER,
     type VtgMode,
   } from "../services/shape-matrix-realizations";
   import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
-  import {
-    HERO_TRAIL_PRESET,
-    HERO_TIP_EFFECT_MAP,
-  } from "$lib/shared/landing/data/hero-trail-preset";
+  import { HERO_TRAIL_PRESET } from "$lib/shared/landing/data/hero-trail-preset";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
+  import { growFade } from "$lib/shared/transitions/motion";
   import { getShapeMatrixTransitionRecorder } from "../debug/shape-matrix-transition-recorder";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
-  import type { ShapeMatrixRelationshipDriver } from "../app/state/shape-matrix-app-state.svelte";
   import { QualityTier } from "$lib/shared/animation-engine/domain/types/quality-types";
   import { resolveRealizationEntryStep } from "../services/realization-phase-handoff";
   import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import AnimationPanel from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
+  import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
+  import { getShapeMatrixAnimationContext } from "../app/context/shape-matrix-animation-context";
+  import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
 
   interface Props {
     /** Nullable: the drill renders its own "Pick a cell" state before any click. */
@@ -87,8 +84,16 @@
     selectedPropMode?: VtgMode | null;
     onmodechange?: (mode: VtgMode | null) => void;
     onpropmodechange?: (mode: VtgMode | null) => void;
-    relationshipDriver?: ShapeMatrixRelationshipDriver;
     propType?: PropType;
+    onproptypechange?: (propType: PropType) => void;
+    onopenproppicker?: () => void;
+    /**
+     * Shared tile-to-hero transition seam. `claim` makes the cold floor the
+     * owner of the shared view-transition name (the host's compact layout is
+     * showing this pane); `handoff` forces the floor visible while a
+     * shared-element transition captures its snapshot.
+     */
+    mandalaTransition?: { claim: boolean; handoff: boolean };
   }
   let {
     pair,
@@ -99,9 +104,13 @@
     selectedPropMode = $bindable(null),
     onmodechange,
     onpropmodechange,
-    relationshipDriver = "hands",
     propType = PropType.STAFF,
+    onproptypechange,
+    onopenproppicker,
+    mandalaTransition = { claim: false, handoff: false },
   }: Props = $props();
+
+  const animationState = getShapeMatrixAnimationContext();
 
   let animationPlayerModule: ReturnType<typeof importAnimationPlayer> | null =
     null;
@@ -121,14 +130,29 @@
     // The matrix stage is viewed much closer than the landing-page hero. Keep
     // its glow and stroke one tuning step quieter without changing that shared
     // attract-mode preset.
-    glowBlur: HERO_TRAIL_PRESET.glowBlur - 1,
-    lineWidth: HERO_TRAIL_PRESET.lineWidth - 1,
+    glowBlur: HERO_TRAIL_PRESET.glowBlur - 2,
+    lineWidth: HERO_TRAIL_PRESET.lineWidth - 2,
     // The generic player precomputes a full path cache whenever a sequence
     // changes. That is useful for long-lived editors but creates a 150–230 ms
     // main-thread task during rapid matrix exploration. Live capture is the
     // correct owner here: the player is already running continuously.
     usePathCache: false,
   };
+
+  const effectiveTrailSettings = $derived.by(() => {
+    const intent = animationState.scope.effects.trails;
+    void intent.thickness;
+    void intent.brightness;
+    void intent.leftColor;
+    void intent.rightColor;
+    return foldTrailIntentIntoSettings(SHAPE_MATRIX_TRAIL_PRESET, intent);
+  });
+
+  const playbackAction = $derived<ControlDockAction>({
+    icon: animationState.playing ? "fa-pause" : "fa-play",
+    label: animationState.playing ? "Pause" : "Play",
+    onClick: animationState.togglePlaying,
+  });
 
   // Sticky across pair changes by design (spec: "Selection persistence").
   // Realizations are immutable payloads replaced as a unit. Raw state keeps
@@ -256,28 +280,19 @@
     requestedPropMode: VtgMode | null,
     allowFallback: boolean
   ): ModeRealization | null {
+    const handCandidates = candidates.filter(
+      (candidate) => candidate.mode === requestedMode
+    );
     if (requestedPropMode) {
-      const requested =
-        candidates.find(
-          (candidate) =>
-            candidate.mode === requestedMode &&
-            candidate.propMode === requestedPropMode
-        ) ??
-        candidates.find(
-          (candidate) => candidate.propMode === requestedPropMode
-        );
+      const requested = handCandidates.find(
+        (candidate) => candidate.propMode === requestedPropMode
+      );
       if (requested) return requested;
       return allowFallback
-        ? (candidates.find((candidate) => candidate.mode === requestedMode) ??
-            candidates[0] ??
-            null)
-        : null;
+        ? (handCandidates[0] ?? candidates[0] ?? null)
+        : (handCandidates[0] ?? null);
     }
-    return (
-      candidates.find((candidate) => candidate.mode === requestedMode) ??
-      (allowFallback ? candidates[0] : null) ??
-      null
-    );
+    return handCandidates[0] ?? (allowFallback ? candidates[0] : null) ?? null;
   }
 
   function syncSelection(
@@ -289,10 +304,7 @@
       selectedMode = realization.mode;
       onmodechange?.(realization.mode);
     }
-    if (
-      requestedPropMode !== null &&
-      realization.propMode !== requestedPropMode
-    ) {
+    if (realization.propMode !== requestedPropMode) {
       selectedPropMode = realization.propMode;
       onpropmodechange?.(realization.propMode);
     }
@@ -472,13 +484,6 @@
       !activeReal
   );
   const captionRealization = $derived(visibleRealization ?? activeReal);
-  const captionKey = $derived.by(() => {
-    const visibleLayer = visibleSource ? getLayer(visibleSource) : null;
-    if (visibleLayer) return visibleLayer.key;
-    if (activeReal && pairKey) return realizationKey(activeReal, pairKey);
-    if (buildError || modeMissing) return "error";
-    return pair ? "pending" : "empty";
-  });
   const visibleStep = $derived(
     visibleSource === "first"
       ? firstStep
@@ -890,10 +895,6 @@
     transitionRecorder.destroy();
   });
 
-  function elementName(raw: string): string {
-    return raw.charAt(0).toUpperCase() + raw.slice(1);
-  }
-
   function entryStepFor(realization: ModeRealization, key: string): number {
     const outgoingLayer = visibleSource ? getLayer(visibleSource) : null;
     return resolveRealizationEntryStep({
@@ -916,10 +917,6 @@
   }
 
   function selectHandMode(mode: VtgMode | null): void {
-    if (selectedPropMode !== null) {
-      selectedPropMode = null;
-      onpropmodechange?.(null);
-    }
     selectMode(mode);
   }
 
@@ -1001,13 +998,20 @@
             autoPlayDelay: 0,
             chrome: "minimal",
             fill: true,
-            disassemblyLayout: "sidecar",
+            disassemblyLayout: "auto",
+            disassemblyTarget: animationState.disassembled,
+            onDisassemblyTargetChange: animationState.requestDisassembled,
             showWordHeader: true,
             beatIndicators: false,
             leftPropType: layer.propType,
             rightPropType: layer.propType,
-            trailSettingsOverride: SHAPE_MATRIX_TRAIL_PRESET,
-            tipEffectMap: HERO_TIP_EFFECT_MAP,
+            trailSettingsOverride: effectiveTrailSettings,
+            tipEffectMap: animationState.scope.effects.tipEffectMap,
+            effectsConfigState: animationState.scope.effects,
+            visibilityManagerOverride: animationState.scope.visibility,
+            externalBpm: animationState.bpm,
+            externalPlaying: animationState.playing,
+            onExternalPlayingChange: animationState.setPlaying,
             backgroundAlpha: 0,
             interactive: false,
             hoverHint: "none",
@@ -1043,13 +1047,14 @@
 
 <section
   class="drill"
+  class:controls-open={animationState.activeSection !== null}
   aria-label="Shape matrix realizations"
   style={captionRealization
     ? `--hand-el: ${captionRealization.element.accentColor}; --hand-dark: ${captionRealization.element.darkComplement}; --prop-el: ${captionRealization.propRelationship.element?.accentColor ?? captionRealization.element.accentColor}`
     : undefined}
 >
-  <div class="mode-picker">
-    {#if relationshipDriver === "hands"}
+  {#if animationState.activeSection === null}
+    <div class="mode-picker" transition:growFade={{ axis: "y" }}>
       <ElementChipRow
         selected={selectedMode}
         available={availableHandModes}
@@ -1057,23 +1062,17 @@
         disabled={!pair}
         onpick={selectHandMode}
       />
-    {:else}
       <PropRelationshipChipRow
         {realizations}
         {selectedMode}
         {selectedPropMode}
         activePropMode={activeReal?.propMode ?? null}
-        equalRotatingTurns={pair !== null &&
-          pair.left.turns !== "fl" &&
-          pair.right.turns !== "fl" &&
-          pair.left.turns === pair.right.turns}
         disabled={!pair}
         {building}
         ontarget={selectPropMode}
-        onhandpick={(mode) => selectMode(mode)}
       />
-    {/if}
-  </div>
+    </div>
+  {/if}
 
   <div class="media-stage">
     <div class="hero-stage">
@@ -1084,9 +1083,10 @@
                rendering owner, including while that canvas is disassembled. -->
           <MandalaHeroLayer
             paths={heroPaths}
-            clubTipDx={data.clubTipDx}
-            opacity={visibleSource ? 0 : 1}
-            glowColor={captionRealization?.element.accentColor}
+            artKey={pairKey ?? ""}
+            opacity={visibleSource ? 0 : MANDALA_GUIDE_FLOOR_OPACITY}
+            claim={mandalaTransition.claim}
+            handoff={mandalaTransition.handoff}
           />
           <DualSourceCrossfade
             active={visibleSource}
@@ -1115,108 +1115,69 @@
       </div>
     </div>
 
-    <div class="strip-zone" role="group" aria-label="Pictograph timeline">
-      {#if railRealization && pictographRailReady}
-        <LazyMount
-          loader={() => import("$lib/shared/timeline/StepStrip.svelte")}
-          active={true}
-          keepAlive={false}
-          debugName="shape matrix pictograph carousel"
-          placeholder={railPlaceholder}
-          error={railLoadError}
-          props={{
-            sequence: railRealization.seq,
-            includeStartPosition: false,
-            currentStep: visibleStep,
-            bpm: 60,
-            density: "compact",
-            fillHeight: true,
-            anchor: "center",
-            orientation: "horizontal",
-            loop: true,
-            leftPropType: propType,
-            rightPropType: propType,
-            propElementalType: railPropElementalType,
-            stepPulse: false,
-            staggerCellUpdates: true,
-          }}
-        />
-      {:else if railRealization}
-        <p class="quarter-status">
-          Quarter-turn pictograph arrows are in visual calibration.
-        </p>
-      {/if}
-    </div>
+    {#if animationState.activeSection === null}
+      <div
+        class="strip-zone"
+        role="group"
+        aria-label="Pictograph timeline"
+        transition:growFade={{ axis: "y" }}
+      >
+        {#if railRealization && pictographRailReady}
+          <LazyMount
+            loader={() => import("$lib/shared/timeline/StepStrip.svelte")}
+            active={true}
+            keepAlive={false}
+            debugName="shape matrix pictograph carousel"
+            placeholder={railPlaceholder}
+            error={railLoadError}
+            props={{
+              sequence: railRealization.seq,
+              includeStartPosition: false,
+              currentStep: visibleStep,
+              bpm: animationState.bpm,
+              density: "compact",
+              fillHeight: true,
+              anchor: "center",
+              orientation: "horizontal",
+              loop: true,
+              leftPropType: propType,
+              rightPropType: propType,
+              propElementalType: railPropElementalType,
+              stepPulse: false,
+              staggerCellUpdates: true,
+            }}
+          />
+        {:else if railRealization}
+          <p class="quarter-status">
+            Quarter-turn pictograph arrows are in visual calibration.
+          </p>
+        {/if}
+      </div>
+    {/if}
   </div>
 
-  <!-- The reserved box never changes size. Only the relationship inside it
-       dissolves after the new realization has taken ownership of the stage. -->
-  <div class="caption-stage">
-    <Crossfade key={captionKey} fill duration={DURATION.fast}>
-      <p
-        class="caption"
-        style={captionRealization
-          ? `--el: ${captionRealization.element.accentColor}`
-          : undefined}
-      >
-        {#if buildError || modeMissing}
-          <span class="cap-err"
-            >Could not build this realization. Reload and try again.</span
-          >
-        {:else if captionRealization}
-          <span class="relationship-badge hand-relationship">
-            <span class="relationship-label">Hands</span>
-            <img src={captionRealization.element.iconPath} alt="" />
-            <span class="badge-copy">
-              <strong>{elementName(captionRealization.element.element)}</strong>
-              <small>{captionRealization.element.name}</small>
-            </span>
-          </span>
-          <i class="fas fa-arrow-right derivation-arrow" aria-hidden="true"></i>
-          <span class="sr-only">produces</span>
-          <span class="relationship-badge prop-relationship">
-            <span class="relationship-label">Props</span>
-            {#if captionRealization.propRelationship.kind === "full"}
-              <img
-                src={captionRealization.propRelationship.element.iconPath}
-                alt=""
-              />
-              <span class="badge-copy">
-                <strong
-                  >{elementName(
-                    captionRealization.propRelationship.element.element
-                  )}</strong
-                >
-                <small>{captionRealization.propRelationship.element.name}</small
-                >
-              </span>
-            {:else if captionRealization.propRelationship.kind === "direction-only"}
-              <span class="relationship-dot" aria-hidden="true"></span>
-              <span class="badge-copy">
-                <strong
-                  >{captionRealization.propRelationship.direction === "same"
-                    ? "Same"
-                    : "Opposite"}</strong
-                >
-                <small>Direction only · different rates</small>
-              </span>
-            {:else}
-              <span class="relationship-dot float-dot" aria-hidden="true"
-              ></span>
-              <span class="badge-copy">
-                <strong>Float</strong>
-                <small>No prop rotation</small>
-              </span>
-            {/if}
-          </span>
-        {:else if pair}
-          <span>
-            Blue <span class="cap-blue">{flowerLabel(pair.left)}</span> over red
-            <span class="cap-red">{flowerLabel(pair.right)}</span>
-          </span>
-        {/if}
-      </p>
-    </Crossfade>
+  <div class="animation-controls">
+    <AnimationPanel
+      isExporting={false}
+      layout="bottom"
+      isPlaying={animationState.playing}
+      bpm={animationState.bpm}
+      playbackMode={animationState.playbackMode}
+      onPlaybackToggle={animationState.togglePlaying}
+      onPlaybackModeChange={animationState.setPlaybackMode}
+      onBpmChange={animationState.setBpm}
+      showEffectsPlayback={false}
+      selectedPropType={propType}
+      onPropChange={onproptypechange}
+      onPropPickerRequest={onopenproppicker}
+      sequence={captionRealization?.seq ?? null}
+      dockTrailingAction={playbackAction}
+      showPathShape={false}
+      showMotionVisibility={true}
+      onActiveSectionChange={animationState.setActiveSection}
+      closeRequest={animationState.closeRequest}
+      regionLabel="Shape animation controls"
+    />
   </div>
 
   {#if onselectRealization}
@@ -1244,7 +1205,7 @@
     grid-template-areas:
       "modes"
       "media"
-      "caption"
+      "controls"
       "action";
     min-height: 0;
     gap: 0.8rem;
@@ -1263,6 +1224,8 @@
 
   .mode-picker {
     grid-area: modes;
+    display: grid;
+    gap: 0.45rem;
     min-width: 0;
     min-height: 0;
   }
@@ -1443,90 +1406,10 @@
     color: var(--theme-text-dim, oklch(0.68 0.02 270));
   }
 
-  .caption-stage {
-    grid-area: caption;
-    height: 3rem;
+  .animation-controls {
+    grid-area: controls;
     min-width: 0;
-  }
-  .caption {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    gap: 0.45rem;
-    font-size: clamp(var(--font-size-min, 0.875rem), 0.82rem + 0.1vw, 0.98rem);
-    line-height: 1.5;
-    text-align: center;
-    color: var(--theme-text, oklch(0.85 0.02 270));
-  }
-  .relationship-badge {
-    display: grid;
-    grid-template-columns: auto auto minmax(0, auto);
-    align-items: center;
-    gap: 0.45rem;
-    min-width: 0;
-    min-height: 3rem;
-    justify-content: center;
-    padding: 0.35rem 0.6rem;
-    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
-    border-radius: 12px;
-    background: color-mix(in srgb, currentColor 8%, transparent);
-  }
-  .relationship-badge img {
-    width: 1.65rem;
-    height: 1.65rem;
-    object-fit: contain;
-  }
-  .badge-copy {
-    display: grid;
-    line-height: 1.05;
-    text-align: left;
-  }
-  .badge-copy small {
-    color: var(--theme-text-dim, oklch(0.68 0.015 270));
-    font-size: var(--font-size-compact, 0.75rem);
-    white-space: nowrap;
-  }
-  .relationship-label {
-    color: var(--theme-text-dim, oklch(0.62 0.015 270));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .hand-relationship strong {
-    color: var(--hand-el, var(--theme-text, oklch(0.85 0.02 270)));
-  }
-  .hand-relationship {
-    color: var(--hand-el, var(--theme-text, oklch(0.85 0.02 270)));
-  }
-  .prop-relationship strong {
-    color: var(--prop-el, var(--theme-text, oklch(0.85 0.02 270)));
-  }
-  .prop-relationship {
-    color: var(--prop-el, var(--theme-text, oklch(0.85 0.02 270)));
-  }
-  .relationship-dot {
-    width: 1rem;
-    height: 1rem;
-    flex: 0 0 auto;
-    border-radius: 999px;
-    background: var(--prop-el, var(--theme-accent, #f4b54c));
-    box-shadow: 0 0 10px
-      color-mix(
-        in srgb,
-        var(--prop-el, var(--theme-accent, #f4b54c)) 45%,
-        transparent
-      );
-  }
-  .float-dot {
-    background: var(--theme-text-dim, #b7c0cc);
-  }
-  .derivation-arrow {
-    color: var(--theme-accent, oklch(0.64 0.03 80));
-    font-size: 0.75rem;
+    min-height: 0;
   }
   .select-action {
     grid-area: action;
@@ -1539,37 +1422,6 @@
   .select-action :global(.panel-btn) {
     width: 100%;
   }
-  .cap-err {
-    color: var(--semantic-error, #fb8a8a);
-    font-size: var(--font-size-min, 0.875rem);
-  }
-  .cap-blue {
-    color: var(--prop-blue, oklch(0.68 0.14 255));
-  }
-  .cap-red {
-    color: var(--prop-red, oklch(0.68 0.16 25));
-  }
-
-  @container shape-matrix-drill (max-width: 30rem) {
-    .badge-copy small {
-      display: none;
-    }
-
-    .caption {
-      gap: 0.3rem;
-    }
-
-    .relationship-badge {
-      gap: 0.3rem;
-      padding-inline: 0.35rem;
-    }
-
-    .relationship-badge img {
-      width: 1.35rem;
-      height: 1.35rem;
-    }
-  }
-
   /* Phone-height realizations keep the live animation legible. The dedicated
      rail returns as soon as the host has enough width to show it without
      reducing the hero to a thumbnail. */
@@ -1579,7 +1431,7 @@
       grid-template-areas:
         "modes"
         "media"
-        "caption"
+        "controls"
         "action";
     }
 
@@ -1599,7 +1451,7 @@
       grid-template-rows: minmax(0, 1fr) auto;
       grid-template-areas:
         "modes media"
-        "action media";
+        "action controls";
       column-gap: 0.8rem;
       row-gap: 0.55rem;
     }
@@ -1613,12 +1465,15 @@
       display: none;
     }
 
-    .caption-stage {
-      display: none;
-    }
-
     .select-action {
       grid-area: action;
+    }
+
+    .drill.controls-open {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "media"
+        "controls";
     }
   }
 </style>

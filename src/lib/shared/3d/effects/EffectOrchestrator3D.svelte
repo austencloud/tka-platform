@@ -26,6 +26,11 @@
   import EffectsLayer from "./EffectsLayer.svelte";
   import { LedRenderer3D, type LedTipInput } from "./led/led-renderer-3d";
   import {
+    MOON_FAN_LED_COUNT,
+    MoonFanDiffuserRenderer3D,
+    moonFanZoneSampleIndices,
+  } from "./led/moon-fan-diffuser-renderer-3d";
+  import {
     CharcoalRenderer3D,
     type CharcoalTipInput,
   } from "./charcoal/charcoal-renderer-3d";
@@ -445,6 +450,8 @@
   // LED renderers managed directly (bypasses Svelte prop propagation timing)
   let leftLedRenderer: LedRenderer3D | null = null;
   let rightLedRenderer: LedRenderer3D | null = null;
+  let leftMoonDiffuser: MoonFanDiffuserRenderer3D | null = null;
+  let rightMoonDiffuser: MoonFanDiffuserRenderer3D | null = null;
 
   // Charcoal renderer (single instance - all tips share one particle pool)
   let charcoalRenderer: CharcoalRenderer3D | null = null;
@@ -648,6 +655,10 @@
       rightLedRenderer.initialize(parent);
       leftLedRenderer.primeTipCapacity(2);
       rightLedRenderer.primeTipCapacity(2);
+      leftMoonDiffuser = new MoonFanDiffuserRenderer3D();
+      rightMoonDiffuser = new MoonFanDiffuserRenderer3D();
+      leftMoonDiffuser.initialize(parent);
+      rightMoonDiffuser.initialize(parent);
       interactiveRenderersPrepared = true;
     }
     if (ledDeviceKind === "pixel-staff" && !leftPovRenderer) {
@@ -726,6 +737,22 @@
       const c = getPixel(ledStrip, ledFrame, ledIndex % ledStrip.ledCount);
       return { r: c.r / 255, g: c.g / 255, b: c.b / 255 };
     };
+    const moonStrip = _ledPattern.resolve(
+      resolvedLed.pattern,
+      MOON_FAN_LED_COUNT
+    );
+    const moonFrame = moonStrip
+      ? patternFrameIndex(
+          ledElapsedMs,
+          resolvedLed.cycleDuration,
+          moonStrip.frameCount
+        )
+      : 0;
+    const moonColorAt = (ledIndex: number) => {
+      if (!moonStrip) return { r: 0, g: 0, b: 0 };
+      const c = getPixel(moonStrip, moonFrame, ledIndex % moonStrip.ledCount);
+      return { r: c.r / 255, g: c.g / 255, b: c.b / 255 };
+    };
     const ledSupersampleCount = LED_SUPERSAMPLE_BY_TIER[qualityTier] ?? 4;
 
     /**
@@ -744,10 +771,11 @@
       speed: number,
       r: number,
       g: number,
-      b: number
+      b: number,
+      sampleCount = ledSupersampleCount
     ): void {
       const prev = _ledPrevPositions.get(key);
-      const N = ledSupersampleCount;
+      const N = sampleCount;
       if (!prev || N <= 1) {
         out.push({
           position: new Vector3(current.x, current.y, current.z),
@@ -809,6 +837,14 @@
     // computes its own LED positions along the shaft.
     let leftLedAssigned = false;
     let rightLedAssigned = false;
+    const leftIsMoonFan =
+      propBuild.fanBuild === "moon" &&
+      (leftPropType === PropType.FAN || leftPropType === PropType.BIGFAN);
+    const rightIsMoonFan =
+      propBuild.fanBuild === "moon" &&
+      (rightPropType === PropType.FAN || rightPropType === PropType.BIGFAN);
+    const leftUsesPov = usePixelStaff && !leftIsMoonFan;
+    const rightUsesPov = usePixelStaff && !rightIsMoonFan;
 
     // PerformerRig's external compatibility API renders the left prop through
     // bluePropState/blueHandPos and the right through redPropState/redHandPos.
@@ -836,7 +872,7 @@
         propBuild
       );
       leftEffectTips = result.tips;
-      result.tips.forEach((tip) => {
+      result.tips.forEach((tip, emitterIndex) => {
         // The tip owns its effect slot. A single-ended prop publishes one tip
         // on slot 1, so the array index is not the slot.
         const tipIndex = tip.tipIndex;
@@ -855,17 +891,25 @@
           // Both props run the same pattern on the same clock, exactly as
           // the 2D sampler does, so a two-prop rig reads as one instrument.
           leftLedAssigned = true;
-          if (!usePixelStaff) {
-            const color = ledColorAt(tipIndex);
+          if (!leftUsesPov) {
+            const color = leftIsMoonFan
+              ? moonColorAt(
+                  Math.round(
+                    (emitterIndex / Math.max(1, result.tips.length - 1)) *
+                      (MOON_FAN_LED_COUNT - 1)
+                  )
+                )
+              : ledColorAt(tipIndex);
             pushSupersampledLed(
               leftLedTips,
-              `0-${tipIndex}`,
+              leftIsMoonFan ? `0-moon-${emitterIndex}` : `0-${tipIndex}`,
               tip.position,
               tip.velocity,
               tip.speed,
               color.r,
               color.g,
-              color.b
+              color.b,
+              leftIsMoonFan ? 1 : ledSupersampleCount
             );
           }
         } else if (effect === "charcoal" && sceneEffectsManager === null) {
@@ -929,7 +973,7 @@
         propBuild
       );
       rightEffectTips = result.tips;
-      result.tips.forEach((tip) => {
+      result.tips.forEach((tip, emitterIndex) => {
         // The tip owns its effect slot. A single-ended prop publishes one tip
         // on slot 1, so the array index is not the slot.
         const tipIndex = tip.tipIndex;
@@ -946,17 +990,25 @@
 
         if (effect === "led") {
           rightLedAssigned = true;
-          if (!usePixelStaff) {
-            const color = ledColorAt(tipIndex);
+          if (!rightUsesPov) {
+            const color = rightIsMoonFan
+              ? moonColorAt(
+                  Math.round(
+                    (emitterIndex / Math.max(1, result.tips.length - 1)) *
+                      (MOON_FAN_LED_COUNT - 1)
+                  )
+                )
+              : ledColorAt(tipIndex);
             pushSupersampledLed(
               rightLedTips,
-              `1-${tipIndex}`,
+              rightIsMoonFan ? `1-moon-${emitterIndex}` : `1-${tipIndex}`,
               tip.position,
               tip.velocity,
               tip.speed,
               color.r,
               color.g,
-              color.b
+              color.b,
+              rightIsMoonFan ? 1 : ledSupersampleCount
             );
           }
         } else if (effect === "charcoal" && sceneEffectsManager === null) {
@@ -1030,6 +1082,46 @@
       syncRendererQuality(imperativeParent);
     }
 
+    const [moonZoneAIndex, moonZoneBIndex] = moonFanZoneSampleIndices();
+    if (
+      moonStrip &&
+      leftIsMoonFan &&
+      leftLedAssigned &&
+      leftRigCenter &&
+      visualLeftProp
+    ) {
+      leftMoonDiffuser?.update({
+        propState: visualLeftProp,
+        rigLocalCenter: leftRigCenter,
+        zoneA: moonColorAt(moonZoneAIndex),
+        zoneB: moonColorAt(moonZoneBIndex),
+        brightness: ledBrightness,
+        scale: leftPropType === PropType.BIGFAN ? 1.4 : 1,
+        elapsedSeconds: ledElapsedMs / 1000,
+      });
+    } else {
+      leftMoonDiffuser?.reset();
+    }
+    if (
+      moonStrip &&
+      rightIsMoonFan &&
+      rightLedAssigned &&
+      rightRigCenter &&
+      visualRightProp
+    ) {
+      rightMoonDiffuser?.update({
+        propState: visualRightProp,
+        rigLocalCenter: rightRigCenter,
+        zoneA: moonColorAt(moonZoneAIndex),
+        zoneB: moonColorAt(moonZoneBIndex),
+        brightness: ledBrightness,
+        scale: rightPropType === PropType.BIGFAN ? 1.4 : 1,
+        elapsedSeconds: ledElapsedMs / 1000,
+      });
+    } else {
+      rightMoonDiffuser?.reset();
+    }
+
     // Bloom remains a live optical response while paused. The tip bridge was
     // reset above, so it publishes the current pose with zero motion without
     // inventing a trail across a pause or scrub. Every emitter below freezes.
@@ -1049,7 +1141,7 @@
           resolvedLed.look.shutter
         );
 
-        if (ledStrip && leftLedAssigned && leftRigCenter) {
+        if (ledStrip && leftLedAssigned && leftRigCenter && leftUsesPov) {
           if (!leftPovRenderer) {
             leftPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
             leftPovRenderer.initialize(imperativeParent);
@@ -1069,7 +1161,7 @@
           leftPovRenderer?.reset();
         }
 
-        if (ledStrip && rightLedAssigned && rightRigCenter) {
+        if (ledStrip && rightLedAssigned && rightRigCenter && rightUsesPov) {
           if (!rightPovRenderer) {
             rightPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
             rightPovRenderer.initialize(imperativeParent);
@@ -1087,6 +1179,17 @@
           );
         } else {
           rightPovRenderer?.reset();
+        }
+
+        if (leftIsMoonFan && leftLedTips.length > 0) {
+          leftLedRenderer?.update(leftLedTips, cam!, now);
+        } else {
+          leftLedRenderer?.reset();
+        }
+        if (rightIsMoonFan && rightLedTips.length > 0) {
+          rightLedRenderer?.update(rightLedTips, cam!, now);
+        } else {
+          rightLedRenderer?.reset();
         }
       } else {
         if (leftLedTips.length > 0) {
@@ -1178,6 +1281,8 @@
     tipBridge.reset();
     leftLedRenderer?.dispose();
     rightLedRenderer?.dispose();
+    leftMoonDiffuser?.dispose();
+    rightMoonDiffuser?.dispose();
     leftPovRenderer?.dispose();
     rightPovRenderer?.dispose();
     charcoalRenderer?.dispose();

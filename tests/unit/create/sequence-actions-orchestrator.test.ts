@@ -65,6 +65,47 @@ function createHarness(
     pushUndoSnapshot: vi.fn((type: UndoOperationType) =>
       events.push(`undo:${type}`)
     ),
+    executeTransformAction: vi.fn(async (action, options) => {
+      events.push(
+        `dispatch:${action}:${options.source}:${options.targetHand ?? "both"}`
+      );
+      try {
+        switch (action) {
+          case "mirror":
+            await sequenceState.mirrorSequence(options.targetHand);
+            break;
+          case "flip":
+            await sequenceState.flipSequence(options.targetHand);
+            break;
+          case "swap":
+            await sequenceState.swapHands();
+            break;
+          case "invert":
+            await sequenceState.invertSequence(options.targetHand);
+            break;
+          case "rewind":
+            await sequenceState.rewindSequence(options.targetHand);
+            break;
+          case "rotate_clockwise":
+            await sequenceState.rotateSequence("clockwise", options.targetHand);
+            break;
+          case "rotate_counterclockwise":
+            await sequenceState.rotateSequence(
+              "counterclockwise",
+              options.targetHand
+            );
+            break;
+          case "shift_start":
+            await sequenceState.shiftStartPosition(options.stepNumber ?? 2);
+        }
+        return { status: "completed" as const };
+      } catch {
+        return {
+          status: "failed" as const,
+          message: "Could not shift start position",
+        };
+      }
+    }),
     busyState: {
       beginTransform() {
         if (transformBusy) return false;
@@ -97,7 +138,7 @@ function createHarness(
 }
 
 describe("sequence actions orchestrator", () => {
-  it("takes the undo snapshot before a transform and blocks a duplicate invocation", async () => {
+  it("delegates a transform to the shared dispatcher and blocks a duplicate invocation", async () => {
     const pending = deferred();
     const harness = createHarness();
     harness.sequenceState.mirrorSequence.mockImplementation(async () => {
@@ -109,28 +150,19 @@ describe("sequence actions orchestrator", () => {
     const duplicate = await harness.orchestrator.mirror();
 
     expect(duplicate).toEqual({ status: "busy" });
-    expect(harness.events).toEqual([
-      "haptic:selection",
-      `undo:${UndoOperationType.MIRROR_SEQUENCE}`,
-      "mirror",
-    ]);
+    expect(harness.events).toEqual(["dispatch:mirror:panel:both", "mirror"]);
 
     pending.resolve();
     await expect(first).resolves.toEqual({ status: "completed" });
   });
 
-  it("sets rotation direction after the snapshot but before the transform", async () => {
-    const harness = createHarness({
-      setGridRotationDirection: (direction) =>
-        harness.events.push(`grid:${direction}`),
-    });
+  it("passes the visible panel hand target to a rotation command", async () => {
+    const harness = createHarness({ getTargetHand: () => "left" });
 
     await harness.orchestrator.rotateClockwise();
 
     expect(harness.events).toEqual([
-      "haptic:selection",
-      `undo:${UndoOperationType.ROTATE_SEQUENCE}`,
-      "grid:1",
+      "dispatch:rotate_clockwise:panel:left",
       "rotate",
     ]);
   });
@@ -202,8 +234,7 @@ describe("sequence actions orchestrator", () => {
       message: "Could not shift start position",
     });
     expect(harness.events).toEqual([
-      `undo:${UndoOperationType.SHIFT_START}`,
-      "haptic:error",
+      "dispatch:shift_start:panel:both",
       "finish-shift",
     ]);
 

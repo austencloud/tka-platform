@@ -21,6 +21,7 @@
     inspector: Snippet;
     takeover?: Snippet;
     takeoverActive?: boolean;
+    stackedInspectorSize?: string;
   }
 
   let {
@@ -32,6 +33,7 @@
     inspector,
     takeover,
     takeoverActive = false,
+    stackedInspectorSize = "auto",
   }: Props = $props();
 
   // With one panel the axis is visually irrelevant, so retain the last axis
@@ -58,7 +60,10 @@
         defaultSize: 1,
         minSize: VIEWER_STAGE_MIN_WIDTH,
         resizable: inspectorResizable,
-        resizeLabel: `Resize viewer and ${inspectorProfile} settings`,
+        resizeLabel:
+          inspectorProfile === "performance"
+            ? "Resize viewer and performances"
+            : `Resize viewer and ${inspectorProfile} settings`,
       },
     ];
 
@@ -88,7 +93,7 @@
         id: "export-inspector-stacked",
         content: inspector,
         defaultSize: 1,
-        preferredSize: inspectorCollapsed ? undefined : "auto",
+        preferredSize: inspectorCollapsed ? undefined : stackedInspectorSize,
       });
     }
 

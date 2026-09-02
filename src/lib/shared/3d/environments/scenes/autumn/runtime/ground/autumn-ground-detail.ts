@@ -34,6 +34,32 @@ export const AUTUMN_CABIN_LANE_GLSL = cabinLane.points
   })
   .join("\n            ");
 
+/**
+ * Keep a faint floor signal beneath the authored tree belt, then return to
+ * ordinary full fog before the infinite apron reaches its geometric edge.
+ */
+export const AUTUMN_HORIZON_FOG_FRAGMENT = /* glsl */ `
+  #ifdef USE_FOG
+    #ifdef FOG_EXP2
+      float fogFactor = 1.0 - exp(
+        -fogDensity * fogDensity * vFogDepth * vFogDepth
+      );
+    #else
+      float fogFactor = smoothstep(fogNear, fogFar, vFogDepth);
+    #endif
+    float autumnGroundFogCeiling = mix(
+      0.88,
+      1.0,
+      smoothstep(
+        180.0,
+        650.0,
+        length(vAutumnGroundWorldPosition.xz)
+      )
+    );
+    fogFactor = min(fogFactor, autumnGroundFogCeiling);
+    gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fogFactor);
+  #endif`;
+
 export interface AutumnGroundDetailUniforms {
   detailMap: { value: Texture };
   strength: { value: number };
@@ -239,9 +265,15 @@ export function patchAutumnGroundDetailMaterial(
             0.45
           );`
       );
+    if (material.name === "Autumn Fog Apron") {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <fog_fragment>",
+        AUTUMN_HORIZON_FOG_FRAGMENT
+      );
+    }
   };
   material.customProgramCacheKey = () =>
-    `${previousCacheKey.call(material)}|autumn-ground-detail-v6`;
+    `${previousCacheKey.call(material)}|autumn-ground-detail-v7|${material.name}`;
 
   const patch: AutumnGroundDetailPatch = {
     uniforms,

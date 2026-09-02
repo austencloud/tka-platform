@@ -50,7 +50,9 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   bigfan: { width: 600, height: 566.9 },
 
   // Triad family
-  triad: { width: 248.76, height: 219.09 },
+  // The regular triad is uniformly scaled so every arm reaches the club's
+  // canonical radius without changing its center pivot or proportions.
+  triad: { width: 258.67, height: 227.818 },
   bigtriad: { width: 600, height: 523.5 },
 
   // Hoop family

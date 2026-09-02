@@ -431,7 +431,7 @@
             </div>
             <p class="context-link">
               For what VTG contributed to The Kinetic Alphabet itself, read the <a
-                href="/notation#lineage">Notation lineage</a
+                href="/notation#archive-record-vtg">Notation lineage</a
               >.
             </p>
           </div>

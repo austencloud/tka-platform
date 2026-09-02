@@ -9,7 +9,8 @@
   - an inline tray that slides up above the bar with the active tab's controls,
   - responsive: full-width sheet on phones, centered floating rounded bar at
     >=700px (matching the mandala dock),
-  - icon-only tabs when the bar is too narrow for labels (no cramming).
+  - icon-only tabs when the bar is too narrow for labels; the row scrolls
+    before any tab can shrink below the shared touch-target floor.
 
   The shell owns NO domain state. Consumers pass their tabs, the active tab,
   a tray Snippet that renders the active tab's body, and the trailing action.
@@ -601,9 +602,18 @@
   }
   .cat-scroll {
     display: flex;
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
     gap: 4px;
+    /* The viewer transition temporarily narrows this surface. Keep every tab
+       pressable through that handoff and let the strip carry the overflow. */
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .cat-scroll::-webkit-scrollbar {
+    display: none;
   }
 
   /* Secondary CTAs + download live in one group so the bar can stack them
@@ -671,8 +681,8 @@
     transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .dock-btn.cat {
-    flex: 1 1 0;
-    min-width: 0;
+    flex: 1 0 var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
     padding: 6px 2px;
     color: color-mix(
       in srgb,

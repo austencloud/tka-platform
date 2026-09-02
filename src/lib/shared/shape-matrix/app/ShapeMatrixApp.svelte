@@ -37,7 +37,6 @@
       activeAxis: "both",
       labelMode: "turns",
       propType: PropType.STAFF,
-      relationshipDriver: "hands",
       pair: null,
       mode: null,
       propMode: null,

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { load as redirectLegacyGlossary } from "../../src/routes/(public)/glossary/+page";
 
@@ -13,5 +15,14 @@ describe("Kinetic Atlas route contract", () => {
         location: "/atlas?board=atlas&letter=B&grid=box&variation=3#cat-letter",
       })
     );
+  });
+
+  it("treats Atlas hashes as client-managed view state during prerender", () => {
+    const svelteConfig = readFileSync(
+      resolve(process.cwd(), "svelte.config.js"),
+      "utf8"
+    );
+
+    expect(svelteConfig).toContain('if (path === "/atlas") return;');
   });
 });

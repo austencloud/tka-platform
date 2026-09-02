@@ -11,9 +11,12 @@
  * - reference: vtg/qtr `[1-6]-[1-6]`; 8stp `[1-8]-(aa|ae|ai|ea|ee|ei|ia|ie|ii)`
  *              (his data spells the 8-step rows uppercase — `1-AA`; the key
  *              lowercases at the boundary so one spelling crosses the wire)
- * - ratio:     1x1 | 1x3 | 1x5 (`x` stands in for `:`, which a path segment
- *              cannot carry cleanly). 8stp has no speed-ratio axis and is
- *              always `1x1`.
+ * - ratio:     1x1 | 1x2 | 1x3 | 1x4 | 1x5 | 2x3 | 2x5 (`x` stands in for
+ *              `:`, which a path segment cannot carry cleanly). 8stp has no
+ *              speed-ratio axis and is always `1x1`. SpiroAnim's eighth
+ *              picker ratio, 2:1, has no TKA reading: its prop turns 45° per
+ *              90° hand arc, less than a 0-turn pro shift and not a float
+ *              either (verified against his compiler, 2026-09-01).
  * - shape:     diamond | box
  * - variant:   base | anti  (anti ⇔ `isAnti: true` in the transcription)
  * - o<degrees>: optional pattern orientation — SpiroAnim's "Pattern rotation"
@@ -22,8 +25,8 @@
  *              it. vtg/qtr only: 8stp has no orientation axis, so any `o` token
  *              on an 8stp key is a foreign field and is ignored like the rest.
  *              A key WITHOUT the token means "whatever SpiroAnim shows by
- *              default", which is 0 for every bridged ratio — NOT the -90 the
- *              transcription was captured at (see orientation-rotation.ts).
+ *              default" for that ratio — 0 for the odd-denominator one-cycle
+ *              ratios, -90 for the rest (see orientation-rotation.ts).
  *
  * Two rules keep the contract durable across independent releases of the two
  * apps: the key is all-lowercase, and unrecognised dot-separated fields beyond
@@ -37,7 +40,14 @@
 
 export type BridgeConcept = "vtg" | "qtr" | "8stp";
 export type BridgeShape = "diamond" | "box";
-export type BridgeSpeedRatio = "1:1" | "1:3" | "1:5";
+export type BridgeSpeedRatio =
+  | "1:1"
+  | "1:2"
+  | "1:3"
+  | "1:4"
+  | "1:5"
+  | "2:3"
+  | "2:5";
 
 /** SpiroAnim's pattern-orientation axis (its "Pattern rotation" control). */
 export const SPIROANIM_ORIENTATIONS = [-90, -45, 0, 45, 90, 180] as const;
@@ -68,8 +78,12 @@ const EIGHT_STEP_REFERENCE = /^[1-8]-(aa|ae|ai|ea|ee|ei|ia|ie|ii)$/;
 
 const RATIOS: Record<string, BridgeSpeedRatio> = {
   "1x1": "1:1",
+  "1x2": "1:2",
   "1x3": "1:3",
+  "1x4": "1:4",
   "1x5": "1:5",
+  "2x3": "2:3",
+  "2x5": "2:5",
 };
 
 function isConcept(value: string): value is BridgeConcept {

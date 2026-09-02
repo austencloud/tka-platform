@@ -706,12 +706,27 @@ export function estimateURLLength(
 
 export function generateViewerURL(
   sequence: SequenceData,
-  options: { compress?: boolean; metadata?: ShareURLMetadata } = {
+  options: {
+    compress?: boolean;
+    metadata?: ShareURLMetadata;
+    /**
+     * A minted short code for this sequence. When present the path is
+     * `/sequence/<code>` — the route resolves it through the short-code
+     * manager — instead of the inline-encoded sequence, so the link stays
+     * short even when it carries a full viewer-state snapshot.
+     */
+    shortCode?: string;
+  } = {
     compress: true,
   }
 ): ShareURLResult {
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const metadataQuery = buildMetadataQuery(options.metadata);
+
+  if (options.shortCode) {
+    const url = `${baseUrl}/sequence/${encodeURIComponent(options.shortCode)}${metadataQuery}`;
+    return { url, length: url.length, compressed: false, savings: 0 };
+  }
 
   if (options.compress) {
     const { encoded, compressed, originalLength, finalLength } =

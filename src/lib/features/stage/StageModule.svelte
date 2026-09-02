@@ -360,7 +360,10 @@
     viewer.dispose();
   });
 
-  let exportOpen = $state(false);
+  // Opening a saved film goes straight to its render card: the person already
+  // chose to render it back in the collection, so a second click to open the
+  // export modal would be a step that asks nothing.
+  let exportOpen = $state(!!handoff?.film);
 
   const workspacePanels = $derived.by<PanelDefinition[]>(() => {
     const stage: PanelDefinition = {
@@ -868,6 +871,7 @@
     bpm={choreography.bpm}
     {exporter}
     onClose={() => (exportOpen = false)}
+    film={handoff?.film}
   />
 {/if}
 

@@ -22,6 +22,8 @@
   } from "$lib/shared/transitions/viewer-mode-dissolve";
   import { TRANSITION_REVIEW_SEQUENCE } from "../transition-review-fixture";
   import type {
+    InspectorLayerId,
+    InspectorRevealSample,
     TransitionGeometrySample,
     TransitionGeometryTrace,
     TransitionTraceCommand,
@@ -190,6 +192,48 @@
     };
   }
 
+  /**
+   * Sample one inspector layer's clip box against the panel composed inside it.
+   * The layer is the animating track; the panel is the surface pinned at its
+   * own destination width. Comparing the two is what reveals a cut-off label
+   * column or an undrawn band, neither of which shows up in a width or drift
+   * measurement taken on the panel alone.
+   */
+  /**
+   * Alpha of an element's own painted fill, 0 when it paints none.
+   *
+   * The inspector surface can live on the layer or on the panel inside it, and
+   * which one holds it decides whether a band the panel does not reach looks
+   * the same as the rest of the track. Reading it rather than assuming it keeps
+   * the trace honest if the surface moves again.
+   */
+  function elementSurfaceAlpha(selector: string): number {
+    const element = document.querySelector<HTMLElement>(selector);
+    if (!element) return 0;
+    const fill = getComputedStyle(element).backgroundColor;
+    if (!fill || fill === "transparent") return 0;
+    const channels = fill.match(/[\d.]+/g);
+    if (!channels) return 0;
+    return channels.length > 3 ? Number.parseFloat(channels[3]) || 0 : 1;
+  }
+
+  function revealBounds(
+    layerSelector: string,
+    panelSelector: string
+  ): InspectorRevealSample {
+    const layer = elementBounds(layerSelector);
+    const panel = elementBounds(panelSelector);
+    return {
+      layerLeft: layer.left,
+      layerWidth: layer.width,
+      panelLeft: panel.left,
+      panelWidth: panel.width,
+      opacity: layer.width > 0 ? elementOpacity(layerSelector) : 0,
+      layerSurfaceAlpha: elementSurfaceAlpha(layerSelector),
+      panelSurfaceAlpha: elementSurfaceAlpha(panelSelector),
+    };
+  }
+
   function elementFlexGrow(selector: string): number {
     const element = document.querySelector<HTMLElement>(selector);
     if (!element) return 0;
@@ -329,11 +373,11 @@
     while (
       version === replayVersion &&
       !document.querySelector<HTMLElement>(
-        '.sequence-videos[data-gallery-state="ready"]'
+        '[data-performance-stage][data-performance-ready="true"]'
       )
     ) {
       if (performance.now() - startedAt > DURATION.dramatic * 3) {
-        throw new Error("Performances did not present a ready gallery.");
+        throw new Error("Performances did not present a ready stage.");
       }
       await wait(16);
     }
@@ -389,6 +433,35 @@
     const cardSettings = elementBounds(
       '[aria-label="Card settings"] .panel-center-inner'
     );
+    // Content drift: the settings panels are persistent layers inside the
+    // animating inspector track. Measuring the panel root (width/left) and its
+    // first content block (top) proves whether a panel is composed at its own
+    // destination width and revealed through PanelGroup's moving clip, or is
+    // re-laying itself out on every frame while the seam travels.
+    const cardSettingsPanel = elementBounds(
+      ".card-settings-layer .export-panel"
+    );
+    const inspectorReveal: Record<InspectorLayerId, InspectorRevealSample> = {
+      motion: revealBounds(".motion-settings-layer", ".export-panel.sidebar"),
+      art: revealBounds(
+        ".art-settings-layer",
+        "[data-viewer-art-inspector-target] .art-settings-panel"
+      ),
+      card: revealBounds(
+        ".card-settings-layer",
+        ".card-settings-layer .export-panel"
+      ),
+      performance: revealBounds(
+        ".performance-inspector-layer",
+        ".performance-inspector-layer .performance-inspector"
+      ),
+    };
+    const artSettingsPanel = elementBounds(
+      "[data-viewer-art-inspector-target] .art-settings-panel"
+    );
+    const artSettingsContent = elementBounds(
+      "[data-viewer-art-inspector-target] .sidebar-rail-layout"
+    );
     const mandalaCanvas = document.querySelector<HTMLCanvasElement>(
       '.animation-column canvas[data-animation-layer="mandala"]'
     );
@@ -402,10 +475,10 @@
       : 0;
     const activeTunnelSurface = tunnelSurface();
     const activeTunnelCanvas = tunnelCanvas();
-    const stageLayer = elementBounds(".viewer-motion-stage-layer");
-    const performanceLayer = elementBounds(".performance-gallery-layer");
+    const stageLayer = elementBounds(".viewer-motion-content-layer");
+    const performanceLayer = elementBounds(".performance-stage-layer");
     const performanceWorkspace = document.querySelector<HTMLElement>(
-      ".performance-gallery-layer .video-workspace"
+      ".performance-inspector-layer .performance-list-items"
     );
     const performanceLayoutColumns = performanceWorkspace
       ? getComputedStyle(performanceWorkspace)
@@ -559,6 +632,12 @@
         '[data-viewer-art-inspector-target] [data-active="true"][data-art-settings]'
       ).length,
       artSettingsOpacity: elementOpacity(".art-settings-layer"),
+      artSettingsWidth: artSettingsPanel.width,
+      artSettingsLeft: artSettingsPanel.left,
+      inspectorReveal,
+      artSettingsContentTop: artSettingsContent.top,
+      cardSettingsLeft: cardSettingsPanel.left,
+      cardSettingsContentTop: cardSettings.top,
       tunnelBackingWidth: activeTunnelCanvas
         ? activeTunnelCanvas.width / Math.max(1, window.devicePixelRatio || 1)
         : 0,
@@ -567,20 +646,26 @@
         : 0,
       tunnelDisplayWidth: tunnelBounds?.width ?? 0,
       tunnelDisplayHeight: tunnelBounds?.height ?? 0,
-      stageLayerOpacity: elementOpacity(".viewer-motion-stage-layer"),
-      performanceLayerOpacity: elementOpacity(".performance-gallery-layer"),
-      stageLayerIdentity: elementIdentity(".viewer-motion-stage-layer"),
-      performanceLayerIdentity: elementIdentity(".performance-gallery-layer"),
-      stageLayerActive: elementDataFlag(".viewer-motion-stage-layer", "active"),
+      stageLayerOpacity: elementOpacity(".viewer-motion-content-layer"),
+      performanceLayerOpacity: elementOpacity(".performance-stage-layer"),
+      stageLayerIdentity: elementIdentity("[data-persistent-viewer-stage]"),
+      performanceLayerIdentity: elementIdentity(".performance-stage-layer"),
+      stageLayerActive: elementDataFlag(
+        ".viewer-motion-content-layer",
+        "active"
+      ),
       performanceLayerActive: elementDataFlag(
-        ".performance-gallery-layer",
+        ".performance-stage-layer",
         "active"
       ),
       performanceGalleryReady:
         document
-          .querySelector(".sequence-videos")
-          ?.getAttribute("data-gallery-state") === "ready",
+          .querySelector("[data-performance-stage]")
+          ?.getAttribute("data-performance-ready") === "true",
       performanceLayoutColumns,
+      performancePlayerCount: document.querySelectorAll(
+        ".performance-stage-layer video.performance-player"
+      ).length,
       stageLayerWidth: stageLayer.width,
       performanceLayerWidth: performanceLayer.width,
     };

@@ -3,6 +3,7 @@ import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
 import { applyDirectorEasing } from "./director-easing";
 import {
   compileCameraMoves,
+  compileCameraShots,
   computeCameraFraming,
   directorFloorY,
 } from "./camera-language";
@@ -27,6 +28,8 @@ export interface DirectorCameraFrame {
   position: [number, number, number];
   target: [number, number, number];
   fovDeg: number;
+  /** Horizon tilt, degrees; positive = clockwise on screen. Always present (0 = level). */
+  rollDeg: number;
 }
 
 export function getPreviewCameraFov(
@@ -70,6 +73,13 @@ export interface ResolvedDirectorCameraTrack {
   preset: DirectorCameraPreset;
   substitutedFor: DirectorCameraPreset | null;
   keyframes: ResolvedDirectorCameraKeyframe[];
+  /**
+   * Present only when the scene's subject asked to be tracked. The compiler
+   * frames the walker at their opening mark; the sampler shifts that framing
+   * by wherever they have walked since. Absent (not null) otherwise, so films
+   * that never track resolve byte-identically to their earlier snapshots.
+   */
+  tracking?: { performerId: string; mode: "aim" | "follow" };
 }
 
 function vec3(value: {
@@ -112,9 +122,18 @@ function keyframe(
   target: [number, number, number],
   fovDeg: number,
   interpolation: ResolvedDirectorCameraKeyframe["interpolation"] = "smooth",
-  easing: ResolvedDirectorCameraKeyframe["easing"] = "ease-in-out"
+  easing: ResolvedDirectorCameraKeyframe["easing"] = "ease-in-out",
+  rollDeg?: number
 ): ResolvedDirectorCameraKeyframe {
-  return { atSeconds, position, target, fovDeg, interpolation, easing };
+  return {
+    atSeconds,
+    position,
+    target,
+    fovDeg,
+    interpolation,
+    easing,
+    ...(rollDeg !== undefined ? { rollDeg } : {}),
+  };
 }
 
 export function resolveDirectorCameraTrack(
@@ -127,7 +146,8 @@ export function resolveDirectorCameraTrack(
         input.angle ||
         input.position ||
         input.moves ||
-        input.subject)
+        input.subject ||
+        input.shots)
   );
   if (usesGrammar && input?.keyframes?.length) {
     throw new Error(
@@ -174,7 +194,8 @@ export function resolveDirectorCameraTrack(
           ),
           frame.fovDeg ?? 50,
           frame.interpolation ?? "smooth",
-          frame.easing ?? "ease-in-out"
+          frame.easing ?? "ease-in-out",
+          frame.rollDeg
         );
       })
       .sort((left, right) => left.atSeconds - right.atSeconds);
@@ -193,6 +214,26 @@ export function resolveDirectorCameraTrack(
     return { preset: "custom", substitutedFor: null, keyframes: resolved };
   }
 
+  if (input?.shots) {
+    // Tracking offsets the whole resolved track by one walker's displacement,
+    // which cannot describe a walker followed in one shot and dropped in the
+    // next. The schema rejects it too; this is the resolver's own guard.
+    if (
+      input.shots.some(
+        (shot) => shot.subject?.kind === "performer" && shot.subject.track
+      )
+    ) {
+      throw new Error(
+        'Tracking and shots do not combine yet. Track a walker with a single framing, or cut between shots without "track".'
+      );
+    }
+    return {
+      preset: "custom",
+      substitutedFor: null,
+      keyframes: compileCameraShots(input.shots, context),
+    };
+  }
+
   if (usesGrammar) {
     const framing = computeCameraFraming(
       {
@@ -203,6 +244,15 @@ export function resolveDirectorCameraTrack(
       },
       context
     );
+    const subject = input!.subject;
+    const tracking =
+      subject?.kind === "performer" && subject.track
+        ? {
+            performerId: subject.performerId,
+            mode:
+              subject.track === "follow" ? ("follow" as const) : ("aim" as const),
+          }
+        : undefined;
     return {
       preset: "custom",
       substitutedFor: null,
@@ -211,6 +261,7 @@ export function resolveDirectorCameraTrack(
         framing,
         context
       ),
+      ...(tracking ? { tracking } : {}),
     };
   }
 
@@ -278,6 +329,25 @@ function interpolateScalar(
   );
 }
 
+/**
+ * Lens scalars (fov, roll) that hold a value across a segment hold it exactly.
+ * Catmull-Rom would bow the flat segment toward its neighbours — fov creeping
+ * to 50.2 before a zoom, roll dipping negative before a clockwise roll — and a
+ * director who stated a hold expects a hold. Position keeps the plain spline:
+ * a per-axis short-circuit there would flatten curved paths.
+ */
+function interpolateLensScalar(
+  before: number,
+  start: number,
+  end: number,
+  after: number,
+  progress: number,
+  smooth: boolean
+): number {
+  if (start === end) return start;
+  return interpolateScalar(before, start, end, after, progress, smooth);
+}
+
 function interpolateVector(
   before: [number, number, number],
   start: [number, number, number],
@@ -304,13 +374,14 @@ export function sampleDirectorCameraTrack(
 ): DirectorCameraFrame {
   const first = keyframes[0];
   if (!first) {
-    return { position: [0, 1, -4], target: [0, 0, 0], fovDeg: 50 };
+    return { position: [0, 1, -4], target: [0, 0, 0], fovDeg: 50, rollDeg: 0 };
   }
   if (keyframes.length === 1 || atSeconds <= first.atSeconds) {
     return {
       position: [...first.position],
       target: [...first.target],
       fovDeg: first.fovDeg,
+      rollDeg: first.rollDeg ?? 0,
     };
   }
 
@@ -320,6 +391,7 @@ export function sampleDirectorCameraTrack(
       position: [...last.position],
       target: [...last.target],
       fovDeg: last.fovDeg,
+      rollDeg: last.rollDeg ?? 0,
     };
   }
 
@@ -332,6 +404,7 @@ export function sampleDirectorCameraTrack(
       position: [...start.position],
       target: [...start.target],
       fovDeg: start.fovDeg,
+      rollDeg: start.rollDeg ?? 0,
     };
   }
 
@@ -341,8 +414,12 @@ export function sampleDirectorCameraTrack(
     Math.min(1, (atSeconds - start.atSeconds) / duration)
   );
   const progress = applyDirectorEasing(linearProgress, start.easing);
-  const before = keyframes[Math.max(0, startIndex - 1)] ?? start;
-  const after = keyframes[Math.min(keyframes.length - 1, endIndex + 1)] ?? end;
+  let before = keyframes[Math.max(0, startIndex - 1)] ?? start;
+  let after = keyframes[Math.min(keyframes.length - 1, endIndex + 1)] ?? end;
+  // A step keyframe is a cut: the spline on either side must not bend toward
+  // framing that belongs to a different shot.
+  if (before.interpolation === "step") before = start;
+  if (end.interpolation === "step") after = end;
   const smooth = start.interpolation === "smooth";
 
   return {
@@ -362,11 +439,19 @@ export function sampleDirectorCameraTrack(
       progress,
       smooth
     ),
-    fovDeg: interpolateScalar(
+    fovDeg: interpolateLensScalar(
       before.fovDeg,
       start.fovDeg,
       end.fovDeg,
       after.fovDeg,
+      progress,
+      smooth
+    ),
+    rollDeg: interpolateLensScalar(
+      before.rollDeg ?? 0,
+      start.rollDeg ?? 0,
+      end.rollDeg ?? 0,
+      after.rollDeg ?? 0,
       progress,
       smooth
     ),

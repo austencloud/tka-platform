@@ -48,7 +48,6 @@
   import MobileHandSelector from "./MobileHandSelector.svelte";
   import MobileActionToolbar from "./MobileActionToolbar.svelte";
   import { getSequenceActionsPanelHeight } from "./sequence-actions-panel-height";
-  import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import { getReturnContext } from "$lib/shared/coordinators/sequence-handoff.svelte";
 
@@ -148,9 +147,17 @@
     getTargetHand: () => panelState.targetHand,
     hapticService,
     pushUndoSnapshot: (type) => CreateModuleState.pushUndoSnapshot(type),
+    executeTransformAction: (action, options) => {
+      const dispatcher = ctx.getSequenceTransformActions();
+      return dispatcher
+        ? dispatcher.execute(action, options)
+        : Promise.resolve({
+            status: "unavailable" as const,
+            message: "Sequence actions are still loading",
+          });
+    },
     busyState: viewState,
     extensionFlowCoordinator,
-    setGridRotationDirection,
     finishShiftStart: () => {
       panelState.exitShiftStartMode();
       viewState.finishShiftStart();

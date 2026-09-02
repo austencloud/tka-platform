@@ -154,6 +154,27 @@ export function convertSceneBeatTimes(
       camera.moves = camera.moves.map((move) => convertDuration(move, bpm.value));
       cameraChanged = true;
     }
+    // A shot counts twice over: its own length on screen, and the length of
+    // each move inside it. Both convert here so the compiler downstream keeps
+    // seeing nothing but seconds.
+    const convertShot = <T extends BeatTimed & { moves?: readonly BeatTimed[] }>(
+      shot: T
+    ): T => {
+      const withMoves = shot.moves?.some(
+        (move) => move.durationBeats !== undefined
+      )
+        ? { ...shot, moves: shot.moves.map((move) => convertDuration(move, bpm.value)) }
+        : shot;
+      return convertDuration(withMoves, bpm.value);
+    };
+
+    if (camera.shots) {
+      const next = camera.shots.map((shot) => convertShot(shot));
+      if (next.some((shot, index) => shot !== camera.shots![index])) {
+        camera.shots = next;
+        cameraChanged = true;
+      }
+    }
     if (camera.keyframes?.some((frame) => frame.atBeats !== undefined)) {
       camera.keyframes = camera.keyframes.map((frame) => {
         if (frame.atBeats === undefined) return frame;

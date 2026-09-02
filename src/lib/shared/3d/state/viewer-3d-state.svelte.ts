@@ -498,6 +498,26 @@ export interface Viewer3DStateOptions {
    * being ambushed by a stale saved prop. A preset-sourced open ignores it.
    */
   appDefaultProp?: string | null;
+  /**
+   * View-only environment, from a shared viewer link (`t3` URL slice). It wins
+   * over the persisted key AND suppresses this instance's environment writes,
+   * so the sender's scene renders without ever reaching the recipient's disk —
+   * the same `initial` + `persist:false` shape `createEffectsConfigState` uses.
+   *
+   * Deliberately NOT expressed by passing a `Viewer3DStateSeed`: a seed marks
+   * the whole instance as a self-contained PREVIEW (it stops persisting camera,
+   * planes, performers and prop, forces verbatim performer restore, and makes
+   * `seededBackgroundType` non-null, which `Viewer3DCamera` reads to pick a
+   * preview-specific distance for Blossom). A link override is a real viewer,
+   * so it narrows the override to the one field the slice actually encodes.
+   */
+  viewOnlyEnvironmentId?: SceneEnvironmentId;
+  /**
+   * View-only scene-feature toggles from the same link. Read by
+   * `Viewer3DCanvas`, which builds an ISOLATED feature state from them — the
+   * shared `tka-scene-features` key is then ignored in both directions.
+   */
+  viewOnlySceneFeatures?: Record<string, boolean>;
 }
 
 function buildViewer3DState(
@@ -541,7 +561,14 @@ function buildViewer3DState(
     persistent && options.appDefaultProp !== undefined
       ? consumeViewer3DPresetIntent()
       : true;
-  const seededEnvironment = seed?.environmentId ?? seed?.backgroundType;
+  const seededEnvironment =
+    seed?.environmentId ?? seed?.backgroundType ?? options.viewOnlyEnvironmentId;
+  /**
+   * A link override reads its environment from the URL and writes none back.
+   * `loadPersistedEnvironment` is skipped entirely, which also skips its
+   * first-use migration write — the recipient's key stays exactly as it was.
+   */
+  const environmentIsViewOnly = options.viewOnlyEnvironmentId !== undefined;
   let environmentId = $state<SceneEnvironmentId>(
     seededEnvironment !== undefined
       ? normalizeSceneEnvironmentId(seededEnvironment)
@@ -559,7 +586,8 @@ function buildViewer3DState(
   const persistActiveFormation = persistent ? WRITERS.activeFormation : noop;
   const persistSelectedIndex = persistent ? WRITERS.selectedIndex : noop;
   const persistEffectToggles = persistent ? WRITERS.effectToggles : noop;
-  const persistSceneEnvironment = persistent ? persistEnvironment : noop;
+  const persistSceneEnvironment =
+    persistent && !environmentIsViewOnly ? persistEnvironment : noop;
   /** The four keys written inline rather than through a `persist*` helper. */
   const writeKey = (key: string, value: string) => {
     if (!persistent) return;
@@ -1339,6 +1367,13 @@ function buildViewer3DState(
   // Legacy - kept for any remaining references but no longer used for gating.
   let autoRenderEnabled = $state(true);
 
+  // Camera roll about the view axis, in degrees; positive reads clockwise to
+  // the audience. camera-controls owns the camera's position and lookAt and
+  // rewrites both every frame, so roll cannot be applied once - Viewer3DCamera
+  // re-applies this value after the controls update on every frame. 0 leaves
+  // the controls' own orientation untouched.
+  let cameraRollDeg = $state(0);
+
   // Camera choreography sub-state - tracks the preset selected in the
   // Export popover. The recording driver that consumes this lands in
   // Phase 1 of the camera-choreography plan.
@@ -1800,6 +1835,14 @@ function buildViewer3DState(
     get seededSceneFeatures(): Record<string, boolean> | null {
       return seed?.sceneFeatures ?? null;
     },
+    /**
+     * Scene-feature toggles a shared link imposed on this viewer; `null` = use
+     * the shared key. Same effect as `seededSceneFeatures` on the canvas, but
+     * available to a real (non-preview) viewer.
+     */
+    get viewOnlySceneFeatures(): Record<string, boolean> | null {
+      return options.viewOnlySceneFeatures ?? null;
+    },
     setOceanVariant(v: OceanVariant) {
       oceanVariant = v;
       writeKey(STORAGE_KEY_OCEAN_VARIANT, v);
@@ -2034,6 +2077,12 @@ function buildViewer3DState(
     },
     get cameraChoreography() {
       return cameraChoreography;
+    },
+    get cameraRollDeg() {
+      return cameraRollDeg;
+    },
+    set cameraRollDeg(value: number) {
+      cameraRollDeg = value;
     },
     get showPerf() {
       return showPerf;
