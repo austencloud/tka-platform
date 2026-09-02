@@ -1324,3 +1324,83 @@ describe("camera: concurrent moves, handheld, pan destinations", () => {
     ).toThrow();
   });
 });
+
+/**
+ * Gap 22. Bars sit beside beats everywhere beats are accepted, and the
+ * contradiction rule counts all three units rather than two.
+ */
+describe("bars as a time unit", () => {
+  const barsFilm = (scene: Record<string, unknown>) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "bars-film",
+    title: "Bars",
+    scenes: [{ id: "s1", title: "S1", ...scene }],
+  });
+
+  it("accepts a meter between two and twelve and rejects outside it", () => {
+    const parsed = FilmDirectorInputSchema.parse(
+      barsFilm({ performance: { meter: { beatsPerBar: 3 } } })
+    );
+    expect(parsed.scenes[0]!.performance!.meter!.beatsPerBar).toBe(3);
+    for (const beatsPerBar of [1, 13, 3.5]) {
+      expect(() =>
+        FilmDirectorInputSchema.parse(
+          barsFilm({ performance: { meter: { beatsPerBar } } })
+        )
+      ).toThrow();
+    }
+  });
+
+  it("rejects bars stated alongside beats or seconds on one field", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        barsFilm({ durationBars: 4, durationBeats: 12 })
+      )
+    ).toThrow(/exactly one of/i);
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        barsFilm({ durationBars: 4, durationSeconds: 8 })
+      )
+    ).toThrow(/exactly one of/i);
+  });
+
+  it("takes atBars on a camera keyframe, still exactly one unit", () => {
+    const keyframes = (list: unknown[]) =>
+      barsFilm({ durationSeconds: 8, camera: { keyframes: list } });
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        keyframes([{ atBars: 0, position: [0, 1, -4] }])
+      )
+    ).not.toThrow();
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        keyframes([{ atBars: 0, atBeats: 0, position: [0, 1, -4] }])
+      )
+    ).toThrow(/exactly one of/i);
+    expect(() =>
+      FilmDirectorInputSchema.parse(keyframes([{ position: [0, 1, -4] }]))
+    ).toThrow(/exactly one of/i);
+  });
+
+  it("rejects a duration on a move inside a with group, in any unit", () => {
+    const withGroup = (member: Record<string, unknown>) =>
+      barsFilm({
+        durationSeconds: 8,
+        camera: {
+          shotSize: "medium",
+          moves: [
+            {
+              move: "push-in",
+              amount: { meters: 1 },
+              durationSeconds: 4,
+              with: [{ move: "zoom", amount: { degrees: 10 }, ...member }],
+            },
+          ],
+        },
+      });
+    expect(() => FilmDirectorInputSchema.parse(withGroup({}))).not.toThrow();
+    expect(() =>
+      FilmDirectorInputSchema.parse(withGroup({ durationBars: 1 }))
+    ).toThrow(/shares the window/);
+  });
+});

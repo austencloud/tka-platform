@@ -56,61 +56,128 @@ export interface FlowFestParkedCarModel {
   attribution?: FlowFestParkedCarAttribution;
 }
 
+const ZHABOTINSKY = {
+  author: "Daniel Zhabotinsky",
+  license: "CC BY 4.0",
+} as const;
+
+/**
+ * Five generic bodies by one artist so the lot reads as one style, plus a
+ * classic camper. All CC Attribution; credits are repeated in
+ * `static/models/flow-fest/cars/CREDITS.md`. Dimensions are the measured
+ * source bounds in metres (length x width x height).
+ */
 export const FLOW_FEST_PARKED_CAR_MODELS: readonly FlowFestParkedCarModel[] =
   Object.freeze([
     {
-      id: "sedan-silver",
-      label: "silver sedan",
-      url: "/models/flow-fest/cars/sedan-silver.glb",
-      lengthMeters: 4.75,
-      widthMeters: 2.05,
-      heightMeters: 1.57,
-      sourceYawRadians: Math.PI,
+      id: "fairheaven-sedan",
+      label: "'80 sedan",
+      url: "/models/flow-fest/cars/fairheaven-sedan.glb",
+      lengthMeters: 5.0,
+      widthMeters: 1.83,
+      heightMeters: 1.35,
+      sourceYawRadians: 0,
+      paint: {
+        materialNames: ["Fairheaven_LT80_Bodymat"],
+        variants: ["#641c26", "#c9c5bb", "#2c3d5e", "#8a8f93"],
+        mode: "recolor",
+      },
+      attribution: {
+        ...ZHABOTINSKY,
+        title: "Fairheaven LT '80",
+        url: "https://sketchfab.com/3d-models/e2678da920cc4be68dbc193727919ffb",
+      },
     },
     {
-      id: "crossover-white",
-      label: "white crossover",
-      url: "/models/flow-fest/cars/crossover-white.glb",
-      lengthMeters: 4.45,
-      widthMeters: 2.05,
-      heightMeters: 1.62,
-      sourceYawRadians: Math.PI,
+      id: "fairheaven-wagon",
+      label: "'84 wagon",
+      url: "/models/flow-fest/cars/fairheaven-wagon.glb",
+      lengthMeters: 5.03,
+      widthMeters: 1.86,
+      heightMeters: 1.4,
+      sourceYawRadians: 0,
+      paint: {
+        materialNames: ["Fairheaven_LT80_Bodymat"],
+        variants: ["#33505a", "#d8d3c4", "#4a5a2f", "#1f2530"],
+        mode: "recolor",
+      },
+      attribution: {
+        ...ZHABOTINSKY,
+        title: "Fairheaven SW '84",
+        url: "https://sketchfab.com/3d-models/aa0becb6e854422596cac6b21bf79787",
+      },
     },
     {
-      id: "wagon-green",
-      label: "green outdoor wagon",
-      url: "/models/flow-fest/cars/wagon-green.glb",
-      lengthMeters: 4.7,
-      widthMeters: 2.15,
-      heightMeters: 1.85,
-      sourceYawRadians: Math.PI,
+      id: "lightbody-pickup",
+      label: "lifted '85 pickup",
+      url: "/models/flow-fest/cars/lightbody-pickup.glb",
+      lengthMeters: 4.93,
+      widthMeters: 2.14,
+      heightMeters: 1.92,
+      sourceYawRadians: 0,
+      paint: {
+        materialNames: ["krmlgtbdy85_Bodymat"],
+        variants: ["#14121f", "#b7b2a8", "#7a1e1e", "#3b4a3a"],
+        mode: "recolor",
+      },
+      attribution: {
+        ...ZHABOTINSKY,
+        title: "Lightbody Lifted '85",
+        url: "https://sketchfab.com/3d-models/67beae18c3d24be68f9c8f0ec382d8e3",
+      },
     },
     {
-      id: "pickup-grey",
-      label: "grey crew-cab pickup",
-      url: "/models/flow-fest/cars/pickup-grey.glb",
-      lengthMeters: 5.85,
-      widthMeters: 2.4,
-      heightMeters: 1.9,
-      sourceYawRadians: Math.PI,
+      id: "bokaroo-suv",
+      label: "'67 SUV",
+      url: "/models/flow-fest/cars/bokaroo-suv.glb",
+      lengthMeters: 4.59,
+      widthMeters: 2.21,
+      heightMeters: 1.96,
+      sourceYawRadians: 0,
+      paint: {
+        materialNames: ["BUCKAROO_67_Bodymat"],
+        variants: ["#348bb0", "#e6e1d3", "#b8482c", "#6f7a52"],
+        mode: "recolor",
+      },
+      attribution: {
+        ...ZHABOTINSKY,
+        title: "Bokaroo '67",
+        url: "https://sketchfab.com/3d-models/22015d1863d6455aa31cfd738b972c50",
+      },
     },
     {
-      id: "camper-van-white",
-      label: "white camper van",
-      url: "/models/flow-fest/cars/camper-van-white.glb",
-      lengthMeters: 5.95,
-      widthMeters: 2.5,
-      heightMeters: 3.25,
-      sourceYawRadians: Math.PI,
+      id: "ace-hatchback",
+      label: "'11 hatchback",
+      url: "/models/flow-fest/cars/ace-hatchback.glb",
+      lengthMeters: 3.84,
+      widthMeters: 1.83,
+      heightMeters: 1.45,
+      sourceYawRadians: 0,
+      paint: {
+        materialNames: ["Ace11_Bodymat"],
+        variants: ["#cf9a24", "#e8e6e1", "#1e2a44", "#a13a3a"],
+        mode: "recolor",
+      },
+      attribution: {
+        ...ZHABOTINSKY,
+        title: "Ace '11",
+        url: "https://sketchfab.com/3d-models/055ff8a21b8d4d279debca089e2fafcd",
+      },
     },
     {
-      id: "hatchback-blue",
-      label: "blue hatchback",
-      url: "/models/flow-fest/cars/hatchback-blue.glb",
-      lengthMeters: 3.7,
-      widthMeters: 1.85,
-      heightMeters: 1.76,
-      sourceYawRadians: Math.PI,
+      id: "t2-camper",
+      label: "classic campervan",
+      url: "/models/flow-fest/cars/t2-camper.glb",
+      lengthMeters: 4.28,
+      widthMeters: 1.97,
+      heightMeters: 1.93,
+      sourceYawRadians: Math.PI / 2,
+      attribution: {
+        title: "Volkswagen T2 Campervan",
+        author: "TheoClarke",
+        license: "CC BY 4.0",
+        url: "https://sketchfab.com/3d-models/96ec638bcdbd44a08be3197d9dece5d5",
+      },
     },
   ]);
 

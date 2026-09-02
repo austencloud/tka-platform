@@ -84,13 +84,27 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  * Gap 28, a pan that names its destination. `pan` took degrees, so aiming at a
  * performer meant doing the trigonometry by hand. Scene 13 whips between two
  * marks five meters apart with two pans that state only `to`.
+ *
+ * Round 2, wave B adds three more.
+ *
+ * Gaps 13 and 14, the callback. A variation on an earlier scene meant retyping
+ * the whole scene and letting the copy drift. Scene 14 states `extends` and
+ * `seedAs` on scene 1 and one word of camera, and comes back to the same
+ * moment from behind, down to the six planes the original drew.
+ *
+ * Gap 21, nobody. A cast of zero was a schema rejection, so an establishing
+ * shot of an empty place had to be faked with a performer hiding off frame.
+ * Scene 15 casts no one for three seconds.
+ *
+ * Gap 22, bars. A director counts bars and the film only understood beats.
+ * Scene 16 is a waltz: meter three, four bars long, with a two-bar push.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
   version: 5,
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
-    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all. An eighth scene changes one performer's effect and effort partway through while another's prop stops for four counts. A ninth and tenth scene repeat one staging twice, an orbit clockwise then the same orbit counterclockwise, so the two can be judged side by side. Then an eleventh scene pushes in and widens the lens in the same breath, holding the performer's size while the world stretches behind her; a twelfth takes the same wide shot off the tripod; and a thirteenth whips between two performers with pans that name where to aim instead of how far to turn.",
+    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all. An eighth scene changes one performer's effect and effort partway through while another's prop stops for four counts. A ninth and tenth scene repeat one staging twice, an orbit clockwise then the same orbit counterclockwise, so the two can be judged side by side. Then an eleventh scene pushes in and widens the lens in the same breath, holding the performer's size while the world stretches behind her; a twelfth takes the same wide shot off the tripod; and a thirteenth whips between two performers with pans that name where to aim instead of how far to turn. A fourteenth scene calls the first one back from behind, inheriting its staging and its draw rather than restating either. A fifteenth holds three seconds on a stage with nobody on it. A sixteenth counts itself in bars: four bars of three at 90.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
   // The grammar only guarantees distinctness PER axis; three blues and three
@@ -605,6 +619,62 @@ export const provingGroundsFilm: FilmDirectorInput = {
             easing: "linear",
           },
           { move: "hold", durationSeconds: 2.5 },
+        ],
+      },
+    },
+    {
+      id: "callback",
+      // Gaps 13 and 14. No cast, no location, no plane list, no framing: the
+      // only thing this scene says about its staging is which scene it is a
+      // variation of and which side the camera is on.
+      extends: "combined-draw",
+      seedAs: "combined-draw",
+      title: "Callback",
+      intent:
+        'Gaps 13 and 14: the opening scene again, from the other side. `extends` brings the cast, the forest, the lit planes, and the wide front framing across, and the only thing stated here is `position: "behind"`, which lands on the inherited camera without disturbing the rest of it. `seedAs` is the second half: without it the same distinct-and-not draw would run under a new scene name and deal six different planes, and the callback would be a different moment rather than the same one seen from the back.',
+      durationSeconds: 6,
+      transition: { kind: "cut" },
+      camera: { position: "behind" },
+    },
+    {
+      id: "empty-stage",
+      title: "Empty Stage",
+      intent:
+        "Gap 21: nobody. A cast of zero used to be a schema rejection, so holding on a place before anyone walked into it meant casting someone and hoping they stayed out of frame. The shot frames the stage origin at head height, the ground is still under the camera, and every rig in the pool stands empty handed.",
+      durationSeconds: 3,
+      transition: { kind: "fade-through-black" },
+      location: { environmentId: "forest" },
+      performance: { cast: { count: 0 } },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "wide",
+        angle: "eye",
+        position: "front",
+        moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "waltz",
+      title: "Waltz",
+      intent:
+        'Gap 22: counted in bars. The meter is three, the tempo is 90, and the scene states its length as four bars rather than the twelve beats or the eight seconds those work out to. The push-in is two bars of the same clock. A director counting a waltz says "four bars", never "twelve beats", and now the film can hear it.',
+      durationBars: 4,
+      transition: { kind: "cut" },
+      location: { environmentId: "cosmic" },
+      performance: {
+        bpm: 90,
+        meter: { beatsPerBar: 3 },
+        formation: "solo",
+        cast: { count: 1, defaults: { effect: "none" } },
+      },
+      camera: {
+        subject: { kind: "performer", performerId: "performer-1" },
+        shotSize: "medium",
+        angle: "eye",
+        position: "front",
+        moves: [
+          { move: "push-in", amount: { meters: 0.6 }, durationBars: 2 },
+          { move: "hold" },
         ],
       },
     },
