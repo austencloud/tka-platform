@@ -60,13 +60,20 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  * states `stepEffects` and `stepEfforts` on one performer and `holds` on
  * another. Nothing about the scene changes at those counts except what that
  * one performer carries, and what the held performer's prop is doing.
+ *
+ * Gap 8b, the felt direction of an orbit. The compiler has carried `orbit`
+ * with a `cw`/`ccw` direction since gap 8a, but nobody has watched the two
+ * signs side by side to check which one an audience would actually call
+ * clockwise. Scenes 9 and 10 stage the same three characters in the same
+ * line, the same wide front shot, the same 90-degree orbit — direction is
+ * the only thing that differs between them.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
   version: 5,
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
-    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all. An eighth scene changes one performer's effect and effort partway through while another's prop stops for four counts.",
+    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all. An eighth scene changes one performer's effect and effort partway through while another's prop stops for four counts. A ninth and tenth scene repeat one staging twice, an orbit clockwise then the same orbit counterclockwise, so the two can be judged side by side.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
   // The grammar only guarantees distinctness PER axis; three blues and three
@@ -422,6 +429,64 @@ export const provingGroundsFilm: FilmDirectorInput = {
         angle: "eye",
         position: "front",
         moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "orbit-clockwise",
+      title: "Orbit Clockwise",
+      intent:
+        "Gap 8b, first half: the camera orbits the line 90 degrees with direction cw. Three different characters stand left to right so the direction of travel reads at a glance. Watch which way the line turns in the frame.",
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      performance: {
+        bpm: 120,
+        formation: "line",
+        cast: {
+          count: 3,
+          defaults: { effect: "none" },
+          performers: [
+            { id: "performer-1", characterId: "x-bot" },
+            { id: "performer-2", characterId: "remy" },
+            { id: "performer-3", characterId: "ch01" },
+          ],
+        },
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "wide",
+        angle: "eye",
+        position: "front",
+        moves: [{ move: "orbit", amount: { degrees: 90 }, direction: "cw" }],
+      },
+    },
+    {
+      id: "orbit-counterclockwise",
+      title: "Orbit Counterclockwise",
+      intent:
+        "Gap 8b, second half: the same staging and the same 90 degree orbit, direction ccw. The line should turn the opposite way from the previous scene. Whichever of the two you would call clockwise decides whether the sign in camera-language.ts stays.",
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      performance: {
+        bpm: 120,
+        formation: "line",
+        cast: {
+          count: 3,
+          defaults: { effect: "none" },
+          performers: [
+            { id: "performer-1", characterId: "x-bot" },
+            { id: "performer-2", characterId: "remy" },
+            { id: "performer-3", characterId: "ch01" },
+          ],
+        },
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "wide",
+        angle: "eye",
+        position: "front",
+        moves: [{ move: "orbit", amount: { degrees: 90 }, direction: "ccw" }],
       },
     },
   ],

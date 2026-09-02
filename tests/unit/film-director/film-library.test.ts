@@ -437,6 +437,30 @@ describe("film library", () => {
     }
   });
 
+  it("proving grounds stages the orbit direction pair identically except for the sign", () => {
+    const proving = FILM_LIBRARY.find((entry) => entry.key === "proving")!;
+    const resolved = resolveFilmDirectorSpec(proving.film);
+
+    const cw = resolved.scenes.find((scene) => scene.id === "orbit-clockwise")!;
+    const ccw = resolved.scenes.find(
+      (scene) => scene.id === "orbit-counterclockwise"
+    )!;
+    expect(cw).toBeDefined();
+    expect(ccw).toBeDefined();
+    expect(cw.performance.performers.map((p) => p.characterId)).toEqual(
+      ccw.performance.performers.map((p) => p.characterId)
+    );
+
+    const cwStart = cw.camera.keyframes[0]!.position;
+    const cwEnd = cw.camera.keyframes.at(-1)!.position;
+    const ccwEnd = ccw.camera.keyframes.at(-1)!.position;
+    // Same start, mirrored end: a 90 degree orbit each way from the same
+    // front framing lands on opposite sides of the line.
+    expect(ccw.camera.keyframes[0]!.position).toEqual(cwStart);
+    expect(cwEnd[0]).toBeCloseTo(-ccwEnd[0], 6);
+    expect(cwEnd[2]).toBeCloseTo(ccwEnd[2], 6);
+  });
+
   it("Chance Suite's identical directives on different scenes draw from different streams", () => {
     const chance = FILM_LIBRARY.find((entry) => entry.key === "chance")!;
     const resolved = resolveFilmDirectorSpec(chance.film);
