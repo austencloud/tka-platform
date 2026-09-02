@@ -52,20 +52,10 @@
     claimSelected = false,
   }: Props = $props();
 
-  // Measured viewport of the scroll container.
-  let wrapW = $state(0);
-  let wrapH = $state(0);
-
-  // Fit the whole grid (headers + cells) into the viewport, but never below the
-  // 44px AAA touch-target floor. When the grid can't fit at 44px (very large
-  // axis on a small viewport) it overflows and scrolls — touch target wins.
-  const cell = $derived.by(() => {
-    const cols = colAxis.length + 1; // + rowheader column
-    const rows = rowAxis.length + 1; // + colheader row
-    if (!wrapW || !wrapH || cols <= 1 || rows <= 1) return 56;
-    const fit = Math.floor(Math.min(wrapW / cols, wrapH / rows));
-    return Math.max(44, Math.min(maxCellPx, fit));
-  });
+  // Track counts for the CSS tile formula: the row-header column and the
+  // column-header row join the axes.
+  const cols = $derived(colAxis.length + 1);
+  const rows = $derived(rowAxis.length + 1);
 
   // Cells and headers are painted by shape-matrix-artwork with the animation
   // canvas's own guide painter, at each tile's measured size (the primitive
@@ -102,11 +92,13 @@
   );
 </script>
 
+<!-- The tile size is container math, not a measurement: it is right in the
+     same layout pass that sizes the pane. A shared-element transition captures
+     the frame the compact view flips, when a ResizeObserver-fed size would
+     still describe the pane the grid was collapsed in. -->
 <div
   class="wrap"
-  style="--cell:{cell}px"
-  bind:clientWidth={wrapW}
-  bind:clientHeight={wrapH}
+  style="--cols:{cols}; --rows:{rows}; --cell-max:{maxCellPx}px"
 >
   {#if rowAxis.length === 0 || colAxis.length === 0}
     <div class="empty">No flowers match the current filters.</div>
@@ -187,6 +179,19 @@
     height: 100%;
     place-content: safe center;
     background: var(--theme-panel-bg, #0a0f14);
+    container-type: size;
+    /* Fit the whole grid (headers + cells) into the viewport at whole pixels,
+       never below the 44px AAA touch-target floor. When it cannot fit at 44px
+       (a large axis on a small viewport) it overflows and scrolls. */
+    --cell: round(
+      down,
+      clamp(
+        44px,
+        min(100cqw / var(--cols), 100cqh / var(--rows)),
+        var(--cell-max)
+      ),
+      1px
+    );
   }
   .empty {
     padding: 48px;
