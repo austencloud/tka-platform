@@ -19,7 +19,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 import type { DirectorBlockingFrame } from "./director-blocking-track";
 import type { DirectorCameraFrame } from "./director-camera-track";
-import { resolveStepChange } from "./director-step-changes";
+import { resolveStepChange, resolveStepRamp } from "./director-step-changes";
 import type { ResolvedDirectorScene } from "./film-director-schema";
 import { resolveDirectorPerformerPoolSize } from "./film-director-performance-policy";
 import { isIdleSequence } from "./sequence-language";
@@ -269,7 +269,18 @@ export function applyDirectorPerformerMotion(
 export interface DirectorAppliedStepChange {
   effect: EffectType;
   effort: EffortId;
+  /** Absent while the performer's prop keeps whatever length the scene set. */
+  staffLengthCm?: number;
 }
+
+/**
+ * Gap 17. How far a prop has to grow before the film writes the new length.
+ * A ramp produces a slightly different number every frame, and setStaffLengthCm
+ * rebuilds the prop, so writing every frame would rebuild it sixty times a
+ * second for a change no one can see. Half a centimetre is under a pixel at
+ * ordinary framing.
+ */
+const STAFF_LENGTH_WRITE_EPSILON_CM = 0.5;
 
 /**
  * Applies this frame's per-step effect and effort for every performer who
@@ -298,7 +309,12 @@ export function applyDirectorStepChanges(
 ): void {
   const performers = viewer.performerManager.performers;
   scene.performance.performers.forEach((directed, index) => {
-    if (directed.stepEffects.length === 0 && directed.stepEfforts.length === 0)
+    const ramp = directed.stepStaffLengths ?? [];
+    if (
+      directed.stepEffects.length === 0 &&
+      directed.stepEfforts.length === 0 &&
+      ramp.length === 0
+    )
       return;
     const performer = performers[index];
     if (!performer) return;
@@ -325,6 +341,23 @@ export function applyDirectorStepChanges(
     // wrote the performer's base effect and effort. So the baseline for the
     // first frame is those, not "nothing" — otherwise every cut would write a
     // redundant pair before the first authored entry is even reached.
+    // A prop with no stated length starts at the model's own, which the film
+    // has no number for. The first ramp entry is then the first length it can
+    // honestly write, so the baseline is that entry's value and the ramp into
+    // it is a cut.
+    const staffLengthCm =
+      ramp.length === 0
+        ? undefined
+        : resolveStepRamp(
+            ramp.map((entry) => ({
+              step: entry.step,
+              value: entry.staffLengthCm,
+              ease: entry.ease,
+            })),
+            step,
+            directed.staffLengthCm ?? ramp[0]!.staffLengthCm
+          );
+
     const last = applied.get(directed.id) ?? {
       effect: directed.effect,
       effort: directed.effort,
@@ -335,7 +368,19 @@ export function applyDirectorStepChanges(
     if (last.effort !== effort) {
       performer.setEffort(effort, { recordUndo: false });
     }
-    applied.set(directed.id, { effect, effort });
+    const staffLengthMoved =
+      staffLengthCm !== undefined &&
+      (last.staffLengthCm === undefined ||
+        Math.abs(last.staffLengthCm - staffLengthCm) >=
+          STAFF_LENGTH_WRITE_EPSILON_CM);
+    if (staffLengthMoved) {
+      performer.setStaffLengthCm(staffLengthCm);
+    }
+    applied.set(directed.id, {
+      effect,
+      effort,
+      staffLengthCm: staffLengthMoved ? staffLengthCm : last.staffLengthCm,
+    });
   });
 }
 
