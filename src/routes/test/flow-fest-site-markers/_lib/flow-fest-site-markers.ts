@@ -20,14 +20,30 @@ import {
   type WorldPoint,
 } from "../../flow-fest-path-tracer/_lib/flow-fest-trace";
 
-export const FLOW_FEST_SITE_MARKER_SCHEMA_VERSION = 1 as const;
+export const FLOW_FEST_SITE_MARKER_SCHEMA_VERSION = 2 as const;
 
 /**
- * How a marker's second point is read. Every shape is placed the same way —
- * click the anchor, drag the handle — and only the meaning of the handle
- * changes, so there is one interaction to learn rather than four.
+ * Two families of shape, because a clearing is not a circle.
+ *
+ * `point`, `facing`, `circle` and `run` are anchor-plus-handle: press once,
+ * drag once, and only the meaning of the handle changes. `area` and `path` are
+ * traced: a run of vertices the author clicks or draws, closed for an area and
+ * open for a path. Forcing a traced thing into a radius was the original sin
+ * here — a grass clearing that is really a lobed field became a disc, which is
+ * not what is on the ground.
  */
-export type FlowFestMarkerShape = "point" | "facing" | "circle" | "run";
+export type FlowFestMarkerShape =
+  | "point"
+  | "facing"
+  | "circle"
+  | "run"
+  | "area"
+  | "path";
+
+/** Traced shapes collect vertices; handle shapes do not. */
+export function isTracedShape(shape: FlowFestMarkerShape): boolean {
+  return shape === "area" || shape === "path";
+}
 
 export interface FlowFestMarkerPreset {
   id: string;
@@ -35,7 +51,7 @@ export interface FlowFestMarkerPreset {
   shape: FlowFestMarkerShape;
   instruction: string;
   /** Grouping for the picker, so the fire circle's parts stay together. */
-  group: "fire-circle" | "services" | "middle-earth" | "roads";
+  group: "fire-circle" | "services" | "middle-earth" | "roads" | "camping";
 }
 
 /**
@@ -47,8 +63,9 @@ export const FLOW_FEST_MARKER_PRESETS: readonly FlowFestMarkerPreset[] = [
   {
     id: "grass-field",
     label: "Grass clearing",
-    shape: "circle",
-    instruction: "Click the middle of the field, drag out to its edge.",
+    shape: "area",
+    instruction:
+      "Trace the edge of the clearing. Click corners or drag freehand, then press Enter to close it.",
     group: "fire-circle",
   },
   {
@@ -132,9 +149,9 @@ export const FLOW_FEST_MARKER_PRESETS: readonly FlowFestMarkerPreset[] = [
   {
     id: "big-canopy",
     label: "Middle Earth canopy",
-    shape: "circle",
+    shape: "area",
     instruction:
-      "Click the middle, drag to a corner. Built at roughly a tenth of size.",
+      "Trace its footprint corner to corner. It is a square circus tent, not a pop-up.",
     group: "middle-earth",
   },
   {
@@ -145,10 +162,47 @@ export const FLOW_FEST_MARKER_PRESETS: readonly FlowFestMarkerPreset[] = [
     group: "middle-earth",
   },
   {
+    id: "performer-area",
+    label: "Performer area",
+    shape: "area",
+    instruction: "Trace where performers actually work, inside the canopy.",
+    group: "middle-earth",
+  },
+  {
+    id: "road",
+    label: "Road",
+    shape: "path",
+    instruction:
+      "Trace the road as it actually runs. Drag freehand along it, Enter to finish.",
+    group: "roads",
+  },
+  {
     id: "road-veer",
-    label: "Road veer",
-    shape: "run",
-    instruction: "Click where the road leaves the straight, drag the way it goes.",
+    label: "Road veer uphill",
+    shape: "path",
+    instruction:
+      "Trace where the road leaves the straight and climbs. Note the grade in the note field.",
+    group: "roads",
+  },
+  {
+    id: "parking-lot",
+    label: "Parking lot",
+    shape: "area",
+    instruction: "Trace the edge of the parking area.",
+    group: "roads",
+  },
+  {
+    id: "cabin",
+    label: "Cabin",
+    shape: "facing",
+    instruction: "Place the cabin, then drag the way its front faces.",
+    group: "roads",
+  },
+  {
+    id: "building",
+    label: "Building",
+    shape: "facing",
+    instruction: "Place it, drag the way it faces, and name what it is.",
     group: "roads",
   },
   {
@@ -159,10 +213,45 @@ export const FLOW_FEST_MARKER_PRESETS: readonly FlowFestMarkerPreset[] = [
     group: "roads",
   },
   {
+    id: "camp-area",
+    label: "Camping area",
+    shape: "area",
+    instruction: "Trace where people actually pitch tents.",
+    group: "camping",
+  },
+  {
+    id: "car-camping",
+    label: "Car camping",
+    shape: "area",
+    instruction: "Trace where cars park alongside camps.",
+    group: "camping",
+  },
+  {
+    id: "vendor-village",
+    label: "Vendor Village",
+    shape: "area",
+    instruction: "Trace the vendor area, then name individual stalls separately.",
+    group: "camping",
+  },
+  {
     id: "custom",
     label: "Something else",
     shape: "facing",
     instruction: "Name it yourself, place it, then drag the way it faces.",
+    group: "services",
+  },
+  {
+    id: "custom-area",
+    label: "Some other area",
+    shape: "area",
+    instruction: "Trace any area the presets do not cover, then name it.",
+    group: "services",
+  },
+  {
+    id: "custom-path",
+    label: "Some other path",
+    shape: "path",
+    instruction: "Trace any line the presets do not cover, then name it.",
     group: "services",
   },
 ] as const;
@@ -172,9 +261,10 @@ export const FLOW_FEST_MARKER_GROUPS: ReadonlyArray<{
   label: string;
 }> = [
   { id: "fire-circle", label: "Fire circle" },
-  { id: "services", label: "Services" },
   { id: "middle-earth", label: "Middle Earth" },
-  { id: "roads", label: "Roads" },
+  { id: "roads", label: "Roads and buildings" },
+  { id: "camping", label: "Camping" },
+  { id: "services", label: "Services" },
 ] as const;
 
 export interface FlowFestSiteMarker {
@@ -183,15 +273,38 @@ export interface FlowFestSiteMarker {
   /** Free text. Defaults to the preset label; editable so repeats can differ. */
   label: string;
   shape: FlowFestMarkerShape;
+  /** First vertex for a traced shape; the placement for every other shape. */
   anchor: ImagePoint;
-  /** Null until the handle is dragged. Meaningless for `point`. */
+  /** Null until the handle is dragged. Meaningless for `point` and traced shapes. */
   handle: ImagePoint | null;
+  /** Vertices after the anchor. Only traced shapes fill this. */
+  points: ImagePoint[];
+  /** True once an area is closed or a path is finished. */
+  closed: boolean;
   note: string;
+  /**
+   * Milliseconds into the narration when this was placed, or null when nothing
+   * was recording. This is what lets spoken words be matched to the stroke they
+   * describe rather than to the whole session.
+   */
+  atMs: number | null;
+}
+
+/** One run of speech, stamped against the same clock the markers use. */
+export interface FlowFestNarrationSegment {
+  atMs: number;
+  text: string;
+}
+
+export interface FlowFestNarration {
+  startedAt: string;
+  segments: FlowFestNarrationSegment[];
 }
 
 export interface FlowFestSiteMarkerDraft {
   markers: FlowFestSiteMarker[];
   overallNote: string;
+  narration: FlowFestNarration | null;
 }
 
 /** The resolved, world-frame form an agent reads. */
@@ -208,6 +321,13 @@ export interface FlowFestSiteMarkerRecord {
   /** Present for `run` markers only. */
   endPosition: WorldPoint | null;
   runLengthMeters: number | null;
+  /** Every vertex, anchor first, for `area` and `path`. Null otherwise. */
+  vertices: WorldPoint[] | null;
+  /** Shoelace area of a closed outline. Present for `area` only. */
+  areaSquareMeters: number | null;
+  /** Summed segment length. Present for `path` only. */
+  pathLengthMeters: number | null;
+  atMs: number | null;
   note: string;
 }
 
@@ -224,6 +344,11 @@ export interface FlowFestSiteMarkerSubmission {
   };
   markers: FlowFestSiteMarkerRecord[];
   notes: { overall: string };
+  /**
+   * What was said while this was drawn, on the same millisecond clock as the
+   * markers' `atMs`. Null when the session was silent.
+   */
+  narration: FlowFestNarration | null;
 }
 
 export type FlowFestSiteMarkerValidation =
@@ -234,6 +359,9 @@ const MAX_MARKERS = 400;
 const MAX_LABEL = 80;
 const MAX_NOTE = 500;
 const MAX_OVERALL_NOTE = 2_000;
+const MAX_VERTICES = 400;
+const MAX_NARRATION_SEGMENTS = 4_000;
+const MAX_SEGMENT_TEXT = 1_000;
 
 export function getMarkerPreset(presetId: string): FlowFestMarkerPreset {
   return (
@@ -243,7 +371,7 @@ export function getMarkerPreset(presetId: string): FlowFestMarkerPreset {
 }
 
 export function emptyFlowFestSiteMarkerDraft(): FlowFestSiteMarkerDraft {
-  return { markers: [], overallNote: "" };
+  return { markers: [], overallNote: "", narration: null };
 }
 
 export function cloneFlowFestSiteMarkerDraft(
@@ -254,15 +382,23 @@ export function cloneFlowFestSiteMarkerDraft(
       ...marker,
       anchor: { ...marker.anchor },
       handle: marker.handle ? { ...marker.handle } : null,
+      points: marker.points.map((point) => ({ ...point })),
     })),
     overallNote: draft.overallNote,
+    narration: draft.narration
+      ? {
+          startedAt: draft.narration.startedAt,
+          segments: draft.narration.segments.map((segment) => ({ ...segment })),
+        }
+      : null,
   };
 }
 
 export function createSiteMarker(
   presetId: string,
   anchor: ImagePoint,
-  existing: readonly FlowFestSiteMarker[]
+  existing: readonly FlowFestSiteMarker[],
+  atMs: number | null = null
 ): FlowFestSiteMarker {
   const preset = getMarkerPreset(presetId);
   const sameKind = existing.filter(
@@ -275,8 +411,61 @@ export function createSiteMarker(
     shape: preset.shape,
     anchor: { ...anchor },
     handle: null,
+    points: [],
+    closed: false,
     note: "",
+    atMs,
   };
+}
+
+/** Anchor first, then every traced vertex. The only ordering callers may assume. */
+export function markerVertices(marker: FlowFestSiteMarker): ImagePoint[] {
+  return isTracedShape(marker.shape)
+    ? [marker.anchor, ...marker.points]
+    : [marker.anchor];
+}
+
+/**
+ * Shoelace area in square metres. The image is a north-up orthophoto at a fixed
+ * ground sample distance, so pixel area scales by the square of that distance
+ * with no projection correction of its own.
+ */
+export function markerAreaSquareMeters(
+  marker: FlowFestSiteMarker
+): number | null {
+  const vertices = markerVertices(marker);
+  if (marker.shape !== "area" || vertices.length < 3) return null;
+  let twiceArea = 0;
+  for (let index = 0; index < vertices.length; index += 1) {
+    const current = vertices[index]!;
+    const next = vertices[(index + 1) % vertices.length]!;
+    twiceArea += current.x * next.y - next.x * current.y;
+  }
+  const pixels = Math.abs(twiceArea) / 2;
+  return Number(
+    (pixels * FLOW_FEST_IMAGE.pixelSizeMeters ** 2).toFixed(1)
+  );
+}
+
+export function markerPathLengthMeters(
+  marker: FlowFestSiteMarker
+): number | null {
+  const vertices = markerVertices(marker);
+  if (!isTracedShape(marker.shape) || vertices.length < 2) return null;
+  let pixels = 0;
+  for (let index = 1; index < vertices.length; index += 1) {
+    pixels += Math.hypot(
+      vertices[index]!.x - vertices[index - 1]!.x,
+      vertices[index]!.y - vertices[index - 1]!.y
+    );
+  }
+  if (marker.shape === "area" && marker.closed && vertices.length > 2) {
+    pixels += Math.hypot(
+      vertices[0]!.x - vertices.at(-1)!.x,
+      vertices[0]!.y - vertices.at(-1)!.y
+    );
+  }
+  return Number((pixels * FLOW_FEST_IMAGE.pixelSizeMeters).toFixed(1));
 }
 
 /**
@@ -305,6 +494,8 @@ export function markerHandleMeters(marker: FlowFestSiteMarker): number | null {
 
 export function markerReadiness(marker: FlowFestSiteMarker): boolean {
   if (marker.shape === "point") return true;
+  if (marker.shape === "area") return markerVertices(marker).length >= 3;
+  if (marker.shape === "path") return markerVertices(marker).length >= 2;
   const meters = markerHandleMeters(marker);
   return meters !== null && meters > 0.5;
 }
@@ -313,6 +504,7 @@ export function toMarkerRecord(
   marker: FlowFestSiteMarker
 ): FlowFestSiteMarkerRecord {
   const meters = markerHandleMeters(marker);
+  const traced = isTracedShape(marker.shape);
   return {
     id: marker.id,
     presetId: marker.presetId,
@@ -329,6 +521,11 @@ export function toMarkerRecord(
         ? imagePointToWorld(marker.handle)
         : null,
     runLengthMeters: marker.shape === "run" ? meters : null,
+    vertices: traced ? markerVertices(marker).map(imagePointToWorld) : null,
+    areaSquareMeters: markerAreaSquareMeters(marker),
+    pathLengthMeters:
+      marker.shape === "path" ? markerPathLengthMeters(marker) : null,
+    atMs: marker.atMs,
     note: marker.note.trim(),
   };
 }
@@ -350,9 +547,15 @@ export function createFlowFestSiteMarkerSubmission(
     },
     markers: draft.markers.map(toMarkerRecord),
     notes: { overall: draft.overallNote.trim() },
+    narration: draft.narration,
   };
 }
 
+/**
+ * Restores a browser-local draft, including one written before traced shapes
+ * and narration existed. A local draft is somebody's unsaved work, so the older
+ * shape is upgraded in place rather than discarded.
+ */
 export function parseStoredFlowFestSiteMarkerDraft(
   serialized: string
 ): FlowFestSiteMarkerDraft | null {
@@ -362,12 +565,17 @@ export function parseStoredFlowFestSiteMarkerDraft(
       !Array.isArray(parsed.markers) ||
       parsed.markers.length > MAX_MARKERS ||
       typeof parsed.overallNote !== "string" ||
-      parsed.overallNote.length > MAX_OVERALL_NOTE ||
-      !parsed.markers.every(isStoredMarker)
+      parsed.overallNote.length > MAX_OVERALL_NOTE
     ) {
       return null;
     }
-    return cloneFlowFestSiteMarkerDraft(parsed as FlowFestSiteMarkerDraft);
+    const markers = parsed.markers.map(upgradeStoredMarker);
+    if (markers.some((marker) => marker === null)) return null;
+    return cloneFlowFestSiteMarkerDraft({
+      markers: markers as FlowFestSiteMarker[],
+      overallNote: parsed.overallNote,
+      narration: isNarration(parsed.narration) ? parsed.narration : null,
+    });
   } catch {
     return null;
   }
@@ -420,7 +628,31 @@ export function validateFlowFestSiteMarkerSubmission(
   ) {
     return { valid: false, error: "The overall note is too long." };
   }
+  if (submission.narration !== null && !isNarration(submission.narration)) {
+    return { valid: false, error: "The narration transcript is malformed." };
+  }
   return { valid: true, value: submission as FlowFestSiteMarkerSubmission };
+}
+
+function isNarration(value: unknown): value is FlowFestNarration {
+  if (!value || typeof value !== "object") return false;
+  const narration = value as Partial<FlowFestNarration>;
+  return (
+    typeof narration.startedAt === "string" &&
+    Number.isFinite(Date.parse(narration.startedAt)) &&
+    Array.isArray(narration.segments) &&
+    narration.segments.length <= MAX_NARRATION_SEGMENTS &&
+    narration.segments.every(
+      (segment) =>
+        !!segment &&
+        typeof segment === "object" &&
+        typeof segment.atMs === "number" &&
+        Number.isFinite(segment.atMs) &&
+        segment.atMs >= 0 &&
+        typeof segment.text === "string" &&
+        segment.text.length <= MAX_SEGMENT_TEXT
+    )
+  );
 }
 
 function validateMarkerRecord(value: unknown): string | null {
@@ -459,6 +691,26 @@ function validateMarkerRecord(value: unknown): string | null {
   ) {
     return `Marker "${record.label ?? record.id}" runs outside the registered terrain.`;
   }
+  if (record.vertices !== null) {
+    if (
+      !Array.isArray(record.vertices) ||
+      record.vertices.length < 2 ||
+      record.vertices.length > MAX_VERTICES
+    ) {
+      return `Marker "${record.label ?? record.id}" has an unusable outline.`;
+    }
+    if (!record.vertices.every(isWorldPointInsideTerrain)) {
+      return `Marker "${record.label ?? record.id}" is traced outside the registered terrain.`;
+    }
+  }
+  if (
+    record.atMs !== null &&
+    (typeof record.atMs !== "number" ||
+      !Number.isFinite(record.atMs) ||
+      record.atMs < 0)
+  ) {
+    return `Marker "${record.label ?? record.id}" has an invalid narration time.`;
+  }
   if (typeof record.note !== "string" || record.note.length > MAX_NOTE) {
     return `Marker "${record.label ?? record.id}" has an over-long note.`;
   }
@@ -495,21 +747,45 @@ function isStoredImagePoint(value: unknown): value is ImagePoint {
   );
 }
 
-function isStoredMarker(value: unknown): value is FlowFestSiteMarker {
-  if (!value || typeof value !== "object") return false;
+const STORED_SHAPES: readonly FlowFestMarkerShape[] = [
+  "point",
+  "facing",
+  "circle",
+  "run",
+  "area",
+  "path",
+];
+
+function upgradeStoredMarker(value: unknown): FlowFestSiteMarker | null {
+  if (!value || typeof value !== "object") return null;
   const marker = value as Partial<FlowFestSiteMarker>;
-  return (
-    typeof marker.id === "string" &&
-    typeof marker.presetId === "string" &&
-    typeof marker.label === "string" &&
-    marker.label.length <= MAX_LABEL &&
-    (marker.shape === "point" ||
-      marker.shape === "facing" ||
-      marker.shape === "circle" ||
-      marker.shape === "run") &&
-    isStoredImagePoint(marker.anchor) &&
-    (marker.handle === null || isStoredImagePoint(marker.handle)) &&
-    typeof marker.note === "string" &&
-    marker.note.length <= MAX_NOTE
-  );
+  if (
+    typeof marker.id !== "string" ||
+    typeof marker.presetId !== "string" ||
+    typeof marker.label !== "string" ||
+    marker.label.length > MAX_LABEL ||
+    !STORED_SHAPES.includes(marker.shape as FlowFestMarkerShape) ||
+    !isStoredImagePoint(marker.anchor) ||
+    !(marker.handle === null || isStoredImagePoint(marker.handle)) ||
+    typeof marker.note !== "string" ||
+    marker.note.length > MAX_NOTE
+  ) {
+    return null;
+  }
+  const points = Array.isArray(marker.points) ? marker.points : [];
+  if (points.length > MAX_VERTICES || !points.every(isStoredImagePoint)) {
+    return null;
+  }
+  return {
+    id: marker.id,
+    presetId: marker.presetId,
+    label: marker.label,
+    shape: marker.shape as FlowFestMarkerShape,
+    anchor: marker.anchor,
+    handle: marker.handle ?? null,
+    points,
+    closed: marker.closed === true,
+    note: marker.note,
+    atMs: typeof marker.atMs === "number" && marker.atMs >= 0 ? marker.atMs : null,
+  };
 }

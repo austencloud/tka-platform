@@ -15,12 +15,16 @@
     createSiteMarker,
     emptyFlowFestSiteMarkerDraft,
     getMarkerPreset,
+    isTracedShape,
     markerReadiness,
+    markerVertices,
     parseStoredFlowFestSiteMarkerDraft,
     toMarkerRecord,
+    type FlowFestNarration,
     type FlowFestSiteMarker,
     type FlowFestSiteMarkerDraft,
   } from "./_lib/flow-fest-site-markers";
+  import { createNarrationCapture } from "./_lib/narration-capture.svelte";
 
   type InteractionMode = "place" | "pan";
   type NoticeKind = "quiet" | "success" | "error";
@@ -38,6 +42,10 @@
   /** Middle Earth sits near image (1224, 794); this frames it and the ground east of it. */
   const MIDDLE_EARTH_VIEW = { x: 940, y: 620, width: 900 } as const;
   const HIT_RADIUS_PIXELS = 14;
+  /** Freehand sampling distance, in screen pixels, while a stroke is dragged. */
+  const TRACE_SAMPLE_PIXELS = 7;
+  /** Below this much pointer travel a press counts as a click, not a drag. */
+  const CLICK_SLOP_PIXELS = 4;
 
   const MODE_OPTIONS = [
     { value: "place", label: "Place", tone: "accent" as const },
@@ -63,6 +71,13 @@
   let panOrigin: { x: number; y: number; viewX: number; viewY: number } | null =
     null;
   let history: FlowFestSiteMarkerDraft[] = [];
+  let future: FlowFestSiteMarkerDraft[] = [];
+  /** The traced marker accepting vertices, or null when nothing is open. */
+  let tracingId = $state<string | null>(null);
+  let strokeOrigin: { x: number; y: number } | null = null;
+
+  const narration = createNarrationCapture();
+  let recordingElapsed = $state(0);
 
   const viewHeight = $derived((view.width * mapHeight) / Math.max(mapWidth, 1));
   /** Screen pixels to viewBox units, so strokes and dots keep a constant size. */
@@ -71,8 +86,20 @@
   const selectedMarker = $derived(
     draft.markers.find((marker) => marker.id === selectedMarkerId) ?? null
   );
-  const incompleteCount = $derived(
-    draft.markers.filter((marker) => !markerReadiness(marker)).length
+  /**
+   * The two ways a marker can be unfinished need different instructions: a
+   * facing marker is waiting on a drag, a traced one is waiting on more points.
+   * One combined "needs a direction" line sends the author to the wrong gesture.
+   */
+  const unfinishedDirectionCount = $derived(
+    draft.markers.filter(
+      (marker) => !isTracedShape(marker.shape) && !markerReadiness(marker)
+    ).length
+  );
+  const unfinishedTraceCount = $derived(
+    draft.markers.filter(
+      (marker) => isTracedShape(marker.shape) && !markerReadiness(marker)
+    ).length
   );
   const presetsByGroup = $derived(
     FLOW_FEST_MARKER_GROUPS.map((group) => ({
@@ -82,18 +109,49 @@
       ),
     }))
   );
+  const tracingMarker = $derived(
+    draft.markers.find((marker) => marker.id === tracingId) ?? null
+  );
 
   onMount(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return;
-    const parsed = parseStoredFlowFestSiteMarkerDraft(stored);
-    if (parsed) {
-      draft = parsed;
-      report(
-        `Restored ${parsed.markers.length} marker${parsed.markers.length === 1 ? "" : "s"} from this browser.`,
-        "quiet"
-      );
+    if (stored) {
+      const parsed = parseStoredFlowFestSiteMarkerDraft(stored);
+      if (parsed) {
+        draft = parsed;
+        report(
+          `Restored ${parsed.markers.length} marker${parsed.markers.length === 1 ? "" : "s"} from this browser.`,
+          "quiet"
+        );
+      }
     }
+    return () => narration.dispose();
+  });
+
+  /**
+   * The transcript lives in the capture owner while it is being spoken and in
+   * the draft once it exists, so a reload or a save carries the words with the
+   * strokes they describe.
+   */
+  $effect(() => {
+    if (!narration.recording) return;
+    const timer = setInterval(() => {
+      recordingElapsed = narration.elapsedMs() ?? 0;
+    }, 500);
+    return () => clearInterval(timer);
+  });
+
+  $effect(() => {
+    const startedAt = narration.startedAt;
+    const segments = narration.segments;
+    const next: FlowFestNarration | null =
+      startedAt && segments.length > 0
+        ? { startedAt, segments: segments.map((segment) => ({ ...segment })) }
+        : null;
+    if (next === null && draft.narration === null) return;
+    if (next && draft.narration?.segments.length === next.segments.length) return;
+    draft.narration = next;
+    persist();
   });
 
   function report(message: string, kind: NoticeKind): void {
@@ -130,18 +188,62 @@
   }
 
   function remember(): void {
-    history = [...history.slice(-49), cloneFlowFestSiteMarkerDraft(draft)];
+    history = [...history.slice(-99), cloneFlowFestSiteMarkerDraft(draft)];
+    future = [];
   }
 
+  /**
+   * While a shape is being traced, undo means "take back that last point" —
+   * which is what a hand expects mid-stroke. Only once the trace is finished
+   * does undo start walking whole edits.
+   */
   function undo(): void {
+    const tracing = tracingMarker;
+    if (tracing && tracing.points.length > 0) {
+      draft.markers = draft.markers.map((marker) =>
+        marker.id === tracing.id
+          ? { ...marker, points: marker.points.slice(0, -1), closed: false }
+          : marker
+      );
+      persist();
+      report("Took back the last point.", "quiet");
+      return;
+    }
+    if (tracing) {
+      discardMarker(tracing.id);
+      tracingId = null;
+      report("Took back the start of that shape.", "quiet");
+      return;
+    }
+
     const previous = history.pop();
     if (!previous) {
       report("Nothing to undo.", "quiet");
       return;
     }
+    future = [...future.slice(-99), cloneFlowFestSiteMarkerDraft(draft)];
     draft = previous;
     persist();
     report("Undid the last change.", "quiet");
+  }
+
+  function redo(): void {
+    const next = future.pop();
+    if (!next) {
+      report("Nothing to redo.", "quiet");
+      return;
+    }
+    history = [...history.slice(-99), cloneFlowFestSiteMarkerDraft(draft)];
+    draft = next;
+    persist();
+    report("Redid the last change.", "quiet");
+  }
+
+  /** Removes a marker without touching history; undo calls this mid-trace. */
+  function discardMarker(id: string): void {
+    draft.markers = draft.markers.filter((marker) => marker.id !== id);
+    if (selectedMarkerId === id) selectedMarkerId = null;
+    persist();
   }
 
   function pointFromEvent(event: PointerEvent): ImagePoint | null {
@@ -203,9 +305,34 @@
       return;
     }
 
+    strokeOrigin = { x: event.clientX, y: event.clientY };
+
+    const tracing = tracingMarker;
+    if (tracing) {
+      const reach = HIT_RADIUS_PIXELS * pixelScale;
+      const closesTheLoop =
+        tracing.shape === "area" &&
+        tracing.points.length >= 2 &&
+        Math.hypot(point.x - tracing.anchor.x, point.y - tracing.anchor.y) <=
+          reach;
+      if (closesTheLoop) {
+        finishTrace();
+        return;
+      }
+      appendVertex(tracing.id, point);
+      return;
+    }
+
     const existing = markerNear(point);
     if (existing) {
       selectedMarkerId = existing.id;
+      if (isTracedShape(existing.shape)) {
+        report(
+          `${existing.label}. Use Continue tracing to add more points to it.`,
+          "quiet"
+        );
+        return;
+      }
       draggingHandleFor = existing.id;
       report(
         `${existing.label}. Drag to set its direction, or release to leave it.`,
@@ -215,9 +342,24 @@
     }
 
     remember();
-    const marker = createSiteMarker(activePresetId, point, draft.markers);
+    const marker = createSiteMarker(
+      activePresetId,
+      point,
+      draft.markers,
+      narration.elapsedMs()
+    );
     draft.markers = [...draft.markers, marker];
     selectedMarkerId = marker.id;
+    if (isTracedShape(marker.shape)) {
+      tracingId = marker.id;
+      draggingHandleFor = null;
+      persist();
+      report(
+        `Tracing ${marker.label}. Click each corner or drag along it, then press Enter${marker.shape === "area" ? " or click the first point" : ""} to finish.`,
+        "success"
+      );
+      return;
+    }
     draggingHandleFor = marker.shape === "point" ? null : marker.id;
     persist();
     report(
@@ -226,6 +368,50 @@
         : `Placed ${marker.label}. Keep dragging to set its ${handleNoun(marker.shape)}.`,
       "success"
     );
+  }
+
+  function appendVertex(id: string, point: ImagePoint): void {
+    draft.markers = draft.markers.map((marker) =>
+      marker.id === id
+        ? { ...marker, points: [...marker.points, { ...point }] }
+        : marker
+    );
+  }
+
+  function finishTrace(): void {
+    const tracing = tracingMarker;
+    tracingId = null;
+    strokeOrigin = null;
+    if (!tracing) return;
+    if (!markerReadiness(tracing)) {
+      discardMarker(tracing.id);
+      report(
+        tracing.shape === "area"
+          ? "An area needs at least three points, so that one was dropped."
+          : "A path needs at least two points, so that one was dropped.",
+        "quiet"
+      );
+      return;
+    }
+    draft.markers = draft.markers.map((marker) =>
+      marker.id === tracing.id
+        ? { ...marker, closed: marker.shape === "area" }
+        : marker
+    );
+    persist();
+    report(`Finished ${tracing.label}. ${describe(tracing)}`, "success");
+  }
+
+  function continueTrace(id: string): void {
+    const marker = draft.markers.find((candidate) => candidate.id === id);
+    if (!marker || !isTracedShape(marker.shape)) return;
+    remember();
+    tracingId = id;
+    selectedMarkerId = id;
+    draft.markers = draft.markers.map((candidate) =>
+      candidate.id === id ? { ...candidate, closed: false } : candidate
+    );
+    report(`Adding to ${marker.label}. Enter finishes it again.`, "quiet");
   }
 
   function handlePointerMove(event: PointerEvent): void {
@@ -244,6 +430,31 @@
       return;
     }
 
+    /**
+     * A drag inside an open trace is freehand: sample it by distance so a road
+     * traced with the hand keeps its curve without collecting a vertex per
+     * pointer event.
+     */
+    const tracing = tracingMarker;
+    if (tracing && strokeOrigin) {
+      const travelled = Math.hypot(
+        event.clientX - strokeOrigin.x,
+        event.clientY - strokeOrigin.y
+      );
+      if (travelled < CLICK_SLOP_PIXELS) return;
+      const point = pointFromEvent(event);
+      if (!point) return;
+      const last = markerVertices(tracing).at(-1)!;
+      if (
+        Math.hypot(point.x - last.x, point.y - last.y) <
+        TRACE_SAMPLE_PIXELS * pixelScale
+      ) {
+        return;
+      }
+      appendVertex(tracing.id, point);
+      return;
+    }
+
     if (!draggingHandleFor) return;
     const point = pointFromEvent(event);
     if (!point) return;
@@ -257,9 +468,59 @@
     capturePointer(event, false);
     pointerId = null;
     panOrigin = null;
+    strokeOrigin = null;
+    if (tracingId) persist();
     if (draggingHandleFor) {
       draggingHandleFor = null;
       persist();
+    }
+  }
+
+  function handleKeydown(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    const typing =
+      !!target &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable);
+    if (typing) return;
+
+    const accelerator = event.ctrlKey || event.metaKey;
+    const key = event.key.toLowerCase();
+    if (accelerator && key === "z" && !event.shiftKey) {
+      event.preventDefault();
+      undo();
+      return;
+    }
+    if (accelerator && (key === "y" || (key === "z" && event.shiftKey))) {
+      event.preventDefault();
+      redo();
+      return;
+    }
+    if (event.key === "Enter" && tracingId) {
+      event.preventDefault();
+      finishTrace();
+      return;
+    }
+    if (event.key === "Escape") {
+      if (tracingId) {
+        event.preventDefault();
+        finishTrace();
+        return;
+      }
+      if (selectedMarkerId) {
+        event.preventDefault();
+        selectedMarkerId = null;
+      }
+      return;
+    }
+    if (
+      (event.key === "Delete" || event.key === "Backspace") &&
+      selectedMarkerId &&
+      !tracingId
+    ) {
+      event.preventDefault();
+      deleteMarker(selectedMarkerId);
     }
   }
 
@@ -408,7 +669,28 @@
     if (record.radiusMeters !== null) parts.push(`r ${record.radiusMeters} m`);
     if (record.runLengthMeters !== null)
       parts.push(`${record.runLengthMeters} m long`);
+    if (record.vertices !== null) parts.push(`${record.vertices.length} pts`);
+    if (record.areaSquareMeters !== null)
+      parts.push(formatArea(record.areaSquareMeters));
+    if (record.pathLengthMeters !== null)
+      parts.push(`${Math.round(record.pathLengthMeters)} m long`);
     return parts.join(" · ");
+  }
+
+  /** Hectares once a field stops being legible in square metres. */
+  function formatArea(squareMeters: number): string {
+    return squareMeters >= 10_000
+      ? `${(squareMeters / 10_000).toFixed(2)} ha`
+      : `${Math.round(squareMeters)} m²`;
+  }
+
+  function pointsAttribute(points: readonly ImagePoint[]): string {
+    return points.map((point) => `${point.x},${point.y}`).join(" ");
+  }
+
+  function formatElapsed(milliseconds: number): string {
+    const total = Math.floor(milliseconds / 1000);
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
   }
 
   function compass(degrees: number): string {
@@ -426,14 +708,18 @@
   <title>Flow Fest site markers</title>
 </svelte:head>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <main class="marker-page">
   <header class="page-head">
     <div>
       <h1>Flow Fest site markers</h1>
       <p class="lede">
-        Place what is actually there and say which way it faces. Everything lands
-        in world metres on the registered orthophoto, in the same frame as the
-        road traces, so an agent can build from it directly.
+        Place what is actually there, trace what has a shape, and say which way
+        it faces. Turn on Narrate and talk while you draw: the words are stamped
+        against the same clock as the strokes, so what you say lands next to the
+        thing you were pointing at. Everything saves in world metres on the
+        registered orthophoto, in the same frame as the road traces.
       </p>
     </div>
     <div class="head-actions">
@@ -468,10 +754,35 @@
       >
         Whole site
       </PanelButton>
+      <PanelButton
+        variant={narration.recording ? "primary" : "secondary"}
+        onclick={() => (narration.recording ? narration.stop() : narration.start())}
+        ariaPressed={narration.recording}
+      >
+        {narration.recording
+          ? `Narrating ${formatElapsed(recordingElapsed)}`
+          : "Narrate"}
+      </PanelButton>
     </div>
   </header>
 
   <p class="notice notice--{noticeKind}" role="status">{notice}</p>
+
+  {#if narration.error}
+    <p class="notice notice--error" role="status">{narration.error}</p>
+  {:else if narration.recording || narration.segments.length > 0}
+    <p class="notice notice--narrating" role="status" aria-live="off">
+      <span class="narration-count">
+        {narration.segments.length}
+        {narration.segments.length === 1 ? "line" : "lines"} captured
+      </span>
+      <span class="narration-heard">
+        {narration.interim ||
+          narration.segments.at(-1)?.text ||
+          "Listening. Say what you are pointing at."}
+      </span>
+    </p>
+  {/if}
 
   <div class="workspace">
     <section class="rail rail--left" aria-label="What to place">
@@ -506,7 +817,22 @@
     </section>
 
     <section class="map-shell" aria-label="Site map">
-      <p class="instruction">{activePreset.instruction}</p>
+      <div class="map-bar">
+        <p class="instruction">
+          {#if tracingMarker}
+            Tracing {tracingMarker.label} — {markerVertices(tracingMarker).length}
+            {markerVertices(tracingMarker).length === 1 ? "point" : "points"}.
+            Ctrl+Z takes one back.
+          {:else}
+            {activePreset.instruction}
+          {/if}
+        </p>
+        {#if tracingMarker}
+          <PanelButton variant="primary" onclick={finishTrace}>
+            Finish shape
+          </PanelButton>
+        {/if}
+      </div>
       <svg
         bind:this={svgElement}
         bind:clientWidth={mapWidth}
@@ -520,6 +846,7 @@
         onpointermove={handlePointerMove}
         onpointerup={finishPointer}
         onpointercancel={finishPointer}
+        ondblclick={() => tracingId && finishTrace()}
         onwheel={handleWheel}
       >
         <image
@@ -533,11 +860,36 @@
         {#each draft.markers as marker (marker.id)}
           {@const selected = marker.id === selectedMarkerId}
           {@const tip = arrowTip(marker)}
+          {@const vertices = markerVertices(marker)}
           <g
             class="marker"
             class:marker--selected={selected}
             class:marker--incomplete={!markerReadiness(marker)}
+            class:marker--tracing={marker.id === tracingId}
           >
+            {#if isTracedShape(marker.shape) && vertices.length > 1}
+              {#if marker.shape === "area" && marker.closed}
+                <polygon
+                  class="marker-area"
+                  points={pointsAttribute(vertices)}
+                  stroke-width={2 * pixelScale}
+                />
+              {:else}
+                <polyline
+                  class="marker-trace"
+                  points={pointsAttribute(vertices)}
+                  stroke-width={3 * pixelScale}
+                />
+              {/if}
+              {#each vertices as vertex, index (index)}
+                <circle
+                  class="marker-vertex"
+                  cx={vertex.x}
+                  cy={vertex.y}
+                  r={2.5 * pixelScale}
+                />
+              {/each}
+            {/if}
             {#if marker.shape === "circle" && tip}
               <circle
                 class="marker-circle"
@@ -592,11 +944,18 @@
         Placed
         <span class="rail-count">{draft.markers.length}</span>
       </h2>
-      {#if incompleteCount > 0}
+      {#if unfinishedDirectionCount > 0}
         <p class="warn">
-          {incompleteCount}
-          {incompleteCount === 1 ? "marker still needs" : "markers still need"} a
-          direction. Press one on the map and drag.
+          {unfinishedDirectionCount}
+          {unfinishedDirectionCount === 1 ? "marker still needs" : "markers still need"}
+          a direction. Press one on the map and drag.
+        </p>
+      {/if}
+      {#if unfinishedTraceCount > 0}
+        <p class="warn">
+          {unfinishedTraceCount}
+          {unfinishedTraceCount === 1 ? "shape needs" : "shapes need"} more points.
+          Select it, press Continue tracing, then click or drag along the map.
         </p>
       {/if}
 
@@ -645,7 +1004,15 @@
             ></textarea>
           </label>
           <div class="editor-actions">
-            {#if editing.shape !== "point"}
+            {#if isTracedShape(editing.shape)}
+              <PanelButton
+                variant="secondary"
+                onclick={() => continueTrace(editing.id)}
+                disabled={editing.id === tracingId}
+              >
+                Continue tracing
+              </PanelButton>
+            {:else if editing.shape !== "point"}
               <PanelButton
                 variant="secondary"
                 onclick={() => clearHandle(editing.id)}
@@ -689,7 +1056,12 @@
           Copy JSON
         </PanelButton>
         <PanelButton variant="secondary" onclick={undo}>Undo</PanelButton>
+        <PanelButton variant="secondary" onclick={redo}>Redo</PanelButton>
       </div>
+      <p class="empty">
+        Ctrl+Z undoes, Ctrl+Shift+Z redoes, Enter finishes a traced shape,
+        Delete removes the selected one.
+      </p>
     </section>
   </div>
 </main>
@@ -881,10 +1253,44 @@
     min-width: 0;
   }
 
+  .map-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    /**
+     * The bar keeps a fixed height because its right-hand action only exists
+     * while a shape is open. Without the reservation, starting and finishing a
+     * trace would nudge the map up and down under the pointer.
+     */
+    min-height: 40px;
+  }
+
   .instruction {
     margin: 0;
     font-size: 0.875rem;
     color: var(--theme-text-secondary, #9aa7b4);
+  }
+
+  .notice--narrating {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    border-color: var(--theme-accent, #4493f8);
+  }
+
+  .narration-count {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-secondary, #9aa7b4);
+  }
+
+  .narration-heard {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /**
@@ -942,6 +1348,31 @@
     vector-effect: non-scaling-stroke;
   }
 
+  .marker-area {
+    fill: color-mix(in srgb, var(--theme-accent, #4493f8) 18%, transparent);
+    stroke: var(--theme-accent, #4493f8);
+    vector-effect: non-scaling-stroke;
+  }
+
+  .marker-trace {
+    fill: none;
+    stroke: var(--theme-accent, #4493f8);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .marker--tracing .marker-trace,
+  .marker--tracing .marker-area {
+    stroke: var(--semantic-warning, #d29922);
+    stroke-dasharray: 6 4;
+  }
+
+  .marker-vertex {
+    fill: #fff;
+    opacity: 0.85;
+  }
+
   .marker-text {
     fill: #fff;
     paint-order: stroke;
@@ -979,10 +1410,21 @@
     border: 1px solid var(--theme-border, #30363d);
   }
 
-  .editor-actions,
-  .rail-actions {
+  .editor-actions {
     display: flex;
     flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /**
+   * A wrapping flex row strands Redo on a line of its own at most rail widths,
+   * and three tracks in a ~315px rail is too narrow for "Copy JSON" to stay on
+   * one line. Two columns of two is a deliberate composition: no orphan row, no
+   * wrapped label, and Save keeps its accent fill to read as the primary.
+   */
+  .rail-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -1015,13 +1457,24 @@
   }
 
   /**
-   * Stacked, the picker must not push the map off screen — that is hiding the
-   * workspace, not recomposing for it. The presets flow into as many columns as
-   * fit and the rail keeps a short capped height, so the map stays in view.
+   * Once the columns collapse the map is the workspace, so it leads and the
+   * picker follows it. Leaving the picker on top pushed the map past half the
+   * viewport at 820 wide — that is hiding the workspace, not recomposing for
+   * it. The lede folds away because the instruction line above the map already
+   * says what the current preset wants, and the presets flow into as many
+   * columns as fit under a capped height.
    */
   @media (max-width: 1200px) {
     .workspace {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .lede {
+      display: none;
+    }
+
+    .map-shell {
+      order: -1;
     }
 
     .rail--left {
@@ -1043,20 +1496,8 @@
     }
   }
 
-  /**
-   * On a phone the map is the workspace, so it leads and the picker follows it.
-   * The lede folds away because the instruction line above the map already says
-   * what the current preset wants.
-   */
+  /** A phone has less height to spend on the picker below the map. */
   @media (max-width: 700px) {
-    .lede {
-      display: none;
-    }
-
-    .map-shell {
-      order: -1;
-    }
-
     .rail--left {
       max-height: 34vh;
     }
@@ -1084,6 +1525,11 @@
 
     .workspace {
       grid-template-columns: minmax(0, 210px) minmax(0, 1fr);
+    }
+
+    /* Two columns again, so the picker returns to the left of the map. */
+    .map-shell {
+      order: 0;
     }
 
     .rail--left {
