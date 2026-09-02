@@ -63,6 +63,8 @@
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { growFade } from "$lib/shared/transitions/motion";
+  import { claimedViewTransitionName } from "$lib/shared/transitions/claimed-view-transition-name";
+  import { SHAPE_MATRIX_ACTIVE_STAGE_NAME } from "../services/shape-matrix-artwork";
   import { getShapeMatrixTransitionRecorder } from "../debug/shape-matrix-transition-recorder";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
@@ -170,6 +172,8 @@
   type PlayerSource = "first" | "second";
   interface PlayerLayer {
     key: string;
+    /** The pair this layer plays; a layer for another pair is stale. */
+    pairKey: string;
     realization: ModeRealization;
     paths: MandalaPaths;
     clubTipDx: number;
@@ -235,6 +239,13 @@
 
   const pairKey = $derived(
     pair ? `${propType}|${flowerKey(pair.left)}|${flowerKey(pair.right)}` : null
+  );
+
+  // The live canvas that is visible plays THIS pair. Until then the still
+  // floor is the mandala on stage: a canvas still playing the previous pair
+  // is hidden rather than left under the arriving picture.
+  const livePlayerShowsPair = $derived(
+    visibleSource !== null && getLayer(visibleSource)?.pairKey === pairKey
   );
 
   // The cell's mandala: left hand's flower merged with right hand's flower — the
@@ -913,6 +924,7 @@
         const layerKey = realizationKey(realization, key);
         stageLayer({
           key: layerKey,
+          pairKey: key,
           realization,
           paths,
           clubTipDx: data.clubTipDx,
@@ -1025,7 +1037,13 @@
         style={`--atmosphere-hand: ${layer.realization.element.accentColor}; --atmosphere-prop: ${layer.realization.propRelationship.element?.accentColor ?? layer.realization.element.accentColor}`}
         aria-hidden="true"
       ></div>
-      <div class="player-layer">
+      <!-- Hidden while it still plays the previous pair, and while a
+           shared-element capture is in flight: the still floor is the one
+           mandala on stage until the live canvas for this pair is ready. -->
+      <div
+        class="player-layer"
+        class:offstage={layer.pairKey !== pairKey || mandalaTransition.handoff}
+      >
         <!-- The first mount waits for the tile-to-hero morph to finish. The
              still floor is the picture that travels; loading the player and
              building its engine before the new-state capture only delays the
@@ -1124,7 +1142,16 @@
   {/if}
 
   <div class="media-stage">
-    <div class="hero-stage">
+    <!-- The stage rectangle is the selected matrix tile's box, arrived. It
+         carries the shared stage name so the whole stage flies between the
+         tile and the detail view; the mandala inside carries its own. -->
+    <div
+      class="hero-stage"
+      use:claimedViewTransitionName={{
+        name: SHAPE_MATRIX_ACTIVE_STAGE_NAME,
+        enabled: mandalaTransition.claim,
+      }}
+    >
       <div class="hero-header">
         <div class="hero-header-ghost" aria-hidden="true">
           <WordHeader word="A" visible={true} darkMode={headerDarkMode} />
@@ -1157,7 +1184,8 @@
           <MandalaHeroLayer
             paths={heroPaths}
             artKey={pairKey ?? ""}
-            opacity={visibleSource ? 0 : MANDALA_GUIDE_FLOOR_OPACITY}
+            tipDx={data.clubTipDx}
+            opacity={livePlayerShowsPair ? 0 : MANDALA_GUIDE_FLOOR_OPACITY}
             claim={mandalaTransition.claim}
             handoff={mandalaTransition.handoff}
           />
@@ -1397,6 +1425,9 @@
   .player-layer {
     position: absolute;
     inset: 0;
+  }
+  .player-layer.offstage {
+    visibility: hidden;
   }
 
   .lazy-region-state {

@@ -8,11 +8,16 @@
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  import { createShapeMatrixAnimationState } from "../state/shape-matrix-animation-state.svelte";
+  import { setShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
+  import { setAnimationScopeContext } from "$lib/shared/animation-engine/state/animation-scope-context";
+  import { setAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
+  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import ShapeMatrixDetailPane from "./ShapeMatrixDetailPane.svelte";
   import ShapeMatrixMatrixPane from "./ShapeMatrixMatrixPane.svelte";
   import ShapeMatrixOverflowMenu from "./ShapeMatrixOverflowMenu.svelte";
   import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
-  import ShapeMatrixTurnTray from "./ShapeMatrixTurnTray.svelte";
+  import ShapeMatrixTurnPopover from "./ShapeMatrixTurnPopover.svelte";
   import { runMandalaMorph } from "../services/shape-matrix-mandala-morph";
   import { growFade } from "$lib/shared/transitions/motion";
 
@@ -24,6 +29,14 @@
 
   const { variant = "standalone" }: Props = $props();
   const appState = getShapeMatrixAppContext();
+  // The hero's animation state lives here, above both panes, so the compact
+  // topbar can host the relationships toggle the wide detail heading shows.
+  const animationState = setShapeMatrixAnimationContext(
+    createShapeMatrixAnimationState()
+  );
+  setAnimationScopeContext(animationState.scope);
+  setAnimationVisibilityContext(animationState.scope.visibility);
+  setEffectsConfigContext(animationState.scope.effects);
   const LEVELS: readonly TurnLevel[] = [1, 2, 3, 4];
   const LEVEL_DESCRIPTIONS: Record<TurnLevel, { name: string; blurb: string }> =
     {
@@ -139,7 +152,7 @@
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
             <span>Matrix</span>
           </button>
-          <ShapeMatrixTurnTray />
+          <ShapeMatrixTurnPopover />
         {:else}
           <strong>Shape Matrix</strong>
         {/if}
@@ -192,6 +205,21 @@
           >
             <span>Detail</span>
             <i class="fas fa-arrow-right" aria-hidden="true"></i>
+          </button>
+        {/if}
+        <!-- Only while a control section covers the relationships: the button
+             is the way back to them, so it has nothing to do when they are
+             already showing, and it never competes with Matrix for the tap. -->
+        {#if appState.activeView === "detail" && animationState.activeSection !== null}
+          <button
+            type="button"
+            class="top-action relationships-action"
+            aria-label="Back to element relationships"
+            onclick={animationState.showRelationships}
+            transition:growFade={{ axis: "x", x: 4 }}
+          >
+            <i class="fas fa-shapes" aria-hidden="true"></i>
+            <span>Relationships</span>
           </button>
         {/if}
         <ShapeMatrixOverflowMenu />
@@ -520,6 +548,10 @@
     gap: 0.4rem;
   }
 
+  .relationships-action i {
+    color: var(--theme-accent, #f59e0b);
+  }
+
   .compact-detail-action {
     border-color: color-mix(
       in srgb,
@@ -631,6 +663,18 @@
     }
   }
 
+  /* Phone widths: the relationships pill keeps its glyph and aria-label and
+     drops the word so the turn chip beside it never clips. */
+  @container shape-matrix-app (max-width: 30rem) {
+    .relationships-action {
+      padding-inline: 0;
+    }
+
+    .relationships-action span {
+      display: none;
+    }
+  }
+
   @container shape-matrix-app (max-width: 25rem) {
     .topbar {
       gap: 0.3rem;
@@ -678,15 +722,27 @@
     transition: none;
   }
 
+  /* Two nested shared elements travel together: the stage rectangle (the
+     selected tile's box, or the detail stage with its header band and
+     corner annotations) and, riding on top of it, the mandala. The mandala
+     is excluded from the stage's snapshot because it has its own name, so
+     each is one picture. Both settle without overshoot; a spring would swing
+     the mandala past the square the live canvas is about to paint in. */
+  :global(
+    html.shape-matrix-morph::view-transition-group(shape-matrix-active-stage)
+  ),
   :global(
     html.shape-matrix-morph::view-transition-group(shape-matrix-active-mandala)
   ) {
-    /* One picture travels between the tile and the hero. It settles onto
-       its destination without overshoot; a spring would swing the mandala
-       past the square the live canvas is about to paint in. */
     animation-duration: var(--duration-dramatic);
     animation-timing-function: var(--ease-in-out);
   }
+  :global(
+    html.shape-matrix-morph::view-transition-old(shape-matrix-active-stage)
+  ),
+  :global(
+    html.shape-matrix-morph::view-transition-new(shape-matrix-active-stage)
+  ),
   :global(
     html.shape-matrix-morph::view-transition-old(shape-matrix-active-mandala)
   ),
@@ -695,6 +751,19 @@
   ) {
     animation-duration: var(--duration-emphasis);
     animation-timing-function: var(--ease-in-out);
+  }
+  /* The tile and the stage are different rectangles. Each snapshot fills the
+     travelling box for the whole flight instead of keeping its own aspect
+     and leaving the box partly empty. */
+  :global(
+    html.shape-matrix-morph::view-transition-old(shape-matrix-active-stage)
+  ),
+  :global(
+    html.shape-matrix-morph::view-transition-new(shape-matrix-active-stage)
+  ) {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -713,6 +782,15 @@
     ),
     :global(
       html.shape-matrix-morph::view-transition-new(shape-matrix-active-mandala)
+    ),
+    :global(
+      html.shape-matrix-morph::view-transition-group(shape-matrix-active-stage)
+    ),
+    :global(
+      html.shape-matrix-morph::view-transition-old(shape-matrix-active-stage)
+    ),
+    :global(
+      html.shape-matrix-morph::view-transition-new(shape-matrix-active-stage)
     ) {
       animation: none;
     }
