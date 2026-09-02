@@ -17,6 +17,7 @@
 
 import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 import { getAuthInstance, getStorageInstance } from "$lib/shared/auth/firebase";
+import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { ThumbnailVariant } from "$lib/shared/browse/services/thumbnail-key-deriver";
@@ -470,9 +471,15 @@ export async function upload(
   }
 
   // Gallery browsing is public, but the shared Storage path only accepts
-  // authenticated writes. Wait until Firebase has restored any persisted
-  // session before deciding. Without this boundary, every signed-out cache miss
-  // makes a doomed upload request and fills the browser console with 403s.
+  // authenticated writes. A signed-out visitor still paid for the render, so
+  // mint an anonymous identity here rather than throw that work away. This is
+  // the write site, and it owns the identity it needs regardless of which
+  // surface (gallery, choreo card tab, offline warmer) triggered the render.
+  // ensureGuestIdentity() is idempotent and swallows provider failures, so the
+  // currentUser check below stays the real gate: without it every signed-out
+  // cache miss would make a doomed upload request and fill the console with
+  // 403s when the anonymous provider is disabled.
+  await ensureGuestIdentity("thumbnail_upload");
   const auth = await getAuthInstance();
   await auth.authStateReady();
   if (!auth.currentUser) {
