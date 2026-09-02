@@ -53,8 +53,10 @@ const expectedHashes: Record<keyof typeof factories, string> = {
     "36a5c5c124f80ad24e50ac7e5926ac5ca37df95f18c16dd30ae0278aed72f50c",
   // Re-baselined 2026-08-30 by the four-lane field-audit fix queue (river
   // drape/source/terminus, plume rebuild, upcountry detail reach, sky depth).
+  // Re-baselined 2026-09-02 for the plume coverage lift that finally made the
+  // vents read at the orbit and ground cameras (field-audit follow-up N5).
   createDefaultEmberConfig:
-    "500b780cada771ca043948f7772a0b8684fc3df7d6f6c48bad5d9cfe2fd89ac3",
+    "6009dc461e7959117d30dfb7c02e09e3eadf2a1dd8e1e70d1f717618423e1031",
   createDefaultForestAutumnConfig:
     "5429d3c565a020b03582d6fe83b48e2a430f160e7f533363d4d6ebe689f70a8e",
   createDefaultForestFireflyConfig:

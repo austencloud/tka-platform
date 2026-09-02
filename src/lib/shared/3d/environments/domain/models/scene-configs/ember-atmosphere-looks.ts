@@ -342,6 +342,14 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     // takes the crown into silhouette. Normal blending carries both: a column
     // darkens the bright horizon band and lightens the near-black zenith from
     // one material. One shear vector per look keeps every vent on one wind.
+    //
+    // The crown stays near-black on purpose: against this sky, which sits near
+    // 0.03 linear luminance, the dark crown carries roughly four times the
+    // silhouette contrast of the grey the other two looks use. What kept the
+    // columns off every camera was coverage, not hue — at 0.24-0.34 opacity,
+    // spread across a soft body falloff and mottling, a whole column could not
+    // move a pixel far enough to see. The opacities below are what buys the
+    // silhouette; `PLUME_FOG_BLEND_CAP` is what stops distance erasing it.
     plumes: [
       {
         position: [-25, 44, 145],
@@ -351,7 +359,7 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
         litColor: "#7a3a18",
         ashColor: "#14100f",
         sizeRange: [1.5, 3.6],
-        opacity: 0.34,
+        opacity: 0.68,
         motionScale: 0.7,
         windShear: [0.34, -0.12],
         growth: [0.22, 1.15],
@@ -364,7 +372,7 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
         litColor: "#6b3315",
         ashColor: "#14100f",
         sizeRange: [0.8, 1.85],
-        opacity: 0.26,
+        opacity: 0.5,
         motionScale: 0.6,
         windShear: [0.34, -0.12],
         growth: [0.26, 1],
@@ -377,7 +385,7 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
         litColor: "#6b3315",
         ashColor: "#16110f",
         sizeRange: [0.55, 1.3],
-        opacity: 0.24,
+        opacity: 0.46,
         motionScale: 0.56,
         windShear: [0.34, -0.12],
         growth: [0.26, 1],
@@ -390,7 +398,7 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
         litColor: "#74371a",
         ashColor: "#15110f",
         sizeRange: [0.95, 2.25],
-        opacity: 0.28,
+        opacity: 0.54,
         motionScale: 0.64,
         windShear: [0.34, -0.12],
         growth: [0.24, 1.08],
