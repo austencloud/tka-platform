@@ -37,12 +37,15 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "../data/sequences/": "data/sequences/"
+      "../data/sequences/": "data/sequences/",
+      "../data/gallery/": "data/gallery/",
+      "desktop-assets/": "assets/"
     },
     "createUpdaterArtifacts": true,
     "windows": {
       "webviewInstallMode": {
-        "type": "downloadBootstrapper"
+        "type": "fixedRuntime",
+        "path": "./webview2-runtime/"
       }
     }
   },

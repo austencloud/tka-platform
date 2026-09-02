@@ -462,11 +462,20 @@
       setTimeout(preloadGlyphs, 0);
     }
 
+    // Desktop only: route 3D asset URLs onto the offline bundle before any
+    // scene can mount. A local manifest read; no-op on web/mobile.
+    const { installDesktopAssetRuntime } =
+      await import("$lib/shared/desktop/desktop-asset-runtime");
+    await installDesktopAssetRuntime().catch((err: unknown) =>
+      console.warn("[Layout] Desktop asset bundle unavailable:", err)
+    );
+
     // Initialize desktop Tauri features (window state, updater).
     // No-op on web/mobile - the isDesktop check inside returns immediately.
     const { getDesktopInitializer } =
       await import("$lib/shared/desktop/get-desktop-initializer");
-    getDesktopInitializer()
+    const desktopInitializer = getDesktopInitializer();
+    desktopInitializer
       .initialize()
       .catch((err: unknown) =>
         console.warn("[Layout] Desktop init skipped:", err)
@@ -485,6 +494,11 @@
       // Gallery: always warm from the IndexedDB cache (local, instant). On a
       // constrained connection, skip the fresh Firestore sync; otherwise sync in
       // the background so the gallery is up to date before the user opens it.
+      //
+      // The desktop build seeds that cache from its bundled public index on
+      // first launch; wait for it so the warm finds data instead of an empty
+      // table. Resolved immediately on the web.
+      await desktopInitializer.dataSeeded.catch(() => undefined);
       try {
         const { getGalleryPrefetcher } =
           await import("$lib/features/browse/shared/get-gallery-prefetcher");
