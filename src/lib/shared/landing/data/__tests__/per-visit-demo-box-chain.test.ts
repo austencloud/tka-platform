@@ -28,7 +28,7 @@ const { applyBoxMode } = await import(
 describe("per-visit demo chained to a box start position", () => {
   it("returns a real sequence instead of the baked fallback", async () => {
     const seed = JSON.parse(JSON.stringify(await generatePerVisitDemo()));
-    expect(seed.word).not.toBe(FALLBACK_DEMO.word);
+    expect(seed.id).not.toBe(FALLBACK_DEMO.id);
 
     const boxed = applyBoxMode(seed, "box") as { startPosition?: unknown };
     const chained = await generatePerVisitDemo({
