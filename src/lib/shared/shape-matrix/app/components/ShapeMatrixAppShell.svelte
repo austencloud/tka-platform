@@ -782,38 +782,106 @@
     object-fit: cover;
   }
 
-  /* The carousel is not in the flying rectangle. It has its own name, so
-     the root crossfade leaves it alone; it rises from below once the stage
-     has landed, and sinks away first on the trip back. Only one side of the
-     morph has a strip, so the group has nothing to interpolate. */
-  @keyframes -global-shape-matrix-strip-rise {
+  /* The page under the flight is one snapshot on each side. Left alone the
+     browser holds both at full strength and sums them, so the matrix grid
+     burns through the arriving detail view for the whole flight and then
+     vanishes at teardown. Crossfading them dissolves the grid away instead;
+     `plus-lighter` keeps the parts common to both sides (the top bar) at
+     constant strength through the middle of the fade. */
+  @keyframes -global-shape-matrix-page-in {
     from {
       opacity: 0;
-      transform: translateY(1.5rem);
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes -global-shape-matrix-page-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  :global(html.shape-matrix-morph::view-transition-old(root)),
+  :global(html.shape-matrix-morph::view-transition-new(root)) {
+    mix-blend-mode: plus-lighter;
+  }
+  :global(html.shape-matrix-morph::view-transition-old(root)) {
+    animation: shape-matrix-page-out var(--duration-emphasis) var(--ease-in)
+      both;
+  }
+  :global(html.shape-matrix-morph::view-transition-new(root)) {
+    animation: shape-matrix-page-in var(--duration-emphasis) var(--ease-out)
+      both;
+  }
+
+  /* The three frames around the stage — chips above, carousel below, control
+     bar at the foot — are not in the flying rectangle. Each has its own name,
+     so instead of being painted complete under the flight they settle into
+     their landed positions on a wave that starts while the stage is still
+     arriving and finishes just after it lands. The wave runs outward from the
+     stage: nearest first, and from the side each frame sits on. Only one side
+     of the morph has these frames, so their groups have nothing to
+     interpolate. */
+  @keyframes -global-shape-matrix-settle-in {
+    from {
+      opacity: 0;
+      transform: translateY(var(--settle-from));
     }
     to {
       opacity: 1;
       transform: translateY(0);
     }
   }
-  @keyframes -global-shape-matrix-strip-sink {
+  @keyframes -global-shape-matrix-settle-out {
     from {
       opacity: 1;
       transform: translateY(0);
     }
     to {
       opacity: 0;
-      transform: translateY(1rem);
+      transform: translateY(var(--settle-from));
     }
+  }
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-modes)),
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-strip)),
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-controls)) {
+    animation: shape-matrix-settle-in var(--duration-emphasis) var(--ease-out)
+      both;
+  }
+  :global(html.shape-matrix-morph::view-transition-old(shape-matrix-modes)),
+  :global(html.shape-matrix-morph::view-transition-old(shape-matrix-strip)),
+  :global(html.shape-matrix-morph::view-transition-old(shape-matrix-controls)) {
+    animation: shape-matrix-settle-out var(--duration-normal) var(--ease-in)
+      both;
+  }
+  /* Above the stage, so it drops in from above. */
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-modes)),
+  :global(html.shape-matrix-morph::view-transition-old(shape-matrix-modes)) {
+    --settle-from: -0.9rem;
   }
   :global(html.shape-matrix-morph::view-transition-new(shape-matrix-strip)) {
-    animation: shape-matrix-strip-rise var(--duration-emphasis) var(--ease-out)
-      both;
-    animation-delay: calc(var(--duration-dramatic) * 0.6);
+    --settle-from: 1.2rem;
   }
   :global(html.shape-matrix-morph::view-transition-old(shape-matrix-strip)) {
-    animation: shape-matrix-strip-sink var(--duration-normal) var(--ease-in)
-      both;
+    --settle-from: 1rem;
+  }
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-controls)) {
+    --settle-from: 1.5rem;
+  }
+  :global(html.shape-matrix-morph::view-transition-old(shape-matrix-controls)) {
+    --settle-from: 1rem;
+  }
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-modes)) {
+    animation-delay: calc(var(--duration-dramatic) * 0.45);
+  }
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-strip)) {
+    animation-delay: calc(var(--duration-dramatic) * 0.6);
+  }
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-controls)) {
+    animation-delay: calc(var(--duration-dramatic) * 0.72);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -822,8 +890,25 @@
       transition: none;
     }
 
+    /* Without the crossfade there is nothing for the additive blend to sum,
+       and both page snapshots would burn through each other. */
+    :global(html.shape-matrix-morph::view-transition-old(root)),
+    :global(html.shape-matrix-morph::view-transition-new(root)) {
+      mix-blend-mode: normal;
+    }
+
+    :global(html.shape-matrix-morph::view-transition-old(root)),
+    :global(html.shape-matrix-morph::view-transition-new(root)),
+    :global(html.shape-matrix-morph::view-transition-new(shape-matrix-modes)),
+    :global(html.shape-matrix-morph::view-transition-old(shape-matrix-modes)),
     :global(html.shape-matrix-morph::view-transition-new(shape-matrix-strip)),
-    :global(html.shape-matrix-morph::view-transition-old(shape-matrix-strip)) {
+    :global(html.shape-matrix-morph::view-transition-old(shape-matrix-strip)),
+    :global(
+      html.shape-matrix-morph::view-transition-new(shape-matrix-controls)
+    ),
+    :global(
+      html.shape-matrix-morph::view-transition-old(shape-matrix-controls)
+    ) {
       animation: none;
     }
 

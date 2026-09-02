@@ -133,11 +133,12 @@ describe("shape matrix mandala continuity", () => {
     expect(loop).toContain("opacity: MANDALA_GUIDE_FLOOR_OPACITY");
   });
 
-  it("keeps one mandala on stage: a canvas for another pair, or mid-capture, is offstage", () => {
+  it("keeps one mandala on stage: a canvas for another pair is offstage", () => {
+    // A canvas painting a different pair is hidden outright; the canvas for
+    // this pair holds at zero until it is live, so the two are never both
+    // on stage and neither one appears without a fade.
     const drill = read("components/ShapeMatrixDrill.svelte");
-    expect(drill).toMatch(
-      /class:offstage=\{layer\.pairKey !== pairKey \|\| mandalaTransition\.handoff\}/
-    );
+    expect(drill).toContain("class:offstage={layer.pairKey !== pairKey}");
     expect(drill).toMatch(/\.player-layer\.offstage \{\s*visibility: hidden;/);
     expect(drill).toMatch(
       /getLayer\(visibleSource\)\?\.pairKey === pairKey/
@@ -236,7 +237,65 @@ describe("shape matrix mandala continuity", () => {
     const shell = read("app/components/ShapeMatrixAppShell.svelte");
     expect(shell).toContain("::view-transition-new(shape-matrix-strip)");
     expect(shell).toContain("::view-transition-old(shape-matrix-strip)");
-    expect(shell).toContain("@keyframes -global-shape-matrix-strip-rise");
+  });
+
+  it("settles every frame around the stage instead of popping it in", () => {
+    // Anything left unnamed rides the page's single root snapshot, which is
+    // painted complete for the whole flight and then swapped for the live
+    // DOM. The chips, the carousel and the control bar each carry a name so
+    // they can settle into their landed positions on a staggered wave.
+    const drill = read("components/ShapeMatrixDrill.svelte");
+    const regionClaims = (region: string, name: string) => {
+      const at = drill.indexOf(`data-drill-region="${region}"`);
+      return at >= 0 && drill.slice(at, at + 280).includes(`name: ${name},`);
+    };
+    expect(regionClaims("modes", "SHAPE_MATRIX_MODES_NAME")).toBe(true);
+    expect(regionClaims("strip", "SHAPE_MATRIX_STRIP_NAME")).toBe(true);
+    expect(regionClaims("controls", "SHAPE_MATRIX_CONTROLS_NAME")).toBe(true);
+    // A frame is named only while a morph is in flight, and only on the side
+    // that owns the detail view, so it is new-only arriving and old-only
+    // leaving and never a containing block for its own popovers at rest.
+    expect(drill).toContain(
+      "mandalaTransition.claim && mandalaTransition.handoff"
+    );
+    expect(drill.match(/enabled: morphingFrames,/g)).toHaveLength(3);
+
+    const shell = read("app/components/ShapeMatrixAppShell.svelte");
+    expect(shell).toContain("@keyframes -global-shape-matrix-settle-in");
+    expect(shell).toContain("@keyframes -global-shape-matrix-settle-out");
+    // Every leg of the wave is delayed, and each frame travels from the side
+    // it sits on, so the page assembles outward from the landing stage.
+    expect(
+      shell.match(/animation-delay: calc\(var\(--duration-dramatic\)/g)
+    ).toHaveLength(3);
+    expect(shell).toContain("--settle-from: -0.9rem;");
+    for (const name of [
+      "shape-matrix-modes",
+      "shape-matrix-strip",
+      "shape-matrix-controls",
+    ]) {
+      expect(shell).toContain(`::view-transition-new(${name})`);
+      expect(shell).toContain(`::view-transition-old(${name})`);
+    }
+    // The page under the flight dissolves rather than summing both sides at
+    // full strength for the whole flight and vanishing at teardown.
+    expect(shell).toContain("shape-matrix-page-out var(--duration-emphasis)");
+    expect(shell).toContain("shape-matrix-page-in var(--duration-emphasis)");
+    expect(shell).toContain("mix-blend-mode: plus-lighter;");
+  });
+
+  it("fades the live player up instead of flipping it visible", () => {
+    // The stage glyph and the step number belong to the player, which is not
+    // mounted while the stage flies. A visibility flip on release lands them
+    // at full strength the instant the morph ends: the pop this removes.
+    const drill = read("components/ShapeMatrixDrill.svelte");
+    expect(drill).toContain("class:settling={!livePlayerShowsPair}");
+    expect(drill).not.toContain("|| mandalaTransition.handoff}");
+    expect(drill).toContain(".player-layer.settling {");
+    expect(drill).toContain(".player-layer:not(.settling) {");
+    expect(drill).toContain(
+      "transition: opacity var(--duration-emphasis) var(--ease-out);"
+    );
   });
 
   it("lets the compact popover pick the level, shown as the difficulty badge", () => {
