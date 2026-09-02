@@ -40,6 +40,7 @@ const ecology: FlowFestForestEcologyLayout = {
     sourceTreeFamilies: 0,
     plantFactoryTreePlacements: 0,
     measuredCanopyPlacements: 0,
+    infillTreePlacements: 0,
     grassPlacements: 0,
     groundLifePlacements: 1,
   },
