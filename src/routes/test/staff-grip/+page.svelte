@@ -1,8 +1,14 @@
 <script lang="ts">
   import { Canvas, T } from "@threlte/core";
-  import type { AvatarGripDiagnostics } from "@austencloud/scene-3d";
+  import type {
+    AvatarGripDiagnostics,
+    AvatarPoseDiagnostics,
+    CollisionEvent,
+  } from "@austencloud/scene-3d";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
+  import { page } from "$app/state";
   import { FALG } from "$lib/shared/combination/domain/demo-fixtures";
+  import type { CharacterId } from "$lib/shared/3d/domain/character-model";
   import StaffGripStage from "./StaffGripStage.svelte";
 
   interface CameraView {
@@ -18,7 +24,28 @@
     contactOffsetMm: number | null;
   }
 
+  interface PoseMetric {
+    requestedYawDeg: number | null;
+    achievedYawDeg: number | null;
+    headDodgeDeg: number | null;
+    torsoPitchDeg: number | null;
+    collisionCount: number;
+    collisionZones: string;
+    deepestCollisionMm: number;
+    collisionDescriptions: string;
+    audienceGripSeparationMm: number | null;
+    depthGripSeparationMm: number | null;
+    renderedStepNumber: number;
+    renderedBeatProgress: number;
+  }
+
   const sequence = FALG;
+  // `?character=<catalog id>` swaps the posed rig so the same frozen frames can
+  // be swept across materially different bodies.
+  const characterId = $derived(
+    (page.url.searchParams.get("character") as CharacterId | null) ??
+      undefined
+  );
   const VIEWS: CameraView[] = [
     {
       id: "front",
@@ -50,7 +77,7 @@
     },
   ];
 
-  let phase = $state(0.35);
+  let phase = $state(7.99);
   let pairFocus = $state<[number, number, number]>([0, 1, 0]);
   let leftFocus = $state<[number, number, number]>([-0.2, 1, 0]);
   let rightFocus = $state<[number, number, number]>([0.2, 1, 0]);
@@ -61,6 +88,20 @@
   let rightMetric = $state<GripMetric>({
     axisErrorDeg: null,
     contactOffsetMm: null,
+  });
+  let poseMetric = $state<PoseMetric>({
+    requestedYawDeg: null,
+    achievedYawDeg: null,
+    headDodgeDeg: null,
+    torsoPitchDeg: null,
+    collisionCount: 0,
+    collisionZones: "",
+    deepestCollisionMm: 0,
+    collisionDescriptions: "",
+    audienceGripSeparationMm: null,
+    depthGripSeparationMm: null,
+    renderedStepNumber: 0,
+    renderedBeatProgress: 0,
   });
 
   const phaseLabel = $derived(
@@ -94,46 +135,90 @@
     return Math.hypot(palm.x - grip.x, palm.y - grip.y, palm.z - grip.z) * 1000;
   }
 
-  function collectGripMetrics(diagnostics: AvatarGripDiagnostics): void {
+  function collectGripMetrics(
+    events: CollisionEvent[],
+    diagnostics: AvatarPoseDiagnostics,
+    gripDiagnostics: AvatarGripDiagnostics
+  ): void {
     leftMetric = {
       axisErrorDeg: axisErrorDegrees(
-        diagnostics.leftGripAxis,
-        diagnostics.blueStaffSegment
+        gripDiagnostics.leftGripAxis,
+        gripDiagnostics.blueStaffSegment
       ),
       contactOffsetMm: contactOffsetMillimeters(
-        diagnostics.leftPalm,
-        diagnostics.renderedBlueGrip
+        gripDiagnostics.leftPalm,
+        gripDiagnostics.renderedBlueGrip
       ),
     };
     rightMetric = {
       axisErrorDeg: axisErrorDegrees(
-        diagnostics.rightGripAxis,
-        diagnostics.redStaffSegment
+        gripDiagnostics.rightGripAxis,
+        gripDiagnostics.redStaffSegment
       ),
       contactOffsetMm: contactOffsetMillimeters(
-        diagnostics.rightPalm,
-        diagnostics.renderedRedGrip
+        gripDiagnostics.rightPalm,
+        gripDiagnostics.renderedRedGrip
       ),
     };
 
-    if (diagnostics.leftPalm && diagnostics.rightPalm) {
+    poseMetric = {
+      requestedYawDeg: radiansToDegrees(diagnostics.requestedStanceYawRad),
+      achievedYawDeg: radiansToDegrees(diagnostics.achievedShoulderYawRad),
+      headDodgeDeg: radiansToDegrees(diagnostics.appliedHeadDodgeRad),
+      torsoPitchDeg: radiansToDegrees(diagnostics.achievedTorsoPitchRad),
+      collisionCount: events.length,
+      collisionZones: events
+        .map(({ zone, severity }) => `${zone}:${severity}`)
+        .sort()
+        .join(","),
+      deepestCollisionMm:
+        Math.max(0, ...events.map(({ penetrationDepth }) => penetrationDepth)) *
+        1000,
+      collisionDescriptions: events
+        .map(({ description }) => description)
+        .join(" | "),
+      audienceGripSeparationMm:
+        gripDiagnostics.authoredBlueGrip && gripDiagnostics.authoredRedGrip
+          ? Math.hypot(
+              gripDiagnostics.authoredBlueGrip.x -
+                gripDiagnostics.authoredRedGrip.x,
+              gripDiagnostics.authoredBlueGrip.y -
+                gripDiagnostics.authoredRedGrip.y
+            ) * 1000
+          : null,
+      depthGripSeparationMm:
+        gripDiagnostics.authoredBlueGrip && gripDiagnostics.authoredRedGrip
+          ? Math.abs(
+              gripDiagnostics.authoredBlueGrip.z -
+                gripDiagnostics.authoredRedGrip.z
+            ) * 1000
+          : null,
+      renderedStepNumber: gripDiagnostics.stepNumber,
+      renderedBeatProgress: gripDiagnostics.beatProgress,
+    };
+
+    if (gripDiagnostics.leftPalm && gripDiagnostics.rightPalm) {
       const next: [number, number, number] = [
-        (diagnostics.leftPalm.x + diagnostics.rightPalm.x) / 2,
-        (diagnostics.leftPalm.y + diagnostics.rightPalm.y) / 2,
-        (diagnostics.leftPalm.z + diagnostics.rightPalm.z) / 2,
+        (gripDiagnostics.leftPalm.x + gripDiagnostics.rightPalm.x) / 2,
+        (gripDiagnostics.leftPalm.y + gripDiagnostics.rightPalm.y) / 2,
+        (gripDiagnostics.leftPalm.z + gripDiagnostics.rightPalm.z) / 2,
       ];
       pairFocus = updateFocus(pairFocus, next);
       leftFocus = updateFocus(leftFocus, [
-        diagnostics.leftPalm.x,
-        diagnostics.leftPalm.y,
-        diagnostics.leftPalm.z,
+        gripDiagnostics.leftPalm.x,
+        gripDiagnostics.leftPalm.y,
+        gripDiagnostics.leftPalm.z,
       ]);
       rightFocus = updateFocus(rightFocus, [
-        diagnostics.rightPalm.x,
-        diagnostics.rightPalm.y,
-        diagnostics.rightPalm.z,
+        gripDiagnostics.rightPalm.x,
+        gripDiagnostics.rightPalm.y,
+        gripDiagnostics.rightPalm.z,
       ]);
     }
+  }
+
+  function radiansToDegrees(radians: number): number {
+    return (radians * 180) / Math.PI;
   }
 
   function updateFocus(
@@ -181,11 +266,30 @@
   class="grip-inspection"
   data-sequence-source="validated-production-fixture"
   data-sequence-id={sequence.id}
+  data-character-id={characterId ?? "intake-current"}
   data-phase={phase.toFixed(2)}
   data-left-axis-error-deg={formatMetric(leftMetric.axisErrorDeg, 3)}
   data-right-axis-error-deg={formatMetric(rightMetric.axisErrorDeg, 3)}
   data-left-contact-offset-mm={formatMetric(leftMetric.contactOffsetMm, 3)}
   data-right-contact-offset-mm={formatMetric(rightMetric.contactOffsetMm, 3)}
+  data-requested-yaw-deg={formatMetric(poseMetric.requestedYawDeg, 3)}
+  data-achieved-yaw-deg={formatMetric(poseMetric.achievedYawDeg, 3)}
+  data-head-dodge-deg={formatMetric(poseMetric.headDodgeDeg, 3)}
+  data-torso-pitch-deg={formatMetric(poseMetric.torsoPitchDeg, 3)}
+  data-collision-count={poseMetric.collisionCount}
+  data-collision-zones={poseMetric.collisionZones}
+  data-deepest-collision-mm={formatMetric(poseMetric.deepestCollisionMm, 3)}
+  data-collision-descriptions={poseMetric.collisionDescriptions}
+  data-audience-grip-separation-mm={formatMetric(
+    poseMetric.audienceGripSeparationMm,
+    3
+  )}
+  data-depth-grip-separation-mm={formatMetric(
+    poseMetric.depthGripSeparationMm,
+    3
+  )}
+  data-rendered-step-number={poseMetric.renderedStepNumber}
+  data-rendered-beat-progress={formatMetric(poseMetric.renderedBeatProgress, 3)}
 >
   <div class="views">
     {#each VIEWS as view, index (view.id)}
@@ -212,9 +316,8 @@
             id={`staff-grip-${view.id}`}
             {phase}
             {sequence}
-            onCollisionEvents={index === 0
-              ? (_events, _pose, grip) => collectGripMetrics(grip)
-              : undefined}
+            {characterId}
+            onCollisionEvents={index === 0 ? collectGripMetrics : undefined}
           />
         </Canvas>
         <span class="view-label">{view.label}</span>
@@ -232,6 +335,19 @@
       <b>R</b>
       {formatMetric(rightMetric.axisErrorDeg)}° ·
       {formatMetric(rightMetric.contactOffsetMm)} mm
+    </span>
+    <span>
+      <b>Yaw</b>
+      {formatMetric(poseMetric.requestedYawDeg, 0)}° →
+      {formatMetric(poseMetric.achievedYawDeg, 0)}°
+    </span>
+    <span>
+      <b>Head</b>
+      {formatMetric(poseMetric.headDodgeDeg, 0)}°
+    </span>
+    <span>
+      <b>Hits</b>
+      {poseMetric.collisionCount}
     </span>
   </div>
 
