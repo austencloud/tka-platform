@@ -8,13 +8,18 @@ import type {
   Viewer3DStateSeed,
 } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
-import type { EffectsConfig } from "$lib/shared/effects/domain/effects-config";
+import type {
+  EffectsConfig,
+  EffectType,
+} from "$lib/shared/effects/domain/effects-config";
+import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 import type { DirectorBlockingFrame } from "./director-blocking-track";
 import type { DirectorCameraFrame } from "./director-camera-track";
+import { resolveStepChange } from "./director-step-changes";
 import type { ResolvedDirectorScene } from "./film-director-schema";
 import { resolveDirectorPerformerPoolSize } from "./film-director-performance-policy";
 import { isIdleSequence } from "./sequence-language";
@@ -247,6 +252,80 @@ export function applyDirectorPerformerMotion(
       speed: frame.moveSpeed,
       moving: frame.isMoving,
     });
+  });
+}
+
+/** What the film last wrote to one performer, so a frame that changes nothing writes nothing. */
+export interface DirectorAppliedStepChange {
+  effect: EffectType;
+  effort: EffortId;
+}
+
+/**
+ * Applies this frame's per-step effect and effort for every performer who
+ * states any.
+ *
+ * `stepPlanes` is handed to the runtime once at scene apply because
+ * `setStepHandPlane` exists. There is no per-step setter for effect or effort,
+ * so the film watches the playhead instead and writes the whole-performer
+ * setter when the answer changes. `applied` is the caller's memory of the last
+ * write, keyed by performer id — the caller clears it when a scene is applied,
+ * so a cut re-writes rather than trusting stale state.
+ *
+ * `effectiveSteps` are HELD steps (director-step-holds.ts), not the raw shared
+ * clock, so an entry scheduled inside a hold applies for the whole hold.
+ *
+ * `equipBuild: false` matches the scene-apply call above: a step-level effect
+ * change states an effect, not a request to put a different prop in the
+ * performer's hand mid-shot. `recordUndo: false` keeps a looping film from
+ * flooding the undo history.
+ */
+export function applyDirectorStepChanges(
+  viewer: Viewer3DState,
+  scene: ResolvedDirectorScene,
+  effectiveSteps: readonly number[],
+  applied: Map<string, DirectorAppliedStepChange>
+): void {
+  const performers = viewer.performerManager.performers;
+  scene.performance.performers.forEach((directed, index) => {
+    if (directed.stepEffects.length === 0 && directed.stepEfforts.length === 0)
+      return;
+    const performer = performers[index];
+    if (!performer) return;
+
+    const step = effectiveSteps[index] ?? 0;
+    const effect = resolveStepChange(
+      directed.stepEffects.map((entry) => ({
+        step: entry.step,
+        value: entry.effect,
+      })),
+      step,
+      directed.effect
+    );
+    const effort = resolveStepChange(
+      directed.stepEfforts.map((entry) => ({
+        step: entry.step,
+        value: entry.effort,
+      })),
+      step,
+      directed.effort
+    );
+
+    // No memory yet means the scene was just applied, and scene apply already
+    // wrote the performer's base effect and effort. So the baseline for the
+    // first frame is those, not "nothing" — otherwise every cut would write a
+    // redundant pair before the first authored entry is even reached.
+    const last = applied.get(directed.id) ?? {
+      effect: directed.effect,
+      effort: directed.effort,
+    };
+    if (last.effect !== effect) {
+      performer.setEffect(effect, { equipBuild: false, recordUndo: false });
+    }
+    if (last.effort !== effort) {
+      performer.setEffort(effort, { recordUndo: false });
+    }
+    applied.set(directed.id, { effect, effort });
   });
 }
 
