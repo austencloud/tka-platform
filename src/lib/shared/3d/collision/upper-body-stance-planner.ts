@@ -22,14 +22,30 @@ export interface UpperBodyStancePlan {
   rightDepthOffsetM: number;
 }
 
-const MAX_STANCE_YAW_RAD = Math.PI / 2;
+// Just short of a full quarter turn. At exactly 90 degrees the shoulder line
+// runs parallel to the rig's root forward, which is the degenerate case the
+// animator's own body-frame code calls out: the disambiguating dot product
+// sits at zero, and sampling the turned shoulders back into the next solve
+// limit-cycles. On ch18 that showed as a periodic 8.2-degree flicker in the
+// achieved shoulder yaw at a held side stance. Three degrees of margin leaves
+// the singularity while staying visually side-on.
+export const MAX_STANCE_YAW_RAD = (87 * Math.PI) / 180;
 const LATERAL_DEAD_ZONE_M = 0.1;
 const FULL_ASSIST_LATERAL_M = 0.28;
-// The widest supported torso radius (16 cm). The far
-// hand moves forward by this amount during a fully side-on hold, which keeps
-// the two grips overlaid from the audience while giving the rear arm and staff
-// a complete corridor around the body envelope.
-const SAME_SIDE_DEPTH_SEPARATION_M = 0.16;
+// The hidden-depth budget between the two grips during a fully side-on hold.
+// The pair straddles the chest centerline, so each hand takes half of it on its
+// own shoulder's side. From the audience the two staffs still overlay; between
+// the arms each one gets its own corridor. 16 cm was enough while both grips
+// sat a full grid offset in front of the torso; centering them on the chest
+// brings each shaft back into the torso's depth band, so the budget now has to
+// clear the widest supported torso rather than merely overlay the two staffs.
+// At an 8 cm lane the swing frames grazed the intake chest by 5-6 mm and the
+// bulkier ch18 chest by 1-2 cm; a 16 cm lane clears every sampled frame on all
+// three verified rigs and still sits well inside a ~22 cm shoulder half-span,
+// so both grips stay between the arms.
+const SIDE_ON_YAW_KNEE_RAD = MAX_STANCE_YAW_RAD * 0.8;
+const SAME_SIDE_DEPTH_SEPARATION_M = 0.32;
+const SAME_SIDE_DEPTH_LANE_M = SAME_SIDE_DEPTH_SEPARATION_M / 2;
 
 const SQUARE_STANCE: UpperBodyStancePlan = {
   yawRad: 0,
@@ -87,17 +103,36 @@ export function planUpperBodyStance(
   const assistance = smoothstep01(coherence) * lateralWeight;
   const yawRad =
     clamp(desiredYaw, -MAX_STANCE_YAW_RAD, MAX_STANCE_YAW_RAD) * assistance;
-  const farHandDepthOffset = SAME_SIDE_DEPTH_SEPARATION_M * assistance;
+
+  // Once the chest turns, the grid's forward offset stops being forward: it
+  // becomes a sideways shift along the audience axis, which is what left both
+  // arms angled toward the audience with the near staff crossing the torso.
+  // Re-express the two grips in the turned chest frame instead. The chest's own
+  // lateral axis is the audience depth axis at a full side hold, so cancelling
+  // the target's depth puts both hands directly in front of the chest, and each
+  // hand then takes its own shoulder's depth lane so neither arm crosses the
+  // body. Lateral placement is never touched, so the audience silhouette and
+  // the authored grid point are unchanged.
+  // The re-expression engages only once the chest is genuinely side-on. A
+  // linear ramp would drag the rear grip through the torso's depth band while
+  // the chest is still half square, which is where the bulkier rigs took shaft
+  // hits mid-transition. Below SIDE_ON_YAW_KNEE the grips keep their authored
+  // depth and the pose is simply the old square-ish reach.
+  const sideBlend = smoothstep01(
+    (Math.abs(yawRad) - SIDE_ON_YAW_KNEE_RAD) /
+      (MAX_STANCE_YAW_RAD - SIDE_ON_YAW_KNEE_RAD)
+  );
+  // Rig convention: the performer's left is rig-local +X, so a positive stance
+  // yaw swings the left shoulder toward negative depth.
+  const leftLaneM = -Math.sign(yawRad) * SAME_SIDE_DEPTH_LANE_M;
   return {
     yawRad,
     // Same-side reaches need shoulder facing, not a permanent bow. Cross-body
     // pitch and reach-deficit lean remain owned by the animator and engage only
     // when their geometry actually calls for them.
     pitchRad: 0,
-    // With this rig convention, negative yaw makes the right shoulder the far
-    // shoulder; positive yaw mirrors the route to the left hand.
-    leftDepthOffsetM: yawRad > 0 ? farHandDepthOffset : 0,
-    rightDepthOffsetM: yawRad < 0 ? farHandDepthOffset : 0,
+    leftDepthOffsetM: sideBlend * (leftLaneM - (targets.left?.z ?? 0)),
+    rightDepthOffsetM: sideBlend * (-leftLaneM - (targets.right?.z ?? 0)),
   };
 }
 
