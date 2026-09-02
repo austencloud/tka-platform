@@ -53,6 +53,7 @@ import { MandalaPathPreparer } from "$lib/shared/mandala/services/mandala-path-p
 import {
   DEFAULT_MANDALA_OVERLAY_CONFIG,
   type MandalaOverlayConfig,
+  MANDALA_GUIDE_FLOOR_OPACITY
 } from "$lib/shared/mandala/domain/mandala-overlay-types";
 import type { MandalaHandVisibility } from "$lib/shared/mandala/domain/mandala-types";
 
@@ -114,9 +115,10 @@ const MANDALA_GUIDE_CONFIG: MandalaOverlayConfig = {
   ...DEFAULT_MANDALA_OVERLAY_CONFIG,
   enabled: true,
   mode: "guide",
-  // Match the Shape Matrix's ghost-guide treatment so the live trail remains
-  // the brightest read while it runs directly over the mandala path.
-  opacity: 0.55,
+  // Shared with the Shape Matrix hero floor so the live trail remains the
+  // brightest read while it runs directly over the mandala path, and the
+  // still floor → live guide handoff changes nothing on screen.
+  opacity: MANDALA_GUIDE_FLOOR_OPACITY,
 };
 
 /**

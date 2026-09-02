@@ -1,20 +1,24 @@
 /**
  * shape-matrix-artwork — the one owner of Shape Matrix mandala artwork.
  *
- * Both the matrix grid tiles and the detail hero's cold floor render the SAME
- * vector image: the left hand's flower merged with the right hand's flower,
- * painted by `renderCell`. Keeping the source here (cached per prop type and
- * flower pair) is what lets the hero literally BE the tile — and what makes
- * the shared-element transition between them a continuous object instead of
- * a crossfade between two different drawings.
+ * Matrix tiles, axis headers, and the detail hero's cold floor are all
+ * painted by the animation canvas's guide painter (shape-matrix-render.ts),
+ * each at its own exact CSS-pixel size and device pixel ratio, so a still
+ * mandala is the animator's mandala: same colors, same 2.5px stroke, same
+ * purple overlap, same engine alignment for the hero. That is what lets the
+ * shared-element transition morph a tile into the floor and the floor yield
+ * to the live guide without anything visibly changing but position.
  *
- * The hero is engine-aligned by scaling that same image with `alignScale`
- * (see mandala-hero.ts); the tile shows it unscaled. Geometry is otherwise
- * identical because renderMandalaSVG's extent math is shared by construction.
+ * Images are rasters, so they are cached per (painter, key, size, dpr) with a
+ * bounded LRU; a resize repaints, a repeat visit is free.
  */
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 import { flowerKey, type Flower } from "../domain/flower-signature";
-import { renderCell, renderHeader } from "./shape-matrix-render";
+import {
+  renderCell,
+  renderEngineAligned,
+  renderHeader,
+} from "./shape-matrix-render";
 import type { ShapeMatrixData } from "./shape-matrix-flowers";
 
 /**
@@ -24,12 +28,19 @@ import type { ShapeMatrixData } from "./shape-matrix-flowers";
  */
 export const SHAPE_MATRIX_ACTIVE_MANDALA_NAME = "shape-matrix-active-mandala";
 
-/** Vector viewbox edge. The image is scale-free, so this only sets stroke ratio. */
-export const SHAPE_MATRIX_ARTWORK_VIEWBOX_PX = 128;
-
 export interface ShapeMatrixArtworkPainter {
-  cell: typeof renderCell;
-  header: typeof renderHeader;
+  cell: (
+    left: MandalaPaths,
+    right: MandalaPaths,
+    sizePx: number,
+    tipDx: number
+  ) => string;
+  header: (
+    paths: MandalaPaths,
+    hand: "left" | "right",
+    sizePx: number,
+    tipDx: number
+  ) => string;
 }
 
 export const CLUB_ARTWORK_PAINTER: ShapeMatrixArtworkPainter = {
@@ -37,79 +48,111 @@ export const CLUB_ARTWORK_PAINTER: ShapeMatrixArtworkPainter = {
   header: renderHeader,
 };
 
-const cellCaches = new WeakMap<ShapeMatrixArtworkPainter, Map<string, string>>();
-const headerCaches = new WeakMap<
-  ShapeMatrixArtworkPainter,
-  Map<string, string>
->();
+/** Rasters are per size and DPR; keep the recent ones, drop the rest. */
+const ARTWORK_CACHE_LIMIT = 512;
 
-function cacheFor(
-  store: WeakMap<ShapeMatrixArtworkPainter, Map<string, string>>,
-  painter: ShapeMatrixArtworkPainter
-): Map<string, string> {
-  let cache = store.get(painter);
+class ArtworkCache {
+  private readonly entries = new Map<string, string>();
+
+  get(key: string, paint: () => string): string {
+    const hit = this.entries.get(key);
+    if (hit !== undefined) {
+      // Refresh recency.
+      this.entries.delete(key);
+      this.entries.set(key, hit);
+      return hit;
+    }
+    const url = paint();
+    if (!url) return url;
+    this.entries.set(key, url);
+    if (this.entries.size > ARTWORK_CACHE_LIMIT) {
+      const oldest = this.entries.keys().next().value;
+      if (oldest !== undefined) this.entries.delete(oldest);
+    }
+    return url;
+  }
+}
+
+const caches = new WeakMap<ShapeMatrixArtworkPainter, ArtworkCache>();
+
+function cacheFor(painter: ShapeMatrixArtworkPainter): ArtworkCache {
+  let cache = caches.get(painter);
   if (!cache) {
-    cache = new Map();
-    store.set(painter, cache);
+    cache = new ArtworkCache();
+    caches.set(painter, cache);
   }
   return cache;
 }
 
-/** The merged left-over-right tile for one matrix cell (cached). */
+function currentDpr(): number {
+  return typeof window !== "undefined" ? (window.devicePixelRatio ?? 1) : 1;
+}
+
+/** The merged left-over-right tile for one matrix cell at `sizePx`. */
 export function cellArtworkSrc(
   data: ShapeMatrixData,
   left: Flower,
   right: Flower,
+  sizePx: number,
   painter: ShapeMatrixArtworkPainter = CLUB_ARTWORK_PAINTER
 ): string {
-  const key = `${data.propType}__${flowerKey(left)}__${flowerKey(right)}`;
-  const cache = cacheFor(cellCaches, painter);
-  let url = cache.get(key);
-  if (!url) {
-    url = painter.cell(
+  const size = Math.round(sizePx);
+  if (!(size > 0)) return "";
+  const key = `cell|${data.propType}|${flowerKey(left)}|${flowerKey(right)}|${size}|${currentDpr()}`;
+  return cacheFor(painter).get(key, () =>
+    painter.cell(
       data.left.get(flowerKey(left))!,
       data.right.get(flowerKey(right))!,
-      SHAPE_MATRIX_ARTWORK_VIEWBOX_PX,
+      size,
       data.clubTipDx
-    );
-    cache.set(key, url);
-  }
-  return url;
+    )
+  );
 }
 
-/** One axis-header flower (cached). */
+/** One axis-header flower at `sizePx`. */
 export function headerArtworkSrc(
   data: ShapeMatrixData,
   flower: Flower,
   hand: "left" | "right",
+  sizePx: number,
   painter: ShapeMatrixArtworkPainter = CLUB_ARTWORK_PAINTER
 ): string {
-  const key = `${data.propType}__${hand}__${flowerKey(flower)}`;
-  const cache = cacheFor(headerCaches, painter);
-  let url = cache.get(key);
-  if (!url) {
-    url = painter.header(
+  const size = Math.round(sizePx);
+  if (!(size > 0)) return "";
+  const key = `head|${data.propType}|${hand}|${flowerKey(flower)}|${size}|${currentDpr()}`;
+  return cacheFor(painter).get(key, () =>
+    painter.header(
       (hand === "left" ? data.left : data.right).get(flowerKey(flower))!,
       hand,
-      SHAPE_MATRIX_ARTWORK_VIEWBOX_PX,
+      size,
       data.clubTipDx
-    );
-    cache.set(key, url);
+    )
+  );
+}
+
+const pathsIds = new WeakMap<MandalaPaths, number>();
+let nextPathsId = 1;
+
+function pathsId(paths: MandalaPaths): number {
+  let id = pathsIds.get(paths);
+  if (id === undefined) {
+    id = nextPathsId++;
+    pathsIds.set(paths, id);
   }
-  return url;
+  return id;
 }
 
 /**
- * Artwork for already-merged paths (hosts that hold paths rather than a
- * matrix cell, e.g. the detail hero and the CAP demo's ghost). Same painter,
- * same viewbox, so it is pixel-for-pixel the tile a cell with those paths
- * would show.
+ * Engine-aligned artwork for already-merged paths (the detail hero floor).
+ * Painted for a square of `sizePx` — the SAME square the AnimatorCanvas
+ * renders into — so the floor's strokes and the live guide's strokes are the
+ * same pixels.
  */
-export function pathsArtworkSrc(paths: MandalaPaths, tipDx: number): string {
-  return renderCell(
-    { left: paths.left, right: [], purple: [] },
-    { left: [], right: paths.right, purple: [] },
-    SHAPE_MATRIX_ARTWORK_VIEWBOX_PX,
-    tipDx
+export function pathsArtworkSrc(paths: MandalaPaths, sizePx: number): string {
+  const size = Math.round(sizePx);
+  if (!(size > 0)) return "";
+  const key = `paths|${pathsId(paths)}|${size}|${currentDpr()}`;
+  return cacheFor(CLUB_ARTWORK_PAINTER).get(key, () =>
+    renderEngineAligned(paths, size)
   );
 }

@@ -1,15 +1,17 @@
 <!-- src/lib/shared/shape-matrix/components/ShapeMatrixMandalaArt.svelte
   The one Shape Matrix mandala artwork primitive. A matrix tile and the
-  detail hero's cold floor are two instances of THIS component showing the
-  same cached vector image (shape-matrix-artwork.ts); the hero instance
-  scales it to the engine hand orbit so the animator's trail lands on top.
+  detail hero's cold floor are two instances of THIS component, each asking
+  the shared guide painter (shape-matrix-artwork.ts) for an image at its own
+  measured pixel size — so the strokes are the animator's strokes at every
+  size, never a scaled raster.
 
   `claim` stamps the shared `view-transition-name` through the name registry,
   so only the endpoint that currently owns the artwork carries it and the
   native shared-element transition can morph one instance into the other.
 
-  It fills its parent (which must own a square box). Source changes crossfade
-  in place through the shared Crossfade primitive. -->
+  It fills its parent (which must own a square box). A change of `artKey`
+  (a different flower or pair) crossfades in place through the shared
+  Crossfade primitive; a resize repaints the current image without one. -->
 <script lang="ts">
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { claimedViewTransitionName } from "$lib/shared/transitions/claimed-view-transition-name";
@@ -17,19 +19,17 @@
   import { SHAPE_MATRIX_ACTIVE_MANDALA_NAME } from "../services/shape-matrix-artwork";
 
   let {
-    src,
+    paint,
+    artKey,
     alt = "",
-    scale = 1,
-    glowColor = null,
     claim = false,
     instant = false,
   }: {
-    src: string;
+    /** Image source for a square of `sizePx` CSS pixels; "" paints nothing. */
+    paint: (sizePx: number) => string;
+    /** Identity of the artwork; changing it crossfades, resizing does not. */
+    artKey: string;
     alt?: string;
-    /** Engine alignment factor for the hero; tiles stay at 1. */
-    scale?: number;
-    /** Soft glow behind the strokes; null renders the plain tile. */
-    glowColor?: string | null;
     /** True on the ONE instance that owns the shared-element name right now. */
     claim?: boolean;
     /**
@@ -39,24 +39,40 @@
      */
     instant?: boolean;
   } = $props();
+
+  let host = $state<HTMLDivElement | null>(null);
+  let side = $state(0);
+  const src = $derived(side > 0 ? paint(side) : "");
+
+  $effect(() => {
+    const node = host;
+    if (!node) return;
+    const measure = () => {
+      side = Math.round(Math.min(node.clientWidth, node.clientHeight));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(node);
+    return () => ro.disconnect();
+  });
 </script>
 
 <div
   class="mandala-art"
-  class:glow={glowColor !== null}
-  style:--art-scale={scale}
-  style:--art-glow={glowColor ?? undefined}
+  bind:this={host}
   use:claimedViewTransitionName={{
     name: SHAPE_MATRIX_ACTIVE_MANDALA_NAME,
     enabled: claim,
   }}
 >
-  {#if instant}
-    <img class="instant" {src} {alt} draggable="false" />
-  {:else}
-    <Crossfade key={src} fill duration={DURATION.emphasis} delay={STAGGER.micro}>
-      <img {src} {alt} draggable="false" />
-    </Crossfade>
+  {#if src}
+    {#if instant}
+      <img class="instant" {src} {alt} draggable="false" />
+    {:else}
+      <Crossfade key={artKey} fill duration={DURATION.emphasis} delay={STAGGER.micro}>
+        <img {src} {alt} draggable="false" />
+      </Crossfade>
+    {/if}
   {/if}
 </div>
 
@@ -69,12 +85,6 @@
     min-height: 0;
   }
 
-  .mandala-art.glow {
-    filter: drop-shadow(
-      0 0 0.3rem color-mix(in srgb, var(--art-glow) 34%, transparent)
-    );
-  }
-
   .mandala-art img.instant {
     position: absolute;
     inset: 0;
@@ -84,8 +94,6 @@
     display: block;
     width: 100%;
     height: 100%;
-    transform: scale(var(--art-scale, 1));
-    transform-origin: 50% 50%;
     user-select: none;
     -webkit-user-drag: none;
   }

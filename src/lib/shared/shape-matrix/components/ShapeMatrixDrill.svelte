@@ -42,6 +42,7 @@
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import MandalaHeroLayer from "./MandalaHeroLayer.svelte";
+  import { MANDALA_GUIDE_FLOOR_OPACITY } from "$lib/shared/mandala/domain/mandala-overlay-types";
   import ElementChipRow from "./ElementChipRow.svelte";
   import PropRelationshipChipRow from "./PropRelationshipChipRow.svelte";
   import {
@@ -1082,9 +1083,8 @@
                rendering owner, including while that canvas is disassembled. -->
           <MandalaHeroLayer
             paths={heroPaths}
-            clubTipDx={data.clubTipDx}
-            opacity={visibleSource ? 0 : 1}
-            glowColor={captionRealization?.element.accentColor}
+            artKey={pairKey ?? ""}
+            opacity={visibleSource ? 0 : MANDALA_GUIDE_FLOOR_OPACITY}
             claim={mandalaTransition.claim}
             handoff={mandalaTransition.handoff}
           />

@@ -67,14 +67,14 @@
     return Math.max(44, Math.min(maxCellPx, fit));
   });
 
-  // Cells and headers are cached vector images owned by shape-matrix-artwork,
-  // the same source the detail hero renders. They follow the grid from the
-  // 44px touch-target floor through the 320px 4K layout without stretching a
-  // raster or rebuilding geometry during resize.
-  const headerSrc = (f: Flower, hand: "left" | "right") =>
-    headerArtworkSrc(data, f, hand, painter);
-  const cellSrc = (b: Flower, r: Flower) =>
-    cellArtworkSrc(data, b, r, painter);
+  // Cells and headers are painted by shape-matrix-artwork with the animation
+  // canvas's own guide painter, at each tile's measured size (the primitive
+  // measures itself), so the strokes are the animator's strokes from the 44px
+  // touch-target floor through the 320px 4K layout.
+  const headerPaint = (f: Flower, hand: "left" | "right") => (sizePx: number) =>
+    headerArtworkSrc(data, f, hand, sizePx, painter);
+  const cellPaint = (b: Flower, r: Flower) => (sizePx: number) =>
+    cellArtworkSrc(data, b, r, sizePx, painter);
 
   let observed = $state(new Set<string>());
   function watch(node: HTMLElement, key: string) {
@@ -120,10 +120,10 @@
           <th class="corner" scope="col" aria-label="left rows by right columns"
           ></th>
           {#each colAxis as rf, colIndex (colIndex)}
-            {@const source = headerSrc(rf, "right")}
             <th class="colhead" scope="col" title={flowerLabel(rf)}>
               <ShapeMatrixMandalaArt
-                src={source}
+                paint={headerPaint(rf, "right")}
+                artKey={`right:${flowerKey(rf)}`}
                 alt={`right ${flowerLabel(rf)}`}
               />
             </th>
@@ -132,11 +132,11 @@
       </thead>
       <tbody>
         {#each rowAxis as bf, rowIndex (rowIndex)}
-          {@const rowSource = headerSrc(bf, "left")}
           <tr>
             <th class="rowhead" scope="row" title={flowerLabel(bf)}>
               <ShapeMatrixMandalaArt
-                src={rowSource}
+                paint={headerPaint(bf, "left")}
+                artKey={`left:${flowerKey(bf)}`}
                 alt={`left ${flowerLabel(bf)}`}
               />
             </th>
@@ -162,10 +162,10 @@
                   }}
                 >
                   {#if observed.has(slotKey)}
-                    {@const source = cellSrc(bf, rf)}
                     <span class="artwork">
                       <ShapeMatrixMandalaArt
-                        src={source}
+                        paint={cellPaint(bf, rf)}
+                        artKey={key}
                         claim={claimSelected && selectedKey === key}
                       />
                     </span>

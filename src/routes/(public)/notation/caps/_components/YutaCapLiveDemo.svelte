@@ -228,7 +228,7 @@
         height="500"
       />
     {/if}
-    <MandalaHeroLayer paths={mandalaPaths} {clubTipDx} opacity={ghostOpacity} />
+    <MandalaHeroLayer paths={mandalaPaths} artKey="yuta-cap" opacity={ghostOpacity} />
     {#if !reduceMotion.current}
       <div class="player-layer">
         <LazyMount

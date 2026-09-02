@@ -2,30 +2,29 @@
   Engine-aligned still mandala floor. Fills its parent (which must be the
   SAME square AnimatorCanvas renders into — that shared frame is the whole
   alignment contract) and renders the shared ShapeMatrixMandalaArt primitive
-  scaled by alignScale, so the floor IS the matrix tile the user picked.
-  Opacity animates via CSS so the still-mandala → ghost transition never
+  painted at engine alignment by the animator's own guide painter, so the
+  floor is pixel-for-pixel the guide the live canvas will draw over it.
+  Opacity animates via CSS so the still-mandala → live-guide transition never
   re-rasterizes. During a shared-element handoff the floor is forced fully
   visible with no transition so the transition snapshot has artwork in it. -->
 <script lang="ts">
   import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
   import { motionDuration } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
-  import { alignScale } from "../services/mandala-hero";
   import { pathsArtworkSrc } from "../services/shape-matrix-artwork";
   import ShapeMatrixMandalaArt from "./ShapeMatrixMandalaArt.svelte";
 
   let {
     paths,
-    clubTipDx,
+    artKey,
     opacity = 1,
-    glowColor,
     claim = false,
     handoff = false,
   }: {
     paths: MandalaPaths;
-    clubTipDx: number;
+    /** Identity of the pair these paths belong to; a change crossfades. */
+    artKey: string;
     opacity?: number;
-    glowColor?: string;
     /** This floor owns the shared tile↔hero transition name right now. */
     claim?: boolean;
     /** A shared-element transition is capturing: show the artwork, instantly. */
@@ -35,9 +34,8 @@
   let box = $state<HTMLDivElement | null>(null);
   let side = $state(0);
   const transitionDuration = motionDuration(DURATION.normal);
-  const src = $derived(pathsArtworkSrc(paths, clubTipDx));
-  const scale = $derived(alignScale(clubTipDx));
   const effectiveOpacity = $derived(handoff ? 1 : opacity);
+  const paint = $derived((sizePx: number) => pathsArtworkSrc(paths, sizePx));
 
   $effect(() => {
     const host = box;
@@ -60,13 +58,7 @@
   aria-hidden="true"
 >
   <div class="mandala-square">
-    <ShapeMatrixMandalaArt
-      {src}
-      {scale}
-      {claim}
-      instant={handoff}
-      glowColor={glowColor ?? "var(--theme-accent, #f59e0b)"}
-    />
+    <ShapeMatrixMandalaArt {paint} {artKey} {claim} instant={handoff} />
   </div>
 </div>
 
