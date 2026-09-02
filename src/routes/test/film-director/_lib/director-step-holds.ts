@@ -23,7 +23,11 @@ import type { ResolvedDirectorHold } from "./film-director-schema";
 export interface HeldStep {
   /** Whole step of the performer's own phrase. */
   step: number;
-  /** How far into that step, 0 to 1. Always 0 inside a hold. */
+  /**
+   * How far into that step, 0 to 1. Inside a hold this is the hold's own
+   * `progress` (gap 19), which is where in the step the frozen pose sits; a
+   * hold that never says lands on 0, the top of the step.
+   */
   progress: number;
 }
 
@@ -55,7 +59,10 @@ export function resolveHeldStep(
     const opens = hold.fromStep + lag;
     if (shared < opens) break;
     if (shared < opens + hold.steps) {
-      return { step: wrap(hold.fromStep, totalSteps), progress: 0 };
+      return {
+        step: wrap(hold.fromStep, totalSteps),
+        progress: hold.progress ?? 0,
+      };
     }
     lag += hold.steps;
   }

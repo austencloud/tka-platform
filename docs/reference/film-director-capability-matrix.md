@@ -96,6 +96,11 @@ downstream with the existing seconds-speaking message.)
 | camera `handheld` | scene | `"subtle" \| "steady" \| "rough"`, or `{meters: 0-0.3, degrees: 0-5}` | `cameraSchema.handheld` in `film-director-schema.ts`; `resolveHandheld` in `director-camera-track.ts`; `applyHandheld` in `sample-film-director.ts` | Takes the rig off sticks. Applied to the sampled frame after tracking, so following a walker still follows them. Position drifts inside the metres envelope; the aim drifts inside the degrees envelope, converted to metres at the current shooting distance so a long lens shakes as much on screen as a wide one. The drift is three incommensurate sines per axis, phased from `axisSeedValue(filmSeed, sceneId, "handheld")`, so it never repeats inside a scene, never uses `Math.random`, and replays identically. Works under every camera form including `shots`. Optional and absent when unused, so untouched films resolve byte-identically. `/test/film-director?film=proving` scene 12 ("handheld"). |
 | `pan` `to` a destination | scene | `to: {kind: "performer", performerId} \| {kind: "point", position: [x, y, z]}` | `cameraPanDestinationSchema` in `film-director-schema.ts`; `panDegrees`/`resolvePanDestination` in `camera-language.ts` | A pan spoken as a place rather than an angle. The compiler reads the shortest way round from the current aim to the destination and feeds the existing rotation math, so the rig still turns in place. `to` with a `direction` or an `amount` rejects (state the destination or the angle, not both), `to` on any move that is not a `pan` rejects, and a missing performer rejects by name: `Camera pan references missing performer "x".` `/test/film-director?film=proving` scene 13 ("whip-pans"). |
 | cast block                      | scene (`performance.cast`) | `{count: 1-8, defaults?, performers?: override[]}`                                                                                                 | `castSchema`                                                                                                                                                                                 | Mutually exclusive with `performance.performers` (schema `.refine()`). Overrides addressed by `id` (`performer-<n>`) fill their named slot; overrides with no `id` fill remaining slots in array order. An `id` that doesn't match any of the cast's performers rejects: `Cast override "<id>" does not match any of the <n> performers.`                                                                                                                                                                                                                                                     |
+| scene cues | scene (`cues`) | `Record<name, {atSeconds} \| {atBeats} \| {atBars}>`, up to 16, names `^[a-z][a-z0-9-]*$` | `cueSchema`/`cueNameSchema` in `film-director-schema.ts`; `buildCueTable`/`resolveSceneCues` in `director-beat-times.ts` | A name for a moment. Once named, the name is speakable anywhere a step is (`stepPlanes`, `stepEffects`, `stepEfforts`, `stepStaffLengths`, `holds.fromStep`), as a move's length (`until`), as a camera keyframe's `at`, and as a blocking phase's `startCue`. A cue read as a count is its beat position, because counts advance one per beat; read as a time it is its seconds. Both come from the one stated moment, so one cue drives a step change, a shot boundary and a blocking phase to the same instant. Resolves in `convertSceneBeatTimes` alongside beats and bars, so nothing downstream knows cues exist. An unknown name rejects listing the scene's cues; a cue used as a step that lands between counts rejects with the fractional count; an `until` whose cue has already passed, or whose window has no known start, rejects by position. `/test/film-director?film=proving` scene 19 ("growing-staff"). |
+| `performance.phrase` | scene | `"restart" \| "continue"` (default restart) | `performanceSchema.phrase`; `resolveFilmDirectorSpec`'s step cursor; `sampleFilmDirector` | Whether the scene's shared count starts over or picks up where the previous scene's ended (`stepOffset + duration * bpm / 60`). `continue` publishes `performance.stepOffset` on the resolved scene and the sampler adds it to `sequenceStep`, so a tempo change across a cut reads as one phrase getting faster rather than two takes. Optional and absent when the scene restarts. A first scene stating `continue` rejects by name. `/test/film-director?film=proving` scenes 17-18 ("tempo-slow"/"tempo-double"). |
+| `stepStaffLengths` | performer, cast defaults | `[{step \| cue, staffLengthCm: 40-300, ease?: "cut" \| "linear"}]`, up to 16 | `stepStaffLengthEntrySchema`; `resolveStepStaffLengthsForPerformer`; `resolveStepRamp` in `director-step-changes.ts`; `applyDirectorStepChanges` | A prop length that changes during the scene. Read as a ramp rather than a series of switches because the runtime can land between two lengths: `linear` (the default) slides from the previous entry across the counts between them, `cut` snaps at its own step. Same replace-not-merge rule as `stepEffects`: a performer's list replaces the cast-default list entirely. The adapter writes `setStaffLengthCm` only when the value has moved at least 0.5 cm, because the setter rebuilds the prop and a ramp produces a new number every frame. Optional and absent when the prop keeps one length. |
+| `performance.blocking` as a timeline | scene | the single staging object, or an array of 1-8 phases each adding `startSeconds \| startStep \| startCue` | `sceneBlockingPhaseSchema`; `assertOrderedPhases`/`movesThroughPhases` in `resolve-film-director-spec.ts` | Cast staging said over time: line up, hold, then open into a circle on the drop. Each phase names its own `endFormation` and the cast stands on its marks through the gaps between phases. A phase with no stated start follows the one before it. Phases run in the order written and may not overlap, because two formations cannot own the cast at once; an overlap rejects naming both phases, and a phase finishing past the scene's length rejects with both figures. A performer's own `blocking` still wins outright over the whole timeline. `/test/film-director?film=proving` scene 20 ("two-lines-one-circle"). |
+| `holds[].progress` | performer, cast defaults | `0-1`, optional | `holdSchema.progress`; `resolveHeldStep` in `director-step-holds.ts` | Where inside the frozen step the held pose sits. A hold pins the performer at `fromStep`; without this the pose is the top of that step, and with it the pose is that fraction through it, so a director can freeze mid-arc rather than only on the count. Absent when unstated, so a film written before this word resolves byte-identically. |
 
 ## Sequence directives
 
@@ -213,6 +218,56 @@ and each got an explicit ruling, not a "maybe later":
 ## Grammar gaps
 
 None open. Closed so far:
+
+- **Named cues** (closed 2026-09-02). Before this gap closed, every moment in a
+  scene was a number, and the same moment written into a step change, a shot
+  boundary and a walk was three numbers that had to be kept in agreement by
+  hand: moving the drop meant finding and editing all of them. `cues` names
+  moments once, and the name is then speakable wherever a step is, as a move's
+  `until`, as a camera keyframe's `at`, and as a blocking phase's `startCue`.
+  A cue carries two readings of the one stated moment, a count and a time,
+  because a step field wants counts and a duration wants seconds; counts
+  advance one per beat, so the count reading is the cue's beat position. Cues
+  resolve inside `convertSceneBeatTimes`, the same single pass that flattens
+  beats and bars, so no compiler below `resolveScene` learns they exist.
+  `/test/film-director?film=proving` scene 19 ("growing-staff") hangs a prop
+  ramp, a camera hold and a freeze off two names.
+
+- **One phrase across a tempo change** (closed 2026-09-02). Before this gap
+  closed, every scene restarted the shared count at zero, so cutting to a
+  faster take threw every performer's prop phrase back to its first step: a
+  tempo change was unspeakable as a continuation and could only be shot as a
+  new take. `performance.phrase: "continue"` hands the scene the count the
+  previous one ended on, published as `performance.stepOffset` and added to
+  `sequenceStep` at the sampler. The count crosses the cut unbroken and then
+  advances at the new tempo. A first scene stating `continue` rejects by name,
+  because there is no previous phrase to continue.
+  `/test/film-director?film=proving` scenes 17-18 play one phrase at 60 then
+  120 bpm.
+
+- **Prop length over time** (closed 2026-09-02). Before this gap closed a
+  performer's staff was whatever length the scene set and stayed there.
+  `stepStaffLengths` is the first per-step list read as a ramp instead of a
+  series of switches, because length is a number the runtime can land between:
+  `linear` slides between entries, `cut` snaps. The runtime write is gated at
+  half a centimetre, because `setStaffLengthCm` rebuilds the prop and a ramp
+  produces a slightly different number every frame.
+
+- **Staging as a timeline** (closed 2026-09-02). Before this gap closed,
+  `performance.blocking` was one instruction for a whole scene, so "line up,
+  hold, then open into a circle on the drop" needed three scenes with the cast
+  rebuilt in each. It now also accepts an array of phases, each naming its own
+  `endFormation` and optionally its own start as a second, a count, or a cue.
+  The cast stands on its marks between phases. Phases run in the order written
+  and may not overlap, since two formations cannot own the cast at once; the
+  rejection names both phases so the director knows which pair to move. A
+  performer's own `blocking` still overrides the whole timeline.
+  `/test/film-director?film=proving` scene 20 ("two-lines-one-circle").
+
+- **Where a hold freezes** (closed 2026-09-02). A hold pinned the performer at
+  the top of `fromStep`, so freezing mid-arc was unsayable. `holds[].progress`
+  fixes the pose at a fraction through the step instead. Optional and absent,
+  so films written before it resolve unchanged.
 
 - **Per-step changes: effect, effort, and holds** (closed 2026-09-02). Before
   this gap closed a performer carried one effect and one effort for a whole
@@ -422,6 +477,14 @@ None open. Closed so far:
 Things a director might plausibly ask for that the schema correctly rejects
 because the capability does not exist at the scope requested, or does not
 exist in the app's control surface at all:
+
+- **A tempo curve inside one scene.** `performance.bpm` is one number for a
+  whole scene: nothing in the schema or the resolver accepts a bpm that
+  changes over the scene's length, and the sampler forms `sequenceStep` from
+  that single value. A director who wants the phrase to accelerate spells it
+  as two scenes joined by a cut, the second stating `phrase: "continue"` and
+  the new tempo, which keeps the count unbroken across the change. Proving
+  Grounds scenes 17 and 18 are that spelling.
 
 - **Motion blur.** No shutter or motion-blur pass exists. The whole
   post-processing surface is `src/lib/shared/3d/effects/post-processing/`, which
