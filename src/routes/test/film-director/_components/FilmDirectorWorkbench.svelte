@@ -10,6 +10,7 @@
   import { captureFilmPoster } from "$lib/features/film-collection/services/capture-film-poster";
   import { filmCollectionState } from "$lib/features/film-collection/state/film-collection-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { growFade } from "$lib/shared/transitions/motion";
   import { setFilmDirectorContext } from "../_lib/film-director-context";
   import { createFilmDirectorState } from "../_lib/film-director-state.svelte";
   import type { FilmDirectorInput } from "../_lib/film-director-schema";
@@ -21,15 +22,23 @@
   import FilmDirectorFilmPanel from "./FilmDirectorFilmPanel.svelte";
   import FilmDirectorJsonEditor from "./FilmDirectorJsonEditor.svelte";
   import FilmDirectorScene from "./FilmDirectorScene.svelte";
+  import FilmDirectorSceneIndex from "./FilmDirectorSceneIndex.svelte";
   import FilmDirectorTransport from "./FilmDirectorTransport.svelte";
 
   let {
     film,
     initialOrigin,
+    initialSceneId = null,
     onExit,
   }: {
     film: FilmDirectorInput;
     initialOrigin: FilmOrigin;
+    /**
+     * A scene to open soloed, from `?scene=` in the address bar. Every
+     * capability the film demonstrates gets a link that lands on it directly,
+     * so showing one costs opening a URL rather than watching to its mark.
+     */
+    initialSceneId?: string | null;
     /** Back to the marquee. The route owns which surface is showing. */
     onExit: () => void;
   } = $props();
@@ -55,16 +64,33 @@
 
   let origin = $state<FilmOrigin>(initialOrigin);
   let saveOpen = $state(false);
+  let sceneIndexOpen = $state(false);
   let poster = $state("");
 
   // Takes the origin rather than a bare key so the URL can never disagree with
-  // what Save will do.
+  // what Save will do. The soloed scene rides along in the same write: two
+  // separate replaceState calls would race, and the second would drop whatever
+  // the first had just put in the address bar.
   function syncFilmToUrl(next: FilmOrigin): void {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
     url.searchParams.set("film", filmOriginUrlKey(next));
+    const soloed =
+      director.soloSceneIndex === null
+        ? null
+        : (director.film.scenes[director.soloSceneIndex]?.id ?? null);
+    if (soloed) url.searchParams.set("scene", soloed);
+    else url.searchParams.delete("scene");
     replaceState(url, {});
   }
+
+  // Solo is reachable from the index, the timeline, and the exit button, so the
+  // URL follows the state rather than each of those call sites remembering to
+  // update it.
+  $effect(() => {
+    void director.soloSceneIndex;
+    syncFilmToUrl(origin);
+  });
 
   function openSaveModal(): void {
     // Capture before the modal paints over the canvas, so the poster is the
@@ -158,6 +184,14 @@
   }
 
   onMount(() => {
+    // A ?scene= that names no scene in this film is ignored rather than
+    // treated as an error: the film still opens, from the top.
+    if (initialSceneId) {
+      const index = director.film.scenes.findIndex(
+        (scene) => scene.id === initialSceneId
+      );
+      if (index >= 0) director.setSoloScene(index);
+    }
     // The URL always names what is on screen, including when the address bar
     // arrived bare and the route picked the film.
     syncFilmToUrl(origin);
@@ -216,17 +250,49 @@
 
   <FilmDirectorTransport>
     {#snippet trailing()}
-      <FilmDirectorFilmPanel
-        {origin}
-        hasPreviousVersion={previousVersionAvailable}
-        busy={saveBusy}
-        onSave={saveFilm}
-        onSaveAsNew={openSaveModal}
-        onRestore={restorePreviousFilm}
-      />
+      <div class="transport-actions">
+        {#if director.soloSceneIndex !== null}
+          <!-- Leaving solo is a one-click move out of the loop and back into the
+               film, so it does not hide behind the index it was entered from.
+               growFade on x so the row widens into it rather than snapping. -->
+          <button
+            type="button"
+            class="solo-exit"
+            aria-label="Exit solo and play the whole film"
+            transition:growFade={{ axis: "x" }}
+            onclick={() => director.setSoloScene(null)}
+          >
+            <i class="fas fa-repeat" aria-hidden="true"></i>
+            <span>Exit solo</span>
+          </button>
+        {/if}
+
+        <button
+          type="button"
+          class="scenes-button"
+          class:soloing={director.soloSceneIndex !== null}
+          aria-label="Scenes"
+          aria-haspopup="dialog"
+          aria-expanded={sceneIndexOpen}
+          onclick={() => (sceneIndexOpen = true)}
+        >
+          <i class="fas fa-list-ol" aria-hidden="true"></i>
+          <span>Scenes</span>
+        </button>
+
+        <FilmDirectorFilmPanel
+          {origin}
+          hasPreviousVersion={previousVersionAvailable}
+          busy={saveBusy}
+          onSave={saveFilm}
+          onSaveAsNew={openSaveModal}
+          onRestore={restorePreviousFilm}
+        />
+      </div>
     {/snippet}
   </FilmDirectorTransport>
   <FilmDirectorJsonEditor />
+  <FilmDirectorSceneIndex bind:open={sceneIndexOpen} />
 </main>
 
 <SaveFilmModal
@@ -326,6 +392,96 @@
   @media (prefers-reduced-motion: reduce) {
     .preparation-track span {
       transition: none;
+    }
+  }
+
+  /* Two controls in the transport's trailing cell. Grouping them here rather
+     than adding a fifth grid column keeps the transport's own template, which
+     the compact layout below 60rem re-flows as a whole. */
+  .transport-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .scenes-button {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0 0.9rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    border-radius: 0.7rem;
+    color: var(--theme-text, #fff);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    font: inherit;
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 750;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .scenes-button:hover {
+    border-color: var(--theme-accent, #9d8cff);
+  }
+
+  .scenes-button:focus-visible {
+    outline: 3px solid var(--theme-accent, #9d8cff);
+    outline-offset: 2px;
+  }
+
+  .scenes-button.soloing {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #9d8cff) 70%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #7869eb) 26%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.08))
+    );
+  }
+
+  .solo-exit {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0 0.9rem;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #9d8cff) 60%, transparent);
+    border-radius: 0.7rem;
+    color: var(--theme-text, #fff);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #7869eb) 26%,
+      transparent
+    );
+    font: inherit;
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 750;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .solo-exit:hover {
+    border-color: var(--theme-accent, #9d8cff);
+  }
+
+  .solo-exit:focus-visible {
+    outline: 3px solid var(--theme-accent, #9d8cff);
+    outline-offset: 2px;
+  }
+
+  /* Narrow transports drop the words from both trailing controls; the icons
+     carry them, and each keeps its accessible name. */
+  @media (max-width: 34rem) {
+    .scenes-button span,
+    .solo-exit span {
+      display: none;
     }
   }
 

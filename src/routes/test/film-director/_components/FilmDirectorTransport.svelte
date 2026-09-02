@@ -31,6 +31,26 @@
     const whole = Math.max(0, Math.floor(seconds));
     return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
   }
+
+  /**
+   * While a scene is soloed the playhead never leaves it, so film time over the
+   * film's length would read as a film stuck near one mark. The clock becomes
+   * the scene's instead: elapsed within the loop, over the loop.
+   */
+  const clock = $derived.by(() => {
+    const index = director.soloSceneIndex;
+    const scene = index === null ? null : director.film.scenes[index];
+    if (!scene) {
+      return {
+        elapsed: director.playheadSeconds,
+        total: director.film.durationSeconds,
+      };
+    }
+    return {
+      elapsed: Math.max(0, director.playheadSeconds - scene.startSeconds),
+      total: scene.durationSeconds,
+    };
+  });
 </script>
 
 <div
@@ -63,9 +83,7 @@
     <span class="timecode">
       <span class="sizer" aria-hidden="true">00:00 / 00:00</span>
       <span class="live">
-        {formatTime(director.playheadSeconds)} / {formatTime(
-          director.film.durationSeconds
-        )}
+        {formatTime(clock.elapsed)} / {formatTime(clock.total)}
       </span>
     </span>
   </div>
