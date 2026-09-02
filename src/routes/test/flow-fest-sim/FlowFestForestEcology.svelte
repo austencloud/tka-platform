@@ -21,6 +21,7 @@
     type InstanceFrustumCuller,
     type InstanceFrustumCullingStats,
   } from "$lib/shared/3d/rendering/instance-frustum-culling";
+  import { prepareCoveragePreservingAlphaMipmaps } from "$lib/shared/3d/rendering/alpha-coverage-mipmaps";
   import ForestClearingWind from "$lib/shared/3d/environments/scenes/forest/ForestClearingWind.svelte";
   import {
     deriveFlowFestTreeInstanceTint,
@@ -328,6 +329,14 @@
       foliage: [0.045, -0.06, 0.062],
       bark: [0.022, -0.035, 0.036],
     },
+    "plantcatalog-weeping-willow-19": {
+      foliage: [0.05, -0.08, 0.07],
+      bark: [0.018, -0.03, 0.03],
+    },
+    "plantcatalog-weeping-willow-43": {
+      foliage: [0.04, -0.05, 0.05],
+      bark: [0.014, -0.028, 0.024],
+    },
   };
 
   function collectTreeScenes(
@@ -601,6 +610,14 @@
           material.color.set(isFoliage ? foliageTint : barkTint);
           const adjustment = grade?.[isFoliage ? "foliage" : "bark"];
           if (adjustment) material.color.offsetHSL(...adjustment);
+          // Without this the leaf maps' box-filtered mips fall under the
+          // cutoff a few tiers out and every crown past ~30 m thins to twigs.
+          if (isFoliage && material.map) {
+            prepareCoveragePreservingAlphaMipmaps(
+              material.map,
+              material.alphaTest
+            );
+          }
         }
       });
     }
