@@ -1,6 +1,6 @@
 # Film Director Capability Matrix
 
-<!-- directive-axes: characterId,prop,effect,effort,staffLengthCm,environmentId,formation,leftPlane,rightPlane,stepPlane -->
+<!-- directive-axes: characterId,prop,effect,effort,staffLengthCm,environmentId,formation,leftPlane,rightPlane,stepPlane,stepEffect,stepEffort -->
 
 One row per speakable axis of the `/test/film-director` schema (v4). "Source
 of truth" is the live registry/enum — never copy value lists here.
@@ -32,13 +32,20 @@ not}` and still reject `distinct`, with or without `not`.
 | leftPlane     | performer                            | literal, pick any/distinct, oneOf, not, sameAs                                                                                                                                            | `Plane` enum, `@austencloud/scene-3d` `dist/lib/domain/enums/Plane.d.ts` — nine values: `wall`, `wheel`, `floor`, `right-shield`, `left-shield`, `forward-ramp`, `backward-ramp`, `right-wing`, `left-wing`. Precedence: `performer.leftPlane ?? cast?.defaults?.leftPlane ?? "wall"`. Reroll knob: `seed.axes.leftPlane`; the resolver retains the historical blue-plane hash namespace so existing films do not reshuffle.                                                                                                                                                                                          | unknown value: `Unknown plane "<value>". Planes: wall, wheel, floor, right-shield, left-shield, forward-ramp, backward-ramp, right-wing, left-wing.` (lists the full catalog — there's no "closest" plane the way there's an obvious closest prop)                        |
 | rightPlane    | performer                            | literal, pick any/distinct, oneOf, not, sameAs                                                                                                                                            | Same `Plane` catalog and precedence as leftPlane, resolved as its own independent axis (a `sameAs` on rightPlane copies the other performer's rightPlane, never their leftPlane). Reroll knob: `seed.axes.rightPlane`; the historical red-plane hash namespace remains stable.                                                                                                                                                                                                                                                                                                                                        | same catalog message as leftPlane                                                                                                                                                                                                                                         |
 | stepPlanes    | performer, array of per-step entries | scene-scoped directive per entry: literal, pick any, oneOf, not (distinct/sameAs rejected — pinned to a single (performer, step, hand) triple, same reasoning as environmentId/formation) | Each entry is `{step: int ≥ 0, hand: "left" \| "right", plane: <Plane directive>}`. Effective list: `performer.stepPlanes ?? cast?.defaults?.stepPlanes ?? []` — a performer's own list REPLACES the cast-default list, it does not merge with it. Reroll knob: `seed.axes.stepPlane` (shared across every stepPlanes entry in the film; each (performer, step, hand) triple still draws its own stream via a distinguishing key, so bumping this salt doesn't collapse every entry to the same value). Legacy blue/red hand values normalize at the schema boundary without changing their historical random stream. | unknown plane: same catalog message as leftPlane; `distinct`/`sameAs` on an entry: `Scene "<id>": "stepPlane" supports literals, pick:any, oneOf, and not — distinct/sameAs are performer-scoped.`; bad `hand`: zod enum rejection; negative `step`: zod bounds rejection |
+| stepEffects   | performer, array of per-step entries | scene-scoped directive per entry: literal, pick any, oneOf, not (distinct/sameAs rejected — pinned to a single (performer, step) pair) | Each entry is `{step: int ≥ 0, effect: <effect directive>}`, `"none"` a legal literal. Effective list: `performer.stepEffects ?? cast?.defaults?.stepEffects ?? []` — a performer's own list REPLACES the cast-default list. Catalog is `EFFECT_CATALOG` in `resolve-film-director-spec.ts` (`"none"` plus every `EFFECTS` id). Reroll knob: `seed.axes.stepEffect`; each (performer, step) pair draws its own stream. Applied per frame by `applyDirectorStepChanges` (`director-viewer-adapter.ts`) with `equipBuild: false` and `recordUndo: false`, written only when the value changes. | unknown effect: catalog message above; `distinct`/`sameAs`: `Scene "<id>": "stepEffect" supports literals, pick:any, oneOf, and not — distinct/sameAs are performer-scoped.`; two entries on one step: `Scene "<id>": performer "<id>" stepEffects names step <n> twice.` |
+| stepEfforts   | performer, array of per-step entries | same scene-scoped subset as stepEffects | Each entry is `{step: int ≥ 0, effort: <effort directive>}`. Same replace-not-merge rule and the `DIRECTOR_EFFORT_IDS` catalog. Reroll knob: `seed.axes.stepEffort`. Applied per frame beside stepEffects, `recordUndo: false`. | unknown effort: catalog message above; `distinct`/`sameAs`: same message with `"stepEffort"`; duplicate step: `... stepEfforts names step <n> twice.` |
+| holds | performer, array of `{fromStep: int ≥ 0, steps: int ≥ 1}` (max 16) | Time stops for that performer's prop phrase. While the shared clock, after their `beatOffset`, is inside `[fromStep, fromStep + steps)`, they are pinned to `fromStep` at progress 0; afterwards they resume from `fromStep`, so every later step lags by `steps`, accumulated across several holds. Blocking is authored geometry and is NOT paused — a performer who holds mid-walk keeps walking. Literal only: a hold states this performer's clock and has no catalog to draw from. `performer.holds ?? cast?.defaults?.holds ?? []`, replace not merge; resolved sorted by `fromStep`. | `director-step-holds.ts` (`resolveHeldStep`), driven into the viewer's existing `performerSteps` host-override seam (`performer-step-timing.ts` `resolvePerformerStepSource`) — the value is fractional, which pins step and progress together. | overlapping holds: `Scene "<id>": performer "<id>" holds overlap: step <n> for <n> steps and step <n> for <n> steps.`; `steps: 0`: `A hold lasts at least one step.`; negative `fromStep`: zod bounds rejection |
 
-`stepPlanes` is the first speakable axis that addresses an individual step
-rather than a whole performer or a whole scene. Every other axis in this table
-resolves once per (scene, performer) or once per scene; `stepPlanes` resolves
-once per (scene, performer, step, hand). Before 2026-08-24, director scenes had
-no way to address individual beats at all — the setter existed
-(`performer.setStepHandPlane`) but nothing in the schema could reach it.
+`stepPlanes` was the first speakable axis that addresses an individual step
+rather than a whole performer or a whole scene, and `stepEffects` and
+`stepEfforts` now join it: all three resolve once per (scene, performer, step)
+— stepPlanes once per hand as well. They differ in how they reach the runtime.
+A plane has a per-step setter (`performer.setStepHandPlane`), so the whole list
+is handed over once when the scene is applied. Effect and effort do not:
+`setEffect` and `setEffort` set the whole performer, so the film reads the
+playhead every frame, decides which entry is in force
+(`director-step-changes.ts`), and writes only on change. Before 2026-08-24
+director scenes could not address individual beats at all.
 
 ## Literal-only axes (not directive-capable)
 
@@ -201,6 +208,25 @@ and each got an explicit ruling, not a "maybe later":
 ## Grammar gaps
 
 None open. Closed so far:
+
+- **Per-step changes: effect, effort, and holds** (closed 2026-09-02). Before
+  this gap closed a performer carried one effect and one effort for a whole
+  scene and every performer counted the same clock, so changing either meant
+  cutting to a new scene. `stepEffects` and `stepEfforts` copy `stepPlanes`
+  exactly at the schema and resolver — a per-step entry whose value is a
+  scene-scope directive, a performer's list replacing the cast-default list —
+  and differ only at the runtime, where no per-step setter exists: the film
+  reads the playhead each frame and calls `setEffect`/`setEffort` when the
+  value in force changes, with `equipBuild: false` so a step-level effect never
+  swaps the prop and `recordUndo: false` so a looping film does not flood the
+  undo history (the option added to `character-instance-state.svelte.ts` for
+  this). `holds` is literal only and remaps one performer's playhead:
+  `resolveHeldStep` pins them at `fromStep` for the stated counts and leaves
+  them that far behind afterwards, driven into the viewer's existing
+  `performerSteps` host-override seam. Blocking does not pause during a hold,
+  and per-step effects read the HELD step, so an entry scheduled inside a hold
+  applies for its whole length. `/test/film-director?film=proving` scene 8
+  ("per-step-changes") shows both halves side by side.
 
 - **Beats as a time unit** (closed 2026-08-30). Before this gap closed, every
   duration field in the scene schema accepted only `durationSeconds` — a
