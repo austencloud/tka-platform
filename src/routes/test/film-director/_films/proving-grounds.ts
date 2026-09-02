@@ -1,3 +1,5 @@
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+
 import type { FilmDirectorInput } from "../_lib/film-director-schema";
 
 /**
@@ -806,6 +808,130 @@ export const provingGroundsFilm: FilmDirectorInput = {
         subject: { kind: "group" },
         shotSize: "wide",
         angle: "high",
+        position: "front",
+        moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "hand-cam",
+      title: "Hand Cam",
+      intent:
+        'Gap 12. The camera can name a hand or a prop tip as its subject, not just a whole performer. The aim sits on the opening mark of that performer at hand height (1.1 m) and prop-tip height (1.4 m), so the framing is tight on the working hand rather than the face. The aim does not follow the hand through the phrase: no hand world position reaches the viewer state, which is recorded as a rejection in the capability matrix.',
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      performance: {
+        bpm: 120,
+        formation: "side-by-side",
+        cast: { count: 2, defaults: { effect: "trails" } },
+      },
+      camera: {
+        subject: { kind: "hand", performerId: "performer-1", hand: "right" },
+        shotSize: "close-up",
+        angle: "eye",
+        position: "front",
+        moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "canon-ramp",
+      title: "Canon Ramp",
+      intent:
+        'Gap 20. Two spreads the cast speaks once and every performer takes their own share of. "beatOffset: { canon: 2 }" walks the cast two counts apart each, so performer 4 enters six counts behind performer 1. "level: { ramp: { from: 1, to: 3 } }" walks the same cast from level 1 to level 3, so the line reads as a difficulty gradient without naming a level per performer.',
+      durationBeats: 32,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      performance: {
+        bpm: 120,
+        formation: "line",
+        cast: {
+          count: 4,
+          defaults: {
+            effect: "led",
+            beatOffset: { canon: 2 },
+            sequence: { length: 8, level: { ramp: { from: 1, to: 3 } } },
+          },
+        },
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "wide",
+        angle: "high",
+        position: "front",
+        moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "prop-builds",
+      title: "Prop Builds",
+      intent:
+        'Gap 23. A performer states the build of the prop in their hands, not just its type. Performer 1 spins fire fans on a black frame, performer 2 the lotus build with a day finish. Finish is per performer here: it is a part of the build the performer overrides, so the two differ on stage at the same time.',
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      performance: {
+        bpm: 120,
+        formation: "side-by-side",
+        cast: {
+          count: 2,
+          defaults: { prop: PropType.FAN, effect: "trails" },
+          performers: [
+            {
+              id: "performer-1",
+              propBuild: {
+                fanBuild: "fire",
+                fanFrameColor: "black",
+                finish: "fire",
+              },
+            },
+            {
+              id: "performer-2",
+              propBuild: { fanBuild: "lotus", finish: "day" },
+            },
+          ],
+        },
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "medium",
+        angle: "eye",
+        position: "front",
+        moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "split-hands",
+      title: "Split Hands",
+      intent:
+        'Gap 26. One effect per hand. Performer 1 runs fire on the left and led on the right for the whole scene; performer 2 starts matched and splits on the "split" cue. The renderer already resolves an effect per prop, so the pair reaches it as a tip map keyed 0 (left, blue) and 1 (right, red) rather than the wildcard.',
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      cues: { split: { atBeats: 8 } },
+      performance: {
+        bpm: 120,
+        formation: "side-by-side",
+        cast: {
+          count: 2,
+          performers: [
+            {
+              id: "performer-1",
+              effect: { left: "fire", right: "led" },
+            },
+            {
+              id: "performer-2",
+              effect: "trails",
+              stepEffects: [
+                { step: "split", effect: { left: "sparkles", right: "ghost" } },
+              ],
+            },
+          ],
+        },
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "medium",
+        angle: "eye",
         position: "front",
         moves: [{ move: "hold" }],
       },

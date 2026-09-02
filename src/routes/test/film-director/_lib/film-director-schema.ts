@@ -298,6 +298,29 @@ const configurableEffectIdSchema = z
     error: (issue) => `Unknown configurable effect "${String(issue.input)}"`,
   });
 
+/**
+ * Gap 23. Which build of the prop this performer carries. The keys are the
+ * package's own `PropBuild` (`prop-finish-state.svelte.ts`), enumerated here
+ * rather than passed through, so a misspelled key rejects by name instead of
+ * arriving at `setPropBuild` and doing nothing.
+ *
+ * `finish` belongs here and not to the scene: the package's `propFinishState`
+ * is a global singleton, but a performer's `propBuild` is merged over it
+ * (`character-instance-state.svelte.ts` `effectivePropBuild`), so the fire
+ * triad and the day triad can stand next to each other.
+ */
+const propBuildSchema = z
+  .object({
+    finish: z.enum(["fire", "day"]).optional(),
+    fanBuild: z.enum(["pictograph", "fire", "lotus", "day", "moon"]).optional(),
+    fanFrameColor: z.enum(["black", "white"]).optional(),
+    fanCover: z.enum(["bare", "covered"]).optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, {
+    error: 'A "propBuild" states at least one of the build\'s parts.',
+  });
+
 // Derived from the live enum, never retyped — see the comment above
 // effortIdSchema for why this is string+refine (with a type-predicate to
 // still narrow the inferred type to Plane) rather than z.enum/z.nativeEnum.
@@ -337,27 +360,45 @@ const visiblePlanesSchema = z
 // resolve-film-director-spec.ts — distinct/sameAs make no sense pinned to a
 // single (performer, step, hand) triple, same reasoning as environmentId
 // and formation.
+const handSideSchema = z.preprocess(
+  (value) => (value === "blue" ? "left" : value === "red" ? "right" : value),
+  z.enum(["left", "right"])
+);
+
 const stepPlaneEntrySchema = z
   .object({
     step: stepRefSchema,
-    hand: z.preprocess(
-      (value) =>
-        value === "blue" ? "left" : value === "red" ? "right" : value,
-      z.enum(["left", "right"])
-    ),
+    hand: handSideSchema,
     plane: directiveSchema(planeSchema),
   })
   .strict();
 
+/**
+ * Gap 26. An effect is spoken once for both hands, or once per hand. The pair
+ * form keeps the full directive grammar on each side, so "fire on her right,
+ * anything on her left" is one sentence. A single id is not shorthand for a
+ * pair of the same id: it stays the whole-performer form and reaches the
+ * renderer through the wildcard tip key exactly as it always has.
+ */
+const effectValueSchema = z.union([
+  directiveSchema(effectIdSchema),
+  z
+    .object({
+      left: directiveSchema(effectIdSchema),
+      right: directiveSchema(effectIdSchema),
+    })
+    .strict(),
+]);
+
 // Per-step effect and effort are scene-scope directives for the same reason
 // stepPlanes is: the value is pinned to one (performer, step) pair, so
 // distinct has no cast to spread across and sameAs has no matching pair to
-// copy from. Unlike a plane there is no hand — an effect and an effort are
-// carried by the whole performer.
+// copy from. Unlike an effort, an effect may name a hand (gap 26), because the
+// renderer resolves effects per prop and a director asks for a lit right hand.
 const stepEffectEntrySchema = z
   .object({
     step: stepRefSchema,
-    effect: directiveSchema(effectIdSchema),
+    effect: effectValueSchema,
   })
   .strict();
 
@@ -423,6 +464,32 @@ const cameraTargetSchema = z.discriminatedUnion("kind", [
     })
     .strict(),
   z.object({ kind: z.literal("point"), position: vector3Schema }).strict(),
+  /**
+   * Gap 12. Frame the hand, or the end of the prop it holds, rather than the
+   * whole person. Both aim at the named performer's mark and differ only in
+   * height: a hand rides about chest high, a prop tip about a staff's reach
+   * above the floor. `hand` names the side, in the same left/right the planes
+   * and the per-hand effects use.
+   *
+   * The aim is the opening mark, not the live hand. The rig publishes hand
+   * world positions into PerformerRig's effects snippet and nothing carries
+   * them back to `Viewer3DState`, so the adapter has nothing to re-aim from.
+   * The capability matrix records that boundary.
+   */
+  z
+    .object({
+      kind: z.literal("hand"),
+      performerId: z.string().min(1),
+      hand: handSideSchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("prop-tip"),
+      performerId: z.string().min(1),
+      hand: handSideSchema,
+    })
+    .strict(),
 ]);
 
 const cameraKeyframeSchema = z
@@ -646,7 +713,28 @@ const performerSequenceSchema = z
     startPosition: positionRefSchema.optional(),
     startOrientation: startOrientationSchema.optional(),
     turns: turnsSchema.optional(),
-    level: z.literal(DIRECTOR_SEQUENCE_LEVELS).optional(),
+    /**
+     * Gap 20. One level for whoever reads this sequence, or a ramp across the
+     * cast: `{ramp: {from, to}}` hands the first performer `from`, the last
+     * `to`, and everyone between a rounded step along that line. A ramp is a
+     * statement about a cast, so it is only sayable in cast defaults; on one
+     * performer it is rejected by name.
+     */
+    level: z
+      .union([
+        z.literal(DIRECTOR_SEQUENCE_LEVELS),
+        z
+          .object({
+            ramp: z
+              .object({
+                from: z.literal(DIRECTOR_SEQUENCE_LEVELS),
+                to: z.literal(DIRECTOR_SEQUENCE_LEVELS),
+              })
+              .strict(),
+          })
+          .strict(),
+      ])
+      .optional(),
     gridMode: z.enum(GridMode).optional(),
     flow: z.enum(DIRECTOR_CONTINUITIES).optional(),
     handPath: z.enum(DIRECTOR_CONTINUITIES).optional(),
@@ -849,6 +937,47 @@ function rejectPerformerEffectConfig(
   }
 }
 
+/**
+ * Gap 20. A spread is a statement about a cast: canon hands performer k the
+ * kth multiple of one offset, a level ramp walks the cast from one difficulty
+ * to another. Written on a single performer there is nobody to spread across,
+ * so both reject by name rather than resolving to the one-performer case.
+ */
+export const CANON_NEEDS_A_CAST =
+  'A canon spreads one offset across the cast, so it is spoken in "cast.defaults". On this performer, state the "beatOffset" they actually take.';
+export const LEVEL_RAMP_NEEDS_A_CAST =
+  'A level ramp walks the whole cast from one level to another, so it is spoken in "cast.defaults". On this performer, state the "level" they actually spin.';
+
+const beatOffsetSpreadSchema = z.union([
+  finiteNumber,
+  z.object({ canon: finiteNumber }).strict(),
+]);
+
+function rejectPerformerCastSpreads(
+  input: unknown,
+  ctx: z.RefinementCtx
+): void {
+  const value = input as {
+    beatOffset?: unknown;
+    sequence?: { level?: unknown } | undefined;
+  };
+  if (typeof value.beatOffset === "object" && value.beatOffset !== null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["beatOffset"],
+      message: CANON_NEEDS_A_CAST,
+    });
+  }
+  const level = value.sequence?.level;
+  if (typeof level === "object" && level !== null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["sequence", "level"],
+      message: LEVEL_RAMP_NEEDS_A_CAST,
+    });
+  }
+}
+
 const performerSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -856,11 +985,14 @@ const performerSchema = z
     sequence: performerSequenceSchema.optional(),
     characterId: directiveSchema(characterIdSchema).optional(),
     prop: directiveSchema(propTypeSchema).optional(),
-    effect: directiveSchema(effectIdSchema).optional(),
+    propBuild: propBuildSchema.optional(),
+    effect: effectValueSchema.optional(),
     effort: directiveSchema(effortIdSchema).optional(),
     position: position2Schema.optional(),
     facingDegrees: finiteNumber.optional(),
-    beatOffset: finiteNumber.optional(),
+    // Accepted in the canon shape so the rejection can name the constraint
+    // rather than reading as "expected number".
+    beatOffset: beatOffsetSpreadSchema.optional(),
     blocking: blockingSchema.optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
     leftPlane: directiveSchema(planeSchema).optional(),
@@ -873,15 +1005,21 @@ const performerSchema = z
     ...performerEffectConfigKeys,
   })
   .strict()
-  .superRefine(rejectPerformerEffectConfig);
+  .superRefine((value, ctx) => {
+    rejectPerformerEffectConfig(value, ctx);
+    rejectPerformerCastSpreads(value, ctx);
+  });
 
 const castDefaultsSchema = z
   .object({
     sequence: performerSequenceSchema.optional(),
     characterId: directiveSchema(characterIdSchema).optional(),
     prop: directiveSchema(propTypeSchema).optional(),
-    effect: directiveSchema(effectIdSchema).optional(),
+    propBuild: propBuildSchema.optional(),
+    effect: effectValueSchema.optional(),
     effort: directiveSchema(effortIdSchema).optional(),
+    /** Gap 20. One offset for everyone, or `{canon}` for a staggered entry. */
+    beatOffset: beatOffsetSpreadSchema.optional(),
     blocking: blockingSchema.optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
     leftPlane: directiveSchema(planeSchema).optional(),
@@ -1404,6 +1542,7 @@ export type DirectorSceneInput = z.infer<typeof sceneSchema>;
 export type DirectorCastInput = z.infer<typeof castSchema>;
 export type DirectorCameraInput = z.infer<typeof cameraSchema>;
 export type DirectorCameraTargetInput = z.infer<typeof cameraTargetSchema>;
+export type DirectorPropBuild = z.infer<typeof propBuildSchema>;
 export type DirectorBlockingInput = z.infer<typeof blockingSchema>;
 export type DirectorSceneBlockingInput = z.infer<typeof sceneBlockingSchema>;
 export type DirectorSceneBlockingPhaseInput = z.infer<
@@ -1419,9 +1558,21 @@ export interface ResolvedDirectorStepPlane {
   plane: Plane;
 }
 
+/**
+ * Gap 26. A pair of effects, one per hand. Absent everywhere the director
+ * spoke a single effect, so a film written before the pair existed resolves
+ * byte-identically to its snapshot.
+ */
+export interface ResolvedDirectorHandEffects {
+  left: EffectType;
+  right: EffectType;
+}
+
 export interface ResolvedDirectorStepEffect {
   step: number;
+  /** The left hand's effect, which is also the whole performer's when no pair was spoken. */
   effect: EffectType;
+  handEffects?: ResolvedDirectorHandEffects;
 }
 
 export interface ResolvedDirectorStepEffort {
@@ -1455,7 +1606,15 @@ export interface ResolvedDirectorPerformer {
   name: string;
   characterId: CharacterId;
   prop: PropType;
+  /**
+   * Gap 23. Which build of that prop, merged over the scene package's global
+   * build. Absent when the performer takes the global one unchanged.
+   */
+  propBuild?: DirectorPropBuild;
+  /** The left hand's effect, which is also the whole performer's when no pair was spoken. */
   effect: EffectType;
+  /** Gap 26. Present only when the director spoke a hand pair. */
+  handEffects?: ResolvedDirectorHandEffects;
   effort: EffortId;
   sequence: DirectorPerformerSequence;
   /** Where this performer stands when the scene opens. */

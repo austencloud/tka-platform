@@ -66,6 +66,25 @@ const CLOSE_UP_TARGET_HEIGHT = 1.45;
 const EMPTY_STAGE_TARGET_HEIGHT = 1.4;
 
 /**
+ * Gap 12. Where a hand and the end of its prop sit above the floor. A hand in
+ * a spinning grip rides roughly chest high; a staff tip reaches about a head
+ * higher at the top of its arc. Both are compile-time aims at the performer's
+ * mark, so they say nothing about where the hand is on any particular count.
+ */
+export const HAND_TARGET_HEIGHT = 1.1;
+export const PROP_TIP_TARGET_HEIGHT = 1.4;
+
+/**
+ * Gap 12. The height a subject of this kind aims at, or null when the subject
+ * aims at whatever the group framing already chose.
+ */
+export function subjectAnchorHeight(kind: string): number | null {
+  if (kind === "hand") return HAND_TARGET_HEIGHT;
+  if (kind === "prop-tip") return PROP_TIP_TARGET_HEIGHT;
+  return null;
+}
+
+/**
  * World Y of the floor performers stand on. `groundOffset` is the rig ORIGIN
  * (shoulder height, per computeFramingShot); the feet sit
  * `userProportionsState.groundY` (negative) below it. Directive heights are
@@ -106,6 +125,8 @@ export function computeCameraFraming(
   }
 
   const target = resolveSubject(input.subject, context, groupTarget);
+  // A hand or a prop tip (gap 12) already names the height it means, so a
+  // close-up of one must not be dragged up to face height.
   if (input.shotSize === "close-up" && input.subject?.kind === "performer") {
     target[1] = directorFloorY(context.groundOffset) + CLOSE_UP_TARGET_HEIGHT;
   }
@@ -159,10 +180,17 @@ function resolveSubject(
       `Camera subject references missing performer "${subject.performerId}".`
     );
   }
+  const anchorHeight = subjectAnchorHeight(subject.kind);
+  const height =
+    anchorHeight !== null
+      ? anchorHeight
+      : subject.kind === "performer"
+        ? subject.height
+        : undefined;
   return [
     performer.position.x,
-    subject.height !== undefined
-      ? directorFloorY(context.groundOffset) + subject.height
+    height !== undefined
+      ? directorFloorY(context.groundOffset) + height
       : groupTarget[1],
     performer.position.z,
   ];

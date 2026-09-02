@@ -778,7 +778,15 @@
          Performer Hub effect selection actually reach the renderer. -->
       {@const perfEffect =
         performer.rawEffect ?? globalTipEffectMap["*"]?.effect ?? "none"}
-      {@const perfTipMap = { "*": { effect: perfEffect } }}
+      <!-- When the two hands run different effects, key the map per prop
+         instead of the wildcard. resolveEffect already reads propIndex, so
+         prop 0 (blue, left) and prop 1 (red, right) each take their own. -->
+      {@const perfTipMap = performer.rawHandEffects
+        ? {
+            "0": { effect: performer.rawHandEffects.left },
+            "1": { effect: performer.rawHandEffects.right },
+          }
+        : { "*": { effect: perfEffect } }}
       {@const performerCurrentStep = resolvePerformerStepSource(
         performerSteps?.[i],
         currentStep,

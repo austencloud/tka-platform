@@ -28,6 +28,15 @@
     isLibraryFilmKey
   );
 
+  // Read once, at entry. After this the workbench owns the parameter — it
+  // writes the soloed scene back as the user moves around — and re-reading it
+  // would fight those writes. Only an address typed for a film opens soloed;
+  // picking a different film from the marquee starts it from the top.
+  const requestedSceneId = page.url.searchParams.get("scene");
+  let pendingSceneId = $state<string | null>(
+    requested.kind === "unknown" ? null : requestedSceneId
+  );
+
   // A saved link waits on the marquee while the collection loads rather than
   // booting an unrelated film and swapping it out. A link to an entry the user
   // cannot see simply stays on the marquee.
@@ -54,6 +63,19 @@
     stage = { film: getLibraryFilm(key), origin: { kind: "library", key } };
   }
 
+  // Choosing a film from the marquee is a fresh start, so a scene id left over
+  // from the address that opened the page does not follow it into a film that
+  // may not even have that scene.
+  function pickLibraryFilm(key: string): void {
+    pendingSceneId = null;
+    openLibraryFilm(key);
+  }
+
+  function pickSavedFilm(entry: CollectedFilm): void {
+    pendingSceneId = null;
+    openSavedFilm(entry);
+  }
+
   function openSavedFilm(entry: CollectedFilm): void {
     // The entry is a $state proxy and the director structuredClones its input,
     // which throws on a proxy. Snapshot to a plain object first.
@@ -65,8 +87,10 @@
 
   function exitToMarquee(): void {
     stage = null;
+    pendingSceneId = null;
     const url = new URL(window.location.href);
     url.searchParams.delete("film");
+    url.searchParams.delete("scene");
     replaceState(url, {});
   }
 
@@ -102,8 +126,8 @@
 
 {#if !stage}
   <FilmDirectorMarquee
-    onOpenLibraryFilm={openLibraryFilm}
-    onOpenSavedFilm={openSavedFilm}
+    onOpenLibraryFilm={pickLibraryFilm}
+    onOpenSavedFilm={pickSavedFilm}
   />
 {:else if Workbench}
   <!-- createFilmDirectorState runs once per instance, so switching films has to
@@ -112,6 +136,7 @@
     <Workbench
       film={stage.film}
       initialOrigin={stage.origin}
+      initialSceneId={pendingSceneId}
       onExit={exitToMarquee}
     />
   {/key}

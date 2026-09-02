@@ -4,7 +4,6 @@
 
   import { setShapeMatrixAppContext } from "./context/shape-matrix-app-context";
   import ShapeMatrixAboutModal from "./components/ShapeMatrixAboutModal.svelte";
-  import ShapeMatrixPropPickerModal from "./components/ShapeMatrixPropPickerModal.svelte";
   import ShapeMatrixAppShell from "./components/ShapeMatrixAppShell.svelte";
   import {
     createShapeMatrixAppState,
@@ -71,7 +70,6 @@
 <div class="shape-matrix-app-host" bind:this={host}>
   <ShapeMatrixAppShell {variant} />
   <ShapeMatrixAboutModal />
-  <ShapeMatrixPropPickerModal />
 </div>
 
 <style>

@@ -298,7 +298,15 @@ Census findings (read-only agent, file:line evidence in its report):
 
 Wave D scope (one executor):
 
-- [ ] Gap 12: camera subject on a hand or prop tip.
+- [~] Gap 12: camera subject on a hand or prop tip. Landed: the schema, the
+      1.1 m / 1.4 m compile-time aim, and the "prop-builds"/"hand-cam" scenes.
+      Stopped on live re-aim, per the row's own stop condition. Blocking file:
+      `src/lib/shared/3d/components/Viewer3DScene.svelte`, where the
+      PerformerRig `effectsSlot` payload (`blueHandPos`/`redHandPos`) is
+      consumed inline; nothing publishes it to `viewer-3d-state.svelte.ts`,
+      which is the adapter's only handle, and `leftPropState.worldPosition` is
+      a grid-local prop centre rather than a world hand position. Recorded in
+      the matrix.
       `{ kind: "hand" | "prop-tip", performerId, hand: "left" | "right" }`.
       Compile-time aim is the performer's mark at hand height (1.1 m above
       the floor for a hand, 1.4 m for a tip). Runtime live re-aim in the
@@ -307,20 +315,20 @@ Wave D scope (one executor):
       for a per-performer world-position source reachable from
       `Viewer3DState`; if none is reachable without a package change, ship the
       compile-time aim, state that in the matrix row, and stop.
-- [ ] Gap 20: cast-scoped numeric spread. Cast defaults accept
+- [x] Gap 20: cast-scoped numeric spread. Cast defaults accept
       `beatOffset: number | { canon: number }` (performer k gets k * canon)
       and `sequence.level` accepts `{ ramp: { from, to } }` (linear across
       cast order, rounded to an integer, clamped to the valid level range).
       Rejections: canon or ramp on a single performer (nothing to spread
       across).
-- [ ] Gap 23: per-performer prop build. Performer and cast defaults accept
+- [x] Gap 23: per-performer prop build. Performer and cast defaults accept
       `propBuild: Partial<PropBuild>` validated against the package's
       `PropBuild` keys (read the type; enumerate the keys in the schema so an
       unknown key rejects by name). Adapter calls `setPropBuild` at scene
       apply. Finish stays a matrix rejection ("global finish, one value for
       the whole film") unless a scene-level write to `propFinishState` is
       cheap and reversible on cut; decide with evidence and record it.
-- [ ] Gap 26: per-hand effect. `effect` (performer, cast defaults, and
+- [x] Gap 26: per-hand effect. `effect` (performer, cast defaults, and
       `stepEffects[].effect`) accepts `{ left, right }` in addition to a
       single id. Thread a per-hand pair through `character-instance-state`
       into the `tipEffectMap` that `EffectOrchestrator3D` already consumes;
@@ -328,10 +336,22 @@ Wave D scope (one executor):
       Directive grammar (`pick`) applies per hand. If the tipEffectMap prop
       is not reachable from the performer instance without a package change,
       record the exact blocking file in the matrix and stop.
-- [ ] Gaps 24, 25, 27 and audio: matrix rejections only, each citing the
+- [x] Gaps 24, 25, 27 and audio: matrix rejections only, each citing the
       census evidence above and naming the seam a future round would open
       (`headLookAt` writer; `setActiveState` exposure; a runtime look store;
       a clock-synced audio owner).
+
+Wave D result (2026-09-02): 808 film-director unit tests pass (793 before, 15
+added in `tests/unit/film-director/wave-d-language.test.ts`). The resolution
+snapshot changed only inside the `"Proving Grounds" (proving)` block and its
+own `durationSeconds`; every other film is byte-identical. Gap 23's finish
+question resolved in favour of per-performer: `finish` is a `PropBuild` key and
+`effectivePropBuild` merges the performer's build over the global
+`propFinishState.build`, so no write to the package singleton is needed and no
+rejection is owed. Gap 26 reaches the renderer through a new
+`PerformerSettings.handEffects` plus `setHandEffects`, and the tip map in
+`Viewer3DScene.svelte` keys per prop (0 left, 1 right) only when a pair is
+present; `EffectOrchestrator3D.svelte` needed no change.
 
 ## Named rejections to record in the matrix (no implementation)
 

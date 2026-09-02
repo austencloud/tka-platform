@@ -101,7 +101,41 @@ export const VTG_GLOSSARY: FlowArtsGlossaryEntry[] = [
 			sourceType: "document",
 			sourceRef: "VTG V.1, Pattern/Shape section",
 		},
-		relatedTerms: ["minimal beat shape", "snapshot", "VTG Trinity"],
+		relatedTerms: [
+			"0:1 ratio",
+			"1:2 ratio",
+			"minimal beat shape",
+			"snapshot",
+			"VTG Trinity",
+		],
+		category: "analysis",
+		framework: "VTG",
+	},
+	{
+		term: "0:1 ratio",
+		aliases: ["0:1", "float ratio"],
+		definition:
+			"The VTG prop-to-hand rotation ratio for TKA Float: the prop makes zero rotations while the hand completes one cycle.",
+		source: {
+			claim: "VTG 0:1 corresponds to TKA Float",
+			sourceType: "community",
+			sourceRef: "Austen Cloud domain correction, 2026-09-02",
+		},
+		relatedTerms: ["1:2 ratio", "pattern"],
+		category: "analysis",
+		framework: "VTG",
+	},
+	{
+		term: "1:2 ratio",
+		aliases: ["1:2"],
+		definition:
+			"The reduced VTG prop-to-hand rotation ratio corresponding to the TKA -0.25 turn value (0.5:1 reduced to 1:2). It is numeric and distinct from Float.",
+		source: {
+			claim: "VTG 1:2 corresponds to TKA -0.25",
+			sourceType: "community",
+			sourceRef: "Austen Cloud domain correction, 2026-09-02",
+		},
+		relatedTerms: ["0:1 ratio", "pattern"],
 		category: "analysis",
 		framework: "VTG",
 	},

@@ -115,6 +115,36 @@ describe("shape matrix URL state", () => {
     });
   });
 
+  it("round-trips the Shape Matrix-only negative quarter-turn band", () => {
+    const flowers = buildFlowerAxis([-0.25]).filter(
+      (flower) => flower.grid === "diamond"
+    );
+    const left = flowers[0];
+    const right = flowers[1];
+    if (!left || !right) throw new Error("Expected negative quarter flowers");
+    const url = new URL("https://tkaflowarts.com/notation/shape-matrix");
+
+    writeShapeMatrixRouteState(url, {
+      level: 4,
+      leftTurn: -0.25,
+      rightTurn: -0.25,
+      ...COMMON,
+      labelMode: "ratios",
+      pair: { left, right },
+      mode: "SS",
+    });
+
+    expect(readShapeMatrixRouteState(url.search)).toEqual({
+      level: 4,
+      leftTurn: -0.25,
+      rightTurn: -0.25,
+      ...COMMON,
+      labelMode: "ratios",
+      pair: { left, right },
+      mode: "SS",
+    });
+  });
+
   it("reads legacy color-keyed axis links as performer-relative hands", () => {
     const state = readShapeMatrixRouteState(
       "?level=4&blueTurn=0.75&redTurn=1.5&axis=red"
