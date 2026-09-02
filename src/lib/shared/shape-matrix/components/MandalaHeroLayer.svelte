@@ -31,30 +31,19 @@
     handoff?: boolean;
   } = $props();
 
-  let box = $state<HTMLDivElement | null>(null);
-  let side = $state(0);
   const transitionDuration = motionDuration(DURATION.normal);
   const effectiveOpacity = $derived(handoff ? 1 : opacity);
   const paint = $derived((sizePx: number) => pathsArtworkSrc(paths, sizePx));
-
-  $effect(() => {
-    const host = box;
-    if (!host) return;
-    const measure = () => {
-      side = Math.min(host.clientWidth, host.clientHeight);
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(host);
-    return () => ro.disconnect();
-  });
 </script>
 
+<!-- The square's box comes from container units, not a measurement, so it is
+     correct in the same layout pass that sizes the frame. A shared-element
+     transition captures the frame the view flips; a JS-measured side would
+     still read 0 from the collapsed pane at that moment. -->
 <div
   class="mandala-layer"
   class:handoff
-  bind:this={box}
-  style={`opacity: ${effectiveOpacity}; --mandala-duration: ${transitionDuration}ms; --mandala-side: ${side}px`}
+  style={`opacity: ${effectiveOpacity}; --mandala-duration: ${transitionDuration}ms`}
   aria-hidden="true"
 >
   <div class="mandala-square">
@@ -68,6 +57,7 @@
     inset: 0;
     display: grid;
     place-items: center;
+    container-type: size;
     pointer-events: none;
     transition: opacity var(--mandala-duration) var(--transition-easing, ease);
   }
@@ -77,8 +67,8 @@
     transition: none;
   }
   .mandala-square {
-    width: var(--mandala-side);
-    height: var(--mandala-side);
+    width: min(100cqw, 100cqh);
+    height: min(100cqw, 100cqh);
     overflow: visible;
   }
   @media (prefers-reduced-motion: reduce) {

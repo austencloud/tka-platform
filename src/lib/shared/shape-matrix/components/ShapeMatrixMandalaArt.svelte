@@ -16,7 +16,10 @@
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { claimedViewTransitionName } from "$lib/shared/transitions/claimed-view-transition-name";
   import { DURATION, STAGGER } from "$lib/shared/transitions/transitions";
-  import { SHAPE_MATRIX_ACTIVE_MANDALA_NAME } from "../services/shape-matrix-artwork";
+  import {
+    registerMandalaArtMeasurer,
+    SHAPE_MATRIX_ACTIVE_MANDALA_NAME,
+  } from "../services/shape-matrix-artwork";
 
   let {
     paint,
@@ -53,7 +56,13 @@
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(node);
-    return () => ro.disconnect();
+    // The morph re-measures synchronously before its new-state capture; the
+    // observer alone would report a frame too late (see shape-matrix-artwork).
+    const unregister = registerMandalaArtMeasurer(measure);
+    return () => {
+      ro.disconnect();
+      unregister();
+    };
   });
 </script>
 
@@ -69,7 +78,12 @@
     {#if instant}
       <img class="instant" {src} {alt} draggable="false" />
     {:else}
-      <Crossfade key={artKey} fill duration={DURATION.emphasis} delay={STAGGER.micro}>
+      <Crossfade
+        key={artKey}
+        fill
+        duration={DURATION.emphasis}
+        delay={STAGGER.micro}
+      >
         <img {src} {alt} draggable="false" />
       </Crossfade>
     {/if}

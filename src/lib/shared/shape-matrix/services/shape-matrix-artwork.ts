@@ -156,3 +156,25 @@ export function pathsArtworkSrc(paths: MandalaPaths, sizePx: number): string {
     renderEngineAligned(paths, size)
   );
 }
+
+/**
+ * Every mounted ShapeMatrixMandalaArt registers its measure function here.
+ * A shared-element morph flips the view inside a View Transition's update
+ * callback, where rendering is suppressed: the endpoint's ResizeObserver
+ * will not report until the browser next renders, which is AFTER the
+ * new-state capture. `measureMandalaArt` forces layout and re-measures every
+ * instance right then, so the destination paints at its real size before the
+ * capture instead of being captured at 0x0.
+ */
+const artMeasurers = new Set<() => void>();
+
+export function registerMandalaArtMeasurer(measure: () => void): () => void {
+  artMeasurers.add(measure);
+  return () => {
+    artMeasurers.delete(measure);
+  };
+}
+
+export function measureMandalaArt(): void {
+  for (const measure of artMeasurers) measure();
+}

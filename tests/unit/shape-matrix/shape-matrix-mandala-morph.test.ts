@@ -18,15 +18,34 @@ function createHarness(startMorph: MandalaMorphDependencies["startMorph"]) {
     beginMandalaHandoff: vi.fn(),
     endMandalaHandoff: vi.fn(),
   };
+  const settle = vi.fn(async () => {});
   const deps: MandalaMorphDependencies = {
     startMorph,
     flush: (fn) => fn(),
     root: () => root,
+    settle,
   };
-  return { classes, host, deps };
+  return { classes, host, deps, settle };
 }
 
 describe("runMandalaMorph", () => {
+  it("hands its endpoint settle step to the morph so the capture waits for it", () => {
+    const startMorph = vi.fn((fn: () => void) => {
+      fn();
+      return null;
+    });
+    const { deps, settle } = createHarness(startMorph);
+
+    runMandalaMorph(
+      { beginMandalaHandoff() {}, endMandalaHandoff() {} },
+      () => {},
+      {},
+      deps
+    );
+
+    expect(startMorph).toHaveBeenCalledWith(expect.any(Function), settle);
+  });
+
   it("applies the mutation plainly and restores the flags when no transition runs", () => {
     const mutate = vi.fn();
     const startMorph = vi.fn((fn: () => void) => {
@@ -69,7 +88,13 @@ describe("runMandalaMorph", () => {
     );
 
     expect(result).toBe(transition);
-    expect(order).toEqual(["before", "begin", "snapshot", "mutation", "mutate"]);
+    expect(order).toEqual([
+      "before",
+      "begin",
+      "snapshot",
+      "mutation",
+      "mutate",
+    ]);
     expect(classes.has(SHAPE_MATRIX_MORPH_CLASS)).toBe(true);
     expect(host.endMandalaHandoff).not.toHaveBeenCalled();
 

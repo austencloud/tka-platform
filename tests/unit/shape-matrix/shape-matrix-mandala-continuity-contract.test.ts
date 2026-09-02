@@ -16,7 +16,9 @@ const readSrc = (relative: string) =>
 
 describe("shape matrix mandala continuity", () => {
   it("uses one fixed shared-element name", () => {
-    expect(SHAPE_MATRIX_ACTIVE_MANDALA_NAME).toBe("shape-matrix-active-mandala");
+    expect(SHAPE_MATRIX_ACTIVE_MANDALA_NAME).toBe(
+      "shape-matrix-active-mandala"
+    );
   });
 
   it("routes both endpoints through the artwork primitive", () => {
@@ -31,7 +33,9 @@ describe("shape matrix mandala continuity", () => {
   it("paints every still with the animation canvas's own guide painter", () => {
     // One painter: the live overlay and the still image renderer both stroke
     // through paintMandalaGuide, so a tile IS the animator's guide.
-    const overlay = readSrc("lib/shared/mandala/services/mandala-overlay-canvas.ts");
+    const overlay = readSrc(
+      "lib/shared/mandala/services/mandala-overlay-canvas.ts"
+    );
     const image = readSrc("lib/shared/mandala/services/mandala-guide-image.ts");
     expect(overlay).toContain("paintMandalaGuide(");
     expect(image).toContain("paintMandalaGuide");
@@ -67,7 +71,26 @@ describe("shape matrix mandala continuity", () => {
     expect(drill).toContain("showWordHeader: false");
     expect(drill).toContain('class="hero-header"');
     expect(drill).toContain('class="hero-header-ghost"');
-    expect(drill).toMatch(/\.hero-stage \{[^}]*grid-template-rows: auto minmax\(0, 1fr\)/s);
+    expect(drill).toMatch(
+      /\.hero-stage \{[^}]*grid-template-rows: auto minmax\(0, 1fr\)/s
+    );
+
+    // The hero square's box is CSS container math, present in the layout
+    // pass that sizes the frame; a measured side reads 0 from a collapsed
+    // pane at capture time. The morph service then re-measures every art
+    // instance synchronously and waits for the endpoint's image to decode
+    // before the new-state capture.
+    const art = read("components/ShapeMatrixMandalaArt.svelte");
+    expect(art).toContain("registerMandalaArtMeasurer(measure)");
+    const heroLayer = read("components/MandalaHeroLayer.svelte");
+    expect(heroLayer).not.toContain("ResizeObserver");
+    expect(heroLayer).toContain("min(100cqw, 100cqh)");
+    const morph = read("app/services/shape-matrix-mandala-morph.ts");
+    expect(morph).toContain("settleMandalaEndpoint");
+    expect(morph).toContain("measureMandalaArt();");
+    expect(morph).toMatch(/img\.decode\(\)/);
+    const results = readSrc("lib/shared/transitions/results-morph.ts");
+    expect(results).toMatch(/if \(settle\) await settle\(\);/);
 
     // The group animation settles; a spring would overshoot the square.
     const shell = read("app/components/ShapeMatrixAppShell.svelte");
@@ -79,7 +102,9 @@ describe("shape matrix mandala continuity", () => {
 
   it("shows the still floor at the live guide's opacity so the handoff is invisible", () => {
     const drill = read("components/ShapeMatrixDrill.svelte");
-    const loop = readSrc("lib/shared/animation-engine/services/animation-render-loop.ts");
+    const loop = readSrc(
+      "lib/shared/animation-engine/services/animation-render-loop.ts"
+    );
     expect(drill).toContain("visibleSource ? 0 : MANDALA_GUIDE_FLOOR_OPACITY");
     expect(loop).toContain("opacity: MANDALA_GUIDE_FLOOR_OPACITY");
   });
