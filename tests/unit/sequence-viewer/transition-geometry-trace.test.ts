@@ -93,6 +93,7 @@ function sample(
     performanceLayerActive: false,
     performanceGalleryReady: true,
     performanceLayoutColumns: 2,
+    performancePlayerCount: 1,
     stageLayerWidth: 900,
     performanceLayerWidth: 900,
   };
@@ -163,16 +164,17 @@ describe("Sequence Viewer geometry trace", () => {
     expect(summary.performanceBlankFrames).toBe(0);
     expect(summary.performanceDoubleOpaqueFrames).toBe(0);
     expect(summary.performanceLayoutChanges).toBe(0);
+    expect(summary.performancePlayerCountMaximum).toBe(1);
     expect(summary.performanceCrossfadeFrames).toBe(2);
     expect(summary.performanceUnreadyFrames).toBe(0);
     expect(summary.performanceOpacityComplementDriftMaximum).toBe(0);
     expect(summary.performanceLayerWidthMismatchMaximum).toBe(0);
     expect(summary.performanceSurfacePath).toEqual([
-      "Viewer stage",
-      "Viewer stage + Performances",
-      "Performances",
-      "Viewer stage + Performances",
-      "Viewer stage",
+      "Motion stage",
+      "Motion stage + Performance stage",
+      "Performance stage",
+      "Motion stage + Performance stage",
+      "Motion stage",
     ]);
     expect(summary.performanceStageExit?.backtrack).toBe(0);
     expect(summary.performanceStageEntry?.overshoot).toBe(0);

@@ -13,7 +13,11 @@
  *      orientation is what `calculateEndOrientation` says it is.
  *
  * Invariant 1 is the load-bearing one: it can only pass if the resolver picked
- * the right dataframe row for all 8,640 steps.
+ * the right dataframe row for every step of every addressable cell.
+ *
+ * A fourth check pins the per-hand turns to the transcription, because the
+ * derived word alone cannot see them: a 1:3 cell and a 1:4 cell share a word
+ * and differ only by half a turn per step.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -94,7 +98,7 @@ describe("spiroanim bridge resolver", () => {
   it(
     "resolves every addressable cell to its transcribed sequence",
     async () => {
-      expect(addressable.size).toBe(1008);
+      expect(addressable.size).toBe(2160);
 
       const failures: string[] = [];
       for (const [key, entry] of addressable) {
@@ -122,6 +126,16 @@ describe("spiroanim bridge resolver", () => {
             if (!motion) {
               failures.push(`${key} step${index + 1} ${color}: no motion`);
               break;
+            }
+            const transcribed = entry.steps[index];
+            const expectedTurns =
+              color === HandSide.LEFT
+                ? transcribed?.blueTurns
+                : transcribed?.redTurns;
+            if (motion.turns !== expectedTurns) {
+              failures.push(
+                `${key} step${index + 1} ${color}: turns ${String(motion.turns)} !== transcribed ${String(expectedTurns)}`
+              );
             }
             const expected = calculateEndOrientation(motion, color);
             if (motion.endOrientation !== expected) {
@@ -180,11 +194,12 @@ describe("spiroanim bridge resolver", () => {
 
 /**
  * Orientation translation. The transcription was captured at SpiroAnim pattern
- * orientation -90; SpiroAnim's live default for every bridged ratio is 0. A
- * plain key therefore renders the transcription rotated 90° clockwise, and an
- * `o` token requests any of the six views. Verified against his compiler
- * (2026-08-30): +45° of orientation = one compass step clockwise for every
- * hand.
+ * orientation -90; SpiroAnim's live default is per ratio — 0 for 1:1, 1:3 and
+ * 1:5, -90 for 1:2, 1:4, 2:3 and 2:5. A plain odd-ratio key therefore renders
+ * the transcription rotated 90° clockwise, a plain even/two-cycle key renders
+ * it as captured, and an `o` token requests any of the six views. Verified
+ * against his compiler (2026-08-30): +45° of orientation = one compass step
+ * clockwise for every hand.
  */
 describe("spiroanim bridge orientation translation", () => {
   const positionsOf = (steps: readonly { startPosition: unknown; endPosition: unknown }[]) =>
@@ -216,6 +231,36 @@ describe("spiroanim bridge orientation translation", () => {
       positionsOf(resolved!.entry.steps)
     );
     expect(resolved!.sequence.metadata?.spiroanimOrientation).toBe(-90);
+  });
+
+  it("renders an even-denominator ratio's default view as captured", async () => {
+    // vtg 3-4 @ 1:4 shares 1:3's hand paths; SpiroAnim's default view for it
+    // is -90, which IS the capture orientation, so a plain key rotates nothing.
+    const resolved = await resolveCell("vtg.3-4.1x4.diamond.base", transcription);
+    expect(resolved).not.toBeNull();
+    expect(positionsOf(resolved!.sequence.steps)).toEqual(
+      positionsOf(resolved!.entry.steps)
+    );
+    expect(resolved!.sequence.word).toBe("KEKE");
+    expect(resolved!.sequence.metadata?.spiroanimOrientation).toBe(-90);
+    for (const step of resolved!.sequence.steps) {
+      expect(step.motions?.[HandSide.LEFT]?.turns).toBe(1.5);
+      expect(step.motions?.[HandSide.RIGHT]?.turns).toBe(1.5);
+    }
+  });
+
+  it("carries a two-cycle ratio as its doubled word with quarter turns", async () => {
+    // vtg 1-1 @ 2:3 repeats 1:3's four-step hand path twice (his compiler
+    // emits 17 frames for a two-cycle ratio) and turns 0.25 per step.
+    const resolved = await resolveCell("vtg.1-1.2x3.diamond.base", transcription);
+    expect(resolved).not.toBeNull();
+    expect(resolved!.sequence.steps).toHaveLength(8);
+    expect(resolved!.sequence.word).toBe("HHHHHHHH");
+    expect(resolved!.sequence.metadata?.spiroanimOrientation).toBe(-90);
+    for (const step of resolved!.sequence.steps) {
+      expect(step.motions?.[HandSide.LEFT]?.turns).toBe(0.25);
+      expect(step.motions?.[HandSide.RIGHT]?.turns).toBe(0.25);
+    }
   });
 
   it("rotates qtr gamma cells the same way", async () => {
@@ -276,7 +321,7 @@ describe("spiroanim bridge orientation translation", () => {
       }
       console.log(`o45 cells checked: ${checked}, failures: ${failures.length}`);
       if (failures.length) console.log(failures.slice(0, 20).join("\n"));
-      expect(checked).toBe(864);
+      expect(checked).toBe(2016);
       expect(failures).toEqual([]);
     },
     600_000
@@ -316,7 +361,7 @@ describe("spiroanim bridge return links", () => {
         else expect(link.startsWith("https://spiroanim.com/player?")).toBe(true);
       }
       console.log(`return links checked: ${checked}, missing: ${missing.length}`);
-      expect(checked).toBe(504);
+      expect(checked).toBe(1080);
       expect(missing).toEqual([]);
     }
   );

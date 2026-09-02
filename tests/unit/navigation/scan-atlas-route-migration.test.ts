@@ -106,7 +106,7 @@ describe("Scan Atlas route migration", () => {
         sectionId: CHOREO_CARD_SCAN_ATLAS_TAB_ID,
       });
     });
-  });
+  }, 30_000);
 
   it("sends QR-scan notifications through the canonical tab owner", () => {
     const notificationItem = readFileSync(

@@ -4,7 +4,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { getPropDimensions } from "$lib/shared/animation-engine/services/IPropTextureLoader";
 import { setTrailPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/trail-point-types";
-import { setTipPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+import {
+  CLUB_TIP_REACH,
+  setTipPointOverrideProvider,
+} from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 import { resolveTrailPointConfig } from "$lib/shared/animation-engine/domain/types/trail-point-types";
 import { ENGINE_GRID_RADIUS } from "$lib/shared/mandala/domain/mandala-constants";
 import {
@@ -19,7 +22,6 @@ import type {
 
 // Both derive from the prop's own pictograph viewBox half-width — the animation
 // canvas draws that artwork, so the traced tip sits on its visible end.
-const CLUB_TIP_REACH = 258.67 / 2;
 const STAFF_TIP_REACH = 252.8 / 2;
 const sequenceMandalaSource = readFileSync(
   resolve(
@@ -113,12 +115,11 @@ describe("animation mandala trail-point alignment", () => {
   });
 
   it("follows an override that reorders a prop's arms instead of tracing a different arm", () => {
-    // Triad's saved points list the rear-upper arm first and the forward arm
-    // second; the code table lists them the other way round. The trail picks
-    // the index off the saved list, so the mandala has to resolve it there too.
+    // Deliberately reorder the saved arms. The trail picks the index off the
+    // saved list, so the mandala has to resolve it there too.
     const saved = [
-      { dx: -62.2, dy: -107.8 },
       { dx: 124.4, dy: 0 },
+      { dx: -62.2, dy: -107.8 },
       { dx: -62.2, dy: 107.8 },
     ];
     setTipPointOverrideProvider((propType) =>
@@ -222,13 +223,10 @@ describe("animation mandala trail-point alignment", () => {
       TrackingMode.BOTH_ENDS,
       "baseline"
     );
-    const paths = calculate(
-      [staticEastStep()],
-      "fan",
-      "fan",
-      undefined,
-      { left: fanTips, right: fanTips }
-    );
+    const paths = calculate([staticEastStep()], "fan", "fan", undefined, {
+      left: fanTips,
+      right: fanTips,
+    });
 
     expect(fanTips).toEqual([{ dx: 130, dy: 0 }]);
     expect(staffTips).toEqual([

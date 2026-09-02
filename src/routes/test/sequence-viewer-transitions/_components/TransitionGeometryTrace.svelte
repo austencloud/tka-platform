@@ -10,6 +10,7 @@
     type TransitionGeometryTrace,
     type TransitionTravelSummary,
     type TransitionValueRange,
+    type TransitionContentDrift,
   } from "../transition-geometry-trace";
 
   interface Props {
@@ -85,6 +86,16 @@
   function formatTravel(value: TransitionTravelSummary | null): string {
     if (!value) return "n/a";
     return `${Math.round(value.start)} → ${Math.round(value.end)} px · ${Math.round(value.backtrack)} px backtrack · ${Math.round(value.overshoot)} px overshoot`;
+  }
+
+  function formatDrift(value: TransitionContentDrift | null): string {
+    if (!value) return "n/a";
+    return `${Math.round(value.width)} px width · ${Math.round(value.origin)} px origin · ${Math.round(value.vertical)} px vertical`;
+  }
+
+  function drifted(value: TransitionContentDrift | null): boolean {
+    if (!value) return false;
+    return value.width > 1 || value.origin > 1 || value.vertical > 1;
   }
 
   function formatRange(value: TransitionValueRange | null): string {
@@ -289,7 +300,7 @@
         >Viewer stage remounts: {summary.performanceStageIdentityChanges}</span
       >
       <span data-problem={summary.performanceGalleryIdentityChanges > 0}
-        >Gallery remounts: {summary.performanceGalleryIdentityChanges}</span
+        >Performance stage remounts: {summary.performanceGalleryIdentityChanges}</span
       >
       <span data-problem={summary.performanceInspectorIdentityChanges > 0}
         >Inspector remounts: {summary.performanceInspectorIdentityChanges}</span
@@ -307,10 +318,13 @@
         >Workspace dissolve frames: {summary.dissolveFrames}</span
       >
       <span data-problem={summary.performanceUnreadyFrames > 0}
-        >Unready gallery frames: {summary.performanceUnreadyFrames}</span
+        >Unready performance frames: {summary.performanceUnreadyFrames}</span
       >
       <span data-problem={summary.performanceLayoutChanges > 0}
-        >Visible gallery layout changes: {summary.performanceLayoutChanges}</span
+        >Visible inspector layout changes: {summary.performanceLayoutChanges}</span
+      >
+      <span data-problem={summary.performancePlayerCountMaximum > 1}
+        >Maximum performance players: {summary.performancePlayerCountMaximum}</span
       >
       <span data-dissolve={summary.performanceOpacityComplementDriftMaximum > 0}
         >Shared-background dip: {summary.performanceOpacityComplementDriftMaximum.toFixed(
@@ -423,6 +437,19 @@
         data-problem={(summary.cardStageInspectorEntry?.backtrack ?? 0) > 1 ||
           (summary.cardStageInspectorEntry?.overshoot ?? 0) > 1}
         >Inspector return: {formatTravel(summary.cardStageInspectorEntry)}</span
+      >
+      <span data-problem={drifted(summary.artSettingsContentDrift)}
+        >Art settings drift: {formatDrift(
+          summary.artSettingsContentDrift
+        )}</span
+      >
+      <span data-problem={drifted(summary.cardSettingsContentDrift)}
+        >Card settings drift: {formatDrift(
+          summary.cardSettingsContentDrift
+        )}</span
+      >
+      <span data-problem={summary.longestSampleGap > 80}
+        >Longest sample gap: {Math.round(summary.longestSampleGap)} ms</span
       >
       <span data-dissolve={summary.dissolveFrames > 0}
         >Workspace dissolve frames: {summary.dissolveFrames}</span

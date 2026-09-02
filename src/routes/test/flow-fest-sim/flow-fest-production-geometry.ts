@@ -172,6 +172,17 @@ export function buildFlowFestProductionDressing(
     (tree) =>
       !pointInsideFlowFestEntranceFixtureClearance(tree, tree.crownRadiusMeters)
   );
+  // The ecology lists measured-canopy trees first and infill trees after them,
+  // so the audit split survives the entrance clearing without a per-tree flag.
+  const entranceClearedMeasuredTrees = sourceForestEcology.trees
+    .slice(0, sourceForestEcology.audit.measuredCanopyPlacements)
+    .filter(
+      (tree) =>
+        !pointInsideFlowFestEntranceFixtureClearance(
+          tree,
+          tree.crownRadiusMeters
+        )
+    ).length;
   const entranceClearedGrass = sourceForestEcology.grass.filter(
     (grass) => !pointInsideFlowFestEntranceFixtureClearance(grass, 0.6)
   );
@@ -191,7 +202,9 @@ export function buildFlowFestProductionDressing(
       plantFactoryTreePlacements: entranceClearedTrees.filter((tree) =>
         tree.familyId.startsWith("plantcatalog-")
       ).length,
-      measuredCanopyPlacements: entranceClearedTrees.length,
+      measuredCanopyPlacements: entranceClearedMeasuredTrees,
+      infillTreePlacements:
+        entranceClearedTrees.length - entranceClearedMeasuredTrees,
       grassPlacements: entranceClearedGrass.length,
       groundLifePlacements: entranceClearedGroundLife.length,
     },

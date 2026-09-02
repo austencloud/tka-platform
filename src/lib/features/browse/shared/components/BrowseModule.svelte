@@ -37,6 +37,7 @@
   import { BrowseScrollBehavior } from "../services/browse-scroll-behavior";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
   import AnimationSheetCoordinator from "../../../../shared/coordinators/AnimationSheetCoordinator.svelte";
   import { consumePendingSequenceView } from "../../state/pending-sequence.svelte";
   import {
@@ -466,6 +467,14 @@
   // ============================================================================
 
   onMount(() => {
+    // Every gallery card a signed-out visitor renders is a candidate for the
+    // crowd-sourced thumbnail cache, and Storage only accepts authenticated
+    // writes. Mint the anonymous identity now so it is already settled by the
+    // time the first render finishes; the upload site re-checks on its own,
+    // so this is a head start, not the gate. Best-effort: the helper swallows
+    // provider failures and no-ops once any user exists.
+    void ensureGuestIdentity("gallery_mount");
+
     // The gallery's Collections filter needs the live collection lists; both
     // stores are session singletons that no-op on a repeat call.
     collectionsState.ensureStarted();

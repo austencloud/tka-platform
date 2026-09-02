@@ -1067,9 +1067,9 @@
   /* Height stays reserved so the picker below it never moves as the wording
      changes between phases. */
   .guided-build-status {
-    min-height: 2.75rem;
+    min-height: 3.25rem;
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 1rem;
     font-size: clamp(1rem, 0.96rem + 0.14vw, 1.15rem);
@@ -1087,7 +1087,8 @@
     min-width: 6rem;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.56));
     font-size: var(--font-size-min, 0.875rem);
-    font-weight: 600;
+    font-weight: 650;
+    letter-spacing: 0.01em;
   }
 
   .hand-dot {
@@ -1193,18 +1194,18 @@
   @container (min-width: 1100px) {
     .demo-columns {
       display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(22rem, 0.86fr);
+      grid-template-columns: minmax(0, 1.25fr) minmax(28rem, 1fr);
       gap: 0;
       align-items: stretch;
       min-height: calc(clamp(18.75rem, 38vh, 33.75rem) + 6.75rem);
     }
 
     .sequence-column {
-      padding-right: clamp(1.5rem, 2.6cqw, 2.75rem);
+      padding-right: clamp(1.25rem, 2cqw, 2rem);
     }
 
     .build-column {
-      padding-left: clamp(1.5rem, 2.6cqw, 2.75rem);
+      padding-left: clamp(1.25rem, 2cqw, 2rem);
       border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }
 

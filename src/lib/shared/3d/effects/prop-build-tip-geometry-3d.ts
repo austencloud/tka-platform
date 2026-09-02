@@ -14,14 +14,14 @@ import type { PropTipAnchor3D } from "./prop-tip-geometry-3d";
 /**
  * The prop-build inputs that move a prop's tracked effect emitters.
  *
- * `fanBuild` selects which of the four meshes `Fan3D.svelte` renders, and the
- * four do not share a silhouette. Pictograph is a drawn plate sized from
+ * `fanBuild` selects which of the five meshes `Fan3D.svelte` renders, and the
+ * five do not share a silhouette. Pictograph is a drawn plate sized from
  * `getFanPlate(effectiveLength, ...)`, so it follows the user's staff length.
  * Fire and day are fixed-size GLBs: `Fan3D` wraps them in
  * `<T.Group scale={[scale, scale, scale]}>` and never feeds them `length`.
  */
 export interface PropBuildTipGeometry3D {
-  readonly fanBuild: "pictograph" | "fire" | "lotus" | "day";
+  readonly fanBuild: "pictograph" | "fire" | "lotus" | "day" | "moon";
   readonly finish: "fire" | "day";
 }
 
@@ -121,6 +121,19 @@ export const FAN_DAY_RIM_POINTS_M = [
   { x: 0.250905, y: 0.1205098, z: 0 },
 ] as const;
 
+/**
+ * Five evenly distributed samples on the measured 600 x 380mm Moon fan rim.
+ * The live diffuser owns all 78 physical emitters; these anchors give trails
+ * and the bright moving heads enough span to describe the fan's outer arc.
+ */
+export const FAN_MOON_RIM_POINTS_M = [
+  { x: -0.2897787, y: 0.1045398, z: 0 },
+  { x: -0.212132, y: 0.2336468, z: 0 },
+  { x: 0, y: 0.318, z: 0 },
+  { x: 0.212132, y: 0.2336468, z: 0 },
+  { x: 0.2897787, y: 0.1045398, z: 0 },
+] as const;
+
 interface Offset3D {
   readonly x: number;
   readonly y: number;
@@ -176,6 +189,9 @@ function fanAnchors(
   }
   if (build.fanBuild === "day") {
     return fixedAnchors(FAN_DAY_RIM_POINTS_M, scale);
+  }
+  if (build.fanBuild === "moon") {
+    return fixedAnchors(FAN_MOON_RIM_POINTS_M, scale);
   }
   return silhouetteAnchors(
     FAN_TIP_POINTS,

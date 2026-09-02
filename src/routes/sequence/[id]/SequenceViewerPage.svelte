@@ -36,7 +36,7 @@
   import SequenceViewerOrchestrator from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
   import SequenceViewerShell from "$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte";
-  import { viewerModeForRenderMode } from "$lib/shared/sequence-viewer/services/viewer-modes";
+  import { initialViewerModeForUrl } from "$lib/shared/sequence-viewer/services/viewer-modes";
 
   import {
     getIabBannerVisible,
@@ -133,7 +133,13 @@
   const urlLeftProp = $derived(page.url.searchParams.get("bp"));
   const urlRightProp = $derived(page.url.searchParams.get("rp"));
 
-  // URL view mode param (from QR codes with browse view mode)
+  // URL view mode param (from QR codes with browse view mode).
+  // NOT the viewer mode. `vm` here is the printed-card BROWSE view mode
+  // (`short-code-manager.ts` writes `vm=hsb`), decoded below into hand-path and
+  // per-prop visibility. The viewer's own URL-state session carries
+  // `ViewerMode` on `pane` and never reads, writes, or removes `vm` (see
+  // SequenceViewerOrchestrator). Do not "unify" them — this plumbing is not
+  // redundant.
   const urlViewModeParam = $derived(page.url.searchParams.get("vm"));
   const decodedBrowseViewMode = $derived(
     urlViewModeParam ? decodeViewMode(urlViewModeParam) : null
@@ -602,9 +608,11 @@
     initialStep={handoffData?.playbackState?.currentStep || 0}
     initialViewMode={urlViewMode || undefined}
     initialRenderMode={urlRenderMode || (scanOriginCode ? "2d" : undefined)}
-    initialViewerMode={scanOriginCode
-      ? "card"
-      : viewerModeForRenderMode(urlRenderMode)}
+    initialViewerMode={initialViewerModeForUrl(
+      !!scanOriginCode,
+      page.url.searchParams.get("pane"),
+      urlRenderMode
+    )}
     deferInteractiveStartup={!!scanOriginCode}
     initialActiveEffect={scanOriginCode ? "trails" : undefined}
     handPathMode={urlHandPathMode}

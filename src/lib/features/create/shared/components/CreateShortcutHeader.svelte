@@ -8,11 +8,34 @@
   import type { ShortcutCustomizer } from "$lib/shared/keyboard/services/shortcut-customizer";
   import { createAltHoldIntent } from "./alt-hold-intent";
   import { buildCreateAltShortcutHints } from "./create-alt-shortcut-hints";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import CreateSequenceActionRail from "./CreateSequenceActionRail.svelte";
+  import type { SequenceTransformCommandId } from "$lib/shared/create/domain/sequence-action-types";
+  import { logSequenceActionSurfaceShown } from "$lib/shared/create/analytics/sequence-action-events";
+  import {
+    logKeyboardShortcutCenterOpened,
+    logKeyboardShortcutHintsShown,
+  } from "$lib/shared/keyboard/keyboard-shortcut-analytics";
+
+  interface Props {
+    hasSequenceActions: boolean;
+    onSequenceAction: (
+      action: SequenceTransformCommandId
+    ) => void | Promise<void>;
+    onOpenSequenceActions: () => void;
+  }
+
+  let { hasSequenceActions, onSequenceAction, onOpenSequenceActions }: Props =
+    $props();
 
   let customizer = $state<ShortcutCustomizer | null>(null);
   let registryVersion = $state(0);
   let hintsVisible = $state(false);
   let desktopInteraction = $state(false);
+  let wideWorkspace = $state(false);
+  let headerElement: HTMLElement | null = null;
+  let surfaceExposureLogged = false;
 
   const hintModel = $derived.by(() => {
     registryVersion;
@@ -23,7 +46,22 @@
   });
 
   const holdIntent = createAltHoldIntent({
-    onVisibilityChange: (visible) => (hintsVisible = visible),
+    onVisibilityChange: (visible) => {
+      hintsVisible = visible;
+      if (visible) logKeyboardShortcutHintsShown("create", "create_header");
+    },
+  });
+
+  $effect(() => {
+    if (
+      hasSequenceActions &&
+      desktopInteraction &&
+      wideWorkspace &&
+      !surfaceExposureLogged
+    ) {
+      surfaceExposureLogged = true;
+      logSequenceActionSurfaceShown("header");
+    }
   });
 
   function isEditingText(): boolean {
@@ -37,6 +75,7 @@
   }
 
   function openShortcutCenter(): void {
+    logKeyboardShortcutCenterOpened("create", "create_header");
     keyboardShortcutState.openHelp({
       view: "current",
       query: "Alt+",
@@ -49,6 +88,14 @@
     registryVersion += 1;
 
     const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const workspace = headerElement?.closest<HTMLElement>(
+      ".create-workspace-source"
+    );
+    const workspaceObserver = workspace
+      ? new ResizeObserver(([entry]) => {
+          wideWorkspace = (entry?.contentRect.width ?? 0) >= 1180;
+        })
+      : null;
     const updateDesktopInteraction = () => {
       desktopInteraction = finePointer.matches && window.innerWidth >= 768;
       if (!desktopInteraction) holdIntent.cancel();
@@ -76,6 +123,10 @@
     }
 
     updateDesktopInteraction();
+    if (workspace) {
+      wideWorkspace = workspace.getBoundingClientRect().width >= 1180;
+      workspaceObserver?.observe(workspace);
+    }
     const unsubscribeRegistry = shortcutRegistry.subscribe(
       () => (registryVersion += 1)
     );
@@ -95,52 +146,65 @@
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", holdIntent.cancel);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      workspaceObserver?.disconnect();
     };
   });
 </script>
 
-<div class="create-shortcut-header">
-  <div
-    class="shortcut-hints"
-    class:visible={hintsVisible}
-    aria-hidden={!hintsVisible}
-  >
-    <span class="alt-key">
-      <KeyboardKeyDisplay
-        parsed={{ key: "", modifiers: ["alt"] }}
-        size="small"
-      />
-    </span>
-
-    {#if hintModel.rotate.length > 0}
-      <span class="hint-group">
-        <span class="hint-keys">
-          {#each hintModel.rotate as hint (hint.id)}
-            <KeyboardKeyDisplay parsed={hint.binding} size="small" />
-          {/each}
-        </span>
-        <span class="hint-label">Rotate</span>
-      </span>
-    {/if}
-
-    {#if hintModel.transforms.length > 0}
-      <span class="transform-hints">
-        {#each hintModel.transforms as hint (hint.id)}
-          <span class="hint-group transform-hint">
-            <KeyboardKeyDisplay parsed={hint.binding} size="small" />
-            <span class="hint-label">{hint.label}</span>
+<div class="create-shortcut-header" bind:this={headerElement}>
+  <div class="header-command-slot">
+    <Crossfade
+      key={hintsVisible ? "hints" : "actions"}
+      fill
+      duration={DURATION.fast}
+    >
+      {#if hintsVisible}
+        <div class="shortcut-hints" aria-live="polite">
+          <span class="alt-key">
+            <KeyboardKeyDisplay
+              parsed={{ key: "", modifiers: ["alt"] }}
+              size="small"
+            />
           </span>
-        {/each}
-        <span class="hint-label compact-transform-label">Actions</span>
-      </span>
-    {/if}
 
-    {#if hintModel.propSummary}
-      <span class="hint-group props-hint">
-        <KeyboardKeyDisplay parsed={hintModel.propSummary} size="small" />
-        <span class="hint-label">Props</span>
-      </span>
-    {/if}
+          {#if hintModel.rotate.length > 0}
+            <span class="hint-group">
+              <span class="hint-keys">
+                {#each hintModel.rotate as hint (hint.id)}
+                  <KeyboardKeyDisplay parsed={hint.binding} size="small" />
+                {/each}
+              </span>
+              <span class="hint-label">Rotate</span>
+            </span>
+          {/if}
+
+          {#if hintModel.transforms.length > 0}
+            <span class="transform-hints">
+              {#each hintModel.transforms as hint (hint.id)}
+                <span class="hint-group transform-hint">
+                  <KeyboardKeyDisplay parsed={hint.binding} size="small" />
+                  <span class="hint-label">{hint.label}</span>
+                </span>
+              {/each}
+              <span class="hint-label compact-transform-label">Actions</span>
+            </span>
+          {/if}
+
+          {#if hintModel.propSummary}
+            <span class="hint-group props-hint">
+              <KeyboardKeyDisplay parsed={hintModel.propSummary} size="small" />
+              <span class="hint-label">Props</span>
+            </span>
+          {/if}
+        </div>
+      {:else}
+        <CreateSequenceActionRail
+          available={hasSequenceActions}
+          onAction={onSequenceAction}
+          onMoreActions={onOpenSequenceActions}
+        />
+      {/if}
+    </Crossfade>
   </div>
 
   <span class="shortcut-launcher">
@@ -167,6 +231,12 @@
     min-width: 0;
   }
 
+  .header-command-slot {
+    flex: 1;
+    min-width: 0;
+    height: var(--min-touch-target, 44px);
+  }
+
   .shortcut-hints {
     min-width: 0;
     height: var(--min-touch-target, 44px);
@@ -177,18 +247,6 @@
     gap: clamp(6px, 0.7cqi, 11px);
     overflow: hidden;
     background: var(--theme-panel-bg);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition:
-      opacity var(--transition-fast),
-      visibility 0s linear var(--duration-fast);
-  }
-
-  .shortcut-hints.visible {
-    opacity: 1;
-    visibility: visible;
-    transition-delay: 0s;
   }
 
   .alt-key,
@@ -297,12 +355,6 @@
   @media (hover: none) and (pointer: coarse) {
     .create-shortcut-header {
       display: none;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .shortcut-hints {
-      transition: none;
     }
   }
 </style>

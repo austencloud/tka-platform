@@ -7,6 +7,8 @@ import {
   directorFloorY,
 } from "../../../src/routes/test/film-director/_lib/camera-language";
 
+type V3 = [number, number, number];
+
 const CONTEXT = {
   durationSeconds: 8,
   aspectRatio: 16 / 9,
@@ -25,8 +27,27 @@ const CONTEXT = {
   ],
 };
 
+/** CONTEXT with overrides — the new truck/zoom/roll suites need a shorter
+ * duration than the shared CONTEXT so each move's window is easy to reason
+ * about, without disturbing the fixture every existing test in this file reads. */
+function context(overrides: Partial<typeof CONTEXT> = {}) {
+  return { ...CONTEXT, ...overrides };
+}
+
+/** A plain CameraFraming fixture for zoom/roll tests, where the exact position
+ * doesn't matter — only that it stays fixed (zoom) or unrotated (roll). */
+const framing50: { position: V3; target: V3; fovDeg: number } = {
+  position: [0, 1.6, 6],
+  target: [0, 1.2, 0],
+  fovDeg: 50,
+};
+
 function distance(a: [number, number, number], b: [number, number, number]) {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
+function sub(a: V3, b: V3): V3 {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 }
 
 describe("computeCameraFraming", () => {
@@ -207,5 +228,152 @@ describe("compileCameraMoves", () => {
     expect(frames[1]!.interpolation).toBe("step");
     expect(frames[0]!.position).toEqual(framing.position);
     expect(frames[0]!.target).toEqual(framing.target);
+  });
+});
+
+describe("truck", () => {
+  it("translates position and target together along camera-right", () => {
+    // Assert the invariants rather than a hand-derived world vector.
+    const frames = compileCameraMoves(
+      [{ move: "truck", direction: "right", amount: { meters: 2 } }],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    const first = frames[0]!;
+    const last = frames.at(-1)!;
+    // Both endpoints moved by the same vector (no rotation of the framing):
+    const dPos = sub(last.position, first.position);
+    const dTgt = sub(last.target, first.target);
+    expect(dPos).toEqual(dTgt);
+    // The move is 2 meters, on the ground plane, perpendicular to view:
+    expect(Math.hypot(...dPos)).toBeCloseTo(2, 6);
+    expect(dPos[1]).toBeCloseTo(0, 6);
+    const forward = sub(first.target, first.position);
+    expect(dPos[0] * forward[0] + dPos[2] * forward[2]).toBeCloseTo(0, 6);
+  });
+
+  it("left and right are opposite vectors", () => {
+    const right = compileCameraMoves(
+      [{ move: "truck", direction: "right", amount: { meters: 2 } }],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    const left = compileCameraMoves(
+      [{ move: "truck", direction: "left", amount: { meters: 2 } }],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    const dRight = sub(right.at(-1)!.position, right[0]!.position);
+    const dLeft = sub(left.at(-1)!.position, left[0]!.position);
+    expect(dLeft[0]).toBeCloseTo(-dRight[0], 6);
+    expect(dLeft[1]).toBeCloseTo(-dRight[1], 6);
+    expect(dLeft[2]).toBeCloseTo(-dRight[2], 6);
+  });
+
+  it("rejects a truck from a framing that looks straight down", () => {
+    const overhead = {
+      ...framing50,
+      position: [framing50.target[0], framing50.target[1] + 5, framing50.target[2]] as V3,
+    };
+    expect(() =>
+      compileCameraMoves(
+        [{ move: "truck", direction: "right", amount: { meters: 1 } }],
+        overhead,
+        context({ durationSeconds: 4 })
+      )
+    ).toThrow(/has no sideways/);
+  });
+
+  it("an old move rejects the new lens directions", () => {
+    expect(() =>
+      compileCameraMoves(
+        [{ move: "pan", direction: "in" as never }],
+        framing50,
+        context({ durationSeconds: 4 })
+      )
+    ).toThrow(/direction must be one of/);
+  });
+});
+
+describe("zoom", () => {
+  it("zoom in narrows fov by the stated degrees without moving the camera", () => {
+    const frames = compileCameraMoves(
+      [{ move: "zoom", direction: "in", amount: { degrees: 15 } }],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    expect(frames[0]!.fovDeg).toBe(50);
+    expect(frames.at(-1)!.fovDeg).toBe(35);
+    expect(frames.at(-1)!.position).toEqual(frames[0]!.position);
+  });
+
+  it("a later push-in starts from the zoomed fov", () => {
+    const frames = compileCameraMoves(
+      [
+        { move: "zoom", direction: "in", amount: { degrees: 15 } },
+        { move: "push-in", amount: { meters: 1 } },
+      ],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    expect(frames[0]!.fovDeg).toBe(50);
+    for (const frame of frames.slice(1)) {
+      expect(frame.fovDeg).toBe(35);
+    }
+  });
+
+  it("rejects a zoom that leaves 20-100", () => {
+    expect(() =>
+      compileCameraMoves(
+        [{ move: "zoom", direction: "in", amount: { degrees: 40 } }],
+        framing50,
+        context({ durationSeconds: 4 })
+      )
+    ).toThrow(/outside the 20-100 degree range/);
+  });
+
+  it("accepts a zoom that lands exactly on the 20 and 100 degree edges", () => {
+    const tight = compileCameraMoves(
+      [{ move: "zoom", direction: "in", amount: { degrees: 30 } }],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    expect(tight.at(-1)!.fovDeg).toBe(20);
+    const wide = compileCameraMoves(
+      [{ move: "zoom", direction: "out", amount: { degrees: 50 } }],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    expect(wide.at(-1)!.fovDeg).toBe(100);
+  });
+});
+
+describe("roll", () => {
+  it("ramps rollDeg from an explicit 0 anchor to the signed amount", () => {
+    const frames = compileCameraMoves(
+      [{ move: "roll", direction: "cw", amount: { degrees: 10 } }],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    expect(frames[0]!.rollDeg).toBe(0);
+    expect(frames.at(-1)!.rollDeg).toBe(10);
+  });
+
+  it("ccw is negative and rolls accumulate", () => {
+    const frames = compileCameraMoves(
+      [
+        { move: "roll", direction: "cw", amount: { degrees: 10 } },
+        { move: "roll", direction: "ccw", amount: { degrees: 25 } },
+      ],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    expect(frames[0]!.rollDeg).toBe(0);
+    expect(frames.at(-1)!.rollDeg).toBe(-15);
+  });
+
+  it("keyframes from scenes that never roll carry no rollDeg key", () => {
+    const frames = compileCameraMoves([{ move: "hold" }], framing50, context({ durationSeconds: 4 }));
+    for (const frame of frames) expect("rollDeg" in frame).toBe(false);
   });
 });

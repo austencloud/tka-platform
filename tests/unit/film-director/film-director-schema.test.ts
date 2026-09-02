@@ -497,3 +497,87 @@ describe("beats as a time unit", () => {
     ).toThrow(/exactly one of/i);
   });
 });
+
+describe("camera tracking grammar", () => {
+  const trackingFilm = (camera: Record<string, unknown>) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "tracking-film",
+    title: "Tracking",
+    scenes: [{ id: "s1", title: "S1", camera }],
+  });
+
+  it("accepts track on a framing subject", () => {
+    const parsed = FilmDirectorInputSchema.parse(
+      trackingFilm({
+        subject: {
+          kind: "performer",
+          performerId: "performer-1",
+          track: "follow",
+        },
+        shotSize: "medium",
+      })
+    );
+    expect(parsed.scenes[0]!.camera?.subject).toMatchObject({
+      track: "follow",
+    });
+  });
+
+  it("accepts the aim spelling but no other string", () => {
+    expect(
+      FilmDirectorInputSchema.parse(
+        trackingFilm({
+          subject: { kind: "performer", performerId: "performer-1", track: true },
+          shotSize: "medium",
+        })
+      ).scenes[0]!.camera?.subject
+    ).toMatchObject({ track: true });
+
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        trackingFilm({
+          subject: {
+            kind: "performer",
+            performerId: "performer-1",
+            track: "aim",
+          },
+          shotSize: "medium",
+        })
+      )
+    ).toThrow();
+  });
+
+  it("rejects track on a preset's target", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        trackingFilm({
+          preset: "group-orbit",
+          target: {
+            kind: "performer",
+            performerId: "performer-1",
+            track: true,
+          },
+        })
+      )
+    ).toThrow(/spoken on \\"subject\\"/);
+  });
+
+  it("rejects track on a raw keyframe target", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        trackingFilm({
+          keyframes: [
+            {
+              atSeconds: 0,
+              position: [0, 1, -4],
+              target: {
+                kind: "performer",
+                performerId: "performer-1",
+                track: "follow",
+              },
+            },
+          ],
+        })
+      )
+    ).toThrow(/spoken on \\"subject\\"/);
+  });
+});

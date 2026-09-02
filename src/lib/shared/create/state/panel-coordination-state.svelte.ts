@@ -44,6 +44,8 @@ import {
 } from "$lib/shared/create/state/customize-overlay-hmr";
 import type { CreateModuleState } from "$lib/shared/create/state/create-module-state-types";
 import type { ConstructOptionAudition } from "$lib/shared/create/domain/construct-option-audition";
+import { logSequenceActionsOpened } from "$lib/shared/create/analytics/sequence-action-events";
+import type { SequenceActionsOpenSource } from "$lib/shared/create/domain/sequence-action-types";
 
 // Lazy import to break circular dependency
 // panel-coordination-state ↔ create-module-state-ref ↔ construct-tab-state (cycle)
@@ -258,7 +260,7 @@ export interface PanelCoordinationState {
   // Sequence Actions Panel State
   get isSequenceActionsPanelOpen(): boolean;
 
-  openSequenceActionsPanel(): void;
+  openSequenceActionsPanel(source?: SequenceActionsOpenSource): void;
   closeSequenceActionsPanel(): void;
 
   // Target Hand Selection (for single-hand transforms)
@@ -728,11 +730,12 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       return isSequenceActionsPanelOpen;
     },
 
-    openSequenceActionsPanel() {
+    openSequenceActionsPanel(source: SequenceActionsOpenSource = "unknown") {
       // Only close other panels if this panel isn't already open
       // This prevents the panel from closing when beat operations update state
       if (!isSequenceActionsPanelOpen) {
         closeAllPanels();
+        logSequenceActionsOpened(source);
       }
       isSequenceActionsPanelOpen = true;
     },

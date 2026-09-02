@@ -329,11 +329,11 @@
     while (
       version === replayVersion &&
       !document.querySelector<HTMLElement>(
-        '.sequence-videos[data-gallery-state="ready"]'
+        '[data-performance-stage][data-performance-ready="true"]'
       )
     ) {
       if (performance.now() - startedAt > DURATION.dramatic * 3) {
-        throw new Error("Performances did not present a ready gallery.");
+        throw new Error("Performances did not present a ready stage.");
       }
       await wait(16);
     }
@@ -389,6 +389,20 @@
     const cardSettings = elementBounds(
       '[aria-label="Card settings"] .panel-center-inner'
     );
+    // Content drift: the settings panels are persistent layers inside the
+    // animating inspector track. Measuring the panel root (width/left) and its
+    // first content block (top) proves whether a panel is composed at its own
+    // destination width and revealed through PanelGroup's moving clip, or is
+    // re-laying itself out on every frame while the seam travels.
+    const cardSettingsPanel = elementBounds(
+      ".card-settings-layer .export-panel"
+    );
+    const artSettingsPanel = elementBounds(
+      "[data-viewer-art-inspector-target] .art-settings-panel"
+    );
+    const artSettingsContent = elementBounds(
+      "[data-viewer-art-inspector-target] .sidebar-rail-layout"
+    );
     const mandalaCanvas = document.querySelector<HTMLCanvasElement>(
       '.animation-column canvas[data-animation-layer="mandala"]'
     );
@@ -402,10 +416,10 @@
       : 0;
     const activeTunnelSurface = tunnelSurface();
     const activeTunnelCanvas = tunnelCanvas();
-    const stageLayer = elementBounds(".viewer-motion-stage-layer");
-    const performanceLayer = elementBounds(".performance-gallery-layer");
+    const stageLayer = elementBounds(".viewer-motion-content-layer");
+    const performanceLayer = elementBounds(".performance-stage-layer");
     const performanceWorkspace = document.querySelector<HTMLElement>(
-      ".performance-gallery-layer .video-workspace"
+      ".performance-inspector-layer .performance-list-items"
     );
     const performanceLayoutColumns = performanceWorkspace
       ? getComputedStyle(performanceWorkspace)
@@ -559,6 +573,11 @@
         '[data-viewer-art-inspector-target] [data-active="true"][data-art-settings]'
       ).length,
       artSettingsOpacity: elementOpacity(".art-settings-layer"),
+      artSettingsWidth: artSettingsPanel.width,
+      artSettingsLeft: artSettingsPanel.left,
+      artSettingsContentTop: artSettingsContent.top,
+      cardSettingsLeft: cardSettingsPanel.left,
+      cardSettingsContentTop: cardSettings.top,
       tunnelBackingWidth: activeTunnelCanvas
         ? activeTunnelCanvas.width / Math.max(1, window.devicePixelRatio || 1)
         : 0,
@@ -567,20 +586,26 @@
         : 0,
       tunnelDisplayWidth: tunnelBounds?.width ?? 0,
       tunnelDisplayHeight: tunnelBounds?.height ?? 0,
-      stageLayerOpacity: elementOpacity(".viewer-motion-stage-layer"),
-      performanceLayerOpacity: elementOpacity(".performance-gallery-layer"),
-      stageLayerIdentity: elementIdentity(".viewer-motion-stage-layer"),
-      performanceLayerIdentity: elementIdentity(".performance-gallery-layer"),
-      stageLayerActive: elementDataFlag(".viewer-motion-stage-layer", "active"),
+      stageLayerOpacity: elementOpacity(".viewer-motion-content-layer"),
+      performanceLayerOpacity: elementOpacity(".performance-stage-layer"),
+      stageLayerIdentity: elementIdentity("[data-persistent-viewer-stage]"),
+      performanceLayerIdentity: elementIdentity(".performance-stage-layer"),
+      stageLayerActive: elementDataFlag(
+        ".viewer-motion-content-layer",
+        "active"
+      ),
       performanceLayerActive: elementDataFlag(
-        ".performance-gallery-layer",
+        ".performance-stage-layer",
         "active"
       ),
       performanceGalleryReady:
         document
-          .querySelector(".sequence-videos")
-          ?.getAttribute("data-gallery-state") === "ready",
+          .querySelector("[data-performance-stage]")
+          ?.getAttribute("data-performance-ready") === "true",
       performanceLayoutColumns,
+      performancePlayerCount: document.querySelectorAll(
+        ".performance-stage-layer video.performance-player"
+      ).length,
       stageLayerWidth: stageLayer.width,
       performanceLayerWidth: performanceLayer.width,
     };

@@ -83,7 +83,7 @@ downstream with the existing seconds-speaking message.)
 | effectPresets                   | scene                      | `Record<effectId, presetId \| {pick:"any"}>`                                                                                                       | effect registry preset groups (`effect-registry.ts`, `getRegistration(effectId).presetGroup.presets`)                                                                                        | unknown effect: `Effect preset references unknown effect "<id>".`; unknown preset: `Effect "<id>" has no preset named "<preset>".`; `{pick:"any"}` with no registered presets: `has no registered presets to pick from.`                                                                                                                                                                                                                                                                                                                                                                      |
 | effectOverrides                 | scene                      | `Record<effectId, Record<string, unknown>>`                                                                                                        | validated against `effect-registry.ts` registration only (property-level values are NOT validated against the effect's own schema)                                                           | unknown effect: `Effect overrides reference unknown effect "<id>".`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | camera keyframes                | scene                      | literal array of `{atSeconds \| atBeats, position, target?, fovDeg?, interpolation?, easing?}`                                                     | `film-director-schema.ts` `cameraKeyframeSchema`                                                                                                                                             | A keyframe states its cue in seconds or in beats — exactly one, converted at the scene bpm (see "Counted time"). Mutually exclusive with the framing grammar (`shotSize`/`angle`/`position`/`moves`/`subject`) and with `preset` (unless `preset: "custom"`, which requires at least one keyframe).                                                                                                                                                                                                                                                                                           |
-| camera framing grammar          | scene                      | `subject` + `shotSize`/`angle`/`position` + `moves[]`, each move `{move, amount?, direction?, durationSeconds? \| durationBeats?, easing?}`        | `src/routes/test/film-director/_lib/camera-language.ts`                                                                                                                                      | A move's length is stated in seconds or beats, one unit per move, converted at the scene bpm (see "Counted time"); moves that state neither split the scene's remaining time evenly. Exclusivity rules enforced by `cameraSchema`'s `.refine()`s (keyframes vs. framing; preset vs. framing; `subject` vs. `target`). Per-move unit/direction contradictions enforced by `validateMove()` in `camera-language.ts` (e.g. `orbit` takes degrees + cw/ccw only, `push-in`/`pull-back` take meters and no direction).                                                                             |
+| camera framing grammar          | scene                      | `subject` + `shotSize`/`angle`/`position` + `moves[]`, each move `{move, amount?, direction?, durationSeconds? \| durationBeats?, easing?}`        | `src/routes/test/film-director/_lib/camera-language.ts`                                                                                                                                      | A move's length is stated in seconds or beats, one unit per move, converted at the scene bpm (see "Counted time"); moves that state neither split the scene's remaining time evenly. Exclusivity rules enforced by `cameraSchema`'s `.refine()`s (keyframes vs. framing; preset vs. framing; `subject` vs. `target`; `track` only on `subject`). A performer `subject` may add `track: true` (aim) or `track: "follow"` to stay framed while they walk. Per-move unit/direction contradictions enforced by `validateMove()` in `camera-language.ts` (e.g. `orbit` takes degrees + cw/ccw only, `push-in`/`pull-back` take meters and no direction). `move` ∈ `hold`/`push-in`/`pull-back`/`orbit`/`crane`/`pan`/`truck`/`zoom`/`roll`: `truck` takes meters + left/right, `zoom` takes degrees + in/out and rejects outside 20–100, `roll` takes degrees + cw/ccw. |
 | cast block                      | scene (`performance.cast`) | `{count: 1-8, defaults?, performers?: override[]}`                                                                                                 | `castSchema`                                                                                                                                                                                 | Mutually exclusive with `performance.performers` (schema `.refine()`). Overrides addressed by `id` (`performer-<n>`) fill their named slot; overrides with no `id` fill remaining slots in array order. An `id` that doesn't match any of the cast's performers rejects: `Cast override "<id>" does not match any of the <n> performers.`                                                                                                                                                                                                                                                     |
 
 ## Sequence directives
@@ -150,6 +150,28 @@ confirmed against this convention yet — if Austen reads a `cw` orbit as
 turning the wrong way on screen, the fix is flipping the sign in that one
 branch, not the schema.
 
+## Camera roll direction convention
+
+`roll` moves take `direction: "cw" | "ccw"` and accumulate into a resolved
+keyframe's `rollDeg`; `cw` adds, `ccw` subtracts. Positive `rollDeg` rolls the
+camera body clockwise as seen from behind the camera, so the world in the frame
+tips the other way: verticals lean left and the horizon's right side drops.
+That is the cinematographer's sense of "roll clockwise" (the camera moves, the
+picture counter-rotates) and it was confirmed on screen 2026-09-01 at
+`rollDeg: 10` — the camera's local x-axis measured 9.975 degrees off the world
+horizontal and the performers leaned left. If a director wants the picture to
+tip clockwise instead, they say `ccw`.
+
+The roll lives in viewer state (`viewer3DState.cameraRollDeg`), not on the
+camera directly: camera-controls rewrites the camera's position and `lookAt`
+every frame, so a one-shot `rotateZ` was erased before the next render.
+`Viewer3DCamera` re-applies the roll after the controls' task each frame
+(`useTask(..., { after: ORBIT_UPDATE_TASK })`), from scratch — reset `up`,
+`lookAt` the controls' target, then `rotateZ` — so it cannot accumulate on a
+frame where the controls did not run. A scene's first roll anchors the ramp
+with an explicit `rollDeg: 0` keyframe before it starts turning, so the tilt
+reads as departing from level rather than snapping in partway rolled.
+
 ## Real but not yet speakable
 
 Swept from `src/routes/test/film-director/_lib/director-viewer-adapter.ts`
@@ -201,6 +223,44 @@ None open. Closed so far:
   `normalizeDirective` checks `pick` before the bare `{not}` form so a
   `{pick, not}` object cannot fall through to the exclude-only branch.
   `/test/film-director?film=proving` exercises it on two axes at once.
+- **Camera edges: truck, zoom, roll** (closed 2026-08-30). Before this gap
+  closed, the camera vocabulary stopped at `hold`/`push-in`/`pull-back`/
+  `orbit`/`crane`/`pan` — no move slid the frame sideways without turning it,
+  tightened the lens without moving the rig, or tilted the horizon. Three
+  moves close it: `truck` (meters, `left`/`right`) translates position and
+  target together along the camera-right ground axis; `zoom` (degrees,
+  `in`/`out`) adjusts `fovDeg` in place and rejects rather than clamps when a
+  request would take the lens outside 20–100 degrees, naming the degrees
+  asked for, the fov it would reach, and the fov it is at; `roll` (degrees,
+  `cw`/`ccw`) ramps a new `rollDeg` field from an explicit `0` anchor on a
+  scene's first roll. `rollDeg` is optional on a resolved keyframe (present
+  only where a roll ran, so every film that never rolls stays byte-identical
+  to its pre-roll snapshot) and required on a sampled `DirectorCameraFrame`
+  (always `0` when absent). Positive `rollDeg` means clockwise as the audience
+  sees the frame — see "Camera roll direction convention" above for the sign,
+  including that it has not yet been visually confirmed. `/test/film-director?film=proving`
+  scene 3 ("camera-edges") states all three in one breath: a one-meter truck,
+  a fifteen-degree zoom, and a ten-degree clockwise roll. A `truck` from a
+  framing that looks straight up or down rejects (no sideways to slide along),
+  and the sampler holds a flat fov or roll segment exactly instead of letting
+  Catmull-Rom bow it toward the neighbouring keyframes.
+- **Camera tracks a walking performer** (closed 2026-09-01). Before this gap
+  closed, the compiler framed the cast where it stood when the scene opened and
+  the camera stayed aimed there, so a performer who walked left the frame
+  behind. A performer `subject` now takes `track: true` or `track: "follow"`.
+  `true` aims: the camera stays put and turns its target with the walker.
+  `"follow"` travels: target and position both move with them, so the framing
+  holds constant. The keyframe compiler is untouched — resolution records
+  `camera.tracking: {performerId, mode}` and `applyCameraTracking` in
+  `sample-film-director.ts` offsets the sampled camera by the performer's live
+  displacement from their resolved opening mark (measured from that mark, not
+  the first blocking keyframe, so blocking that opens on a hold still tracks).
+  `tracking` is optional and absent when unused, so every film that does not
+  track resolves byte-identically to its pre-tracking snapshot. Grammar only:
+  `track` on a preset's `target` or on a raw keyframe target rejects, because
+  those aim exactly where their target says.
+  `/test/film-director?film=proving` scene 4 ("tracking-shot") follows a
+  three-meter crossing with a medium shot that holds its framing throughout.
 
 ## Spoken but not real (proven rejections)
 

@@ -167,7 +167,7 @@
 
   @container (min-width: 620px) {
     .fan-appearance-picker:not(.compact) {
-      --build-option-count: 4;
+      --build-option-count: 5;
     }
   }
 

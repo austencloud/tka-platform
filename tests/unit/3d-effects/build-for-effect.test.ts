@@ -97,7 +97,7 @@ describe("buildForEffect — fire equips a burnable build", () => {
   });
 });
 
-describe("buildForEffect — led equips the baton", () => {
+describe("buildForEffect — led equips the emitting build", () => {
   it("swaps a staff or fire staff for the LED baton", () => {
     expect(buildForEffect(PropType.STAFF, "led", DEFAULT_BUILD)).toEqual({
       prop: PropType.CAPSULE_BATON,
@@ -107,8 +107,16 @@ describe("buildForEffect — led equips the baton", () => {
     ).toEqual({ prop: PropType.CAPSULE_BATON });
   });
 
-  it("leaves fans and clubs alone — there is no LED build for them", () => {
-    expect(buildForEffect(PropType.FAN, "led", DEFAULT_BUILD)).toBeNull();
+  it("puts both fan sizes on the Moon LED build", () => {
+    expect(buildForEffect(PropType.FAN, "led", DEFAULT_BUILD)).toEqual({
+      propBuild: { fanBuild: "moon" },
+    });
+    expect(buildForEffect(PropType.BIGFAN, "led", DEFAULT_BUILD)).toEqual({
+      propBuild: { fanBuild: "moon" },
+    });
+  });
+
+  it("leaves clubs alone because they still have no LED build", () => {
     expect(buildForEffect(PropType.CLUB, "led", DEFAULT_BUILD)).toBeNull();
   });
 });
@@ -123,6 +131,12 @@ describe("buildForEffect — nothing to change", () => {
     ).toBeNull();
     expect(
       buildForEffect(PropType.CAPSULE_BATON, "led", DEFAULT_BUILD)
+    ).toBeNull();
+    expect(
+      buildForEffect(PropType.FAN, "led", {
+        ...DEFAULT_BUILD,
+        fanBuild: "moon",
+      })
     ).toBeNull();
   });
 

@@ -10,7 +10,7 @@ const MAX_RAIL_WIDTH = 300;
 export const VIEWER_INSPECTOR_HANDLE_SIZE = 8;
 export const VIEWER_STAGE_MIN_WIDTH = 600;
 
-export type ViewerInspectorProfile = "card" | "motion" | "art";
+export type ViewerInspectorProfile = "card" | "motion" | "art" | "performance";
 
 const INSPECTOR_LAYOUTS: Record<
   ViewerInspectorProfile,
@@ -19,11 +19,17 @@ const INSPECTOR_LAYOUTS: Record<
   card: { defaultWidth: 480, minWidth: 420, maxWidth: 840 },
   motion: { defaultWidth: 560, minWidth: 520, maxWidth: 1200 },
   art: { defaultWidth: 480, minWidth: 440, maxWidth: 1000 },
+  // Performances lists takes in a column beside a landscape video, so its
+  // inspector is deliberately narrower than the effects inspector. The gap
+  // between the two defaults is what makes the stage/inspector seam travel
+  // when the viewer switches between Motion and Performances.
+  performance: { defaultWidth: 400, minWidth: 360, maxWidth: 900 },
 };
 
-export function viewerInspectorConstraints(
-  profile: ViewerInspectorProfile
-): { minWidth: number; maxWidth: number } {
+export function viewerInspectorConstraints(profile: ViewerInspectorProfile): {
+  minWidth: number;
+  maxWidth: number;
+} {
   const { minWidth, maxWidth } = INSPECTOR_LAYOUTS[profile];
   return { minWidth, maxWidth };
 }

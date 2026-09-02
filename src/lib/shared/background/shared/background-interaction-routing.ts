@@ -93,3 +93,18 @@ export function isBackgroundInteractionBlocked(
 
   return false;
 }
+
+/** Map viewport input to the backing canvas's logical coordinate system. */
+export function toBackgroundCoordinates(
+  clientX: number,
+  clientY: number,
+  rect: Pick<DOMRect, "left" | "top" | "width" | "height">,
+  canvas: Pick<HTMLCanvasElement, "width" | "height">
+): { x: number; y: number } {
+  const scaleX = rect.width > 0 ? canvas.width / rect.width : 1;
+  const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY,
+  };
+}

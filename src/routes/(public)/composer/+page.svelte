@@ -318,10 +318,10 @@
          a row it is too wide for. The viewer then gets the full band below. -->
     <div class="changing-head">
       <div class="changing-intro">
-        <h2 id="changing-title">One sequence. Three views.</h2>
+        <h2 id="changing-title">See what you made.</h2>
         <p>
-          Build it above, then watch the same steps as notation, a tunnel, and a
-          3D performance.
+          The sequence above carries into the tunnel and the 3D player below.
+          Its notation comes with it.
         </p>
       </div>
 
@@ -626,7 +626,7 @@
   }
 
   /* px ceiling — see the note on h1. Was 5rem, which the root ramp turned into
-     120px at 4K; "One sequence, new views." ran 1862px wide as a result. */
+     120px at 4K; the old heading ran 1862px wide as a result. */
   h2 {
     margin: 0;
     color: oklch(0.96 0.012 270);

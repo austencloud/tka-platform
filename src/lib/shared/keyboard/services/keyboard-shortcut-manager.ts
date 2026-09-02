@@ -23,6 +23,10 @@ import {
 } from "$lib/shared/foundation/ui/drawer/drawer-stack";
 import { getActiveModule } from "$lib/shared/application/state/ui/ui-state.svelte";
 import { isEditableKeyboardTarget } from "../domain/shortcut-target-resolution";
+import {
+  logKeyboardShortcutExecuted,
+  logKeyboardShortcutFailed,
+} from "$lib/shared/keyboard/keyboard-shortcut-analytics";
 
 const debug = createComponentLogger("KeyboardShortcutManager");
 
@@ -299,8 +303,19 @@ export class KeyboardShortcutManager {
       context: this.currentContext,
     });
 
+    const analytics = {
+      shortcutId: shortcut.id,
+      context: this.currentContext,
+      scope: shortcut.scope,
+      key: normalized.key,
+      modifiers: normalized.modifiers,
+      isSingleKey: shortcut.isSingleKey,
+    };
+    logKeyboardShortcutExecuted(analytics);
+
     // Execute the shortcut (this will call preventDefault if configured)
     shortcut.execute(event).catch((error) => {
+      logKeyboardShortcutFailed(analytics, error);
       console.error(`Error executing shortcut "${shortcut.id}":`, error);
     });
   }

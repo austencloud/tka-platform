@@ -98,7 +98,6 @@ import type { DeviceDetector } from '$lib/shared/device/services/device-detector
     {currentSection}
     {onSectionChange}
     {sectionHome}
-    {onSectionHomeSelect}
     {onModuleSwitcherTap}
     {onHeightChange}
     {showModuleSwitcher}

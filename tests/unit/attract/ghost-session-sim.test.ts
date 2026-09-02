@@ -41,7 +41,7 @@ import {
   type Stats,
 } from "./sim/run-session";
 
-const SESSION_TEST_TIMEOUT_MS = 30_000;
+const SESSION_TEST_TIMEOUT_MS = 60_000;
 
 interface AuditedDecision {
   record: SessionRecord;

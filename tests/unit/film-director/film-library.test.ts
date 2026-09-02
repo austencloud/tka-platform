@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 
 import { FILM_LIBRARY } from "../../../src/routes/test/film-director/_films/index";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
+import { sampleFilmDirector } from "../../../src/routes/test/film-director/_lib/sample-film-director";
 
 /** What scripts/build-film-posters.mjs writes. */
 const POSTER_WIDTH = 960;
@@ -224,6 +225,68 @@ describe("film library", () => {
     );
     expect(arrival).toBeDefined();
     expect(arrival!.position).toEqual({ x: -1.5, z: -1 });
+
+    const edges = resolved.scenes.find((s) => s.id === "camera-edges")!;
+    expect(edges.durationSeconds).toBe(12);
+    expect(edges.transition).toMatchObject({ durationSeconds: 1 });
+    const kf = edges.camera.keyframes;
+    const at = (t: number) =>
+      kf.find((frame) => Math.abs(frame.atSeconds - t) < 1e-6)!;
+    // Truck (0-4s): position and target translate by the same 1m ground vector.
+    const truckDelta = [0, 1, 2].map((axis) => at(4).position[axis]! - at(0).position[axis]!);
+    const targetDelta = [0, 1, 2].map((axis) => at(4).target[axis]! - at(0).target[axis]!);
+    // toBeCloseTo, not toEqual: position and target sit at different absolute
+    // magnitudes, so adding the identical translation vector to each rounds
+    // to a ~1e-16 difference on subtraction — real floating point, not a bug.
+    truckDelta.forEach((value, axis) => {
+      expect(value).toBeCloseTo(targetDelta[axis]!, 9);
+    });
+    expect(Math.hypot(...truckDelta)).toBeCloseTo(1, 4);
+    expect(truckDelta[1]).toBeCloseTo(0, 6);
+    // Zoom (4-8s): fov 50 -> 35 with the camera parked.
+    expect(at(4).fovDeg).toBe(50);
+    expect(at(8).fovDeg).toBe(35);
+    expect(at(8).position).toEqual(at(4).position);
+    // Roll (8-10s): explicit 0 anchor ramping to +10 (clockwise on screen).
+    expect(at(8).rollDeg).toBe(0);
+    expect(at(10).rollDeg).toBe(10);
+    // Scenes that never roll stay sparse:
+    expect(onBeat.camera.keyframes.every((frame) => !("rollDeg" in frame))).toBe(true);
+
+    const tracking = resolved.scenes.find((s) => s.id === "tracking-shot")!;
+    expect(tracking.camera.tracking).toEqual({
+      performerId: "performer-2",
+      mode: "follow",
+    });
+    // Only the scene that asked carries the key at all, so the other three
+    // resolve exactly as they did before tracking existed.
+    for (const scene of [combined, onBeat, edges]) {
+      expect("tracking" in scene.camera).toBe(false);
+    }
+
+    const trackedWalker = tracking.performance.performers.find(
+      (performer) => performer.id === "performer-2"
+    )!;
+    const arrivalMark = trackedWalker.blocking.at(-1)!.position;
+    const walked = {
+      x: arrivalMark.x - trackedWalker.position.x,
+      z: arrivalMark.z - trackedWalker.position.z,
+    };
+    expect(Math.hypot(walked.x, walked.z)).toBeCloseTo(3, 6);
+
+    const sampleAt = (offset: number) =>
+      sampleFilmDirector(resolved, tracking.startSeconds + offset).camera;
+    const opening = sampleAt(0);
+    const crossed = sampleAt(4);
+    expect(crossed.target[0]! - opening.target[0]!).toBeCloseTo(walked.x, 6);
+    expect(crossed.target[2]! - opening.target[2]!).toBeCloseTo(walked.z, 6);
+    expect(crossed.position[0]! - opening.position[0]!).toBeCloseTo(walked.x, 6);
+    expect(crossed.position[2]! - opening.position[2]!).toBeCloseTo(walked.z, 6);
+    // The frame stops when the walker does: the standing half of the scene
+    // holds the offset the crossing produced rather than drifting on.
+    const standing = sampleAt(6);
+    expect(standing.position).toEqual(crossed.position);
+    expect(standing.target).toEqual(crossed.target);
   });
 
   it("Chance Suite's identical directives on different scenes draw from different streams", () => {

@@ -16,6 +16,7 @@ import {
   removeCurrentUrlParams,
   writeUrl,
 } from "$lib/shared/navigation/services/url-state";
+import { VIEWER_STATE_PARAM_NAMES } from "../services/viewer-url-state-codec";
 import type { SequenceViewerSource } from "$lib/shared/sequence-viewer/analytics/viewer-events";
 
 let _isOpen = $state(false);
@@ -178,7 +179,9 @@ async function mintAndSyncShortCode(
 
 export function closeSequenceOverlay(): void {
   if (typeof window !== "undefined") {
-    removeCurrentUrlParams(["v"], { removeState: ["sequenceOverlay"] });
+    removeCurrentUrlParams(["v", ...VIEWER_STATE_PARAM_NAMES], {
+      removeState: ["sequenceOverlay"],
+    });
   }
   _isOpen = false;
   _sequence = null;

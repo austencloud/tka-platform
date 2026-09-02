@@ -43,7 +43,8 @@ describe("OptionPickerContent desktop layout", () => {
     const settingsBounds = settings.element().getBoundingClientRect();
     const tabsBounds = tabs.element().getBoundingClientRect();
     const infoBounds = info.element().getBoundingClientRect();
-    expect(headerBounds.height).toBeLessThanOrEqual(40);
+    expect(headerBounds.height).toBeGreaterThanOrEqual(44);
+    expect(headerBounds.height).toBeLessThanOrEqual(48);
     expect(settingsBounds.right).toBeLessThanOrEqual(tabsBounds.left);
     expect(tabsBounds.right).toBeLessThanOrEqual(infoBounds.left);
     expect(
@@ -132,7 +133,7 @@ describe("OptionPickerContent desktop layout", () => {
     );
   });
 
-  it("keeps the filter and explanation when direction settings hide every option", async () => {
+  it("keeps the filter when direction settings hide every option", async () => {
     render(OptionPickerDesktopLayoutHarness, {
       width: 1200,
       height: 700,
@@ -147,13 +148,6 @@ describe("OptionPickerContent desktop layout", () => {
     await expect
       .element(page.getByRole("button", { name: "Continuous" }))
       .toBeInTheDocument();
-    await expect
-      .element(page.getByRole("status"))
-      .toHaveTextContent(
-        "6 options hidden by the clockwise and counterclockwise settings"
-      );
-    expect(
-      document.querySelector(".availability-status")?.textContent
-    ).toContain("0 shown · 6 hidden by CW/CCW to avoid reversals");
+    expect(document.querySelector(".availability-status")).toBeNull();
   });
 });

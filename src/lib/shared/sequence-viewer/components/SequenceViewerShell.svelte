@@ -32,7 +32,15 @@
     createVideoPlayheadBridge,
     setVideoPlayheadContext,
   } from "../context/video-playhead-context";
-  import SequenceVideos from "./sequence-videos/SequenceVideos.svelte";
+  import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { getSequenceVideosStore } from "$lib/shared/video-collaboration/state/sequence-videos-store.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { createPerformanceWorkspaceState } from "./sequence-videos/state/performance-workspace-state.svelte";
+  import { setPerformanceWorkspaceContext } from "./sequence-videos/context/performance-workspace-context";
+  import PerformanceStage from "./sequence-videos/PerformanceStage.svelte";
+  import PerformanceInspector from "./sequence-videos/PerformanceInspector.svelte";
+  import PerformanceEditor from "./sequence-videos/PerformanceEditor.svelte";
   import ViewerHeader from "./ViewerHeader.svelte";
   import FullscreenControls from "./FullscreenControls.svelte";
   import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
@@ -381,6 +389,24 @@
     }
   );
 
+  const performanceWorkspace = createPerformanceWorkspaceState(
+    {
+      getSequence: () => sequence,
+      getActive: () => layout.showVideoGallery,
+      getUploadRequested: () => layout.isVideoUploadActive,
+      onWorkOpenChange: interactions.handleVideoWorkOpenChange,
+    },
+    {
+      getStore: getSequenceVideosStore,
+      playhead: videoPlayhead,
+      onTimingSaved: () => toast.success("Timing saved"),
+    }
+  );
+  setPerformanceWorkspaceContext(performanceWorkspace);
+  const performanceEditorActive = $derived(
+    layout.showVideoGallery && performanceWorkspace.view !== "browse"
+  );
+
   let consumedShareOnOpen = false;
   $effect(() => {
     if (!shareOnOpen || consumedShareOnOpen) return;
@@ -703,6 +729,8 @@
           class:export-active={layout.isWorkspaceInspectorActive}
           class:record-scene-active={layout.isRecordSceneActive}
           class:card-inspector={layout.inspectorProfile === "card"}
+          class:performance-inspector={layout.inspectorProfile ===
+            "performance"}
           class:desktop={!layout.effectiveMobile}
           class:stacked-rail={layout.stackedExportWithRail}
           class:sidebar-collapsed={layout.exportSidebarCollapsed &&
@@ -728,23 +756,17 @@
             </div>
           {/if}
 
-          {#snippet performanceWorkspace()}
+          {#snippet performanceEditor()}
             <div
-              class="performance-gallery-layer"
-              data-active={layout.showVideoGallery}
-              data-persistent-performance-gallery
+              class="performance-editor-layer"
+              data-active={performanceEditorActive}
+              data-persistent-performance-editor
             >
-              <SequenceVideos
+              <PerformanceEditor
                 {sequence}
-                active={layout.showVideoGallery}
                 isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
-                isLoggedIn={ctx.isLoggedIn}
                 bpm={ctx.bpmLocal}
-                canUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED}
-                uploadRequested={layout.isVideoUploadActive}
                 onSaveFirst={interactions.handleVideoUploadSaveFirst}
-                onSaveToLibrary={interactions.handleSave}
-                onUploadOpenChange={interactions.handleVideoWorkOpenChange}
               />
             </div>
           {/snippet}
@@ -755,8 +777,11 @@
             inspectorCollapsed={layout.exportSidebarCollapsed &&
               !layout.isImageExportActive}
             inspectorProfile={layout.inspectorProfile}
-            takeover={performanceWorkspace}
-            takeoverActive={layout.showVideoGallery}
+            stackedInspectorSize={layout.showVideoGallery
+              ? "var(--performance-inspector-height)"
+              : "auto"}
+            takeover={performanceEditor}
+            takeoverActive={performanceEditorActive}
           >
             {#snippet stage()}
               <div class="viewer-stage-container">
@@ -768,131 +793,157 @@
                     onSharePost={() => share.sharePost()}
                   />
                 {:else}
-                  <div class="viewer-motion-stage-content">
-                    <ViewerSplitPane
-                      sequence={ctx.effectiveSequence}
-                      {tunnelComposition}
-                      {tunnelSaveTarget}
-                      {onTunnelSaved}
-                      renderMode={ctx.renderMode}
-                      isExporting={interactions.videoBusy}
-                      bpm={ctx.bpmLocal}
-                      onBpmChange={(bpm) =>
-                        interactions.handleBpmChange(bpm, "viewer")}
-                      onSaveToLibrary={interactions.handleSave}
-                      onPropChange={(prop) =>
-                        interactions.handlePropChange(prop, "viewer")}
-                      onFanAppearanceChange={ctx.handleFanAppearanceChange}
-                      playback={layout.showVideoGallery
-                        ? { ...ctx.splitPanePlayback, isPlaying: false }
-                        : ctx.splitPanePlayback}
-                      imageComposition={layout.isImageExportActive
-                        ? {
-                            ...currentCardImageComposition,
-                            darkMode: ctx.exportOptions.imageDarkMode,
-                            forceContain: true,
-                          }
-                        : currentCardImageComposition}
-                      propRendering={ctx.splitPanePropRendering}
-                      layout={{
-                        isFullscreen: ctx.isFullscreen,
-                        fullscreenStackVertical: ctx.fullscreenStackVertical,
-                        isMobile: layout.effectiveMobile,
-                        isLandscapeMobile: layout.isLandscape,
-                        focusedPane:
-                          ctx.viewerState.viewerMode !== "split"
-                            ? ctx.viewerState.viewerMode === "card"
-                              ? "image"
-                              : "animation"
-                            : ctx.editingPane,
-                        suppressCloseButton:
-                          ctx.viewerState.viewerMode !== "split",
-                      }}
-                      onRenderProgress={ctx.onRenderProgress}
-                      onFocusPane={interactions.handleFocusPane}
-                      onUnfocusPane={interactions.handleUnfocusPane}
-                      onStepClick={interactions.handleStepClick}
-                      onQrPlayClick={ctx.practiceActive
-                        ? undefined
-                        : layout.playFromQr}
-                      onCanvasReady={ctx.handleCanvasReady}
-                      cardAutoLayoutOverride={layout.cardAutoLayoutOverride}
-                      cardContainSizeMotion={layout.cardContainSizeMotion}
-                      onAutoLayoutResolved={(resolved, width, height) => {
-                        const cardOwnsReadablePane =
-                          ctx.viewerState.viewerMode === "card" ||
-                          (ctx.viewerState.viewerMode === "split" &&
-                            ctx.editingPane !== "animation");
-                        // Keep the last Card box that was large enough to read.
-                        // A collapsing hidden Card must not replace that shape
-                        // with the wide, shallow grid its exit briefly measures.
-                        if (cardOwnsReadablePane) {
-                          layout.rememberReadableCardAutoLayout(
-                            resolved,
-                            width,
-                            height
-                          );
-                        }
-                        if (
-                          cardOwnsReadablePane &&
-                          (resolved || layout.isImageExportActive)
-                        ) {
-                          ctx.setResolvedCardAutoLayout(resolved);
-                        }
-                      }}
-                      {rerenderTrigger}
-                      onChoreoCardContextMenu={(x, y) =>
-                        choreoCardMenuHost?.openContextMenu(x, y)}
-                      onPlaybackToggle={() =>
-                        interactions.handlePlaybackToggle("viewer_transport")}
-                      onSystemPlaybackChange={interactions.handleSystemPlaybackChange}
-                      onProgressBarSeek={interactions.handleProgressBarSeek}
-                      onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
-                      onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
-                      playbackMode={ctx.playbackMode}
-                      onPlaybackModeChange={(mode) =>
-                        interactions.handlePlaybackModeChange(mode, "viewer")}
-                      onSceneReadyChange={(ready) => (sceneReady3d = ready)}
-                      splitConfig={ctx.viewerState.viewerMode === "split"
-                        ? { leftPane: "animation", rightPane: "card" }
-                        : ctx.viewerState.viewerMode === "card"
+                  {#snippet motionStageSource()}
+                    <div
+                      class="viewer-motion-stage-content viewer-motion-content-layer"
+                      data-active={!layout.showVideoGallery}
+                      data-persistent-motion-stage
+                    >
+                      <ViewerSplitPane
+                        sequence={ctx.effectiveSequence}
+                        {tunnelComposition}
+                        {tunnelSaveTarget}
+                        {onTunnelSaved}
+                        renderMode={ctx.renderMode}
+                        isExporting={interactions.videoBusy}
+                        bpm={ctx.bpmLocal}
+                        onBpmChange={(bpm) =>
+                          interactions.handleBpmChange(bpm, "viewer")}
+                        onSaveToLibrary={interactions.handleSave}
+                        onPropChange={(prop) =>
+                          interactions.handlePropChange(prop, "viewer")}
+                        onFanAppearanceChange={ctx.handleFanAppearanceChange}
+                        playback={layout.showVideoGallery
+                          ? { ...ctx.splitPanePlayback, isPlaying: false }
+                          : ctx.splitPanePlayback}
+                        imageComposition={layout.isImageExportActive
                           ? {
-                              ...ctx.viewerState.splitConfig,
-                              rightPane: "card",
+                              ...currentCardImageComposition,
+                              darkMode: ctx.exportOptions.imageDarkMode,
+                              forceContain: true,
                             }
-                          : ctx.viewerState.viewerMode === "animation" ||
-                              ctx.viewerState.viewerMode === "animation-3d" ||
-                              ctx.viewerState.viewerMode === "mandala" ||
-                              ctx.viewerState.viewerMode === "tunnel"
+                          : currentCardImageComposition}
+                        propRendering={ctx.splitPanePropRendering}
+                        layout={{
+                          isFullscreen: ctx.isFullscreen,
+                          fullscreenStackVertical: ctx.fullscreenStackVertical,
+                          isMobile: layout.effectiveMobile,
+                          isLandscapeMobile: layout.isLandscape,
+                          focusedPane:
+                            ctx.viewerState.viewerMode !== "split"
+                              ? ctx.viewerState.viewerMode === "card"
+                                ? "image"
+                                : "animation"
+                              : ctx.editingPane,
+                          suppressCloseButton:
+                            ctx.viewerState.viewerMode !== "split",
+                        }}
+                        onRenderProgress={ctx.onRenderProgress}
+                        onFocusPane={interactions.handleFocusPane}
+                        onUnfocusPane={interactions.handleUnfocusPane}
+                        onStepClick={interactions.handleStepClick}
+                        onQrPlayClick={ctx.practiceActive
+                          ? undefined
+                          : layout.playFromQr}
+                        onCanvasReady={ctx.handleCanvasReady}
+                        cardAutoLayoutOverride={layout.cardAutoLayoutOverride}
+                        cardContainSizeMotion={layout.cardContainSizeMotion}
+                        onAutoLayoutResolved={(resolved, width, height) => {
+                          const cardOwnsReadablePane =
+                            ctx.viewerState.viewerMode === "card" ||
+                            (ctx.viewerState.viewerMode === "split" &&
+                              ctx.editingPane !== "animation");
+                          // Keep the last Card box that was large enough to read.
+                          // A collapsing hidden Card must not replace that shape
+                          // with the wide, shallow grid its exit briefly measures.
+                          if (cardOwnsReadablePane) {
+                            layout.rememberReadableCardAutoLayout(
+                              resolved,
+                              width,
+                              height
+                            );
+                          }
+                          if (
+                            cardOwnsReadablePane &&
+                            (resolved || layout.isImageExportActive)
+                          ) {
+                            ctx.setResolvedCardAutoLayout(resolved);
+                          }
+                        }}
+                        {rerenderTrigger}
+                        onChoreoCardContextMenu={(x, y) =>
+                          choreoCardMenuHost?.openContextMenu(x, y)}
+                        onPlaybackToggle={() =>
+                          interactions.handlePlaybackToggle("viewer_transport")}
+                        onSystemPlaybackChange={interactions.handleSystemPlaybackChange}
+                        onProgressBarSeek={interactions.handleProgressBarSeek}
+                        onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
+                        onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
+                        playbackMode={ctx.playbackMode}
+                        onPlaybackModeChange={(mode) =>
+                          interactions.handlePlaybackModeChange(mode, "viewer")}
+                        onSceneReadyChange={(ready) => (sceneReady3d = ready)}
+                        splitConfig={ctx.viewerState.viewerMode === "split"
+                          ? { leftPane: "animation", rightPane: "card" }
+                          : ctx.viewerState.viewerMode === "card"
                             ? {
                                 ...ctx.viewerState.splitConfig,
-                                leftPane: ctx.viewerState.viewerMode,
+                                rightPane: "card",
                               }
-                            : ctx.viewerState.splitConfig}
-                      isLoggedIn={ctx.isLoggedIn}
-                      onVideoUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
-                        ? interactions.handleGalleryVideoUpload
-                        : undefined}
-                      onArtExport={interactions.handleArtExport}
-                      onArtShare={share.setArtShareTarget}
-                      artShareActive={!!share.artShare}
-                      onArtExportEvent={interactions.handleArtExportEvent}
-                      onArtSettingChange={interactions.handleArtSettingChange}
-                      onArtAction={interactions.handleArtAction}
-                      onViewer3DSettingChange={scanInstrumentationEnabled
-                        ? interactions.handleViewer3DSetting
-                        : undefined}
-                      onViewer3DAction={scanInstrumentationEnabled
-                        ? interactions.handleViewer3DAction
-                        : undefined}
-                      practiceActive={ctx.practiceActive}
-                      practiceRunning={ctx.practiceRunning}
-                      practiceCountdown={ctx.practiceCountdown}
-                      practiceCellSize={ctx.practiceViewPrefs.cellSize}
-                      practiceCanvasFraction={0.5}
-                      practiceMirrorEnabled={ctx.mirrorEnabled}
-                    />
-                  </div>
+                            : ctx.viewerState.viewerMode === "animation" ||
+                                ctx.viewerState.viewerMode === "animation-3d" ||
+                                ctx.viewerState.viewerMode === "mandala" ||
+                                ctx.viewerState.viewerMode === "tunnel"
+                              ? {
+                                  ...ctx.viewerState.splitConfig,
+                                  leftPane: ctx.viewerState.viewerMode,
+                                }
+                              : ctx.viewerState.viewerMode === "videos"
+                                ? { leftPane: "animation", rightPane: "card" }
+                                : ctx.viewerState.splitConfig}
+                        isLoggedIn={ctx.isLoggedIn}
+                        onVideoUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
+                          ? interactions.handleGalleryVideoUpload
+                          : undefined}
+                        onArtExport={interactions.handleArtExport}
+                        onArtShare={share.setArtShareTarget}
+                        artShareActive={!!share.artShare}
+                        onArtExportEvent={interactions.handleArtExportEvent}
+                        onArtSettingChange={interactions.handleArtSettingChange}
+                        onArtAction={interactions.handleArtAction}
+                        onViewer3DSettingChange={scanInstrumentationEnabled
+                          ? interactions.handleViewer3DSetting
+                          : undefined}
+                        onViewer3DAction={scanInstrumentationEnabled
+                          ? interactions.handleViewer3DAction
+                          : undefined}
+                        practiceActive={ctx.practiceActive}
+                        practiceRunning={ctx.practiceRunning}
+                        practiceCountdown={ctx.practiceCountdown}
+                        practiceCellSize={ctx.practiceViewPrefs.cellSize}
+                        practiceCanvasFraction={0.5}
+                        practiceMirrorEnabled={ctx.mirrorEnabled}
+                      />
+                    </div>
+                  {/snippet}
+                  {#snippet performanceStageSource()}
+                    <div
+                      class="performance-stage-layer"
+                      data-active={layout.showVideoGallery}
+                      data-persistent-performance-stage
+                    >
+                      <PerformanceStage
+                        {sequence}
+                        onSaveToLibrary={interactions.handleSave}
+                      />
+                    </div>
+                  {/snippet}
+                  <DualSourceCrossfade
+                    active={layout.showVideoGallery ? "second" : "first"}
+                    first={motionStageSource}
+                    second={performanceStageSource}
+                    duration={DURATION.emphasis}
+                  />
                 {/if}
                 {#if ctx.renderMode === "3d" && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
                   <Recording3DOverlay
@@ -1023,6 +1074,23 @@
                         : undefined}
                     />
                   {/if}
+                </div>
+                <div
+                  class="inspector-content-layer performance-inspector-layer"
+                  data-active={layout.showVideoGallery &&
+                    performanceWorkspace.view === "browse"}
+                  inert={!layout.showVideoGallery ||
+                    performanceWorkspace.view !== "browse" ||
+                    undefined}
+                  aria-hidden={!layout.showVideoGallery ||
+                    performanceWorkspace.view !== "browse"}
+                  data-persistent-performance-inspector
+                >
+                  <PerformanceInspector
+                    isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
+                    isLoggedIn={ctx.isLoggedIn}
+                    canUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED}
+                  />
                 </div>
                 <div
                   class="inspector-content-layer art-settings-layer"
@@ -1352,6 +1420,7 @@
   .viewer-and-export {
     --export-sidebar-width: 560px;
     --card-sidebar-width: clamp(480px, 28vw, 640px);
+    --performance-sidebar-width: clamp(380px, 24vw, 520px);
     --active-inspector-width: var(--export-sidebar-width);
     position: relative;
     display: flex;
@@ -1366,6 +1435,14 @@
     --active-inspector-width: var(--card-sidebar-width);
   }
 
+  /* Performances keeps a narrower column than the effects inspector so the
+     landscape video gets the width. The difference between the two tokens is
+     the seam travel PanelGroup animates on the structural clock when the mode
+     changes. */
+  .viewer-and-export.performance-inspector {
+    --active-inspector-width: var(--performance-sidebar-width);
+  }
+
   .viewer-stage-container {
     position: relative;
     display: flex;
@@ -1377,7 +1454,8 @@
   }
 
   .viewer-motion-stage-content,
-  .performance-gallery-layer {
+  .performance-stage-layer,
+  .performance-editor-layer {
     display: flex;
     width: 100%;
     height: 100%;
@@ -1497,6 +1575,12 @@
     overflow-y: auto;
   }
 
+  .performance-inspector-layer {
+    display: flex;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+
   .card-settings-layer {
     display: flex;
     justify-content: flex-end;
@@ -1515,9 +1599,75 @@
     flex: 0 0 var(--export-sidebar-width);
   }
 
+  /* The Performances inspector is composed at its own destination width
+     before the mode changes. PanelGroup then slides the seam from the effects
+     width to this width and reveals the already-laid-out column through the
+     moving clip, so nothing rewraps while the stage source crossfades. */
+  .viewer-and-export.desktop
+    .performance-inspector-layer
+    > :global(.performance-inspector) {
+    width: var(--performance-sidebar-width);
+    min-width: var(--performance-sidebar-width);
+    flex: 0 0 var(--performance-sidebar-width);
+  }
+
+  /* Art settings are portaled into their layer as an absolutely positioned
+     host, so `width: 100%` made them stretch and re-wrap on every frame of the
+     seam animation. Compose them at the same destination width the Effects
+     inspector uses and anchor them to the layer's right edge, so PanelGroup
+     reveals a stationary column instead of dragging its left edge along. */
+  .viewer-and-export.desktop
+    .art-settings-layer
+    > :global(.art-settings-host.external) {
+    left: auto;
+    right: 0;
+    width: var(--export-sidebar-width);
+    min-width: var(--export-sidebar-width);
+    max-width: var(--export-sidebar-width);
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .art-settings-layer
+    > :global(.art-settings-host.external) {
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  /* The card pin below is keyed to a mode-conditional container class, which
+     Svelte removes the instant the mode changes. The departing Card panel then
+     falls back to its intrinsic width and follows the closing seam. Keying the
+     same destination width to the persistent layer keeps it composed on the
+     way out as well as on the way in. */
+  .viewer-and-export.desktop
+    .card-settings-layer
+    :global(.export-panel:not(.inline)) {
+    width: var(--card-sidebar-width);
+    min-width: var(--card-sidebar-width);
+    flex: 0 0 var(--card-sidebar-width);
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .card-settings-layer
+    :global(.export-panel:not(.inline)) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
   :global(.panel-wrapper[data-manually-sized="true"])
     .motion-settings-layer
     > :global(.export-panel.sidebar) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .performance-inspector-layer
+    > :global(.performance-inspector) {
     width: 100%;
     min-width: 0;
     flex-basis: 100%;
@@ -1564,6 +1714,30 @@
     overflow: visible;
     border-left: none;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .viewer-and-export:not(.desktop)
+    .performance-inspector-layer
+    > :global(.performance-inspector) {
+    height: var(--performance-inspector-height);
+    min-height: 16rem;
+  }
+
+  .viewer-and-export {
+    --performance-inspector-height: min(46vh, 30rem);
+  }
+
+  @media (max-height: 34rem) {
+    .viewer-and-export:not(.desktop)
+      .performance-inspector-layer
+      > :global(.performance-inspector) {
+      height: var(--performance-inspector-height);
+      min-height: 10rem;
+    }
+
+    .viewer-and-export {
+      --performance-inspector-height: min(48vh, 13rem);
+    }
   }
 
   .viewer-and-export:not(.desktop).export-active

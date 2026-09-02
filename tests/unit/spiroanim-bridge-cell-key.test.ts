@@ -47,7 +47,7 @@ function isCanonicalReading(entry: TranscriptionEntry): boolean {
 
 describe("spiroanim bridge cell keys", () => {
   it("round-trips every transcription entry", () => {
-    expect(transcription.length).toBe(1584);
+    expect(transcription.length).toBe(3312);
     for (const entry of transcription) {
       const key = formatCellKey({
         concept: entry.concept as "vtg" | "qtr" | "8stp",
@@ -77,7 +77,7 @@ describe("spiroanim bridge cell keys", () => {
    * addresses the CANONICAL reading of each cell — `quarters: 1`,
    * `reversePlane: false` — which is the same reading `cell-catalogue.json`
    * records and the only one SpiroAnim's own link builder emits. This pins
-   * that collapse: 1,008 addressable keys, and every collision resolves to
+   * that collapse: 2,160 addressable keys, and every collision resolves to
    * exactly one canonical entry.
    */
   it("addresses one canonical entry per key", () => {
@@ -92,7 +92,7 @@ describe("spiroanim bridge cell keys", () => {
       });
       byKey.set(key, [...(byKey.get(key) ?? []), entry]);
     }
-    expect(byKey.size).toBe(1008);
+    expect(byKey.size).toBe(2160);
 
     const notExactlyOne = [...byKey.entries()].filter(
       ([, entries]) => entries.filter(isCanonicalReading).length !== 1
@@ -116,6 +116,35 @@ describe("spiroanim bridge cell keys", () => {
     ]) {
       expect(parseCellKey(bad), bad).toBeNull();
     }
+  });
+
+  it("parses every bridged speed ratio and only those", () => {
+    const bridged: Record<string, string> = {
+      "1x1": "1:1",
+      "1x2": "1:2",
+      "1x3": "1:3",
+      "1x4": "1:4",
+      "1x5": "1:5",
+      "2x3": "2:3",
+      "2x5": "2:5",
+    };
+    for (const [token, ratio] of Object.entries(bridged)) {
+      const key = `vtg.1-1.${token}.diamond.base`;
+      expect(parseCellKey(key)?.speedRatio, key).toBe(ratio);
+      expect(
+        formatCellKey({
+          concept: "qtr",
+          reference: "2-5",
+          speedRatio: ratio,
+          shape: "diamond",
+          isAnti: true,
+        })
+      ).toBe(`qtr.2-5.${token}.diamond.anti`);
+    }
+    // 2:1 is SpiroAnim's one picker ratio with no TKA reading (its prop turns
+    // 45° per 90° hand arc — less than a 0-turn shift, and not a float).
+    expect(parseCellKey("vtg.1-1.2x1.diamond.base")).toBeNull();
+    expect(parseCellKey("vtg.1-1.1:3.diamond.base")).toBeNull();
   });
 
   it("ignores unknown trailing fields", () => {
