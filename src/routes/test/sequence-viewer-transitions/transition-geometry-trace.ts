@@ -11,6 +11,7 @@ export type TransitionTraceCommand =
   | "card-2d"
   | "card-3d"
   | "card-tunnel"
+  | "card-performances"
   | "card-stage-interrupt"
   | "performances-2d"
   | "performances-3d"
@@ -40,6 +41,9 @@ export type TransitionTracePhase =
   | "card-to-stage"
   | "stage-to-card"
   | "card-stage-interrupt"
+  | "card-to-performances"
+  | "performances-to-card"
+  | "settle"
   | "stage-to-performances"
   | "performances-to-stage"
   | "interrupt-performances"
@@ -89,6 +93,7 @@ export interface TransitionGeometrySample {
   cardTransformedCellCount: number;
   cardColumns: number;
   cardRows: number;
+  cardContainSizeMotion: string | null;
   cardAutoLayoutLocked: boolean;
   cardAutoLayoutLockColumns: number;
   cardAutoLayoutLockRows: number;
@@ -243,6 +248,7 @@ export interface TransitionGeometrySummary {
   artSettingsContentDrift: TransitionContentDrift | null;
   inspectorReveal: InspectorRevealSummary[];
   inspectorSurfaceStep: InspectorSurfaceStep | null;
+  cardSizePinRelease: CardSizePinRelease | null;
   cardSettingsContentDrift: TransitionContentDrift | null;
   longestSampleGap: number;
   performanceStageIdentityChanges: number;
@@ -950,6 +956,84 @@ function longestSampleGap(samples: TransitionGeometrySample[]): number {
   return longest;
 }
 
+/**
+ * What the Card's contained box did after its size pin was released.
+ *
+ * The Card holds a pinned box while `data-contain-size-motion` is set, and only
+ * that attribute carries the width/height transition. When the pin's timer
+ * clears the attribute, the next measurement recomputes the box from the real
+ * container with no transition left to carry it, so any distance still
+ * outstanding at that moment is crossed in a single frame.
+ */
+export interface CardSizePinRelease {
+  /** Largest single-frame width change after the pin was released. */
+  stepPx: number;
+  /** Total width the box still had to travel once the pin was released. */
+  travelPx: number;
+  /** Sampled frames that travel was spread across. */
+  frames: number;
+  /** How long after the pin released the box reached its final width. */
+  ms: number;
+  /** Fraction of the container the box filled when the pin released. */
+  fillBefore: number;
+  /** Fraction of the container the box filled once it settled. */
+  fillAfter: number;
+}
+
+/**
+ * Grade the frames that follow the Card's size pin.
+ *
+ * The pin's last frame is the baseline: everything the box does afterwards is
+ * untransitioned by construction, so a large `stepPx` spread over one or two
+ * frames is a visible jump rather than motion. Traces whose Card never pinned,
+ * or that stop before the release, report nothing rather than a zero — an
+ * absent measurement must not read as a passing one.
+ */
+function summarizeCardSizePinRelease(
+  samples: TransitionGeometrySample[]
+): CardSizePinRelease | null {
+  let pinEnd = -1;
+  for (let index = 0; index < samples.length; index += 1) {
+    if (samples[index].cardContainSizeMotion) pinEnd = index;
+  }
+  if (pinEnd < 0 || pinEnd >= samples.length - 1) return null;
+
+  const measured = samples
+    .slice(pinEnd)
+    .filter(
+      (sample) => sample.cardContentWidth > 0 && sample.cardRootWidth > 0
+    );
+  if (measured.length < 2) return null;
+
+  const first = measured[0];
+  const last = measured[measured.length - 1];
+
+  let stepPx = 0;
+  let settledIndex = 0;
+  for (let index = 1; index < measured.length; index += 1) {
+    const delta = Math.abs(
+      measured[index].cardContentWidth - measured[index - 1].cardContentWidth
+    );
+    if (delta > stepPx) stepPx = delta;
+    if (delta > 0.5) settledIndex = index;
+  }
+
+  const settled = measured[settledIndex];
+  return {
+    stepPx: Math.round(stepPx * 10) / 10,
+    travelPx:
+      Math.round(
+        Math.abs(last.cardContentWidth - first.cardContentWidth) * 10
+      ) / 10,
+    frames: settledIndex,
+    ms: Math.round((settled.time - first.time) * 10) / 10,
+    fillBefore:
+      Math.round((first.cardContentWidth / first.cardRootWidth) * 1000) / 1000,
+    fillAfter:
+      Math.round((last.cardContentWidth / last.cardRootWidth) * 1000) / 1000,
+  };
+}
+
 export function summarizeTransitionGeometry(
   trace: TransitionGeometryTrace
 ): TransitionGeometrySummary {
@@ -1451,6 +1535,7 @@ export function summarizeTransitionGeometry(
       summarizeInspectorReveal(trace.samples, layer)
     ).filter((entry) => entry.readableFrames > 0),
     inspectorSurfaceStep: summarizeInspectorSurfaceStep(trace.samples),
+    cardSizePinRelease: summarizeCardSizePinRelease(trace.samples),
     performanceStageIdentityChanges: isPerformanceTrace
       ? identityChanges(trace.samples, (sample) => sample.stageLayerIdentity)
       : 0,

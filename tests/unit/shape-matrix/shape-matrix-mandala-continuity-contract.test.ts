@@ -82,6 +82,13 @@ describe("shape matrix mandala continuity", () => {
     // before the new-state capture.
     const art = read("components/ShapeMatrixMandalaArt.svelte");
     expect(art).toContain("registerMandalaArtMeasurer(measure)");
+    // The tile's box is container math as well, so the return trip lands on
+    // the tile at its real size instead of a stale measured one.
+    const grid = read("components/ShapeMatrixGrid.svelte");
+    expect(grid).not.toMatch(/bind:clientWidth|new ResizeObserver/);
+    expect(grid).toContain("100cqw / var(--cols)");
+    // The player's first mount does not run inside the morph's capture window.
+    expect(drill).toContain("active={!mandalaTransition.handoff}");
     const heroLayer = read("components/MandalaHeroLayer.svelte");
     expect(heroLayer).not.toContain("ResizeObserver");
     expect(heroLayer).toContain("min(100cqw, 100cqh)");

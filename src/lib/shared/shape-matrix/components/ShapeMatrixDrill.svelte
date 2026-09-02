@@ -1026,9 +1026,14 @@
         aria-hidden="true"
       ></div>
       <div class="player-layer">
+        <!-- The first mount waits for the tile-to-hero morph to finish. The
+             still floor is the picture that travels; loading the player and
+             building its engine before the new-state capture only delays the
+             morph. Once mounted, keep-alive holds the player through later
+             handoffs. -->
         <LazyMount
           loader={loadAnimationPlayer}
-          active={true}
+          active={!mandalaTransition.handoff}
           debugName="shape matrix animation player"
           placeholder={playerPlaceholder}
           error={source === "first"

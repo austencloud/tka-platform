@@ -782,6 +782,93 @@ back to a hand-anchored edge. Focused Vitest
 `viewer-shell-model`): 29 files, 231 tests pass. Prettier and
 `git diff --check` are clean.
 
+### Card follow-up · 2026-09-02 (late size burst on Card ⇄ Performances)
+
+Austen reported that after returning to Card the animation completed with the
+Card still narrower than its container, and the last thing that happened was an
+instant jump to full width. Instrumented first, then fixed.
+
+**Why the existing trace could not see it.** Two gaps. The harness had no
+`card-performances` command at all, so that pair was never replayed. And every
+trace stopped when the last mode step returned, which `chooseMode` does one
+emphasis (370 ms) after the commit — while the Card's contained box stays pinned
+for 480 ms. The trace ended 110 ms before the event it needed to record.
+
+**What was added.**
+
+- A `card-performances` replay command, and a `settle` phase that keeps sampling
+  for `DURATION.emphasis * 2 + DURATION.normal + 200` after the last step so the
+  pin's release is inside the recorded window.
+- `data-contain-size-motion` is now sampled per frame, and a **Card size pin
+  release** metric grades the frames after the pin's last frame: the largest
+  single-frame width step, total travel, frames and milliseconds to settle, and
+  the container fill ratio before and after. Everything after the pin is
+  untransitioned by construction, so a large step there is a jump rather than
+  motion. A trace whose Card never pinned reports nothing rather than a zero, so
+  an absent measurement cannot read as a pass.
+
+**What it found.** The Card is width-constrained only where `fitWidth` applies,
+which is why the burst was invisible on the wide viewports and obvious on the
+narrow ones:
+
+| Viewport    | Pinned content width | Root width | At pin release                                      |
+| ----------- | -------------------- | ---------- | --------------------------------------------------- |
+| 820×1180    | 666 px               | 740 px     | 666 → 740 in 1 frame (t = 948 ms), fill 0.90 → 1.00 |
+| 375×667     | 336 px               | 375 px     | 336 → 375 in 1 frame (t = 984 ms), fill 0.90 → 1.00 |
+| 1920 / 2560 | height-constrained   | —          | 0 px — height never changes                         |
+
+**Root cause, two compounding defects.**
+
+1. `splitContainedSize` was captured only on a `focus` transition (Side-by-Side →
+   Card) but was used as the pinned output for `return` **and** `restore`. A
+   Performances → Card `restore` therefore held the Card at a size measured in a
+   different layout for the whole animation, guaranteeing residual distance at
+   the end.
+2. The width and height transition lives only on
+   `.choreo-card-root[data-contain-size-motion]`. A fixed 480 ms timer cleared
+   that attribute, and the effect watching it recomputed the box in the same
+   tick, so whatever distance remained was crossed in one untransitioned frame.
+
+**The fix.**
+
+- The frozen-size branch is gone. The contained box now follows the container
+  throughout, so the width and height transitions carry it to its destination.
+  The protection the pin actually existed for — a pencil-thin Card solved
+  against a destination track that has not opened yet — is now a
+  `MIN_MEASURABLE_MOTION_SIZE` (240 px) sliver guard that holds the last painted
+  box for that frame only, instead of freezing the whole transition.
+- The pin outlives the workspace allocation by one emphasis and is released on
+  two settled paints, versioned so an interrupting transition cancels the
+  pending release. A ResizeObserver delivery landing on the frame the clock
+  expires is still carried by the transition it was measured under.
+
+**Post-fix, `card-performances` at every required viewport:** `Card size pin
+release: 0 px step · 0 px over 0 frames · 0 ms`, `Mode path: card → videos →
+card`, `Squashed Card frames: 0`, `Card remounts: 0`. At 375×667 the width now
+eases 305 → 375 over ~180 ms and reaches its destination 33 ms _before_ the pin
+releases.
+
+**No regression on the other Gate 4 commands or Gate 1.** `card-2d`,
+`card-tunnel`, and `card-stage-interrupt` all report a `0 px` pin release step.
+The sliver protection still holds: `card-stage-interrupt` and `gate1-card` at
+1920 report a minimum Card box of 705 × 1019 px with zero tiny or squashed
+frames, and `gate1-card` at 375 reports 336 × 280 px with zero tiny frames.
+
+The Card-playback pin tests that landed on `main` while this was in flight
+encoded the old 480 ms lifetime and a same-tick release; they now assert the
+extended lifetime and the settled-paint release, plus a new case proving an
+interrupting transition cancels the pending release rather than clearing its own
+pin.
+
+**Checks.** The orchestration contract test asserts the frozen size is gone, the
+sliver floor and its two guards are present, the extended pin lifetime and its
+cancellation are wired, and the harness carries the settle tail, the
+`card-performances` command, the sampled attribute, and the released-pin
+readout. Focused Vitest (`tests/config/vitest.config.ts`,
+`tests/unit/sequence-viewer` plus `viewer-shell-model` and
+`sequence-viewer-escape-ownership`): 29 files, 234 tests pass on the branch
+merged up to `main`, with `svelte-check` reporting 0 errors and 0 warnings.
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of

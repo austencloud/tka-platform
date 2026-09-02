@@ -31,6 +31,17 @@
   } from "../transition-geometry-trace";
 
   type ReplayCommand = TransitionTraceCommand;
+
+  /**
+   * How long the trace keeps sampling after the last mode step returns.
+   *
+   * `chooseMode` returns one emphasis after a commit, but the Card's contained
+   * size stays pinned past the workspace allocation and is released on its own
+   * clock. A trace that stopped when the last step returned ended before that
+   * release, so an untransitioned size change landing after it was never
+   * recorded.
+   */
+  const SETTLE_TAIL_MS = DURATION.emphasis * 2 + DURATION.normal + 200;
   type ReviewModeLabel =
     | "Side by Side"
     | "2D Animation"
@@ -265,6 +276,11 @@
   function elementDataFlag(selector: string, name: string): boolean {
     const element = document.querySelector<HTMLElement>(selector);
     return element?.dataset[name] === "true";
+  }
+
+  function elementDataValue(selector: string, name: string): string | null {
+    const element = document.querySelector<HTMLElement>(selector);
+    return element?.dataset[name] ?? null;
   }
 
   function elementDataNumber(selector: string, name: string): number {
@@ -563,6 +579,10 @@
       cardRows: elementDataNumber(
         ".preview-column .choreo-card-root",
         "layoutRows"
+      ),
+      cardContainSizeMotion: elementDataValue(
+        ".preview-column .choreo-card-root",
+        "containSizeMotion"
       ),
       cardAutoLayoutLocked: elementDataFlag(
         ".preview-column .choreo-card-root",
@@ -879,6 +899,11 @@
         await wait(motionDuration(DURATION.emphasis) + 90);
         setTracePhase("stage-to-card");
         if (!(await chooseMode("Card", version))) return;
+      } else if (command === "card-performances") {
+        beginGeometryTrace(command, "card-to-performances");
+        if (!(await chooseMode("Performances", version))) return;
+        setTracePhase("performances-to-card");
+        if (!(await chooseMode("Card", version))) return;
       } else if (command === "card-stage-interrupt") {
         beginGeometryTrace(command, "card-stage-interrupt");
         if (!(await chooseMode("2D Animation", version, false))) return;
@@ -928,6 +953,11 @@
         if (!(await chooseMode("2D Animation", version))) return;
       }
 
+      if (activeTrace && version === replayVersion) {
+        setTracePhase("settle");
+        await wait(SETTLE_TAIL_MS);
+      }
+
       const elapsed = Math.round(performance.now() - startedAt);
       report(
         "complete",
@@ -964,6 +994,7 @@
           message.command === "card-2d" ||
           message.command === "card-3d" ||
           message.command === "card-tunnel" ||
+          message.command === "card-performances" ||
           message.command === "card-stage-interrupt" ||
           message.command === "performances-2d" ||
           message.command === "performances-3d" ||
