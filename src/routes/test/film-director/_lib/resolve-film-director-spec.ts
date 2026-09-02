@@ -39,7 +39,10 @@ import {
   type FilmSeed,
 } from "./directive-random";
 import { resolveCastAxis } from "./resolve-directives";
-import { assertSequenceDirective } from "./sequence-language";
+import {
+  assertSequenceDirective,
+  transformSourceId,
+} from "./sequence-language";
 import {
   DIRECTOR_EFFORT_IDS,
   DIRECTOR_FORMATIONS,
@@ -671,11 +674,11 @@ function resolveScene(
     }
   );
 
-  // Sequences resolve as literals, not through resolveCastAxis: the mirror
-  // form names one specific performer, so there is no catalog to pick from.
-  // The mirror graph is validated exactly one level deep — a mirror of a
-  // mirror has no original of its own to reflect, and letting it resolve
-  // would silently hand both performers the same reflection.
+  // Sequences resolve as literals, not through resolveCastAxis: the derived
+  // forms name one specific performer, so there is no catalog to pick from.
+  // The derived graph is validated exactly one level deep — a sequence derived
+  // from a derived one has no original of its own to change, and letting it
+  // resolve would silently hand both performers the same result.
   const resolvedSequences: DirectorPerformerSequence[] = rawInputs.map(
     (input) => input.sequence ?? cast?.defaults?.sequence ?? { source: "demo" }
   );
@@ -685,21 +688,23 @@ function resolveScene(
       sequence,
       `Scene "${scene.id}", performer "${self}"`
     );
-    if (!("mirrorOf" in sequence)) return;
-    const targetIndex = performerIds.indexOf(sequence.mirrorOf);
-    if (sequence.mirrorOf === self) {
+    const sourceId = transformSourceId(sequence);
+    if (sourceId === null) return;
+    const verb = "mirrorOf" in sequence ? "mirror" : "transform";
+    if (sourceId === self) {
       throw new Error(
-        `Scene "${scene.id}": performer "${self}" cannot mirror themselves.`
+        `Scene "${scene.id}": performer "${self}" cannot ${verb} themselves.`
       );
     }
+    const targetIndex = performerIds.indexOf(sourceId);
     if (targetIndex < 0) {
       throw new Error(
-        `Scene "${scene.id}": performer "${self}" mirrors "${sequence.mirrorOf}", who is not in this scene.`
+        `Scene "${scene.id}": performer "${self}" ${verb}s "${sourceId}", who is not in this scene.`
       );
     }
-    if ("mirrorOf" in resolvedSequences[targetIndex]!) {
+    if (transformSourceId(resolvedSequences[targetIndex]!) !== null) {
       throw new Error(
-        `Scene "${scene.id}": performer "${self}" mirrors "${sequence.mirrorOf}", who is already a mirror. Mirror the original instead.`
+        `Scene "${scene.id}": performer "${self}" ${verb}s "${sourceId}", whose sequence is already derived from another performer's. Derive from the original instead.`
       );
     }
   });

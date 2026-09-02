@@ -108,13 +108,21 @@ proving-film scenes author at version 4.
       low close-up on performer 1 / high behind two-shot with no glide. Cut
       transition default duration is now 0, which changed only
       `transition.durationSeconds` in five shipped films' snapshots.
-- [ ] **Gap 5 — sequence transforms + library source.** Sequence sources gain
+- [x] **Gap 5 — sequence transforms + library source.** Sequence sources gain
       `{transformOf: performer, transforms: [...]}` for the operations
       `sequence-transformer.ts` already owns (rotate/invert/swap/retrograde…;
       exact speakable list fixed at design time after reading the transformer),
       with `mirrorOf` kept as sugar. Plus a saved-library-sequence source if
       the loader seam is workbench-safe (async like word generation) — verify
       first, descope honestly if not.
+      **Accepted 2026-09-02** (commits `8ee379c537`..`08f34afe1c`): ops
+      mirror/flip/invert/rewind (optional hand), rotate (45° multiples, cw/ccw),
+      swap-hands, start-at; `{library: <publicSequences id>}` loads through
+      `batchFetchPublicSequences` (world-readable). Suite 659/659; snapshot
+      changed only in the proving block. Visual gate on the workbench at
+      1920×1080, film time 50 s and 53.2 s: Firestore fetch observed, no
+      fallback warning in the console, and the three performers show three
+      different pictures (library source, rotated + swapped hands, retrograde).
 - [ ] **Gap 2 — per-beat changes.** Per-performer `stepEffects` (and
       `stepEfforts` if the adapter seam allows live effort swap) following the
       stepPlanes shape; freeze/hold on a beat only if the playback seam
