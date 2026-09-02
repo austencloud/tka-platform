@@ -85,6 +85,8 @@
     <div
       class="segment"
       class:current={segment.index === director.frame.sceneIndex}
+      class:outside-solo={director.soloSceneIndex !== null &&
+        segment.index !== director.soloSceneIndex}
       style:left="{segment.offset * 100}%"
       style:width="{segment.width * 100}%"
     >
@@ -149,6 +151,13 @@
       var(--theme-accent, #7869eb) 22%,
       transparent
     );
+  }
+
+  /* While one scene is soloed the rest of the film is still reachable — a click
+     moves the solo — but it is not what is playing, and the track should say so
+     at a glance rather than looking like an ordinary playthrough. */
+  .segment.outside-solo {
+    opacity: 0.38;
   }
 
   .segment button {
