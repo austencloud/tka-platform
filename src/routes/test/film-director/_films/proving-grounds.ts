@@ -98,13 +98,28 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  *
  * Gap 22, bars. A director counts bars and the film only understood beats.
  * Scene 16 is a waltz: meter three, four bars long, with a two-bar push.
+ *
+ * Round 2, wave C adds four.
+ *
+ * Gap 16, one phrase across a tempo change. A new scene restarted the count,
+ * so cutting to a faster take threw the prop back to step zero. Scenes 17 and
+ * 18 are the same two performers at 60 then 120 bpm, and the second says
+ * `phrase: "continue"`, so the count crosses the cut unbroken.
+ *
+ * Gaps 15, 17 and 19. Scene 19 names two moments and spends them everywhere:
+ * a staff that grows from 100 cm to 250 between them, a camera hold that runs
+ * until the second one, and a freeze that opens on the first. The freeze also
+ * says where inside its step the pose sits.
+ *
+ * Gap 18, staging as a timeline. Cast blocking was one instruction for the
+ * whole scene. Scene 20 states three phases, the last opening on a cue.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
   version: 5,
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
-    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all. An eighth scene changes one performer's effect and effort partway through while another's prop stops for four counts. A ninth and tenth scene repeat one staging twice, an orbit clockwise then the same orbit counterclockwise, so the two can be judged side by side. Then an eleventh scene pushes in and widens the lens in the same breath, holding the performer's size while the world stretches behind her; a twelfth takes the same wide shot off the tripod; and a thirteenth whips between two performers with pans that name where to aim instead of how far to turn. A fourteenth scene calls the first one back from behind, inheriting its staging and its draw rather than restating either. A fifteenth holds three seconds on a stage with nobody on it. A sixteenth counts itself in bars: four bars of three at 90.",
+    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide. A sixth scene spins a saved library sequence beside two transforms of it, a 90-degree rotation with swapped hands and a retrograde. A seventh scene walks a performer in from off camera along a bowed path, while a third stands and watches with no sequence at all. An eighth scene changes one performer's effect and effort partway through while another's prop stops for four counts. A ninth and tenth scene repeat one staging twice, an orbit clockwise then the same orbit counterclockwise, so the two can be judged side by side. Then an eleventh scene pushes in and widens the lens in the same breath, holding the performer's size while the world stretches behind her; a twelfth takes the same wide shot off the tripod; and a thirteenth whips between two performers with pans that name where to aim instead of how far to turn. A fourteenth scene calls the first one back from behind, inheriting its staging and its draw rather than restating either. A fifteenth holds three seconds on a stage with nobody on it. A sixteenth counts itself in bars: four bars of three at 90. A seventeenth and eighteenth play the same phrase at 60 then 120 with the count crossing the cut instead of restarting. A nineteenth names the moments it cares about, \"grow\" and \"settle\", and hangs a staff growing from 100 cm to 250, a camera hold, and a half-step freeze off those two names. A twentieth walks its cast through three staging phases, the last one opening on the drop.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
   // The grammar only guarantees distinctness PER axis; three blues and three
@@ -676,6 +691,123 @@ export const provingGroundsFilm: FilmDirectorInput = {
           { move: "push-in", amount: { meters: 0.6 }, durationBars: 2 },
           { move: "hold" },
         ],
+      },
+    },
+    {
+      id: "tempo-slow",
+      title: "Tempo, Slow Half",
+      intent:
+        "Gap 16, first half. Sixteen counts at 60 bpm. Nothing here is new on its own; it exists so the scene after it has a phrase to continue, and so the count the film hands that scene is a real number rather than zero.",
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "cosmic" },
+      performance: {
+        bpm: 60,
+        formation: "side-by-side",
+        cast: { count: 2, defaults: { effect: "trails" } },
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "wide",
+        angle: "eye",
+        position: "front",
+        moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "tempo-double",
+      title: "Tempo, Double Time",
+      intent:
+        'Gap 16: the same phrase, twice the tempo. A tempo change used to mean cutting to a new scene, and a new scene restarted the count, so the prop jumped back to step zero at the cut. `phrase: "continue"` hands this scene the count the last one ended on: step 16 arrives at 120 bpm on the first frame after the cut, and the phrase reads as one gesture speeding up rather than two takes.',
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "cosmic" },
+      performance: {
+        bpm: 120,
+        phrase: "continue",
+        formation: "side-by-side",
+        cast: { count: 2, defaults: { effect: "trails" } },
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "wide",
+        angle: "eye",
+        position: "front",
+        moves: [{ move: "hold" }],
+      },
+    },
+    {
+      id: "growing-staff",
+      title: "Growing Staff",
+      intent:
+        'Gaps 15, 17 and 19. The scene names two moments, "grow" and "settle", and then never states a number again: the prop ramp, the camera hold, and the second performer\'s freeze all hang off those names, so moving a cue moves every one of them together. Performer 1\'s staff starts at 100 cm and slides to 250 by the settle. Performer 2 freezes at the grow for four counts, and states `progress: 0.5` so the frozen pose sits halfway through its step rather than at the top of it.',
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      cues: { grow: { atBeats: 4 }, settle: { atBeats: 12 } },
+      performance: {
+        bpm: 120,
+        formation: "side-by-side",
+        cast: {
+          count: 2,
+          defaults: { effect: "trails" },
+          performers: [
+            {
+              id: "performer-1",
+              staffLengthCm: 100,
+              stepStaffLengths: [
+                { step: "grow", staffLengthCm: 100, ease: "cut" },
+                { step: "settle", staffLengthCm: 250 },
+              ],
+            },
+            {
+              id: "performer-2",
+              holds: [{ fromStep: "grow", steps: 4, progress: 0.5 }],
+            },
+          ],
+        },
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "wide",
+        angle: "eye",
+        position: "front",
+        moves: [
+          { move: "hold", until: "settle" },
+          { move: "push-in", amount: { meters: 0.5 } },
+        ],
+      },
+    },
+    {
+      id: "two-lines-one-circle",
+      title: "Two Lines, One Circle",
+      intent:
+        'Gap 18: staging as a timeline. Cast blocking used to be one instruction for the whole scene, so "line up, hold, then break into a circle on the drop" needed three scenes and a rebuilt cast in each. Here it is three phases in one scene: the cast walks into a line, stands, and then opens into a circle starting on the "drop" cue. The phases run in the order written and may not overlap, because two formations cannot own the cast at once.',
+      durationBeats: 32,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      cues: { drop: { atBeats: 16 } },
+      performance: {
+        bpm: 120,
+        formation: "grid-2x2",
+        cast: { count: 4, defaults: { effect: "led" } },
+        blocking: [
+          { endFormation: "line", durationBeats: 8, facing: "hold" },
+          { endFormation: "line", durationBeats: 4 },
+          {
+            endFormation: "circle",
+            startCue: "drop",
+            durationBeats: 8,
+            facing: "travel",
+          },
+        ],
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "wide",
+        angle: "high",
+        position: "front",
+        moves: [{ move: "hold" }],
       },
     },
   ],

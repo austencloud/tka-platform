@@ -211,7 +211,12 @@ export function sampleFilmDirector(
     scene,
     sceneTimeSeconds,
     sceneProgress: sceneTimeSeconds / scene.durationSeconds,
-    sequenceStep: (sceneTimeSeconds * scene.performance.bpm) / 60,
+    // Gap 16. stepOffset is the count this scene opened on: zero when the
+    // scene restarts the phrase, the previous scene's final count when it
+    // continues.
+    sequenceStep:
+      (scene.performance.stepOffset ?? 0) +
+      (sceneTimeSeconds * scene.performance.bpm) / 60,
     performerStepOffsets: scene.performance.performers.map(
       (performer) => performer.beatOffset
     ),

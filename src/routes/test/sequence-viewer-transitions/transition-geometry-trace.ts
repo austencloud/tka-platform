@@ -249,6 +249,8 @@ export interface TransitionGeometrySummary {
   inspectorReveal: InspectorRevealSummary[];
   inspectorSurfaceStep: InspectorSurfaceStep | null;
   cardSizePinRelease: CardSizePinRelease | null;
+  cardArrival: CardArrival | null;
+  dockCollapse: DockCollapse | null;
   cardSettingsContentDrift: TransitionContentDrift | null;
   longestSampleGap: number;
   performanceStageIdentityChanges: number;
@@ -965,6 +967,48 @@ function longestSampleGap(samples: TransitionGeometrySample[]): number {
  * container with no transition left to carry it, so any distance still
  * outstanding at that moment is crossed in a single frame.
  */
+/**
+ * Where the Card started when it was committed back into the workspace, and how
+ * far it had to travel to get to rest.
+ *
+ * The Card is centred in its column, so a Card whose box has collapsed sits on
+ * that column's centre line with nothing to centre. When the column then grows
+ * for the new mode, the collapsed box lands at the bottom of it and the size
+ * transition sweeps the visible card up into place. Measuring the visible
+ * card's centre against its own column tells the two apart: a Card composed at
+ * its destination reports zero travel and nothing offstage, while a Card that
+ * grew into place from below reports the distance it climbed.
+ */
+/**
+ * How the stacked inspector dock gave its space back.
+ *
+ * A held panel -- flex-grow and flex-shrink both zero -- is sized entirely by
+ * its flex-basis, so a basis that changes between a length and a keyword is a
+ * discrete change CSS cannot interpolate. The group then re-lays out in one
+ * frame and everything below the dock teleports. Measuring the dock's largest
+ * single-frame change separates the two: an interpolated collapse moves it a
+ * frame's worth at a time, while a snap moves its whole height at once.
+ */
+export interface DockCollapse {
+  /** Largest single-frame change of the dock's own size. */
+  stepPx: number;
+  /** Total size the dock gave up. */
+  travelPx: number;
+  frames: number;
+  ms: number;
+}
+
+export interface CardArrival {
+  /** Largest single-frame movement of the visible card's centre. */
+  stepPx: number;
+  /** Total distance that centre covered before it settled. */
+  travelPx: number;
+  /** How far below its own column the centre started. Zero when on stage. */
+  offstagePx: number;
+  frames: number;
+  ms: number;
+}
+
 export interface CardSizePinRelease {
   /** Largest single-frame width change after the pin was released. */
   stepPx: number;
@@ -1031,6 +1075,100 @@ function summarizeCardSizePinRelease(
       Math.round((first.cardContentWidth / first.cardRootWidth) * 1000) / 1000,
     fillAfter:
       Math.round((last.cardContentWidth / last.cardRootWidth) * 1000) / 1000,
+  };
+}
+
+/**
+ * Grade the Card's arrival into the workspace.
+ *
+ * Everything is measured from the last commit into card mode, because that is
+ * the frame the user perceives as the start of the arrival. A trace that never
+ * commits into card, or that stops before the Card is measurable, reports
+ * nothing rather than a zero — an absent measurement must not read as a
+ * passing one.
+ */
+function summarizeDockCollapse(
+  samples: TransitionGeometrySample[]
+): DockCollapse | null {
+  const held = samples.filter(
+    (sample) => sample.inspectorFlexGrow === 0 && sample.inspectorSize >= 0
+  );
+  if (held.length < 2) return null;
+
+  let stepPx = 0;
+  let firstIndex = -1;
+  let lastIndex = -1;
+  for (let index = 1; index < held.length; index += 1) {
+    // Either direction counts. A round trip opens the dock and closes it again,
+    // and a snap on the way out is the same defect as a snap on the way in.
+    const delta = Math.abs(held[index - 1].inspectorSize - held[index].inspectorSize);
+    if (delta > stepPx) stepPx = delta;
+    if (delta > 0.5) {
+      if (firstIndex < 0) firstIndex = index - 1;
+      lastIndex = index;
+    }
+  }
+  if (firstIndex < 0) return null;
+
+  // The dock's endpoints are equal after a round trip, so the distance that
+  // matters is its full excursion rather than the difference between the ends.
+  const moving = held.slice(firstIndex, lastIndex + 1).map((s) => s.inspectorSize);
+  return {
+    stepPx: Math.round(stepPx * 10) / 10,
+    travelPx: Math.round((Math.max(...moving) - Math.min(...moving)) * 10) / 10,
+    frames: lastIndex - firstIndex,
+    ms: Math.round((held[lastIndex].time - held[firstIndex].time) * 10) / 10,
+  };
+}
+
+function summarizeCardArrival(
+  samples: TransitionGeometrySample[]
+): CardArrival | null {
+  let commit = -1;
+  for (let index = 1; index < samples.length; index += 1) {
+    if (
+      samples[index].selectedMode === "card" &&
+      samples[index - 1].selectedMode !== "card"
+    ) {
+      commit = index;
+    }
+  }
+  if (commit < 0) return null;
+
+  // A collapsed panel is exactly where the card is parked before it climbs, so
+  // filtering on panel height would drop every frame that carries the defect.
+  // Only the card's own content has to be measurable.
+  const measured = samples
+    .slice(commit)
+    .filter((sample) => sample.cardContentHeight > 0);
+  if (measured.length < 2) return null;
+
+  const first = measured[0];
+  const last = measured[measured.length - 1];
+
+  let stepPx = 0;
+  let settledIndex = 0;
+  for (let index = 1; index < measured.length; index += 1) {
+    const delta = Math.abs(
+      measured[index].cardContentCenterY - measured[index - 1].cardContentCenterY
+    );
+    if (delta > stepPx) stepPx = delta;
+    if (delta > 0.5) settledIndex = index;
+  }
+
+  const columnBottom = first.cardPanelCenterY + first.cardPanelHeight / 2;
+  const settled = measured[settledIndex];
+  return {
+    stepPx: Math.round(stepPx * 10) / 10,
+    travelPx:
+      Math.round(
+        Math.abs(last.cardContentCenterY - first.cardContentCenterY) * 10
+      ) / 10,
+    offstagePx: Math.round(
+      Math.max(0, first.cardContentCenterY - columnBottom) * 10
+    ) / 10,
+    frames: settledIndex,
+    ms: Math.round((settled.time - first.time) * 10) / 10,
   };
 }
 
@@ -1536,6 +1674,8 @@ export function summarizeTransitionGeometry(
     ).filter((entry) => entry.readableFrames > 0),
     inspectorSurfaceStep: summarizeInspectorSurfaceStep(trace.samples),
     cardSizePinRelease: summarizeCardSizePinRelease(trace.samples),
+    cardArrival: summarizeCardArrival(trace.samples),
+    dockCollapse: summarizeDockCollapse(trace.samples),
     performanceStageIdentityChanges: isPerformanceTrace
       ? identityChanges(trace.samples, (sample) => sample.stageLayerIdentity)
       : 0,

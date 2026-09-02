@@ -819,6 +819,36 @@
         )}</span
       >
     {/if}
+    <!-- Measured from the commit into card, not from a gate phase: the
+         arrival is what the user watches, and it outlives the step that
+         started it. -->
+    <!-- The dock is the cause the arrival only hints at: a held panel whose
+       basis snaps between a length and a keyword re-lays out the whole group
+       in one frame. A collapse that takes a single frame is that snap. -->
+  {#if summary.dockCollapse}
+    <span
+      data-problem={summary.dockCollapse.frames <= 1 &&
+        summary.dockCollapse.travelPx > 24}
+      title="A held dock is sized by its flex-basis alone, and CSS cannot interpolate between a length and a keyword. A collapse that takes one frame is that snap."
+      >Dock collapse: {Math.round(summary.dockCollapse.stepPx)} px step · {Math.round(
+        summary.dockCollapse.travelPx
+      )} px over {summary.dockCollapse.frames} frames · {Math.round(
+        summary.dockCollapse.ms
+      )} ms</span
+    >
+  {/if}
+  {#if summary.cardArrival}
+      <span
+        data-problem={summary.cardArrival.offstagePx > 0 ||
+          (summary.cardArrival.travelPx > 24 &&
+            summary.cardArrival.frames <= 1)}
+        >Card arrival: {Math.round(summary.cardArrival.stepPx)} px step · {Math.round(
+          summary.cardArrival.travelPx
+        )} px climbed over {summary.cardArrival.frames} frames · {Math.round(
+          summary.cardArrival.ms
+        )} ms · {Math.round(summary.cardArrival.offstagePx)} px offstage</span
+      >
+    {/if}
     {#each summary.inspectorReveal as reveal (reveal.layer)}
       <span data-problem={revealBroken(reveal)}
         >{reveal.layer} reveal: {formatReveal(reveal)}</span
