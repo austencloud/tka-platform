@@ -8,10 +8,7 @@ const packageRoot = resolve(
 );
 
 const animatorSource = readFileSync(
-  resolve(
-    packageRoot,
-    "src/lib/services/implementations/AvatarAnimator.ts"
-  ),
+  resolve(packageRoot, "src/lib/services/implementations/AvatarAnimator.ts"),
   "utf8"
 );
 
@@ -21,10 +18,7 @@ const animatorRuntime = readFileSync(
 );
 
 const spineTwisterSource = readFileSync(
-  resolve(
-    packageRoot,
-    "src/lib/services/implementations/SpineTwister.ts"
-  ),
+  resolve(packageRoot, "src/lib/services/implementations/SpineTwister.ts"),
   "utf8"
 );
 
@@ -83,18 +77,40 @@ describe("avatar head-clearance policy", () => {
   it.each([
     ["source", animatorSource],
     ["runtime", animatorRuntime],
-  ])("does not phase-lag the interpolated stance track in %s", (_label, animator) => {
-    expect(animator).toContain(
-      "this.stanceYawSmoothedRad = this.stanceYawTargetRad"
-    );
-    expect(animator).not.toMatch(
-      /this\.stanceYawSmoothedRad \+=\s*\(this\.stanceYawTargetRad/
-    );
-    expect(animator).toContain("const stanceTrackActive = maxIKWeight > 0.001");
-    expect(animator).toContain(
-      "const stanceCorrectionActive = Math.abs(stanceYawCorrectionRad) > 0.001"
-    );
-  });
+  ])(
+    "does not phase-lag the interpolated stance track in %s",
+    (_label, animator) => {
+      expect(animator).toContain(
+        "this.stanceYawSmoothedRad = this.stanceYawTargetRad"
+      );
+      expect(animator).not.toMatch(
+        /this\.stanceYawSmoothedRad \+=\s*\(this\.stanceYawTargetRad/
+      );
+      expect(animator).toContain(
+        "const stanceTrackActive = maxIKWeight > 0.001"
+      );
+      expect(animator).toContain(
+        "const stanceCorrectionActive = Math.abs(stanceYawCorrectionRad) > 0.001"
+      );
+    }
+  );
+
+  it.each([
+    ["source", animatorSource],
+    ["runtime", animatorRuntime],
+  ])(
+    "keeps the stance baseline stable across rendered frames in %s",
+    (_label, animator) => {
+      expect(animator).toContain("refreshStanceReferenceForward(state");
+      expect(animator).toContain("_stanceReferenceRoot");
+      expect(animator).toContain("_stanceReferenceLocalForward");
+      expect(animator).toContain("root !== this._stanceReferenceRoot");
+      expect(animator).toContain("this.refreshStanceReferenceForward(state)");
+      expect(animator).not.toMatch(
+        /this\.refreshBodyFrame\(state, leftChain, rightChain\);\s*this\._stanceReferenceForward\.copy/
+      );
+    }
+  );
 
   it.each([
     ["source", animatorSource],
@@ -104,7 +120,9 @@ describe("avatar head-clearance policy", () => {
     expect(animator).toMatch(/this\.solveArmWithBodyClearance\(\s*"right"/);
     expect(animator).toContain("this.armClearsBody(chain, context)");
     expect(animator).toContain("this.armBodyClearanceMargin(chain, context)");
-    expect(animator).toContain("this.solveArmAtClearPole(chain, target, context)");
+    expect(animator).toContain(
+      "this.solveArmAtClearPole(chain, target, context)"
+    );
     expect(animator).toContain("ARM_CLEARANCE_RECOVERY_INTERVAL");
     expect(animator).toContain("this.rememberClearArmRoute(");
     expect(animator).toMatch(
@@ -119,30 +137,36 @@ describe("avatar head-clearance policy", () => {
   it.each([
     ["source", avatarComponentSource],
     ["runtime", avatarComponentRuntime],
-  ])("measures upper arms from their real chain roots in %s", (_label, component) => {
-    expect(component).toContain(
-      "leftChain.root.getWorldPosition(_boneVecs.leftShoulder)"
-    );
-    expect(component).toContain(
-      "rightChain.root.getWorldPosition(_boneVecs.rightShoulder)"
-    );
-  });
+  ])(
+    "measures upper arms from their real chain roots in %s",
+    (_label, component) => {
+      expect(component).toContain(
+        "leftChain.root.getWorldPosition(_boneVecs.leftShoulder)"
+      );
+      expect(component).toContain(
+        "rightChain.root.getWorldPosition(_boneVecs.rightShoulder)"
+      );
+    }
+  );
 
   it.each([
     ["source", animatorSource],
     ["runtime", animatorRuntime],
-  ])("builds the solver face envelope from real arm roots in %s", (_label, animator) => {
-    expect(animator).toContain(
-      'leftChain?.root ?? state.bones.get("LeftShoulder")'
-    );
-    expect(animator).toContain(
-      'rightChain?.root ?? state.bones.get("RightShoulder")'
-    );
-    expect(animator).toMatch(
-      /applyReachEscalation\("left"[\s\S]{0,300}refreshFaceClearanceCenter/
-    );
-    expect(animator).toMatch(
-      /applyReachEscalation\("right"[\s\S]{0,300}refreshFaceClearanceCenter/
-    );
-  });
+  ])(
+    "builds the solver face envelope from real arm roots in %s",
+    (_label, animator) => {
+      expect(animator).toContain(
+        'leftChain?.root ?? state.bones.get("LeftShoulder")'
+      );
+      expect(animator).toContain(
+        'rightChain?.root ?? state.bones.get("RightShoulder")'
+      );
+      expect(animator).toMatch(
+        /applyReachEscalation\("left"[\s\S]{0,300}refreshFaceClearanceCenter/
+      );
+      expect(animator).toMatch(
+        /applyReachEscalation\("right"[\s\S]{0,300}refreshFaceClearanceCenter/
+      );
+    }
+  );
 });

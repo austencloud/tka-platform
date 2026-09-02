@@ -23,6 +23,7 @@
     makeStandaloneDeps,
   } from "$lib/shared/3d/state/character-instance-state.svelte";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
+  import { planUpperBodyStanceForPropStates } from "$lib/shared/3d/collision/upper-body-stance-planner";
   import { buildTipEffectMap } from "$lib/shared/animation-engine/domain/tip-effect-map";
   import EffectOrchestrator3D from "$lib/shared/3d/effects/EffectOrchestrator3D.svelte";
 
@@ -65,19 +66,33 @@
     },
     makeStandaloneDeps()
   );
+  const upperBodyStance = $derived(
+    planUpperBodyStanceForPropStates(
+      PlaneMode.WALL,
+      performerState.leftPropState,
+      performerState.rightPropState
+    )
+  );
   let readyReported = false;
 
   $effect(() => {
     const sequence = props.sequence;
-    const phase = props.phaseOffsetSteps ?? 0;
+    const phase = props.phaseOffsetSteps;
     untrack(() => {
       performerState.loadSequence(sequence);
       performerState.loop = true;
-      if (sequence.steps.length > 0) {
+      if (phase == null) {
+        performerState.goToStep(0);
+      } else if (sequence.steps.length > 0) {
         const wrapped =
           ((phase % sequence.steps.length) + sequence.steps.length) %
           sequence.steps.length;
-        performerState.goToStep(Math.floor(wrapped));
+        // A live phase is motion-relative: 0.00 is the beginning of beat 1 and
+        // 7.99 the end of beat 8. The state owner says where beat 1 lives,
+        // because it reserves index 0 for a static start pose when one exists.
+        performerState.goToStep(
+          Math.floor(wrapped) + performerState.motionStepOffset
+        );
         performerState.setProgress(wrapped - Math.floor(wrapped));
       }
       performerState.speed = props.playbackSpeed ?? 1;
@@ -115,6 +130,10 @@
   enableFootPlanting={props.enableFootPlanting ?? true}
   weldGrip={props.weldGrip ?? false}
   headDodge={true}
+  stanceYaw={upperBodyStance.yawRad}
+  spinePitchOffset={upperBodyStance.pitchRad}
+  blueHandDepthOffset={upperBodyStance.leftDepthOffsetM}
+  redHandDepthOffset={upperBodyStance.rightDepthOffsetM}
   showEffects={props.showEffects ?? true}
   {tipEffectMap}
   isPlaying={performerState.isPlaying}
