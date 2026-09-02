@@ -2,10 +2,10 @@
 
 **Date:** 2026-09-02
 **Status:** Decomposition agreed. Sub-project 1 (Drive in) selected for the first design.
-**Settled so far:** chase camera behind the car; approach extended along the real
-ODOT centerline re-clipped to the terrain square (886.9 m of measured road, 132 s
-at a careful 15 mph), fully
-player-steered.
+**Settled so far:** chase camera behind the car; the approach runs the official
+ODOT centerline re-clipped to the terrain square — 886.9 m of measured road,
+132 s at a careful 15 mph — fully player-steered. The whole economy is designed
+up front; only the car reaches the screen in the first delivery.
 **Scope:** This is a roadmap, not an implementation spec. Each sub-project below
 gets its own `YYYY-MM-DD-<topic>-design.md` and its own implementation plan.
 
