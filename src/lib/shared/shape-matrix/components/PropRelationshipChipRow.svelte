@@ -126,8 +126,12 @@
   <i class="fas fa-arrow-right bridge-arrow" aria-hidden="true"></i>
   <span class="sr-only">produces</span>
 
-  <div class="prop-stage">
-    <Crossfade key={resultKey} fill duration={DURATION.fast}>
+  <div class="prop-result">
+    <!-- Content-sized with an eased height, NOT `fill`. The branching variant
+         is a label over two chips and is materially taller than the one-line
+         result; filling a 3.5rem parent made its layers absolute and spilled
+         them over the animation below. -->
+    <Crossfade key={resultKey} animateHeight duration={DURATION.fast}>
       {#if disabled}
         <div class="bridge-side prop-side pending-result">
           <span class="bridge-role">Props</span>
@@ -281,8 +285,9 @@
     font-size: 0.85rem;
   }
 
-  .prop-stage {
-    position: relative;
+  .prop-result {
+    display: grid;
+    align-content: start;
     min-width: 0;
     min-height: 3.5rem;
   }
@@ -355,9 +360,30 @@
       padding-block: 0.25rem;
     }
 
-    .prop-stage,
+    .prop-result,
     .result-choices :global(.relationship-choice) {
       min-height: 3.1rem;
+    }
+
+    /* A short, wide drill puts the bridge in a narrow column, where the glyph
+       beside the text left the code about eighteen pixels and rendered it as
+       "S...". Stacking gives the code and the element name the chip's whole
+       width. */
+    .result-choices :global(.relationship-choice) {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      padding-inline: 0.25rem;
+    }
+
+    /* The drill is wide, so the chip spells the relationship out by default.
+       These two do not have the drill's width; they have a column of it. */
+    .result-choices :global(.relationship-choice .code-wide) {
+      display: none;
+    }
+
+    .result-choices :global(.relationship-choice .code-compact) {
+      display: inline;
     }
 
     .bridge-copy small,

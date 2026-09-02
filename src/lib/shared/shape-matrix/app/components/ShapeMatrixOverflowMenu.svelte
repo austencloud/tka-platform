@@ -1,7 +1,6 @@
 <script lang="ts">
   import { DropdownMenu } from "bits-ui";
   import type { HTMLButtonAttributes } from "svelte/elements";
-  import { getPropTypeDisplayInfo } from "$lib/shared/settings/components/tabs/prop-type/prop-type-registry";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
 
@@ -9,15 +8,10 @@
     "http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/";
 
   const appState = getShapeMatrixAppContext();
-  const selectedProp = $derived(getPropTypeDisplayInfo(appState.propType));
   let open = $state(false);
 
   function asButtonAttributes(props: unknown): HTMLButtonAttributes {
     return props as HTMLButtonAttributes;
-  }
-
-  function chooseProp(): void {
-    appState.openPropPicker();
   }
 
   function openAbout(): void {
@@ -58,18 +52,9 @@
       class="shape-matrix-overflow"
       aria-label="Shape Matrix options"
     >
-      <DropdownMenu.Item
-        class="shape-matrix-overflow-item"
-        textValue={`Choose prop. Current prop: ${selectedProp.label}`}
-        onSelect={chooseProp}
-      >
-        <img class="prop-icon" src={selectedProp.image} alt="" />
-        <span class="item-copy">
-          <span>Choose prop</span>
-          <small>{selectedProp.label}</small>
-        </span>
-      </DropdownMenu.Item>
-      <DropdownMenu.Separator class="shape-matrix-overflow-divider" />
+      <!-- No prop entry here: the Props control under the animation canvas
+           owns that choice, where the prop is visible against the shape it
+           traces. -->
       <DropdownMenu.Item
         class="shape-matrix-overflow-item"
         textValue="View Lorq Nichols' original Shape Matrix"
@@ -161,38 +146,11 @@
     color: var(--theme-text, #fff);
   }
 
-  :global(.shape-matrix-overflow-item > i),
-  :global(.shape-matrix-overflow-item > .prop-icon) {
-    width: 1.4rem;
-    height: 1.4rem;
-    flex: 0 0 1.4rem;
-    object-fit: contain;
-    text-align: center;
-  }
-
   :global(.shape-matrix-overflow-item > i) {
-    height: auto;
+    width: 1.4rem;
+    flex: 0 0 1.4rem;
     color: var(--theme-accent, #f59e0b);
-  }
-
-  :global(.shape-matrix-overflow-item .item-copy) {
-    display: grid;
-    min-width: 0;
-    gap: 0.05rem;
-  }
-
-  :global(.shape-matrix-overflow-item .item-copy small) {
-    overflow: hidden;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-compact, 12px);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  :global(.shape-matrix-overflow-divider) {
-    height: 1px;
-    margin: 4px 8px;
-    background: var(--theme-stroke, rgb(255 255 255 / 0.1));
+    text-align: center;
   }
 
   @keyframes menu-in {
