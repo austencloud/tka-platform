@@ -2,10 +2,12 @@
 
 **Date:** 2026-09-02
 **Status:** Decomposition agreed. Sub-project 1 (Drive in) selected for the first design.
-**Settled so far:** chase camera behind the car; the approach runs the official
-ODOT centerline re-clipped to the terrain square — 886.9 m of measured road,
-132 s at a careful 15 mph — fully player-steered. The whole economy is designed
-up front; only the car reaches the screen in the first delivery.
+**Settled so far:** the whole sim becomes third person — on foot as well as in
+the car; the game opens on the loadout screen and then puts you at the wheel;
+the approach runs the official ODOT centerline re-clipped to the terrain square
+— 886.9 m of measured road, 132 s at a careful 15 mph — fully player-steered.
+The whole economy is designed up front; only the car reaches the screen in the
+first delivery.
 **Scope:** This is a roadmap, not an implementation spec. Each sub-project below
 gets its own `YYYY-MM-DD-<topic>-design.md` and its own implementation plan.
 
@@ -276,6 +278,47 @@ thing that actually decides this. Do that before committing.
 This is its own decision with its own spec, not part of the arrival arc. The arc
 consumes it.
 
+## The whole sim goes third person — ADDED 2026-09-02
+
+Austen: *"The whole SIM is not first person in fact. It should be third person
+the whole time. I know, big direction change."*
+
+It reaches further than the car. The sim is first person on foot today —
+`FlowFestGrayboxWalkScene.svelte` sets `EYE_HEIGHT = 1.7`, tags its camera
+`established-first-person-walk`, and the walking player has no rendered body at
+all. Checked the same day, the change is smaller than it sounds, because both
+halves already exist in this scene:
+
+- **Third person is already a mode, already used here.** The scene passes
+  `allowedModes={[CameraMode.THIRD_PERSON]}` the moment you mount the electric
+  unicycle, and `[CameraMode.FIRST_PERSON]` when you are on foot, with
+  `disableModeToggle`. The mounted rider renders a real body — `Avatar3D` with
+  `FLOW_FEST_EUC_CONFIG.riderAvatarId` (`ch01`). So the sim has *already* shown
+  you your own character from behind; it just stops when you step off.
+- **The walking character owner is already mounted in the same scene.**
+  `FlowFestFestivalCommunity.svelte` renders every spectator as `Avatar3D` with
+  `enableLocomotion` and `enableFootPlanting`, driven by position, facing angle,
+  `isMoving`, `moveSpeed` and `moveDirection`. The player becomes one more of
+  those, with the camera behind it. That is the shared locomotion owner, not a
+  second walking system.
+
+So the work is: give the on-foot player the body the NPCs already have, allow
+third person on foot, and move the camera from eye height to a follow rig. Three
+things this must not do:
+
+1. **Do not loosen the drift guard.** `flow-fest-runtime-contract.ts` asserts
+   `spawn.eyeHeightMeters === 1.7` and errors with *"Flow Fest Gate 2 spawn,
+   camera, zone, or anchor set drifted"*. That guard exists to catch exactly this
+   kind of silent change. Give it the new intended value; never relax the check.
+2. **Do not hand-roll a follow camera.** `shared/3d/camera/` owns camera
+   movement and transitions.
+3. **Third person changes what the player can see of themselves, so it changes
+   what has to be right.** Character, clothing, the props on your back, and how
+   the body sits in the car all become visible surfaces that first person hid.
+
+This is a prerequisite for sub-project 1 — the drive is authored around a camera
+behind the car — and it re-opens the on-foot camera for every later sub-project.
+
 ## Decomposition
 
 Six independent subsystems, in dependency order. Each gets its own spec, plan,
@@ -320,6 +363,30 @@ hatchback with a great tent and a vendor budget. Every one of those costs is
 something the sim needs for other reasons, so none of it is a balance tax
 invented to prop up the mechanic.
 
+**Props are plural, and they are real geometry in the back of the car.** Austen,
+2026-09-02:
+
+> Honestly you'll have a bunch of props most likely if you're a seasoned Flow
+> Fest veteran. So maybe you can pick a wide variety and they can all be real 3D
+> models and they can literally be sitting there in the back of your car, kind
+> of stacked or next to each other. [...] As we add more 3D prop models to the
+> system, get more and more realistic.
+
+That overturns the earlier "the one prop that you come in with". It also does
+real work for the sim: props visible in the cargo area are the cheapest possible
+proof that the loadout screen is not a menu that lies, and they are the reason a
+bigger car matters before the tent or the cooler exist.
+
+`scene-prop-catalog.ts` holds **15** props with 3D models today — Sword,
+Sickles, Staff, LED Baton, Fire Staff, Chicken, Big Chicken, Club, Torch,
+Guitar, Ukulele, Triquetra, Triquetra 2, Triad, Trigeng. So a fixed "pick 33" is
+not currently expressible. **The cap is the car, not a number.** Cargo volume
+comes from the vehicle you chose, each prop has a footprint, and you pack until
+it is full — which makes the pickup-versus-hatchback choice legible on the
+loadout screen on day one and grows on its own as the catalog grows. The catalog
+is the single owner of what exists; the loadout screen reads it rather than
+keeping its own list.
+
 **The discipline that keeps this honest:** a choice may only appear on the
 loadout screen once at least one of its consequences is implemented. Otherwise
 it is a menu that lies. The budget and the car qualify immediately; the tent
@@ -341,15 +408,26 @@ Settled with Austen on 2026-09-02:
   steering on the EUC pattern, plus weight transfer, mild understeer, and a
   loose gravel shoulder. Automatic; it cannot stall. The pickup must feel
   heavier than the hatchback so the loadout car choice is felt, not stated.
-- **Camera: chase, behind the car.**
+- **Camera: third person, behind the car** — and third person on foot too, for
+  the whole sim. See the section above; it is a prerequisite, not a detail of
+  this slice.
 - **Date: May 14.** Bare fields, fully leafed woods, sun behind the driver from
   15:05 to sunset at 20:44.
 - **Departure time is a dial on the loadout screen.** Early, midday or late
   afternoon. It sets the arrival light, whether there is a queue at the gate,
   and how much daylight is left to make camp. This is the only piece of the
   economy that must exist for slice 1.
+- **The loadout screen comes first, then the road.** Not a cold open on the
+  highway. You pack, you pick, then the first thing you see in the world is the
+  road — so the drive is the first *place*, and the choices you made are already
+  sitting in the car with you.
 - **The surveyed 887 m is the whole drive.** The game opens at the west edge of
   the terrain square with the player's hands already on the wheel.
+- **No music, no radio, no dialogue.** Road noise and the engine. Austen chose
+  this over a soundtrack or a car radio.
+- **Overshoot the gate and you turn around and come back.** No rubber-banding,
+  no invisible wall. The centerline runs 189 m past the entrance to the square's
+  east edge, so there is real road to turn around on.
 - **The slice ends parked at the gate, out of the car.** The canopy exists as
   geometry you can walk up to; nobody is behind it until sub-project 2.
 - **Traffic: the road is essentially yours.** A few cars that may or may not be
