@@ -604,53 +604,76 @@ const locationSchema = z
   })
   .strict();
 
+const cameraMoveSchema = z
+  .object({
+    move: z.enum([
+      "hold",
+      "push-in",
+      "pull-back",
+      "orbit",
+      "crane",
+      "pan",
+      "truck",
+      "zoom",
+      "roll",
+    ]),
+    direction: z
+      .enum(["cw", "ccw", "up", "down", "left", "right", "in", "out"])
+      .optional(),
+    amount: z
+      .union([
+        z.object({ degrees: finiteNumber }).strict(),
+        z.object({ meters: finiteNumber.positive() }).strict(),
+      ])
+      .optional(),
+    durationSeconds: finiteNumber.positive().optional(),
+    durationBeats: finiteNumber.positive().optional(),
+    easing: z.enum(DIRECTOR_EASINGS).optional(),
+  })
+  .strict()
+  .superRefine(atMostOneTimeUnit);
+
+/**
+ * One framing, spelled the same whether it is the scene's only framing or one
+ * shot among several. Shared so a shot can never drift from what the top-level
+ * camera accepts.
+ */
+const cameraFramingFields = {
+  subject: cameraTargetSchema.optional(),
+  shotSize: z.enum(["close-up", "medium", "wide", "extreme-wide"]).optional(),
+  angle: z.enum(["low", "eye", "high", "top"]).optional(),
+  position: z
+    .union([
+      z.enum(["front", "left", "right", "behind"]),
+      z.object({ degrees: finiteNumber.min(-360).max(360) }).strict(),
+    ])
+    .optional(),
+  moves: z.array(cameraMoveSchema).min(1).max(16).optional(),
+};
+
+/** A framing plus how long it stays on screen. Consecutive shots hard-cut. */
+const cameraShotSchema = z
+  .object({
+    ...cameraFramingFields,
+    durationSeconds: finiteNumber.positive().optional(),
+    durationBeats: finiteNumber.positive().optional(),
+  })
+  .strict()
+  .superRefine(atMostOneTimeUnit);
+
 const cameraSchema = z
   .object({
     preset: z.enum(DIRECTOR_CAMERA_PRESETS).optional(),
     target: cameraTargetSchema.optional(),
     orbitDegrees: finiteNumber.min(-720).max(720).optional(),
     keyframes: z.array(cameraKeyframeSchema).min(1).max(32).optional(),
-    subject: cameraTargetSchema.optional(),
-    shotSize: z.enum(["close-up", "medium", "wide", "extreme-wide"]).optional(),
-    angle: z.enum(["low", "eye", "high", "top"]).optional(),
-    position: z
-      .union([
-        z.enum(["front", "left", "right", "behind"]),
-        z.object({ degrees: finiteNumber.min(-360).max(360) }).strict(),
-      ])
-      .optional(),
-    moves: z
-      .array(
-        z
-          .object({
-            move: z.enum([
-              "hold",
-              "push-in",
-              "pull-back",
-              "orbit",
-              "crane",
-              "pan",
-              "truck",
-              "zoom",
-              "roll",
-            ]),
-            direction: z
-              .enum(["cw", "ccw", "up", "down", "left", "right", "in", "out"])
-              .optional(),
-            amount: z
-              .union([
-                z.object({ degrees: finiteNumber }).strict(),
-                z.object({ meters: finiteNumber.positive() }).strict(),
-              ])
-              .optional(),
-            durationSeconds: finiteNumber.positive().optional(),
-            durationBeats: finiteNumber.positive().optional(),
-            easing: z.enum(DIRECTOR_EASINGS).optional(),
-          })
-          .strict()
-          .superRefine(atMostOneTimeUnit)
-      )
-      .min(1)
+    ...cameraFramingFields,
+    shots: z
+      .array(cameraShotSchema)
+      .min(2, {
+        message:
+          "One shot is just a framing. State it directly on camera, or give shots at least two entries to cut between.",
+      })
       .max(16)
       .optional(),
   })
@@ -706,6 +729,47 @@ const cameraSchema = z
       message:
         'Tracking is spoken on "subject" with framing grammar. Presets and raw keyframes aim where their targets say.',
       path: ["target"],
+    }
+  )
+  .refine(
+    (camera) =>
+      !camera.shots ||
+      !(
+        camera.subject ||
+        camera.shotSize ||
+        camera.angle ||
+        camera.position ||
+        camera.moves
+      ),
+    {
+      message:
+        'Shots and a single framing are exclusive. Put every framing inside "shots".',
+      path: ["shots"],
+    }
+  )
+  .refine((camera) => !(camera.shots && camera.preset), {
+    message: "A preset and shots are exclusive. Shots are their own framing.",
+    path: ["shots"],
+  })
+  .refine((camera) => !(camera.shots && camera.keyframes), {
+    message: "Raw keyframes and shots are exclusive. Use one.",
+    path: ["shots"],
+  })
+  .refine((camera) => !(camera.shots && camera.target), {
+    message: 'Use "subject" inside each shot, not "target".',
+    path: ["shots"],
+  })
+  // Tracking offsets the WHOLE resolved track by a walker's displacement, so
+  // it cannot describe a walker followed in one shot and ignored in the next.
+  .refine(
+    (camera) =>
+      !camera.shots?.some(
+        (shot) => shot.subject?.kind === "performer" && shot.subject.track
+      ),
+    {
+      message:
+        'Tracking and shots do not combine yet. Track a walker with a single framing, or cut between shots without "track".',
+      path: ["shots"],
     }
   );
 

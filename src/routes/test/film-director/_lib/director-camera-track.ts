@@ -3,6 +3,7 @@ import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
 import { applyDirectorEasing } from "./director-easing";
 import {
   compileCameraMoves,
+  compileCameraShots,
   computeCameraFraming,
   directorFloorY,
 } from "./camera-language";
@@ -145,7 +146,8 @@ export function resolveDirectorCameraTrack(
         input.angle ||
         input.position ||
         input.moves ||
-        input.subject)
+        input.subject ||
+        input.shots)
   );
   if (usesGrammar && input?.keyframes?.length) {
     throw new Error(
@@ -210,6 +212,26 @@ export function resolveDirectorCameraTrack(
       }
     }
     return { preset: "custom", substitutedFor: null, keyframes: resolved };
+  }
+
+  if (input?.shots) {
+    // Tracking offsets the whole resolved track by one walker's displacement,
+    // which cannot describe a walker followed in one shot and dropped in the
+    // next. The schema rejects it too; this is the resolver's own guard.
+    if (
+      input.shots.some(
+        (shot) => shot.subject?.kind === "performer" && shot.subject.track
+      )
+    ) {
+      throw new Error(
+        'Tracking and shots do not combine yet. Track a walker with a single framing, or cut between shots without "track".'
+      );
+    }
+    return {
+      preset: "custom",
+      substitutedFor: null,
+      keyframes: compileCameraShots(input.shots, context),
+    };
   }
 
   if (usesGrammar) {
@@ -392,8 +414,12 @@ export function sampleDirectorCameraTrack(
     Math.min(1, (atSeconds - start.atSeconds) / duration)
   );
   const progress = applyDirectorEasing(linearProgress, start.easing);
-  const before = keyframes[Math.max(0, startIndex - 1)] ?? start;
-  const after = keyframes[Math.min(keyframes.length - 1, endIndex + 1)] ?? end;
+  let before = keyframes[Math.max(0, startIndex - 1)] ?? start;
+  let after = keyframes[Math.min(keyframes.length - 1, endIndex + 1)] ?? end;
+  // A step keyframe is a cut: the spline on either side must not bend toward
+  // framing that belongs to a different shot.
+  if (before.interpolation === "step") before = start;
+  if (end.interpolation === "step") after = end;
   const smooth = start.interpolation === "smooth";
 
   return {

@@ -96,11 +96,18 @@ proving-film scenes author at version 4.
       standing (≈7 s) frames with the forest sliding behind; the first staging
       walked through the partner's mark along z = 0 and was moved downstage
       to (-1.5, -1.8). 611/611 tests.
-- [ ] **Gap 4 — mid-scene cut.** `camera.shots: [...]` — a list of framing
+- [x] **Gap 4 — mid-scene cut.** `camera.shots: [...]` — a list of framing
       blocks each with its own subject/shotSize/angle/position/moves and a
       duration (seconds or beats); hard cut between consecutive shots.
       Exclusive with single-framing fields, presets, and raw keyframes.
       Compiles to one keyframe track with step-interpolation boundaries.
+      **Accepted 2026-09-02** (worktree `c5b004dcec` + close-out): suite
+      632/632; proving scene 5 sampled on the running workbench at 1920×1080 —
+      wide front hold through scene time 2.99 s, close-up at 3.01 s pushing
+      0.4 m to 5.99 s, high-behind at 6.01 s; three frames read wide two-shot /
+      low close-up on performer 1 / high behind two-shot with no glide. Cut
+      transition default duration is now 0, which changed only
+      `transition.durationSeconds` in five shipped films' snapshots.
 - [ ] **Gap 5 — sequence transforms + library source.** Sequence sources gain
       `{transformOf: performer, transforms: [...]}` for the operations
       `sequence-transformer.ts` already owns (rotate/invert/swap/retrograde…;
