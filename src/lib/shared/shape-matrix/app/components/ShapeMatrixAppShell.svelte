@@ -681,8 +681,11 @@
   :global(
     html.shape-matrix-morph::view-transition-group(shape-matrix-active-mandala)
   ) {
+    /* One picture travels between the tile and the hero. It settles onto
+       its destination without overshoot; a spring would swing the mandala
+       past the square the live canvas is about to paint in. */
     animation-duration: var(--duration-dramatic);
-    animation-timing-function: var(--ease-spring);
+    animation-timing-function: var(--ease-in-out);
   }
   :global(
     html.shape-matrix-morph::view-transition-old(shape-matrix-active-mandala)

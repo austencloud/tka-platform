@@ -39,10 +39,12 @@ overlay calls it every frame. A new
 `mandala-guide-image.ts` (`renderMandalaGuideImage`) calls the same painter
 into a throwaway canvas and returns a data URL, with two fits:
 
-- `extent`: whole mandala fills the box (tiles and headers; the standalone
-  rule `resolveMandalaRenderExtent` already used).
 - `engine`: `computeEngineAlignedMandalaScale(size)`, the live overlay's own
-  transform (hero floor).
+  transform. Tiles, headers, and the hero floor all use it (revised in the
+  parity follow-up, below), so every still is the live canvas at another size.
+- `extent`: whole mandala fills the box (the standalone rule
+  `resolveMandalaRenderExtent` already used). Kept for surfaces that are not
+  morph endpoints.
 
 `shape-matrix-render.ts` routes `renderCell` / `renderHeader` through it and
 adds `renderEngineAligned`. Colors come from `HERO_TRAIL_PRESET` — the preset
@@ -72,6 +74,33 @@ nothing on screen changes. Disassembled split canvases use the live overlay
 already and inherit parity for free.
 
 ### Tile → hero morph
+
+Revised after the first ship (Austen: "very obviously different mandalas ...
+not in the exact same position ... the animation overshoots"). Three things
+made the moving element not one picture:
+
+1. **Fits differed.** Tiles used `extent`, the hero used `engine`. The
+   shared-element morph's default old/new crossfade blended two drawings of
+   different scale. Now `renderCell` and `renderHeader` paint at `engine`
+   fit too, so the morph is a uniform scale and translate of one picture.
+2. **The hero's square was not the canvas's square.** The player rendered
+   its word header inside the frame, so the live canvas letterboxed beneath a
+   ~53px band while `MandalaHeroLayer` centered on the whole frame. The
+   drill now passes `showWordHeader: false` and renders the shared
+   `WordHeader` in a drill-owned band above `.hero-frame` (grid rows
+   `auto minmax(0, 1fr)`), with a hidden one-letter ghost header holding the
+   band's height before a realization exists. The frame is the canvas
+   region, so the floor's inscribed square is the canvas's inscribed square,
+   and the header still follows the visibility manager's `wordHeader` and
+   dark-mode settings and the visible step number.
+3. **Overshoot.** The group animation used `--ease-spring`. It now uses
+   `--ease-in-out`; the picture settles onto the square the live canvas
+   paints in.
+
+The return trip is the same element: the hero claims the name while the
+detail view is active, the selected tile claims it in matrix view, and both
+draw the identical engine-fit picture, so going back is the same mandala
+travelling back.
 
 Both endpoints are now the same painter's output. The View Transition morphs
 one drawing between two positions and sizes; the only remaining change across
