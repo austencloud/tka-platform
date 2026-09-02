@@ -47,8 +47,8 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  *
  * Gap 7, the edges of the stage. Before this wave a walk was a straight line
  * between two marks, and a performer who was meant to enter had nowhere to
- * enter from. Scene 7 opens performer 3 five meters off the right of the
- * frame — legal all along, because nothing clamps a position and the ground
+ * enter from. Scene 7 opens performer 3 eight meters out, past the edge of a
+ * medium shot — legal all along, because nothing clamps a position and the ground
  * grows to include it — and walks them in along an arc that bows to their
  * left, compiled into chords whose speed is measured along the curve rather
  * than across the chord. A third performer stands and watches with no

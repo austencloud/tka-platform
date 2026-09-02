@@ -123,11 +123,29 @@ proving-film scenes author at version 4.
       1920×1080, film time 50 s and 53.2 s: Firestore fetch observed, no
       fallback warning in the console, and the three performers show three
       different pictures (library source, rotated + swapped hands, retrograde).
-- [ ] **Gap 2 — per-beat changes.** Per-performer `stepEffects` (and
+- [x] **Gap 2 — per-beat changes.** Per-performer `stepEffects` (and
       `stepEfforts` if the adapter seam allows live effort swap) following the
       stepPlanes shape; freeze/hold on a beat only if the playback seam
       supports per-performer step remapping cheaply. Design task reads
       `director-viewer-adapter.ts` + `FilmDirectorScene.svelte` fully first.
+      Shipped 2026-09-02 (`b09d7a696f`..`73ff889a75`): `stepEffects`,
+      `stepEfforts`, and `holds` resolve per frame and write through
+      `setEffect`/`setEffort` on each performer; Proving Grounds scene 8
+      (64–72 s) demonstrates all three.
+      Acceptance (main-loop review, 2026-09-02): runtime state on :5201 showed
+      performer 1 `rawEffect` none → trails at step 4 → fire at step 8 with
+      `effectiveEffortId` punch, while performer 2 held step 4 for four beats.
+      The visual gate first FAILED: no effect drew anywhere in the workbench,
+      even when set by hand. Root cause was outside the gap — Viewer3DScene's
+      `effectsSlot` snippet destructured `leftPropState`/`rightPropState` while
+      `PerformerRig` publishes `bluePropState`/`redPropState`, so the
+      orchestrator received `undefined` prop states and every 3D effect was
+      silently disabled for every viewer host (pre-existing on `main`). Fixed
+      by renaming at the seam; locked by
+      `tests/unit/3d-viewer/viewer3d-effects-slot-contract.test.ts`. After the
+      fix, canvas frames at 67.0 s show blue and red trails on performer 1 with
+      performer 2 clean, and at 69.5 s fire on all four staff ends of
+      performer 1 only. Console clean.
 - [x] **Gap 6 — per-performer effect presets/overrides.** Design task first:
       determine whether the effects engine can hold two configs of one effect
       id in one scene. If yes: `performer.effectPreset`/`effectOverrides`
