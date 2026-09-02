@@ -102,6 +102,32 @@ detail view is active, the selected tile claims it in matrix view, and both
 draw the identical engine-fit picture, so going back is the same mandala
 travelling back.
 
+Two more things held the second ship back, both about WHEN the browser
+captures the new state. Both compact panes stay mounted and the destination
+pane sits at 0px until the view flips inside the transition's update
+callback. Rendering is suppressed there, so anything sized by a
+ResizeObserver (`bind:clientWidth`, a measured square) still describes the
+collapsed pane at capture time: the forward morph was captured to a 0x0
+endpoint and the return trip landed on a 55px tile that then grew to 65px.
+
+4. **Endpoints are container math, not measurements.** The hero square is
+   `min(100cqw, 100cqh)` of its layer and the grid tile is
+   `round(down, clamp(44px, min(100cqw / cols, 100cqh / rows), max), 1px)`
+   of `.wrap`, both with `container-type: size`. Those are right in the same
+   layout pass that sizes the pane. The raster inside each still measures
+   itself, so `startMorph` takes a `settle` step that the mandala morph uses
+   to re-measure every art instance synchronously
+   (`registerMandalaArtMeasurer` / `measureMandalaArt`), flush, and await
+   `img.decode()` before the capture.
+5. **The player mounts after the morph.** Its module load and engine
+   construction ran between the update callback and the new-state capture
+   and held the morph back by about a second. The drill's player `LazyMount`
+   is `active={!mandalaTransition.handoff}`; keep-alive holds it through
+   later handoffs. Measured at 375x667: ready 121ms after the tap (was
+   1064ms), forward `64.656px @ (156, 470.7)` to `228.375px @ (73.3,
+   342.7)`, back `227.875px @ (74, 343.3)` to `64.656px @ (156, 470.7)`,
+   tile after the trip 66px at (155, 470).
+
 Both endpoints are now the same painter's output. The View Transition morphs
 one drawing between two positions and sizes; the only remaining change across
 the morph is the tile's full opacity easing to the floor's 0.55.
