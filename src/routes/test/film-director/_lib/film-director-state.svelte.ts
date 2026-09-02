@@ -61,7 +61,46 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
 
   const frame = $derived(sampleFilmDirector(film, playheadSeconds));
 
+  /**
+   * The scene the playhead is confined to, or null for the whole film.
+   *
+   * A 24-scene film is a linear watch, which is the wrong shape for checking
+   * one capability: someone who wants to see the dolly zoom should not have to
+   * sit through the eleven scenes in front of it. Solo turns the film into that
+   * one scene, looping, so a capability costs its own duration to inspect and
+   * nothing more.
+   */
+  let soloSceneIndex = $state<number | null>(null);
+
+  /**
+   * The window the playhead wraps inside. It starts a hair past the scene's own
+   * start for the same reason `selectScene` does: landing exactly on a boundary
+   * lands inside the outgoing scene's transition.
+   */
+  const soloWindow = $derived.by(() => {
+    const index = soloSceneIndex;
+    if (index === null) return null;
+    const scene = film.scenes[index];
+    if (!scene) return null;
+    const lead =
+      scene.transition.kind === "fade-through-black"
+        ? scene.transition.durationSeconds / 2 + 0.001
+        : 0.001;
+    return {
+      index,
+      start: scene.startSeconds + lead,
+      end: scene.startSeconds + scene.durationSeconds,
+    };
+  });
+
   function seek(seconds: number): void {
+    const window = soloWindow;
+    if (window) {
+      const span = Math.max(0.001, window.end - window.start);
+      const offset = seconds - window.start;
+      playheadSeconds = window.start + (((offset % span) + span) % span);
+      return;
+    }
     if (film.playback.loop) {
       playheadSeconds =
         ((seconds % film.durationSeconds) + film.durationSeconds) %
@@ -71,9 +110,37 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     playheadSeconds = Math.max(0, Math.min(film.durationSeconds, seconds));
   }
 
+  /**
+   * Confines playback to one scene and parks the playhead at its head. Passing
+   * null releases the film and leaves the playhead where the soloed scene left
+   * it, so the surrounding film resumes from that point rather than from zero.
+   */
+  function setSoloScene(index: number | null): void {
+    if (index === null) {
+      soloSceneIndex = null;
+      return;
+    }
+    if (!film.scenes[index]) return;
+    soloSceneIndex = index;
+    // The window's own start, not the scene's: the window opens a millisecond
+    // later to clear the incoming transition, so seeking to the raw scene start
+    // is a millisecond BEFORE the window and wraps to its tail — which parks a
+    // freshly soloed scene on its last frame.
+    const opened = soloWindow;
+    if (opened) playheadSeconds = opened.start;
+  }
+
   function play(): void {
     wantsToPlay = true;
-    if (!film.playback.loop && playheadSeconds >= film.durationSeconds) seek(0);
+    // A soloed scene always has somewhere to go — its own window wraps — so
+    // only an un-soloed non-looping film can be parked at a dead end.
+    if (
+      !soloWindow &&
+      !film.playback.loop &&
+      playheadSeconds >= film.durationSeconds
+    ) {
+      seek(0);
+    }
     if (sceneReady && !transitionHolding) isPlaying = true;
   }
 
@@ -138,6 +205,12 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
   function selectScene(index: number): void {
     const scene = film.scenes[index];
     if (!scene) return;
+    // While soloing, choosing a scene moves the solo rather than seeking into a
+    // window the playhead would immediately be wrapped out of.
+    if (soloSceneIndex !== null) {
+      setSoloScene(index);
+      return;
+    }
     const clearPreviewOffset =
       scene.transition.kind === "fade-through-black"
         ? scene.transition.durationSeconds / 2 + 0.001
@@ -166,6 +239,8 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
       const nextFilm = resolveFilmDirectorSpec(parsed);
       sourceInput = parsed as FilmDirectorInput;
       film = nextFilm;
+      // Scene indices no longer name the same scenes.
+      soloSceneIndex = null;
       playheadSeconds = 0;
       wantsToPlay = nextFilm.playback.autoplay;
       isPlaying = sceneReady && wantsToPlay && !transitionHolding;
@@ -219,6 +294,7 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
       sourceInput = cloned;
       film = nextFilm;
       draft = JSON.stringify(cloned, null, 2);
+      soloSceneIndex = null;
       playheadSeconds = 0;
       wantsToPlay = nextFilm.playback.autoplay;
       isPlaying = sceneReady && wantsToPlay && !transitionHolding;
@@ -245,7 +321,10 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
 
     if (isPlaying) {
       const next = playheadSeconds + deltaSeconds;
-      if (!film.playback.loop && next >= film.durationSeconds) {
+      // A soloed scene loops regardless of the film's own playback mode: the
+      // point of solo is to watch one capability repeat, and stopping at the
+      // scene's last frame would defeat it.
+      if (!soloWindow && !film.playback.loop && next >= film.durationSeconds) {
         playheadSeconds = film.durationSeconds;
         isPlaying = false;
         wantsToPlay = false;
@@ -331,6 +410,11 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     get frame() {
       return frame;
     },
+    /** The scene playback is confined to, or null when the whole film plays. */
+    get soloSceneIndex() {
+      return soloSceneIndex;
+    },
+    setSoloScene,
     seek,
     play,
     pause,
