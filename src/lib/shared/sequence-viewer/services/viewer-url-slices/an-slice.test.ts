@@ -289,4 +289,27 @@ describe("an slice", () => {
     expect(seeded.settings.bpm).toBe(77);
     expect(seeded.visibility.stepNumbers).toBe(false);
   });
+
+  describe("full snapshot", () => {
+    it("emits every settings and visibility key at defaults, and round-trips", () => {
+      const stores = defaultStores();
+      const full = captureAnSlice(stores, { full: true });
+      expect(full).not.toBeNull();
+      expect(full?.settings?.bpm).toBe(stores.settings.snapshot().bpm);
+      expect(full?.settings?.shouldLoop).toBe(stores.settings.snapshot().shouldLoop);
+      expect(Object.keys(full!.settings!.trail!).sort()).toEqual(
+        Object.keys(DEFAULT_TRAIL_SETTINGS).sort()
+      );
+      expect(Object.keys(full!.visibility!).sort()).toEqual(
+        Object.keys(postNormalizeVisibilityDefaults()).sort()
+      );
+
+      const seeded = seedFromAnSlice(full!);
+      const next = defaultStores();
+      next.settings.replaceAll(seeded.settings);
+      next.visibility.replaceAll(seeded.visibility);
+      expect(captureAnSlice(next, { full: true })).toEqual(full);
+      expect(captureAnSlice(next)).toBeNull();
+    });
+  });
 });
