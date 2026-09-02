@@ -673,6 +673,31 @@ export function applyThemeForBackground(backgroundType: BackgroundType): void {
 }
 
 /**
+ * The background this device has saved, or COSMIC when nothing is stored or the
+ * stored value cannot be read.
+ *
+ * A standalone surface that mounts its own BackgroundHost needs the same value
+ * `ensureThemeApplied` tunes the interface colors for, so both read it here
+ * instead of parsing the settings blob twice.
+ */
+export function getSavedBackgroundType(): BackgroundType {
+  if (typeof localStorage === "undefined") return BackgroundType.COSMIC;
+
+  try {
+    const stored = localStorage.getItem("tka-modern-web-settings");
+    if (!stored) return BackgroundType.COSMIC;
+
+    const settings = JSON.parse(stored);
+    return (
+      normalizeBackgroundType(settings.backgroundType) ?? BackgroundType.COSMIC
+    );
+  } catch (e) {
+    console.warn("[Theme] Failed to read the saved background type:", e);
+    return BackgroundType.COSMIC;
+  }
+}
+
+/**
  * Ensure theme CSS variables are applied based on localStorage settings.
  * Call this when CSS variables may have been cleared (HMR, remount, etc.)
  * This ALWAYS applies - no "skip if same" optimization.
@@ -686,27 +711,7 @@ export function ensureThemeApplied(): void {
   if (typeof localStorage === "undefined" || typeof document === "undefined")
     return;
 
-  try {
-    const stored = localStorage.getItem("tka-modern-web-settings");
-    if (!stored) {
-      // No settings - apply default dark theme
-      applyThemeForBackground(BackgroundType.COSMIC);
-      return;
-    }
-
-    const settings = JSON.parse(stored);
-    const bgType = normalizeBackgroundType(settings.backgroundType);
-
-    if (bgType) {
-      applyThemeForBackground(bgType);
-    } else {
-      applyThemeForBackground(BackgroundType.COSMIC);
-    }
-  } catch (e) {
-    console.warn("[Theme] Failed to ensure theme applied:", e);
-    // On error, apply default theme
-    applyThemeForBackground(BackgroundType.COSMIC);
-  }
+  applyThemeForBackground(getSavedBackgroundType());
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
