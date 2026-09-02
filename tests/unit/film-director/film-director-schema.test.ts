@@ -993,3 +993,162 @@ describe("standing and watching", () => {
     ).toThrow(/is not spinning anything/);
   });
 });
+
+describe("per-step changes: stepEffects, stepEfforts, holds", () => {
+  // This file has no shared film/parse helper — the stepPlanes parse tests
+  // build a whole document inline each time. These wrap that same shape once.
+  const film = (scene: Record<string, unknown>) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "per-step",
+    title: "Per step",
+    scenes: [{ id: "s1", title: "S1", ...scene }],
+  });
+  const parse = (doc: unknown) => FilmDirectorInputSchema.parse(doc);
+
+  it("accepts a step effect list, a step effort list, and holds", () => {
+    const parsed = parse(
+      film({
+        performance: {
+          cast: {
+            count: 2,
+            performers: [
+              {
+                id: "performer-1",
+                stepEffects: [
+                  { step: 0, effect: "none" },
+                  { step: 4, effect: "trails" },
+                ],
+                stepEfforts: [{ step: 8, effort: "punch" }],
+              },
+              { id: "performer-2", holds: [{ fromStep: 4, steps: 4 }] },
+            ],
+          },
+        },
+      })
+    );
+    const cast = parsed.scenes[0]!.performance!.cast!.performers!;
+    expect(cast[0]!.stepEffects).toEqual([
+      { step: 0, effect: "none" },
+      { step: 4, effect: "trails" },
+    ]);
+    expect(cast[0]!.stepEfforts).toEqual([{ step: 8, effort: "punch" }]);
+    expect(cast[1]!.holds).toEqual([{ fromStep: 4, steps: 4 }]);
+  });
+
+  it("accepts the same three lists on cast defaults", () => {
+    const parsed = parse(
+      film({
+        performance: {
+          cast: {
+            count: 2,
+            defaults: {
+              stepEffects: [{ step: 2, effect: { pick: "any", not: ["fire"] } }],
+              stepEfforts: [{ step: 2, effort: { oneOf: ["punch", "dab"] } }],
+              holds: [{ fromStep: 0, steps: 2 }],
+            },
+          },
+        },
+      })
+    );
+    expect(parsed.scenes[0]!.performance!.cast!.defaults!.holds).toEqual([
+      { fromStep: 0, steps: 2 },
+    ]);
+  });
+
+  it("rejects an unknown effect on a step entry", () => {
+    expect(() =>
+      parse(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [
+                { id: "a", stepEffects: [{ step: 0, effect: "glitter" }] },
+              ],
+            },
+          },
+        })
+      )
+    ).toThrow(/Unknown effect .{0,2}glitter/);
+  });
+
+  it("rejects an unknown effort on a step entry", () => {
+    expect(() =>
+      parse(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [
+                { id: "a", stepEfforts: [{ step: 0, effort: "swagger" }] },
+              ],
+            },
+          },
+        })
+      )
+    ).toThrow(/Unknown effort .{0,2}swagger/);
+  });
+
+  it("rejects a negative step and a fractional step", () => {
+    for (const step of [-1, 1.5]) {
+      expect(() =>
+        parse(
+          film({
+            performance: {
+              cast: {
+                count: 1,
+                performers: [
+                  { id: "a", stepEffects: [{ step, effect: "trails" }] },
+                ],
+              },
+            },
+          })
+        )
+      ).toThrow();
+    }
+  });
+
+  it("rejects a hold of zero steps and a negative fromStep", () => {
+    expect(() =>
+      parse(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [{ id: "a", holds: [{ fromStep: 0, steps: 0 }] }],
+            },
+          },
+        })
+      )
+    ).toThrow(/at least one step/);
+    expect(() =>
+      parse(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [{ id: "a", holds: [{ fromStep: -1, steps: 2 }] }],
+            },
+          },
+        })
+      )
+    ).toThrow();
+  });
+
+  it("rejects an unknown key inside a hold", () => {
+    expect(() =>
+      parse(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [
+                { id: "a", holds: [{ fromStep: 0, steps: 2, beats: 4 }] },
+              ],
+            },
+          },
+        })
+      )
+    ).toThrow();
+  });
+});
