@@ -30,6 +30,18 @@ export interface ChoreoCardSizingDeps {
  * container measurements a one-way input to layout instead of scattering DOM
  * reads through the cell renderer and transition controller.
  */
+/**
+ * Smallest container a structural transition can hand the Card and still be
+ * measured from.
+ *
+ * Mid-transition the Card can be mounted behind a track that is briefly a
+ * sliver of its destination. Solving the contained box against that sliver
+ * paints a pencil-thin Card for a frame. Below this floor the last measured
+ * box is held instead; above it the box keeps following the container, so the
+ * width and height transitions carry it to the destination.
+ */
+const MIN_MEASURABLE_MOTION_SIZE = 240;
+
 export function createChoreoCardSizingState(
   getDeps: () => ChoreoCardSizingDeps
 ) {
@@ -42,8 +54,6 @@ export function createChoreoCardSizingState(
   let flipSuppressed = $state(false);
   let containerWasZero = false;
   let flipTimer: ReturnType<typeof setTimeout> | null = null;
-  let splitContainedSize: Size | null = null;
-  let previousContainSizeMotion: "focus" | "return" | "restore" | null = null;
 
   /**
    * `measured` carries the size a ResizeObserver already computed for us.
@@ -81,20 +91,6 @@ export function createChoreoCardSizingState(
     const aspectRatio = deps.previewAspectRatio;
     if (!container || !aspectRatio || !Number.isFinite(aspectRatio)) return;
 
-    if (deps.containSizeMotion !== previousContainSizeMotion) {
-      if (
-        deps.containSizeMotion === "focus" &&
-        containedWidth !== null &&
-        containedHeight !== null
-      ) {
-        splitContainedSize = {
-          width: containedWidth,
-          height: containedHeight,
-        };
-      }
-      previousContainSizeMotion = deps.containSizeMotion;
-    }
-
     let availableWidth: number;
     let availableHeight: number;
     if (content) {
@@ -110,6 +106,21 @@ export function createChoreoCardSizingState(
         container.clientHeight -
         parseFloat(style.paddingTop) -
         parseFloat(style.paddingBottom);
+    }
+
+    if (
+      deps.containSizeMotion !== null &&
+      containedWidth !== null &&
+      containedHeight !== null &&
+      availableWidth > 0 &&
+      availableHeight > 0 &&
+      (availableWidth < MIN_MEASURABLE_MOTION_SIZE ||
+        availableHeight < MIN_MEASURABLE_MOTION_SIZE)
+    ) {
+      // The destination track has not opened yet. Hold the painted box for this
+      // frame rather than solving against the sliver; the next measurement above
+      // the floor resumes the transition toward the real destination.
+      return;
     }
 
     if (availableWidth === 0 || availableHeight === 0) {
@@ -133,14 +144,7 @@ export function createChoreoCardSizingState(
     let nextHeight: number | null;
     const containerRatio = availableWidth / availableHeight;
 
-    if (
-      (deps.containSizeMotion === "return" ||
-        deps.containSizeMotion === "restore") &&
-      splitContainedSize
-    ) {
-      nextWidth = splitContainedSize.width;
-      nextHeight = splitContainedSize.height;
-    } else if (deps.forceContain && deps.fitWidth) {
+    if (deps.forceContain && deps.fitWidth) {
       const heightFromWidth = availableWidth / aspectRatio;
       if (
         deps.containSizeMotion !== "focus" &&
