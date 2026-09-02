@@ -610,13 +610,11 @@ that actually unblocks it:
 > the sky's the limit in terms of what we could build as a representation of
 > reality.
 
-**That page mostly exists.** `/test/flow-fest-path-tracer` is a 2407-line
+**Most of the machinery exists.** `/test/flow-fest-path-tracer` is a 2407-line
 workspace with three modes (`layout`, `paths`, `plan`), three interactions
 (`draw`, `place`, `pan`), an aerial background with `worldPointToImage` /
 `imagePointToWorld` transforms, localStorage drafts, validation, and a
-`save-plan` server endpoint that writes corrections back to disk. Per
-`never-hand-roll.md` the answer is to extend it, not to build a second placement
-tool.
+`save-plan` server endpoint that writes corrections back to disk.
 
 Two things it lacks for this job:
 
@@ -624,9 +622,38 @@ Two things it lacks for this job:
   say which way a thing faces — the stage, the archway, each safety position,
   each exit.
 - **The vocabulary.** Its editable features are `lower-road-loop`,
-  `tent-perimeter-band`, `car-camping-area`, `lower-loop-entrance`. Nothing for
-  the field, the circle, the LED rope, the archway, the dip station, the queues,
-  the exits, the stage, first aid, volunteer HQ, or the big canopy.
+  `tent-perimeter-band`, `car-camping-area`, `lower-loop-entrance` — a fixed
+  four-field schema in `flow-fest-lower-layout.ts` with no facing and no
+  repeated instances. Nothing for the field, the circle, the LED rope, the
+  archway, the dip station, the queues, the exits, the stage, first aid,
+  volunteer HQ, or the big canopy.
+
+**Correction, same day: a sibling route, not a fourth mode.** This section first
+said the answer was to extend the tracer. Reading it settled the opposite. That
+page carries roughly forty branches shaped
+`workspaceMode === "layout" ? A : workspaceMode === "plan" ? B : C`; a fourth
+mode falls through to the paths branch in most of them, and the wreckage lands
+on Austen's already-authored trace and layout data. The `never-hand-roll`
+question is who owns a *capability*, not which file it lives in — so
+`/test/flow-fest-site-markers` reuses `flow-fest-trace.ts` for registration
+instead of re-deriving it, and copies the `save-plan` endpoint shape. It creates
+exactly one new owner: `flow-fest-site-markers.ts`, for **oriented, repeatable
+markers**.
+
+Four shapes, one gesture — press where the thing is, drag to say the rest:
+
+| Shape | What the drag means | Used by |
+| --- | --- | --- |
+| `point` | nothing; the drag is ignored | fuel station, houses |
+| `facing` | which way it faces | stage, archway, first aid, volunteer HQ, safety posts, exits |
+| `circle` | the radius | the grass clearing, the LED rope, the big canopy |
+| `run` | where the line ends | the queue to the dip station, the uphill veer |
+
+Facing is a compass bearing, 0 = north, clockwise through east, because that is
+the vocabulary a person describing a site actually uses. Records resolve to
+world metres in the same frame as the road traces, so an agent reads placement
+without touching the picture. Saving writes
+`docs/superpowers/specs/flow-fest-sim/austen-site-markers.json`.
 
 Austen also raised walking Google Earth's street-level view to read building
 placement. Google's imagery stays a human reference — it is licensed against
