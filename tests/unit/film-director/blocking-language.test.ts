@@ -231,3 +231,19 @@ describe("compileBlockingMoves", () => {
     ).toThrow(/Performer "fan-girl-2"/);
   });
 });
+
+describe("run", () => {
+  it("rejects and names the single walk clip and the skate ceiling", () => {
+    expect(() =>
+      compile([{ move: "run", to: { x: 0, z: 4 } }] as DirectorBlockingMove[])
+    ).toThrow(
+      /"run" is not a gait the 3D locomotion has\. There is one walk clip, time-warped to the ground, and past 2\.6 m\/s the feet skate\. Write a "walk"\./
+    );
+  });
+
+  it("rejects even when the distance would be walkable", () => {
+    expect(() =>
+      compile([{ move: "run", to: { x: 0, z: 1 } }] as DirectorBlockingMove[])
+    ).toThrow(/"run" is not a gait/);
+  });
+});

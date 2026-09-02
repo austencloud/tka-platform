@@ -13,7 +13,7 @@
 import type { DirectorEasing } from "./film-director-schema";
 import { allocateMoveWindows } from "./director-move-windows";
 
-export type DirectorBlockingVerb = "stand" | "walk" | "turn";
+export type DirectorBlockingVerb = "stand" | "walk" | "turn" | "run";
 
 export type DirectorBlockingDirection =
   | "forward"
@@ -83,6 +83,9 @@ const MOVE_RULES: Record<
     takesDestination: true,
   },
   turn: { unit: "degrees", directions: ["left", "right"], takesDestination: false },
+  // Reachable only through the rejection in `validateBlockingMove`; a run has
+  // no rules because there is no run.
+  run: { unit: null, directions: null, takesDestination: false },
 };
 
 export function compileBlockingMoves(
@@ -193,6 +196,12 @@ function validateBlockingMove(
   move: DirectorBlockingMove,
   performerId: string
 ): void {
+  if (move.move === "run") {
+    throw new Error(
+      `Performer "${performerId}": "run" is not a gait the 3D locomotion has. There is one walk clip, time-warped to the ground, and past ${fmt(MAX_TRAVEL_SPEED)} m/s the feet skate. Write a "walk".`
+    );
+  }
+
   const rules = MOVE_RULES[move.move];
   const where = `Performer "${performerId}": "${move.move}"`;
 

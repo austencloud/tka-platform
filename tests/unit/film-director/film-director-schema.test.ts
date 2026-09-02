@@ -913,3 +913,27 @@ describe("per-performer effect config (spoken but not real)", () => {
     expect(parsed.scenes[0]!.effectPresets).toEqual({ trails: "trail-neon" });
   });
 });
+
+describe("blocking edges", () => {
+  const edgesFilm = (blocking: unknown[]) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "edges-film",
+    title: "Edges",
+    scenes: [
+      {
+        id: "s1",
+        title: "S1",
+        performance: { performers: [{ id: "a", blocking }] },
+      },
+    ],
+  });
+  const parseBlocking = (blocking: unknown[]) =>
+    FilmDirectorInputSchema.parse(edgesFilm(blocking));
+
+  it("parses a run move so the compiler can reject it by name", () => {
+    const parsed = parseBlocking([{ move: "run", to: { x: 0, z: 2 } }]);
+    expect(
+      parsed.scenes[0]!.performance!.performers![0]!.blocking![0]!.move
+    ).toBe("run");
+  });
+});

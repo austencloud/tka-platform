@@ -567,7 +567,7 @@ export type { DirectorPerformerSequence };
  */
 const blockingMoveSchema = z
   .object({
-    move: z.enum(["stand", "walk", "turn"]),
+    move: z.enum(["stand", "walk", "turn", "run"]),
     to: position2Schema.optional(),
     direction: z.enum(["forward", "backward", "left", "right"]).optional(),
     amount: z
