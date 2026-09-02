@@ -25,6 +25,8 @@ const model: FlowFestParkedCarModel = {
   widthMeters: 2,
   heightMeters: 1.5,
   sourceYawRadians: 0,
+  // Deliberately off-centre, as every catalogue body's axle line is.
+  wheels: { frontAlongMeters: 1.6, rearAlongMeters: -1.2, halfTrackMeters: 0.84 },
   paint: {
     materialNames: ["Paint"],
     variants: ["#ff0000", "#0000ff"],
@@ -47,19 +49,78 @@ function buildSource(): Group {
   return source;
 }
 
+/** A body whose underbody pan hangs 0.2 below the tyres, as the wagon's does. */
+function buildSourceWithUnderbody(): Group {
+  const source = buildSource();
+  const wheels = new Mesh(
+    new BoxGeometry(4, 0.6, 2),
+    new MeshStandardMaterial({ name: "Tire" })
+  );
+  wheels.name = "WheelStock_FL";
+  wheels.position.y = 0.3;
+  const pan = new Mesh(
+    new BoxGeometry(4, 0.2, 1.6),
+    new MeshStandardMaterial({ name: "Bottom" })
+  );
+  pan.name = "Bottom";
+  pan.position.y = -0.1;
+  source.add(wheels, pan);
+  return source;
+}
+
+/** Where the four contact patches end up once the placement matrix applies. */
+function settledWheelWorldPoints(
+  placement: { x: number; z: number; rotation: number },
+  settled: { y: number; pitch: number; roll: number }
+): Vector3[] {
+  const matrix = flowFestParkedCarPlacementMatrix({
+    x: placement.x,
+    y: settled.y,
+    z: placement.z,
+    rotation: placement.rotation,
+    pitch: settled.pitch,
+    roll: settled.roll,
+  });
+  const { frontAlongMeters, rearAlongMeters, halfTrackMeters } = model.wheels;
+  return [
+    [frontAlongMeters, -halfTrackMeters],
+    [frontAlongMeters, halfTrackMeters],
+    [rearAlongMeters, -halfTrackMeters],
+    [rearAlongMeters, halfTrackMeters],
+  ].map(([along, across]) =>
+    new Vector3(along, 0, across).applyMatrix4(matrix)
+  );
+}
+
 describe("Flow Fest parked cars", () => {
-  it("settles a car on a slope with pitch and roll instead of hovering", () => {
-    // Ground rises 0.1 per metre toward +x; the nose points along +x.
-    const settled = settleFlowFestParkedCarOnGround(
+  it("puts every wheel on the ground on a slope instead of hovering", () => {
+    for (const ground of [
+      (x: number, _z: number) => 0.1 * x,
+      (_x: number, z: number) => 0.1 * z,
+      (x: number, z: number) => 0.08 * x - 0.05 * z + 3,
+    ]) {
+      for (const rotation of [0, Math.PI / 2, 2.3]) {
+        const placement = { x: 4, z: -7, rotation };
+        const settled = settleFlowFestParkedCarOnGround(model, placement, (x, z) =>
+          ground(x, z)
+        );
+        for (const wheel of settledWheelWorldPoints(placement, settled)) {
+          // Each tyre rests 3 cm into the field, never above it.
+          expect(wheel.y - ground(wheel.x, wheel.z)).toBeCloseTo(-0.03, 3);
+        }
+      }
+    }
+  });
+
+  it("pitches nose-up on a rising slope and rolls away from the high side", () => {
+    const uphill = settleFlowFestParkedCarOnGround(
       model,
       { x: 0, z: 0, rotation: 0 },
       (x) => 0.1 * x
     );
-    expect(settled.y).toBeCloseTo(-0.03, 5);
-    expect(settled.pitch).toBeCloseTo(Math.atan(0.1), 5);
-    expect(settled.roll).toBeCloseTo(0, 5);
+    expect(uphill.pitch).toBeCloseTo(Math.atan(0.1), 5);
+    expect(uphill.roll).toBeCloseTo(0, 5);
 
-    // Ground rises toward +z (the car's right side); the body rolls left-up.
     const rolled = settleFlowFestParkedCarOnGround(
       model,
       { x: 0, z: 0, rotation: 0 },
@@ -67,28 +128,34 @@ describe("Flow Fest parked cars", () => {
     );
     expect(rolled.pitch).toBeCloseTo(0, 5);
     expect(rolled.roll).toBeCloseTo(-Math.atan(0.1), 5);
-    // The matrix lifts the right-hand wheels to meet the higher ground.
-    const matrix = flowFestParkedCarPlacementMatrix({
-      x: 0,
-      y: rolled.y,
-      z: 0,
-      rotation: 0,
-      pitch: rolled.pitch,
-      roll: rolled.roll,
-    });
-    const rightWheel = new Vector3(0, 0, 0.84).applyMatrix4(matrix);
-    expect(rightWheel.y).toBeGreaterThan(rolled.y);
-    const nose = new Vector3(1, 0, 0).applyMatrix4(
-      flowFestParkedCarPlacementMatrix({
+  });
+
+  it("grounds a body on its tyres, not on the pan hanging below them", () => {
+    const placements = [
+      {
         x: 0,
         y: 0,
         z: 0,
         rotation: 0,
-        pitch: settled.pitch,
+        pitch: 0,
         roll: 0,
-      })
+        modelId: model.id,
+        paintIndex: 0,
+      },
+    ];
+    const root = createFlowFestParkedCarInstances(
+      buildSourceWithUnderbody(),
+      model,
+      placements
     );
-    expect(nose.y).toBeGreaterThan(0);
+    const wheels = (root.children as InstancedMesh[]).find((mesh) =>
+      mesh.name.endsWith("_WheelStock_FL")
+    )!;
+    const matrix = new Matrix4();
+    wheels.getMatrixAt(0, matrix);
+    const wheelBottom = new Vector3(0, -0.3, 0).applyMatrix4(matrix);
+    // The tyres sit on y = 0; the pan is allowed to sink below it.
+    expect(wheelBottom.y).toBeCloseTo(0, 5);
   });
 
   it("paints only the named panels, per instance, and keeps the rest untouched", () => {
