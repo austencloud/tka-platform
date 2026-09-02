@@ -634,6 +634,56 @@ Acceptance requires:
   orchestration contract. Prettier and `git diff --check` are clean. Gate 5
   remains ready for Austen's visual review.
 
+### Gate 4 follow-up · 2026-09-02 (inspector content drift)
+
+Austen reported that switching between Card and Tunnel made the right-hand
+pane's contents shift up and to the right before settling. Instrumented first,
+then fixed.
+
+- The harness now measures **content drift** per settings surface: the spread
+  of a panel's width, its horizontal origin, and its first content block's top
+  across every frame the surface was actually readable. A panel composed at its
+  destination width and revealed through `PanelGroup`'s moving clip reports
+  zero on all three axes. `longestSampleGap` was added alongside it so a starved
+  measurement host cannot be mistaken for smooth motion.
+- Baseline at 1440×900 reproduced the complaint: **art settings drift of 77 px
+  width and 77 px origin**, and **card settings drift of 4 px** on both. The art
+  panel is portaled into its layer as an absolutely positioned host at
+  `width: 100%`, so it stretched and rewrapped on every frame of the seam
+  animation. The Card pin was keyed to `.export-panel-container.card-settings`,
+  a mode-conditional class Svelte removes the instant the mode changes, so the
+  departing Card panel dropped to its intrinsic width and then followed the
+  closing seam.
+- Both surfaces now pin their destination width on the **persistent layer**,
+  matching what the Effects and Performances layers already did. The art host is
+  additionally right-anchored (`left: auto; right: 0`) at
+  `--export-sidebar-width`, and the Card panel pins `--card-sidebar-width` on
+  `.card-settings-layer`. The `data-manually-sized="true"` overrides are
+  preserved on both, so dragging the seam still resizes the panel.
+- Post-fix `card-tunnel` replays report `0 px` drift on both surfaces at every
+  desktop viewport, with zero Card/Animator/inspector remounts, zero blank,
+  squashed, or transformed-cell frames, and monotonic seam travel:
+
+  | Viewport  | Art drift | Card drift | Longest sample gap |
+  | --------- | --------- | ---------- | ------------------ |
+  | 1440×900  | 0 px      | 0 px       | 58 ms              |
+  | 1920×1080 | 0 px      | 0 px       | 71 ms              |
+  | 2560×1440 | 0 px      | 0 px       | 64 ms              |
+  | 3840×2160 | 0 px      | 0 px       | 483 ms (host)      |
+  | 820×1180  | n/a       | n/a        | 57 ms              |
+  | 960×412   | n/a       | n/a        | 84 ms              |
+  | 375×667   | n/a       | n/a        | 82 ms              |
+
+  The three narrow viewports report `n/a` because mobile has no desktop
+  inspector layer. The 4K sample gap is emulation-host jank, not product
+  motion: 2560 and 1920 measured 64 ms and 71 ms in the same pass.
+
+- The orchestration contract test now asserts that all four persistent
+  inspector layers pin a destination width and keep their manual-resize
+  override, so a future layer cannot silently go back to `width: 100%`.
+- Focused Vitest (`tests/config/vitest.config.ts`): 28 files, 224 tests pass.
+  Prettier and `git diff --check` are clean.
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of

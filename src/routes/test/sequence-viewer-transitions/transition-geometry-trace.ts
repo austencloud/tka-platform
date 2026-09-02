@@ -123,6 +123,11 @@ export interface TransitionGeometrySample {
   animatorCanvasCount: number;
   activeArtSettingsCount: number;
   artSettingsOpacity: number;
+  artSettingsWidth: number;
+  artSettingsLeft: number;
+  artSettingsContentTop: number;
+  cardSettingsLeft: number;
+  cardSettingsContentTop: number;
   tunnelBackingWidth: number;
   tunnelBackingHeight: number;
   tunnelDisplayWidth: number;
@@ -234,6 +239,9 @@ export interface TransitionGeometrySummary {
   cardStageInspectorSize: TransitionValueRange | null;
   cardStageInspectorExit: TransitionTravelSummary | null;
   cardStageInspectorEntry: TransitionTravelSummary | null;
+  artSettingsContentDrift: TransitionContentDrift | null;
+  cardSettingsContentDrift: TransitionContentDrift | null;
+  longestSampleGap: number;
   performanceStageIdentityChanges: number;
   performanceGalleryIdentityChanges: number;
   performanceInspectorIdentityChanges: number;
@@ -275,6 +283,20 @@ export interface TransitionValueRange {
   minimum: number;
   maximum: number;
   variation: number;
+}
+
+/**
+ * How far a settings surface re-laid itself out while a person could see it.
+ * A panel composed at its own destination width and revealed through
+ * PanelGroup's moving clip reports zero on all three axes: its rows never
+ * rewrap, its right edge never leaves the viewport edge, and its content never
+ * rides up or down. Any non-zero value is the surface following the animating
+ * inspector track instead of being revealed by it.
+ */
+export interface TransitionContentDrift {
+  width: number;
+  origin: number;
+  vertical: number;
 }
 
 export const READABLE_PANE_SIZE = 180;
@@ -676,6 +698,38 @@ function uniquePerformanceSurfacePath(
       return "Blank";
     })
   );
+}
+
+function contentDrift(
+  samples: TransitionGeometrySample[],
+  isReadable: (sample: TransitionGeometrySample) => boolean,
+  width: (sample: TransitionGeometrySample) => number,
+  left: (sample: TransitionGeometrySample) => number,
+  top: (sample: TransitionGeometrySample) => number
+): TransitionContentDrift | null {
+  const readable = samples.filter(
+    (sample) => isReadable(sample) && width(sample) > 0
+  );
+  if (readable.length < 2) return null;
+
+  const spread = (value: (sample: TransitionGeometrySample) => number) => {
+    const values = readable.map(value);
+    return Math.max(...values) - Math.min(...values);
+  };
+
+  return {
+    width: spread(width),
+    origin: spread(left),
+    vertical: spread(top),
+  };
+}
+
+function longestSampleGap(samples: TransitionGeometrySample[]): number {
+  let longest = 0;
+  for (let index = 1; index < samples.length; index += 1) {
+    longest = Math.max(longest, samples[index].time - samples[index - 1].time);
+  }
+  return longest;
 }
 
 export function summarizeTransitionGeometry(
@@ -1156,6 +1210,25 @@ export function summarizeTransitionGeometry(
           (sample) => sample.inspectorSize
         )
       : null,
+    artSettingsContentDrift: contentDrift(
+      trace.samples,
+      (sample) =>
+        sample.desktopInspectorExpected &&
+        sample.artSettingsOpacity >= VISIBLE_PANE_OPACITY,
+      (sample) => sample.artSettingsWidth,
+      (sample) => sample.artSettingsLeft,
+      (sample) => sample.artSettingsContentTop
+    ),
+    cardSettingsContentDrift: contentDrift(
+      trace.samples,
+      (sample) =>
+        sample.desktopInspectorExpected &&
+        sample.cardSettingsOpacity >= VISIBLE_PANE_OPACITY,
+      (sample) => sample.cardSettingsWidth,
+      (sample) => sample.cardSettingsLeft,
+      (sample) => sample.cardSettingsContentTop
+    ),
+    longestSampleGap: longestSampleGap(trace.samples),
     performanceStageIdentityChanges: isPerformanceTrace
       ? identityChanges(trace.samples, (sample) => sample.stageLayerIdentity)
       : 0,
