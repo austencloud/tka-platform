@@ -368,3 +368,48 @@ describe("applyDirectorStepChanges", () => {
     });
   });
 });
+
+/**
+ * Gap 21. A scene can cast nobody. The pool is kept alive across cuts, so an
+ * empty stage has to actively empty the rigs left over from the scene before
+ * it rather than simply having no performers of its own to apply.
+ */
+describe("applyDirectorSceneToViewer with an empty cast", () => {
+  it("applies without throwing and leaves every pooled performer idle", () => {
+    const { state, dispose } = createViewer3DStateForTest({});
+    try {
+      state.performerManager.initialize();
+      state.loadSequenceScoped(demoSequence);
+
+      const cast = resolveFilmDirectorSpec(
+        film({ performance: { cast: { count: 1 } } })
+      ).scenes[0]!;
+      applyDirectorSceneToViewer(state, cast, { reservedPerformerCount: 1 });
+      expect(state.performerManager.performers[0]!.hasSequence).toBe(true);
+
+      const empty = resolveFilmDirectorSpec(
+        film({
+          durationSeconds: 3,
+          performance: { cast: { count: 0 } },
+        })
+      ).scenes[0]!;
+      expect(empty.performance.performers).toEqual([]);
+
+      applyDirectorSceneToViewer(state, empty, { reservedPerformerCount: 1 });
+      for (const performer of state.performerManager.performers) {
+        expect(performer.hasSequence).toBe(false);
+      }
+    } finally {
+      dispose();
+    }
+  });
+
+  it("seeds a viewer with no performers", () => {
+    const empty = resolveFilmDirectorSpec(
+      film({ durationSeconds: 3, performance: { cast: { count: 0 } } })
+    ).scenes[0]!;
+    const seed = buildDirectorViewerSeed(empty);
+    expect(seed.performers).toEqual([]);
+    expect(idlePerformerIndices(empty).size).toBe(0);
+  });
+});

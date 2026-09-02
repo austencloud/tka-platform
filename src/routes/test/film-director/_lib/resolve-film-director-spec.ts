@@ -155,6 +155,10 @@ function contextualEnvironmentFromEffects(
 }
 
 function defaultFormation(count: number): FormationPreset {
+  // Gap 21. Nobody is standing anywhere, so no preset describes the stage.
+  // "custom" is the honest answer: the arrangement is exactly the (empty)
+  // list of positions.
+  if (count === 0) return "custom";
   if (count === 1) return "solo";
   if (count <= 4) return "grid-2x2";
   return "circle";
@@ -259,7 +263,8 @@ function resolveStepPlanesForPerformer(
   }[],
   performerId: string,
   sceneId: string,
-  seed: FilmSeed
+  seed: FilmSeed,
+  seedSceneId: string = sceneId
 ): ResolvedDirectorStepPlane[] {
   return entries.map((entry) => ({
     step: entry.step,
@@ -277,7 +282,7 @@ function resolveStepPlanesForPerformer(
       PLANE_CATALOG,
       // NUL-separated like createAxisStream's own key: authored ids may
       // contain spaces, so a space-joined key would be ambiguous.
-      `${sceneId}\u0000${performerId}\u0000${entry.step}\u0000${entry.hand === "left" ? "blue" : "red"}`
+      `${seedSceneId}\u0000${performerId}\u0000${entry.step}\u0000${entry.hand === "left" ? "blue" : "red"}`
     ),
   }));
 }
@@ -315,7 +320,8 @@ function resolveStepEffectsForPerformer(
   entries: readonly { step: number; effect: DirectiveValue<string> }[],
   performerId: string,
   sceneId: string,
-  seed: FilmSeed
+  seed: FilmSeed,
+  seedSceneId: string = sceneId
 ): ResolvedDirectorStepEffect[] {
   assertOneEntryPerStep(entries, "stepEffects", performerId, sceneId);
   return entries.map((entry) => ({
@@ -333,7 +339,7 @@ function resolveStepEffectsForPerformer(
       EFFECT_CATALOG,
       // NUL-separated like createAxisStream's own key: authored ids may
       // contain spaces, so a space-joined key would be ambiguous.
-      `${sceneId}\u0000${performerId}\u0000${entry.step}\u0000stepEffect`
+      `${seedSceneId}\u0000${performerId}\u0000${entry.step}\u0000stepEffect`
     ) as EffectType,
   }));
 }
@@ -343,7 +349,8 @@ function resolveStepEffortsForPerformer(
   entries: readonly { step: number; effort: DirectiveValue<EffortId> }[],
   performerId: string,
   sceneId: string,
-  seed: FilmSeed
+  seed: FilmSeed,
+  seedSceneId: string = sceneId
 ): ResolvedDirectorStepEffort[] {
   assertOneEntryPerStep(entries, "stepEfforts", performerId, sceneId);
   return entries.map((entry) => ({
@@ -359,7 +366,7 @@ function resolveStepEffortsForPerformer(
       sceneId,
       seed,
       EFFORT_CATALOG,
-      `${sceneId}\u0000${performerId}\u0000${entry.step}\u0000stepEffort`
+      `${seedSceneId}\u0000${performerId}\u0000${entry.step}\u0000stepEffort`
     ),
   }));
 }
@@ -391,7 +398,8 @@ function resolveHoldsForPerformer(
 function resolveEffectPresets(
   effectPresets: Record<string, string | { pick: "any" }>,
   sceneId: string,
-  seed: FilmSeed
+  seed: FilmSeed,
+  seedSceneId: string = sceneId
 ): Record<string, string> {
   const resolved: Record<string, string> = {};
   for (const [effectId, presetValue] of Object.entries(effectPresets)) {
@@ -425,7 +433,7 @@ function resolveEffectPresets(
     const picked = presetIds?.length
       ? seededPick(
           presetIds,
-          createAxisStream(seed, sceneId, `effectPreset:${effectId}`)
+          createAxisStream(seed, seedSceneId, `effectPreset:${effectId}`)
         )
       : undefined;
     if (picked === undefined) {
@@ -531,6 +539,9 @@ function buildResolvedPerformers(
   durationSeconds: number,
   sceneBlocking: DirectorSceneBlockingInput | undefined
 ): ResolvedDirectorPerformer[] {
+  // Gap 21. No preset lists 0 as a valid count, and none should: an empty
+  // stage has nothing to arrange, so there is no arrangement to check.
+  if (inputs.length === 0) return [];
   const validCounts = PRESET_VALID_COUNTS[formationPreset];
   if (!validCounts.includes(inputs.length)) {
     throw new Error(
@@ -630,15 +641,22 @@ function resolveScene(
   const scene = convertSceneBeatTimes(rawScene, {
     value: bpm,
     stated: bpmStated,
+    beatsPerBar: rawScene.performance?.meter?.beatsPerBar,
   });
   const durationSeconds = scene.durationSeconds ?? 8;
   const cast = scene.performance?.cast;
+  /**
+   * Gap 14. Which scene's name the seeded draws happen under. Every stream
+   * key below uses this; error text keeps using `scene.id`, so a rejection
+   * still names the scene the director is reading.
+   */
+  const seedSceneId = scene.seedAs ?? scene.id;
 
+  // Gap 21. A stated empty cast, by either spelling, is an empty stage.
+  // Only silence about the cast falls back to the lone default performer.
   const rawInputs: PerformerInput[] = cast
     ? buildCastPerformerInputs(cast)
-    : scene.performance?.performers?.length
-      ? scene.performance.performers
-      : [{}];
+    : (scene.performance?.performers ?? [{}]);
 
   const performerIds = rawInputs.map(
     (input, index) => input.id ?? `performer-${index + 1}`
@@ -683,7 +701,7 @@ function resolveScene(
     performerIds,
     values: characterIdValues,
     catalog: DEFAULT_CHARACTERS,
-    random: createCharacterAxisStream(filmSeed, scene.id),
+    random: createCharacterAxisStream(filmSeed, seedSceneId),
   });
   const resolvedProps = resolveCastAxis<PropType>({
     axis: "prop",
@@ -691,7 +709,7 @@ function resolveScene(
     performerIds,
     values: propValues,
     catalog: PROP_CATALOG,
-    random: createAxisStream(filmSeed, scene.id, "prop"),
+    random: createAxisStream(filmSeed, seedSceneId, "prop"),
   });
   const resolvedEffects = resolveCastAxis<string>({
     axis: "effect",
@@ -699,7 +717,7 @@ function resolveScene(
     performerIds,
     values: effectValues,
     catalog: EFFECT_CATALOG,
-    random: createAxisStream(filmSeed, scene.id, "effect"),
+    random: createAxisStream(filmSeed, seedSceneId, "effect"),
   });
   const resolvedEfforts = resolveCastAxis<EffortId>({
     axis: "effort",
@@ -707,7 +725,7 @@ function resolveScene(
     performerIds,
     values: effortValues,
     catalog: EFFORT_CATALOG,
-    random: createAxisStream(filmSeed, scene.id, "effort"),
+    random: createAxisStream(filmSeed, seedSceneId, "effort"),
   });
 
   // staffLengthCm has no finite catalog (a pick needs an explicit "from"),
@@ -743,7 +761,7 @@ function resolveScene(
       performerIds: staffIndices.map((index) => performerIds[index]!),
       values: staffIndices.map((index) => staffLengthStates[index]!),
       catalog: null,
-      random: createAxisStream(filmSeed, scene.id, "staffLengthCm"),
+      random: createAxisStream(filmSeed, seedSceneId, "staffLengthCm"),
     });
     staffIndices.forEach((index, cursor) => {
       resolvedStaffLengths[index] = resolved[cursor]!;
@@ -762,7 +780,7 @@ function resolveScene(
     performerIds,
     values: leftPlaneValues,
     catalog: PLANE_CATALOG,
-    random: createHandPlaneAxisStream(filmSeed, scene.id, "left"),
+    random: createHandPlaneAxisStream(filmSeed, seedSceneId, "left"),
   });
   const resolvedRightPlanes = resolveCastAxis<Plane>({
     axis: "rightPlane",
@@ -770,7 +788,7 @@ function resolveScene(
     performerIds,
     values: rightPlaneValues,
     catalog: PLANE_CATALOG,
-    random: createHandPlaneAxisStream(filmSeed, scene.id, "right"),
+    random: createHandPlaneAxisStream(filmSeed, seedSceneId, "right"),
   });
 
   // A performer's own stepPlanes list REPLACES cast defaults entirely — it
@@ -784,7 +802,8 @@ function resolveScene(
         entries,
         performerIds[index]!,
         scene.id,
-        filmSeed
+        filmSeed,
+        seedSceneId
       );
     }
   );
@@ -797,7 +816,8 @@ function resolveScene(
         input.stepEffects ?? cast?.defaults?.stepEffects ?? [],
         performerIds[index]!,
         scene.id,
-        filmSeed
+        filmSeed,
+        seedSceneId
       )
   );
   const resolvedStepEfforts: ResolvedDirectorStepEffort[][] = rawInputs.map(
@@ -806,7 +826,8 @@ function resolveScene(
         input.stepEfforts ?? cast?.defaults?.stepEfforts ?? [],
         performerIds[index]!,
         scene.id,
-        filmSeed
+        filmSeed,
+        seedSceneId
       )
   );
   const resolvedHolds: ResolvedDirectorHold[][] = rawInputs.map(
@@ -882,7 +903,8 @@ function resolveScene(
     () => contextualEnvironmentFromEffects(resolvedFields.map((f) => f.effect)),
     scene.id,
     filmSeed,
-    ENVIRONMENT_CATALOG
+    ENVIRONMENT_CATALOG,
+    seedSceneId
   );
 
   const performerCount = resolvedFields.length;
@@ -895,7 +917,8 @@ function resolveScene(
     () => defaultFormation(performerCount),
     scene.id,
     filmSeed,
-    formationCatalog
+    formationCatalog,
+    seedSceneId
   );
 
   const performers = buildResolvedPerformers(
@@ -919,7 +942,8 @@ function resolveScene(
   const effectPresets = resolveEffectPresets(
     scene.effectPresets ?? {},
     scene.id,
-    filmSeed
+    filmSeed,
+    seedSceneId
   );
   const effectOverrides = { ...(scene.effectOverrides ?? {}) };
   validateEffectOverrides(effectOverrides);
@@ -957,6 +981,10 @@ function resolveScene(
     id: scene.id,
     title: scene.title,
     intent: scene.intent ?? null,
+    // Gaps 13 and 14. Spread so an unrelated scene carries neither key and
+    // resolves exactly as it did before round 2.
+    ...(scene.extends === undefined ? {} : { extends: scene.extends }),
+    ...(scene.seedAs === undefined ? {} : { seedSource: scene.seedAs }),
     startSeconds,
     durationSeconds,
     transition: {
@@ -995,6 +1023,9 @@ function resolveScene(
 function collectStageExtent(
   performers: readonly ResolvedDirectorPerformer[]
 ): { x: number; z: number }[] {
+  // Gap 21. An empty stage still needs ground under the camera, so the origin
+  // stands in for the marks nobody reaches.
+  if (performers.length === 0) return [{ x: 0, z: 0 }];
   return performers.flatMap((performer) => [
     { ...performer.position },
     ...performer.blocking.map((keyframe) => ({ ...keyframe.position })),

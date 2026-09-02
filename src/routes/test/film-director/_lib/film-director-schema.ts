@@ -171,19 +171,35 @@ const finiteNumber = z.number().finite();
  * clock, so stating neither is just as invalid as stating both.
  */
 const atMostOneTimeUnit = (
-  value: { durationSeconds?: number; durationBeats?: number },
+  value: {
+    durationSeconds?: number;
+    durationBeats?: number;
+    durationBars?: number;
+  },
   ctx: z.RefinementCtx
 ) => {
-  if (
-    value.durationSeconds !== undefined &&
-    value.durationBeats !== undefined
-  ) {
+  const stated = [
+    value.durationSeconds !== undefined,
+    value.durationBeats !== undefined,
+    value.durationBars !== undefined,
+  ].filter(Boolean).length;
+  if (stated > 1) {
     ctx.addIssue({
       code: "custom",
-      message: 'State exactly one of "durationSeconds" or "durationBeats".',
+      message:
+        'State exactly one of "durationSeconds", "durationBeats", or "durationBars".',
     });
   }
 };
+
+/**
+ * Gap 22. Bars are the unit a director actually counts off, and they are just
+ * beats multiplied by the scene's meter, so every field that accepts beats
+ * accepts bars on the same terms: syntactic bounds here, the real seconds
+ * bound at resolve time. The caps are the beats caps divided by the smallest
+ * meter, which keeps a bars figure from parsing when its beats twin could not.
+ */
+const durationBarsField = finiteNumber.positive().optional();
 
 const vector3Schema = z.tuple([finiteNumber, finiteNumber, finiteNumber]);
 const position2Schema = z.object({ x: finiteNumber, z: finiteNumber }).strict();
@@ -324,6 +340,7 @@ const cameraKeyframeSchema = z
     // inline just below rather than reusing that helper.
     atSeconds: finiteNumber.nonnegative().optional(),
     atBeats: finiteNumber.nonnegative().optional(),
+    atBars: finiteNumber.nonnegative().optional(),
     position: vector3Schema,
     target: cameraTargetSchema.optional(),
     fovDeg: finiteNumber.min(20).max(100).optional(),
@@ -333,11 +350,16 @@ const cameraKeyframeSchema = z
   })
   .strict()
   .superRefine((frame, ctx) => {
-    if ((frame.atSeconds !== undefined) === (frame.atBeats !== undefined)) {
+    const stated = [
+      frame.atSeconds !== undefined,
+      frame.atBeats !== undefined,
+      frame.atBars !== undefined,
+    ].filter(Boolean).length;
+    if (stated !== 1) {
       ctx.addIssue({
         code: "custom",
         message:
-          'A camera keyframe states exactly one of "atSeconds" or "atBeats".',
+          'A camera keyframe states exactly one of "atSeconds", "atBeats", or "atBars".',
       });
     }
   });
@@ -636,6 +658,7 @@ const blockingMoveSchema = z
       .optional(),
     durationSeconds: finiteNumber.positive().optional(),
     durationBeats: finiteNumber.positive().optional(),
+    durationBars: durationBarsField,
     easing: z.enum(DIRECTOR_EASINGS).optional(),
   })
   .strict()
@@ -653,6 +676,7 @@ const sceneBlockingSchema = z
     endFormation: formationIdSchema,
     durationSeconds: finiteNumber.positive().optional(),
     durationBeats: finiteNumber.positive().optional(),
+    durationBars: durationBarsField,
     easing: z.enum(DIRECTOR_EASINGS).optional(),
     facing: z
       .union([
@@ -742,7 +766,13 @@ const castDefaultsSchema = z
 
 const castSchema = z
   .object({
-    count: z.number().int().min(1).max(8),
+    /**
+     * Gap 21. Zero is a real answer. An establishing shot of an empty stage,
+     * a held environment before anyone walks on, a beat of nothing: the
+     * director says nobody is in this one and the scene still has a location,
+     * a duration, and a camera.
+     */
+    count: z.number().int().min(0).max(8),
     defaults: castDefaultsSchema.optional(),
     performers: z.array(performerSchema).max(8).optional(),
   })
@@ -751,6 +781,15 @@ const castSchema = z
 const performanceSchema = z
   .object({
     bpm: finiteNumber.min(20).max(300).optional(),
+    /**
+     * Gap 22. How many beats make a bar here. Only meaningful alongside a
+     * bars-stated duration, and 4 when unstated, which is what an unmarked
+     * count-off means.
+     */
+    meter: z
+      .object({ beatsPerBar: z.number().int().min(2).max(12) })
+      .strict()
+      .optional(),
     sequence: z
       .object({ source: z.literal("demo"), loop: z.boolean().optional() })
       .strict()
@@ -758,7 +797,9 @@ const performanceSchema = z
     formation: directiveSchema(formationIdSchema).optional(),
     blocking: sceneBlockingSchema.optional(),
     cast: castSchema.optional(),
-    performers: z.array(performerSchema).min(1).max(8).optional(),
+    // Gap 21. An explicit empty array is a stated empty stage, the long way
+    // round from `cast: { count: 0 }`, and means the same thing.
+    performers: z.array(performerSchema).min(0).max(8).optional(),
   })
   .strict()
   .refine((value) => !(value.cast && value.performers), {
@@ -811,6 +852,7 @@ const cameraMoveFields = {
   to: cameraPanDestinationSchema.optional(),
   durationSeconds: finiteNumber.positive().optional(),
   durationBeats: finiteNumber.positive().optional(),
+  durationBars: durationBarsField,
   easing: z.enum(DIRECTOR_EASINGS).optional(),
 };
 
@@ -865,7 +907,8 @@ const cameraMoveMemberSchema = z
     }
     if (
       member.durationSeconds !== undefined ||
-      member.durationBeats !== undefined
+      member.durationBeats !== undefined ||
+      member.durationBars !== undefined
     ) {
       ctx.addIssue({ code: "custom", message: MOVE_GROUP_MEMBER_DURATION });
     }
@@ -947,6 +990,7 @@ const cameraShotSchema = z
     ...cameraFramingFields,
     durationSeconds: finiteNumber.positive().optional(),
     durationBeats: finiteNumber.positive().optional(),
+    durationBars: durationBarsField,
   })
   .strict()
   .superRefine(atMostOneTimeUnit);
@@ -1086,6 +1130,7 @@ const transitionSchema = z
     // still convert to more than the 3-second ceiling this transition
     // actually enforces; convertSceneBeatTimes catches that at resolve time.
     durationBeats: finiteNumber.min(0).max(32).optional(),
+    durationBars: finiteNumber.min(0).max(16).optional(),
   })
   .strict()
   .superRefine(atMostOneTimeUnit);
@@ -1095,12 +1140,30 @@ const sceneSchema = z
     id: z.string().min(1),
     title: z.string().min(1),
     intent: z.string().min(1).optional(),
+    /**
+     * Gap 13. The earlier scene this one is a variation of. Already expanded
+     * by `expandSceneInheritance` at the input boundary, so what arrives here
+     * is a whole scene and this field is only the record of where it came
+     * from. That expansion is also why `title` above stays required: a child
+     * inherits its parent's title before the schema ever sees it.
+     */
+    extends: z.string().min(1).optional(),
+    /**
+     * Gap 14. Draw this scene's seeded directives as if it were the named
+     * earlier scene, so a callback picks the same character, prop, and planes
+     * the original did. Deliberately NOT implied by `extends`: a second angle
+     * on the same moment wants the same draws, while a later verse that reuses
+     * a scene's staging usually wants fresh ones. Two different intentions,
+     * two separate words.
+     */
+    seedAs: z.string().min(1).optional(),
     durationSeconds: finiteNumber.min(1).max(60).optional(),
     // max 240 beats is a syntactic cap, not the real one — see the
     // two-layer contract note on atMostOneTimeUnit above. At a slow bpm,
     // 240 beats can still convert to more than the scene's 60-second
     // ceiling; convertSceneBeatTimes catches that at resolve time.
     durationBeats: finiteNumber.positive().max(240).optional(),
+    durationBars: finiteNumber.positive().max(120).optional(),
     transition: transitionSchema.optional(),
     location: locationSchema.optional(),
     performance: performanceSchema.optional(),
@@ -1241,6 +1304,15 @@ export interface ResolvedDirectorScene {
   id: string;
   title: string;
   intent: string | null;
+  /**
+   * Gap 13. The earlier scene this one was expanded from. Absent (not null)
+   * when the scene stands alone, and likewise for `seedSource` below, so
+   * films that use neither resolve byte-identically to their pre-round-2
+   * snapshots. Same convention as `camera.tracking` and `camera.handheld`.
+   */
+  extends?: string;
+  /** Gap 14. The scene id this scene's seeded directives were drawn under. */
+  seedSource?: string;
   startSeconds: number;
   durationSeconds: number;
   transition: {

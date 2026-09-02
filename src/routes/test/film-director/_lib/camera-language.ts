@@ -62,6 +62,8 @@ const VANTAGE_AZIMUTH_DEG: Record<Exclude<DirectorCameraVantage, { degrees: numb
 
 const MIN_DISTANCE_METERS = 1.2;
 const CLOSE_UP_TARGET_HEIGHT = 1.45;
+/** Gap 21. Head height above the floor for a shot of an empty stage. */
+const EMPTY_STAGE_TARGET_HEIGHT = 1.4;
 
 /**
  * World Y of the floor performers stand on. `groundOffset` is the rig ORIGIN
@@ -93,6 +95,15 @@ export function computeCameraFraming(
     base.target.y,
     base.target.z,
   ];
+  // Gap 21. With nobody on stage there is no group to average, so the shot
+  // frames the spot where the cast would stand: the stage origin, at the
+  // height a head would be. Everything downstream (distance, vantage,
+  // elevation) then works off that point exactly as it does for a cast.
+  if (context.performers.length === 0) {
+    groupTarget[0] = 0;
+    groupTarget[1] = directorFloorY(context.groundOffset) + EMPTY_STAGE_TARGET_HEIGHT;
+    groupTarget[2] = 0;
+  }
 
   const target = resolveSubject(input.subject, context, groupTarget);
   if (input.shotSize === "close-up" && input.subject?.kind === "performer") {
