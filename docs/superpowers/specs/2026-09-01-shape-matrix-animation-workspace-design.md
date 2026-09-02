@@ -301,8 +301,13 @@ animator geometry is already linear by definition.
 - [ ] Clear or formally baseline the full project check/build gates.
 - [x] Verify transitions and final composition at 375×667, 960×412, 820×1180,
       1440×900, 1920×1080, 2560×1440, and 3840×2160, plus 200% zoom.
-- [ ] Obtain approval for the mobile turn editor and shared-mandala transition.
-- [ ] Implement and verify the approved mobile continuity phase.
+- [x] Obtain approval for the mobile turn editor and shared-mandala transition
+      (decisions recorded in the 2026-09-02 continuity handoff).
+- [x] Implement and verify the approved mobile continuity phase: one
+      `ShapeMatrixMandalaArt` primitive for tiles and the hero floor, the
+      `shape-matrix-active-mandala` shared-element morph in both directions,
+      obvious grid hover/focus cues, and the compact detail turn tray with the
+      stay-on-detail seam. Verified 2026-09-02 at all seven viewports.
 - [x] Obtain approval for the unified relationship bridge, responsive prop
       drawer, compact play/pause action, and canonical-path release boundary.
 - [x] Implement and verify the approved release-boundary follow-up.
