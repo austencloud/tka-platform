@@ -12,6 +12,7 @@ import {
 } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
+import type { Scene3DFilm } from "$lib/features/scene-3d-collection/domain/scene-3d-collection-types";
 
 type Viewer3DState = ReturnType<typeof createViewer3DState>;
 
@@ -46,7 +47,17 @@ export function createSceneVideoExport(viewer: Viewer3DState) {
     return !signal.aborted && ready();
   }
 
-  async function render(sequence: SequenceData, bpm: number): Promise<boolean> {
+  /**
+   * Render the scene. With no film this exports the current static angle for
+   * the sequence's own length; with one it replays the recorded camera path
+   * for exactly as long as it was recorded, which is what makes a saved film
+   * reproducible at any resolution.
+   */
+  async function render(
+    sequence: SequenceData,
+    bpm: number,
+    film?: Scene3DFilm
+  ): Promise<boolean> {
     localError = null;
     if (isStarting || sequenceModalExporter.state.isExporting) return false;
 
@@ -98,8 +109,13 @@ export function createSceneVideoExport(viewer: Viewer3DState) {
       const holdUnits =
         (videoOptions.includeStartPosition ? 1 : 0) +
         (videoOptions.includeEndHold ? 1 : 0);
-      const cameraKeyframes = new CameraKeyframeBuffer();
-      cameraKeyframes.captureStatic(camera);
+      const cameraKeyframes = film
+        ? CameraKeyframeBuffer.fromKeyframes(film.keyframes)
+        : new CameraKeyframeBuffer();
+      if (!film) cameraKeyframes.captureStatic(camera);
+      const totalDurationSeconds = film
+        ? film.durationSeconds
+        : (sequenceUnits + holdUnits) / beatsPerSecond;
 
       if (attempt.signal.aborted) return false;
 
@@ -119,7 +135,7 @@ export function createSceneVideoExport(viewer: Viewer3DState) {
           webglCanvas: canvas,
           camera,
           beatsPerSecond,
-          totalDurationSeconds: (sequenceUnits + holdUnits) / beatsPerSecond,
+          totalDurationSeconds,
           cameraKeyframes,
           renderer,
           runFrame,

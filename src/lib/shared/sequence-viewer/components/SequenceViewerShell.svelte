@@ -60,6 +60,7 @@
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import PostShareSheet from "$lib/shared/share/components/PostShareSheet.svelte";
   import { VIDEO_UPLOAD_ENABLED } from "../config/viewer-feature-flags";
+  import { uploadRenderedFilm } from "$lib/shared/video-collaboration/services/upload-rendered-film";
   import { canAccessPostStudio } from "../services/post-studio-access";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import {
@@ -597,6 +598,31 @@
     awaitingSceneTake = false;
     share.resumeAfterSceneTake();
   });
+  // Opt-in cloud save for a film rendered here: the same performance-video
+  // pipeline the upload sheet uses, minus the file picker. Local retention and
+  // the download stay untouched — this is an extra destination, not a
+  // replacement.
+  const canSaveFilmToSequence = $derived(
+    ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED && !!(ctx.effectiveSequence ?? sequence)
+  );
+
+  async function saveFilmToSequence(): Promise<void> {
+    const target = ctx.effectiveSequence ?? sequence;
+    const url = ctx.previewBlobUrl;
+    if (!target || !url) return;
+    try {
+      const blob = await (await fetch(url)).blob();
+      await uploadRenderedFilm({ sequence: target, blob });
+      toast.success("Film saved to this sequence");
+    } catch (error) {
+      console.warn("[RenderedFilm] Cloud save failed:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Could not save the film"
+      );
+      throw error;
+    }
+  }
+
 </script>
 
 <div
@@ -943,7 +969,7 @@
                     duration={DURATION.emphasis}
                   />
                 {/if}
-                {#if ctx.renderMode === "3d" && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
+                {#if ctx.renderMode === "3d" && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting || ctx.pendingFilmRender)}
                   <Recording3DOverlay
                     countdownValue={ctx.countdownValue}
                     isRecording={ctx.isRecording3D}
@@ -952,6 +978,9 @@
                     exportProgress={ctx.exportProgress}
                     isExporting={ctx.isExporting}
                     onCancelExport={interactions.handleCancelVideoExport}
+                    pendingRender={ctx.pendingFilmRender}
+                    onConfirmRender={interactions.handleConfirmFilmRender}
+                    onDiscardRender={interactions.handleDiscardFilmRender}
                   />
                 {/if}
                 {#if ctx.renderMode !== "3d" && shellRendersTakeover && animTakeover.phase !== "idle"}
@@ -994,7 +1023,7 @@
                 />
                 {#if layout.isRecordSceneActive && ctx.effectiveSequence && sceneReady3d}
                   <RecordSceneChrome
-                    isExporting={ctx.isExporting}
+                    isExporting={ctx.isExporting || !!ctx.pendingFilmRender}
                     canvasReady={ctx.canvasReady}
                     onExport={() => interactions.handleVideoExport()}
                     choreography={ctx.viewer3DState.cameraChoreography}
@@ -1032,6 +1061,9 @@
                       onDismiss={interactions.handleDismissExportedVideo}
                       onRedownload={() =>
                         void interactions.handleRedownloadExportedVideo()}
+                      onSaveToCloud={canSaveFilmToSequence
+                        ? saveFilmToSequence
+                        : undefined}
                     />
                   {:else}
                     <!-- No tempo and no playback mode on the Motion page: the
