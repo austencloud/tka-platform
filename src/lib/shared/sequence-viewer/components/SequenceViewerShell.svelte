@@ -1023,7 +1023,7 @@
                   stepCount={sequence?.steps?.length ?? 0}
                   onAction={interactions.handleCardContextAction}
                 />
-                {#if layout.isRecordSceneActive && ctx.effectiveSequence && sceneReady3d}
+                {#if layout.isRecordSceneActive && ctx.effectiveSequence && sceneReady3d && ctx.countdownValue === 0 && !ctx.isRecording3D}
                   <RecordSceneChrome
                     isExporting={ctx.isExporting || !!ctx.pendingFilmRender}
                     canvasReady={ctx.canvasReady}

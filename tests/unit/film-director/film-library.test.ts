@@ -321,8 +321,24 @@ describe("film library", () => {
     // Shot one is wide; shot two is a close-up, so it sits nearer its subject.
     expect(range(opener)).toBeGreaterThan(range(atCut(3)[1]!));
 
+    const derived = resolved.scenes.find((s) => s.id === "derived-sequences")!;
+    expect(
+      derived.performance.performers.map((performer) => performer.sequence)
+    ).toEqual([
+      { library: "0c7e6529-1dca-4254-903e-7068e38c030c" },
+      {
+        transformOf: "performer-1",
+        transforms: [
+          { op: "rotate", degrees: 90, direction: "cw" },
+          { op: "swap-hands" },
+        ],
+      },
+      { transformOf: "performer-1", transforms: [{ op: "rewind" }] },
+    ]);
+    expect(derived.durationSeconds).toBe(8);
+
     // Every scene that says "cut" cuts: no dissolve window anywhere.
-    for (const scene of [onBeat, tracking, shots]) {
+    for (const scene of [onBeat, tracking, shots, derived]) {
       expect(scene.transition).toEqual({ kind: "cut", durationSeconds: 0 });
     }
   });
