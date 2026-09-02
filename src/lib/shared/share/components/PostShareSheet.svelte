@@ -32,6 +32,7 @@
     type CardPresentation,
   } from "$lib/shared/share/domain/models/card-presentation";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { VIEWER_STATE_PARAM_NAMES } from "$lib/shared/sequence-viewer/services/viewer-url-state-codec";
   import {
     buildArtifactFilename,
     buildPostLink,
@@ -249,6 +250,30 @@
   );
 
   const postUrl = $derived(shortUrl ?? seededShortUrl);
+
+  /**
+   * Copy link hands over the viewer state too, so the recipient opens the exact
+   * view that was shared. Captions keep the bare post link: a caption is read by
+   * people, and a state blob in it is noise.
+   */
+  const copyLinkUrl = $derived.by(() => {
+    if (!postUrl) return "";
+    if (!shareUrl) return postUrl;
+    try {
+      const state = new URL(shareUrl).searchParams;
+      const target = new URL(postUrl);
+      let carried = false;
+      for (const name of VIEWER_STATE_PARAM_NAMES) {
+        const value = state.get(name);
+        if (value === null) continue;
+        target.searchParams.set(name, value);
+        carried = true;
+      }
+      return carried ? target.toString() : postUrl;
+    } catch {
+      return postUrl;
+    }
+  });
 
   const presets = $derived(
     captions.buildPresets({
@@ -942,7 +967,7 @@
         short: "Link",
         icon: "fa-solid fa-link",
         ready: true,
-        run: () => void runLocalTile("copy-link", () => copyLink(postUrl)),
+        run: () => void runLocalTile("copy-link", () => copyLink(copyLinkUrl)),
       });
     }
     return tiles;

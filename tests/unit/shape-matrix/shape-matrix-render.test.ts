@@ -13,7 +13,6 @@ import type {
   MandalaGuidePaintTarget,
 } from "$lib/shared/mandala/services/mandala-guide-painter";
 import { computeEngineAlignedMandalaScale } from "$lib/shared/mandala/services/mandala-path-preparer";
-import { resolveMandalaRenderExtent } from "$lib/shared/mandala/services/mandala-renderer";
 import type { PreparedMandalaPath } from "$lib/shared/mandala/services/types";
 import { HERO_TRAIL_PRESET } from "$lib/shared/landing/data/hero-trail-preset";
 import {
@@ -95,12 +94,22 @@ describe("shape matrix stills use the animator's guide painter", () => {
     });
   });
 
-  it("fits a cell to its full extent so busy tiles never clip", () => {
+  it("paints a cell at engine alignment so a tile is the hero floor shrunk", () => {
     const { calls, deps } = harness();
     renderCell(left, right, 128, 100, { dpr: 1, deps });
-    const merged: MandalaPaths = { left: left.left, right: right.right, purple: [] };
-    const extent = resolveMandalaRenderExtent(merged, { show: "both", tipDx: 100 });
-    expect(calls[0]?.options.scale).toBeCloseTo(64 / (extent * 1.05), 10);
+    expect(calls[0]?.options.scale).toBeCloseTo(
+      computeEngineAlignedMandalaScale(128),
+      10
+    );
+  });
+
+  it("paints a header at the same engine alignment as the cells", () => {
+    const { calls, deps } = harness();
+    renderHeader(left, "left", 128, 100, { dpr: 1, deps });
+    expect(calls[0]?.options.scale).toBeCloseTo(
+      computeEngineAlignedMandalaScale(128),
+      10
+    );
   });
 
   it("paints a header with only its own hand", () => {
