@@ -224,7 +224,7 @@ export const provingGroundsFilm: FilmDirectorInput = {
       id: "three-shots",
       title: "Three Shots",
       intent:
-        "Gap 4: one scene, three framings, two hard cuts. A wide front two-shot for six beats, then a cut to a low close-up on the left performer that pushes in for six beats, then a cut to a high medium shot from behind for the last four. The frame jumps at each cut; nothing glides between framings.",
+        "Gap 4: one scene, three framings, two hard cuts. A wide front two-shot for six beats, then a cut to a low close-up on performer 1 (the pink one, screen right from the front) that pushes in for six beats, then a cut to a high medium shot from behind for the last four. The frame jumps at each cut; nothing glides between framings.",
       durationBeats: 16,
       transition: { kind: "cut" },
       location: { environmentId: "cosmic" },
