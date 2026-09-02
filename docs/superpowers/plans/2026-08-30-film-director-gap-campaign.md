@@ -140,13 +140,27 @@ proving-film scenes author at version 4.
       `effectOverrides` on a performer or in cast defaults now reject with
       `PERFORMER_EFFECT_CONFIG_MESSAGE`; documented under "Spoken but not
       real". 663/663 tests; snapshot untouched. Non-visual, no frame needed.
-- [ ] **Gap 7 — blocking edges.** `run` (only if the locomotion owner has a
+- [x] **Gap 7 — blocking edges.** `run` (only if the locomotion owner has a
       run gait — locomotion.md forbids inventing one), arc paths
       (`along: "arc"` resolved into chord segments at compile time, no runtime
       change), offstage entrances (positions outside stage bounds + walk in —
       verify stage-extent handling), stand-and-watch (`sequence: {source:"none"}`
       — performer idles, no prop phrase; needs adapter support for a
       sequence-less performer).
+      Closed 2026-09-02: arc paths and stand-and-watch shipped as capability,
+      offstage entrances were already legal and are now documented, `run`
+      shipped as a named rejection. The Task 1 spike took branch A — a
+      performer with no loaded sequence renders an idle body, throws nothing,
+      and holds no prop.
+      Acceptance (main-loop review, 2026-09-02): 683/683 film-director tests.
+      Visual gate on :5201 at 1920×1080, film time 56.0 s: two bodies in the
+      medium shot, the idle performer empty-handed, the entrant reported at
+      (8, -1) and outside the frame. At 59.5 s the entrant is inside the
+      frame edge at (4.14, -2.08), 1.2 m/s, downstage of the straight chord.
+      No console errors or warnings. The executor's staging (opening mark at
+      x = 5, wide group shot) was inside the frame from the first beat, so
+      the scene was restaged to x = 8 over twelve beats under a medium shot
+      on performer 2 before commit.
 - [ ] **Gap 8b — orbit cw/ccw felt-direction confirmation.** Two-scene demo in
       proving-grounds (one cw, one ccw orbit over distinguishable staging);
       pane delivery asking Austen which reads clockwise. One-line flip in

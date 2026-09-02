@@ -202,17 +202,30 @@ export interface DirectorLibrarySequence {
  * chain of the Actions-panel transforms to another performer's sequence; and
  * `library` plays a sequence someone saved to the public library.
  *
- * `demo`, `mirrorOf`, `transformOf`, and `library` take no controls. A derived
- * sequence is its source's sequence changed in a stated way, so a turn figure
- * written on it would have to disagree with the thing it claims to derive
- * from; a library sequence is already finished.
+ * `{source: "none"}` is a performer who stands and watches: no prop phrase, no
+ * generated sequence, the body idling in place. Blocking still applies, so a
+ * watcher can walk on, stand, and turn.
+ *
+ * `demo`, `none`, `mirrorOf`, `transformOf`, and `library` take no controls. A
+ * derived sequence is its source's sequence changed in a stated way, so a turn
+ * figure written on it would have to disagree with the thing it claims to
+ * derive from; a library sequence is already finished; and a performer who
+ * spins nothing has nothing for a control to shape.
  */
 export type DirectorPerformerSequence =
   | { source: "demo" }
+  | { source: "none" }
   | { mirrorOf: string }
   | DirectorTransformedSequence
   | DirectorLibrarySequence
   | DirectorGeneratedSequence;
+
+/** A performer who spins nothing this scene and simply stands and watches. */
+export function isIdleSequence(
+  sequence: DirectorPerformerSequence
+): sequence is { source: "none" } {
+  return "source" in sequence && sequence.source === "none";
+}
 
 export function isGeneratedSequence(
   sequence: DirectorPerformerSequence
@@ -580,6 +593,7 @@ export function sequenceDirectiveKey(
     return `transformOf:${sequence.transformOf}:${stableJson(sequence.transforms)}`;
   }
   if ("library" in sequence) return `library:${sequence.library}`;
+  if (isIdleSequence(sequence)) return "none";
   if (!isGeneratedSequence(sequence)) return "demo";
   return `generated:${stableJson(sequence)}`;
 }

@@ -337,8 +337,60 @@ describe("film library", () => {
     ]);
     expect(derived.durationSeconds).toBe(8);
 
+    const edgesOfStage = resolved.scenes.find(
+      (s) => s.id === "edges-of-the-stage"
+    )!;
+    expect(edgesOfStage.durationSeconds).toBe(8);
+    const entrant = edgesOfStage.performance.performers.find(
+      (performer) => performer.id === "performer-3"
+    )!;
+    // The opening mark is off camera and unclamped, and the stage extent
+    // stretched to include it rather than pulling it in.
+    expect(entrant.position).toEqual({ x: 8, z: -1 });
+    expect(edgesOfStage.performance.stageExtent).toContainEqual({ x: 8, z: -1 });
+
+    const walkFrames = entrant.blocking.filter((frame) => frame.walking);
+    // Fifteen chords: about 7.2m of arc at a 0.5m target chord length.
+    expect(walkFrames).toHaveLength(15);
+    expect(entrant.blocking.at(-1)!.position).toEqual({ x: 1.8, z: -0.3 });
+
+    // The path is a bow, not a line: the halfway keyframe sits well off the
+    // straight route between the two marks (the sagitta is a quarter of the
+    // 6.24m chord, about 1.56m).
+    const from = entrant.position;
+    const to = { x: 1.8, z: -0.3 };
+    const chord = Math.hypot(to.x - from.x, to.z - from.z);
+    const halfway = entrant.blocking[7]!.position;
+    const offChord =
+      Math.abs(
+        (to.x - from.x) * (from.z - halfway.z) -
+          (from.x - halfway.x) * (to.z - from.z)
+      ) / chord;
+    expect(offChord).toBeGreaterThan(1.4);
+
+    // Constant ground speed: every chord is the same length and lands on the
+    // same time step.
+    const legLengths = walkFrames.map((frame, index) => {
+      const next = entrant.blocking[index + 1]!;
+      return Math.hypot(
+        next.position.x - frame.position.x,
+        next.position.z - frame.position.z
+      );
+    });
+    for (const leg of legLengths) expect(leg).toBeCloseTo(legLengths[0]!, 6);
+    // Arc length over the six seconds twelve beats buy, under the 2.6 ceiling.
+    const arcLength = legLengths.reduce((sum, leg) => sum + leg, 0);
+    expect(arcLength / 6).toBeLessThan(2.6);
+    expect(arcLength).toBeGreaterThan(chord);
+
+    // The watcher spins nothing at all, beside two performers who do.
+    expect(
+      edgesOfStage.performance.performers.find((p) => p.id === "performer-1")!
+        .sequence
+    ).toEqual({ source: "none" });
+
     // Every scene that says "cut" cuts: no dissolve window anywhere.
-    for (const scene of [onBeat, tracking, shots, derived]) {
+    for (const scene of [onBeat, tracking, shots, derived, edgesOfStage]) {
       expect(scene.transition).toEqual({ kind: "cut", durationSeconds: 0 });
     }
   });

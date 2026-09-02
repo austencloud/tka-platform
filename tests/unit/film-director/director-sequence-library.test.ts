@@ -165,4 +165,17 @@ describe("director sequence library", () => {
     );
     noise.mockRestore();
   });
+
+  it("gives an idle performer no sequence at all, not the demo", async () => {
+    const d = deps();
+    const lib = createDirectorSequenceLibrary(seq("demo"), d);
+    await lib.prepare(
+      film([{ id: "watcher", sequence: { source: "none" } }, { id: "spinner" }])
+    );
+    const scene = lib.forScene("s1");
+    expect(scene.has("watcher")).toBe(false);
+    expect(tag(scene.get("spinner")!)).toBe("demo");
+    expect(lib.failures).toEqual([]);
+  });
+
 });

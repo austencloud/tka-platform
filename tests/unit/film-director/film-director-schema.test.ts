@@ -913,3 +913,83 @@ describe("per-performer effect config (spoken but not real)", () => {
     expect(parsed.scenes[0]!.effectPresets).toEqual({ trails: "trail-neon" });
   });
 });
+
+describe("blocking edges", () => {
+  const edgesFilm = (blocking: unknown[]) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "edges-film",
+    title: "Edges",
+    scenes: [
+      {
+        id: "s1",
+        title: "S1",
+        performance: { performers: [{ id: "a", blocking }] },
+      },
+    ],
+  });
+  const parseBlocking = (blocking: unknown[]) =>
+    FilmDirectorInputSchema.parse(edgesFilm(blocking));
+
+  it("parses a run move so the compiler can reject it by name", () => {
+    const parsed = parseBlocking([{ move: "run", to: { x: 0, z: 2 } }]);
+    expect(
+      parsed.scenes[0]!.performance!.performers![0]!.blocking![0]!.move
+    ).toBe("run");
+  });
+  it("accepts an arc on a walk", () => {
+    const parsed = parseBlocking([
+      { move: "walk", to: { x: 2, z: 0 }, along: { arc: "left", bulge: 0.25 } },
+    ]);
+    expect(
+      parsed.scenes[0]!.performance!.performers![0]!.blocking![0]!.along
+    ).toEqual({ arc: "left", bulge: 0.25 });
+  });
+
+  it("rejects a bulge outside its bounds", () => {
+    for (const bulge of [0, -0.5, 1.6]) {
+      expect(() =>
+        parseBlocking([
+          { move: "walk", to: { x: 2, z: 0 }, along: { arc: "left", bulge } },
+        ])
+      ).toThrow();
+    }
+  });
+
+  it("rejects an unknown arc side", () => {
+    expect(() =>
+      parseBlocking([
+        { move: "walk", to: { x: 2, z: 0 }, along: { arc: "wide" } },
+      ])
+    ).toThrow();
+  });
+});
+
+describe("standing and watching", () => {
+  const watcherFilm = (sequence: unknown) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+    id: "watcher-film",
+    title: "Watcher",
+    scenes: [
+      {
+        id: "s1",
+        title: "S1",
+        performance: { performers: [{ id: "a", sequence }] },
+      },
+    ],
+  });
+
+  it("accepts a performer who stands and watches", () => {
+    const parsed = FilmDirectorInputSchema.parse(
+      watcherFilm({ source: "none" })
+    );
+    expect(parsed.scenes[0]!.performance!.performers![0]!.sequence).toEqual({
+      source: "none",
+    });
+  });
+
+  it("rejects controls on a performer who is not spinning", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(watcherFilm({ source: "none", level: 2 }))
+    ).toThrow(/is not spinning anything/);
+  });
+});

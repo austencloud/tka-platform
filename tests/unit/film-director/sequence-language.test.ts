@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { GenerationMode } from "../../../src/lib/shared/foundation/domain/models/generation/generate-models";
 import {
   compileSequenceDirective,
+  isIdleSequence,
   isLibrarySequence,
   isTransformedSequence,
   resolvePositionRef,
@@ -318,5 +319,17 @@ describe("derived and library sequences", () => {
     expect(isTransformedSequence({ mirrorOf: "a" })).toBe(false);
     expect(isLibrarySequence({ library: "a" })).toBe(true);
     expect(isLibrarySequence({ word: "AB" })).toBe(false);
+  });
+});
+
+describe("standing and watching", () => {
+  it("keys an idle performer by their idleness", () => {
+    expect(sequenceDirectiveKey({ source: "none" })).toBe("none");
+  });
+
+  it("classifies an idle sequence", () => {
+    expect(isIdleSequence({ source: "none" })).toBe(true);
+    expect(isIdleSequence({ source: "demo" })).toBe(false);
+    expect(isIdleSequence({ word: "AB" })).toBe(false);
   });
 });

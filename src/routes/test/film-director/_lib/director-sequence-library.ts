@@ -39,6 +39,7 @@ import type {
 import {
   compileSequenceDirective,
   isGeneratedSequence,
+  isIdleSequence,
   isLibrarySequence,
   sequenceDirectiveKey,
   transformSourceId,
@@ -215,6 +216,12 @@ export function createDirectorSequenceLibrary(
     await Promise.all(
       performers.map(async (performer) => {
         const directed = performer.sequence;
+        if (isIdleSequence(directed)) {
+          // Deliberately no entry: the adapter reads the absence as "this
+          // performer spins nothing", which is different from "the library has
+          // not finished yet" only because the adapter also knows the scene.
+          return;
+        }
         try {
           const sourceId = transformSourceId(directed);
           if (sourceId !== null) {
