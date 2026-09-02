@@ -133,7 +133,17 @@ export function applyDirectorSceneToViewer(
     // `applyBeatPlaneOverrides` bails out whenever `loadedSequence` is null.
     // Load once, the first time each pooled performer is touched.
     const sequenceData = viewer.currentSequenceData;
-    if (sequenceData) {
+    // Gap 21. Nobody is cast, so nothing spins. Skipping the backfill is not
+    // enough on its own: a pooled rig reused from an earlier scene is still
+    // holding whatever it spun there, and the per-performer loop below has no
+    // entries to reach it with. Clear the whole pool instead.
+    const emptyStage = scene.performance.performers.length === 0;
+    if (emptyStage) {
+      for (const performer of manager.performers) {
+        if (performer.hasSequence) performer.clearSequence();
+      }
+    }
+    if (sequenceData && !emptyStage) {
       for (const [index, performer] of manager.performers.entries()) {
         if (idle.has(index)) continue;
         if (!performer.hasSequence) performer.loadSequence(sequenceData);

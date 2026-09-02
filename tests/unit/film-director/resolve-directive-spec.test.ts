@@ -413,3 +413,216 @@ describe("scene transition defaults", () => {
     expect(spec.scenes[1]!.transition.durationSeconds).toBe(0.5);
   });
 });
+
+/** Two or more scenes in one film, for the round-2 inheritance rules. */
+function scenesFilm(scenes: unknown[], extras: Record<string, unknown> = {}) {
+  return {
+    version: 5,
+    id: "inheritance-film",
+    title: "Inheritance Film",
+    scenes,
+    ...extras,
+  };
+}
+
+/**
+ * Gap 13. A variation on an earlier scene, stated as the variation rather
+ * than as a whole second copy of the scene.
+ */
+describe("scene extends", () => {
+  const parent = {
+    id: "opening",
+    title: "Opening",
+    durationSeconds: 6,
+    location: { environmentId: "forest", showStage: true },
+    performance: { formation: "line", cast: { count: 3 } },
+    camera: { subject: { kind: "group" }, shotSize: "wide", position: "front" },
+  };
+
+  it("copies everything the child does not restate, and keeps the child's id", () => {
+    const spec = resolveFilmDirectorSpec(
+      scenesFilm([
+        parent,
+        { id: "again", extends: "opening", camera: { position: "behind" } },
+      ])
+    );
+    const [first, second] = spec.scenes;
+    expect(second!.id).toBe("again");
+    // Title is optional on a child: the parent's carries over.
+    expect(second!.title).toBe("Opening");
+    expect(second!.extends).toBe("opening");
+    expect(second!.durationSeconds).toBe(6);
+    expect(second!.location).toEqual(first!.location);
+    expect(second!.performance.performers).toHaveLength(3);
+  });
+
+  it("merges nested objects key by key instead of replacing them", () => {
+    const spec = resolveFilmDirectorSpec(
+      scenesFilm([
+        parent,
+        { id: "again", extends: "opening", location: { showStage: false } },
+      ])
+    );
+    // The child said one word about the location and kept the rest of it.
+    expect(spec.scenes[1]!.location.environmentId).toBe("forest");
+    expect(spec.scenes[1]!.location.showStage).toBe(false);
+  });
+
+  it("replaces arrays wholesale", () => {
+    const spec = resolveFilmDirectorSpec(
+      scenesFilm([
+        {
+          ...parent,
+          location: {
+            environmentId: "forest",
+            visiblePlanes: ["wall", "wheel", "floor"],
+          },
+        },
+        { id: "again", extends: "opening", location: { visiblePlanes: ["floor"] } },
+      ])
+    );
+    expect(spec.scenes[1]!.location.visiblePlanes).toEqual(["floor"]);
+  });
+
+  it("deletes an inherited key when the child states null", () => {
+    const spec = resolveFilmDirectorSpec(
+      scenesFilm([
+        { ...parent, intent: "the establishing shot" },
+        { id: "again", extends: "opening", intent: null },
+      ])
+    );
+    expect(spec.scenes[0]!.intent).toBe("the establishing shot");
+    expect(spec.scenes[1]!.intent).toBeNull();
+  });
+
+  it("flattens a chain, so a grandchild sees what its parent inherited", () => {
+    const spec = resolveFilmDirectorSpec(
+      scenesFilm([
+        parent,
+        { id: "middle", extends: "opening", durationSeconds: 4 },
+        { id: "last", extends: "middle", camera: { position: "left" } },
+      ])
+    );
+    expect(spec.scenes[2]!.durationSeconds).toBe(4);
+    expect(spec.scenes[2]!.location.environmentId).toBe("forest");
+    expect(spec.scenes[2]!.extends).toBe("middle");
+  });
+
+  it("carries neither key on a scene that inherits nothing", () => {
+    const spec = resolveFilmDirectorSpec(scenesFilm([parent]));
+    expect("extends" in spec.scenes[0]!).toBe(false);
+    expect("seedSource" in spec.scenes[0]!).toBe(false);
+  });
+
+  it("rejects a forward reference, an unknown scene, and itself, naming both scenes", () => {
+    expect(() =>
+      resolveFilmDirectorSpec(
+        scenesFilm([{ id: "first", title: "First", extends: "later" }, parent, { id: "later", title: "Later" }])
+      )
+    ).toThrow(/"first" extends "later", which comes later/);
+    expect(() =>
+      resolveFilmDirectorSpec(scenesFilm([parent, { id: "again", extends: "nowhere" }]))
+    ).toThrow(/"again" extends "nowhere", which is not a scene in this film/);
+    expect(() =>
+      resolveFilmDirectorSpec(scenesFilm([parent, { id: "again", extends: "again" }]))
+    ).toThrow(/"again" extends itself/);
+  });
+});
+
+/**
+ * Gap 14. Draw a scene's seeded directives under an earlier scene's name, so
+ * a callback comes back to the same moment rather than a new one.
+ */
+describe("scene seedAs", () => {
+  const drawing = (id: string, extra: Record<string, unknown> = {}) => ({
+    id,
+    title: id,
+    performance: {
+      formation: "line",
+      cast: { count: 3, defaults: { prop: { pick: "distinct" } } },
+    },
+    ...extra,
+  });
+
+  it("makes two scenes with the same cast draw identical picks", () => {
+    const spec = resolveFilmDirectorSpec(
+      scenesFilm([drawing("first"), drawing("second", { seedAs: "first" })])
+    );
+    const props = (index: number) =>
+      spec.scenes[index]!.performance.performers.map(
+        (performer) => performer.prop
+      );
+    expect(props(1)).toEqual(props(0));
+    expect(spec.scenes[1]!.seedSource).toBe("first");
+  });
+
+  it("draws differently without it, which is what makes it worth saying", () => {
+    const spec = resolveFilmDirectorSpec(
+      scenesFilm([drawing("first"), drawing("second")])
+    );
+    const props = (index: number) =>
+      spec.scenes[index]!.performance.performers.map(
+        (performer) => performer.prop
+      );
+    expect(props(1)).not.toEqual(props(0));
+  });
+
+  it("is not implied by extends", () => {
+    const spec = resolveFilmDirectorSpec(
+      scenesFilm([drawing("first"), { id: "second", extends: "first" }])
+    );
+    expect("seedSource" in spec.scenes[1]!).toBe(false);
+    expect(
+      spec.scenes[1]!.performance.performers.map((performer) => performer.prop)
+    ).not.toEqual(
+      spec.scenes[0]!.performance.performers.map((performer) => performer.prop)
+    );
+  });
+
+  it("rejects a scene that seeds as one that has not happened yet", () => {
+    expect(() =>
+      resolveFilmDirectorSpec(
+        scenesFilm([drawing("first", { seedAs: "second" }), drawing("second")])
+      )
+    ).toThrow(/"first" seeds as "second", which comes later/);
+  });
+});
+
+/** Gap 21. An empty stage is a shot, not a mistake. */
+describe("a cast of zero", () => {
+  const emptyScene = {
+    id: "empty",
+    title: "Empty",
+    durationSeconds: 3,
+    location: { environmentId: "forest" },
+    performance: { cast: { count: 0 } },
+    camera: { subject: { kind: "group" }, shotSize: "wide" },
+  };
+
+  it("resolves with no performers and a finite camera on the origin", () => {
+    const scene = resolveFilmDirectorSpec(scenesFilm([emptyScene])).scenes[0]!;
+    expect(scene.performance.performers).toEqual([]);
+    expect(scene.performance.stageExtent).toEqual([{ x: 0, z: 0 }]);
+    for (const frame of scene.camera.keyframes) {
+      expect(frame.position.every(Number.isFinite)).toBe(true);
+      expect(frame.target[0]).toBeCloseTo(0, 6);
+      expect(frame.target[2]).toBeCloseTo(0, 6);
+    }
+  });
+
+  it("reads an explicit empty performers array the same way", () => {
+    const scene = resolveFilmDirectorSpec(
+      scenesFilm([
+        { ...emptyScene, performance: { performers: [] } },
+      ])
+    ).scenes[0]!;
+    expect(scene.performance.performers).toEqual([]);
+  });
+
+  it("still gives one performer to a scene that says nothing about its cast", () => {
+    const scene = resolveFilmDirectorSpec(
+      scenesFilm([{ id: "quiet", title: "Quiet" }])
+    ).scenes[0]!;
+    expect(scene.performance.performers).toHaveLength(1);
+  });
+});
