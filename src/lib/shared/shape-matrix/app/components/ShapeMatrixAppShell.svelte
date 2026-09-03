@@ -6,6 +6,7 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
+  import ShapeMatrixBandControl from "./ShapeMatrixBandControl.svelte";
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
@@ -47,12 +48,13 @@
     SHAPE_MATRIX_LEVELS,
     SHAPE_MATRIX_LEVEL_DESCRIPTIONS,
   } from "../shape-matrix-levels";
-  import { THEORY_LEVEL_DESCRIPTIONS } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
 
   /* Both surfaces are a grid of pairs with a detail beside it, so the shell
-     runs one layout and swaps what fills the panes. The level means a
-     different thing on each - TKA turn vocabulary on the Matrix, how far the
-     ratio band opens on Theory - so only its descriptions change. */
+     runs one layout and swaps what fills the panes. The vocabulary control is
+     the one thing that does not merely change its labels between them: the
+     Matrix picks a Kinetic Alphabet level, Theory picks how far the rational
+     field opens, and those are different systems rather than two readings of
+     one number. Each surface gets its own control. */
   const theory = $derived(appState.surface === "theory");
 
   /* The app always mounts on the Matrix and restores its saved or linked
@@ -67,9 +69,6 @@
     });
     return () => cancelAnimationFrame(frame);
   });
-  const levelDescriptions = $derived(
-    theory ? THEORY_LEVEL_DESCRIPTIONS : SHAPE_MATRIX_LEVEL_DESCRIPTIONS
-  );
   const hasPair = $derived(
     theory ? appState.theoryPair !== null : appState.selectedPair !== null
   );
@@ -307,27 +306,49 @@
     {/if}
 
     {#if !appState.compact}
-      <!-- Which surface, and at what difficulty: two app-level choices that
-           outrank everything below them, so they sit on the title line. That
-           hands the whole second line to the turn row, which level 4 needs
-           for fourteen values without becoming a thin scroller. -->
+      <!-- Which surface, and how much of its vocabulary: two app-level choices
+           that outrank everything below them, so they sit on the title line.
+           That hands the whole second line to the turn row, which level 4
+           needs for fourteen values without becoming a thin scroller. -->
       <div class="header-meta">
         <div class="control-cell surface-control-cell">
           <span class="control-label">Explore</span>
           <ShapeMatrixSurfaceControl />
         </div>
         <div class="control-cell level-control">
-          <span class="control-label">Difficulty</span>
-          <LevelSelector
-            value={appState.level}
-            levels={SHAPE_MATRIX_LEVELS}
-            describe={(level) => levelDescriptions[level]}
-            onchange={appState.setLevel}
-            compact={true}
-            ariaLabel={theory
-              ? "How far the ratio band opens"
-              : "Kinetic Alphabet level"}
-          />
+          <!-- The caption rides the same clock as the control below it. Left
+               outside the transition it flipped on the first frame, so
+               "Difficulty" sat over Halves/Thirds/Fifths/Ninths for the length
+               of the fade — the exact pairing this surface exists to deny. -->
+          <Crossfade
+            key={theory ? "band" : "level"}
+            mode="swap"
+            duration={booted ? DURATION.normal : 0}
+          >
+            <span class="control-label">
+              {theory ? "Ratio field" : "Difficulty"}
+            </span>
+          </Crossfade>
+          <!-- Same cell, two different systems. The swap runs sequentially so
+               a level numeral is never readable over a band name. -->
+          <Crossfade
+            key={theory ? "band" : "level"}
+            mode="swap"
+            duration={booted ? DURATION.normal : 0}
+          >
+            {#if theory}
+              <ShapeMatrixBandControl />
+            {:else}
+              <LevelSelector
+                value={appState.level}
+                levels={SHAPE_MATRIX_LEVELS}
+                describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
+                onchange={appState.setLevel}
+                compact={true}
+                ariaLabel="Kinetic Alphabet level"
+              />
+            {/if}
+          </Crossfade>
         </div>
       </div>
       <!-- The two ribbons already shared one grid area, so a pair of
@@ -683,6 +704,38 @@
   .level-control {
     grid-area: level;
     flex: 0 0 auto;
+    /* One reserved box for two systems. The cell carries a level selector on
+       the Matrix and a band selector on Theory, and sizing it to whichever is
+       mounted slid the whole centred header sideways on every surface change
+       for no information. The three widths track LevelSelector's own
+       1680/2600 ramp, which is what sets the wider of the two. */
+    min-width: 17.5rem;
+  }
+
+  /* Fill the reserved box rather than sitting in it with dead space alongside.
+     SegmentedControl already divides the room into equal segments, so the band
+     names get the same breathing space the level badges have. */
+  .level-control :global(.crossfade) {
+    width: 100%;
+  }
+
+  /* Centre the badges in the reserved box. Left-aligned they left a ragged gap
+     down the right-hand side that read as a mis-sized cell. */
+  .level-control :global(.level-selector) {
+    width: 100%;
+    justify-content: center;
+  }
+
+  @media (min-width: 1680px) {
+    .level-control {
+      min-width: 19.25rem;
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .level-control {
+      min-width: 22.5rem;
+    }
   }
 
   .control-label {
@@ -801,6 +854,12 @@
       gap: 0;
       padding: 0.25rem 0.35rem;
       border-radius: 10px;
+    }
+
+    /* A narrow host has no room to reserve; the swap is not visible here
+       anyway, since this tier trades the whole title-line pair for canvas. */
+    .level-control {
+      min-width: 0;
     }
 
     .top-actions {

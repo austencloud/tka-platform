@@ -1443,7 +1443,6 @@
       {viewpointHref}
       {targetZone}
       targetDistance={objectiveDistance}
-      currentArea={integratedJourney?.currentArea ?? integratedArea}
       mobility={mobilityRuntime}
       {electricUnicycleSpeedMph}
       {electricUnicycleSpeedKph}
@@ -1558,7 +1557,6 @@
     --action-shadow: 0 0.8rem 2rem rgba(165, 65, 39, 0.28);
     --action-shadow-hover: 0 1rem 2.4rem rgba(165, 65, 39, 0.42);
     --action-focus: #ffe6b0;
-    --sim-ui-scale: 1;
     position: fixed;
     inset: 0;
     min-inline-size: 20rem;
@@ -1608,8 +1606,8 @@
     gap: 0.16rem;
     max-inline-size: min(28rem, calc(100vw - 1.5rem));
     padding: 0.72rem 0.9rem;
-    border-inline-start: 0.2rem solid var(--sim-accent);
-    border-radius: 0.35rem 0.9rem 0.9rem 0.35rem;
+    border: 1px solid var(--sim-stroke);
+    border-radius: 0.9rem;
     background: rgba(7, 13, 10, 0.74);
     box-shadow: 0 0.9rem 2.4rem rgba(2, 7, 4, 0.26);
     pointer-events: none;
@@ -1653,7 +1651,7 @@
     inline-size: min(55rem, calc(100vw - 2rem));
     padding: clamp(1rem, 2vw, 1.5rem);
     border-radius: 1.35rem;
-    transform: translate(-50%, -50%) scale(var(--sim-ui-scale));
+    translate: -50% -50%;
   }
 
   .choice-heading {
@@ -1751,7 +1749,7 @@
     max-inline-size: min(34rem, calc(100vw - 2rem));
     padding: 1rem 1.15rem;
     border-radius: 1.15rem;
-    transform: translate(-50%, -50%) scale(var(--sim-ui-scale));
+    translate: -50% -50%;
   }
 
   .loading-card > div:last-child,
@@ -1862,18 +1860,6 @@
 
     .choice-grid small {
       display: none;
-    }
-  }
-
-  @media (min-width: 1680px) {
-    .festival-page {
-      --sim-ui-scale: 1.12;
-    }
-  }
-
-  @media (min-width: 2600px) {
-    .festival-page {
-      --sim-ui-scale: 1.48;
     }
   }
 

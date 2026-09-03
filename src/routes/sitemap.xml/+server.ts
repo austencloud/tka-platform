@@ -25,9 +25,10 @@ const pages: SitemapEntry[] = [
   // into the product pages. A redirected URL doesn't self-list.
   // Pillar pages (SEO content roadmap)
   { url: "composer" },
-  // The notation hub, rebuilt as a chronological catalog and un-gated
-  // 2026-07-27 (2026-07-26-notation-catalog-design.md).
-  { url: "notation" },
+  // The archive, rebuilt as a chronological catalog and un-gated 2026-07-27
+  // (2026-07-26-notation-catalog-design.md), moved from /notation to /history
+  // on 2026-09-03. /notation 301s here and is omitted, same as /roots below.
+  { url: "history" },
   // Per-prop notation pages (2026-07-16-per-prop-notation-pages-design.md)
   { url: "notation/staves" },
   { url: "notation/fans" },

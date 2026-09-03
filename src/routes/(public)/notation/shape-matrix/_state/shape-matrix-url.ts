@@ -19,6 +19,7 @@ import {
 } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
 import type { ShapeMatrixAppSnapshot } from "$lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte";
 import type { ShapeMatrixAxisTarget } from "$lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte";
+import type { ShapeMatrixSurface } from "$lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   makeSpinRatio,
@@ -32,7 +33,12 @@ import {
   theoryFlowerKey,
   type TheoryFlower,
 } from "$lib/shared/shape-matrix/domain/theory-flower";
-import { theoryRatiosForLevel } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
+import {
+  asTheoryBand,
+  DEFAULT_THEORY_BAND,
+  theoryRatiosForBand,
+  type TheoryBand,
+} from "$lib/shared/shape-matrix/domain/theory-ratio-band";
 
 const MODES = new Set<VtgMode>(MODE_ORDER);
 const LABEL_MODES = new Set<MatrixLabelMode>(["turns", "ratios"]);
@@ -42,24 +48,47 @@ const LEGACY_SIZE_TURNS = { small: 0, medium: 1, large: 2 } as const;
 const DEFAULT_THEORY_RATIO = makeSpinRatio(1, 3);
 
 /*
- * A ratio only restores when the level in the same link actually contains it,
- * so a link never lands on a grid whose axis the difficulty selector cannot
- * reach. `leftRatio`/`rightRatio` are the current names; `ratio` is the single
- * axis older links carried and still restores both axes from it.
+ * A ratio only restores when the band in the same link actually contains it,
+ * so a link never lands on a grid whose axis the band selector cannot reach.
+ * `leftRatio`/`rightRatio` are the current names; `ratio` is the single axis
+ * older links carried and still restores both axes from it.
  */
 function readTheoryRatio(
   params: URLSearchParams,
   key: "leftRatio" | "rightRatio",
-  level: TurnLevel
+  band: TheoryBand
 ): SpinRatio {
   const requested =
     parseSpinRatio(params.get(key) ?? "") ??
     parseSpinRatio(params.get("ratio") ?? "");
   return (
-    theoryRatiosForLevel(level).find(
+    theoryRatiosForBand(band).find(
       (candidate) => requested && spinRatioEquals(candidate, requested)
     ) ?? DEFAULT_THEORY_RATIO
   );
+}
+
+/*
+ * How far the Theory ratio field opens.
+ *
+ * `level` used to carry this, which put `level=4` in the address bar of a
+ * surface the level system does not reach. Links written before the split
+ * still restore through it, so a shared 1:9 flower keeps working; new links
+ * write `band` and leave `level` to mean the Kinetic Alphabet level it names.
+ *
+ * The fallback is read only on a Theory link. On a Matrix link `level` means
+ * exactly what it says, and borrowing it for the band would let a Matrix URL
+ * silently decide how far a surface it never opened is allowed to go.
+ */
+function readTheoryBand(
+  params: URLSearchParams,
+  surface: ShapeMatrixSurface
+): TheoryBand {
+  const legacy = surface === "theory" ? params.get("level") : null;
+  const raw = Number(params.get("band") ?? legacy);
+  return Number.isInteger(raw) && raw >= 1 && raw <= 4
+    ? asTheoryBand(raw)
+    : DEFAULT_THEORY_BAND;
 }
 
 function readTheoryFlower(
@@ -130,14 +159,17 @@ export function readShapeMatrixRouteState(
   ) as ShapeMatrixAxisTarget | null;
   const requestedProp = params.get("prop") as PropType | null;
 
-  const theoryLeftRatio = readTheoryRatio(params, "leftRatio", level);
-  const theoryRightRatio = readTheoryRatio(params, "rightRatio", level);
+  const surface: ShapeMatrixSurface =
+    params.get("theory") === "1" ? "theory" : "matrix";
+  const theoryBand = readTheoryBand(params, surface);
+  const theoryLeftRatio = readTheoryRatio(params, "leftRatio", theoryBand);
+  const theoryRightRatio = readTheoryRatio(params, "rightRatio", theoryBand);
   const theoryLeft = readTheoryFlower(params, "theoryLeft", theoryLeftRatio);
   const theoryRight = readTheoryFlower(params, "theoryRight", theoryRightRatio);
   const requestedTheoryMode = params.get("pairing") as VtgMode | null;
 
   return {
-    surface: params.get("theory") === "1" ? "theory" : "matrix",
+    surface,
     theoryLeftRatio,
     theoryRightRatio,
     theoryMode:
@@ -148,6 +180,7 @@ export function readShapeMatrixRouteState(
       theoryLeft && theoryRight
         ? { left: theoryLeft, right: theoryRight }
         : null,
+    theoryBand,
     level,
     leftTurn,
     rightTurn,
@@ -178,7 +211,12 @@ export function writeShapeMatrixRouteState(
 ): void {
   url.searchParams.delete("size");
   url.searchParams.delete("turn");
-  url.searchParams.set("level", String(state.level));
+  // `level` names a Kinetic Alphabet level, so only the surface that has one
+  // writes it. A Theory link carries `band` instead: the address bar should
+  // not tell a visitor they are at Level 4 of a system that does not reach
+  // the ratio they are looking at.
+  if (state.surface === "theory") url.searchParams.delete("level");
+  else url.searchParams.set("level", String(state.level));
   url.searchParams.delete("blueTurn");
   url.searchParams.delete("redTurn");
   url.searchParams.set("leftTurn", turnValueToKey(state.leftTurn));
@@ -200,6 +238,7 @@ export function writeShapeMatrixRouteState(
   url.searchParams.delete("hands");
   if (state.surface === "theory") {
     url.searchParams.set("theory", "1");
+    url.searchParams.set("band", String(state.theoryBand));
     url.searchParams.set("leftRatio", spinRatioKey(state.theoryLeftRatio));
     url.searchParams.set("rightRatio", spinRatioKey(state.theoryRightRatio));
     url.searchParams.set("pairing", state.theoryMode);
@@ -218,6 +257,7 @@ export function writeShapeMatrixRouteState(
     }
   } else {
     url.searchParams.delete("theory");
+    url.searchParams.delete("band");
     url.searchParams.delete("leftRatio");
     url.searchParams.delete("rightRatio");
     url.searchParams.delete("pairing");
