@@ -8,6 +8,10 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy, untrack } from "svelte";
+  import {
+    createRenderActivityGate,
+    renderGateTarget,
+  } from "$lib/shared/render-gating/render-activity-gate";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
@@ -335,6 +339,14 @@
 
   // Services - per-instance to allow multiple simultaneous players (e.g., Arena)
   let playbackController: AnimationPlaybackController | null = null;
+
+  // Off-screen / hidden-tab gating for THIS player's playhead loop. The canvas
+  // render loop is gated independently inside CanvasSurface; this one stops the
+  // clock that advances the sequence. Created at component init (no DOM work,
+  // SSR-safe) and attached to the root element by `use:renderGateTarget`.
+  const activityGate = createRenderActivityGate({
+    name: "inline-animation-player",
+  });
   let servicesReady = $state(false);
   let loading = $state(true);
   // Once true, reloads never return to the loading-state branch — see the
@@ -486,6 +498,7 @@
         // drive the workspace's beat highlight for an unrelated sequence.
         syncSharedWorkspaceState: false,
       });
+      playbackController.setActivityGate(activityGate);
       playbackController.onLoopComplete(() => onLoopComplete?.());
       playbackController.onSequenceBoundary(() => {
         const handoff = onSequenceBoundary?.() ?? null;
@@ -512,6 +525,7 @@
   });
 
   onDestroy(() => {
+    activityGate.dispose();
     playbackController?.offLoopComplete();
     playbackController?.offSequenceBoundary();
     playbackController?.dispose();
@@ -767,7 +781,7 @@
   }
 </script>
 
-<div class="inline-animation-player">
+<div class="inline-animation-player" use:renderGateTarget={activityGate}>
   {#if loading && !hasLoadedOnce}
     <!-- First load only. On RELOADS (sequence prop swap) this branch must NOT
          fire: flipping to it unmounts AnimatorCanvas, which destroys the whole

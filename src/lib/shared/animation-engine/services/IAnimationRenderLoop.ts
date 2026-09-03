@@ -47,6 +47,7 @@ import type {
 import type { EffectRendererLike } from "./effects/effect-renderer";
 import type { MandalaOverlayCanvas } from "$lib/shared/mandala/services/mandala-overlay-canvas";
 import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+import type { RenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
 import type {
   MandalaPathOptions,
   StepLike,
@@ -258,6 +259,15 @@ export interface IAnimationRenderLoop {
    * @param value - true to disable the rAF loop, false to re-enable
    */
   setExternallyDriven(value: boolean): void;
+
+  /**
+   * Route this loop through the canonical off-screen / hidden-tab gate
+   * (`shared/render-gating/render-activity-gate.ts`). While the gate is closed
+   * the rAF stops entirely and the canvas holds its last painted frame; when it
+   * reopens the frame clock is re-seeded and the loop resumes. Pass null to
+   * un-gate. An externally driven loop ignores the gate.
+   */
+  setActivityGate(gate: RenderActivityGate | null): void;
 
   /** Render ONE frame synchronously, now, with an explicit sim dt (seconds).
    *  Bypasses rAF/needsRender scheduling — used by the offscreen export path so
