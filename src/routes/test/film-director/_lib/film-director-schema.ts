@@ -12,6 +12,10 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import {
+  CAMERA_CHANNEL_IDS,
+  type CameraChannelId,
+} from "./director-camera-channels";
 import { directiveSchema } from "./directives";
 import { normalizeFilmDirectorInput } from "./normalize-film-director-input";
 import type { ResolvedDirectorBlockingKeyframe } from "./blocking-language";
@@ -1299,9 +1303,51 @@ const cameraShotSchema = z
   .strict()
   .superRefine(atMostOneMoveLength);
 
+/**
+ * One hand-authored key on one camera channel.
+ *
+ * Times are seconds from the scene's start. Manual keys deliberately do not
+ * accept the beat, bar and cue vocabulary a camera keyframe does: a key placed
+ * by dragging it is a statement about a moment, and having it slide when the
+ * tempo changed would be a surprise rather than a feature.
+ */
+const cameraChannelKeySchema = z
+  .object({
+    atSeconds: finiteNumber.min(0),
+    value: finiteNumber,
+    interpolation: z.enum(DIRECTOR_INTERPOLATIONS).optional(),
+    easing: z.enum(DIRECTOR_EASINGS).optional(),
+  })
+  .strict();
+
+/**
+ * The manual layer, addressed by channel.
+ *
+ * Present only when something was hand-keyed; absent, not empty, otherwise, so
+ * every film written before channels existed resolves byte-identically. A
+ * channel named here takes ownership whole (decision D2): its keys replace
+ * whatever composed underneath rather than merging with it.
+ */
+const cameraChannelsSchema = z
+  // partialRecord, not record: an enum-keyed `z.record` in Zod 4 is
+  // EXHAUSTIVE, so it would demand all eleven channels before accepting one.
+  // Hand-keying a single scalar is the whole point of the block.
+  .partialRecord(
+    z.enum(CAMERA_CHANNEL_IDS),
+    z
+      .object({ keys: z.array(cameraChannelKeySchema).min(1).max(64) })
+      .strict()
+  )
+  .refine((channels) => Object.keys(channels).length > 0, {
+    message:
+      "A channels block with nothing in it says nothing. Leave it out instead.",
+  });
+
 const cameraSchema = z
   .object({
     preset: z.enum(DIRECTOR_CAMERA_PRESETS).optional(),
+    /** Hand-keyed channels, layered over whatever the rest of this camera says. */
+    channels: cameraChannelsSchema.optional(),
     target: cameraTargetSchema.optional(),
     orbitDegrees: finiteNumber.min(-720).max(720).optional(),
     keyframes: z.array(cameraKeyframeSchema).min(1).max(32).optional(),
@@ -1748,6 +1794,23 @@ export interface ResolvedDirectorCameraKeyframe {
   easing: DirectorEasing;
 }
 
+/**
+ * One key of a resolved manual channel. Structurally what
+ * `ManualCameraChannel` in `director-camera-channels.ts` consumes; the shape
+ * is stated here because this is where resolved documents are described.
+ */
+export interface ResolvedDirectorCameraChannelKey {
+  atSeconds: number;
+  value: number;
+  interpolation: DirectorInterpolation;
+  easing: DirectorEasing;
+}
+
+export interface ResolvedDirectorCameraChannel {
+  id: CameraChannelId;
+  keys: ResolvedDirectorCameraChannelKey[];
+}
+
 export interface ResolvedDirectorScene {
   id: string;
   title: string;
@@ -1823,6 +1886,13 @@ export interface ResolvedDirectorScene {
      * byte-identically to their earlier snapshots.
      */
     handheld?: ResolvedDirectorHandheld;
+    /**
+     * The manual layer: channels the director hand-keyed, each owning its
+     * scalar outright over whatever the preset, grammar or keyframes below it
+     * produced. Absent (not an empty array) when nothing was hand-keyed, so
+     * films written before channels existed resolve byte-identically.
+     */
+    channels?: ResolvedDirectorCameraChannel[];
   };
 }
 

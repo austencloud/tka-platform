@@ -116,6 +116,55 @@ const AIM_CHANNELS: ReadonlySet<CameraChannelId> = new Set([
   "camera.aim.distance",
 ]);
 
+/** Whether `id` addresses a camera channel. Narrows arbitrary strings. */
+export function isCameraChannelId(value: string): value is CameraChannelId {
+  return (CAMERA_CHANNEL_IDS as readonly string[]).includes(value);
+}
+
+/**
+ * Whether this channel holds a flat segment exactly. See `CameraChannel`.
+ * Aim is angular and a stated hold in it is a hold, for the same reason the
+ * lens channels hold: a pan that pauses should not drift while it waits.
+ */
+export function holdsFlatForChannel(id: CameraChannelId): boolean {
+  return LENS_CHANNELS.has(id) || AIM_CHANNELS.has(id);
+}
+
+/**
+ * The channels that have to change owner together with `id`.
+ *
+ * Yaw, pitch and distance are one aim expressed in three scalars, and the
+ * segment's aim space is carried by the yaw channel. Taking yaw into the
+ * manual layer while pitch and distance stayed below would leave the aim half
+ * derived and half measured, so the group moves as one. Every other channel
+ * stands alone: a hand-keyed `camera.target.x` composes perfectly well with a
+ * `camera.target.y` that nobody has touched.
+ */
+export function cameraChannelGroup(
+  id: CameraChannelId
+): readonly CameraChannelId[] {
+  return AIM_CHANNELS.has(id)
+    ? ["camera.aim.yaw", "camera.aim.pitch", "camera.aim.distance"]
+    : [id];
+}
+
+/**
+ * A channel as the document states it. Authored times are seconds from the
+ * scene's start, which is the unit a drag produces; a manual key deliberately
+ * does not speak the beat and cue vocabulary that `cameraKeyframeSchema` does,
+ * because a hand-placed key that moved when the tempo changed would be a
+ * surprise rather than a feature.
+ */
+export interface ManualCameraChannel {
+  id: CameraChannelId;
+  keys: readonly {
+    atSeconds: number;
+    value: number;
+    interpolation: DirectorInterpolation;
+    easing: DirectorEasing;
+  }[];
+}
+
 function readChannelValue(
   frame: ResolvedDirectorCameraKeyframe,
   id: CameraChannelId
@@ -205,9 +254,17 @@ function buildAimChannels(
   // A stated hold in aim is a hold: the same argument the lens channels make,
   // and the reason a pan that pauses does not drift while it waits.
   return [
-    { id: "camera.aim.yaw", holdsFlat: true, keys: yaw },
-    { id: "camera.aim.pitch", holdsFlat: true, keys: pitch },
-    { id: "camera.aim.distance", holdsFlat: true, keys: distance },
+    { id: "camera.aim.yaw", holdsFlat: holdsFlatForChannel("camera.aim.yaw"), keys: yaw },
+    {
+      id: "camera.aim.pitch",
+      holdsFlat: holdsFlatForChannel("camera.aim.pitch"),
+      keys: pitch,
+    },
+    {
+      id: "camera.aim.distance",
+      holdsFlat: holdsFlatForChannel("camera.aim.distance"),
+      keys: distance,
+    },
   ];
 }
 
@@ -221,7 +278,8 @@ function buildAimChannels(
  * deliberate behaviour change and gets its own snapshot diff.
  */
 export function buildCameraChannels(
-  keyframes: readonly ResolvedDirectorCameraKeyframe[]
+  keyframes: readonly ResolvedDirectorCameraKeyframe[],
+  manual?: readonly ManualCameraChannel[]
 ): CameraChannelStore {
   const base = new Map<CameraChannelId, CameraChannel>();
   // A channel with no keys is not a channel. Leaving the layer empty is what
@@ -231,7 +289,7 @@ export function buildCameraChannels(
     if (AIM_CHANNELS.has(id)) continue;
     base.set(id, {
       id,
-      holdsFlat: LENS_CHANNELS.has(id),
+      holdsFlat: holdsFlatForChannel(id),
       keys: keyframes.map((frame) => ({
         t: frame.atSeconds,
         v: readChannelValue(frame, id),
@@ -248,7 +306,79 @@ export function buildCameraChannels(
     Map<CameraChannelId, CameraChannel>
   >();
   layers.set("base", base);
+  if (manual?.length) layers.set("manual", buildManualLayer(manual));
   return { layers };
+}
+
+/**
+ * The hand-authored layer.
+ *
+ * A manual yaw channel stamps `aimSpace` on every key, which is what makes
+ * hand-keying the aim direction visible: without it the derived aim point
+ * would be assembled and then thrown away in favour of the target channels
+ * underneath, and dragging a yaw key would appear to do nothing.
+ */
+function buildManualLayer(
+  manual: readonly ManualCameraChannel[]
+): Map<CameraChannelId, CameraChannel> {
+  const layer = new Map<CameraChannelId, CameraChannel>();
+  for (const channel of manual) {
+    if (channel.keys.length === 0) continue;
+    const angular = channel.id === "camera.aim.yaw";
+    layer.set(channel.id, {
+      id: channel.id,
+      holdsFlat: holdsFlatForChannel(channel.id),
+      keys: [...channel.keys]
+        .sort((left, right) => left.atSeconds - right.atSeconds)
+        .map((key) => ({
+          t: key.atSeconds,
+          v: key.value,
+          interpolation: key.interpolation,
+          easing: key.easing,
+          ...(angular ? { aimSpace: "angles" as const } : {}),
+        })),
+    });
+  }
+  return layer;
+}
+
+/**
+ * The keys a manual channel starts from when it takes ownership.
+ *
+ * Decision D2 is copy-on-write per channel: the topmost owner takes the whole
+ * channel, seeded from what composed underneath it, so the first edit changes
+ * exactly one key and nothing else moves. A channel no layer owns seeds as a
+ * single key at zero holding `fallback`, which is the honest reading of "this
+ * value was never authored".
+ */
+export function seedManualChannel(
+  store: CameraChannelStore,
+  id: CameraChannelId,
+  fallback = 0
+): ManualCameraChannel {
+  const composed = resolveChannel(store, id);
+  if (!composed) {
+    return {
+      id,
+      keys: [
+        {
+          atSeconds: 0,
+          value: fallback,
+          interpolation: "smooth",
+          easing: "ease-in-out",
+        },
+      ],
+    };
+  }
+  return {
+    id,
+    keys: composed.keys.map((key) => ({
+      atSeconds: key.t,
+      value: key.v,
+      interpolation: key.interpolation,
+      easing: key.easing,
+    })),
+  };
 }
 
 /**

@@ -5,6 +5,7 @@ import {
   sampleCameraFrame,
   type CameraChannelStore,
   type DirectorCameraFrame,
+  type ManualCameraChannel,
 } from "./director-camera-channels";
 import {
   compileCameraMoves,
@@ -27,6 +28,7 @@ import type {
   DirectorCameraPreset,
   DirectorCameraTargetInput,
   DirectorEasing,
+  ResolvedDirectorCameraChannel,
   ResolvedDirectorCameraKeyframe,
   ResolvedDirectorHandheld,
   ResolvedDirectorPerformer,
@@ -123,6 +125,53 @@ export interface ResolvedDirectorCameraTrack {
    * films that stay on the tripod resolve byte-identically.
    */
   handheld?: ResolvedDirectorHandheld;
+  /**
+   * The manual layer. Absent (not an empty array) when nothing was hand-keyed,
+   * which is what keeps every pre-channels film resolving byte-identically.
+   */
+  channels?: ResolvedDirectorCameraChannel[];
+}
+
+/**
+ * Hand-keyed channels, checked against the scene they belong to.
+ *
+ * The rules are the ones raw keyframes already answer to — sorted, no two keys
+ * at the same instant, nothing past the end of the scene — because a channel
+ * is the same kind of statement about the same timeline. The message names the
+ * channel, since the director is looking at a row rather than at a list.
+ */
+function resolveManualChannels(
+  input: DirectorCameraInput["channels"],
+  durationSeconds: number,
+  sceneId: string
+): ResolvedDirectorCameraChannel[] | undefined {
+  if (!input) return undefined;
+  const resolved: ResolvedDirectorCameraChannel[] = [];
+  for (const [id, channel] of Object.entries(input)) {
+    if (!channel) continue;
+    const keys = [...channel.keys]
+      .map((key) => ({
+        atSeconds: key.atSeconds,
+        value: key.value,
+        interpolation: key.interpolation ?? ("smooth" as const),
+        easing: key.easing ?? ("ease-in-out" as const),
+      }))
+      .sort((left, right) => left.atSeconds - right.atSeconds);
+    for (let index = 1; index < keys.length; index += 1) {
+      if (keys[index]!.atSeconds === keys[index - 1]!.atSeconds) {
+        throw new Error(
+          `Scene "${sceneId}": two keys on "${id}" share the same time.`
+        );
+      }
+    }
+    if (keys.at(-1)!.atSeconds > durationSeconds) {
+      throw new Error(
+        `Scene "${sceneId}": a key on "${id}" falls after the scene has ended.`
+      );
+    }
+    resolved.push({ id: id as ResolvedDirectorCameraChannel["id"], keys });
+  }
+  return resolved.length > 0 ? resolved : undefined;
 }
 
 function vec3(value: {
@@ -213,7 +262,18 @@ export function resolveDirectorCameraTrack(
   // Handheld is a modifier on the sampled frame, not a framing, so it rides
   // along with whichever of the four camera spellings below resolves.
   const handheld = resolveHandheld(input?.handheld, context);
-  const shake = handheld ? { handheld } : {};
+  const manual = resolveManualChannels(
+    input?.channels,
+    context.durationSeconds,
+    sceneId
+  );
+  // Spread at each of the four spellings a camera resolves through, so the
+  // manual layer rides along with presets, grammar, shots and raw keyframes
+  // alike rather than being a fifth mutually exclusive way to write a camera.
+  const shake = {
+    ...(handheld ? { handheld } : {}),
+    ...(manual ? { channels: manual } : {}),
+  };
   const baseShot = computeFramingShot({
     performers: performers.map((performer) => performer.position),
     plane: "wall",
@@ -374,14 +434,23 @@ export function resolveDirectorCameraTrack(
  */
 const CHANNEL_STORES = new WeakMap<object, CameraChannelStore>();
 
-/** The channel store behind a resolved track, built on first use. */
+/**
+ * The channel store behind a resolved track, built on first use.
+ *
+ * Cached against the manual layer's identity when there is one, and against
+ * the keyframes' otherwise. Both arrays are produced by the same resolution
+ * pass, so they change together; keying on the manual array is what lets a
+ * live drag hand in a new preview array and get a new store for it without
+ * evicting anything.
+ */
 export function cameraChannelsFor(
-  keyframes: readonly ResolvedDirectorCameraKeyframe[]
+  keyframes: readonly ResolvedDirectorCameraKeyframe[],
+  manual?: readonly ManualCameraChannel[]
 ): CameraChannelStore {
-  const key = keyframes as unknown as object;
+  const key = (manual ?? keyframes) as unknown as object;
   const cached = CHANNEL_STORES.get(key);
   if (cached) return cached;
-  const store = buildCameraChannels(keyframes);
+  const store = buildCameraChannels(keyframes, manual);
   CHANNEL_STORES.set(key, store);
   return store;
 }
@@ -395,7 +464,8 @@ export function cameraChannelsFor(
  */
 export function sampleDirectorCameraTrack(
   keyframes: readonly ResolvedDirectorCameraKeyframe[],
-  atSeconds: number
+  atSeconds: number,
+  manual?: readonly ManualCameraChannel[]
 ): DirectorCameraFrame {
-  return sampleCameraFrame(cameraChannelsFor(keyframes), atSeconds);
+  return sampleCameraFrame(cameraChannelsFor(keyframes, manual), atSeconds);
 }
