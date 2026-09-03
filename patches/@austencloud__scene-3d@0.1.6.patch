@@ -6674,6 +6674,49 @@ index ef6cccc850025c82919b91010c3666d6c065483d..00000000000000000000000000000000
 diff --git a/dist/lib/scale/scale-constants.d.ts.map b/dist/lib/scale/scale-constants.d.ts.map
 deleted file mode 100644
 index 1f4d9296f2d356f677d1a21f8e955b437c53f394..0000000000000000000000000000000000000000
+diff --git a/dist/lib/services/bone-name-normalization.js b/dist/lib/services/bone-name-normalization.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1cf469d4a9529c870e130e7a7771a69058731f85
+--- /dev/null
++++ b/dist/lib/services/bone-name-normalization.js
+@@ -0,0 +1,37 @@
++/**
++ * One owner for exporter-namespace-tolerant bone name matching.
++ *
++ * Rigs authored in Maya/FBX tooling carry an export namespace on every joint:
++ * Mixamo writes `mixamorig:LeftHand` and, once a character has been
++ * re-uploaded, `mixamorig12:LeftHandThumb1`. Two things then happen to that
++ * name before a lookup sees it:
++ *
++ *   1. The character intake pipeline strips the namespace when it bakes a rig,
++ *      so rigs that went through intake arrive as bare `hand_l` / `thumb1_l`.
++ *   2. three.js sanitizes every node name at load time - `PropertyBinding`
++ *      deletes `[ ] . : /` outright - so a catalog GLB's
++ *      `mixamorig:LeftHandThumb1` reaches the runtime as
++ *      `mixamorigLeftHandThumb1`, colon and all structure gone.
++ *
++ * Both forms have to resolve against the same alias tables, or a rig whose
++ * joints merely carry a namespace looks exactly like a rig with no fingers.
++ *
++ * The Mixamo prefix is matched by name rather than by shape, because after
++ * sanitization there is no separator left to key on. Everything else is matched
++ * on the colon, which is only ever a namespace separator - it never appears
++ * inside a joint name in any convention this package supports (Mixamo
++ * `LeftHandThumb1`, characters3d.com `L_Thumb1`, Unreal `thumb1_l`).
++ */
++const MIXAMO_NAMESPACE = /^mixamorig\d*:?/;
++const EXPORT_NAMESPACE = /^[a-z0-9_]+:/;
++
++/**
++ * Lowercase a bone name and drop any exporter namespace prefix, so a rig's
++ * joints and this package's alias tables can be compared directly.
++ */
++export function normalizeBoneName(name) {
++    return name
++        .toLowerCase()
++        .replace(MIXAMO_NAMESPACE, "")
++        .replace(EXPORT_NAMESPACE, "");
++}
 diff --git a/dist/lib/services/clip-footprint.js b/dist/lib/services/clip-footprint.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..153c2b3986241b3f48913f2d699f8019ae663385
@@ -8704,10 +8747,10 @@ diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts.map b/
 deleted file mode 100644
 index c12c9d64f6cc6e7e5dca20f2c415f3d3f215eee0..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.js b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
-index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1de92088ef 100644
+index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..84b262dda923399fc9f1bf1e4952c1d8ff8138cd 100644
 --- a/dist/lib/services/implementations/AvatarSkeletonBuilder.js
 +++ b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
-@@ -5,8 +5,10 @@
+@@ -5,8 +5,11 @@
   * Provides access to bones for IK solving and animation.
   */
  import { Vector3, Box3 } from "three";
@@ -8715,11 +8758,12 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
  import { FINGER_BONES, } from "../../domain/models/GripPose";
 +import { cloneSharedSkinnedScene, getSharedGltfBounds, loadSharedGltf, } from "../shared-gltf-cache";
 +import { buildTwoBoneChain } from "../leg-geometry";
++import { normalizeBoneName } from "../bone-name-normalization";
 +import { avatarAssetLabel, recordAvatarLoadSpan, } from "../../debug/avatar-load-instrumentation";
  /**
   * Mapping of standard bone names to common variations
   * GLTF models from different sources use different naming conventions
-@@ -41,6 +43,7 @@ const BONE_NAME_ALIASES = {
+@@ -41,6 +44,7 @@ const BONE_NAME_ALIASES = {
      LeftUpLeg: ["LeftUpLeg", "l_thigh", "thigh.L", "upperleg_l", "LeftUpperLeg"],
      LeftLeg: ["LeftLeg", "l_shin", "shin.L", "lowerleg_l", "LeftLowerLeg"],
      LeftFoot: ["LeftFoot", "l_foot", "foot.L", "foot_l"],
@@ -8727,7 +8771,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
      RightUpLeg: [
          "RightUpLeg",
          "r_thigh",
-@@ -50,6 +53,7 @@ const BONE_NAME_ALIASES = {
+@@ -50,6 +54,7 @@ const BONE_NAME_ALIASES = {
      ],
      RightLeg: ["RightLeg", "r_shin", "shin.R", "lowerleg_r", "RightLowerLeg"],
      RightFoot: ["RightFoot", "r_foot", "foot.R", "foot_r"],
@@ -8735,7 +8779,36 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
  };
  /**
   * Mapping of canonical finger bone names to common GLTF naming conventions.
-@@ -84,25 +88,36 @@ export class AvatarSkeletonBuilder {
+@@ -72,6 +77,28 @@ for (const side of ["Left", "Right"]) {
+         ];
+     }
+ }
++
++const EXPECTED_FINGER_BONE_COUNT = FINGER_BONES.length * 2;
++const warnedMissingFingerRigs = new Set();
++
++/**
++ * Report an unresolved finger rig once per model.
++ *
++ * Grip calibration, the wrist goal, the palm socket and the per-frame shaft
++ * channel all disable themselves when finger chains are null. That used to
++ * happen in total silence, so a rig whose joints merely carried an unexpected
++ * export namespace looked exactly like a rig with no fingers at all.
++ */
++function warnMissingFingerRig(label, found, missing) {
++  if (warnedMissingFingerRigs.has(label)) return;
++  warnedMissingFingerRigs.add(label);
++  const sample = missing.slice(0, 4).join(", ");
++  const rest = missing.length > 4 ? ` (+${missing.length - 4} more)` : "";
++  console.warn(
++    `[AvatarSkeletonBuilder] "${label}": finger rig unresolved - found ${found} of ${EXPECTED_FINGER_BONE_COUNT} expected finger bones. Wrist goal, palm socket and shaft-channel correction stay disabled. Missing: ${sample}${rest}`
++  );
++}
++
+ export class AvatarSkeletonBuilder {
+     state = {
+         isLoaded: false,
+@@ -84,25 +111,36 @@ export class AvatarSkeletonBuilder {
          rightLegChain: null,
          fingerChains: null,
      };
@@ -8771,7 +8844,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
 +                recordAvatarLoadSpan(label, "skinned-clone", cloneStart);
 +            }
 +            const buildStart = performance.now();
-+            this.processGLTF(root, getSharedGltfBounds(url));
++            this.processGLTF(root, getSharedGltfBounds(url), label);
 +            recordAvatarLoadSpan(label, "skeleton-build", buildStart, preparedRoot ? "prepared-root" : "cold");
 +        }
 +        catch (error) {
@@ -8780,11 +8853,11 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
 +        }
      }
 -    processGLTF(gltf) {
-+    processGLTF(root, preparedBounds) {
++    processGLTF(root, preparedBounds, label) {
          // Hot-swap: keep old arm chains valid until new ones are ready
          // This ensures animation continues smoothly during the swap
          const oldRoot = this.state.root;
-@@ -111,7 +126,7 @@ export class AvatarSkeletonBuilder {
+@@ -111,11 +149,22 @@ export class AvatarSkeletonBuilder {
          const newBones = new Map();
          let newSkeleton = null;
          // Find all skinned meshes and bones in the new model
@@ -8793,7 +8866,23 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
              if (child.isSkinnedMesh) {
                  const skinnedMesh = child;
                  newMeshes.push(skinnedMesh);
-@@ -129,44 +144,46 @@ export class AvatarSkeletonBuilder {
+-                newSkeleton = skinnedMesh.skeleton;
++                // A character is usually exported as several skinned meshes - a body
++                // plus shirt, pants, sneakers and eyelashes - and every accessory
++                // carries its own reduced skeleton holding only the joints that deform
++                // it. Keeping whichever mesh happened to be traversed last left the rig
++                // pointing at a 13-joint trouser skeleton, so every finger lookup missed
++                // even though the body skin beside it held all 30. The character's own
++                // skeleton is the complete one, so keep the largest.
++                if (skinnedMesh.skeleton &&
++                    (newSkeleton === null ||
++                        skinnedMesh.skeleton.bones.length > newSkeleton.bones.length)) {
++                    newSkeleton = skinnedMesh.skeleton;
++                }
+                 // Map bones from the skeleton directly (more reliable than checking isBone)
+                 if (skinnedMesh.skeleton) {
+                     for (const bone of skinnedMesh.skeleton.bones) {
+@@ -129,47 +178,49 @@ export class AvatarSkeletonBuilder {
          });
          // Compute original bounding box of new model (before any transforms)
          // This is done ONCE at load time, before the model is added to the scene
@@ -8819,7 +8908,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
          this.buildArmChains();
          this.buildLegChains();
 -        this.state.fingerChains = this.buildFingerChains(gltf.scene);
-+        this.state.fingerChains = this.buildFingerChains(root);
++        this.state.fingerChains = this.buildFingerChains(label);
          this.state.isLoaded = true;
 -        // Dispose old model resources after swap is complete
 -        if (oldRoot) {
@@ -8850,21 +8939,35 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
       * Map a bone to a bones map (used during hot-swap)
       */
      mapBoneToMap(bone, bonesMap) {
-         const boneName = bone.name.toLowerCase();
+-        const boneName = bone.name.toLowerCase();
++        const boneName = normalizeBoneName(bone.name);
 +        // A rig that already uses TKA's names must keep each spine level exactly
 +        // where it authored it. Vendor aliases such as `spine1` and `spine2` are
 +        // also used for zero-based rigs, so checking those first silently shifted
 +        // canonical Spine1/Spine2 bones down one level.
 +        for (const standardName of Object.keys(BONE_NAME_ALIASES)) {
-+            if (boneName === standardName.toLowerCase()) {
++            if (boneName === normalizeBoneName(standardName)) {
 +                bonesMap.set(standardName, bone);
 +                return;
 +            }
 +        }
          for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
              for (const alias of aliases) {
-                 if (boneName === alias.toLowerCase()) {
-@@ -188,117 +205,28 @@ export class AvatarSkeletonBuilder {
+-                if (boneName === alias.toLowerCase()) {
++                if (boneName === normalizeBoneName(alias)) {
+                     bonesMap.set(standardName, bone);
+                     return;
+                 }
+@@ -180,7 +231,7 @@ export class AvatarSkeletonBuilder {
+             if (bonesMap.has(standardName))
+                 continue;
+             for (const alias of aliases) {
+-                if (boneName.includes(alias.toLowerCase())) {
++                if (boneName.includes(normalizeBoneName(alias))) {
+                     bonesMap.set(standardName, bone);
+                     return;
+                 }
+@@ -188,117 +239,28 @@ export class AvatarSkeletonBuilder {
          }
      }
      mapBone(bone) {
@@ -8996,7 +9099,78 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
      }
      /**
       * Build finger bone chains for both hands.
-@@ -355,28 +283,6 @@ export class AvatarSkeletonBuilder {
+@@ -309,74 +271,50 @@ export class AvatarSkeletonBuilder {
+      * Returns null if ANY of the 30 bones cannot be found - graceful degradation
+      * for low-poly models that omit finger rigs entirely.
+      */
+-    buildFingerChains(_root) {
++    buildFingerChains(label) {
+         if (!this.skeleton)
+             return null;
+         const left = new Map();
+         const right = new Map();
+-        // Build a lookup from lowercase bone name → Bone reference
+-        // using the skeleton's actual bone array (the GPU-bound instances)
++        // Build a lookup from normalized bone name → Bone reference using the
++        // skeleton's actual bone array (the GPU-bound instances).
+         const bonesByName = new Map();
+         for (const bone of this.skeleton.bones) {
+-            bonesByName.set(bone.name.toLowerCase(), bone);
++            bonesByName.set(normalizeBoneName(bone.name), bone);
+         }
++        const resolve = (key) => {
++            for (const alias of FINGER_BONE_ALIASES[key] ?? []) {
++                const found = bonesByName.get(normalizeBoneName(alias));
++                if (found)
++                    return found;
++            }
++            return null;
++        };
++        const missing = [];
+         for (const boneName of FINGER_BONES) {
+-            // --- Left hand ---
+             const leftKey = `Left${boneName}`;
+-            const leftAliases = FINGER_BONE_ALIASES[leftKey] ?? [];
+-            let leftBone = null;
+-            for (const alias of leftAliases) {
+-                const found = bonesByName.get(alias.toLowerCase());
+-                if (found) {
+-                    leftBone = found;
+-                    break;
+-                }
+-            }
+-            // --- Right hand ---
+             const rightKey = `Right${boneName}`;
+-            const rightAliases = FINGER_BONE_ALIASES[rightKey] ?? [];
+-            let rightBone = null;
+-            for (const alias of rightAliases) {
+-                const found = bonesByName.get(alias.toLowerCase());
+-                if (found) {
+-                    rightBone = found;
+-                    break;
+-                }
+-            }
+-            if (!leftBone || !rightBone) {
+-                return null;
+-            }
++            const leftBone = resolve(leftKey);
++            const rightBone = resolve(rightKey);
++            if (!leftBone)
++                missing.push(leftKey);
++            if (!rightBone)
++                missing.push(rightKey);
++            if (!leftBone || !rightBone)
++                continue;
+             left.set(boneName, leftBone);
+             right.set(boneName, rightBone);
+         }
++        if (missing.length > 0) {
++            warnMissingFingerRig(label, EXPECTED_FINGER_BONE_COUNT - missing.length, missing);
++            return null;
++        }
+         return { left, right };
+     }
+     /**
       * Compute the rest direction of a bone (direction to child in bind pose)
       * Returns the direction in the bone's LOCAL space
       */
@@ -9025,7 +9199,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
      getState() {
          return this.state;
      }
-@@ -452,23 +358,37 @@ export class AvatarSkeletonBuilder {
+@@ -452,23 +390,37 @@ export class AvatarSkeletonBuilder {
          // The model is already positioned with feet at Y=0
          return 0;
      }
@@ -20454,6 +20628,49 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..f730d0095921422928d9a1b3857fe3a7
 +// The .d.ts already declares this; the runtime half was missing, which broke
 +// every consumer of the barrel (AvatarSwapTransition.svelte) in the browser.
 +export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache";
+diff --git a/src/lib/services/bone-name-normalization.ts b/src/lib/services/bone-name-normalization.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..164a88b402d8501ad7b09fa33e727f75550e8999
+--- /dev/null
++++ b/src/lib/services/bone-name-normalization.ts
+@@ -0,0 +1,37 @@
++/**
++ * One owner for exporter-namespace-tolerant bone name matching.
++ *
++ * Rigs authored in Maya/FBX tooling carry an export namespace on every joint:
++ * Mixamo writes `mixamorig:LeftHand` and, once a character has been
++ * re-uploaded, `mixamorig12:LeftHandThumb1`. Two things then happen to that
++ * name before a lookup sees it:
++ *
++ *   1. The character intake pipeline strips the namespace when it bakes a rig,
++ *      so rigs that went through intake arrive as bare `hand_l` / `thumb1_l`.
++ *   2. three.js sanitizes every node name at load time - `PropertyBinding`
++ *      deletes `[ ] . : /` outright - so a catalog GLB's
++ *      `mixamorig:LeftHandThumb1` reaches the runtime as
++ *      `mixamorigLeftHandThumb1`, colon and all structure gone.
++ *
++ * Both forms have to resolve against the same alias tables, or a rig whose
++ * joints merely carry a namespace looks exactly like a rig with no fingers.
++ *
++ * The Mixamo prefix is matched by name rather than by shape, because after
++ * sanitization there is no separator left to key on. Everything else is matched
++ * on the colon, which is only ever a namespace separator - it never appears
++ * inside a joint name in any convention this package supports (Mixamo
++ * `LeftHandThumb1`, characters3d.com `L_Thumb1`, Unreal `thumb1_l`).
++ */
++const MIXAMO_NAMESPACE = /^mixamorig\d*:?/;
++const EXPORT_NAMESPACE = /^[a-z0-9_]+:/;
++
++/**
++ * Lowercase a bone name and drop any exporter namespace prefix, so a rig's
++ * joints and this package's alias tables can be compared directly.
++ */
++export function normalizeBoneName(name: string): string {
++  return name
++    .toLowerCase()
++    .replace(MIXAMO_NAMESPACE, "")
++    .replace(EXPORT_NAMESPACE, "");
++}
 diff --git a/src/lib/services/clip-footprint.ts b/src/lib/services/clip-footprint.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..b05226657be65de8dbaf442b0ac115002c2ef166
@@ -23730,7 +23947,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fb02a245b6d3e1c31fdb6df10e3a7959
    toggleClavicleRaise(): boolean {
      this._clavicleRaiseEnabled = !this._clavicleRaiseEnabled;
 diff --git a/src/lib/services/implementations/AvatarSkeletonBuilder.ts b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
-index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee09f537d90 100644
+index d2f43b6b63eacb247573543f3d15c29118926882..bc98e1993809abb5e6a48e10345b1292fa06f389 100644
 --- a/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 +++ b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 @@ -5,9 +5,8 @@
@@ -23744,7 +23961,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
  import type {
    IAvatarSkeletonBuilder,
    BoneName,
-@@ -19,6 +18,16 @@ import {
+@@ -19,6 +18,17 @@ import {
    type FingerBoneName,
    type FingerChains,
  } from "../../domain/models/GripPose";
@@ -23754,6 +23971,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 +  loadSharedGltf,
 +} from "../shared-gltf-cache";
 +import { buildTwoBoneChain } from "../leg-geometry";
++import { normalizeBoneName } from "../bone-name-normalization";
 +import {
 +  avatarAssetLabel,
 +  recordAvatarLoadSpan,
@@ -23761,7 +23979,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
  
  /**
   * Mapping of standard bone names to common variations
-@@ -54,6 +63,7 @@ const BONE_NAME_ALIASES: Record<BoneName, string[]> = {
+@@ -54,6 +64,7 @@ const BONE_NAME_ALIASES: Record<BoneName, string[]> = {
    LeftUpLeg: ["LeftUpLeg", "l_thigh", "thigh.L", "upperleg_l", "LeftUpperLeg"],
    LeftLeg: ["LeftLeg", "l_shin", "shin.L", "lowerleg_l", "LeftLowerLeg"],
    LeftFoot: ["LeftFoot", "l_foot", "foot.L", "foot_l"],
@@ -23769,7 +23987,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
    RightUpLeg: [
      "RightUpLeg",
      "r_thigh",
-@@ -63,6 +73,7 @@ const BONE_NAME_ALIASES: Record<BoneName, string[]> = {
+@@ -63,6 +74,7 @@ const BONE_NAME_ALIASES: Record<BoneName, string[]> = {
    ],
    RightLeg: ["RightLeg", "r_shin", "shin.R", "lowerleg_r", "RightLowerLeg"],
    RightFoot: ["RightFoot", "r_foot", "foot.R", "foot_r"],
@@ -23777,7 +23995,40 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
  };
  
  /**
-@@ -101,9 +112,9 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -88,6 +100,32 @@ for (const side of ["Left", "Right"] as const) {
+   }
+ }
+ 
++
++const EXPECTED_FINGER_BONE_COUNT = FINGER_BONES.length * 2;
++const warnedMissingFingerRigs = new Set<string>();
++
++/**
++ * Report an unresolved finger rig once per model.
++ *
++ * Grip calibration, the wrist goal, the palm socket and the per-frame shaft
++ * channel all disable themselves when finger chains are null. That used to
++ * happen in total silence, so a rig whose joints merely carried an unexpected
++ * export namespace looked exactly like a rig with no fingers at all.
++ */
++function warnMissingFingerRig(
++  label: string,
++  found: number,
++  missing: string[]
++): void {
++  if (warnedMissingFingerRigs.has(label)) return;
++  warnedMissingFingerRigs.add(label);
++  const sample = missing.slice(0, 4).join(", ");
++  const rest = missing.length > 4 ? ` (+${missing.length - 4} more)` : "";
++  console.warn(
++    `[AvatarSkeletonBuilder] "${label}": finger rig unresolved - found ${found} of ${EXPECTED_FINGER_BONE_COUNT} expected finger bones. Wrist goal, palm socket and shaft-channel correction stay disabled. Missing: ${sample}${rest}`
++  );
++}
++
+ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+   private state: SkeletonState = {
+     isLoaded: false,
+@@ -101,9 +139,9 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      fingerChains: null,
    };
  
@@ -23788,7 +24039,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
  
    /** Offset from model origin to feet (negative value - feet are below origin) */
    private feetOffset: number = 0;
-@@ -111,24 +122,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -111,24 +149,37 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
    /** Original bounding box min Y (in unscaled model space) - computed once at load time */
    private originalMinY: number = 0;
  
@@ -23818,7 +24069,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 +        recordAvatarLoadSpan(label, "skinned-clone", cloneStart);
 +      }
 +      const buildStart = performance.now();
-+      this.processGLTF(root, getSharedGltfBounds(url));
++      this.processGLTF(root, getSharedGltfBounds(url), label);
 +      recordAvatarLoadSpan(
 +        label,
 +        "skeleton-build",
@@ -23835,12 +24086,13 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 -  private processGLTF(gltf: GLTF): void {
 +  private processGLTF(
 +    root: Object3D,
-+    preparedBounds: { height: number; minY: number } | null
++    preparedBounds: { height: number; minY: number } | null,
++    label: string
 +  ): void {
      // Hot-swap: keep old arm chains valid until new ones are ready
      // This ensures animation continues smoothly during the swap
      const oldRoot = this.state.root;
-@@ -139,7 +162,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -139,11 +190,24 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      let newSkeleton: Skeleton | null = null;
  
      // Find all skinned meshes and bones in the new model
@@ -23849,7 +24101,25 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
        if ((child as SkinnedMesh).isSkinnedMesh) {
          const skinnedMesh = child as SkinnedMesh;
          newMeshes.push(skinnedMesh);
-@@ -160,12 +183,17 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+-        newSkeleton = skinnedMesh.skeleton;
++        // A character is usually exported as several skinned meshes - a body
++        // plus shirt, pants, sneakers and eyelashes - and every accessory
++        // carries its own reduced skeleton holding only the joints that deform
++        // it. Keeping whichever mesh happened to be traversed last left the rig
++        // pointing at a 13-joint trouser skeleton, so every finger lookup missed
++        // even though the body skin beside it held all 30. The character's own
++        // skeleton is the complete one, so keep the largest.
++        if (
++          skinnedMesh.skeleton &&
++          (newSkeleton === null ||
++            skinnedMesh.skeleton.bones.length > newSkeleton.bones.length)
++        ) {
++          newSkeleton = skinnedMesh.skeleton;
++        }
+ 
+         // Map bones from the skeleton directly (more reliable than checking isBone)
+         if (skinnedMesh.skeleton) {
+@@ -160,12 +224,17 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
  
      // Compute original bounding box of new model (before any transforms)
      // This is done ONCE at load time, before the model is added to the scene
@@ -23871,12 +24141,12 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
      this.state.meshes = newMeshes;
      this.state.bones = newBones;
      this.skeleton = newSkeleton;
-@@ -173,28 +201,14 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -173,39 +242,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      // Build IK chains (uses the new bones map)
      this.buildArmChains();
      this.buildLegChains();
 -    this.state.fingerChains = this.buildFingerChains(gltf.scene);
-+    this.state.fingerChains = this.buildFingerChains(root);
++    this.state.fingerChains = this.buildFingerChains(label);
  
      this.state.isLoaded = true;
  
@@ -23905,25 +24175,40 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
    }
  
    /**
-@@ -203,6 +217,17 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+    * Map a bone to a bones map (used during hot-swap)
+    */
    private mapBoneToMap(bone: Bone, bonesMap: Map<BoneName, Bone>): void {
-     const boneName = bone.name.toLowerCase();
- 
+-    const boneName = bone.name.toLowerCase();
++    const boneName = normalizeBoneName(bone.name);
++
 +    // A rig that already uses TKA's names must keep each spine level exactly
 +    // where it authored it. Vendor aliases such as `spine1` and `spine2` are
 +    // also used for zero-based rigs, so checking those first silently shifted
 +    // canonical Spine1/Spine2 bones down one level.
 +    for (const standardName of Object.keys(BONE_NAME_ALIASES) as BoneName[]) {
-+      if (boneName === standardName.toLowerCase()) {
++      if (boneName === normalizeBoneName(standardName)) {
 +        bonesMap.set(standardName, bone);
 +        return;
 +      }
 +    }
-+
+ 
      for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
        for (const alias of aliases) {
-         if (boneName === alias.toLowerCase()) {
-@@ -225,80 +250,33 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+-        if (boneName === alias.toLowerCase()) {
++        if (boneName === normalizeBoneName(alias)) {
+           bonesMap.set(standardName as BoneName, bone);
+           return;
+         }
+@@ -216,7 +282,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+     for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
+       if (bonesMap.has(standardName as BoneName)) continue;
+       for (const alias of aliases) {
+-        if (boneName.includes(alias.toLowerCase())) {
++        if (boneName.includes(normalizeBoneName(alias))) {
+           bonesMap.set(standardName as BoneName, bone);
+           return;
+         }
+@@ -225,80 +291,33 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
    }
  
    private mapBone(bone: Bone): void {
@@ -24027,7 +24312,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
    }
  
    /**
-@@ -306,51 +284,12 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -306,51 +325,12 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     * Same pattern as arm chains - two-bone IK with rest directions.
     */
    private buildLegChains(): void {
@@ -24085,7 +24370,96 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
    }
  
    /**
-@@ -417,34 +356,6 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -360,56 +340,57 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+    * rather than scene-graph lookup, which can return different object instances.
+    *
+    * Returns null if ANY of the 30 bones cannot be found - graceful degradation
+-   * for low-poly models that omit finger rigs entirely.
++   * for low-poly models that omit finger rigs entirely - and warns once, naming
++   * how many were found, so a naming mismatch cannot degrade silently.
+    */
+-  private buildFingerChains(_root: Object3D): FingerChains | null {
++  private buildFingerChains(label: string): FingerChains | null {
+     if (!this.skeleton) return null;
+ 
+     const left = new Map<FingerBoneName, Bone>();
+     const right = new Map<FingerBoneName, Bone>();
+ 
+-    // Build a lookup from lowercase bone name → Bone reference
+-    // using the skeleton's actual bone array (the GPU-bound instances)
++    // Build a lookup from normalized bone name → Bone reference using the
++    // skeleton's actual bone array (the GPU-bound instances). Normalizing here
++    // is what lets a namespaced rig (`mixamorig12:LeftHandThumb1`) resolve
++    // against the same alias table as a rig that went through intake.
+     const bonesByName = new Map<string, Bone>();
+     for (const bone of this.skeleton.bones) {
+-      bonesByName.set(bone.name.toLowerCase(), bone);
++      bonesByName.set(normalizeBoneName(bone.name), bone);
+     }
+ 
+-    for (const boneName of FINGER_BONES) {
+-      // --- Left hand ---
+-      const leftKey = `Left${boneName}`;
+-      const leftAliases = FINGER_BONE_ALIASES[leftKey] ?? [];
+-      let leftBone: Bone | null = null;
+-
+-      for (const alias of leftAliases) {
+-        const found = bonesByName.get(alias.toLowerCase());
+-        if (found) {
+-          leftBone = found;
+-          break;
+-        }
++    const resolve = (key: string): Bone | null => {
++      for (const alias of FINGER_BONE_ALIASES[key] ?? []) {
++        const found = bonesByName.get(normalizeBoneName(alias));
++        if (found) return found;
+       }
++      return null;
++    };
++
++    const missing: string[] = [];
+ 
+-      // --- Right hand ---
++    for (const boneName of FINGER_BONES) {
++      const leftKey = `Left${boneName}`;
+       const rightKey = `Right${boneName}`;
+-      const rightAliases = FINGER_BONE_ALIASES[rightKey] ?? [];
+-      let rightBone: Bone | null = null;
+-
+-      for (const alias of rightAliases) {
+-        const found = bonesByName.get(alias.toLowerCase());
+-        if (found) {
+-          rightBone = found;
+-          break;
+-        }
+-      }
++      const leftBone = resolve(leftKey);
++      const rightBone = resolve(rightKey);
+ 
+-      if (!leftBone || !rightBone) {
+-        return null;
+-      }
++      if (!leftBone) missing.push(leftKey);
++      if (!rightBone) missing.push(rightKey);
++      if (!leftBone || !rightBone) continue;
+ 
+       left.set(boneName, leftBone);
+       right.set(boneName, rightBone);
+     }
+ 
++    if (missing.length > 0) {
++      warnMissingFingerRig(
++        label,
++        EXPECTED_FINGER_BONE_COUNT - missing.length,
++        missing
++      );
++      return null;
++    }
++
+     return { left, right };
+   }
+ 
+@@ -417,34 +398,6 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     * Compute the rest direction of a bone (direction to child in bind pose)
     * Returns the direction in the bone's LOCAL space
     */
@@ -24120,7 +24494,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
    getState(): SkeletonState {
      return this.state;
    }
-@@ -535,22 +446,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -535,22 +488,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      return 0;
    }
  
