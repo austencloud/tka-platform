@@ -45,9 +45,12 @@ describe("canonical trail point resolution", () => {
 
   it("anchors both buugeng trails to the pictograph SVG terminals", () => {
     expect(getTipPoints("buugeng").points).toEqual(BUUGENG_TIP_POINTS.points);
+    // Bigbuugeng's terminals are tapers, not buugeng's rounded caps, and its
+    // S-curve is steep enough that an on-axis pair falls off the artwork
+    // entirely. These sit inside the taper at radius 295, point-symmetric.
     expect(getTipPoints("bigbuugeng").points).toEqual([
-      { dx: 263.44, dy: 0 },
-      { dx: -263.44, dy: 0 },
+      { dx: 294.28, dy: 20.58 },
+      { dx: -294.28, dy: -20.58 },
     ]);
   });
 

@@ -38,8 +38,13 @@ describe("Sickles prop registration", () => {
       width: 440,
       height: 260,
     });
+    // 2D and 3D reach the same blade apex from opposite starting points.
+    // sickles.svg draws the kama diagonally in its box and the canvas renderer
+    // rotates about the viewBox centre, so the 2D apex is off-axis at radius
+    // 166, bearing -42.52 degrees. sickles.glb's kinetic-axis node rotates the
+    // same apex onto +Y, so the 3D anchor is a pure Y reach.
     expect(getTipPointsBaseline(PropType.SICKLES).points).toEqual([
-      { dx: 192, dy: 0 },
+      { dx: 122.35, dy: -112.19 },
     ]);
     expect(
       resolvePropTipAnchors3D(PropType.SICKLES, 0.4318, {
