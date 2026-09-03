@@ -38,7 +38,7 @@ const ecology: FlowFestForestEcologyLayout = {
     grassRouteIntrusions: 0,
     groundLifeRouteIntrusions: 0,
     sourceTreeFamilies: 0,
-    plantFactoryTreePlacements: 0,
+    sourceTreeSpecies: 0,
     measuredCanopyPlacements: 0,
     infillTreePlacements: 0,
     grassPlacements: 0,
