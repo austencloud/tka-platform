@@ -461,9 +461,11 @@ export function createViewerShellLayoutState(
       startCardContainSizeMotion("return");
     }
     if (mode !== "card") ctx.ensureInteractiveServices();
-    if (mode === "card") {
-      leaseCardAutoLayout();
-    } else if (previousMode === "split" && mode === "animation") {
+    // Entering Card does not lease. The Card solves its grid against the box
+    // its pane is heading toward, so there is no sliver for the picker to
+    // choose a wide, shallow grid from -- and a lease here would pin the
+    // Side-by-Side grid onto the focused Card for the whole visit.
+    if (previousMode === "split" && mode === "animation") {
       // The covered Card still owns the last readable Side-by-Side shape.
       // Holding it across the 2D visit prevents an interrupted return from
       // publishing a pencil-thin Auto grid before Card focus takes over.

@@ -10,6 +10,7 @@
     type ShapeMatrixAppPersistence,
   } from "./state/shape-matrix-app-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { DEFAULT_THEORY_BAND } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
 
   interface Props {
     persistence?: ShapeMatrixAppPersistence;
@@ -35,6 +36,7 @@
       theoryRightRatio: { propRotations: 1, handCycles: 3 },
       theoryMode: "SS",
       theoryPair: null,
+      theoryBand: DEFAULT_THEORY_BAND,
       level: 2,
       leftTurn: 2,
       rightTurn: 2,

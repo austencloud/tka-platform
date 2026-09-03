@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import FlowFestFieldPositioningPanel from "$lib/features/flow-fest-sim/components/FlowFestFieldPositioningPanel.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
@@ -6,6 +7,10 @@
     isOpen?: boolean;
     mounted: boolean;
     soundOn: boolean;
+    /** Live camera eye as `x, y, z` metres, or empty before the first report. */
+    viewpointCoordinates: string;
+    /** Absolute link that reopens the sim on this exact viewpoint. */
+    viewpointHref: string;
     showFieldPositioning: boolean;
     captureMode: boolean;
     showReviewTools: boolean;
@@ -22,6 +27,8 @@
     isOpen = $bindable(false),
     mounted,
     soundOn,
+    viewpointCoordinates,
+    viewpointHref,
     showFieldPositioning,
     captureMode,
     showReviewTools,
@@ -33,6 +40,30 @@
     onReviewCamp,
     onReviewFestival,
   }: Props = $props();
+
+  // Transient copy feedback on a fixed-width button, so the label swap cannot
+  // move anything around it.
+  let copyState = $state<"idle" | "copied" | "failed">("idle");
+  let copyResetTimer: ReturnType<typeof setTimeout> | null = null;
+
+  async function copyViewpointLink(): Promise<void> {
+    if (!viewpointHref) return;
+    try {
+      await navigator.clipboard.writeText(viewpointHref);
+      copyState = "copied";
+    } catch {
+      // The address bar already carries the same link, so a blocked clipboard
+      // costs a manual copy rather than the viewpoint. Say so instead of
+      // reporting a success that did not happen.
+      copyState = "failed";
+    }
+    if (copyResetTimer) clearTimeout(copyResetTimer);
+    copyResetTimer = setTimeout(() => (copyState = "idle"), 2200);
+  }
+
+  onDestroy(() => {
+    if (copyResetTimer) clearTimeout(copyResetTimer);
+  });
 
   const controlGroups = $derived(
     mounted
@@ -119,7 +150,27 @@
           <i class="fas fa-ruler-combined" aria-hidden="true"></i>
           Open survey view
         </a>
+        <button
+          type="button"
+          class="viewpoint"
+          aria-disabled={!viewpointHref}
+          onclick={() => void copyViewpointLink()}
+        >
+          <i class="fas fa-link" aria-hidden="true"></i>
+          <span>
+            {copyState === "copied"
+              ? "Link copied"
+              : copyState === "failed"
+                ? "Copy blocked"
+                : "Copy view link"}
+            <small>{viewpointCoordinates || "—"}</small>
+          </span>
+        </button>
       </div>
+      <p class="map-source">
+        Map: ODOT road centreline · 2023 public-domain NAIP imagery ·
+        Austen's on-site traces
+      </p>
     </section>
 
     {#if showFieldPositioning}
@@ -322,8 +373,38 @@
     text-decoration: none;
   }
 
-  .utility-actions a {
+  .utility-actions a,
+  .utility-actions .viewpoint {
     grid-column: 1 / -1;
+  }
+
+  .utility-actions .viewpoint {
+    align-items: center;
+    padding-block: 0.42rem;
+  }
+
+  .utility-actions .viewpoint span {
+    display: grid;
+    justify-items: start;
+    min-inline-size: 0;
+  }
+
+  .utility-actions .viewpoint small {
+    color: var(--sim-muted, #c9cebd);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .utility-actions .viewpoint[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .map-source {
+    margin: 0;
+    color: var(--sim-muted, #c9cebd);
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.4;
   }
 
   .review-actions {

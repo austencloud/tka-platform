@@ -215,10 +215,13 @@ const RECORDER = `async ({ ms, scrollTo, click, scrollSweep }) => {
   const q = (p) => sorted.length ? +sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))].toFixed(1) : 0;
   const rs = r.slice().sort((a, b) => a - b);
 
-  const canvases = document.querySelectorAll('canvas').length;
+  const allCanvases = Array.from(document.querySelectorAll('canvas'));
+  const canvases = allCanvases.length;
+  const contentCanvases = allCanvases.filter((c) => !c.closest('.background-canvas-container')).length;
 
   return {
     canvases,
+    contentCanvases,
     frameCount: f.length,
     min: q(0),
     median: q(0.5),
@@ -289,18 +292,35 @@ async function measureDisplayInterval(ws, sessionId) {
  * player mounted: an inert page drops no frames. Time-to-live is also the
  * number a visitor feels first, so it is reported rather than hidden.
  */
-async function waitForLive(ws, sessionId, timeoutMs = 30000) {
+async function waitForLive(ws, sessionId, scrollTo = null, timeoutMs = 45000) {
   const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    const live = await run(
+  if (scrollTo) {
+    await run(
       ws,
       sessionId,
-      `() => document.querySelectorAll('canvas').length > 0`
+      `() => { document.querySelector(${JSON.stringify(scrollTo)})?.scrollIntoView({ behavior: 'instant', block: 'center' }); }`
     );
-    if (live) return { ms: Date.now() - started, live: true };
-    await sleep(250);
   }
-  return { ms: Date.now() - started, live: false };
+  let last = -1;
+  let stable = 0;
+  while (Date.now() - started < timeoutMs) {
+    const count = await run(
+      ws,
+      sessionId,
+      `() => Array.from(document.querySelectorAll('canvas')).filter(
+         (c) => !c.closest('.background-canvas-container')
+       ).length`
+    );
+    if (count > 0 && count === last) stable += 1;
+    else stable = 0;
+    last = count;
+    // Three identical readings 500ms apart. The heavy sections (tunnel art, the
+    // 3D viewer) mount several seconds after the cheap ones, so 'a canvas
+    // exists' is not the same question as 'the page has finished arriving'.
+    if (stable >= 3) return { ms: Date.now() - started, live: true, contentCanvases: count };
+    await sleep(500);
+  }
+  return { ms: Date.now() - started, live: last > 0, contentCanvases: last };
 }
 
 function grade(pass, interval) {
@@ -330,10 +350,11 @@ function fmt(pass, interval) {
   const fails = grade(pass, interval);
   const mark = fails.length ? "FAIL" : "pass";
   return [
-    `  ${mark}  ${pass.name}`,
+    `  ${mark}  ${pass.name}` +
+      (pass.settled ? ` · settled in ${(pass.settled.ms / 1000).toFixed(1)}s` : ""),
     `        ${fps} fps · median ${r.median}ms · p95 ${r.p95}ms · worst ${r.worst}ms`,
     `        rAF loops/frame ${r.rafPerFrame.median} (max ${r.rafPerFrame.max}) · ` +
-      `long tasks ${r.longTaskCount} totalling ${r.longTaskTotalMs}ms · canvases ${r.canvases ?? 0}`,
+      `long tasks ${r.longTaskCount} totalling ${r.longTaskTotalMs}ms · canvases ${r.canvases ?? 0} (${r.contentCanvases ?? 0} content)`,
     r.longTasks.length
       ? `        worst tasks ${r.longTasks.slice(0, 4).map((t) => `${t.duration}ms`).join(", ")}`
       : null,
@@ -396,7 +417,7 @@ async function main() {
     // about a page that has finished arriving, so wait for the route to be
     // live first — and report that wait, because it is the delay a visitor
     // feels before anything moves.
-    const liveness = await waitForLive(ws, sessionId);
+    const liveness = await waitForLive(ws, sessionId, null, 20000);
 
     // Idle: sitting still at three depths, doing nothing at all.
     const stops = [
@@ -405,8 +426,13 @@ async function main() {
       { name: "idle at outputs", scrollTo: ".changing, .keeping" },
     ];
     for (const stop of stops) {
+      // Park at the stop and let its lazily-mounted content finish arriving
+      // before recording. A section still fetching its 3D chunk drops no
+      // frames, and grading it would report an absence as smoothness.
+      const settled = await waitForLive(ws, sessionId, stop.scrollTo);
       passes.push({
         name: stop.name,
+        settled,
         result: await run(
           ws,
           sessionId,
@@ -416,6 +442,7 @@ async function main() {
     }
 
     for (const probe of INTERACTIONS[ROUTE] ?? []) {
+      await waitForLive(ws, sessionId, probe.scrollTo);
       passes.push({
         name: `interaction: ${probe.name}`,
         result: await run(
@@ -436,7 +463,7 @@ async function main() {
     );
     console.log(
       liveness.live
-        ? `  first animated frame after ${(liveness.ms / 1000).toFixed(1)}s of loading`
+        ? `  content settled after ${(liveness.ms / 1000).toFixed(1)}s — ${liveness.contentCanvases} content canvases`
         : `  NEVER CAME ALIVE — no canvas after ${(liveness.ms / 1000).toFixed(1)}s`
     );
     console.log("");

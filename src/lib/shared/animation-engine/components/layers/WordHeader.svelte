@@ -608,9 +608,12 @@ Supports letter highlighting during animation playback.
       "dlig" 1;
     font-weight: normal;
     opacity: 0.2;
-    transition:
-      filter 0.15s ease,
-      opacity 0.15s ease;
+    /* Opacity only. Tweening `filter` meant a drop-shadow blur convolution per
+       letter per frame, and this header re-marks its active letter on every
+       step of playback — the most frequently restyled text on the page. The
+       glow now snaps in with the opacity ramp: one raster per state change
+       instead of one per frame. */
+    transition: opacity 0.15s ease;
   }
 
   .letter.active {
