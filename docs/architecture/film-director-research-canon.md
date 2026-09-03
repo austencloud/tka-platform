@@ -20,6 +20,17 @@ from Austen: whether the Film Director's camera model is granular enough, or
 whether it is "trying to make something dynamic out of legos without having
 legos that are detailed enough." The answer, and the evidence for it, is below.
 
+**Re-verified 2026-09-02, 23:11**, on a direct challenge from Austen about
+whether this reflects the actual state of the art tonight. Three targeted
+searches were run: a three.js camera behavior system, Theatre.js's public
+status, and fresh text-to-trajectory work. **No decision in the design
+changed.** Two papers were added (CinemaTraj, ShotVerse), one library entry was
+added (NYT `three-story-controls`, the closest published prior art to decision
+D1), and the Theatre.js status held with a weaker evidence caveat. The
+calibration worth keeping: the architectural layers held exactly as predicted,
+and the generative-research section was the part that had moved, which is why
+the design deliberately depends on none of it.
+
 ## Status and evidence vocabulary
 
 Decision status:
@@ -143,8 +154,49 @@ not a reliable read on current behavior, and adopting a library whose source of
 truth is not visible fails `.claude/rules/no-fabrication.md` and the
 library-swap evidence rule. Revisit when 1.0 ships publicly.
 
+Re-verified 2026-09-02 at 23:15: the private-repo notice is still on the public
+README and still carries no date, and that fetch did not render release or
+last-commit information, so the age of the notice remains unmeasured. Treat
+"temporarily" with suspicion. The status has now been observed unchanged across
+two checks and no public 1.0 has appeared.
+
 Steal the interaction model: per-property tracks, a dopesheet over a curve
 editor, and an editor that attaches to a running scene rather than replacing it.
+
+### three-story-controls and the film-camera axis vocabulary
+
+- Status: **Reference only** as a dependency; **Adopted** as the axis vocabulary
+- Evidence: documentation site, **read at source** (2026-09-02)
+- [three-story-controls](https://nytimes.github.io/three-story-controls/)
+- [nytimes/three-story-controls](https://github.com/nytimes/three-story-controls)
+
+The New York Times ships a three.js `CameraRig` that decomposes camera motion
+into six independently named axes, with rotation stored separately from
+translation:
+
+| Action | Transform |
+| --- | --- |
+| Pan | rotate around Y |
+| Tilt | rotate around X |
+| Roll | rotate around Z |
+| Pedestal | translate on Y |
+| Truck | translate on X |
+| Dolly | translate on Z |
+
+This is the closest published prior art to decision D1, and it is a working npm
+package rather than a paper. A production newsroom concluded that a camera worth
+authoring is a rig with named rotational axes, not a position plus a look-at
+target.
+
+It is **not** a Cinemachine equivalent and must not be adopted as one. The docs
+describe no layered or additive behavior, no corrections, and no independent
+per-axis curves. A rig can be driven by a three.js `AnimationClip` along a
+predefined rail, which is a single baked path, not a channel store.
+
+TKA takeaway beyond D1: that table is the film vocabulary and TKA's move set does
+not match it. TKA has `pan` but no `tilt`, uses `push-in` / `pull-back` where the
+industry says `dolly`, and has no `pedestal` at all. `tilt` is the notable gap,
+because D1 is exactly what makes it expressible.
 
 ## Behavior layer: procedural motion as correction, not as baked keys
 
@@ -306,6 +358,60 @@ implemented now, but the Film Director is closer to this research than it looks,
 and the per-channel trajectory representation is the interchange these methods
 assume.
 
+### CinemaTraj
+
+- Status: **Evaluate**
+- Evidence: preprint plus project page, **read at source** (2026-09-02)
+- [arXiv 2607.26910](https://arxiv.org/abs/2607.26910v1), submitted 2026-07-29
+- [Project page](https://cinematraj.github.io/)
+
+The most direct external validation of the Film Director's architecture found so
+far, published two months ago. An LLM agent decomposes a natural-language prompt
+into a sequence of **atomic cinematographic movements** (dolly, orbit, crane,
+pan, tilt, zoom, arc), each instantiated as a parametric trajectory that stays
+optimizable afterward. A structured 3D scene graph grounds the agent's spatial
+reasoning. Evaluated on real ScanNet++ environments.
+
+That is the same shape as TKA's directive language: a named atomic move
+vocabulary, composed by a language model, over a parametric representation
+rather than a baked path. Two independent designs converging on a move
+vocabulary is a real signal that the Director's verb set was the right
+abstraction rather than an improvisation.
+
+It supplies evidence for two decisions in the design. `tilt` is in its atomic
+set and absent from TKA's, which is the gap D1 opens. And keeping each move
+parametric and optimizable after instantiation is precisely D4's argument for
+moves as persistent nodes rather than compile-time functions.
+
+Where it differs is worth recording as a genuine alternative. Its collision
+handling is a **Collision and Occlusion-Free Trajectory Optimizer that refines
+the moves' free parameters by gradient descent on a signed distance field**,
+reporting a 0.056 collision rate. That edits the move's own parameters. D3
+instead models collision as an additive correction evaluated after composition.
+Both are defensible and TKA has neither an SDF nor a collision requirement
+today. See Open questions.
+
+Code is listed as "coming soon" and is not released. Do not plan on importing
+anything from it.
+
+### ShotVerse
+
+- Status: **Reference only**
+- Evidence: preprint, **read at source** (2026-09-02)
+- [arXiv 2603.11421](https://arxiv.org/abs/2603.11421), v1 2026-03-12, v2 2026-08-24
+
+A "Plan-then-Control" framework splitting generation into a VLM-based Planner
+that derives globally aligned trajectories from text and a Controller that
+renders them through a camera adapter. Contributes an automated multi-shot
+camera calibration pipeline that aligns disjoint single-shot trajectories into
+one global coordinate system, plus the ShotVerse-Bench dataset.
+
+Less applicable than CinemaTraj because its Controller drives a video generation
+model, whereas TKA renders its own 3D scene and already has exact camera
+control. The planner/controller split is nonetheless the same separation the
+design draws between the directive layer and its evaluators. Release state not
+confirmed.
+
 ## What TKA does today, and where it diverges
 
 Current path:
@@ -342,8 +448,13 @@ Recorded so the next agent does not repeat the search.
 
 - **Theatre.js cannot be adopted as a dependency today.** Development moved to a
   private repository pending 1.0. Read at source, 2026-09-02.
-- **There is no Cinemachine port for three.js.** Searched 2026-09-02; nothing
-  credible. The architecture is reimplemented, not imported.
+- **There is no Cinemachine port for three.js.** Searched 2026-09-02, then
+  re-searched the same evening with a package-oriented query. Nothing credible.
+  The two libraries that surface are
+  [camera-controls](https://github.com/yomotsu/camera-controls), an
+  OrbitControls successor for interactive control rather than a behavior system,
+  and NYT `three-story-controls`, a rig plus rail animation with no layering and
+  no corrections. The architecture is reimplemented, not imported.
 - **OpenUSD and OpenTimelineIO are not browser-runtime options.** Adopt their
   data models; do not plan on their runtimes in a SvelteKit client.
 
@@ -358,6 +469,13 @@ Recorded so the next agent does not repeat the search.
 - Whether a learned trajectory component (the GenDoP or E.T. line of work) ever
   earns a slot here, or whether the authored directive language is permanently
   the better fit for a notation-driven product.
+- Whether collision avoidance, if it is ever needed, belongs in D3's additive
+  correction layer or in a CinemaTraj-style optimizer that refines a move's own
+  free parameters against a signed distance field. TKA has no SDF and no
+  collision requirement today, so this is cheap to leave open.
+- Whether `tilt` and `pedestal` should join the move vocabulary once D1 makes
+  aim a first-class channel. Both are standard film axes that TKA cannot
+  currently say.
 
 ## Related
 
