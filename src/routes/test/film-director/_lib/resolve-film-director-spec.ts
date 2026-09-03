@@ -1251,6 +1251,9 @@ function resolveScene(
     id: scene.id,
     title: scene.title,
     intent: scene.intent ?? null,
+    // Spread for the same reason as the two below: a film that states no
+    // category carries no key and resolves exactly as it did before.
+    ...(scene.category === undefined ? {} : { category: scene.category }),
     // Gaps 13 and 14. Spread so an unrelated scene carries neither key and
     // resolves exactly as it did before round 2.
     ...(scene.extends === undefined ? {} : { extends: scene.extends }),

@@ -5,6 +5,23 @@
 One row per speakable axis of the `/test/film-director` schema (v4). "Source
 of truth" is the live registry/enum — never copy value lists here.
 
+## How this document points at scenes
+
+Nearly every row and rejection below cites a Proving Grounds scene as its
+witness. Those citations are **scene ids, linked**, never ordinal positions.
+An id is a stable address; a position changes the moment a scene is added or
+deleted, and a document full of "scene 19" quietly starts misdirecting readers
+the first time either happens. It did: the counterclockwise orbit twin was
+deleted on 2026-09-02 and shifted fourteen of them.
+
+Every link opens that scene alone, looping, at
+`https://localhost:5173/test/film-director?film=proving&scene=<id>` — the film
+does not play and the other scenes never load. The Scenes button in the
+transport is the same catalog as a panel, grouped by each scene's `category`
+(camera, timing, staging, performers, props, structure) with the scene's
+authored `intent` printed on its card. Proving Grounds is a reference to browse
+by subject, not a film to watch front to back.
+
 ## Directive-capable axes
 
 These support the full directive grammar (literal, `pick: "any"`,
@@ -75,7 +92,7 @@ downstream with the existing seconds-speaking message.)
 | performer `position`            | performer                  | literal `{x, z}`                                                                                                                                   | `performerSchema`                                                                                                                                                                            | Only required (and only meaningful) for `formation: "custom"`; otherwise the formation preset's slot geometry places the performer.                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | performer `facingDegrees`       | performer                  | literal number (degrees)                                                                                                                           | `performerSchema`                                                                                                                                                                            | Falls back to the formation slot's computed facing angle when omitted.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | performer `beatOffset`          | performer                  | literal number, or `{canon: n}` in `cast.defaults` only | `beatOffsetSpreadSchema` in `film-director-schema.ts`; `spreadBeatOffset` in `resolve-film-director-spec.ts` | Gap 20. A canon spreads one offset across the cast: performer `i` takes `i * n`. On one performer it rejects by name and says to state the offset that performer actually takes. |
-| performer `blocking`            | performer                  | literal array of 1–16 moves: `{move: "stand" \| "walk" \| "turn" \| "run", to?, along?, direction?, amount?, facing?, durationSeconds? \| durationBeats?, easing?}` | `blockingMoveSchema` in `film-director-schema.ts` (shape); `src/routes/test/film-director/_lib/blocking-language.ts` (meaning + resolution)                                                  | A move states its length in seconds or in beats — one unit per move, converted at the scene bpm (see "Counted time"). `walk` takes `to: {x, z}` (world point) or `direction` + `amount` (performer-relative); `facing` ∈ `travel`/`hold`/`audience`/`{degrees}` (`audience` faces the default camera side at −Z, NOT the seated crowd at +Z). Travel speed is capped at `MAX_TRAVEL_SPEED` (2.6 m/s) — a faster leg rejects — and below ~0.47 m/s the walk clip hits its playback-rate floor and the feet skate. Deliberately not directive-capable: a path is authored geometry, not a pick. `walk` may bow along a circular path with `along: {arc: "left" \| "right", bulge?}` — `arc` names the side the path bends toward from the traveller's own point of view, `bulge` is the sagitta as a fraction of the chord (default 0.5, a semicircle; bounds (0, 1.5]). The arc compiles into 4–16 straight chords inside `compileBlockingMoves`, targeting 0.5m per chord, so everything downstream still sees ordinary keyframes and `collectStageExtent`'s straight-segment invariant holds. Speed is checked against the ARC length, not the chord. `facing: "travel"` follows the tangent round the curve; any other facing eases from the opening angle to the stated one across the move. Positions and `to` are unbounded — nothing clamps a mark to a stage rectangle, and `stageExtent` grows the ground to include whatever the cast touches — so an entrance is an opening mark outside the frame plus a walk in (`/test/film-director?film=proving` scene 7). `move: "run"` parses and rejects by name; see "Spoken but not real". |
+| performer `blocking`            | performer                  | literal array of 1–16 moves: `{move: "stand" \| "walk" \| "turn" \| "run", to?, along?, direction?, amount?, facing?, durationSeconds? \| durationBeats?, easing?}` | `blockingMoveSchema` in `film-director-schema.ts` (shape); `src/routes/test/film-director/_lib/blocking-language.ts` (meaning + resolution)                                                  | A move states its length in seconds or in beats — one unit per move, converted at the scene bpm (see "Counted time"). `walk` takes `to: {x, z}` (world point) or `direction` + `amount` (performer-relative); `facing` ∈ `travel`/`hold`/`audience`/`{degrees}` (`audience` faces the default camera side at −Z, NOT the seated crowd at +Z). Travel speed is capped at `MAX_TRAVEL_SPEED` (2.6 m/s) — a faster leg rejects — and below ~0.47 m/s the walk clip hits its playback-rate floor and the feet skate. Deliberately not directive-capable: a path is authored geometry, not a pick. `walk` may bow along a circular path with `along: {arc: "left" \| "right", bulge?}` — `arc` names the side the path bends toward from the traveller's own point of view, `bulge` is the sagitta as a fraction of the chord (default 0.5, a semicircle; bounds (0, 1.5]). The arc compiles into 4–16 straight chords inside `compileBlockingMoves`, targeting 0.5m per chord, so everything downstream still sees ordinary keyframes and `collectStageExtent`'s straight-segment invariant holds. Speed is checked against the ARC length, not the chord. `facing: "travel"` follows the tangent round the curve; any other facing eases from the opening angle to the stated one across the move. Positions and `to` are unbounded — nothing clamps a mark to a stage rectangle, and `stageExtent` grows the ground to include whatever the cast touches — so an entrance is an opening mark outside the frame plus a walk in (scene [edges-of-the-stage](https://localhost:5173/test/film-director?film=proving&scene=edges-of-the-stage)). `move: "run"` parses and rejects by name; see "Spoken but not real". |
 | `performance.blocking`          | scene                      | literal `{endFormation, durationSeconds? \| durationBeats?, easing?, facing?}`                                                                     | `sceneBlockingSchema` in `film-director-schema.ts`                                                                                                                                           | Beats convert at the scene bpm; state exactly one unit (see "Counted time"). Cast-wide staging: walks every performer from their opening slot into the named formation's slots — the spoken "and then they all form a line". A performer with their own `blocking` list ignores it. `endFormation` validates against the same formation catalog (and per-count validity) as the `formation` axis.                                                                                                                                                                                             |
 | performer `sequence`            | performer                  | one source (`{source:"demo"}` \| `{source:"none"}` \| `word` \| `length` \| `mirrorOf` \| `transformOf` + `transforms` \| `library`) plus, for the two generated sources, any of the twelve controls below           | `src/routes/test/film-director/_lib/sequence-language.ts` (grammar + meaning), `film-director-schema.ts` `performerSequenceSchema` (shape); resolved async by `director-sequence-library.ts` | Defaults to `{source:"demo"}` (the film's shared sequence). See "Sequence directives" below. Deliberately not directive-capable: `mirrorOf` and `transformOf` name one specific performer and `library` names one specific document, so a random pick would have nothing to mean. Rejections: `A sequence names one source…`; `performer "<id>" cannot mirror themselves.`; `mirrors "<id>", who is not in this scene.`; `<verb>s "<id>", whose sequence is already derived from another performer's. Derive from the original instead.` Generation happens after the first frame, so a scene opens on the shared sequence and re-applies when the library resolves. `{source:"none"}` is a performer who stands and watches: `director-sequence-library.ts` gives them no map entry, and `director-viewer-adapter.ts` skips both load paths for their index (`idlePerformerIndices`) and clears any sequence `enter3D` or an earlier scene left on them, so the body idles and no prop renders. Blocking still applies, so a watcher can walk on and stand. Controls reject on it, same as on the demo.                             |
 | bpm                             | scene (`performance.bpm`)  | literal number, 20–300                                                                                                                             | `performanceSchema`                                                                                                                                                                          | Defaults to 90.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -92,14 +109,14 @@ downstream with the existing seconds-speaking message.)
 | camera keyframes                | scene                      | literal array of `{atSeconds \| atBeats, position, target?, fovDeg?, interpolation?, easing?}`                                                     | `film-director-schema.ts` `cameraKeyframeSchema`                                                                                                                                             | A keyframe states its cue in seconds or in beats — exactly one, converted at the scene bpm (see "Counted time"). Mutually exclusive with the framing grammar (`shotSize`/`angle`/`position`/`moves`/`subject`) and with `preset` (unless `preset: "custom"`, which requires at least one keyframe).                                                                                                                                                                                                                                                                                           |
 | camera framing grammar          | scene                      | `subject` + `shotSize`/`angle`/`position` + `moves[]`, each move `{move, amount?, direction?, durationSeconds? \| durationBeats?, easing?}`        | `src/routes/test/film-director/_lib/camera-language.ts`                                                                                                                                      | A move's length is stated in seconds or beats, one unit per move, converted at the scene bpm (see "Counted time"); moves that state neither split the scene's remaining time evenly. Exclusivity rules enforced by `cameraSchema`'s `.refine()`s (keyframes vs. framing; preset vs. framing; `subject` vs. `target`; `track` only on `subject`; `shots` vs. each of framing/preset/keyframes/target). A performer `subject` may add `track: true` (aim) or `track: "follow"` to stay framed while they walk. Per-move unit/direction contradictions enforced by `validateMove()` in `camera-language.ts` (e.g. `orbit` takes degrees + cw/ccw only, `push-in`/`pull-back` take meters and no direction). `move` ∈ `hold`/`push-in`/`pull-back`/`orbit`/`crane`/`pan`/`truck`/`zoom`/`roll`: `truck` takes meters + left/right, `zoom` takes degrees + in/out and rejects outside 20–100, `roll` takes degrees + cw/ccw. Several framings in one scene are spoken as `shots: [...]` (2-16), each a full framing plus an optional duration, joined by hard cuts - see "Mid-scene cuts" under Grammar gaps. |
 | camera concurrent moves (`with`) | scene | a move may carry `with: [1-4 moves]`, each stating no duration of its own | `cameraMoveMemberSchema` in `film-director-schema.ts`; the group branch of `compileCameraMoves` in `camera-language.ts` | Every member runs in the parent move's window and its delta is added to the parent's, so a truck riding a crane travels diagonally and an orbit riding a zoom keeps its 30-degree segments. A `with` inside a `with` rejects, a member that states a duration rejects, and `hold` rejects on either side of the group. A member with no easing rides the group's; a member stating a different one has its curve baked into its own progress, because one keyframe stream cannot hold two easing curves at once. A group whose combined lens leaves 20-100 degrees rejects by name with both figures. |
-| zoom `amount: {match: "subject-size"}` | scene | a zoom inside a push-in or pull-back's `with`, stating no number and no direction | `cameraMoveFields.amount` in `film-director-schema.ts`; `moveGroupDelta` in `camera-language.ts` | The dolly zoom. The lens is solved each sample to hold `tan(fov/2) * distance-to-target` at its opening value, so the subject stays the same size while the world behind it stretches or compresses. Rejects on the parent move itself, on a member that is not a zoom, on a parent that is not `push-in`/`pull-back` (nothing for it to answer), and alongside a `direction` (the travel decides the sign). `/test/film-director?film=proving` scene 11 ("dolly-zoom"). |
-| camera `handheld` | scene | `"subtle" \| "steady" \| "rough"`, or `{meters: 0-0.3, degrees: 0-5}` | `cameraSchema.handheld` in `film-director-schema.ts`; `resolveHandheld` in `director-camera-track.ts`; `applyHandheld` in `sample-film-director.ts` | Takes the rig off sticks. Applied to the sampled frame after tracking, so following a walker still follows them. Position drifts inside the metres envelope; the aim drifts inside the degrees envelope, converted to metres at the current shooting distance so a long lens shakes as much on screen as a wide one. The drift is three incommensurate sines per axis, phased from `axisSeedValue(filmSeed, sceneId, "handheld")`, so it never repeats inside a scene, never uses `Math.random`, and replays identically. Works under every camera form including `shots`. Optional and absent when unused, so untouched films resolve byte-identically. `/test/film-director?film=proving` scene 12 ("handheld"). |
-| `pan` `to` a destination | scene | `to: {kind: "performer", performerId} \| {kind: "point", position: [x, y, z]}` | `cameraPanDestinationSchema` in `film-director-schema.ts`; `panDegrees`/`resolvePanDestination` in `camera-language.ts` | A pan spoken as a place rather than an angle. The compiler reads the shortest way round from the current aim to the destination and feeds the existing rotation math, so the rig still turns in place. `to` with a `direction` or an `amount` rejects (state the destination or the angle, not both), `to` on any move that is not a `pan` rejects, and a missing performer rejects by name: `Camera pan references missing performer "x".` `/test/film-director?film=proving` scene 13 ("whip-pans"). |
+| zoom `amount: {match: "subject-size"}` | scene | a zoom inside a push-in or pull-back's `with`, stating no number and no direction | `cameraMoveFields.amount` in `film-director-schema.ts`; `moveGroupDelta` in `camera-language.ts` | The dolly zoom. The lens is solved each sample to hold `tan(fov/2) * distance-to-target` at its opening value, so the subject stays the same size while the world behind it stretches or compresses. Rejects on the parent move itself, on a member that is not a zoom, on a parent that is not `push-in`/`pull-back` (nothing for it to answer), and alongside a `direction` (the travel decides the sign). Scene [dolly-zoom](https://localhost:5173/test/film-director?film=proving&scene=dolly-zoom). |
+| camera `handheld` | scene | `"subtle" \| "steady" \| "rough"`, or `{meters: 0-0.3, degrees: 0-5}` | `cameraSchema.handheld` in `film-director-schema.ts`; `resolveHandheld` in `director-camera-track.ts`; `applyHandheld` in `sample-film-director.ts` | Takes the rig off sticks. Applied to the sampled frame after tracking, so following a walker still follows them. Position drifts inside the metres envelope; the aim drifts inside the degrees envelope, converted to metres at the current shooting distance so a long lens shakes as much on screen as a wide one. The drift is three incommensurate sines per axis, phased from `axisSeedValue(filmSeed, sceneId, "handheld")`, so it never repeats inside a scene, never uses `Math.random`, and replays identically. Works under every camera form including `shots`. Optional and absent when unused, so untouched films resolve byte-identically. Scene [handheld](https://localhost:5173/test/film-director?film=proving&scene=handheld). |
+| `pan` `to` a destination | scene | `to: {kind: "performer", performerId} \| {kind: "point", position: [x, y, z]}` | `cameraPanDestinationSchema` in `film-director-schema.ts`; `panDegrees`/`resolvePanDestination` in `camera-language.ts` | A pan spoken as a place rather than an angle. The compiler reads the shortest way round from the current aim to the destination and feeds the existing rotation math, so the rig still turns in place. `to` with a `direction` or an `amount` rejects (state the destination or the angle, not both), `to` on any move that is not a `pan` rejects, and a missing performer rejects by name: `Camera pan references missing performer "x".` Scene [whip-pans](https://localhost:5173/test/film-director?film=proving&scene=whip-pans). |
 | cast block                      | scene (`performance.cast`) | `{count: 1-8, defaults?, performers?: override[]}`                                                                                                 | `castSchema`                                                                                                                                                                                 | Mutually exclusive with `performance.performers` (schema `.refine()`). Overrides addressed by `id` (`performer-<n>`) fill their named slot; overrides with no `id` fill remaining slots in array order. An `id` that doesn't match any of the cast's performers rejects: `Cast override "<id>" does not match any of the <n> performers.`                                                                                                                                                                                                                                                     |
-| scene cues | scene (`cues`) | `Record<name, {atSeconds} \| {atBeats} \| {atBars}>`, up to 16, names `^[a-z][a-z0-9-]*$` | `cueSchema`/`cueNameSchema` in `film-director-schema.ts`; `buildCueTable`/`resolveSceneCues` in `director-beat-times.ts` | A name for a moment. Once named, the name is speakable anywhere a step is (`stepPlanes`, `stepEffects`, `stepEfforts`, `stepStaffLengths`, `holds.fromStep`), as a move's length (`until`), as a camera keyframe's `at`, and as a blocking phase's `startCue`. A cue read as a count is its beat position, because counts advance one per beat; read as a time it is its seconds. Both come from the one stated moment, so one cue drives a step change, a shot boundary and a blocking phase to the same instant. Resolves in `convertSceneBeatTimes` alongside beats and bars, so nothing downstream knows cues exist. An unknown name rejects listing the scene's cues; a cue used as a step that lands between counts rejects with the fractional count; an `until` whose cue has already passed, or whose window has no known start, rejects by position. `/test/film-director?film=proving` scene 19 ("growing-staff"). |
-| `performance.phrase` | scene | `"restart" \| "continue"` (default restart) | `performanceSchema.phrase`; `resolveFilmDirectorSpec`'s step cursor; `sampleFilmDirector` | Whether the scene's shared count starts over or picks up where the previous scene's ended (`stepOffset + duration * bpm / 60`). `continue` publishes `performance.stepOffset` on the resolved scene and the sampler adds it to `sequenceStep`, so a tempo change across a cut reads as one phrase getting faster rather than two takes. Optional and absent when the scene restarts. A first scene stating `continue` rejects by name. `/test/film-director?film=proving` scenes 17-18 ("tempo-slow"/"tempo-double"). |
+| scene cues | scene (`cues`) | `Record<name, {atSeconds} \| {atBeats} \| {atBars}>`, up to 16, names `^[a-z][a-z0-9-]*$` | `cueSchema`/`cueNameSchema` in `film-director-schema.ts`; `buildCueTable`/`resolveSceneCues` in `director-beat-times.ts` | A name for a moment. Once named, the name is speakable anywhere a step is (`stepPlanes`, `stepEffects`, `stepEfforts`, `stepStaffLengths`, `holds.fromStep`), as a move's length (`until`), as a camera keyframe's `at`, and as a blocking phase's `startCue`. A cue read as a count is its beat position, because counts advance one per beat; read as a time it is its seconds. Both come from the one stated moment, so one cue drives a step change, a shot boundary and a blocking phase to the same instant. Resolves in `convertSceneBeatTimes` alongside beats and bars, so nothing downstream knows cues exist. An unknown name rejects listing the scene's cues; a cue used as a step that lands between counts rejects with the fractional count; an `until` whose cue has already passed, or whose window has no known start, rejects by position. Scene [growing-staff](https://localhost:5173/test/film-director?film=proving&scene=growing-staff). |
+| `performance.phrase` | scene | `"restart" \| "continue"` (default restart) | `performanceSchema.phrase`; `resolveFilmDirectorSpec`'s step cursor; `sampleFilmDirector` | Whether the scene's shared count starts over or picks up where the previous scene's ended (`stepOffset + duration * bpm / 60`). `continue` publishes `performance.stepOffset` on the resolved scene and the sampler adds it to `sequenceStep`, so a tempo change across a cut reads as one phrase getting faster rather than two takes. Optional and absent when the scene restarts. A first scene stating `continue` rejects by name. Scenes [tempo-slow](https://localhost:5173/test/film-director?film=proving&scene=tempo-slow) and [tempo-double](https://localhost:5173/test/film-director?film=proving&scene=tempo-double). |
 | `stepStaffLengths` | performer, cast defaults | `[{step \| cue, staffLengthCm: 40-300, ease?: "cut" \| "linear"}]`, up to 16 | `stepStaffLengthEntrySchema`; `resolveStepStaffLengthsForPerformer`; `resolveStepRamp` in `director-step-changes.ts`; `applyDirectorStepChanges` | A prop length that changes during the scene. Read as a ramp rather than a series of switches because the runtime can land between two lengths: `linear` (the default) slides from the previous entry across the counts between them, `cut` snaps at its own step. Same replace-not-merge rule as `stepEffects`: a performer's list replaces the cast-default list entirely. The adapter writes `setStaffLengthCm` only when the value has moved at least 0.5 cm, because the setter rebuilds the prop and a ramp produces a new number every frame. Optional and absent when the prop keeps one length. |
-| `performance.blocking` as a timeline | scene | the single staging object, or an array of 1-8 phases each adding `startSeconds \| startStep \| startCue` | `sceneBlockingPhaseSchema`; `assertOrderedPhases`/`movesThroughPhases` in `resolve-film-director-spec.ts` | Cast staging said over time: line up, hold, then open into a circle on the drop. Each phase names its own `endFormation` and the cast stands on its marks through the gaps between phases. A phase with no stated start follows the one before it. Phases run in the order written and may not overlap, because two formations cannot own the cast at once; an overlap rejects naming both phases, and a phase finishing past the scene's length rejects with both figures. A performer's own `blocking` still wins outright over the whole timeline. `/test/film-director?film=proving` scene 20 ("two-lines-one-circle"). |
+| `performance.blocking` as a timeline | scene | the single staging object, or an array of 1-8 phases each adding `startSeconds \| startStep \| startCue` | `sceneBlockingPhaseSchema`; `assertOrderedPhases`/`movesThroughPhases` in `resolve-film-director-spec.ts` | Cast staging said over time: line up, hold, then open into a circle on the drop. Each phase names its own `endFormation` and the cast stands on its marks through the gaps between phases. A phase with no stated start follows the one before it. Phases run in the order written and may not overlap, because two formations cannot own the cast at once; an overlap rejects naming both phases, and a phase finishing past the scene's length rejects with both figures. A performer's own `blocking` still wins outright over the whole timeline. Scene [two-lines-one-circle](https://localhost:5173/test/film-director?film=proving&scene=two-lines-one-circle). |
 | `holds[].progress` | performer, cast defaults | `0-1`, optional | `holdSchema.progress`; `resolveHeldStep` in `director-step-holds.ts` | Where inside the frozen step the held pose sits. A hold pins the performer at `fromStep`; without this the pose is the top of that step, and with it the pose is that fraction through it, so a director can freeze mid-arc rather than only on the count. Absent when unstated, so a film written before this word resolves byte-identically. |
 | camera `subject: {kind: "hand" \| "prop-tip", performerId, hand}` | scene | `hand` is `"left" \| "right"` (`"blue"`/`"red"` accepted) | `cameraTargetSchema` in `film-director-schema.ts`; `subjectAnchorHeight` in `camera-language.ts` | Gap 12. Aims at the named performer's opening mark at hand height (1.1 m) or prop-tip height (1.4 m) instead of the group centre. A close-up does not drag it up to face height. The aim is compile-time and does not follow the hand: see the rejection below. |
 | performer `propBuild` | performer, cast defaults | `{finish?, fanBuild?, fanFrameColor?, fanCover?}`, at least one part | `propBuildSchema`; `performer.setPropBuild` in `character-instance-state.svelte.ts` | Gap 23. Finish is per performer here, because `effectivePropBuild` merges the performer's build over the global `propFinishState.build`. An unstated build clears the override rather than inheriting the previous cut's. |
@@ -164,14 +181,20 @@ n, right s). Name one, or give a {left, right} pair.` Locations accept `n`,
 ## Camera orbit direction convention
 
 `orbit` moves take `direction: "cw" | "ccw"`. The convention is the FELT one,
-confirmed by Austen on 2026-09-02 against Proving Grounds scenes 9 and 10:
-a `cw` orbit that starts from the front ends on the performers' screen-left
-end of the line, and `ccw` ends on the screen-right end. In the azimuth math
-of `camera-language.ts` (`resolveDirectorCameraTrack`, `orbit` branch) that
-means `cw` DECREASES the angle and `ccw` increases it, the opposite of the
-"clockwise viewed from above" reading the code originally shipped with. The
-two Proving Grounds scenes stay in the film as the standing reference for
-this convention.
+confirmed by Austen on 2026-09-02 against a matched pair of Proving Grounds
+scenes: a `cw` orbit that starts from the front ends on the performers'
+screen-left end of the line, and `ccw` ends on the screen-right end. In the
+azimuth math of `camera-language.ts` (`resolveDirectorCameraTrack`, `orbit`
+branch) that means `cw` DECREASES the angle and `ccw` increases it, the
+opposite of the "clockwise viewed from above" reading the code originally
+shipped with.
+
+The pair existed to be judged side by side while the sign was open. With the
+convention settled, the counterclockwise twin was deleted rather than kept —
+sixteen beats of a reference film asking a question that has an answer. Scene
+[orbit-clockwise](https://localhost:5173/test/film-director?film=proving&scene=orbit-clockwise) is the remaining picture, and the mirror invariant the pair
+proved (same start, opposite ends) now lives in `film-library.test.ts`, which
+builds the twin inline from the surviving scene.
 
 ## Camera roll direction convention
 
@@ -234,7 +257,7 @@ None open. Closed so far:
   advance one per beat, so the count reading is the cue's beat position. Cues
   resolve inside `convertSceneBeatTimes`, the same single pass that flattens
   beats and bars, so no compiler below `resolveScene` learns they exist.
-  `/test/film-director?film=proving` scene 19 ("growing-staff") hangs a prop
+  Scene [growing-staff](https://localhost:5173/test/film-director?film=proving&scene=growing-staff) hangs a prop
   ramp, a camera hold and a freeze off two names.
 
 - **One phrase across a tempo change** (closed 2026-09-02). Before this gap
@@ -246,7 +269,7 @@ None open. Closed so far:
   `sequenceStep` at the sampler. The count crosses the cut unbroken and then
   advances at the new tempo. A first scene stating `continue` rejects by name,
   because there is no previous phrase to continue.
-  `/test/film-director?film=proving` scenes 17-18 play one phrase at 60 then
+  Scenes [tempo-slow](https://localhost:5173/test/film-director?film=proving&scene=tempo-slow) and [tempo-double](https://localhost:5173/test/film-director?film=proving&scene=tempo-double) play one phrase at 60 then
   120 bpm.
 
 - **Prop length over time** (closed 2026-09-02). Before this gap closed a
@@ -266,7 +289,7 @@ None open. Closed so far:
   and may not overlap, since two formations cannot own the cast at once; the
   rejection names both phases so the director knows which pair to move. A
   performer's own `blocking` still overrides the whole timeline.
-  `/test/film-director?film=proving` scene 20 ("two-lines-one-circle").
+  Scene [two-lines-one-circle](https://localhost:5173/test/film-director?film=proving&scene=two-lines-one-circle).
 
 - **Where a hold freezes** (closed 2026-09-02). A hold pinned the performer at
   the top of `fromStep`, so freezing mid-arc was unsayable. `holds[].progress`
@@ -289,8 +312,8 @@ None open. Closed so far:
   them that far behind afterwards, driven into the viewer's existing
   `performerSteps` host-override seam. Blocking does not pause during a hold,
   and per-step effects read the HELD step, so an entry scheduled inside a hold
-  applies for its whole length. `/test/film-director?film=proving` scene 8
-  ("per-step-changes") shows both halves side by side.
+  applies for its whole length. Scene
+  [per-step-changes](https://localhost:5173/test/film-director?film=proving&scene=per-step-changes) shows both halves side by side.
 
 - **Beats as a time unit** (closed 2026-08-30). Before this gap closed, every
   duration field in the scene schema accepted only `durationSeconds` — a
@@ -303,7 +326,7 @@ None open. Closed so far:
   in seconds and never learns beats exist. A beat count that converts outside
   its field's valid seconds range rejects in the unit it was spoken in, and
   names whether the bpm was stated or defaulted (see "Counted time" above).
-  `/test/film-director?film=proving` scene 2 ("on-the-beat") states its whole
+  Scene [on-the-beat](https://localhost:5173/test/film-director?film=proving&scene=on-the-beat) states its whole
   clock in beats: a 16-beat scene, an 8-beat camera push, and an 8-beat
   crossing walk.
 - **Distinct + exclude in one directive** (closed 2026-08-30). The canonical
@@ -314,7 +337,7 @@ None open. Closed so far:
   variant now takes an optional `not` (one value or a list), and
   `normalizeDirective` checks `pick` before the bare `{not}` form so a
   `{pick, not}` object cannot fall through to the exclude-only branch.
-  `/test/film-director?film=proving` exercises it on two axes at once.
+  Scene [combined-draw](https://localhost:5173/test/film-director?film=proving&scene=combined-draw) exercises it on two axes at once.
 - **Camera edges: truck, zoom, roll** (closed 2026-08-30). Before this gap
   closed, the camera vocabulary stopped at `hold`/`push-in`/`pull-back`/
   `orbit`/`crane`/`pan` — no move slid the frame sideways without turning it,
@@ -330,8 +353,8 @@ None open. Closed so far:
   to its pre-roll snapshot) and required on a sampled `DirectorCameraFrame`
   (always `0` when absent). Positive `rollDeg` means clockwise as the audience
   sees the frame — see "Camera roll direction convention" above for the sign,
-  including that it has not yet been visually confirmed. `/test/film-director?film=proving`
-  scene 3 ("camera-edges") states all three in one breath: a one-meter truck,
+  including that it has not yet been visually confirmed. Scene
+  [camera-edges](https://localhost:5173/test/film-director?film=proving&scene=camera-edges) states all three in one breath: a one-meter truck,
   a fifteen-degree zoom, and a ten-degree clockwise roll. A `truck` from a
   framing that looks straight up or down rejects (no sideways to slide along),
   and the sampler holds a flat fov or roll segment exactly instead of letting
@@ -351,7 +374,7 @@ None open. Closed so far:
   track resolves byte-identically to its pre-tracking snapshot. Grammar only:
   `track` on a preset's `target` or on a raw keyframe target rejects, because
   those aim exactly where their target says.
-  `/test/film-director?film=proving` scene 4 ("tracking-shot") follows a
+  Scene [tracking-shot](https://localhost:5173/test/film-director?film=proving&scene=tracking-shot) follows a
   three-meter crossing with a medium shot that holds its framing throughout.
 - **Mid-scene cuts** (closed 2026-09-01). Before this gap closed a scene held
   one framing for its whole length: to cut, a director split the shot into
@@ -377,7 +400,7 @@ None open. Closed so far:
   walker followed in one shot and dropped in the next. Closing this gap also
   made `transition: {kind: "cut"}` instantaneous — it had defaulted to a 0.8s
   dissolve window, which is not a cut. A stated `durationSeconds` still wins.
-  `/test/film-director?film=proving` scene 5 ("three-shots") cuts twice inside
+  Scene [three-shots](https://localhost:5173/test/film-director?film=proving&scene=three-shots) cuts twice inside
   one scene: a wide front two-shot, a low close-up that pushes in, and a high
   medium shot from behind.
 
@@ -395,8 +418,8 @@ None open. Closed so far:
   `loadLibrarySequence`, and `transforms` dependencies with the production
   owners as defaults, caches each chain by its source's directive key plus the
   chain itself, and falls back to the demo with a named reason when a library
-  id is missing. `/test/film-director?film=proving` scene 6
-  ("derived-sequences") plays one library sequence beside a 90-degree rotation
+  id is missing. Scene
+  [derived-sequences](https://localhost:5173/test/film-director?film=proving&scene=derived-sequences) plays one library sequence beside a 90-degree rotation
   with swapped hands and a retrograde of it.
 
 - **Per-performer effect config** (ruled 2026-09-02). Investigated and
@@ -417,8 +440,8 @@ None open. Closed so far:
   be named. Expansion runs at the boundary rather than after validation so a
   child can genuinely omit `title` without loosening the schema for every other
   scene. Rejections name both scenes: an unknown parent, a forward reference,
-  and a self reference. `/test/film-director?film=proving` scene 14
-  ("callback") is scene 12 with one line changed, the camera moved behind.
+  and a self reference. Scene
+  [callback](https://localhost:5173/test/film-director?film=proving&scene=callback) is [combined-draw](https://localhost:5173/test/film-director?film=proving&scene=combined-draw) with one line changed, the camera moved behind.
 
 - **Seed sharing** (closed 2026-09-02). A scene's random draws are keyed by its
   own id, so two scenes asking for the same `pick` got different answers, and a
@@ -452,7 +475,7 @@ None open. Closed so far:
   at-most-one-time-unit refine now covers three units, and a bar count that
   converts outside its field's valid seconds range rejects in bars, naming the
   meter and the bpm: `40 bars of 3 at 66 bpm is 109.09s`.
-  `/test/film-director?film=proving` scene 16 ("waltz") states a 4-bar scene in
+  Scene [waltz](https://localhost:5173/test/film-director?film=proving&scene=waltz) states a 4-bar scene in
   3/4 at 90 bpm with a 2-bar camera push.
 
 - **Blocking edges** (closed 2026-09-02). Four edges of the staging grammar,
@@ -468,8 +491,8 @@ None open. Closed so far:
   already assume. Offstage entrances needed no grammar at all: positions and
   `to` were never bounded, and `stageExtent` already grows the ground to
   include every mark, so an entrance is an opening mark outside the frame
-  followed by a walk in. `/test/film-director?film=proving` scene 7
-  ("edges-of-the-stage") does both at once: a performer opens five meters off
+  followed by a walk in. Scene
+  [edges-of-the-stage](https://localhost:5173/test/film-director?film=proving&scene=edges-of-the-stage) does both at once: a performer opens five meters off
   the right of the frame and walks in along a left-bending arc to their place
   in the line. The fourth edge, standing and watching, is real:
   `{source: "none"}` gives a performer no sequence, no prop phrase, and an
@@ -488,7 +511,7 @@ exist in the app's control surface at all:
   that single value. A director who wants the phrase to accelerate spells it
   as two scenes joined by a cut, the second stating `phrase: "continue"` and
   the new tempo, which keeps the count unbroken across the change. Proving
-  Grounds scenes 17 and 18 are that spelling.
+  Grounds scenes [tempo-slow](https://localhost:5173/test/film-director?film=proving&scene=tempo-slow) and [tempo-double](https://localhost:5173/test/film-director?film=proving&scene=tempo-double) are that spelling.
 
 - **Motion blur.** No shutter or motion-blur pass exists. The whole
   post-processing surface is `src/lib/shared/3d/effects/post-processing/`, which
