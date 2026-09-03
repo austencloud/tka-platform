@@ -51,6 +51,7 @@
     labFixture,
     labPropLabel,
     labSequenceLabel,
+    labSweepCharacter,
     resolveLabSequence,
   } from "./lab-catalog";
   import {
@@ -61,7 +62,7 @@
     type GripMetric,
     type PoseMetric,
   } from "./lab-metrics";
-  import { LAB_PARAM, StaffLabState } from "./lab-state.svelte";
+  import { StaffLabState } from "./lab-state.svelte";
 
   /** Motion steps per second. Slow enough to read a 0.16-step stagger. */
   const PLAYBACK_STEPS_PER_SECOND = 1.2;
@@ -134,6 +135,16 @@
   const fitComparison = $derived(compareLengths(bodyFit, configuredLengthCm));
 
   /**
+   * When the body on stage is one of the controlled proportion sweep rigs, the
+   * generator recorded what it measured off the GLB's rest pose and whether it
+   * expected a staff to fit. The lab measures the same body live, through the
+   * running solve. Showing both is the point: agreement means the offline
+   * sweep can be trusted to pre-filter a coverage matrix, and disagreement is
+   * a finding in one of the two, not a rounding difference to average away.
+   */
+  const sweepCharacter = $derived(labSweepCharacter(lab.character));
+
+  /**
    * A divergence worth naming, not a rounding difference. Below this the two
    * numbers are the same measurement read two ways.
    */
@@ -197,12 +208,18 @@
     );
   });
 
-  // A pasted link, a reload, or Back all arrive as a URL this state owner did
-  // not write. Reading the param here is what makes that adoption reactive.
+  // A pasted link or a reload arrives as a real navigation, which is the one
+  // URL change SvelteKit still reports through `page.url`. Reading its href
+  // here is what makes re-seeding the lab's mirror reactive.
   $effect(() => {
-    void page.url.searchParams.get(LAB_PARAM.phase);
-    lab.adoptUrlPhase();
+    void page.url.href;
+    lab.syncFromNavigation();
   });
+
+  // Back and Forward move the address bar without any framework signal at
+  // all, because every write here is shallow routing. This is the only way
+  // history navigation reaches the lab.
+  $effect(() => lab.attachUrlSync());
 
   // Someone reaching for the address bar blurs the window first, so that is
   // the moment a still-moving phase has to be pinned exactly.
@@ -389,10 +406,17 @@
       </p>
     </header>
 
-    <LabControls {lab} {sequence} {sequenceLoading} {bodyLengthCm} />
+    <LabControls
+      {lab}
+      {sequence}
+      {sequenceLoading}
+      {bodyLengthCm}
+      bodyMeasured={bodyFit !== null}
+    />
 
     <LabInspector
       {lab}
+      {sweepCharacter}
       fit={bodyFit}
       verdict={fitComparison.verdict}
       deltaCm={fitComparison.deltaCm}

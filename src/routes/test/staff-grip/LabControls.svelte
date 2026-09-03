@@ -41,6 +41,13 @@
     sequenceLoading: boolean;
     /** The length this body would choose, so Body fit can name its value. */
     bodyLengthCm: number | null;
+    /**
+     * Whether the rig has been measured yet. Without it a body that fits no
+     * supported staff is indistinguishable from one still loading, and the
+     * caption sits on “Measuring…” forever while the inspector beside it
+     * already says the fit failed.
+     */
+    bodyMeasured: boolean;
   }
 
   let {
@@ -48,6 +55,7 @@
     sequence,
     sequenceLoading,
     bodyLengthCm,
+    bodyMeasured,
   }: Props = $props();
 
   let characterOpen = $state(false);
@@ -87,7 +95,8 @@
     { value: "quad" as LabView, label: "Quad", ariaLabel: "All four cameras" },
     ...INSPECTION_VIEWS.map((view) => ({
       value: view.id as LabView,
-      label: view.label,
+      // The abbreviation is visual only; `ariaLabel` still says the full name.
+      label: view.pickerLabel ?? view.label,
       ariaLabel: `${view.label} camera only`,
     })),
   ]);
@@ -176,7 +185,7 @@
         { value: "pinned", label: "Pinned", ariaLabel: "Fixed length in cm" },
       ]}
       value={lengthMode}
-      size="sm"
+      density="tight"
       ariaLabel="How prop length is chosen"
       onchange={(mode) =>
         lab.setPropLength(mode === "body" ? "body" : pinnedLengthCm)}
@@ -194,9 +203,13 @@
         />
       {:else}
         <p class="derived">
-          {bodyLengthCm === null
-            ? "Measuring…"
-            : `${bodyLengthCm.toFixed(0)} cm from this body`}
+          {#if bodyLengthCm !== null}
+            {bodyLengthCm.toFixed(0)} cm from this body
+          {:else if bodyMeasured}
+            No supported length fits this body
+          {:else}
+            Measuring…
+          {/if}
         </p>
       {/if}
     </div>
@@ -207,7 +220,7 @@
     <SegmentedControl
       options={sequenceOptions}
       value={lab.sequenceId}
-      size="sm"
+      density="tight"
       columns={2}
       ariaLabel="Loaded sequence"
       onchange={(id) => lab.setSequence(id)}
@@ -263,7 +276,7 @@
     <SegmentedControl
       options={viewOptions}
       value={lab.view}
-      size="sm"
+      density="tight"
       columns={3}
       ariaLabel="Camera layout"
       onchange={(view) => lab.setView(view)}

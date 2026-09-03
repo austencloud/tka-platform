@@ -13,7 +13,9 @@
   import CoverageMatrixMount from "./CoverageMatrixMount.svelte";
   import StanceTimingChart from "./StanceTimingChart.svelte";
   import type { CoverageMatrix } from "./coverage-matrix-contract";
+  import { LAB_SWEEP_AXIS_LABEL } from "./lab-catalog";
   import type { BodyPropFit, FitVerdict } from "./lab-body-fit";
+  import type { ProportionSweepCharacter } from "$lib/shared/3d/domain/proportion-sweep-characters";
   import type { GripMetric, PoseMetric } from "./lab-metrics";
   import type { LabPanel, StaffLabState } from "./lab-state.svelte";
   import type {
@@ -23,6 +25,11 @@
 
   interface Props {
     lab: StaffLabState;
+    /**
+     * Set when the body on stage is one of the controlled proportion sweep
+     * rigs, carrying what the offline generator measured off its rest pose.
+     */
+    sweepCharacter: ProportionSweepCharacter | undefined;
     fit: BodyPropFit | null;
     verdict: FitVerdict;
     deltaCm: number | null;
@@ -43,6 +50,7 @@
 
   let {
     lab,
+    sweepCharacter,
     fit,
     verdict,
     deltaCm,
@@ -57,6 +65,36 @@
     stanceVelocity,
     coverageMatrix,
   }: Props = $props();
+
+  /**
+   * The offline sweep's reading of this body beside the lab's live one. It is
+   * the same arithmetic — `performer-reach-measurements` — run twice: once by
+   * the generator over the GLB's authored rest pose, once here over the rig
+   * the browser actually posed. Agreement is what would let a sweep pre-filter
+   * a coverage matrix without opening it. A gap means one of the two is
+   * measuring a different body than it thinks.
+   */
+  const SWEEP_AGREEMENT_TOLERANCE_CM = 1;
+
+  const sweepDeltaCm = $derived(
+    sweepCharacter && fit
+      ? fit.fit.maxStaffLengthCm - sweepCharacter.measured.staffCm
+      : null
+  );
+
+  const sweepDisagrees = $derived(
+    sweepDeltaCm !== null &&
+      Math.abs(sweepDeltaCm) > SWEEP_AGREEMENT_TOLERANCE_CM
+  );
+
+  /** `statureScale 0.90` — the literal knob, because that is what was moved. */
+  const sweepParameters = $derived(
+    sweepCharacter
+      ? Object.entries(sweepCharacter.parameters)
+          .map(([name, value]) => `${name} ${value}`)
+          .join(" · ")
+      : ""
+  );
 
   const PANEL_OPTIONS: { value: LabPanel; label: string; ariaLabel: string }[] =
     [
@@ -95,7 +133,7 @@
   <SegmentedControl
     options={PANEL_OPTIONS}
     value={lab.panel}
-    size="sm"
+    density="tight"
     semantics="tabs"
     ariaLabel="Which measurements to show"
     onchange={(panel) => lab.setPanel(panel)}
@@ -172,7 +210,40 @@
                 {/if}
               </dd>
             </div>
+            {#if sweepCharacter}
+              <div class="metric is-wide">
+                <dt>Proportion sweep</dt>
+                <dd>
+                  {LAB_SWEEP_AXIS_LABEL[sweepCharacter.axis]}
+                  {#if sweepParameters}
+                    <span class="sub">· {sweepParameters}</span>
+                  {/if}
+                </dd>
+              </div>
+              <div class="metric is-wide" data-diverged={sweepDisagrees}>
+                <dt>Offline sweep predicted</dt>
+                <dd>
+                  {sweepCharacter.measured.staffCm.toFixed(1)} cm
+                  <span class="sub"
+                    >· {sweepCharacter.measured.staffFits
+                      ? "fits"
+                      : "does not fit"}{#if sweepDeltaCm !== null}, lab measures
+                      {sweepDeltaCm > 0 ? "+" : "−"}{Math.abs(
+                        sweepDeltaCm
+                      ).toFixed(1)} cm{/if}</span
+                  >
+                </dd>
+              </div>
+            {/if}
           </dl>
+          {#if sweepCharacter}
+            <p class="note">
+              This body is one base rig with a single dimension moved, so a
+              failure here names its own cause. The predicted line is the
+              generator's own measurement of the same rest pose; it and the
+              live reading above should agree within a centimetre.
+            </p>
+          {/if}
           <p class="note">
             Two lengths are live at once. The configured one reaches the drawn
             prop through <code>propLength</code>; the collision model builds

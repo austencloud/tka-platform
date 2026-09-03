@@ -19,6 +19,10 @@ import {
   type CharacterId,
 } from "$lib/shared/3d/domain/character-model";
 import {
+  registerProportionSweepCharacters,
+  type ProportionSweepCharacter,
+} from "$lib/shared/3d/domain/proportion-sweep-characters";
+import {
   SCENE_PROP_FAMILIES,
   SCENE_PROP_TYPES,
 } from "$lib/shared/3d/domain/scene-prop-catalog";
@@ -59,6 +63,43 @@ function registerLocalIntakeCharacters(): void {
 }
 
 registerLocalIntakeCharacters();
+
+/**
+ * The controlled proportion sweep: one licensed base rig with exactly one body
+ * dimension moved per copy. The deployed catalog varies every dimension at
+ * once, so a catalog body that fails the hug fit cannot say which dimension
+ * caused it. These can, which is the difference between a lab that reproduces
+ * a failure and one that explains it.
+ *
+ * The GLBs are gitignored, so a checkout without them registers ten characters
+ * whose models 404. That is the same trade the intake rig already makes and
+ * the same reason neither is the default: the lab opens on a CDN body, and
+ * these are one pick away for whoever has them.
+ */
+const LAB_SWEEP_CHARACTERS = registerProportionSweepCharacters();
+
+const LAB_SWEEP_BY_ID = new Map<string, ProportionSweepCharacter>(
+  LAB_SWEEP_CHARACTERS.map((character) => [character.id as string, character])
+);
+
+/** The sweep record behind a character, when the character is a sweep body. */
+export function labSweepCharacter(
+  id: string
+): ProportionSweepCharacter | undefined {
+  return LAB_SWEEP_BY_ID.get(id);
+}
+
+/** What a sweep body's axis is called in the lab's own vocabulary. */
+export const LAB_SWEEP_AXIS_LABEL: Readonly<
+  Record<ProportionSweepCharacter["axis"], string>
+> = {
+  none: "Control",
+  stature: "Stature",
+  shoulderWidth: "Shoulder width",
+  armLength: "Arm length",
+  armSegmentRatio: "Arm segment ratio",
+  torsoGirth: "Build",
+};
 
 /**
  * The body the lab opens on.

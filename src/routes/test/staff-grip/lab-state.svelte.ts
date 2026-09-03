@@ -13,10 +13,12 @@
  * can never disagree. `phase` is the single exception and it is explained on
  * its own accessor.
  */
+import { untrack } from "svelte";
+
 import { browser } from "$app/environment";
 import { page } from "$app/state";
 
-import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
+import { writeUrl } from "$lib/shared/navigation/services/url-state";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { CharacterId } from "$lib/shared/3d/domain/character-model";
 
@@ -86,6 +88,22 @@ export class StaffLabState {
   readonly #stepCount: () => number;
 
   /**
+   * The URL this lab reads, mirrored reactively.
+   *
+   * It cannot be `page.url`. Every write here goes through SvelteKit shallow
+   * routing, and `pushState`/`replaceState` deliberately update only
+   * `page.state` — `page.url` keeps naming the last real navigation
+   * (`@sveltejs/kit` 2.61.1, `client.js`: `page.state = state` with no url
+   * assignment). Deriving the axes from `page.url` therefore produced a lab
+   * whose address bar moved while the page ignored it: the link was right and
+   * the instrument was a frame behind, which is the exact opposite of the
+   * point. This mirror is written by `#write` before the history call and
+   * re-seeded from `popstate` and from real navigations, so reads follow the
+   * address bar in every direction — clicks, Back, Forward, paste, reload.
+   */
+  #url = $state(new URL(page.url));
+
+  /**
    * Phase is the one axis that changes continuously, so it cannot be read
    * straight off the URL: a running clock would issue a history write every
    * frame. It is mirrored locally, written on a short coalescing timer, and
@@ -103,17 +121,17 @@ export class StaffLabState {
   }
 
   readonly character = $derived.by((): CharacterId => {
-    const raw = page.url.searchParams.get(LAB_PARAM.character);
+    const raw = this.#url.searchParams.get(LAB_PARAM.character);
     return raw && isLabCharacterId(raw) ? raw : DEFAULT_LAB_CHARACTER_ID;
   });
 
   readonly prop = $derived.by((): PropType => {
-    const raw = page.url.searchParams.get(LAB_PARAM.prop);
+    const raw = this.#url.searchParams.get(LAB_PARAM.prop);
     return raw && isLabPropType(raw) ? raw : PropType.STAFF;
   });
 
   readonly propLength = $derived.by((): LabPropLength => {
-    const raw = page.url.searchParams.get(LAB_PARAM.length);
+    const raw = this.#url.searchParams.get(LAB_PARAM.length);
     if (!raw || raw === "body") return "body";
     const cm = Number(raw);
     if (!Number.isFinite(cm)) return "body";
@@ -121,20 +139,20 @@ export class StaffLabState {
   });
 
   readonly sequenceId = $derived(
-    page.url.searchParams.get(LAB_PARAM.sequence) ?? DEFAULT_LAB_SEQUENCE_ID
+    this.#url.searchParams.get(LAB_PARAM.sequence) ?? DEFAULT_LAB_SEQUENCE_ID
   );
 
   readonly playing = $derived(
-    page.url.searchParams.get(LAB_PARAM.playing) === "1"
+    this.#url.searchParams.get(LAB_PARAM.playing) === "1"
   );
 
   readonly view = $derived.by((): LabView => {
-    const raw = page.url.searchParams.get(LAB_PARAM.view);
+    const raw = this.#url.searchParams.get(LAB_PARAM.view);
     return raw && VIEW_IDS.includes(raw) ? (raw as LabView) : "quad";
   });
 
   readonly panel = $derived.by((): LabPanel => {
-    const raw = page.url.searchParams.get(LAB_PARAM.panel);
+    const raw = this.#url.searchParams.get(LAB_PARAM.panel);
     return raw && (LAB_PANELS as readonly string[]).includes(raw)
       ? (raw as LabPanel)
       : "fit";
@@ -142,7 +160,7 @@ export class StaffLabState {
 
   /** Grid point labels in the wide reference pane. Off is opt-in. */
   readonly gridLabels = $derived(
-    page.url.searchParams.get(LAB_PARAM.labels) !== "0"
+    this.#url.searchParams.get(LAB_PARAM.labels) !== "0"
   );
 
   get phase(): number {
@@ -154,7 +172,7 @@ export class StaffLabState {
    * reload, a Back, or a pasted link lands on the frame it names.
    */
   adoptUrlPhase(): void {
-    const raw = page.url.searchParams.get(LAB_PARAM.phase);
+    const raw = this.#url.searchParams.get(LAB_PARAM.phase);
     if (this.#adopted && raw === this.#phaseWrittenParam) return;
     this.#adopted = true;
     this.#phaseWrittenParam = raw;
@@ -251,10 +269,10 @@ export class StaffLabState {
    * the whole point is pasting a finding into a conversation.
    */
   fullyQualifiedHref(): string {
-    // Built from `page.url` rather than `window.location`, so the link is a
-    // reactive value a template can render and a test can read, not a
+    // Built from the reactive mirror rather than `window.location`, so the
+    // link is a value a template can render and a test can read, not a
     // snapshot that only exists at the moment a button was pressed.
-    const url = new URL(page.url);
+    const url = new URL(this.#url);
     const params = url.searchParams;
     params.set(LAB_PARAM.character, this.character);
     params.set(LAB_PARAM.prop, this.prop);
@@ -287,6 +305,58 @@ export class StaffLabState {
     mutate: (params: URLSearchParams) => void,
     mode: "push" | "replace"
   ): void {
-    mutateCurrentUrl((url) => mutate(url.searchParams), { mode });
+    if (!browser) return;
+    // Build the destination from `window.location` rather than the mirror, so
+    // a write can never resurrect an axis some other writer has since changed.
+    const next = new URL(window.location.href);
+    mutate(next.searchParams);
+    if (next.href === window.location.href) return;
+    // The mirror moves first: a control's own re-render must not wait on the
+    // history call, which the shared owner may defer while the router starts.
+    this.#url = next;
+    writeUrl(next, { mode });
+  }
+
+  /**
+   * Re-read the address bar after a change this owner did not make. Back and
+   * Forward move `window.location` without telling the app, so without this
+   * the mirror — and every axis derived from it — silently stops agreeing
+   * with the URL the user is looking at.
+   */
+  attachUrlSync(): () => void {
+    if (!browser) return () => {};
+    const sync = () => this.#adoptLocation();
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }
+
+  /**
+   * `window.location` is the only honest source. `page.url` names the last
+   * real navigation and never moves for shallow routing, so re-seeding from
+   * it would undo a Back the moment SvelteKit reassigns its page object.
+   */
+  #adoptLocation(): void {
+    if (!browser) return;
+    const href = window.location.href;
+    if (this.#url.href === href) return;
+    this.#url = new URL(href);
+    this.adoptUrlPhase();
+  }
+
+  /**
+   * Adopt a real navigation. `page.url` still tracks those, so a `goto` into
+   * this route with different params — a coverage-matrix cell, a link from
+   * another page — re-seeds the mirror instead of being ignored.
+   */
+  syncFromNavigation(): void {
+    // `page.url` is read purely as the dependency that says a real navigation
+    // happened; the value adopted is always `window.location`.
+    void page.url.href;
+    // Untracked, because this runs inside an effect and both the mirror and
+    // the phase are written here. Reading either one back as a dependency
+    // would make the effect its own trigger, and Svelte kills that with
+    // `effect_update_depth_exceeded` during mount — which in turn stops the
+    // router from ever starting, so every later URL write is dropped.
+    untrack(() => this.#adoptLocation());
   }
 }
