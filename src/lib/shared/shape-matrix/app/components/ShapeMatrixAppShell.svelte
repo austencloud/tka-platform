@@ -318,8 +318,8 @@
         <div class="control-cell level-control">
           <!-- The caption rides the same clock as the control below it. Left
                outside the transition it flipped on the first frame, so
-               "Difficulty" sat over Halves/Thirds/Fifths/Ninths for the length
-               of the fade — the exact pairing this surface exists to deny. -->
+               "Difficulty" sat over the band bounds for the length of the
+               fade — the exact pairing this surface exists to deny. -->
           <Crossfade
             key={theory ? "band" : "level"}
             mode="swap"
@@ -404,8 +404,10 @@
         {/if}
         <!-- Only while a control section covers the relationships: the button
              is the way back to them, so it has nothing to do when they are
-             already showing, and it never competes with Matrix for the tap. -->
-        {#if appState.surface === "matrix" && appState.activeView === "detail" && animationState.activeSection !== null}
+             already showing, and it never competes with Matrix for the tap.
+             Both surfaces mount the element row above the same dock, so both
+             lose it to an open panel and both need the way back. -->
+        {#if appState.activeView === "detail" && animationState.activeSection !== null}
           <button
             type="button"
             class="top-action relationships-action"

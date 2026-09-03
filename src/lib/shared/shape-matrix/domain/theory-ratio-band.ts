@@ -33,13 +33,21 @@ export function asTheoryBand(value: number): TheoryBand {
 /**
  * The band the surface opens on.
  *
- * Thirds, because the default axis is 1:3 and this is the narrowest band that
- * holds it. It is also the first band past what the turn system names, which
- * is the whole reason the surface exists.
+ * Three cycles, because the default axis is 1:3 and this is the narrowest band
+ * that holds it. It is also the first band past what the turn system names,
+ * which is the whole reason the surface exists.
  */
 export const DEFAULT_THEORY_BAND: TheoryBand = 2;
 
-/** Farey order per band: every reduced P:Q in [0:1, 1:1] with Q ≤ order. */
+/**
+ * Farey order per band: every reduced P:Q in [0:1, 1:1] with Q ≤ order.
+ *
+ * The order IS the hand-cycle bound, because Q is the number of hand cycles
+ * the shape takes to close. That is what the bands are named for. 2, 3, 5, 9
+ * roughly doubles the field at each step (3, 5, 11, 29 ratios); the gap at 4
+ * is that pacing, not an omission - a bound of five already carries the
+ * quarters.
+ */
 export const THEORY_BAND_ORDER: Record<TheoryBand, number> = {
   1: 2,
   2: 3,
@@ -47,19 +55,44 @@ export const THEORY_BAND_ORDER: Record<TheoryBand, number> = {
   4: 9,
 };
 
+/**
+ * Band names are BOUNDS, in the unit the rest of the surface already counts in.
+ *
+ * They used to name a denominator - Halves, Thirds, Fifths, Ninths - and every
+ * one of those names described what the band ADDED while the control presented
+ * it as what the band IS. Fifths held the quarters. Ninths held the sixths,
+ * sevenths and eighths. Halves held float and isolation, neither of which is a
+ * half. Nothing about "Thirds" says it also contains 1:2.
+ *
+ * A band's Farey order is its hand-cycle bound, so naming the bound says the
+ * true thing and says it in the vocabulary of the pane's own Closed path
+ * readout: 1:3 closes in three hand cycles, and it lives in the band that
+ * opens the field to three. Containment then reads off the labels - five
+ * plainly includes three - instead of having to be learned.
+ */
 export const THEORY_BAND_DESCRIPTIONS: Record<
   TheoryBand,
   { name: string; blurb: string }
 > = {
-  1: { name: "Halves", blurb: "Float, 1:2, isolation. The whole of what TKA names." },
-  2: { name: "Thirds", blurb: "Adds 1:3 and 2:3. Outside the level system." },
+  1: {
+    name: "2 cycles",
+    blurb:
+      "Every shape that closes within two hand cycles: float, 1:2, isolation. The whole of what TKA names.",
+  },
+  2: {
+    name: "3 cycles",
+    blurb:
+      "Every shape that closes within three hand cycles. Adds 1:3 and 2:3. Outside the level system.",
+  },
   3: {
-    name: "Fifths",
-    blurb: "Adds quarters and fifths. Outside the level system.",
+    name: "5 cycles",
+    blurb:
+      "Every shape that closes within five hand cycles. Adds the quarters and the fifths. Outside the level system.",
   },
   4: {
-    name: "Ninths",
-    blurb: "Every ratio to 1:9, plus 1:0. Outside the level system.",
+    name: "9 cycles",
+    blurb:
+      "Every shape that closes within nine hand cycles, plus the stationary hand. Outside the level system.",
   },
 };
 
