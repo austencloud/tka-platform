@@ -17,6 +17,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import Grid3D from "$lib/shared/3d/components/Grid3D.svelte";
   import LiveSequencePerformer3D from "$lib/shared/3d/performers/LiveSequencePerformer3D.svelte";
+  import type { StanceYawTrack } from "$lib/shared/3d/collision/stance-yaw-track";
 
   interface Props {
     id: string;
@@ -31,6 +32,13 @@
      * rings so nothing labelled sits on top of a hand.
      */
     gridEmphasis?: "reference" | "muted";
+    /**
+     * The planned turn, handed up so the lab can draw it. Every pane is seeked
+     * from the page's own clock rather than running one of its own, so four
+     * cameras stay on the same frame of the same turn and only one of them
+     * needs to report the curve.
+     */
+    onStanceTrack?: (track: StanceYawTrack | null) => void;
     onCollisionEvents?: (
       events: CollisionEvent[],
       diagnostics: AvatarPoseDiagnostics,
@@ -44,6 +52,7 @@
     sequence,
     characterId,
     gridEmphasis = "reference",
+    onStanceTrack,
     onCollisionEvents,
   }: Props = $props();
 
@@ -94,6 +103,7 @@
   showEffects={false}
   enableLocomotion={false}
   enableFootPlanting={false}
+  {onStanceTrack}
   {onCollisionEvents}
 >
   {#snippet gridSlot()}
