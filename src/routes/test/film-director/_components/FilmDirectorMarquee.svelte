@@ -3,12 +3,16 @@
   import type { CollectedFilm } from "$lib/features/film-collection/domain/film-collection-types";
   import { FILM_LIBRARY } from "../_films/index";
   import { resolveFilmDirectorSpec } from "../_lib/resolve-film-director-spec";
+  import SceneCatalog from "./SceneCatalog.svelte";
+  import type { CatalogScene } from "./scene-catalog-types";
 
   let {
     onOpenLibraryFilm,
+    onOpenLibraryScene,
     onOpenSavedFilm,
   }: {
     onOpenLibraryFilm: (key: string) => void;
+    onOpenLibraryScene: (key: string, sceneId: string) => void;
     onOpenSavedFilm: (entry: CollectedFilm) => void;
   } = $props();
 
@@ -24,9 +28,44 @@
       sceneCount: spec.scenes.length,
       durationSeconds: spec.durationSeconds,
       sceneTitles: spec.scenes.map((scene) => scene.title),
+      scenes: spec.scenes,
       performerCount: spec.scenes[0]?.performance.performers.length ?? 0,
     };
   });
+
+  /**
+   * The films that are references rather than watches.
+   *
+   * A scene states a `category` when it exists to prove one capability, which
+   * is what separates Proving Grounds from the eight films in the library that
+   * are actually films. Those scenes belong on the front door: reading the
+   * catalog is how a director finds the vocabulary, and it should cost nothing
+   * — this page resolves plain documents and mounts no 3D at all, so the whole
+   * catalog is on screen while the stage is still cold.
+   *
+   * Picking a card opens that scene soloed and looping. It pays one scene boot,
+   * and every scene after it is instant, because the stage is warm by then.
+   */
+  const references = startingPoints
+    .map((film) => ({
+      key: film.key,
+      label: film.label,
+      scenes: film.scenes
+        .map((scene, index) => ({
+          index,
+          id: scene.id,
+          title: scene.title,
+          intent: scene.intent,
+          seconds: scene.durationSeconds,
+          category: scene.category,
+        }))
+        .filter((scene): scene is CatalogScene => scene.category !== undefined),
+    }))
+    .filter((film) => film.scenes.length > 0);
+
+  // One filter per reference film, keyed by film key, so two catalogs on one
+  // page cannot filter each other.
+  let queries = $state<Record<string, string>>({});
 
   // A poster is a baked artifact, so a missing one means the bake has not run
   // for this film yet. Loud in dev, an icon in production.
@@ -65,6 +104,36 @@
     <span class="kicker">Director</span>
     <h1>Films</h1>
   </header>
+
+  {#each references as reference (reference.key)}
+    <section
+      class="capabilities"
+      aria-labelledby={`capabilities-${reference.key}`}
+    >
+      <div class="section-head">
+        <h2 id={`capabilities-${reference.key}`}>Capabilities</h2>
+        <input
+          class="capabilities-filter"
+          type="search"
+          placeholder="Filter capabilities"
+          aria-label={`Filter ${reference.label} capabilities by name, id, or description`}
+          bind:value={
+            () => queries[reference.key] ?? "",
+            (value) => (queries[reference.key] = value)
+          }
+        />
+      </div>
+      <SceneCatalog
+        scenes={reference.scenes}
+        bind:query={
+          () => queries[reference.key] ?? "",
+          (value) => (queries[reference.key] = value)
+        }
+        onPick={(scene) => onOpenLibraryScene(reference.key, scene.id)}
+        lead="Every capability the director can speak, one scene each. Pick one to watch it on its own, looping."
+      />
+    </section>
+  {/each}
 
   <section aria-labelledby="starting-points">
     <h2 id="starting-points">Starting points</h2>
@@ -170,6 +239,57 @@
   h2 {
     margin: 0 0 1rem;
     font-size: 1.05rem;
+  }
+
+  /* The catalog's own heading row. The h2 keeps the shelf's type so the three
+     sections read as siblings; the filter sits beside it rather than above the
+     grid, because a full-width input over a full-width grid reads as a search
+     for the page instead of for this section. */
+  .section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem 1rem;
+    margin: 0 0 1rem;
+  }
+
+  .section-head h2 {
+    margin: 0;
+  }
+
+  /* A flat width for the same reason the modal's filter carries one: a
+     percentage resolves against a box this element is itself sizing, drops out
+     of the row's max-content contribution, and wraps the row it is measured
+     into. */
+  .capabilities-filter {
+    min-width: 0;
+    width: 16rem;
+    max-width: 100%;
+    min-height: 2.75rem;
+    padding: 0 0.85rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.16));
+    border-radius: 0.7rem;
+    outline: none;
+    color: var(--theme-text, #fff);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    font: inherit;
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .capabilities-filter:focus-visible {
+    border-color: var(--theme-accent, #9d8cff);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--theme-accent, #9d8cff) 24%, transparent);
+  }
+
+  /* Once the head row wraps, a 16rem field leaves a stripe of dead space beside
+     itself. Below the wrap point it takes the row it already occupies alone.
+     Same treatment the modal index gives its own filter at the same width. */
+  @media (max-width: 34rem) {
+    .capabilities-filter {
+      width: 100%;
+    }
   }
 
   /* Pinned counts, not auto-fill: five known cards against a minmax floor

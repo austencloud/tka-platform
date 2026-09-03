@@ -71,6 +71,15 @@
     openLibraryFilm(key);
   }
 
+  // Picking a capability from the marquee's catalog is the same entry an
+  // address with `?scene=` makes: the film opens soloed on that scene and
+  // loops it. Set before the film, because the workbench reads the scene id
+  // once at construction.
+  function pickLibraryScene(key: string, sceneId: string): void {
+    pendingSceneId = sceneId;
+    openLibraryFilm(key);
+  }
+
   function pickSavedFilm(entry: CollectedFilm): void {
     pendingSceneId = null;
     openSavedFilm(entry);
@@ -127,6 +136,7 @@
 {#if !stage}
   <FilmDirectorMarquee
     onOpenLibraryFilm={pickLibraryFilm}
+    onOpenLibraryScene={pickLibraryScene}
     onOpenSavedFilm={pickSavedFilm}
   />
 {:else if Workbench}
