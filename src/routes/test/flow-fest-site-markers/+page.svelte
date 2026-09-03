@@ -15,35 +15,129 @@
     createSiteMarker,
     emptyFlowFestSiteMarkerDraft,
     getMarkerPreset,
+    isTracedShape,
     markerReadiness,
+    markerVertices,
     parseStoredFlowFestSiteMarkerDraft,
     toMarkerRecord,
+    type FlowFestNarration,
     type FlowFestSiteMarker,
     type FlowFestSiteMarkerDraft,
   } from "./_lib/flow-fest-site-markers";
+  import { createNarrationCapture } from "./_lib/narration-capture.svelte";
+  import { flyFade } from "$lib/shared/transitions/motion";
 
   type InteractionMode = "place" | "pan";
   type NoticeKind = "quiet" | "success" | "error";
 
   const STORAGE_KEY = "flow-fest-site-markers-v1";
-  const FULL_VIEW = {
-    x: 0,
-    y: 0,
-    width: FLOW_FEST_IMAGE.width,
-    height: FLOW_FEST_IMAGE.height,
-  } as const;
+  /**
+   * The window is stored as its top-left corner plus a width. Its HEIGHT comes
+   * from the rendered element's aspect ratio, so the viewBox always matches the
+   * box it is drawn in. That is not cosmetic: `pointFromEvent` maps a screen
+   * position into image space linearly, which is only true when the SVG is not
+   * letterboxing to preserve a mismatched ratio. Get it wrong and every marker
+   * lands somewhere other than where it was pressed.
+   */
+  const FULL_VIEW = { x: 0, y: 0, width: FLOW_FEST_IMAGE.width } as const;
   /** Middle Earth sits near image (1224, 794); this frames it and the ground east of it. */
-  const MIDDLE_EARTH_VIEW = {
-    x: 940,
-    y: 560,
-    width: 900,
-    height: 900,
-  } as const;
+  const MIDDLE_EARTH_VIEW = { x: 940, y: 620, width: 900 } as const;
   const HIT_RADIUS_PIXELS = 14;
+  /** Freehand sampling distance, in screen pixels, while a stroke is dragged. */
+  const TRACE_SAMPLE_PIXELS = 7;
+  /** Below this much pointer travel a press counts as a click, not a drag. */
+  const CLICK_SLOP_PIXELS = 4;
+  /** Button and key zoom. The wheel steps smaller so a flick is not a jump. */
+  const ZOOM_STEP = 1.35;
+  const WHEEL_ZOOM_STEP = 1.12;
+  /** Ctrl+wheel is what a trackpad pinch sends, so it wants a finer grain. */
+  const FINE_ZOOM_STEP = 1.05;
+  /** Arrow-key pan, as a fraction of the visible window. */
+  const PAN_STEP_FRACTION = 0.15;
+  /** Arrow-key nudge for a selected marker, in image pixels (0.5 m each). */
+  const NUDGE_IMAGE_PIXELS = 1;
+  const NUDGE_IMAGE_PIXELS_LARGE = 10;
+  /** A run of nudges inside this gap is one undo step, not forty. */
+  const NUDGE_COALESCE_MS = 700;
+  /** Padding around a fitted bounding box, as a fraction of its longest side. */
+  const FIT_PADDING = 0.15;
+  /** Narrowest window a single-marker frame will zoom to, in image pixels. */
+  const FRAME_MIN_WIDTH = 90;
 
   const MODE_OPTIONS = [
     { value: "place", label: "Place", tone: "accent" as const },
     { value: "pan", label: "Pan", tone: "accent" as const },
+  ];
+
+  /** The cheatsheet is this list, so there is nothing to keep in sync by hand. */
+  const HOTKEY_GROUPS: readonly {
+    title: string;
+    rows: readonly { keys: readonly string[]; does: string }[];
+  }[] = [
+    {
+      title: "Move the map",
+      rows: [
+        { keys: ["Space", "drag"], does: "Hand tool, from any mode" },
+        { keys: ["Middle-drag"], does: "The same, without the keyboard" },
+        { keys: ["Scroll"], does: "Zoom at the cursor" },
+        { keys: ["Ctrl", "scroll"], does: "Fine zoom, and a trackpad pinch" },
+        { keys: ["Shift", "scroll"], does: "Pan sideways" },
+        { keys: ["Arrows"], does: "Pan; Shift goes four times as far" },
+        { keys: ["+"], does: "Zoom in" },
+        { keys: ["−"], does: "Zoom out" },
+        { keys: ["H"], does: "Toggle the hand tool and stay there" },
+      ],
+    },
+    {
+      title: "Frame something",
+      rows: [
+        { keys: ["1"], does: "Whole site" },
+        { keys: ["2"], does: "Middle Earth" },
+        { keys: ["3"], does: "Fit to everything placed" },
+        { keys: ["Z"], does: "Zoom to the selected marker" },
+      ],
+    },
+    {
+      title: "Choose what to place",
+      rows: [
+        { keys: ["["], does: "Previous preset" },
+        { keys: ["]"], does: "Next preset" },
+        { keys: ["Shift", "["], does: "Previous group" },
+        { keys: ["Shift", "]"], does: "Next group" },
+      ],
+    },
+    {
+      title: "Draw",
+      rows: [
+        { keys: ["Click"], does: "Place, or add a vertex while tracing" },
+        { keys: ["Drag"], does: "Freehand a traced shape" },
+        { keys: ["Shift", "click"], does: "Lock that segment to 45°" },
+        { keys: ["Enter"], does: "Finish; reopens a selected traced shape" },
+        { keys: ["Double-click"], does: "Finish the shape" },
+        { keys: ["Backspace"], does: "Take back the last vertex" },
+        { keys: ["Escape"], does: "Drop the shape in progress" },
+      ],
+    },
+    {
+      title: "Edit what is placed",
+      rows: [
+        { keys: ["N"], does: "Next marker, and frame it" },
+        { keys: ["Shift", "N"], does: "Previous marker" },
+        { keys: ["Arrows"], does: "Nudge 0.5 m; Shift moves 5 m" },
+        { keys: ["Delete"], does: "Delete the selected marker" },
+        { keys: ["Escape"], does: "Deselect" },
+      ],
+    },
+    {
+      title: "Everything else",
+      rows: [
+        { keys: ["Ctrl", "Z"], does: "Undo" },
+        { keys: ["Ctrl", "Shift", "Z"], does: "Redo" },
+        { keys: ["Ctrl", "S"], does: "Save to the repo" },
+        { keys: ["M"], does: "Start or stop narrating" },
+        { keys: ["?"], does: "This sheet" },
+      ],
+    },
   ];
 
   let draft = $state<FlowFestSiteMarkerDraft>(emptyFlowFestSiteMarkerDraft());
@@ -52,6 +146,8 @@
   let interactionMode = $state<InteractionMode>("place");
   let view = $state({ ...MIDDLE_EARTH_VIEW });
   let svgElement = $state<SVGSVGElement | null>(null);
+  let mapWidth = $state(1);
+  let mapHeight = $state(1);
   let notice = $state(
     "Pick what you are placing, then press on the map and drag the way it faces."
   );
@@ -60,16 +156,51 @@
 
   let pointerId: number | null = null;
   let draggingHandleFor: string | null = null;
-  let panOrigin: { x: number; y: number; viewX: number; viewY: number } | null =
-    null;
+  /** Reactive because the map's cursor switches to grabbing while a drag runs. */
+  let panOrigin = $state<{
+    x: number;
+    y: number;
+    viewX: number;
+    viewY: number;
+  } | null>(null);
   let history: FlowFestSiteMarkerDraft[] = [];
+  let future: FlowFestSiteMarkerDraft[] = [];
+  /** The traced marker accepting vertices, or null when nothing is open. */
+  let tracingId = $state<string | null>(null);
+  let strokeOrigin: { x: number; y: number } | null = null;
+  /**
+   * Held Space is the hand tool every map has: it borrows pan for as long as
+   * the key is down and hands the tool back on release, without disturbing the
+   * mode the author actually chose in the switch.
+   */
+  let spaceHeld = $state(false);
+  let showHotkeys = $state(false);
+  let lastNudgeAt = 0;
 
+  const narration = createNarrationCapture();
+  let recordingElapsed = $state(0);
+
+  const viewHeight = $derived((view.width * mapHeight) / Math.max(mapWidth, 1));
+  /** Screen pixels to viewBox units, so strokes and dots keep a constant size. */
+  const pixelScale = $derived(view.width / Math.max(mapWidth, 1));
   const activePreset = $derived(getMarkerPreset(activePresetId));
   const selectedMarker = $derived(
     draft.markers.find((marker) => marker.id === selectedMarkerId) ?? null
   );
-  const incompleteCount = $derived(
-    draft.markers.filter((marker) => !markerReadiness(marker)).length
+  /**
+   * The two ways a marker can be unfinished need different instructions: a
+   * facing marker is waiting on a drag, a traced one is waiting on more points.
+   * One combined "needs a direction" line sends the author to the wrong gesture.
+   */
+  const unfinishedDirectionCount = $derived(
+    draft.markers.filter(
+      (marker) => !isTracedShape(marker.shape) && !markerReadiness(marker)
+    ).length
+  );
+  const unfinishedTraceCount = $derived(
+    draft.markers.filter(
+      (marker) => isTracedShape(marker.shape) && !markerReadiness(marker)
+    ).length
   );
   const presetsByGroup = $derived(
     FLOW_FEST_MARKER_GROUPS.map((group) => ({
@@ -79,18 +210,56 @@
       ),
     }))
   );
+  const tracingMarker = $derived(
+    draft.markers.find((marker) => marker.id === tracingId) ?? null
+  );
+  /** What the map is actually doing right now, mode switch or held Space. */
+  const effectiveMode = $derived<InteractionMode>(
+    spaceHeld ? "pan" : interactionMode
+  );
+  const flatPresets = $derived(
+    presetsByGroup.flatMap((group) => group.presets)
+  );
 
   onMount(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return;
-    const parsed = parseStoredFlowFestSiteMarkerDraft(stored);
-    if (parsed) {
-      draft = parsed;
-      report(
-        `Restored ${parsed.markers.length} marker${parsed.markers.length === 1 ? "" : "s"} from this browser.`,
-        "quiet"
-      );
+    if (stored) {
+      const parsed = parseStoredFlowFestSiteMarkerDraft(stored);
+      if (parsed) {
+        draft = parsed;
+        report(
+          `Restored ${parsed.markers.length} marker${parsed.markers.length === 1 ? "" : "s"} from this browser.`,
+          "quiet"
+        );
+      }
     }
+    return () => narration.dispose();
+  });
+
+  /**
+   * The transcript lives in the capture owner while it is being spoken and in
+   * the draft once it exists, so a reload or a save carries the words with the
+   * strokes they describe.
+   */
+  $effect(() => {
+    if (!narration.recording) return;
+    const timer = setInterval(() => {
+      recordingElapsed = narration.elapsedMs() ?? 0;
+    }, 500);
+    return () => clearInterval(timer);
+  });
+
+  $effect(() => {
+    const startedAt = narration.startedAt;
+    const segments = narration.segments;
+    const next: FlowFestNarration | null =
+      startedAt && segments.length > 0
+        ? { startedAt, segments: segments.map((segment) => ({ ...segment })) }
+        : null;
+    if (next === null && draft.narration === null) return;
+    if (next && draft.narration?.segments.length === next.segments.length) return;
+    draft.narration = next;
+    persist();
   });
 
   function report(message: string, kind: NoticeKind): void {
@@ -127,32 +296,77 @@
   }
 
   function remember(): void {
-    history = [...history.slice(-49), cloneFlowFestSiteMarkerDraft(draft)];
+    history = [...history.slice(-99), cloneFlowFestSiteMarkerDraft(draft)];
+    future = [];
   }
 
+  /**
+   * While a shape is being traced, undo means "take back that last point" —
+   * which is what a hand expects mid-stroke. Only once the trace is finished
+   * does undo start walking whole edits.
+   */
   function undo(): void {
+    const tracing = tracingMarker;
+    if (tracing && tracing.points.length > 0) {
+      draft.markers = draft.markers.map((marker) =>
+        marker.id === tracing.id
+          ? { ...marker, points: marker.points.slice(0, -1), closed: false }
+          : marker
+      );
+      persist();
+      report("Took back the last point.", "quiet");
+      return;
+    }
+    if (tracing) {
+      discardMarker(tracing.id);
+      tracingId = null;
+      report("Took back the start of that shape.", "quiet");
+      return;
+    }
+
     const previous = history.pop();
     if (!previous) {
       report("Nothing to undo.", "quiet");
       return;
     }
+    future = [...future.slice(-99), cloneFlowFestSiteMarkerDraft(draft)];
     draft = previous;
     persist();
     report("Undid the last change.", "quiet");
   }
 
-  function pointFromEvent(event: PointerEvent): ImagePoint | null {
+  function redo(): void {
+    const next = future.pop();
+    if (!next) {
+      report("Nothing to redo.", "quiet");
+      return;
+    }
+    history = [...history.slice(-99), cloneFlowFestSiteMarkerDraft(draft)];
+    draft = next;
+    persist();
+    report("Redid the last change.", "quiet");
+  }
+
+  /** Removes a marker without touching history; undo calls this mid-trace. */
+  function discardMarker(id: string): void {
+    draft.markers = draft.markers.filter((marker) => marker.id !== id);
+    if (selectedMarkerId === id) selectedMarkerId = null;
+    persist();
+  }
+
+  function pointFromClient(clientX: number, clientY: number): ImagePoint | null {
     if (!svgElement) return null;
     const bounds = svgElement.getBoundingClientRect();
     if (bounds.width === 0 || bounds.height === 0) return null;
     return {
-      x: view.x + ((event.clientX - bounds.left) / bounds.width) * view.width,
-      y: view.y + ((event.clientY - bounds.top) / bounds.height) * view.height,
+      x: view.x + ((clientX - bounds.left) / bounds.width) * view.width,
+      y: view.y + ((clientY - bounds.top) / bounds.height) * viewHeight,
     };
   }
 
-  /** Scale a screen-constant size into the current viewBox units. */
-  const pixelScale = $derived(view.width / FLOW_FEST_IMAGE.width);
+  function pointFromEvent(event: PointerEvent): ImagePoint | null {
+    return pointFromClient(event.clientX, event.clientY);
+  }
 
   function markerNear(point: ImagePoint): FlowFestSiteMarker | null {
     const reach = HIT_RADIUS_PIXELS * pixelScale;
@@ -171,13 +385,45 @@
     return closest;
   }
 
+  /**
+   * Capture keeps the drag alive when the pointer leaves the map, which matters
+   * when a circle's radius runs past the edge. It throws for a pointer the
+   * element never owned, and losing capture is not a reason to lose the drag.
+   */
+  function capturePointer(event: PointerEvent, capture: boolean): void {
+    const target = event.currentTarget as Element | null;
+    if (!target) return;
+    try {
+      if (capture) target.setPointerCapture(event.pointerId);
+      else target.releasePointerCapture(event.pointerId);
+    } catch {
+      /* The drag continues on the document-level move and up handlers. */
+    }
+  }
+
   function handlePointerDown(event: PointerEvent): void {
     const point = pointFromEvent(event);
     if (!point) return;
-    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    capturePointer(event, true);
     pointerId = event.pointerId;
 
-    if (interactionMode === "pan") {
+    /**
+     * Touching the map hands the keyboard back to the map. Without this, a
+     * preset button clicked a second ago still holds focus, and Space would
+     * press it again instead of picking up the hand tool.
+     */
+    const focused = document.activeElement;
+    if (focused instanceof HTMLElement && focused !== document.body) {
+      focused.blur();
+    }
+
+    /**
+     * Middle-drag pans from any mode without touching the keyboard, which is
+     * how every map behaves and what a mouse-only hand reaches for first.
+     */
+    const middleButton = event.button === 1;
+    if (effectiveMode === "pan" || middleButton) {
+      if (middleButton) event.preventDefault();
       panOrigin = {
         x: event.clientX,
         y: event.clientY,
@@ -187,9 +433,38 @@
       return;
     }
 
+    strokeOrigin = { x: event.clientX, y: event.clientY };
+
+    const tracing = tracingMarker;
+    if (tracing) {
+      const reach = HIT_RADIUS_PIXELS * pixelScale;
+      const closesTheLoop =
+        tracing.shape === "area" &&
+        tracing.points.length >= 2 &&
+        Math.hypot(point.x - tracing.anchor.x, point.y - tracing.anchor.y) <=
+          reach;
+      if (closesTheLoop) {
+        finishTrace();
+        return;
+      }
+      const previous = markerVertices(tracing).at(-1)!;
+      appendVertex(
+        tracing.id,
+        event.shiftKey ? snapVertex(previous, point) : point
+      );
+      return;
+    }
+
     const existing = markerNear(point);
     if (existing) {
       selectedMarkerId = existing.id;
+      if (isTracedShape(existing.shape)) {
+        report(
+          `${existing.label}. Use Continue tracing to add more points to it.`,
+          "quiet"
+        );
+        return;
+      }
       draggingHandleFor = existing.id;
       report(
         `${existing.label}. Drag to set its direction, or release to leave it.`,
@@ -199,9 +474,24 @@
     }
 
     remember();
-    const marker = createSiteMarker(activePresetId, point, draft.markers);
+    const marker = createSiteMarker(
+      activePresetId,
+      point,
+      draft.markers,
+      narration.elapsedMs()
+    );
     draft.markers = [...draft.markers, marker];
     selectedMarkerId = marker.id;
+    if (isTracedShape(marker.shape)) {
+      tracingId = marker.id;
+      draggingHandleFor = null;
+      persist();
+      report(
+        `Tracing ${marker.label}. Click each corner or drag along it, then press Enter${marker.shape === "area" ? " or click the first point" : ""} to finish.`,
+        "success"
+      );
+      return;
+    }
     draggingHandleFor = marker.shape === "point" ? null : marker.id;
     persist();
     report(
@@ -212,10 +502,54 @@
     );
   }
 
+  function appendVertex(id: string, point: ImagePoint): void {
+    draft.markers = draft.markers.map((marker) =>
+      marker.id === id
+        ? { ...marker, points: [...marker.points, { ...point }] }
+        : marker
+    );
+  }
+
+  function finishTrace(): void {
+    const tracing = tracingMarker;
+    tracingId = null;
+    strokeOrigin = null;
+    if (!tracing) return;
+    if (!markerReadiness(tracing)) {
+      discardMarker(tracing.id);
+      report(
+        tracing.shape === "area"
+          ? "An area needs at least three points, so that one was dropped."
+          : "A path needs at least two points, so that one was dropped.",
+        "quiet"
+      );
+      return;
+    }
+    draft.markers = draft.markers.map((marker) =>
+      marker.id === tracing.id
+        ? { ...marker, closed: marker.shape === "area" }
+        : marker
+    );
+    persist();
+    report(`Finished ${tracing.label}. ${describe(tracing)}`, "success");
+  }
+
+  function continueTrace(id: string): void {
+    const marker = draft.markers.find((candidate) => candidate.id === id);
+    if (!marker || !isTracedShape(marker.shape)) return;
+    remember();
+    tracingId = id;
+    selectedMarkerId = id;
+    draft.markers = draft.markers.map((candidate) =>
+      candidate.id === id ? { ...candidate, closed: false } : candidate
+    );
+    report(`Adding to ${marker.label}. Enter finishes it again.`, "quiet");
+  }
+
   function handlePointerMove(event: PointerEvent): void {
     if (pointerId !== event.pointerId) return;
 
-    if (interactionMode === "pan" && panOrigin && svgElement) {
+    if (panOrigin && svgElement) {
       const bounds = svgElement.getBoundingClientRect();
       if (bounds.width === 0 || bounds.height === 0) return;
       view.x =
@@ -223,8 +557,33 @@
         ((event.clientX - panOrigin.x) / bounds.width) * view.width;
       view.y =
         panOrigin.viewY -
-        ((event.clientY - panOrigin.y) / bounds.height) * view.height;
+        ((event.clientY - panOrigin.y) / bounds.height) * viewHeight;
       clampView();
+      return;
+    }
+
+    /**
+     * A drag inside an open trace is freehand: sample it by distance so a road
+     * traced with the hand keeps its curve without collecting a vertex per
+     * pointer event.
+     */
+    const tracing = tracingMarker;
+    if (tracing && strokeOrigin) {
+      const travelled = Math.hypot(
+        event.clientX - strokeOrigin.x,
+        event.clientY - strokeOrigin.y
+      );
+      if (travelled < CLICK_SLOP_PIXELS) return;
+      const point = pointFromEvent(event);
+      if (!point) return;
+      const last = markerVertices(tracing).at(-1)!;
+      if (
+        Math.hypot(point.x - last.x, point.y - last.y) <
+        TRACE_SAMPLE_PIXELS * pixelScale
+      ) {
+        return;
+      }
+      appendVertex(tracing.id, point);
       return;
     }
 
@@ -238,15 +597,202 @@
 
   function finishPointer(event: PointerEvent): void {
     if (pointerId !== event.pointerId) return;
-    (event.currentTarget as HTMLElement).releasePointerCapture?.(
-      event.pointerId
-    );
+    capturePointer(event, false);
     pointerId = null;
     panOrigin = null;
+    strokeOrigin = null;
+    if (tracingId) persist();
     if (draggingHandleFor) {
       draggingHandleFor = null;
       persist();
     }
+  }
+
+  function isTypingTarget(target: EventTarget | null): boolean {
+    const element = target as HTMLElement | null;
+    return (
+      !!element &&
+      (element.tagName === "INPUT" ||
+        element.tagName === "TEXTAREA" ||
+        element.isContentEditable)
+    );
+  }
+
+  /**
+   * Space, Enter and the arrows belong to whatever control has focus: Space and
+   * Enter press a button, the arrows walk a SegmentedControl. The map only gets
+   * them once focus is off the rails, which is why the map blurs on press.
+   */
+  function isControlTarget(target: EventTarget | null): boolean {
+    const element = target as HTMLElement | null;
+    return !!element?.closest?.(
+      "button, a[href], select, summary, [role='radio'], [role='tab'], [role='switch']"
+    );
+  }
+
+  /**
+   * The map's keys live here rather than in the app-wide shortcut manager on
+   * purpose. That manager's `global` context already binds bare `f` and `p`,
+   * Shift+F/L and Shift+digit for feedback, the prop drawer and theme
+   * switching — every one of which would fight a map key — and this is an
+   * authoring route whose keys have no business in the user-facing Shortcut
+   * Center. The canvas-local model follows `EffectPointSvgCanvas`.
+   */
+  function handleKeydown(event: KeyboardEvent): void {
+    if (isTypingTarget(event.target) || event.defaultPrevented) return;
+    const onControl = isControlTarget(event.target);
+
+    if (event.code === "Space") {
+      if (onControl) return;
+      event.preventDefault();
+      if (!event.repeat) spaceHeld = true;
+      return;
+    }
+
+    const accelerator = event.ctrlKey || event.metaKey;
+    const key = event.key.toLowerCase();
+
+    if (accelerator && key === "z" && !event.shiftKey) {
+      event.preventDefault();
+      undo();
+      return;
+    }
+    if (accelerator && (key === "y" || (key === "z" && event.shiftKey))) {
+      event.preventDefault();
+      redo();
+      return;
+    }
+    if (accelerator && key === "s") {
+      event.preventDefault();
+      void saveMarkers();
+      return;
+    }
+    if (accelerator) return;
+
+    if (event.key === "Enter") {
+      if (onControl) return;
+      event.preventDefault();
+      if (tracingId) finishTrace();
+      else if (selectedMarker && isTracedShape(selectedMarker.shape)) {
+        continueTrace(selectedMarker.id);
+      }
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      if (showHotkeys) showHotkeys = false;
+      else if (tracingId) cancelTrace();
+      else if (selectedMarkerId) selectedMarkerId = null;
+      return;
+    }
+
+    if (event.key.startsWith("Arrow")) {
+      /** Tab stays focus navigation; N cycles markers. See `isControlTarget`. */
+      if (onControl) return;
+      event.preventDefault();
+      const stepX = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+      const stepY = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
+      /**
+       * Arrows serve the selection when there is one and the window when there
+       * is not. That split is what every editor does and it never needs a mode.
+       */
+      if (selectedMarker && !tracingId) {
+        const distance = event.shiftKey
+          ? NUDGE_IMAGE_PIXELS_LARGE
+          : NUDGE_IMAGE_PIXELS;
+        nudgeSelected(stepX * distance, stepY * distance);
+      } else {
+        panBy(stepX * (event.shiftKey ? 4 : 1), stepY * (event.shiftKey ? 4 : 1));
+      }
+      return;
+    }
+
+    if (event.key === "Delete" || event.key === "Backspace") {
+      event.preventDefault();
+      if (tracingId) undo();
+      else if (selectedMarkerId) deleteMarker(selectedMarkerId);
+      return;
+    }
+
+    /**
+     * By code, not by key: Shift+[ types `{`, so reading `event.key` would make
+     * the group shortcut unreachable on a US layout.
+     */
+    if (event.code === "BracketLeft" || event.code === "BracketRight") {
+      event.preventDefault();
+      const delta = event.code === "BracketRight" ? 1 : -1;
+      if (event.shiftKey) stepPresetGroup(delta);
+      else stepPreset(delta);
+      return;
+    }
+
+    if (event.key === "?") {
+      event.preventDefault();
+      showHotkeys = !showHotkeys;
+      return;
+    }
+
+    if (event.key === "+" || event.key === "=") {
+      event.preventDefault();
+      zoom(1 / ZOOM_STEP);
+      return;
+    }
+    if (event.key === "-" || event.key === "_") {
+      event.preventDefault();
+      zoom(ZOOM_STEP);
+      return;
+    }
+
+    switch (key) {
+      case "1":
+        event.preventDefault();
+        view = { ...FULL_VIEW };
+        report("Whole site.", "quiet");
+        return;
+      case "2":
+        event.preventDefault();
+        view = { ...MIDDLE_EARTH_VIEW };
+        report("Middle Earth.", "quiet");
+        return;
+      case "3":
+        event.preventDefault();
+        fitToMarkers();
+        return;
+      case "z":
+        event.preventDefault();
+        if (selectedMarker) frameMarker(selectedMarker);
+        else report("Select something first, then Z frames it.", "quiet");
+        return;
+      case "h":
+        event.preventDefault();
+        interactionMode = interactionMode === "pan" ? "place" : "pan";
+        report(
+          interactionMode === "pan"
+            ? "Pan tool. Press H again for Place, or just hold Space."
+            : "Place tool.",
+          "quiet"
+        );
+        return;
+      case "n":
+        event.preventDefault();
+        cycleSelection(event.shiftKey ? -1 : 1);
+        return;
+      case "m":
+        event.preventDefault();
+        if (narration.recording) narration.stop();
+        else narration.start();
+        return;
+    }
+  }
+
+  function handleKeyup(event: KeyboardEvent): void {
+    if (event.code === "Space") spaceHeld = false;
+  }
+
+  /** A blurred window never delivers the keyup, so the hand tool would stick. */
+  function releaseHeldKeys(): void {
+    spaceHeld = false;
   }
 
   function handleNoun(shape: FlowFestSiteMarker["shape"]): string {
@@ -256,37 +802,224 @@
   }
 
   function clampView(): void {
-    view.width = Math.min(
-      Math.max(view.width, 120),
-      FLOW_FEST_IMAGE.width
-    );
-    view.height = Math.min(
-      Math.max(view.height, 120),
-      FLOW_FEST_IMAGE.height
-    );
-    view.x = Math.min(
-      Math.max(view.x, 0),
-      FLOW_FEST_IMAGE.width - view.width
-    );
+    view.width = Math.min(Math.max(view.width, 120), FLOW_FEST_IMAGE.width);
+    /** A window taller than the picture just shows the void; keep it inside. */
+    if (viewHeight > FLOW_FEST_IMAGE.height) {
+      view.width =
+        (FLOW_FEST_IMAGE.height * Math.max(mapWidth, 1)) / Math.max(mapHeight, 1);
+    }
+    view.x = Math.min(Math.max(view.x, 0), FLOW_FEST_IMAGE.width - view.width);
     view.y = Math.min(
       Math.max(view.y, 0),
-      FLOW_FEST_IMAGE.height - view.height
+      Math.max(FLOW_FEST_IMAGE.height - viewHeight, 0)
     );
   }
 
   function zoom(factor: number): void {
     const centreX = view.x + view.width / 2;
-    const centreY = view.y + view.height / 2;
+    const centreY = view.y + viewHeight / 2;
     view.width *= factor;
-    view.height *= factor;
     view.x = centreX - view.width / 2;
-    view.y = centreY - view.height / 2;
+    clampView();
+    view.y = centreY - viewHeight / 2;
+    clampView();
+  }
+
+  /**
+   * Zoom toward a screen position rather than the window centre. Every map
+   * works this way: the ground under the cursor is what you are aiming at, so
+   * it must stay under the cursor while the scale changes. Centre-zoom makes
+   * the target slide away and forces a corrective pan after every step.
+   */
+  function zoomAt(factor: number, clientX: number, clientY: number): void {
+    if (!svgElement) {
+      zoom(factor);
+      return;
+    }
+    const bounds = svgElement.getBoundingClientRect();
+    if (bounds.width === 0 || bounds.height === 0) return;
+    const anchor = pointFromClient(clientX, clientY);
+    if (!anchor) return;
+    const fractionX = (clientX - bounds.left) / bounds.width;
+    const fractionY = (clientY - bounds.top) / bounds.height;
+    view.width *= factor;
+    clampView();
+    view.x = anchor.x - fractionX * view.width;
+    view.y = anchor.y - fractionY * viewHeight;
     clampView();
   }
 
   function handleWheel(event: WheelEvent): void {
     event.preventDefault();
-    zoom(event.deltaY > 0 ? 1.12 : 1 / 1.12);
+    /** Shift+wheel is the standard sideways scroll; keep it a pan, not a zoom. */
+    if (event.shiftKey && !event.ctrlKey && !event.metaKey) {
+      panBy(event.deltaY > 0 ? 1 : -1, 0);
+      return;
+    }
+    const step =
+      event.ctrlKey || event.metaKey ? FINE_ZOOM_STEP : WHEEL_ZOOM_STEP;
+    zoomAt(event.deltaY > 0 ? step : 1 / step, event.clientX, event.clientY);
+  }
+
+  function panBy(stepsX: number, stepsY: number): void {
+    view.x += stepsX * view.width * PAN_STEP_FRACTION;
+    view.y += stepsY * viewHeight * PAN_STEP_FRACTION;
+    clampView();
+  }
+
+  /** Centres a window of `width` image pixels on a point, then clamps it. */
+  function showWindow(centre: ImagePoint, width: number): void {
+    view.width = Math.min(Math.max(width, 120), FLOW_FEST_IMAGE.width);
+    clampView();
+    view.x = centre.x - view.width / 2;
+    view.y = centre.y - viewHeight / 2;
+    clampView();
+  }
+
+  function boundsOf(points: readonly ImagePoint[]): {
+    centre: ImagePoint;
+    width: number;
+  } | null {
+    if (points.length === 0) return null;
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    for (const point of points) {
+      minX = Math.min(minX, point.x);
+      minY = Math.min(minY, point.y);
+      maxX = Math.max(maxX, point.x);
+      maxY = Math.max(maxY, point.y);
+    }
+    const spanX = maxX - minX;
+    const spanY = maxY - minY;
+    /**
+     * The window's height follows its width through the map's aspect ratio, so
+     * a tall box has to be fitted by the width that produces enough height.
+     */
+    const aspect = Math.max(mapWidth, 1) / Math.max(mapHeight, 1);
+    const width = Math.max(spanX, spanY * aspect) * (1 + FIT_PADDING * 2);
+    return { centre: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }, width };
+  }
+
+  function markerPoints(marker: FlowFestSiteMarker): ImagePoint[] {
+    return marker.handle
+      ? [...markerVertices(marker), marker.handle]
+      : markerVertices(marker);
+  }
+
+  function fitToMarkers(): void {
+    const fitted = boundsOf(draft.markers.flatMap(markerPoints));
+    if (!fitted) {
+      report("Nothing placed yet, so there is nothing to fit to.", "quiet");
+      return;
+    }
+    showWindow(fitted.centre, fitted.width);
+    report("Framed everything placed.", "quiet");
+  }
+
+  function frameMarker(marker: FlowFestSiteMarker): void {
+    selectedMarkerId = marker.id;
+    const fitted = boundsOf(markerPoints(marker));
+    if (!fitted) return;
+    showWindow(fitted.centre, Math.max(fitted.width, FRAME_MIN_WIDTH));
+  }
+
+  function stepPreset(delta: number): void {
+    const list = flatPresets;
+    if (list.length === 0) return;
+    const current = list.findIndex((preset) => preset.id === activePresetId);
+    const next = list[(current + delta + list.length) % list.length]!;
+    activePresetId = next.id;
+    report(`${next.label}. ${next.instruction}`, "quiet");
+  }
+
+  function stepPresetGroup(delta: number): void {
+    const groups = presetsByGroup.filter((group) => group.presets.length > 0);
+    if (groups.length === 0) return;
+    const current = Math.max(
+      0,
+      groups.findIndex((group) =>
+        group.presets.some((preset) => preset.id === activePresetId)
+      )
+    );
+    const next = groups[(current + delta + groups.length) % groups.length]!;
+    const preset = next.presets[0]!;
+    activePresetId = preset.id;
+    report(`${next.label} — ${preset.label}. ${preset.instruction}`, "quiet");
+  }
+
+  function cycleSelection(delta: number): void {
+    if (draft.markers.length === 0) {
+      report("Nothing placed yet.", "quiet");
+      return;
+    }
+    const current = draft.markers.findIndex(
+      (marker) => marker.id === selectedMarkerId
+    );
+    const index =
+      current < 0
+        ? delta > 0
+          ? 0
+          : draft.markers.length - 1
+        : (current + delta + draft.markers.length) % draft.markers.length;
+    const marker = draft.markers[index]!;
+    frameMarker(marker);
+    report(`${marker.label}. ${describe(marker)}`, "quiet");
+  }
+
+  /**
+   * Nudging moves the whole marker — every vertex and its handle — because a
+   * shape whose first point drifts away from the rest is not what "move it a
+   * bit left" means. Runs of arrow presses collapse into one undo step.
+   */
+  function nudgeSelected(deltaX: number, deltaY: number): void {
+    const marker = selectedMarker;
+    if (!marker) return;
+    const now = Date.now();
+    if (now - lastNudgeAt > NUDGE_COALESCE_MS) remember();
+    lastNudgeAt = now;
+    const shift = (point: ImagePoint): ImagePoint => ({
+      x: point.x + deltaX,
+      y: point.y + deltaY,
+    });
+    draft.markers = draft.markers.map((candidate) =>
+      candidate.id === marker.id
+        ? {
+            ...candidate,
+            anchor: shift(candidate.anchor),
+            handle: candidate.handle ? shift(candidate.handle) : null,
+            points: candidate.points.map(shift),
+          }
+        : candidate
+    );
+    persist();
+  }
+
+  /**
+   * Holding Shift while placing the next vertex locks the segment to 45-degree
+   * increments. Roads and tent rows run straight far more often than not.
+   */
+  function snapVertex(from: ImagePoint, to: ImagePoint): ImagePoint {
+    const deltaX = to.x - from.x;
+    const deltaY = to.y - from.y;
+    const distance = Math.hypot(deltaX, deltaY);
+    if (distance < 1e-6) return to;
+    const increment = Math.PI / 4;
+    const angle = Math.round(Math.atan2(deltaY, deltaX) / increment) * increment;
+    return {
+      x: from.x + Math.cos(angle) * distance,
+      y: from.y + Math.sin(angle) * distance,
+    };
+  }
+
+  function cancelTrace(): void {
+    const tracing = tracingMarker;
+    tracingId = null;
+    strokeOrigin = null;
+    if (!tracing) return;
+    discardMarker(tracing.id);
+    report(`Dropped ${tracing.label}.`, "quiet");
   }
 
   function renameSelected(value: string): void {
@@ -325,13 +1058,6 @@
     );
     persist();
     report("Cleared its direction. Drag from the marker to set a new one.", "quiet");
-  }
-
-  function focusMarker(marker: FlowFestSiteMarker): void {
-    selectedMarkerId = marker.id;
-    view.x = marker.anchor.x - view.width / 2;
-    view.y = marker.anchor.y - view.height / 2;
-    clampView();
   }
 
   async function copyMarkers(): Promise<void> {
@@ -399,7 +1125,28 @@
     if (record.radiusMeters !== null) parts.push(`r ${record.radiusMeters} m`);
     if (record.runLengthMeters !== null)
       parts.push(`${record.runLengthMeters} m long`);
+    if (record.vertices !== null) parts.push(`${record.vertices.length} pts`);
+    if (record.areaSquareMeters !== null)
+      parts.push(formatArea(record.areaSquareMeters));
+    if (record.pathLengthMeters !== null)
+      parts.push(`${Math.round(record.pathLengthMeters)} m long`);
     return parts.join(" · ");
+  }
+
+  /** Hectares once a field stops being legible in square metres. */
+  function formatArea(squareMeters: number): string {
+    return squareMeters >= 10_000
+      ? `${(squareMeters / 10_000).toFixed(2)} ha`
+      : `${Math.round(squareMeters)} m²`;
+  }
+
+  function pointsAttribute(points: readonly ImagePoint[]): string {
+    return points.map((point) => `${point.x},${point.y}`).join(" ");
+  }
+
+  function formatElapsed(milliseconds: number): string {
+    const total = Math.floor(milliseconds / 1000);
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
   }
 
   function compass(degrees: number): string {
@@ -417,28 +1164,38 @@
   <title>Flow Fest site markers</title>
 </svelte:head>
 
+<svelte:window
+  onkeydown={handleKeydown}
+  onkeyup={handleKeyup}
+  onblur={releaseHeldKeys}
+/>
+
 <main class="marker-page">
   <header class="page-head">
     <div>
       <h1>Flow Fest site markers</h1>
       <p class="lede">
-        Place what is actually there and say which way it faces. Everything lands
-        in world metres on the registered orthophoto, in the same frame as the
-        road traces, so an agent can build from it directly.
+        Place what is actually there, trace what has a shape, and say which way
+        it faces. Turn on Narrate and talk while you draw: the words are stamped
+        against the same clock as the strokes, so what you say lands next to the
+        thing you were pointing at. Everything saves in world metres on the
+        registered orthophoto, in the same frame as the road traces.
       </p>
     </div>
     <div class="head-actions">
-      <SegmentedControl
-        options={MODE_OPTIONS}
-        value={interactionMode}
-        onchange={(next) => (interactionMode = next as InteractionMode)}
-        ariaLabel="Map interaction"
-        size="sm"
-      />
-      <PanelButton variant="secondary" onclick={() => zoom(1 / 1.35)}>
+      <div class="mode-switch">
+        <SegmentedControl
+          options={MODE_OPTIONS}
+          value={effectiveMode}
+          onchange={(next) => (interactionMode = next as InteractionMode)}
+          ariaLabel="Map interaction"
+          size="sm"
+        />
+      </div>
+      <PanelButton variant="secondary" onclick={() => zoom(1 / ZOOM_STEP)}>
         Zoom in
       </PanelButton>
-      <PanelButton variant="secondary" onclick={() => zoom(1.35)}>
+      <PanelButton variant="secondary" onclick={() => zoom(ZOOM_STEP)}>
         Zoom out
       </PanelButton>
       <PanelButton
@@ -457,10 +1214,46 @@
       >
         Whole site
       </PanelButton>
+      <PanelButton variant="secondary" onclick={fitToMarkers}>
+        Fit to placed
+      </PanelButton>
+      <PanelButton
+        variant={narration.recording ? "primary" : "secondary"}
+        onclick={() => (narration.recording ? narration.stop() : narration.start())}
+        ariaPressed={narration.recording}
+      >
+        {narration.recording
+          ? `Narrating ${formatElapsed(recordingElapsed)}`
+          : "Narrate"}
+      </PanelButton>
+      <PanelButton
+        variant="secondary"
+        onclick={() => (showHotkeys = !showHotkeys)}
+        ariaPressed={showHotkeys}
+        ariaLabel="Keyboard shortcuts"
+      >
+        Keys ?
+      </PanelButton>
     </div>
   </header>
 
   <p class="notice notice--{noticeKind}" role="status">{notice}</p>
+
+  {#if narration.error}
+    <p class="notice notice--error" role="status">{narration.error}</p>
+  {:else if narration.recording || narration.segments.length > 0}
+    <p class="notice notice--narrating" role="status" aria-live="off">
+      <span class="narration-count">
+        {narration.segments.length}
+        {narration.segments.length === 1 ? "line" : "lines"} captured
+      </span>
+      <span class="narration-heard">
+        {narration.interim ||
+          narration.segments.at(-1)?.text ||
+          "Listening. Say what you are pointing at."}
+      </span>
+    </p>
+  {/if}
 
   <div class="workspace">
     <section class="rail rail--left" aria-label="What to place">
@@ -495,18 +1288,42 @@
     </section>
 
     <section class="map-shell" aria-label="Site map">
-      <p class="instruction">{activePreset.instruction}</p>
+      <div class="map-bar">
+        <p class="instruction">
+          {#if tracingMarker}
+            Tracing {tracingMarker.label} — {markerVertices(tracingMarker).length}
+            {markerVertices(tracingMarker).length === 1 ? "point" : "points"}.
+            Enter finishes, Backspace takes one back, Shift snaps to 45°, Escape
+            drops it.
+          {:else}
+            {activePreset.instruction}
+          {/if}
+        </p>
+        <p class="hint">
+          Hold Space or middle-drag to pan. Scroll zooms at the cursor. Press ?
+          for every key.
+        </p>
+        {#if tracingMarker}
+          <PanelButton variant="primary" onclick={finishTrace}>
+            Finish shape
+          </PanelButton>
+        {/if}
+      </div>
       <svg
         bind:this={svgElement}
+        bind:clientWidth={mapWidth}
+        bind:clientHeight={mapHeight}
         class="map"
-        class:map--pan={interactionMode === "pan"}
-        viewBox="{view.x} {view.y} {view.width} {view.height}"
+        class:map--pan={effectiveMode === "pan"}
+        class:map--panning={panOrigin !== null}
+        viewBox="{view.x} {view.y} {view.width} {viewHeight}"
         role="application"
         aria-label="Registered Flow Fest orthophoto with placed site markers"
         onpointerdown={handlePointerDown}
         onpointermove={handlePointerMove}
         onpointerup={finishPointer}
         onpointercancel={finishPointer}
+        ondblclick={() => tracingId && finishTrace()}
         onwheel={handleWheel}
       >
         <image
@@ -520,11 +1337,36 @@
         {#each draft.markers as marker (marker.id)}
           {@const selected = marker.id === selectedMarkerId}
           {@const tip = arrowTip(marker)}
+          {@const vertices = markerVertices(marker)}
           <g
             class="marker"
             class:marker--selected={selected}
             class:marker--incomplete={!markerReadiness(marker)}
+            class:marker--tracing={marker.id === tracingId}
           >
+            {#if isTracedShape(marker.shape) && vertices.length > 1}
+              {#if marker.shape === "area" && marker.closed}
+                <polygon
+                  class="marker-area"
+                  points={pointsAttribute(vertices)}
+                  stroke-width={2 * pixelScale}
+                />
+              {:else}
+                <polyline
+                  class="marker-trace"
+                  points={pointsAttribute(vertices)}
+                  stroke-width={3 * pixelScale}
+                />
+              {/if}
+              {#each vertices as vertex, index (index)}
+                <circle
+                  class="marker-vertex"
+                  cx={vertex.x}
+                  cy={vertex.y}
+                  r={2.5 * pixelScale}
+                />
+              {/each}
+            {/if}
             {#if marker.shape === "circle" && tip}
               <circle
                 class="marker-circle"
@@ -572,6 +1414,44 @@
           </g>
         {/each}
       </svg>
+
+      {#if showHotkeys}
+        <!--
+          The sheet floats over the map rather than sitting in the column, so
+          opening it moves nothing. Escape and the Keys button both close it.
+        -->
+        <div class="hotkeys" transition:flyFade={{ y: 6 }}>
+          <div class="hotkeys-head">
+            <h2>Keys</h2>
+            <PanelButton
+              variant="secondary"
+              onclick={() => (showHotkeys = false)}
+            >
+              Close
+            </PanelButton>
+          </div>
+          <div class="hotkeys-grid">
+            {#each HOTKEY_GROUPS as group (group.title)}
+              <section class="hotkey-group">
+                <h3>{group.title}</h3>
+                <dl>
+                  {#each group.rows as row (row.does)}
+                    <div class="hotkey-row">
+                      <dt>
+                        {#each row.keys as chunk, index (chunk)}
+                          {#if index > 0}<span class="hotkey-plus">+</span>{/if}
+                          <kbd>{chunk}</kbd>
+                        {/each}
+                      </dt>
+                      <dd>{row.does}</dd>
+                    </div>
+                  {/each}
+                </dl>
+              </section>
+            {/each}
+          </div>
+        </div>
+      {/if}
     </section>
 
     <section class="rail rail--right" aria-label="Placed markers">
@@ -579,11 +1459,18 @@
         Placed
         <span class="rail-count">{draft.markers.length}</span>
       </h2>
-      {#if incompleteCount > 0}
+      {#if unfinishedDirectionCount > 0}
         <p class="warn">
-          {incompleteCount}
-          {incompleteCount === 1 ? "marker still needs" : "markers still need"} a
-          direction. Press one on the map and drag.
+          {unfinishedDirectionCount}
+          {unfinishedDirectionCount === 1 ? "marker still needs" : "markers still need"}
+          a direction. Press one on the map and drag.
+        </p>
+      {/if}
+      {#if unfinishedTraceCount > 0}
+        <p class="warn">
+          {unfinishedTraceCount}
+          {unfinishedTraceCount === 1 ? "shape needs" : "shapes need"} more points.
+          Select it, press Continue tracing, then click or drag along the map.
         </p>
       {/if}
 
@@ -601,7 +1488,7 @@
                 class="marker-row"
                 class:marker-row--active={marker.id === selectedMarkerId}
                 aria-pressed={marker.id === selectedMarkerId}
-                onclick={() => focusMarker(marker)}
+                onclick={() => frameMarker(marker)}
               >
                 <span class="marker-row-label">{marker.label}</span>
                 <span class="marker-row-detail">{describe(marker)}</span>
@@ -632,7 +1519,15 @@
             ></textarea>
           </label>
           <div class="editor-actions">
-            {#if editing.shape !== "point"}
+            {#if isTracedShape(editing.shape)}
+              <PanelButton
+                variant="secondary"
+                onclick={() => continueTrace(editing.id)}
+                disabled={editing.id === tracingId}
+              >
+                Continue tracing
+              </PanelButton>
+            {:else if editing.shape !== "point"}
               <PanelButton
                 variant="secondary"
                 onclick={() => clearHandle(editing.id)}
@@ -676,7 +1571,12 @@
           Copy JSON
         </PanelButton>
         <PanelButton variant="secondary" onclick={undo}>Undo</PanelButton>
+        <PanelButton variant="secondary" onclick={redo}>Redo</PanelButton>
       </div>
+      <p class="empty">
+        Ctrl+Z undoes, Ctrl+Shift+Z redoes, Enter finishes a traced shape,
+        Delete removes the selected one.
+      </p>
     </section>
   </div>
 </main>
@@ -862,23 +1762,167 @@
   }
 
   .map-shell {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 8px;
     min-width: 0;
   }
 
+  .map-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 12px;
+    /**
+     * The bar keeps a fixed height because its right-hand action only exists
+     * while a shape is open. Without the reservation, starting and finishing a
+     * trace would nudge the map up and down under the pointer.
+     */
+    min-height: 40px;
+  }
+
   .instruction {
+    flex: 0 1 auto;
     margin: 0;
     font-size: 0.875rem;
     color: var(--theme-text-secondary, #9aa7b4);
   }
 
+  .hint {
+    /** Shrinkable, or a narrow bar pushes it off the right of the viewport. */
+    flex: 0 1 auto;
+    min-width: 0;
+    /** Sits beside the instruction; the auto margin keeps the button right. */
+    margin: 0 auto 0 0;
+    font-size: 0.75rem;
+    color: var(--theme-text-tertiary, #7d8894);
+  }
+
+  /**
+   * The sheet floats over the map instead of taking a row in the column, so
+   * opening and closing it never moves the map under the pointer.
+   */
+  .hotkeys {
+    position: absolute;
+    inset: 48px 0 auto 0;
+    z-index: 4;
+    max-height: calc(100% - 60px);
+    overflow-y: auto;
+    padding: 14px 16px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--theme-border, #30363d);
+    background: var(--theme-surface, #0d1117);
+    box-shadow: 0 18px 44px rgb(0 0 0 / 55%);
+  }
+
+  .hotkeys-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .hotkeys-head h2 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .hotkeys-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 10px 22px;
+  }
+
+  .hotkey-group h3 {
+    margin: 0 0 4px;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--theme-text-secondary, #9aa7b4);
+  }
+
+  .hotkey-group dl {
+    display: grid;
+    gap: 3px;
+    margin: 0;
+  }
+
+  .hotkey-row {
+    display: grid;
+    grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .hotkey-row dt {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    justify-content: flex-end;
+  }
+
+  .hotkey-row dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--theme-text-secondary, #9aa7b4);
+  }
+
+  .hotkeys kbd {
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--theme-border, #30363d);
+    border-bottom-width: 2px;
+    background: var(--theme-card-bg, #161b22);
+    color: var(--theme-text, #e6edf3);
+    font-family: inherit;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .hotkey-plus {
+    font-size: 0.6875rem;
+    color: var(--theme-text-tertiary, #7d8894);
+  }
+
+  .notice--narrating {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    border-color: var(--theme-accent, #4493f8);
+  }
+
+  .narration-count {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-secondary, #9aa7b4);
+  }
+
+  .narration-heard {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /**
+   * SegmentedControl stretches to its container by default, so two five-letter
+   * labels would each take a third of a 4K header. `flex-basis: auto` resolves
+   * to `width`, so the width has to be capped, not just the basis.
+   */
+  .mode-switch {
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 220px;
+  }
+
   .map {
     display: block;
     width: 100%;
-    aspect-ratio: 1 / 1;
-    max-height: calc(100vh - 200px);
+    height: clamp(320px, calc(100vh - 210px), 2100px);
     border-radius: 10px;
     border: 1px solid var(--theme-border, #30363d);
     background: #000;
@@ -888,6 +1932,44 @@
 
   .map--pan {
     cursor: grab;
+  }
+
+  .map--panning {
+    cursor: grabbing;
+  }
+
+  /**
+   * The desktop tiers own the whole viewport, so the map takes whatever the
+   * head, notice and bar leave rather than subtracting a guessed constant. A
+   * constant was always wrong somewhere — the lede wraps to a different number
+   * of lines at each width — and the map ran past the bottom of the screen.
+   */
+  @media (min-width: 1201px) {
+    .marker-page {
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .workspace {
+      align-items: stretch;
+      /** An `auto` row would grow to the SVG's intrinsic square height. */
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .rail {
+      max-height: 100%;
+    }
+
+    .map-shell {
+      min-height: 0;
+    }
+
+    /** Basis 0, so the square SVG contributes no intrinsic height to the row. */
+    .map {
+      flex: 1 1 0;
+      height: 0;
+      min-height: 0;
+    }
   }
 
   .marker-dot {
@@ -917,6 +1999,31 @@
     stroke: var(--theme-accent, #4493f8);
     stroke-width: 2;
     vector-effect: non-scaling-stroke;
+  }
+
+  .marker-area {
+    fill: color-mix(in srgb, var(--theme-accent, #4493f8) 18%, transparent);
+    stroke: var(--theme-accent, #4493f8);
+    vector-effect: non-scaling-stroke;
+  }
+
+  .marker-trace {
+    fill: none;
+    stroke: var(--theme-accent, #4493f8);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .marker--tracing .marker-trace,
+  .marker--tracing .marker-area {
+    stroke: var(--semantic-warning, #d29922);
+    stroke-dasharray: 6 4;
+  }
+
+  .marker-vertex {
+    fill: #fff;
+    opacity: 0.85;
   }
 
   .marker-text {
@@ -956,10 +2063,21 @@
     border: 1px solid var(--theme-border, #30363d);
   }
 
-  .editor-actions,
-  .rail-actions {
+  .editor-actions {
     display: flex;
     flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /**
+   * A wrapping flex row strands Redo on a line of its own at most rail widths,
+   * and three tracks in a ~315px rail is too narrow for "Copy JSON" to stay on
+   * one line. Two columns of two is a deliberate composition: no orphan row, no
+   * wrapped label, and Save keeps its accent fill to read as the primary.
+   */
+  .rail-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -975,17 +2093,119 @@
     color: var(--semantic-warning, #d29922);
   }
 
+  /**
+   * Wide canvas buys a second preset column, not larger controls: seventeen
+   * presets stop scrolling and the roads group becomes visible without a hunt.
+   */
+  @media (min-width: 2200px) {
+    .workspace {
+      grid-template-columns: minmax(0, 420px) minmax(0, 1fr) minmax(0, 400px);
+    }
+
+    .preset-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+  }
+
+  /**
+   * Once the columns collapse the map is the workspace, so it leads and the
+   * picker follows it. Leaving the picker on top pushed the map past half the
+   * viewport at 820 wide — that is hiding the workspace, not recomposing for
+   * it. The lede folds away because the instruction line above the map already
+   * says what the current preset wants, and the presets flow into as many
+   * columns as fit under a capped height.
+   */
   @media (max-width: 1200px) {
     .workspace {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    .rail {
+    .lede {
+      display: none;
+    }
+
+    .map-shell {
+      order: -1;
+    }
+
+    .rail--left {
+      max-height: 30vh;
+    }
+
+    .rail--right {
       max-height: none;
     }
 
+    .preset-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 4px;
+    }
+
     .map {
-      max-height: 70vh;
+      height: 58vh;
+    }
+  }
+
+  /** A phone has less height to spend on the picker below the map. */
+  @media (max-width: 700px) {
+    .rail--left {
+      max-height: 34vh;
+    }
+
+    .map {
+      height: 46vh;
+    }
+
+    /** Keyboard guidance on a touch device is a row of wasted height. */
+    .hint {
+      display: none;
+    }
+  }
+
+  /**
+   * Short and wide (a folded phone in landscape) is a height problem, not a
+   * width problem. Stacking there buries the map under the picker, so the
+   * columns come back, the lede folds away, and the placed-marker rail moves
+   * under the map where it can scroll without stealing map height.
+   */
+  @media (max-height: 620px) {
+    .marker-page {
+      gap: 8px;
+      padding: 10px;
+    }
+
+    .lede {
+      display: none;
+    }
+
+    .workspace {
+      grid-template-columns: minmax(0, 210px) minmax(0, 1fr);
+    }
+
+    /* Two columns again, so the picker returns to the left of the map. */
+    .map-shell {
+      order: 0;
+    }
+
+    .rail--left {
+      max-height: none;
+    }
+
+    .rail--right {
+      grid-column: 1 / -1;
+      max-height: 40vh;
+    }
+
+    .preset-list {
+      display: flex;
+      grid-template-columns: none;
+    }
+
+    .map {
+      height: calc(100vh - 150px);
     }
   }
 </style>

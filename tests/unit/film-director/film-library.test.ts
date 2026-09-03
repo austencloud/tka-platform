@@ -15,6 +15,7 @@ import { getStageCoordinateFrame } from "../../../src/lib/shared/3d/environments
 import { directorFloorY } from "../../../src/routes/test/film-director/_lib/camera-language";
 import { resolveStepChange } from "../../../src/routes/test/film-director/_lib/director-step-changes";
 import { resolveHeldStep } from "../../../src/routes/test/film-director/_lib/director-step-holds";
+import { DIRECTOR_SCENE_CATEGORIES } from "../../../src/routes/test/film-director/_lib/film-director-schema";
 
 import { FILM_LIBRARY } from "../../../src/routes/test/film-director/_films/index";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
@@ -442,9 +443,63 @@ describe("film library", () => {
     }
   });
 
-  it("proving grounds stages the orbit direction pair identically except for the sign", () => {
+  it("every proving grounds scene declares what it is chiefly about", () => {
     const proving = FILM_LIBRARY.find((entry) => entry.key === "proving")!;
     const resolved = resolveFilmDirectorSpec(proving.film);
+
+    // The scene index groups this film by category, so an uncategorized scene
+    // lands in a stray "Uncategorized" heading below everything else instead of
+    // beside the scenes it belongs with. A reference film is browsed by
+    // subject; a scene with no subject is a scene nobody finds.
+    const uncategorized = resolved.scenes
+      .filter((scene) => scene.category === undefined)
+      .map((scene) => scene.id);
+    expect(uncategorized).toEqual([]);
+
+    // Every category the schema declares is spent. A category nothing uses is
+    // a heading that can never appear, and the enum is closed precisely so the
+    // list stays a real description of the film rather than an aspiration.
+    const used = new Set(resolved.scenes.map((scene) => scene.category));
+    expect([...DIRECTOR_SCENE_CATEGORIES].filter((c) => !used.has(c))).toEqual(
+      []
+    );
+
+    // Films are films, not references: the other eight state no category and
+    // must keep resolving without one rather than acquiring a default.
+    for (const entry of FILM_LIBRARY.filter((f) => f.key !== "proving")) {
+      const other = resolveFilmDirectorSpec(entry.film);
+      for (const scene of other.scenes) {
+        expect(scene.category).toBeUndefined();
+        expect("category" in scene).toBe(false);
+      }
+    }
+  });
+
+  it("a 90 degree orbit mirrors when only the direction flips", () => {
+    const proving = FILM_LIBRARY.find((entry) => entry.key === "proving")!;
+
+    // Proving Grounds used to carry a counterclockwise twin of this scene,
+    // staged identically, so the pair could be judged side by side while the
+    // sign convention was still open. The convention is settled — clockwise
+    // decreases azimuth — so the twin is built here instead. The invariant is
+    // worth guarding; a second 16-beat scene in a reference film is not.
+    const authored = proving.film.scenes.find(
+      (scene) => scene.id === "orbit-clockwise"
+    )!;
+    const flipped = {
+      ...authored,
+      id: "orbit-counterclockwise",
+      title: "Orbit Counterclockwise",
+      camera: {
+        ...authored.camera,
+        moves: [{ move: "orbit", amount: { degrees: 90 }, direction: "ccw" }],
+      },
+    } as (typeof proving.film.scenes)[number];
+
+    const resolved = resolveFilmDirectorSpec({
+      ...proving.film,
+      scenes: [authored, flipped],
+    });
 
     const cw = resolved.scenes.find((scene) => scene.id === "orbit-clockwise")!;
     const ccw = resolved.scenes.find(

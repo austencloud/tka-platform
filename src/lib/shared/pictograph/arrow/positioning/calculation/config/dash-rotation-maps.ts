@@ -31,11 +31,22 @@ export const dashCounterClockwiseMap: Record<GridLocation, number> = {
 };
 
 /**
- * DASH rotation override maps from the OG desktop calculator's
- * DashRotAngleCalculator._get_rot_angle_override_according_to_loc().
+ * DASH rotation override maps. A DASH override quarter-turns the glyph; it
+ * cannot reuse the STATIC override maps because those turn it by 180 degrees.
  *
- * A DASH override quarter-turns the glyph. It cannot reuse the STATIC
- * override maps because those turn the glyph by 180 degrees instead.
+ * The two maps are MIRROR IMAGES, not independent tables. A counter-clockwise
+ * DASH arrow renders with `scale(-1, 1)` (shouldMirrorArrow in
+ * arrow-positioning-orchestrator), and a horizontal flip reverses rotational
+ * sense, so for every location:
+ *
+ *   ccw[loc] === (360 - cw[mirrorAcrossVerticalAxis(loc)]) % 360
+ *
+ * The normal dashClockwiseMap/dashCounterClockwiseMap pair above already
+ * satisfies that identity. The counter-clockwise override table did not: it
+ * was transcribed with its NORTH/SOUTH and NE/SE, NW/SW keys swapped, which
+ * quarter-turned the glyph the wrong way at six of the eight locations (and
+ * not at all at SE and NW). Symptom: on a 1-turn CCW dash at NORTH the glyph
+ * points down, and pressing X swung it right instead of left.
  */
 export const dashClockwiseOverrideMap: Partial<Record<GridLocation, number>> = {
   [GridLocation.NORTH]: 270,
@@ -51,14 +62,14 @@ export const dashClockwiseOverrideMap: Partial<Record<GridLocation, number>> = {
 export const dashCounterClockwiseOverrideMap: Partial<
   Record<GridLocation, number>
 > = {
-  [GridLocation.NORTH]: 270,
+  [GridLocation.NORTH]: 90,
   [GridLocation.EAST]: 180,
-  [GridLocation.SOUTH]: 90,
+  [GridLocation.SOUTH]: 270,
   [GridLocation.WEST]: 0,
-  [GridLocation.NORTHEAST]: 225,
-  [GridLocation.SOUTHEAST]: 135,
-  [GridLocation.SOUTHWEST]: 45,
-  [GridLocation.NORTHWEST]: 315,
+  [GridLocation.NORTHEAST]: 135,
+  [GridLocation.SOUTHEAST]: 225,
+  [GridLocation.SOUTHWEST]: 315,
+  [GridLocation.NORTHWEST]: 45,
 };
 
 /**

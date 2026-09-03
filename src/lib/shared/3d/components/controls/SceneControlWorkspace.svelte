@@ -3,6 +3,7 @@
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import {
     resolveSceneControlLayout,
+    type SceneControlHostTool,
     type SceneControlLayout,
     type SceneControlTool,
   } from "../../domain/scene-control-layout";
@@ -18,7 +19,7 @@
   import SceneControlInspector from "./SceneControlInspector.svelte";
   import SceneControlRail from "./SceneControlRail.svelte";
   import type { PerformerEditSink } from "./performer-hub-types";
-  import { onMount } from "svelte";
+  import { onMount, type Snippet } from "svelte";
   import { flyFade } from "$lib/shared/transitions/motion";
 
   interface Props {
@@ -64,6 +65,21 @@
     onPerformerEdit?: PerformerEditSink;
     /** Fires with the tool being inspected, or null when the inspector closes. */
     onInspectorChange?: (tool: SceneControlTool | null) => void;
+    /**
+     * One rail entry and one panel this host contributes, for a surface the
+     * viewer has no concept of. Both are required together; the panel renders
+     * in the inspector's own column and is mutually exclusive with the viewer's
+     * tools, so the right edge never holds two open panels.
+     */
+    hostTool?: SceneControlHostTool | null;
+    /**
+     * Receives a close callback, because this component owns whether the panel
+     * is open. A host panel's own close button has to route back through that
+     * owner rather than keeping a second copy of the open state.
+     */
+    hostPanel?: Snippet<[() => void]>;
+    /** Fires when the host panel opens or closes. */
+    onHostPanelChange?: (open: boolean) => void;
     /** Compact sheets are independent from the desktop rail. Hosts can use
      *  this signal to animate surrounding chrome out of their way. */
     onCompactSheetChange?: (sheet: "performer" | "scene" | null) => void;
@@ -87,11 +103,15 @@
     onPerformerEdit,
     onInspectorChange,
     onCompactSheetChange,
+    hostTool = null,
+    hostPanel,
+    onHostPanelChange,
   }: Props = $props();
 
   let workspaceWidth = $state(0);
   let workspaceHeight = $state(0);
   let activeTool = $state<SceneControlTool | null>(null);
+  let hostPanelOpen = $state(false);
   let panelEl = $state<HTMLElement | null>(null);
   let saveSceneOpen = $state(false);
   let showInteractionHint = $state(false);
@@ -126,17 +146,37 @@
 
   function openSaveScene(): void {
     activeTool = null;
+    hostPanelOpen = false;
     saveSceneOpen = true;
   }
+
+  // One panel at a time in the right column. Choosing a viewer tool closes the
+  // host's panel and choosing the host's closes the viewer tool, so the edge
+  // never stacks two.
+  function chooseTool(tool: SceneControlTool | null): void {
+    activeTool = tool;
+    if (tool !== null) hostPanelOpen = false;
+  }
+
+  function toggleHostPanel(): void {
+    hostPanelOpen = !hostPanelOpen;
+    if (hostPanelOpen) activeTool = null;
+  }
+
+  function closeHostPanel(): void {
+    hostPanelOpen = false;
+  }
+
   const inspectorUsesDock = $derived(
     activeTool === "performer" || activeTool === "dev"
   );
+  const rightColumnOpen = $derived(activeTool !== null || hostPanelOpen);
 
   const layout = $derived(
     resolveSceneControlLayout(
       workspaceWidth,
       workspaceHeight,
-      activeTool !== null,
+      rightColumnOpen,
       inspectorUsesDock
     )
   );
@@ -152,6 +192,7 @@
 
   function closeInspector(): void {
     activeTool = null;
+    hostPanelOpen = false;
   }
 
   function handleCompactSheetChange(sheet: "performer" | "scene" | null): void {
@@ -176,6 +217,14 @@
     onInspectorChange?.(current);
   });
 
+  let lastReportedHostPanel = false;
+  $effect(() => {
+    const current = hostPanelOpen;
+    if (current === lastReportedHostPanel) return;
+    lastReportedHostPanel = current;
+    onHostPanelChange?.(current);
+  });
+
   let lastLayoutSignature = "";
   $effect(() => {
     const current = layout;
@@ -188,7 +237,10 @@
   // A compact workspace has its own sheet state. Clearing the desktop tool
   // prevents a stale inspector from reopening when a split pane grows again.
   $effect(() => {
-    if (layout.presentation === "compact") activeTool = null;
+    if (layout.presentation === "compact") {
+      activeTool = null;
+      hostPanelOpen = false;
+    }
   });
 
   let dockWasOpen = false;
@@ -208,13 +260,13 @@
 
 <svelte:window
   onpointerdowncapture={(event) => {
-    if (activeTool && layout.presentation === "overlay") {
+    if (rightColumnOpen && layout.presentation === "overlay") {
       dismiss.onBackdropPointerDown(event);
     }
   }}
   onkeydown={(event) => {
     if (
-      activeTool &&
+      rightColumnOpen &&
       !shouldDeferEscapeShortcut(document) &&
       !isModalTarget(event.target)
     ) {
@@ -233,13 +285,13 @@
   bind:clientHeight={workspaceHeight}
   data-scene-control-workspace
   data-presentation={layout.presentation}
-  data-open={activeTool !== null || undefined}
+  data-open={rightColumnOpen || undefined}
   style:--scene-controls-top={topOffset}
   style:--scene-performer-bar-top={topLeftOffset ?? topOffset}
   style:--scene-controls-bottom={bottomOffset}
   style:--scene-controls-left={leftOffset}
   style:--scene-inspector-width="{layout.panelWidth}px"
-  style:--scene-right-occupied={activeTool
+  style:--scene-right-occupied={rightColumnOpen
     ? `calc(4.75rem + ${layout.panelWidth}px)`
     : "4.75rem"}
 >
@@ -280,8 +332,11 @@
       {onSettingChange}
       {topOffset}
       {bottomOffset}
-      onToolSelect={(tool) => (activeTool = tool)}
+      onToolSelect={chooseTool}
       onOpenSaveScene={allowSaveScene ? openSaveScene : undefined}
+      hostTool={hostPanel ? hostTool : null}
+      hostToolActive={hostPanelOpen}
+      onHostToolSelect={toggleHostPanel}
     />
 
     {#if activeTool}
@@ -298,6 +353,15 @@
           {onPerformerEdit}
           onOpenSaveScene={allowSaveScene ? openSaveScene : undefined}
         />
+      </div>
+    {:else if hostPanelOpen && hostPanel}
+      <div
+        class="inspector-anchor"
+        data-tool={hostTool?.id}
+        bind:this={panelEl}
+        transition:dockSlide={{ duration: 280, distance: 24 }}
+      >
+        {@render hostPanel(closeHostPanel)}
       </div>
     {/if}
   {/if}

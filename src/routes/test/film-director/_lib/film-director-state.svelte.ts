@@ -2,7 +2,12 @@ import { ZodError } from "zod";
 
 import { sampleFilmDirector } from "./sample-film-director";
 import { resolveFilmDirectorSpec } from "./resolve-film-director-spec";
-import { applyPerformerEdit, type PerformerEdit } from "./film-director-edit";
+import {
+  applyPerformerEdit,
+  applySceneEdit,
+  type PerformerEdit,
+  type SceneEdit,
+} from "./film-director-edit";
 import type { FilmDirectorInput } from "./film-director-schema";
 import { getFilmDirectorWarmupStepCount } from "./film-director-warmup-plan";
 
@@ -29,10 +34,37 @@ function explainValidationError(error: unknown): string {
   return `${issues.join(". ")}${remaining > 0 ? `. ${remaining} more issue${remaining === 1 ? "" : "s"}.` : "."}`;
 }
 
-export function createFilmDirectorState(initialInput: FilmDirectorInput) {
+export interface FilmDirectorStateOptions {
+  /**
+   * A scene the film should open soloed on, from the address that opened the
+   * page. It has to arrive here rather than being set from the workbench's
+   * `onMount`, because the scene component is a child and starts warming from
+   * scene zero before any parent mount handler runs.
+   */
+  soloSceneId?: string | null;
+}
+
+export function createFilmDirectorState(
+  initialInput: FilmDirectorInput,
+  options: FilmDirectorStateOptions = {}
+) {
   let sourceInput = $state<FilmDirectorInput>(structuredClone(initialInput));
   let film = $state(resolveFilmDirectorSpec(sourceInput));
   let draft = $state(JSON.stringify(sourceInput, null, 2));
+
+  const requestedSoloIndex = options.soloSceneId
+    ? film.scenes.findIndex((scene) => scene.id === options.soloSceneId)
+    : -1;
+  const openingSoloIndex = requestedSoloIndex >= 0 ? requestedSoloIndex : null;
+
+  /**
+   * The scene the curtain warms, fixed for the life of one preparation.
+   *
+   * Deliberately not `soloSceneIndex`: leaving solo halfway through the curtain
+   * would otherwise lengthen the plan under the cursor already walking it.
+   */
+  let warmupSceneIndex = $state<number | null>(openingSoloIndex);
+
   let playheadSeconds = $state(0);
   let wantsToPlay = $state(film.playback.autoplay);
   let isPlaying = $state(false);
@@ -41,11 +73,15 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
   let preparationRevision = $state(0);
   let preparation = $state({
     complete: false,
-    sceneIndex: 0,
+    sceneIndex: openingSoloIndex ?? 0,
     totalScenes: film.scenes.length,
-    sceneTitle: film.scenes[0]?.title ?? "Opening scene",
+    sceneTitle:
+      film.scenes[openingSoloIndex ?? 0]?.title ?? "Opening scene",
     preparedSteps: 0,
-    totalSteps: getFilmDirectorWarmupStepCount(film.scenes.length),
+    totalSteps: getFilmDirectorWarmupStepCount(
+      film.scenes.length,
+      openingSoloIndex
+    ),
   });
   let editorOpen = $state(false);
   let validationError = $state<string | null>(null);
@@ -70,7 +106,7 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
    * one scene, looping, so a capability costs its own duration to inspect and
    * nothing more.
    */
-  let soloSceneIndex = $state<number | null>(null);
+  let soloSceneIndex = $state<number | null>(openingSoloIndex);
 
   /**
    * The window the playhead wraps inside. It starts a hair past the scene's own
@@ -92,6 +128,14 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
       end: scene.startSeconds + scene.durationSeconds,
     };
   });
+
+  // An address that opened on a scene starts at that scene's head, not at zero.
+  // Without this the first tick seeks from 0, and `seek` wraps a before-window
+  // playhead to an arbitrary point inside the window.
+  if (openingSoloIndex !== null) {
+    const opened = soloWindow;
+    if (opened) playheadSeconds = opened.start;
+  }
 
   function seek(seconds: number): void {
     const window = soloWindow;
@@ -167,19 +211,17 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
   function setPreparationScene(index: number, preparedSteps = 0): void {
     const scene = film.scenes[index];
     if (!scene) return;
+    const totalSteps = getFilmDirectorWarmupStepCount(
+      film.scenes.length,
+      warmupSceneIndex
+    );
     preparation = {
       complete: false,
       sceneIndex: index,
       totalScenes: film.scenes.length,
       sceneTitle: scene.title,
-      preparedSteps: Math.max(
-        0,
-        Math.min(
-          getFilmDirectorWarmupStepCount(film.scenes.length),
-          preparedSteps
-        )
-      ),
-      totalSteps: getFilmDirectorWarmupStepCount(film.scenes.length),
+      preparedSteps: Math.max(0, Math.min(totalSteps, preparedSteps)),
+      totalSteps,
     };
   }
 
@@ -192,13 +234,16 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     transitionHolding = false;
     isPlaying = false;
     preparationRevision += 1;
+    // A different film's scene indices name different scenes, so the opening
+    // address stops applying and the next curtain warms the whole thing.
+    warmupSceneIndex = null;
     preparation = {
       complete: false,
       sceneIndex: 0,
       totalScenes: film.scenes.length,
       sceneTitle: film.scenes[0]?.title ?? "Opening scene",
       preparedSteps: 0,
-      totalSteps: getFilmDirectorWarmupStepCount(film.scenes.length),
+      totalSteps: getFilmDirectorWarmupStepCount(film.scenes.length, null),
     };
   }
 
@@ -272,6 +317,30 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
       const patched = applyPerformerEdit(
         $state.snapshot(sourceInput) as FilmDirectorInput,
         film,
+        edit
+      );
+      const nextFilm = resolveFilmDirectorSpec(patched);
+      sourceInput = patched;
+      film = nextFilm;
+      draft = JSON.stringify(patched, null, 2);
+      lastEditError = null;
+      editRevision += 1;
+      return true;
+    } catch (error: unknown) {
+      lastEditError = explainValidationError(error);
+      return false;
+    }
+  }
+
+  /**
+   * Patches the scene itself — its camera moves, its formation, its
+   * environment. Same contract as `editPerformer`: the playhead and the warmup
+   * stay put, and a rejected edit leaves the document untouched.
+   */
+  function editScene(edit: SceneEdit): boolean {
+    try {
+      const patched = applySceneEdit(
+        $state.snapshot(sourceInput) as FilmDirectorInput,
         edit
       );
       const nextFilm = resolveFilmDirectorSpec(patched);
@@ -414,6 +483,13 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     get soloSceneIndex() {
       return soloSceneIndex;
     },
+    /**
+     * The scene the curtain warms, or null for the whole film. Fixed for the
+     * life of one preparation so the plan cannot change under the cursor.
+     */
+    get warmupSceneIndex() {
+      return warmupSceneIndex;
+    },
     setSoloScene,
     seek,
     play,
@@ -430,6 +506,7 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     applyDraft,
     resetDraft,
     editPerformer,
+    editScene,
     loadFilm,
     toggleEditor,
     setPosterSource,

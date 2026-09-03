@@ -43,7 +43,12 @@
     onExit: () => void;
   } = $props();
 
-  const director = createFilmDirectorState(film);
+  // The soloed scene is handed to the state at construction, not from onMount:
+  // the scene component is a child, and its warmup plan is read during its own
+  // first render, well before a parent mount handler could narrow it.
+  const director = createFilmDirectorState(film, {
+    soloSceneId: initialSceneId,
+  });
   setFilmDirectorContext(director);
 
   // The scene's performer bar pins itself to the stage's top-left corner,
@@ -184,14 +189,9 @@
   }
 
   onMount(() => {
-    // A ?scene= that names no scene in this film is ignored rather than
-    // treated as an error: the film still opens, from the top.
-    if (initialSceneId) {
-      const index = director.film.scenes.findIndex(
-        (scene) => scene.id === initialSceneId
-      );
-      if (index >= 0) director.setSoloScene(index);
-    }
+    // A ?scene= that names no scene in this film was already ignored by the
+    // state constructor rather than treated as an error: the film still opens,
+    // from the top, and the sync below rewrites the address to match.
     // The URL always names what is on screen, including when the address bar
     // arrived bare and the route picked the film.
     syncFilmToUrl(origin);
@@ -215,7 +215,11 @@
   {#if !director.preparation.complete}
     <div class="film-preparation" role="status" aria-live="polite">
       <div class="preparation-card">
-        <span class="preparation-kicker">Preparing the film</span>
+        <span class="preparation-kicker">
+          {director.warmupSceneIndex === null
+            ? "Preparing the film"
+            : "Preparing the scene"}
+        </span>
         <strong>{director.preparation.sceneTitle}</strong>
         <span class="preparation-count">
           Scene {director.preparation.sceneIndex + 1} of {director.preparation

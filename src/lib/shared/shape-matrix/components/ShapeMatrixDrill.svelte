@@ -68,6 +68,8 @@
   import { claimedViewTransitionName } from "$lib/shared/transitions/claimed-view-transition-name";
   import {
     SHAPE_MATRIX_ACTIVE_STAGE_NAME,
+    SHAPE_MATRIX_CONTROLS_NAME,
+    SHAPE_MATRIX_MODES_NAME,
     SHAPE_MATRIX_STRIP_NAME,
   } from "../services/shape-matrix-artwork";
   import { getShapeMatrixTransitionRecorder } from "../debug/shape-matrix-transition-recorder";
@@ -295,6 +297,16 @@
   // is hidden rather than left under the arriving picture.
   const livePlayerShowsPair = $derived(
     visibleSource !== null && getLayer(visibleSource)?.pairKey === pairKey
+  );
+  /**
+   * The frames around the stage take a shared-element name only while a morph
+   * is in flight, and only on the side that owns the detail view: arriving,
+   * they are new-only and settle in; leaving, they are old-only and sink out.
+   * A name held permanently would make each frame a containing block for its
+   * own popovers for no gain.
+   */
+  const morphingFrames = $derived(
+    mandalaTransition.claim && mandalaTransition.handoff
   );
 
   // The cell's mandala: left hand's flower merged with right hand's flower — the
@@ -1091,7 +1103,8 @@
            mandala on stage until the live canvas for this pair is ready. -->
       <div
         class="player-layer"
-        class:offstage={layer.pairKey !== pairKey || mandalaTransition.handoff}
+        class:offstage={layer.pairKey !== pairKey}
+        class:settling={!livePlayerShowsPair}
       >
         <!-- The first mount waits for the tile-to-hero morph to finish. The
              still floor is the picture that travels; loading the player and
@@ -1175,6 +1188,10 @@
     <div
       class="mode-picker"
       data-drill-region="modes"
+      use:claimedViewTransitionName={{
+        name: SHAPE_MATRIX_MODES_NAME,
+        enabled: morphingFrames,
+      }}
       transition:growFade={{ axis: "y" }}
     >
       <ElementChipRow
@@ -1283,7 +1300,7 @@
         aria-label="Pictograph timeline"
         use:claimedViewTransitionName={{
           name: SHAPE_MATRIX_STRIP_NAME,
-          enabled: mandalaTransition.claim,
+          enabled: morphingFrames,
         }}
         transition:growFade={{ axis: "y" }}
       >
@@ -1351,7 +1368,16 @@
     {/if}
   </div>
 
-  <div class="animation-controls" data-drill-region="controls">
+  <!-- The control bar is below the stage, not inside it. It settles in as the
+       last frame of the wave rather than arriving complete under the flight. -->
+  <div
+    class="animation-controls"
+    data-drill-region="controls"
+    use:claimedViewTransitionName={{
+      name: SHAPE_MATRIX_CONTROLS_NAME,
+      enabled: morphingFrames,
+    }}
+  >
     <AnimationPanel
       isExporting={false}
       layout="bottom"
@@ -1546,6 +1572,16 @@
   }
   .player-layer.offstage {
     visibility: hidden;
+  }
+  /* This layer is empty while the stage flies and for as long as the engine
+     takes to build. It holds at zero and fades up the frame the live player
+     actually shows this pair, so the stage glyph and the step number arrive
+     as the closing beat of the settle wave instead of appearing at once. */
+  .player-layer.settling {
+    opacity: 0;
+  }
+  .player-layer:not(.settling) {
+    transition: opacity var(--duration-emphasis) var(--ease-out);
   }
 
   .lazy-region-state {

@@ -2,7 +2,10 @@
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
-  import type { SceneControlTool } from "$lib/shared/3d/domain/scene-control-layout";
+  import type {
+    SceneControlHostTool,
+    SceneControlTool,
+  } from "$lib/shared/3d/domain/scene-control-layout";
   import SceneChromeButton from "./SceneChromeButton.svelte";
   import {
     reportViewerControlChange,
@@ -17,6 +20,10 @@
     /** Omit to leave Save scene off the rail — see SceneControlWorkspace's
      *  allowSaveScene. */
     onOpenSaveScene?: () => void;
+    /** Omit to leave the rail as the viewer defines it. */
+    hostTool?: SceneControlHostTool | null;
+    hostToolActive?: boolean;
+    onHostToolSelect?: () => void;
     /** Leaves room for host-owned close/fullscreen controls above the rail. */
     topOffset?: string;
     /** Leaves room for host-owned chrome below the rail, such as a transport. */
@@ -29,6 +36,9 @@
     onSettingChange,
     onToolSelect,
     onOpenSaveScene,
+    hostTool = null,
+    hostToolActive = false,
+    onHostToolSelect,
     topOffset = "12px",
     bottomOffset = "max(5rem, calc(5rem + env(safe-area-inset-bottom)))",
   }: Props = $props();
@@ -125,6 +135,21 @@
         />
       {/each}
     </div>
+
+    {#if hostTool}
+      <div class="rail-separator" aria-hidden="true"></div>
+
+      <div class="rail-group" role="group" aria-label="Film">
+        <SceneChromeButton
+          icon={hostTool.icon}
+          label={hostTool.label}
+          active={hostToolActive}
+          aria-pressed={hostToolActive}
+          data-scene-tool={hostTool.id}
+          onclick={() => onHostToolSelect?.()}
+        />
+      </div>
+    {/if}
 
     <div class="utility-group" role="group" aria-label="Scene utilities">
       <SceneChromeButton

@@ -1248,17 +1248,37 @@ const cameraMoveSchema = z
   });
 
 /**
+ * The framing vocabulary, named rather than written inline into the enums
+ * below. A surface that shows a director their framing options reads these, so
+ * the offered set and the accepted set cannot drift apart — the same reason
+ * `CAMERA_MOVE_RULES` and the axis catalogs are exported.
+ */
+export const DIRECTOR_SHOT_SIZES = [
+  "close-up",
+  "medium",
+  "wide",
+  "extreme-wide",
+] as const;
+export const DIRECTOR_CAMERA_ANGLES = ["low", "eye", "high", "top"] as const;
+export const DIRECTOR_CAMERA_POSITIONS = [
+  "front",
+  "left",
+  "right",
+  "behind",
+] as const;
+
+/**
  * One framing, spelled the same whether it is the scene's only framing or one
  * shot among several. Shared so a shot can never drift from what the top-level
  * camera accepts.
  */
 const cameraFramingFields = {
   subject: cameraTargetSchema.optional(),
-  shotSize: z.enum(["close-up", "medium", "wide", "extreme-wide"]).optional(),
-  angle: z.enum(["low", "eye", "high", "top"]).optional(),
+  shotSize: z.enum(DIRECTOR_SHOT_SIZES).optional(),
+  angle: z.enum(DIRECTOR_CAMERA_ANGLES).optional(),
   position: z
     .union([
-      z.enum(["front", "left", "right", "behind"]),
+      z.enum(DIRECTOR_CAMERA_POSITIONS),
       z.object({ degrees: finiteNumber.min(-360).max(360) }).strict(),
     ])
     .optional(),
@@ -1404,9 +1424,16 @@ const cameraSchema = z
     }
   );
 
+/** How one scene may reach the next. Exported for the same reason as above. */
+export const DIRECTOR_TRANSITION_KINDS = [
+  "cut",
+  "environment-dissolve",
+  "fade-through-black",
+] as const;
+
 const transitionSchema = z
   .object({
-    kind: z.enum(["cut", "environment-dissolve", "fade-through-black"]),
+    kind: z.enum(DIRECTOR_TRANSITION_KINDS),
     durationSeconds: finiteNumber.min(0).max(3).optional(),
     // max 32 beats is a syntactic cap, not the real one — see the two-layer
     // contract note on atMostOneTimeUnit above. At a slow bpm, 32 beats can
@@ -1418,11 +1445,55 @@ const transitionSchema = z
   .strict()
   .superRefine(atMostOneTimeUnit);
 
+/**
+ * What a scene is chiefly about, for browsing a film that is a reference rather
+ * than a watch. Proving Grounds is 23 scenes and each one demonstrates a
+ * different part of the language; read end to end it is a three-minute film,
+ * and a director looking for the dolly zoom does not want a film.
+ *
+ * A closed set on purpose. Free-text categories drift into synonyms ("camera",
+ * "cameras", "shots") and the index then groups the same subject three ways.
+ * The scene index renders these in the order written here, so the list doubles
+ * as the reading order: what the frame does, then how the film counts, then
+ * where the bodies are, then who they are, then what is in their hands, then
+ * how scenes refer to each other.
+ */
+export const DIRECTOR_SCENE_CATEGORIES = [
+  "camera",
+  "timing",
+  "staging",
+  "performers",
+  "props",
+  "structure",
+] as const;
+
+export type DirectorSceneCategory = (typeof DIRECTOR_SCENE_CATEGORIES)[number];
+
+/** Heading shown for each category in the scene index. */
+export const DIRECTOR_SCENE_CATEGORY_LABELS: Record<
+  DirectorSceneCategory,
+  string
+> = {
+  camera: "Camera",
+  timing: "Timing",
+  staging: "Staging",
+  performers: "Performers",
+  props: "Props and effects",
+  structure: "Structure",
+};
+
 const sceneSchema = z
   .object({
     id: z.string().min(1),
     title: z.string().min(1),
     intent: z.string().min(1).optional(),
+    /**
+     * Which part of the language this scene is chiefly demonstrating. Optional,
+     * and ABSENT rather than null once resolved, so the films that are films
+     * rather than references resolve byte-identically to their pre-category
+     * snapshots — the same convention `extends` and `seedSource` follow.
+     */
+    category: z.enum(DIRECTOR_SCENE_CATEGORIES).optional(),
     /**
      * Gap 13. The earlier scene this one is a variation of. Already expanded
      * by `expandSceneInheritance` at the input boundary, so what arrives here
@@ -1657,6 +1728,8 @@ export interface ResolvedDirectorScene {
   id: string;
   title: string;
   intent: string | null;
+  /** See the schema field. Absent, not null, when the scene states none. */
+  category?: DirectorSceneCategory;
   /**
    * Gap 13. The earlier scene this one was expanded from. Absent (not null)
    * when the scene stands alone, and likewise for `seedSource` below, so
