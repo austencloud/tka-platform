@@ -330,20 +330,41 @@ export function buildPendulum(): QftIncrement[] {
   });
 }
 
-/** Sample points of the traced path, for drawing the trail. */
-export function tracePath(
+/**
+ * Sample points of the traced path, with the hand orbit and the prop measured
+ * in the drawing's own units.
+ *
+ * The model's unit is one prop length and `radius` measures the hand orbit
+ * against it, which is the right frame for the notation and the wrong one for
+ * any drawing that also renders a real prop. A staff's tracked tip sits 126.4
+ * out from a hand travelling a 150 circle, so collapsing the two to a single
+ * unit draws a flower with the wrong proportions against the grid it sits on.
+ *
+ * `units.hand` scales the orbit rather than replacing it, so a stationary hand
+ * stays at the centre however long that unit is.
+ */
+export function traceScaledPath(
   knobs: QftKnobs,
+  units: { hand: number; prop: number },
   samples = closedPathSampleCount(knobs)
 ): Array<{ x: number; y: number }> {
   const points: Array<{ x: number; y: number }> = [];
   const revolutions = revolutionsToClose(knobs);
   for (let i = 0; i <= samples; i += 1) {
     const u = (i / samples) * STEPS * revolutions;
-    const hand = pointAt(handIndexAt(knobs, u), knobs.radius);
-    const prop = pointAt(propIndexAt(knobs, u), PROP_LENGTH);
+    const hand = pointAt(handIndexAt(knobs, u), knobs.radius * units.hand);
+    const prop = pointAt(propIndexAt(knobs, u), units.prop);
     points.push({ x: hand.x + prop.x, y: hand.y + prop.y });
   }
   return points;
+}
+
+/** Sample points of the traced path, for drawing the trail. */
+export function tracePath(
+  knobs: QftKnobs,
+  samples = closedPathSampleCount(knobs)
+): Array<{ x: number; y: number }> {
+  return traceScaledPath(knobs, { hand: 1, prop: PROP_LENGTH }, samples);
 }
 
 function decimalDenominator(value: number): number {

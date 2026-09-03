@@ -73,7 +73,7 @@
 </script>
 
 <section class="caps-hub" aria-label="What are CAPs">
-  <a class="hub-back" href="/notation">← Flow Arts Notation</a>
+  <a class="hub-back" href="/history">← Flow Arts History</a>
 
   <header class="hub-head">
     <span class="eyebrow">Continuous Assembly Patterns</span>

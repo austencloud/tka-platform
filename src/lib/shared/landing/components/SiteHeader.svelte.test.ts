@@ -85,10 +85,13 @@ describe("SiteHeader desktop disclosures", () => {
     expect(document.activeElement).toBe(notation);
   });
 
+  // Shop is the group whose destinations nest: /shop/loop-deck sits under
+  // /shop, and both match the path. (Notation lost its own nested pair when
+  // the archive moved from /notation to /history on 2026-09-03.)
   it("marks only the most specific matching destination active", async () => {
-    setPath("/notation/caps");
+    setPath("/shop/loop-deck");
     render(SiteHeader);
-    await click(desktopTrigger("Notation"));
+    await click(desktopTrigger("Shop"));
 
     const desktopLinks = Array.from(
       document.querySelectorAll<HTMLAnchorElement>(".desktop-nav .panel a")
@@ -97,13 +100,13 @@ describe("SiteHeader desktop disclosures", () => {
       .filter((link) => link.classList.contains("active"))
       .map((link) => link.getAttribute("href"));
 
-    expect(desktopActiveHrefs).toEqual(["/notation/caps"]);
+    expect(desktopActiveHrefs).toEqual(["/shop/loop-deck"]);
     expect(
-      desktopLinks.find((link) => link.getAttribute("href") === "/notation")
+      desktopLinks.find((link) => link.getAttribute("href") === "/shop")
     ).not.toHaveAttribute("aria-current");
     expect(
       desktopLinks.find(
-        (link) => link.getAttribute("href") === "/notation/caps"
+        (link) => link.getAttribute("href") === "/shop/loop-deck"
       )
     ).toHaveAttribute("aria-current", "page");
 
@@ -112,6 +115,6 @@ describe("SiteHeader desktop disclosures", () => {
         ".mobile-nav .m-sub-inner a.active"
       )
     ).map((link) => link.getAttribute("href"));
-    expect(mobileActiveHrefs).toEqual(["/notation/caps"]);
+    expect(mobileActiveHrefs).toEqual(["/shop/loop-deck"]);
   });
 });

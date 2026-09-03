@@ -185,13 +185,17 @@
     "/atlas",
     "/faq",
     "/learn/staff-spinning-choreography",
+    // The archive, moved off /notation on 2026-09-03. A single page, not a
+    // subtree: nothing renders under /history.
+    "/history",
   ]);
-  // /notation is a subtree: the hub plus the per-prop pages (/notation/staves,
-  // /notation/fans, ...) all render the same persistent chrome.
+  // /notation is a subtree: the per-prop and per-system pages
+  // (/notation/staves, /notation/fans, ...) all render the same persistent
+  // chrome. Its own index only redirects to /history.
   const MARKETING_SUBTREES = ["/shop", "/notation", "/learn/concepts"];
   // Carve-outs inside those subtrees. The QfT app is an instrument, not a page
   // about one: it wants the whole viewport, owns its own bottom chrome, and
-  // carries its own way back out to /notation. The persistent site header on
+  // carries its own way back out to /history. The persistent site header on
   // top of that reads as a page wrapped around an app.
   const MARKETING_EXCLUDE = new Set([
     "/notation/qft",
