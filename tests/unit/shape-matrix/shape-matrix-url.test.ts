@@ -12,8 +12,10 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const COMMON = {
   surface: "matrix" as const,
-  theoryRatio: { propRotations: 1, handCycles: 3 },
-  theorySpin: "pro" as const,
+  theoryLeftRatio: { propRotations: 1, handCycles: 3 },
+  theoryRightRatio: { propRotations: 1, handCycles: 3 },
+  theoryMode: "SS" as const,
+  theoryPair: null,
   activeAxis: "both" as const,
   propType: PropType.STAFF,
   propMode: null,
@@ -107,8 +109,10 @@ describe("shape matrix URL state", () => {
 
     expect(state).toEqual({
       surface: "matrix",
-      theoryRatio: { propRotations: 1, handCycles: 3 },
-      theorySpin: "pro",
+      theoryLeftRatio: { propRotations: 1, handCycles: 3 },
+      theoryRightRatio: { propRotations: 1, handCycles: 3 },
+      theoryMode: "SS",
+      theoryPair: null,
       level: 4,
       leftTurn: 0.75,
       rightTurn: 1.5,
@@ -211,27 +215,61 @@ describe("shape matrix URL state", () => {
     expect(state.propMode).toBeNull();
   });
 
-  it("round-trips the exact Theory Atlas ratio and spin direction", () => {
+  it("round-trips both theory axes, the pairing, and the selected cell", () => {
     const url = new URL(
       "https://tkaflowarts.com/notation/shape-matrix?ref=theory"
     );
     const state = readShapeMatrixRouteState(
-      "?theory=1&ratio=2:9&spin=anti&level=4"
+      "?theory=1&leftRatio=2:9&rightRatio=1:2&pairing=QO" +
+        "&theoryLeft=2:9-anti-in&theoryRight=1:2-pro-out&level=4"
     );
 
     expect(state.surface).toBe("theory");
-    expect(state.theoryRatio).toEqual({ propRotations: 2, handCycles: 9 });
-    expect(state.theorySpin).toBe("anti");
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 1, handCycles: 2 });
+    expect(state.theoryMode).toBe("QO");
+    expect(state.theoryPair?.left.style).toBe("anti");
+    expect(state.theoryPair?.left.ori).toBe("in");
+    expect(state.theoryPair?.right.style).toBe("pro");
 
     writeShapeMatrixRouteState(url, state);
     expect(url.searchParams.get("ref")).toBe("theory");
     expect(url.searchParams.get("theory")).toBe("1");
-    expect(url.searchParams.get("ratio")).toBe("2:9");
-    expect(url.searchParams.get("spin")).toBe("anti");
+    expect(url.searchParams.get("leftRatio")).toBe("2:9");
+    expect(url.searchParams.get("rightRatio")).toBe("1:2");
+    expect(url.searchParams.get("pairing")).toBe("QO");
+    expect(url.searchParams.get("theoryLeft")).toBe("2:9-anti-in");
+    expect(url.searchParams.get("theoryRight")).toBe("1:2-pro-out");
   });
 
-  it("falls back from ratios outside the bounded atlas", () => {
-    const state = readShapeMatrixRouteState("?theory=1&ratio=3:10");
-    expect(state.theoryRatio).toEqual({ propRotations: 1, handCycles: 3 });
+  it("restores the one-axis legacy link onto both axes", () => {
+    const state = readShapeMatrixRouteState("?theory=1&ratio=2:9&level=4");
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 2, handCycles: 9 });
+  });
+
+  it("drops the retired timing and hands pair from an older theory link", () => {
+    const url = new URL(
+      "https://tkaflowarts.com/notation/shape-matrix?theory=1&timing=quarter&hands=opp"
+    );
+    const state = readShapeMatrixRouteState(url.search);
+    // The old two-parameter pairing has no reading; the surface opens on the
+    // default element rather than half-restoring a link it cannot honour.
+    expect(state.theoryMode).toBe("SS");
+
+    writeShapeMatrixRouteState(url, state);
+    expect(url.searchParams.get("timing")).toBeNull();
+    expect(url.searchParams.get("hands")).toBeNull();
+    expect(url.searchParams.get("pairing")).toBe("SS");
+  });
+
+  it("falls back from a ratio the requested level does not contain", () => {
+    // 2:9 is real, but only Level 4 opens the band far enough to hold it.
+    const state = readShapeMatrixRouteState("?theory=1&leftRatio=2:9&level=2");
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 1, handCycles: 3 });
+    expect(
+      readShapeMatrixRouteState("?theory=1&leftRatio=3:10&level=4")
+        .theoryLeftRatio
+    ).toEqual({ propRotations: 1, handCycles: 3 });
   });
 });

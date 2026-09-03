@@ -77,15 +77,21 @@ Middle Earth also holds the crops that are spun, and the props people bring.
 
 ## Upper section
 
-| Pin | What it is |
-| --- | --- |
-| `B4` | The main cabin. Fancy stay, indoor activities. **Not really part of the festival.** |
-| `B5` | Inside the campground. A covered porch and a bunch of lodges sit next to it. |
-| `B6` | Approximately the parking lot. You park **west** of `B6`, never pulling forward into `B5`. |
-| `B7` | Unrelated houses, or possibly rentable cabins. Year-round property. |
+Frame `UP-A1` to `UP-H6`, cells ~32 x 31 m.
+`worldX = -168.75 + 32.5*col` (A=0), `worldZ = -121.4 + 31.17*(row-1)`.
 
-The drive that veers uphill is **further south, off the bottom of the middle
-frame**. You do not drive into the `B5` area to reach parking.
+| Feature | Cell | World (approx) | Note |
+| --- | --- | --- | --- |
+| Top parking, made pad | `UP-D4` `UP-E4` `UP-D5` | -87 to -22, -44 to 19 | The hard pale rectangle |
+| Top parking, overflow field | `UP-A3` to `UP-C5` | -185 to -55, -75 to 19 | Grass. The pad fills first |
+| Main cabin | `UP-F2` / `UP-G2` | 4 to 36, -90 | Fancy stay, indoor activities. **Not really part of the festival** |
+| Lodges and covered porch | `UP-E3` / `UP-F3` | -39 to 4, -59 | |
+| Upper camping | north of the `UP` frame | z below -137 | Treeline; see wide `C2`, bottom of `D1`, bottom-right of `C1` |
+| Unrelated houses / rentable cabins | wide `H2` area | 60, -30 | Year-round property |
+
+The drive that veers uphill is south of the middle frame and reaches this
+section from the paved road. You do not use it on arrival — you drive past it
+to the campground first and only come back up if you are not car camping.
 
 ## Lower campground
 
@@ -115,12 +121,23 @@ lower campground; `worldX = 213 + px/9.032`, `worldZ = -209 + py/9.032`.
 
 Then it forks:
 
-- **Park in the middle.** Stop in the centre of the lower section and camp
-  right beside your car. Done.
-- **Camp elsewhere.** Unpack around the loop, then drive back out of the lower
-  section, back the way you came along the paved road, all the way up to the
-  **top parking at `B3` `C3` `B4` `C4`**. Park there and walk. Camping options
-  up top: the treeline at `C2`, the bottom of `D1`, the bottom-right of `C1`.
+### Camping is a rule, not a zone
+
+You drive to wherever your campsite is going to be and unload at it. Arrive
+early and that is easy; arrive late and every good spot is taken. Then the car
+has to end up in one of exactly two places:
+
+| If you are | Your car ends up |
+| --- | --- |
+| Car camping | in the **middle of the loop**, beside your tent |
+| Setting up a regular camp | at the **very top parking**, `B3` `C3` `B4` `C4` |
+
+Getting to the top lot means driving back out of the lower section, along the
+paved road the way you came, and up. Upper camping options: the treeline at
+`C2`, the bottom of `D1`, the bottom-right of `C1`.
+
+Do not model camping as fixed pitches. Model it as first-come occupancy plus
+that two-way parking rule.
 
 ## Lower campground
 
@@ -131,7 +148,8 @@ z -177 to -76. One junction, at its southeast corner beside the main building.
 | --- | --- | --- |
 | Junction off the paved road | `E5` | 319.6, -105.5 |
 | Main building, year round | `D5` | 305.4, -114.0 |
-| Check-in canopy | `E4` / `E5`, unconfirmed | 319.6, -116.2 |
+| Check-in canopy | `E4` | 319.6, -116.2 |
+| Sign-in pull-off | top of `E4`, or the east side of `E5` | — |
 | Park in the middle | `C4` | 272.8, -131.5 |
 
 ## Vendor village, and the barn
@@ -139,8 +157,36 @@ z -177 to -76. One junction, at its southeast corner beside the main building.
 `G2` is **primarily Vendor Village**. From the air it reads as woods; it is
 not. You walk straight through it easily, because you are only looking at the
 tops of the trees. Through it runs a **decorated pathway**, usually hung with
-art strung along the trees, and there is **a stage at the northwest side of
-`G2`**.
+art strung along the trees.
+
+At the northwest of `G2`, immediately **east of Middle Earth and nestled into
+the woods**, stands the **abandoned stage** — the old stage, kept after they
+built the new one. The teal roof inside Middle Earth is that new one. The
+abandoned stage is under canopy and does not read from the air.
+
+A third frame covers this block: columns `P`-`V`, rows `1`-`7`, cells ~13 m,
+lettered `P` onward so they cannot be confused with the wide frame's `G2`.
+`worldX = 134.6 + 13.22*col` (P=0), `worldZ = -160.6 + 13.22*row`.
+
+| Feature | Vendor cell | World (approx) |
+| --- | --- | --- |
+| Barn | `T3` | 187.5, -120.9 |
+| Abandoned stage | `P3` / `Q3` | 135 to 148, -121 |
+
+### The pathway is the loop road continued
+
+The decorated path is not a separate trail cut through the woods. It **follows
+the same line the bottom of the campground loop already follows**, ever so
+slightly diagonal, runs straight up into Middle Earth, then veers left to go up
+the road. It is invisible from the air because the canopy closes over it.
+
+That is a load-bearing detail for the tree work: the canopy must close above
+the path while the understory stays open enough to walk and to hang art in.
+
+### Jam circles are everywhere
+
+Austen: "literally everywhere. It's a flow festival." Do not place jam circles
+as fixed sites. They are emergent, wherever there is room and people.
 
 `H2`, at its bottom, has another clearing where vendor village spills over. It
 is a big space.
@@ -161,10 +207,8 @@ This is the layout constraint for the ez-tree work. See
 
 ## Open — still to establish
 
-- Jam circles.
 - Exact canopy, pull-off, and per-site camping spots around the loop.
-- What the stage at the northwest of `G2` is.
-- The barn's footprint.
+- Where exactly the abandoned stage sits, and what condition it is in.
 - The woods: which stands, which species, which density — feeds the ez-tree
   layout. See `project_ez_tree_adoption` in memory.
 
