@@ -24,7 +24,11 @@
     makeStandaloneDeps,
   } from "$lib/shared/3d/state/character-instance-state.svelte";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
-  import { planUpperBodyStanceForPropStates } from "$lib/shared/3d/collision/upper-body-stance-planner";
+  import {
+    buildStanceYawTrackForSource,
+    resolveTrackedUpperBodyStance,
+    type StanceYawTrack,
+  } from "$lib/shared/3d/collision/stance-yaw-track";
   import {
     fitStaffLengthForHug,
     measurePerformerReach,
@@ -57,6 +61,12 @@
      */
     gridSlot?: Snippet;
     onReady?: () => void;
+    /**
+     * The planned turn for the loaded sequence, handed out once it exists.
+     * Only a lab that draws the curve needs this; the pose itself is already
+     * resolved here, so nothing downstream re-plans from it.
+     */
+    onStanceTrack?: (track: StanceYawTrack | null) => void;
     onCollisionEvents?: (
       events: CollisionEvent[],
       diagnostics: AvatarPoseDiagnostics,
@@ -91,8 +101,15 @@
   const propLength = $derived(
     staffFit?.fits ? cmToUnits(staffFit.recommendedStaffLengthCm) : undefined
   );
+  // The turn's timing is planned once per sequence, not re-derived per frame:
+  // the curve needs the whole score to know when to start leading.
+  const stanceTrack = $derived(
+    buildStanceYawTrackForSource(performerState, PlaneMode.WALL)
+  );
   const upperBodyStance = $derived(
-    planUpperBodyStanceForPropStates(
+    resolveTrackedUpperBodyStance(
+      stanceTrack,
+      performerState.scoreTime,
       PlaneMode.WALL,
       performerState.leftPropState,
       performerState.rightPropState,
@@ -148,6 +165,11 @@
     });
   });
 
+  $effect(() => {
+    const track = stanceTrack;
+    props.onStanceTrack?.(track);
+  });
+
   onDestroy(() => performerState.destroy());
 </script>
 
@@ -170,6 +192,7 @@
   {propLength}
   headDodge={true}
   stanceYaw={upperBodyStance.yawRad}
+  stanceSegments={upperBodyStance.segments}
   spinePitchOffset={upperBodyStance.pitchRad}
   blueHandDepthOffset={upperBodyStance.leftDepthOffsetM}
   redHandDepthOffset={upperBodyStance.rightDepthOffsetM}

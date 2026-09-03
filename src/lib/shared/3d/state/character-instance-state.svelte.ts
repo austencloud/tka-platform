@@ -410,27 +410,27 @@ export function createCharacterInstanceState(
   // configs here may come from a different step than currentStepIndex - this
   // matches how the 2D orchestrator picks a target step inside a phrase.
   // stepConfigs[0] is the start pose, so motion beat N lives at stepConfigs[N].
-  const easedFrame = $derived.by(() => {
+  function resolveEasedFrame(stepIndexAt: number, rawProgress: number) {
     const timeline = effortTimeline;
-    const rawProgress = playback.progress;
+    const step = stepConfigs[stepIndexAt] ?? null;
 
     if (!timeline?.phrases?.length) {
       return {
-        left: activeLeftConfig,
-        right: activeRightConfig,
+        left: step?.left ?? null,
+        right: step?.right ?? null,
         progress: applyEffort(effectiveEffortId, rawProgress),
       };
     }
 
-    const motionStepIndex = Math.max(0, currentStepIndex - 1);
+    const motionStepIndex = Math.max(0, stepIndexAt - 1);
     const currentStep = motionStepIndex + 1 + rawProgress;
     const phrase = findPhraseAtBeat(timeline, currentStep);
 
     if (!phrase) {
       // Gaps between phrases play linearly.
       return {
-        left: activeLeftConfig,
-        right: activeRightConfig,
+        left: step?.left ?? null,
+        right: step?.right ?? null,
         progress: rawProgress,
       };
     }
@@ -448,7 +448,40 @@ export function createCharacterInstanceState(
       right: targetStep?.right ?? null,
       progress: localProgress,
     };
-  });
+  }
+
+  const easedFrame = $derived.by(() =>
+    resolveEasedFrame(currentStepIndex, playback.progress)
+  );
+
+  /**
+   * The prop pair this sequence renders at an arbitrary motion score time,
+   * where 0.00 is the start of beat 1. Runs the same eased-frame resolution
+   * the live frame uses, so a planner sampling the future sees exactly the
+   * geometry the renderer will present when the playhead gets there.
+   */
+  function propStatesAtScoreTime(scoreTime: number) {
+    const motionSteps = Math.max(0, stepConfigs.length - motionStepOffsetValue());
+    if (motionSteps === 0) return { left: null, right: null };
+    const wrapped = playback.loop
+      ? ((scoreTime % motionSteps) + motionSteps) % motionSteps
+      : Math.max(0, Math.min(motionSteps - 1e-6, scoreTime));
+    const stepIndexAt = Math.min(
+      stepConfigs.length - 1,
+      Math.floor(wrapped) + motionStepOffsetValue()
+    );
+    const frame = resolveEasedFrame(stepIndexAt, wrapped - Math.floor(wrapped));
+    return {
+      left: frame.left ? calculatePropState(frame.left, frame.progress) : null,
+      right: frame.right
+        ? calculatePropState(frame.right, frame.progress)
+        : null,
+    };
+  }
+
+  function motionStepOffsetValue(): number {
+    return hasStartPose ? 1 : 0;
+  }
 
   // Computed prop states
   const leftPropState = $derived(
@@ -460,6 +493,15 @@ export function createCharacterInstanceState(
     easedFrame.right
       ? calculatePropState(easedFrame.right, easedFrame.progress)
       : null
+  );
+
+  /**
+   * Where the playhead sits in motion score time: 0.00 is the start of beat 1
+   * and 7.99 the end of beat 8, matching `phaseOffsetSteps` on the live
+   * performer. One owner, so every consumer samples the same clock.
+   */
+  const scoreTime = $derived(
+    Math.max(0, currentStepIndex - motionStepOffsetValue()) + playback.progress
   );
 
   /**
@@ -1405,8 +1447,17 @@ export function createCharacterInstanceState(
      * phase math is motion-relative and adds this to reach a beat.
      */
     get motionStepOffset() {
-      return hasStartPose ? 1 : 0;
+      return motionStepOffsetValue();
     },
+    /** Motion beats in the loaded sequence, excluding any static start pose. */
+    get motionStepCount() {
+      return Math.max(0, stepConfigs.length - motionStepOffsetValue());
+    },
+    /** Playhead in motion score time; 0.00 is the start of beat 1. */
+    get scoreTime() {
+      return scoreTime;
+    },
+    propStatesAtScoreTime,
 
     // Visibility
     get showLeft() {

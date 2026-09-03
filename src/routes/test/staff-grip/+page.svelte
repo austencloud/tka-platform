@@ -11,6 +11,12 @@
   import type { CharacterId } from "$lib/shared/3d/domain/character-model";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import StaffGripStage from "./StaffGripStage.svelte";
+  import StanceTimingChart from "./StanceTimingChart.svelte";
+  import {
+    describeStanceYawTrack,
+    stanceYawAngularVelocity,
+    type StanceYawTrack,
+  } from "$lib/shared/3d/collision/stance-yaw-track";
   import {
     INSPECTION_FOV_DEG,
     INSPECTION_VIEWS,
@@ -81,6 +87,36 @@
     (page.url.searchParams.get("character") as CharacterId | null) ?? undefined
   );
   let phase = $state(7.99);
+  /**
+   * One clock for four panes. Each pane holds its own performer, so letting
+   * them run their own playback would drift them apart within a few seconds;
+   * seeking every pane from this page's phase keeps all four cameras on the
+   * same frame of the same turn.
+   */
+  let playing = $state(false);
+  /** Motion steps per second. Slow enough to read a 0.16-step stagger. */
+  const PLAYBACK_STEPS_PER_SECOND = 1.2;
+  let stanceTrack = $state<StanceYawTrack | null>(null);
+  const stanceSummary = $derived(describeStanceYawTrack(stanceTrack));
+  const stanceVelocity = $derived(stanceYawAngularVelocity(stanceTrack, phase));
+
+  $effect(() => {
+    if (!playing) return;
+    let frame = 0;
+    let previous = performance.now();
+    const span = sequence.steps.length;
+    // The callback reads and writes `phase` outside the effect's tracking
+    // scope, so advancing it cannot restart this loop.
+    const tick = (now: number) => {
+      const elapsed = Math.min(0.1, (now - previous) / 1000);
+      previous = now;
+      const next = phase + elapsed * PLAYBACK_STEPS_PER_SECOND;
+      phase = next >= span - 0.01 ? next - span : next;
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  });
   // Each pane solves its own shot against its own aspect ratio, so a tall
   // reference column and a squat inspection cell both frame their subject
   // instead of one of them cropping it.
@@ -461,6 +497,29 @@
   data-shoulder-half-span-mm={formatMetric(poseMetric.shoulderHalfSpanMm, 3)}
   data-rendered-step-number={poseMetric.renderedStepNumber}
   data-rendered-beat-progress={formatMetric(poseMetric.renderedBeatProgress, 3)}
+  data-playing={playing}
+  data-stance-lead-steps={formatMetric(stanceSummary.onsetLeadSteps, 4)}
+  data-stance-spine-lead-steps={formatMetric(
+    stanceSummary.spineOnsetLeadSteps,
+    4
+  )}
+  data-stance-peak-chest-deg={formatMetric(
+    (stanceSummary.peakChestRad * 180) / Math.PI,
+    3
+  )}
+  data-stance-peak-head-lag-deg={formatMetric(
+    (stanceSummary.peakHeadLagRad * 180) / Math.PI,
+    3
+  )}
+  data-stance-peak-spine-stagger-deg={formatMetric(
+    (stanceSummary.peakSpineStaggerRad * 180) / Math.PI,
+    3
+  )}
+  data-stance-arrival-spine1={formatMetric(stanceSummary.arrivals.spine1, 4)}
+  data-stance-arrival-chest={formatMetric(stanceSummary.arrivals.chest, 4)}
+  data-stance-arrival-spine2={formatMetric(stanceSummary.arrivals.spine2, 4)}
+  data-stance-arrival-head={formatMetric(stanceSummary.arrivals.head, 4)}
+  data-stance-angular-velocity={formatMetric(stanceVelocity, 5)}
 >
   <div class="views">
     <section class="console" style:grid-area="console">
@@ -472,6 +531,14 @@
       </header>
 
       <div class="scrubber">
+        <button
+          type="button"
+          class="transport"
+          aria-pressed={playing}
+          onclick={() => (playing = !playing)}
+        >
+          {playing ? "Pause" : "Play"}
+        </button>
         <label for="grip-phase">Step {phaseLabel}</label>
         <input
           id="grip-phase"
@@ -575,6 +642,11 @@
             {characterId}
             gridEmphasis={view.grid}
             onCollisionEvents={index === 0 ? collectGripMetrics : undefined}
+          onStanceTrack={index === 0
+            ? (track) => {
+                stanceTrack = track;
+              }
+            : undefined}
           />
         </Canvas>
         <span class="view-label">
@@ -583,6 +655,14 @@
         </span>
       </section>
     {/each}
+
+    <section
+      class="timing-band"
+      style:grid-area="timing"
+      aria-label="Stance turn timing"
+    >
+      <StanceTimingChart track={stanceTrack} scoreTime={phase} />
+    </section>
   </div>
 </main>
 
@@ -609,6 +689,7 @@
      */
     grid-template-areas:
       "console"
+      "timing"
       "audience"
       "grip-front"
       "grip-quarter"
@@ -618,16 +699,41 @@
      * measured at, so an auto row lets a pane keep whatever height the wide
      * layout gave it instead of shrinking to the stacked one.
      */
-    grid-template-rows: auto repeat(4, minmax(0, 52svh));
+    /*
+     * The band is size-contained so its own contents cannot report a height,
+     * which means an `auto` row collapses to the minimum and crushes the two
+     * lanes under a readout that wraps to five lines at this width. In a
+     * column that scrolls anyway, buy the chart the height outright.
+     */
+    grid-template-rows: auto minmax(0, 30rem) repeat(4, minmax(0, 52svh));
     min-height: 100dvh;
   }
 
   .view,
-  .console {
+  .console,
+  .timing-band {
     min-width: 0;
     min-height: 0;
     border-bottom: 1px solid rgb(148 178 206 / 18%);
     background: #0a101a;
+  }
+
+  .timing-band {
+    display: flex;
+    /*
+     * The band is a reading height, not a share of the viewport: the curves
+     * need room for curvature, and a band that grew with the screen would take
+     * the canvases' space at 4K without showing anything more. Its grid row
+     * owns that height, so the item itself stays collapsible.
+     */
+    min-height: 0;
+    overflow: hidden;
+    container: timing-band / size;
+  }
+
+  .timing-band > :global(*) {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .view {
@@ -635,7 +741,7 @@
     overflow: hidden;
   }
 
-  .views > :last-child {
+  .views > :nth-child(5) {
     border-bottom: 0;
   }
 
@@ -707,6 +813,47 @@
     background: rgb(5 14 24 / 88%);
   }
 
+  .transport {
+    flex: 0 0 auto;
+    /*
+     * A real button, not a text link: this is the control that turns the lab
+     * from a scrubber into playback, and it has to read as pressable.
+     */
+    min-width: 5rem;
+    min-height: 2.5rem;
+    padding: 0 0.9rem;
+    border: 1px solid rgb(111 231 255 / 45%);
+    border-radius: 0.5rem;
+    background: rgb(111 231 255 / 12%);
+    color: #a8efff;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--transition-fast, 120ms) ease;
+  }
+
+  .transport:hover {
+    background: rgb(111 231 255 / 22%);
+  }
+
+  .transport[aria-pressed="true"] {
+    border-color: rgb(111 231 255 / 75%);
+    background: rgb(111 231 255 / 28%);
+    color: #eaf9ff;
+  }
+
+  .transport:focus-visible {
+    outline: 2px solid #6fe7ff;
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .transport {
+      transition: none;
+    }
+  }
+
   .scrubber label {
     flex: 0 0 auto;
     min-width: 5rem;
@@ -773,9 +920,10 @@
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       grid-template-areas:
         "console      console"
+        "timing       timing"
         "audience     grip-front"
         "grip-quarter grip-overhead";
-      grid-template-rows: auto repeat(2, minmax(0, 52svh));
+      grid-template-rows: auto minmax(0, 24rem) repeat(2, minmax(0, 52svh));
     }
 
     /* Second and fourth in DOM order are the left-hand column. */
@@ -787,6 +935,10 @@
     .views > :nth-child(4),
     .views > :nth-child(5) {
       border-bottom: 0;
+    }
+
+    .timing-band {
+      border-bottom: 1px solid rgb(148 178 206 / 18%);
     }
 
     /*
@@ -804,8 +956,9 @@
         grid-template-columns: minmax(0, 21rem) minmax(0, 1fr) minmax(0, 1fr);
         grid-template-areas:
           "console audience     grip-front"
-          "console grip-quarter grip-overhead";
-        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+          "console grip-quarter grip-overhead"
+          "timing  timing       timing";
+        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 12rem);
         height: 100dvh;
         min-height: 0;
       }
@@ -844,10 +997,18 @@
 
     .views {
       grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1fr);
-      grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+      /*
+       * The band is a chart, so it is allowed to take more canvas when there
+       * is more canvas: the lower lane draws four curves whose separation is
+       * the thing being read. The floor keeps 1080 exactly where it was
+       * measured, and the cap stops a 4K panel from turning a readout strip
+       * into a third of the page.
+       */
+      grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) minmax(0, clamp(16rem, 18vh, 24rem));
       grid-template-areas:
         "audience grip-front    grip-quarter"
-        "audience grip-overhead console";
+        "audience grip-overhead console"
+        "timing   timing        timing";
       height: 100dvh;
     }
 
@@ -855,6 +1016,22 @@
     .console {
       border-right: 1px solid rgb(148 178 206 / 18%);
       border-bottom: 1px solid rgb(148 178 206 / 18%);
+    }
+
+    .timing-band {
+      border-top: 1px solid rgb(148 178 206 / 18%);
+      border-bottom: 0;
+    }
+
+    /*
+     * Wide and short — a folded phone in landscape. The band keeps both lanes
+     * and every reading, at the smallest height they stay legible in, so the
+     * four canvases are still worth looking at.
+     */
+    @media (max-height: 34rem) {
+      .views {
+        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 12rem);
+      }
     }
 
     .views > :last-child,
