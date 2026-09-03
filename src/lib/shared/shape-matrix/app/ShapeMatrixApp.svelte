@@ -30,6 +30,9 @@
       syncState: (snapshot) => persistence?.persist(snapshot),
     },
     {
+      surface: "matrix",
+      theoryRatio: { propRotations: 1, handCycles: 3 },
+      theorySpin: "pro",
       level: 2,
       leftTurn: 2,
       rightTurn: 2,

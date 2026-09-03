@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick } from "svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
+  import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
@@ -17,6 +18,8 @@
   import ShapeMatrixOverflowMenu from "./ShapeMatrixOverflowMenu.svelte";
   import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
   import ShapeMatrixTurnPopover from "./ShapeMatrixTurnPopover.svelte";
+  import ShapeMatrixSurfaceControl from "./ShapeMatrixSurfaceControl.svelte";
+  import ShapeMatrixTheoryAtlas from "./ShapeMatrixTheoryAtlas.svelte";
   import { runMandalaMorph } from "../services/shape-matrix-mandala-morph";
   import { growFade } from "$lib/shared/transitions/motion";
 
@@ -127,14 +130,61 @@
   </div>
 {/snippet}
 
+{#snippet matrixWorkspace()}
+  <!-- The crossfade lays its sources out as absolutely positioned blocks, so a
+       child that fills by flex-grow has nothing to grow inside. Each source
+       gets its own filling stage, the way the viewer's panel workspace does. -->
+  <div class="workspace-source">
+    <PanelGroup
+      direction="horizontal"
+      bind:sizes
+      gap={appState.compact ? 0 : 8}
+      panels={[
+        {
+          id: "matrix",
+          content: matrixPane,
+          defaultSize: 1.28,
+          minSize: 440,
+          fixedSize: appState.compact
+            ? appState.activeView === "matrix"
+              ? "100%"
+              : "0px"
+            : undefined,
+          resizable: !appState.compact,
+        },
+        {
+          id: "realization",
+          content: detailPane,
+          defaultSize: 0.82,
+          minSize: 380,
+          fixedSize: appState.compact
+            ? appState.activeView === "detail"
+              ? "100%"
+              : "0px"
+            : undefined,
+        },
+      ]}
+    />
+  </div>
+{/snippet}
+
+{#snippet theoryWorkspace()}
+  <div class="workspace-source">
+    <ShapeMatrixTheoryAtlas />
+  </div>
+{/snippet}
+
 <main
   class="shape-app"
-  class:compact-detail={appState.compact && appState.activeView === "detail"}
+  class:compact-detail={appState.surface === "matrix" &&
+    appState.compact &&
+    appState.activeView === "detail"}
+  class:theory={appState.surface === "theory"}
 >
   <header class="topbar">
     {#if appState.compact}
       <div class="compact-context">
-        {#if appState.activeView === "detail"}
+        {#if appState.surface === "matrix" && appState.activeView === "detail"}
           <button
             type="button"
             class="back-to-matrix"
@@ -145,13 +195,20 @@
             <span>Matrix</span>
           </button>
         {:else}
-          <strong>Shape Matrix</strong>
+          <strong
+            >{appState.surface === "theory"
+              ? "Ratio Atlas"
+              : "Shape Matrix"}</strong
+          >
         {/if}
         <!-- One level-and-turns chip on both compact panes. The full ribbon
              stacked four control groups above the grid on a phone and let
              the turn scroller run past the right edge; the chip keeps the
              matrix the hero and opens every control in its popover. -->
-        <ShapeMatrixTurnPopover />
+        <ShapeMatrixSurfaceControl compact />
+        {#if appState.surface === "matrix"}
+          <ShapeMatrixTurnPopover />
+        {/if}
       </div>
     {:else if variant === "standalone"}
       <div class="identity">
@@ -161,38 +218,52 @@
     {/if}
 
     {#if !appState.compact}
-      <div class="matrix-controls">
-        <div class="control-cell level-control">
-          <span class="control-label">Difficulty</span>
-          <LevelSelector
-            value={appState.level}
-            levels={SHAPE_MATRIX_LEVELS}
-            describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
-            onchange={appState.setLevel}
-            compact={true}
-            ariaLabel="Kinetic Alphabet level"
-          />
+      <!-- Which surface, and at what difficulty: two app-level choices that
+           outrank everything below them, so they sit on the title line. That
+           hands the whole second line to the turn row, which level 4 needs
+           for fourteen values without becoming a thin scroller. -->
+      <div class="header-meta">
+        <div class="control-cell surface-control-cell">
+          <span class="control-label">Explore</span>
+          <ShapeMatrixSurfaceControl />
         </div>
-        <div class="control-cell label-control neutral-accent">
-          <span class="control-label">Notation</span>
-          <SegmentedControl
-            options={LABEL_OPTIONS}
-            value={appState.labelMode}
-            onchange={(mode: MatrixLabelMode) => appState.setLabelMode(mode)}
-            size="sm"
-            density="tight"
-            color="accent"
-            semantics="radiogroup"
-            ariaLabel="Turn label system"
-          />
-        </div>
-        <ShapeMatrixTurnControls onturn={appState.setTurn} />
+        {#if appState.surface === "matrix"}
+          <div class="control-cell level-control" transition:growFade={{ axis: "x" }}>
+            <span class="control-label">Difficulty</span>
+            <LevelSelector
+              value={appState.level}
+              levels={SHAPE_MATRIX_LEVELS}
+              describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
+              onchange={appState.setLevel}
+              compact={true}
+              ariaLabel="Kinetic Alphabet level"
+            />
+          </div>
+        {/if}
       </div>
+      {#if appState.surface === "matrix"}
+        <div class="matrix-controls" transition:growFade={{ axis: "y" }}>
+          <div class="control-cell label-control neutral-accent">
+            <span class="control-label">Notation</span>
+            <SegmentedControl
+              options={LABEL_OPTIONS}
+              value={appState.labelMode}
+              onchange={(mode: MatrixLabelMode) => appState.setLabelMode(mode)}
+              size="sm"
+              density="tight"
+              color="accent"
+              semantics="radiogroup"
+              ariaLabel="Turn label system"
+            />
+          </div>
+          <ShapeMatrixTurnControls onturn={appState.setTurn} />
+        </div>
+      {/if}
     {/if}
 
     <div class="top-actions">
       {#if appState.compact}
-        {#if appState.activeView === "matrix" && appState.selectedPair}
+        {#if appState.surface === "matrix" && appState.activeView === "matrix" && appState.selectedPair}
           <button
             type="button"
             class="top-action compact-detail-action"
@@ -206,7 +277,7 @@
         <!-- Only while a control section covers the relationships: the button
              is the way back to them, so it has nothing to do when they are
              already showing, and it never competes with Matrix for the tap. -->
-        {#if appState.activeView === "detail" && animationState.activeSection !== null}
+        {#if appState.surface === "matrix" && appState.activeView === "detail" && animationState.activeSection !== null}
           <button
             type="button"
             class="top-action relationships-action"
@@ -243,35 +314,10 @@
   </header>
 
   <div class="workspace">
-    <PanelGroup
-      direction="horizontal"
-      bind:sizes
-      gap={appState.compact ? 0 : 8}
-      panels={[
-        {
-          id: "matrix",
-          content: matrixPane,
-          defaultSize: 1.28,
-          minSize: 440,
-          fixedSize: appState.compact
-            ? appState.activeView === "matrix"
-              ? "100%"
-              : "0px"
-            : undefined,
-          resizable: !appState.compact,
-        },
-        {
-          id: "realization",
-          content: detailPane,
-          defaultSize: 0.82,
-          minSize: 380,
-          fixedSize: appState.compact
-            ? appState.activeView === "detail"
-              ? "100%"
-              : "0px"
-            : undefined,
-        },
-      ]}
+    <DualSourceCrossfade
+      active={appState.surface === "matrix" ? "first" : "second"}
+      first={matrixWorkspace}
+      second={theoryWorkspace}
     />
   </div>
 </main>
@@ -298,10 +344,10 @@
 
   .topbar {
     display: grid;
-    grid-template-columns: minmax(12rem, 1fr) max-content;
+    grid-template-columns: minmax(6rem, 1fr) auto minmax(6rem, 1fr);
     grid-template-areas:
-      "identity actions"
-      "controls controls";
+      "identity meta actions"
+      "controls controls controls";
     align-items: center;
     gap: 0.3rem 0.8rem;
     padding: 0.3rem 0.75rem 0.45rem;
@@ -477,6 +523,22 @@
     min-width: 0;
   }
 
+  /* The title-line pair. It carries the ribbon's control height so the two
+     cells match the band below rather than shrinking to the title's line box. */
+  .header-meta {
+    grid-area: meta;
+    --ribbon-control-h: 3.25rem;
+    display: flex;
+    align-items: stretch;
+    justify-self: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .surface-control-cell {
+    flex: 0 0 auto;
+  }
+
   /* The bento cell: a caption row over its control, each cell carrying its
      own card chrome. The caption names the control so the band reads as
      labeled instruments instead of a strip of anonymous widgets. */
@@ -570,6 +632,14 @@
     overflow: hidden;
   }
 
+  .workspace-source {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
   .workspace-pane {
     width: 100%;
     height: 100%;
@@ -580,16 +650,20 @@
 
   @container shape-matrix-app (max-width: 74.99rem) or (max-height: 41.99rem) {
     .topbar {
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr) auto auto;
       grid-template-areas:
-        "context actions"
-        "controls controls";
+        "context meta actions"
+        "controls controls controls";
       gap: 0.3rem 0.5rem;
       padding: 0.3rem 0.45rem 0.45rem;
     }
 
     .matrix-controls {
       grid-area: controls;
+      gap: 0.4rem;
+    }
+
+    .header-meta {
       gap: 0.4rem;
     }
 
@@ -629,18 +703,19 @@
     }
   }
 
-  /* Wide hosts hold the whole header in one row. The seam sits above the
-     WIDEST ribbon state: level 4's fourteen-segment turn control plus
-     identity and actions measures ~138rem, so 140rem guarantees the row
-     fits with slack. The controls column may shrink to zero so any drift
-     degrades into the turn-scroller's own scroll, never page overflow. */
+  /* Wide hosts hold the whole header in one row: identity, the Explore and
+     Difficulty pair, the notation-and-turn band, and the actions. The seam
+     sits above the widest state, level 4's fourteen turn values, and the
+     band column may shrink to zero so any drift degrades into the turn
+     viewport's own scroll rather than page overflow. */
   @container shape-matrix-app (min-width: 140rem) {
     .topbar {
       grid-template-columns:
         minmax(max-content, 1fr)
+        auto
         minmax(0, max-content)
         minmax(max-content, 1fr);
-      grid-template-areas: "identity controls actions";
+      grid-template-areas: "identity meta controls actions";
     }
 
     .matrix-controls {

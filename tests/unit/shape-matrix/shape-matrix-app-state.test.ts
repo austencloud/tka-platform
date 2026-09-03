@@ -46,6 +46,9 @@ function createState(compact: boolean) {
       syncState,
     },
     {
+      surface: "matrix",
+      theoryRatio: { propRotations: 1, handCycles: 3 },
+      theorySpin: "pro",
       level: 2,
       leftTurn: 0,
       rightTurn: 0,
@@ -209,6 +212,9 @@ describe("shape matrix app state", () => {
     if (!left || !right) throw new Error("Shape Matrix axis is empty");
 
     state.restoreState({
+      surface: "matrix",
+      theoryRatio: { propRotations: 2, handCycles: 7 },
+      theorySpin: "anti",
       level: 3,
       leftTurn: 0.5,
       rightTurn: 0.5,
@@ -230,7 +236,31 @@ describe("shape matrix app state", () => {
     expect(state.selectedPair?.right.style).toBe(right.style);
     expect(state.selectedMode).toBe("QS");
     expect(state.selectedPropMode).toBe("SO");
+    expect(state.theoryRatio).toEqual({ propRotations: 2, handCycles: 7 });
+    expect(state.theorySpin).toBe("anti");
     expect(syncState).not.toHaveBeenCalled();
+  });
+
+  it("keeps Theory Atlas state exact and rejects ratios outside the catalog", () => {
+    const { state, syncState } = createState(false);
+
+    state.setSurface("theory");
+    state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
+    state.setTheorySpin("anti");
+
+    expect(state.surface).toBe("theory");
+    expect(state.theoryRatio).toEqual({ propRotations: 2, handCycles: 9 });
+    expect(state.theorySpin).toBe("anti");
+    expect(syncState).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        surface: "theory",
+        theoryRatio: { propRotations: 2, handCycles: 9 },
+        theorySpin: "anti",
+      })
+    );
+
+    state.setTheoryRatio({ propRotations: 3, handCycles: 10 });
+    expect(state.theoryRatio).toEqual({ propRotations: 1, handCycles: 3 });
   });
 
   it("keeps an exact prop target only while the pair has equal rotating turns", () => {

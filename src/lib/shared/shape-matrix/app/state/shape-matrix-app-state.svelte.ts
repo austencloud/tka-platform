@@ -20,10 +20,18 @@ import {
   MODE_ORDER,
   type VtgMode,
 } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { requestShapeMatrixTransition } from "$lib/shared/shape-matrix/debug/shape-matrix-transition-recorder";
+import {
+  buildTheorySpinRatioAtlas,
+  makeSpinRatio,
+  spinRatioEquals,
+  type SpinRatio,
+  type SpinStyle,
+} from "@vtg/domain";
 
 export type ShapeMatrixAppView = "matrix" | "detail";
+export type ShapeMatrixSurface = "matrix" | "theory";
 export interface ShapeMatrixCompactFocusRequest {
   id: number;
   target: ShapeMatrixAppView;
@@ -51,6 +59,9 @@ export interface ShapeMatrixSetTurnOptions {
 }
 
 export interface ShapeMatrixAppSnapshot {
+  surface: ShapeMatrixSurface;
+  theoryRatio: SpinRatio;
+  theorySpin: SpinStyle;
   level: TurnLevel;
   leftTurn: TurnValue;
   rightTurn: TurnValue;
@@ -80,6 +91,20 @@ const LEVEL_LANDING_TURN: Record<TurnLevel, TurnValue> = {
   3: 0.5,
   4: 0.25,
 };
+
+const THEORY_RATIOS = buildTheorySpinRatioAtlas();
+const DEFAULT_THEORY_RATIO = makeSpinRatio(1, 3);
+
+function allowedTheoryRatio(ratio: SpinRatio): SpinRatio {
+  try {
+    return (
+      THEORY_RATIOS.find((candidate) => spinRatioEquals(candidate, ratio)) ??
+      DEFAULT_THEORY_RATIO
+    );
+  } catch {
+    return DEFAULT_THEORY_RATIO;
+  }
+}
 
 function semanticVariant(flower: Flower): SemanticVariant {
   if (flower.style === "float") {
@@ -141,6 +166,9 @@ export function createShapeMatrixAppState(
   initial: ShapeMatrixAppSnapshot,
   initialCompact: boolean
 ) {
+  let surface = $state<ShapeMatrixSurface>(initial.surface);
+  let theoryRatio = $state(allowedTheoryRatio(initial.theoryRatio));
+  let theorySpin = $state<SpinStyle>(initial.theorySpin);
   let level = $state(initial.level);
   let leftTurn = $state<TurnValue>(
     clampMatrixTurnToLevel(initial.leftTurn, initial.level)
@@ -291,6 +319,25 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
+  function setSurface(nextSurface: ShapeMatrixSurface): void {
+    if (surface === nextSurface) return;
+    surface = nextSurface;
+    syncState();
+  }
+
+  function setTheoryRatio(nextRatio: SpinRatio): void {
+    const allowed = allowedTheoryRatio(nextRatio);
+    if (spinRatioEquals(theoryRatio, allowed)) return;
+    theoryRatio = allowed;
+    syncState();
+  }
+
+  function setTheorySpin(nextSpin: SpinStyle): void {
+    if (theorySpin === nextSpin) return;
+    theorySpin = nextSpin;
+    syncState();
+  }
+
   /*
    * The picker stays open. It sits beside the animation rather than over it,
    * so a choice is meant to be watched: pick a prop, see the shape traced by
@@ -303,6 +350,11 @@ export function createShapeMatrixAppState(
   }
 
   function restoreState(snapshot: ShapeMatrixAppSnapshot): void {
+    surface = snapshot.surface ?? "matrix";
+    theoryRatio = allowedTheoryRatio(
+      snapshot.theoryRatio ?? DEFAULT_THEORY_RATIO
+    );
+    theorySpin = snapshot.theorySpin === "anti" ? "anti" : "pro";
     level = snapshot.level;
     leftTurn = clampMatrixTurnToLevel(snapshot.leftTurn, snapshot.level);
     rightTurn = clampMatrixTurnToLevel(snapshot.rightTurn, snapshot.level);
@@ -409,6 +461,9 @@ export function createShapeMatrixAppState(
 
   function syncState(): void {
     dependencies.syncState({
+      surface,
+      theoryRatio,
+      theorySpin,
       level,
       leftTurn,
       rightTurn,
@@ -422,6 +477,15 @@ export function createShapeMatrixAppState(
   }
 
   return {
+    get surface() {
+      return surface;
+    },
+    get theoryRatio() {
+      return theoryRatio;
+    },
+    get theorySpin() {
+      return theorySpin;
+    },
     get level() {
       return level;
     },
@@ -494,6 +558,9 @@ export function createShapeMatrixAppState(
     setTurn,
     setActiveAxis,
     setLabelMode,
+    setSurface,
+    setTheoryRatio,
+    setTheorySpin,
     setPropType,
     selectPair,
     setMode,

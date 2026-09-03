@@ -20,12 +20,31 @@ import {
 import type { ShapeMatrixAppSnapshot } from "$lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte";
 import type { ShapeMatrixAxisTarget } from "$lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import {
+  buildTheorySpinRatioAtlas,
+  makeSpinRatio,
+  parseSpinRatio,
+  spinRatioEquals,
+  spinRatioKey,
+  type SpinRatio,
+} from "@vtg/domain";
 
 const MODES = new Set<VtgMode>(MODE_ORDER);
 const LABEL_MODES = new Set<MatrixLabelMode>(["turns", "ratios"]);
 const AXIS_TARGETS = new Set<ShapeMatrixAxisTarget>(["left", "both", "right"]);
 const PROP_TYPES = new Set<PropType>(Object.values(PropType));
 const LEGACY_SIZE_TURNS = { small: 0, medium: 1, large: 2 } as const;
+const THEORY_RATIOS = buildTheorySpinRatioAtlas();
+const DEFAULT_THEORY_RATIO = makeSpinRatio(1, 3);
+
+function readTheoryRatio(params: URLSearchParams): SpinRatio {
+  const requested = parseSpinRatio(params.get("ratio") ?? "");
+  return (
+    THEORY_RATIOS.find(
+      (candidate) => requested && spinRatioEquals(candidate, requested)
+    ) ?? DEFAULT_THEORY_RATIO
+  );
+}
 
 function readLevel(params: URLSearchParams): TurnLevel {
   const raw = Number(params.get("level"));
@@ -87,6 +106,9 @@ export function readShapeMatrixRouteState(
   const requestedProp = params.get("prop") as PropType | null;
 
   return {
+    surface: params.get("theory") === "1" ? "theory" : "matrix",
+    theoryRatio: readTheoryRatio(params),
+    theorySpin: params.get("spin") === "anti" ? "anti" : "pro",
     level,
     leftTurn,
     rightTurn,
@@ -129,6 +151,16 @@ export function writeShapeMatrixRouteState(
   // modes. The coordinated selector no longer has a driver, so new URLs remove
   // it while `propMode` continues to restore the exact relationship edge.
   url.searchParams.delete("driver");
+
+  if (state.surface === "theory") {
+    url.searchParams.set("theory", "1");
+    url.searchParams.set("ratio", spinRatioKey(state.theoryRatio));
+    url.searchParams.set("spin", state.theorySpin);
+  } else {
+    url.searchParams.delete("theory");
+    url.searchParams.delete("ratio");
+    url.searchParams.delete("spin");
+  }
 
   if (!state.pair) {
     url.searchParams.delete("left");
