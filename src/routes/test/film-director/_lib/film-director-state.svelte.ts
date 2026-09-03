@@ -1,10 +1,15 @@
 import { ZodError } from "zod";
 
-import { sampleFilmDirector } from "./sample-film-director";
+import {
+  sampleFilmDirector,
+  type FilmDirectorChannelPreview,
+} from "./sample-film-director";
 import { resolveFilmDirectorSpec } from "./resolve-film-director-spec";
 import {
+  applyChannelEdit,
   applyPerformerEdit,
   applySceneEdit,
+  type ChannelEdit,
   type PerformerEdit,
   type SceneEdit,
 } from "./film-director-edit";
@@ -95,7 +100,17 @@ export function createFilmDirectorState(
   let frameRequest: number | null = null;
   let lastFrameTime: number | null = null;
 
-  const frame = $derived(sampleFilmDirector(film, playheadSeconds));
+  /**
+   * A manual camera layer standing in for one scene's own while a key is being
+   * dragged. Committing every pointer move would re-resolve the whole film;
+   * this substitutes the layer at sample time instead, so the rig answers the
+   * drag immediately and the document is written once, on release.
+   */
+  let channelPreview = $state<FilmDirectorChannelPreview | null>(null);
+
+  const frame = $derived(
+    sampleFilmDirector(film, playheadSeconds, channelPreview)
+  );
 
   /**
    * The scene the playhead is confined to, or null for the whole film.
@@ -356,6 +371,39 @@ export function createFilmDirectorState(
     }
   }
 
+  /**
+   * Writes the manual camera layer and re-resolves. Same contract as the two
+   * edits above: the playhead and the warmup stay put, and a rejected write
+   * leaves the document untouched. Clears any live preview, because the
+   * document now says what the preview was standing in for.
+   */
+  function editChannel(edit: ChannelEdit): boolean {
+    try {
+      const patched = applyChannelEdit(
+        $state.snapshot(sourceInput) as FilmDirectorInput,
+        edit
+      );
+      const nextFilm = resolveFilmDirectorSpec(patched);
+      sourceInput = patched;
+      film = nextFilm;
+      draft = JSON.stringify(patched, null, 2);
+      lastEditError = null;
+      channelPreview = null;
+      editRevision += 1;
+      return true;
+    } catch (error: unknown) {
+      lastEditError = explainValidationError(error);
+      channelPreview = null;
+      return false;
+    }
+  }
+
+  /** Substitute a scene's manual layer for the length of a drag, or null to
+   *  go back to whatever the document says. */
+  function previewChannels(preview: FilmDirectorChannelPreview | null): void {
+    channelPreview = preview;
+  }
+
   function loadFilm(input: FilmDirectorInput): boolean {
     try {
       const cloned = structuredClone(input);
@@ -476,6 +524,10 @@ export function createFilmDirectorState(
     get lastEditError() {
       return lastEditError;
     },
+    /** The manual layer standing in for a scene's own during a drag, if any. */
+    get channelPreview() {
+      return channelPreview;
+    },
     get frame() {
       return frame;
     },
@@ -507,6 +559,8 @@ export function createFilmDirectorState(
     resetDraft,
     editPerformer,
     editScene,
+    editChannel,
+    previewChannels,
     loadFilm,
     toggleEditor,
     setPosterSource,

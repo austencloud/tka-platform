@@ -12,6 +12,10 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import {
+  CAMERA_CHANNEL_IDS,
+  type CameraChannelId,
+} from "./director-camera-channels";
 import { directiveSchema } from "./directives";
 import { normalizeFilmDirectorInput } from "./normalize-film-director-input";
 import type { ResolvedDirectorBlockingKeyframe } from "./blocking-language";
@@ -1111,6 +1115,7 @@ const cameraMoveFields = {
     "orbit",
     "crane",
     "pan",
+    "tilt",
     "truck",
     "zoom",
     "roll",
@@ -1298,9 +1303,51 @@ const cameraShotSchema = z
   .strict()
   .superRefine(atMostOneMoveLength);
 
+/**
+ * One hand-authored key on one camera channel.
+ *
+ * Times are seconds from the scene's start. Manual keys deliberately do not
+ * accept the beat, bar and cue vocabulary a camera keyframe does: a key placed
+ * by dragging it is a statement about a moment, and having it slide when the
+ * tempo changed would be a surprise rather than a feature.
+ */
+const cameraChannelKeySchema = z
+  .object({
+    atSeconds: finiteNumber.min(0),
+    value: finiteNumber,
+    interpolation: z.enum(DIRECTOR_INTERPOLATIONS).optional(),
+    easing: z.enum(DIRECTOR_EASINGS).optional(),
+  })
+  .strict();
+
+/**
+ * The manual layer, addressed by channel.
+ *
+ * Present only when something was hand-keyed; absent, not empty, otherwise, so
+ * every film written before channels existed resolves byte-identically. A
+ * channel named here takes ownership whole (decision D2): its keys replace
+ * whatever composed underneath rather than merging with it.
+ */
+const cameraChannelsSchema = z
+  // partialRecord, not record: an enum-keyed `z.record` in Zod 4 is
+  // EXHAUSTIVE, so it would demand all eleven channels before accepting one.
+  // Hand-keying a single scalar is the whole point of the block.
+  .partialRecord(
+    z.enum(CAMERA_CHANNEL_IDS),
+    z
+      .object({ keys: z.array(cameraChannelKeySchema).min(1).max(64) })
+      .strict()
+  )
+  .refine((channels) => Object.keys(channels).length > 0, {
+    message:
+      "A channels block with nothing in it says nothing. Leave it out instead.",
+  });
+
 const cameraSchema = z
   .object({
     preset: z.enum(DIRECTOR_CAMERA_PRESETS).optional(),
+    /** Hand-keyed channels, layered over whatever the rest of this camera says. */
+    channels: cameraChannelsSchema.optional(),
     target: cameraTargetSchema.optional(),
     orbitDegrees: finiteNumber.min(-720).max(720).optional(),
     keyframes: z.array(cameraKeyframeSchema).min(1).max(32).optional(),
@@ -1720,8 +1767,48 @@ export interface ResolvedDirectorCameraKeyframe {
    * that never roll resolve byte-identically to their pre-roll snapshots.
    */
   rollDeg?: number;
+  /**
+   * How the aim travels from THIS keyframe to the next, the same way
+   * `interpolation` governs its own outgoing segment.
+   *
+   * Absent means the aim point is interpolated where it lives, in world space.
+   * That is right for every move that holds a fixed point or carries the aim
+   * along with the rig, and it is what every keyframe resolved before this
+   * field existed does, so those films are untouched.
+   *
+   * `"angles"` means the segment interpolates the aim DIRECTION instead, and
+   * the aim point is derived. A turn in place needs this: interpolating the
+   * point chords across the arc, so the framing distance dips and the angular
+   * rate is wrong in the middle of the move.
+   */
+  aimSpace?: "angles";
+  /**
+   * Aim yaw in degrees, `atan2(dx, dz)`, present when the compiler knows the
+   * turn it authored. Stated rather than recovered because `atan2` cannot tell
+   * a turn of 270 degrees from one of -90.
+   */
+  aimYawDeg?: number;
+  /** Aim pitch in degrees above level, present alongside `aimYawDeg`. */
+  aimPitchDeg?: number;
   interpolation: DirectorInterpolation;
   easing: DirectorEasing;
+}
+
+/**
+ * One key of a resolved manual channel. Structurally what
+ * `ManualCameraChannel` in `director-camera-channels.ts` consumes; the shape
+ * is stated here because this is where resolved documents are described.
+ */
+export interface ResolvedDirectorCameraChannelKey {
+  atSeconds: number;
+  value: number;
+  interpolation: DirectorInterpolation;
+  easing: DirectorEasing;
+}
+
+export interface ResolvedDirectorCameraChannel {
+  id: CameraChannelId;
+  keys: ResolvedDirectorCameraChannelKey[];
 }
 
 export interface ResolvedDirectorScene {
@@ -1799,6 +1886,13 @@ export interface ResolvedDirectorScene {
      * byte-identically to their earlier snapshots.
      */
     handheld?: ResolvedDirectorHandheld;
+    /**
+     * The manual layer: channels the director hand-keyed, each owning its
+     * scalar outright over whatever the preset, grammar or keyframes below it
+     * produced. Absent (not an empty array) when nothing was hand-keyed, so
+     * films written before channels existed resolve byte-identically.
+     */
+    channels?: ResolvedDirectorCameraChannel[];
   };
 }
 

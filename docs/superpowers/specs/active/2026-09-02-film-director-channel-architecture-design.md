@@ -59,7 +59,7 @@ Each decision states the alternatives considered and why they lost. Any of
 these can be overturned in one line; they are written down so that overturning
 one is a decision rather than a drift.
 
-### D1. Orientation is stored as yaw, pitch and distance. Target is derived.
+### D1. Aim is stored as yaw, pitch and distance. The aim space is chosen per segment.
 
 `camera.aim.yaw`, `camera.aim.pitch`, and `camera.aim.distance` become real
 channels. The look-at target is computed from position plus that spherical aim
@@ -95,6 +95,59 @@ says `push-in` / `pull-back` where the industry says `dolly`, and has no
 exactly the reason this decision fixes. [CinemaTraj](https://arxiv.org/abs/2607.26910v1)
 (2026-07-29) also lists tilt among its seven atomic movements. Adding `tilt` to
 `DirectorCameraMove` belongs in the phase that lands D1, not in a later cleanup.
+
+**Amended 2026-09-03, during implementation.** As written above, this decision
+was wrong in a way that only showed up against the library: *derive the target
+always* breaks the most common shot in the product.
+
+Interpolating yaw, pitch and distance independently reproduces a fixed aim
+point only when the camera is also fixed. Whenever the rig travels while
+holding a subject -- a push-in, a crane, a truck, an orbit, which between them
+account for nearly every keyframe in the nine films -- the aim's spherical
+coordinates all change, and interpolating them separately makes the aim point
+wander off the subject it was supposed to be locked to. The cartesian target
+was not merely the status quo. For those moves it is correct, and the spherical
+form is not.
+
+The distinction that survives is not which representation is true. It is what
+the move MEANS:
+
+- **Turning in place** (pan, tilt) is angular. Interpolating the point chords
+  across the arc: the framing distance dips through the middle of the move and
+  the angular rate does not match the turn that was asked for. Measured on the
+  library, Nine Planes scene 1 sagged from 15.357 m to 14.806 m mid-pan.
+- **Holding or carrying an aim point** (hold, push-in, pull-back, crane, truck,
+  orbit, zoom, roll) is positional. Interpolating angles drifts off the subject.
+
+So the aim space belongs to the segment, exactly as `interpolation` already
+does: a keyframe governs how the camera travels from it to the next one.
+`ResolvedDirectorCameraKeyframe` gains `aimSpace?: "angles"`, set only by a
+move that turns the rig in place, plus `aimYawDeg` / `aimPitchDeg` stated by
+the compiler that authored the turn. Absent means world-space aim, which is
+what every keyframe resolved before the field existed means, so six of the nine
+films are byte-identical and the other three changed only inside their turns.
+
+`camera.aim.yaw` / `.pitch` / `.distance` are still real channels present on
+every track, so pan and tilt are real rows on the timeline as promised. What
+changed is that the target channels are not deleted; the two aim forms coexist
+and the segment says which one is load-bearing.
+
+**What this does not foreclose.** The Cinemachine-shaped answer -- aim is a
+BEHAVIOR (track this subject) rather than a keyed value, so holding a subject
+is not keyed at all -- is better than either representation and remains open.
+It belongs with D4's behavior nodes in phase 2, not in a refactor that has to
+keep nine films pixel-stable.
+
+Two implementation traps worth carrying forward, both found by tests rather
+than by reading:
+
+1. A stated yaw must never be unwrapped toward its neighbour. Unwrapping is for
+   angles recovered from a point; folding a stated one turns a 270-degree pan
+   into a 90-degree pan the other way.
+2. A turn's closing keyframe is popped and replaced by the next move's opening
+   keyframe at the same instant, which would take the stated arrival angle with
+   it. The replacing key inherits the angles (but not `aimSpace`, which governs
+   a segment that now belongs to the next move).
 
 ### D2. Layers compose by copy-on-write per channel.
 
@@ -322,14 +375,35 @@ Four phases. Each is independently shippable, and the first two are provable.
 Build the store, express a fused keyframe as nine channels keyed at the same
 `t`, and rewrite `sampleDirectorCameraTrack` as an adapter over it.
 
-**Gate: `film-resolution-snapshot.test.ts` passes with zero snapshot changes,
-and all 848 tests stay green.** If a snapshot moves, the step is wrong. Do not
-regenerate the snapshot to make phase 1 pass; that would discard the only proof
-available that the refactor preserved behavior.
+**The gate this phase was written with was not strong enough, and the
+correction matters more than the phase does.** `film-resolution-snapshot`
+freezes what RESOLUTION produces: the keyframe list. It says nothing whatever
+about the curve BETWEEN two keyframes, which is the entire subject of a sampler
+refactor. A Catmull-Rom pass that selected its neighbours differently would
+produce byte-identical keyframes and a visibly different film, and that
+snapshot would have passed.
 
-Aim conversion (D1) lands here, so this phase must also prove that
-position-plus-yaw-pitch-distance reconstructs the identical target vector to
-floating-point tolerance. Add a focused property test for the round trip.
+So phase 1 splits, and it opens by building the missing gate:
+
+- **1a. Freeze the sampler, then refactor under it.** Add
+  `camera-sampling-snapshot.test.ts`: every scene of all nine films sampled on
+  a uniform grid, plus probes 1 ms either side of every keyframe (cuts and
+  holds hide between grid points), plus out-of-range probes for the clamps.
+  Then build the channel store. **Gate: both snapshots unchanged.** Do not
+  regenerate either; that discards the only proof the refactor preserved
+  behaviour. Landed 2026-09-03, 857 tests, zero snapshot changes.
+- **1b. Aim channels and `tilt` (D1 as amended).** This one cannot be
+  byte-identical and should never have been scheduled as though it could:
+  making a turn sweep its arc instead of chording it changes, by design, the
+  frames inside every turn. It is a reviewed diff, and the review is the
+  deliverable. Landed 2026-09-03: resolution purely additive, sampling moved 3
+  of 50 scenes and 382 of 20,050 probes, all inside turns, largest 0.61 m.
+
+The round-trip property this phase was told to prove is subsumed: the
+amendment to D1 keeps the target channels, and the tests in
+`camera-aim-channels.test.ts` assert the observable behaviour (constant framing
+distance through a turn, angle tracking eased progress, a 270-degree turn that
+does not fold to 90) rather than the conversion in isolation.
 
 ### Phase 2: moves become nodes that produce the directive layer.
 
@@ -359,11 +433,10 @@ model. `scene.extends` retires in favor of clip instancing.
 
 ## Testing
 
-- **Snapshot equality is the phase 1 and 2 gate**, and it is unusually strong
-  here: nine films resolve deterministically, so a passing snapshot is proof
-  the refactor changed no pixels.
-- **Property test the aim round trip**: for a sampled set of position and target
-  pairs, converting to yaw, pitch and distance and back reproduces the target.
+- **Snapshot equality is the phase 1 and 2 gate**, and it takes BOTH snapshots.
+  `film-resolution-snapshot` proves the keyframes did not move;
+  `camera-sampling-snapshot` proves the curve between them did not either.
+  Neither implies the other, and a sampler change is invisible to the first.
 - **Property test layer composition**: for randomized layer stacks, the topmost
   owner wins, corrections are additive, and revert restores the composed value
   exactly.

@@ -7,9 +7,24 @@ import {
   type DirectorCameraFrame,
 } from "./director-camera-track";
 import type {
+  ResolvedDirectorCameraChannel,
   ResolvedDirectorScene,
   ResolvedFilmDirectorSpec,
 } from "./film-director-schema";
+
+/**
+ * A manual layer standing in for one scene's own, for the length of a drag.
+ *
+ * Committing a hand-keyed value to the document re-resolves the whole film,
+ * which is right on release and far too heavy per pointer move. The channel
+ * editor hands the whole replacement layer here instead, so the rig answers
+ * the drag on the frame the finger moved and the document is written once, at
+ * the end.
+ */
+export interface FilmDirectorChannelPreview {
+  sceneId: string;
+  channels: readonly ResolvedDirectorCameraChannel[];
+}
 
 export interface FilmDirectorFrame {
   filmTimeSeconds: number;
@@ -174,7 +189,8 @@ export function applyHandheld(
 
 export function sampleFilmDirector(
   film: ResolvedFilmDirectorSpec,
-  requestedSeconds: number
+  requestedSeconds: number,
+  channelPreview?: FilmDirectorChannelPreview | null
 ): FilmDirectorFrame {
   const filmTimeSeconds = normalizeFilmTime(film, requestedSeconds);
   let sceneIndex = film.scenes.findIndex(
@@ -195,7 +211,13 @@ export function sampleFilmDirector(
   );
   const camera = applyHandheld(
     applyCameraTracking(
-      sampleDirectorCameraTrack(scene.camera.keyframes, sceneTimeSeconds),
+      sampleDirectorCameraTrack(
+        scene.camera.keyframes,
+        sceneTimeSeconds,
+        channelPreview?.sceneId === scene.id
+          ? channelPreview.channels
+          : scene.camera.channels
+      ),
       scene,
       performerMotion
     ),

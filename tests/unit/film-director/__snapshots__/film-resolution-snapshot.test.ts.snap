@@ -8376,7 +8376,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "fovDeg": 50,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "ease-in-out",
+            "aimYawDeg": 0,
+            "aimPitchDeg": -28,
+            "aimSpace": "angles"
           },
           {
             "atSeconds": 4.5,
@@ -8392,7 +8395,9 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "fovDeg": 50,
             "interpolation": "smooth",
-            "easing": "ease-out"
+            "easing": "ease-out",
+            "aimYawDeg": -35,
+            "aimPitchDeg": -28
           },
           {
             "atSeconds": 9,
@@ -12897,7 +12902,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             ],
             "fovDeg": 50,
             "interpolation": "smooth",
-            "easing": "linear"
+            "easing": "linear",
+            "aimYawDeg": 0,
+            "aimPitchDeg": -4,
+            "aimSpace": "angles"
           },
           {
             "atSeconds": 2.8,
@@ -12913,7 +12921,9 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             ],
             "fovDeg": 50,
             "interpolation": "step",
-            "easing": "ease-in-out"
+            "easing": "ease-in-out",
+            "aimYawDeg": 51.759354,
+            "aimPitchDeg": -4
           },
           {
             "atSeconds": 5.2,
@@ -12929,7 +12939,10 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             ],
             "fovDeg": 50,
             "interpolation": "smooth",
-            "easing": "linear"
+            "easing": "linear",
+            "aimYawDeg": 51.759354,
+            "aimPitchDeg": -4,
+            "aimSpace": "angles"
           },
           {
             "atSeconds": 5.5,
@@ -12945,7 +12958,9 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             ],
             "fovDeg": 50,
             "interpolation": "step",
-            "easing": "ease-in-out"
+            "easing": "ease-in-out",
+            "aimYawDeg": 0,
+            "aimPitchDeg": -4
           },
           {
             "atSeconds": 8,
@@ -18691,7 +18706,10 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "fovDeg": 50,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "ease-in-out",
+            "aimYawDeg": 0,
+            "aimPitchDeg": -4,
+            "aimSpace": "angles"
           },
           {
             "atSeconds": 3.5,
@@ -18707,7 +18725,9 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "fovDeg": 50,
             "interpolation": "step",
-            "easing": "ease-in-out"
+            "easing": "ease-in-out",
+            "aimYawDeg": 30,
+            "aimPitchDeg": -4
           },
           {
             "atSeconds": 5.5,

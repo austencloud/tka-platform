@@ -1,6 +1,12 @@
 import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
 
-import { applyDirectorEasing } from "./director-easing";
+import {
+  buildCameraChannels,
+  sampleCameraFrame,
+  type CameraChannelStore,
+  type DirectorCameraFrame,
+  type ManualCameraChannel,
+} from "./director-camera-channels";
 import {
   compileCameraMoves,
   compileCameraShots,
@@ -22,18 +28,13 @@ import type {
   DirectorCameraPreset,
   DirectorCameraTargetInput,
   DirectorEasing,
+  ResolvedDirectorCameraChannel,
   ResolvedDirectorCameraKeyframe,
   ResolvedDirectorHandheld,
   ResolvedDirectorPerformer,
 } from "./film-director-schema";
 
-export interface DirectorCameraFrame {
-  position: [number, number, number];
-  target: [number, number, number];
-  fovDeg: number;
-  /** Horizon tilt, degrees; positive = clockwise on screen. Always present (0 = level). */
-  rollDeg: number;
-}
+export type { DirectorCameraFrame } from "./director-camera-channels";
 
 export function getPreviewCameraFov(
   filmFovDeg: number,
@@ -124,6 +125,53 @@ export interface ResolvedDirectorCameraTrack {
    * films that stay on the tripod resolve byte-identically.
    */
   handheld?: ResolvedDirectorHandheld;
+  /**
+   * The manual layer. Absent (not an empty array) when nothing was hand-keyed,
+   * which is what keeps every pre-channels film resolving byte-identically.
+   */
+  channels?: ResolvedDirectorCameraChannel[];
+}
+
+/**
+ * Hand-keyed channels, checked against the scene they belong to.
+ *
+ * The rules are the ones raw keyframes already answer to — sorted, no two keys
+ * at the same instant, nothing past the end of the scene — because a channel
+ * is the same kind of statement about the same timeline. The message names the
+ * channel, since the director is looking at a row rather than at a list.
+ */
+function resolveManualChannels(
+  input: DirectorCameraInput["channels"],
+  durationSeconds: number,
+  sceneId: string
+): ResolvedDirectorCameraChannel[] | undefined {
+  if (!input) return undefined;
+  const resolved: ResolvedDirectorCameraChannel[] = [];
+  for (const [id, channel] of Object.entries(input)) {
+    if (!channel) continue;
+    const keys = [...channel.keys]
+      .map((key) => ({
+        atSeconds: key.atSeconds,
+        value: key.value,
+        interpolation: key.interpolation ?? ("smooth" as const),
+        easing: key.easing ?? ("ease-in-out" as const),
+      }))
+      .sort((left, right) => left.atSeconds - right.atSeconds);
+    for (let index = 1; index < keys.length; index += 1) {
+      if (keys[index]!.atSeconds === keys[index - 1]!.atSeconds) {
+        throw new Error(
+          `Scene "${sceneId}": two keys on "${id}" share the same time.`
+        );
+      }
+    }
+    if (keys.at(-1)!.atSeconds > durationSeconds) {
+      throw new Error(
+        `Scene "${sceneId}": a key on "${id}" falls after the scene has ended.`
+      );
+    }
+    resolved.push({ id: id as ResolvedDirectorCameraChannel["id"], keys });
+  }
+  return resolved.length > 0 ? resolved : undefined;
 }
 
 function vec3(value: {
@@ -214,7 +262,18 @@ export function resolveDirectorCameraTrack(
   // Handheld is a modifier on the sampled frame, not a framing, so it rides
   // along with whichever of the four camera spellings below resolves.
   const handheld = resolveHandheld(input?.handheld, context);
-  const shake = handheld ? { handheld } : {};
+  const manual = resolveManualChannels(
+    input?.channels,
+    context.durationSeconds,
+    sceneId
+  );
+  // Spread at each of the four spellings a camera resolves through, so the
+  // manual layer rides along with presets, grammar, shots and raw keyframes
+  // alike rather than being a fifth mutually exclusive way to write a camera.
+  const shake = {
+    ...(handheld ? { handheld } : {}),
+    ...(manual ? { channels: manual } : {}),
+  };
   const baseShot = computeFramingShot({
     performers: performers.map((performer) => performer.position),
     plane: "wall",
@@ -367,151 +426,46 @@ export function resolveDirectorCameraTrack(
   };
 }
 
-function interpolateScalar(
-  before: number,
-  start: number,
-  end: number,
-  after: number,
-  progress: number,
-  smooth: boolean
-): number {
-  if (!smooth) return start + (end - start) * progress;
-  const p2 = progress * progress;
-  const p3 = p2 * progress;
-  return (
-    0.5 *
-    (2 * start +
-      (-before + end) * progress +
-      (2 * before - 5 * start + 4 * end - after) * p2 +
-      (-before + 3 * start - 3 * end + after) * p3)
-  );
+/**
+ * Channel stores are derived from a keyframe list, so they are cached against
+ * that list's identity. Resolution produces each track once per film load and
+ * the viewer then samples it every frame; rebuilding eight channels per frame
+ * would be a real cost for no gain.
+ */
+const CHANNEL_STORES = new WeakMap<object, CameraChannelStore>();
+
+/**
+ * The channel store behind a resolved track, built on first use.
+ *
+ * Cached against the manual layer's identity when there is one, and against
+ * the keyframes' otherwise. Both arrays are produced by the same resolution
+ * pass, so they change together; keying on the manual array is what lets a
+ * live drag hand in a new preview array and get a new store for it without
+ * evicting anything.
+ */
+export function cameraChannelsFor(
+  keyframes: readonly ResolvedDirectorCameraKeyframe[],
+  manual?: readonly ManualCameraChannel[]
+): CameraChannelStore {
+  const key = (manual ?? keyframes) as unknown as object;
+  const cached = CHANNEL_STORES.get(key);
+  if (cached) return cached;
+  const store = buildCameraChannels(keyframes, manual);
+  CHANNEL_STORES.set(key, store);
+  return store;
 }
 
 /**
- * Lens scalars (fov, roll) that hold a value across a segment hold it exactly.
- * Catmull-Rom would bow the flat segment toward its neighbours — fov creeping
- * to 50.2 before a zoom, roll dipping negative before a clockwise roll — and a
- * director who stated a hold expects a hold. Position keeps the plain spline:
- * a per-axis short-circuit there would flatten curved paths.
+ * Sample a resolved camera track.
+ *
+ * The curve itself lives in `director-camera-channels.ts`, one channel per
+ * scalar. This function is the adapter that the viewer and the exporters have
+ * always called: hand it fused keyframes, get one frame back.
  */
-function interpolateLensScalar(
-  before: number,
-  start: number,
-  end: number,
-  after: number,
-  progress: number,
-  smooth: boolean
-): number {
-  if (start === end) return start;
-  return interpolateScalar(before, start, end, after, progress, smooth);
-}
-
-function interpolateVector(
-  before: [number, number, number],
-  start: [number, number, number],
-  end: [number, number, number],
-  after: [number, number, number],
-  progress: number,
-  smooth: boolean
-): [number, number, number] {
-  return [0, 1, 2].map((axis) =>
-    interpolateScalar(
-      before[axis]!,
-      start[axis]!,
-      end[axis]!,
-      after[axis]!,
-      progress,
-      smooth
-    )
-  ) as [number, number, number];
-}
-
 export function sampleDirectorCameraTrack(
   keyframes: readonly ResolvedDirectorCameraKeyframe[],
-  atSeconds: number
+  atSeconds: number,
+  manual?: readonly ManualCameraChannel[]
 ): DirectorCameraFrame {
-  const first = keyframes[0];
-  if (!first) {
-    return { position: [0, 1, -4], target: [0, 0, 0], fovDeg: 50, rollDeg: 0 };
-  }
-  if (keyframes.length === 1 || atSeconds <= first.atSeconds) {
-    return {
-      position: [...first.position],
-      target: [...first.target],
-      fovDeg: first.fovDeg,
-      rollDeg: first.rollDeg ?? 0,
-    };
-  }
-
-  const last = keyframes.at(-1)!;
-  if (atSeconds >= last.atSeconds) {
-    return {
-      position: [...last.position],
-      target: [...last.target],
-      fovDeg: last.fovDeg,
-      rollDeg: last.rollDeg ?? 0,
-    };
-  }
-
-  const endIndex = keyframes.findIndex((frame) => frame.atSeconds > atSeconds);
-  const startIndex = Math.max(0, endIndex - 1);
-  const start = keyframes[startIndex]!;
-  const end = keyframes[endIndex]!;
-  if (start.interpolation === "step") {
-    return {
-      position: [...start.position],
-      target: [...start.target],
-      fovDeg: start.fovDeg,
-      rollDeg: start.rollDeg ?? 0,
-    };
-  }
-
-  const duration = Math.max(0.0001, end.atSeconds - start.atSeconds);
-  const linearProgress = Math.max(
-    0,
-    Math.min(1, (atSeconds - start.atSeconds) / duration)
-  );
-  const progress = applyDirectorEasing(linearProgress, start.easing);
-  let before = keyframes[Math.max(0, startIndex - 1)] ?? start;
-  let after = keyframes[Math.min(keyframes.length - 1, endIndex + 1)] ?? end;
-  // A step keyframe is a cut: the spline on either side must not bend toward
-  // framing that belongs to a different shot.
-  if (before.interpolation === "step") before = start;
-  if (end.interpolation === "step") after = end;
-  const smooth = start.interpolation === "smooth";
-
-  return {
-    position: interpolateVector(
-      before.position,
-      start.position,
-      end.position,
-      after.position,
-      progress,
-      smooth
-    ),
-    target: interpolateVector(
-      before.target,
-      start.target,
-      end.target,
-      after.target,
-      progress,
-      smooth
-    ),
-    fovDeg: interpolateLensScalar(
-      before.fovDeg,
-      start.fovDeg,
-      end.fovDeg,
-      after.fovDeg,
-      progress,
-      smooth
-    ),
-    rollDeg: interpolateLensScalar(
-      before.rollDeg ?? 0,
-      start.rollDeg ?? 0,
-      end.rollDeg ?? 0,
-      after.rollDeg ?? 0,
-      progress,
-      smooth
-    ),
-  };
+  return sampleCameraFrame(cameraChannelsFor(keyframes, manual), atSeconds);
 }
