@@ -1,7 +1,8 @@
 # Scene Boot Cost — Measured, and the Dead Ends
 
-**Status:** settled 2026-09-02. Re-open only with new measurements from the
-boot profiler, never from reasoning about what "should" be slow.
+**Status:** settled 2026-09-02; two defects found and fixed the same day.
+Re-open only with new measurements from the boot profiler, never from
+reasoning about what "should" be slow.
 
 This document exists so no future session re-derives it. Three separate
 sessions independently proposed texture cooking as the fix for 3D load time.
@@ -119,30 +120,58 @@ The wait relocated. It is driver link time, and it does not disappear by
 declining to ask for it. Any future "just skip the shader error check" patch
 is this same non-fix; measure before believing it.
 
-## Still open — these are the real leads
+## Fixed 2026-09-02 — do not "fix" these again
 
-### 1. The settle phase burns 3,167 ms doing nothing
+Both leads below were investigated and closed. The numbers are same-machine
+before/after on `/test/ocean-scene`, warm, page foregrounded.
 
-Zero blocked time, zero GPU calls, verdict `"capped"`. The frame gate
-(`frame-gate.ts`) never observed its smooth-frame streak over an
-already-loaded scene and timed out instead. The desktop run settled in 114 ms,
-so machine load may explain part of it — but 3.2 seconds of measured idle in a
-7.7-second boot has not been investigated at all.
+| Phase | Before | After |
+| --- | --- | --- |
+| assets | 2,842 ms | 2,185 ms |
+| compile | 2,942 ms | **673 ms** |
+| settle | 1,590 ms, `capped` | **191 ms, `passed`** |
 
-### 2. Shader programs link lazily and serially, before the warmup runs
+### The frame gate could not pass at 30fps
 
-Cold run: the **assets** phase spent 3,930 ms in `shaderSync` across 79 calls
-with peak in-flight of **1** — strictly sequential. The **compile** phase's
-`warmupRenderer` / `compileAsync` pass, which exists to pre-build these, cost
-only 316 ms across 51 calls.
+`DEFAULT_FRAME_GATE.frameBudgetMs` was 20 ms — under half a 30 fps frame — and
+the gate wanted five consecutive frames inside it. A heavy scene settles at a
+steady 30 fps, so the streak was unreachable and the boot paid the full 1,500 ms
+cap as a flat delay with zero blocked time and zero GPU calls. Measured cadence
+during settle: p50 33.3 ms, p90 33.4 ms, 34 of 53 frames over the old budget.
 
-That shape suggests most programs are already linking at first draw before the
-warmup pass gets to them, so the warmup covers little of the real cost. This
-is a **hypothesis**, not a measured conclusion. Verifying it means
-instrumenting which programs link in which phase.
+The budget is now 40 ms. At the identical 33.3 ms cadence the gate passes in
+191 ms. It still resets on the 130 ms hitches it exists to hide.
 
-The levers, if it holds: reduce distinct program count (material variants,
-`defines` permutations), or move linking earlier and overlap it with fetch.
+A second defect: the cap was only tested when a frame arrived, and
+`requestAnimationFrame` does not fire in a hidden document, so a scene booted in
+a background tab waited on a cap that could never come. The settle loop in
+`SceneShaderWarmup.svelte` now races the frame loop against wall-clock time.
+
+Caveat worth keeping: on a machine already rendering at 60 fps the old gate
+passed fine, so this fix buys nothing there. It is the 30 fps case — a heavy
+scene, a phone, a loaded machine — that was paying 1.5 s.
+
+### The shader warm-up awaited one program at a time
+
+`warmupRenderer` ran `await renderer.compileAsync(...)` in a loop.
+`compileAsync` (`three.module.js:16992`) does its traversal and program
+creation synchronously and then returns a promise that polls
+`KHR_parallel_shader_compile` on a **10 ms `setTimeout` chain**. Awaiting them
+in turn therefore paid every driver link end to end *plus* a poll tick per
+program, with the GPU idle in between.
+
+The calls are now dispatched together and awaited as a group. Same-server A/B,
+three runs each: compile phase 1,615 / 2,103 / 1,695 ms → 240 / 216 / 293 ms.
+The synchronous GL work is unchanged (~200 ms); what disappeared was the
+waiting. `tests/unit/scene-boot/renderer-warmup.test.ts` pins the concurrency,
+because serialization is invisible at runtime — it just takes longer.
+
+## Still open
+
+The **assets** phase still does ~1,000 ms of shader linking across ~125 calls
+before the warm-up runs at all — programs linking at first draw as each mesh
+mounts. Moving that work earlier, or reducing the distinct program count
+(material variants, `defines` permutations), is the next lever. Not attempted.
 
 ## Re-measuring
 
