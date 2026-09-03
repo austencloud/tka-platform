@@ -15,10 +15,45 @@ import {
 const FINGERPRINT = "contract-fingerprint";
 
 describe("Flow Fest Thursday progress", () => {
-  it("uses a game-scale walking pace for the one-square-kilometre festival", () => {
-    expect(FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND).toBe(4.2);
-    expect(FLOW_FEST_GAMEPLAY_SPRINT_MULTIPLIER).toBe(1.8);
+  // Measured off the shipped clips with the same contact-weighted foot-speed
+  // method LocomotionAnimator.analyzeClipGait uses, so these are the speeds the
+  // animation can actually carry rather than numbers that read well.
+  const WALK_CLIP_NATIVE_SPEED = 1.517;
+  const RUN_CLIP_NATIVE_SPEED = 3.099;
+
+  it("keeps on-foot speeds inside what the walk and run clips can carry", () => {
+    expect(FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND).toBe(1.7);
+    expect(FLOW_FEST_GAMEPLAY_SPRINT_MULTIPLIER).toBe(2.3);
     expect(FLOW_FEST_GAMEPLAY_JUMP_FORCE).toBe(5);
+
+    // Grieve's square-root law splits a speed request between stride length and
+    // cadence: the animator authors sqrt(speed / clipSpeed) as stride and caps
+    // it at 1.15. Past that cap the surplus lands on playback rate alone and
+    // the body skates over its own footfalls. Both tiers stay under the cap,
+    // which is the whole reason the run is a second clip and not a faster walk.
+    const walkStride = Math.sqrt(
+      FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND / WALK_CLIP_NATIVE_SPEED
+    );
+    const sprintStride = Math.sqrt(
+      (FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND *
+        FLOW_FEST_GAMEPLAY_SPRINT_MULTIPLIER) /
+        RUN_CLIP_NATIVE_SPEED
+    );
+    expect(walkStride).toBeLessThan(1.15);
+    expect(sprintStride).toBeLessThan(1.15);
+
+    // And sprint has to clear the run tier's crossover, or holding Shift buys a
+    // faster walk instead of a run. The band is walk native x 1.15 up to run
+    // native x 0.8; above the top of it the pose is entirely run clips.
+    const sprintSpeed =
+      FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND *
+      FLOW_FEST_GAMEPLAY_SPRINT_MULTIPLIER;
+    expect(sprintSpeed).toBeGreaterThan(RUN_CLIP_NATIVE_SPEED * 0.8);
+    // The walk stays below the bottom of the band, so unmodified travel is a
+    // walk with no run bleeding into it.
+    expect(FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND).toBeLessThan(
+      WALK_CLIP_NATIVE_SPEED * 1.15
+    );
   });
 
   it("activates the player's tent collision only after camp is established", () => {

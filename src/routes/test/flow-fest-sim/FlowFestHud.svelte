@@ -4,6 +4,7 @@
   import { growFade } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import type { FlowFestMobilityRuntimeUpdate } from "$lib/features/flow-fest-sim/state/flow-fest-mobility-state.svelte";
+  import { FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
   import type {
     FlowFestObjective,
     FlowFestProgressState,
@@ -119,12 +120,23 @@
   const showObjectiveAction = $derived(
     Boolean(objective?.actionLabel) && !objectiveActionDisabled
   );
+  /**
+   * Running needs both halves. Shift alone is a request the body may not be
+   * able to honour - blocked by a car, backpedalling, or still standing still
+   * - and speed alone climbs the same way on a downhill walk. The label
+   * changes only once the player asked to run and the body is genuinely
+   * travelling faster than its walk.
+   */
   const mobilityStateLabel = $derived(
     mobility.mounted
       ? mobility.input.performanceMode
         ? "Performance"
         : "Cruise"
-      : "Walking"
+      : mobility.onFoot.sprinting &&
+          mobility.onFoot.speedMetersPerSecond >
+            FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND
+        ? "Running"
+        : "Walking"
   );
 </script>
 

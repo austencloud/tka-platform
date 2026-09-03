@@ -13,6 +13,7 @@ export type Verdict = "good" | "warn" | "bad" | "none";
 export type GaitReportScope = "gait" | "arrival";
 export type GaitManeuverProfile =
   | "walk"
+  | "run"
   | "lateral"
   | "crossover"
   | "turn-in-place";
@@ -39,6 +40,120 @@ function band(
   if (value >= good[0] && value <= good[1]) return "good";
   if (value >= warn[0] && value <= warn[1]) return "warn";
   return "bad";
+}
+
+/**
+ * Ground speed the gait itself reports, m/s.
+ *
+ * Cadence times step length is the distance the feet actually covered, so this
+ * is the speed the instrument saw rather than the one the host commanded. A
+ * clip played at the wrong rate shows up as a disagreement between the two
+ * instead of being smuggled in as truth.
+ */
+const paceOf = (r: GaitReport) => (r.cadence / 60) * r.meanStepLength;
+
+/**
+ * The pace the walking bands were authored at, m/s.
+ *
+ * Measured, not assumed: the lab's own steady walk on x-bot reads 98 steps a
+ * minute at 77cm, which is this. The kinematic ceilings below were calibrated
+ * against that walk, so a faster gait is compared to them by how much faster
+ * it is going rather than to the raw number.
+ */
+const WALK_BAND_PACE = 1.26;
+
+/**
+ * The same measurements, read against running instead of walking.
+ *
+ * Running is not walking played faster. It trades double support for a flight
+ * phase, so the four rows that describe the shape of a gait cycle - cadence,
+ * step length, duty factor, double support - have different human ranges, and
+ * grading a run against walking figures turns four correct readings red. Duty
+ * factor is the definition itself: below 0.5 there is a flight phase and the
+ * character is running, whatever clip is playing.
+ *
+ * The kinematic ceilings are a different problem. Those were calibrated in
+ * this lab at a walk, and both scale with pace. Measured on x-bot on the
+ * circle: going from 1.26 m/s to 3.95 m/s (x3.13) moved knee jerk from 2111
+ * to 6251 (x2.96) and the worst joint acceleration from 106 to 297 (x2.80).
+ * Scaling them by measured pace keeps a run and a walk of equal quality on the
+ * same verdict, instead of failing every run for being a run.
+ *
+ * Foot slip is deliberately NOT scaled. A four-centimetre slide is visible at
+ * any stride length, and the same walk measures 7.1cm on this pattern, so that
+ * band is already reporting the pattern's turning ground rather than the gait.
+ */
+function runRows(rows: VerdictRow[], r: GaitReport): VerdictRow[] {
+  const kinematic = Math.max(1, paceOf(r) / WALK_BAND_PACE);
+  const jerkGood = 1500 * kinematic;
+  const joltGood = 300 * kinematic;
+  const overrides = new Map<
+    string,
+    Omit<VerdictRow, "name" | "value" | "unit">
+  >([
+    [
+      "Cadence",
+      {
+        human: "155 to 185",
+        verdict: band(r.cadence, [150, 200], [135, 230]),
+        tell: "steps per minute at a run; distance runners cluster near 175",
+      },
+    ],
+    [
+      "Step length",
+      {
+        human: "110 to 160",
+        verdict: band(r.meanStepLength, [1.0, 1.8], [0.8, 2.2]),
+        tell: "heel strike to the other foot's, about double a walking step",
+      },
+    ],
+    [
+      "Duty factor",
+      {
+        human: "0.25 to 0.40",
+        verdict: band(r.dutyFactor, [0.22, 0.45], [0.18, 0.5]),
+        tell: "share of a stride each foot is down; 0.5 or more is not a run",
+      },
+    ],
+    [
+      "Double support",
+      {
+        human: "0",
+        verdict: band(r.doubleSupportFraction, [0, 0.02], [0, 0.08]),
+        tell: "a run has none - the overlap becomes flight, so anything here is a fast walk",
+      },
+    ],
+    [
+      "Knee jerk",
+      {
+        human: `under ${Math.round(jerkGood)}`,
+        verdict: band(r.kneeJerkRms, [0, jerkGood], [0, 4000 * kinematic]),
+        tell: "RMS knee acceleration, against the walk ceiling scaled by this run's pace",
+      },
+    ],
+    [
+      "Worst teleport",
+      {
+        human: `under ${Math.round(joltGood)}`,
+        verdict: r.peakJoltJoint
+          ? band(r.peakJolt, [0, joltGood], [0, 900 * kinematic])
+          : "none",
+        tell: `worst single-frame jump was ${cm(r.peakJoltStep)}cm in one frame`,
+      },
+    ],
+    [
+      "Knee twitches",
+      {
+        human: "not measurable at a run",
+        verdict: "none",
+        tell: `the fixed 4000 deg/s2 pop detector sits below this run's own ${Math.round(r.kneeJerkRms)} RMS, so it counts the stride itself - read Knee jerk instead`,
+      },
+    ],
+  ]);
+  return rows.map((row) => {
+    const over = overrides.get(row.name);
+    return over ? { ...row, ...over } : row;
+  });
 }
 
 export function verdictRows(
@@ -209,6 +324,8 @@ export function verdictRows(
   if (scope === "arrival") {
     return rows.filter((row) => arrivalMetrics.has(row.name));
   }
+
+  if (maneuver === "run") return runRows(rows, r);
 
   // Forward-walk norms are not universal locomotion norms. A pivot has no
   // meaningful forward step length or cycling-on-the-spot score, and lateral

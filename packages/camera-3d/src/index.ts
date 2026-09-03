@@ -31,6 +31,11 @@ export type {
   FlyInteractionKind,
 } from "./lib/fly-interaction-dirty";
 export { normalizeCameraFrameDelta } from "./lib/frame-delta";
+export {
+  advanceGroundVelocity,
+  DEFAULT_AIR_CONTROL_FRACTION,
+} from "./lib/ground-velocity";
+export type { GroundVelocity, GroundVelocityStep } from "./lib/ground-velocity";
 export { resolveThrelteContextValue } from "./lib/threlte-context-value";
 
 // Components

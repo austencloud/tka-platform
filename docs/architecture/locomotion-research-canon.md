@@ -87,6 +87,27 @@ The owners have deliberately different jobs:
    which is the intended relationship. Do not add a second stance solver, and do
    not extend this one into swing, contact, or step planning.
 
+8. The **speed axis** of a gait is owned by `LocomotionAnimator`, not by any
+   caller. `RUN_TIER_KEYS` maps `forward`, `strafeLeft`, and `strafeRight` onto
+   `runForward`, `runStrafeLeft`, and `runStrafeRight`; `runTierFraction()`
+   derives the crossover band from the two clips' own measured `nativeSpeed`
+   (`WALK_TIER_CEILING` 1.15 to `RUN_TIER_FLOOR` 0.8) rather than from a written
+   speed; and `getGaitTier()` reports the blend a viewer can see. Both tiers
+   read the same `gaitSteps` clock, so the crossover is phase-matched by
+   construction and needs no transition state. Reaching a run by multiplying
+   playback rate is forbidden: `updateGaitSplit` caps authored stride at 1.15,
+   so past that everything lands on rate and the result is a speed-walk, which
+   has double support where a run has flight. Shipped 2026-09-03; design in
+   `docs/superpowers/specs/2026-09-03-locomotion-gait-tiers-design.md`.
+9. **How fast a body is allowed to become** is a separate owner:
+   `advanceGroundVelocity()` in `packages/camera-3d/src/lib/ground-velocity.ts`,
+   called by `UnifiedCameraController` through `groundAcceleration` and
+   `groundDeceleration`. It bounds the velocity *vector*, so a hard turn carries
+   through its arc; it selects its rate by comparing magnitudes, so releasing a
+   sprint brakes rather than coasts; and omitting the props means infinite
+   acceleration, which reproduces instant response exactly. This is not a gait
+   owner and must not acquire clip, contact, or phase knowledge.
+
 The governing TKA designs are:
 
 - `docs/superpowers/specs/2026-08-27-exact-step-locomotion-design.md`
@@ -469,9 +490,14 @@ bake does not invalidate it and it does not excuse leaving the bake in place.
 2. **Contact-aware retargeting across shipped rigs.** Measure how one source
    motion changes on short and tall rigs. Preserve intentional self-contact
    while preventing interpenetration.
-3. **Terminal transition coverage.** Complete stop assets or distance-matched
-   profiles for terminal foot, approach speed, remaining distance, and desired
-   facing. Prove that `targetFacing` executes.
+3. **Terminal transition coverage.** The state machine exists and runs
+   (`TerminalKey`, armed/braking/landed/settled, `terminalEntryBlend`, contact
+   curves), but the only shipped assets are `walk-stop-left` and
+   `walk-stop-right`, so **stopping from a run plays a walk stop**. Author a run
+   stop through `scripts/build-terminal-stops.py`; this is an asset gap, not a
+   code gap. Also still open: distance-matched profiles for terminal foot,
+   approach speed, remaining distance, and desired facing, and proof that
+   `targetFacing` executes.
 4. **External score-time gait schedule.** Land and prove `GaitTimingPlan` across
    different render-frame partitions without changing the requested plant times.
 5. **Footprint-target runtime seam.** After timing works, add explicit left and
@@ -483,11 +509,22 @@ bake does not invalidate it and it does not excuse leaving the bake in place.
 7. **Asset provenance inventory.** Record every current locomotion clip's source,
    license, skeleton, root-motion curve, contacts, mirrored status, and supported
    rigs.
-8. **Human evaluation protocol.** Add repeatable blinded comparisons for
+8. **Run-tier clip coverage.** There is no backward run, no jog mid-tier, and
+   no run terminal stop. Each is a missing clip, and each is deliberately left
+   as a gap rather than faked with playback rate. Importing CC0 clips
+   (Quaternius is the candidate) is blocked on retargeting:
+   `remapClipToSkeleton` recognises only `mixamorig1`, `mixamorig:`,
+   `mixamorig`, and `""` bone prefixes. The dataset and asset gate applies
+   before any download, conversion, or commit.
+9. **A straight steady-state pattern for the walk lab.** Every sustained sample
+   rides `CIRCLE_R = 2.6`, which at 3.9 m/s is a 1.5 rad/s turn no runner holds.
+   This confounds `overSupportFraction`, which reads 49% at a walk and 0% at a
+   run, and it cannot be separated without a straight sample.
+10. **Human evaluation protocol.** Add repeatable blinded comparisons for
    grounding, weight, continuity, intent, and preference alongside diagnostics.
-9. **Terrain scope.** Make an explicit product decision before adding slope or
+11. **Terrain scope.** Make an explicit product decision before adding slope or
    obstacle logic to flat-stage locomotion.
-10. **Learned controller threshold.** Define the data volume, web runtime budget,
+12. **Learned controller threshold.** Define the data volume, web runtime budget,
     determinism, editability, and licensing evidence required before training or
     shipping one.
 

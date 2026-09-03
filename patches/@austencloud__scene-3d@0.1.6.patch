@@ -11945,473 +11945,423 @@ diff --git a/dist/lib/services/implementations/LocomotionAnimator.d.ts.map b/dis
 deleted file mode 100644
 index e2ad276197cfcb019800a407b2fe3d4739b38861..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/LocomotionAnimator.js b/dist/lib/services/implementations/LocomotionAnimator.js
-index 56279f173c47d912a9cb02a35e4e27abc07c41d6..7e7614449f1a34bc66973415e8240b5d051ba664 100644
+index 56279f173c47d912a9cb02a35e4e27abc07c41d6..3e61cea0ccc84c29871425cfb9406070d40d2d42 100644
 --- a/dist/lib/services/implementations/LocomotionAnimator.js
 +++ b/dist/lib/services/implementations/LocomotionAnimator.js
-@@ -11,9 +11,12 @@
-  *
-  * State machine: idle <-> walk (4-way directional) <-> jump/fall/land/crouch.
-  */
+@@ -1,554 +1,1525 @@
+-/**
+- * LocomotionAnimator
+- *
+- * Plays raw Mixamo animation clips via Three.js AnimationMixer.
+- * Modeled after the canonical Three.js skinning-blending example:
+- * https://threejs.org/examples/webgl_animation_skinning_blending.html
+- *
+- * The principle: don't touch the clips. Load them, play them, blend by weight.
+- * The mixer handles everything. Mixamo animations are authored to look correct
+- * when played unmodified on a matching Mixamo skeleton.
+- *
+- * State machine: idle <-> walk (4-way directional) <-> jump/fall/land/crouch.
+- */
 -import { AnimationMixer, AnimationClip, LoopRepeat, LoopOnce } from "three";
 -import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-+import { AnimationMixer, AnimationClip, LoopRepeat, LoopOnce, Matrix4, Vector3, } from "three";
++import {
++  AnimationMixer,
++  AnimationClip,
++  LoopRepeat,
++  LoopOnce,
++  Matrix4,
++  Vector3
++} from "three";
  import { LocomotionState } from "../contracts/IAnimationStateMachine";
+-/**
+- * Known Mixamo bone prefixes. Animation files may use a different
+- * variant than the model (e.g., "mixamorig:" vs "mixamorig").
+- * We detect the animation's prefix and remap to the model's prefix.
+- */
 +import { loadSharedAnimation } from "../shared-gltf-cache";
-+import { getClipFootprint } from "../clip-footprint";
++import {
++  getClipFootprint
++} from "../clip-footprint";
 +import { bakeContactPreservedLegs } from "./ContactRetargeter";
-+const preparedClipCache = new WeakMap();
- /**
-  * Known Mixamo bone prefixes. Animation files may use a different
-  * variant than the model (e.g., "mixamorig:" vs "mixamorig").
-@@ -59,16 +62,23 @@ function detectClipPrefix(clip) {
-  *   "strip"    - Remove Hips position entirely (default for idle/jump/fall/land)
-  *   "rootMotion" - Keep and make Z relative to first frame (for walk/run root motion)
-  *   "pose"     - Keep as-is, no baseline subtraction (for crouch - absolute Y is the pose)
-+ *   "bob"      - Keep pelvis rise and explicitly authored cyclic transfer
-  */
- /**
-  * Leg bone names to strip when stripLegBones is true.
-  * Exhibit performers don't need leg animation - feet stay planted.
-  */
- const LEG_BONE_NAMES = new Set([
++const DIRECTION_KEYS = [
++  "forward",
++  "backward",
++  "strafeLeft",
++  "strafeRight",
++  "grapevineLeft",
++  "grapevineRight",
++  "runForward",
++  "runStrafeLeft",
++  "runStrafeRight"
++];
++const RUN_TIER_KEYS = {
++  forward: "runForward",
++  strafeLeft: "runStrafeLeft",
++  strafeRight: "runStrafeRight"
++};
++const RUN_TIER_MEMBERS = new Set(
++  Object.values(RUN_TIER_KEYS)
++);
++const WALK_TIER_CEILING = 1.15;
++const RUN_TIER_FLOOR = 0.8;
++function isLateralKey(key) {
++  return key === "strafeLeft" || key === "strafeRight" || key === "grapevineLeft" || key === "grapevineRight" || key === "runStrafeLeft" || key === "runStrafeRight";
++}
++function directionRecord(value) {
++  const record = {};
++  for (const key of DIRECTION_KEYS) record[key] = value;
++  return record;
++}
++function terminalKey(foot) {
++  return foot === "left" ? "stopLeft" : "stopRight";
++}
++function sampleNonLoopingCurve(curve, phase) {
++  if (curve.length === 0) return 0;
++  if (curve.length === 1) return curve[0];
++  const x = Math.min(1, Math.max(0, phase)) * (curve.length - 1);
++  const index = Math.floor(x);
++  const fraction = x - index;
++  const left = curve[index];
++  const right = curve[Math.min(curve.length - 1, index + 1)];
++  return left + (right - left) * fraction;
++}
++function smoothStep01(value) {
++  const t = Math.min(1, Math.max(0, value));
++  return t * t * (3 - 2 * t);
++}
++function springWeight(current, velocity, target, smoothTime, delta) {
++  const omega = 2 / Math.max(1e-4, smoothTime);
++  const x = omega * delta;
++  const decay = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
++  const change = current - target;
++  const temp = (velocity + omega * change) * delta;
++  return [target + (change + temp) * decay, (velocity - omega * temp) * decay];
++}
++function terminalEntryBlend(motion, phase) {
++  const entryEnd = Math.max(1e-4, motion.stepPhases[0] * 0.45);
++  return smoothStep01(phase / entryEnd);
++}
++function assertTerminalStopMotion(value) {
++  if (!value || typeof value !== "object") {
++    throw new TypeError("terminal stop motion must be an object");
++  }
++  const motion = value;
++  if (motion.version !== 1 || motion.terminalFoot !== "left" && motion.terminalFoot !== "right" || !Number.isFinite(motion.frameRate) || !Number.isInteger(motion.frameCount) || !Array.isArray(motion.stepFrames) || motion.stepFrames.length !== 2 || !Array.isArray(motion.stepPhases) || motion.stepPhases.length !== 2 || !Array.isArray(motion.rootDistance) || !Array.isArray(motion.leftFoot) || !Array.isArray(motion.rightFoot) || motion.rootDistance.length !== motion.frameCount || motion.leftFoot.length !== motion.frameCount || motion.rightFoot.length !== motion.frameCount) {
++    throw new TypeError("terminal stop motion has an invalid schema");
++  }
++  return motion;
++}
++async function loadTerminalStopMotion(url) {
++  const response = await fetch(url);
++  if (!response.ok) {
++    throw new Error(`terminal stop motion failed to load (${response.status})`);
++  }
++  return assertTerminalStopMotion(await response.json());
++}
++const preparedClipCache = /* @__PURE__ */ new WeakMap();
+ const KNOWN_PREFIXES = ["mixamorig1", "mixamorig:", "mixamorig", ""];
+-/**
+- * Detect which prefix an animation clip uses by checking its first track.
+- */
+ function detectClipPrefix(clip) {
+-    if (clip.tracks.length === 0)
+-        return "";
+-    const boneName = clip.tracks[0].name.split(".")[0] ?? "";
+-    for (const prefix of KNOWN_PREFIXES) {
+-        if (prefix && boneName.startsWith(prefix))
+-            return prefix;
+-    }
+-    return "";
++  if (clip.tracks.length === 0) return "";
++  const boneName = clip.tracks[0].name.split(".")[0] ?? "";
++  for (const prefix of KNOWN_PREFIXES) {
++    if (prefix && boneName.startsWith(prefix)) return prefix;
++  }
++  return "";
+ }
+-/**
+- * Remap track names to match the model's bone prefix, and keep only the
+- * tracks that produce correct results:
+- *
+- * KEEP:
+- * - All .quaternion tracks (bone rotations - the core of animation)
+- * - Hips .position track when keepHipsPosition is true (for root motion)
+- *
+- * FILTER OUT:
+- * - Hips .quaternion (Mixamo separate exports bake base orientation)
+- * - .position tracks on non-Hips bones (cause limb displacement)
+- * - .scale tracks on any bone (can make meshes disappear)
+- * - Hips .position when keepHipsPosition is false (teleports avatar)
+- *
+- * keepHipsPosition = true: Root motion mode. The Hips position track
+- * contains XZ displacement that RootMotionExtractor reads each frame.
+- * The extractor zeros it out after reading so the mesh stays centered.
+- *
+- * keepHipsPosition = false: Legacy mode. All position tracks filtered
+- * out. Code-driven movement only.
+- */
+-/**
+- * @param hipsMode - Controls Hips position track handling:
+- *   "strip"    - Remove Hips position entirely (default for idle/jump/fall/land)
+- *   "rootMotion" - Keep and make Z relative to first frame (for walk/run root motion)
+- *   "pose"     - Keep as-is, no baseline subtraction (for crouch - absolute Y is the pose)
+- */
+-/**
+- * Leg bone names to strip when stripLegBones is true.
+- * Exhibit performers don't need leg animation - feet stay planted.
+- */
+-const LEG_BONE_NAMES = new Set([
 -    "LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase",
 -    "RightUpLeg", "RightLeg", "RightFoot", "RightToeBase",
-+    "LeftUpLeg",
-+    "LeftLeg",
-+    "LeftFoot",
-+    "LeftToeBase",
-+    "RightUpLeg",
-+    "RightLeg",
-+    "RightFoot",
-+    "RightToeBase",
++const LEG_BONE_NAMES = /* @__PURE__ */ new Set([
++  "LeftUpLeg",
++  "LeftLeg",
++  "LeftFoot",
++  "LeftToeBase",
++  "RightUpLeg",
++  "RightLeg",
++  "RightFoot",
++  "RightToeBase"
  ]);
 -function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBones = false) {
-+function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBones = false, preservePelvisSway = false) {
-     const clipPrefix = detectClipPrefix(clip);
-     const tracks = clip.tracks
-         .filter((track) => {
-@@ -77,7 +87,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
-             return false;
-         const boneName = track.name.slice(0, dotIdx);
-         const property = track.name.slice(dotIdx + 1);
+-    const clipPrefix = detectClipPrefix(clip);
+-    const tracks = clip.tracks
+-        .filter((track) => {
+-        const dotIdx = track.name.indexOf(".");
+-        if (dotIdx === -1)
+-            return false;
+-        const boneName = track.name.slice(0, dotIdx);
+-        const property = track.name.slice(dotIdx + 1);
 -        const coreName = clipPrefix ? boneName.slice(clipPrefix.length) : boneName;
-+        const coreName = clipPrefix
-+            ? boneName.slice(clipPrefix.length)
-+            : boneName;
-         // Skip bones that don't exist on our models
-         if (coreName.endsWith("_End"))
-             return false;
-@@ -92,7 +104,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
-         if (coreName === "Hips" && property === "quaternion")
-             return false;
-         // Keep Hips position track when needed for root motion or crouch pose.
+-        // Skip bones that don't exist on our models
+-        if (coreName.endsWith("_End"))
+-            return false;
+-        if (/Hand.*4$/.test(coreName))
+-            return false;
+-        // Strip leg bones for exhibit performers - feet stay perfectly planted
+-        if (stripLegBones && LEG_BONE_NAMES.has(coreName))
+-            return false;
+-        // Skip Hips quaternion - Mixamo separate exports bake the character's
+-        // base orientation into this track, which lays the avatar flat on its back.
+-        // The locomotion system controls facing via group rotation instead.
+-        if (coreName === "Hips" && property === "quaternion")
+-            return false;
+-        // Keep Hips position track when needed for root motion or crouch pose.
 -        if (coreName === "Hips" && property === "position" && hipsMode !== "strip")
-+        if (coreName === "Hips" &&
-+            property === "position" &&
-+            hipsMode !== "strip")
-             return true;
-         // Keep all other quaternion tracks - bone rotations are the animation.
-         // Filter out position/scale tracks (position teleports, scale vanishes).
-@@ -104,7 +118,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
-         const dotIdx = track.name.indexOf(".");
-         const boneName = track.name.slice(0, dotIdx);
-         const property = track.name.slice(dotIdx);
+-            return true;
+-        // Keep all other quaternion tracks - bone rotations are the animation.
+-        // Filter out position/scale tracks (position teleports, scale vanishes).
+-        if (property === "quaternion")
+-            return true;
+-        return false;
+-    })
+-        .map((track) => {
+-        const dotIdx = track.name.indexOf(".");
+-        const boneName = track.name.slice(0, dotIdx);
+-        const property = track.name.slice(dotIdx);
 -        const coreName = clipPrefix ? boneName.slice(clipPrefix.length) : boneName;
-+        const coreName = clipPrefix
-+            ? boneName.slice(clipPrefix.length)
-+            : boneName;
-         const cloned = track.clone();
-         // Remap bone prefix if needed
-         if (clipPrefix !== modelPrefix) {
-@@ -115,20 +131,74 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
-         // first keyframe's Z preserves the natural vertical bob (hips go up
-         // and down ~2-3cm per step) while removing the absolute offset that
-         // would slam the avatar underground.
+-        const cloned = track.clone();
+-        // Remap bone prefix if needed
+-        if (clipPrefix !== modelPrefix) {
+-            cloned.name = `${modelPrefix}${coreName}${property}`;
+-        }
+-        // Root motion: make Z (vertical in GLB coords) relative to first frame.
+-        // Mixamo FBX→GLB Z = absolute hip height (~-100cm). Subtracting the
+-        // first keyframe's Z preserves the natural vertical bob (hips go up
+-        // and down ~2-3cm per step) while removing the absolute offset that
+-        // would slam the avatar underground.
 -        if (coreName === "Hips" && property.includes("position") && hipsMode === "rootMotion") {
-+        if (coreName === "Hips" &&
-+            property.includes("position") &&
-+            hipsMode === "rootMotion") {
-             const values = cloned.values;
-             const baseZ = values[2] ?? 0; // First keyframe's Z = rest height
-             for (let i = 2; i < values.length; i += 3) {
-                 values[i] -= baseZ; // Relative offset preserves vertical bob
-             }
-         }
-+        // Bob mode: keep the pelvis rising over each supporting foot.
-+        //
-+        // A walk raises and lowers its pelvis about eight centimetres per step,
-+        // and that is what gives a foot a stance to stand through: the pelvis
-+        // travels over a foot that stays put. Strip the track to stop the avatar
-+        // teleporting and the pelvis is pinned at one height, so the only way
-+        // left for the leg to fold and unfold is to move the foot instead. The
-+        // stance flattens out of the clip - measured here, a foot that is on the
-+        // floor for 56% of the source cycle is on it for 32% once the track is
-+        // gone - and the plant is then asked to hold a foot the animation is
-+        // still swinging through ten centimetres of air.
-+        //
-+        // Travel belongs to whatever is moving the performer. A clip may still
-+        // opt into its detrended lateral channel when that channel was authored
-+        // against its actual support schedule. Grapevine does: removing it puts
-+        // the body on a rail while the legs cross underneath. Ordinary Mixamo
-+        // clips keep the established vertical-only behavior because their raw
-+        // lateral root channel has not passed that authored-contact gate.
-+        //
-+        // What is left is written as a fraction of the clip's own hip height,
-+        // not as centimetres. Avatars are not all one size, and an absolute
-+        // eight centimetres is a different walk on each of them.
-+        //
-+        // The mean is what it is measured from, so the pelvis spends the walk at
-+        // the height the rig was authored at rather than above it. Anchoring the
-+        // low point at rest instead reads as walking on tiptoe: it lifts the
-+        // whole body four centimetres and the feet stop reaching the floor for
-+        // long enough to stand on.
-+        if (coreName === "Hips" &&
-+            property.includes("position") &&
-+            hipsMode === "bob") {
-+            const values = cloned.values;
-+            const frames = values.length / 3;
-+            let sum = 0;
-+            for (let i = 0; i < frames; i++)
-+                sum += values[i * 3 + 2];
-+            const mean = frames > 0 ? sum / frames : 0;
-+            const height = Math.abs(mean) || 1;
-+            const firstLateral = values[0] ?? 0;
-+            const lastLateral = values[Math.max(0, frames - 1) * 3] ?? firstLateral;
-+            for (let i = 0; i < frames; i++) {
-+                const phase = frames > 1 ? i / (frames - 1) : 0;
-+                const travel = firstLateral + (lastLateral - firstLateral) * phase;
-+                values[i * 3] = preservePelvisSway
-+                    ? (values[i * 3] - travel) / height
-+                    : 0;
-+                values[i * 3 + 1] = -(values[i * 3 + 2] - mean) / height;
-+                values[i * 3 + 2] = 0;
-+            }
-+        }
-         // Pose mode (crouch): Mixamo FBX→GLB Hips position values are in
-         // centimeters (~85cm) but the skeleton is in meters (~0.85m). Scale
-         // by 0.01 to fix the unit mismatch. Then nudge Z (vertical in GLB)
-         // up by 0.04m - measured via foot bone world-Y logging: the grounded
-         // foot's toeBase averaged -0.005m (slightly below floor). The 0.04m
-         // correction centers it at +0.035m (flush with floor surface).
+-            const values = cloned.values;
+-            const baseZ = values[2] ?? 0; // First keyframe's Z = rest height
+-            for (let i = 2; i < values.length; i += 3) {
+-                values[i] -= baseZ; // Relative offset preserves vertical bob
+-            }
+-        }
+-        // Pose mode (crouch): Mixamo FBX→GLB Hips position values are in
+-        // centimeters (~85cm) but the skeleton is in meters (~0.85m). Scale
+-        // by 0.01 to fix the unit mismatch. Then nudge Z (vertical in GLB)
+-        // up by 0.04m - measured via foot bone world-Y logging: the grounded
+-        // foot's toeBase averaged -0.005m (slightly below floor). The 0.04m
+-        // correction centers it at +0.035m (flush with floor surface).
 -        if (coreName === "Hips" && property.includes("position") && hipsMode === "pose") {
-+        if (coreName === "Hips" &&
-+            property.includes("position") &&
-+            hipsMode === "pose") {
-             const values = cloned.values;
-             for (let i = 0; i < values.length; i++) {
-                 values[i] *= 0.01;
-@@ -142,10 +212,155 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
-     });
-     return new AnimationClip(clip.name, clip.duration, tracks);
+-            const values = cloned.values;
+-            for (let i = 0; i < values.length; i++) {
+-                values[i] *= 0.01;
+-            }
+-            // Z = vertical axis in GLB. Raise hips slightly so feet don't clip floor.
+-            for (let i = 2; i < values.length; i += 3) {
+-                values[i] += 0.04;
+-            }
+-        }
+-        return cloned;
+-    });
+-    return new AnimationClip(clip.name, clip.duration, tracks);
++function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBones = false, preservePelvisSway = false) {
++  const clipPrefix = detectClipPrefix(clip);
++  const tracks = clip.tracks.filter((track) => {
++    const dotIdx = track.name.indexOf(".");
++    if (dotIdx === -1) return false;
++    const boneName = track.name.slice(0, dotIdx);
++    const property = track.name.slice(dotIdx + 1);
++    const coreName = clipPrefix ? boneName.slice(clipPrefix.length) : boneName;
++    if (coreName.endsWith("_End")) return false;
++    if (/Hand.*4$/.test(coreName)) return false;
++    if (stripLegBones && LEG_BONE_NAMES.has(coreName)) return false;
++    if (coreName === "Hips" && property === "quaternion") return false;
++    if (coreName === "Hips" && property === "position" && hipsMode !== "strip")
++      return true;
++    if (property === "quaternion") return true;
++    return false;
++  }).map((track) => {
++    const dotIdx = track.name.indexOf(".");
++    const boneName = track.name.slice(0, dotIdx);
++    const property = track.name.slice(dotIdx);
++    const coreName = clipPrefix ? boneName.slice(clipPrefix.length) : boneName;
++    const cloned = track.clone();
++    if (clipPrefix !== modelPrefix) {
++      cloned.name = `${modelPrefix}${coreName}${property}`;
++    }
++    if (coreName === "Hips" && property.includes("position") && hipsMode === "rootMotion") {
++      const values = cloned.values;
++      const baseZ = values[2] ?? 0;
++      for (let i = 2; i < values.length; i += 3) {
++        values[i] -= baseZ;
++      }
++    }
++    if (coreName === "Hips" && property.includes("position") && hipsMode === "bob") {
++      const values = cloned.values;
++      const frames = values.length / 3;
++      let sum = 0;
++      for (let i = 0; i < frames; i++) sum += values[i * 3 + 2];
++      const mean = frames > 0 ? sum / frames : 0;
++      const height = Math.abs(mean) || 1;
++      const firstLateral = values[0] ?? 0;
++      const lastLateral = values[Math.max(0, frames - 1) * 3] ?? firstLateral;
++      for (let i = 0; i < frames; i++) {
++        const phase = frames > 1 ? i / (frames - 1) : 0;
++        const travel = firstLateral + (lastLateral - firstLateral) * phase;
++        values[i * 3] = preservePelvisSway ? (values[i * 3] - travel) / height : 0;
++        values[i * 3 + 1] = -(values[i * 3 + 2] - mean) / height;
++        values[i * 3 + 2] = 0;
++      }
++    }
++    if (coreName === "Hips" && property.includes("position") && hipsMode === "pose") {
++      const values = cloned.values;
++      for (let i = 0; i < values.length; i++) {
++        values[i] *= 0.01;
++      }
++      for (let i = 2; i < values.length; i += 3) {
++        values[i] += 0.04;
++      }
++    }
++    return cloned;
++  });
++  return new AnimationClip(clip.name, clip.duration, tracks);
  }
-+const GAIT_SAMPLES = 64;
-+/**
-+ * A clip's stride depends on the legs walking it, so the same clip on a taller
-+ * rig implies a faster walk. Key the cache by both.
-+ */
-+const gaitCache = new WeakMap();
-+/** A foot within this height of the lower foot is sharing the load. */
-+const DOUBLE_SUPPORT_BAND = 0.045;
-+function analyzeClipGait(clip, root, prefix) {
-+    const leftFoot = root.getObjectByName(`${prefix}LeftFoot`);
-+    const rightFoot = root.getObjectByName(`${prefix}RightFoot`);
-+    const leftToe = root.getObjectByName(`${prefix}LeftToeBase`);
-+    const rightToe = root.getObjectByName(`${prefix}RightToeBase`);
-+    const leftUpLeg = root.getObjectByName(`${prefix}LeftUpLeg`);
-+    if (!leftFoot || !rightFoot || !leftUpLeg)
-+        return null;
-+    if (clip.duration <= 0)
-+        return null;
-+    root.updateMatrixWorld(true);
-+    const invRoot = new Matrix4().copy(root.matrixWorld).invert();
-+    const probe = new Vector3();
-+    const legSpan = leftUpLeg
-+        .getWorldPosition(probe)
-+        .distanceTo(leftFoot.getWorldPosition(new Vector3()));
-+    const cacheKey = `${prefix}|${legSpan.toFixed(4)}`;
-+    let variants = gaitCache.get(clip);
-+    if (!variants) {
-+        variants = new Map();
-+        gaitCache.set(clip, variants);
-+    }
-+    const cached = variants.get(cacheKey);
-+    if (cached)
-+        return cached;
-+    // A private mixer so the sampling never disturbs the live one. Three keys
-+    // its bindings per mixer instance, so uncaching this root afterwards leaves
-+    // the real mixer's bindings intact.
-+    const probeMixer = new AnimationMixer(root);
-+    const action = probeMixer.clipAction(clip);
-+    action.setLoop(LoopRepeat, Infinity);
-+    action.setEffectiveWeight(1);
-+    action.setEffectiveTimeScale(1);
-+    action.play();
-+    const dt = clip.duration / GAIT_SAMPLES;
-+    const leftY = new Float32Array(GAIT_SAMPLES);
-+    const rightY = new Float32Array(GAIT_SAMPLES);
-+    const toeY = new Float32Array(GAIT_SAMPLES).fill(Infinity);
-+    const leftXZ = [];
-+    const rightXZ = [];
-+    // The clip's pelvis track carries the bob and no height, so the rig's own
-+    // height has to go back on before anything is measured against the floor.
-+    const hips = root.getObjectByName(`${prefix}Hips`);
-+    const hipsRest = hips ? hips.position.clone() : null;
-+    const local = new Vector3();
-+    for (let i = 0; i < GAIT_SAMPLES; i++) {
-+        if (hips)
-+            hips.position.set(0, 0, 0);
-+        probeMixer.update(i === 0 ? 0 : dt);
-+        if (hips && hipsRest) {
-+            hips.position.add(hipsRest);
-+        }
-+        // Only the two leg chains matter here, and refreshing the whole rig 64
-+        // times per clip per avatar is the difference between a few milliseconds
-+        // at load and a visible hitch.
-+        leftFoot.updateWorldMatrix(true, false);
-+        rightFoot.updateWorldMatrix(true, false);
-+        if (leftToe && rightToe) {
-+            leftToe.updateWorldMatrix(true, false);
-+            rightToe.updateWorldMatrix(true, false);
-+            const l = leftToe.getWorldPosition(local).applyMatrix4(invRoot).y;
-+            const r = rightToe.getWorldPosition(local).applyMatrix4(invRoot).y;
-+            toeY[i] = Math.min(l, r);
-+        }
-+        leftFoot.getWorldPosition(local).applyMatrix4(invRoot);
-+        leftY[i] = local.y;
-+        leftXZ.push([local.x, local.z]);
-+        rightFoot.getWorldPosition(local).applyMatrix4(invRoot);
-+        rightY[i] = local.y;
-+        rightXZ.push([local.x, local.z]);
-+    }
-+    probeMixer.stopAllAction();
-+    probeMixer.uncacheAction(clip, root);
-+    probeMixer.uncacheRoot(root);
-+    const leftContact = new Float32Array(GAIT_SAMPLES);
-+    const rightContact = new Float32Array(GAIT_SAMPLES);
-+    const band = DOUBLE_SUPPORT_BAND * (legSpan / 0.9 || 1);
-+    const speeds = [];
-+    for (let i = 0; i < GAIT_SAMPLES; i++) {
-+        const lower = Math.min(leftY[i], rightY[i]);
-+        leftContact[i] = leftY[i] <= lower + band ? 1 : 0;
-+        rightContact[i] = rightY[i] <= lower + band ? 1 : 0;
-+        // The foot bearing weight travels at exactly the speed the clip implies.
-+        const j = (i + 1) % GAIT_SAMPLES;
-+        const useLeft = leftY[i] <= rightY[i];
-+        const a = useLeft ? leftXZ[i] : rightXZ[i];
-+        const b = useLeft ? leftXZ[j] : rightXZ[j];
-+        speeds.push(Math.hypot(b[0] - a[0], b[1] - a[1]) / dt);
-+    }
-+    // Median, not mean: the wrap-around sample and the swing-to-stance handoff
-+    // both produce outliers that a mean would carry into every stride.
-+    speeds.sort((a, b) => a - b);
-+    const nativeSpeed = speeds[Math.floor(speeds.length / 2)] ?? 0;
-+    let leftStrikePhase = 0;
-+    let soleOffset = Infinity;
-+    let toeOffset = Infinity;
-+    for (let i = 0; i < GAIT_SAMPLES; i++) {
-+        soleOffset = Math.min(soleOffset, leftY[i], rightY[i]);
-+        toeOffset = Math.min(toeOffset, toeY[i]);
-+    }
-+    // A rig without toes answers the toe question with its ankle, which is what
-+    // the planter falls back to pinning anyway.
-+    if (!Number.isFinite(toeOffset))
-+        toeOffset = soleOffset;
-+    // The plant holds a foot at this height, so a negative one holds it inside
-+    // the stage. Retargeting can dip a pose below the rig's own origin - the
-+    // pelvis bob did, by just over a centimetre on the shortest rig - and the
-+    // floor is the floor whatever the pose says.
-+    soleOffset = Math.max(0, soleOffset);
-+    toeOffset = Math.max(0, toeOffset);
-+    for (let i = 0; i < GAIT_SAMPLES; i++) {
-+        const prev = leftContact[(i + GAIT_SAMPLES - 1) % GAIT_SAMPLES];
-+        if (prev === 0 && leftContact[i] === 1) {
-+            leftStrikePhase = i / GAIT_SAMPLES;
-+            break;
-+        }
-+    }
-+    const gait = {
-+        nativeSpeed,
-+        leftContact,
-+        rightContact,
-+        leftStrikePhase,
-+        duration: clip.duration,
-+        soleOffset,
-+        toeOffset,
-+    };
-+    variants.set(cacheKey, gait);
-+    return gait;
-+}
-+function sampleCurve(curve, phase) {
-+    const n = curve.length;
-+    const x = ((((phase % 1) + 1) % 1)) * n;
-+    const i = Math.floor(x);
-+    const frac = x - i;
-+    const a = curve[i % n];
-+    const b = curve[(i + 1) % n];
-+    return a + (b - a) * frac;
-+}
- export class LocomotionAnimator {
-     mixer = null;
-     root = null;
+-export class LocomotionAnimator {
+-    mixer = null;
+-    root = null;
 -    loader = new GLTFLoader();
-     modelPrefix = "mixamorig";
-     // Actions - created from raw clips, no processing
-     idleAction = null;
-@@ -188,31 +403,143 @@ export class LocomotionAnimator {
-         strafeLeft: 0,
-         strafeRight: 0,
-     };
-+    // -- Gait --
-+    /** The proportions a baked clip was fitted to, for the prepared-clip cache. */
-+    rigSignature = "";
-+    hipsBone = null;
-+    hipsRest = null;
-+    gaits = {
-+        forward: null,
-+        backward: null,
-+        strafeLeft: null,
-+        strafeRight: null,
-+    };
-+    /**
-+     * One phase drives all four walk clips. They have different durations, so
-+     * left alone they drift apart and the blended left foot plants at four
-+     * different moments, which is a foot that never really plants at all. Each
-+     * action is held at timeScale 0 and its time written from this.
-+     */
-+    masterPhase = 0;
-+    /** Unwrapped version of masterPhase, so exact-step plans survive phase wrap. */
-+    gaitCycles = 0;
-+    gaitCadence = 0;
-+    commandedMoving = false;
-+    playRate = 1;
-+    strideScale = 1;
-+    commandedSpeed = 0;
-+    contactLeft = -1;
-+    contactRight = -1;
-+    rootWorldScale = 1;
-+    tempScale = new Vector3();
-     initialize(root) {
-+        // Actions belong to the mixer that made them, and createActions() only
-+        // fills empty slots. Carrying them across a new mixer leaves it with zero
-+        // actions, so every clip is silently dropped and the avatar never moves.
-+        this.releaseActions();
-         this.root = root;
-         this.mixer = new AnimationMixer(root);
-         this.modelPrefix = this.detectModelPrefix(root);
-         this.initialized = true;
-+        // Read before anything animates: the clips carry the pelvis's motion but
-+        // not its height, and every avatar has its own.
-+        this.hipsBone = this.getHipsBone();
-+        this.hipsRest = this.hipsBone ? this.hipsBone.position.clone() : null;
-+        this.rigSignature = this.measureRig(root);
-         if (this.clipsLoaded) {
-             this.createActions();
-         }
+-    modelPrefix = "mixamorig";
+-    // Actions - created from raw clips, no processing
+-    idleAction = null;
+-    walkActions = {
+-        forward: null,
+-        backward: null,
+-        strafeLeft: null,
+-        strafeRight: null,
+-    };
+-    jumpAction = null;
+-    fallAction = null;
+-    landAction = null;
+-    crouchAction = null;
+-    // Raw clips (stored between loadAnimations and initialize)
+-    pendingClips = new Map();
+-    // State
+-    activeState = null;
+-    currentActiveState = null;
+-    initialized = false;
+-    clipsLoaded = false;
+-    config = {
+-        baseSpeed: 1,
+-        blendTime: 0.15,
+-        animationWalkSpeed: 1.57,
+-        enableRootMotion: false,
+-        stripLegBones: false,
+-    };
+-    // Blend weights (smoothed each frame)
+-    currentIdleWeight = 1;
+-    targetIdleWeight = 1;
+-    currentDirWeights = {
+-        forward: 0,
+-        backward: 0,
+-        strafeLeft: 0,
+-        strafeRight: 0,
+-    };
+-    targetDirWeights = {
+-        forward: 0,
+-        backward: 0,
+-        strafeLeft: 0,
+-        strafeRight: 0,
+-    };
+-    initialize(root) {
+-        this.root = root;
+-        this.mixer = new AnimationMixer(root);
+-        this.modelPrefix = this.detectModelPrefix(root);
+-        this.initialized = true;
+-        if (this.clipsLoaded) {
+-            this.createActions();
+-        }
++const GAIT_SAMPLES = 64;
++function reconstructRootDistance(leftXZ, rightXZ, leftContact, rightContact) {
++  const count = Math.min(leftXZ.length, rightXZ.length);
++  const curve = new Float32Array(count + 1);
++  if (count === 0) return curve;
++  let previousIncrement = 0;
++  for (let i = 0; i < count; i++) {
++    const next = (i + 1) % count;
++    let dx = 0;
++    let dz = 0;
++    let support = 0;
++    if (leftContact[i] >= 0.5 || leftContact[next] >= 0.5) {
++      dx += leftXZ[next][0] - leftXZ[i][0];
++      dz += leftXZ[next][1] - leftXZ[i][1];
++      support++;
      }
-+    /**
-+     * The proportions that decide what a baked clip looks like, to the millimetre.
-+     *
-+     * Prepared clips are cached across avatars and keyed by bone prefix, which
-+     * was enough while preparation only renamed tracks. Now that it solves the
-+     * legs against a particular pair of them, two avatars sharing a prefix and
-+     * differing in leg length would otherwise be handed each other's walk.
-+     */
-+    measureRig(root) {
-+        const bone = (name) => root.getObjectByName(`${this.modelPrefix}${name}`) ?? null;
-+        const upper = bone("LeftUpLeg");
-+        const knee = bone("LeftLeg");
-+        const ankle = bone("LeftFoot");
-+        const right = bone("RightUpLeg");
-+        if (!upper || !knee || !ankle || !right)
-+            return "unrigged";
-+        root.updateMatrixWorld(true);
-+        const a = new Vector3();
-+        const b = new Vector3();
-+        upper.getWorldPosition(a);
-+        knee.getWorldPosition(b);
-+        const leg = a.distanceTo(b) + b.distanceTo(ankle.getWorldPosition(a));
-+        upper.getWorldPosition(a);
-+        const width = a.distanceTo(right.getWorldPosition(b));
-+        return `${Math.round(leg * 1000)}x${Math.round(width * 1000)}`;
-+    }
-     /**
-      * Detect bone naming prefix on the loaded model.
-      */
-     detectModelPrefix(root) {
-         for (const prefix of KNOWN_PREFIXES) {
+-    /**
+-     * Detect bone naming prefix on the loaded model.
+-     */
+-    detectModelPrefix(root) {
+-        for (const prefix of KNOWN_PREFIXES) {
 -            if (root.getObjectByName(`${prefix}Hips`))
-+            if (this.hasRig(root, prefix))
-                 return prefix;
-         }
+-                return prefix;
+-        }
 -        // Fallback: search for any bone containing "Hips"
 -        let found = "mixamorig";
-+        // Fallback: a rig whose prefix is not in the known list. Take it from the
-+        // bone actually named "<prefix>Hips", not from any name that merely
-+        // contains "Hips" — "LeftHipsHelper" would yield a prefix that binds
-+        // nothing.
-+        let found = null;
-         root.traverse((obj) => {
+-        root.traverse((obj) => {
 -            if (obj.name.includes("Hips")) {
 -                found = obj.name.slice(0, obj.name.indexOf("Hips"));
 -            }
-+            if (found !== null || !obj.name.endsWith("Hips"))
-+                return;
-+            const prefix = obj.name.slice(0, obj.name.length - "Hips".length);
-+            if (this.hasRig(root, prefix))
-+                found = prefix;
-         });
+-        });
 -        return found;
-+        return found ?? "mixamorig";
-+    }
-+    /**
-+     * A prefix is the model's only if the hip and a leg both carry it. Hips
-+     * alone matches the bare "" prefix against a stray bone named "Hips" and
-+     * binds every track to nothing.
-+     */
-+    hasRig(root, prefix) {
-+        return (!!root.getObjectByName(`${prefix}Hips`) &&
-+            !!root.getObjectByName(`${prefix}LeftUpLeg`));
-+    }
-+    releaseActions() {
-+        if (this.mixer) {
-+            this.mixer.stopAllAction();
-+            if (this.root)
-+                this.mixer.uncacheRoot(this.root);
-+            this.mixer = null;
-+        }
-+        this.idleAction = null;
-+        this.jumpAction = null;
-+        this.fallAction = null;
-+        this.landAction = null;
-+        this.crouchAction = null;
-+        for (const key of Object.keys(this.walkActions)) {
-+            this.walkActions[key] = null;
-+            this.gaits[key] = null;
-+        }
-+        this.masterPhase = 0;
-+        this.gaitCycles = 0;
-+        this.gaitCadence = 0;
-+        this.commandedMoving = false;
-+        this.playRate = 1;
-+        this.strideScale = 1;
-+        this.commandedSpeed = 0;
-+        this.contactLeft = -1;
-+        this.contactRight = -1;
-+        this.currentIdleWeight = 1;
-+        this.targetIdleWeight = 1;
-+        this.activeState = null;
-+        this.currentActiveState = null;
-+        for (const key of Object.keys(this.currentDirWeights)) {
-+            this.currentDirWeights[key] = 0;
-+            this.targetDirWeights[key] = 0;
-+        }
-     }
-     async loadAnimations(urls) {
-         const entries = [
-@@ -231,15 +558,7 @@ export class LocomotionAnimator {
-         if (urls.crouch)
-             entries.push({ key: "crouch", url: urls.crouch });
-         const results = await Promise.allSettled(entries.map(async ({ key, url }) => {
+-    }
+-    async loadAnimations(urls) {
+-        const entries = [
+-            { key: "idle", url: urls.idle },
+-            { key: "forward", url: urls.forward },
+-            { key: "backward", url: urls.backward },
+-            { key: "strafeLeft", url: urls.strafeLeft },
+-            { key: "strafeRight", url: urls.strafeRight },
+-        ];
+-        if (urls.jump)
+-            entries.push({ key: "jump", url: urls.jump });
+-        if (urls.fall)
+-            entries.push({ key: "fall", url: urls.fall });
+-        if (urls.land)
+-            entries.push({ key: "land", url: urls.land });
+-        if (urls.crouch)
+-            entries.push({ key: "crouch", url: urls.crouch });
+-        const results = await Promise.allSettled(entries.map(async ({ key, url }) => {
 -            const gltf = await this.loadGltf(url);
 -            const clip = gltf.animations[0];
 -            if (!clip)
@@ -12421,152 +12371,284 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..7e7614449f1a34bc66973415e8240b5d
 -            // by clip name, so duplicate names cause all actions to share
 -            // the same clip. Give each a unique name.
 -            clip.name = key;
-+            const clip = await loadSharedAnimation(url);
-             return { key, clip };
-         }));
-         for (const result of results) {
-@@ -273,14 +592,38 @@ export class LocomotionAnimator {
-         // (Mixamo FBX→GLB values are in centimeters, skeleton is in meters).
-         // This lets the Hips bone drop to the correct crouched height.
-         let hipsMode = "strip";
+-            return { key, clip };
+-        }));
+-        for (const result of results) {
+-            if (result.status === "fulfilled") {
+-                this.pendingClips.set(result.value.key, result.value.clip);
+-            }
+-        }
+-        this.clipsLoaded = true;
+-        if (this.initialized && this.mixer) {
+-            this.createActions();
+-        }
++    if (rightContact[i] >= 0.5 || rightContact[next] >= 0.5) {
++      dx += rightXZ[next][0] - rightXZ[i][0];
++      dz += rightXZ[next][1] - rightXZ[i][1];
++      support++;
+     }
+-    /**
+-     * Remap a pending clip's track names to match this model's bone prefix.
+-     * When root motion is enabled, keeps Hips position track for locomotion
+-     * clips (walk/run) so RootMotionExtractor can read XZ deltas.
+-     */
+-    prepareClip(key) {
+-        const raw = this.pendingClips.get(key);
+-        if (!raw)
+-            return null;
+-        // Determine how to handle the Hips position track:
+-        // - Walk/run clips with root motion: keep Hips position, subtract Z baseline
+-        // - Crouch: keep Hips position as-is (absolute Y IS the crouched height)
+-        // - Everything else: strip Hips position (would teleport the avatar)
+-        const isLocomotionClip = key === "forward" ||
+-            key === "backward" ||
+-            key === "strafeLeft" ||
+-            key === "strafeRight";
+-        // Crouch uses "pose" mode - keeps Hips position track but scales cm→m
+-        // (Mixamo FBX→GLB values are in centimeters, skeleton is in meters).
+-        // This lets the Hips bone drop to the correct crouched height.
+-        let hipsMode = "strip";
 -        if (this.config.enableRootMotion && isLocomotionClip)
 -            hipsMode = "rootMotion";
-+        if (isLocomotionClip)
-+            hipsMode = this.config.enableRootMotion ? "rootMotion" : "bob";
-         if (key === "crouch")
-             hipsMode = "pose";
-         // Strip leg bones from idle clip for exhibit performers so feet
-         // stay perfectly planted during sequence playback.
-         const stripLegs = this.config.stripLegBones && key === "idle";
+-        if (key === "crouch")
+-            hipsMode = "pose";
+-        // Strip leg bones from idle clip for exhibit performers so feet
+-        // stay perfectly planted during sequence playback.
+-        const stripLegs = this.config.stripLegBones && key === "idle";
 -        return remapClipToSkeleton(raw, this.modelPrefix, hipsMode, stripLegs);
-+        const preservePelvisSway = key === "grapevineLeft" || key === "grapevineRight";
-+        const cacheKey = `${key}|${this.modelPrefix}|${this.rigSignature}|${hipsMode}|${stripLegs}|${preservePelvisSway}`;
-+        let variants = preparedClipCache.get(raw);
-+        if (!variants) {
-+            variants = new Map();
-+            preparedClipCache.set(raw, variants);
-+        }
-+        const existing = variants.get(cacheKey);
-+        if (existing)
-+            return existing;
-+        let prepared = remapClipToSkeleton(raw, this.modelPrefix, hipsMode, stripLegs, preservePelvisSway);
-+        // Renaming the tracks is only half of a retarget. The rotations that come
-+        // across put this rig's feet somewhere its own proportions decide, which
-+        // is not where the animator put them - see ContactRetargeter for what that
-+        // costs. Locomotion is where it shows, because locomotion is the only
-+        // thing here that has to hold a foot still against the floor.
-+        const footprint = this.root ? getClipFootprint(raw) : null;
-+        if (footprint && isLocomotionClip && !stripLegs) {
-+            prepared = bakeContactPreservedLegs(prepared, footprint, this.root, this.modelPrefix);
-+        }
-+        // Blender exports all Mixamo clips with the same name. AnimationMixer
-+        // caches actions by clip name, so each behavior needs a stable identity.
-+        prepared.name = key;
-+        variants.set(cacheKey, prepared);
-+        return prepared;
-     }
-     /**
-      * Create actions from clips - only bone prefix remapping, no track filtering.
-@@ -290,6 +633,18 @@ export class LocomotionAnimator {
-     createActions() {
-         if (!this.mixer)
-             return;
-+        // Three remembers each bone's value the first time an action binds it, and
-+        // fills any weight the running clips do not supply with that remembered
-+        // value. The pelvis track is a delta - update() zeroes the bone, lets the
-+        // mixer write, then adds the rig's height back - so the remembered value
-+        // has to be that same zero. Bound at rest instead, a clip carrying no
-+        // pelvis track leaves the binding short mid-crossfade and the rig's height
-+        // lands on the pelvis twice: the performer stands a whole leg off the floor
-+        // and sinks back as the crossfade finishes.
-+        const hips = this.hipsBone;
-+        const hipsBeforeBind = hips ? hips.position.clone() : null;
-+        if (hips)
-+            hips.position.set(0, 0, 0);
-         // Idle - starts at weight 1
-         const idleClip = this.prepareClip("idle");
-         if (idleClip && !this.idleAction) {
-@@ -299,7 +654,12 @@ export class LocomotionAnimator {
-             this.idleAction.play();
-         }
-         // Walk directions - start at weight 0
+-    }
+-    /**
+-     * Create actions from clips - only bone prefix remapping, no track filtering.
+-     * Play all simultaneously, control blending purely through weights.
+-     * This is how the canonical Three.js skinning-blending example works.
+-     */
+-    createActions() {
+-        if (!this.mixer)
+-            return;
+-        // Idle - starts at weight 1
+-        const idleClip = this.prepareClip("idle");
+-        if (idleClip && !this.idleAction) {
+-            this.idleAction = this.mixer.clipAction(idleClip);
+-            this.idleAction.setLoop(LoopRepeat, Infinity);
+-            this.setWeight(this.idleAction, 1);
+-            this.idleAction.play();
+-        }
+-        // Walk directions - start at weight 0
 -        for (const key of ["forward", "backward", "strafeLeft", "strafeRight"]) {
-+        for (const key of [
-+            "forward",
-+            "backward",
-+            "strafeLeft",
-+            "strafeRight",
-+        ]) {
-             const clip = this.prepareClip(key);
-             if (clip && !this.walkActions[key]) {
-                 const action = this.mixer.clipAction(clip);
-@@ -307,6 +667,14 @@ export class LocomotionAnimator {
-                 this.setWeight(action, 0);
-                 action.play();
-                 this.walkActions[key] = action;
-+                if (this.root && !this.config.enableRootMotion) {
-+                    this.gaits[key] = analyzeClipGait(clip, this.root, this.modelPrefix);
-+                    // Time comes from the shared phase from here on. A zero-timescale
-+                    // action is still sampled and blended; it just stops advancing its
-+                    // own clock.
-+                    if (this.gaits[key])
-+                        action.setEffectiveTimeScale(0);
-+                }
-             }
-         }
-         // Jump (one-shot)
-@@ -343,6 +711,8 @@ export class LocomotionAnimator {
-             this.setWeight(this.crouchAction, 0);
-             this.crouchAction.play();
-         }
-+        if (hips && hipsBeforeBind)
-+            hips.position.copy(hipsBeforeBind);
+-            const clip = this.prepareClip(key);
+-            if (clip && !this.walkActions[key]) {
+-                const action = this.mixer.clipAction(clip);
+-                action.setLoop(LoopRepeat, Infinity);
+-                this.setWeight(action, 0);
+-                action.play();
+-                this.walkActions[key] = action;
+-            }
+-        }
+-        // Jump (one-shot)
+-        const jumpClip = this.prepareClip("jump");
+-        if (jumpClip && !this.jumpAction) {
+-            this.jumpAction = this.mixer.clipAction(jumpClip);
+-            this.jumpAction.setLoop(LoopOnce, 1);
+-            this.jumpAction.clampWhenFinished = true;
+-            this.setWeight(this.jumpAction, 0);
+-            this.jumpAction.play();
+-        }
+-        // Fall (loop)
+-        const fallClip = this.prepareClip("fall");
+-        if (fallClip && !this.fallAction) {
+-            this.fallAction = this.mixer.clipAction(fallClip);
+-            this.fallAction.setLoop(LoopRepeat, Infinity);
+-            this.setWeight(this.fallAction, 0);
+-            this.fallAction.play();
+-        }
+-        // Land (one-shot)
+-        const landClip = this.prepareClip("land");
+-        if (landClip && !this.landAction) {
+-            this.landAction = this.mixer.clipAction(landClip);
+-            this.landAction.setLoop(LoopOnce, 1);
+-            this.landAction.clampWhenFinished = true;
+-            this.setWeight(this.landAction, 0);
+-            this.landAction.play();
+-        }
+-        // Crouch (loop)
+-        const crouchClip = this.prepareClip("crouch");
+-        if (crouchClip && !this.crouchAction) {
+-            this.crouchAction = this.mixer.clipAction(crouchClip);
+-            this.crouchAction.setLoop(LoopRepeat, Infinity);
+-            this.setWeight(this.crouchAction, 0);
+-            this.crouchAction.play();
+-        }
++    const increment = support > 0 ? Math.hypot(dx / support, dz / support) : previousIncrement;
++    previousIncrement = Number.isFinite(increment) ? increment : 0;
++    curve[i + 1] = curve[i] + previousIncrement;
++  }
++  const total = curve[count];
++  if (total <= 1e-6) {
++    for (let i = 0; i <= count; i++) curve[i] = i / count;
++    return curve;
++  }
++  for (let i = 1; i <= count; i++) curve[i] /= total;
++  curve[count] = 1;
++  return curve;
++}
++const gaitCache = /* @__PURE__ */ new WeakMap();
++const DOUBLE_SUPPORT_BAND = 0.045;
++function analyzeClipGait(clip, root, prefix, sourceFootprint = null) {
++  const leftFoot = root.getObjectByName(`${prefix}LeftFoot`);
++  const rightFoot = root.getObjectByName(`${prefix}RightFoot`);
++  const leftToe = root.getObjectByName(`${prefix}LeftToeBase`);
++  const rightToe = root.getObjectByName(`${prefix}RightToeBase`);
++  const leftUpLeg = root.getObjectByName(`${prefix}LeftUpLeg`);
++  if (!leftFoot || !rightFoot || !leftUpLeg) return null;
++  if (clip.duration <= 0) return null;
++  root.updateMatrixWorld(true);
++  const invRoot = new Matrix4().copy(root.matrixWorld).invert();
++  const probe = new Vector3();
++  const legSpan = leftUpLeg.getWorldPosition(probe).distanceTo(leftFoot.getWorldPosition(new Vector3()));
++  const cacheKey = `${prefix}|${legSpan.toFixed(4)}`;
++  let variants = gaitCache.get(clip);
++  if (!variants) {
++    variants = /* @__PURE__ */ new Map();
++    gaitCache.set(clip, variants);
++  }
++  const cached = variants.get(cacheKey);
++  if (cached) return cached;
++  const probeMixer = new AnimationMixer(root);
++  const action = probeMixer.clipAction(clip);
++  action.setLoop(LoopRepeat, Infinity);
++  action.setEffectiveWeight(1);
++  action.setEffectiveTimeScale(1);
++  action.play();
++  const dt = clip.duration / GAIT_SAMPLES;
++  const leftY = new Float32Array(GAIT_SAMPLES);
++  const rightY = new Float32Array(GAIT_SAMPLES);
++  const toeY = new Float32Array(GAIT_SAMPLES).fill(Infinity);
++  const leftXZ = [];
++  const rightXZ = [];
++  const hips = root.getObjectByName(`${prefix}Hips`);
++  const hipsRest = hips ? hips.position.clone() : null;
++  const local = new Vector3();
++  for (let i = 0; i < GAIT_SAMPLES; i++) {
++    if (hips) hips.position.set(0, 0, 0);
++    probeMixer.update(i === 0 ? 0 : dt);
++    if (hips && hipsRest) {
++      hips.position.add(hipsRest);
      }
-     /**
-      * Set weight on an action - same helper as the Three.js example.
-@@ -353,6 +723,7 @@ export class LocomotionAnimator {
-         action.setEffectiveWeight(weight);
+-    /**
+-     * Set weight on an action - same helper as the Three.js example.
+-     */
+-    setWeight(action, weight) {
+-        action.enabled = true;
+-        action.setEffectiveTimeScale(1);
+-        action.setEffectiveWeight(weight);
+-    }
+-    setLocomotion(input) {
+-        if (input.isMoving) {
+-            this.targetIdleWeight = 0;
+-            this.updateDirectionalTargets(input);
+-            this.updatePlaybackSpeed(input.speed);
+-        }
+-        else {
+-            this.targetIdleWeight = 1;
+-            this.targetDirWeights.forward = 0;
+-            this.targetDirWeights.backward = 0;
+-            this.targetDirWeights.strafeLeft = 0;
+-            this.targetDirWeights.strafeRight = 0;
+-        }
++    leftFoot.updateWorldMatrix(true, false);
++    rightFoot.updateWorldMatrix(true, false);
++    if (leftToe && rightToe) {
++      leftToe.updateWorldMatrix(true, false);
++      rightToe.updateWorldMatrix(true, false);
++      const l = leftToe.getWorldPosition(local).applyMatrix4(invRoot).y;
++      const r = rightToe.getWorldPosition(local).applyMatrix4(invRoot).y;
++      toeY[i] = Math.min(l, r);
      }
-     setLocomotion(input) {
-+        this.commandedMoving = input.isMoving;
-         if (input.isMoving) {
-             this.targetIdleWeight = 0;
-             this.updateDirectionalTargets(input);
-@@ -381,7 +752,29 @@ export class LocomotionAnimator {
-         else {
-             this.applyLegacyWeights(blendFactor);
-         }
+-    setActiveState(state) {
+-        this.activeState = state;
+-    }
+-    update(delta) {
+-        if (!this.mixer)
+-            return;
+-        // Exponential smoothing for framerate-independent blending
+-        const blendSpeed = 1 / Math.max(0.01, this.config.blendTime);
+-        const blendFactor = 1 - Math.exp(-blendSpeed * delta);
+-        if (this.activeState !== null) {
+-            this.applyStateWeights(blendFactor);
+-        }
+-        else {
+-            this.applyLegacyWeights(blendFactor);
+-        }
 -        this.mixer.update(delta);
-+        if (this.hasGait()) {
-+            if (this.root) {
-+                this.tempScale.setFromMatrixScale(this.root.matrixWorld);
-+                const scale = (this.tempScale.x + this.tempScale.y + this.tempScale.z) / 3;
-+                if (scale > 1e-4)
-+                    this.rootWorldScale = scale;
-+            }
-+            this.updateGaitSplit();
-+            this.advanceGaitPhase(delta);
-+        }
-+        // Zeroed first so the two cases agree: a clip carrying the pelvis track
-+        // writes the bob and this adds the rig's height under it, and a clip
-+        // without one leaves zero, which is the same height on its own. Adding to
-+        // whatever last frame left would walk the pelvis off in either case.
-+        const hips = this.hipsBone;
-+        if (hips && this.hipsRest) {
-+            hips.position.set(0, 0, 0);
-+            this.mixer.update(delta);
-+            hips.position.add(this.hipsRest);
-+        }
-+        else {
-+            this.mixer.update(delta);
-+        }
++    leftFoot.getWorldPosition(local).applyMatrix4(invRoot);
++    leftY[i] = local.y;
++    leftXZ.push([local.x, local.z]);
++    rightFoot.getWorldPosition(local).applyMatrix4(invRoot);
++    rightY[i] = local.y;
++    rightXZ.push([local.x, local.z]);
++  }
++  probeMixer.stopAllAction();
++  probeMixer.uncacheAction(clip, root);
++  probeMixer.uncacheRoot(root);
++  const leftContact = new Float32Array(GAIT_SAMPLES);
++  const rightContact = new Float32Array(GAIT_SAMPLES);
++  const band = DOUBLE_SUPPORT_BAND * (legSpan / 0.9 || 1);
++  const speeds = [];
++  for (let i = 0; i < GAIT_SAMPLES; i++) {
++    const lower = Math.min(leftY[i], rightY[i]);
++    const sourceIndex = sourceFootprint ? Math.min(
++      sourceFootprint.samples - 1,
++      Math.round(i / GAIT_SAMPLES * (sourceFootprint.samples - 1))
++    ) : -1;
++    leftContact[i] = sourceFootprint ? sourceFootprint.left.contact[sourceIndex] : leftY[i] <= lower + band ? 1 : 0;
++    rightContact[i] = sourceFootprint ? sourceFootprint.right.contact[sourceIndex] : rightY[i] <= lower + band ? 1 : 0;
++    const j = (i + 1) % GAIT_SAMPLES;
++    let dx = 0;
++    let dz = 0;
++    let support = 0;
++    if (leftContact[i] >= 0.5 || leftContact[j] >= 0.5) {
++      dx += leftXZ[j][0] - leftXZ[i][0];
++      dz += leftXZ[j][1] - leftXZ[i][1];
++      support++;
      }
-     isReady() {
-         return this.initialized && this.clipsLoaded;
-@@ -397,37 +790,13 @@ export class LocomotionAnimator {
-         return obj ?? null;
+-    isReady() {
+-        return this.initialized && this.clipsLoaded;
++    if (rightContact[i] >= 0.5 || rightContact[j] >= 0.5) {
++      dx += rightXZ[j][0] - rightXZ[i][0];
++      dz += rightXZ[j][1] - rightXZ[i][1];
++      support++;
      }
-     dispose() {
+-    configure(config) {
+-        this.config = { ...this.config, ...config };
++    if (support > 0) {
++      speeds.push(Math.hypot(dx / support, dz / support) / dt);
+     }
+-    getHipsBone() {
+-        if (!this.root)
+-            return null;
+-        const hipsName = `${this.modelPrefix}Hips`;
+-        const obj = this.root.getObjectByName(hipsName);
+-        return obj ?? null;
++  }
++  speeds.sort((a, b) => a - b);
++  const nativeSpeed = speeds[Math.floor(speeds.length / 2)] ?? 0;
++  let leftStrikePhase = 0;
++  let soleOffset = Infinity;
++  let toeOffset = Infinity;
++  for (let i = 0; i < GAIT_SAMPLES; i++) {
++    soleOffset = Math.min(soleOffset, leftY[i], rightY[i]);
++    toeOffset = Math.min(toeOffset, toeY[i]);
++  }
++  if (!Number.isFinite(toeOffset)) toeOffset = soleOffset;
++  soleOffset = Math.max(0, soleOffset);
++  toeOffset = Math.max(0, toeOffset);
++  const strikes = [];
++  for (let i = 0; i < GAIT_SAMPLES; i++) {
++    const prevIndex = (i + GAIT_SAMPLES - 1) % GAIT_SAMPLES;
++    if (leftContact[prevIndex] < 0.5 && leftContact[i] >= 0.5) {
++      strikes.push({ phase: i / GAIT_SAMPLES, foot: "left" });
+     }
+-    dispose() {
 -        if (this.mixer) {
 -            this.mixer.stopAllAction();
 -            this.mixer = null;
@@ -12579,11 +12661,10 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..7e7614449f1a34bc66973415e8240b5d
 -        for (const key of Object.keys(this.walkActions)) {
 -            this.walkActions[key] = null;
 -        }
-+        this.releaseActions();
-         this.pendingClips.clear();
-         this.root = null;
-         this.initialized = false;
-         this.clipsLoaded = false;
+-        this.pendingClips.clear();
+-        this.root = null;
+-        this.initialized = false;
+-        this.clipsLoaded = false;
 -        this.currentIdleWeight = 1;
 -        this.targetIdleWeight = 1;
 -        this.activeState = null;
@@ -12592,215 +12673,1337 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..7e7614449f1a34bc66973415e8240b5d
 -            this.currentDirWeights[key] = 0;
 -            this.targetDirWeights[key] = 0;
 -        }
++    if (rightContact[prevIndex] < 0.5 && rightContact[i] >= 0.5) {
++      strikes.push({ phase: i / GAIT_SAMPLES, foot: "right" });
      }
-     // --- Private helpers ---
+-    // --- Private helpers ---
 -    loadGltf(url) {
 -        return new Promise((resolve, reject) => {
 -            this.loader.load(url, resolve, undefined, reject);
 -        });
 -    }
-     updateDirectionalTargets(input) {
-         const dir = input.moveDirection ?? { x: 0, z: 1 };
-         const fw = Math.max(0, dir.z);
-@@ -463,11 +832,176 @@ export class LocomotionAnimator {
-             }
-             return;
-         }
+-    updateDirectionalTargets(input) {
+-        const dir = input.moveDirection ?? { x: 0, z: 1 };
+-        const fw = Math.max(0, dir.z);
+-        const bw = Math.max(0, -dir.z);
+-        const sl = Math.max(0, -dir.x);
+-        const sr = Math.max(0, dir.x);
+-        // When moving backward (S held), use 100% backward animation regardless
+-        // of strafe input. Blending backward + strafe produces an awkward hybrid
+-        // pose. The physics still moves diagonally - only the animation is pure
+-        // backward. This matches how most third-person games handle it.
+-        if (bw > 0) {
+-            this.targetDirWeights.forward = 0;
+-            this.targetDirWeights.backward = 1;
+-            this.targetDirWeights.strafeLeft = 0;
+-            this.targetDirWeights.strafeRight = 0;
+-            return;
+-        }
+-        const total = fw + sl + sr;
+-        const n = total > 0 ? 1 / total : 0;
+-        this.targetDirWeights.forward = fw * n;
+-        this.targetDirWeights.backward = 0;
+-        this.targetDirWeights.strafeLeft = sl * n;
+-        this.targetDirWeights.strafeRight = sr * n;
+-    }
+-    updatePlaybackSpeed(speed) {
+-        // With root motion, the animation plays at natural speed (1.0) and
+-        // the displacement it produces IS the movement. Speed-matching would
+-        // slow the animation while the root motion delta stays the same,
+-        // causing feet to slide.
+-        if (this.config.enableRootMotion) {
+-            for (const key of Object.keys(this.walkActions)) {
+-                this.walkActions[key]?.setEffectiveTimeScale(this.config.baseSpeed);
+-            }
+-            return;
+-        }
 -        const timeScale = this.config.baseSpeed *
 -            Math.max(0.3, speed / this.config.animationWalkSpeed);
-+        this.commandedSpeed = speed;
-+        // Without a measured gait there is no phase driving either, so the single
-+        // authored constant is still the only thing available to match speed with.
-+        if (!this.hasGait()) {
-+            const timeScale = this.config.baseSpeed *
-+                Math.max(0.3, speed / this.config.animationWalkSpeed);
-+            for (const key of Object.keys(this.walkActions)) {
-+                this.walkActions[key]?.setEffectiveTimeScale(timeScale);
-+            }
-+        }
-+    }
-+    hasGait() {
-+        return (!!this.gaits.forward ||
-+            !!this.gaits.backward ||
-+            !!this.gaits.strafeLeft ||
-+            !!this.gaits.strafeRight);
-+    }
-+    /**
-+     * Split the speed ratio between how long each step is and how often it
-+     * lands.
-+     *
-+     * Walking humans hold stride length over cadence roughly constant, so both
-+     * track the square root of speed. Sending the whole ratio to playback rate
-+     * alone, which is what a lone timeScale does, leaves the clip's own stride
-+     * covering ground the body is not covering, and that gap IS the slide.
-+     * Splitting it means the step gets shorter as it gets slower.
-+     *
-+     * Stride carries the residual when cadence saturates: their product is the
-+     * ground speed, and that has to stay exact.
-+     */
-+    updateGaitSplit() {
-+        const native = this.blendedNativeSpeed();
-+        if (native <= 1e-4) {
-+            this.playRate = this.config.baseSpeed;
-+            this.strideScale = 1;
-+            return;
-+        }
-+        const r = Math.max(0, this.commandedSpeed) / native;
-+        const stride = Math.min(1.15, Math.max(0.5, Math.sqrt(r)));
-+        const rate = Math.min(2, Math.max(0.35, r / stride));
-+        this.strideScale = r > 0 ? r / rate : 1;
-+        this.playRate = this.config.baseSpeed * rate;
-+    }
-+    /** Native speed of the current blend, in world units/sec. */
-+    blendedNativeSpeed() {
-+        let sum = 0;
-+        let weight = 0;
-+        for (const key of Object.keys(this.walkActions)) {
-+            const gait = this.gaits[key];
-+            // Smoothed weights, not targets: stride and contact have to describe
-+            // the pose on screen, not the pose being blended toward.
-+            const w = this.currentDirWeights[key];
-+            if (!gait || w <= 1e-4)
-+                continue;
-+            sum += gait.nativeSpeed * w;
-+            weight += w;
-+        }
-+        if (weight <= 1e-4)
-+            return 0;
-+        return (sum / weight) * this.rootWorldScale;
-+    }
-+    /**
-+     * Advance the shared phase and write it to every walk action, offset by
-+     * where that clip puts its own left-foot strike so all four agree on which
-+     * foot is down.
-+     */
-+    advanceGaitPhase(delta) {
-+        let cadence = 0;
-+        let weight = 0;
-         for (const key of Object.keys(this.walkActions)) {
+-        for (const key of Object.keys(this.walkActions)) {
 -            this.walkActions[key]?.setEffectiveTimeScale(timeScale);
-+            const gait = this.gaits[key];
-+            const w = this.currentDirWeights[key];
-+            if (!gait || w <= 1e-4)
-+                continue;
-+            cadence += w / gait.duration;
-+            weight += w;
-         }
-+        if (weight > 1e-4 && this.commandedMoving) {
-+            const cycleRate = (this.playRate * cadence) / weight;
-+            this.gaitCycles += delta * cycleRate;
-+            this.masterPhase = this.gaitCycles - Math.floor(this.gaitCycles);
-+            this.gaitCadence = cycleRate * 2;
-+        }
-+        else {
-+            // Let the walking pose fade at its last authored phase. Advancing the
-+            // legs after world motion stops is the cycling-in-place fault the gait
-+            // probe measures, and it also makes an exact terminal footfall drift.
-+            this.gaitCadence = 0;
-+        }
-+        let left = 0;
-+        let right = 0;
-+        for (const key of Object.keys(this.walkActions)) {
-+            const gait = this.gaits[key];
-+            const action = this.walkActions[key];
-+            if (!gait || !action)
-+                continue;
-+            const phase = (this.masterPhase + gait.leftStrikePhase) % 1;
-+            action.time = phase * gait.duration;
-+            const w = this.currentDirWeights[key];
-+            if (w <= 1e-4)
-+                continue;
-+            left += sampleCurve(gait.leftContact, phase) * w;
-+            right += sampleCurve(gait.rightContact, phase) * w;
-+        }
-+        if (weight > 1e-4) {
-+            this.contactLeft = left / weight;
-+            this.contactRight = right / weight;
-+        }
-+        else {
-+            // Standing still, the curves describe a stride that is not happening.
-+            // Hand contact back to the velocity heuristic rather than freezing
-+            // whichever foot the phase stopped on.
-+            this.contactLeft = -1;
-+            this.contactRight = -1;
-+        }
-+    }
-+    /**
-+     * How much longer or shorter each step should be than the clip authored it.
-+     * FootPlanter applies this where the foot lands.
-+     */
-+    /**
-+     * Ankle height above the sole in world units, measured on this rig.
-+     *
-+     * Taken as the lowest value any walk clip reaches, because the sole plane
-+     * belongs to the rig rather than to a clip, and a clip whose foot never
-+     * quite flattens would otherwise report the character standing on air.
-+     */
-+    getSoleOffset() {
-+        let lowest = Infinity;
-+        for (const key of Object.keys(this.gaits)) {
-+            const gait = this.gaits[key];
-+            if (gait)
-+                lowest = Math.min(lowest, gait.soleOffset);
-+        }
-+        return Number.isFinite(lowest) ? lowest * this.rootWorldScale : 0;
-+    }
-+    /**
-+     * Height of the ball of the foot above the sole in world units.
-+     *
-+     * Measured the same way as getSoleOffset and for the same reason: it is the
-+     * height a plant should pin the toe at, and it belongs to the rig rather
-+     * than to whichever frame the foot happened to land on.
-+     */
-+    getToeOffset() {
-+        let lowest = Infinity;
-+        for (const key of Object.keys(this.gaits)) {
-+            const gait = this.gaits[key];
-+            if (gait)
-+                lowest = Math.min(lowest, gait.toeOffset);
-+        }
-+        return Number.isFinite(lowest) ? lowest * this.rootWorldScale : 0;
-+    }
-+    getStrideScale() {
-+        return this.strideScale;
-+    }
-+    /**
-+     * Blended weight-bearing per foot, or -1 per foot when the blend carries no
-+     * walk and the caller should fall back to velocity detection.
-+     */
-+    getFootContact() {
-+        return { left: this.contactLeft, right: this.contactRight };
-+    }
-+    getGaitClock() {
-+        return {
-+            phase: this.masterPhase,
-+            step: this.gaitCycles * 2,
-+            cadence: this.gaitCadence,
-+            strideScale: this.strideScale,
-+            moving: this.commandedMoving && this.gaitCadence > 0,
-+        };
+-        }
++  }
++  strikes.sort((a, b) => a.phase - b.phase);
++  const firstLeft = strikes.findIndex((strike) => strike.foot === "left");
++  const orderedStrikes = firstLeft > 0 ? [...strikes.slice(firstLeft), ...strikes.slice(0, firstLeft)] : strikes;
++  leftStrikePhase = orderedStrikes[0]?.phase ?? 0;
++  const strikePhases = new Float32Array(
++    orderedStrikes.length > 0 ? orderedStrikes.map((strike) => strike.phase) : [leftStrikePhase, (leftStrikePhase + 0.5) % 1]
++  );
++  const gait = {
++    nativeSpeed,
++    leftContact,
++    rightContact,
++    leftStrikePhase,
++    strikePhases,
++    stepsPerCycle: strikePhases.length,
++    rootDistance: reconstructRootDistance(
++      leftXZ,
++      rightXZ,
++      leftContact,
++      rightContact
++    ),
++    duration: clip.duration,
++    soleOffset,
++    toeOffset
++  };
++  variants.set(cacheKey, gait);
++  return gait;
++}
++function sampleCurve(curve, phase) {
++  const n = curve.length;
++  const x = (phase % 1 + 1) % 1 * n;
++  const i = Math.floor(x);
++  const frac = x - i;
++  const a = curve[i % n];
++  const b = curve[(i + 1) % n];
++  return a + (b - a) * frac;
++}
++function phaseAtGaitStep(gait, step) {
++  const count = gait.stepsPerCycle;
++  if (count <= 0 || gait.strikePhases.length !== count) {
++    return ((step / 2 + gait.leftStrikePhase) % 1 + 1) % 1;
++  }
++  return ((step / count + gait.leftStrikePhase) % 1 + 1) % 1;
++}
++function sampleRootDistance(curve, phase) {
++  if (curve.length < 2) return (phase % 1 + 1) % 1;
++  const intervals = curve.length - 1;
++  const wrapped = (phase % 1 + 1) % 1 * intervals;
++  const index = Math.floor(wrapped);
++  const fraction = wrapped - index;
++  const from = curve[Math.min(index, intervals)];
++  const to = curve[Math.min(index + 1, intervals)];
++  return from + (to - from) * fraction;
++}
++function distanceAtGaitStep(gait, step) {
++  const count = Math.max(1, gait.stepsPerCycle);
++  const cycle = Math.floor(step / count);
++  const within = step - cycle * count;
++  const phase = phaseAtGaitStep(gait, step);
++  const phaseDistance = sampleRootDistance(gait.rootDistance, phase);
++  const strikeDistance = sampleRootDistance(
++    gait.rootDistance,
++    gait.leftStrikePhase
++  );
++  let cycleDistance = phaseDistance - strikeDistance;
++  if (within > 1e-7 && cycleDistance < 0) cycleDistance += 1;
++  if (within <= 1e-7) cycleDistance = 0;
++  return cycle * count + cycleDistance * count;
++}
++class LocomotionAnimator {
++  mixer = null;
++  root = null;
++  modelPrefix = "mixamorig";
++  // Actions - created from raw clips, no processing
++  idleAction = null;
++  walkActions = directionRecord(null);
++  jumpAction = null;
++  fallAction = null;
++  landAction = null;
++  crouchAction = null;
++  stopActions = {
++    stopLeft: null,
++    stopRight: null
++  };
++  // Raw clips (stored between loadAnimations and initialize)
++  pendingClips = /* @__PURE__ */ new Map();
++  terminalMotions = {
++    stopLeft: null,
++    stopRight: null
++  };
++  // State
++  activeState = null;
++  currentActiveState = null;
++  terminalPlan = null;
++  terminalPlanId = null;
++  terminalStatus = null;
++  terminalPhase = 0;
++  terminalElapsed = 0;
++  terminalDistanceStep = 0;
++  gaitTimingSample = null;
++  currentTerminalWeight = 0;
++  terminalEntryStrideScale = 1;
++  terminalEntryDirWeights = directionRecord(0);
++  terminalEntryContactLeft = -1;
++  terminalEntryContactRight = -1;
++  terminalContactLeft = -1;
++  terminalContactRight = -1;
++  initialized = false;
++  clipsLoaded = false;
++  config = {
++    baseSpeed: 1,
++    blendTime: 0.24,
++    animationWalkSpeed: 1.57,
++    enableRootMotion: false,
++    stripLegBones: false
++  };
++  // Blend weights (smoothed each frame)
++  currentIdleWeight = 1;
++  currentIdleVelocity = 0;
++  targetIdleWeight = 1;
++  currentDirWeights = directionRecord(0);
++  dirWeightVelocities = directionRecord(0);
++  targetDirWeights = directionRecord(0);
++  // -- Gait --
++  /** The proportions a baked clip was fitted to, for the prepared-clip cache. */
++  rigSignature = "";
++  hipsBone = null;
++  hipsRest = null;
++  gaits = directionRecord(null);
++  /**
++   * One phase drives all four walk clips. They have different durations, so
++   * left alone they drift apart and the blended left foot plants at four
++   * different moments, which is a foot that never really plants at all. Each
++   * action is held at timeScale 0 and its time written from this.
++   */
++  masterPhase = 0;
++  /** Monotonic authored footfalls, so exact-step plans survive clip and phase
++   *  wraps. This is deliberately not derived from clip cycles: lateral mocap
++   *  and stop coverage can contain more than two steps per file. */
++  gaitSteps = 0;
++  gaitCadence = 0;
++  commandedMoving = false;
++  playRate = 1;
++  strideScale = 1;
++  commandedSpeed = 0;
++  contactLeft = -1;
++  contactRight = -1;
++  rootWorldScale = 1;
++  tempScale = new Vector3();
++  initialize(root) {
++    this.releaseActions();
++    this.root = root;
++    this.mixer = new AnimationMixer(root);
++    this.modelPrefix = this.detectModelPrefix(root);
++    this.initialized = true;
++    this.hipsBone = this.getHipsBone();
++    this.hipsRest = this.hipsBone ? this.hipsBone.position.clone() : null;
++    this.rigSignature = this.measureRig(root);
++    if (this.clipsLoaded) {
++      this.createActions();
      }
-     applyStateWeights(blendFactor) {
-         const state = this.activeState;
-@@ -483,7 +1017,7 @@ export class LocomotionAnimator {
-         // "hunched walk" without needing a dedicated crouch-walk animation clip.
-         // Without movement, 100% crouch-idle plays normally.
-         const isCrouching = state === LocomotionState.CROUCHING;
+-    applyStateWeights(blendFactor) {
+-        const state = this.activeState;
+-        // Phase-based jump: each state has its own clip.
+-        // jump-up = push off (one-shot), falling-idle = air loop, hard-landing = absorb (one-shot).
+-        // Physics owns vertical position; animations are purely cosmetic poses.
+-        const wantIdle = state === LocomotionState.IDLE ? 1 : 0;
+-        const wantJump = state === LocomotionState.JUMPING ? 1 : 0;
+-        const wantFall = state === LocomotionState.FALLING ? 1 : 0;
+-        const wantLand = state === LocomotionState.LANDING ? 1 : 0;
+-        // Crouch-walk: when crouching with movement input, blend crouch pose (60%)
+-        // with walk directions (40%) at reduced playback speed. This produces a
+-        // "hunched walk" without needing a dedicated crouch-walk animation clip.
+-        // Without movement, 100% crouch-idle plays normally.
+-        const isCrouching = state === LocomotionState.CROUCHING;
 -        const hasMovement = Object.values(this.targetDirWeights).some(w => w > 0);
-+        const hasMovement = Object.values(this.targetDirWeights).some((w) => w > 0);
-         const crouchWalking = isCrouching && hasMovement;
-         const wantWalk = state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
-         const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
-@@ -506,7 +1040,8 @@ export class LocomotionAnimator {
-         // On state entry: snap weights for instant transitions on one-shot clips.
-         if (state !== this.currentActiveState) {
-             // Zero out ground animations instantly when entering any airborne state
+-        const crouchWalking = isCrouching && hasMovement;
+-        const wantWalk = state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
+-        const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
+-        // Idle
+-        this.currentIdleWeight += (wantIdle - this.currentIdleWeight) * blendFactor;
+-        this.idleAction?.setEffectiveWeight(this.currentIdleWeight);
+-        // Walk directions (scaled by wantWalk - also drives crouch-walk blend)
+-        for (const key of Object.keys(this.walkActions)) {
+-            const dirTarget = this.targetDirWeights[key] * wantWalk;
+-            const current = this.currentDirWeights[key];
+-            const newWeight = current + (dirTarget - current) * blendFactor;
+-            this.currentDirWeights[key] = newWeight;
+-            this.walkActions[key]?.setEffectiveWeight(newWeight);
++  }
++  /**
++   * The proportions that decide what a baked clip looks like, to the millimetre.
++   *
++   * Prepared clips are cached across avatars and keyed by bone prefix, which
++   * was enough while preparation only renamed tracks. Now that it solves the
++   * legs against a particular pair of them, two avatars sharing a prefix and
++   * differing in leg length would otherwise be handed each other's walk.
++   */
++  measureRig(root) {
++    const bone = (name) => root.getObjectByName(`${this.modelPrefix}${name}`) ?? null;
++    const upper = bone("LeftUpLeg");
++    const knee = bone("LeftLeg");
++    const ankle = bone("LeftFoot");
++    const right = bone("RightUpLeg");
++    if (!upper || !knee || !ankle || !right) return "unrigged";
++    root.updateMatrixWorld(true);
++    const a = new Vector3();
++    const b = new Vector3();
++    upper.getWorldPosition(a);
++    knee.getWorldPosition(b);
++    const leg = a.distanceTo(b) + b.distanceTo(ankle.getWorldPosition(a));
++    upper.getWorldPosition(a);
++    const width = a.distanceTo(right.getWorldPosition(b));
++    return `${Math.round(leg * 1e3)}x${Math.round(width * 1e3)}`;
++  }
++  /**
++   * Detect bone naming prefix on the loaded model.
++   */
++  detectModelPrefix(root) {
++    for (const prefix of KNOWN_PREFIXES) {
++      if (this.hasRig(root, prefix)) return prefix;
++    }
++    let found = null;
++    root.traverse((obj) => {
++      if (found !== null || !obj.name.endsWith("Hips")) return;
++      const prefix = obj.name.slice(0, obj.name.length - "Hips".length);
++      if (this.hasRig(root, prefix)) found = prefix;
++    });
++    return found ?? "mixamorig";
++  }
++  /**
++   * A prefix is the model's only if the hip and a leg both carry it. Hips
++   * alone matches the bare "" prefix against a stray bone named "Hips" and
++   * binds every track to nothing.
++   */
++  hasRig(root, prefix) {
++    return !!root.getObjectByName(`${prefix}Hips`) && !!root.getObjectByName(`${prefix}LeftUpLeg`);
++  }
++  releaseActions() {
++    if (this.mixer) {
++      this.mixer.stopAllAction();
++      if (this.root) this.mixer.uncacheRoot(this.root);
++      this.mixer = null;
++    }
++    this.idleAction = null;
++    this.jumpAction = null;
++    this.fallAction = null;
++    this.landAction = null;
++    this.crouchAction = null;
++    this.stopActions.stopLeft = null;
++    this.stopActions.stopRight = null;
++    for (const key of Object.keys(this.walkActions)) {
++      this.walkActions[key] = null;
++      this.gaits[key] = null;
++    }
++    this.masterPhase = 0;
++    this.gaitSteps = 0;
++    this.gaitCadence = 0;
++    this.commandedMoving = false;
++    this.playRate = 1;
++    this.strideScale = 1;
++    this.commandedSpeed = 0;
++    this.contactLeft = -1;
++    this.contactRight = -1;
++    this.currentIdleWeight = 1;
++    this.currentIdleVelocity = 0;
++    this.targetIdleWeight = 1;
++    this.activeState = null;
++    this.currentActiveState = null;
++    this.terminalPlan = null;
++    this.terminalPlanId = null;
++    this.terminalStatus = null;
++    this.terminalPhase = 0;
++    this.terminalElapsed = 0;
++    this.terminalDistanceStep = 0;
++    this.gaitTimingSample = null;
++    this.currentTerminalWeight = 0;
++    this.terminalEntryStrideScale = 1;
++    for (const key of Object.keys(
++      this.terminalEntryDirWeights
++    )) {
++      this.terminalEntryDirWeights[key] = 0;
++    }
++    this.terminalEntryContactLeft = -1;
++    this.terminalEntryContactRight = -1;
++    this.terminalContactLeft = -1;
++    this.terminalContactRight = -1;
++    for (const key of Object.keys(this.currentDirWeights)) {
++      this.currentDirWeights[key] = 0;
++      this.dirWeightVelocities[key] = 0;
++      this.targetDirWeights[key] = 0;
++    }
++  }
++  async loadAnimations(urls) {
++    const entries = [
++      { key: "idle", url: urls.idle },
++      { key: "forward", url: urls.forward },
++      { key: "backward", url: urls.backward },
++      { key: "strafeLeft", url: urls.strafeLeft },
++      { key: "strafeRight", url: urls.strafeRight }
++    ];
++    if (urls.grapevineLeft)
++      entries.push({ key: "grapevineLeft", url: urls.grapevineLeft });
++    if (urls.grapevineRight)
++      entries.push({ key: "grapevineRight", url: urls.grapevineRight });
++    if (urls.runForward)
++      entries.push({ key: "runForward", url: urls.runForward });
++    if (urls.runStrafeLeft)
++      entries.push({ key: "runStrafeLeft", url: urls.runStrafeLeft });
++    if (urls.runStrafeRight)
++      entries.push({ key: "runStrafeRight", url: urls.runStrafeRight });
++    if (urls.jump) entries.push({ key: "jump", url: urls.jump });
++    if (urls.fall) entries.push({ key: "fall", url: urls.fall });
++    if (urls.land) entries.push({ key: "land", url: urls.land });
++    if (urls.crouch) entries.push({ key: "crouch", url: urls.crouch });
++    const terminalMotionLoads = [];
++    for (const foot of ["left", "right"]) {
++      const asset = urls.terminalStops?.[foot];
++      if (!asset) continue;
++      const key = terminalKey(foot);
++      entries.push({ key, url: asset.animation });
++      terminalMotionLoads.push({
++        key,
++        load: loadTerminalStopMotion(asset.motion)
++      });
++    }
++    const results = await Promise.allSettled(
++      entries.map(async ({ key, url }) => {
++        const clip = await loadSharedAnimation(url);
++        return { key, clip };
++      })
++    );
++    for (const result of results) {
++      if (result.status === "fulfilled") {
++        this.pendingClips.set(result.value.key, result.value.clip);
++      }
++    }
++    const motionResults = await Promise.allSettled(
++      terminalMotionLoads.map(async ({ key, load }) => ({
++        key,
++        motion: await load
++      }))
++    );
++    for (const result of motionResults) {
++      if (result.status === "fulfilled") {
++        this.terminalMotions[result.value.key] = result.value.motion;
++      } else {
++        console.warn(
++          "[LocomotionAnimator] Terminal stop metadata not loaded:",
++          result.reason
++        );
++      }
++    }
++    this.clipsLoaded = true;
++    if (this.initialized && this.mixer) {
++      this.createActions();
++    }
++  }
++  /**
++   * Remap a pending clip's track names to match this model's bone prefix.
++   * When root motion is enabled, keeps Hips position track for locomotion
++   * clips (walk/run) so RootMotionExtractor can read XZ deltas.
++   */
++  prepareClip(key) {
++    const raw = this.pendingClips.get(key);
++    if (!raw) return null;
++    const isLocomotionClip = DIRECTION_KEYS.includes(key) || key === "stopLeft" || key === "stopRight";
++    const needsCyclicContactRetarget = DIRECTION_KEYS.includes(
++      key
++    );
++    let hipsMode = "strip";
++    if (isLocomotionClip)
++      hipsMode = this.config.enableRootMotion ? "rootMotion" : "bob";
++    if (key === "crouch") hipsMode = "pose";
++    const stripLegs = this.config.stripLegBones && key === "idle";
++    const preservePelvisSway = key === "grapevineLeft" || key === "grapevineRight";
++    const cacheKey = `${key}|${this.modelPrefix}|${this.rigSignature}|${hipsMode}|${stripLegs}|${preservePelvisSway}`;
++    let variants = preparedClipCache.get(raw);
++    if (!variants) {
++      variants = /* @__PURE__ */ new Map();
++      preparedClipCache.set(raw, variants);
++    }
++    const existing = variants.get(cacheKey);
++    if (existing) return existing;
++    let prepared = remapClipToSkeleton(
++      raw,
++      this.modelPrefix,
++      hipsMode,
++      stripLegs,
++      preservePelvisSway
++    );
++    const footprint = this.root ? getClipFootprint(raw) : null;
++    if (footprint && needsCyclicContactRetarget && !stripLegs) {
++      const lateral = isLateralKey(key);
++      const preservesCrossing = key === "grapevineLeft" || key === "grapevineRight";
++      prepared = bakeContactPreservedLegs(
++        prepared,
++        footprint,
++        this.root,
++        this.modelPrefix,
++        preservesCrossing ? { footGoalSmoothingPasses: 140 } : lateral ? {
++          footGoalSmoothingPasses: 140,
++          minimumLegOrderShare: 1.25
++        } : {}
++      );
++    }
++    prepared.name = key;
++    variants.set(cacheKey, prepared);
++    return prepared;
++  }
++  /**
++   * Create actions from clips - only bone prefix remapping, no track filtering.
++   * Play all simultaneously, control blending purely through weights.
++   * This is how the canonical Three.js skinning-blending example works.
++   */
++  createActions() {
++    if (!this.mixer) return;
++    const hips = this.hipsBone;
++    const hipsBeforeBind = hips ? hips.position.clone() : null;
++    if (hips) hips.position.set(0, 0, 0);
++    const idleClip = this.prepareClip("idle");
++    if (idleClip && !this.idleAction) {
++      this.idleAction = this.mixer.clipAction(idleClip);
++      this.idleAction.setLoop(LoopRepeat, Infinity);
++      this.setWeight(this.idleAction, 1);
++      this.idleAction.play();
++    }
++    for (const key of DIRECTION_KEYS) {
++      const clip = this.prepareClip(key);
++      if (clip && !this.walkActions[key]) {
++        const action = this.mixer.clipAction(clip);
++        action.setLoop(LoopRepeat, Infinity);
++        this.setWeight(action, 0);
++        action.play();
++        this.walkActions[key] = action;
++        if (this.root && !this.config.enableRootMotion) {
++          this.gaits[key] = analyzeClipGait(
++            clip,
++            this.root,
++            this.modelPrefix,
++            getClipFootprint(this.pendingClips.get(key))
++          );
++          if (this.gaits[key]) action.setEffectiveTimeScale(0);
+         }
+-        // Airborne phase clips + crouch
+-        this.blendAction(this.crouchAction, wantCrouch, blendFactor);
+-        this.blendAction(this.jumpAction, wantJump, blendFactor);
+-        this.blendAction(this.fallAction, wantFall, blendFactor);
+-        this.blendAction(this.landAction, wantLand, blendFactor);
+-        // On state entry: snap weights for instant transitions on one-shot clips.
+-        if (state !== this.currentActiveState) {
+-            // Zero out ground animations instantly when entering any airborne state
 -            if (state === LocomotionState.JUMPING || state === LocomotionState.FALLING) {
-+            if (state === LocomotionState.JUMPING ||
-+                state === LocomotionState.FALLING) {
-                 this.idleAction?.setEffectiveWeight(0);
-                 this.currentIdleWeight = 0;
-                 for (const key of Object.keys(this.walkActions)) {
+-                this.idleAction?.setEffectiveWeight(0);
+-                this.currentIdleWeight = 0;
+-                for (const key of Object.keys(this.walkActions)) {
+-                    this.walkActions[key]?.setEffectiveWeight(0);
+-                    this.currentDirWeights[key] = 0;
+-                }
+-            }
+-            // Reset one-shot clips on entry
+-            if (state === LocomotionState.JUMPING && this.jumpAction) {
+-                this.jumpAction.reset().play();
+-                this.jumpAction.setEffectiveWeight(1);
+-            }
+-            if (state === LocomotionState.FALLING && this.fallAction) {
+-                this.fallAction.reset().play();
+-                this.fallAction.setEffectiveWeight(1);
+-                // Zero out jump clip
+-                this.jumpAction?.setEffectiveWeight(0);
+-            }
+-            if (state === LocomotionState.LANDING && this.landAction) {
+-                this.landAction.reset().play();
+-                this.landAction.setEffectiveWeight(1);
+-                this.fallAction?.setEffectiveWeight(0);
+-            }
+-            this.currentActiveState = state;
++      }
++    }
++    const jumpClip = this.prepareClip("jump");
++    if (jumpClip && !this.jumpAction) {
++      this.jumpAction = this.mixer.clipAction(jumpClip);
++      this.jumpAction.setLoop(LoopOnce, 1);
++      this.jumpAction.clampWhenFinished = true;
++      this.setWeight(this.jumpAction, 0);
++      this.jumpAction.play();
++    }
++    const fallClip = this.prepareClip("fall");
++    if (fallClip && !this.fallAction) {
++      this.fallAction = this.mixer.clipAction(fallClip);
++      this.fallAction.setLoop(LoopRepeat, Infinity);
++      this.setWeight(this.fallAction, 0);
++      this.fallAction.play();
++    }
++    const landClip = this.prepareClip("land");
++    if (landClip && !this.landAction) {
++      this.landAction = this.mixer.clipAction(landClip);
++      this.landAction.setLoop(LoopOnce, 1);
++      this.landAction.clampWhenFinished = true;
++      this.setWeight(this.landAction, 0);
++      this.landAction.play();
++    }
++    const crouchClip = this.prepareClip("crouch");
++    if (crouchClip && !this.crouchAction) {
++      this.crouchAction = this.mixer.clipAction(crouchClip);
++      this.crouchAction.setLoop(LoopRepeat, Infinity);
++      this.setWeight(this.crouchAction, 0);
++      this.crouchAction.play();
++    }
++    for (const key of ["stopLeft", "stopRight"]) {
++      const clip = this.prepareClip(key);
++      if (!clip || this.stopActions[key]) continue;
++      const action = this.mixer.clipAction(clip);
++      action.setLoop(LoopOnce, 1);
++      action.clampWhenFinished = true;
++      this.setWeight(action, 0);
++      action.setEffectiveTimeScale(0);
++      action.play();
++      this.stopActions[key] = action;
++    }
++    if (hips && hipsBeforeBind) hips.position.copy(hipsBeforeBind);
++  }
++  /**
++   * Set weight on an action - same helper as the Three.js example.
++   */
++  setWeight(action, weight) {
++    action.enabled = true;
++    action.setEffectiveTimeScale(1);
++    action.setEffectiveWeight(weight);
++  }
++  setLocomotion(input) {
++    this.commandedMoving = input.isMoving;
++    if (input.isMoving) {
++      this.targetIdleWeight = 0;
++      this.updateDirectionalTargets(input);
++      this.updatePlaybackSpeed(input.speed);
++    } else {
++      this.targetIdleWeight = 1;
++      for (const key of DIRECTION_KEYS) this.targetDirWeights[key] = 0;
++    }
++  }
++  setTerminalStepPlan(plan) {
++    if (plan?.id === this.terminalPlanId) return;
++    if (plan) {
++      if (!plan.id || !Number.isFinite(plan.startAtGaitStep) || !Number.isFinite(plan.landAtGaitStep) || Math.abs(plan.landAtGaitStep - plan.startAtGaitStep - 2) > 1e-6 || !Number.isFinite(plan.remainingDistance) || plan.remainingDistance <= 0 || !Number.isFinite(plan.cadence) || plan.cadence <= 0 || plan.timingPlanId !== void 0 && !plan.timingPlanId || plan.stepDistances.some(
++        (distance) => !Number.isFinite(distance) || distance <= 0
++      ) || Math.abs(
++        plan.stepDistances[0] + plan.stepDistances[1] - plan.remainingDistance
++      ) > 1e-5) {
++        throw new RangeError("terminal step plan is invalid");
++      }
++    }
++    this.terminalPlan = plan;
++    this.terminalPlanId = plan?.id ?? null;
++    this.terminalStatus = plan ? "armed" : null;
++    this.terminalPhase = 0;
++    this.terminalElapsed = 0;
++    this.terminalDistanceStep = plan?.startAtGaitStep ?? this.gaitSteps;
++    this.currentTerminalWeight = 0;
++    this.terminalEntryStrideScale = this.strideScale;
++    this.terminalEntryContactLeft = -1;
++    this.terminalEntryContactRight = -1;
++    this.terminalContactLeft = -1;
++    this.terminalContactRight = -1;
++    for (const action of Object.values(this.stopActions)) {
++      if (!action) continue;
++      action.setEffectiveWeight(0);
++      action.time = 0;
++    }
++  }
++  setGaitTimingSample(sample) {
++    if (sample && (!sample.planId || !Number.isFinite(sample.gaitStep) || !Number.isFinite(sample.cadence) || sample.cadence < 0 || !Number.isFinite(sample.settleProgress) || sample.settleProgress < 0 || sample.settleProgress > 1)) {
++      throw new RangeError("scheduled gait timing sample is invalid");
++    }
++    this.gaitTimingSample = sample;
++  }
++  setActiveState(state) {
++    this.activeState = state;
++  }
++  update(delta) {
++    if (!this.mixer) return;
++    const blendSpeed = 1 / Math.max(0.01, this.config.blendTime);
++    const blendFactor = 1 - Math.exp(-blendSpeed * delta);
++    if (this.hasGait()) {
++      if (this.root) {
++        this.tempScale.setFromMatrixScale(this.root.matrixWorld);
++        const scale = (this.tempScale.x + this.tempScale.y + this.tempScale.z) / 3;
++        if (scale > 1e-4) this.rootWorldScale = scale;
++      }
++      this.updateGaitSplit();
++      if (this.terminalStatus === "braking" || this.terminalStatus === "landed") {
++        this.advanceTerminalStep(delta);
++      } else {
++        this.advanceGaitPhase(delta);
++      }
++    }
++    if (this.terminalStatus === "braking" || this.terminalStatus === "landed" || this.terminalStatus === "settled") {
++      this.applyTerminalWeights(blendFactor);
++    } else if (this.activeState !== null) {
++      this.applyStateWeights(delta, blendFactor);
++    } else {
++      this.applyLegacyWeights(delta);
++    }
++    const hips = this.hipsBone;
++    if (hips && this.hipsRest) {
++      hips.position.set(0, 0, 0);
++      this.mixer.update(delta);
++      hips.position.add(this.hipsRest);
++    } else {
++      this.mixer.update(delta);
++    }
++  }
++  isReady() {
++    return this.initialized && this.clipsLoaded;
++  }
++  reset() {
++    this.activeState = null;
++    this.currentActiveState = null;
++    this.terminalPlan = null;
++    this.terminalPlanId = null;
++    this.terminalStatus = null;
++    this.terminalPhase = 0;
++    this.terminalElapsed = 0;
++    this.terminalDistanceStep = 0;
++    this.gaitTimingSample = null;
++    this.currentTerminalWeight = 0;
++    this.terminalEntryStrideScale = 1;
++    this.terminalEntryContactLeft = -1;
++    this.terminalEntryContactRight = -1;
++    this.terminalContactLeft = -1;
++    this.terminalContactRight = -1;
++    this.masterPhase = 0;
++    this.gaitSteps = 0;
++    this.gaitCadence = 0;
++    this.commandedMoving = false;
++    this.commandedSpeed = 0;
++    this.playRate = 1;
++    this.strideScale = 1;
++    this.contactLeft = -1;
++    this.contactRight = -1;
++    this.currentIdleWeight = 1;
++    this.currentIdleVelocity = 0;
++    this.targetIdleWeight = 1;
++    for (const key of Object.keys(this.walkActions)) {
++      this.currentDirWeights[key] = 0;
++      this.dirWeightVelocities[key] = 0;
++      this.targetDirWeights[key] = 0;
++      const action = this.walkActions[key];
++      if (!action) continue;
++      action.setEffectiveWeight(0);
++      action.time = 0;
++    }
++    for (const key of Object.keys(
++      this.terminalEntryDirWeights
++    )) {
++      this.terminalEntryDirWeights[key] = 0;
++    }
++    for (const action of Object.values(this.stopActions)) {
++      if (!action) continue;
++      action.setEffectiveWeight(0);
++      action.time = 0;
++    }
++    for (const action of [
++      this.crouchAction,
++      this.jumpAction,
++      this.fallAction,
++      this.landAction
++    ]) {
++      action?.setEffectiveWeight(0);
++    }
++    if (this.idleAction) {
++      this.idleAction.setEffectiveWeight(1);
++      this.idleAction.time = 0;
++    }
++  }
++  configure(config) {
++    this.config = { ...this.config, ...config };
++  }
++  getHipsBone() {
++    if (!this.root) return null;
++    const hipsName = `${this.modelPrefix}Hips`;
++    const obj = this.root.getObjectByName(hipsName);
++    return obj ?? null;
++  }
++  dispose() {
++    this.releaseActions();
++    this.pendingClips.clear();
++    this.root = null;
++    this.initialized = false;
++    this.clipsLoaded = false;
++  }
++  // --- Private helpers ---
++  updateDirectionalTargets(input) {
++    const dir = input.moveDirection ?? { x: 0, z: 1 };
++    const fw = Math.max(0, dir.z);
++    const bw = Math.max(0, -dir.z);
++    const sl = Math.max(0, -dir.x);
++    const sr = Math.max(0, dir.x);
++    if (bw > 0) {
++      for (const key of DIRECTION_KEYS) this.targetDirWeights[key] = 0;
++      this.targetDirWeights.backward = 1;
++      return;
++    }
++    const total = fw + sl + sr;
++    const n = total > 0 ? 1 / total : 0;
++    const leftKey = input.lateralGait === "grapevine" ? "grapevineLeft" : "strafeLeft";
++    const rightKey = input.lateralGait === "grapevine" ? "grapevineRight" : "strafeRight";
++    for (const key of DIRECTION_KEYS) this.targetDirWeights[key] = 0;
++    this.assignTieredWeight("forward", fw * n, input.speed);
++    this.assignTieredWeight(leftKey, sl * n, input.speed);
++    this.assignTieredWeight(rightKey, sr * n, input.speed);
++  }
++  /**
++   * Give one direction's weight to its walk clip, its run clip, or a blend.
++   *
++   * Both tiers read the same monotonic `gaitSteps`, and `phaseAtGaitStep`
++   * offsets each clip by its own measured left-strike phase, so a crossover
++   * happens with the two clips already agreeing on which foot is down. The
++   * tier change lands between footfalls instead of teleporting one, which is
++   * why this needs no separate transition state: the shared clock is the
++   * transition.
++   */
++  assignTieredWeight(key, weight, speed) {
++    if (weight <= 0) return;
++    const runKey = RUN_TIER_KEYS[key];
++    const tier = runKey ? this.runTierFraction(key, runKey, speed) : 0;
++    this.targetDirWeights[key] += weight * (1 - tier);
++    if (runKey) this.targetDirWeights[runKey] += weight * tier;
++  }
++  /**
++   * How much of a direction belongs to its run clip at this ground speed.
++   *
++   * The band comes from the two clips' own measured speeds rather than a
++   * written constant, so a rig whose retarget lands a slower walk crosses over
++   * sooner instead of being held to a number authored for a different
++   * skeleton. Zero whenever the run clip is absent, unmeasured, or not
++   * actually faster than the walk - a pack without run coverage keeps exactly
++   * the behaviour it had before this tier existed.
++   */
++  runTierFraction(walkKey, runKey, speed) {
++    const walk = this.gaits[walkKey];
++    const run = this.gaits[runKey];
++    if (!walk || !run || !this.walkActions[runKey]) return 0;
++    const walkNative = walk.nativeSpeed * this.rootWorldScale;
++    const runNative = run.nativeSpeed * this.rootWorldScale;
++    if (walkNative <= 1e-4 || runNative <= walkNative) return 0;
++    const lower = walkNative * WALK_TIER_CEILING;
++    const upper = Math.max(lower + 1e-3, runNative * RUN_TIER_FLOOR);
++    return smoothStep01((speed - lower) / (upper - lower));
++  }
++  /**
++   * How much of the pose on screen is the run tier, in [0, 1].
++   *
++   * Measured from the smoothed weights, not the commanded ones: this reports
++   * the gait a viewer can see, which is what a diagnostic overlay and a
++   * verification pass both need.
++   */
++  getGaitTier() {
++    let run = 0;
++    let total = 0;
++    for (const key of Object.keys(this.currentDirWeights)) {
++      const weight = this.currentDirWeights[key];
++      if (weight <= 1e-4) continue;
++      total += weight;
++      if (RUN_TIER_MEMBERS.has(key)) run += weight;
++    }
++    return total > 1e-4 ? run / total : 0;
++  }
++  updatePlaybackSpeed(speed) {
++    if (this.config.enableRootMotion) {
++      for (const key of Object.keys(this.walkActions)) {
++        this.walkActions[key]?.setEffectiveTimeScale(this.config.baseSpeed);
++      }
++      return;
++    }
++    this.commandedSpeed = speed;
++    if (!this.hasGait()) {
++      const timeScale = this.config.baseSpeed * Math.max(0.3, speed / this.config.animationWalkSpeed);
++      for (const key of Object.keys(this.walkActions)) {
++        this.walkActions[key]?.setEffectiveTimeScale(timeScale);
++      }
++    }
++  }
++  hasGait() {
++    return DIRECTION_KEYS.some((key) => !!this.gaits[key]);
++  }
++  /**
++   * Split the speed ratio between how long each step is and how often it
++   * lands.
++   *
++   * Walking humans hold stride length over cadence roughly constant, so both
++   * track the square root of speed. Sending the whole ratio to playback rate
++   * alone, which is what a lone timeScale does, leaves the clip's own stride
++   * covering ground the body is not covering, and that gap IS the slide.
++   * Splitting it means the step gets shorter as it gets slower.
++   *
++   * Stride carries the residual when cadence saturates: their product is the
++   * ground speed, and that has to stay exact.
++   */
++  updateGaitSplit() {
++    const native = this.blendedNativeSpeed();
++    if (native <= 1e-4) {
++      this.playRate = this.config.baseSpeed;
++      this.strideScale = 1;
++      return;
++    }
++    const r = Math.max(0, this.commandedSpeed) / native;
++    const authoredStride = Math.min(1.15, Math.max(0.5, Math.sqrt(r)));
++    const strideAuthority = this.getFootPlantConfidence();
++    const stride = 1 + (authoredStride - 1) * strideAuthority;
++    const minimumRate = 0.1 + 0.25 * strideAuthority;
++    const rate = Math.min(2, Math.max(minimumRate, r / stride));
++    this.strideScale = r > 0 ? r / rate : 1;
++    this.playRate = this.config.baseSpeed * rate;
++  }
++  /** Native speed of the current blend, in world units/sec. */
++  blendedNativeSpeed() {
++    let sum = 0;
++    let weight = 0;
++    for (const key of Object.keys(this.walkActions)) {
++      const gait = this.gaits[key];
++      const w = this.currentDirWeights[key];
++      if (!gait || w <= 1e-4) continue;
++      sum += gait.nativeSpeed * w;
++      weight += w;
++    }
++    if (weight <= 1e-4) return 0;
++    return sum / weight * this.rootWorldScale;
++  }
++  matchingGaitTimingSample() {
++    const sample = this.gaitTimingSample;
++    if (!sample) return null;
++    const timingPlanId = this.terminalPlan?.timingPlanId;
++    return timingPlanId && timingPlanId !== sample.planId ? null : sample;
++  }
++  /**
++   * Advance the shared phase and write it to every walk action, offset by
++   * where that clip puts its own left-foot strike so all four agree on which
++   * foot is down.
++   */
++  advanceGaitPhase(delta) {
++    let stepRate = 0;
++    let weight = 0;
++    for (const key of Object.keys(this.walkActions)) {
++      const gait = this.gaits[key];
++      const w = this.currentDirWeights[key];
++      if (!gait || w <= 1e-4) continue;
++      stepRate += w * gait.stepsPerCycle / gait.duration;
++      weight += w;
++    }
++    const scheduled = this.matchingGaitTimingSample();
++    if (scheduled && (this.commandedMoving || scheduled.arrived)) {
++      this.gaitSteps = scheduled.gaitStep;
++      const gaitCycles = this.gaitSteps / 2;
++      this.masterPhase = gaitCycles - Math.floor(gaitCycles);
++      this.gaitCadence = scheduled.arrived ? 0 : scheduled.cadence;
++      const plan = this.terminalPlan;
++      if (plan && this.terminalStatus === "armed" && this.gaitSteps >= plan.startAtGaitStep && this.beginTerminalStep()) {
++        this.advanceScheduledTerminalStep(scheduled);
++        return;
++      }
++    } else if (weight > 1e-4 && this.commandedMoving) {
++      const cadence = this.playRate * stepRate / weight;
++      this.gaitSteps += delta * cadence;
++      const gaitCycles = this.gaitSteps / 2;
++      this.masterPhase = gaitCycles - Math.floor(gaitCycles);
++      this.gaitCadence = cadence;
++      const plan = this.terminalPlan;
++      if (plan && this.terminalStatus === "armed" && this.gaitSteps >= plan.startAtGaitStep) {
++        const overshootSteps = this.gaitSteps - plan.startAtGaitStep;
++        if (this.beginTerminalStep()) {
++          this.advanceTerminalStep(
++            this.gaitCadence > 1e-6 ? overshootSteps / this.gaitCadence : 0
++          );
++          return;
+         }
++      }
++    } else {
++      this.gaitCadence = 0;
++    }
++    let left = 0;
++    let right = 0;
++    for (const key of Object.keys(this.walkActions)) {
++      const gait = this.gaits[key];
++      const action = this.walkActions[key];
++      if (!gait || !action) continue;
++      const phase = phaseAtGaitStep(gait, this.gaitSteps);
++      action.time = phase * gait.duration;
++      const w = this.currentDirWeights[key];
++      if (w <= 1e-4) continue;
++      left += sampleCurve(gait.leftContact, phase) * w;
++      right += sampleCurve(gait.rightContact, phase) * w;
++    }
++    if (weight > 1e-4) {
++      this.contactLeft = left / weight;
++      this.contactRight = right / weight;
++    } else {
++      this.contactLeft = -1;
++      this.contactRight = -1;
++    }
++  }
++  beginTerminalStep() {
++    const plan = this.terminalPlan;
++    if (!plan) return false;
++    const key = terminalKey(plan.terminalFoot);
++    const motion = this.terminalMotions[key];
++    const action = this.stopActions[key];
++    if (!motion || !action || motion.terminalFoot !== plan.terminalFoot) {
++      return false;
++    }
++    this.terminalEntryContactLeft = this.contactLeft;
++    this.terminalEntryContactRight = this.contactRight;
++    for (const key2 of Object.keys(
++      this.terminalEntryDirWeights
++    )) {
++      this.terminalEntryDirWeights[key2] = this.currentDirWeights[key2];
++    }
++    this.terminalContactLeft = motion.leftFoot[0] ?? -1;
++    this.terminalContactRight = motion.rightFoot[0] ?? -1;
++    this.terminalEntryStrideScale = this.strideScale;
++    this.terminalStatus = "braking";
++    this.terminalPhase = 0;
++    this.terminalElapsed = 0;
++    this.terminalDistanceStep = plan.startAtGaitStep;
++    this.gaitSteps = plan.startAtGaitStep;
++    const gaitCycles = this.gaitSteps / 2;
++    this.masterPhase = gaitCycles - Math.floor(gaitCycles);
++    this.gaitCadence = plan.cadence;
++    action.reset().play();
++    action.setEffectiveTimeScale(0);
++    action.setEffectiveWeight(0);
++    action.time = 0;
++    return true;
++  }
++  advanceTerminalStep(delta) {
++    const plan = this.terminalPlan;
++    if (!plan) return;
++    const key = terminalKey(plan.terminalFoot);
++    const motion = this.terminalMotions[key];
++    const action = this.stopActions[key];
++    if (!motion || !action) return;
++    const scheduled = this.matchingGaitTimingSample();
++    if (scheduled) {
++      this.advanceScheduledTerminalStep(scheduled);
++      return;
++    }
++    this.terminalElapsed += Math.max(0, delta);
++    const desiredLandingDuration = 2 / plan.cadence;
++    const nativeLandingDuration = action.getClip().duration * motion.stepPhases[1];
++    const playbackRate = nativeLandingDuration / desiredLandingDuration;
++    const rawPhase = this.terminalElapsed * playbackRate / action.getClip().duration;
++    const phase = rawPhase >= 1 - 1e-9 ? 1 : Math.max(0, rawPhase);
++    const clampedProgress = this.applyTerminalPose(plan, motion, action, phase);
++    const gaitStep = Math.min(
++      plan.landAtGaitStep,
++      plan.startAtGaitStep + clampedProgress
++    );
++    this.gaitSteps = gaitStep;
++    const gaitCycles = this.gaitSteps / 2;
++    this.masterPhase = gaitCycles - Math.floor(gaitCycles);
++    if (gaitStep >= plan.landAtGaitStep - 1e-6) {
++      this.gaitSteps = plan.landAtGaitStep;
++      const gaitCycles2 = this.gaitSteps / 2;
++      this.masterPhase = gaitCycles2 - Math.floor(gaitCycles2);
++      this.gaitCadence = 0;
++      this.terminalStatus = this.terminalPhase >= 1 ? "settled" : "landed";
++    } else {
++      this.gaitCadence = plan.cadence;
++      this.terminalStatus = "braking";
++    }
++    if (this.terminalPhase >= 1) {
++      this.terminalStatus = "settled";
++      this.contactLeft = this.terminalContactLeft;
++      this.contactRight = this.terminalContactRight;
++    }
++  }
++  advanceScheduledTerminalStep(sample) {
++    const plan = this.terminalPlan;
++    if (!plan) return;
++    const key = terminalKey(plan.terminalFoot);
++    const motion = this.terminalMotions[key];
++    const action = this.stopActions[key];
++    if (!motion || !action) return;
++    const localStep = Math.min(
++      2,
++      Math.max(0, sample.gaitStep - plan.startAtGaitStep)
++    );
++    const phase = localStep <= 1 ? motion.stepPhases[0] * localStep : localStep < 2 ? motion.stepPhases[0] + (motion.stepPhases[1] - motion.stepPhases[0]) * (localStep - 1) : motion.stepPhases[1] + (1 - motion.stepPhases[1]) * sample.settleProgress;
++    this.applyTerminalPose(plan, motion, action, phase);
++    this.gaitSteps = Math.min(
++      plan.landAtGaitStep,
++      Math.max(plan.startAtGaitStep, sample.gaitStep)
++    );
++    const gaitCycles = this.gaitSteps / 2;
++    this.masterPhase = gaitCycles - Math.floor(gaitCycles);
++    this.gaitCadence = sample.arrived ? 0 : sample.cadence;
++    this.terminalStatus = sample.settled ? "settled" : sample.arrived ? "landed" : "braking";
++    if (sample.arrived) {
++      this.contactLeft = this.terminalContactLeft;
++      this.contactRight = this.terminalContactRight;
++    }
++  }
++  applyTerminalPose(plan, motion, action, phase) {
++    this.terminalPhase = Math.min(1, Math.max(0, phase));
++    action.time = this.terminalPhase * action.getClip().duration;
++    const rootProgress = sampleNonLoopingCurve(
++      motion.rootDistance,
++      this.terminalPhase
++    );
++    const firstLandingProgress = sampleNonLoopingCurve(
++      motion.rootDistance,
++      motion.stepPhases[0]
++    );
++    const stepProgress = rootProgress <= firstLandingProgress ? rootProgress / Math.max(1e-6, firstLandingProgress) : 1 + (rootProgress - firstLandingProgress) / Math.max(1e-6, 1 - firstLandingProgress);
++    const clampedProgress = Math.min(2, Math.max(0, stepProgress));
++    this.terminalDistanceStep = Math.min(
++      plan.landAtGaitStep,
++      plan.startAtGaitStep + clampedProgress
++    );
++    const sourceDistance = motion.nativeTravelMeters * this.rootWorldScale;
++    const sourceSegments = [
++      sourceDistance * firstLandingProgress,
++      sourceDistance * (1 - firstLandingProgress)
++    ];
++    const segmentScales = plan.stepDistances.map(
++      (distance, segment) => Math.min(
++        1.75,
++        Math.max(0.5, distance / Math.max(1e-4, sourceSegments[segment]))
++      )
++    );
++    const segmentBlend = smoothStep01((clampedProgress - 0.9) / 0.2);
++    const brakingStrideScale = segmentScales[0] + (segmentScales[1] - segmentScales[0]) * segmentBlend;
++    const entryBlend = terminalEntryBlend(motion, this.terminalPhase);
++    this.strideScale = this.terminalEntryStrideScale + (brakingStrideScale - this.terminalEntryStrideScale) * entryBlend;
++    this.terminalContactLeft = sampleNonLoopingCurve(
++      motion.leftFoot,
++      this.terminalPhase
++    );
++    this.terminalContactRight = sampleNonLoopingCurve(
++      motion.rightFoot,
++      this.terminalPhase
++    );
++    return clampedProgress;
++  }
++  /**
++   * How much longer or shorter each step should be than the clip authored it.
++   * FootPlanter applies this where the foot lands.
++   */
++  /**
++   * Ankle height above the sole in world units, measured on this rig.
++   *
++   * Taken as the lowest value any walk clip reaches, because the sole plane
++   * belongs to the rig rather than to a clip, and a clip whose foot never
++   * quite flattens would otherwise report the character standing on air.
++   */
++  getSoleOffset() {
++    let lowest = Infinity;
++    for (const key of Object.keys(this.gaits)) {
++      const gait = this.gaits[key];
++      if (gait) lowest = Math.min(lowest, gait.soleOffset);
++    }
++    return Number.isFinite(lowest) ? lowest * this.rootWorldScale : 0;
++  }
++  /**
++   * Height of the ball of the foot above the sole in world units.
++   *
++   * Measured the same way as getSoleOffset and for the same reason: it is the
++   * height a plant should pin the toe at, and it belongs to the rig rather
++   * than to whichever frame the foot happened to land on.
++   */
++  getToeOffset() {
++    let lowest = Infinity;
++    for (const key of Object.keys(this.gaits)) {
++      const gait = this.gaits[key];
++      if (gait) lowest = Math.min(lowest, gait.toeOffset);
++    }
++    return Number.isFinite(lowest) ? lowest * this.rootWorldScale : 0;
++  }
++  getStrideScale() {
++    return this.strideScale;
++  }
++  /**
++   * Blended weight-bearing per foot, or -1 per foot when the blend carries no
++   * walk and the caller should fall back to velocity detection.
++   */
++  getFootContact() {
++    return { left: this.contactLeft, right: this.contactRight };
++  }
++  getFootPlantConfidence() {
++    if (this.terminalStatus) return 1;
++    let total = 0;
++    let lateral = 0;
++    for (const key of Object.keys(this.currentDirWeights)) {
++      const weight = this.currentDirWeights[key];
++      total += weight;
++      if (isLateralKey(key)) lateral += weight;
++    }
++    if (total <= 1e-4) return 1;
++    return Math.max(0, Math.min(1, 1 - lateral / total));
++  }
++  /**
++   * Root-distance coordinate for the pose currently on screen.
++   *
++   * Directional clips contribute by their visible blend weights. An authored
++   * terminal clip has already mapped its own root curve into `gaitSteps`, so
++   * that window is returned directly and never parameterized twice.
++   */
++  blendedDistanceStep() {
++    if (this.terminalStatus === "braking" || this.terminalStatus === "landed" || this.terminalStatus === "settled") {
++      return this.terminalDistanceStep;
++    }
++    let distance = 0;
++    let weight = 0;
++    for (const key of Object.keys(this.currentDirWeights)) {
++      const gait = this.gaits[key];
++      const w = this.currentDirWeights[key];
++      if (!gait || w <= 1e-4) continue;
++      distance += distanceAtGaitStep(gait, this.gaitSteps) * w;
++      weight += w;
++    }
++    return weight > 1e-4 ? distance / weight : this.gaitSteps;
++  }
++  getGaitClock() {
++    const terminal = this.terminalPlan && this.terminalStatus ? {
++      status: this.terminalStatus,
++      foot: this.terminalPlan.terminalFoot,
++      phase: this.terminalPhase
++    } : void 0;
++    return {
++      phase: this.masterPhase,
++      step: this.gaitSteps,
++      distanceStep: this.blendedDistanceStep(),
++      cadence: this.gaitCadence,
++      strideScale: this.strideScale,
++      tier: this.getGaitTier(),
++      moving: this.terminalStatus === "braking" ? this.gaitCadence > 0 : this.commandedMoving && this.gaitCadence > 0,
++      ...terminal && { terminal }
++    };
++  }
++  applyTerminalWeights(blendFactor) {
++    const plan = this.terminalPlan;
++    if (!plan || !this.terminalStatus) return;
++    const motion = this.terminalMotions[terminalKey(plan.terminalFoot)];
++    if (!motion) return;
++    const entryBlend = terminalEntryBlend(motion, this.terminalPhase);
++    this.currentTerminalWeight = entryBlend;
++    this.currentIdleWeight = 0;
++    this.currentIdleVelocity = 0;
++    this.idleAction?.setEffectiveWeight(this.currentIdleWeight);
++    const selectedKey = terminalKey(plan.terminalFoot);
++    for (const key of ["stopLeft", "stopRight"]) {
++      this.stopActions[key]?.setEffectiveWeight(
++        key === selectedKey ? this.currentTerminalWeight : 0
++      );
++    }
++    for (const key of Object.keys(this.walkActions)) {
++      const next = this.terminalEntryDirWeights[key] * (1 - entryBlend);
++      this.currentDirWeights[key] = next;
++      this.dirWeightVelocities[key] = 0;
++      this.walkActions[key]?.setEffectiveWeight(next);
++    }
++    this.blendAction(this.crouchAction, 0, blendFactor);
++    this.blendAction(this.jumpAction, 0, blendFactor);
++    this.blendAction(this.fallAction, 0, blendFactor);
++    this.blendAction(this.landAction, 0, blendFactor);
++    if (this.terminalStatus === "braking" || this.terminalStatus === "landed") {
++      const leftEntry = this.terminalEntryContactLeft >= 0 ? this.terminalEntryContactLeft : this.terminalContactLeft;
++      const rightEntry = this.terminalEntryContactRight >= 0 ? this.terminalEntryContactRight : this.terminalContactRight;
++      this.contactLeft = leftEntry + (this.terminalContactLeft - leftEntry) * entryBlend;
++      this.contactRight = rightEntry + (this.terminalContactRight - rightEntry) * entryBlend;
++    }
++  }
++  applyStateWeights(delta, blendFactor) {
++    const state = this.activeState;
++    const wantIdle = state === LocomotionState.IDLE ? 1 : 0;
++    const wantJump = state === LocomotionState.JUMPING ? 1 : 0;
++    const wantFall = state === LocomotionState.FALLING ? 1 : 0;
++    const wantLand = state === LocomotionState.LANDING ? 1 : 0;
++    const isCrouching = state === LocomotionState.CROUCHING;
++    const hasMovement = Object.values(this.targetDirWeights).some((w) => w > 0);
++    const crouchWalking = isCrouching && hasMovement;
++    const wantWalk = state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
++    const wantCrouch = isCrouching ? crouchWalking ? 0.6 : 1 : 0;
++    [this.currentIdleWeight, this.currentIdleVelocity] = springWeight(
++      this.currentIdleWeight,
++      this.currentIdleVelocity,
++      wantIdle,
++      this.config.blendTime,
++      delta
++    );
++    this.idleAction?.setEffectiveWeight(this.currentIdleWeight);
++    for (const key of Object.keys(this.walkActions)) {
++      const dirTarget = this.targetDirWeights[key] * wantWalk;
++      const [newWeight, velocity] = springWeight(
++        this.currentDirWeights[key],
++        this.dirWeightVelocities[key],
++        dirTarget,
++        this.config.blendTime,
++        delta
++      );
++      this.currentDirWeights[key] = newWeight;
++      this.dirWeightVelocities[key] = velocity;
++      this.walkActions[key]?.setEffectiveWeight(newWeight);
+     }
+-    applyLegacyWeights(blendFactor) {
+-        this.currentIdleWeight +=
+-            (this.targetIdleWeight - this.currentIdleWeight) * blendFactor;
+-        this.idleAction?.setEffectiveWeight(this.currentIdleWeight);
++    this.blendAction(this.crouchAction, wantCrouch, blendFactor);
++    this.blendAction(this.jumpAction, wantJump, blendFactor);
++    this.blendAction(this.fallAction, wantFall, blendFactor);
++    this.blendAction(this.landAction, wantLand, blendFactor);
++    if (state !== this.currentActiveState) {
++      if (state === LocomotionState.JUMPING || state === LocomotionState.FALLING) {
++        this.idleAction?.setEffectiveWeight(0);
++        this.currentIdleWeight = 0;
++        this.currentIdleVelocity = 0;
+         for (const key of Object.keys(this.walkActions)) {
+-            const target = this.targetDirWeights[key];
+-            const current = this.currentDirWeights[key];
+-            const newWeight = current + (target - current) * blendFactor;
+-            this.currentDirWeights[key] = newWeight;
+-            this.walkActions[key]?.setEffectiveWeight(newWeight);
++          this.walkActions[key]?.setEffectiveWeight(0);
++          this.currentDirWeights[key] = 0;
++          this.dirWeightVelocities[key] = 0;
+         }
++      }
++      if (state === LocomotionState.JUMPING && this.jumpAction) {
++        this.jumpAction.reset().play();
++        this.jumpAction.setEffectiveWeight(1);
++      }
++      if (state === LocomotionState.FALLING && this.fallAction) {
++        this.fallAction.reset().play();
++        this.fallAction.setEffectiveWeight(1);
++        this.jumpAction?.setEffectiveWeight(0);
++      }
++      if (state === LocomotionState.LANDING && this.landAction) {
++        this.landAction.reset().play();
++        this.landAction.setEffectiveWeight(1);
++        this.fallAction?.setEffectiveWeight(0);
++      }
++      this.currentActiveState = state;
+     }
+-    blendAction(action, targetWeight, blendFactor) {
+-        if (!action)
+-            return;
+-        const current = action.getEffectiveWeight();
+-        action.setEffectiveWeight(current + (targetWeight - current) * blendFactor);
++  }
++  applyLegacyWeights(delta) {
++    [this.currentIdleWeight, this.currentIdleVelocity] = springWeight(
++      this.currentIdleWeight,
++      this.currentIdleVelocity,
++      this.targetIdleWeight,
++      this.config.blendTime,
++      delta
++    );
++    this.idleAction?.setEffectiveWeight(this.currentIdleWeight);
++    for (const key of Object.keys(this.walkActions)) {
++      const target = this.targetDirWeights[key];
++      const [newWeight, velocity] = springWeight(
++        this.currentDirWeights[key],
++        this.dirWeightVelocities[key],
++        target,
++        this.config.blendTime,
++        delta
++      );
++      this.currentDirWeights[key] = newWeight;
++      this.dirWeightVelocities[key] = velocity;
++      this.walkActions[key]?.setEffectiveWeight(newWeight);
+     }
++  }
++  blendAction(action, targetWeight, blendFactor) {
++    if (!action) return;
++    const current = action.getEffectiveWeight();
++    action.setEffectiveWeight(current + (targetWeight - current) * blendFactor);
++  }
+ }
++export {
++  LocomotionAnimator
++};
 diff --git a/dist/lib/services/implementations/PerformerSynchronizer.d.ts b/dist/lib/services/implementations/PerformerSynchronizer.d.ts
 deleted file mode 100644
 index b3c164cd7e54de07c9fb968781bad830a8d092e8..0000000000000000000000000000000000000000
@@ -13804,7 +15007,7 @@ diff --git a/dist/lib/state/user-proportions-state.svelte.d.ts.map b/dist/lib/st
 deleted file mode 100644
 index a8fd5a41c1434bf568841daf28c8443ba1515e65..0000000000000000000000000000000000000000
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab1aa036c1 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..91314c3b0e8ad15a0566ff3a9ea347c7c7fe987a 100644
 --- a/src/lib/components/Avatar3D.svelte
 +++ b/src/lib/components/Avatar3D.svelte
 @@ -16,29 +16,44 @@
@@ -14627,7 +15830,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -416,12 +882,39 @@
+@@ -416,12 +882,54 @@
              idle: `${animBase}idle${rmSuffix}.glb`,
              forward: `${animBase}walk-forward${rmSuffix}.glb`,
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
@@ -14646,6 +15849,21 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
 +            grapevineRight: enableRootMotion
 +              ? undefined
 +              : `${animBase}grapevine-right.glb`,
++            // Run tier. Omitted under root motion on purpose: run-rm.glb is
++            // byte-identical to run.glb and the strafe runs have no -rm export
++            // at all, so the hips carry no XZ displacement and a root-motion
++            // host would drive the run clip at zero travel. Walk clips keep
++            // their behaviour; a root-motion run needs a real in-place-off
++            // export first.
++            runForward: enableRootMotion
++              ? undefined
++              : `${animBase}run.glb`,
++            runStrafeLeft: enableRootMotion
++              ? undefined
++              : `${animBase}strafe-run-left.glb`,
++            runStrafeRight: enableRootMotion
++              ? undefined
++              : `${animBase}strafe-run-right.glb`,
 +            jump: enableRootMotion
 +              ? `${animBase}jump-up-rm.glb`
 +              : "/animations/jump-up.glb",
@@ -14670,7 +15888,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
            })
            .catch((err) => {
              console.warn(
-@@ -444,18 +937,39 @@
+@@ -444,18 +952,39 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -14719,7 +15937,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +990,13 @@
+@@ -476,7 +1005,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -14734,7 +15952,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
  
-@@ -502,6 +1022,16 @@
+@@ -502,6 +1037,16 @@
        }
      } finally {
        isLoading = false;
@@ -14751,7 +15969,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
      }
    }
  
-@@ -560,6 +1090,15 @@
+@@ -560,6 +1105,15 @@
      }
    });
  
@@ -14767,7 +15985,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
    // React to height changes - update avatar scale
    $effect(() => {
      if (!skeletonService || !modelLoaded || useProceduralFallback) return;
-@@ -570,8 +1109,14 @@
+@@ -570,8 +1124,14 @@
  
      // Update feetOffset for positioning (use untrack to prevent re-triggering)
      const newFeetOffset = skeletonService.getFeetOffset();
@@ -14782,7 +16000,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
      });
    });
  
-@@ -587,25 +1132,30 @@
+@@ -587,25 +1147,30 @@
  
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
@@ -14824,7 +16042,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
  
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -614,6 +1164,7 @@
+@@ -614,6 +1179,7 @@
            speed: stateOutput.animationSpeed,
            facingAngle: stateOutput.facingAngle,
            moveDirection: stateOutput.moveDirection,
@@ -14832,7 +16050,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
          });
          // Track state for FootPlanter (airborne states skip foot planting)
          currentLocomotionState = stateOutput.state;
-@@ -624,9 +1175,19 @@
+@@ -624,9 +1190,19 @@
            speed: moveSpeed,
            facingAngle,
            moveDirection,
@@ -14852,7 +16070,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
  
        // Turn clip overlay - when a turn is active, overwrite lower-body
        // and spine bones with the turn clip's authored pose at the current
-@@ -639,20 +1200,52 @@
+@@ -639,20 +1215,52 @@
        if (turnRequestProp && turnAnimator?.isReady() && skeletonService) {
          const sample = turnAnimator.sample(turnRequestProp);
          const bones = skeletonService.getState().bones;
@@ -14916,7 +16134,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
            }
          }
  
-@@ -681,7 +1274,11 @@
+@@ -681,7 +1289,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -14929,7 +16147,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -708,28 +1305,98 @@
+@@ -708,28 +1320,98 @@
        // clips without authored curves. Gated on enableFootPlanting so the
        // museum FPS player stays fully code-driven.
        if (enableFootPlanting && footPlanter?.isReady()) {
@@ -15033,7 +16251,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
      }
  
      if (redPropAnchorRef && redPropState) {
-@@ -737,6 +1404,10 @@
+@@ -737,6 +1419,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
      } else if (redPropState) {
        redIKTarget.copy(redPropState.worldPosition);
@@ -15044,7 +16262,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
      }
  
      const blueWorldProp = bluePropState
-@@ -746,15 +1417,137 @@
+@@ -746,15 +1432,137 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
  
@@ -15182,7 +16400,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -768,56 +1561,55 @@
+@@ -768,56 +1576,55 @@
        bones.get("Spine2")?.getWorldPosition(_boneVecs.spine2);
        bones.get("Spine1")?.getWorldPosition(_boneVecs.spine1);
        bones.get("Hips")?.getWorldPosition(_boneVecs.hips);
@@ -15269,7 +16487,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
            halfStaffLength,
            _redSegA,
            _redSegB
-@@ -825,23 +1617,134 @@
+@@ -825,23 +1632,134 @@
          redSegOrNull = redSeg;
        }
  
@@ -15418,7 +16636,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
    });
  
    // Note: Visibility is handled via the {#if visible} in the template
-@@ -867,20 +1770,15 @@
+@@ -867,20 +1785,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -15445,7 +16663,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1811,19 @@
+@@ -913,13 +1826,19 @@
  </script>
  
  {#if visible}
@@ -15472,7 +16690,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
      <T.Group
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
-@@ -940,9 +1844,10 @@
+@@ -940,9 +1859,10 @@
        - rotation.y: facingAngle (avatar faces movement direction)
  
        groupY calculation:
@@ -15486,7 +16704,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab
        - This positions feet at the correct ground level
  
        Using cachedRoot instead of skeletonService.getRoot() ensures
-@@ -950,6 +1855,7 @@
+@@ -950,6 +1870,7 @@
        preventing visual glitches during avatar swap.
      -->
      <T.Group
@@ -22066,7 +23284,7 @@ index df13878005926639ee48b400e7eb19647b92b020..d68905bd3ebda71325e9a332f633a38c
 +  solve(input: LegIKInput): LegIKResult;
  }
 diff --git a/src/lib/services/contracts/ILocomotionAnimator.ts b/src/lib/services/contracts/ILocomotionAnimator.ts
-index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..fc1fc4f75c294ebb0861e825214bb99bac915f34 100644
+index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..c11d976d2836702055614983acac0c472e6b671e 100644
 --- a/src/lib/services/contracts/ILocomotionAnimator.ts
 +++ b/src/lib/services/contracts/ILocomotionAnimator.ts
 @@ -11,6 +11,9 @@
@@ -22079,7 +23297,7 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..fc1fc4f75c294ebb0861e825214bb99b
  /**
   * Locomotion state from the avatar movement system
   */
-@@ -23,6 +26,92 @@ export interface LocomotionInput {
+@@ -23,6 +26,100 @@ export interface LocomotionInput {
    facingAngle?: number;
    /** Movement direction relative to facing: x (-1 left, +1 right), z (-1 back, +1 forward) */
    moveDirection?: { x: number; z: number };
@@ -22114,6 +23332,14 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..fc1fc4f75c294ebb0861e825214bb99b
 +  cadence: number;
 +  /** How much longer or shorter the current stride is than the source clip. */
 +  strideScale: number;
++  /**
++   * How much of the pose is the run tier, in [0, 1].
++   *
++   * 0 is entirely walk clips, 1 entirely run clips, and the values between are
++   * a real blend of the two rather than one clip played faster. Zero whenever
++   * the loaded pack carries no run coverage.
++   */
++  tier: number;
 +  /** Whether movement intent is currently advancing the clock. */
 +  moving: boolean;
 +  /** Authored arrival transition, when one owns the current pose. */
@@ -22172,17 +23398,25 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..fc1fc4f75c294ebb0861e825214bb99b
  }
  
  /**
-@@ -34,6 +123,9 @@ export interface AnimationUrls {
+@@ -34,6 +131,17 @@ export interface AnimationUrls {
    backward: string;
    strafeLeft: string;
    strafeRight: string;
 +  /** Four-step side, cross-behind, side, cross-in-front loops. */
 +  grapevineLeft?: string;
 +  grapevineRight?: string;
++  /**
++   * Run-tier coverage. Optional: without it the animator behaves exactly as it
++   * did with walk clips alone. There is deliberately no backward run - see
++   * RUN_TIER_KEYS in LocomotionAnimator.
++   */
++  runForward?: string;
++  runStrafeLeft?: string;
++  runStrafeRight?: string;
    /** Jump ascent clip (optional - needed for jump/fall/land states) */
    jump?: string;
    /** Sustained fall loop (optional) */
-@@ -42,6 +134,8 @@ export interface AnimationUrls {
+@@ -42,6 +150,8 @@ export interface AnimationUrls {
    land?: string;
    /** Crouch idle loop (optional) */
    crouch?: string;
@@ -22191,7 +23425,7 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..fc1fc4f75c294ebb0861e825214bb99b
  }
  
  /**
-@@ -53,10 +147,11 @@ export interface LocomotionConfig {
+@@ -53,10 +163,11 @@ export interface LocomotionConfig {
    /** Blend time when transitioning between states (seconds, default: 0.3) */
    blendTime?: number;
    /**
@@ -22207,7 +23441,7 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..fc1fc4f75c294ebb0861e825214bb99b
     */
    animationWalkSpeed?: number;
    /**
-@@ -124,6 +219,59 @@ export interface ILocomotionAnimator {
+@@ -124,6 +235,64 @@ export interface ILocomotionAnimator {
     */
    getHipsBone?(): Bone | null;
  
@@ -22246,6 +23480,11 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..fc1fc4f75c294ebb0861e825214bb99b
 +  /** Confidence that the current blend can accept hard world-space foot
 +   *  anchors. Authored motion remains the source of truth when this is zero. */
 +  getFootPlantConfidence?(): number;
++
++  /**
++   * How much of the current pose is the run tier, in [0, 1].
++   */
++  getGaitTier?(): number;
 +
 +  /**
 +   * Read the phase that actually drives the walk clips.
@@ -28942,10 +30181,10 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
    }
  }
 diff --git a/src/lib/services/implementations/LocomotionAnimator.ts b/src/lib/services/implementations/LocomotionAnimator.ts
-index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065ad0e28238 100644
+index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3de233d4486986fe3799d3b06fb63558b8c7f097 100644
 --- a/src/lib/services/implementations/LocomotionAnimator.ts
 +++ b/src/lib/services/implementations/LocomotionAnimator.ts
-@@ -13,17 +13,151 @@
+@@ -13,17 +13,209 @@
   */
  
  import type { AnimationAction, Object3D, Bone } from "three";
@@ -28984,17 +30223,76 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +  "strafeRight",
 +  "grapevineLeft",
 +  "grapevineRight",
++  "runForward",
++  "runStrafeLeft",
++  "runStrafeRight",
 +] as const;
 +type DirectionKey = (typeof DIRECTION_KEYS)[number];
 +type TerminalKey = "stopLeft" | "stopRight";
+ 
+-type DirectionKey = "forward" | "backward" | "strafeLeft" | "strafeRight";
++/**
++ * Which run clip carries a direction once the body outruns its walk.
++ *
++ * A run is not a fast walk. It replaces double support with flight, changes
++ * arm carriage, and lands roughly a fifth of the walk's stance overlap - none
++ * of which a playback rate can synthesise. Past the stride ceiling in
++ * `updateGaitSplit` the walk clip saturates and every remaining metre per
++ * second falls on rate alone, which is the cartoon speed-walk. So the run is a
++ * second set of clips sharing one gait clock, not a multiplier on the first.
++ *
++ * Backward and grapevine have no run coverage in the shipped pack, so they are
++ * absent here on purpose and stay on their walk clip. Over-cranking a backpedal
++ * into a sprint is the exact fault this tier exists to remove; a host that
++ * wants faster reverse travel owes it a clip.
++ */
++const RUN_TIER_KEYS: Partial<Record<DirectionKey, DirectionKey>> = {
++  forward: "runForward",
++  strafeLeft: "runStrafeLeft",
++  strafeRight: "runStrafeRight",
++};
++
++const RUN_TIER_MEMBERS: ReadonlySet<string> = new Set(
++  Object.values(RUN_TIER_KEYS) as DirectionKey[]
++);
++
++/**
++ * Where the walk clip stops being honest, as a multiple of its own measured
++ * ground speed. `updateGaitSplit` caps authored stride at 1.15; past that the
++ * whole remaining correction goes to playback rate.
++ */
++const WALK_TIER_CEILING = 1.15;
++
++/**
++ * Where the run clip starts being honest, as a multiple of its own measured
++ * ground speed. Below this the run is asked to shorten its stride past what a
++ * run looks like, and it reads first as a jog and then as a mime.
++ */
++const RUN_TIER_FLOOR = 0.8;
 +
 +function isLateralKey(key: string): boolean {
 +  return (
 +    key === "strafeLeft" ||
 +    key === "strafeRight" ||
 +    key === "grapevineLeft" ||
-+    key === "grapevineRight"
++    key === "grapevineRight" ||
++    key === "runStrafeLeft" ||
++    key === "runStrafeRight"
 +  );
++}
++
++/**
++ * A slot per travel direction, all set to the same starting value.
++ *
++ * Six of these used to be written out as literals, so adding a direction key
++ * meant remembering all six or getting a type error in one file and a silent
++ * hole in another. Deriving them from DIRECTION_KEYS means a new gait or tier
++ * is one entry in that list.
++ */
++function directionRecord<T>(value: T): Record<DirectionKey, T> {
++  const record = {} as Record<DirectionKey, T>;
++  for (const key of DIRECTION_KEYS) record[key] = value;
++  return record;
 +}
 +
 +interface TerminalStopMotion {
@@ -29091,8 +30389,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +  }
 +  return assertTerminalStopMotion(await response.json());
 +}
- 
--type DirectionKey = "forward" | "backward" | "strafeLeft" | "strafeRight";
++
 +const preparedClipCache = new WeakMap<
 +  AnimationClip,
 +  Map<string, AnimationClip>
@@ -29100,7 +30397,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
  
  /**
   * Known Mixamo bone prefixes. Animation files may use a different
-@@ -70,21 +204,29 @@ function detectClipPrefix(clip: AnimationClip): string {
+@@ -70,21 +262,29 @@ function detectClipPrefix(clip: AnimationClip): string {
   *   "strip"    - Remove Hips position entirely (default for idle/jump/fall/land)
   *   "rootMotion" - Keep and make Z relative to first frame (for walk/run root motion)
   *   "pose"     - Keep as-is, no baseline subtraction (for crouch - absolute Y is the pose)
@@ -29134,7 +30431,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
  ): AnimationClip {
    const clipPrefix = detectClipPrefix(clip);
  
-@@ -95,7 +237,9 @@ function remapClipToSkeleton(
+@@ -95,7 +295,9 @@ function remapClipToSkeleton(
  
        const boneName = track.name.slice(0, dotIdx);
        const property = track.name.slice(dotIdx + 1);
@@ -29145,7 +30442,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
  
        // Skip bones that don't exist on our models
        if (coreName.endsWith("_End")) return false;
-@@ -110,7 +254,12 @@ function remapClipToSkeleton(
+@@ -110,7 +312,12 @@ function remapClipToSkeleton(
        if (coreName === "Hips" && property === "quaternion") return false;
  
        // Keep Hips position track when needed for root motion or crouch pose.
@@ -29159,7 +30456,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
  
        // Keep all other quaternion tracks - bone rotations are the animation.
        // Filter out position/scale tracks (position teleports, scale vanishes).
-@@ -122,7 +271,9 @@ function remapClipToSkeleton(
+@@ -122,7 +329,9 @@ function remapClipToSkeleton(
        const dotIdx = track.name.indexOf(".");
        const boneName = track.name.slice(0, dotIdx);
        const property = track.name.slice(dotIdx);
@@ -29170,7 +30467,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
  
        const cloned = track.clone();
  
-@@ -136,7 +287,11 @@ function remapClipToSkeleton(
+@@ -136,7 +345,11 @@ function remapClipToSkeleton(
        // first keyframe's Z preserves the natural vertical bob (hips go up
        // and down ~2-3cm per step) while removing the absolute offset that
        // would slam the avatar underground.
@@ -29183,7 +30480,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
          const values = cloned.values as Float32Array;
          const baseZ = values[2] ?? 0; // First keyframe's Z = rest height
          for (let i = 2; i < values.length; i += 3) {
-@@ -144,13 +299,70 @@ function remapClipToSkeleton(
+@@ -144,13 +357,70 @@ function remapClipToSkeleton(
          }
        }
  
@@ -29255,7 +30552,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
          const values = cloned.values as Float32Array;
          for (let i = 0; i < values.length; i++) {
            values[i]! *= 0.01;
-@@ -167,10 +379,377 @@ function remapClipToSkeleton(
+@@ -167,37 +437,424 @@ function remapClipToSkeleton(
    return new AnimationClip(clip.name, clip.duration, tracks);
  }
  
@@ -29634,13 +30931,15 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
    private modelPrefix = "mixamorig";
  
    // Actions - created from raw clips, no processing
-@@ -180,24 +759,56 @@ export class LocomotionAnimator implements ILocomotionAnimator {
-     backward: null,
-     strafeLeft: null,
-     strafeRight: null,
-+    grapevineLeft: null,
-+    grapevineRight: null,
-   };
+   private idleAction: AnimationAction | null = null;
+-  private walkActions: Record<DirectionKey, AnimationAction | null> = {
+-    forward: null,
+-    backward: null,
+-    strafeLeft: null,
+-    strafeRight: null,
+-  };
++  private walkActions: Record<DirectionKey, AnimationAction | null> =
++    directionRecord<AnimationAction | null>(null);
    private jumpAction: AnimationAction | null = null;
    private fallAction: AnimationAction | null = null;
    private landAction: AnimationAction | null = null;
@@ -29670,14 +30969,8 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +  private gaitTimingSample: ScheduledGaitTimingSample | null = null;
 +  private currentTerminalWeight = 0;
 +  private terminalEntryStrideScale = 1;
-+  private terminalEntryDirWeights: Record<DirectionKey, number> = {
-+    forward: 0,
-+    backward: 0,
-+    strafeLeft: 0,
-+    strafeRight: 0,
-+    grapevineLeft: 0,
-+    grapevineRight: 0,
-+  };
++  private terminalEntryDirWeights: Record<DirectionKey, number> =
++    directionRecord(0);
 +  private terminalEntryContactLeft = -1;
 +  private terminalEntryContactRight = -1;
 +  private terminalContactLeft = -1;
@@ -29692,36 +30985,30 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
      animationWalkSpeed: 1.57,
      enableRootMotion: false,
      stripLegBones: false,
-@@ -205,46 +816,205 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -205,46 +862,181 @@ export class LocomotionAnimator implements ILocomotionAnimator {
  
    // Blend weights (smoothed each frame)
    private currentIdleWeight = 1;
 +  private currentIdleVelocity = 0;
    private targetIdleWeight = 1;
-   private currentDirWeights: Record<DirectionKey, number> = {
-     forward: 0,
-     backward: 0,
-     strafeLeft: 0,
-     strafeRight: 0,
-+    grapevineLeft: 0,
-+    grapevineRight: 0,
-+  };
-+  private dirWeightVelocities: Record<DirectionKey, number> = {
-+    forward: 0,
-+    backward: 0,
-+    strafeLeft: 0,
-+    strafeRight: 0,
-+    grapevineLeft: 0,
-+    grapevineRight: 0,
-   };
-   private targetDirWeights: Record<DirectionKey, number> = {
-     forward: 0,
-     backward: 0,
-     strafeLeft: 0,
-     strafeRight: 0,
-+    grapevineLeft: 0,
-+    grapevineRight: 0,
-+  };
+-  private currentDirWeights: Record<DirectionKey, number> = {
+-    forward: 0,
+-    backward: 0,
+-    strafeLeft: 0,
+-    strafeRight: 0,
+-  };
+-  private targetDirWeights: Record<DirectionKey, number> = {
+-    forward: 0,
+-    backward: 0,
+-    strafeLeft: 0,
+-    strafeRight: 0,
+-  };
++  private currentDirWeights: Record<DirectionKey, number> =
++    directionRecord(0);
++  private dirWeightVelocities: Record<DirectionKey, number> =
++    directionRecord(0);
++  private targetDirWeights: Record<DirectionKey, number> =
++    directionRecord(0);
 +
 +  // -- Gait --
 +
@@ -29729,15 +31016,9 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +  private rigSignature = "";
 +  private hipsBone: Bone | null = null;
 +  private hipsRest: Vector3 | null = null;
-+  private gaits: Record<DirectionKey, ClipGait | null> = {
-+    forward: null,
-+    backward: null,
-+    strafeLeft: null,
-+    strafeRight: null,
-+    grapevineLeft: null,
-+    grapevineRight: null,
-   };
- 
++  private gaits: Record<DirectionKey, ClipGait | null> =
++    directionRecord<ClipGait | null>(null);
++
 +  /**
 +   * One phase drives all four walk clips. They have different durations, so
 +   * left alone they drift apart and the blended left foot plants at four
@@ -29758,7 +31039,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +  private contactRight = -1;
 +  private rootWorldScale = 1;
 +  private readonly tempScale = new Vector3();
-+
+ 
    initialize(root: Object3D): void {
 +    // Actions belong to the mixer that made them, and createActions() only
 +    // fills empty slots. Carrying them across a new mixer leaves it with zero
@@ -29905,7 +31186,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
    }
  
    async loadAnimations(urls: AnimationUrls): Promise<void> {
-@@ -255,21 +1025,33 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -255,21 +1047,39 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        { key: "strafeLeft", url: urls.strafeLeft },
        { key: "strafeRight", url: urls.strafeRight },
      ];
@@ -29913,6 +31194,12 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +      entries.push({ key: "grapevineLeft", url: urls.grapevineLeft });
 +    if (urls.grapevineRight)
 +      entries.push({ key: "grapevineRight", url: urls.grapevineRight });
++    if (urls.runForward)
++      entries.push({ key: "runForward", url: urls.runForward });
++    if (urls.runStrafeLeft)
++      entries.push({ key: "runStrafeLeft", url: urls.runStrafeLeft });
++    if (urls.runStrafeRight)
++      entries.push({ key: "runStrafeRight", url: urls.runStrafeRight });
      if (urls.jump) entries.push({ key: "jump", url: urls.jump });
      if (urls.fall) entries.push({ key: "fall", url: urls.fall });
      if (urls.land) entries.push({ key: "land", url: urls.land });
@@ -29947,7 +31234,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
          return { key, clip };
        })
      );
-@@ -280,6 +1062,23 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -280,6 +1090,23 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        }
      }
  
@@ -29971,7 +31258,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
      this.clipsLoaded = true;
      if (this.initialized && this.mixer) {
        this.createActions();
-@@ -300,23 +1099,75 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -300,23 +1127,75 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // - Crouch: keep Hips position as-is (absolute Y IS the crouched height)
      // - Everything else: strip Hips position (would teleport the avatar)
      const isLocomotionClip =
@@ -30054,7 +31341,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
    }
  
    /**
-@@ -327,6 +1178,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -327,6 +1206,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    private createActions(): void {
      if (!this.mixer) return;
  
@@ -30072,7 +31359,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
  
      // Idle - starts at weight 1
      const idleClip = this.prepareClip("idle");
-@@ -338,7 +1200,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -338,7 +1228,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
  
      // Walk directions - start at weight 0
@@ -30081,7 +31368,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
        const clip = this.prepareClip(key);
        if (clip && !this.walkActions[key]) {
          const action = this.mixer.clipAction(clip);
-@@ -346,6 +1208,19 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -346,6 +1236,19 @@ export class LocomotionAnimator implements ILocomotionAnimator {
          this.setWeight(action, 0);
          action.play();
          this.walkActions[key] = action;
@@ -30101,7 +31388,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
        }
      }
  
-@@ -386,6 +1261,20 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -386,6 +1289,20 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        this.setWeight(this.crouchAction, 0);
        this.crouchAction.play();
      }
@@ -30122,7 +31409,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
    }
  
    /**
-@@ -398,19 +1287,77 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -398,17 +1315,75 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    }
  
    setLocomotion(input: LocomotionInput): void {
@@ -30138,9 +31425,9 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 -      this.targetDirWeights.strafeLeft = 0;
 -      this.targetDirWeights.strafeRight = 0;
 +      for (const key of DIRECTION_KEYS) this.targetDirWeights[key] = 0;
-     }
-   }
- 
++    }
++  }
++
 +  setTerminalStepPlan(plan: TerminalStepPlan | null): void {
 +    if (plan?.id === this.terminalPlanId) return;
 +
@@ -30197,14 +31484,12 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +        sample.settleProgress > 1)
 +    ) {
 +      throw new RangeError("scheduled gait timing sample is invalid");
-+    }
+     }
 +    this.gaitTimingSample = sample;
-+  }
-+
-   setActiveState(state: LocomotionState): void {
-     this.activeState = state;
    }
-@@ -422,19 +1369,116 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+ 
+   setActiveState(state: LocomotionState): void {
+@@ -422,19 +1397,116 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      const blendSpeed = 1 / Math.max(0.01, this.config.blendTime);
      const blendFactor = 1 - Math.exp(-blendSpeed * delta);
  
@@ -30325,7 +31610,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
    configure(config: LocomotionConfig): void {
      this.config = { ...this.config, ...config };
    }
-@@ -447,40 +1491,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -447,40 +1519,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    }
  
    dispose(): void {
@@ -30367,7 +31652,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
    private updateDirectionalTargets(input: LocomotionInput): void {
      const dir = input.moveDirection ?? { x: 0, z: 1 };
      const fw = Math.max(0, dir.z);
-@@ -493,20 +1512,22 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -493,20 +1540,92 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // pose. The physics still moves diagonally - only the animation is pure
      // backward. This matches how most third-person games handle it.
      if (bw > 0) {
@@ -30382,8 +31667,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
      const total = fw + sl + sr;
      const n = total > 0 ? 1 / total : 0;
  
-+    for (const key of DIRECTION_KEYS) this.targetDirWeights[key] = 0;
-     this.targetDirWeights.forward = fw * n;
+-    this.targetDirWeights.forward = fw * n;
 -    this.targetDirWeights.backward = 0;
 -    this.targetDirWeights.strafeLeft = sl * n;
 -    this.targetDirWeights.strafeRight = sr * n;
@@ -30391,12 +31675,84 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +      input.lateralGait === "grapevine" ? "grapevineLeft" : "strafeLeft";
 +    const rightKey =
 +      input.lateralGait === "grapevine" ? "grapevineRight" : "strafeRight";
-+    this.targetDirWeights[leftKey] = sl * n;
-+    this.targetDirWeights[rightKey] = sr * n;
++
++    for (const key of DIRECTION_KEYS) this.targetDirWeights[key] = 0;
++    this.assignTieredWeight("forward", fw * n, input.speed);
++    this.assignTieredWeight(leftKey, sl * n, input.speed);
++    this.assignTieredWeight(rightKey, sr * n, input.speed);
++  }
++
++  /**
++   * Give one direction's weight to its walk clip, its run clip, or a blend.
++   *
++   * Both tiers read the same monotonic `gaitSteps`, and `phaseAtGaitStep`
++   * offsets each clip by its own measured left-strike phase, so a crossover
++   * happens with the two clips already agreeing on which foot is down. The
++   * tier change lands between footfalls instead of teleporting one, which is
++   * why this needs no separate transition state: the shared clock is the
++   * transition.
++   */
++  private assignTieredWeight(
++    key: DirectionKey,
++    weight: number,
++    speed: number
++  ): void {
++    if (weight <= 0) return;
++    const runKey = RUN_TIER_KEYS[key];
++    const tier = runKey ? this.runTierFraction(key, runKey, speed) : 0;
++    this.targetDirWeights[key] += weight * (1 - tier);
++    if (runKey) this.targetDirWeights[runKey] += weight * tier;
++  }
++
++  /**
++   * How much of a direction belongs to its run clip at this ground speed.
++   *
++   * The band comes from the two clips' own measured speeds rather than a
++   * written constant, so a rig whose retarget lands a slower walk crosses over
++   * sooner instead of being held to a number authored for a different
++   * skeleton. Zero whenever the run clip is absent, unmeasured, or not
++   * actually faster than the walk - a pack without run coverage keeps exactly
++   * the behaviour it had before this tier existed.
++   */
++  private runTierFraction(
++    walkKey: DirectionKey,
++    runKey: DirectionKey,
++    speed: number
++  ): number {
++    const walk = this.gaits[walkKey];
++    const run = this.gaits[runKey];
++    if (!walk || !run || !this.walkActions[runKey]) return 0;
++
++    const walkNative = walk.nativeSpeed * this.rootWorldScale;
++    const runNative = run.nativeSpeed * this.rootWorldScale;
++    if (walkNative <= 1e-4 || runNative <= walkNative) return 0;
++
++    const lower = walkNative * WALK_TIER_CEILING;
++    const upper = Math.max(lower + 1e-3, runNative * RUN_TIER_FLOOR);
++    return smoothStep01((speed - lower) / (upper - lower));
++  }
++
++  /**
++   * How much of the pose on screen is the run tier, in [0, 1].
++   *
++   * Measured from the smoothed weights, not the commanded ones: this reports
++   * the gait a viewer can see, which is what a diagnostic overlay and a
++   * verification pass both need.
++   */
++  getGaitTier(): number {
++    let run = 0;
++    let total = 0;
++    for (const key of Object.keys(this.currentDirWeights) as DirectionKey[]) {
++      const weight = this.currentDirWeights[key];
++      if (weight <= 1e-4) continue;
++      total += weight;
++      if (RUN_TIER_MEMBERS.has(key)) run += weight;
++    }
++    return total > 1e-4 ? run / total : 0;
    }
  
    private updatePlaybackSpeed(speed: number): void {
-@@ -521,15 +1542,530 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -521,15 +1640,531 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        return;
      }
  
@@ -30475,16 +31831,16 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
      }
 +    if (weight <= 1e-4) return 0;
 +    return (sum / weight) * this.rootWorldScale;
-+  }
-+
+   }
+ 
+-  private applyStateWeights(blendFactor: number): void {
 +  private matchingGaitTimingSample(): ScheduledGaitTimingSample | null {
 +    const sample = this.gaitTimingSample;
 +    if (!sample) return null;
 +    const timingPlanId = this.terminalPlan?.timingPlanId;
 +    return timingPlanId && timingPlanId !== sample.planId ? null : sample;
-   }
- 
--  private applyStateWeights(blendFactor: number): void {
++  }
++
 +  /**
 +   * Advance the shared phase and write it to every walk action, offset by
 +   * where that clip puts its own left-foot strike so all four agree on which
@@ -30870,6 +32226,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +      distanceStep: this.blendedDistanceStep(),
 +      cadence: this.gaitCadence,
 +      strideScale: this.strideScale,
++      tier: this.getGaitTier(),
 +      moving:
 +        this.terminalStatus === "braking"
 +          ? this.gaitCadence > 0
@@ -30932,7 +32289,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
      const state = this.activeState!;
  
      // Phase-based jump: each state has its own clip.
-@@ -545,22 +2081,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -545,22 +2180,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // "hunched walk" without needing a dedicated crouch-walk animation clip.
      // Without movement, 100% crouch-idle plays normally.
      const isCrouching = state === LocomotionState.CROUCHING;
@@ -30973,7 +32330,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
        this.walkActions[key]?.setEffectiveWeight(newWeight);
      }
  
-@@ -573,12 +2122,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -573,12 +2221,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // On state entry: snap weights for instant transitions on one-shot clips.
      if (state !== this.currentActiveState) {
        // Zero out ground animations instantly when entering any airborne state
@@ -30992,7 +32349,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
          }
        }
        // Reset one-shot clips on entry
-@@ -601,16 +2155,27 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -601,16 +2254,27 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
    }
  

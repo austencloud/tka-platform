@@ -103,6 +103,14 @@
     hostMode: FlowFestTerrainHostMode;
     moveSpeedMetersPerSecond?: number;
     sprintMultiplier?: number;
+    /**
+     * Horizontal acceleration and braking in m/s^2. Omitted means the instant
+     * velocity this scene has always had, which is what the review harnesses
+     * measure distance-over-time against; the gameplay host supplies real
+     * rates so the walker has mass.
+     */
+    groundAccelerationMetersPerSecondSquared?: number;
+    groundDecelerationMetersPerSecondSquared?: number;
     jumpForce?: number;
     enableSprint?: boolean;
     enableJump?: boolean;
@@ -289,12 +297,27 @@
     requestedVelocity: { x: number; y: number; z: number };
   } | null>(null);
   let electricUnicycleInteractionMessage = $state("Park wheel");
+  /** Shift held, from the camera controller's own key set. */
+  let sprintHeld = $state(false);
   let electricUnicycleKeyPressed = false;
   let electricUnicycleGamepadButtonPressed = false;
   let lastElectricUnicycleReportAt = 0;
   let appliedElectricUnicycleRevision = props.electricUnicycleRevision ?? 0;
   let isMoving = $state(false);
   let moveDirection = $state({ x: 0, z: 0 });
+  /**
+   * Sprint only where a run clip exists.
+   *
+   * The locomotion pack has a forward run and both lateral runs; it has no
+   * backward run. Multiplying a backpedal asks the walk-backward clip for
+   * roughly four times its own 1.004 m/s, which saturates stride and rate and
+   * turns retreating into a moonwalk. Holding Shift while reversing therefore
+   * buys nothing until someone authors the clip. Sideways-and-back keeps the
+   * sprint, because the lateral run carries that component.
+   */
+  const effectiveSprintMultiplier = $derived(
+    moveDirection.z < 0 ? 1 : (props.sprintMultiplier ?? 1)
+  );
   /**
    * The body's real horizontal speed, not the configured one. Sprinting,
    * slopes, and collision limiting all change how fast the character is
@@ -966,6 +989,10 @@
       interactionMessage: electricUnicycleInteractionMessage,
       gamepadConnected: electricUnicycleGamepadConnected,
       collisionLimited: electricUnicycleCollisionLimited,
+      onFoot: {
+        speedMetersPerSecond: measuredGroundSpeed,
+        sprinting: sprintHeld && (props.enableSprint ?? false),
+      },
     };
     (globalThis as Record<string, unknown>).__flowFestEuc = {
       status: initialized ? "ready" : "initializing",
@@ -1864,7 +1891,9 @@
       showControlsHint={false}
       moveSpeed={props.moveSpeedMetersPerSecond ??
         REVIEW_WALK_SPEED_METERS_PER_SECOND}
-      sprintMultiplier={props.sprintMultiplier ?? 1}
+      sprintMultiplier={effectiveSprintMultiplier}
+      groundAcceleration={props.groundAccelerationMetersPerSecondSquared}
+      groundDeceleration={props.groundDecelerationMetersPerSecondSquared}
       jumpForce={props.jumpForce ?? 0}
       gravity={9.81}
       maximumFrameDeltaSeconds={props.electricUnicycleEnabled &&
@@ -1895,6 +1924,9 @@
         props.onViewRotationChange?.(yaw, pitch);
       }}
       onInputStateChange={(input) => {
+        sprintHeld =
+          input.activeCodes.includes("ShiftLeft") ||
+          input.activeCodes.includes("ShiftRight");
         if (props.electricUnicycleEnabled) {
           handleElectricUnicycleCodes(input.activeCodes);
         }
