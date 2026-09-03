@@ -57,6 +57,8 @@ const CDP_PORT = Number(args.get("cdp") ?? 9222);
 const CPU_THROTTLE = Number(args.get("cpu") ?? 1);
 const JSON_OUT = args.get("json") ?? null;
 const VIEWPORT = (args.get("viewport") ?? "1920x1080").split("x").map(Number);
+/** Pin the budget to a refresh rate instead of measuring it (`--hz 120`). */
+const HZ_OVERRIDE = args.has("hz") ? Number(args.get("hz")) : null;
 
 /** Interaction probes, per route. A route with no entry runs cold + idle only. */
 const INTERACTIONS = {
@@ -234,22 +236,46 @@ const RECORDER = `async ({ ms, scrollTo, click, scrollSweep }) => {
 // ------------------------------------------------------------------ reporting
 
 /**
- * The display's frame interval, inferred from the fastest frame observed across
- * every pass. rAF cannot beat the refresh rate, so the minimum delta is the
- * interval. Snapped to a known rate so one anomalous sub-millisecond delta
- * cannot invent an impossible budget.
+ * Snap a measured interval to the nearest real refresh rate, so scheduling
+ * noise cannot invent an impossible budget.
+ *
+ * Deriving this from the loaded page's own frames was wrong: on a janky or
+ * CPU-throttled page the recorder's frames bunch unpredictably, and a single
+ * short delta once produced a "155Hz" display and a 6.4ms budget. The interval
+ * is measured on a blank page instead (see `measureDisplayInterval`), where an
+ * empty rAF loop runs at exactly vsync.
  */
-function inferFrameInterval(passes) {
-  const mins = passes.map((p) => p.result.min).filter((v) => v > 1);
-  const fastest = Math.min(...mins);
-  const known = [1000 / 240, 1000 / 165, 1000 / 144, 1000 / 120, 1000 / 90, 1000 / 60];
+function snapToRefreshRate(measuredMs) {
+  const known = [1000 / 240, 1000 / 165, 1000 / 144, 1000 / 120, 1000 / 90, 1000 / 60, 1000 / 50, 1000 / 30];
   let best = 1000 / 60;
   let bestErr = Infinity;
   for (const k of known) {
-    const err = Math.abs(fastest - k);
+    const err = Math.abs(measuredMs - k);
     if (err < bestErr) { bestErr = err; best = k; }
   }
   return best;
+}
+
+/** An empty rAF loop on about:blank runs at exactly the display's refresh rate. */
+async function measureDisplayInterval(ws, sessionId) {
+  const median = await run(
+    ws,
+    sessionId,
+    `async () => {
+      const f = [];
+      let last = performance.now();
+      let h = 0;
+      let stop = false;
+      const tick = () => { const n = performance.now(); f.push(n - last); last = n; if (!stop) h = requestAnimationFrame(tick); };
+      h = requestAnimationFrame(tick);
+      await new Promise((r) => setTimeout(r, 1000));
+      stop = true;
+      cancelAnimationFrame(h);
+      const s = f.slice(2).sort((a, b) => a - b);
+      return s.length ? s[Math.floor(s.length / 2)] : 16.7;
+    }`
+  );
+  return snapToRefreshRate(median);
 }
 
 function grade(pass, interval) {
@@ -309,6 +335,12 @@ async function main() {
       { width: VIEWPORT[0], height: VIEWPORT[1], deviceScaleFactor: 1, mobile: false },
       sessionId
     );
+    // Measure the display BEFORE the page and before any CPU throttle, while
+    // the tab is still blank — that is the only moment the reading is clean.
+    const interval = HZ_OVERRIDE
+      ? snapToRefreshRate(1000 / HZ_OVERRIDE)
+      : await measureDisplayInterval(ws, sessionId);
+
     if (CPU_THROTTLE > 1) {
       await send(ws, "Emulation.setCPUThrottlingRate", { rate: CPU_THROTTLE }, sessionId);
     }
@@ -357,7 +389,6 @@ async function main() {
       });
     }
 
-    const interval = inferFrameInterval(passes);
     const failing = passes.filter((p) => grade(p, interval).length > 0);
 
     console.log(`\nFrame budget — ${url}`);
