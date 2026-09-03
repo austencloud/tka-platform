@@ -22,8 +22,8 @@ truth does this question need."
 |---|---|---|
 | Rearrange / polish / restyle components **that already exist** | **Test page** (`src/routes/test/*`, real Svelte + HMR) | Zero hand-rolling. Real gradients, spacing, counts. The only thing that answers "does the whitespace balance." |
 | Try N variants of one knob fast | **Playground** skill | Parameter sweep + copy-out prompt |
-| Greenfield layout, components don't exist yet | **HTML sketch** (`static/sketches/<date>-*.html`, served at `http://localhost:5173/sketches/...`) | Cheap throwaway before any Svelte exists |
-| Abstract concept, no primitive library at all | (visual companion's design target) | — see ban below |
+| Greenfield layout, components don't exist yet | **HTML sketch** (`static/sketches/<date>-*.html`, served at `https://localhost:5173/sketches/...`) | Cheap throwaway before any Svelte exists |
+| Abstract concept / data model / greenfield, nothing real to render | **Visual companion** or an HTML sketch | Nothing in `src/routes/test/*` renders a state machine or a schema |
 
 **Default for this codebase: test page with real components.** The primitive
 density makes it correct ~90% of the time. When a screen already has a test
@@ -43,27 +43,50 @@ surface for effect iteration. Do not leave it open as the only way to inspect an
 effect: an HMR restart can discard its modal, 3D mode, performer selection, and
 FX state.
 
-## Visual companion: RETIRED here
+## Visual companion: allowed again, for work with nothing real to render
 
-Never use or offer the superpowers visual companion. Not arbitrary — the
-companion is built for codebases that **lack** a primitive library, so it
-hand-rolls simplified emoji fakes of UI. Showing an emoji mockup of a component
-that already renders in HMR is strictly worse than showing the real thing, and
-it violates `never-hand-roll.md`. Its cheap-throwaway value prop is anti-value
-when the real component exists.
+The 2026-05-30 retirement is **lifted** (Austen, 2026-09-02). That ban was
+written when every session ran through the CLI with no browser attached, so
+anything the companion produced was a local URL Austen had to go open himself.
+The desktop app's in-app Browser pane removed that cost: a companion visual now
+lands beside the conversation like any other surface. *"That ban was made when
+we did not use an in app browser and we did everything through CLI. That's no
+longer the case."*
 
-Skip step 2 (visual-companion offer) of the brainstorming checklist entirely.
+What has **not** changed is the primitive-density argument, and it still decides
+most cases. This codebase has an enormous set of real, shipping components, so a
+low-fidelity mockup of something that already renders in HMR remains strictly
+worse than the real thing and still violates `never-hand-roll.md`. Route by the
+table above:
+
+- **The component exists** -> test page with the real Svelte. Still roughly 90%
+  of visual questions here. The companion is the wrong tool for these.
+- **Greenfield layout, no primitives yet** -> companion or HTML sketch, whichever
+  is cheaper for the question.
+- **Diagrams, data models, layer stacks, state machines, architecture** -> the
+  companion or an artifact. Nothing in `src/routes/test/*` renders a schema, and
+  these were the cases the blanket ban left with no good tool at all.
+
+Step 2 of the brainstorming checklist (the visual-companion offer) is live again
+for those last two rows. Skip it when the answer is a test page.
+
+Whatever the companion produces, open it in the in-app Browser pane per
+`deliver-in-the-app-browser.md`. Handing over a companion URL and letting Austen
+click it is the pre-2026-09 workflow this lift exists to replace.
 
 ## Forbidden
 
-- Offering / using the superpowers visual companion.
-- Hand-rolling an HTML/emoji mockup of a component that already exists as Svelte
-  — render the real one in a test page instead.
-- Spinning up a new sketch/playground when a test harness for that screen
-  already exists.
+- Hand-rolling an HTML/emoji/companion mockup of a component that already exists
+  as Svelte — render the real one in a test page instead.
+- Spinning up a new sketch, playground, or companion when a test harness for that
+  screen already exists.
+- Handing Austen a companion or sketch URL without opening it in the in-app
+  Browser pane.
 
 ## Related
 
 - `never-hand-roll.md` (master), `primitive-discovery.md`
 - `CLAUDE.md` → HTML sketches via localhost; `feedback_html_sketches_via_localhost`
-- Memory: `feedback_no_visual_companion` (reason now reframed to primitive density)
+- `deliver-in-the-app-browser.md` — anything visual reaches Austen through the pane
+- Memory: `feedback_no_visual_companion` (ban lifted 2026-09-02; primitive-density
+  routing survives it)

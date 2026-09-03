@@ -24,6 +24,13 @@
     sequence: SequenceData;
     /** Catalog character to pose; defaults to the local intake rig. */
     characterId?: CharacterId;
+    /**
+     * The grid stays centred on the performer in every pane, because that is
+     * the corrected anchoring. What changes is how much of it is drawn: the
+     * wide reference pane names its points, and the close panes keep only the
+     * rings so nothing labelled sits on top of a hand.
+     */
+    gridEmphasis?: "reference" | "muted";
     onCollisionEvents?: (
       events: CollisionEvent[],
       diagnostics: AvatarPoseDiagnostics,
@@ -31,8 +38,24 @@
     ) => void;
   }
 
-  let { id, phase, sequence, characterId, onCollisionEvents }: Props =
-    $props();
+  let {
+    id,
+    phase,
+    sequence,
+    characterId,
+    gridEmphasis = "reference",
+    onCollisionEvents,
+  }: Props = $props();
+
+  /**
+   * The translucent plane surface is what washed across the close panes and
+   * flattened the contrast the grips need to read, and in the wide pane it drew
+   * an arbitrary lit rectangle behind the performer. The rings, their points and
+   * the centre marker already say where the plane is, so the surface itself is
+   * off everywhere and the rings carry the grid.
+   */
+  const PLANE_SURFACE_OPACITY = 0;
+  const isReferenceGrid = $derived(gridEmphasis === "reference");
 
   const INTAKE_CHARACTER_ID = "intake-current" as AvatarId;
   const INTAKE_CHARACTER: AvatarDefinition = {
@@ -79,7 +102,8 @@
         visiblePlanes={WALL_PLANE}
         gridMode="diamond"
         planeMode={PlaneMode.WALL}
-        showLabels={true}
+        planeOpacity={PLANE_SURFACE_OPACITY}
+        showLabels={isReferenceGrid}
         showOrientationHelpers={false}
       />
     </T.Group>

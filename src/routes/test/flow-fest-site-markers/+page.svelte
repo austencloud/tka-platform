@@ -77,7 +77,7 @@
     {
       title: "Move the map",
       rows: [
-        { keys: ["Space", "drag"], does: "Hand tool, from any mode" },
+        { keys: ["Space", "drag"], does: "Hand tool, any time the pointer is over the map" },
         { keys: ["Middle-drag"], does: "The same, without the keyboard" },
         { keys: ["Scroll"], does: "Zoom at the cursor" },
         { keys: ["Ctrl", "scroll"], does: "Fine zoom, and a trackpad pinch" },
@@ -174,6 +174,13 @@
    * mode the author actually chose in the switch.
    */
   let spaceHeld = $state(false);
+  /**
+   * Space belongs to the map whenever the pointer is over it, even while a
+   * rail button still holds focus. Pick a preset, move to the map, hold Space,
+   * pan, then click where the thing goes — that is one gesture, and demanding
+   * a throwaway click on the map to shake the button loose first was the bug.
+   */
+  let pointerOverMap = $state(false);
   let showHotkeys = $state(false);
   let lastNudgeAt = 0;
 
@@ -643,7 +650,8 @@
     const onControl = isControlTarget(event.target);
 
     if (event.code === "Space") {
-      if (onControl) return;
+      /** Over the map, Space is the hand tool; elsewhere it presses the button. */
+      if (onControl && !pointerOverMap) return;
       event.preventDefault();
       if (!event.repeat) spaceHeld = true;
       return;
@@ -1272,7 +1280,12 @@
                 aria-pressed={activePresetId === preset.id}
                 onclick={() => {
                   activePresetId = preset.id;
-                  report(preset.instruction, "quiet");
+                  /**
+                   * The label, not the instruction: the line above the map
+                   * already carries the instruction, and echoing it here put
+                   * the same sentence in two stacked bars.
+                   */
+                  report(`Placing ${preset.label}.`, "quiet");
                 }}
               >
                 <span class="preset-label">{preset.label}</span>
@@ -1320,6 +1333,8 @@
         role="application"
         aria-label="Registered Flow Fest orthophoto with placed site markers"
         onpointerdown={handlePointerDown}
+        onpointerenter={() => (pointerOverMap = true)}
+        onpointerleave={() => (pointerOverMap = false)}
         onpointermove={handlePointerMove}
         onpointerup={finishPointer}
         onpointercancel={finishPointer}

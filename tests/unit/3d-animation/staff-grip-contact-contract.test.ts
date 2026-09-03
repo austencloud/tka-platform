@@ -82,8 +82,17 @@ describe("staff grip contact contract", () => {
   });
 
   it("freezes one shared sequence phase across four inspectable camera views", () => {
-    expect(gripTestPage).toContain("const VIEWS: CameraView[]");
-    expect(gripTestPage).toContain("{#each VIEWS as view, index (view.id)}");
+    // The shot vocabulary is owned by ./inspection-framing, which solves each
+    // pane from the performer's proportions and the pane's own aspect ratio.
+    // The page renders those views; it does not carry its own camera table and
+    // must never re-aim a camera from the live pose.
+    expect(gripTestPage).toContain('from "./inspection-framing"');
+    expect(gripTestPage).toContain("INSPECTION_VIEWS");
+    expect(gripTestPage).toContain("inspectionShotForView(view, aspectRatio)");
+    expect(gripTestPage).toContain(
+      "{#each INSPECTION_VIEWS as view, index (view.id)}"
+    );
+    expect(gripTestPage).not.toContain("updateFocus");
     expect(gripTestPage).toContain("{phase}");
     expect(gripTestPage).toContain('type="range"');
     expect(gripTestPage).toContain('rightDragAction="rotate"');
