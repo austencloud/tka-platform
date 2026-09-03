@@ -7,6 +7,7 @@ transition in place via their own CSS transforms when data changes.
 Computes reversal indicators for options based on current sequence.
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import {
@@ -48,9 +49,37 @@ Computes reversal indicators for options based on current sequence.
   // Get reversal detection service
   const ReversalDetector = reversalDetector;
 
-  // Compute reversals for all options based on current sequence
+  // Reversal dots describe how each option relates to the sequence the option
+  // SET was generated for.
+  //
+  // Reading the live sequence here meant that committing a step re-derived every
+  // mounted card against options that were about to be replaced wholesale — tens
+  // of milliseconds of synchronous work on the very frame the pick lands, thrown
+  // away when the next option set resolves. Keying on array identity is not
+  // enough either: the continuation reorder hands down a new array holding the
+  // same options, which would re-snapshot against the grown sequence and flip
+  // dots on most cards. So the snapshot is keyed on set membership, which only
+  // changes when the picker genuinely loads a different set of options.
+  let frameMembers: ReadonlySet<PictographData> = new Set();
+  let frameSequence: PictographData[] = [];
+  function sequenceForOptionFrame(frame: PictographData[]): PictographData[] {
+    if (
+      frame.length !== frameMembers.size ||
+      !frame.every((o) => frameMembers.has(o))
+    ) {
+      frameMembers = new Set(frame);
+      frameSequence = untrack(() => currentSequence);
+    }
+    return frameSequence;
+  }
+  const reversalSequence = $derived.by(() => sequenceForOptionFrame(options));
+
+  // Compute reversals for all options based on the option frame's sequence
   const optionsWithReversals = $derived(() => {
-    return ReversalDetector.detectReversalsForOptions(currentSequence, options);
+    return ReversalDetector.detectReversalsForOptions(
+      reversalSequence,
+      options
+    );
   });
 
   const doubleFloatRows = $derived(() =>
