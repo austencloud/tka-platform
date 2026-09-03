@@ -19,6 +19,7 @@
  * See docs/superpowers/specs/active/2026-07-02-gallery-thumbnail-warm-pass-design.md
  */
 
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ThumbnailRenderOrchestrator } from "./thumbnail-render-orchestrator";
@@ -58,6 +59,8 @@ export interface WarmProgress {
   finished: boolean;
   /** True if the run stopped early via cancel(). */
   cancelled: boolean;
+  /** True while the pass is draining the uploads it started, after the last render. */
+  uploading: boolean;
 }
 
 export interface WarmHandle {
@@ -90,7 +93,11 @@ interface Combo {
 const DEFAULT_CONCURRENCY = 4;
 
 function comboLabel(c: Combo): string {
-  const name = c.sequence.word || c.sequence.name || "?";
+  // A LOOP repeats its word by construction, so the raw value reads as
+  // "DPhi-APsiDPhi-APsi". The operator watches this line for minutes; show the
+  // word the way every other surface shows it.
+  const word = c.sequence.word ? simplifyRepeatedWord(c.sequence.word) : "";
+  const name = word || c.sequence.name || "?";
   const id = c.sequence.id || "missing-id";
   return `${name} [${id}] (${c.prop}, ${c.mode}${c.qr ? ", qr" : ""})`;
 }
@@ -143,6 +150,7 @@ export function startGalleryWarm(
     failedCombinations: [],
     finished: false,
     cancelled: false,
+    uploading: false,
   };
 
   const promise = (async (): Promise<WarmProgress> => {
@@ -231,6 +239,22 @@ export function startGalleryWarm(
       () => runWorker()
     );
     await Promise.all(workers);
+
+    // Rendering is done; the writes may not be. getThumbnail() hands each blob
+    // to a fire-and-forget upload so live cards paint immediately, which means
+    // the last combos can still be in the air here. An unattended pass exists
+    // to fill the shared cache, so it does not get to claim success until its
+    // own uploads have settled — otherwise closing the tab on "Done" silently
+    // discards the tail.
+    progress.uploading = true;
+    onProgress({ ...progress });
+    try {
+      await orchestrator.settleUploads();
+    } catch {
+      // settleUploads never rejects, but a stubbed orchestrator in a test may
+      // not implement it. A missing settle point must not fail the run.
+    }
+    progress.uploading = false;
 
     progress.finished = true;
     progress.cancelled = cancelled;

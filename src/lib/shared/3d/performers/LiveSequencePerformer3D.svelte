@@ -3,7 +3,7 @@
    * A world-space performer whose character, hands, props, and tip effects all
    * come from the production sequence stack.
    */
-  import { onDestroy, untrack } from "svelte";
+  import { onDestroy, untrack, type Snippet } from "svelte";
   import {
     cmToUnits,
     PerformerRig,
@@ -49,6 +49,13 @@
     showEffects?: boolean;
     enableLocomotion?: boolean;
     enableFootPlanting?: boolean;
+    /**
+     * Scene markers drawn inside the rig's own root group, so they inherit the
+     * performer's world position, ground offset, and facing instead of sitting
+     * at the world origin. Hosts pass the same wrapper the sequence viewer
+     * uses: a group at GRID_OFFSETS[planeMode] around Grid3D.
+     */
+    gridSlot?: Snippet;
     onReady?: () => void;
     onCollisionEvents?: (
       events: CollisionEvent[],
@@ -150,7 +157,7 @@
   planeMode={PlaneMode.WALL}
   avatarState={performerState}
   avatarId={props.characterId}
-  showGrid={false}
+  showGrid={props.gridSlot != null}
   visiblePlanes={new Set([Plane.WALL])}
   bluePropType={toScenePropType(props.propType)}
   redPropType={toScenePropType(props.propType)}
@@ -173,6 +180,7 @@
     captureReach(diagnostics);
     props.onCollisionEvents?.(events, diagnostics, gripDiagnostics);
   }}
+  gridSlot={props.gridSlot}
   onAvatarSwapped={() => {
     if (readyReported) return;
     readyReported = true;

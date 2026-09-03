@@ -52,6 +52,20 @@
     /** Elbow world positions, for proving the hug kept them put. */
     leftElbow: string;
     rightElbow: string;
+    /**
+     * How far each hand swings toward the chest-forward midline BEYOND its own
+     * forearm direction. This is the wrist's own contribution to the hug: 0 is
+     * a hand that continues straight out of the forearm, positive is a wrist
+     * rotated inward toward the centerline.
+     */
+    leftWristInwardDeg: number | null;
+    rightWristInwardDeg: number | null;
+    /** Total wrist bend between forearm and hand, whatever its direction. */
+    leftWristBendDeg: number | null;
+    rightWristBendDeg: number | null;
+    /** Distance from each palm to the grip point the grid authored for it. */
+    leftPalmToAuthoredMm: number | null;
+    rightPalmToAuthoredMm: number | null;
     /** Measured arm segments and the staff length they permit. */
     upperArmMm: number | null;
     forearmMm: number | null;
@@ -129,6 +143,12 @@
     gripSeparationMm: null,
     leftElbow: "",
     rightElbow: "",
+    leftWristInwardDeg: null,
+    rightWristInwardDeg: null,
+    leftWristBendDeg: null,
+    rightWristBendDeg: null,
+    leftPalmToAuthoredMm: null,
+    rightPalmToAuthoredMm: null,
     upperArmMm: null,
     forearmMm: null,
     reachMm: null,
@@ -168,6 +188,70 @@
     return Math.hypot(palm.x - grip.x, palm.y - grip.y, palm.z - grip.z) * 1000;
   }
 
+  interface WristGeometry {
+    inwardDeg: number | null;
+    bendDeg: number | null;
+  }
+
+  const NO_WRIST_GEOMETRY: WristGeometry = { inwardDeg: null, bendDeg: null };
+
+  type Point = Readonly<{ x: number; y: number; z: number }>;
+
+  function unit(from: Point, to: Point): [number, number, number] | null {
+    const x = to.x - from.x;
+    const y = to.y - from.y;
+    const z = to.z - from.z;
+    const length = Math.hypot(x, y, z);
+    if (length < 1e-6) return null;
+    return [x / length, y / length, z / length];
+  }
+
+  function arcsinDegrees(value: number): number {
+    return (Math.asin(Math.max(-1, Math.min(1, value))) * 180) / Math.PI;
+  }
+
+  /**
+   * Split the hand's direction into the part the forearm already carries and
+   * the part the wrist adds. The chest-lateral axis is rebuilt from the
+   * achieved shoulder yaw: at yaw 0 the performer's anatomical right is world
+   * -X, and the shoulder frame turns it about Y. Medial (toward the
+   * chest-forward midline) is +lateral for the left hand and -lateral for the
+   * right, matching the animator's own palm-socket convention.
+   */
+  function wristGeometry(
+    side: "left" | "right",
+    elbow: Point | null | undefined,
+    wrist: Point | null | undefined,
+    palm: Point | null | undefined,
+    achievedYawRad: number
+  ): WristGeometry {
+    if (!elbow || !wrist || !palm) return NO_WRIST_GEOMETRY;
+    const forearm = unit(elbow, wrist);
+    const hand = unit(wrist, palm);
+    if (!forearm || !hand) return NO_WRIST_GEOMETRY;
+    const medialSign = side === "left" ? 1 : -1;
+    const lateralX = -Math.cos(achievedYawRad) * medialSign;
+    const lateralZ = Math.sin(achievedYawRad) * medialSign;
+    const handMedial = arcsinDegrees(hand[0] * lateralX + hand[2] * lateralZ);
+    const forearmMedial = arcsinDegrees(
+      forearm[0] * lateralX + forearm[2] * lateralZ
+    );
+    const dot =
+      forearm[0] * hand[0] + forearm[1] * hand[1] + forearm[2] * hand[2];
+    return {
+      inwardDeg: handMedial - forearmMedial,
+      bendDeg: (Math.acos(Math.max(-1, Math.min(1, dot))) * 180) / Math.PI,
+    };
+  }
+
+  function separationMillimeters(
+    a: Point | null | undefined,
+    b: Point | null | undefined
+  ): number | null {
+    if (!a || !b) return null;
+    return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) * 1000;
+  }
+
   function collectGripMetrics(
     events: CollisionEvent[],
     diagnostics: AvatarPoseDiagnostics,
@@ -193,6 +277,21 @@
         gripDiagnostics.renderedRedGrip
       ),
     };
+
+    const leftWrist = wristGeometry(
+      "left",
+      diagnostics.leftElbowWorld,
+      gripDiagnostics.leftWrist,
+      gripDiagnostics.leftPalm,
+      diagnostics.achievedShoulderYawRad
+    );
+    const rightWrist = wristGeometry(
+      "right",
+      diagnostics.rightElbowWorld,
+      gripDiagnostics.rightWrist,
+      gripDiagnostics.rightPalm,
+      diagnostics.achievedShoulderYawRad
+    );
 
     poseMetric = {
       requestedYawDeg: radiansToDegrees(diagnostics.requestedStanceYawRad),
@@ -259,6 +358,18 @@
           : null,
       leftElbow: formatPoint(diagnostics.leftElbowWorld),
       rightElbow: formatPoint(diagnostics.rightElbowWorld),
+      leftWristInwardDeg: leftWrist.inwardDeg,
+      rightWristInwardDeg: rightWrist.inwardDeg,
+      leftWristBendDeg: leftWrist.bendDeg,
+      rightWristBendDeg: rightWrist.bendDeg,
+      leftPalmToAuthoredMm: separationMillimeters(
+        gripDiagnostics.leftPalm,
+        gripDiagnostics.authoredBlueGrip
+      ),
+      rightPalmToAuthoredMm: separationMillimeters(
+        gripDiagnostics.rightPalm,
+        gripDiagnostics.authoredRedGrip
+      ),
       upperArmMm:
         ((diagnostics.leftUpperArmLength + diagnostics.rightUpperArmLength) /
           2) *
@@ -387,6 +498,18 @@
   data-grip-separation-mm={formatMetric(poseMetric.gripSeparationMm, 2)}
   data-left-elbow-mm={poseMetric.leftElbow}
   data-right-elbow-mm={poseMetric.rightElbow}
+  data-left-wrist-inward-deg={formatMetric(poseMetric.leftWristInwardDeg, 2)}
+  data-right-wrist-inward-deg={formatMetric(poseMetric.rightWristInwardDeg, 2)}
+  data-left-wrist-bend-deg={formatMetric(poseMetric.leftWristBendDeg, 2)}
+  data-right-wrist-bend-deg={formatMetric(poseMetric.rightWristBendDeg, 2)}
+  data-left-palm-to-authored-mm={formatMetric(
+    poseMetric.leftPalmToAuthoredMm,
+    2
+  )}
+  data-right-palm-to-authored-mm={formatMetric(
+    poseMetric.rightPalmToAuthoredMm,
+    2
+  )}
   data-upper-arm-mm={formatMetric(poseMetric.upperArmMm, 2)}
   data-forearm-mm={formatMetric(poseMetric.forearmMm, 2)}
   data-reach-mm={formatMetric(poseMetric.reachMm, 2)}
@@ -469,6 +592,11 @@
         poseMetric.shoulderHalfSpanMm,
         0
       )}
+    </span>
+    <span>
+      <b>Wrist in</b>
+      {formatMetric(poseMetric.leftWristInwardDeg, 0)}° /
+      {formatMetric(poseMetric.rightWristInwardDeg, 0)}°
     </span>
     <span>
       <b>Hits</b>

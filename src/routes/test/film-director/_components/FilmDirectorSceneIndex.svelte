@@ -2,17 +2,34 @@
   FilmDirectorSceneIndex — every scene in the film, with what it is for.
 
   A film is a linear watch, which is the wrong shape for inspecting one thing.
-  Proving Grounds is 24 scenes and 3:36; someone who wants to see the dolly zoom
-  should not have to sit through the eleven scenes in front of it. Every scene
-  already carries an authored `intent` — a written statement of what it proves
-  and what to watch for — and until this panel nothing rendered it. So the index
-  is both the map and the explanation: read what a scene is for, click it, and
-  playback confines itself to that scene on a loop.
+  Proving Grounds is 23 scenes; someone who wants to see the dolly zoom should
+  not have to sit through the ten scenes in front of it. Every scene already
+  carries an authored `intent` — a written statement of what it proves and what
+  to watch for — and until this panel nothing rendered it. So the index is both
+  the map and the explanation: read what a scene is for, click it, and playback
+  confines itself to that scene on a loop.
+
+  Scenes that state a `category` are grouped under it, in the schema's declared
+  order, because a reference is browsed by subject rather than by running order.
+  Headings rather than a filter row: a seven-option selector at panel width
+  stretches three-word labels into a progress bar, and grouping shows every
+  subject at once instead of hiding six behind a click. Films that state no
+  category — the eight in the library that are films rather than references —
+  render exactly as before, one ungrouped grid.
+
+  The card leads with the scene id, not its position. The id is the stable
+  address (`?film=<key>&scene=<id>`); the position changes the moment a scene is
+  added or, as the orbit twin was, deleted.
 -->
 <script lang="ts">
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
 
   import { getFilmDirectorContext } from "../_lib/film-director-context";
+  import {
+    DIRECTOR_SCENE_CATEGORIES,
+    DIRECTOR_SCENE_CATEGORY_LABELS,
+    type DirectorSceneCategory,
+  } from "../_lib/film-director-schema";
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
@@ -27,13 +44,23 @@
     query = "";
   });
 
-  const scenes = $derived(
+  type IndexScene = {
+    index: number;
+    id: string;
+    title: string;
+    intent: string | null;
+    seconds: number;
+    category?: DirectorSceneCategory;
+  };
+
+  const scenes = $derived<IndexScene[]>(
     director.film.scenes.map((scene, index) => ({
       index,
       id: scene.id,
       title: scene.title,
       intent: scene.intent,
       seconds: scene.durationSeconds,
+      category: scene.category,
     }))
   );
 
@@ -41,8 +68,35 @@
     const needle = query.trim().toLowerCase();
     if (!needle) return scenes;
     return scenes.filter((scene) =>
-      `${scene.title} ${scene.intent ?? ""}`.toLowerCase().includes(needle)
+      `${scene.title} ${scene.id} ${scene.intent ?? ""}`
+        .toLowerCase()
+        .includes(needle)
     );
+  });
+
+  const grouped = $derived(scenes.some((scene) => scene.category !== undefined));
+
+  // Declared order, and empty groups are dropped rather than shown empty: a
+  // filter that matches only camera scenes should leave one heading standing,
+  // not six with nothing under five of them.
+  const groups = $derived.by(() => {
+    const ordered: { key: string; label: string; scenes: IndexScene[] }[] = [];
+    for (const category of DIRECTOR_SCENE_CATEGORIES) {
+      const inCategory = matches.filter((scene) => scene.category === category);
+      if (inCategory.length === 0) continue;
+      ordered.push({
+        key: category,
+        label: DIRECTOR_SCENE_CATEGORY_LABELS[category],
+        scenes: inCategory,
+      });
+    }
+    // A film that categorizes some scenes and not others is a mistake worth
+    // seeing rather than hiding, so the stragglers get a heading of their own.
+    const uncategorized = matches.filter((scene) => scene.category === undefined);
+    if (uncategorized.length > 0) {
+      ordered.push({ key: "other", label: "Uncategorized", scenes: uncategorized });
+    }
+    return ordered;
   });
 
   function formatSeconds(seconds: number): string {
@@ -75,14 +129,15 @@
       </div>
 
       <div class="index-tools">
-        <!-- A 24-scene film is more than a glance can hold, and the intent text
-             is where the vocabulary actually lives: typing "orbit" or "camera"
-             finds the scenes that demonstrate it. -->
+        <!-- Two dozen scenes is more than a glance can hold, and the intent
+             text is where the vocabulary actually lives: typing "orbit" or
+             "handheld" finds the scenes that demonstrate it. Ids are matched
+             too, so a link pasted back from the address bar finds its card. -->
         <input
           class="index-filter"
           type="search"
           placeholder="Filter scenes"
-          aria-label="Filter scenes by name or description"
+          aria-label="Filter scenes by name, id, or description"
           bind:value={query}
         />
         <button type="button" class="index-close" onclick={() => (open = false)}>
@@ -113,32 +168,50 @@
       {/if}
     </p>
 
-    <ul class="scene-grid">
-      {#each matches as scene (scene.id)}
-        <li>
-          <button
-            type="button"
-            class="scene-card"
-            class:soloed={scene.index === director.soloSceneIndex}
-            aria-current={scene.index === director.frame.sceneIndex
-              ? "true"
-              : undefined}
-            onclick={() => soloScene(scene.index)}
-          >
-            <span class="scene-meta">
-              <span class="scene-number">
-                {String(scene.index + 1).padStart(2, "0")}
-              </span>
-              <span class="scene-duration">{formatSeconds(scene.seconds)}</span>
-            </span>
-            <span class="scene-title">{scene.title}</span>
-            {#if scene.intent}
-              <span class="scene-intent">{scene.intent}</span>
-            {/if}
-          </button>
-        </li>
+    {#snippet sceneCard(scene: IndexScene)}
+      <li>
+        <button
+          type="button"
+          class="scene-card"
+          class:soloed={scene.index === director.soloSceneIndex}
+          aria-current={scene.index === director.frame.sceneIndex
+            ? "true"
+            : undefined}
+          onclick={() => soloScene(scene.index)}
+        >
+          <span class="scene-meta">
+            <span class="scene-id">{scene.id}</span>
+            <span class="scene-duration">{formatSeconds(scene.seconds)}</span>
+          </span>
+          <span class="scene-title">{scene.title}</span>
+          {#if scene.intent}
+            <span class="scene-intent">{scene.intent}</span>
+          {/if}
+        </button>
+      </li>
+    {/snippet}
+
+    {#if grouped}
+      {#each groups as group (group.key)}
+        <section class="scene-group">
+          <h3 class="group-heading">
+            <span class="group-label">{group.label}</span>
+            <span class="group-count">{group.scenes.length}</span>
+          </h3>
+          <ul class="scene-grid">
+            {#each group.scenes as scene (scene.id)}
+              {@render sceneCard(scene)}
+            {/each}
+          </ul>
+        </section>
       {/each}
-    </ul>
+    {:else}
+      <ul class="scene-grid">
+        {#each matches as scene (scene.id)}
+          {@render sceneCard(scene)}
+        {/each}
+      </ul>
+    {/if}
 
     {#if matches.length === 0}
       <p class="index-empty">No scene mentions “{query.trim()}”.</p>
@@ -287,6 +360,41 @@
     margin: 0.5rem 0 0;
   }
 
+  .scene-group + .scene-group {
+    margin-top: 1.35rem;
+  }
+
+  /* Baseline-aligned so the count reads as an annotation on the word rather
+     than a badge floating beside it. The rule fills the rest of the row, which
+     is what makes a heading legible as a divider without a heavier weight. */
+  .group-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0 0 0.6rem;
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .group-label {
+    color: var(--theme-accent, #b0a4ff);
+  }
+
+  .group-count {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
+  .group-heading::after {
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    content: "";
+  }
+
   .scene-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
@@ -355,9 +463,19 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .scene-number {
-    font-weight: 800;
-    letter-spacing: 0.08em;
+  /* Monospace because this is the literal string a director types after
+     `?scene=`, and because it wraps in the middle of a hyphenated id rather
+     than pushing the duration off the row. */
+  .scene-id {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  .scene-duration {
+    flex: 0 0 auto;
   }
 
   .scene-title {

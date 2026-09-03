@@ -250,7 +250,7 @@ function uploadToCloud(
   key: ThumbnailCacheKey,
   blob: Blob
 ): void {
-  cloudCacheModule
+  const upload = cloudCacheModule
     .upload(orchestrator.buildCloudKey(key), blob)
     .then((url) => {
       if (url) {
@@ -261,6 +261,12 @@ function uploadToCloud(
       // Non-fatal - image is displayed, just couldn't upload for others
       orchestrator["metrics"]?.recordUpload(false);
     });
+
+  // A live card is finished the moment its image paints, so the upload stays
+  // off the render path. A batch warm pass is the opposite case: the upload IS
+  // the deliverable, and whoever started it needs to know when closing the tab
+  // is safe. Register the promise so settleUploads() can answer that.
+  orchestrator.trackUpload(upload);
 }
 
 export class ThumbnailRenderOrchestrator {
@@ -273,12 +279,43 @@ export class ThumbnailRenderOrchestrator {
   // Track which generation each key was last rendered at
   private renderedGenerations = new Map<string, number>();
 
+  // Uploads that have been handed to Storage but have not settled yet. Kept so
+  // a batch pass can wait for its own writes instead of guessing.
+  private inFlightUploads = new Set<Promise<void>>();
+
   constructor(
     private queue: ThumbnailRenderQueue,
     private renderer: ThumbnailRenderer,
     private localCache: ThumbnailLocalCache,
     private metrics?: ThumbnailMetricsCollector
   ) {}
+
+  /**
+   * Register an in-flight cloud upload. Called by the module-level upload
+   * helper; the set self-drains as each upload settles.
+   */
+  trackUpload(upload: Promise<void>): void {
+    this.inFlightUploads.add(upload);
+    void upload.finally(() => this.inFlightUploads.delete(upload));
+  }
+
+  /**
+   * Resolve once every upload this orchestrator has started has settled.
+   *
+   * Uploads are deliberately fire-and-forget so a gallery card paints as soon
+   * as its image exists. That makes "render finished" a poor proxy for "the
+   * shared cache actually has it" — a warm pass can report 100% while hundreds
+   * of writes are still in the air, and closing the tab there throws that work
+   * away. A batch caller awaits this before it claims to be done.
+   *
+   * Loops because settling one upload can enqueue another (the cloud module
+   * probes for an existing object before it writes).
+   */
+  async settleUploads(): Promise<void> {
+    while (this.inFlightUploads.size > 0) {
+      await Promise.allSettled([...this.inFlightUploads]);
+    }
+  }
 
   /**
    * Nuke every cache layer and force all subsequent requests to render fresh.

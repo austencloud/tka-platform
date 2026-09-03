@@ -459,14 +459,25 @@
                   >{progress.done.toLocaleString()} / {progress.total.toLocaleString()}
                   ({percent}%)</span
                 >
-                <span class="eta">{progress.finished ? "" : `ETA ${eta}`}</span>
+                <span class="eta"
+                  >{progress.uploading
+                    ? "Saving uploads"
+                    : progress.finished
+                      ? ""
+                      : `ETA ${eta}`}</span
+                >
               </div>
               <div class="tally">
                 <span class="new">{progress.rendered} new</span>
                 <span class="cached">{progress.skipped} cached</span>
                 <span class="failed">{progress.failed} failed</span>
               </div>
-              {#if progress.current && !progress.finished}
+              {#if progress.uploading}
+                <div class="current">
+                  Every render is done. Finishing the uploads still in flight —
+                  leave this tab open until it says Done.
+                </div>
+              {:else if progress.current && !progress.finished}
                 <div class="current">{progress.current}</div>
               {/if}
               {#if progress.failedCombinations.length > 0}
@@ -486,8 +497,10 @@
               {/if}
               {#if progress.finished}
                 <div class="done">
-                  {progress.cancelled ? "Cancelled" : "Done"} — now run the index
-                  and bundle steps in the rail.
+                  {progress.cancelled
+                    ? "Cancelled"
+                    : "Done — every upload landed"} — now run the index and
+                  bundle steps in the rail.
                 </div>
               {/if}
             </section>

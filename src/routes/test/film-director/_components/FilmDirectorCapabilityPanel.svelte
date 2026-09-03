@@ -299,7 +299,14 @@
     flex-direction: column;
     width: 100%;
     height: auto;
-    max-height: inherit;
+    /*
+     * Percent, not `inherit`. The dock anchor is absolutely positioned with
+     * both top and bottom, so its height is definite but its own max-height
+     * computes to `none` — inheriting that leaves this panel unbounded, and a
+     * catalog of 148 chips then runs 300px past the bottom of a 1080 viewport
+     * instead of scrolling inside the dock.
+     */
+    max-height: 100%;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
@@ -379,6 +386,12 @@
   }
 
   .timeline-block {
+    /*
+     * The scroller is a flex column, so its children shrink by default. Left at
+     * the default they compress to fit the dock instead of letting the body
+     * scroll, and `.group`'s `overflow: hidden` then clips the row's own label.
+     */
+    flex: none;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -489,6 +502,8 @@
   }
 
   .group {
+    /* Same reason as `.timeline-block`: keep the natural height, let body scroll. */
+    flex: none;
     border: 1px solid var(--theme-stroke);
     border-radius: 0.875rem;
     background: var(--theme-card-bg);
