@@ -311,16 +311,26 @@
 	}
 
 	.lane-list {
-		display: grid;
-		/* min-content floors: a lane row can never squeeze below its track
-		   stack, so chips stay inside their own lane at every tier. */
-		grid-template-rows: repeat(4, minmax(min-content, 1fr));
+		display: flex;
+		flex-direction: column;
+		/* Flex, not `grid-template-rows: repeat(4, minmax(min-content, 1fr))`.
+		   Equal `fr` rows look equivalent but size the grid's own intrinsic
+		   height to four times the TALLEST lane: four 3-track rows, 611px, for
+		   464px of content. The room is a fixed viewport, so those 147 wasted
+		   pixels pushed the cluster tray under the fold where `overflow:
+		   hidden` ate it and no scroll could reach it.
+
+		   Each lane instead grows in proportion to the chip tracks it carries
+		   and shrinks no further than that stack, so a 1-track lane no longer
+		   reserves a 3-track lane's height. */
 		min-height: 0;
 		border-top: 1px solid var(--theme-stroke, oklch(1 0 0 / 0.12));
 	}
 
 	.lane {
-		height: 100%;
+		/* min-content floor: a lane can never squeeze below its track stack, so
+		   chips stay inside their own lane at every tier. */
+		flex: var(--track-count) 1 auto;
 		min-height: calc(var(--track-count) * var(--archive-track-size) + 0.5rem);
 		align-items: center;
 		border-bottom: 1px solid var(--theme-stroke, oklch(1 0 0 / 0.12));

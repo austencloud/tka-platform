@@ -85,6 +85,12 @@
         : "full"
   );
 
+  // Full-bleed room pages run their own dark surface to the viewport edge, so
+  // the footer's standing 4.5rem margin shows as a band of star field between
+  // the room's floor and the footer — dead space that reads as the page having
+  // ended early. Those pages get the footer flush against them.
+  const footerFlush = $derived(path === "/history");
+
   // Named route morphs suppress the keyed content fade only while that exact
   // allowlisted navigation is active. Ordinary marketing navigation keeps the
   // 200ms fade.
@@ -121,7 +127,7 @@
     <!-- The homepage already is a complete navigation surface. Interior pages
          keep the sitemap; the host owns that route decision so SiteFooter also
          remains safe for its independent GuideShell host. -->
-    <SiteFooter variant={footerVariant} />
+    <SiteFooter variant={footerVariant} flush={footerFlush} />
   </div>
 </div>
 
