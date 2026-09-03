@@ -101,6 +101,38 @@ export interface CameraChannel {
 
 export interface CameraChannelStore {
   layers: Map<CameraLayerName, Map<CameraChannelId, CameraChannel>>;
+  /**
+   * Additive, unkeyed, applied after the layers have composed. See
+   * `CameraCorrection`.
+   */
+  corrections: readonly CameraCorrection[];
+}
+
+/**
+ * What each layer is built from.
+ *
+ * `base` and `directive` are two different statements about the same camera,
+ * and exactly one of them is populated for any given scene. A camera spoken as
+ * a preset, as raw keyframes, or as a list of shots states itself directly and
+ * owns `base`. A camera spoken as framing plus MOVES is the output of move
+ * nodes, and those nodes own `directive` — which is what makes reverting a
+ * hand-keyed channel fall back to what the moves said rather than to nothing.
+ *
+ * Moves cannot be split across layers one at a time, because they chain: a pan
+ * that follows a push starts from wherever the push left the rig. So the
+ * directive layer owns every channel its scene has, and the base layer beneath
+ * it is empty on that path rather than holding a synthetic framing nothing
+ * would ever read.
+ */
+export interface CameraChannelSources {
+  /** A preset, authored keyframes, or compiled shots. Owns `base`. */
+  base?: readonly ResolvedDirectorCameraKeyframe[];
+  /** What the scene's move nodes evaluated to. Owns `directive`. */
+  directive?: readonly ResolvedDirectorCameraKeyframe[];
+  /** Hand-keyed channels. Owns `manual`. */
+  manual?: readonly ManualCameraChannel[];
+  /** Applied after composition, in order. See `CameraCorrection`. */
+  corrections?: readonly CameraCorrection[];
 }
 
 /** Which channels hold a flat segment exactly. See `CameraChannel.holdsFlat`. */
@@ -254,7 +286,11 @@ function buildAimChannels(
   // A stated hold in aim is a hold: the same argument the lens channels make,
   // and the reason a pan that pauses does not drift while it waits.
   return [
-    { id: "camera.aim.yaw", holdsFlat: holdsFlatForChannel("camera.aim.yaw"), keys: yaw },
+    {
+      id: "camera.aim.yaw",
+      holdsFlat: holdsFlatForChannel("camera.aim.yaw"),
+      keys: yaw,
+    },
     {
       id: "camera.aim.pitch",
       holdsFlat: holdsFlatForChannel("camera.aim.pitch"),
@@ -269,7 +305,7 @@ function buildAimChannels(
 }
 
 /**
- * Explode fused keyframes into one channel per scalar.
+ * Build the layered store for one camera.
  *
  * Every channel is keyed at the same times as the source keyframes, which is
  * what makes this exchange lossless: Catmull-Rom neighbour selection depends
@@ -278,16 +314,33 @@ function buildAimChannels(
  * deliberate behaviour change and gets its own snapshot diff.
  */
 export function buildCameraChannels(
-  keyframes: readonly ResolvedDirectorCameraKeyframe[],
-  manual?: readonly ManualCameraChannel[]
+  sources: CameraChannelSources
 ): CameraChannelStore {
-  const base = new Map<CameraChannelId, CameraChannel>();
+  const layers = new Map<
+    CameraLayerName,
+    Map<CameraChannelId, CameraChannel>
+  >();
+  if (sources.base) layers.set("base", explodeKeyframes(sources.base));
+  if (sources.directive) {
+    layers.set("directive", explodeKeyframes(sources.directive));
+  }
+  if (sources.manual?.length) {
+    layers.set("manual", buildManualLayer(sources.manual));
+  }
+  return { layers, corrections: sources.corrections ?? [] };
+}
+
+/** One layer's worth of channels, exploded from a fused keyframe list. */
+function explodeKeyframes(
+  keyframes: readonly ResolvedDirectorCameraKeyframe[]
+): Map<CameraChannelId, CameraChannel> {
+  const channels = new Map<CameraChannelId, CameraChannel>();
   // A channel with no keys is not a channel. Leaving the layer empty is what
   // lets an unauthored camera fall back to the default frame rather than
   // sampling zeroes out of empty key arrays.
   for (const id of keyframes.length === 0 ? [] : CAMERA_CHANNEL_IDS) {
     if (AIM_CHANNELS.has(id)) continue;
-    base.set(id, {
+    channels.set(id, {
       id,
       holdsFlat: holdsFlatForChannel(id),
       keys: keyframes.map((frame) => ({
@@ -299,15 +352,11 @@ export function buildCameraChannels(
     });
   }
   if (keyframes.length > 0) {
-    for (const channel of buildAimChannels(keyframes)) base.set(channel.id, channel);
+    for (const channel of buildAimChannels(keyframes)) {
+      channels.set(channel.id, channel);
+    }
   }
-  const layers = new Map<
-    CameraLayerName,
-    Map<CameraChannelId, CameraChannel>
-  >();
-  layers.set("base", base);
-  if (manual?.length) layers.set("manual", buildManualLayer(manual));
-  return { layers };
+  return channels;
 }
 
 /**
@@ -503,6 +552,57 @@ export interface DirectorCameraFrame {
   rollDeg: number;
 }
 
+/**
+ * The channels a composed frame actually exposes.
+ *
+ * The aim channels are an INPUT representation for the target, not an output:
+ * on a segment that aims by point they are never read, so a delta expressed in
+ * yaw would silently vanish there. These eight are the scalars every frame
+ * carries however its aim was spoken, which makes them the only place a
+ * correction can land unambiguously.
+ */
+export const CAMERA_FRAME_CHANNEL_IDS = [
+  "camera.position.x",
+  "camera.position.y",
+  "camera.position.z",
+  "camera.target.x",
+  "camera.target.y",
+  "camera.target.z",
+  "camera.lens.fov",
+  "camera.roll",
+] as const satisfies readonly CameraChannelId[];
+
+export type CameraFrameChannelId = (typeof CAMERA_FRAME_CHANNEL_IDS)[number];
+
+/** Per-channel offsets, in each channel's own unit. Absent means zero. */
+export type CameraCorrectionDelta = Partial<
+  Record<CameraFrameChannelId, number>
+>;
+
+/**
+ * Something that displaces the composed camera without being part of it.
+ *
+ * Decision D3. A correction is additive, stated in the channel's own unit, and
+ * never keyed — which is exactly what handheld drift and subject tracking
+ * always were, even while they lived as two bolted-on fields the sampler had
+ * to remember to apply. Because it composes on top rather than inside, a film
+ * with no corrections samples the layers alone, byte for byte.
+ *
+ * `evaluate` receives the frame as it stands, because a correction may
+ * legitimately depend on it: handheld converts an angular envelope to metres
+ * at the CURRENT shooting distance, so a long lens shakes as much on screen as
+ * a wide one. Corrections apply in order for the same reason — drift measured
+ * after a follow is drift on the shot the audience sees.
+ */
+export interface CameraCorrection {
+  /** Stable and human, because it appears in editor UI: "handheld", "tracking". */
+  id: string;
+  evaluate(
+    atSeconds: number,
+    frame: DirectorCameraFrame
+  ): CameraCorrectionDelta;
+}
+
 /** What an unauthored camera looks like: eye level, slightly back, 50mm-ish. */
 const DEFAULT_CAMERA_FRAME: DirectorCameraFrame = {
   position: [0, 1, -4],
@@ -560,10 +660,48 @@ export function sampleCameraFrame(
     ];
   }
 
-  return {
+  const composed: DirectorCameraFrame = {
     position,
     target,
     fovDeg: read("camera.lens.fov", fallback.fovDeg),
     rollDeg: read("camera.roll", fallback.rollDeg),
   };
+  return applyCorrections(store.corrections, atSeconds, composed);
+}
+
+/**
+ * Add every correction's offsets to the composed frame, in order.
+ *
+ * Each correction sees the frame the ones before it produced, which is what
+ * lets handheld measure its shooting distance on a shot that is already
+ * following a walker. A correction that returns nothing costs one empty object
+ * and leaves the frame's identity alone.
+ */
+function applyCorrections(
+  corrections: readonly CameraCorrection[],
+  atSeconds: number,
+  composed: DirectorCameraFrame
+): DirectorCameraFrame {
+  let frame = composed;
+  for (const correction of corrections) {
+    const delta = correction.evaluate(atSeconds, frame);
+    // A held shot's tracking correction says nothing on most frames. Leave the
+    // frame's identity alone rather than rebuilding it out of eight zeroes.
+    if (Object.keys(delta).length === 0) continue;
+    frame = {
+      position: [
+        frame.position[0] + (delta["camera.position.x"] ?? 0),
+        frame.position[1] + (delta["camera.position.y"] ?? 0),
+        frame.position[2] + (delta["camera.position.z"] ?? 0),
+      ],
+      target: [
+        frame.target[0] + (delta["camera.target.x"] ?? 0),
+        frame.target[1] + (delta["camera.target.y"] ?? 0),
+        frame.target[2] + (delta["camera.target.z"] ?? 0),
+      ],
+      fovDeg: frame.fovDeg + (delta["camera.lens.fov"] ?? 0),
+      rollDeg: frame.rollDeg + (delta["camera.roll"] ?? 0),
+    };
+  }
+  return frame;
 }

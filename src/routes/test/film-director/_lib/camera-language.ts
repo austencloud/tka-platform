@@ -108,7 +108,11 @@ export function computeCameraFraming(
     paddingMult: 1.18,
     elevationDeg: 12,
   });
-  const baseEye: [number, number, number] = [base.eye.x, base.eye.y, base.eye.z];
+  const baseEye: [number, number, number] = [
+    base.eye.x,
+    base.eye.y,
+    base.eye.z,
+  ];
   const groupTarget: [number, number, number] = [
     base.target.x,
     base.target.y,
@@ -220,6 +224,32 @@ export interface DirectorCameraMove {
   with?: DirectorCameraMove[];
   durationSeconds?: number;
   easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+}
+
+/**
+ * A move that survived resolution, still a move.
+ *
+ * Decision D4. Compiling a move used to consume it: the keyframes came out and
+ * the sentence that produced them was gone, so the only way to ask what a scene
+ * DOES was to re-read the authored document, and the only way to retime a move
+ * was to rewrite that document and resolve the whole film again. A node keeps
+ * the move and the window it was allocated, which is what a timeline needs to
+ * draw it as a bar with draggable ends and what an editor needs to address it.
+ *
+ * The id is scene-local because the track is the scene's: `move.0` for a plain
+ * move list, `shot.1/move.0` inside a cut list.
+ */
+export interface ResolvedCameraBehavior {
+  id: string;
+  move: DirectorCameraMove;
+  startSeconds: number;
+  endSeconds: number;
+}
+
+/** Keyframes plus the nodes that produced them. */
+export interface CompiledCameraMoves {
+  keyframes: ResolvedDirectorCameraKeyframe[];
+  behaviors: ResolvedCameraBehavior[];
 }
 
 /**
@@ -500,11 +530,7 @@ function moveGroupDelta(
   const degrees =
     panDegrees(move, origin.position, origin.target, context) * progress;
   const aimed = panTarget(origin.position, origin.target, degrees);
-  delta.target = [
-    aimed[0] - origin.target[0],
-    0,
-    aimed[2] - origin.target[2],
-  ];
+  delta.target = [aimed[0] - origin.target[0], 0, aimed[2] - origin.target[2]];
   return delta;
 }
 
@@ -534,32 +560,58 @@ function moveGroupSegments(members: readonly DirectorCameraMove[]): number {
   return segments;
 }
 
+/**
+ * The keyframes alone, for callers that do not keep the nodes.
+ * `compileCameraMoveNodes` is the owner; this is the projection of it that the
+ * shot compiler and the older tests read.
+ */
 export function compileCameraMoves(
   moves: readonly DirectorCameraMove[],
   framing: CameraFraming,
   context: CameraLanguageContext
 ): ResolvedDirectorCameraKeyframe[] {
+  return compileCameraMoveNodes(moves, framing, context).keyframes;
+}
+
+/**
+ * Evaluate a list of move nodes into one scene's worth of camera.
+ *
+ * The nodes come back with the keyframes because they are not the same thing:
+ * the keyframes are what this evaluation produced at these window boundaries,
+ * and the nodes are the statements that would produce them again if a window
+ * moved. The keyframes become the store's `directive` layer; the nodes become
+ * the track's `behaviors`.
+ */
+export function compileCameraMoveNodes(
+  moves: readonly DirectorCameraMove[],
+  framing: CameraFraming,
+  context: CameraLanguageContext,
+  idPrefix = ""
+): CompiledCameraMoves {
   if (moves.length === 0) {
     // No moves to chain: an honest two-frame hold spanning the whole scene,
-    // rather than crashing on frames[0] below.
-    return [
-      {
-        atSeconds: 0,
-        position: [...framing.position],
-        target: [...framing.target],
-        fovDeg: framing.fovDeg,
-        interpolation: "step",
-        easing: "linear",
-      },
-      {
-        atSeconds: context.durationSeconds,
-        position: [...framing.position],
-        target: [...framing.target],
-        fovDeg: framing.fovDeg,
-        interpolation: "step",
-        easing: "linear",
-      },
-    ];
+    // rather than crashing on frames[0] below. No moves means no nodes.
+    return {
+      behaviors: [],
+      keyframes: [
+        {
+          atSeconds: 0,
+          position: [...framing.position],
+          target: [...framing.target],
+          fovDeg: framing.fovDeg,
+          interpolation: "step",
+          easing: "linear",
+        },
+        {
+          atSeconds: context.durationSeconds,
+          position: [...framing.position],
+          target: [...framing.target],
+          fovDeg: framing.fovDeg,
+          interpolation: "step",
+          easing: "linear",
+        },
+      ],
+    };
   }
 
   const windows = allocateMoveWindows(
@@ -568,6 +620,7 @@ export function compileCameraMoves(
     "Camera moves"
   );
   const frames: ResolvedDirectorCameraKeyframe[] = [];
+  const behaviors: ResolvedCameraBehavior[] = [];
   let position: [number, number, number] = [...framing.position];
   let target: [number, number, number] = [...framing.target];
   let fovDeg = framing.fovDeg;
@@ -576,6 +629,15 @@ export function compileCameraMoves(
   moves.forEach((move, index) => {
     validateMove(move);
     const { start, end } = windows[index]!;
+    // The window is the node's whole timing story: `allocateMoveWindows` has
+    // already turned stated and left-over durations into real seconds, so a
+    // timeline can draw this bar without re-deriving any of that.
+    behaviors.push({
+      id: `${idPrefix}move.${index}`,
+      move,
+      startSeconds: start,
+      endSeconds: end,
+    });
     const easing = move.easing ?? "ease-in-out";
     /**
      * `aim` is stated only by moves that turn the camera in place. It travels
@@ -771,7 +833,11 @@ export function compileCameraMoves(
       const meters =
         (move.amount && "meters" in move.amount ? move.amount.meters : 2) *
         (move.direction === "down" ? -1 : 1);
-      const next: [number, number, number] = [position[0], position[1] + meters, position[2]];
+      const next: [number, number, number] = [
+        position[0],
+        position[1] + meters,
+        position[2],
+      ];
       push(start, [...position], [...target]);
       push(end, next, [...target]);
       position = next;
@@ -880,12 +946,20 @@ export function compileCameraMoves(
   if (frames[0]!.atSeconds !== 0) {
     frames.unshift({ ...frames[0]!, atSeconds: 0 });
   }
-  return frames;
+  return { keyframes: frames, behaviors };
 }
 
 export interface DirectorCameraShot extends DirectorFramingInput {
   moves?: DirectorCameraMove[];
   durationSeconds?: number;
+}
+
+/** The keyframes alone. `compileCameraShotNodes` is the owner. */
+export function compileCameraShots(
+  shots: readonly DirectorCameraShot[],
+  context: CameraLanguageContext
+): ResolvedDirectorCameraKeyframe[] {
+  return compileCameraShotNodes(shots, context).keyframes;
 }
 
 /**
@@ -896,16 +970,17 @@ export interface DirectorCameraShot extends DirectorFramingInput {
  * sampler holds it until the next shot's first keyframe, which starts at the
  * same instant: the cut.
  */
-export function compileCameraShots(
+export function compileCameraShotNodes(
   shots: readonly DirectorCameraShot[],
   context: CameraLanguageContext
-): ResolvedDirectorCameraKeyframe[] {
+): CompiledCameraMoves {
   const windows = allocateMoveWindows(
     shots,
     context.durationSeconds,
     "Camera shots"
   );
   const frames: ResolvedDirectorCameraKeyframe[] = [];
+  const behaviors: ResolvedCameraBehavior[] = [];
   shots.forEach((shot, index) => {
     const { start, end } = windows[index]!;
     const length = end - start;
@@ -924,24 +999,35 @@ export function compileCameraShots(
       },
       shotContext
     );
-    const compiled = compileCameraMoves(
+    const compiled = compileCameraMoveNodes(
       shot.moves ?? [{ move: "hold" }],
       framing,
-      shotContext
+      shotContext,
+      `shot.${index}/`
     );
     const isLast = index === shots.length - 1;
-    compiled.forEach((frame, frameIndex) => {
+    compiled.keyframes.forEach((frame, frameIndex) => {
       const shifted: ResolvedDirectorCameraKeyframe = {
         ...frame,
         atSeconds: frame.atSeconds + start,
       };
-      if (!isLast && frameIndex === compiled.length - 1) {
+      if (!isLast && frameIndex === compiled.keyframes.length - 1) {
         shifted.interpolation = "step";
       }
       frames.push(shifted);
     });
+    // A shot compiles inside its own window, so its nodes are timed from that
+    // window's start. Shift them the way the keyframes were shifted, or the
+    // second shot's moves would draw on top of the first shot's.
+    for (const behavior of compiled.behaviors) {
+      behaviors.push({
+        ...behavior,
+        startSeconds: behavior.startSeconds + start,
+        endSeconds: behavior.endSeconds + start,
+      });
+    }
   });
-  return frames;
+  return { keyframes: frames, behaviors };
 }
 
 function validateMove(move: DirectorCameraMove): void {
