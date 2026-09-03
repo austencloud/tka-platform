@@ -140,6 +140,8 @@ export class SilkRibbonGeometry3D {
   private readonly propTint: MutableRgb = { right: 1, green: 1, left: 1 };
   private sampleCursor = 0;
   private indexCursor = 0;
+  /** Index count published by the last commit(). Lets an idle ribbon skip republishing an already-empty frame. */
+  private committedIndexCount = 0;
 
   constructor(private readonly sampleCapacity: number) {
     const vertexCapacity = sampleCapacity * SILK_CROSS_SECTION_VERTEX_COUNT;
@@ -252,8 +254,28 @@ export class SilkRibbonGeometry3D {
     this.sampleCursor += count;
   }
 
+  /**
+   * Publishes this frame's writes to the GPU.
+   *
+   * Every dirtied attribute carries an explicit update range, and an attribute
+   * that received no writes stays clean. That matters more than it looks:
+   * three's WebGLAttributes.updateBuffer falls back to uploading the ENTIRE
+   * backing array when an attribute is dirty with no update ranges, so an idle
+   * ribbon used to push 4.8 MB of bufferSubData every frame for a mesh whose
+   * draw range was zero. Nothing reads a stale tail either way - setDrawRange
+   * bounds every draw to what this frame actually wrote.
+   */
   commit(): void {
     const vertexCount = this.sampleCursor * SILK_CROSS_SECTION_VERTEX_COUNT;
+    if (
+      vertexCount === 0 &&
+      this.indexCursor === 0 &&
+      this.committedIndexCount === 0
+    ) {
+      // An empty ribbon was already published: buffers are clean and the draw
+      // range is already zero, so there is nothing to republish.
+      return;
+    }
     this.markUpdated("position", vertexCount * 3);
     this.markUpdated("normal", vertexCount * 3);
     this.markUpdated("ribbonTangent", vertexCount * 3);
@@ -269,9 +291,17 @@ export class SilkRibbonGeometry3D {
     this.markUpdated("weaveFrequency", vertexCount);
     const index = this.geometry.index as BufferAttribute;
     index.clearUpdateRanges();
-    if (this.indexCursor > 0) index.addUpdateRange(0, this.indexCursor);
-    index.needsUpdate = true;
+    if (this.indexCursor > 0) {
+      index.addUpdateRange(0, this.indexCursor);
+      index.needsUpdate = true;
+    }
     this.geometry.setDrawRange(0, this.indexCursor);
+    this.committedIndexCount = this.indexCursor;
+  }
+
+  /** Index count published by the last commit(); 0 means nothing is drawn. */
+  get drawCount(): number {
+    return this.committedIndexCount;
   }
 
   clear(): void {
@@ -863,7 +893,13 @@ export class SilkRibbonGeometry3D {
   private markUpdated(name: string, componentCount: number): void {
     const attribute = this.geometry.getAttribute(name) as BufferAttribute;
     attribute.clearUpdateRanges();
-    if (componentCount > 0) attribute.addUpdateRange(0, componentCount);
+    if (componentCount === 0) {
+      // Nothing was written, and the draw range excludes whatever the previous
+      // frame left behind. Leaving the attribute clean avoids a full-array
+      // re-upload of a buffer nothing will read.
+      return;
+    }
+    attribute.addUpdateRange(0, componentCount);
     attribute.needsUpdate = true;
   }
 }
