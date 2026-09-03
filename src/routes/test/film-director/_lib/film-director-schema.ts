@@ -1111,6 +1111,7 @@ const cameraMoveFields = {
     "orbit",
     "crane",
     "pan",
+    "tilt",
     "truck",
     "zoom",
     "roll",
@@ -1720,6 +1721,29 @@ export interface ResolvedDirectorCameraKeyframe {
    * that never roll resolve byte-identically to their pre-roll snapshots.
    */
   rollDeg?: number;
+  /**
+   * How the aim travels from THIS keyframe to the next, the same way
+   * `interpolation` governs its own outgoing segment.
+   *
+   * Absent means the aim point is interpolated where it lives, in world space.
+   * That is right for every move that holds a fixed point or carries the aim
+   * along with the rig, and it is what every keyframe resolved before this
+   * field existed does, so those films are untouched.
+   *
+   * `"angles"` means the segment interpolates the aim DIRECTION instead, and
+   * the aim point is derived. A turn in place needs this: interpolating the
+   * point chords across the arc, so the framing distance dips and the angular
+   * rate is wrong in the middle of the move.
+   */
+  aimSpace?: "angles";
+  /**
+   * Aim yaw in degrees, `atan2(dx, dz)`, present when the compiler knows the
+   * turn it authored. Stated rather than recovered because `atan2` cannot tell
+   * a turn of 270 degrees from one of -90.
+   */
+  aimYawDeg?: number;
+  /** Aim pitch in degrees above level, present alongside `aimYawDeg`. */
+  aimPitchDeg?: number;
   interpolation: DirectorInterpolation;
   easing: DirectorEasing;
 }

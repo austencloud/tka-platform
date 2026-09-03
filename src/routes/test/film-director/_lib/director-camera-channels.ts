@@ -51,6 +51,9 @@ export const CAMERA_CHANNEL_IDS = [
   "camera.target.x",
   "camera.target.y",
   "camera.target.z",
+  "camera.aim.yaw",
+  "camera.aim.pitch",
+  "camera.aim.distance",
   "camera.lens.fov",
   "camera.roll",
 ] as const;
@@ -73,6 +76,13 @@ export interface CameraChannelKey {
   v: number;
   interpolation: DirectorInterpolation;
   easing: DirectorEasing;
+  /**
+   * Only meaningful on `camera.aim.yaw`, and only on the key that opens a
+   * segment: it says this segment's aim point is derived from the aim
+   * direction rather than read from the target channels. See
+   * `ResolvedDirectorCameraKeyframe.aimSpace`.
+   */
+  aimSpace?: "angles";
 }
 
 export interface CameraChannel {
@@ -99,11 +109,23 @@ const LENS_CHANNELS: ReadonlySet<CameraChannelId> = new Set([
   "camera.roll",
 ]);
 
+/** Aim channels are built by a sequential pass, not a per-key read. */
+const AIM_CHANNELS: ReadonlySet<CameraChannelId> = new Set([
+  "camera.aim.yaw",
+  "camera.aim.pitch",
+  "camera.aim.distance",
+]);
+
 function readChannelValue(
   frame: ResolvedDirectorCameraKeyframe,
   id: CameraChannelId
 ): number {
   switch (id) {
+    case "camera.aim.yaw":
+    case "camera.aim.pitch":
+    case "camera.aim.distance":
+      // Unreachable: buildCameraChannels routes these through buildAimChannels.
+      return 0;
     case "camera.position.x":
       return frame.position[0];
     case "camera.position.y":
@@ -126,6 +148,70 @@ function readChannelValue(
 }
 
 /**
+ * Yaw, pitch and distance for every keyframe.
+ *
+ * A keyframe authored by a turn states its own yaw, because `atan2` cannot
+ * tell a turn of 270 degrees from one of -90 and recovering the angle from the
+ * endpoint would silently shorten the move. Every other keyframe has its aim
+ * measured from position and target, then unwrapped against the key before it
+ * so a spline never takes the long way round a seam at +-180 degrees.
+ */
+function buildAimChannels(
+  keyframes: readonly ResolvedDirectorCameraKeyframe[]
+): CameraChannel[] {
+  const yaw: CameraChannelKey[] = [];
+  const pitch: CameraChannelKey[] = [];
+  const distance: CameraChannelKey[] = [];
+
+  let previousYaw: number | undefined;
+  for (const frame of keyframes) {
+    const dx = frame.target[0] - frame.position[0];
+    const dy = frame.target[1] - frame.position[1];
+    const dz = frame.target[2] - frame.position[2];
+    const length = Math.hypot(dx, dy, dz);
+
+    const measuredYaw = length < 1e-9 ? 0 : (Math.atan2(dx, dz) * 180) / Math.PI;
+    const measuredPitch =
+      length < 1e-9
+        ? 0
+        : (Math.asin(Math.max(-1, Math.min(1, dy / length))) * 180) / Math.PI;
+
+    // Unwrapping is for MEASURED angles only. A stated one already knows which
+    // way round it went, and folding it toward its neighbour is exactly the
+    // loss the compiler stated it to avoid.
+    let yawValue = frame.aimYawDeg;
+    if (yawValue === undefined) {
+      yawValue = measuredYaw;
+      if (previousYaw !== undefined) {
+        yawValue += Math.round((previousYaw - yawValue) / 360) * 360;
+      }
+    }
+    previousYaw = yawValue;
+
+    const shared = {
+      t: frame.atSeconds,
+      interpolation: frame.interpolation,
+      easing: frame.easing,
+    };
+    yaw.push({
+      ...shared,
+      v: yawValue,
+      ...(frame.aimSpace ? { aimSpace: frame.aimSpace } : {}),
+    });
+    pitch.push({ ...shared, v: frame.aimPitchDeg ?? measuredPitch });
+    distance.push({ ...shared, v: length });
+  }
+
+  // A stated hold in aim is a hold: the same argument the lens channels make,
+  // and the reason a pan that pauses does not drift while it waits.
+  return [
+    { id: "camera.aim.yaw", holdsFlat: true, keys: yaw },
+    { id: "camera.aim.pitch", holdsFlat: true, keys: pitch },
+    { id: "camera.aim.distance", holdsFlat: true, keys: distance },
+  ];
+}
+
+/**
  * Explode fused keyframes into one channel per scalar.
  *
  * Every channel is keyed at the same times as the source keyframes, which is
@@ -142,6 +228,7 @@ export function buildCameraChannels(
   // lets an unauthored camera fall back to the default frame rather than
   // sampling zeroes out of empty key arrays.
   for (const id of keyframes.length === 0 ? [] : CAMERA_CHANNEL_IDS) {
+    if (AIM_CHANNELS.has(id)) continue;
     base.set(id, {
       id,
       holdsFlat: LENS_CHANNELS.has(id),
@@ -152,6 +239,9 @@ export function buildCameraChannels(
         easing: frame.easing,
       })),
     });
+  }
+  if (keyframes.length > 0) {
+    for (const channel of buildAimChannels(keyframes)) base.set(channel.id, channel);
   }
   const layers = new Map<
     CameraLayerName,
@@ -198,6 +288,22 @@ function interpolateChannelScalar(
 }
 
 /**
+ * The key whose outgoing segment contains `atSeconds`, clamped to the track.
+ * A key governs the span that starts at it, which is why `interpolation` and
+ * `aimSpace` are read from the key BEFORE the instant being sampled.
+ */
+export function governingKeyIndex(
+  keys: readonly CameraChannelKey[],
+  atSeconds: number
+): number {
+  if (keys.length === 0) return -1;
+  if (atSeconds <= keys[0]!.t) return 0;
+  const last = keys.length - 1;
+  if (atSeconds >= keys[last]!.t) return last;
+  return keys.findIndex((key) => key.t > atSeconds) - 1;
+}
+
+/**
  * Sample one channel. Clamps flat outside its first and last key, cuts on a
  * `step` key, and otherwise eases across the straddling pair with the two
  * outer keys shaping the spline.
@@ -207,18 +313,15 @@ export function sampleCameraChannel(
   atSeconds: number
 ): number {
   const keys = channel.keys;
-  const first = keys[0];
-  if (!first) return 0;
-  if (keys.length === 1 || atSeconds <= first.t) return first.v;
-
-  const last = keys.at(-1)!;
-  if (atSeconds >= last.t) return last.v;
-
-  const endIndex = keys.findIndex((key) => key.t > atSeconds);
-  const startIndex = Math.max(0, endIndex - 1);
+  const startIndex = governingKeyIndex(keys, atSeconds);
+  if (startIndex < 0) return 0;
   const start = keys[startIndex]!;
-  const end = keys[endIndex]!;
+  // Outside the track at either end, or standing on the final key.
+  if (startIndex === keys.length - 1 || atSeconds <= keys[0]!.t) return start.v;
   if (start.interpolation === "step") return start.v;
+
+  const endIndex = startIndex + 1;
+  const end = keys[endIndex]!;
 
   const duration = Math.max(0.0001, end.t - start.t);
   const linearProgress = Math.max(
@@ -278,6 +381,18 @@ const DEFAULT_CAMERA_FRAME: DirectorCameraFrame = {
   rollDeg: 0,
 };
 
+/**
+ * Whether the segment containing `atSeconds` aims by direction rather than by
+ * point. The yaw channel carries the flag, because it is the channel that
+ * becomes load-bearing when it is set.
+ */
+function aimsByAngle(store: CameraChannelStore, atSeconds: number): boolean {
+  const yaw = resolveChannel(store, "camera.aim.yaw");
+  if (!yaw) return false;
+  const index = governingKeyIndex(yaw.keys, atSeconds);
+  return index >= 0 && yaw.keys[index]!.aimSpace === "angles";
+}
+
 /** Sample every camera channel at one instant and assemble the frame. */
 export function sampleCameraFrame(
   store: CameraChannelStore,
@@ -286,17 +401,38 @@ export function sampleCameraFrame(
   const read = (id: CameraChannelId, fallback: number) =>
     sampleStoreChannel(store, id, atSeconds, fallback);
   const fallback = DEFAULT_CAMERA_FRAME;
-  return {
-    position: [
-      read("camera.position.x", fallback.position[0]),
-      read("camera.position.y", fallback.position[1]),
-      read("camera.position.z", fallback.position[2]),
-    ],
-    target: [
+  const position: [number, number, number] = [
+    read("camera.position.x", fallback.position[0]),
+    read("camera.position.y", fallback.position[1]),
+    read("camera.position.z", fallback.position[2]),
+  ];
+
+  // A turn in place derives its aim point from the direction it is sweeping
+  // through. Reading the target channels here instead would chord across the
+  // arc: the framing distance would dip in the middle of the move and the
+  // angular rate would not match the turn the director asked for.
+  let target: [number, number, number];
+  if (aimsByAngle(store, atSeconds)) {
+    const yaw = (read("camera.aim.yaw", 0) * Math.PI) / 180;
+    const pitch = (read("camera.aim.pitch", 0) * Math.PI) / 180;
+    const distance = read("camera.aim.distance", 0);
+    const horizontal = Math.cos(pitch) * distance;
+    target = [
+      position[0] + Math.sin(yaw) * horizontal,
+      position[1] + Math.sin(pitch) * distance,
+      position[2] + Math.cos(yaw) * horizontal,
+    ];
+  } else {
+    target = [
       read("camera.target.x", fallback.target[0]),
       read("camera.target.y", fallback.target[1]),
       read("camera.target.z", fallback.target[2]),
-    ],
+    ];
+  }
+
+  return {
+    position,
+    target,
     fovDeg: read("camera.lens.fov", fallback.fovDeg),
     rollDeg: read("camera.roll", fallback.rollDeg),
   };
