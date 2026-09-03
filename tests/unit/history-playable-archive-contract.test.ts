@@ -18,22 +18,22 @@ function read(relativePath: string) {
 }
 
 const archiveSource = read(
-  "src/routes/(public)/notation/_components/archive/PlayableArchive.svelte"
+  "src/routes/(public)/history/_components/archive/PlayableArchive.svelte"
 );
 const timeMapSource = read(
-  "src/routes/(public)/notation/_components/archive/ArchiveTimeMap.svelte"
+  "src/routes/(public)/history/_components/archive/ArchiveTimeMap.svelte"
 );
 const mobileIndexSource = read(
-  "src/routes/(public)/notation/_components/archive/ArchiveChronologicalIndex.svelte"
+  "src/routes/(public)/history/_components/archive/ArchiveChronologicalIndex.svelte"
 );
 const vtgSource = read(
-  "src/routes/(public)/notation/_components/archive/VtgChapterStepper.svelte"
+  "src/routes/(public)/history/_components/archive/VtgChapterStepper.svelte"
 );
 const detailSource = read(
-  "src/routes/(public)/notation/_components/archive/ArchiveEntryDetail.svelte"
+  "src/routes/(public)/history/_components/archive/ArchiveEntryDetail.svelte"
 );
 const submissionSource = read(
-  "src/routes/(public)/notation/_components/archive/ResearchSubmissionGuide.svelte"
+  "src/routes/(public)/history/_components/archive/ResearchSubmissionGuide.svelte"
 );
 const svelteConfigSource = read("svelte.config.js");
 
@@ -96,7 +96,7 @@ describe("playable archive: selection context", () => {
 		expect(archiveSource).toContain("pushState(nextHash");
     expect(archiveSource).toContain('window.addEventListener("popstate"');
     expect(timeMapSource).toContain("#archive-record-${entry.id}");
-    expect(svelteConfigSource).toContain('path === "/notation"');
+    expect(svelteConfigSource).toContain('path === "/history"');
     expect(svelteConfigSource).toContain(
       'id.startsWith("archive-record-")'
     );

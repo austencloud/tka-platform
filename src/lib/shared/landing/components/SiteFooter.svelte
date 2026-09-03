@@ -14,8 +14,13 @@
 
   let {
     variant = "full",
+    flush = false,
   }: {
     variant?: "full" | "compact" | "sitemap";
+    /** Sit directly against the page above. For full-bleed surfaces that own
+     *  the viewport edge to edge, where the standing 4.5rem gap reads as a
+     *  dead band of background rather than breathing room. */
+    flush?: boolean;
   } = $props();
 
   let sheetOpen = $state(false);
@@ -48,7 +53,7 @@
    *   /notation, reachable from it, not destinations in their own right.
    * - Endless LOOPs, Poi and TKA, Double Staff Codex — the other three links
    *   that existed only here. Same reason: leaf pages under /endless-spinner,
-   *   /notation, and /guide.
+   *   /history, and /guide.
    * - The Shop column was a verbatim copy of the header's Shop dropdown, and
    *   `SALES_LIVE` is false, so all four pointed into a storefront that says it
    *   is not open. The storefront stays browsable, so one "Shop" link remains
@@ -61,7 +66,7 @@
     {
       title: "Explore",
       links: [
-        { label: "History", href: "/notation" },
+        { label: "History", href: "/history" },
         { label: "Composer", href: "/composer" },
         { label: "Shop", href: "/shop" },
         { label: "About", href: "/about" },
@@ -96,6 +101,7 @@
   class:compact={variant === "compact"}
   class:full={variant === "full"}
   class:sitemap={variant === "sitemap"}
+  class:flush={flush}
 >
   <div class="inner">
     <div
@@ -185,7 +191,8 @@
   .site-footer.compact {
     margin-top: 1.5rem;
   }
-  .site-footer.sitemap {
+  .site-footer.sitemap,
+  .site-footer.flush {
     margin-top: 0;
   }
 

@@ -28,7 +28,7 @@
     >
   </div>
 
-  <a class="exit" href="/notation">
+  <a class="exit" href="/history">
     <i class="fas fa-chevron-left" aria-hidden="true"></i>
     <span>All notation</span>
   </a>

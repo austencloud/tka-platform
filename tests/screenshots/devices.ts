@@ -217,8 +217,8 @@ export const PUBLIC_ROUTES: RouteConfig[] = [
     waitSelector: ".terms-page",
   },
   {
-    path: "/notation",
-    label: "notation",
+    path: "/history",
+    label: "history",
     requiresAuth: false,
     isModule: false,
     waitSelector: ".playable-viewport .room-title",
