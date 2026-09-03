@@ -18,6 +18,7 @@
   import Seo from "$lib/shared/components/Seo.svelte";
   import PlayableArchive from "./_components/archive/PlayableArchive.svelte";
   import { ARCHIVE_ENTRIES } from "./_components/archive/_lib/archive-ledger";
+  import { ARCHIVE_INK } from "$lib/shared/landing/domain/page-surface";
 
   // The archive documents eight systems, seven of them other people's. A
   // "| The Kinetic Alphabet" suffix here implied it owned all of them.
@@ -67,7 +68,11 @@
   {@html `<script type="application/ld+json">${JSON.stringify(jsonLd)}<\/script>`}
 </Seo>
 
-<div class="playable-viewport" style:view-transition-name="launchpad-history">
+<div
+  class="playable-viewport"
+  style:view-transition-name="launchpad-history"
+  style:background={ARCHIVE_INK}
+>
   <PlayableArchive />
 </div>
 
@@ -87,7 +92,9 @@
     padding-top: 64px;
     box-sizing: border-box;
     overflow: hidden;
-    background: oklch(0.115 0.008 270);
+    /* The ink itself is applied inline from ARCHIVE_INK, the one definition
+       MarketingChrome also hands to the footer so the two surfaces cannot
+       drift apart. */
     color: oklch(0.9 0.02 270);
   }
 

@@ -19,6 +19,7 @@
   import { motionDuration } from "$lib/shared/transitions/motion";
   import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
   import { marketingBackground } from "../state/marketing-background-state.svelte";
+  import { pageSurface } from "../domain/page-surface";
   import SiteHeader from "./SiteHeader.svelte";
   import SiteFooter from "./SiteFooter.svelte";
 
@@ -85,11 +86,12 @@
         : "full"
   );
 
-  // Full-bleed room pages run their own dark surface to the viewport edge, so
-  // the footer's standing 4.5rem margin shows as a band of star field between
-  // the room's floor and the footer — dead space that reads as the page having
-  // ended early. Those pages get the footer flush against them.
-  const footerFlush = $derived(path === "/history");
+  // A page that paints its own opaque surface to the viewport edge hands it to
+  // the footer, which continues that surface instead of settling onto the star
+  // field. Without it the footer's standing 4.5rem margin shows a band of sky
+  // between the two, and its scrim and hairline finish the job of making the
+  // bottom of the page look like a different site.
+  const footerSurface = $derived(pageSurface(path));
 
   // Named route morphs suppress the keyed content fade only while that exact
   // allowlisted navigation is active. Ordinary marketing navigation keeps the
@@ -127,7 +129,7 @@
     <!-- The homepage already is a complete navigation surface. Interior pages
          keep the sitemap; the host owns that route decision so SiteFooter also
          remains safe for its independent GuideShell host. -->
-    <SiteFooter variant={footerVariant} flush={footerFlush} />
+    <SiteFooter variant={footerVariant} surface={footerSurface} />
   </div>
 </div>
 
