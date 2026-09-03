@@ -27,7 +27,7 @@
     "@type": "BreadcrumbList",
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://tkaflowarts.com/" },
-      { "@type": "ListItem", "position": 2, "name": "Notation", "item": "https://tkaflowarts.com/notation" },
+      { "@type": "ListItem", "position": 2, "name": "Flow Arts History", "item": "https://tkaflowarts.com/history" },
       { "@type": "ListItem", "position": 3, "name": "Poi", "item": "${URL}" }
     ]
   }
@@ -35,7 +35,7 @@
 </Seo>
 
 <div class="editorial">
-  <a class="back-link" href="/notation">← Flow Arts Notation</a>
+  <a class="back-link" href="/history">← Flow Arts History</a>
 
   <header class="editorial-header">
     <h1 class="page-title">Poi Notation</h1>
@@ -77,7 +77,7 @@
         already read part of this alphabet. If you spin poi and want notation
         that was born for your prop, VTG is that system, and TKA honors it
         rather than replacing it. The full lineage, with sources, lives on the <a
-          href="/notation">notation page</a
+          href="/history">history page</a
         >.
       </p>
       <p>
@@ -88,7 +88,7 @@
           href="/guide">guide</a
         >, the
         <a href="/atlas">Kinetic Atlas</a>, and the
-        <a href="/notation">notation overview</a> all read fine through a poi spinner's
+        <a href="/history">history page</a> all read fine through a poi spinner's
         eyes, and the momentum-friendly slice of what you build in the composer will
         be spinnable.
       </p>

@@ -37,7 +37,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     // sections, so section anchors on "/" no longer exist — prerender's
     // missing-id check fails the whole build on a dangling one. Link to pages,
     // not homepage anchors.
-    cta: { label: "Read the history", href: "/notation" },
+    cta: { label: "Read the history", href: "/history" },
   },
   {
     question: "Do I have to memorize letters and symbols first?",

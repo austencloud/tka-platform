@@ -79,7 +79,7 @@
       label: "History",
       title: "Trace the notation",
       copy: "Read the sourced chronology of systems used to write flow arts down.",
-      href: "/notation",
+      href: "/history",
     },
     {
       label: "Software",
