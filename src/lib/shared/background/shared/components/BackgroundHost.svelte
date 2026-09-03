@@ -25,6 +25,7 @@
 	import { createOceanBubblePop } from '../ocean-bubble-pop';
 	import { isBackgroundSuppressed } from '../state/background-suppression.svelte';
 	import { holdBackground, releaseBackground } from '../state/background-hold.svelte';
+	import { createRenderActivityGate } from '$lib/shared/render-gating/render-activity-gate';
 	import { sharedAnimationState } from '$lib/shared/animation-engine/state/shared-animation-state.svelte';
 	import { shouldReduceBackgroundResolution } from '$lib/shared/platform/network-conditions';
 
@@ -242,18 +243,27 @@
 		window.addEventListener('pointerdown', onPointerDown);
 
 		// Freeze the background's animation loop while the tab is hidden, then
-		// resume the same live systems when the tab returns.
-		const onVisibilityChange = () => {
-			pageHidden = document.hidden;
-		};
-		pageHidden = document.hidden;
-		document.addEventListener('visibilitychange', onVisibilityChange);
+		// resume the same live systems when the tab returns. The hidden-tab
+		// signal comes from the canonical render gate rather than a private
+		// `visibilitychange` listener, so every animated surface in the app
+		// reads one owner. `ignoreViewport` because this backdrop is a fixed
+		// full-viewport layer: intersection tells us nothing it doesn't already
+		// know, and observing <body> would just cost an observer.
+		const visibilityGate = createRenderActivityGate({
+			ignoreViewport: true,
+			name: 'background-host'
+		});
+		pageHidden = !visibilityGate.active;
+		const unsubscribeVisibility = visibilityGate.subscribe((active) => {
+			pageHidden = !active;
+		});
 
 		return () => {
 			window.removeEventListener('pointermove', onPointerMove);
 			window.removeEventListener('pointerleave', onPointerLeaveWin);
 			window.removeEventListener('pointerdown', onPointerDown);
-			document.removeEventListener('visibilitychange', onVisibilityChange);
+			unsubscribeVisibility();
+			visibilityGate.dispose();
 			setJellyCursor(false); // never leave a stray pointer cursor on <body>
 			chime.dispose();
 			bubblePop.dispose();

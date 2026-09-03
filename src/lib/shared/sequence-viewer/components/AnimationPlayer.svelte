@@ -16,6 +16,10 @@
 -->
 <script lang="ts">
   import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
+  import {
+    createRenderActivityGate,
+    renderGateTarget,
+  } from "$lib/shared/render-gating/render-activity-gate";
   import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
   import { onMount, onDestroy, untrack } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -123,6 +127,12 @@
 
   // Services (standalone mode only)
   let controller = $state<AnimationPlaybackController | null>(null);
+
+  // Off-screen / hidden-tab gating for the playhead loop. Standalone mode only:
+  // in context mode the viewer shell owns the controller and its gating, and a
+  // second gate on the shared singleton would fight it. The canvas render loop
+  // is gated independently inside CanvasSurface.
+  const activityGate = createRenderActivityGate({ name: "animation-player" });
 
   // State (standalone mode only)
   const animState = createAnimationPanelState();
@@ -260,6 +270,7 @@
 
     try {
       controller = getAnimationPlaybackController();
+      controller.setActivityGate(activityGate);
       loading = false;
       // Expose toggle function to parent for keyboard control
       onTogglePlaybackRef?.(togglePlayback);
@@ -272,6 +283,10 @@
 
   onDestroy(() => {
     if (!useContext) {
+      // Identity-scoped: the shared singleton must never be left gated to this
+      // host's detached element after a newer host has claimed it.
+      controller?.clearActivityGate(activityGate);
+      activityGate.dispose();
       // Owner-scoped release so a stale teardown can't clobber a newer host
       // that already re-claimed the shared singleton (HMR remount overlap).
       controller?.dispose(animState);
@@ -392,7 +407,11 @@
   const cancelExport = () => ctx?.actions.onCancelExport();
 </script>
 
-<div class="animation-player" class:horizontal={layout === "horizontal"}>
+<div
+  class="animation-player"
+  class:horizontal={layout === "horizontal"}
+  use:renderGateTarget={useContext ? null : activityGate}
+>
   {#if loading}
     <div class="state-msg">
       <ProgressRing percent={-1} size={32} strokeWidth={3} /><span

@@ -8,7 +8,7 @@
  * neighbours differently produces identical keyframes and a different film.
  *
  * This file freezes the sampled frames themselves. It samples every scene of
- * every library film at two kinds of time:
+ * every capability demo at two kinds of time:
  *
  *   - a uniform grid across the track, which catches curve-shape changes; and
  *   - the moments either side of every keyframe, which catches cut, hold and
@@ -20,7 +20,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { FILM_LIBRARY } from "../../../src/routes/test/film-director/_films/index";
+import { CAPABILITY_LIBRARY } from "../../../src/routes/test/film-director/_capabilities/index";
 import { sampleDirectorCameraTrack } from "../../../src/routes/test/film-director/_lib/director-camera-track";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
 import type { ResolvedDirectorCameraKeyframe } from "../../../src/routes/test/film-director/_lib/film-director-schema";
@@ -82,8 +82,8 @@ function sampleTrack(
 }
 
 describe("camera sampling snapshots", () => {
-  for (const entry of FILM_LIBRARY) {
-    it(`"${entry.label}" (${entry.key}) samples to its frozen curve`, () => {
+  for (const entry of CAPABILITY_LIBRARY) {
+    it(`"${entry.label}" (${entry.id}) samples to its frozen curve`, () => {
       const spec = resolveFilmDirectorSpec(entry.film);
       const perScene = spec.scenes.map((scene, index) => ({
         scene: index,
