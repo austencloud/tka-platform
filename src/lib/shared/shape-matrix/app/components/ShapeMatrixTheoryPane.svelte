@@ -37,9 +37,9 @@
       keyOf={theoryFlowerKey}
       labelOf={theoryFlowerLabel}
       paintHeader={(flower, hand, sizePx) =>
-        theoryHeaderArtworkSrc(flower, hand, state.theoryMode, tipDx, sizePx)}
+        theoryHeaderArtworkSrc(flower, hand, tipDx, sizePx)}
       paintCell={(left, right, sizePx) =>
-        theoryCellArtworkSrc(left, right, state.theoryMode, tipDx, sizePx)}
+        theoryCellArtworkSrc(left, right, tipDx, sizePx)}
       onselect={onselect ?? state.selectTheoryPair}
     />
   </div>
