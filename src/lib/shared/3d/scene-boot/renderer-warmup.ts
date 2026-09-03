@@ -11,6 +11,41 @@ export interface WarmupOptions {
   signal?: AbortSignal;
 }
 
+/**
+ * How long one compile target may sit unresolved before warmup gives up on it.
+ *
+ * `compileAsync` resolves by polling `currentProgram.isReady()` from a timer.
+ * If the material is disposed while that poll is in flight — which Threlte's
+ * refcounted disposal context does routinely and legitimately whenever a scene
+ * regrades its materials after the GLB lands — the program handle is gone, the
+ * poll throws out of a timer callback where no caller can catch it, and the
+ * promise never settles. Awaiting it unguarded wedges boot permanently: the
+ * ember scene reproduced this on a cold server, reaching `assetsMs` and then
+ * hanging with `compileMs` null and the curtain up forever.
+ *
+ * A target that has not compiled inside this window is abandoned rather than
+ * waited on. Its shader then compiles lazily on first render, which costs one
+ * hitch — vastly better than never revealing the scene at all.
+ */
+const COMPILE_TARGET_TIMEOUT_MS = 6000;
+
+/** Resolves false if the promise has not settled inside `ms`. */
+function withTimeout(promise: Promise<unknown>, ms: number): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    const timer = setTimeout(() => resolve(false), ms);
+    promise.then(
+      () => {
+        clearTimeout(timer);
+        resolve(true);
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(true);
+      }
+    );
+  });
+}
+
 interface CompileTarget extends Object3D {
   geometry?: {
     attributes?: Record<string, { itemSize?: number }>;
@@ -178,7 +213,17 @@ export async function warmupRenderer(
       // ancestors do not exclude it. Equivalent materials share one program
       // signature and never repeat this relatively expensive traversal.
       target.visible = true;
-      await renderer.compileAsync(target, camera, scene as Scene);
+      const settled = await withTimeout(
+        renderer.compileAsync(target, camera, scene as Scene),
+        COMPILE_TARGET_TIMEOUT_MS
+      );
+      if (!settled && !warned) {
+        warned = true;
+        console.warn(
+          "[scene-boot] shader warmup abandoned a target after " +
+            `${COMPILE_TARGET_TIMEOUT_MS}ms; it will compile on first render.`
+        );
+      }
     } catch (error) {
       if (!warned) {
         warned = true;
