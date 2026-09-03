@@ -4,13 +4,13 @@
 
   import { setShapeMatrixAppContext } from "./context/shape-matrix-app-context";
   import ShapeMatrixAboutModal from "./components/ShapeMatrixAboutModal.svelte";
-  import ShapeMatrixPropPickerModal from "./components/ShapeMatrixPropPickerModal.svelte";
   import ShapeMatrixAppShell from "./components/ShapeMatrixAppShell.svelte";
   import {
     createShapeMatrixAppState,
     type ShapeMatrixAppPersistence,
   } from "./state/shape-matrix-app-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { DEFAULT_THEORY_BAND } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
 
   interface Props {
     persistence?: ShapeMatrixAppPersistence;
@@ -31,6 +31,12 @@
       syncState: (snapshot) => persistence?.persist(snapshot),
     },
     {
+      surface: "matrix",
+      theoryLeftRatio: { propRotations: 1, handCycles: 3 },
+      theoryRightRatio: { propRotations: 1, handCycles: 3 },
+      theoryMode: "SS",
+      theoryPair: null,
+      theoryBand: DEFAULT_THEORY_BAND,
       level: 2,
       leftTurn: 2,
       rightTurn: 2,
@@ -71,7 +77,6 @@
 <div class="shape-matrix-app-host" bind:this={host}>
   <ShapeMatrixAppShell {variant} />
   <ShapeMatrixAboutModal />
-  <ShapeMatrixPropPickerModal />
 </div>
 
 <style>

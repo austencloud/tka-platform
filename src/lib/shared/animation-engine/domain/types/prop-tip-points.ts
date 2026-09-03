@@ -148,13 +148,19 @@ export const FAN_TIP_POINTS: PropTipConfig = {
   ],
 };
 
+// Bigfan is separate artwork rather than a rescaled fan (600 x 566.9 against
+// 260 x 207), so its points are measured against its own ribs instead of being
+// scaled from fan's. The ribs sit at 61.2 / 32.7 / 0 degrees and the rim arc
+// bulges outward with angle — 314.5 / 302 / 299.5 — so each tip is that local
+// rim radius minus 2.5. The old ring put four of the five tips at bearings
+// between the ribs, in the fan's open space, ~60 units short of the rim.
 const BIGFAN_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 154, dy: -184 },
-    { dx: 218, dy: -102 },
-    { dx: 240, dy: 0 },
-    { dx: 218, dy: 102 },
-    { dx: 154, dy: 184 },
+    { dx: 150.31, dy: -273.41 },
+    { dx: 252.03, dy: -161.8 },
+    { dx: 297, dy: 0 },
+    { dx: 252.03, dy: 161.8 },
+    { dx: 150.31, dy: 273.41 },
   ],
 };
 
@@ -175,23 +181,31 @@ const BIGTRIAD_TIP_POINTS: PropTipConfig = {
   ],
 };
 
+// Hoops are butt-pivoted: the hand sits at the viewBox centre and the ring is
+// drawn entirely in +x. The measured ring centreline is at dx 59.4 with radius
+// 60.6 and a 16.8-unit tube, so these five points are ring angles 216 / 288 /
+// 0 / 72 / 144 degrees on that centreline — dead centre of the tube, evenly
+// spaced around the hoop. The old values straddled the tube and put one point
+// behind the hand.
 const MINIHOOP_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 34.28, dy: -68.63 },
-    { dx: 102.85, dy: -21.45 },
-    { dx: 102.85, dy: 21.45 },
-    { dx: 34.28, dy: 68.63 },
-    { dx: -25.71, dy: 0 },
+    { dx: 10.37, dy: -35.62 },
+    { dx: 78.13, dy: -57.63 },
+    { dx: 120, dy: 0 },
+    { dx: 78.13, dy: 57.63 },
+    { dx: 10.37, dy: 35.62 },
   ],
 };
 
+// The same five ring angles at the big-hoop scale: measured centreline at
+// dx 149.8 with radius 142.4 and a 16-unit tube.
 const BIGHOOP_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 80, dy: -150 },
-    { dx: 230, dy: -50 },
-    { dx: 230, dy: 50 },
-    { dx: 80, dy: 150 },
-    { dx: -60, dy: 0 },
+    { dx: 34.6, dy: -83.7 },
+    { dx: 193.8, dy: -135.43 },
+    { dx: 292.2, dy: 0 },
+    { dx: 193.8, dy: 135.43 },
+    { dx: 34.6, dy: 83.7 },
   ],
 };
 
@@ -220,9 +234,14 @@ export const BUUGENG_TIP_POINTS = radialTipConfig(
 
 const BIGBUUGENG_TIP_POINTS: PropTipConfig = {
   points: [
-    // Same proportional terminal inset at the 600 x 293.1 big-prop scale.
-    { dx: 263.44, dy: 0 },
-    { dx: -263.44, dy: 0 },
+    // Unlike buugeng, this artwork's terminals are tapers rather than rounded
+    // caps, and its S-curve is steep enough that the old on-axis pair landed
+    // in empty space at both ends. These are the point-symmetric pair inside
+    // the taper at radius 295 (the apexes measure (299.5, 14.45) and
+    // (-300, -14.05)), which is the deepest the emitter can sit while staying
+    // centred in the visible terminal.
+    { dx: 294.28, dy: 20.58 },
+    { dx: -294.28, dy: -20.58 },
   ],
 };
 
@@ -252,11 +271,13 @@ const SWORD_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 280, dy: 0 }],
 };
 
-// The SVG pivot is the lower wrapped grip at (190, 150). The physical kama is
-// rotated around that hand point so its blade apex lands on the +X kinetic axis;
-// the butt is not tracked.
+// The renderer rotates every prop about its viewBox centre, which for sickles
+// is (220, 130) — not the wrapped grip. Measured from that centre the blade
+// apex sits at (126.5, -116): radius 171.6 at -42.52 degrees. The tracked
+// point is that bearing at radius 166, inside the apex and on the blade. The
+// butt is not tracked.
 const SICKLES_TIP_POINTS: PropTipConfig = {
-  points: [{ dx: 192, dy: 0 }],
+  points: [{ dx: 122.35, dy: -112.19 }],
 };
 
 // Energy Saber is a sword restyle, so it gets sword's reach exactly: the blade
@@ -277,37 +298,50 @@ const ENERGY_STAFF_TIP_POINTS: PropTipConfig = {
   ],
 };
 
+// Butt-pivoted like the other offset props: the knot's own centre measures
+// 47.123 to the +x side of the viewBox centre, and its three lobe apexes sit
+// on a band whose mid-radius is 88.5 from that knot centre, at 0 / 120 / 240
+// degrees. The old values were measured from the viewBox centre instead, so
+// the two rear lobes fell off the artwork.
 const TRIQUETRA_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 125.8, dy: 0 },
-    { dx: -62.9, dy: -109.34 },
-    { dx: -62.9, dy: 109.34 },
+    { dx: 135.62, dy: 0 },
+    { dx: 2.87, dy: -76.64 },
+    { dx: 2.87, dy: 76.64 },
   ],
 };
 
 // triquetra2 stays on the animated artwork (the pictograph file is a different
-// shape, not a rescale), so it keeps the original 300-box offsets.
+// shape, not a rescale). Its knot centre measures 90.668 to the +x side of the
+// viewBox centre with a lobe band mid-radius of 91.75, and the knot is rotated
+// so the lobes land at 60 / 180 / 300 degrees — meaning one lobe apex sits
+// almost exactly on the hand. Index 0 is the apex farthest from the pivot,
+// then -120 degree steps, so the ordering stays deterministic.
 const TRIQUETRA2_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 130, dy: 0 },
-    { dx: -65, dy: -113 },
-    { dx: -65, dy: 113 },
+    { dx: 136.55, dy: -79.46 },
+    { dx: -1.08, dy: 0 },
+    { dx: 136.55, dy: 79.46 },
   ],
 };
 
 // Regular (small) chicken is single-ended — one weighted tip at the outer
-// (+dx) end, matching the club/sword single-tip convention.
+// (+dx) end, matching the club/sword single-tip convention. The artwork stops
+// at 152 on the axis, so the old 162.5 was ten units past the paint; 149 puts
+// the emitter inside the solid head instead of in a gap between feather wisps.
 const CHICKEN_TIP_POINTS: PropTipConfig = {
-  points: [{ dx: 162.5, dy: 0 }],
+  points: [{ dx: 149, dy: 0 }],
 };
 
-// Big chicken is bilateral — two mirror-symmetric ends. (See the
-// TWO_ENDED_PROPS set in prop-tip-ends.ts: bigchicken is two-ended, regular
-// chicken is not.)
+// Big chicken is bilateral, but the drawing is a chicken and not a baton, so
+// the two ends are not mirror images: the head reaches 123.5 on the axis while
+// the tail is a fan of feather wisps whose solid base stops near 112. The old
+// symmetric pair missed the paint at both ends. (See the TWO_ENDED_PROPS set
+// in prop-tip-ends.ts: bigchicken is two-ended, regular chicken is not.)
 const BIGCHICKEN_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: -126.4, dy: 0 },
-    { dx: 126.4, dy: 0 },
+    { dx: -115, dy: 4 },
+    { dx: 121.8, dy: -6.4 },
   ],
 };
 
@@ -319,12 +353,14 @@ const UKULELE_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 170, dy: 0 }],
 };
 
+// The two star apexes only. The old third and fourth points sat at the waist
+// between the stars, where there is no artwork at all, and contradicted the
+// TWO_ENDED_PROPS entry in prop-tip-ends.ts. Indices 0 and 1 are unchanged, so
+// saved per-tip effects stay on the end they were assigned to.
 const DOUBLESTAR_TIP_POINTS: PropTipConfig = {
   points: [
     { dx: 150, dy: 0 },
     { dx: -150, dy: 0 },
-    { dx: 0, dy: -75 },
-    { dx: 0, dy: 75 },
   ],
 };
 
@@ -332,8 +368,6 @@ const BIGDOUBLESTAR_TIP_POINTS: PropTipConfig = {
   points: [
     { dx: 300, dy: 0 },
     { dx: -300, dy: 0 },
-    { dx: 0, dy: -150 },
-    { dx: 0, dy: 150 },
   ],
 };
 
@@ -363,12 +397,18 @@ export const QUIAD_TIP_POINTS: PropTipConfig = {
   ],
 };
 
+// Both torch SVGs are butt-pivoted: the viewBox is padded so the hand sits at
+// the viewBox centre and the shaft runs entirely in +x. The old -140 / -120
+// values pointed backwards past the hand into empty space, so trails and fire
+// tracked a point with no artwork behind it. Each file carries an authored,
+// invisible `data-animated-torch-wick` rect around the lit head; these are the
+// centres of those rects, which is exactly where the flame is drawn from.
 const TORCH_TIP_POINTS: PropTipConfig = {
-  points: [{ dx: -140, dy: 0 }],
+  points: [{ dx: 142.55, dy: 0 }],
 };
 
 const BIGTORCH_TIP_POINTS: PropTipConfig = {
-  points: [{ dx: -120, dy: 0 }],
+  points: [{ dx: 145.2, dy: 0 }],
 };
 
 const POI_TIP_POINTS: PropTipConfig = {

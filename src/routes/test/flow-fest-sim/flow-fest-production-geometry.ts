@@ -65,11 +65,13 @@ import {
   settleFlowFestParkedCarOnGround,
   type FlowFestParkedCarPlacement,
 } from "./flow-fest-parked-cars";
+import { FLOW_FEST_SITE_TREE_LAYOUT } from "./flow-fest-site-tree-layout";
 import {
   deriveFlowFestForestEcology,
   type FlowFestForestEcologyLayout,
   type FlowFestForestTreePlacement,
 } from "./flow-fest-forest-ecology";
+import { flowFestTreeFamilyPlan } from "./flow-fest-tree-species";
 import { buildFlowFestEntranceScene } from "./flow-fest-entrance-geometry";
 import { pointInsideFlowFestEntranceFixtureClearance } from "./flow-fest-entrance-reference";
 
@@ -187,7 +189,8 @@ export function buildFlowFestProductionDressing(
     contract,
     terrain,
     canopy,
-    campPlan
+    campPlan,
+    { speciesPlan: FLOW_FEST_SITE_TREE_LAYOUT }
   );
   const entranceClearedTrees = sourceForestEcology.trees.filter(
     (tree) =>
@@ -220,9 +223,11 @@ export function buildFlowFestProductionDressing(
       sourceTreeFamilies: new Set(
         entranceClearedTrees.map((tree) => tree.familyId)
       ).size,
-      plantFactoryTreePlacements: entranceClearedTrees.filter((tree) =>
-        tree.familyId.startsWith("plantcatalog-")
-      ).length,
+      sourceTreeSpecies: new Set(
+        entranceClearedTrees.map(
+          (tree) => flowFestTreeFamilyPlan(tree.familyId)?.speciesId ?? "unknown"
+        )
+      ).size,
       measuredCanopyPlacements: entranceClearedMeasuredTrees,
       infillTreePlacements:
         entranceClearedTrees.length - entranceClearedMeasuredTrees,

@@ -12,6 +12,8 @@
  * docs/reference/archive/qft-notation/README.md
  */
 
+import type { SpinRatio } from "@vtg/domain";
+
 export type Convention = "charlie" | "drex";
 export type Spin = "inspin" | "antispin";
 
@@ -25,6 +27,12 @@ export interface QftKnobs {
   radius: number;
   /** Prop rotations per hand rotation. */
   downbeats: number;
+  /**
+   * Exact prop-to-hand rotation ratio when the decimal `downbeats` value is not
+   * the source of truth. Theory Atlas uses this for closed rational paths and
+   * for the stationary-hand 1:0 endpoint.
+   */
+  ratio?: SpinRatio;
   spin: Spin;
   /**
    * Prop offset from the hand, in eighths. Zero for flowers and extensions;
@@ -127,6 +135,11 @@ function handPositionAt(knobs: QftKnobs, u: number): PositionValue {
 /** Which way the hand travels. Clockwise unless the caller says otherwise. */
 const handSign = (knobs: QftKnobs): 1 | -1 => knobs.handDirection ?? 1;
 
+/** Static ratios keep the hand at its starting point while the prop rotates. */
+function handRateForKnobs(knobs: QftKnobs): number {
+  return knobs.ratio?.handCycles === 0 ? 0 : handSign(knobs);
+}
+
 /**
  * Continuous hand index at step `u`. Integer steps give the table rows.
  *
@@ -134,7 +147,7 @@ const handSign = (knobs: QftKnobs): 1 | -1 => knobs.handDirection ?? 1;
  * which is what every published QfT table assumes.
  */
 export function handIndexAt(knobs: QftKnobs, u: number): number {
-  return handSign(knobs) * u + (knobs.handPhase ?? 0);
+  return handRateForKnobs(knobs) * u + (knobs.handPhase ?? 0);
 }
 
 /**
@@ -161,7 +174,12 @@ export function propIndexAt(knobs: QftKnobs, u: number): number {
  * antispin one, which is a different shape with a different petal count.
  */
 export function propRateForKnobs(knobs: QftKnobs): number {
-  return handSign(knobs) * spinSign(knobs.spin) * knobs.downbeats;
+  const magnitude = knobs.ratio
+    ? knobs.ratio.handCycles === 0
+      ? knobs.ratio.propRotations
+      : knobs.ratio.propRotations / knobs.ratio.handCycles
+    : knobs.downbeats;
+  return handSign(knobs) * spinSign(knobs.spin) * magnitude;
 }
 
 /**
@@ -174,7 +192,7 @@ export function propRateForKnobs(knobs: QftKnobs): number {
 function headTangent(knobs: QftKnobs, u: number): { x: number; y: number } {
   const handAngle = angleOf(handIndexAt(knobs, u));
   const propAngle = angleOf(propIndexAt(knobs, u));
-  const h = handSign(knobs);
+  const h = handRateForKnobs(knobs);
   const s = propRateForKnobs(knobs);
   return {
     x:
@@ -312,20 +330,55 @@ export function buildPendulum(): QftIncrement[] {
   });
 }
 
-/** Sample points of the traced path, for drawing the trail. */
-export function tracePath(
+/**
+ * Sample points of the traced path, with the hand orbit and the prop measured
+ * in the drawing's own units.
+ *
+ * The model's unit is one prop length and `radius` measures the hand orbit
+ * against it, which is the right frame for the notation and the wrong one for
+ * any drawing that also renders a real prop. A staff's tracked tip sits 126.4
+ * out from a hand travelling a 150 circle, so collapsing the two to a single
+ * unit draws a flower with the wrong proportions against the grid it sits on.
+ *
+ * `units.hand` scales the orbit rather than replacing it, so a stationary hand
+ * stays at the centre however long that unit is.
+ */
+export function traceScaledPath(
   knobs: QftKnobs,
-  samples = 240
+  units: { hand: number; prop: number },
+  samples = closedPathSampleCount(knobs)
 ): Array<{ x: number; y: number }> {
   const points: Array<{ x: number; y: number }> = [];
   const revolutions = revolutionsToClose(knobs);
   for (let i = 0; i <= samples; i += 1) {
     const u = (i / samples) * STEPS * revolutions;
-    const hand = pointAt(handIndexAt(knobs, u), knobs.radius);
-    const prop = pointAt(propIndexAt(knobs, u), PROP_LENGTH);
+    const hand = pointAt(handIndexAt(knobs, u), knobs.radius * units.hand);
+    const prop = pointAt(propIndexAt(knobs, u), units.prop);
     points.push({ x: hand.x + prop.x, y: hand.y + prop.y });
   }
   return points;
+}
+
+/** Sample points of the traced path, for drawing the trail. */
+export function tracePath(
+  knobs: QftKnobs,
+  samples = closedPathSampleCount(knobs)
+): Array<{ x: number; y: number }> {
+  return traceScaledPath(knobs, { hand: 1, prop: PROP_LENGTH }, samples);
+}
+
+function decimalDenominator(value: number): number {
+  if (!Number.isFinite(value)) return 1;
+
+  const magnitude = Math.abs(value);
+  for (let denominator = 1; denominator <= 1024; denominator += 1) {
+    const numerator = Math.round(magnitude * denominator);
+    if (Math.abs(magnitude - numerator / denominator) < TOLERANCE) {
+      return denominator;
+    }
+  }
+
+  return 1;
 }
 
 /**
@@ -333,7 +386,24 @@ export function tracePath(
  * number of turns per hand circle closes in one; anything else needs more.
  */
 export function revolutionsToClose(knobs: QftKnobs): number {
-  return Number.isInteger(knobs.downbeats) ? 1 : 8;
+  if (knobs.ratio) return Math.max(1, knobs.ratio.handCycles);
+  return decimalDenominator(knobs.downbeats);
+}
+
+/** Eight compass steps per hand revolution across the exact closed path. */
+export function closedPathSteps(knobs: QftKnobs): number {
+  return STEPS * revolutionsToClose(knobs);
+}
+
+/** Preserve curve quality as the number of hand and prop windings grows. */
+export function closedPathSampleCount(knobs: QftKnobs): number {
+  const handWindings = knobs.ratio
+    ? knobs.ratio.handCycles
+    : revolutionsToClose(knobs);
+  const propWindings = knobs.ratio
+    ? knobs.ratio.propRotations
+    : Math.abs(knobs.downbeats) * handWindings;
+  return Math.max(240, Math.ceil((handWindings + propWindings) * 32));
 }
 
 /** Hand and prop-head positions at a continuous step, for rendering. */

@@ -110,13 +110,18 @@
   const effects = createEffectsConfigState(undefined, { persist: false });
   setEffectsConfigContext(effects);
 
-  const sequence = createSequenceData({
-    id: "composer-tunnel-demo",
-    name: sourceSequence.word,
-    word: sourceSequence.word,
-    steps: sourceSequence.steps,
-    gridMode: sourceSequence.gridMode,
-  });
+  // Derived, not snapshotted. The controller reads it through `getSequence`,
+  // and its own re-bake effect picks the new topology up, so the host can swap
+  // the sequence without remounting the renderer.
+  const sequence = $derived(
+    createSequenceData({
+      id: "composer-tunnel-demo",
+      name: sourceSequence.word,
+      word: sourceSequence.word,
+      steps: sourceSequence.steps,
+      gridMode: sourceSequence.gridMode,
+    })
+  );
 
   const controller = new TunnelViewController({ getSequence: () => sequence });
   controller.active = true;

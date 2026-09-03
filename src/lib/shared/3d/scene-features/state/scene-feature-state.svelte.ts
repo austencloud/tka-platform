@@ -1,3 +1,4 @@
+import { recordFeatureReady } from "../../scene-boot/boot-spans";
 import {
   SCENE_FEATURES,
   type SceneFeature,
@@ -152,6 +153,7 @@ export function createSceneFeatureState(
     }
     if (readySet.has(key)) return;
     console.debug(`[SceneFeature] ${key} READY`);
+    recordFeatureReady(key);
     readySet = new Set([...readySet, key]);
   }
 

@@ -53,48 +53,28 @@ const OUTPUT_DIRECTORY = resolve(
   "static/models/flow-fest-sim/ecology/distance-lod"
 );
 const MANIFEST_PATH = resolve(OUTPUT_DIRECTORY, "manifest.json");
-const ISLAND_ROOT = "static/models/flow-fest-sim/ecology";
-const PLANTCATALOG_ROOT = "static/models/forest/trees/candidates/plantcatalog-r1";
+const SPECIES_ROOT = "static/models/flow-fest-sim/ecology/species";
+const SPECIES_MANIFEST = resolve(SPECIES_ROOT, "manifest.json");
 
 /**
- * Family ids match `FLOW_FEST_FOREST_TREE_ASSETS`. Sources are the accepted
- * near-tier GLBs; every family listed here gets a `<id>-mid.glb` and
- * `<id>-far.glb`. Extend this table when new conditioned candidates join the
- * roster (the R3 export set adds twelve more).
+ * The roster comes from the ez-tree species bake, never a hand-kept table.
+ * `build_flow_fest_eztree_species.ts` writes one GLB plus a manifest entry per
+ * generated family, so reading that manifest here means adding a species to the
+ * catalog is the only edit needed to get its distance tiers built. The previous
+ * hardcoded table drifted out of sync with the asset directory twice.
  */
-const FAMILIES = [
-  { id: "island-tree-01", source: `${ISLAND_ROOT}/island-tree-01-flow-lod-512.glb` },
-  { id: "island-tree-02", source: `${ISLAND_ROOT}/island-tree-02-flow-lod-512.glb` },
-  { id: "island-tree-03", source: `${ISLAND_ROOT}/island-tree-03-flow-lod-512.glb` },
-  { id: "tree-small-02", source: `${ISLAND_ROOT}/tree-small-02-flow-lod-512.glb` },
-  { id: "plantcatalog-aesculus-carnea", source: `${PLANTCATALOG_ROOT}/aesculus-carnea-ld-s23.glb` },
-  { id: "plantcatalog-oak-urban", source: `${PLANTCATALOG_ROOT}/quercus-robur-urban-ld-s13.glb` },
-  { id: "plantcatalog-oak-colonised", source: `${PLANTCATALOG_ROOT}/quercus-robur-colonised-ld-s29.glb` },
-  { id: "plantcatalog-willow", source: `${PLANTCATALOG_ROOT}/salix-alba-ld-s11.glb` },
-  { id: "plantcatalog-buckeye-31", source: `${PLANTCATALOG_ROOT}/aesculus-pavia-ld-s31.glb` },
-  { id: "plantcatalog-buckeye-79", source: `${PLANTCATALOG_ROOT}/aesculus-pavia-ld-s79.glb` },
-  { id: "plantcatalog-habitat-snag", source: `${PLANTCATALOG_ROOT}/quercus-robur-dead-ld-s37.glb` },
-  { id: "plantcatalog-oak-forest-41", source: `${PLANTCATALOG_ROOT}/quercus-robur-forest-ld-s41.glb` },
-  { id: "plantcatalog-oak-forest-67", source: `${PLANTCATALOG_ROOT}/quercus-robur-forest-ld-s67.glb` },
-  { id: "plantcatalog-oak-forest-89", source: `${PLANTCATALOG_ROOT}/quercus-robur-forest-ld-s89.glb` },
-  // quercus-robur-lone-ld-s7 stays off the roster: 525k tris, far over the
-  // 150k conditioning budget. The R3 export's lone-ld-s57 replaces it.
-];
-
-const OPTIONAL_FAMILIES = [
-  { id: "plantcatalog-oak-forest-101", source: `${PLANTCATALOG_ROOT}/quercus-robur-forest-ld-s101.glb` },
-  { id: "plantcatalog-oak-forest-113", source: `${PLANTCATALOG_ROOT}/quercus-robur-forest-ld-s113.glb` },
-  { id: "plantcatalog-oak-lone-57", source: `${PLANTCATALOG_ROOT}/quercus-robur-lone-ld-s57.glb` },
-  { id: "plantcatalog-oak-urban-71", source: `${PLANTCATALOG_ROOT}/quercus-robur-urban-ld-s71.glb` },
-  { id: "plantcatalog-oak-colonised-61", source: `${PLANTCATALOG_ROOT}/quercus-robur-colonised-ld-s61.glb` },
-  { id: "plantcatalog-carnea-47", source: `${PLANTCATALOG_ROOT}/aesculus-carnea-ld-s47.glb` },
-  { id: "plantcatalog-buckeye-103", source: `${PLANTCATALOG_ROOT}/aesculus-pavia-ld-s103.glb` },
-  { id: "plantcatalog-willow-53", source: `${PLANTCATALOG_ROOT}/salix-alba-ld-s53.glb` },
-  { id: "plantcatalog-weeping-willow-19", source: `${PLANTCATALOG_ROOT}/salix-babylonica-ld-s19.glb` },
-  { id: "plantcatalog-weeping-willow-43", source: `${PLANTCATALOG_ROOT}/salix-babylonica-ld-s43.glb` },
-  { id: "plantcatalog-goldenrain-17", source: `${PLANTCATALOG_ROOT}/koelreuteria-bipinnata-ld-s17.glb` },
-  { id: "plantcatalog-chinaberry-27", source: `${PLANTCATALOG_ROOT}/melia-azedarach-ld-s27.glb` },
-];
+function loadFamilies() {
+  if (!existsSync(SPECIES_MANIFEST)) {
+    throw new Error(
+      `No species manifest at ${SPECIES_MANIFEST}. Run: npx tsx scripts/geospatial/build_flow_fest_eztree_species.ts`
+    );
+  }
+  const manifest = JSON.parse(readFileSync(SPECIES_MANIFEST, "utf-8"));
+  return manifest.families.map((family) => ({
+    id: family.familyId,
+    source: `${SPECIES_ROOT}/${family.file}`,
+  }));
+}
 
 /**
  * Plantcatalog foliage prims are per-leaf billboards (~2 triangles per card),
@@ -552,18 +532,14 @@ async function main() {
     "meshopt.encoder": MeshoptEncoder,
   });
 
-  const families = [
-    ...FAMILIES,
-    ...OPTIONAL_FAMILIES.filter((family) => existsSync(resolve(family.source))),
-  ];
-  const skippedOptional = OPTIONAL_FAMILIES.filter(
-    (family) => !existsSync(resolve(family.source))
-  );
-  if (skippedOptional.length > 0) {
-    console.log(
-      `Skipping ${skippedOptional.length} optional families with no conditioned source yet: ${skippedOptional.map((family) => family.id).join(", ")}`
+  const families = loadFamilies();
+  const missing = families.filter((family) => !existsSync(resolve(family.source)));
+  if (missing.length > 0) {
+    throw new Error(
+      `Species manifest lists ${missing.length} families with no GLB on disk: ${missing.map((family) => family.id).join(", ")}`
     );
   }
+  console.log(`Building distance tiers for ${families.length} ez-tree families.`);
 
   const manifest = {
     schemaVersion: 2,

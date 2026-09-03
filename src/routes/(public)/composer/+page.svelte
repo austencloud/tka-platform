@@ -14,6 +14,7 @@
   import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
   import { createHeroAct } from "$lib/shared/landing/data/hero-act.svelte";
+  import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo";
   import {
     HERO_TRAIL_PRESET,
     HERO_TIP_EFFECT_MAP,
@@ -101,15 +102,41 @@
     });
   }
 
-  // The hero rolls live sequences exactly as HomeHero does — no baked example
-  // is ever shown here. `sequence` is null until the first draw lands, which
-  // SequenceHeroDemo renders as its "Preparing a live sequence..." state.
-  const heroAct = createHeroAct();
+  // Opens on the baked fixture, exactly as HomeHero does, then rolls live
+  // sequences forever. 5d637dc105 dropped the seed here believing that mirrored
+  // HomeHero; HomeHero has always passed `initialSequence: FALLBACK_DEMO`, so
+  // the unseeded act left this page on "Preparing a live sequence..." for the
+  // whole cold generation — measured at 14.1 s in dev. The objection that
+  // motivated dropping the seed (the fixture was GGGGGGGG over 8 identical
+  // steps) was retired by that same commit, which regenerated it through this
+  // exact preset: it is now a 16-count MYΩN draw that passes the quality gate.
+  // The first live draw takes over at the next loop boundary via the act's
+  // existing prefetch handoff.
+  const heroAct = createHeroAct({ initialSequence: FALLBACK_DEMO });
 
   // A sequence the visitor composed or generated further down the page takes
-  // over the carry; until then the hero's current draw is what carries.
+  // over the carry; until then the bands hold the hero's FIRST draw.
   let visitorSequence = $state<SequenceData | null>(null);
-  const carriedSequence = $derived(visitorSequence ?? heroAct.sequence);
+
+  // The hero keeps auto-advancing every loop pass. The tunnel and the 3D
+  // viewer must NOT follow it: rebuilding a Threlte scene under a reader every
+  // ~16 seconds is churn on its own, and a teardown landing mid-compileAsync
+  // throws inside three's timer where nothing can catch it. So the bands latch
+  // the first live hero draw and hold it until the visitor makes one.
+  //
+  // The baked opening is skipped here on purpose: the hero shows it for one
+  // pass and moves on, but whatever the
+  // bands latch is what they show for the entire visit, so it has to be a live
+  // draw rather than the fixture every visitor sees. Compared by id because
+  // `heroAct.sequence` is a $state proxy and never identity-equal to the import.
+  let latchedHeroSequence = $state<SequenceData | null>(null);
+  $effect(() => {
+    const first = heroAct.sequence;
+    if (first && first.id !== FALLBACK_DEMO.id && !latchedHeroSequence) {
+      latchedHeroSequence = first;
+    }
+  });
+  const carriedSequence = $derived(visitorSequence ?? latchedHeroSequence);
   const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
   let constructActive = $state(false);
   let outputsActive = $state(false);
@@ -135,7 +162,6 @@
   // Same handler HomeHero uses: report the interaction, then roll now.
   function handleReroll(): void {
     trackDemoInteraction("try_another");
-    visitorSequence = null;
     void heroAct.advanceNow();
   }
 
@@ -292,7 +318,7 @@
 
     <div class="opening-player">
       <SequenceHeroDemo
-        sequence={carriedSequence}
+        sequence={heroAct.sequence}
         element={heroAct.element}
         onReroll={handleReroll}
         rerolling={heroAct.rerolling}
@@ -366,8 +392,8 @@
     <div class="changing-intro">
       <h2 id="changing-title">See what you made.</h2>
       <p>
-        The sequence above carries into the tunnel and the 3D player below.
-        Its notation comes with it.
+        The sequence you build above carries into the tunnel and the 3D player
+        below. Its notation comes with it.
       </p>
     </div>
 
@@ -376,19 +402,19 @@
          viewer takes the next band. -->
     <div class="tunnel-band">
       <div class="product-frame band-frame">
-        {#key carriedSequence?.id}
-          <LazyMount
-            loader={() => import("./_components/ComposerTunnelDemo.svelte")}
-            active={outputsActive && !!carriedSequence}
-            props={{ sequence: carriedSequence, layout: "band" }}
-            error={tunnelLoadError}
-            debugName="composer tunnel"
-          >
-            {#snippet placeholder()}
-              {@render tunnelPlaceholder()}
-            {/snippet}
-          </LazyMount>
-        {/key}
+        <!-- No {#key}: both demos accept a changing `sequence` prop and swap
+             in place, the way SequenceHeroDemo's player deliberately does. -->
+        <LazyMount
+          loader={() => import("./_components/ComposerTunnelDemo.svelte")}
+          active={outputsActive && !!carriedSequence}
+          props={{ sequence: carriedSequence, layout: "band" }}
+          error={tunnelLoadError}
+          debugName="composer tunnel"
+        >
+          {#snippet placeholder()}
+            {@render tunnelPlaceholder()}
+          {/snippet}
+        </LazyMount>
       </div>
     </div>
 
@@ -400,19 +426,17 @@
             <p>3D is unavailable in this browser.</p>
           </div>
         {:else}
-          {#key carriedSequence?.id}
-            <LazyMount
-              loader={() => import("./_components/Composer3DViewerDemo.svelte")}
-              active={outputsActive && canShow3D && !!carriedSequence}
-              props={{ sequence: carriedSequence }}
-              error={viewerLoadError}
-              debugName="composer 3D viewer"
-            >
-              {#snippet placeholder()}
-                {@render viewerPlaceholder()}
-              {/snippet}
-            </LazyMount>
-          {/key}
+          <LazyMount
+            loader={() => import("./_components/Composer3DViewerDemo.svelte")}
+            active={outputsActive && canShow3D && !!carriedSequence}
+            props={{ sequence: carriedSequence }}
+            error={viewerLoadError}
+            debugName="composer 3D viewer"
+          >
+            {#snippet placeholder()}
+              {@render viewerPlaceholder()}
+            {/snippet}
+          </LazyMount>
         {/if}
       </div>
     </div>

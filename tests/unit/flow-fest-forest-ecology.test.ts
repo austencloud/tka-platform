@@ -11,14 +11,47 @@ import {
   FLOW_FEST_FOREST_GROUND_LIFE_ASSETS,
   FLOW_FEST_FOREST_DISTANCE_LOD,
   FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS,
+  FLOW_FEST_FOREST_FOLIAGE_MATERIAL_TOKENS,
   FLOW_FEST_FOREST_TRUNK_PROFILES,
-  FLOW_FEST_PLANTFACTORY_TREE_FAMILIES,
   FLOW_FEST_FOREST_TREE_ASSETS,
   isFlowFestForestFoliageMaterial,
   summarizeFlowFestForestEcologyAssets,
   type FlowFestForestTreeFamilyId,
 } from "../../src/routes/test/flow-fest-sim/flow-fest-forest-ecology";
 import { createFlowFestCampPlan } from "../../src/routes/test/flow-fest-sim/flow-fest-camp-plan";
+import {
+  FLOW_FEST_TREE_FAMILY_PLANS,
+  flowFestTreeFamiliesForRole,
+  flowFestTreeFamiliesForSpecies,
+  flowFestTreeFamilyPlan,
+  type FlowFestTreeRole,
+  type FlowFestTreeSpeciesPlan,
+} from "../../src/routes/test/flow-fest-sim/flow-fest-tree-species";
+
+interface SpeciesManifest {
+  readonly generator: string;
+  readonly library: string;
+  readonly families: ReadonlyArray<{
+    readonly familyId: string;
+    readonly speciesId: string;
+    readonly formId: string;
+    readonly role: FlowFestTreeRole;
+    readonly file: string;
+    readonly trunkRadiusRatio: number;
+  }>;
+}
+
+function loadSpeciesManifest(): SpeciesManifest {
+  return JSON.parse(
+    readFileSync(
+      resolve(
+        root,
+        "static/models/flow-fest-sim/ecology/species/manifest.json"
+      ),
+      "utf8"
+    )
+  ) as SpeciesManifest;
+}
 
 const root = process.cwd();
 
@@ -241,12 +274,12 @@ describe("Flow Fest Forest ecology integration", () => {
     const first = deriveFlowFestForestEcology(contract, terrain, canopy);
     const second = deriveFlowFestForestEcology(contract, terrain, canopy);
 
-    expect(Object.values(FLOW_FEST_FOREST_TREE_ASSETS)).toHaveLength(24);
+    expect(Object.values(FLOW_FEST_FOREST_TREE_ASSETS)).toHaveLength(
+      FLOW_FEST_TREE_FAMILY_PLANS.length
+    );
     expect(
-      Object.values(FLOW_FEST_FOREST_TREE_ASSETS).every(
-        (path) =>
-          path.startsWith("/models/flow-fest-sim/ecology/") ||
-          path.startsWith("/models/forest/trees/candidates/plantcatalog-r1/")
+      Object.values(FLOW_FEST_FOREST_TREE_ASSETS).every((path) =>
+        path.startsWith("/models/flow-fest-sim/ecology/species/")
       )
     ).toBe(true);
     expect(first.audit).toEqual(second.audit);
@@ -261,11 +294,17 @@ describe("Flow Fest Forest ecology integration", () => {
     expect(first.audit.sourceTreeFamilies).toBe(
       Object.keys(FLOW_FEST_FOREST_TREE_ASSETS).length
     );
+    // Families count models; species counts kinds of tree. Both matter: four
+    // seeds of one oak would satisfy the family count and still read as a
+    // plantation.
+    expect(first.audit.sourceTreeSpecies).toBe(
+      new Set(FLOW_FEST_TREE_FAMILY_PLANS.map((plan) => plan.speciesId)).size
+    );
     expect(first.audit.grassPlacements).toBeGreaterThan(20_000);
     expect(first.audit.groundLifePlacements).toBeGreaterThan(0);
   });
 
-  it("casts the PlantFactory species as the forest majority with every family present", () => {
+  it("casts every generated family across the woodland with no species dominant", () => {
     const { contract, terrain, canopy } = loadCanopy();
     const ecology = deriveFlowFestForestEcology(contract, terrain, canopy);
 
@@ -274,31 +313,39 @@ describe("Flow Fest Forest ecology integration", () => {
       grassRouteIntrusions: 0,
       groundLifeRouteIntrusions: 0,
     });
-    expect(
-      ecology.trees.filter((tree) =>
-        FLOW_FEST_PLANTFACTORY_TREE_FAMILIES.includes(tree.familyId)
-      )
-    ).toHaveLength(ecology.audit.plantFactoryTreePlacements);
-    // The gorgeous-tree directive: PlantFactory species carry the forest, the
-    // island families season it.
-    expect(
-      ecology.audit.plantFactoryTreePlacements / ecology.trees.length
-    ).toBeGreaterThan(0.5);
+
     const familyCounts = new Map<string, number>();
+    const speciesCounts = new Map<string, number>();
     for (const tree of ecology.trees) {
       familyCounts.set(
         tree.familyId,
         (familyCounts.get(tree.familyId) ?? 0) + 1
       );
+      const speciesId = flowFestTreeFamilyPlan(tree.familyId)?.speciesId;
+      expect(speciesId, tree.familyId).toBeDefined();
+      speciesCounts.set(speciesId!, (speciesCounts.get(speciesId!) ?? 0) + 1);
     }
+
+    // Every generated model earns its bake: an unused family is 800 KB of
+    // shipped GLB nobody sees.
     for (const familyId of Object.keys(FLOW_FEST_FOREST_TREE_ASSETS)) {
       expect(familyCounts.get(familyId), familyId).toBeGreaterThan(0);
     }
+    // The whole point of replacing the reused GLBs: no single model, and no
+    // single species, carries the site.
     expect(
       Math.max(...familyCounts.values()) / ecology.trees.length
-    ).toBeLessThanOrEqual(0.28);
-    // Standing dead wood is punctuation: present, never a stand.
-    const snagCount = familyCounts.get("plantcatalog-habitat-snag") ?? 0;
+    ).toBeLessThanOrEqual(0.06);
+    expect(
+      Math.max(...speciesCounts.values()) / ecology.trees.length
+    ).toBeLessThanOrEqual(0.3);
+
+    // Standing dead wood is punctuation: present, never a stand. The snag
+    // families are generated leafless, so they render as bare boles.
+    const snagCount = flowFestTreeFamiliesForRole("snag").reduce(
+      (total, familyId) => total + (familyCounts.get(familyId) ?? 0),
+      0
+    );
     expect(snagCount).toBeGreaterThan(0);
     expect(snagCount / ecology.trees.length).toBeLessThan(0.05);
   });
@@ -339,10 +386,12 @@ describe("Flow Fest Forest ecology integration", () => {
       );
       expect(tree.trunkRadiusMeters).toBeCloseTo(expected, 6);
     }
-    // The clip-through regression: island-tree-03 renders a bole far wider
-    // than the old 0.48 m one-size cap, and its collision now matches.
+    // The clip-through regression, restated for the generated roster: the
+    // redcedar carries the thickest bole relative to its height of any family
+    // (0.0954, roughly twice a stand maple), and its collision cylinder has to
+    // follow it rather than sit at a one-size 0.48 m cap the trunk overhangs.
     const wideBole = ecology.trees.find(
-      (tree) => tree.familyId === "island-tree-03"
+      (tree) => tree.familyId === "eztree-eastern-redcedar-open-c"
     );
     expect(wideBole).toBeDefined();
     expect(wideBole!.trunkRadiusMeters).toBeGreaterThan(0.9);
@@ -365,6 +414,156 @@ describe("Flow Fest Forest ecology integration", () => {
     });
     expect(planAligned.trees.length).toBeLessThan(baseline.trees.length);
     expect(planAligned.grass.length).toBeLessThan(baseline.grass.length);
+  });
+});
+
+describe("Flow Fest ez-tree species catalog wiring", () => {
+  it("keeps the ecology roster identical to the baked species manifest", () => {
+    const manifest = loadSpeciesManifest();
+
+    expect(manifest.library).toBe("@dgreenheck/ez-tree");
+    expect(manifest.families).toHaveLength(FLOW_FEST_TREE_FAMILY_PLANS.length);
+
+    const manifestIds = manifest.families.map((family) => family.familyId);
+    expect(Object.keys(FLOW_FEST_FOREST_TREE_ASSETS).sort()).toEqual(
+      [...manifestIds].sort()
+    );
+    expect(Object.keys(FLOW_FEST_FOREST_TRUNK_PROFILES).sort()).toEqual(
+      [...manifestIds].sort()
+    );
+
+    for (const family of manifest.families) {
+      // The GLB the ecology asks for is the file the generator actually wrote.
+      expect(FLOW_FEST_FOREST_TREE_ASSETS[family.familyId]).toBe(
+        `/models/flow-fest-sim/ecology/species/${family.file}`
+      );
+      expect(
+        existsSync(
+          resolve(
+            root,
+            `static/models/flow-fest-sim/ecology/species/${family.file}`
+          )
+        ),
+        family.familyId
+      ).toBe(true);
+      // The collision bole comes from the generator's own measurement of the
+      // baked geometry. A hand-edited profile table is how the trunk collider
+      // silently drifts away from the trunk you can see.
+      expect(
+        FLOW_FEST_FOREST_TRUNK_PROFILES[family.familyId],
+        family.familyId
+      ).toBeCloseTo(family.trunkRadiusRatio, 6);
+      expect(flowFestTreeFamilyPlan(family.familyId)?.speciesId).toBe(
+        family.speciesId
+      );
+      expect(flowFestTreeFamiliesForRole(family.role)).toContain(
+        family.familyId
+      );
+    }
+  });
+
+  it("gives every ecological role at least two families to rotate through", () => {
+    const roles: readonly FlowFestTreeRole[] = [
+      "stand",
+      "open",
+      "understory",
+      "damp",
+      "snag",
+    ];
+    for (const role of roles) {
+      expect(flowFestTreeFamiliesForRole(role).length, role).toBeGreaterThan(1);
+    }
+  });
+});
+
+describe("Flow Fest per-instance species seam", () => {
+  it("lets a layout pin the family and the trunk height for every tree", () => {
+    const { contract, terrain, canopy } = loadCanopy();
+    const queries: number[] = [];
+    const speciesPlan: FlowFestTreeSpeciesPlan = {
+      resolve: (query) => {
+        queries.push(query.index);
+        return {
+          speciesId: "eztree-white-oak-open-a",
+          trunkHeightMeters: 4.25,
+        };
+      },
+    };
+
+    const ecology = deriveFlowFestForestEcology(
+      contract,
+      terrain,
+      canopy,
+      null,
+      { speciesPlan }
+    );
+
+    // The plan is asked about every tree it could have an opinion on: measured
+    // peak, infill, and the backdrop woodland beyond the property line.
+    expect(queries).toHaveLength(
+      ecology.trees.length + ecology.backdropTrees.length
+    );
+    expect(ecology.audit.sourceTreeFamilies).toBe(1);
+    expect(ecology.audit.sourceTreeSpecies).toBe(1);
+    for (const tree of [...ecology.trees, ...ecology.backdropTrees]) {
+      expect(tree.familyId).toBe("eztree-white-oak-open-a");
+      expect(tree.trunkHeightMeters).toBeCloseTo(4.25, 6);
+    }
+  });
+
+  it("resolves a bare species id to one of that species' generated forms", () => {
+    const { contract, terrain, canopy } = loadCanopy();
+    const ecology = deriveFlowFestForestEcology(
+      contract,
+      terrain,
+      canopy,
+      null,
+      { speciesPlan: { resolve: () => ({ speciesId: "shagbark-hickory" }) } }
+    );
+
+    const hickory = new Set(
+      flowFestTreeFamiliesForSpecies("shagbark-hickory")
+    );
+    expect(hickory.size).toBe(3);
+    for (const tree of ecology.trees) {
+      expect(flowFestTreeFamilyPlan(tree.familyId)?.speciesId).toBe(
+        "shagbark-hickory"
+      );
+      expect(hickory.has(tree.familyId)).toBe(true);
+    }
+    // A species id spreads across its variants rather than pinning one model.
+    expect(ecology.audit.sourceTreeFamilies).toBeGreaterThan(1);
+  });
+
+  it("falls back to habitat casting wherever the layout has no opinion", () => {
+    const { contract, terrain, canopy } = loadCanopy();
+    const baseline = deriveFlowFestForestEcology(contract, terrain, canopy);
+    const partial = deriveFlowFestForestEcology(contract, terrain, canopy, null, {
+      speciesPlan: {
+        resolve: (query) =>
+          query.index % 2 === 0
+            ? { speciesId: "eztree-standing-snag-b" }
+            : null,
+      },
+    });
+
+    expect(partial.trees).toHaveLength(baseline.trees.length);
+    for (const [index, tree] of partial.trees.entries()) {
+      if (index % 2 === 0) {
+        expect(tree.familyId).toBe("eztree-standing-snag-b");
+      } else {
+        expect(tree.familyId).toBe(baseline.trees[index]!.familyId);
+      }
+    }
+  });
+
+  it("refuses a species the catalog cannot bake instead of silently reverting", () => {
+    const { contract, terrain, canopy } = loadCanopy();
+    expect(() =>
+      deriveFlowFestForestEcology(contract, terrain, canopy, null, {
+        speciesPlan: { resolve: () => ({ speciesId: "eastern-hemlock" }) },
+      })
+    ).toThrow(/eastern-hemlock/);
   });
 });
 
@@ -424,16 +623,44 @@ describe("Flow Fest forest foliage material classification", () => {
     }
     expect(inspected.length).toBeGreaterThan(20);
     // The regression this locks: "<family>_leaves" does not contain "leaf".
-    expect(inspected).toContain("island_tree_01_leaves");
+    expect(inspected).toContain("eztree-sugar-maple-stand-a_leaves");
     expect(
-      isFlowFestForestFoliageMaterial({ name: "island_tree_01_leaves" })
+      isFlowFestForestFoliageMaterial({
+        name: "eztree-sugar-maple-stand-a_leaves",
+      })
     ).toBe(true);
     expect(
-      isFlowFestForestFoliageMaterial({ name: "island_tree_01_branches" })
+      isFlowFestForestFoliageMaterial({
+        name: "eztree-sugar-maple-stand-a_wood",
+      })
     ).toBe(false);
-    expect(isFlowFestForestFoliageMaterial({ name: "tree_small_02_trunk" })).toBe(
-      false
-    );
+    // A leafless snag ships one opaque wood material and no canopy card, so it
+    // must never be graded as foliage.
+    expect(
+      isFlowFestForestFoliageMaterial({ name: "eztree-standing-snag-a_wood" })
+    ).toBe(false);
+  });
+
+  it("keeps every family id clear of the foliage tokens it would collide with", () => {
+    // The bake names a family's materials `<familyId>_wood` and
+    // `<familyId>_leaves`, and the grade above reads material NAMES. So a
+    // family id containing a foliage token silently promotes its opaque trunk
+    // to foliage and hands the bark an alpha-coverage mip pass.
+    //
+    // This caught a real one: the sub-canopy hophornbeam form was first named
+    // `hophornbeam-subcanopy`, whose id embeds "canopy", so
+    // `eztree-hophornbeam-subcanopy-a_wood` graded as a leaf. The form is now
+    // `hophornbeam-understory`. Catching it here costs a string scan; catching
+    // it downstream costs a full re-bake, because the form id seeds the
+    // generator and renaming it regenerates the geometry.
+    for (const plan of FLOW_FEST_TREE_FAMILY_PLANS) {
+      for (const token of FLOW_FEST_FOREST_FOLIAGE_MATERIAL_TOKENS) {
+        expect(
+          plan.familyId.toLowerCase().includes(token),
+          `family id "${plan.familyId}" contains foliage token "${token}", which would grade its opaque wood material as foliage`
+        ).toBe(false);
+      }
+    }
   });
 
   it("keeps ground-life species on the foliage side of the grade", () => {
@@ -556,7 +783,9 @@ describe("Flow Fest distance-tier borrow contract", () => {
   });
 
   it("keeps the near tier textured and alpha-cut", () => {
-    const gltf = readGltfJson(FLOW_FEST_FOREST_TREE_ASSETS["island-tree-01"]);
+    const gltf = readGltfJson(
+      FLOW_FEST_FOREST_TREE_ASSETS["eztree-sugar-maple-stand-a"]!
+    );
     expect((gltf.images ?? []).length).toBeGreaterThan(0);
     const canopy = (gltf.meshes ?? [])
       .flatMap((mesh) => mesh.primitives)
@@ -607,5 +836,58 @@ describe("Flow Fest per-tree instance tints", () => {
       expect(bark.r).toBeGreaterThan(0.8);
       expect(bark.r).toBeLessThan(1.15);
     }
+  });
+});
+
+describe("Flow Fest backdrop woodland", () => {
+  it("plants the measured woods outside the site and keeps them off the venue", () => {
+    const { contract, terrain, canopy } = loadCanopy();
+    const first = deriveFlowFestForestEcology(contract, terrain, canopy);
+    const second = deriveFlowFestForestEcology(contract, terrain, canopy);
+    const active = contract.surfaceEvidenceProxy.activeBoundsWorldMeters;
+
+    // The horizon read as bare tan hills because every pass sampled only the
+    // site. A backdrop thinner than the site's own tree count would not close
+    // it, so this floor is the defect's regression guard, not a tuning knob.
+    expect(first.backdropTrees.length).toBeGreaterThan(first.trees.length);
+    expect(first.audit.backdropTreePlacements).toBe(first.backdropTrees.length);
+    expect(first.backdropTrees).toEqual(second.backdropTrees);
+
+    for (const tree of first.backdropTrees) {
+      const insideSite =
+        tree.x >= active.minX &&
+        tree.x <= active.maxX &&
+        tree.z >= active.minZ &&
+        tree.z <= active.maxZ;
+      expect(insideSite).toBe(false);
+      expect(tree.x).toBeGreaterThanOrEqual(terrain.worldBounds.minX);
+      expect(tree.x).toBeLessThanOrEqual(terrain.worldBounds.maxX);
+      expect(tree.z).toBeGreaterThanOrEqual(terrain.worldBounds.minZ);
+      expect(tree.z).toBeLessThanOrEqual(terrain.worldBounds.maxZ);
+    }
+
+    // The site pass owns the venue and is unchanged by the backdrop pass.
+    for (const tree of first.trees) {
+      expect(tree.x).toBeGreaterThanOrEqual(active.minX);
+      expect(tree.x).toBeLessThanOrEqual(active.maxX);
+      expect(tree.z).toBeGreaterThanOrEqual(active.minZ);
+      expect(tree.z).toBeLessThanOrEqual(active.maxZ);
+    }
+  });
+
+  it("spreads the backdrop across more than one quarter of the raster", () => {
+    const { contract, terrain, canopy } = loadCanopy();
+    const { backdropTrees } = deriveFlowFestForestEcology(
+      contract,
+      terrain,
+      canopy
+    );
+    // A backdrop bunched against one edge would leave the other horizons bare
+    // and still satisfy a count. Every quadrant of the measured square has
+    // woodland in it, so every quadrant should carry trees.
+    const quadrants = new Set(
+      backdropTrees.map((tree) => `${tree.x < 0 ? "w" : "e"}${tree.z < 0 ? "n" : "s"}`)
+    );
+    expect(quadrants.size).toBe(4);
   });
 });

@@ -28,11 +28,6 @@ even when Svelte recreates the component instance.
   import type { MotionData } from "../../shared/domain/models/motion-data";
   import type { PropAssets } from "../domain/models/prop-assets";
   import type { PropPosition } from "../domain/models/prop-position";
-  import {
-    applyEditorTorchPalette,
-    needsEditorContrast,
-    type PropRenderContext,
-  } from "../domain/prop-render-context";
   import { getSettings } from "../../../application/state/app-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
   import {
@@ -107,8 +102,6 @@ even when Svelte recreates the component instance.
     // Per-frame motion renderers already supply interpolation. Bypass the cache
     // and CSS transition layer so these coordinates paint on the same frame.
     directPositioning = false,
-    propRenderContext = "standard",
-    darkMode = false,
     colorOverride = undefined,
   } = $props<{
     motionData: MotionData;
@@ -124,10 +117,6 @@ even when Svelte recreates the component instance.
     transitionKey?: string | null;
     /** Apply supplied coordinates directly without cache or CSS interpolation. */
     directPositioning?: boolean;
-    /** Editor grids opt in to a surface-aware torch palette. */
-    propRenderContext?: PropRenderContext;
-    /** The actual pictograph surface, used to choose the opposing shaft color. */
-    darkMode?: boolean;
     /** Optional display-only color. The motion remains blue/red semantically. */
     colorOverride?: string;
   }>();
@@ -144,17 +133,7 @@ even when Svelte recreates the component instance.
         })
       : propAssets.imageSrc
   );
-  const showEditorContrast = $derived(
-    needsEditorContrast(propRenderContext, renderedPropType)
-  );
-  const renderedArtwork = $derived(
-    applyEditorTorchPalette(
-      colorizedArtwork,
-      propRenderContext,
-      renderedPropType,
-      darkMode
-    )
-  );
+  const renderedArtwork = $derived(colorizedArtwork);
 
   type MotionSnapshot = {
     startOrientation?: Orientation;
@@ -528,17 +507,7 @@ even when Svelte recreates the component instance.
 </script>
 
 {#snippet propArtwork()}
-  {#if showEditorContrast}
-    <g
-      class="editor-torch-artwork"
-      data-editor-prop-contrast
-      data-editor-torch-palette={darkMode ? "dark" : "light"}
-    >
-      {@html renderedArtwork}
-    </g>
-  {:else}
-    {@html renderedArtwork}
-  {/if}
+  {@html renderedArtwork}
 {/snippet}
 
 {#if showProp}
@@ -638,9 +607,9 @@ even when Svelte recreates the component instance.
   }
 
   @media (forced-colors: active) {
-    .editor-torch-artwork :global([data-torch-shaft]),
-    .editor-torch-artwork :global([data-torch-metal]),
-    .editor-torch-artwork :global([data-torch-flame-part]) {
+    .prop-svg :global([data-torch-shaft]),
+    .prop-svg :global([data-torch-metal]),
+    .prop-svg :global([data-torch-flame-part]) {
       fill: CanvasText !important;
       stroke: CanvasText !important;
     }

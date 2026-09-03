@@ -5,7 +5,7 @@ diff --git a/dist/index.d.ts.map b/dist/index.d.ts.map
 deleted file mode 100644
 index d554c5bba49036758f9b3c997d025556395cf72b..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/Avatar3D.svelte b/dist/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09bab0e1af 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..ffe75f6faa7409a09bde9b228b21e884e2a965ca 100644
 --- a/dist/lib/components/Avatar3D.svelte
 +++ b/dist/lib/components/Avatar3D.svelte
 @@ -16,29 +16,41 @@
@@ -58,13 +58,18 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
    import type { IAnimationStateMachine } from "../services/contracts/IAnimationStateMachine";
    import { LocomotionState } from "../services/contracts/IAnimationStateMachine";
    import type { IRootMotionExtractor } from "../services/contracts/IRootMotionExtractor";
-@@ -51,7 +63,14 @@
+@@ -51,7 +63,19 @@
    import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
    import { GripType } from "../domain/models/GripPose";
    import { CollisionDetector } from "../services/implementations/CollisionDetector";
 -  import type { BodySnapshot, CollisionEvent, PropSegment } from "../services/contracts/ICollisionDetector";
 +  import { computeFaceCenter } from "../services/geometry/BodyCollisionGeometry";
 +  import { buildRenderedStaffSegment } from "../services/rendered-staff-geometry";
++  import {
++    applyStandingStance,
++    measureStandingStance,
++    planStandingStance,
++  } from "../services/leg-geometry";
 +  import type {
 +    AvatarPoseDiagnostics,
 +    BodySnapshot,
@@ -74,7 +79,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
    import { tryGetViewer3DContext } from "../context/viewer-3d-context";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
    import {
-@@ -74,6 +93,17 @@
+@@ -74,6 +98,17 @@
    const blueVisible = $derived(viewerVisibility?.blueMotion ?? true);
    const redVisible = $derived(viewerVisibility?.redMotion ?? true);
  
@@ -92,7 +97,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
    // Default Z position for avatars
    // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
    // The avatar's body is thin enough that it won't clip through the grid
-@@ -115,11 +145,38 @@
+@@ -115,11 +150,46 @@
      enableRootMotion?: boolean;
      /** Called each frame with the world-space XZ delta from root motion.
       *  The parent applies this to physics for collision-aware movement. */
@@ -129,10 +134,18 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
 +     *  distributed across the spine, feet planted. Planner-shaped - the
 +     *  caller decides the stance, the animator applies it. */
 +    stanceYaw?: number;
++    /** Score-time timing for the stance turn: how far the lower spine
++     *  leads its resting share, and how far the head still trails the
++     *  shoulders. Null holds the historical instant-arrival split. */
++    stanceSegments?: {
++        spine1Rad: number;
++        spine2Rad: number;
++        headLagRad: number;
++    } | null;
      /** Disable spine twist (dual-wheel: wide lateral targets twist the torso/feet) */
      disableSpineTwist?: boolean;
      /** Current beat index for collision detection logging */
-@@ -128,7 +185,11 @@
+@@ -128,7 +198,11 @@
      beatProgress?: number;
      /** Optional callback invoked each frame with the collision detector's events.
       *  Lets parent components surface collision state without duplicating detection. */
@@ -145,7 +158,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
      /** Extra forward pitch (radians) applied to Spine1 before arm IK runs.
       *  Positive values lean the torso forward. Used by the collision lab's
       *  lean-forward stance variant. 0 = no external pitch. */
-@@ -173,8 +234,14 @@
+@@ -173,8 +247,15 @@
      isJumpRequested = false,
      enableRootMotion = false,
      onRootMotion,
@@ -157,10 +170,11 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
 +    weldGrip = false,
 +    headDodge = false,
 +    stanceYaw = 0,
++    stanceSegments = null,
      disableSpineTwist = false,
      stepNumber = 0,
      beatProgress = 0,
-@@ -195,8 +262,16 @@
+@@ -195,8 +276,16 @@
    // Services (manually instantiated to ensure shared skeleton instance)
    let skeletonService: IAvatarSkeletonBuilder | null = $state(null);
    let ikSolver: IIKSolver | null = $state(null);
@@ -178,7 +192,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
    let stateMachine: IAnimationStateMachine | null = null;
    let rootMotionExtractor: IRootMotionExtractor | null = null;
    let footPlanter: IFootPlanter | null = null;
-@@ -210,21 +285,37 @@
+@@ -210,21 +299,43 @@
    // Collision detection - logs when props/arms clip through the avatar body
    const collisionDetector = new CollisionDetector();
    const _boneVecs = {
@@ -223,12 +237,18 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
 +    appliedStanceYawRad: 0,
 +    appliedReachLeanRad: 0,
 +    appliedHeadDodgeRad: 0,
++    leftUpperArmLength: 0,
++    leftForearmLength: 0,
++    rightUpperArmLength: 0,
++    rightForearmLength: 0,
++    leftElbowWorld: _boneVecs.leftElbow,
++    rightElbowWorld: _boneVecs.rightElbow,
 +    achievedTorsoPitchRad: 0,
 +  };
  
    /**
     * Base rotation from the staff's local-Y axis to the "horizontal" axis
-@@ -236,8 +327,6 @@
+@@ -236,8 +347,6 @@
    const STAFF_HORIZONTAL_QUAT = new Quaternion().setFromEuler(
      new Euler(0, 0, Math.PI / 2)
    );
@@ -237,7 +257,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
    const _blueSegA = new Vector3();
    const _blueSegB = new Vector3();
    const _redSegA = new Vector3();
-@@ -245,42 +334,203 @@
+@@ -245,42 +354,203 @@
  
    const blueSeg: PropSegment = { a: _blueSegA, b: _blueSegB, radius: 0.012 };
    const redSeg: PropSegment = { a: _redSegA, b: _redSegB, radius: 0.012 };
@@ -469,14 +489,87 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
    let currentLoadedAvatarId = $state<string | null>(null);
    let isLoading = $state(false);
    let hasShownFallbackToast = $state(false);
-@@ -302,14 +552,68 @@
+@@ -291,6 +561,66 @@
+   // Feet offset from model origin (negative value, updated after setHeight)
+   let feetOffset = $state(0);
+ 
++  // How much the standing base lifted the ankles off the bind pose, in the
++  // rig's own unscaled units. Grounding measures a bounding box taken before
++  // the legs moved, so this is what it owes the soles back.
++  let stanceAnkleRiseUnscaled = 0;
++  let stanceAnkleRise = $state(0);
++
++  /**
++   * Give the performer a standing base measured from its own skeleton.
++   *
++   * With locomotion off nothing writes the leg bones, so the rig stands in
++   * whatever base its GLB authored for the whole performance - and across the
++   * catalog that ranges from ankles touching to a half-metre splay. This reads
++   * this rig's hip sockets and ankles and rotates the femurs until the ankles
++   * sit under them.
++   *
++   * With locomotion on, the idle clip owns the leg pose every frame; the pose
++   * set here would be overwritten and the grounding compensation would then be
++   * describing a stance that is no longer on screen. Those performers are left
++   * to their animator.
++   */
++  function applyStandingBase(): void {
++    stanceAnkleRiseUnscaled = 0;
++    stanceAnkleRise = 0;
++    if (enableLocomotion || !skeletonService) return;
++
++    const skState = skeletonService.getState();
++    const stanceRoot = skState.root;
++    const leftUpLeg = skState.bones.get("LeftUpLeg");
++    const rightUpLeg = skState.bones.get("RightUpLeg");
++    const leftFoot = skState.bones.get("LeftFoot");
++    const rightFoot = skState.bones.get("RightFoot");
++    if (!stanceRoot || !leftUpLeg || !rightUpLeg || !leftFoot || !rightFoot) {
++      return;
++    }
++
++    stanceRoot.updateMatrixWorld(true);
++    const measured = measureStandingStance(
++      leftUpLeg,
++      rightUpLeg,
++      leftFoot,
++      rightFoot
++    );
++    if (!measured) return;
++
++    const stance = planStandingStance(measured);
++    applyStandingStance(
++      [
++        { upLeg: leftUpLeg, foot: leftFoot, plan: stance.left },
++        { upLeg: rightUpLeg, foot: rightFoot, plan: stance.right },
++      ],
++      measured.abductionAxis
++    );
++
++    // Held unscaled so a later height change rescales it exactly the way
++    // getFeetOffset() rescales the bind-pose offset it corrects.
++    const stanceScale = stanceRoot.scale.x || 1;
++    stanceAnkleRiseUnscaled = stance.ankleRise / stanceScale;
++    stanceAnkleRise = stance.ankleRise;
++  }
++
+   // Derived values from user proportions
+   // avatarHeight is the target height in scene units (cm * CM_TO_UNITS)
+   const avatarHeight = $derived(cmToUnits(userProportionsState.heightCm));
+@@ -300,16 +630,74 @@
+   // If position.y is provided (e.g., from terrain/physics), use it directly
+   // Otherwise, use groundY from user proportions (for flat stage mode)
    // feetOffset adjusts so feet touch the ground (it's negative)
++  // The standing base lifts the ankles off the bind pose the bounding box was
++  // measured in, so the whole performer comes down by the same amount and the
++  // soles stay on the floor.
++  const groundedFeetOffset = $derived(feetOffset + stanceAnkleRise);
    const baseGroupY = $derived(
      position.y !== undefined && position.y !== 0
 -      ? position.y - feetOffset  // Use provided Y (terrain mode)
 -      : defaultGroundY - feetOffset  // Use stage groundY (stage mode)
-+      ? position.y - feetOffset // Use provided Y (terrain mode)
-+      : defaultGroundY - feetOffset // Use stage groundY (stage mode)
++      ? position.y - groundedFeetOffset // Use provided Y (terrain mode)
++      : defaultGroundY - groundedFeetOffset // Use stage groundY (stage mode)
    );
  
    // No mesh offset needed - the crouch animation's Hips position track (scaled
@@ -540,7 +633,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
    // Load a GLTF model for a specific avatar
    // Uses hot-swap pattern: keeps old avatar visible until new one is ready
    async function loadAvatar(targetAvatarId: string) {
-@@ -319,12 +623,22 @@
+@@ -319,12 +707,22 @@
      if (currentLoadedAvatarId === targetAvatarId) return;
  
      const url = getAvatarModelPath(targetAvatarId);
@@ -564,7 +657,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
  
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
-@@ -333,19 +647,43 @@
+@@ -333,19 +731,43 @@
        // Get the feet offset for positioning (negative value)
        feetOffset = skeletonService.getFeetOffset();
  
@@ -617,24 +710,31 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
        currentLoadedAvatarId = targetAvatarId;
        modelLoaded = true;
        useProceduralFallback = false;
-@@ -363,8 +701,14 @@
-       const rightUpLeg = skState.bones.get("RightUpLeg");
-       if (leftUpLeg && rightUpLeg) {
-         const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
+@@ -354,22 +776,7 @@
+       // can fade the avatar back in). Fires on initial load and on every swap.
+       onModelSwapped?.(targetAvatarId);
+ 
+-      // Widen the default stance - rotate upper legs outward so feet
+-      // are shoulder-width apart instead of the narrow T-pose default.
+-      // This gives the avatar a more natural standing base and helps
+-      // cross-body reaches look less strained.
+-      const skState = skeletonService.getState();
+-      const leftUpLeg = skState.bones.get("LeftUpLeg");
+-      const rightUpLeg = skState.bones.get("RightUpLeg");
+-      if (leftUpLeg && rightUpLeg) {
+-        const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
 -        const leftTilt = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), stanceAngle);
 -        const rightTilt = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -stanceAngle);
-+        const leftTilt = new Quaternion().setFromAxisAngle(
-+          new Vector3(0, 0, 1),
-+          stanceAngle
-+        );
-+        const rightTilt = new Quaternion().setFromAxisAngle(
-+          new Vector3(0, 0, 1),
-+          -stanceAngle
-+        );
-         leftUpLeg.quaternion.multiply(leftTilt);
-         rightUpLeg.quaternion.multiply(rightTilt);
-         leftUpLeg.updateMatrixWorld(true);
-@@ -388,17 +732,21 @@
+-        leftUpLeg.quaternion.multiply(leftTilt);
+-        rightUpLeg.quaternion.multiply(rightTilt);
+-        leftUpLeg.updateMatrixWorld(true);
+-        rightUpLeg.updateMatrixWorld(true);
+-      }
++      applyStandingBase();
+ 
+       // Verify arm chains are ready
+       const leftChain = skeletonService.getLeftArmChain();
+@@ -388,17 +795,21 @@
        // use IK only and don't need idle/walk animations.
        if (enableLocomotion && locomotionAnimator && cachedRoot) {
          // Configure before initialize so clips are prepared correctly
@@ -661,7 +761,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -418,9 +766,15 @@
+@@ -418,9 +829,15 @@
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
              strafeLeft: `${animBase}strafe-left${rmSuffix}.glb`,
              strafeRight: `${animBase}strafe-right${rmSuffix}.glb`,
@@ -680,7 +780,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
              crouch: "/animations/crouch-idle.glb",
            })
            .catch((err) => {
-@@ -444,18 +798,35 @@
+@@ -444,18 +861,35 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -725,7 +825,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +847,13 @@
+@@ -476,7 +910,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -740,7 +840,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
  
-@@ -502,6 +879,16 @@
+@@ -502,6 +942,16 @@
        }
      } finally {
        isLoading = false;
@@ -757,7 +857,22 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
      }
    }
  
-@@ -587,7 +974,7 @@
+@@ -570,8 +1020,14 @@
+ 
+     // Update feetOffset for positioning (use untrack to prevent re-triggering)
+     const newFeetOffset = skeletonService.getFeetOffset();
++    // setScale() rebuilds the leg chains but leaves the stance rotation on the
++    // bones, so the base survives a height change and only its lift rescales.
++    const newStanceRise =
++      stanceAnkleRiseUnscaled *
++      (skeletonService.getState().root?.scale.x ?? 1);
+     untrack(() => {
+       feetOffset = newFeetOffset;
++      stanceAnkleRise = newStanceRise;
+     });
+   });
+ 
+@@ -587,7 +1043,7 @@
  
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
@@ -766,7 +881,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
        (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
      }
  
-@@ -596,16 +983,19 @@
+@@ -596,16 +1052,19 @@
      if (enableLocomotion && locomotionAnimator) {
        if (stateMachine) {
          // State machine decides what state we're in based on physics signals
@@ -796,7 +911,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
  
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -627,6 +1017,8 @@
+@@ -627,6 +1086,8 @@
          });
        }
        locomotionAnimator.update(delta);
@@ -805,7 +920,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
  
        // Turn clip overlay - when a turn is active, overwrite lower-body
        // and spine bones with the turn clip's authored pose at the current
-@@ -642,7 +1034,9 @@
+@@ -642,7 +1103,9 @@
  
          // Apply bone rotations - overwrite animation pose for lower body
          for (const [boneName, quat] of sample.boneRotations) {
@@ -816,7 +931,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
            if (bone) {
              bone.quaternion.copy(quat);
            }
-@@ -681,7 +1075,11 @@
+@@ -681,7 +1144,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -829,7 +944,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -708,28 +1106,78 @@
+@@ -708,28 +1175,79 @@
        // clips without authored curves. Gated on enableFootPlanting so the
        // museum FPS player stays fully code-driven.
        if (enableFootPlanting && footPlanter?.isReady()) {
@@ -840,7 +955,8 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
 +        let footGroundY = 0;
 +        if (performerRootRef) {
 +          performerRootRef.updateWorldMatrix(true, false);
-+          footGroundY = performerRootRef.matrixWorld.elements[13] + feetOffset;
++          footGroundY =
++            performerRootRef.matrixWorld.elements[13] + groundedFeetOffset;
 +        }
 +        // Stride warping happens along the world axis the performer travels,
 +        // and moveDirection is expressed relative to their facing.
@@ -912,7 +1028,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
      }
  
      if (redPropAnchorRef && redPropState) {
-@@ -737,6 +1185,10 @@
+@@ -737,6 +1255,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
      } else if (redPropState) {
        redIKTarget.copy(redPropState.worldPosition);
@@ -923,7 +1039,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
      }
  
      const blueWorldProp = bluePropState
-@@ -746,15 +1198,128 @@
+@@ -746,15 +1268,129 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
  
@@ -979,6 +1095,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
      // before the animator runs IK so the arms solve against the leaned torso.
      animationService.setExternalSpinePitch(spinePitchOffset);
 +    animationService.setStanceYaw?.(stanceYaw);
++    animationService.setStanceYawSegments?.(stanceSegments);
 +    animationService.setHeadDodgeEnabled(headDodge);
 +    const blueThreatActive =
 +      headDodge &&
@@ -1052,7 +1169,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -768,56 +1333,55 @@
+@@ -768,56 +1404,55 @@
        bones.get("Spine2")?.getWorldPosition(_boneVecs.spine2);
        bones.get("Spine1")?.getWorldPosition(_boneVecs.spine1);
        bones.get("Hips")?.getWorldPosition(_boneVecs.hips);
@@ -1139,7 +1256,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
            halfStaffLength,
            _redSegA,
            _redSegB
-@@ -825,23 +1389,119 @@
+@@ -825,23 +1460,123 @@
          redSegOrNull = redSeg;
        }
  
@@ -1155,6 +1272,10 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
        );
 -      onCollisionEvents?.(events);
 +      _poseDiagnostics.shoulderWidth = _diagnosticShoulderLateral.length();
++      _poseDiagnostics.leftUpperArmLength = leftChain?.upperLength ?? 0;
++      _poseDiagnostics.leftForearmLength = leftChain?.lowerLength ?? 0;
++      _poseDiagnostics.rightUpperArmLength = rightChain?.upperLength ?? 0;
++      _poseDiagnostics.rightForearmLength = rightChain?.lowerLength ?? 0;
 +      _diagnosticRootQuaternion.identity();
 +      state.root?.getWorldQuaternion(_diagnosticRootQuaternion);
 +      _diagnosticRootForward
@@ -1273,7 +1394,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
    });
  
    // Note: Visibility is handled via the {#if visible} in the template
-@@ -867,20 +1527,15 @@
+@@ -867,20 +1602,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -1300,7 +1421,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1568,19 @@
+@@ -913,13 +1643,19 @@
  </script>
  
  {#if visible}
@@ -1327,7 +1448,21 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..856ba9dbbd809b1904962c34e9893b09
      <T.Group
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
-@@ -950,6 +1611,7 @@
+@@ -940,9 +1676,10 @@
+       - rotation.y: facingAngle (avatar faces movement direction)
+ 
+       groupY calculation:
+-      - If position.y is provided (terrain/physics mode): position.y - feetOffset
+-      - Else (flat stage mode): defaultGroundY - feetOffset
+-      - feetOffset is negative (feet are below model origin)
++      - If position.y is provided (terrain/physics mode): position.y - groundedFeetOffset
++      - Else (flat stage mode): defaultGroundY - groundedFeetOffset
++      - groundedFeetOffset is negative (feet are below model origin) and folds
++        in whatever height the standing base took off the bind-pose ankles
+       - This positions feet at the correct ground level
+ 
+       Using cachedRoot instead of skeletonService.getRoot() ensures
+@@ -950,6 +1687,7 @@
        preventing visual glitches during avatar swap.
      -->
      <T.Group
@@ -1360,7 +1495,7 @@ diff --git a/dist/lib/components/LimbSegment.svelte.d.ts.map b/dist/lib/componen
 deleted file mode 100644
 index cde3408aa49f552ba186378457fee937ba0d21ec..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/PerformerRig.svelte b/dist/lib/components/PerformerRig.svelte
-index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8f74ca4569a0bbc2770e58f66438b66bd8610515 100644
+index 99a40cd26b35183a5e71c93105e0704084dbf9e9..cfb247971517bc4b6162c57294fe81d84bafb610 100644
 --- a/dist/lib/components/PerformerRig.svelte
 +++ b/dist/lib/components/PerformerRig.svelte
 @@ -16,11 +16,12 @@
@@ -1434,7 +1569,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8f74ca4569a0bbc2770e58f66438b66b
      /** Enable idle/walk locomotion animation on the avatar.
       *  When true, the avatar breathes/sways while standing. */
      enableRootMotion?: boolean;
-@@ -119,23 +136,50 @@
+@@ -119,23 +136,58 @@
       * effect orchestrator can place tip-tracking effects (trails, LED, etc.)
       * in the correct rig-root-local frame without duplicating rig internals.
       */
@@ -1469,6 +1604,14 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8f74ca4569a0bbc2770e58f66438b66b
 +     *  Planner-shaped - the caller (heuristic today, offline execution
 +     *  planner later) decides the stance; the rig just carries it. */
 +    stanceYaw?: number;
++    /** Score-time timing for the stance turn: how far the lower spine
++     *  leads its resting share, and how far the head still trails the
++     *  shoulders. Null holds the historical instant-arrival split. */
++    stanceSegments?: {
++        spine1Rad: number;
++        spine2Rad: number;
++        headLagRad: number;
++    } | null;
 +    /** Planner-selected forward shoulder carry, forwarded to Avatar3D. */
 +    spinePitchOffset?: number;
 +    /** Hidden depth routing for audience-overlaid same-side grips. */
@@ -1496,7 +1639,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8f74ca4569a0bbc2770e58f66438b66b
    }
  
    let {
-@@ -149,32 +193,43 @@
+@@ -149,32 +201,44 @@
      showEffects = true,
      visiblePlanes = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]),
      gridMode = "diamond" as GridMode,
@@ -1524,6 +1667,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8f74ca4569a0bbc2770e58f66438b66b
      enableFootPlanting = false,
      turnRequestOverride,
 +    stanceYaw = 0,
++    stanceSegments = null,
 +    spinePitchOffset = 0,
 +    blueHandDepthOffset = 0,
 +    redHandDepthOffset = 0,
@@ -1543,7 +1687,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8f74ca4569a0bbc2770e58f66438b66b
    );
  
    // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
-@@ -185,8 +240,12 @@
+@@ -185,8 +249,12 @@
    let accumulatedYaw = $state(untrack(() => facingAngle));
  
    // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
@@ -1558,7 +1702,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8f74ca4569a0bbc2770e58f66438b66b
  
    // Derive mode config and grid offset from the current plane mode
    const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
-@@ -247,7 +306,9 @@
+@@ -247,7 +315,9 @@
  
    // When a turn is active, enable animation-driven yaw so the rig
    // rotates from the turn clip's root motion rather than snapping.
@@ -1569,7 +1713,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8f74ca4569a0bbc2770e58f66438b66b
  
    // Turn completion snap: when turnRequest goes null after being active,
    // snap avatarState to the post-turn heading so the sync effect below
-@@ -280,20 +341,66 @@
+@@ -280,20 +350,66 @@
    const dualWheelOffset = $derived(staffHalfLength);
    const blueHandPos = $derived({
      x: isDualWheel ? dualWheelOffset : modeConfig.blueLateralOffset,
@@ -1638,7 +1782,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8f74ca4569a0bbc2770e58f66438b66b
  </script>
  
  <!-- Root: position in world space, apply facing rotation -->
-@@ -305,25 +412,34 @@
+@@ -305,25 +421,35 @@
  >
    <!-- Avatar3D uses groundY (~-1.56) internally to position its mesh,
         so shoulders end up near y=0 in rig space. -->
@@ -1673,13 +1817,14 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8f74ca4569a0bbc2770e58f66438b66b
 +      {bluePropCorrectionRef}
 +      {redPropCorrectionRef}
 +      {stanceYaw}
++      {stanceSegments}
 +      {spinePitchOffset}
 +      {weldGrip}
 +      {headDodge}
        disableSpineTwist={isDualWheel}
        stepNumber={avatarState.currentStepIndex}
        beatProgress={avatarState.progress}
-@@ -339,15 +455,12 @@
+@@ -339,15 +465,12 @@
    {/if}
  
    <!-- Grid (consumer-provided via gridSlot) -->
@@ -1697,7 +1842,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8f74ca4569a0bbc2770e58f66438b66b
      {#if bluePropState && blueVisible}
        <T.Group
          bind:ref={bluePropAnchorRef}
-@@ -355,23 +468,23 @@
+@@ -355,23 +478,23 @@
          position.y={bluePropState.worldPosition.y}
          position.z={bluePropState.worldPosition.z}
        >
@@ -1733,7 +1878,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8f74ca4569a0bbc2770e58f66438b66b
      {#if redPropState && redVisible}
        <T.Group
          bind:ref={redPropAnchorRef}
-@@ -379,20 +492,23 @@
+@@ -379,20 +502,23 @@
          position.y={redPropState.worldPosition.y}
          position.z={redPropState.worldPosition.z}
        >
@@ -2870,7 +3015,7 @@ diff --git a/dist/lib/components/props/Eightrings3D.svelte.d.ts.map b/dist/lib/c
 deleted file mode 100644
 index fadf6104b043722cb8415eb47964e1527ee8a117..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/props/Fan3D.svelte b/dist/lib/components/props/Fan3D.svelte
-index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c8452888117523b 100644
+index dc635e752d11561cb585cbaaffa05b1e525d31e8..8f93dc5db7f5d6d6da7f76381c3217792730aa64 100644
 --- a/dist/lib/components/props/Fan3D.svelte
 +++ b/dist/lib/components/props/Fan3D.svelte
 @@ -1,29 +1,52 @@
@@ -6664,6 +6809,49 @@ index ef6cccc850025c82919b91010c3666d6c065483d..00000000000000000000000000000000
 diff --git a/dist/lib/scale/scale-constants.d.ts.map b/dist/lib/scale/scale-constants.d.ts.map
 deleted file mode 100644
 index 1f4d9296f2d356f677d1a21f8e955b437c53f394..0000000000000000000000000000000000000000
+diff --git a/dist/lib/services/bone-name-normalization.js b/dist/lib/services/bone-name-normalization.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1cf469d4a9529c870e130e7a7771a69058731f85
+--- /dev/null
++++ b/dist/lib/services/bone-name-normalization.js
+@@ -0,0 +1,37 @@
++/**
++ * One owner for exporter-namespace-tolerant bone name matching.
++ *
++ * Rigs authored in Maya/FBX tooling carry an export namespace on every joint:
++ * Mixamo writes `mixamorig:LeftHand` and, once a character has been
++ * re-uploaded, `mixamorig12:LeftHandThumb1`. Two things then happen to that
++ * name before a lookup sees it:
++ *
++ *   1. The character intake pipeline strips the namespace when it bakes a rig,
++ *      so rigs that went through intake arrive as bare `hand_l` / `thumb1_l`.
++ *   2. three.js sanitizes every node name at load time - `PropertyBinding`
++ *      deletes `[ ] . : /` outright - so a catalog GLB's
++ *      `mixamorig:LeftHandThumb1` reaches the runtime as
++ *      `mixamorigLeftHandThumb1`, colon and all structure gone.
++ *
++ * Both forms have to resolve against the same alias tables, or a rig whose
++ * joints merely carry a namespace looks exactly like a rig with no fingers.
++ *
++ * The Mixamo prefix is matched by name rather than by shape, because after
++ * sanitization there is no separator left to key on. Everything else is matched
++ * on the colon, which is only ever a namespace separator - it never appears
++ * inside a joint name in any convention this package supports (Mixamo
++ * `LeftHandThumb1`, characters3d.com `L_Thumb1`, Unreal `thumb1_l`).
++ */
++const MIXAMO_NAMESPACE = /^mixamorig\d*:?/;
++const EXPORT_NAMESPACE = /^[a-z0-9_]+:/;
++
++/**
++ * Lowercase a bone name and drop any exporter namespace prefix, so a rig's
++ * joints and this package's alias tables can be compared directly.
++ */
++export function normalizeBoneName(name) {
++    return name
++        .toLowerCase()
++        .replace(MIXAMO_NAMESPACE, "")
++        .replace(EXPORT_NAMESPACE, "");
++}
 diff --git a/dist/lib/services/clip-footprint.js b/dist/lib/services/clip-footprint.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..153c2b3986241b3f48913f2d699f8019ae663385
@@ -7236,10 +7424,10 @@ diff --git a/dist/lib/services/implementations/AvatarAnimator.d.ts.map b/dist/li
 deleted file mode 100644
 index f8e47d42167b6ea9bb4fd8f44f41273f48f1943b..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/AvatarAnimator.js b/dist/lib/services/implementations/AvatarAnimator.js
-index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fbc8fa8e3c 100644
+index bdd5ae35ed47c58d29c537a7805705783f9b9066..810f759d24b90fad412e5051851cd94351bcf9cd 100644
 --- a/dist/lib/services/implementations/AvatarAnimator.js
 +++ b/dist/lib/services/implementations/AvatarAnimator.js
-@@ -4,7 +4,59 @@
+@@ -4,7 +4,73 @@
   * Manages avatar pose states and smooth animation blending.
   * Bridges TKA prop states to skeleton IK targets.
   */
@@ -7264,6 +7452,9 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +/** Two adjacent grips need enough lateral room for both closed hands. The
 + *  render-side contact lock can bridge half of this distance per prop. */
 +const MIN_ADJACENT_GRIP_SEPARATION = 0.07;
++const HUG_WRIST_DEVIATION = (25 * Math.PI) / 180;
++const HUG_YAW_KNEE = (65 * Math.PI) / 180;
++const HUG_YAW_FULL = (85 * Math.PI) / 180;
 +/** Reach deficits (meters) below this don't trigger escalation. */
 +const REACH_EPSILON = 0.015;
 +/** Deficit (meters) at which clavicle reach-extension saturates. */
@@ -7287,10 +7478,21 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +/** Stance yaw input clamp (~matches the thoracic+cervical twist budget). */
 +const MAX_STANCE_YAW = (90 * Math.PI) / 180;
 +/**
-+ * While the previous body-frame forward still points within ~120° of root
-+ * forward, it disambiguates the shoulder perpendicular instead of the root.
++ * Resting share of the shoulder line carried by Spine1; Spine2 takes the rest.
 + */
-+const BODY_FRAME_HYSTERESIS_MIN_DOT = -0.5;
++const SPINE1_BLADE_SHARE = 0.45;
++/** Ceiling on how far the lower spine may run ahead of the upper one. */
++const MAX_SPINE_STAGGER = (25 * Math.PI) / 180;
++/** Ceiling on how far the head may trail the shoulder line. */
++const MAX_STANCE_HEAD_LAG = (34 * Math.PI) / 180;
++
++/**
++ * How square the chest must be before the shoulder line's export handedness
++ * can be read off the root. At 0.5 the chest is within 60° of facing the way
++ * the hips do, where the comparison is decisive; a fully bladed torso puts the
++ * shoulder line along root forward and collapses the same dot to about 0.05.
++ */
++const BODY_FRAME_SIGN_MIN_DOT = 0.5;
 +const WORLD_UP = new Vector3(0, 1, 0);
 +const MAX_HEAD_DODGE = 0.42;
 +const HEAD_DODGE_ENGAGE_DISTANCE = 0.32;
@@ -7300,7 +7502,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
  export class AvatarAnimator {
      ikSolver;
      skeleton;
-@@ -14,6 +66,10 @@ export class AvatarAnimator {
+@@ -14,6 +80,10 @@ export class AvatarAnimator {
      // Per-arm IK blend weights: 0 = animation drives the arm, 1 = IK drives the arm
      leftArmIK = { weight: 0, targetWeight: 0 };
      rightArmIK = { weight: 0, targetWeight: 0 };
@@ -7311,7 +7513,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
      ikBlendSpeed = 1 / 0.3; // ~0.3s ramp time
      smoothBlending = true;
      smoothingFactor = 0.15; // 0-1, higher = smoother but laggier
-@@ -23,8 +79,13 @@ export class AvatarAnimator {
+@@ -23,8 +93,13 @@ export class AvatarAnimator {
      transitionProgress = 0;
      transitionConfig = null;
      poleComputer;
@@ -7325,7 +7527,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
      _poleVectorsEnabled = true;
      clavicleRaiser;
      leftClavicleQuat = new Quaternion();
-@@ -67,6 +128,115 @@ export class AvatarAnimator {
+@@ -67,6 +142,129 @@ export class AvatarAnimator {
       * on top of the twist rest pose before arm IK runs. 0 = disabled.
       */
      externalSpinePitchRad = 0;
@@ -7355,6 +7557,8 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +    _wristOrientationEnabled = true;
 +    // --- Stance yaw input track (planner-shaped facing/stance input) ---
 +    stanceYawTargetRad = 0;
++    stanceSpineStaggerRad = 0;
++    stanceHeadLagRad = 0;
 +    stanceYawSmoothedRad = 0;
 +    // --- Reflexive head dodge ---
 +    headDodgeEnabled = false;
@@ -7390,9 +7594,12 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +    _stanceReferenceRoot = null;
 +    _stanceReferenceLocalForward = new Vector3(0, 0, 1);
 +    _stanceReferenceForward = new Vector3(0, 0, 1);
-+    _bodyFrameForwardSeeded = false;
-+    _bodyFramePreviousForward = new Vector3(0, 0, 1);
-+    _bodyFrameHemisphereRef = new Vector3(0, 0, 1);
++    /**
++     * Export handedness of the shoulder line for the bound rig: `1` when
++     * `right - left` already yields a forward-facing perpendicular, `-1` when it
++     * yields the backward one, `0` until a square-enough chest lets us tell.
++     */
++    _bodyFrameLateralSign = 0;
 +    _leftShoulderWorld = new Vector3();
 +    _rightShoulderWorld = new Vector3();
 +    _headWorld = new Vector3();
@@ -7424,6 +7631,15 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +    _socketTargetRight = new Vector3();
 +    _desiredPalmWorld = new Vector3();
 +    _palmRollCross = new Vector3();
++    _handMedial = new Vector3();
++    _handForearm = new Vector3();
++    _handDeviate = new Vector3();
++    _handRef = new Vector3();
++    _handAxis = new Vector3();
++    leftHandDir = new Vector3();
++    rightHandDir = new Vector3();
++    leftHandDirValid = false;
++    rightHandDirValid = false;
 +    _gripProximalLocal = new Vector3();
 +    _gripMiddleLocal = new Vector3();
 +    _gripDistalLocal = new Vector3();
@@ -7441,7 +7657,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
      constructor(ikSolver, skeleton, poleComputer, clavicleRaiser, spineTwister) {
          this.ikSolver = ikSolver;
          this.skeleton = skeleton;
-@@ -140,9 +310,41 @@ export class AvatarAnimator {
+@@ -140,9 +338,41 @@ export class AvatarAnimator {
                  weight: 1,
              }
              : null;
@@ -7484,7 +7700,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
          this.leftArmIK.targetWeight = blueProp ? 1 : 0;
          this.rightArmIK.targetWeight = redProp ? 1 : 0;
          const ox = offset?.x ?? 0;
-@@ -154,6 +356,7 @@ export class AvatarAnimator {
+@@ -154,6 +384,7 @@ export class AvatarAnimator {
          this.targetPose.leftHand = blueProp
              ? {
                  targetPosition: new Vector3(blueProp.worldPosition.x - ox, blueProp.worldPosition.y - oy, blueProp.worldPosition.z - oz),
@@ -7492,7 +7708,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
                  staffAngle: blueProp.staffRotationAngle,
                  plane: blueProp.plane,
                  weight: 1,
-@@ -162,13 +365,54 @@ export class AvatarAnimator {
+@@ -162,13 +393,70 @@ export class AvatarAnimator {
          this.targetPose.rightHand = redProp
              ? {
                  targetPosition: new Vector3(redProp.worldPosition.x - ox, redProp.worldPosition.y - oy, redProp.worldPosition.z - oz),
@@ -7507,6 +7723,22 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
      }
 +    setStanceYaw(radians) {
 +        this.stanceYawTargetRad = Math.max(-MAX_STANCE_YAW, Math.min(MAX_STANCE_YAW, radians));
++    }
++    /**
++     * Per-segment timing for the stance turn, planned in score time by the
++     * app. The stagger is a signed excess so it can be applied as an equal
++     * and opposite pair whose sum cannot move the shoulder line.
++     */
++    setStanceYawSegments(segments) {
++        if (!segments) {
++            this.stanceSpineStaggerRad = 0;
++            this.stanceHeadLagRad = 0;
++            return;
++        }
++        const chestRad = segments.spine1Rad + segments.spine2Rad;
++        const stagger = segments.spine1Rad - SPINE1_BLADE_SHARE * chestRad;
++        this.stanceSpineStaggerRad = Math.max(-MAX_SPINE_STAGGER, Math.min(MAX_SPINE_STAGGER, stagger));
++        this.stanceHeadLagRad = Math.max(-MAX_STANCE_HEAD_LAG, Math.min(MAX_STANCE_HEAD_LAG, segments.headLagRad));
 +    }
 +    getPostureDiagnostics() {
 +        this.postureDiagnostics.appliedStanceYawRad =
@@ -7547,7 +7779,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
      setLeftHandTarget(target) {
          this.targetPose.leftHand = { ...target };
          this.targetPose.timestamp = Date.now();
-@@ -197,7 +441,7 @@ export class AvatarAnimator {
+@@ -197,7 +485,7 @@ export class AvatarAnimator {
          // Apply combined layers
          const finalPose = this.computeFinalPose();
          // Solve IK for arms
@@ -7556,7 +7788,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
      }
      blendToTarget(_deltaTime) {
          // Hands snap directly to prop positions - no lerp.
-@@ -273,18 +517,150 @@ export class AvatarAnimator {
+@@ -273,18 +561,184 @@ export class AvatarAnimator {
          }
          return result;
      }
@@ -7599,23 +7831,35 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +        this._bodyFrame.forward
 +            .crossVectors(this._bodyFrame.lateral, WORLD_UP)
 +            .normalize();
-+        // The shoulder line has two valid perpendiculars. On the first frame the
-+        // root's forward hemisphere disambiguates them so differently exported
-+        // rigs cannot face backwards. Afterwards the previous frame's forward
-+        // wins: a torso turned a full quarter puts the shoulder line parallel to
-+        // root forward, where the root dot product sits at zero and flips sign
-+        // frame to frame. Continuity keeps the frame stable there. The root only
-+        // takes over again if the cached forward has swung behind the performer.
-+        this._bodyFrameHemisphereRef.copy(this._v4);
-+        if (this._bodyFrameForwardSeeded &&
-+            this._bodyFramePreviousForward.dot(this._v4) > BODY_FRAME_HYSTERESIS_MIN_DOT) {
-+            this._bodyFrameHemisphereRef.copy(this._bodyFramePreviousForward);
++        // Whether `right - left` points to the performer's right is a property of
++        // how the rig was exported, not of this frame: every catalog rig and the
++        // intake rig put the bone named left at +X of a root facing +Z, so the raw
++        // perpendicular comes out backwards and has to be inverted. Measure that
++        // once while the chest is square enough for the root to answer decisively,
++        // then apply the same sign on every later frame.
++        //
++        // Deciding it per frame is what made held side stances alternate. This
++        // method runs three times per solve -- before the spine twist, after it
++        // with the chest rebased square, and again after the stance correction --
++        // so a bladed stance hands the square sample a reference a quarter turn
++        // away. Their dot product is then a difference of two ~0.05 residuals, and
++        // the arm solve feeds those residuals back, so its sign flips frame to
++        // frame. A flipped forward reads as a 180° error to
++        // resolveStanceYawCorrection, which clamps the correction to the opposite
++        // side and blades the torso the wrong way.
++        const rootAlignment = this._bodyFrame.forward.dot(this._v4);
++        if (this._bodyFrameLateralSign === 0 &&
++            Math.abs(rootAlignment) >= BODY_FRAME_SIGN_MIN_DOT) {
++            this._bodyFrameLateralSign = rootAlignment < 0 ? -1 : 1;
 +        }
-+        if (this._bodyFrame.forward.dot(this._bodyFrameHemisphereRef) < 0) {
++        const lateralSign = this._bodyFrameLateralSign !== 0
++            ? this._bodyFrameLateralSign
++            : rootAlignment < 0
++                ? -1
++                : 1;
++        if (lateralSign < 0) {
 +            this._bodyFrame.forward.multiplyScalar(-1);
 +        }
-+        this._bodyFramePreviousForward.copy(this._bodyFrame.forward);
-+        this._bodyFrameForwardSeeded = true;
 +    }
 +    /**
 +     * Preserve the character's anatomical forward direction while the whole
@@ -7629,13 +7873,13 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +            this._stanceReferenceRoot = null;
 +            this._stanceReferenceLocalForward.set(0, 0, 1);
 +            this._stanceReferenceForward.set(0, 0, 1);
-+            this._bodyFrameForwardSeeded = false;
++            this._bodyFrameLateralSign = 0;
 +            return;
 +        }
 +        root.getWorldQuaternion(this._q1);
 +        if (root !== this._stanceReferenceRoot) {
 +            this._stanceReferenceRoot = root;
-+            this._bodyFrameForwardSeeded = false;
++            this._bodyFrameLateralSign = 0;
 +            this._stanceReferenceLocalForward
 +                .copy(this._bodyFrame.forward)
 +                .applyQuaternion(this._q2.copy(this._q1).invert())
@@ -7674,11 +7918,33 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +     * SpineTwister may already have supplied part of the requested turn; adding
 +     * the full stance again over-rotates the shoulders and recreates the neck
 +     * collision on the far side.
++     *
++     * The return value is a DELTA between the achieved and requested facings, so
++     * MAX_STANCE_YAW -- the input clamp for an absolute stance -- is the wrong
++     * bound for it and used to truncate the turn. SpineTwister does not always
++     * supply *part* of the requested turn; on several catalog rigs it turns the
++     * chest the other way first. Measured at the two-hand side holds of the FALG
++     * fixture, the pre-blade chest sat at about +20 degrees while the planner
++     * asked for -87, so the delta needed -107 and the old clamp handed back -90.
++     * The rendered shoulder line then read -70: the 17-degree shortfall was the
++     * clamp saturating, exactly `needed - 90` on every affected rig and hold
++     * (ch01, ch18, ch41 at the 87-degree holds; ch07 and the intake rig needed
++     * only 83-90 and so never tripped it).
++     *
++     * Any bound that never truncates a correctly measured delta is a no-op --
++     * |requested - achieved| <= |requested| + |achieved| and both terms are
++     * already bounded -- so the guard belongs on the input, where setStanceYaw
++     * also applies it. What the delta does need is wrapping: requested minus an
++     * atan2 result reaches +/-267 degrees, and an unwrapped value that large
++     * turns the torso the long way round. Half-turn ambiguity in the shoulder
++     * line is caught upstream by the latched body-frame handedness, not here.
 +     */
 +    resolveStanceYawCorrection(requestedYawRad, referenceForward, achievedForward) {
 +        const achievedYaw = Math.atan2(referenceForward.z * achievedForward.x -
 +            referenceForward.x * achievedForward.z, Math.max(-1, Math.min(1, referenceForward.dot(achievedForward))));
-+        return Math.max(-MAX_STANCE_YAW, Math.min(MAX_STANCE_YAW, requestedYawRad - achievedYaw));
++        const targetYaw = Math.max(-MAX_STANCE_YAW, Math.min(MAX_STANCE_YAW, requestedYawRad));
++        const delta = targetYaw - achievedYaw;
++        return delta - Math.PI * 2 * Math.round(delta / (Math.PI * 2));
 +    }
 +    applyIKToSkeleton(pose, deltaTime) {
          const state = this.skeleton.getState();
@@ -7708,7 +7974,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
          // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
          // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
          // position feeds back and causes oscillation.
-@@ -335,7 +711,7 @@ export class AvatarAnimator {
+@@ -335,7 +789,7 @@ export class AvatarAnimator {
              // Nullable hands are first-class: SpineTwister handles the
              // single-hand-gaze branch and the no-hand identity branch
              // internally, so we pass pose hands through as-is.
@@ -7717,7 +7983,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
              // Apply twist to each bone individually for a natural spinal curve.
              // Each bone gets its own weighted quaternion from SpineTwister.
              const applySpineTwist = (boneName, key, twistQuat) => {
-@@ -389,11 +765,115 @@ export class AvatarAnimator {
+@@ -389,11 +843,125 @@ export class AvatarAnimator {
                      hipsBoneForUpdate.updateMatrixWorld(true);
              }
          }
@@ -7744,7 +8010,10 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +            stanceYawCorrectionRad = this.resolveStanceYawCorrection(this.stanceYawSmoothedRad, this._stanceReferenceForward, this._bodyFrame.forward);
 +        }
 +        const stanceCorrectionActive = Math.abs(stanceYawCorrectionRad) > 0.001;
-+        if ((stanceCorrectionActive || leanActive) && this.spineRestCached) {
++        // The stagger is a pose the torso holds mid-turn rather than a
++        // correction, so it can be the only reason this block runs.
++        const stanceStaggerActive = stanceTrackActive && Math.abs(this.stanceSpineStaggerRad) > 0.001;
++        if ((stanceCorrectionActive || stanceStaggerActive || leanActive) && this.spineRestCached) {
 +            const spine1Bone = state.bones.get("Spine1");
 +            const spine2Bone = state.bones.get("Spine2");
 +            // Rebase any spine bone nothing else wrote this frame, so these
@@ -7761,18 +8030,25 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +                    spine2Bone.quaternion.copy(this.spineTwistRestQuats.spine2);
 +                }
 +            }
-+            if (stanceCorrectionActive) {
-+                // Local-Y yaw split across the two spine bones (blading, not a
-+                // whole-body turn). Models lacking Spine2 get a softer stance -
-+                // acceptable, since the clamp already bounds the total.
-+                if (spine1Bone) {
-+                    this._q1.setFromAxisAngle(this._v1.set(0, 1, 0), stanceYawCorrectionRad * 0.45);
-+                    spine1Bone.quaternion.multiply(this._q1);
-+                }
-+                if (spine2Bone) {
-+                    this._q1.setFromAxisAngle(this._v1.set(0, 1, 0), stanceYawCorrectionRad * 0.55);
-+                    spine2Bone.quaternion.multiply(this._q1);
-+                }
++            if (stanceCorrectionActive || stanceStaggerActive) {
++                // Yaw split across the two spine bones (blading, not a
++                // whole-body turn). The axis is the WORLD vertical, conjugated
++                // into each bone's parent frame the way applyLean below does.
++                // Local-Y assumed the spine bones stand vertical; they do not,
++                // so a requested quarter turn arrived short by a rig-dependent
++                // amount that this single open-loop pass never recovered.
++                const applyBladeYaw = (bone, angleRad) => {
++                    if (!bone || !bone.parent)
++                        return;
++                    this._q1.setFromAxisAngle(this._v1.set(0, 1, 0), angleRad);
++                    bone.parent.getWorldQuaternion(this._q2);
++                    this._q3.copy(this._q2).invert().multiply(this._q1).multiply(this._q2);
++                    bone.quaternion.premultiply(this._q3);
++                };
++                // Successive breaking of joints: equal and opposite, so
++                // the pair still sums to the delivered shoulder line.
++                applyBladeYaw(spine1Bone, stanceYawCorrectionRad * SPINE1_BLADE_SHARE + this.stanceSpineStaggerRad);
++                applyBladeYaw(spine2Bone, stanceYawCorrectionRad * (1 - SPINE1_BLADE_SHARE) - this.stanceSpineStaggerRad);
 +            }
 +            if (leanActive) {
 +                // Tilt the upper body toward the (horizontalized) deficit
@@ -7834,7 +8110,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
                  // Save what the locomotion animation wrote to bone quaternions
                  const animRootQuat = leftChain.root.quaternion.clone();
                  const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -402,7 +882,7 @@ export class AvatarAnimator {
+@@ -402,7 +970,7 @@ export class AvatarAnimator {
                  if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
                      const leftShoulder = state.bones.get("LeftShoulder");
                      if (leftShoulder) {
@@ -7843,13 +8119,13 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
                          this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
                          leftShoulder.quaternion
                              .copy(this.leftClavicleRestQuat)
-@@ -410,19 +890,56 @@ export class AvatarAnimator {
+@@ -410,19 +978,56 @@ export class AvatarAnimator {
                          leftShoulder.updateMatrixWorld(true);
                      }
                  }
 +                // Palm socket: aim the IK effector so the PALM lands on the grip
 +                // point, not the wrist joint (which sits a few cm proximal).
-+                const leftTarget = this.computeSocketTarget("left", leftChain, leftHand.targetPosition);
++                const leftTarget = this.computeSocketTarget("left", leftChain, leftHand.targetPosition, leftHand.wristRotation);
                  // Build IK target with optional pole vector
                  const target = {
                      position: leftTarget,
@@ -7903,7 +8179,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
                  // Save IK results BEFORE blending - .copy() would overwrite them
                  const ikRootQuat = leftChain.root.quaternion.clone();
                  const ikMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -432,12 +949,20 @@ export class AvatarAnimator {
+@@ -432,12 +1037,20 @@ export class AvatarAnimator {
                  leftChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
                  leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
                  leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
@@ -7925,7 +8201,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
                  // Save what the locomotion animation wrote to bone quaternions
                  const animRootQuat = rightChain.root.quaternion.clone();
                  const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -446,7 +971,7 @@ export class AvatarAnimator {
+@@ -446,7 +1059,7 @@ export class AvatarAnimator {
                  if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
                      const rightShoulder = state.bones.get("RightShoulder");
                      if (rightShoulder) {
@@ -7934,13 +8210,13 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
                          this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
                          rightShoulder.quaternion
                              .copy(this.rightClavicleRestQuat)
-@@ -454,19 +979,49 @@ export class AvatarAnimator {
+@@ -454,19 +1067,49 @@ export class AvatarAnimator {
                          rightShoulder.updateMatrixWorld(true);
                      }
                  }
 +                // Palm socket: aim the IK effector so the PALM lands on the grip
 +                // point, not the wrist joint (which sits a few cm proximal).
-+                const rightTarget = this.computeSocketTarget("right", rightChain, rightHand.targetPosition);
++                const rightTarget = this.computeSocketTarget("right", rightChain, rightHand.targetPosition, rightHand.wristRotation);
                  // Build IK target with optional pole vector
                  const target = {
                      position: rightTarget,
@@ -7987,7 +8263,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
                  // Save IK results BEFORE blending - .copy() would overwrite them
                  const ikRootQuat = rightChain.root.quaternion.clone();
                  const ikMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -476,11 +1031,588 @@ export class AvatarAnimator {
+@@ -476,11 +1119,677 @@ export class AvatarAnimator {
                  rightChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
                  rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
                  rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
@@ -8019,7 +8295,9 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +        const head = state.bones.get("Head");
 +        if (!head)
 +            return;
-+        if (!this.headDodgeEnabled && this.headDodgeAngleSmoothed < 0.001) {
++        const stanceHeadLagRad = this.stanceHeadLagRad;
++        const stanceLagActive = Math.abs(stanceHeadLagRad) > 0.0001;
++        if (!this.headDodgeEnabled && this.headDodgeAngleSmoothed < 0.001 && !stanceLagActive) {
 +            this.headDodgeAngleSmoothed = 0;
 +            return;
 +        }
@@ -8091,6 +8369,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +        }
 +        if (targetAngle === 0 && this.headDodgeAngleSmoothed < 0.001) {
 +            this.headDodgeAngleSmoothed = 0;
++            this.applyStanceHeadLag(neck, head, stanceHeadLagRad);
 +            return;
 +        }
 +        if (neck) {
@@ -8099,6 +8378,31 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +        }
 +        else {
 +            this.applyWorldHeadDodge(head, 1);
++        }
++        this.applyStanceHeadLag(neck, head, stanceHeadLagRad);
++    }
++    /**
++     * The head settles last. Safe to premultiply because applyHeadDodge
++     * rebases Neck and Head to rest whenever SpineTwister did not.
++     */
++    applyStanceHeadLag(neck, head, lagRad) {
++        if (Math.abs(lagRad) < 0.0001)
++            return;
++        const applyLag = (bone, fraction) => {
++            if (!bone.parent)
++                return;
++            this._q1.setFromAxisAngle(this._v1.set(0, 1, 0), lagRad * fraction);
++            bone.parent.getWorldQuaternion(this._q2);
++            this._q3.copy(this._q2).invert().multiply(this._q1).multiply(this._q2);
++            bone.quaternion.premultiply(this._q3);
++            bone.updateMatrixWorld(true);
++        };
++        if (neck) {
++            applyLag(neck, 0.6);
++            applyLag(head, 0.4);
++        }
++        else {
++            applyLag(head, 1);
 +        }
 +    }
 +    applyWorldHeadDodge(bone, fraction) {
@@ -8253,32 +8557,78 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +        if (rightLength !== null)
 +            this.rightPalmWorldLength = rightLength;
 +    }
-+    /**
-+     * Shift the IK target so the PALM (not the wrist joint) lands on the
-+     * grip point. The wrist approaches from the outside of its own staff:
-+     * left wrist outside the left-hand grip, right wrist outside the
-+     * right-hand grip. Reading the hand's previous orientation here allowed
-+     * both socket corrections to converge between close parallel staffs,
-+     * putting the two wrist joints at the same point.
-+     */
-+    computeSocketTarget(side, _chain, gripPoint) {
++    hugBlend() {
++        const yaw = Math.abs(this.stanceYawSmoothedRad);
++        const t = (yaw - HUG_YAW_KNEE) / (HUG_YAW_FULL - HUG_YAW_KNEE);
++        const c = Math.max(0, Math.min(1, t));
++        return c * c * (3 - 2 * c);
++    }
++    computeHandDirection(side, chain, gripPoint, staffQuat, out) {
++        const medialSign = side === "left" ? 1 : -1;
++        this._handMedial
++            .copy(this._bodyFrame.lateral)
++            .multiplyScalar(medialSign)
++            .normalize();
++        out.copy(this._handMedial);
++        const blend = this.hugBlend();
++        if (blend <= 1e-4 || !staffQuat)
++            return;
++        this._handAxis.set(0, -1, 0).applyQuaternion(staffQuat);
++        if (this._handAxis.lengthSq() <= 1e-10)
++            return;
++        this._handAxis.normalize();
++        this._handMedial.addScaledVector(this._handAxis, -this._handMedial.dot(this._handAxis));
++        if (this._handMedial.lengthSq() <= 1e-10)
++            return;
++        this._handMedial.normalize();
++        // Reference the SHOULDER, not the elbow: the elbow is the previous
++        // frame's IK output, and easing the wrist goal toward it closes a
++        // once-per-frame feedback loop that settles into a period-2
++        // alternation. The shoulder is an input to this solve.
++        chain.root.getWorldPosition(this._handForearm);
++        this._handForearm.sub(gripPoint);
++        this._handForearm.addScaledVector(this._handAxis, -this._handForearm.dot(this._handAxis));
++        if (this._handForearm.lengthSq() <= 1e-10)
++            return;
++        this._handForearm.normalize();
++        this._handDeviate
++            .copy(this._handForearm)
++            .addScaledVector(this._handMedial, -this._handForearm.dot(this._handMedial));
++        if (this._handDeviate.lengthSq() <= 1e-10)
++            return;
++        this._handDeviate.normalize();
++        const toForearm = Math.acos(Math.max(-1, Math.min(1, this._handMedial.dot(this._handForearm))));
++        const deviation = Math.min(HUG_WRIST_DEVIATION, toForearm);
++        this._handRef
++            .copy(this._handMedial)
++            .multiplyScalar(Math.cos(deviation))
++            .addScaledVector(this._handDeviate, Math.sin(deviation))
++            .normalize();
++        out.lerp(this._handRef, blend);
++        if (out.lengthSq() <= 1e-10)
++            out.copy(this._handMedial);
++        else
++            out.normalize();
++    }
++    computeSocketTarget(side, chain, gripPoint, staffQuat) {
 +        const palmLocal = side === "left" ? this.leftPalmLocal : this.rightPalmLocal;
 +        const worldPalmLength = side === "left"
 +            ? this.leftPalmWorldLength
 +            : this.rightPalmWorldLength;
 +        const out = side === "left" ? this._socketTargetLeft : this._socketTargetRight;
++        if (side === "left")
++            this.leftHandDirValid = false;
++        else
++            this.rightHandDirValid = false;
 +        if (!palmLocal || worldPalmLength <= 1e-6)
 +            return out.copy(gripPoint);
-+        // _bodyFrame.lateral points toward the performer's anatomical right.
-+        // A left palm therefore approaches medially along +lateral; a right
-+        // palm approaches along -lateral. Subtracting that palm vector places
-+        // the wrist on the outer side of the requested grip.
-+        const medialSign = side === "left" ? 1 : -1;
-+        this._v1
-+            .copy(this._bodyFrame.lateral)
-+            .multiplyScalar(medialSign)
-+            .normalize()
-+            .multiplyScalar(worldPalmLength);
++        const dir = side === "left" ? this.leftHandDir : this.rightHandDir;
++        this.computeHandDirection(side, chain, gripPoint, staffQuat, dir);
++        if (side === "left")
++            this.leftHandDirValid = true;
++        else
++            this.rightHandDirValid = true;
++        this._v1.copy(dir).multiplyScalar(worldPalmLength);
 +        return out.copy(gripPoint).sub(this._v1);
 +    }
 +    /**
@@ -8508,16 +8858,31 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
 +        // Align the wrist-to-palm vector with the medial side of the body. The
 +        // knuckle constraint alone leaves a free 180-degree roll about the staff;
 +        // for adjacent staffs that ambiguous roll placed both wrists in the gap.
++        const hugAmount = this.hugBlend();
++        const handDirValid = side === "left" ? this.leftHandDirValid : this.rightHandDirValid;
 +        this._v4
 +            .copy(palmNormalLocal)
 +            .applyQuaternion(this._q1)
 +            .applyQuaternion(this._q2)
-+            .addScaledVector(this._v2, -this._v4.dot(this._v2));
++            .normalize();
 +        const medialSign = side === "left" ? 1 : -1;
 +        this._desiredPalmWorld
 +            .copy(this._bodyFrame.lateral)
 +            .multiplyScalar(medialSign)
-+            .addScaledVector(this._v2, -this._desiredPalmWorld.dot(this._v2));
++            .normalize();
++        if (hugAmount > 1e-4 && handDirValid) {
++            this._handRef
++                .copy(palmLocal)
++                .applyQuaternion(this._q1)
++                .applyQuaternion(this._q2);
++            if (this._handRef.lengthSq() > 1e-10) {
++                this._handRef.normalize();
++                this._v4.lerp(this._handRef, hugAmount);
++                this._desiredPalmWorld.lerp(side === "left" ? this.leftHandDir : this.rightHandDir, hugAmount);
++            }
++        }
++        this._v4.addScaledVector(this._v2, -this._v4.dot(this._v2));
++        this._desiredPalmWorld.addScaledVector(this._v2, -this._desiredPalmWorld.dot(this._v2));
 +        if (this._v4.lengthSq() > 1e-10 &&
 +            this._desiredPalmWorld.lengthSq() > 1e-10) {
 +            this._v4.normalize();
@@ -8576,7 +8941,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
      addLayer(layer) {
          this.layers.set(layer.id, layer);
      }
-@@ -521,6 +1653,12 @@ export class AvatarAnimator {
+@@ -521,6 +1830,12 @@ export class AvatarAnimator {
      setExternalSpinePitch(radians) {
          this.externalSpinePitchRad = radians;
      }
@@ -8589,7 +8954,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..d0360f2362328e9f8904f1ca282599fb
      /** Debug toggle: disable pole vectors to compare old vs new elbow behavior */
      togglePoleVectors() {
          this._poleVectorsEnabled = !this._poleVectorsEnabled;
-@@ -528,9 +1666,16 @@ export class AvatarAnimator {
+@@ -528,9 +1843,16 @@ export class AvatarAnimator {
              // Reset to default backward poles so difference is visible immediately
              this.leftPoleVector.set(0, 0, -1);
              this.rightPoleVector.set(0, 0, -1);
@@ -8625,10 +8990,10 @@ diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts.map b/
 deleted file mode 100644
 index c12c9d64f6cc6e7e5dca20f2c415f3d3f215eee0..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.js b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
-index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1de92088ef 100644
+index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..84b262dda923399fc9f1bf1e4952c1d8ff8138cd 100644
 --- a/dist/lib/services/implementations/AvatarSkeletonBuilder.js
 +++ b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
-@@ -5,8 +5,10 @@
+@@ -5,8 +5,11 @@
   * Provides access to bones for IK solving and animation.
   */
  import { Vector3, Box3 } from "three";
@@ -8636,11 +9001,12 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
  import { FINGER_BONES, } from "../../domain/models/GripPose";
 +import { cloneSharedSkinnedScene, getSharedGltfBounds, loadSharedGltf, } from "../shared-gltf-cache";
 +import { buildTwoBoneChain } from "../leg-geometry";
++import { normalizeBoneName } from "../bone-name-normalization";
 +import { avatarAssetLabel, recordAvatarLoadSpan, } from "../../debug/avatar-load-instrumentation";
  /**
   * Mapping of standard bone names to common variations
   * GLTF models from different sources use different naming conventions
-@@ -41,6 +43,7 @@ const BONE_NAME_ALIASES = {
+@@ -41,6 +44,7 @@ const BONE_NAME_ALIASES = {
      LeftUpLeg: ["LeftUpLeg", "l_thigh", "thigh.L", "upperleg_l", "LeftUpperLeg"],
      LeftLeg: ["LeftLeg", "l_shin", "shin.L", "lowerleg_l", "LeftLowerLeg"],
      LeftFoot: ["LeftFoot", "l_foot", "foot.L", "foot_l"],
@@ -8648,7 +9014,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
      RightUpLeg: [
          "RightUpLeg",
          "r_thigh",
-@@ -50,6 +53,7 @@ const BONE_NAME_ALIASES = {
+@@ -50,6 +54,7 @@ const BONE_NAME_ALIASES = {
      ],
      RightLeg: ["RightLeg", "r_shin", "shin.R", "lowerleg_r", "RightLowerLeg"],
      RightFoot: ["RightFoot", "r_foot", "foot.R", "foot_r"],
@@ -8656,7 +9022,36 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
  };
  /**
   * Mapping of canonical finger bone names to common GLTF naming conventions.
-@@ -84,25 +88,36 @@ export class AvatarSkeletonBuilder {
+@@ -72,6 +77,28 @@ for (const side of ["Left", "Right"]) {
+         ];
+     }
+ }
++
++const EXPECTED_FINGER_BONE_COUNT = FINGER_BONES.length * 2;
++const warnedMissingFingerRigs = new Set();
++
++/**
++ * Report an unresolved finger rig once per model.
++ *
++ * Grip calibration, the wrist goal, the palm socket and the per-frame shaft
++ * channel all disable themselves when finger chains are null. That used to
++ * happen in total silence, so a rig whose joints merely carried an unexpected
++ * export namespace looked exactly like a rig with no fingers at all.
++ */
++function warnMissingFingerRig(label, found, missing) {
++  if (warnedMissingFingerRigs.has(label)) return;
++  warnedMissingFingerRigs.add(label);
++  const sample = missing.slice(0, 4).join(", ");
++  const rest = missing.length > 4 ? ` (+${missing.length - 4} more)` : "";
++  console.warn(
++    `[AvatarSkeletonBuilder] "${label}": finger rig unresolved - found ${found} of ${EXPECTED_FINGER_BONE_COUNT} expected finger bones. Wrist goal, palm socket and shaft-channel correction stay disabled. Missing: ${sample}${rest}`
++  );
++}
++
+ export class AvatarSkeletonBuilder {
+     state = {
+         isLoaded: false,
+@@ -84,25 +111,36 @@ export class AvatarSkeletonBuilder {
          rightLegChain: null,
          fingerChains: null,
      };
@@ -8692,7 +9087,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
 +                recordAvatarLoadSpan(label, "skinned-clone", cloneStart);
 +            }
 +            const buildStart = performance.now();
-+            this.processGLTF(root, getSharedGltfBounds(url));
++            this.processGLTF(root, getSharedGltfBounds(url), label);
 +            recordAvatarLoadSpan(label, "skeleton-build", buildStart, preparedRoot ? "prepared-root" : "cold");
 +        }
 +        catch (error) {
@@ -8701,11 +9096,11 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
 +        }
      }
 -    processGLTF(gltf) {
-+    processGLTF(root, preparedBounds) {
++    processGLTF(root, preparedBounds, label) {
          // Hot-swap: keep old arm chains valid until new ones are ready
          // This ensures animation continues smoothly during the swap
          const oldRoot = this.state.root;
-@@ -111,7 +126,7 @@ export class AvatarSkeletonBuilder {
+@@ -111,11 +149,22 @@ export class AvatarSkeletonBuilder {
          const newBones = new Map();
          let newSkeleton = null;
          // Find all skinned meshes and bones in the new model
@@ -8714,7 +9109,23 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
              if (child.isSkinnedMesh) {
                  const skinnedMesh = child;
                  newMeshes.push(skinnedMesh);
-@@ -129,44 +144,46 @@ export class AvatarSkeletonBuilder {
+-                newSkeleton = skinnedMesh.skeleton;
++                // A character is usually exported as several skinned meshes - a body
++                // plus shirt, pants, sneakers and eyelashes - and every accessory
++                // carries its own reduced skeleton holding only the joints that deform
++                // it. Keeping whichever mesh happened to be traversed last left the rig
++                // pointing at a 13-joint trouser skeleton, so every finger lookup missed
++                // even though the body skin beside it held all 30. The character's own
++                // skeleton is the complete one, so keep the largest.
++                if (skinnedMesh.skeleton &&
++                    (newSkeleton === null ||
++                        skinnedMesh.skeleton.bones.length > newSkeleton.bones.length)) {
++                    newSkeleton = skinnedMesh.skeleton;
++                }
+                 // Map bones from the skeleton directly (more reliable than checking isBone)
+                 if (skinnedMesh.skeleton) {
+                     for (const bone of skinnedMesh.skeleton.bones) {
+@@ -129,47 +178,49 @@ export class AvatarSkeletonBuilder {
          });
          // Compute original bounding box of new model (before any transforms)
          // This is done ONCE at load time, before the model is added to the scene
@@ -8740,7 +9151,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
          this.buildArmChains();
          this.buildLegChains();
 -        this.state.fingerChains = this.buildFingerChains(gltf.scene);
-+        this.state.fingerChains = this.buildFingerChains(root);
++        this.state.fingerChains = this.buildFingerChains(label);
          this.state.isLoaded = true;
 -        // Dispose old model resources after swap is complete
 -        if (oldRoot) {
@@ -8771,21 +9182,35 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
       * Map a bone to a bones map (used during hot-swap)
       */
      mapBoneToMap(bone, bonesMap) {
-         const boneName = bone.name.toLowerCase();
+-        const boneName = bone.name.toLowerCase();
++        const boneName = normalizeBoneName(bone.name);
 +        // A rig that already uses TKA's names must keep each spine level exactly
 +        // where it authored it. Vendor aliases such as `spine1` and `spine2` are
 +        // also used for zero-based rigs, so checking those first silently shifted
 +        // canonical Spine1/Spine2 bones down one level.
 +        for (const standardName of Object.keys(BONE_NAME_ALIASES)) {
-+            if (boneName === standardName.toLowerCase()) {
++            if (boneName === normalizeBoneName(standardName)) {
 +                bonesMap.set(standardName, bone);
 +                return;
 +            }
 +        }
          for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
              for (const alias of aliases) {
-                 if (boneName === alias.toLowerCase()) {
-@@ -188,117 +205,28 @@ export class AvatarSkeletonBuilder {
+-                if (boneName === alias.toLowerCase()) {
++                if (boneName === normalizeBoneName(alias)) {
+                     bonesMap.set(standardName, bone);
+                     return;
+                 }
+@@ -180,7 +231,7 @@ export class AvatarSkeletonBuilder {
+             if (bonesMap.has(standardName))
+                 continue;
+             for (const alias of aliases) {
+-                if (boneName.includes(alias.toLowerCase())) {
++                if (boneName.includes(normalizeBoneName(alias))) {
+                     bonesMap.set(standardName, bone);
+                     return;
+                 }
+@@ -188,117 +239,28 @@ export class AvatarSkeletonBuilder {
          }
      }
      mapBone(bone) {
@@ -8917,7 +9342,78 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
      }
      /**
       * Build finger bone chains for both hands.
-@@ -355,28 +283,6 @@ export class AvatarSkeletonBuilder {
+@@ -309,74 +271,50 @@ export class AvatarSkeletonBuilder {
+      * Returns null if ANY of the 30 bones cannot be found - graceful degradation
+      * for low-poly models that omit finger rigs entirely.
+      */
+-    buildFingerChains(_root) {
++    buildFingerChains(label) {
+         if (!this.skeleton)
+             return null;
+         const left = new Map();
+         const right = new Map();
+-        // Build a lookup from lowercase bone name → Bone reference
+-        // using the skeleton's actual bone array (the GPU-bound instances)
++        // Build a lookup from normalized bone name → Bone reference using the
++        // skeleton's actual bone array (the GPU-bound instances).
+         const bonesByName = new Map();
+         for (const bone of this.skeleton.bones) {
+-            bonesByName.set(bone.name.toLowerCase(), bone);
++            bonesByName.set(normalizeBoneName(bone.name), bone);
+         }
++        const resolve = (key) => {
++            for (const alias of FINGER_BONE_ALIASES[key] ?? []) {
++                const found = bonesByName.get(normalizeBoneName(alias));
++                if (found)
++                    return found;
++            }
++            return null;
++        };
++        const missing = [];
+         for (const boneName of FINGER_BONES) {
+-            // --- Left hand ---
+             const leftKey = `Left${boneName}`;
+-            const leftAliases = FINGER_BONE_ALIASES[leftKey] ?? [];
+-            let leftBone = null;
+-            for (const alias of leftAliases) {
+-                const found = bonesByName.get(alias.toLowerCase());
+-                if (found) {
+-                    leftBone = found;
+-                    break;
+-                }
+-            }
+-            // --- Right hand ---
+             const rightKey = `Right${boneName}`;
+-            const rightAliases = FINGER_BONE_ALIASES[rightKey] ?? [];
+-            let rightBone = null;
+-            for (const alias of rightAliases) {
+-                const found = bonesByName.get(alias.toLowerCase());
+-                if (found) {
+-                    rightBone = found;
+-                    break;
+-                }
+-            }
+-            if (!leftBone || !rightBone) {
+-                return null;
+-            }
++            const leftBone = resolve(leftKey);
++            const rightBone = resolve(rightKey);
++            if (!leftBone)
++                missing.push(leftKey);
++            if (!rightBone)
++                missing.push(rightKey);
++            if (!leftBone || !rightBone)
++                continue;
+             left.set(boneName, leftBone);
+             right.set(boneName, rightBone);
+         }
++        if (missing.length > 0) {
++            warnMissingFingerRig(label, EXPECTED_FINGER_BONE_COUNT - missing.length, missing);
++            return null;
++        }
+         return { left, right };
+     }
+     /**
       * Compute the rest direction of a bone (direction to child in bind pose)
       * Returns the direction in the bone's LOCAL space
       */
@@ -8946,7 +9442,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1d
      getState() {
          return this.state;
      }
-@@ -452,23 +358,37 @@ export class AvatarSkeletonBuilder {
+@@ -452,23 +390,37 @@ export class AvatarSkeletonBuilder {
          // The model is already positioned with feet at Y=0
          return 0;
      }
@@ -12522,11 +13018,11 @@ deleted file mode 100644
 index 52f3da6d8d8bb5c429baa2320f0ab202453922d7..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/leg-geometry.js b/dist/lib/services/leg-geometry.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..81b3a5126207698fd46322d6be79bd40582b1823
+index 0000000000000000000000000000000000000000..f771f48ce98f1349c33231a654cbfe189b43473d
 --- /dev/null
 +++ b/dist/lib/services/leg-geometry.js
-@@ -0,0 +1,88 @@
-+import { Vector3 } from "three";
+@@ -0,0 +1,270 @@
++import { Quaternion, Vector3 } from "three";
 +const parentWorld = new Vector3();
 +const childWorld = new Vector3();
 +const toeWorld = new Vector3();
@@ -12613,6 +13109,188 @@ index 0000000000000000000000000000000000000000..81b3a5126207698fd46322d6be79bd40
 +    if (toSpace)
 +        toeWorld.applyMatrix4(toSpace);
 +    return Math.max(floor, toeWorld.y - lowest);
++}
++
++/* ------------------------------------------------------------------------ *
++ * Standing stance
++ *
++ * A performer whose legs nobody is driving shows the audience whatever its
++ * GLB authored as a bind pose, for the whole performance. Those bind poses
++ * disagree: the Mixamo-derived catalog rigs are authored in an A-pose whose
++ * ankles sit ~320 mm apart, and the intake rig is authored standing, ankles
++ * directly under its hip sockets at ~240 mm.
++ *
++ * What used to run in Avatar3D was a fixed 8-degree rotation about each upper
++ * leg's own local Z. A bone's local axes are a property of the export, not of
++ * the body, so one constant read as abduction on one rig and adduction on the
++ * next: it splayed ch18 from 321 mm to 549 mm, and it closed the intake rig
++ * from 239 mm to 18 mm, which is the feet-stuck-together silhouette.
++ *
++ * These three functions replace the constant with a measurement: read the
++ * rig's own hip sockets and ankles, plan the frontal-plane rotation that puts
++ * the ankles a body-derived distance apart, apply it in world space so no
++ * bone naming or axis convention is assumed.
++ *
++ * This is a static standing base, not locomotion. It owns no gait clock, no
++ * contact schedule and no footfall plan. Once a clip or a planner drives the
++ * legs, that owner writes these bones every frame and this pose is gone,
++ * which is the intended relationship.
++ * ------------------------------------------------------------------------ */
++/**
++ * Where the ankles sit, as a multiple of the rig's own hip-socket separation.
++ *
++ * 1 puts each ankle directly beneath its own hip socket, so the femurs hang
++ * vertical in the frontal plane. That is the neutral base a person takes when
++ * they are about to move: wide enough to read as support, narrow enough that
++ * turning the torso hard to one side does not fight the legs. It is also the
++ * ratio the intake rig's author chose by hand.
++ */
++export const STANDING_ANKLE_TO_HIP_RATIO = 1;
++const hipL = new Vector3();
++const hipR = new Vector3();
++const ankleL = new Vector3();
++const ankleR = new Vector3();
++const stanceUp = new Vector3();
++const stanceLateral = new Vector3();
++const hipToAnkle = new Vector3();
++const ankleMid = new Vector3();
++/**
++ * Measure a rig's standing base off its own skeleton.
++ *
++ * Both axes come from the body rather than from the world: up runs from the
++ * ankle midpoint to the hip midpoint, and lateral is the hip-to-hip direction
++ * with that up component removed. Nothing here reads a bone name, a local
++ * axis, or a character id, so a newly authored rig is measured rather than
++ * tabulated.
++ *
++ * Call with world matrices current. Returns null for a degenerate skeleton
++ * (coincident hips or coincident ankles), where there is no frontal plane to
++ * work in.
++ */
++export function measureStandingStance(leftUpLeg, rightUpLeg, leftFoot, rightFoot) {
++    leftUpLeg.getWorldPosition(hipL);
++    rightUpLeg.getWorldPosition(hipR);
++    leftFoot.getWorldPosition(ankleL);
++    rightFoot.getWorldPosition(ankleR);
++    // Ankle midpoint to hip midpoint. On a standing rig this is the body's own
++    // vertical, and it stays correct when the whole performer is yawed.
++    ankleMid.copy(ankleL).add(ankleR).multiplyScalar(0.5);
++    stanceUp.copy(hipL).add(hipR).multiplyScalar(0.5).sub(ankleMid);
++    if (stanceUp.lengthSq() < 1e-12)
++        return null;
++    stanceUp.normalize();
++    stanceLateral.copy(hipL).sub(hipR);
++    stanceLateral.addScaledVector(stanceUp, -stanceLateral.dot(stanceUp));
++    if (stanceLateral.lengthSq() < 1e-12)
++        return null;
++    stanceLateral.normalize();
++    const lateral = stanceLateral.clone();
++    const up = stanceUp.clone();
++    const abductionAxis = lateral.clone().cross(up).normalize();
++    const midLateral = (hipL.dot(lateral) + hipR.dot(lateral)) / 2;
++    const sampleLeg = (hip, ankle) => {
++        hipToAnkle.copy(ankle).sub(hip);
++        return {
++            hipLateral: hip.dot(lateral) - midLateral,
++            ankleLateralFromHip: hipToAnkle.dot(lateral),
++            ankleDropFromHip: -hipToAnkle.dot(up),
++        };
++    };
++    return {
++        left: sampleLeg(hipL, ankleL),
++        right: sampleLeg(hipR, ankleR),
++        lateral,
++        up,
++        abductionAxis,
++    };
++}
++function planLeg(leg, targetAnkleLateral) {
++    // The hip-to-ankle vector, restricted to the plane a frontal rotation moves.
++    // Its fore-aft component rides along unchanged and only shortens the radius.
++    const radius = Math.hypot(leg.ankleLateralFromHip, leg.ankleDropFromHip);
++    if (radius < 1e-6) {
++        return { abductionRad: 0, ankleLateral: leg.hipLateral, ankleRise: 0 };
++    }
++    const wanted = targetAnkleLateral - leg.hipLateral;
++    // Angle away from straight down, positive toward the rig's left.
++    const current = Math.atan2(leg.ankleLateralFromHip, leg.ankleDropFromHip);
++    // A rigid leg cannot reach further sideways than it is long, so a target
++    // outside that circle resolves to the widest base the leg actually has.
++    const target = Math.asin(Math.max(-1, Math.min(1, wanted / radius)));
++    return {
++        abductionRad: target - current,
++        ankleLateral: leg.hipLateral + radius * Math.sin(target),
++        // A bigger drop hangs the ankle lower, so a rise is the drop shrinking.
++        ankleRise: radius * Math.cos(current) - radius * Math.cos(target),
++    };
++}
++/**
++ * Plan the frontal-plane rotation each upper leg needs so the ankles land a
++ * body-derived distance apart.
++ *
++ * Both legs are planned against the same target separation, so the base stays
++ * symmetric about the pelvis midline even on a rig whose two legs were
++ * authored differently.
++ */
++export function planStandingStance(sample, ankleToHipRatio = STANDING_ANKLE_TO_HIP_RATIO) {
++    const hipSeparation = Math.abs(sample.left.hipLateral - sample.right.hipLateral);
++    const currentAnkleSeparation = Math.abs(sample.left.hipLateral +
++        sample.left.ankleLateralFromHip -
++        (sample.right.hipLateral + sample.right.ankleLateralFromHip));
++    const targetAnkleSeparation = hipSeparation * ankleToHipRatio;
++    // Lateral points toward the rig's left, so the left ankle belongs on the
++    // positive side of the midline and the right ankle on the negative side.
++    const left = planLeg(sample.left, targetAnkleSeparation / 2);
++    const right = planLeg(sample.right, -targetAnkleSeparation / 2);
++    return {
++        left,
++        right,
++        hipSeparation,
++        currentAnkleSeparation,
++        targetAnkleSeparation,
++        ankleRise: (left.ankleRise + right.ankleRise) / 2,
++    };
++}
++const stanceRotation = new Quaternion();
++const boneWorldQuat = new Quaternion();
++const parentWorldQuat = new Quaternion();
++const footWorldQuat = new Quaternion();
++/**
++ * Rotate the upper legs into a planned stance, leaving the soles as authored.
++ *
++ * The rotation is applied in world space about the measured `abductionAxis`,
++ * so it does not care which way an exporter happened to point a femur's local
++ * axes. Each foot's world orientation is captured before its leg moves and
++ * restored afterwards: rotating a femur carries the whole chain with it, and
++ * without the restore the sole tips off the floor by the same angle.
++ */
++export function applyStandingStance(legs, abductionAxis) {
++    for (const { upLeg, foot, plan } of legs) {
++        if (!Number.isFinite(plan.abductionRad) || plan.abductionRad === 0)
++            continue;
++        upLeg.updateWorldMatrix(true, false);
++        foot.updateWorldMatrix(true, false);
++        foot.getWorldQuaternion(footWorldQuat);
++        upLeg.getWorldQuaternion(boneWorldQuat);
++        stanceRotation.setFromAxisAngle(abductionAxis, plan.abductionRad);
++        boneWorldQuat.premultiply(stanceRotation);
++        if (upLeg.parent) {
++            upLeg.parent.getWorldQuaternion(parentWorldQuat);
++            upLeg.quaternion.copy(parentWorldQuat.invert()).multiply(boneWorldQuat);
++        }
++        else {
++            upLeg.quaternion.copy(boneWorldQuat);
++        }
++        upLeg.updateMatrixWorld(true);
++        if (foot.parent) {
++            foot.parent.getWorldQuaternion(parentWorldQuat);
++            foot.quaternion.copy(parentWorldQuat.invert()).multiply(footWorldQuat);
++        }
++        else {
++            foot.quaternion.copy(footWorldQuat);
++        }
++        foot.updateMatrixWorld(true);
++    }
 +}
 diff --git a/dist/lib/services/rendered-staff-geometry.js b/dist/lib/services/rendered-staff-geometry.js
 new file mode 100644
@@ -13126,7 +13804,7 @@ diff --git a/dist/lib/state/user-proportions-state.svelte.d.ts.map b/dist/lib/st
 deleted file mode 100644
 index a8fd5a41c1434bf568841daf28c8443ba1515e65..0000000000000000000000000000000000000000
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33aefa9ea1 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..511579fb2948f5db269bea38a4bce7ab1aa036c1 100644
 --- a/src/lib/components/Avatar3D.svelte
 +++ b/src/lib/components/Avatar3D.svelte
 @@ -16,29 +16,44 @@
@@ -13182,13 +13860,18 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
    import type { IAnimationStateMachine } from "../services/contracts/IAnimationStateMachine";
    import { LocomotionState } from "../services/contracts/IAnimationStateMachine";
    import type { IRootMotionExtractor } from "../services/contracts/IRootMotionExtractor";
-@@ -51,7 +66,14 @@
+@@ -51,7 +66,19 @@
    import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
    import { GripType } from "../domain/models/GripPose";
    import { CollisionDetector } from "../services/implementations/CollisionDetector";
 -  import type { BodySnapshot, CollisionEvent, PropSegment } from "../services/contracts/ICollisionDetector";
 +  import { computeFaceCenter } from "../services/geometry/BodyCollisionGeometry";
 +  import { buildRenderedStaffSegment } from "../services/rendered-staff-geometry";
++  import {
++    applyStandingStance,
++    measureStandingStance,
++    planStandingStance,
++  } from "../services/leg-geometry";
 +  import type {
 +    AvatarPoseDiagnostics,
 +    BodySnapshot,
@@ -13198,7 +13881,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
    import { tryGetViewer3DContext } from "../context/viewer-3d-context";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
    import {
-@@ -74,6 +96,17 @@
+@@ -74,6 +101,17 @@
    const blueVisible = $derived(viewerVisibility?.blueMotion ?? true);
    const redVisible = $derived(viewerVisibility?.redMotion ?? true);
  
@@ -13216,7 +13899,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
    // Default Z position for avatars
    // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
    // The avatar's body is thin enough that it won't clip through the grid
-@@ -99,6 +132,8 @@
+@@ -99,6 +137,8 @@
      moveSpeed?: number;
      /** Movement direction relative to facing: x (-1 left, +1 right), z (-1 back, +1 forward) */
      moveDirection?: { x: number; z: number };
@@ -13225,7 +13908,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
      /** Enable idle/walk locomotion animation. False for exhibit performers
       *  that should only use IK (no idle animation fighting the pose). */
      enableLocomotion?: boolean;
-@@ -115,11 +150,50 @@
+@@ -115,11 +155,58 @@
      enableRootMotion?: boolean;
      /** Called each frame with the world-space XZ delta from root motion.
       *  The parent applies this to physics for collision-aware movement. */
@@ -13274,10 +13957,18 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
 +     *  distributed across the spine, feet planted. Planner-shaped - the
 +     *  caller decides the stance, the animator applies it. */
 +    stanceYaw?: number;
++    /** Score-time timing for the stance turn: how far the lower spine
++     *  leads its resting share, and how far the head still trails the
++     *  shoulders. Null holds the historical instant-arrival split. */
++    stanceSegments?: {
++        spine1Rad: number;
++        spine2Rad: number;
++        headLagRad: number;
++    } | null;
      /** Disable spine twist (dual-wheel: wide lateral targets twist the torso/feet) */
      disableSpineTwist?: boolean;
      /** Current beat index for collision detection logging */
-@@ -128,7 +202,11 @@
+@@ -128,7 +215,11 @@
      beatProgress?: number;
      /** Optional callback invoked each frame with the collision detector's events.
       *  Lets parent components surface collision state without duplicating detection. */
@@ -13290,7 +13981,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
      /** Extra forward pitch (radians) applied to Spine1 before arm IK runs.
       *  Positive values lean the torso forward. Used by the collision lab's
       *  lean-forward stance variant. 0 = no external pitch. */
-@@ -166,6 +244,7 @@
+@@ -166,6 +257,7 @@
      isMoving = false,
      moveSpeed = 1,
      moveDirection = { x: 0, z: 1 },
@@ -13298,7 +13989,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
      enableLocomotion = false,
      isGrounded = true,
      verticalVelocity = 0,
-@@ -173,8 +252,19 @@
+@@ -173,8 +265,20 @@
      isJumpRequested = false,
      enableRootMotion = false,
      onRootMotion,
@@ -13315,10 +14006,11 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
 +    weldGrip = false,
 +    headDodge = false,
 +    stanceYaw = 0,
++    stanceSegments = null,
      disableSpineTwist = false,
      stepNumber = 0,
      beatProgress = 0,
-@@ -195,8 +285,17 @@
+@@ -195,8 +299,17 @@
    // Services (manually instantiated to ensure shared skeleton instance)
    let skeletonService: IAvatarSkeletonBuilder | null = $state(null);
    let ikSolver: IIKSolver | null = $state(null);
@@ -13337,7 +14029,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
    let stateMachine: IAnimationStateMachine | null = null;
    let rootMotionExtractor: IRootMotionExtractor | null = null;
    let footPlanter: IFootPlanter | null = null;
-@@ -210,21 +309,37 @@
+@@ -210,21 +323,43 @@
    // Collision detection - logs when props/arms clip through the avatar body
    const collisionDetector = new CollisionDetector();
    const _boneVecs = {
@@ -13382,12 +14074,18 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
 +    appliedStanceYawRad: 0,
 +    appliedReachLeanRad: 0,
 +    appliedHeadDodgeRad: 0,
++    leftUpperArmLength: 0,
++    leftForearmLength: 0,
++    rightUpperArmLength: 0,
++    rightForearmLength: 0,
++    leftElbowWorld: _boneVecs.leftElbow,
++    rightElbowWorld: _boneVecs.rightElbow,
 +    achievedTorsoPitchRad: 0,
 +  };
  
    /**
     * Base rotation from the staff's local-Y axis to the "horizontal" axis
-@@ -236,8 +351,6 @@
+@@ -236,8 +371,6 @@
    const STAFF_HORIZONTAL_QUAT = new Quaternion().setFromEuler(
      new Euler(0, 0, Math.PI / 2)
    );
@@ -13396,7 +14094,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
    const _blueSegA = new Vector3();
    const _blueSegB = new Vector3();
    const _redSegA = new Vector3();
-@@ -245,42 +358,233 @@
+@@ -245,42 +378,233 @@
  
    const blueSeg: PropSegment = { a: _blueSegA, b: _blueSegB, radius: 0.012 };
    const redSeg: PropSegment = { a: _redSegA, b: _redSegB, radius: 0.012 };
@@ -13523,7 +14221,11 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
 +
 +  function composeStaffWorldQuat(
 +    anchorRef: import("three").Group | undefined,
-+    worldRotation: Quaternion,
+     worldRotation: Quaternion,
+-    avatarFacingAngle: number,
+-    halfLength: number,
+-    outA: Vector3,
+-    outB: Vector3
 +    out: Quaternion
 +  ): Quaternion {
 +    if (anchorRef) {
@@ -13544,11 +14246,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
 +    correctionRef: import("three").Group | undefined,
 +    anchorRef: import("three").Group | undefined,
 +    fallbackGrip: Vector3,
-     worldRotation: Quaternion,
--    avatarFacingAngle: number,
--    halfLength: number,
--    outA: Vector3,
--    outB: Vector3
++    worldRotation: Quaternion,
 +    outGrip: Vector3,
 +    outQuaternion: Quaternion
    ): void {
@@ -13656,14 +14354,87 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
    let currentLoadedAvatarId = $state<string | null>(null);
    let isLoading = $state(false);
    let hasShownFallbackToast = $state(false);
-@@ -302,14 +606,68 @@
+@@ -291,6 +615,66 @@
+   // Feet offset from model origin (negative value, updated after setHeight)
+   let feetOffset = $state(0);
+ 
++  // How much the standing base lifted the ankles off the bind pose, in the
++  // rig's own unscaled units. Grounding measures a bounding box taken before
++  // the legs moved, so this is what it owes the soles back.
++  let stanceAnkleRiseUnscaled = 0;
++  let stanceAnkleRise = $state(0);
++
++  /**
++   * Give the performer a standing base measured from its own skeleton.
++   *
++   * With locomotion off nothing writes the leg bones, so the rig stands in
++   * whatever base its GLB authored for the whole performance - and across the
++   * catalog that ranges from ankles touching to a half-metre splay. This reads
++   * this rig's hip sockets and ankles and rotates the femurs until the ankles
++   * sit under them.
++   *
++   * With locomotion on, the idle clip owns the leg pose every frame; the pose
++   * set here would be overwritten and the grounding compensation would then be
++   * describing a stance that is no longer on screen. Those performers are left
++   * to their animator.
++   */
++  function applyStandingBase(): void {
++    stanceAnkleRiseUnscaled = 0;
++    stanceAnkleRise = 0;
++    if (enableLocomotion || !skeletonService) return;
++
++    const skState = skeletonService.getState();
++    const stanceRoot = skState.root;
++    const leftUpLeg = skState.bones.get("LeftUpLeg");
++    const rightUpLeg = skState.bones.get("RightUpLeg");
++    const leftFoot = skState.bones.get("LeftFoot");
++    const rightFoot = skState.bones.get("RightFoot");
++    if (!stanceRoot || !leftUpLeg || !rightUpLeg || !leftFoot || !rightFoot) {
++      return;
++    }
++
++    stanceRoot.updateMatrixWorld(true);
++    const measured = measureStandingStance(
++      leftUpLeg,
++      rightUpLeg,
++      leftFoot,
++      rightFoot
++    );
++    if (!measured) return;
++
++    const stance = planStandingStance(measured);
++    applyStandingStance(
++      [
++        { upLeg: leftUpLeg, foot: leftFoot, plan: stance.left },
++        { upLeg: rightUpLeg, foot: rightFoot, plan: stance.right },
++      ],
++      measured.abductionAxis
++    );
++
++    // Held unscaled so a later height change rescales it exactly the way
++    // getFeetOffset() rescales the bind-pose offset it corrects.
++    const stanceScale = stanceRoot.scale.x || 1;
++    stanceAnkleRiseUnscaled = stance.ankleRise / stanceScale;
++    stanceAnkleRise = stance.ankleRise;
++  }
++
+   // Derived values from user proportions
+   // avatarHeight is the target height in scene units (cm * CM_TO_UNITS)
+   const avatarHeight = $derived(cmToUnits(userProportionsState.heightCm));
+@@ -300,16 +684,74 @@
+   // If position.y is provided (e.g., from terrain/physics), use it directly
+   // Otherwise, use groundY from user proportions (for flat stage mode)
    // feetOffset adjusts so feet touch the ground (it's negative)
++  // The standing base lifts the ankles off the bind pose the bounding box was
++  // measured in, so the whole performer comes down by the same amount and the
++  // soles stay on the floor.
++  const groundedFeetOffset = $derived(feetOffset + stanceAnkleRise);
    const baseGroupY = $derived(
      position.y !== undefined && position.y !== 0
 -      ? position.y - feetOffset  // Use provided Y (terrain mode)
 -      : defaultGroundY - feetOffset  // Use stage groundY (stage mode)
-+      ? position.y - feetOffset // Use provided Y (terrain mode)
-+      : defaultGroundY - feetOffset // Use stage groundY (stage mode)
++      ? position.y - groundedFeetOffset // Use provided Y (terrain mode)
++      : defaultGroundY - groundedFeetOffset // Use stage groundY (stage mode)
    );
  
    // No mesh offset needed - the crouch animation's Hips position track (scaled
@@ -13727,7 +14498,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
    // Load a GLTF model for a specific avatar
    // Uses hot-swap pattern: keeps old avatar visible until new one is ready
    async function loadAvatar(targetAvatarId: string) {
-@@ -319,12 +677,23 @@
+@@ -319,12 +761,23 @@
      if (currentLoadedAvatarId === targetAvatarId) return;
  
      const url = getAvatarModelPath(targetAvatarId);
@@ -13752,7 +14523,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
  
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
-@@ -333,19 +702,43 @@
+@@ -333,19 +786,43 @@
        // Get the feet offset for positioning (negative value)
        feetOffset = skeletonService.getFeetOffset();
  
@@ -13805,24 +14576,31 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
        currentLoadedAvatarId = targetAvatarId;
        modelLoaded = true;
        useProceduralFallback = false;
-@@ -363,8 +756,14 @@
-       const rightUpLeg = skState.bones.get("RightUpLeg");
-       if (leftUpLeg && rightUpLeg) {
-         const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
+@@ -354,22 +831,7 @@
+       // can fade the avatar back in). Fires on initial load and on every swap.
+       onModelSwapped?.(targetAvatarId);
+ 
+-      // Widen the default stance - rotate upper legs outward so feet
+-      // are shoulder-width apart instead of the narrow T-pose default.
+-      // This gives the avatar a more natural standing base and helps
+-      // cross-body reaches look less strained.
+-      const skState = skeletonService.getState();
+-      const leftUpLeg = skState.bones.get("LeftUpLeg");
+-      const rightUpLeg = skState.bones.get("RightUpLeg");
+-      if (leftUpLeg && rightUpLeg) {
+-        const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
 -        const leftTilt = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), stanceAngle);
 -        const rightTilt = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -stanceAngle);
-+        const leftTilt = new Quaternion().setFromAxisAngle(
-+          new Vector3(0, 0, 1),
-+          stanceAngle
-+        );
-+        const rightTilt = new Quaternion().setFromAxisAngle(
-+          new Vector3(0, 0, 1),
-+          -stanceAngle
-+        );
-         leftUpLeg.quaternion.multiply(leftTilt);
-         rightUpLeg.quaternion.multiply(rightTilt);
-         leftUpLeg.updateMatrixWorld(true);
-@@ -388,17 +787,21 @@
+-        leftUpLeg.quaternion.multiply(leftTilt);
+-        rightUpLeg.quaternion.multiply(rightTilt);
+-        leftUpLeg.updateMatrixWorld(true);
+-        rightUpLeg.updateMatrixWorld(true);
+-      }
++      applyStandingBase();
+ 
+       // Verify arm chains are ready
+       const leftChain = skeletonService.getLeftArmChain();
+@@ -388,17 +850,21 @@
        // use IK only and don't need idle/walk animations.
        if (enableLocomotion && locomotionAnimator && cachedRoot) {
          // Configure before initialize so clips are prepared correctly
@@ -13849,7 +14627,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -416,12 +819,39 @@
+@@ -416,12 +882,39 @@
              idle: `${animBase}idle${rmSuffix}.glb`,
              forward: `${animBase}walk-forward${rmSuffix}.glb`,
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
@@ -13892,7 +14670,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
            })
            .catch((err) => {
              console.warn(
-@@ -444,18 +874,39 @@
+@@ -444,18 +937,39 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -13941,7 +14719,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +927,13 @@
+@@ -476,7 +990,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -13956,7 +14734,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
  
-@@ -502,6 +959,16 @@
+@@ -502,6 +1022,16 @@
        }
      } finally {
        isLoading = false;
@@ -13973,7 +14751,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
      }
    }
  
-@@ -560,6 +1027,15 @@
+@@ -560,6 +1090,15 @@
      }
    });
  
@@ -13989,7 +14767,22 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
    // React to height changes - update avatar scale
    $effect(() => {
      if (!skeletonService || !modelLoaded || useProceduralFallback) return;
-@@ -587,25 +1063,30 @@
+@@ -570,8 +1109,14 @@
+ 
+     // Update feetOffset for positioning (use untrack to prevent re-triggering)
+     const newFeetOffset = skeletonService.getFeetOffset();
++    // setScale() rebuilds the leg chains but leaves the stance rotation on the
++    // bones, so the base survives a height change and only its lift rescales.
++    const newStanceRise =
++      stanceAnkleRiseUnscaled *
++      (skeletonService.getState().root?.scale.x ?? 1);
+     untrack(() => {
+       feetOffset = newFeetOffset;
++      stanceAnkleRise = newStanceRise;
+     });
+   });
+ 
+@@ -587,25 +1132,30 @@
  
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
@@ -14031,7 +14824,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
  
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -614,6 +1095,7 @@
+@@ -614,6 +1164,7 @@
            speed: stateOutput.animationSpeed,
            facingAngle: stateOutput.facingAngle,
            moveDirection: stateOutput.moveDirection,
@@ -14039,7 +14832,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
          });
          // Track state for FootPlanter (airborne states skip foot planting)
          currentLocomotionState = stateOutput.state;
-@@ -624,9 +1106,19 @@
+@@ -624,9 +1175,19 @@
            speed: moveSpeed,
            facingAngle,
            moveDirection,
@@ -14059,7 +14852,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
  
        // Turn clip overlay - when a turn is active, overwrite lower-body
        // and spine bones with the turn clip's authored pose at the current
-@@ -639,20 +1131,52 @@
+@@ -639,20 +1200,52 @@
        if (turnRequestProp && turnAnimator?.isReady() && skeletonService) {
          const sample = turnAnimator.sample(turnRequestProp);
          const bones = skeletonService.getState().bones;
@@ -14123,7 +14916,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
            }
          }
  
-@@ -681,7 +1205,11 @@
+@@ -681,7 +1274,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -14136,7 +14929,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -708,28 +1236,97 @@
+@@ -708,28 +1305,98 @@
        // clips without authored curves. Gated on enableFootPlanting so the
        // museum FPS player stays fully code-driven.
        if (enableFootPlanting && footPlanter?.isReady()) {
@@ -14147,7 +14940,8 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
 +        let footGroundY = 0;
 +        if (performerRootRef) {
 +          performerRootRef.updateWorldMatrix(true, false);
-+          footGroundY = performerRootRef.matrixWorld.elements[13] + feetOffset;
++          footGroundY =
++            performerRootRef.matrixWorld.elements[13] + groundedFeetOffset;
 +        }
 +        // Stride warping happens along the world axis the performer travels,
 +        // and moveDirection is expressed relative to their facing.
@@ -14239,7 +15033,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
      }
  
      if (redPropAnchorRef && redPropState) {
-@@ -737,6 +1334,10 @@
+@@ -737,6 +1404,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
      } else if (redPropState) {
        redIKTarget.copy(redPropState.worldPosition);
@@ -14250,7 +15044,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
      }
  
      const blueWorldProp = bluePropState
-@@ -746,15 +1347,136 @@
+@@ -746,15 +1417,137 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
  
@@ -14310,6 +15104,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
      // before the animator runs IK so the arms solve against the leaned torso.
      animationService.setExternalSpinePitch(spinePitchOffset);
 +    animationService.setStanceYaw?.(stanceYaw);
++    animationService.setStanceYawSegments?.(stanceSegments);
 +    animationService.setHeadDodgeEnabled(headDodge);
 +    const blueThreatActive =
 +      headDodge &&
@@ -14387,7 +15182,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -768,56 +1490,55 @@
+@@ -768,56 +1561,55 @@
        bones.get("Spine2")?.getWorldPosition(_boneVecs.spine2);
        bones.get("Spine1")?.getWorldPosition(_boneVecs.spine1);
        bones.get("Hips")?.getWorldPosition(_boneVecs.hips);
@@ -14474,7 +15269,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
            halfStaffLength,
            _redSegA,
            _redSegB
-@@ -825,23 +1546,128 @@
+@@ -825,23 +1617,134 @@
          redSegOrNull = redSeg;
        }
  
@@ -14491,6 +15286,12 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
 -      onCollisionEvents?.(events);
 -    }
 +      _poseDiagnostics.shoulderWidth = _diagnosticShoulderLateral.length();
++      // Arm-segment lengths come straight off the mapped chains, so a rig the
++      // catalog has never seen is measured rather than assumed.
++      _poseDiagnostics.leftUpperArmLength = leftChain?.upperLength ?? 0;
++      _poseDiagnostics.leftForearmLength = leftChain?.lowerLength ?? 0;
++      _poseDiagnostics.rightUpperArmLength = rightChain?.upperLength ?? 0;
++      _poseDiagnostics.rightForearmLength = rightChain?.lowerLength ?? 0;
 +      _diagnosticRootQuaternion.identity();
 +      state.root?.getWorldQuaternion(_diagnosticRootQuaternion);
 +      _diagnosticRootForward
@@ -14617,7 +15418,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
    });
  
    // Note: Visibility is handled via the {#if visible} in the template
-@@ -867,20 +1693,15 @@
+@@ -867,20 +1770,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -14644,7 +15445,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1734,19 @@
+@@ -913,13 +1811,19 @@
  </script>
  
  {#if visible}
@@ -14671,7 +15472,21 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
      <T.Group
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
-@@ -950,6 +1777,7 @@
+@@ -940,9 +1844,10 @@
+       - rotation.y: facingAngle (avatar faces movement direction)
+ 
+       groupY calculation:
+-      - If position.y is provided (terrain/physics mode): position.y - feetOffset
+-      - Else (flat stage mode): defaultGroundY - feetOffset
+-      - feetOffset is negative (feet are below model origin)
++      - If position.y is provided (terrain/physics mode): position.y - groundedFeetOffset
++      - Else (flat stage mode): defaultGroundY - groundedFeetOffset
++      - groundedFeetOffset is negative (feet are below model origin) and folds
++        in whatever height the standing base took off the bind-pose ankles
+       - This positions feet at the correct ground level
+ 
+       Using cachedRoot instead of skeletonService.getRoot() ensures
+@@ -950,6 +1855,7 @@
        preventing visual glitches during avatar swap.
      -->
      <T.Group
@@ -14680,7 +15495,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7fa633cbece2424529cca438b5afbc33
        position={[position.x, groupY, position.z]}
        rotation.y={facingAngle}
 diff --git a/src/lib/components/PerformerRig.svelte b/src/lib/components/PerformerRig.svelte
-index 99a40cd26b35183a5e71c93105e0704084dbf9e9..43334c89452fc6b602b7e97cfddf669e8bc07857 100644
+index 99a40cd26b35183a5e71c93105e0704084dbf9e9..93bd4f8c5440f158e74b4f33e4634ffcf511c730 100644
 --- a/src/lib/components/PerformerRig.svelte
 +++ b/src/lib/components/PerformerRig.svelte
 @@ -16,11 +16,12 @@
@@ -14767,7 +15582,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..43334c89452fc6b602b7e97cfddf669e
      /** Enable idle/walk locomotion animation on the avatar.
       *  When true, the avatar breathes/sways while standing. */
      enableRootMotion?: boolean;
-@@ -119,23 +149,50 @@
+@@ -119,23 +149,58 @@
       * effect orchestrator can place tip-tracking effects (trails, LED, etc.)
       * in the correct rig-root-local frame without duplicating rig internals.
       */
@@ -14802,6 +15617,14 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..43334c89452fc6b602b7e97cfddf669e
 +     *  Planner-shaped - the caller (heuristic today, offline execution
 +     *  planner later) decides the stance; the rig just carries it. */
 +    stanceYaw?: number;
++    /** Score-time timing for the stance turn: how far the lower spine
++     *  leads its resting share, and how far the head still trails the
++     *  shoulders. Null holds the historical instant-arrival split. */
++    stanceSegments?: {
++        spine1Rad: number;
++        spine2Rad: number;
++        headLagRad: number;
++    } | null;
 +    /** Planner-selected forward shoulder carry, forwarded to Avatar3D. */
 +    spinePitchOffset?: number;
 +    /** Hidden depth routing for audience-overlaid same-side grips. */
@@ -14829,7 +15652,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..43334c89452fc6b602b7e97cfddf669e
    }
  
    let {
-@@ -149,44 +206,63 @@
+@@ -149,44 +214,64 @@
      showEffects = true,
      visiblePlanes = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]),
      gridMode = "diamond" as GridMode,
@@ -14861,6 +15684,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..43334c89452fc6b602b7e97cfddf669e
      enableFootPlanting = false,
      turnRequestOverride,
 +    stanceYaw = 0,
++    stanceSegments = null,
 +    spinePitchOffset = 0,
 +    blueHandDepthOffset = 0,
 +    redHandDepthOffset = 0,
@@ -14903,7 +15727,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..43334c89452fc6b602b7e97cfddf669e
  
    // Derive mode config and grid offset from the current plane mode
    const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
-@@ -247,7 +323,23 @@
+@@ -247,7 +332,23 @@
  
    // When a turn is active, enable animation-driven yaw so the rig
    // rotates from the turn clip's root motion rather than snapping.
@@ -14928,7 +15752,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..43334c89452fc6b602b7e97cfddf669e
  
    // Turn completion snap: when turnRequest goes null after being active,
    // snap avatarState to the post-turn heading so the sync effect below
-@@ -259,6 +351,8 @@
+@@ -259,6 +360,8 @@
        // Turn just completed - snap avatarState to post-turn heading
        avatarState.snapFacingAngle(turnTargetHeading);
        turnTargetHeading = null;
@@ -14937,7 +15761,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..43334c89452fc6b602b7e97cfddf669e
      }
    });
  
-@@ -280,56 +374,119 @@
+@@ -280,56 +383,120 @@
    const dualWheelOffset = $derived(staffHalfLength);
    const blueHandPos = $derived({
      x: isDualWheel ? dualWheelOffset : modeConfig.blueLateralOffset,
@@ -15053,6 +15877,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..43334c89452fc6b602b7e97cfddf669e
 +      {bluePropCorrectionRef}
 +      {redPropCorrectionRef}
 +      {stanceYaw}
++      {stanceSegments}
 +      {spinePitchOffset}
 +      {weldGrip}
 +      {headDodge}
@@ -15068,7 +15893,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..43334c89452fc6b602b7e97cfddf669e
                accumulatedYaw += delta.yawDelta;
                onYawIntegrated?.(accumulatedYaw);
              }
-@@ -339,15 +496,12 @@
+@@ -339,15 +506,12 @@
    {/if}
  
    <!-- Grid (consumer-provided via gridSlot) -->
@@ -15086,7 +15911,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..43334c89452fc6b602b7e97cfddf669e
      {#if bluePropState && blueVisible}
        <T.Group
          bind:ref={bluePropAnchorRef}
-@@ -355,23 +509,23 @@
+@@ -355,23 +519,23 @@
          position.y={bluePropState.worldPosition.y}
          position.z={bluePropState.worldPosition.z}
        >
@@ -15122,7 +15947,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..43334c89452fc6b602b7e97cfddf669e
      {#if redPropState && redVisible}
        <T.Group
          bind:ref={redPropAnchorRef}
-@@ -379,20 +533,23 @@
+@@ -379,20 +543,23 @@
          position.y={redPropState.worldPosition.y}
          position.z={redPropState.worldPosition.z}
        >
@@ -16211,7 +17036,7 @@ index 12a776e2dc4cc4cf8f484afde470d094690a6dc0..e99e626aef531d417e49111acc3fed41
 +  />
  {/if}
 diff --git a/src/lib/components/props/Fan3D.svelte b/src/lib/components/props/Fan3D.svelte
-index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c8452888117523b 100644
+index dc635e752d11561cb585cbaaffa05b1e525d31e8..8f93dc5db7f5d6d6da7f76381c3217792730aa64 100644
 --- a/src/lib/components/props/Fan3D.svelte
 +++ b/src/lib/components/props/Fan3D.svelte
 @@ -1,29 +1,52 @@
@@ -20363,6 +21188,49 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..f730d0095921422928d9a1b3857fe3a7
 +// The .d.ts already declares this; the runtime half was missing, which broke
 +// every consumer of the barrel (AvatarSwapTransition.svelte) in the browser.
 +export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache";
+diff --git a/src/lib/services/bone-name-normalization.ts b/src/lib/services/bone-name-normalization.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..164a88b402d8501ad7b09fa33e727f75550e8999
+--- /dev/null
++++ b/src/lib/services/bone-name-normalization.ts
+@@ -0,0 +1,37 @@
++/**
++ * One owner for exporter-namespace-tolerant bone name matching.
++ *
++ * Rigs authored in Maya/FBX tooling carry an export namespace on every joint:
++ * Mixamo writes `mixamorig:LeftHand` and, once a character has been
++ * re-uploaded, `mixamorig12:LeftHandThumb1`. Two things then happen to that
++ * name before a lookup sees it:
++ *
++ *   1. The character intake pipeline strips the namespace when it bakes a rig,
++ *      so rigs that went through intake arrive as bare `hand_l` / `thumb1_l`.
++ *   2. three.js sanitizes every node name at load time - `PropertyBinding`
++ *      deletes `[ ] . : /` outright - so a catalog GLB's
++ *      `mixamorig:LeftHandThumb1` reaches the runtime as
++ *      `mixamorigLeftHandThumb1`, colon and all structure gone.
++ *
++ * Both forms have to resolve against the same alias tables, or a rig whose
++ * joints merely carry a namespace looks exactly like a rig with no fingers.
++ *
++ * The Mixamo prefix is matched by name rather than by shape, because after
++ * sanitization there is no separator left to key on. Everything else is matched
++ * on the colon, which is only ever a namespace separator - it never appears
++ * inside a joint name in any convention this package supports (Mixamo
++ * `LeftHandThumb1`, characters3d.com `L_Thumb1`, Unreal `thumb1_l`).
++ */
++const MIXAMO_NAMESPACE = /^mixamorig\d*:?/;
++const EXPORT_NAMESPACE = /^[a-z0-9_]+:/;
++
++/**
++ * Lowercase a bone name and drop any exporter namespace prefix, so a rig's
++ * joints and this package's alias tables can be compared directly.
++ */
++export function normalizeBoneName(name: string): string {
++  return name
++    .toLowerCase()
++    .replace(MIXAMO_NAMESPACE, "")
++    .replace(EXPORT_NAMESPACE, "");
++}
 diff --git a/src/lib/services/clip-footprint.ts b/src/lib/services/clip-footprint.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..b05226657be65de8dbaf442b0ac115002c2ef166
@@ -20712,7 +21580,7 @@ index 0000000000000000000000000000000000000000..b05226657be65de8dbaf442b0ac11500
 +  return scratch.distanceTo(b.getWorldPosition(new Vector3()));
 +}
 diff --git a/src/lib/services/contracts/IAvatarAnimator.ts b/src/lib/services/contracts/IAvatarAnimator.ts
-index 42a46ac294719f16470ed72c27286e50c55a35f2..8b7ef1f90d4aed4e87728b971108afdbd46ff5bc 100644
+index 42a46ac294719f16470ed72c27286e50c55a35f2..c37e6fddaf34bfd057f655f47e59bad4400123d9 100644
 --- a/src/lib/services/contracts/IAvatarAnimator.ts
 +++ b/src/lib/services/contracts/IAvatarAnimator.ts
 @@ -8,6 +8,7 @@
@@ -20777,7 +21645,7 @@ index 42a46ac294719f16470ed72c27286e50c55a35f2..8b7ef1f90d4aed4e87728b971108afdb
  export interface IAvatarAnimator {
    /**
     * Set the hand targets from prop states
-@@ -140,13 +188,46 @@ export interface IAvatarAnimator {
+@@ -140,13 +188,60 @@ export interface IAvatarAnimator {
     * Set prop states and compute per-arm IK blend weights.
     * Arms with props ramp toward IK (weight 1).
     * Arms without props ramp toward animation (weight 0).
@@ -20803,6 +21671,20 @@ index 42a46ac294719f16470ed72c27286e50c55a35f2..8b7ef1f90d4aed4e87728b971108afdb
 +   * Optional so lightweight test doubles don't have to implement it.
 +   */
 +  setStanceYaw?(radians: number): void;
++
++  /**
++   * Score-time timing for the same turn: how far the lower spine leads its
++   * resting share of the shoulder line, and how far the head still trails
++   * that line. Both are zero at a held facing, so an animator that ignores
++   * this method poses exactly as it always did.
++   */
++  setStanceYawSegments?(
++    segments: {
++      spine1Rad: number;
++      spine2Rad: number;
++      headLagRad: number;
++    } | null
++  ): void;
 +
 +  /** Returns the current smoothed posture contributions without allocating. */
 +  getPostureDiagnostics?(): Readonly<AvatarAnimatorDiagnostics>;
@@ -20866,7 +21748,7 @@ index 666a20b6ddead4b33f695ce341c854f937eaabb6..e0b23efe86d24cb2ffedebf41579906d
     * Dispose of the loaded model and free resources
     */
 diff --git a/src/lib/services/contracts/ICollisionDetector.ts b/src/lib/services/contracts/ICollisionDetector.ts
-index 4f198331785178e696142a56f0f2b6675d020abe..3df351e31d65edf1237d9483023a6d25231ec5f7 100644
+index 4f198331785178e696142a56f0f2b6675d020abe..cea61ed8d9c1d3c71fa8da423d443e8d7b752800 100644
 --- a/src/lib/services/contracts/ICollisionDetector.ts
 +++ b/src/lib/services/contracts/ICollisionDetector.ts
 @@ -17,6 +17,8 @@ export type CollisionZone =
@@ -20878,7 +21760,7 @@ index 4f198331785178e696142a56f0f2b6675d020abe..3df351e31d65edf1237d9483023a6d25
    | "arms-through-each-other";
  
  /**
-@@ -51,6 +53,26 @@ export interface CollisionEvent {
+@@ -51,6 +53,38 @@ export interface CollisionEvent {
    description: string;
  }
  
@@ -20900,6 +21782,18 @@ index 4f198331785178e696142a56f0f2b6675d020abe..3df351e31d65edf1237d9483023a6d25
 +  appliedHeadDodgeRad: number;
 +  /** Signed forward pitch measured from the achieved torso axis. */
 +  achievedTorsoPitchRad: number;
++  /**
++   * Measured arm-segment lengths from the loaded rig's own skinned skeleton.
++   * Zero until the arm chains are mapped. Consumers derive reach and the prop
++   * sizes a body can hold from these rather than tabulating them per rig.
++   */
++  leftUpperArmLength: number;
++  leftForearmLength: number;
++  rightUpperArmLength: number;
++  rightForearmLength: number;
++  /** Live elbow world positions, for verifying a pose change kept them put. */
++  leftElbowWorld: Readonly<Vector3>;
++  rightElbowWorld: Readonly<Vector3>;
 +}
 +
  /** Bone positions snapshot needed for collision checks */
@@ -21658,10 +22552,10 @@ index 0000000000000000000000000000000000000000..2ffaba50d596d64feda7d3a54922536f
 +  return confidence;
 +}
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff2bdd6c04 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..6f3297f9506ec56646391d4464bc1ddb9b9d0348 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
-@@ -5,21 +5,106 @@
+@@ -5,21 +5,136 @@
   * Bridges TKA prop states to skeleton IK targets.
   */
  
@@ -21728,6 +22622,19 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 + *  render-side contact lock can bridge half of this distance per prop. */
 +const MIN_ADJACENT_GRIP_SEPARATION = 0.07;
 +
++/** Inward wrist deviation applied once the stance is fully side-on. Both
++ *  hands then share one narrow corridor in front of the turned chest, and the
++ *  hand reaches that corridor by deviating medially out of its own forearm
++ *  instead of the grip being carried across the body. 35 degrees is the
++ *  ulnar-deviation ceiling this rig allows (see MAX_WRIST_SWING). */
++const HUG_WRIST_DEVIATION = (25 * Math.PI) / 180;
++
++/** Stance yaw where the inward wrist deviation starts, and where it
++ *  saturates. A square stance keeps the historical medial hand approach
++ *  untouched; the deviation eases in only as the chest turns to the side. */
++const HUG_YAW_KNEE = (65 * Math.PI) / 180;
++const HUG_YAW_FULL = (85 * Math.PI) / 180;
++
 +/** Reach deficits (meters) below this don't trigger escalation. */
 +const REACH_EPSILON = 0.015;
 +
@@ -21756,12 +22663,29 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +
 +/** Stance yaw input clamp (~matches the thoracic+cervical twist budget). */
 +const MAX_STANCE_YAW = (90 * Math.PI) / 180;
++/**
++ * Resting share of the shoulder line carried by Spine1; Spine2 takes the rest.
++ * Mirrors the app-side score-time track's own split, so a held stance is
++ * bone-for-bone the pose that shipped before that track existed.
++ */
++const SPINE1_BLADE_SHARE = 0.45;
++/**
++ * Ceiling on how far the lower spine may run ahead of the upper one mid-turn.
++ * Past roughly this the spiral stops reading as a torso rotating in sequence
++ * and starts reading as a break at the waist.
++ */
++const MAX_SPINE_STAGGER = (25 * Math.PI) / 180;
++/** Ceiling on how far the head may trail the shoulder line. */
++const MAX_STANCE_HEAD_LAG = (34 * Math.PI) / 180;
++
 +
 +/**
-+ * While the previous body-frame forward still points within ~120° of root
-+ * forward, it disambiguates the shoulder perpendicular instead of the root.
++ * How square the chest must be before the shoulder line's export handedness
++ * can be read off the root. At 0.5 the chest is within 60° of facing the way
++ * the hips do, where the comparison is decisive; a fully bladed torso puts the
++ * shoulder line along root forward and collapses the same dot to about 0.05.
 + */
-+const BODY_FRAME_HYSTERESIS_MIN_DOT = -0.5;
++const BODY_FRAME_SIGN_MIN_DOT = 0.5;
 +
 +const WORLD_UP = new Vector3(0, 1, 0);
 +const MAX_HEAD_DODGE = 0.42;
@@ -21772,7 +22696,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
  
  export class AvatarAnimator implements IAvatarAnimator {
    private currentPose: BodyPose;
-@@ -29,6 +114,10 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -29,6 +144,10 @@ export class AvatarAnimator implements IAvatarAnimator {
    // Per-arm IK blend weights: 0 = animation drives the arm, 1 = IK drives the arm
    private leftArmIK = { weight: 0, targetWeight: 0 };
    private rightArmIK = { weight: 0, targetWeight: 0 };
@@ -21783,7 +22707,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
    private ikBlendSpeed = 1 / 0.3; // ~0.3s ramp time
    private smoothBlending = true;
    private smoothingFactor = 0.15; // 0-1, higher = smoother but laggier
-@@ -38,8 +127,13 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -38,8 +157,13 @@ export class AvatarAnimator implements IAvatarAnimator {
    private transitionProgress = 0;
    private transitionConfig: TransitionConfig | null = null;
    private poleComputer: IElbowPoleComputer | null;
@@ -21797,7 +22721,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
    private _poleVectorsEnabled = true;
  
    private clavicleRaiser: IClavicleRaiser | null;
-@@ -85,6 +179,125 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -85,6 +209,142 @@ export class AvatarAnimator implements IAvatarAnimator {
     */
    private externalSpinePitchRad = 0;
  
@@ -21828,6 +22752,8 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +
 +  // --- Stance yaw input track (planner-shaped facing/stance input) ---
 +  private stanceYawTargetRad = 0;
++  private stanceSpineStaggerRad = 0;
++  private stanceHeadLagRad = 0;
 +  private stanceYawSmoothedRad = 0;
 +
 +  // --- Reflexive head dodge ---
@@ -21870,9 +22796,12 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +  private _stanceReferenceRoot: Object3D | null = null;
 +  private readonly _stanceReferenceLocalForward = new Vector3(0, 0, 1);
 +  private readonly _stanceReferenceForward = new Vector3(0, 0, 1);
-+  private _bodyFrameForwardSeeded = false;
-+  private readonly _bodyFramePreviousForward = new Vector3(0, 0, 1);
-+  private readonly _bodyFrameHemisphereRef = new Vector3(0, 0, 1);
++  /**
++   * Export handedness of the shoulder line for the bound rig: `1` when
++   * `right - left` already yields a forward-facing perpendicular, `-1` when it
++   * yields the backward one, `0` until a square-enough chest lets us tell.
++   */
++  private _bodyFrameLateralSign = 0;
 +  private readonly _leftShoulderWorld = new Vector3();
 +  private readonly _rightShoulderWorld = new Vector3();
 +  private readonly _headWorld = new Vector3();
@@ -21905,6 +22834,18 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +  private readonly _socketTargetRight = new Vector3();
 +  private readonly _desiredPalmWorld = new Vector3();
 +  private readonly _palmRollCross = new Vector3();
++  // Hand-direction scratch, plus the direction the socket committed to this
++  // frame per side so the wrist orientation aims at the same goal the wrist
++  // position assumed instead of deriving a second one.
++  private readonly _handMedial = new Vector3();
++  private readonly _handForearm = new Vector3();
++  private readonly _handDeviate = new Vector3();
++  private readonly _handRef = new Vector3();
++  private readonly _handAxis = new Vector3();
++  private readonly leftHandDir = new Vector3();
++  private readonly rightHandDir = new Vector3();
++  private leftHandDirValid = false;
++  private rightHandDirValid = false;
 +  private readonly _gripProximalLocal = new Vector3();
 +  private readonly _gripMiddleLocal = new Vector3();
 +  private readonly _gripDistalLocal = new Vector3();
@@ -21923,7 +22864,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
    constructor(
      private ikSolver: IIKSolver,
      private skeleton: IAvatarSkeletonBuilder,
-@@ -180,13 +393,58 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -180,13 +440,58 @@ export class AvatarAnimator implements IAvatarAnimator {
          }
        : null;
  
@@ -21983,7 +22924,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
    ): void {
      this.leftArmIK.targetWeight = blueProp ? 1 : 0;
      this.rightArmIK.targetWeight = redProp ? 1 : 0;
-@@ -205,6 +463,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -205,6 +510,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              blueProp.worldPosition.y - oy,
              blueProp.worldPosition.z - oz
            ),
@@ -21991,7 +22932,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
            staffAngle: blueProp.staffRotationAngle,
            plane: blueProp.plane,
            weight: 1,
-@@ -218,15 +477,63 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -218,15 +524,100 @@ export class AvatarAnimator implements IAvatarAnimator {
              redProp.worldPosition.y - oy,
              redProp.worldPosition.z - oz
            ),
@@ -22010,6 +22951,43 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +    this.stanceYawTargetRad = Math.max(
 +      -MAX_STANCE_YAW,
 +      Math.min(MAX_STANCE_YAW, radians)
++    );
++  }
++
++  /**
++   * Per-segment timing for the stance turn, planned in score time by the app.
++   *
++   * `spine1Rad + spine2Rad` is the shoulder-line request already delivered
++   * through `setStanceYaw`, so this carries only what that one scalar cannot
++   * express: how far the lower spine is ahead of its resting share, and how far
++   * the head is still trailing the shoulders. Both are zero at a held facing.
++   *
++   * The stagger is stored as a signed excess rather than two absolute angles
++   * precisely so it can be applied as an equal and opposite pair. Their sum is
++   * zero, so no timing decision here can move the shoulder line the grip solve
++   * converges against.
++   */
++  setStanceYawSegments(
++    segments: {
++      spine1Rad: number;
++      spine2Rad: number;
++      headLagRad: number;
++    } | null
++  ): void {
++    if (!segments) {
++      this.stanceSpineStaggerRad = 0;
++      this.stanceHeadLagRad = 0;
++      return;
++    }
++    const chestRad = segments.spine1Rad + segments.spine2Rad;
++    const stagger = segments.spine1Rad - SPINE1_BLADE_SHARE * chestRad;
++    this.stanceSpineStaggerRad = Math.max(
++      -MAX_SPINE_STAGGER,
++      Math.min(MAX_SPINE_STAGGER, stagger)
++    );
++    this.stanceHeadLagRad = Math.max(
++      -MAX_STANCE_HEAD_LAG,
++      Math.min(MAX_STANCE_HEAD_LAG, segments.headLagRad)
 +    );
 +  }
 +
@@ -22055,7 +23033,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
    setLeftHandTarget(target: HandPose): void {
      this.targetPose.leftHand = { ...target };
      this.targetPose.timestamp = Date.now();
-@@ -259,7 +566,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -259,7 +650,7 @@ export class AvatarAnimator implements IAvatarAnimator {
      const finalPose = this.computeFinalPose();
  
      // Solve IK for arms
@@ -22064,7 +23042,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
    }
  
    private blendToTarget(_deltaTime: number): void {
-@@ -378,13 +685,182 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -378,13 +769,217 @@ export class AvatarAnimator implements IAvatarAnimator {
      return result;
    }
  
@@ -22117,25 +23095,38 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +      .crossVectors(this._bodyFrame.lateral, WORLD_UP)
 +      .normalize();
 +
-+    // The shoulder line has two valid perpendiculars. On the first frame the
-+    // root's forward hemisphere disambiguates them so differently exported
-+    // rigs cannot face backwards. Afterwards the previous frame's forward
-+    // wins: a torso turned a full quarter puts the shoulder line parallel to
-+    // root forward, where the root dot product sits at zero and flips sign
-+    // frame to frame. Continuity keeps the frame stable there. The root only
-+    // takes over again if the cached forward has swung behind the performer.
-+    this._bodyFrameHemisphereRef.copy(this._v4);
++    // Whether `right - left` points to the performer's right is a property of
++    // how the rig was exported, not of this frame: every catalog rig and the
++    // intake rig put the bone named left at +X of a root facing +Z, so the raw
++    // perpendicular comes out backwards and has to be inverted. Measure that
++    // once while the chest is square enough for the root to answer decisively,
++    // then apply the same sign on every later frame.
++    //
++    // Deciding it per frame is what made held side stances alternate. This
++    // method runs three times per solve -- before the spine twist, after it
++    // with the chest rebased square, and again after the stance correction --
++    // so a bladed stance hands the square sample a reference a quarter turn
++    // away. Their dot product is then a difference of two ~0.05 residuals, and
++    // the arm solve feeds those residuals back, so its sign flips frame to
++    // frame. A flipped forward reads as a 180° error to
++    // resolveStanceYawCorrection, which clamps the correction to the opposite
++    // side and blades the torso the wrong way.
++    const rootAlignment = this._bodyFrame.forward.dot(this._v4);
 +    if (
-+      this._bodyFrameForwardSeeded &&
-+      this._bodyFramePreviousForward.dot(this._v4) > BODY_FRAME_HYSTERESIS_MIN_DOT
++      this._bodyFrameLateralSign === 0 &&
++      Math.abs(rootAlignment) >= BODY_FRAME_SIGN_MIN_DOT
 +    ) {
-+      this._bodyFrameHemisphereRef.copy(this._bodyFramePreviousForward);
++      this._bodyFrameLateralSign = rootAlignment < 0 ? -1 : 1;
 +    }
-+    if (this._bodyFrame.forward.dot(this._bodyFrameHemisphereRef) < 0) {
++    const lateralSign =
++      this._bodyFrameLateralSign !== 0
++        ? this._bodyFrameLateralSign
++        : rootAlignment < 0
++          ? -1
++          : 1;
++    if (lateralSign < 0) {
 +      this._bodyFrame.forward.multiplyScalar(-1);
 +    }
-+    this._bodyFramePreviousForward.copy(this._bodyFrame.forward);
-+    this._bodyFrameForwardSeeded = true;
 +  }
 +
 +  /**
@@ -22150,14 +23141,14 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +      this._stanceReferenceRoot = null;
 +      this._stanceReferenceLocalForward.set(0, 0, 1);
 +      this._stanceReferenceForward.set(0, 0, 1);
-+      this._bodyFrameForwardSeeded = false;
++      this._bodyFrameLateralSign = 0;
 +      return;
 +    }
 +
 +    root.getWorldQuaternion(this._q1);
 +    if (root !== this._stanceReferenceRoot) {
 +      this._stanceReferenceRoot = root;
-+      this._bodyFrameForwardSeeded = false;
++      this._bodyFrameLateralSign = 0;
 +      this._stanceReferenceLocalForward
 +        .copy(this._bodyFrame.forward)
 +        .applyQuaternion(this._q2.copy(this._q1).invert())
@@ -22210,6 +23201,26 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +   * SpineTwister may already have supplied part of the requested turn; adding
 +   * the full stance again over-rotates the shoulders and recreates the neck
 +   * collision on the far side.
++   *
++   * The return value is a DELTA between the achieved and requested facings, so
++   * MAX_STANCE_YAW -- the input clamp for an absolute stance -- is the wrong
++   * bound for it and used to truncate the turn. SpineTwister does not always
++   * supply *part* of the requested turn; on several catalog rigs it turns the
++   * chest the other way first. Measured at the two-hand side holds of the FALG
++   * fixture, the pre-blade chest sat at about +20 degrees while the planner
++   * asked for -87, so the delta needed -107 and the old clamp handed back -90.
++   * The rendered shoulder line then read -70: the 17-degree shortfall was the
++   * clamp saturating, exactly `needed - 90` on every affected rig and hold
++   * (ch01, ch18, ch41 at the 87-degree holds; ch07 and the intake rig needed
++   * only 83-90 and so never tripped it).
++   *
++   * Any bound that never truncates a correctly measured delta is a no-op --
++   * |requested - achieved| <= |requested| + |achieved| and both terms are
++   * already bounded -- so the guard belongs on the input, where setStanceYaw
++   * also applies it. What the delta does need is wrapping: requested minus an
++   * atan2 result reaches +/-267 degrees, and an unwrapped value that large
++   * turns the torso the long way round. Half-turn ambiguity in the shoulder
++   * line is caught upstream by the latched body-frame handedness, not here.
 +   */
 +  private resolveStanceYawCorrection(
 +    requestedYawRad: number,
@@ -22221,10 +23232,12 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +        referenceForward.x * achievedForward.z,
 +      Math.max(-1, Math.min(1, referenceForward.dot(achievedForward)))
 +    );
-+    return Math.max(
++    const targetYaw = Math.max(
 +      -MAX_STANCE_YAW,
-+      Math.min(MAX_STANCE_YAW, requestedYawRad - achievedYaw)
++      Math.min(MAX_STANCE_YAW, requestedYawRad)
 +    );
++    const delta = targetYaw - achievedYaw;
++    return delta - Math.PI * 2 * Math.round(delta / (Math.PI * 2));
 +  }
 +
 +  private applyIKToSkeleton(pose: BodyPose, deltaTime: number): void {
@@ -22248,7 +23261,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
      // Compute body center from Hips bone (or default to origin)
      const bodyCenter = new Vector3(0, 0, 0);
      const hipsBone = state.bones.get("Hips");
-@@ -392,6 +868,11 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -392,6 +987,11 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
  
@@ -22260,7 +23273,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
      // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
      // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
      // position feeds back and causes oscillation.
-@@ -445,7 +926,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -445,7 +1045,8 @@ export class AvatarAnimator implements IAvatarAnimator {
          pose.leftHand?.targetPosition ?? null,
          pose.rightHand?.targetPosition ?? null,
          bodyCenter,
@@ -22270,7 +23283,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
        );
  
        // Apply twist to each bone individually for a natural spinal curve.
-@@ -511,12 +993,140 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -511,12 +1112,175 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
  
@@ -22301,7 +23314,14 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +      );
 +    }
 +    const stanceCorrectionActive = Math.abs(stanceYawCorrectionRad) > 0.001;
-+    if ((stanceCorrectionActive || leanActive) && this.spineRestCached) {
++    // The stagger is a pose the torso holds mid-turn rather than a
++    // correction, so it can be the only reason this block runs.
++    const stanceStaggerActive =
++      stanceTrackActive && Math.abs(this.stanceSpineStaggerRad) > 0.001;
++    if (
++      (stanceCorrectionActive || stanceStaggerActive || leanActive) &&
++      this.spineRestCached
++    ) {
 +      const spine1Bone = state.bones.get("Spine1");
 +      const spine2Bone = state.bones.get("Spine2");
 +      // Rebase any spine bone nothing else wrote this frame, so these
@@ -22319,24 +23339,52 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +          spine2Bone.quaternion.copy(this.spineTwistRestQuats.spine2);
 +        }
 +      }
-+      if (stanceCorrectionActive) {
-+        // Local-Y yaw split across the two spine bones (blading, not a
-+        // whole-body turn). Models lacking Spine2 get a softer stance -
-+        // acceptable, since the clamp already bounds the total.
-+        if (spine1Bone) {
-+          this._q1.setFromAxisAngle(
-+            this._v1.set(0, 1, 0),
-+            stanceYawCorrectionRad * 0.45
-+          );
-+          spine1Bone.quaternion.multiply(this._q1);
-+        }
-+        if (spine2Bone) {
-+          this._q1.setFromAxisAngle(
-+            this._v1.set(0, 1, 0),
-+            stanceYawCorrectionRad * 0.55
-+          );
-+          spine2Bone.quaternion.multiply(this._q1);
-+        }
++      if (stanceCorrectionActive || stanceStaggerActive) {
++        // Yaw split across the two spine bones (blading, not a whole-body
++        // turn). Models lacking Spine2 get a softer stance - acceptable,
++        // since the clamp already bounds the total.
++        //
++        // The axis is the WORLD vertical, conjugated into each bone's parent
++        // frame the way applyLean below already does. Posting the rotation
++        // onto the bone's own local Y assumed every rig's spine bones stand
++        // vertical; they do not, and the external spine pitch tilts them
++        // further, so a requested quarter turn arrived short by an amount
++        // that varied per rig and per side. resolveStanceYawCorrection is a
++        // single open-loop pass - target minus measured - so that shortfall
++        // survived as steady error. About the true vertical the correction
++        // lands exactly: the intake rig now measures 87.000 / -87.000 /
++        // 0.000 degrees achieved against the same requested values, where the
++        // local-Y form left roughly a degree of rig-dependent residual.
++        const applyBladeYaw = (bone: Bone | undefined, angleRad: number) => {
++          if (!bone || !bone.parent) return;
++          this._q1.setFromAxisAngle(this._v1.set(0, 1, 0), angleRad);
++          // World-frame delta -> bone-local delta by conjugation. Spine2's
++          // parent world quaternion is one frame-internal step stale here,
++          // but the staleness is itself a rotation about the world vertical
++          // and rotations about a shared axis commute, so the conjugated
++          // delta is unaffected.
++          bone.parent.getWorldQuaternion(this._q2);
++          this._q3
++            .copy(this._q2)
++            .invert()
++            .multiply(this._q1)
++            .multiply(this._q2);
++          bone.quaternion.premultiply(this._q3);
++        };
++        // Successive breaking of joints. The stagger enters as an equal
++        // and opposite pair, so the two bones still sum to exactly the
++        // shoulder line the correction above delivered; only its
++        // distribution moves, and only while the turn is in flight.
++        applyBladeYaw(
++          spine1Bone,
++          stanceYawCorrectionRad * SPINE1_BLADE_SHARE +
++            this.stanceSpineStaggerRad
++        );
++        applyBladeYaw(
++          spine2Bone,
++          stanceYawCorrectionRad * (1 - SPINE1_BLADE_SHARE) -
++            this.stanceSpineStaggerRad
++        );
 +      }
 +      if (leanActive) {
 +        // Tilt the upper body toward the (horizontalized) deficit
@@ -22412,7 +23460,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = leftChain.root.quaternion.clone();
          const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -527,7 +1137,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -527,7 +1291,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const leftShoulder = state.bones.get("LeftShoulder");
            if (leftShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -22421,7 +23469,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
                "left",
                this.leftShoulderRestY,
                leftChain.totalLength
-@@ -540,6 +1150,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -540,6 +1304,15 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -22430,13 +23478,14 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +        const leftTarget = this.computeSocketTarget(
 +          "left",
 +          leftChain,
-+          leftHand.targetPosition
++          leftHand.targetPosition,
++          leftHand.wristRotation
 +        );
 +
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: leftTarget,
-@@ -547,19 +1165,75 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -547,19 +1320,75 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
  
          if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
@@ -22515,7 +23564,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
  
          // Save IK results BEFORE blending - .copy() would overwrite them
          const ikRootQuat = leftChain.root.quaternion.clone();
-@@ -572,13 +1246,24 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -572,13 +1401,24 @@ export class AvatarAnimator implements IAvatarAnimator {
          leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -22541,7 +23590,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = rightChain.root.quaternion.clone();
          const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -589,7 +1274,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -589,7 +1429,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const rightShoulder = state.bones.get("RightShoulder");
            if (rightShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -22550,7 +23599,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
                "right",
                this.rightShoulderRestY,
                rightChain.totalLength
-@@ -602,6 +1287,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -602,6 +1442,15 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -22559,13 +23608,14 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +        const rightTarget = this.computeSocketTarget(
 +          "right",
 +          rightChain,
-+          rightHand.targetPosition
++          rightHand.targetPosition,
++          rightHand.wristRotation
 +        );
 +
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: rightTarget,
-@@ -609,19 +1302,68 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -609,19 +1458,68 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
  
          if (this._poleVectorsEnabled && this.poleComputer && rightHand.plane) {
@@ -22637,7 +23687,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
  
          // Save IK results BEFORE blending - .copy() would overwrite them
          const ikRootQuat = rightChain.root.quaternion.clone();
-@@ -634,13 +1376,821 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -634,13 +1532,972 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -22680,7 +23730,13 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +  ): void {
 +    const head = state.bones.get("Head");
 +    if (!head) return;
-+    if (!this.headDodgeEnabled && this.headDodgeAngleSmoothed < 0.001) {
++    const stanceHeadLagRad = this.stanceHeadLagRad;
++    const stanceLagActive = Math.abs(stanceHeadLagRad) > 0.0001;
++    if (
++      !this.headDodgeEnabled &&
++      this.headDodgeAngleSmoothed < 0.001 &&
++      !stanceLagActive
++    ) {
 +      this.headDodgeAngleSmoothed = 0;
 +      return;
 +    }
@@ -22764,6 +23820,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +    }
 +    if (targetAngle === 0 && this.headDodgeAngleSmoothed < 0.001) {
 +      this.headDodgeAngleSmoothed = 0;
++      this.applyStanceHeadLag(neck, head, stanceHeadLagRad);
 +      return;
 +    }
 +
@@ -22772,6 +23829,38 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +      this.applyWorldHeadDodge(head, 0.4);
 +    } else {
 +      this.applyWorldHeadDodge(head, 1);
++    }
++    this.applyStanceHeadLag(neck, head, stanceHeadLagRad);
++  }
++
++  /**
++   * The head settles last.
++   *
++   * `lagRad` is the app's planned head-minus-shoulders drag about the
++   * world vertical, applied after the dodge on the same two bones and
++   * split the same way. Premultiplying is safe because the rebase at the
++   * top of `applyHeadDodge` restores Neck and Head to rest whenever
++   * SpineTwister did not already write them, so nothing accumulates.
++   */
++  private applyStanceHeadLag(
++    neck: Bone | undefined,
++    head: Bone,
++    lagRad: number
++  ): void {
++    if (Math.abs(lagRad) < 0.0001) return;
++    const applyLag = (bone: Bone, fraction: number) => {
++      if (!bone.parent) return;
++      this._q1.setFromAxisAngle(this._v1.set(0, 1, 0), lagRad * fraction);
++      bone.parent.getWorldQuaternion(this._q2);
++      this._q3.copy(this._q2).invert().multiply(this._q1).multiply(this._q2);
++      bone.quaternion.premultiply(this._q3);
++      bone.updateMatrixWorld(true);
++    };
++    if (neck) {
++      applyLag(neck, 0.6);
++      applyLag(head, 0.4);
++    } else {
++      applyLag(head, 1);
 +    }
 +  }
 +
@@ -22982,17 +24071,107 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +  }
 +
 +  /**
-+   * Shift the IK target so the PALM (not the wrist joint) lands on the
-+   * grip point. The wrist approaches from the outside of its own staff:
-+   * left wrist outside the left-hand grip, right wrist outside the
-+   * right-hand grip. Reading the hand's previous orientation here allowed
-+   * both socket corrections to converge between close parallel staffs,
-+   * putting the two wrist joints at the same point.
++   * How fully the same-side hug is engaged, read from the stance yaw the
++   * planner asked for. 0 leaves every square pose on its historical approach.
 +   */
++  private hugBlend(): number {
++    const yaw = Math.abs(this.stanceYawSmoothedRad);
++    const t = (yaw - HUG_YAW_KNEE) / (HUG_YAW_FULL - HUG_YAW_KNEE);
++    const c = Math.max(0, Math.min(1, t));
++    return c * c * (3 - 2 * c);
++  }
++
++  /**
++   * Direction the hand points, wrist to palm, for a requested grip.
++   *
++   * A square stance keeps the historical approach: straight along the medial
++   * axis, so the wrist sits a palm length outboard of the grip. Once the chest
++   * turns side-on the goal becomes medial, eased back toward the forearm by a
++   * bounded wrist deviation and resolved inside the plane the knuckle axis can
++   * actually reach. Nothing here moves the authored grip: the wrist travels
++   * around it on a palm-length sphere, so the hug is the hand rotating in, not
++   * a second placement pass, and the elbow stays where the arm already put it.
++   */
++  private computeHandDirection(
++    side: "left" | "right",
++    chain: BoneChain,
++    gripPoint: Vector3,
++    staffQuat: Quaternion | undefined,
++    out: Vector3
++  ): void {
++    const medialSign = side === "left" ? 1 : -1;
++    this._handMedial
++      .copy(this._bodyFrame.lateral)
++      .multiplyScalar(medialSign)
++      .normalize();
++    out.copy(this._handMedial);
++    const blend = this.hugBlend();
++    if (blend <= 1e-4 || !staffQuat) return;
++    // The knuckle axis is welded to the staff, so the only wrist-to-palm
++    // directions the orientation pass can actually reach lie in the plane
++    // perpendicular to the shaft. Solve the hug inside that plane; a goal
++    // outside it leaves the palm short of the grip by whatever the shaft
++    // swallows, which is how the first attempt pulled both staffs into the
++    // torso.
++    this._handAxis.set(0, -1, 0).applyQuaternion(staffQuat);
++    if (this._handAxis.lengthSq() <= 1e-10) return;
++    this._handAxis.normalize();
++    this._handMedial.addScaledVector(
++      this._handAxis,
++      -this._handMedial.dot(this._handAxis)
++    );
++    if (this._handMedial.lengthSq() <= 1e-10) return;
++    this._handMedial.normalize();
++    // Rotate the medial goal back toward the arm's own reach line by a
++    // bounded wrist deviation. Pure medial is the tightest hug the hand can
++    // hold; easing toward the arm's line is what keeps the elbow where it
++    // already is.
++    //
++    // Reference the SHOULDER, not the elbow. The elbow is where the previous
++    // frame's IK put it, so easing toward it closed the loop
++    // elbow -> wrist goal -> IK -> elbow, stepped once per frame. Where that
++    // loop's gain exceeds one it settles into an exact period-2 alternation:
++    // two hug poses that each reproduce the other, which is what made a
++    // frozen step flicker between a converged hug and a collapse. The
++    // shoulder is an input to this solve rather than an output of it, and the
++    // shoulder-to-grip chord is the same reach line the clearance solver
++    // already plans against, so the goal is stable by construction instead of
++    // by damping.
++    chain.root.getWorldPosition(this._handForearm);
++    this._handForearm.sub(gripPoint);
++    this._handForearm.addScaledVector(
++      this._handAxis,
++      -this._handForearm.dot(this._handAxis)
++    );
++    if (this._handForearm.lengthSq() <= 1e-10) return;
++    this._handForearm.normalize();
++    this._handDeviate
++      .copy(this._handForearm)
++      .addScaledVector(
++        this._handMedial,
++        -this._handForearm.dot(this._handMedial)
++      );
++    if (this._handDeviate.lengthSq() <= 1e-10) return;
++    this._handDeviate.normalize();
++    const toForearm = Math.acos(
++      Math.max(-1, Math.min(1, this._handMedial.dot(this._handForearm)))
++    );
++    const deviation = Math.min(HUG_WRIST_DEVIATION, toForearm);
++    this._handRef
++      .copy(this._handMedial)
++      .multiplyScalar(Math.cos(deviation))
++      .addScaledVector(this._handDeviate, Math.sin(deviation))
++      .normalize();
++    out.lerp(this._handRef, blend);
++    if (out.lengthSq() <= 1e-10) out.copy(this._handMedial);
++    else out.normalize();
++  }
++
 +  private computeSocketTarget(
 +    side: "left" | "right",
-+    _chain: BoneChain,
-+    gripPoint: Vector3
++    chain: BoneChain,
++    gripPoint: Vector3,
++    staffQuat: Quaternion | undefined
 +  ): Vector3 {
 +    const palmLocal = side === "left" ? this.leftPalmLocal : this.rightPalmLocal;
 +    const worldPalmLength =
@@ -23001,17 +24180,17 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +        : this.rightPalmWorldLength;
 +    const out =
 +      side === "left" ? this._socketTargetLeft : this._socketTargetRight;
++    if (side === "left") this.leftHandDirValid = false;
++    else this.rightHandDirValid = false;
 +    if (!palmLocal || worldPalmLength <= 1e-6) return out.copy(gripPoint);
-+    // _bodyFrame.lateral points toward the performer's anatomical right.
-+    // A left palm therefore approaches medially along +lateral; a right
-+    // palm approaches along -lateral. Subtracting that palm vector places
-+    // the wrist on the outer side of the requested grip.
-+    const medialSign = side === "left" ? 1 : -1;
-+    this._v1
-+      .copy(this._bodyFrame.lateral)
-+      .multiplyScalar(medialSign)
-+      .normalize()
-+      .multiplyScalar(worldPalmLength);
++    // Shift the IK target so the PALM, not the wrist joint, lands on the grip
++    // point. computeHandDirection owns which way the wrist sits off the grip;
++    // publish it so the orientation pass aims at the same goal.
++    const dir = side === "left" ? this.leftHandDir : this.rightHandDir;
++    this.computeHandDirection(side, chain, gripPoint, staffQuat, dir);
++    if (side === "left") this.leftHandDirValid = true;
++    else this.rightHandDirValid = true;
++    this._v1.copy(dir).multiplyScalar(worldPalmLength);
 +    return out.copy(gripPoint).sub(this._v1);
 +  }
 +
@@ -23378,22 +24557,44 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
 +    // Correction that carries the grip axis onto the directed staff axis
 +    this._q2.setFromUnitVectors(this._v1, this._v2);
 +
-+    // Align the wrist-to-palm vector with the medial side of the body. The
-+    // knuckle constraint alone leaves a free 180-degree roll about the staff;
-+    // for adjacent staffs that ambiguous roll placed both wrists in the gap.
++    // Resolve the free 180-degree roll the knuckle constraint leaves about the
++    // staff. A square stance aims the palm NORMAL medially, which is what has
++    // always kept two adjacent wrists out of each other's gap. Once the hug
++    // engages, the roll instead swings the wrist-to-palm axis onto the same
++    // hand direction the socket used, so the hand visibly rotates inward and
++    // the palm lands on the grid grip rather than outboard of it.
++    const hugAmount = this.hugBlend();
++    const handDirValid =
++      side === "left" ? this.leftHandDirValid : this.rightHandDirValid;
 +    this._v4
 +      .copy(palmNormalLocal)
 +      .applyQuaternion(this._q1)
 +      .applyQuaternion(this._q2)
-+      .addScaledVector(this._v2, -this._v4.dot(this._v2));
++      .normalize();
 +    const medialSign = side === "left" ? 1 : -1;
 +    this._desiredPalmWorld
 +      .copy(this._bodyFrame.lateral)
 +      .multiplyScalar(medialSign)
-+      .addScaledVector(
-+        this._v2,
-+        -this._desiredPalmWorld.dot(this._v2)
-+      );
++      .normalize();
++    if (hugAmount > 1e-4 && handDirValid) {
++      this._handRef
++        .copy(palmLocal)
++        .applyQuaternion(this._q1)
++        .applyQuaternion(this._q2);
++      if (this._handRef.lengthSq() > 1e-10) {
++        this._handRef.normalize();
++        this._v4.lerp(this._handRef, hugAmount);
++        this._desiredPalmWorld.lerp(
++          side === "left" ? this.leftHandDir : this.rightHandDir,
++          hugAmount
++        );
++      }
++    }
++    this._v4.addScaledVector(this._v2, -this._v4.dot(this._v2));
++    this._desiredPalmWorld.addScaledVector(
++      this._v2,
++      -this._desiredPalmWorld.dot(this._v2)
++    );
 +    if (
 +      this._v4.lengthSq() > 1e-10 &&
 +      this._desiredPalmWorld.lengthSq() > 1e-10
@@ -23459,7 +24660,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
  
    addLayer(layer: AnimationLayer): void {
      this.layers.set(layer.id, layer);
-@@ -689,6 +2239,20 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -689,6 +2546,20 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.externalSpinePitchRad = radians;
    }
  
@@ -23480,7 +24681,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
    /** Debug toggle: disable pole vectors to compare old vs new elbow behavior */
    togglePoleVectors(): boolean {
      this._poleVectorsEnabled = !this._poleVectorsEnabled;
-@@ -696,10 +2260,18 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -696,10 +2567,18 @@ export class AvatarAnimator implements IAvatarAnimator {
        // Reset to default backward poles so difference is visible immediately
        this.leftPoleVector.set(0, 0, -1);
        this.rightPoleVector.set(0, 0, -1);
@@ -23500,7 +24701,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..39df73ccab82e00663785f81698b35ff
    toggleClavicleRaise(): boolean {
      this._clavicleRaiseEnabled = !this._clavicleRaiseEnabled;
 diff --git a/src/lib/services/implementations/AvatarSkeletonBuilder.ts b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
-index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee09f537d90 100644
+index d2f43b6b63eacb247573543f3d15c29118926882..bc98e1993809abb5e6a48e10345b1292fa06f389 100644
 --- a/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 +++ b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 @@ -5,9 +5,8 @@
@@ -23514,7 +24715,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
  import type {
    IAvatarSkeletonBuilder,
    BoneName,
-@@ -19,6 +18,16 @@ import {
+@@ -19,6 +18,17 @@ import {
    type FingerBoneName,
    type FingerChains,
  } from "../../domain/models/GripPose";
@@ -23524,6 +24725,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 +  loadSharedGltf,
 +} from "../shared-gltf-cache";
 +import { buildTwoBoneChain } from "../leg-geometry";
++import { normalizeBoneName } from "../bone-name-normalization";
 +import {
 +  avatarAssetLabel,
 +  recordAvatarLoadSpan,
@@ -23531,7 +24733,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
  
  /**
   * Mapping of standard bone names to common variations
-@@ -54,6 +63,7 @@ const BONE_NAME_ALIASES: Record<BoneName, string[]> = {
+@@ -54,6 +64,7 @@ const BONE_NAME_ALIASES: Record<BoneName, string[]> = {
    LeftUpLeg: ["LeftUpLeg", "l_thigh", "thigh.L", "upperleg_l", "LeftUpperLeg"],
    LeftLeg: ["LeftLeg", "l_shin", "shin.L", "lowerleg_l", "LeftLowerLeg"],
    LeftFoot: ["LeftFoot", "l_foot", "foot.L", "foot_l"],
@@ -23539,7 +24741,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
    RightUpLeg: [
      "RightUpLeg",
      "r_thigh",
-@@ -63,6 +73,7 @@ const BONE_NAME_ALIASES: Record<BoneName, string[]> = {
+@@ -63,6 +74,7 @@ const BONE_NAME_ALIASES: Record<BoneName, string[]> = {
    ],
    RightLeg: ["RightLeg", "r_shin", "shin.R", "lowerleg_r", "RightLowerLeg"],
    RightFoot: ["RightFoot", "r_foot", "foot.R", "foot_r"],
@@ -23547,7 +24749,40 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
  };
  
  /**
-@@ -101,9 +112,9 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -88,6 +100,32 @@ for (const side of ["Left", "Right"] as const) {
+   }
+ }
+ 
++
++const EXPECTED_FINGER_BONE_COUNT = FINGER_BONES.length * 2;
++const warnedMissingFingerRigs = new Set<string>();
++
++/**
++ * Report an unresolved finger rig once per model.
++ *
++ * Grip calibration, the wrist goal, the palm socket and the per-frame shaft
++ * channel all disable themselves when finger chains are null. That used to
++ * happen in total silence, so a rig whose joints merely carried an unexpected
++ * export namespace looked exactly like a rig with no fingers at all.
++ */
++function warnMissingFingerRig(
++  label: string,
++  found: number,
++  missing: string[]
++): void {
++  if (warnedMissingFingerRigs.has(label)) return;
++  warnedMissingFingerRigs.add(label);
++  const sample = missing.slice(0, 4).join(", ");
++  const rest = missing.length > 4 ? ` (+${missing.length - 4} more)` : "";
++  console.warn(
++    `[AvatarSkeletonBuilder] "${label}": finger rig unresolved - found ${found} of ${EXPECTED_FINGER_BONE_COUNT} expected finger bones. Wrist goal, palm socket and shaft-channel correction stay disabled. Missing: ${sample}${rest}`
++  );
++}
++
+ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+   private state: SkeletonState = {
+     isLoaded: false,
+@@ -101,9 +139,9 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      fingerChains: null,
    };
  
@@ -23558,7 +24793,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
  
    /** Offset from model origin to feet (negative value - feet are below origin) */
    private feetOffset: number = 0;
-@@ -111,24 +122,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -111,24 +149,37 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
    /** Original bounding box min Y (in unscaled model space) - computed once at load time */
    private originalMinY: number = 0;
  
@@ -23588,7 +24823,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 +        recordAvatarLoadSpan(label, "skinned-clone", cloneStart);
 +      }
 +      const buildStart = performance.now();
-+      this.processGLTF(root, getSharedGltfBounds(url));
++      this.processGLTF(root, getSharedGltfBounds(url), label);
 +      recordAvatarLoadSpan(
 +        label,
 +        "skeleton-build",
@@ -23605,12 +24840,13 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 -  private processGLTF(gltf: GLTF): void {
 +  private processGLTF(
 +    root: Object3D,
-+    preparedBounds: { height: number; minY: number } | null
++    preparedBounds: { height: number; minY: number } | null,
++    label: string
 +  ): void {
      // Hot-swap: keep old arm chains valid until new ones are ready
      // This ensures animation continues smoothly during the swap
      const oldRoot = this.state.root;
-@@ -139,7 +162,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -139,11 +190,24 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      let newSkeleton: Skeleton | null = null;
  
      // Find all skinned meshes and bones in the new model
@@ -23619,7 +24855,25 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
        if ((child as SkinnedMesh).isSkinnedMesh) {
          const skinnedMesh = child as SkinnedMesh;
          newMeshes.push(skinnedMesh);
-@@ -160,12 +183,17 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+-        newSkeleton = skinnedMesh.skeleton;
++        // A character is usually exported as several skinned meshes - a body
++        // plus shirt, pants, sneakers and eyelashes - and every accessory
++        // carries its own reduced skeleton holding only the joints that deform
++        // it. Keeping whichever mesh happened to be traversed last left the rig
++        // pointing at a 13-joint trouser skeleton, so every finger lookup missed
++        // even though the body skin beside it held all 30. The character's own
++        // skeleton is the complete one, so keep the largest.
++        if (
++          skinnedMesh.skeleton &&
++          (newSkeleton === null ||
++            skinnedMesh.skeleton.bones.length > newSkeleton.bones.length)
++        ) {
++          newSkeleton = skinnedMesh.skeleton;
++        }
+ 
+         // Map bones from the skeleton directly (more reliable than checking isBone)
+         if (skinnedMesh.skeleton) {
+@@ -160,12 +224,17 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
  
      // Compute original bounding box of new model (before any transforms)
      // This is done ONCE at load time, before the model is added to the scene
@@ -23641,12 +24895,12 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
      this.state.meshes = newMeshes;
      this.state.bones = newBones;
      this.skeleton = newSkeleton;
-@@ -173,28 +201,14 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -173,39 +242,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      // Build IK chains (uses the new bones map)
      this.buildArmChains();
      this.buildLegChains();
 -    this.state.fingerChains = this.buildFingerChains(gltf.scene);
-+    this.state.fingerChains = this.buildFingerChains(root);
++    this.state.fingerChains = this.buildFingerChains(label);
  
      this.state.isLoaded = true;
  
@@ -23675,25 +24929,40 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
    }
  
    /**
-@@ -203,6 +217,17 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+    * Map a bone to a bones map (used during hot-swap)
+    */
    private mapBoneToMap(bone: Bone, bonesMap: Map<BoneName, Bone>): void {
-     const boneName = bone.name.toLowerCase();
- 
+-    const boneName = bone.name.toLowerCase();
++    const boneName = normalizeBoneName(bone.name);
++
 +    // A rig that already uses TKA's names must keep each spine level exactly
 +    // where it authored it. Vendor aliases such as `spine1` and `spine2` are
 +    // also used for zero-based rigs, so checking those first silently shifted
 +    // canonical Spine1/Spine2 bones down one level.
 +    for (const standardName of Object.keys(BONE_NAME_ALIASES) as BoneName[]) {
-+      if (boneName === standardName.toLowerCase()) {
++      if (boneName === normalizeBoneName(standardName)) {
 +        bonesMap.set(standardName, bone);
 +        return;
 +      }
 +    }
-+
+ 
      for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
        for (const alias of aliases) {
-         if (boneName === alias.toLowerCase()) {
-@@ -225,80 +250,33 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+-        if (boneName === alias.toLowerCase()) {
++        if (boneName === normalizeBoneName(alias)) {
+           bonesMap.set(standardName as BoneName, bone);
+           return;
+         }
+@@ -216,7 +282,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+     for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
+       if (bonesMap.has(standardName as BoneName)) continue;
+       for (const alias of aliases) {
+-        if (boneName.includes(alias.toLowerCase())) {
++        if (boneName.includes(normalizeBoneName(alias))) {
+           bonesMap.set(standardName as BoneName, bone);
+           return;
+         }
+@@ -225,80 +291,33 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
    }
  
    private mapBone(bone: Bone): void {
@@ -23797,7 +25066,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
    }
  
    /**
-@@ -306,51 +284,12 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -306,51 +325,12 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     * Same pattern as arm chains - two-bone IK with rest directions.
     */
    private buildLegChains(): void {
@@ -23855,7 +25124,96 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
    }
  
    /**
-@@ -417,34 +356,6 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -360,56 +340,57 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+    * rather than scene-graph lookup, which can return different object instances.
+    *
+    * Returns null if ANY of the 30 bones cannot be found - graceful degradation
+-   * for low-poly models that omit finger rigs entirely.
++   * for low-poly models that omit finger rigs entirely - and warns once, naming
++   * how many were found, so a naming mismatch cannot degrade silently.
+    */
+-  private buildFingerChains(_root: Object3D): FingerChains | null {
++  private buildFingerChains(label: string): FingerChains | null {
+     if (!this.skeleton) return null;
+ 
+     const left = new Map<FingerBoneName, Bone>();
+     const right = new Map<FingerBoneName, Bone>();
+ 
+-    // Build a lookup from lowercase bone name → Bone reference
+-    // using the skeleton's actual bone array (the GPU-bound instances)
++    // Build a lookup from normalized bone name → Bone reference using the
++    // skeleton's actual bone array (the GPU-bound instances). Normalizing here
++    // is what lets a namespaced rig (`mixamorig12:LeftHandThumb1`) resolve
++    // against the same alias table as a rig that went through intake.
+     const bonesByName = new Map<string, Bone>();
+     for (const bone of this.skeleton.bones) {
+-      bonesByName.set(bone.name.toLowerCase(), bone);
++      bonesByName.set(normalizeBoneName(bone.name), bone);
+     }
+ 
+-    for (const boneName of FINGER_BONES) {
+-      // --- Left hand ---
+-      const leftKey = `Left${boneName}`;
+-      const leftAliases = FINGER_BONE_ALIASES[leftKey] ?? [];
+-      let leftBone: Bone | null = null;
+-
+-      for (const alias of leftAliases) {
+-        const found = bonesByName.get(alias.toLowerCase());
+-        if (found) {
+-          leftBone = found;
+-          break;
+-        }
++    const resolve = (key: string): Bone | null => {
++      for (const alias of FINGER_BONE_ALIASES[key] ?? []) {
++        const found = bonesByName.get(normalizeBoneName(alias));
++        if (found) return found;
+       }
++      return null;
++    };
++
++    const missing: string[] = [];
+ 
+-      // --- Right hand ---
++    for (const boneName of FINGER_BONES) {
++      const leftKey = `Left${boneName}`;
+       const rightKey = `Right${boneName}`;
+-      const rightAliases = FINGER_BONE_ALIASES[rightKey] ?? [];
+-      let rightBone: Bone | null = null;
+-
+-      for (const alias of rightAliases) {
+-        const found = bonesByName.get(alias.toLowerCase());
+-        if (found) {
+-          rightBone = found;
+-          break;
+-        }
+-      }
++      const leftBone = resolve(leftKey);
++      const rightBone = resolve(rightKey);
+ 
+-      if (!leftBone || !rightBone) {
+-        return null;
+-      }
++      if (!leftBone) missing.push(leftKey);
++      if (!rightBone) missing.push(rightKey);
++      if (!leftBone || !rightBone) continue;
+ 
+       left.set(boneName, leftBone);
+       right.set(boneName, rightBone);
+     }
+ 
++    if (missing.length > 0) {
++      warnMissingFingerRig(
++        label,
++        EXPECTED_FINGER_BONE_COUNT - missing.length,
++        missing
++      );
++      return null;
++    }
++
+     return { left, right };
+   }
+ 
+@@ -417,34 +398,6 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     * Compute the rest direction of a bone (direction to child in bind pose)
     * Returns the direction in the bone's LOCAL space
     */
@@ -23890,7 +25248,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
    getState(): SkeletonState {
      return this.state;
    }
-@@ -535,22 +446,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -535,22 +488,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      return 0;
    }
  
@@ -29963,11 +31321,17 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..359acdf3d54d932409ca055b0f0aafcd
    }
 diff --git a/src/lib/services/leg-geometry.ts b/src/lib/services/leg-geometry.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..1a00ec34f0ab723690fd103c51a0c668379dd484
+index 0000000000000000000000000000000000000000..659491c87669856c213fd41dabbf8171b30282bd
 --- /dev/null
 +++ b/src/lib/services/leg-geometry.ts
-@@ -0,0 +1,100 @@
-+import { Vector3, type Bone, type Matrix4, type Object3D } from "three";
+@@ -0,0 +1,366 @@
++import {
++  Quaternion,
++  Vector3,
++  type Bone,
++  type Matrix4,
++  type Object3D,
++} from "three";
 +import type { BoneChain } from "./contracts/IAvatarSkeletonBuilder";
 +
 +const parentWorld = new Vector3();
@@ -30066,6 +31430,266 @@ index 0000000000000000000000000000000000000000..1a00ec34f0ab723690fd103c51a0c668
 +  toe.getWorldPosition(toeWorld);
 +  if (toSpace) toeWorld.applyMatrix4(toSpace);
 +  return Math.max(floor, toeWorld.y - lowest);
++}
++
++/* ------------------------------------------------------------------------ *
++ * Standing stance
++ *
++ * A performer whose legs nobody is driving shows the audience whatever its
++ * GLB authored as a bind pose, for the whole performance. Those bind poses
++ * disagree: the Mixamo-derived catalog rigs are authored in an A-pose whose
++ * ankles sit ~320 mm apart, and the intake rig is authored standing, ankles
++ * directly under its hip sockets at ~240 mm.
++ *
++ * What used to run in Avatar3D was a fixed 8-degree rotation about each upper
++ * leg's own local Z. A bone's local axes are a property of the export, not of
++ * the body, so one constant read as abduction on one rig and adduction on the
++ * next: it splayed ch18 from 321 mm to 549 mm, and it closed the intake rig
++ * from 239 mm to 18 mm, which is the feet-stuck-together silhouette.
++ *
++ * These three functions replace the constant with a measurement: read the
++ * rig's own hip sockets and ankles, plan the frontal-plane rotation that puts
++ * the ankles a body-derived distance apart, apply it in world space so no
++ * bone naming or axis convention is assumed.
++ *
++ * This is a static standing base, not locomotion. It owns no gait clock, no
++ * contact schedule and no footfall plan. Once a clip or a planner drives the
++ * legs, that owner writes these bones every frame and this pose is gone,
++ * which is the intended relationship.
++ * ------------------------------------------------------------------------ */
++
++/**
++ * Where the ankles sit, as a multiple of the rig's own hip-socket separation.
++ *
++ * 1 puts each ankle directly beneath its own hip socket, so the femurs hang
++ * vertical in the frontal plane. That is the neutral base a person takes when
++ * they are about to move: wide enough to read as support, narrow enough that
++ * turning the torso hard to one side does not fight the legs. It is also the
++ * ratio the intake rig's author chose by hand.
++ */
++export const STANDING_ANKLE_TO_HIP_RATIO = 1;
++
++/** One leg, measured in the frontal plane of the body that owns it. */
++export interface StandingLegSample {
++  /** Lateral offset of this hip socket from the pelvis midline, signed toward the rig's left. */
++  hipLateral: number;
++  /** Lateral offset of the ankle from its own hip socket, same axis. */
++  ankleLateralFromHip: number;
++  /** How far the ankle hangs below the hip socket. Positive on a standing rig. */
++  ankleDropFromHip: number;
++}
++
++export interface StandingStanceSample {
++  left: StandingLegSample;
++  right: StandingLegSample;
++  /** Body lateral axis, pointing toward the rig's left. */
++  lateral: Vector3;
++  /** Body vertical axis, ankles toward hips. */
++  up: Vector3;
++  /** `lateral x up`. A positive rotation about it swings an ankle to the rig's left. */
++  abductionAxis: Vector3;
++}
++
++export interface StandingLegPlan {
++  /** Frontal-plane rotation for this upper leg, about `abductionAxis`. */
++  abductionRad: number;
++  /** Where the ankle lands laterally, relative to the pelvis midline. */
++  ankleLateral: number;
++  /** How far the ankle rises. Negative means it settles lower. */
++  ankleRise: number;
++}
++
++export interface StandingStancePlan {
++  left: StandingLegPlan;
++  right: StandingLegPlan;
++  /** Distance between the hip sockets the plan is derived from. */
++  hipSeparation: number;
++  /** Ankle separation before the plan is applied. */
++  currentAnkleSeparation: number;
++  /** Ankle separation the plan lands on. */
++  targetAnkleSeparation: number;
++  /**
++   * Mean height change of the two ankles. A host that grounds a rig from its
++   * bind-pose bounding box has to fold this into its feet offset, or the soles
++   * float above or sink below the floor by exactly this much.
++   */
++  ankleRise: number;
++}
++
++const hipL = new Vector3();
++const hipR = new Vector3();
++const ankleL = new Vector3();
++const ankleR = new Vector3();
++const stanceUp = new Vector3();
++const stanceLateral = new Vector3();
++const hipToAnkle = new Vector3();
++const ankleMid = new Vector3();
++
++/**
++ * Measure a rig's standing base off its own skeleton.
++ *
++ * Both axes come from the body rather than from the world: up runs from the
++ * ankle midpoint to the hip midpoint, and lateral is the hip-to-hip direction
++ * with that up component removed. Nothing here reads a bone name, a local
++ * axis, or a character id, so a newly authored rig is measured rather than
++ * tabulated.
++ *
++ * Call with world matrices current. Returns null for a degenerate skeleton
++ * (coincident hips or coincident ankles), where there is no frontal plane to
++ * work in.
++ */
++export function measureStandingStance(
++  leftUpLeg: Object3D,
++  rightUpLeg: Object3D,
++  leftFoot: Object3D,
++  rightFoot: Object3D
++): StandingStanceSample | null {
++  leftUpLeg.getWorldPosition(hipL);
++  rightUpLeg.getWorldPosition(hipR);
++  leftFoot.getWorldPosition(ankleL);
++  rightFoot.getWorldPosition(ankleR);
++
++  // Ankle midpoint to hip midpoint. On a standing rig this is the body's own
++  // vertical, and it stays correct when the whole performer is yawed.
++  ankleMid.copy(ankleL).add(ankleR).multiplyScalar(0.5);
++  stanceUp.copy(hipL).add(hipR).multiplyScalar(0.5).sub(ankleMid);
++  if (stanceUp.lengthSq() < 1e-12) return null;
++  stanceUp.normalize();
++
++  stanceLateral.copy(hipL).sub(hipR);
++  stanceLateral.addScaledVector(stanceUp, -stanceLateral.dot(stanceUp));
++  if (stanceLateral.lengthSq() < 1e-12) return null;
++  stanceLateral.normalize();
++
++  const lateral = stanceLateral.clone();
++  const up = stanceUp.clone();
++  const abductionAxis = lateral.clone().cross(up).normalize();
++  const midLateral = (hipL.dot(lateral) + hipR.dot(lateral)) / 2;
++
++  const sampleLeg = (hip: Vector3, ankle: Vector3): StandingLegSample => {
++    hipToAnkle.copy(ankle).sub(hip);
++    return {
++      hipLateral: hip.dot(lateral) - midLateral,
++      ankleLateralFromHip: hipToAnkle.dot(lateral),
++      ankleDropFromHip: -hipToAnkle.dot(up),
++    };
++  };
++
++  return {
++    left: sampleLeg(hipL, ankleL),
++    right: sampleLeg(hipR, ankleR),
++    lateral,
++    up,
++    abductionAxis,
++  };
++}
++
++function planLeg(
++  leg: StandingLegSample,
++  targetAnkleLateral: number
++): StandingLegPlan {
++  // The hip-to-ankle vector, restricted to the plane a frontal rotation moves.
++  // Its fore-aft component rides along unchanged and only shortens the radius.
++  const radius = Math.hypot(leg.ankleLateralFromHip, leg.ankleDropFromHip);
++  if (radius < 1e-6) {
++    return { abductionRad: 0, ankleLateral: leg.hipLateral, ankleRise: 0 };
++  }
++
++  const wanted = targetAnkleLateral - leg.hipLateral;
++  // Angle away from straight down, positive toward the rig's left.
++  const current = Math.atan2(leg.ankleLateralFromHip, leg.ankleDropFromHip);
++  // A rigid leg cannot reach further sideways than it is long, so a target
++  // outside that circle resolves to the widest base the leg actually has.
++  const target = Math.asin(Math.max(-1, Math.min(1, wanted / radius)));
++
++  return {
++    abductionRad: target - current,
++    ankleLateral: leg.hipLateral + radius * Math.sin(target),
++    // A bigger drop hangs the ankle lower, so a rise is the drop shrinking.
++    ankleRise: radius * Math.cos(current) - radius * Math.cos(target),
++  };
++}
++
++/**
++ * Plan the frontal-plane rotation each upper leg needs so the ankles land a
++ * body-derived distance apart.
++ *
++ * Both legs are planned against the same target separation, so the base stays
++ * symmetric about the pelvis midline even on a rig whose two legs were
++ * authored differently.
++ */
++export function planStandingStance(
++  sample: Pick<StandingStanceSample, "left" | "right">,
++  ankleToHipRatio: number = STANDING_ANKLE_TO_HIP_RATIO
++): StandingStancePlan {
++  const hipSeparation = Math.abs(
++    sample.left.hipLateral - sample.right.hipLateral
++  );
++  const currentAnkleSeparation = Math.abs(
++    sample.left.hipLateral +
++      sample.left.ankleLateralFromHip -
++      (sample.right.hipLateral + sample.right.ankleLateralFromHip)
++  );
++  const targetAnkleSeparation = hipSeparation * ankleToHipRatio;
++  // Lateral points toward the rig's left, so the left ankle belongs on the
++  // positive side of the midline and the right ankle on the negative side.
++  const left = planLeg(sample.left, targetAnkleSeparation / 2);
++  const right = planLeg(sample.right, -targetAnkleSeparation / 2);
++
++  return {
++    left,
++    right,
++    hipSeparation,
++    currentAnkleSeparation,
++    targetAnkleSeparation,
++    ankleRise: (left.ankleRise + right.ankleRise) / 2,
++  };
++}
++
++const stanceRotation = new Quaternion();
++const boneWorldQuat = new Quaternion();
++const parentWorldQuat = new Quaternion();
++const footWorldQuat = new Quaternion();
++
++/**
++ * Rotate the upper legs into a planned stance, leaving the soles as authored.
++ *
++ * The rotation is applied in world space about the measured `abductionAxis`,
++ * so it does not care which way an exporter happened to point a femur's local
++ * axes. Each foot's world orientation is captured before its leg moves and
++ * restored afterwards: rotating a femur carries the whole chain with it, and
++ * without the restore the sole tips off the floor by the same angle.
++ */
++export function applyStandingStance(
++  legs: { upLeg: Object3D; foot: Object3D; plan: StandingLegPlan }[],
++  abductionAxis: Vector3
++): void {
++  for (const { upLeg, foot, plan } of legs) {
++    if (!Number.isFinite(plan.abductionRad) || plan.abductionRad === 0) continue;
++
++    upLeg.updateWorldMatrix(true, false);
++    foot.updateWorldMatrix(true, false);
++    foot.getWorldQuaternion(footWorldQuat);
++
++    upLeg.getWorldQuaternion(boneWorldQuat);
++    stanceRotation.setFromAxisAngle(abductionAxis, plan.abductionRad);
++    boneWorldQuat.premultiply(stanceRotation);
++    if (upLeg.parent) {
++      upLeg.parent.getWorldQuaternion(parentWorldQuat);
++      upLeg.quaternion.copy(parentWorldQuat.invert()).multiply(boneWorldQuat);
++    } else {
++      upLeg.quaternion.copy(boneWorldQuat);
++    }
++    upLeg.updateMatrixWorld(true);
++
++    if (foot.parent) {
++      foot.parent.getWorldQuaternion(parentWorldQuat);
++      foot.quaternion.copy(parentWorldQuat.invert()).multiply(footWorldQuat);
++    } else {
++      foot.quaternion.copy(footWorldQuat);
++    }
++    foot.updateMatrixWorld(true);
++  }
 +}
 diff --git a/src/lib/services/rendered-staff-geometry.ts b/src/lib/services/rendered-staff-geometry.ts
 new file mode 100644
@@ -30573,7 +32197,7 @@ index 0000000000000000000000000000000000000000..b06186fca0b9b1b41eb38ac86f0dcecd
 +}
 diff --git a/src/lib/state/prop-finish-state.svelte.ts b/src/lib/state/prop-finish-state.svelte.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..525b1b46458e2aae1c4110ab138eb859d6781f4a
+index 0000000000000000000000000000000000000000..0392476d03b2fde881b69ea77a9e83303356ce0a
 --- /dev/null
 +++ b/src/lib/state/prop-finish-state.svelte.ts
 @@ -0,0 +1,106 @@

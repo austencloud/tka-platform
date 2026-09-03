@@ -5,7 +5,7 @@ export type MatrixSize = "small" | "medium" | "large";
 
 /**
  * Cumulative integer-turn ratio bands per size, matching the domain ratio
- * labels 1:1 (turns 0), 1:3 (turns 1), 1:5 (turns 2). Half-turn steps
+ * labels 1:1 (turns 0), 3:1 (turns 1), 5:1 (turns 2). Half-turn steps
  * (0.5/1.5/2.5, ratios 2:1/4:1/6:1) are excluded from the preset — they are
  * available via the manual filter, not the size control.
  */

@@ -94,14 +94,48 @@ export const VTG_GLOSSARY: FlowArtsGlossaryEntry[] = [
 		term: "pattern",
 		aliases: ["shape"],
 		definition:
-			"The flower shape traced by the prop over a full 360-degree cycle. Categorized by the prop-to-hand rotation ratio (1:1, 1:3, 1:5). The 1:1 set contains 40 patterns; the 1:3 set contains 64.",
+			"The flower shape traced by the prop over a full 360-degree cycle. This app normalizes ratios as prop:hand, so the classic families are 1:1, 3:1, and 5:1. Original VTG materials and the legacy app display the latter two in the inverse order as 1:3 and 1:5. The source-native 1:1 set contains 40 patterns; the source-native 1:3 set contains 64.",
 		source: {
 			claim:
 				"Patterns/Shapes: the shapes made from timing and direction, categorized by rotation ratios",
 			sourceType: "document",
 			sourceRef: "VTG V.1, Pattern/Shape section",
 		},
-		relatedTerms: ["minimal beat shape", "snapshot", "VTG Trinity"],
+		relatedTerms: [
+			"0:1 ratio",
+			"1:2 ratio",
+			"minimal beat shape",
+			"snapshot",
+			"VTG Trinity",
+		],
+		category: "analysis",
+		framework: "VTG",
+	},
+	{
+		term: "0:1 ratio",
+		aliases: ["0:1", "float ratio"],
+		definition:
+			"The VTG prop-to-hand rotation ratio for TKA Float: the prop makes zero rotations while the hand completes one cycle.",
+		source: {
+			claim: "VTG 0:1 corresponds to TKA Float",
+			sourceType: "community",
+			sourceRef: "Austen Cloud domain correction, 2026-09-02",
+		},
+		relatedTerms: ["1:2 ratio", "pattern"],
+		category: "analysis",
+		framework: "VTG",
+	},
+	{
+		term: "1:2 ratio",
+		aliases: ["1:2"],
+		definition:
+			"The reduced VTG prop-to-hand rotation ratio corresponding to the TKA -0.25 turn value (0.5:1 reduced to 1:2). It is numeric and distinct from Float.",
+		source: {
+			claim: "VTG 1:2 corresponds to TKA -0.25",
+			sourceType: "community",
+			sourceRef: "Austen Cloud domain correction, 2026-09-02",
+		},
+		relatedTerms: ["0:1 ratio", "pattern"],
 		category: "analysis",
 		framework: "VTG",
 	},

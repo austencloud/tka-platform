@@ -56,6 +56,8 @@ import {
   type ResolvedDirectorPerformer,
   type ResolvedDirectorScene,
   type ResolvedDirectorHold,
+  type DirectorPropBuild,
+  type ResolvedDirectorHandEffects,
   type ResolvedDirectorStepEffect,
   type ResolvedDirectorStepEffort,
   type ResolvedDirectorStepStaffLength,
@@ -109,17 +111,21 @@ function createHandPlaneAxisStream(
 // because their schema fields are un-narrowed `z.string()` refinements —
 // the registry-type cast happens once, on the resolved concrete value, same
 // as this file did before directives existed.
-const PROP_CATALOG = Object.values(PropType);
-const EFFECT_CATALOG: readonly string[] = [
+//
+// Exported because they are what a directive may actually resolve to. Any
+// surface that shows a director their options reads these, so the offered set
+// and the accepted set cannot drift apart.
+export const PROP_CATALOG = Object.values(PropType);
+export const EFFECT_CATALOG: readonly string[] = [
   "none",
   ...EFFECTS.map((effect) => effect.id),
 ];
-const EFFORT_CATALOG = [...DIRECTOR_EFFORT_IDS] as EffortId[];
-const ENVIRONMENT_CATALOG = Object.values(SceneEnvironmentId);
-const PLANE_CATALOG = Object.values(Plane) as Plane[];
+export const EFFORT_CATALOG = [...DIRECTOR_EFFORT_IDS] as EffortId[];
+export const ENVIRONMENT_CATALOG = Object.values(SceneEnvironmentId);
+export const PLANE_CATALOG = Object.values(Plane) as Plane[];
 // "custom" needs per-performer positions, so an open formation pick never
 // selects it — the count filter below narrows further, per scene.
-const FORMATION_CATALOG = DIRECTOR_FORMATIONS.filter(
+export const FORMATION_CATALOG = DIRECTOR_FORMATIONS.filter(
   (preset) => preset !== "custom"
 ) as FormationPreset[];
 
@@ -130,7 +136,9 @@ interface ResolvedPerformerFields {
   name?: string;
   characterId: CharacterId;
   prop: PropType;
+  propBuild?: DirectorPropBuild;
   effect: EffectType;
+  handEffects?: ResolvedDirectorHandEffects;
   effort: EffortId;
   sequence: DirectorPerformerSequence;
   position?: { x: number; z: number };
@@ -145,6 +153,55 @@ interface ResolvedPerformerFields {
   stepEfforts: ResolvedDirectorStepEffort[];
   stepStaffLengths: ResolvedDirectorStepStaffLength[];
   holds: ResolvedDirectorHold[];
+}
+
+/**
+ * Gap 26. What a director may say where an effect is expected: one value, or
+ * one per hand. Each side keeps the full directive grammar.
+ */
+export interface HandEffectPair {
+  left: DirectiveValue<string>;
+  right: DirectiveValue<string>;
+}
+type SpokenEffect = DirectiveValue<string> | HandEffectPair;
+
+function isHandEffectPair(value: SpokenEffect): value is HandEffectPair {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "left" in value &&
+    "right" in value
+  );
+}
+
+/**
+ * Gap 20. Where performer `index` of `count` lands on a level ramp. The ends
+ * are exactly `from` and `to`; between them the line is walked and rounded, so
+ * a 1-to-3 ramp across four performers reads 1, 2, 2, 3 rather than inventing
+ * fractional levels the generator has no meaning for.
+ */
+export function rampedSequenceLevel(
+  ramp: { from: number; to: number },
+  index: number,
+  count: number
+): number {
+  if (count <= 1) return ramp.from;
+  const walked = ramp.from + ((ramp.to - ramp.from) * index) / (count - 1);
+  return Math.min(3, Math.max(1, Math.round(walked)));
+}
+
+/**
+ * Gap 20. Reads a spoken `beatOffset` for one performer. A plain number is
+ * everyone's offset; `{canon}` staggers the cast, performer k entering k
+ * offsets after the first, which is what a canon means.
+ */
+export function spreadBeatOffset(
+  spoken: number | { canon: number } | undefined,
+  index: number
+): number | undefined {
+  if (spoken === undefined) return undefined;
+  if (typeof spoken === "number") return spoken;
+  return index * spoken.canon;
 }
 
 function contextualEnvironmentFromEffects(
@@ -320,21 +377,26 @@ function assertOneEntryPerStep(
  * a distinguishing streamKey — the same arrangement stepPlanes uses.
  */
 function resolveStepEffectsForPerformer(
-  entries: readonly { step: number; effect: DirectiveValue<string> }[],
+  entries: readonly { step: number; effect: SpokenEffect }[],
   performerId: string,
   sceneId: string,
   seed: FilmSeed,
   seedSceneId: string = sceneId
 ): ResolvedDirectorStepEffect[] {
   assertOneEntryPerStep(entries, "stepEffects", performerId, sceneId);
-  return entries.map((entry) => ({
-    step: entry.step,
-    effect: resolveSceneDirective<string>(
-      entry.effect,
+  const resolveOne = (
+    value: DirectiveValue<string>,
+    entryStep: number,
+    // Gap 26. The hands of one entry must not share a stream key, or a
+    // `pick: "any"` pair would draw the same effect for both.
+    handKey: string
+  ): EffectType =>
+    resolveSceneDirective<string>(
+      value,
       "stepEffect",
       () => {
         throw new Error(
-          `Scene "${sceneId}": stepEffects entry for "${performerId}" at step ${entry.step} is missing an effect.`
+          `Scene "${sceneId}": stepEffects entry for "${performerId}" at step ${entryStep} is missing an effect.`
         );
       },
       sceneId,
@@ -342,9 +404,20 @@ function resolveStepEffectsForPerformer(
       EFFECT_CATALOG,
       // NUL-separated like createAxisStream's own key: authored ids may
       // contain spaces, so a space-joined key would be ambiguous.
-      `${seedSceneId}\u0000${performerId}\u0000${entry.step}\u0000stepEffect`
-    ) as EffectType,
-  }));
+      `${seedSceneId}\u0000${performerId}\u0000${entryStep}\u0000stepEffect${handKey}`
+    ) as EffectType;
+
+  return entries.map((entry) => {
+    if (!isHandEffectPair(entry.effect)) {
+      return {
+        step: entry.step,
+        effect: resolveOne(entry.effect, entry.step, ""),
+      };
+    }
+    const left = resolveOne(entry.effect.left, entry.step, "");
+    const right = resolveOne(entry.effect.right, entry.step, "-right");
+    return { step: entry.step, effect: left, handEffects: { left, right } };
+  });
 }
 
 /** The effort twin of resolveStepEffectsForPerformer, axis "stepEffort". */
@@ -701,7 +774,9 @@ function buildResolvedPerformers(
       name: input.name ?? `Performer ${index + 1}`,
       characterId: input.characterId,
       prop: input.prop,
+      ...(input.propBuild ? { propBuild: input.propBuild } : {}),
       effect: input.effect,
+      ...(input.handEffects ? { handEffects: input.handEffects } : {}),
       effort: input.effort,
       sequence: input.sequence,
       position: { ...position },
@@ -781,8 +856,15 @@ function resolveScene(
   const propValues: DirectiveValue<PropType>[] = rawInputs.map(
     (input) => input.prop ?? cast?.defaults?.prop ?? PropType.STAFF
   );
-  const effectValues: DirectiveValue<string>[] = rawInputs.map(
+  // Gap 26. An effect is one value or a hand pair. The left column is what
+  // the axis has always resolved, so a film that never speaks a pair draws
+  // exactly the numbers it drew before; the right column runs as a second
+  // stream over only the performers who did speak one.
+  const spokenEffects = rawInputs.map(
     (input) => input.effect ?? cast?.defaults?.effect ?? "none"
+  );
+  const effectValues: DirectiveValue<string>[] = spokenEffects.map((value) =>
+    isHandEffectPair(value) ? value.left : (value as DirectiveValue<string>)
   );
   const effortValues: DirectiveValue<EffortId>[] = rawInputs.map(
     (input) => input.effort ?? cast?.defaults?.effort ?? "linear"
@@ -825,6 +907,29 @@ function resolveScene(
     catalog: EFFECT_CATALOG,
     random: createAxisStream(filmSeed, seedSceneId, "effect"),
   });
+  const pairIndices = spokenEffects
+    .map((value, index) => (isHandEffectPair(value) ? index : -1))
+    .filter((index) => index >= 0);
+  const resolvedHandEffects: (ResolvedDirectorHandEffects | undefined)[] =
+    rawInputs.map(() => undefined);
+  if (pairIndices.length > 0) {
+    const rightHands = resolveCastAxis<string>({
+      axis: "effect",
+      sceneId: scene.id,
+      performerIds: pairIndices.map((index) => performerIds[index]!),
+      values: pairIndices.map(
+        (index) => (spokenEffects[index] as HandEffectPair).right
+      ),
+      catalog: EFFECT_CATALOG,
+      random: createAxisStream(filmSeed, seedSceneId, "effect:right"),
+    });
+    pairIndices.forEach((index, cursor) => {
+      resolvedHandEffects[index] = {
+        left: resolvedEffects[index]! as EffectType,
+        right: rightHands[cursor]! as EffectType,
+      };
+    });
+  }
   const resolvedEfforts = resolveCastAxis<EffortId>({
     axis: "effort",
     sceneId: scene.id,
@@ -984,7 +1089,20 @@ function resolveScene(
   // from a derived one has no original of its own to change, and letting it
   // resolve would silently hand both performers the same result.
   const resolvedSequences: DirectorPerformerSequence[] = rawInputs.map(
-    (input) => input.sequence ?? cast?.defaults?.sequence ?? { source: "demo" }
+    (input, index) => {
+      const sequence =
+        input.sequence ?? cast?.defaults?.sequence ?? { source: "demo" };
+      // Gap 20. A level ramp is a cast-wide statement, so it is spent here,
+      // where the performer's place in the cast is known, and the sequence
+      // that leaves this map carries the plain level it resolved to.
+      const level = (sequence as { level?: unknown }).level;
+      if (typeof level !== "object" || level === null) return sequence;
+      const { ramp } = level as { ramp: { from: number; to: number } };
+      return {
+        ...sequence,
+        level: rampedSequenceLevel(ramp, index, rawInputs.length),
+      } as DirectorPerformerSequence;
+    }
   );
   resolvedSequences.forEach((sequence, index) => {
     const self = performerIds[index]!;
@@ -1019,13 +1137,24 @@ function resolveScene(
       name: input.name,
       characterId: resolvedCharacterIds[index]! as CharacterId,
       prop: resolvedProps[index]!,
+      // Absent, not an empty object: a performer who takes the scene's build
+      // unchanged says nothing about it (gap 23).
+      ...(input.propBuild ?? cast?.defaults?.propBuild
+        ? { propBuild: input.propBuild ?? cast!.defaults!.propBuild! }
+        : {}),
       effect: resolvedEffects[index]! as EffectType,
+      ...(resolvedHandEffects[index]
+        ? { handEffects: resolvedHandEffects[index]! }
+        : {}),
       effort: resolvedEfforts[index]!,
       sequence: resolvedSequences[index]!,
       position: input.position,
       facingDegrees: input.facingDegrees,
       blocking: input.blocking ?? cast?.defaults?.blocking,
-      beatOffset: input.beatOffset,
+      beatOffset: spreadBeatOffset(
+        input.beatOffset ?? cast?.defaults?.beatOffset,
+        index
+      ),
       staffLengthCm: resolvedStaffLengths[index]!,
       leftPlane: resolvedLeftPlanes[index]!,
       rightPlane: resolvedRightPlanes[index]!,
@@ -1122,6 +1251,9 @@ function resolveScene(
     id: scene.id,
     title: scene.title,
     intent: scene.intent ?? null,
+    // Spread for the same reason as the two below: a film that states no
+    // category carries no key and resolves exactly as it did before.
+    ...(scene.category === undefined ? {} : { category: scene.category }),
     // Gaps 13 and 14. Spread so an unrelated scene carries neither key and
     // resolves exactly as it did before round 2.
     ...(scene.extends === undefined ? {} : { extends: scene.extends }),

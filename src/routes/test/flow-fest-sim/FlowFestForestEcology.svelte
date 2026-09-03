@@ -40,6 +40,7 @@
     type FlowFestForestTreeFamilyId,
     type FlowFestForestTreePlacement,
   } from "./flow-fest-forest-ecology";
+  import { FLOW_FEST_TREE_COLOR_GRADES } from "./flow-fest-tree-species";
 
   interface Props {
     layout: FlowFestForestEcologyLayout;
@@ -74,6 +75,17 @@
     onCullingSample,
     onGrassCullingSample,
   }: Props = $props();
+  /**
+   * Everything that gets drawn. Site trees and backdrop woodland share the
+   * distance tiers and the cullers, so a backdrop tree 40 m past the property
+   * line renders on the same full asset a site tree does at that range. Only
+   * the venue's own trees carry collision and leaf litter, and those consumers
+   * read `layout.trees` directly.
+   */
+  const renderedTrees = $derived([
+    ...layout.trees,
+    ...layout.backdropTrees,
+  ]);
   const { camera } = useThrelte();
   const loaderOptions = {
     dracoLoader: useDraco("/draco/"),
@@ -235,109 +247,14 @@
   let lastCullingSignature = "";
   let lastGrassCullingSignature = "";
 
-  const familyColorGrade: Partial<
-    Record<
-      FlowFestForestTreeFamilyId,
-      { foliage: [number, number, number]; bark: [number, number, number] }
-    >
-  > = {
-    "island-tree-01": {
-      foliage: [-0.01, -0.02, -0.03],
-      bark: [0, -0.02, -0.02],
-    },
-    "island-tree-02": {
-      foliage: [0.015, -0.04, 0.015],
-      bark: [0.01, -0.02, 0.01],
-    },
-    "island-tree-03": {
-      foliage: [-0.02, 0.02, 0.035],
-      bark: [-0.01, 0, 0.015],
-    },
-    "tree-small-02": {
-      foliage: [0.025, -0.05, -0.045],
-      bark: [0.015, -0.03, -0.025],
-    },
-    "plantcatalog-aesculus-carnea": {
-      foliage: [-0.018, 0.045, 0.04],
-      bark: [-0.01, 0.02, 0.015],
-    },
-    "plantcatalog-oak-urban": {
-      foliage: [0.012, -0.025, -0.025],
-      bark: [0.01, -0.02, 0.02],
-    },
-    "plantcatalog-oak-colonised": {
-      foliage: [0.028, 0, -0.065],
-      bark: [0.015, 0.01, -0.025],
-    },
-    "plantcatalog-willow": {
-      foliage: [0.04, -0.07, 0.07],
-      bark: [0.025, -0.04, 0.04],
-    },
-    "plantcatalog-buckeye-31": {
-      foliage: [-0.025, 0.04, 0.02],
-      bark: [-0.01, 0.01, 0],
-    },
-    "plantcatalog-buckeye-79": {
-      foliage: [0.018, 0.02, -0.015],
-      bark: [0.01, -0.01, -0.015],
-    },
-    "plantcatalog-habitat-snag": {
-      foliage: [0, -0.08, 0.06],
-      bark: [0.015, -0.08, 0.08],
-    },
-    "plantcatalog-oak-forest-41": {
-      foliage: [-0.012, 0.015, -0.02],
-      bark: [-0.008, 0.005, -0.01],
-    },
-    "plantcatalog-oak-forest-67": {
-      foliage: [0.01, -0.02, 0.025],
-      bark: [0.008, -0.015, 0.012],
-    },
-    "plantcatalog-oak-forest-89": {
-      foliage: [0.022, 0.03, -0.04],
-      bark: [0.012, 0.01, -0.02],
-    },
-    "plantcatalog-oak-forest-101": {
-      foliage: [-0.02, 0.028, 0.015],
-      bark: [-0.01, 0.012, 0.008],
-    },
-    "plantcatalog-oak-forest-113": {
-      foliage: [0.016, -0.03, 0.03],
-      bark: [0.01, -0.018, 0.015],
-    },
-    "plantcatalog-oak-lone-57": {
-      foliage: [0.03, 0.018, -0.05],
-      bark: [0.016, 0.008, -0.022],
-    },
-    "plantcatalog-oak-urban-71": {
-      foliage: [0.014, -0.035, -0.02],
-      bark: [0.012, -0.022, 0.015],
-    },
-    "plantcatalog-oak-colonised-61": {
-      foliage: [0.024, 0.008, -0.058],
-      bark: [0.013, 0.012, -0.02],
-    },
-    "plantcatalog-carnea-47": {
-      foliage: [-0.024, 0.05, 0.032],
-      bark: [-0.012, 0.022, 0.012],
-    },
-    "plantcatalog-buckeye-103": {
-      foliage: [-0.03, 0.035, 0.028],
-      bark: [-0.012, 0.014, 0.004],
-    },
-    "plantcatalog-willow-53": {
-      foliage: [0.045, -0.06, 0.062],
-      bark: [0.022, -0.035, 0.036],
-    },
-    "plantcatalog-weeping-willow-19": {
-      foliage: [0.05, -0.08, 0.07],
-      bark: [0.018, -0.03, 0.03],
-    },
-    "plantcatalog-weeping-willow-43": {
-      foliage: [0.04, -0.05, 0.05],
-      bark: [0.014, -0.028, 0.024],
-    },
-  };
+  /**
+   * Per-family HSL grade, owned by the species catalog so a family's colour
+   * ships with the parameters that generated it. Sugar maple and beech share a
+   * leaf atlas; without a per-form grade a mixed stand renders as one flat
+   * green. The grade composes with the per-instance tint from
+   * `deriveFlowFestTreeInstanceTint`.
+   */
+  const familyColorGrade = FLOW_FEST_TREE_COLOR_GRADES;
 
   function collectTreeScenes(
     tier: "near" | "mid" | "far"
@@ -403,7 +320,7 @@
     for (const [familyId, geometrySource] of geometrySources) {
       const materialSource = materialSources.get(familyId);
       if (!materialSource) continue;
-      const placements = layout.trees.filter(
+      const placements = renderedTrees.filter(
         (placement) => placement.familyId === familyId
       );
       if (placements.length === 0) continue;
@@ -472,7 +389,7 @@
     const nextNearTrees = new Group();
     nextNearTrees.name = "FFS_ForestScene_TreeFamilies_near";
     for (const [familyId, source] of sources) {
-      const placements = layout.trees.filter(
+      const placements = renderedTrees.filter(
         (placement) => placement.familyId === familyId
       );
       const nearInstances = createForestRuntimeTreeInstances(
@@ -697,7 +614,7 @@
     });
     const culling = aggregateCullingStats(treeCullers);
     onReady?.({
-      treeInstances: layout.trees.length,
+      treeInstances: renderedTrees.length,
       grassInstances: layout.grass.length,
       groundLifeInstances: layout.groundLife.length,
       treeFamilies: treeSources.size,

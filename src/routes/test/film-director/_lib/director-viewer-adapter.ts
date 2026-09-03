@@ -20,7 +20,10 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { DirectorBlockingFrame } from "./director-blocking-track";
 import type { DirectorCameraFrame } from "./director-camera-track";
 import { resolveStepChange, resolveStepRamp } from "./director-step-changes";
-import type { ResolvedDirectorScene } from "./film-director-schema";
+import type {
+  ResolvedDirectorHandEffects,
+  ResolvedDirectorScene,
+} from "./film-director-schema";
 import { resolveDirectorPerformerPoolSize } from "./film-director-performance-policy";
 import { isIdleSequence } from "./sequence-language";
 
@@ -167,7 +170,13 @@ export function applyDirectorSceneToViewer(
       performer.setDisplayName(directed.name);
       performer.setCharacter(directed.characterId);
       performer.setProp(directed.prop, { equipBuild: false });
-      performer.setEffect(directed.effect, { equipBuild: false });
+      // Gap 23. An unstated build is not "keep the last scene's build": a
+      // pooled performer carries whatever the previous cut equipped, so an
+      // absent build resets the override and lets the global build show.
+      performer.setPropBuild(directed.propBuild ?? {});
+      writePerformerEffect(performer, directed.effect, directed.handEffects, {
+        equipBuild: false,
+      });
       performer.setEffort(directed.effort);
       performer.setStaffLengthCm(directed.staffLengthCm);
 
@@ -265,9 +274,50 @@ export function applyDirectorPerformerMotion(
   });
 }
 
+function sameHandEffects(
+  a: ResolvedDirectorHandEffects | null,
+  b: ResolvedDirectorHandEffects | null
+): boolean {
+  if (a === null || b === null) return a === b;
+  return a.left === b.left && a.right === b.right;
+}
+
+/**
+ * Gap 26. One effect per hand when the film states a pair, the ordinary
+ * whole-performer write otherwise. A pair whose two sides agree is the same
+ * request as the single value, so it takes the plain setter and the tip map
+ * keeps its wildcard.
+ */
+function writePerformerEffect(
+  performer: {
+    setEffect: (
+      effect: EffectType,
+      options?: { equipBuild?: boolean; recordUndo?: boolean }
+    ) => void;
+    setHandEffects: (
+      left: EffectType,
+      right: EffectType,
+      options?: { recordUndo?: boolean }
+    ) => void;
+  },
+  effect: EffectType,
+  handEffects: ResolvedDirectorHandEffects | undefined,
+  options: { equipBuild?: boolean; recordUndo?: boolean }
+): void {
+  if (handEffects && handEffects.left !== handEffects.right) {
+    performer.setHandEffects(handEffects.left, handEffects.right, {
+      recordUndo: options.recordUndo,
+    });
+    return;
+  }
+  performer.setEffect(handEffects?.left ?? effect, options);
+}
+
 /** What the film last wrote to one performer, so a frame that changes nothing writes nothing. */
 export interface DirectorAppliedStepChange {
   effect: EffectType;
+  /** Present only while this performer's hands run different effects. */
+  handEffects?: ResolvedDirectorHandEffects;
   effort: EffortId;
   /** Absent while the performer's prop keeps whatever length the scene set. */
   staffLengthCm?: number;
@@ -358,12 +408,28 @@ export function applyDirectorStepChanges(
             directed.staffLengthCm ?? ramp[0]!.staffLengthCm
           );
 
+    const handEffects = resolveStepChange(
+      directed.stepEffects.map((entry) => ({
+        step: entry.step,
+        value: entry.handEffects ?? null,
+      })),
+      step,
+      directed.handEffects ?? null
+    );
+
     const last = applied.get(directed.id) ?? {
       effect: directed.effect,
       effort: directed.effort,
+      ...(directed.handEffects ? { handEffects: directed.handEffects } : {}),
     };
-    if (last.effect !== effect) {
-      performer.setEffect(effect, { equipBuild: false, recordUndo: false });
+    if (
+      last.effect !== effect ||
+      !sameHandEffects(last.handEffects ?? null, handEffects)
+    ) {
+      writePerformerEffect(performer, effect, handEffects ?? undefined, {
+        equipBuild: false,
+        recordUndo: false,
+      });
     }
     if (last.effort !== effort) {
       performer.setEffort(effort, { recordUndo: false });
@@ -378,6 +444,7 @@ export function applyDirectorStepChanges(
     }
     applied.set(directed.id, {
       effect,
+      ...(handEffects ? { handEffects } : {}),
       effort,
       staffLengthCm: staffLengthMoved ? staffLengthCm : last.staffLengthCm,
     });

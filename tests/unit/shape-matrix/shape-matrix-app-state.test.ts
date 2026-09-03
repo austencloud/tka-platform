@@ -16,6 +16,7 @@ import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
 const LEVEL_FOUR_TURNS = [
   "fl",
+  -0.25,
   0,
   0.25,
   0.5,
@@ -45,6 +46,12 @@ function createState(compact: boolean) {
       syncState,
     },
     {
+      surface: "matrix",
+      theoryLeftRatio: { propRotations: 1, handCycles: 3 },
+      theoryRightRatio: { propRotations: 1, handCycles: 3 },
+      theoryMode: "SS",
+      theoryPair: null,
+      theoryBand: 4,
       level: 2,
       leftTurn: 0,
       rightTurn: 0,
@@ -72,6 +79,7 @@ describe("shape matrix app state", () => {
     state.setLevel(4);
     expect(state.leftTurn).toBe(0.25);
     expect(state.rightTurn).toBe(0.25);
+    expect(state.availableTurns).toEqual(LEVEL_FOUR_TURNS);
 
     state.setLevel(1);
     expect(state.leftTurn).toBe(0);
@@ -207,6 +215,11 @@ describe("shape matrix app state", () => {
     if (!left || !right) throw new Error("Shape Matrix axis is empty");
 
     state.restoreState({
+      surface: "matrix",
+      theoryLeftRatio: { propRotations: 2, handCycles: 5 },
+      theoryRightRatio: { propRotations: 1, handCycles: 2 },
+      theoryMode: "QO",
+      theoryPair: null,
       level: 3,
       leftTurn: 0.5,
       rightTurn: 0.5,
@@ -228,7 +241,68 @@ describe("shape matrix app state", () => {
     expect(state.selectedPair?.right.style).toBe(right.style);
     expect(state.selectedMode).toBe("QS");
     expect(state.selectedPropMode).toBe("SO");
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 5 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 1, handCycles: 2 });
+    expect(state.theoryMode).toBe("QO");
     expect(syncState).not.toHaveBeenCalled();
+  });
+
+  it("moves both theory axes together and honours the Apply-to target", () => {
+    const { state, syncState } = createState(false);
+
+    state.setSurface("theory");
+    state.setTheoryBand(4);
+    state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
+
+    expect(state.surface).toBe("theory");
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 2, handCycles: 9 });
+
+    state.setActiveAxis("right");
+    state.setTheoryRatio({ propRotations: 1, handCycles: 2 });
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 1, handCycles: 2 });
+
+    state.setTheoryMode("TO");
+    expect(syncState).toHaveBeenLastCalledWith(
+      expect.objectContaining({ surface: "theory", theoryMode: "TO" })
+    );
+  });
+
+  it("keeps every theory ratio inside the band the user chose", () => {
+    const { state } = createState(false);
+
+    state.setSurface("theory");
+    state.setTheoryBand(4);
+    state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+
+    // Band 1 is the three ratios TKA can already name, so 2:9 has to land on
+    // the nearest one it holds rather than survive a band it is not in.
+    state.setTheoryBand(1);
+    expect(
+      state.availableTheoryRatios.some(
+        (ratio) =>
+          ratio.propRotations === state.theoryLeftRatio.propRotations &&
+          ratio.handCycles === state.theoryLeftRatio.handCycles
+      )
+    ).toBe(true);
+    expect(state.availableTheoryRatios).toHaveLength(3);
+  });
+
+  it("moves the Kinetic Alphabet level without touching the ratio band", () => {
+    const { state } = createState(false);
+
+    state.setSurface("theory");
+    state.setTheoryBand(4);
+    state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
+
+    // The two ladders are independent. A level is a turn vocabulary and a band
+    // is a denominator vocabulary; the surface that reads one must not move
+    // the other, which is what a single shared number used to do.
+    state.setLevel(1);
+    expect(state.theoryBand).toBe(4);
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
   });
 
   it("keeps an exact prop target only while the pair has equal rotating turns", () => {

@@ -12,6 +12,10 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import {
+  CAMERA_CHANNEL_IDS,
+  type CameraChannelId,
+} from "./director-camera-channels";
 import { directiveSchema } from "./directives";
 import { normalizeFilmDirectorInput } from "./normalize-film-director-input";
 import type { ResolvedDirectorBlockingKeyframe } from "./blocking-language";
@@ -298,6 +302,29 @@ const configurableEffectIdSchema = z
     error: (issue) => `Unknown configurable effect "${String(issue.input)}"`,
   });
 
+/**
+ * Gap 23. Which build of the prop this performer carries. The keys are the
+ * package's own `PropBuild` (`prop-finish-state.svelte.ts`), enumerated here
+ * rather than passed through, so a misspelled key rejects by name instead of
+ * arriving at `setPropBuild` and doing nothing.
+ *
+ * `finish` belongs here and not to the scene: the package's `propFinishState`
+ * is a global singleton, but a performer's `propBuild` is merged over it
+ * (`character-instance-state.svelte.ts` `effectivePropBuild`), so the fire
+ * triad and the day triad can stand next to each other.
+ */
+const propBuildSchema = z
+  .object({
+    finish: z.enum(["fire", "day"]).optional(),
+    fanBuild: z.enum(["pictograph", "fire", "lotus", "day", "moon"]).optional(),
+    fanFrameColor: z.enum(["black", "white"]).optional(),
+    fanCover: z.enum(["bare", "covered"]).optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, {
+    error: 'A "propBuild" states at least one of the build\'s parts.',
+  });
+
 // Derived from the live enum, never retyped — see the comment above
 // effortIdSchema for why this is string+refine (with a type-predicate to
 // still narrow the inferred type to Plane) rather than z.enum/z.nativeEnum.
@@ -337,27 +364,45 @@ const visiblePlanesSchema = z
 // resolve-film-director-spec.ts — distinct/sameAs make no sense pinned to a
 // single (performer, step, hand) triple, same reasoning as environmentId
 // and formation.
+const handSideSchema = z.preprocess(
+  (value) => (value === "blue" ? "left" : value === "red" ? "right" : value),
+  z.enum(["left", "right"])
+);
+
 const stepPlaneEntrySchema = z
   .object({
     step: stepRefSchema,
-    hand: z.preprocess(
-      (value) =>
-        value === "blue" ? "left" : value === "red" ? "right" : value,
-      z.enum(["left", "right"])
-    ),
+    hand: handSideSchema,
     plane: directiveSchema(planeSchema),
   })
   .strict();
 
+/**
+ * Gap 26. An effect is spoken once for both hands, or once per hand. The pair
+ * form keeps the full directive grammar on each side, so "fire on her right,
+ * anything on her left" is one sentence. A single id is not shorthand for a
+ * pair of the same id: it stays the whole-performer form and reaches the
+ * renderer through the wildcard tip key exactly as it always has.
+ */
+const effectValueSchema = z.union([
+  directiveSchema(effectIdSchema),
+  z
+    .object({
+      left: directiveSchema(effectIdSchema),
+      right: directiveSchema(effectIdSchema),
+    })
+    .strict(),
+]);
+
 // Per-step effect and effort are scene-scope directives for the same reason
 // stepPlanes is: the value is pinned to one (performer, step) pair, so
 // distinct has no cast to spread across and sameAs has no matching pair to
-// copy from. Unlike a plane there is no hand — an effect and an effort are
-// carried by the whole performer.
+// copy from. Unlike an effort, an effect may name a hand (gap 26), because the
+// renderer resolves effects per prop and a director asks for a lit right hand.
 const stepEffectEntrySchema = z
   .object({
     step: stepRefSchema,
-    effect: directiveSchema(effectIdSchema),
+    effect: effectValueSchema,
   })
   .strict();
 
@@ -423,6 +468,32 @@ const cameraTargetSchema = z.discriminatedUnion("kind", [
     })
     .strict(),
   z.object({ kind: z.literal("point"), position: vector3Schema }).strict(),
+  /**
+   * Gap 12. Frame the hand, or the end of the prop it holds, rather than the
+   * whole person. Both aim at the named performer's mark and differ only in
+   * height: a hand rides about chest high, a prop tip about a staff's reach
+   * above the floor. `hand` names the side, in the same left/right the planes
+   * and the per-hand effects use.
+   *
+   * The aim is the opening mark, not the live hand. The rig publishes hand
+   * world positions into PerformerRig's effects snippet and nothing carries
+   * them back to `Viewer3DState`, so the adapter has nothing to re-aim from.
+   * The capability matrix records that boundary.
+   */
+  z
+    .object({
+      kind: z.literal("hand"),
+      performerId: z.string().min(1),
+      hand: handSideSchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("prop-tip"),
+      performerId: z.string().min(1),
+      hand: handSideSchema,
+    })
+    .strict(),
 ]);
 
 const cameraKeyframeSchema = z
@@ -646,7 +717,28 @@ const performerSequenceSchema = z
     startPosition: positionRefSchema.optional(),
     startOrientation: startOrientationSchema.optional(),
     turns: turnsSchema.optional(),
-    level: z.literal(DIRECTOR_SEQUENCE_LEVELS).optional(),
+    /**
+     * Gap 20. One level for whoever reads this sequence, or a ramp across the
+     * cast: `{ramp: {from, to}}` hands the first performer `from`, the last
+     * `to`, and everyone between a rounded step along that line. A ramp is a
+     * statement about a cast, so it is only sayable in cast defaults; on one
+     * performer it is rejected by name.
+     */
+    level: z
+      .union([
+        z.literal(DIRECTOR_SEQUENCE_LEVELS),
+        z
+          .object({
+            ramp: z
+              .object({
+                from: z.literal(DIRECTOR_SEQUENCE_LEVELS),
+                to: z.literal(DIRECTOR_SEQUENCE_LEVELS),
+              })
+              .strict(),
+          })
+          .strict(),
+      ])
+      .optional(),
     gridMode: z.enum(GridMode).optional(),
     flow: z.enum(DIRECTOR_CONTINUITIES).optional(),
     handPath: z.enum(DIRECTOR_CONTINUITIES).optional(),
@@ -849,6 +941,47 @@ function rejectPerformerEffectConfig(
   }
 }
 
+/**
+ * Gap 20. A spread is a statement about a cast: canon hands performer k the
+ * kth multiple of one offset, a level ramp walks the cast from one difficulty
+ * to another. Written on a single performer there is nobody to spread across,
+ * so both reject by name rather than resolving to the one-performer case.
+ */
+export const CANON_NEEDS_A_CAST =
+  'A canon spreads one offset across the cast, so it is spoken in "cast.defaults". On this performer, state the "beatOffset" they actually take.';
+export const LEVEL_RAMP_NEEDS_A_CAST =
+  'A level ramp walks the whole cast from one level to another, so it is spoken in "cast.defaults". On this performer, state the "level" they actually spin.';
+
+const beatOffsetSpreadSchema = z.union([
+  finiteNumber,
+  z.object({ canon: finiteNumber }).strict(),
+]);
+
+function rejectPerformerCastSpreads(
+  input: unknown,
+  ctx: z.RefinementCtx
+): void {
+  const value = input as {
+    beatOffset?: unknown;
+    sequence?: { level?: unknown } | undefined;
+  };
+  if (typeof value.beatOffset === "object" && value.beatOffset !== null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["beatOffset"],
+      message: CANON_NEEDS_A_CAST,
+    });
+  }
+  const level = value.sequence?.level;
+  if (typeof level === "object" && level !== null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["sequence", "level"],
+      message: LEVEL_RAMP_NEEDS_A_CAST,
+    });
+  }
+}
+
 const performerSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -856,11 +989,14 @@ const performerSchema = z
     sequence: performerSequenceSchema.optional(),
     characterId: directiveSchema(characterIdSchema).optional(),
     prop: directiveSchema(propTypeSchema).optional(),
-    effect: directiveSchema(effectIdSchema).optional(),
+    propBuild: propBuildSchema.optional(),
+    effect: effectValueSchema.optional(),
     effort: directiveSchema(effortIdSchema).optional(),
     position: position2Schema.optional(),
     facingDegrees: finiteNumber.optional(),
-    beatOffset: finiteNumber.optional(),
+    // Accepted in the canon shape so the rejection can name the constraint
+    // rather than reading as "expected number".
+    beatOffset: beatOffsetSpreadSchema.optional(),
     blocking: blockingSchema.optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
     leftPlane: directiveSchema(planeSchema).optional(),
@@ -873,15 +1009,21 @@ const performerSchema = z
     ...performerEffectConfigKeys,
   })
   .strict()
-  .superRefine(rejectPerformerEffectConfig);
+  .superRefine((value, ctx) => {
+    rejectPerformerEffectConfig(value, ctx);
+    rejectPerformerCastSpreads(value, ctx);
+  });
 
 const castDefaultsSchema = z
   .object({
     sequence: performerSequenceSchema.optional(),
     characterId: directiveSchema(characterIdSchema).optional(),
     prop: directiveSchema(propTypeSchema).optional(),
-    effect: directiveSchema(effectIdSchema).optional(),
+    propBuild: propBuildSchema.optional(),
+    effect: effectValueSchema.optional(),
     effort: directiveSchema(effortIdSchema).optional(),
+    /** Gap 20. One offset for everyone, or `{canon}` for a staggered entry. */
+    beatOffset: beatOffsetSpreadSchema.optional(),
     blocking: blockingSchema.optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
     leftPlane: directiveSchema(planeSchema).optional(),
@@ -973,6 +1115,7 @@ const cameraMoveFields = {
     "orbit",
     "crane",
     "pan",
+    "tilt",
     "truck",
     "zoom",
     "roll",
@@ -1110,17 +1253,37 @@ const cameraMoveSchema = z
   });
 
 /**
+ * The framing vocabulary, named rather than written inline into the enums
+ * below. A surface that shows a director their framing options reads these, so
+ * the offered set and the accepted set cannot drift apart — the same reason
+ * `CAMERA_MOVE_RULES` and the axis catalogs are exported.
+ */
+export const DIRECTOR_SHOT_SIZES = [
+  "close-up",
+  "medium",
+  "wide",
+  "extreme-wide",
+] as const;
+export const DIRECTOR_CAMERA_ANGLES = ["low", "eye", "high", "top"] as const;
+export const DIRECTOR_CAMERA_POSITIONS = [
+  "front",
+  "left",
+  "right",
+  "behind",
+] as const;
+
+/**
  * One framing, spelled the same whether it is the scene's only framing or one
  * shot among several. Shared so a shot can never drift from what the top-level
  * camera accepts.
  */
 const cameraFramingFields = {
   subject: cameraTargetSchema.optional(),
-  shotSize: z.enum(["close-up", "medium", "wide", "extreme-wide"]).optional(),
-  angle: z.enum(["low", "eye", "high", "top"]).optional(),
+  shotSize: z.enum(DIRECTOR_SHOT_SIZES).optional(),
+  angle: z.enum(DIRECTOR_CAMERA_ANGLES).optional(),
   position: z
     .union([
-      z.enum(["front", "left", "right", "behind"]),
+      z.enum(DIRECTOR_CAMERA_POSITIONS),
       z.object({ degrees: finiteNumber.min(-360).max(360) }).strict(),
     ])
     .optional(),
@@ -1140,9 +1303,51 @@ const cameraShotSchema = z
   .strict()
   .superRefine(atMostOneMoveLength);
 
+/**
+ * One hand-authored key on one camera channel.
+ *
+ * Times are seconds from the scene's start. Manual keys deliberately do not
+ * accept the beat, bar and cue vocabulary a camera keyframe does: a key placed
+ * by dragging it is a statement about a moment, and having it slide when the
+ * tempo changed would be a surprise rather than a feature.
+ */
+const cameraChannelKeySchema = z
+  .object({
+    atSeconds: finiteNumber.min(0),
+    value: finiteNumber,
+    interpolation: z.enum(DIRECTOR_INTERPOLATIONS).optional(),
+    easing: z.enum(DIRECTOR_EASINGS).optional(),
+  })
+  .strict();
+
+/**
+ * The manual layer, addressed by channel.
+ *
+ * Present only when something was hand-keyed; absent, not empty, otherwise, so
+ * every film written before channels existed resolves byte-identically. A
+ * channel named here takes ownership whole (decision D2): its keys replace
+ * whatever composed underneath rather than merging with it.
+ */
+const cameraChannelsSchema = z
+  // partialRecord, not record: an enum-keyed `z.record` in Zod 4 is
+  // EXHAUSTIVE, so it would demand all eleven channels before accepting one.
+  // Hand-keying a single scalar is the whole point of the block.
+  .partialRecord(
+    z.enum(CAMERA_CHANNEL_IDS),
+    z
+      .object({ keys: z.array(cameraChannelKeySchema).min(1).max(64) })
+      .strict()
+  )
+  .refine((channels) => Object.keys(channels).length > 0, {
+    message:
+      "A channels block with nothing in it says nothing. Leave it out instead.",
+  });
+
 const cameraSchema = z
   .object({
     preset: z.enum(DIRECTOR_CAMERA_PRESETS).optional(),
+    /** Hand-keyed channels, layered over whatever the rest of this camera says. */
+    channels: cameraChannelsSchema.optional(),
     target: cameraTargetSchema.optional(),
     orbitDegrees: finiteNumber.min(-720).max(720).optional(),
     keyframes: z.array(cameraKeyframeSchema).min(1).max(32).optional(),
@@ -1266,9 +1471,16 @@ const cameraSchema = z
     }
   );
 
+/** How one scene may reach the next. Exported for the same reason as above. */
+export const DIRECTOR_TRANSITION_KINDS = [
+  "cut",
+  "environment-dissolve",
+  "fade-through-black",
+] as const;
+
 const transitionSchema = z
   .object({
-    kind: z.enum(["cut", "environment-dissolve", "fade-through-black"]),
+    kind: z.enum(DIRECTOR_TRANSITION_KINDS),
     durationSeconds: finiteNumber.min(0).max(3).optional(),
     // max 32 beats is a syntactic cap, not the real one — see the two-layer
     // contract note on atMostOneTimeUnit above. At a slow bpm, 32 beats can
@@ -1280,11 +1492,55 @@ const transitionSchema = z
   .strict()
   .superRefine(atMostOneTimeUnit);
 
+/**
+ * What a scene is chiefly about, for browsing a film that is a reference rather
+ * than a watch. Proving Grounds is 23 scenes and each one demonstrates a
+ * different part of the language; read end to end it is a three-minute film,
+ * and a director looking for the dolly zoom does not want a film.
+ *
+ * A closed set on purpose. Free-text categories drift into synonyms ("camera",
+ * "cameras", "shots") and the index then groups the same subject three ways.
+ * The scene index renders these in the order written here, so the list doubles
+ * as the reading order: what the frame does, then how the film counts, then
+ * where the bodies are, then who they are, then what is in their hands, then
+ * how scenes refer to each other.
+ */
+export const DIRECTOR_SCENE_CATEGORIES = [
+  "camera",
+  "timing",
+  "staging",
+  "performers",
+  "props",
+  "structure",
+] as const;
+
+export type DirectorSceneCategory = (typeof DIRECTOR_SCENE_CATEGORIES)[number];
+
+/** Heading shown for each category in the scene index. */
+export const DIRECTOR_SCENE_CATEGORY_LABELS: Record<
+  DirectorSceneCategory,
+  string
+> = {
+  camera: "Camera",
+  timing: "Timing",
+  staging: "Staging",
+  performers: "Performers",
+  props: "Props and effects",
+  structure: "Structure",
+};
+
 const sceneSchema = z
   .object({
     id: z.string().min(1),
     title: z.string().min(1),
     intent: z.string().min(1).optional(),
+    /**
+     * Which part of the language this scene is chiefly demonstrating. Optional,
+     * and ABSENT rather than null once resolved, so the films that are films
+     * rather than references resolve byte-identically to their pre-category
+     * snapshots — the same convention `extends` and `seedSource` follow.
+     */
+    category: z.enum(DIRECTOR_SCENE_CATEGORIES).optional(),
     /**
      * Gap 13. The earlier scene this one is a variation of. Already expanded
      * by `expandSceneInheritance` at the input boundary, so what arrives here
@@ -1404,6 +1660,7 @@ export type DirectorSceneInput = z.infer<typeof sceneSchema>;
 export type DirectorCastInput = z.infer<typeof castSchema>;
 export type DirectorCameraInput = z.infer<typeof cameraSchema>;
 export type DirectorCameraTargetInput = z.infer<typeof cameraTargetSchema>;
+export type DirectorPropBuild = z.infer<typeof propBuildSchema>;
 export type DirectorBlockingInput = z.infer<typeof blockingSchema>;
 export type DirectorSceneBlockingInput = z.infer<typeof sceneBlockingSchema>;
 export type DirectorSceneBlockingPhaseInput = z.infer<
@@ -1419,9 +1676,21 @@ export interface ResolvedDirectorStepPlane {
   plane: Plane;
 }
 
+/**
+ * Gap 26. A pair of effects, one per hand. Absent everywhere the director
+ * spoke a single effect, so a film written before the pair existed resolves
+ * byte-identically to its snapshot.
+ */
+export interface ResolvedDirectorHandEffects {
+  left: EffectType;
+  right: EffectType;
+}
+
 export interface ResolvedDirectorStepEffect {
   step: number;
+  /** The left hand's effect, which is also the whole performer's when no pair was spoken. */
   effect: EffectType;
+  handEffects?: ResolvedDirectorHandEffects;
 }
 
 export interface ResolvedDirectorStepEffort {
@@ -1455,7 +1724,15 @@ export interface ResolvedDirectorPerformer {
   name: string;
   characterId: CharacterId;
   prop: PropType;
+  /**
+   * Gap 23. Which build of that prop, merged over the scene package's global
+   * build. Absent when the performer takes the global one unchanged.
+   */
+  propBuild?: DirectorPropBuild;
+  /** The left hand's effect, which is also the whole performer's when no pair was spoken. */
   effect: EffectType;
+  /** Gap 26. Present only when the director spoke a hand pair. */
+  handEffects?: ResolvedDirectorHandEffects;
   effort: EffortId;
   sequence: DirectorPerformerSequence;
   /** Where this performer stands when the scene opens. */
@@ -1490,14 +1767,56 @@ export interface ResolvedDirectorCameraKeyframe {
    * that never roll resolve byte-identically to their pre-roll snapshots.
    */
   rollDeg?: number;
+  /**
+   * How the aim travels from THIS keyframe to the next, the same way
+   * `interpolation` governs its own outgoing segment.
+   *
+   * Absent means the aim point is interpolated where it lives, in world space.
+   * That is right for every move that holds a fixed point or carries the aim
+   * along with the rig, and it is what every keyframe resolved before this
+   * field existed does, so those films are untouched.
+   *
+   * `"angles"` means the segment interpolates the aim DIRECTION instead, and
+   * the aim point is derived. A turn in place needs this: interpolating the
+   * point chords across the arc, so the framing distance dips and the angular
+   * rate is wrong in the middle of the move.
+   */
+  aimSpace?: "angles";
+  /**
+   * Aim yaw in degrees, `atan2(dx, dz)`, present when the compiler knows the
+   * turn it authored. Stated rather than recovered because `atan2` cannot tell
+   * a turn of 270 degrees from one of -90.
+   */
+  aimYawDeg?: number;
+  /** Aim pitch in degrees above level, present alongside `aimYawDeg`. */
+  aimPitchDeg?: number;
   interpolation: DirectorInterpolation;
   easing: DirectorEasing;
+}
+
+/**
+ * One key of a resolved manual channel. Structurally what
+ * `ManualCameraChannel` in `director-camera-channels.ts` consumes; the shape
+ * is stated here because this is where resolved documents are described.
+ */
+export interface ResolvedDirectorCameraChannelKey {
+  atSeconds: number;
+  value: number;
+  interpolation: DirectorInterpolation;
+  easing: DirectorEasing;
+}
+
+export interface ResolvedDirectorCameraChannel {
+  id: CameraChannelId;
+  keys: ResolvedDirectorCameraChannelKey[];
 }
 
 export interface ResolvedDirectorScene {
   id: string;
   title: string;
   intent: string | null;
+  /** See the schema field. Absent, not null, when the scene states none. */
+  category?: DirectorSceneCategory;
   /**
    * Gap 13. The earlier scene this one was expanded from. Absent (not null)
    * when the scene stands alone, and likewise for `seedSource` below, so
@@ -1567,6 +1886,13 @@ export interface ResolvedDirectorScene {
      * byte-identically to their earlier snapshots.
      */
     handheld?: ResolvedDirectorHandheld;
+    /**
+     * The manual layer: channels the director hand-keyed, each owning its
+     * scalar outright over whatever the preset, grammar or keyframes below it
+     * produced. Absent (not an empty array) when nothing was hand-keyed, so
+     * films written before channels existed resolve byte-identically.
+     */
+    channels?: ResolvedDirectorCameraChannel[];
   };
 }
 

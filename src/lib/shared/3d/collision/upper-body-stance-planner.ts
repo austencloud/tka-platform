@@ -1,4 +1,8 @@
 import {
+  planHugReachGeometry,
+  type PerformerReachMeasurements,
+} from "$lib/shared/3d/domain/performer-reach-measurements";
+import {
   GRID_OFFSETS,
   PLANE_MODE_CONFIGS,
   type PlaneMode,
@@ -31,7 +35,12 @@ export interface UpperBodyStancePlan {
 // the singularity while staying visually side-on.
 export const MAX_STANCE_YAW_RAD = (87 * Math.PI) / 180;
 const LATERAL_DEAD_ZONE_M = 0.1;
-const FULL_ASSIST_LATERAL_M = 0.28;
+/**
+ * Lateral mean at which the turn is fully assisted. Exported so a timing
+ * readout can plot the prop signal in the same units the planner reads it,
+ * rather than inventing a second scale for the same number.
+ */
+export const FULL_ASSIST_LATERAL_M = 0.28;
 // The hidden-depth budget between the two grips during a fully side-on hold.
 // The pair straddles the chest centerline, so each hand takes half of it on its
 // own shoulder's side. From the audience the two staffs still overlay; between
@@ -43,9 +52,36 @@ const FULL_ASSIST_LATERAL_M = 0.28;
 // bulkier ch18 chest by 1-2 cm; a 16 cm lane clears every sampled frame on all
 // three verified rigs and still sits well inside a ~22 cm shoulder half-span,
 // so both grips stay between the arms.
+//
+// Re-measured after the hug became a wrist rotation rather than a grip
+// translation: the lane is still load-bearing and cannot be traded for wrist
+// angle. Overriding the intake rig's measured 11.6 cm lane while everything
+// else stayed fixed put the shaft into the torso by 15 mm at 8 cm, 28 mm at
+// 4 cm, and 38 mm at 0. This lane is a torso-clearance corridor, not a
+// convergence mechanism; converging further needs a shorter staff, which is
+// what `fitStaffLengthForHug` is for.
 const SIDE_ON_YAW_KNEE_RAD = MAX_STANCE_YAW_RAD * 0.8;
 const SAME_SIDE_DEPTH_SEPARATION_M = 0.32;
 const SAME_SIDE_DEPTH_LANE_M = SAME_SIDE_DEPTH_SEPARATION_M / 2;
+
+/**
+ * The hug reach. Once a rig has been measured, the pair no longer straddles
+ * the chest at a fixed 16 cm: each grip converges to its body's own hug lane,
+ * so the two outstretched arms close toward the chest-forward midline. The
+ * shaft that used to pass beside the chest now sits inside the torso's depth
+ * band, which is why the prop seam shortens the staff by the same
+ * measurements — see `fitStaffLengthForHug`. Without measurements the planner
+ * keeps the wider un-measured lane rather than guessing at a body.
+ */
+function sameSideLaneM(
+  measurements: PerformerReachMeasurements | null
+): number {
+  if (!measurements) return SAME_SIDE_DEPTH_LANE_M;
+  return Math.min(
+    SAME_SIDE_DEPTH_LANE_M,
+    planHugReachGeometry(measurements).laneM
+  );
+}
 
 const SQUARE_STANCE: UpperBodyStancePlan = {
   yawRad: 0,
@@ -64,36 +100,55 @@ function smoothstep01(value: number): number {
 }
 
 /**
- * Turn a coherent same-side pair of targets into the body's forward reach
- * corridor.
+ * The lateral mean of the two grips in the grid frame; positive is the
+ * performer's +X side. Exposed so a score-time visualization can plot the prop
+ * signal the yaw is derived from on the same axis as the yaw itself, without
+ * re-deriving the mean from raw prop states.
+ */
+export function stanceLateralMean(targets: UpperBodyStanceTargets): number {
+  const active = [targets.left, targets.right].filter(
+    (target): target is GripTargetXZ => target !== null
+  );
+  if (active.length < 2) return 0;
+  return active.reduce((sum, target) => sum + target.x, 0) / active.length;
+}
+
+/**
+ * The yaw this grip geometry wants, as a memoryless function of where the props
+ * are right now.
+ *
+ * This is the planner's *desire*, not its delivered motion. It has no history
+ * and no lookahead, so on its own it can never start a turn before the props
+ * are already lateral. `stance-yaw-track.ts` owns turning a whole sequence of
+ * these samples into a motion curve with anticipation and successive-breaking
+ * overlap; this function stays the single geometry authority both paths agree
+ * on.
  *
  * Split targets intentionally cancel: when one hand is east and the other is
  * west, the avatar stays square. A coherent same-side pair uses the same yaw
  * sign as its lateral placement so the performer's shoulders and face turn
  * toward the props and both arms remain in front of the chest.
  */
-export function planUpperBodyStance(
+export function planUpperBodyStanceYawTarget(
   targets: UpperBodyStanceTargets
-): UpperBodyStancePlan {
+): number {
   const active = [targets.left, targets.right].filter(
     (target): target is GripTargetXZ => target !== null
   );
-  if (active.length < 2) return SQUARE_STANCE;
+  if (active.length < 2) return 0;
 
   const meanX =
     active.reduce((sum, target) => sum + target.x, 0) / active.length;
   const meanAbsX =
     active.reduce((sum, target) => sum + Math.abs(target.x), 0) / active.length;
-  if (meanAbsX < 1e-6) return SQUARE_STANCE;
+  if (meanAbsX < 1e-6) return 0;
 
   const coherence = clamp(Math.abs(meanX) / meanAbsX, 0, 1);
   const lateralWeight = smoothstep01(
     (Math.abs(meanX) - LATERAL_DEAD_ZONE_M) /
       (FULL_ASSIST_LATERAL_M - LATERAL_DEAD_ZONE_M)
   );
-  if (coherence < 0.35 || lateralWeight === 0) {
-    return SQUARE_STANCE;
-  }
+  if (coherence < 0.35 || lateralWeight === 0) return 0;
 
   // Every wall-grid point carries the same forward plane offset. Folding that
   // depth into atan2 made a true E/W two-hand hold look merely diagonal and
@@ -101,8 +156,39 @@ export function planUpperBodyStance(
   // the stance direction; coherence and lateralWeight still soften entrances.
   const desiredYaw = Math.sign(meanX) * MAX_STANCE_YAW_RAD;
   const assistance = smoothstep01(coherence) * lateralWeight;
-  const yawRad =
-    clamp(desiredYaw, -MAX_STANCE_YAW_RAD, MAX_STANCE_YAW_RAD) * assistance;
+  return clamp(desiredYaw, -MAX_STANCE_YAW_RAD, MAX_STANCE_YAW_RAD) * assistance;
+}
+
+/**
+ * The reach corridor for a chest that is *already* turned by `yawRad`.
+ *
+ * Split out from the yaw decision so a planned score-time curve can drive the
+ * chest while the hands still resolve against a corridor that knows about both
+ * halves of the moment.
+ *
+ * `propDesireRad` is what this frame's actual grip geometry asks for, which is
+ * the same number as `yawRad` on the memoryless path and differs from it only
+ * while a score-time curve is deliberately out of phase with the props. The
+ * corridor opens on whichever of the two is further side-on, provided they
+ * agree about which way the body is turning.
+ *
+ * That matters because the corridor protects a mismatch, not a chest. Measured
+ * on ch18 over a 400-frame sweep: with the corridor keyed to the chest alone, a
+ * curve that led the props by 0.22 steps took 25 collision frames at 57.8 mm
+ * against the memoryless baseline's 11 at 36.5 mm, and a curve that trailed
+ * them took 14 at 27.7 mm. Both directions of phase error hurt, because in both
+ * the grips sit at an authored depth the chest no longer faces. Reading the
+ * larger of the two closes the window from either side, and because the two
+ * numbers are equal whenever no curve is driving, the memoryless path is
+ * bit-for-bit unchanged.
+ */
+export function planUpperBodyStanceDepth(
+  yawRad: number,
+  targets: UpperBodyStanceTargets,
+  measurements: PerformerReachMeasurements | null = null,
+  propDesireRad: number = yawRad
+): UpperBodyStancePlan {
+  if (yawRad === 0) return SQUARE_STANCE;
 
   // Once the chest turns, the grid's forward offset stops being forward: it
   // becomes a sideways shift along the audience axis, which is what left both
@@ -118,13 +204,20 @@ export function planUpperBodyStance(
   // the chest is still half square, which is where the bulkier rigs took shaft
   // hits mid-transition. Below SIDE_ON_YAW_KNEE the grips keep their authored
   // depth and the pose is simply the old square-ish reach.
+  // Only an aligned desire counts. Through a reversal the delivered yaw passes
+  // through zero while the props still ask for the side it is leaving, and
+  // opening a corridor in the sign of a near-zero yaw would steer the grips the
+  // wrong way at exactly the frame they are least committed.
+  const alignedDesireRad =
+    Math.sign(propDesireRad) === Math.sign(yawRad) ? Math.abs(propDesireRad) : 0;
+  const sideOnRad = Math.max(Math.abs(yawRad), alignedDesireRad);
   const sideBlend = smoothstep01(
-    (Math.abs(yawRad) - SIDE_ON_YAW_KNEE_RAD) /
+    (sideOnRad - SIDE_ON_YAW_KNEE_RAD) /
       (MAX_STANCE_YAW_RAD - SIDE_ON_YAW_KNEE_RAD)
   );
   // Rig convention: the performer's left is rig-local +X, so a positive stance
   // yaw swings the left shoulder toward negative depth.
-  const leftLaneM = -Math.sign(yawRad) * SAME_SIDE_DEPTH_LANE_M;
+  const leftLaneM = -Math.sign(yawRad) * sameSideLaneM(measurements);
   return {
     yawRad,
     // Same-side reaches need shoulder facing, not a permanent bow. Cross-body
@@ -136,27 +229,43 @@ export function planUpperBodyStance(
   };
 }
 
+/**
+ * The memoryless plan: this frame's geometric yaw and the corridor that yaw
+ * implies. Every surface that has no score-time track available still routes
+ * here, and the track's own samples are built from the same two owners.
+ */
+export function planUpperBodyStance(
+  targets: UpperBodyStanceTargets,
+  measurements: PerformerReachMeasurements | null = null
+): UpperBodyStancePlan {
+  return planUpperBodyStanceDepth(
+    planUpperBodyStanceYawTarget(targets),
+    targets,
+    measurements
+  );
+}
+
 export function planUpperBodyStanceYaw(
   targets: UpperBodyStanceTargets
 ): number {
-  return planUpperBodyStance(targets).yawRad;
+  return planUpperBodyStanceYawTarget(targets);
 }
 
-type GripPropState = Pick<PropState3D, "worldPosition">;
+export type GripPropState = Pick<PropState3D, "worldPosition">;
 
 /**
- * Convert the two rendered prop targets into the shared body-facing plan.
- * Every live sequence surface uses this seam so a diagnostic route cannot
- * silently pose the arms without the shoulder turn used by the app.
+ * The grid-frame grip targets behind a rendered prop pair. One owner for the
+ * plane-mode lateral offsets and grid depth, so the per-frame plan and the
+ * score-time track can never disagree about where the props are.
  */
-export function planUpperBodyStanceForPropStates(
+export function stanceTargetsForPropStates(
   planeMode: PlaneMode,
   left: GripPropState | null,
   right: GripPropState | null
-): UpperBodyStancePlan {
+): UpperBodyStanceTargets {
   const mode = PLANE_MODE_CONFIGS[planeMode];
   const gridOffset = GRID_OFFSETS[planeMode];
-  return planUpperBodyStance({
+  return {
     left: left
       ? {
           x: mode.blueLateralOffset + left.worldPosition.x,
@@ -169,5 +278,22 @@ export function planUpperBodyStanceForPropStates(
           z: gridOffset + right.worldPosition.z,
         }
       : null,
-  });
+  };
+}
+
+/**
+ * Convert the two rendered prop targets into the shared body-facing plan.
+ * Every live sequence surface uses this seam so a diagnostic route cannot
+ * silently pose the arms without the shoulder turn used by the app.
+ */
+export function planUpperBodyStanceForPropStates(
+  planeMode: PlaneMode,
+  left: GripPropState | null,
+  right: GripPropState | null,
+  measurements: PerformerReachMeasurements | null = null
+): UpperBodyStancePlan {
+  return planUpperBodyStance(
+    stanceTargetsForPropStates(planeMode, left, right),
+    measurements
+  );
 }

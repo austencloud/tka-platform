@@ -27,10 +27,7 @@ Usage:
   import GridSvg from "../../grid/components/GridSvg.svelte";
   import PropSvg from "../../prop/components/PropSvg.svelte";
   import type { PropPosition } from "../../prop/domain/models/prop-position";
-  import {
-    EDITOR_TORCH_PALETTE,
-    type PropRenderContext,
-  } from "../../prop/domain/prop-render-context";
+  import { TORCH_CONTRAST_PALETTE } from "../../prop/domain/torch-contrast";
   import ArrowSvg from "../../arrow/rendering/components/ArrowSvg.svelte";
   import TKAGlyph, {
     getLetterDimensions,
@@ -104,7 +101,6 @@ Usage:
     // Dark Mode override for export (when set, overrides CSS-based detection)
     darkMode = undefined,
     // Editor-only prop legibility treatment. Standard rendering is untouched.
-    propRenderContext = "standard",
     // Print Mode: uses pure white background for professional print output (Choreo Cards)
     printMode = false,
     // Transparent background: grid and props float on parent's background
@@ -175,8 +171,6 @@ Usage:
     onPropClick?: (hand: HandSideValue) => void;
     /** Dark Mode override for export. When set, overrides CSS-based detection. */
     darkMode?: boolean;
-    /** Editor grids opt in to context-scoped prop contrast. */
-    propRenderContext?: PropRenderContext;
     /** Print Mode: pure white background for professional print (Choreo Cards). */
     printMode?: boolean;
     /** Transparent background - grid and props float on parent's background */
@@ -429,9 +423,9 @@ Usage:
         : printMode
           ? "#ffffff"
           : darkMode === true
-            ? EDITOR_TORCH_PALETTE.dark.background
+            ? TORCH_CONTRAST_PALETTE.dark.background
             : darkMode === false
-              ? EDITOR_TORCH_PALETTE.light.background
+              ? TORCH_CONTRAST_PALETTE.light.background
               : "var(--dm-pictograph-bg)"}
       pointer-events="none"
     />
@@ -473,8 +467,6 @@ Usage:
               {cellIndex}
               {transitionKey}
               directPositioning={propPositionOverrides?.[hand] !== undefined}
-              {propRenderContext}
-              darkMode={darkMode ?? false}
               colorOverride={hand === HandSide.LEFT
                 ? leftColorOverride
                 : rightColorOverride}

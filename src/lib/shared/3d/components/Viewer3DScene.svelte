@@ -16,7 +16,7 @@
   import { getSceneFeatureContext } from "../scene-features/context/scene-feature-context";
   import SeatedAudience3D from "./SeatedAudience3D.svelte";
   import { Plane, GRID_OFFSETS, cmToUnits } from "@austencloud/scene-3d";
-  import type { GridMode } from "@austencloud/scene-3d";
+  import type { GridMode, PlaneMode } from "@austencloud/scene-3d";
   import Grid3D from "./Grid3D.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
@@ -65,7 +65,11 @@
     createPerformerPointerInteraction,
     type PerformerPointerInteraction,
   } from "./performer-interaction/performer-pointer-interaction.svelte";
-  import { planUpperBodyStanceForPropStates } from "../collision/upper-body-stance-planner";
+  import {
+    buildStanceYawTrackForSource,
+    resolveTrackedUpperBodyStance,
+    type StanceYawTrack,
+  } from "../collision/stance-yaw-track";
   import { getAvatarSequenceCollisionAudit } from "../collision/avatar-sequence-collision-audit";
   import { getAvatarGripMotionAudit } from "../diagnostics/avatar-grip-motion-audit";
 
@@ -82,8 +86,50 @@
     ? getAvatarGripMotionAudit()
     : null;
 
+  // One track per performer, rebuilt only when that performer's sequence,
+  // plane mode, or step count changes. Sampling it is per-frame; planning it
+  // is not.
+  const stanceTracks = new WeakMap<
+    CharacterInstanceState,
+    {
+      sequence: SequenceData | null;
+      planeMode: PlaneMode;
+      stepCount: number;
+      loop: boolean;
+      track: StanceYawTrack | null;
+    }
+  >();
+
+  function resolveStanceTrack(performer: CharacterInstanceState) {
+    const sequence = performer.loadedSequence;
+    const planeMode = performer.planeMode;
+    const stepCount = performer.motionStepCount;
+    const loop = performer.loop;
+    const cached = stanceTracks.get(performer);
+    if (
+      cached &&
+      cached.sequence === sequence &&
+      cached.planeMode === planeMode &&
+      cached.stepCount === stepCount &&
+      cached.loop === loop
+    ) {
+      return cached.track;
+    }
+    const track = buildStanceYawTrackForSource(performer, planeMode);
+    stanceTracks.set(performer, {
+      sequence,
+      planeMode,
+      stepCount,
+      loop,
+      track,
+    });
+    return track;
+  }
+
   function resolveUpperBodyStance(performer: CharacterInstanceState) {
-    return planUpperBodyStanceForPropStates(
+    return resolveTrackedUpperBodyStance(
+      resolveStanceTrack(performer),
+      performer.scoreTime,
       performer.planeMode,
       performer.leftPropState,
       performer.rightPropState
@@ -778,7 +824,15 @@
          Performer Hub effect selection actually reach the renderer. -->
       {@const perfEffect =
         performer.rawEffect ?? globalTipEffectMap["*"]?.effect ?? "none"}
-      {@const perfTipMap = { "*": { effect: perfEffect } }}
+      <!-- When the two hands run different effects, key the map per prop
+         instead of the wildcard. resolveEffect already reads propIndex, so
+         prop 0 (blue, left) and prop 1 (red, right) each take their own. -->
+      {@const perfTipMap = performer.rawHandEffects
+        ? {
+            "0": { effect: performer.rawHandEffects.left },
+            "1": { effect: performer.rawHandEffects.right },
+          }
+        : { "*": { effect: perfEffect } }}
       {@const performerCurrentStep = resolvePerformerStepSource(
         performerSteps?.[i],
         currentStep,
@@ -828,6 +882,7 @@
               gaitTimingSample={performer.gaitTimingSample}
               terminalStepPlan={performer.terminalStepPlan}
               stanceYaw={upperBodyStance.yawRad}
+              stanceSegments={upperBodyStance.segments}
               spinePitchOffset={upperBodyStance.pitchRad}
               blueHandDepthOffset={upperBodyStance.leftDepthOffsetM}
               redHandDepthOffset={upperBodyStance.rightDepthOffsetM}

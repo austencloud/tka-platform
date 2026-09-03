@@ -66,6 +66,25 @@ const CLOSE_UP_TARGET_HEIGHT = 1.45;
 const EMPTY_STAGE_TARGET_HEIGHT = 1.4;
 
 /**
+ * Gap 12. Where a hand and the end of its prop sit above the floor. A hand in
+ * a spinning grip rides roughly chest high; a staff tip reaches about a head
+ * higher at the top of its arc. Both are compile-time aims at the performer's
+ * mark, so they say nothing about where the hand is on any particular count.
+ */
+export const HAND_TARGET_HEIGHT = 1.1;
+export const PROP_TIP_TARGET_HEIGHT = 1.4;
+
+/**
+ * Gap 12. The height a subject of this kind aims at, or null when the subject
+ * aims at whatever the group framing already chose.
+ */
+export function subjectAnchorHeight(kind: string): number | null {
+  if (kind === "hand") return HAND_TARGET_HEIGHT;
+  if (kind === "prop-tip") return PROP_TIP_TARGET_HEIGHT;
+  return null;
+}
+
+/**
  * World Y of the floor performers stand on. `groundOffset` is the rig ORIGIN
  * (shoulder height, per computeFramingShot); the feet sit
  * `userProportionsState.groundY` (negative) below it. Directive heights are
@@ -89,7 +108,11 @@ export function computeCameraFraming(
     paddingMult: 1.18,
     elevationDeg: 12,
   });
-  const baseEye: [number, number, number] = [base.eye.x, base.eye.y, base.eye.z];
+  const baseEye: [number, number, number] = [
+    base.eye.x,
+    base.eye.y,
+    base.eye.z,
+  ];
   const groupTarget: [number, number, number] = [
     base.target.x,
     base.target.y,
@@ -106,6 +129,8 @@ export function computeCameraFraming(
   }
 
   const target = resolveSubject(input.subject, context, groupTarget);
+  // A hand or a prop tip (gap 12) already names the height it means, so a
+  // close-up of one must not be dragged up to face height.
   if (input.shotSize === "close-up" && input.subject?.kind === "performer") {
     target[1] = directorFloorY(context.groundOffset) + CLOSE_UP_TARGET_HEIGHT;
   }
@@ -159,10 +184,17 @@ function resolveSubject(
       `Camera subject references missing performer "${subject.performerId}".`
     );
   }
+  const anchorHeight = subjectAnchorHeight(subject.kind);
+  const height =
+    anchorHeight !== null
+      ? anchorHeight
+      : subject.kind === "performer"
+        ? subject.height
+        : undefined;
   return [
     performer.position.x,
-    subject.height !== undefined
-      ? directorFloorY(context.groundOffset) + subject.height
+    height !== undefined
+      ? directorFloorY(context.groundOffset) + height
       : groupTarget[1],
     performer.position.z,
   ];
@@ -180,6 +212,7 @@ export interface DirectorCameraMove {
     | "orbit"
     | "crane"
     | "pan"
+    | "tilt"
     | "truck"
     | "zoom"
     | "roll";
@@ -193,7 +226,40 @@ export interface DirectorCameraMove {
   easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
 }
 
-const MOVE_RULES: Record<
+/**
+ * A move that survived resolution, still a move.
+ *
+ * Decision D4. Compiling a move used to consume it: the keyframes came out and
+ * the sentence that produced them was gone, so the only way to ask what a scene
+ * DOES was to re-read the authored document, and the only way to retime a move
+ * was to rewrite that document and resolve the whole film again. A node keeps
+ * the move and the window it was allocated, which is what a timeline needs to
+ * draw it as a bar with draggable ends and what an editor needs to address it.
+ *
+ * The id is scene-local because the track is the scene's: `move.0` for a plain
+ * move list, `shot.1/move.0` inside a cut list.
+ */
+export interface ResolvedCameraBehavior {
+  id: string;
+  move: DirectorCameraMove;
+  startSeconds: number;
+  endSeconds: number;
+}
+
+/** Keyframes plus the nodes that produced them. */
+export interface CompiledCameraMoves {
+  keyframes: ResolvedDirectorCameraKeyframe[];
+  behaviors: ResolvedCameraBehavior[];
+}
+
+/**
+ * What each move measures, and which directions it accepts.
+ *
+ * Exported because it is the only authority on a legal move: any surface that
+ * offers moves to a director has to read this rather than restate it, or it
+ * will offer one that fails validation the moment it is written into a film.
+ */
+export const CAMERA_MOVE_RULES: Record<
   DirectorCameraMove["move"],
   { unit: "degrees" | "meters" | null; directions: readonly string[] | null }
 > = {
@@ -203,10 +269,13 @@ const MOVE_RULES: Record<
   orbit: { unit: "degrees", directions: ["cw", "ccw"] },
   crane: { unit: "meters", directions: ["up", "down"] },
   pan: { unit: "degrees", directions: ["left", "right"] },
+  tilt: { unit: "degrees", directions: ["up", "down"] },
   truck: { unit: "meters", directions: ["left", "right"] },
   zoom: { unit: "degrees", directions: ["in", "out"] },
   roll: { unit: "degrees", directions: ["cw", "ccw"] },
 };
+
+const MOVE_RULES = CAMERA_MOVE_RULES;
 
 const ORBIT_SEGMENT_DEG = 30;
 
@@ -300,6 +369,60 @@ function panTarget(position: Vec3, target: Vec3, degrees: number): Vec3 {
     position[2] - dx * Math.sin(angle) + dz * Math.cos(angle),
   ];
 }
+
+/** How far the camera is from what it aims at, in three dimensions. */
+function aimDistance(position: Vec3, target: Vec3): number {
+  return Math.hypot(
+    target[0] - position[0],
+    target[1] - position[1],
+    target[2] - position[2]
+  );
+}
+
+/**
+ * Where the camera is looking, as angles rather than as a point.
+ *
+ * Yaw is `atan2(dx, dz)` so it matches `panDegrees`; pitch is measured above
+ * level. A camera sitting on its own aim point has no direction, so it reports
+ * level and forward rather than a NaN.
+ */
+function aimAngles(
+  position: Vec3,
+  target: Vec3
+): { yawDeg: number; pitchDeg: number } {
+  const dx = target[0] - position[0];
+  const dy = target[1] - position[1];
+  const dz = target[2] - position[2];
+  const distance = Math.hypot(dx, dy, dz);
+  if (distance < 1e-9) return { yawDeg: 0, pitchDeg: 0 };
+  return {
+    yawDeg: (Math.atan2(dx, dz) * 180) / Math.PI,
+    pitchDeg: (Math.asin(Math.max(-1, Math.min(1, dy / distance))) * 180) / Math.PI,
+  };
+}
+
+/** The aim point implied by a direction and a distance. */
+function aimPoint(
+  position: Vec3,
+  yawDeg: number,
+  pitchDeg: number,
+  distance: number
+): Vec3 {
+  const yaw = (yawDeg * Math.PI) / 180;
+  const pitch = (pitchDeg * Math.PI) / 180;
+  const horizontal = Math.cos(pitch) * distance;
+  return [
+    position[0] + Math.sin(yaw) * horizontal,
+    position[1] + Math.sin(pitch) * distance,
+    position[2] + Math.cos(yaw) * horizontal,
+  ];
+}
+
+/**
+ * How far from level a tilt may finish. Past this the aim approaches straight
+ * up or straight down, where yaw stops meaning anything and the horizon spins.
+ */
+const MAX_TILT_DEG = 85;
 
 /**
  * One member's contribution to a move group at `progress`, measured from the
@@ -407,11 +530,7 @@ function moveGroupDelta(
   const degrees =
     panDegrees(move, origin.position, origin.target, context) * progress;
   const aimed = panTarget(origin.position, origin.target, degrees);
-  delta.target = [
-    aimed[0] - origin.target[0],
-    0,
-    aimed[2] - origin.target[2],
-  ];
+  delta.target = [aimed[0] - origin.target[0], 0, aimed[2] - origin.target[2]];
   return delta;
 }
 
@@ -441,32 +560,58 @@ function moveGroupSegments(members: readonly DirectorCameraMove[]): number {
   return segments;
 }
 
+/**
+ * The keyframes alone, for callers that do not keep the nodes.
+ * `compileCameraMoveNodes` is the owner; this is the projection of it that the
+ * shot compiler and the older tests read.
+ */
 export function compileCameraMoves(
   moves: readonly DirectorCameraMove[],
   framing: CameraFraming,
   context: CameraLanguageContext
 ): ResolvedDirectorCameraKeyframe[] {
+  return compileCameraMoveNodes(moves, framing, context).keyframes;
+}
+
+/**
+ * Evaluate a list of move nodes into one scene's worth of camera.
+ *
+ * The nodes come back with the keyframes because they are not the same thing:
+ * the keyframes are what this evaluation produced at these window boundaries,
+ * and the nodes are the statements that would produce them again if a window
+ * moved. The keyframes become the store's `directive` layer; the nodes become
+ * the track's `behaviors`.
+ */
+export function compileCameraMoveNodes(
+  moves: readonly DirectorCameraMove[],
+  framing: CameraFraming,
+  context: CameraLanguageContext,
+  idPrefix = ""
+): CompiledCameraMoves {
   if (moves.length === 0) {
     // No moves to chain: an honest two-frame hold spanning the whole scene,
-    // rather than crashing on frames[0] below.
-    return [
-      {
-        atSeconds: 0,
-        position: [...framing.position],
-        target: [...framing.target],
-        fovDeg: framing.fovDeg,
-        interpolation: "step",
-        easing: "linear",
-      },
-      {
-        atSeconds: context.durationSeconds,
-        position: [...framing.position],
-        target: [...framing.target],
-        fovDeg: framing.fovDeg,
-        interpolation: "step",
-        easing: "linear",
-      },
-    ];
+    // rather than crashing on frames[0] below. No moves means no nodes.
+    return {
+      behaviors: [],
+      keyframes: [
+        {
+          atSeconds: 0,
+          position: [...framing.position],
+          target: [...framing.target],
+          fovDeg: framing.fovDeg,
+          interpolation: "step",
+          easing: "linear",
+        },
+        {
+          atSeconds: context.durationSeconds,
+          position: [...framing.position],
+          target: [...framing.target],
+          fovDeg: framing.fovDeg,
+          interpolation: "step",
+          easing: "linear",
+        },
+      ],
+    };
   }
 
   const windows = allocateMoveWindows(
@@ -475,6 +620,7 @@ export function compileCameraMoves(
     "Camera moves"
   );
   const frames: ResolvedDirectorCameraKeyframe[] = [];
+  const behaviors: ResolvedCameraBehavior[] = [];
   let position: [number, number, number] = [...framing.position];
   let target: [number, number, number] = [...framing.target];
   let fovDeg = framing.fovDeg;
@@ -483,15 +629,46 @@ export function compileCameraMoves(
   moves.forEach((move, index) => {
     validateMove(move);
     const { start, end } = windows[index]!;
+    // The window is the node's whole timing story: `allocateMoveWindows` has
+    // already turned stated and left-over durations into real seconds, so a
+    // timeline can draw this bar without re-deriving any of that.
+    behaviors.push({
+      id: `${idPrefix}move.${index}`,
+      move,
+      startSeconds: start,
+      endSeconds: end,
+    });
     const easing = move.easing ?? "ease-in-out";
+    /**
+     * `aim` is stated only by moves that turn the camera in place. It travels
+     * with the keyframe so the sampler can interpolate the direction rather
+     * than the aim point; everything else leaves it absent and keeps the
+     * world-space aim it has always had.
+     */
     const push = (
       atSeconds: number,
       pos: [number, number, number],
       tgt: [number, number, number],
-      interpolation: ResolvedDirectorCameraKeyframe["interpolation"] = "smooth"
+      interpolation: ResolvedDirectorCameraKeyframe["interpolation"] = "smooth",
+      aim?: { yawDeg: number; pitchDeg: number; opensSegment?: boolean }
     ) => {
       const last = frames.at(-1);
-      if (last && Math.abs(last.atSeconds - atSeconds) < 1e-6) frames.pop();
+      const coincident =
+        last && Math.abs(last.atSeconds - atSeconds) < 1e-6 ? last : undefined;
+      if (coincident) frames.pop();
+      // The next move opens where the last one closed, at the same instant and
+      // the same aim point. Inheriting the angles keeps a turn past a half
+      // circle intact, since the replacing key would otherwise leave the
+      // arriving angle to be recovered from a point, which cannot tell 270
+      // degrees from -90. `aimSpace` is NOT inherited: it governs the outgoing
+      // segment, and that now belongs to the move taking over.
+      const inherited =
+        aim === undefined && coincident?.aimYawDeg !== undefined
+          ? {
+              aimYawDeg: coincident.aimYawDeg,
+              aimPitchDeg: coincident.aimPitchDeg,
+            }
+          : undefined;
       frames.push({
         atSeconds,
         position: pos,
@@ -500,6 +677,13 @@ export function compileCameraMoves(
         interpolation,
         easing,
         ...(rollDeg !== undefined ? { rollDeg } : {}),
+        ...(aim
+          ? {
+              aimYawDeg: aim.yawDeg,
+              aimPitchDeg: aim.pitchDeg,
+              ...(aim.opensSegment ? { aimSpace: "angles" as const } : {}),
+            }
+          : (inherited ?? {})),
       });
     };
 
@@ -649,7 +833,11 @@ export function compileCameraMoves(
       const meters =
         (move.amount && "meters" in move.amount ? move.amount.meters : 2) *
         (move.direction === "down" ? -1 : 1);
-      const next: [number, number, number] = [position[0], position[1] + meters, position[2]];
+      const next: [number, number, number] = [
+        position[0],
+        position[1] + meters,
+        position[2],
+      ];
       push(start, [...position], [...target]);
       push(end, next, [...target]);
       position = next;
@@ -705,14 +893,52 @@ export function compileCameraMoves(
       return;
     }
 
-    // pan: rotate the aim point around the camera. This branch is last and
-    // explicit (rather than a bare trailing fallthrough) so a future move
-    // inserted above can never silently fall into it.
+    if (move.move === "tilt") {
+      const degrees = degreesAmount(move, 15) * (move.direction === "down" ? -1 : 1);
+      const from = aimAngles(position, target);
+      const pitchDeg = from.pitchDeg + degrees;
+      if (Math.abs(pitchDeg) > MAX_TILT_DEG) {
+        throw new Error(
+          `A tilt of ${fmt(Math.abs(degrees))} degrees would take the aim to ${fmt(pitchDeg)} degrees from level, past the ${MAX_TILT_DEG} degree limit where the horizon stops holding (it is at ${fmt(from.pitchDeg)}).`
+        );
+      }
+      const next = aimPoint(
+        position,
+        from.yawDeg,
+        pitchDeg,
+        aimDistance(position, target)
+      );
+      push(start, [...position], [...target], "smooth", {
+        ...from,
+        opensSegment: true,
+      });
+      push(end, [...position], next, "smooth", {
+        yawDeg: from.yawDeg,
+        pitchDeg,
+      });
+      target = next;
+      return;
+    }
+
+    // pan: turn the camera in place. This branch is last and explicit (rather
+    // than a bare trailing fallthrough) so a future move inserted above can
+    // never silently fall into it.
     if (move.move === "pan") {
       const degrees = panDegrees(move, position, target, context);
       const next = panTarget(position, target, degrees);
-      push(start, [...position], [...target]);
-      push(end, [...position], next);
+      const from = aimAngles(position, target);
+      push(start, [...position], [...target], "smooth", {
+        ...from,
+        opensSegment: true,
+      });
+      // The arriving yaw is stated, not measured: `atan2` cannot tell a turn of
+      // 270 degrees from one of -90. It ADDS, because `panTarget` rotates the
+      // aim through `atan2(x, z) + degrees`. Pitch is measured, because
+      // `panTarget` keeps the aim point at its height rather than at its pitch.
+      push(end, [...position], next, "smooth", {
+        yawDeg: from.yawDeg + degrees,
+        pitchDeg: aimAngles(position, next).pitchDeg,
+      });
       target = next;
     }
   });
@@ -720,12 +946,20 @@ export function compileCameraMoves(
   if (frames[0]!.atSeconds !== 0) {
     frames.unshift({ ...frames[0]!, atSeconds: 0 });
   }
-  return frames;
+  return { keyframes: frames, behaviors };
 }
 
 export interface DirectorCameraShot extends DirectorFramingInput {
   moves?: DirectorCameraMove[];
   durationSeconds?: number;
+}
+
+/** The keyframes alone. `compileCameraShotNodes` is the owner. */
+export function compileCameraShots(
+  shots: readonly DirectorCameraShot[],
+  context: CameraLanguageContext
+): ResolvedDirectorCameraKeyframe[] {
+  return compileCameraShotNodes(shots, context).keyframes;
 }
 
 /**
@@ -736,16 +970,17 @@ export interface DirectorCameraShot extends DirectorFramingInput {
  * sampler holds it until the next shot's first keyframe, which starts at the
  * same instant: the cut.
  */
-export function compileCameraShots(
+export function compileCameraShotNodes(
   shots: readonly DirectorCameraShot[],
   context: CameraLanguageContext
-): ResolvedDirectorCameraKeyframe[] {
+): CompiledCameraMoves {
   const windows = allocateMoveWindows(
     shots,
     context.durationSeconds,
     "Camera shots"
   );
   const frames: ResolvedDirectorCameraKeyframe[] = [];
+  const behaviors: ResolvedCameraBehavior[] = [];
   shots.forEach((shot, index) => {
     const { start, end } = windows[index]!;
     const length = end - start;
@@ -764,24 +999,35 @@ export function compileCameraShots(
       },
       shotContext
     );
-    const compiled = compileCameraMoves(
+    const compiled = compileCameraMoveNodes(
       shot.moves ?? [{ move: "hold" }],
       framing,
-      shotContext
+      shotContext,
+      `shot.${index}/`
     );
     const isLast = index === shots.length - 1;
-    compiled.forEach((frame, frameIndex) => {
+    compiled.keyframes.forEach((frame, frameIndex) => {
       const shifted: ResolvedDirectorCameraKeyframe = {
         ...frame,
         atSeconds: frame.atSeconds + start,
       };
-      if (!isLast && frameIndex === compiled.length - 1) {
+      if (!isLast && frameIndex === compiled.keyframes.length - 1) {
         shifted.interpolation = "step";
       }
       frames.push(shifted);
     });
+    // A shot compiles inside its own window, so its nodes are timed from that
+    // window's start. Shift them the way the keyframes were shifted, or the
+    // second shot's moves would draw on top of the first shot's.
+    for (const behavior of compiled.behaviors) {
+      behaviors.push({
+        ...behavior,
+        startSeconds: behavior.startSeconds + start,
+        endSeconds: behavior.endSeconds + start,
+      });
+    }
   });
-  return frames;
+  return { keyframes: frames, behaviors };
 }
 
 function validateMove(move: DirectorCameraMove): void {
