@@ -26,6 +26,9 @@
     "red",
     "mode",
     "propMode",
+    "theory",
+    "ratio",
+    "spin",
   ];
   const persistence = {
     restore: (): ShapeMatrixAppSnapshot | null => {

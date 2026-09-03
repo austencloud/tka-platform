@@ -47,6 +47,14 @@ const FULL_ASSIST_LATERAL_M = 0.28;
 // bulkier ch18 chest by 1-2 cm; a 16 cm lane clears every sampled frame on all
 // three verified rigs and still sits well inside a ~22 cm shoulder half-span,
 // so both grips stay between the arms.
+//
+// Re-measured after the hug became a wrist rotation rather than a grip
+// translation: the lane is still load-bearing and cannot be traded for wrist
+// angle. Overriding the intake rig's measured 11.6 cm lane while everything
+// else stayed fixed put the shaft into the torso by 15 mm at 8 cm, 28 mm at
+// 4 cm, and 38 mm at 0. This lane is a torso-clearance corridor, not a
+// convergence mechanism; converging further needs a shorter staff, which is
+// what `fitStaffLengthForHug` is for.
 const SIDE_ON_YAW_KNEE_RAD = MAX_STANCE_YAW_RAD * 0.8;
 const SAME_SIDE_DEPTH_SEPARATION_M = 0.32;
 const SAME_SIDE_DEPTH_LANE_M = SAME_SIDE_DEPTH_SEPARATION_M / 2;

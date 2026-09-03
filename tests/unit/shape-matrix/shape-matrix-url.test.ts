@@ -11,6 +11,9 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const COMMON = {
+  surface: "matrix" as const,
+  theoryRatio: { propRotations: 1, handCycles: 3 },
+  theorySpin: "pro" as const,
   activeAxis: "both" as const,
   propType: PropType.STAFF,
   propMode: null,
@@ -103,6 +106,9 @@ describe("shape matrix URL state", () => {
     );
 
     expect(state).toEqual({
+      surface: "matrix",
+      theoryRatio: { propRotations: 1, handCycles: 3 },
+      theorySpin: "pro",
       level: 4,
       leftTurn: 0.75,
       rightTurn: 1.5,
@@ -203,5 +209,29 @@ describe("shape matrix URL state", () => {
       "?level=4&leftTurn=0.25&rightTurn=1&propMode=SS"
     );
     expect(state.propMode).toBeNull();
+  });
+
+  it("round-trips the exact Theory Atlas ratio and spin direction", () => {
+    const url = new URL(
+      "https://tkaflowarts.com/notation/shape-matrix?ref=theory"
+    );
+    const state = readShapeMatrixRouteState(
+      "?theory=1&ratio=2:9&spin=anti&level=4"
+    );
+
+    expect(state.surface).toBe("theory");
+    expect(state.theoryRatio).toEqual({ propRotations: 2, handCycles: 9 });
+    expect(state.theorySpin).toBe("anti");
+
+    writeShapeMatrixRouteState(url, state);
+    expect(url.searchParams.get("ref")).toBe("theory");
+    expect(url.searchParams.get("theory")).toBe("1");
+    expect(url.searchParams.get("ratio")).toBe("2:9");
+    expect(url.searchParams.get("spin")).toBe("anti");
+  });
+
+  it("falls back from ratios outside the bounded atlas", () => {
+    const state = readShapeMatrixRouteState("?theory=1&ratio=3:10");
+    expect(state.theoryRatio).toEqual({ propRotations: 1, handCycles: 3 });
   });
 });

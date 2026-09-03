@@ -217,8 +217,14 @@ describe("shape matrix mandala continuity", () => {
     );
     expect(shell).toContain("<ShapeMatrixTurnPopover />");
     // The chip serves both compact panes; the four-group ribbon is wide-only,
-    // so a phone matrix view keeps the grid as the hero.
-    expect(shell).toMatch(/\{#if !appState\.compact\}\s*<div class="matrix-controls">/);
+    // so a phone matrix view keeps the grid as the hero. Checked by nesting
+    // rather than adjacency: the surface tab put a header-meta row and a
+    // surface guard between the two, and neither of those weakens the rule.
+    const compactGuard = shell.indexOf("{#if !appState.compact}");
+    const ribbon = shell.indexOf('<div class="matrix-controls"');
+    expect(compactGuard).toBeGreaterThan(-1);
+    expect(ribbon).toBeGreaterThan(compactGuard);
+    expect(shell.split('<div class="matrix-controls"')).toHaveLength(2);
     expect(shell).not.toMatch(/activeView === "matrix"\}\s*<div class="matrix-controls">/);
     expect(shell).toContain("runMandalaMorph");
   });

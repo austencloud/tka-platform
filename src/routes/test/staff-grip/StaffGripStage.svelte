@@ -57,16 +57,6 @@
 <T.DirectionalLight position={[2.4, 4.5, 3.8]} intensity={1.7} castShadow />
 <T.DirectionalLight position={[-3, 2.2, 1]} intensity={0.65} color="#99c7ff" />
 
-<T.Group position.z={STAGE.AVATAR_GRID_OFFSET}>
-  <Grid3D
-    visiblePlanes={WALL_PLANE}
-    gridMode="diamond"
-    planeMode={PlaneMode.WALL}
-    showLabels={true}
-    showOrientationHelpers={false}
-  />
-</T.Group>
-
 <LiveSequencePerformer3D
   {id}
   position={{ x: 0, y: 0, z: 0 }}
@@ -82,4 +72,16 @@
   enableLocomotion={false}
   enableFootPlanting={false}
   {onCollisionEvents}
-/>
+>
+  {#snippet gridSlot()}
+    <T.Group position.z={STAGE.AVATAR_GRID_OFFSET}>
+      <Grid3D
+        visiblePlanes={WALL_PLANE}
+        gridMode="diamond"
+        planeMode={PlaneMode.WALL}
+        showLabels={true}
+        showOrientationHelpers={false}
+      />
+    </T.Group>
+  {/snippet}
+</LiveSequencePerformer3D>
