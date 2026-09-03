@@ -136,6 +136,12 @@
      *  (the landing spinner). Viewer/export already own Left/Right in their
      *  header, so they leave it false to avoid a duplicate. */
     showMotionVisibility?: boolean;
+    /** Hide the four sequence-only edge marks (TKA glyph, element, step number,
+     *  word) for a host animating something with no letter and no steps. */
+    showSequenceMarks?: boolean;
+    /** Restrict the effect roster to what the host's renderer can actually
+     *  draw. Omit for the full roster. */
+    availableEffects?: readonly string[];
     /** Experimental interpolation shapes stay available to study surfaces,
      * while ordinary playback hosts can retain canonical motion geometry. */
     showPathShape?: boolean;
@@ -180,6 +186,8 @@
     dockTrailingAction,
     showInlineExportProgress = true,
     showMotionVisibility = false,
+    showSequenceMarks = true,
+    availableEffects,
     showPathShape = true,
     onSettingChange,
     onActiveSectionChange,
@@ -674,6 +682,7 @@
         onPlaybackToggle &&
         onBpmChange
       )}
+      {availableEffects}
       onSettingChange={(setting, previous, value, coalesce) =>
         reportSetting("effects", setting, previous, value, coalesce)}
     />
@@ -810,6 +819,7 @@
     <div class="rt-section" role="region" aria-label="Visibility">
       <DisplayPanel
         {showMotionVisibility}
+        {showSequenceMarks}
         {sequence}
         propType={selectedPropType}
         fill={layout === "sidebar"}
