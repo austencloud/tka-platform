@@ -1,52 +1,26 @@
 <!--
-  FilmDirectorSceneIndex — the scene catalog, as a modal inside a booted film.
+  FilmDirectorSceneIndex — pick one scene out of a multi-scene film and loop it.
 
-  A film is a linear watch, which is the wrong shape for inspecting one thing.
-  Proving Grounds is 23 scenes; someone who wants to see the dolly zoom should
-  not have to sit through the ten scenes in front of it. Every scene already
-  carries an authored `intent` — a written statement of what it proves and what
-  to watch for — and this panel renders it.
+  A capability demo is one scene, so the workbench hides the button that opens
+  this entirely. What is left needing it: a demo that has to establish something
+  first (the tempo change needs a slow count to change away from), and a saved
+  film the user cut themselves. Both are short lists of titles.
 
-  The grid, the grouping and the card belong to SceneCatalog, which the marquee
-  also renders before any film has booted. This component is the in-film host:
-  it owns the modal chrome, the filter input's placement in the header, and the
-  two actions only a running film can offer — solo a scene, or release solo and
-  play from the top. Switching scenes here is instant, because the stage is
-  already warm; from the marquee the same pick pays the one scene boot.
+  Scenes here carry no written intent and no category — that vocabulary moved to
+  the capability library, which is a better index than a film ever was. So this
+  is a list of titles and durations, not a card grid.
 -->
 <script lang="ts">
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
 
   import { getFilmDirectorContext } from "../_lib/film-director-context";
-  import SceneCatalog from "./SceneCatalog.svelte";
-  import type { CatalogScene } from "./scene-catalog-types";
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
   const director = getFilmDirectorContext();
 
-  let query = $state("");
-
-  // Reset per open, so a reopened index never hides scenes behind a filter the
-  // user typed a minute ago and has since forgotten.
-  $effect(() => {
-    if (!open) return;
-    query = "";
-  });
-
-  const scenes = $derived<CatalogScene[]>(
-    director.film.scenes.map((scene, index) => ({
-      index,
-      id: scene.id,
-      title: scene.title,
-      intent: scene.intent,
-      seconds: scene.durationSeconds,
-      category: scene.category,
-    }))
-  );
-
-  function soloScene(scene: CatalogScene): void {
-    director.setSoloScene(scene.index);
+  function soloScene(index: number): void {
+    director.setSoloScene(index);
     director.play();
     open = false;
   }
@@ -59,34 +33,20 @@
   }
 </script>
 
-<BaseModal bind:open size="xl" labelledBy="scene-index-title">
+<BaseModal bind:open size="md" labelledBy="scene-index-title">
   {#snippet header()}
     <div class="index-header">
-      <div class="index-heading">
+      <div>
         <span class="kicker">{director.film.title}</span>
         <h2 id="scene-index-title">
-          {scenes.length}
-          {scenes.length === 1 ? "scene" : "scenes"}
+          {director.film.scenes.length}
+          {director.film.scenes.length === 1 ? "scene" : "scenes"}
         </h2>
       </div>
-
-      <div class="index-tools">
-        <!-- Two dozen scenes is more than a glance can hold, and the intent
-             text is where the vocabulary actually lives: typing "orbit" or
-             "handheld" finds the scenes that demonstrate it. Ids are matched
-             too, so a link pasted back from the address bar finds its card. -->
-        <input
-          class="index-filter"
-          type="search"
-          placeholder="Filter scenes"
-          aria-label="Filter scenes by name, id, or description"
-          bind:value={query}
-        />
-        <button type="button" class="index-close" onclick={() => (open = false)}>
-          <i class="fas fa-xmark" aria-hidden="true"></i>
-          Close
-        </button>
-      </div>
+      <button type="button" class="index-close" onclick={() => (open = false)}>
+        <i class="fas fa-xmark" aria-hidden="true"></i>
+        Close
+      </button>
     </div>
   {/snippet}
 
@@ -94,36 +54,39 @@
     {#if director.soloSceneIndex !== null}
       <button type="button" class="release-solo" onclick={playWholeFilm}>
         <i class="fas fa-list-ol" aria-hidden="true"></i>
-        <span>
-          Playing one scene on a loop. Play the whole film from the top instead.
-        </span>
+        <span>Playing one scene on a loop. Play from the top instead.</span>
       </button>
     {/if}
 
-    <SceneCatalog
-      {scenes}
-      bind:query
-      onPick={soloScene}
-      soloIndex={director.soloSceneIndex}
-      currentIndex={director.frame.sceneIndex}
-    />
+    <ul>
+      {#each director.film.scenes as scene, index (scene.id)}
+        <li>
+          <button
+            type="button"
+            class:soloed={index === director.soloSceneIndex}
+            aria-current={index === director.frame.sceneIndex
+              ? "true"
+              : undefined}
+            onclick={() => soloScene(index)}
+          >
+            <span class="ordinal">{index + 1}</span>
+            <span class="title">{scene.title}</span>
+            <span class="seconds">{scene.durationSeconds}s</span>
+          </button>
+        </li>
+      {/each}
+    </ul>
   </div>
 </BaseModal>
 
 <style>
   .index-header {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem 1rem;
+    gap: 1rem;
     padding: 1.15rem 1.25rem 0.9rem;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-  }
-
-  .index-heading {
-    display: grid;
-    gap: 0.15rem;
   }
 
   .kicker {
@@ -135,42 +98,8 @@
   }
 
   h2 {
-    margin: 0;
+    margin: 0.15rem 0 0;
     font-size: 1.3rem;
-  }
-
-  /* nowrap, so the filter and Close stay one row: a wrapped tools column makes
-     the header twice as tall and strands the title beside dead space. */
-  .index-tools {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  /* A flat width, not min(16rem, 100%). The percentage resolves against a
-     container this element is itself sizing, so it drops out of the row's
-     max-content contribution — the row then measures narrower than the controls
-     inside it and wraps them onto two lines. */
-  .index-filter {
-    min-width: 0;
-    width: 16rem;
-    max-width: 100%;
-    min-height: 2.75rem;
-    padding: 0 0.85rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.16));
-    border-radius: 0.7rem;
-    outline: none;
-    color: var(--theme-text, #fff);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    font: inherit;
-    font-size: var(--font-size-min, 0.875rem);
-  }
-
-  .index-filter:focus-visible {
-    border-color: var(--theme-accent, #9d8cff);
-    box-shadow: 0 0 0 3px
-      color-mix(in srgb, var(--theme-accent, #9d8cff) 24%, transparent);
   }
 
   .index-close {
@@ -194,7 +123,9 @@
     border-color: var(--theme-accent, #9d8cff);
   }
 
-  .index-close:focus-visible {
+  .index-close:focus-visible,
+  .release-solo:focus-visible,
+  li button:focus-visible {
     outline: 3px solid var(--theme-accent, #9d8cff);
     outline-offset: 2px;
   }
@@ -230,28 +161,71 @@
     border-color: var(--theme-accent, #9d8cff);
   }
 
-  .release-solo:focus-visible {
-    outline: 3px solid var(--theme-accent, #9d8cff);
-    outline-offset: 2px;
-  }
-
   .release-solo i {
     flex: 0 0 auto;
     color: var(--theme-accent, #b0a4ff);
   }
 
+  ul {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li button {
+    display: flex;
+    width: 100%;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    border-radius: 0.7rem;
+    color: var(--theme-text, #fff);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  li button:hover {
+    border-color: var(--theme-accent, #9d8cff);
+  }
+
+  /* Full perimeter and a wash, never a strip down one edge. */
+  li button.soloed {
+    border-color: var(--theme-accent, #9d8cff);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #7869eb) 22%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.05))
+    );
+  }
+
+  .ordinal {
+    flex: 0 0 1.6rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    font-size: var(--font-size-min, 0.875rem);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .title {
+    flex: 1 1 auto;
+    font-weight: 700;
+  }
+
+  .seconds {
+    flex: 0 0 auto;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 0.875rem);
+    font-variant-numeric: tabular-nums;
+  }
+
   @media (max-width: 34rem) {
     .index-header {
       padding: 0.9rem 1rem 0.75rem;
-    }
-
-    .index-tools {
-      width: 100%;
-    }
-
-    .index-filter {
-      flex: 1 1 8rem;
-      width: auto;
     }
 
     .index-body {

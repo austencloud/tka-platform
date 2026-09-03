@@ -1,66 +1,105 @@
 /**
- * Every film in the workbench's registry must resolve without rejection,
- * deterministically. A film that would reject at load time should fail here,
- * not in the picker. The determinism check re-resolves each film and demands
- * an identical result: the seeded axis streams are the only randomness, so
- * two resolutions of the same input must agree bit for bit.
+ * Every capability demo must resolve without rejection, deterministically. A
+ * demo that would reject at load time should fail here, not when the user
+ * clicks it. The determinism check re-resolves each demo and demands an
+ * identical result: the seeded axis streams are the only randomness, so two
+ * resolutions of the same input must agree bit for bit.
+ *
+ * Below that, the per-capability tests: each one is the machine-checkable half
+ * of a claim the library makes in one line of prose. "The camera follows a
+ * walking performer" is a sentence; the test proves the target actually moved
+ * with them.
  */
-import { readFileSync, statSync } from "node:fs";
-import { resolve as resolvePath } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
 import { getSceneEnvironmentRendererKey } from "../../../src/lib/shared/3d/environments/domain/scene-environment";
 import { getStageCoordinateFrame } from "../../../src/lib/shared/3d/environments/domain/stage-coordinate-frame";
+import {
+  CAPABILITY_LIBRARY,
+  capabilityDemo,
+} from "../../../src/routes/test/film-director/_capabilities/index";
 import { directorFloorY } from "../../../src/routes/test/film-director/_lib/camera-language";
 import { resolveStepChange } from "../../../src/routes/test/film-director/_lib/director-step-changes";
 import { resolveHeldStep } from "../../../src/routes/test/film-director/_lib/director-step-holds";
 import { DIRECTOR_SCENE_CATEGORIES } from "../../../src/routes/test/film-director/_lib/film-director-schema";
-
-import { FILM_LIBRARY } from "../../../src/routes/test/film-director/_films/index";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
 import { sampleFilmDirector } from "../../../src/routes/test/film-director/_lib/sample-film-director";
 
-/** What scripts/build-film-posters.mjs writes. */
-const POSTER_WIDTH = 960;
-const POSTER_HEIGHT = 540;
-const POSTER_MAX_BYTES = 220 * 1024;
+/**
+ * Every demo, resolved once. Resolution is pure and deterministic (the test
+ * below proves it), so the whole file can share one pass rather than paying
+ * for 22 of them per assertion.
+ */
+const SPECS = CAPABILITY_LIBRARY.map((entry) => ({
+  entry,
+  spec: resolveFilmDirectorSpec(entry.film),
+}));
 
 /**
- * Read a WebP's dimensions from its container header.
- *
- * Hand-parsed rather than decoded with sharp: the size is four bytes at a fixed
- * offset, and a unit test should not pull a native image codec in to read them.
+ * The demo that owns a scene, and that scene resolved. A lead-in scene appears
+ * in two demos — `combined-draw` is both its own demo and the callback's
+ * establishing shot — and library order puts the owner first, so the search
+ * finds the one the user reaches by clicking that capability.
  */
-function readWebpSize(file: Buffer): { width: number; height: number } {
-  expect(file.subarray(0, 4).toString("ascii")).toBe("RIFF");
-  expect(file.subarray(8, 12).toString("ascii")).toBe("WEBP");
-  const fourcc = file.subarray(12, 16).toString("ascii");
-  if (fourcc === "VP8 ") {
-    return {
-      width: file.readUInt16LE(26) & 0x3fff,
-      height: file.readUInt16LE(28) & 0x3fff,
-    };
+function find(sceneId: string) {
+  for (const { spec } of SPECS) {
+    const scene = spec.scenes.find((entry) => entry.id === sceneId);
+    if (scene) return { spec, scene };
   }
-  if (fourcc === "VP8X") {
-    return {
-      width: (file.readUIntLE(24, 3) & 0xffffff) + 1,
-      height: (file.readUIntLE(27, 3) & 0xffffff) + 1,
-    };
-  }
-  throw new Error(`Unsupported WebP chunk "${fourcc}"`);
+  throw new Error(`No capability scene "${sceneId}"`);
 }
 
-describe("film library", () => {
-  it("has unique keys and film ids", () => {
-    const keys = FILM_LIBRARY.map((entry) => entry.key);
-    expect(new Set(keys).size).toBe(keys.length);
-    const ids = FILM_LIBRARY.map((entry) => entry.film.id);
+const scene = (id: string) => find(id).scene;
+
+/** Every resolved scene in the library, lead-in duplicates included. */
+const allScenes = SPECS.flatMap(({ spec }) => spec.scenes);
+
+describe("capability library", () => {
+  it("has unique ids", () => {
+    const ids = CAPABILITY_LIBRARY.map((entry) => entry.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  for (const entry of FILM_LIBRARY) {
-    describe(`"${entry.label}" (${entry.key})`, () => {
+  it("addresses every demo by its id", () => {
+    for (const entry of CAPABILITY_LIBRARY) {
+      expect(capabilityDemo(entry.id)).toBe(entry);
+    }
+    expect(() => capabilityDemo("no-such-capability")).toThrow();
+  });
+
+  it("says what each demo shows, in one line", () => {
+    for (const entry of CAPABILITY_LIBRARY) {
+      expect(entry.label.length).toBeGreaterThan(0);
+      // The whole point of the rewrite: a line, not a paragraph. Anything
+      // longer than this stops being something anyone reads on the way past.
+      expect(entry.demonstrates.length).toBeGreaterThan(0);
+      expect(entry.demonstrates.length).toBeLessThanOrEqual(90);
+    }
+  });
+
+  it("groups every demo under a category, and spends every category", () => {
+    // The front door groups by category, so an uncategorized demo would fall
+    // out of the list entirely. And a category nothing uses is a heading that
+    // can never appear — the enum is closed precisely so the list stays a real
+    // description of what the director does rather than an aspiration.
+    const used = new Set(CAPABILITY_LIBRARY.map((entry) => entry.category));
+    expect([...DIRECTOR_SCENE_CATEGORIES].filter((c) => !used.has(c))).toEqual(
+      []
+    );
+  });
+
+  it("keeps a demo to the one scene it demonstrates, plus any setup it needs", () => {
+    for (const entry of CAPABILITY_LIBRARY) {
+      // Clicking a capability plays that capability. A lead-in is allowed
+      // where the point cannot be made cold — a tempo CHANGE needs a tempo to
+      // change away from — and the demonstrated scene is always the last one.
+      expect(entry.film.scenes.length).toBeLessThanOrEqual(2);
+      expect(entry.film.scenes.at(-1)!.id).toBe(entry.id);
+    }
+  });
+
+  for (const entry of CAPABILITY_LIBRARY) {
+    describe(`"${entry.label}" (${entry.id})`, () => {
       it("resolves without rejection", () => {
         const resolved = resolveFilmDirectorSpec(entry.film);
         expect(resolved.scenes.length).toBeGreaterThan(0);
@@ -76,134 +115,11 @@ describe("film library", () => {
         const second = resolveFilmDirectorSpec(entry.film);
         expect(second).toEqual(first);
       });
-
-      it("names a poster cue that still lands inside its scene", () => {
-        const resolved = resolveFilmDirectorSpec(entry.film);
-        const scene = resolved.scenes.find(
-          (candidate) => candidate.id === entry.poster.sceneId
-        );
-        expect(
-          scene,
-          `poster cue names scene "${entry.poster.sceneId}", which this film does not have`
-        ).toBeDefined();
-        expect(entry.poster.offsetSeconds).toBeGreaterThanOrEqual(0);
-        expect(entry.poster.offsetSeconds).toBeLessThan(scene!.durationSeconds);
-      });
-
-      it("has a baked poster at the size the marquee reserves", () => {
-        expect(entry.poster.src).toBe(`/films/posters/${entry.key}.webp`);
-        const path = resolvePath("static", entry.poster.src.slice(1));
-        expect(
-          statSync(path, { throwIfNoEntry: false }),
-          `${path} is missing. Run: node scripts/build-film-posters.mjs --only ${entry.key}`
-        ).toBeDefined();
-        const file = readFileSync(path);
-        expect(file.byteLength).toBeLessThanOrEqual(POSTER_MAX_BYTES);
-        expect(readWebpSize(file)).toEqual({
-          width: POSTER_WIDTH,
-          height: POSTER_HEIGHT,
-        });
-      });
     });
   }
 
-  it("Nine Planes actually exercises the plane axes it advertises", () => {
-    const ninePlanes = FILM_LIBRARY.find((entry) => entry.key === "planes")!;
-    const resolved = resolveFilmDirectorSpec(ninePlanes.film);
-
-    const wheelhouse = resolved.scenes.find(
-      (scene) => scene.id === "wheelhouse"
-    )!;
-    expect(wheelhouse.location.visiblePlanes).toEqual(["wheel"]);
-    for (const performer of wheelhouse.performance.performers) {
-      expect(performer.leftPlane).toBe("wheel");
-      expect(performer.rightPlane).toBe("wheel");
-    }
-
-    const noTwoAlike = resolved.scenes.find(
-      (scene) => scene.id === "no-two-alike"
-    )!;
-    const leftPlanes = noTwoAlike.performance.performers.map(
-      (performer) => performer.leftPlane
-    );
-    expect(new Set(leftPlanes).size).toBe(leftPlanes.length);
-    const rightPlanes = noTwoAlike.performance.performers.map(
-      (performer) => performer.rightPlane
-    );
-    expect(new Set(rightPlanes).size).toBe(rightPlanes.length);
-
-    const scramble = resolved.scenes.find(
-      (scene) => scene.id === "mid-phrase-scramble"
-    )!;
-    for (const performer of scramble.performance.performers) {
-      expect(performer.stepPlanes).toHaveLength(4);
-    }
-
-    const shieldWall = resolved.scenes.find(
-      (scene) => scene.id === "shield-wall"
-    )!;
-    expect(shieldWall.location.visiblePlanes).toEqual([
-      "left-shield",
-      "right-shield",
-    ]);
-  });
-
-  it("Understudy Night's sameAs and distinct constraints hold after resolution", () => {
-    const understudy = FILM_LIBRARY.find(
-      (entry) => entry.key === "understudy"
-    )!;
-    const resolved = resolveFilmDirectorSpec(understudy.film);
-
-    const leadScene = resolved.scenes.find(
-      (scene) => scene.id === "lead-and-copies"
-    )!;
-    const lead = leadScene.performance.performers.find(
-      (performer) => performer.id === "performer-1"
-    )!;
-    expect(lead.name).toBe("Lead");
-    expect(lead.effect).toBe("fire");
-    const understudies = leadScene.performance.performers.filter(
-      (performer) => performer.id !== "performer-1"
-    );
-    for (const performer of understudies) {
-      expect(performer.prop).toBe(lead.prop);
-      expect(performer.effect).not.toBe("fire");
-    }
-    const efforts = leadScene.performance.performers.map(
-      (performer) => performer.effort
-    );
-    expect(new Set(efforts).size).toBe(efforts.length);
-
-    const allEight = resolved.scenes.find(
-      (scene) => scene.id === "all-eight-efforts"
-    )!;
-    const eightEfforts = allEight.performance.performers.map(
-      (performer) => performer.effort
-    );
-    expect(new Set(eightEfforts).size).toBe(8);
-
-    const mirrorScene = resolved.scenes.find(
-      (scene) => scene.id === "mirror-pair"
-    )!;
-    const original = mirrorScene.performance.performers.find(
-      (performer) => performer.name === "Original"
-    )!;
-    const mirror = mirrorScene.performance.performers.find(
-      (performer) => performer.name === "Mirror"
-    )!;
-    expect(mirror.prop).toBe(original.prop);
-    expect(mirror.effect).toBe(original.effect);
-    expect(mirror.effort).toBe(original.effort);
-    expect(mirror.leftPlane).toBe(original.leftPlane);
-    expect(mirror.rightPlane).toBe(original.rightPlane);
-    expect(mirror.staffLengthCm).not.toBe(original.staffLengthCm);
-  });
-
-  it("Proving Grounds exercises the gaps it advertises", () => {
-    const proving = FILM_LIBRARY.find((entry) => entry.key === "proving")!;
-    const resolved = resolveFilmDirectorSpec(proving.film);
-
-    const combined = resolved.scenes.find((s) => s.id === "combined-draw")!;
+  it("draws six planes at once, and never the wall", () => {
+    const combined = scene("combined-draw");
     const lefts = combined.performance.performers.map((p) => p.leftPlane);
     const rights = combined.performance.performers.map((p) => p.rightPlane);
     expect(new Set(lefts).size).toBe(lefts.length);
@@ -214,8 +130,10 @@ describe("film library", () => {
     // produces zero cross-axis repeats, so the frame actually shows six
     // different planes rather than four unique ones reused across six slots.
     expect(new Set([...lefts, ...rights]).size).toBe(6);
+  });
 
-    const onBeat = resolved.scenes.find((s) => s.id === "on-the-beat")!;
+  it("counts a scene in beats, and lands a walker on the beat it names", () => {
+    const onBeat = scene("on-the-beat");
     expect(onBeat.durationSeconds).toBe(8);
     const pushStart = onBeat.camera.keyframes.find(
       (frame) => Math.abs(frame.atSeconds - 0) < 1e-6
@@ -234,16 +152,22 @@ describe("film library", () => {
     );
     expect(arrival).toBeDefined();
     expect(arrival!.position).toEqual({ x: -1.5, z: -1 });
+  });
 
-    const edges = resolved.scenes.find((s) => s.id === "camera-edges")!;
+  it("trucks, zooms and rolls the frame without turning it", () => {
+    const edges = scene("camera-edges");
     expect(edges.durationSeconds).toBe(12);
     expect(edges.transition).toMatchObject({ durationSeconds: 1 });
     const kf = edges.camera.keyframes;
     const at = (t: number) =>
       kf.find((frame) => Math.abs(frame.atSeconds - t) < 1e-6)!;
     // Truck (0-4s): position and target translate by the same 1m ground vector.
-    const truckDelta = [0, 1, 2].map((axis) => at(4).position[axis]! - at(0).position[axis]!);
-    const targetDelta = [0, 1, 2].map((axis) => at(4).target[axis]! - at(0).target[axis]!);
+    const truckDelta = [0, 1, 2].map(
+      (axis) => at(4).position[axis]! - at(0).position[axis]!
+    );
+    const targetDelta = [0, 1, 2].map(
+      (axis) => at(4).target[axis]! - at(0).target[axis]!
+    );
     // toBeCloseTo, not toEqual: position and target sit at different absolute
     // magnitudes, so adding the identical translation vector to each rounds
     // to a ~1e-16 difference on subtraction — real floating point, not a bug.
@@ -260,17 +184,24 @@ describe("film library", () => {
     expect(at(8).rollDeg).toBe(0);
     expect(at(10).rollDeg).toBe(10);
     // Scenes that never roll stay sparse:
-    expect(onBeat.camera.keyframes.every((frame) => !("rollDeg" in frame))).toBe(true);
+    expect(
+      scene("on-the-beat").camera.keyframes.every(
+        (frame) => !("rollDeg" in frame)
+      )
+    ).toBe(true);
+  });
 
-    const tracking = resolved.scenes.find((s) => s.id === "tracking-shot")!;
+  it("follows a walking performer instead of losing them", () => {
+    const { spec: resolved, scene: tracking } = find("tracking-shot");
     expect(tracking.camera.tracking).toEqual({
       performerId: "performer-2",
       mode: "follow",
     });
-    // Only the scene that asked carries the key at all, so the other three
-    // resolve exactly as they did before tracking existed.
-    for (const scene of [combined, onBeat, edges]) {
-      expect("tracking" in scene.camera).toBe(false);
+    // Only the scene that asked carries the key at all, so every other scene
+    // in the library resolves exactly as it did before tracking existed.
+    for (const other of allScenes) {
+      if (other.id === "tracking-shot") continue;
+      expect("tracking" in other.camera).toBe(false);
     }
 
     const trackedWalker = tracking.performance.performers.find(
@@ -289,15 +220,23 @@ describe("film library", () => {
     const crossed = sampleAt(4);
     expect(crossed.target[0]! - opening.target[0]!).toBeCloseTo(walked.x, 6);
     expect(crossed.target[2]! - opening.target[2]!).toBeCloseTo(walked.z, 6);
-    expect(crossed.position[0]! - opening.position[0]!).toBeCloseTo(walked.x, 6);
-    expect(crossed.position[2]! - opening.position[2]!).toBeCloseTo(walked.z, 6);
+    expect(crossed.position[0]! - opening.position[0]!).toBeCloseTo(
+      walked.x,
+      6
+    );
+    expect(crossed.position[2]! - opening.position[2]!).toBeCloseTo(
+      walked.z,
+      6
+    );
     // The frame stops when the walker does: the standing half of the scene
     // holds the offset the crossing produced rather than drifting on.
     const standing = sampleAt(6);
     expect(standing.position).toEqual(crossed.position);
     expect(standing.target).toEqual(crossed.target);
+  });
 
-    const shots = resolved.scenes.find((s) => s.id === "three-shots")!;
+  it("cuts between three framings inside one scene", () => {
+    const { spec: resolved, scene: shots } = find("three-shots");
     expect(shots.durationSeconds).toBe(8);
     const shotKeyframes = shots.camera.keyframes;
     const atCut = (t: number) =>
@@ -313,7 +252,11 @@ describe("film library", () => {
     const jump = (a: number, b: number) => {
       const from = shotSample(a).position;
       const to = shotSample(b).position;
-      return Math.hypot(to[0]! - from[0]!, to[1]! - from[1]!, to[2]! - from[2]!);
+      return Math.hypot(
+        to[0]! - from[0]!,
+        to[1]! - from[1]!,
+        to[2]! - from[2]!
+      );
     };
     // A cut, not a glide: a metre of travel inside ten milliseconds.
     expect(jump(2.99, 3)).toBeGreaterThan(1);
@@ -329,8 +272,10 @@ describe("film library", () => {
       );
     // Shot one is wide; shot two is a close-up, so it sits nearer its subject.
     expect(range(opener)).toBeGreaterThan(range(atCut(3)[1]!));
+  });
 
-    const derived = resolved.scenes.find((s) => s.id === "derived-sequences")!;
+  it("puts a saved sequence beside two transforms of it", () => {
+    const derived = scene("derived-sequences");
     expect(
       derived.performance.performers.map((performer) => performer.sequence)
     ).toEqual([
@@ -345,10 +290,10 @@ describe("film library", () => {
       { transformOf: "performer-1", transforms: [{ op: "rewind" }] },
     ]);
     expect(derived.durationSeconds).toBe(8);
+  });
 
-    const edgesOfStage = resolved.scenes.find(
-      (s) => s.id === "edges-of-the-stage"
-    )!;
+  it("walks a performer in from outside the frame, along a curve", () => {
+    const edgesOfStage = scene("edges-of-the-stage");
     expect(edgesOfStage.durationSeconds).toBe(8);
     const entrant = edgesOfStage.performance.performers.find(
       (performer) => performer.id === "performer-3"
@@ -356,7 +301,10 @@ describe("film library", () => {
     // The opening mark is off camera and unclamped, and the stage extent
     // stretched to include it rather than pulling it in.
     expect(entrant.position).toEqual({ x: 8, z: -1 });
-    expect(edgesOfStage.performance.stageExtent).toContainEqual({ x: 8, z: -1 });
+    expect(edgesOfStage.performance.stageExtent).toContainEqual({
+      x: 8,
+      z: -1,
+    });
 
     const walkFrames = entrant.blocking.filter((frame) => frame.walking);
     // Fifteen chords: about 7.2m of arc at a 0.5m target chord length.
@@ -397,8 +345,10 @@ describe("film library", () => {
       edgesOfStage.performance.performers.find((p) => p.id === "performer-1")!
         .sequence
     ).toEqual({ source: "none" });
+  });
 
-    const perStep = resolved.scenes.find((s) => s.id === "per-step-changes")!;
+  it("changes effect, effort and holds partway through a scene", () => {
+    const perStep = scene("per-step-changes");
     expect(perStep.durationSeconds).toBe(8);
     const [changer, holder] = perStep.performance.performers;
     expect(changer!.stepEffects).toEqual([
@@ -436,56 +386,30 @@ describe("film library", () => {
     expect(holdAt(7)).toEqual({ step: 4, progress: 0 });
     expect(holdAt(8)).toEqual({ step: 4, progress: 0 });
     expect(holdAt(12)).toEqual({ step: 8, progress: 0 });
-
-    // Every scene that says "cut" cuts: no dissolve window anywhere.
-    for (const scene of [onBeat, tracking, shots, derived, edgesOfStage, perStep]) {
-      expect(scene.transition).toEqual({ kind: "cut", durationSeconds: 0 });
-    }
   });
 
-  it("every proving grounds scene declares what it is chiefly about", () => {
-    const proving = FILM_LIBRARY.find((entry) => entry.key === "proving")!;
-    const resolved = resolveFilmDirectorSpec(proving.film);
-
-    // The scene index groups this film by category, so an uncategorized scene
-    // lands in a stray "Uncategorized" heading below everything else instead of
-    // beside the scenes it belongs with. A reference film is browsed by
-    // subject; a scene with no subject is a scene nobody finds.
-    const uncategorized = resolved.scenes
-      .filter((scene) => scene.category === undefined)
-      .map((scene) => scene.id);
-    expect(uncategorized).toEqual([]);
-
-    // Every category the schema declares is spent. A category nothing uses is
-    // a heading that can never appear, and the enum is closed precisely so the
-    // list stays a real description of the film rather than an aspiration.
-    const used = new Set(resolved.scenes.map((scene) => scene.category));
-    expect([...DIRECTOR_SCENE_CATEGORIES].filter((c) => !used.has(c))).toEqual(
-      []
-    );
-
-    // Films are films, not references: the other eight state no category and
-    // must keep resolving without one rather than acquiring a default.
-    for (const entry of FILM_LIBRARY.filter((f) => f.key !== "proving")) {
-      const other = resolveFilmDirectorSpec(entry.film);
-      for (const scene of other.scenes) {
-        expect(scene.category).toBeUndefined();
-        expect("category" in scene).toBe(false);
-      }
+  it("cuts where it says cut, with no dissolve window anywhere", () => {
+    for (const id of [
+      "on-the-beat",
+      "tracking-shot",
+      "three-shots",
+      "derived-sequences",
+      "edges-of-the-stage",
+      "per-step-changes",
+    ]) {
+      expect(scene(id).transition).toEqual({ kind: "cut", durationSeconds: 0 });
     }
   });
 
   it("a 90 degree orbit mirrors when only the direction flips", () => {
-    const proving = FILM_LIBRARY.find((entry) => entry.key === "proving")!;
+    const orbit = capabilityDemo("orbit-clockwise");
 
-    // Proving Grounds used to carry a counterclockwise twin of this scene,
+    // The library used to carry a counterclockwise twin of this scene,
     // staged identically, so the pair could be judged side by side while the
     // sign convention was still open. The convention is settled — clockwise
     // decreases azimuth — so the twin is built here instead. The invariant is
-    // worth guarding; a second 16-beat scene in a reference film is not.
-    const authored = proving.film.scenes.find(
-      (scene) => scene.id === "orbit-clockwise"
-    )!;
+    // worth guarding; a second 16-beat demo of it is not.
+    const authored = orbit.film.scenes.at(-1)!;
     const flipped = {
       ...authored,
       id: "orbit-counterclockwise",
@@ -494,10 +418,10 @@ describe("film library", () => {
         ...authored.camera,
         moves: [{ move: "orbit", amount: { degrees: 90 }, direction: "ccw" }],
       },
-    } as (typeof proving.film.scenes)[number];
+    } as (typeof orbit.film.scenes)[number];
 
     const resolved = resolveFilmDirectorSpec({
-      ...proving.film,
+      ...orbit.film,
       scenes: [authored, flipped],
     });
 
@@ -520,43 +444,13 @@ describe("film library", () => {
     expect(cwEnd[0]).toBeCloseTo(-ccwEnd[0], 6);
     expect(cwEnd[2]).toBeCloseTo(ccwEnd[2], 6);
   });
-
-  it("Chance Suite's identical directives on different scenes draw from different streams", () => {
-    const chance = FILM_LIBRARY.find((entry) => entry.key === "chance")!;
-    const resolved = resolveFilmDirectorSpec(chance.film);
-
-    const distinct = resolved.scenes.find(
-      (scene) => scene.id === "distinct-everything"
-    )!;
-    const props = distinct.performance.performers.map(
-      (performer) => performer.prop
-    );
-    expect(new Set(props).size).toBe(props.length);
-
-    const loaded = resolved.scenes.find((scene) => scene.id === "loaded-dice")!;
-    for (const performer of loaded.performance.performers) {
-      expect(["fire", "led", "trails"]).toContain(performer.effect);
-      const redStep = performer.stepPlanes.find(
-        (entry) => entry.hand === "right"
-      )!;
-      expect(redStep.plane).not.toBe("wall");
-    }
-  });
 });
 
-describe("proving grounds: wave A scenes", () => {
-  const resolved = resolveFilmDirectorSpec(
-    FILM_LIBRARY.find((entry) => entry.key === "proving")!.film
-  );
-  const scene = (id: string) => resolved.scenes.find((entry) => entry.id === id)!;
-
-  it("adds three scenes, each inside the six to eight second window", () => {
+describe("capability library: off the tripod", () => {
+  it("keeps each demo inside the six to eight second window", () => {
     expect(scene("dolly-zoom").durationSeconds).toBe(8);
     expect(scene("handheld").durationSeconds).toBe(7);
     expect(scene("whip-pans").durationSeconds).toBe(8);
-    for (const id of ["dolly-zoom", "handheld", "whip-pans"]) {
-      expect(scene(id).intent.length).toBeGreaterThan(0);
-    }
   });
 
   it("the dolly zoom holds subject size while the rig travels", () => {
@@ -580,14 +474,14 @@ describe("proving grounds: wave A scenes", () => {
       meters: 0.05,
       degrees: 1,
     });
-    for (const other of resolved.scenes) {
+    for (const other of allScenes) {
       if (other.id === "handheld") continue;
       expect("handheld" in other.camera).toBe(false);
     }
   });
 
   it("the whip pans end aimed at each performer in turn", () => {
-    const target = scene("whip-pans");
+    const { spec: resolved, scene: target } = find("whip-pans");
     const marks = new Map(
       target.performance.performers.map((performer) => [
         performer.id,
@@ -616,20 +510,12 @@ describe("proving grounds: wave A scenes", () => {
   });
 });
 
-describe("proving grounds: wave B scenes", () => {
-  const resolved = resolveFilmDirectorSpec(
-    FILM_LIBRARY.find((entry) => entry.key === "proving")!.film
-  );
-  const scene = (id: string) => resolved.scenes.find((entry) => entry.id === id)!;
-
-  it("adds three scenes, each with a stated intent", () => {
+describe("capability library: callback, empty stage, waltz", () => {
+  it("keeps each demo inside its stated count", () => {
     expect(scene("callback").durationSeconds).toBe(6);
     expect(scene("empty-stage").durationSeconds).toBe(3);
     // Gap 22. Four bars of three at 90 bpm is twelve beats, which is 8s.
     expect(scene("waltz").durationSeconds).toBe(8);
-    for (const id of ["callback", "empty-stage", "waltz"]) {
-      expect(scene(id).intent.length).toBeGreaterThan(0);
-    }
   });
 
   it("the callback inherits its parent's staging and draw, changing only the camera", () => {
