@@ -279,3 +279,28 @@ reminder that his zone language is about use, not about geometry.
 - **Loop interior** — a real stand around the main building, no campable shade.
 - **North and west woods** — backdrop only, and the survey already stops at
   roughly the property edge (trees span world x -160 to 380, z -170 to 40).
+
+## Infrastructure
+
+Present on site: **porta-potties** and **showers**. Austen did not name potable
+water spigots, generators, or power drops when offered them, so do not invent
+them. Neither porta-potties nor showers has a location yet — ask.
+
+## Workshops
+
+Workshops have **specific, repeated locations**, not ad-hoc shade:
+
+- **one near Vendor Village**
+- **four or five spread through Middle Earth** (Austen first said three, then
+  corrected upward: *"I think four or 5 might happen in Middle Earth"*)
+- **two at the top of the hill**
+- plus the **red-roof cabin** at `T-F2`/`T-F3`, which is a real workshop venue
+
+Exact spots are not yet placed. They are the next thing to put on a map.
+
+## Backdrop woods
+
+Extend the trees past the property line. From inside the festival you look at
+the neighbor's treeline and it reads as one continuous mass, so the survey's
+current cutoff at world x -160 / z -170 leaves a visible hole in the horizon.
+Ownership does not decide what is rendered; sightlines do.
