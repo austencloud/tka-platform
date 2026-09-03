@@ -4,25 +4,28 @@ import {
   buildCameraChannels,
   sampleCameraFrame,
   type CameraChannelStore,
+  type CameraCorrection,
   type DirectorCameraFrame,
   type ManualCameraChannel,
 } from "./director-camera-channels";
 import {
-  compileCameraMoves,
-  compileCameraShots,
+  compileCameraMoveNodes,
+  compileCameraShotNodes,
   computeCameraFraming,
   directorFloorY,
   subjectAnchorHeight,
+  type ResolvedCameraBehavior,
 } from "./camera-language";
-import {
-  fitPresetKeyframes,
-  measureCastGeometry,
-} from "./director-camera-fit";
+import { fitPresetKeyframes, measureCastGeometry } from "./director-camera-fit";
 import {
   resolvePresetForFormation,
   type DirectorFormation,
 } from "./director-camera-presets";
-import { axisSeedValue, resolveFilmSeed, type FilmSeed } from "./directive-random";
+import {
+  axisSeedValue,
+  resolveFilmSeed,
+  type FilmSeed,
+} from "./directive-random";
 import type {
   DirectorCameraInput,
   DirectorCameraPreset,
@@ -130,6 +133,17 @@ export interface ResolvedDirectorCameraTrack {
    * which is what keeps every pre-channels film resolving byte-identically.
    */
   channels?: ResolvedDirectorCameraChannel[];
+  /**
+   * The move nodes that produced `keyframes`, with the windows they were
+   * allocated (decision D4). Their presence is also what says which layer the
+   * keyframes above belong to: a camera with behaviors states itself through
+   * moves and owns the store's `directive` layer, and a camera without them
+   * states itself directly and owns `base`.
+   *
+   * Absent (not an empty array) for a preset, raw keyframes, or a grammar with
+   * no moves, so every film that never spoke a move resolves byte-identically.
+   */
+  behaviors?: ResolvedCameraBehavior[];
 }
 
 /**
@@ -325,7 +339,12 @@ export function resolveDirectorCameraTrack(
         throw new Error("Camera keyframes cannot share the same time.");
       }
     }
-    return { preset: "custom", substitutedFor: null, keyframes: resolved, ...shake };
+    return {
+      preset: "custom",
+      substitutedFor: null,
+      keyframes: resolved,
+      ...shake,
+    };
   }
 
   if (input?.shots) {
@@ -341,10 +360,12 @@ export function resolveDirectorCameraTrack(
         'Tracking and shots do not combine yet. Track a walker with a single framing, or cut between shots without "track".'
       );
     }
+    const shots = compileCameraShotNodes(input.shots, context);
     return {
       preset: "custom",
       substitutedFor: null,
-      keyframes: compileCameraShots(input.shots, context),
+      keyframes: shots.keyframes,
+      ...(shots.behaviors.length ? { behaviors: shots.behaviors } : {}),
       ...shake,
     };
   }
@@ -365,17 +386,21 @@ export function resolveDirectorCameraTrack(
         ? {
             performerId: subject.performerId,
             mode:
-              subject.track === "follow" ? ("follow" as const) : ("aim" as const),
+              subject.track === "follow"
+                ? ("follow" as const)
+                : ("aim" as const),
           }
         : undefined;
+    const compiled = compileCameraMoveNodes(
+      input!.moves ?? [{ move: "hold" }],
+      framing,
+      context
+    );
     return {
       preset: "custom",
       substitutedFor: null,
-      keyframes: compileCameraMoves(
-        input!.moves ?? [{ move: "hold" }],
-        framing,
-        context
-      ),
+      keyframes: compiled.keyframes,
+      ...(compiled.behaviors.length ? { behaviors: compiled.behaviors } : {}),
       ...(tracking ? { tracking } : {}),
       ...shake,
     };
@@ -431,8 +456,30 @@ export function resolveDirectorCameraTrack(
  * that list's identity. Resolution produces each track once per film load and
  * the viewer then samples it every frame; rebuilding eight channels per frame
  * would be a real cost for no gain.
+ *
+ * Two levels, because corrections are the second input and they are NOT
+ * implied by the first. The channel editor and the viewer look at the same
+ * scene's keyframes, and only one of them is asking for the handheld shake;
+ * a single-level cache would hand whichever asked second the other's store.
  */
-const CHANNEL_STORES = new WeakMap<object, CameraChannelStore>();
+const CHANNEL_STORES = new WeakMap<
+  object,
+  WeakMap<object, CameraChannelStore>
+>();
+
+/** The stable key a store with no corrections is cached under. */
+const NO_CORRECTIONS: readonly CameraCorrection[] = [];
+
+export interface CameraStoreOptions {
+  /** The hand-authored layer, or a drag's replacement for it. */
+  manual?: readonly ManualCameraChannel[];
+  /**
+   * What displaces the finished frame. Pass the SAME array across frames — it
+   * is half the cache key, and a fresh array each frame rebuilds the store
+   * every frame.
+   */
+  corrections?: readonly CameraCorrection[];
+}
 
 /**
  * The channel store behind a resolved track, built on first use.
@@ -444,28 +491,62 @@ const CHANNEL_STORES = new WeakMap<object, CameraChannelStore>();
  * evicting anything.
  */
 export function cameraChannelsFor(
-  keyframes: readonly ResolvedDirectorCameraKeyframe[],
-  manual?: readonly ManualCameraChannel[]
+  camera: Pick<ResolvedDirectorCameraTrack, "keyframes" | "behaviors">,
+  options?: CameraStoreOptions
 ): CameraChannelStore {
-  const key = (manual ?? keyframes) as unknown as object;
-  const cached = CHANNEL_STORES.get(key);
+  const manual = options?.manual;
+  const corrections = options?.corrections ?? NO_CORRECTIONS;
+  const key = (manual ?? camera.keyframes) as unknown as object;
+  let byCorrection = CHANNEL_STORES.get(key);
+  if (!byCorrection) {
+    byCorrection = new WeakMap();
+    CHANNEL_STORES.set(key, byCorrection);
+  }
+  const cached = byCorrection.get(corrections as unknown as object);
   if (cached) return cached;
-  const store = buildCameraChannels(keyframes, manual);
-  CHANNEL_STORES.set(key, store);
+  // Which layer the keyframes belong to is a property of how the camera was
+  // spoken, not of this call. See `ResolvedDirectorCameraTrack.behaviors`.
+  const store = buildCameraChannels({
+    ...(camera.behaviors?.length
+      ? { directive: camera.keyframes }
+      : { base: camera.keyframes }),
+    ...(manual ? { manual } : {}),
+    ...(corrections.length ? { corrections } : {}),
+  });
+  byCorrection.set(corrections as unknown as object, store);
   return store;
 }
 
 /**
- * Sample a resolved camera track.
+ * Sample a resolved camera.
  *
  * The curve itself lives in `director-camera-channels.ts`, one channel per
- * scalar. This function is the adapter that the viewer and the exporters have
- * always called: hand it fused keyframes, get one frame back.
+ * scalar, and corrections compose on top of it. This function is the adapter
+ * the viewer and the exporters call: hand it a resolved camera, get one frame.
+ */
+export function sampleDirectorCamera(
+  camera: Pick<ResolvedDirectorCameraTrack, "keyframes" | "behaviors">,
+  atSeconds: number,
+  options?: CameraStoreOptions
+): DirectorCameraFrame {
+  return sampleCameraFrame(cameraChannelsFor(camera, options), atSeconds);
+}
+
+/**
+ * Sample a bare keyframe list.
+ *
+ * Keyframes with no camera around them are base-layer keyframes by definition:
+ * nothing has told us they came from moves. Tests and tooling that hold a
+ * compiled track rather than a resolved scene call this.
  */
 export function sampleDirectorCameraTrack(
   keyframes: readonly ResolvedDirectorCameraKeyframe[],
   atSeconds: number,
   manual?: readonly ManualCameraChannel[]
 ): DirectorCameraFrame {
-  return sampleCameraFrame(cameraChannelsFor(keyframes, manual), atSeconds);
+  return sampleDirectorCamera(
+    { keyframes: keyframes as ResolvedDirectorCameraKeyframe[] },
+    atSeconds,
+    manual ? { manual } : undefined
+  );
 }
