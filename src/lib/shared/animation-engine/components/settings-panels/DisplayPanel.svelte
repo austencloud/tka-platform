@@ -33,12 +33,18 @@
      *  third of the column empty underneath. Where it is not, the width-only
      *  rules below apply unchanged. */
     fill = false,
+    /** The four edge marks (TKA glyph, element, step number, word) describe a
+     *  realized sequence. A host animating something that has no letter and no
+     *  steps — the shape-matrix theory stage traces a bare spin ratio — turns
+     *  them off rather than offering four tiles that toggle nothing. */
+    showSequenceMarks = true,
     onSettingChange,
   }: {
     showMotionVisibility?: boolean;
     sequence?: { word?: string | null; steps?: ReadonlyArray<{ letter?: string | null }> | null } | null;
     propType?: string;
     fill?: boolean;
+    showSequenceMarks?: boolean;
     onSettingChange?: ViewerControlSink;
   } = $props();
 
@@ -226,7 +232,7 @@
   const chips: Chip[] = $derived([
     ...(showPropChips ? propChips : [masterPropsChip]),
     ...fieldChips,
-    ...markChips,
+    ...(showSequenceMarks ? markChips : []),
   ]);
 
   /**
