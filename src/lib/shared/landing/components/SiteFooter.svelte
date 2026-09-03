@@ -14,13 +14,17 @@
 
   let {
     variant = "full",
-    flush = false,
+    surface,
   }: {
     variant?: "full" | "compact" | "sitemap";
-    /** Sit directly against the page above. For full-bleed surfaces that own
-     *  the viewport edge to edge, where the standing 4.5rem gap reads as a
-     *  dead band of background rather than breathing room. */
-    flush?: boolean;
+    /**
+     * The opaque surface the page above runs to the viewport edge, when it has
+     * one. Given it, the footer continues that surface rather than settling
+     * onto the cosmic background: no handoff gap, no sky scrim, no hairline
+     * across what should read as one continuous page. Pages that float their
+     * content on the star field leave this unset.
+     */
+    surface?: string;
   } = $props();
 
   let sheetOpen = $state(false);
@@ -101,7 +105,8 @@
   class:compact={variant === "compact"}
   class:full={variant === "full"}
   class:sitemap={variant === "sitemap"}
-  class:flush={flush}
+  class:surfaced={Boolean(surface)}
+  style:background={surface}
 >
   <div class="inner">
     <div
@@ -191,9 +196,16 @@
   .site-footer.compact {
     margin-top: 1.5rem;
   }
-  .site-footer.sitemap,
-  .site-footer.flush {
+  .site-footer.sitemap {
     margin-top: 0;
+  }
+  /* Continuing the page's own surface. The handoff gap, the scrim (replaced by
+     the inline background) and the hairline all exist to seat the footer on the
+     star field; with no star field beneath it, all three only draw the seam
+     they were meant to prevent. */
+  .site-footer.surfaced {
+    margin-top: 0;
+    border-top: 0;
   }
 
   .inner {
