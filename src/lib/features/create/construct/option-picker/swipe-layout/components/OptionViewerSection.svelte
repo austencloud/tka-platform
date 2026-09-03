@@ -19,7 +19,7 @@ Renders a section with:
     calculateFitSize as calculateGridFitSize,
     calculateOptimalColumnLayout,
   } from "../../services/option-grid-fit-calculator";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import OptionPictographCell from "./OptionPictographCell.svelte";
   import SectionHeader from "./SectionHeader.svelte";
@@ -80,11 +80,36 @@ Renders a section with:
   // Pictographs are already filtered when passed to this component
   const sectionPictographs = $derived(() => pictographs);
 
-  // Get pictographs with reversal information - updates instantly when options change
+  // Reversal dots describe how each option relates to the sequence the option
+  // SET was generated for.
+  //
+  // Reading the live sequence here meant that committing a step re-derived every
+  // mounted cell against options that were about to be replaced wholesale — the
+  // dots were added and removed across the whole grid on the very frame the pick
+  // lands, then thrown away when the next option set resolved. Keying on array
+  // identity is not enough: a reorder hands down a new array holding the same
+  // options, which would re-snapshot against the grown sequence. So the snapshot
+  // is keyed on set membership, which only changes when the picker genuinely
+  // loads a different set of options.
+  let frameMembers: ReadonlySet<PictographData> = new Set();
+  let frameSequence: PictographData[] = [];
+  function sequenceForOptionFrame(frame: PictographData[]): PictographData[] {
+    if (
+      frame.length !== frameMembers.size ||
+      !frame.every((option) => frameMembers.has(option))
+    ) {
+      frameMembers = new Set(frame);
+      frameSequence = untrack(() => currentSequence);
+    }
+    return frameSequence;
+  }
+
+  // Get pictographs with reversal information - updates when the option set changes
   const displayedItems = $derived(() => {
+    const frame = sectionPictographs();
     return reversalDetector.detectReversalsForOptions(
-      currentSequence,
-      sectionPictographs()
+      sequenceForOptionFrame(frame),
+      frame
     );
   });
   const doubleFloatRows = $derived(() =>
@@ -445,13 +470,25 @@ Renders a section with:
     box-sizing: border-box;
     overflow: hidden;
     box-shadow: var(--option-card-shadow);
-    transition:
-      transform 0.3s ease,
-      filter 0.3s ease,
-      box-shadow 0.3s ease;
+    /* Transform only. `filter` and `box-shadow` tweens re-rasterised the whole
+       cell — pictograph SVG included — on every frame of a 300ms hover, on a
+       grid that mounts dozens of these. The lift now animates on the compositor
+       and the brightness cue moved to the veil below. */
+    transition: transform 0.3s ease;
     touch-action: manipulation;
     -webkit-touch-callout: none;
     user-select: none;
+  }
+
+  /* Hover / focus / audition brightness, as a compositor-friendly veil. */
+  .pictograph-option::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
   }
 
   .pictograph-option.continuation {
@@ -470,8 +507,11 @@ Renders a section with:
     .pictograph-option:hover {
       z-index: 1;
       transform: scale(1.05);
-      filter: brightness(1.05);
       box-shadow: var(--option-card-shadow-hover);
+    }
+
+    .pictograph-option:hover::after {
+      opacity: 0.05;
     }
   }
 
@@ -483,27 +523,32 @@ Renders a section with:
   .pictograph-option:global(.option-audition-active) {
     z-index: 4;
     transform: translateY(-6px) scale(1.08);
-    filter: brightness(1.08);
     box-shadow:
       0 0 0 3px
         color-mix(in srgb, var(--theme-accent, #3b82f6) 70%, transparent),
       0 14px 28px -14px
         color-mix(in srgb, var(--border-primary) 70%, transparent),
       var(--option-card-shadow-hover);
-    transition:
-      transform 320ms cubic-bezier(0.2, 1.55, 0.35, 1),
-      filter 160ms ease,
-      box-shadow 160ms ease;
+    transition: transform 320ms cubic-bezier(0.2, 1.55, 0.35, 1);
+  }
+
+  .pictograph-option:global(.option-audition-active)::after {
+    opacity: 0.08;
+    transition: opacity 160ms ease;
   }
 
   .pictograph-option:focus-visible {
     outline: 2px solid var(--theme-accent, #3b82f6);
     outline-offset: 2px;
-    filter: brightness(1.05);
+  }
+
+  .pictograph-option:focus-visible::after {
+    opacity: 0.05;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pictograph-option {
+    .pictograph-option,
+    .pictograph-option::after {
       transition: none;
     }
 
