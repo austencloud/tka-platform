@@ -17,6 +17,7 @@
   // extracted sub-components (CardHeader, CardFooter, CardGridLayout, CellRenderer).
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PreviewCellRenderOptions } from "../services/preview-cell-renderer";
+  import type { ViewerPaneBox } from "./viewer-panel-layout";
   import { onDestroy } from "svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { authState as AuthStateModule } from "$lib/shared/auth/state/auth-state.svelte";
@@ -124,6 +125,14 @@
     autoLayoutOverride?: ResolvedAutoLayout | null;
     /** Keeps contain sizing on the viewer's transition clock. */
     containSizeMotion?: "focus" | "return" | "restore" | null;
+    /**
+     * The box this Card's pane is heading toward while containSizeMotion is set.
+     *
+     * Without it the Card follows a container that is still opening and paints
+     * itself at every size along the way. With it the Card renders at its
+     * destination size for the whole structural change.
+     */
+    containMotionBox?: ViewerPaneBox | null;
     /** Reports the measured Auto winner so Download Card can reuse it for PNG export. */
     onAutoLayoutResolved?: (
       layout: ResolvedAutoLayout | null,
@@ -164,6 +173,7 @@
     startPositionLayoutOverride = null,
     autoLayoutOverride = null,
     containSizeMotion = null,
+    containMotionBox = null,
     onAutoLayoutResolved,
   }: Props = $props();
 
@@ -388,6 +398,7 @@
     needsScroll: layoutState.needsScroll,
     fitWidth,
     containSizeMotion,
+    containMotionBox,
     containModel: layoutState.containModel,
   }));
 
@@ -760,6 +771,7 @@
   class:scroll-mode={needsScroll}
   class:force-contain={forceContain}
   data-contain-size-motion={containSizeMotion}
+  data-contain-size-jump={sizingState.sizeJump ? "true" : undefined}
   aria-busy={isRefreshing ? "true" : undefined}
   data-layout-columns={effectiveColumns}
   data-layout-rows={effectiveRows}
@@ -994,6 +1006,12 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  /* The Card was never readable at its previous size, so there is nothing to
+     animate from. Place it at the destination without a transition. */
+  .choreo-card-root[data-contain-size-jump="true"] .preview-stack {
+    transition: none;
   }
 
   .choreo-card-root[data-contain-size-motion="focus"] .preview-stack {
