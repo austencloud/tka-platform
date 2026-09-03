@@ -24,20 +24,13 @@ import {
   ENGINE_GRID_RADIUS,
   MANDALA_GRID_RADIUS,
 } from "$lib/shared/mandala/domain/mandala-constants";
-import {
-  closedPathSampleCount,
-  posesAt,
-  revolutionsToClose,
-} from "$lib/shared/notation/qft/qft-model";
+import { traceScaledPath } from "$lib/shared/notation/qft/qft-model";
 import { renderCell, renderHeader } from "./shape-matrix-render";
 import {
   theoryFlowerKey,
   theorySoloKnobs,
   type TheoryFlower,
 } from "../domain/theory-flower";
-
-/** Eight compass steps make one hand revolution in the QfT model. */
-const STEPS_PER_REVOLUTION = 8;
 
 /**
  * A path that never leaves one point is not a path. The 1:1 prospin isolation
@@ -48,32 +41,32 @@ const STEPS_PER_REVOLUTION = 8;
 const STILL_POINT_SPAN = 0.5;
 const STILL_POINT_RADIUS = MANDALA_GRID_RADIUS * 0.055;
 
+/**
+ * How far the prop reaches, measured in hand-orbit radii.
+ *
+ * The engine puts a hand point at `ENGINE_GRID_RADIUS` and the prop's tracked
+ * tip `clubTipDx` out from it, so this ratio is the one thing a drawing needs
+ * to place a prop against a hand at any scale. A staff reads about 0.84, not
+ * 1: the tip stops short of the outer grid point rather than landing on it.
+ */
+export function propReachInHandRadii(clubTipDx: number): number {
+  return clubTipDx / ENGINE_GRID_RADIUS;
+}
+
 function propReachFor(clubTipDx: number): number {
-  return (clubTipDx * MANDALA_GRID_RADIUS) / ENGINE_GRID_RADIUS;
+  return MANDALA_GRID_RADIUS * propReachInHandRadii(clubTipDx);
 }
 
 function traceFlower(
   flower: TheoryFlower,
   clubTipDx: number
 ): Array<{ x: number; y: number }> {
-  const knobs = theorySoloKnobs(flower);
-  const samples = closedPathSampleCount(knobs);
-  const span = STEPS_PER_REVOLUTION * revolutionsToClose(knobs);
-  const handRadius = MANDALA_GRID_RADIUS;
-  const propRadius = propReachFor(clubTipDx);
-
-  const points: Array<{ x: number; y: number }> = [];
-  for (let i = 0; i <= samples; i += 1) {
-    // `posesAt` works in prop lengths with the hand orbit also at 1. The two
-    // radii are separate here so the drawing carries the real prop reach of
-    // the selected prop, the same one the Matrix tiles are drawn at.
-    const pose = posesAt(knobs, (i / samples) * span);
-    points.push({
-      x: pose.hand.x * handRadius + (pose.head.x - pose.hand.x) * propRadius,
-      y: pose.hand.y * handRadius + (pose.head.y - pose.hand.y) * propRadius,
-    });
-  }
-  return points;
+  // The two radii are separate so the drawing carries the real prop reach of
+  // the selected prop, the same one the Matrix tiles are drawn at.
+  return traceScaledPath(theorySoloKnobs(flower), {
+    hand: MANDALA_GRID_RADIUS,
+    prop: propReachFor(clubTipDx),
+  });
 }
 
 function toPathData(points: Array<{ x: number; y: number }>): SVGPathData[] {
