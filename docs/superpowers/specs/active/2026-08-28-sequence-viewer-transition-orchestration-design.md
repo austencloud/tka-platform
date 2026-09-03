@@ -951,6 +951,86 @@ guarantees by construction: the inline basis exists only for the duration of the
 transition.
 
 
+### Gate 5 · Card arrives at its destination size (2026-09-03)
+
+Follow-on to the dock-collapse fix above. With the dock's basis handoff landed,
+one defect remained on the Card's own geometry: entering Card from a mode whose
+Card pane was collapsed (Tunnel, Performances, 2D Animation) painted the Card as
+a speck and grew it over roughly 375 ms.
+
+**Cause.** The Card was never given a transition. It was dragged along by its
+container: entering Card animates the image pane's `flex-grow` from 0 to 1, and
+the Card's aspect-fit solve read that live, still-opening geometry as if it were
+the final box. The first solve therefore ran against a few pixels of pane. An
+interrupted outgoing transition compounded it — the element stayed painted at
+that sliver while `containedWidth/Height` were unchanged, so nothing detected a
+size change and the incoming transition flew out of the speck.
+
+**Fix — solve against the box the pane is heading toward.**
+
+1. `resolveViewerPaneDestinationBox()` in `viewer-panel-layout.ts` turns the
+   split's measured size plus the layout's decided allocation into the pane's
+   destination box.
+2. That resolved box is remembered in a module-scope memo in the same file,
+   keyed `focus|split` and qualified by viewport. Module scope is required:
+   `ViewerSplitPane` mounts inside a `DualSourceCrossfade` source, so a mode
+   change creates a fresh instance and component-local state is empty on exactly
+   the transitions that need it. The resolved *box* is remembered rather than the
+   stage and the allocation separately, because for the first frames of a mode
+   change the allocation still describes the mode being left; recombining it with
+   a settled stage yields a box the Card never occupies.
+3. Only a layout that actually shows the Card may teach the memo
+   (`splitConfig.leftPane/rightPane === "card"`). Tunnel focuses the same pane but
+   keeps the dock open, so its stage is several hundred pixels narrower and would
+   otherwise poison the focused entry.
+4. The write is debounced 180 ms. The motion flag clears while the pane is still
+   easing, so an undebounced write relearns a mid-animation size.
+5. `choreo-card-sizing-state.svelte.ts` solves against that box whenever the pane
+   is still opening, decided from **geometry** (container below 92 % of the
+   destination) rather than from the motion flag alone — the incoming Card can
+   mount a frame after the flag clears and still find a sliver. Host chrome is
+   learned from settled frames as a clamped inset, for both the content box (the
+   aspect-fit solve) and the container box (the grid pickers), so the column and
+   start-placement choice is aimed at the destination too.
+6. When a transition was interrupted and left the Card painted unreadably small,
+   `data-contain-size-jump` suppresses the size transition for one DOM commit so
+   the Card is *placed* at its destination instead of flying to it. The decision
+   reads `getBoundingClientRect`, not state, because painted size and state size
+   diverge in exactly that case.
+7. The un-released Card entry lease in `viewer-shell-layout-state.svelte.ts` was
+   removed. With the destination box in hand there is no sliver for the picker to
+   choose a wide, shallow grid from, and the lease pinned the Side-by-Side grid
+   onto the focused Card for the whole visit.
+
+**Measured on the real route** (`/sequence/EHWE`, warm entries, distinct painted
+sizes counted per rAF from the click to settle):
+
+| Viewport | Tunnel -> Card | Performances -> Card | 2D -> Card | Side by Side -> Card |
+| --- | --- | --- | --- | --- |
+| 375×667 | 1 frame @ 312×502 | 1 frame | 1 frame | 355×280 -> 312×502 |
+| 960×412 | 1 frame @ 869×232 | 1 frame | 1 frame | 430×334 -> 869×232 |
+| 820×1180 | 1 frame @ 694×1119 | 1 frame | 1 frame | 714×555 -> 694×1119 |
+| 1440×900 | 1 frame @ 521×839 | 1 frame | 1 frame | 535×416 -> 521×839 |
+| 1920×1080 | 1 frame @ 1176×915 | 1 frame | 1 frame | 633×1019 -> 1176×915 |
+| 2560×1440 | 1 frame @ 1713×1332 | 1 frame | 1 frame | 856×1379 -> 1713×1332 |
+| 3840×2160 | 1 frame @ 2699×2099 | 1 frame | 1 frame | 1303×2099 -> 2699×2099 |
+
+"1 frame" means the first painted frame is already the settled size — the pane
+opens around a Card that never changes size. Before the fix the same entries read
+`29×68` and `19×53` growing across 8–9 frames.
+
+Side by Side is deliberately different and is left animating. There the Card is
+already mounted and readable at its real half-pane size, so its size change is a
+true structural change with something to animate from, which
+`no-layout-shift.md` requires be animated rather than snapped.
+
+**Checks.** `tests/unit/sequence-viewer/viewer-panel-layout.test.ts`: 15 tests
+pass, including five for `resolveViewerPaneDestinationBox` (focused pane, both
+split directions, uneven allocation, collapsing pane, unmeasured split).
+`svelte-check`: 0 errors, 0 warnings. No horizontal overflow at any of the seven
+viewports.
+
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of

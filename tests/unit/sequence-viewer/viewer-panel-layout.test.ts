@@ -3,6 +3,7 @@ import {
   isViewerPaneReadyToReveal,
   resolveViewerPanelDirection,
   resolveViewerPanelLayout,
+  resolveViewerPaneDestinationBox,
   resolveViewerPaneRevealReady,
 } from "$lib/shared/sequence-viewer/components/viewer-panel-layout";
 
@@ -178,5 +179,77 @@ describe("isViewerPaneReadyToReveal", () => {
         height: 640,
       })
     ).toBe(true);
+  });
+});
+
+describe("resolveViewerPaneDestinationBox", () => {
+  it("gives a focused pane the whole split", () => {
+    expect(
+      resolveViewerPaneDestinationBox({
+        pane: "image",
+        direction: "vertical",
+        sizes: [0, 1],
+        splitWidth: 928,
+        splitHeight: 741,
+      })
+    ).toEqual({ width: 928, height: 741 });
+  });
+
+  it("splits along the panel direction", () => {
+    expect(
+      resolveViewerPaneDestinationBox({
+        pane: "animation",
+        direction: "horizontal",
+        sizes: [1, 1],
+        splitWidth: 1200,
+        splitHeight: 800,
+      })
+    ).toEqual({ width: 600, height: 800 });
+
+    expect(
+      resolveViewerPaneDestinationBox({
+        pane: "image",
+        direction: "vertical",
+        sizes: [1, 1],
+        splitWidth: 1200,
+        splitHeight: 800,
+      })
+    ).toEqual({ width: 1200, height: 400 });
+  });
+
+  it("honors an uneven allocation", () => {
+    expect(
+      resolveViewerPaneDestinationBox({
+        pane: "image",
+        direction: "horizontal",
+        sizes: [3, 1],
+        splitWidth: 1000,
+        splitHeight: 500,
+      })
+    ).toEqual({ width: 250, height: 500 });
+  });
+
+  it("has no box for a pane that is collapsing away", () => {
+    expect(
+      resolveViewerPaneDestinationBox({
+        pane: "image",
+        direction: "vertical",
+        sizes: [1, 0],
+        splitWidth: 928,
+        splitHeight: 741,
+      })
+    ).toBeNull();
+  });
+
+  it("has no box before the split is measured", () => {
+    expect(
+      resolveViewerPaneDestinationBox({
+        pane: "image",
+        direction: "vertical",
+        sizes: [0, 1],
+        splitWidth: 0,
+        splitHeight: 741,
+      })
+    ).toBeNull();
   });
 });
