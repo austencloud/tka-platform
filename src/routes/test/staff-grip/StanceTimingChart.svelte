@@ -275,7 +275,21 @@
     min-width: 0;
     min-height: 0;
     padding: 0.75rem 1.15rem 0.85rem;
-    background: #0a101a;
+    /*
+     * The series colours are data: each one names a curve the legend
+     * identifies, so it is declared once here and read by both the key swatch
+     * and the stroke that draws it. Everything else in this chart is chrome
+     * and reads the app's own surface, stroke and text tokens.
+     */
+    --series-lateral: rgb(148 178 206 / 55%);
+    --series-lateral-fill: rgb(148 178 206 / 16%);
+    --series-hips: rgb(148 178 206 / 45%);
+    --series-desire: #ffb27a;
+    --series-chest: #6fe7ff;
+    --series-spine1: #8ef5c0;
+    --series-spine2: #b6a6ff;
+    --series-head: #ff8fb0;
+    background: var(--surface-dark, rgba(0, 0, 0, 0.35));
   }
 
   header {
@@ -287,7 +301,7 @@
 
   h2 {
     margin: 0;
-    color: rgb(240 247 253 / 94%);
+    color: var(--theme-text, #fff);
     font-size: 0.9375rem;
     font-weight: 640;
     letter-spacing: 0.01em;
@@ -317,7 +331,7 @@
   }
 
   .timing-readout dt {
-    color: rgb(196 219 238 / 72%);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     font-size: 0.75rem;
     letter-spacing: 0.03em;
     text-transform: uppercase;
@@ -349,7 +363,7 @@
      * row from reflowing as a value gains or loses a character.
      */
     min-width: 4.5rem;
-    color: #a8efff;
+    color: var(--theme-text, #fff);
     font-size: 0.875rem;
     font-variant-numeric: tabular-nums;
   }
@@ -360,7 +374,7 @@
     gap: 0.25rem 0.9rem;
     margin: 0;
     padding: 0;
-    color: rgb(206 226 242 / 74%);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     font-size: 0.75rem;
     list-style: none;
   }
@@ -408,30 +422,30 @@
   }
 
   .swatch.lateral {
-    background: rgb(148 178 206 / 55%);
+    background: var(--series-lateral);
   }
   .swatch.desire {
     background: repeating-linear-gradient(
       90deg,
-      #ffb27a 0 0.25rem,
+      var(--series-desire) 0 0.25rem,
       transparent 0.25rem 0.4rem
     );
   }
   .swatch.chest {
     height: 0.25rem;
-    background: #6fe7ff;
+    background: var(--series-chest);
   }
   .swatch.spine1 {
-    background: #8ef5c0;
+    background: var(--series-spine1);
   }
   .swatch.spine2 {
-    background: #b6a6ff;
+    background: var(--series-spine2);
   }
   .swatch.head {
-    background: #ff8fb0;
+    background: var(--series-head);
   }
   .swatch.hips {
-    background: rgb(148 178 206 / 45%);
+    background: var(--series-hips);
   }
 
   .lanes {
@@ -449,16 +463,16 @@
   .lane {
     position: relative;
     min-height: 0;
-    border: 1px solid rgb(148 178 206 / 20%);
+    border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.1));
     border-radius: 0.4rem;
-    background: rgb(5 12 21 / 72%);
+    background: var(--surface-inset-deep, rgba(0, 0, 0, 0.3));
   }
 
   .lane-name {
     position: absolute;
     top: 0.25rem;
     left: 0.4rem;
-    color: rgb(206 226 242 / 60%);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     font-size: 0.6875rem;
     letter-spacing: 0.02em;
     pointer-events: none;
@@ -481,29 +495,29 @@
   }
 
   .boundary {
-    stroke: rgb(148 178 206 / 16%);
+    stroke: color-mix(in srgb, var(--theme-text, #fff) 14%, transparent);
     stroke-width: 1;
   }
 
   .zero {
-    stroke: rgb(148 178 206 / 34%);
+    stroke: color-mix(in srgb, var(--theme-text, #fff) 32%, transparent);
     stroke-width: 1;
   }
 
   .zero.hips {
-    stroke: rgb(148 178 206 / 45%);
+    stroke: var(--series-hips);
     stroke-width: 2;
   }
 
   .limit {
-    stroke: rgb(255 178 122 / 24%);
+    stroke: color-mix(in srgb, var(--series-desire) 24%, transparent);
     stroke-dasharray: 2 4;
     stroke-width: 1;
   }
 
   .lateral-area {
-    fill: rgb(148 178 206 / 16%);
-    stroke: rgb(148 178 206 / 55%);
+    fill: var(--series-lateral-fill);
+    stroke: var(--series-lateral);
     stroke-width: 1;
   }
 
@@ -514,40 +528,40 @@
   }
 
   .trace.desire {
-    stroke: #ffb27a;
+    stroke: var(--series-desire);
     stroke-dasharray: 5 4;
     stroke-width: 1.5;
   }
 
   .trace.chest {
-    stroke: #6fe7ff;
+    stroke: var(--series-chest);
     stroke-width: 2.5;
   }
 
   .trace.spine1 {
-    stroke: #8ef5c0;
+    stroke: var(--series-spine1);
     stroke-width: 1.5;
   }
 
   .trace.spine2 {
-    stroke: #b6a6ff;
+    stroke: var(--series-spine2);
     stroke-width: 1.5;
   }
 
   .trace.head {
-    stroke: #ff8fb0;
+    stroke: var(--series-head);
     stroke-width: 1.5;
   }
 
   .playhead {
-    stroke: rgb(255 255 255 / 70%);
+    stroke: color-mix(in srgb, var(--theme-text, #fff) 70%, transparent);
     stroke-width: 1.5;
   }
 
   .axis {
     position: relative;
     height: 1rem;
-    color: rgb(196 219 238 / 60%);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     font-size: 0.6875rem;
     font-variant-numeric: tabular-nums;
   }
