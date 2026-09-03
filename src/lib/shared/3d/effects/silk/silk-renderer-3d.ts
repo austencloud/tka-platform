@@ -121,6 +121,12 @@ export class SilkRenderer3D {
       );
     }
     this.ribbon.commit();
+    // The ribbon mesh lives in the scene for the lifetime of the effects
+    // manager, and frustumCulled is off, so an empty ribbon would still be
+    // walked, bound, and issued as a zero-count draw every frame. Hiding it
+    // when nothing was written takes it out of the render list entirely and
+    // changes nothing on screen - the draw range is zero either way.
+    this.fabricMesh.visible = this.ribbon.drawCount > 0;
   }
 
   clear(): void {
