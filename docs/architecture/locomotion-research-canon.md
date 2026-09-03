@@ -434,6 +434,17 @@ the rig's own hip-socket separation, applies the rotation in world space about a
 measured abduction axis, restores each foot's authored world orientation, and
 returns the ankle height change so the host can re-ground the performer.
 
+Two different upstream shapes feed that measurement, so do not read one rig's
+numbers as the catalog's. The Mixamo-derived catalog rigs arrive at runtime in
+their authored bind pose, ankles about 1.7x hip width apart. The intake rig
+arrives with ankles at exactly 1.0x hip width, which is the signature of a
+Blender intake that baked the GLB's embedded `mixamo.com` action - that clip's
+first frame stands the rig at attention, and `pose.armature_apply()` writes it
+in as the new bind pose (see `clear_imported_pose` in
+`scripts/characters/blender-proportion-rescale.py`, landed 2026-09-03 in
+`40180e87a8`). The runtime stance normalizes both shapes, so fixing the intake
+bake does not invalidate it and it does not excuse leaving the bake in place.
+
 
 | Assumption                                               | Why it is rejected                                                                                                                                     |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
