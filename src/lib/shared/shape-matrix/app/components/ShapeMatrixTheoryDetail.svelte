@@ -15,10 +15,14 @@
     spinRatioToTkaTurnFraction,
     type SpinRatio,
   } from "@vtg/domain";
+  import { MANDALA_STANDARD_TIP_DX } from "$lib/shared/mandala/domain/mandala-constants";
+  import { traceScaledPath } from "$lib/shared/notation/qft/qft-model";
   import {
     buildRatioStops,
     snapToStop,
   } from "$lib/shared/shape-matrix/domain/ratio-tuner";
+  import { propReachInHandRadii } from "$lib/shared/shape-matrix/services/theory-matrix-artwork";
+  import { tkaNamesTheoryRatio } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
   import {
     isStationaryRatio,
     theoryKnobs,
@@ -38,6 +42,18 @@
   const RED = "var(--dm-motion-red, #ed1c24)";
 
   const stops = buildRatioStops();
+
+  /*
+   * The prop's reach, in hand-orbit radii. The tiles in the grid are already
+   * drawn at it, and drawing the animation at a flat one prop length gave the
+   * same flower different proportions in the two places. Theory paths come
+   * from the model rather than from a realized sequence, so the grid can
+   * render before the pictograph data lands; the standard staff covers that
+   * wait, exactly as it does for the tiles.
+   */
+  const propReach = $derived(
+    propReachInHandRadii(app.data?.clubTipDx ?? MANDALA_STANDARD_TIP_DX)
+  );
 
   let paused = $state(false);
   let alignToken = $state(0);
@@ -120,9 +136,23 @@
     color: string
   ): LiveHand {
     const knobs = theoryKnobs(flower, hand, app.theoryMode);
+    const rate = scrubbed[hand] ?? rateOf(flower);
+    /*
+     * The mandala under the animation, from the first frame.
+     *
+     * It comes from the SAME knobs the stage integrates — the paired ones,
+     * with this hand's timing offset and direction in them — so the curve lies
+     * exactly under the prop rather than near it. The tile beside it is the
+     * unpaired shape, which is the Matrix's rule for a tile and the reason
+     * this cannot just reuse the tile's geometry.
+     *
+     * A rate between two stops has no closed path to draw, which is the honest
+     * answer there rather than a shape the prop is not tracing.
+     */
+    const settled = Math.abs(rate - rateOf(flower)) < 1e-9;
     return {
       id: hand,
-      rate: scrubbed[hand] ?? rateOf(flower),
+      rate,
       spinSign: knobs.spin === "inspin" ? 1 : -1,
       radius: knobs.radius,
       color,
@@ -130,6 +160,9 @@
       handSign: knobs.handDirection ?? 1,
       propPhase: knobs.phase ?? 0,
       trailCycles: closureCycles(flower),
+      guide: settled
+        ? traceScaledPath(knobs, { hand: 1, prop: propReach })
+        : null,
     };
   }
 
@@ -153,10 +186,21 @@
     if (stop) app.setTheoryRatioFor(hand, stop.ratio);
   }
 
+  /**
+   * The turn the Kinetic Alphabet gives this ratio, or "none".
+   *
+   * The arithmetic runs on every ratio — (P/Q − 1) / 2 answers 4:9 with −5/18
+   * — but an answer is not a turn value. The level palettes stop at a quarter
+   * turn, so inside this field only Float, 1:2 and isolation are turns anyone
+   * can play, and printing −5/18 under a TKA heading claimed a coverage that
+   * does not exist. `tkaNamesTheoryRatio` is that boundary; past it the honest
+   * readout is that there is nothing there.
+   */
   function turnLabel(ratio: SpinRatio): string {
+    if (!tkaNamesTheoryRatio(ratio)) return "none";
     const fraction = spinRatioToTkaTurnFraction(ratio);
     if (fraction === "fl") return "Float";
-    if (fraction === null) return "No finite value";
+    if (fraction === null) return "none";
     if (fraction.numerator === 0) return "0";
     if (fraction.denominator === 1) return `${fraction.numerator}`;
     const sign = fraction.numerator < 0 ? "−" : "";
@@ -218,7 +262,12 @@
 
         <div class="stage-card">
           <div class="stage-window">
-            <ShapeMatrixLiveRatioStage {hands} {paused} {alignToken} />
+            <ShapeMatrixLiveRatioStage
+              {hands}
+              {paused}
+              {alignToken}
+              {propReach}
+            />
           </div>
           <div class="stage-actions">
             <button
@@ -272,7 +321,7 @@
             <dd>{styleLabel(pair.right)} · {pair.right.petals} petals</dd>
           </div>
           <div>
-            <dt>TKA-equivalent</dt>
+            <dt>TKA turns</dt>
             <dd>
               {turnLabel(pair.left.ratio)} / {turnLabel(pair.right.ratio)}
             </dd>
@@ -283,11 +332,17 @@
           </div>
         </dl>
 
-        <p class="boundary-note">
-          These paths are calculated continuously. Theory does not assign new
-          Kinetic Alphabet letters.
-        </p>
       {/if}
+
+      <!-- Outside the branch on purpose: it is true of the whole surface, not
+           of one selected pair, and a visitor who has not picked a cell yet is
+           exactly the one who needs to read it. -->
+      <p class="boundary-note">
+        This surface stands outside the level system. Levels name turn values
+        down to a quarter turn, so a ratio like 1:3 has no turn, no letter and
+        no level, and VTG classifies timing and direction rather than the whole
+        rational field. These paths are exact; neither notation covers them.
+      </p>
     </div>
   </div>
 </aside>

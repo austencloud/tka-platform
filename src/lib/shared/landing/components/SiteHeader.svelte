@@ -185,9 +185,9 @@
       items: [
         {
           label: "History",
-          href: "/notation",
+          href: "/history",
           icon: "fa-language",
-          desc: "How flow arts notation developed, 2009 to 2022",
+          desc: "Who wrote flow arts down, 2004 to 2026",
         },
         {
           label: "Shape Matrix",
@@ -265,9 +265,10 @@
     return currentPath === href || currentPath.startsWith(href + "/");
   }
 
-  // Some dropdown destinations live under another destination. On /notation/caps,
-  // both /notation and /notation/caps match the current path, but the visitor is
-  // only on the latter. Choosing the longest match keeps one clear location.
+  // Some dropdown destinations live under another destination. On
+  // /shop/loop-deck, both /shop and /shop/loop-deck match the current path, but
+  // the visitor is only on the latter. Choosing the longest match keeps one
+  // clear location.
   function getActiveItemHref(
     items: readonly { href: string }[]
   ): string | null {
