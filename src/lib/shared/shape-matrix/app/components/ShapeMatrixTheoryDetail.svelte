@@ -22,6 +22,7 @@
     snapToStop,
   } from "$lib/shared/shape-matrix/domain/ratio-tuner";
   import { propReachInHandRadii } from "$lib/shared/shape-matrix/services/theory-matrix-artwork";
+  import { tkaNamesTheoryRatio } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
   import {
     isStationaryRatio,
     theoryKnobs,
@@ -185,10 +186,21 @@
     if (stop) app.setTheoryRatioFor(hand, stop.ratio);
   }
 
+  /**
+   * The turn the Kinetic Alphabet gives this ratio, or "none".
+   *
+   * The arithmetic runs on every ratio — (P/Q − 1) / 2 answers 4:9 with −5/18
+   * — but an answer is not a turn value. The level palettes stop at a quarter
+   * turn, so inside this field only Float, 1:2 and isolation are turns anyone
+   * can play, and printing −5/18 under a TKA heading claimed a coverage that
+   * does not exist. `tkaNamesTheoryRatio` is that boundary; past it the honest
+   * readout is that there is nothing there.
+   */
   function turnLabel(ratio: SpinRatio): string {
+    if (!tkaNamesTheoryRatio(ratio)) return "none";
     const fraction = spinRatioToTkaTurnFraction(ratio);
     if (fraction === "fl") return "Float";
-    if (fraction === null) return "No finite value";
+    if (fraction === null) return "none";
     if (fraction.numerator === 0) return "0";
     if (fraction.denominator === 1) return `${fraction.numerator}`;
     const sign = fraction.numerator < 0 ? "−" : "";
@@ -309,7 +321,7 @@
             <dd>{styleLabel(pair.right)} · {pair.right.petals} petals</dd>
           </div>
           <div>
-            <dt>TKA-equivalent</dt>
+            <dt>TKA turns</dt>
             <dd>
               {turnLabel(pair.left.ratio)} / {turnLabel(pair.right.ratio)}
             </dd>
@@ -320,11 +332,17 @@
           </div>
         </dl>
 
-        <p class="boundary-note">
-          These paths are calculated continuously. Theory does not assign new
-          Kinetic Alphabet letters.
-        </p>
       {/if}
+
+      <!-- Outside the branch on purpose: it is true of the whole surface, not
+           of one selected pair, and a visitor who has not picked a cell yet is
+           exactly the one who needs to read it. -->
+      <p class="boundary-note">
+        This surface stands outside the level system. Levels name turn values
+        down to a quarter turn, so a ratio like 1:3 has no turn, no letter and
+        no level, and VTG classifies timing and direction rather than the whole
+        rational field. These paths are exact; neither notation covers them.
+      </p>
     </div>
   </div>
 </aside>

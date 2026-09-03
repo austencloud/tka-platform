@@ -215,7 +215,13 @@ const RECORDER = `async ({ ms, scrollTo, click, scrollSweep }) => {
   const q = (p) => sorted.length ? +sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))].toFixed(1) : 0;
   const rs = r.slice().sort((a, b) => a - b);
 
+  const allCanvases = Array.from(document.querySelectorAll('canvas'));
+  const canvases = allCanvases.length;
+  const contentCanvases = allCanvases.filter((c) => !c.closest('.background-canvas-container')).length;
+
   return {
+    canvases,
+    contentCanvases,
     frameCount: f.length,
     min: q(0),
     median: q(0.5),
@@ -278,6 +284,45 @@ async function measureDisplayInterval(ws, sessionId) {
   return snapToRefreshRate(median);
 }
 
+/**
+ * Block until the route is actually running, and report how long that took.
+ *
+ * Measuring before this point is how the harness once graded /composer as a
+ * clean 60fps while its hero sat on "Preparing a live sequence..." with no
+ * player mounted: an inert page drops no frames. Time-to-live is also the
+ * number a visitor feels first, so it is reported rather than hidden.
+ */
+async function waitForLive(ws, sessionId, scrollTo = null, timeoutMs = 45000) {
+  const started = Date.now();
+  if (scrollTo) {
+    await run(
+      ws,
+      sessionId,
+      `() => { document.querySelector(${JSON.stringify(scrollTo)})?.scrollIntoView({ behavior: 'instant', block: 'center' }); }`
+    );
+  }
+  let last = -1;
+  let stable = 0;
+  while (Date.now() - started < timeoutMs) {
+    const count = await run(
+      ws,
+      sessionId,
+      `() => Array.from(document.querySelectorAll('canvas')).filter(
+         (c) => !c.closest('.background-canvas-container')
+       ).length`
+    );
+    if (count > 0 && count === last) stable += 1;
+    else stable = 0;
+    last = count;
+    // Three identical readings 500ms apart. The heavy sections (tunnel art, the
+    // 3D viewer) mount several seconds after the cheap ones, so 'a canvas
+    // exists' is not the same question as 'the page has finished arriving'.
+    if (stable >= 3) return { ms: Date.now() - started, live: true, contentCanvases: count };
+    await sleep(500);
+  }
+  return { ms: Date.now() - started, live: last > 0, contentCanvases: last };
+}
+
 function grade(pass, interval) {
   const budget = interval * 1.05; // one frame, plus scheduling noise
   const dropped = interval * 2;   // a frame the user actually loses
@@ -290,6 +335,12 @@ function grade(pass, interval) {
   }
   const bigTask = pass.result.longTasks.find((t) => t.duration > 50);
   if (bigTask) fails.push(`${bigTask.duration}ms long task blocks the thread`);
+  // A page that renders nothing trivially holds any frame budget. Grading that
+  // as a pass is how a stuck loading state reads as 60fps, so refuse it: every
+  // surface this harness audits has at least one animated loop when it is live.
+  if (pass.result.rafPerFrame.max === 0) {
+    fails.push("no rAF loop ran — page was inert, not smooth");
+  }
   return fails;
 }
 
@@ -299,10 +350,11 @@ function fmt(pass, interval) {
   const fails = grade(pass, interval);
   const mark = fails.length ? "FAIL" : "pass";
   return [
-    `  ${mark}  ${pass.name}`,
+    `  ${mark}  ${pass.name}` +
+      (pass.settled ? ` · settled in ${(pass.settled.ms / 1000).toFixed(1)}s` : ""),
     `        ${fps} fps · median ${r.median}ms · p95 ${r.p95}ms · worst ${r.worst}ms`,
     `        rAF loops/frame ${r.rafPerFrame.median} (max ${r.rafPerFrame.max}) · ` +
-      `long tasks ${r.longTaskCount} totalling ${r.longTaskTotalMs}ms`,
+      `long tasks ${r.longTaskCount} totalling ${r.longTaskTotalMs}ms · canvases ${r.canvases ?? 0} (${r.contentCanvases ?? 0} content)`,
     r.longTasks.length
       ? `        worst tasks ${r.longTasks.slice(0, 4).map((t) => `${t.duration}ms`).join(", ")}`
       : null,
@@ -361,6 +413,12 @@ async function main() {
       ),
     });
 
+    // The cold pass deliberately watches the load. Everything after it is
+    // about a page that has finished arriving, so wait for the route to be
+    // live first — and report that wait, because it is the delay a visitor
+    // feels before anything moves.
+    const liveness = await waitForLive(ws, sessionId, null, 20000);
+
     // Idle: sitting still at three depths, doing nothing at all.
     const stops = [
       { name: "idle at hero", scrollTo: "main, body" },
@@ -368,8 +426,13 @@ async function main() {
       { name: "idle at outputs", scrollTo: ".changing, .keeping" },
     ];
     for (const stop of stops) {
+      // Park at the stop and let its lazily-mounted content finish arriving
+      // before recording. A section still fetching its 3D chunk drops no
+      // frames, and grading it would report an absence as smoothness.
+      const settled = await waitForLive(ws, sessionId, stop.scrollTo);
       passes.push({
         name: stop.name,
+        settled,
         result: await run(
           ws,
           sessionId,
@@ -379,6 +442,7 @@ async function main() {
     }
 
     for (const probe of INTERACTIONS[ROUTE] ?? []) {
+      await waitForLive(ws, sessionId, probe.scrollTo);
       passes.push({
         name: `interaction: ${probe.name}`,
         result: await run(
@@ -397,6 +461,11 @@ async function main() {
         `  viewport ${VIEWPORT[0]}x${VIEWPORT[1]}` +
         (CPU_THROTTLE > 1 ? `  CPU ${CPU_THROTTLE}x slowdown` : "")
     );
+    console.log(
+      liveness.live
+        ? `  content settled after ${(liveness.ms / 1000).toFixed(1)}s — ${liveness.contentCanvases} content canvases`
+        : `  NEVER CAME ALIVE — no canvas after ${(liveness.ms / 1000).toFixed(1)}s`
+    );
     console.log("");
     for (const pass of passes) console.log(fmt(pass, interval), "\n");
 
@@ -409,7 +478,7 @@ async function main() {
       const { writeFileSync } = await import("node:fs");
       writeFileSync(
         JSON_OUT,
-        JSON.stringify({ url, interval, cpuThrottle: CPU_THROTTLE, passes }, null, 2)
+        JSON.stringify({ url, interval, cpuThrottle: CPU_THROTTLE, liveness, passes }, null, 2)
       );
       console.log(`wrote ${JSON_OUT}\n`);
     }

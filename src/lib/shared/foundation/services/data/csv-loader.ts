@@ -229,6 +229,12 @@ export class CsvLoader {
   }
 
   private isWindowDataAvailable(): boolean {
+    // `window` is a bare ReferenceError inside a Worker and during SSR, and this
+    // check runs before the fetch path it is an optimization for. The generation
+    // worker (per-visit-demo.worker.ts) loads this CSV, so the guard is what
+    // lets the whole generation path run off the main thread; without it the
+    // worker throws here instead of falling through to fetch.
+    if (typeof window === "undefined") return false;
     return window.csvData !== undefined && window.csvData !== null;
   }
 

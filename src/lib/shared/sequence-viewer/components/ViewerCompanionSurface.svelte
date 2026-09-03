@@ -26,6 +26,7 @@
     onChoreoCardContextMenu,
     cardAutoLayoutOverride,
     cardContainSizeMotion = null,
+    cardContainMotionBox = null,
     onAutoLayoutResolved,
     onPlaybackToggle,
     playbackMode,
@@ -121,6 +122,7 @@
       onContextMenu={onChoreoCardContextMenu}
       autoLayoutOverride={cardAutoLayoutOverride}
       containSizeMotion={cardContainSizeMotion}
+      containMotionBox={cardContainMotionBox}
       onAutoLayoutResolved={card.shown ? onAutoLayoutResolved : undefined}
     />
   </div>

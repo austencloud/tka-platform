@@ -1,11 +1,15 @@
 <!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixTurnPopover.svelte
-  Compact detail level and turn editor. The trigger shows the level as the
-  shared difficulty badge and the pair's two hand turns (blue left, red
-  right); it opens a popover anchored under it that holds the level
-  selector, the notation toggle, and the canonical turn controls, sized to
-  those controls and nothing more. An edit here stays on the detail pane,
-  so the animator restages under the user's eyes and the matrix is already
-  rebuilt when they go back. -->
+  Compact detail axis editor. The trigger shows the pair's two hand values
+  (blue left, red right); it opens a popover anchored under it that holds the
+  vocabulary control, the notation toggle, and the canonical turn controls,
+  sized to those controls and nothing more. An edit here stays on the detail
+  pane, so the animator restages under the user's eyes and the matrix is
+  already rebuilt when they go back.
+
+  What the vocabulary control is differs by surface, and the difference is real
+  rather than cosmetic. The Matrix picks a Kinetic Alphabet level, so it gets
+  the level badge and the LevelSelector. Theory picks how far the rational
+  field opens, which is not a level at all, so it gets neither. -->
 <script lang="ts">
   import { Popover } from "bits-ui";
   import { flyFade } from "$lib/shared/transitions/motion";
@@ -26,9 +30,10 @@
     SHAPE_MATRIX_LEVELS,
     SHAPE_MATRIX_LEVEL_DESCRIPTIONS,
   } from "../shape-matrix-levels";
-  import { THEORY_LEVEL_DESCRIPTIONS } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
+  import { THEORY_BAND_DESCRIPTIONS } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
   import { spinRatioKey } from "@vtg/domain";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  import ShapeMatrixBandControl from "./ShapeMatrixBandControl.svelte";
   import ShapeMatrixTheoryControls from "./ShapeMatrixTheoryControls.svelte";
   import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
 
@@ -36,11 +41,8 @@
   let open = $state(false);
 
   /* One chip for both surfaces. What it edits changes with the surface; that
-     it is the way into level and axis values does not. */
+     it is the way into the axis values does not. */
   const theory = $derived(appState.surface === "theory");
-  const levelDescriptions = $derived(
-    theory ? THEORY_LEVEL_DESCRIPTIONS : SHAPE_MATRIX_LEVEL_DESCRIPTIONS
-  );
 
   const LABEL_OPTIONS = [
     { value: "turns" as const, label: "TKA turns", shortLabel: "Turns" },
@@ -64,11 +66,14 @@
   );
   const triggerLabel = $derived(
     theory
-      ? `Edit level, ratios, timing and direction. Level ${appState.level}. Left ${leftVisible}, right ${rightVisible}.`
+      ? `Edit ratios, timing and direction. Ratio field: ${THEORY_BAND_DESCRIPTIONS[appState.theoryBand].name}. Left ${leftVisible}, right ${rightVisible}.`
       : `Edit level and turns. Level ${appState.level}. Left ${spoken(appState.leftTurn)}, right ${spoken(appState.rightTurn)}.`
   );
   const popoverTitle = $derived(
-    theory ? "Level and ratios" : "Level and turns"
+    theory ? "Ratios and timing" : "Level and turns"
+  );
+  const closeLabel = $derived(
+    theory ? "Close ratio editor" : "Close level and turn editor"
   );
 
   function applyTurn(turn: TurnValue): void {
@@ -88,7 +93,9 @@
         class="turn-trigger"
         aria-label={triggerLabel}
       >
-        <DifficultyBadge level={appState.level} size="1.5rem" />
+        {#if !theory}
+          <DifficultyBadge level={appState.level} size="1.5rem" />
+        {/if}
         <span class="hand blue" aria-hidden="true">{leftVisible}</span>
         <span class="divider" aria-hidden="true">·</span>
         <span class="hand red" aria-hidden="true">{rightVisible}</span>
@@ -121,22 +128,26 @@
                 <button
                   type="button"
                   class="popover-close"
-                  aria-label="Close level and turn editor"
+                  aria-label={closeLabel}
                   onclick={() => (open = false)}
                 >
                   <i class="fas fa-xmark" aria-hidden="true"></i>
                 </button>
               </div>
               <div class="level-row">
-                <span class="row-label">Level</span>
-                <LevelSelector
-                  value={appState.level}
-                  levels={SHAPE_MATRIX_LEVELS}
-                  describe={(level) => levelDescriptions[level]}
-                  onchange={applyLevel}
-                  compact={true}
-                  ariaLabel="Kinetic Alphabet level"
-                />
+                <span class="row-label">{theory ? "Ratio field" : "Level"}</span>
+                {#if theory}
+                  <ShapeMatrixBandControl stayOnDetail={true} />
+                {:else}
+                  <LevelSelector
+                    value={appState.level}
+                    levels={SHAPE_MATRIX_LEVELS}
+                    describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
+                    onchange={applyLevel}
+                    compact={true}
+                    ariaLabel="Kinetic Alphabet level"
+                  />
+                {/if}
               </div>
               {#if theory}
                 <ShapeMatrixTheoryControls layout="tray" />
@@ -319,6 +330,13 @@
 
   .notation :global(.segmented-control) {
     width: 9rem;
+  }
+
+  /* SegmentedControl fills its container, and the tray is as wide as the sheet.
+     Four band names stretched across a landscape phone read as a progress bar
+     next to the content-sized rows above and below them. */
+  .level-row :global(.segmented-control) {
+    width: min(18rem, 100%);
   }
 
   .row-label {
