@@ -291,7 +291,6 @@
           cellIndex={null}
           leftPropTypeOverride={leftPropType}
           rightPropTypeOverride={rightPropType}
-          propRenderContext="editor"
           motionStartData={motion.startData}
           motionProgress={motion.active ? motion.progress : null}
           arrowOpacity={motion.active ? 0 : 1}
