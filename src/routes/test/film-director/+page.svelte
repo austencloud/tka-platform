@@ -7,7 +7,7 @@
   import { filmCollectionState } from "$lib/features/film-collection/state/film-collection-state.svelte";
   import { parseFilmKey } from "$lib/features/film-director/domain/film-director-link";
   import FilmDirectorMarquee from "./_components/FilmDirectorMarquee.svelte";
-  import { getLibraryFilm, isLibraryFilmKey } from "./_films/index";
+  import { getLibraryFilm, isLibraryFilmKey } from "./_capabilities/index";
   import type { FilmDirectorInput } from "./_lib/film-director-schema";
   import type { FilmOrigin } from "./_lib/film-origin";
 
@@ -59,25 +59,12 @@
     if (entry) openSavedFilm(entry);
   });
 
-  function openLibraryFilm(key: string): void {
-    stage = { film: getLibraryFilm(key), origin: { kind: "library", key } };
-  }
-
-  // Choosing a film from the marquee is a fresh start, so a scene id left over
-  // from the address that opened the page does not follow it into a film that
-  // may not even have that scene.
-  function pickLibraryFilm(key: string): void {
+  // Choosing a capability from the marquee is a fresh start, so a scene id
+  // left over from the address that opened the page does not follow it into a
+  // demo that may not even have that scene.
+  function pickCapability(id: string): void {
     pendingSceneId = null;
-    openLibraryFilm(key);
-  }
-
-  // Picking a capability from the marquee's catalog is the same entry an
-  // address with `?scene=` makes: the film opens soloed on that scene and
-  // loops it. Set before the film, because the workbench reads the scene id
-  // once at construction.
-  function pickLibraryScene(key: string, sceneId: string): void {
-    pendingSceneId = sceneId;
-    openLibraryFilm(key);
+    stage = { film: getLibraryFilm(id), origin: { kind: "library", key: id } };
   }
 
   function pickSavedFilm(entry: CollectedFilm): void {
@@ -135,8 +122,7 @@
 
 {#if !stage}
   <FilmDirectorMarquee
-    onOpenLibraryFilm={pickLibraryFilm}
-    onOpenLibraryScene={pickLibraryScene}
+    onOpenCapability={pickCapability}
     onOpenSavedFilm={pickSavedFilm}
   />
 {:else if Workbench}

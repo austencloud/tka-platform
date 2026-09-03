@@ -22,7 +22,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { FILM_LIBRARY } from "../../../src/routes/test/film-director/_films/index";
+import { CAPABILITY_LIBRARY } from "../../../src/routes/test/film-director/_capabilities/index";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
 import { sampleFilmDirector } from "../../../src/routes/test/film-director/_lib/sample-film-director";
 import type { ResolvedDirectorScene } from "../../../src/routes/test/film-director/_lib/film-director-schema";
@@ -62,8 +62,8 @@ function sceneTimes(scene: ResolvedDirectorScene): number[] {
 }
 
 describe("film frame snapshots", () => {
-  for (const entry of FILM_LIBRARY) {
-    it(`"${entry.label}" (${entry.key}) delivers its frozen frames`, () => {
+  for (const entry of CAPABILITY_LIBRARY) {
+    it(`"${entry.label}" (${entry.id}) delivers its frozen frames`, () => {
       const spec = resolveFilmDirectorSpec(entry.film);
       const perScene = spec.scenes.map((scene, index) => ({
         scene: index,
