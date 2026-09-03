@@ -295,6 +295,11 @@ static/textures/water/
 scripts/temp/
 scripts/model-curator/
 
+# Human Generator V4 Blender addon content library (~318 MB, third-party,
+# trial-licensed). Never committable: its terms permit neither personal nor
+# commercial use. See docs/reference/human-generator-license-finding.md.
+human-generator/
+
 # Source model backups (originals before gltf-transform optimization)
 assets/source-models/
 

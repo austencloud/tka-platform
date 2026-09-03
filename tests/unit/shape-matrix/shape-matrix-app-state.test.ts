@@ -51,6 +51,7 @@ function createState(compact: boolean) {
       theoryRightRatio: { propRotations: 1, handCycles: 3 },
       theoryMode: "SS",
       theoryPair: null,
+      theoryBand: 4,
       level: 2,
       leftTurn: 0,
       rightTurn: 0,
@@ -250,7 +251,7 @@ describe("shape matrix app state", () => {
     const { state, syncState } = createState(false);
 
     state.setSurface("theory");
-    state.setLevel(4);
+    state.setTheoryBand(4);
     state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
 
     expect(state.surface).toBe("theory");
@@ -268,17 +269,17 @@ describe("shape matrix app state", () => {
     );
   });
 
-  it("keeps every theory ratio inside the level the user chose", () => {
+  it("keeps every theory ratio inside the band the user chose", () => {
     const { state } = createState(false);
 
     state.setSurface("theory");
-    state.setLevel(4);
+    state.setTheoryBand(4);
     state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
     expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
 
-    // Level 1 is the three ratios TKA can already name, so 2:9 has to land on
-    // the nearest one it holds rather than survive a level it is not in.
-    state.setLevel(1);
+    // Band 1 is the three ratios TKA can already name, so 2:9 has to land on
+    // the nearest one it holds rather than survive a band it is not in.
+    state.setTheoryBand(1);
     expect(
       state.availableTheoryRatios.some(
         (ratio) =>
@@ -287,6 +288,21 @@ describe("shape matrix app state", () => {
       )
     ).toBe(true);
     expect(state.availableTheoryRatios).toHaveLength(3);
+  });
+
+  it("moves the Kinetic Alphabet level without touching the ratio band", () => {
+    const { state } = createState(false);
+
+    state.setSurface("theory");
+    state.setTheoryBand(4);
+    state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
+
+    // The two ladders are independent. A level is a turn vocabulary and a band
+    // is a denominator vocabulary; the surface that reads one must not move
+    // the other, which is what a single shared number used to do.
+    state.setLevel(1);
+    expect(state.theoryBand).toBe(4);
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
   });
 
   it("keeps an exact prop target only while the pair has equal rotating turns", () => {

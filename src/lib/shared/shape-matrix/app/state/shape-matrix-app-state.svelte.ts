@@ -28,8 +28,11 @@ import {
   type TheoryFlower,
 } from "$lib/shared/shape-matrix/domain/theory-flower";
 import {
-  clampTheoryRatioToLevel,
-  theoryRatiosForLevel,
+  asTheoryBand,
+  clampTheoryRatioToBand,
+  DEFAULT_THEORY_BAND,
+  theoryRatiosForBand,
+  type TheoryBand,
 } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
 
 export type ShapeMatrixAppView = "matrix" | "detail";
@@ -72,6 +75,14 @@ export interface ShapeMatrixAppSnapshot {
    */
   theoryMode: VtgMode;
   theoryPair: { left: TheoryFlower; right: TheoryFlower } | null;
+  /**
+   * How far the Theory ratio field opens. Deliberately NOT `level`: a band
+   * counts denominators and a level names turn values, and the two ladders
+   * only happen to be the same length. Sharing one number told a Theory
+   * visitor they were at Level 4, which is a claim the turn system does not
+   * make about any ratio past band 1.
+   */
+  theoryBand: TheoryBand;
   level: TurnLevel;
   leftTurn: TurnValue;
   rightTurn: TurnValue;
@@ -104,11 +115,11 @@ const LEVEL_LANDING_TURN: Record<TurnLevel, TurnValue> = {
 
 export const DEFAULT_THEORY_RATIO = makeSpinRatio(1, 3);
 
-function allowedTheoryRatio(ratio: SpinRatio, level: TurnLevel): SpinRatio {
+function allowedTheoryRatio(ratio: SpinRatio, band: TheoryBand): SpinRatio {
   try {
-    return clampTheoryRatioToLevel(ratio, level);
+    return clampTheoryRatioToBand(ratio, band);
   } catch {
-    return clampTheoryRatioToLevel(DEFAULT_THEORY_RATIO, level);
+    return clampTheoryRatioToBand(DEFAULT_THEORY_RATIO, band);
   }
 }
 
@@ -196,11 +207,12 @@ export function createShapeMatrixAppState(
   initialCompact: boolean
 ) {
   let surface = $state<ShapeMatrixSurface>(initial.surface);
+  let theoryBand = $state<TheoryBand>(initial.theoryBand);
   let theoryLeftRatio = $state(
-    allowedTheoryRatio(initial.theoryLeftRatio, initial.level)
+    allowedTheoryRatio(initial.theoryLeftRatio, initial.theoryBand)
   );
   let theoryRightRatio = $state(
-    allowedTheoryRatio(initial.theoryRightRatio, initial.level)
+    allowedTheoryRatio(initial.theoryRightRatio, initial.theoryBand)
   );
   let theoryMode = $state<VtgMode>(initial.theoryMode);
   let theoryPair = $state(initial.theoryPair);
@@ -241,7 +253,7 @@ export function createShapeMatrixAppState(
   let mandalaHandoff = $state(false);
 
   const availableTurns = $derived(matrixTurnsForLevel(level));
-  const availableTheoryRatios = $derived(theoryRatiosForLevel(level));
+  const availableTheoryRatios = $derived(theoryRatiosForBand(theoryBand));
   const theoryRowAxis = $derived(buildTheoryAxis(theoryLeftRatio));
   const theoryColAxis = $derived(buildTheoryAxis(theoryRightRatio));
   const filters = $derived(matrixFiltersForTurns(leftTurn, rightTurn));
@@ -285,25 +297,6 @@ export function createShapeMatrixAppState(
     if (level === nextLevel) return;
     level = nextLevel;
 
-    // On Theory the level is the Farey order, so it decides how fine the ratio
-    // axis gets. Whichever ratios the new level can still name are kept; the
-    // rest fall to the nearest ratio it can.
-    applyTheoryRatios(
-      clampTheoryRatioToLevel(theoryLeftRatio, level),
-      clampTheoryRatioToLevel(theoryRightRatio, level)
-    );
-    if (surface === "theory") {
-      // The Matrix still has to be legal when the user goes back to it.
-      const heldLeft = clampMatrixTurnToLevel(leftTurn, level);
-      const heldRight = clampMatrixTurnToLevel(rightTurn, level);
-      updateSelectedPairTurns(heldLeft, heldRight);
-      leftTurn = heldLeft;
-      rightTurn = heldRight;
-      if (compact && !options.stayOnDetail) activeView = "matrix";
-      syncState();
-      return;
-    }
-
     const landingTurn = LEVEL_LANDING_TURN[level];
     // A higher level should change the picture, not merely add quiet options
     // around the current Level 1 matrix. Move the edited axis into the new
@@ -330,6 +323,29 @@ export function createShapeMatrixAppState(
     }
     leftTurn = nextLeftTurn;
     rightTurn = nextRightTurn;
+    if (compact && !options.stayOnDetail) activeView = "matrix";
+    syncState();
+  }
+
+  /**
+   * Open or close the Theory ratio field.
+   *
+   * The counterpart of `setLevel` and nothing more: it moves the Farey order,
+   * never a turn value, and it leaves the Matrix's level exactly where the
+   * user left it. Ratios the new band can still name are kept; the rest fall
+   * to the nearest one it holds, so a narrowing band moves the axis a little
+   * rather than throwing the user's place away.
+   */
+  function setTheoryBand(
+    nextBand: TheoryBand,
+    options: ShapeMatrixSetTurnOptions = {}
+  ): void {
+    if (theoryBand === nextBand) return;
+    theoryBand = nextBand;
+    applyTheoryRatios(
+      clampTheoryRatioToBand(theoryLeftRatio, theoryBand),
+      clampTheoryRatioToBand(theoryRightRatio, theoryBand)
+    );
     if (compact && !options.stayOnDetail) activeView = "matrix";
     syncState();
   }
@@ -400,7 +416,7 @@ export function createShapeMatrixAppState(
 
   /** One named axis, for the live tuners that edit a specific hand. */
   function setTheoryRatioFor(hand: "left" | "right", nextRatio: SpinRatio): void {
-    const allowed = allowedTheoryRatio(nextRatio, level);
+    const allowed = allowedTheoryRatio(nextRatio, theoryBand);
     applyTheoryRatios(
       hand === "left" ? allowed : theoryLeftRatio,
       hand === "right" ? allowed : theoryRightRatio
@@ -410,7 +426,7 @@ export function createShapeMatrixAppState(
 
   /** Honours the Apply to target, exactly as the Matrix turn control does. */
   function setTheoryRatio(nextRatio: SpinRatio): void {
-    const allowed = allowedTheoryRatio(nextRatio, level);
+    const allowed = allowedTheoryRatio(nextRatio, theoryBand);
     applyTheoryRatios(
       activeAxis === "right" ? theoryLeftRatio : allowed,
       activeAxis === "left" ? theoryRightRatio : allowed
@@ -450,13 +466,19 @@ export function createShapeMatrixAppState(
   function restoreState(snapshot: ShapeMatrixAppSnapshot): void {
     surface = snapshot.surface ?? "matrix";
     level = snapshot.level;
+    // A snapshot written before the band split its own field carries the band
+    // in `level`, exactly as a pre-split link does. Read it there rather than
+    // dropping a returning visitor back to band 1.
+    theoryBand =
+      snapshot.theoryBand ??
+      (snapshot.level ? asTheoryBand(snapshot.level) : DEFAULT_THEORY_BAND);
     theoryLeftRatio = allowedTheoryRatio(
       snapshot.theoryLeftRatio ?? DEFAULT_THEORY_RATIO,
-      level
+      theoryBand
     );
     theoryRightRatio = allowedTheoryRatio(
       snapshot.theoryRightRatio ?? DEFAULT_THEORY_RATIO,
-      level
+      theoryBand
     );
     theoryMode = snapshot.theoryMode ?? "SS";
     theoryPair = snapshot.theoryPair
@@ -579,6 +601,7 @@ export function createShapeMatrixAppState(
       theoryRightRatio,
       theoryMode,
       theoryPair,
+      theoryBand,
       level,
       leftTurn,
       rightTurn,
@@ -619,6 +642,9 @@ export function createShapeMatrixAppState(
     },
     get availableTheoryRatios() {
       return availableTheoryRatios;
+    },
+    get theoryBand() {
+      return theoryBand;
     },
     get level() {
       return level;
@@ -689,6 +715,7 @@ export function createShapeMatrixAppState(
     load,
     restoreState,
     setLevel,
+    setTheoryBand,
     setTurn,
     setActiveAxis,
     setLabelMode,
