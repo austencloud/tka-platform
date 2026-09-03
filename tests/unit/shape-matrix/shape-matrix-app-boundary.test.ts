@@ -275,10 +275,25 @@ describe("Shape Matrix app boundary", () => {
     expect(chipSource).not.toMatch(/border-(left|right|top|bottom):\s*\d/);
   });
 
-  it("wraps a long turn palette instead of scrolling it sideways", () => {
+  it("wraps a long value palette instead of scrolling it sideways", () => {
+    // The scroller owns the long-band behaviour for both surfaces: the Matrix
+    // turn band and the Theory ratio band have the same problem and now the
+    // same control.
+    const scrollerSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixValueScroller.svelte"
+      ),
+      "utf8"
+    );
     const turnSource = readFileSync(
       resolve(
         "src/lib/shared/shape-matrix/app/components/ShapeMatrixTurnControls.svelte"
+      ),
+      "utf8"
+    );
+    const theorySource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixTheoryControls.svelte"
       ),
       "utf8"
     );
@@ -289,10 +304,15 @@ describe("Shape Matrix app boundary", () => {
 
     // Level 4 lists fourteen ratios. The tray splits them over two rows and
     // spends the saved room on full-size segments.
-    expect(turnSource).toContain("columns={trayColumns}");
-    expect(turnSource).toContain(
-      ".turn-editor:not(.tray) .turn-control :global(.segmented-control)"
+    expect(scrollerSource).toContain("columns={trayColumns}");
+    expect(scrollerSource).toContain(
+      ".scroller-host:not(.tray) .value-control :global(.segmented-control)"
     );
+    // Neither ribbon may fork it back into a local palette.
+    expect(turnSource).toContain("<ShapeMatrixValueScroller");
+    expect(theorySource).toContain("<ShapeMatrixValueScroller");
+    expect(turnSource).not.toContain("trayColumns");
+    expect(theorySource).not.toContain("trayColumns");
     // The indicator tracks the chosen cell on both axes.
     expect(segmentedSource).toContain(".grid .indicator {");
     expect(segmentedSource).toContain("--row: {selectedRow}");
