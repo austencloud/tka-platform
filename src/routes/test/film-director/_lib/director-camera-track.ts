@@ -1,6 +1,11 @@
 import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
 
-import { applyDirectorEasing } from "./director-easing";
+import {
+  buildCameraChannels,
+  sampleCameraFrame,
+  type CameraChannelStore,
+  type DirectorCameraFrame,
+} from "./director-camera-channels";
 import {
   compileCameraMoves,
   compileCameraShots,
@@ -27,13 +32,7 @@ import type {
   ResolvedDirectorPerformer,
 } from "./film-director-schema";
 
-export interface DirectorCameraFrame {
-  position: [number, number, number];
-  target: [number, number, number];
-  fovDeg: number;
-  /** Horizon tilt, degrees; positive = clockwise on screen. Always present (0 = level). */
-  rollDeg: number;
-}
+export type { DirectorCameraFrame } from "./director-camera-channels";
 
 export function getPreviewCameraFov(
   filmFovDeg: number,
@@ -367,151 +366,36 @@ export function resolveDirectorCameraTrack(
   };
 }
 
-function interpolateScalar(
-  before: number,
-  start: number,
-  end: number,
-  after: number,
-  progress: number,
-  smooth: boolean
-): number {
-  if (!smooth) return start + (end - start) * progress;
-  const p2 = progress * progress;
-  const p3 = p2 * progress;
-  return (
-    0.5 *
-    (2 * start +
-      (-before + end) * progress +
-      (2 * before - 5 * start + 4 * end - after) * p2 +
-      (-before + 3 * start - 3 * end + after) * p3)
-  );
+/**
+ * Channel stores are derived from a keyframe list, so they are cached against
+ * that list's identity. Resolution produces each track once per film load and
+ * the viewer then samples it every frame; rebuilding eight channels per frame
+ * would be a real cost for no gain.
+ */
+const CHANNEL_STORES = new WeakMap<object, CameraChannelStore>();
+
+/** The channel store behind a resolved track, built on first use. */
+export function cameraChannelsFor(
+  keyframes: readonly ResolvedDirectorCameraKeyframe[]
+): CameraChannelStore {
+  const key = keyframes as unknown as object;
+  const cached = CHANNEL_STORES.get(key);
+  if (cached) return cached;
+  const store = buildCameraChannels(keyframes);
+  CHANNEL_STORES.set(key, store);
+  return store;
 }
 
 /**
- * Lens scalars (fov, roll) that hold a value across a segment hold it exactly.
- * Catmull-Rom would bow the flat segment toward its neighbours — fov creeping
- * to 50.2 before a zoom, roll dipping negative before a clockwise roll — and a
- * director who stated a hold expects a hold. Position keeps the plain spline:
- * a per-axis short-circuit there would flatten curved paths.
+ * Sample a resolved camera track.
+ *
+ * The curve itself lives in `director-camera-channels.ts`, one channel per
+ * scalar. This function is the adapter that the viewer and the exporters have
+ * always called: hand it fused keyframes, get one frame back.
  */
-function interpolateLensScalar(
-  before: number,
-  start: number,
-  end: number,
-  after: number,
-  progress: number,
-  smooth: boolean
-): number {
-  if (start === end) return start;
-  return interpolateScalar(before, start, end, after, progress, smooth);
-}
-
-function interpolateVector(
-  before: [number, number, number],
-  start: [number, number, number],
-  end: [number, number, number],
-  after: [number, number, number],
-  progress: number,
-  smooth: boolean
-): [number, number, number] {
-  return [0, 1, 2].map((axis) =>
-    interpolateScalar(
-      before[axis]!,
-      start[axis]!,
-      end[axis]!,
-      after[axis]!,
-      progress,
-      smooth
-    )
-  ) as [number, number, number];
-}
-
 export function sampleDirectorCameraTrack(
   keyframes: readonly ResolvedDirectorCameraKeyframe[],
   atSeconds: number
 ): DirectorCameraFrame {
-  const first = keyframes[0];
-  if (!first) {
-    return { position: [0, 1, -4], target: [0, 0, 0], fovDeg: 50, rollDeg: 0 };
-  }
-  if (keyframes.length === 1 || atSeconds <= first.atSeconds) {
-    return {
-      position: [...first.position],
-      target: [...first.target],
-      fovDeg: first.fovDeg,
-      rollDeg: first.rollDeg ?? 0,
-    };
-  }
-
-  const last = keyframes.at(-1)!;
-  if (atSeconds >= last.atSeconds) {
-    return {
-      position: [...last.position],
-      target: [...last.target],
-      fovDeg: last.fovDeg,
-      rollDeg: last.rollDeg ?? 0,
-    };
-  }
-
-  const endIndex = keyframes.findIndex((frame) => frame.atSeconds > atSeconds);
-  const startIndex = Math.max(0, endIndex - 1);
-  const start = keyframes[startIndex]!;
-  const end = keyframes[endIndex]!;
-  if (start.interpolation === "step") {
-    return {
-      position: [...start.position],
-      target: [...start.target],
-      fovDeg: start.fovDeg,
-      rollDeg: start.rollDeg ?? 0,
-    };
-  }
-
-  const duration = Math.max(0.0001, end.atSeconds - start.atSeconds);
-  const linearProgress = Math.max(
-    0,
-    Math.min(1, (atSeconds - start.atSeconds) / duration)
-  );
-  const progress = applyDirectorEasing(linearProgress, start.easing);
-  let before = keyframes[Math.max(0, startIndex - 1)] ?? start;
-  let after = keyframes[Math.min(keyframes.length - 1, endIndex + 1)] ?? end;
-  // A step keyframe is a cut: the spline on either side must not bend toward
-  // framing that belongs to a different shot.
-  if (before.interpolation === "step") before = start;
-  if (end.interpolation === "step") after = end;
-  const smooth = start.interpolation === "smooth";
-
-  return {
-    position: interpolateVector(
-      before.position,
-      start.position,
-      end.position,
-      after.position,
-      progress,
-      smooth
-    ),
-    target: interpolateVector(
-      before.target,
-      start.target,
-      end.target,
-      after.target,
-      progress,
-      smooth
-    ),
-    fovDeg: interpolateLensScalar(
-      before.fovDeg,
-      start.fovDeg,
-      end.fovDeg,
-      after.fovDeg,
-      progress,
-      smooth
-    ),
-    rollDeg: interpolateLensScalar(
-      before.rollDeg ?? 0,
-      start.rollDeg ?? 0,
-      end.rollDeg ?? 0,
-      after.rollDeg ?? 0,
-      progress,
-      smooth
-    ),
-  };
+  return sampleCameraFrame(cameraChannelsFor(keyframes), atSeconds);
 }
