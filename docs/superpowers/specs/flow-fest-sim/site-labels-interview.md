@@ -89,7 +89,8 @@ covers the whole section and is the one to use.
 | Top parking, overflow field | `T-B5` to `T-D6` (= `UP-A3` to `UP-C5`) | -185 to -55, -75 to 19 | Grass. The pad fills first, then this |
 | Mown clearing, north half | `T-C4` to `T-F4` | -185 to -20, -95 to -65 | **Nothing is programmed here.** One year it held a firewalk |
 | Treeline camping | `T-E2` `T-E3` `T-F2`, and every edge of the clearing | -80 to -10, -170 to -110 | Tents tuck into shade wherever there is an edge |
-| Workshop cabin | `T-F2` / `T-F3`, red roof | -38 to -14, -152 to -140 | A real workshop venue. **The building immediately west of it is unidentified** |
+| Workshop cabin | `T-F2`, pink roof, centred -15, -141 | -22 to -8, -147 to -136 | Workshop `W6`. Austen calls it the pink building |
+| Unidentified building | `T-E2`/`T-F2`, dark grey roof, centred -35, -140 | -43 to -28, -146 to -135 | Directly west of the cabin. Austen has never been inside it |
 | Main cabin | `T-G4` / `T-H4` (= `UP-F2` `UP-G2`) | 2 to 40, -100 to -78 | Fancy stay, indoor activities. **Not really part of the festival** |
 | Lodges and covered porch | `T-F5` (= `UP-E3` `UP-F3`) | -42 to 6, -70 to -48 | |
 | North and west woods | `T-A1` to `T-D3` | x below -60, z below -110 | **Not the festival's land.** Property line runs somewhere in there |
@@ -219,8 +220,15 @@ This is the layout constraint for the ez-tree work. See
 
 - Exact canopy, pull-off, and per-site camping spots around the loop.
 - Where exactly the abandoned stage sits, and what condition it is in.
-- The woods: which stands, which species, which density — feeds the ez-tree
-  layout. See `project_ez_tree_adoption` in memory.
+- Exact porta-potty and shower positions inside the campground and Middle
+  Earth. The zones are settled; the pins are still my picks.
+- The property line through the upper woods.
+
+**Closed 2026-09-03:** workshop locations (all seven placed), and the whole map
+as a unit. Shown the consolidated recap — every traced route, the loop, the
+fire-field amoeba, the check-in queue and nineteen labeled pins — Austen
+validated it in one pass: *"It's all about right."* Nothing in the record above
+is waiting on his confirmation any more.
 
 ## Drive-in direction
 
@@ -284,19 +292,66 @@ reminder that his zone language is about use, not about geometry.
 
 Present on site: **porta-potties** and **showers**. Austen did not name potable
 water spigots, generators, or power drops when offered them, so do not invent
-them. Neither porta-potties nor showers has a location yet — ask.
+them.
+
+**They cluster in two places only: the lower campground and Middle Earth.**
+The top parking gets none — you walk down. Exact positions within those two
+zones are still my picks, not his; the candidates currently drawn are:
+
+| Cluster | World (approx) | What it serves |
+| --- | --- | --- |
+| Middle Earth, west edge | 66, -100 | The fire field and the food vendors |
+| Campground, north arc | 266, -178 | Camping along the top of the loop |
+| Campground, south arc | 262, -79 | Camping along the bottom of the loop |
+| Campground, near the gate | 312, -101 | Arrivals and the check-in canopy |
+
+Showers ride with the Middle Earth cluster and the campground south arc. The
+other two are toilets only.
 
 ## Workshops
 
-Workshops have **specific, repeated locations**, not ad-hoc shade:
+Workshops have **specific, repeated locations**, not ad-hoc shade. **They do
+not need trees** — Austen: *"Workshops don't need shade."* They pitch their own
+canopies, so the layout must not treat a workshop spot as a reason to place a
+tree, and must not push one into the treeline to find shade.
 
-- **one near Vendor Village**
-- **four or five spread through Middle Earth** (Austen first said three, then
-  corrected upward: *"I think four or 5 might happen in Middle Earth"*)
-- **two at the top of the hill**
-- plus the **red-roof cabin** at `T-F2`/`T-F3`, which is a real workshop venue
+Seven spots, resolved 2026-09-03:
 
-Exact spots are not yet placed. They are the next thing to put on a map.
+| # | Where | World (approx) | Source |
+| --- | --- | --- | --- |
+| W1 | Middle Earth, north-west of the fire field | 72, -134 | my pick |
+| W2 | Middle Earth, north-east of the fire field | 106, -131 | my pick |
+| W3 | Middle Earth, west side by the food vendors | 61, -110 | my pick |
+| W4 | Middle Earth, south-east past the juggling tent | 110, -89 | my pick |
+| W5 | The road intersection west of the loop | 213, -95 | Austen |
+| W6 | The pink cabin | -15, -141 | Austen |
+| W7 | North of the lodges' covered porch | -27, -83 | Austen |
+
+**The Middle Earth four are mine to choose.** Austen: *"The whole thing gets
+filled doesn't really matter you can pick the spots I'll just tell you if I
+want to change."* They ring the fire field on open grass, spread to the four
+compass sides, clear of the amoeba, the queue, the food vendors, and the
+juggling tent. Treat them as placed, not provisional — he corrects rather than
+approves.
+
+**W5 is the T where the Vendor Village road meets the south-west corner of the
+loop road.** Austen: *"kind of at the left corner of the whole loop on the
+other side of Vander Village so serve at the intersection."* The junction is
+visible in the orthophoto at roughly world (215, -95).
+
+**W6 is the pink-roofed cabin**, and it is the same building as the "red roof"
+workshop cabin recorded in the Upper section table. Confirmed at 9x zoom: two
+buildings sit side by side on the north edge of the upper clearing — the west
+one has a dark grey roof and is the building Austen has never been inside, the
+east one has a distinctly rose-pink roof and is the workshop. He described it
+as *"the pink building on the north edge on the right."* That resolves the
+Upper section's open question by elimination: the unidentified building is the
+**west** one at roughly world (-35, -140).
+
+**W7 is the open lawn immediately north of the lodges and covered porch.**
+
+The count reconciles: two at the top of the hill are W6 and W7 (the cabin was
+never a separate eighth venue), four in Middle Earth, one at Vendor Village.
 
 ## Backdrop woods
 
