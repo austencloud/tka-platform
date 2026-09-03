@@ -42,6 +42,15 @@ export interface InspectionSubject {
 export interface InspectionView {
   id: string;
   label: string;
+  /**
+   * What the camera picker shows when the full label will not fit its track.
+   * The rail runs three columns wide at laptop widths, which leaves about 79px
+   * of label room per option, and `Three-quarter` needs 89px at the control's
+   * real 14px type. Abbreviating there — rather than dropping the whole rail to
+   * 12px or letting the word break across two lines — keeps the picker legible
+   * while the pane header over the viewport still carries the full name.
+   */
+  pickerLabel?: string;
   /** One line saying what this pane is for, shown under the label. */
   hint: string;
   subject: InspectionSubjectId;
@@ -113,6 +122,7 @@ export const INSPECTION_VIEWS: readonly InspectionView[] = [
   {
     id: "grip-quarter",
     label: "Three-quarter",
+    pickerLabel: "3/4",
     hint: "Arm extension and elbow position",
     subject: "grip",
     azimuthDeg: 55,

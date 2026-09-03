@@ -170,13 +170,24 @@ const RECORDER = `async ({ ms, scrollTo, click, scrollSweep }) => {
 
   const frames = [];
   const perFrameRaf = [];
+  const frameWork = [];
   let last = performance.now();
   let handle = 0;
   let stopped = false;
-  const tick = () => {
+  const tick = (ts) => {
     const now = performance.now();
     frames.push(now - last);
     last = now;
+    // Main-thread work already spent in THIS frame when our probe runs: the
+    // gap between the frame's vsync timestamp and now. This is a LOWER BOUND
+    // — it misses rAF callbacks registered after ours, and all of style,
+    // layout, and paint. It is measured because frame INTERVALS are
+    // vsync-quantized: on a 60Hz panel every healthy frame reads ~16.7ms no
+    // matter how cheap the work was, so intervals alone cannot answer whether
+    // the page would hold 120Hz. Work can. Asymmetric evidence: work already
+    // over the budget disproves headroom outright; work under it is
+    // suggestive, not proof.
+    if (typeof ts === 'number') frameWork.push(now - ts);
     perFrameRaf.push(rafCount);
     rafCount = 0;
     if (!stopped) handle = nativeRaf(tick);
@@ -214,6 +225,8 @@ const RECORDER = `async ({ ms, scrollTo, click, scrollSweep }) => {
   const sorted = f.slice().sort((a, b) => a - b);
   const q = (p) => sorted.length ? +sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))].toFixed(1) : 0;
   const rs = r.slice().sort((a, b) => a - b);
+  const ws = frameWork.slice(2).sort((a, b) => a - b);
+  const wq = (p) => ws.length ? +ws[Math.min(ws.length - 1, Math.floor(ws.length * p))].toFixed(1) : 0;
 
   const allCanvases = Array.from(document.querySelectorAll('canvas'));
   const canvases = allCanvases.length;
@@ -232,6 +245,7 @@ const RECORDER = `async ({ ms, scrollTo, click, scrollSweep }) => {
       median: rs.length ? rs[Math.floor(rs.length / 2)] : 0,
       max: rs.length ? rs[rs.length - 1] : 0
     },
+    work: { median: wq(0.5), p95: wq(0.95), worst: wq(1) },
     longTasks: longTasks.sort((a, b) => b.duration - a.duration).slice(0, 8),
     longTaskCount: longTasks.length,
     longTaskTotalMs: longTasks.reduce((a, b) => a + b.duration, 0),
@@ -353,6 +367,10 @@ function fmt(pass, interval) {
     `  ${mark}  ${pass.name}` +
       (pass.settled ? ` · settled in ${(pass.settled.ms / 1000).toFixed(1)}s` : ""),
     `        ${fps} fps · median ${r.median}ms · p95 ${r.p95}ms · worst ${r.worst}ms`,
+    r.work
+      ? `        work/frame median ${r.work.median}ms · p95 ${r.work.p95}ms` +
+        ` (lower bound; ${r.work.p95 > 8.3 ? "no" : "possible"} 120Hz headroom)`
+      : null,
     `        rAF loops/frame ${r.rafPerFrame.median} (max ${r.rafPerFrame.max}) · ` +
       `long tasks ${r.longTaskCount} totalling ${r.longTaskTotalMs}ms · canvases ${r.canvases ?? 0} (${r.contentCanvases ?? 0} content)`,
     r.longTasks.length
@@ -389,9 +407,13 @@ async function main() {
     );
     // Measure the display BEFORE the page and before any CPU throttle, while
     // the tab is still blank — that is the only moment the reading is clean.
+    // Always measure the real panel, even when --hz pins the budget: the two
+    // together are what makes an override honest to read (see the warning
+    // printed below when the override outruns the hardware).
+    const realInterval = await measureDisplayInterval(ws, sessionId);
     const interval = HZ_OVERRIDE
       ? snapToRefreshRate(1000 / HZ_OVERRIDE)
-      : await measureDisplayInterval(ws, sessionId);
+      : realInterval;
 
     if (CPU_THROTTLE > 1) {
       await send(ws, "Emulation.setCPUThrottlingRate", { rate: CPU_THROTTLE }, sessionId);
@@ -461,6 +483,19 @@ async function main() {
         `  viewport ${VIEWPORT[0]}x${VIEWPORT[1]}` +
         (CPU_THROTTLE > 1 ? `  CPU ${CPU_THROTTLE}x slowdown` : "")
     );
+    // An override faster than the panel cannot be judged by frame INTERVALS.
+    // rAF fires on vsync, so on a 60Hz display every healthy frame measures
+    // ~16.7ms however cheap the work was — a median "over budget" here is the
+    // hardware talking, not the page. Read work/frame on each pass instead.
+    if (HZ_OVERRIDE && interval < realInterval - 0.5) {
+      console.log(
+        `  NOTE: budget pinned to ${HZ_OVERRIDE}Hz on a ${Math.round(1000 / realInterval)}Hz panel.` +
+          ` Frame intervals are vsync-quantized and CANNOT clear it — judge these`
+      );
+      console.log(
+        `        passes by work/frame, which is the part that transfers to a faster display.`
+      );
+    }
     console.log(
       liveness.live
         ? `  content settled after ${(liveness.ms / 1000).toFixed(1)}s — ${liveness.contentCanvases} content canvases`
