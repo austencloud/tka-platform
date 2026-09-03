@@ -76,7 +76,9 @@ CC0 is the only ship-clean license (Poly Haven HDRIs + scenes, Quaternius,
 Kenney are CC0 and GLB-ready). CC-BY needs attribution; CC-BY-NC/ND are off
 limits for the commercial app. Any non-low-poly external asset still owes a
 Blender pass (decimate, bake, KTX2, re-origin) before it meets the mobile
-WebGL budget — route it through the pipeline above.
+WebGL budget — route it through the pipeline above. That budget is VRAM and poly
+count. KTX2 is **not** a load-time fix: texture decode plus upload measured 179 ms
+of a 7,700 ms scene boot (`docs/architecture/scene-boot-cost.md`).
 
 ## Related
 
