@@ -498,11 +498,14 @@ describe("Flow Fest per-instance species seam", () => {
       { speciesPlan }
     );
 
-    // The plan is asked about every tree, measured peak and infill alike.
-    expect(queries).toHaveLength(ecology.trees.length);
+    // The plan is asked about every tree it could have an opinion on: measured
+    // peak, infill, and the backdrop woodland beyond the property line.
+    expect(queries).toHaveLength(
+      ecology.trees.length + ecology.backdropTrees.length
+    );
     expect(ecology.audit.sourceTreeFamilies).toBe(1);
     expect(ecology.audit.sourceTreeSpecies).toBe(1);
-    for (const tree of ecology.trees) {
+    for (const tree of [...ecology.trees, ...ecology.backdropTrees]) {
       expect(tree.familyId).toBe("eztree-white-oak-open-a");
       expect(tree.trunkHeightMeters).toBeCloseTo(4.25, 6);
     }
@@ -833,5 +836,58 @@ describe("Flow Fest per-tree instance tints", () => {
       expect(bark.r).toBeGreaterThan(0.8);
       expect(bark.r).toBeLessThan(1.15);
     }
+  });
+});
+
+describe("Flow Fest backdrop woodland", () => {
+  it("plants the measured woods outside the site and keeps them off the venue", () => {
+    const { contract, terrain, canopy } = loadCanopy();
+    const first = deriveFlowFestForestEcology(contract, terrain, canopy);
+    const second = deriveFlowFestForestEcology(contract, terrain, canopy);
+    const active = contract.surfaceEvidenceProxy.activeBoundsWorldMeters;
+
+    // The horizon read as bare tan hills because every pass sampled only the
+    // site. A backdrop thinner than the site's own tree count would not close
+    // it, so this floor is the defect's regression guard, not a tuning knob.
+    expect(first.backdropTrees.length).toBeGreaterThan(first.trees.length);
+    expect(first.audit.backdropTreePlacements).toBe(first.backdropTrees.length);
+    expect(first.backdropTrees).toEqual(second.backdropTrees);
+
+    for (const tree of first.backdropTrees) {
+      const insideSite =
+        tree.x >= active.minX &&
+        tree.x <= active.maxX &&
+        tree.z >= active.minZ &&
+        tree.z <= active.maxZ;
+      expect(insideSite).toBe(false);
+      expect(tree.x).toBeGreaterThanOrEqual(terrain.worldBounds.minX);
+      expect(tree.x).toBeLessThanOrEqual(terrain.worldBounds.maxX);
+      expect(tree.z).toBeGreaterThanOrEqual(terrain.worldBounds.minZ);
+      expect(tree.z).toBeLessThanOrEqual(terrain.worldBounds.maxZ);
+    }
+
+    // The site pass owns the venue and is unchanged by the backdrop pass.
+    for (const tree of first.trees) {
+      expect(tree.x).toBeGreaterThanOrEqual(active.minX);
+      expect(tree.x).toBeLessThanOrEqual(active.maxX);
+      expect(tree.z).toBeGreaterThanOrEqual(active.minZ);
+      expect(tree.z).toBeLessThanOrEqual(active.maxZ);
+    }
+  });
+
+  it("spreads the backdrop across more than one quarter of the raster", () => {
+    const { contract, terrain, canopy } = loadCanopy();
+    const { backdropTrees } = deriveFlowFestForestEcology(
+      contract,
+      terrain,
+      canopy
+    );
+    // A backdrop bunched against one edge would leave the other horizons bare
+    // and still satisfy a count. Every quadrant of the measured square has
+    // woodland in it, so every quadrant should carry trees.
+    const quadrants = new Set(
+      backdropTrees.map((tree) => `${tree.x < 0 ? "w" : "e"}${tree.z < 0 ? "n" : "s"}`)
+    );
+    expect(quadrants.size).toBe(4);
   });
 });

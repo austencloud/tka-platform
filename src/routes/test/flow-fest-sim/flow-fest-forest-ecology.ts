@@ -338,6 +338,16 @@ export interface FlowFestForestGroundLifePlacement {
 
 export interface FlowFestForestEcologyLayout {
   trees: FlowFestForestTreePlacement[];
+  /**
+   * The measured woodland OUTSIDE the site, kept in its own list.
+   *
+   * These render through the same distance tiers as the site trees, so walking
+   * toward the property line does not reveal a wall of far-tier cards. They are
+   * separate because everything that treats a tree as part of the venue reads
+   * `trees`: collision bodies, leaf litter on the ground surface, and the
+   * entrance-fixture clearance. Scenery a kilometre out earns none of that.
+   */
+  backdropTrees: FlowFestForestTreePlacement[];
   grass: FlowFestForestGrassPlacement[];
   groundLife: FlowFestForestGroundLifePlacement[];
   audit: {
@@ -348,6 +358,7 @@ export interface FlowFestForestEcologyLayout {
     sourceTreeSpecies: number;
     measuredCanopyPlacements: number;
     infillTreePlacements: number;
+    backdropTreePlacements: number;
     grassPlacements: number;
     groundLifePlacements: number;
   };
@@ -431,6 +442,12 @@ export function deriveFlowFestForestEcology(
   const measuredCanopyPlacements = trees.length;
   appendCanopyInfillTrees(contract, terrain, canopy, routes, trees, speciesPlan);
   const infillTreePlacements = trees.length - measuredCanopyPlacements;
+  const backdropTrees = deriveBackdropTrees(
+    contract,
+    terrain,
+    canopy,
+    speciesPlan
+  );
 
   const grass: FlowFestForestGrassPlacement[] = [];
   const groundLife: FlowFestForestGroundLifePlacement[] = [];
@@ -511,6 +528,7 @@ export function deriveFlowFestForestEcology(
 
   return {
     trees,
+    backdropTrees,
     grass,
     groundLife,
     audit: {
@@ -544,10 +562,73 @@ export function deriveFlowFestForestEcology(
       ).size,
       measuredCanopyPlacements,
       infillTreePlacements,
+      backdropTreePlacements: backdropTrees.length,
       grassPlacements: grass.length,
       groundLifePlacements: groundLife.length,
     },
   };
+}
+
+const BACKDROP_MINIMUM_SPACING_METERS = 10;
+
+/**
+ * The measured woodland beyond the property line.
+ *
+ * Austen, 2026-09-03: "when I look off of the land the trees are nonexistent."
+ * The land was never bare — the LiDAR canopy raster covers a full square
+ * kilometre and 38.9% of its samples outside the site clear the tall-canopy
+ * threshold, against 43.8% inside. Only the site was ever sampled, because
+ * every ecology pass reads `activeBoundsWorldMeters`. This one reads the whole
+ * raster and subtracts the window the site pass already covered.
+ *
+ * Spacing is looser than the site's 7.5 m because these trees exist to close
+ * the horizon, not to be walked through: the nearest is 150 m from anywhere a
+ * player stands, and the ridge lines read as continuous canopy well before the
+ * stems resolve. Registered routes and zones are not consulted — none of them
+ * reach out here, and the per-sample segment distance is what makes the site
+ * pass expensive.
+ */
+function deriveBackdropTrees(
+  contract: FlowFestRuntimeContract,
+  terrain: ImportedTerrainDataV2,
+  canopy: FlowFestCanopyEvidence,
+  speciesPlan: FlowFestTreeSpeciesPlan | null
+): FlowFestForestTreePlacement[] {
+  return deriveFlowFestCanopyPeaks(contract, terrain, canopy, {
+    bounds: terrain.worldBounds,
+    excludeBounds: contract.surfaceEvidenceProxy.activeBoundsWorldMeters,
+    minimumSpacingMeters: BACKDROP_MINIMUM_SPACING_METERS,
+    avoidRegisteredSurfaces: false,
+  }).map((peak, index) => {
+    const rng = makeRng(
+      childSeed(FLOW_FEST_MASTER_SEED, `forest-backdrop:${peak.x}:${peak.z}`)
+    );
+    const renderedHeightMeters = clamp(
+      peak.measuredHeightMeters * (0.62 + rng() * 0.08),
+      7.5,
+      19
+    );
+    const groundY = sampleFlowFestTerrainWorldY(terrain, peak.x, peak.z);
+    const cast = castTreeFamily({
+      speciesPlan,
+      index,
+      x: peak.x,
+      z: peak.z,
+      groundY,
+      renderedHeightMeters,
+      neighborhoodHighReturnRatio: peak.neighborhoodHighReturnRatio,
+      rng,
+    });
+    return buildTreePlacement(
+      peak.x,
+      groundY,
+      peak.z,
+      peak.measuredHeightMeters,
+      renderedHeightMeters,
+      cast,
+      rng
+    );
+  });
 }
 
 function buildTreePlacement(

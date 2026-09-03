@@ -86,6 +86,13 @@
     type FlowFestEntranceReferenceRequest,
   } from "./flow-fest-entrance-reference";
   import type { FlowFestProductionDressing } from "./flow-fest-production-geometry";
+  import {
+    flowFestViewLinkUrl,
+    flowFestViewPoseChanged,
+    formatFlowFestViewCoordinates,
+    parseFlowFestViewLink,
+    type FlowFestViewPose,
+  } from "./flow-fest-view-link";
   import { getFlowFestVehicleStagePoint } from "./flow-fest-site-fidelity";
   import {
     getFlowFestVisualProfile,
@@ -152,6 +159,29 @@
     z: FLOW_FEST_LOWER_CHECK_IN.z,
   });
   let listenerYaw = $state(0);
+  const initialViewLink = parseFlowFestViewLink(initialSearch);
+  // The entrance reference cameras plus, when the link carried one, the exact
+  // viewpoint it named. Registering it as a review camera rather than adding a
+  // second teleport path means a shared link arrives through the same code that
+  // places every other camera in this route.
+  const reviewCameras = initialViewLink
+    ? [...FLOW_FEST_ENTRANCE_REVIEW_CAMERAS, initialViewLink]
+    : FLOW_FEST_ENTRANCE_REVIEW_CAMERAS;
+  // Live camera eye, mirrored outside `$state` for the same reason the audio
+  // listener below is: it lands every frame, and nothing renders from it at
+  // that rate. The readout and the URL both refresh from a 4 Hz tick.
+  const viewPose: FlowFestViewPose = {
+    x: FLOW_FEST_LOWER_CHECK_IN.x,
+    y: 13.7,
+    z: FLOW_FEST_LOWER_CHECK_IN.z,
+    yawRadians: 0,
+    pitchRadians: 0,
+    horizontalFovDegrees: 65,
+  };
+  let publishedViewPose: FlowFestViewPose | null = null;
+  let viewPoseReported = false;
+  let viewpointCoordinates = $state("");
+  let viewpointHref = $state("");
   // The audio tick reads its own non-reactive mirror of the listener. Reading
   // `position` inside an effect would re-run the whole audio path at render
   // rate; the field only needs a 20 Hz control tick, and everything smoother
@@ -504,6 +534,30 @@
     stageToken += 1;
   }
 
+  function handleCameraPose(pose: FlowFestViewPose): void {
+    Object.assign(viewPose, pose);
+    viewPoseReported = true;
+  }
+
+  /**
+   * Mirror the live camera into `?cam=&look=&fov=` so the address bar always
+   * describes the frame on screen, and a copied link reopens it.
+   *
+   * Raw `history.replaceState` on purpose, matching `EnvironmentReviewCamera`:
+   * routing this through SvelteKit would republish `page.url`, and anything
+   * reading the query back would re-place the camera at the rounded pose on
+   * every write.
+   */
+  function publishViewpoint(): void {
+    if (!browser || fixedReviewEnabled || !viewPoseReported) return;
+    if (!flowFestViewPoseChanged(publishedViewPose, viewPose)) return;
+    publishedViewPose = { ...viewPose };
+    viewpointCoordinates = formatFlowFestViewCoordinates(viewPose);
+    const url = flowFestViewLinkUrl(new URL(window.location.href), viewPose);
+    viewpointHref = url.href;
+    window.history.replaceState(window.history.state, "", url);
+  }
+
   function handlePlayerPosition(nextPosition: {
     x: number;
     y: number;
@@ -664,9 +718,11 @@
     gate6Capture = gate6Review && search.get("capture") === "1";
     const performanceTimer = window.setInterval(refreshGate5Performance, 500);
     const audioTimer = window.setInterval(pumpSiteAudio, 50);
+    const viewpointTimer = window.setInterval(publishViewpoint, 250);
     return () => {
       window.clearInterval(performanceTimer);
       window.clearInterval(audioTimer);
+      window.clearInterval(viewpointTimer);
       mobility.destroy();
       fieldPositioning.destroy();
       fireJamSoundscape.dispose();
@@ -978,6 +1034,14 @@
       sendCamera(reviewCamera.id);
       return;
     }
+    if (initialViewLink) {
+      // An explicit viewpoint outranks the phase-staged cameras below. The
+      // link exists to put someone at one specific spot, and letting the night
+      // composition win would silently discard the coordinates it carried.
+      initialCameraApplied = true;
+      sendCamera(initialViewLink.id);
+      return;
+    }
     if (gate4Review) {
       // The Gate 4 slice starts on the wheel at the fire-jam approach. Reusing
       // the night composition camera here would silently teleport the rider
@@ -1217,7 +1281,7 @@
           {resetToken}
           {cameraToken}
           {cameraId}
-          externalReviewCameras={FLOW_FEST_ENTRANCE_REVIEW_CAMERAS}
+          externalReviewCameras={reviewCameras}
           {stageToken}
           {stagePosition}
           {selectedBranch}
@@ -1247,6 +1311,7 @@
             listenerYaw = yaw;
             audioListener.yawRadians = yaw;
           }}
+          onCameraPoseChange={handleCameraPose}
           onElectricUnicycleChange={(update) => mobility.applyRuntime(update)}
           onError={(message) => (error = message)}
         />
@@ -1374,6 +1439,8 @@
       {selectedBranch}
       {position}
       headingRadians={listenerYaw}
+      {viewpointCoordinates}
+      {viewpointHref}
       {targetZone}
       targetDistance={objectiveDistance}
       currentArea={integratedJourney?.currentArea ?? integratedArea}

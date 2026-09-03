@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import type { FlowFestIntegratedAreaId } from "$lib/features/flow-fest-sim/domain/flow-fest-integrated-world";
   import type { FlowFestMobilityRuntimeUpdate } from "$lib/features/flow-fest-sim/state/flow-fest-mobility-state.svelte";
@@ -27,6 +28,10 @@
     selectedBranch: FlowFestBranchId;
     position: { x: number; z: number };
     headingRadians: number;
+    /** Live camera eye as `x, y, z` metres, or empty before the first report. */
+    viewpointCoordinates: string;
+    /** Absolute link that reopens the sim on this exact viewpoint. */
+    viewpointHref: string;
     targetZone: FlowFestRuntimeZone | null;
     targetDistance: number | null;
     currentArea: FlowFestIntegratedAreaId | "loading";
@@ -57,6 +62,8 @@
     selectedBranch,
     position,
     headingRadians,
+    viewpointCoordinates,
+    viewpointHref,
     targetZone,
     targetDistance,
     currentArea,
@@ -79,6 +86,29 @@
   }: Props = $props();
 
   let guideOpen = $state(false);
+  // Transient copy feedback. The button is full-width inside a fixed-width
+  // card, so swapping its label cannot move anything around it.
+  let copyState = $state<"idle" | "copied" | "failed">("idle");
+  let copyResetTimer: ReturnType<typeof setTimeout> | null = null;
+
+  async function copyViewpointLink(): Promise<void> {
+    if (!viewpointHref) return;
+    try {
+      await navigator.clipboard.writeText(viewpointHref);
+      copyState = "copied";
+    } catch {
+      // The address bar already carries the same link, so a blocked clipboard
+      // costs a manual copy rather than the viewpoint. Say so instead of
+      // reporting a success that did not happen.
+      copyState = "failed";
+    }
+    if (copyResetTimer) clearTimeout(copyResetTimer);
+    copyResetTimer = setTimeout(() => (copyState = "idle"), 2200);
+  }
+
+  onDestroy(() => {
+    if (copyResetTimer) clearTimeout(copyResetTimer);
+  });
   const campPlan = $derived(
     contract ? createFlowFestCampPlan(contract, selectedBranch) : null
   );
@@ -114,6 +144,23 @@
     {currentArea}
     {location}
   />
+
+  <div class="viewpoint-card">
+    <span>Viewpoint</span>
+    <strong>{viewpointCoordinates || "—"}</strong>
+    <ActionButton
+      label={copyState === "copied"
+        ? "Link copied"
+        : copyState === "failed"
+          ? "Copy blocked"
+          : "Copy view link"}
+      icon="fa-link"
+      color="theme"
+      fullWidth
+      ariaDisabled={!viewpointHref}
+      onclick={() => void copyViewpointLink()}
+    />
+  </div>
 </div>
 
 {#if ready && location}
@@ -290,11 +337,41 @@
   .map-dock {
     --festival-map-width: clamp(20rem, 25vw, 28rem);
     position: absolute;
+    display: grid;
+    gap: 0.55rem;
+    justify-items: stretch;
     inset-block-start: clamp(0.75rem, 1.4vw, 1.5rem);
     inset-inline-end: clamp(0.75rem, 1.4vw, 1.5rem);
     z-index: 33;
     transform: scale(var(--sim-ui-scale));
     transform-origin: top right;
+  }
+
+  .viewpoint-card {
+    display: grid;
+    gap: 0.3rem;
+    inline-size: var(--festival-map-width);
+    padding: 0.55rem 0.7rem 0.7rem;
+    border: 1px solid var(--sim-stroke);
+    border-radius: 0.8rem;
+    color: var(--sim-text);
+    background: var(--sim-panel-strong);
+    box-shadow: 0 1.2rem 3rem rgba(2, 7, 4, 0.28);
+  }
+
+  .viewpoint-card span {
+    color: var(--sim-accent);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 820;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .viewpoint-card strong {
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 700;
+    /* The digits change constantly; tabular figures keep the line still. */
+    font-variant-numeric: tabular-nums;
   }
 
   .location-cue {
@@ -611,6 +688,18 @@
     }
 
     .mobility-prompt {
+      display: none;
+    }
+  }
+
+  /*
+   * The viewpoint readout is a desk-side review tool. Below these sizes the map
+   * dock is already down to 11rem and the mobility card has moved under it, so
+   * the card would either overlap or wrap its own button. The address bar still
+   * carries the link on every viewport; only the shortcut to it goes away.
+   */
+  @media (max-width: 46rem), (max-height: 31rem) {
+    .viewpoint-card {
       display: none;
     }
   }
