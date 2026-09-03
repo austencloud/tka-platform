@@ -40,6 +40,8 @@
   import type { FlowFestFireJamSoundscapeSnapshot } from "$lib/features/flow-fest-sim/services/contracts/IFlowFestFireJamSoundscape";
   import {
     FLOW_FEST_GAMEPLAY_JUMP_FORCE,
+    FLOW_FEST_GAMEPLAY_GROUND_ACCELERATION_METERS_PER_SECOND_SQUARED,
+    FLOW_FEST_GAMEPLAY_GROUND_DECELERATION_METERS_PER_SECOND_SQUARED,
     FLOW_FEST_GAMEPLAY_SPRINT_MULTIPLIER,
     FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND,
   } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
@@ -1288,6 +1290,8 @@
           hostMode="chunked"
           moveSpeedMetersPerSecond={FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND}
           sprintMultiplier={FLOW_FEST_GAMEPLAY_SPRINT_MULTIPLIER}
+          groundAccelerationMetersPerSecondSquared={FLOW_FEST_GAMEPLAY_GROUND_ACCELERATION_METERS_PER_SECOND_SQUARED}
+          groundDecelerationMetersPerSecondSquared={FLOW_FEST_GAMEPLAY_GROUND_DECELERATION_METERS_PER_SECOND_SQUARED}
           jumpForce={FLOW_FEST_GAMEPLAY_JUMP_FORCE}
           enableSprint={true}
           enableJump={true}

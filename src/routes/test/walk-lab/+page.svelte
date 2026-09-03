@@ -44,6 +44,7 @@
   } from "$lib/shared/3d/state/character-instance-state.svelte";
   import GaitProbe from "$lib/shared/3d/diagnostics/gait/GaitProbe.svelte";
   import GaitOverlay from "$lib/shared/3d/diagnostics/gait/GaitOverlay.svelte";
+  import type { GaitManeuverProfile } from "$lib/shared/3d/diagnostics/gait/gait-verdicts";
   import { gaitProbeState } from "$lib/shared/3d/diagnostics/gait/gait-probe-state.svelte";
   import {
     WALK_PATTERNS,
@@ -217,15 +218,6 @@
     walkPattern(isExactMark ? WALK_PATTERNS[0]!.id : patternId)
   );
   const isManual = $derived(patternId === MANUAL);
-  const gaitManeuver = $derived(
-    patternId === "pivot"
-      ? "turn-in-place"
-      : patternId === "sidestep"
-        ? "lateral"
-        : patternId === "grapevine"
-          ? "crossover"
-          : "walk"
-  );
   const lateralGait: LateralGait = $derived(
     patternId === "grapevine" ? "grapevine" : "sidestep"
   );
@@ -268,6 +260,40 @@
     terminalStepPlan: null,
   });
   let gaitClock = $state<LocomotionGaitClock | null>(null);
+  /**
+   * Which clips the pose is actually made of. The animator crosses from the
+   * walk set to the run set over a band derived from the two clips' own
+   * measured speeds, so the honest readout is a blend percentage rather than a
+   * label that flips at some threshold.
+   */
+  const gaitTierLabel = $derived.by(() => {
+    const tier = gaitClock?.tier ?? 0;
+    if (tier <= 0.01) return "walk";
+    if (tier >= 0.99) return "run";
+    return `blend ${(tier * 100).toFixed(0)}%`;
+  });
+  /**
+   * Which set of human norms the probe grades against.
+   *
+   * The first three come from the pattern, because a pivot or a grapevine is
+   * that maneuver at any speed. Running is not: it is a property of how fast
+   * the body is actually going, so it comes from the animator's own tier
+   * rather than from a pattern name. Half is the crossover because that is
+   * where the pose stops being mostly walk clips and starts being mostly run
+   * ones - and the profile has to follow the pose, since the whole point is
+   * grading what is on screen.
+   */
+  const gaitManeuver = $derived<GaitManeuverProfile>(
+    patternId === "pivot"
+      ? "turn-in-place"
+      : patternId === "sidestep"
+        ? "lateral"
+        : patternId === "grapevine"
+          ? "crossover"
+          : (gaitClock?.tier ?? 0) >= 0.5
+            ? "run"
+            : "walk"
+  );
   let gaitTimingSample = $state<ScheduledGaitTimingSample | null>(null);
   let departureGaitStep = $state<number | null>(null);
   const destinationTerminalStepPlan = $derived<TerminalStepPlan | null>(
@@ -573,6 +599,7 @@
   data-gait-step={gaitClock?.step ?? -1}
   data-gait-distance-step={gaitClock?.distanceStep ?? -1}
   data-gait-cadence={gaitClock?.cadence ?? -1}
+  data-gait-tier={gaitClock?.tier ?? -1}
 >
   <div class="stage">
     <Canvas shadows>
@@ -721,6 +748,10 @@
         <div>
           <dt>covered</dt>
           <dd>{walk.travelled.toFixed(1)} m</dd>
+        </div>
+        <div>
+          <dt>gait</dt>
+          <dd>{gaitTierLabel}</dd>
         </div>
         {#if isExactMark}
           <div>
@@ -885,13 +916,17 @@
       {:else}
         <label class="slider">
           <span class="slider-label">Speed</span>
+          <!-- The top of the range has to clear the run tier's crossover
+               (the walk clip's 1.52 m/s x 1.15, up to the run clip's 3.10 m/s
+               x 0.8) or this page cannot show the gait it is here to judge.
+               4 m/s puts the far end squarely in a run. -->
           <input
             type="range"
             min="0.15"
-            max="1.8"
+            max="4"
             step="0.05"
             bind:value={speed}
-            aria-label="Commanded walking speed in metres per second"
+            aria-label="Commanded ground speed in metres per second"
           />
           <output>{speed.toFixed(2)} m/s</output>
         </label>
