@@ -1,7 +1,7 @@
 # Film Director Channel Architecture Design
 
 Date: 2026-09-02
-Status: **Proposed** — not started. Supersedes nothing yet; the current camera
+Status: **Proposed**, not started. Evidence re-verified 2026-09-02 23:11; no decision changed, D1 and D4 gained external support. Supersedes nothing yet; the current camera
 model stays shipped until phase 1 lands.
 
 Research backing every decision here:
@@ -78,6 +78,24 @@ and must now convert that point to yaw and pitch. That is one inverse
 trigonometric step, and it makes tracking a correction on aim rather than a
 displacement of a target point, which is more correct.
 
+**Prior art, added 2026-09-02 after re-verification.** The New York Times ships
+a three.js `CameraRig` in
+[three-story-controls](https://nytimes.github.io/three-story-controls/) that
+decomposes camera motion into six independently named axes with rotation stored
+separately from translation: pan rotates Y, tilt rotates X, roll rotates Z,
+pedestal translates Y, truck translates X, dolly translates Z. A production
+newsroom reached the same conclusion this decision reaches. Take the axis model
+as validation; do not take the dependency, because that rig has no layering, no
+corrections, and no per-axis curves.
+
+**Consequence to schedule, not to defer silently.** That table is the film
+vocabulary and TKA's move set does not match it: TKA has `pan` but no `tilt`,
+says `push-in` / `pull-back` where the industry says `dolly`, and has no
+`pedestal`. `tilt` is the one that matters, because it is unsayable today for
+exactly the reason this decision fixes. [CinemaTraj](https://arxiv.org/abs/2607.26910v1)
+(2026-07-29) also lists tilt among its seven atomic movements. Adding `tilt` to
+`DirectorCameraMove` belongs in the phase that lands D1, not in a later cleanup.
+
 ### D2. Layers compose by copy-on-write per channel.
 
 Four layers, evaluated bottom to top:
@@ -124,6 +142,14 @@ raw values from its correction channel.
   correction needs one. YAGNI. Recorded in the canon's open questions if a
   proportional lens correction ever appears.
 
+- *Open rather than rejected: a parameter optimizer instead of an additive
+  correction.* CinemaTraj handles collision and occlusion by refining a move's
+  own free parameters with gradient descent on a signed distance field, rather
+  than adding a delta after composition. That is a real alternative for one
+  correction type. It stays open because TKA has no SDF and no collision
+  requirement; if collision ever becomes a requirement, decide it then instead
+  of assuming the additive form covers it.
+
 This also retires two workarounds: `camera.handheld` and `camera.tracking` stop
 being optional fields bolted to the resolved camera and become corrections,
 which is what they always were.
@@ -149,6 +175,12 @@ This gives the three properties that matter:
   it makes manual override ambiguous, because a dragged key would have to
   compete with a live generator rather than with stored data. It also makes the
   snapshot gate harder to hold at exactly the moment the gate is most valuable.
+
+**External support, added 2026-09-02.** CinemaTraj has an LLM agent decompose a
+prompt into atomic cinematographic movements, each instantiated as a parametric
+trajectory that remains optimizable afterward rather than being collapsed into a
+path. Two independent designs arriving at a persistent parametric move is a
+better argument for this decision than the reasoning above on its own.
 
 ### D5. Add `bezier` as a fourth interpolation. Keep the existing three.
 
