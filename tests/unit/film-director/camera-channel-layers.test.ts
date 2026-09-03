@@ -97,13 +97,19 @@ describe("channel addresses", () => {
 
 describe("the manual layer owns a channel outright", () => {
   it("replaces its own scalar", () => {
-    const store = buildCameraChannels(KEYFRAMES, manualHeight(9));
+    const store = buildCameraChannels({
+      base: KEYFRAMES,
+      manual: manualHeight(9),
+    });
     expect(sampleCameraFrame(store, 1).position[1]).toBeCloseTo(9, 9);
   });
 
   it("leaves every other channel sampling out of the layer below", () => {
-    const base = buildCameraChannels(KEYFRAMES);
-    const layered = buildCameraChannels(KEYFRAMES, manualHeight(9));
+    const base = buildCameraChannels({ base: KEYFRAMES });
+    const layered = buildCameraChannels({
+      base: KEYFRAMES,
+      manual: manualHeight(9),
+    });
     for (let step = 0; step <= 8; step += 1) {
       const at = (step / 8) * 4;
       const before = sampleCameraFrame(base, at);
@@ -116,38 +122,56 @@ describe("the manual layer owns a channel outright", () => {
   });
 
   it("resolves to the manual channel rather than the base one", () => {
-    const store = buildCameraChannels(KEYFRAMES, manualHeight(9));
+    const store = buildCameraChannels({
+      base: KEYFRAMES,
+      manual: manualHeight(9),
+    });
     expect(resolveChannel(store, "camera.position.y")!.keys).toHaveLength(1);
     expect(resolveChannel(store, "camera.position.x")!.keys).toHaveLength(3);
   });
 
   it("ignores a channel that states no keys, which owns nothing", () => {
-    const store = buildCameraChannels(KEYFRAMES, [
-      { id: "camera.position.y", keys: [] },
-    ]);
+    const store = buildCameraChannels({
+      base: KEYFRAMES,
+      manual: [{ id: "camera.position.y", keys: [] }],
+    });
     expect(resolveChannel(store, "camera.position.y")!.keys).toHaveLength(3);
   });
 
   it("sorts keys it was handed out of order", () => {
-    const store = buildCameraChannels(KEYFRAMES, [
-      {
-        id: "camera.lens.fov",
-        keys: [
-          { atSeconds: 3, value: 80, interpolation: "smooth", easing: "linear" },
-          { atSeconds: 1, value: 30, interpolation: "smooth", easing: "linear" },
-        ],
-      },
-    ]);
-    expect(resolveChannel(store, "camera.lens.fov")!.keys.map((key) => key.t))
-      .toEqual([1, 3]);
+    const store = buildCameraChannels({
+      base: KEYFRAMES,
+      manual: [
+        {
+          id: "camera.lens.fov",
+          keys: [
+            {
+              atSeconds: 3,
+              value: 80,
+              interpolation: "smooth",
+              easing: "linear",
+            },
+            {
+              atSeconds: 1,
+              value: 30,
+              interpolation: "smooth",
+              easing: "linear",
+            },
+          ],
+        },
+      ],
+    });
+    expect(
+      resolveChannel(store, "camera.lens.fov")!.keys.map((key) => key.t)
+    ).toEqual([1, 3]);
   });
 });
 
 describe("seeding is copy-on-write", () => {
   it("promoting a channel and changing nothing changes nothing", () => {
-    const base = buildCameraChannels(KEYFRAMES);
+    const base = buildCameraChannels({ base: KEYFRAMES });
     const seeded = seedManualChannel(base, "camera.position.x");
-    const promoted = buildCameraChannels(KEYFRAMES, [seeded]);
+    const promoted = buildCameraChannels({ base: KEYFRAMES, manual: [seeded] });
     for (let step = 0; step <= 40; step += 1) {
       const at = (step / 40) * 4;
       expect(sampleCameraFrame(promoted, at).position[0]).toBeCloseTo(
@@ -158,14 +182,22 @@ describe("seeding is copy-on-write", () => {
   });
 
   it("seeds from what composed underneath, not from the bottom layer", () => {
-    const layered = buildCameraChannels(KEYFRAMES, manualHeight(9));
+    const layered = buildCameraChannels({
+      base: KEYFRAMES,
+      manual: manualHeight(9),
+    });
     expect(seedManualChannel(layered, "camera.position.y").keys).toEqual([
-      { atSeconds: 0, value: 9, interpolation: "smooth", easing: "ease-in-out" },
+      {
+        atSeconds: 0,
+        value: 9,
+        interpolation: "smooth",
+        easing: "ease-in-out",
+      },
     ]);
   });
 
   it("seeds an unowned channel as one honest key at zero", () => {
-    const empty = buildCameraChannels([]);
+    const empty = buildCameraChannels({ base: [] });
     expect(seedManualChannel(empty, "camera.lens.fov", 50).keys).toEqual([
       {
         atSeconds: 0,
@@ -182,7 +214,7 @@ describe("seeding is copy-on-write", () => {
       KEYFRAMES[1]!,
     ];
     const seeded = seedManualChannel(
-      buildCameraChannels(cut),
+      buildCameraChannels({ base: cut }),
       "camera.position.x"
     );
     expect(seeded.keys[0]!.interpolation).toBe("step");
@@ -199,26 +231,44 @@ describe("hand-keying the aim direction", () => {
    * dragging a pan key would appear to do nothing at all.
    */
   it("takes effect, which means the yaw is what steers the target", () => {
-    const store = buildCameraChannels(KEYFRAMES, [
-      {
-        id: "camera.aim.yaw",
-        keys: [
-          { atSeconds: 0, value: 90, interpolation: "smooth", easing: "linear" },
-        ],
-      },
-      {
-        id: "camera.aim.pitch",
-        keys: [
-          { atSeconds: 0, value: 0, interpolation: "smooth", easing: "linear" },
-        ],
-      },
-      {
-        id: "camera.aim.distance",
-        keys: [
-          { atSeconds: 0, value: 6, interpolation: "smooth", easing: "linear" },
-        ],
-      },
-    ]);
+    const store = buildCameraChannels({
+      base: KEYFRAMES,
+      manual: [
+        {
+          id: "camera.aim.yaw",
+          keys: [
+            {
+              atSeconds: 0,
+              value: 90,
+              interpolation: "smooth",
+              easing: "linear",
+            },
+          ],
+        },
+        {
+          id: "camera.aim.pitch",
+          keys: [
+            {
+              atSeconds: 0,
+              value: 0,
+              interpolation: "smooth",
+              easing: "linear",
+            },
+          ],
+        },
+        {
+          id: "camera.aim.distance",
+          keys: [
+            {
+              atSeconds: 0,
+              value: 6,
+              interpolation: "smooth",
+              easing: "linear",
+            },
+          ],
+        },
+      ],
+    });
     const frame = sampleCameraFrame(store, 1);
     // Yaw 90 degrees from a rig on the x axis looks along +x, six metres out.
     expect(frame.target[0] - frame.position[0]).toBeCloseTo(6, 6);
@@ -226,17 +276,40 @@ describe("hand-keying the aim direction", () => {
   });
 
   it("holds a stated hold rather than letting the spline bow it", () => {
-    const store = buildCameraChannels(KEYFRAMES, [
-      {
-        id: "camera.aim.yaw",
-        keys: [
-          { atSeconds: 0, value: 0, interpolation: "smooth", easing: "linear" },
-          { atSeconds: 1, value: 30, interpolation: "smooth", easing: "linear" },
-          { atSeconds: 2, value: 30, interpolation: "smooth", easing: "linear" },
-          { atSeconds: 3, value: 90, interpolation: "smooth", easing: "linear" },
-        ],
-      },
-    ]);
+    const store = buildCameraChannels({
+      base: KEYFRAMES,
+      manual: [
+        {
+          id: "camera.aim.yaw",
+          keys: [
+            {
+              atSeconds: 0,
+              value: 0,
+              interpolation: "smooth",
+              easing: "linear",
+            },
+            {
+              atSeconds: 1,
+              value: 30,
+              interpolation: "smooth",
+              easing: "linear",
+            },
+            {
+              atSeconds: 2,
+              value: 30,
+              interpolation: "smooth",
+              easing: "linear",
+            },
+            {
+              atSeconds: 3,
+              value: 90,
+              interpolation: "smooth",
+              easing: "linear",
+            },
+          ],
+        },
+      ],
+    });
     const yaw = resolveChannel(store, "camera.aim.yaw")!;
     expect(sampleCameraChannel(yaw, 1.5)).toBeCloseTo(30, 9);
   });

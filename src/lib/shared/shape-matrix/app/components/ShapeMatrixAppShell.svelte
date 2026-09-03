@@ -864,6 +864,18 @@
     .relationships-action span {
       display: none;
     }
+
+    /* The back button drops its word for the same reason, and it has one more:
+       the surface control sitting right beside it already says Matrix or
+       Theory, so the word was printed twice. Theory is where the row actually
+       ran out of width, because two ratios are wider than two turn values. */
+    .back-to-matrix {
+      padding-inline: 0.6rem;
+    }
+
+    .back-to-matrix span {
+      display: none;
+    }
   }
 
   @container shape-matrix-app (max-width: 25rem) {

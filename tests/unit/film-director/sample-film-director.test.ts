@@ -5,11 +5,9 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { cameraCorrectionsFor } from "../../../src/routes/test/film-director/_lib/camera-corrections";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
-import {
-  applyCameraTracking,
-  sampleFilmDirector,
-} from "../../../src/routes/test/film-director/_lib/sample-film-director";
+import { sampleFilmDirector } from "../../../src/routes/test/film-director/_lib/sample-film-director";
 
 /** Where the walker ends up. The distance is measured against their resolved
  * opening mark rather than assumed, so a formation tweak cannot quietly turn
@@ -75,6 +73,11 @@ function walkerDx(film: ReturnType<typeof walkingFilm>): number {
   return WALK_TO_X - walker.position.x;
 }
 
+/** The one resolved scene of a followed walking film. */
+function followedScene() {
+  return walkingFilm("follow").scenes[0]!;
+}
+
 describe("camera tracking sampling", () => {
   it("turns the camera to keep an aimed walker in frame", () => {
     const film = walkingFilm(true);
@@ -105,10 +108,8 @@ describe("camera tracking sampling", () => {
     );
   });
 
-  it("returns the camera untouched when the tracked id matches no performer", () => {
-    const film = walkingFilm("follow");
-    const scene = film.scenes[0]!;
-    const frame = sampleFilmDirector(film, 4);
+  it("states no correction when the tracked id matches no performer", () => {
+    const scene = followedScene();
     const ghost = {
       ...scene,
       camera: {
@@ -116,11 +117,11 @@ describe("camera tracking sampling", () => {
         tracking: { performerId: "nobody", mode: "follow" as const },
       },
     };
-    const untracked = sampleFilmDirector(walkingFilm(), 4).camera;
 
-    expect(applyCameraTracking(untracked, ghost, frame.performerMotion)).toBe(
-      untracked
-    );
+    expect(cameraCorrectionsFor(scene).map((each) => each.id)).toEqual([
+      "tracking",
+    ]);
+    expect(cameraCorrectionsFor(ghost)).toEqual([]);
   });
 });
 
@@ -141,14 +142,20 @@ describe("handheld", () => {
           durationSeconds: 8,
           location: { environmentId: "forest" },
           performance: { bpm: 120, cast: { count: 2 } },
-          camera: { shotSize: "medium", ...camera, ...(handheld ? { handheld } : {}) },
+          camera: {
+            shotSize: "medium",
+            ...camera,
+            ...(handheld ? { handheld } : {}),
+          },
         },
       ],
     });
   }
 
   const frames = (film: ReturnType<typeof resolveFilmDirectorSpec>) =>
-    Array.from({ length: 33 }, (_, index) => sampleFilmDirector(film, index / 4));
+    Array.from({ length: 33 }, (_, index) =>
+      sampleFilmDirector(film, index / 4)
+    );
 
   it("leaves a scene that never asked for it byte identical", () => {
     const plain = frames(handheldFilm());
@@ -191,7 +198,10 @@ describe("handheld", () => {
       shotSize: undefined,
     });
     const steady = frames(
-      handheldFilm(undefined, { shots: [{ shotSize: "wide" }, { shotSize: "close-up" }], shotSize: undefined })
+      handheldFilm(undefined, {
+        shots: [{ shotSize: "wide" }, { shotSize: "close-up" }],
+        shotSize: undefined,
+      })
     );
     const moved = frames(film).some(
       (frame, index) =>
