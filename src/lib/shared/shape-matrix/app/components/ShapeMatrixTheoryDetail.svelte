@@ -5,9 +5,9 @@
   six timing-and-direction elements across the top, the animation under them,
   then the facts. The grid says which pair; this says what that pair DOES.
 
-  The two rate sliders sit under the stage as live tuners: scrub a hand while
-  it spins and the rate changes without the prop jumping, and landing on an
-  exact ratio moves that axis of the grid. -->
+  The two rate sliders under the stage scrub freely between ratios, and landing
+  on an exact one moves that axis of the grid and restarts the draw, so the
+  trail on the canvas is always the flower the tile shows. -->
 <script lang="ts">
   import {
     jointSpinRatioClosureHandCycles,
@@ -71,17 +71,22 @@
    * What a restart is FOR.
    *
    * The stage integrates angle rather than evaluating position, so a rate can
-   * change mid-flight without moving the prop — that is the whole point of the
-   * sliders below. A starting OFFSET cannot: the pairing's quarter or split
-   * gap, the hand's direction, and the prop's in-or-out start are all read
-   * from where the hands began, and changing one of them after that changes
-   * nothing at all on screen. Those three restart the hands. The ratio never
-   * does.
+   * change mid-flight without moving the prop. That is what makes the sliders
+   * below scrubbable: drag through the open values between two stops and the
+   * prop keeps its place while its speed changes.
+   *
+   * It is also why landing has to restart. A trail drawn half at the old rate
+   * and half at the new one is neither flower, so the shape on the canvas
+   * stopped matching the tile that was picked. Every settled choice — the
+   * pairing, the two exact ratios, each hand's spin and start — clears the
+   * trail and returns the hands to their start. Only the open values between
+   * stops keep drawing through, because there is no closed shape there to
+   * match.
    */
   const alignKey = $derived(
     pair
-      ? `${app.theoryMode}|${pair.left.style}${pair.left.ori}` +
-        `|${pair.right.style}${pair.right.ori}`
+      ? `${app.theoryMode}|${cellKey}` +
+        `|${pair.left.style}${pair.left.ori}|${pair.right.style}${pair.right.ori}`
       : app.theoryMode
   );
   let appliedAlign = $state("");
@@ -95,6 +100,18 @@
     return isStationaryRatio(flower.ratio)
       ? flower.ratio.propRotations
       : flower.ratio.propRotations / flower.ratio.handCycles;
+  }
+
+  /*
+   * One closed path of this hand's own, in hand cycles: the denominator of its
+   * ratio, which is how many hand circles 1:9 needs before it lands back where
+   * it started. That is exactly what the tile in the grid draws, so it is
+   * exactly what the trail should keep. A stationary hand closes after one
+   * prop rotation, which the stage counts on the same clock.
+   */
+  function closureCycles(flower: TheoryFlower): number {
+    if (isStationaryRatio(flower.ratio)) return 1;
+    return Math.max(1, flower.ratio.handCycles);
   }
 
   function liveHand(
@@ -112,6 +129,7 @@
       handPhase: knobs.handPhase ?? 8,
       handSign: knobs.handDirection ?? 1,
       propPhase: knobs.phase ?? 0,
+      trailCycles: closureCycles(flower),
     };
   }
 
@@ -225,7 +243,7 @@
         </div>
 
         <div class="tuners">
-          <span class="section-label">Tune while it spins</span>
+          <span class="section-label">Slide to a ratio</span>
           <ShapeMatrixRatioSlider
             {stops}
             value={scrubbed.left ?? rateOf(pair.left)}
