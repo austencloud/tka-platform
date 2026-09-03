@@ -131,20 +131,15 @@ export function buildTheoryAxis(ratio: SpinRatio): TheoryFlower[] {
 }
 
 /**
- * QfT knobs for one hand of a pairing.
+ * One hand's knobs in its own frame: home bearing, travelling clockwise.
  *
- * The left hand always starts at home and travels clockwise; timing and
- * direction are expressed entirely as the right hand's offset and sign. That
- * is a choice of frame, not of physics — rotating both hands together would
- * spin the whole picture without changing a single relationship in it.
+ * This is the hand's own shape and nothing else, which is exactly what a tile
+ * draws. A Matrix tile is the blue hand's mandala against the red hand's, with
+ * no pairing baked into either, and a Theory tile is that same picture at
+ * ratios TKA has no turn value for.
  */
-export function theoryKnobs(
-  flower: TheoryFlower,
-  hand: "left" | "right",
-  mode: VtgMode
-): QftKnobs {
+export function theorySoloKnobs(flower: TheoryFlower): QftKnobs {
   const stationary = isStationaryRatio(flower.ratio);
-  const opposed = hand === "right" && mode.charAt(1) === "O";
   return {
     radius: stationary ? 0 : 1,
     downbeats: stationary
@@ -153,10 +148,30 @@ export function theoryKnobs(
     ratio: flower.ratio,
     spin: flower.style === "pro" ? "inspin" : "antispin",
     phase: ORI_PHASE[flower.ori],
-    handPhase:
-      HAND_HOME +
-      (hand === "right" ? (TIMING_OFFSET[mode.charAt(0)] ?? 0) : 0),
-    handDirection: opposed ? -1 : 1,
+    handPhase: HAND_HOME,
+    handDirection: 1,
+  };
+}
+
+/**
+ * QfT knobs for one hand of a pairing, which is what the animation runs.
+ *
+ * The left hand keeps its own frame; timing and direction are expressed
+ * entirely as the right hand's offset and sign. That is a choice of frame, not
+ * of physics — rotating both hands together would spin the whole picture
+ * without changing a single relationship in it.
+ */
+export function theoryKnobs(
+  flower: TheoryFlower,
+  hand: "left" | "right",
+  mode: VtgMode
+): QftKnobs {
+  const solo = theorySoloKnobs(flower);
+  if (hand === "left") return solo;
+  return {
+    ...solo,
+    handPhase: HAND_HOME + (TIMING_OFFSET[mode.charAt(0)] ?? 0),
+    handDirection: mode.charAt(1) === "O" ? -1 : 1,
   };
 }
 

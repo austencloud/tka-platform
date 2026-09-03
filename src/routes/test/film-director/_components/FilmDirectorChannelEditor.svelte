@@ -71,7 +71,7 @@
   });
 
   const store = $derived(
-    cameraChannelsFor(scene.camera.keyframes, manual.length ? manual : undefined)
+    cameraChannelsFor(scene.camera, manual.length ? { manual } : undefined)
   );
 
   /** Channel ids the document hand-keys for this scene. */
@@ -197,7 +197,10 @@
     for (const member of touched) {
       if (working.some((channel) => channel.id === member)) continue;
       const seeded = seedManualChannel(store, member);
-      working.push({ id: member, keys: seeded.keys.map((key) => ({ ...key })) });
+      working.push({
+        id: member,
+        keys: seeded.keys.map((key) => ({ ...key })),
+      });
     }
     return { working, touched };
   }

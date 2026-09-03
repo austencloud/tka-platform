@@ -560,6 +560,39 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 5.5
+            },
+            "startSeconds": 0,
+            "endSeconds": 5.5
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "pull-back",
+              "amount": {
+                "meters": 1.5
+              },
+              "durationSeconds": 5.5,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 5.5,
+            "endSeconds": 11
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 5
+            },
+            "startSeconds": 11,
+            "endSeconds": 16
+          }
         ]
       }
     }
@@ -904,6 +937,29 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "fovDeg": 50,
             "interpolation": "smooth",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 1.5
+            },
+            "startSeconds": 0,
+            "endSeconds": 1.5
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 3
+              },
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 1.5,
+            "endSeconds": 9
           }
         ]
       }
@@ -1318,6 +1374,21 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "fovDeg": 50,
             "interpolation": "smooth",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "orbit",
+              "direction": "cw",
+              "amount": {
+                "degrees": 100
+              },
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 0,
+            "endSeconds": 10
           }
         ]
       }
@@ -1888,6 +1959,21 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             "fovDeg": 50,
             "interpolation": "smooth",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "orbit",
+              "direction": "cw",
+              "amount": {
+                "degrees": 180
+              },
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 0,
+            "endSeconds": 10
           }
         ]
       }
@@ -2803,6 +2889,53 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2
+            },
+            "startSeconds": 0,
+            "endSeconds": 2
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "orbit",
+              "direction": "ccw",
+              "amount": {
+                "degrees": 40
+              },
+              "durationSeconds": 6,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 2,
+            "endSeconds": 8
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 1.2
+              },
+              "durationSeconds": 3,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 8,
+            "endSeconds": 11
+          },
+          {
+            "id": "move.3",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2
+            },
+            "startSeconds": 11,
+            "endSeconds": 13
+          }
         ]
       }
     },
@@ -3085,6 +3218,39 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2.5
+            },
+            "startSeconds": 0,
+            "endSeconds": 2.5
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 2
+              },
+              "durationSeconds": 6,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 2.5,
+            "endSeconds": 8.5
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 5.5
+            },
+            "startSeconds": 8.5,
+            "endSeconds": 14
           }
         ]
       }
@@ -3420,6 +3586,40 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2
+            },
+            "startSeconds": 0,
+            "endSeconds": 2
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "orbit",
+              "direction": "cw",
+              "amount": {
+                "degrees": 30
+              },
+              "durationSeconds": 5,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 2,
+            "endSeconds": 7
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 7
+            },
+            "startSeconds": 7,
+            "endSeconds": 14
+          }
         ]
       }
     },
@@ -3676,6 +3876,53 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2
+            },
+            "startSeconds": 0,
+            "endSeconds": 2
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "crane",
+              "direction": "up",
+              "amount": {
+                "meters": 2.5
+              },
+              "durationSeconds": 5,
+              "easing": "ease-out"
+            },
+            "startSeconds": 2,
+            "endSeconds": 7
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 2.5
+              },
+              "durationSeconds": 5,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 7,
+            "endSeconds": 12
+          },
+          {
+            "id": "move.3",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 5
+            },
+            "startSeconds": 12,
+            "endSeconds": 17
+          }
         ]
       }
     }
@@ -3913,6 +4160,40 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 3.4
+            },
+            "startSeconds": 0,
+            "endSeconds": 3.4
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "orbit",
+              "direction": "cw",
+              "amount": {
+                "degrees": 22
+              },
+              "durationSeconds": 5,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 3.4,
+            "endSeconds": 8.4
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2.6
+            },
+            "startSeconds": 8.4,
+            "endSeconds": 11
           }
         ]
       }
@@ -4195,6 +4476,40 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2.4
+            },
+            "startSeconds": 0,
+            "endSeconds": 2.4
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "orbit",
+              "direction": "cw",
+              "amount": {
+                "degrees": 100
+              },
+              "durationSeconds": 5.2,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 2.4,
+            "endSeconds": 7.6
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2.4
+            },
+            "startSeconds": 7.6,
+            "endSeconds": 10
           }
         ]
       }
@@ -5487,6 +5802,67 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 1.25
+            },
+            "startSeconds": 0,
+            "endSeconds": 1.25
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "crane",
+              "direction": "up",
+              "amount": {
+                "meters": 4
+              },
+              "durationSeconds": 5,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 1.25,
+            "endSeconds": 6.25
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 2
+              },
+              "durationSeconds": 2.75,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 6.25,
+            "endSeconds": 9
+          },
+          {
+            "id": "move.3",
+            "move": {
+              "move": "orbit",
+              "direction": "ccw",
+              "amount": {
+                "degrees": 70
+              },
+              "durationSeconds": 4.5,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 9,
+            "endSeconds": 13.5
+          },
+          {
+            "id": "move.4",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 1.5
+            },
+            "startSeconds": 13.5,
+            "endSeconds": 15
+          }
         ]
       }
     },
@@ -6519,6 +6895,53 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2
+            },
+            "startSeconds": 0,
+            "endSeconds": 2
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "crane",
+              "direction": "up",
+              "amount": {
+                "meters": 5.5
+              },
+              "durationSeconds": 9,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 2,
+            "endSeconds": 11
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 2.5
+              },
+              "durationSeconds": 4,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 11,
+            "endSeconds": 15
+          },
+          {
+            "id": "move.3",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2
+            },
+            "startSeconds": 15,
+            "endSeconds": 17
+          }
         ]
       }
     },
@@ -7239,6 +7662,53 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2
+            },
+            "startSeconds": 0,
+            "endSeconds": 2
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "crane",
+              "direction": "up",
+              "amount": {
+                "meters": 2.5
+              },
+              "durationSeconds": 5,
+              "easing": "ease-out"
+            },
+            "startSeconds": 2,
+            "endSeconds": 7
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "pull-back",
+              "amount": {
+                "meters": 3
+              },
+              "durationSeconds": 4.5,
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 7,
+            "endSeconds": 11.5
+          },
+          {
+            "id": "move.3",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2.5
+            },
+            "startSeconds": 11.5,
+            "endSeconds": 14
+          }
         ]
       }
     }
@@ -7852,6 +8322,21 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "interpolation": "smooth",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "orbit",
+              "direction": "ccw",
+              "amount": {
+                "degrees": 120
+              },
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 0,
+            "endSeconds": 9
+          }
         ]
       }
     },
@@ -8414,6 +8899,33 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "fovDeg": 50,
             "interpolation": "smooth",
             "easing": "ease-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "pan",
+              "direction": "right",
+              "amount": {
+                "degrees": 35
+              },
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 0,
+            "endSeconds": 4.5
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 3
+              },
+              "easing": "ease-out"
+            },
+            "startSeconds": 4.5,
+            "endSeconds": 9
           }
         ]
       }
@@ -9125,6 +9637,20 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "interpolation": "smooth",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 1.5
+              },
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 0,
+            "endSeconds": 10
+          }
         ]
       }
     },
@@ -9686,6 +10212,33 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             "interpolation": "smooth",
             "easing": "ease-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "crane",
+              "direction": "down",
+              "amount": {
+                "meters": 2.5
+              },
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 0,
+            "endSeconds": 4.5
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 3
+              },
+              "easing": "ease-out"
+            },
+            "startSeconds": 4.5,
+            "endSeconds": 9
+          }
         ]
       }
     }
@@ -9967,6 +10520,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 12
+          }
         ]
       }
     },
@@ -10189,6 +10752,29 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 1
+              },
+              "durationSeconds": 4
+            },
+            "startSeconds": 0,
+            "endSeconds": 4
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 4
+            },
+            "startSeconds": 4,
+            "endSeconds": 8
           }
         ]
       }
@@ -10434,6 +11020,56 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "easing": "ease-in-out",
             "rollDeg": 10
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "truck",
+              "direction": "right",
+              "amount": {
+                "meters": 1
+              },
+              "durationSeconds": 4
+            },
+            "startSeconds": 0,
+            "endSeconds": 4
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "zoom",
+              "direction": "in",
+              "amount": {
+                "degrees": 15
+              },
+              "durationSeconds": 4
+            },
+            "startSeconds": 4,
+            "endSeconds": 8
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "roll",
+              "direction": "cw",
+              "amount": {
+                "degrees": 10
+              },
+              "durationSeconds": 2
+            },
+            "startSeconds": 8,
+            "endSeconds": 10
+          },
+          {
+            "id": "move.3",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2
+            },
+            "startSeconds": 10,
+            "endSeconds": 12
+          }
         ]
       }
     },
@@ -10640,6 +11276,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 8
           }
         ],
         "tracking": {
@@ -10901,6 +11547,35 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "shot.0/move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 3
+          },
+          {
+            "id": "shot.1/move.0",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 0.4
+              }
+            },
+            "startSeconds": 3,
+            "endSeconds": 6
+          },
+          {
+            "id": "shot.2/move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 6,
+            "endSeconds": 8
           }
         ]
       }
@@ -11167,6 +11842,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 8
           }
         ]
       }
@@ -11629,6 +12314,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 8
+          }
         ]
       }
     },
@@ -11844,6 +12539,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 8
           }
         ]
       }
@@ -12127,6 +12832,20 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "smooth",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "orbit",
+              "direction": "cw",
+              "amount": {
+                "degrees": 90
+              }
+            },
+            "startSeconds": 0,
+            "endSeconds": 8
           }
         ]
       }
@@ -12455,6 +13174,37 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 1.2
+              },
+              "durationSeconds": 6,
+              "with": [
+                {
+                  "move": "zoom",
+                  "amount": {
+                    "match": "subject-size"
+                  }
+                }
+              ]
+            },
+            "startSeconds": 0,
+            "endSeconds": 6
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2
+            },
+            "startSeconds": 6,
+            "endSeconds": 8
+          }
         ]
       }
     },
@@ -12705,6 +13455,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 7
           }
         ],
         "handheld": {
@@ -12978,6 +13738,63 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2.5
+            },
+            "startSeconds": 0,
+            "endSeconds": 2.5
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "pan",
+              "to": {
+                "kind": "performer",
+                "performerId": "her"
+              },
+              "durationSeconds": 0.3,
+              "easing": "linear"
+            },
+            "startSeconds": 2.5,
+            "endSeconds": 2.8
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2.4
+            },
+            "startSeconds": 2.8,
+            "endSeconds": 5.2
+          },
+          {
+            "id": "move.3",
+            "move": {
+              "move": "pan",
+              "to": {
+                "kind": "performer",
+                "performerId": "him"
+              },
+              "durationSeconds": 0.3,
+              "easing": "linear"
+            },
+            "startSeconds": 5.2,
+            "endSeconds": 5.5
+          },
+          {
+            "id": "move.4",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2.5
+            },
+            "startSeconds": 5.5,
+            "endSeconds": 8
+          }
         ]
       }
     },
@@ -13240,6 +14057,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 6
+          }
         ]
       }
     },
@@ -13319,6 +14146,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 3
           }
         ]
       }
@@ -13470,6 +14307,28 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 0.6
+              },
+              "durationSeconds": 4
+            },
+            "startSeconds": 0,
+            "endSeconds": 4
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 4,
+            "endSeconds": 8
           }
         ]
       }
@@ -13664,6 +14523,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 16
+          }
         ]
       }
     },
@@ -13857,6 +14726,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 8
           }
         ]
       }
@@ -14084,6 +14963,28 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "smooth",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 6
+            },
+            "startSeconds": 0,
+            "endSeconds": 6
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 0.5
+              }
+            },
+            "startSeconds": 6,
+            "endSeconds": 8
           }
         ]
       }
@@ -14618,6 +15519,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 16
+          }
         ]
       }
     },
@@ -14810,6 +15721,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 8
           }
         ]
       }
@@ -15124,6 +16045,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "interpolation": "step",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 16
+          }
         ]
       }
     },
@@ -15325,6 +16256,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 8
           }
         ]
       }
@@ -15531,6 +16472,16 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "fovDeg": 50,
             "interpolation": "step",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold"
+            },
+            "startSeconds": 0,
+            "endSeconds": 8
           }
         ]
       }
@@ -17745,6 +18696,43 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
             "interpolation": "smooth",
             "easing": "ease-in-out"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2.5
+            },
+            "startSeconds": 0,
+            "endSeconds": 2.5
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "pull-back",
+              "amount": {
+                "meters": 4
+              },
+              "durationSeconds": 9.5,
+              "easing": "ease-out"
+            },
+            "startSeconds": 2.5,
+            "endSeconds": 12
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "crane",
+              "direction": "up",
+              "amount": {
+                "meters": 1
+              },
+              "durationSeconds": 4
+            },
+            "startSeconds": 12,
+            "endSeconds": 16
+          }
         ]
       }
     }
@@ -18181,6 +19169,33 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "fovDeg": 50,
             "interpolation": "smooth",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 2
+              },
+              "easing": "ease-out"
+            },
+            "startSeconds": 0,
+            "endSeconds": 5
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "orbit",
+              "direction": "cw",
+              "amount": {
+                "degrees": 70
+              },
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 5,
+            "endSeconds": 10
           }
         ]
       }
@@ -18761,6 +19776,42 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "interpolation": "smooth",
             "easing": "ease-in"
           }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "pan",
+              "direction": "left",
+              "amount": {
+                "degrees": 30
+              },
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 0,
+            "endSeconds": 3.5
+          },
+          {
+            "id": "move.1",
+            "move": {
+              "move": "hold",
+              "durationSeconds": 2
+            },
+            "startSeconds": 3.5,
+            "endSeconds": 5.5
+          },
+          {
+            "id": "move.2",
+            "move": {
+              "move": "pull-back",
+              "amount": {
+                "meters": 3
+              },
+              "easing": "ease-in"
+            },
+            "startSeconds": 5.5,
+            "endSeconds": 9
+          }
         ]
       }
     },
@@ -18954,6 +20005,20 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             "fovDeg": 50,
             "interpolation": "smooth",
             "easing": "ease-in-out"
+          }
+        ],
+        "behaviors": [
+          {
+            "id": "move.0",
+            "move": {
+              "move": "push-in",
+              "amount": {
+                "meters": 1.5
+              },
+              "easing": "ease-in-out"
+            },
+            "startSeconds": 0,
+            "endSeconds": 8
           }
         ]
       }

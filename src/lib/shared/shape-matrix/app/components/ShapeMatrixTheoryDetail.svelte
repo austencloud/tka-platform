@@ -1,11 +1,13 @@
 <!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixTheoryDetail.svelte
   The Theory surface's detail pane: the cell you picked in the grid, playing.
 
-  It is the counterpart of the Matrix drill. The grid says which pair; this
-  says what that pair DOES, with the same timing and direction the grid was
-  painted under. The two rate sliders sit under the stage as live tuners:
-  scrub a hand while it spins and the rate changes without the prop jumping,
-  and landing on an exact ratio moves that axis of the grid. -->
+  It is the counterpart of the Matrix drill, and it is laid out like one: the
+  six timing-and-direction elements across the top, the animation under them,
+  then the facts. The grid says which pair; this says what that pair DOES.
+
+  The two rate sliders sit under the stage as live tuners: scrub a hand while
+  it spins and the rate changes without the prop jumping, and landing on an
+  exact ratio moves that axis of the grid. -->
 <script lang="ts">
   import {
     jointSpinRatioClosureHandCycles,
@@ -22,9 +24,8 @@
     theoryKnobs,
     type TheoryFlower,
   } from "$lib/shared/shape-matrix/domain/theory-flower";
-  import { MODE_LABEL } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
-  import { FAMILY_BY_MODE } from "$lib/shared/shape-matrix/services/build-mode-realizations";
-  import { TND_BY_FAMILY } from "$lib/features/choreo-card/domain/tnd-element";
+  import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
+  import ElementChipRow from "$lib/shared/shape-matrix/components/ElementChipRow.svelte";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import ShapeMatrixLiveRatioStage, {
     type LiveHand,
@@ -64,6 +65,30 @@
     if (cellKey === appliedCell) return;
     appliedCell = cellKey;
     scrubbed = { left: null, right: null };
+  });
+
+  /*
+   * What a restart is FOR.
+   *
+   * The stage integrates angle rather than evaluating position, so a rate can
+   * change mid-flight without moving the prop — that is the whole point of the
+   * sliders below. A starting OFFSET cannot: the pairing's quarter or split
+   * gap, the hand's direction, and the prop's in-or-out start are all read
+   * from where the hands began, and changing one of them after that changes
+   * nothing at all on screen. Those three restart the hands. The ratio never
+   * does.
+   */
+  const alignKey = $derived(
+    pair
+      ? `${app.theoryMode}|${pair.left.style}${pair.left.ori}` +
+        `|${pair.right.style}${pair.right.ori}`
+      : app.theoryMode
+  );
+  let appliedAlign = $state("");
+  $effect(() => {
+    if (alignKey === appliedAlign) return;
+    appliedAlign = alignKey;
+    alignToken += 1;
   });
 
   function rateOf(flower: TheoryFlower): number {
@@ -126,9 +151,6 @@
     return `${flower.style === "pro" ? "prospin" : "antispin"} ${flower.ori}`;
   }
 
-  /** The element the chosen pairing carries everywhere else in the app. */
-  const pairingElement = $derived(TND_BY_FAMILY[FAMILY_BY_MODE[app.theoryMode]]);
-
   const closure = $derived(
     jointCycles === null
       ? "Open path"
@@ -137,122 +159,163 @@
 </script>
 
 <aside class="theory-detail" aria-label="Selected theory pair">
-  {#if !pair}
-    <div class="empty">
-      <strong>Pick a cell</strong>
-      <small>Its two hands run here, at the pairing the grid is drawn in.</small>
-    </div>
-  {:else}
-    <header class="pair-heading">
-      <div class="pair-keys">
-        <strong style={`color: ${BLUE};`}>
-          {spinRatioKey(pair.left.ratio)}
-        </strong>
-        <span class="against">against</span>
-        <strong style={`color: ${RED};`}>
-          {spinRatioKey(pair.right.ratio)}
-        </strong>
-      </div>
-      <span
-        class="pairing-chip"
-        style={pairingElement
-          ? `--pairing-accent: ${pairingElement.accentColor};`
-          : undefined}
-      >
-        {#if pairingElement}
-          <img src={pairingElement.iconPath} alt="" />
-        {/if}
-        {MODE_LABEL[app.theoryMode]}
-      </span>
-    </header>
-
-    <div class="stage-card">
-      <div class="stage-window">
-        <ShapeMatrixLiveRatioStage {hands} {paused} {alignToken} />
-      </div>
-      <div class="stage-actions">
-        <button
-          type="button"
-          class="stage-action"
-          onclick={() => (paused = !paused)}
-          aria-pressed={paused}
-        >
-          <i class={paused ? "fas fa-play" : "fas fa-pause"} aria-hidden="true"
-          ></i>
-          <span>{paused ? "Play" : "Pause"}</span>
-        </button>
-        <button
-          type="button"
-          class="stage-action"
-          onclick={() => (alignToken += 1)}
-        >
-          <i class="fas fa-crosshairs" aria-hidden="true"></i>
-          <span>Restart</span>
-        </button>
-      </div>
-    </div>
-
-    <div class="tuners">
-      <span class="section-label">Tune while it spins</span>
-      <ShapeMatrixRatioSlider
-        {stops}
-        value={scrubbed.left ?? rateOf(pair.left)}
-        locked={snapToStop(stops, scrubbed.left ?? rateOf(pair.left))}
-        label="Blue"
-        color={BLUE}
-        onchange={(next) => tune("left", next)}
-      />
-      <ShapeMatrixRatioSlider
-        {stops}
-        value={scrubbed.right ?? rateOf(pair.right)}
-        locked={snapToStop(stops, scrubbed.right ?? rateOf(pair.right))}
-        label="Red"
-        color={RED}
-        onchange={(next) => tune("right", next)}
+  <!-- The pane owns the container; this body owns the composition, the
+       same split the Matrix drill uses between its stage and its drill. A size
+       container cannot answer its own query. -->
+  <div class="detail-body">
+    <!-- The same row, in the same place, as the Matrix drill's. On Theory it
+         also repaints nothing in the grid: a tile is the two hands' shapes, and
+         the pairing is what those two hands do to each other, which is a thing
+         you watch rather than a thing you look at. -->
+    <div class="mode-picker">
+      <ElementChipRow
+        selected={app.theoryMode}
+        onpick={(mode: VtgMode | null) => {
+          // The row clears on a second click, which the Matrix wants and Theory
+          // cannot use: the two hands are always in some pairing. Re-picking the
+          // chosen element keeps it.
+          if (mode) app.setTheoryMode(mode);
+        }}
       />
     </div>
 
-    <dl class="pair-facts">
-      <div>
-        <dt>Blue</dt>
-        <dd>{styleLabel(pair.left)} · {pair.left.petals} petals</dd>
-      </div>
-      <div>
-        <dt>Red</dt>
-        <dd>{styleLabel(pair.right)} · {pair.right.petals} petals</dd>
-      </div>
-      <div>
-        <dt>TKA-equivalent</dt>
-        <dd>
-          {turnLabel(pair.left.ratio)} / {turnLabel(pair.right.ratio)}
-        </dd>
-      </div>
-      <div>
-        <dt>Closed path</dt>
-        <dd>{closure}</dd>
-      </div>
-    </dl>
+    <div class="detail-flow">
+      {#if !pair}
+        <div class="empty">
+          <strong>Pick a cell</strong>
+          <small>Its two hands run here, in the pairing chosen above.</small>
+        </div>
+      {:else}
+        <header class="pair-heading">
+          <div class="pair-keys">
+            <strong style={`color: ${BLUE};`}>
+              {spinRatioKey(pair.left.ratio)}
+            </strong>
+            <span class="against">against</span>
+            <strong style={`color: ${RED};`}>
+              {spinRatioKey(pair.right.ratio)}
+            </strong>
+          </div>
+        </header>
 
-    <p class="boundary-note">
-      These paths are calculated continuously. Theory does not assign new
-      Kinetic Alphabet letters.
-    </p>
-  {/if}
+        <div class="stage-card">
+          <div class="stage-window">
+            <ShapeMatrixLiveRatioStage {hands} {paused} {alignToken} />
+          </div>
+          <div class="stage-actions">
+            <button
+              type="button"
+              class="stage-action"
+              onclick={() => (paused = !paused)}
+              aria-pressed={paused}
+            >
+              <i class={paused ? "fas fa-play" : "fas fa-pause"} aria-hidden="true"
+              ></i>
+              <span>{paused ? "Play" : "Pause"}</span>
+            </button>
+            <button
+              type="button"
+              class="stage-action"
+              onclick={() => (alignToken += 1)}
+            >
+              <i class="fas fa-crosshairs" aria-hidden="true"></i>
+              <span>Restart</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="tuners">
+          <span class="section-label">Tune while it spins</span>
+          <ShapeMatrixRatioSlider
+            {stops}
+            value={scrubbed.left ?? rateOf(pair.left)}
+            locked={snapToStop(stops, scrubbed.left ?? rateOf(pair.left))}
+            label="Blue"
+            color={BLUE}
+            onchange={(next) => tune("left", next)}
+          />
+          <ShapeMatrixRatioSlider
+            {stops}
+            value={scrubbed.right ?? rateOf(pair.right)}
+            locked={snapToStop(stops, scrubbed.right ?? rateOf(pair.right))}
+            label="Red"
+            color={RED}
+            onchange={(next) => tune("right", next)}
+          />
+        </div>
+
+        <dl class="pair-facts">
+          <div>
+            <dt>Blue</dt>
+            <dd>{styleLabel(pair.left)} · {pair.left.petals} petals</dd>
+          </div>
+          <div>
+            <dt>Red</dt>
+            <dd>{styleLabel(pair.right)} · {pair.right.petals} petals</dd>
+          </div>
+          <div>
+            <dt>TKA-equivalent</dt>
+            <dd>
+              {turnLabel(pair.left.ratio)} / {turnLabel(pair.right.ratio)}
+            </dd>
+          </div>
+          <div>
+            <dt>Closed path</dt>
+            <dd>{closure}</dd>
+          </div>
+        </dl>
+
+        <p class="boundary-note">
+          These paths are calculated continuously. Theory does not assign new
+          Kinetic Alphabet letters.
+        </p>
+      {/if}
+    </div>
+  </div>
 </aside>
 
 <style>
   .theory-detail {
-    display: flex;
     height: 100%;
+    min-width: 0;
     min-height: 0;
-    flex-direction: column;
-    gap: 0.7rem;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 0.85rem;
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
     border-radius: 16px;
     background: var(--theme-panel-bg, rgb(16 23 33 / 0.82));
     color: var(--theme-text, #fff);
+    /* The element row's own responsive rules are written against the drill's
+       container, so this pane answers to the same name and the six chips
+       recompose here exactly as they do there. */
+    container: shape-matrix-drill / size;
+  }
+
+  .detail-body {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+    gap: 0.7rem;
+    /* Vertical only. The selected chip's marker paints a pixel past its own
+       box, and an `auto` horizontal axis turns that into a scrollbar. */
+    overflow: hidden auto;
+  }
+
+  .detail-flow {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .mode-picker {
+    display: grid;
+    flex: 0 0 auto;
+    gap: 0.45rem;
+    min-width: 0;
   }
 
   /* The same shape the Matrix drill's empty state has: a title and one line
@@ -260,7 +323,8 @@
      way the app talks. */
   .empty {
     display: grid;
-    height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
     align-content: center;
     justify-items: center;
     gap: 0.35rem;
@@ -301,36 +365,6 @@
     font-size: var(--font-size-compact, 0.75rem);
     letter-spacing: 0.06em;
     text-transform: uppercase;
-  }
-
-  /* The chip wears the element the pairing carries everywhere else, so the
-     grid, the ribbon row, and this heading all name the same thing. */
-  .pairing-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.25rem 0.6rem;
-    border: 1px solid
-      color-mix(in srgb, var(--pairing-accent, var(--theme-accent, #f59e0b)) 45%, transparent);
-    border-radius: 999px;
-    background: color-mix(
-      in srgb,
-      var(--pairing-accent, var(--theme-accent, #f59e0b)) 16%,
-      transparent
-    );
-    color: color-mix(
-      in srgb,
-      var(--pairing-accent, var(--theme-accent, #f59e0b)) 25%,
-      #fff
-    );
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 650;
-  }
-
-  .pairing-chip img {
-    width: 1rem;
-    height: 1rem;
-    object-fit: contain;
   }
 
   /* The stage is the one part of this column that deserves the leftover
@@ -478,6 +512,29 @@
     .theory-detail {
       border: 0;
       border-radius: 0;
+    }
+  }
+
+  /* The drill's short-wide composition, for the same reason and at the same
+     breakpoint: a wide, short host is height-bound, so the element rail moves
+     beside the animation instead of eating the top third of the screen. The
+     row is already two columns wide here on its own, which is what the rail
+     was sized for. */
+  @container shape-matrix-drill (min-width: 42rem) and (max-height: 24rem) {
+    .detail-body {
+      flex-direction: row;
+      gap: 0.8rem;
+      overflow: hidden;
+    }
+
+    .mode-picker {
+      flex: 0 0 clamp(14rem, 32%, 18rem);
+      align-self: center;
+    }
+
+    .detail-flow {
+      align-self: stretch;
+      overflow: hidden auto;
     }
   }
 </style>
