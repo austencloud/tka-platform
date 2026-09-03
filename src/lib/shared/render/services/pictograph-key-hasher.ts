@@ -75,6 +75,11 @@ const PROP_APPEARANCE_REVISIONS: Readonly<Record<string, string>> = {
   // material artwork changes those pixels without changing PropType.CLUB, so
   // old IndexedDB and cloud cells must no longer be valid hits.
   club: "club-art-v2",
+  // Torch artwork used to render as a near-black shaft with no flame, which
+  // vanished on a dark card. The contrast palette and its approved flame are
+  // now baked into the loaded artwork, so cells cached before that must miss.
+  torch: "torch-contrast-v2",
+  bigtorch: "torch-contrast-v2",
 };
 const NON_RADIAL_ORIENTATIONS = new Set(["clock", "counter"]);
 const SHIFT_MOTION_TYPES = new Set(["pro", "anti", "float"]);

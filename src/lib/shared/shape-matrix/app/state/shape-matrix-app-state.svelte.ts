@@ -22,13 +22,15 @@ import {
 } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { requestShapeMatrixTransition } from "$lib/shared/shape-matrix/debug/shape-matrix-transition-recorder";
+import { makeSpinRatio, spinRatioEquals, type SpinRatio } from "@vtg/domain";
 import {
-  buildTheorySpinRatioAtlas,
-  makeSpinRatio,
-  spinRatioEquals,
-  type SpinRatio,
-  type SpinStyle,
-} from "@vtg/domain";
+  buildTheoryAxis,
+  type TheoryFlower,
+} from "$lib/shared/shape-matrix/domain/theory-flower";
+import {
+  clampTheoryRatioToLevel,
+  theoryRatiosForLevel,
+} from "$lib/shared/shape-matrix/domain/theory-ratio-band";
 
 export type ShapeMatrixAppView = "matrix" | "detail";
 export type ShapeMatrixSurface = "matrix" | "theory";
@@ -60,8 +62,16 @@ export interface ShapeMatrixSetTurnOptions {
 
 export interface ShapeMatrixAppSnapshot {
   surface: ShapeMatrixSurface;
-  theoryRatio: SpinRatio;
-  theorySpin: SpinStyle;
+  /** Theory rows: the blue hand's prop-to-hand ratio. */
+  theoryLeftRatio: SpinRatio;
+  /** Theory columns: the red hand's prop-to-hand ratio. */
+  theoryRightRatio: SpinRatio;
+  /**
+   * The timing-and-direction pairing on the Theory surface, named by the same
+   * six VTG modes (and the same six elements) a Matrix realization carries.
+   */
+  theoryMode: VtgMode;
+  theoryPair: { left: TheoryFlower; right: TheoryFlower } | null;
   level: TurnLevel;
   leftTurn: TurnValue;
   rightTurn: TurnValue;
@@ -92,18 +102,37 @@ const LEVEL_LANDING_TURN: Record<TurnLevel, TurnValue> = {
   4: 0.25,
 };
 
-const THEORY_RATIOS = buildTheorySpinRatioAtlas();
-const DEFAULT_THEORY_RATIO = makeSpinRatio(1, 3);
+export const DEFAULT_THEORY_RATIO = makeSpinRatio(1, 3);
 
-function allowedTheoryRatio(ratio: SpinRatio): SpinRatio {
+function allowedTheoryRatio(ratio: SpinRatio, level: TurnLevel): SpinRatio {
   try {
-    return (
-      THEORY_RATIOS.find((candidate) => spinRatioEquals(candidate, ratio)) ??
-      DEFAULT_THEORY_RATIO
-    );
+    return clampTheoryRatioToLevel(ratio, level);
   } catch {
-    return DEFAULT_THEORY_RATIO;
+    return clampTheoryRatioToLevel(DEFAULT_THEORY_RATIO, level);
   }
+}
+
+/**
+ * Carry a selection across a ratio change instead of dropping it.
+ *
+ * The user picked prospin-out in the top-left corner; changing the ratio is a
+ * request to see THAT variant at the new ratio, the same way the Matrix keeps
+ * a cell's style and orientation when its turn value moves. The endpoints have
+ * fewer variants, so the axis is asked what actually survives.
+ */
+function theoryFlowerAt(
+  ratio: SpinRatio,
+  remembered: TheoryFlower | null
+): TheoryFlower {
+  const axis = buildTheoryAxis(ratio);
+  const match = remembered
+    ? axis.find(
+        (candidate) =>
+          candidate.style === remembered.style &&
+          candidate.ori === remembered.ori
+      )
+    : undefined;
+  return match ?? (axis[0] as TheoryFlower);
 }
 
 function semanticVariant(flower: Flower): SemanticVariant {
@@ -167,8 +196,14 @@ export function createShapeMatrixAppState(
   initialCompact: boolean
 ) {
   let surface = $state<ShapeMatrixSurface>(initial.surface);
-  let theoryRatio = $state(allowedTheoryRatio(initial.theoryRatio));
-  let theorySpin = $state<SpinStyle>(initial.theorySpin);
+  let theoryLeftRatio = $state(
+    allowedTheoryRatio(initial.theoryLeftRatio, initial.level)
+  );
+  let theoryRightRatio = $state(
+    allowedTheoryRatio(initial.theoryRightRatio, initial.level)
+  );
+  let theoryMode = $state<VtgMode>(initial.theoryMode);
+  let theoryPair = $state(initial.theoryPair);
   let level = $state(initial.level);
   let leftTurn = $state<TurnValue>(
     clampMatrixTurnToLevel(initial.leftTurn, initial.level)
@@ -206,6 +241,9 @@ export function createShapeMatrixAppState(
   let mandalaHandoff = $state(false);
 
   const availableTurns = $derived(matrixTurnsForLevel(level));
+  const availableTheoryRatios = $derived(theoryRatiosForLevel(level));
+  const theoryRowAxis = $derived(buildTheoryAxis(theoryLeftRatio));
+  const theoryColAxis = $derived(buildTheoryAxis(theoryRightRatio));
   const filters = $derived(matrixFiltersForTurns(leftTurn, rightTurn));
   const rowAxis = $derived(
     data ? applyFilter(data.axis, filters.left, false) : []
@@ -246,6 +284,26 @@ export function createShapeMatrixAppState(
   ): void {
     if (level === nextLevel) return;
     level = nextLevel;
+
+    // On Theory the level is the Farey order, so it decides how fine the ratio
+    // axis gets. Whichever ratios the new level can still name are kept; the
+    // rest fall to the nearest ratio it can.
+    applyTheoryRatios(
+      clampTheoryRatioToLevel(theoryLeftRatio, level),
+      clampTheoryRatioToLevel(theoryRightRatio, level)
+    );
+    if (surface === "theory") {
+      // The Matrix still has to be legal when the user goes back to it.
+      const heldLeft = clampMatrixTurnToLevel(leftTurn, level);
+      const heldRight = clampMatrixTurnToLevel(rightTurn, level);
+      updateSelectedPairTurns(heldLeft, heldRight);
+      leftTurn = heldLeft;
+      rightTurn = heldRight;
+      if (compact && !options.stayOnDetail) activeView = "matrix";
+      syncState();
+      return;
+    }
+
     const landingTurn = LEVEL_LANDING_TURN[level];
     // A higher level should change the picture, not merely add quiet options
     // around the current Level 1 matrix. Move the edited axis into the new
@@ -325,16 +383,56 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
-  function setTheoryRatio(nextRatio: SpinRatio): void {
-    const allowed = allowedTheoryRatio(nextRatio);
-    if (spinRatioEquals(theoryRatio, allowed)) return;
-    theoryRatio = allowed;
+  function applyTheoryRatios(nextLeft: SpinRatio, nextRight: SpinRatio): void {
+    const moved =
+      !spinRatioEquals(nextLeft, theoryLeftRatio) ||
+      !spinRatioEquals(nextRight, theoryRightRatio);
+    if (!moved) return;
+    theoryLeftRatio = nextLeft;
+    theoryRightRatio = nextRight;
+    if (theoryPair) {
+      theoryPair = {
+        left: theoryFlowerAt(nextLeft, theoryPair.left),
+        right: theoryFlowerAt(nextRight, theoryPair.right),
+      };
+    }
+  }
+
+  /** One named axis, for the live tuners that edit a specific hand. */
+  function setTheoryRatioFor(hand: "left" | "right", nextRatio: SpinRatio): void {
+    const allowed = allowedTheoryRatio(nextRatio, level);
+    applyTheoryRatios(
+      hand === "left" ? allowed : theoryLeftRatio,
+      hand === "right" ? allowed : theoryRightRatio
+    );
     syncState();
   }
 
-  function setTheorySpin(nextSpin: SpinStyle): void {
-    if (theorySpin === nextSpin) return;
-    theorySpin = nextSpin;
+  /** Honours the Apply to target, exactly as the Matrix turn control does. */
+  function setTheoryRatio(nextRatio: SpinRatio): void {
+    const allowed = allowedTheoryRatio(nextRatio, level);
+    applyTheoryRatios(
+      activeAxis === "right" ? theoryLeftRatio : allowed,
+      activeAxis === "left" ? theoryRightRatio : allowed
+    );
+    syncState();
+  }
+
+  function setTheoryMode(nextMode: VtgMode): void {
+    if (theoryMode === nextMode) return;
+    theoryMode = nextMode;
+    syncState();
+  }
+
+  function selectTheoryPair(
+    pair: { left: TheoryFlower; right: TheoryFlower },
+    options: ShapeMatrixSelectPairOptions = {}
+  ): void {
+    theoryPair = pair;
+    if (compact && options.navigate !== false) {
+      activeView = "detail";
+      requestCompactFocus("detail");
+    }
     syncState();
   }
 
@@ -351,11 +449,22 @@ export function createShapeMatrixAppState(
 
   function restoreState(snapshot: ShapeMatrixAppSnapshot): void {
     surface = snapshot.surface ?? "matrix";
-    theoryRatio = allowedTheoryRatio(
-      snapshot.theoryRatio ?? DEFAULT_THEORY_RATIO
-    );
-    theorySpin = snapshot.theorySpin === "anti" ? "anti" : "pro";
     level = snapshot.level;
+    theoryLeftRatio = allowedTheoryRatio(
+      snapshot.theoryLeftRatio ?? DEFAULT_THEORY_RATIO,
+      level
+    );
+    theoryRightRatio = allowedTheoryRatio(
+      snapshot.theoryRightRatio ?? DEFAULT_THEORY_RATIO,
+      level
+    );
+    theoryMode = snapshot.theoryMode ?? "SS";
+    theoryPair = snapshot.theoryPair
+      ? {
+          left: theoryFlowerAt(theoryLeftRatio, snapshot.theoryPair.left),
+          right: theoryFlowerAt(theoryRightRatio, snapshot.theoryPair.right),
+        }
+      : null;
     leftTurn = clampMatrixTurnToLevel(snapshot.leftTurn, snapshot.level);
     rightTurn = clampMatrixTurnToLevel(snapshot.rightTurn, snapshot.level);
     activeAxis = snapshot.activeAxis;
@@ -418,7 +527,7 @@ export function createShapeMatrixAppState(
     if (compact) requestCompactFocus("matrix");
   }
   function showDetail(): void {
-    if (selectedPair) {
+    if (surface === "theory" ? theoryPair : selectedPair) {
       activeView = "detail";
       if (compact) requestCompactFocus("detail");
     }
@@ -432,7 +541,11 @@ export function createShapeMatrixAppState(
   function setCompact(nextCompact: boolean): void {
     if (compact === nextCompact) return;
     compact = nextCompact;
-    if (compact) activeView = selectedPair ? "detail" : "matrix";
+    if (compact) {
+      activeView = (surface === "theory" ? theoryPair : selectedPair)
+        ? "detail"
+        : "matrix";
+    }
   }
   function openAbout(): void {
     aboutOpen = true;
@@ -462,8 +575,10 @@ export function createShapeMatrixAppState(
   function syncState(): void {
     dependencies.syncState({
       surface,
-      theoryRatio,
-      theorySpin,
+      theoryLeftRatio,
+      theoryRightRatio,
+      theoryMode,
+      theoryPair,
       level,
       leftTurn,
       rightTurn,
@@ -480,11 +595,30 @@ export function createShapeMatrixAppState(
     get surface() {
       return surface;
     },
-    get theoryRatio() {
-      return theoryRatio;
+    get theoryLeftRatio() {
+      return theoryLeftRatio;
     },
-    get theorySpin() {
-      return theorySpin;
+    get theoryRightRatio() {
+      return theoryRightRatio;
+    },
+    /** The ratio the Apply to target currently edits. */
+    get activeTheoryRatio() {
+      return activeAxis === "right" ? theoryRightRatio : theoryLeftRatio;
+    },
+    get theoryMode() {
+      return theoryMode;
+    },
+    get theoryPair() {
+      return theoryPair;
+    },
+    get theoryRowAxis() {
+      return theoryRowAxis;
+    },
+    get theoryColAxis() {
+      return theoryColAxis;
+    },
+    get availableTheoryRatios() {
+      return availableTheoryRatios;
     },
     get level() {
       return level;
@@ -560,7 +694,9 @@ export function createShapeMatrixAppState(
     setLabelMode,
     setSurface,
     setTheoryRatio,
-    setTheorySpin,
+    setTheoryRatioFor,
+    setTheoryMode,
+    selectTheoryPair,
     setPropType,
     selectPair,
     setMode,

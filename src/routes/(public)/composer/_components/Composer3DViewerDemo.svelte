@@ -56,13 +56,20 @@
   );
   setScene3DRenderContext(createScene3DRenderState());
 
-  const sequence = createSequenceData({
-    id: "composer-3d-demo",
-    name: sourceSequence.word,
-    word: sourceSequence.word,
-    steps: sourceSequence.steps,
-    gridMode: sourceSequence.gridMode,
-  });
+  // Derived, not snapshotted: the page swaps this prop in place when the
+  // visitor composes or generates a new sequence. Remounting the component
+  // instead would tear down the Threlte scene, and a dispose landing while
+  // renderer.compileAsync is still polling KHR_parallel_shader_compile throws
+  // inside three's own timer, where nothing downstream can catch it.
+  const sequence = $derived(
+    createSequenceData({
+      id: "composer-3d-demo",
+      name: sourceSequence.word,
+      word: sourceSequence.word,
+      steps: sourceSequence.steps,
+      gridMode: sourceSequence.gridMode,
+    })
+  );
 
   // Scene, performer count, formation, and props are all owned by the rail's
   // own tools, which write straight onto the viewer state. The label reads that
@@ -101,8 +108,20 @@
     effects.setActiveEffect("fire");
   }
 
+  // Reload the new choreography onto the performers already on stage. The
+  // scene, camera, environment, and every compiled shader survive.
+  let loadedWord: string | null = null;
+  $effect(() => {
+    const next = sequence;
+    if (!ready || loadedWord === null || loadedWord === next.word) return;
+    loadedWord = next.word;
+    viewer.loadSequenceScoped(next);
+    currentStep = 0;
+  });
+
   onMount(() => {
     viewer.enter3D(sequence);
+    loadedWord = sequence.word;
     normalizeComposer3DDemoState(viewer);
     ready = true;
 

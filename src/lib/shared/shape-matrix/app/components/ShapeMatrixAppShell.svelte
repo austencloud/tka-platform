@@ -1,7 +1,9 @@
 <script lang="ts">
   import { tick } from "svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
@@ -19,7 +21,9 @@
   import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
   import ShapeMatrixTurnPopover from "./ShapeMatrixTurnPopover.svelte";
   import ShapeMatrixSurfaceControl from "./ShapeMatrixSurfaceControl.svelte";
-  import ShapeMatrixTheoryAtlas from "./ShapeMatrixTheoryAtlas.svelte";
+  import ShapeMatrixTheoryControls from "./ShapeMatrixTheoryControls.svelte";
+  import ShapeMatrixTheoryDetail from "./ShapeMatrixTheoryDetail.svelte";
+  import ShapeMatrixTheoryPane from "./ShapeMatrixTheoryPane.svelte";
   import { runMandalaMorph } from "../services/shape-matrix-mandala-morph";
   import { growFade } from "$lib/shared/transitions/motion";
 
@@ -43,13 +47,42 @@
     SHAPE_MATRIX_LEVELS,
     SHAPE_MATRIX_LEVEL_DESCRIPTIONS,
   } from "../shape-matrix-levels";
+  import { THEORY_LEVEL_DESCRIPTIONS } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
+
+  /* Both surfaces are a grid of pairs with a detail beside it, so the shell
+     runs one layout and swaps what fills the panes. The level means a
+     different thing on each - TKA turn vocabulary on the Matrix, how far the
+     ratio band opens on Theory - so only its descriptions change. */
+  const theory = $derived(appState.surface === "theory");
+
+  /* The app always mounts on the Matrix and restores its saved or linked
+     surface immediately afterwards, so a deep link into Theory would dissolve
+     one ribbon into the other while the page is still arriving. Chrome does
+     not animate into place on first paint: the restore lands instantly, and
+     every surface change the user makes after that crossfades. */
+  let booted = $state(false);
+  $effect(() => {
+    const frame = requestAnimationFrame(() => {
+      booted = true;
+    });
+    return () => cancelAnimationFrame(frame);
+  });
+  const levelDescriptions = $derived(
+    theory ? THEORY_LEVEL_DESCRIPTIONS : SHAPE_MATRIX_LEVEL_DESCRIPTIONS
+  );
+  const hasPair = $derived(
+    theory ? appState.theoryPair !== null : appState.selectedPair !== null
+  );
   const LABEL_OPTIONS = [
     { value: "turns" as const, label: "TKA turns", shortLabel: "Turns" },
     { value: "ratios" as const, label: "VTG ratios", shortLabel: "Ratios" },
   ];
   let sizes = $state([1.28, 0.82]);
+  let theorySizes = $state([1.28, 0.82]);
   let matrixPaneElement: HTMLDivElement;
   let detailPaneElement: HTMLDivElement;
+  let theoryPaneElement: HTMLDivElement;
+  let theoryDetailElement: HTMLDivElement;
 
   // Compact navigation runs as a shared-element morph between the selected
   // tile and the hero. Wide layouts show both panes at once, so the same
@@ -63,15 +96,18 @@
       before: () => appState.selectPair(pair, { navigate: false }),
     });
   }
+  // The morph is a shared-element handoff between the matrix tile and the
+  // matrix hero. Theory tiles do not own that name, so theory navigates
+  // plainly rather than capturing the hidden matrix behind it.
   function showDetail(): void {
-    if (!appState.compact) {
+    if (!appState.compact || theory) {
       appState.showDetail();
       return;
     }
     runMandalaMorph(appState, () => appState.showDetail());
   }
   function showMatrix(): void {
-    if (!appState.compact) {
+    if (!appState.compact || theory) {
       appState.showMatrix();
       return;
     }
@@ -87,8 +123,14 @@
     void tick().then(() => {
       if (cancelled) return;
       frame = requestAnimationFrame(() => {
-        const pane =
-          request.target === "matrix" ? matrixPaneElement : detailPaneElement;
+        const pane = theory
+          ? request.target === "matrix"
+            ? theoryPaneElement
+            : theoryDetailElement
+          : request.target === "matrix"
+            ? matrixPaneElement
+            : detailPaneElement;
+        if (!pane) return;
         const focusTarget =
           request.target === "matrix"
             ? pane.querySelector<HTMLButtonElement>(
@@ -168,47 +210,94 @@
   </div>
 {/snippet}
 
+{#snippet theoryPane()}
+  <div
+    class="workspace-pane"
+    bind:this={theoryPaneElement}
+    inert={appState.compact && appState.activeView !== "matrix"}
+    aria-hidden={appState.compact && appState.activeView !== "matrix"}
+  >
+    <ShapeMatrixTheoryPane />
+  </div>
+{/snippet}
+
+{#snippet theoryDetail()}
+  <div
+    class="workspace-pane"
+    bind:this={theoryDetailElement}
+    inert={appState.compact && appState.activeView !== "detail"}
+    aria-hidden={appState.compact && appState.activeView !== "detail"}
+  >
+    <ShapeMatrixTheoryDetail />
+  </div>
+{/snippet}
+
 {#snippet theoryWorkspace()}
+  <!-- Same two panes, same split, same compact behaviour as the Matrix. The
+       surface changes what the grid is made of, not how the app works. -->
   <div class="workspace-source">
-    <ShapeMatrixTheoryAtlas />
+    <PanelGroup
+      direction="horizontal"
+      bind:sizes={theorySizes}
+      gap={appState.compact ? 0 : 8}
+      panels={[
+        {
+          id: "theory-matrix",
+          content: theoryPane,
+          defaultSize: 1.28,
+          minSize: 440,
+          fixedSize: appState.compact
+            ? appState.activeView === "matrix"
+              ? "100%"
+              : "0px"
+            : undefined,
+          resizable: !appState.compact,
+        },
+        {
+          id: "theory-realization",
+          content: theoryDetail,
+          defaultSize: 0.82,
+          minSize: 380,
+          fixedSize: appState.compact
+            ? appState.activeView === "detail"
+              ? "100%"
+              : "0px"
+            : undefined,
+        },
+      ]}
+    />
   </div>
 {/snippet}
 
 <main
   class="shape-app"
-  class:compact-detail={appState.surface === "matrix" &&
-    appState.compact &&
-    appState.activeView === "detail"}
-  class:theory={appState.surface === "theory"}
+  class:compact-detail={appState.compact && appState.activeView === "detail"}
+  class:theory={theory}
 >
   <header class="topbar">
     {#if appState.compact}
       <div class="compact-context">
-        {#if appState.surface === "matrix" && appState.activeView === "detail"}
+        {#if appState.activeView === "detail"}
           <button
             type="button"
             class="back-to-matrix"
-            aria-label="Back to the shape matrix"
+            aria-label={theory
+              ? "Back to the theory matrix"
+              : "Back to the shape matrix"}
             onclick={showMatrix}
           >
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
-            <span>Matrix</span>
+            <span>{theory ? "Theory" : "Matrix"}</span>
           </button>
         {:else}
-          <strong
-            >{appState.surface === "theory"
-              ? "Ratio Atlas"
-              : "Shape Matrix"}</strong
-          >
+          <strong>{theory ? "Theory Matrix" : "Shape Matrix"}</strong>
         {/if}
         <!-- One level-and-turns chip on both compact panes. The full ribbon
              stacked four control groups above the grid on a phone and let
              the turn scroller run past the right edge; the chip keeps the
              matrix the hero and opens every control in its popover. -->
         <ShapeMatrixSurfaceControl compact />
-        {#if appState.surface === "matrix"}
-          <ShapeMatrixTurnPopover />
-        {/if}
+        <ShapeMatrixTurnPopover />
       </div>
     {:else if variant === "standalone"}
       <div class="identity">
@@ -227,43 +316,61 @@
           <span class="control-label">Explore</span>
           <ShapeMatrixSurfaceControl />
         </div>
-        {#if appState.surface === "matrix"}
-          <div class="control-cell level-control" transition:growFade={{ axis: "x" }}>
-            <span class="control-label">Difficulty</span>
-            <LevelSelector
-              value={appState.level}
-              levels={SHAPE_MATRIX_LEVELS}
-              describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
-              onchange={appState.setLevel}
-              compact={true}
-              ariaLabel="Kinetic Alphabet level"
-            />
-          </div>
-        {/if}
-      </div>
-      {#if appState.surface === "matrix"}
-        <div class="matrix-controls" transition:growFade={{ axis: "y" }}>
-          <div class="control-cell label-control neutral-accent">
-            <span class="control-label">Notation</span>
-            <SegmentedControl
-              options={LABEL_OPTIONS}
-              value={appState.labelMode}
-              onchange={(mode: MatrixLabelMode) => appState.setLabelMode(mode)}
-              size="sm"
-              density="tight"
-              color="accent"
-              semantics="radiogroup"
-              ariaLabel="Turn label system"
-            />
-          </div>
-          <ShapeMatrixTurnControls onturn={appState.setTurn} />
+        <div class="control-cell level-control">
+          <span class="control-label">Difficulty</span>
+          <LevelSelector
+            value={appState.level}
+            levels={SHAPE_MATRIX_LEVELS}
+            describe={(level) => levelDescriptions[level]}
+            onchange={appState.setLevel}
+            compact={true}
+            ariaLabel={theory
+              ? "How far the ratio band opens"
+              : "Kinetic Alphabet level"}
+          />
         </div>
-      {/if}
+      </div>
+      <!-- The two ribbons already shared one grid area, so a pair of
+           independent fades painted Matrix's turn row through Theory's ratio
+           row: two legible bands of numbers on top of each other for the
+           length of the swap. The shared primitive runs them sequentially in
+           that same cell, so only one ribbon is ever readable. -->
+      <div class="controls-swap">
+        <Crossfade
+          key={theory ? "theory" : "matrix"}
+          mode="swap"
+          duration={booted ? DURATION.normal : 0}
+        >
+          {#if theory}
+            <div class="surface-controls">
+              <ShapeMatrixTheoryControls />
+            </div>
+          {:else}
+            <div class="matrix-controls">
+              <div class="control-cell label-control neutral-accent">
+                <span class="control-label">Notation</span>
+                <SegmentedControl
+                  options={LABEL_OPTIONS}
+                  value={appState.labelMode}
+                  onchange={(mode: MatrixLabelMode) =>
+                    appState.setLabelMode(mode)}
+                  size="sm"
+                  density="tight"
+                  color="accent"
+                  semantics="radiogroup"
+                  ariaLabel="Turn label system"
+                />
+              </div>
+              <ShapeMatrixTurnControls onturn={appState.setTurn} />
+            </div>
+          {/if}
+        </Crossfade>
+      </div>
     {/if}
 
     <div class="top-actions">
       {#if appState.compact}
-        {#if appState.surface === "matrix" && appState.activeView === "matrix" && appState.selectedPair}
+        {#if appState.activeView === "matrix" && hasPair}
           <button
             type="button"
             class="top-action compact-detail-action"
@@ -316,6 +423,7 @@
   <div class="workspace">
     <DualSourceCrossfade
       active={appState.surface === "matrix" ? "first" : "second"}
+      duration={booted ? DURATION.normal : 0}
       first={matrixWorkspace}
       second={theoryWorkspace}
     />
@@ -502,8 +610,22 @@
     outline-offset: 2px;
   }
 
-  .matrix-controls {
+  /* The crossfade owns the grid cell both ribbons used to claim directly, so
+     the outgoing and incoming bands are stacked by the primitive rather than
+     by two elements happening to name the same area. */
+  .controls-swap {
     grid-area: controls;
+    /* Centered, not start-justified: the turn control swings from 4 to 14
+       segments across levels, and a left-packed band strands the width
+       reserved for level 4 as a dead field on the right. Centering splits
+       the slack into balanced gutters at every level. */
+    justify-self: center;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .matrix-controls,
+  .surface-controls {
     /* One shared control height for all ribbon cells: a one-line sm
        SegmentedControl (44px segment + its own padding and border). Cells
        size to content — fixed cell widths overflowed once the four level
@@ -514,11 +636,8 @@
     max-width: 100%;
     display: flex;
     align-items: stretch;
-    /* Centered, not start-justified: the turn control swings from 4 to 14
-       segments across levels, and a left-packed band strands the width
-       reserved for level 4 as a dead field on the right. Centering splits
-       the slack into balanced gutters at every level. */
-    justify-self: center;
+    justify-content: center;
+    margin-inline: auto;
     gap: 0.5rem;
     min-width: 0;
   }
@@ -595,7 +714,8 @@
     width: 7.5rem;
   }
 
-  .matrix-controls :global(.turn-editor) {
+  .matrix-controls :global(.turn-editor),
+  .surface-controls :global(.theory-editor) {
     grid-area: turns;
   }
 
@@ -658,8 +778,12 @@
       padding: 0.3rem 0.45rem 0.45rem;
     }
 
-    .matrix-controls {
+    .controls-swap {
       grid-area: controls;
+    }
+
+    .matrix-controls,
+    .surface-controls {
       gap: 0.4rem;
     }
 
@@ -718,7 +842,8 @@
       grid-template-areas: "identity meta controls actions";
     }
 
-    .matrix-controls {
+    .matrix-controls,
+    .surface-controls {
       min-width: 0;
     }
   }

@@ -33,36 +33,65 @@ You leave Middle Earth by one of two ways:
 
 ## Middle Earth (the fire field)
 
-| Feature | Where Austen put it | World (approx) |
+The clearing runs roughly world x 52 to 130, z -147 to -83: about 82 x 67 m.
+
+A 6 x 5 interview grid is laid over it, columns `A`-`F` west to east, rows
+`1`-`5` north to south, each cell ~13.6 x 13.5 m. Cell centre in world:
+
+    worldX = 57.3 + 13.64 * col   (A=0 .. F=5)
+    worldZ = -141.9 + 13.45 * row  (1=0 .. 5=4)
+
+| Feature | Cell | World (approx) |
 | --- | --- | --- |
-| Showcase stage | `B3`, the teal roof | 129, -99.5 |
-| Fire circle | at `B2`, "basically" | 80.5, -118.5 |
-| Fire circle entrance | NW of `B2` | — |
-| Dip station | behind the entrance, reached by the queue | — |
-| Queue | switches back and forth between entrance and field | — |
-| Volunteer HQ | north of `B3` / east of `B1` | — |
-| First aid tent | same area as volunteer HQ | — |
-| Juggling tent | south of `B2` and east of `B9` | — |
-| Unidentified white structure | `B9` | 55, -96.5 |
+| Fire circle, LED rope | centred D3, spans B3-E4 | 90.5, -119.5 |
+| Fire circle entrance | `C2` | 79.5, -133.0 |
+| Dip station | `B1` | 70.9, -141.9 |
+| Walk-in | `E1` | 111.8, -141.9 |
+| Volunteer HQ | `F2` | 125.5, -128.4 |
+| First aid | `F3` | 125.5, -115.0 |
+| Showcase stage, teal roof | `F4` | 126.8, -98.6 |
+| Juggling tent | `C5` / `D5` | 93.6, -87.3 |
+| Food vendors, at the white structure | `A4` | 55.9, -96.4 |
 
-The walk-in, in Austen's order: enter around `B1`, go around the side, into the
-dip station, through the rest of the queue which goes back and forth, into the
-field north of `B2`, then spin around `B2`, maybe east of `B2`.
+### The fire circle is an amoeba
 
-Middle Earth also holds the crops that are spun, the volunteer HQ, first aid,
-and possibly food vendors.
+Austen sized it at about seven grid cells, "more like a smushed oval so that
+there is an ideal viewing section for everybody who's around it". Seven cells of
+area is an ellipse of roughly **51 x 32 m**, long axis east-west.
+
+It is **not** a circle and not a clean ellipse. It is a rope laid on grass, so
+the preset is `area` (freeform trace) and the rendered boundary must be
+irregular. The `circle` shape survives only for the fire pit. See
+`.claude/rules/` history on this: shipping it as a circle was a corrected defect.
+
+### The queue, in Austen's own order
+
+    E1 walk in -> west along the north edge -> B1 dip station
+      -> A1 -> A2 -> B2 (wait in line again) -> C2 entrance -> the field
+
+A switchback along the top of the field that doubles back through the northwest
+corner. You do not enter where you arrive. Once inside you spin around the fire,
+maybe on its east side.
+
+Middle Earth also holds the crops that are spun, and the props people bring.
 
 ## Upper section
 
-| Pin | What it is |
-| --- | --- |
-| `B4` | The main cabin. Fancy stay, indoor activities. **Not really part of the festival.** |
-| `B5` | Inside the campground. A covered porch and a bunch of lodges sit next to it. |
-| `B6` | Approximately the parking lot. You park **west** of `B6`, never pulling forward into `B5`. |
-| `B7` | Unrelated houses, or possibly rentable cabins. Year-round property. |
+Frame `UP-A1` to `UP-H6`, cells ~32 x 31 m.
+`worldX = -168.75 + 32.5*col` (A=0), `worldZ = -121.4 + 31.17*(row-1)`.
 
-The drive that veers uphill is **further south, off the bottom of the middle
-frame**. You do not drive into the `B5` area to reach parking.
+| Feature | Cell | World (approx) | Note |
+| --- | --- | --- | --- |
+| Top parking, made pad | `UP-D4` `UP-E4` `UP-D5` | -87 to -22, -44 to 19 | The hard pale rectangle |
+| Top parking, overflow field | `UP-A3` to `UP-C5` | -185 to -55, -75 to 19 | Grass. The pad fills first |
+| Main cabin | `UP-F2` / `UP-G2` | 4 to 36, -90 | Fancy stay, indoor activities. **Not really part of the festival** |
+| Lodges and covered porch | `UP-E3` / `UP-F3` | -39 to 4, -59 | |
+| Upper camping | north of the `UP` frame | z below -137 | Treeline; see wide `C2`, bottom of `D1`, bottom-right of `C1` |
+| Unrelated houses / rentable cabins | wide `H2` area | 60, -30 | Year-round property |
+
+The drive that veers uphill is south of the middle frame and reaches this
+section from the paved road. You do not use it on arrival — you drive past it
+to the campground first and only come back up if you are not car camping.
 
 ## Lower campground
 
@@ -71,12 +100,115 @@ frame**. You do not drive into the `B5` area to reach parking.
 | `A3` | The junction is the gate |
 | loop field | The lower campground |
 
+## Arrival, in Austen's route order
+
+Two frames are in play. The **wide frame** is a 6 x 4 grid `A1`-`J4` over the
+whole property; cell centre is `worldX = 65*col - 217.5` (A=0), `worldZ =
+62.5*row - 168.75` (row 1 = 0). The **loop frame** is a 6 x 6 grid over the
+lower campground; `worldX = 213 + px/9.032`, `worldZ = -209 + py/9.032`.
+
+1. **Down the paved road.** `B4` `C4` `D4` `E4` `F4` `G4` `H4`, then veer north
+   into `I3`. You do not turn off at the west or middle drives.
+2. **In at the lower campground.** Turn **right** into the loop.
+3. **Check in.** A canopy on your **left**, to the right of the main building
+   that is there year round. Several volunteers.
+4. **Pull off first.** Get the car into the grass beside the campground, out of
+   the traffic lane, before you do anything.
+5. **Sign in**, hand over ID, receive a **wristband**, get told how everything
+   works.
+6. **Back in the car**, out of the spot, and around the loop
+   **counterclockwise. That is the only direction allowed.**
+
+Then it forks:
+
+### Camping is a rule, not a zone
+
+You drive to wherever your campsite is going to be and unload at it. Arrive
+early and that is easy; arrive late and every good spot is taken. Then the car
+has to end up in one of exactly two places:
+
+| If you are | Your car ends up |
+| --- | --- |
+| Car camping | in the **middle of the loop**, beside your tent |
+| Setting up a regular camp | at the **very top parking**, `B3` `C3` `B4` `C4` |
+
+Getting to the top lot means driving back out of the lower section, along the
+paved road the way you came, and up. Upper camping options: the treeline at
+`C2`, the bottom of `D1`, the bottom-right of `C1`.
+
+Do not model camping as fixed pitches. Model it as first-come occupancy plus
+that two-way parking rule.
+
+## Lower campground
+
+The loop is a closed gravel circuit roughly 111 x 101 m, world x 219 to 330,
+z -177 to -76. One junction, at its southeast corner beside the main building.
+
+| Feature | Loop cell | World (approx) |
+| --- | --- | --- |
+| Junction off the paved road | `E5` | 319.6, -105.5 |
+| Main building, year round | `D5` | 305.4, -114.0 |
+| Check-in canopy | `E4` | 319.6, -116.2 |
+| Sign-in pull-off | top of `E4`, or the east side of `E5` | — |
+| Park in the middle | `C4` | 272.8, -131.5 |
+
+## Vendor village, and the barn
+
+`G2` is **primarily Vendor Village**. From the air it reads as woods; it is
+not. You walk straight through it easily, because you are only looking at the
+tops of the trees. Through it runs a **decorated pathway**, usually hung with
+art strung along the trees.
+
+At the northwest of `G2`, immediately **east of Middle Earth and nestled into
+the woods**, stands the **abandoned stage** — the old stage, kept after they
+built the new one. The teal roof inside Middle Earth is that new one. The
+abandoned stage is under canopy and does not read from the air.
+
+A third frame covers this block: columns `P`-`V`, rows `1`-`7`, cells ~13 m,
+lettered `P` onward so they cannot be confused with the wide frame's `G2`.
+`worldX = 134.6 + 13.22*col` (P=0), `worldZ = -160.6 + 13.22*row`.
+
+| Feature | Vendor cell | World (approx) |
+| --- | --- | --- |
+| Barn | `T3` | 187.5, -120.9 |
+| Abandoned stage | `P3` / `Q3` | 135 to 148, -121 |
+
+### The pathway is the loop road continued
+
+The decorated path is not a separate trail cut through the woods. It **follows
+the same line the bottom of the campground loop already follows**, ever so
+slightly diagonal, runs straight up into Middle Earth, then veers left to go up
+the road. It is invisible from the air because the canopy closes over it.
+
+That is a load-bearing detail for the tree work: the canopy must close above
+the path while the understory stays open enough to walk and to hang art in.
+
+### Jam circles are everywhere
+
+Austen: "literally everywhere. It's a flow festival." Do not place jam circles
+as fixed sites. They are emergent, wherever there is room and people.
+
+`H2`, at its bottom, has another clearing where vendor village spills over. It
+is a big space.
+
+At the **top right of `G2` there is a barn**. It matters: activities happen in
+it, and when the festival rains out, everyone and everything goes into the
+barn. Austen: "Kinetic Fire or Kinwetic Water as we like to call it." Rain is a
+recurring, expected condition, not an edge case.
+
+## Woods people actually walk through
+
+Only `G2`. Everything else reads as woods and functions as edge and backdrop.
+That single block is where tree work has to hold up at eye level: a walkable
+understory, a decorated path, art in the branches. The rest can be canopy.
+
+This is the layout constraint for the ez-tree work. See
+`project_ez_tree_adoption` in memory.
+
 ## Open — still to establish
 
-- Exact points for: fire circle entrance, dip station, queue path, volunteer HQ,
-  first aid, juggling tent. All were given as compass offsets, not points.
-- The uphill drive, south of the middle frame.
-- Vendor village, jam circles, wristband canopy, temporary parking.
+- Exact canopy, pull-off, and per-site camping spots around the loop.
+- Where exactly the abandoned stage sits, and what condition it is in.
 - The woods: which stands, which species, which density — feeds the ez-tree
   layout. See `project_ez_tree_adoption` in memory.
 
