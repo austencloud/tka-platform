@@ -67,6 +67,12 @@
     stage = { film: getLibraryFilm(id), origin: { kind: "library", key: id } };
   }
 
+  // The shell below shows only while the workbench module is still loading,
+  // so it names the demo being opened rather than a position in a film.
+  const preparingLabel = $derived(
+    stage ? `Preparing ${stage.film.title}` : "Preparing"
+  );
+
   function pickSavedFilm(entry: CollectedFilm): void {
     pendingSceneId = null;
     openSavedFilm(entry);
@@ -148,8 +154,8 @@
         aria-hidden="true"
       ></i>
       <div>
-        <span>3D Film Director</span>
-        <h1>{loadError ?? "Preparing the first scene"}</h1>
+        <span>Director</span>
+        <h1>{loadError ?? preparingLabel}</h1>
       </div>
     </section>
   </main>
