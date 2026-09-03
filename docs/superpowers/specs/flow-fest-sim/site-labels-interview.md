@@ -227,3 +227,41 @@ This is the layout constraint for the ez-tree work. See
 Not a site fact. Austen: "It depends where you're driving from." The arrival
 arc must ask the player, or pick from their stated origin. Do not hard-code a
 compass bearing into the drive-in.
+
+## Trees
+
+Answers from 2026-09-03, the batch that drives the ez-tree layout.
+
+**The two big clearings are genuinely bare.**
+
+- The Middle Earth grass clearing — the fire field — has **no trees in it at
+  all**. Not ringed-with-a-few-in-the-middle. Bare.
+- The **inside of the lower campground loop is wide open, no trees**. Shade
+  there comes only from the tree wall at the loop's edge.
+
+**The good trees — hammocks, slacklines, the ones people compete for — are on
+the lower campground treeline.** Not the pathway, not the fire-field edge, not
+the upper treeline. That treeline is the one place the layout should spend
+open-grown, big-crowned, low-forking specimens.
+
+Art is still strung along the decorated pathway (see the pathway section), but
+that is hung decoration, not the hammock trees. Keep the two separate.
+
+**The property line through the upper woods is unknown.** Austen knows where
+people go, not where the deed line runs. Until it is traced, the north and west
+woods stay pure backdrop: canopy, no programming, no camping, nothing sited.
+The one exception is what he named directly — treeline camping at `T-E2`,
+`T-E3`, `T-F2`, and the workshop cabin at `T-F2`/`T-F3`.
+
+### Open: the tree cluster inside the loop
+
+Austen said the loop interior is "wide open, no trees". The LiDAR canopy survey
+puts **12 trees inside the traced loop road** against 79 on the treeline
+outside it. The orthophoto backs the survey in part: most of those twelve sit
+on a real dark canopy mass in the middle-south of the loop, wrapped around the
+main building. A few sit on open grass at the north end.
+
+Both readings can be true — the camping grass is open, and there is a stand
+around the building that nobody pitches under. Until Austen rules on it,
+`tests/unit/flow-fest-site-ground-truth.test.ts` asserts the proportion
+(interior under a quarter of the treeline) rather than either absolute.
