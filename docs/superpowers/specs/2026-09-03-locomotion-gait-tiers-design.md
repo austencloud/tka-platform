@@ -236,8 +236,11 @@ hand invites a divergence nobody would notice.
   6 static contract tests for the run tier, 7 for the run gait profile, and a
   drift guard pinning the measured clip speeds.
 - `svelte-check`: 0 errors, 0 warnings.
-- Walk lab, x-bot, circle, 3.90 m/s: `data-gait-tier` = 1, cadence 161/min,
-  step length 147.8 cm, duty factor 0.28, double support 0%.
+- Walk lab, circle, 3.90 m/s, planting on, buffer settled: x-bot, ch01 and
+  ch10 all reach `data-gait-tier` = 1 and score **3 of 18**, failing the same
+  three rows (foot slip 4.0-5.6 cm, body over the foot 0%, weight alternates
+  no). Cadence 156-164, step length 145-152 cm, duty factor 0.27-0.28, double
+  support 0%. ch07 scores 4 of 18 -- see the audit below.
 - Flow Fest on foot, real surface: all three run clips fetched; measured speed
   plateau 1.73 m/s walking and 3.85 m/s running against a 3.91 target, with
   the ramp and the brake both visible in the trace.
@@ -247,3 +250,109 @@ hand invites a divergence nobody would notice.
 - `docs/architecture/locomotion-research-canon.md`
 - `.claude/rules/locomotion.md`, `.claude/rules/canonical-capabilities.md`
 - `patches/@austencloud__scene-3d@0.1.6.patch`
+
+## Audit, 2026-09-03
+
+Austen asked for an adversarial pass over this work before going further. It
+found two defects and corrected two claims, including one of my own.
+
+### Measured: the crossover is clean
+
+The claim that "tier transitions are phase-matched by construction" was read
+off the code, never measured. It is now measured. Ramping 1.2 -> 4.2 m/s in a
+straight line over 8 s, with the tier fraction and every joint sampled per
+frame:
+
+| observation | value |
+|---|---|
+| tier regressions while speed climbs | **0** |
+| tier leaves 0 at | 1.69 m/s (derived lower bound 1.745) |
+| tier reaches 1 at | 2.54 m/s (derived upper bound 2.479) |
+| joint jolts inside the crossing window | **0 of 13** |
+
+All 13 jolts occur later, at sustained run speed. The seam itself is quiet, so
+the shared clock does hold the two clips in phase across the exchange. This is
+now locked by `tests/unit/3d/locomotion-motion-quality.test.ts`.
+
+### Defect 1: ch07 resolves only one foot at a run
+
+Held to one pattern, one speed and one planting setting, and varying only the
+rig, ch07 is an outlier:
+
+| rig @ 3.90 m/s | score | cadence | step length | cadence x step | vs 3.90 |
+|---|---|---|---|---|---|
+| x-bot | 3 of 18 | 160 | 148.8 cm | 3.97 m/s | ok |
+| ch01 | 3 of 18 | 161 | 145.4 cm | 3.90 m/s | ok |
+| ch10 | 3 of 18 | 157 | 150.3 cm | 3.93 m/s | ok |
+| **ch07** | 4 of 18 | **102** | 144.8 cm | **2.46 m/s** | **63%** |
+
+Cadence times step length must reconcile with ground speed. On three rigs it
+does, within 1%. On ch07 it recovers under two thirds of the distance actually
+travelled, which means footfalls are going unresolved rather than the body
+moving differently.
+
+The gait probe's contact strip shows which ones: ch07 registers about 13 left
+contacts and **2 right** over the same window where x-bot registers about 14 on
+each side. One foot is nearly invisible to contact detection. ch07 is a heeled
+character, which changes the ankle's height above ground and the toe geometry
+the contact band is measured against, so the footwear is the first place to
+look. That is a hypothesis, not a diagnosis.
+
+Bounds worth keeping, because they narrow the search:
+
+- **Not general to the rig.** ch07 walking at 1.40 m/s reconciles (4 of 18,
+  cadence 120, step 72.3 cm).
+- **Not general to the run tier.** ch07 at 2.60 m/s, already at tier 0.92,
+  reconciles: 133/min x 118.1 cm = 2.62 m/s against 2.60 commanded.
+- **Not rig scale.** The obvious explanation -- a short rig saturating its
+  stride -- is falsified. Hip heights are ch10 1.0516, ch07 0.9955, ch01 0.9916,
+  ch12 0.9765, ch18 0.9377. ch07 is the second tallest; the shortest rig is
+  fine.
+
+So the failure appears on one rig, only above roughly 2.6 m/s.
+
+### Defect 2: the run profile lets a broken measurement move its own goalposts
+
+The run bands scale by pace, and pace is derived from the *measured* gait. When
+contact detection under-resolves, measured pace falls, and the ceilings tighten
+around the very rig that is already failing:
+
+| rig | measured pace | knee-jerk ceiling | knee jerk |
+|---|---|---|---|
+| ch10 | 4.01 m/s | 4773 | 6301 |
+| x-bot | 3.97 m/s | 4727 | 6271 |
+| ch07 | 2.46 m/s | **2931** | 7185 |
+
+ch07's knee-jerk ceiling is 62% of x-bot's purely because its cadence
+under-resolves. The row grades worse for a reason that has nothing to do with
+its knees. The ceiling should scale by **commanded** speed, which the caller
+already knows, so that a measurement failure cannot make an unrelated row look
+like a second defect.
+
+### Correction 1: the "3 of 18" claim was right
+
+I told Austen mid-session that my own screenshots contradicted this spec. They
+did not. On a settled buffer x-bot measures exactly 3 of 18, and ch01 and ch10
+match it on the same three rows. The frames that disagreed were ramp frames --
+a mixed walk-and-run buffer graded against run bands.
+
+The same mistake produced a false alarm: an early reading of ch07 as "7 of 18,
+cadence 89, step length 0.0 cm" was taken before the rolling buffer had filled.
+Settled and sampled three times twelve seconds apart, ch07 is a stable 4 of 18.
+**The gait readout needs a settling window of about 20 s after any navigation
+before it can be read at all.** Every number in this audit was taken after one.
+
+### Correction 2: knee jerk does not come into band
+
+The spec says the run profile scales the knee-jerk ceiling by pace. It does,
+and that is still not enough: 6271 against a 4727 ceiling on x-bot. It grades
+`warn` rather than `bad`, so it stays out of the 3-of-18 count, but calling it
+handled would be wrong. Knee jerk is out of band at a walk too (4189 against
+1500), so it is a standing property of these clips and rigs, not something the
+run tier introduced.
+
+### Process failure that allowed this
+
+`.claude/rules/locomotion.md` requires live visual proof on **each supported
+rig**. The verification above cited x-bot alone. Defect 1 is visible in the
+first frame of any other rig, and was found the moment a second one was opened.
