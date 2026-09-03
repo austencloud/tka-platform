@@ -68,6 +68,14 @@
     );
   });
 
+  const multiScene = $derived(director.film.scenes.length > 1);
+
+  // True whenever exactly one scene is being warmed: a capability demo, which
+  // only has one, or a soloed boot inside a longer film.
+  const oneSceneWarming = $derived(
+    director.warmupSceneIndex !== null || director.preparation.totalScenes <= 1
+  );
+
   let origin = $state<FilmOrigin>(initialOrigin);
   let saveOpen = $state(false);
   let sceneIndexOpen = $state(false);
@@ -135,7 +143,9 @@
    *  exactly what it preserves, so a link to this entry survives an edit. */
   function currentFilmPatch() {
     return {
-      film: $state.snapshot(director.sourceInput) as unknown as StoredFilmDocument,
+      film: $state.snapshot(
+        director.sourceInput
+      ) as unknown as StoredFilmDocument,
       poster: captureFilmPoster(director.readPosterSource()),
       durationSeconds: director.film.durationSeconds,
       sceneCount: director.film.scenes.length,
@@ -175,7 +185,9 @@
     saveBusy = true;
     try {
       // Swap rather than drop, so Restore is itself undoable.
-      const document = $state.snapshot(restored) as unknown as StoredFilmDocument;
+      const document = $state.snapshot(
+        restored
+      ) as unknown as StoredFilmDocument;
       await filmCollectionState.update(entry.id, {
         film: document,
         previousFilm: $state.snapshot(entry.film),
@@ -203,8 +215,8 @@
     // The URL always names what is on screen, including when the address bar
     // arrived bare and the route picked the film.
     syncFilmToUrl(origin);
-    // Drive seam for scripts/build-film-posters.mjs, which has to seek to a
-    // scene-relative cue and read the canvas back over CDP. Dev only.
+    // Drive seam for debugging over CDP: seek, solo a scene, read the frame.
+    // Dev only.
     if (import.meta.env.DEV) {
       (window as unknown as Record<string, unknown>).__filmDirector = director;
     }
@@ -224,21 +236,20 @@
     <div class="film-preparation" role="status" aria-live="polite">
       <div class="preparation-card">
         <span class="preparation-kicker">
-          {director.warmupSceneIndex === null
-            ? "Preparing the film"
-            : "Preparing the scene"}
+          {oneSceneWarming ? "Preparing the scene" : "Preparing the film"}
         </span>
         <strong>{director.preparation.sceneTitle}</strong>
-        <!-- A soloed boot warms exactly one scene, so its position in the film
-             is not what is being waited on. Printing "Scene 11 of 23" there
-             describes a 23-scene load that is not happening; the scene id is
-             both true and the address the viewer would type to come back. -->
+        <!-- A capability demo, and a soloed boot inside a longer film, each
+             warm exactly one scene, so a position in the film is not what is
+             being waited on. Printing "Scene 11 of 23" there describes a
+             23-scene load that is not happening; the scene id is both true and
+             the address the viewer would type to come back. -->
         <span class="preparation-count">
-          {#if director.warmupSceneIndex === null}
+          {#if oneSceneWarming}
+            {preparingSceneId ?? "One scene, on its own"}
+          {:else}
             Scene {director.preparation.sceneIndex + 1} of {director.preparation
               .totalScenes}
-          {:else}
-            {preparingSceneId ?? "One scene, on its own"}
           {/if}
         </span>
         <!-- One warmup step has no interior to report, and a determinate bar
@@ -268,7 +279,7 @@
     bind:clientWidth={exitButtonWidth}
   >
     <i class="fas fa-arrow-left" aria-hidden="true"></i>
-    Films
+    Capabilities
   </button>
 
   {#if director.lastEditError}
@@ -312,18 +323,22 @@
           <span>Channels</span>
         </button>
 
-        <button
-          type="button"
-          class="scenes-button"
-          class:soloing={director.soloSceneIndex !== null}
-          aria-label="Scenes"
-          aria-haspopup="dialog"
-          aria-expanded={sceneIndexOpen}
-          onclick={() => (sceneIndexOpen = true)}
-        >
-          <i class="fas fa-list-ol" aria-hidden="true"></i>
-          <span>Scenes</span>
-        </button>
+        <!-- A one-scene demo has nothing to pick between, so the control that
+             picks does not appear at all. -->
+        {#if multiScene}
+          <button
+            type="button"
+            class="scenes-button"
+            class:soloing={director.soloSceneIndex !== null}
+            aria-label="Scenes"
+            aria-haspopup="dialog"
+            aria-expanded={sceneIndexOpen}
+            onclick={() => (sceneIndexOpen = true)}
+          >
+            <i class="fas fa-list-ol" aria-hidden="true"></i>
+            <span>Scenes</span>
+          </button>
+        {/if}
 
         <FilmDirectorFilmPanel
           {origin}
@@ -338,7 +353,9 @@
   </FilmDirectorTransport>
   <FilmDirectorChannelEditor bind:open={channelsOpen} />
   <FilmDirectorJsonEditor />
-  <FilmDirectorSceneIndex bind:open={sceneIndexOpen} />
+  {#if multiScene}
+    <FilmDirectorSceneIndex bind:open={sceneIndexOpen} />
+  {/if}
 </main>
 
 <SaveFilmModal
