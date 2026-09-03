@@ -1,7 +1,7 @@
 export interface FrameGateConfig {
   /** Consecutive frames inside budget before the scene counts as smooth. */
   requiredConsecutive: number;
-  /** A frame slower than this resets the streak (20ms ≈ under 50fps). */
+  /** A frame slower than this resets the streak. */
   frameBudgetMs: number;
   /** A weak GPU never holds the curtain hostage past this point. */
   capMs: number;
@@ -9,7 +9,14 @@ export interface FrameGateConfig {
 
 export const DEFAULT_FRAME_GATE: FrameGateConfig = {
   requiredConsecutive: 5,
-  frameBudgetMs: 20,
+  // A heavy scene that settles at a steady 30fps is not stuttering, and this
+  // budget was 20ms — under half a 30fps frame. Five consecutive frames inside
+  // it were unreachable, so the gate never passed and every boot paid the full
+  // cap as a flat delay. Measured on the ocean scene: p50 frame 33.3ms, p90
+  // 33.4ms, 34 of 53 frames over 20ms, verdict "capped" on every run. 40ms
+  // clears a steady 30fps with headroom while still resetting on the kind of
+  // 130ms hitch the gate exists to hide.
+  frameBudgetMs: 40,
   capMs: 1500,
 };
 
