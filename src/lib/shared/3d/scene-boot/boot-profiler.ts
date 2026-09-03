@@ -503,8 +503,7 @@ export function formatBootProfile(report: BootProfileReport): string {
       lines.push(`  ${task.attribution.slice(0, 40).padEnd(42)}${ms(task.durationMs)}`);
     }
   }
-  return lines.join("
-");
+  return lines.join("\n");
 }
 
 export function finishBootProfile(): void {
