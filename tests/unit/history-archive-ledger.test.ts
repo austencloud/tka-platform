@@ -11,7 +11,7 @@ import {
   entrySpanEndYear,
   historicalYearPosition,
   placeArchiveEntries,
-} from "../../src/routes/(public)/notation/_components/archive/_lib/archive-ledger";
+} from "../../src/routes/(public)/history/_components/archive/_lib/archive-ledger";
 
 describe("four-lane notation archive ledger", () => {
   it("requires every published entry to carry evidence with a claim-level basis", () => {

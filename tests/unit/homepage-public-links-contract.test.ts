@@ -215,7 +215,15 @@ describe("homepage public-links contract", () => {
     expect(marketingChrome).toContain('path === "/about"');
     expect(marketingChrome).toContain('"sitemap"');
     expect(marketingChrome).toContain('"full"');
-    expect(marketingChrome).toContain("<SiteFooter variant={footerVariant} />");
+    expect(marketingChrome).toContain(
+      "<SiteFooter variant={footerVariant} flush={footerFlush} />"
+    );
+    // Full-bleed room pages sit the footer flush against them; the standing
+    // 4.5rem margin reads as dead background under a page that owns the
+    // viewport edge to edge.
+    expect(marketingChrome).toContain('path === "/history"');
+    expect(siteFooter).toContain("flush?: boolean");
+    expect(siteFooter).toContain("class:flush={flush}");
     expect(siteFooter).toContain('variant?: "full" | "compact" | "sitemap"');
     expect(siteFooter).toContain('variant = "full"');
     expect(siteFooter).toContain('class:sitemap={variant === "sitemap"}');
