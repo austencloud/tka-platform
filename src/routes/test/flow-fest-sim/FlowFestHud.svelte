@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
-  import type { FlowFestIntegratedAreaId } from "$lib/features/flow-fest-sim/domain/flow-fest-integrated-world";
+  import { growFade } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import type { FlowFestMobilityRuntimeUpdate } from "$lib/features/flow-fest-sim/state/flow-fest-mobility-state.svelte";
   import type {
     FlowFestObjective,
@@ -14,10 +15,6 @@
   } from "../flow-fest-graybox/flow-fest-runtime-contract";
   import FlowFestFestivalMap from "./FlowFestFestivalMap.svelte";
   import FlowFestUtilityDrawer from "./FlowFestUtilityDrawer.svelte";
-  import {
-    createFlowFestCampPlan,
-    identifyFlowFestPlanLocation,
-  } from "./flow-fest-camp-plan";
 
   interface Props {
     ready: boolean;
@@ -34,7 +31,6 @@
     viewpointHref: string;
     targetZone: FlowFestRuntimeZone | null;
     targetDistance: number | null;
-    currentArea: FlowFestIntegratedAreaId | "loading";
     mobility: FlowFestMobilityRuntimeUpdate;
     electricUnicycleSpeedMph: number;
     electricUnicycleSpeedKph: number;
@@ -66,7 +62,6 @@
     viewpointHref,
     targetZone,
     targetDistance,
-    currentArea,
     mobility,
     electricUnicycleSpeedMph,
     electricUnicycleSpeedKph,
@@ -85,35 +80,51 @@
     onReviewFestival,
   }: Props = $props();
 
-  let guideOpen = $state(false);
-  // Transient copy feedback. The button is full-width inside a fixed-width
-  // card, so swapping its label cannot move anything around it.
-  let copyState = $state<"idle" | "copied" | "failed">("idle");
-  let copyResetTimer: ReturnType<typeof setTimeout> | null = null;
+  /** How long a new objective's supporting sentence stays on screen. */
+  const DETAIL_DWELL_MS = 7000;
 
-  async function copyViewpointLink(): Promise<void> {
-    if (!viewpointHref) return;
-    try {
-      await navigator.clipboard.writeText(viewpointHref);
-      copyState = "copied";
-    } catch {
-      // The address bar already carries the same link, so a blocked clipboard
-      // costs a manual copy rather than the viewpoint. Say so instead of
-      // reporting a success that did not happen.
-      copyState = "failed";
-    }
-    if (copyResetTimer) clearTimeout(copyResetTimer);
-    copyResetTimer = setTimeout(() => (copyState = "idle"), 2200);
-  }
+  let guideOpen = $state(false);
+  /**
+   * The mobility card parks under the map on narrow viewports, so it needs
+   * the map's real rendered height rather than a guessed offset.
+   */
+  let mapDockBlockSize = $state(0);
+
+  /*
+   * The objective sentence explains a goal once, when it changes, and then
+   * gets out of the way. Keeping it on screen for the whole leg turned the
+   * objective into a paragraph the player had already read.
+   */
+  let detailVisible = $state(false);
+  let detailTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastDetailTitle = "";
+
+  $effect(() => {
+    const title = objective?.title ?? "";
+    if (title === lastDetailTitle) return;
+    lastDetailTitle = title;
+    if (detailTimer) clearTimeout(detailTimer);
+    detailVisible = Boolean(title);
+    if (!detailVisible) return;
+    detailTimer = setTimeout(() => (detailVisible = false), DETAIL_DWELL_MS);
+  });
 
   onDestroy(() => {
-    if (copyResetTimer) clearTimeout(copyResetTimer);
+    if (detailTimer) clearTimeout(detailTimer);
   });
-  const campPlan = $derived(
-    contract ? createFlowFestCampPlan(contract, selectedBranch) : null
+
+  const objectiveVisible = $derived(
+    ready && objective !== null && progress?.phase !== "choose-camp"
   );
-  const location = $derived(
-    campPlan ? identifyFlowFestPlanLocation(campPlan, position) : null
+  const showObjectiveAction = $derived(
+    Boolean(objective?.actionLabel) && !objectiveActionDisabled
+  );
+  const mobilityStateLabel = $derived(
+    mobility.mounted
+      ? mobility.input.performanceMode
+        ? "Performance"
+        : "Cruise"
+      : "Walking"
   );
 </script>
 
@@ -129,11 +140,10 @@
     onclick={() => (guideOpen = true)}
   >
     <i class="fas fa-compass" aria-hidden="true"></i>
-    <span>Guide</span>
   </button>
 </div>
 
-<div class="map-dock">
+<div class="map-dock" bind:clientHeight={mapDockBlockSize}>
   <FlowFestFestivalMap
     {contract}
     branch={selectedBranch}
@@ -141,109 +151,85 @@
     {headingRadians}
     {targetZone}
     {targetDistance}
-    {currentArea}
-    {location}
   />
-
-  <div class="viewpoint-card">
-    <span>Viewpoint</span>
-    <strong>{viewpointCoordinates || "—"}</strong>
-    <ActionButton
-      label={copyState === "copied"
-        ? "Link copied"
-        : copyState === "failed"
-          ? "Copy blocked"
-          : "Copy view link"}
-      icon="fa-link"
-      color="theme"
-      fullWidth
-      ariaDisabled={!viewpointHref}
-      onclick={() => void copyViewpointLink()}
-    />
-  </div>
 </div>
 
-{#if ready && location}
-  <aside
-    class="location-cue"
-    aria-live="polite"
-    data-location-id={location.id}
-    data-evidence={location.evidence}
-  >
-    <span>{location.eyebrow}</span>
-    <strong>{location.label}</strong>
-  </aside>
-{/if}
-
-{#if ready && objective && progress?.phase !== "choose-camp"}
-  <section class="objective-card" aria-live="polite">
-    <div class="objective-progress" aria-hidden="true">
-      <span
-        style:width={`${(objective.progressStep / objective.progressTotal) * 100}%`}
-      ></span>
+<div class="hud-foot">
+  {#if ready && mobility.interactionMessage}
+    <div class="prompt">
+      <kbd>E</kbd>
+      <span>{mobility.interactionMessage}</span>
     </div>
-    <div class="objective-heading">
-      <div>
-        <span>{objective.eyebrow}</span>
+  {/if}
+
+  {#if objectiveVisible && objective}
+    <section class="objective" aria-live="polite">
+      <div class="objective-line">
+        <span class="eyebrow">{objective.eyebrow}</span>
         <h1>{objective.title}</h1>
+        {#if targetDistance !== null}
+          <strong class="range">{Math.round(targetDistance)} m</strong>
+        {/if}
+        {#if showObjectiveAction && objective.actionLabel}
+          <ActionButton
+            label={objective.actionLabel}
+            icon={progress?.phase === "morning"
+              ? "fa-arrow-rotate-left"
+              : "fa-arrow-right"}
+            color="fuse"
+            onclick={onObjectiveAction}
+          />
+        {/if}
       </div>
-      {#if targetDistance !== null}
-        <strong class="objective-distance"
-          >{Math.round(targetDistance)} m</strong
-        >
-      {/if}
-    </div>
-    <p>{objective.detail}</p>
 
-    {#if objective.actionLabel}
-      <ActionButton
-        label={objective.actionLabel}
-        icon={progress?.phase === "morning"
-          ? "fa-arrow-rotate-left"
-          : "fa-arrow-right"}
-        color="fuse"
-        fullWidth
-        ariaDisabled={objectiveActionDisabled}
-        onclick={onObjectiveAction}
-      />
-    {/if}
-  </section>
-{/if}
+      {#if detailVisible}
+        <p transition:growFade={{ duration: DURATION.emphasis }}>
+          {objective.detail}
+        </p>
+      {/if}
+
+      <div
+        class="objective-progress"
+        role="progressbar"
+        aria-label="Arrival progress"
+        aria-valuemin="0"
+        aria-valuemax={objective.progressTotal}
+        aria-valuenow={objective.progressStep}
+      >
+        <span
+          style:inline-size={`${(objective.progressStep / objective.progressTotal) * 100}%`}
+        ></span>
+      </div>
+    </section>
+  {/if}
+</div>
 
 {#if ready}
-  <aside class="mobility-card" aria-live="polite">
+  <aside
+    class="mobility-card"
+    style:--hud-map-block-size="{mapDockBlockSize}px"
+    aria-live="polite"
+  >
     <div class="mobility-heading">
       <span>{mobility.mounted ? "EUC" : "On foot"}</span>
       <strong class:performance={mobility.input.performanceMode}>
-        {mobility.mounted
-          ? mobility.input.performanceMode
-            ? "Performance"
-            : "Cruise"
-          : "Walking"}
+        {mobilityStateLabel}
       </strong>
     </div>
 
     {#if mobility.mounted}
-      <div class="mobility-data">
-        <div class="speed">
-          <strong>{electricUnicycleSpeedMph.toFixed(1)}</strong>
-          <span
-            >mph<small>{electricUnicycleSpeedKph.toFixed(1)} km/h</small></span
-          >
-        </div>
-        <div class="battery">
-          <span
-            ><i style:width={`${mobility.dynamics.batteryPercent}%`}></i></span
-          >
-          <strong>{Math.round(mobility.dynamics.batteryPercent)}%</strong>
-        </div>
+      <div class="speed">
+        <strong>{electricUnicycleSpeedMph.toFixed(1)}</strong>
+        <span>mph<small>{electricUnicycleSpeedKph.toFixed(1)} km/h</small></span
+        >
+      </div>
+      <div class="battery">
+        <span><i style:inline-size={`${mobility.dynamics.batteryPercent}%`}
+          ></i></span
+        >
+        <strong>{Math.round(mobility.dynamics.batteryPercent)}%</strong>
       </div>
     {/if}
-
-    <div class="mobility-prompt">
-      <kbd>E</kbd>
-      <span>{mobility.interactionMessage}</span>
-    </div>
   </aside>
 {/if}
 
@@ -251,6 +237,8 @@
   bind:isOpen={guideOpen}
   mounted={mobility.mounted}
   {soundOn}
+  {viewpointCoordinates}
+  {viewpointHref}
   {showFieldPositioning}
   {captureMode}
   {showReviewTools}
@@ -265,63 +253,78 @@
 
 <style>
   .hud-brand,
-  .location-cue,
-  .objective-card,
+  .objective,
+  .prompt,
   .mobility-card {
     border: 1px solid var(--sim-stroke);
     color: var(--sim-text);
     background: var(--sim-panel-strong);
-    box-shadow: 0 1.2rem 3rem rgba(2, 7, 4, 0.28);
+    box-shadow: 0 1rem 2.6rem rgba(2, 7, 4, 0.28);
   }
 
   .hud-brand {
     position: absolute;
-    inset-block-start: clamp(0.75rem, 1.4vw, 1.5rem);
-    inset-inline-start: clamp(0.75rem, 1.4vw, 1.5rem);
+    inset-block-start: clamp(0.6rem, 1.1vw, 1rem);
+    inset-inline-start: clamp(0.6rem, 1.1vw, 1rem);
     z-index: 34;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.48rem;
-    border-radius: 0.9rem;
-    transform: scale(var(--sim-ui-scale));
-    transform-origin: top left;
+    gap: 0.4rem;
+    padding: 0.3rem 0.3rem 0.3rem 0.6rem;
+    border-radius: 0.7rem;
   }
 
   .wordmark {
     display: grid;
     gap: 0.02rem;
-    min-inline-size: 7.3rem;
-    padding-inline: 0.42rem 0.15rem;
   }
 
   .wordmark strong {
     font-family: Georgia, "Times New Roman", serif;
-    font-size: 1.05rem;
+    font-size: 0.9rem;
     font-weight: 620;
     letter-spacing: 0.07em;
+    line-height: 1.1;
   }
 
   .wordmark span {
     color: var(--sim-muted);
     font-size: var(--font-size-compact, 0.75rem);
     font-variant-numeric: tabular-nums;
+    line-height: 1.2;
   }
 
   .hud-brand button {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.42rem;
-    min-block-size: var(--min-touch-target);
-    padding-inline: 0.78rem;
+    inline-size: 2.1rem;
+    block-size: 2.1rem;
+    min-inline-size: 0;
+    min-block-size: 0;
+    padding: 0;
     border: 1px solid var(--sim-stroke);
-    border-radius: 0.65rem;
-    color: var(--sim-text);
+    border-radius: 0.55rem;
+    color: var(--sim-accent);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.055));
     font: inherit;
-    font-size: var(--font-size-min, 0.875rem);
     cursor: pointer;
+  }
+
+  /*
+   * The visible control is deliberately smaller than the touch floor so the
+   * brand stays a badge rather than a toolbar; the hit area meets the floor by
+   * extending past the button.
+   */
+  .hud-brand button::after {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    inline-size: var(--min-touch-target);
+    block-size: var(--min-touch-target);
+    translate: -50% -50%;
+    content: "";
   }
 
   .hud-brand button:hover,
@@ -330,124 +333,74 @@
     outline: none;
   }
 
-  .hud-brand button i {
-    color: var(--sim-accent);
-  }
-
   .map-dock {
-    --festival-map-width: clamp(20rem, 25vw, 28rem);
     position: absolute;
-    display: grid;
-    gap: 0.55rem;
-    justify-items: stretch;
-    inset-block-start: clamp(0.75rem, 1.4vw, 1.5rem);
-    inset-inline-end: clamp(0.75rem, 1.4vw, 1.5rem);
+    inset-block-start: clamp(0.6rem, 1.1vw, 1rem);
+    inset-inline-end: clamp(0.6rem, 1.1vw, 1rem);
     z-index: 33;
-    transform: scale(var(--sim-ui-scale));
-    transform-origin: top right;
   }
 
-  .viewpoint-card {
-    display: grid;
-    gap: 0.3rem;
-    inline-size: var(--festival-map-width);
-    padding: 0.55rem 0.7rem 0.7rem;
-    border: 1px solid var(--sim-stroke);
-    border-radius: 0.8rem;
-    color: var(--sim-text);
-    background: var(--sim-panel-strong);
-    box-shadow: 0 1.2rem 3rem rgba(2, 7, 4, 0.28);
-  }
-
-  .viewpoint-card span {
-    color: var(--sim-accent);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 820;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .viewpoint-card strong {
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 700;
-    /* The digits change constantly; tabular figures keep the line still. */
-    font-variant-numeric: tabular-nums;
-  }
-
-  .location-cue {
+  /*
+   * One bottom-centred column. The objective and the interaction prompt are
+   * both "what do I do next", so they stack in the same place instead of
+   * claiming two corners, and the column grows upward as content arrives.
+   */
+  .hud-foot {
     position: absolute;
-    inset-block-start: clamp(0.75rem, 1.4vw, 1.5rem);
+    inset-block-end: clamp(0.6rem, 1.1vw, 1rem);
     inset-inline-start: 50%;
-    z-index: 32;
+    z-index: 35;
     display: grid;
-    min-inline-size: 13rem;
-    max-inline-size: 21rem;
-    padding: 0.55rem 0.9rem 0.62rem;
-    border-radius: 0.8rem;
-    text-align: center;
-    transform: translateX(-50%) scale(var(--sim-ui-scale));
-    transform-origin: top center;
-    pointer-events: none;
+    gap: 0.45rem;
+    justify-items: center;
+    /*
+     * An explicit width, not a max: an absolutely positioned box anchored at
+     * 50% only gets the right-hand half of the viewport to shrink-to-fit in,
+     * which truncated the objective long before the column ran out of room.
+     */
+    inline-size: min(38rem, calc(100vw - 2rem));
+    translate: -50% 0;
   }
 
-  .location-cue span {
-    color: var(--sim-accent);
+  .prompt {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem 0.6rem 0.3rem 0.35rem;
+    border-color: rgba(255, 180, 95, 0.28);
+    border-radius: 0.6rem;
+    background: rgba(24, 16, 8, 0.72);
+  }
+
+  .prompt span {
     font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 820;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .location-cue strong {
-    overflow: hidden;
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 760;
-    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .objective-card {
-    position: absolute;
-    inset-inline-start: clamp(0.75rem, 1.4vw, 1.5rem);
-    inset-block-end: clamp(0.75rem, 1.4vw, 1.5rem);
-    z-index: 35;
+  .objective {
     display: grid;
-    gap: 0.68rem;
-    inline-size: min(23rem, calc(100vw - 2rem));
-    padding: 0.9rem;
-    border-radius: 1rem;
-    transform: scale(var(--sim-ui-scale));
-    transform-origin: bottom left;
+    gap: 0.4rem;
+    inline-size: 100%;
+    padding: 0.5rem 0.7rem 0.55rem;
+    border-radius: 0.8rem;
+    pointer-events: auto;
   }
 
-  .objective-progress {
-    block-size: 0.18rem;
-    overflow: hidden;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .objective-progress span {
-    display: block;
-    block-size: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, var(--sim-accent), #ed6f56);
-    transition: width 480ms ease;
-  }
-
-  .objective-heading {
+  /*
+   * The row wraps rather than truncating: a destination the player cannot read
+   * is worse than a capsule that grows one line. It is bottom-anchored, so the
+   * extra line grows upward into empty sky.
+   */
+  .objective-line {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem 0.55rem;
   }
 
-  .objective-heading > div {
-    display: grid;
-    min-inline-size: 0;
-  }
-
-  .objective-heading span {
+  .eyebrow {
+    flex: 0 0 auto;
     color: var(--sim-accent);
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 820;
@@ -461,51 +414,61 @@
   }
 
   h1 {
-    margin-block-start: 0.12rem;
+    min-inline-size: 0;
     font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(1.35rem, 2vw, 1.75rem);
+    font-size: 1.05rem;
     font-weight: 560;
-    line-height: 1.02;
+    line-height: 1.15;
+    text-align: center;
+  }
+
+  .range {
+    flex: 0 0 auto;
+    color: var(--sim-mint);
+    font-size: var(--font-size-min, 0.875rem);
+    font-variant-numeric: tabular-nums;
   }
 
   p {
-    display: -webkit-box;
-    overflow: hidden;
     color: var(--sim-muted);
     font-size: var(--font-size-min, 0.875rem);
-    line-height: 1.42;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    line-height: 1.4;
+    text-align: center;
   }
 
-  .objective-distance {
-    flex: 0 0 auto;
-    min-inline-size: 4.5rem;
-    color: var(--sim-mint);
-    font-size: 1rem;
-    font-variant-numeric: tabular-nums;
-    text-align: end;
+  .objective-progress {
+    block-size: 0.16rem;
+    inline-size: 100%;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .objective-progress span {
+    display: block;
+    block-size: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--sim-accent), #ed6f56);
+    transition: inline-size 480ms ease;
   }
 
   .mobility-card {
     position: absolute;
-    inset-inline-end: clamp(0.75rem, 1.4vw, 1.5rem);
-    inset-block-end: clamp(0.75rem, 1.4vw, 1.5rem);
+    inset-inline-end: clamp(0.6rem, 1.1vw, 1rem);
+    inset-block-end: clamp(0.6rem, 1.1vw, 1rem);
     z-index: 34;
     display: grid;
-    gap: 0.55rem;
-    inline-size: 14rem;
-    padding: 0.75rem;
-    border-radius: 0.9rem;
-    transform: scale(var(--sim-ui-scale));
-    transform-origin: bottom right;
+    gap: 0.4rem;
+    /* Fits the widest heading pair, "On foot" beside "Performance". */
+    inline-size: 11.75rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 0.8rem;
     pointer-events: none;
   }
 
   .mobility-heading,
   .speed,
-  .battery,
-  .mobility-prompt {
+  .battery {
     display: flex;
     align-items: center;
   }
@@ -513,19 +476,25 @@
   .mobility-heading,
   .battery {
     justify-content: space-between;
-    gap: 0.65rem;
+    gap: 0.35rem;
   }
 
   .mobility-heading > span {
     color: var(--sim-muted);
+    white-space: nowrap;
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 780;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
+  /*
+   * Every label in this row is enumerable, so the widest one reserves the
+   * space and the row never resizes as the state changes.
+   */
   .mobility-heading > strong {
-    min-inline-size: 6.5rem;
+    min-inline-size: 5.6rem;
+    white-space: nowrap;
     color: var(--sim-mint);
     font-size: var(--font-size-compact, 0.75rem);
     text-align: end;
@@ -535,20 +504,15 @@
     color: var(--sim-accent);
   }
 
-  .mobility-data {
-    display: grid;
-    gap: 0.45rem;
-  }
-
   .speed {
     align-items: flex-end;
-    gap: 0.48rem;
+    gap: 0.4rem;
   }
 
   .speed > strong {
-    min-inline-size: 4.3rem;
+    min-inline-size: 3.5rem;
     font:
-      580 2.35rem/0.9 Georgia,
+      580 1.95rem/0.9 Georgia,
       "Times New Roman",
       serif;
     font-variant-numeric: tabular-nums;
@@ -557,6 +521,7 @@
 
   .speed > span {
     display: grid;
+    min-inline-size: 0;
     color: var(--sim-accent);
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 800;
@@ -568,11 +533,13 @@
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 600;
     text-transform: none;
+    white-space: nowrap;
   }
 
   .battery > span {
     flex: 1;
-    block-size: 0.3rem;
+    min-inline-size: 0;
+    block-size: 0.28rem;
     overflow: hidden;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.1);
@@ -583,169 +550,98 @@
     block-size: 100%;
     border-radius: inherit;
     background: linear-gradient(90deg, #67cfab, #c4e58c);
-    transition: width 180ms linear;
+    transition: inline-size 180ms linear;
   }
 
   .battery strong {
-    min-inline-size: 3rem;
+    min-inline-size: 2.6rem;
     color: var(--sim-mint);
     font-size: var(--font-size-compact, 0.75rem);
     font-variant-numeric: tabular-nums;
     text-align: end;
   }
 
-  .mobility-prompt {
-    gap: 0.5rem;
-    min-block-size: 2.45rem;
-    padding: 0.35rem 0.45rem;
-    border: 1px solid rgba(255, 180, 95, 0.2);
-    border-radius: 0.62rem;
-    background: rgba(255, 180, 95, 0.055);
-  }
-
-  .mobility-prompt span {
-    overflow: hidden;
-    font-size: var(--font-size-compact, 0.75rem);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   kbd {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-inline-size: 2rem;
-    min-block-size: 1.8rem;
+    min-inline-size: 1.7rem;
+    min-block-size: 1.6rem;
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-block-end-color: rgba(255, 255, 255, 0.4);
-    border-radius: 0.42rem;
+    border-radius: 0.4rem;
     background: rgba(255, 255, 255, 0.07);
     font:
       720 var(--font-size-compact, 0.75rem) / 1 ui-monospace,
       monospace;
   }
 
-  @media (max-width: 46rem) {
-    .location-cue {
-      display: none;
-    }
-
-    .hud-brand {
-      inset-block-start: 0.55rem;
-      inset-inline-start: 0.55rem;
-      gap: 0.35rem;
-      padding: 0.35rem;
-    }
-
-    .wordmark {
-      min-inline-size: 0;
-      padding-inline: 0.28rem;
-    }
-
-    .wordmark strong {
-      font-size: 0.9rem;
-    }
-
-    .wordmark span,
-    .hud-brand button span {
-      display: none;
-    }
-
-    .hud-brand button {
-      inline-size: var(--min-touch-target);
-      padding: 0;
-    }
-
-    .map-dock {
-      --festival-map-width: min(11rem, calc(100vw - 12.875rem));
-      inset-block-start: 0.55rem;
-      inset-inline-end: 0.55rem;
-    }
-
-    .objective-card {
-      inset-inline: 0.55rem;
-      inset-block-end: 0.55rem;
-      inline-size: auto;
-      padding: 0.72rem;
-    }
-
-    .objective-card p {
-      display: none;
-    }
-
-    .mobility-card {
-      inset-block: 12rem auto;
-      inset-inline: auto 0.55rem;
-      inline-size: 10.5rem;
-      gap: 0.35rem;
-      padding: 0.55rem;
-      transform-origin: top right;
-    }
-
-    .speed > strong {
-      min-inline-size: 3.5rem;
-      font-size: 1.8rem;
-    }
-
-    .mobility-prompt {
-      display: none;
-    }
-  }
-
   /*
-   * The viewpoint readout is a desk-side review tool. Below these sizes the map
-   * dock is already down to 11rem and the mobility card has moved under it, so
-   * the card would either overlap or wrap its own button. The address bar still
-   * carries the link on every viewport; only the shortcut to it goes away.
+   * Phone portrait: the bottom column and the mobility card cannot share the
+   * bottom edge, so the card moves under the map and the column takes the
+   * full width. Nothing is hidden; the layout recomposes.
    */
-  @media (max-width: 46rem), (max-height: 31rem) {
-    .viewpoint-card {
-      display: none;
-    }
-  }
-
-  @media (min-width: 46.01rem) and (max-width: 70rem) {
-    .location-cue {
-      display: none;
-    }
-  }
-
-  @media (max-height: 31rem) and (min-width: 40rem) {
-    .hud-brand {
-      inset-block-start: 0.5rem;
-    }
-
+  @media (max-width: 63rem) {
     .map-dock {
+      /* A fifth of a tablet's width is still a lot of map. */
       --festival-map-width: 17rem;
-      inset-block-start: 0.5rem;
-      inset-inline-end: 0.5rem;
     }
 
-    .objective-card {
-      inset-block-end: 0.5rem;
-      inline-size: 21rem;
-      gap: 0.42rem;
-      padding: 0.62rem;
-    }
-
-    .objective-card p {
-      display: none;
+    .hud-foot {
+      inset-inline: 0.5rem;
+      inline-size: auto;
+      translate: 0 0;
     }
 
     .mobility-card {
-      inset-inline-end: 0.5rem;
-      inset-block-end: 0.5rem;
-      inline-size: 11rem;
-      gap: 0.3rem;
-      padding: 0.5rem;
+      inset-block: calc(
+          clamp(0.6rem, 1.1vw, 1rem) + var(--hud-map-block-size, 12rem) + 0.55rem
+        )
+        auto;
+    }
+  }
+
+  @media (max-width: 34rem) {
+    .map-dock {
+      /*
+       * A phone cannot give the map a fifth of its width per side and still
+       * show the brand badge, so the map takes what is left beside the badge.
+       */
+      --festival-map-width: min(11.5rem, calc(100vw - 11.5rem));
     }
 
-    .mobility-prompt {
-      display: none;
+    .mobility-card {
+      inline-size: 9.5rem;
+      gap: 0.3rem;
+      padding: 0.45rem 0.5rem;
     }
 
     .speed > strong {
-      font-size: 1.8rem;
+      min-inline-size: 3rem;
+      font-size: 1.6rem;
+    }
+
+    .prompt span {
+      white-space: normal;
+    }
+  }
+
+  /* Wide and short: recentre the column and keep it clear of the map rail. */
+  @media (max-height: 31rem) and (min-width: 34.01rem) {
+    .map-dock {
+      /* Half the viewport height is too much map on a short landscape phone. */
+      --festival-map-width: 15rem;
+    }
+
+    .hud-foot {
+      inset-inline: auto;
+      inset-inline-start: 50%;
+      inline-size: min(30rem, calc(100vw - 26rem));
+      translate: -50% 0;
+    }
+
+    .objective p {
+      display: none;
     }
   }
 

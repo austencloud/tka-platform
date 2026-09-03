@@ -806,7 +806,7 @@
     {/if}
 
     <p class="creator-credit">
-      A reference for <a href="/notation">Flow Arts Notation</a> ·
+      A reference for <a href="/history">Flow Arts History</a> ·
       <a href="/guide">Guide</a>
     </p>
   </div>

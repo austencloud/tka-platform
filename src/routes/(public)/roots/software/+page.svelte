@@ -250,8 +250,8 @@
           {
             "@type": "ListItem",
             position: 2,
-            name: "Notation",
-            item: "https://tkaflowarts.com/notation",
+            name: "Flow Arts History",
+            item: "https://tkaflowarts.com/history",
           },
           {
             "@type": "ListItem",
@@ -431,7 +431,7 @@
             </div>
             <p class="context-link">
               For what VTG contributed to The Kinetic Alphabet itself, read the <a
-                href="/notation#archive-record-vtg">Notation lineage</a
+                href="/history#archive-record-vtg">VTG record in the history archive</a
               >.
             </p>
           </div>

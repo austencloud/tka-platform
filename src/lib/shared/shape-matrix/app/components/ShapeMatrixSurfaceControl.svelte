@@ -12,8 +12,11 @@
   const options = [
     { value: "matrix" as const, label: "Level 4 matrix", shortLabel: "Matrix" },
     {
+      // The Matrix sits at a Kinetic Alphabet level and Theory does not sit at
+      // one at all, so the switch between them says which is which rather than
+      // implying a step up the same ladder.
       value: "theory" as const,
-      label: "Rational ratio theory",
+      label: "Rational ratio theory, outside the level system",
       shortLabel: "Theory",
     },
   ];

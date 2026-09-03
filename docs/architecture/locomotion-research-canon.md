@@ -77,6 +77,15 @@ The owners have deliberately different jobs:
    controller did not build or query the database. Treat it as unfinished
    infrastructure, not a shipping motion-matching solver and not a reason to
    create a parallel system.
+7. `measureStandingStance` / `planStandingStance` / `applyStandingStance` in
+   `@austencloud/scene-3d` `src/lib/services/leg-geometry.ts` own the **static
+   standing base** a performer holds when nothing is driving its legs. This is
+   not locomotion: it owns no gait clock, no contact schedule, and no footfall
+   plan. `Avatar3D.svelte` calls it once at load, and only when
+   `enableLocomotion` is false. The moment a clip or a planner drives the legs,
+   that owner writes the same bones every frame and the standing pose is gone,
+   which is the intended relationship. Do not add a second stance solver, and do
+   not extend this one into swing, contact, or step planning.
 
 The governing TKA designs are:
 
@@ -405,6 +414,37 @@ visual evaluation. It does not justify accepting visible defects because one
 metric improved.
 
 ## Rejected assumptions
+
+### A single hard-coded rotation can serve as a stance for every rig
+Rejected 2026-09-03, with runtime bone measurements on four rigs.
+
+`Avatar3D.svelte` widened the default stance with a fixed 8-degree rotation
+about each upper leg's **own local Z**. A bone's local axes are a property of
+the export, not of the body, so one constant behaved differently on every rig:
+it abducted the Mixamo-derived catalog rigs (ch18 321 mm -> 549 mm ankle
+separation, ch01 318 -> 564, ch07 326 -> 567) and adducted the intake rig
+(239 mm -> 18 mm), which is the feet-stuck-together silhouette Austen reported
+on `/test/staff-grip`. The rotation also raised the ankles off the bind pose
+that `getFeetOffset()` had already measured, so every affected performer stood
+a centimetre or two above the floor without anything reporting it.
+
+A stance must be measured from the body it belongs to: hip sockets, ankles, and
+the frontal plane they define. The replacement targets ankle separation equal to
+the rig's own hip-socket separation, applies the rotation in world space about a
+measured abduction axis, restores each foot's authored world orientation, and
+returns the ankle height change so the host can re-ground the performer.
+
+Two different upstream shapes feed that measurement, so do not read one rig's
+numbers as the catalog's. The Mixamo-derived catalog rigs arrive at runtime in
+their authored bind pose, ankles about 1.7x hip width apart. The intake rig
+arrives with ankles at exactly 1.0x hip width, which is the signature of a
+Blender intake that baked the GLB's embedded `mixamo.com` action - that clip's
+first frame stands the rig at attention, and `pose.armature_apply()` writes it
+in as the new bind pose (see `clear_imported_pose` in
+`scripts/characters/blender-proportion-rescale.py`, landed 2026-09-03 in
+`40180e87a8`). The runtime stance normalizes both shapes, so fixing the intake
+bake does not invalidate it and it does not excuse leaving the bake in place.
+
 
 | Assumption                                               | Why it is rejected                                                                                                                                     |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |

@@ -13,7 +13,7 @@ import {
 // Every CTA door must point at a route or landing anchor that actually exists.
 // If a route is renamed, update BOTH the FAQ item and this list.
 const KNOWN_DOORS = new Set([
-  "/notation",
+  "/history",
   "/learn/guide", // Level 1 guide reader (the /guide/level-1 static page is a retired 308)
   "/endless-spinner",
   "/composer",

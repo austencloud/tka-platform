@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PlayableArchive from "../../(public)/notation/_components/archive/PlayableArchive.svelte";
+  import PlayableArchive from "../../(public)/history/_components/archive/PlayableArchive.svelte";
 </script>
 
 <svelte:head>

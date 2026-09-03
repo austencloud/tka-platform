@@ -215,7 +215,10 @@ const RECORDER = `async ({ ms, scrollTo, click, scrollSweep }) => {
   const q = (p) => sorted.length ? +sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))].toFixed(1) : 0;
   const rs = r.slice().sort((a, b) => a - b);
 
+  const canvases = document.querySelectorAll('canvas').length;
+
   return {
+    canvases,
     frameCount: f.length,
     min: q(0),
     median: q(0.5),
@@ -278,6 +281,28 @@ async function measureDisplayInterval(ws, sessionId) {
   return snapToRefreshRate(median);
 }
 
+/**
+ * Block until the route is actually running, and report how long that took.
+ *
+ * Measuring before this point is how the harness once graded /composer as a
+ * clean 60fps while its hero sat on "Preparing a live sequence..." with no
+ * player mounted: an inert page drops no frames. Time-to-live is also the
+ * number a visitor feels first, so it is reported rather than hidden.
+ */
+async function waitForLive(ws, sessionId, timeoutMs = 30000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const live = await run(
+      ws,
+      sessionId,
+      `() => document.querySelectorAll('canvas').length > 0`
+    );
+    if (live) return { ms: Date.now() - started, live: true };
+    await sleep(250);
+  }
+  return { ms: Date.now() - started, live: false };
+}
+
 function grade(pass, interval) {
   const budget = interval * 1.05; // one frame, plus scheduling noise
   const dropped = interval * 2;   // a frame the user actually loses
@@ -290,6 +315,12 @@ function grade(pass, interval) {
   }
   const bigTask = pass.result.longTasks.find((t) => t.duration > 50);
   if (bigTask) fails.push(`${bigTask.duration}ms long task blocks the thread`);
+  // A page that renders nothing trivially holds any frame budget. Grading that
+  // as a pass is how a stuck loading state reads as 60fps, so refuse it: every
+  // surface this harness audits has at least one animated loop when it is live.
+  if (pass.result.rafPerFrame.max === 0) {
+    fails.push("no rAF loop ran — page was inert, not smooth");
+  }
   return fails;
 }
 
@@ -302,7 +333,7 @@ function fmt(pass, interval) {
     `  ${mark}  ${pass.name}`,
     `        ${fps} fps · median ${r.median}ms · p95 ${r.p95}ms · worst ${r.worst}ms`,
     `        rAF loops/frame ${r.rafPerFrame.median} (max ${r.rafPerFrame.max}) · ` +
-      `long tasks ${r.longTaskCount} totalling ${r.longTaskTotalMs}ms`,
+      `long tasks ${r.longTaskCount} totalling ${r.longTaskTotalMs}ms · canvases ${r.canvases ?? 0}`,
     r.longTasks.length
       ? `        worst tasks ${r.longTasks.slice(0, 4).map((t) => `${t.duration}ms`).join(", ")}`
       : null,
@@ -361,6 +392,12 @@ async function main() {
       ),
     });
 
+    // The cold pass deliberately watches the load. Everything after it is
+    // about a page that has finished arriving, so wait for the route to be
+    // live first — and report that wait, because it is the delay a visitor
+    // feels before anything moves.
+    const liveness = await waitForLive(ws, sessionId);
+
     // Idle: sitting still at three depths, doing nothing at all.
     const stops = [
       { name: "idle at hero", scrollTo: "main, body" },
@@ -397,6 +434,11 @@ async function main() {
         `  viewport ${VIEWPORT[0]}x${VIEWPORT[1]}` +
         (CPU_THROTTLE > 1 ? `  CPU ${CPU_THROTTLE}x slowdown` : "")
     );
+    console.log(
+      liveness.live
+        ? `  first animated frame after ${(liveness.ms / 1000).toFixed(1)}s of loading`
+        : `  NEVER CAME ALIVE — no canvas after ${(liveness.ms / 1000).toFixed(1)}s`
+    );
     console.log("");
     for (const pass of passes) console.log(fmt(pass, interval), "\n");
 
@@ -409,7 +451,7 @@ async function main() {
       const { writeFileSync } = await import("node:fs");
       writeFileSync(
         JSON_OUT,
-        JSON.stringify({ url, interval, cpuThrottle: CPU_THROTTLE, passes }, null, 2)
+        JSON.stringify({ url, interval, cpuThrottle: CPU_THROTTLE, liveness, passes }, null, 2)
       );
       console.log(`wrote ${JSON_OUT}\n`);
     }
