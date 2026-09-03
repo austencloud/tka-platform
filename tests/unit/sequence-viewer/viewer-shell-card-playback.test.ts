@@ -216,7 +216,7 @@ describe("sequence viewer Card playback", () => {
     expect(harness.togglePlayback).not.toHaveBeenCalled();
   });
 
-  it("leases the readable split Card shape for the entire Card visit", () => {
+  it("lets the focused Card pick its own grid, and leases the one it leaves behind", () => {
     vi.useFakeTimers();
     const resolved = {
       cols: 4,
@@ -231,11 +231,17 @@ describe("sequence viewer Card playback", () => {
     harness.layout.rememberReadableCardAutoLayout(resolved, 322, 280);
     harness.layout.selectViewerMode("card");
 
-    expect(harness.layout.cardAutoLayoutOverride).toEqual(resolved);
+    // Entering Card must not lease. The Card solves against the box its pane is
+    // heading toward, so there is no sliver to protect it from -- and a lease
+    // would pin the Side-by-Side grid onto the focused Card for the whole visit.
+    expect(harness.layout.cardAutoLayoutOverride).toBeNull();
     vi.advanceTimersByTime(DURATION.emphasis * 2);
-    expect(harness.layout.cardAutoLayoutOverride).toEqual(resolved);
+    expect(harness.layout.cardAutoLayoutOverride).toBeNull();
 
+    // Leaving Card still leases: the Card it leaves behind sits in a collapsing
+    // pane, and its last readable shape has to outlive that collapse.
     harness.layout.selectViewerMode("animation");
+    expect(harness.layout.cardAutoLayoutOverride).toEqual(resolved);
     vi.advanceTimersByTime(DURATION.emphasis - 1);
     expect(harness.layout.cardAutoLayoutOverride).toEqual(resolved);
     vi.advanceTimersByTime(1);
@@ -263,8 +269,11 @@ describe("sequence viewer Card playback", () => {
     disposals.push(harness.dispose);
 
     harness.layout.rememberReadableCardAutoLayout(stable, 322, 280);
+    // Measured through a pane that is already collapsing: too small in one
+    // dimension to be a readable Card, so it must not replace the stable shape.
     harness.layout.rememberReadableCardAutoLayout(collapsing, 375, 186);
     harness.layout.selectViewerMode("card");
+    harness.layout.selectViewerMode("animation");
 
     expect(harness.layout.cardAutoLayoutOverride).toEqual(stable);
   });
