@@ -302,9 +302,16 @@ describe("landing shared-element contract", () => {
     expect(composer).not.toContain("FALLBACK_DEMO");
     expect(composer).toContain("const heroAct = createHeroAct()");
     expect(composer).toContain("runAfterNamedRouteMorphIdle(heroAct.start)");
+    // The hero keeps auto-advancing; the tunnel and 3D bands latch its first
+    // draw so a Threlte scene is never torn down under a reading visitor.
+    expect(composer).toContain("sequence={heroAct.sequence}");
     expect(composer).toContain(
-      "const carriedSequence = $derived(visitorSequence ?? heroAct.sequence)"
+      "const carriedSequence = $derived(visitorSequence ?? latchedHeroSequence)"
     );
+    expect(composer).toContain(
+      "if (first && !latchedHeroSequence) latchedHeroSequence = first;"
+    );
+    expect(composer).not.toContain("{#key carriedSequence?.id}");
     expect(composer).toContain(
       'loader={() => import("./_sections/ConstructSection.svelte")}'
     );
