@@ -107,9 +107,20 @@
   const heroAct = createHeroAct();
 
   // A sequence the visitor composed or generated further down the page takes
-  // over the carry; until then the hero's current draw is what carries.
+  // over the carry; until then the bands hold the hero's FIRST draw.
   let visitorSequence = $state<SequenceData | null>(null);
-  const carriedSequence = $derived(visitorSequence ?? heroAct.sequence);
+
+  // The hero keeps auto-advancing every loop pass. The tunnel and the 3D
+  // viewer must NOT follow it: rebuilding a Threlte scene under a reader every
+  // ~16 seconds is churn on its own, and a teardown landing mid-compileAsync
+  // throws inside three's timer where nothing can catch it. So the bands latch
+  // the first non-null hero draw and hold it until the visitor makes one.
+  let latchedHeroSequence = $state<SequenceData | null>(null);
+  $effect(() => {
+    const first = heroAct.sequence;
+    if (first && !latchedHeroSequence) latchedHeroSequence = first;
+  });
+  const carriedSequence = $derived(visitorSequence ?? latchedHeroSequence);
   const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
   let constructActive = $state(false);
   let outputsActive = $state(false);
@@ -135,7 +146,6 @@
   // Same handler HomeHero uses: report the interaction, then roll now.
   function handleReroll(): void {
     trackDemoInteraction("try_another");
-    visitorSequence = null;
     void heroAct.advanceNow();
   }
 
@@ -292,7 +302,7 @@
 
     <div class="opening-player">
       <SequenceHeroDemo
-        sequence={carriedSequence}
+        sequence={heroAct.sequence}
         element={heroAct.element}
         onReroll={handleReroll}
         rerolling={heroAct.rerolling}
@@ -366,8 +376,8 @@
     <div class="changing-intro">
       <h2 id="changing-title">See what you made.</h2>
       <p>
-        The sequence above carries into the tunnel and the 3D player below.
-        Its notation comes with it.
+        The sequence you build above carries into the tunnel and the 3D player
+        below. Its notation comes with it.
       </p>
     </div>
 
@@ -376,19 +386,19 @@
          viewer takes the next band. -->
     <div class="tunnel-band">
       <div class="product-frame band-frame">
-        {#key carriedSequence?.id}
-          <LazyMount
-            loader={() => import("./_components/ComposerTunnelDemo.svelte")}
-            active={outputsActive && !!carriedSequence}
-            props={{ sequence: carriedSequence, layout: "band" }}
-            error={tunnelLoadError}
-            debugName="composer tunnel"
-          >
-            {#snippet placeholder()}
-              {@render tunnelPlaceholder()}
-            {/snippet}
-          </LazyMount>
-        {/key}
+        <!-- No {#key}: both demos accept a changing `sequence` prop and swap
+             in place, the way SequenceHeroDemo's player deliberately does. -->
+        <LazyMount
+          loader={() => import("./_components/ComposerTunnelDemo.svelte")}
+          active={outputsActive && !!carriedSequence}
+          props={{ sequence: carriedSequence, layout: "band" }}
+          error={tunnelLoadError}
+          debugName="composer tunnel"
+        >
+          {#snippet placeholder()}
+            {@render tunnelPlaceholder()}
+          {/snippet}
+        </LazyMount>
       </div>
     </div>
 
@@ -400,19 +410,17 @@
             <p>3D is unavailable in this browser.</p>
           </div>
         {:else}
-          {#key carriedSequence?.id}
-            <LazyMount
-              loader={() => import("./_components/Composer3DViewerDemo.svelte")}
-              active={outputsActive && canShow3D && !!carriedSequence}
-              props={{ sequence: carriedSequence }}
-              error={viewerLoadError}
-              debugName="composer 3D viewer"
-            >
-              {#snippet placeholder()}
-                {@render viewerPlaceholder()}
-              {/snippet}
-            </LazyMount>
-          {/key}
+          <LazyMount
+            loader={() => import("./_components/Composer3DViewerDemo.svelte")}
+            active={outputsActive && canShow3D && !!carriedSequence}
+            props={{ sequence: carriedSequence }}
+            error={viewerLoadError}
+            debugName="composer 3D viewer"
+          >
+            {#snippet placeholder()}
+              {@render viewerPlaceholder()}
+            {/snippet}
+          </LazyMount>
         {/if}
       </div>
     </div>
