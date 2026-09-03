@@ -150,8 +150,15 @@ const HAZE_DOME_RADIUS = 660;
  */
 const FOG: Record<EmberAtmosphereLookId, FogConfig> = {
   "blackglass-inferno": { color: "#3f2018", density: 0.0042 },
-  "furnace-storm": { color: "#6b3018", density: 0.0072 },
-  "sulfur-caldera": { color: "#443f22", density: 0.0062 },
+  // The two coloured looks were set a third to three-quarters heavier than
+  // blackglass, which at the F09 orbit turned each into one flat wash: the
+  // lava run went to a smear and the far ridge lost its form entirely. A
+  // brighter fog colour carries much further at the same density than the
+  // near-black blackglass fog does, so matching blackglass's reach means
+  // sitting close to its density, not above it. Storm keeps a touch more haze
+  // than the other two because that is the look's whole premise.
+  "furnace-storm": { color: "#6b3018", density: 0.0046 },
+  "sulfur-caldera": { color: "#443f22", density: 0.0044 },
 };
 
 /**

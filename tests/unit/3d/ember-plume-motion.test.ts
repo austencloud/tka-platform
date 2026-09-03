@@ -286,6 +286,25 @@ describe("plume aerial perspective", () => {
   );
 });
 
+describe("look fog reach", () => {
+  const BLACKGLASS = createDefaultEmberConfig("blackglass-inferno").fog.density;
+
+  it.each(EMBER_ATMOSPHERE_LOOK_IDS)(
+    "keeps %s within reach of the look that was judged correct",
+    (lookId) => {
+      const { density } = createDefaultEmberConfig(lookId).fog;
+
+      // Blackglass is the reference: at the F09 orbit its lava run reads end to
+      // end and the far ridge keeps its form. The coloured looks were once set
+      // a third to three-quarters heavier and each collapsed into a flat wash.
+      // A brighter fog colour already carries further at equal density, so a
+      // meaningfully higher density is what erases the frame.
+      expect(density).toBeLessThanOrEqual(BLACKGLASS * 1.15);
+      expect(density).toBeGreaterThan(0);
+    }
+  );
+});
+
 function parseHex(value: string): { r: number; g: number; b: number } {
   const hex = value.replace("#", "");
   return {
