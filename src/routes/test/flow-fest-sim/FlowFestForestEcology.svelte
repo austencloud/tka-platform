@@ -75,6 +75,17 @@
     onCullingSample,
     onGrassCullingSample,
   }: Props = $props();
+  /**
+   * Everything that gets drawn. Site trees and backdrop woodland share the
+   * distance tiers and the cullers, so a backdrop tree 40 m past the property
+   * line renders on the same full asset a site tree does at that range. Only
+   * the venue's own trees carry collision and leaf litter, and those consumers
+   * read `layout.trees` directly.
+   */
+  const renderedTrees = $derived([
+    ...layout.trees,
+    ...layout.backdropTrees,
+  ]);
   const { camera } = useThrelte();
   const loaderOptions = {
     dracoLoader: useDraco("/draco/"),
@@ -309,7 +320,7 @@
     for (const [familyId, geometrySource] of geometrySources) {
       const materialSource = materialSources.get(familyId);
       if (!materialSource) continue;
-      const placements = layout.trees.filter(
+      const placements = renderedTrees.filter(
         (placement) => placement.familyId === familyId
       );
       if (placements.length === 0) continue;
@@ -378,7 +389,7 @@
     const nextNearTrees = new Group();
     nextNearTrees.name = "FFS_ForestScene_TreeFamilies_near";
     for (const [familyId, source] of sources) {
-      const placements = layout.trees.filter(
+      const placements = renderedTrees.filter(
         (placement) => placement.familyId === familyId
       );
       const nearInstances = createForestRuntimeTreeInstances(
@@ -603,7 +614,7 @@
     });
     const culling = aggregateCullingStats(treeCullers);
     onReady?.({
-      treeInstances: layout.trees.length,
+      treeInstances: renderedTrees.length,
       grassInstances: layout.grass.length,
       groundLifeInstances: layout.groundLife.length,
       treeFamilies: treeSources.size,

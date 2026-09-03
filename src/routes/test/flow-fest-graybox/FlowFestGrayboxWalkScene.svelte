@@ -33,6 +33,7 @@
   import {
     Mesh,
     TextureLoader,
+    Vector3,
     type Group,
     type PerspectiveCamera,
     type WebGLRenderer,
@@ -124,6 +125,24 @@
     onReady?: (details: FlowFestGrayboxReadyDetails) => void;
     onPositionChange?: (position: { x: number; y: number; z: number }) => void;
     onViewRotationChange?: (yaw: number, pitch: number) => void;
+    /**
+     * The live camera eye rather than the body centre: its world position plus
+     * the yaw and pitch it is aimed with, reported alongside the position task.
+     *
+     * A consumer that wants to describe "the view I am looking at right now"
+     * must read the camera the frame was actually drawn from. Deriving it from
+     * the body position and a fixed eye height is wrong the moment the player
+     * crouches or mounts the wheel, both of which move the eye without moving
+     * the body centre by the same amount.
+     */
+    onCameraPoseChange?: (pose: {
+      x: number;
+      y: number;
+      z: number;
+      yawRadians: number;
+      pitchRadians: number;
+      horizontalFovDegrees: number;
+    }) => void;
     onElectricUnicycleChange?: (update: FlowFestMobilityRuntimeUpdate) => void;
     onError?: (message: string) => void;
   }
@@ -145,6 +164,18 @@
     PLAYER_HALF_HEIGHT + PLAYER_RADIUS + PLAYER_OFFSET;
   const EYE_HEIGHT = 1.7;
   const CAMERA_OFFSET = EYE_HEIGHT - BODY_CENTRE_ABOVE_GROUND;
+  /**
+   * Below this the rig is first person and the body already carries the camera.
+   * The first-person rig still nudges the eye 5 cm forward, so the floor sits
+   * well above that rather than treating the nudge as a chase boom.
+   */
+  const MINIMUM_RIG_BOOM_METERS = 0.25;
+  /** Above this the reading is a rig mid-settle, not a real chase distance. */
+  const MAXIMUM_RIG_BOOM_METERS = 12;
+  /** Frames a deferred boom correction may wait for the rig to produce one. */
+  const RIG_CORRECTION_FRAME_BUDGET = 90;
+  /** Past this the player has taken over and the correction is not ours to make. */
+  const RIG_CORRECTION_DRIFT_TOLERANCE_METERS = 0.5;
   const DESTINATION_ID = "flow-fest-gate2-measured-walk";
   const REVIEW_WALK_SPEED_METERS_PER_SECOND = 1.2;
   const CHUNK_SIZE_METERS = 32;
@@ -208,6 +239,23 @@
     });
   let electricUnicycleParkedBody: PhysicsBodyComponent | null = null;
   let electricUnicycleLongitudinalAcceleration = $state(0);
+  /**
+   * A review-camera teleport that ran before the chase rig had produced a frame,
+   * waiting to redo itself once the boom can be measured. See
+   * `reviewCameraRigBoom`.
+   */
+  let pendingRigCorrection: {
+    cameraId: string;
+    expectedX: number;
+    expectedZ: number;
+    framesRemaining: number;
+  } | null = null;
+  // View angles and the scratch vector behind `onCameraPoseChange`. Held
+  // outside `$state` because nothing in this component renders from them; they
+  // are read once per frame by the position task and handed straight out.
+  let viewYawRadians = 0;
+  let viewPitchRadians = 0;
+  const cameraWorldPosition = new Vector3();
   /**
    * Last mounted-pose report. Held outside `$state` on purpose: it lands every
    * frame, and the runtime-proof surface samples it at its own throttle rather
@@ -649,6 +697,8 @@
     playerYaw = orientation.yaw;
     targetPlayerYaw = orientation.yaw;
     initialPitch = orientation.pitch;
+    viewYawRadians = orientation.yaw;
+    viewPitchRadians = orientation.pitch;
     activeHorizontalFov = lowerGateCamera?.horizontalFovDegrees ?? 65;
     if (props.electricUnicycleEnabled && electricUnicycleDrive && terrain) {
       clearElectricUnicycleParkedBody();
@@ -669,7 +719,43 @@
     cameraRevision += 1;
   }
 
-  function teleportToReviewCamera(cameraId: string): boolean {
+  /**
+   * How far the rendered camera currently sits from the body it follows.
+   *
+   * In first person the two coincide apart from eye height, but the electric
+   * unicycle's chase rig holds the camera a fixed boom behind the aim and a
+   * little above it. A review camera's `positionWorld` says where the CAMERA
+   * belongs, so the body has to be planted that far forward or the frame lands
+   * short of the authored one — and a shared viewpoint link, which reports the
+   * real camera position, walks backwards by one boom every time it is opened.
+   *
+   * Measured from the live rig rather than read from config so it stays correct
+   * when a collision probe shortens the boom or the mode changes. Returns a zero
+   * boom before the rig has produced a plausible frame, which keeps the
+   * first-person path on its exact existing arithmetic.
+   */
+  function reviewCameraRigBoom(): { forward: number; vertical: number } {
+    if (!reviewCamera) return { forward: 0, vertical: 0 };
+    const body = physicsProvider?.getPlayerPosition() ?? playerPosition;
+    reviewCamera.getWorldPosition(cameraWorldPosition);
+    const forward = Math.hypot(
+      cameraWorldPosition.x - body.x,
+      cameraWorldPosition.z - body.z
+    );
+    if (
+      !Number.isFinite(forward) ||
+      forward < MINIMUM_RIG_BOOM_METERS ||
+      forward > MAXIMUM_RIG_BOOM_METERS
+    ) {
+      return { forward: 0, vertical: 0 };
+    }
+    return { forward, vertical: cameraWorldPosition.y - body.y };
+  }
+
+  function teleportToReviewCamera(
+    cameraId: string,
+    correctingRigBoom = false
+  ): boolean {
     if (!contract || !terrain) return false;
     const camera =
       contract.reviewCameras.find((candidate) => candidate.id === cameraId) ??
@@ -678,10 +764,13 @@
       );
     if (!camera) return false;
     const orientation = yawPitchForCamera(camera);
+    const boom = reviewCameraRigBoom();
     const position = {
-      x: camera.positionWorld[0],
-      y: camera.positionWorld[1] - CAMERA_OFFSET,
-      z: camera.positionWorld[2],
+      x: camera.positionWorld[0] + boom.forward * Math.sin(orientation.yaw),
+      y:
+        camera.positionWorld[1] -
+        (boom.forward > 0 ? boom.vertical : CAMERA_OFFSET),
+      z: camera.positionWorld[2] + boom.forward * Math.cos(orientation.yaw),
     };
     ensureTerrainColliders(position.x, position.z);
     physicsProvider?.teleport?.(position);
@@ -689,8 +778,22 @@
     playerYaw = orientation.yaw;
     targetPlayerYaw = orientation.yaw;
     initialPitch = orientation.pitch;
+    viewYawRadians = orientation.yaw;
+    viewPitchRadians = orientation.pitch;
     activeHorizontalFov = camera.horizontalFovDegrees;
     cameraRevision += 1;
+    // The first teleport of a page load runs before the rig has drawn anything,
+    // so its boom is unmeasurable and the frame lands one boom short. Redo it
+    // once the rig can answer, unless this pass already is that redo.
+    pendingRigCorrection =
+      correctingRigBoom || boom.forward > 0
+        ? null
+        : {
+            cameraId,
+            expectedX: position.x,
+            expectedZ: position.z,
+            framesRemaining: RIG_CORRECTION_FRAME_BUDGET,
+          };
     return true;
   }
 
@@ -1562,6 +1665,32 @@
     // the player had actually walked to.
     if (props.electricUnicycleEnabled) emitElectricUnicycleUpdate();
     props.onPositionChange?.(position);
+    if (pendingRigCorrection) {
+      const drifted =
+        Math.hypot(
+          position.x - pendingRigCorrection.expectedX,
+          position.z - pendingRigCorrection.expectedZ
+        ) > RIG_CORRECTION_DRIFT_TOLERANCE_METERS;
+      pendingRigCorrection.framesRemaining -= 1;
+      if (drifted || pendingRigCorrection.framesRemaining <= 0) {
+        pendingRigCorrection = null;
+      } else if (reviewCameraRigBoom().forward > 0) {
+        const { cameraId } = pendingRigCorrection;
+        pendingRigCorrection = null;
+        teleportToReviewCamera(cameraId, true);
+      }
+    }
+    if (props.onCameraPoseChange && reviewCamera) {
+      reviewCamera.getWorldPosition(cameraWorldPosition);
+      props.onCameraPoseChange({
+        x: cameraWorldPosition.x,
+        y: cameraWorldPosition.y,
+        z: cameraWorldPosition.z,
+        yawRadians: viewYawRadians,
+        pitchRadians: viewPitchRadians,
+        horizontalFovDegrees: activeHorizontalFov,
+      });
+    }
   });
 
   onDestroy(() => {
@@ -1681,6 +1810,8 @@
         if (movement) movement.cameraMode = nextMode;
       }}
       onRotationChange={(yaw, pitch) => {
+        viewYawRadians = yaw;
+        viewPitchRadians = pitch;
         props.onViewRotationChange?.(yaw, pitch);
       }}
       onInputStateChange={(input) => {
