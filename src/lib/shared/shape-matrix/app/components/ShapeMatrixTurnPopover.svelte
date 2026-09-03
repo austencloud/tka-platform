@@ -26,11 +26,21 @@
     SHAPE_MATRIX_LEVELS,
     SHAPE_MATRIX_LEVEL_DESCRIPTIONS,
   } from "../shape-matrix-levels";
+  import { THEORY_LEVEL_DESCRIPTIONS } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
+  import { spinRatioKey } from "@vtg/domain";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  import ShapeMatrixTheoryControls from "./ShapeMatrixTheoryControls.svelte";
   import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
 
   const appState = getShapeMatrixAppContext();
   let open = $state(false);
+
+  /* One chip for both surfaces. What it edits changes with the surface; that
+     it is the way into level and axis values does not. */
+  const theory = $derived(appState.surface === "theory");
+  const levelDescriptions = $derived(
+    theory ? THEORY_LEVEL_DESCRIPTIONS : SHAPE_MATRIX_LEVEL_DESCRIPTIONS
+  );
 
   const LABEL_OPTIONS = [
     { value: "turns" as const, label: "TKA turns", shortLabel: "Turns" },
@@ -44,10 +54,21 @@
     return matrixTurnSpokenLabel(turn, appState.labelMode);
   }
 
-  const leftVisible = $derived(visible(appState.leftTurn));
-  const rightVisible = $derived(visible(appState.rightTurn));
+  const leftVisible = $derived(
+    theory ? spinRatioKey(appState.theoryLeftRatio) : visible(appState.leftTurn)
+  );
+  const rightVisible = $derived(
+    theory
+      ? spinRatioKey(appState.theoryRightRatio)
+      : visible(appState.rightTurn)
+  );
   const triggerLabel = $derived(
-    `Edit level and turns. Level ${appState.level}. Left ${spoken(appState.leftTurn)}, right ${spoken(appState.rightTurn)}.`
+    theory
+      ? `Edit level, ratios, timing and direction. Level ${appState.level}. Left ${leftVisible}, right ${rightVisible}.`
+      : `Edit level and turns. Level ${appState.level}. Left ${spoken(appState.leftTurn)}, right ${spoken(appState.rightTurn)}.`
+  );
+  const popoverTitle = $derived(
+    theory ? "Level and ratios" : "Level and turns"
   );
 
   function applyTurn(turn: TurnValue): void {
@@ -92,11 +113,11 @@
               {...props}
               class="turn-popover themed-scrollbar"
               role="dialog"
-              aria-label="Edit level and turns"
+              aria-label={popoverTitle}
               transition:flyFade={{ y: -6, duration: DURATION.normal }}
             >
               <div class="popover-head">
-                <span class="popover-title">Level and turns</span>
+                <span class="popover-title">{popoverTitle}</span>
                 <button
                   type="button"
                   class="popover-close"
@@ -111,27 +132,31 @@
                 <LevelSelector
                   value={appState.level}
                   levels={SHAPE_MATRIX_LEVELS}
-                  describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
+                  describe={(level) => levelDescriptions[level]}
                   onchange={applyLevel}
                   compact={true}
                   ariaLabel="Kinetic Alphabet level"
                 />
               </div>
-              <div class="notation">
-                <span class="row-label">Notation</span>
-                <SegmentedControl
-                  options={LABEL_OPTIONS}
-                  value={appState.labelMode}
-                  onchange={(mode: MatrixLabelMode) =>
-                    appState.setLabelMode(mode)}
-                  size="sm"
-                  density="tight"
-                  color="accent"
-                  semantics="radiogroup"
-                  ariaLabel="Turn label system"
-                />
-              </div>
-              <ShapeMatrixTurnControls layout="tray" onturn={applyTurn} />
+              {#if theory}
+                <ShapeMatrixTheoryControls layout="tray" />
+              {:else}
+                <div class="notation">
+                  <span class="row-label">Notation</span>
+                  <SegmentedControl
+                    options={LABEL_OPTIONS}
+                    value={appState.labelMode}
+                    onchange={(mode: MatrixLabelMode) =>
+                      appState.setLabelMode(mode)}
+                    size="sm"
+                    density="tight"
+                    color="accent"
+                    semantics="radiogroup"
+                    ariaLabel="Turn label system"
+                  />
+                </div>
+                <ShapeMatrixTurnControls layout="tray" onturn={applyTurn} />
+              {/if}
             </div>
           {/if}
         </div>

@@ -47,8 +47,10 @@ function createState(compact: boolean) {
     },
     {
       surface: "matrix",
-      theoryRatio: { propRotations: 1, handCycles: 3 },
-      theorySpin: "pro",
+      theoryLeftRatio: { propRotations: 1, handCycles: 3 },
+      theoryRightRatio: { propRotations: 1, handCycles: 3 },
+      theoryMode: "SS",
+      theoryPair: null,
       level: 2,
       leftTurn: 0,
       rightTurn: 0,
@@ -213,8 +215,10 @@ describe("shape matrix app state", () => {
 
     state.restoreState({
       surface: "matrix",
-      theoryRatio: { propRotations: 2, handCycles: 7 },
-      theorySpin: "anti",
+      theoryLeftRatio: { propRotations: 2, handCycles: 5 },
+      theoryRightRatio: { propRotations: 1, handCycles: 2 },
+      theoryMode: "QO",
+      theoryPair: null,
       level: 3,
       leftTurn: 0.5,
       rightTurn: 0.5,
@@ -236,31 +240,53 @@ describe("shape matrix app state", () => {
     expect(state.selectedPair?.right.style).toBe(right.style);
     expect(state.selectedMode).toBe("QS");
     expect(state.selectedPropMode).toBe("SO");
-    expect(state.theoryRatio).toEqual({ propRotations: 2, handCycles: 7 });
-    expect(state.theorySpin).toBe("anti");
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 5 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 1, handCycles: 2 });
+    expect(state.theoryMode).toBe("QO");
     expect(syncState).not.toHaveBeenCalled();
   });
 
-  it("keeps Theory Atlas state exact and rejects ratios outside the catalog", () => {
+  it("moves both theory axes together and honours the Apply-to target", () => {
     const { state, syncState } = createState(false);
 
     state.setSurface("theory");
+    state.setLevel(4);
     state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
-    state.setTheorySpin("anti");
 
     expect(state.surface).toBe("theory");
-    expect(state.theoryRatio).toEqual({ propRotations: 2, handCycles: 9 });
-    expect(state.theorySpin).toBe("anti");
-    expect(syncState).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        surface: "theory",
-        theoryRatio: { propRotations: 2, handCycles: 9 },
-        theorySpin: "anti",
-      })
-    );
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 2, handCycles: 9 });
 
-    state.setTheoryRatio({ propRotations: 3, handCycles: 10 });
-    expect(state.theoryRatio).toEqual({ propRotations: 1, handCycles: 3 });
+    state.setActiveAxis("right");
+    state.setTheoryRatio({ propRotations: 1, handCycles: 2 });
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 1, handCycles: 2 });
+
+    state.setTheoryMode("TO");
+    expect(syncState).toHaveBeenLastCalledWith(
+      expect.objectContaining({ surface: "theory", theoryMode: "TO" })
+    );
+  });
+
+  it("keeps every theory ratio inside the level the user chose", () => {
+    const { state } = createState(false);
+
+    state.setSurface("theory");
+    state.setLevel(4);
+    state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+
+    // Level 1 is the three ratios TKA can already name, so 2:9 has to land on
+    // the nearest one it holds rather than survive a level it is not in.
+    state.setLevel(1);
+    expect(
+      state.availableTheoryRatios.some(
+        (ratio) =>
+          ratio.propRotations === state.theoryLeftRatio.propRotations &&
+          ratio.handCycles === state.theoryLeftRatio.handCycles
+      )
+    ).toBe(true);
+    expect(state.availableTheoryRatios).toHaveLength(3);
   });
 
   it("keeps an exact prop target only while the pair has equal rotating turns", () => {

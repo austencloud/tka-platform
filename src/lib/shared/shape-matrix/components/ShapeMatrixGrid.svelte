@@ -1,4 +1,13 @@
-<script lang="ts">
+<!--
+  The one Shape Matrix grid: axis headers, tiles, selection, and the fit
+  formula that keeps a whole matrix on screen at whole pixels.
+
+  Generic over its axis item so the Theory surface gets the same grid rather
+  than a lookalike. What differs between the two surfaces is only how a tile is
+  drawn and keyed, so those four things are props; layout, the touch-target
+  floor, lazy paint, and the tile-to-hero shared element stay here.
+-->
+<script lang="ts" generics="TAxis = Flower">
   import type { ShapeMatrixData } from "../services/shape-matrix-flowers";
   import {
     flowerKey,
@@ -18,28 +27,37 @@
   type CellVerdict = "legal" | "illegal" | "unsure";
 
   interface Props {
-    data: ShapeMatrixData;
-    /** Blue flowers to show as rows (already filtered). */
-    rowAxis: Flower[];
-    /** Red flowers to show as columns (already filtered). */
-    colAxis: Flower[];
+    /** Required by the default flower painters; unused when painters are given. */
+    data?: ShapeMatrixData;
+    /** Blue axis items to show as rows (already filtered). */
+    rowAxis: TAxis[];
+    /** Red axis items to show as columns (already filtered). */
+    colAxis: TAxis[];
     /** Upper bound on a cell's edge; the actual size shrinks to fit the viewport. */
     maxCellPx?: number;
-    onselect: (pair: { left: Flower; right: Flower }) => void;
+    onselect: (pair: { left: TAxis; right: TAxis }) => void;
     /** Optional externally-owned selection for restored/shared app state. */
-    selectedPair?: { left: Flower; right: Flower } | null;
+    selectedPair?: { left: TAxis; right: TAxis } | null;
     /** Alternative cell/header painter (e.g. the poi trail painter). Defaults to the club-style painter. */
     painter?: ShapeMatrixArtworkPainter;
     /** Per-cell verdict tint (poi-legality curation). Null/undefined = no tint. */
-    overlayFor?: (left, right) => CellVerdict | null | undefined;
+    overlayFor?: (left: TAxis, right: TAxis) => CellVerdict | null | undefined;
     /** Cells to de-emphasize (e.g. already-judged cells in a curation focus view). */
-    dimFor?: (left, right) => boolean;
+    dimFor?: (left: TAxis, right: TAxis) => boolean;
     /**
      * The selected tile owns the shared tile-to-hero `view-transition-name`
      * while this grid is the visible endpoint. Hosts that show the hero at the
      * same time (wide layouts) leave this off so the name is never doubled.
      */
     claimSelected?: boolean;
+    /** Stable identity of an axis item. Defaults to the flower key. */
+    keyOf?: (item: TAxis) => string;
+    /** Spoken description of an axis item. Defaults to the flower label. */
+    labelOf?: (item: TAxis) => string;
+    /** Header artwork source at a measured size. Defaults to the flower painter. */
+    paintHeader?: (item: TAxis, hand: "left" | "right", sizePx: number) => string;
+    /** Cell artwork source at a measured size. Defaults to the flower painter. */
+    paintCell?: (left: TAxis, right: TAxis, sizePx: number) => string;
   }
   let {
     data,
@@ -52,6 +70,19 @@
     overlayFor,
     dimFor,
     claimSelected = false,
+    /*
+     * The flower defaults keep every existing consumer calling this component
+     * exactly as before. They are the only place the generic axis is narrowed,
+     * and they only run when the caller supplied no painter of its own.
+     */
+    keyOf = ((item: TAxis) => flowerKey(item as Flower)) as (
+      item: TAxis
+    ) => string,
+    labelOf = ((item: TAxis) => flowerLabel(item as Flower)) as (
+      item: TAxis
+    ) => string,
+    paintHeader,
+    paintCell,
   }: Props = $props();
 
   // Track counts for the CSS tile formula: the row-header column and the
@@ -63,10 +94,19 @@
   // canvas's own guide painter, at each tile's measured size (the primitive
   // measures itself), so the strokes are the animator's strokes from the 44px
   // touch-target floor through the 320px 4K layout.
-  const headerPaint = (f: Flower, hand: "left" | "right") => (sizePx: number) =>
-    headerArtworkSrc(data, f, hand, sizePx, painter);
-  const cellPaint = (b: Flower, r: Flower) => (sizePx: number) =>
-    cellArtworkSrc(data, b, r, sizePx, painter);
+  const headerPaint =
+    (f: TAxis, hand: "left" | "right") => (sizePx: number) =>
+      paintHeader
+        ? paintHeader(f, hand, sizePx)
+        : data
+          ? headerArtworkSrc(data, f as Flower, hand, sizePx, painter)
+          : "";
+  const cellPaint = (b: TAxis, r: TAxis) => (sizePx: number) =>
+    paintCell
+      ? paintCell(b, r, sizePx)
+      : data
+        ? cellArtworkSrc(data, b as Flower, r as Flower, sizePx, painter)
+        : "";
 
   let observed = $state(new Set<string>());
   function watch(node: HTMLElement, key: string) {
@@ -89,7 +129,7 @@
     selectedPair === undefined
       ? sel
       : selectedPair
-        ? `${flowerKey(selectedPair.left)}__${flowerKey(selectedPair.right)}`
+        ? `${keyOf(selectedPair.left)}__${keyOf(selectedPair.right)}`
         : null
   );
 </script>
@@ -114,11 +154,11 @@
           <th class="corner" scope="col" aria-label="left rows by right columns"
           ></th>
           {#each colAxis as rf, colIndex (colIndex)}
-            <th class="colhead" scope="col" title={flowerLabel(rf)}>
+            <th class="colhead" scope="col" title={labelOf(rf)}>
               <ShapeMatrixMandalaArt
                 paint={headerPaint(rf, "right")}
-                artKey={`right:${flowerKey(rf)}`}
-                alt={`right ${flowerLabel(rf)}`}
+                artKey={`right:${keyOf(rf)}`}
+                alt={`right ${labelOf(rf)}`}
               />
             </th>
           {/each}
@@ -127,15 +167,15 @@
       <tbody>
         {#each rowAxis as bf, rowIndex (rowIndex)}
           <tr>
-            <th class="rowhead" scope="row" title={flowerLabel(bf)}>
+            <th class="rowhead" scope="row" title={labelOf(bf)}>
               <ShapeMatrixMandalaArt
                 paint={headerPaint(bf, "left")}
-                artKey={`left:${flowerKey(bf)}`}
-                alt={`left ${flowerLabel(bf)}`}
+                artKey={`left:${keyOf(bf)}`}
+                alt={`left ${labelOf(bf)}`}
               />
             </th>
             {#each colAxis as rf, colIndex (colIndex)}
-              {@const key = `${flowerKey(bf)}__${flowerKey(rf)}`}
+              {@const key = `${keyOf(bf)}__${keyOf(rf)}`}
               {@const slotKey = `${rowIndex}:${colIndex}`}
               {@const verdict = overlayFor?.(bf, rf) ?? null}
               <td class="cell-td">
@@ -152,7 +192,7 @@
                     name: SHAPE_MATRIX_ACTIVE_STAGE_NAME,
                     enabled: claimSelected && selectedKey === key,
                   }}
-                  aria-label={`left ${flowerLabel(bf)} over right ${flowerLabel(rf)}`}
+                  aria-label={`left ${labelOf(bf)} over right ${labelOf(rf)}`}
                   aria-pressed={selectedKey === key}
                   onclick={() => {
                     sel = key;
