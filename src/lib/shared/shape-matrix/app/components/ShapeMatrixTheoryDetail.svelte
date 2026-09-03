@@ -15,10 +15,13 @@
     spinRatioToTkaTurnFraction,
     type SpinRatio,
   } from "@vtg/domain";
+  import { MANDALA_STANDARD_TIP_DX } from "$lib/shared/mandala/domain/mandala-constants";
+  import { traceScaledPath } from "$lib/shared/notation/qft/qft-model";
   import {
     buildRatioStops,
     snapToStop,
   } from "$lib/shared/shape-matrix/domain/ratio-tuner";
+  import { propReachInHandRadii } from "$lib/shared/shape-matrix/services/theory-matrix-artwork";
   import {
     isStationaryRatio,
     theoryKnobs,
@@ -38,6 +41,18 @@
   const RED = "var(--dm-motion-red, #ed1c24)";
 
   const stops = buildRatioStops();
+
+  /*
+   * The prop's reach, in hand-orbit radii. The tiles in the grid are already
+   * drawn at it, and drawing the animation at a flat one prop length gave the
+   * same flower different proportions in the two places. Theory paths come
+   * from the model rather than from a realized sequence, so the grid can
+   * render before the pictograph data lands; the standard staff covers that
+   * wait, exactly as it does for the tiles.
+   */
+  const propReach = $derived(
+    propReachInHandRadii(app.data?.clubTipDx ?? MANDALA_STANDARD_TIP_DX)
+  );
 
   let paused = $state(false);
   let alignToken = $state(0);
@@ -120,9 +135,23 @@
     color: string
   ): LiveHand {
     const knobs = theoryKnobs(flower, hand, app.theoryMode);
+    const rate = scrubbed[hand] ?? rateOf(flower);
+    /*
+     * The mandala under the animation, from the first frame.
+     *
+     * It comes from the SAME knobs the stage integrates — the paired ones,
+     * with this hand's timing offset and direction in them — so the curve lies
+     * exactly under the prop rather than near it. The tile beside it is the
+     * unpaired shape, which is the Matrix's rule for a tile and the reason
+     * this cannot just reuse the tile's geometry.
+     *
+     * A rate between two stops has no closed path to draw, which is the honest
+     * answer there rather than a shape the prop is not tracing.
+     */
+    const settled = Math.abs(rate - rateOf(flower)) < 1e-9;
     return {
       id: hand,
-      rate: scrubbed[hand] ?? rateOf(flower),
+      rate,
       spinSign: knobs.spin === "inspin" ? 1 : -1,
       radius: knobs.radius,
       color,
@@ -130,6 +159,9 @@
       handSign: knobs.handDirection ?? 1,
       propPhase: knobs.phase ?? 0,
       trailCycles: closureCycles(flower),
+      guide: settled
+        ? traceScaledPath(knobs, { hand: 1, prop: propReach })
+        : null,
     };
   }
 
@@ -218,7 +250,12 @@
 
         <div class="stage-card">
           <div class="stage-window">
-            <ShapeMatrixLiveRatioStage {hands} {paused} {alignToken} />
+            <ShapeMatrixLiveRatioStage
+              {hands}
+              {paused}
+              {alignToken}
+              {propReach}
+            />
           </div>
           <div class="stage-actions">
             <button

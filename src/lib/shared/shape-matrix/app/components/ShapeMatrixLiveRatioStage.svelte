@@ -55,12 +55,22 @@
      * whole closed path and nothing older.
      */
     trailCycles: number;
+    /**
+     * The whole closed path, in stage units, drawn under the animation from
+     * the first frame. Null while the rate sits between two ratios, where
+     * there is no closed path to show.
+     */
+    guide?: ReadonlyArray<{ x: number; y: number }> | null;
   }
 </script>
 
 <script lang="ts">
   import { onMount } from "svelte";
   import { angleOf, PROP_LENGTH } from "$lib/shared/notation/qft/qft-model";
+  import { ENGINE_GRID_RADIUS } from "$lib/shared/mandala/domain/mandala-constants";
+  import { MANDALA_GUIDE_FLOOR_OPACITY } from "$lib/shared/mandala/domain/mandala-overlay-types";
+  import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
   interface Props {
     hands: LiveHand[];
@@ -69,6 +79,8 @@
     paused?: boolean;
     /** Bumping this returns every accumulated phase to its start. */
     alignToken?: number;
+    /** Prop reach in hand-orbit radii, so the stick matches the real prop. */
+    propReach?: number;
   }
 
   let {
@@ -76,9 +88,23 @@
     handPeriod = 2600,
     paused = false,
     alignToken = 0,
+    propReach = PROP_LENGTH,
   }: Props = $props();
 
   const VIEW = 2.45;
+
+  /*
+   * The pictograph grid, at the scale the hands are already drawn at.
+   *
+   * One stage unit is one hand-orbit radius, and the engine puts a hand point
+   * at ENGINE_GRID_RADIUS inside a 950-unit box. That fixes the grid square
+   * against the canvas exactly, with nothing measured: the two agree because
+   * they are the same number, not because a layout pass made them agree.
+   * Container units rather than JS, so it is right in the frame the canvas is
+   * first sized in.
+   */
+  const GRID_VIEWBOX = 950;
+  const GRID_SPAN = GRID_VIEWBOX / ENGINE_GRID_RADIUS / (VIEW * 2);
   const TRAIL_CAPACITY = 1100;
   const TRAIL_BUCKETS = 26;
   /*
@@ -229,6 +255,30 @@
       context.translate(cssWidth / 2, cssHeight / 2);
       context.scale(scale, scale);
 
+      /*
+       * The mandala first, whole, under everything else — the same floor the
+       * Matrix drill lays under its live player, at the same opacity. Both
+       * hands before either trail, so one hand's guide never lands on top of
+       * the other hand's motion.
+       */
+      context.globalCompositeOperation = "lighter";
+      context.globalAlpha = MANDALA_GUIDE_FLOOR_OPACITY;
+      context.lineWidth = 0.013;
+      context.lineJoin = "round";
+      for (const hand of hands) {
+        const guide = hand.guide;
+        if (!guide || guide.length < 2) continue;
+        context.strokeStyle = resolveColor(element, hand.color);
+        context.beginPath();
+        context.moveTo(guide[0].x, guide[0].y);
+        for (let i = 1; i < guide.length; i += 1) {
+          context.lineTo(guide[i].x, guide[i].y);
+        }
+        context.stroke();
+      }
+      context.globalAlpha = 1;
+      context.globalCompositeOperation = "source-over";
+
       for (const hand of hands) {
         const runtime = runtimeFor(hand);
         const color = resolveColor(element, hand.color);
@@ -253,24 +303,14 @@
          */
         const handX = Math.sin(runtime.handAngle) * hand.radius;
         const handY = -Math.cos(runtime.handAngle) * hand.radius;
-        const headX = handX + Math.sin(runtime.propAngle) * PROP_LENGTH;
-        const headY = handY - Math.cos(runtime.propAngle) * PROP_LENGTH;
+        const headX = handX + Math.sin(runtime.propAngle) * propReach;
+        const headY = handY - Math.cos(runtime.propAngle) * propReach;
         const spacing = hand.trailCycles / TRAIL_SAMPLES;
         if (
           runtime.length === 0 ||
           (advance > 0 && runtime.cycles - runtime.lastSample >= spacing)
         ) {
           pushPoint(runtime, headX, headY);
-        }
-
-        if (hand.radius > 0) {
-          context.beginPath();
-          context.arc(0, 0, hand.radius, 0, Math.PI * 2);
-          context.setLineDash([0.055, 0.075]);
-          context.lineWidth = 0.016;
-          context.strokeStyle = "rgba(255, 255, 255, 0.18)";
-          context.stroke();
-          context.setLineDash([]);
         }
 
         const kept = keptPoints(runtime, hand.trailCycles);
@@ -314,11 +354,12 @@
             }
           }
           /*
-           * The floor is high because the window is now exactly one closure:
-           * the oldest bucket is the rest of the flower, not a stale streak,
-           * so it has to stay readable while the head still leads.
+           * A low floor, because the guide beneath it already holds the whole
+           * flower. Without one the trail has to be the shape AND the
+           * recency, and the two fight. With one it is free to read as a
+           * bright head walking a drawing that is already there.
            */
-          context.globalAlpha = 0.34 + age * 0.62;
+          context.globalAlpha = 0.12 + age * 0.84;
           context.lineWidth = 0.016 + age * 0.026;
           context.stroke();
         }
@@ -357,10 +398,41 @@
   });
 </script>
 
-<canvas bind:this={canvas} class="live-stage" aria-hidden="true"></canvas>
+<div class="live-frame" style={`--grid-span: ${GRID_SPAN};`} aria-hidden="true">
+  <svg class="tka-grid" viewBox="0 0 {GRID_VIEWBOX} {GRID_VIEWBOX}">
+    <!-- Every hand start lands on north, south, east or west, and every prop
+         bearing with it, so diamond is the grid these paths are actually drawn
+         on. `darkMode` is not about export here: it inlines the light grid
+         colour, which is what this stage needs on its dark card whatever the
+         page theme is doing. -->
+    <GridSvg gridMode={GridMode.DIAMOND} darkMode={true} />
+  </svg>
+  <canvas bind:this={canvas} class="live-stage"></canvas>
+</div>
 
 <style>
+  .live-frame {
+    position: absolute;
+    inset: 0;
+    /* The grid square is a fixed multiple of the canvas's shorter side, which
+       is the side the canvas scales itself from. */
+    container-type: size;
+  }
+
+  .tka-grid {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: calc(min(100cqw, 100cqh) * var(--grid-span));
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    /* Scaffolding, not the subject. */
+    opacity: 0.3;
+  }
+
   .live-stage {
+    position: absolute;
+    inset: 0;
     display: block;
     width: 100%;
     height: 100%;
