@@ -198,12 +198,12 @@ describe("Flow Fest site ground truth", () => {
   });
 
   /**
-   * Austen called the inside of the loop "wide open, no trees". The canopy
-   * survey disagrees: twelve trees fall inside the traced loop road, most of
-   * them on the real tree cluster around the main building at its south end,
-   * a few on grass at the north end. Rather than encode either source as
-   * truth, this asserts the campable proportion — the loop interior stays
-   * overwhelmingly open, which is what makes shade there scarce.
+   * Austen first called the inside of the loop "wide open, no trees", then
+   * confirmed against the overlay that all twelve interior trees are real —
+   * "I was speaking loosely. Those trees exist, you just don't get to camp
+   * under them." So the interior carries a genuine stand around the main
+   * building; what it does not carry is campable shade. The assertion holds
+   * both halves: the stand exists, and the treeline dwarfs it.
    */
   it("keeps the loop interior overwhelmingly open", () => {
     const interior = ecology.trees.filter((tree) =>
@@ -215,6 +215,7 @@ describe("Flow Fest site ground truth", () => {
         distanceToPolygon(tree.x, tree.z, LOOP_INTERIOR) <= 45
     );
 
+    expect(interior.length).toBeGreaterThan(0);
     expect(interior.length).toBeLessThan(treeline.length / 4);
   });
 

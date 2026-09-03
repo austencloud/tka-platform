@@ -253,7 +253,7 @@ woods stay pure backdrop: canopy, no programming, no camping, nothing sited.
 The one exception is what he named directly — treeline camping at `T-E2`,
 `T-E3`, `T-F2`, and the workshop cabin at `T-F2`/`T-F3`.
 
-### Open: the tree cluster inside the loop
+### Resolved: the tree cluster inside the loop
 
 Austen said the loop interior is "wide open, no trees". The LiDAR canopy survey
 puts **12 trees inside the traced loop road** against 79 on the treeline
@@ -261,7 +261,21 @@ outside it. The orthophoto backs the survey in part: most of those twelve sit
 on a real dark canopy mass in the middle-south of the loop, wrapped around the
 main building. A few sit on open grass at the north end.
 
-Both readings can be true — the camping grass is open, and there is a stand
-around the building that nobody pitches under. Until Austen rules on it,
-`tests/unit/flow-fest-site-ground-truth.test.ts` asserts the proportion
-(interior under a quarter of the treeline) rather than either absolute.
+Shown the overlay, Austen confirmed all twelve: *"I was speaking loosely.
+Those trees exist, you just don't get to camp under them."* The survey is
+right. "Wide open" describes campable shade, not tree count — a useful
+reminder that his zone language is about use, not about geometry.
+
+## Tree character, by zone
+
+- **Lower campground treeline** — *"a dense wall of woods."* Not open-grown
+  spreading specimens. Tight trunks, canopy carried high, closed-stand forms.
+  The hammock and slackline trees are simply the first few trunks of that wall
+  where it faces the field. This is the one place the layout should be
+  deliberate; everywhere else habitat casting is fine.
+- **Decorated pathway** — canopy is **dappled and patchy**, not a closed
+  tunnel. Do not roof it. Gaps of sky along its length are correct.
+- **Middle Earth fire field** — bare. No trees at all.
+- **Loop interior** — a real stand around the main building, no campable shade.
+- **North and west woods** — backdrop only, and the survey already stops at
+  roughly the property edge (trees span world x -160 to 380, z -170 to 40).
