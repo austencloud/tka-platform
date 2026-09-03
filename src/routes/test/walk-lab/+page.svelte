@@ -1251,6 +1251,15 @@
       gap: 0.75rem;
     }
 
+    /* Same problem from the other end: the panel is anchored to the top of a
+       stage the deck now floats over, so every field it gains grows it down
+       toward the controls. Three columns hold the travelling readout to two
+       rows instead of three, which is what keeps it clear of them. */
+    .hud-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.3rem 0.75rem;
+    }
+
     /* The readout anchors to the bottom of the stage, and the stage is now
        the whole viewport, so it would sit under the floating controls.
        Lifted clear of them, measured against the deck at this size. */

@@ -297,6 +297,8 @@
     requestedVelocity: { x: number; y: number; z: number };
   } | null>(null);
   let electricUnicycleInteractionMessage = $state("Park wheel");
+  /** Shift held, from the camera controller's own key set. */
+  let sprintHeld = $state(false);
   let electricUnicycleKeyPressed = false;
   let electricUnicycleGamepadButtonPressed = false;
   let lastElectricUnicycleReportAt = 0;
@@ -987,6 +989,10 @@
       interactionMessage: electricUnicycleInteractionMessage,
       gamepadConnected: electricUnicycleGamepadConnected,
       collisionLimited: electricUnicycleCollisionLimited,
+      onFoot: {
+        speedMetersPerSecond: measuredGroundSpeed,
+        sprinting: sprintHeld && (props.enableSprint ?? false),
+      },
     };
     (globalThis as Record<string, unknown>).__flowFestEuc = {
       status: initialized ? "ready" : "initializing",
@@ -1918,6 +1924,9 @@
         props.onViewRotationChange?.(yaw, pitch);
       }}
       onInputStateChange={(input) => {
+        sprintHeld =
+          input.activeCodes.includes("ShiftLeft") ||
+          input.activeCodes.includes("ShiftRight");
         if (props.electricUnicycleEnabled) {
           handleElectricUnicycleCodes(input.activeCodes);
         }
