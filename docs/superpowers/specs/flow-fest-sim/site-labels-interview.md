@@ -77,17 +77,27 @@ Middle Earth also holds the crops that are spun, and the props people bring.
 
 ## Upper section
 
-Frame `UP-A1` to `UP-H6`, cells ~32 x 31 m.
-`worldX = -168.75 + 32.5*col` (A=0), `worldZ = -121.4 + 31.17*(row-1)`.
+Two frames cover it. The `UP` frame is the older, tighter crop; the `T` frame
+covers the whole section and is the one to use.
+
+`T` frame, cells 35 x 30 m:
+`worldX = -202.5 + 35*col` (A=0), `worldZ = -185 + 30*(row-1)`.
 
 | Feature | Cell | World (approx) | Note |
 | --- | --- | --- | --- |
-| Top parking, made pad | `UP-D4` `UP-E4` `UP-D5` | -87 to -22, -44 to 19 | The hard pale rectangle |
-| Top parking, overflow field | `UP-A3` to `UP-C5` | -185 to -55, -75 to 19 | Grass. The pad fills first |
-| Main cabin | `UP-F2` / `UP-G2` | 4 to 36, -90 | Fancy stay, indoor activities. **Not really part of the festival** |
-| Lodges and covered porch | `UP-E3` / `UP-F3` | -39 to 4, -59 | |
-| Upper camping | north of the `UP` frame | z below -137 | Treeline; see wide `C2`, bottom of `D1`, bottom-right of `C1` |
+| Top parking, made pad | `T-E6`/`T-F6` (= `UP-D4` `UP-E4` `UP-D5`) | -87 to -22, -44 to 19 | Hard pale rectangle. Mostly south of the `T` crop |
+| Top parking, overflow field | `T-B5` to `T-D6` (= `UP-A3` to `UP-C5`) | -185 to -55, -75 to 19 | Grass. The pad fills first, then this |
+| Mown clearing, north half | `T-C4` to `T-F4` | -185 to -20, -95 to -65 | **Nothing is programmed here.** One year it held a firewalk |
+| Treeline camping | `T-E2` `T-E3` `T-F2`, and every edge of the clearing | -80 to -10, -170 to -110 | Tents tuck into shade wherever there is an edge |
+| Workshop cabin | `T-F2` / `T-F3`, red roof | -38 to -14, -152 to -140 | A real workshop venue. **The building immediately west of it is unidentified** |
+| Main cabin | `T-G4` / `T-H4` (= `UP-F2` `UP-G2`) | 2 to 40, -100 to -78 | Fancy stay, indoor activities. **Not really part of the festival** |
+| Lodges and covered porch | `T-F5` (= `UP-E3` `UP-F3`) | -42 to 6, -70 to -48 | |
+| North and west woods | `T-A1` to `T-D3` | x below -60, z below -110 | **Not the festival's land.** Property line runs somewhere in there |
 | Unrelated houses / rentable cabins | wide `H2` area | 60, -30 | Year-round property |
+
+The clearing is the trap here. It is the largest open ground on the property and
+it does nothing. Its southern end is overflow parking; its northern end is
+empty grass. Do not site programming on it.
 
 The drive that veers uphill is south of the middle frame and reaches this
 section from the paved road. You do not use it on arrival — you drive past it
