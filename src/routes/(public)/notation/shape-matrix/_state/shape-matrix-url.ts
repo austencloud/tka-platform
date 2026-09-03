@@ -21,29 +21,54 @@ import type { ShapeMatrixAppSnapshot } from "$lib/shared/shape-matrix/app/state/
 import type { ShapeMatrixAxisTarget } from "$lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
-  buildTheorySpinRatioAtlas,
   makeSpinRatio,
   parseSpinRatio,
   spinRatioEquals,
   spinRatioKey,
   type SpinRatio,
 } from "@vtg/domain";
+import {
+  parseTheoryFlowerKey,
+  theoryFlowerKey,
+  type TheoryFlower,
+} from "$lib/shared/shape-matrix/domain/theory-flower";
+import { theoryRatiosForLevel } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
 
 const MODES = new Set<VtgMode>(MODE_ORDER);
 const LABEL_MODES = new Set<MatrixLabelMode>(["turns", "ratios"]);
 const AXIS_TARGETS = new Set<ShapeMatrixAxisTarget>(["left", "both", "right"]);
 const PROP_TYPES = new Set<PropType>(Object.values(PropType));
 const LEGACY_SIZE_TURNS = { small: 0, medium: 1, large: 2 } as const;
-const THEORY_RATIOS = buildTheorySpinRatioAtlas();
 const DEFAULT_THEORY_RATIO = makeSpinRatio(1, 3);
 
-function readTheoryRatio(params: URLSearchParams): SpinRatio {
-  const requested = parseSpinRatio(params.get("ratio") ?? "");
+/*
+ * A ratio only restores when the level in the same link actually contains it,
+ * so a link never lands on a grid whose axis the difficulty selector cannot
+ * reach. `leftRatio`/`rightRatio` are the current names; `ratio` is the single
+ * axis older links carried and still restores both axes from it.
+ */
+function readTheoryRatio(
+  params: URLSearchParams,
+  key: "leftRatio" | "rightRatio",
+  level: TurnLevel
+): SpinRatio {
+  const requested =
+    parseSpinRatio(params.get(key) ?? "") ??
+    parseSpinRatio(params.get("ratio") ?? "");
   return (
-    THEORY_RATIOS.find(
+    theoryRatiosForLevel(level).find(
       (candidate) => requested && spinRatioEquals(candidate, requested)
     ) ?? DEFAULT_THEORY_RATIO
   );
+}
+
+function readTheoryFlower(
+  params: URLSearchParams,
+  key: "theoryLeft" | "theoryRight",
+  ratio: SpinRatio
+): TheoryFlower | null {
+  const flower = parseTheoryFlowerKey(params.get(key) ?? "");
+  return flower && spinRatioEquals(flower.ratio, ratio) ? flower : null;
 }
 
 function readLevel(params: URLSearchParams): TurnLevel {
@@ -105,10 +130,24 @@ export function readShapeMatrixRouteState(
   ) as ShapeMatrixAxisTarget | null;
   const requestedProp = params.get("prop") as PropType | null;
 
+  const theoryLeftRatio = readTheoryRatio(params, "leftRatio", level);
+  const theoryRightRatio = readTheoryRatio(params, "rightRatio", level);
+  const theoryLeft = readTheoryFlower(params, "theoryLeft", theoryLeftRatio);
+  const theoryRight = readTheoryFlower(params, "theoryRight", theoryRightRatio);
+  const requestedTheoryMode = params.get("pairing") as VtgMode | null;
+
   return {
     surface: params.get("theory") === "1" ? "theory" : "matrix",
-    theoryRatio: readTheoryRatio(params),
-    theorySpin: params.get("spin") === "anti" ? "anti" : "pro",
+    theoryLeftRatio,
+    theoryRightRatio,
+    theoryMode:
+      requestedTheoryMode && MODES.has(requestedTheoryMode)
+        ? requestedTheoryMode
+        : "SS",
+    theoryPair:
+      theoryLeft && theoryRight
+        ? { left: theoryLeft, right: theoryRight }
+        : null,
     level,
     leftTurn,
     rightTurn,
@@ -152,14 +191,38 @@ export function writeShapeMatrixRouteState(
   // it while `propMode` continues to restore the exact relationship edge.
   url.searchParams.delete("driver");
 
+  // `ratio` and `spin` named the one-axis slider the Theory surface shipped
+  // with, and `timing`/`hands` named the pairing before it took the app's own
+  // VTG mode names. New links carry both axes and one `pairing` instead.
+  url.searchParams.delete("ratio");
+  url.searchParams.delete("spin");
+  url.searchParams.delete("timing");
+  url.searchParams.delete("hands");
   if (state.surface === "theory") {
     url.searchParams.set("theory", "1");
-    url.searchParams.set("ratio", spinRatioKey(state.theoryRatio));
-    url.searchParams.set("spin", state.theorySpin);
+    url.searchParams.set("leftRatio", spinRatioKey(state.theoryLeftRatio));
+    url.searchParams.set("rightRatio", spinRatioKey(state.theoryRightRatio));
+    url.searchParams.set("pairing", state.theoryMode);
+    if (state.theoryPair) {
+      url.searchParams.set(
+        "theoryLeft",
+        theoryFlowerKey(state.theoryPair.left)
+      );
+      url.searchParams.set(
+        "theoryRight",
+        theoryFlowerKey(state.theoryPair.right)
+      );
+    } else {
+      url.searchParams.delete("theoryLeft");
+      url.searchParams.delete("theoryRight");
+    }
   } else {
     url.searchParams.delete("theory");
-    url.searchParams.delete("ratio");
-    url.searchParams.delete("spin");
+    url.searchParams.delete("leftRatio");
+    url.searchParams.delete("rightRatio");
+    url.searchParams.delete("pairing");
+    url.searchParams.delete("theoryLeft");
+    url.searchParams.delete("theoryRight");
   }
 
   if (!state.pair) {

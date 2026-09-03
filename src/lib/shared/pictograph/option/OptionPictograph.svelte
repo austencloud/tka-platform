@@ -86,5 +86,4 @@
   {handPointVisibility}
   {activeLocations}
   {darkMode}
-  propRenderContext="editor"
 />

@@ -19,6 +19,7 @@
     filmOriginUrlKey,
     type FilmOrigin,
   } from "../_lib/film-origin";
+  import FilmDirectorChannelEditor from "./FilmDirectorChannelEditor.svelte";
   import FilmDirectorFilmPanel from "./FilmDirectorFilmPanel.svelte";
   import FilmDirectorJsonEditor from "./FilmDirectorJsonEditor.svelte";
   import FilmDirectorScene from "./FilmDirectorScene.svelte";
@@ -70,6 +71,7 @@
   let origin = $state<FilmOrigin>(initialOrigin);
   let saveOpen = $state(false);
   let sceneIndexOpen = $state(false);
+  let channelsOpen = $state(false);
   let poster = $state("");
 
   // Takes the origin rather than a bare key so the URL can never disagree with
@@ -271,6 +273,21 @@
           </button>
         {/if}
 
+        <!-- The dock is a peer of the transport rather than a popover, because
+             it is a work surface: it stays up while the film plays and while
+             the rig answers a drag. -->
+        <button
+          type="button"
+          class="scenes-button"
+          class:soloing={channelsOpen}
+          aria-label="Camera channels"
+          aria-pressed={channelsOpen}
+          onclick={() => (channelsOpen = !channelsOpen)}
+        >
+          <i class="fas fa-sliders" aria-hidden="true"></i>
+          <span>Channels</span>
+        </button>
+
         <button
           type="button"
           class="scenes-button"
@@ -295,6 +312,7 @@
       </div>
     {/snippet}
   </FilmDirectorTransport>
+  <FilmDirectorChannelEditor bind:open={channelsOpen} />
   <FilmDirectorJsonEditor />
   <FilmDirectorSceneIndex bind:open={sceneIndexOpen} />
 </main>

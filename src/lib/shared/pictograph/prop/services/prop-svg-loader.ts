@@ -21,6 +21,7 @@ import {
   SELECTIVE_COLOR_PROP_TYPES,
   type ThemeMode,
 } from "../../../utils/svg-color-utils";
+import { applyTorchContrastPalette } from "../domain/torch-contrast";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 import { assetFetch } from "../../../net/asset-fetch";
 
@@ -121,12 +122,6 @@ export class PropSvgLoader {
       // Fetch raw SVG (uses raw cache + deduplication)
       const originalSvgText = await this.fetchSvgContentCached(path);
 
-      // Parse SVG for viewBox and center (uses metadata cache)
-      const { viewBox, center } = this.parsePropSvgCached(
-        originalSvgText,
-        path
-      );
-
       // Apply color transformation with current theme mode
       const coloredSvgText = this.applyColorToSvg(
         originalSvgText,
@@ -135,8 +130,25 @@ export class PropSvgLoader {
         propType
       );
 
+      // Torch artwork is a near-black shaft with no flame, so it disappears on
+      // a dark pictograph. Baking the contrast palette in here means every
+      // consumer of this loader inherits it — the live DOM, the worker raster
+      // behind choreo cards, image export and print. The animated artwork
+      // carries its own flame and is handled by the animation svg-generator.
+      const contrastAdjustedSvgText = useGridVersion
+        ? coloredSvgText
+        : applyTorchContrastPalette(coloredSvgText, propType, themeMode);
+
+      // Parse viewBox and center from the artwork that actually ships. The
+      // torch treatment grows the box around the flame, and the shared
+      // path-keyed metadata cache would hand back the pre-treatment box.
+      const treated = contrastAdjustedSvgText !== coloredSvgText;
+      const { viewBox, center } = treated
+        ? this.parsePropSvg(contrastAdjustedSvgText)
+        : this.parsePropSvgCached(originalSvgText, path);
+
       // Extract SVG content
-      const svgContent = this.extractSvgContent(coloredSvgText);
+      const svgContent = this.extractSvgContent(contrastAdjustedSvgText);
 
       const result: PropRenderData = {
         position: { x: propData.positionX, y: propData.positionY },

@@ -11,12 +11,14 @@
  */
 
 import type { DirectorCameraMove } from "./camera-language";
+import type { CameraChannelId } from "./director-camera-channels";
 import { isDirectiveExpression, normalizeDirective } from "./directives";
 import type { DirectiveValue } from "./directives";
 import { FilmDirectorInputSchema } from "./film-director-schema";
 import type {
   DirectorPerformerSequence,
   FilmDirectorInput,
+  ResolvedDirectorCameraChannel,
   ResolvedDirectorPerformer,
   ResolvedFilmDirectorSpec,
 } from "./film-director-schema";
@@ -296,6 +298,86 @@ export function applySceneEdit(
     return FilmDirectorInputSchema.parse(next) as FilmDirectorInput;
   } catch (error) {
     throw new SceneEditError(
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+/**
+ * A write to the manual camera layer.
+ *
+ * Set and clear travel together for the same reason an All-Performers edit
+ * does: seeding the aim group takes three channels, and a per-channel loop
+ * would re-resolve between writes and could leave the document owning one axis
+ * of an aim and not the other two.
+ */
+export interface ChannelEdit {
+  sceneId: string;
+  /** Channels to own outright. Each replaces whatever it had, whole. */
+  set?: readonly ResolvedDirectorCameraChannel[];
+  /** Channels handed back to the layer below. */
+  clear?: readonly CameraChannelId[];
+}
+
+export class ChannelEditError extends Error {}
+
+/** Default interpolation and easing are left unwritten, so a hand-keyed
+ *  channel reads as the values it states rather than as boilerplate. */
+function authoredChannel(channel: ResolvedDirectorCameraChannel) {
+  return {
+    keys: channel.keys.map((key) => ({
+      atSeconds: key.atSeconds,
+      value: key.value,
+      ...(key.interpolation === "smooth"
+        ? {}
+        : { interpolation: key.interpolation }),
+      ...(key.easing === "ease-in-out" ? {} : { easing: key.easing }),
+    })),
+  };
+}
+
+/**
+ * Writes the manual layer and returns the patched document.
+ *
+ * Same contract as the edits above: the input is never mutated, the result is
+ * schema-validated, and a rejected write changes nothing. An emptied block is
+ * deleted rather than left as `{}` — the schema rejects an empty one, and
+ * "nothing is hand-keyed here" is what its absence already means.
+ */
+export function applyChannelEdit(
+  input: FilmDirectorInput,
+  edit: ChannelEdit
+): FilmDirectorInput {
+  const next = structuredClone(input) as unknown as {
+    scenes: { id: string; camera?: Record<string, unknown> }[];
+  };
+
+  const scene = next.scenes.find((candidate) => candidate.id === edit.sceneId);
+  if (!scene) {
+    throw new ChannelEditError(`No scene "${edit.sceneId}" in this film.`);
+  }
+
+  const camera = (scene.camera ??= {});
+  const channels = {
+    ...((camera.channels as Record<string, unknown> | undefined) ?? {}),
+  };
+  for (const id of edit.clear ?? []) delete channels[id];
+  for (const channel of edit.set ?? []) {
+    if (channel.keys.length === 0) {
+      throw new ChannelEditError(
+        `A channel with no keys owns nothing. Clear "${channel.id}" instead.`
+      );
+    }
+    channels[channel.id] = authoredChannel(channel);
+  }
+
+  if (Object.keys(channels).length === 0) delete camera.channels;
+  else camera.channels = channels;
+
+  try {
+    return FilmDirectorInputSchema.parse(next) as FilmDirectorInput;
+  } catch (error) {
+    throw new ChannelEditError(
       error instanceof Error ? error.message : String(error)
     );
   }

@@ -10,9 +10,9 @@ import {
 } from "$lib/shared/utils/svg-color-utils";
 import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
-  EDITOR_TORCH_PALETTE,
+  TORCH_CONTRAST_PALETTE,
   recolorMarkedPart,
-} from "$lib/shared/pictograph/prop/domain/prop-render-context";
+} from "$lib/shared/pictograph/prop/domain/torch-contrast";
 import {
   getAnimationVisibilityManager,
   type AnimationVisibilityStateManager,
@@ -325,7 +325,7 @@ export async function generatePropSvg(
       ? recolorMarkedPart(
           sizedSvg,
           "data-animated-torch-shaft",
-          EDITOR_TORCH_PALETTE[themeMode].shaft
+          TORCH_CONTRAST_PALETTE[themeMode].shaft
         )
       : sizedSvg;
   const { width, height } = extractViewBoxDimensions(sizedSvg);

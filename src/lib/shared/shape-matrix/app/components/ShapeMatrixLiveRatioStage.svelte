@@ -31,6 +31,16 @@
     color: string;
     /** Compass eighths the hand starts at, so two hands can be offset. */
     handPhase: number;
+    /**
+     * Which way the hand travels: +1 clockwise, -1 counter. This is the
+     * direction half of a VTG mode, and no amount of phase can express it.
+     */
+    handSign?: 1 | -1;
+    /**
+     * Prop offset from the hand's own bearing, in eighths. Zero points the
+     * prop out along the hand; 4 points it back in.
+     */
+    propPhase?: number;
   }
 </script>
 
@@ -77,7 +87,7 @@
     if (!runtime) {
       runtime = {
         handAngle: angleOf(hand.handPhase),
-        propAngle: angleOf(hand.handPhase),
+        propAngle: angleOf(hand.handPhase + (hand.propPhase ?? 0)),
         trail: new Float32Array(TRAIL_CAPACITY * 2),
         head: 0,
         length: 0,
@@ -89,7 +99,7 @@
 
   function resetRuntime(hand: LiveHand, runtime: HandRuntime): void {
     runtime.handAngle = angleOf(hand.handPhase);
-    runtime.propAngle = angleOf(hand.handPhase);
+    runtime.propAngle = angleOf(hand.handPhase + (hand.propPhase ?? 0));
     runtime.head = 0;
     runtime.length = 0;
   }
@@ -183,10 +193,17 @@
       for (const hand of hands) {
         const runtime = runtimeFor(hand);
         const color = resolveColor(element, hand.color);
+        /*
+         * `spin` is relative to the hand, so a hand running counter-clockwise
+         * carries its prospin prop counter-clockwise too. Without the hand's
+         * sign on both terms, reversing one hand would silently convert its
+         * prospin flower into an antispin one.
+         */
+        const handSign = hand.handSign ?? 1;
         runtime.handAngle +=
-          handTurns * Math.PI * 2 * (hand.radius > 0 ? 1 : 0);
+          handTurns * Math.PI * 2 * handSign * (hand.radius > 0 ? 1 : 0);
         runtime.propAngle +=
-          handTurns * Math.PI * 2 * hand.rate * hand.spinSign;
+          handTurns * Math.PI * 2 * hand.rate * hand.spinSign * handSign;
 
         /*
          * The model measures angles clockwise from straight up into a

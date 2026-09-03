@@ -208,6 +208,7 @@ export interface DirectorCameraMove {
     | "orbit"
     | "crane"
     | "pan"
+    | "tilt"
     | "truck"
     | "zoom"
     | "roll";
@@ -238,6 +239,7 @@ export const CAMERA_MOVE_RULES: Record<
   orbit: { unit: "degrees", directions: ["cw", "ccw"] },
   crane: { unit: "meters", directions: ["up", "down"] },
   pan: { unit: "degrees", directions: ["left", "right"] },
+  tilt: { unit: "degrees", directions: ["up", "down"] },
   truck: { unit: "meters", directions: ["left", "right"] },
   zoom: { unit: "degrees", directions: ["in", "out"] },
   roll: { unit: "degrees", directions: ["cw", "ccw"] },
@@ -337,6 +339,60 @@ function panTarget(position: Vec3, target: Vec3, degrees: number): Vec3 {
     position[2] - dx * Math.sin(angle) + dz * Math.cos(angle),
   ];
 }
+
+/** How far the camera is from what it aims at, in three dimensions. */
+function aimDistance(position: Vec3, target: Vec3): number {
+  return Math.hypot(
+    target[0] - position[0],
+    target[1] - position[1],
+    target[2] - position[2]
+  );
+}
+
+/**
+ * Where the camera is looking, as angles rather than as a point.
+ *
+ * Yaw is `atan2(dx, dz)` so it matches `panDegrees`; pitch is measured above
+ * level. A camera sitting on its own aim point has no direction, so it reports
+ * level and forward rather than a NaN.
+ */
+function aimAngles(
+  position: Vec3,
+  target: Vec3
+): { yawDeg: number; pitchDeg: number } {
+  const dx = target[0] - position[0];
+  const dy = target[1] - position[1];
+  const dz = target[2] - position[2];
+  const distance = Math.hypot(dx, dy, dz);
+  if (distance < 1e-9) return { yawDeg: 0, pitchDeg: 0 };
+  return {
+    yawDeg: (Math.atan2(dx, dz) * 180) / Math.PI,
+    pitchDeg: (Math.asin(Math.max(-1, Math.min(1, dy / distance))) * 180) / Math.PI,
+  };
+}
+
+/** The aim point implied by a direction and a distance. */
+function aimPoint(
+  position: Vec3,
+  yawDeg: number,
+  pitchDeg: number,
+  distance: number
+): Vec3 {
+  const yaw = (yawDeg * Math.PI) / 180;
+  const pitch = (pitchDeg * Math.PI) / 180;
+  const horizontal = Math.cos(pitch) * distance;
+  return [
+    position[0] + Math.sin(yaw) * horizontal,
+    position[1] + Math.sin(pitch) * distance,
+    position[2] + Math.cos(yaw) * horizontal,
+  ];
+}
+
+/**
+ * How far from level a tilt may finish. Past this the aim approaches straight
+ * up or straight down, where yaw stops meaning anything and the horizon spins.
+ */
+const MAX_TILT_DEG = 85;
 
 /**
  * One member's contribution to a move group at `progress`, measured from the
@@ -521,14 +577,36 @@ export function compileCameraMoves(
     validateMove(move);
     const { start, end } = windows[index]!;
     const easing = move.easing ?? "ease-in-out";
+    /**
+     * `aim` is stated only by moves that turn the camera in place. It travels
+     * with the keyframe so the sampler can interpolate the direction rather
+     * than the aim point; everything else leaves it absent and keeps the
+     * world-space aim it has always had.
+     */
     const push = (
       atSeconds: number,
       pos: [number, number, number],
       tgt: [number, number, number],
-      interpolation: ResolvedDirectorCameraKeyframe["interpolation"] = "smooth"
+      interpolation: ResolvedDirectorCameraKeyframe["interpolation"] = "smooth",
+      aim?: { yawDeg: number; pitchDeg: number; opensSegment?: boolean }
     ) => {
       const last = frames.at(-1);
-      if (last && Math.abs(last.atSeconds - atSeconds) < 1e-6) frames.pop();
+      const coincident =
+        last && Math.abs(last.atSeconds - atSeconds) < 1e-6 ? last : undefined;
+      if (coincident) frames.pop();
+      // The next move opens where the last one closed, at the same instant and
+      // the same aim point. Inheriting the angles keeps a turn past a half
+      // circle intact, since the replacing key would otherwise leave the
+      // arriving angle to be recovered from a point, which cannot tell 270
+      // degrees from -90. `aimSpace` is NOT inherited: it governs the outgoing
+      // segment, and that now belongs to the move taking over.
+      const inherited =
+        aim === undefined && coincident?.aimYawDeg !== undefined
+          ? {
+              aimYawDeg: coincident.aimYawDeg,
+              aimPitchDeg: coincident.aimPitchDeg,
+            }
+          : undefined;
       frames.push({
         atSeconds,
         position: pos,
@@ -537,6 +615,13 @@ export function compileCameraMoves(
         interpolation,
         easing,
         ...(rollDeg !== undefined ? { rollDeg } : {}),
+        ...(aim
+          ? {
+              aimYawDeg: aim.yawDeg,
+              aimPitchDeg: aim.pitchDeg,
+              ...(aim.opensSegment ? { aimSpace: "angles" as const } : {}),
+            }
+          : (inherited ?? {})),
       });
     };
 
@@ -742,14 +827,52 @@ export function compileCameraMoves(
       return;
     }
 
-    // pan: rotate the aim point around the camera. This branch is last and
-    // explicit (rather than a bare trailing fallthrough) so a future move
-    // inserted above can never silently fall into it.
+    if (move.move === "tilt") {
+      const degrees = degreesAmount(move, 15) * (move.direction === "down" ? -1 : 1);
+      const from = aimAngles(position, target);
+      const pitchDeg = from.pitchDeg + degrees;
+      if (Math.abs(pitchDeg) > MAX_TILT_DEG) {
+        throw new Error(
+          `A tilt of ${fmt(Math.abs(degrees))} degrees would take the aim to ${fmt(pitchDeg)} degrees from level, past the ${MAX_TILT_DEG} degree limit where the horizon stops holding (it is at ${fmt(from.pitchDeg)}).`
+        );
+      }
+      const next = aimPoint(
+        position,
+        from.yawDeg,
+        pitchDeg,
+        aimDistance(position, target)
+      );
+      push(start, [...position], [...target], "smooth", {
+        ...from,
+        opensSegment: true,
+      });
+      push(end, [...position], next, "smooth", {
+        yawDeg: from.yawDeg,
+        pitchDeg,
+      });
+      target = next;
+      return;
+    }
+
+    // pan: turn the camera in place. This branch is last and explicit (rather
+    // than a bare trailing fallthrough) so a future move inserted above can
+    // never silently fall into it.
     if (move.move === "pan") {
       const degrees = panDegrees(move, position, target, context);
       const next = panTarget(position, target, degrees);
-      push(start, [...position], [...target]);
-      push(end, [...position], next);
+      const from = aimAngles(position, target);
+      push(start, [...position], [...target], "smooth", {
+        ...from,
+        opensSegment: true,
+      });
+      // The arriving yaw is stated, not measured: `atan2` cannot tell a turn of
+      // 270 degrees from one of -90. It ADDS, because `panTarget` rotates the
+      // aim through `atan2(x, z) + degrees`. Pitch is measured, because
+      // `panTarget` keeps the aim point at its height rather than at its pitch.
+      push(end, [...position], next, "smooth", {
+        yawDeg: from.yawDeg + degrees,
+        pitchDeg: aimAngles(position, next).pitchDeg,
+      });
       target = next;
     }
   });
