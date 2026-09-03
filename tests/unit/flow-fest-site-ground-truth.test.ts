@@ -4,6 +4,21 @@ import { describe, expect, it } from "vitest";
 import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
 import { parseFlowFestRuntimeContract } from "../../src/routes/test/flow-fest-graybox/flow-fest-runtime-contract";
 import { deriveFlowFestForestEcology } from "../../src/routes/test/flow-fest-sim/flow-fest-forest-ecology";
+import {
+  distanceToFlowFestPolygon,
+  distanceToFlowFestPolyline,
+  FLOW_FEST_CAMPGROUND_LOOP,
+  FLOW_FEST_DECORATED_PATHWAY,
+  FLOW_FEST_PATHWAY_HALF_WIDTH_METERS,
+  FLOW_FEST_TREELINE_DEPTH_METERS,
+  insideFlowFestFireField,
+  insideFlowFestPolygon,
+} from "../../src/routes/test/flow-fest-sim/flow-fest-site-geometry";
+import { FLOW_FEST_SITE_TREE_LAYOUT } from "../../src/routes/test/flow-fest-sim/flow-fest-site-tree-layout";
+import {
+  flowFestTreeFamiliesForRole,
+  flowFestTreeFamiliesForSpecies,
+} from "../../src/routes/test/flow-fest-sim/flow-fest-tree-species";
 
 /**
  * Ground truth Austen gave in the 2026-09-03 site-labeling interview, recorded
@@ -92,104 +107,19 @@ function loadSite() {
 }
 
 /**
- * The fire field, as Austen sized it: "about seven blocks ... more like a
- * smushed oval". Seven cells of the Middle Earth interview grid area-match an
- * ellipse of 51 x 32 m centred where he placed it.
+ * The site polygons live in `flow-fest-site-geometry.ts` so the tree layout and
+ * these assertions read the same traced shapes.
  */
-const FIRE_FIELD = {
-  centerX: 25 + 720 / 11,
-  centerZ: -165 + 500 / 11,
-  radiusX: 280 / 11,
-  radiusZ: 176 / 11,
-};
-
-/**
- * The lower campground loop road, traced off the orthophoto at the registration
- * documented in the interview record: `worldX = 213 + px / 9.032`,
- * `worldZ = -209 + py / 9.032`.
- */
-const LOOP_TRACE_PIXELS: ReadonlyArray<readonly [number, number]> = [
-  [960, 930],
-  [1035, 760],
-  [1052, 600],
-  [990, 505],
-  [880, 425],
-  [690, 332],
-  [480, 286],
-  [330, 300],
-  [196, 432],
-  [96, 660],
-  [52, 880],
-  [70, 1015],
-  [250, 1108],
-  [470, 1168],
-  [640, 1200],
-  [810, 1130],
-  [915, 1015],
-];
-
-const LOOP_INTERIOR = LOOP_TRACE_PIXELS.map(
-  ([px, py]) => [213 + px / 9.032, -209 + py / 9.032] as const
-);
-
-function insideEllipse(x: number, z: number): boolean {
-  const dx = (x - FIRE_FIELD.centerX) / FIRE_FIELD.radiusX;
-  const dz = (z - FIRE_FIELD.centerZ) / FIRE_FIELD.radiusZ;
-  return dx * dx + dz * dz <= 1;
-}
-
-function insidePolygon(
-  x: number,
-  z: number,
-  polygon: ReadonlyArray<readonly [number, number]>
-): boolean {
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [xi, zi] = polygon[i];
-    const [xj, zj] = polygon[j];
-    if (
-      zi > z !== zj > z &&
-      x < ((xj - xi) * (z - zi)) / (zj - zi) + xi
-    ) {
-      inside = !inside;
-    }
-  }
-  return inside;
-}
-
-function distanceToPolygon(
-  x: number,
-  z: number,
-  polygon: ReadonlyArray<readonly [number, number]>
-): number {
-  let best = Number.POSITIVE_INFINITY;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [xi, zi] = polygon[i];
-    const [xj, zj] = polygon[j];
-    const dx = xj - xi;
-    const dz = zj - zi;
-    const lengthSquared = dx * dx + dz * dz;
-    const t =
-      lengthSquared === 0
-        ? 0
-        : Math.max(
-            0,
-            Math.min(1, ((x - xi) * dx + (z - zi) * dz) / lengthSquared)
-          );
-    const px = xi + t * dx;
-    const pz = zi + t * dz;
-    best = Math.min(best, Math.hypot(x - px, z - pz));
-  }
-  return best;
-}
 
 describe("Flow Fest site ground truth", () => {
   const { contract, terrain, canopy } = loadSite();
-  const ecology = deriveFlowFestForestEcology(contract, terrain, canopy);
+  const ecology = deriveFlowFestForestEcology(contract, terrain, canopy, null, {
+    speciesPlan: FLOW_FEST_SITE_TREE_LAYOUT,
+  });
 
   it("leaves the Middle Earth fire field completely bare", () => {
     const intruders = ecology.trees.filter((tree) =>
-      insideEllipse(tree.x, tree.z)
+      insideFlowFestFireField(tree.x, tree.z)
     );
 
     expect(
@@ -207,12 +137,13 @@ describe("Flow Fest site ground truth", () => {
    */
   it("keeps the loop interior overwhelmingly open", () => {
     const interior = ecology.trees.filter((tree) =>
-      insidePolygon(tree.x, tree.z, LOOP_INTERIOR)
+      insideFlowFestPolygon(tree.x, tree.z, FLOW_FEST_CAMPGROUND_LOOP)
     );
     const treeline = ecology.trees.filter(
       (tree) =>
-        !insidePolygon(tree.x, tree.z, LOOP_INTERIOR) &&
-        distanceToPolygon(tree.x, tree.z, LOOP_INTERIOR) <= 45
+        !insideFlowFestPolygon(tree.x, tree.z, FLOW_FEST_CAMPGROUND_LOOP) &&
+        distanceToFlowFestPolygon(tree.x, tree.z, FLOW_FEST_CAMPGROUND_LOOP) <=
+          FLOW_FEST_TREELINE_DEPTH_METERS
     );
 
     expect(interior.length).toBeGreaterThan(0);
@@ -222,13 +153,78 @@ describe("Flow Fest site ground truth", () => {
   it("keeps a real treeline around the loop, which is where the shade comes from", () => {
     const treeline = ecology.trees.filter(
       (tree) =>
-        !insidePolygon(tree.x, tree.z, LOOP_INTERIOR) &&
-        distanceToPolygon(tree.x, tree.z, LOOP_INTERIOR) <= 45
+        !insideFlowFestPolygon(tree.x, tree.z, FLOW_FEST_CAMPGROUND_LOOP) &&
+        distanceToFlowFestPolygon(tree.x, tree.z, FLOW_FEST_CAMPGROUND_LOOP) <=
+          FLOW_FEST_TREELINE_DEPTH_METERS
     );
 
     expect(treeline.length).toBeGreaterThan(20);
     expect(
       Math.max(...treeline.map((tree) => tree.crownRadiusMeters))
     ).toBeGreaterThan(3);
+  });
+
+  /**
+   * Austen on the campground treeline: "a dense wall of woods." Habitat
+   * casting reads a woodland edge as a light gap and hands it the wide-crowned
+   * open-grown forms, which is the opposite of a wall. The site layout
+   * overrides that, and this holds it there.
+   */
+  it("builds the campground treeline out of closed-stand forms, not open-grown specimens", () => {
+    const openGrown = new Set(
+      flowFestTreeFamiliesForRole("open").filter(
+        (familyId) =>
+          !flowFestTreeFamiliesForSpecies("eastern-redcedar").includes(familyId)
+      )
+    );
+    const treeline = ecology.trees.filter(
+      (tree) =>
+        !insideFlowFestPolygon(tree.x, tree.z, FLOW_FEST_CAMPGROUND_LOOP) &&
+        distanceToFlowFestPolygon(tree.x, tree.z, FLOW_FEST_CAMPGROUND_LOOP) <=
+          FLOW_FEST_TREELINE_DEPTH_METERS
+    );
+
+    expect(treeline.length).toBeGreaterThan(20);
+    expect(
+      treeline
+        .filter((tree) => openGrown.has(tree.familyId))
+        .map((tree) => `${tree.familyId} at ${tree.x.toFixed(1)}, ${tree.z.toFixed(1)}`)
+    ).toEqual([]);
+    expect(new Set(treeline.map((tree) => tree.familyId)).size).toBeGreaterThan(
+      3
+    );
+  });
+
+  /**
+   * Austen on the decorated pathway: "dappled and patchy" — not a tunnel. The
+   * layout cannot thin the stand, so it casts the narrowest crowns and keeps
+   * out the two forms that would roof it: boxelder, the widest crown in the
+   * catalog, and beech, whose signature is deep shade.
+   */
+  it("keeps the decorated pathway from being roofed over", () => {
+    const roofing = new Set([
+      ...flowFestTreeFamiliesForSpecies("boxelder"),
+      ...flowFestTreeFamiliesForSpecies("american-beech"),
+    ]);
+    const corridor = ecology.trees.filter(
+      (tree) =>
+        !insideFlowFestPolygon(tree.x, tree.z, FLOW_FEST_CAMPGROUND_LOOP) &&
+        distanceToFlowFestPolygon(tree.x, tree.z, FLOW_FEST_CAMPGROUND_LOOP) >
+          FLOW_FEST_TREELINE_DEPTH_METERS &&
+        distanceToFlowFestPolyline(
+          tree.x,
+          tree.z,
+          FLOW_FEST_DECORATED_PATHWAY
+        ) <= FLOW_FEST_PATHWAY_HALF_WIDTH_METERS
+    );
+
+    // The corridor's east half sits inside the treeline band, which owns it;
+    // this is the stretch beyond, where the pathway is the only rule.
+    expect(corridor.length).toBeGreaterThan(8);
+    expect(
+      corridor
+        .filter((tree) => roofing.has(tree.familyId))
+        .map((tree) => `${tree.familyId} at ${tree.x.toFixed(1)}, ${tree.z.toFixed(1)}`)
+    ).toEqual([]);
   });
 });

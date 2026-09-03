@@ -65,6 +65,7 @@ import {
   settleFlowFestParkedCarOnGround,
   type FlowFestParkedCarPlacement,
 } from "./flow-fest-parked-cars";
+import { FLOW_FEST_SITE_TREE_LAYOUT } from "./flow-fest-site-tree-layout";
 import {
   deriveFlowFestForestEcology,
   type FlowFestForestEcologyLayout,
@@ -188,7 +189,8 @@ export function buildFlowFestProductionDressing(
     contract,
     terrain,
     canopy,
-    campPlan
+    campPlan,
+    { speciesPlan: FLOW_FEST_SITE_TREE_LAYOUT }
   );
   const entranceClearedTrees = sourceForestEcology.trees.filter(
     (tree) =>
