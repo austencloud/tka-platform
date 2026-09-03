@@ -190,6 +190,12 @@
     }
   }
 
+  // The id of the scene the curtain is warming. Read from the film rather than
+  // carried on `preparation`, which describes progress and not identity.
+  const preparingSceneId = $derived(
+    director.film.scenes[director.preparation.sceneIndex]?.id ?? null
+  );
+
   onMount(() => {
     // A ?scene= that names no scene in this film was already ignored by the
     // state constructor rather than treated as an error: the film still opens,
@@ -223,13 +229,31 @@
             : "Preparing the scene"}
         </span>
         <strong>{director.preparation.sceneTitle}</strong>
+        <!-- A soloed boot warms exactly one scene, so its position in the film
+             is not what is being waited on. Printing "Scene 11 of 23" there
+             describes a 23-scene load that is not happening; the scene id is
+             both true and the address the viewer would type to come back. -->
         <span class="preparation-count">
-          Scene {director.preparation.sceneIndex + 1} of {director.preparation
-            .totalScenes}
+          {#if director.warmupSceneIndex === null}
+            Scene {director.preparation.sceneIndex + 1} of {director.preparation
+              .totalScenes}
+          {:else}
+            {preparingSceneId ?? "One scene, on its own"}
+          {/if}
         </span>
-        <div class="preparation-track" aria-hidden="true">
+        <!-- One warmup step has no interior to report, and a determinate bar
+             pinned at 0% for the length of a scene boot reads as stuck rather
+             than as busy. A sweep claims only that work is happening, which is
+             all this phase knows. -->
+        <div
+          class="preparation-track"
+          class:indeterminate={director.preparation.totalSteps <= 1}
+          aria-hidden="true"
+        >
           <span
-            style:width={`${(director.preparation.preparedSteps / director.preparation.totalSteps) * 100}%`}
+            style:width={director.preparation.totalSteps <= 1
+              ? undefined
+              : `${(director.preparation.preparedSteps / director.preparation.totalSteps) * 100}%`}
           ></span>
         </div>
       </div>
@@ -411,9 +435,32 @@
     transition: width 180ms ease-out;
   }
 
+  .preparation-track.indeterminate span {
+    width: 40%;
+    transition: none;
+    animation: preparation-sweep 1.25s ease-in-out infinite;
+  }
+
+  @keyframes preparation-sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(250%);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .preparation-track span {
       transition: none;
+    }
+
+    /* No sweep, but the bar still has to read as "working" rather than as a
+       stalled 0%. A steady partial fill says that without motion. */
+    .preparation-track.indeterminate span {
+      width: 100%;
+      opacity: 0.45;
+      animation: none;
     }
   }
 
