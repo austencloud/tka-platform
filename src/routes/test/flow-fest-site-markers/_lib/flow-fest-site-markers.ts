@@ -30,7 +30,9 @@ export const FLOW_FEST_SITE_MARKER_SCHEMA_VERSION = 2 as const;
  * traced: a run of vertices the author clicks or draws, closed for an area and
  * open for a path. Forcing a traced thing into a radius was the original sin
  * here — a grass clearing that is really a lobed field became a disc, which is
- * not what is on the ground.
+ * not what is on the ground. The fire circle is the same story: the LED rope
+ * reads as a circle from inside it and is nothing of the kind on the photo, so
+ * it is traced. `circle` survives for the fire pit, which really is radial.
  */
 export type FlowFestMarkerShape =
   | "point"
@@ -71,8 +73,16 @@ export const FLOW_FEST_MARKER_PRESETS: readonly FlowFestMarkerPreset[] = [
   {
     id: "fire-circle",
     label: "Fire circle (LED rope)",
+    shape: "area",
+    instruction:
+      "Trace the rope where it actually lies. Click corners or drag freehand, then Enter to close it.",
+    group: "fire-circle",
+  },
+  {
+    id: "fire-pit",
+    label: "Fire pit",
     shape: "circle",
-    instruction: "Click the centre, drag out to where the LED rope lies.",
+    instruction: "Click the centre of the fire, then drag out to its edge.",
     group: "fire-circle",
   },
   {

@@ -168,25 +168,50 @@ export async function warmupRenderer(
   const targets = collectUniqueCompileTargets(scene);
   if (targets.length === 0) targets.push(scene);
   let warned = false;
+  let settled = 0;
 
-  for (let index = 0; index < targets.length; index += 1) {
-    if (signal?.aborted) return;
-    const target = targets[index]!;
+  const reportFailure = (error: unknown) => {
+    if (warned) return;
+    warned = true;
+    console.warn("[scene-boot] shader warmup failed:", error);
+  };
+
+  // compileAsync does its traversal and program creation synchronously, then
+  // returns a promise that polls KHR_parallel_shader_compile until the driver
+  // reports the programs linked. Awaiting each target in turn therefore paid
+  // every driver link end to end, plus a 10ms poll tick per program, while the
+  // GPU sat idle between them. Dispatching them together keeps the synchronous
+  // half in the same order and lets the link waits overlap, so the warm-up
+  // costs roughly the slowest single program instead of the sum of all of them.
+  const pending = targets.map((target) => {
+    if (signal?.aborted) return null;
+    // A representative object is a temporary compile root, so invisible
+    // ancestors do not exclude it. Equivalent materials share one program
+    // signature and never repeat this relatively expensive traversal. The flag
+    // is restored as soon as compileAsync returns because the traversal it
+    // depends on has already happened by then — only the polling is deferred.
     const wasVisible = target.visible;
+    target.visible = true;
     try {
-      // A representative object is a temporary compile root, so invisible
-      // ancestors do not exclude it. Equivalent materials share one program
-      // signature and never repeat this relatively expensive traversal.
-      target.visible = true;
-      await renderer.compileAsync(target, camera, scene as Scene);
+      return renderer.compileAsync(target, camera, scene as Scene);
     } catch (error) {
-      if (!warned) {
-        warned = true;
-        console.warn("[scene-boot] shader warmup failed:", error);
-      }
+      reportFailure(error);
+      return null;
     } finally {
       target.visible = wasVisible;
     }
-    onProgress?.((index + 1) / targets.length);
-  }
+  });
+
+  await Promise.all(
+    pending.map(async (promise) => {
+      try {
+        await promise;
+      } catch (error) {
+        reportFailure(error);
+      } finally {
+        settled += 1;
+        onProgress?.(settled / pending.length);
+      }
+    })
+  );
 }
