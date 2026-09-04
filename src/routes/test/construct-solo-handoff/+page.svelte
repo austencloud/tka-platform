@@ -1,10 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { onMount, tick } from "svelte";
+  import { tick } from "svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import { createConstructSoloReviewSequence } from "./construct-solo-review-fixture";
 
-  const PENDING_EDIT_KEY = "tka-pending-edit-sequence";
   const VIEWPORTS = [
     { id: "phone", label: "375 × 667", width: 375, height: 667, scale: 0.9 },
     {
@@ -49,29 +47,18 @@
     VIEWPORTS.find((viewport) => viewport.id === viewportId) ?? VIEWPORTS[3]
   );
   const frameSource = $derived(
-    `/create/construct?soloReview=left-${frameRevision}`
+    `/test/construct-solo-handoff/proposal?review=${frameRevision}`
   );
 
-  function seedPendingEdit(): void {
-    const sequence = createConstructSoloReviewSequence("left");
-    localStorage.setItem(PENDING_EDIT_KEY, JSON.stringify(sequence));
-  }
-
-  async function reloadConstruct(): Promise<void> {
+  async function reloadProposal(): Promise<void> {
     frameReady = false;
-    seedPendingEdit();
     frameRevision += 1;
     await tick();
   }
 
   async function openFullSize(): Promise<void> {
-    seedPendingEdit();
-    await goto("/create/construct?soloReview=left-full");
+    await goto("/test/construct-solo-handoff/proposal");
   }
-
-  onMount(() => {
-    void reloadConstruct();
-  });
 </script>
 
 <svelte:head>
@@ -81,16 +68,16 @@
 <main class="review-page">
   <header class="review-header">
     <div>
-      <span class="eyebrow">Production harness</span>
-      <h1>Solo Choreo Card → Construct</h1>
+      <span class="eyebrow">Solo-aware UX harness</span>
+      <h1>Choreo Card → Construct</h1>
       <p>
-        A canonical solo sequence is handed to the real Construct route. Nothing
-        inside the frame is redrawn or mocked.
+        A proposed first-run flow built with real sequence data, motion catalog
+        options, and production pictograph renderers.
       </p>
     </div>
     <div class="header-actions">
-      <PanelButton variant="secondary" onclick={reloadConstruct}>
-        Reload card
+      <PanelButton variant="secondary" onclick={reloadProposal}>
+        Reset walkthrough
       </PanelButton>
       <PanelButton variant="primary" onclick={openFullSize}>
         Open full size
@@ -136,37 +123,45 @@
             <dd><code>soloPropToSequence</code></dd>
           </div>
           <div>
-            <dt>Destination</dt>
-            <dd><code>/create/construct</code></dd>
+            <dt>Sequence</dt>
+            <dd>production <code>StepGrid</code></dd>
           </div>
           <div>
             <dt>Hand</dt>
             <dd>left only</dd>
           </div>
           <div>
-            <dt>Partner</dt>
-            <dd>right is an invisible schema placeholder</dd>
+            <dt>Options</dt>
+            <dd>production motion catalog</dd>
+          </div>
+          <div>
+            <dt>Rendering</dt>
+            <dd>production pictographs</dd>
           </div>
         </dl>
       </section>
 
       <section class="review-question">
-        <span class="section-label">First question only</span>
+        <span class="section-label">Walkthrough</span>
         <p>
-          Does Construct communicate that a complete left-hand artifact arrived,
-          or does it make the card look broken before you touch anything?
+          Start by continuing blue. Then press <strong>Add red path</strong> to see
+          the separate pairing task. Choose the saved red path to reach the normal
+          two-hand state.
         </p>
       </section>
     </aside>
 
-    <section class="review-workspace" aria-label="Real Construct preview">
+    <section
+      class="review-workspace"
+      aria-label="Solo-aware Construct proposal"
+    >
       <header class="frame-header">
         <div>
           <strong>{selectedViewport.width} × {selectedViewport.height}</strong>
-          <span>real application route</span>
+          <span>interactive proposal</span>
         </div>
         <span class:ready={frameReady} class="status">
-          {frameReady ? "Construct loaded" : "Loading Construct…"}
+          {frameReady ? "Ready to review" : "Loading proposal…"}
         </span>
       </header>
 
@@ -178,7 +173,7 @@
           {#key frameRevision}
             <iframe
               src={frameSource}
-              title="Left-hand Choreo Card loaded into Construct"
+              title="Solo-aware Construct walkthrough"
               onload={() => (frameReady = true)}
             ></iframe>
           {/key}

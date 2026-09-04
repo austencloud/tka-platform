@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   ARCHIVE_CLUSTERS,
+  ARCHIVE_END_YEAR,
   ARCHIVE_ENTRIES,
   ARCHIVE_LANES,
+  ARCHIVE_START_YEAR,
+  ARCHIVE_YEAR_TICKS,
   EVIDENCE_BASIS_LABELS,
   activityLabel,
   archiveClusterForEntry,
@@ -68,9 +71,32 @@ describe("four-lane history archive ledger", () => {
   });
 
   it("uses proportional calendar spacing instead of equal carousel spacing", () => {
-    expect(historicalYearPosition(2004)).toBe(0);
+    expect(historicalYearPosition(1998)).toBe(0);
     expect(historicalYearPosition(2026)).toBe(100);
-    expect(historicalYearPosition(2015)).toBe(50);
+    expect(historicalYearPosition(2012)).toBe(50);
+    expect(ARCHIVE_YEAR_TICKS).toEqual([1998, 2005, 2012, 2019, 2026]);
+  });
+
+  it("opens with Home of Poi as a sourced teaching archive", () => {
+    const homeOfPoi = archiveEntry("home-of-poi");
+
+    expect(ARCHIVE_START_YEAR).toBe(1998);
+    expect(ARCHIVE_END_YEAR).toBe(2026);
+    expect(ARCHIVE_ENTRIES[0]?.id).toBe("home-of-poi");
+    expect(homeOfPoi).toMatchObject({
+      lane: "teaching",
+      firstDocumentedYear: 1998,
+      people: "Malcolm Crawshay and the Home of Poi community",
+      evidenceBasis: "creators-account",
+    });
+    expect(homeOfPoi.citations.map((citation) => citation.href)).toEqual(
+      expect.arrayContaining([
+        "https://www.homeofpoi.com/us/company/information-mission.php",
+        "https://www.homeofpoi.com/us/community/forums/",
+        "https://www.homeofpoi.com/en/community/forums/topics/120838/How-do-you-define-a-weave",
+      ])
+    );
+    expect(homeOfPoi.citations).toHaveLength(3);
   });
 
   it("labels the related movement-language records with their actual 2009–2010 range", () => {
@@ -107,9 +133,9 @@ describe("four-lane history archive ledger", () => {
   });
 
   it("keeps verified-activity spans off each other's tracks", () => {
-    // PLAYPOI, FAI, and DrexFactor all carry observation connectors reaching
-    // 2026. If track assignment ignored the span end, a later chip would sit
-    // on top of an earlier record's connector.
+    // Home of Poi, PLAYPOI, FAI, and DrexFactor all carry observation
+    // connectors reaching 2026. If track assignment ignored the span end, a
+    // later chip would sit on top of an earlier record's connector.
     const placements = placeArchiveEntries(entriesForLane("teaching"));
     const tracks = placements.map((placement) => placement.track);
     expect(new Set(tracks).size).toBe(placements.length);
@@ -128,9 +154,14 @@ describe("four-lane history archive ledger", () => {
       );
     }
 
-    // The three teaching projects were verified active in 2026 from dated
+    // The four teaching projects were verified active in 2026 from dated
     // public listings; the claim is "active, verified 2026" and nothing more.
-    for (const id of ["playpoi", "flow-arts-institute", "drexfactor"]) {
+    for (const id of [
+      "home-of-poi",
+      "playpoi",
+      "flow-arts-institute",
+      "drexfactor",
+    ]) {
       const entry = archiveEntry(id);
       expect(entry.activity?.status, id).toBe("active");
       expect(entry.activity?.lastVerifiedYear, id).toBe(2026);
