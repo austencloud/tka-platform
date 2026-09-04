@@ -1,4 +1,4 @@
-import { Group, Scene } from "three";
+import { Group, Raycaster, Scene, Vector2, Vector3 } from "three";
 import {
   GLTFLoader,
   type GLTF,
@@ -15,6 +15,7 @@ import {
   enhanceOceanSeabed,
 } from "../../environments/worlds/ocean/ocean-authored-flora";
 import { createOceanDepthGradient } from "../../environments/worlds/ocean/ocean-depth-gradient";
+import { createOceanFishBoids } from "../../environments/worlds/ocean/ocean-fish-boids";
 import { createOceanGodRayShafts } from "../../environments/worlds/ocean/ocean-god-ray-shafts";
 import { createOceanLightingRig } from "../../environments/worlds/ocean/ocean-lighting-rig";
 import { createOceanJellyfishSwarm } from "../../environments/worlds/ocean/ocean-jellyfish-swarm";
@@ -37,14 +38,14 @@ function absoluteAssetUrl(path: string): string {
 function loadGltf(
   loader: GLTFLoader,
   url: string,
-  onProgress: (loaded: number, total: number) => void,
+  onProgress: (loaded: number, total: number) => void
 ): Promise<GLTF> {
   return new Promise((resolve, reject) => {
     loader.load(
       absoluteAssetUrl(url),
       resolve,
       (event) => onProgress(event.loaded, event.total),
-      reject,
+      reject
     );
   });
 }
@@ -58,7 +59,7 @@ function loadGltf(
  * gates.
  */
 export async function createOceanPrototypeWorld(
-  context: WorkerWorldContext,
+  context: WorkerWorldContext
 ): Promise<WorkerEnvironmentWorld> {
   const scene = new Scene();
   const world = new Group();
@@ -96,10 +97,10 @@ export async function createOceanPrototypeWorld(
   try {
     [seabed, flora] = await Promise.all([
       loadGltf(loader, "/models/ocean/ocean-environment.glb", (value, total) =>
-        report(0, value, total),
+        report(0, value, total)
       ),
       loadGltf(loader, oceanFloraSceneUrl(), (value, total) =>
-        report(1, value, total),
+        report(1, value, total)
       ),
     ]);
   } finally {
@@ -137,13 +138,26 @@ export async function createOceanPrototypeWorld(
       groundOffset: 1.5,
       zOffset: 0,
     },
-    groundY,
+    groundY
   );
   const lighting = createOceanLightingRig({
     groundY,
     hemisphereEnabled: true,
   });
   const jellyfish = createOceanJellyfishSwarm(20);
+  const cursorRay = {
+    origin: new Vector3(),
+    dir: new Vector3(0, 0, -1),
+    active: false,
+  };
+  const raycaster = new Raycaster();
+  const pointer = new Vector2();
+  const fish = createOceanFishBoids({
+    renderer: context.renderer,
+    cursorRay,
+    groundY,
+    worldYOffset: OCEAN_WORLD_Y_OFFSET,
+  });
   world.add(
     depth.object,
     water.object,
@@ -152,7 +166,9 @@ export async function createOceanPrototypeWorld(
     ruins.object,
     lighting.object,
     jellyfish.object,
+    fish.object
   );
+  await fish.ready;
 
   causticUniforms.uGroundY.value = groundY + OCEAN_WORLD_Y_OFFSET;
   causticUniforms.uCausticStrength.value = DEFAULT_CAUSTIC_STRENGTH;
@@ -167,6 +183,7 @@ export async function createOceanPrototypeWorld(
     ruins.setGroundY(groundY);
     lighting.setGroundY(groundY);
     floraController.setGroundY(groundY + OCEAN_WORLD_Y_OFFSET);
+    fish.setGroundY(groundY);
     causticUniforms.uGroundY.value = groundY + OCEAN_WORLD_Y_OFFSET;
   }
 
@@ -182,15 +199,29 @@ export async function createOceanPrototypeWorld(
       particles.update(deltaSeconds);
       ruins.update(deltaSeconds);
       jellyfish.update(deltaSeconds);
+      fish.update(deltaSeconds, context.camera);
       floraController.update(deltaSeconds, context.camera);
     },
     setPerformers(performers) {
       setGroundY(performers[0]?.groundY ?? -1.5);
     },
     pointerMove(ndcX, ndcY) {
+      pointer.set(ndcX, ndcY);
+      raycaster.setFromCamera(pointer, context.camera);
+      cursorRay.origin.copy(raycaster.ray.origin);
+      cursorRay.dir.copy(raycaster.ray.direction);
+      cursorRay.active = true;
       return jellyfish.hoverAt(ndcX, ndcY, context.camera);
     },
+    pointerLeave() {
+      cursorRay.active = false;
+    },
     pointerDown(ndcX, ndcY) {
+      pointer.set(ndcX, ndcY);
+      raycaster.setFromCamera(pointer, context.camera);
+      cursorRay.origin.copy(raycaster.ray.origin);
+      cursorRay.dir.copy(raycaster.ray.direction);
+      cursorRay.active = true;
       return jellyfish.interactAt(ndcX, ndcY, context.camera);
     },
     dispose() {
@@ -202,7 +233,7 @@ export async function createOceanPrototypeWorld(
         godRays.object,
         particles.object,
         ruins.object,
-        lighting.object,
+        lighting.object
       );
       depth.dispose();
       water.dispose();
@@ -211,6 +242,7 @@ export async function createOceanPrototypeWorld(
       ruins.dispose();
       lighting.dispose();
       jellyfish.dispose();
+      fish.dispose();
       disposeWorkerWorldTree(scene);
       scene.background = null;
       scene.fog = null;

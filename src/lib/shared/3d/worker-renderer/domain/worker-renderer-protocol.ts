@@ -1,4 +1,4 @@
-export type WorkerEnvironmentKey = "ocean" | "rainbow";
+export type WorkerEnvironmentKey = "ocean" | "rainbow" | "void";
 
 export interface WorkerViewport {
   width: number;

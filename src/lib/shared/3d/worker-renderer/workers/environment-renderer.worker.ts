@@ -18,6 +18,7 @@ import type {
 import { clampWorkerViewport } from "../domain/worker-renderer-protocol";
 import { createOceanPrototypeWorld } from "../worlds/ocean-prototype-world";
 import { createRainbowPrototypeWorld } from "../worlds/rainbow-prototype-world";
+import { createVoidPrototypeWorld } from "../worlds/void-prototype-world";
 import type {
   WorkerEnvironmentWorld,
   WorkerWorldFactory,
@@ -31,6 +32,7 @@ import {
   createViewerBaseLightingGroup,
   resolveViewerBaseLighting,
 } from "../../rendering/viewer-lighting-rig";
+import { ScenePostProcessingPipeline } from "../../effects/post-processing/scene-post-processing-pipeline";
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 
@@ -39,6 +41,7 @@ const WORLD_FACTORIES: Readonly<
 > = {
   ocean: createOceanPrototypeWorld,
   rainbow: createRainbowPrototypeWorld,
+  void: createVoidPrototypeWorld,
 };
 
 let requestId = 0;
@@ -47,6 +50,7 @@ let renderer: WebGLRenderer | null = null;
 let camera: PerspectiveCamera | null = null;
 let world: WorkerEnvironmentWorld | null = null;
 let performerStage: WorkerPerformerStage | null = null;
+let postProcessing: ScenePostProcessingPipeline | null = null;
 let performerSnapshots: readonly WorkerPerformerSnapshot[] = [];
 let animationFrame = 0;
 let frameCount = 0;
@@ -69,6 +73,42 @@ function applyViewport(viewportInput: WorkerViewport): void {
   renderer.setSize(viewport.width, viewport.height, false);
   camera.aspect = viewport.width / viewport.height;
   camera.updateProjectionMatrix();
+  postProcessing?.resize(viewport.width, viewport.height);
+}
+
+function createPostProcessingPipeline(
+  activeEnvironment: WorkerEnvironmentKey
+): ScenePostProcessingPipeline | null {
+  if (!renderer || !camera || !world) return null;
+  const isOcean = activeEnvironment === "ocean";
+  return new ScenePostProcessingPipeline({
+    renderer,
+    scene: world.scene,
+    camera,
+    config: {
+      enabled: true,
+      isOcean,
+      tierBloom: true,
+      enableShadows: true,
+      bloomResolutionScale: 1,
+      bloomLevels: 8,
+      tierBloomResolutionScale: 1,
+      tierBloomLevels: 8,
+      enableBloom: true,
+      enableChromaticAberration: true,
+      oceanBloom: true,
+      oceanWaterTint: true,
+      oceanWaterTintStrength: 0.8,
+      oceanUnderwaterDistortion: false,
+    },
+  });
+}
+
+function renderCurrentFrame(deltaSeconds: number): void {
+  if (!renderer || !camera || !world) return;
+  if (postProcessing)
+    postProcessing.render(deltaSeconds, { forceBaseRender: true });
+  else renderer.render(world.scene, camera);
 }
 
 function applyCamera(snapshot: WorkerCameraSnapshot): void {
@@ -103,7 +143,7 @@ function renderFrame(now: number): void {
   if (visible) {
     world.update(Math.min(deltaMs / 1000, 0.1), now / 1000);
     performerStage?.update(Math.min(deltaMs / 1000, 0.1));
-    renderer.render(world.scene, camera);
+    renderCurrentFrame(deltaMs / 1000);
     frameCount += 1;
     post({
       type: "frame",
@@ -193,6 +233,7 @@ async function initialize(
   const performerReadyAt = performance.now();
   const worldReadyAt = performerReadyAt;
   post({ type: "progress", requestId, phase: "performer", fraction: 1 });
+  postProcessing = createPostProcessingPipeline(environment);
 
   post({ type: "progress", requestId, phase: "compile", fraction: 0 });
   const compileTargets = await warmWorkerRenderer(
@@ -241,7 +282,7 @@ async function initialize(
   try {
     world.update(0, finalizedAt / 1000);
     performerStage.update(0);
-    renderer.render(world.scene, camera);
+    renderCurrentFrame(0);
   } finally {
     renderer.setViewport(previousViewport);
   }
@@ -253,7 +294,7 @@ async function initialize(
   const firstRenderStartedAt = performance.now();
   world.update(0, compiledAt / 1000);
   performerStage.update(0);
-  renderer.render(world.scene, camera);
+  renderCurrentFrame(0);
   const firstRenderCompletedAt = performance.now();
   const memoryAfterFirstRender = rendererMemory();
   await nextWorkerFrame();
@@ -264,7 +305,7 @@ async function initialize(
     presentedAt / 1000
   );
   performerStage.update(Math.min((presentedAt - compiledAt) / 1000, 0.1));
-  renderer.render(world.scene, camera);
+  renderCurrentFrame(Math.min((presentedAt - compiledAt) / 1000, 0.1));
   const firstFrameAt = performance.now();
   frameCount = 1;
   previousFrameAt = firstFrameAt;
@@ -328,6 +369,8 @@ function dispose(): void {
   animationFrame = 0;
   performerStage?.dispose();
   performerStage = null;
+  postProcessing?.dispose();
+  postProcessing = null;
   world?.dispose();
   world = null;
   renderer?.renderLists.dispose();
@@ -377,6 +420,7 @@ scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
     case "pointer": {
       if (!world || !environment) break;
       if (message.action === "leave") {
+        world.pointerLeave?.();
         post({
           type: "interaction",
           requestId,

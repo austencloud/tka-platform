@@ -20,6 +20,7 @@ export interface WorkerEnvironmentWorld {
   update(deltaSeconds: number, elapsedSeconds: number): void;
   setPerformers?(performers: readonly WorkerPerformerSnapshot[]): void;
   pointerMove?(ndcX: number, ndcY: number): boolean;
+  pointerLeave?(): void;
   pointerDown?(
     ndcX: number,
     ndcY: number
