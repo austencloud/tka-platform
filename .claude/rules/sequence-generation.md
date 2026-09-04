@@ -1,3 +1,9 @@
+---
+paths:
+  - "mcp-server/**/*"
+  - "src/lib/shared/effects/**/*"
+---
+
 # Sequence Generation Rules
 
 Full reference with humor workflow details in `docs/reference/sequence-generation-guide.md`.

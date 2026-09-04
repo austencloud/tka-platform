@@ -32,7 +32,7 @@
  * Threlte's own render loop and `shared/3d/scene-boot/` (renderer warmup +
  * frame gate) are excluded: the 3D reveal is gated on proven frame stability,
  * so pausing those loops deadlocks the curtain. See the rule row in
- * `.claude/rules/canonical-capabilities.md`.
+ * `docs/architecture/canonical-capabilities.md`.
  */
 
 /** How a gate reports itself for diagnostics. */

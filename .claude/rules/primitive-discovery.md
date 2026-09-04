@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/**/*.{svelte,ts}"
+---
+
 # Primitive Discovery — ENFORCED
 
 The UI-specific arm of `never-hand-roll.md`. It distinguishes a new component

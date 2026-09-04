@@ -307,6 +307,6 @@ Canonical design and acceptance gates:
 ## Related
 
 - `src/lib/shared/3d/scene-boot/` — the boot window's owners
-- `.claude/rules/canonical-capabilities.md` — scene-boot routing row
+- `docs/architecture/canonical-capabilities.md` — scene-boot routing row
 - `.claude/rules/verification-protocol.md`, `no-assumption-without-evidence.md`
 - `memory/reference_scene_boot_cost_measured.md`
