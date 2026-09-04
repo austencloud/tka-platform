@@ -63,6 +63,8 @@ describe("ArtSettingsPanel split contract", () => {
       "TunnelLookSettings",
       "TunnelSpeedSettings",
       "TunnelEffectsSettings",
+      "TunnelDisplaySettings",
+      "TunnelMotionSettings",
       "TunnelPlaybackSettings",
     ];
 
