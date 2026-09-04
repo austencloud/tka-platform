@@ -13,6 +13,7 @@
   let {
     performer,
     displaySequence = null,
+    activeStepIndex = null,
     stageTransformLabel = null,
     formationCopy = false,
     label,
@@ -44,6 +45,7 @@
   }: {
     performer: TunnelPerformer | null;
     displaySequence?: SequenceData | null;
+    activeStepIndex?: number | null;
     stageTransformLabel?: string | null;
     /** A reconstructed legacy arm: visible for performed-result inspection,
      * but absent from the authored composition until the user edits it. */
@@ -80,6 +82,12 @@
     performer?.source.kind === "independent" ? performer.source.sequence : null
   );
   const previewSequence = $derived(displaySequence ?? ownSequence);
+  const activeStepNumber = $derived.by(() => {
+    if (activeStepIndex === null) return null;
+    return (
+      previewSequence?.steps[activeStepIndex]?.stepNumber ?? activeStepIndex + 1
+    );
+  });
   const displayWord = $derived(
     previewSequence
       ? simplifyRepeatedWord(
@@ -408,9 +416,11 @@
         startPosition={previewSequence?.startPosition ??
           previewSequence?.startingPosition ??
           null}
+        selectedStepNumber={activeStepNumber}
         activeMode={null}
         isTimelineMode={false}
         fitAllSteps={true}
+        sizingProfile="preview"
         narrowMaxColumns={3}
         preferWidthSizingOnNarrow={true}
         leftPropTypeOverride={leftPropType}
@@ -473,7 +483,6 @@
   }
 
   .source-heading {
-    flex-wrap: wrap;
     justify-content: space-between;
     gap: var(--settings-spacing-sm, 8px);
     min-height: 3.5rem;
@@ -651,8 +660,8 @@
     align-items: center;
     justify-content: center;
     min-width: 0;
-    min-height: 2.75rem;
-    padding: 4px var(--settings-spacing-md, 14px);
+    min-height: 2.25rem;
+    padding: 2px var(--settings-spacing-sm, 8px);
     border-bottom: 1px solid var(--theme-stroke);
   }
 
@@ -740,7 +749,36 @@
     }
   }
 
-  @container (max-width: 34rem) {
+  /* The performer card is a preview, not a second settings panel. Keep its
+     identity, hand key, and two source actions in one compact toolbar until a
+     genuinely wide card can afford the complete action row. This is the same
+     hierarchy Fuse uses for its compact source cards: notation gets the room;
+     secondary source tools stay available through the overflow menu. */
+  @container (max-width: 56rem) {
+    .source-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 4px 6px;
+      min-height: 3.5rem;
+      padding: 3px var(--settings-spacing-sm, 8px);
+    }
+
+    .source-identity {
+      min-height: var(--min-touch-target, 48px);
+      overflow: hidden;
+    }
+
+    .source-meta {
+      max-height: 1.25em;
+      overflow: hidden;
+      flex-wrap: nowrap;
+    }
+
+    .expand-indicator {
+      display: none;
+    }
+
     .desktop-source-actions {
       display: none;
     }
@@ -749,11 +787,11 @@
       display: flex;
       align-items: center;
       gap: var(--settings-spacing-xs, 6px);
-      width: 100%;
+      width: auto;
     }
 
     .compact-source-actions :global(.panel-btn) {
-      flex: 1;
+      flex: 0 0 auto;
       min-height: var(--min-touch-target, 48px);
     }
 
@@ -768,6 +806,27 @@
       max-height: min(12rem, 34dvh);
       overflow-y: auto;
       overscroll-behavior: contain;
+    }
+  }
+
+  @container (max-width: 22rem) {
+    .source-meta span:not(:first-child) {
+      display: none;
+    }
+
+    .compact-source-actions :global(.panel-btn) {
+      width: var(--min-touch-target, 48px);
+      padding-inline: 0;
+    }
+
+    .compact-generate-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      clip-path: inset(50%);
     }
   }
 

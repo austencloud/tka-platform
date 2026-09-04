@@ -2,17 +2,17 @@
 	<header>
 		<h2>Contribute a record</h2>
 		<p>
-			Send a source and describe what it supports. A submission is reviewed
-			before it appears in the archive.
+			Send a source and say what it shows. Every submission is reviewed before
+			publication.
 		</p>
 	</header>
 
 	<section>
 		<h3>What inclusion means</h3>
 		<p>
-			A record is listed when the archive can point to an identifiable
-			artifact, a dated public trace, or named testimony. Listing does not
-			rank importance or settle who invented what.
+			Records need an identifiable artifact, dated public trace, or named
+			testimony. Claims of invention or historical importance require their own
+			sources.
 		</p>
 	</section>
 
@@ -29,9 +29,8 @@
 	<section>
 		<h3>Correct a record</h3>
 		<p>
-			Name the record and the sentence it gets wrong, then send the source
-			that contradicts it. Counter-evidence goes through the same review as a
-			new record, and a confirmed correction changes the page.
+			Name the record, quote the sentence, and send a source that contradicts
+			it. Confirmed corrections update the page.
 		</p>
 	</section>
 
@@ -44,7 +43,7 @@
 		</ol>
 	</section>
 
-	<p class="prototype-note">This prototype does not send submissions yet.</p>
+	<p class="prototype-note">Submission form coming soon.</p>
 </article>
 
 <style>

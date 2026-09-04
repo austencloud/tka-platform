@@ -36,7 +36,8 @@ import {
 import {
   asTheoryBand,
   DEFAULT_THEORY_BAND,
-  theoryRatiosForBand,
+  narrowestBandFor,
+  THEORY_RATIO_MAX_PART,
   type TheoryBand,
 } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
 
@@ -48,24 +49,33 @@ const LEGACY_SIZE_TURNS = { small: 0, medium: 1, large: 2 } as const;
 const DEFAULT_THEORY_RATIO = makeSpinRatio(1, 3);
 
 /*
- * A ratio only restores when the band in the same link actually contains it,
- * so a link never lands on a grid whose axis the band selector cannot reach.
- * `leftRatio`/`rightRatio` are the current names; `ratio` is the single axis
- * older links carried and still restores both axes from it.
+ * A ratio restores whenever both values fit the editor's 0–15 range. The
+ * reader widens the band afterward, so an old or hand-written band cannot
+ * silently replace the requested ratio. `ratio` is the legacy one-axis name.
  */
 function readTheoryRatio(
   params: URLSearchParams,
-  key: "leftRatio" | "rightRatio",
-  band: TheoryBand
+  key: "leftRatio" | "rightRatio"
 ): SpinRatio {
+  const readBounded = (value: string | null): SpinRatio | null => {
+    const match = /^(\d+):(\d+)$/.exec(value?.trim() ?? "");
+    if (!match) return null;
+    const propRotations = Number(match[1]);
+    const handCycles = Number(match[2]);
+    if (
+      propRotations > THEORY_RATIO_MAX_PART ||
+      handCycles > THEORY_RATIO_MAX_PART
+    ) {
+      return null;
+    }
+    return parseSpinRatio(`${propRotations}:${handCycles}`);
+  };
+
   const requested =
-    parseSpinRatio(params.get(key) ?? "") ??
-    parseSpinRatio(params.get("ratio") ?? "");
-  return (
-    theoryRatiosForBand(band).find(
-      (candidate) => requested && spinRatioEquals(candidate, requested)
-    ) ?? DEFAULT_THEORY_RATIO
-  );
+    readBounded(params.get(key)) ?? readBounded(params.get("ratio"));
+  return requested && narrowestBandFor(requested) !== null
+    ? requested
+    : DEFAULT_THEORY_RATIO;
 }
 
 /*
@@ -86,7 +96,7 @@ function readTheoryBand(
 ): TheoryBand {
   const legacy = surface === "theory" ? params.get("level") : null;
   const raw = Number(params.get("band") ?? legacy);
-  return Number.isInteger(raw) && raw >= 1 && raw <= 4
+  return Number.isInteger(raw) && raw >= 1 && raw <= 5
     ? asTheoryBand(raw)
     : DEFAULT_THEORY_BAND;
 }
@@ -161,9 +171,13 @@ export function readShapeMatrixRouteState(
 
   const surface: ShapeMatrixSurface =
     params.get("theory") === "1" ? "theory" : "matrix";
-  const theoryBand = readTheoryBand(params, surface);
-  const theoryLeftRatio = readTheoryRatio(params, "leftRatio", theoryBand);
-  const theoryRightRatio = readTheoryRatio(params, "rightRatio", theoryBand);
+  let theoryBand = readTheoryBand(params, surface);
+  const theoryLeftRatio = readTheoryRatio(params, "leftRatio");
+  const theoryRightRatio = readTheoryRatio(params, "rightRatio");
+  for (const ratio of [theoryLeftRatio, theoryRightRatio]) {
+    const home = narrowestBandFor(ratio);
+    if (home !== null && home > theoryBand) theoryBand = home;
+  }
   const theoryLeft = readTheoryFlower(params, "theoryLeft", theoryLeftRatio);
   const theoryRight = readTheoryFlower(params, "theoryRight", theoryRightRatio);
   const requestedTheoryMode = params.get("pairing") as VtgMode | null;

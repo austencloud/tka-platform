@@ -29,9 +29,14 @@
     type StanceYawTrack,
   } from "$lib/shared/3d/collision/stance-yaw-track";
 
+  import PanelContent from "$lib/shared/components/panel/PanelContent.svelte";
+  import PanelHeader from "$lib/shared/components/panel/PanelHeader.svelte";
+  import PanelState from "$lib/shared/components/panel/PanelState.svelte";
+
   import CoverageMatrixMount from "./CoverageMatrixMount.svelte";
   import LabControls from "./LabControls.svelte";
   import LabInspector from "./LabInspector.svelte";
+  import LabTransport from "./LabTransport.svelte";
   import StaffGripStage from "./StaffGripStage.svelte";
   import type { CoverageMatrix } from "./coverage-matrix-contract";
   import {
@@ -77,8 +82,10 @@
    * declares reactive class fields; it is handed a step-count reader rather
    * than the sequence itself so phase can clamp to whatever is loaded.
    */
+  const stepCount = $derived(sequence?.steps.length ?? 1);
+
   const lab = new StaffLabState({
-    stepCount: () => sequence?.steps.length ?? 1,
+    stepCount: () => stepCount,
   });
 
   /**
@@ -177,12 +184,6 @@
       const aspectRatio = width > 0 && height > 0 ? width / height : 1;
       return inspectionShotForView(view, aspectRatio);
     })
-  );
-
-  const phaseLabel = $derived(
-    `${Math.floor(lab.phase) + 1}.${Math.round((lab.phase % 1) * 100)
-      .toString()
-      .padStart(2, "0")}`
   );
 
   function collectGripMetrics(
@@ -399,97 +400,117 @@
   data-stance-angular-velocity={formatMetric(stanceVelocity, 5)}
 >
   <aside class="rail" aria-label="Lab configuration and measurements">
-    <header class="rail-head">
-      <h1>Staff grip lab</h1>
-      <p class="rail-sub">
-        {characterName} · {propLabel} · {displayWord} · step {phaseLabel}
-      </p>
-    </header>
-
-    <LabControls
-      {lab}
-      {sequence}
-      {sequenceLoading}
-      {bodyLengthCm}
-      bodyMeasured={bodyFit !== null}
+    <!--
+      The app's own panel masthead, at the rank a page owes its document. The
+      lab used to open on a 17px heading, which is smaller than the section
+      labels under it and the first thing that read as a debug console.
+    -->
+    <PanelHeader
+      headingLevel={1}
+      icon="fa-flask"
+      title="Staff grip lab"
+      subtitle={`${characterName} · ${propLabel} · ${displayWord}`}
     />
 
-    <LabInspector
-      {lab}
-      {sweepCharacter}
-      fit={bodyFit}
-      verdict={fitComparison.verdict}
-      deltaCm={fitComparison.deltaCm}
-      {configuredLengthCm}
-      {collisionLengthCm}
-      {lengthDivergenceCm}
-      {leftMetric}
-      {rightMetric}
-      {poseMetric}
-      {stanceTrack}
-      {stanceSummary}
-      {stanceVelocity}
-      {coverageMatrix}
-    />
+    <PanelContent>
+      <div class="rail-sections">
+        <LabControls
+          {lab}
+          {sequence}
+          {sequenceLoading}
+          {bodyLengthCm}
+          bodyMeasured={bodyFit !== null}
+        />
+
+        <LabInspector
+          {lab}
+          {sweepCharacter}
+          fit={bodyFit}
+          verdict={fitComparison.verdict}
+          deltaCm={fitComparison.deltaCm}
+          {configuredLengthCm}
+          {collisionLengthCm}
+          {lengthDivergenceCm}
+          {leftMetric}
+          {rightMetric}
+          {poseMetric}
+          {stanceTrack}
+          {stanceSummary}
+          {stanceVelocity}
+          {coverageMatrix}
+        />
+      </div>
+    </PanelContent>
   </aside>
 
-  <div class="stage" data-layout={lab.view === "quad" ? "quad" : "solo"}>
-    {#if sequence}
-      {#each activeViews as view, index (view.id)}
-        <section
-          class="view"
-          aria-label={`${view.label}: ${view.hint}`}
-          bind:clientWidth={paneWidths[index]}
-          bind:clientHeight={paneHeights[index]}
-        >
-          <!--
-            No scene clear colour. An alpha buffer lets the pane's own app
-            surface show through, so the canvases sit on the product's ground
-            rather than on a navy rectangle that appears nowhere else.
-          -->
-          <Canvas shadows rendererParameters={{ alpha: true }}>
-            <T.PerspectiveCamera
-              makeDefault
-              position={shots[index].position}
-              fov={INSPECTION_FOV_DEG}
-            >
-              <OrbitControls
-                enableDamping
-                enablePan={false}
-                rightDragAction="rotate"
-                target={shots[index].target}
-                minDistance={0.3}
-                maxDistance={12}
-                maxPolarAngle={Math.PI}
-              />
-            </T.PerspectiveCamera>
+  <div class="stage">
+    <div class="views" data-layout={lab.view === "quad" ? "quad" : "solo"}>
+      {#if sequence}
+        {#each activeViews as view, index (view.id)}
+          <section
+            class="view"
+            aria-label={`${view.label}: ${view.hint}`}
+            bind:clientWidth={paneWidths[index]}
+            bind:clientHeight={paneHeights[index]}
+          >
+            <!--
+              No scene clear colour. An alpha buffer lets the pane's own app
+              surface show through, so the canvases sit on the product's ground
+              rather than on a navy rectangle that appears nowhere else.
+            -->
+            <Canvas shadows rendererParameters={{ alpha: true }}>
+              <T.PerspectiveCamera
+                makeDefault
+                position={shots[index].position}
+                fov={INSPECTION_FOV_DEG}
+              >
+                <OrbitControls
+                  enableDamping
+                  enablePan={false}
+                  rightDragAction="rotate"
+                  target={shots[index].target}
+                  minDistance={0.3}
+                  maxDistance={12}
+                  maxPolarAngle={Math.PI}
+                />
+              </T.PerspectiveCamera>
 
-            <StaffGripStage
-              id={`staff-grip-${view.id}`}
-              phase={lab.phase}
-              {sequence}
-              characterId={lab.character}
-              propType={lab.prop}
-              propLengthCm={lab.propLength === "body" ? null : lab.propLength}
-              gridEmphasis={view.grid}
-              showGridLabels={lab.gridLabels}
-              onCollisionEvents={index === 0 ? collectGripMetrics : undefined}
-              onStanceTrack={index === 0
-                ? (track) => {
-                    stanceTrack = track;
-                  }
-                : undefined}
-            />
-          </Canvas>
-          <span class="view-label">
-            <b>{view.label}</b>
-            <i>{view.hint}</i>
-          </span>
-        </section>
-      {/each}
-    {:else}
-      <p class="stage-empty" role="status">Loading sequence…</p>
-    {/if}
+              <StaffGripStage
+                id={`staff-grip-${view.id}`}
+                phase={lab.phase}
+                {sequence}
+                characterId={lab.character}
+                propType={lab.prop}
+                propLengthCm={lab.propLength === "body" ? null : lab.propLength}
+                gridEmphasis={view.grid}
+                showGridLabels={lab.gridLabels}
+                onCollisionEvents={index === 0 ? collectGripMetrics : undefined}
+                onStanceTrack={index === 0
+                  ? (track) => {
+                      stanceTrack = track;
+                    }
+                  : undefined}
+              />
+            </Canvas>
+            <span class="view-label">
+              <b>{view.label}</b>
+              <i>{view.hint}</i>
+            </span>
+          </section>
+        {/each}
+      {:else}
+        <div class="stage-empty">
+          <PanelState type="loading" message="Loading sequence…" />
+        </div>
+      {/if}
+    </div>
+
+    <!--
+      The transport lives under the cameras, where the app puts one, and is the
+      shared TransportControls the rest of the product plays with. It stays
+      mounted while a sequence resolves so the stage above it never resizes.
+    -->
+    <LabTransport {lab} {stepCount} disabled={!sequence} />
   </div>
 
   <!--
@@ -522,16 +543,31 @@
   }
 
   /*
-   * The rail flows into as many columns as its own width affords. Stacked
-   * above the stage on a tablet it is the full viewport wide, and a single
-   * column there stretches a two-word segmented control across 700px and
-   * pushes every camera below the fold. Two columns keep each control at the
-   * measure it has as a desktop rail and halve the height the stage sits
-   * under. As a side rail — 20rem to 34rem — this resolves to one column, so
-   * no breakpoint has to name the difference.
+   * The rail is an app panel: a masthead that does not scroll over a body that
+   * does. PanelHeader and PanelContent own the padding and the scroll, so this
+   * rule only places the panel and paints its surface.
    */
   .rail {
     grid-area: rail;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--panel-bg-current, rgba(255, 255, 255, 0.05));
+    backdrop-filter: var(--glass-backdrop, blur(20px));
+    border-bottom: var(--glass-border, 1px solid rgba(255, 255, 255, 0.08));
+  }
+
+  /*
+   * The panel body flows into as many columns as its own width affords.
+   * Stacked above the stage on a tablet it is the full viewport wide, and a
+   * single column there stretches a two-word segmented control across 700px
+   * and pushes every camera below the fold. Two columns keep each control at
+   * the measure it has as a desktop rail and halve the height the stage sits
+   * under. As a side rail — 20rem to 34rem — this resolves to one column, so
+   * no breakpoint has to name the difference.
+   */
+  .rail-sections {
     display: grid;
     /* min() so the track can fall below its own floor rather than
        overflowing a rail narrower than 19rem, which is the 19rem side
@@ -541,35 +577,18 @@
     align-items: start;
     gap: 1rem 1.25rem;
     min-width: 0;
-    padding: 1rem 1.15rem 1.25rem;
-    background: var(--panel-bg-current, rgba(255, 255, 255, 0.05));
-    backdrop-filter: var(--glass-backdrop, blur(20px));
-    border-bottom: var(--glass-border, 1px solid rgba(255, 255, 255, 0.08));
   }
 
-  .rail-head {
-    grid-column: 1 / -1;
-  }
-
-  .rail-head h1 {
-    margin: 0;
-    font-size: var(--font-size-lg, 1.05rem);
-    font-weight: 640;
-    letter-spacing: 0.01em;
-    color: var(--theme-text, #fff);
-  }
-
-  .rail-sub {
-    margin: 0.15rem 0 0;
-    font-size: var(--font-size-sm, 0.8125rem);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
-    /* The step number changes continuously; tabular digits keep the line from
-       reflowing under a scrubbing thumb. */
-    font-variant-numeric: tabular-nums;
-  }
-
+  /* Cameras over a transport, the way the product stacks a player. */
   .stage {
     grid-area: stage;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .views {
     display: grid;
     min-width: 0;
     min-height: 0;
@@ -579,7 +598,7 @@
     grid-auto-rows: minmax(0, 52svh);
   }
 
-  .stage[data-layout="solo"] {
+  .views[data-layout="solo"] {
     grid-auto-rows: minmax(0, 72svh);
   }
 
@@ -587,9 +606,7 @@
     display: grid;
     place-items: center;
     min-height: 40svh;
-    margin: 0;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
-    font-size: var(--font-size-sm, 0.875rem);
+    min-width: 0;
   }
 
   .stage-matrix {
@@ -654,7 +671,7 @@
    * and the width goes to empty stage either side of it.
    */
   @media (min-width: 40rem) {
-    .stage[data-layout="quad"] {
+    .views[data-layout="quad"] {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
@@ -676,15 +693,15 @@
     .rail {
       border-right: var(--glass-border, 1px solid rgba(255, 255, 255, 0.08));
       border-bottom: 0;
-      overflow-y: auto;
+      overflow: hidden;
     }
 
-    .stage {
+    .views {
       grid-auto-rows: unset;
       grid-template-rows: repeat(2, minmax(0, 1fr));
     }
 
-    .stage[data-layout="solo"] {
+    .views[data-layout="solo"] {
       grid-template-rows: minmax(0, 1fr);
     }
 
@@ -715,15 +732,15 @@
     .rail {
       border-right: var(--glass-border, 1px solid rgba(255, 255, 255, 0.08));
       border-bottom: 0;
-      overflow-y: auto;
+      overflow: hidden;
     }
 
-    .stage {
+    .views {
       grid-auto-rows: unset;
       grid-template-rows: repeat(2, minmax(0, 1fr));
     }
 
-    .stage[data-layout="solo"] {
+    .views[data-layout="solo"] {
       grid-template-rows: minmax(0, 1fr);
     }
 

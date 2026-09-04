@@ -3,6 +3,7 @@
   import type { Section } from "$lib/shared/navigation/domain/types";
   import type { CreateFrontDoorSource } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import LastUsedBadge from "$lib/shared/components/LastUsedBadge.svelte";
   import {
     logCreateFrontDoorViewed,
     logCreateMethodSelected,
@@ -90,19 +91,21 @@
             class="method-card"
             data-method-id={method.id}
             style:--method-color={method.color ?? "var(--theme-accent)"}
+            aria-label={method.id === lastUsedMode
+              ? `${method.label}, last used on this device${method.description ? `. ${method.description}` : ""}`
+              : undefined}
             onclick={(event) => selectMethod(method.id, event.currentTarget)}
           >
+            {#if method.id === lastUsedMode}
+              <LastUsedBadge />
+            {/if}
+
             <span class="method-icon" aria-hidden="true">
               {@html method.icon}
             </span>
 
             <span class="method-copy">
-              <span class="method-heading">
-                <span class="method-name">{method.label}</span>
-                {#if method.id === lastUsedMode}
-                  <span class="last-used">Last used</span>
-                {/if}
-              </span>
+              <span class="method-name">{method.label}</span>
               {#if method.description}
                 <span class="method-description">{method.description}</span>
               {/if}
@@ -150,8 +153,11 @@
   .method-index {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    column-gap: 8px;
+    row-gap: 16px;
     width: 100%;
+    padding-top: 12px;
+    box-sizing: border-box;
   }
 
   .method-item {
@@ -164,6 +170,8 @@
   }
 
   .method-card {
+    --last-used-badge-accent: var(--method-color);
+
     position: relative;
     width: 100%;
     min-height: 174px;
@@ -251,13 +259,6 @@
     gap: 6px;
   }
 
-  .method-heading {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 4px 12px;
-  }
-
   .method-name {
     color: var(--theme-text);
     font-size: var(--font-size-lg, 1.125rem);
@@ -270,14 +271,6 @@
     font-size: var(--font-size-min, 14px);
     line-height: 1.42;
     text-wrap: pretty;
-  }
-
-  .last-used {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    line-height: 1.2;
-    white-space: nowrap;
   }
 
   @container create-entry (min-width: 480px) and (max-width: 619px) {
@@ -309,7 +302,8 @@
 
     .method-index {
       grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 12px;
+      column-gap: 12px;
+      row-gap: 16px;
     }
 
     h1 {
@@ -353,6 +347,18 @@
     }
   }
 
+  @container create-entry (min-width: 1680px) {
+    .front-door-inner {
+      width: min(calc(100% - 160px), clamp(1040px, 50cqi, 1280px));
+    }
+  }
+
+  @container create-entry (min-width: 2600px) {
+    .front-door-inner {
+      width: min(calc(100% - 240px), clamp(1280px, 42cqi, 1600px));
+    }
+  }
+
   @media (max-height: 640px) and (min-width: 760px) {
     .front-door-inner {
       width: min(calc(100% - 28px), 960px);
@@ -365,7 +371,8 @@
     }
 
     .method-index {
-      gap: 6px;
+      column-gap: 6px;
+      row-gap: 16px;
     }
 
     .method-card {

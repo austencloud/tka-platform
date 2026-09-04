@@ -15,15 +15,21 @@ Supports two navigation modes:
     ExperienceViewMode,
   } from "../domain/types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import { getConceptExperience } from "../domain/concept-experience-registry";
+  import {
+    getConceptExperience,
+    isConceptExperienceAvailable,
+  } from "../domain/concept-experience-registry";
+  import { getConceptById } from "../domain/concepts";
+  import { getConceptPlaceIdForLesson } from "../domain/concept-place-registry";
   import {
     trackLessonCompleted,
     trackLessonStarted,
   } from "../services/learn-events";
 
-  let { concept, onClose } = $props<{
+  let { concept, onClose, onContinue } = $props<{
     concept: LearnConcept;
     onClose?: () => void;
+    onContinue?: (concept: LearnConcept, conceptPlaceId: string | null) => void;
   }>();
 
   const hapticService = getHapticFeedback();
@@ -102,11 +108,24 @@ Supports two navigation modes:
     }
   }
 
-  function handlePracticeComplete() {
+  function handlePracticeComplete(nextConceptId?: string) {
     // Mark the concept as completed when the experience is finished
     // This explicitly completes rather than just recording one practice attempt
     conceptProgressService.completeConcept(concept.id);
     trackLessonCompleted(concept.id);
+
+    const nextConcept = nextConceptId
+      ? getConceptById(nextConceptId)
+      : undefined;
+    if (
+      nextConcept &&
+      isConceptExperienceAvailable(nextConcept.id) &&
+      onContinue
+    ) {
+      onContinue(nextConcept, getConceptPlaceIdForLesson(nextConcept.id));
+      return;
+    }
+
     // After completing, go back to concept list
     handleClose();
   }
@@ -195,8 +214,10 @@ Supports two navigation modes:
     flex-direction: column;
     height: 100%;
     width: 100%;
-    background: var(--background, #000000);
-    color: var(--foreground, #ffffff);
+    /* BackgroundHost owns the application atmosphere. Concept lessons should
+       float above it on theme surfaces instead of replacing it with black. */
+    background: transparent;
+    color: var(--theme-text, var(--foreground, #ffffff));
   }
 
   .header-bar {

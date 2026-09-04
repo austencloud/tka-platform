@@ -1,9 +1,9 @@
 # Words: Alpha/Beta Copy Review
 
 **Concept ID:** `words-alpha-beta`  
-**Review state:** GUIDE-VERBATIM COPY APPROVED / STEP LESSON IN REVIEW
+**Review state:** GUIDE-VERBATIM COPY APPROVED / MEDIA STAGE IN REVIEW
 **Implementation gate:** OPEN for guide-verbatim prose only  
-**Last reviewed:** 2026-08-23
+**Last reviewed:** 2026-09-03
 
 ## Current Implementation Boundary
 
@@ -18,13 +18,22 @@ want to see what's presented to you in the actual guide”) and approved the
 replacement direction with “Yes. Do that.”: a hand-held step-by-step lesson
 that follows the guide's Alpha/Beta Words page (`lt1-abc-ghi`) — one word at a
 time in guide order (AAAA, BBBB, CCCC, then GGGG, HHHH, IIII), with the guide's
-own sentences quoted verbatim as the only connective prose, ending with the
-full 19-card deck as the summary/exploration capstone.
+own sentences quoted verbatim as the only connective prose.
 
-The lesson may load and present the deck's canonical 19 sequence objects and
-the guide's verbatim prose recorded under Approved Text below. No other
-explanatory TKA copy is approved. Routine interface labels, the verified
-deck/family names, card counts, and canonical glyphs remain exempt.
+On 2026-09-03 Austen accepted the one-word-at-a-time direction and rejected the
+full-deck ending because it revealed material before the learner was ready. He
+also requested a Composer-native themed layout with one coordinated stage for
+a performance video, the animation, the Choreo Card, and an explanation tied
+to the same word. The ending is therefore a recap of the same six taught words,
+not a browser for the full deck.
+
+The lesson may load the canonical 19 sequence objects so every base word has a
+typed home for future curriculum media, but this concept presents only the six
+words taught on the guide's Alpha/Beta Words page. The guide's verbatim prose
+recorded under Approved Text below is the only explanatory copy approved. The
+reserved explanation slots must remain empty until exact replacement wording
+is reviewed. Routine interface labels, the verified family names, counts, and
+canonical glyphs remain exempt.
 
 The rejected quiz and completion summary have been removed. The step lesson's
 interaction is awaiting Austen's hands-on review and is not recorded as
@@ -169,7 +178,7 @@ Intro step:
 > The first words we will learn correspond to VTG’s 1:1 motions.
 > To execute these, **_you’ll need to use body turns and/or negative space_**.
 
-Deck capstone step:
+Six-word recap step:
 
 > **Practice each word once in both directions, then again starting with
 > thumbs out.**
@@ -183,3 +192,7 @@ other explanatory prose still requires a new approval entry here.
   including “guide sentences as the connective copy (verbatim),” with
   “Yes. Do that.” The approved sentences are his own guide copy quoted
   unchanged; no newly authored explanatory copy is in the lesson.
+- 2026-09-03 — Austen approved keeping the one-word-at-a-time lesson, removing
+  the premature 19-word reveal, and reserving coordinated video and explanation
+  slots beside the animation and card. No new instructional explanation was
+  supplied or approved; those slots remain empty.

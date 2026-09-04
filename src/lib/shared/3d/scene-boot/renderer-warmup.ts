@@ -81,6 +81,23 @@ const VALUE_PROGRAM_FIELDS = [
   "wireframe",
 ] as const;
 
+const COMPILE_DISPATCH_SLICE_MS = 50;
+
+function yieldToMainThread(): Promise<void> {
+  const scheduler = (
+    globalThis as typeof globalThis & {
+      scheduler?: { yield?: () => Promise<void> };
+    }
+  ).scheduler;
+  if (scheduler?.yield) return scheduler.yield();
+
+  return new Promise<void>((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => resolve();
+    channel.port2.postMessage(null);
+  });
+}
+
 function stableRecord(value: unknown): string {
   if (!value || typeof value !== "object") return JSON.stringify(value);
   return JSON.stringify(
@@ -183,8 +200,13 @@ export async function warmupRenderer(
   // GPU sat idle between them. Dispatching them together keeps the synchronous
   // half in the same order and lets the link waits overlap, so the warm-up
   // costs roughly the slowest single program instead of the sum of all of them.
-  const pending = targets.map((target) => {
-    if (signal?.aborted) return null;
+  const pending: Array<Promise<void> | null> = [];
+  let sliceStartedAt = performance.now();
+  for (const target of targets) {
+    if (signal?.aborted) {
+      pending.push(null);
+      continue;
+    }
     // A representative object is a temporary compile root, so invisible
     // ancestors do not exclude it. Equivalent materials share one program
     // signature and never repeat this relatively expensive traversal. The flag
@@ -193,14 +215,27 @@ export async function warmupRenderer(
     const wasVisible = target.visible;
     target.visible = true;
     try {
-      return renderer.compileAsync(target, camera, scene as Scene);
+      pending.push(renderer.compileAsync(target, camera, scene as Scene));
     } catch (error) {
       reportFailure(error);
-      return null;
+      pending.push(null);
     } finally {
       target.visible = wasVisible;
     }
-  });
+
+    // Program creation is synchronous even when the driver links in parallel.
+    // Large environments can accumulate seconds of those calls into one task,
+    // making every control feel dead. Keep the fast path contiguous, but hand
+    // the browser a turn once that task has consumed a visible frame budget.
+    // The link promises remain pending, so this does not serialize the GPU.
+    if (
+      performance.now() - sliceStartedAt >= COMPILE_DISPATCH_SLICE_MS &&
+      pending.length < targets.length
+    ) {
+      await yieldToMainThread();
+      sliceStartedAt = performance.now();
+    }
+  }
 
   await Promise.all(
     pending.map(async (promise) => {

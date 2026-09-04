@@ -642,6 +642,16 @@
       scenePreparationLabel:
         scenePreparation?.dataset.scenePreparationLabel ?? null,
       tunnelOpacity: tunnelBlend,
+      tunnelLayersReady:
+        persistentAnimator?.dataset.tunnelLayersReady === "true",
+      tunnelLayerCount:
+        Number(persistentAnimator?.dataset.tunnelLayerCount) || 0,
+      tunnelLayerOpacityMinimum:
+        Number(persistentAnimator?.dataset.tunnelLayerOpacityMin) || 0,
+      tunnelLayerOpacityMaximum:
+        Number(persistentAnimator?.dataset.tunnelLayerOpacityMax) || 0,
+      tunnelGridOpacity:
+        Number(persistentAnimator?.dataset.tunnelGridOpacity) || 0,
       tunnelPresented: Boolean(activeTunnelSurface) || tunnelBlend > 0,
       tunnelCanvasReady,
       animatorIdentity: elementIdentity("[data-persistent-animator]"),

@@ -64,6 +64,26 @@ export type LabPropLength = "body" | number;
 
 export const DEFAULT_LAB_PHASE = 7.99;
 
+/**
+ * One frame: the finest moment this lab can name.
+ *
+ * Not a round number picked for feel. The pose is a continuous function of
+ * phase — `StaffGripStage` hands it straight to the performer as
+ * `phaseOffsetSteps` — so nothing downstream quantises it, and the only real
+ * limit is what the address bar can carry. `formatPhase` writes two decimals,
+ * so 0.01 of a step is the finest phase a link can express; anything smaller
+ * is a moment that cannot be copied, and therefore cannot be reported. The
+ * rest of the lab already addresses on this grid: `clampPhase` reserves
+ * `span - 0.01` as the last position, the scrub's `step` is 0.01, the stage's
+ * `data-phase` attribute is `toFixed(2)`, and every coverage-matrix cell link
+ * names its phase the same way.
+ *
+ * It is also strictly finer than playback. The page's clock runs at 1.2 steps
+ * per second, so one frame of a 60Hz display advances 0.02 — two of these.
+ * Nothing the eye catches while it runs falls between two addressable stops.
+ */
+export const LAB_FRAME_STEP = 0.01;
+
 /** Supported prop length band, matching the hug fit's own bounds. */
 export const LAB_LENGTH_MIN_CM = 61;
 export const LAB_LENGTH_MAX_CM = 152;
@@ -77,6 +97,11 @@ function clampPhase(value: number, stepCount: number): number {
 
 function formatPhase(value: number): string {
   return value.toFixed(2);
+}
+
+/** Land on the addressable grid, so repeated stepping never drifts off it. */
+function snapPhase(value: number): number {
+  return Math.round(value / LAB_FRAME_STEP) * LAB_FRAME_STEP;
 }
 
 export interface StaffLabStateOptions {
@@ -165,6 +190,33 @@ export class StaffLabState {
 
   get phase(): number {
     return this.#phase;
+  }
+
+  /**
+   * The phase as a name: the exact string the `phase=` param carries.
+   *
+   * The readout renders this rather than formatting the number itself, so a
+   * frame the lab shows and a frame the address bar names can never be two
+   * different strings. That mattered: the transport used to read out a
+   * 1-based `Step 8.99` beside a URL that said `phase=7.99`, which gave one
+   * moment two names and made "it breaks here" unreportable.
+   */
+  get phaseParam(): string {
+    return formatPhase(this.#phase);
+  }
+
+  /**
+   * Discrete transport movement — a frame button, a step button, an arrow key.
+   *
+   * Distinct from `setPhase` in two ways that only matter when someone is
+   * naming a moment rather than watching one: it snaps onto the addressable
+   * grid, and it writes the URL immediately instead of waiting on the
+   * coalescing timer. After this returns, the phase, the readout and the
+   * address bar are the same value.
+   */
+  stepPhase(delta: number): void {
+    this.#phase = clampPhase(snapPhase(this.#phase + delta), this.#stepCount());
+    this.flushPhase();
   }
 
   /**
@@ -338,7 +390,14 @@ export class StaffLabState {
   #adoptLocation(): void {
     if (!browser) return;
     const href = window.location.href;
-    if (this.#url.href === href) return;
+    if (this.#url.href === href) {
+      // First run after mount. The mirror was seeded from `page.url`, which on
+      // a fresh load already equals `window.location`, so the href guard would
+      // skip the one adoption a pasted `phase=` depends on and the lab would
+      // open on `DEFAULT_LAB_PHASE` instead of the frame the link names.
+      if (!this.#adopted) this.adoptUrlPhase();
+      return;
+    }
     this.#url = new URL(href);
     this.adoptUrlPhase();
   }

@@ -15,6 +15,7 @@
   let {
     variant = "full",
     surface,
+    immersive = false,
   }: {
     variant?: "full" | "compact" | "sitemap";
     /**
@@ -25,6 +26,12 @@
      * content on the star field leave this unset.
      */
     surface?: string;
+    /**
+     * Hide the footer after a viewport-sized room on non-phone layouts. The
+     * room's persistent header already provides global navigation; phones keep
+     * the compact footer after their document-flow version of the same page.
+     */
+    immersive?: boolean;
   } = $props();
 
   let sheetOpen = $state(false);
@@ -106,6 +113,7 @@
   class:full={variant === "full"}
   class:sitemap={variant === "sitemap"}
   class:surfaced={Boolean(surface)}
+  class:immersive
   style:background={surface}
 >
   <div class="inner">
@@ -206,6 +214,12 @@
   .site-footer.surfaced {
     margin-top: 0;
     border-top: 0;
+  }
+
+  @media (min-width: 761px), (min-width: 700px) and (max-height: 560px) {
+    .site-footer.immersive {
+      display: none;
+    }
   }
 
   .inner {

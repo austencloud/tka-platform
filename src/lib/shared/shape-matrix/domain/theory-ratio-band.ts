@@ -2,57 +2,53 @@
  * The Theory surface's ratio bands — how much of the rational field is open.
  *
  * This is NOT a level. TKA levels name turn values, and a turn value is a
- * quantized thing: zero, whole, half, quarter. A band names denominators, and
- * the ladder is the Farey sequence by order, so each step is the
- * mathematically next-simplest set of ratios rather than an arbitrary cut.
+ * quantized thing: zero, whole, half, quarter. A band names the hand-cycle
+ * denominator bound while the numerator remains independently available from
+ * 0 through 15.
  *
- * The two ladders happen to be four steps long and they are otherwise
- * unrelated. Presenting a band as a level claimed that a 4:9 flower sat at
- * Level 4, which is not true at any level: `tkaNamesTheoryRatio` below is the
- * whole of what the turn system reaches inside this field, and it is band 1.
- * Everything past band 1 is outside the level system, and neither TKA nor VTG
- * gives it a name.
+ * The band ladder and the TKA level ladder are unrelated. Some ratios have an
+ * exact TKA turn equivalent and many do not; `tkaNamesTheoryRatio` owns that
+ * distinction instead of inferring it from a band's position.
  */
 import {
-  buildBoundedSpinRatios,
+  buildTheorySpinRatioAtlas,
   spinRatioEquals,
   spinRatioKey,
+  spinRatioToTkaTurnFraction,
+  THEORY_SPIN_RATIO_MAX_PART,
   type SpinRatio,
 } from "@vtg/domain";
-import { STATIONARY_RATIO } from "./theory-flower";
+/** How far the ratio field opens. */
+export type TheoryBand = 1 | 2 | 3 | 4 | 5;
 
-/** How far the ratio field opens. Four steps, like the ladder it is not. */
-export type TheoryBand = 1 | 2 | 3 | 4;
-
-export const THEORY_BANDS: readonly TheoryBand[] = [1, 2, 3, 4];
+export const THEORY_BANDS: readonly TheoryBand[] = [1, 2, 3, 4, 5];
 
 export function asTheoryBand(value: number): TheoryBand {
-  return (value >= 1 && value <= 4 ? Math.trunc(value) : 1) as TheoryBand;
+  return (value >= 1 && value <= 5 ? Math.trunc(value) : 1) as TheoryBand;
 }
 
 /**
  * The band the surface opens on.
  *
  * Three cycles, because the default axis is 1:3 and this is the narrowest band
- * that holds it. It is also the first band past what the turn system names,
- * which is the whole reason the surface exists.
+ * that holds it.
  */
 export const DEFAULT_THEORY_BAND: TheoryBand = 2;
 
 /**
- * Farey order per band: every reduced P:Q in [0:1, 1:1] with Q ≤ order.
+ * Hand-cycle bound per band. Every band includes the complete 0–15 prop range;
+ * the band only describes how many hand cycles the closed path needs.
  *
  * The order IS the hand-cycle bound, because Q is the number of hand cycles
- * the shape takes to close. That is what the bands are named for. 2, 3, 5, 9
- * roughly doubles the field at each step (3, 5, 11, 29 ratios); the gap at 4
- * is that pacing, not an omission - a bound of five already carries the
- * quarters.
+ * the shape takes to close. The 2, 3, 5, 9, 15 pacing opens useful intermediate
+ * fields while ending at the editor's complete range.
  */
 export const THEORY_BAND_ORDER: Record<TheoryBand, number> = {
   1: 2,
   2: 3,
   3: 5,
   4: 9,
+  5: 15,
 };
 
 /**
@@ -64,8 +60,8 @@ export const THEORY_BAND_ORDER: Record<TheoryBand, number> = {
  * sevenths and eighths. Halves held float and isolation, neither of which is a
  * half. Nothing about "Thirds" says it also contains 1:2.
  *
- * A band's Farey order is its hand-cycle bound, so naming the bound says the
- * true thing and says it in the vocabulary of the pane's own Closed path
+ * A band's order is its hand-cycle bound, so naming the bound says the true
+ * thing and says it in the vocabulary of the pane's own Closed path
  * readout: 1:3 closes in three hand cycles, and it lives in the band that
  * opens the field to three. Containment then reads off the labels - five
  * plainly includes three - instead of having to be learned.
@@ -77,50 +73,55 @@ export const THEORY_BAND_DESCRIPTIONS: Record<
   1: {
     name: "2 cycles",
     blurb:
-      "Every shape that closes within two hand cycles: float, 1:2, isolation. The whole of what TKA names.",
+      "Every 0–15 prop ratio that closes within two hand cycles, including the ratios TKA names.",
   },
   2: {
     name: "3 cycles",
-    blurb:
-      "Every shape that closes within three hand cycles. Adds 1:3 and 2:3. Outside the level system.",
+    blurb: "Every 0–15 prop ratio that closes within three hand cycles.",
   },
   3: {
     name: "5 cycles",
-    blurb:
-      "Every shape that closes within five hand cycles. Adds the quarters and the fifths. Outside the level system.",
+    blurb: "Every 0–15 prop ratio that closes within five hand cycles.",
   },
   4: {
     name: "9 cycles",
     blurb:
-      "Every shape that closes within nine hand cycles, plus the stationary hand. Outside the level system.",
+      "Every 0–15 prop ratio that closes within nine hand cycles, plus the stationary hand.",
+  },
+  5: {
+    name: "15 cycles",
+    blurb: "The complete field: any two values from 0 through 15, except 0:0.",
   },
 };
 
 /**
  * The ratios an axis may take in a band.
  *
- * The stationary hand joins only at the top. 1:0 sits outside the Farey field
- * entirely — it is the ratio with no hand path at all — so it reads as the far
- * edge of the vocabulary rather than one of its steps.
+ * The stationary hand has no cycle bound. It remains available from the
+ * nine-cycle band onward for compatibility with existing links.
  */
+const THEORY_RATIO_ATLAS = buildTheorySpinRatioAtlas();
+
 export function theoryRatiosForBand(band: TheoryBand): SpinRatio[] {
-  const field = buildBoundedSpinRatios(THEORY_BAND_ORDER[band]);
-  return band === 4 ? [...field, STATIONARY_RATIO] : field;
+  const cycleBound = THEORY_BAND_ORDER[band];
+  return THEORY_RATIO_ATLAS.filter((ratio) =>
+    ratio.handCycles === 0 ? band >= 4 : ratio.handCycles <= cycleBound
+  );
 }
 
 /**
  * Whether the Kinetic Alphabet has a turn value for this ratio.
  *
- * TKA turns are quantized: a positive P:Q ratio maps to (P/Q − 1) / 2, and the
- * level palettes step by a quarter turn at their finest. Inside this field
- * that leaves exactly three — Float, the 1:2 quarter reduction, and isolation
- * — which is why band 1 holds them all and no wider band adds another. A 1:3
- * is a −1/3 turn, and TKA has no such value at any level.
+ * TKA turns are quantized: a positive P:Q ratio maps to (P/Q − 1) / 2. The
+ * current turn ladder runs from −1/4 through 3 in quarter-turn steps, plus
+ * Float. A 1:3 is −1/3 and therefore remains outside that named set.
  */
 export function tkaNamesTheoryRatio(ratio: SpinRatio): boolean {
-  return theoryRatiosForBand(1).some((named) =>
-    spinRatioEquals(named, ratio)
-  );
+  const fraction = spinRatioToTkaTurnFraction(ratio);
+  if (fraction === "fl") return true;
+  if (fraction === null) return false;
+  const quarters = (fraction.numerator * 4) / fraction.denominator;
+  return Number.isInteger(quarters) && quarters >= -1 && quarters <= 12;
 }
 
 export function clampTheoryRatioToBand(
@@ -161,15 +162,17 @@ export function theoryRatioSpokenLabel(ratio: SpinRatio): string {
 /**
  * The narrowest band that already holds this ratio, or null if none does.
  *
- * Typing a ratio is bounded by the CATALOG, not by the band the field happens
- * to be open to, so a direct entry widens the band to hold what was asked for
+ * Typing a ratio is bounded by the 0–15 input range, not by the band the field
+ * happens to be open to, so a direct entry widens the band to hold what was asked for
  * rather than clamping the answer to something else. The band then reports
  * where that ratio lives: type 4 and 9 and the control moves to nine cycles,
  * which is the true statement that 4:9 needs nine of them.
  */
 export function narrowestBandFor(ratio: SpinRatio): TheoryBand | null {
   for (const band of THEORY_BANDS) {
-    if (theoryRatiosForBand(band).some((held) => spinRatioEquals(held, ratio))) {
+    if (
+      theoryRatiosForBand(band).some((held) => spinRatioEquals(held, ratio))
+    ) {
       return band;
     }
   }
@@ -178,10 +181,10 @@ export function narrowestBandFor(ratio: SpinRatio): TheoryBand | null {
 
 /** Every ratio the surface can reach at all: the widest band's whole field. */
 export function theoryRatioCatalog(): SpinRatio[] {
-  return theoryRatiosForBand(THEORY_BANDS[THEORY_BANDS.length - 1] as TheoryBand);
+  return theoryRatiosForBand(
+    THEORY_BANDS[THEORY_BANDS.length - 1] as TheoryBand
+  );
 }
 
 /** The largest number either side of a typed ratio may carry. */
-export const THEORY_RATIO_MAX_PART = Math.max(
-  ...THEORY_BANDS.map((band) => THEORY_BAND_ORDER[band])
-);
+export const THEORY_RATIO_MAX_PART = THEORY_SPIN_RATIO_MAX_PART;

@@ -82,6 +82,9 @@ export interface AnimationEngineProps {
   rightProp: PropState | null;
   additionalLayers?: AdditionalLayerProps[];
   gridVisible?: boolean;
+  /** Direct grid alpha for a host-owned transition. Undefined keeps the
+   * renderer's ordinary visibility-toggle fade. */
+  gridOpacity?: number;
   gridMode?: GridMode | null;
   backgroundAlpha?: number;
   letter?: Letter | null;

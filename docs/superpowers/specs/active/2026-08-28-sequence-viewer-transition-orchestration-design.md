@@ -907,11 +907,11 @@ dock resumes following its contents. Reduced motion opts out entirely, and a
 **Measured on the real route** (`/sequence/EHWE`, 1118×1221 — the in-app pane's
 exact viewport):
 
-| Run | Dock max step | Dock moving frames | Card centre max step | Card ever offscreen |
-| --- | --- | --- | --- | --- |
-| Performances -> Card | 74.8 px | **17** (was 1) | 19.1 px (was a 479.3 px teleport) | **no** (was yes) |
-| Card -> Performances | 74.9 px | 17 | 31.7 px | departure only, clipped by `overflow: hidden` |
-| 2D Animation -> Card | 0 px | 0 | 92.4 px | unchanged from before the fix |
+| Run                  | Dock max step | Dock moving frames | Card centre max step              | Card ever offscreen                           |
+| -------------------- | ------------- | ------------------ | --------------------------------- | --------------------------------------------- |
+| Performances -> Card | 74.8 px       | **17** (was 1)     | 19.1 px (was a 479.3 px teleport) | **no** (was yes)                              |
+| Card -> Performances | 74.9 px       | 17                 | 31.7 px                           | departure only, clipped by `overflow: hidden` |
+| 2D Animation -> Card | 0 px          | 0                  | 92.4 px                           | unchanged from before the fix                 |
 
 Post-fix basis frames: `480px -> 476.0 -> 461.7 -> 431.6 -> 380.0 -> 307.1 ->
 231.8 -> 170.4 -> 123.5 -> 88.4 -> 62.1 -> 42.1 -> 27.2 -> 16.3 -> 8.6 -> 3.8 ->
@@ -950,7 +950,6 @@ captured at all seven required viewports — 375×667, 960×412, 820×1180, 1440
 guarantees by construction: the inline basis exists only for the duration of the
 transition.
 
-
 ### Gate 5 · Card arrives at its destination size (2026-09-03)
 
 Follow-on to the dock-collapse fix above. With the dock's basis handoff landed,
@@ -975,7 +974,7 @@ size change and the incoming transition flew out of the speck.
    keyed `focus|split` and qualified by viewport. Module scope is required:
    `ViewerSplitPane` mounts inside a `DualSourceCrossfade` source, so a mode
    change creates a fresh instance and component-local state is empty on exactly
-   the transitions that need it. The resolved *box* is remembered rather than the
+   the transitions that need it. The resolved _box_ is remembered rather than the
    stage and the allocation separately, because for the first frames of a mode
    change the allocation still describes the mode being left; recombining it with
    a settled stage yields a box the Card never occupies.
@@ -994,7 +993,7 @@ size change and the incoming transition flew out of the speck.
    start-placement choice is aimed at the destination too.
 6. When a transition was interrupted and left the Card painted unreadably small,
    `data-contain-size-jump` suppresses the size transition for one DOM commit so
-   the Card is *placed* at its destination instead of flying to it. The decision
+   the Card is _placed_ at its destination instead of flying to it. The decision
    reads `getBoundingClientRect`, not state, because painted size and state size
    diverge in exactly that case.
 7. The un-released Card entry lease in `viewer-shell-layout-state.svelte.ts` was
@@ -1005,15 +1004,15 @@ size change and the incoming transition flew out of the speck.
 **Measured on the real route** (`/sequence/EHWE`, warm entries, distinct painted
 sizes counted per rAF from the click to settle):
 
-| Viewport | Tunnel -> Card | Performances -> Card | 2D -> Card | Side by Side -> Card |
-| --- | --- | --- | --- | --- |
-| 375×667 | 1 frame @ 312×502 | 1 frame | 1 frame | 355×280 -> 312×502 |
-| 960×412 | 1 frame @ 869×232 | 1 frame | 1 frame | 430×334 -> 869×232 |
-| 820×1180 | 1 frame @ 694×1119 | 1 frame | 1 frame | 714×555 -> 694×1119 |
-| 1440×900 | 1 frame @ 521×839 | 1 frame | 1 frame | 535×416 -> 521×839 |
-| 1920×1080 | 1 frame @ 1176×915 | 1 frame | 1 frame | 633×1019 -> 1176×915 |
-| 2560×1440 | 1 frame @ 1713×1332 | 1 frame | 1 frame | 856×1379 -> 1713×1332 |
-| 3840×2160 | 1 frame @ 2699×2099 | 1 frame | 1 frame | 1303×2099 -> 2699×2099 |
+| Viewport  | Tunnel -> Card      | Performances -> Card | 2D -> Card | Side by Side -> Card   |
+| --------- | ------------------- | -------------------- | ---------- | ---------------------- |
+| 375×667   | 1 frame @ 312×502   | 1 frame              | 1 frame    | 355×280 -> 312×502     |
+| 960×412   | 1 frame @ 869×232   | 1 frame              | 1 frame    | 430×334 -> 869×232     |
+| 820×1180  | 1 frame @ 694×1119  | 1 frame              | 1 frame    | 714×555 -> 694×1119    |
+| 1440×900  | 1 frame @ 521×839   | 1 frame              | 1 frame    | 535×416 -> 521×839     |
+| 1920×1080 | 1 frame @ 1176×915  | 1 frame              | 1 frame    | 633×1019 -> 1176×915   |
+| 2560×1440 | 1 frame @ 1713×1332 | 1 frame              | 1 frame    | 856×1379 -> 1713×1332  |
+| 3840×2160 | 1 frame @ 2699×2099 | 1 frame              | 1 frame    | 1303×2099 -> 2699×2099 |
 
 "1 frame" means the first painted frame is already the settled size — the pane
 opens around a Card that never changes size. Before the fix the same entries read
@@ -1030,6 +1029,58 @@ split directions, uneven allocation, collapsing pane, unmeasured split).
 `svelte-check`: 0 errors, 0 warnings. No horizontal overflow at any of the seven
 viewports.
 
+### Gate 3 follow-up · 2026-09-03 (2D ⇄ Tunnel choreography)
+
+Rapid reversals exposed two clocks where the transition should have had one. The
+Tunnel reveal started before its asynchronous formation build was guaranteed to
+exist, so completed copies could join an already-visible canvas in one frame.
+The ordinary 2D grid also ran on the renderer's separate 250/200 ms visibility
+fade while Tunnel layers used the viewer's 280 ms reveal. The grid, props, and
+formation therefore looked like several effects triggered near each other rather
+than one transformation.
+
+The viewer now prepares Tunnel layers while 2D remains active. Readiness remains
+an instrumented invariant rather than a prerequisite of the reveal tween: gating
+the tween on the asynchronous flag created a circular handoff in which Tunnel
+mode committed at zero reveal and the layer list could never become visible. The
+same reversible progress drives every Tunnel copy and the 2D grid alpha. An
+authored Tunnel grid stays visible; otherwise the 2D grid leaves as the copies
+arrive. The existing renderer fade remains the default for every caller that does
+not supply this viewer-owned opacity.
+
+The Gate 3 trace now reads the painted boundary directly: layer readiness/count,
+minimum and maximum layer alpha, and grid alpha. It grades reveal-before-ready
+frames, late asynchronous layer arrivals, alpha discontinuities, duplicate
+canvases, and the existing backing/identity invariants. The first trustworthy
+1440 × 900 stress reversal measured:
+
+| Measure                                |   Result |
+| -------------------------------------- | -------: |
+| Reveal before layers ready             | 0 frames |
+| Late layer arrivals                    |        0 |
+| Largest Tunnel-layer alpha step        |     0.04 |
+| Largest grid alpha step                |     0.04 |
+| Animator remounts / duplicate canvases |    0 / 0 |
+
+The responsive replay completed at all seven contract viewports. Backgrounded
+phone emulations produced coarse frame gaps, so alpha-step alarms are suppressed
+when the trace itself reports a sample gap above 80 ms; readiness, late-arrival,
+and singleton checks remain exact regardless of cadence. `svelte-check` reports
+0 errors and 0 warnings. The sequence-viewer and animation-engine suites pass 61
+files / 432 tests, including the new reversible grid-curve cases and orchestration
+contract.
+
+Follow-up review showed that continuity alone was not enough: seven prepared
+layers were starting inside the first 24% of the reveal, and at 78% progress
+their measured alpha occupied a narrow band. The copies therefore read as one
+group pop even though the numbers were technically interpolating. The formation
+now uses the canonical dramatic clock, spreads center-out starts across 62% of
+that clock, and gives each layer smoothstep shoulders. The ordinary 2D grid
+clears during the opening 38%, leaving the middle and outer performers room to
+arrive as distinct overlapping waves. A new `Layer cascade spread` metric fails
+traces whose moving layers never separate by at least 0.35 alpha. The seven-layer
+unit sample measures more than 0.45 spread at the midpoint, remains monotonic
+from center to edge, and reverses by retracing the same master progress.
 
 ## Gate 6 baseline · 2026-09-01
 
