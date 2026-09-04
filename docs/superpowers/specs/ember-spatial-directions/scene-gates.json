@@ -3,7 +3,7 @@
   "sceneId": "ember-broken-rift",
   "title": "Ember Broken Rift",
   "domainProofRequired": false,
-  "currentGate": 1,
+  "currentGate": 2,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
     "roomShellSource": "src/lib/shared/3d/environments/scenes/EmberScene.svelte",
@@ -41,7 +41,9 @@
       "torsiCoIaMMrkMklUMSq",
       "lIPwVa2kGFcoQsgICkWI",
       "BvN1DiylOnfdbrofcwaM",
-      "FZftIaWtEdGTrqXRv9JS"
+      "FZftIaWtEdGTrqXRv9JS",
+      "xFcagbaZTQAq615IbZgT",
+      "lXhTllDFV2Ne1E7foCkS"
     ]
   },
   "sequenceFingerprints": [],
@@ -431,7 +433,7 @@
     },
     {
       "id": "measured-plan",
-      "status": "ready-for-review",
+      "status": "approved",
       "evidence": [
         {
           "kind": "floor-plan",
@@ -485,13 +487,65 @@
           "evidence": "The canonical R4 Gate 1.1 report records SHA-256 digests for all review images and the checked-in little-endian float32 simulator raster."
         }
       ],
-      "approval": null
+      "approval": {
+        "approvedBy": "Austen",
+        "approvedAt": "2026-09-04T18:34:25.786Z",
+        "quote": "Yeah that's better let's go with that",
+        "museumTrackerItem": "xFcagbaZTQAq615IbZgT",
+        "visualComprehensionConfirmed": true
+      }
     },
     {
       "id": "playable-graybox",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "blender/ember-midflank-fire-pilgrimage-graybox-r4.blend"
+        },
+        {
+          "kind": "coordinate-manifest",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/ember-midflank-fire-pilgrimage-r4-coordinate-manifest.json"
+        },
+        {
+          "kind": "graybox-glb",
+          "path": "static/models/ember/review/ember-midflank-fire-pilgrimage-graybox-r4.glb"
+        },
+        {
+          "kind": "first-person-walk",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/14-continuous-runtime-orbit.webp"
+        },
+        {
+          "kind": "review-contact-sheet",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/ember-midflank-fire-pilgrimage-r4-gate2-contact-sheet.png"
+        },
+        {
+          "kind": "verification-report",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/ember-midflank-fire-pilgrimage-r4-graybox-report.json"
+        }
+      ],
+      "checks": [
+        {
+          "name": "artifact-digest",
+          "status": "passed",
+          "evidence": "The R4 graybox report records SHA-256 and byte length for every Blender, GLB, raster, still, motion, manifest, and source artifact."
+        },
+        {
+          "name": "collision",
+          "status": "passed",
+          "evidence": "EMBER_Terrain is the sole visible collider and exports tka_camera_collision=true."
+        },
+        {
+          "name": "route-duration",
+          "status": "passed",
+          "evidence": "The approved orbit-backdrop exemption is fulfilled by a 48-frame continuous exact-camera orbit plus eight registered 45-degree stills."
+        },
+        {
+          "name": "sequence-parity",
+          "status": "passed",
+          "evidence": "The isolated R4 environment graybox does not select or modify a TKA sequence."
+        }
+      ],
       "approval": null
     },
     {
