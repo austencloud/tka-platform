@@ -2,8 +2,6 @@
   import { goto } from "$app/navigation";
   import { onMount, tick } from "svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import type { AuthoredHand } from "$lib/shared/foundation/domain/models/authored-hand";
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { createConstructSoloReviewSequence } from "./construct-solo-review-fixture";
 
   const PENDING_EDIT_KEY = "tka-pending-edit-sequence";
@@ -43,7 +41,6 @@
 
   type ViewportId = (typeof VIEWPORTS)[number]["id"];
 
-  let authoredHand = $state<AuthoredHand>("left");
   let viewportId = $state<ViewportId>("laptop");
   let frameRevision = $state(0);
   let frameReady = $state(false);
@@ -52,12 +49,11 @@
     VIEWPORTS.find((viewport) => viewport.id === viewportId) ?? VIEWPORTS[3]
   );
   const frameSource = $derived(
-    `/create/construct?soloReview=${authoredHand}-${frameRevision}`
+    `/create/construct?soloReview=left-${frameRevision}`
   );
-  const partnerHand = $derived(authoredHand === "left" ? "right" : "left");
 
   function seedPendingEdit(): void {
-    const sequence = createConstructSoloReviewSequence(authoredHand);
+    const sequence = createConstructSoloReviewSequence("left");
     localStorage.setItem(PENDING_EDIT_KEY, JSON.stringify(sequence));
   }
 
@@ -70,12 +66,7 @@
 
   async function openFullSize(): Promise<void> {
     seedPendingEdit();
-    await goto(`/create/construct?soloReview=${authoredHand}-full`);
-  }
-
-  function selectHand(value: string): void {
-    authoredHand = value as AuthoredHand;
-    void reloadConstruct();
+    await goto("/create/construct?soloReview=left-full");
   }
 
   onMount(() => {
@@ -109,18 +100,10 @@
 
   <div class="review-layout">
     <aside class="review-rail">
-      <section>
-        <span class="section-label" id="solo-hand-label">Fixture</span>
-        <SegmentedControl
-          options={[
-            { value: "left", label: "Left solo" },
-            { value: "right", label: "Right solo" },
-          ]}
-          value={authoredHand}
-          onchange={selectHand}
-          ariaLabelledby="solo-hand-label"
-          size="sm"
-        />
+      <section class="fixture-summary">
+        <span class="section-label">Fixture</span>
+        <strong>Left-hand smooth box</strong>
+        <span>8 canonical steps · complete solo artifact</span>
       </section>
 
       <section>
@@ -158,11 +141,11 @@
           </div>
           <div>
             <dt>Hand</dt>
-            <dd>{authoredHand} only</dd>
+            <dd>left only</dd>
           </div>
           <div>
             <dt>Partner</dt>
-            <dd>{partnerHand} is an invisible schema placeholder</dd>
+            <dd>right is an invisible schema placeholder</dd>
           </div>
         </dl>
       </section>
@@ -170,9 +153,8 @@
       <section class="review-question">
         <span class="section-label">First question only</span>
         <p>
-          Does Construct communicate that a complete {authoredHand}-hand
-          artifact arrived, or does it make the card look broken before you
-          touch anything?
+          Does Construct communicate that a complete left-hand artifact arrived,
+          or does it make the card look broken before you touch anything?
         </p>
       </section>
     </aside>
@@ -196,7 +178,7 @@
           {#key frameRevision}
             <iframe
               src={frameSource}
-              title={`${authoredHand}-hand Choreo Card loaded into Construct`}
+              title="Left-hand Choreo Card loaded into Construct"
               onload={() => (frameReady = true)}
             ></iframe>
           {/key}
@@ -300,6 +282,28 @@
   .section-label {
     display: block;
     margin-bottom: 8px;
+  }
+
+  .fixture-summary {
+    padding: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .fixture-summary strong,
+  .fixture-summary > span:last-child {
+    display: block;
+  }
+
+  .fixture-summary strong {
+    font-size: 14px;
+  }
+
+  .fixture-summary > span:last-child {
+    margin-top: 3px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
+    font-size: 12px;
   }
 
   .viewport-options {
