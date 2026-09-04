@@ -119,6 +119,16 @@
     runMandalaMorph(appState, () => appState.showMatrix());
   }
 
+  function surpriseMe(): void {
+    if (!appState.compact || theory || appState.activeView === "detail") {
+      appState.surpriseMe();
+      return;
+    }
+    runMandalaMorph(appState, () => appState.showDetail(), {
+      before: () => appState.surpriseMe(Math.random, { navigate: false }),
+    });
+  }
+
   $effect(() => {
     const request = appState.compactFocusRequest;
     if (!request || !appState.compact) return;
@@ -164,6 +174,21 @@
   >
     <ShapeMatrixMatrixPane onselect={selectPair} />
   </div>
+{/snippet}
+
+{#snippet surpriseAction(compact = false)}
+  <button
+    type="button"
+    class="top-action surprise-action"
+    class:compact
+    aria-label="Surprise me with a new grid, crossing, and hand relationship"
+    title="Pick a new grid, crossing, and hand relationship"
+    disabled={!theory && !appState.data}
+    onclick={surpriseMe}
+  >
+    <i class="fas fa-dice" aria-hidden="true"></i>
+    {#if !compact}<span>Surprise me</span>{/if}
+  </button>
 {/snippet}
 
 {#snippet detailPane()}
@@ -324,6 +349,9 @@
         <div class="surface-control-cell">
           <ShapeMatrixSurfaceControl />
         </div>
+        <div class="surprise-presence">
+          {@render surpriseAction()}
+        </div>
         {#if !theory}
           <!-- The wrapper owns the gap as well as the cell width, so removing
                Difficulty releases one continuous piece of space instead of
@@ -391,6 +419,7 @@
 
     <div class="top-actions">
       {#if appState.compact}
+        {@render surpriseAction(true)}
         {#if appState.activeView === "matrix" && hasPair}
           <button
             type="button"
@@ -554,6 +583,39 @@
     outline-offset: 2px;
   }
 
+  .surprise-action {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 58%,
+      var(--theme-stroke, transparent)
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 13%,
+      var(--theme-card-bg, transparent)
+    );
+    color: var(--theme-text, #fff);
+    font-weight: 750;
+  }
+
+  .surprise-action i {
+    color: var(--theme-accent, #f59e0b);
+  }
+
+  .surprise-action:disabled {
+    border-color: var(--theme-stroke, rgb(255 255 255 / 0.09));
+    background: transparent;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.42));
+    cursor: wait;
+    opacity: 0.6;
+  }
+
+  .surprise-action.compact {
+    width: var(--min-touch-target, 44px);
+    max-width: none;
+    padding: 0;
+  }
+
   .identity {
     grid-area: identity;
     display: flex;
@@ -691,6 +753,17 @@
     display: flex;
     flex: 0 0 auto;
     align-items: center;
+  }
+
+  .surprise-presence {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    margin-left: 0.5rem;
+  }
+
+  .surprise-presence .surprise-action {
+    min-height: 3.65rem;
   }
 
   /* The bento cell: a caption row over its control, each cell carrying its
