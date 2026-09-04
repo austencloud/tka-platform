@@ -4,7 +4,7 @@ import { TKA_CONCEPTS } from "./concepts";
 
 interface ConceptExperienceProps {
   viewMode?: ExperienceViewMode;
-  onComplete?: () => void;
+  onComplete?: (nextConceptId?: string) => void;
   onBack?: () => void;
 }
 
