@@ -26,6 +26,15 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     /** md = default chip · sm = denser padding for tight scrollable filter rows.
      *  Touch-target floor is preserved in both sizes. */
     size?: "sm" | "md";
+    /**
+     * compact (default) = 12px label, correct for a filter bar where the chip
+     * qualifies content shown elsewhere · readable = 14px label and leading
+     * glyph, for a chip whose label IS the primary content being read and
+     * chosen between (a sequence word, a named target). Padding, radius and the
+     * touch-target floor are unchanged; only the type steps up to the body-text
+     * floor. Independent of `size`, which owns density.
+     */
+    labelScale?: "compact" | "readable";
     expanded?: boolean;
     disabled?: boolean;
     /** Accessible name when the visible label does not describe the action. */
@@ -60,6 +69,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     mode = "dropdown",
     emphasis = "soft",
     size = "md",
+    labelScale = "compact",
     expanded = false,
     disabled = false,
     ariaLabel,
@@ -191,6 +201,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     class:active
     class:solid={emphasis === "solid"}
     class:size-sm={size === "sm"}
+    class:scale-readable={labelScale === "readable"}
     style="--chip-color: {chipColor};"
   >
     {@render chipBody()}
@@ -203,6 +214,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
       class:disabled
       class:solid={emphasis === "solid"}
       class:size-sm={size === "sm"}
+    class:scale-readable={labelScale === "readable"}
       type="button"
       aria-pressed={mode === "toggle" ? active : undefined}
       aria-label={ariaLabel ?? `${label}${count != null ? ` (${count})` : ""}`}
@@ -221,6 +233,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
       class:disabled
       class:solid={emphasis === "solid"}
       class:size-sm={size === "sm"}
+    class:scale-readable={labelScale === "readable"}
       type="button"
       aria-label={removeAriaLabel ?? `Remove ${label}`}
       {disabled}
@@ -237,6 +250,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     class:expanded
     class:solid={emphasis === "solid"}
     class:size-sm={size === "sm"}
+    class:scale-readable={labelScale === "readable"}
     style="--chip-color: {chipColor};"
     type="button"
     aria-pressed={mode === "toggle" ? active : undefined}
@@ -390,6 +404,18 @@ Popover uses fixed positioning to escape overflow:hidden containers.
 
   .filter-chip i:not(.chip-arrow) {
     font-size: var(--font-size-compact, 12px);
+  }
+
+  /* Opt-in: the label is the content, not a qualifier on content shown
+     elsewhere, so it sits on the body-text floor instead of the supplementary
+     one. Density (padding, gap, touch target) is untouched — that stays with
+     `size`. */
+  .filter-chip.scale-readable {
+    font-size: var(--font-size-sm, 14px);
+  }
+
+  .filter-chip.scale-readable i:not(.chip-arrow) {
+    font-size: var(--font-size-sm, 14px);
   }
 
   .chip-label {
