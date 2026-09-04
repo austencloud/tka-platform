@@ -40,6 +40,7 @@ function safeTurn(pattern: string): string {
 }
 
 let poolPromise: Promise<readonly SequenceData[]> | null = null;
+let basePoolPromise: Promise<readonly SequenceData[]> | null = null;
 
 /**
  * Resolve the full canonical pool (all six families × all 49 turn patterns).
@@ -56,12 +57,30 @@ export function loadCanonicalTnDSequences(): Promise<readonly SequenceData[]> {
   return poolPromise;
 }
 
-async function resolvePool(): Promise<readonly SequenceData[]> {
+/** Resolve only the 19 zero-turn representatives used by Learning Letters. */
+export function loadCanonicalTnDBaseSequences(): Promise<
+  readonly SequenceData[]
+> {
+  if (!basePoolPromise) {
+    basePoolPromise = resolvePool(["0|0"]).catch((err) => {
+      basePoolPromise = null;
+      throw err;
+    });
+  }
+  return basePoolPromise;
+}
+
+async function resolvePool(
+  patterns?: readonly string[]
+): Promise<readonly SequenceData[]> {
   const out: SequenceData[] = [];
   // Sequential per family: each call shares the same cached base catalog, and
   // the resolution work is CPU-bound — parallelism buys nothing but jank.
   for (const element of TND_ELEMENTS) {
-    const matrices = await resolveTnDFamilyCards(element.familyId);
+    const matrices = await resolveTnDFamilyCards(
+      element.familyId,
+      patterns ? { patterns } : undefined
+    );
     for (const matrix of matrices) {
       for (const [pattern, seq] of matrix.byTurn) {
         const tagged = updateSequenceData(seq, {

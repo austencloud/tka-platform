@@ -7,14 +7,15 @@ import {
   normalizeLearningLettersProgress,
 } from "$lib/features/learn/components/interactive/words/learning-letters-progress";
 
-const { canonicalPool, loadCanonicalTnDSequences } = vi.hoisted(() => ({
+const { canonicalPool, loadCanonicalTnDBaseSequences } = vi.hoisted(() => ({
   canonicalPool: [] as SequenceData[],
-  loadCanonicalTnDSequences: vi.fn(),
+  loadCanonicalTnDBaseSequences: vi.fn(),
 }));
 
 vi.mock("$lib/features/browse/gallery-home/canonical-tnd-pool", () => ({
   CANONICAL_TND_AUTHOR: "T&D Alphabet",
-  loadCanonicalTnDSequences,
+  loadCanonicalTnDBaseSequences,
+  loadCanonicalTnDSequences: vi.fn(async () => []),
   loadCanonicalBookVariations: vi.fn(async () => []),
 }));
 
@@ -54,7 +55,7 @@ describe("Learning Letters founding deck loader", () => {
         words.map((word) => sequence(word, familyId))
       )
     );
-    loadCanonicalTnDSequences.mockResolvedValue(canonicalPool);
+    loadCanonicalTnDBaseSequences.mockResolvedValue(canonicalPool);
   });
 
   it("resolves TKA 1 through the founding collection rule", async () => {
@@ -82,7 +83,7 @@ describe("Learning Letters founding deck loader", () => {
       "OROR",
     ]);
     expect(new Set(cards.map((card) => card.id)).size).toBe(19);
-    expect(loadCanonicalTnDSequences).toHaveBeenCalledOnce();
+    expect(loadCanonicalTnDBaseSequences).toHaveBeenCalledOnce();
   });
 
   it("rejects deck drift instead of presenting a partial lesson", async () => {
