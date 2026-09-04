@@ -74,7 +74,8 @@ STATUS=0
 timeout "${CODEX_ASK_TIMEOUT:-2700}" codex exec \
 	--ignore-user-config \
 	-m "$MODEL" \
-	${EFFORT_ARGS[@]+"${EFFORT_ARGS[@]}"} \n	-o "$OUT" \
+	${EFFORT_ARGS[@]+"${EFFORT_ARGS[@]}"} \
+	-o "$OUT" \
 	--dangerously-bypass-approvals-and-sandbox \
 	-C "$REPO" \
 	"$PROMPT" </dev/null >"${OUT%.md}.log" 2>&1 || STATUS=$?
