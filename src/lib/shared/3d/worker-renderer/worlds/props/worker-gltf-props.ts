@@ -239,7 +239,7 @@ function recolorRegistryScene(
       }
       return cloned;
     });
-    mesh.material = usesArray ? recolored : recolored[0];
+    mesh.material = usesArray ? recolored : (recolored[0] ?? mesh.material);
   });
 }
 

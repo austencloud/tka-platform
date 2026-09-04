@@ -1,5 +1,5 @@
 import type { CameraStateSnapshot } from "@austencloud/scene-3d";
-import type { BackgroundType } from "@austencloud/backgrounds";
+import type { SceneEnvironmentId } from "../environments/domain/scene-environment";
 
 import { getViewerFrontStageCameraZ } from "../domain/viewer-formation-facing";
 
@@ -13,7 +13,7 @@ export interface ViewerCameraFraming {
 }
 
 export interface ViewerCameraFramingOptions {
-  environmentId: BackgroundType;
+  environmentId: SceneEnvironmentId;
   fov: number;
   document?: Document | null;
 }

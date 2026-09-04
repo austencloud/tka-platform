@@ -283,7 +283,7 @@ export function createWorkerGrid3D(options: WorkerGridOptions): WorkerGrid3D {
       let labelPlane: Plane | null = null;
       let bestDot = -1;
       for (const plane of visiblePlanes) {
-        const dot = Math.abs(viewDirection.dot(PLANE_NORMALS[plane]));
+        const dot = Math.abs(viewDirection.dot(PLANE_NORMALS[plane as unknown as keyof typeof PLANE_NORMALS]));
         if (dot > bestDot) {
           bestDot = dot;
           labelPlane = plane;

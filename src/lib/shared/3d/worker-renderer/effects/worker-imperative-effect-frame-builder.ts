@@ -14,11 +14,17 @@ import {
   resolveTrailSources3D,
   TipPositionBridge3D,
 } from "../../effects/tip-position-bridge-3d";
-import type { TipPositionData3D } from "../../effects/types";
+import { QualityTier, type TipPositionData3D } from "../../effects/types";
+import type {
+  Charcoal3DParams,
+  Fire3DParams,
+} from "$lib/shared/effects/translators/webgl3d-types";
+import type { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { MOON_FAN_LED_COUNT } from "../../effects/led/moon-fan-diffuser-renderer-3d";
 import { shutterToPovPersistence } from "../../effects/poi/pov-strip-renderer-3d";
 import type { SceneEffectTipSource3D } from "../../effects/scene-effects/scene-effect-source-3d";
 import type {
+  WorkerEffectQualityTier,
   WorkerImperativeEffectFrame,
   WorkerLedTipFrame,
   WorkerPerformerEffectIntent,
@@ -29,6 +35,17 @@ import type {
 } from "../domain/worker-renderer-protocol";
 
 const LED_SUPERSAMPLE_BY_TIER = { high: 8, medium: 4, low: 1 } as const;
+const QUALITY_TIER_BY_WORKER_TIER: Readonly<
+  Record<WorkerEffectQualityTier, QualityTier>
+> = {
+  high: QualityTier.HIGH,
+  medium: QualityTier.MEDIUM,
+  low: QualityTier.LOW,
+};
+
+function toQualityTier(tier: WorkerEffectQualityTier): QualityTier {
+  return QUALITY_TIER_BY_WORKER_TIER[tier];
+}
 
 export interface WorkerEffectPropFrameInput {
   state: PropState3D | null;
@@ -138,16 +155,16 @@ function pooledSource(
       return {
         ...base,
         effect,
-        params,
-        qualityTier: input.intent.qualityTier,
+        params: params as Fire3DParams,
+        qualityTier: toQualityTier(input.intent.qualityTier),
         jerk: Math.hypot(tip.jerk.x, tip.jerk.y, tip.jerk.z),
       };
     case "charcoal":
       return {
         ...base,
         effect,
-        params,
-        qualityTier: input.intent.qualityTier,
+        params: params as Charcoal3DParams,
+        qualityTier: toQualityTier(input.intent.qualityTier),
         jerk: Math.hypot(tip.jerk.x, tip.jerk.y, tip.jerk.z),
         totalSteps: input.intent.totalSteps,
         collisionFloorY: input.collisionFloorY,
@@ -221,7 +238,7 @@ export class WorkerImperativeEffectFrameBuilder {
       }
 
       for (const source of resolveTrailSources3D(
-        input.intent.trails.trackingMode,
+        input.intent.trails.trackingMode as TrackingMode,
         tipFrame.tips,
         center
       )) {

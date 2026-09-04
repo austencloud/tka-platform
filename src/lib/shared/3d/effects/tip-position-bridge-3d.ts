@@ -162,7 +162,7 @@ export class TipPositionBridge3D {
 		rigLocalCenter: { x: number; y: number; z: number },
 		staffHalfLength: number,
 		deltaTime: number,
-		propType?: string,
+		propType: string | undefined,
 		build: PropBuild
 	): PropTipPositions3D {
 		const center = new Vector3(

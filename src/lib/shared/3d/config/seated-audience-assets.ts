@@ -19,7 +19,9 @@ export const SEATED_AUDIENCE_CHARACTER_IDS = [
 ] as const satisfies readonly AvatarId[];
 
 export const SEATED_AUDIENCE_CHARACTER_URLS =
-  SEATED_AUDIENCE_CHARACTER_IDS.map(getAvatarModelPath);
+  SEATED_AUDIENCE_CHARACTER_IDS.map(
+    (id): string => getAvatarModelPath(id)
+  );
 
 /**
  * `sitting-idle-a` retargets to a near-horizontal pose — head 0.23m above the

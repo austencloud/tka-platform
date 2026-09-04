@@ -1,4 +1,4 @@
-import { Scene } from "three";
+import { Scene, type ColorSpace } from "three";
 import {
   GLTFLoader,
   type GLTF,
@@ -105,7 +105,7 @@ export async function createWinterPrototypeWorld(
     groundY: context.performers[0]?.groundY ?? -1.5,
     stageRadius: 3,
     deviceTier: detectWinterQuality(context.renderer),
-    outputColorSpace: context.renderer.outputColorSpace,
+    outputColorSpace: context.renderer.outputColorSpace as ColorSpace,
     assetUrl: absoluteAssetUrl,
     loadTexture(url) {
       const texture = textures.get(url);

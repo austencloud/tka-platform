@@ -240,7 +240,9 @@ function applyEffects(snapshot: WorkerSceneEffectsSnapshot): void {
 
 function applyCurrentEffects(): void {
   const performerEffects = performerStage?.getEffects();
-  applyEffects(mergeWorkerSceneEffects(externalEffects, performerEffects));
+  applyEffects(
+    mergeWorkerSceneEffects(externalEffects, performerEffects ?? null)
+  );
 }
 
 function applyCamera(snapshot: WorkerCameraSnapshot): void {

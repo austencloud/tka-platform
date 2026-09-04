@@ -765,7 +765,7 @@ function createReflector(options: CelestialCloudbreakOptions): Reflector {
   const bounds = geometry.boundingBox;
   const positions = geometry.attributes.position;
   const uv = geometry.attributes.uv;
-  if (bounds && uv) {
+  if (bounds && uv && positions) {
     const spanX = Math.max(bounds.max.x - bounds.min.x, 0.001);
     const spanY = Math.max(bounds.max.y - bounds.min.y, 0.001);
     for (let index = 0; index < positions.count; index += 1) {

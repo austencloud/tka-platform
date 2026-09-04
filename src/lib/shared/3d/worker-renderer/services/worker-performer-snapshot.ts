@@ -11,6 +11,7 @@ import { CANONICAL_PERFORMER_ANCHOR_Y } from "../../environments/domain/stage-co
 import type {
   WorkerPerformerEffectIntent,
   WorkerPerformerSnapshot,
+  WorkerPooledEffectConfigs,
   WorkerPerformerPropType,
   WorkerPropSnapshot,
   WorkerSelectionMarkerSnapshot,
@@ -97,7 +98,7 @@ export function supportsWorkerPerformerEffectIntent(
       decision.effect !== "none" &&
       decision.effect !== "trails" &&
       decision.effect !== "led" &&
-      !intent.pooled[decision.effect]
+      !intent.pooled[decision.effect as keyof WorkerPooledEffectConfigs]
     ) {
       return false;
     }

@@ -56,7 +56,7 @@ function isValidCamera(camera: WorkerCameraSnapshot): boolean {
     ? camera.quaternion.reduce((sum, value) => sum + value * value, 0)
     : 1;
   const viewLengthSquared = camera.position.reduce((sum, value, index) => {
-    const delta = value - camera.target[index];
+    const delta = value - (camera.target[index] ?? 0);
     return sum + delta * delta;
   }, 0);
   return (
