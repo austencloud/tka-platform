@@ -613,9 +613,6 @@
       width: min(100%, 68cqh);
     }
 
-    .transform-actions {
-      grid-template-columns: 1fr;
-    }
   }
 
   @media (max-height: 480px) and (min-width: 641px) {
