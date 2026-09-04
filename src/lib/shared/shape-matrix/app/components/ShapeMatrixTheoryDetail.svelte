@@ -17,24 +17,27 @@
   thing to look at, a meaningless thing to link to, and a second way to do what
   the grid already does. -->
 <script lang="ts">
-  import {
-    jointSpinRatioClosureHandCycles,
-    spinRatioKey,
-    spinRatioToTkaTurnFraction,
-    type SpinRatio,
-  } from "@vtg/domain";
+  import { spinRatioKey } from "@vtg/domain";
   import { MANDALA_STANDARD_TIP_DX } from "$lib/shared/mandala/domain/mandala-constants";
   import { traceScaledPath } from "$lib/shared/notation/qft/qft-model";
   import { propReachInHandRadii } from "$lib/shared/shape-matrix/services/theory-matrix-artwork";
   import { shapeMatrixTipPoint } from "$lib/shared/shape-matrix/services/shape-matrix-flowers";
-  import { tkaNamesTheoryRatio } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
   import {
     isStationaryRatio,
     theoryKnobs,
     type TheoryFlower,
   } from "$lib/shared/shape-matrix/domain/theory-flower";
   import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
+  import { theoryPropRelationship } from "$lib/shared/shape-matrix/domain/theory-prop-relationship";
+  import {
+    FAMILY_BY_MODE,
+    propModeOf,
+  } from "$lib/shared/shape-matrix/services/build-mode-realizations";
+  import { TND_BY_FAMILY } from "$lib/features/choreo-card/domain/tnd-element";
   import ElementChipRow from "$lib/shared/shape-matrix/components/ElementChipRow.svelte";
+  import PropRelationshipChipRow, {
+    type RelationshipBridgeEntry,
+  } from "$lib/shared/shape-matrix/components/PropRelationshipChipRow.svelte";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import AnimationPanel from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
@@ -183,13 +186,43 @@
       : []
   );
 
-  const jointCycles = $derived.by(() => {
-    if (!pair) return null;
-    return jointSpinRatioClosureHandCycles([
-      pair.left.ratio,
-      pair.right.ratio,
-    ]);
-  });
+  /*
+   * The other half of the VTG reading, which the drill has always carried and
+   * this pane was missing.
+   *
+   * The element row above names what the two HANDS are in. These props are in
+   * a timing and a direction of their own, and on this surface the props are
+   * the thing being drawn, so the same bridge component names both. One entry,
+   * never a choice: the drill branches when several realizations share a hand
+   * mode, and a theory pairing has exactly one prop relationship because the
+   * two ratios and the pairing determine it.
+   */
+  const handElement = $derived(TND_BY_FAMILY[FAMILY_BY_MODE[app.theoryMode]]);
+
+  const propRelationship = $derived(
+    pair ? theoryPropRelationship(pair, app.theoryMode) : null
+  );
+
+  const bridgeEntries = $derived<RelationshipBridgeEntry[]>(
+    handElement && propRelationship
+      ? [
+          {
+            mode: app.theoryMode,
+            propMode: propModeOf(propRelationship),
+            element: handElement,
+            propRelationship,
+          },
+        ]
+      : []
+  );
+
+  /* The two accents the backdrop is lit by: hands from one, props from the
+     other. A pairing whose props have no element to name lights both from the
+     hands rather than dropping the backdrop to grey. */
+  const handAccent = $derived(handElement?.accentColor ?? "transparent");
+  const propAccent = $derived(
+    propRelationship?.element?.accentColor ?? handAccent
+  );
 
   /*
    * Play/pause lives in the dock's trailing slot, where the Matrix drill keeps
@@ -202,43 +235,10 @@
     onClick: animationState.togglePlaying,
   });
 
-  /**
-   * The turn the Kinetic Alphabet gives this ratio, or "none".
-   *
-   * The arithmetic runs on every ratio — (P/Q − 1) / 2 answers 4:9 with −5/18 —
-   * but an answer is not a turn value. The level palettes stop at a quarter
-   * turn, so inside this field only Float, 1:2 and isolation are turns anyone
-   * can play, and printing −5/18 under a TKA heading claimed a coverage that
-   * does not exist. `tkaNamesTheoryRatio` is that boundary; past it the honest
-   * readout is that there is nothing there.
-   */
-  function turnLabel(ratio: SpinRatio): string {
-    if (!tkaNamesTheoryRatio(ratio)) return "none";
-    const fraction = spinRatioToTkaTurnFraction(ratio);
-    if (fraction === "fl") return "Float";
-    if (fraction === null) return "none";
-    if (fraction.numerator === 0) return "0";
-    if (fraction.denominator === 1) return `${fraction.numerator}`;
-    const sign = fraction.numerator < 0 ? "−" : "";
-    return `${sign}${Math.abs(fraction.numerator)}/${fraction.denominator}`;
-  }
-
-  function styleLabel(flower: TheoryFlower): string {
-    if (isStationaryRatio(flower.ratio)) return "stationary hand";
-    if (flower.ratio.propRotations === 0) return `float ${flower.ori}`;
-    return `${flower.style === "pro" ? "prospin" : "antispin"} ${flower.ori}`;
-  }
-
-  const closure = $derived(
-    jointCycles === null
-      ? "Open path"
-      : `${jointCycles} hand ${jointCycles === 1 ? "cycle" : "cycles"}`
-  );
-
   /*
    * An open control panel takes the room the reading rows were using, the same
-   * trade the drill makes. The stage and the facts stay: they are what the
-   * controls are being pointed at.
+   * trade the drill makes. The stage stays: it is what the controls are being
+   * pointed at.
    */
   const controlsOpen = $derived(animationState.activeSection !== null);
 </script>
@@ -261,6 +261,17 @@
             // Theory cannot use: the two hands are always in some pairing.
             // Re-picking the chosen element keeps it.
             if (mode) app.setTheoryMode(mode);
+          }}
+        />
+        <PropRelationshipChipRow
+          realizations={bridgeEntries}
+          selectedMode={app.theoryMode}
+          selectedPropMode={null}
+          activePropMode={null}
+          disabled={!pair}
+          ontarget={() => {
+            /* One entry per pairing, so the branching chips never render and
+               there is no second phase to target. */
           }}
         />
       </div>
@@ -287,6 +298,15 @@
           </header>
 
           <div class="stage-window">
+            <!-- The elemental backdrop from the drill, lit by the two elements
+                 the bridge above names. It is what tied the animation to the
+                 relationship being read instead of leaving it a canvas that
+                 happens to sit under one. -->
+            <div
+              class="stage-atmosphere"
+              style={`--atmosphere-hand: ${handAccent}; --atmosphere-prop: ${propAccent}`}
+              aria-hidden="true"
+            ></div>
             <ShapeMatrixLiveRatioStage
               {hands}
               {handPeriod}
@@ -297,27 +317,6 @@
               propType={app.propType}
             />
           </div>
-
-          <dl class="pair-facts">
-            <div>
-              <dt>Blue</dt>
-              <dd>{styleLabel(pair.left)} · {pair.left.petals} petals</dd>
-            </div>
-            <div>
-              <dt>Red</dt>
-              <dd>{styleLabel(pair.right)} · {pair.right.petals} petals</dd>
-            </div>
-            <div>
-              <dt>TKA turns</dt>
-              <dd>
-                {turnLabel(pair.left.ratio)} / {turnLabel(pair.right.ratio)}
-              </dd>
-            </div>
-            <div>
-              <dt>Closed path</dt>
-              <dd>{closure}</dd>
-            </div>
-          </dl>
         {/if}
 
         <!-- Outside the branch on purpose: it is true of the whole surface, not
@@ -511,7 +510,7 @@
 
   /* The canvas fits the SHORTER side of this box and centres, so a fixed 22rem
      cap drew a small mandala in a wide letterbox on a tall pane and left the
-     column dead below the facts. Growing into the free height instead spends
+     column dead below it. Growing into the free height instead spends
      that room on the artwork. The box is sized by the flex column before the
      canvas paints, so nothing below it moves when the stage mounts or the pair
      changes. */
@@ -520,12 +519,32 @@
     flex: 1 1 0;
     width: 100%;
     /* Set this floor too high on a short pane and the box cannot shrink to the
-       room it was given, and the facts below it are pushed out of the flow. */
+       room it was given, and the note below it is pushed out of the flow. */
     min-height: 9rem;
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.09));
     border-radius: 14px;
     background: color-mix(in srgb, #000 34%, var(--theme-panel-bg, #0a0f14));
+  }
+
+  /* Under the drawing, over the window's own ground. The stage clears its
+     canvas to transparent every frame, so a plain child in the same box shows
+     through without needing a stacking context of its own. */
+  .stage-atmosphere {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        circle at 36% 42%,
+        color-mix(in srgb, var(--atmosphere-hand) 13%, transparent),
+        transparent 58%
+      ),
+      radial-gradient(
+        circle at 64% 58%,
+        color-mix(in srgb, var(--atmosphere-prop) 13%, transparent),
+        transparent 58%
+      );
   }
 
   /* Taken out of flow on purpose. In flow, the canvas reports its own pixel
@@ -537,46 +556,6 @@
     display: block;
     width: 100%;
     height: 100%;
-  }
-
-  /* Four facts, so the only orphan-free counts are two columns and four.
-     `auto-fit` picked three at the widths this pane actually gets and stranded
-     the last card alone on its own row. */
-  .pair-facts {
-    display: grid;
-    flex: 0 0 auto;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
-    margin: 0;
-  }
-
-  @container shape-matrix-drill (min-width: 46rem) {
-    .pair-facts {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-  }
-
-  .pair-facts div {
-    display: grid;
-    gap: 0.15rem;
-    padding: 0.45rem 0.6rem;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.08));
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--theme-text, #fff) 3.5%, transparent);
-  }
-
-  .pair-facts dt {
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.52));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 650;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .pair-facts dd {
-    margin: 0;
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 600;
   }
 
   .boundary-note {
@@ -658,10 +637,8 @@
     }
 
     /* The stage floor is the only fixed height left in the flow, so on a pane
-       this short it is what has to give. At 9rem the facts row underneath it
-       was sliced through the middle of its cards, which reads as broken rather
-       than as scrollable. The note below the facts scrolls, and prose running
-       past a scrollbar reads correctly. */
+       this short it is what has to give. Prose running past a scrollbar reads
+       correctly; a boxed row sliced through the middle reads as broken. */
     .stage-window {
       min-height: 8rem;
     }

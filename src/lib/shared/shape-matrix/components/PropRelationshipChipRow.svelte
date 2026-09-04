@@ -1,9 +1,27 @@
 <script lang="ts">
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
-  import type { ModeRealization } from "../services/build-mode-realizations";
+  import type { TnDElement } from "$lib/features/choreo-card/domain/tnd-element";
+  import type { PropRelationship } from "../domain/prop-relationship";
   import type { VtgMode } from "../services/shape-matrix-realizations";
   import RelationshipChoiceChip from "./RelationshipChoiceChip.svelte";
+
+  /**
+   * Everything this bridge reads, and nothing else.
+   *
+   * A drill realization satisfies it structurally, so that call site is
+   * unchanged. The narrowing is what lets the Theory surface show the same
+   * hands-to-props reading: a spin ratio has no realized sequence, and asking
+   * for one would have forced a second copy of this component rather than a
+   * second caller of it.
+   */
+  export interface RelationshipBridgeEntry {
+    mode: VtgMode;
+    /** The prop relationship's own mode, when the props are in one. */
+    propMode: VtgMode | null;
+    element: TnDElement;
+    propRelationship: PropRelationship;
+  }
 
   interface PropResultDescription {
     key: string;
@@ -23,7 +41,7 @@
     building = false,
     ontarget,
   }: {
-    realizations: ModeRealization[];
+    realizations: RelationshipBridgeEntry[];
     selectedMode: VtgMode | null;
     selectedPropMode: VtgMode | null;
     activePropMode: VtgMode | null;
@@ -36,7 +54,9 @@
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   }
 
-  function describe(realization: ModeRealization): PropResultDescription {
+  function describe(
+    realization: RelationshipBridgeEntry
+  ): PropResultDescription {
     const relationship = realization.propRelationship;
     if (relationship.kind === "full") {
       return {

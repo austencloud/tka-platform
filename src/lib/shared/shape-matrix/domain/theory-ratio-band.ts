@@ -150,10 +150,6 @@ export function clampTheoryRatioToBand(
   return best;
 }
 
-export function theoryRatioVisibleLabel(ratio: SpinRatio): string {
-  return spinRatioKey(ratio);
-}
-
 export function theoryRatioSpokenLabel(ratio: SpinRatio): string {
   const key = spinRatioKey(ratio);
   if (ratio.handCycles === 0) return `${key}, stationary hand`;
@@ -161,3 +157,31 @@ export function theoryRatioSpokenLabel(ratio: SpinRatio): string {
   const cycles = ratio.handCycles;
   return `${key}, closes in ${cycles} hand ${cycles === 1 ? "cycle" : "cycles"}`;
 }
+
+/**
+ * The narrowest band that already holds this ratio, or null if none does.
+ *
+ * Typing a ratio is bounded by the CATALOG, not by the band the field happens
+ * to be open to, so a direct entry widens the band to hold what was asked for
+ * rather than clamping the answer to something else. The band then reports
+ * where that ratio lives: type 4 and 9 and the control moves to nine cycles,
+ * which is the true statement that 4:9 needs nine of them.
+ */
+export function narrowestBandFor(ratio: SpinRatio): TheoryBand | null {
+  for (const band of THEORY_BANDS) {
+    if (theoryRatiosForBand(band).some((held) => spinRatioEquals(held, ratio))) {
+      return band;
+    }
+  }
+  return null;
+}
+
+/** Every ratio the surface can reach at all: the widest band's whole field. */
+export function theoryRatioCatalog(): SpinRatio[] {
+  return theoryRatiosForBand(THEORY_BANDS[THEORY_BANDS.length - 1] as TheoryBand);
+}
+
+/** The largest number either side of a typed ratio may carry. */
+export const THEORY_RATIO_MAX_PART = Math.max(
+  ...THEORY_BANDS.map((band) => THEORY_BAND_ORDER[band])
+);
