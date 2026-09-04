@@ -9,6 +9,7 @@ import {
   spinRatioPetals,
   spinRatioToTkaTurns,
   spinRatioToTkaTurnFraction,
+  THEORY_SPIN_RATIO_MAX_PART,
 } from "../../packages/vtg-domain/src/reference/spin-ratio";
 import { describe, expect, it } from "vitest";
 
@@ -28,45 +29,32 @@ describe("VTG spin ratios", () => {
     expect(() => makeSpinRatio(0, 0)).toThrow("0:0");
   });
 
-  it("generates the complete Farey-9 atlas plus static", () => {
+  it("generates every ratio reachable from two values through 15", () => {
     const finite = buildBoundedSpinRatios(9);
     const atlas = buildTheorySpinRatioAtlas();
+    const keys = new Set(atlas.map(spinRatioKey));
 
     expect(finite).toHaveLength(29);
-    expect(atlas).toHaveLength(30);
-    expect(finite.map(spinRatioKey)).toEqual([
-      "0:1",
-      "1:9",
-      "1:8",
-      "1:7",
-      "1:6",
-      "1:5",
-      "2:9",
-      "1:4",
-      "2:7",
-      "1:3",
-      "3:8",
-      "2:5",
-      "3:7",
-      "4:9",
-      "1:2",
-      "5:9",
-      "4:7",
-      "3:5",
-      "5:8",
-      "2:3",
-      "5:7",
-      "3:4",
-      "7:9",
-      "4:5",
-      "5:6",
-      "6:7",
-      "7:8",
-      "8:9",
-      "1:1",
-    ]);
+    expect(atlas[0]).toEqual(makeSpinRatio(0, 1));
     expect(spinRatioKey(atlas.at(-1)!)).toBe("1:0");
-    expect(new Set(atlas.map(spinRatioKey)).size).toBe(30);
+    expect(keys.size).toBe(atlas.length);
+
+    for (
+      let propRotations = 0;
+      propRotations <= THEORY_SPIN_RATIO_MAX_PART;
+      propRotations += 1
+    ) {
+      for (
+        let handCycles = 0;
+        handCycles <= THEORY_SPIN_RATIO_MAX_PART;
+        handCycles += 1
+      ) {
+        if (propRotations === 0 && handCycles === 0) continue;
+        expect(
+          keys.has(spinRatioKey(makeSpinRatio(propRotations, handCycles)))
+        ).toBe(true);
+      }
+    }
   });
 
   it("converts ratios without inventing Float or Static turn numbers", () => {

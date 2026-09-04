@@ -10,7 +10,7 @@ import {
   buildTunnelCompositionLayers,
   type BuiltTunnelLayer,
 } from "./tunnel-layer-builder";
-import { sampleTunnelProps } from "./tunnel-prop-sampling";
+import { sampleTunnelProps, tunnelStepIndexAt } from "./tunnel-prop-sampling";
 import {
   DEFAULT_CONFIG,
   MAX_IMAGES,
@@ -90,6 +90,9 @@ export interface TunnelControllerSources {
   initialViewState?: TunnelViewState;
   /** A parent-scoped pair shared with another art controller. */
   customColorState?: ViewerCustomColorState;
+  /** Keep a viewer's formation baked while 2D is showing so returning to
+   * Tunnel can reverse the existing reveal instead of rebuilding in public. */
+  prepareWhileInactive?: boolean;
 }
 
 /** Reduced motion caps a dense ring so a heavy kaleidoscope doesn't spin for
@@ -198,6 +201,7 @@ export class TunnelViewController {
 
   #sources: TunnelControllerSources;
   #layers = $state<BuiltTunnelLayer[]>([]);
+  #layersReady = $state(false);
   #buildToken = 0;
   buildError = $state<string | null>(null);
 
@@ -291,9 +295,12 @@ export class TunnelViewController {
         staggerSteps: 0,
         speedOverrides: {},
       };
-      const on = this.active;
-      if (!on || !seq) {
+      const shouldPrepare = this.#sources.prepareWhileInactive
+        ? true
+        : this.active;
+      if (!shouldPrepare || !seq) {
         this.#layers = [];
+        this.#layersReady = false;
         this.#sources.onLayersChange?.([]);
         this.buildError = null;
         return;
@@ -309,16 +316,19 @@ export class TunnelViewController {
           }
         );
       const token = ++this.#buildToken;
+      this.#layersReady = false;
       void buildTunnelCompositionLayers(composition, spatial)
         .then((layers) => {
           if (token !== this.#buildToken) return;
           this.#layers = layers;
+          this.#layersReady = true;
           this.#sources.onLayersChange?.(layers);
           this.buildError = null;
         })
         .catch((error) => {
           if (token !== this.#buildToken) return;
           this.#layers = [];
+          this.#layersReady = false;
           this.#sources.onLayersChange?.([]);
           this.buildError =
             error instanceof Error
@@ -326,6 +336,12 @@ export class TunnelViewController {
               : "The tunnel could not be built.";
         });
     });
+  }
+
+  /** A reveal may start only after every copy has a sampled layer. Otherwise
+   * the completed build joins an already-visible canvas as a one-frame pop. */
+  get layersReady(): boolean {
+    return this.#layersReady;
   }
 
   /** The live config as a plain object (for propCount / persistence / key). */
@@ -592,14 +608,56 @@ export class TunnelViewController {
         left: { ...DEFAULT_PROP_STATE },
         right: { ...DEFAULT_PROP_STATE },
       };
-    const baseSpeed = (layer?.speed ?? 1) * (this.speedOverrides[0] ?? 1);
+    const timing = layer
+      ? this.#samplingTimingForArm(layer, 0)
+      : { offset: 0, speed: this.speedOverrides[0] ?? 1 };
     return sampleTunnelProps(
       seq,
       currentStep,
       this.#ease,
-      layer?.stepOffset ?? 0,
-      baseSpeed
+      timing.offset,
+      timing.speed
     );
+  }
+
+  /** The performed cell for each authored card at this exact canvas frame. */
+  authoredPerformerStepIndicesAt(currentStep: number): Record<string, number> {
+    const indices: Record<string, number> = {};
+    for (const [arm, layer] of this.#layers.entries()) {
+      // A generated formation copy can be staggered away from its source card.
+      // One card gets one border, so follow that performer's first authored
+      // stage instance rather than flashing several contradictory cells.
+      if (indices[layer.performerId] !== undefined) continue;
+      const timing = this.#samplingTimingForArm(layer, arm);
+      const index = tunnelStepIndexAt(
+        layer.performerSequence.steps.length,
+        currentStep,
+        timing.offset,
+        timing.speed
+      );
+      if (index !== null) indices[layer.performerId] = index;
+    }
+    return indices;
+  }
+
+  #samplingTimingForArm(
+    layer: BuiltTunnelLayer,
+    arm: number
+  ): { offset: number; speed: number } {
+    if (arm === 0) {
+      return {
+        offset: layer.stepOffset,
+        speed: layer.speed * (this.speedOverrides[0] ?? 1),
+      };
+    }
+    const mod = copyModulators(this.config)[arm - 1] ?? {
+      staggerSteps: 0,
+      speed: 1,
+    };
+    return {
+      offset: layer.stepOffset + mod.staggerSteps,
+      speed: layer.speed * mod.speed,
+    };
   }
 
   /** Per-copy prop states at the live playhead, each shifted by its Stagger +
@@ -607,15 +665,14 @@ export class TunnelViewController {
    *  index-for-index with the baked layers (same generation order). */
   additionalLayersAt(currentStep: number): AdditionalLayerProps[] {
     if (!this.active) return [];
-    const mods = copyModulators(this.config);
     return this.#layers.slice(1).map((layer, i) => {
-      const m = mods[i] ?? { staggerSteps: 0, speed: 1 };
+      const timing = this.#samplingTimingForArm(layer, i + 1);
       const p = sampleTunnelProps(
         layer.sequence,
         currentStep,
         this.#ease,
-        layer.stepOffset + m.staggerSteps,
-        layer.speed * m.speed
+        timing.offset,
+        timing.speed
       );
       // Every copy inherits the viewer's global prop — a layer carries no explicit
       // per-hand prop type, so the engine falls back to the global prop (the same

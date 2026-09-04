@@ -1,9 +1,9 @@
 <!--
   The archive uses overview + detail, not a carousel. Calendar position owns
-  the horizontal axis, all four research lanes remain visible, and the dense
-  2009–2011 period expands into a named cluster. Compact screens receive the
-  same records as a vertical chronology and open one record in the shared
-  Drawer primitive.
+  the horizontal axis, all four evidence lanes remain visible, and the dense
+  2009–2010 period expands inside the lane that owns it. Compact screens receive
+  the same records as a vertical chronology. Viewports without room for the
+  persistent detail panel open one record in the shared Drawer primitive.
 
   Spec: docs/superpowers/specs/shipped/2026-07-27-notation-playable-archive-design.md
 -->
@@ -35,10 +35,10 @@
 	import ResearchSubmissionGuide from "./ResearchSubmissionGuide.svelte";
 
 	const HASH_PREFIX = "#archive-record-";
-	const DEFAULT_ENTRY_ID = "qft";
+	const DEFAULT_ENTRY_ID = "playpoi";
 
 	let activeEntry = $state<ArchiveEntry>(archiveEntry(DEFAULT_ENTRY_ID));
-	let mobileRecordOpen = $state(false);
+	let recordDrawerOpen = $state(false);
 	let submissionOpen = $state(false);
 	let announcement = $state("");
 
@@ -48,6 +48,10 @@
 	const isShortWide = new MediaQuery(
 		"(min-width: 700px) and (max-height: 560px)"
 	);
+	const usesRecordDrawer = new MediaQuery(
+		"(max-width: 980px), (max-height: 560px)"
+	);
+	const usesSideDrawer = new MediaQuery("(min-width: 700px)");
 	const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
 
 	const activeIndex = $derived(
@@ -65,7 +69,7 @@
 	);
 
 	$effect(() => {
-		if (!isCompact.current) mobileRecordOpen = false;
+		if (!usesRecordDrawer.current) recordDrawerOpen = false;
 	});
 
 	function entryFromHash(hash: string): ArchiveEntry | undefined {
@@ -81,9 +85,9 @@
 		pushState(nextHash, { archiveRecord: entry.id });
 	}
 
-	function applyEntry(entry: ArchiveEntry, openCompactRecord: boolean) {
+	function applyEntry(entry: ArchiveEntry, openSelectedRecord: boolean) {
 		activeEntry = entry;
-		if (openCompactRecord && isCompact.current) mobileRecordOpen = true;
+		if (openSelectedRecord && usesRecordDrawer.current) recordDrawerOpen = true;
 		announcement = `${entry.dateLabel}, ${entry.title}. ${archiveLane(entry.lane).label}. Record ${ARCHIVE_ENTRIES.findIndex((candidate) => candidate.id === entry.id) + 1} of ${ARCHIVE_ENTRIES.length}.`;
 		getHapticFeedback().trigger("selection");
 	}
@@ -91,8 +95,8 @@
 	function selectEntry(entry: ArchiveEntry) {
 		if (entry.id !== activeEntry.id) {
 			applyEntry(entry, true);
-		} else if (isCompact.current) {
-			mobileRecordOpen = true;
+		} else if (usesRecordDrawer.current) {
+			recordDrawerOpen = true;
 		}
 		writeEntryHistory(entry);
 	}
@@ -106,18 +110,18 @@
 		const linkedEntry = entryFromHash(window.location.hash);
 		if (linkedEntry) {
 			activeEntry = linkedEntry;
-			if (isCompact.current) mobileRecordOpen = true;
+			if (usesRecordDrawer.current) recordDrawerOpen = true;
 		}
 
 		const restoreFromHistory = () => {
 			const restoredEntry = entryFromHash(window.location.hash);
 			if (restoredEntry) {
 				activeEntry = restoredEntry;
-				if (isCompact.current) mobileRecordOpen = true;
+				if (usesRecordDrawer.current) recordDrawerOpen = true;
 				return;
 			}
 			activeEntry = archiveEntry(DEFAULT_ENTRY_ID);
-			mobileRecordOpen = false;
+			recordDrawerOpen = false;
 		};
 
 		window.addEventListener("popstate", restoreFromHistory);
@@ -132,11 +136,10 @@
 >
 	<header class="archive-header">
 		<div>
-			<p>{ARCHIVE_ENTRIES.length} documented traces · {ARCHIVE_START_YEAR}–{ARCHIVE_END_YEAR}</p>
-			<h1>Writing flow arts down</h1>
+			<p>{ARCHIVE_START_YEAR}–{ARCHIVE_END_YEAR}</p>
+			<h1>Flow arts history</h1>
 			<p class="premise">
-				Documented traces, not a definitive history. Each entry says exactly
-				what its sources support, and better evidence changes the record.
+				{ARCHIVE_ENTRIES.length} sourced records of how people documented flow arts and passed the knowledge on.
 			</p>
 		</div>
 		<PanelButton
@@ -165,10 +168,11 @@
 			<!-- No id anchor here: selection is applied from the hash in onMount.
 			     A native anchor jump would scroll the overflow-hidden room and
 			     strand the layout partly off-screen on deep-link loads. -->
-			<section
-				class="selected-record"
-				aria-label={`Selected record: ${activeEntry.title}`}
-			>
+			{#if !usesRecordDrawer.current}
+				<section
+					class="selected-record"
+					aria-label={`Selected record: ${activeEntry.title}`}
+				>
 				<header class="record-toolbar">
 					<p aria-live="polite">
 						<span>Selected record</span>
@@ -239,7 +243,8 @@
 						/>
 					</div>
 				</div>
-			</section>
+				</section>
+			{/if}
 		</div>
 	{/if}
 
@@ -247,15 +252,15 @@
 </section>
 
 <Drawer
-	bind:isOpen={mobileRecordOpen}
-	placement={isShortWide.current ? "right" : "bottom"}
+	bind:isOpen={recordDrawerOpen}
+	placement={usesSideDrawer.current ? "right" : "bottom"}
 	ariaLabel={`${activeEntry.title}, artifact, record, and sources`}
-	showHandle={!isShortWide.current}
+	showHandle={!usesSideDrawer.current}
 >
 	<div class="record-drawer" style:--artifact-accent={accent}>
 		<header>
 			<p><span>{activeEntry.dateLabel}</span>{lane.label}</p>
-			<PanelButton variant="secondary" onclick={() => (mobileRecordOpen = false)}>
+			<PanelButton variant="secondary" onclick={() => (recordDrawerOpen = false)}>
 				Close
 			</PanelButton>
 		</header>
@@ -610,18 +615,17 @@
 	@media (max-width: 980px) and (min-height: 561px) {
 		.large-archive {
 			grid-template-columns: minmax(0, 1fr);
-			grid-template-rows: auto minmax(20rem, 1fr);
+			grid-template-rows: minmax(0, 1fr);
 		}
 
-		.record-toolbar :global(.panel-btn) {
-			padding-inline: 0.7rem;
+		/* The map owns this tier. Selecting a trace opens its record in a right
+		   drawer, so the answer appears immediately instead of being stacked below
+		   the viewport. Keep this CSS guard for the server-rendered first frame;
+		   the media query then removes the panel from the hydrated DOM. */
+		.selected-record {
+			display: none;
 		}
 	}
-
-	/* No stacked wide tier: stacking put the selected record below the fold of
-	   the 100dvh room, where page scroll only reaches the site footer. The map
-	   and the selected record stay side by side at every desktop size so a
-	   selection is always answered on-screen. */
 
 	@media (max-width: 760px), (max-height: 560px) {
 		.archive-room {
@@ -670,7 +674,7 @@
 			grid-template-columns: minmax(14rem, 0.34fr) minmax(0, 1.66fr);
 			grid-template-rows: minmax(0, 1fr);
 			gap: clamp(1rem, 3vw, 2rem);
-			height: 100dvh;
+			height: 100%;
 			padding: 0.8rem 1rem;
 			overflow: hidden;
 		}

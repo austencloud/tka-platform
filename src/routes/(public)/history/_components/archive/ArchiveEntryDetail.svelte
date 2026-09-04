@@ -60,15 +60,17 @@
 		</section>
 	{/if}
 
-	<section class="editorial-note" data-status={entry.evidenceBasis}>
-		<h3><span aria-hidden="true">●</span>{entry.evidenceLabel}</h3>
-		<div>
-			<p>{entry.evidenceNote}</p>
-			{#if entry.activity}
-				<p class="activity-note">{entry.activity.note}</p>
-			{/if}
-		</div>
-	</section>
+	{#if entry.evidenceNote || entry.activity}
+		<section class="editorial-note" data-status={entry.evidenceBasis}>
+			<h3><span aria-hidden="true">●</span>{entry.evidenceLabel}</h3>
+			<div>
+				{#if entry.evidenceNote}<p>{entry.evidenceNote}</p>{/if}
+				{#if entry.activity}
+					<p class="activity-note">{entry.activity.note}</p>
+				{/if}
+			</div>
+		</section>
+	{/if}
 
 	<section class="sources" aria-labelledby={`sources-${entry.id}`}>
 		<h3 id={`sources-${entry.id}`}>Sources</h3>

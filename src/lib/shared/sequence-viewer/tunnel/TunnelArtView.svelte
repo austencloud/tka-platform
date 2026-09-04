@@ -35,6 +35,7 @@
     leftBuugengFlipped,
     rightBuugengFlipped,
     onCanvasReady,
+    onActivePerformerStepsChange,
   }: {
     sequence: SequenceData;
     playback?: ViewerPlaybackState;
@@ -63,6 +64,10 @@
     leftBuugengFlipped?: boolean;
     rightBuugengFlipped?: boolean;
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
+    /** Reports the one card cell that matches each authored stage instance. */
+    onActivePerformerStepsChange?: (
+      stepIndices: Readonly<Record<string, number>>
+    ) => void;
   } = $props();
 
   let readyFrame = 0;
@@ -175,6 +180,17 @@
   const additionalLayers = $derived(
     controller.additionalLayersAt(samplingStep)
   );
+  let announcedPerformerSteps = "";
+  $effect(() => {
+    if (!onActivePerformerStepsChange) return;
+    const next = controller.authoredPerformerStepIndicesAt(samplingStep);
+    const key = Object.entries(next)
+      .map(([performerId, index]) => `${performerId}:${index}`)
+      .join("|");
+    if (key === announcedPerformerSteps) return;
+    announcedPerformerSteps = key;
+    onActivePerformerStepsChange(next);
+  });
 
   // Reuse the sidebar's chosen effect, applied uniformly across every layer.
   const activeEffect = $derived(effectsConfig?.activeEffect ?? "none");

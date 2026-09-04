@@ -277,14 +277,26 @@ describe("shape matrix URL state", () => {
     expect(url.searchParams.get("pairing")).toBe("SS");
   });
 
-  it("falls back from a ratio the requested band does not contain", () => {
-    // 2:9 is real, but only the widest band holds it.
+  it("widens a stale band instead of replacing a valid ratio", () => {
     const state = readShapeMatrixRouteState("?theory=1&leftRatio=2:9&band=2");
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+    expect(state.theoryBand).toBe(4);
+
+    const full = readShapeMatrixRouteState(
+      "?theory=1&leftRatio=15:4&rightRatio=4:15&band=1"
+    );
+    expect(full.theoryLeftRatio).toEqual({ propRotations: 15, handCycles: 4 });
+    expect(full.theoryRightRatio).toEqual({ propRotations: 4, handCycles: 15 });
+    expect(full.theoryBand).toBe(5);
+  });
+
+  it("rejects a typed part above 15", () => {
+    const state = readShapeMatrixRouteState(
+      "?theory=1&leftRatio=16:15&rightRatio=15:16&band=5"
+    );
     expect(state.theoryLeftRatio).toEqual({ propRotations: 1, handCycles: 3 });
-    expect(
-      readShapeMatrixRouteState("?theory=1&leftRatio=3:10&band=4")
-        .theoryLeftRatio
-    ).toEqual({ propRotations: 1, handCycles: 3 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 1, handCycles: 3 });
+    expect(state.theoryBand).toBe(5);
   });
 
   it("reads a pre-split theory link's band out of its level parameter", () => {
