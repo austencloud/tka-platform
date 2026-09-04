@@ -13,6 +13,7 @@
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { growFade } from "$lib/shared/transitions/motion";
   import { getMovementMapContext } from "../context/movement-map-context";
 
   const { state: movementMap } = getMovementMapContext();
@@ -67,6 +68,18 @@
     movementMap.setSequence(sequence);
     pickerOpen = false;
   }
+
+  function clearVideo(): void {
+    movementMap.setVideo(null);
+    fileError = null;
+    // Reset the input's value so re-picking the SAME file still fires change.
+    // Without it, removing a clip and choosing it again is a silent no-op.
+    if (fileInput) fileInput.value = "";
+  }
+
+  function clearSequence(): void {
+    movementMap.setSequence(null);
+  }
 </script>
 
 <div class="setup">
@@ -100,11 +113,22 @@
       </button>
 
       {#if movementMap.video}
-        <p class="chosen">
-          <i class="fas fa-check" aria-hidden="true"></i>
-          {movementMap.video.label}
-          <span class="muted">{movementMap.video.duration.toFixed(1)}s</span>
-        </p>
+        <div class="chosen-row" transition:growFade>
+          <p class="chosen">
+            <i class="fas fa-check" aria-hidden="true"></i>
+            {movementMap.video.label}
+            <span class="muted">{movementMap.video.duration.toFixed(1)}s</span>
+          </p>
+          <button
+            type="button"
+            class="remove"
+            onclick={clearVideo}
+            aria-label={`Remove footage ${movementMap.video.label}`}
+          >
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+            <span>Remove</span>
+          </button>
+        </div>
       {/if}
       {#if fileError}
         <p class="error" role="alert">{fileError}</p>
@@ -124,36 +148,47 @@
       </button>
 
       {#if movementMap.sequence}
-        <div class="sequence-chosen">
-          <div class="thumb">
-            <PropAwareThumbnail sequence={movementMap.sequence} alt="" />
+        <div class="chosen-block" transition:growFade>
+          <div class="sequence-chosen">
+            <div class="thumb">
+              <PropAwareThumbnail sequence={movementMap.sequence} alt="" />
+            </div>
+            <div class="sequence-meta">
+              <p class="chosen">
+                <i class="fas fa-check" aria-hidden="true"></i>
+                {displayWord || movementMap.sequence.name}
+              </p>
+              <p class="muted">{movementMap.sequence.steps.length} steps</p>
+            </div>
+            <button
+              type="button"
+              class="remove"
+              onclick={clearSequence}
+              aria-label={`Remove sequence ${displayWord || movementMap.sequence.name}`}
+            >
+              <i class="fas fa-xmark" aria-hidden="true"></i>
+              <span>Remove</span>
+            </button>
           </div>
-          <div>
-            <p class="chosen">
-              <i class="fas fa-check" aria-hidden="true"></i>
-              {displayWord || movementMap.sequence.name}
-            </p>
-            <p class="muted">{movementMap.sequence.steps.length} steps</p>
-          </div>
-        </div>
 
-        {#if movementMap.isLevelOne}
-          <p class="verdict ok" role="status">
-            <i class="fas fa-circle-check" aria-hidden="true"></i>
-            Level 1. No turns, every orientation radial.
-          </p>
-        {:else}
-          <p class="verdict blocked" role="alert">
-            <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
-            Level {movementMap.difficulty?.level}{movementMap.difficulty?.trigger === "turns"
-              ? " — this sequence carries turns."
-              : movementMap.difficulty?.trigger === "nonRadial"
-                ? " — this sequence uses non-radial orientations."
-                : "."}
-            Level 1 is the world being mapped first. Pick a sequence with no
-            turns and radial orientations only.
-          </p>
-        {/if}
+          {#if movementMap.isLevelOne}
+            <p class="verdict ok" role="status">
+              <i class="fas fa-circle-check" aria-hidden="true"></i>
+              Level 1. No turns, every orientation radial.
+            </p>
+          {:else}
+            <p class="verdict blocked" role="alert">
+              <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+              Level {movementMap.difficulty?.level}{movementMap.difficulty?.trigger === "turns"
+                ? " — this sequence carries turns."
+                : movementMap.difficulty?.trigger === "nonRadial"
+                  ? " — this sequence uses non-radial orientations."
+                  : "."}
+              Level 1 is the world being mapped first. Remove it and pick a
+              sequence with no turns and radial orientations only.
+            </p>
+          {/if}
+        </div>
       {/if}
     </section>
   </div>
@@ -311,6 +346,7 @@
     display: flex;
     gap: 0.65rem;
     align-items: center;
+    flex-wrap: wrap;
   }
 
   .thumb {
@@ -366,8 +402,64 @@
     align-items: flex-start;
   }
 
+  .chosen-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .chosen-row .chosen,
+  .sequence-meta {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .chosen-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    flex: 0 0 auto;
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.16));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background-color var(--transition-fast, 120ms) ease,
+      border-color var(--transition-fast, 120ms) ease,
+      color var(--transition-fast, 120ms) ease;
+  }
+
+  .remove:hover {
+    color: var(--theme-text, #fff);
+    border-color: var(--semantic-red, #ef4444);
+    background: color-mix(
+      in srgb,
+      var(--semantic-red, #ef4444) 14%,
+      transparent
+    );
+  }
+
+  .remove:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .action {
+    .action,
+    .remove {
       transition: none;
     }
   }
