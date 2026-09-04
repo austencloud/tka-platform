@@ -232,7 +232,7 @@
 									{activeEntry.catalogEntry.explore.label}
 									<span aria-hidden="true">→</span>
 								</a>
-							{:else if activeEntry.citations[0]}
+							{:else if !activeEntry.documents?.length && activeEntry.citations[0]}
 								<a
 									class="artifact-action"
 									href={activeEntry.citations[0].href}

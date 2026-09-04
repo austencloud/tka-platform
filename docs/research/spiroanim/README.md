@@ -126,6 +126,19 @@ shared start frame, the column sets the continuation.
 - `scripts/import-spiroanim-qst.cjs`: idempotent private-library importer for the
   `Quarter Space Tech Archive` collection.
 
+## History archive preservation
+
+The public `/history#archive-record-quarter-space-tech` record preserves the
+three PDF exports byte-for-byte and renders all 50 pages as lossless WebP images
+for the in-page document reader. The PDFs carry a March 15, 2024 export date.
+That date identifies these copies, not the origin of Quarter Space Tech.
+
+| Document                | Pages | Patterns | SHA-256                                                            |
+| ----------------------- | ----: | -------: | ------------------------------------------------------------------ |
+| Quarter “Time” Breaks   |     7 |       56 | `4a9ef6c8b77cfde6210427e78e2d2b521574a30c0b079bfa7f5890c39cd42547` |
+| Quarter “Time” Advanced |    16 |       64 | `d90369e4980a4e98be827f50092a2fef4f362c2b2489830151f53eeafe6aa429` |
+| Quarter Space Beyond    |    27 |      108 | `80169e9ea7e24c9b7abe9909b89f190045f1b85888a8cd7da9b1dd0e225ef068` |
+
 ## What he has that TKA does not
 
 1. **Dual hands/props classification** — two codes per pattern (`6-3` = `SO/TS`)
