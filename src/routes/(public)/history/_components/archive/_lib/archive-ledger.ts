@@ -372,7 +372,7 @@ const researchEntries: ArchiveEntry[] = [
 				label: "Home of Poi: Our mission and values",
 				href: "https://www.homeofpoi.com/us/company/information-mission.php",
 				supports:
-					"The October 26, 1998 launch, Malcolm Crawshay's authorship, and the site's educational purpose.",
+					"The 1998 launch, founder Malcolm Crawshay, and the site's teaching mission.",
 				basis: "creators-account",
 			},
 			{
