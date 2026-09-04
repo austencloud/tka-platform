@@ -139,6 +139,7 @@ describe("canonical concept lesson composition", () => {
     expect(motions).toContain("const comparisonIndex = HAND_PATH_STEPS.length");
     expect(motions).toContain("getConceptPlacesByLevel(1)");
     expect(motions).toContain("LessonStageFrame");
+    expect(motions).toContain("var(--shell-w, 96rem)");
     expect(motions).not.toContain("element-properties");
     expect(motions).not.toContain("activeMode");
     expect(motions).not.toContain("recap-state");

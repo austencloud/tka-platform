@@ -310,11 +310,11 @@
         <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
         <span class="identity-note">
           <span class="identity-note-sizer" aria-hidden="true">
-            Build a 4×4 grid from any two prop:hand ratios
+            Pair any two whole-number ratios in a 4×4 grid
           </span>
           <span class="identity-note-live">
             {theory
-              ? "Build a 4×4 grid from any two prop:hand ratios"
+              ? "Pair any two whole-number ratios in a 4×4 grid"
               : `Lorq’s 144 Shape Matrix: VTG ratios ${ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}`}
           </span>
         </span>
@@ -796,6 +796,22 @@
     min-width: max-content;
     justify-content: flex-end;
     gap: 0.4rem;
+  }
+
+  /* Theory's two-ratio equation is the complete instrument, and it is narrow
+     enough to share the title row at every non-compact size. Keeping it in a
+     second full-width row stranded most of the header while pushing the
+     actual matrix down the page. Matrix keeps its two-row composition until
+     its much wider turn ribbon reaches the dedicated wide-canvas seam. */
+  @container shape-matrix-app (min-width: 75rem) and (min-height: 42rem) {
+    .shape-app.theory .topbar {
+      grid-template-columns:
+        minmax(max-content, 1fr)
+        auto
+        minmax(0, max-content)
+        minmax(max-content, 1fr);
+      grid-template-areas: "identity meta controls actions";
+    }
   }
 
   .relationships-action i {
