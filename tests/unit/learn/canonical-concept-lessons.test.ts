@@ -194,11 +194,16 @@ describe("canonical concept lesson composition", () => {
     expect(timingBoard).toContain("ChoreoCard");
     expect(timingBoard).toContain("handPathMode");
     expect(timingBoard).toContain("showWord={false}");
-    expect(timingBoard).toContain("includeStartPosition={false}");
+    expect(timingBoard).toContain("includeStartPosition");
+    expect(timingBoard).not.toContain("includeStartPosition={false}");
+    expect(timingBoard).not.toContain("startPositionLayoutOverride");
     expect(timingBoard).not.toContain("clickableStart");
     expect(timingBoard).toContain("customTitleText={mode.element.name}");
     expect(timingBoard).toContain("customNotesText={definitionFor(mode)}");
     expect(timingBoard).toContain("frameColors={{");
+    expect(timingBoard).toContain("CARD_SIZES.poker.widthInches");
+    expect(timingBoard).toContain("cardAspectRatio={pokerCardAspectRatio}");
+    expect(timingBoard).toContain("columnCount={2}");
     expect(timingBoard).not.toContain("choreo-card-artifact");
     expect(timingBoard).toContain("dark: mode.element.darkComplement");
     expect(timingBoard).not.toContain("card-identity");
@@ -222,7 +227,20 @@ describe("canonical concept lesson composition", () => {
     expect(timingIntro).toContain("@keyframes timing-bounce");
     expect(timingIntro).toContain("@keyframes direction-travel-forward");
     expect(timingIntro).toContain("@keyframes direction-travel-reverse");
+    expect(timingIntro).toContain(
+      "grid-template-columns: minmax(0, 3fr) minmax(0, 2fr)"
+    );
+    expect(timingIntro).toMatch(
+      /\.timing-examples\s*\{[^}]*grid-template-columns: repeat\(3,/s
+    );
+    expect(timingIntro).toMatch(
+      /\.direction-examples\s*\{[^}]*grid-template-columns: repeat\(2,/s
+    );
+    expect(timingIntro).toContain("--scene-delay");
+    expect(timingIntro).toContain("animation-timing-function: var(--ease-out)");
+    expect(timingIntro).toContain("animation-timing-function: var(--ease-in)");
     expect(timingIntro).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(timingIntro).not.toContain(".example-row + .example-row");
     expect(timingIntro).not.toContain("axis-join");
     expect(timingIntro).not.toMatch(
       /border-(left|right|top|bottom):\s*[2-9]\d*px/

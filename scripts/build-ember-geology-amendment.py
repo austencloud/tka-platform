@@ -37,6 +37,7 @@ SECTIONS_PATH = OUTPUT_DIR / "02-true-scale-midflank-section.png"
 VIEWPOINTS_PATH = OUTPUT_DIR / "03-runtime-uphill-downhill-proof.png"
 SIGHTLINES_PATH = OUTPUT_DIR / "04-orbit-sightline-study.png"
 CALIBRATION_PATH = OUTPUT_DIR / "05-flowy-calibration-sweep.png"
+GROUND_DETAIL_PATH = OUTPUT_DIR / "06-performance-ground-detail.png"
 CONTACT_PATH = OUTPUT_DIR / "ember-midflank-fire-pilgrimage-r5-gate1-1-contact-sheet.png"
 SELECTED_DATA_PATH = ROOT / "static/data/ember/review/ember-midflank-fire-pilgrimage-r5-flowy-thickness.f32"
 
@@ -54,6 +55,13 @@ TALUS = (173, 132, 92)
 STAGE = (231, 242, 244)
 PASS = (109, 207, 137)
 FAIL = (237, 112, 94)
+
+AUDIENCE_STANDING_POINTS: tuple[tuple[float, float], ...] = (
+    (4.0, -9.0),
+    (8.0, -11.5),
+    (7.0, -15.0),
+    (2.5, -17.0),
+)
 
 
 def load_module(path: Path, name: str) -> Any:
@@ -172,6 +180,66 @@ def selected_result(manifest: dict[str, Any]) -> dict[str, Any]:
     raise ValueError("Calibration manifest has no selected result")
 
 
+def performance_ground_metrics(
+    study: Any,
+    height: np.ndarray,
+    thickness: np.ndarray,
+    masks: dict[str, np.ndarray],
+    selected: dict[str, Any],
+) -> dict[str, Any]:
+    dz, dx = np.gradient(height, 1.0, 1.0)
+    slope_degrees = np.degrees(np.arctan(np.hypot(dx, dz)))
+    stable_core = masks["stablePatch"] >= 0.98
+    stable_x = study.X_GRID[stable_core]
+    stable_z = study.Z_GRID[stable_core]
+    old_flow_contact = masks["olderFlowContact"] >= 0.5
+    radius = np.hypot(study.X_GRID, study.Z_GRID)
+    active = thickness > 0.01
+    active_x = study.X_GRID[active]
+    active_z = study.Z_GRID[active]
+    standing_points: list[dict[str, Any]] = []
+    for x, z in AUDIENCE_STANDING_POINTS:
+        row = int(np.argmin(np.abs(study.Z_VALUES - z)))
+        column = int(np.argmin(np.abs(study.X_VALUES - x)))
+        distance_from_performer = math.hypot(x, z)
+        active_flow_clearance = float(np.min(np.hypot(active_x - x, active_z - z)))
+        standing_points.append(
+            {
+                "runtimeXZ": [x, z],
+                "terrainSlopeDegrees": round(float(slope_degrees[row, column]), 3),
+                "clearanceBeyondActionEnvelopeM": round(distance_from_performer - study.ACTION_RADIUS_M, 3),
+                "activeFlowClearanceM": round(active_flow_clearance, 3),
+                "withinOlderFlowContact": bool(masks["olderFlowContact"][row, column] >= 0.5),
+            }
+        )
+    return {
+        "stableCoreWidthXM": round(float(np.ptp(stable_x)), 3),
+        "stableCoreWidthZM": round(float(np.ptp(stable_z)), 3),
+        "stableCoreAreaM2": int(np.count_nonzero(stable_core)),
+        "actionAreaM2": round(math.pi * study.ACTION_RADIUS_M**2, 3),
+        "actionMedianSlopeDegrees": round(
+            float(np.median(slope_degrees[radius <= study.ACTION_RADIUS_M])),
+            3,
+        ),
+        "olderFlowContactMedianSlopeDegrees": round(
+            float(np.median(slope_degrees[old_flow_contact])),
+            3,
+        ),
+        "activeFlowActionClearanceM": round(float(selected["clearanceBeyondActionEnvelopeM"]), 3),
+        "audienceStandingPoints": standing_points,
+        "minimumAudienceActionClearanceM": min(
+            point["clearanceBeyondActionEnvelopeM"] for point in standing_points
+        ),
+        "minimumAudienceActiveFlowClearanceM": min(
+            point["activeFlowClearanceM"] for point in standing_points
+        ),
+        "audienceSlopeRangeDegrees": [
+            min(point["terrainSlopeDegrees"] for point in standing_points),
+            max(point["terrainSlopeDegrees"] for point in standing_points),
+        ],
+    }
+
+
 def map_panel(
     study: Any,
     height: np.ndarray,
@@ -242,7 +310,15 @@ def map_panel(
     label(draw, (source[0] + 20, source[1] - 28), "2 · FURNACE SADDLE + HIGH SOURCE", color=LAVA_HOT)
     ravine_pt = world_to_pixel(study, -22.0, 58.0, rect)
     label(draw, (ravine_pt[0] + 24, ravine_pt[1] - 18), "3 · GRAVITY-LED RAVINE", color=LAVA_HOT)
-    label(draw, (stage[0] - 360, stage[1] + 53), "4 · SMALL STABLE PATCH IN SLOPING OLD-FLOW CONTACT", color=CYAN)
+    stable_core = masks["stablePatch"] >= 0.98
+    stable_width_x = float(np.ptp(study.X_GRID[stable_core]))
+    stable_width_z = float(np.ptp(study.Z_GRID[stable_core]))
+    label(
+        draw,
+        (stage[0] - 360, stage[1] + 53),
+        f"4 · OLDER HARDENED LAVA BENCH · {stable_width_x:.0f} × {stable_width_z:.0f} m EASED CORE",
+        color=CYAN,
+    )
     label(draw, (stage[0] - 58, stage[1] - 48), "PERFORMER", color=INK)
     drop_pt = world_to_pixel(study, 52.0, -67.0, rect)
     label(draw, (drop_pt[0] + 24, drop_pt[1] - 8), "5 · GRADUALLY STEEPENING LOWER FLANK", color=TALUS)
@@ -271,9 +347,189 @@ def map_panel(
     draw.text((rect[0], legend_y), "PLAN CONTRACT", font=FONT_22, fill=CYAN)
     legend = (
         "380 × 335 m · 1 m DEM · 10 m contours · white = protected 4.5 m action envelope · "
-        "cyan ring = 25 m orbit · orange = Flowy cells > 0.01 m · tan = sloping old-flow contact · cyan = stable patch"
+        "cyan ring = 25 m orbit · orange = Flowy cells > 0.01 m · tan = sloping old-flow contact · cyan = cooled stable core"
     )
     draw.text((rect[0], legend_y + 38), legend, font=FONT_18, fill=MUTED)
+    return canvas
+
+
+def performance_ground_board(
+    study: Any,
+    height: np.ndarray,
+    thickness: np.ndarray,
+    masks: dict[str, np.ndarray],
+    ground_metrics: dict[str, Any],
+) -> Image.Image:
+    """Clarify what the performer stands on without changing the R5 terrain."""
+
+    canvas = Image.new("RGBA", (2400, 1800), (*PAPER, 255))
+    draw = ImageDraw.Draw(canvas)
+    draw.text((64, 42), "EMBER GATE 1.1 R5 · PERFORMANCE-GROUND CLARIFICATION", font=FONT_44, fill=INK)
+    draw.text(
+        (66, 101),
+        "Same measured terrain · close-up of the old-flow bench, protected action zone, and small audience relationship",
+        font=FONT_22,
+        fill=MUTED,
+    )
+
+    local_x = (-28.0, 28.0)
+    local_z = (-26.0, 24.0)
+    x_selection = (study.X_VALUES >= local_x[0]) & (study.X_VALUES <= local_x[1])
+    z_selection = (study.Z_VALUES >= local_z[0]) & (study.Z_VALUES <= local_z[1])
+    local_height = height[np.ix_(z_selection, x_selection)]
+    local_thickness = thickness[np.ix_(z_selection, x_selection)]
+    local_contact = masks["olderFlowContact"][np.ix_(z_selection, x_selection)]
+    local_patch = masks["stablePatch"][np.ix_(z_selection, x_selection)]
+    rect = (64, 178, 1456, 1421)
+    terrain = (
+        study.terrain_image(local_height, (rect[2] - rect[0], rect[3] - rect[1]))
+        .transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+        .convert("RGBA")
+    )
+    canvas.alpha_composite(terrain, (rect[0], rect[1]))
+    add_raster_overlay(canvas, study.contour_mask(local_height, interval=1.0), rect, INK, 82)
+    add_raster_overlay(canvas, local_contact, rect, HEADWALL, 54)
+    add_raster_overlay(canvas, local_contact, rect, HEADWALL, 220, edges_only=True)
+    add_raster_overlay(canvas, local_patch, rect, CYAN, 72)
+    add_raster_overlay(canvas, local_patch, rect, CYAN, 245, edges_only=True)
+    add_raster_overlay(canvas, local_thickness > 0.01, rect, LAVA, 160)
+    draw = ImageDraw.Draw(canvas)
+
+    def local_to_pixel(x: float, z: float) -> tuple[int, int]:
+        px = rect[0] + (x - local_x[0]) / (local_x[1] - local_x[0]) * (rect[2] - rect[0])
+        py = rect[3] - (z - local_z[0]) / (local_z[1] - local_z[0]) * (rect[3] - rect[1])
+        return round(px), round(py)
+
+    def local_metres_to_pixels(metres: float) -> int:
+        return max(1, round(metres / (local_x[1] - local_x[0]) * (rect[2] - rect[0])))
+
+    stage = local_to_pixel(0.0, 0.0)
+    action = local_metres_to_pixels(study.ACTION_RADIUS_M)
+    draw.ellipse(
+        (stage[0] - action, stage[1] - action, stage[0] + action, stage[1] + action),
+        outline=(*STAGE, 255),
+        width=5,
+    )
+    draw.line((stage[0] - 13, stage[1], stage[0] + 13, stage[1]), fill=STAGE, width=4)
+    draw.line((stage[0], stage[1] - 13, stage[0], stage[1] + 13), fill=STAGE, width=4)
+    label(draw, (stage[0] + 34, stage[1] - 42), "PERFORMER GROUP · 4.5 m PROTECTED RADIUS", color=STAGE)
+
+    audience_pixels = [local_to_pixel(x, z) for x, z in AUDIENCE_STANDING_POINTS]
+    draw.line(audience_pixels, fill=(*HEADWALL, 220), width=8, joint="curve")
+    for px, py in audience_pixels:
+        draw.ellipse((px - 11, py - 11, px + 11, py + 11), fill=INK, outline=HEADWALL, width=4)
+    label(
+        draw,
+        (audience_pixels[-1][0] + 28, audience_pixels[-1][1] - 14),
+        "SMALL DOWNSLOPE / LATERAL STANDING CRESCENT",
+        color=HEADWALL,
+    )
+
+    audience_camera = local_to_pixel(0.0, -21.5)
+    draw.polygon(
+        (
+            (audience_camera[0], audience_camera[1] - 15),
+            (audience_camera[0] - 14, audience_camera[1] + 12),
+            (audience_camera[0] + 14, audience_camera[1] + 12),
+        ),
+        fill=INK,
+        outline=PAPER,
+    )
+    draw.line((audience_camera[0], audience_camera[1] - 18, stage[0], stage[1] + 18), fill=(*INK, 180), width=3)
+    label(draw, (audience_camera[0] - 298, audience_camera[1] + 30), "DEFAULT AUDIENCE CAMERA · 21.5 m DOWNSLOPE", color=INK)
+
+    stable_label_point = local_to_pixel(-5.0, 5.0)
+    label(draw, (stable_label_point[0] - 312, stable_label_point[1] - 66), "12 × 11 m LOCALLY EASED CORE", color=CYAN)
+    contact_label_point = local_to_pixel(18.0, 13.0)
+    label(draw, (contact_label_point[0] - 140, contact_label_point[1] - 45), "OLDER COOLED FLOW CONTACT", color=HEADWALL)
+    lava_label_point = local_to_pixel(-12.0, -12.0)
+    label(draw, (lava_label_point[0] - 270, lava_label_point[1] + 28), "ACTIVE FLOW REMAINS OUTSIDE ACTION ZONE", color=LAVA_HOT)
+
+    scale_start = local_to_pixel(-25.0, 21.0)
+    scale_end = local_to_pixel(-15.0, 21.0)
+    draw.line((*scale_start, *scale_end), fill=INK, width=5)
+    draw.line((scale_start[0], scale_start[1] - 9, scale_start[0], scale_start[1] + 9), fill=INK, width=4)
+    draw.line((scale_end[0], scale_end[1] - 9, scale_end[0], scale_end[1] + 9), fill=INK, width=4)
+    draw.text((scale_start[0] + 88, scale_start[1] + 16), "10 m", font=FONT_18, fill=INK)
+    draw.rectangle(rect, outline=GRID, width=3)
+
+    card = (1510, 178, 2336, 1650)
+    draw.rounded_rectangle(card, radius=20, fill=(*PANEL, 255), outline=GRID, width=3)
+    x0 = card[0] + 38
+    y = card[1] + 34
+    draw.text((x0, y), "MY CALL", font=FONT_26, fill=CYAN)
+    y += 54
+    draw.text((x0, y), "OLDER HARDENED LAVA BENCH", font=FONT_32, fill=INK)
+    y += 64
+    draw.multiline_text(
+        (x0, y),
+        "Natural cause: a thin remnant of an older cooled flow\n"
+        "crosses the continuing mountain grade.\n\n"
+        "Order intervention: loose clinker is cleared away;\n"
+        "the rock is not quarried into a platform.\n\n"
+        "Audience: a few standing pockets follow the contour\n"
+        "downslope and laterally, outside the action zone.",
+        font=FONT_22,
+        fill=MUTED,
+        spacing=10,
+    )
+    y += 338
+    draw.text((x0, y), "MEASURED NOW", font=FONT_26, fill=CYAN)
+    y += 54
+    audience_slope_range = ground_metrics["audienceSlopeRangeDegrees"]
+    measured_lines = (
+        (
+            "Stable core                 "
+            f"{float(ground_metrics['stableCoreWidthXM']):.0f} × "
+            f"{float(ground_metrics['stableCoreWidthZM']):.0f} m · "
+            f"{int(ground_metrics['stableCoreAreaM2'])} m²"
+        ),
+        f"Protected action area       {float(ground_metrics['actionAreaM2']):.1f} m²",
+        f"Core median slope           {float(ground_metrics['actionMedianSlopeDegrees']):.1f}°",
+        f"Old-flow contact slope      {float(ground_metrics['olderFlowContactMedianSlopeDegrees']):.1f}°",
+        f"Audience pocket slopes      {audience_slope_range[0]:.1f}–{audience_slope_range[1]:.1f}°",
+        f"Audience / active flow      ≥ {float(ground_metrics['minimumAudienceActiveFlowClearanceM']):.1f} m",
+    )
+    for line in measured_lines:
+        draw.text((x0, y), line, font=FONT_22, fill=INK)
+        y += 44
+    y += 24
+    draw.text((x0, y), "RESERVED FOR GATE 3 / 4", font=FONT_26, fill=LAVA_HOT)
+    y += 54
+    draw.multiline_text(
+        (x0, y),
+        "INVENTION · Slightly darker, denser basalt may\n"
+        "distinguish the whole old-flow contact. A restrained\n"
+        "pulse may live only in pre-existing peripheral fractures.\n"
+        "The surface underfoot remains cooled and non-emissive.",
+        font=FONT_22,
+        fill=MUTED,
+        spacing=10,
+    )
+    y += 190
+    draw.text((x0, y), "REJECT", font=FONT_26, fill=FAIL)
+    y += 54
+    draw.multiline_text(
+        (x0, y),
+        "Floating disc · circular shader · radial crack graphic\n"
+        "lava moat · broad level shelf · hot floor under performers",
+        font=FONT_22,
+        fill=MUTED,
+        spacing=10,
+    )
+
+    draw.text(
+        (66, 1510),
+        "GATE STATUS · This sheet clarifies the ground identity and audience relationship. It does not alter the R5 terrain or Flowy calibration.",
+        font=FONT_22,
+        fill=INK,
+    )
+    draw.text(
+        (66, 1554),
+        "Tan = the full sloping old-flow contact · cyan = locally eased stable core · white = protected action radius · orange = simulator-owned active flow",
+        font=FONT_18,
+        fill=MUTED,
+    )
     return canvas
 
 
@@ -670,7 +926,12 @@ def contact_sheet(paths: list[Path]) -> Image.Image:
     canvas = Image.new("RGB", (3840, 2160), PAPER)
     draw = ImageDraw.Draw(canvas)
     draw.text((60, 35), "EMBER MID-FLANK FIRE PILGRIMAGE · GATE 1.1 R5 REVIEW", font=FONT_44, fill=INK)
-    draw.text((62, 93), "North-up plan · true-scale section · exact uphill/downhill orbit proof · clearance", font=FONT_22, fill=MUTED)
+    draw.text(
+        (62, 93),
+        "North-up plan · true-scale section · exact uphill/downhill orbit proof · performance-ground clarification",
+        font=FONT_22,
+        fill=MUTED,
+    )
     slots = ((45, 150, 1905, 1135), (1935, 150, 3795, 1135), (45, 1165, 1905, 2120), (1935, 1165, 3795, 2120))
     for path, slot in zip(paths, slots):
         image = Image.open(path).convert("RGB")
@@ -690,6 +951,7 @@ def build() -> dict[str, Any]:
     manifest = json.loads(SIMULATOR_MANIFEST.read_text(encoding="utf-8"))
     selected = selected_result(manifest)
     thickness = read_esri_ascii(Path(selected["output"]))
+    ground_metrics = performance_ground_metrics(study, height, thickness, masks, selected)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     SELECTED_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -702,7 +964,11 @@ def build() -> dict[str, Any]:
     sightlines, sightline_metrics = sightline_board(study, height)
     sightlines.save(SIGHTLINES_PATH, optimize=True)
     calibration_board(study, height, manifest).convert("RGB").save(CALIBRATION_PATH, optimize=True)
-    contact_sheet([PLAN_PATH, SECTIONS_PATH, VIEWPOINTS_PATH, SIGHTLINES_PATH]).save(CONTACT_PATH, optimize=True)
+    performance_ground_board(study, height, thickness, masks, ground_metrics).convert("RGB").save(
+        GROUND_DETAIL_PATH,
+        optimize=True,
+    )
+    contact_sheet([PLAN_PATH, SECTIONS_PATH, VIEWPOINTS_PATH, GROUND_DETAIL_PATH]).save(CONTACT_PATH, optimize=True)
 
     stable_patch = masks["stablePatch"] >= 0.98
     stable_x = study.X_GRID[stable_patch]
@@ -724,6 +990,7 @@ def build() -> dict[str, Any]:
             "midflankRequirement": "BvN1DiylOnfdbrofcwaM",
             "broadLedgeRejection": "Vwm6XTLdDbDfxuoVE7z9",
             "r5CandidateProposal": "5P5KVEq04dpHxu9F0ViI",
+            "performanceGroundDetailProposal": "LfdgqBhR1T31jk77cFhf",
             "gate1R5CompletionReference": "Iur86OmZX40nTqdwgxDq",
             "historicalGate1R4Approval": "xFcagbaZTQAq615IbZgT",
             "historicalGate1R4Completion": "FZftIaWtEdGTrqXRv9JS",
@@ -792,18 +1059,47 @@ def build() -> dict[str, Any]:
         },
         "runtimeViewpointProof": viewpoint_metrics,
         "orbitSightlines": sightline_metrics,
+        "performanceGround": {
+            **ground_metrics,
+            "geometryClassification": "invention",
+            "geologicalRead": "Old, cooled lava bench embedded in the sloping older-flow contact.",
+            "authoredIntervention": "The Order clears loose clinker without cutting a geometric platform.",
+            "audienceRelationship": "A few standing pockets follow the contour downslope and laterally, outside the protected action envelope.",
+            "materialClassification": "invention reserved for Gate 3",
+            "materialProposal": "A subtle darker and denser read belongs to the entire old-flow contact, not a circular stage shader.",
+            "thermalResponseClassification": "invention reserved for Gate 3/4",
+            "thermalResponseProposal": "Low-area pulse only in pre-existing peripheral fractures; the cooled surface underfoot remains non-emissive.",
+            "rejectedReads": [
+                "floating disc",
+                "circular stage shader",
+                "radial crack graphic",
+                "lava moat",
+                "broad level shelf",
+                "hot floor under performers",
+            ],
+        },
         "evidence": [
             rel(PLAN_PATH),
             rel(SECTIONS_PATH),
             rel(VIEWPOINTS_PATH),
             rel(SIGHTLINES_PATH),
             rel(CALIBRATION_PATH),
+            rel(GROUND_DETAIL_PATH),
             rel(CONTACT_PATH),
             rel(SELECTED_DATA_PATH),
         ],
         "evidenceDigests": {
             rel(path): sha256_path(path)
-            for path in (PLAN_PATH, SECTIONS_PATH, VIEWPOINTS_PATH, SIGHTLINES_PATH, CALIBRATION_PATH, CONTACT_PATH, SELECTED_DATA_PATH)
+            for path in (
+                PLAN_PATH,
+                SECTIONS_PATH,
+                VIEWPOINTS_PATH,
+                SIGHTLINES_PATH,
+                CALIBRATION_PATH,
+                GROUND_DETAIL_PATH,
+                CONTACT_PATH,
+                SELECTED_DATA_PATH,
+            )
         },
         "limitations": manifest["limitations"],
         "readyForReview": bool(
@@ -842,6 +1138,22 @@ def verify() -> dict[str, Any]:
             and float(report["terrainMetrics"]["verticalExaggeration"]) == 1.0
         ),
         "runtime-uphill-downhill-proof": VIEWPOINTS_PATH.exists() and Image.open(VIEWPOINTS_PATH).size == (3840, 1320),
+        "performance-ground-clarification": (
+            GROUND_DETAIL_PATH.exists()
+            and Image.open(GROUND_DETAIL_PATH).size == (2400, 1800)
+            and report["performanceGround"]["geometryClassification"] == "invention"
+            and report["performanceGround"]["thermalResponseClassification"] == "invention reserved for Gate 3/4"
+        ),
+        "audience-standing-pockets": (
+            len(report["performanceGround"]["audienceStandingPoints"]) == len(AUDIENCE_STANDING_POINTS)
+            and all(
+                bool(point["withinOlderFlowContact"])
+                and float(point["terrainSlopeDegrees"]) <= 12.0
+                and float(point["clearanceBeyondActionEnvelopeM"]) >= 3.0
+                and float(point["activeFlowClearanceM"]) >= 3.0
+                for point in report["performanceGround"]["audienceStandingPoints"]
+            )
+        ),
         "eight-sightlines": len(report["orbitSightlines"]) == 8 and all(item["clear"] for item in report["orbitSightlines"]),
         "small-irregular-stable-patch": (
             9.0 <= float(report["terrainMetrics"]["stablePatchCoreWidthXM"]) <= 15.0
@@ -871,7 +1183,18 @@ def verify() -> dict[str, Any]:
         "passed": all(checks.values()),
         "checks": checks,
         "reportSha256": sha256_path(REPORT_PATH),
-        "evidenceSha256": {rel(path): sha256_path(path) for path in (PLAN_PATH, SECTIONS_PATH, VIEWPOINTS_PATH, SIGHTLINES_PATH, CALIBRATION_PATH, CONTACT_PATH)},
+        "evidenceSha256": {
+            rel(path): sha256_path(path)
+            for path in (
+                PLAN_PATH,
+                SECTIONS_PATH,
+                VIEWPOINTS_PATH,
+                SIGHTLINES_PATH,
+                CALIBRATION_PATH,
+                GROUND_DETAIL_PATH,
+                CONTACT_PATH,
+            )
+        },
     }
     print(json.dumps(result, indent=2))
     if not result["passed"]:

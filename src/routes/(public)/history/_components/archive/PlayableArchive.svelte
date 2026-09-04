@@ -37,7 +37,7 @@
 	import ResearchSubmissionGuide from "./ResearchSubmissionGuide.svelte";
 
 	const HASH_PREFIX = "#archive-record-";
-	const DEFAULT_ENTRY_ID = "playpoi";
+	const DEFAULT_ENTRY_ID = "home-of-poi";
 
 	let activeEntry = $state<ArchiveEntry>(archiveEntry(DEFAULT_ENTRY_ID));
 	let recordDrawerOpen = $state(false);
@@ -232,7 +232,7 @@
 									{activeEntry.catalogEntry.explore.label}
 									<span aria-hidden="true">→</span>
 								</a>
-							{:else if activeEntry.citations[0]}
+							{:else if !activeEntry.documents?.length && activeEntry.citations[0]}
 								<a
 									class="artifact-action"
 									href={activeEntry.citations[0].href}
@@ -801,6 +801,17 @@
 		.record-toolbar :global(.panel-btn) {
 			min-height: 3.25rem;
 			font-size: 1rem;
+		}
+	}
+
+	/* On tall canvases the artifact earns the extra room. Reversing the normal
+	   40/60 split keeps the inspector at a generous, stable reading height
+	   instead of turning sparse record metadata into a full-height empty rail.
+	   The row stays fixed across overview and drill-down screens, so opening
+	   Sources never makes the artifact jump. */
+	@media (min-width: 981px) and (min-height: 1200px) {
+		.record-body {
+			grid-template-rows: minmax(24rem, 1.2fr) minmax(28rem, 0.8fr);
 		}
 	}
 

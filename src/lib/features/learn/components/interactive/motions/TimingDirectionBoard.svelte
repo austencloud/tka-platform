@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, tick } from "svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import { CARD_SIZES } from "$lib/features/choreo-card/domain/card-sizes";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
@@ -25,6 +26,8 @@
   } = $props();
 
   const haptic = getHapticFeedback();
+  const pokerCardAspectRatio =
+    CARD_SIZES.poker.widthInches / CARD_SIZES.poker.heightInches;
   let boardElement: HTMLDivElement | null = $state(null);
   let focusCloseButton: HTMLButtonElement | null = $state(null);
   let focusedModeId = $state<TimingDirectionModeId | null>(null);
@@ -254,10 +257,12 @@
                   accent: mode.element.accentColor,
                   dark: mode.element.darkComplement,
                 }}
+                cardAspectRatio={pokerCardAspectRatio}
                 showWord={false}
                 customTitleText={mode.element.name}
                 showDifficultyLevel={false}
-                includeStartPosition={false}
+                includeStartPosition
+                columnCount={2}
                 showNotes
                 customNotesText={definitionFor(mode)}
                 showLoopGlyph={false}
@@ -679,7 +684,7 @@
     }
   }
 
-  @media (max-height: 540px) and (min-width: 701px) {
+  @media (max-height: 540px) and (min-width: 801px) {
     .comparison-board {
       grid-template-rows: minmax(0, 1fr);
     }

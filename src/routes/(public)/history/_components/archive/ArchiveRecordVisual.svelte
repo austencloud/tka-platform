@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ArtifactVisual from "./ArtifactVisual.svelte";
+	import ArchiveDocumentReader from "./ArchiveDocumentReader.svelte";
 	import { archiveLane, type ArchiveEntry } from "./_lib/archive-ledger";
 
 	let { entry, active = false }: { entry: ArchiveEntry; active?: boolean } =
@@ -11,6 +12,10 @@
 {#if entry.catalogEntry}
 	<div class="artifact-visual">
 		<ArtifactVisual entry={entry.catalogEntry} {active} />
+	</div>
+{:else if entry.documents?.length}
+	<div class="document-artifact">
+		<ArchiveDocumentReader documents={entry.documents} {active} />
 	</div>
 {:else}
 	<article class="source-record">
@@ -35,6 +40,16 @@
 
 <style>
 	.artifact-visual {
+		display: grid;
+		width: 100%;
+		height: 100%;
+		min-width: 0;
+		min-height: 0;
+		place-items: center;
+		container-type: size;
+	}
+
+	.document-artifact {
 		display: grid;
 		width: 100%;
 		height: 100%;
