@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  interpolateTunnelLayerProp,
   resolveTunnelGridOpacity,
   resolveTunnelLayerOpacity,
   resolveTunnelLayerProgress,
-  tunnelLayerPositionSeparation,
+  tunnelLayerPoseDifference,
   TUNNEL_REVEAL_DURATION,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-layer-reveal";
 import { DURATION } from "$lib/shared/transitions/transitions";
@@ -49,48 +48,36 @@ describe("Tunnel layer reveal", () => {
     expect(resolveTunnelLayerProgress(0.5, 0, 7)).toBe(0.5);
   });
 
-  it("uses the same reversible progress for position and opacity", () => {
+  it("uses the shared stagger progress directly for opacity", () => {
     expect(resolveTunnelLayerProgress(0.42, 1, 4)).toBe(
       resolveTunnelLayerOpacity(0.42, 1, 4)
     );
   });
 
-  it("peels a copy from the live prop into its Tunnel pose", () => {
-    const base = { centerPathAngle: 0, staffRotationAngle: 0 };
+  it("reports no drift when the rendered prop is at its authored pose", () => {
     const target = {
       centerPathAngle: Math.PI / 2,
       staffRotationAngle: Math.PI,
     };
 
-    expect(interpolateTunnelLayerProp(base, target, 0)).toEqual(base);
-    expect(interpolateTunnelLayerProp(base, target, 0.5)).toEqual({
-      centerPathAngle: Math.PI / 4,
-      staffRotationAngle: Math.PI / 2,
-      x: 0.5,
-      y: 0.5,
-    });
-    expect(interpolateTunnelLayerProp(base, target, 1)).toEqual(target);
+    expect(tunnelLayerPoseDifference(target, target)).toBe(0);
   });
 
-  it("keeps canvas position continuous across the angle seam", () => {
+  it("measures the shortest orientation drift across the angle seam", () => {
     const degrees = (value: number) => (value * Math.PI) / 180;
-    const midpoint = interpolateTunnelLayerProp(
+    const difference = tunnelLayerPoseDifference(
       { centerPathAngle: degrees(350), staffRotationAngle: degrees(350) },
-      { centerPathAngle: degrees(10), staffRotationAngle: degrees(10) },
-      0.5
+      { centerPathAngle: degrees(10), staffRotationAngle: degrees(10) }
     );
 
-    expect(midpoint?.x).toBeCloseTo(Math.cos(degrees(10)));
-    expect(midpoint?.y).toBeCloseTo(0);
-    expect(midpoint?.centerPathAngle).toBeCloseTo(0);
-    expect(midpoint?.staffRotationAngle).toBeCloseTo(0);
+    expect(difference).toBeCloseTo(20 / 180);
   });
 
-  it("reports the visible positional separation from the live pair", () => {
+  it("reports positional drift in grid-radius units", () => {
     expect(
-      tunnelLayerPositionSeparation(
-        { centerPathAngle: 0, staffRotationAngle: 0 },
-        { centerPathAngle: Math.PI / 3, staffRotationAngle: Math.PI }
+      tunnelLayerPoseDifference(
+        { centerPathAngle: 0, staffRotationAngle: 0, x: 0, y: 0 },
+        { centerPathAngle: 0, staffRotationAngle: 0, x: 0.6, y: 0.8 }
       )
     ).toBeCloseTo(1);
   });

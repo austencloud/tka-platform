@@ -134,7 +134,8 @@ export interface TransitionGeometrySample {
   tunnelPerceptibleLayerCount: number;
   tunnelMovingLayerCount: number;
   tunnelTrailSuppressedLayerCount: number;
-  tunnelLayerSeparation: number;
+  /** Maximum difference between a rendered copy and its prepared Tunnel pose. */
+  tunnelFormationPoseDrift: number;
   tunnelGridOpacity: number;
   tunnelPaintFrame: number;
   tunnelPaintedPropCount: number;
@@ -268,9 +269,8 @@ export interface TransitionGeometrySummary {
   tunnelFormationTrailCaptures: number;
   tunnelUnguardedFormationFrames: number;
   tunnelPreparedLayerCountMaximum: number;
-  tunnelLayerSeparationMaximum: number;
-  tunnelLayerSeparationStepMaximum: number;
-  tunnelSpatialPeelFrames: number;
+  tunnelFormationPoseDriftMaximum: number;
+  tunnelFormationPoseDriftFrames: number;
   tunnelCrossfadeFrames: number;
   tunnelDoubleFadeFrames: number;
   tunnelBlankFrames: number;
@@ -1770,26 +1770,20 @@ export function summarizeTransitionGeometry(
           ...trace.samples.map((sample) => sample.tunnelPreparedLayerCount)
         )
       : 0,
-    tunnelLayerSeparationMaximum: isTunnelTrace
+    tunnelFormationPoseDriftMaximum: isTunnelTrace
       ? Math.round(
           Math.max(
             0,
-            ...trace.samples.map((sample) => sample.tunnelLayerSeparation)
+            ...trace.samples.map((sample) => sample.tunnelFormationPoseDrift)
           ) * 1000
         ) / 1000
       : 0,
-    tunnelLayerSeparationStepMaximum: isTunnelTrace
-      ? maximumSampleStep(
-          trace.samples,
-          (sample) => sample.tunnelLayerSeparation
-        )
-      : 0,
-    tunnelSpatialPeelFrames: isTunnelTrace
+    tunnelFormationPoseDriftFrames: isTunnelTrace
       ? trace.samples.filter(
           (sample) =>
             sample.tunnelOpacity >= 0.05 &&
             sample.tunnelOpacity <= 0.95 &&
-            sample.tunnelLayerSeparation > 0.02
+            sample.tunnelFormationPoseDrift > 0.001
         ).length
       : 0,
     tunnelCrossfadeFrames: isTunnelTrace

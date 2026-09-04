@@ -77,6 +77,8 @@
     allowFewStepOverflowOnNarrow = true,
     fitAllSteps = false,
     sizingProfile = "workbench",
+    stepIdentityMode = "step",
+    stepIdentityPrefix = "step-grid",
     selectedStepNumbers = new Set<number>(),
     isMultiSelectMode = false,
     onStartLongPress,
@@ -125,6 +127,10 @@
     fitAllSteps?: boolean;
     /** Preview grids trade edit-hover breathing room for larger notation. */
     sizingProfile?: "workbench" | "preview";
+    /** Keep visual positions alive while a preview swaps to another sequence. */
+    stepIdentityMode?: "step" | "slot";
+    /** Namespaces slot identities so independent grids never share motion caches. */
+    stepIdentityPrefix?: string;
     selectedStepNumbers?: Set<number>;
     isMultiSelectMode?: boolean;
     onStartLongPress?: () => void;
@@ -698,7 +704,11 @@
     onStartClick?.();
   }
 
-  const stepIdentities = $derived(createStableStepIdentities(steps));
+  const stepIdentities = $derived(
+    stepIdentityMode === "slot"
+      ? steps.map((_step, index) => `${stepIdentityPrefix}:slot:${index}`)
+      : createStableStepIdentities(steps)
+  );
   const getStepKey = (_step: StepData, index: number) =>
     stepIdentities[index] ?? `missing-step:${index}`;
 
@@ -773,6 +783,7 @@
       {isClearing}
       {historyTransition}
       {historyTransitionEpoch}
+      animateStepMembership={stepIdentityMode === "slot"}
       {highlightedSteps}
       onStepClick={handleStepClick}
       onStartClick={handleStartClick}

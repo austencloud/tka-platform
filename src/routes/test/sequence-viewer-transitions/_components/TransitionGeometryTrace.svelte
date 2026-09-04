@@ -519,7 +519,7 @@
             summary.tunnelLayerOpacitySpreadMaximum > 0.28)}
         >Layer timing spread: {summary.tunnelPreparedLayerCountMaximum > 1
           ? summary.tunnelLayerOpacitySpreadMaximum.toFixed(2)
-          : "n/a · one copy peels spatially"}</span
+          : "n/a · one copy"}</span
       >
       <span
         data-problem={summary.tunnelPreparedLayerCountMaximum > 0 &&
@@ -556,14 +556,13 @@
         >Formation trail captures: {summary.tunnelFormationTrailCaptures}</span
       >
       <span
-        data-problem={summary.tunnelPreparedLayerCountMaximum > 0 &&
-          summary.tunnelLayerSeparationMaximum > 0.08 &&
-          summary.tunnelSpatialPeelFrames < 3}
-        >Spatial peel: {(summary.tunnelLayerSeparationMaximum * 100).toFixed(
-          0
-        )}% radius over {summary.tunnelSpatialPeelFrames} frames · {(
-          summary.tunnelLayerSeparationStepMaximum * 100
-        ).toFixed(0)}% max step</span
+        data-problem={summary.tunnelFormationPoseDriftMaximum > 0.001 ||
+          summary.tunnelFormationPoseDriftFrames > 0}
+        title="Compares every rendered copy with the authored Tunnel pose prepared at the same playhead. The handoff should change opacity only."
+        >Formation placement: {(
+          summary.tunnelFormationPoseDriftMaximum * 100
+        ).toFixed(1)}% max drift · {summary.tunnelFormationPoseDriftFrames}
+        drifting frames</span
       >
       <span data-dissolve={summary.tunnelCrossfadeFrames > 0}
         >Layer-bloom frames: {summary.tunnelCrossfadeFrames}</span

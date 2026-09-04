@@ -26,6 +26,7 @@
     isBrowseSoloMode: boolean;
     soloHand: "left" | "right" | undefined;
     browseViewMode?: import("$lib/shared/browse/domain/browse-view-mode").BrowseViewMode;
+    customTitleText?: string;
     showDifficultyLevel: boolean;
     difficultyLevel: number;
     currentLevelStyle: { bg: string; border: string; text: string };
@@ -50,6 +51,7 @@
     isBrowseSoloMode,
     soloHand,
     browseViewMode,
+    customTitleText,
     showDifficultyLevel,
     difficultyLevel,
     currentLevelStyle,
@@ -119,7 +121,16 @@
         </div>
       {/if}
 
-      {#if wordVisible}
+      {#if customTitleText?.trim()}
+        <div
+          class="word-title text-title"
+          style:width={`max(0px, calc(100% - ${Math.ceil(wordSideInset * 2)}px))`}
+          style:font-size={`max(var(--font-size-min, 14px), ${wordTitleFontSize}px)`}
+          transition:fade|local={{ duration: 200 }}
+        >
+          {customTitleText}
+        </div>
+      {:else if wordVisible}
         <div
           class="word-title"
           style:width={`max(0px, calc(100% - ${Math.ceil(wordSideInset * 2)}px))`}
@@ -191,6 +202,19 @@
     justify-content: center;
     max-width: 75%;
     overflow: hidden;
+  }
+
+  .text-title {
+    color: #111;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    line-height: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header-section.dark-mode .text-title {
+    color: white;
   }
 
   .loop-icon-badge {

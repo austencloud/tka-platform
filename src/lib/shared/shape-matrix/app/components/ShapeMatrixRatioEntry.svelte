@@ -55,8 +55,6 @@
   }
 
   const typed = $derived(reduceTyped(propText, handText));
-  const actionLabel = $derived(theoryRatioLabel(typed ?? current));
-
   const problem = $derived.by<string | null>(() => {
     const propRotations = readPart(propText);
     const handCycles = readPart(handText);
@@ -90,12 +88,6 @@
     if (!typed || problem) return;
     appState.setTheoryRatioFor(hand, typed);
     // Keep 2:4 under the cursor while the grid correctly applies 1:2.
-    seededKey = spinRatioKey(typed);
-  }
-
-  function useForBoth(): void {
-    if (!typed || problem) return;
-    appState.setTheoryRatios(typed, typed);
     seededKey = spinRatioKey(typed);
   }
 
@@ -142,15 +134,6 @@
 >
   <header class="side-head">
     <span class="axis-label">{axisLabel}</span>
-    <button
-      type="button"
-      class="use-both"
-      disabled={!typed || Boolean(problem)}
-      aria-label={`Use ${actionLabel} for both axes`}
-      onclick={useForBoth}
-    >
-      Use for both
-    </button>
   </header>
 
   <div class="entry-row" class:invalid={Boolean(problem)}>
@@ -211,14 +194,7 @@
     width: 15rem;
     min-width: 0;
     gap: 0.45rem;
-    padding: 0.5rem;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
-    transition:
-      border-color var(--duration-fast, 150ms) var(--transition-easing, ease),
-      background var(--duration-fast, 150ms) var(--transition-easing, ease),
-      box-shadow var(--duration-fast, 150ms) var(--transition-easing, ease);
+    padding: 0.25rem;
   }
 
   .ratio-side.left {
@@ -231,23 +207,10 @@
     --axis-base: var(--prop-red, #ed1c24);
   }
 
-  .ratio-side:focus-within {
-    border-color: color-mix(in srgb, var(--axis-color) 72%, transparent);
-    background: color-mix(
-      in srgb,
-      var(--axis-base) 10%,
-      var(--theme-card-bg, rgb(255 255 255 / 0.05))
-    );
-    box-shadow: inset 0 0 0 1px
-      color-mix(in srgb, var(--axis-color) 34%, transparent);
-  }
-
   .side-head {
     display: flex;
     min-width: 0;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
   }
 
   .axis-label {
@@ -255,40 +218,6 @@
     font-size: var(--font-size-min, 0.875rem);
     font-weight: 700;
     white-space: nowrap;
-  }
-
-  .use-both {
-    min-height: var(--min-touch-target, 44px);
-    flex: 0 0 auto;
-    padding: 0.35rem 0.6rem;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--axis-base) 7%, transparent);
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
-    cursor: pointer;
-    font: inherit;
-    font-size: var(--font-size-min, 0.875rem);
-    white-space: nowrap;
-    transition:
-      color var(--duration-fast, 150ms) var(--transition-easing, ease),
-      border-color var(--duration-fast, 150ms) var(--transition-easing, ease),
-      background var(--duration-fast, 150ms) var(--transition-easing, ease);
-  }
-
-  .use-both:hover:not(:disabled) {
-    border-color: color-mix(in srgb, var(--axis-color) 58%, transparent);
-    background: color-mix(in srgb, var(--axis-base) 16%, transparent);
-    color: var(--theme-text, #fff);
-  }
-
-  .use-both:focus-visible {
-    outline: 2px solid var(--axis-color);
-    outline-offset: 2px;
-  }
-
-  .use-both:disabled {
-    cursor: not-allowed;
-    opacity: 0.42;
   }
 
   .entry-row {
@@ -376,56 +305,12 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* The axis title and copy action no longer compete for one cramped line.
-     The action sits beside the values it copies, and an empty feedback region
-     occupies no space. Validation expands below through the shared motion
-     primitive only when there is something useful to say. */
-  .ratio-side:not(.tray) {
-    grid-template-columns: minmax(0, 1fr) max-content;
-    grid-template-rows: auto auto auto;
-    grid-template-areas:
-      "axis axis"
-      "entry action"
-      "feedback feedback";
-    width: 20rem;
-    gap: 0 0.65rem;
-    padding: 0.65rem;
-  }
-
-  .ratio-side:not(.tray) .side-head {
-    display: contents;
-  }
-
-  .ratio-side:not(.tray) .axis-label {
-    grid-area: axis;
-  }
-
-  .ratio-side:not(.tray) .entry-row {
-    grid-area: entry;
-    margin-top: 0.55rem;
-  }
-
-  .ratio-side:not(.tray) .use-both {
-    grid-area: action;
-    align-self: end;
-    margin-top: 0.55rem;
-  }
-
-  .ratio-side:not(.tray) .feedback {
-    grid-area: feedback;
-  }
-
-  .ratio-side:not(.tray) .feedback:not(:empty) {
-    margin-top: 0.45rem;
-  }
-
   .ratio-side.tray {
     width: 100%;
+    padding-inline: 0;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .ratio-side,
-    .use-both,
     .part-field input {
       transition: none;
     }

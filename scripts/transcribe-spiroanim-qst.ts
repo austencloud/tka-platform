@@ -363,8 +363,8 @@ async function main(): Promise<void> {
           sourceDocument: collection.sourceDocument,
           attribution: {
             credit:
-              "Quarter Space Tech archive preserved in Mentive's SpiroAnim (@rbgirard)",
-            note: "Quarter Space Tech predates SpiroAnim. The bundled source documents do not name an individual creator.",
+              "Quarter Space Tech source documents by Mentive (@rbgirard), based on Alex Kurowski's grid",
+            note: "These sequences translate Mentive's documented patterns from SpiroAnim into Flow Arts Composer.",
           },
           translation: {
             coordinateViews: {

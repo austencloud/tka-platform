@@ -3,7 +3,7 @@
   "sceneId": "ember-broken-rift",
   "title": "Ember Broken Rift",
   "domainProofRequired": false,
-  "currentGate": 2,
+  "currentGate": 1,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
     "roomShellSource": "src/lib/shared/3d/environments/scenes/EmberScene.svelte",
@@ -43,7 +43,10 @@
       "BvN1DiylOnfdbrofcwaM",
       "FZftIaWtEdGTrqXRv9JS",
       "xFcagbaZTQAq615IbZgT",
-      "lXhTllDFV2Ne1E7foCkS"
+      "lXhTllDFV2Ne1E7foCkS",
+      "Vwm6XTLdDbDfxuoVE7z9",
+      "5P5KVEq04dpHxu9F0ViI",
+      "Iur86OmZX40nTqdwgxDq"
     ]
   },
   "sequenceFingerprints": [],
@@ -57,17 +60,17 @@
     {
       "id": "C-002",
       "class": "invention",
-      "statement": "The active R4 Mid-Flank Fire Pilgrimage plan places the performer on a long contour ledge between a 100+ m upper volcanic edifice and a 60+ m fall to lower country; a high-source Flowy drainage passes west of the protected 4.5 m action radius and continues through the south scene boundary.",
+      "statement": "The active R5 Mid-Flank Fire Pilgrimage candidate places the performer in a 12 by 11 m irregular stable patch embedded in a continuously inclined compound flank between 131.368 m of upper mountain and 69.916 m of lower-country fall; a high-source Flowy drainage clears the protected 4.5 m action radius and continues through the south scene boundary.",
       "evidence": [
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/01-north-up-measured-plan.png",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/02-true-scale-midflank-section.png",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/03-runtime-uphill-downhill-proof.png"
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/01-north-up-measured-plan.png",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/02-true-scale-midflank-section.png",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/03-runtime-uphill-downhill-proof.png"
       ]
     },
     {
       "id": "C-003",
       "class": "invention",
-      "statement": "Reserved Gate 3/4 visual target, not an R4 measured-plan claim: blue-black basalt and rough obsidian dominate the frame; orange is confined to fissures and the banked, crusted river, with restrained mineral ochre as a secondary accent.",
+      "statement": "Reserved Gate 3/4 visual target, not an R5 measured-plan claim: blue-black basalt and rough obsidian dominate the frame; orange is confined to fissures and the banked, crusted river, with restrained mineral ochre as a secondary accent.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/look-development.md"
       ]
@@ -75,7 +78,7 @@
     {
       "id": "C-004",
       "class": "invention",
-      "statement": "Historical surface research reserved for a future Gate 3/4 restart, not accepted R4 geometry: Fresh Rift uses young lava crust as Ember's surface base, exposes fractured basalt on scarps, shelters ash in depressions, and confines iron-rich alteration to lava-distance contact zones.",
+      "statement": "Historical surface research reserved for a future Gate 3/4 restart, not accepted R5 geometry: Fresh Rift uses young lava crust as Ember's surface base, exposes fractured basalt on scarps, shelters ash in depressions, and confines iron-rich alteration to lava-distance contact zones.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-surface-target-board.jpg",
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/candidate-decisions.md"
@@ -84,10 +87,10 @@
     {
       "id": "C-005",
       "class": "invention",
-      "statement": "Mid-Flank Fire Pilgrimage R4 is the active geology direction: one continuous upper massif, one furnace saddle and high source, one contour-following performer ledge, one gravity-led Flowy drainage, one lower escarpment, and one explicit off-world downslope exit.",
+      "statement": "Mid-Flank Fire Pilgrimage R5 is the active correction candidate: one continuous upper massif, one furnace saddle and high source, one small stable performance widening within a 6-10 degree old-flow contact, one gravity-led Flowy drainage, one gradually steepening lower flank, and one explicit off-world downslope exit.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/01-north-up-measured-plan.png"
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/01-north-up-measured-plan.png"
       ]
     },
     {
@@ -393,6 +396,36 @@
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r3/"
       ],
       "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/"
+    },
+    {
+      "invalidatedAt": "2026-09-04T14:01:32.7164584-05:00",
+      "reopenedGate": 1,
+      "museumTrackerItem": "Vwm6XTLdDbDfxuoVE7z9",
+      "proposalTrackerItem": "5P5KVEq04dpHxu9F0ViI",
+      "reason": "Austen retained R4's colossal mid-flank composition but rejected its roughly 138 by 66 m near-level ledge as an implausibly lucky clearing between steep drops. Because the correction changes terrain geometry and orbit sightlines, R5 reopens Gate 1.1 before any Blender rebuild.",
+      "preserved": [
+        "380 by 335 m world footprint",
+        "colossal mountain-above and lower-country-below composition",
+        "high furnace-saddle source and south-boundary continuation",
+        "4.5 m performer action envelope",
+        "25 m Viewer3D orbit contract",
+        "Flowy ownership and pinned open-source geology pipeline",
+        "Fresh Rift material research for a later gate",
+        "Blackglass atmosphere systems for a later gate",
+        "existing Meshy assets and unspent credits"
+      ],
+      "invalidated": [
+        "R4 broad near-level contour ledge",
+        "R4 abrupt ledge-to-upper and ledge-to-lower grade breaks",
+        "R4 Gate 1.1 geometry and sightline approval",
+        "R4 Gate 2 Blender source, GLB, manifest, renders, and checks",
+        "all later-gate evidence"
+      ],
+      "historicalEvidence": [
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/"
     }
   ],
   "gates": [
@@ -433,119 +466,67 @@
     },
     {
       "id": "measured-plan",
-      "status": "approved",
+      "status": "ready-for-review",
       "evidence": [
         {
           "kind": "floor-plan",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/01-north-up-measured-plan.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/01-north-up-measured-plan.png"
         },
         {
           "kind": "vertical-section",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/02-true-scale-midflank-section.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/02-true-scale-midflank-section.png"
         },
         {
           "kind": "route-storyboard",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/03-runtime-uphill-downhill-proof.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/03-runtime-uphill-downhill-proof.png"
         },
         {
           "kind": "sightline-study",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/04-orbit-sightline-study.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/04-orbit-sightline-study.png"
         },
         {
           "kind": "emplacement-calibration",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/05-flowy-calibration-sweep.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/05-flowy-calibration-sweep.png"
         },
         {
           "kind": "verification-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/ember-midflank-fire-pilgrimage-r4-gate1-1-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/ember-midflank-fire-pilgrimage-r5-gate1-1-report.json"
         }
       ],
       "checks": [
         {
           "name": "walkability",
           "status": "passed",
-          "evidence": "Ember remains a Viewer3D orbit environment. The R4 report verifies low relief inside the protected 4.5 m action envelope while the contour ledge continues beyond the orbit; no material boundary encloses a circular stage."
+          "evidence": "Ember remains a Viewer3D orbit environment. R5 limits the locally eased terrain to a 12 by 11 m irregular core; the protected 4.5 m action envelope has 0.205 m relief and 1.286 degree median slope."
         },
         {
           "name": "clearance",
           "status": "passed",
-          "evidence": "The selected Flowy footprint preserves at least 2.500 m beyond the protected 4.5 m action envelope; the canonical R4 report owns the regenerated measurement."
+          "evidence": "Fresh Flowy calibration r5f-c03-braided-20m2 preserves 7.097 m beyond the protected 4.5 m action envelope."
         },
         {
           "name": "sightlines",
           "status": "passed",
-          "evidence": "All eight exact-cap orbit samples clear the performer target; the eye sits 8.25 m above local ground, targets 1.75 m above it, and remains 25.000 m from target."
+          "evidence": "All eight exact-cap orbit samples clear the performer target by 1.764 m or more; the eye remains 25.000 m from target."
         },
         {
           "name": "final-view",
           "status": "passed",
-          "evidence": "The north-up plan and true-scale section keep more than 100 m of upper mountain and more than 60 m of lower fall in one continuous section, while the exact opposite-side orbit proof tests both reads from the performer target."
+          "evidence": "The true-scale compound section keeps 131.368 m of upper mountain and 69.916 m of lower-country fall while the surrounding 8-25 m annulus retains a 9.188 degree median slope."
         },
         {
           "name": "artifact-digest",
           "status": "passed",
-          "evidence": "The canonical R4 Gate 1.1 report records SHA-256 digests for all review images and the checked-in little-endian float32 simulator raster."
+          "evidence": "The canonical R5 Gate 1.1 report records SHA-256 digests for every review image and the fresh little-endian float32 Flowy raster."
         }
       ],
-      "approval": {
-        "approvedBy": "Austen",
-        "approvedAt": "2026-09-04T18:34:25.786Z",
-        "quote": "Yeah that's better let's go with that",
-        "museumTrackerItem": "xFcagbaZTQAq615IbZgT",
-        "visualComprehensionConfirmed": true
-      }
+      "approval": null
     },
     {
       "id": "playable-graybox",
-      "status": "ready-for-review",
-      "evidence": [
-        {
-          "kind": "blender-source",
-          "path": "blender/ember-midflank-fire-pilgrimage-graybox-r4.blend"
-        },
-        {
-          "kind": "coordinate-manifest",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/ember-midflank-fire-pilgrimage-r4-coordinate-manifest.json"
-        },
-        {
-          "kind": "graybox-glb",
-          "path": "static/models/ember/review/ember-midflank-fire-pilgrimage-graybox-r4.glb"
-        },
-        {
-          "kind": "first-person-walk",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/14-continuous-runtime-orbit.webp"
-        },
-        {
-          "kind": "review-contact-sheet",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/ember-midflank-fire-pilgrimage-r4-gate2-contact-sheet.png"
-        },
-        {
-          "kind": "verification-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/ember-midflank-fire-pilgrimage-r4-graybox-report.json"
-        }
-      ],
-      "checks": [
-        {
-          "name": "artifact-digest",
-          "status": "passed",
-          "evidence": "The R4 graybox report records SHA-256 and byte length for every Blender, GLB, raster, still, motion, manifest, and source artifact."
-        },
-        {
-          "name": "collision",
-          "status": "passed",
-          "evidence": "EMBER_Terrain is the sole visible collider and exports tka_camera_collision=true."
-        },
-        {
-          "name": "route-duration",
-          "status": "passed",
-          "evidence": "The approved orbit-backdrop exemption is fulfilled by a 48-frame continuous exact-camera orbit plus eight registered 45-degree stills."
-        },
-        {
-          "name": "sequence-parity",
-          "status": "passed",
-          "evidence": "The isolated R4 environment graybox does not select or modify a TKA sequence."
-        }
-      ],
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
       "approval": null
     },
     {
