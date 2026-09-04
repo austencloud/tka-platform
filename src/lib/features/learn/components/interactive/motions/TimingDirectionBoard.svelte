@@ -451,8 +451,8 @@
 
     .board-toolbar {
       position: absolute;
-      top: 0.35rem;
-      right: 0.35rem;
+      top: -3rem;
+      right: 0;
       z-index: 8;
     }
 
@@ -468,6 +468,16 @@
 
     .board-toolbar :global(.panel-btn) {
       background: color-mix(in srgb, var(--theme-panel-bg) 88%, transparent);
+    }
+
+    .board-toolbar :global(.panel-btn span) {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      clip-path: inset(50%);
     }
 
     .mode-grid:not(.has-focus) {
