@@ -8,6 +8,7 @@
   floor, lazy paint, and the tile-to-hero shared element stay here.
 -->
 <script lang="ts" generics="TAxis = Flower">
+  import type { Snippet } from "svelte";
   import type { ShapeMatrixData } from "../services/shape-matrix-flowers";
   import {
     flowerKey,
@@ -63,7 +64,9 @@
     /** Cell artwork source at a measured size. Defaults to the flower painter. */
     paintCell?: (left: TAxis, right: TAxis, sizePx: number) => string;
     /** Optional focus feedback from an external axis editor. */
-    emphasizedAxis?: "left" | "right" | null;
+    emphasizedAxis?: "left" | "right" | "both" | null;
+    /** Optional guide or action for the otherwise-empty axis intersection. */
+    corner?: Snippet;
   }
   let {
     data,
@@ -90,6 +93,7 @@
     paintHeader,
     paintCell,
     emphasizedAxis = null,
+    corner,
   }: Props = $props();
 
   // Track counts for the CSS tile formula: the row-header column and the
@@ -157,12 +161,19 @@
     >
       <thead>
         <tr>
-          <th class="corner" scope="col" aria-label="left rows by right columns"
-          ></th>
+          <th
+            class="corner"
+            class:interactive-corner={Boolean(corner)}
+            scope="col"
+            aria-label={corner ? undefined : "left rows by right columns"}
+          >
+            {@render corner?.()}
+          </th>
           {#each colAxis as rf, colIndex (colIndex)}
             <th
               class="colhead"
-              class:axis-emphasized={emphasizedAxis === "right"}
+              class:axis-emphasized={emphasizedAxis === "right" ||
+                emphasizedAxis === "both"}
               scope="col"
               title={labelOf(rf)}
             >
@@ -180,7 +191,8 @@
           <tr>
             <th
               class="rowhead"
-              class:axis-emphasized={emphasizedAxis === "left"}
+              class:axis-emphasized={emphasizedAxis === "left" ||
+                emphasizedAxis === "both"}
               scope="row"
               title={labelOf(bf)}
             >
@@ -293,6 +305,10 @@
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-card-bg, #111922);
+  }
+
+  .corner.interactive-corner {
+    overflow: hidden;
   }
 
   .colhead {
