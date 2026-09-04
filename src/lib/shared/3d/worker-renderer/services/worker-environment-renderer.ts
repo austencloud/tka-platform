@@ -63,7 +63,7 @@ export interface WorkerEnvironmentRendererOptions {
   createWorker?: () => Worker;
 }
 
-function supportsWorkerRenderer(): boolean {
+export function supportsWorkerEnvironmentRenderer(): boolean {
   return (
     typeof Worker !== "undefined" &&
     typeof HTMLCanvasElement !== "undefined" &&
@@ -88,6 +88,8 @@ export class WorkerEnvironmentRenderer {
     createWorkerRendererHandoffState();
   private readonly slots = new Map<number, WorkerRendererSlot>();
   private viewport: WorkerViewport = { width: 1, height: 1, dpr: 1 };
+  private pixelRatio =
+    typeof window === "undefined" ? 1 : window.devicePixelRatio;
   private resizeObserver: ResizeObserver | null = null;
   private readonly responsiveness = new WorkerRendererResponsivenessProbe();
   private progress = 0;
@@ -106,7 +108,7 @@ export class WorkerEnvironmentRenderer {
     this.onSnapshot = options.onSnapshot;
     this.onInteraction = options.onInteraction;
     this.createWorker = options.createWorker ?? createRendererWorker;
-    this.supported = supportsWorkerRenderer();
+    this.supported = supportsWorkerEnvironmentRenderer();
     if (!this.supported) {
       this.phase = "unsupported";
       this.publish();
@@ -177,6 +179,13 @@ export class WorkerEnvironmentRenderer {
         camera,
       });
     }
+  }
+
+  setPixelRatio(pixelRatio: number): void {
+    if (!Number.isFinite(pixelRatio) || pixelRatio <= 0) return;
+    if (pixelRatio === this.pixelRatio) return;
+    this.pixelRatio = pixelRatio;
+    this.measureViewport();
   }
 
   setPerformers(performers: readonly WorkerPerformerSnapshot[]): void {
@@ -395,7 +404,7 @@ export class WorkerEnvironmentRenderer {
     this.viewport = clampWorkerViewport({
       width: rect.width,
       height: rect.height,
-      dpr: window.devicePixelRatio,
+      dpr: this.pixelRatio,
     });
     for (const slot of this.slots.values()) {
       this.post(slot, {
