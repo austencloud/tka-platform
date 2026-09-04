@@ -865,15 +865,16 @@
   .fuse-workspace.tall-portrait-workspace {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows:
-      max-content minmax(0, 0.85fr) minmax(0, 0.85fr)
-      minmax(0, 1.3fr);
+      max-content minmax(430px, auto) minmax(430px, auto)
+      minmax(520px, 1fr);
     grid-template-areas:
       "header"
       "left"
       "right"
       "preview";
-    align-content: stretch;
-    overflow: hidden;
+    align-content: start;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   @container fuse (min-width: 600px) {
