@@ -59,6 +59,7 @@
     labSweepCharacter,
     resolveLabSequence,
   } from "./lab-catalog";
+  import { isLabGoalId } from "./lab-goals";
   import {
     collectFrameMetrics,
     EMPTY_GRIP_METRIC,
@@ -291,7 +292,9 @@
   class="grip-lab"
   data-sequence-source={labFixture(lab.sequenceId)
     ? "validated-production-fixture"
-    : "library"}
+    : isLabGoalId(lab.sequenceId)
+      ? "core-goal"
+      : "library"}
   data-sequence-id={lab.sequenceId}
   data-sequence-steps={sequence?.steps.length ?? 0}
   data-character-id={lab.character}
