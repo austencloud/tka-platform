@@ -195,8 +195,10 @@ Supports two navigation modes:
     flex-direction: column;
     height: 100%;
     width: 100%;
-    background: var(--background, #000000);
-    color: var(--foreground, #ffffff);
+    /* BackgroundHost owns the application atmosphere. Concept lessons should
+       float above it on theme surfaces instead of replacing it with black. */
+    background: transparent;
+    color: var(--theme-text, var(--foreground, #ffffff));
   }
 
   .header-bar {
