@@ -43,6 +43,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
   import ConfettiBurst from "$lib/shared/delight/components/ConfettiBurst.svelte";
   import AchievementToast from "$lib/shared/delight/components/AchievementToast.svelte";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
+  import { withViewTransition } from "./play/state/view-transition";
 
   type LearnMode = "concepts" | "play" | "tika" | "guide";
 
@@ -246,6 +247,13 @@ Navigation via bottom tabs (mobile-first UX pattern)
     openConcept(concept, "push", conceptPlaceId ?? null);
   }
 
+  function handleConceptContinue(
+    concept: LearnConcept,
+    conceptPlaceId: string | null
+  ) {
+    withViewTransition(() => openConcept(concept, "replace", conceptPlaceId));
+  }
+
   // Handle back from detail view
   function handleBackToPath() {
     selectedConcept = null;
@@ -291,6 +299,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
               <ConceptDetailView
                 concept={selectedConcept}
                 onClose={handleBackToPath}
+                onContinue={handleConceptContinue}
               />
             {/key}
           {:else}
