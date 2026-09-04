@@ -40,9 +40,15 @@ function semanticVariant(flower: Flower): number {
 
 function createState(compact: boolean) {
   const syncState = vi.fn();
+  const axis = buildFlowerAxis();
   const state = createShapeMatrixAppState(
     {
-      loadMatrix: vi.fn(),
+      loadMatrix: vi.fn().mockResolvedValue({
+        axis,
+        left: new Map(),
+        right: new Map(),
+        clubTipDx: 100,
+      }),
       syncState,
     },
     {
@@ -384,6 +390,25 @@ describe("shape matrix app state", () => {
       propRotations: 1,
       handCycles: 3,
     });
+  });
+
+  it("randomizes within the visible Level Matrix without changing its level or turns", async () => {
+    const { state } = createState(false);
+    await state.load();
+    const first = {
+      left: state.rowAxis[0]!,
+      right: state.colAxis[0]!,
+    };
+    state.selectPair(first);
+
+    state.selectRandomPair(() => 0);
+
+    expect(state.selectedPair).not.toEqual(first);
+    expect(state.rowAxis).toHaveLength(4);
+    expect(state.colAxis).toHaveLength(4);
+    expect(state.level).toBe(2);
+    expect(state.leftTurn).toBe(0);
+    expect(state.rightTurn).toBe(0);
   });
 
   it("rejects an invalid two-ratio update without moving either axis", () => {
