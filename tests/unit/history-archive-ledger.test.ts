@@ -161,7 +161,9 @@ describe("four-lane history archive ledger", () => {
     );
     expect(fanAlphabet?.evidenceBasis).toBe("unresolved");
     expect(fanAlphabet?.people).toContain("early documented teacher");
-    expect(fanAlphabet?.summary).toContain("do not establish a sole inventor");
+    expect(fanAlphabet?.summary).toContain(
+      "No reviewed source names a sole inventor"
+    );
   });
 
   it("keeps PoiNotation's repository record separate from adoption claims", () => {
@@ -170,7 +172,7 @@ describe("four-lane history archive ledger", () => {
     );
     expect(poiNotation?.evidenceLabel).toBe("Repository record");
     expect(poiNotation?.evidenceNote).toContain(
-      "does not claim broad adoption"
+      "Adoption and influence are unverified"
     );
   });
 });

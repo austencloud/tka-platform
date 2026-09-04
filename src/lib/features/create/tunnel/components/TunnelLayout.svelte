@@ -89,6 +89,7 @@
       }
     >
   >({});
+  let activePerformerStepIndices = $state<Record<string, number>>({});
   const controller = new TunnelViewController({
     getSequence: () => creator.leadSequence,
     getComposition: () =>
@@ -470,6 +471,7 @@
       <TunnelPerformerRoster
         bind:this={performerRoster}
         displays={performerDisplays}
+        activeStepIndices={activePerformerStepIndices}
         {leftPropType}
         {rightPropType}
         colorMode={controller.colorMode}
@@ -523,6 +525,8 @@
             animationSettingsState={creator.presentation.animationSettings}
             visibilityManager={creator.presentation.visibility}
             stageFit="contain"
+            onActivePerformerStepsChange={(stepIndices) =>
+              (activePerformerStepIndices = { ...stepIndices })}
           />
           {#if !creator.ready}
             <div class="preview-guidance" role="status">

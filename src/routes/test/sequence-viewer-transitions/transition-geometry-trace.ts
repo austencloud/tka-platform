@@ -228,6 +228,7 @@ export interface TransitionGeometrySummary {
   tunnelLateLayerArrivals: number;
   tunnelLayerOpacityStepMaximum: number;
   tunnelGridOpacityStepMaximum: number;
+  tunnelLayerOpacitySpreadMaximum: number;
   tunnelCrossfadeFrames: number;
   tunnelDoubleFadeFrames: number;
   tunnelBlankFrames: number;
@@ -1564,6 +1565,18 @@ export function summarizeTransitionGeometry(
       : 0,
     tunnelGridOpacityStepMaximum: isTunnelTrace
       ? maximumSampleStep(trace.samples, (sample) => sample.tunnelGridOpacity)
+      : 0,
+    tunnelLayerOpacitySpreadMaximum: isTunnelTrace
+      ? Math.round(
+          Math.max(
+            0,
+            ...trace.samples.map(
+              (sample) =>
+                sample.tunnelLayerOpacityMaximum -
+                sample.tunnelLayerOpacityMinimum
+            )
+          ) * 1000
+        ) / 1000
       : 0,
     tunnelCrossfadeFrames: isTunnelTrace
       ? trace.samples.filter(

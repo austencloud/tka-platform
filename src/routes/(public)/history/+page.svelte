@@ -23,8 +23,7 @@
   // The archive documents eight systems, seven of them other people's. A
   // "| The Kinetic Alphabet" suffix here implied it owned all of them.
   const TITLE = "Flow Arts History Archive: Who Wrote It Down";
-  const DESCRIPTION =
-    "A living index of documented traces: notation systems, movement languages, teaching archives, and current flow-arts research, 2004 to 2026. Every claim names its source.";
+  const DESCRIPTION = `${ARCHIVE_ENTRIES.length} sourced records of flow-arts notation systems, movement languages, teaching archives, and research from 2004 to 2026.`;
   const URL = "https://tkaflowarts.com/history";
 
   const jsonLd = {
