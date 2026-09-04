@@ -12,6 +12,7 @@ export const ARCHIVE_ACCENTS: Record<string, string> = {
 	poinotation: "oklch(0.78 0.14 150)",
 	tka: "oklch(0.74 0.15 305)",
 	"fan-alphabet": "oklch(0.8 0.13 335)",
+	"quarter-space-tech": "oklch(0.76 0.16 325)",
 	playpoi: "oklch(0.78 0.14 195)",
 	"flow-arts-institute": "oklch(0.76 0.13 150)",
 	drexfactor: "oklch(0.78 0.13 60)",

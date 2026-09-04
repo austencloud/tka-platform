@@ -1,5 +1,12 @@
 <script module lang="ts">
-	export type InspectorScreen = "overview" | "sources" | "works" | "work" | "videos" | "video";
+	export type InspectorScreen =
+		| "overview"
+		| "sources"
+		| "documents"
+		| "works"
+		| "work"
+		| "videos"
+		| "video";
 </script>
 
 <script lang="ts">
@@ -25,6 +32,10 @@
 
 	const works = $derived(entry.catalogEntry?.subWorks ?? []);
 	const videos = $derived(entry.catalogEntry?.videos ?? []);
+	const documents = $derived(entry.documents ?? []);
+	const documentPageTotal = $derived(
+		documents.reduce((total, document) => total + document.pageCount, 0)
+	);
 	const activity = $derived(activityLabel(entry));
 	const selectedWork = $derived(
 		selectedWorkIndex === null ? undefined : works[selectedWorkIndex]
@@ -104,6 +115,16 @@
 							<span class="door-arrow" aria-hidden="true">→</span>
 						</button>
 
+						{#if documents.length}
+							<button type="button" class="detail-door" onclick={() => showScreen("documents")}>
+								<span>
+									<strong>Complete documents</strong>
+									<small>{plural(documents.length, "PDF")} · {plural(documentPageTotal, "page")}</small>
+								</span>
+								<span class="door-arrow" aria-hidden="true">→</span>
+							</button>
+						{/if}
+
 						{#if works.length}
 							<button type="button" class="detail-door" onclick={() => showScreen("works")}>
 								<span>
@@ -157,6 +178,40 @@
 											<small>{EVIDENCE_BASIS_LABELS[citation.basis]}</small>
 										</span>
 										<span class="source-support">{citation.supports}</span>
+									</span>
+									<span class="external-arrow" aria-hidden="true">↗</span>
+								</a>
+							</li>
+						{/each}
+					</ol>
+				</section>
+			{:else if screen === "documents"}
+				<section class="inspector-screen detail-screen" aria-labelledby={`documents-${entry.id}`}>
+					<header class="detail-screen-heading">
+						<button
+							type="button"
+							class="back-button"
+							aria-label={`Back to ${entry.title} overview`}
+							onclick={() => showScreen("overview", -1)}
+						>←</button>
+						<div>
+							<p>{entry.shortTitle}</p>
+							<h2 id={`documents-${entry.id}`} tabindex="-1" use:trackHeading>Complete documents</h2>
+						</div>
+						<span class="screen-count">{documents.length}</span>
+					</header>
+
+					<ol class="document-list">
+						{#each documents as document, documentIndex (document.id)}
+							<li>
+								<a href={document.pdfHref} target="_blank" rel="noopener">
+									<span class="item-number">{documentIndex + 1}</span>
+									<span class="document-copy">
+										<span class="document-title">
+											<strong>{document.title}</strong>
+											<small>{plural(document.pageCount, "page")}</small>
+										</span>
+										<span class="document-note">{document.note}</span>
 									</span>
 									<span class="external-arrow" aria-hidden="true">↗</span>
 								</a>
@@ -476,6 +531,7 @@
 	}
 
 	.source-list,
+	.document-list,
 	.work-list,
 	.video-list {
 		display: grid;
@@ -486,6 +542,7 @@
 	}
 
 	.source-list li,
+	.document-list li,
 	.work-list li,
 	.video-list li {
 		min-width: 0;
@@ -581,6 +638,7 @@
 	}
 
 	.source-list strong,
+	.document-list strong,
 	.work-list strong,
 	.video-list strong {
 		display: block;
@@ -612,6 +670,32 @@
 		display: grid;
 		min-width: 0;
 		gap: 0.1rem;
+	}
+
+	.document-copy {
+		display: grid;
+		min-width: 0;
+		gap: 0.15rem;
+	}
+
+	.document-title {
+		display: flex;
+		min-width: 0;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.6rem;
+	}
+
+	.document-title small,
+	.document-note {
+		color: var(--theme-text-dim, oklch(0.74 0.02 270));
+		font-size: var(--font-size-compact, 0.75rem);
+		line-height: 1.35;
+	}
+
+	.document-title small {
+		flex: 0 0 auto;
+		white-space: nowrap;
 	}
 
 	.source-title {
@@ -647,7 +731,8 @@
 		color: var(--artifact-accent, var(--theme-accent, oklch(0.76 0.13 270)));
 	}
 
-	.source-list .external-arrow {
+	.source-list .external-arrow,
+	.document-list .external-arrow {
 		grid-column: 3;
 		grid-row: 1;
 	}
@@ -685,6 +770,24 @@
 		.source-list li > a {
 			font-size: 1rem;
 		}
+	}
+
+	.document-list li > a {
+		display: grid;
+		min-height: var(--min-touch-target, 2.75rem);
+		grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 0.55rem;
+		padding: 0.65rem 0.7rem;
+		color: var(--theme-text, oklch(0.95 0.01 270));
+		text-decoration: none;
+		transition: background var(--duration-normal, 200ms) ease;
+	}
+
+	.document-list li > a:hover,
+	.document-list li > a:focus-visible {
+		background: color-mix(in oklch, var(--artifact-accent) 8%, transparent);
+		outline: none;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
