@@ -2,9 +2,17 @@
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { getThirdOrderContext } from "../context/third-order-context";
   import { THIRD_ORDER_VIEWBOX_SIZE } from "../domain/third-order-math";
+  import ThirdOrderFlowerOverlay from "./ThirdOrderFlowerOverlay.svelte";
+  import { thirdOrderFlowerPetals } from "../domain/third-order-flower-path";
 
   let { compact = false }: { compact?: boolean } = $props();
   const state = getThirdOrderContext();
+  const flowerPetals = $derived(
+    thirdOrderFlowerPetals(state.composition.carrierPath)
+  );
+  const flowerLabel = $derived(
+    flowerPetals === 0 ? "circle" : `${flowerPetals}-lobe path`
+  );
 
   function percent(value: number): string {
     return `${(value / THIRD_ORDER_VIEWBOX_SIZE) * 100}%`;
@@ -46,13 +54,20 @@
           hideStepNumbers
           hideProgressBar
           hideHeader
-          hidePathLines={false}
+          hidePathLines={state.composition.carrierPath.mode === "flower"}
           beatIndicators={false}
           disableContextMenu
           suppress2DOverlays
           fillContainer
         />
       </div>
+
+      {#if state.composition.carrierPath.mode === "flower"}
+        <ThirdOrderFlowerOverlay
+          path={state.composition.carrierPath}
+          children={state.frame.children}
+        />
+      {/if}
 
       {#each state.frame.children as child (child.id)}
         {#if child.visible}
@@ -105,7 +120,12 @@
   </div>
 
   <div class="stage-legend" aria-label="Stage legend">
-    <span><i class="carrier-dot"></i> Carrier sequence</span>
+    <span>
+      <i class="carrier-dot"></i>
+      {state.composition.carrierPath.mode === "flower"
+        ? `${state.composition.carrierPath.ratio} · ${flowerLabel}`
+        : "Carrier sequence"}
+    </span>
     <span><i class="blue-dot"></i> Blue child grid</span>
     <span><i class="red-dot"></i> Red child grid</span>
     <span class="stage-count"
@@ -171,12 +191,13 @@
     place-items: center;
     min-height: 0;
     overflow: hidden;
+    container-type: size;
   }
   .stage-canvas {
     position: relative;
-    width: min(100%, 76cqh);
+    width: min(100cqw, 100cqh);
+    height: min(100cqw, 100cqh);
     aspect-ratio: 1;
-    max-height: 100%;
     overflow: hidden;
     border: 1px solid
       color-mix(
@@ -196,10 +217,10 @@
   }
   .carrier-canvas {
     z-index: 1;
-    opacity: 0.42;
+    opacity: 0.34;
   }
   .child-grid {
-    z-index: 2;
+    z-index: 3;
     width: 100%;
     height: 100%;
     transform-origin: center;
@@ -222,7 +243,7 @@
     place-items: center;
     width: var(--min-touch-target, 44px);
     height: var(--min-touch-target, 44px);
-    translate: -50% -50%;
+    translate: -50% calc(-50% - 54px);
     border: 1px solid currentColor;
     border-radius: 50%;
     background: var(--theme-panel-bg);
@@ -302,15 +323,32 @@
       padding: 10px;
     }
     .stage-header p,
-    .stage-legend > span:not(.stage-count) {
+    .stage-legend > span:not(.stage-count),
+    .center-caption {
       display: none;
     }
     .stage-header h1 {
       font-size: 18px;
     }
     .stage-canvas {
-      width: min(100%, 72cqh);
       border-radius: 15px;
+    }
+    .stage-legend {
+      min-height: 20px;
+    }
+  }
+  @container (max-height: 590px) {
+    .stage-shell {
+      gap: 6px;
+      padding: 8px 14px 6px;
+    }
+    .stage-header p,
+    .stage-legend > span:not(.stage-count),
+    .center-caption {
+      display: none;
+    }
+    .stage-header h1 {
+      font-size: 18px;
     }
     .stage-legend {
       min-height: 20px;
