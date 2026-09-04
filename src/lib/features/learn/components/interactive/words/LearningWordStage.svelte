@@ -32,7 +32,7 @@
   lessonVisibility.setMotionPolicySource(sharedVisibility);
   const propElementalType = $derived(derivePropElementalType(sequence));
   let stageWidth = $state(
-    typeof window === "undefined" ? 1080 : window.innerWidth
+    typeof window === "undefined" ? 900 : window.innerWidth
   );
 </script>
 
@@ -134,7 +134,7 @@
   <div class="studio-body">
     <PanelGroup
       direction="horizontal"
-      flattened={stageWidth < 1080}
+      flattened={stageWidth < 900}
       gap={6}
       panels={[
         {
@@ -185,8 +185,9 @@
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
     min-width: 0;
+    min-height: 0;
     overflow: hidden;
-    background: var(--theme-panel-bg);
+    background: transparent;
   }
 
   .studio-body {
@@ -317,14 +318,14 @@
     gap: 0.5rem;
   }
 
-  @container learning-word-stage (max-width: 1079px) {
+  @container learning-word-stage (max-width: 899px) {
     .studio-body {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       grid-template-areas:
         "video animation"
         "card animation";
-      min-height: 54rem;
+      min-height: 48rem;
     }
 
     .video-pane {
