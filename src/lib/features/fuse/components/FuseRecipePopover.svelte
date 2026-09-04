@@ -107,7 +107,11 @@
     overflow: hidden;
     border: 1px solid var(--theme-stroke-strong, var(--theme-stroke));
     border-radius: 18px;
-    background: var(--theme-panel-bg);
+    /* The workspace beneath this editor is animated. Paint the theme wash over
+       an opaque floor so paths never compete with labels or hit targets. */
+    background:
+      linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
+      color-mix(in srgb, var(--theme-text) 8%, black);
     box-shadow: 0 24px 72px var(--theme-shadow);
   }
 

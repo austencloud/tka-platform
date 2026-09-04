@@ -1,5 +1,6 @@
 <script lang="ts">
-  import StyleExpandPanel from "$lib/features/create/generate/components/StyleExpandPanel.svelte";
+  import GenerationStylePanel from "$lib/shared/create/components/GenerationStylePanel.svelte";
+  import { DEFAULT_GENERATION_STYLE } from "$lib/shared/create/domain/generation-style";
   import { startOrientationsForLevel } from "$lib/features/create/generate/domain/level-orientation-policy";
   import {
     GridLocation,
@@ -10,7 +11,6 @@
     type Orientation as OrientationValue,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { getFuseContext } from "../context/fuse-context";
-  import { FUSE_STYLE_BASELINE } from "../domain/fuse-recipe-summaries";
   import type { SoloLoopTraversalDirection } from "../services/solo-loop-generator";
   import FuseRecipeChoiceField from "./FuseRecipeChoiceField.svelte";
 
@@ -111,11 +111,11 @@
     class:modal-detail={presentation === "modal"}
     class:popover-detail={presentation === "popover"}
   >
-    <StyleExpandPanel
+    <GenerationStylePanel
       constraintPreset={fuseState.constraintPreset}
       handPathMode={fuseState.handPathMode}
       motionTypeFilter={fuseState.motionTypeFilter}
-      baseline={FUSE_STYLE_BASELINE}
+      baseline={DEFAULT_GENERATION_STYLE}
       haptic={null}
       onPropsChange={fuseState.setConstraintPreset}
       onHandsChange={fuseState.setHandPathMode}
