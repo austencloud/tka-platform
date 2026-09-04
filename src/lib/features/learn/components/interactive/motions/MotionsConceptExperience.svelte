@@ -297,13 +297,13 @@
     place-items: center;
   }
 
-  @media (max-width: 640px), (max-height: 540px) {
+  @media (max-width: 800px), (max-height: 540px) {
     .comparison-state {
       min-height: 0;
     }
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: 800px) {
     .motions-experience.has-focused-comparison,
     .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
       height: auto;
@@ -315,7 +315,7 @@
     }
   }
 
-  @media (max-height: 540px) and (min-width: 641px) {
+  @media (max-height: 540px) and (min-width: 801px) {
     .motions-experience.has-focused-comparison,
     .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
       height: auto;
