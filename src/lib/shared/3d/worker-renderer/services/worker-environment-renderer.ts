@@ -18,26 +18,7 @@ import {
 } from "../domain/worker-renderer-protocol";
 import { WorkerRendererResponsivenessProbe } from "./worker-renderer-responsiveness-probe";
 import { WorkerRendererSlot } from "./worker-renderer-slot";
-
-const CAMERA_BY_ENVIRONMENT: Readonly<
-  Record<WorkerEnvironmentKey, WorkerCameraSnapshot>
-> = {
-  ocean: {
-    position: [0, 4.5, 19],
-    target: [0, 1.6, -2],
-    fov: 46,
-  },
-  rainbow: {
-    position: [0, 4.2, 17],
-    target: [0, 1.1, -1],
-    fov: 48,
-  },
-  void: {
-    position: [0, 4.2, 17],
-    target: [0, 1.1, -1],
-    fov: 48,
-  },
-};
+import { getWorkerEnvironmentCamera } from "../domain/worker-environment-camera";
 
 export interface WorkerSceneSwitchMeasurement {
   requestId: number;
@@ -117,6 +98,7 @@ export class WorkerEnvironmentRenderer {
   private history: WorkerSceneSwitchMeasurement[] = [];
   private disposed = false;
   private performers: readonly WorkerPerformerSnapshot[] = [];
+  private camera: WorkerCameraSnapshot | null = null;
 
   constructor(options: WorkerEnvironmentRendererOptions) {
     this.container = options.container;
@@ -186,6 +168,7 @@ export class WorkerEnvironmentRenderer {
   }
 
   setCamera(camera: WorkerCameraSnapshot): void {
+    this.camera = camera;
     for (const slot of this.slots.values()) {
       this.post(slot, {
         type: "camera",
@@ -227,7 +210,7 @@ export class WorkerEnvironmentRenderer {
         container: this.container,
         state,
         viewport: this.viewport,
-        camera: CAMERA_BY_ENVIRONMENT[state.environment],
+        camera: this.camera ?? getWorkerEnvironmentCamera(state.environment),
         performers: this.performers,
         createWorker: this.createWorker,
         onMessage: (source, message) =>
