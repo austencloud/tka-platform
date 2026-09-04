@@ -122,6 +122,11 @@ export interface TransitionGeometrySample {
   scenePreparationProgress: number | null;
   scenePreparationLabel: string | null;
   tunnelOpacity: number;
+  tunnelLayersReady: boolean;
+  tunnelLayerCount: number;
+  tunnelLayerOpacityMinimum: number;
+  tunnelLayerOpacityMaximum: number;
+  tunnelGridOpacity: number;
   tunnelPresented: boolean;
   tunnelCanvasReady: boolean;
   animatorIdentity: number;
@@ -219,6 +224,10 @@ export interface TransitionGeometrySummary {
   motionStageSize: TransitionValueRange | null;
   motionInspectorSize: TransitionValueRange | null;
   tunnelUnreadyFrames: number;
+  tunnelUnpreparedLayerFrames: number;
+  tunnelLateLayerArrivals: number;
+  tunnelLayerOpacityStepMaximum: number;
+  tunnelGridOpacityStepMaximum: number;
   tunnelCrossfadeFrames: number;
   tunnelDoubleFadeFrames: number;
   tunnelBlankFrames: number;
@@ -759,6 +768,36 @@ function lateTunnelBackingChanges(samples: TransitionGeometrySample[]): number {
   return changes;
 }
 
+function maximumSampleStep(
+  samples: TransitionGeometrySample[],
+  value: (sample: TransitionGeometrySample) => number
+): number {
+  let maximum = 0;
+  for (let index = 1; index < samples.length; index += 1) {
+    maximum = Math.max(
+      maximum,
+      Math.abs(value(samples[index]) - value(samples[index - 1]))
+    );
+  }
+  return Math.round(maximum * 1000) / 1000;
+}
+
+function lateTunnelLayerArrivals(samples: TransitionGeometrySample[]): number {
+  let arrivals = 0;
+  for (let index = 1; index < samples.length; index += 1) {
+    const previous = samples[index - 1];
+    const current = samples[index];
+    if (
+      !previous.tunnelLayersReady &&
+      current.tunnelLayersReady &&
+      current.tunnelLayerOpacityMaximum > 0.05
+    ) {
+      arrivals += 1;
+    }
+  }
+  return arrivals;
+}
+
 function uniquePerformanceSurfacePath(
   samples: TransitionGeometrySample[]
 ): string[] {
@@ -1101,7 +1140,9 @@ function summarizeDockCollapse(
   for (let index = 1; index < held.length; index += 1) {
     // Either direction counts. A round trip opens the dock and closes it again,
     // and a snap on the way out is the same defect as a snap on the way in.
-    const delta = Math.abs(held[index - 1].inspectorSize - held[index].inspectorSize);
+    const delta = Math.abs(
+      held[index - 1].inspectorSize - held[index].inspectorSize
+    );
     if (delta > stepPx) stepPx = delta;
     if (delta > 0.5) {
       if (firstIndex < 0) firstIndex = index - 1;
@@ -1112,7 +1153,9 @@ function summarizeDockCollapse(
 
   // The dock's endpoints are equal after a round trip, so the distance that
   // matters is its full excursion rather than the difference between the ends.
-  const moving = held.slice(firstIndex, lastIndex + 1).map((s) => s.inspectorSize);
+  const moving = held
+    .slice(firstIndex, lastIndex + 1)
+    .map((s) => s.inspectorSize);
   return {
     stepPx: Math.round(stepPx * 10) / 10,
     travelPx: Math.round((Math.max(...moving) - Math.min(...moving)) * 10) / 10,
@@ -1150,7 +1193,8 @@ function summarizeCardArrival(
   let settledIndex = 0;
   for (let index = 1; index < measured.length; index += 1) {
     const delta = Math.abs(
-      measured[index].cardContentCenterY - measured[index - 1].cardContentCenterY
+      measured[index].cardContentCenterY -
+        measured[index - 1].cardContentCenterY
     );
     if (delta > stepPx) stepPx = delta;
     if (delta > 0.5) settledIndex = index;
@@ -1164,9 +1208,9 @@ function summarizeCardArrival(
       Math.round(
         Math.abs(last.cardContentCenterY - first.cardContentCenterY) * 10
       ) / 10,
-    offstagePx: Math.round(
-      Math.max(0, first.cardContentCenterY - columnBottom) * 10
-    ) / 10,
+    offstagePx:
+      Math.round(Math.max(0, first.cardContentCenterY - columnBottom) * 10) /
+      10,
     frames: settledIndex,
     ms: Math.round((settled.time - first.time) * 10) / 10,
   };
@@ -1503,6 +1547,23 @@ export function summarizeTransitionGeometry(
       ? trace.samples.filter(
           (sample) => sample.tunnelOpacity >= 0.05 && !sample.tunnelCanvasReady
         ).length
+      : 0,
+    tunnelUnpreparedLayerFrames: isTunnelTrace
+      ? trace.samples.filter(
+          (sample) => sample.tunnelOpacity >= 0.05 && !sample.tunnelLayersReady
+        ).length
+      : 0,
+    tunnelLateLayerArrivals: isTunnelTrace
+      ? lateTunnelLayerArrivals(trace.samples)
+      : 0,
+    tunnelLayerOpacityStepMaximum: isTunnelTrace
+      ? maximumSampleStep(
+          trace.samples,
+          (sample) => sample.tunnelLayerOpacityMaximum
+        )
+      : 0,
+    tunnelGridOpacityStepMaximum: isTunnelTrace
+      ? maximumSampleStep(trace.samples, (sample) => sample.tunnelGridOpacity)
       : 0,
     tunnelCrossfadeFrames: isTunnelTrace
       ? trace.samples.filter(
