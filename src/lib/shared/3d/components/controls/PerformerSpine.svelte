@@ -7,10 +7,7 @@
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
-  import {
-    flipDuration,
-    growFade,
-  } from "$lib/shared/transitions/motion";
+  import { flipDuration, growFade } from "$lib/shared/transitions/motion";
 
   interface Props {
     onSettingChange?: ViewerControlSink;
@@ -26,6 +23,7 @@
   const viewer = getViewer3DContext();
   const performers = $derived(viewer.performerManager.performers);
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
+  const selectedIndices = $derived(new Set(viewer.selectedPerformerIndices));
   const canAdd = $derived(performers.length < STAGE.MAX_VIEWER_PERFORMERS);
 
   function scopeValue(index: number | null): string {
@@ -46,10 +44,16 @@
     );
   }
 
-  function selectPerformer(i: number): void {
+  function selectPerformer(event: MouseEvent, i: number): void {
     const previous = scopeValue(selectedIndex);
-    viewer.selectPerformerScope(i);
-    onScopeSelect?.(i);
+    const additive =
+      viewer.performerSelectionMode ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey;
+    if (additive) viewer.togglePerformerSelection(i);
+    else viewer.replacePerformerSelection(i);
+    onScopeSelect?.(viewer.primaryPerformerIndex);
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_performer",
@@ -57,6 +61,28 @@
       previous,
       scopeValue(i)
     );
+  }
+
+  function clearSelection(): void {
+    const previous = scopeValue(selectedIndex);
+    viewer.clearPerformerSelection();
+    onScopeSelect?.(null);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "scope",
+      previous,
+      "none"
+    );
+  }
+
+  function toggleMultiSelection(): void {
+    if (viewer.performerSelectionMode) {
+      viewer.setPerformerSelectionMode(false);
+      return;
+    }
+    if (viewer.isAllPerformersSelected) viewer.clearPerformerSelection();
+    viewer.setPerformerSelectionMode(true);
   }
 
   function addPerformer(): void {
@@ -98,6 +124,19 @@
 
     <div class="separator" aria-hidden="true"></div>
 
+    <button
+      class="spine-chip multi-chip"
+      class:active={viewer.performerSelectionMode}
+      aria-pressed={viewer.performerSelectionMode}
+      aria-label={viewer.performerSelectionMode
+        ? "Stop selecting multiple performers"
+        : "Select multiple performers"}
+      title="Select multiple"
+      onclick={toggleMultiSelection}
+    >
+      <i class="fas fa-object-group" aria-hidden="true"></i>
+    </button>
+
     <div class="selection-track">
       <button
         class="spine-chip all-chip"
@@ -109,15 +148,25 @@
         <i class="fas fa-users"></i>
       </button>
 
+      <button
+        class="spine-chip none-chip"
+        aria-pressed={viewer.selectedPerformerIndices.length === 0}
+        aria-label="No performers"
+        title="Clear performer selection"
+        onclick={clearSelection}
+      >
+        <i class="fas fa-ban" aria-hidden="true"></i>
+      </button>
+
       {#each performers as performer, i (performer.id)}
         {@const color = getPerformerColor(i)}
         <button
           class="spine-chip performer-chip"
-          aria-pressed={selectedIndex === i}
+          aria-pressed={selectedIndices.has(i)}
           aria-label="Performer {i + 1}"
           title="Performer {i + 1}"
           style:--performer-color={color}
-          onclick={() => selectPerformer(i)}
+          onclick={(event) => selectPerformer(event, i)}
           animate:flip={{ duration: flipDuration() }}
           transition:growFade={{ axis: "x" }}
         >
@@ -199,6 +248,13 @@
     color: color-mix(in srgb, var(--theme-accent) 60%, var(--theme-text));
     box-shadow: 0 4px 20px
       color-mix(in srgb, var(--theme-accent) 25%, transparent);
+  }
+
+  .none-chip[aria-pressed="true"],
+  .multi-chip.active {
+    background: color-mix(in srgb, var(--theme-accent) 16%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 55%, transparent);
+    color: var(--theme-accent-text);
   }
 
   /* Performer chip */

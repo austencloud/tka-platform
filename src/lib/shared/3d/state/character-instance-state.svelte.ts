@@ -461,7 +461,10 @@ export function createCharacterInstanceState(
    * geometry the renderer will present when the playhead gets there.
    */
   function propStatesAtScoreTime(scoreTime: number) {
-    const motionSteps = Math.max(0, stepConfigs.length - motionStepOffsetValue());
+    const motionSteps = Math.max(
+      0,
+      stepConfigs.length - motionStepOffsetValue()
+    );
     if (motionSteps === 0) return { left: null, right: null };
     const wrapped = playback.loop
       ? ((scoreTime % motionSteps) + motionSteps) % motionSteps
@@ -962,6 +965,9 @@ export function createCharacterInstanceState(
     return structuredClone({
       index: -1, // filled by caller if needed
       selectedPerformerIndex: null,
+      characterId,
+      displayName,
+      loadedSequence: $state.snapshot(loadedSequence),
       settings: {
         prop: _settings.prop,
         effortId: _settings.effortId,
@@ -980,6 +986,8 @@ export function createCharacterInstanceState(
   }
 
   function restorePerformerSnapshot(snap: PerformerDomainSnapshot): void {
+    characterId = snap.characterId;
+    displayName = snap.displayName;
     _settings = {
       prop: snap.settings.prop,
       effortId: snap.settings.effortId,
@@ -991,6 +999,8 @@ export function createCharacterInstanceState(
     customLeftPlane = snap.planes.customLeftPlane;
     customRightPlane = snap.planes.customRightPlane;
     planeMode = snap.planes.planeMode;
+    if (snap.loadedSequence) loadSequence(snap.loadedSequence);
+    else clearSequence();
     beatPlaneOverrides = new Map(snap.planes.beatPlaneOverrides);
     reconvertWithConfig(getEffectiveModeConfig(effectivePlaneMode));
   }
@@ -1375,6 +1385,8 @@ export function createCharacterInstanceState(
       return displayName;
     },
     setDisplayName,
+    captureEditingSnapshot: capturePerformerSnapshot,
+    restoreEditingSnapshot: restorePerformerSnapshot,
 
     // Sequence state
     get hasSequence() {
