@@ -52,7 +52,7 @@ describe("four-lane history archive ledger", () => {
 
       for (const citation of entry.citations) {
         expect(citation.href, `${entry.id} citation URL`).toMatch(
-          /^https:\/\/|^\//
+          /^https:\/\/|^\/|^http:\/\/www\.semlyen\.net\/cosmosjugglers\/lib\//
         );
         expect(citation.supports, `${entry.id} source claim`).not.toBe("");
         expect(validBases, `${entry.id} citation basis`).toContain(
@@ -147,18 +147,35 @@ describe("four-lane history archive ledger", () => {
   });
 
   it("uses proportional calendar spacing instead of equal carousel spacing", () => {
-    expect(historicalYearPosition(1998)).toBe(0);
+    expect(historicalYearPosition(1994)).toBe(0);
     expect(historicalYearPosition(2026)).toBe(100);
-    expect(historicalYearPosition(2012)).toBe(50);
-    expect(ARCHIVE_YEAR_TICKS).toEqual([1998, 2005, 2012, 2019, 2026]);
+    expect(historicalYearPosition(2010)).toBe(50);
+    expect(ARCHIVE_YEAR_TICKS).toEqual([1994, 2002, 2010, 2018, 2026]);
   });
 
-  it("opens with Home of Poi as a sourced teaching archive", () => {
+  it("links Jillings' 1994 book to its author without attaching a hosted copy", () => {
+    const book = archiveEntry("modern-club-swinging");
+
+    expect(ARCHIVE_START_YEAR).toBe(1994);
+    expect(ARCHIVE_ENTRIES[0]?.id).toBe(book.id);
+    expect(book.lane).toBe("teaching");
+    expect(book.firstDocumentedYear).toBe(1994);
+    expect(book.documents).toBeUndefined();
+    expect(book.catalogEntry).toBeUndefined();
+    expect(book.activity).toBeUndefined();
+    expect(entrySpanEndYear(book)).toBe(1994);
+    expect(book.citations[0]?.href).toBe(
+      "http://www.semlyen.net/cosmosjugglers/lib/contents.htm"
+    );
+    for (const citation of book.citations) {
+      expect(new URL(citation.href).origin).toBe("http://www.semlyen.net");
+    }
+  });
+
+  it("keeps Home of Poi as a sourced teaching archive", () => {
     const homeOfPoi = archiveEntry("home-of-poi");
 
-    expect(ARCHIVE_START_YEAR).toBe(1998);
     expect(ARCHIVE_END_YEAR).toBe(2026);
-    expect(ARCHIVE_ENTRIES[0]?.id).toBe("home-of-poi");
     expect(homeOfPoi).toMatchObject({
       lane: "teaching",
       firstDocumentedYear: 1998,
@@ -221,8 +238,9 @@ describe("four-lane history archive ledger", () => {
     // connectors reaching 2026. If track assignment ignored the span end, a
     // later chip would sit on top of an earlier record's connector.
     const placements = placeArchiveEntries(entriesForLane("teaching"));
-    const tracks = placements.map((placement) => placement.track);
-    expect(new Set(tracks).size).toBe(placements.length);
+    const observedProjects = placements.filter(({ entry }) => entry.activity);
+    const tracks = observedProjects.map((placement) => placement.track);
+    expect(new Set(tracks).size).toBe(observedProjects.length);
   });
 
   it("only claims activity when a dated endpoint supports it", () => {

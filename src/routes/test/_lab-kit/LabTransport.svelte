@@ -14,25 +14,54 @@
   arrows renders the same string the `phase=` param carries. Nothing here reads
   or writes pose, grip or playback rate — the lab is being measured, not tuned.
 
-  Above the scrub it draws what the committed continuity sweep found for the
-  loaded sequence, so the moments worth looking at are already on screen and
-  one press away. The markers annotate the scrub; they never stand in for it.
+  Above the scrub it draws whatever moments the host lab says are worth looking
+  at, so they are already on screen and one press away. What a marker MEANS is
+  the lab's business — `staff-grip` fills them from the committed prop-continuity
+  sweep — so they arrive as data rather than being looked up here. The markers
+  annotate the scrub; they never stand in for it. A lab with nothing to annotate
+  passes none, and the lane holds its height so the cameras above never move.
 -->
 <script lang="ts">
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
 
-  import { labContinuityMarkers, labContinuityStatus } from "./lab-continuity";
-  import { LAB_FRAME_STEP, type StaffLabState } from "./lab-state.svelte";
+  import {
+    LAB_FRAME_STEP,
+    labScrubMax,
+    type LabPhaseTransport,
+    type ScrubMarker,
+  } from "./phase-transport";
 
   interface Props {
-    lab: StaffLabState;
+    lab: LabPhaseTransport;
     /** Steps in the loaded sequence; the scrub's span and the readout's total. */
     stepCount: number;
     /** No sequence yet: the bar stays in place, inert, so nothing moves later. */
     disabled?: boolean;
+    /**
+     * Moments the host wants on the track. Positions are fractions of
+     * `labScrubMax(stepCount)`, which the host computes with the same helper
+     * this component does, so a marker lands on the pixel the range input puts
+     * that phase at rather than a fraction to its left.
+     */
+    markers?: readonly ScrubMarker[];
+    /**
+     * What the lane says when it is drawing nothing. Null holds the lane empty
+     * and silent — the honest state while a sequence is still resolving, when
+     * everything the lane could say belongs to the sequence being replaced.
+     */
+    markerNote?: string | null;
+    /** What the marker lane is a group of, for a screen reader. */
+    markerLaneLabel?: string;
   }
 
-  let { lab, stepCount, disabled = false }: Props = $props();
+  let {
+    lab,
+    stepCount,
+    disabled = false,
+    markers = [],
+    markerNote = null,
+    markerLaneLabel = "Marked moments in this sequence",
+  }: Props = $props();
 
   /** How long the copy confirmation holds, matching the rail's Copy link. */
   const COPIED_MS = 1600;
@@ -69,30 +98,10 @@
    * placed against this rather than `stepCount`, so a marker lands on the pixel
    * the range input puts that phase at instead of a fraction to its left.
    */
-  const scrubMax = $derived(
-    Math.max(stepCount - LAB_FRAME_STEP, LAB_FRAME_STEP)
-  );
-
-  /** What the committed sweep found for whatever is loaded. Never re-measured. */
-  const continuity = $derived(labContinuityStatus(lab.sequenceId));
-  const markers = $derived(labContinuityMarkers(continuity, scrubMax));
+  const scrubMax = $derived(labScrubMax(stepCount));
 
   /**
-   * Whether the lane may draw yet.
-   *
-   * `lab.sequenceId` changes the instant a goal is pressed; `stepCount` only
-   * catches up when that sequence finishes loading. In between, a four-step
-   * sequence's markers would be laid out against the eight-step track still on
-   * screen and sit at visibly wrong positions for a moment. The sweep records
-   * how many steps it walked, so a disagreement is exactly that window: hold
-   * the lane empty through it rather than publish a placement that is wrong.
-   */
-  const laneMatchesSequence = $derived(
-    continuity.state === "unswept" || continuity.sweptStepCount === stepCount
-  );
-
-  /**
-   * Land on a discontinuity and stop there. Same contract as a frame step: a
+   * Land on a marked moment and stop there. Same contract as a frame step: a
    * running clock would overwrite the landing on its very next tick.
    */
   function seek(phase: number, label: string): void {
@@ -196,12 +205,12 @@
     <div
       class="marker-lane"
       role="group"
-      aria-label="Prop discontinuities in this sequence"
+      aria-label={markerLaneLabel}
     >
       <!-- Blue over red rather than side by side: the two spans overlap to
            within a couple of thousandths of a step, so stacking is what keeps
            the one from hiding the other. -->
-      {#snippet mark(marker: (typeof markers)[number])}
+      {#snippet mark(marker: ScrubMarker)}
         <span class="marker-bars" aria-hidden="true">
           <span class="marker-bar is-blue" class:is-absent={!marker.blue}
           ></span>
@@ -210,26 +219,20 @@
         <span class="marker-stem" aria-hidden="true"></span>
       {/snippet}
 
-      {#if !laneMatchesSequence}
-        <!-- A sequence is still loading. The lane holds its height and says
-             nothing, because everything it could say right now belongs to the
-             sequence being replaced. -->
-      {:else if markers.length === 0}
-        <p class="marker-empty">
-          {continuity.state === "unswept"
-            ? "Not in the continuity sweep"
-            : "No discontinuities in the sweep"}
-        </p>
+      {#if markers.length === 0}
+        {#if markerNote}
+          <p class="marker-empty">{markerNote}</p>
+        {/if}
       {:else}
         {#each markers as marker (marker.key)}
           <button
             class="marker"
             type="button"
             style={`left: ${(marker.start + marker.width / 2) * 100}%;`}
-            title={`${marker.labelRange} · up to ${Math.round(marker.peakMagnitudeCm)} cm`}
+            title={marker.title}
             aria-label={marker.ariaLabel}
             {disabled}
-            onclick={() => seek(marker.seekPhase, marker.labelRange)}
+            onclick={() => seek(marker.seekPhase, marker.label)}
           >
             {@render mark(marker)}
           </button>

@@ -3,15 +3,14 @@
 
   Unified animation export panel with pill-nav section switcher.
 
-  - Mobile (layout="bottom"): pill bar + download button at bottom.
-    Tapping a pill opens a RailBentoSheet with that section's body.
-  - Desktop (layout="sidebar"): pill bar at top, active section body
-    in scrollable area, download button pinned in footer.
+  - Mobile (layout="bottom"): compact control dock + export action.
+  - Desktop (layout="sidebar"): shared Animator inspector shell with a
+    scrollable section body and export action pinned in its footer.
 
-  Sections: Effects → Effort → Playback → Display → Export.
+  Sections: Effects → Props → Motion → Display → Export.
 -->
 <script lang="ts">
-  import { fade, fly } from "svelte/transition";
+  import { fade } from "svelte/transition";
   import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import {
@@ -44,7 +43,8 @@
     type FanAppearance,
   } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import type { PropChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
-  import IconRailNav from "../pill-nav/IconRailNav.svelte";
+  import AnimatorInspectorShell from "./AnimatorInspectorShell.svelte";
+  import AnimatorInspectorFooter from "./AnimatorInspectorFooter.svelte";
   import { RAIL_CATEGORY_ACCENTS } from "../pill-nav/rail-category-accents";
   import ControlDock, {
     type ControlDockTab,
@@ -74,6 +74,7 @@
     type ViewerControlSink,
     type ViewerControlValue,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import { getOptionalViewerAnimatorInspectorContext } from "$lib/shared/sequence-viewer/context/viewer-animator-inspector-context";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -195,6 +196,8 @@
     regionLabel = "Animation controls",
   }: Props = $props();
 
+  const viewerAnimatorInspector = getOptionalViewerAnimatorInspectorContext();
+
   const exportButtonLabel = $derived(
     renderMode === "3d" ? "Record Scene" : "Export Animation"
   );
@@ -238,6 +241,7 @@
         panelDirection = nextIdx > prevIdx ? 1 : -1;
       }
       activePill = id;
+      viewerAnimatorInspector?.select(id);
     }
     reportViewerControlChange(
       onSettingChange,
@@ -589,7 +593,12 @@
   // section. That frame put two copies of Visibility's label id in the document
   // during the crossfade, and left the mobile dock holding a tray with no tab.
   const availableIds = $derived(pillSpecs.map((p) => p.id));
-  const resolvedPill = $derived(resolveActivePill(activePill, availableIds));
+  const requestedPill = $derived(
+    layout === "sidebar" && viewerAnimatorInspector
+      ? (viewerAnimatorInspector.resolve(availableIds) as PillId | null)
+      : activePill
+  );
+  const resolvedPill = $derived(resolveActivePill(requestedPill, availableIds));
 
   // The effect reads pillSpecs (through resolvedPill), which recomputes on
   // every BPM tick and effect change, so an unguarded save wrote the same
@@ -1048,157 +1057,46 @@
     {/if}
   </div>
 {:else}
-  <!-- ============================================================
-       DESKTOP SIDEBAR: pill bar at top, active body scrollable,
-       download button pinned in footer.
-       ============================================================ -->
-  <div
-    class="export-panel sidebar"
-    transition:fade={{ duration: reduceMotion ? 0 : 200 }}
-    role="region"
-    aria-label="Animation export settings"
+  <AnimatorInspectorShell
+    pills={pillSpecs}
+    activeId={resolvedPill}
+    activeLabel={activePillLabel}
+    onSelect={handlePillSelect}
+    direction={panelDirection}
+    {reduceMotion}
+    fillBody={resolvedPill === "display"}
+    regionLabel="Animation export settings"
+    onNavMount={(element) => {
+      pillNavEl = element;
+    }}
+    onScrollMount={(element) => {
+      panelScrollEl = element;
+    }}
   >
-    <div class="sidebar-rail-layout">
-      <IconRailNav
-        pills={pillSpecs}
-        activeId={resolvedPill}
-        onSelect={handlePillSelect}
-        onNavMount={(el) => {
-          pillNavEl = el;
-        }}
-      />
-
-      <div class="sidebar-main">
-        <div class="panel-scroll" bind:this={panelScrollEl}>
-          <div class="panel-content-center">
-            {#if resolvedPill}
-              {#key resolvedPill}
-                <div
-                  class="panel-transition"
-                  in:fly={{
-                    y: reduceMotion ? 0 : panelDirection * 24,
-                    duration: reduceMotion ? 0 : 200,
-                    delay: 60,
-                  }}
-                  out:fly={{
-                    y: reduceMotion ? 0 : panelDirection * -12,
-                    duration: reduceMotion ? 0 : 120,
-                  }}
-                >
-                  <div class="panel-center-inner">
-                    <h2 class="panel-title">{activePillLabel}</h2>
-                    {@render pillBody()}
-                  </div>
-                </div>
-              {/key}
-            {/if}
-          </div>
-        </div>
-
-        {#if exportEnabled}
-          <div class="panel-footer">
-            {#if isExporting && showInlineExportProgress}
-              <div class="export-progress-row" role="status" aria-live="polite">
-                <div class="progress-info">
-                  <span class="progress-stage">
-                    {#if !exportProgress}Starting...{:else}Exporting{/if}
-                  </span>
-                  <span class="progress-pct"
-                    >{exportProgress
-                      ? Math.round(exportProgress.progress * 100)
-                      : 0}%</span
-                  >
-                </div>
-                <div
-                  class="progress-bar"
-                  role="progressbar"
-                  aria-valuenow={exportProgress
-                    ? Math.round(exportProgress.progress * 100)
-                    : 0}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label="Export progress"
-                >
-                  <div
-                    class="progress-fill"
-                    style="width: {exportProgress
-                      ? exportProgress.progress * 100
-                      : 0}%"
-                  ></div>
-                </div>
-                {#if onCancel}
-                  <button
-                    type="button"
-                    class="cancel-btn"
-                    onclick={onCancel}
-                    aria-label="Cancel export"
-                  >
-                    <i class="fas fa-times" aria-hidden="true"></i>
-                    Cancel
-                  </button>
-                {/if}
-              </div>
-            {:else}
-              <div class="export-row">
-                <button
-                  type="button"
-                  class="export-btn"
-                  onclick={onExport}
-                  disabled={exportDisabled}
-                  aria-label={exportButtonLabel}
-                >
-                  {#if !canvasReady}
-                    <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                    Preparing export...
-                  {:else}
-                    <i
-                      class="fas {renderMode === '3d'
-                        ? 'fa-circle'
-                        : 'fa-download'}"
-                      aria-hidden="true"
-                    ></i>
-                    {exportButtonLabel}
-                  {/if}
-                </button>
-                {#if timeEstimateLabel && !exportDisabled}
-                  <span class="time-estimate">{timeEstimateLabel}</span>
-                {/if}
-              </div>
-            {/if}
-          </div>
-        {/if}
-      </div>
-    </div>
-  </div>
+    {#snippet body()}{@render pillBody()}{/snippet}
+    {#snippet footer()}
+      {#if exportEnabled && onExport}
+        <AnimatorInspectorFooter
+          onAction={onExport}
+          label={exportButtonLabel}
+          icon={renderMode === "3d" ? "fa-circle" : "fa-download"}
+          busy={isExporting}
+          disabled={exportDisabled}
+          ready={canvasReady}
+          meta={timeEstimateLabel}
+          showProgress={showInlineExportProgress}
+          progress={exportProgress}
+          {onCancel}
+        />
+      {/if}
+    {/snippet}
+  </AnimatorInspectorShell>
 {/if}
 
 <style>
-  /* ============================================================
-   * PILL BAR CONTAINER (desktop top area)
-   * ============================================================ */
-
-  .sidebar-rail-layout {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-  }
-
-  .sidebar-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-  }
-
   .section-pad {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 4px 16px 16px;
-  }
-
-  .sidebar .section-pad {
     gap: 16px;
     padding: 8px 16px 20px;
   }
@@ -1531,101 +1429,12 @@
     padding: 10px 16px 12px;
   }
 
-  .export-panel {
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    display: flex;
-    flex-direction: column;
-    z-index: 10;
-  }
-
-  .export-panel.sidebar {
-    position: relative;
-    width: 100%;
-    max-width: 100%;
-    height: 100%;
-    container: animation-sidebar / inline-size;
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    overflow: hidden;
-  }
-
-  .panel-scroll {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .panel-content-center {
-    flex: 1;
-    position: relative;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .panel-transition {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
-
-  /* Vertically center the section content within the tall panel.
-     auto block margins collapse to 0 when content overflows, so it
-     still scrolls from the top — no clipping on long sections. */
-  .panel-center-inner {
-    margin: auto 0;
-    width: 100%;
-    max-width: 560px;
-    align-self: center;
-  }
-
-  /* Display is eight pictures, not a paragraph: it takes the panel's whole
-     height instead of sitting centred with a third of a 1050px column empty
-     underneath it. That is also what gives the grid a box with a real shape to
-     measure, so a tall narrow rail can choose two columns of big pictures over
-     four columns of small ones. Every other page stays centred — they are
-     prose-height and read better that way. */
-  /* `1 1 0` rather than `1 0 auto`: the box has to be the panel's height and
-     nothing else. A content-based basis makes the height a function of the
-     tiles that are sized from it, and the two chase each other upward until
-     the picture hits its ceiling. */
-  .panel-center-inner:has(.display-rows) {
-    margin: 0;
+  .display-rows,
+  .display-rows .rt-section {
     flex: 1 1 0;
     min-height: 0;
     display: flex;
     flex-direction: column;
-  }
-
-  .panel-center-inner:has(.display-rows) .display-rows,
-  .panel-center-inner:has(.display-rows) .display-rows .rt-section {
-    flex: 1 1 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Tracks the viewer's settings column, which widens at the same seams. A cap
-     left at 560px would keep the panel a narrow strip in a wide column and
-     strand the extra room as dead rail. */
-  @media (min-width: 1680px) {
-    .panel-center-inner {
-      max-width: 800px;
-    }
-  }
-
-  @media (min-width: 2600px) {
-    .panel-center-inner {
-      max-width: 1000px;
-    }
   }
 
   .section-hint {
@@ -1635,85 +1444,6 @@
     line-height: 1.4;
     margin: 0;
     padding: 0 8px;
-  }
-
-  .panel-title {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    text-align: center;
-    color: rgba(255, 255, 255, 0.7);
-    margin: 0;
-    padding: 12px 16px 4px;
-  }
-
-  .panel-scroll::-webkit-scrollbar {
-    width: 5px;
-  }
-  .panel-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .panel-scroll::-webkit-scrollbar-thumb {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.12));
-    border-radius: 3px;
-  }
-
-  /* ============================================================
-   * Shared: duration lines, footer, export button, progress
-   * ============================================================ */
-
-  .panel-footer {
-    padding: 12px 16px 16px;
-    flex-shrink: 0;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-  }
-
-  .export-row {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .time-estimate {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
-  }
-
-  .export-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    min-height: var(--min-touch-target);
-    padding: 12px 24px;
-    border: none;
-    border-radius: 12px;
-    background: var(--theme-accent, #6366f1);
-    color: white;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .export-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
-    box-shadow: 0 4px 12px
-      color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
-  }
-
-  .export-btn:active:not(:disabled) {
-    transform: scale(0.98);
-    transition-duration: 50ms;
-  }
-
-  .export-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
   }
 
   .export-progress-row {
@@ -1785,15 +1515,10 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .export-btn,
     .cancel-btn,
     .progress-fill {
       transition: none !important;
       animation: none !important;
-    }
-
-    .export-btn:active {
-      transform: none !important;
     }
   }
 </style>

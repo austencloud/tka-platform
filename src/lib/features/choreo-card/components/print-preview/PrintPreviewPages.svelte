@@ -61,6 +61,10 @@
     /** Per-card short URLs, index-aligned with sequences. When supplied, card
      *  rendering stays read-only and skips Firestore short-code resolution. */
     qrUrls?: (string | undefined)[];
+    /** Hands-only reference-card rendering omits TKA, difficulty, LOOP, and QR. */
+    cardProfile?: "sequence" | "hand-path";
+    /** Plain card titles, index-aligned with sequences. */
+    cardTitles?: string[];
     /** Use deck layout policy instead of user composition settings */
     deckMode?: boolean;
     /** Bump to force a full re-render of all cards */
@@ -136,6 +140,8 @@
     tndElements,
     footers,
     qrUrls,
+    cardProfile = "sequence",
+    cardTitles,
     deckMode = false,
     rerenderKey = 0,
     copies = 1,
@@ -395,8 +401,9 @@
     // where the tall slot isn't filled, and crop marks that don't meet the card.
     const size = CARD_SIZES[cardSize];
     const bleedPx = 36;
+    const isHandPath = cardProfile === "hand-path";
     const physicalLayout =
-      deckMode && sequence
+      deckMode && sequence && !isHandPath
         ? calculatePhysicalCardLayout({
             sequence,
             canvasWidth: size.canvasWidth,
@@ -418,15 +425,19 @@
       canvasWidth: size.canvasWidth,
       canvasHeight: size.canvasHeight,
       includeStartPosition,
-      startPositionLayout: physicalLayout
-        ? physicalLayout.startPositionLayout
-        : stepCount != null
-          ? imageComposition.getStartPositionLayoutForStepCount(stepCount)
-          : imageComposition.startPositionLayout,
-      ...(physicalLayout?.totalGridColumns !== undefined && {
-        totalGridColumns: physicalLayout.totalGridColumns,
-      }),
-      showMandala: true,
+      startPositionLayout: isHandPath
+        ? "row"
+        : physicalLayout
+          ? physicalLayout.startPositionLayout
+          : stepCount != null
+            ? imageComposition.getStartPositionLayoutForStepCount(stepCount)
+            : imageComposition.startPositionLayout,
+      ...(isHandPath
+        ? { totalGridColumns: 2 }
+        : physicalLayout?.totalGridColumns !== undefined
+          ? { totalGridColumns: physicalLayout.totalGridColumns }
+          : {}),
+      showMandala: !isHandPath,
       theme,
       tndElement: element,
       leftPropType: resolvedLeftProp,
@@ -439,6 +450,9 @@
       deckId,
       deckName,
       qrUrl: cardIndex != null ? qrUrls?.[cardIndex] : undefined,
+      showQRCode: isHandPath ? false : undefined,
+      cardProfile,
+      customName: cardIndex != null ? cardTitles?.[cardIndex] : undefined,
     };
   }
 
@@ -464,6 +478,8 @@
       footer?.center ?? "",
       footer?.right ?? "",
       qrUrls?.[index] ?? "managed-qr",
+      cardProfile,
+      cardTitles?.[index] ?? "",
       layout,
       rerenderKey,
       // Content fingerprint: self-invalidates whenever the sequence's rendered
@@ -519,6 +535,8 @@
     const _leftProp = resolvedLeftProp;
     const _rightProp = resolvedRightProp;
     const _qrUrls = qrUrls;
+    const _cardProfile = cardProfile;
+    const _cardTitles = cardTitles;
 
     // Void unused captures to satisfy linter
     void _cardSize;
@@ -529,6 +547,8 @@
     void _leftProp;
     void _rightProp;
     void _qrUrls;
+    void _cardProfile;
+    void _cardTitles;
 
     const generation = ++renderGeneration;
     blobCacheWarned = false;
@@ -647,7 +667,10 @@
     // also pegs the main thread and freezes the Print Deck modal. Best-effort:
     // any miss falls through to per-card resolution at render time. Reports
     // chunk progress so the bar moves during the otherwise-silent cold start.
-    const sequencesNeedingCodes = seqs.filter((_, index) => !qrUrls?.[index]);
+    const sequencesNeedingCodes =
+      cardProfile === "hand-path"
+        ? []
+        : seqs.filter((_, index) => !qrUrls?.[index]);
     if (sequencesNeedingCodes.length > 0) {
       await getShortCodeManager().resolveCodesForDeck(
         sequencesNeedingCodes,
@@ -707,7 +730,8 @@
             renderer.renderBack(seq, options),
           ]);
 
-          const label = seq.word || seq.name || `Card ${i + 1}`;
+          const label =
+            cardTitles?.[i] || seq.word || seq.name || `Card ${i + 1}`;
           const [frontBlob, backBlob] = await Promise.all([
             canvasToBlob(frontCanvas),
             canvasToBlob(backCanvas),
@@ -891,7 +915,8 @@
     const frontCanvas = await renderer.renderFront(seq, options);
     const backCanvas = await renderer.renderBack(seq, options);
 
-    const label = seq.word || seq.name || `Card ${index + 1}`;
+    const label =
+      cardTitles?.[index] || seq.word || seq.name || `Card ${index + 1}`;
     const [frontBlob, backBlob] = await Promise.all([
       canvasToBlob(frontCanvas),
       canvasToBlob(backCanvas),
