@@ -75,10 +75,7 @@
   <section class="concept-panel timing-panel" aria-labelledby="timing-heading">
     <h3 id="timing-heading">Timing</h3>
 
-    <div
-      class="selector timing-selector"
-      onkeydown={(event) => event.stopPropagation()}
-    >
+    <div class="selector timing-selector">
       <SegmentedControl
         options={timingOptions}
         value={timingMode}
@@ -122,10 +119,7 @@
   >
     <h3 id="direction-heading">Direction</h3>
 
-    <div
-      class="selector direction-selector"
-      onkeydown={(event) => event.stopPropagation()}
-    >
+    <div class="selector direction-selector">
       <SegmentedControl
         options={directionOptions}
         value={directionMode}

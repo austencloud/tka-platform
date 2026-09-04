@@ -221,7 +221,6 @@ describe("canonical concept lesson composition", () => {
     expect(timingIntro).toContain('<h3 id="direction-heading">Direction</h3>');
     expect(timingIntro).toContain("SegmentedControl");
     expect(timingIntro).toContain('semantics="radiogroup"');
-    expect(timingIntro).toContain("event.stopPropagation()");
     expect(timingIntro).toContain("data-timing={timingMode}");
     expect(timingIntro).toContain("data-direction={directionMode}");
     expect(timingIntro).toContain("phase-ring outer-ring");
