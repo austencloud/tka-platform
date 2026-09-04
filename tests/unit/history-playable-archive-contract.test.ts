@@ -35,6 +35,13 @@ const detailSource = read(
 const submissionSource = read(
   "src/routes/(public)/history/_components/archive/ResearchSubmissionGuide.svelte"
 );
+const historyPageSource = read("src/routes/(public)/history/+page.svelte");
+const marketingChromeSource = read(
+  "src/lib/shared/landing/components/MarketingChrome.svelte"
+);
+const footerSource = read(
+  "src/lib/shared/landing/components/SiteFooter.svelte"
+);
 const svelteConfigSource = read("svelte.config.js");
 
 describe("playable archive: chronological overview", () => {
@@ -43,23 +50,27 @@ describe("playable archive: chronological overview", () => {
     expect(timeMapSource).toContain("ARCHIVE_LANES");
     expect(timeMapSource).toContain("ARCHIVE_YEAR_TICKS");
     expect(timeMapSource).toContain("historicalYearPosition");
-    expect(timeMapSource).toContain(
-      "Position marks the first documented year. Spacing is proportional."
-    );
+    expect(timeMapSource).toContain("marks the first documented year");
   });
 
-  it("names and expands the dense 2009–2011 period", () => {
+  it("expands the 2009–2010 group inside its owning lane", () => {
     expect(timeMapSource).toContain("ARCHIVE_CLUSTERS");
     expect(timeMapSource).toContain("cluster-marker");
-    expect(timeMapSource).toContain("Dense period, separated for readability");
+    expect(timeMapSource).toContain('class="cluster-expansion"');
+    expect(timeMapSource).toContain(
+      "The marker above stands for these four records."
+    );
+    expect(timeMapSource).toContain("transition:growFade|local");
+    expect(timeMapSource).not.toContain('class="cluster-slot"');
+    expect(timeMapSource).not.toContain(
+      "Dense period, separated for readability"
+    );
     expect(timeMapSource).toContain("aria-expanded");
     expect(timeMapSource).toContain("aria-controls");
   });
 
   it("presents documented traces, not a definitive history", () => {
-    expect(archiveSource).toContain(
-      "Documented traces, not a definitive history."
-    );
+    expect(archiveSource).toContain("not a definitive history.");
     expect(archiveSource).toContain("better evidence changes the record");
   });
 
@@ -90,16 +101,20 @@ describe("playable archive: selection context", () => {
     );
   });
 
+  it("starts at the earliest trace rather than a hardcoded later record", () => {
+    expect(archiveSource).toContain('const DEFAULT_ENTRY_ID = "playpoi"');
+  });
+
   it("uses record hashes and browser history for restorable deep links", () => {
     expect(archiveSource).toContain('const HASH_PREFIX = "#archive-record-"');
-		expect(archiveSource).toContain('import { pushState } from "$app/navigation"');
-		expect(archiveSource).toContain("pushState(nextHash");
+    expect(archiveSource).toContain(
+      'import { pushState } from "$app/navigation"'
+    );
+    expect(archiveSource).toContain("pushState(nextHash");
     expect(archiveSource).toContain('window.addEventListener("popstate"');
     expect(timeMapSource).toContain("#archive-record-${entry.id}");
     expect(svelteConfigSource).toContain('path === "/history"');
-    expect(svelteConfigSource).toContain(
-      'id.startsWith("archive-record-")'
-    );
+    expect(svelteConfigSource).toContain('id.startsWith("archive-record-")');
   });
 
   it("uses native links and buttons for pointer and keyboard behavior", () => {
@@ -130,12 +145,34 @@ describe("playable archive: compact screens", () => {
     expect(mobileIndexSource).toContain("artifact, claims, and sources");
   });
 
-  it("opens the selected record in the shared drawer on phones and short-wide screens", () => {
-    expect(archiveSource).toContain("bind:isOpen={mobileRecordOpen}");
+  it("opens the selected record in the shared drawer whenever the persistent panel will not fit", () => {
     expect(archiveSource).toContain(
-      'placement={isShortWide.current ? "right" : "bottom"}'
+      '"(max-width: 980px), (max-height: 560px)"'
+    );
+    expect(archiveSource).toContain("bind:isOpen={recordDrawerOpen}");
+    expect(archiveSource).toContain(
+      'placement={usesSideDrawer.current ? "right" : "bottom"}'
     );
     expect(archiveSource).toContain("drawer-neighbors");
+  });
+
+  it("keeps one scroll owner per responsive tier", () => {
+    expect(historyPageSource).toContain(
+      "padding-top: var(--marketing-header-h, 64px)"
+    );
+    expect(historyPageSource).not.toContain("--archive-room-floor: 78rem");
+    expect(marketingChromeSource).toContain("immersive={footerImmersive}");
+    expect(footerSource).toContain(".site-footer.immersive");
+    expect(mobileIndexSource).toContain("overflow-y: auto");
+    expect(archiveSource).toContain(".record-detail");
+  });
+
+  it("keeps full lane names in the compact chronology", () => {
+    expect(mobileIndexSource).toContain("lane.label");
+    expect(mobileIndexSource).not.toContain("lane.shortLabel");
+    expect(mobileIndexSource).toContain(
+      "Part of the {cluster.dateLabel} group of four related records"
+    );
   });
 });
 

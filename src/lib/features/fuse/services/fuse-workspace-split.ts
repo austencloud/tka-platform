@@ -21,7 +21,9 @@ export interface FuseTallPortraitInput {
   width: number;
   height: number;
   mobileMaxWidth: number;
-  minHeight: number;
+  splitMinWidth: number;
+  narrowMinHeight: number;
+  splitMinHeight: number;
   minAspectRatio: number;
 }
 
@@ -32,12 +34,23 @@ export interface FuseTallPortraitInput {
 export function fitsFuseTallPortraitWorkspace(
   input: FuseTallPortraitInput
 ): boolean {
-  const { width, height, mobileMaxWidth, minHeight, minAspectRatio } = input;
+  const {
+    width,
+    height,
+    mobileMaxWidth,
+    splitMinWidth,
+    narrowMinHeight,
+    splitMinHeight,
+    minAspectRatio,
+  } = input;
   if (width <= 0 || height <= 0) return false;
+
+  const requiredHeight =
+    width >= splitMinWidth ? splitMinHeight : narrowMinHeight;
 
   return (
     width < mobileMaxWidth &&
-    height >= minHeight &&
+    height >= requiredHeight &&
     height / width >= minAspectRatio
   );
 }

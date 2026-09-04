@@ -82,6 +82,7 @@ captureEffectDiagnostics to the context menu.
     tunnelPropColors = null,
     tunnelSelectedLayer = null,
     gridVisible = true,
+    gridOpacity = undefined,
     gridMode = GridMode.DIAMOND,
     backgroundAlpha = 1,
     letter = null,
@@ -143,6 +144,7 @@ captureEffectDiagnostics to the context menu.
     tunnelPropColors?: TunnelPropColorPair | null;
     tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
+    gridOpacity?: number;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;
     letter?: Letter | null;
@@ -433,6 +435,7 @@ captureEffectDiagnostics to the context menu.
       tunnelPropColors,
       tunnelSelectedLayer,
       gridVisible,
+      gridOpacity,
       gridMode,
       backgroundAlpha,
       letter,

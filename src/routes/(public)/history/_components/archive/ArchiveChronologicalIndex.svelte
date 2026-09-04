@@ -2,6 +2,7 @@
 	import { pressSpring } from "$lib/actions/press-spring";
 	import {
 		ARCHIVE_ENTRIES,
+		archiveClusterForEntry,
 		archiveLane,
 		type ArchiveEntry,
 	} from "./_lib/archive-ledger";
@@ -31,6 +32,7 @@
 	<ol>
 		{#each ARCHIVE_ENTRIES as entry (entry.id)}
 			{@const lane = archiveLane(entry.lane)}
+			{@const cluster = archiveClusterForEntry(entry.id)}
 			<li style:--entry-accent={archiveAccent(entry.id)}>
 				<span class="year" aria-hidden="true">{entry.firstDocumentedYear}</span>
 				<a
@@ -44,9 +46,12 @@
 					use:pressSpring
 				>
 					<span class="record-copy">
-						<span class="record-meta">{entry.dateLabel} · {lane.shortLabel} · {entry.citations.length} {entry.citations.length === 1 ? "source" : "sources"}</span>
+						<span class="record-meta">{entry.dateLabel} · {lane.label} · {entry.citations.length} {entry.citations.length === 1 ? "source" : "sources"}</span>
 						<strong>{entry.title}</strong>
 						<small>{entry.people}</small>
+						{#if cluster}
+							<small class="group-meta">Part of the {cluster.dateLabel} group of four related records</small>
+						{/if}
 					</span>
 					<span class="open-label">Open <span aria-hidden="true">→</span></span>
 				</a>
@@ -185,6 +190,11 @@
 		color: var(--entry-accent);
 		font-variant-numeric: tabular-nums;
 		font-weight: 700;
+	}
+
+	.group-meta {
+		color: var(--theme-accent, oklch(0.76 0.13 290));
+		font-weight: 650;
 	}
 
 	.open-label {

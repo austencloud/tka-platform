@@ -32,7 +32,7 @@
     "@graph": [
       {
         "@type": "Article",
-        headline: "Writing flow arts down",
+        headline: "Flow arts history",
         description: DESCRIPTION,
         mainEntityOfPage: URL,
         author: { "@type": "Person", name: "Austen Cloud" },
@@ -88,22 +88,14 @@
     position: relative;
     height: max(100vh, var(--archive-room-floor));
     height: max(100dvh, var(--archive-room-floor));
-    --archive-room-floor: 53rem;
-    padding-top: 64px;
+    --archive-room-floor: 56rem;
+    padding-top: var(--marketing-header-h, 64px);
     box-sizing: border-box;
     overflow: hidden;
     /* The ink itself is applied inline from ARCHIVE_INK, the one definition
        MarketingChrome also hands to the footer so the two surfaces cannot
        drift apart. */
     color: oklch(0.9 0.02 270);
-  }
-
-  /* Stacked tier: the map keeps its full height and the record sits under it,
-     so the floor carries both. */
-  @media (max-width: 980px) and (min-height: 561px) {
-    .playable-viewport {
-      --archive-room-floor: 78rem;
-    }
   }
 
   /* Grain keeps the archive's flat ink surfaces from reading as app glass. */

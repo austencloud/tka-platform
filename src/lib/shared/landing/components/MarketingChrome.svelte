@@ -20,6 +20,7 @@
   import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
   import { marketingBackground } from "../state/marketing-background-state.svelte";
   import { pageSurface } from "../domain/page-surface";
+  import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
   import SiteHeader from "./SiteHeader.svelte";
   import SiteFooter from "./SiteFooter.svelte";
 
@@ -32,9 +33,7 @@
   // module graph. Its public index re-exports every renderer, even though this
   // shell only needs the string value until the live host is loaded.
   let LiveBackground = $state<BackgroundHostComponent | null>(null);
-  let applyTheme = $state<
-    ((type: BackgroundType) => void) | null
-  >(null);
+  let applyTheme = $state<((type: BackgroundType) => void) | null>(null);
 
   // Re-tune the interface colors whenever the chosen background changes, and
   // once when the calculator module finishes loading. A page that drives
@@ -79,7 +78,7 @@
 
   const path = $derived(page.url.pathname);
   const footerVariant = $derived(
-    path === "/" || path === "/composer"
+    path === "/" || path === "/composer" || path === "/history"
       ? "compact"
       : path === "/about"
         ? "sitemap"
@@ -92,6 +91,12 @@
   // between the two, and its scrim and hairline finish the job of making the
   // bottom of the page look like a different site.
   const footerSurface = $derived(pageSurface(path));
+
+  // The archive is a single-room research surface on larger viewports. Its
+  // header already carries every site destination, while a second navigation
+  // slab below a viewport-sized room creates a fake extra page. Phones keep the
+  // compact footer after their document-flow chronology; larger tiers omit it.
+  const footerImmersive = $derived(path === "/history");
 
   // Named route morphs suppress the keyed content fade only while that exact
   // allowlisted navigation is active. Ordinary marketing navigation keeps the
@@ -126,11 +131,16 @@
     <!-- Persistent chrome like the header: outside the keyed crossfade, so it
          never re-fades between pages; below the growing stage, so it pins to
          the viewport bottom on short pages (sticky-footer flex column). -->
-    <!-- The homepage already is a complete navigation surface. Interior pages
-         keep the sitemap; the host owns that route decision so SiteFooter also
+    <!-- The homepage and archive already carry complete navigation in their
+         primary surfaces. The host owns the route decision so SiteFooter also
          remains safe for its independent GuideShell host. -->
-    <SiteFooter variant={footerVariant} surface={footerSurface} />
+    <SiteFooter
+      variant={footerVariant}
+      surface={footerSurface}
+      immersive={footerImmersive}
+    />
   </div>
+  <ToastContainer />
 </div>
 
 <style>

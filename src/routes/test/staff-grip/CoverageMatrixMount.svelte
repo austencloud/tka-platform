@@ -7,6 +7,8 @@
   wiring steps.
 -->
 <script lang="ts">
+  import PanelState from "$lib/shared/components/panel/PanelState.svelte";
+
   import {
     coverageCellHref,
     findCoverageCell,
@@ -81,20 +83,18 @@
       </table>
     </div>
   {:else}
-    <div class="awaiting">
-      <h3>Coverage matrix</h3>
-      <p>
-        This is the mount point for the character × prop × sequence sweep. It
-        renders as soon as a <code>CoverageMatrix</code> is passed in.
-      </p>
-      <p class="contract">
-        The sweep engine stays out of this route on purpose. Adapt its result
-        to the plain-data shape in <code>coverage-matrix-contract.ts</code>,
-        pass it to the page as <code>coverageMatrix</code>, and every cell
-        becomes a link back into this lab already set to that body, prop and
-        frame.
-      </p>
-    </div>
+    <!--
+      The app's own empty state, not a dashed developer box. It states the
+      same contract: the sweep engine stays out of this route on purpose, and
+      wiring it is the three steps in `coverage-matrix-contract.ts`.
+    -->
+    <PanelState
+      type="info"
+      icon="fa-table-cells"
+      title="Coverage matrix"
+      message="No sweep is loaded. Adapt a sweep result to the plain-data shape in coverage-matrix-contract.ts, hand it to this page as coverageMatrix, and every cell becomes a link back into this lab already set to that body, prop and frame."
+      compact
+    />
   {/if}
 </div>
 
@@ -176,33 +176,9 @@
     outline-offset: 2px;
   }
 
-  .awaiting {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    padding: 0.9rem 1rem;
-    border: 1px dashed var(--theme-text-dim, rgba(255, 255, 255, 0.28));
-    border-radius: 12px;
-    background: var(--card-bg-current, rgba(255, 255, 255, 0.05));
-  }
 
-  .awaiting h3 {
-    margin: 0;
-    font-size: var(--font-size-md, 1rem);
-    color: var(--theme-text, #fff);
-  }
 
-  .awaiting p {
-    margin: 0;
-    font-size: var(--font-size-sm, 0.875rem);
-    line-height: 1.5;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
-  }
 
-  .contract code {
-    font-size: 0.9em;
-    color: var(--theme-text, #fff);
-  }
 
   .visually-hidden {
     position: absolute;

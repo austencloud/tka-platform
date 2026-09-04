@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { resolveTunnelLayerOpacity } from "$lib/shared/sequence-viewer/tunnel/tunnel-layer-reveal";
+import {
+  resolveTunnelGridOpacity,
+  resolveTunnelLayerOpacity,
+} from "$lib/shared/sequence-viewer/tunnel/tunnel-layer-reveal";
 
 describe("Tunnel layer reveal", () => {
   it("holds every layer inside a normalized opacity envelope", () => {
@@ -21,5 +24,19 @@ describe("Tunnel layer reveal", () => {
     );
 
     expect(opacities).toEqual([1, 1, 1, 1, 1, 1]);
+  });
+});
+
+describe("Tunnel grid reveal", () => {
+  it("removes the 2D grid on the same reversible progress as Tunnel", () => {
+    expect(resolveTunnelGridOpacity(0, false)).toBe(1);
+    expect(resolveTunnelGridOpacity(0.4, false)).toBeCloseTo(0.6);
+    expect(resolveTunnelGridOpacity(1, false)).toBe(0);
+  });
+
+  it("keeps an authored Tunnel grid visible throughout the handoff", () => {
+    expect(resolveTunnelGridOpacity(0, true)).toBe(1);
+    expect(resolveTunnelGridOpacity(0.5, true)).toBe(1);
+    expect(resolveTunnelGridOpacity(1, true)).toBe(1);
   });
 });

@@ -125,6 +125,9 @@
   const tunnelController = new TunnelViewController({
     getSequence: () => playback.animationState.sequenceData ?? sequence,
     getComposition: () => tunnelComposition,
+    // 2D and Tunnel share this canvas. Keep its formation prepared while 2D is
+    // showing so a quick return can reverse the live reveal with no rebuild.
+    prepareWhileInactive: true,
     ...(tnSeed ? { initialViewState: tnSeed, persistViewState: false } : {}),
   });
   const tunnelStage = createViewerTunnelStageState(tunnelController);

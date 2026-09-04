@@ -129,7 +129,8 @@
   }
 </script>
 
-<section class="inspector" aria-label="Measurements">
+<section class="inspector" aria-labelledby="lab-measurements-title">
+  <h2 class="card-title" id="lab-measurements-title">Measurements</h2>
   <SegmentedControl
     options={PANEL_OPTIONS}
     value={lab.panel}
@@ -368,11 +369,26 @@
 </section>
 
 <style>
+  /* Same card the controls use, so the rail reads as one set of app panels
+     rather than a heading-and-divider console. */
   .inspector {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.6rem;
     min-width: 0;
+    padding: 1rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+  }
+
+  .card-title {
+    margin: 0;
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
   }
 
   .panel-stage {
@@ -469,9 +485,30 @@
     color: var(--theme-text, #fff);
   }
 
-  /* The chart draws to the box it is given, so the box is reserved up front. */
+  /*
+   * The chart draws to the box it is given, so the box is reserved up front —
+   * and the box NAMES itself, which it never used to.
+   *
+   * `StanceTimingChart` carries two `@container timing-band` rules and no
+   * ancestor declared the container, so neither had ever matched. The width
+   * one is a live defect: the arrivals reading reserves `min-width: 21rem`,
+   * the rail gives the band about 20rem, and without the query that floor
+   * pushes the last arrival past the edge instead of wrapping. `inline-size`
+   * arms it.
+   *
+   * The companion `(max-height: 13rem)` rule stays unarmed on purpose. A
+   * height query needs `size` containment, `size` containment needs a definite
+   * height, and every height that clears this chart's readout in a rail this
+   * narrow is far above the 13rem seam — a height low enough to match would
+   * clip the numbers the panel exists to show.
+   */
   .chart-frame {
-    min-height: 190px;
+    display: grid;
     min-width: 0;
+    min-height: 190px;
+    container-type: inline-size;
+    container-name: timing-band;
+    border-radius: 10px;
+    overflow: hidden;
   }
 </style>

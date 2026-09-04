@@ -13,7 +13,7 @@ import {
   placeArchiveEntries,
 } from "../../src/routes/(public)/history/_components/archive/_lib/archive-ledger";
 
-describe("four-lane notation archive ledger", () => {
+describe("four-lane history archive ledger", () => {
   it("requires every published entry to carry evidence with a claim-level basis", () => {
     expect(ARCHIVE_ENTRIES.length).toBeGreaterThan(8);
 
@@ -73,12 +73,18 @@ describe("four-lane notation archive ledger", () => {
     expect(historicalYearPosition(2015)).toBe(50);
   });
 
-  it("keeps the overloaded 2009–2011 period explicit without changing its dates", () => {
+  it("labels the related movement-language records with their actual 2009–2010 range", () => {
     const cluster = ARCHIVE_CLUSTERS.find(
       (candidate) => candidate.id === "movement-language-foundations"
     );
 
-    expect(cluster?.dateLabel).toBe("2009–2011");
+    expect(cluster).toMatchObject({
+      lane: "languages",
+      label: "4 related records",
+      dateLabel: "2009–2010",
+      startYear: 2009,
+      endYear: 2010,
+    });
     expect(cluster?.entryIds).toEqual([
       "caps",
       "trochoid",
@@ -117,10 +123,9 @@ describe("four-lane notation archive ledger", () => {
         `${entry.id} verified endpoint`
       ).toBeGreaterThanOrEqual(entry.firstDocumentedYear);
       expect(entry.activity.note, `${entry.id} activity note`).not.toBe("");
-      expect(
-        entrySpanEndYear(entry),
-        `${entry.id} span end`
-      ).toBe(entry.activity.lastVerifiedYear);
+      expect(entrySpanEndYear(entry), `${entry.id} span end`).toBe(
+        entry.activity.lastVerifiedYear
+      );
     }
 
     // The three teaching projects were verified active in 2026 from dated

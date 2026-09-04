@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { pressSpring } from "$lib/actions/press-spring";
+	import { growFade } from "$lib/shared/transitions/motion";
 	import {
 		ARCHIVE_CLUSTERS,
 		ARCHIVE_LANES,
@@ -20,7 +21,14 @@
 		onselect: (entry: ArchiveEntry) => void;
 	} = $props();
 
-	let openClusterId = $state<string | null>(ARCHIVE_CLUSTERS[0]?.id ?? null);
+	let openClusterId = $state<string | null>(null);
+
+	$effect(() => {
+		const activeCluster = ARCHIVE_CLUSTERS.find((cluster) =>
+			cluster.entryIds.includes(activeEntryId)
+		);
+		if (activeCluster) openClusterId = activeCluster.id;
+	});
 
 	function toggleCluster(clusterId: string) {
 		openClusterId = openClusterId === clusterId ? null : clusterId;
@@ -34,13 +42,14 @@
 <section class="time-map" aria-labelledby="archive-time-map-title">
 	<header class="map-heading">
 		<div>
-			<p class="eyebrow">Chronological overview</p>
-			<h2 id="archive-time-map-title">Four kinds of record, on one clock</h2>
+			<p class="eyebrow">Timeline by first documented year</p>
+			<h2 id="archive-time-map-title">How flow arts knowledge was recorded and shared</h2>
 		</div>
 		<p class="scale-note">
 			<span aria-hidden="true"></span>
-			Position marks the first documented year. Spacing is proportional. A
-			dotted line reaches a record's latest verified trace.
+			Each trace sits in the lane that best matches the evidence. Its position
+			marks the first documented year; a dotted line ends at the latest verified
+			public trace. Select a marker to open its record and sources.
 		</p>
 	</header>
 
@@ -66,7 +75,12 @@
 				entriesForLane(lane.id).filter((entry) => !clusterIds.has(entry.id))
 			)}
 			{@const trackCount = Math.max(1, ...placements.map((item) => item.track + 1))}
-			<section class="lane" style:--track-count={trackCount} aria-labelledby={`lane-${lane.id}`}>
+			<section
+				class="lane"
+				class:cluster-open={Boolean(cluster && openClusterId === cluster.id)}
+				style:--track-count={trackCount}
+				aria-labelledby={`lane-${lane.id}`}
+			>
 				<header class="lane-heading">
 					<h3 id={`lane-${lane.id}`}>{lane.label}</h3>
 					<p>{lane.description}</p>
@@ -116,7 +130,10 @@
 						>
 							<span>{cluster.dateLabel}</span>
 							<strong>{cluster.label}</strong>
-							<small>{openClusterId === cluster.id ? "Hide records" : "Show records"}</small>
+							<small>
+								{openClusterId === cluster.id ? "Collapse" : "Expand"}
+								<span class="cluster-chevron" aria-hidden="true">⌄</span>
+							</small>
 						</button>
 					{/if}
 
@@ -146,41 +163,43 @@
 						{/each}
 					</ol>
 				</div>
-			</section>
-		{/each}
-	</div>
 
-	<div class="cluster-slot">
-		{#each ARCHIVE_CLUSTERS as cluster (cluster.id)}
-			{#if openClusterId === cluster.id}
-				<section id={`cluster-${cluster.id}`} class="cluster-tray" aria-label={`${cluster.dateLabel} cluster`}>
-					<div class="cluster-title">
-						<span>{cluster.dateLabel}</span>
-						<strong>Dense period, separated for readability</strong>
-					</div>
-					<ol>
-						{#each cluster.entryIds as entryId}
-							{@const entry = archiveEntry(entryId)}
-							<li>
-								<a
-									href={entryHref(entry)}
-									class:is-active={entry.id === activeEntryId}
-									style:--entry-accent={archiveAccent(entry.id)}
-									aria-current={entry.id === activeEntryId ? "true" : undefined}
-									onclick={(event) => {
-										event.preventDefault();
-										onselect(entry);
-									}}
-									use:pressSpring
-								>
-									<span>{entry.dateLabel}</span>
-									<strong>{entry.shortTitle}</strong>
-								</a>
-							</li>
-						{/each}
-					</ol>
-				</section>
-			{/if}
+				{#if cluster && openClusterId === cluster.id}
+					<section
+						id={`cluster-${cluster.id}`}
+						class="cluster-expansion"
+						style:--cluster-position={`${historicalYearPosition((cluster.startYear + cluster.endYear) / 2)}%`}
+						aria-label={`${lane.label}, ${cluster.dateLabel}: four records shown as one timeline marker`}
+						transition:growFade|local={{ axis: "y" }}
+					>
+						<div class="cluster-title">
+							<span>{lane.label} · {cluster.dateLabel}</span>
+							<strong>The marker above stands for these four records.</strong>
+						</div>
+						<ol>
+							{#each cluster.entryIds as entryId}
+								{@const entry = archiveEntry(entryId)}
+								<li>
+									<a
+										href={entryHref(entry)}
+										class:is-active={entry.id === activeEntryId}
+										style:--entry-accent={archiveAccent(entry.id)}
+										aria-current={entry.id === activeEntryId ? "true" : undefined}
+										onclick={(event) => {
+											event.preventDefault();
+											onselect(entry);
+										}}
+										use:pressSpring
+									>
+										<span>{entry.dateLabel}</span>
+										<strong>{entry.shortTitle}</strong>
+									</a>
+								</li>
+							{/each}
+						</ol>
+					</section>
+				{/if}
+			</section>
 		{/each}
 	</div>
 </section>
@@ -189,7 +208,7 @@
 	.time-map {
 		--archive-track-size: 3rem;
 		display: grid;
-		grid-template-rows: auto auto minmax(min-content, 1fr) auto;
+		grid-template-rows: auto auto minmax(min-content, 1fr);
 		min-width: 0;
 		gap: 0.45rem;
 		container-type: inline-size;
@@ -336,11 +355,21 @@
 		border-bottom: 1px solid var(--theme-stroke, oklch(1 0 0 / 0.12));
 	}
 
+	.lane.cluster-open {
+		grid-template-rows: auto auto;
+		min-height: calc(var(--track-count) * var(--archive-track-size) + 5rem);
+	}
+
 	.lane-heading {
 		display: grid;
 		align-content: center;
 		gap: 0.15rem;
 		padding-block: 0.45rem;
+	}
+
+	.lane.cluster-open .lane-heading {
+		grid-row: 1 / span 2;
+		align-content: start;
 	}
 
 	.lane-heading h3 {
@@ -395,7 +424,7 @@
 	}
 
 	.lane-track ol,
-	.cluster-tray ol {
+	.cluster-expansion ol {
 		margin: 0;
 		padding: 0;
 		list-style: none;
@@ -419,7 +448,7 @@
 	}
 
 	.lane-track a,
-	.cluster-tray a,
+	.cluster-expansion a,
 	.cluster-marker {
 		display: grid;
 		min-height: 2.75rem;
@@ -439,13 +468,15 @@
 		transition: border-color var(--duration-fast, 150ms) ease, background var(--duration-fast, 150ms) ease;
 	}
 
-	.lane-track a {
+	.lane-track a,
+	.cluster-expansion a {
 		max-width: 8.5rem;
-		border-left: 0.28rem solid var(--entry-accent);
+		border-color: color-mix(in oklch, var(--entry-accent) 46%, var(--theme-stroke, oklch(1 0 0 / 0.16)));
+		background: color-mix(in oklch, var(--entry-accent) 6%, var(--theme-card-bg, oklch(0.17 0.012 270)));
 	}
 
 	.lane-track a span,
-	.cluster-tray a span,
+	.cluster-expansion a span,
 	.cluster-marker span,
 	.cluster-marker small {
 		color: var(--theme-text-dim, oklch(0.74 0.02 270));
@@ -454,7 +485,7 @@
 	}
 
 	.lane-track a strong,
-	.cluster-tray a strong,
+	.cluster-expansion a strong,
 	.cluster-marker strong {
 		overflow: hidden;
 		font-size: var(--font-size-min, 0.875rem);
@@ -464,15 +495,15 @@
 
 	.lane-track a:hover,
 	.lane-track a:focus-visible,
-	.cluster-tray a:hover,
-	.cluster-tray a:focus-visible {
+	.cluster-expansion a:hover,
+	.cluster-expansion a:focus-visible {
 		border-color: var(--entry-accent);
 		background: var(--theme-card-hover-bg, oklch(0.21 0.018 270));
 		outline: none;
 	}
 
 	.lane-track a.is-active,
-	.cluster-tray a.is-active {
+	.cluster-expansion a.is-active {
 		border-color: var(--entry-accent);
 		background: color-mix(in oklch, var(--entry-accent) 18%, var(--theme-card-bg, oklch(0.17 0.012 270)));
 		box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--entry-accent) 55%, transparent);
@@ -495,11 +526,23 @@
 	}
 
 	.cluster-marker small {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip-path: inset(50%);
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		margin-top: 0.12rem;
+	}
+
+	.cluster-chevron {
+		display: inline-block;
+		color: var(--theme-accent, oklch(0.76 0.13 290));
+		font-size: 0.9rem;
+		line-height: 0.7;
+		rotate: 0deg;
+		transition: rotate var(--duration-fast, 150ms) ease;
+	}
+
+	.cluster-marker[aria-expanded="true"] .cluster-chevron {
+		rotate: 180deg;
 	}
 
 	.cluster-marker:hover,
@@ -510,12 +553,10 @@
 		outline: none;
 	}
 
-	.cluster-slot {
-		min-height: 4rem;
-	}
-
-	.cluster-tray {
+	.cluster-expansion {
+		position: relative;
 		display: grid;
+		grid-column: 2;
 		grid-template-columns: clamp(10.5rem, 18vw, 16rem) minmax(0, 1fr);
 		gap: clamp(0.65rem, 1.5vw, 1.4rem);
 		min-height: 4rem;
@@ -525,6 +566,16 @@
 		border-radius: var(--radius-2026-lg, 18px);
 		background: color-mix(in oklch, var(--theme-accent, oklch(0.76 0.13 290)) 7%, var(--theme-card-bg, oklch(0.15 0.012 270)));
 		box-sizing: border-box;
+	}
+
+	.cluster-expansion::before {
+		content: "";
+		position: absolute;
+		left: var(--cluster-position);
+		bottom: 100%;
+		width: 1px;
+		height: 0.55rem;
+		background: var(--theme-accent, oklch(0.76 0.13 290));
 	}
 
 	.cluster-title {
@@ -545,14 +596,10 @@
 		font-weight: 650;
 	}
 
-	.cluster-tray ol {
+	.cluster-expansion ol {
 		display: grid;
 		grid-template-columns: repeat(4, minmax(0, 1fr));
 		gap: 0.45rem;
-	}
-
-	.cluster-tray a {
-		border-left: 0.28rem solid var(--entry-accent);
 	}
 
 	@container (max-width: 58rem) {
@@ -566,7 +613,7 @@
 
 		.year-axis,
 		.lane,
-		.cluster-tray {
+		.cluster-expansion {
 			grid-template-columns: 9.5rem minmax(0, 1fr);
 		}
 
@@ -574,13 +621,16 @@
 			display: none;
 		}
 
-		.cluster-tray ol {
+		.cluster-expansion ol {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 
-		.cluster-slot,
-		.cluster-tray {
+		.cluster-expansion {
 			min-height: 7rem;
+		}
+
+		.lane.cluster-open {
+			min-height: calc(var(--track-count) * var(--archive-track-size) + 7.5rem);
 		}
 	}
 
@@ -599,7 +649,7 @@
 		.year-tick,
 		.lane-heading p,
 		.lane-track a span,
-		.cluster-tray a span,
+		.cluster-expansion a span,
 		.cluster-marker span,
 		.cluster-title span,
 		.cluster-title strong {
@@ -612,13 +662,13 @@
 
 		.lane-heading h3,
 		.lane-track a strong,
-		.cluster-tray a strong,
+		.cluster-expansion a strong,
 		.cluster-marker strong {
 			font-size: 1.1rem;
 		}
 
 		.lane-track a,
-		.cluster-tray a,
+		.cluster-expansion a,
 		.cluster-marker {
 			min-height: 3.25rem;
 			padding-inline: 0.9rem;
@@ -638,7 +688,7 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.lane-track a,
-		.cluster-tray a,
+		.cluster-expansion a,
 		.cluster-marker {
 			transition: none;
 		}
