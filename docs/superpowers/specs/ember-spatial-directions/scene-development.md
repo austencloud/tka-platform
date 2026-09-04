@@ -1,6 +1,6 @@
 # Ember Spatial Directions
 
-Status: Breached Rift Bench Gate 2 graybox ready for review; prior Gate 4 is historical
+Status: Breached Rift Bench Gate 2 R2 graybox ready for review; prior Gate 4 is historical
 
 Date: 2026-09-04
 
@@ -14,8 +14,9 @@ Current regression authority: museum trackers `rn25Qau62kXyyOJpgm7Z`,
 `s3cxnp6hOLBVQR5dDF42`, `uXmi4z9lL7zCiNq5ULCp`, and
 `ahPuPwh34G3FeqvUEHsB`; geology-first restart authority:
 `hMO9hB97M2y1ZVGrxCt3`, `gqImqDqgfctdYi1kr6pH`,
-`ZgRNLK66C9Hz2wMPbOXc`, and Gate 2 evidence reference
-`anf4rcwDOr4j1LuyOX3l`
+`ZgRNLK66C9Hz2wMPbOXc`, adversarial audit `xSjtvI2XVvvMdn8pHqwP`,
+corrective authorization `WS9FU4nn2fCSbOn68IeB`, and delegated Gate 1.1
+approval `7uoHBfOCOqMmFeKBRh7l`
 
 ## Why this exists
 
@@ -431,9 +432,40 @@ eruption or a claim of hazard accuracy.
 
 The corrected north-up plan, measured sections, eight-point sightline study,
 calibration sweep, contact sheet, selected float32 simulator raster, and
-canonical report live in
-`evidence/gate-1-1-geology-amendment-r2/`. Gate 1 is
-`ready-for-review` with approval unset. The former R1 Gate 1 approval and Gate 2
-artifact remain in repository and regression history, but no longer authorize
-later work. Gate 2 R2 begins only after Austen describes and approves the named
-Gate 1.1 spatial relationship.
+canonical report live in `evidence/gate-1-1-geology-amendment-r2/`. Austen
+delegated the final spatial selection and authorized delivery on 2026-09-04 in
+tracker `7uoHBfOCOqMmFeKBRh7l`. The tracker and gate record preserve that as an
+explicit waiver of the describe-the-layout-back ritual rather than inventing a
+description Austen did not give.
+
+## Breached Rift Bench Gate 2 R2
+
+The existing `scripts/build-ember-geology-graybox.py` owner now derives R2 from
+the approved Gate 1.1 heightfield and checked-in Flowy thickness raster. It no
+longer constructs a second lava body from an authored centerline. The visible
+`EMBER_LavaSimulatorDeposit` has exactly one quad for each of the 3,558 active
+simulator cells and carries the source raster digest in the Blend and GLB.
+
+The editable scene adds the spatial signals the R1 review model omitted:
+
+- one elongated fissure and fractured source rampart;
+- one surviving northwest headwall with an explicit plan-only missing-volume
+  guide;
+- one combined talus apron below the breached sector;
+- one 1.75 m performer proxy and the 4.5 m action envelope;
+- the north-up plan camera, default audience camera, eight 45-degree orbit
+  cameras, and two director cameras.
+
+All of those signals ship in the review-equivalent GLB. The registered evidence
+also includes the north-up plan, four-times-exaggerated source-to-continuation
+section, complete orbit strip, bird's-eye overview, collapse oblique, and a 4K
+contact sheet. The coordinate manifest is UTF-8 with canonical LF bytes and
+locks the terrain owner, Gate 1.1 report, research contract, selected simulator
+raster, and its own payload.
+
+Automated verification confirms one visible terrain collider, exact 3,558-cell
+simulator geometry parity, 13.220 m of clearance beyond the protected action
+envelope, 14.800 m of net descent over 322.840 m, downstream widening from 11 m
+to 14 m, every required review node and camera in the GLB, and a north-up plan
+rotation. Gate 2 R2 is `ready-for-review`; Gate 3 has not started. No production
+runtime, final material, atmosphere, or Meshy asset changed.
