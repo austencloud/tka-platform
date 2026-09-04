@@ -47,6 +47,7 @@ import type {
   SceneEffectRigFrame3D,
   SceneEffectTipSource3D,
 } from "../../effects/scene-effects/scene-effect-source-3d";
+import { mergeWorkerSceneEffects } from "../effects/merge-worker-scene-effects";
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 
@@ -80,6 +81,10 @@ const sceneEffectsFrame: SceneEffectRigFrame3D = {
   sources: [],
 };
 let performerSnapshots: readonly WorkerPerformerSnapshot[] = [];
+let externalEffects: WorkerSceneEffectsSnapshot = {
+  playing: false,
+  sources: [],
+};
 let animationFrame = 0;
 let frameCount = 0;
 let previousFrameAt = 0;
@@ -150,6 +155,11 @@ function applyEffects(snapshot: WorkerSceneEffectsSnapshot): void {
   if (camera) imperativeEffects?.apply(snapshot.imperative ?? [], camera);
 }
 
+function applyCurrentEffects(): void {
+  const performerEffects = performerStage?.getEffects();
+  applyEffects(mergeWorkerSceneEffects(externalEffects, performerEffects));
+}
+
 function applyCamera(snapshot: WorkerCameraSnapshot): void {
   if (!camera) return;
   camera.position.fromArray(snapshot.position);
@@ -182,6 +192,7 @@ function renderFrame(now: number): void {
   if (visible) {
     world.update(Math.min(deltaMs / 1000, 0.1), now / 1000);
     performerStage?.update(Math.min(deltaMs / 1000, 0.1));
+    applyCurrentEffects();
     renderCurrentFrame(deltaMs / 1000);
     frameCount += 1;
     post({
@@ -279,7 +290,8 @@ async function initialize(
   const performerReadyAt = performance.now();
   const worldReadyAt = performerReadyAt;
   post({ type: "progress", requestId, phase: "performer", fraction: 1 });
-  applyEffects(message.effects ?? { playing: false, sources: [] });
+  externalEffects = message.effects ?? { playing: false, sources: [] };
+  applyCurrentEffects();
   postProcessing = createPostProcessingPipeline(environment);
 
   post({ type: "progress", requestId, phase: "compile", fraction: 0 });
@@ -329,6 +341,7 @@ async function initialize(
   try {
     world.update(0, finalizedAt / 1000);
     performerStage.update(0);
+    applyCurrentEffects();
     renderCurrentFrame(0);
   } finally {
     renderer.setViewport(previousViewport);
@@ -341,6 +354,7 @@ async function initialize(
   const firstRenderStartedAt = performance.now();
   world.update(0, compiledAt / 1000);
   performerStage.update(0);
+  applyCurrentEffects();
   renderCurrentFrame(0);
   const firstRenderCompletedAt = performance.now();
   const memoryAfterFirstRender = rendererMemory();
@@ -352,6 +366,7 @@ async function initialize(
     presentedAt / 1000
   );
   performerStage.update(Math.min((presentedAt - compiledAt) / 1000, 0.1));
+  applyCurrentEffects();
   renderCurrentFrame(Math.min((presentedAt - compiledAt) / 1000, 0.1));
   const firstFrameAt = performance.now();
   frameCount = 1;
@@ -416,6 +431,7 @@ function dispose(): void {
   animationFrame = 0;
   performerStage?.dispose();
   performerStage = null;
+  externalEffects = { playing: false, sources: [] };
   imperativeEffects?.dispose();
   imperativeEffects = null;
   sceneEffectsRegistration?.dispose();
@@ -473,7 +489,8 @@ scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
       });
       break;
     case "effects":
-      applyEffects(message.effects);
+      externalEffects = message.effects;
+      applyCurrentEffects();
       break;
     case "pointer": {
       if (!world || !environment) break;
