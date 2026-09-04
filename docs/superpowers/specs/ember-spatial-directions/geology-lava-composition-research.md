@@ -1,6 +1,6 @@
 # Ember geology, lava, and composition research
 
-Status: complete research package; Breached Rift Bench Gate 1.1 R3 ready for review and Gate 2 pending
+Status: complete research package; Mid-Flank Fire Pilgrimage Gate 1.1 R4 ready for review and Gate 2 pending
 
 Date: 2026-09-03
 
@@ -12,19 +12,17 @@ Prior lava correction: museum tracker `hMO9hB97M2y1ZVGrxCt3`
 
 Rebuild Ember's spatial backbone, but do not discard the whole scene.
 
-The strongest first graybox is **A. Breached Rift Bench**: a broad basaltic
-rift/caldera landscape in which one older collapse scarp occupies the west and
-northwest, one fissure-fed lava system descends from `(-22, 25)`, the active
-flow skirts a compact irregular quiet patch, and the east/southeast horizon
-remains open. The plan is directional rather than radial. The performer stands
-on continuous older cooled terrain, not a disk placed inside a ring of
-spectacle.
+The active correction is **Mid-Flank Fire Pilgrimage R4**: a volcanic flank in
+which the performer occupies a long contour ledge between an upper edifice and
+a lower runout plain. One high fissure-fed system descends from `(-34, 132)`,
+passes west of the performer, and continues beyond the south review boundary.
+The performer is neither on a disk nor at the bottom of a basin; the mountain
+continues materially above and below the orbit.
 
-This direction is the Gate 1.1 R3 review candidate under Austen's delegated
-spatial authority and his “attack it!” correction authorization in trackers
-`7uoHBfOCOqMmFeKBRh7l` and `lIPwVa2kGFcoQsgICkWI`. A Gate 2 candidate was built
-to falsify the plan in registered cameras, but remains noncanonical until Gate
-1.1 receives explicit artifact approval.
+This direction is the Gate 1.1 R4 review candidate under Austen's explicit
+mid-flank requirement in tracker `BvN1DiylOnfdbrofcwaM`. The R3 Gate 2 package
+is historical. No new Blender graybox becomes canonical until Gate 1.1 R4
+receives explicit artifact approval.
 
 The restart should preserve Ember's useful infrastructure, surface work, and
 atmosphere while replacing two failed owners:
@@ -589,7 +587,7 @@ The [source ledger](geology-research-source-ledger.md) records all measured,
 scientific, production, repository, licensing, and Meshy references used by the
 study.
 
-## Gate 1.1 R3 correction evidence
+## Historical Gate 1.1 R3 correction evidence
 
 The R1 and R2 adversarial audits and corrective authorizations are recorded in
 museum tracker items `xSjtvI2XVvvMdn8pHqwP`, `WS9FU4nn2fCSbOn68IeB`,
@@ -607,3 +605,19 @@ Direction A remains the accepted creative direction. Gate 1.1 R3 is
 started.
 The R3 correction changes no production runtime, final material, atmosphere,
 or Meshy asset and spends no Meshy credits.
+
+## Gate 1.1 R4 mid-flank correction evidence
+
+Austen's tracker decision `BvN1DiylOnfdbrofcwaM` rejects the R3 broad-basin
+spatial target. The current R4 plan, 1:1 vertical section, opposite-side runtime
+orbit proof, sightline study, simulator sweep, contact sheet, canonical report,
+and selected float32 footprint live in
+`evidence/gate-1-1-geology-amendment-r4/`. Reproduce them with:
+
+- `py -3 scripts/prepare-ember-lava-simulator-benchmark.py all-r4`
+- `py -3 scripts/build-ember-geology-amendment.py build`
+- `py -3 scripts/build-ember-geology-amendment.py verify`
+
+Gate 1.1 R4 is `ready-for-review` with approval unset; Gate 2 remains pending.
+The R4 correction changes no production runtime, final material, atmosphere,
+Blender source, Meshy asset, or Meshy credit.

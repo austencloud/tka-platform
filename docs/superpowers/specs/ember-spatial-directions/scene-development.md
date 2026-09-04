@@ -1,6 +1,6 @@
 # Ember Spatial Directions
 
-Status: Breached Rift Bench Gate 1.1 R3 ready for review; Gate 2 pending; all prior Gate 3+ work is historical
+Status: Mid-Flank Fire Pilgrimage Gate 1.1 R4 ready for review; Gate 2 pending; all R3 and prior Gate 2+ work is historical
 
 Date: 2026-09-04
 
@@ -16,25 +16,23 @@ Current regression authority: museum trackers `rn25Qau62kXyyOJpgm7Z`,
 `hMO9hB97M2y1ZVGrxCt3`, `gqImqDqgfctdYi1kr6pH`,
 `ZgRNLK66C9Hz2wMPbOXc`, adversarial audit `xSjtvI2XVvvMdn8pHqwP`,
 corrective authorization `WS9FU4nn2fCSbOn68IeB`, delegated spatial selection
-`7uoHBfOCOqMmFeKBRh7l`, R2 audit `torsiCoIaMMrkMklUMSq`, and R3 correction
-authorization `lIPwVa2kGFcoQsgICkWI`
+`7uoHBfOCOqMmFeKBRh7l`, R2 audit `torsiCoIaMMrkMklUMSq`, R3 correction
+authorization `lIPwVa2kGFcoQsgICkWI`, and mid-flank requirement
+`BvN1DiylOnfdbrofcwaM`
 
 ## Current active geometry contract
 
-Only Breached Rift Bench R3 is current. Its north-up Gate 1.1 evidence lives in
-`evidence/gate-1-1-geology-amendment-r3/`; its editable Gate 2 source, portable
-GLB, exact camera/collision manifest, continuous orbit, and review sheet live in
-`blender/ember-breached-rift-bench-graybox-r3.blend`,
-`static/models/ember/review/ember-breached-rift-bench-graybox-r3.glb`, and
-`evidence/gate-2-geology-graybox-r3/`.
+Only Mid-Flank Fire Pilgrimage R4 is current. Its north-up plan, true-scale
+section, exact runtime uphill/downhill orbit proof, sightline study, Flowy
+calibration, and report live in `evidence/gate-1-1-geology-amendment-r4/`.
 
-The active formation is one retained western mass cut by a visibly missing
-breach, fractured talus below it, a nearby fissure, and one simulator-owned
-deposit that skirts an attached old-flow peninsula, sheds a dying breakout
-lobe, and settles in an inboard terminal low behind a containing lip. The east and
-southeast horizon remains open. Gate 1.1 is `ready-for-review`; Gate 2 remains
-pending behind explicit approval. Gate 3 has not started. Every R1/R2 graybox and every pre-restart Gate 3 through Gate 6 artifact
-is historical evidence only.
+The performer occupies a long contour ledge halfway between an upper volcanic
+edifice and a lower runout plain. The active source sits high at runtime XZ
+`(-34, 132)`; one simulator-owned drainage passes west of the 4.5 m action
+envelope and leaves the review world at the south boundary. The summit and
+downslope country both continue beyond frame. Gate 1.1 is `ready-for-review`;
+Gate 2 and every later gate remain pending. The R3 Blender/GLB package and all
+earlier artifacts are historical evidence only.
 
 ## Why this exists
 
@@ -488,7 +486,7 @@ to 14 m, every required review node and camera in the GLB, and a north-up plan
 rotation. Gate 2 R2 was `ready-for-review`; it is now historical. No production
 runtime, final material, atmosphere, or Meshy asset changed.
 
-## Breached Rift Bench Gate 1.1 and Gate 2 R3
+## Historical: Breached Rift Bench Gate 1.1 and Gate 2 R3
 
 The R2 adversarial audit in tracker `torsiCoIaMMrkMklUMSq` rejected both visual
 overclaiming and technical mismatches. Austen authorized the full correction
@@ -510,9 +508,49 @@ target, and saves the Blend with a portable default audience state. The 48-frame
 continuous orbit is the recorded substitute for a first-person route in this
 orbit-only environment.
 
-Gate 1.1 R3 remains `ready-for-review` with approval unset. Gate 2 R3 is a
-candidate artifact and remains `pending` until Gate 1.1 is explicitly approved.
+Gate 1.1 R3 was left `ready-for-review` with approval unset. Gate 2 R3 was a
+candidate artifact and remained `pending` until R4 superseded both artifacts.
 Semantic claims about collapse readability, geological causality, the
 absence of a stage-island reading, and complete-orbit composition remain human
 review items. Gate 3 has not started; no production runtime, final material,
 atmosphere, or Meshy asset changed.
+
+## Mid-Flank Fire Pilgrimage Gate 1.1 R4
+
+Austen rejected R3's broad-basin read in tracker `BvN1DiylOnfdbrofcwaM`:
+the performer must feel halfway up a colossal volcanic mountain, with sustained
+ascent above and sustained descent below. R4 therefore invalidates R3's shallow
+terrain, nearby same-level source, inboard terminal basin, and open-horizon
+composition while preserving the 380 by 335 m world, 4.5 m action envelope,
+25 m orbit, Flowy ownership, surface research, atmosphere systems, and all
+unspent Meshy credits.
+
+The verified R4 Gate 1.1 evidence is archived in tracker reference
+`FZftIaWtEdGTrqXRv9JS`.
+
+R4 is a true mid-flank section rather than a basin. The performer stands on a
+long, oblique contour ledge. The upper edifice rises more than 100 m above the
+performer and continues out of frame; the lower escarpment falls more than 60 m
+below and continues into an off-world runout plain. A high furnace saddle feeds
+one continuous Flowy-owned drainage that passes the performer to the west and
+exits the south review boundary. The boundary is explicit continuation, not a
+terminal pool.
+
+The Gate 1.1 evidence is:
+
+- north-up measured plan:
+  `evidence/gate-1-1-geology-amendment-r4/01-north-up-measured-plan.png`;
+- true-scale long section with no vertical exaggeration:
+  `evidence/gate-1-1-geology-amendment-r4/02-true-scale-midflank-section.png`;
+- exact opposite-side runtime orbit proof:
+  `evidence/gate-1-1-geology-amendment-r4/03-runtime-uphill-downhill-proof.png`;
+- eight-point orbit clearance:
+  `evidence/gate-1-1-geology-amendment-r4/04-orbit-sightline-study.png`;
+- Flowy calibration sweep:
+  `evidence/gate-1-1-geology-amendment-r4/05-flowy-calibration-sweep.png`;
+- canonical measured report:
+  `evidence/gate-1-1-geology-amendment-r4/ember-midflank-fire-pilgrimage-r4-gate1-1-report.json`.
+
+Gate 1.1 R4 is `ready-for-review` with approval unset. No Blender graybox,
+shipping runtime, final material, atmosphere, Meshy asset, or Meshy credit was
+changed. Gate 2 may begin only after explicit R4 artifact approval.

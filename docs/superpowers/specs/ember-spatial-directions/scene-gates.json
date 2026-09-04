@@ -39,7 +39,9 @@
       "WS9FU4nn2fCSbOn68IeB",
       "7uoHBfOCOqMmFeKBRh7l",
       "torsiCoIaMMrkMklUMSq",
-      "lIPwVa2kGFcoQsgICkWI"
+      "lIPwVa2kGFcoQsgICkWI",
+      "BvN1DiylOnfdbrofcwaM",
+      "FZftIaWtEdGTrqXRv9JS"
     ]
   },
   "sequenceFingerprints": [],
@@ -53,16 +55,17 @@
     {
       "id": "C-002",
       "class": "invention",
-      "statement": "The active R3 Breached Rift Bench plan is performer-centred: a nearby northwest fissure crosses a visibly failed headwall, skirts the protected 4.5 m action radius beside an attached old-flow peninsula, sheds a dying breakout lobe, then deposits in an inboard terminal low.",
+      "statement": "The active R4 Mid-Flank Fire Pilgrimage plan places the performer on a long contour ledge between a 100+ m upper volcanic edifice and a 60+ m fall to lower country; a high-source Flowy drainage passes west of the protected 4.5 m action radius and continues through the south scene boundary.",
       "evidence": [
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/01-north-up-measured-plan.png",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r3/ember-breached-rift-bench-r3-gate2-contact-sheet.png"
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/01-north-up-measured-plan.png",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/02-true-scale-midflank-section.png",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/03-runtime-uphill-downhill-proof.png"
       ]
     },
     {
       "id": "C-003",
       "class": "invention",
-      "statement": "Reserved Gate 3/4 visual target, not an R3 graybox claim: blue-black basalt and rough obsidian dominate the frame; orange is confined to fissures and the banked, crusted river, with restrained mineral ochre as a secondary accent.",
+      "statement": "Reserved Gate 3/4 visual target, not an R4 measured-plan claim: blue-black basalt and rough obsidian dominate the frame; orange is confined to fissures and the banked, crusted river, with restrained mineral ochre as a secondary accent.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/look-development.md"
       ]
@@ -70,7 +73,7 @@
     {
       "id": "C-004",
       "class": "invention",
-      "statement": "Historical surface research reserved for a future Gate 3/4 restart, not accepted R3 geometry: Fresh Rift uses young lava crust as Ember's surface base, exposes fractured basalt on scarps, shelters ash in depressions, and confines iron-rich alteration to lava-distance contact zones.",
+      "statement": "Historical surface research reserved for a future Gate 3/4 restart, not accepted R4 geometry: Fresh Rift uses young lava crust as Ember's surface base, exposes fractured basalt on scarps, shelters ash in depressions, and confines iron-rich alteration to lava-distance contact zones.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-surface-target-board.jpg",
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/candidate-decisions.md"
@@ -79,10 +82,10 @@
     {
       "id": "C-005",
       "class": "invention",
-      "statement": "Breached Rift Bench R3 is the active geology direction: one older western collapse mass, one near fissure and breach, one Flowy-owned deposit skirting an attached old-flow peninsula, one inboard terminal low, and one open east-southeast horizon.",
+      "statement": "Mid-Flank Fire Pilgrimage R4 is the active geology direction: one continuous upper massif, one furnace saddle and high source, one contour-following performer ledge, one gravity-led Flowy drainage, one lower escarpment, and one explicit off-world downslope exit.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/01-north-up-measured-plan.png"
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/01-north-up-measured-plan.png"
       ]
     },
     {
@@ -362,6 +365,32 @@
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/"
       ],
       "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/ and docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r3/"
+    },
+    {
+      "invalidatedAt": "2026-09-04T12:43:02.2094003-05:00",
+      "reopenedGate": 1,
+      "museumTrackerItem": "BvN1DiylOnfdbrofcwaM",
+      "reason": "Austen rejected R3 because its technically valid broad-basin composition did not create the experience of standing halfway up a colossal volcanic flank, with consequential ascent above and descent below. R4 replaces the spatial target before any further Blender, runtime, material, or Meshy work.",
+      "preserved": [
+        "380 by 335 m world footprint",
+        "4.5 m performer action envelope",
+        "25 m Viewer3D orbit contract",
+        "Flowy ownership and pinned open-source geology pipeline",
+        "Fresh Rift material research for a later gate",
+        "Blackglass atmosphere systems for a later gate",
+        "existing Meshy assets and unspent credits"
+      ],
+      "invalidated": [
+        "R3 broad-basin and inboard-terminal spatial target",
+        "R3 Gate 1.1 plan and measurements",
+        "R3 Gate 2 Blender source, GLB, manifest, renders, and checks",
+        "all later-gate visual acceptance evidence"
+      ],
+      "historicalEvidence": [
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r3/"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/"
     }
   ],
   "gates": [
@@ -406,39 +435,39 @@
       "evidence": [
         {
           "kind": "floor-plan",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/01-north-up-measured-plan.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/01-north-up-measured-plan.png"
         },
         {
           "kind": "vertical-section",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/02-measured-sections.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/02-true-scale-midflank-section.png"
         },
         {
           "kind": "route-storyboard",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/01-north-up-measured-plan.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/03-runtime-uphill-downhill-proof.png"
         },
         {
           "kind": "sightline-study",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/03-orbit-sightline-study.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/04-orbit-sightline-study.png"
         },
         {
           "kind": "emplacement-calibration",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/04-flowy-calibration-sweep.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/05-flowy-calibration-sweep.png"
         },
         {
           "kind": "verification-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/ember-breached-rift-bench-gate1-1-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/ember-midflank-fire-pilgrimage-r4-gate1-1-report.json"
         }
       ],
       "checks": [
         {
           "name": "walkability",
           "status": "passed",
-          "evidence": "Ember remains a Viewer3D orbit environment. The R3 report verifies low relief inside the protected 4.5 m action envelope and an elongated old-flow peninsula attached to the open eastern terrain; no material boundary marks a stage."
+          "evidence": "Ember remains a Viewer3D orbit environment. The R4 report verifies low relief inside the protected 4.5 m action envelope while the contour ledge continues beyond the orbit; no material boundary encloses a circular stage."
         },
         {
           "name": "clearance",
           "status": "passed",
-          "evidence": "The selected Flowy footprint must preserve at least 2.500 m beyond the protected 4.5 m action envelope; the canonical R3 report owns the regenerated measurement."
+          "evidence": "The selected Flowy footprint preserves at least 2.500 m beyond the protected 4.5 m action envelope; the canonical R4 report owns the regenerated measurement."
         },
         {
           "name": "sightlines",
@@ -448,12 +477,12 @@
         {
           "name": "final-view",
           "status": "passed",
-          "evidence": "The north-up plan keeps the fissure and failed crown inside the primary composition, preserves the open east/southeast horizon, and identifies an actual inboard terminal low with a containing downslope lip."
+          "evidence": "The north-up plan and true-scale section keep more than 100 m of upper mountain and more than 60 m of lower fall in one continuous section, while the exact opposite-side orbit proof tests both reads from the performer target."
         },
         {
           "name": "artifact-digest",
           "status": "passed",
-          "evidence": "The canonical Gate 1.1 report records SHA-256 digests for all review images and the checked-in little-endian float32 simulator raster."
+          "evidence": "The canonical R4 Gate 1.1 report records SHA-256 digests for all review images and the checked-in little-endian float32 simulator raster."
         }
       ],
       "approval": null
