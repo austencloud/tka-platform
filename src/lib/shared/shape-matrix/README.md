@@ -1,9 +1,11 @@
-# Shape Matrix Engine
+# Kinetic Shape Engine
 
-Shared engine for the interactive VTG shape matrix: the flower axis, the
-matrix grid, the exact-realization drill, and cell rendering. Consumed by the
-`/notation/shape-matrix` public destination, the `/notation` teaser, and the
-lab dev harness (`src/routes/test/shape-matrix/+page.svelte`,
+Shared implementation for Kinetic Shape Engine: the flower axis, level and
+ratio matrices, exact-realization drill, and cell rendering. Internal
+`ShapeMatrix*` names remain because the matrix is still the behavior they own.
+The implementation is consumed by the `/notation/shape-matrix` public
+destination, the history archive, and the lab dev harness
+(`src/routes/test/shape-matrix/+page.svelte`,
 `src/lib/features/lab/vtg-lab/`).
 
 No barrel export (`index.ts`) per this codebase's code-style convention —

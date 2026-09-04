@@ -271,7 +271,10 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
       },
       { label: "LORQ:TECH", href: "https://www.youtube.com/user/SirLorq" },
     ],
-    explore: { label: "Run the Shape Matrix", href: "/notation/shape-matrix" },
+    explore: {
+      label: "Open Kinetic Shape Engine",
+      href: "/notation/shape-matrix",
+    },
   },
   {
     id: "poinotation",

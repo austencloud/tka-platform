@@ -7,10 +7,17 @@
     readShapeMatrixRouteState,
     writeShapeMatrixRouteState,
   } from "./_state/shape-matrix-url";
+  import {
+    KINETIC_SHAPE_ENGINE_DESCRIPTION,
+    KINETIC_SHAPE_ENGINE_NAME,
+    ORIGINAL_SHAPE_MATRIX_NAME,
+    ORIGINAL_SHAPE_MATRIX_URL,
+    SHAPE_ENGINE_SHORT_NAME,
+    SHAPE_MATRIX_EXPLORER_LEGACY_NAME,
+  } from "$lib/shared/shape-matrix/app/shape-engine-identity";
 
-  const TITLE = "Shape Matrix Explorer | Flow Arts Composer";
-  const DESCRIPTION =
-    "Explore shape pairings in an interactive matrix, then open six timing-and-direction realizations and watch each path traced live.";
+  const TITLE = `${KINETIC_SHAPE_ENGINE_NAME} | Flow Arts Composer`;
+  const DESCRIPTION = KINETIC_SHAPE_ENGINE_DESCRIPTION;
   const URL = "https://tkaflowarts.com/notation/shape-matrix";
   const ROUTE_STATE_PARAMS = [
     "level",
@@ -48,15 +55,16 @@
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "Shape Matrix Explorer",
+    "name": "${KINETIC_SHAPE_ENGINE_NAME}",
+    "alternateName": ["${SHAPE_ENGINE_SHORT_NAME}", "${SHAPE_MATRIX_EXPLORER_LEGACY_NAME}"],
     "url": "${URL}",
     "description": "${DESCRIPTION}",
     "applicationCategory": "EducationalApplication",
     "operatingSystem": "Web",
     "isBasedOn": {
       "@type": "CreativeWork",
-      "name": "144 Shape Matrix",
-      "url": "http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/",
+      "name": "${ORIGINAL_SHAPE_MATRIX_NAME}",
+      "url": "${ORIGINAL_SHAPE_MATRIX_URL}",
       "creator": {
         "@type": "Person",
         "name": "Lorq Nichols",
@@ -77,7 +85,7 @@
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://tkaflowarts.com/" },
       { "@type": "ListItem", "position": 2, "name": "Flow Arts History", "item": "https://tkaflowarts.com/history" },
-      { "@type": "ListItem", "position": 3, "name": "Shape Matrix Explorer", "item": "${URL}" }
+      { "@type": "ListItem", "position": 3, "name": "${KINETIC_SHAPE_ENGINE_NAME}", "item": "${URL}" }
     ]
   }
   </script>`}

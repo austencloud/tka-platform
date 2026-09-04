@@ -3,9 +3,10 @@
   import type { HTMLButtonAttributes } from "svelte/elements";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
-
-  const ORIGINAL_MATRIX_URL =
-    "http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/";
+  import {
+    KINETIC_SHAPE_ENGINE_NAME,
+    ORIGINAL_SHAPE_MATRIX_URL,
+  } from "../shape-engine-identity";
 
   const appState = getShapeMatrixAppContext();
   let open = $state(false);
@@ -20,7 +21,7 @@
 
   function openOriginal(): void {
     const original = window.open(
-      ORIGINAL_MATRIX_URL,
+      ORIGINAL_SHAPE_MATRIX_URL,
       "_blank",
       "noopener,noreferrer"
     );
@@ -36,7 +37,7 @@
         {...triggerProps}
         type="button"
         class="overflow-trigger"
-        aria-label="More Shape Matrix options"
+        aria-label="More Shape Engine options"
       >
         <i class="fas fa-ellipsis-vertical" aria-hidden="true"></i>
       </button>
@@ -50,26 +51,26 @@
       sideOffset={8}
       collisionPadding={12}
       class="shape-matrix-overflow"
-      aria-label="Shape Matrix options"
+      aria-label="Shape Engine options"
     >
       <!-- No prop entry here: the Props control under the animation canvas
            owns that choice, where the prop is visible against the shape it
            traces. -->
       <DropdownMenu.Item
         class="shape-matrix-overflow-item"
-        textValue="View Lorq Nichols' original Shape Matrix"
+        textValue="View Lorq Nichols' original 144 Shape Matrix"
         onSelect={openOriginal}
       >
         <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-        <span>Original Shape Matrix</span>
+        <span>Lorq Nichols’ original 144 Shape Matrix</span>
       </DropdownMenu.Item>
       <DropdownMenu.Item
         class="shape-matrix-overflow-item"
-        textValue="About Shape Matrix Explorer"
+        textValue={`About ${KINETIC_SHAPE_ENGINE_NAME}`}
         onSelect={openAbout}
       >
         <i class="fas fa-circle-info" aria-hidden="true"></i>
-        <span>About this explorer</span>
+        <span>About Shape Engine</span>
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Portal>
