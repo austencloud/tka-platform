@@ -195,6 +195,7 @@ export class WorkerEnvironmentRenderer {
           this.handleFailure(source.state.requestId, message),
         onDestroyed: (source) => {
           this.slots.delete(source.state.requestId);
+          if (!this.disposed) this.publish();
         },
       });
       this.slots.set(state.requestId, slot);
