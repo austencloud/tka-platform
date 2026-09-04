@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createStageChoreographyState } from "$lib/features/stage/state/stage-choreography-state.svelte";
 import { sampleStageFormations } from "$lib/features/stage/domain/stage-formation-sampler";
+import { resolveStageTravel } from "$lib/features/stage/domain/stage-travel-plan";
 import { generatePresetPositions } from "$lib/features/stage/state/formation-presets";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { SceneEnvironmentId } from "$lib/shared/3d/environments/domain/scene-environment";
@@ -472,7 +473,7 @@ describe("stage choreography state", () => {
 
   it("anchors an unqualified transition to the exact sampled live positions", () => {
     const state = createStageChoreographyState();
-    const atBeat = 24;
+    const atBeat = 8;
     const before = sampleStageFormations(state.choreography, atBeat);
 
     state.applyFormationTransition("circle", 4, undefined, atBeat);
@@ -491,6 +492,86 @@ describe("stage choreography state", () => {
         6
       );
     }
+    state.destroy();
+  });
+
+  it("refuses to replace already-authored travel with a stationary anchor", () => {
+    const state = createStageChoreographyState();
+    const before = JSON.stringify(state.choreography);
+    const beforeRevision = state.historyRevision;
+    const beforeFrames = sampleStageFormations(state.choreography, 20);
+
+    expect(() => state.applyFormationTransition("circle", 4, undefined, 24))
+      .toThrow("would change movement before beat 24");
+    expect(JSON.stringify(state.choreography)).toBe(before);
+    expect(state.historyRevision).toBe(beforeRevision);
+    expect(sampleStageFormations(state.choreography, 20)).toEqual(beforeFrames);
+    state.destroy();
+  });
+
+  it("preserves incoming travel when directing from an existing set", () => {
+    const state = createStageChoreographyState();
+    const beforeFrames = sampleStageFormations(state.choreography, 20);
+    state.applyFormationTransition("circle", 4, undefined, 32);
+    expect(sampleStageFormations(state.choreography, 20)).toEqual(beforeFrames);
+    state.destroy();
+  });
+
+  it("refuses to erase an earlier turn even when the performer stays in place", () => {
+    const state = createStageChoreographyState();
+    for (const performer of state.choreography.performers) {
+      const opening = state.choreography.formations[0]!.spots[performer.id]!;
+      opening.facingAngle = 0;
+      state.choreography.formations[1]!.spots[performer.id] = {
+        ...opening,
+        facingAngle: Math.PI / 2,
+      };
+    }
+    const before = JSON.stringify(state.choreography);
+    const beforeFacing = sampleStageFormations(state.choreography, 20).map((frame) => frame.bodyFacing);
+    expect(beforeFacing.every((facing) => facing === Math.PI / 2)).toBe(true);
+    expect(() => state.applyFormationTransition("circle", 4, undefined, 24))
+      .toThrow("would change movement before beat 24");
+    expect(JSON.stringify(state.choreography)).toBe(before);
+    expect(sampleStageFormations(state.choreography, 20).map((frame) => frame.bodyFacing)).toEqual(beforeFacing);
+    state.destroy();
+  });
+
+  it("captures actual body facing when creating a permitted held anchor", () => {
+    const state = createStageChoreographyState();
+    const performer = state.choreography.performers[0]!;
+    state.choreography.formations[0]!.spots[performer.id]!.facingAngle = Math.PI / 3;
+    const facing = sampleStageFormations(state.choreography, 8)[0]!.bodyFacing;
+    state.applyFormationTransition("circle", 4, undefined, 8);
+    expect(state.choreography.formations.find((set) => set.atBeat === 8)!.spots[performer.id]!.facingAngle).toBe(facing);
+    state.destroy();
+  });
+
+  it("refuses a new start shape that would rewrite arrival at an existing set", () => {
+    const state = createStageChoreographyState();
+    const before = JSON.stringify(state.choreography);
+    expect(() => state.applyFormationTransition("circle", 4, "v-shape", 32))
+      .toThrow("would change movement before beat 32");
+    expect(JSON.stringify(state.choreography)).toBe(before);
+    state.destroy();
+  });
+
+  it("replaces old performer timing with the explicitly requested transition duration", () => {
+    const state = createStageChoreographyState();
+    const destination = state.addFormation(4, "circle")!;
+    const performer = state.choreography.performers[0]!;
+    state.updatePerformerTravelTiming(destination.id, performer.id, 1, 2);
+
+    state.applyFormationTransition("circle", 4, "v-shape", 0);
+    const index = state.choreography.formations.findIndex((set) => set.atBeat === 4);
+    expect(resolveStageTravel(state.choreography, performer.id, index)).toMatchObject({
+      departureBeat: 0,
+      arrivalBeat: 4,
+      durationBeats: 4,
+    });
+    state.undo();
+    expect(state.choreography.formations[index]!.spots[performer.id]!.travel)
+      .toMatchObject({ departureBeat: 1, arrivalBeat: 2 });
     state.destroy();
   });
 
