@@ -139,6 +139,10 @@ export function readShapeMatrixRouteState(
     surface,
     theoryLeftRatio,
     theoryRightRatio,
+    ...(params.get("linkRatios") === "1" &&
+    spinRatioEquals(theoryLeftRatio, theoryRightRatio)
+      ? { theoryRatiosLinked: true }
+      : {}),
     theoryMode:
       requestedTheoryMode && MODES.has(requestedTheoryMode)
         ? requestedTheoryMode
@@ -206,6 +210,8 @@ export function writeShapeMatrixRouteState(
     url.searchParams.set("theory", "1");
     url.searchParams.set("leftRatio", spinRatioKey(state.theoryLeftRatio));
     url.searchParams.set("rightRatio", spinRatioKey(state.theoryRightRatio));
+    if (state.theoryRatiosLinked) url.searchParams.set("linkRatios", "1");
+    else url.searchParams.delete("linkRatios");
     url.searchParams.set("pairing", state.theoryMode);
     if (state.theoryPair) {
       url.searchParams.set(
@@ -224,6 +230,7 @@ export function writeShapeMatrixRouteState(
     url.searchParams.delete("theory");
     url.searchParams.delete("leftRatio");
     url.searchParams.delete("rightRatio");
+    url.searchParams.delete("linkRatios");
     url.searchParams.delete("pairing");
     url.searchParams.delete("theoryLeft");
     url.searchParams.delete("theoryRight");

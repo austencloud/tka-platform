@@ -51,6 +51,12 @@ export interface LayoutMotionConfig {
    * second transition doesn't stack on top of a first.
    */
   cancelSelectors?: string[];
+  /**
+   * Mark the root while geometry owns the gesture. Descendants can use the
+   * attribute to pause their own transitions so, for example, an SVG does not
+   * rotate inside a tile that is simultaneously translating and scaling.
+   */
+  suspendDescendantTransitions?: boolean;
   /** Reduced-motion-aware duration in ms. 0 disables the transition. */
   getDuration?: () => number;
   easing?: string;
@@ -129,7 +135,8 @@ function animateGeometry(
   const deltaX = beforeRect.left - afterRect.left;
   const deltaY = beforeRect.top - afterRect.top;
   const scaleX = afterRect.width > 0 ? beforeRect.width / afterRect.width : 1;
-  const scaleY = afterRect.height > 0 ? beforeRect.height / afterRect.height : 1;
+  const scaleY =
+    afterRect.height > 0 ? beforeRect.height / afterRect.height : 1;
 
   const moved =
     Math.abs(deltaX) > MIN_TRANSLATE_PX ||
@@ -159,16 +166,37 @@ export function createLayoutMotion(config: LayoutMotionConfig): LayoutMotion {
     getRoot,
     groups,
     cancelSelectors = [],
+    suspendDescendantTransitions = false,
     getDuration = () => LAYOUT_MOTION_DURATION_MS,
     easing = LAYOUT_MOTION_EASING,
   } = config;
 
   let snapshot: Map<string, DOMRect> | null = null;
   let running: Animation[] = [];
+  let suspendedRoot: HTMLElement | null = null;
+  let suspensionToken = 0;
+
+  function beginDescendantSuspension(root: HTMLElement): number {
+    const token = ++suspensionToken;
+    suspendedRoot?.removeAttribute("data-layout-motion-suspend-descendants");
+    suspendedRoot = root;
+    root.setAttribute("data-layout-motion-suspend-descendants", "");
+    return token;
+  }
+
+  function endDescendantSuspension(expectedToken?: number): void {
+    if (expectedToken !== undefined && expectedToken !== suspensionToken) {
+      return;
+    }
+    suspendedRoot?.removeAttribute("data-layout-motion-suspend-descendants");
+    suspendedRoot = null;
+  }
 
   function cancel(): void {
+    ++suspensionToken;
     for (const animation of running) animation.cancel();
     running = [];
+    endDescendantSuspension();
   }
 
   return {
@@ -206,6 +234,9 @@ export function createLayoutMotion(config: LayoutMotionConfig): LayoutMotion {
       running = [];
 
       snapshot = rects;
+      if (suspendDescendantTransitions) {
+        beginDescendantSuspension(root);
+      }
       return true;
     },
 
@@ -215,7 +246,10 @@ export function createLayoutMotion(config: LayoutMotionConfig): LayoutMotion {
       if (!rects) return [];
 
       const root = getRoot();
-      if (!root) return [];
+      if (!root) {
+        endDescendantSuspension();
+        return [];
+      }
 
       const duration = getDuration();
       const members = collectMembers(root, groups);
@@ -226,16 +260,44 @@ export function createLayoutMotion(config: LayoutMotionConfig): LayoutMotion {
         // Absent members left the layout (a deleted step, a mandala that only
         // exists in the other mode). Nothing to move them to.
         if (!element) continue;
-        const animation = animateGeometry(element, beforeRect, duration, easing);
+        const animation = animateGeometry(
+          element,
+          beforeRect,
+          duration,
+          easing
+        );
         if (animation) animations.push(animation);
       }
 
       running = animations;
+      if (suspendDescendantTransitions) {
+        const token = suspensionToken;
+        if (animations.length === 0) {
+          endDescendantSuspension(token);
+        } else {
+          const unsettled = new Set(animations);
+          const settle = (animation: Animation) => {
+            if (!unsettled.delete(animation) || unsettled.size > 0) return;
+            if (token === suspensionToken) running = [];
+            endDescendantSuspension(token);
+          };
+          for (const animation of animations) {
+            animation.addEventListener("finish", () => settle(animation), {
+              once: true,
+            });
+            animation.addEventListener("cancel", () => settle(animation), {
+              once: true,
+            });
+          }
+        }
+      }
       return animations;
     },
 
     discard(): void {
       snapshot = null;
+      ++suspensionToken;
+      endDescendantSuspension();
     },
 
     cancel,

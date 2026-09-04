@@ -38,8 +38,8 @@ insert explicitly.
 Each reference card uses the production Choreo Card rendering pipeline with:
 
 - poker-card geometry (2.5 × 3.5 inches, 5:7 aspect ratio);
-- the canonical Start position in the first column, followed by the four
-  continuous-motion beats in the standard 3×2 four-beat grid;
+- the canonical Start row above the four continuous-motion beats in their 2×2
+  grid;
 - `handPathMode`, so the card shows HAND props and motion paths without TKA
   letters;
 - a plain-language relationship title rather than a word;

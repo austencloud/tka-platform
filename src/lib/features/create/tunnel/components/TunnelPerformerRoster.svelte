@@ -2,7 +2,11 @@
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getBaseMotionColors } from "$lib/shared/animation-engine/services/svg-generator";
   import {
     tunnelPropColor,
@@ -63,8 +67,11 @@
   const componentId = $props.id();
   const performerPanelId = `${componentId}-selected-performer-panel`;
   const creator = getTunnelCreatorContext();
+  const animationVisibility = getAnimationVisibilityManager();
   const baseMotionColors = getBaseMotionColors();
   let cardRef = $state<CardRef>();
+  let pendingPerformerId = $state<string | null>(null);
+  let selectionRequest = 0;
   const workflowOptions = [
     {
       value: "custom" as TunnelWorkflowMode,
@@ -111,7 +118,47 @@
     );
   }
 
-  function select(performerId: string): void {
+  function sequenceFor(performerId: string): SequenceData | null {
+    const displayed = displays[performerId]?.sequence;
+    if (displayed) return displayed;
+    const performer = creator.performerSlots.find(
+      (slot) => slot.id === performerId
+    )?.performer;
+    return performer?.source.kind === "independent"
+      ? performer.source.sequence
+      : null;
+  }
+
+  async function preparePerformer(performerId: string): Promise<void> {
+    const sequence = sequenceFor(performerId);
+    if (!sequence) return;
+
+    const pictographs = [
+      sequence.startPosition ?? sequence.startingPosition ?? null,
+      ...sequence.steps,
+    ].filter((pictograph): pictograph is PictographData => pictograph !== null);
+    const settings = getSettings();
+    await pictographPreparer.prepareBatch(pictographs, {
+      themeMode: animationVisibility.isDarkMode() ? "dark" : "light",
+      leftPropType,
+      rightPropType,
+      leftBuugengFlipped: settings.leftBuugengFlipped ?? false,
+      rightBuugengFlipped: settings.rightBuugengFlipped ?? false,
+    });
+  }
+
+  async function select(performerId: string): Promise<void> {
+    const request = ++selectionRequest;
+    if (performerId === creator.selectedPerformerId) {
+      pendingPerformerId = null;
+      return;
+    }
+
+    pendingPerformerId = performerId;
+    await preparePerformer(performerId);
+    if (request !== selectionRequest) return;
+
+    pendingPerformerId = null;
     if (!creator.selectPerformer(performerId)) return;
     onSelectPerformer(performerId);
   }
@@ -134,7 +181,7 @@
     event.preventDefault();
     const nextSlot = creator.performerSlots[nextIndex];
     if (!nextSlot) return;
-    select(nextSlot.id);
+    void select(nextSlot.id);
     const tabs = event.currentTarget
       ? Array.from(
           (
@@ -242,9 +289,10 @@
               type="button"
               role="tab"
               aria-selected={creator.selectedPerformerId === slot.id}
+              aria-busy={pendingPerformerId === slot.id}
               aria-controls={performerPanelId}
               tabindex={creator.selectedPerformerId === slot.id ? 0 : -1}
-              onclick={() => select(slot.id)}
+              onclick={() => void select(slot.id)}
               onkeydown={(event) => handleTabKeydown(event, index)}
             >
               {slot.label.replace("Performer ", "P")}
@@ -424,6 +472,11 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 750;
     cursor: pointer;
+    transition:
+      border-color var(--transition-fast),
+      color var(--transition-fast),
+      background-color var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
   .performer-switcher button[aria-selected="true"] {
@@ -434,6 +487,14 @@
       var(--theme-accent) 18%,
       var(--theme-card-bg)
     );
+  }
+
+  .performer-switcher button[aria-busy="true"]:not([aria-selected="true"]) {
+    border-color: color-mix(in srgb, var(--theme-accent) 45%, transparent);
+    color: var(--theme-text);
+    box-shadow: inset 0 -2px 0
+      color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    cursor: progress;
   }
 
   .performer-switcher button:focus-visible {
