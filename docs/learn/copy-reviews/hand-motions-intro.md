@@ -148,3 +148,9 @@ the lesson does not repeat Water, Earth, Sun, Fire, Air, or Moon as headings.
   side-by-side motion bays, offsets their clocks, and uses a quicker
   gravity-shaped bounce with impact squash and rebound. No learner-facing copy
   changed.
+- 2026-09-04 — Austen rejected bouncing balls as a timing metaphor because
+  unbelievable physics competed with the concept. The bridge now uses one
+  selectable phase dial for Together, Split, and Quarter and one selectable
+  arrow runway for Same and Opposite. The dial states the selected relationship
+  as the same point, half a cycle apart, or one quarter of a cycle apart. The
+  five relationship names are unchanged.

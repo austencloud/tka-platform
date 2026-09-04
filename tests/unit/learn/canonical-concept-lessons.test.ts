@@ -219,28 +219,26 @@ describe("canonical concept lesson composition", () => {
     );
     expect(timingIntro).toContain('<h3 id="timing-heading">Timing</h3>');
     expect(timingIntro).toContain('<h3 id="direction-heading">Direction</h3>');
-    expect(timingIntro).toContain('data-phase="0"');
-    expect(timingIntro).toContain('data-phase="half"');
-    expect(timingIntro).toContain('data-phase="quarter"');
-    expect(timingIntro).toContain('data-direction="same"');
-    expect(timingIntro).toContain('data-direction="opposite"');
-    expect(timingIntro).toContain("@keyframes timing-bounce");
+    expect(timingIntro).toContain("SegmentedControl");
+    expect(timingIntro).toContain('semantics="radiogroup"');
+    expect(timingIntro).toContain("event.stopPropagation()");
+    expect(timingIntro).toContain("data-timing={timingMode}");
+    expect(timingIntro).toContain("data-direction={directionMode}");
+    expect(timingIntro).toContain("phase-ring outer-ring");
+    expect(timingIntro).toContain("phase-ring inner-ring");
+    expect(timingIntro).toContain("phase-ticks");
+    expect(timingIntro).toContain("@keyframes phase-rotation");
     expect(timingIntro).toContain("@keyframes direction-travel-forward");
     expect(timingIntro).toContain("@keyframes direction-travel-reverse");
     expect(timingIntro).toContain(
       "grid-template-columns: minmax(0, 3fr) minmax(0, 2fr)"
     );
-    expect(timingIntro).toMatch(
-      /\.timing-examples\s*\{[^}]*grid-template-columns: repeat\(3,/s
-    );
-    expect(timingIntro).toMatch(
-      /\.direction-examples\s*\{[^}]*grid-template-columns: repeat\(2,/s
-    );
-    expect(timingIntro).toContain("--scene-delay");
-    expect(timingIntro).toContain("animation-timing-function: var(--ease-out)");
-    expect(timingIntro).toContain("animation-timing-function: var(--ease-in)");
+    expect(timingIntro).toContain('value: "½"');
+    expect(timingIntro).toContain('value: "¼"');
     expect(timingIntro).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(timingIntro).not.toContain(".example-row + .example-row");
+    expect(timingIntro).not.toContain("timing-bounce");
+    expect(timingIntro).not.toContain("bounce-stage");
+    expect(timingIntro).not.toContain("example-bay");
     expect(timingIntro).not.toContain("axis-join");
     expect(timingIntro).not.toMatch(
       /border-(left|right|top|bottom):\s*[2-9]\d*px/
