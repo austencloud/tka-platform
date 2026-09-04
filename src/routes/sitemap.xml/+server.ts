@@ -67,6 +67,7 @@ const pages: SitemapEntry[] = [
   { url: "guide/level-2" },
   { url: "guide/level-2/turns" },
   { url: "guide/level-2/double-turns" },
+  { url: "guide/ratios" },
   { url: "guide/codex" },
 ];
 

@@ -1,6 +1,7 @@
 export const KINETIC_SHAPE_ENGINE_NAME = "Kinetic Shape Engine";
 export const SHAPE_ENGINE_SHORT_NAME = "Shape Engine";
 export const SHAPE_MATRIX_EXPLORER_LEGACY_NAME = "Shape Matrix Explorer";
+export const KINETIC_SHAPE_ENGINE_AUTHOR = "Austen Cloud";
 
 export const KINETIC_SHAPE_ENGINE_DESCRIPTION =
   "Generate and animate exact flow-arts flowers across TKA Levels 1–4 and a matrix of whole-number spin ratios.";
