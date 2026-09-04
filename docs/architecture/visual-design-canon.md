@@ -386,10 +386,12 @@ restrained whole-surface tint, and full perimeter border carry its tab color.
 The tiles do not use list-row chevrons, blur, decorative edge strips, or
 invented workflow graphics.
 
-On large desktop and 4K canvases, the authored content band grows at the
-canonical wide-screen tiers while the cards, icons, type, and spacing retain
-their ordinary scale. This makes the choice set more present without turning
-the interface into a magnified desktop screenshot.
+On desktop, the chooser uses a deliberately generous front-door scale because
+it presents one focused decision rather than dense workspace chrome. The
+authored band grows fluidly toward 1440px while its title, icons, descriptions,
+and tiles use the desktop baseline defined for this surface. True wide canvases
+may extend the band to 1600px, but the controls do not keep magnifying with the
+viewport.
 
 Height-constrained landscape screens keep the same two-band bento and compact
 its vertical rhythm. The question remains above the choices at every viewport.

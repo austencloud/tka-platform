@@ -184,7 +184,7 @@ export function verdictRows(
   maneuver: GaitManeuverProfile = "walk"
 ): VerdictRow[] {
   const r = report;
-  if (!r || r.stances.length === 0) return [];
+  if (!r) return [];
   const anatomyMeasured =
     r.anatomy.minConditionedFraction >= MIN_ANATOMY_COVERAGE;
   const rows = [
@@ -365,6 +365,19 @@ export function verdictRows(
       tell: "share of the bend spent with the shank in front of the thigh",
     },
   ];
+  // Anatomy does not depend on contact. A knee folding sideways is a knee
+  // folding sideways whether or not the instrument managed to find a footfall,
+  // and these three rows read hip/knee/ankle geometry alone. Returning nothing
+  // when no stance was detected made the anatomy layer inherit every fragility
+  // of contact detection, which is the one thing it exists to be independent
+  // of: four characters lost their knee rows to a stance window landing a few
+  // milliseconds under the minimum. Every other row below describes a footfall
+  // and genuinely has nothing to say without one.
+  if (r.stances.length === 0) {
+    const anatomyOnly = new Set<string>(ANATOMY_METRICS);
+    return rows.filter((row) => anatomyOnly.has(row.name));
+  }
+
   const arrivalMetrics = new Set([
     "Foot slip per step",
     "Heel lift in stance",

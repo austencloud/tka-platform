@@ -23,6 +23,7 @@ Uses stepper pattern for direct increment/decrement interaction
     gridColumnSpan = 2,
     cardIndex = 0,
     headerFontSize = "9px",
+    appearance = "vivid",
   } = $props<{
     currentIntensity: number;
     allowedValues: number[];
@@ -33,6 +34,7 @@ Uses stepper pattern for direct increment/decrement interaction
     gridColumnSpan?: number;
     cardIndex?: number;
     headerFontSize?: string;
+    appearance?: "vivid" | "quiet";
   }>();
 
   // The app follows its selected background. Isolated embeds can pin the
@@ -98,4 +100,5 @@ Uses stepper pattern for direct increment/decrement interaction
   {gridColumnSpan}
   {cardIndex}
   {headerFontSize}
+  {appearance}
 />

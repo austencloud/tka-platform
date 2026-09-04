@@ -34,7 +34,7 @@ CardFooter.svelte - Footer section with subtitle and description
 
   /* Portrait mode: Subtitle and description */
   .card-subtitle {
-    font-size: clamp(10px, 2.5cqh, 14px);
+    font-size: var(--card-subtitle-size, clamp(10px, 2.5cqh, 14px));
     font-weight: 500;
     color: color-mix(in srgb, var(--text-color) 85%, transparent);
     text-align: center;
@@ -48,12 +48,12 @@ CardFooter.svelte - Footer section with subtitle and description
   }
 
   .card-description {
-    font-size: clamp(8px, 2cqh, 11px);
+    font-size: var(--card-description-size, clamp(8px, 2cqh, 11px));
     font-weight: 500;
     color: color-mix(in srgb, var(--text-color) 75%, transparent);
     text-align: center;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
+    letter-spacing: var(--card-description-letter-spacing, 0.3px);
+    text-transform: var(--card-description-transform, uppercase);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

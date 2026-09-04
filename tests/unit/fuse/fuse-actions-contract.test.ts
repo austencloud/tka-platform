@@ -65,6 +65,21 @@ describe("Fuse sequence actions contract", () => {
     expect(compactMenu).not.toContain('label: "Choose first step"');
   });
 
+  it("gives desktop sources one primary action and discloses rare actions", () => {
+    const card = read("src/lib/features/fuse/components/FuseSourceCard.svelte");
+
+    expect(card).toContain('<div class="source-actions">');
+    expect(card).toContain("Regenerate");
+    expect(card).toContain("<FuseSourceActionPopover");
+    expect(card).toContain("items={sourceMenuItems}");
+    expect(card).toContain('triggerPresentation="labelled"');
+    expect(card).toContain("<span>More</span>");
+    expect(card).toContain('label: "Choose saved LOOP"');
+    expect(card).toContain('label: "Choose a shape"');
+    expect(card).toContain('label: "Build a custom path"');
+    expect(card).toContain('"Save to library"');
+  });
+
   it("keeps the live source grid inside the canonical Choreo Card contract", () => {
     const card = read("src/lib/features/fuse/components/FuseSourceCard.svelte");
     const grid = read(
@@ -97,6 +112,9 @@ describe("Fuse sequence actions contract", () => {
     );
     expect(preview).toContain("min-width: 110px");
     expect(preview).toContain("@container fuse-preview (max-width: 620px)");
-    expect(preview).toContain('"tempo save viewer"');
+    expect(preview).toContain('"viewer viewer viewer"');
+    expect(preview).toContain('"tempo save share"');
+    expect(preview).toContain('label="Open viewer"');
+    expect(preview).toContain('variant="secondary"');
   });
 });

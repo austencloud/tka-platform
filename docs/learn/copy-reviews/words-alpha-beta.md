@@ -35,6 +35,13 @@ reserved explanation slots must remain empty until exact replacement wording
 is reviewed. Routine interface labels, the verified family names, counts, and
 canonical glyphs remain exempt.
 
+Each taught word now uses one coordinated Composer-style stage with a reserved
+performance-video region, the live animation, and the production Choreo Card
+visible together. The animation keeps the full context menu and shows hand
+timing/direction at bottom right and prop timing/direction at top right. The
+video and explanation stay attached to the same typed 19-word curriculum
+record so future media cannot drift to a different word.
+
 The rejected quiz and completion summary have been removed. The step lesson's
 interaction is awaiting Austen's hands-on review and is not recorded as
 CONFIRMED.
@@ -196,3 +203,7 @@ other explanatory prose still requires a new approval entry here.
   the premature 19-word reveal, and reserving coordinated video and explanation
   slots beside the animation and card. No new instructional explanation was
   supplied or approved; those slots remain empty.
+- 2026-09-03 — Austen approved the pre-letter hand-motion and pictograph
+  anatomy sequence, the full animation menu, and visible hand/prop
+  timing-direction regions. The word lesson still introduces only its six
+  guide-assigned Alpha/Beta words.
