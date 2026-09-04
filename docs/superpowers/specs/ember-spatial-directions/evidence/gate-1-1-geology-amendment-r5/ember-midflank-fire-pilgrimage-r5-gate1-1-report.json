@@ -12,6 +12,7 @@
     "midflankRequirement": "BvN1DiylOnfdbrofcwaM",
     "broadLedgeRejection": "Vwm6XTLdDbDfxuoVE7z9",
     "r5CandidateProposal": "5P5KVEq04dpHxu9F0ViI",
+    "performanceGroundDetailProposal": "LfdgqBhR1T31jk77cFhf",
     "gate1R5CompletionReference": "Iur86OmZX40nTqdwgxDq",
     "historicalGate1R4Approval": "xFcagbaZTQAq615IbZgT",
     "historicalGate1R4Completion": "FZftIaWtEdGTrqXRv9JS"
@@ -312,22 +313,97 @@
       "clear": true
     }
   ],
+  "performanceGround": {
+    "stableCoreWidthXM": 12.0,
+    "stableCoreWidthZM": 11.0,
+    "stableCoreAreaM2": 124,
+    "actionAreaM2": 63.617,
+    "actionMedianSlopeDegrees": 1.286,
+    "olderFlowContactMedianSlopeDegrees": 8.209,
+    "activeFlowActionClearanceM": 7.097,
+    "audienceStandingPoints": [
+      {
+        "runtimeXZ": [
+          4.0,
+          -9.0
+        ],
+        "terrainSlopeDegrees": 7.063,
+        "clearanceBeyondActionEnvelopeM": 5.349,
+        "activeFlowClearanceM": 16.0,
+        "withinOlderFlowContact": true
+      },
+      {
+        "runtimeXZ": [
+          8.0,
+          -11.5
+        ],
+        "terrainSlopeDegrees": 8.423,
+        "clearanceBeyondActionEnvelopeM": 9.509,
+        "activeFlowClearanceM": 20.006,
+        "withinOlderFlowContact": true
+      },
+      {
+        "runtimeXZ": [
+          7.0,
+          -15.0
+        ],
+        "terrainSlopeDegrees": 9.381,
+        "clearanceBeyondActionEnvelopeM": 12.053,
+        "activeFlowClearanceM": 19.0,
+        "withinOlderFlowContact": true
+      },
+      {
+        "runtimeXZ": [
+          2.5,
+          -17.0
+        ],
+        "terrainSlopeDegrees": 9.45,
+        "clearanceBeyondActionEnvelopeM": 12.683,
+        "activeFlowClearanceM": 14.5,
+        "withinOlderFlowContact": true
+      }
+    ],
+    "minimumAudienceActionClearanceM": 5.349,
+    "minimumAudienceActiveFlowClearanceM": 14.5,
+    "audienceSlopeRangeDegrees": [
+      7.063,
+      9.45
+    ],
+    "geometryClassification": "invention",
+    "geologicalRead": "Old, cooled lava bench embedded in the sloping older-flow contact.",
+    "authoredIntervention": "The Order clears loose clinker without cutting a geometric platform.",
+    "audienceRelationship": "A few standing pockets follow the contour downslope and laterally, outside the protected action envelope.",
+    "materialClassification": "invention reserved for Gate 3",
+    "materialProposal": "A subtle darker and denser read belongs to the entire old-flow contact, not a circular stage shader.",
+    "thermalResponseClassification": "invention reserved for Gate 3/4",
+    "thermalResponseProposal": "Low-area pulse only in pre-existing peripheral fractures; the cooled surface underfoot remains non-emissive.",
+    "rejectedReads": [
+      "floating disc",
+      "circular stage shader",
+      "radial crack graphic",
+      "lava moat",
+      "broad level shelf",
+      "hot floor under performers"
+    ]
+  },
   "evidence": [
     "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/01-north-up-measured-plan.png",
     "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/02-true-scale-midflank-section.png",
     "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/03-runtime-uphill-downhill-proof.png",
     "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/04-orbit-sightline-study.png",
     "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/05-flowy-calibration-sweep.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/06-performance-ground-detail.png",
     "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/ember-midflank-fire-pilgrimage-r5-gate1-1-contact-sheet.png",
     "static/data/ember/review/ember-midflank-fire-pilgrimage-r5-flowy-thickness.f32"
   ],
   "evidenceDigests": {
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/01-north-up-measured-plan.png": "87534272af1947cc63fc4cc8bc310115325bea2440d7f833b3b5d9d60d78a279",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/01-north-up-measured-plan.png": "5e7c3bff3835f90a8283c37f7aa453008a1ff38c09b9cb6d75f69111246b5a45",
     "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/02-true-scale-midflank-section.png": "3718dc685487658490312c7cdd1675f98f99f97781acb0fc2c6a80acffd8149f",
     "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/03-runtime-uphill-downhill-proof.png": "855bb814a98ca980138a93f401b4afdadfd748a9c8aee04219aca300dbb23680",
     "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/04-orbit-sightline-study.png": "85195ae032b9747d2843713de9d565fcbb30e690b59d73f79704710b1ebf38a6",
     "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/05-flowy-calibration-sweep.png": "2fab381794796ab4193b93f33de5fda56e0f36a80d960fef2f26f0db21365c79",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/ember-midflank-fire-pilgrimage-r5-gate1-1-contact-sheet.png": "6b9213456af092614f5407e561fbd4f87f7804786e6300e05230309fd3f65a96",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/06-performance-ground-detail.png": "08642d6e7fc5e063c06bc23e5ee3676b164f9a660b19c0b27847d8ffea152703",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/ember-midflank-fire-pilgrimage-r5-gate1-1-contact-sheet.png": "0b525c9ea29f1cb4e7925258502c7f3cdfacc1480456f97393930a5a1833ebdc",
     "static/data/ember/review/ember-midflank-fire-pilgrimage-r5-flowy-thickness.f32": "a2e25ba84b25cd78360071504dad537491be293303ae4d3f21e7ade2b7edc066"
   },
   "limitations": [
