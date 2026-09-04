@@ -1130,6 +1130,60 @@ Every viewport reports zero horizontal overflow; the compact controls remain
 present at 820 x 1180. The sequence-viewer and focused animation-engine checks
 pass 30 files / 254 tests, and `svelte-check` reports 0 errors and 0 warnings.
 
+#### Ensemble-arrival correction · 2026-09-04
+
+Austen's visual review rejected the result above: the additional props still
+arrived as a clump near the end instead of becoming legible throughout the
+phrase. That judgment was correct. The previous trace proved that opacity state
+changed, but it did not prove what the canvas painted. Its supposed pixel probe
+queried `canvas[data-animation-layer="mandala"]`; the production Animator canvas
+had no such marker, so the replay could fail its ready-canvas wait without
+producing pixel evidence. The statement above that this fixture had one
+additional pair is also superseded. The current review sequence prepares seven
+additional layers.
+
+The timing was mathematically backloaded. `ViewerMotionSurface` eased the master
+clock with `cubicInOut`; `resolveTunnelLayerProgress` then eased each copy a
+second time with smoothstep and distributed their starts across 62% of the same
+clock. The grid completed its own departure inside the opening 38%. At the
+phrase midpoint only four of seven layers reached 10% opacity, mean layer alpha
+was 21%, and two layers had not started. The grid had already gone. The state
+was continuous, but the composition withheld most of its information until the
+last beat.
+
+An 820 x 1180 source-buffer trace confirmed the perceptual failure. The primary
+canvas still contained zero Tunnel-spectrum sample pixels at master progress
+0.196. Its first substantial colored signal arrived around progress 0.563, then
+rose to roughly 78% of the sampled peak by progress 0.899. This is the late pop
+Austen described.
+
+The corrected phrase has one ease and a small depth offset:
+
+1. The shared 480 ms `Tween` uses the canonical `cubicOut` ease. Layer progress
+   is linear within that already-eased clock, so there is no second easing
+   shoulder.
+2. Seven starts span 18% rather than 62%. The farthest copy crosses 10% opacity
+   by master progress 0.262; at one quarter of elapsed time all seven copies are
+   participating with at least 49% opacity and 53% mean opacity.
+3. The ordinary 2D grid is the exact complement of the same eased clock. It
+   remains present while the ensemble becomes legible, then yields as the
+   formation takes ownership.
+4. The Canvas2D owner marks its primary canvas as
+   `data-animation-layer="props"`. The review harness samples that canvas's own
+   readable buffer every 48 ms and counts green, yellow, cyan, and purple pixels
+   that the red/blue 2D pair cannot contribute. Copying into a probe canvas is
+   deliberately avoided because Chromium returned a transparent proxy for this
+   live renderer. The grade now fails visibly as `Painted spectrum arrival:
+unavailable` if the pixel boundary cannot be read.
+
+The new Gate 3 acceptance contract requires all layers to be perceptible by 35%
+master progress, at least 35% mean layer opacity near halfway, at least 15% of
+the final painted spectrum by quarter progress, at least 50% by halfway, and at
+least four independently sampled growth frames. Timing spread must remain
+between 0.08 and 0.28 so the copies retain depth without becoming seven serial
+disclosures. Rapid reversal still retraces the same per-layer progress and uses
+one opacity owner.
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of

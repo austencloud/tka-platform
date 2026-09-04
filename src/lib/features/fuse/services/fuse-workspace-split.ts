@@ -27,6 +27,33 @@ export interface FuseTallPortraitInput {
   minAspectRatio: number;
 }
 
+export interface FuseWingWorkspaceInput {
+  /** Width inside the workspace padding. */
+  availableWidth: number;
+  /** Height of the complete Fuse slot, including its header. */
+  availableHeight: number;
+  /** Width the center result needs to use the available height. */
+  previewIdealWidth: number;
+  /** Smallest usable width for each full source card. */
+  sourceFloor: number;
+  /** Stops source notation from consuming width the result can use better. */
+  sourceCap: number;
+  /** Smallest useful center result. */
+  previewFloor: number;
+  /** Zero while Recipe is closed. */
+  recipeWidth: number;
+  /** Gap between adjacent visible columns. */
+  columnGap: number;
+  /** Short workspaces keep the stacked source column. */
+  minHeight: number;
+}
+
+export interface FuseWingWorkspace {
+  fits: boolean;
+  sourceWidth: number;
+  previewWidth: number;
+}
+
 /**
  * Identifies a narrow slot with enough vertical room to show both source paths
  * and the result instead of spending the entire surface on the compact hero.
@@ -53,6 +80,56 @@ export function fitsFuseTallPortraitWorkspace(
     height >= requiredHeight &&
     height / width >= minAspectRatio
   );
+}
+
+/**
+ * Seats Left and Right on opposite sides of the combined result when all three
+ * can remain useful. Recipe counts as a fourth column while it is open.
+ *
+ * The result asks for the width that lets its square animation use the available
+ * height. Both source cards then share what remains equally, until they reach a
+ * comfortable cap; any further width belongs to the result instead of turning
+ * eight pictographs into two huge, sparse side rails.
+ */
+export function resolveFuseWingWorkspace(
+  input: FuseWingWorkspaceInput
+): FuseWingWorkspace {
+  const availableWidth = Math.max(0, input.availableWidth);
+  const recipeWidth = Math.max(0, input.recipeWidth);
+  const columnGap = Math.max(0, input.columnGap);
+  const sourceFloor = Math.max(0, input.sourceFloor);
+  const sourceCap = Math.max(sourceFloor, input.sourceCap);
+  const previewFloor = Math.max(0, input.previewFloor);
+  const visibleGaps = recipeWidth > 0 ? 3 : 2;
+  const workWidth = Math.max(
+    0,
+    availableWidth - recipeWidth - visibleGaps * columnGap
+  );
+  const fits =
+    input.availableHeight >= input.minHeight &&
+    workWidth >= 2 * sourceFloor + previewFloor;
+
+  if (!fits) {
+    return { fits: false, sourceWidth: 0, previewWidth: workWidth };
+  }
+
+  const largestUsefulPreview = Math.max(
+    previewFloor,
+    workWidth - 2 * sourceFloor
+  );
+  const targetPreview = Math.min(
+    largestUsefulPreview,
+    Math.max(previewFloor, input.previewIdealWidth)
+  );
+  const sourceWidth = Math.round(
+    Math.min(sourceCap, Math.max(sourceFloor, (workWidth - targetPreview) / 2))
+  );
+
+  return {
+    fits: true,
+    sourceWidth,
+    previewWidth: Math.max(0, workWidth - 2 * sourceWidth),
+  };
 }
 
 function stepColumnCandidates(stepCount: number): readonly number[] {

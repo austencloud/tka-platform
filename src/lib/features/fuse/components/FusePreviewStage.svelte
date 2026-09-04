@@ -19,7 +19,6 @@
     onBuildPath,
     onEditPairing,
     compact = false,
-    defaultDecomposed = false,
     isSaving = false,
   }: {
     onOpenViewer: () => Promise<void>;
@@ -30,17 +29,12 @@
     /** Opens the Pairing editor from the derived follower's badge. */
     onEditPairing?: () => void;
     compact?: boolean;
-    /** Large workspaces have enough height to show both source canvases and
-     * the combined result as one composed animation object. */
-    defaultDecomposed?: boolean;
     isSaving?: boolean;
   } = $props();
   const { state: fuseState } = getFuseContext();
   let tempoOpen = $state(false);
   let decompositionOverride = $state<boolean | null>(null);
-  const previewDecomposed = $derived(
-    decompositionOverride ?? (compact || defaultDecomposed)
-  );
+  const previewDecomposed = $derived(decompositionOverride ?? compact);
 
   function toggleDecomposition(): void {
     decompositionOverride = !previewDecomposed;
@@ -69,6 +63,7 @@
 <section
   class="preview-stage"
   class:compact
+  data-fuse-layout-region="preview"
   aria-labelledby="fuse-preview-heading"
 >
   <header class="preview-heading">
