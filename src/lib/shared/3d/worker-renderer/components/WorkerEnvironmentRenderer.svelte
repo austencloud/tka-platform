@@ -15,11 +15,19 @@
     createApplicationThreadCameraController,
     type ApplicationThreadCameraController,
   } from "../services/application-thread-camera-controller";
+  import type { ApplicationThreadCameraSnapshot } from "../domain/application-thread-camera";
 
   interface Props {
     environment: WorkerEnvironmentKey;
     performers?: readonly WorkerPerformerSnapshot[];
     effects?: WorkerSceneEffectsSnapshot;
+    initialCamera?:
+      | import("../domain/worker-renderer-protocol").WorkerCameraSnapshot
+      | null;
+    initialCameraRoll?: number;
+    maxOrbitDistance?: number;
+    cameraFov?: number;
+    onCameraChange?: (snapshot: ApplicationThreadCameraSnapshot) => void;
     onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
   }
 
@@ -27,6 +35,11 @@
     environment,
     performers = [],
     effects = { playing: false, sources: [] },
+    initialCamera = null,
+    initialCameraRoll = 0,
+    maxOrbitDistance = 25,
+    cameraFov,
+    onCameraChange,
     onSnapshot,
   }: Props = $props();
   let container: HTMLDivElement;
@@ -50,15 +63,18 @@
       onSnapshot,
       onInteraction: handleInteraction,
     });
-    const initialCamera = getWorkerEnvironmentCamera(environment);
+    const cameraSeed = initialCamera ?? getWorkerEnvironmentCamera(environment);
     cameraController = createApplicationThreadCameraController(container, {
-      initialPosition: initialCamera.position,
-      initialTarget: initialCamera.target,
-      fov: initialCamera.fov,
+      initialPosition: cameraSeed.position,
+      initialTarget: cameraSeed.target,
+      up: cameraSeed.up,
+      roll: initialCameraRoll,
+      fov: cameraFov ?? cameraSeed.fov,
       minDistance: 1,
-      maxDistance: 25,
+      maxDistance: maxOrbitDistance,
       maxPolarAngle: Math.PI / 2,
       onChange: (snapshot) => renderer?.setCamera(snapshot),
+      onControlEnd: (snapshot) => onCameraChange?.(snapshot),
     });
     renderer.setCamera(cameraController.getSnapshot());
     cameraResizeObserver = new ResizeObserver(() => {
