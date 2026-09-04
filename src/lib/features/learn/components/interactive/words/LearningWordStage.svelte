@@ -191,8 +191,9 @@
   }
 
   .studio-body {
+    height: 100%;
     min-width: 0;
-    min-height: clamp(32rem, 58dvh, 48rem);
+    min-height: 0;
     overflow: hidden;
   }
 
@@ -322,10 +323,11 @@
     .studio-body {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(19rem, 1fr));
       grid-template-areas:
         "video animation"
         "card animation";
-      min-height: 48rem;
+      overflow-y: auto;
     }
 
     .video-pane {
@@ -344,11 +346,11 @@
   @container learning-word-stage (max-width: 760px) {
     .studio-body {
       grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: 10.5rem 24rem 31rem;
       grid-template-areas:
         "video"
         "animation"
         "card";
-      min-height: 0;
     }
 
     .video-pane {
@@ -371,7 +373,11 @@
 
   @media (max-height: 620px) and (min-width: 761px) {
     .studio-body {
-      min-height: 31rem;
+      overflow-y: auto;
+    }
+
+    .studio-body :global(.panel-group) {
+      min-height: 14rem;
     }
 
     .guide-notes {
@@ -381,13 +387,13 @@
 
   @container learning-word-stage (min-width: 1680px) {
     .studio-body {
-      min-height: min(62dvh, 60rem);
+      min-height: 0;
     }
   }
 
   @container learning-word-stage (min-width: 2600px) {
     .studio-body {
-      min-height: min(64dvh, 78rem);
+      min-height: 0;
     }
 
     .pane-heading {

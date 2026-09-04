@@ -433,7 +433,10 @@
           aria-label="Open Lorq Nichols’ original 144 Shape Matrix"
         >
           <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-          <span>Source</span>
+          <!-- The fuller identity line yields below 1600px to protect the
+               control ribbon. Keep the visible action itself attributable so
+               that breakpoint never reduces Lorq's work to a generic source. -->
+          <span>Lorq Nichols’ original</span>
         </a>
         <button
           class="top-action"
@@ -528,6 +531,12 @@
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /* Preserve the existing action footprint while giving the attributed source
+     label enough text width to render Lorq's name without an ellipsis. */
+  .source-action {
+    padding-inline: 0.6rem;
   }
 
   .top-action:hover {
