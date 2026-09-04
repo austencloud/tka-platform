@@ -9,7 +9,7 @@
 
   import EmailPasswordAuth from "./EmailPasswordAuth.svelte";
   import EmailLinkAuth from "./EmailLinkAuth.svelte";
-  import LastUsedBadge from "./LastUsedBadge.svelte";
+  import LastUsedBadge from "$lib/shared/components/LastUsedBadge.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
 
