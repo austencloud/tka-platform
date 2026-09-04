@@ -1,0 +1,768 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "ember-broken-rift",
+  "gateId": "playable-graybox",
+  "status": "ready-for-review",
+  "museumTracker": {
+    "gate1Approval": "Szxybxm6NlLkPyPL6dQt",
+    "gate2ReviewReference": "1hlrU13Dg8VqdQaLJPib"
+  },
+  "blenderVersion": "5.0.1",
+  "commands": {
+    "build": "py -3 scripts/build-ember-geology-graybox.py build",
+    "verify": "py -3 scripts/build-ember-geology-graybox.py verify"
+  },
+  "artifacts": {
+    "scripts/build-ember-geology-graybox.py": {
+      "sha256": "5db9dda0b8a3729822df0482dcd0284f7574c96bf725013069ac215148e7cdba",
+      "byteLength": 121510
+    },
+    "scripts/build-ember-geology-study.py": {
+      "sha256": "21ea89118f3194ea2c0c13d720c746913b4467d12f2ce927522e7d71c58a81f5",
+      "byteLength": 59436
+    },
+    "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md": {
+      "sha256": "c39c0295099e1d4a700fcffe2e6fa8c5acd644fa9b167266bf9b73a7ba2d4220",
+      "byteLength": 32953
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/ember-midflank-fire-pilgrimage-r5-gate1-1-report.json": {
+      "sha256": "36b2d1f602a7efd66d8ad25f981a289eef5bdcb2c55c55e14df1df2610c7a0d9",
+      "byteLength": 14372
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/ember-midflank-fire-pilgrimage-r5-coordinate-manifest.json": {
+      "sha256": "de8676a5b7945912dc8eae55bfab4ee5b0111fb92c396e1ea2cac060ed8d5275",
+      "byteLength": 29148
+    },
+    "static/data/ember/review/ember-midflank-fire-pilgrimage-r5-height.f32": {
+      "sha256": "00f0e3da6ba6ec8b9609f76ea24f8cf76d5eba35e3c2ab319adc9d131e0b0ec4",
+      "byteLength": 512064
+    },
+    "static/data/ember/review/ember-midflank-fire-pilgrimage-r5-flowy-thickness.f32": {
+      "sha256": "a2e25ba84b25cd78360071504dad537491be293303ae4d3f21e7ade2b7edc066",
+      "byteLength": 512064
+    },
+    "blender/ember-midflank-fire-pilgrimage-graybox-r5.blend": {
+      "sha256": "5f10bdafd3eee0cbed724ba64172b3f35a4b881336148972b6208d9de8ae9c84",
+      "byteLength": 4043245
+    },
+    "static/models/ember/review/ember-midflank-fire-pilgrimage-graybox-r5.glb": {
+      "sha256": "d35cffffa0cb0eb6e470f22d76a02d28c9ad632caa9c2aded0ee5963fb5772ad",
+      "byteLength": 5545012
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/ember-midflank-fire-pilgrimage-r5-gate2-contact-sheet.png": {
+      "sha256": "ede34af8fb8b0e29cf593a72f4d689261e42cac7d2dd2186c81ca1bbf4461918",
+      "byteLength": 2498509
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/11-sampled-runtime-orbit-board.png": {
+      "sha256": "80dd241f49803b7158cba68430050480df8456c35dbc343a39bdad05100c3297",
+      "byteLength": 1355908
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/14-continuous-runtime-orbit.webp": {
+      "sha256": "f2fad80ea43a8387f62b7844aa04f1ad17a0fd8cf83e8a1bccb0ae3ef9d44e27",
+      "byteLength": 324338
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/00-default-audience.png": {
+      "sha256": "ab61a4fd106cc971b187138aabd08717996096438b938d76ed5e5681e2250ec4",
+      "byteLength": 1086811
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/01-orbit-000.png": {
+      "sha256": "ada3be9c75d530c5cc9d98efcf3ebff96679e3cc4bf3014b0361e7a0cf2fea31",
+      "byteLength": 1092212
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/02-orbit-045.png": {
+      "sha256": "88d78d719eadf8df1f315cd6b7f2aa8744ffda26cec8fe1d18bed3283f1f500e",
+      "byteLength": 1055362
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/03-orbit-090.png": {
+      "sha256": "d4d9e0c6ed5af2d702576b2b19c2417dcfa84303b513e4578e86b54773dc82b5",
+      "byteLength": 1018373
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/04-orbit-135.png": {
+      "sha256": "0f42187f2dab038868c289ff560727503e3a49769c2a0eedef3e16eede385010",
+      "byteLength": 984675
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/05-orbit-180.png": {
+      "sha256": "34c53dc41667af9367dce08746f8028315059355210573f8735119aa13330f57",
+      "byteLength": 1013484
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/06-orbit-225.png": {
+      "sha256": "2740364b1d9e6762190e744b947781ef09f5ecebdf2c816456a4f3165952400b",
+      "byteLength": 1005743
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/07-orbit-270.png": {
+      "sha256": "09dfba52cc2a0074b04eb2e14f592fc45cca2c55f5a554919066d27407d19e84",
+      "byteLength": 1018800
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/08-orbit-315.png": {
+      "sha256": "35cccd760854b732ccb62ece9364830ca7ad422c6b68d95872b30450909ae40d",
+      "byteLength": 1048386
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/09-north-up-plan.png": {
+      "sha256": "a4739fae964e126010d3ccf62a70c28b98ea4e8561d4f4b2514c14d229708066",
+      "byteLength": 888164
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/10-longitudinal-section.png": {
+      "sha256": "8c783eaec7474d872c59352bb2955670c8f32a9ed19cd40149c64e294b0834f5",
+      "byteLength": 638707
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/12-director-overview.png": {
+      "sha256": "45baedd501a85ad817d75fe8bdeabc823b344da40c9967453a00c35f13d5621e",
+      "byteLength": 1090577
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/13-midflank-oblique.png": {
+      "sha256": "9d6a90854e18b184557165e345be47da58d69a361e9546c049cefd972a9c29e3",
+      "byteLength": 1095187
+    }
+  },
+  "checks": {
+    "artifact-digest": {
+      "passed": true,
+      "evidence": "SHA-256 and byte length recorded for 25 Gate 2 artifacts."
+    },
+    "collision": {
+      "passed": true,
+      "evidence": "EMBER_Terrain is the only visible collider and exports runtime-recognized tka_camera_collision=true metadata."
+    },
+    "route-duration": {
+      "passed": true,
+      "applicable": false,
+      "evidence": "Ember is an orbit backdrop with no player route; the explicit exemption is evidenced by docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/14-continuous-runtime-orbit.webp plus the sampled 45-degree still set."
+    },
+    "sequence-parity": {
+      "passed": true,
+      "applicable": false,
+      "evidence": "This isolated environment graybox neither selects nor modifies a TKA sequence."
+    },
+    "source-and-manifest-lock": {
+      "passed": true,
+      "evidence": {
+        "terrainOwnerSha256": "21ea89118f3194ea2c0c13d720c746913b4467d12f2ce927522e7d71c58a81f5",
+        "gate1AmendmentReportSha256": "36b2d1f602a7efd66d8ad25f981a289eef5bdcb2c55c55e14df1df2610c7a0d9",
+        "researchContractSha256": "c39c0295099e1d4a700fcffe2e6fa8c5acd644fa9b167266bf9b73a7ba2d4220",
+        "contractPayloadSha256": "4b2af88c616e6073e61587a255c8baf713d76cf4104afa578c93c0046a88b3d3"
+      }
+    },
+    "simulator-deposit-owner": {
+      "passed": true,
+      "evidence": {
+        "implementation": "Flowy",
+        "calibration": "r5f-c03-braided-20m2",
+        "sourceSha256": "a2e25ba84b25cd78360071504dad537491be293303ae4d3f21e7ade2b7edc066",
+        "activeCellCount": 2400,
+        "activeAreaSquareMeters": 2400.0
+      }
+    },
+    "downhill-drainage": {
+      "passed": true,
+      "evidence": {
+        "depositSectionLengthMeters": 298.367532,
+        "sourceTerrainElevationMeters": 79.00808,
+        "terminusTerrainElevationMeters": -69.327919,
+        "netDescentMeters": 148.335999,
+        "reachesDownslopeExit": true,
+        "continuousDownslope": true,
+        "southExitActiveCellCount": 31,
+        "occupiedRowGapCount": 0,
+        "depositSectionDownhillFraction": 1.0,
+        "depositSectionMaximumLocalRiseMeters": -0.024262
+      }
+    },
+    "performer-clearance": {
+      "passed": true,
+      "evidence": {
+        "simulatorDepositClearanceBeyondActionEnvelopeMeters": 7.097414,
+        "minimumVisibleSupportDistanceMeters": 11.597414,
+        "independentlyMeasuredVisibleSupportDistanceMeters": 11.597414,
+        "actionRadiusMeters": 4.5
+      }
+    },
+    "audience-spatial-contract": {
+      "passed": true,
+      "evidence": {
+        "standingPockets": [
+          {
+            "id": "audience-01",
+            "positionWorldXYZ": [
+              4.0,
+              -0.899104,
+              -9.0
+            ],
+            "heightMeters": 1.76,
+            "terrainSlopeDegrees": 7.063,
+            "clearanceBeyondActionEnvelopeMeters": 5.349,
+            "activeFlowClearanceMeters": 16.0,
+            "withinOlderFlowContact": true
+          },
+          {
+            "id": "audience-02",
+            "positionWorldXYZ": [
+              8.0,
+              -1.249709,
+              -11.5
+            ],
+            "heightMeters": 1.64,
+            "terrainSlopeDegrees": 8.423,
+            "clearanceBeyondActionEnvelopeMeters": 9.509,
+            "activeFlowClearanceMeters": 20.006,
+            "withinOlderFlowContact": true
+          },
+          {
+            "id": "audience-03",
+            "positionWorldXYZ": [
+              7.0,
+              -1.769168,
+              -15.0
+            ],
+            "heightMeters": 1.7,
+            "terrainSlopeDegrees": 9.381,
+            "clearanceBeyondActionEnvelopeMeters": 12.053,
+            "activeFlowClearanceMeters": 19.0,
+            "withinOlderFlowContact": true
+          },
+          {
+            "id": "audience-04",
+            "positionWorldXYZ": [
+              2.5,
+              -2.004663,
+              -17.0
+            ],
+            "heightMeters": 1.76,
+            "terrainSlopeDegrees": 9.45,
+            "clearanceBeyondActionEnvelopeMeters": 12.683,
+            "activeFlowClearanceMeters": 14.5,
+            "withinOlderFlowContact": true
+          }
+        ],
+        "minimumActionClearanceMeters": 5.349,
+        "minimumActiveFlowClearanceMeters": 14.5,
+        "glbExtras": {
+          "ember_role": "downslope-lateral-audience-standing-crescent",
+          "ember_collides": false,
+          "tka_camera_collision": false,
+          "ember_coordinate_manifest_sha256": "de8676a5b7945912dc8eae55bfab4ee5b0111fb92c396e1ea2cac060ed8d5275",
+          "ember_audience_count": 4,
+          "ember_minimum_action_clearance_m": 5.349,
+          "ember_minimum_active_flow_clearance_m": 14.5,
+          "ember_audience_contract_sha256": "1ca9b7e30d80b6924c6d7b1fda6fcc9589341a5f4bc900bed1dd5cfdec04e7b1"
+        }
+      }
+    },
+    "midflank-continuity": {
+      "passed": true,
+      "evidence": {
+        "passesMidflank": true,
+        "midflankPassActiveCellCount": 461,
+        "occupiedRowGapCount": 0,
+        "upstreamMedianWidthMeters": 7.0,
+        "upstreamWidthSamplingRuntimeZ": {
+          "minimum": 30.0,
+          "maximum": 100.0
+        },
+        "downstreamMedianWidthMeters": 12.0,
+        "downstreamWidthSamplingRuntimeZ": {
+          "maximum": -80.0
+        },
+        "downstreamWideningRatio": 1.714286
+      }
+    },
+    "evidence-raster-and-motion-integrity": {
+      "passed": true,
+      "evidence": {
+        "stillDimensions": {
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/00-default-audience.png": [
+            1600,
+            900
+          ],
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/01-orbit-000.png": [
+            1600,
+            900
+          ],
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/02-orbit-045.png": [
+            1600,
+            900
+          ],
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/03-orbit-090.png": [
+            1600,
+            900
+          ],
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/04-orbit-135.png": [
+            1600,
+            900
+          ],
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/05-orbit-180.png": [
+            1600,
+            900
+          ],
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/06-orbit-225.png": [
+            1600,
+            900
+          ],
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/07-orbit-270.png": [
+            1600,
+            900
+          ],
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/08-orbit-315.png": [
+            1600,
+            900
+          ],
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/09-north-up-plan.png": [
+            1400,
+            1000
+          ],
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/10-longitudinal-section.png": [
+            1400,
+            900
+          ],
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/12-director-overview.png": [
+            1600,
+            900
+          ],
+          "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/13-midflank-oblique.png": [
+            1600,
+            900
+          ]
+        },
+        "continuousOrbitBytes": 324338
+      }
+    },
+    "blender-source-integrity": {
+      "passed": true,
+      "evidence": {
+        "sceneId": "ember-broken-rift",
+        "blenderVersion": "5.0.1",
+        "blendPath": "blender/ember-midflank-fire-pilgrimage-graybox-r5.blend",
+        "checks": {
+          "manifest-scene-lock": {
+            "passed": true,
+            "evidence": "de8676a5b7945912dc8eae55bfab4ee5b0111fb92c396e1ea2cac060ed8d5275"
+          },
+          "root-transform": {
+            "passed": true,
+            "evidence": [
+              1.5707963705062866,
+              0.0,
+              0.0
+            ]
+          },
+          "terrain-identity": {
+            "passed": true,
+            "evidence": {
+              "vertexCount": 128016,
+              "faceCount": 127300,
+              "expectedVertexCount": 128016,
+              "role": "r5-slanted-midflank-heightfield-and-visible-collider"
+            }
+          },
+          "visible-collision": {
+            "passed": true,
+            "evidence": {
+              "runtimeRecognizedColliders": [
+                "EMBER_Terrain"
+              ],
+              "metadata": "tka_camera_collision=true"
+            }
+          },
+          "lava-footprint": {
+            "passed": true,
+            "evidence": {
+              "vertexCount": 11468,
+              "faceCount": 7667,
+              "expectedActiveCellCount": 2400,
+              "registeredTopFaceCount": 2400,
+              "supportFaceCount": 5267,
+              "unsupportedTopEdgeCount": 0,
+              "registeredFaceCenterCount": 2400,
+              "expectedRegisteredFaceCenterCount": 2400,
+              "verifiedRegisteredTopVertexCount": 9600,
+              "maximumTopVertexHeightErrorMeters": 3.8e-06,
+              "cellSupportBoundsWorldXZ": {
+                "minX": -36.5,
+                "maxX": 21.5,
+                "minZ": -144.5,
+                "maxZ": 136.5
+              },
+              "expectedCellSupportBoundsWorldXZ": {
+                "minX": -36.5,
+                "maxX": 21.5,
+                "minZ": -144.5,
+                "maxZ": 136.5
+              },
+              "sourceSha256": "a2e25ba84b25cd78360071504dad537491be293303ae4d3f21e7ade2b7edc066"
+            }
+          },
+          "review-equivalence-signals": {
+            "passed": true,
+            "evidence": [
+              "EMBER_FlankButtresses",
+              "EMBER_HardenedLavaBenchGuide",
+              "EMBER_SourceFissure",
+              "EMBER_SourceRampart",
+              "EMBER_PerformerProxy",
+              "EMBER_AudienceStandingPockets",
+              "EMBER_ActionEnvelope"
+            ]
+          },
+          "audience-standing-pockets": {
+            "passed": true,
+            "evidence": {
+              "proxyCount": 4,
+              "minimumActionClearanceMeters": 5.349,
+              "minimumActiveFlowClearanceMeters": 14.5,
+              "contractSha256": "1ca9b7e30d80b6924c6d7b1fda6fcc9589341a5f4bc900bed1dd5cfdec04e7b1"
+            }
+          },
+          "registered-cameras": {
+            "passed": true,
+            "evidence": {
+              "default-audience": {
+                "passed": true,
+                "runtimeEquivalent": true,
+                "eyeToTargetDistanceMeters": 22.461078,
+                "verticalFovDegrees": 50.0,
+                "positionErrorMeters": 0.0,
+                "aimErrorDegrees": 0.0
+              },
+              "orbit-000": {
+                "passed": true,
+                "runtimeEquivalent": true,
+                "eyeToTargetDistanceMeters": 25.0,
+                "verticalFovDegrees": 50.0,
+                "positionErrorMeters": 0.0,
+                "aimErrorDegrees": 0.01713201
+              },
+              "orbit-045": {
+                "passed": true,
+                "runtimeEquivalent": true,
+                "eyeToTargetDistanceMeters": 25.0,
+                "verticalFovDegrees": 50.0,
+                "positionErrorMeters": 0.0,
+                "aimErrorDegrees": 0.006994114
+              },
+              "orbit-090": {
+                "passed": true,
+                "runtimeEquivalent": true,
+                "eyeToTargetDistanceMeters": 25.0,
+                "verticalFovDegrees": 50.0,
+                "positionErrorMeters": 0.0,
+                "aimErrorDegrees": 0.0
+              },
+              "orbit-135": {
+                "passed": true,
+                "runtimeEquivalent": true,
+                "eyeToTargetDistanceMeters": 25.0,
+                "verticalFovDegrees": 50.0,
+                "positionErrorMeters": 0.0,
+                "aimErrorDegrees": 0.018504686
+              },
+              "orbit-180": {
+                "passed": true,
+                "runtimeEquivalent": true,
+                "eyeToTargetDistanceMeters": 25.0,
+                "verticalFovDegrees": 50.0,
+                "positionErrorMeters": 0.0,
+                "aimErrorDegrees": 0.0
+              },
+              "orbit-225": {
+                "passed": true,
+                "runtimeEquivalent": true,
+                "eyeToTargetDistanceMeters": 25.0,
+                "verticalFovDegrees": 50.0,
+                "positionErrorMeters": 0.0,
+                "aimErrorDegrees": 0.018504686
+              },
+              "orbit-270": {
+                "passed": true,
+                "runtimeEquivalent": true,
+                "eyeToTargetDistanceMeters": 25.0,
+                "verticalFovDegrees": 50.0,
+                "positionErrorMeters": 0.0,
+                "aimErrorDegrees": 0.0
+              },
+              "orbit-315": {
+                "passed": true,
+                "runtimeEquivalent": true,
+                "eyeToTargetDistanceMeters": 25.0,
+                "verticalFovDegrees": 50.0,
+                "positionErrorMeters": 0.0,
+                "aimErrorDegrees": 0.006994114
+              },
+              "director-overview": {
+                "passed": true,
+                "runtimeEquivalent": false,
+                "eyeToTargetDistanceMeters": 215.752173,
+                "verticalFovDegrees": 48.000001,
+                "positionErrorMeters": 0.0,
+                "aimErrorDegrees": 0.0
+              },
+              "midflank-oblique": {
+                "passed": true,
+                "runtimeEquivalent": false,
+                "eyeToTargetDistanceMeters": 113.863954,
+                "verticalFovDegrees": 50.0,
+                "positionErrorMeters": 0.0,
+                "aimErrorDegrees": 0.0
+              }
+            }
+          },
+          "continuous-orbit-motion": {
+            "passed": true,
+            "evidence": {
+              "keyframes": [
+                [
+                  1.0,
+                  0.0
+                ],
+                [
+                  49.0,
+                  6.2831854820251465
+                ]
+              ],
+              "interpolations": [
+                "LINEAR",
+                "LINEAR"
+              ]
+            }
+          },
+          "north-up-plan": {
+            "passed": true,
+            "evidence": [
+              0.0,
+              0.0,
+              3.1415927410125732
+            ]
+          },
+          "section-scene": {
+            "passed": true,
+            "evidence": "Ember Gate 2 R5 Mid-Flank Section"
+          },
+          "performer-scale": {
+            "passed": true,
+            "evidence": 1.75
+          },
+          "portable-default-state": {
+            "passed": true,
+            "evidence": {
+              "activeCamera": "EMBER_Camera_default-audience",
+              "resolution": [
+                1600,
+                900
+              ],
+              "sceneRenderPaths": {
+                "Ember Gate 2 R5 Mid-Flank Section": "//ember-gate2-r5-midflank-section.png",
+                "Ember Mid-Flank Fire Pilgrimage Gate 2 R5": "//ember-gate2-r5-preview.png"
+              }
+            }
+          }
+        }
+      }
+    },
+    "glb-spatial-camera-equivalence": {
+      "passed": true,
+      "evidence": {
+        "nodes": [
+          "EMBER_AudienceStandingPockets",
+          "EMBER_FlankButtresses",
+          "EMBER_LavaSimulatorDeposit",
+          "EMBER_PerformerProxy",
+          "EMBER_SourceFissure",
+          "EMBER_SourceRampart",
+          "EMBER_Terrain",
+          "EMBER_WorldRoot",
+          "EMBER_Sun",
+          "EMBER_SourceFissureLight",
+          "EMBER_Camera_default-audience",
+          "EMBER_Camera_orbit-000",
+          "EMBER_Camera_orbit-045",
+          "EMBER_Camera_orbit-090",
+          "EMBER_Camera_orbit-135",
+          "EMBER_Camera_orbit-180",
+          "EMBER_Camera_orbit-225",
+          "EMBER_Camera_orbit-270",
+          "EMBER_Camera_orbit-315",
+          "EMBER_Camera_director-overview",
+          "EMBER_Camera_midflank-oblique",
+          "EMBER_Camera_plan"
+        ],
+        "diagnosticNodesExcluded": true,
+        "geometryNodesHaveMeshes": true,
+        "rootTransformAndParentingEquivalent": true,
+        "terrainExtras": {
+          "ember_role": "r5-slanted-midflank-heightfield-and-visible-collider",
+          "ember_collides": true,
+          "tka_camera_collision": true,
+          "ember_coordinate_manifest_sha256": "de8676a5b7945912dc8eae55bfab4ee5b0111fb92c396e1ea2cac060ed8d5275",
+          "ember_source_data_sha256": "00f0e3da6ba6ec8b9609f76ea24f8cf76d5eba35e3c2ab319adc9d131e0b0ec4"
+        },
+        "terrainMesh": {
+          "passed": true,
+          "decodedPositionCount": 130964,
+          "uniqueRegisteredSampleCount": 128016,
+          "decodedTriangleCount": 254600,
+          "maximumHeightErrorMeters": 0.0,
+          "positionBoundsWorldXZ": {
+            "minX": -190.0,
+            "maxX": 190.0,
+            "minZ": -145.0,
+            "maxZ": 190.0
+          }
+        },
+        "lavaMesh": {
+          "passed": true,
+          "registeredCellCount": 2400,
+          "topTriangleCount": 4800,
+          "supportTriangleCount": 10534,
+          "maximumTopVertexHeightErrorMeters": 3.8e-06,
+          "positionBoundsWorldXZ": {
+            "minX": -36.5,
+            "maxX": 21.5,
+            "minZ": -144.5,
+            "maxZ": 136.5
+          },
+          "sourceSha256": "a2e25ba84b25cd78360071504dad537491be293303ae4d3f21e7ade2b7edc066",
+          "manifestSha256": "de8676a5b7945912dc8eae55bfab4ee5b0111fb92c396e1ea2cac060ed8d5275"
+        },
+        "cameras": {
+          "default-audience": {
+            "passed": true,
+            "runtimeEquivalent": true,
+            "eyeToTargetDistanceMeters": 22.461078,
+            "positionErrorMeters": 3.05e-07,
+            "aimErrorDegrees": 8.995e-06,
+            "verticalFovDegrees": 50.0,
+            "expectedVerticalFovDegrees": 50.0,
+            "aspectRatio": 1.7777777777777777
+          },
+          "orbit-000": {
+            "passed": true,
+            "runtimeEquivalent": true,
+            "eyeToTargetDistanceMeters": 25.0,
+            "positionErrorMeters": 3.15e-07,
+            "aimErrorDegrees": 1.5105e-05,
+            "verticalFovDegrees": 50.0,
+            "expectedVerticalFovDegrees": 50.0,
+            "aspectRatio": 1.7777777777777777
+          },
+          "orbit-045": {
+            "passed": true,
+            "runtimeEquivalent": true,
+            "eyeToTargetDistanceMeters": 25.0,
+            "positionErrorMeters": 4.38e-07,
+            "aimErrorDegrees": 6.332e-06,
+            "verticalFovDegrees": 50.0,
+            "expectedVerticalFovDegrees": 50.0,
+            "aspectRatio": 1.7777777777777777
+          },
+          "orbit-090": {
+            "passed": true,
+            "runtimeEquivalent": true,
+            "eyeToTargetDistanceMeters": 25.0,
+            "positionErrorMeters": 3.15e-07,
+            "aimErrorDegrees": 2.0419e-05,
+            "verticalFovDegrees": 50.0,
+            "expectedVerticalFovDegrees": 50.0,
+            "aspectRatio": 1.7777777777777777
+          },
+          "orbit-135": {
+            "passed": true,
+            "runtimeEquivalent": true,
+            "eyeToTargetDistanceMeters": 25.0,
+            "positionErrorMeters": 4.38e-07,
+            "aimErrorDegrees": 1.246e-05,
+            "verticalFovDegrees": 50.0,
+            "expectedVerticalFovDegrees": 50.0,
+            "aspectRatio": 1.7777777777777777
+          },
+          "orbit-180": {
+            "passed": true,
+            "runtimeEquivalent": true,
+            "eyeToTargetDistanceMeters": 25.0,
+            "positionErrorMeters": 3.15e-07,
+            "aimErrorDegrees": 4.353e-06,
+            "verticalFovDegrees": 50.0,
+            "expectedVerticalFovDegrees": 50.0,
+            "aspectRatio": 1.7777777777777777
+          },
+          "orbit-225": {
+            "passed": true,
+            "runtimeEquivalent": true,
+            "eyeToTargetDistanceMeters": 25.0,
+            "positionErrorMeters": 4.38e-07,
+            "aimErrorDegrees": 1.246e-05,
+            "verticalFovDegrees": 50.0,
+            "expectedVerticalFovDegrees": 50.0,
+            "aspectRatio": 1.7777777777777777
+          },
+          "orbit-270": {
+            "passed": true,
+            "runtimeEquivalent": true,
+            "eyeToTargetDistanceMeters": 25.0,
+            "positionErrorMeters": 3.15e-07,
+            "aimErrorDegrees": 2.0419e-05,
+            "verticalFovDegrees": 50.0,
+            "expectedVerticalFovDegrees": 50.0,
+            "aspectRatio": 1.7777777777777777
+          },
+          "orbit-315": {
+            "passed": true,
+            "runtimeEquivalent": true,
+            "eyeToTargetDistanceMeters": 25.0,
+            "positionErrorMeters": 4.38e-07,
+            "aimErrorDegrees": 6.332e-06,
+            "verticalFovDegrees": 50.0,
+            "expectedVerticalFovDegrees": 50.0,
+            "aspectRatio": 1.7777777777777777
+          },
+          "director-overview": {
+            "passed": true,
+            "runtimeEquivalent": false,
+            "eyeToTargetDistanceMeters": 215.752173,
+            "positionErrorMeters": 0.0,
+            "aimErrorDegrees": 1.4664e-05,
+            "verticalFovDegrees": 48.000001,
+            "expectedVerticalFovDegrees": 48.0,
+            "aspectRatio": 1.7777777777777777
+          },
+          "midflank-oblique": {
+            "passed": true,
+            "runtimeEquivalent": false,
+            "eyeToTargetDistanceMeters": 113.863954,
+            "positionErrorMeters": 0.0,
+            "aimErrorDegrees": 2.7012e-05,
+            "verticalFovDegrees": 50.0,
+            "expectedVerticalFovDegrees": 50.0,
+            "aspectRatio": 1.7777777777777777
+          }
+        },
+        "punctualLightCount": 2,
+        "scope": "Geometry, materials, cameras, and collision metadata. Blender world shading and area fill are intentionally not represented by glTF."
+      }
+    }
+  },
+  "review": {
+    "contactSheet": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/ember-midflank-fire-pilgrimage-r5-gate2-contact-sheet.png",
+    "orbitStrip": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/11-sampled-runtime-orbit-board.png",
+    "continuousOrbit": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/14-continuous-runtime-orbit.webp",
+    "cameraCount": 11,
+    "planIsNorthUp": true,
+    "planIncludesSimulatorDeposit": true,
+    "sectionVerticalExaggeration": 1.0
+  },
+  "reviewAssertions": {
+    "performerReadsHalfwayUpAColossalVolcanicFlank": "requires-human-review",
+    "performanceGroundReadsAsAnOlderCooledLavaBenchEmbeddedInTheSlope": "requires-human-review",
+    "audienceReadsAsDownslopeAndLateralRatherThanAsAFormalAmphitheatre": "requires-human-review",
+    "uphillMountainAndFireContinueBeyondTheFrame": "requires-human-review",
+    "downhillTerrainFallsTowardLowerCountry": "requires-human-review",
+    "flowReadsCausalContinuousAndSouthBound": "requires-human-review",
+    "allOrbitSectorsHaveUsefulDepthWithoutFormingAStageIsland": "requires-human-review"
+  },
+  "limitations": [
+    "This is a composition and spatial-causality graybox, not a final geological surface.",
+    "The Flowy calibration is preproduction morphology evidence, not eruption-history or hazard science.",
+    "The visible lava body is generated only from the selected checked-in Flowy thickness raster.",
+    "The GLB is spatially review-equivalent for geometry, materials, cameras, and collision metadata; Blender world shading and the area fill are renderer-specific and intentionally excluded.",
+    "The collision metadata is runtime-recognized, but the current Viewer3D terrain-safe collision path is enabled only for AUTUMN; Ember integration remains a later-gate task.",
+    "Semantic composition assertions remain human review items and are not reported as machine-verified passes.",
+    "No production Ember asset, runtime behavior, final material, atmosphere, or Meshy object is changed."
+  ]
+}
