@@ -169,11 +169,10 @@
 	}
 
 	.record-copy > strong {
-		overflow: hidden;
 		font-size: 1rem;
 		font-weight: 750;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		line-height: 1.25;
+		white-space: normal;
 	}
 
 	.record-meta,
@@ -187,9 +186,12 @@
 	}
 
 	.record-meta {
+		overflow: visible;
 		color: var(--entry-accent);
 		font-variant-numeric: tabular-nums;
 		font-weight: 700;
+		text-overflow: clip;
+		white-space: normal;
 	}
 
 	.group-meta {
