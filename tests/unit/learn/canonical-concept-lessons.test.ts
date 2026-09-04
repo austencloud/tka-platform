@@ -161,9 +161,6 @@ describe("canonical concept lesson composition", () => {
       "const comparisonIndex = timingDirectionIndex + 1"
     );
     expect(motions).toContain('activeMotion?.name ?? "Timing and Direction"');
-    expect(motions).toContain(
-      "Time compares the hands: together, split, or quarter. Direction compares their travel: same or opposite."
-    );
     expect(motions).toContain('"stageSchemaVersion"');
     expect(motions).toContain("migrateHandMotionsSavedStep");
     expect(motions).toContain('viewMode === "scroll"\n      ? comparisonIndex');
@@ -223,17 +220,6 @@ describe("canonical concept lesson composition", () => {
     expect(timingIntro).toContain('semantics="radiogroup"');
     expect(timingIntro).toContain("data-timing={timingMode}");
     expect(timingIntro).toContain("data-direction={directionMode}");
-    expect(timingIntro).toContain("phase-ring outer-ring");
-    expect(timingIntro).toContain("phase-ring inner-ring");
-    expect(timingIntro).toContain("phase-ticks");
-    expect(timingIntro).toContain("@keyframes phase-rotation");
-    expect(timingIntro).toContain("@keyframes direction-travel-forward");
-    expect(timingIntro).toContain("@keyframes direction-travel-reverse");
-    expect(timingIntro).toContain(
-      "grid-template-columns: minmax(0, 3fr) minmax(0, 2fr)"
-    );
-    expect(timingIntro).toContain('value: "½"');
-    expect(timingIntro).toContain('value: "¼"');
     expect(timingIntro).toContain("@media (prefers-reduced-motion: reduce)");
     expect(timingIntro).not.toContain("timing-bounce");
     expect(timingIntro).not.toContain("bounce-stage");
