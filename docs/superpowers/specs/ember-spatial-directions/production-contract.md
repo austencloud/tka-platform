@@ -1,6 +1,6 @@
 # Ember Broken Rift production contract
 
-**Status:** Geology-first restart at Gate 1.1 R3 ready for review and Gate 2 pending; all prior Gate 3+ production is historical
+**Status:** Mid-Flank Fire Pilgrimage Gate 1.1 R4 ready for review and Gate 2 pending; all R3 and prior Gate 2+ production is historical
 
 **Scene ID:** `ember-broken-rift`
 
@@ -17,25 +17,25 @@
 `sDKmB6cUEXLfHgz4DGd4`, `s3cxnp6hOLBVQR5dDF42`,
 `uXmi4z9lL7zCiNq5ULCp`, `ahPuPwh34G3FeqvUEHsB`,
 `gqImqDqgfctdYi1kr6pH`, `ZgRNLK66C9Hz2wMPbOXc`,
-`xSjtvI2XVvvMdn8pHqwP`, `WS9FU4nn2fCSbOn68IeB`, and
-`7uoHBfOCOqMmFeKBRh7l`.
+`xSjtvI2XVvvMdn8pHqwP`, `WS9FU4nn2fCSbOn68IeB`,
+`7uoHBfOCOqMmFeKBRh7l`, `lIPwVa2kGFcoQsgICkWI`, and
+`BvN1DiylOnfdbrofcwaM`.
 
-## R3 supersession notice
+## R4 supersession notice
 
-Breached Rift Bench R3 is the only active spatial contract. Its Gate 1.1 plan is
-`ready-for-review`; the built Gate 2 candidate remains pending behind explicit
-Gate 1.1 artifact approval. Gate 3 has not started.
-The R3 sources are `scripts/build-ember-geology-study.py`,
+Mid-Flank Fire Pilgrimage R4 is the only active spatial contract. Its Gate 1.1
+plan is `ready-for-review`; Gate 2 remains pending behind explicit R4 artifact
+approval. Gate 3 has not started. The R4 sources are
+`scripts/build-ember-geology-study.py`,
 `scripts/prepare-ember-lava-simulator-benchmark.py`,
-`scripts/build-ember-geology-amendment.py`, and
-`scripts/build-ember-geology-graybox.py`. Current evidence lives in
-`evidence/gate-1-1-geology-amendment-r3/` and
-`evidence/gate-2-geology-graybox-r3/`.
+and `scripts/build-ember-geology-amendment.py`. Current evidence lives in
+`evidence/gate-1-1-geology-amendment-r4/`. The R3 Blender source, GLB, and
+Gate 2 evidence are historical only.
 
 Every later-gate section below is retained as historical production evidence,
 not as an active direction, approval, or implementation plan. The shipping
 Ember runtime, final materials, atmosphere, Meshy assets, and Meshy credits are
-unchanged by R3.
+unchanged by R4.
 
 ## Historical outcome before the geology-first restart
 
@@ -63,16 +63,17 @@ no generated candidate remains in the integrated runtime asset.
 ## Current regression boundary
 
 Austen reopened the scene at Gate 1 on 2026-09-03. The R2 adversarial audit in
-`torsiCoIaMMrkMklUMSq` then reopened Gate 1.1 again, and the R3 correction was
-authorized in `lIPwVa2kGFcoQsgICkWI`. This supersedes every earlier Gate 1/2
-artifact and every pre-restart Gate 3 through Gate 6 approval.
+`torsiCoIaMMrkMklUMSq` led to R3, then Austen rejected R3's shallow broad-basin
+read in `BvN1DiylOnfdbrofcwaM`. R4 supersedes every earlier Gate 1/2 artifact
+and every pre-restart Gate 3 through Gate 6 approval.
 
 The active boundary preserves the shared Ember scene owner, performer identity,
 4.5 m action radius, 25 m orbit cap, front-stage facing, surface research,
 atmospheric systems, and unspent Meshy credits. It replaces the macro terrain,
-collapse anatomy, lava footprint, camera evidence, collision contract, and
-composition. Gate 1.1 R3 is `ready-for-review`; Gate 2 R3 and all later gates
-are pending.
+inboard basin, same-level source, lava footprint, and composition with a
+true-scale upper edifice, mid-flank ledge, lower escarpment, and explicit
+off-world continuation. Gate 1.1 R4 is `ready-for-review`; Gate 2 and all later
+gates are pending.
 
 ## Authority ledger
 
@@ -84,25 +85,24 @@ are pending.
 | Performer roster           | Viewer3D runtime                 | `src/routes/test/viewer-3d/Viewer3DWorkbench.svelte`      | No performer identity is changed                                              |
 | TKA motion                 | Not applicable                   | `domainProofRequired: false` in `scene-gates.json`        | No letter, position, motion, or sequence fact is asserted                     |
 | Selected sequence variants | Not applicable                   | `domainProofRequired: false` in `scene-gates.json`        | No sequence is selected                                                       |
-| Spatial geometry           | Ember R3 geology builders        | `scripts/build-ember-geology-study.py` and `scripts/build-ember-geology-graybox.py` | Gate 1.1 R3 awaits explicit review; Gate 2 is a noncanonical candidate |
-| Blender output             | Ember Gate 2 R3 graybox builder  | `scripts/build-ember-geology-graybox.py`                  | Review artifact only; no shipping GLB changed                                 |
-| Runtime behavior           | Existing Ember scene owner       | `src/lib/shared/3d/environments/scenes/EmberScene.svelte` | R3 does not change runtime behavior                                            |
+| Spatial geometry           | Ember R4 geology builders        | `scripts/build-ember-geology-study.py` and `scripts/build-ember-geology-amendment.py` | Gate 1.1 R4 awaits explicit review; Gate 2 has not begun |
+| Blender output             | Historical Ember Gate 2 R3 builder | `scripts/build-ember-geology-graybox.py`                | R3 review artifact only; no R4 Blender or shipping GLB changed                 |
+| Runtime behavior           | Existing Ember scene owner       | `src/lib/shared/3d/environments/scenes/EmberScene.svelte` | R4 does not change runtime behavior                                            |
 
 ## Claim ledger
 
 | ID    | Class     | Statement                                                                                                                                   | Evidence or proposal source                        | Status   |
 | ----- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | -------- |
 | C-001 | literal   | Viewer3D gives Ember a 25 m maximum orbit distance.                                                                                         | `src/lib/shared/3d/components/Viewer3DCamera.svelte` | verified |
-| C-002 | invention | R3 uses one retained western mass, missing breach volume, graded talus, near fissure, simulator-owned drainage, an attached old-flow peninsula, an inboard terminal low, and open east/southeast horizon. | Gate 1.1 and Gate 2 R3 evidence | Gate 1.1 review pending; Gate 2 candidate only |
+| C-002 | invention | R4 places the performer on a long contour ledge between a 100+ m upper edifice and 60+ m lower fall, with one high-source Flowy drainage continuing through the south scene boundary. | Gate 1.1 R4 evidence | Gate 1.1 review pending |
 | C-003 | invention | Blue-black basalt and rough obsidian dominate; orange is confined to fissures and the banked, crusted river, with restrained mineral ochre. | `look-development.md`, Blackglass Mineral Rift | reserved for future Gate 3/4 |
-| C-004 | literal   | The shared performer contract preserves a clear 4.5 m action radius around world origin. | R3 coordinate manifest and Gate 1.1 report | verified |
+| C-004 | literal   | The shared performer contract preserves a clear 4.5 m action radius around world origin. | R4 Gate 1.1 report | verified |
 
 ## Experience sentence
 
-> The viewer orbits a performer on an attached old-flow tongue, reads a nearby
-> fissure cutting through a failed western crown, follows one simulator-owned
-> drainage past a dying breakout lobe, and finds open eastern depth without a
-> ring of props enclosing the silhouette.
+> The viewer orbits a performer halfway up a colossal volcanic flank: the
+> mountain and its high fire continue above, the ledge and drainage pass beside
+> the performer, and the lower country falls away beneath them.
 
 ## Gate 0: Evidence preflight
 
@@ -112,42 +112,46 @@ are pending.
 - Camera contract: the real Viewer3D orbit, with Ember capped at 25 m.
 - Stage frame: playable surface at native local Y 0.5 before environment
   grounding offset.
-- Creative authority: Direction A, Breached Rift Bench R3. Historical Direction
-  E and Blackglass work may inform later surfaces but does not own geometry.
+- Creative authority: Mid-Flank Fire Pilgrimage R4 under tracker
+  `BvN1DiylOnfdbrofcwaM`. Historical Direction A, R3, Direction E, and
+  Blackglass work may inform later surfaces but do not own geometry.
 - Canon conflicts: none. No story or TKA-domain behavior is changed.
 
 ### Live motion proof
 
 Not required. This slice changes environment geometry and materials only.
 
-## Gate 1.1 R3: Measured plan
+## Gate 1.1 R4: Measured plan
 
 ### Player route
 
 This is an orbit environment rather than a walkable room. The spatial sequence
-is visual: performer on an attached old-flow peninsula, nearby fissure and
-breached western crown, main drainage with a dying breakout lobe, inboard
-terminal low, and open east/southeast depth.
+is visual: upper edifice and furnace saddle, performer on a contour ledge,
+gravity-led drainage passing west of the action envelope, lower escarpment, and
+off-world downslope continuation.
 
 | Stop | Viewer position and action                   | First focus                     | Environment response                         | Next cue                  |
 | ---- | -------------------------------------------- | ------------------------------- | -------------------------------------------- | ------------------------- |
-| 1    | Default camera, orbit begins from runtime -Z | Performer and initial drainage | Quiet peninsula stays attached to open terrain | Fissure and breach       |
-| 2    | Front-quarter orbit                          | Failed crown and graded talus  | Source and channel read as one event           | Main drainage            |
-| 3    | Side and rear-quarter orbit                  | Low attached eastern shelves   | Breathing room keeps useful depth              | Return to performer      |
+| 1    | Default camera, orbit begins from runtime -Z | Performer against rising mountain | High source and edifice continue out of frame | Orbit uphill |
+| 2    | Side orbit                                   | Contour ledge and passing drainage | Performer remains clear inside the mountain section | Orbit behind |
+| 3    | Opposite camera at runtime +Z                | Lower escarpment and runout country | Drainage and terrain continue below and beyond scene | Return to performer |
 
 ### Spatial artifacts
 
-- Annotated floor plan: `evidence/gate-1-1-geology-amendment-r3/01-north-up-measured-plan.png`
-- Vertical composition proof: `evidence/gate-1-1-geology-amendment-r3/02-measured-sections.png`
-- Sightline study: `evidence/gate-1-1-geology-amendment-r3/03-orbit-sightline-study.png`
+- Annotated floor plan: `evidence/gate-1-1-geology-amendment-r4/01-north-up-measured-plan.png`
+- True-scale vertical composition proof: `evidence/gate-1-1-geology-amendment-r4/02-true-scale-midflank-section.png`
+- Exact uphill/downhill orbit proof: `evidence/gate-1-1-geology-amendment-r4/03-runtime-uphill-downhill-proof.png`
+- Sightline study: `evidence/gate-1-1-geology-amendment-r4/04-orbit-sightline-study.png`
 - Plan contract: `scene-development.md`
-- Automated report: `evidence/gate-1-1-geology-amendment-r3/ember-breached-rift-bench-gate1-1-report.json`
+- Automated report: `evidence/gate-1-1-geology-amendment-r4/ember-midflank-fire-pilgrimage-r4-gate1-1-report.json`
 
 ## Gate 2: Playable graybox
 
-- Blender source: `blender/ember-breached-rift-bench-graybox-r3.blend`
-- Coordinate and camera manifest:
-  `evidence/gate-2-geology-graybox-r3/ember-breached-rift-bench-r3-coordinate-manifest.json`
+Pending explicit Gate 1.1 R4 approval. The historical R3 Blender source and
+coordinate manifest are retained for audit but are not a base geometry contract.
+
+### Historical R3 Gate 2 evidence
+
 - Review GLB:
   `../../../static/models/ember/review/ember-breached-rift-bench-graybox-r3.glb`
 - Review contact sheet:
