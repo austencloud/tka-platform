@@ -194,7 +194,8 @@ describe("canonical concept lesson composition", () => {
     expect(timingBoard).toContain("ChoreoCard");
     expect(timingBoard).toContain("handPathMode");
     expect(timingBoard).toContain("showWord={false}");
-    expect(timingBoard).toContain("includeStartPosition={false}");
+    expect(timingBoard).toContain("includeStartPosition");
+    expect(timingBoard).not.toContain("includeStartPosition={false}");
     expect(timingBoard).not.toContain("clickableStart");
     expect(timingBoard).toContain("customTitleText={mode.element.name}");
     expect(timingBoard).toContain("customNotesText={definitionFor(mode)}");
