@@ -1,7 +1,7 @@
 # App Navigation Hierarchy — Design
 
-Date: 2026-09-04  
-Status: Approved  
+Date: 2026-09-04
+Status: Approved
 Area: App shell navigation, Create workspace chrome, keyboard settings
 
 ## Problem
