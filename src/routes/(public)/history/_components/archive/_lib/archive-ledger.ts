@@ -369,7 +369,7 @@ const researchEntries: ArchiveEntry[] = [
 			{
 				label: "Read the complete book",
 				href: "http://www.semlyen.net/cosmosjugglers/lib/contents.htm",
-				supports: "All 20 lessons, supporting chapters, and pole articles.",
+				supports: "20 lessons, chapters, and pole articles.",
 				basis: "creators-account",
 			},
 			{
@@ -381,13 +381,13 @@ const researchEntries: ArchiveEntry[] = [
 			{
 				label: "Author and illustrator",
 				href: "http://www.semlyen.net/cosmosjugglers/lib/ackbook.htm",
-				supports: "Anna Jillings' 1994 notice and Julie Wilson's credit.",
+				supports: "Original author and illustrator credits.",
 				basis: "creators-account",
 			},
 			{
 				label: "Earlier teaching resources",
 				href: "http://www.semlyen.net/cosmosjugglers/lib/bibcs.htm",
-				supports: "Anna's bibliography and the book's publication details.",
+				supports: "Earlier teaching and publication details.",
 				basis: "creators-account",
 			},
 		],
