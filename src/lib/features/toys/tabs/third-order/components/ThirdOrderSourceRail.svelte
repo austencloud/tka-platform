@@ -14,7 +14,7 @@
 <section class="source-rail" class:embedded aria-label="Third Order sources">
   <header class="rail-header">
     <h2>Sources</h2>
-    <p>Choose the outer path and the two sequences traveling inside it.</p>
+    <p>Choose the clock and the two sequences traveling inside it.</p>
   </header>
 
   <section class="source-row carrier-row">
@@ -23,8 +23,8 @@
         <i class="fas fa-atom"></i>
       </span>
       <span class="source-copy">
-        <span class="source-kicker">Outer path</span>
-        <strong>Carrier</strong>
+        <span class="source-kicker">Parent clock</span>
+        <strong>Carrier sequence</strong>
         <span class="sequence-word">
           {sequenceName(state.composition.carrier)}
         </span>
@@ -34,7 +34,7 @@
       </span>
     </div>
     <PanelButton
-      ariaLabel="Choose carrier sequence"
+      ariaLabel="Choose parent clock sequence"
       onclick={() => state.openPicker("carrier")}
     >
       Choose
@@ -63,7 +63,7 @@
             <strong>{child.label}</strong>
             <span class="sequence-word">{sequenceName(child.sequence)}</span>
             <small>
-              {child.sequence.steps.length} counts · {child.lane} carrier
+              {child.sequence.steps.length} counts · {child.lane} path
             </small>
           </span>
         </button>
@@ -96,8 +96,10 @@
   }
   .source-rail.embedded {
     height: auto;
-    padding: 0;
+    margin-top: 17px;
+    padding: 17px 0 0;
     overflow: visible;
+    border-top: 1px solid var(--theme-stroke);
     background: transparent;
   }
 

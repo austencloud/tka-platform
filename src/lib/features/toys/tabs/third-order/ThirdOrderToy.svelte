@@ -6,6 +6,7 @@
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo";
   import ThirdOrderSourceRail from "./components/ThirdOrderSourceRail.svelte";
+  import ThirdOrderPathControls from "./components/ThirdOrderPathControls.svelte";
   import ThirdOrderStage from "./components/ThirdOrderStage.svelte";
   import ThirdOrderInspector from "./components/ThirdOrderInspector.svelte";
   import ThirdOrderTransport from "./components/ThirdOrderTransport.svelte";
@@ -41,6 +42,7 @@
 
 {#snippet setup()}
   <aside class="setup-panel" aria-label="Third Order setup">
+    <ThirdOrderPathControls />
     <ThirdOrderSourceRail embedded />
     <ThirdOrderInspector embedded />
   </aside>
@@ -89,6 +91,7 @@
     onClose={() => thirdOrder.setSetupDrawerOpen(false)}
   />
   <div class="setup-drawer-body">
+    <ThirdOrderPathControls />
     <ThirdOrderSourceRail embedded />
     <ThirdOrderInspector embedded />
   </div>

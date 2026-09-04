@@ -3,13 +3,17 @@ import type { IThirdOrderCompositionSampler } from "../services/contracts/IThird
 import {
   THIRD_ORDER_COMPOSITION_VERSION,
   type ThirdOrderCarrierLane,
+  type ThirdOrderCarrierPathMode,
   type ThirdOrderChildDraft,
   type ThirdOrderCompositionDraft,
   type ThirdOrderCompositionFrame,
+  type ThirdOrderFlowerRatio,
   type ThirdOrderOrientationMode,
   type ThirdOrderSourceTarget,
   type ThirdOrderTimingMode,
 } from "../domain/third-order-composition";
+import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
+import type { SpinStyle } from "@vtg/domain";
 
 type ChildId = ThirdOrderChildDraft["id"];
 
@@ -31,6 +35,13 @@ export interface ThirdOrderState {
   setChildTiming(id: ChildId, mode: ThirdOrderTimingMode): void;
   setChildRate(id: ChildId, rate: number): void;
   setChildVisible(id: ChildId, visible: boolean): void;
+  setCarrierPathMode(mode: ThirdOrderCarrierPathMode): void;
+  setFlowerRatio(ratio: ThirdOrderFlowerRatio): void;
+  setFlowerStyle(style: SpinStyle): void;
+  setFlowerStrength(strength: number): void;
+  setFlowerPhase(phase: number): void;
+  setFlowerRelationship(relationship: VtgMode): void;
+  setShowConstruction(show: boolean): void;
   setBpm(bpm: number): void;
   setMasterBeat(beat: number): void;
   stepBy(beats: number): void;
@@ -68,6 +79,15 @@ export function createThirdOrderState(
   const composition = $state<ThirdOrderCompositionDraft>({
     version: THIRD_ORDER_COMPOSITION_VERSION,
     carrier: initialSequence,
+    carrierPath: {
+      mode: "flower",
+      ratio: "1:3",
+      style: "anti",
+      strength: 1,
+      phase: 0,
+      relationship: "SO",
+      showConstruction: true,
+    },
     children: [
       createChild("grid-blue", "Blue grid", "left", initialSequence),
       createChild("grid-red", "Red grid", "right", initialSequence),
@@ -188,6 +208,37 @@ export function createThirdOrderState(
     },
     setChildVisible(id, visible) {
       updateChild(id, (child) => ({ ...child, visible }));
+    },
+    setCarrierPathMode(mode) {
+      stopPlayback();
+      composition.carrierPath.mode = mode;
+      masterBeat = 0;
+      refresh();
+    },
+    setFlowerRatio(ratio) {
+      stopPlayback();
+      composition.carrierPath.ratio = ratio;
+      masterBeat = 0;
+      refresh();
+    },
+    setFlowerStyle(style) {
+      composition.carrierPath.style = style;
+      refresh();
+    },
+    setFlowerStrength(strength) {
+      composition.carrierPath.strength = Math.max(0, Math.min(1, strength));
+      refresh();
+    },
+    setFlowerPhase(phase) {
+      composition.carrierPath.phase = ((Math.round(phase) % 8) + 8) % 8;
+      refresh();
+    },
+    setFlowerRelationship(relationship) {
+      composition.carrierPath.relationship = relationship;
+      refresh();
+    },
+    setShowConstruction(show) {
+      composition.carrierPath.showConstruction = show;
     },
     setBpm(bpm) {
       composition.bpm = Math.max(10, Math.min(300, bpm));
