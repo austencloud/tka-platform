@@ -365,13 +365,6 @@ const researchEntries: ArchiveEntry[] = [
 				basis: "creators-account",
 			},
 			{
-				label: "Home of Poi learning and community guide",
-				href: "https://www.homeofpoi.com/us/company/new_visitor.php",
-				supports:
-					"The breadth of the lesson library, safety material, forums, videos, and other community archives.",
-				basis: "creators-account",
-			},
-			{
 				label: "Home of Poi forum archive",
 				href: "https://www.homeofpoi.com/us/community/forums/",
 				supports:
@@ -384,13 +377,6 @@ const researchEntries: ArchiveEntry[] = [
 				supports:
 					"A dated example of members working through movement terminology and teaching language in public.",
 				basis: "community-attested",
-			},
-			{
-				label: "Home of Poi",
-				href: "https://www.homeofpoi.com/en/",
-				supports:
-					"The lesson categories and public site still available during the 2026 review.",
-				basis: "directly-observed",
 			},
 		],
 	},
