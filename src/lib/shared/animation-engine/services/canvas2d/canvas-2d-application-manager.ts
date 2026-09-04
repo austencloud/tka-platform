@@ -88,6 +88,7 @@ export class Canvas2DApplicationManager {
     // Create canvas element with DPI-aware backing store
     // Physical pixels = logical size * devicePixelRatio for sharp rendering on high-DPI screens
     this.canvas = document.createElement("canvas");
+    this.canvas.dataset.animationLayer = "props";
     this.canvas.width = Math.floor(size * this.dpr);
     this.canvas.height = Math.floor(size * this.dpr);
     this.canvas.style.width = "100%";

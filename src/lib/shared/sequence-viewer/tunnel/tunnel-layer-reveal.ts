@@ -13,6 +13,22 @@ function clampProgress(progress: number): number {
 }
 
 /**
+ * Seven copies still need to read as one ensemble, not seven late disclosures.
+ * This keeps the farthest copy only a fraction of a phrase behind the first.
+ */
+const LAYER_POSITION_STAGGER = 0.18;
+
+function layerStart(
+  layerIndex: number,
+  layerCount: number,
+  staggerWindow: number
+): number {
+  if (layerCount <= 1) return 0;
+  const index = Math.max(0, Math.min(layerCount - 1, layerIndex));
+  return (index / (layerCount - 1)) * staggerWindow;
+}
+
+/**
  * Per-copy progress through the formation change.
  *
  * This is shared by geometry and opacity so a rapid reversal retraces one
@@ -26,12 +42,12 @@ export function resolveTunnelLayerProgress(
   const clampedProgress = clampProgress(progress);
   if (layerCount <= 1) return clampedProgress;
 
-  const staggerWindow = 0.62;
-  const start =
-    (Math.max(0, Math.min(layerCount - 1, layerIndex)) / (layerCount - 1)) *
-    staggerWindow;
+  const start = layerStart(layerIndex, layerCount, LAYER_POSITION_STAGGER);
   const localProgress = clampProgress((clampedProgress - start) / (1 - start));
-  return localProgress * localProgress * (3 - 2 * localProgress);
+  // The shared Tween already supplies the product's cubic-out easing. Easing
+  // again here held six of seven copies near zero until the final beat, then
+  // compressed their visible movement into a burst.
+  return localProgress;
 }
 
 function propPosition(state: PropState): { x: number; y: number } {
@@ -95,9 +111,9 @@ export function interpolateTunnelLayerProp(
 }
 
 /**
- * Extra performers arrive from the center of the stack outward. Keeping the
- * final third of the transition as overlapping settle time keeps the result
- * composed while giving each arrival enough separation to read as a wave.
+ * Extra performers arrive from the center of the stack outward as one phrase.
+ * The positional stagger is deliberately subtle: depth remains legible, while
+ * every copy is already participating before the reveal reaches its midpoint.
  */
 export function resolveTunnelLayerOpacity(
   progress: number,
@@ -116,10 +132,8 @@ export function resolveTunnelGridOpacity(
   tunnelGridVisible: boolean
 ): number {
   if (tunnelGridVisible) return 1;
-  // Clear the construction grid during the opening third, before the outer
-  // performers become dominant. This turns the handoff into two overlapping
-  // phrases instead of fading every visual ingredient at once.
-  const localProgress = Math.max(0, Math.min(1, progress / 0.38));
-  const easedProgress = localProgress * localProgress * (3 - 2 * localProgress);
-  return 1 - easedProgress;
+  // The grid and performers share one eased clock. The grid therefore remains
+  // visible while the copies become legible, then clears as their formation
+  // takes ownership instead of vanishing before anything replaces it.
+  return 1 - clampProgress(progress);
 }
