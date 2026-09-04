@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "ember-breached-rift-bench",
+  "gateId": "playable-graybox",
+  "status": "derived-from-approved-plan",
+  "sourceAuthority": {
+    "approvedDirection": "a-breached-rift-bench",
+    "terrainOwner": "scripts/build-ember-geology-study.py",
+    "researchContract": "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
+    "simulatorGuideSource": "E:\\tka-platform-ember-geology-sources\\ember-simulator-benchmark\\flowy\\output\\ember_breached_rift_thickness_full.asc",
+    "simulatorImplementation": "Flowy",
+    "simulatorRole": "Registered emplacement guide only; not final render geometry."
+  },
+  "coordinateSystem": {
+    "world": "right-handed metres; x east/west, y elevation, z north/south",
+    "blenderChildCoordinates": "(worldX, worldY, worldZ)",
+    "blenderDisplayTransform": "World root rotates +90 degrees about X; review cameras use (x, -z, y)",
+    "gltfRuntime": "Root and child transforms preserve plan-world local coordinates for later integration review."
+  },
+  "worldBoundsMeters": {
+    "minX": -190.0,
+    "maxX": 190.0,
+    "minZ": -145.0,
+    "maxZ": 190.0
+  },
+  "terrain": {
+    "dataPath": "static/data/ember/review/ember-breached-rift-bench-height.f32",
+    "columns": 381,
+    "rows": 336,
+    "cellSizeMeters": 1.0,
+    "reviewStrideSamples": 2,
+    "minimumElevationMeters": -1.15,
+    "maximumElevationMeters": 38.162197,
+    "performerElevationMeters": 0.658125,
+    "dataSha256": "264da2e44709d72b4280c3e128b8c913680c30d6de8211a35ff44500af929879"
+  },
+  "lavaPlan": {
+    "sourceWorldXZ": [
+      -72.0,
+      137.0
+    ],
+    "centerlineWorldXZ": [
+      [
+        -72.0,
+        137.0
+      ],
+      [
+        -61.0,
+        116.0
+      ],
+      [
+        -48.0,
+        92.0
+      ],
+      [
+        -31.0,
+        68.0
+      ],
+      [
+        -12.0,
+        45.0
+      ],
+      [
+        8.0,
+        24.0
+      ],
+      [
+        14.0,
+        8.0
+      ],
+      [
+        15.0,
+        -9.0
+      ],
+      [
+        19.0,
+        -31.0
+      ],
+      [
+        29.0,
+        -54.0
+      ],
+      [
+        35.0,
+        -82.0
+      ],
+      [
+        42.0,
+        -122.0
+      ],
+      [
+        49.0,
+        -145.0
+      ]
+    ],
+    "widthMeters": [
+      4.0,
+      5.0,
+      5.5,
+      6.0,
+      6.5,
+      7.0,
+      7.0,
+      7.5,
+      10.0,
+      14.0,
+      19.0,
+      24.0,
+      28.0
+    ],
+    "pathLengthMeters": 314.088077,
+    "sourceTerrainElevationMeters": 21.450001,
+    "terminusTerrainElevationMeters": -1.15,
+    "netDescentMeters": 22.600001,
+    "centerlineCumulativeDistanceMeters": [
+      0.0,
+      23.706539,
+      51.001227,
+      80.41211,
+      110.244977,
+      139.244977,
+      156.332985,
+      173.362371,
+      195.723051,
+      220.802923,
+      249.438566,
+      290.046447,
+      314.088077
+    ],
+    "grayboxRole": "Full approved source-to-continuation footprint; final lava morphology remains Gate 4 work."
+  },
+  "simulatorGuide": {
+    "maskPath": "static/data/ember/review/ember-breached-rift-bench-flowy-guide.u8",
+    "maskSha256": "70287611058d07ca45c64f491ac4b3d5cdb22236de8a2a3570939827a864ec3a",
+    "sourceSha256": "8a0e500e8be9bd5d1e4eeaad6024c130625fab6fd52e7f0ab60df21543b6ef80",
+    "activeCellCount": 5335,
+    "activeAreaSquareMeters": 5335.0,
+    "boundsWorldXZ": {
+      "minX": -75.0,
+      "maxX": 21.0,
+      "minZ": -5.0,
+      "maxZ": 139.0
+    },
+    "minimumCenterDistanceMeters": 8.602325,
+    "clearanceBeyondActionEnvelopeMeters": 4.102325,
+    "esriHeader": {
+      "ncols": 381,
+      "nrows": 336,
+      "xllcorner": -190.0,
+      "yllcorner": -145.0,
+      "cellsize": 1.0,
+      "nodata_value": 0.0
+    }
+  },
+  "performerContract": {
+    "originWorldXYZ": [
+      0.0,
+      0.658125,
+      0.0
+    ],
+    "heightMeters": 1.75,
+    "actionRadiusMeters": 4.5,
+    "orbitRadiusMeters": 25.0,
+    "walkable": false
+  },
+  "compositionContract": {
+    "dominantMass": "Older collapse scarp to west / northwest",
+    "openHorizon": "East and southeast",
+    "sourceToContinuation": "northwest fissure to south frame exit",
+    "antiPatterns": [
+      "decorative arch",
+      "circular stage island",
+      "radial basin",
+      "spline-owned lava footprint",
+      "visible world edge from the 25 m orbit"
+    ]
+  },
+  "reviewCameras": [
+    {
+      "id": "default-audience",
+      "positionWorldXYZ": [
+        0.0,
+        7.0,
+        -21.5
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        2.7,
+        27.0
+      ],
+      "horizontalFovDegrees": 69.0,
+      "reviewImage": "00-default-audience.png"
+    },
+    {
+      "id": "orbit-000",
+      "bearingDegreesClockwiseFromAudience": 0,
+      "positionWorldXYZ": [
+        0.0,
+        7.0,
+        -25.0
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.85,
+        0.0
+      ],
+      "horizontalFovDegrees": 72.0,
+      "reviewImage": "01-orbit-000.png"
+    },
+    {
+      "id": "orbit-045",
+      "bearingDegreesClockwiseFromAudience": 45,
+      "positionWorldXYZ": [
+        17.67767,
+        7.0,
+        -17.67767
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.85,
+        0.0
+      ],
+      "horizontalFovDegrees": 72.0,
+      "reviewImage": "02-orbit-045.png"
+    },
+    {
+      "id": "orbit-090",
+      "bearingDegreesClockwiseFromAudience": 90,
+      "positionWorldXYZ": [
+        25.0,
+        7.0,
+        -0.0
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.85,
+        0.0
+      ],
+      "horizontalFovDegrees": 72.0,
+      "reviewImage": "03-orbit-090.png"
+    },
+    {
+      "id": "orbit-135",
+      "bearingDegreesClockwiseFromAudience": 135,
+      "positionWorldXYZ": [
+        17.67767,
+        7.0,
+        17.67767
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.85,
+        0.0
+      ],
+      "horizontalFovDegrees": 72.0,
+      "reviewImage": "04-orbit-135.png"
+    },
+    {
+      "id": "orbit-180",
+      "bearingDegreesClockwiseFromAudience": 180,
+      "positionWorldXYZ": [
+        0.0,
+        7.0,
+        25.0
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.85,
+        0.0
+      ],
+      "horizontalFovDegrees": 72.0,
+      "reviewImage": "05-orbit-180.png"
+    },
+    {
+      "id": "orbit-225",
+      "bearingDegreesClockwiseFromAudience": 225,
+      "positionWorldXYZ": [
+        -17.67767,
+        7.0,
+        17.67767
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.85,
+        0.0
+      ],
+      "horizontalFovDegrees": 72.0,
+      "reviewImage": "06-orbit-225.png"
+    },
+    {
+      "id": "orbit-270",
+      "bearingDegreesClockwiseFromAudience": 270,
+      "positionWorldXYZ": [
+        -25.0,
+        7.0,
+        0.0
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.85,
+        0.0
+      ],
+      "horizontalFovDegrees": 72.0,
+      "reviewImage": "07-orbit-270.png"
+    },
+    {
+      "id": "orbit-315",
+      "bearingDegreesClockwiseFromAudience": 315,
+      "positionWorldXYZ": [
+        -17.67767,
+        7.0,
+        -17.67767
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.85,
+        0.0
+      ],
+      "horizontalFovDegrees": 72.0,
+      "reviewImage": "08-orbit-315.png"
+    }
+  ],
+  "reviewImages": [
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/00-default-audience.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/01-orbit-000.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/02-orbit-045.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/03-orbit-090.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/04-orbit-135.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/05-orbit-180.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/06-orbit-225.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/07-orbit-270.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/08-orbit-315.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/09-plan-simulator-guide.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/10-longitudinal-section.png"
+  ],
+  "limitations": [
+    "This is a composition and spatial-causality graybox, not a final geological surface.",
+    "The Flowy raster is an uncalibrated same-DEM benchmark and is shown only as a guide.",
+    "The complete lava body is a deterministic footprint derived from the approved Gate 1 centerline and widths.",
+    "No production Ember asset, runtime behavior, final material, atmosphere, or Meshy object is changed."
+  ],
+  "sourceDigests": {
+    "terrainOwnerSha256": "cbfce4fadbccbb51ca2779137132d7de0e2c550365a86fde2333a938bcaeca86",
+    "researchContractSha256": "2bf483bbfb0991b3a0c029ae89a18209fa6aa2520ad3f63d74b4a05606d9ede8",
+    "contractPayloadSha256": "bf6181732ba3177bd1d2ee69532116c2efc27e94c3a04236167a82f2fb6b10c8"
+  }
+}
