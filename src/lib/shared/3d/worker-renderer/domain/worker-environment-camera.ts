@@ -21,6 +21,11 @@ const CAMERA_BY_ENVIRONMENT: Readonly<
     target: [0, 1.1, -1],
     fov: 48,
   },
+  winter: {
+    position: [0, 4.2, 17],
+    target: [0, 1.1, -1],
+    fov: 48,
+  },
 };
 
 export function getWorkerEnvironmentCamera(

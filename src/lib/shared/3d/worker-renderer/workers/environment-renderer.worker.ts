@@ -20,6 +20,7 @@ import { clampWorkerViewport } from "../domain/worker-renderer-protocol";
 import { createOceanPrototypeWorld } from "../worlds/ocean-prototype-world";
 import { createRainbowPrototypeWorld } from "../worlds/rainbow-prototype-world";
 import { createVoidPrototypeWorld } from "../worlds/void-prototype-world";
+import { createWinterPrototypeWorld } from "../worlds/winter-prototype-world";
 import type {
   WorkerEnvironmentWorld,
   WorkerWorldFactory,
@@ -48,6 +49,7 @@ const WORLD_FACTORIES: Readonly<
   ocean: createOceanPrototypeWorld,
   rainbow: createRainbowPrototypeWorld,
   void: createVoidPrototypeWorld,
+  winter: createWinterPrototypeWorld,
 };
 
 let requestId = 0;
