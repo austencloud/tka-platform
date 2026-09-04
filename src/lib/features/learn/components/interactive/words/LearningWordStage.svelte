@@ -365,6 +365,16 @@
       min-height: 31rem;
     }
 
+    .empty-state {
+      gap: 0.45rem;
+      padding: 0.5rem;
+    }
+
+    .empty-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+
     .guide-notes {
       grid-template-columns: minmax(0, 1fr);
       gap: 0.55rem;
