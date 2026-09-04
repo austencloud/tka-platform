@@ -37,12 +37,43 @@ Austen wants an in-app AI director for the 3D Stage that interprets whole reques
 - In isolated `/test/stage`, typed an UNSENT draft, switched to Performers, then back to TIKA. TIKA disappeared during the other tool, exactly one inspector returned, and draft text survived. No live scene-changing or paid browser request was sent.
 - Compact phone close and short-landscape close were exercised; awaited dialog hidden after the outro. Measured modes: 375×667 compact, 960×412 compact, 820×1180 overlay, 1440×900 overlay. No document horizontal overflow in measured phone/tablet/laptop states. Desktop docking above was verified separately.
 
-## Believed done — unverified
+## Pickup audit and verification (2026-09-04, Fable)
 
-- Complete seven-viewport visual pass is NOT finished. 2560×1440 reached docked mode, then the development page reloaded before the final panel measurement/screenshot. 3840×2160, reduced-motion behavior, and 200% zoom/reflow remain unverified.
-- The screenshot backend produced stale duplicate fragments and black padding while switching viewport overrides. DOM showed one panel/composer, not duplicate components. Do not mistake these captures for clean visual proof. Normal-size desktop composition was directly visible; responsive geometry is stronger evidence than those corrupted captures.
-- Pending-request cancellation during tool switching is code-backed and existing session tests pass, but no delayed real-browser request test was completed after moving the panel. Conversation history persistence across close is code-backed; only unsent draft persistence was browser-tested this turn.
-- No claim of broad adversarial reliability, repeated-run stability, or fully browser-driven plan execution is justified yet.
+Audit of the claims above: all five cited commits exist on main; all cited
+files exist; the cited focused suites pass now (34 tests across
+`scene-control-layout`, `tika-director-session`, `stage-module-contract`,
+`tika-director-planner`, `tika-director-reviewer`). Nothing diverged.
+
+Browser verification completed via Chrome DevTools MCP against Austen's 5173
+server, per-tab emulation, CSS pixels measured from `innerWidth`. Isolated
+`/test/stage` unless noted.
+
+| Check                             | Result                                                                                                                                                                                                                                                         |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2560×1440 open                    | canvas right 1642, panel left 1658, overlap 0; clean screenshot, three performers visible                                                                                                                                                                      |
+| 2560×1440 close / reopen          | panel unmounts, canvas returns to full width; reopen re-docks identically                                                                                                                                                                                      |
+| 3840×2160 open / close / reopen   | canvas right 2638, panel left 2654, overlap 0; one shell, one composer                                                                                                                                                                                         |
+| 1280×720 @ dpr 2 (200% zoom)      | overlay presentation, composer and send in view, no horizontal overflow                                                                                                                                                                                        |
+| 375×667 mobile                    | bottom sheet; composer in view on open; send button below fold until the panel body scrolls, then reachable                                                                                                                                                    |
+| Reduced motion                    | JS path via `data-motion-preference="reduce"`: panel present within two frames on open, gone within 120 ms on close. CSS `prefers-reduced-motion` blocks exist in all five touched components but were not exercised (DevTools MCP has no media-query switch). |
+| Shipping `/stage/scene` 2560×1440 | signed-in account; canvas right 1662, panel left 1678, overlap 0                                                                                                                                                                                               |
+
+Async behavior, verified with a stubbed `/api/tika/direct` fetch that delays
+4 s and returns an `apply` formation transition (no provider cost, no real
+request):
+
+- Non-anchored prompt sent, then switched to the Performers tool mid-request:
+  the fetch signal aborted, the stub never resolved, stage Undo stayed
+  disabled, performer count unchanged. Exactly one inspector after the switch.
+- Reopening TIKA after the switch: conversation history retained across the
+  remount, send button enables with a new draft, no stuck pending state.
+- Scene mutated by the user (Add performer) while a request was outstanding:
+  the stub resolved, the session rejected the plan with "The scene changed
+  while TIKA was thinking", stage Undo reflected only the user's own change.
+
+Still unverified: CSS reduced-motion media query, playback continuing during
+inference, resize across compact/desktop during a request, stale undo in the
+browser, and any real-model end-to-end plan execution.
 
 ## In flight
 
@@ -53,9 +84,9 @@ Austen wants an in-app AI director for the 3D Stage that interprets whole reques
 
 ## Loose ends (ranked)
 
-1. Finish docking verification with stable browser conditions. Read current code and AGENTS first; changes are already on main. Use `/test/stage` to isolate the real StageModule from app-shell reloads, then confirm shipping `/stage/scene`. Recheck 2560×1440 and 3840×2160 open/closed, reduced motion, zoom/reflow, and compact input reachability by scrolling. Screenshot duplication during emulation needs a clean capture path before claiming a full visual pass.
+1. DONE 2026-09-04 (see pickup section): docking verified at 2560, 3840, 200% zoom, compact phone, and shipping route. Remaining from this item: CSS reduced-motion media query only.
 2. Confirm the intended intermediate-width behavior with Austen if necessary. This patch deliberately reuses existing breakpoints: `scene-control-layout.ts` docks only when workspace width ≥1680 and at least 960 px of stage remains. Tablet/laptop still overlay; compact sheets also cover part of the scene. If Austen wants ZERO occlusion at every width, the current patch does not deliver that. Extend the shared layout owner rather than creating a TIKA-only sizing system.
-3. Test async close/tool-switch/reopen while a delayed request is outstanding, history retention across panel remounts, stale undo, playback continuing during inference, and resize across compact/desktop during a request. Ensure no old request changes the scene.
+3. PARTLY DONE 2026-09-04: tool-switch abort, history retention across remount, and stale-revision rejection verified in the browser with a stubbed request. Still open: stale undo in the browser, playback continuing during inference, resize across compact/desktop during a request.
 4. Deepen AI evaluations rather than adding more assurances. Add repeated paraphrases and multi-turn corrections, explicit removal versus ambiguous acknowledgement of exclusions, prompt injection in scene labels/history, unsupported mixed requests, and failures/cancellation. Assert scene diffs and unchanged state on rejection, not just response kind. Keep holdouts separate from prompt examples. The previous 17 passes are a baseline, not a release threshold.
 5. Make any feedback learning explicit, versioned and evaluated before adopting it. There is no existing self-training loop to resume.
 
