@@ -18,6 +18,7 @@ export interface StageEditMode {
   readonly multiSelectedPerformerIds: Set<string>;
   isDragging: boolean;
   selectPerformer(id: string, addToSelection?: boolean): void;
+  selectPerformers(ids: readonly string[], anchorId?: string): void;
   selectFormation(formationId: string | null): void;
   selectSpot(formationId: string, performerId: string): void;
   selectTravel(formationId: string, performerId: string): void;
@@ -75,6 +76,19 @@ export function createStageEditMode(): StageEditMode {
           };
   }
 
+  function selectPerformers(ids: readonly string[], anchorId?: string) {
+    const performerIds = [...new Set(ids)].filter(Boolean);
+    if (performerIds.length === 0) {
+      selection = { kind: "none" };
+      return;
+    }
+    const anchor =
+      anchorId && performerIds.includes(anchorId)
+        ? anchorId
+        : performerIds.at(-1)!;
+    selection = { kind: "performers", performerIds, anchorId: anchor };
+  }
+
   function selectFormation(formationId: string | null) {
     selection = formationId
       ? { kind: "formation", formationId }
@@ -122,6 +136,7 @@ export function createStageEditMode(): StageEditMode {
       isDragging = value;
     },
     selectPerformer,
+    selectPerformers,
     selectFormation,
     selectSpot,
     selectTravel,

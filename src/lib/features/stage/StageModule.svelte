@@ -81,12 +81,75 @@
   setStageChoreographyContext(stageState);
   const editMode = createStageEditMode();
 
+  function performerIdAt(index: number): string | null {
+    return stageState.choreography.performers[index]?.id ?? null;
+  }
+
+  function performerIndexForId(id: string | null): number | null {
+    if (!id) return null;
+    const index = stageState.choreography.performers.findIndex(
+      (performer) => performer.id === id
+    );
+    return index >= 0 ? index : null;
+  }
+
   // The Stage is the same 3D surface as every other one in the app: the shared
   // viewer state is what makes the control rail's tools — performers, formation,
   // camera, scene, presets — reach real rigs instead of doing nothing.
   const viewer = createViewer3DState(undefined, {
     firstUseEnvironment: stageState.choreography.environmentId,
     appDefaultProp: settings.leftPropType ?? null,
+    performerSelection: {
+      getSelectedIndices: () => {
+        if (editMode.selection.kind === "performers") {
+          return editMode.selection.performerIds
+            .map((id) => performerIndexForId(id))
+            .filter((index): index is number => index !== null);
+        }
+        const focusedIndex = performerIndexForId(editMode.selectedPerformerId);
+        return focusedIndex === null ? [] : [focusedIndex];
+      },
+      getPrimaryIndex: () => performerIndexForId(editMode.selectedPerformerId),
+      replace: (index) => {
+        const id = performerIdAt(index);
+        if (id) editMode.selectPerformer(id);
+      },
+      toggle: (index) => {
+        const id = performerIdAt(index);
+        if (id) editMode.selectPerformer(id, true);
+      },
+      clear: () => editMode.clearSelection(),
+      selectAll: (count) => {
+        const ids = stageState.choreography.performers
+          .slice(0, count)
+          .map((performer) => performer.id);
+        editMode.selectPerformers(ids);
+      },
+      setSelection: (indices, primaryIndex) => {
+        const ids = indices
+          .map((index) => performerIdAt(index))
+          .filter((id): id is string => id !== null);
+        editMode.selectPerformers(
+          ids,
+          primaryIndex === undefined
+            ? undefined
+            : (performerIdAt(primaryIndex) ?? undefined)
+        );
+      },
+      removeSelection: (indices) => {
+        const ids = indices
+          .map((index) => performerIdAt(index))
+          .filter((id): id is string => id !== null);
+        if (ids.length === 0) return false;
+        const firstIndex = Math.min(...indices);
+        if (!stageState.removePerformers(ids)) return false;
+        const remaining = stageState.choreography.performers;
+        const next = remaining[Math.min(firstIndex, remaining.length - 1)];
+        if (next) editMode.selectPerformer(next.id);
+        else editMode.clearSelection();
+        return true;
+      },
+    },
   });
   setViewer3DContext(viewer);
   viewer.setEnvironmentId(stageState.choreography.environmentId);
