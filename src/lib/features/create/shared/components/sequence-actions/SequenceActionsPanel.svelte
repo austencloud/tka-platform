@@ -959,6 +959,16 @@
 <!-- Spotlight Modal - Replaced with /sequence/[id] route navigation -->
 
 <style>
+  :global(.drawer-content.sequence-actions-panel-container) {
+    /* The controls need a matte reading surface over the live pictograph
+       workspace. Keep the active theme color, then resolve it against the
+       solid sheet base so petals and glyphs cannot show through. */
+    --sheet-bg:
+      linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
+      var(--sheet-bg-solid, rgb(15, 15, 20));
+    --sheet-filter: none;
+  }
+
   .editor-panel {
     display: flex;
     flex-direction: column;
