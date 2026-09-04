@@ -4,78 +4,26 @@
   scrolls TKA turn values, Theory scrolls prop-to-hand ratios.
 
   Timing and direction are NOT here. They sit above the animation in the detail
-  pane, which is where the Matrix has always kept them. -->
+  pane, which is where the Matrix has always kept them.
+
+  The ratio is TYPED rather than scrolled. The Matrix scrolls turn values
+  because there are eight of them and they are a ladder; the ratio field is
+  twenty-nine values wide and is not, so a viewer who knows they want 4:9 says
+  4:9 instead of hunting for it. -->
 <script lang="ts">
-  import { parseSpinRatio, spinRatioKey } from "@vtg/domain";
-  import {
-    theoryRatioSpokenLabel,
-    theoryRatioVisibleLabel,
-  } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
   import ShapeMatrixAxisControl from "./ShapeMatrixAxisControl.svelte";
-  import ShapeMatrixValueScroller from "./ShapeMatrixValueScroller.svelte";
-  import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  import ShapeMatrixRatioEntry from "./ShapeMatrixRatioEntry.svelte";
 
   interface Props {
     /** Ribbon: the header band. Tray: the compact detail sheet. */
     layout?: "ribbon" | "tray";
   }
   let { layout = "ribbon" }: Props = $props();
-
-  const appState = getShapeMatrixAppContext();
-
-  const ratioOptions = $derived([
-    ...(appState.activeAxis === "both" &&
-    spinRatioKey(appState.theoryLeftRatio) !==
-      spinRatioKey(appState.theoryRightRatio)
-      ? [
-          {
-            value: "mixed",
-            label: "Mixed axis ratios",
-            shortLabel: "Mixed",
-            disabled: true,
-          },
-        ]
-      : []),
-    ...appState.availableTheoryRatios.map((ratio) => ({
-      value: spinRatioKey(ratio),
-      label: theoryRatioSpokenLabel(ratio),
-      shortLabel: theoryRatioVisibleLabel(ratio),
-      tone:
-        appState.activeAxis === "left"
-          ? "blue"
-          : appState.activeAxis === "right"
-            ? "red"
-            : "both",
-    })),
-  ]);
-  const ratioKeys = $derived(
-    appState.availableTheoryRatios.map((ratio) => spinRatioKey(ratio))
-  );
-  const selectedRatioKey = $derived(
-    appState.activeAxis === "both" &&
-      spinRatioKey(appState.theoryLeftRatio) !==
-        spinRatioKey(appState.theoryRightRatio)
-      ? "mixed"
-      : spinRatioKey(appState.activeTheoryRatio)
-  );
-
 </script>
 
 <div class="theory-editor" class:tray={layout === "tray"}>
   <ShapeMatrixAxisControl {layout} steers="the ratio control" />
-  <ShapeMatrixValueScroller
-    label="Ratio"
-    options={ratioOptions}
-    keys={ratioKeys}
-    value={selectedRatioKey}
-    onchange={(key) => {
-      if (key === "mixed") return;
-      const ratio = parseSpinRatio(key);
-      if (ratio) appState.setTheoryRatio(ratio);
-    }}
-    ariaLabel="Prop rotations to hand cycles"
-    {layout}
-  />
+  <ShapeMatrixRatioEntry {layout} />
 </div>
 
 <style>

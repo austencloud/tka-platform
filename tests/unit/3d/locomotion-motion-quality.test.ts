@@ -13,12 +13,16 @@
  * and the avatars' bones are `mixamorig12:`, so every run goes through
  * `remapClipToSkeleton` exactly as the app does.
  *
+ * The loading and driving live in `./locomotion-harness`, which every suite
+ * that needs a posed skeleton shares.
+ *
  * ## What this can and cannot see
  *
  * `FootPlanter` IK and the arm pass run after the animator in `Avatar3D`, and
- * neither runs here. That is deliberate -- it isolates the layer the run tier
- * changed, so a correction downstream cannot hide a defect upstream -- but it
- * decides what may be asserted.
+ * neither runs here: `driveRig` is called without `planting`. That is
+ * deliberate -- it isolates the layer the run tier changed, so a correction
+ * downstream cannot hide a defect upstream -- but it decides what may be
+ * asserted. The anatomy suite is the one that turns the planter on.
  *
  * Measured, not assumed: on `ch01` at 3.9 m/s this layer reports cadence 80/min
  * and a step length of 0 cm, while the same rig through the full pipeline in
@@ -54,291 +58,17 @@
  * nothing.
  */
 
-import fs from "node:fs";
-import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { AnimationClip, Group, Object3D } from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-import { LocomotionAnimator } from "@austencloud/scene-3d";
-import {
-  analyzeGait,
-  type GaitReport,
-} from "$lib/shared/3d/diagnostics/gait/gait-analysis";
 import type { GaitFrame } from "$lib/shared/3d/diagnostics/gait/gait-frame";
 import {
-  collectRiggedAvatars,
-  sampleRig,
-} from "$lib/shared/3d/diagnostics/gait/gait-rig-sampler";
+  avatar,
+  driveRig,
+  loadPackClips,
+  RIGS,
+} from "./locomotion-harness";
 
-const PACK = path.resolve(process.cwd(), "static/animations/locomotion-pack");
-
-const avatar = (id: string) =>
-  path.resolve(process.cwd(), `static/models/avatars/_optimized/${id}.glb`);
-
-/**
- * Shipped characters, not clip GLBs.
- *
- * The pack's GLBs each carry the full armature and no skinned mesh, which makes
- * one of them look like a convenient rig. It is not: those are raw Mixamo
- * exports, so the armature is turned a quarter turn, scaled by 0.01, and its
- * Hips sit at -104.27 **centimetres on local Z**. The optimize pipeline emits
- * the opposite -- an identity root with Hips at 0.99 **metres on Y** -- and
- * `prepareClip` bob mode writes the pelvis bob to local Y as a fraction of hip
- * height. That is correct for the shipped convention and silently lands on the
- * wrong axis, 100x too small, on the raw one: measuring a pack GLB reports a
- * pelvis frozen to the millimetre and a duty factor half what the app has.
- */
-const RIGS = ["ch01", "ch07", "ch10", "ch12", "ch18"];
-const REFERENCE_RIG = avatar(RIGS[0]!);
-
-const CLIP_FILES: Record<string, string> = {
-  idle: "idle.glb",
-  forward: "walk-forward.glb",
-  backward: "walk-backward.glb",
-  strafeLeft: "strafe-left.glb",
-  strafeRight: "strafe-right.glb",
-  runForward: "run.glb",
-  runStrafeLeft: "strafe-run-left.glb",
-  runStrafeRight: "strafe-run-right.glb",
-};
-
-/** The two fields `loadAnimations` would have filled over the network. */
-interface ClipInjectionSeam {
-  pendingClips: Map<string, AnimationClip>;
-  clipsLoaded: boolean;
-}
-
-const loader = new GLTFLoader();
-
-/**
- * Node copies a file into a shared pool, so a `Buffer` is a view into a larger
- * allocation. Slicing its `ArrayBuffer` by offset is the one place this can go
- * wrong quietly: a mis-sliced GLB parses as JSON and reports an unsupported
- * asset version rather than a bad offset. Copy, then check the magic.
- */
-function readGlb(file: string): Uint8Array {
-  const buffer = fs.readFileSync(file);
-  const bytes = new Uint8Array(buffer.byteLength);
-  bytes.set(buffer);
-  const magic = String.fromCharCode(...bytes.subarray(0, 4));
-  if (magic !== "glTF") throw new Error(`${file}: magic "${magic}"`);
-  return bytes;
-}
-
-const GLB_HEADER_BYTES = 12;
-const CHUNK_HEADER_BYTES = 8;
-const JSON_CHUNK = 0x4e4f534a;
-const BIN_CHUNK = 0x004e4942;
-const GLTF_MAGIC = 0x46546c67;
-
-/** Extensions that exist only to describe an image payload. */
-const TEXTURE_EXTENSIONS = new Set([
-  "KHR_texture_basisu",
-  "EXT_texture_webp",
-  "KHR_texture_transform",
-  "EXT_meshopt_compression",
-]);
-
-/**
- * Remove every image from a GLB, leaving the skeleton untouched.
- *
- * jsdom cannot decode an image and three waits on the decode forever, so a
- * textured avatar hangs the parse rather than failing it. Shading has no
- * bearing on where a bone ends up, so this drops images, textures, samplers and
- * the material references to them, and leaves nodes, skins, meshes and
- * accessors exactly as shipped.
- */
-function stripTextures(bytes: Uint8Array): ArrayBuffer {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  let offset = GLB_HEADER_BYTES;
-  let json: Record<string, unknown> | null = null;
-  let bin: Uint8Array | null = null;
-
-  while (offset < bytes.byteLength) {
-    const length = view.getUint32(offset, true);
-    const type = view.getUint32(offset + 4, true);
-    const start = offset + CHUNK_HEADER_BYTES;
-    const chunk = bytes.subarray(start, start + length);
-    if (type === JSON_CHUNK) {
-      json = JSON.parse(new TextDecoder().decode(chunk)) as Record<
-        string,
-        unknown
-      >;
-    } else if (type === BIN_CHUNK) {
-      bin = chunk;
-    }
-    offset = start + length + ((4 - (length % 4)) % 4);
-  }
-  if (!json) throw new Error("GLB has no JSON chunk");
-
-  delete json.images;
-  delete json.textures;
-  delete json.samplers;
-  for (const material of (json.materials ?? []) as Record<string, unknown>[]) {
-    delete material.normalTexture;
-    delete material.occlusionTexture;
-    delete material.emissiveTexture;
-    delete material.extensions;
-    const pbr = material.pbrMetallicRoughness as
-      | Record<string, unknown>
-      | undefined;
-    if (pbr) {
-      delete pbr.baseColorTexture;
-      delete pbr.metallicRoughnessTexture;
-    }
-  }
-  const keep = (name: string) => !TEXTURE_EXTENSIONS.has(name);
-  json.extensionsUsed = ((json.extensionsUsed ?? []) as string[]).filter(keep);
-  json.extensionsRequired = ((json.extensionsRequired ?? []) as string[]).filter(
-    keep
-  );
-
-  const jsonBytes = new TextEncoder().encode(JSON.stringify(json));
-  const jsonPad = (4 - (jsonBytes.byteLength % 4)) % 4;
-  const binBytes = bin ?? new Uint8Array(0);
-  const binPad = (4 - (binBytes.byteLength % 4)) % 4;
-  const total =
-    GLB_HEADER_BYTES +
-    CHUNK_HEADER_BYTES +
-    jsonBytes.byteLength +
-    jsonPad +
-    (bin ? CHUNK_HEADER_BYTES + binBytes.byteLength + binPad : 0);
-
-  const out = new Uint8Array(total);
-  const outView = new DataView(out.buffer);
-  outView.setUint32(0, GLTF_MAGIC, true);
-  outView.setUint32(4, 2, true);
-  outView.setUint32(8, total, true);
-  outView.setUint32(12, jsonBytes.byteLength + jsonPad, true);
-  outView.setUint32(16, JSON_CHUNK, true);
-  out.set(jsonBytes, 20);
-  out.fill(0x20, 20 + jsonBytes.byteLength, 20 + jsonBytes.byteLength + jsonPad);
-  if (bin) {
-    const binStart = 20 + jsonBytes.byteLength + jsonPad;
-    outView.setUint32(binStart, binBytes.byteLength + binPad, true);
-    outView.setUint32(binStart + 4, BIN_CHUNK, true);
-    out.set(binBytes, binStart + CHUNK_HEADER_BYTES);
-  }
-  return out.buffer;
-}
-
-function parse(
-  data: ArrayBuffer
-): Promise<{ scene: Object3D; animations: AnimationClip[] }> {
-  return new Promise((resolve, reject) =>
-    loader.parse(data, "", resolve as never, reject)
-  );
-}
-
-const clips = new Map<string, AnimationClip>();
-const rigs = new Map<string, ArrayBuffer>();
-
-/** Strip once per rig; `parse` is cheap, re-reading and re-encoding is not. */
-function rigData(file: string): ArrayBuffer {
-  let data = rigs.get(file);
-  if (!data) {
-    data = stripTextures(readGlb(file));
-    rigs.set(file, data);
-  }
-  return data;
-}
-
-beforeAll(async () => {
-  for (const [key, file] of Object.entries(CLIP_FILES)) {
-    const gltf = await parse(readGlb(path.join(PACK, file)).buffer);
-    const clip = gltf.animations[0];
-    if (clip) clips.set(key, clip);
-  }
-  expect(clips.size, "every pack clip parsed").toBe(
-    Object.keys(CLIP_FILES).length
-  );
-}, 120_000);
-
-interface DriveOptions {
-  /** Commanded ground speed in metres per second, as a function of time. */
-  speedAt: (t: number) => number;
-  seconds: number;
-  /** Frames discarded before recording, so the blend springs reach target. */
-  settleSeconds?: number;
-  frameRate?: number;
-  /** Absolute path to the rig GLB. Defaults to the reference rig. */
-  rig?: string;
-  /** Clip keys withheld from the animator, to model an incomplete pack. */
-  omitClips?: string[];
-}
-
-interface DriveResult {
-  frames: GaitFrame[];
-  report: GaitReport;
-  /** `getGaitTier()` sampled on every recorded frame. */
-  tiers: number[];
-  /** Commanded speed on every recorded frame, for reading a sweep back. */
-  speeds: number[];
-}
-
-/**
- * Walk a rig in a straight line along +Z and record what the bones did.
- *
- * A fresh animator per call: the blend springs, the gait clock and the tier
- * split are all stateful, and a test that inherited another test's mid-blend
- * pose would be measuring the previous case as much as its own.
- */
-async function drive({
-  speedAt,
-  seconds,
-  settleSeconds = 2,
-  frameRate = 60,
-  rig: rigFile = REFERENCE_RIG,
-  omitClips = [],
-}: DriveOptions): Promise<DriveResult> {
-  const rig = await parse(rigData(rigFile));
-  const travel = new Group();
-  travel.add(rig.scene);
-
-  const animator = new LocomotionAnimator();
-  const seam = animator as unknown as ClipInjectionSeam;
-  const injected = new Map(clips);
-  for (const key of omitClips) injected.delete(key);
-  seam.pendingClips = injected;
-  seam.clipsLoaded = true;
-  animator.initialize(rig.scene);
-
-  const avatars = collectRiggedAvatars(travel);
-  expect(avatars, "sampler found the rig leg chains").toHaveLength(1);
-  const rigged = avatars[0]!;
-
-  const dt = 1 / frameRate;
-  const frames: GaitFrame[] = [];
-  const tiers: number[] = [];
-  const speeds: number[] = [];
-  let z = 0;
-
-  const total = Math.round((settleSeconds + seconds) * frameRate);
-  for (let i = 0; i < total; i++) {
-    const elapsed = i * dt;
-    const speed = speedAt(Math.max(0, elapsed - settleSeconds));
-
-    animator.setLocomotion({
-      isMoving: speed > 0.01,
-      speed,
-      moveDirection: { x: 0, z: 1 },
-    });
-    animator.update(dt);
-
-    z += speed * dt;
-    travel.position.z = z;
-    travel.updateMatrixWorld(true);
-
-    if (elapsed < settleSeconds) continue;
-    frames.push(sampleRig(rigged, { t: elapsed - settleSeconds, dt }));
-    tiers.push(animator.getGaitTier());
-    speeds.push(speed);
-  }
-
-  animator.dispose();
-  return { frames, report: analyzeGait(frames), tiers, speeds };
-}
+beforeAll(loadPackClips, 120_000);
 
 /** Peak-to-peak vertical travel of the pelvis, in centimetres. */
 function bobCm(frames: GaitFrame[]): number {
@@ -365,7 +95,7 @@ const RUN_SPEED = 3.9;
 describe("locomotion motion quality", () => {
   describe("pelvis bob", () => {
     it("raises and lowers the pelvis through a walk", async () => {
-      const { frames } = await drive({
+      const { frames } = await driveRig({
         speedAt: () => WALK_SPEED,
         seconds: 6,
       });
@@ -377,8 +107,8 @@ describe("locomotion motion quality", () => {
     }, 120_000);
 
     it("keeps the bob once the run tier has taken over", async () => {
-      const walk = await drive({ speedAt: () => WALK_SPEED, seconds: 6 });
-      const run = await drive({ speedAt: () => RUN_SPEED, seconds: 6 });
+      const walk = await driveRig({ speedAt: () => WALK_SPEED, seconds: 6 });
+      const run = await driveRig({ speedAt: () => RUN_SPEED, seconds: 6 });
       expect(bobCm(run.frames)).toBeGreaterThan(4);
       // A run displaces the pelvis further than a walk, never less. Blending
       // toward a clip that had lost its vertical track would show up here as
@@ -389,7 +119,7 @@ describe("locomotion motion quality", () => {
     it("bobs by the same amount on every shipped rig", async () => {
       const measured: Record<string, number> = {};
       for (const id of RIGS) {
-        const { frames } = await drive({
+        const { frames } = await driveRig({
           speedAt: () => WALK_SPEED,
           seconds: 5,
           rig: avatar(id),
@@ -411,15 +141,15 @@ describe("locomotion motion quality", () => {
 
   describe("gait tier", () => {
     it("holds the walk clip below the band and reaches the run clip above it", async () => {
-      const walk = await drive({ speedAt: () => WALK_SPEED, seconds: 4 });
-      const run = await drive({ speedAt: () => RUN_SPEED, seconds: 4 });
+      const walk = await driveRig({ speedAt: () => WALK_SPEED, seconds: 4 });
+      const run = await driveRig({ speedAt: () => RUN_SPEED, seconds: 4 });
       expect(last(walk.tiers)).toBeLessThan(0.01);
       expect(last(run.tiers)).toBeGreaterThan(0.99);
     }, 120_000);
 
     it("engages on every shipped rig", async () => {
       for (const id of RIGS) {
-        const { tiers } = await drive({
+        const { tiers } = await driveRig({
           speedAt: () => RUN_SPEED,
           seconds: 4,
           rig: avatar(id),
@@ -429,7 +159,7 @@ describe("locomotion motion quality", () => {
     }, 300_000);
 
     it("stays on the walk when the pack carries no run clips", async () => {
-      const { tiers, frames } = await drive({
+      const { tiers, frames } = await driveRig({
         speedAt: () => RUN_SPEED,
         seconds: 5,
         omitClips: ["runForward", "runStrafeLeft", "runStrafeRight"],
@@ -444,8 +174,8 @@ describe("locomotion motion quality", () => {
     }, 120_000);
 
     it("changes the shape of the gait, not only its rate", async () => {
-      const walk = await drive({ speedAt: () => WALK_SPEED, seconds: 6 });
-      const run = await drive({ speedAt: () => RUN_SPEED, seconds: 6 });
+      const walk = await driveRig({ speedAt: () => WALK_SPEED, seconds: 6 });
+      const run = await driveRig({ speedAt: () => RUN_SPEED, seconds: 6 });
       // Absolute duty factor here is not the app's -- contact detection needs
       // the planter this harness omits -- but the ratio is the point. A run
       // replaces double support with flight, so its feet are down for a
@@ -463,7 +193,7 @@ describe("locomotion motion quality", () => {
   describe("walk to run crossover", () => {
     const RAMP_SECONDS = 8;
     const rampDrive = () =>
-      drive({
+      driveRig({
         speedAt: (t) => 1.2 + (4.2 - 1.2) * Math.min(1, t / RAMP_SECONDS),
         seconds: RAMP_SECONDS + 2,
       });

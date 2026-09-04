@@ -13,6 +13,11 @@
  */
 
 import type { GaitFrame, Stance, Support, Vec3 } from "./gait-frame";
+import {
+  analyzeKneeAnatomy,
+  EMPTY_KNEE_ANATOMY,
+  type KneeAnatomy,
+} from "./knee-anatomy";
 
 export interface GaitThresholds {
   /**
@@ -149,6 +154,12 @@ export interface GaitReport {
   peakJoltJoint: JoltJoint | null;
   /** How far the worst one moved in a single frame, metres. */
   peakJoltStep: number;
+
+  /**
+   * Whether each knee bent like a hinge. Every other row here describes the
+   * pattern the legs traced; this one describes the legs.
+   */
+  anatomy: KneeAnatomy;
 
   /** Seconds the feet reversed the left/right ordering of the thighs. */
   legCrossingSeconds: number;
@@ -786,6 +797,7 @@ function emptyReport(frameCount: number): GaitReport {
     peakJolt: 0,
     peakJoltJoint: null,
     peakJoltStep: 0,
+    anatomy: EMPTY_KNEE_ANATOMY,
     legCrossingSeconds: 0,
     legCrossingFraction: 0,
     minimumLegOrderMargin: 0,
@@ -969,6 +981,7 @@ export function analyzeGait(
     peakJolt: jolt.peak,
     peakJoltJoint: jolt.peakJoint,
     peakJoltStep: jolt.peakStep,
+    anatomy: analyzeKneeAnatomy(frames),
     legCrossingSeconds,
     legCrossingFraction: duration > 0 ? legCrossingSeconds / duration : 0,
     minimumLegOrderMargin: Number.isFinite(minimumLegOrderMargin)

@@ -276,9 +276,9 @@ describe("Shape Matrix app boundary", () => {
   });
 
   it("wraps a long value palette instead of scrolling it sideways", () => {
-    // The scroller owns the long-band behaviour for both surfaces: the Matrix
-    // turn band and the Theory ratio band have the same problem and now the
-    // same control.
+    // The scroller owns the long-band behaviour wherever a surface picks from
+    // an ordered palette. That is the Matrix turn band. Theory types its ratio
+    // instead, so it is checked below for the entry rather than the scroller.
     const scrollerSource = readFileSync(
       resolve(
         "src/lib/shared/shape-matrix/app/components/ShapeMatrixValueScroller.svelte"
@@ -308,11 +308,14 @@ describe("Shape Matrix app boundary", () => {
     expect(scrollerSource).toContain(
       ".scroller-host:not(.tray) .value-control :global(.segmented-control)"
     );
-    // Neither ribbon may fork it back into a local palette.
+    // The turn ribbon may not fork it back into a local palette.
     expect(turnSource).toContain("<ShapeMatrixValueScroller");
-    expect(theorySource).toContain("<ShapeMatrixValueScroller");
     expect(turnSource).not.toContain("trayColumns");
-    expect(theorySource).not.toContain("trayColumns");
+    // Twenty-nine ratios are a field, not a ladder, so Theory takes the two
+    // numbers directly and must not grow a palette of its own.
+    expect(theorySource).toContain("<ShapeMatrixRatioEntry");
+    expect(theorySource).not.toContain("<ShapeMatrixValueScroller");
+    expect(theorySource).not.toContain("SegmentedControl");
     // The indicator tracks the chosen cell on both axes.
     expect(segmentedSource).toContain(".grid .indicator {");
     expect(segmentedSource).toContain("--row: {selectedRow}");
