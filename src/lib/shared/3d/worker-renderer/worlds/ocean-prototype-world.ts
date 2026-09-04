@@ -17,6 +17,7 @@ import {
 import { createOceanDepthGradient } from "../../environments/worlds/ocean/ocean-depth-gradient";
 import { createOceanGodRayShafts } from "../../environments/worlds/ocean/ocean-god-ray-shafts";
 import { createOceanLightingRig } from "../../environments/worlds/ocean/ocean-lighting-rig";
+import { createOceanJellyfishSwarm } from "../../environments/worlds/ocean/ocean-jellyfish-swarm";
 import { createOceanMarineParticles } from "../../environments/worlds/ocean/ocean-marine-particles";
 import { createOceanRuinsPlatform } from "../../environments/worlds/ocean/ocean-ruins-platform";
 import { applyOceanSceneAppearance } from "../../environments/worlds/ocean/ocean-scene-appearance";
@@ -51,9 +52,10 @@ function loadGltf(
 /**
  * Ocean's exact static production layers in the worker renderer.
  *
- * Fauna, interaction/audio, and post-processing remain explicit later parity
- * gates; the authored reef, seabed treatment, stage, atmosphere, water, fog,
- * IBL, and complete motivated light rig all come from the production owners.
+ * The authored reef, seabed treatment, stage, atmosphere, water, jellyfish,
+ * fog, IBL, and complete motivated light rig all come from the production
+ * owners. Fish, interaction/audio and post-processing remain explicit parity
+ * gates.
  */
 export async function createOceanPrototypeWorld(
   context: WorkerWorldContext,
@@ -141,6 +143,7 @@ export async function createOceanPrototypeWorld(
     groundY,
     hemisphereEnabled: true,
   });
+  const jellyfish = createOceanJellyfishSwarm(20);
   world.add(
     depth.object,
     water.object,
@@ -148,6 +151,7 @@ export async function createOceanPrototypeWorld(
     particles.object,
     ruins.object,
     lighting.object,
+    jellyfish.object,
   );
 
   causticUniforms.uGroundY.value = groundY + OCEAN_WORLD_Y_OFFSET;
@@ -177,10 +181,17 @@ export async function createOceanPrototypeWorld(
       godRays.update(deltaSeconds);
       particles.update(deltaSeconds);
       ruins.update(deltaSeconds);
+      jellyfish.update(deltaSeconds);
       floraController.update(deltaSeconds, context.camera);
     },
     setPerformers(performers) {
       setGroundY(performers[0]?.groundY ?? -1.5);
+    },
+    pointerMove(ndcX, ndcY) {
+      return jellyfish.hoverAt(ndcX, ndcY, context.camera);
+    },
+    pointerDown(ndcX, ndcY) {
+      return jellyfish.interactAt(ndcX, ndcY, context.camera);
     },
     dispose() {
       floraController.dispose();
@@ -199,6 +210,7 @@ export async function createOceanPrototypeWorld(
       particles.dispose();
       ruins.dispose();
       lighting.dispose();
+      jellyfish.dispose();
       disposeWorkerWorldTree(scene);
       scene.background = null;
       scene.fog = null;

@@ -162,6 +162,14 @@ export interface PerformersWorkerRendererMessage {
   performers: readonly WorkerPerformerSnapshot[];
 }
 
+export interface PointerWorkerRendererMessage {
+  type: "pointer";
+  requestId: number;
+  action: "move" | "down" | "leave";
+  ndcX: number;
+  ndcY: number;
+}
+
 export interface DisposeWorkerRendererMessage {
   type: "dispose";
   requestId: number;
@@ -172,6 +180,7 @@ export type WorkerRendererInMessage =
   | ResizeWorkerRendererMessage
   | CameraWorkerRendererMessage
   | PerformersWorkerRendererMessage
+  | PointerWorkerRendererMessage
   | VisibilityWorkerRendererMessage
   | DisposeWorkerRendererMessage;
 
@@ -224,6 +233,14 @@ export interface WorkerRendererDisposedMessage {
   requestId: number;
 }
 
+export interface WorkerRendererInteractionMessage {
+  type: "interaction";
+  requestId: number;
+  environment: WorkerEnvironmentKey;
+  hover: boolean;
+  chime: { frequencyHz: number; pan: number } | null;
+}
+
 export type WorkerRendererOutMessage =
   | WorkerRendererBootingMessage
   | WorkerRendererProgressMessage
@@ -231,6 +248,7 @@ export type WorkerRendererOutMessage =
   | WorkerRendererFrameMessage
   | WorkerRendererErrorMessage
   | WorkerRendererContextLostMessage
+  | WorkerRendererInteractionMessage
   | WorkerRendererDisposedMessage;
 
 export function isWorkerRendererOutMessage(
@@ -246,6 +264,7 @@ export function isWorkerRendererOutMessage(
       candidate.type === "frame" ||
       candidate.type === "error" ||
       candidate.type === "context-lost" ||
+      candidate.type === "interaction" ||
       candidate.type === "disposed")
   );
 }

@@ -70,6 +70,10 @@ export interface WorkerSceneSwitchSnapshot {
 export interface WorkerEnvironmentRendererOptions {
   container: HTMLElement;
   onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
+  onInteraction?: (message: Extract<
+    WorkerRendererOutMessage,
+    { type: "interaction" }
+  >) => void;
   createWorker?: () => Worker;
 }
 
@@ -92,6 +96,7 @@ export class WorkerEnvironmentRenderer {
   private readonly container: HTMLElement;
   private readonly onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
   private readonly createWorker: () => Worker;
+  private readonly onInteraction?: WorkerEnvironmentRendererOptions["onInteraction"];
   private readonly supported: boolean;
   private handoff: WorkerRendererHandoffState =
     createWorkerRendererHandoffState();
@@ -111,6 +116,7 @@ export class WorkerEnvironmentRenderer {
   constructor(options: WorkerEnvironmentRendererOptions) {
     this.container = options.container;
     this.onSnapshot = options.onSnapshot;
+    this.onInteraction = options.onInteraction;
     this.createWorker = options.createWorker ?? createRendererWorker;
     this.supported = supportsWorkerRenderer();
     if (!this.supported) {
@@ -121,6 +127,9 @@ export class WorkerEnvironmentRenderer {
 
     this.resizeObserver = new ResizeObserver(() => this.measureViewport());
     this.resizeObserver.observe(this.container);
+    this.container.addEventListener("pointermove", this.handlePointerMove);
+    this.container.addEventListener("pointerdown", this.handlePointerDown);
+    this.container.addEventListener("pointerleave", this.handlePointerLeave);
     this.measureViewport();
     this.publish();
   }
@@ -197,6 +206,9 @@ export class WorkerEnvironmentRenderer {
     this.disposed = true;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+    this.container.removeEventListener("pointermove", this.handlePointerMove);
+    this.container.removeEventListener("pointerdown", this.handlePointerDown);
+    this.container.removeEventListener("pointerleave", this.handlePointerLeave);
     this.endProbe();
     for (const requestId of [...this.slots.keys()]) {
       this.destroySlot(requestId, undefined, true);
@@ -261,6 +273,11 @@ export class WorkerEnvironmentRenderer {
           slot.state.requestId,
           "Worker WebGL context was lost"
         );
+        return;
+      case "interaction":
+        if (this.handoff.active?.requestId === message.requestId) {
+          this.onInteraction?.(message);
+        }
         return;
       case "disposed":
         return;
@@ -386,6 +403,40 @@ export class WorkerEnvironmentRenderer {
         viewport: this.viewport,
       });
     }
+  }
+
+  private readonly handlePointerMove = (event: PointerEvent): void => {
+    this.postPointer("move", event);
+  };
+
+  private readonly handlePointerDown = (event: PointerEvent): void => {
+    this.postPointer("down", event);
+  };
+
+  private readonly handlePointerLeave = (): void => {
+    const active = this.handoff.active;
+    if (!active) return;
+    this.slots.get(active.requestId)?.post({
+      type: "pointer",
+      requestId: active.requestId,
+      action: "leave",
+      ndcX: 0,
+      ndcY: 0,
+    });
+  };
+
+  private postPointer(action: "move" | "down", event: PointerEvent): void {
+    const active = this.handoff.active;
+    if (!active) return;
+    const rect = this.container.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    this.slots.get(active.requestId)?.post({
+      type: "pointer",
+      requestId: active.requestId,
+      action,
+      ndcX: ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      ndcY: -((event.clientY - rect.top) / rect.height) * 2 + 1,
+    });
   }
 
   private post(

@@ -371,6 +371,32 @@ scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
         });
       });
       break;
+    case "pointer": {
+      if (!world || !environment) break;
+      if (message.action === "leave") {
+        post({
+          type: "interaction",
+          requestId,
+          environment,
+          hover: false,
+          chime: null,
+        });
+        break;
+      }
+      const hover = world.pointerMove?.(message.ndcX, message.ndcY) ?? false;
+      const chime =
+        message.action === "down"
+          ? (world.pointerDown?.(message.ndcX, message.ndcY) ?? null)
+          : null;
+      post({
+        type: "interaction",
+        requestId,
+        environment,
+        hover,
+        chime,
+      });
+      break;
+    }
     case "visibility":
       visible = message.visible;
       previousFrameAt = performance.now();

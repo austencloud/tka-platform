@@ -8,6 +8,7 @@
     WorkerEnvironmentRenderer,
     type WorkerSceneSwitchSnapshot,
   } from "../services/worker-environment-renderer";
+  import { createJellyfishChime } from "../../environments/scenes/ocean/runtime/fauna/jellyfish/jellyfish-chime";
 
   interface Props {
     environment: WorkerEnvironmentKey;
@@ -18,17 +19,29 @@
   let { environment, performers = [], onSnapshot }: Props = $props();
   let container: HTMLDivElement;
   let renderer: WorkerEnvironmentRenderer | null = null;
+  const jellyfishChime = createJellyfishChime();
+
+  function handleInteraction(
+    message: import("../domain/worker-renderer-protocol").WorkerRendererInteractionMessage,
+  ): void {
+    container.style.cursor = message.hover ? "pointer" : "";
+    if (message.chime) {
+      jellyfishChime.play(message.chime.frequencyHz, message.chime.pan);
+    }
+  }
 
   onMount(() => {
     renderer = new WorkerEnvironmentRenderer({
       container,
       onSnapshot,
+      onInteraction: handleInteraction,
     });
     renderer.setPerformers($state.snapshot(performers));
     renderer.switchTo(environment);
     return () => {
       renderer?.dispose();
       renderer = null;
+      jellyfishChime.dispose();
     };
   });
 

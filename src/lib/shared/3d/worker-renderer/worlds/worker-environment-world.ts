@@ -19,6 +19,11 @@ export interface WorkerEnvironmentWorld {
   useViewerBaseLighting?: boolean;
   update(deltaSeconds: number, elapsedSeconds: number): void;
   setPerformers?(performers: readonly WorkerPerformerSnapshot[]): void;
+  pointerMove?(ndcX: number, ndcY: number): boolean;
+  pointerDown?(
+    ndcX: number,
+    ndcY: number
+  ): { frequencyHz: number; pan: number } | null;
   dispose(): void;
 }
 
