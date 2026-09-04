@@ -58,7 +58,7 @@
       color-mix(in srgb, var(--semantic-success, #22c55e) 74%, #065f46) 100%
     );
     border-radius: var(--workspace-action-radius, 50%);
-    color: #052e16;
+    color: var(--theme-text);
     cursor: pointer;
     transition:
       transform var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
