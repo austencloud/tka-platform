@@ -23,6 +23,13 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { CharacterId } from "$lib/shared/3d/domain/character-model";
 
 import {
+  LAB_FRAME_STEP,
+  clampLabPhase,
+  formatLabPhase,
+  snapLabPhase,
+} from "../_lab-kit/phase-transport";
+
+import {
   DEFAULT_LAB_CHARACTER_ID,
   DEFAULT_LAB_SEQUENCE_ID,
   isLabCharacterId,
@@ -67,42 +74,26 @@ export const DEFAULT_LAB_PHASE = 7.99;
 /**
  * One frame: the finest moment this lab can name.
  *
- * Not a round number picked for feel. The pose is a continuous function of
- * phase — `StaffGripStage` hands it straight to the performer as
- * `phaseOffsetSteps` — so nothing downstream quantises it, and the only real
- * limit is what the address bar can carry. `formatPhase` writes two decimals,
- * so 0.01 of a step is the finest phase a link can express; anything smaller
- * is a moment that cannot be copied, and therefore cannot be reported. The
- * rest of the lab already addresses on this grid: `clampPhase` reserves
- * `span - 0.01` as the last position, the scrub's `step` is 0.01, the stage's
- * `data-phase` attribute is `toFixed(2)`, and every coverage-matrix cell link
- * names its phase the same way.
- *
- * It is also strictly finer than playback. The page's clock runs at 1.2 steps
- * per second, so one frame of a 60Hz display advances 0.02 — two of these.
- * Nothing the eye catches while it runs falls between two addressable stops.
+ * Re-exported so every caller that already names it here keeps working. The
+ * definition — and the reasoning behind 0.01 — lives with the shared
+ * transport in `../_lab-kit/phase-transport`, because the scrub, the URL
+ * format and the clamp have to agree on one grid across every lab that
+ * scrubs a phase.
  */
-export const LAB_FRAME_STEP = 0.01;
+export { LAB_FRAME_STEP };
 
 /** Supported prop length band, matching the hug fit's own bounds. */
 export const LAB_LENGTH_MIN_CM = 61;
 export const LAB_LENGTH_MAX_CM = 152;
 
-function clampPhase(value: number, stepCount: number): number {
-  if (!Number.isFinite(value)) return 0;
-  const span = Math.max(stepCount, 1);
-  const wrapped = ((value % span) + span) % span;
-  return Math.min(wrapped, span - 0.01);
-}
-
-function formatPhase(value: number): string {
-  return value.toFixed(2);
-}
-
-/** Land on the addressable grid, so repeated stepping never drifts off it. */
-function snapPhase(value: number): number {
-  return Math.round(value / LAB_FRAME_STEP) * LAB_FRAME_STEP;
-}
+/**
+ * The phase grid, from the shared owner. These were this lab's own three
+ * functions until a second lab needed the same addressing; the local names
+ * stay so the class below reads exactly as it did.
+ */
+const clampPhase = clampLabPhase;
+const formatPhase = formatLabPhase;
+const snapPhase = snapLabPhase;
 
 export interface StaffLabStateOptions {
   /** Steps in the loaded sequence, so phase can clamp to it. */

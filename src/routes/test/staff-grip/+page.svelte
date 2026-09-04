@@ -33,10 +33,15 @@
   import PanelHeader from "$lib/shared/components/panel/PanelHeader.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
 
+  import LabTransport from "../_lab-kit/LabTransport.svelte";
+  import {
+    labScrubMax,
+    type ScrubMarker,
+  } from "../_lab-kit/phase-transport";
+
   import CoverageMatrixMount from "./CoverageMatrixMount.svelte";
   import LabControls from "./LabControls.svelte";
   import LabInspector from "./LabInspector.svelte";
-  import LabTransport from "./LabTransport.svelte";
   import StaffGripStage from "./StaffGripStage.svelte";
   import type { CoverageMatrix } from "./coverage-matrix-contract";
   import {
@@ -59,6 +64,10 @@
     labSweepCharacter,
     resolveLabSequence,
   } from "./lab-catalog";
+  import {
+    labContinuityMarkers,
+    labContinuityStatus,
+  } from "./lab-continuity";
   import { isLabGoalId } from "./lab-goals";
   import {
     collectFrameMetrics,
@@ -88,6 +97,61 @@
   const lab = new StaffLabState({
     stepCount: () => stepCount,
   });
+
+  /**
+   * What the committed sweep found for whatever is loaded, laid out on the
+   * transport's own track.
+   *
+   * The transport draws marks and seeks to them; it does not know what one
+   * means. That stays here, because the sweep is this lab's evidence: the
+   * shared bar is used by other labs whose marked moments are something else
+   * entirely.
+   */
+  const continuity = $derived(labContinuityStatus(lab.sequenceId));
+
+  /**
+   * `lab.sequenceId` changes the instant a goal is pressed; `stepCount` only
+   * catches up when that sequence finishes loading. In between, a four-step
+   * sequence's markers would be laid out against the eight-step track still on
+   * screen and sit at visibly wrong positions for a moment. The sweep records
+   * how many steps it walked, so a disagreement is exactly that window: hand
+   * the bar nothing through it rather than publish a placement that is wrong.
+   */
+  const laneMatchesSequence = $derived(
+    continuity.state === "unswept" || continuity.sweptStepCount === stepCount
+  );
+
+  const continuityMarkers = $derived<readonly ScrubMarker[]>(
+    laneMatchesSequence
+      ? labContinuityMarkers(continuity, labScrubMax(stepCount)).map(
+          (marker) => ({
+            key: marker.key,
+            start: marker.start,
+            width: marker.width,
+            seekPhase: marker.seekPhase,
+            label: marker.labelRange,
+            ariaLabel: marker.ariaLabel,
+            title: `${marker.labelRange} · up to ${Math.round(
+              marker.peakMagnitudeCm
+            )} cm`,
+            blue: marker.blue !== null,
+            red: marker.red !== null,
+          })
+        )
+      : []
+  );
+
+  /**
+   * What the empty lane says. Null while a sequence is still resolving —
+   * everything it could say right now belongs to the sequence being replaced.
+   */
+  const continuityNote = $derived(
+    !laneMatchesSequence
+      ? null
+      : continuity.state === "unswept"
+        ? "Not in the continuity sweep"
+        : "No discontinuities in the sweep"
+  );
 
   /**
    * The sweep engine at `shared/3d/diagnostics/` is being built separately and
@@ -513,7 +577,14 @@
       shared TransportControls the rest of the product plays with. It stays
       mounted while a sequence resolves so the stage above it never resizes.
     -->
-    <LabTransport {lab} {stepCount} disabled={!sequence} />
+    <LabTransport
+      {lab}
+      {stepCount}
+      disabled={!sequence}
+      markers={continuityMarkers}
+      markerNote={continuityNote}
+      markerLaneLabel="Prop discontinuities in this sequence"
+    />
   </div>
 
   <!--
