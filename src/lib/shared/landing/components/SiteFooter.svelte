@@ -87,6 +87,7 @@
       title: "Learn",
       links: [
         { label: "Interactive lessons", href: "/learn/concepts" },
+        { label: "Timing & Direction", href: "/timing-and-direction" },
         { label: "Read the Guide", href: "/guide" },
         { label: "Kinetic Atlas", href: "/atlas" },
         { label: "FAQ", href: "/faq" },

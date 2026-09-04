@@ -1,6 +1,6 @@
 # Ember Spatial Directions
 
-Status: Breached Rift Bench Gate 2 R2 graybox ready for review; prior Gate 4 is historical
+Status: Breached Rift Bench Gate 1.1 R3 ready for review; Gate 2 pending; all prior Gate 3+ work is historical
 
 Date: 2026-09-04
 
@@ -15,8 +15,26 @@ Current regression authority: museum trackers `rn25Qau62kXyyOJpgm7Z`,
 `ahPuPwh34G3FeqvUEHsB`; geology-first restart authority:
 `hMO9hB97M2y1ZVGrxCt3`, `gqImqDqgfctdYi1kr6pH`,
 `ZgRNLK66C9Hz2wMPbOXc`, adversarial audit `xSjtvI2XVvvMdn8pHqwP`,
-corrective authorization `WS9FU4nn2fCSbOn68IeB`, and delegated Gate 1.1
-approval `7uoHBfOCOqMmFeKBRh7l`
+corrective authorization `WS9FU4nn2fCSbOn68IeB`, delegated spatial selection
+`7uoHBfOCOqMmFeKBRh7l`, R2 audit `torsiCoIaMMrkMklUMSq`, and R3 correction
+authorization `lIPwVa2kGFcoQsgICkWI`
+
+## Current active geometry contract
+
+Only Breached Rift Bench R3 is current. Its north-up Gate 1.1 evidence lives in
+`evidence/gate-1-1-geology-amendment-r3/`; its editable Gate 2 source, portable
+GLB, exact camera/collision manifest, continuous orbit, and review sheet live in
+`blender/ember-breached-rift-bench-graybox-r3.blend`,
+`static/models/ember/review/ember-breached-rift-bench-graybox-r3.glb`, and
+`evidence/gate-2-geology-graybox-r3/`.
+
+The active formation is one retained western mass cut by a visibly missing
+breach, fractured talus below it, a nearby fissure, and one simulator-owned
+deposit that skirts an attached old-flow peninsula, sheds a dying breakout
+lobe, and settles in an inboard terminal low behind a containing lip. The east and
+southeast horizon remains open. Gate 1.1 is `ready-for-review`; Gate 2 remains
+pending behind explicit approval. Gate 3 has not started. Every R1/R2 graybox and every pre-restart Gate 3 through Gate 6 artifact
+is historical evidence only.
 
 ## Why this exists
 
@@ -438,10 +456,10 @@ tracker `7uoHBfOCOqMmFeKBRh7l`. The tracker and gate record preserve that as an
 explicit waiver of the describe-the-layout-back ritual rather than inventing a
 description Austen did not give.
 
-## Breached Rift Bench Gate 2 R2
+## Historical: Breached Rift Bench Gate 2 R2
 
 The existing `scripts/build-ember-geology-graybox.py` owner now derives R2 from
-the approved Gate 1.1 heightfield and checked-in Flowy thickness raster. It no
+the then-selected Gate 1.1 heightfield and checked-in Flowy thickness raster. It no
 longer constructs a second lava body from an authored centerline. The visible
 `EMBER_LavaSimulatorDeposit` has exactly one quad for each of the 3,558 active
 simulator cells and carries the source raster digest in the Blend and GLB.
@@ -467,5 +485,34 @@ Automated verification confirms one visible terrain collider, exact 3,558-cell
 simulator geometry parity, 13.220 m of clearance beyond the protected action
 envelope, 14.800 m of net descent over 322.840 m, downstream widening from 11 m
 to 14 m, every required review node and camera in the GLB, and a north-up plan
-rotation. Gate 2 R2 is `ready-for-review`; Gate 3 has not started. No production
+rotation. Gate 2 R2 was `ready-for-review`; it is now historical. No production
 runtime, final material, atmosphere, or Meshy asset changed.
+
+## Breached Rift Bench Gate 1.1 and Gate 2 R3
+
+The R2 adversarial audit in tracker `torsiCoIaMMrkMklUMSq` rejected both visual
+overclaiming and technical mismatches. Austen authorized the full correction
+with “attack it!” in tracker `lIPwVa2kGFcoQsgICkWI`.
+
+R3 moves the fissure and breach into the 25 m runtime composition, replaces the
+circular quiet area with an elongated attached old-flow peninsula,
+models the collapse as retained headwall plus missing volume plus fractured
+talus, and lowers the east/southeast shelves without closing that horizon. The
+selected Flowy calibration owns every visible lava face. R3's measured values
+are regenerated after the inboard-basin and raster-registration correction;
+the report, rather than this prose, owns their exact cell count and clearance.
+
+The graybox preserves source thickness exactly at each raster coordinate. It
+adds runtime-recognized `tka_camera_collision=true` metadata only to visible
+terrain, excludes plan-only diagnostics from the GLB, uses the Viewer3D
+50-degree vertical FOV, places all eight orbit cameras exactly 25 m from their
+target, and saves the Blend with a portable default audience state. The 48-frame
+continuous orbit is the recorded substitute for a first-person route in this
+orbit-only environment.
+
+Gate 1.1 R3 remains `ready-for-review` with approval unset. Gate 2 R3 is a
+candidate artifact and remains `pending` until Gate 1.1 is explicitly approved.
+Semantic claims about collapse readability, geological causality, the
+absence of a stage-island reading, and complete-orbit composition remain human
+review items. Gate 3 has not started; no production runtime, final material,
+atmosphere, or Meshy asset changed.

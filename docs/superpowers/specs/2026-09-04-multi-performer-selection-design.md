@@ -1,6 +1,6 @@
 # Multi-Performer Selection and Editing
 
-**Status:** Approved for implementation  
+**Status:** Implemented and verified
 **Date:** 2026-09-04  
 **Owners:** `viewer-3d-state.svelte.ts`, `shared/3d/components/performer-interaction/`, and the Stage selection bridge
 
@@ -155,3 +155,18 @@ Implementation is complete only with evidence for:
 6. runtime browser verification of desktop and touch paths, mixed controls, undo/redo, and Stage/3D synchronization;
 7. viewport evidence at 1920, 2560, 3840, 1440-height, tablet, 960x412, and 375 widths with reduced-motion and visible focus checks;
 8. a final reconciliation note confirming that every useful selection behavior from the preserved source branch is represented, adapted, or explicitly rejected above.
+
+## Verification Record
+
+Verified on 2026-09-04 after bringing the task branch current with local `main`:
+
+- Nine focused and adjacent Vitest files passed, covering 91 tests across viewer scope, performer count, viewer integration, pointer interaction, Stage selection and timeline projection, saved-scene state, and Film Director editing/adaptation.
+- `npm run check` completed with 0 errors and 0 warnings.
+- The full production build completed successfully, including package compilation, SSR/client feature gating, Cloudflare adapter output, critical CSS generation, and deploy-asset trimming. PostHog source-map upload was skipped as expected because production credentials were not present.
+- Desktop runtime verification selected performers 1 and 3, kept performer 3 primary, rendered both selection treatments, exposed the group movement affordance, showed the `2 performers` inspector state, and scoped removal and mixed-value edits to the pair.
+- Touch runtime verification entered persistent selection mode, kept Cancel enabled with zero selected performers, exposed one exit action instead of duplicate close controls, selected all three performers, and enabled Done after selection.
+- Exact WebP viewport evidence was inspected at 375×667, 960×412, 820×1180, 1440×900, 1920×1080, 2560×1440, and 3840×2160. Each viewport retained a 16px root font and no horizontal document overflow. Selection actions measured 44px on compact layouts and performer controls measured 48px at desktop and native 4K.
+- The 1440×900 physical equivalent at 200% zoom was exercised as 720×450 CSS pixels at DPR 2. The toolbar reflowed without horizontal overflow, all four actions remained reachable, and keyboard traversal produced the canonical visible 2px focus outline.
+- Reduced-motion fallbacks remain explicit at the shared selection toolbar, move handle, Stage host, and scene-control host boundaries; the new structural entry/exit paths use the shared motion primitives.
+- The browser console produced no runtime errors. The only warning was the expected development message that PostHog analytics were disabled without an API key.
+- The preserved source worktree and branch were left intact with the same five pre-existing dirty paths. No source-branch commit or uncommitted file was modified, staged, or removed.

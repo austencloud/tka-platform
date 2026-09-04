@@ -2,56 +2,24 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import {
-  flowerPetals,
-  ratioLabel,
-} from "$lib/shared/shape-matrix/domain/flower-signature";
-import { matrixTurnsForLevel } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
-import { levelForTurnValue } from "$lib/shared/create/services/level-turn-values";
-
 function read(path: string): string {
   return readFileSync(resolve(path), "utf8");
 }
 
 describe("Shape Engine ratio guide", () => {
-  it("derives the complete Level 1–4 translation from canonical domain owners", () => {
-    const rows = matrixTurnsForLevel(4).map((turn) => ({
-      turn,
-      ratio: ratioLabel(turn),
-      level: levelForTurnValue(turn),
-      pro: turn === "fl" ? null : flowerPetals({ style: "pro", turns: turn }),
-      anti: turn === "fl" ? null : flowerPetals({ style: "anti", turns: turn }),
-    }));
+  it("keeps the original ratios and their TKA turn names together", () => {
+    const page = read("src/routes/(public)/guide/ratios/+page.svelte");
 
-    expect(rows).toHaveLength(15);
-    expect(rows).toContainEqual({
-      turn: 0,
-      ratio: "1:1",
-      level: 1,
-      pro: 0,
-      anti: 2,
-    });
-    expect(rows).toContainEqual({
-      turn: 1,
-      ratio: "3:1",
-      level: 2,
-      pro: 2,
-      anti: 4,
-    });
-    expect(rows).toContainEqual({
-      turn: 2,
-      ratio: "5:1",
-      level: 2,
-      pro: 4,
-      anti: 6,
-    });
-    expect(rows).toContainEqual({
-      turn: 0.25,
-      ratio: "3:2",
-      level: 4,
-      pro: 1,
-      anti: 5,
-    });
+    expect(page).toContain('ratio: "1:1"');
+    expect(page).toContain('ratio: "1:3"');
+    expect(page).toContain('ratio: "1:5"');
+    expect(page).toContain('turnLabel: "0 turns"');
+    expect(page).toContain('turnLabel: "1 turn"');
+    expect(page).toContain('turnLabel: "2 turns"');
+    expect(page).toContain("Each family supplied four driving");
+    expect(page).toContain("Theory Matrix can pair any two whole-number");
+    expect(page).not.toContain("prop rotations : hand cycles");
+    expect(page).not.toContain("One family, two reading orders");
   });
 
   it("connects the guide, Shape Engine, and both relevant history records", () => {
@@ -65,7 +33,6 @@ describe("Shape Engine ratio guide", () => {
     const sitemap = read("src/routes/sitemap.xml/+server.ts");
 
     expect(page).toContain('path="/guide/ratios"');
-    expect(page).toContain("matrixTurnsForLevel(4)");
     expect(page).toContain("/history#archive-record-vtg");
     expect(page).toContain("/history#archive-record-lorq");
     expect(page).toContain("/notation/shape-matrix?");

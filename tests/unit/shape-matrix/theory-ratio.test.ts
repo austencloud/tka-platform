@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { spinRatioKey } from "@vtg/domain";
 import {
   theoryRatioFromParts,
+  theoryRatioLabel,
   theoryRatioSpokenLabel,
   THEORY_RATIO_MAX_PART,
 } from "$lib/shared/shape-matrix/domain/theory-ratio";
@@ -26,10 +27,15 @@ describe("theory ratios", () => {
 
   it("speaks the two stationary endpoints distinctly", () => {
     expect(theoryRatioSpokenLabel(theoryRatioFromParts(0, 1)!)).toBe(
-      "0:1, float"
+      "1:0, float"
     );
     expect(theoryRatioSpokenLabel(theoryRatioFromParts(1, 0)!)).toBe(
-      "1:0, stationary hand"
+      "0:1, stationary hand"
     );
+  });
+
+  it("displays ratios in SpiroAnim's hand-cycle-first order", () => {
+    expect(theoryRatioLabel(theoryRatioFromParts(3, 1)!)).toBe("1:3");
+    expect(theoryRatioLabel(theoryRatioFromParts(7, 3)!)).toBe("3:7");
   });
 });

@@ -25,6 +25,15 @@ describe("search indexing controls", () => {
     expect(sitemap).not.toContain("<priority>");
     expect(sitemap).toContain("<loc>https://tkaflowarts.com/composer</loc>");
     expect(sitemap).toContain("<loc>https://tkaflowarts.com/faq</loc>");
+    expect(sitemap).toContain(
+      "<loc>https://tkaflowarts.com/timing-and-direction</loc>"
+    );
+    expect(sitemap).toContain(
+      "<loc>https://tkaflowarts.com/timing-and-direction/quarter-time-same-direction</loc>"
+    );
+    expect(sitemap).toContain(
+      "<loc>https://tkaflowarts.com/timing-and-direction/quarter-time-opposite-direction</loc>"
+    );
   });
 
   it("permanently redirects the old landing duplicate to the canonical root", () => {

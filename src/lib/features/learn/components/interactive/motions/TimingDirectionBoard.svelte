@@ -262,6 +262,16 @@
 
   .mode-grid.has-focus .mode-tile:not(.is-focused) {
     grid-column: 2;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-player {
+    display: none;
+  }
+
+  .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-header {
+    height: 100%;
+    justify-content: center;
   }
 
   .mode-header {
@@ -382,13 +392,7 @@
       grid-row: 2;
     }
 
-    .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-player {
-      display: none;
-    }
-
     .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-header {
-      height: 100%;
-      justify-content: center;
       padding: 0.3rem;
     }
 
@@ -447,8 +451,8 @@
 
     .board-toolbar {
       position: absolute;
-      top: 0.35rem;
-      right: 0.35rem;
+      top: -3rem;
+      right: 0;
       z-index: 8;
     }
 
@@ -464,6 +468,16 @@
 
     .board-toolbar :global(.panel-btn) {
       background: color-mix(in srgb, var(--theme-panel-bg) 88%, transparent);
+    }
+
+    .board-toolbar :global(.panel-btn span) {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      clip-path: inset(50%);
     }
 
     .mode-grid:not(.has-focus) {
@@ -486,12 +500,7 @@
       grid-row: auto;
     }
 
-    .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-player {
-      display: block;
-    }
-
     .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-header {
-      height: auto;
       justify-content: flex-start;
       padding: 0.25rem 0.4rem;
     }

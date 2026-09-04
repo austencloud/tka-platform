@@ -2,9 +2,10 @@
 
 **Concept ID:** `hand-motions-intro`
 
-**Review state:** APPROVED
+**Review state:** APPROVED TERMINOLOGY / REDESIGN REQUIRED
 
-**Implementation gate:** OPEN for the four-step lesson and comparison board
+**Implementation gate:** OPEN for previously approved text and terminology;
+CLOSED for new teaching explanation pending exact-copy approval
 **Last reviewed:** 2026-09-04
 
 ## Approved Text
@@ -33,7 +34,11 @@ Sources: `src/routes/(public)/guide/level-1/_pages/HandMotionsPage.svelte` and
 Routine labels such as “Blue hand,” “Previous,” and “Next” are exempt. No
 additional explanation of how to perform these motions is approved.
 
-## Time + Direction Comparison — Exact UI Copy
+## Timing and Direction Comparison — Exact UI Copy
+
+The concept heading is exactly:
+
+> Timing and Direction
 
 This chapter follows Shift, Dash, and Static in the same lesson.
 
@@ -111,3 +116,11 @@ the lesson does not repeat Water, Earth, Sun, Fire, Air, or Moon as headings.
   comparison board and established the learner-facing terminology: “split
   time, same direction,” not “split timing, same direction.” He also approved
   icon-first mode labels and removing repeated element-name headings.
+- 2026-09-04 — Austen clarified that the system is called “Timing and
+  Direction,” while an individual relationship uses “split time,” “together
+  time,” or “quarter time.” This supersedes the current `Time + Direction`
+  screen heading. He requested a slower introduction before the six-up board,
+  larger labels, a production Choreo Card hand-path breakdown after selecting
+  a relationship, and removal of the duplicated top-left element icon when the
+  canonical glyph is already visible at bottom right. No new explanatory prose
+  was approved.

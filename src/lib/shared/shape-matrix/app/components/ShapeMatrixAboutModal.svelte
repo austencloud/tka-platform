@@ -5,7 +5,6 @@
   import {
     KINETIC_SHAPE_ENGINE_AUTHOR,
     KINETIC_SHAPE_ENGINE_NAME,
-    ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS,
     ORIGINAL_SHAPE_MATRIX_URL,
     ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
     SPIN_SCIENCE_URL,
@@ -45,11 +44,6 @@
           {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}. Each supplied four even-petaled
           driving styles, giving twelve choices per hand and 144 left/right
           combinations.
-        </p>
-        <p class="convention-note">
-          This engine writes <strong>prop rotations : hand cycles</strong>, so
-          those same families appear here as
-          {ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS}.
         </p>
       </section>
 
@@ -126,13 +120,8 @@
     text-underline-offset: 0.2em;
   }
 
-  p strong,
   h2 {
     color: var(--theme-text, #fff);
-  }
-
-  p strong {
-    font-weight: 650;
   }
 
   .section-kicker {
@@ -148,13 +137,6 @@
     font-size: clamp(1.2rem, 1.8vw, 1.55rem);
     line-height: 1.2;
     letter-spacing: -0.02em;
-  }
-
-  .convention-note {
-    padding: 0.85rem 1rem;
-    border: 1px solid rgb(245 158 11 / 0.24);
-    border-radius: 12px;
-    background: rgb(245 158 11 / 0.06);
   }
 
   .source-links {

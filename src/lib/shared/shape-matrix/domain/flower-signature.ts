@@ -106,23 +106,20 @@ export function flowerKey(
 }
 
 /**
- * VTG spin ratio for a TKA turn value. Numeric turns follow
- * (2·turns + 1):1; Float is VTG's 0:1 ratio. The numerator is the same for
- * prospin and antispin at a given numeric turn — the style sets the petal
- * count (prospin = |P−Q|, antispin = P+Q) — so the ratio labels the axis and
- * the left/right style is read from the axis itself. Level 4's -0.25 turn
- * reduces from 0.5:1 to 1:2.
+ * VTG spin ratio for a TKA turn value, displayed in SpiroAnim's order:
+ * hand cycles first, prop rotations second. The style sets the petal count,
+ * so the left/right style is still read from the axis itself.
  */
 export function ratioLabel(turns: TurnValue): string {
-  if (turns === "fl") return "0:1";
+  if (turns === "fl") return "1:0";
   const ratio = reducedSpinRatio(turns);
-  return `${ratio.numerator}:${ratio.denominator}`;
+  return `${ratio.denominator}:${ratio.numerator}`;
 }
 
 /**
  * Verified VTG display for a two-axis hybrid. VTG primary sources establish
- * each prop:hand ratio, but not the community-looking `3::1` contraction.
- * Keeping both ratios explicit makes the axes and the convention unambiguous.
+ * each ratio, but not a community-standard double-colon contraction. Keeping
+ * both ratios explicit makes the axes unambiguous.
  */
 export function hybridRatioLabel(
   leftTurns: TurnValue,
