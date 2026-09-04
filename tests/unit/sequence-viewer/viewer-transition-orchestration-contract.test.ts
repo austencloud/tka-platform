@@ -350,7 +350,7 @@ describe("Sequence Viewer transition orchestration contract", () => {
     );
     expect(splitPane).toContain("prepareWhileInactive: true");
     expect(tunnelController).toContain("get layersReady(): boolean");
-    expect(motionSurface).toContain("if (!tunnelController.layersReady)");
+    expect(motionSurface).not.toContain("if (!tunnelController.layersReady)");
     expect(tunnelLayerReveal).toContain(
       "export function resolveTunnelGridOpacity("
     );
