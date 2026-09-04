@@ -16,12 +16,7 @@ import type { FuseMode } from "../state/fuse-state.svelte";
 import { fuseRuleLabel, type FuseRule } from "./fuse-rule";
 import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
 import type { FuseRecipeDestination } from "./fuse-recipe-destination";
-
-export const FUSE_STYLE_BASELINE = {
-  constraintPreset: "mixed",
-  handPathMode: "mixed",
-  motionTypeFilter: null,
-} as const;
+import { DEFAULT_GENERATION_STYLE } from "$lib/shared/create/domain/generation-style";
 
 const LOCATION_LABELS: Partial<Record<GridLocation, string>> = {
   [GridLocation.NORTH]: "North",
@@ -61,7 +56,7 @@ export function buildFuseRecipeSummaries(
       handPathMode: input.handPathMode,
       motionTypeFilter: input.motionTypeFilter,
     },
-    FUSE_STYLE_BASELINE
+    DEFAULT_GENERATION_STYLE
   );
   const location = input.startLocation
     ? (LOCATION_LABELS[input.startLocation] ?? input.startLocation)

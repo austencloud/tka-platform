@@ -24,3 +24,16 @@ export interface WallFeasibilityMetadata {
   /** Scanner version for invalidation when thresholds/model change. */
   scanVersion: number;
 }
+
+/**
+ * A caution preserved from an attributed external source. This is deliberately
+ * separate from WallFeasibilityMetadata: a source flag is evidence to review,
+ * not a positive scanner result and not a precise impossible/with-cheat verdict.
+ */
+export interface WallPlaneSourceAssessment {
+  status: "flagged-difficult-or-impossible";
+  source: string;
+  sourceRepository?: string;
+  sourceCommit?: string;
+  note: string;
+}

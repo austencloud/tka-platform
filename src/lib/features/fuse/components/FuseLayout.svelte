@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { onDestroy, tick, untrack } from "svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
   import { holdBackgroundFor } from "$lib/shared/background/shared/state/background-hold.svelte";
   import {
     BREAKPOINTS,
@@ -19,6 +21,7 @@
     getBestFuseStepColumns,
     negotiateFuseColumnWidths,
     resolveBalancedFuseWorkspaceSplit,
+    resolveFuseWingWorkspace,
   } from "../services/fuse-workspace-split";
   import { getFuseContext } from "../context/fuse-context";
   import type { FuseSettingsDestination } from "../domain/fuse-recipe-destination";
@@ -47,10 +50,9 @@
   let pathBuilderOpen = $state(false);
   let pathBuilderSide = $state<FuseSide | null>(null);
   let isSavingResult = $state(false);
-  // On the locked desktop layout the source cards sit in a tall column with
-  // room to spare, so each pictograph stays large even with a start position
-  // and a mandala added. Gate the full choreo card on that size (matching the
-  // 1100/780 layout breakpoint) so smaller screens keep the lean, big-cell view.
+  // Full desktop cards include their start position and mandala. Smaller
+  // workspaces keep the lean, big-cell view; especially wide ones can seat the
+  // two complete cards on opposite sides of the result.
   let fullCard = $state(false);
   let wideWorkspace = $state(false);
 
@@ -90,17 +92,21 @@
   const TALL_PORTRAIT_NARROW_MIN_HEIGHT = 1480;
   const TALL_PORTRAIT_SPLIT_MIN_HEIGHT = 1280;
   const TALL_PORTRAIT_MIN_ASPECT = 2.1;
+  const WING_SOURCE_FLOOR = 520;
+  const WING_SOURCE_CAP = 820;
+  const WING_PREVIEW_FLOOR = 760;
+  const WING_MIN_HEIGHT = 900;
 
   let containerWidth = $state(0);
   let containerHeight = $state(0);
   let workspaceGridWidth = $state(0);
   let workspaceColumnGap = $state(0);
-  let contentH = $state(0); // measured content-row height (the left column fills it)
+  let contentH = $state(0); // measured height of the complete result row
   let overrides = $state<Record<string, number>>(loadOverrides());
   let splitPx = $state<number | null>(null);
   let dragging = $state(false);
-  let leftColEl = $state<HTMLDivElement | null>(null);
   let workspaceEl = $state<HTMLDivElement | null>(null);
+  let layoutRecomposing = $state(false);
 
   function loadOverrides(): Record<string, number> {
     try {
@@ -206,6 +212,71 @@
   const recipeTargetWidth = $derived(openColumnWidths.recipe);
   const recipeColumnWidth = $derived(recipeColumn ? recipeTargetWidth : 0);
 
+  const previewIdealWidth = () =>
+    Math.max(
+      WING_PREVIEW_FLOOR,
+      containerHeight - PREVIEW_CHROME_V + PREVIEW_HPAD
+    );
+  const wingLayout = $derived(
+    resolveFuseWingWorkspace({
+      availableWidth: workspaceGridWidth || containerWidth,
+      availableHeight: containerHeight,
+      previewIdealWidth: previewIdealWidth(),
+      sourceFloor: WING_SOURCE_FLOOR,
+      sourceCap: WING_SOURCE_CAP,
+      previewFloor: WING_PREVIEW_FLOOR,
+      recipeWidth: recipeColumnWidth,
+      columnGap: workspaceColumnGap || CARD_GAP,
+      minHeight: WING_MIN_HEIGHT,
+    })
+  );
+  const wingWorkspace = $derived(fullCard && wingLayout.fits);
+
+  // Crossing the wide-workbench seam moves three surviving regions at once.
+  // The shared layout-motion owner lets Left travel left, Right travel right,
+  // and the result grow between them instead of making the workspace blink
+  // into a new arrangement. The initial measured layout is first paint, not a
+  // user-visible change, so it settles without animation.
+  const workspaceLayoutMotion = createLayoutMotion({
+    getRoot: () => workspaceEl,
+    groups: [
+      {
+        selector: "[data-fuse-layout-region]",
+        datasetKey: "fuseLayoutRegion",
+      },
+    ],
+    getDuration: () => motionDuration(DURATION.emphasis),
+  });
+  let previousWingWorkspace = false;
+  let wingLayoutResolved = false;
+  let layoutMotionToken = 0;
+
+  $effect.pre(() => {
+    const nextWingWorkspace = wingWorkspace;
+    if ((workspaceGridWidth || containerWidth) <= 0) {
+      previousWingWorkspace = nextWingWorkspace;
+      return;
+    }
+    if (!wingLayoutResolved) {
+      wingLayoutResolved = true;
+      previousWingWorkspace = nextWingWorkspace;
+      return;
+    }
+    if (nextWingWorkspace === previousWingWorkspace) return;
+
+    previousWingWorkspace = nextWingWorkspace;
+    const captured = workspaceLayoutMotion.capture();
+    layoutRecomposing = captured;
+    const token = ++layoutMotionToken;
+    void tick().then(() => {
+      if (token !== layoutMotionToken) return;
+      if (captured) workspaceLayoutMotion.play();
+      layoutRecomposing = false;
+    });
+  });
+
+  onDestroy(() => workspaceLayoutMotion.cancel());
+
   // The grid track animating open is the one moment on this page where the
   // frame budget is fully spoken for, and the animated backdrop repaints a
   // viewport-sized canvas on every one of those frames. It holds its last
@@ -272,7 +343,10 @@
   // at least two rows instead of stranding the mandala in a row by itself.
   // Each card owns half the content row minus the gap and its own chrome.
   const cardBoxH = $derived(
-    Math.max(0, (contentH - CARD_GAP) / 2 - CARD_CHROME_V)
+    Math.max(
+      0,
+      (contentH - (workspaceColumnGap || CARD_GAP)) / 2 - CARD_CHROME_V
+    )
   );
   function bestStepCols(leftW: number): number {
     return getBestFuseStepColumns(leftW, cardBoxH, stepCount, CARD_HPAD);
@@ -353,15 +427,11 @@
       Math.min(maxLeft(), splitAvailableWidth() - columnWidths.canvas)
     );
   function optimalSplit(): number {
-    const previewIdealWidth = Math.max(
-      CANVAS_FLOOR,
-      containerHeight - PREVIEW_CHROME_V + PREVIEW_HPAD
-    );
     return resolveBalancedFuseWorkspaceSplit({
       availableWidth: splitAvailableWidth(),
       cardBoxHeight: cardBoxH,
       stepCount,
-      previewIdealWidth,
+      previewIdealWidth: previewIdealWidth(),
       minLeft: minLeft(),
       maxLeft: defaultMaxLeft(),
       cardHorizontalChrome: CARD_HPAD,
@@ -372,7 +442,7 @@
   // a saved per-device override wins, otherwise the computed optimum. Writing
   // splitPx here never re-triggers this effect (splitPx isn't read in it).
   $effect(() => {
-    if (!fullCard || dragging) return;
+    if (!fullCard || wingWorkspace || dragging) return;
     const saved = overrides[deviceBucket];
     splitPx = saved != null ? clampSplit(saved) : optimalSplit();
   });
@@ -409,10 +479,12 @@
     return () => ro.disconnect();
   });
 
-  // Measure the content-row height so optimalSplit targets a square canvas
-  // exactly, independent of header/padding guesses.
+  // The result spans the complete content row in both desktop arrangements,
+  // so its real box is the stable height authority for the split solver.
   $effect(() => {
-    const el = leftColEl;
+    const el = workspaceEl?.querySelector<HTMLElement>(
+      '[data-fuse-layout-region="preview"]'
+    );
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(([entry]) => {
       contentH = Math.round(entry?.contentRect.height ?? el.clientHeight);
@@ -428,8 +500,12 @@
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
   function onSplitMove(e: PointerEvent): void {
-    if (!dragging || !leftColEl) return;
-    splitPx = clampSplit(e.clientX - leftColEl.getBoundingClientRect().left);
+    if (!dragging || !workspaceEl) return;
+    const rect = workspaceEl.getBoundingClientRect();
+    const paddingLeft = Number.parseFloat(
+      getComputedStyle(workspaceEl).paddingLeft
+    );
+    splitPx = clampSplit(e.clientX - rect.left - (paddingLeft || 0));
   }
   function onSplitUp(): void {
     if (!dragging) return;
@@ -657,9 +733,12 @@
     class:landscape-workspace={landscapeSplit}
     class:full-card-workspace={fullCard}
     class:wide-workspace={wideWorkspace}
+    class:wing-workspace={wingWorkspace}
     class:recipe-workspace={recipeColumn}
     class:dragging
+    class:layout-recomposing={layoutRecomposing}
     style:--fuse-left={fullCard && splitPx !== null ? `${splitPx}px` : null}
+    style:--fuse-wing={`${wingLayout.sourceWidth}px`}
     style:--fuse-recipe-w={`${recipeColumnWidth}px`}
     style:--fuse-recipe-open-w={`${recipeTargetWidth}px`}
     aria-busy={fuseState.isLoadingLength ||
@@ -668,6 +747,7 @@
   >
     <FuseWorkspaceHeader
       recipeOpen={settingsOpen}
+      flatRecipeRail={wideWorkspace}
       onOpenRecipe={toggleRecipe}
       onOpenSetting={openSettings}
       onModeChange={changeMode}
@@ -680,55 +760,53 @@
       />
     {/if}
     {#if fullCard}
-      <div class="fuse-left-col" bind:this={leftColEl}>
-        <FuseSourceCard
-          side="left"
-          full={true}
-          {stepCols}
-          onChooseFirstStep={openFirstStep}
-          onBuildPath={openPathBuilder}
-          firstStepPickerActive={inlineFirstStepSide === "left"}
-          onFirstStepComplete={closeInlineFirstStep}
-          onCancelFirstStep={closeInlineFirstStep}
-          onEditPairing={editPairing}
-        />
-        <FuseSourceCard
-          side="right"
-          full={true}
-          {stepCols}
-          onChooseFirstStep={openFirstStep}
-          onBuildPath={openPathBuilder}
-          firstStepPickerActive={inlineFirstStepSide === "right"}
-          onFirstStepComplete={closeInlineFirstStep}
-          onCancelFirstStep={closeInlineFirstStep}
-          onEditPairing={editPairing}
-        />
-        <div
-          class="split-handle"
-          role="slider"
-          tabindex="0"
-          aria-label="Resize path panel"
-          aria-orientation="vertical"
-          aria-valuemin={minLeft()}
-          aria-valuemax={maxLeft()}
-          aria-valuenow={splitPx ?? 0}
-          aria-valuetext={`${splitPx ?? 0} pixels for source paths`}
-          onpointerdown={onSplitDown}
-          onpointermove={onSplitMove}
-          onpointerup={onSplitUp}
-          onpointercancel={onSplitUp}
-          ondblclick={onSplitReset}
-          onkeydown={onSplitKeyDown}
-        >
-          <span class="split-flow" aria-hidden="true">
-            <span class="pair-dots">
-              <span class="path-dot blue-dot"></span>
-              <span class="path-dot red-dot"></span>
-            </span>
-            <i class="fas fa-plus"></i>
-            <i class="fas fa-arrow-right"></i>
+      <FuseSourceCard
+        side="left"
+        full={true}
+        stepCols={wingWorkspace ? null : stepCols}
+        onChooseFirstStep={openFirstStep}
+        onBuildPath={openPathBuilder}
+        firstStepPickerActive={inlineFirstStepSide === "left"}
+        onFirstStepComplete={closeInlineFirstStep}
+        onCancelFirstStep={closeInlineFirstStep}
+        onEditPairing={editPairing}
+      />
+      <FuseSourceCard
+        side="right"
+        full={true}
+        stepCols={wingWorkspace ? null : stepCols}
+        onChooseFirstStep={openFirstStep}
+        onBuildPath={openPathBuilder}
+        firstStepPickerActive={inlineFirstStepSide === "right"}
+        onFirstStepComplete={closeInlineFirstStep}
+        onCancelFirstStep={closeInlineFirstStep}
+        onEditPairing={editPairing}
+      />
+      <div
+        class="split-handle"
+        role="slider"
+        tabindex="0"
+        aria-label="Resize path panel"
+        aria-orientation="vertical"
+        aria-valuemin={minLeft()}
+        aria-valuemax={maxLeft()}
+        aria-valuenow={splitPx ?? 0}
+        aria-valuetext={`${splitPx ?? 0} pixels for source paths`}
+        onpointerdown={onSplitDown}
+        onpointermove={onSplitMove}
+        onpointerup={onSplitUp}
+        onpointercancel={onSplitUp}
+        ondblclick={onSplitReset}
+        onkeydown={onSplitKeyDown}
+      >
+        <span class="split-flow" aria-hidden="true">
+          <span class="pair-dots">
+            <span class="path-dot blue-dot"></span>
+            <span class="path-dot red-dot"></span>
           </span>
-        </div>
+          <i class="fas fa-plus"></i>
+          <i class="fas fa-arrow-right"></i>
+        </span>
       </div>
     {:else if landscapeSplit}
       <div class="fuse-left-col">
@@ -784,7 +862,6 @@
       onBuildPath={openPathBuilder}
       onEditPairing={editPairing}
       {compact}
-      defaultDecomposed={wideWorkspace}
     />
   </div>
 
@@ -826,7 +903,7 @@
 
   .fuse-workspace {
     /* One source for the gap so the full-card grid can spend it as explicit
-       tracks instead of `column-gap` — see the five-track list below. */
+       tracks instead of `column-gap` — see the seven-track list below. */
     --fuse-col-gap: var(--settings-spacing-md, 12px);
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -958,22 +1035,19 @@
      the rail. A panel that answered a right-hand control by growing out of the
      opposite edge of the screen made you look away from what you just clicked.
 
-     The track count never changes, because CSS only interpolates two track lists
-     of equal length: going from two tracks to three snapped to the end value on
-     frame one, which is exactly the pop this transition was written to avoid.
-     So the recipe track and its seam are always present and measure 0 when the
-     recipe is closed, and the gaps are spent as explicit tracks rather than as
-     `column-gap` — a uniform gap cannot be collapsed for one seam alone, and a
-     zero-width track with a live gap before it would inset the cards from the
-     header above them. Every track is a length, so the whole list interpolates. */
+     The seven tracks are stable in both desktop compositions: paths, result,
+     and Recipe each keep a named place while unused seams collapse to zero.
+     Recipe can therefore open without snapping, and the wide workbench can put
+     Right on the far side of the result without introducing another grid owner. */
   .fuse-workspace.full-card-workspace {
     grid-template-columns:
-      var(--fuse-left, 1.8fr) var(--fuse-col-gap) minmax(0, 1fr)
-      var(--fuse-recipe-seam, 0px) var(--fuse-recipe-w, 0px);
-    grid-template-rows: auto minmax(0, 1fr);
+      var(--fuse-left, 1.8fr) var(--fuse-col-gap) minmax(0, 1fr) 0px
+      0px var(--fuse-recipe-seam, 0px) var(--fuse-recipe-w, 0px);
+    grid-template-rows: auto repeat(2, minmax(0, 1fr));
     grid-template-areas:
-      "header header header header header"
-      "left . preview . recipe";
+      "header header header header header header header"
+      "left . preview preview preview . recipe"
+      "right . preview preview preview . recipe";
     align-content: stretch;
     column-gap: 0;
     row-gap: var(--fuse-col-gap);
@@ -986,10 +1060,26 @@
     --fuse-recipe-seam: var(--fuse-col-gap);
   }
 
+  /* On a genuinely wide workbench the two inputs become spatial operands:
+     Left + combined result + Right. The assembled animation receives every
+     pixel the side cards do not need, while Recipe remains an optional fourth
+     column on the same track list. */
+  .fuse-workspace.full-card-workspace.wing-workspace {
+    grid-template-columns:
+      var(--fuse-wing) var(--fuse-col-gap) minmax(0, 1fr)
+      var(--fuse-col-gap) var(--fuse-wing) var(--fuse-recipe-seam, 0px)
+      var(--fuse-recipe-w, 0px);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "header header header header header header header"
+      "left . preview . right . recipe";
+  }
+
   /* A dragged seam must sit under the pointer, not ease toward it: the same
      transition that carries the recipe open would make every pointermove a
      280ms catch-up and the handle would swim. */
-  .fuse-workspace.full-card-workspace.dragging {
+  .fuse-workspace.full-card-workspace.dragging,
+  .fuse-workspace.full-card-workspace.layout-recomposing {
     transition: none;
   }
 
@@ -999,9 +1089,8 @@
     }
   }
 
-  /* Desktop path column: left over right, with the drag seam pinned to its right
-     edge. Only rendered at the locked desktop size, so grid-area: left never
-     applies in the narrower layouts. */
+  /* Landscape tablets still group their lean source cards in one column. Full
+     desktop cards participate directly in the workspace grid. */
   .fuse-left-col {
     position: relative;
     grid-area: left;
@@ -1018,14 +1107,19 @@
   }
 
   .split-handle {
-    position: absolute;
-    top: 0;
-    right: -7px;
+    position: relative;
+    grid-column: 2;
+    grid-row: 2 / -1;
+    justify-self: center;
     width: 14px;
     height: 100%;
     cursor: col-resize;
     z-index: 10;
     touch-action: none;
+  }
+
+  .wing-workspace .split-handle {
+    display: none;
   }
 
   .split-handle::before {
@@ -1055,11 +1149,17 @@
       --min-touch-target: 48px;
       /* Columns and areas stay with .full-card-workspace, which is always the
          layout in force at this size — a second track list here would fight the
-         recipe's five-track one. */
+         recipe's seven-track one. */
       --fuse-col-gap: 18px;
-      grid-template-rows: max-content minmax(0, 1fr);
       gap: var(--fuse-col-gap);
       padding: 24px;
+    }
+
+    /* Only the three-across composition has one content row. Applying this to
+       the ordinary stacked desktop grid left its Right path in an implicit
+       max-content row, which made 1920x1080 taller than its viewport. */
+    .fuse-workspace.full-card-workspace.wing-workspace {
+      grid-template-rows: max-content minmax(0, 1fr);
     }
 
     .fuse-left-col {

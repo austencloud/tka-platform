@@ -148,7 +148,7 @@
     }
     if (onEditGeneration) {
       items.push({
-        label: "Generation recipe",
+        label: "Change generation settings",
         icon: "fas fa-sliders",
         action: onEditGeneration,
       });
@@ -160,7 +160,7 @@
     });
     if (onChooseShapeMatrix) {
       items.push({
-        label: "Shape Matrix",
+        label: "Use Shape Matrix",
         icon: "fas fa-shapes",
         action: onChooseShapeMatrix,
       });
@@ -217,7 +217,6 @@
     <button
       type="button"
       class="source-identity"
-      aria-expanded={expanded}
       aria-pressed={selected}
       onclick={onSelect}
     >
@@ -228,21 +227,20 @@
             <span>{previewSequence.steps.length} steps</span>
             {#if sourceDescriptor}<span>{sourceDescriptor}</span>{/if}
             {#if linked && sourceLabel}
-              <span>Follows {sourcePerformerLabel ?? "earlier performer"}</span>
-              <span>{sourceLabel}</span>
-            {/if}
-            {#if linked && stageTransformLabel}
-              <span>On stage: {stageTransformLabel}</span>
+              <span
+                >Linked to {sourcePerformerLabel ?? "earlier performer"}</span
+              >
             {/if}
             {#if formationCopy}
               <span>Formation copy (not authored)</span>
             {/if}
             {#if generatedInstanceCount > 0}
-              <span>
-                Drives {generatedInstanceCount} stage {generatedInstanceCount ===
-                1
-                  ? "instance"
-                  : "instances"}
+              <span
+                title={stageTransformLabel
+                  ? `Stage placement: ${stageTransformLabel}`
+                  : undefined}
+              >
+                {generatedInstanceCount} on stage
               </span>
             {/if}
           {:else if linked}
@@ -253,9 +251,6 @@
           {/if}
         </p>
       </div>
-      <span class="expand-indicator" aria-hidden="true">
-        <i class={`fas ${expanded ? "fa-chevron-up" : "fa-chevron-down"}`}></i>
-      </span>
     </button>
 
     <div
@@ -285,104 +280,8 @@
 
     {#if expanded}
       <div
-        class="source-actions desktop-source-actions"
-        aria-label={`${label} source actions`}
-      >
-        {#if onEditPairing}
-          <PanelButton
-            variant="secondary"
-            onclick={onEditPairing}
-            ariaLabel={linked
-              ? `${formationCopy ? "Author" : "Edit"} source relationship${sourceLabel ? `: ${sourceLabel}` : ""}`
-              : `Link ${label} to an earlier performer`}
-          >
-            <i class="fas fa-link" aria-hidden="true"></i>
-            <span class="action-label">{linked ? "Relationship" : "Link"}</span>
-          </PanelButton>
-        {/if}
-        {#if previousCount > 0 && onPrevious}
-          <PanelButton
-            variant="secondary"
-            onclick={onPrevious}
-            ariaLabel={`Show the previous ${label} sequence`}
-          >
-            <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
-            <span class="action-label">Previous</span>
-          </PanelButton>
-        {/if}
-        {#if onGenerateNow}
-          <PanelButton
-            variant="primary"
-            onclick={onGenerateNow}
-            ariaLabel={`Generate a new ${label} sequence with the current settings`}
-          >
-            <i class="fas fa-dice" aria-hidden="true"></i>
-            <span class="action-label">Generate</span>
-          </PanelButton>
-        {/if}
-        {#if onEditGeneration}
-          <PanelButton
-            variant="secondary"
-            onclick={onEditGeneration}
-            ariaLabel={`Edit generation settings for ${label}`}
-          >
-            <i class="fas fa-sliders" aria-hidden="true"></i>
-            <span class="action-label">Recipe</span>
-          </PanelButton>
-        {/if}
-        <PanelButton
-          variant="secondary"
-          onclick={onChoose}
-          ariaLabel={`Choose an existing sequence for ${label}`}
-        >
-          <i class="fas fa-folder-open" aria-hidden="true"></i>
-          <span class="action-label">Browse</span>
-        </PanelButton>
-        {#if onChooseShapeMatrix}
-          <PanelButton
-            variant="secondary"
-            onclick={onChooseShapeMatrix}
-            ariaLabel={`Choose a Shape Matrix realization for ${label}`}
-          >
-            <i class="fas fa-shapes" aria-hidden="true"></i>
-            <span class="action-label">Matrix</span>
-          </PanelButton>
-        {/if}
-        <span class="action-spacer" aria-hidden="true"></span>
-        <div class="roster-actions" aria-label={`${label} roster controls`}>
-          <PanelButton
-            variant="secondary"
-            disabled={!canMoveUp}
-            onclick={onMoveUp}
-            ariaLabel={`Move ${label} earlier`}
-          >
-            <i class="fas fa-arrow-up" aria-hidden="true"></i>
-          </PanelButton>
-          <PanelButton
-            variant="secondary"
-            disabled={!canMoveDown}
-            onclick={onMoveDown}
-            ariaLabel={`Move ${label} later`}
-          >
-            <i class="fas fa-arrow-down" aria-hidden="true"></i>
-          </PanelButton>
-          {#if onRemove}
-            <span title={removeBlockedReason ?? undefined}>
-              <PanelButton
-                variant="secondary"
-                disabled={!canRemove}
-                onclick={onRemove}
-                ariaLabel={removeBlockedReason ?? `Remove ${label}`}
-              >
-                <i class="fas fa-user-minus" aria-hidden="true"></i>
-              </PanelButton>
-            </span>
-          {/if}
-        </div>
-      </div>
-      <div
         class="compact-source-actions"
-        aria-label={`${label} compact source actions`}
+        aria-label={`${label} sequence actions`}
       >
         {#if onGenerateNow}
           <PanelButton
@@ -398,7 +297,20 @@
           items={compactActions}
           placement="bottom"
           ariaLabel={`More ${label} actions`}
-        />
+          triggerPresentation="labelled"
+        >
+          {#snippet trigger()}
+            <span class="compact-more-label">More</span>
+            <i
+              class="fas fa-chevron-down compact-more-chevron"
+              aria-hidden="true"
+            ></i>
+            <i
+              class="fas fa-ellipsis-vertical compact-more-icon"
+              aria-hidden="true"
+            ></i>
+          {/snippet}
+        </OverflowMenu>
       </div>
     {/if}
   </header>
@@ -476,13 +388,10 @@
       color-mix(in srgb, var(--theme-accent) 35%, transparent);
   }
 
-  .source-heading,
-  .source-identity {
-    display: flex;
-    align-items: center;
-  }
-
   .source-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
     justify-content: space-between;
     gap: var(--settings-spacing-sm, 8px);
     min-height: 3.5rem;
@@ -491,6 +400,8 @@
   }
 
   .source-identity {
+    display: flex;
+    align-items: center;
     flex: 1 1 11rem;
     min-width: 0;
     min-height: var(--min-touch-target, 44px);
@@ -508,40 +419,10 @@
     outline-offset: 3px;
   }
 
-  .expand-indicator {
-    display: grid;
-    flex: 0 0 var(--min-touch-target, 44px);
-    width: var(--min-touch-target, 44px);
-    height: var(--min-touch-target, 44px);
-    place-items: center;
-    color: var(--theme-text-dim);
-  }
-
-  .source-actions,
-  .roster-actions,
   .hand-key {
     display: flex;
     align-items: center;
     gap: var(--settings-spacing-xs, 6px);
-  }
-
-  .source-actions {
-    flex: 1 1 100%;
-    flex-wrap: wrap;
-  }
-
-  .action-spacer {
-    flex: 1 1 auto;
-  }
-
-  .roster-actions {
-    flex: 0 0 auto;
-  }
-
-  .roster-actions :global(.panel-btn) {
-    width: var(--min-touch-target, 44px);
-    min-width: var(--min-touch-target, 44px);
-    padding-inline: 0;
   }
 
   .hand-key {
@@ -677,6 +558,25 @@
   }
 
   .compact-source-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--settings-spacing-xs, 6px);
+    width: auto;
+  }
+
+  .compact-source-actions :global(.panel-btn),
+  .compact-source-actions :global(.overflow-trigger) {
+    min-height: var(--min-touch-target, 48px);
+  }
+
+  .compact-source-actions :global(.overflow-trigger) {
+    width: auto;
+    height: auto;
+    padding: 10px 14px;
+    color: var(--theme-text);
+  }
+
+  .compact-more-icon {
     display: none;
   }
 
@@ -731,10 +631,6 @@
       padding-inline: 12px;
     }
 
-    .source-actions .action-label {
-      display: none;
-    }
-
     .hand {
       padding-inline: 6px;
     }
@@ -749,11 +645,10 @@
     }
   }
 
-  /* The performer card is a preview, not a second settings panel. Keep its
-     identity, hand key, and two source actions in one compact toolbar until a
-     genuinely wide card can afford the complete action row. This is the same
-     hierarchy Fuse uses for its compact source cards: notation gets the room;
-     secondary source tools stay available through the overflow menu. */
+  /* Width may rearrange the toolbar, but it must never introduce a different
+     action inventory. Generate stays primary and the labelled More menu owns
+     every secondary sequence action at every size, matching Fuse's source
+     cards instead of turning a wide Tunnel card into a second settings rail. */
   @container (max-width: 56rem) {
     .source-heading {
       display: grid;
@@ -775,31 +670,8 @@
       flex-wrap: nowrap;
     }
 
-    .expand-indicator {
-      display: none;
-    }
-
-    .desktop-source-actions {
-      display: none;
-    }
-
-    .compact-source-actions {
-      display: flex;
-      align-items: center;
-      gap: var(--settings-spacing-xs, 6px);
-      width: auto;
-    }
-
     .compact-source-actions :global(.panel-btn) {
       flex: 0 0 auto;
-      min-height: var(--min-touch-target, 48px);
-    }
-
-    .compact-source-actions :global(.overflow-trigger) {
-      width: var(--min-touch-target, 48px);
-      height: var(--min-touch-target, 48px);
-      border-color: var(--theme-stroke);
-      background: var(--theme-card-bg);
     }
 
     .compact-source-actions :global(.overflow-dropdown) {
@@ -817,6 +689,20 @@
     .compact-source-actions :global(.panel-btn) {
       width: var(--min-touch-target, 48px);
       padding-inline: 0;
+    }
+
+    .compact-source-actions :global(.overflow-trigger) {
+      width: var(--min-touch-target, 48px);
+      padding-inline: 0;
+    }
+
+    .compact-more-label,
+    .compact-more-chevron {
+      display: none;
+    }
+
+    .compact-more-icon {
+      display: inline-block;
     }
 
     .compact-generate-label {
@@ -849,7 +735,6 @@
     overflow: hidden;
   }
 
-  .source-card.short .expand-indicator,
   .source-card.short .word-rail {
     display: none;
   }
@@ -864,6 +749,20 @@
     padding-inline: 0;
   }
 
+  .source-card.short .compact-source-actions :global(.overflow-trigger) {
+    width: var(--min-touch-target, 48px);
+    padding-inline: 0;
+  }
+
+  .source-card.short .compact-more-label,
+  .source-card.short .compact-more-chevron {
+    display: none;
+  }
+
+  .source-card.short .compact-more-icon {
+    display: inline-block;
+  }
+
   .source-card.short .compact-generate-label {
     position: absolute;
     width: 1px;
@@ -876,11 +775,5 @@
 
   .source-card.short .workbench-stage {
     grid-template-rows: minmax(0, 1fr);
-  }
-
-  @container (max-width: 56rem) {
-    .source-actions .action-label {
-      display: none;
-    }
   }
 </style>

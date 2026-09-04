@@ -22,7 +22,3 @@ export function logCreateMethodSelected(props: {
     is_last_used: props.isLastUsed,
   });
 }
-
-export function logCreateFrontDoorReturned(method: string): void {
-  captureEvent("create_front_door_returned", { method });
-}

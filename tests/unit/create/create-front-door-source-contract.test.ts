@@ -17,8 +17,27 @@ describe("Create front-door source contract", () => {
     expect(source).toContain("<DualSourceCrossfade");
     expect(source).toContain("first={frontDoorSurface}");
     expect(source).toContain("second={workspaceSurface}");
-    expect(source).toContain('aria-label="Back to Create"');
-    expect(source).toContain("trigger.blur();");
+    expect(source).not.toContain("CreateShortcutHeader");
+    expect(source).not.toContain("create-method-bar");
+  });
+
+  it("exposes All methods through the shared navigation owner", () => {
+    const mainInterfaceSource = readFileSync(
+      resolve(root, "src/lib/shared/MainInterface.svelte"),
+      "utf8"
+    );
+    const desktopNavigationSource = readFileSync(
+      resolve(
+        root,
+        "src/lib/shared/navigation/components/DesktopNavigationSidebar.svelte"
+      ),
+      "utf8"
+    );
+
+    expect(mainInterfaceSource).toContain("isModuleHomeOpen");
+    expect(mainInterfaceSource).toContain("onModuleHomeSelect");
+    expect(desktopNavigationSource).toContain("MODULE_HOME_SECTION_PREFIX");
+    expect(desktopNavigationSource).toContain("module.home.optionLabel");
   });
 
   it("hands the active Construct guide sole ownership of its heading", () => {

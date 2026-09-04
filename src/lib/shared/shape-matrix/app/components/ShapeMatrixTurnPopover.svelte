@@ -6,13 +6,12 @@
   pane, so the animator restages under the user's eyes and the matrix is
   already rebuilt when they go back.
 
-  What the vocabulary control is differs by surface, and the difference is real
-  rather than cosmetic. The Matrix picks a Kinetic Alphabet level, so it gets
-  the level badge and the LevelSelector. Theory picks how far the rational
-  field opens, which is not a level at all, so it gets neither. -->
+  The Matrix picks a Kinetic Alphabet level, so it gets the level badge and
+  LevelSelector. Theory's two typed ratios are already the complete choice, so
+  it gets neither. -->
 <script lang="ts">
   import { Popover } from "bits-ui";
-  import { flyFade } from "$lib/shared/transitions/motion";
+  import { flyFade, growFade } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
@@ -30,10 +29,8 @@
     SHAPE_MATRIX_LEVELS,
     SHAPE_MATRIX_LEVEL_DESCRIPTIONS,
   } from "../shape-matrix-levels";
-  import { THEORY_BAND_DESCRIPTIONS } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
   import { spinRatioKey } from "@vtg/domain";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
-  import ShapeMatrixBandControl from "./ShapeMatrixBandControl.svelte";
   import ShapeMatrixTheoryControls from "./ShapeMatrixTheoryControls.svelte";
   import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
 
@@ -66,7 +63,7 @@
   );
   const triggerLabel = $derived(
     theory
-      ? `Edit ratios, timing and direction. Ratio field: ${THEORY_BAND_DESCRIPTIONS[appState.theoryBand].name}. Left ${leftVisible}, right ${rightVisible}.`
+      ? `Edit ratios, timing and direction. Left ${leftVisible}, right ${rightVisible}.`
       : `Edit level and turns. Level ${appState.level}. Left ${spoken(appState.leftTurn)}, right ${spoken(appState.rightTurn)}.`
   );
   const popoverTitle = $derived(
@@ -134,11 +131,12 @@
                   <i class="fas fa-xmark" aria-hidden="true"></i>
                 </button>
               </div>
-              <div class="level-row">
-                <span class="row-label">{theory ? "Ratio field" : "Level"}</span>
-                {#if theory}
-                  <ShapeMatrixBandControl stayOnDetail={true} />
-                {:else}
+              {#if !theory}
+                <div
+                  class="level-row"
+                  transition:growFade={{ duration: DURATION.normal }}
+                >
+                  <span class="row-label">Level</span>
                   <LevelSelector
                     value={appState.level}
                     levels={SHAPE_MATRIX_LEVELS}
@@ -147,8 +145,8 @@
                     compact={true}
                     ariaLabel="Kinetic Alphabet level"
                   />
-                {/if}
-              </div>
+                </div>
+              {/if}
               {#if theory}
                 <ShapeMatrixTheoryControls layout="tray" />
               {:else}
@@ -254,10 +252,7 @@
   .turn-popover {
     display: grid;
     width: max-content;
-    max-width: var(
-      --bits-popover-content-available-width,
-      calc(100vw - 16px)
-    );
+    max-width: var(--bits-popover-content-available-width, calc(100vw - 16px));
     max-height: var(
       --bits-popover-content-available-height,
       calc(100dvh - 16px)

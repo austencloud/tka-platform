@@ -49,10 +49,9 @@
     align-items: center;
     justify-items: start;
     gap: 0.3rem;
-    /* A ribbon cell holds its content width. Only the value scroller opts
-       into shrinking, because only it can scroll what does not fit; letting
-       every cell shrink squeezed Timing and Direction off the right edge as
-       soon as the ratio band ran to thirty values. */
+    /* A ribbon cell holds its content width. Only the turn scroller opts into
+       shrinking, because it alone can scroll what does not fit; letting every
+       cell shrink squeezes the fixed controls beside it. */
     flex: 0 0 auto;
     min-width: 0;
     padding: 0.45rem 0.55rem 0.5rem;

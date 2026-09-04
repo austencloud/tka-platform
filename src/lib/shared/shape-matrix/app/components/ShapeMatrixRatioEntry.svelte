@@ -1,25 +1,19 @@
 <!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixRatioEntry.svelte
   Type the ratio. Two whole numbers, prop rotations over hand cycles.
 
-  This replaces a scroller over the open band, which asked a viewer who already
-  knew they wanted 4:9 to go find 4:9 in a long catalog, and which could
-  only ever offer the band that happened to be open. Each number is bounded at
-  15 instead: any pair in that square can be typed straight in, and the band
-  control follows to report how many hand cycles the reduced ratio needs.
+  This replaces the ratio catalog, which asked a viewer who already knew they
+  wanted 4:9 to go find it in a long list. Each number is bounded at 15 instead:
+  any pair in that square can be typed straight in.
 
   It reduces on the way in, so 2:4 applies 1:2, and it says so in the caption
   rather than rewriting the digits under the cursor. -->
 <script lang="ts">
+  import { spinRatioEquals, spinRatioKey, type SpinRatio } from "@vtg/domain";
   import {
-    makeSpinRatio,
-    spinRatioEquals,
-    spinRatioKey,
-    type SpinRatio,
-  } from "@vtg/domain";
-  import {
+    theoryRatioFromParts,
     theoryRatioSpokenLabel,
     THEORY_RATIO_MAX_PART,
-  } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
+  } from "$lib/shared/shape-matrix/domain/theory-ratio";
   import { growFade } from "$lib/shared/transitions/motion";
   import ShapeMatrixRibbonCell from "./ShapeMatrixRibbonCell.svelte";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
@@ -52,7 +46,7 @@
    * Reduction would rewrite 2:4 to 1:2 the instant the second digit landed,
    * and an emptied field would refill itself before the next keystroke. So the
    * text follows the applied ratio only when that ratio changed somewhere
-   * ELSE: the grid, the band, a link, the Apply to axis. `seededKey` is what
+   * ELSE: the grid, a link, or the Apply to axis. `seededKey` is what
    * this control has already accounted for.
    */
   let seededKey = $state<string | null>(null);
@@ -75,11 +69,7 @@
     const propRotations = readPart(prop);
     const handCycles = readPart(hand);
     if (propRotations === null || handCycles === null) return null;
-    try {
-      return makeSpinRatio(propRotations, handCycles);
-    } catch {
-      return null;
-    }
+    return theoryRatioFromParts(propRotations, handCycles);
   }
 
   const typed = $derived(reduceTyped(propText, handText));
@@ -87,7 +77,7 @@
   /**
    * Why the typed pair is not on screen, or null when it is.
    *
-   * Each case names the bound it crossed rather than reporting "invalid". The
+   * Each case names the bound it crossed rather than reporting "invalid".
    * Each typed number may reach 15 independently. Only 0:0 has no ratio.
    */
   const problem = $derived.by<string | null>(() => {

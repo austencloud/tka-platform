@@ -45,10 +45,7 @@
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { CREATE_TABS } from "$lib/shared/navigation/config/tab-definitions";
-  import {
-    handleCreateFrontDoor,
-    handleSectionChange,
-  } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import { handleSectionChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { setSideBySideLayout } from "$lib/shared/application/state/animation-visibility-state.svelte";
@@ -68,7 +65,6 @@
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import StandardWorkspaceLayout from "./StandardWorkspaceLayout.svelte";
   import CreateFrontDoor from "./CreateFrontDoor.svelte";
-  import CreateShortcutHeader from "./CreateShortcutHeader.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { setCreateModuleContext } from "../context/create-module-context";
@@ -107,7 +103,6 @@
   import { createConstructTutorialState } from "../../construct/tutorial/state/construct-tutorial-state.svelte";
   import { logConstructOptionApplied } from "../../construct/services/construct-analytics";
   import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
-  import { logCreateFrontDoorReturned } from "../services/create-entry-analytics";
   import {
     createSequenceTransformActionDispatcher,
     type SequenceTransformActionDispatcher,
@@ -175,9 +170,6 @@
         isTabAccessible("create", tab.id, accessTier)
     );
   });
-  const activeCreateMethod = $derived(
-    CREATE_TABS.find((tab) => tab.id === navigationState.activeTab) ?? null
-  );
   const lastUsedCreateMode = $derived(
     navigationState.hasRememberedCreateMode
       ? navigationState.currentCreateMode
@@ -696,12 +688,6 @@
     handleSectionChange(methodId);
   }
 
-  function handleReturnToCreateFrontDoor(trigger: HTMLButtonElement): void {
-    logCreateFrontDoorReturned(navigationState.activeTab);
-    trigger.blur();
-    handleCreateFrontDoor("workspace");
-  }
-
   function handleOpenExportPanel() {
     if (!handlers) return;
     handlers.handleOpenExportPanel(panelState);
@@ -940,25 +926,6 @@
 
 {#snippet workspaceSurface()}
   <div class="create-workspace-source">
-    <nav class="create-method-bar" aria-label="Current creation method">
-      <button
-        type="button"
-        class="all-methods-button"
-        aria-label="Back to Create"
-        onclick={(event) => handleReturnToCreateFrontDoor(event.currentTarget)}
-      >
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>Create</span>
-      </button>
-
-      {#if activeCreateMethod}
-        <span class="method-divider" aria-hidden="true">/</span>
-        <span class="active-method">{activeCreateMethod.label}</span>
-      {/if}
-
-      <CreateShortcutHeader />
-    </nav>
-
     <div class="create-workspace-body">
       {#if error}
         <ErrorBanner message={error} onDismiss={clearError} />
@@ -1118,68 +1085,6 @@
     container-type: inline-size;
   }
 
-  .create-method-bar {
-    position: relative;
-    z-index: 1;
-    display: none;
-    flex: 0 0 auto;
-    min-height: var(--min-touch-target, 44px);
-    align-items: center;
-    gap: 8px;
-    padding: 4px clamp(8px, 1.2cqi, 16px);
-    box-sizing: border-box;
-    border-bottom: 1px solid var(--theme-stroke);
-    background: var(--theme-panel-bg);
-  }
-
-  @media (min-width: 1280px) {
-    .create-method-bar {
-      display: flex;
-    }
-  }
-
-  .all-methods-button {
-    min-height: var(--min-touch-target, 44px);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 8px;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 650;
-    cursor: pointer;
-    transition:
-      background-color var(--duration-normal) ease,
-      border-color var(--duration-normal) ease,
-      color var(--duration-normal) ease;
-  }
-
-  .all-methods-button:hover {
-    border-color: var(--theme-stroke);
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-  }
-
-  .all-methods-button:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .method-divider {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 14px);
-  }
-
-  .active-method {
-    min-width: 0;
-    color: var(--theme-text);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-  }
-
   .create-workspace-body {
     flex: 1;
     height: auto;
@@ -1206,11 +1111,5 @@
     margin: 0;
     font-size: var(--font-size-sm, 13px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .all-methods-button {
-      transition: none;
-    }
   }
 </style>

@@ -1,7 +1,5 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
-  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -83,17 +81,11 @@
     registry = getShortcutRegistry();
     customizer = getShortcutCustomizer();
     registryVersion += 1;
+    focusSearch();
     return registry.subscribe(() => (registryVersion += 1));
   });
 
   $effect(() => {
-    if (!keyboardShortcutState.showHelp) {
-      query = "";
-      selectedShortcutId = null;
-      showResetConfirmation = false;
-      return;
-    }
-
     if (appliedHelpLaunchVersion === keyboardShortcutState.helpLaunchVersion)
       return;
 
@@ -101,10 +93,6 @@
     query = keyboardShortcutState.helpLaunch.query;
     appliedHelpLaunchVersion = keyboardShortcutState.helpLaunchVersion;
   });
-
-  function close(): void {
-    keyboardShortcutState.closeHelp();
-  }
 
   function focusSearch(): void {
     requestAnimationFrame(() => searchInput?.focus());
@@ -187,23 +175,16 @@
   }
 </script>
 
-<BaseModal
-  open={keyboardShortcutState.showHelp}
-  size="xl"
-  class="shortcut-center-modal"
-  labelledBy="shortcut-center-title"
-  onclose={close}
-  onopened={focusSearch}
->
-  {#snippet header()}
-    <ModalHeader
-      id="shortcut-center-title"
-      title="Keyboard shortcuts"
-      subtitle="Find a command, see where it works, or change its keys."
-      icon="fa-keyboard"
-      onClose={close}
-    />
-  {/snippet}
+<section class="shortcut-settings" aria-labelledby="shortcut-center-title">
+  <header class="shortcut-settings-header">
+    <span class="shortcut-settings-icon" aria-hidden="true">
+      <i class="fas fa-keyboard"></i>
+    </span>
+    <span>
+      <h1 id="shortcut-center-title">Keyboard shortcuts</h1>
+      <p>Find a command, see where it works, or change its keys.</p>
+    </span>
+  </header>
 
   <div class="shortcut-center">
     <div class="toolbar">
@@ -304,7 +285,7 @@
 
     <p class="sr-only" aria-live="assertive">{announcement}</p>
   </div>
-</BaseModal>
+</section>
 
 <ConfirmDialog
   bind:isOpen={showResetConfirmation}
@@ -318,29 +299,57 @@
 />
 
 <style>
-  :global(dialog.base-modal.shortcut-center-modal[data-size="xl"]) {
-    width: min(94vw, clamp(72rem, 72vw, 176rem));
-    height: min(90dvh, 96rem);
-  }
-
-  :global(dialog.shortcut-center-modal .modal-content-wrapper) {
-    height: 100%;
-  }
-
-  :global(dialog.shortcut-center-modal .modal-body) {
+  .shortcut-settings {
+    width: min(100%, 72rem);
+    min-height: 100%;
+    margin: 0 auto;
     display: flex;
-    flex: 1;
-    overflow: hidden;
+    flex-direction: column;
+    color: var(--theme-text);
+  }
+
+  .shortcut-settings-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: clamp(0.75rem, 2vw, 1.35rem) clamp(0.25rem, 1vw, 0.75rem);
+  }
+
+  .shortcut-settings-icon {
+    width: clamp(2.75rem, 4vw, 3.5rem);
+    height: clamp(2.75rem, 4vw, 3.5rem);
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 0.9rem;
+    background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
+    color: var(--theme-accent);
+    font-size: var(--font-size-lg);
+  }
+
+  .shortcut-settings-header h1,
+  .shortcut-settings-header p {
+    margin: 0;
+  }
+
+  .shortcut-settings-header h1 {
+    font-size: clamp(var(--font-size-xl), 2.5vw, var(--font-size-2xl));
+    line-height: 1.15;
+  }
+
+  .shortcut-settings-header p {
+    margin-top: 0.25rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm);
   }
 
   .shortcut-center {
-    container-type: inline-size;
     display: flex;
     flex: 1;
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    background: color-mix(in srgb, var(--theme-panel-bg) 82%, transparent);
+    border-top: 1px solid var(--theme-stroke);
   }
 
   .toolbar {
@@ -466,37 +475,7 @@
     border: 0;
   }
 
-  @container (min-width: 64rem) {
-    .workspace.editing {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(22rem, 27rem);
-      overflow: hidden;
-    }
-
-    .list-pane,
-    .editor-pane {
-      min-height: 0;
-      overflow: hidden;
-      overscroll-behavior: contain;
-    }
-
-    .editor-pane {
-      order: initial;
-    }
-
-    :global(.editor-pane .binding-editor) {
-      height: 100%;
-    }
-  }
-
-  @container (min-width: 105rem) {
-    .groups {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: start;
-    }
-  }
-
-  @container (max-width: 50rem) {
+  @media (max-width: 800px) {
     .toolbar {
       grid-template-columns: minmax(0, 1fr);
       padding-inline: 0.75rem;
@@ -516,22 +495,8 @@
   }
 
   @media (max-width: 520px) {
-    :global(dialog.base-modal.shortcut-center-modal[data-size="xl"]) {
-      width: 100%;
-      height: var(--viewport-height, 100dvh);
-      max-height: var(--viewport-height, 100dvh);
-    }
-
-    :global(.shortcut-center-modal .modal-header) {
-      padding: 0.65rem 0.75rem;
-    }
-
-    :global(.shortcut-center-modal .header-icon) {
-      display: none;
-    }
-
-    :global(.shortcut-center-modal .header-subtitle) {
-      display: none;
+    .shortcut-settings-header {
+      padding-inline: 0.25rem;
     }
 
     .toolbar {
@@ -545,18 +510,8 @@
   }
 
   @media (max-height: 520px) {
-    :global(dialog.base-modal.shortcut-center-modal[data-size="xl"]) {
-      height: 100dvh;
-      max-height: 100dvh;
-    }
-
-    :global(.shortcut-center-modal .modal-header) {
-      padding: 0.5rem 0.75rem;
-    }
-
-    :global(.shortcut-center-modal .header-icon),
-    :global(.shortcut-center-modal .header-subtitle) {
-      display: none;
+    .shortcut-settings-header {
+      padding-block: 0.5rem;
     }
 
     .toolbar {

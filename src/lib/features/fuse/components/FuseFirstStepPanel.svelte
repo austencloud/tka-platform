@@ -100,6 +100,16 @@
     border-radius: 0;
   }
 
+  :global(.drawer-content.fuse-first-step-panel-container) {
+    --sheet-bg:
+      linear-gradient(
+        var(--theme-panel-bg, rgba(15, 17, 24, 0.96)),
+        var(--theme-panel-bg, rgba(15, 17, 24, 0.96))
+      ),
+      color-mix(in srgb, var(--theme-text, white) 8%, black);
+    --sheet-filter: none;
+  }
+
   .first-step-panel,
   .first-step-content {
     display: flex;
@@ -110,7 +120,7 @@
   .first-step-panel {
     width: 100%;
     height: 100%;
-    background: var(--theme-panel-bg);
+    background: transparent;
   }
 
   .first-step-content {

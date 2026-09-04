@@ -17,9 +17,6 @@
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
   import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
-  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import KeyboardKeyDisplay from "$lib/shared/keyboard/components/settings/KeyboardKeyDisplay.svelte";
-  import { keyboardShortcutState } from "$lib/shared/keyboard/state/keyboard-shortcut-state.svelte";
   import OfflineLocalDataSection from "./preferences/OfflineLocalDataSection.svelte";
   import { Collapsible } from "bits-ui";
 
@@ -80,11 +77,6 @@
     await handleModuleChange("create", "generate");
     generateTourState.restart();
   }
-
-  function handleOpenShortcutCenter() {
-    hapticService?.trigger("selection");
-    keyboardShortcutState.openHelp();
-  }
 </script>
 
 <div class="preferences-tab" class:visible={isVisible}>
@@ -98,35 +90,6 @@
       <p>{t("settings_customize_behavior")}</p>
     </div>
   </header>
-
-  <section class="section">
-    <h2 class="section-title keyboard-section-title">
-      <i class="fas fa-keyboard" aria-hidden="true"></i>
-      Keyboard
-    </h2>
-
-    <PanelButton
-      variant="secondary"
-      fullWidth={true}
-      onclick={handleOpenShortcutCenter}
-      ariaLabel="Open keyboard shortcuts"
-    >
-      <span class="shortcut-launcher">
-        <span class="shortcut-launcher-icon">
-          <i class="fas fa-keyboard" aria-hidden="true"></i>
-        </span>
-        <span class="shortcut-launcher-copy">
-          <strong>Keyboard shortcuts</strong>
-          <small>Review or change shortcuts saved on this device.</small>
-        </span>
-        <KeyboardKeyDisplay keyCombo="Shift+/" size="small" />
-        <i
-          class="fas fa-chevron-right shortcut-launcher-arrow"
-          aria-hidden="true"
-        ></i>
-      </span>
-    </PanelButton>
-  </section>
 
   <!-- Confirmation Dialogs Section -->
   <section class="section">
@@ -302,59 +265,6 @@
 
   .section-title i.fa-compass {
     color: var(--semantic-info, #3b82f6);
-  }
-
-  .section-title.keyboard-section-title i {
-    color: var(--theme-accent-strong, var(--theme-accent));
-  }
-
-  .shortcut-launcher {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    text-align: left;
-  }
-
-  .shortcut-launcher-icon {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    border-radius: 12px;
-    color: var(--theme-accent-strong, var(--theme-accent));
-    background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
-    font-size: var(--font-size-lg);
-  }
-
-  .shortcut-launcher-copy {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .shortcut-launcher-copy strong {
-    color: var(--theme-text);
-    font-size: var(--font-size-base);
-    font-weight: 600;
-  }
-
-  .shortcut-launcher-copy small {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 400;
-    line-height: 1.35;
-  }
-
-  .shortcut-launcher-arrow {
-    width: 20px;
-    flex-shrink: 0;
-    color: var(--theme-text-dim);
-    text-align: center;
   }
 
   /* Toggle List */
@@ -599,18 +509,6 @@
 
     .toggle-row {
       padding: 14px;
-    }
-
-    .shortcut-launcher {
-      gap: 10px;
-    }
-
-    .shortcut-launcher-icon {
-      display: none;
-    }
-
-    .shortcut-launcher-copy small {
-      font-size: var(--font-size-compact, 12px);
     }
 
     .toggle-switch {

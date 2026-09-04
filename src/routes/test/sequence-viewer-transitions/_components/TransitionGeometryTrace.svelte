@@ -492,6 +492,9 @@
       <span data-problem={summary.tunnelUnpreparedLayerFrames > 0}
         >Reveal-before-layers frames: {summary.tunnelUnpreparedLayerFrames}</span
       >
+      <span data-problem={summary.tunnelUnpreparedTextureFrames > 0}
+        >Reveal-before-textures frames: {summary.tunnelUnpreparedTextureFrames}</span
+      >
       <span data-problem={summary.tunnelLateLayerArrivals > 0}
         >Late layer arrivals: {summary.tunnelLateLayerArrivals}</span
       >
@@ -510,11 +513,47 @@
         )}</span
       >
       <span
-        data-problem={summary.tunnelLayerOpacitySpreadMaximum < 0.35 &&
-          summary.tunnelCrossfadeFrames > 2}
-        >Layer cascade spread: {summary.tunnelLayerOpacitySpreadMaximum.toFixed(
-          2
-        )}</span
+        data-problem={summary.tunnelPreparedLayerCountMaximum > 1 &&
+          summary.tunnelCrossfadeFrames > 2 &&
+          (summary.tunnelLayerOpacitySpreadMaximum < 0.08 ||
+            summary.tunnelLayerOpacitySpreadMaximum > 0.28)}
+        >Layer timing spread: {summary.tunnelPreparedLayerCountMaximum > 1
+          ? summary.tunnelLayerOpacitySpreadMaximum.toFixed(2)
+          : "n/a · one copy peels spatially"}</span
+      >
+      <span
+        data-problem={summary.tunnelPreparedLayerCountMaximum > 0 &&
+          (summary.tunnelAllLayersPerceptibleProgress === null ||
+            summary.tunnelAllLayersPerceptibleProgress > 0.35 ||
+            (summary.tunnelLayerMeanOpacityAtHalf ?? 0) < 0.35)}
+        >Ensemble legibility: {summary.tunnelAllLayersPerceptibleProgress ===
+        null
+          ? "never"
+          : `${Math.round(summary.tunnelAllLayersPerceptibleProgress * 100)}% reveal`}
+        · {summary.tunnelLayerMeanOpacityAtHalf === null
+          ? "n/a"
+          : `${Math.round(summary.tunnelLayerMeanOpacityAtHalf * 100)}% mean alpha at halfway`}</span
+      >
+      <span
+        data-problem={summary.tunnelPaintedArrival === null ||
+          (summary.longestSampleGap <= 80 &&
+            (summary.tunnelPaintedArrival.quarterFill < 0.15 ||
+              summary.tunnelPaintedArrival.halfwayFill < 0.5 ||
+              summary.tunnelPaintedArrival.growthFrames < 4))}
+        title="Counts green, yellow, and purple pixels sampled from the rendered canvas, not reactive layer state."
+        >Painted spectrum arrival: {summary.tunnelPaintedArrival === null
+          ? "unavailable"
+          : `${Math.round(summary.tunnelPaintedArrival.quarterFill * 100)}% by quarter · ${Math.round(summary.tunnelPaintedArrival.halfwayFill * 100)}% by halfway · ${summary.tunnelPaintedArrival.growthFrames} growth frames`}</span
+      >
+      <span
+        data-problem={summary.tunnelPreparedLayerCountMaximum > 0 &&
+          summary.tunnelLayerSeparationMaximum > 0.08 &&
+          summary.tunnelSpatialPeelFrames < 3}
+        >Spatial peel: {(summary.tunnelLayerSeparationMaximum * 100).toFixed(
+          0
+        )}% radius over {summary.tunnelSpatialPeelFrames} frames · {(
+          summary.tunnelLayerSeparationStepMaximum * 100
+        ).toFixed(0)}% max step</span
       >
       <span data-dissolve={summary.tunnelCrossfadeFrames > 0}
         >Layer-bloom frames: {summary.tunnelCrossfadeFrames}</span
