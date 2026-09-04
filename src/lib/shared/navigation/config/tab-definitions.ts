@@ -489,6 +489,16 @@ export const SETTINGS_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
   },
   {
+    id: "keyboard",
+    labelKey: "tab_settings_keyboard",
+    descKey: "tab_desc_settings_keyboard",
+    label: "Keyboard",
+    icon: '<i class="fas fa-keyboard" aria-hidden="true"></i>',
+    description: "Review and change keyboard shortcuts",
+    color: "#a855f7",
+    gradient: "linear-gradient(135deg, #c084fc 0%, #9333ea 100%)",
+  },
+  {
     id: "language",
     labelKey: "tab_settings_language",
     descKey: "tab_desc_settings_language",

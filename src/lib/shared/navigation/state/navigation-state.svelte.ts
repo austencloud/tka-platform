@@ -68,9 +68,9 @@ export function createNavigationState() {
   let currentCreateMode = $state<string>("construct");
   let currentLearnMode = $state<string>("concepts");
 
-  // The Create home is navigation intent, not a fake tab. Keep a valid backing
-  // method so drafts and mode-specific state survive while the chooser is open.
-  let isCreateFrontDoorOpen = $state(true);
+  // A module home is navigation intent, not a fake tab. The active tab remains
+  // valid behind it so returning to a workspace restores in-progress work.
+  let activeModuleHome = $state<ModuleId | null>("create");
   let createFrontDoorSource = $state<CreateFrontDoorSource>("direct");
   let hasRememberedCreateMode = $state(false);
 
@@ -232,6 +232,7 @@ export function createNavigationState() {
             activeTab = DEFAULT_CREATE_TAB;
           } else {
             currentModule = normalizedModule;
+            activeModuleHome = null;
 
             if (urlModuleDefinition.sections.length > 0) {
               const validTab = urlTab
@@ -241,7 +242,7 @@ export function createNavigationState() {
               if (validTab && urlTab) {
                 activeTab = urlTab;
                 if (normalizedModule === "create") {
-                  isCreateFrontDoorOpen = false;
+                  activeModuleHome = null;
                   hasRememberedCreateMode = true;
                 }
               } else if (normalizedModule === "create") {
@@ -250,7 +251,7 @@ export function createNavigationState() {
                 // chooser can restore its state without pretending it is a
                 // separate navigation section.
                 activeTab = currentCreateMode || DEFAULT_CREATE_TAB;
-                isCreateFrontDoorOpen = true;
+                activeModuleHome = "create";
                 createFrontDoorSource = "direct";
               } else {
                 const savedTab = loadModuleTab(normalizedModule);
@@ -265,12 +266,15 @@ export function createNavigationState() {
               }
             } else {
               activeTab = "";
+              activeModuleHome = urlModuleDefinition.home
+                ? normalizedModule
+                : null;
             }
           }
         } else {
           currentModule = "create";
           activeTab = DEFAULT_CREATE_TAB;
-          isCreateFrontDoorOpen = true;
+          activeModuleHome = "create";
           createFrontDoorSource = "direct";
         }
       }
@@ -366,12 +370,13 @@ export function createNavigationState() {
 
       activeTab = nextTab;
 
+      activeModuleHome =
+        moduleDefinition?.home && !normalizedTargetTab ? moduleId : null;
+
       if (moduleId === "create") {
         if (normalizedTargetTab) {
-          isCreateFrontDoorOpen = false;
           hasRememberedCreateMode = true;
         } else {
-          isCreateFrontDoorOpen = true;
           createFrontDoorSource = entrySource;
         }
       }
@@ -441,8 +446,9 @@ export function createNavigationState() {
       return;
     }
 
+    activeModuleHome = null;
+
     if (currentModule === "create") {
-      isCreateFrontDoorOpen = false;
       hasRememberedCreateMode = true;
     }
 
@@ -520,12 +526,22 @@ export function createNavigationState() {
     }
   }
 
+  function openModuleHome(
+    moduleId: ModuleId,
+    source: CreateFrontDoorSource = "navigation"
+  ): void {
+    const moduleDefinition = MODULE_DEFINITIONS.find(
+      (definition) => definition.id === moduleId
+    );
+    if (currentModule !== moduleId || !moduleDefinition?.home) return;
+    activeModuleHome = moduleId;
+    if (moduleId === "create") createFrontDoorSource = source;
+  }
+
   function openCreateFrontDoor(
     source: CreateFrontDoorSource = "navigation"
   ): void {
-    if (currentModule !== "create") return;
-    isCreateFrontDoorOpen = true;
-    createFrontDoorSource = source;
+    openModuleHome("create", source);
   }
 
   return {
@@ -536,7 +552,10 @@ export function createNavigationState() {
       return currentLearnMode;
     },
     get isCreateFrontDoorOpen() {
-      return isCreateFrontDoorOpen;
+      return activeModuleHome === "create";
+    },
+    get activeModuleHome() {
+      return activeModuleHome;
     },
     get createFrontDoorSource() {
       return createFrontDoorSource;
@@ -624,7 +643,11 @@ export function createNavigationState() {
 
     setCurrentModule,
     setActiveTab,
+    openModuleHome,
     openCreateFrontDoor,
+    isModuleHomeOpen(moduleId: ModuleId) {
+      return currentModule === moduleId && activeModuleHome === moduleId;
+    },
     getCurrentModule,
     getActiveTab,
     getTabsForModule,

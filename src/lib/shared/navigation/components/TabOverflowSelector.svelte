@@ -32,7 +32,7 @@
     sectionHome?.active
       ? sectionHome
       : sections.find((section: Section) => section.id === currentSection) ||
-          sections[0],
+          sections[0]
   );
 
   function handleTriggerClick() {
@@ -87,7 +87,7 @@
 <button
   class="tab-picker-trigger"
   popovertarget="tab-overflow-popover"
-  aria-label={selectorLabel}
+  aria-label={`${currentDestination?.label ?? "Select"}. ${selectorLabel}`}
   aria-expanded={isOpen}
   aria-controls="tab-overflow-popover"
   onclick={handleTriggerClick}
@@ -388,8 +388,7 @@
       var(--theme-stroke)
     );
     box-shadow:
-      0 0 0 2px
-        color-mix(in srgb, var(--section-color) 25%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--section-color) 25%, transparent),
       inset 0 1px 0 0 hsl(0 0% 100% / 0.1);
   }
 

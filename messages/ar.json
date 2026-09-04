@@ -464,6 +464,8 @@
   "sort_difficulty": "صعوبة",
   "sort_length": "طول",
   "sort_recent": "مؤخرًا",
+  "tab_desc_settings_keyboard": "مراجعة اختصارات لوحة المفاتيح وتغييرها",
+  "tab_settings_keyboard": "لوحة المفاتيح",
   "tab_settings_profile": "الحساب",
   "train_accuracy_percent": "{value}% الدقة",
   "train_all_completed": "تم إنجاز جميع التحديات! تابعونا قريباً.",

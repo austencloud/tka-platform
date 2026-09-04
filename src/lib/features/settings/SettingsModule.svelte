@@ -40,8 +40,8 @@
   import { getShowroomThemeFromId } from "$lib/shared/settings/components/tabs/background/showroom/theme-showroom-data";
   import PreferencesTab from "$lib/shared/settings/components/tabs/PreferencesTab.svelte";
   import LanguageTab from "$lib/shared/settings/components/tabs/LanguageTab.svelte";
+  import ShortcutCenter from "$lib/shared/keyboard/components/ShortcutCenter.svelte";
   import NotificationPreferencesPanel from "$lib/features/feedback/components/NotificationPreferencesPanel.svelte";
-  import { keyboardShortcutState } from "$lib/shared/keyboard/state/keyboard-shortcut-state.svelte";
 
   // Reactive settings - derives from getSettings() to maintain reactivity
   let settings = $derived(getSettings());
@@ -63,11 +63,6 @@
   let showBackHeader = $derived(false);
 
   onMount(() => {
-    if (navigationState.activeTab === "keyboard") {
-      navigationState.setActiveTab("profile");
-      keyboardShortcutState.openHelp();
-    }
-
     let deviceCleanup: (() => void) | undefined;
     try {
       deviceDetector = getDeviceDetector();
@@ -283,6 +278,8 @@
             currentSettings={settings}
             onSettingUpdate={handleSettingUpdate}
           />
+        {:else if activeTab === "keyboard"}
+          <ShortcutCenter />
         {:else if activeTab === "language"}
           <LanguageTab />
         {:else}
