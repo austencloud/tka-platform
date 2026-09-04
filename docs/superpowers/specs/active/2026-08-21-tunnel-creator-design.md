@@ -183,6 +183,28 @@ the cast as left/right component props. Performer cards remain at least 44 px
 interactive, use component-scoped theme variables, and recompose at laptop,
 tablet, short-landscape, phone, and all three 4K tiers.
 
+### Workspace ownership correction (2026-09-04)
+
+Tunnel is not a Generate recipe. Its workspace must not present performer
+sources, cast structure, stage formation, and playback as one row of peer
+setting cards. Each control stays beside the artifact region it changes:
+
+- The page header owns the current tunnel's identity and the saved **Tunnels**
+  library entrance.
+- The choreography roster owns the Custom cast / Seeded canon decision and
+  direct add, remove, select, and reorder actions.
+- A performer card owns Generate, generation recipe, Browse, Shape Matrix,
+  Previous, and relationship editing for that performer.
+- The preview owns formation, look, effects, timing, playback, and its single
+  **Stage settings** entrance.
+- Composition cycle length is status, not a setting. It appears with the
+  preview as “Together after N steps.”
+
+The same ownership remains visible at every breakpoint. Responsive layouts may
+compact labels, focus one performer card, or move an existing inspector into a
+drawer, but they may not make a second settings entrance or hide a capability
+because an arbitrary width was crossed.
+
 ## Migration and Compatibility
 
 - Viewer-created single-source tunnels continue to work unchanged.
