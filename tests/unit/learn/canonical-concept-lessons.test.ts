@@ -131,6 +131,9 @@ describe("canonical concept lesson composition", () => {
     const timingBoard = readSource(
       "src/lib/features/learn/components/interactive/motions/TimingDirectionBoard.svelte"
     );
+    const timingIntro = readSource(
+      "src/lib/features/learn/components/interactive/motions/TimingDirectionIntro.svelte"
+    );
     const foundationContent = readSource(
       "src/lib/features/learn/components/interactive/foundations/pictograph-foundation-content.ts"
     );
@@ -150,6 +153,7 @@ describe("canonical concept lesson composition", () => {
     expect(motions).toContain("GAMMA_MODES");
     expect(motions).toContain("TND_ELEMENTS");
     expect(motions).toContain("TimingDirectionBoard");
+    expect(motions).toContain("TimingDirectionIntro");
     expect(motions).toContain(
       "const timingDirectionIndex = HAND_PATH_STEPS.length"
     );
@@ -162,9 +166,7 @@ describe("canonical concept lesson composition", () => {
     );
     expect(motions).toContain('"stageSchemaVersion"');
     expect(motions).toContain("migrateHandMotionsSavedStep");
-    expect(motions).toContain(
-      'viewMode === "scroll"\n      ? comparisonIndex'
-    );
+    expect(motions).toContain('viewMode === "scroll"\n      ? comparisonIndex');
     expect(motions).toContain("getConceptPlacesByLevel(1)");
     expect(motions).toContain("LessonStageFrame");
     expect(motions).toContain("var(--shell-w, 96rem)");
@@ -172,6 +174,7 @@ describe("canonical concept lesson composition", () => {
     expect(motions).not.toContain("activeMode");
     expect(motions).not.toContain("recap-state");
     expect(motions).not.toContain('"Timing + Direction"');
+    expect(motions).not.toContain('class="axis-join"');
     expect(motions).not.toContain("letterQueryHandler");
     expect(motions).not.toContain("LessonPictographStage");
     expect(positions).toContain('onComplete?.("hand-motions-intro")');
@@ -199,6 +202,21 @@ describe("canonical concept lesson composition", () => {
     expect(timingBoard).toContain("mode.id.toUpperCase()");
     expect(timingBoard).not.toContain("mode.element.element");
     expect(timingBoard).not.toMatch(
+      /border-(left|right|top|bottom):\s*[2-9]\d*px/
+    );
+    expect(timingIntro).toContain('<h3 id="timing-heading">Timing</h3>');
+    expect(timingIntro).toContain('<h3 id="direction-heading">Direction</h3>');
+    expect(timingIntro).toContain('data-phase="0"');
+    expect(timingIntro).toContain('data-phase="half"');
+    expect(timingIntro).toContain('data-phase="quarter"');
+    expect(timingIntro).toContain('data-direction="same"');
+    expect(timingIntro).toContain('data-direction="opposite"');
+    expect(timingIntro).toContain("@keyframes timing-bounce");
+    expect(timingIntro).toContain("@keyframes direction-travel-forward");
+    expect(timingIntro).toContain("@keyframes direction-travel-reverse");
+    expect(timingIntro).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(timingIntro).not.toContain("axis-join");
+    expect(timingIntro).not.toMatch(
       /border-(left|right|top|bottom):\s*[2-9]\d*px/
     );
     expect(foundationContent).toContain("PropType.HAND");

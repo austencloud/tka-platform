@@ -47,6 +47,15 @@ This chapter follows Shift, Dash, and Static in the same lesson.
 > Time compares the hands: together, split, or quarter. Direction compares
 > their travel: same or opposite.
 
+The two concept labels are exactly:
+
+> Timing
+>
+> Direction
+
+“Timing” names the concept as a whole. The individual relationships continue
+to use “together time,” “split time,” and “quarter time.”
+
 ### Six demonstrations
 
 > SS
@@ -128,3 +137,8 @@ the lesson does not repeat Water, Earth, Sun, Fire, Air, or Moon as headings.
   The six-up board now opens each relationship into a synchronized live
   animation and production hand-path Choreo Card; the duplicate focused icon
   is removed. The lesson remains BUILT pending Austen's hands-on confirmation.
+- 2026-09-04 — Austen replaced the bridge's inert panels and plus sign with
+  simple animated examples: paired bouncing balls show together, split, and
+  quarter timing, while paired tracks show same and opposite direction. He
+  specified “Timing” as the whole-concept label and required “Timing” and
+  “Direction” to remain on the same line. No new teaching prose was added.

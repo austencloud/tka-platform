@@ -1,7 +1,8 @@
 # Timing and Direction Article Cluster
 
 Date: 2026-09-04
-Status: Approved for implementation by Austen's “Let's do this then. Proceed.”
+Status: Approved, with the public hub revised from direct user feedback on
+2026-09-04.
 
 ## Outcome
 
@@ -35,7 +36,7 @@ listed in the sitemap.
 | Element names, normalized icons, and accents | `features/choreo-card/domain/tnd-element.ts`                | Reuse        |
 | Representative motion sequences              | Learn `pictograph-foundation-content.ts`                    | Compose      |
 | Public live animation                        | `shared/landing/components/SequenceHeroDemo.svelte`         | Reuse        |
-| Timing and direction selection               | `shared/ui/components/SegmentedControl.svelte`              | Reuse        |
+| Six-mode comparison, focus, and playback     | Learn `TimingDirectionBoard.svelte`                         | Extend       |
 | Editorial page frame and reading measure     | `public-editorial.css`                                      | Reuse        |
 | Metadata and JSON-LD                         | `shared/components/Seo.svelte`                              | Reuse        |
 | Public discovery                             | `SiteHeader.svelte`, `SiteFooter.svelte`, and sitemap       | Extend       |
@@ -46,14 +47,15 @@ classification or generate sequences.
 
 ## Interaction
 
-The hub opens with two single-select controls: Timing and Direction. Selecting
-one value from each resolves to one canonical mode and swaps the existing live
-sequence in place. Both controls use `SegmentedControl`, including its keyboard
-and selected-indicator behavior.
+The hub opens on all six relationships. Same Direction is one three-mode row;
+Opposite Direction is the other. Selecting a mode focuses its hand-path player
+and card while keeping the other five available. The focused mode links to its
+article. Escape and the All six control return to the full comparison.
 
-The result panel reserves enough space for the longest mode name and definition.
-The animation stage also reserves its geometry before mounting. A selection
-therefore changes content without pushing later sections down the page.
+The public page composes the Learn lesson's `TimingDirectionBoard` so focus,
+keyboard handling, playback, layout motion, and reduced-motion behavior have one
+owner. The rejected two-axis picker and “Pick one from each axis” copy are not
+part of the hub.
 
 Each mode article presents its own live example and links to all six siblings.
 Sibling navigation is ordinary document navigation, not a second stateful
@@ -77,11 +79,10 @@ rails, hidden mode details, and viewport-driven root typography.
 
 ## Responsive composition
 
-- Wide desktop: explorer controls and live stage share a row; six mode links
-  occupy three columns.
-- Tablet: explorer stacks; mode links occupy two columns.
-- Phone: one content column and one mode link per row.
-- Short landscape: the explorer remains compact and the page scrolls normally;
+- Wide desktop: Same and Opposite are labeled rows with three modes each.
+- Tablet and phone: each direction label sits above its three-mode row so all
+  six relationships remain visible together.
+- Short landscape: the two rows remain compact and the page scrolls normally;
   no fixed-height room traps the article.
 - 4K: the shared shell widens the composition while prose keeps the existing
   editorial measure. Controls and body type do not magnify with viewport width.
@@ -105,8 +106,8 @@ The public claim is:
    citations, and sitemap entries.
 2. Run the focused tests with the repository Vitest config.
 3. Run `svelte-check` through the worktree integration gate.
-4. Search the diff for raw chip controls, edge-accent patterns, `transition: all`,
-   and user-facing AI-writing tells.
+4. Search the diff for the removed picker copy, edge-accent patterns,
+   `transition: all`, and user-facing AI-writing tells.
 5. Verify the hub and one representative original/quarter article at 375×667,
    960×412, 820×1180, 1440×900, 1920×1080, 2560×1440, and 3840×2160, including
-   one real Timing/Direction selection change and reduced motion.
+   one real focus/collapse transition and reduced motion.

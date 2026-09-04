@@ -15,9 +15,13 @@
   let {
     modes,
     onFocusChange,
+    articleHrefFor,
+    showDirectionRowLabels = false,
   }: {
     modes: readonly TimingDirectionMode[];
     onFocusChange?: (focused: boolean) => void;
+    articleHrefFor?: (mode: TimingDirectionMode) => string;
+    showDirectionRowLabels?: boolean;
   } = $props();
 
   const haptic = getHapticFeedback();
@@ -31,9 +35,19 @@
   const focusedMode = $derived(
     modes.find((mode) => mode.id === focusedModeId) ?? null
   );
+  const groupedModes = $derived.by(() => {
+    if (!showDirectionRowLabels) return modes;
+    return [
+      ...modes.filter((mode) => mode.direction === "Same"),
+      ...modes.filter((mode) => mode.direction === "Opposite"),
+    ];
+  });
   const orderedModes = $derived.by(() => {
-    if (!focusedMode) return modes;
-    return [focusedMode, ...modes.filter((mode) => mode.id !== focusedMode.id)];
+    if (!focusedMode) return groupedModes;
+    return [
+      focusedMode,
+      ...groupedModes.filter((mode) => mode.id !== focusedMode.id),
+    ];
   });
 
   const boardMotion = createLayoutMotion({
@@ -134,7 +148,7 @@
   class:has-focus={focusedMode !== null}
   bind:this={boardElement}
   role="region"
-  aria-label="Six time and direction relationships"
+  aria-label="Six timing and direction relationships"
 >
   <div class="board-toolbar">
     <div class="selection-status" aria-live="polite">
@@ -154,13 +168,23 @@
     </PanelButton>
   </div>
 
-  <div class="mode-grid" class:has-focus={focusedMode !== null}>
-    {#each orderedModes as mode (mode.id)}
+  <div
+    class="mode-grid"
+    class:has-focus={focusedMode !== null}
+    class:with-row-labels={showDirectionRowLabels}
+  >
+    {#each orderedModes as mode, index (mode.id)}
+      {#if showDirectionRowLabels && !focusedMode && (index === 0 || orderedModes[index - 1]?.direction !== mode.direction)}
+        <h3 class="direction-row-label">{mode.direction} Direction</h3>
+      {/if}
       {@const isFocused = mode.id === focusedModeId}
+      {@const articleHref = articleHrefFor?.(mode)}
       <article
         class="mode-tile"
         class:is-focused={isFocused}
         data-mode-id={mode.id}
+        data-timing={mode.timing}
+        data-direction={mode.direction}
         style:--element-accent={mode.element.accentColor}
         aria-label={`${codeFor(mode)}. ${definitionFor(mode)}`}
       >
@@ -178,15 +202,27 @@
           </div>
 
           {#if isFocused}
-            <PanelButton
-              bind:ref={focusCloseButton}
-              variant="secondary"
-              onclick={() => void setFocusedMode(null)}
-              ariaLabel="Back to all six relationships"
-            >
-              <i class="fa-solid fa-compress" aria-hidden="true"></i>
-              <span>All six</span>
-            </PanelButton>
+            <div class="mode-actions">
+              {#if articleHref}
+                <a
+                  class="mode-article-link"
+                  href={articleHref}
+                  aria-label={`Read the ${fullNameFor(mode)} article`}
+                >
+                  <span>Read article</span>
+                  <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                </a>
+              {/if}
+              <PanelButton
+                bind:ref={focusCloseButton}
+                variant="secondary"
+                onclick={() => void setFocusedMode(null)}
+                ariaLabel="Back to all six relationships"
+              >
+                <i class="fa-solid fa-compress" aria-hidden="true"></i>
+                <span>All six</span>
+              </PanelButton>
+            </div>
           {/if}
         </header>
 
@@ -309,6 +345,22 @@
     grid-template-rows: repeat(5, minmax(0, 1fr));
   }
 
+  .mode-grid.with-row-labels:not(.has-focus) {
+    grid-template-columns: minmax(7.5rem, auto) repeat(3, minmax(0, 1fr));
+  }
+
+  .direction-row-label {
+    min-width: 0;
+    display: grid;
+    place-items: center start;
+    margin: 0;
+    padding-inline: 0.35rem;
+    color: var(--theme-text);
+    font-size: clamp(0.875rem, calc(0.72rem + 0.25cqw), 1.125rem);
+    font-weight: 750;
+    line-height: 1.2;
+  }
+
   .mode-tile {
     position: relative;
     min-width: 0;
@@ -409,6 +461,49 @@
     padding: 0.4rem 0.65rem;
   }
 
+  .mode-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .mode-article-link {
+    min-height: var(--min-touch-target, 44px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.65rem;
+    color: var(--theme-text);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 650;
+    text-decoration: none;
+    border: 1px solid var(--element-accent);
+    border-radius: var(--radius-md, 0.5rem);
+    background: color-mix(
+      in srgb,
+      var(--element-accent) 14%,
+      var(--theme-card-bg)
+    );
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
+  }
+
+  .mode-article-link:hover {
+    background: color-mix(
+      in srgb,
+      var(--element-accent) 22%,
+      var(--theme-card-bg)
+    );
+  }
+
+  .mode-article-link:focus-visible {
+    outline: 3px solid var(--element-accent);
+    outline-offset: 2px;
+  }
+
   .mode-player {
     min-width: 0;
     min-height: 0;
@@ -472,6 +567,17 @@
     .mode-grid:not(.has-focus) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       grid-template-rows: repeat(3, minmax(0, 1fr));
+    }
+
+    .mode-grid.with-row-labels:not(.has-focus) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1fr);
+    }
+
+    .direction-row-label {
+      grid-column: 1 / -1;
+      place-items: end start;
+      padding: 0.1rem 0;
     }
 
     .mode-grid.has-focus {
@@ -541,7 +647,8 @@
     }
 
     .mode-header :global(.panel-btn span),
-    .board-toolbar :global(.panel-btn span) {
+    .board-toolbar :global(.panel-btn span),
+    .mode-article-link span {
       position: absolute;
       width: 1px;
       height: 1px;
@@ -593,6 +700,17 @@
       grid-template-rows: minmax(0, 1fr);
     }
 
+    .mode-grid.with-row-labels:not(.has-focus) {
+      grid-template-columns: minmax(7.5rem, auto) repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+
+    .mode-grid.with-row-labels:not(.has-focus) .direction-row-label {
+      grid-column: auto;
+      place-items: center start;
+      padding-inline: 0.35rem;
+    }
+
     .mode-grid.has-focus {
       grid-template-columns: repeat(6, minmax(0, 1fr));
       grid-template-rows: repeat(3, minmax(0, 1fr));
@@ -630,7 +748,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .mode-select {
+    .mode-select,
+    .mode-article-link {
       transition: none;
     }
   }
