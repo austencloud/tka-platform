@@ -216,6 +216,10 @@
           index,
           preparedTunnelLayers.length
         ),
+        // The peel is stage composition, not choreography. Keep it visible but
+        // do not let trail history turn the trip to the formation into a line.
+        trailCaptureSuppressed: progress < 0.999,
+        formationTransitionActive: progress < 0.999,
       };
     });
   });
@@ -237,6 +241,12 @@
   );
   const tunnelPerceptibleLayerCount = $derived(
     tunnelLayers.filter((layer) => (layer.opacity ?? 1) >= 0.1).length
+  );
+  const tunnelMovingLayerCount = $derived(
+    tunnelLayers.filter((layer) => layer.formationTransitionActive).length
+  );
+  const tunnelTrailSuppressedLayerCount = $derived(
+    tunnelLayers.filter((layer) => layer.trailCaptureSuppressed).length
   );
   const tunnelLayerSeparation = $derived(
     Math.max(
@@ -596,6 +606,8 @@
     data-tunnel-layer-opacity-max={tunnelLayerOpacityMaximum.toFixed(3)}
     data-tunnel-layer-opacity-mean={tunnelLayerOpacityMean.toFixed(3)}
     data-tunnel-perceptible-layer-count={tunnelPerceptibleLayerCount}
+    data-tunnel-moving-layer-count={tunnelMovingLayerCount}
+    data-tunnel-trail-suppressed-layer-count={tunnelTrailSuppressedLayerCount}
     data-tunnel-layer-separation={tunnelLayerSeparation.toFixed(3)}
     data-tunnel-grid-opacity={tunnelGridOpacity.toFixed(3)}
     data-presented={is2DPresented}

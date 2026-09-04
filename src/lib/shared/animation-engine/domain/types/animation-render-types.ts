@@ -10,6 +10,10 @@ export interface AdditionalLayerRenderData {
   hasLeft: boolean;
   hasRight: boolean;
   opacity: number;
+  /** Visible formation travel is not performed motion and must not ink a trail. */
+  trailCaptureSuppressed?: boolean;
+  /** Lets review telemetry distinguish formation travel from performed motion. */
+  formationTransitionActive?: boolean;
   leftColor: string;
   rightColor: string;
   /** Per-performer prop type (Performer Set); drives the hand-never-rotates rule

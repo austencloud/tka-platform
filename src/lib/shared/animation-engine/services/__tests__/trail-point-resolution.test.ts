@@ -304,4 +304,56 @@ describe("legacy trail capture endpoint parity", () => {
     expect(points[0]?.x).toBeCloseTo(expected!.x, 8);
     expect(points[0]?.y).toBeCloseTo(expected!.y, 8);
   });
+
+  it("does not record Tunnel formation travel and resumes from a fresh path", () => {
+    const capturer = new TrailCapturer();
+    capturer.initialize({
+      canvasSize: 500,
+      leftPropDimensions: { width: 252.8, height: 77.8 },
+      rightPropDimensions: { width: 252.8, height: 77.8 },
+      leftPropType: "staff",
+      trailSettings: {
+        ...DEFAULT_TRAIL_SETTINGS,
+        trackingMode: TrackingMode.BOTH_ENDS,
+      },
+    });
+    const prop = (x: number): PropState => ({
+      x,
+      y: 0,
+      centerPathAngle: 0,
+      staffRotationAngle: 0,
+    });
+    const frame = (x: number, time: number, trailCaptureSuppressed = false) =>
+      capturer.captureFrame(
+        {
+          leftProp: null,
+          rightProp: null,
+          additionalLayers: [
+            {
+              leftProp: prop(x),
+              rightProp: null,
+              trailCaptureSuppressed,
+              formationTransitionActive: trailCaptureSuppressed,
+            },
+          ],
+        },
+        x,
+        time
+      );
+
+    frame(0, 1000);
+    frame(0.1, 1600);
+    expect(capturer.getAllTrailPoints().additionalLayers[0]?.left.length).toBe(
+      2
+    );
+
+    frame(0.3, 1700, true);
+    frame(0.5, 1800, true);
+    expect(capturer.getAllTrailPoints().additionalLayers[0]?.left).toEqual([]);
+
+    frame(0.5, 1900);
+    expect(capturer.getAllTrailPoints().additionalLayers[0]?.left).toHaveLength(
+      2
+    );
+  });
 });

@@ -62,6 +62,16 @@ function ringsOf(overlay: TrailOverlayCanvas): {
   };
 }
 
+function layerLeftRingOf(overlay: TrailOverlayCanvas): unknown[] {
+  return (
+    (
+      overlay as unknown as {
+        leftLayerRings: Array<{ left: unknown[] }>;
+      }
+    ).leftLayerRings[0]?.left ?? []
+  );
+}
+
 describe("TrailOverlayCanvas prop-swap suppression", () => {
   it("pauses capture, then starts the replacement prop as a disconnected segment", () => {
     const overlay = makeOverlay();
@@ -128,5 +138,49 @@ describe("TrailOverlayCanvas prop-swap suppression", () => {
     // topology change, while destination-out still runs its normal fade pass.
     expect(clearRect).not.toHaveBeenCalled();
     expect(fillRect).toHaveBeenCalledOnce();
+  });
+});
+
+describe("TrailOverlayCanvas Tunnel formation suppression", () => {
+  const layer = (
+    angle: number,
+    trailCaptureSuppressed: boolean,
+    formationTransitionActive = trailCaptureSuppressed
+  ) => ({
+    leftProp: propAt(angle),
+    rightProp: null,
+    leftTrailPoints: [],
+    rightTrailPoints: [],
+    hasLeft: true,
+    hasRight: false,
+    opacity: 1,
+    leftColor: "#8b5cf6",
+    rightColor: "#f97316",
+    trailCaptureSuppressed,
+    formationTransitionActive,
+  });
+
+  it("keeps formation travel out of the ring and restarts disconnected", () => {
+    const overlay = makeOverlay();
+    overlay.renderFrame(
+      baseParams({ additionalLayers: [layer(0, false)], currentTime: 0 })
+    );
+    overlay.renderFrame(
+      baseParams({ additionalLayers: [layer(0.05, false)], currentTime: 16 })
+    );
+    expect(layerLeftRingOf(overlay)).toHaveLength(2);
+
+    overlay.renderFrame(
+      baseParams({ additionalLayers: [layer(0.2, true)], currentTime: 32 })
+    );
+    overlay.renderFrame(
+      baseParams({ additionalLayers: [layer(0.4, true)], currentTime: 48 })
+    );
+    expect(layerLeftRingOf(overlay)).toHaveLength(0);
+
+    overlay.renderFrame(
+      baseParams({ additionalLayers: [layer(0.4, false)], currentTime: 64 })
+    );
+    expect(layerLeftRingOf(overlay)).toHaveLength(1);
   });
 });

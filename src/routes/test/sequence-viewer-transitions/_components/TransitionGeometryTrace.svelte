@@ -548,6 +548,13 @@
           ? "unavailable"
           : `all ${summary.tunnelPaintedArrival.peakProps} by ${summary.tunnelPaintedArrival.allPropsPerceptibleProgress === null ? "never" : `${Math.round(summary.tunnelPaintedArrival.allPropsPerceptibleProgress * 100)}% reveal`} · ${Math.round(summary.tunnelPaintedArrival.quarterMeanAlpha * 100)}% mean alpha at quarter · ${Math.round(summary.tunnelPaintedArrival.halfwayMeanAlpha * 100)}% at halfway · ${summary.tunnelPaintedArrival.growthFrames} rendered growth frames`}</span
       >
+      <span data-problem={summary.tunnelUnguardedFormationFrames > 0}
+        >Trail-safe formation: {summary.tunnelUnguardedFormationFrames} moving frames
+        unguarded</span
+      >
+      <span data-problem={summary.tunnelFormationTrailCaptures > 0}
+        >Formation trail captures: {summary.tunnelFormationTrailCaptures}</span
+      >
       <span
         data-problem={summary.tunnelPreparedLayerCountMaximum > 0 &&
           summary.tunnelLayerSeparationMaximum > 0.08 &&

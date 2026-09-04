@@ -354,6 +354,7 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(motionSurface).toContain("resolveTunnelLayerProgress(");
     expect(motionSurface).toContain("interpolateTunnelLayerProp(");
     expect(motionSurface).toContain("resolveTunnelLayerOpacity(");
+    expect(motionSurface).toContain("trailCaptureSuppressed: progress < 0.999");
     expect(splitPane).toContain("prepareWhileInactive: true");
     expect(tunnelController).toContain("get layersReady(): boolean");
     expect(tunnelController).toContain("preparedAdditionalLayersAt(");
@@ -396,6 +397,8 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Layer timing spread:");
     expect(geometryTrace).toContain("Ensemble legibility:");
     expect(geometryTrace).toContain("Painted prop arrival:");
+    expect(geometryTrace).toContain("Formation trail captures:");
+    expect(geometryTrace).toContain("Trail-safe formation:");
     expect(geometryTrace).toContain("one copy peels spatially");
     expect(geometryTrace).toContain("Spatial peel:");
     expect(viewerModeDissolve).toContain(
