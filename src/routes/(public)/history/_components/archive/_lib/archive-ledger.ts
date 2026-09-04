@@ -51,6 +51,16 @@ export interface ArchiveCitation {
 	basis: EvidenceBasis;
 }
 
+export interface ArchiveDocument {
+	id: string;
+	title: string;
+	shortTitle: string;
+	pdfHref: string;
+	pageImagePrefix: string;
+	pageCount: number;
+	note: string;
+}
+
 export interface ArchiveEntry {
 	id: string;
 	lane: ArchiveLaneId;
@@ -66,6 +76,7 @@ export interface ArchiveEntry {
 	evidenceShortLabel: string;
 	evidenceNote?: string;
 	citations: ArchiveCitation[];
+	documents?: ArchiveDocument[];
 	catalogEntry?: CatalogEntry;
 }
 
@@ -419,6 +430,88 @@ const researchEntries: ArchiveEntry[] = [
 		],
 	},
 	{
+		id: "quarter-space-tech",
+		lane: "languages",
+		dateLabel: "PDF archive · 2024",
+		firstDocumentedYear: 2024,
+		title: "Quarter Space Tech",
+		shortTitle: "QST",
+		people: "Mentive, based on Alex Kurowski's grid",
+		summary:
+			"Mentive's three visual reference documents organize 228 patterns across Quarter “Time” Breaks, Quarter “Time” Advanced, and Quarter Space Beyond. Mentive identifies the documents as his work, based on Alex Kurowski's grid.",
+		evidenceBasis: "creators-account",
+		evidenceLabel: "Creator attribution and preserved documents",
+		evidenceShortLabel: "Creator source",
+		evidenceNote:
+			"The PDFs were exported from quarterspace.tech on March 15, 2024. That dates these copies, not the system's origin. Mentive identifies himself as the document author and Alex Kurowski's grid as the foundation.",
+		citations: [
+			{
+				label: 'Quarter “Time” Breaks, complete PDF',
+				href: "/history/sources/quarter-space-tech/quarter-time-breaks.pdf",
+				supports:
+					"The seven-page diagram set and its 56 Quarter “Time” Break patterns.",
+				basis: "directly-observed",
+			},
+			{
+				label: 'Quarter “Time” Advanced, complete PDF',
+				href: "/history/sources/quarter-space-tech/quarter-time-advanced.pdf",
+				supports:
+					"The sixteen-page diagram set and its 64 advanced patterns.",
+				basis: "directly-observed",
+			},
+			{
+				label: "Quarter Space Beyond, complete PDF",
+				href: "/history/sources/quarter-space-tech/quarter-space-beyond.pdf",
+				supports:
+					"The twenty-seven-page diagram set and its 108 beyond patterns.",
+				basis: "directly-observed",
+			},
+			{
+				label: "SpiroAnim Quarter Space Tech document archive",
+				href:
+					"https://github.com/rbgirard/spiroanim/tree/main/public/docs/qst",
+				supports:
+					"Mentive's public software archive containing all three PDF exports.",
+				basis: "directly-observed",
+			},
+		],
+		documents: [
+			{
+				id: "breaks",
+				title: 'Quarter “Time” Breaks',
+				shortTitle: "Breaks",
+				pdfHref:
+					"/history/sources/quarter-space-tech/quarter-time-breaks.pdf",
+				pageImagePrefix:
+					"/images/history/quarter-space-tech/breaks",
+				pageCount: 7,
+				note: "56 patterns across seven parts, preserved as seven diagram pages.",
+			},
+			{
+				id: "advanced",
+				title: 'Quarter “Time” Advanced',
+				shortTitle: "Advanced",
+				pdfHref:
+					"/history/sources/quarter-space-tech/quarter-time-advanced.pdf",
+				pageImagePrefix:
+					"/images/history/quarter-space-tech/advanced",
+				pageCount: 16,
+				note: "64 advanced patterns, preserved as sixteen diagram pages.",
+			},
+			{
+				id: "beyond",
+				title: "Quarter Space Beyond",
+				shortTitle: "Beyond",
+				pdfHref:
+					"/history/sources/quarter-space-tech/quarter-space-beyond.pdf",
+				pageImagePrefix:
+					"/images/history/quarter-space-tech/beyond",
+				pageCount: 27,
+				note: "108 beyond patterns, preserved as twenty-seven diagram pages.",
+			},
+		],
+	},
+	{
 		id: "playpoi",
 		lane: "teaching",
 		dateLabel: "2004",
@@ -679,6 +772,23 @@ export function archiveEntry(entryId: string): ArchiveEntry {
 	const match = ARCHIVE_ENTRIES.find((entry) => entry.id === entryId);
 	if (!match) throw new Error(`Unknown archive entry: ${entryId}`);
 	return match;
+}
+
+export function archiveDocumentPageImage(
+	document: ArchiveDocument,
+	pageNumber: number
+): string {
+	if (
+		!Number.isInteger(pageNumber) ||
+		pageNumber < 1 ||
+		pageNumber > document.pageCount
+	) {
+		throw new Error(
+			`Page ${pageNumber} is outside ${document.title}'s ${document.pageCount}-page range`
+		);
+	}
+
+	return `${document.pageImagePrefix}-${String(pageNumber).padStart(2, "0")}.webp`;
 }
 
 export function archiveClusterForEntry(

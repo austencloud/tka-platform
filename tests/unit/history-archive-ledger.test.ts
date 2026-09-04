@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   ARCHIVE_CLUSTERS,
   ARCHIVE_END_YEAR,
@@ -9,12 +13,22 @@ import {
   EVIDENCE_BASIS_LABELS,
   activityLabel,
   archiveClusterForEntry,
+  archiveDocumentPageImage,
   archiveEntry,
   entriesForLane,
   entrySpanEndYear,
   historicalYearPosition,
   placeArchiveEntries,
 } from "../../src/routes/(public)/history/_components/archive/_lib/archive-ledger";
+
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../.."
+);
+
+function staticFile(publicPath: string): string {
+  return path.join(repoRoot, "static", publicPath.replace(/^\//, ""));
+}
 
 describe("four-lane history archive ledger", () => {
   it("requires every published entry to carry evidence with a claim-level basis", () => {
@@ -44,6 +58,68 @@ describe("four-lane history archive ledger", () => {
         expect(validBases, `${entry.id} citation basis`).toContain(
           citation.basis
         );
+      }
+    }
+  });
+
+  it("preserves Mentive's complete Quarter Space Tech documents and credits Alex Kurowski's grid", () => {
+    const qst = archiveEntry("quarter-space-tech");
+    const documents = qst.documents ?? [];
+    const expectedDocuments = [
+      {
+        id: "breaks",
+        pageCount: 7,
+        sha256:
+          "4a9ef6c8b77cfde6210427e78e2d2b521574a30c0b079bfa7f5890c39cd42547",
+      },
+      {
+        id: "advanced",
+        pageCount: 16,
+        sha256:
+          "d90369e4980a4e98be827f50092a2fef4f362c2b2489830151f53eeafe6aa429",
+      },
+      {
+        id: "beyond",
+        pageCount: 27,
+        sha256:
+          "80169e9ea7e24c9b7abe9909b89f190045f1b85888a8cd7da9b1dd0e225ef068",
+      },
+    ];
+
+    expect(qst.people).toBe("Mentive, based on Alex Kurowski's grid");
+    expect(qst.summary).toContain("228 patterns");
+    expect(qst.evidenceNote).toContain(
+      "That dates these copies, not the system's origin"
+    );
+    expect(documents.map(({ id, pageCount }) => ({ id, pageCount }))).toEqual(
+      expectedDocuments.map(({ id, pageCount }) => ({ id, pageCount }))
+    );
+
+    for (const expected of expectedDocuments) {
+      const document = documents.find(
+        (candidate) => candidate.id === expected.id
+      );
+      expect(document, expected.id).toBeDefined();
+      if (!document) continue;
+
+      const pdf = readFileSync(staticFile(document.pdfHref));
+      expect(
+        createHash("sha256").update(pdf).digest("hex"),
+        `${expected.id} source PDF`
+      ).toBe(expected.sha256);
+
+      for (
+        let pageNumber = 1;
+        pageNumber <= document.pageCount;
+        pageNumber += 1
+      ) {
+        const pageImage = readFileSync(
+          staticFile(archiveDocumentPageImage(document, pageNumber))
+        );
+        expect(
+          pageImage.subarray(0, 4).toString("ascii"),
+          `${expected.id} page ${pageNumber}`
+        ).toBe("RIFF");
       }
     }
   });
