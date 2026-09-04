@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   normalizeLegacyMotion,
   normalizeLegacyMotionRecord,
+  Plane,
 } from "@tka/tka-types";
 import { Letter } from "../../../../foundation/domain/models/letter";
 import {
@@ -57,27 +58,33 @@ const defaultPropPlacementData = {
   svgCenter: null,
 };
 
-const MotionDataSchema = z.preprocess(normalizeLegacyMotion, z.object({
-  motionType: z.nativeEnum(MotionType).default(MotionType.STATIC),
-  rotationDirection: z
-    .nativeEnum(RotationDirection)
-    .default(RotationDirection.NO_ROTATION),
-  startLocation: z.nativeEnum(GridLocation).default(GridLocation.NORTH),
-  endLocation: z.nativeEnum(GridLocation).default(GridLocation.NORTH),
-  turns: z.union([z.number(), z.literal("fl")]).default(0.0),
-  startOrientation: z.nativeEnum(Orientation).default(Orientation.IN),
-  endOrientation: z.nativeEnum(Orientation).default(Orientation.IN),
-  isVisible: z.boolean().default(true),
-  propType: z.nativeEnum(PropType).default(PropType.STAFF),
-  arrowLocation: z.nativeEnum(GridLocation).default(GridLocation.NORTH),
-  hand: z.nativeEnum(HandSide).default(HandSide.LEFT),
-  arrowPlacementData: ArrowPlacementDataSchema.default(
-    defaultArrowPlacementData
-  ),
-  propPlacementData: PropPlacementDataSchema.default(defaultPropPlacementData),
-  prefloatMotionType: z.nativeEnum(MotionType).optional(),
-  prefloatRotationDirection: z.nativeEnum(RotationDirection).optional(),
-}));
+const MotionDataSchema = z.preprocess(
+  normalizeLegacyMotion,
+  z.object({
+    motionType: z.nativeEnum(MotionType).default(MotionType.STATIC),
+    rotationDirection: z
+      .nativeEnum(RotationDirection)
+      .default(RotationDirection.NO_ROTATION),
+    startLocation: z.nativeEnum(GridLocation).default(GridLocation.NORTH),
+    endLocation: z.nativeEnum(GridLocation).default(GridLocation.NORTH),
+    turns: z.union([z.number(), z.literal("fl")]).default(0.0),
+    startOrientation: z.nativeEnum(Orientation).default(Orientation.IN),
+    endOrientation: z.nativeEnum(Orientation).default(Orientation.IN),
+    isVisible: z.boolean().default(true),
+    propType: z.nativeEnum(PropType).default(PropType.STAFF),
+    arrowLocation: z.nativeEnum(GridLocation).default(GridLocation.NORTH),
+    hand: z.nativeEnum(HandSide).default(HandSide.LEFT),
+    arrowPlacementData: ArrowPlacementDataSchema.default(
+      defaultArrowPlacementData
+    ),
+    propPlacementData: PropPlacementDataSchema.default(
+      defaultPropPlacementData
+    ),
+    prefloatMotionType: z.nativeEnum(MotionType).optional(),
+    prefloatRotationDirection: z.nativeEnum(RotationDirection).optional(),
+    plane: z.nativeEnum(Plane).optional(),
+  })
+);
 
 const PictographDataObjectSchema = z.object({
   id: z
@@ -96,21 +103,18 @@ const PictographDataObjectSchema = z.object({
     .default({} as Record<HandSide, z.infer<typeof MotionDataSchema>>),
 });
 
-const PictographDataSchema = z.preprocess(
-  (value) => {
-    if (typeof value !== "object" || value === null || Array.isArray(value)) {
-      return value;
-    }
-    const record = value as Record<string, unknown>;
-    return {
-      ...record,
-      ...(record.motions !== undefined && {
-        motions: normalizeLegacyMotionRecord(record.motions),
-      }),
-    };
-  },
-  PictographDataObjectSchema
-);
+const PictographDataSchema = z.preprocess((value) => {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return value;
+  }
+  const record = value as Record<string, unknown>;
+  return {
+    ...record,
+    ...(record.motions !== undefined && {
+      motions: normalizeLegacyMotionRecord(record.motions),
+    }),
+  };
+}, PictographDataObjectSchema);
 
 export {
   ArrowPlacementDataSchema,

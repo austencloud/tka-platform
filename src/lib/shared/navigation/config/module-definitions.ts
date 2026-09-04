@@ -122,6 +122,13 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Construct and generate sequences",
     isMain: true,
     sections: CREATE_TABS,
+    home: {
+      label: "Create",
+      optionLabel: "All methods",
+      ariaLabel: "All creation methods",
+      description: "Choose how you want to build your next sequence.",
+      icon: '<i class="fas fa-border-all" aria-hidden="true"></i>',
+    },
   },
   {
     id: "browse",

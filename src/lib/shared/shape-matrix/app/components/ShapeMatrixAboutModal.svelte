@@ -2,6 +2,14 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  import {
+    KINETIC_SHAPE_ENGINE_NAME,
+    ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS,
+    ORIGINAL_SHAPE_MATRIX_URL,
+    ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
+    SPIN_SCIENCE_URL,
+    SPIN_SCIENCE_WORK_URL,
+  } from "../shape-engine-identity";
 
   const state = getShapeMatrixAppContext();
 </script>
@@ -9,8 +17,8 @@
 {#snippet header()}
   <ModalHeader
     id="shape-matrix-about-title"
-    title="About Shape Matrix Explorer"
-    subtitle="Lorq’s foundation and what this app adds"
+    title={`About ${KINETIC_SHAPE_ENGINE_NAME}`}
+    subtitle="Lorq’s VTG foundation and what this engine adds"
     icon="fa-table-cells-large"
     iconColor="#d9901a"
     onClose={state.closeAbout}
@@ -26,20 +34,29 @@
 >
   <div class="about-copy">
     <p>
-      Lorq Nichols created the Shape Matrix and publishes as
-      <a
-        href="http://spinscience.xyz/"
-        target="_blank"
-        rel="noopener noreferrer">Spin Science</a
-      >. His framework pairs one hand's driving style with the other hand's to
-      map a field of shapes.
+      <strong>The foundation.</strong> Lorq Nichols created the original 144
+      Shape Matrix and publishes as
+      <a href={SPIN_SCIENCE_URL} target="_blank" rel="noopener noreferrer"
+        >Spin Science</a
+      >. The VTG ratios at its core were {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}, as
+      labeled in the original. Each ratio contributes four even-petaled driving
+      styles, giving twelve choices per hand. Pairing the left-hand columns with
+      the right-hand rows produced 144 basic and hybrid combinations. This
+      engine writes prop rotations before hand cycles, so those same families
+      appear here as {ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS}.
     </p>
     <p>
-      Shape Matrix Explorer is an independently built app based on that
-      foundation. It does not reproduce Nichols' original diagram or present
-      itself as an official Spin Science release. TKA levels, quarter-turn and
-      mixed-axis bands, prop selection, hand/prop relationship derivation,
-      animation, and pictograph readouts are additions made here.
+      <strong>What this engine adds.</strong>
+      {KINETIC_SHAPE_ENGINE_NAME} keeps that pairing model as its starting point.
+      The Shape Matrix view extends it through TKA Levels 1–4 with independently selected
+      turn bands. The Theory Matrix builds exact flower paths from whole-number spin
+      ratios. Prop selection, element relationships, live animation, and pictograph
+      readouts are additions made here.
+    </p>
+    <p>
+      <strong>Independent work.</strong> This app was built independently by The Kinetic
+      Alphabet. It does not reproduce Nichols' original diagram and is not an official
+      Spin Science release.
     </p>
     <p>
       <strong>Element relationships.</strong> Choose a hand timing and direction.
@@ -47,28 +64,23 @@
       exact prop phases, both choices appear so you can pick the result you want.
     </p>
     <p>
-      <strong>Theory.</strong> The Theory view opens the rational field past what
-      either notation names. Kinetic Alphabet levels name turn values down to a
-      quarter turn, which inside this field covers Float, 1:2 and isolation and
-      nothing finer, so a ratio like 1:3 or 4:9 has no turn, no letter and no
-      level. VTG classifies timing and direction rather than the whole field.
-      Those shapes are exact and worth exploring; they stand outside both
-      notations rather than at the top of either.
+      <strong>The Theory Matrix.</strong> Its two axes contain exact whole-number
+      spin ratios. The widest current band spans values from 0 through 15, except
+      0:0, and every cell resolves to a closed flower path. TKA Levels 1–4 name zero,
+      whole, half, Float, and quarter-turn values. Ratios such as 1:3 or 4:9 have
+      no TKA turn, letter, or level. VTG can classify timing and direction where they
+      apply, but it does not name the complete ratio pair.
     </p>
     <div class="source-links">
       <a
-        href="http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/"
+        href={ORIGINAL_SHAPE_MATRIX_URL}
         target="_blank"
         rel="noopener noreferrer"
       >
-        View the original 144 Shape Matrix
+        View Lorq Nichols’ 144 Shape Matrix
         <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
       </a>
-      <a
-        href="http://spinscience.xyz/work/"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a href={SPIN_SCIENCE_WORK_URL} target="_blank" rel="noopener noreferrer">
         Explore Spin Science
         <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
       </a>

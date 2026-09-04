@@ -21,6 +21,7 @@ import {
   getEditHistoryShortcutActionLabel,
   type EditHistoryAction,
 } from "../domain/edit-history-shortcut-target";
+import { openShortcutSettings } from "../open-shortcut-settings";
 
 function getCommandIcon(icon: string | undefined): string {
   return icon?.match(/\bfa-[a-z0-9-]+\b/i)?.[0] ?? "fa-circle";
@@ -120,8 +121,8 @@ export function registerCommandPaletteCommands(
     keywords: ["help", "shortcuts", "keyboard", "hotkeys"],
     available: true,
     action: () => {
-      state.openHelp();
       state.closeCommandPalette();
+      void openShortcutSettings("command_palette");
     },
   });
 }

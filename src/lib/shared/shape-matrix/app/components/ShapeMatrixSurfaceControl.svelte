@@ -31,7 +31,7 @@
     density="tight"
     color="accent"
     semantics="radiogroup"
-    ariaLabel="Shape Matrix surface"
+    ariaLabel="Shape Engine surface"
   />
 </div>
 

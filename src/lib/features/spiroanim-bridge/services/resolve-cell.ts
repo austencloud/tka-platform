@@ -313,7 +313,11 @@ export async function resolveCell(
         ? {}
         : { spiroanimOrientation: effectiveOrientation(parsed) }),
       attribution:
-        "Concept catalogues and generated geometry by Ryan Girard (spiroanim)",
+        parsed.concept === "8stp"
+          ? "8-Step Concepts and handpaths by Gage DeMello; transcribed from Mentive's SpiroAnim (@rbgirard)"
+          : parsed.concept === "vtg"
+            ? "Vulcan Tech Gospel by Noel Yee; transcribed from Mentive's SpiroAnim (@rbgirard)"
+            : "Quarter Spacing catalog transcribed from Mentive's SpiroAnim (@rbgirard)",
     },
   });
 

@@ -1082,6 +1082,108 @@ traces whose moving layers never separate by at least 0.35 alpha. The seven-laye
 unit sample measures more than 0.45 spread at the midpoint, remains monotonic
 from center to edge, and reverses by retracing the same master progress.
 
+#### Pixel correction · 2026-09-04
+
+The alpha-only follow-up above did not prove that the canvas painted a
+choreographed entrance. The production review fixture has one additional
+performer pair, so its measured layer-to-layer spread is necessarily zero. More
+importantly, the renderer did not begin generating that pair's prop sprites
+until the visible additional-layer array became non-empty. A reveal clock could
+therefore advance while there was nothing drawable, then display both completed
+sprites together. The state trace passed a curve that the pixels never had the
+resources to paint.
+
+The animation engine now accepts a preparation-only additional-layer list. It
+loads and reports those sprites while the visible list remains empty, and the
+viewer waits for both prepared geometry and loaded sprites before moving the
+reversible reveal away from zero. The instrument records requested and loaded
+texture counts and fails any frame whose reveal precedes its drawable sprites.
+
+Opacity is no longer asked to impersonate choreography. Each additional pair
+starts transparent at the live red/blue pair, then peels through canvas space
+into its authored Tunnel position while gaining opacity. The ordinary pair and
+the copy therefore have a visible relationship even in the one-copy fixture.
+Canvas-space interpolation avoids a direction flip when moving props straddle
+the angular 180-degree seam. The same per-copy progress folds the pair back into
+the live props on a rapid reversal. The phrase uses the canonical emphasis plus
+normal clock (480 ms), with no feature-local duration or easing.
+
+Pixel capture at 820 x 1180, with playback held, records the reveal at blends
+`0.000`, `0.087`, `0.561`, `0.920`, `0.997`, and `1.000`: the purple/green pair
+is tucked under the red/blue pair in the first frame, visibly separates in the
+intermediate frames, and reaches the opposite formation edge at rest. The DOM
+instrument records the same trip as `0.000 -> 2.000` grid-radius units over 30
+painted frames in 500 ms. A 1440 x 900 rapid reversal reports:
+
+| Measure                       | Result                             |
+| ----------------------------- | ---------------------------------- |
+| Reveal before textures        | 0 frames                           |
+| Spatial peel during reversals | 20 frames                          |
+| Largest layer alpha step      | 0.11                               |
+| Largest grid alpha step       | 0.19                               |
+| Blank frames                  | 0                                  |
+| Mode path                     | 2D -> Tunnel -> 2D -> Tunnel -> 2D |
+
+The settled Tunnel was visually checked with native emulation at 375 x 667,
+960 x 412, 820 x 1180, 1440 x 900, 1920 x 1080, 2560 x 1440, and 3840 x 2160.
+Every viewport reports zero horizontal overflow; the compact controls remain
+present at 820 x 1180. The sequence-viewer and focused animation-engine checks
+pass 30 files / 254 tests, and `svelte-check` reports 0 errors and 0 warnings.
+
+#### Ensemble-arrival correction · 2026-09-04
+
+Austen's visual review rejected the result above: the additional props still
+arrived as a clump near the end instead of becoming legible throughout the
+phrase. That judgment was correct. The previous trace proved that opacity state
+changed, but it did not prove what the canvas painted. Its supposed pixel probe
+queried `canvas[data-animation-layer="mandala"]`; the production Animator canvas
+had no such marker, so the replay could fail its ready-canvas wait without
+producing pixel evidence. The statement above that this fixture had one
+additional pair is also superseded. The current review sequence prepares seven
+additional layers.
+
+The timing was mathematically backloaded. `ViewerMotionSurface` eased the master
+clock with `cubicInOut`; `resolveTunnelLayerProgress` then eased each copy a
+second time with smoothstep and distributed their starts across 62% of the same
+clock. The grid completed its own departure inside the opening 38%. At the
+phrase midpoint only four of seven layers reached 10% opacity, mean layer alpha
+was 21%, and two layers had not started. The grid had already gone. The state
+was continuous, but the composition withheld most of its information until the
+last beat.
+
+An 820 x 1180 source-buffer trace confirmed the perceptual failure. The primary
+canvas still contained zero Tunnel-spectrum sample pixels at master progress
+0.196. Its first substantial colored signal arrived around progress 0.563, then
+rose to roughly 78% of the sampled peak by progress 0.899. This is the late pop
+Austen described.
+
+The corrected phrase has one ease and a small depth offset:
+
+1. The shared 480 ms `Tween` uses the canonical `cubicOut` ease. Layer progress
+   is linear within that already-eased clock, so there is no second easing
+   shoulder.
+2. Seven starts span 18% rather than 62%. The farthest copy crosses 10% opacity
+   by master progress 0.262; at one quarter of elapsed time all seven copies are
+   participating with at least 49% opacity and 53% mean opacity.
+3. The ordinary 2D grid is the exact complement of the same eased clock. It
+   remains present while the ensemble becomes legible, then yields as the
+   formation takes ownership.
+4. The Canvas2D owner marks its primary canvas as
+   `data-animation-layer="props"`. The review harness samples that canvas's own
+   readable buffer every 48 ms and counts green, yellow, cyan, and purple pixels
+   that the red/blue 2D pair cannot contribute. Copying into a probe canvas is
+   deliberately avoided because Chromium returned a transparent proxy for this
+   live renderer. The grade now fails visibly as `Painted spectrum arrival:
+unavailable` if the pixel boundary cannot be read.
+
+The new Gate 3 acceptance contract requires all layers to be perceptible by 35%
+master progress, at least 35% mean layer opacity near halfway, at least 15% of
+the final painted spectrum by quarter progress, at least 50% by halfway, and at
+least four independently sampled growth frames. Timing spread must remain
+between 0.08 and 0.28 so the copies retain depth without becoming seven serial
+disclosures. Rapid reversal still retraces the same per-layer progress and uses
+one opacity owner.
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of

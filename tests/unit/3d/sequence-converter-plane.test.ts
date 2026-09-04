@@ -21,7 +21,7 @@ describe("SequenceConverter plane passthrough", () => {
     expect(config.plane).toBe(Plane.WALL);
   });
 
-  it("modeConfig overrides motion.plane", () => {
+  it("authored motion.plane overrides the viewer fallback", () => {
     const motion = createMotionData({ plane: Plane.FLOOR });
     const modeConfig = {
       facingAngle: 0,
@@ -46,7 +46,7 @@ describe("SequenceConverter plane passthrough", () => {
     } as unknown as StepData;
 
     const result = stepDataToConfigs(beat, Plane.WALL, modeConfig);
-    expect(result.left?.plane).toBe(Plane.WHEEL);
+    expect(result.left?.plane).toBe(Plane.FLOOR);
   });
 
   it("uses motion.plane per-hand when modeConfig is absent", () => {

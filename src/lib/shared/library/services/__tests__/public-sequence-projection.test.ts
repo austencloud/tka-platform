@@ -278,7 +278,7 @@ describe("buildPublicSequenceProjection — field coverage", () => {
     expect(projection.viewCount).toBe(11);
     expect(projection.starCount).toBe(3);
     expect(projection.contentHash).toMatch(/^[0-9a-f]{64}$/);
-    expect(projection.contentHashVersion).toBe(2);
+    expect(projection.contentHashVersion).toBe(3);
     expect(projection.creatorIntent).toEqual(CREATOR_INTENT);
     // Not derivable from the compositional fields; dropping it empties the
     // start cell (the bug the 2026-06 backfill repaired).

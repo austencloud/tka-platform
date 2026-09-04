@@ -58,7 +58,7 @@
   // TKAWordGlyph receives a pixel height, so only the canonical 1680/2600
   // big-screen seams can increase the rendered glyph size.
   const glyphScale = $derived(
-    shellWidth >= 2600 ? 2 : shellWidth >= 1680 ? 1.15 : 1
+    shellWidth >= 2600 ? 3.25 : shellWidth >= 1680 ? 1.15 : 1
   );
 
   const coreSequences = $derived(
@@ -414,7 +414,7 @@
 
   .lesson-shell {
     display: grid;
-    place-items: center;
+    place-items: start center;
     width: min(100%, 130rem);
     min-height: 100%;
     margin-inline: auto;
@@ -426,17 +426,21 @@
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
     width: 100%;
-    min-height: min(58rem, calc(100dvh - 8rem));
+    height: min(58rem, calc(100dvh - 10rem));
+    min-height: 0;
     overflow: hidden;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-lg, 0.75rem);
-    background: var(--theme-panel-bg);
+    background: color-mix(in srgb, var(--theme-panel-bg) 86%, transparent);
+    backdrop-filter: blur(1.5rem) saturate(1.08);
     box-shadow: 0 1.5rem 4rem color-mix(in srgb, black 22%, transparent);
   }
 
   .lesson-content {
+    display: grid;
     min-width: 0;
     min-height: 0;
+    overflow: auto;
   }
 
   .chapter-label {
@@ -607,8 +611,13 @@
   }
 
   .word-stage {
+    display: grid;
     min-width: 0;
     min-height: 0;
+  }
+
+  .word-stage :global(.learning-word-stage) {
+    height: 100%;
   }
 
   .recap-step {
@@ -744,7 +753,7 @@
     }
 
     .lesson-studio {
-      min-height: calc(100dvh - 5.25rem);
+      height: calc(100dvh - 8.75rem);
     }
 
     .intro-step {
@@ -835,7 +844,7 @@
     }
 
     .lesson-studio {
-      min-height: min(70rem, calc(100dvh - 8rem));
+      height: min(70rem, calc(100dvh - 10rem));
     }
   }
 
@@ -845,12 +854,24 @@
     }
 
     .lesson-studio {
-      min-height: min(116rem, calc(100dvh - 8rem));
+      height: min(96rem, calc(100dvh - 10rem));
     }
 
     .recap-families {
       grid-template-columns: minmax(0, 1fr);
       grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+
+    .chapter-label {
+      font-size: 1.1rem;
+    }
+
+    h1 {
+      font-size: 4rem;
+    }
+
+    .guide-prose {
+      font-size: 1.4rem;
     }
 
     .recap-family {
@@ -866,13 +887,24 @@
       border-bottom: 0;
     }
 
+    .family-identity,
+    .sequence-position {
+      font-size: 1.15rem;
+    }
+
+    .family-heading > span:last-child,
+    .recap-word {
+      font-size: 1rem;
+    }
+
     .family-identity img {
       width: 1.6rem;
       height: 1.6rem;
     }
 
     .word-header {
-      min-height: 4.25rem;
+      min-height: 5rem;
+      padding-inline: 1.4rem;
     }
 
     .recap-word {
@@ -887,7 +919,7 @@
     }
 
     .lesson-studio {
-      min-height: calc(100dvh - 4.4rem);
+      height: calc(100dvh - 8rem);
     }
 
     .intro-copy,

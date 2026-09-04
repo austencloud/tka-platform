@@ -2,8 +2,8 @@
 
 ## Outcome
 
-The Shape Matrix Explorer becomes a self-contained instrument that can fill a route or
-an application panel. A visitor can
+Kinetic Shape Engine becomes a self-contained instrument that can fill a route
+or an application panel. A visitor can
 choose a matrix cell, inspect its exact realizations, and return to the matrix
 without document scrolling. The page identifies Lorq Nichols as the creator of
 the Shape Matrix without claiming ownership, permission, collaboration, or
@@ -41,11 +41,23 @@ The original diagram and long editorial preface leave the primary interaction
 path. Concise context and source links live in an About modal using the shared
 modal owner.
 
-The product identity is `Shape Matrix Explorer`, with the subtitle `Built on
-Lorq Nichols’ Shape Matrix`. The About copy distinguishes Lorq's original
-framework from this app's independent TKA levels, quarter turns, mixed axes,
-prop rendering, relationships, and animation. The Original and About links stay
-present without implying permission, collaboration, or endorsement.
+As of 2026-09-04, the formal product identity is `Kinetic Shape Engine`, with
+`Shape Engine` as its compact name. `Shape Matrix Explorer` remains metadata's
+legacy alternate name so old references stay intelligible; it is no longer the
+visible product identity. The stable route remains `/notation/shape-matrix`.
+
+The visible source line identifies the original matrix's VTG ratios: `1:1`,
+`1:3`, and `1:5`. The About copy explains that Lorq used four even-petaled
+driving styles from each ratio family, giving twelve choices for each hand and
+144 left/right pairings. It also resolves the notation convention: Lorq's
+labels appear as `1:1`, `3:1`, and `5:1` in this engine because its controls put
+prop rotations before hand cycles.
+
+The About copy separates three things: Nichols' original matrix, the level and
+ratio matrices this engine generates, and the independent software built by
+The Kinetic Alphabet. `Shape Matrix` and `Theory Matrix` remain the names of
+matrix surfaces inside the larger engine. Source and About links stay present
+without implying permission, collaboration, or endorsement.
 
 ## Selection and sharing
 

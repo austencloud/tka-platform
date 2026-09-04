@@ -4,6 +4,14 @@ All URLs consulted during Feb 2026 research session. Deduplicated, organized by 
 
 ---
 
+## Later Provenance Ledgers
+
+- [Timing and Direction: Historical Provenance and Source Archive](./timing-direction-history.md):
+  September 4, 2026 audit of all six timing/direction modes, quarter-time prior
+  art, VTG/FAI codification, TKA's public record, and the VTG4/SpiroAnim timeline.
+
+---
+
 ## VTG (Vulcan Tech Gospel)
 
 1. https://noelyee.com/instruction/vulcan-tech-gospel/ — VTG main page, links to VTG V.1 PDF

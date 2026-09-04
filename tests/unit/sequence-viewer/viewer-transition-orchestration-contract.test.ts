@@ -53,6 +53,9 @@ const tunnelController = read(
 const tunnelLayerReveal = read(
   "src/lib/shared/sequence-viewer/tunnel/tunnel-layer-reveal.ts"
 );
+const canvasApplicationManager = read(
+  "src/lib/shared/animation-engine/services/canvas2d/canvas-2d-application-manager.ts"
+);
 const sceneLoadingCurtain = read(
   "src/lib/shared/3d/scene-features/components/SceneLoadingCurtain.svelte"
 );
@@ -345,27 +348,45 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(motionSurface).toContain("data-tunnel-blend");
     expect(motionSurface).toContain("additionalLayers={tunnelLayers}");
     expect(motionSurface.match(/<AnimatorCanvas/g)).toHaveLength(1);
-    expect(motionSurface).toContain(
-      "resolveTunnelLayerOpacity(\n        tunnelReveal.current"
-    );
+    expect(motionSurface).toContain("resolveTunnelLayerProgress(");
+    expect(motionSurface).toContain("interpolateTunnelLayerProp(");
+    expect(motionSurface).toContain("resolveTunnelLayerOpacity(");
     expect(splitPane).toContain("prepareWhileInactive: true");
     expect(tunnelController).toContain("get layersReady(): boolean");
+    expect(tunnelController).toContain("preparedAdditionalLayersAt(");
     expect(motionSurface).not.toContain("if (!tunnelController.layersReady)");
+    expect(motionSurface).toContain(
+      "preloadAdditionalLayers={preparedTunnelLayers}"
+    );
+    expect(motionSurface).toContain("data-tunnel-textures-ready");
+    expect(motionSurface).toContain(
+      "if (!tunnelController.layersReady || !tunnelTexturesReady) return"
+    );
     expect(tunnelLayerReveal).toContain(
       "export function resolveTunnelGridOpacity("
     );
-    expect(tunnelLayerReveal).toContain(
-      "export const TUNNEL_REVEAL_DURATION = DURATION.dramatic"
-    );
-    expect(splitPane).toContain(
-      "motionDuration(TUNNEL_REVEAL_DURATION)"
-    );
+    expect(tunnelLayerReveal).toContain("DURATION.emphasis + DURATION.normal");
+    expect(splitPane).toContain("motionDuration(TUNNEL_REVEAL_DURATION)");
     expect(motionSurface).toContain("gridOpacity={tunnelGridOpacity}");
     expect(motionSurface).toContain("data-tunnel-layer-opacity-max");
+    expect(motionSurface).toContain("data-tunnel-layer-opacity-mean");
+    expect(motionSurface).toContain("data-tunnel-perceptible-layer-count");
+    expect(motionSurface).toContain("data-tunnel-layer-separation");
     expect(reviewFrame).toContain("tunnelLayerOpacityMaximum:");
+    expect(canvasApplicationManager).toContain(
+      'this.canvas.dataset.animationLayer = "props"'
+    );
+    expect(reviewFrame).toContain('canvas[data-animation-layer="props"]');
+    expect(reviewFrame).toContain("tunnelSpectrumPixelCount(");
+    expect(reviewFrame).toContain("TUNNEL_PIXEL_SAMPLE_INTERVAL_MS");
+    expect(reviewFrame).toContain("tunnelSpectrumSampled:");
     expect(geometryTrace).toContain("Reveal-before-layers frames:");
     expect(geometryTrace).toContain("Largest grid alpha step:");
-    expect(geometryTrace).toContain("Layer cascade spread:");
+    expect(geometryTrace).toContain("Layer timing spread:");
+    expect(geometryTrace).toContain("Ensemble legibility:");
+    expect(geometryTrace).toContain("Painted spectrum arrival:");
+    expect(geometryTrace).toContain("one copy peels spatially");
+    expect(geometryTrace).toContain("Spatial peel:");
     expect(viewerModeDissolve).toContain(
       'GATE_THREE_STAGE_MODES.has(previousMode) && nextMode === "tunnel"'
     );
