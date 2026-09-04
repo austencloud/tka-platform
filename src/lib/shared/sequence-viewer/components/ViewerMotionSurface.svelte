@@ -27,6 +27,7 @@
   import {
     resolveTunnelGridOpacity,
     resolveTunnelLayerOpacity,
+    TUNNEL_REVEAL_DURATION,
   } from "../tunnel/tunnel-layer-reveal";
 
   let {
@@ -125,14 +126,14 @@
         duration:
           retainedMotionPane === "animation-3d"
             ? 0
-            : motionDuration(DURATION.emphasis),
+            : motionDuration(TUNNEL_REVEAL_DURATION),
         easing: cubicInOut,
       });
       return;
     }
 
     if (is3DActive && tunnelReveal.current > 0.001) {
-      const resetDelay = motionDuration(DURATION.emphasis);
+      const resetDelay = motionDuration(TUNNEL_REVEAL_DURATION);
       if (resetDelay === 0) {
         void tunnelReveal.set(0, { duration: 0 });
       } else {
@@ -147,7 +148,7 @@
     }
 
     void tunnelReveal.set(0, {
-      duration: motionDuration(DURATION.emphasis),
+      duration: motionDuration(TUNNEL_REVEAL_DURATION),
       easing: cubicInOut,
     });
   });

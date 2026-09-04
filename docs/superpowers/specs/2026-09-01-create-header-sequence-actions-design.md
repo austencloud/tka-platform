@@ -6,10 +6,10 @@
 
 ## Outcome
 
-Create has one visible entry point for sequence operations: the full-size
-workspace **Actions** button. It remains available at every width where Create
-shows workspace controls and opens the existing designed Sequence Actions
-drawer.
+Create has one visible entry point for sequence operations: the workspace
+**Actions** button. It remains available at every width where Create shows
+workspace controls, follows the existing labeled/compact responsive treatment,
+and opens the designed Sequence Actions drawer.
 
 The Create method header does not duplicate those actions. Its Shortcuts
 control opens the keyboard reference, and an intentional Alt hold temporarily
