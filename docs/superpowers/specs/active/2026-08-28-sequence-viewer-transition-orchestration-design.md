@@ -1368,7 +1368,7 @@ at desktop layouts, with no visible clipping or horizontal overflow. At
 1440 x 900 the 2D and Tunnel footers have identical geometry and accent styling;
 the Effects body retains its scroll allocation when Tunnel inserts Colors above
 it. Artifacts are retained under
-`artifacts/unified-animator-inspector/` in the task worktree.
+`artifacts/unified-animator-inspector/` in the local main workspace.
 
 The sequence-viewer regression run passes 31 files / 258 tests, including the
 new shared-section state and ownership contracts, and `svelte-check` reports
