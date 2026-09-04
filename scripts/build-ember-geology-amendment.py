@@ -1,4 +1,4 @@
-"""Build Ember's Gate 1.1 measured-plan regression package.
+"""Build Ember's player-centred Gate 1.1 R3 correction package.
 
 The terrain comes from ``build-ember-geology-study.py`` and the lava footprint
 comes from Flowy calibration outputs prepared by
@@ -24,12 +24,12 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parents[1]
 STUDY_SCRIPT = ROOT / "scripts/build-ember-geology-study.py"
 SIMULATOR_ROOT = Path(
-    "E:/tka-platform-ember-geology-sources/ember-simulator-benchmark/gate-1-1-r2"
+    "E:/tka-platform-ember-geology-sources/ember-simulator-benchmark/gate-1-1-r3"
 )
 SIMULATOR_MANIFEST = SIMULATOR_ROOT / "calibration-manifest.json"
 OUTPUT_DIR = (
     ROOT
-    / "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2"
+    / "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3"
 )
 REPORT_PATH = OUTPUT_DIR / "ember-breached-rift-bench-gate1-1-report.json"
 PLAN_PATH = OUTPUT_DIR / "01-north-up-measured-plan.png"
@@ -37,7 +37,7 @@ SECTIONS_PATH = OUTPUT_DIR / "02-measured-sections.png"
 SIGHTLINES_PATH = OUTPUT_DIR / "03-orbit-sightline-study.png"
 CALIBRATION_PATH = OUTPUT_DIR / "04-flowy-calibration-sweep.png"
 CONTACT_PATH = OUTPUT_DIR / "ember-breached-rift-bench-gate1-1-contact-sheet.png"
-SELECTED_DATA_PATH = ROOT / "static/data/ember/review/ember-breached-rift-bench-r2-flowy-thickness.f32"
+SELECTED_DATA_PATH = ROOT / "static/data/ember/review/ember-breached-rift-bench-r3-flowy-thickness.f32"
 
 INK = (235, 237, 239)
 MUTED = (155, 165, 174)
@@ -48,7 +48,7 @@ CYAN = (89, 214, 224)
 LAVA = (255, 91, 33)
 LAVA_HOT = (255, 201, 84)
 HEADWALL = (209, 177, 124)
-BREACH = (225, 93, 73)
+BREACH = (137, 116, 238)
 TALUS = (173, 132, 92)
 STAGE = (231, 242, 244)
 PASS = (109, 207, 137)
@@ -180,10 +180,10 @@ def map_panel(
 ) -> Image.Image:
     canvas = Image.new("RGBA", size, (*PAPER, 255))
     draw = ImageDraw.Draw(canvas)
-    draw.text((64, 42), "EMBER GATE 1.1 · NORTH-UP MEASURED PLAN", font=FONT_44, fill=INK)
+    draw.text((64, 42), "EMBER GATE 1.1 R3 · PERFORMER-CENTRED NORTH-UP PLAN", font=FONT_44, fill=INK)
     draw.text(
         (66, 101),
-        "Corrected terrain shelf, explicit collapse anatomy, and simulator-owned lava footprint",
+        "Performer-first composition · explicit collapse anatomy · Flowy-owned footprint",
         font=FONT_22,
         fill=MUTED,
     )
@@ -204,6 +204,7 @@ def map_panel(
     add_raster_overlay(canvas, masks["collapseBreach"], rect, BREACH, 220, edges_only=True)
     add_raster_overlay(canvas, masks["talusApron"], rect, TALUS, 210, edges_only=True)
     add_raster_overlay(canvas, masks["performanceShelf"], rect, CYAN, 210, edges_only=True)
+    add_raster_overlay(canvas, masks["terminalBasin"], rect, LAVA_HOT, 210, edges_only=True)
 
     draw = ImageDraw.Draw(canvas)
     stage = world_to_pixel(study, 0.0, 0.0, rect)
@@ -214,13 +215,13 @@ def map_panel(
     draw.line((stage[0] - 10, stage[1], stage[0] + 10, stage[1]), fill=PAPER, width=3)
     draw.line((stage[0], stage[1] - 10, stage[0], stage[1] + 10), fill=PAPER, width=3)
 
-    source = world_to_pixel(study, -72.0, 137.0, rect)
+    source = world_to_pixel(study, *study.R3_BREACHED_RIFT_SOURCE, rect)
     draw.polygon(
         ((source[0], source[1] - 13), (source[0] - 12, source[1] + 10), (source[0] + 12, source[1] + 10)),
         fill=LAVA_HOT,
         outline=PAPER,
     )
-    draw.line((rect[0], rect[3] - 5, rect[2], rect[3] - 5), fill=LAVA_HOT, width=5)
+    terminal = world_to_pixel(study, *study.R3_TERMINAL_BASIN_CENTER, rect)
 
     # Explicit orientation and route labels. Each is legible without prose.
     north_x = rect[0] + 62
@@ -238,17 +239,17 @@ def map_panel(
     draw.text((scale_x + scale_length // 2 - 28, scale_y + 14), "50 m", font=FONT_18, fill=INK)
 
     label(draw, (source[0] + 20, source[1] - 28), "1 · FISSURE SOURCE", color=LAVA_HOT)
-    headwall_pt = world_to_pixel(study, -125.0, 108.0, rect)
+    headwall_pt = world_to_pixel(study, -42.0, 47.0, rect)
     label(draw, (headwall_pt[0] - 100, headwall_pt[1] - 32), "SURVIVING HEADWALL", color=HEADWALL)
-    breach_pt = world_to_pixel(study, -58.0, 103.0, rect)
+    breach_pt = world_to_pixel(study, -22.0, 29.0, rect)
     label(draw, (breach_pt[0] + 15, breach_pt[1] - 35), "2 · MISSING COLLAPSE VOLUME", color=BREACH)
-    talus_pt = world_to_pixel(study, -60.0, 63.0, rect)
+    talus_pt = world_to_pixel(study, -27.0, 13.0, rect)
     label(draw, (talus_pt[0] - 110, talus_pt[1] + 36), "3 · TALUS RUNOUT", color=TALUS)
-    label(draw, (stage[0] - 245, stage[1] + 53), "4 · IRREGULAR OLD-FLOW SHELF", color=CYAN)
+    label(draw, (stage[0] - 245, stage[1] + 53), "4 · ATTACHED OLD-FLOW PENINSULA", color=CYAN)
     label(draw, (stage[0] - 58, stage[1] - 48), "PERFORMER", color=INK)
-    flow_mid = world_to_pixel(study, 21.0, -42.0, rect)
-    label(draw, (flow_mid[0] + 34, flow_mid[1] - 10), "5 · SIMULATED ACTIVE FOOTPRINT", color=LAVA_HOT)
-    label(draw, (rect[2] - 302, rect[3] - 52), "6 · SOUTH CONTINUATION", color=LAVA_HOT)
+    flow_mid = world_to_pixel(study, -6.0, -52.0, rect)
+    label(draw, (flow_mid[0] + 34, flow_mid[1] - 10), "5 · MAIN DRAINAGE + FAILED BREAKOUT", color=LAVA_HOT)
+    label(draw, (terminal[0] + 34, terminal[1] + 18), "6 · INBOARD TERMINAL LOW + CONTAINING LIP", color=LAVA_HOT)
     audience = world_to_pixel(study, 0.0, -21.5, rect)
     draw.polygon(
         ((audience[0], audience[1] - 12), (audience[0] - 11, audience[1] + 10), (audience[0] + 11, audience[1] + 10)),
@@ -266,7 +267,7 @@ def map_panel(
     draw.text((rect[0], legend_y), "PLAN CONTRACT", font=FONT_22, fill=CYAN)
     legend = (
         "380 × 335 m · 1 m DEM · white = protected 4.5 m action envelope · cyan ring = 25 m orbit · "
-        "orange = Flowy cells > 0.01 m · bottom edge = downstream continuation"
+        "orange = Flowy cells > 0.01 m · violet = missing collapse volume · orange outline = inboard terminal low"
     )
     draw.text((rect[0], legend_y + 38), legend, font=FONT_18, fill=MUTED)
     return canvas
@@ -275,10 +276,15 @@ def map_panel(
 def section_board(study: Any, candidate: Any, height: np.ndarray) -> tuple[Image.Image, dict[str, float]]:
     canvas = Image.new("RGB", (2400, 1400), PAPER)
     draw = ImageDraw.Draw(canvas)
-    draw.text((64, 42), "EMBER GATE 1.1 · MEASURED SECTIONS", font=FONT_44, fill=INK)
+    draw.text((64, 42), "EMBER GATE 1.1 R3 · MEASURED SECTIONS", font=FONT_44, fill=INK)
     draw.text((66, 101), "Natural scale labels; vertical exaggeration is stated where used", font=FONT_22, fill=MUTED)
 
-    distances, xs, zs = study.interpolate_path(study.R2_BREACHED_RIFT_FLOW_PATH, samples=480)
+    drainage_distances, drainage_xs, drainage_zs = study.interpolate_path(study.R3_BREACHED_RIFT_FLOW_PATH, samples=480)
+    drainage_elevations = np.asarray(
+        [study.sample_height(height, float(x), float(z)) for x, z in zip(drainage_xs, drainage_zs)]
+    )
+    profile_path = (*study.R3_BREACHED_RIFT_FLOW_PATH, (4.0, -134.0), (4.0, -145.0))
+    distances, xs, zs = study.interpolate_path(profile_path, samples=600)
     elevations = np.asarray([study.sample_height(height, float(x), float(z)) for x, z in zip(xs, zs)])
     left, top, right, bottom = 90, 210, 2310, 760
     draw.rounded_rectangle((left, top, right, bottom), radius=18, fill=PANEL, outline=GRID, width=2)
@@ -293,11 +299,31 @@ def section_board(study: Any, candidate: Any, height: np.ndarray) -> tuple[Image
 
     points = [long_point(float(d), float(e)) for d, e in zip(distances, elevations)]
     draw.polygon(points + [(plot[2], plot[3]), (plot[0], plot[3])], fill=(47, 51, 50), outline=HEADWALL)
-    for index, text in ((0, "SOURCE"), (205, "BENCH-SIDE"), (360, "SLOPE BREAK"), (479, "CONTINUATION")):
+    annotations = (
+        (study.R3_BREACHED_RIFT_SOURCE, "SOURCE"),
+        ((-20.0, 16.0), "BREACH CHUTE"),
+        ((-17.0, -3.0), "PERFORMER-SIDE"),
+        ((-7.0, -58.0), "BREAKOUT REACH"),
+        (study.R3_TERMINAL_BASIN_CENTER, "TERMINAL LOW"),
+        ((4.0, -131.0), "CONTAINING LIP"),
+    )
+    for (x0, z0), text in annotations:
+        index = int(np.argmin((xs - x0) ** 2 + (zs - z0) ** 2))
         px, py = points[index]
         draw.line((px, py - 8, px, plot[3]), fill=GRID, width=2)
         draw.text((px - 54, py - 40), text, font=FONT_16, fill=LAVA_HOT)
-    draw.text((left + 24, top + 18), "LONGITUDINAL · source to south continuation · 4× vertical exaggeration", font=FONT_22, fill=INK)
+    draw.line((plot[0], plot[3], plot[2], plot[3]), fill=INK, width=2)
+    draw.line((plot[0], plot[1], plot[0], plot[3]), fill=INK, width=2)
+    for distance_tick in range(0, int(distances[-1]) + 1, 25):
+        px, _ = long_point(float(distance_tick), min_e)
+        draw.line((px, plot[3] - 7, px, plot[3] + 7), fill=INK, width=2)
+        draw.text((px - 16, plot[3] + 12), f"{distance_tick}", font=FONT_16, fill=MUTED)
+    for elevation_tick in range(math.floor(min_e), math.ceil(max_e) + 1, 2):
+        _, py = long_point(0.0, float(elevation_tick))
+        draw.line((plot[0] - 7, py, plot[0] + 7, py), fill=INK, width=2)
+        draw.text((plot[0] - 54, py - 9), f"{elevation_tick} m", font=FONT_16, fill=MUTED)
+    draw.text((plot[2] - 130, plot[3] + 42), "distance (m)", font=FONT_16, fill=MUTED)
+    draw.text((left + 24, top + 18), "LONGITUDINAL · source through terminal low and containing lip · 4× vertical exaggeration", font=FONT_22, fill=INK)
 
     xs_cross = np.linspace(-60.0, 60.0, 400)
     cross_e = np.asarray([study.sample_height(height, float(x), 0.0) for x in xs_cross])
@@ -319,7 +345,7 @@ def section_board(study: Any, candidate: Any, height: np.ndarray) -> tuple[Image
     stage_y = min(stage_left[1], stage_right[1]) - 10
     draw.line((stage_left[0], stage_y, stage_right[0], stage_y), fill=STAGE, width=8)
     draw.text((stage_left[0] - 44, stage_y - 38), "9 m protected action width", font=FONT_18, fill=STAGE)
-    draw.text((c_left + 24, c_top + 17), "TRANSVERSE · west headwall → irregular shelf → eastern drainage", font=FONT_22, fill=INK)
+    draw.text((c_left + 24, c_top + 17), "TRANSVERSE · west headwall → attached old-flow peninsula → open-side shelves", font=FONT_22, fill=INK)
     draw.text((cplot[0], c_bottom - 38), "WEST", font=FONT_18, fill=MUTED)
     draw.text((cplot[2] - 50, c_bottom - 38), "EAST", font=FONT_18, fill=MUTED)
 
@@ -330,11 +356,15 @@ def section_board(study: Any, candidate: Any, height: np.ndarray) -> tuple[Image
                 local_samples.append(study.sample_height(height, float(x), float(z)))
     local_relief = max(local_samples) - min(local_samples)
     metrics = {
-        "pathLengthM": round(float(distances[-1]), 3),
-        "sourceElevationM": round(float(elevations[0]), 3),
-        "continuationElevationM": round(float(elevations[-1]), 3),
-        "netDescentM": round(float(elevations[0] - elevations[-1]), 3),
-        "averageGradePercent": round(float((elevations[0] - elevations[-1]) / distances[-1] * 100.0), 3),
+        "pathLengthM": round(float(drainage_distances[-1]), 3),
+        "sourceElevationM": round(float(drainage_elevations[0]), 3),
+        "terminalLowElevationM": round(float(drainage_elevations[-1]), 3),
+        "netDescentM": round(float(drainage_elevations[0] - drainage_elevations[-1]), 3),
+        "averageGradePercent": round(float((drainage_elevations[0] - drainage_elevations[-1]) / drainage_distances[-1] * 100.0), 3),
+        "containingLipElevationM": round(float(study.sample_height(height, 4.0, -131.0)), 3),
+        "basinContainmentReliefM": round(
+            float(study.sample_height(height, 4.0, -131.0) - drainage_elevations[-1]), 3
+        ),
         "actionEnvelopeLocalReliefM": round(float(local_relief), 3),
     }
     return canvas, metrics
@@ -344,7 +374,7 @@ def calibration_board(study: Any, height: np.ndarray, manifest: dict[str, Any]) 
     canvas = Image.new("RGBA", (3840, 1280), (*PAPER, 255))
     draw = ImageDraw.Draw(canvas)
     draw.text((60, 38), "FLOWY CALIBRATION SWEEP · SAME CORRECTED DEM", font=FONT_44, fill=INK)
-    draw.text((62, 96), "Orange is solver output, not an authored ribbon. Green cards meet continuation + clearance.", font=FONT_22, fill=MUTED)
+    draw.text((62, 96), "Orange is solver output. Green cards occupy the inboard basin, avoid the south edge, preserve clearance, and branch.", font=FONT_22, fill=MUTED)
     results = manifest.get("results", [])
     panel_width = 720
     for index, result in enumerate(results):
@@ -370,11 +400,12 @@ def calibration_board(study: Any, height: np.ndarray, manifest: dict[str, Any]) 
         bounds = result["boundsRuntimeXZ"]
         status = "ELIGIBLE" if result.get("eligible") else "REJECT"
         draw.text((x0 + 25, y0 + 680), status, font=FONT_26, fill=border)
-        draw.text((x0 + 25, y0 + 729), f"south reach z = {bounds['minZ']:.1f} m", font=FONT_18, fill=INK)
+        draw.text((x0 + 25, y0 + 729), f"terminal-basin cells = {result['terminalBasinActiveCellCount']}", font=FONT_18, fill=INK)
         draw.text((x0 + 25, y0 + 765), f"action clearance = {result['clearanceBeyondActionEnvelopeM']:.1f} m", font=FONT_18, fill=INK)
         draw.text((x0 + 25, y0 + 801), f"downstream median width = {result['downstreamMedianWidthM']:.1f} m", font=FONT_18, fill=INK)
-        draw.text((x0 + 25, y0 + 837), f"widening ratio = {result['downstreamWideningRatio']:.2f}×", font=FONT_18, fill=INK)
-        draw.text((x0 + 25, y0 + 873), "Targets: z ≤ −143 m · width ≥ 9 m · widening ≥ 1.25×", font=FONT_16, fill=MUTED)
+        draw.text((x0 + 25, y0 + 837), f"branched rows = {result['branchedRowCount']}", font=FONT_18, fill=INK)
+        boundary = "YES" if result["touchesSouthBoundaryGuard"] else "NO"
+        draw.text((x0 + 25, y0 + 873), f"Targets: basin ≥ 24 cells · south-edge contact {boundary} · clearance ≥ 2.5 m · branch rows ≥ 3", font=FONT_16, fill=MUTED)
     draw.text(
         (60, 1150),
         f"Selection status: {manifest.get('selectionStatus')} · selected: {manifest.get('selectedCalibration')}",
@@ -390,7 +421,7 @@ def sightline_board(study: Any, height: np.ndarray) -> tuple[Image.Image, list[d
     canvas = Image.new("RGB", (2400, 1320), PAPER)
     draw = ImageDraw.Draw(canvas)
     draw.text((64, 42), "EIGHT-POINT ORBIT SIGHTLINE STUDY", font=FONT_44, fill=INK)
-    draw.text((66, 101), "Camera eye 7.0 m · target 1.2 m · orbit radius 25 m", font=FONT_22, fill=MUTED)
+    draw.text((66, 101), "Camera eye +8.25 m · target +1.75 m · exact 25 m eye-to-target cap", font=FONT_22, fill=MUTED)
     cx, cy = 760, 720
     radius = 465
     draw.ellipse((cx - radius, cy - radius, cx + radius, cy + radius), outline=GRID, width=3)
@@ -448,10 +479,10 @@ def contact_sheet(paths: list[Path]) -> Image.Image:
 
 
 def build() -> dict[str, Any]:
-    study = load_module(STUDY_SCRIPT, "ember_geology_study_r2")
+    study = load_module(STUDY_SCRIPT, "ember_geology_study_r3")
     candidate = next(item for item in study.CANDIDATES if item.id == "a-breached-rift-bench")
-    height = study.candidate_height(candidate, revision="r2")
-    masks = study.breached_rift_r2_masks()
+    height = study.candidate_height(candidate, revision="r3")
+    masks = study.breached_rift_r3_masks()
     manifest = json.loads(SIMULATOR_MANIFEST.read_text(encoding="utf-8"))
     selected = selected_result(manifest)
     thickness = read_esri_ascii(Path(selected["output"]))
@@ -478,13 +509,17 @@ def build() -> dict[str, Any]:
     headwall_relief = float(np.percentile(height[headwall], 75) - np.percentile(height[breach], 25))
     report = {
         "schemaVersion": 1,
+        "sceneId": "ember-broken-rift",
+        "directionId": candidate.id,
+        "gateId": "measured-plan",
+        "status": "ready-for-review",
         "artifact": "Ember Breached Rift Bench Gate 1.1 measured-plan amendment",
         "generatedBy": "scripts/build-ember-geology-amendment.py",
-        "terrainOwner": "scripts/build-ember-geology-study.py#breached_rift_height_r2",
+        "terrainOwner": "scripts/build-ember-geology-study.py#breached_rift_height_r3",
         "simulatorCalibrationOwner": "scripts/prepare-ember-lava-simulator-benchmark.py",
         "museumTracker": {
-            "correctiveAuthorization": "WS9FU4nn2fCSbOn68IeB",
-            "adversarialAudit": "xSjtvI2XVvvMdn8pHqwP",
+            "correctiveAuthorization": "lIPwVa2kGFcoQsgICkWI",
+            "adversarialAudit": "torsiCoIaMMrkMklUMSq",
             "acceptedDirection": "ZgRNLK66C9Hz2wMPbOXc",
         },
         "worldContract": {
@@ -495,21 +530,21 @@ def build() -> dict[str, Any]:
             "cellSizeM": 1.0,
             "actionRadiusM": study.ACTION_RADIUS_M,
             "interactiveOrbitCapM": study.ORBIT_RADIUS_M,
-            "sourceRuntimeXZ": list(candidate.source),
-            "drainageCenterlineRuntimeXZ": [list(point) for point in study.R2_BREACHED_RIFT_FLOW_PATH],
+            "sourceRuntimeXZ": list(study.R3_BREACHED_RIFT_SOURCE),
+            "drainageCenterlineRuntimeXZ": [list(point) for point in study.R3_BREACHED_RIFT_FLOW_PATH],
         },
         "terrainMetrics": {
             "minimumElevationM": round(float(height.min()), 3),
             "maximumElevationM": round(float(height.max()), 3),
             "performerElevationM": round(study.sample_height(height, 0.0, 0.0), 3),
-            "shelfCoreBoundsRuntimeXZ": {
+            "oldFlowPeninsulaCoreBoundsRuntimeXZ": {
                 "minX": round(float(shelf_x.min()), 3),
                 "maxX": round(float(shelf_x.max()), 3),
                 "minZ": round(float(shelf_z.min()), 3),
                 "maxZ": round(float(shelf_z.max()), 3),
             },
-            "shelfCoreAspectRatio": round(float(np.ptp(shelf_x) / np.ptp(shelf_z)), 3),
-            "shelfCorePcaAspectRatio": round(shelf_pca_aspect, 3),
+            "oldFlowPeninsulaCoreAxisRatio": round(float(np.ptp(shelf_x) / np.ptp(shelf_z)), 3),
+            "oldFlowPeninsulaCorePcaAspectRatio": round(shelf_pca_aspect, 3),
             "headwallToBreachReliefM": round(headwall_relief, 3),
             **section_metrics,
         },
@@ -521,12 +556,19 @@ def build() -> dict[str, Any]:
             "calibrations": manifest["calibrations"],
             "thresholds": {
                 "activeThicknessM": manifest["activeThicknessThresholdM"],
-                "southContinuationRuntimeZ": manifest["continuationThresholdRuntimeZ"],
+                "terminalBasin": manifest["terminalBasin"],
                 "clearanceBeyondActionEnvelopeM": manifest["requiredClearanceBeyondActionEnvelopeM"],
                 "downstreamMedianWidthM": manifest["requiredDownstreamMedianWidthM"],
-                "downstreamWideningRatio": manifest["requiredDownstreamWideningRatio"],
+                "requiredBranchEvidence": manifest["requiredBranchEvidence"],
             },
             "calibrationManifest": str(SIMULATOR_MANIFEST),
+            "provenanceDigests": {
+                "flowyBinarySha256": manifest["implementation"]["binarySha256"],
+                "demSha256": manifest["dem"]["sha256"],
+                "selectedInputTomlSha256": manifest["inputTomlSha256"][manifest["selectedCalibration"]],
+                "selectedOutputAscSha256": manifest["selectedOutputSha256"],
+                "calibrationManifestSha256": sha256_path(SIMULATOR_MANIFEST),
+            },
             "selectedData": {
                 "path": rel(SELECTED_DATA_PATH),
                 "format": "little-endian float32, row-major, runtime Z ascending",
@@ -552,9 +594,12 @@ def build() -> dict[str, Any]:
         "readyForReview": bool(
             manifest.get("selectionStatus", "").startswith("selected-")
             and all(bool(item["clear"]) for item in sightline_metrics)
-            and shelf_pca_aspect >= 1.5
             and section_metrics["actionEnvelopeLocalReliefM"] <= 0.35
+            and section_metrics["basinContainmentReliefM"] >= 1.0
             and headwall_relief >= 8.0
+            and bool(selected["reachesInboardTerminalBasin"])
+            and not bool(selected["touchesSouthBoundaryGuard"])
+            and bool(selected["hasBranchEvidence"])
         ),
     }
     write_json(REPORT_PATH, report)
@@ -568,10 +613,19 @@ def verify() -> dict[str, Any]:
         "north-up-plan": PLAN_PATH.exists() and Image.open(PLAN_PATH).size == (2400, 2400),
         "measured-sections": SECTIONS_PATH.exists() and Image.open(SECTIONS_PATH).size == (2400, 1400),
         "eight-sightlines": len(report["orbitSightlines"]) == 8 and all(item["clear"] for item in report["orbitSightlines"]),
-        "non-radial-shelf": float(report["terrainMetrics"]["shelfCorePcaAspectRatio"]) >= 1.5,
+        "attached-irregular-old-flow-peninsula": (
+            float(report["terrainMetrics"]["oldFlowPeninsulaCorePcaAspectRatio"]) >= 2.0
+            and float(report["terrainMetrics"]["oldFlowPeninsulaCoreBoundsRuntimeXZ"]["minX"]) <= 0.0
+            and float(report["terrainMetrics"]["oldFlowPeninsulaCoreBoundsRuntimeXZ"]["maxX"]) >= 25.0
+        ),
         "walkable-action-envelope": float(report["terrainMetrics"]["actionEnvelopeLocalReliefM"]) <= 0.35,
+        "inboard-basin-containment": float(report["terrainMetrics"]["basinContainmentReliefM"]) >= 1.0,
         "explicit-collapse-relief": float(report["terrainMetrics"]["headwallToBreachReliefM"]) >= 8.0,
-        "simulator-continuation": bool(report["simulator"]["selectedResult"]["reachesSouthContinuation"]),
+        "simulator-terminal-basin": (
+            bool(report["simulator"]["selectedResult"]["reachesInboardTerminalBasin"])
+            and not bool(report["simulator"]["selectedResult"]["touchesSouthBoundaryGuard"])
+        ),
+        "simulator-branch-evidence": bool(report["simulator"]["selectedResult"]["hasBranchEvidence"]),
         "simulator-clearance": bool(report["simulator"]["selectedResult"]["meetsActionClearance"]),
         "selected-data-digest": (
             SELECTED_DATA_PATH.exists()

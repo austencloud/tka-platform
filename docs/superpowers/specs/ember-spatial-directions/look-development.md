@@ -1,14 +1,18 @@
 # Broken Rift Gate Look Development
 
-Status: Gate 3 approved; Columnar Furnace selected
+Status: historical Gate 3 study; superseded by the geology-first Gate 1.1 R3 restart
 
 Date: 2026-08-27
 
-Spatial authority: `scene-development.md`, Direction E
+Former spatial authority: `scene-development.md`, Direction E
 
 Reopen authority: museum tracker `rn25Qau62kXyyOJpgm7Z`
 
 Selection authority: museum tracker `QRHbwRQLhM7Zn9LyYHOd`
+
+Current authority is `geology-lava-composition-research.md` and the R3 evidence
+named by `scene-gates.json`. Nothing in this document is an active Gate 3
+approval or current geometry contract.
 
 ## Purpose
 

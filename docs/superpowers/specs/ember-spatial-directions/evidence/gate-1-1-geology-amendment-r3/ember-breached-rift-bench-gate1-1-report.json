@@ -1,0 +1,309 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "ember-broken-rift",
+  "directionId": "a-breached-rift-bench",
+  "gateId": "measured-plan",
+  "status": "ready-for-review",
+  "artifact": "Ember Breached Rift Bench Gate 1.1 measured-plan amendment",
+  "generatedBy": "scripts/build-ember-geology-amendment.py",
+  "terrainOwner": "scripts/build-ember-geology-study.py#breached_rift_height_r3",
+  "simulatorCalibrationOwner": "scripts/prepare-ember-lava-simulator-benchmark.py",
+  "museumTracker": {
+    "correctiveAuthorization": "lIPwVa2kGFcoQsgICkWI",
+    "adversarialAudit": "torsiCoIaMMrkMklUMSq",
+    "acceptedDirection": "ZgRNLK66C9Hz2wMPbOXc"
+  },
+  "worldContract": {
+    "runtimeXRangeM": [
+      -190.0,
+      190.0
+    ],
+    "runtimeZRangeM": [
+      -145.0,
+      190.0
+    ],
+    "gridColumns": 381,
+    "gridRows": 336,
+    "cellSizeM": 1.0,
+    "actionRadiusM": 4.5,
+    "interactiveOrbitCapM": 25.0,
+    "sourceRuntimeXZ": [
+      -22.0,
+      25.0
+    ],
+    "drainageCenterlineRuntimeXZ": [
+      [
+        -22.0,
+        25.0
+      ],
+      [
+        -20.0,
+        16.0
+      ],
+      [
+        -18.0,
+        7.0
+      ],
+      [
+        -17.0,
+        -3.0
+      ],
+      [
+        -18.0,
+        -14.0
+      ],
+      [
+        -15.0,
+        -27.0
+      ],
+      [
+        -10.0,
+        -42.0
+      ],
+      [
+        -7.0,
+        -58.0
+      ],
+      [
+        -4.0,
+        -75.0
+      ],
+      [
+        0.0,
+        -96.0
+      ],
+      [
+        4.0,
+        -112.0
+      ]
+    ]
+  },
+  "terrainMetrics": {
+    "minimumElevationM": -3.621,
+    "maximumElevationM": 25.867,
+    "performerElevationM": 2.278,
+    "oldFlowPeninsulaCoreBoundsRuntimeXZ": {
+      "minX": -22.0,
+      "maxX": 40.0,
+      "minZ": -12.0,
+      "maxZ": 9.0
+    },
+    "oldFlowPeninsulaCoreAxisRatio": 2.952,
+    "oldFlowPeninsulaCorePcaAspectRatio": 3.4,
+    "headwallToBreachReliefM": 21.56,
+    "pathLengthM": 140.099,
+    "sourceElevationM": 7.3,
+    "terminalLowElevationM": -3.621,
+    "netDescentM": 10.921,
+    "averageGradePercent": 7.795,
+    "containingLipElevationM": 0.036,
+    "basinContainmentReliefM": 3.657,
+    "actionEnvelopeLocalReliefM": 0.254
+  },
+  "simulator": {
+    "implementation": {
+      "repository": "https://github.com/flowy-code/flowy",
+      "commit": "4ce1036d1073d581085c74c569b1d0e95a4ae0bd",
+      "license": "GPL-3.0",
+      "binary": "/mnt/e/tka-platform-ember-geology-sources/flowy/build-mamba/flowy",
+      "binarySha256": "f6f01c2d5919f63349e3bb6841b5ea856ec964988d8cfc215db0769dc7de8b8e"
+    },
+    "selectionStatus": "selected-inboard-basin-deposition-with-breakout-evidence",
+    "selectedCalibration": "r3f-c01f-threaded-10m2",
+    "selectedResult": {
+      "calibrationId": "r3f-c01f-threaded-10m2",
+      "output": "E:\\tka-platform-ember-geology-sources\\ember-simulator-benchmark\\gate-1-1-r3\\calibrations\\r3f-c01f-threaded-10m2\\output\\ember_gate1_1_r3f_c01f_threaded_10m2_thickness_full.asc",
+      "activeCellCount": 4272,
+      "activeAreaM2": 4272.0,
+      "boundsRuntimeXZ": {
+        "minX": -35.0,
+        "maxX": 57.0,
+        "minZ": -130.0,
+        "maxZ": 55.0
+      },
+      "minimumDistanceToPerformerM": 9.618,
+      "minimumCellCenterDistanceToPerformerM": 10.198,
+      "distanceMeasurement": "Minimum distance from performer origin to the visible 1 m cell support, not merely its center sample.",
+      "clearanceBeyondActionEnvelopeM": 5.118,
+      "upstreamMedianWidthM": 6.5,
+      "upstreamWidthSamplingRuntimeZ": {
+        "minimum": -30.0,
+        "maximum": -5.0
+      },
+      "downstreamMedianWidthM": 49.0,
+      "downstreamWidthSamplingRuntimeZ": {
+        "maximum": -80.0
+      },
+      "downstreamWideningRatio": 7.538,
+      "occupiedRowGapCount": 0,
+      "branchedRowCount": 39,
+      "terminalBasinActiveCellCount": 1014,
+      "reachesInboardTerminalBasin": true,
+      "touchesSouthBoundaryGuard": false,
+      "meetsActionClearance": true,
+      "meetsDownstreamWidth": true,
+      "widensDownstream": null,
+      "hasBranchEvidence": true,
+      "eligible": true
+    },
+    "calibrations": [
+      {
+        "id": "r3f-c01f-threaded-10m2",
+        "lobes_per_flow": 520,
+        "total_volume_m3": 5200.0,
+        "n_flows": 3,
+        "lobe_area_m2": 10.0,
+        "max_slope_probability": 1.0,
+        "inertial_exponent": 0.18,
+        "lobe_exponent": 0.01,
+        "thickening_parameter": 0.18,
+        "thickness_ratio": 0.2
+      },
+      {
+        "id": "r3f-c02f-breakout-14m2",
+        "lobes_per_flow": 600,
+        "total_volume_m3": 7560.0,
+        "n_flows": 3,
+        "lobe_area_m2": 14.0,
+        "max_slope_probability": 1.0,
+        "inertial_exponent": 0.18,
+        "lobe_exponent": 0.02,
+        "thickening_parameter": 0.18,
+        "thickness_ratio": 0.2
+      },
+      {
+        "id": "r3f-c03f-branched-18m2",
+        "lobes_per_flow": 680,
+        "total_volume_m3": 11016.0,
+        "n_flows": 4,
+        "lobe_area_m2": 18.0,
+        "max_slope_probability": 1.0,
+        "inertial_exponent": 0.18,
+        "lobe_exponent": 0.035,
+        "thickening_parameter": 0.18,
+        "thickness_ratio": 0.2
+      },
+      {
+        "id": "r3f-c04f-branched-22m2",
+        "lobes_per_flow": 760,
+        "total_volume_m3": 15048.0,
+        "n_flows": 4,
+        "lobe_area_m2": 22.0,
+        "max_slope_probability": 1.0,
+        "inertial_exponent": 0.18,
+        "lobe_exponent": 0.05,
+        "thickening_parameter": 0.18,
+        "thickness_ratio": 0.2
+      },
+      {
+        "id": "r3f-c05f-lobate-28m2",
+        "lobes_per_flow": 840,
+        "total_volume_m3": 21168.0,
+        "n_flows": 5,
+        "lobe_area_m2": 28.0,
+        "max_slope_probability": 1.0,
+        "inertial_exponent": 0.18,
+        "lobe_exponent": 0.065,
+        "thickening_parameter": 0.18,
+        "thickness_ratio": 0.2
+      }
+    ],
+    "thresholds": {
+      "activeThicknessM": 0.01,
+      "terminalBasin": {
+        "centerRuntimeXZ": [
+          4.0,
+          -112.0
+        ],
+        "radiiM": [
+          22.0,
+          15.0
+        ],
+        "requiredActiveCellCount": 24,
+        "southBoundaryGuardRuntimeZ": -140.0
+      },
+      "clearanceBeyondActionEnvelopeM": 2.5,
+      "downstreamMedianWidthM": 8.0,
+      "requiredBranchEvidence": true
+    },
+    "calibrationManifest": "E:\\tka-platform-ember-geology-sources\\ember-simulator-benchmark\\gate-1-1-r3\\calibration-manifest.json",
+    "provenanceDigests": {
+      "flowyBinarySha256": "f6f01c2d5919f63349e3bb6841b5ea856ec964988d8cfc215db0769dc7de8b8e",
+      "demSha256": "6afe436f2d7aba1a9479fe9c22e237cce08d94e9b95298abef01a54dbf00481e",
+      "selectedInputTomlSha256": "af4ff19aaf89091b7ff242b7635191277d527ed2e8e2715b91e1926ec6a0eaec",
+      "selectedOutputAscSha256": "752a714d074b42d1b9e23c44bca0d174ea1222944cea36b2ba487b6d3a7654fd",
+      "calibrationManifestSha256": "e97b897869532e4c26ba57cdde25afeb53bfff2cf22bda2944d0767ba8ced973"
+    },
+    "selectedData": {
+      "path": "static/data/ember/review/ember-breached-rift-bench-r3-flowy-thickness.f32",
+      "format": "little-endian float32, row-major, runtime Z ascending",
+      "columns": 381,
+      "rows": 336,
+      "sha256": "9d8583b414b33e058017b527b7b472c3178ab3c214ecec92209a62c2929995f9"
+    }
+  },
+  "orbitSightlines": [
+    {
+      "bearingDegreesClockwiseFromAudience": 0,
+      "minimumTerrainClearanceM": 2.278,
+      "clear": true
+    },
+    {
+      "bearingDegreesClockwiseFromAudience": 45,
+      "minimumTerrainClearanceM": 2.249,
+      "clear": true
+    },
+    {
+      "bearingDegreesClockwiseFromAudience": 90,
+      "minimumTerrainClearanceM": 2.233,
+      "clear": true
+    },
+    {
+      "bearingDegreesClockwiseFromAudience": 135,
+      "minimumTerrainClearanceM": 2.235,
+      "clear": true
+    },
+    {
+      "bearingDegreesClockwiseFromAudience": 180,
+      "minimumTerrainClearanceM": 2.249,
+      "clear": true
+    },
+    {
+      "bearingDegreesClockwiseFromAudience": 225,
+      "minimumTerrainClearanceM": 1.864,
+      "clear": true
+    },
+    {
+      "bearingDegreesClockwiseFromAudience": 270,
+      "minimumTerrainClearanceM": 1.527,
+      "clear": true
+    },
+    {
+      "bearingDegreesClockwiseFromAudience": 315,
+      "minimumTerrainClearanceM": 2.299,
+      "clear": true
+    }
+  ],
+  "evidence": [
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/01-north-up-measured-plan.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/02-measured-sections.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/03-orbit-sightline-study.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/04-flowy-calibration-sweep.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/ember-breached-rift-bench-gate1-1-contact-sheet.png",
+    "static/data/ember/review/ember-breached-rift-bench-r3-flowy-thickness.f32"
+  ],
+  "evidenceDigests": {
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/01-north-up-measured-plan.png": "07dd7f6e476895f794bbc3c3ccaf81b70c3a2a3e0ba12b940947e270be6400a5",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/02-measured-sections.png": "712396155d307eb4f7519707d500f74f36291327a0bac52ab9fb09090916335c",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/03-orbit-sightline-study.png": "d7accf100bb5f008bb915d7199fa38e0e350755993e2639eb8e2a4ce71818c99",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/04-flowy-calibration-sweep.png": "a5bbce55b98cf6c3ddbfe147722ad0cfd25113df472ca2cf972ed025059e4394",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/ember-breached-rift-bench-gate1-1-contact-sheet.png": "bde4723f318eca13c54b8017e2a5762828dd3b835c362511d9f225b76faa4224",
+    "static/data/ember/review/ember-breached-rift-bench-r3-flowy-thickness.f32": "9d8583b414b33e058017b527b7b472c3178ab3c214ecec92209a62c2929995f9"
+  },
+  "limitations": [
+    "The terrain is an authored Gate 1.1 hypothesis, not a surveyed volcano.",
+    "The sweep tests route reach and clearance, not eruption-history fit.",
+    "Simulator output owns the proposed deposit footprint but is not final render geometry."
+  ],
+  "readyForReview": true
+}

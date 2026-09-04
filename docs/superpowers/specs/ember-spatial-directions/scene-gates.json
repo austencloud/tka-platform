@@ -3,9 +3,9 @@
   "sceneId": "ember-broken-rift",
   "title": "Ember Broken Rift",
   "domainProofRequired": false,
-  "currentGate": 2,
+  "currentGate": 1,
   "authority": {
-    "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/look-development.md",
+    "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
     "roomShellSource": "src/lib/shared/3d/environments/scenes/EmberScene.svelte",
     "planContract": "docs/superpowers/specs/ember-spatial-directions/scene-development.md",
     "museumTrackerItems": [
@@ -37,7 +37,9 @@
       "anf4rcwDOr4j1LuyOX3l",
       "xSjtvI2XVvvMdn8pHqwP",
       "WS9FU4nn2fCSbOn68IeB",
-      "7uoHBfOCOqMmFeKBRh7l"
+      "7uoHBfOCOqMmFeKBRh7l",
+      "torsiCoIaMMrkMklUMSq",
+      "lIPwVa2kGFcoQsgICkWI"
     ]
   },
   "sequenceFingerprints": [],
@@ -46,21 +48,21 @@
       "id": "C-001",
       "class": "literal",
       "statement": "Viewer3D caps Ember's orbit distance at 25 metres.",
-      "evidence": ["src/lib/shared/3d/camera/Viewer3DCamera.svelte"]
+      "evidence": ["src/lib/shared/3d/components/Viewer3DCamera.svelte"]
     },
     {
       "id": "C-002",
       "class": "invention",
-      "statement": "The Columnar Furnace rises from an offset breached caldera whose collapsed terraces, open travel saddle, embedded stage crust, and through-frame lava channel establish continuous foreground, midground, and far terrain outside the protected 4.5 m action radius.",
+      "statement": "The active R3 Breached Rift Bench plan is performer-centred: a nearby northwest fissure crosses a visibly failed headwall, skirts the protected 4.5 m action radius beside an attached old-flow peninsula, sheds a dying breakout lobe, then deposits in an inboard terminal low.",
       "evidence": [
-        "docs/superpowers/specs/ember-spatial-directions/scene-development.md",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-volcanic-world-production-slice-r8-orbit-board.png"
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/01-north-up-measured-plan.png",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r3/ember-breached-rift-bench-r3-gate2-contact-sheet.png"
       ]
     },
     {
       "id": "C-003",
       "class": "invention",
-      "statement": "Blue-black basalt and rough obsidian dominate the frame; orange is confined to fissures and the banked, crusted river, with restrained mineral ochre as a secondary accent.",
+      "statement": "Reserved Gate 3/4 visual target, not an R3 graybox claim: blue-black basalt and rough obsidian dominate the frame; orange is confined to fissures and the banked, crusted river, with restrained mineral ochre as a secondary accent.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/look-development.md"
       ]
@@ -68,7 +70,7 @@
     {
       "id": "C-004",
       "class": "invention",
-      "statement": "Fresh Rift uses young lava crust as Ember's surface base, exposes fractured basalt on scarps, shelters ash in depressions, and confines iron-rich alteration to lava-distance contact zones.",
+      "statement": "Historical surface research reserved for a future Gate 3/4 restart, not accepted R3 geometry: Fresh Rift uses young lava crust as Ember's surface base, exposes fractured basalt on scarps, shelters ash in depressions, and confines iron-rich alteration to lava-distance contact zones.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-surface-target-board.jpg",
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/candidate-decisions.md"
@@ -77,10 +79,10 @@
     {
       "id": "C-005",
       "class": "invention",
-      "statement": "Breached Rift Bench is the recommended first geology graybox: one older western collapse scarp, one high fissure source, one terrain-driven flow skirting the performer bench, and one open east-southeast horizon.",
+      "statement": "Breached Rift Bench R3 is the active geology direction: one older western collapse mass, one near fissure and breach, one Flowy-owned deposit skirting an attached old-flow peninsula, one inboard terminal low, and one open east-southeast horizon.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/01-north-up-measured-plan.png"
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/01-north-up-measured-plan.png"
       ]
     },
     {
@@ -101,15 +103,6 @@
       "approvedBy": "Austen",
       "approvedAt": "2026-08-25T22:44:27.322Z",
       "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
-    },
-    {
-      "gateId": "measured-plan",
-      "type": "check",
-      "name": "visual-comprehension-description",
-      "rationale": "Austen explicitly delegated the final spatial selection with 'you can pick, bro, I trust you' after the Gate 1.1 visual bridge was presented. This records a user-directed waiver of the describe-the-layout-back ritual; it does not attribute an unspoken spatial description to him.",
-      "approvedBy": "Austen",
-      "approvedAt": "2026-09-04T07:20:17.502Z",
-      "museumTrackerItem": "7uoHBfOCOqMmFeKBRh7l"
     },
     {
       "gateId": "playable-graybox",
@@ -336,6 +329,39 @@
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/"
       ],
       "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/"
+    },
+    {
+      "invalidatedAt": "2026-09-04T08:29:49.084Z",
+      "reopenedGate": 1,
+      "museumTrackerItem": "lIPwVa2kGFcoQsgICkWI",
+      "auditTrackerItem": "torsiCoIaMMrkMklUMSq",
+      "reason": "The R2 adversarial review found that the evidence overstated visual proof, the flow did not read causally from the registered runtime cameras, the quiet area still read as a circular stage, the collapse read as additive geometry instead of missing volume, the lava mesh modified simulator thickness, the GLB lacked runtime-recognized collision metadata, camera contracts were not exact, diagnostic nodes leaked into the review export, source and terminal semantics were ambiguous, and active documentation still pointed at invalidated later-gate work. Austen authorized a complete Gate 1.1 and Gate 2 correction with 'attack it!'.",
+      "preserved": [
+        "Breached Rift Bench as the selected geological direction",
+        "one fissure-fed gravity-legible drainage",
+        "west and northwest dominant mass",
+        "open east and southeast horizon",
+        "380 by 335 m world",
+        "4.5 m performer action envelope",
+        "25 m Viewer3D orbit contract",
+        "Fresh Rift material research for a later gate",
+        "Blackglass atmosphere systems for a later gate",
+        "existing Meshy assets and unspent credits"
+      ],
+      "invalidated": [
+        "R2 Gate 1.1 plan approval and measurements",
+        "R2 additive collapse reading",
+        "R2 circular quiet-area composition",
+        "R2 lava-thickness transforms and false continuation semantics",
+        "R2 camera, collision, diagnostic-export, and portability claims",
+        "R2 Gate 2 Blender source, GLB, manifest, renders, and checks",
+        "all later-gate visual acceptance evidence"
+      ],
+      "historicalEvidence": [
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/ and docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r3/"
     }
   ],
   "gates": [
@@ -376,53 +402,53 @@
     },
     {
       "id": "measured-plan",
-      "status": "approved",
+      "status": "ready-for-review",
       "evidence": [
         {
           "kind": "floor-plan",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/01-north-up-measured-plan.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/01-north-up-measured-plan.png"
         },
         {
           "kind": "vertical-section",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/02-measured-sections.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/02-measured-sections.png"
         },
         {
           "kind": "route-storyboard",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/01-north-up-measured-plan.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/01-north-up-measured-plan.png"
         },
         {
           "kind": "sightline-study",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/03-orbit-sightline-study.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/03-orbit-sightline-study.png"
         },
         {
           "kind": "emplacement-calibration",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/04-flowy-calibration-sweep.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/04-flowy-calibration-sweep.png"
         },
         {
           "kind": "verification-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/ember-breached-rift-bench-gate1-1-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/ember-breached-rift-bench-gate1-1-report.json"
         }
       ],
       "checks": [
         {
           "name": "walkability",
           "status": "passed",
-          "evidence": "Ember remains a Viewer3D orbit environment. The corrected old-flow shelf has 0.161 m local relief inside the protected 4.5 m action envelope and the default audience camera is marked at runtime XZ (0, -21.5)."
+          "evidence": "Ember remains a Viewer3D orbit environment. The R3 report verifies low relief inside the protected 4.5 m action envelope and an elongated old-flow peninsula attached to the open eastern terrain; no material boundary marks a stage."
         },
         {
           "name": "clearance",
           "status": "passed",
-          "evidence": "The selected Flowy footprint stays 17.720 m from the performer center, preserving 13.220 m beyond the protected 4.5 m action envelope."
+          "evidence": "The selected Flowy footprint must preserve at least 2.500 m beyond the protected 4.5 m action envelope; the canonical R3 report owns the regenerated measurement."
         },
         {
           "name": "sightlines",
           "status": "passed",
-          "evidence": "All eight deterministic 45-degree orbit samples clear the 1.2 m performer target from the 7.0 m review camera; measured terrain clearance ranges from 0.845 m to 0.923 m."
+          "evidence": "All eight exact-cap orbit samples clear the performer target; the eye sits 8.25 m above local ground, targets 1.75 m above it, and remains 25.000 m from target."
         },
         {
           "name": "final-view",
           "status": "passed",
-          "evidence": "The north-up plan assigns a 21.839 m headwall-to-breach relief, preserves the open east/southeast horizon, and carries the simulator footprint to runtime Z -144 m at the south continuation."
+          "evidence": "The north-up plan keeps the fissure and failed crown inside the primary composition, preserves the open east/southeast horizon, and identifies an actual inboard terminal low with a containing downslope lip."
         },
         {
           "name": "artifact-digest",
@@ -430,103 +456,13 @@
           "evidence": "The canonical Gate 1.1 report records SHA-256 digests for all review images and the checked-in little-endian float32 simulator raster."
         }
       ],
-      "approval": {
-        "approvedBy": "Austen",
-        "approvedAt": "2026-09-04T07:20:17.502Z",
-        "quote": "you can pick, bro, I trust you. Show me the scene when you're done",
-        "museumTrackerItem": "7uoHBfOCOqMmFeKBRh7l",
-        "visualComprehensionConfirmed": true,
-        "visualComprehensionBasis": "delegated-design-authority with an explicit waiver of the describe-the-layout-back ritual"
-      }
+      "approval": null
     },
     {
       "id": "playable-graybox",
-      "status": "ready-for-review",
-      "evidence": [
-        {
-          "kind": "blender-source",
-          "path": "blender/ember-breached-rift-bench-graybox-r2.blend"
-        },
-        {
-          "kind": "coordinate-manifest",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/ember-breached-rift-bench-r2-coordinate-manifest.json"
-        },
-        {
-          "kind": "graybox-glb",
-          "path": "static/models/ember/review/ember-breached-rift-bench-graybox-r2.glb"
-        },
-        {
-          "kind": "first-person-walk",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/11-registered-orbit-strip.png"
-        },
-        {
-          "kind": "review-contact-sheet",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/ember-breached-rift-bench-r2-gate2-contact-sheet.png"
-        },
-        {
-          "kind": "north-up-plan",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/09-north-up-plan.png"
-        },
-        {
-          "kind": "longitudinal-section",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/10-longitudinal-section.png"
-        },
-        {
-          "kind": "director-overview",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/12-director-overview.png"
-        },
-        {
-          "kind": "verification-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/ember-breached-rift-bench-r2-graybox-report.json"
-        }
-      ],
-      "checks": [
-        {
-          "name": "artifact-digest",
-          "status": "passed",
-          "evidence": "The R2 report records SHA-256 and byte length for 24 required source, model, and rendered artifacts."
-        },
-        {
-          "name": "collision",
-          "status": "passed",
-          "evidence": "EMBER_Terrain is the only visible collider; there is no invisible barrier geometry."
-        },
-        {
-          "name": "route-duration",
-          "status": "passed",
-          "evidence": "Ember is an orbit backdrop with no player route; the registered eight-stop orbit strip is the approved equivalent review proof."
-        },
-        {
-          "name": "sequence-parity",
-          "status": "passed",
-          "evidence": "The isolated environment graybox neither selects nor modifies a TKA sequence."
-        },
-        {
-          "name": "simulator-deposit-owner",
-          "status": "passed",
-          "evidence": "EMBER_LavaSimulatorDeposit contains exactly 3,558 faces for 3,558 active Flowy cells and carries the checked-in thickness-raster SHA-256."
-        },
-        {
-          "name": "performer-clearance",
-          "status": "passed",
-          "evidence": "The simulator deposit stays 17.720 m from performer center, preserving 13.220 m beyond the 4.5 m action envelope."
-        },
-        {
-          "name": "downhill-drainage",
-          "status": "passed",
-          "evidence": "The 322.840 m source-to-continuation section descends 14.800 m and the simulator-owned deposit reaches runtime Z -144 m."
-        },
-        {
-          "name": "downstream-widening",
-          "status": "passed",
-          "evidence": "The active simulator footprint widens from an 11 m upstream median to 14 m downstream, a 1.273 ratio."
-        },
-        {
-          "name": "glb-review-equivalence",
-          "status": "passed",
-          "evidence": "The GLB includes terrain, simulator deposit, performer, action envelope, talus apron, collapse guide, source fissure and rampart, north-up plan camera, default camera, eight orbit cameras, and two director cameras."
-        }
-      ],
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
       "approval": null
     },
     {
