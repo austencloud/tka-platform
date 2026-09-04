@@ -25,6 +25,7 @@
   let catalog = $state<PictographData[]>([]);
   let catalogLoading = $state(true);
   let catalogError = $state("");
+  let compactViewport = $state(false);
   let selectedStepNumber = $state(blueSequence.steps.length);
   let lastAction = $state("Imported 8 blue steps from Choreo Card");
 
@@ -89,7 +90,7 @@
     lastAction = "Paired the saved red path with blue";
   }
 
-  onMount(async () => {
+  async function loadCatalog(): Promise<void> {
     try {
       catalog = await motionQueryHandler.queryMotions({
         gridMode: blueSequence.gridMode,
@@ -102,6 +103,21 @@
     } finally {
       catalogLoading = false;
     }
+  }
+
+  onMount(() => {
+    const compactQuery = window.matchMedia("(max-width: 760px)");
+    const syncCompactViewport = () => {
+      compactViewport = compactQuery.matches;
+    };
+
+    syncCompactViewport();
+    compactQuery.addEventListener("change", syncCompactViewport);
+    void loadCatalog();
+
+    return () => {
+      compactQuery.removeEventListener("change", syncCompactViewport);
+    };
   });
 </script>
 
@@ -163,8 +179,8 @@
           onStepClick={(stepNumber) => (selectedStepNumber = stepNumber)}
           fitAllSteps
           sizingProfile="preview"
-          manualColumnCount={4}
-          narrowMaxColumns={4}
+          manualColumnCount={compactViewport ? 9 : 4}
+          narrowMaxColumns={compactViewport ? 9 : 4}
           allowFewStepOverflowOnNarrow={false}
           leftColorOverride="#3b82f6"
           rightColorOverride="#ef233c"
@@ -269,8 +285,8 @@
                 startPosition={redSequence.startPosition}
                 fitAllSteps
                 sizingProfile="preview"
-                manualColumnCount={4}
-                narrowMaxColumns={4}
+                manualColumnCount={compactViewport ? 9 : 4}
+                narrowMaxColumns={compactViewport ? 9 : 4}
                 allowFewStepOverflowOnNarrow={false}
                 leftColorOverride="#3b82f6"
                 rightColorOverride="#ef233c"
@@ -332,6 +348,14 @@
 
   :global(*) {
     box-sizing: border-box;
+  }
+
+  .proposal-page :global(*) {
+    scrollbar-width: none;
+  }
+
+  .proposal-page :global(*::-webkit-scrollbar) {
+    display: none;
   }
 
   .proposal-page {
