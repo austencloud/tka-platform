@@ -2,7 +2,7 @@
   Choosing what to describe.
 
   The Level 1 check is the point of this screen. Level 1 is a closed world - no
-  turns, every orientation radial - and its 96 movements are the target. Footage
+  turns, every orientation radial - and its 52 movements are the target. Footage
   of anything above it would fill the corpus with movements the coverage count
   cannot represent, which is how a bounded mapping effort quietly becomes an
   unbounded one. Higher levels are not refused permanently, they are refused
