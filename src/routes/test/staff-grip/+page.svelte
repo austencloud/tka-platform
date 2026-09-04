@@ -20,8 +20,13 @@
     AvatarPoseDiagnostics,
     CollisionEvent,
   } from "@austencloud/scene-3d";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import { page } from "$app/state";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
+  import {
+    scenePropAuthoredLengthCm,
+    scenePropDrawnLengthCm,
+  } from "$lib/shared/3d/domain/scene-prop-catalog";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     describeStanceYawTrack,
@@ -118,12 +123,38 @@
 
   /**
    * The length this configuration ASKS the prop to be: the pinned number, or
-   * the one this body's hug derives. This is what `propLength` carries into
-   * the rig, so it is what the drawn staff measures.
+   * the one this body's hug derives. It is what `propLength` carries into the
+   * rig, and it is not necessarily what gets drawn — see `drawnLengthCm`.
+   *
+   * It is also not frozen. `LiveSequencePerformer3D` takes its reach reading
+   * once, on the first valid frame, and never again; this panel recomputes the
+   * fit from the live diagnostics every frame. So on a body-fit configuration
+   * this number drifts by a few millimetres across a scrub while the mesh in
+   * the viewport does not move at all.
    */
   const configuredLengthCm = $derived(
     lab.propLength === "body" ? bodyLengthCm : lab.propLength
   );
+
+  /**
+   * The length actually on screen. A procedural build draws what it is asked
+   * for; a model-backed build draws its authored length and ignores the ask,
+   * because `Prop3D` drops `length` on its GLTF branch. The catalog owns which
+   * is which.
+   */
+  const authoredLengthCm = $derived(scenePropAuthoredLengthCm(lab.prop));
+  const drawnLengthCm = $derived(
+    scenePropDrawnLengthCm(lab.prop, configuredLengthCm)
+  );
+
+  /**
+   * How tall the body on stage is, in centimetres. This is the configured
+   * height, not a reading off the mesh: `AvatarSkeletonBuilder.setHeight`
+   * scales the loaded rig by `heightCm / originalHeight`, so the silhouette
+   * is this number by construction. Measured against ch07's posed vertices it
+   * came back 190.69 cm against a configured 190.5 — 1.9 mm, all of it hair.
+   */
+  const characterHeightCm = $derived(userProportionsState.heightCm);
 
   /**
    * The length the COLLISION model is using, read back off the grip segment.
@@ -139,8 +170,8 @@
       : poseMetric.collisionStaffLengthMm / 10
   );
 
-  /** Can this body clear the shaft this configuration asked for? */
-  const fitComparison = $derived(compareLengths(bodyFit, configuredLengthCm));
+  /** Can this body clear the shaft that is actually on screen? */
+  const fitComparison = $derived(compareLengths(bodyFit, drawnLengthCm));
 
   /**
    * When the body on stage is one of the controlled proportion sweep rigs, the
@@ -158,12 +189,12 @@
    */
   const LENGTH_DIVERGENCE_NOISE_CM = 0.5;
   const lengthDivergenceCm = $derived(
-    configuredLengthCm === null || collisionLengthCm === null
+    drawnLengthCm === null || collisionLengthCm === null
       ? null
-      : Math.abs(collisionLengthCm - configuredLengthCm) <
+      : Math.abs(collisionLengthCm - drawnLengthCm) <
           LENGTH_DIVERGENCE_NOISE_CM
         ? null
-        : collisionLengthCm - configuredLengthCm
+        : collisionLengthCm - drawnLengthCm
   );
 
   /** Quad shows the set; a solo view gives one camera the whole stage. */
@@ -322,6 +353,9 @@
     2
   )}
   data-configured-length-cm={formatMetric(configuredLengthCm, 2)}
+  data-drawn-length-cm={formatMetric(drawnLengthCm, 2)}
+  data-prop-honours-length={authoredLengthCm === null}
+  data-character-height-cm={formatMetric(characterHeightCm, 2)}
   data-collision-length-cm={formatMetric(collisionLengthCm, 2)}
   data-length-divergence-cm={formatMetric(lengthDivergenceCm, 2)}
   data-fit-verdict={fitComparison.verdict}
@@ -432,6 +466,9 @@
           verdict={fitComparison.verdict}
           deltaCm={fitComparison.deltaCm}
           {configuredLengthCm}
+          {drawnLengthCm}
+          {authoredLengthCm}
+          {characterHeightCm}
           {collisionLengthCm}
           {lengthDivergenceCm}
           {leftMetric}
