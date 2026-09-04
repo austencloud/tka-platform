@@ -23,7 +23,7 @@
     onBack,
     viewMode = "step",
   } = $props<{
-    onComplete?: () => void;
+    onComplete?: (nextConceptId?: string) => void;
     onBack?: () => void;
     viewMode?: ExperienceViewMode;
   }>();
@@ -156,10 +156,10 @@
     visited = new Set(visited).add(currentCell);
   });
 
-  async function loadHand(color: HandSide): Promise<SvgData | null> {
+  async function loadHand(hand: HandSide): Promise<SvgData | null> {
     const motionData = {
       propType: PropType.HAND,
-      color,
+      hand,
     } as unknown as MotionData;
     const propData = {
       positionX: 0,
@@ -250,7 +250,7 @@
 
   function handlePrimaryAction() {
     if (stage === compareStage) {
-      onComplete?.();
+      onComplete?.("hand-motions-intro");
       return;
     }
     go(stage + 1);
