@@ -132,6 +132,12 @@
   }
 
   @media (min-width: 2400px) and (min-height: 1300px) {
+    .navigation :global(.panel-btn) {
+      min-height: 3.5rem;
+      padding-inline: 1.4rem;
+      font-size: 1.1rem;
+    }
+
     .primary-action {
       min-width: 18rem;
       min-height: 56px;
