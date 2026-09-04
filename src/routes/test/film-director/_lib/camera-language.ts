@@ -279,6 +279,17 @@ const MOVE_RULES = CAMERA_MOVE_RULES;
 
 const ORBIT_SEGMENT_DEG = 30;
 
+/**
+ * How finely a move that bakes an easing curve into its sample positions is
+ * sampled. The reconstruction between those samples is a spline, so its speed
+ * ripples a little where the samples sit unevenly: measured on the dolly zoom
+ * and the 90-degree orbit, that ripple is 2.6% at 12 samples, 1.4% at 20 and
+ * 0.8% at 32. Twenty-four holds it near 1%, an order of magnitude under the
+ * roughly 5% speed change an eye can pick out, for a keyframe list that is
+ * still trivially small.
+ */
+const SAMPLES_PER_EASED_RUN = 24;
+
 const MIN_FOV_DEG = 20;
 const MAX_FOV_DEG = 100;
 
@@ -640,6 +651,18 @@ export function compileCameraMoveNodes(
     });
     const easing = move.easing ?? "ease-in-out";
     /**
+     * What gets written onto each emitted keyframe, which is not always the
+     * move's easing. The sampler eases EVERY segment it is handed, so a move
+     * that emits one segment states its curve here and gets exactly one
+     * acceleration across the whole gesture. A move sampled across many
+     * keyframes must not: twenty-five keys each marked `ease-in-out` speed up
+     * and slow down twenty-four times, which is what made the dolly zoom
+     * arrive in chunks. Those runs bake the curve into WHERE each sample is
+     * taken and leave the keys linear, so the run reads as one continuous
+     * gesture.
+     */
+    let keyEasing = easing;
+    /**
      * `aim` is stated only by moves that turn the camera in place. It travels
      * with the keyframe so the sampler can interpolate the direction rather
      * than the aim point; everything else leaves it absent and keeps the
@@ -675,7 +698,7 @@ export function compileCameraMoveNodes(
         target: tgt,
         fovDeg,
         interpolation,
-        easing,
+        easing: keyEasing,
         ...(rollDeg !== undefined ? { rollDeg } : {}),
         ...(aim
           ? {
@@ -711,14 +734,13 @@ export function compileCameraMoveNodes(
           rollDeg: origin.rollDeg,
         };
         members.forEach((member) => {
-          // A member with no easing of its own rides the group's, which the
-          // keyframes themselves carry. A member that states a different one
-          // has its curve baked into its own progress instead, because one
-          // keyframe stream cannot hold two easing curves at once.
-          const memberProgress =
-            member.easing && member.easing !== easing
-              ? applyDirectorEasing(progress, member.easing)
-              : progress;
+          // Every member's curve is baked into its own progress, because the
+          // keys this group emits are linear and cannot carry one. A member
+          // with no easing of its own rides the group's.
+          const memberProgress = applyDirectorEasing(
+            progress,
+            member.easing ?? easing
+          );
           const delta = moveGroupDelta(
             member,
             origin,
@@ -747,14 +769,19 @@ export function compileCameraMoveNodes(
 
       let segments = moveGroupSegments(members);
       // A baked easing curve and a solved fov both need enough samples to read
-      // as curves rather than as straight lines between two frames.
-      if (members.some((member) => member.easing && member.easing !== easing)) {
-        segments = Math.max(segments, 8);
+      // as curves rather than as straight lines between two frames. A group
+      // that eases is every group that does not say otherwise, since the
+      // default easing is `ease-in-out`.
+      const eases = members.some(
+        (member) => (member.easing ?? easing) !== "linear"
+      );
+      if (eases || members.some(isMatchZoom)) {
+        segments = Math.max(segments, SAMPLES_PER_EASED_RUN);
       }
-      if (members.some(isMatchZoom)) segments = Math.max(segments, 12);
 
       const rolls = members.some((member) => member.move === "roll");
       if (rolls) rollDeg ??= 0;
+      keyEasing = "linear";
       for (let segment = 0; segment <= segments; segment += 1) {
         const progress = segment / segments;
         const state = composeAt(progress);
@@ -814,10 +841,18 @@ export function compileCameraMoveNodes(
       const radius = Math.hypot(position[0] - target[0], position[2] - target[2]);
       const height = position[1];
       const startAngle = Math.atan2(position[0] - target[0], position[2] - target[2]);
-      const segments = Math.max(2, Math.ceil(Math.abs(degrees) / ORBIT_SEGMENT_DEG));
+      const arc = Math.max(2, Math.ceil(Math.abs(degrees) / ORBIT_SEGMENT_DEG));
+      // An eased orbit takes its samples unevenly, so the middle of the arc
+      // gets about twice the angular step even spacing gave it. Doubling the
+      // count keeps the chord error inside what ORBIT_SEGMENT_DEG allows, and
+      // the floor stops a short arc from drawing its curve with three keys.
+      const segments =
+        easing === "linear" ? arc : Math.max(arc * 2, SAMPLES_PER_EASED_RUN);
+      keyEasing = "linear";
       for (let seg = 0; seg <= segments; seg += 1) {
         const progress = seg / segments;
-        const angle = startAngle + (degrees * Math.PI * progress) / 180;
+        const eased = applyDirectorEasing(progress, easing);
+        const angle = startAngle + (degrees * Math.PI * eased) / 180;
         const pos: [number, number, number] = [
           target[0] + Math.sin(angle) * radius,
           height,

@@ -1933,87 +1933,183 @@ exports[`capability resolution snapshots > "Dolly Zoom" (dolly-zoom) resolves to
             ],
             "fovDeg": 50,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 0.25,
+            "position": [
+              0,
+              0.718268,
+              -2.610538
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 50.069864,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 0.5,
             "position": [
               0,
-              0.711583,
-              -2.514938
+              0.717396,
+              -2.598068
             ],
             "target": [
               0,
               0.535721,
               0
             ],
-            "fovDeg": 51.728587,
+            "fovDeg": 50.280555,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 0.75,
+            "position": [
+              0,
+              0.715943,
+              -2.577286
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 50.635415,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 1,
             "position": [
               0,
-              0.704607,
-              -2.415181
+              0.713908,
+              -2.54819
             ],
             "target": [
               0,
               0.535721,
               0
             ],
-            "fovDeg": 53.571873,
+            "fovDeg": 51.140146,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 1.25,
+            "position": [
+              0,
+              0.711292,
+              -2.510781
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 51.80303,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 1.5,
             "position": [
               0,
-              0.697632,
-              -2.315425
+              0.708095,
+              -2.46506
             ],
             "target": [
               0,
               0.535721,
               0
             ],
-            "fovDeg": 55.540611,
+            "fovDeg": 52.635248,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 1.75,
+            "position": [
+              0,
+              0.704317,
+              -2.411025
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 53.651321,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 2,
             "position": [
               0,
-              0.690656,
-              -2.215669
+              0.699957,
+              -2.348677
             ],
             "target": [
               0,
               0.535721,
               0
             ],
-            "fovDeg": 57.646767,
+            "fovDeg": 54.869714,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 2.25,
+            "position": [
+              0,
+              0.695016,
+              -2.278016
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 56.313631,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 2.5,
             "position": [
               0,
-              0.68368,
-              -2.115912
+              0.689494,
+              -2.199043
             ],
             "target": [
               0,
               0.535721,
               0
             ],
-            "fovDeg": 59.903667,
+            "fovDeg": 58.012068,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 2.75,
+            "position": [
+              0,
+              0.68339,
+              -2.111756
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 60.001189,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 3,
@@ -2029,87 +2125,183 @@ exports[`capability resolution snapshots > "Dolly Zoom" (dolly-zoom) resolves to
             ],
             "fovDeg": 62.326142,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 3.25,
+            "position": [
+              0,
+              0.67002,
+              -1.920556
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 64.818292,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 3.5,
             "position": [
               0,
-              0.669729,
-              -1.916399
+              0.663916,
+              -1.833269
             ],
             "target": [
               0,
               0.535721,
               0
             ],
-            "fovDeg": 64.930682,
+            "fovDeg": 67.25336,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 3.75,
+            "position": [
+              0,
+              0.658394,
+              -1.754295
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 69.599339,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 4,
             "position": [
               0,
-              0.662754,
-              -1.816643
+              0.653453,
+              -1.683634
             ],
             "target": [
               0,
               0.535721,
               0
             ],
-            "fovDeg": 67.735596,
+            "fovDeg": 71.822499,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 4.25,
+            "position": [
+              0,
+              0.649093,
+              -1.621287
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 73.888333,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 4.5,
             "position": [
               0,
-              0.655778,
-              -1.716887
+              0.645314,
+              -1.567252
             ],
             "target": [
               0,
               0.535721,
               0
             ],
-            "fovDeg": 70.761149,
+            "fovDeg": 75.762639,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 4.75,
+            "position": [
+              0,
+              0.642117,
+              -1.52153
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 77.412673,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 5,
             "position": [
               0,
-              0.648802,
-              -1.61713
+              0.639501,
+              -1.484122
             ],
             "target": [
               0,
               0.535721,
               0
             ],
-            "fovDeg": 74.029685,
+            "fovDeg": 78.808329,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 5.25,
+            "position": [
+              0,
+              0.637467,
+              -1.455026
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 79.923245,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 5.5,
             "position": [
               0,
-              0.641827,
-              -1.517374
+              0.636014,
+              -1.434243
             ],
             "target": [
               0,
               0.535721,
               0
             ],
-            "fovDeg": 77.565687,
+            "fovDeg": 80.735799,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 5.75,
+            "position": [
+              0,
+              0.635142,
+              -1.421774
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 81.229931,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 6,
@@ -4072,14 +4264,126 @@ exports[`capability resolution snapshots > "Orbit Clockwise" (orbit-clockwise) r
             ],
             "fovDeg": 50,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 0.333333,
+            "position": [
+              0.032217,
+              0.999369,
+              -5.9069
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 0.666667,
+            "position": [
+              0.12886,
+              0.999369,
+              -5.905583
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 1,
+            "position": [
+              0.289842,
+              0.999369,
+              -5.899873
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 1.333333,
+            "position": [
+              0.514828,
+              0.999369,
+              -5.88451
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 1.666667,
+            "position": [
+              0.802947,
+              0.999369,
+              -5.852161
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 2,
+            "position": [
+              1.152396,
+              0.999369,
+              -5.793487
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 2.333333,
+            "position": [
+              1.559938,
+              0.999369,
+              -5.697289
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 2.666667,
             "position": [
-              2.953494,
+              2.020309,
               0.999369,
-              -5.115602
+              -5.550753
             ],
             "target": [
               0,
@@ -4088,14 +4392,126 @@ exports[`capability resolution snapshots > "Orbit Clockwise" (orbit-clockwise) r
             ],
             "fovDeg": 50,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 3,
+            "position": [
+              2.525563,
+              0.999369,
+              -5.339854
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 3.333333,
+            "position": [
+              3.064388,
+              0.999369,
+              -5.049954
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 3.666667,
+            "position": [
+              3.621453,
+              0.999369,
+              -4.666646
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 4,
+            "position": [
+              4.176871,
+              0.999369,
+              -4.176871
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 4.333333,
+            "position": [
+              4.666646,
+              0.999369,
+              -3.621453
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 4.666667,
+            "position": [
+              5.049954,
+              0.999369,
+              -3.064388
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 5,
+            "position": [
+              5.339854,
+              0.999369,
+              -2.525563
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 5.333333,
             "position": [
-              5.115602,
+              5.550753,
               0.999369,
-              -2.953494
+              -2.020309
             ],
             "target": [
               0,
@@ -4104,7 +4520,119 @@ exports[`capability resolution snapshots > "Orbit Clockwise" (orbit-clockwise) r
             ],
             "fovDeg": 50,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 5.666667,
+            "position": [
+              5.697289,
+              0.999369,
+              -1.559938
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 6,
+            "position": [
+              5.793487,
+              0.999369,
+              -1.152396
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 6.333333,
+            "position": [
+              5.852161,
+              0.999369,
+              -0.802947
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 6.666667,
+            "position": [
+              5.88451,
+              0.999369,
+              -0.514828
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 7,
+            "position": [
+              5.899873,
+              0.999369,
+              -0.289842
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 7.333333,
+            "position": [
+              5.905583,
+              0.999369,
+              -0.12886
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
+          },
+          {
+            "atSeconds": 7.666667,
+            "position": [
+              5.9069,
+              0.999369,
+              -0.032217
+            ],
+            "target": [
+              0,
+              0.586313,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "linear"
           },
           {
             "atSeconds": 8,
@@ -4120,7 +4648,7 @@ exports[`capability resolution snapshots > "Orbit Clockwise" (orbit-clockwise) r
             ],
             "fovDeg": 50,
             "interpolation": "smooth",
-            "easing": "ease-in-out"
+            "easing": "linear"
           }
         ],
         "behaviors": [

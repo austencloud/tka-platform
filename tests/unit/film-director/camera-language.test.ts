@@ -537,8 +537,11 @@ describe("compileCameraMoves: concurrent moves (with)", () => {
       framing50,
       context({ durationSeconds: 6 })
     );
-    // 90 degrees at 30 per segment is 3 samples plus the opening frame.
-    expect(frames).toHaveLength(4);
+    // The arc alone would need 3 samples at 30 degrees each. The group also
+    // eases, and an eased run carries its curve in where the samples sit, so
+    // it is drawn at the density that reconstruction needs.
+    expect(frames).toHaveLength(25);
+    expect(frames.every((frame) => frame.easing === "linear")).toBe(true);
     expect(frames.at(-1)!.fovDeg).toBeCloseTo(40, 6);
     for (let index = 1; index < frames.length; index += 1) {
       expect(frames[index]!.fovDeg).toBeLessThan(frames[index - 1]!.fovDeg);
@@ -548,6 +551,59 @@ describe("compileCameraMoves: concurrent moves (with)", () => {
         6
       );
     }
+  });
+
+  it("a run sampled across many keyframes states its curve once, not per key", () => {
+    // The regression this guards: the sampler eases EVERY segment it is
+    // handed, so a run whose keys each said `ease-in-out` sped up and slowed
+    // down once per key. The dolly zoom arrived in two dozen chunks instead of
+    // one sting. An eased run now bakes its curve into the sample positions
+    // and leaves the keys linear.
+    const frames = compileCameraMoves(
+      [
+        {
+          move: "push-in",
+          amount: { meters: 1.2 },
+          durationSeconds: 6,
+          with: [{ move: "zoom", amount: { match: "subject-size" } }],
+        },
+      ],
+      framing50,
+      context({ durationSeconds: 6 })
+    );
+
+    expect(frames.length).toBeGreaterThan(8);
+    expect(frames.every((frame) => frame.easing === "linear")).toBe(true);
+
+    // Uniform time, eased distance: each step covers more ground than the last
+    // until the middle, then less. Under the defect every step was identical,
+    // because the curve lived in the keys rather than in the samples.
+    const steps = frames
+      .slice(1)
+      .map((frame, index) =>
+        distance(frame.position, frames[index]!.position)
+      );
+    const peak = steps.indexOf(Math.max(...steps));
+    expect(peak).toBeGreaterThan(0);
+    expect(peak).toBeLessThan(steps.length - 1);
+    for (let index = 1; index <= peak; index += 1) {
+      expect(steps[index]!).toBeGreaterThan(steps[index - 1]!);
+    }
+    for (let index = peak + 1; index < steps.length; index += 1) {
+      expect(steps[index]!).toBeLessThan(steps[index - 1]!);
+    }
+  });
+
+  it("a move that emits one segment still states its easing on the key", () => {
+    // The other half of the rule: one span, one curve, and the sampler is the
+    // right place to apply it.
+    const frames = compileCameraMoves(
+      [{ move: "push-in", amount: { meters: 1 }, durationSeconds: 4 }],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    expect(frames).toHaveLength(2);
+    expect(frames[0]!.easing).toBe("ease-in-out");
   });
 
   it("rejects a group whose combined lens leaves the usable range", () => {
