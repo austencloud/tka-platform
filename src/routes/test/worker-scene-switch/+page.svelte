@@ -96,11 +96,13 @@
 
   const last = $derived(snapshot?.lastMeasurement ?? null);
   const gateLabel = $derived(
-    !last
-      ? "Awaiting first handoff"
-      : last.passedInputGate && last.passedFrameGate && last.passedWorkerBound
-        ? "All measured gates passed"
-        : "At least one measured gate failed"
+    snapshot?.phase === "error"
+      ? "Worker handoff failed"
+      : !last
+        ? "Awaiting first handoff"
+        : last.passedInputGate && last.passedFrameGate && last.passedWorkerBound
+          ? "All measured gates passed"
+          : "At least one measured gate failed"
   );
 </script>
 
