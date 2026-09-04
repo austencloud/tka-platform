@@ -20,13 +20,12 @@ const isCommit = process.argv.includes("--commit");
 const COLLECTION_ID = "col_spiroanim_qst_archive";
 const COLLECTION_NAME = "Quarter Space Tech Archive";
 const COLLECTION_CREDIT =
-  "Quarter Space Tech archive preserved in Mentive's SpiroAnim (@rbgirard)";
+  "Quarter Space Tech source documents by Mentive (@rbgirard), based on Alex Kurowski's grid";
 const COLLECTION_DESCRIPTION =
-  'All 228 Quarter Space Tech patterns preserved in SpiroAnim: 56 Quarter "Time" ' +
+  'All 228 Quarter Space Tech patterns documented by Mentive from Alex Kurowski\'s grid and preserved in SpiroAnim: 56 Quarter "Time" ' +
   "Breaks, 64 Advanced, and 108 Beyond. Each source arc is translated into an " +
   "editable Kinetic Alphabet step with an authored Wall, Wheel, or Floor plane. " +
-  "Quarter Space Tech predates SpiroAnim; the bundled source documents do not name " +
-  "an individual creator. Unlisted patterns are not a positive anatomical-feasibility claim.";
+  "Unlisted patterns are not a positive anatomical-feasibility claim.";
 
 const sequences = JSON.parse(
   readFileSync(
@@ -44,8 +43,7 @@ function notesFor(sequence) {
   return (
     `${metadata.sourceReference}: ${sequence.displayName}. ` +
     `${COLLECTION_CREDIT}. Original source: ${metadata.sourceDocument}. ` +
-    "Quarter Space Tech predates SpiroAnim; the bundled source documents do not " +
-    "name an individual creator."
+    "Translated from Mentive's SpiroAnim into Flow Arts Composer."
   );
 }
 

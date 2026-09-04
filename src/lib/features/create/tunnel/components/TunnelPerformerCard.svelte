@@ -7,7 +7,9 @@
   import type { TunnelPerformer } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
   import { copyOpsLabel } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
+  import SequenceMetadataRail from "$lib/features/create/shared/workspace-panel/sequence-display/components/SequenceMetadataRail.svelte";
   import WordLabel from "$lib/features/create/shared/workspace-panel/sequence-display/components/WordLabel.svelte";
+  import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import type { TunnelSourceOrigin } from "../domain/tunnel-creator-draft";
 
   let {
@@ -18,8 +20,6 @@
     formationCopy = false,
     label,
     linked = false,
-    expanded = false,
-    selected = false,
     short = false,
     generatedInstanceCount = 0,
     sourcePerformerLabel = null,
@@ -34,7 +34,6 @@
     onEditGeneration,
     onPrevious,
     onEditPairing,
-    onSelect,
     onMoveUp,
     onMoveDown,
     onRemove,
@@ -52,8 +51,6 @@
     formationCopy?: boolean;
     label: string;
     linked?: boolean;
-    expanded?: boolean;
-    selected?: boolean;
     short?: boolean;
     generatedInstanceCount?: number;
     sourcePerformerLabel?: string | null;
@@ -68,7 +65,6 @@
     onEditGeneration?: () => void;
     onPrevious?: () => void;
     onEditPairing?: () => void;
-    onSelect?: () => void;
     onMoveUp?: () => void;
     onMoveDown?: () => void;
     onRemove?: () => void;
@@ -78,6 +74,7 @@
     removeBlockedReason?: string | null;
   } = $props();
 
+  const componentId = $props.id();
   const ownSequence = $derived(
     performer?.source.kind === "independent" ? performer.source.sequence : null
   );
@@ -98,6 +95,10 @@
         )
       : ""
   );
+  const loopDisplay = $derived.by(() => {
+    if (!previewSequence) return null;
+    return tryGetLoopDisplayResolver()?.(previewSequence) ?? null;
+  });
   const sourceLabel = $derived(
     performer?.source.kind === "derived"
       ? copyOpsLabel(performer.source.transforms)
@@ -169,14 +170,14 @@
       items.push({
         label: "Move earlier",
         icon: "fas fa-arrow-up",
-        action: onMoveUp,
+        action: () => onMoveUp?.(),
       });
     }
     if (canMoveDown) {
       items.push({
         label: "Move later",
         icon: "fas fa-arrow-down",
-        action: onMoveDown,
+        action: () => onMoveDown?.(),
       });
     }
     if (onRemove && canRemove) {
@@ -190,12 +191,7 @@
     return items;
   });
 
-  let gridRef:
-    | {
-        prepareGenerationAnimation: (stepCount: number) => void;
-        clearGenerationAnimation: () => void;
-      }
-    | undefined = $state();
+  let gridRef = $state<ReturnType<typeof StepGrid>>();
 
   export function prepareGenerationAnimation(stepCount: number): void {
     gridRef?.prepareGenerationAnimation(stepCount);
@@ -207,51 +203,46 @@
 </script>
 
 <section
-  class="source-card"
-  class:expanded
-  class:selected
+  class="source-card selected"
   class:short
   aria-label={`${label} sequence`}
 >
   <header class="source-heading">
-    <button
-      type="button"
-      class="source-identity"
-      aria-pressed={selected}
-      onclick={onSelect}
-    >
-      <div>
+    <div class="source-identity">
+      <div class="identity-row">
         <h3>{label}</h3>
-        <p class="source-meta">
-          {#if previewSequence}
-            <span>{previewSequence.steps.length} steps</span>
-            {#if sourceDescriptor}<span>{sourceDescriptor}</span>{/if}
-            {#if linked && sourceLabel}
-              <span
-                >Linked to {sourcePerformerLabel ?? "earlier performer"}</span
-              >
-            {/if}
-            {#if formationCopy}
-              <span>Formation copy (not authored)</span>
-            {/if}
-            {#if generatedInstanceCount > 0}
-              <span
-                title={stageTransformLabel
-                  ? `Stage placement: ${stageTransformLabel}`
-                  : undefined}
-              >
-                {generatedInstanceCount} on stage
-              </span>
-            {/if}
-          {:else if linked}
-            <span>Follows {sourcePerformerLabel ?? "an earlier performer"}</span
-            >
-          {:else}
-            <span>Complete two-prop sequence</span>
-          {/if}
-        </p>
+        <SequenceMetadataRail
+          sequence={previewSequence}
+          {loopDisplay}
+          presentation="inline"
+        />
       </div>
-    </button>
+      <p class="source-meta">
+        {#if previewSequence}
+          <span>{previewSequence.steps.length} steps</span>
+          {#if sourceDescriptor}<span>{sourceDescriptor}</span>{/if}
+          {#if linked && sourceLabel}
+            <span>Linked to {sourcePerformerLabel ?? "earlier performer"}</span>
+          {/if}
+          {#if formationCopy}
+            <span>Formation copy (not authored)</span>
+          {/if}
+          {#if generatedInstanceCount > 0}
+            <span
+              title={stageTransformLabel
+                ? `Stage placement: ${stageTransformLabel}`
+                : undefined}
+            >
+              {generatedInstanceCount} on stage
+            </span>
+          {/if}
+        {:else if linked}
+          <span>Follows {sourcePerformerLabel ?? "an earlier performer"}</span>
+        {:else}
+          <span>Complete two-prop sequence</span>
+        {/if}
+      </p>
+    </div>
 
     <div
       class="hand-key"
@@ -278,41 +269,37 @@
       {/if}
     </div>
 
-    {#if expanded}
-      <div
-        class="compact-source-actions"
-        aria-label={`${label} sequence actions`}
-      >
-        {#if onGenerateNow}
-          <PanelButton
-            variant="primary"
-            onclick={onGenerateNow}
-            ariaLabel={`Generate a new ${label} sequence with the current settings`}
-          >
-            <i class="fas fa-dice" aria-hidden="true"></i>
-            <span class="compact-generate-label">Generate</span>
-          </PanelButton>
-        {/if}
-        <OverflowMenu
-          items={compactActions}
-          placement="bottom"
-          ariaLabel={`More ${label} actions`}
-          triggerPresentation="labelled"
+    <div
+      class="compact-source-actions"
+      aria-label={`${label} sequence actions`}
+    >
+      {#if onGenerateNow}
+        <PanelButton
+          variant="primary"
+          onclick={onGenerateNow}
+          ariaLabel={`Generate a new ${label} sequence with the current settings`}
         >
-          {#snippet trigger()}
-            <span class="compact-more-label">More</span>
-            <i
-              class="fas fa-chevron-down compact-more-chevron"
-              aria-hidden="true"
-            ></i>
-            <i
-              class="fas fa-ellipsis-vertical compact-more-icon"
-              aria-hidden="true"
-            ></i>
-          {/snippet}
-        </OverflowMenu>
-      </div>
-    {/if}
+          <i class="fas fa-dice" aria-hidden="true"></i>
+          <span class="compact-generate-label">Generate</span>
+        </PanelButton>
+      {/if}
+      <OverflowMenu
+        items={compactActions}
+        placement="bottom"
+        ariaLabel={`More ${label} actions`}
+        triggerPresentation="labelled"
+      >
+        {#snippet trigger()}
+          <span class="compact-more-label">More</span>
+          <i class="fas fa-chevron-down compact-more-chevron" aria-hidden="true"
+          ></i>
+          <i
+            class="fas fa-ellipsis-vertical compact-more-icon"
+            aria-hidden="true"
+          ></i>
+        {/snippet}
+      </OverflowMenu>
+    </div>
   </header>
 
   <div class="workbench-stage">
@@ -329,10 +316,13 @@
           previewSequence?.startingPosition ??
           null}
         selectedStepNumber={activeStepNumber}
+        autoFocusSelectedStep={false}
         activeMode={null}
         isTimelineMode={false}
         fitAllSteps={true}
         sizingProfile="preview"
+        stepIdentityMode="slot"
+        stepIdentityPrefix={`${componentId}-selected-performer`}
         narrowMaxColumns={3}
         preferWidthSizingOnNarrow={true}
         leftPropTypeOverride={leftPropType}
@@ -368,18 +358,13 @@
     container-type: inline-size;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    flex: 0 0 9.5rem;
+    height: 100%;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--settings-radius-lg, 20px);
     background: var(--theme-panel-bg);
-  }
-
-  .source-card.expanded {
-    flex-basis: clamp(22rem, 58cqh, 34rem);
-    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .source-card.selected {
@@ -400,23 +385,18 @@
   }
 
   .source-identity {
-    display: flex;
-    align-items: center;
-    flex: 1 1 11rem;
+    display: grid;
+    align-content: center;
+    gap: 2px;
     min-width: 0;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    text-align: left;
-    cursor: pointer;
   }
 
-  .source-identity:focus-visible {
-    border-radius: var(--settings-radius-sm, 8px);
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 3px;
+  .identity-row {
+    display: flex;
+    align-items: center;
+    gap: var(--settings-spacing-xs, 6px);
+    min-width: 0;
+    min-height: 20px;
   }
 
   .hand-key {
@@ -462,10 +442,6 @@
     white-space: nowrap;
   }
 
-  .source-identity > div {
-    min-width: 0;
-  }
-
   h3,
   p {
     margin: 0;
@@ -508,32 +484,6 @@
     min-height: 0;
     overflow: hidden;
     background: color-mix(in srgb, var(--theme-card-bg) 72%, black);
-  }
-
-  .source-card:not(.expanded) .word-rail {
-    display: none;
-  }
-
-  .source-card:not(.expanded) .live-grid {
-    padding: 4px;
-  }
-
-  .source-card:not(.expanded) .source-empty {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    align-content: center;
-    justify-items: start;
-    min-height: 0;
-    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 14px);
-    text-align: left;
-  }
-
-  .source-card:not(.expanded) .source-empty > i {
-    font-size: var(--font-size-min, 14px);
-  }
-
-  .source-card:not(.expanded) .source-empty span {
-    display: none;
   }
 
   .word-rail {
@@ -682,6 +632,17 @@
   }
 
   @container (max-width: 22rem) {
+    .identity-row h3 {
+      white-space: nowrap;
+    }
+
+    /* The prop colors are already visible in every pictograph. On a phone the
+       L/R chips compete with the performer name, difficulty, LOOP state, and
+       primary actions, so the action menu remains the compact source of truth. */
+    .hand-key {
+      display: none;
+    }
+
     .source-meta span:not(:first-child) {
       display: none;
     }

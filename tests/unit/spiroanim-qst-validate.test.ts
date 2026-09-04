@@ -242,13 +242,13 @@ describe("SpiroAnim Quarter Space Tech archive", () => {
     expect(v3.size).toBe(228);
   });
 
-  it("records attribution without inventing a personal creator identity", () => {
+  it("credits Mentive's documents and Alex Kurowski's underlying grid", () => {
     for (const sequence of corpus) {
-      expect(sequence.metadata.attribution.credit).toContain(
-        "Mentive's SpiroAnim (@rbgirard)"
+      expect(sequence.metadata.attribution.credit).toBe(
+        "Quarter Space Tech source documents by Mentive (@rbgirard), based on Alex Kurowski's grid"
       );
-      expect(sequence.metadata.attribution.note).toContain(
-        "do not name an individual creator"
+      expect(sequence.metadata.attribution.note).toBe(
+        "These sequences translate Mentive's documented patterns from SpiroAnim into Flow Arts Composer."
       );
     }
   });

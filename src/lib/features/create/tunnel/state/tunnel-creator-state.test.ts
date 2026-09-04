@@ -688,6 +688,20 @@ describe("tunnel creator edit state", () => {
 
     expect(restored.activePanel).toBe("generation");
     expect(restored.generationTargetId).toBe(performerId);
+    expect(restored.selectedPerformerId).toBe(performerId);
+  });
+
+  it("keeps the active performer selected when its tab is pressed again", () => {
+    const state = createState({
+      openComposition: vi.fn(),
+      createId: () => "selected-performer",
+    });
+    const performerId = state.performerIdAt(0);
+    if (!performerId) return;
+
+    expect(state.selectPerformer(performerId)).toBe(true);
+    expect(state.selectPerformer(performerId)).toBe(true);
+    expect(state.selectedPerformerId).toBe(performerId);
   });
 
   it("targets direct generation without opening the generation workspace", () => {
@@ -700,6 +714,7 @@ describe("tunnel creator edit state", () => {
 
     expect(state.selectGenerationTarget(performerId)).toBe(true);
     expect(state.generationTargetId).toBe(performerId);
+    expect(state.selectedPerformerId).toBe(performerId);
     expect(state.activePanel).toBeNull();
     expect(state.selectGenerationTarget("missing-performer")).toBe(false);
   });

@@ -351,10 +351,14 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(motionSurface).toContain("data-tunnel-blend");
     expect(motionSurface).toContain("additionalLayers={tunnelLayers}");
     expect(motionSurface.match(/<AnimatorCanvas/g)).toHaveLength(1);
-    expect(motionSurface).toContain("resolveTunnelLayerProgress(");
-    expect(motionSurface).toContain("interpolateTunnelLayerProp(");
     expect(motionSurface).toContain("resolveTunnelLayerOpacity(");
-    expect(motionSurface).toContain("trailCaptureSuppressed: progress < 0.999");
+    expect(motionSurface).toContain("tunnelLayerPoseDifference(");
+    expect(motionSurface).not.toContain("interpolateTunnelLayerProp(");
+    expect(motionSurface).not.toContain("trailCaptureSuppressed:");
+    expect(motionSurface).toContain(
+      'tunnelVisualActive && activeEffect !== "none"'
+    );
+    expect(motionSurface).toContain("tipEffectMap={tunnelTipEffectMap}");
     expect(splitPane).toContain("prepareWhileInactive: true");
     expect(tunnelController).toContain("get layersReady(): boolean");
     expect(tunnelController).toContain("preparedAdditionalLayersAt(");
@@ -375,7 +379,7 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(motionSurface).toContain("data-tunnel-layer-opacity-max");
     expect(motionSurface).toContain("data-tunnel-layer-opacity-mean");
     expect(motionSurface).toContain("data-tunnel-perceptible-layer-count");
-    expect(motionSurface).toContain("data-tunnel-layer-separation");
+    expect(motionSurface).toContain("data-tunnel-formation-pose-drift");
     expect(reviewFrame).toContain("tunnelLayerOpacityMaximum:");
     expect(canvasApplicationManager).toContain(
       'this.canvas.dataset.animationLayer = "props"'
@@ -399,8 +403,7 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Painted prop arrival:");
     expect(geometryTrace).toContain("Formation trail captures:");
     expect(geometryTrace).toContain("Trail-safe formation:");
-    expect(geometryTrace).toContain("one copy peels spatially");
-    expect(geometryTrace).toContain("Spatial peel:");
+    expect(geometryTrace).toContain("Formation placement:");
     expect(viewerModeDissolve).toContain(
       'GATE_THREE_STAGE_MODES.has(previousMode) && nextMode === "tunnel"'
     );

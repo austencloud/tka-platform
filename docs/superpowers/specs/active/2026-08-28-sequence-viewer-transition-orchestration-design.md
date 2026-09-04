@@ -1238,6 +1238,61 @@ sole failure is the pre-existing `ArtSettingsPanel` 500-line ownership cap,
 which reproduces unchanged on `main` at 518 lines. `svelte-check` reports 0
 errors and 0 warnings.
 
+#### Formation choreography correction · 2026-09-04
+
+The trail correction removed the connector artifact but left the underlying
+motion intact: every additional performer still travelled from the live red / blue
+pair into its authored Tunnel pose. With several copies moving and rotating at
+once, the entrance read as a scramble even though the trail recorder was now
+clean. This was the wrong visual premise. Tunnel is a presentation change, not
+choreography performed by the props.
+
+The corrected handoff does not run a second hidden canvas or a duplicate
+playback loop. While 2D remains visible, `TunnelViewController` already computes
+the lightweight formation sample at the live playhead and `AnimatorCanvas`
+preloads the required prop textures without drawing the extra layers. Once that
+preparation is ready, every copy is rendered immediately at its sampled Tunnel
+pose. Only opacity changes, using the existing 480 ms reveal and its shallow 18%
+center-out stagger. The ordinary effect map and trail capture remain live from
+the first visible frame, so authored effects play normally from the destination
+poses instead of being paused or faked during the handoff.
+
+The previous `interpolateTunnelLayerProp` path and its viewer-owned formation
+travel / trail-suppression flags are gone. The generic trail engine boundary is
+retained for other composition changes, but Gate 3 no longer needs to invoke it.
+The runtime instrument now compares each rendered left/right prop with the
+prepared pose for the same layer and playhead. `Formation placement` fails on
+any drift above 0.1% of a grid radius or on any drifting reveal frame; this
+grades the visible behavior rather than trusting a declarative transition flag.
+
+Before this correction, the 820 × 1180 replay measured a spatial peel reaching
+200% of a grid radius over 17 frames, and rapid reversal extended that travel to
+59 frames. After the correction, the full viewport sweep records zero formation
+drift and zero moving layers while retaining a multi-frame opacity bloom:
+
+| Viewport    | Maximum pose drift | Drifting frames | Layer-bloom frames | Horizontal overflow |
+| ----------- | -----------------: | --------------: | -----------------: | ------------------: |
+| 375 × 667   |               0.0% |               0 |                 24 |                  No |
+| 960 × 412   |               0.0% |               0 |                 11 |                  No |
+| 820 × 1180  |               0.0% |               0 |                  7 |                  No |
+| 1440 × 900  |               0.0% |               0 |                 13 |                  No |
+| 1920 × 1080 |               0.0% |               0 |                 12 |                  No |
+| 2560 × 1440 |               0.0% |               0 |                 15 |                  No |
+| 3840 × 2160 |               0.0% |               0 |                 18 |                  No |
+
+The 1920 × 1080 stress reversal records the direct
+`animation -> tunnel -> animation -> tunnel -> animation` path, 28 bloom
+frames, zero moving layers, zero suppressed layers, zero formation trail
+captures, and zero pose drift. Mid-transition WebP captures at all seven
+viewports show the active Trails effect painting from the already-placed props;
+there is no source-to-target line because there is no source-to-target travel.
+The reveal, geometry-trace, and orchestration contract checks pass 58 tests.
+The broader sequence-viewer run passes 244 of 245 tests; its only failure is the
+unchanged `TunnelArtSettings` 500-line ownership cap (518 lines by the test's
+newline count on both this branch and `main`). `svelte-check` reports 0 errors
+and 0 warnings, and the seven-viewport browser pass produced no console warnings
+or errors.
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of

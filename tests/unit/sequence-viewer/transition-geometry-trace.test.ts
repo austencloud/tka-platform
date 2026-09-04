@@ -87,7 +87,7 @@ function sample(
     tunnelPerceptibleLayerCount: 0,
     tunnelMovingLayerCount: 0,
     tunnelTrailSuppressedLayerCount: 0,
-    tunnelLayerSeparation: 0,
+    tunnelFormationPoseDrift: 0,
     tunnelGridOpacity: 1,
     tunnelPaintFrame: 0,
     tunnelPaintedPropCount: 0,
@@ -921,8 +921,9 @@ describe("Sequence Viewer geometry trace", () => {
       tunnelLayerOpacityMaximum: opacity,
       tunnelLayerOpacityMean: mean,
       tunnelPerceptibleLayerCount: perceptible,
-      tunnelMovingLayerCount: opacity > 0 && opacity < 1 ? 7 : 0,
-      tunnelTrailSuppressedLayerCount: opacity > 0 && opacity < 1 ? 7 : 0,
+      tunnelMovingLayerCount: 0,
+      tunnelTrailSuppressedLayerCount: 0,
+      tunnelFormationPoseDrift: 0,
       tunnelPaintFrame: index + 1,
       tunnelPaintedPropCount: opacity > 0 ? 14 : 0,
       tunnelPaintedPerceptiblePropCount: perceptible * 2,
@@ -957,6 +958,8 @@ describe("Sequence Viewer geometry trace", () => {
     });
     expect(summary.tunnelUnguardedFormationFrames).toBe(0);
     expect(summary.tunnelFormationTrailCaptures).toBe(0);
+    expect(summary.tunnelFormationPoseDriftMaximum).toBe(0);
+    expect(summary.tunnelFormationPoseDriftFrames).toBe(0);
   });
 
   it("flags trail samples accepted during Tunnel formation travel", () => {
@@ -973,6 +976,7 @@ describe("Sequence Viewer geometry trace", () => {
           tunnelLayerCount: 7,
           tunnelMovingLayerCount: 7,
           tunnelTrailSuppressedLayerCount: 5,
+          tunnelFormationPoseDrift: 0.4,
           tunnelFormationTrailCaptures: 3,
         },
       ],
@@ -983,6 +987,8 @@ describe("Sequence Viewer geometry trace", () => {
 
     expect(summary.tunnelUnguardedFormationFrames).toBe(1);
     expect(summary.tunnelFormationTrailCaptures).toBe(3);
+    expect(summary.tunnelFormationPoseDriftMaximum).toBe(0.4);
+    expect(summary.tunnelFormationPoseDriftFrames).toBe(1);
   });
 
   it("flags a Tunnel backing-store change after the overlay is opaque", () => {

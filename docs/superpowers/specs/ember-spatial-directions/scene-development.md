@@ -1,6 +1,6 @@
 # Ember Spatial Directions
 
-Status: Mid-Flank Fire Pilgrimage Gate 1.1 R4 ready for review; Gate 2 pending; all R3 and prior Gate 2+ work is historical
+Status: Mid-Flank Fire Pilgrimage Gate 1.1 R5 ready for review; Gate 2 pending; R4 and earlier Gate 1/2 work is historical
 
 Date: 2026-09-04
 
@@ -17,22 +17,25 @@ Current regression authority: museum trackers `rn25Qau62kXyyOJpgm7Z`,
 `ZgRNLK66C9Hz2wMPbOXc`, adversarial audit `xSjtvI2XVvvMdn8pHqwP`,
 corrective authorization `WS9FU4nn2fCSbOn68IeB`, delegated spatial selection
 `7uoHBfOCOqMmFeKBRh7l`, R2 audit `torsiCoIaMMrkMklUMSq`, R3 correction
-authorization `lIPwVa2kGFcoQsgICkWI`, and mid-flank requirement
-`BvN1DiylOnfdbrofcwaM`
+authorization `lIPwVa2kGFcoQsgICkWI`, mid-flank requirement
+`BvN1DiylOnfdbrofcwaM`, broad-ledge rejection
+`Vwm6XTLdDbDfxuoVE7z9`, R5 candidate `5P5KVEq04dpHxu9F0ViI`, and R5 evidence
+reference `Iur86OmZX40nTqdwgxDq`
 
 ## Current active geometry contract
 
-Only Mid-Flank Fire Pilgrimage R4 is current. Its north-up plan, true-scale
+Only Mid-Flank Fire Pilgrimage R5 is current. Its north-up plan, true-scale
 section, exact runtime uphill/downhill orbit proof, sightline study, Flowy
-calibration, and report live in `evidence/gate-1-1-geology-amendment-r4/`.
+calibration, and report live in `evidence/gate-1-1-geology-amendment-r5/`.
 
-The performer occupies a long contour ledge halfway between an upper volcanic
-edifice and a lower runout plain. The active source sits high at runtime XZ
-`(-34, 132)`; one simulator-owned drainage passes west of the 4.5 m action
-envelope and leaves the review world at the south boundary. The summit and
-downslope country both continue beyond frame. Gate 1.1 is `ready-for-review`;
-Gate 2 and every later gate remain pending. The R3 Blender/GLB package and all
-earlier artifacts are historical evidence only.
+The performer occupies a 12 by 11 m irregular stable patch embedded in a
+continuously inclined compound flank. The surrounding 8-25 m annulus remains
+slanted at a 9.188 degree median grade. The active source sits high at runtime
+XZ `(-34, 132)`; one fresh simulator-owned drainage passes west of the 4.5 m
+action envelope and leaves the review world at the south boundary. The summit
+and downslope country both continue beyond frame. Gate 1.1 is
+`ready-for-review`; Gate 2 and every later gate remain pending. R4 and all
+earlier Blender/GLB artifacts are historical evidence only.
 
 ## Why this exists
 
@@ -515,7 +518,44 @@ absence of a stage-island reading, and complete-orbit composition remain human
 review items. Gate 3 has not started; no production runtime, final material,
 atmosphere, or Meshy asset changed.
 
-## Mid-Flank Fire Pilgrimage Gate 1.1 R4
+## Mid-Flank Fire Pilgrimage Gate 1.1 R5
+
+Austen retained the colossal mid-flank direction but rejected R4's broad flat
+ledge in tracker `Vwm6XTLdDbDfxuoVE7z9`. R5 preserves the 380 by 335 m world,
+high source, south continuation, 4.5 m action envelope, 25 m orbit, Flowy
+ownership, surface research, atmosphere systems, and unspent Meshy credits.
+
+The corrected terrain remains slanted through the performer neighborhood. Only
+a 12 by 11 m irregular core locally eases to a 1.286 degree median slope; the
+surrounding 8-25 m annulus retains a 9.188 degree median slope and the old-flow
+contact retains an 8.209 degree median slope. A true-scale section shows 131.368
+m of upper rise, 69.916 m of lower fall, and smooth compound grade transitions.
+
+Fresh pinned Flowy calibration `r5f-c03-braided-20m2` owns the proposed deposit
+footprint. It yields 2,400 active cells, 7.097 m clearance beyond the action
+envelope, zero occupied-row gaps, 13 m downstream median width, and 31 cells in
+the south-exit guard. All eight exact 25 m sightlines clear.
+
+Current evidence:
+
+- north-up measured plan:
+  `evidence/gate-1-1-geology-amendment-r5/01-north-up-measured-plan.png`;
+- true-scale compound-flank section:
+  `evidence/gate-1-1-geology-amendment-r5/02-true-scale-midflank-section.png`;
+- exact opposite-side orbit proof:
+  `evidence/gate-1-1-geology-amendment-r5/03-runtime-uphill-downhill-proof.png`;
+- eight-point sightline study:
+  `evidence/gate-1-1-geology-amendment-r5/04-orbit-sightline-study.png`;
+- Flowy calibration sweep:
+  `evidence/gate-1-1-geology-amendment-r5/05-flowy-calibration-sweep.png`;
+- canonical report:
+  `evidence/gate-1-1-geology-amendment-r5/ember-midflank-fire-pilgrimage-r5-gate1-1-report.json`.
+
+Gate 1.1 R5 is `ready-for-review` with approval unset in reference
+`Iur86OmZX40nTqdwgxDq`. Gate 2 is pending. No R5 Blender source, GLB, shipping
+runtime, final material, atmosphere, Meshy asset, or Meshy credit changed.
+
+## Historical Mid-Flank Fire Pilgrimage Gate 1.1 / Gate 2 R4
 
 Austen rejected R3's broad-basin read in tracker `BvN1DiylOnfdbrofcwaM`:
 the performer must feel halfway up a colossal volcanic mountain, with sustained
@@ -551,6 +591,41 @@ The Gate 1.1 evidence is:
 - canonical measured report:
   `evidence/gate-1-1-geology-amendment-r4/ember-midflank-fire-pilgrimage-r4-gate1-1-report.json`.
 
-Gate 1.1 R4 is `ready-for-review` with approval unset. No Blender graybox,
-shipping runtime, final material, atmosphere, Meshy asset, or Meshy credit was
-changed. Gate 2 may begin only after explicit R4 artifact approval.
+Gate 1.1 R4 was approved by Austen on 2026-09-04 with “Yeah that's better let's
+go with that” in tracker `xFcagbaZTQAq615IbZgT`. No shipping runtime, final
+material, atmosphere, Meshy asset, or Meshy credit changed at that gate.
+
+## Historical Mid-Flank Fire Pilgrimage Gate 2 R4
+
+The existing `scripts/build-ember-geology-graybox.py` owner now derives the
+Blender scene from the approved R4 heightfield and the same checked-in Flowy
+thickness raster used by Gate 1.1. The terrain has 128,016 registered 1 m
+samples. The visible lava body has exactly one top quad for each of the 2,154
+active simulator cells, closes every exposed edge with terrain-conforming
+support faces, and carries the source raster and coordinate-manifest digests in
+both the Blend and review GLB.
+
+The 1.75 m performer proxy remains on the long contour ledge. A furnace-saddle
+fissure and sparse upper/lower flank buttresses clarify the vertical hierarchy
+without hiding the approved terrain. Plan-only action and ledge guides are
+excluded from the GLB. One visible terrain collider carries
+`tka_camera_collision=true`; no decorative mesh collides.
+
+The review package in `evidence/gate-2-geology-graybox-r4/` includes the exact
+default audience camera, eight exact 25 m orbit stops, a 48-frame continuous
+orbit, north-up plan, true-scale summit-to-outflow section, director overview,
+mid-flank oblique, 4K contact sheet, coordinate manifest, and verification
+report. The editable source is
+`blender/ember-midflank-fire-pilgrimage-graybox-r4.blend`; the spatially
+equivalent review asset is
+`static/models/ember/review/ember-midflank-fire-pilgrimage-graybox-r4.glb`.
+
+Automated verification confirms a connected 296.196 m source-to-south deposit
+trace with 195.588 m net descent, 13 south-exit cells, zero occupied-row gaps,
+9 m downstream median width, and 6.0 m clearance beyond the protected action
+envelope. Blender/GLB geometry, camera, material, collision, transform, and
+source-digest equivalence checks passed. Gate 2 R4 entered review with approval
+unset in tracker reference `lXhTllDFV2Ne1E7foCkS`; Austen then rejected its
+broad ledge in `Vwm6XTLdDbDfxuoVE7z9`. It is historical and Gate 3 did not
+start. No production runtime, final material, atmosphere, Meshy asset, or Meshy
+credit changed.

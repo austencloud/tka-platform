@@ -1,11 +1,8 @@
 import { DURATION } from "$lib/shared/transitions/transitions";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
-import {
-  lerp,
-  lerpAngle,
-} from "$lib/shared/animation-engine/services/angle-calculator";
+import { normalizeAngleSigned } from "$lib/shared/animation-engine/services/angle-calculator";
 
-/** One structural phrase: separate, establish the formation, and settle. */
+/** One structural phrase: reveal the prepared formation and settle. */
 export const TUNNEL_REVEAL_DURATION = DURATION.emphasis + DURATION.normal;
 
 function clampProgress(progress: number): number {
@@ -16,7 +13,7 @@ function clampProgress(progress: number): number {
  * Seven copies still need to read as one ensemble, not seven late disclosures.
  * This keeps the farthest copy only a fraction of a phrase behind the first.
  */
-const LAYER_POSITION_STAGGER = 0.18;
+const LAYER_OPACITY_STAGGER = 0.18;
 
 function layerStart(
   layerIndex: number,
@@ -29,10 +26,11 @@ function layerStart(
 }
 
 /**
- * Per-copy progress through the formation change.
+ * Per-copy progress through the formation crossfade.
  *
- * This is shared by geometry and opacity so a rapid reversal retraces one
- * coherent path instead of asking two independent clocks to catch each other.
+ * The copies are already at their authored poses. This slight offset keeps the
+ * ensemble from appearing as one flat flash without making anyone travel into
+ * place.
  */
 export function resolveTunnelLayerProgress(
   progress: number,
@@ -42,7 +40,7 @@ export function resolveTunnelLayerProgress(
   const clampedProgress = clampProgress(progress);
   if (layerCount <= 1) return clampedProgress;
 
-  const start = layerStart(layerIndex, layerCount, LAYER_POSITION_STAGGER);
+  const start = layerStart(layerIndex, layerCount, LAYER_OPACITY_STAGGER);
   const localProgress = clampProgress((clampedProgress - start) / (1 - start));
   // The shared Tween already supplies the product's cubic-out easing. Easing
   // again here held six of seven copies near zero until the final beat, then
@@ -60,59 +58,51 @@ function propPosition(state: PropState): { x: number; y: number } {
   };
 }
 
-/** Distance the copy has visibly peeled away, in grid-radius units. */
-export function tunnelLayerPositionSeparation(
-  base: PropState | null,
+/**
+ * Difference between the pose being rendered and the authored Tunnel pose.
+ *
+ * Position is measured in grid-radius units. Angles are normalized to a half
+ * turn so either kind of scramble produces a comparable non-zero signal.
+ */
+export function tunnelLayerPoseDifference(
+  expected: PropState | null,
   current: PropState | null
 ): number {
-  if (base === null || current === null) return 0;
-  const from = propPosition(base);
-  const to = propPosition(current);
-  return Math.hypot(to.x - from.x, to.y - from.y);
+  if (expected === null || current === null) {
+    return expected === current ? 0 : 1;
+  }
+  const expectedPosition = propPosition(expected);
+  const currentPosition = propPosition(current);
+  // When neither pose has explicit canvas coordinates, centerPathAngle already
+  // describes its location and is graded below. Counting the unit-circle chord
+  // as well would report the same angular difference twice. If either pose has
+  // explicit coordinates, compare in canvas space and derive only the missing
+  // endpoint from its angle.
+  const hasExplicitPosition =
+    (expected.x !== undefined && expected.y !== undefined) ||
+    (current.x !== undefined && current.y !== undefined);
+  const positionDifference = hasExplicitPosition
+    ? Math.hypot(
+        currentPosition.x - expectedPosition.x,
+        currentPosition.y - expectedPosition.y
+      )
+    : 0;
+  const pathDifference =
+    Math.abs(
+      normalizeAngleSigned(current.centerPathAngle - expected.centerPathAngle)
+    ) / Math.PI;
+  const rotationDifference =
+    Math.abs(
+      normalizeAngleSigned(
+        current.staffRotationAngle - expected.staffRotationAngle
+      )
+    ) / Math.PI;
+  return Math.max(positionDifference, pathDifference, rotationDifference);
 }
 
 /**
- * Peel one Tunnel prop out of the live 2D prop into its authored copy pose.
- *
- * At zero the duplicate sits exactly under the base prop and is transparent.
- * It then becomes legible while separating into the formation. Both angles use
- * the renderer's canonical shortest-path interpolation; dash coordinates follow
- * the same progress when both endpoints carry them.
- */
-export function interpolateTunnelLayerProp(
-  base: PropState | null,
-  target: PropState | null,
-  progress: number
-): PropState | null {
-  if (target === null) return null;
-  if (base === null) return target;
-
-  const clampedProgress = clampProgress(progress);
-  if (clampedProgress === 0) return base;
-  if (clampedProgress === 1) return target;
-
-  // Position travels in canvas space rather than by angular shortest-path.
-  // A moving pair can straddle the 180° seam from one frame to the next; an
-  // angular branch would then flip sides, while this line remains continuous.
-  const from = propPosition(base);
-  const to = propPosition(target);
-  const x = lerp(from.x, to.x, clampedProgress);
-  const y = lerp(from.y, to.y, clampedProgress);
-  return {
-    centerPathAngle: Math.atan2(y, x),
-    staffRotationAngle: lerpAngle(
-      base.staffRotationAngle,
-      target.staffRotationAngle,
-      clampedProgress
-    ),
-    x,
-    y,
-  };
-}
-
-/**
- * Extra performers arrive from the center of the stack outward as one phrase.
- * The positional stagger is deliberately subtle: depth remains legible, while
+ * Extra performers crossfade in with a slight center-out depth stagger. The
+ * offset is deliberately subtle: depth remains legible, while
  * every copy is already participating before the reveal reaches its midpoint.
  */
 export function resolveTunnelLayerOpacity(

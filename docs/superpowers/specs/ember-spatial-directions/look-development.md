@@ -1,6 +1,6 @@
 # Broken Rift Gate Look Development
 
-Status: historical Gate 3 study; superseded by the geology-first Gate 1.1 R4 mid-flank restart
+Status: historical Gate 3 study; superseded by the geology-first Gate 1.1 R5 slanted-mid-flank restart
 
 Date: 2026-08-27
 

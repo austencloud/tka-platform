@@ -24,6 +24,10 @@ const hubSource = readFileSync(
   resolve("src/lib/shared/3d/components/controls/PerformerHubDetail.svelte"),
   "utf8"
 );
+const transitionSource = readFileSync(
+  resolve("src/lib/shared/3d/components/CharacterSwapTransition.svelte"),
+  "utf8"
+);
 // The performer command bar (954f5c4a49) moved the character list markup out of
 // the hub and into this picker. The hub still owns the intent/commit logic and
 // hands the picker its callbacks, so the budget contract spans both files.
@@ -82,6 +86,28 @@ describe("character swap render budget", () => {
     expect(pickerSource).toContain(
       "class:preparing={pendingCharacterId === definition.id}"
     );
+  });
+
+  it("recovers a persisted local-only character whose model is unavailable", () => {
+    const prepare = transitionSource.indexOf(
+      "void prepareCharacter(requestedCharacterId).catch"
+    );
+    const localOnlyGuard = transitionSource.indexOf(
+      '?.availability !== "local-evaluation"',
+      prepare
+    );
+    const fallback = transitionSource.indexOf(
+      "performer.setCharacter(DEFAULT_CHARACTER_ID)",
+      localOnlyGuard
+    );
+
+    expect(prepare).toBeGreaterThan(-1);
+    expect(localOnlyGuard).toBeGreaterThan(prepare);
+    expect(fallback).toBeGreaterThan(localOnlyGuard);
+    expect(transitionSource).toContain(
+      "performer.characterId !== requestedCharacterId"
+    );
+    expect(transitionSource).toContain("sceneUndo.withoutUndo");
   });
 
   it("compiles active material variants before committing the replacement root", () => {
