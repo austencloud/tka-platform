@@ -372,7 +372,7 @@ const researchEntries: ArchiveEntry[] = [
 				label: "Home of Poi: Our mission and values",
 				href: "https://www.homeofpoi.com/us/company/information-mission.php",
 				supports:
-					"The October 26, 1998 launch, Malcolm Crawshay's authorship, and the site's educational and community purpose.",
+					"The October 26, 1998 launch, Malcolm Crawshay's authorship, and the site's educational purpose.",
 				basis: "creators-account",
 			},
 			{
@@ -386,7 +386,7 @@ const researchEntries: ArchiveEntry[] = [
 				label: "How do you define a weave?, 2002",
 				href: "https://www.homeofpoi.com/en/community/forums/topics/120838/How-do-you-define-a-weave",
 				supports:
-					"A dated example of members working through movement terminology and teaching language in public.",
+					"A 2002 discussion of weave terminology and teaching language in public.",
 				basis: "community-attested",
 			},
 		],
