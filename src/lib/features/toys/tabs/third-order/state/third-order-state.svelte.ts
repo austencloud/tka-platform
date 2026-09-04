@@ -21,8 +21,7 @@ export interface ThirdOrderState {
   readonly selectedChildId: ChildId;
   readonly selectedChild: ThirdOrderChildDraft;
   readonly pickerTarget: ThirdOrderSourceTarget | null;
-  readonly sourceDrawerOpen: boolean;
-  readonly inspectorDrawerOpen: boolean;
+  readonly setupDrawerOpen: boolean;
   selectChild(id: ChildId): void;
   setCarrier(sequence: SequenceData): void;
   setChildSequence(id: ChildId, sequence: SequenceData): void;
@@ -40,8 +39,7 @@ export interface ThirdOrderState {
   openPicker(target: ThirdOrderSourceTarget): void;
   closePicker(): void;
   applyPickedSequence(sequence: SequenceData): void;
-  setSourceDrawerOpen(open: boolean): void;
-  setInspectorDrawerOpen(open: boolean): void;
+  setSetupDrawerOpen(open: boolean): void;
   destroy(): void;
 }
 
@@ -67,7 +65,7 @@ export function createThirdOrderState(
   sampler: IThirdOrderCompositionSampler,
   initialSequence: SequenceData
 ): ThirdOrderState {
-  let composition = $state<ThirdOrderCompositionDraft>({
+  const composition = $state<ThirdOrderCompositionDraft>({
     version: THIRD_ORDER_COMPOSITION_VERSION,
     carrier: initialSequence,
     children: [
@@ -80,8 +78,7 @@ export function createThirdOrderState(
   let isPlaying = $state(false);
   let selectedChildId = $state<ChildId>("grid-blue");
   let pickerTarget = $state<ThirdOrderSourceTarget | null>(null);
-  let sourceDrawerOpen = $state(false);
-  let inspectorDrawerOpen = $state(false);
+  let setupDrawerOpen = $state(false);
   let frame = $state<ThirdOrderCompositionFrame>(
     sampler.sample(composition, 0)
   );
@@ -148,11 +145,8 @@ export function createThirdOrderState(
     get pickerTarget() {
       return pickerTarget;
     },
-    get sourceDrawerOpen() {
-      return sourceDrawerOpen;
-    },
-    get inspectorDrawerOpen() {
-      return inspectorDrawerOpen;
+    get setupDrawerOpen() {
+      return setupDrawerOpen;
     },
     selectChild(id) {
       selectedChildId = id;
@@ -242,11 +236,8 @@ export function createThirdOrderState(
       }
       pickerTarget = null;
     },
-    setSourceDrawerOpen(open) {
-      sourceDrawerOpen = open;
-    },
-    setInspectorDrawerOpen(open) {
-      inspectorDrawerOpen = open;
+    setSetupDrawerOpen(open) {
+      setupDrawerOpen = open;
     },
     destroy() {
       stopPlayback();

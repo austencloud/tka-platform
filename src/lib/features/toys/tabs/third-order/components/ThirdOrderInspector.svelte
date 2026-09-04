@@ -9,6 +9,7 @@
     ThirdOrderTimingMode,
   } from "../domain/third-order-composition";
 
+  let { embedded = false }: { embedded?: boolean } = $props();
   const state = getThirdOrderContext();
   const laneOptions = [
     { value: "left", label: "Blue carrier", shortLabel: "Blue", tone: "blue" },
@@ -72,7 +73,7 @@
   };
 </script>
 
-<aside class="inspector" aria-label="Third Order inspector">
+<section class="inspector" class:embedded aria-label="Third Order controls">
   <header class="inspector-header">
     <div>
       <span class="context-label">Selected system</span>
@@ -166,18 +167,7 @@
       </div>
     {/if}
   </section>
-
-  <section class="geometry-summary">
-    <span class="geometry-value" aria-hidden="true">1:2</span>
-    <div>
-      <h3>Child-to-carrier scale</h3>
-      <p>
-        Child centers sit on the carrier hand ring, keeping the two grids
-        geometrically aligned.
-      </p>
-    </div>
-  </section>
-</aside>
+</section>
 
 <style>
   .inspector {
@@ -189,6 +179,14 @@
     padding: 16px;
     overflow: auto;
     background: var(--theme-panel-bg);
+  }
+  .inspector.embedded {
+    height: auto;
+    margin-top: 16px;
+    padding: 16px 0 0;
+    overflow: visible;
+    border-top: 1px solid var(--theme-stroke);
+    background: transparent;
   }
   .inspector-header {
     display: flex;
@@ -235,14 +233,12 @@
     display: grid;
     gap: 4px;
   }
-  .section-heading h3,
-  .geometry-summary h3 {
+  .section-heading h3 {
     margin: 0;
     color: var(--theme-text, #fff);
     font-size: 14px;
   }
-  .section-heading p,
-  .geometry-summary p {
+  .section-heading p {
     margin: 0;
     color: var(--theme-text-dim, #9ca3af);
     font-size: 12px;
@@ -267,26 +263,5 @@
     min-height: 46px;
     color: var(--theme-text-dim, #aeb5c1);
     font-size: var(--font-size-min, 14px);
-  }
-  .geometry-summary {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: auto;
-    padding-top: 16px;
-    border-top: 1px solid var(--theme-stroke);
-  }
-  .geometry-value {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    flex: 0 0 44px;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--border-radius-md, 8px);
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
   }
 </style>

@@ -21,7 +21,7 @@ import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-stat
 const debug = createComponentLogger("ComposeModuleState");
 
 // Tab types - Playback is an overlay, not a tab
-export type ComposeTab = "arrange" | "browse" | "timeline" | "third-order";
+export type ComposeTab = "arrange" | "browse" | "timeline";
 
 // Re-export AnimationMode for backwards compatibility
 export type ComposeMode = AnimationMode;
@@ -76,7 +76,6 @@ export type ComposeModuleState = {
   goToArrange: () => void;
   goToBrowse: () => void;
   goToTimeline: () => void;
-  goToThirdOrder: () => void;
 
   reset: () => void;
 
@@ -208,11 +207,6 @@ export function createComposeModuleState(): ComposeModuleState {
     goToTimeline() {
       currentTab = "timeline";
       debug.log("Navigating to Timeline");
-    },
-
-    goToThirdOrder() {
-      currentTab = "third-order";
-      debug.log("Navigating to Third Order");
     },
 
     reset() {
