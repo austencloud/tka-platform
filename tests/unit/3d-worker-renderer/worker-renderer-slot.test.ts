@@ -92,4 +92,16 @@ describe("worker renderer slot", () => {
     expect(onDestroyed).toHaveBeenCalledTimes(1);
     expect(after).toHaveBeenCalledTimes(1);
   });
+
+  it("terminates a superseded staging worker synchronously", () => {
+    const { worker, canvas, onDestroyed, slot } = fixture();
+    const after = vi.fn();
+
+    slot.terminate(after);
+
+    expect(worker.terminate).toHaveBeenCalledTimes(1);
+    expect(canvas.remove).toHaveBeenCalledTimes(1);
+    expect(onDestroyed).toHaveBeenCalledTimes(1);
+    expect(after).toHaveBeenCalledTimes(1);
+  });
 });

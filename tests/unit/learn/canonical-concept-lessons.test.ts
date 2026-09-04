@@ -5,40 +5,59 @@ import { Letter } from "../../../src/lib/shared/foundation/domain/models/letter"
 import { LetterType } from "../../../src/lib/shared/foundation/domain/models/letter-type";
 import { LETTER_TYPE_COLORS } from "../../../src/lib/shared/pictograph/shared/domain/constants/pictograph-constants";
 import {
-  HAND_MOTION_LESSON,
-  HAND_MOTION_QUESTIONS,
   ROTATION_DIRECTION_LESSON,
   ROTATION_DIRECTION_QUESTIONS,
   TYPE1_ACCENTS,
   TYPE1_LESSON_LETTERS,
   TYPE1_QUESTIONS,
 } from "../../../src/lib/features/learn/components/interactive/shared/canonical-lesson-content";
+import {
+  ALPHA_BETA_MODES,
+  GAMMA_MODES,
+  HAND_PATH_STEPS,
+} from "../../../src/lib/features/learn/components/interactive/foundations/pictograph-foundation-content";
 
 const readSource = (path: string) =>
   readFileSync(resolve(process.cwd(), path), "utf8");
 
 describe("canonical concept lesson content", () => {
-  it("teaches the three hand paths with canonical representative letters and colors", () => {
-    expect(HAND_MOTION_LESSON.map((item) => item.id)).toEqual([
+  it("teaches hand paths before any visible letter", () => {
+    expect(HAND_PATH_STEPS.map((item) => item.id)).toEqual([
       "shift",
       "dash",
       "static",
     ]);
-    expect(HAND_MOTION_LESSON.map((item) => item.letter)).toEqual([
-      Letter.W,
-      Letter.PHI,
-      Letter.ALPHA,
-    ]);
-    expect(HAND_MOTION_LESSON.map((item) => item.accent)).toEqual([
-      LETTER_TYPE_COLORS[LetterType.TYPE2][0],
-      LETTER_TYPE_COLORS[LetterType.TYPE4][0],
-      LETTER_TYPE_COLORS[LetterType.TYPE6][0],
-    ]);
+    expect(HAND_PATH_STEPS.every((item) => item.sequence.word === "")).toBe(
+      true
+    );
     expect(
-      HAND_MOTION_QUESTIONS.every((question) =>
-        HAND_MOTION_LESSON.some((item) => item.id === question.answer)
+      HAND_PATH_STEPS.every((item) =>
+        item.sequence.steps.every((step) => step.letter === null)
       )
     ).toBe(true);
+  });
+
+  it("orders all six timing/direction modes before the letter lessons", () => {
+    expect(ALPHA_BETA_MODES.map((mode) => mode.id)).toEqual([
+      "ss",
+      "ts",
+      "so",
+      "to",
+    ]);
+    expect(GAMMA_MODES.map((mode) => mode.id)).toEqual(["qo", "qs"]);
+    expect(
+      [...ALPHA_BETA_MODES, ...GAMMA_MODES].map((mode) => [
+        mode.timing,
+        mode.direction,
+      ])
+    ).toEqual([
+      ["Split", "Same"],
+      ["Together", "Same"],
+      ["Split", "Opposite"],
+      ["Together", "Opposite"],
+      ["Quarter", "Opposite"],
+      ["Quarter", "Same"],
+    ]);
   });
 
   it("isolates pro and anti with canonical A/B pictographs", () => {
@@ -82,12 +101,18 @@ describe("canonical concept lesson content", () => {
 });
 
 describe("canonical concept lesson composition", () => {
-  it("renders motion, rotation, and Type 1 examples through the production pictograph path", () => {
+  it("renders foundation motion and letter examples through production paths", () => {
     const stage = readSource(
       "src/lib/features/learn/components/interactive/shared/LessonPictographStage.svelte"
     );
     const motions = readSource(
       "src/lib/features/learn/components/interactive/motions/MotionsConceptExperience.svelte"
+    );
+    const handPlayer = readSource(
+      "src/lib/features/learn/components/interactive/foundations/HandMotionPlayer.svelte"
+    );
+    const foundationContent = readSource(
+      "src/lib/features/learn/components/interactive/foundations/pictograph-foundation-content.ts"
     );
     const type1 = readSource(
       "src/lib/features/learn/components/interactive/letters/type1/Type1ConceptExperience.svelte"
@@ -99,8 +124,13 @@ describe("canonical concept lesson composition", () => {
     expect(stage).toContain("PictographContainer");
     expect(stage).toContain("startPositionDeriver");
     expect(stage).toContain("PropType.STAFF");
-    expect(motions).toContain("letterQueryHandler");
-    expect(motions).toContain("LessonPictographStage");
+    expect(motions).toContain("HandMotionPlayer");
+    expect(motions).not.toContain("letterQueryHandler");
+    expect(motions).not.toContain("LessonPictographStage");
+    expect(handPlayer).toContain("InlineAnimationPlayer");
+    expect(handPlayer).toContain('leftPropType="hand"');
+    expect(handPlayer).toContain("hideTkaGlyph");
+    expect(foundationContent).toContain("PropType.HAND");
     expect(rotation).toContain("letterQueryHandler");
     expect(rotation).toContain("LessonPictographStage");
     expect(type1).toContain("letterQueryHandler");
@@ -112,6 +142,31 @@ describe("canonical concept lesson composition", () => {
     expect(rotation).not.toContain("StaffPositionVisualizer");
     expect(type1).not.toContain("TYPE1_ALPHABET");
     expect(type1).not.toContain("Type1ProspinPage");
+  });
+
+  it("publishes motion, timing/direction, and anatomy before letters", () => {
+    const registry = readSource(
+      "src/lib/features/learn/domain/concept-experience-registry.ts"
+    );
+    const anatomy = readSource(
+      "src/lib/features/learn/components/interactive/foundations/PictographAnatomyConceptExperience.svelte"
+    );
+    const order = [
+      "hand-motions-intro",
+      "dual-shifts-alpha-beta",
+      "gamma-motion",
+      "letter-codex-intro",
+      "type1-abc-ghi",
+      "words-alpha-beta",
+    ].map((id) => registry.indexOf(`conceptId: "${id}"`));
+
+    expect(order.every((index) => index >= 0)).toBe(true);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(anatomy).toContain("ArtifactRegionSpotlight");
+    expect(anatomy).toContain("PictographContainer");
+    expect(anatomy).toContain("Top left: the step number.");
+    expect(anatomy).toContain("Bottom right: the hands’ timing and direction.");
+    expect(anatomy).toContain("Top right: the props’ timing and direction.");
   });
 
   it("walks the guide's six words step by step before a six-word recap", () => {
@@ -174,6 +229,9 @@ describe("canonical concept lesson composition", () => {
     expect(stage).toContain("showWordHeader={false}");
     expect(stage).toContain("showWord={false}");
     expect(stage).toContain("hideTkaGlyph");
+    expect(stage).toContain("derivePropElementalType");
+    expect(stage).toContain("visibilityManagerOverride={lessonVisibility}");
+    expect(stage).not.toContain("disableContextMenu");
     expect(stage).toContain("grid-template-columns: repeat(3");
     expect(content).toContain("LEARNING_LETTERS_DECK_WORDS");
     expect(content).toContain("video: null");
