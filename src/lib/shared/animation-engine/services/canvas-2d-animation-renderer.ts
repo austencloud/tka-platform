@@ -433,6 +433,7 @@ export class Canvas2DAnimationRenderer {
 
   renderScene(params: RenderSceneParams): void {
     this.lastRenderedPropSprites.length = 0;
+    const paintedTunnelOpacities: number[] = [];
     const ctx = this.appManager.getContext();
     if (!ctx || !this.appManager.isReady()) {
       return;
@@ -672,6 +673,7 @@ export class Canvas2DAnimationRenderer {
                 params.leftPropFlipped ?? false,
                 layer.leftPropType ?? params.leftPropType
               );
+              paintedTunnelOpacities.push(ctx.globalAlpha);
             }
           }
         }
@@ -827,6 +829,7 @@ export class Canvas2DAnimationRenderer {
                 params.rightPropFlipped ?? false,
                 layer.rightPropType ?? params.rightPropType
               );
+              paintedTunnelOpacities.push(ctx.globalAlpha);
             }
           }
         }
@@ -837,6 +840,33 @@ export class Canvas2DAnimationRenderer {
 
     // 5. Draw glyph (with fade transition)
     this.renderGlyph(ctx, params.currentTime, canvasSize);
+    this.publishTunnelPaintTelemetry(paintedTunnelOpacities);
+  }
+
+  /**
+   * Publish completed Tunnel draw calls only while the transition review asks.
+   *
+   * Reading a live canvas buffer races the renderer's clear/draw tasks and can
+   * report a transparent frame that was never presented. These values are
+   * recorded immediately after each additional prop's `drawImage`, so they
+   * describe the paint work that produced the composited frame without adding
+   * a production DOM write on ordinary playback.
+   */
+  private publishTunnelPaintTelemetry(opacities: number[]): void {
+    const canvas = this.appManager.getCanvas();
+    if (!canvas || canvas.dataset.captureTunnelPaint !== "true") return;
+    const frame = (Number(canvas.dataset.tunnelPaintFrame) || 0) + 1;
+    const mean =
+      opacities.length === 0
+        ? 0
+        : opacities.reduce((total, opacity) => total + opacity, 0) /
+          opacities.length;
+    canvas.dataset.tunnelPaintFrame = String(frame);
+    canvas.dataset.tunnelPaintedPropCount = String(opacities.length);
+    canvas.dataset.tunnelPaintedPerceptiblePropCount = String(
+      opacities.filter((opacity) => opacity >= 0.1).length
+    );
+    canvas.dataset.tunnelPaintedOpacityMean = mean.toFixed(3);
   }
 
   getLastPropTransforms(): {

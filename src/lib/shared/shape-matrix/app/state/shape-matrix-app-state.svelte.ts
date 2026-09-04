@@ -391,17 +391,21 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
-  /** Honours the Apply to target, exactly as the Matrix turn control does. */
-  function setTheoryRatio(nextRatio: SpinRatio): void {
-    const allowed = theoryRatioFromParts(
-      nextRatio.propRotations,
-      nextRatio.handCycles
+  /** Two visible editors commit together when one ratio is copied across. */
+  function setTheoryRatios(
+    nextLeftRatio: SpinRatio,
+    nextRightRatio: SpinRatio
+  ): void {
+    const allowedLeft = theoryRatioFromParts(
+      nextLeftRatio.propRotations,
+      nextLeftRatio.handCycles
     );
-    if (!allowed) return;
-    applyTheoryRatios(
-      activeAxis === "right" ? theoryLeftRatio : allowed,
-      activeAxis === "left" ? theoryRightRatio : allowed
+    const allowedRight = theoryRatioFromParts(
+      nextRightRatio.propRotations,
+      nextRightRatio.handCycles
     );
+    if (!allowedLeft || !allowedRight) return;
+    applyTheoryRatios(allowedLeft, allowedRight);
     syncState();
   }
 
@@ -593,10 +597,6 @@ export function createShapeMatrixAppState(
     get theoryRightRatio() {
       return theoryRightRatio;
     },
-    /** The ratio the Apply to target currently edits. */
-    get activeTheoryRatio() {
-      return activeAxis === "right" ? theoryRightRatio : theoryLeftRatio;
-    },
     get theoryMode() {
       return theoryMode;
     },
@@ -682,8 +682,8 @@ export function createShapeMatrixAppState(
     setActiveAxis,
     setLabelMode,
     setSurface,
-    setTheoryRatio,
     setTheoryRatioFor,
+    setTheoryRatios,
     setTheoryMode,
     selectTheoryPair,
     setPropType,

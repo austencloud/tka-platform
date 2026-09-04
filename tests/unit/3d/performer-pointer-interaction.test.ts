@@ -11,6 +11,7 @@ import {
 } from "three";
 import {
   clampPerformerPosition,
+  clampGroupTranslation,
   createPerformerPointerInteraction,
   getPointerIntent,
   intersectHorizontalPlane,
@@ -93,6 +94,20 @@ describe("performer pointer interaction", () => {
     ).toEqual({ x: 4.5, z: -2.5 });
   });
 
+  it("clamps one translation for the whole formation", () => {
+    expect(
+      clampGroupTranslation(
+        [
+          { x: 2, z: 0 },
+          { x: 4, z: 1 },
+        ],
+        { x: 3, z: -4 },
+        { width: 10, depth: 8, zOffset: 0 },
+        0.5
+      )
+    ).toEqual({ x: 0.5, z: -3.5 });
+  });
+
   it("projects Shift-drag movement onto the nearest of eight ground directions", () => {
     const cases = [
       { target: { x: 3, z: 0.5 }, angle: 0 },
@@ -162,7 +177,16 @@ describe("performer press vs camera-controls listener ordering", () => {
   function firePointer(
     target: EventTarget,
     type: string,
-    init: { clientX: number; clientY: number; pointerId?: number }
+    init: {
+      clientX: number;
+      clientY: number;
+      pointerId?: number;
+      pointerType?: string;
+      button?: number;
+      ctrlKey?: boolean;
+      metaKey?: boolean;
+      shiftKey?: boolean;
+    }
   ): void {
     const Ctor =
       typeof PointerEvent !== "undefined" ? PointerEvent : MouseEvent;
@@ -171,13 +195,21 @@ describe("performer press vs camera-controls listener ordering", () => {
       cancelable: true,
       clientX: init.clientX,
       clientY: init.clientY,
-      button: 0,
+      button: init.button ?? 0,
+      ctrlKey: init.ctrlKey,
+      metaKey: init.metaKey,
+      shiftKey: init.shiftKey,
     });
     if (!("pointerId" in event)) {
       Object.defineProperty(event, "pointerId", {
         value: init.pointerId ?? 1,
       });
-      Object.defineProperty(event, "pointerType", { value: "mouse" });
+      Object.defineProperty(event, "pointerType", {
+        value: init.pointerType ?? "mouse",
+      });
+    }
+    if (init.pointerType && "pointerId" in event) {
+      Object.defineProperty(event, "pointerType", { value: init.pointerType });
     }
     target.dispatchEvent(event);
   }
@@ -225,13 +257,36 @@ describe("performer press vs camera-controls listener ordering", () => {
     visualRoot.updateMatrixWorld(true);
 
     const viewer = {
-      selectedPerformerIndex: null as number | null,
+      primaryPerformerIndex: null as number | null,
+      selectedPerformerIndices: [] as number[],
+      performerSelectionMode: false,
       isCameraDragging: false,
       performerManager: {
-        performers: [{ position: { x: 0, z: 0 } }],
+        performers: [
+          { position: { x: 0, z: 0 } },
+          { position: { x: 1, z: 0 } },
+        ],
         handleDrag: vi.fn(),
       },
-      selectPerformerScope: vi.fn(),
+      replacePerformerSelection: vi.fn((index: number) => {
+        viewer.selectedPerformerIndices = [index];
+        viewer.primaryPerformerIndex = index;
+      }),
+      togglePerformerSelection: vi.fn((index: number) => {
+        viewer.selectedPerformerIndices =
+          viewer.selectedPerformerIndices.includes(index)
+            ? viewer.selectedPerformerIndices.filter((value) => value !== index)
+            : [...viewer.selectedPerformerIndices, index];
+        viewer.primaryPerformerIndex =
+          viewer.selectedPerformerIndices.at(-1) ?? null;
+      }),
+      clearPerformerSelection: vi.fn(() => {
+        viewer.selectedPerformerIndices = [];
+        viewer.primaryPerformerIndex = null;
+      }),
+      setPerformerSelectionMode: vi.fn((value: boolean) => {
+        viewer.performerSelectionMode = value;
+      }),
       beginSpatialEdit: vi.fn(),
       endSpatialEdit: vi.fn(),
       cancelSpatialEdit: vi.fn(),
@@ -257,8 +312,25 @@ describe("performer press vs camera-controls listener ordering", () => {
     interaction.registerPickTarget(proxy);
     interaction.registerVisualPickTarget(0, visualRoot);
     const detach = interaction.attach();
+    const moveHandle = new EventTarget() as unknown as HTMLElement;
+    Object.assign(moveHandle, {
+      style: {},
+      setPointerCapture: () => {},
+      hasPointerCapture: () => false,
+      releasePointerCapture: () => {},
+    });
+    moveHandle.addEventListener("pointerdown", (event) =>
+      interaction.onMoveHandlePointerDown(event as PointerEvent, 0)
+    );
+    moveHandle.addEventListener("pointermove", (event) =>
+      interaction.onMoveHandlePointerMove(event as PointerEvent)
+    );
+    moveHandle.addEventListener("pointerup", (event) =>
+      interaction.onMoveHandlePointerUp(event as PointerEvent)
+    );
     return {
       canvas,
+      moveHandle,
       viewer,
       orbitDown,
       interaction,
@@ -344,20 +416,21 @@ describe("performer press vs camera-controls listener ordering", () => {
     firePointer(canvas, "pointerdown", { clientX: 50, clientY: 50 });
     expect(orbitDown).not.toHaveBeenCalled();
     firePointer(canvas, "pointerup", { clientX: 50, clientY: 50 });
-    expect(viewer.selectPerformerScope).toHaveBeenCalledWith(0);
+    expect(viewer.replacePerformerSelection).toHaveBeenCalledWith(0);
     detach();
   });
 
   it("consumes Escape when it deselects, so the viewer shell stays open", () => {
     const { canvas, viewer, detach } = buildHarness();
-    viewer.selectedPerformerIndex = 0;
+    viewer.primaryPerformerIndex = 0;
+    viewer.selectedPerformerIndices = [0];
     const escape = new KeyboardEvent("keydown", {
       key: "Escape",
       bubbles: true,
       cancelable: true,
     });
     canvas.dispatchEvent(escape);
-    expect(viewer.selectPerformerScope).toHaveBeenCalledWith(null);
+    expect(viewer.clearPerformerSelection).toHaveBeenCalledTimes(1);
     expect(escape.defaultPrevented).toBe(true);
     detach();
   });
@@ -370,7 +443,7 @@ describe("performer press vs camera-controls listener ordering", () => {
       cancelable: true,
     });
     canvas.dispatchEvent(escape);
-    expect(viewer.selectPerformerScope).not.toHaveBeenCalled();
+    expect(viewer.clearPerformerSelection).not.toHaveBeenCalled();
     expect(escape.defaultPrevented).toBe(false);
     detach();
   });
@@ -379,7 +452,108 @@ describe("performer press vs camera-controls listener ordering", () => {
     const { canvas, viewer, orbitDown, detach } = buildHarness();
     firePointer(canvas, "pointerdown", { clientX: 2, clientY: 2 });
     expect(orbitDown).toHaveBeenCalledTimes(1);
-    expect(viewer.selectPerformerScope).not.toHaveBeenCalled();
+    expect(viewer.clearPerformerSelection).not.toHaveBeenCalled();
+    detach();
+  });
+
+  it("moves every selected performer through one direct drag edit", () => {
+    const { canvas, viewer, detach } = buildHarness();
+    viewer.selectedPerformerIndices = [0, 1];
+    viewer.primaryPerformerIndex = 0;
+
+    firePointer(canvas, "pointerdown", { clientX: 50, clientY: 50 });
+    firePointer(canvas, "pointermove", { clientX: 65, clientY: 50 });
+    firePointer(canvas, "pointerup", { clientX: 65, clientY: 50 });
+
+    expect(viewer.beginSpatialEdit).toHaveBeenCalledTimes(1);
+    expect(viewer.endSpatialEdit).toHaveBeenCalledTimes(1);
+    expect(
+      viewer.performerManager.handleDrag.mock.calls.map(([index]) => index)
+    ).toEqual([0, 1]);
+    detach();
+  });
+
+  it("moves the selected formation from the explicit move handle", () => {
+    const { moveHandle, viewer, detach } = buildHarness();
+    viewer.selectedPerformerIndices = [0, 1];
+    viewer.primaryPerformerIndex = 0;
+
+    firePointer(moveHandle, "pointerdown", { clientX: 50, clientY: 50 });
+    firePointer(moveHandle, "pointermove", { clientX: 65, clientY: 50 });
+    firePointer(moveHandle, "pointerup", { clientX: 65, clientY: 50 });
+
+    expect(viewer.beginSpatialEdit).toHaveBeenCalledTimes(1);
+    expect(viewer.endSpatialEdit).toHaveBeenCalledTimes(1);
+    expect(
+      viewer.performerManager.handleDrag.mock.calls.map(([index]) => index)
+    ).toEqual([0, 1]);
+    detach();
+  });
+
+  it("uses desktop modifiers to toggle an arbitrary selection", () => {
+    const { canvas, viewer, detach } = buildHarness();
+    viewer.selectedPerformerIndices = [1];
+    viewer.primaryPerformerIndex = 1;
+
+    firePointer(canvas, "pointerdown", {
+      clientX: 50,
+      clientY: 50,
+      ctrlKey: true,
+    });
+    firePointer(canvas, "pointerup", {
+      clientX: 50,
+      clientY: 50,
+      ctrlKey: true,
+    });
+
+    expect(viewer.togglePerformerSelection).toHaveBeenCalledWith(0);
+    expect(viewer.selectedPerformerIndices).toEqual([1, 0]);
+    detach();
+  });
+
+  it("enters touch selection mode after the existing hold threshold", () => {
+    vi.useFakeTimers();
+    try {
+      const { canvas, viewer, detach } = buildHarness();
+
+      firePointer(canvas, "pointerdown", {
+        clientX: 50,
+        clientY: 50,
+        pointerType: "touch",
+      });
+      vi.advanceTimersByTime(250);
+
+      expect(viewer.setPerformerSelectionMode).toHaveBeenCalledWith(true);
+      expect(viewer.togglePerformerSelection).toHaveBeenCalledWith(0);
+      firePointer(canvas, "pointerup", {
+        clientX: 50,
+        clientY: 50,
+        pointerType: "touch",
+      });
+      detach();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("nudges the selected formation with one keyboard spatial edit", () => {
+    const { canvas, viewer, detach } = buildHarness();
+    viewer.selectedPerformerIndices = [0, 1];
+    viewer.primaryPerformerIndex = 1;
+
+    canvas.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowRight",
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+
+    expect(viewer.beginSpatialEdit).toHaveBeenCalledTimes(1);
+    expect(viewer.endSpatialEdit).toHaveBeenCalledTimes(1);
+    expect(
+      viewer.performerManager.handleDrag.mock.calls.map(([index]) => index)
+    ).toEqual([0, 1]);
     detach();
   });
 });

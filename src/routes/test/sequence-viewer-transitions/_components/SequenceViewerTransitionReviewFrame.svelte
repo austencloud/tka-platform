@@ -402,14 +402,32 @@
 
   function tunnelSurface(): HTMLElement | null {
     return document.querySelector<HTMLElement>(
-      '[data-persistent-animator][data-renderer-mode="tunnel"]'
+      '[data-persistent-animator][data-presented="true"]:not([aria-hidden="true"])[data-renderer-mode="tunnel"]'
     );
   }
 
   function tunnelCanvas(): HTMLCanvasElement | null {
     return document.querySelector<HTMLCanvasElement>(
-      '[data-persistent-animator] canvas[data-animation-layer="mandala"]'
+      '[data-persistent-animator][data-presented="true"]:not([aria-hidden="true"]) canvas[data-animation-layer="props"]'
     );
+  }
+
+  function setTunnelPaintCapture(active: boolean): void {
+    if (!active) {
+      document
+        .querySelectorAll<HTMLCanvasElement>(
+          'canvas[data-animation-layer="props"][data-capture-tunnel-paint="true"]'
+        )
+        .forEach((canvas) => delete canvas.dataset.captureTunnelPaint);
+      return;
+    }
+    const canvas = tunnelCanvas();
+    if (!canvas || canvas.dataset.captureTunnelPaint === "true") return;
+    canvas.dataset.captureTunnelPaint = "true";
+    canvas.dataset.tunnelPaintFrame = "0";
+    canvas.dataset.tunnelPaintedPropCount = "0";
+    canvas.dataset.tunnelPaintedPerceptiblePropCount = "0";
+    canvas.dataset.tunnelPaintedOpacityMean = "0.000";
   }
 
   async function waitForTunnelPresentation(version: number): Promise<boolean> {
@@ -431,6 +449,16 @@
 
   function captureGeometrySample(): void {
     if (!activeTrace) return;
+    if (
+      activeTrace.command === "tunnel-first" ||
+      activeTrace.command === "tunnel-3d" ||
+      activeTrace.command === "tunnel-interrupt"
+    ) {
+      // DualSourceCrossfade may replace the presented animator after the trace
+      // begins. Arm whichever canvas owns this paint before reading it; the
+      // renderer will publish on its next completed frame.
+      setTunnelPaintCapture(true);
+    }
     const splitView = document.querySelector<HTMLElement>(".split-view");
     const direction =
       splitView?.dataset.panelDirection === "vertical"
@@ -502,9 +530,11 @@
           .split(/\s+/)
           .filter(Boolean).length
       : 0;
-    const persistentAnimator = document.querySelector<HTMLElement>(
-      "[data-persistent-animator]"
-    );
+    const persistentAnimator =
+      activeTunnelSurface ??
+      document.querySelector<HTMLElement>(
+        '[data-persistent-animator][data-presented="true"]:not([aria-hidden="true"])'
+      );
     const tunnelBlend = Number(persistentAnimator?.dataset.tunnelBlend) || 0;
     const tunnelBounds = activeTunnelCanvas?.getBoundingClientRect();
     const tunnelCanvasReady = Boolean(
@@ -658,15 +688,28 @@
         Number(persistentAnimator?.dataset.tunnelLayerOpacityMin) || 0,
       tunnelLayerOpacityMaximum:
         Number(persistentAnimator?.dataset.tunnelLayerOpacityMax) || 0,
+      tunnelLayerOpacityMean:
+        Number(persistentAnimator?.dataset.tunnelLayerOpacityMean) || 0,
+      tunnelPerceptibleLayerCount:
+        Number(persistentAnimator?.dataset.tunnelPerceptibleLayerCount) || 0,
       tunnelLayerSeparation:
         Number(persistentAnimator?.dataset.tunnelLayerSeparation) || 0,
       tunnelGridOpacity:
         Number(persistentAnimator?.dataset.tunnelGridOpacity) || 0,
+      tunnelPaintFrame:
+        Number(activeTunnelCanvas?.dataset.tunnelPaintFrame) || 0,
+      tunnelPaintedPropCount:
+        Number(activeTunnelCanvas?.dataset.tunnelPaintedPropCount) || 0,
+      tunnelPaintedPerceptiblePropCount:
+        Number(activeTunnelCanvas?.dataset.tunnelPaintedPerceptiblePropCount) ||
+        0,
+      tunnelPaintedOpacityMean:
+        Number(activeTunnelCanvas?.dataset.tunnelPaintedOpacityMean) || 0,
       tunnelPresented: Boolean(activeTunnelSurface) || tunnelBlend > 0,
       tunnelCanvasReady,
       animatorIdentity: elementIdentity("[data-persistent-animator]"),
       animatorCanvasCount: document.querySelectorAll(
-        '[data-persistent-animator] canvas[data-animation-layer="mandala"]'
+        '[data-persistent-animator][data-presented="true"]:not([aria-hidden="true"]) canvas[data-animation-layer="props"]'
       ).length,
       activeArtSettingsCount: document.querySelectorAll(
         '[data-viewer-art-inspector-target] [data-active="true"][data-art-settings]'
@@ -721,6 +764,7 @@
     tracePhase = phase;
     traceStartedAt = performance.now();
     activeTrace = { command, duration: 0, samples: [], modeCommits: [] };
+    setTunnelPaintCapture(true);
     captureGeometrySample();
   }
 
@@ -743,6 +787,7 @@
       },
       window.location.origin
     );
+    setTunnelPaintCapture(false);
     activeTrace = null;
   }
 

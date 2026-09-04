@@ -514,11 +514,39 @@
       >
       <span
         data-problem={summary.tunnelPreparedLayerCountMaximum > 1 &&
-          summary.tunnelLayerOpacitySpreadMaximum < 0.35 &&
-          summary.tunnelCrossfadeFrames > 2}
-        >Layer cascade spread: {summary.tunnelPreparedLayerCountMaximum > 1
+          summary.tunnelCrossfadeFrames > 2 &&
+          (summary.tunnelLayerOpacitySpreadMaximum < 0.08 ||
+            summary.tunnelLayerOpacitySpreadMaximum > 0.28)}
+        >Layer timing spread: {summary.tunnelPreparedLayerCountMaximum > 1
           ? summary.tunnelLayerOpacitySpreadMaximum.toFixed(2)
           : "n/a · one copy peels spatially"}</span
+      >
+      <span
+        data-problem={summary.tunnelPreparedLayerCountMaximum > 0 &&
+          (summary.tunnelAllLayersPerceptibleProgress === null ||
+            summary.tunnelAllLayersPerceptibleProgress > 0.35 ||
+            (summary.tunnelLayerMeanOpacityAtHalf ?? 0) < 0.35)}
+        >Ensemble legibility: {summary.tunnelAllLayersPerceptibleProgress ===
+        null
+          ? "never"
+          : `${Math.round(summary.tunnelAllLayersPerceptibleProgress * 100)}% reveal`}
+        · {summary.tunnelLayerMeanOpacityAtHalf === null
+          ? "n/a"
+          : `${Math.round(summary.tunnelLayerMeanOpacityAtHalf * 100)}% mean alpha at halfway`}</span
+      >
+      <span
+        data-problem={summary.tunnelPaintedArrival === null ||
+          (summary.longestSampleGap <= 80 &&
+            (summary.tunnelPaintedArrival.allPropsPerceptibleProgress ===
+              null ||
+              summary.tunnelPaintedArrival.allPropsPerceptibleProgress > 0.35 ||
+              summary.tunnelPaintedArrival.quarterMeanAlpha < 0.15 ||
+              summary.tunnelPaintedArrival.halfwayMeanAlpha < 0.35 ||
+              summary.tunnelPaintedArrival.growthFrames < 4))}
+        title="Reads completed additional-prop draw calls from the Canvas2D renderer, not reactive layer state."
+        >Painted prop arrival: {summary.tunnelPaintedArrival === null
+          ? "unavailable"
+          : `all ${summary.tunnelPaintedArrival.peakProps} by ${summary.tunnelPaintedArrival.allPropsPerceptibleProgress === null ? "never" : `${Math.round(summary.tunnelPaintedArrival.allPropsPerceptibleProgress * 100)}% reveal`} · ${Math.round(summary.tunnelPaintedArrival.quarterMeanAlpha * 100)}% mean alpha at quarter · ${Math.round(summary.tunnelPaintedArrival.halfwayMeanAlpha * 100)}% at halfway · ${summary.tunnelPaintedArrival.growthFrames} rendered growth frames`}</span
       >
       <span
         data-problem={summary.tunnelPreparedLayerCountMaximum > 0 &&

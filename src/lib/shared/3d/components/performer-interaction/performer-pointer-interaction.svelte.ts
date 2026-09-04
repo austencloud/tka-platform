@@ -17,6 +17,8 @@ export const TOUCH_HOLD_MS = 250;
 export const TOUCH_MOVE_TOLERANCE_PX = 5;
 export const MIN_TOUCH_TARGET_PX = 44;
 export const PERFORMER_CLEARANCE_METRES = 0.5;
+export const DIRECT_PERFORMER_SELECTION_EVENT =
+  "tka-performer-direct-selection";
 const GRAZING_RAY_EPSILON = 0.001;
 const TOUCH_FALLBACK_PICK_HEIGHT_METRES = 1;
 const EIGHT_DIRECTION_STEP_RADIANS = Math.PI / 4;
@@ -24,6 +26,13 @@ const POSITION_EPSILON = 1e-10;
 
 export type PointerIntent = "click" | "drag";
 export type TouchIntent = "tap" | "drag" | "camera";
+export type PerformerPointerTarget = "character" | "move-handle";
+
+export interface DirectPerformerSelectionDetail {
+  performerIndex: number | null;
+  selectedPerformerIndices: readonly number[];
+  openInspector: boolean;
+}
 
 export interface Point2 {
   x: number;
@@ -100,6 +109,35 @@ export function clampPerformerPosition(
   return {
     x: Math.max(-halfWidth, Math.min(halfWidth, position.x)),
     z: Math.max(centerZ - halfDepth, Math.min(centerZ + halfDepth, position.z)),
+  };
+}
+
+/** Clamp one shared translation so every performer remains on the stage. */
+export function clampGroupTranslation(
+  positions: readonly StagePosition[],
+  desired: StagePosition,
+  bounds: StageBounds,
+  clearance = PERFORMER_CLEARANCE_METRES
+): StagePosition {
+  if (positions.length === 0) return { x: 0, z: 0 };
+  const halfWidth = Math.max(0, bounds.width / 2 - clearance);
+  const halfDepth = Math.max(0, bounds.depth / 2 - clearance);
+  const centerZ = bounds.zOffset ?? 0;
+  const minimumX = Math.max(
+    ...positions.map((position) => -halfWidth - position.x)
+  );
+  const maximumX = Math.min(
+    ...positions.map((position) => halfWidth - position.x)
+  );
+  const minimumZ = Math.max(
+    ...positions.map((position) => centerZ - halfDepth - position.z)
+  );
+  const maximumZ = Math.min(
+    ...positions.map((position) => centerZ + halfDepth - position.z)
+  );
+  return {
+    x: Math.max(minimumX, Math.min(maximumX, desired.x)),
+    z: Math.max(minimumZ, Math.min(maximumZ, desired.z)),
   };
 }
 
@@ -197,13 +235,18 @@ interface PerformerPositionSource {
 }
 
 interface InteractionViewer {
-  selectedPerformerIndex: number | null;
+  primaryPerformerIndex: number | null;
+  selectedPerformerIndices: readonly number[];
+  performerSelectionMode: boolean;
   isCameraDragging: boolean;
   performerManager: {
     performers: PerformerPositionSource[];
     handleDrag(index: number, position: StagePosition): void;
   };
-  selectPerformerScope(index: number | null): void;
+  replacePerformerSelection(index: number): void;
+  togglePerformerSelection(index: number): void;
+  clearPerformerSelection(): void;
+  setPerformerSelectionMode(value: boolean): void;
   beginSpatialEdit(): void;
   endSpatialEdit(): void;
   cancelSpatialEdit(): void;
@@ -237,13 +280,18 @@ interface PressedPointer {
   pointerId: number;
   pointerType: string;
   performerIndex: number;
+  target: PerformerPointerTarget;
   start: Point2;
   startedAt: number;
   startPosition: StagePosition;
+  startPositions: Map<number, StagePosition>;
   dragPlaneY: number;
   grabOffset: StagePosition;
   anchorSource: "visual" | "proxy" | "touch";
   visualAnchor: VisualSurfaceAnchor | null;
+  additive: boolean;
+  longPressSelected: boolean;
+  captureTarget: Element;
 }
 
 interface PerformerHit {
@@ -279,6 +327,38 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
   let holdTimer: ReturnType<typeof setTimeout> | null = null;
   let diagnosticFrame: number | null = null;
   let cameraWasEnabled = true;
+
+  function isSelected(index: number): boolean {
+    return options.viewer.selectedPerformerIndices.includes(index);
+  }
+
+  function announceSelection(openInspector: boolean): void {
+    const selected = options.viewer.selectedPerformerIndices;
+    const primary = options.viewer.primaryPerformerIndex;
+    window.dispatchEvent(
+      new CustomEvent<DirectPerformerSelectionDetail>(
+        DIRECT_PERFORMER_SELECTION_EVENT,
+        {
+          detail: {
+            performerIndex: primary,
+            selectedPerformerIndices: selected,
+            openInspector,
+          },
+        }
+      )
+    );
+    announcement =
+      selected.length === 0
+        ? "Performer selection cleared"
+        : selected.length === 1
+          ? `Performer ${selected[0] + 1} selected`
+          : `${selected.length} performers selected`;
+    window.dispatchEvent(
+      new CustomEvent("tka-performer-interaction-announcement", {
+        detail: announcement,
+      })
+    );
+  }
 
   function setRayFromEvent(event: PointerEvent): boolean {
     const camera = options.camera();
@@ -544,8 +624,25 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
   function startDrag(): void {
     if (!pressed || draggingIndex !== null) return;
     clearHoldTimer();
+    if (!isSelected(pressed.performerIndex)) {
+      if (pressed.additive || options.viewer.performerSelectionMode) {
+        options.viewer.togglePerformerSelection(pressed.performerIndex);
+      } else {
+        options.viewer.replacePerformerSelection(pressed.performerIndex);
+      }
+    }
+    const dragIndices = options.viewer.selectedPerformerIndices.includes(
+      pressed.performerIndex
+    )
+      ? options.viewer.selectedPerformerIndices
+      : [pressed.performerIndex];
+    pressed.startPositions = new Map(
+      dragIndices.flatMap((index) => {
+        const performer = options.viewer.performerManager.performers[index];
+        return performer ? [[index, { ...performer.position }] as const] : [];
+      })
+    );
     draggingIndex = pressed.performerIndex;
-    options.viewer.selectPerformerScope(pressed.performerIndex);
     options.viewer.beginSpatialEdit();
     const controls = options.viewer.cameraChoreography.controls;
     if (controls) {
@@ -559,10 +656,9 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
   function cancelDrag(): void {
     clearHoldTimer();
     if (pressed && draggingIndex !== null) {
-      options.viewer.performerManager.handleDrag(
-        pressed.performerIndex,
-        pressed.startPosition
-      );
+      for (const [index, position] of pressed.startPositions) {
+        options.viewer.performerManager.handleDrag(index, position);
+      }
       options.viewer.cancelSpatialEdit();
     }
     finishPointer(false);
@@ -577,14 +673,20 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
     const controls = options.viewer.cameraChoreography.controls;
     if (controls) controls.enabled = cameraWasEnabled;
     const pointerId = pressed?.pointerId;
+    const captureTarget = pressed?.captureTarget;
     draggingIndex = null;
     pressed = null;
-    if (pointerId !== undefined && options.canvas.hasPointerCapture(pointerId))
-      options.canvas.releasePointerCapture(pointerId);
+    if (
+      pointerId !== undefined &&
+      captureTarget?.hasPointerCapture?.(pointerId)
+    ) {
+      captureTarget.releasePointerCapture(pointerId);
+    }
     options.canvas.style.cursor = hoveredIndex === null ? "" : "grab";
   }
 
   function onPointerDown(event: PointerEvent): void {
+    if (event.button !== 0) return;
     activePointers.add(event.pointerId);
     if (activePointers.size > 1) {
       cancelDrag();
@@ -613,9 +715,11 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       pointerId: event.pointerId,
       pointerType: event.pointerType,
       performerIndex,
+      target: "character",
       start: { x: event.clientX, y: event.clientY },
       startedAt: performance.now(),
       startPosition: { ...performer.position },
+      startPositions: new Map(),
       dragPlaneY: hit.dragPlaneY,
       grabOffset: dragPoint
         ? {
@@ -625,6 +729,9 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
         : { x: 0, z: 0 },
       anchorSource: hit.anchorSource,
       visualAnchor: hit.visualAnchor,
+      additive: event.ctrlKey || event.metaKey || event.shiftKey,
+      longPressSelected: false,
+      captureTarget: options.canvas,
     };
     if (import.meta.env.DEV)
       options.canvas.dataset.performerDragAnchorSource = hit.anchorSource;
@@ -638,17 +745,67 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       // propagating: an unselected touch that moves is a camera pan.
       event.stopImmediatePropagation();
     }
-    if (
-      event.pointerType === "touch" &&
-      options.viewer.selectedPerformerIndex !== performerIndex
-    ) {
+    if (event.pointerType === "touch" && !isSelected(performerIndex)) {
       holdTimer = setTimeout(() => {
         if (pressed?.pointerId === event.pointerId) {
           getHapticFeedback().trigger("selection");
-          startDrag();
+          pressed.longPressSelected = true;
+          options.viewer.setPerformerSelectionMode(true);
+          if (!isSelected(performerIndex)) {
+            options.viewer.togglePerformerSelection(performerIndex);
+          }
+          announceSelection(false);
         }
       }, TOUCH_HOLD_MS);
     }
+  }
+
+  function onMoveHandlePointerDown(
+    event: PointerEvent,
+    performerIndex: number
+  ): void {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const performer =
+      options.viewer.performerManager.performers[performerIndex];
+    if (!performer || !isSelected(performerIndex)) return;
+    activePointers.add(event.pointerId);
+    if (activePointers.size > 1) {
+      cancelDrag();
+      return;
+    }
+    if (!setRayFromEvent(event)) return;
+    const dragPoint = intersectHorizontalPlane(
+      raycaster.ray.origin,
+      raycaster.ray.direction,
+      options.groundY(),
+      { x: 0, z: 0 }
+    );
+    const captureTarget = event.currentTarget as Element;
+    pressed = {
+      pointerId: event.pointerId,
+      pointerType: event.pointerType,
+      performerIndex,
+      target: "move-handle",
+      start: { x: event.clientX, y: event.clientY },
+      startedAt: performance.now(),
+      startPosition: { ...performer.position },
+      startPositions: new Map(),
+      dragPlaneY: options.groundY(),
+      grabOffset: dragPoint
+        ? {
+            x: performer.position.x - dragPoint.x,
+            z: performer.position.z - dragPoint.z,
+          }
+        : { x: 0, z: 0 },
+      anchorSource: "proxy",
+      visualAnchor: null,
+      additive: false,
+      longPressSelected: false,
+      captureTarget,
+    };
+    captureTarget.setPointerCapture?.(event.pointerId);
   }
 
   function onPointerMove(event: PointerEvent): void {
@@ -659,9 +816,11 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
         event.clientY - pressed.start.y
       );
       if (pressed.pointerType === "touch") {
+        if (pressed.longPressSelected) return;
         const intent = resolveTouchIntent({
           selected:
-            options.viewer.selectedPerformerIndex === pressed.performerIndex,
+            pressed.target === "move-handle" ||
+            isSelected(pressed.performerIndex),
           heldMs: performance.now() - pressed.startedAt,
           travelPx: travel,
         });
@@ -683,15 +842,25 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
         const target = dragTarget();
         if (target && pressed) {
           const pointerPress = pressed;
-          options.viewer.performerManager.handleDrag(
-            draggingIndex,
-            resolvePerformerDragPosition(
-              pressed.startPosition,
-              target,
-              options.stageBounds(),
-              event.shiftKey
-            )
+          const anchorStart = pressed.startPositions.get(draggingIndex);
+          if (!anchorStart) return;
+          const constrainedTarget = event.shiftKey
+            ? snapStagePositionToEightDirections(anchorStart, target)
+            : target;
+          const delta = clampGroupTranslation(
+            [...pressed.startPositions.values()],
+            {
+              x: constrainedTarget.x - anchorStart.x,
+              z: constrainedTarget.z - anchorStart.z,
+            },
+            options.stageBounds()
           );
+          for (const [index, start] of pressed.startPositions) {
+            options.viewer.performerManager.handleDrag(index, {
+              x: start.x + delta.x,
+              z: start.z + delta.z,
+            });
+          }
           scheduleDragDiagnostic(event, pointerPress);
         }
       }
@@ -715,24 +884,27 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
         }) === "click" &&
         !options.viewer.isCameraDragging
       ) {
-        options.viewer.selectPerformerScope(null);
+        options.viewer.clearPerformerSelection();
+        announceSelection(false);
       }
       emptyPress = null;
       return;
     }
     if (pressed?.pointerId !== event.pointerId) return;
     if (draggingIndex !== null) finishPointer(true);
-    else {
-      options.viewer.selectPerformerScope(pressed.performerIndex);
-      announcement = `Performer ${pressed.performerIndex + 1} selected`;
-      window.dispatchEvent(
-        new CustomEvent("tka-performer-interaction-announcement", {
-          detail: announcement,
-        })
-      );
+    else if (pressed.target === "move-handle") finishPointer(false);
+    else if (!pressed.longPressSelected) {
+      const additive =
+        pressed.additive || options.viewer.performerSelectionMode;
+      if (additive) {
+        options.viewer.togglePerformerSelection(pressed.performerIndex);
+      } else {
+        options.viewer.replacePerformerSelection(pressed.performerIndex);
+      }
+      announceSelection(!options.viewer.performerSelectionMode && !additive);
       options.onHintDismissed?.();
       finishPointer(false);
-    }
+    } else finishPointer(false);
   }
 
   function onPointerCancel(event: PointerEvent): void {
@@ -749,18 +921,22 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
   }
 
   function onKeyDown(event: KeyboardEvent): void {
-    const selected = options.viewer.selectedPerformerIndex;
+    const selected = options.viewer.selectedPerformerIndices;
     if (event.key === "Escape") {
       if (draggingIndex !== null) cancelDrag();
-      else if (selected !== null) options.viewer.selectPerformerScope(null);
-      else return;
+      else if (options.viewer.performerSelectionMode) {
+        options.viewer.setPerformerSelectionMode(false);
+      } else if (selected.length > 0) {
+        options.viewer.clearPerformerSelection();
+        announceSelection(false);
+      } else return;
       // Consumed: cancel-drag and deselect must not also reach the viewer
       // shell's Escape handler, which closes the whole viewer.
       event.preventDefault();
       event.stopPropagation();
       return;
     }
-    if (selected === null) return;
+    if (selected.length === 0) return;
     const distance = event.altKey ? 0.05 : event.shiftKey ? 1 : 0.25;
     const controls = options.viewer.cameraChoreography.controls;
     const delta = resolveCameraRelativeNudge(
@@ -769,18 +945,33 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       distance
     );
     if (!delta) return;
-    const performer = options.viewer.performerManager.performers[selected];
-    if (!performer) return;
+    const selectedPerformers = selected.flatMap((index) => {
+      const performer = options.viewer.performerManager.performers[index];
+      return performer ? [[index, performer] as const] : [];
+    });
+    if (selectedPerformers.length === 0) return;
     event.preventDefault();
     options.viewer.beginSpatialEdit();
-    const next = clampPerformerPosition(
-      { x: performer.position.x + delta.x, z: performer.position.z + delta.z },
+    const clampedDelta = clampGroupTranslation(
+      selectedPerformers.map(([, performer]) => performer.position),
+      delta,
       options.stageBounds()
     );
-    options.viewer.performerManager.handleDrag(selected, next);
+    let finalPosition: StagePosition | null = null;
+    for (const [index, performer] of selectedPerformers) {
+      const next = {
+        x: performer.position.x + clampedDelta.x,
+        z: performer.position.z + clampedDelta.z,
+      };
+      options.viewer.performerManager.handleDrag(index, next);
+      if (index === options.viewer.primaryPerformerIndex) finalPosition = next;
+    }
     options.viewer.markFormationCustom();
     options.viewer.endSpatialEdit();
-    announcement = `Performer ${selected + 1} moved to ${next.x.toFixed(2)}, ${next.z.toFixed(2)}`;
+    announcement =
+      selected.length === 1 && finalPosition
+        ? `Performer ${selected[0] + 1} moved to ${finalPosition.x.toFixed(2)}, ${finalPosition.z.toFixed(2)}`
+        : `${selected.length} performers moved`;
     window.dispatchEvent(
       new CustomEvent("tka-performer-interaction-announcement", {
         detail: announcement,
@@ -825,6 +1016,10 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
     get draggingIndex() {
       return draggingIndex;
     },
+    onMoveHandlePointerDown,
+    onMoveHandlePointerMove: onPointerMove,
+    onMoveHandlePointerUp: onPointerUp,
+    onMoveHandlePointerCancel: onPointerCancel,
     get announcement() {
       return announcement;
     },

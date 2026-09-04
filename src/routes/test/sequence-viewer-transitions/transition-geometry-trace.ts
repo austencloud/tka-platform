@@ -130,8 +130,14 @@ export interface TransitionGeometrySample {
   tunnelTexturesReady: boolean;
   tunnelLayerOpacityMinimum: number;
   tunnelLayerOpacityMaximum: number;
+  tunnelLayerOpacityMean: number;
+  tunnelPerceptibleLayerCount: number;
   tunnelLayerSeparation: number;
   tunnelGridOpacity: number;
+  tunnelPaintFrame: number;
+  tunnelPaintedPropCount: number;
+  tunnelPaintedPerceptiblePropCount: number;
+  tunnelPaintedOpacityMean: number;
   tunnelPresented: boolean;
   tunnelCanvasReady: boolean;
   animatorIdentity: number;
@@ -169,6 +175,15 @@ export interface TransitionGeometryTrace {
     mode: "split" | "animation" | "animation-3d" | "card" | "tunnel" | "videos";
     latency: number;
   }>;
+}
+
+export interface TunnelPaintedArrival {
+  peakProps: number;
+  allPropsPerceptibleProgress: number | null;
+  quarterMeanAlpha: number;
+  halfwayMeanAlpha: number;
+  growthFrames: number;
+  durationMs: number;
 }
 
 export interface TransitionGeometrySummary {
@@ -235,6 +250,9 @@ export interface TransitionGeometrySummary {
   tunnelLayerOpacityStepMaximum: number;
   tunnelGridOpacityStepMaximum: number;
   tunnelLayerOpacitySpreadMaximum: number;
+  tunnelAllLayersPerceptibleProgress: number | null;
+  tunnelLayerMeanOpacityAtHalf: number | null;
+  tunnelPaintedArrival: TunnelPaintedArrival | null;
   tunnelPreparedLayerCountMaximum: number;
   tunnelLayerSeparationMaximum: number;
   tunnelLayerSeparationStepMaximum: number;
@@ -809,6 +827,88 @@ function lateTunnelLayerArrivals(samples: TransitionGeometrySample[]): number {
   return arrivals;
 }
 
+function firstTunnelReveal(
+  samples: TransitionGeometrySample[]
+): TransitionGeometrySample[] {
+  let start = -1;
+  for (let index = 1; index < samples.length; index += 1) {
+    if (
+      samples[index].tunnelOpacity >
+      samples[index - 1].tunnelOpacity + 0.001
+    ) {
+      start = index - 1;
+      break;
+    }
+  }
+  if (start < 0) return [];
+  let end = samples.length - 1;
+  for (let index = start + 1; index < samples.length; index += 1) {
+    if (samples[index].tunnelOpacity >= 0.99) {
+      end = index;
+      break;
+    }
+  }
+  return samples.slice(start, end + 1);
+}
+
+function closestTunnelSample(
+  samples: TransitionGeometrySample[],
+  target: number
+): TransitionGeometrySample | null {
+  if (samples.length === 0) return null;
+  return samples.reduce((closest, sample) =>
+    Math.abs(sample.tunnelOpacity - target) <
+    Math.abs(closest.tunnelOpacity - target)
+      ? sample
+      : closest
+  );
+}
+
+/** Grade the additional props the Canvas2D renderer actually drew. */
+function tunnelPaintedArrival(
+  samples: TransitionGeometrySample[]
+): TunnelPaintedArrival | null {
+  const reveal = firstTunnelReveal(samples);
+  const painted = reveal.filter(
+    (sample, index) =>
+      sample.tunnelPaintFrame > 0 &&
+      (index === 0 ||
+        sample.tunnelPaintFrame !== reveal[index - 1].tunnelPaintFrame)
+  );
+  if (painted.length < 2) return null;
+  const start = painted[0];
+  const end = painted[painted.length - 1];
+  const peakProps = Math.max(
+    0,
+    ...painted.map((sample) => sample.tunnelPaintedPropCount)
+  );
+  const duration = Math.max(0, end.time - start.time);
+  if (peakProps <= 0 || duration <= 0) return null;
+
+  const atProgress = (progress: number): TransitionGeometrySample =>
+    closestTunnelSample(painted, progress) ?? start;
+
+  return {
+    peakProps,
+    allPropsPerceptibleProgress:
+      painted.find(
+        (sample) =>
+          sample.tunnelPaintedPropCount >= peakProps &&
+          sample.tunnelPaintedPerceptiblePropCount >= peakProps
+      )?.tunnelOpacity ?? null,
+    quarterMeanAlpha:
+      Math.round(atProgress(0.25).tunnelPaintedOpacityMean * 1000) / 1000,
+    halfwayMeanAlpha:
+      Math.round(atProgress(0.5).tunnelPaintedOpacityMean * 1000) / 1000,
+    growthFrames: painted.filter(
+      (sample) =>
+        sample.tunnelPaintedOpacityMean >= 0.05 &&
+        sample.tunnelPaintedOpacityMean <= 0.95
+    ).length,
+    durationMs: Math.round(duration * 10) / 10,
+  };
+}
+
 function uniquePerformanceSurfacePath(
   samples: TransitionGeometrySample[]
 ): string[] {
@@ -1232,6 +1332,9 @@ export function summarizeTransitionGeometry(
 ): TransitionGeometrySummary {
   const isMotionTrace = trace.command.startsWith("3d");
   const isTunnelTrace = trace.command.startsWith("tunnel");
+  const tunnelRevealSamples = isTunnelTrace
+    ? firstTunnelReveal(trace.samples)
+    : [];
   const isCardStageTrace = trace.command.startsWith("card-");
   const isPerformanceTrace = trace.command.startsWith("performances-");
   const tinyCardFrames = trace.samples.filter(
@@ -1596,6 +1699,21 @@ export function summarizeTransitionGeometry(
           ) * 1000
         ) / 1000
       : 0,
+    tunnelAllLayersPerceptibleProgress: isTunnelTrace
+      ? (tunnelRevealSamples.find(
+          (sample) =>
+            sample.tunnelPreparedLayerCount > 0 &&
+            sample.tunnelPerceptibleLayerCount >=
+              sample.tunnelPreparedLayerCount
+        )?.tunnelOpacity ?? null)
+      : null,
+    tunnelLayerMeanOpacityAtHalf: isTunnelTrace
+      ? (closestTunnelSample(tunnelRevealSamples, 0.5)
+          ?.tunnelLayerOpacityMean ?? null)
+      : null,
+    tunnelPaintedArrival: isTunnelTrace
+      ? tunnelPaintedArrival(trace.samples)
+      : null,
     tunnelPreparedLayerCountMaximum: isTunnelTrace
       ? Math.max(
           0,

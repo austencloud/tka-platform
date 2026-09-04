@@ -1,4 +1,7 @@
-import type { Collected3DScene, StoredPerformerSettings } from "../domain/scene-3d-collection-types";
+import type {
+  Collected3DScene,
+  StoredPerformerSettings,
+} from "../domain/scene-3d-collection-types";
 import {
   getScene3DEnvironmentId,
   isGroupSaved,
@@ -25,10 +28,11 @@ import type {
  */
 export function buildScene3DSeed(
   scene: Collected3DScene,
-  options: { autoOrbit?: boolean; autoOrbitSpeed?: number } = {},
+  options: { autoOrbit?: boolean; autoOrbitSpeed?: number } = {}
 ): Viewer3DStateSeed {
   const snap = scene.snapshot;
-  const saved = (g: Parameters<typeof isGroupSaved>[1]) => isGroupSaved(snap, g);
+  const saved = (g: Parameters<typeof isGroupSaved>[1]) =>
+    isGroupSaved(snap, g);
 
   const seed: Viewer3DStateSeed = {
     // A preview is 3D by definition, wherever the user left the real viewer.
@@ -48,9 +52,12 @@ export function buildScene3DSeed(
       customLeftPlane: p.customLeftPlane as never,
       customRightPlane: p.customRightPlane as never,
       name: p.name ?? null,
-      ...(p.settings ? { settings: filterPerformerSettings(p.settings, saved) } : {}),
+      ...(p.settings
+        ? { settings: filterPerformerSettings(p.settings, saved) }
+        : {}),
     }));
     seed.selectedPerformerIndex = snap.selectedPerformerIndex;
+    seed.selectedPerformerIndices = snap.selectedPerformerIndices;
     seed.activeFormation = snap.activeFormation as never;
   }
   if (saved("props")) {
@@ -80,7 +87,7 @@ export function buildScene3DSeed(
 
 function filterPerformerSettings(
   settings: StoredPerformerSettings,
-  saved: (g: "props" | "efforts" | "effects") => boolean,
+  saved: (g: "props" | "efforts" | "effects") => boolean
 ): StoredPerformerSettings {
   return {
     prop: saved("props") ? settings.prop : null,

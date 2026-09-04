@@ -53,6 +53,12 @@ const tunnelController = read(
 const tunnelLayerReveal = read(
   "src/lib/shared/sequence-viewer/tunnel/tunnel-layer-reveal.ts"
 );
+const canvasApplicationManager = read(
+  "src/lib/shared/animation-engine/services/canvas2d/canvas-2d-application-manager.ts"
+);
+const canvas2DRenderer = read(
+  "src/lib/shared/animation-engine/services/canvas-2d-animation-renderer.ts"
+);
 const sceneLoadingCurtain = read(
   "src/lib/shared/3d/scene-features/components/SceneLoadingCurtain.svelte"
 );
@@ -366,11 +372,28 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(splitPane).toContain("motionDuration(TUNNEL_REVEAL_DURATION)");
     expect(motionSurface).toContain("gridOpacity={tunnelGridOpacity}");
     expect(motionSurface).toContain("data-tunnel-layer-opacity-max");
+    expect(motionSurface).toContain("data-tunnel-layer-opacity-mean");
+    expect(motionSurface).toContain("data-tunnel-perceptible-layer-count");
     expect(motionSurface).toContain("data-tunnel-layer-separation");
     expect(reviewFrame).toContain("tunnelLayerOpacityMaximum:");
+    expect(canvasApplicationManager).toContain(
+      'this.canvas.dataset.animationLayer = "props"'
+    );
+    expect(reviewFrame).toContain('canvas[data-animation-layer="props"]');
+    expect(canvas2DRenderer).toContain("publishTunnelPaintTelemetry(");
+    expect(canvas2DRenderer).toContain(
+      'canvas.dataset.captureTunnelPaint !== "true"'
+    );
+    expect(canvas2DRenderer).toContain(
+      "paintedTunnelOpacities.push(ctx.globalAlpha)"
+    );
+    expect(reviewFrame).toContain("setTunnelPaintCapture(true)");
+    expect(reviewFrame).toContain("tunnelPaintedOpacityMean:");
     expect(geometryTrace).toContain("Reveal-before-layers frames:");
     expect(geometryTrace).toContain("Largest grid alpha step:");
-    expect(geometryTrace).toContain("Layer cascade spread:");
+    expect(geometryTrace).toContain("Layer timing spread:");
+    expect(geometryTrace).toContain("Ensemble legibility:");
+    expect(geometryTrace).toContain("Painted prop arrival:");
     expect(geometryTrace).toContain("one copy peels spatially");
     expect(geometryTrace).toContain("Spatial peel:");
     expect(viewerModeDissolve).toContain(

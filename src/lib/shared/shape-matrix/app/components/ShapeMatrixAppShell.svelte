@@ -83,6 +83,11 @@
   let detailPaneElement: HTMLDivElement;
   let theoryPaneElement: HTMLDivElement;
   let theoryDetailElement: HTMLDivElement;
+  let theoryEditingAxis = $state<"left" | "right" | null>(null);
+
+  $effect(() => {
+    if (!theory) theoryEditingAxis = null;
+  });
 
   // Compact navigation runs as a shared-element morph between the selected
   // tile and the hero. Wide layouts show both panes at once, so the same
@@ -217,7 +222,7 @@
     inert={appState.compact && appState.activeView !== "matrix"}
     aria-hidden={appState.compact && appState.activeView !== "matrix"}
   >
-    <ShapeMatrixTheoryPane />
+    <ShapeMatrixTheoryPane emphasizedAxis={theoryEditingAxis} />
   </div>
 {/snippet}
 
@@ -292,20 +297,27 @@
         {:else}
           <strong>{theory ? "Theory Matrix" : "Shape Matrix"}</strong>
         {/if}
-        <!-- One level-and-turns chip on both compact panes. The full ribbon
-             stacked four control groups above the grid on a phone and let
-             the turn scroller run past the right edge; the chip keeps the
-             matrix the hero and opens every control in its popover. -->
+        <!-- The compact value editor keeps the grid as the hero. Matrix opens
+             its level and turns; Theory names ratio editing directly and
+             opens both axis ratios together. -->
         <ShapeMatrixSurfaceControl compact />
-        <ShapeMatrixTurnPopover />
+        <ShapeMatrixTurnPopover
+          onratiofocuschange={(hand) => (theoryEditingAxis = hand)}
+        />
       </div>
     {:else if variant === "standalone"}
       <div class="identity">
         <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
-        <span
-          >Lorq’s 144 Shape Matrix: VTG ratios
-          {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}</span
-        >
+        <span class="identity-note">
+          <span class="identity-note-sizer" aria-hidden="true">
+            Build a 4×4 grid from any two prop:hand ratios
+          </span>
+          <span class="identity-note-live">
+            {theory
+              ? "Build a 4×4 grid from any two prop:hand ratios"
+              : `Lorq’s 144 Shape Matrix: VTG ratios ${ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}`}
+          </span>
+        </span>
       </div>
     {/if}
 
@@ -355,7 +367,9 @@
         >
           {#if theory}
             <div class="surface-controls">
-              <ShapeMatrixTheoryControls />
+              <ShapeMatrixTheoryControls
+                onfocuschange={(hand) => (theoryEditingAxis = hand)}
+              />
             </div>
           {:else}
             <div class="matrix-controls">
@@ -560,12 +574,23 @@
     white-space: nowrap;
   }
 
-  .identity span {
+  .identity-note {
+    display: grid;
     overflow: hidden;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.68));
     font-size: var(--font-size-min, 0.875rem);
-    text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .identity-note > span {
+    grid-area: 1 / 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .identity-note-sizer {
+    visibility: hidden;
   }
 
   .compact-context {
@@ -878,7 +903,7 @@
     }
   }
   @container shape-matrix-app (max-width: 99.99rem) {
-    .identity span {
+    .identity > .identity-note {
       display: none;
     }
   }

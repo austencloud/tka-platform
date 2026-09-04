@@ -15,6 +15,10 @@
     onSettingChange?: ViewerControlSink;
     /** Forwarded to the performer sheet — see PerformerHubDetail's Props. */
     onPerformerEdit?: PerformerEditSink;
+    /** Monotonic request from direct performer selection in the 3D scene. */
+    openPerformerRequest?: number;
+    /** Monotonic request to return the compact canvas to selection. */
+    closePerformerRequest?: number;
     /** Lets a host make room for the active compact sheet without teaching
      *  this shared control surface about the host's surrounding layout. */
     onSheetChange?: (sheet: "performer" | "scene" | null) => void;
@@ -27,15 +31,33 @@
     onStepBackward = () => {},
     onSettingChange,
     onPerformerEdit,
+    openPerformerRequest = 0,
+    closePerformerRequest = 0,
     onSheetChange,
   }: Props = $props();
 
   type Sheet = "performer" | "everything" | null;
   let openSheet = $state<Sheet>(null);
+  let lastOpenPerformerRequest = $state(openPerformerRequest);
+  let lastClosePerformerRequest = $state(closePerformerRequest);
 
   function toggle(sheet: Exclude<Sheet, null>) {
     openSheet = openSheet === sheet ? null : sheet;
   }
+
+  $effect(() => {
+    const request = openPerformerRequest;
+    if (request === lastOpenPerformerRequest) return;
+    lastOpenPerformerRequest = request;
+    openSheet = "performer";
+  });
+
+  $effect(() => {
+    const request = closePerformerRequest;
+    if (request === lastClosePerformerRequest) return;
+    lastClosePerformerRequest = request;
+    if (openSheet === "performer") openSheet = null;
+  });
 
   let lastReportedSheet = $state<Sheet>(null);
   $effect(() => {
