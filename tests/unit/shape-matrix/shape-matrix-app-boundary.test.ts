@@ -267,9 +267,7 @@ describe("Shape Matrix app boundary", () => {
     // not answer "which one did I pick?" at a glance.
     expect(chipSource).toContain('class="choice-check"');
     expect(chipSource).toContain("aria-pressed={active}");
-    expect(chipSource).toContain(
-      ".relationship-choice.active .choice-check {"
-    );
+    expect(chipSource).toContain(".relationship-choice.active .choice-check {");
     // Whole-surface treatment, never a decorative edge strip.
     expect(chipSource).toContain("inset 0 0 0 2px var(--choice-accent)");
     expect(chipSource).not.toMatch(/border-(left|right|top|bottom):\s*\d/);
@@ -311,7 +309,7 @@ describe("Shape Matrix app boundary", () => {
     // The turn ribbon may not fork it back into a local palette.
     expect(turnSource).toContain("<ShapeMatrixValueScroller");
     expect(turnSource).not.toContain("trayColumns");
-    // Twenty-nine ratios are a field, not a ladder, so Theory takes the two
+    // The 0–15 ratio square is a field, not a ladder, so Theory takes the two
     // numbers directly and must not grow a palette of its own.
     expect(theorySource).toContain("<ShapeMatrixRatioEntry");
     expect(theorySource).not.toContain("<ShapeMatrixValueScroller");

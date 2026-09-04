@@ -1039,12 +1039,14 @@ fade while Tunnel layers used the viewer's 280 ms reveal. The grid, props, and
 formation therefore looked like several effects triggered near each other rather
 than one transformation.
 
-The viewer now prepares Tunnel layers while 2D remains active and holds reveal
-progress at zero until the complete formation is ready. The same reversible
-progress drives every Tunnel copy and the 2D grid alpha. An authored Tunnel grid
-stays visible; otherwise the 2D grid leaves as the copies arrive. The existing
-renderer fade remains the default for every caller that does not supply this
-viewer-owned opacity.
+The viewer now prepares Tunnel layers while 2D remains active. Readiness remains
+an instrumented invariant rather than a prerequisite of the reveal tween: gating
+the tween on the asynchronous flag created a circular handoff in which Tunnel
+mode committed at zero reveal and the layer list could never become visible. The
+same reversible progress drives every Tunnel copy and the 2D grid alpha. An
+authored Tunnel grid stays visible; otherwise the 2D grid leaves as the copies
+arrive. The existing renderer fade remains the default for every caller that does
+not supply this viewer-owned opacity.
 
 The Gate 3 trace now reads the painted boundary directly: layer readiness/count,
 minimum and maximum layer alpha, and grid alpha. It grades reveal-before-ready
