@@ -20,13 +20,18 @@
     </div>
     {#if compact}
       <div class="compact-actions">
-        <button type="button" onclick={() => state.setSourceDrawerOpen(true)}>
+        <button
+          type="button"
+          aria-label="Sources"
+          onclick={() => state.setSourceDrawerOpen(true)}
+        >
           <i class="fas fa-layer-group" aria-hidden="true"></i><span
             >Sources</span
           >
         </button>
         <button
           type="button"
+          aria-label="Controls"
           onclick={() => state.setInspectorDrawerOpen(true)}
         >
           <i class="fas fa-sliders" aria-hidden="true"></i><span>Controls</span>
