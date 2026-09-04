@@ -9,6 +9,10 @@
   import ShapeMatrixBandControl from "./ShapeMatrixBandControl.svelte";
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
+  import {
+    KINETIC_SHAPE_ENGINE_NAME,
+    ORIGINAL_SHAPE_MATRIX_URL,
+  } from "../shape-engine-identity";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import { createShapeMatrixAnimationState } from "../state/shape-matrix-animation-state.svelte";
@@ -271,7 +275,7 @@
 <main
   class="shape-app"
   class:compact-detail={appState.compact && appState.activeView === "detail"}
-  class:theory={theory}
+  class:theory
 >
   <header class="topbar">
     {#if appState.compact}
@@ -300,8 +304,8 @@
       </div>
     {:else if variant === "standalone"}
       <div class="identity">
-        <strong>Shape Matrix Explorer</strong>
-        <span>Built on Lorq Nichols’ Shape Matrix</span>
+        <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
+        <span>Lorq Nichols’ 144 Shape Matrix was the starting point</span>
       </div>
     {/if}
 
@@ -423,17 +427,18 @@
       {:else}
         <a
           class="top-action source-action"
-          href="http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/"
+          href={ORIGINAL_SHAPE_MATRIX_URL}
           target="_blank"
           rel="noopener noreferrer"
+          aria-label="Open Lorq Nichols’ original 144 Shape Matrix"
         >
           <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-          <span>Original</span>
+          <span>Source</span>
         </a>
         <button
           class="top-action"
           type="button"
-          aria-label="About the Shape Matrix"
+          aria-label={`About ${KINETIC_SHAPE_ENGINE_NAME}`}
           onclick={appState.openAbout}
         >
           <i class="fas fa-circle-info" aria-hidden="true"></i>

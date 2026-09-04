@@ -2,7 +2,7 @@
 
 ## Outcome
 
-The Shape Matrix Explorer has one relationship-selection model and one animation
+Kinetic Shape Engine has one relationship-selection model and one animation
 workspace. A visitor always chooses the canonical hand timing and direction,
 sees the exact prop result, and receives a prop-phase choice only when the
 selected flowers genuinely admit more than one exact result. Playback,
