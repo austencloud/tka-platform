@@ -45,9 +45,3 @@ export async function createCosmicPrototypeWorld(
     },
   };
 }
-
-export const COSMIC_PROTOTYPE_CAMERA = {
-  position: [0, 4.2, 17] as const,
-  target: [0, 1.1, -1] as const,
-  fov: 48,
-};

@@ -8,10 +8,8 @@ vi.mock(
   () => ({ createCosmicEnvironmentWorld: factory })
 );
 
-import {
-  COSMIC_PROTOTYPE_CAMERA,
-  createCosmicPrototypeWorld,
-} from "$lib/shared/3d/worker-renderer/worlds/cosmic-prototype-world";
+import { getWorkerEnvironmentCamera } from "$lib/shared/3d/worker-renderer/domain/worker-environment-camera";
+import { createCosmicPrototypeWorld } from "$lib/shared/3d/worker-renderer/worlds/cosmic-prototype-world";
 
 describe("createCosmicPrototypeWorld", () => {
   beforeEach(() => {
@@ -42,21 +40,7 @@ describe("createCosmicPrototypeWorld", () => {
       renderer,
       camera,
       requestId: 3,
-      performers: [
-        {
-          id: "performer-1",
-          characterId: "x-bot",
-          propType: "staff",
-          groundY: -1.25,
-          stageAnchorY: 0,
-          position: [0, 0, 0],
-          facingRadians: 0,
-          scale: 1,
-          leftProp: null,
-          rightProp: null,
-          upperBodyStance: null,
-        },
-      ],
+      performers: [{ groundY: -1.25 } as never],
       reportProgress,
     });
 
@@ -82,7 +66,7 @@ describe("createCosmicPrototypeWorld", () => {
   });
 
   it("pins the same initial framing used by the production viewer", () => {
-    expect(COSMIC_PROTOTYPE_CAMERA).toEqual({
+    expect(getWorkerEnvironmentCamera("cosmic")).toEqual({
       position: [0, 4.2, 17],
       target: [0, 1.1, -1],
       fov: 48,
