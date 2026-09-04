@@ -2,15 +2,13 @@
   Type the ratio. Two whole numbers, prop rotations over hand cycles.
 
   This replaces a scroller over the open band, which asked a viewer who already
-  knew they wanted 4:9 to go find 4:9 in a list of twenty-nine, and which could
-  only ever offer the band that happened to be open. The numbers are bounded by
-  the CATALOG instead: anything the field holds can be typed straight in, and
-  the band control follows to report where that ratio lives.
+  knew they wanted 4:9 to go find 4:9 in a long catalog, and which could
+  only ever offer the band that happened to be open. Each number is bounded at
+  15 instead: any pair in that square can be typed straight in, and the band
+  control follows to report how many hand cycles the reduced ratio needs.
 
   It reduces on the way in, so 2:4 applies 1:2, and it says so in the caption
-  rather than rewriting the digits under the cursor. A pair the catalog does not
-  hold is refused with the reason, never snapped to a neighbour: a jump control
-  that lands somewhere else is worse than one that says no. -->
+  rather than rewriting the digits under the cursor. -->
 <script lang="ts">
   import {
     makeSpinRatio,
@@ -19,7 +17,6 @@
     type SpinRatio,
   } from "@vtg/domain";
   import {
-    narrowestBandFor,
     theoryRatioSpokenLabel,
     THEORY_RATIO_MAX_PART,
   } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
@@ -91,8 +88,7 @@
    * Why the typed pair is not on screen, or null when it is.
    *
    * Each case names the bound it crossed rather than reporting "invalid". The
-   * bounds are the catalog's own: nothing over nine on either side, prop
-   * rotations no further than hand cycles, and not both zero.
+   * Each typed number may reach 15 independently. Only 0:0 has no ratio.
    */
   const problem = $derived.by<string | null>(() => {
     const propRotations = readPart(propText);
@@ -105,10 +101,7 @@
       propRotations > THEORY_RATIO_MAX_PART ||
       handCycles > THEORY_RATIO_MAX_PART
     ) {
-      return `The catalog stops at ${THEORY_RATIO_MAX_PART} on each side.`;
-    }
-    if (typed && narrowestBandFor(typed) === null) {
-      return "Prop rotations cannot pass hand cycles.";
+      return `Each number can be 0 through ${THEORY_RATIO_MAX_PART}.`;
     }
     return null;
   });
