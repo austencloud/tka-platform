@@ -112,7 +112,6 @@
     createSequenceTransformActionDispatcher,
     type SequenceTransformActionDispatcher,
   } from "../services/sequence-transform-action-dispatcher";
-  import type { SequenceTransformCommandId } from "$lib/shared/create/domain/sequence-action-types";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
 
   const logger = createComponentLogger("CreateModule");
@@ -215,9 +214,6 @@
     CreateModuleState?.isPersistenceInitialized === true &&
       CreateModuleState.canShowActionButtons()
   );
-  const canShowHeaderSequenceActions = $derived(
-    CreateModuleState?.canShowSequenceActionsButton() ?? false
-  );
 
   setContext("panelState", panelState);
 
@@ -275,20 +271,6 @@
       requestClearSequence: () => handleClearSequence(),
     },
   });
-
-  async function handleHeaderSequenceAction(
-    action: SequenceTransformCommandId
-  ): Promise<void> {
-    const result = await sequenceTransformActions?.execute(action, {
-      source: "header",
-      targetHand: "both",
-    });
-    if (result?.status === "failed") toast.error(result.message);
-  }
-
-  function handleOpenHeaderSequenceActions(): void {
-    panelState.openSequenceActionsPanel("header");
-  }
 
   let entryTutorialWasActive = false;
   let tutorialWorkspacePrepared = false;
@@ -968,11 +950,7 @@
         <span class="active-method">{activeCreateMethod.label}</span>
       {/if}
 
-      <CreateShortcutHeader
-        hasSequenceActions={canShowHeaderSequenceActions}
-        onSequenceAction={handleHeaderSequenceAction}
-        onOpenSequenceActions={handleOpenHeaderSequenceActions}
-      />
+      <CreateShortcutHeader />
     </nav>
 
     <div class="create-workspace-body">
@@ -1132,7 +1110,6 @@
     flex-direction: column;
     overflow: hidden;
     container-type: inline-size;
-    container-name: create-module-workspace;
   }
 
   .create-method-bar {
