@@ -2,7 +2,7 @@
 
 **Concept ID:** `hand-motions-intro`
 
-**Review state:** APPROVED TERMINOLOGY / REDESIGN REQUIRED
+**Review state:** APPROVED TERMINOLOGY / IMPLEMENTED
 
 **Implementation gate:** OPEN for previously approved text and terminology;
 CLOSED for new teaching explanation pending exact-copy approval
@@ -124,3 +124,7 @@ the lesson does not repeat Water, Earth, Sun, Fire, Air, or Moon as headings.
   a relationship, and removal of the duplicated top-left element icon when the
   canonical glyph is already visible at bottom right. No new explanatory prose
   was approved.
+- 2026-09-04 — Implemented the approved five-stage flow and exact bridge copy.
+  The six-up board now opens each relationship into a synchronized live
+  animation and production hand-path Choreo Card; the duplicate focused icon
+  is removed. The lesson remains BUILT pending Austen's hands-on confirmation.
