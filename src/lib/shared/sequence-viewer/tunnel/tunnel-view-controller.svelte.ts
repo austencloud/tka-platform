@@ -90,6 +90,9 @@ export interface TunnelControllerSources {
   initialViewState?: TunnelViewState;
   /** A parent-scoped pair shared with another art controller. */
   customColorState?: ViewerCustomColorState;
+  /** Keep a viewer's formation baked while 2D is showing so returning to
+   * Tunnel can reverse the existing reveal instead of rebuilding in public. */
+  prepareWhileInactive?: boolean;
 }
 
 /** Reduced motion caps a dense ring so a heavy kaleidoscope doesn't spin for
@@ -198,6 +201,7 @@ export class TunnelViewController {
 
   #sources: TunnelControllerSources;
   #layers = $state<BuiltTunnelLayer[]>([]);
+  #layersReady = $state(false);
   #buildToken = 0;
   buildError = $state<string | null>(null);
 
@@ -291,9 +295,12 @@ export class TunnelViewController {
         staggerSteps: 0,
         speedOverrides: {},
       };
-      const on = this.active;
-      if (!on || !seq) {
+      const shouldPrepare = this.#sources.prepareWhileInactive
+        ? true
+        : this.active;
+      if (!shouldPrepare || !seq) {
         this.#layers = [];
+        this.#layersReady = false;
         this.#sources.onLayersChange?.([]);
         this.buildError = null;
         return;
@@ -309,16 +316,19 @@ export class TunnelViewController {
           }
         );
       const token = ++this.#buildToken;
+      this.#layersReady = false;
       void buildTunnelCompositionLayers(composition, spatial)
         .then((layers) => {
           if (token !== this.#buildToken) return;
           this.#layers = layers;
+          this.#layersReady = true;
           this.#sources.onLayersChange?.(layers);
           this.buildError = null;
         })
         .catch((error) => {
           if (token !== this.#buildToken) return;
           this.#layers = [];
+          this.#layersReady = false;
           this.#sources.onLayersChange?.([]);
           this.buildError =
             error instanceof Error
@@ -326,6 +336,12 @@ export class TunnelViewController {
               : "The tunnel could not be built.";
         });
     });
+  }
+
+  /** A reveal may start only after every copy has a sampled layer. Otherwise
+   * the completed build joins an already-visible canvas as a one-frame pop. */
+  get layersReady(): boolean {
+    return this.#layersReady;
   }
 
   /** The live config as a plain object (for propCount / persistence / key). */

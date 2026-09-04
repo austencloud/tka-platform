@@ -396,6 +396,7 @@
   let interactivePropsReady = $state(false);
   let effectsRuntimeReady = $state(!enableEffects);
   let sceneReady = $state(false);
+  let environmentSettled = $state(true);
   let readyPerformerCount = $state(0);
   let totalPerformerCount = $state(0);
   const performersReady = $derived(
@@ -437,6 +438,7 @@
   function handleEnvironmentTransitionChange(
     observation: EnvironmentTransitionObservation<BackgroundType>
   ): void {
+    environmentSettled = observation.settled;
     if (!observation.settled) adaptiveQuality.armSettleWindow();
     onEnvironmentTransitionChange?.(observation);
   }
@@ -451,9 +453,14 @@
   // geometry upload and shader compile need every millisecond of the main
   // thread. Fullscreen occludes it outright. Freeze rather than unmount: the
   // window is short and re-initializing costs more than it saves.
+  //
+  // The scene-ready flag is a first-load latch, so it covered only that boot.
+  // Switching scenes runs the same pipeline again behind the same veil, and the
+  // backdrop was painting through every frame of it — so the transition holds
+  // too, from the moment it starts until it settles.
   const backgroundHoldKey = `viewer3d-boot:${nextViewer3DInstanceId()}`;
   $effect(() => {
-    const shouldHold = !sceneReady || fullScreen;
+    const shouldHold = !sceneReady || !environmentSettled || fullScreen;
     if (shouldHold) holdBackground(backgroundHoldKey);
     else releaseBackground(backgroundHoldKey);
 

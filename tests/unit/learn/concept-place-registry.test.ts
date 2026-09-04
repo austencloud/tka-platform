@@ -4,6 +4,7 @@ import {
   CONCEPT_RESOURCE_BINDINGS,
   getApprovedPractice,
   getConceptPlace,
+  getConceptPlaceIdForLesson,
   getConceptPlacesByLevel,
 } from "$lib/features/learn/domain/concept-place-registry";
 import {
@@ -61,6 +62,12 @@ describe("concept place registry", () => {
   it("does not publish practice candidates as recommendations", () => {
     expect(getApprovedPractice(getConceptPlace("1.3")!)).toEqual([]);
     expect(getApprovedPractice(getConceptPlace("1.5")!)).toEqual([]);
+  });
+
+  it("finds the official place for a lesson handoff", () => {
+    expect(getConceptPlaceIdForLesson("grid")).toBe("1.1");
+    expect(getConceptPlaceIdForLesson("hand-positions")).toBe("1.2");
+    expect(getConceptPlaceIdForLesson("not-a-lesson")).toBeNull();
   });
 
   it("grounds rotation direction in its focused lesson and related Guide page", () => {

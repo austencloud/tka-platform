@@ -17,3 +17,15 @@ export function resolveTunnelLayerOpacity(
     staggerWindow;
   return Math.max(0, Math.min(1, (clampedProgress - start) / (1 - start)));
 }
+
+/**
+ * The ordinary 2D grid leaves on the same progress that introduces Tunnel.
+ * A Tunnel whose own grid is enabled keeps it throughout the transformation.
+ */
+export function resolveTunnelGridOpacity(
+  progress: number,
+  tunnelGridVisible: boolean
+): number {
+  if (tunnelGridVisible) return 1;
+  return 1 - Math.max(0, Math.min(1, progress));
+}
