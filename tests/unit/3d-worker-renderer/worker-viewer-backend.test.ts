@@ -44,6 +44,7 @@ describe("worker viewer backend", () => {
       "blossom",
       "celestial",
       "cosmic",
+      "ember",
       "forest",
       "ocean",
       "rainbow",
@@ -52,7 +53,7 @@ describe("worker viewer backend", () => {
     ]);
     expect(getWorkerEnvironmentKey(SceneEnvironmentId.RAINBOW)).toBe("rainbow");
     expect(getWorkerEnvironmentKey(SceneEnvironmentId.AUTUMN)).toBe("autumn");
-    expect(getWorkerEnvironmentKey(SceneEnvironmentId.EMBER)).toBeNull();
+    expect(getWorkerEnvironmentKey(SceneEnvironmentId.EMBER)).toBe("ember");
   });
 
   it("selects a migrated complete frame", () => {
@@ -119,7 +120,6 @@ describe("worker viewer backend", () => {
       environment: null,
       fallbackReasons: [
         "offscreen-canvas-unavailable",
-        "environment-not-migrated",
         "prop-family-not-migrated",
         "effects-not-migrated",
         "scene-markers-not-migrated",

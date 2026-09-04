@@ -21,7 +21,7 @@ export const WORKER_ENVIRONMENT_BY_BACKGROUND = {
   [BackgroundType.COSMIC]: "cosmic",
   [BackgroundType.PRIDE]: "rainbow",
   [BackgroundType.OCEAN]: "ocean",
-  [BackgroundType.EMBER]: null,
+  [BackgroundType.EMBER]: "ember",
   [BackgroundType.BLOSSOM]: "blossom",
   [BackgroundType.FOREST]: "forest",
   [BackgroundType.AUTUMN]: "autumn",
