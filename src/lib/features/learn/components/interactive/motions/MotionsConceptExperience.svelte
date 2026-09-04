@@ -26,6 +26,7 @@
     migrateHandMotionsSavedStep,
   } from "./hand-motions-stage";
   import TimingDirectionBoard from "./TimingDirectionBoard.svelte";
+  import TimingDirectionIntro from "./TimingDirectionIntro.svelte";
 
   let {
     onComplete,
@@ -192,22 +193,8 @@
             </div>
           </div>
         {:else if isTimingDirectionIntro}
-          <div
-            class="artifact-state timing-direction-intro"
-            aria-label="Timing and Direction"
-          >
-            <section>
-              <strong>Time</strong>
-              <span>Together</span>
-              <span>Split</span>
-              <span>Quarter</span>
-            </section>
-            <div class="axis-join" aria-hidden="true">+</div>
-            <section>
-              <strong>Direction</strong>
-              <span>Same</span>
-              <span>Opposite</span>
-            </section>
+          <div class="artifact-state timing-direction-state">
+            <TimingDirectionIntro />
           </div>
         {:else}
           <div class="artifact-state comparison-state">
@@ -305,46 +292,9 @@
     min-height: 22rem;
   }
 
-  .timing-direction-intro {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: stretch;
-    gap: clamp(0.75rem, 2cqw, 2rem);
-    width: min(100%, 72rem);
-    max-height: 32rem;
-    margin-inline: auto;
-  }
-
-  .timing-direction-intro section {
-    display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: clamp(0.6rem, 1.5cqh, 1rem);
-    min-width: 0;
-    padding: clamp(1rem, 2.5cqw, 2.5rem);
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-lg, 0.75rem);
-    background: var(--theme-card-bg);
-  }
-
-  .timing-direction-intro strong {
-    color: var(--theme-text);
-    font-size: clamp(1.35rem, 2.1cqw, 2.2rem);
-    line-height: 1;
-  }
-
-  .timing-direction-intro span {
-    color: var(--theme-text-dim);
-    font-size: clamp(1rem, 1.4cqw, 1.35rem);
-    font-weight: 700;
-  }
-
-  .axis-join {
+  .timing-direction-state {
     display: grid;
     place-items: center;
-    color: var(--theme-accent);
-    font-size: clamp(1.75rem, 3cqw, 3.5rem);
-    font-weight: 800;
   }
 
   @media (max-width: 640px), (max-height: 540px) {
@@ -363,16 +313,6 @@
     .motions-experience.has-focused-comparison {
       overflow: visible;
     }
-
-    .timing-direction-intro {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
-      gap: 0.5rem;
-    }
-
-    .timing-direction-intro section {
-      padding: 0.75rem;
-    }
   }
 
   @media (max-height: 540px) and (min-width: 641px) {
@@ -386,21 +326,8 @@
       overflow: visible;
     }
 
-    .timing-direction-intro {
-      max-height: none;
-    }
-
-    .timing-direction-intro section {
-      grid-template-columns: repeat(3, auto);
-      padding: 0.75rem;
-    }
-
-    .timing-direction-intro section:last-child {
-      grid-template-columns: repeat(2, auto);
-    }
-
-    .timing-direction-intro strong {
-      grid-column: 1 / -1;
+    .timing-direction-state {
+      place-items: start center;
     }
   }
 </style>
