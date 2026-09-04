@@ -32,7 +32,7 @@
   lessonVisibility.setMotionPolicySource(sharedVisibility);
   const propElementalType = $derived(derivePropElementalType(sequence));
   let stageWidth = $state(
-    typeof window === "undefined" ? 1080 : window.innerWidth
+    typeof window === "undefined" ? 900 : window.innerWidth
   );
 </script>
 
@@ -134,7 +134,7 @@
   <div class="studio-body">
     <PanelGroup
       direction="horizontal"
-      flattened={stageWidth < 1080}
+      flattened={stageWidth < 900}
       gap={6}
       panels={[
         {
@@ -185,13 +185,15 @@
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
     min-width: 0;
+    min-height: 0;
     overflow: hidden;
-    background: var(--theme-panel-bg);
+    background: transparent;
   }
 
   .studio-body {
+    height: 100%;
     min-width: 0;
-    min-height: clamp(32rem, 58dvh, 48rem);
+    min-height: 0;
     overflow: hidden;
   }
 
@@ -317,14 +319,15 @@
     gap: 0.5rem;
   }
 
-  @container learning-word-stage (max-width: 1079px) {
+  @container learning-word-stage (max-width: 899px) {
     .studio-body {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(19rem, 1fr));
       grid-template-areas:
         "video animation"
         "card animation";
-      min-height: 54rem;
+      overflow-y: auto;
     }
 
     .video-pane {
@@ -343,11 +346,11 @@
   @container learning-word-stage (max-width: 760px) {
     .studio-body {
       grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: 10.5rem 24rem 31rem;
       grid-template-areas:
         "video"
         "animation"
         "card";
-      min-height: 0;
     }
 
     .video-pane {
@@ -362,6 +365,16 @@
       min-height: 31rem;
     }
 
+    .empty-state {
+      gap: 0.45rem;
+      padding: 0.5rem;
+    }
+
+    .empty-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+
     .guide-notes {
       grid-template-columns: minmax(0, 1fr);
       gap: 0.55rem;
@@ -370,7 +383,11 @@
 
   @media (max-height: 620px) and (min-width: 761px) {
     .studio-body {
-      min-height: 31rem;
+      overflow-y: auto;
+    }
+
+    .studio-body :global(.panel-group) {
+      min-height: 14rem;
     }
 
     .guide-notes {
@@ -380,17 +397,33 @@
 
   @container learning-word-stage (min-width: 1680px) {
     .studio-body {
-      min-height: min(62dvh, 60rem);
+      min-height: 0;
     }
   }
 
   @container learning-word-stage (min-width: 2600px) {
     .studio-body {
-      min-height: min(64dvh, 78rem);
+      min-height: 0;
+    }
+
+    .pane-heading {
+      min-height: 3.5rem;
+      padding-inline: 1rem;
+      font-size: 1.1rem;
     }
 
     .guide-notes {
+      grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr);
       min-height: 8rem;
+      font-size: 1.1rem;
+    }
+
+    .guide-notes h2 {
+      font-size: 1.2rem;
+    }
+
+    .empty-state {
+      font-size: 1.1rem;
     }
 
     .empty-icon {

@@ -26,6 +26,10 @@ import {
   LAB_GOALS,
   LAB_GOAL_FAMILIES,
 } from "../../../src/routes/test/staff-grip/lab-goals";
+import {
+  labContinuityMarkers,
+  labContinuityStatus,
+} from "../../../src/routes/test/staff-grip/lab-continuity";
 import { coreTnDCorpus } from "../../tools/prop-continuity-corpus";
 
 const projectRoot = path.resolve(
@@ -145,6 +149,54 @@ describe("staff-grip lab goals", () => {
         playbackShape(entry.sequence),
       );
     }
+  });
+
+  /*
+   * The scrub's markers are buttons, and `app.css` floors every button at
+   * `--min-touch-target`. Two of them closer together than that would cover
+   * each other and a tap would land on the wrong jump, so `LabTransport`
+   * swaps the buttons for drawn ticks once its lane drops below 18rem.
+   *
+   * That threshold is only correct while the tightest pair the sweep actually
+   * produces still clears 44px on a 288px lane. This is the arithmetic behind
+   * the container query: if a future sweep finds two jumps closer together
+   * than this, the breakpoint has to move with it.
+   */
+  it("keeps two markers a touch target apart at the width that still draws buttons", () => {
+    const LAB_FRAME_STEP = 0.01;
+    const NARROWEST_BUTTON_LANE_PX = 18 * 16;
+    const MIN_TOUCH_TARGET_PX = 44;
+    const required = MIN_TOUCH_TARGET_PX / NARROWEST_BUTTON_LANE_PX;
+
+    let tightest = Number.POSITIVE_INFINITY;
+    let tightestId = "";
+
+    for (const goal of LAB_GOALS) {
+      const status = labContinuityStatus(goal.id);
+      const trackSpan = Math.max(
+        continuityReport(goal.id)!.motionStepCount - LAB_FRAME_STEP,
+        LAB_FRAME_STEP,
+      );
+      const centres = labContinuityMarkers(status, trackSpan)
+        .map((marker) => marker.start + marker.width / 2)
+        .sort((a, b) => a - b);
+
+      for (let index = 1; index < centres.length; index += 1) {
+        const gap = centres[index] - centres[index - 1];
+        if (gap < tightest) {
+          tightest = gap;
+          tightestId = goal.id;
+        }
+      }
+    }
+
+    expect(tightest, "no goal has two markers to separate").toBeLessThan(
+      Number.POSITIVE_INFINITY,
+    );
+    expect(
+      tightest,
+      `${tightestId} puts two markers ${(tightest * NARROWEST_BUTTON_LANE_PX).toFixed(1)}px apart on an 18rem lane`,
+    ).toBeGreaterThanOrEqual(required);
   });
 
   it("has a committed continuity result for every goal", () => {

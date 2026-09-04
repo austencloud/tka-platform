@@ -51,7 +51,6 @@ function createState(compact: boolean) {
       theoryRightRatio: { propRotations: 1, handCycles: 3 },
       theoryMode: "SS",
       theoryPair: null,
-      theoryBand: 4,
       level: 2,
       leftTurn: 0,
       rightTurn: 0,
@@ -251,7 +250,6 @@ describe("shape matrix app state", () => {
     const { state, syncState } = createState(false);
 
     state.setSurface("theory");
-    state.setTheoryBand(4);
     state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
 
     expect(state.surface).toBe("theory");
@@ -286,48 +284,28 @@ describe("shape matrix app state", () => {
       propRotations: 4,
       handCycles: 15,
     });
-    expect(state.theoryBand).toBe(5);
     expect(state.theoryRowAxis).toHaveLength(4);
     expect(state.theoryColAxis).toHaveLength(4);
   });
 
-  it("keeps every theory ratio inside the band the user chose", () => {
+  it("rejects theory values outside the 0–15 field", () => {
     const { state } = createState(false);
 
     state.setSurface("theory");
-    state.setTheoryBand(4);
-    state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
-    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+    state.setTheoryRatio({ propRotations: 16, handCycles: 15 });
 
-    // Band 1 is the three ratios TKA can already name, so 2:9 has to land on
-    // the nearest one it holds rather than survive a band it is not in.
-    state.setTheoryBand(1);
-    expect(
-      state.availableTheoryRatios.some(
-        (ratio) =>
-          ratio.propRotations === state.theoryLeftRatio.propRotations &&
-          ratio.handCycles === state.theoryLeftRatio.handCycles
-      )
-    ).toBe(true);
-    expect(
-      state.availableTheoryRatios.every(
-        (ratio) => ratio.handCycles > 0 && ratio.handCycles <= 2
-      )
-    ).toBe(true);
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 1, handCycles: 3 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 1, handCycles: 3 });
   });
 
-  it("moves the Kinetic Alphabet level without touching the ratio band", () => {
+  it("moves the Kinetic Alphabet level without touching theory ratios", () => {
     const { state } = createState(false);
 
     state.setSurface("theory");
-    state.setTheoryBand(4);
     state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
 
-    // The two ladders are independent. A level is a turn vocabulary and a band
-    // is a denominator vocabulary; the surface that reads one must not move
-    // the other, which is what a single shared number used to do.
+    // The Matrix's turn vocabulary remains independent from Theory's ratios.
     state.setLevel(1);
-    expect(state.theoryBand).toBe(4);
     expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
   });
 
@@ -384,7 +362,7 @@ describe("shape matrix app state", () => {
     expect(state.selectedPair?.right.turns).toBe(0.25);
   });
 
-  it("preserves each semantic row and column through every L4 turn and ratio band", () => {
+  it("preserves each semantic row and column through every L4 turn", () => {
     const axis = buildFlowerAxis([0.25]).filter(
       (flower) => flower.grid === "diamond"
     );

@@ -22,11 +22,13 @@
  *   collision-safe over the published corpus: every reversal *variant* already
  *   differs in flipped motion content (`reversal-seed-service.ts` flips pro↔anti
  *   + cw↔ccw), so dropping the redundant reversal flag merges nothing.
+ * - **V3** (`HASH_VERSION_V3`) — adds the authored motion plane. Plane was
+ *   previously dropped by composition, so no V1/V2 stored identity could
+ *   distinguish physically different multi-plane choreography.
  *
- * `CONTENT_HASH_VERSION` is the ACTIVE version — **V2** since 2026-06-30, after
- * the corpus `contentHash` migration (`scripts/migrations/rehash-content-v2.ts`)
- * and version-aware fork detection shipped. The version-aware compare + lazy
- * rehash keep mixed-version data consistent, so the flip was race-free.
+ * `CONTENT_HASH_VERSION` is the ACTIVE version — **V3** since 2026-09-04. The
+ * version-aware compare + lazy rehash introduced for V2 keeps mixed-version
+ * data consistent; existing plane-less V2 documents upgrade on their next save.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -34,30 +36,34 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/mot
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { Plane } from "@tka/tka-types";
 
 export const HASH_VERSION_V1 = 1;
 export const HASH_VERSION_V2 = 2;
+export const HASH_VERSION_V3 = 3;
 
 /**
- * ACTIVE identity-hash version — V2 as of 2026-06-30. Rollout complete:
- *   1. version-aware fork detection + lazy rehash deployed (compares
+ * ACTIVE identity-hash version — V3 as of 2026-09-04.
+ *   1. version-aware fork detection + lazy rehash already compares
  *      same-version hashes; recomputes on version mismatch instead of forking),
- *   2. `scripts/migrations/rehash-content-v2.ts --apply` rewrote every stored
- *      `contentHash` to V2 (user library + public mirror; systemCatalogs empty),
- *   3. flipped to V2 here.
- * Any straggler still on V1 self-heals via the version-aware lazy rehash on next
- * access, so a rollback to V1 stays fork-safe too.
+ *   2. V1 and V2 preimages remain byte-stable,
+ *   3. plane-less V2 documents self-heal to V3 on their next save.
+ * No bulk migration is required because absence of a plane was the complete V2
+ * corpus state; only newly authored multi-plane content needs the new field.
  */
-export const CONTENT_HASH_VERSION = HASH_VERSION_V2;
+export const CONTENT_HASH_VERSION = HASH_VERSION_V3;
 
 interface ExtractOptions {
   /** V2: drop round-trip-derived fields (reversal flags, gridMode) so the hash
    *  is invariant under hydrate re-derivation. */
   readonly excludeDerived: boolean;
+  /** V3: authored planes distinguish physical movement in 3D space. */
+  readonly includePlane: boolean;
 }
 
-const V1_OPTS: ExtractOptions = { excludeDerived: false };
-const V2_OPTS: ExtractOptions = { excludeDerived: true };
+const V1_OPTS: ExtractOptions = { excludeDerived: false, includePlane: false };
+const V2_OPTS: ExtractOptions = { excludeDerived: true, includePlane: false };
+const V3_OPTS: ExtractOptions = { excludeDerived: true, includePlane: true };
 
 async function digest(content: unknown): Promise<string> {
   const json = JSON.stringify(content);
@@ -70,14 +76,19 @@ async function digest(content: unknown): Promise<string> {
 /**
  * Identity hash at the given version (defaults to the active version). V1 output
  * is byte-identical to the original implementation; V2 excludes the
- * round-trip-derived fields. Pass `HASH_VERSION_V2` explicitly to compute the
- * fork-proof identity (used by the rehash migration and its tests).
+ * round-trip-derived fields; V3 adds authored plane. Pass a version explicitly
+ * when validating a stored historical preimage.
  */
 export async function computeHash(
   sequence: SequenceData,
   version: number = CONTENT_HASH_VERSION
 ): Promise<string> {
-  const opts = version >= HASH_VERSION_V2 ? V2_OPTS : V1_OPTS;
+  const opts =
+    version >= HASH_VERSION_V3
+      ? V3_OPTS
+      : version >= HASH_VERSION_V2
+        ? V2_OPTS
+        : V1_OPTS;
   return digest(extractContent(sequence, opts));
 }
 
@@ -185,5 +196,6 @@ function extractMotion(m: MotionData, opts: ExtractOptions): unknown {
     ...(opts.excludeDerived ? {} : { gridMode: m.gridMode }),
     skewSteps: m.skewSteps ?? null,
     skewDir: m.skewDir ?? null,
+    ...(opts.includePlane ? { plane: m.plane ?? Plane.wall } : {}),
   };
 }

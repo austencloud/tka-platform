@@ -180,6 +180,23 @@ CANDIDATES = (
 )
 
 
+R2_BREACHED_RIFT_FLOW_PATH = (
+    (-72.0, 137.0),
+    (-57.0, 116.0),
+    (-39.0, 94.0),
+    (-19.0, 72.0),
+    (3.0, 51.0),
+    (21.0, 30.0),
+    (25.0, 10.0),
+    (26.0, -10.0),
+    (31.0, -32.0),
+    (39.0, -56.0),
+    (47.0, -84.0),
+    (56.0, -122.0),
+    (64.0, -145.0),
+)
+
+
 def gaussian(
     x0: float,
     z0: float,
@@ -230,7 +247,128 @@ def embed_performance_bench(height: np.ndarray, target_height: float) -> np.ndar
     return height * (1.0 - core) + bench * core
 
 
-def candidate_height(candidate: Candidate) -> np.ndarray:
+def smoothstep01(value: np.ndarray) -> np.ndarray:
+    clamped = np.clip(value, 0.0, 1.0)
+    return clamped * clamped * (3.0 - 2.0 * clamped)
+
+
+def rotated_coordinates(
+    x0: float,
+    z0: float,
+    angle_deg: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    angle = math.radians(angle_deg)
+    dx = X_GRID - x0
+    dz = Z_GRID - z0
+    return (
+        dx * math.cos(angle) + dz * math.sin(angle),
+        -dx * math.sin(angle) + dz * math.cos(angle),
+    )
+
+
+def breached_rift_r2_masks() -> dict[str, np.ndarray]:
+    """Return the explicit formation regions for the Gate 1.1 amendment."""
+
+    shelf_u, shelf_v = rotated_coordinates(-4.0, 1.0, -14.0)
+    irregularity = (
+        0.075 * np.sin((shelf_u + shelf_v) / 6.7)
+        + 0.055 * np.sin((shelf_u - 1.8 * shelf_v) / 9.1)
+    )
+    shelf_metric = (np.abs(shelf_u) / 48.0) ** 3.6 + (np.abs(shelf_v) / 29.0) ** 3.0 + irregularity
+    shelf = smoothstep01((1.34 - shelf_metric) / 0.58)
+
+    scarp_line_x = -91.0 + 0.105 * (Z_GRID - 58.0) + 5.8 * np.sin((Z_GRID + 14.0) / 31.0)
+    surviving_headwall = 1.0 / (1.0 + np.exp((X_GRID - scarp_line_x) / 3.8))
+    north_window = smoothstep01((Z_GRID + 28.0) / 34.0) * smoothstep01((198.0 - Z_GRID) / 28.0)
+    surviving_headwall *= north_window
+
+    breach_u, breach_v = rotated_coordinates(-66.0, 118.0, -29.0)
+    breach = np.exp(-0.5 * ((breach_u / 27.0) ** 2 + (breach_v / 48.0) ** 2))
+    breach *= smoothstep01((Z_GRID - 42.0) / 54.0)
+
+    talus = np.zeros_like(X_GRID)
+    for x0, z0, sigma_x, sigma_z, amplitude, angle in (
+        (-65.0, 83.0, 20.0, 31.0, 1.00, -27.0),
+        (-44.0, 63.0, 24.0, 19.0, 0.78, -33.0),
+        (-82.0, 52.0, 17.0, 23.0, 0.63, -12.0),
+    ):
+        talus += gaussian(x0, z0, sigma_x, sigma_z, amplitude, angle)
+    talus = np.clip(talus, 0.0, 1.0)
+
+    return {
+        "performanceShelf": shelf,
+        "survivingHeadwall": surviving_headwall,
+        "collapseBreach": breach,
+        "talusApron": talus,
+    }
+
+
+def breached_rift_height_r2(candidate: Candidate) -> np.ndarray:
+    """Build the non-radial Breached Rift Bench used by the Gate 1.1 review."""
+
+    if not candidate.id.startswith("a-"):
+        raise ValueError("The Gate 1.1 amendment applies only to Breached Rift Bench")
+
+    masks = breached_rift_r2_masks()
+    distance, progress = distance_and_progress_to_polyline(R2_BREACHED_RIFT_FLOW_PATH)
+
+    base = 0.18 + 0.0185 * (Z_GRID - WORLD_Z[0]) - 0.0022 * X_GRID
+    base += 0.18 * np.sin((X_GRID + 2.0 * Z_GRID) / 37.0)
+    base += 0.12 * np.sin((1.7 * X_GRID - Z_GRID) / 23.0)
+
+    headwall_relief = 15.5 + 7.2 * smoothstep01((Z_GRID - 36.0) / 125.0)
+    height = base + masks["survivingHeadwall"] * headwall_relief
+    height += gaussian(-137.0, 142.0, 43.0, 32.0, 7.8, 8.0)
+    height += gaussian(-141.0, 38.0, 34.0, 58.0, 5.2, -8.0)
+
+    # The breach removes a wedge from the old western mass; it is deliberately
+    # offset and open downslope so the result cannot read as a freestanding arch.
+    height -= masks["collapseBreach"] * (7.8 + 7.4 * masks["survivingHeadwall"])
+
+    # Low, discontinuous runout derived from the failed wall. These are mass,
+    # not decorative rocks, and remain subordinate to the surviving headwall.
+    height += masks["talusApron"] * 2.5
+    height += gaussian(-54.0, 78.0, 11.0, 20.0, 1.7, -28.0)
+    height += gaussian(-77.0, 64.0, 9.0, 15.0, 1.3, -8.0)
+
+    # The breached edifice leaves a broad constructional apron below it. This
+    # gives the active drainage real banks instead of placing a raised spline
+    # on a low plain.
+    apron_width = 31.0 + 10.0 * smoothstep01((progress - 0.58) / 0.30)
+    apron = np.exp(-0.5 * (distance / apron_width) ** 2)
+    apron_uplift = 1.2 + 14.8 * (1.0 - progress) ** 1.45
+    height += apron * apron_uplift
+
+    # The performance area is a gently graded tongue inside an older flow
+    # shelf. Its superelliptic, warped footprint is intentionally off-centre.
+    shelf_plane = 0.78 + 0.0075 * X_GRID + 0.0035 * Z_GRID
+    shelf_surface = shelf_plane + 0.055 * np.sin((X_GRID + 0.8 * Z_GRID) / 5.4)
+    shelf = masks["performanceShelf"]
+    height = height * (1.0 - shelf) + shelf_surface * shelf
+    height += gaussian(-32.0, -7.0, 10.0, 7.0, 0.48, -15.0)
+    height += gaussian(27.0, -17.0, 8.0, 6.0, 0.31, 12.0)
+
+    # A shallow drainage saddle gives the solver a gravity-legible route. The
+    # simulator still owns the deposit footprint and may occupy either bank.
+    channel_bed = -1.15 + 14.8 * (1.0 - progress) ** 3.2
+    channel_width = 6.8 + 3.2 * smoothstep01((progress - 0.66) / 0.27)
+    channel_influence = np.exp(-0.5 * (distance / channel_width) ** 2)
+    height = height * (1.0 - channel_influence) + channel_bed * channel_influence
+
+    # A broken old-flow shoulder protects the action shelf without becoming a
+    # symmetric berm or a continuous engineered levee.
+    height += gaussian(13.5, 14.0, 2.3, 11.0, 1.15, -5.0)
+    height += gaussian(15.5, -15.0, 2.2, 8.5, 0.88, 7.0)
+
+    return height
+
+
+def candidate_height(candidate: Candidate, revision: str = "r1") -> np.ndarray:
+    if revision == "r2":
+        return breached_rift_height_r2(candidate)
+    if revision != "r1":
+        raise ValueError(f"Unknown terrain revision: {revision}")
+
     base = 0.15 + 0.018 * (Z_GRID - WORLD_Z[0]) - 0.003 * X_GRID
     distance, progress = distance_and_progress_to_polyline(candidate.flow_path)
 
