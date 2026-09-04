@@ -79,9 +79,8 @@ export interface ShapeMatrixAppSnapshot {
   /**
    * How far the Theory ratio field opens. Deliberately NOT `level`: a band
    * counts denominators and a level names turn values, and the two ladders
-   * only happen to be the same length. Sharing one number told a Theory
-   * visitor they were at Level 4, which is a claim the turn system does not
-   * make about any ratio past band 1.
+   * are independent. Sharing one number told a Theory visitor that a
+   * hand-cycle bound was a Kinetic Alphabet level.
    */
   theoryBand: TheoryBand;
   level: TurnLevel;
@@ -122,6 +121,18 @@ function allowedTheoryRatio(ratio: SpinRatio, band: TheoryBand): SpinRatio {
   } catch {
     return clampTheoryRatioToBand(DEFAULT_THEORY_RATIO, band);
   }
+}
+
+function bandHoldingRatios(
+  startingBand: TheoryBand,
+  ratios: readonly SpinRatio[]
+): TheoryBand {
+  let band = startingBand;
+  for (const ratio of ratios) {
+    const home = narrowestBandFor(ratio);
+    if (home !== null && home > band) band = home;
+  }
+  return band;
 }
 
 /**
@@ -207,13 +218,17 @@ export function createShapeMatrixAppState(
   initial: ShapeMatrixAppSnapshot,
   initialCompact: boolean
 ) {
+  const initialTheoryBand = bandHoldingRatios(initial.theoryBand, [
+    initial.theoryLeftRatio,
+    initial.theoryRightRatio,
+  ]);
   let surface = $state<ShapeMatrixSurface>(initial.surface);
-  let theoryBand = $state<TheoryBand>(initial.theoryBand);
+  let theoryBand = $state<TheoryBand>(initialTheoryBand);
   let theoryLeftRatio = $state(
-    allowedTheoryRatio(initial.theoryLeftRatio, initial.theoryBand)
+    allowedTheoryRatio(initial.theoryLeftRatio, initialTheoryBand)
   );
   let theoryRightRatio = $state(
-    allowedTheoryRatio(initial.theoryRightRatio, initial.theoryBand)
+    allowedTheoryRatio(initial.theoryRightRatio, initialTheoryBand)
   );
   let theoryMode = $state<VtgMode>(initial.theoryMode);
   let theoryPair = $state(initial.theoryPair);
@@ -333,7 +348,7 @@ export function createShapeMatrixAppState(
    *
    * The counterpart of `setLevel` and nothing more: it moves the Farey order,
    * never a turn value, and it leaves the Matrix's level exactly where the
-   * user left it. Ratios the new band can still name are kept; the rest fall
+   * user left it. Ratios the new band can still hold are kept; the rest fall
    * to the nearest one it holds, so a narrowing band moves the axis a little
    * rather than throwing the user's place away.
    */
@@ -419,7 +434,7 @@ export function createShapeMatrixAppState(
    * Take a requested ratio at its word when the catalog holds it.
    *
    * The band says how much of the field is on offer; it is not a licence the
-   * ratio needs. A request the catalog can answer is answered, and the band
+   * ratio needs. A request inside the 0–15 field is answered, and the band
    * widens to the narrowest one that holds it, so the control ends up
    * reporting where that ratio lives. Only a ratio outside the catalog
    * entirely still falls back to the nearest thing the band can name.
@@ -432,7 +447,10 @@ export function createShapeMatrixAppState(
   }
 
   /** One named axis, for the live tuners that edit a specific hand. */
-  function setTheoryRatioFor(hand: "left" | "right", nextRatio: SpinRatio): void {
+  function setTheoryRatioFor(
+    hand: "left" | "right",
+    nextRatio: SpinRatio
+  ): void {
     const allowed = admitTheoryRatio(nextRatio);
     applyTheoryRatios(
       hand === "left" ? allowed : theoryLeftRatio,
@@ -486,17 +504,18 @@ export function createShapeMatrixAppState(
     // A snapshot written before the band split its own field carries the band
     // in `level`, exactly as a pre-split link does. Read it there rather than
     // dropping a returning visitor back to band 1.
-    theoryBand =
+    const restoredBand =
       snapshot.theoryBand ??
       (snapshot.level ? asTheoryBand(snapshot.level) : DEFAULT_THEORY_BAND);
-    theoryLeftRatio = allowedTheoryRatio(
-      snapshot.theoryLeftRatio ?? DEFAULT_THEORY_RATIO,
-      theoryBand
-    );
-    theoryRightRatio = allowedTheoryRatio(
-      snapshot.theoryRightRatio ?? DEFAULT_THEORY_RATIO,
-      theoryBand
-    );
+    const restoredLeftRatio = snapshot.theoryLeftRatio ?? DEFAULT_THEORY_RATIO;
+    const restoredRightRatio =
+      snapshot.theoryRightRatio ?? DEFAULT_THEORY_RATIO;
+    theoryBand = bandHoldingRatios(restoredBand, [
+      restoredLeftRatio,
+      restoredRightRatio,
+    ]);
+    theoryLeftRatio = allowedTheoryRatio(restoredLeftRatio, theoryBand);
+    theoryRightRatio = allowedTheoryRatio(restoredRightRatio, theoryBand);
     theoryMode = snapshot.theoryMode ?? "SS";
     theoryPair = snapshot.theoryPair
       ? {
