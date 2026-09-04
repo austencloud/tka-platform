@@ -87,6 +87,11 @@ describe("SiteHeader desktop disclosures", () => {
     expect(
       document.querySelector(".desktop-nav .panel")?.textContent
     ).toContain("Guide");
+    expect(
+      document.querySelector<HTMLAnchorElement>(
+        '.desktop-nav .panel a[href="/timing-and-direction"]'
+      )
+    ).not.toBeNull();
 
     await click(learn);
     expect(learn.getAttribute("aria-expanded")).toBe("false");

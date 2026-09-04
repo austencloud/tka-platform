@@ -1,5 +1,6 @@
 import { LANDING_DOMAIN } from "../../config/domains";
 import { GUIDE_BODY_PAGES } from "../(public)/guide/level-1/_data/guide-manifest";
+import { TIMING_DIRECTION_ARTICLE_SLUGS } from "../(public)/timing-and-direction/_data/timing-direction-articles";
 import type { RequestHandler } from "./$types";
 
 interface SitemapEntry {
@@ -25,6 +26,7 @@ const pages: SitemapEntry[] = [
   // into the product pages. A redirected URL doesn't self-list.
   // Pillar pages (SEO content roadmap)
   { url: "composer" },
+  { url: "timing-and-direction" },
   // The archive, rebuilt as a chronological catalog and un-gated 2026-07-27
   // (2026-07-26-notation-catalog-design.md), moved from /notation to /history
   // on 2026-09-03. /notation 301s here and is omitted, same as /roots below.
@@ -80,6 +82,10 @@ const guideLevel1Entries = GUIDE_BODY_PAGES.map((p) => ({
   url: `guide/level-1/${p.id}`,
 }));
 
+const timingDirectionEntries = TIMING_DIRECTION_ARTICLE_SLUGS.map((slug) => ({
+  url: `timing-and-direction/${slug}`,
+}));
+
 /**
  * Curated sequences: cards released into a physical/printable deck
  * (`deckReleases/counter/manifests/{deckNumber}`, written by the deck
@@ -123,6 +129,7 @@ export const GET: RequestHandler = async () => {
 
   const allEntries: SitemapEntry[] = [
     ...pages,
+    ...timingDirectionEntries,
     ...guideLevel1Entries,
     ...curatedUrls.map((url) => ({ url })),
   ];
