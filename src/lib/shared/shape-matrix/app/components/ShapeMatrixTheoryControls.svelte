@@ -1,15 +1,13 @@
 <!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixTheoryControls.svelte
-  The Theory ribbon. Same cells, same order, same behaviour as the Matrix
-  ribbon: Apply to, then the value band for the chosen axis. Where the Matrix
-  scrolls TKA turn values, Theory scrolls prop-to-hand ratios.
+  The Theory ribbon follows the Matrix's control order: Apply to, then the
+  prop-to-hand ratio for the chosen axis.
 
   Timing and direction are NOT here. They sit above the animation in the detail
   pane, which is where the Matrix has always kept them.
 
-  The ratio is TYPED rather than scrolled. The Matrix scrolls turn values
-  because there are eight of them and they are a ladder; the ratio field spans
-  every pair from 0 through 15, so a viewer who knows they want 12:5 says 12:5
-  instead of hunting through a catalog. -->
+  The ratio is typed rather than scrolled. The Matrix scrolls turn values
+  because they form a short ladder; Theory accepts every pair from 0 through
+  15, so a viewer who wants 12:5 can say 12:5 directly. -->
 <script lang="ts">
   import ShapeMatrixAxisControl from "./ShapeMatrixAxisControl.svelte";
   import ShapeMatrixRatioEntry from "./ShapeMatrixRatioEntry.svelte";
