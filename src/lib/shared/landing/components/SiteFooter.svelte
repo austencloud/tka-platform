@@ -14,8 +14,17 @@
 
   let {
     variant = "full",
+    surface,
   }: {
     variant?: "full" | "compact" | "sitemap";
+    /**
+     * The opaque surface the page above runs to the viewport edge, when it has
+     * one. Given it, the footer continues that surface rather than settling
+     * onto the cosmic background: no handoff gap, no sky scrim, no hairline
+     * across what should read as one continuous page. Pages that float their
+     * content on the star field leave this unset.
+     */
+    surface?: string;
   } = $props();
 
   let sheetOpen = $state(false);
@@ -48,7 +57,7 @@
    *   /notation, reachable from it, not destinations in their own right.
    * - Endless LOOPs, Poi and TKA, Double Staff Codex — the other three links
    *   that existed only here. Same reason: leaf pages under /endless-spinner,
-   *   /notation, and /guide.
+   *   /history, and /guide.
    * - The Shop column was a verbatim copy of the header's Shop dropdown, and
    *   `SALES_LIVE` is false, so all four pointed into a storefront that says it
    *   is not open. The storefront stays browsable, so one "Shop" link remains
@@ -61,7 +70,7 @@
     {
       title: "Explore",
       links: [
-        { label: "History", href: "/notation" },
+        { label: "History", href: "/history" },
         { label: "Composer", href: "/composer" },
         { label: "Shop", href: "/shop" },
         { label: "About", href: "/about" },
@@ -96,6 +105,8 @@
   class:compact={variant === "compact"}
   class:full={variant === "full"}
   class:sitemap={variant === "sitemap"}
+  class:surfaced={Boolean(surface)}
+  style:background={surface}
 >
   <div class="inner">
     <div
@@ -187,6 +198,14 @@
   }
   .site-footer.sitemap {
     margin-top: 0;
+  }
+  /* Continuing the page's own surface. The handoff gap, the scrim (replaced by
+     the inline background) and the hairline all exist to seat the footer on the
+     star field; with no star field beneath it, all three only draw the seam
+     they were meant to prevent. */
+  .site-footer.surfaced {
+    margin-top: 0;
+    border-top: 0;
   }
 
   .inner {

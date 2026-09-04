@@ -13,6 +13,7 @@ export type Verdict = "good" | "warn" | "bad" | "none";
 export type GaitReportScope = "gait" | "arrival";
 export type GaitManeuverProfile =
   | "walk"
+  | "run"
   | "lateral"
   | "crossover"
   | "turn-in-place";
@@ -41,6 +42,142 @@ function band(
   return "bad";
 }
 
+/**
+ * Ground speed the gait itself reports, m/s.
+ *
+ * Cadence times step length is the distance the feet actually covered, so this
+ * is the speed the instrument saw rather than the one the host commanded. A
+ * clip played at the wrong rate shows up as a disagreement between the two
+ * instead of being smuggled in as truth.
+ */
+const paceOf = (r: GaitReport) => (r.cadence / 60) * r.meanStepLength;
+
+/**
+ * The pace the walking bands were authored at, m/s.
+ *
+ * Measured, not assumed: the lab's own steady walk on x-bot reads 98 steps a
+ * minute at 77cm, which is this. The kinematic ceilings below were calibrated
+ * against that walk, so a faster gait is compared to them by how much faster
+ * it is going rather than to the raw number.
+ */
+const WALK_BAND_PACE = 1.26;
+
+/**
+ * Whether a knee bends like a knee, which is true of every maneuver.
+ *
+ * Cadence and step length are walking norms, so they have to be swapped out or
+ * dropped when the character is running, stepping sideways or pivoting. These
+ * three are not norms, they are anatomy: there is no gait in which a knee is
+ * allowed to fold sideways. They stay in every profile.
+ */
+const ANATOMY_METRICS = [
+  "Knee bend plane",
+  "Knee sideways offset",
+  "Knee bends backward",
+] as const;
+
+/**
+ * Below this share of frames the knee was too straight to have a bend
+ * direction at all, so the angles above would be a handful of moments rather
+ * than a reading. Reporting them anyway is how a projection artefact becomes a
+ * verdict.
+ */
+const MIN_ANATOMY_COVERAGE = 0.25;
+
+/**
+ * The same measurements, read against running instead of walking.
+ *
+ * Running is not walking played faster. It trades double support for a flight
+ * phase, so the four rows that describe the shape of a gait cycle - cadence,
+ * step length, duty factor, double support - have different human ranges, and
+ * grading a run against walking figures turns four correct readings red. Duty
+ * factor is the definition itself: below 0.5 there is a flight phase and the
+ * character is running, whatever clip is playing.
+ *
+ * The kinematic ceilings are a different problem. Those were calibrated in
+ * this lab at a walk, and both scale with pace. Measured on x-bot on the
+ * circle: going from 1.26 m/s to 3.95 m/s (x3.13) moved knee jerk from 2111
+ * to 6251 (x2.96) and the worst joint acceleration from 106 to 297 (x2.80).
+ * Scaling them by measured pace keeps a run and a walk of equal quality on the
+ * same verdict, instead of failing every run for being a run.
+ *
+ * Foot slip is deliberately NOT scaled. A four-centimetre slide is visible at
+ * any stride length, and the same walk measures 7.1cm on this pattern, so that
+ * band is already reporting the pattern's turning ground rather than the gait.
+ */
+function runRows(rows: VerdictRow[], r: GaitReport): VerdictRow[] {
+  const kinematic = Math.max(1, paceOf(r) / WALK_BAND_PACE);
+  const jerkGood = 1500 * kinematic;
+  const joltGood = 300 * kinematic;
+  const overrides = new Map<
+    string,
+    Omit<VerdictRow, "name" | "value" | "unit">
+  >([
+    [
+      "Cadence",
+      {
+        human: "155 to 185",
+        verdict: band(r.cadence, [150, 200], [135, 230]),
+        tell: "steps per minute at a run; distance runners cluster near 175",
+      },
+    ],
+    [
+      "Step length",
+      {
+        human: "110 to 160",
+        verdict: band(r.meanStepLength, [1.0, 1.8], [0.8, 2.2]),
+        tell: "heel strike to the other foot's, about double a walking step",
+      },
+    ],
+    [
+      "Duty factor",
+      {
+        human: "0.25 to 0.40",
+        verdict: band(r.dutyFactor, [0.22, 0.45], [0.18, 0.5]),
+        tell: "share of a stride each foot is down; 0.5 or more is not a run",
+      },
+    ],
+    [
+      "Double support",
+      {
+        human: "0",
+        verdict: band(r.doubleSupportFraction, [0, 0.02], [0, 0.08]),
+        tell: "a run has none - the overlap becomes flight, so anything here is a fast walk",
+      },
+    ],
+    [
+      "Knee jerk",
+      {
+        human: `under ${Math.round(jerkGood)}`,
+        verdict: band(r.kneeJerkRms, [0, jerkGood], [0, 4000 * kinematic]),
+        tell: "RMS knee acceleration, against the walk ceiling scaled by this run's pace",
+      },
+    ],
+    [
+      "Worst teleport",
+      {
+        human: `under ${Math.round(joltGood)}`,
+        verdict: r.peakJoltJoint
+          ? band(r.peakJolt, [0, joltGood], [0, 900 * kinematic])
+          : "none",
+        tell: `worst single-frame jump was ${cm(r.peakJoltStep)}cm in one frame`,
+      },
+    ],
+    [
+      "Knee twitches",
+      {
+        human: "not measurable at a run",
+        verdict: "none",
+        tell: `the fixed 4000 deg/s2 pop detector sits below this run's own ${Math.round(r.kneeJerkRms)} RMS, so it counts the stride itself - read Knee jerk instead`,
+      },
+    ],
+  ]);
+  return rows.map((row) => {
+    const over = overrides.get(row.name);
+    return over ? { ...row, ...over } : row;
+  });
+}
+
 export function verdictRows(
   report: GaitReport | null,
   scope: GaitReportScope = "gait",
@@ -48,6 +185,8 @@ export function verdictRows(
 ): VerdictRow[] {
   const r = report;
   if (!r || r.stances.length === 0) return [];
+  const anatomyMeasured =
+    r.anatomy.minConditionedFraction >= MIN_ANATOMY_COVERAGE;
   const rows = [
     {
       name: "Foot slip per step",
@@ -195,6 +334,36 @@ export function verdictRows(
       verdict: r.weightShiftAlternates ? "good" : "bad",
       tell: "the sway must change sides with the foot, or it is not transfer",
     },
+    {
+      name: "Knee bend plane",
+      value: r.anatomy.worstMeanPlaneTilt.toFixed(1),
+      unit: "deg",
+      human: "under 16",
+      verdict: anatomyMeasured
+        ? band(r.anatomy.worstMeanPlaneTilt, [0, 16], [0, 25])
+        : "none",
+      tell: "how far the plane this knee bends in is turned off a hinge's",
+    },
+    {
+      name: "Knee sideways offset",
+      value: pct(r.anatomy.worstPeakMedialOffset),
+      unit: "%",
+      human: "under 6",
+      verdict: anatomyMeasured
+        ? band(r.anatomy.worstPeakMedialOffset, [0, 0.06], [0, 0.12])
+        : "none",
+      tell: "knee's worst departure from the hip-ankle line, over leg length",
+    },
+    {
+      name: "Knee bends backward",
+      value: pct(r.anatomy.worstReversedFraction),
+      unit: "%",
+      human: "0",
+      verdict: anatomyMeasured
+        ? band(r.anatomy.worstReversedFraction, [0, 0.02], [0, 0.1])
+        : "none",
+      tell: "share of the bend spent with the shank in front of the thigh",
+    },
   ];
   const arrivalMetrics = new Set([
     "Foot slip per step",
@@ -205,10 +374,13 @@ export function verdictRows(
     "Knee twitches",
     "Knee jerk",
     "Cycling on the spot",
+    ...ANATOMY_METRICS,
   ]);
   if (scope === "arrival") {
     return rows.filter((row) => arrivalMetrics.has(row.name));
   }
+
+  if (maneuver === "run") return runRows(rows, r);
 
   // Forward-walk norms are not universal locomotion norms. A pivot has no
   // meaningful forward step length or cycling-on-the-spot score, and lateral
@@ -226,6 +398,7 @@ export function verdictRows(
       "Knee twitches",
       "Knee jerk",
       "Weight alternates",
+      ...ANATOMY_METRICS,
     ]);
     return rows.filter((row) => turnMetrics.has(row.name));
   }
@@ -241,6 +414,7 @@ export function verdictRows(
       "Cycling on the spot",
       "Body over the foot",
       "Weight alternates",
+      ...ANATOMY_METRICS,
     ]);
     return [
       ...rows.filter((row) => crossoverMetrics.has(row.name)),
@@ -291,6 +465,7 @@ export function verdictRows(
       "Cycling on the spot",
       "Body over the foot",
       "Weight alternates",
+      ...ANATOMY_METRICS,
     ]);
     return rows.filter((row) => lateralMetrics.has(row.name));
   }

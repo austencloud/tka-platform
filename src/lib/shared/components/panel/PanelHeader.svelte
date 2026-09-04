@@ -12,9 +12,15 @@
     subtitle?: string;
     /** Optional FontAwesome icon class (e.g., "fa-trophy") */
     icon?: string;
+    /**
+     * Heading rank for the title. A panel nested inside a page keeps the
+     * default 2; a panel that IS the page's masthead takes 1 so the document
+     * has exactly one top-level heading. Presentation is identical either way.
+     */
+    headingLevel?: 1 | 2 | 3;
   }
 
-  let { title, subtitle, icon }: Props = $props();
+  let { title, subtitle, icon, headingLevel = 2 }: Props = $props();
 </script>
 
 <div class="panel-header">
@@ -22,7 +28,9 @@
     {#if icon}
       <i class="fas {icon} panel-header__icon" aria-hidden="true"></i>
     {/if}
-    <h2 class="panel-header__text">{title}</h2>
+    <svelte:element this={`h${headingLevel}`} class="panel-header__text">
+      {title}
+    </svelte:element>
   </div>
   {#if subtitle}
     <p class="panel-header__subtitle">{subtitle}</p>

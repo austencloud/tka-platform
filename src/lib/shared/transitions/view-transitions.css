@@ -648,7 +648,7 @@ html.sequence-viewer-reduced-dissolve::view-transition-new(
 ::view-transition-group(launchpad-composer),
 ::view-transition-group(launchpad-choreo-cards),
 ::view-transition-group(launchpad-guide),
-::view-transition-group(launchpad-notation),
+::view-transition-group(launchpad-history),
 ::view-transition-group(launchpad-faq),
 ::view-transition-group(launchpad-glossary) {
   animation-duration: 380ms;
@@ -665,9 +665,9 @@ html.sequence-viewer-reduced-dissolve::view-transition-new(
   ::view-transition-group(launchpad-guide),
   ::view-transition-old(launchpad-guide),
   ::view-transition-new(launchpad-guide),
-  ::view-transition-group(launchpad-notation),
-  ::view-transition-old(launchpad-notation),
-  ::view-transition-new(launchpad-notation),
+  ::view-transition-group(launchpad-history),
+  ::view-transition-old(launchpad-history),
+  ::view-transition-new(launchpad-history),
   ::view-transition-group(launchpad-faq),
   ::view-transition-old(launchpad-faq),
   ::view-transition-new(launchpad-faq),

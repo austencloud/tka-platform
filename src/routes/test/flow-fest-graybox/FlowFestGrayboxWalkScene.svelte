@@ -89,6 +89,8 @@
   } from "./flow-fest-review-geometry";
   import type { FlowFestGrayboxReadyDetails } from "./flow-fest-graybox-types";
   import FlowFestElectricUnicycle from "../flow-fest-sim/FlowFestElectricUnicycle.svelte";
+  import FlowFestOnFootPlayer from "./FlowFestOnFootPlayer.svelte";
+  import { type CharacterId } from "$lib/shared/3d/domain/character-model";
 
   interface Props {
     resetToken: number;
@@ -101,6 +103,14 @@
     hostMode: FlowFestTerrainHostMode;
     moveSpeedMetersPerSecond?: number;
     sprintMultiplier?: number;
+    /**
+     * Horizontal acceleration and braking in m/s^2. Omitted means the instant
+     * velocity this scene has always had, which is what the review harnesses
+     * measure distance-over-time against; the gameplay host supplies real
+     * rates so the walker has mass.
+     */
+    groundAccelerationMetersPerSecondSquared?: number;
+    groundDecelerationMetersPerSecondSquared?: number;
     jumpForce?: number;
     enableSprint?: boolean;
     enableJump?: boolean;
@@ -119,6 +129,12 @@
     productionCampEstablished?: boolean;
     productionFestivalActive?: boolean;
     electricUnicycleEnabled?: boolean;
+    /**
+     * The character the player wears on foot. It defaults to the wheel's
+     * rider so stepping off the unicycle does not change who you are; a host
+     * that lets the player pick one passes that choice through here.
+     */
+    playerCharacterId?: CharacterId;
     electricUnicycleRevision?: number;
     electricUnicycleSnapshot?: FlowFestMobilitySnapshot | null;
     electricUnicycleLightsOn?: boolean;
@@ -163,6 +179,14 @@
   const BODY_CENTRE_ABOVE_GROUND =
     PLAYER_HALF_HEIGHT + PLAYER_RADIUS + PLAYER_OFFSET;
   const EYE_HEIGHT = 1.7;
+  /**
+   * The same character the wheel already renders, so stepping off the
+   * unicycle does not change who you are. The scene package's own default is
+   * its untextured x-bot mannequin, which is a placeholder rather than a
+   * person and must never be what the player sees.
+   */
+  const DEFAULT_PLAYER_CHARACTER_ID: CharacterId =
+    FLOW_FEST_EUC_CONFIG.riderAvatarId;
   const CAMERA_OFFSET = EYE_HEIGHT - BODY_CENTRE_ABOVE_GROUND;
   /**
    * Below this the rig is first person and the body already carries the camera.
@@ -178,6 +202,8 @@
   const RIG_CORRECTION_DRIFT_TOLERANCE_METERS = 0.5;
   const DESTINATION_ID = "flow-fest-gate2-measured-walk";
   const REVIEW_WALK_SPEED_METERS_PER_SECOND = 1.2;
+  /** Per-second convergence rate for the smoothed ground speed. */
+  const GROUND_SPEED_SMOOTHING = 12;
   const CHUNK_SIZE_METERS = 32;
   const CHUNK_COLLIDER_BUFFER_METERS = 64;
 
@@ -271,12 +297,37 @@
     requestedVelocity: { x: number; y: number; z: number };
   } | null>(null);
   let electricUnicycleInteractionMessage = $state("Park wheel");
+  /** Shift held, from the camera controller's own key set. */
+  let sprintHeld = $state(false);
   let electricUnicycleKeyPressed = false;
   let electricUnicycleGamepadButtonPressed = false;
   let lastElectricUnicycleReportAt = 0;
   let appliedElectricUnicycleRevision = props.electricUnicycleRevision ?? 0;
   let isMoving = $state(false);
   let moveDirection = $state({ x: 0, z: 0 });
+  /**
+   * Sprint only where a run clip exists.
+   *
+   * The locomotion pack has a forward run and both lateral runs; it has no
+   * backward run. Multiplying a backpedal asks the walk-backward clip for
+   * roughly four times its own 1.004 m/s, which saturates stride and rate and
+   * turns retreating into a moonwalk. Holding Shift while reversing therefore
+   * buys nothing until someone authors the clip. Sideways-and-back keeps the
+   * sprint, because the lateral run carries that component.
+   */
+  const effectiveSprintMultiplier = $derived(
+    moveDirection.z < 0 ? 1 : (props.sprintMultiplier ?? 1)
+  );
+  /**
+   * The body's real horizontal speed, not the configured one. Sprinting,
+   * slopes, and collision limiting all change how fast the character is
+   * actually travelling, and the locomotion animator picks its gait from
+   * that number - feeding it the configured walk speed makes the legs skate
+   * whenever the two disagree.
+   */
+  let measuredGroundSpeed = $state(0);
+  let measuredVerticalVelocity = $state(0);
+  let measuredGrounded = $state(true);
   let loadStartedAt = 0;
   let frameTimes: number[] = [];
   let performanceWarmupFrames = 0;
@@ -288,7 +339,7 @@
   let mountedProductionCollision: FlowFestProductionCollisionSet | null = null;
   let mountedCampEstablished = false;
   let mountedFestivalActive = false;
-  let activeCameraMode = CameraMode.FIRST_PERSON;
+  let activeCameraMode = CameraMode.THIRD_PERSON;
   const readinessTimeline: Record<string, number> = {};
   const cameraAspect = $derived(
     $size.height > 0 ? $size.width / $size.height : 16 / 9
@@ -734,6 +785,29 @@
    * boom before the rig has produced a plausible frame, which keeps the
    * first-person path on its exact existing arithmetic.
    */
+  /**
+   * How high the camera actually sits above the ground under the player.
+   *
+   * Before third person this was the body's eye height by construction. It is
+   * not any more: the camera rides a boom whose height and distance the shared
+   * rig owns and the collision probe shortens, so the only truthful number is
+   * the one measured off the camera that drew the frame. The eye height is
+   * the honest fallback for the frames before the camera exists.
+   */
+  function measuredCameraHeightAboveGround(): number {
+    const fallback =
+      EYE_HEIGHT +
+      (electricUnicycleMounted
+        ? FLOW_FEST_EUC_CONFIG.mountedEyeHeightGainMeters
+        : 0);
+    if (!reviewCamera || !terrain) return fallback;
+    const body = physicsProvider?.getPlayerPosition() ?? playerPosition;
+    reviewCamera.getWorldPosition(cameraWorldPosition);
+    const groundY = sampleFlowFestTerrainWorldY(terrain, body.x, body.z);
+    const height = cameraWorldPosition.y - groundY;
+    return Number.isFinite(height) ? height : fallback;
+  }
+
   function reviewCameraRigBoom(): { forward: number; vertical: number } {
     if (!reviewCamera) return { forward: 0, vertical: 0 };
     const body = physicsProvider?.getPlayerPosition() ?? playerPosition;
@@ -915,6 +989,10 @@
       interactionMessage: electricUnicycleInteractionMessage,
       gamepadConnected: electricUnicycleGamepadConnected,
       collisionLimited: electricUnicycleCollisionLimited,
+      onFoot: {
+        speedMetersPerSecond: measuredGroundSpeed,
+        sprinting: sprintHeld && (props.enableSprint ?? false),
+      },
     };
     (globalThis as Record<string, unknown>).__flowFestEuc = {
       status: initialized ? "ready" : "initializing",
@@ -941,28 +1019,35 @@
       gamepadConnected: update.gamepadConnected,
       collisionLimited: update.collisionLimited,
       affordance: update.interactionMessage,
-      cameraEyeHeightMeters:
-        EYE_HEIGHT +
-        (update.mounted ? FLOW_FEST_EUC_CONFIG.mountedEyeHeightGainMeters : 0),
+      cameraEyeHeightMeters: measuredCameraHeightAboveGround(),
       camera: {
-        mode: update.mounted
-          ? CameraMode.THIRD_PERSON
-          : CameraMode.FIRST_PERSON,
+        mode: CameraMode.THIRD_PERSON,
         behavior: update.mounted
           ? "collision-aware-heading-chase"
-          : "established-first-person-walk",
+          : "collision-aware-follow-walk",
         headingRadians: update.dynamics.headingRadians,
       },
       avatar: {
-        visible: update.mounted,
+        // A body is on screen either way now: the wheel's rider while
+        // mounted, the walking character once you step off.
+        visible: true,
         owner: "@austencloud/scene-3d/Avatar3D",
-        modelId: FLOW_FEST_EUC_CONFIG.riderAvatarId,
+        modelId: update.mounted
+          ? FLOW_FEST_EUC_CONFIG.riderAvatarId
+          : (props.playerCharacterId ?? DEFAULT_PLAYER_CHARACTER_ID),
         // The rider no longer hangs off a single root offset. Its feet are
         // placed on the pedal anchors by the mounted-pose rig, so the honest
         // report is the pedal surface plus the measured contact error below.
-        pedalSurfaceHeightMeters: FLOW_FEST_EUC_PEDAL_SURFACE_HEIGHT_METERS,
-        stanceWidthMeters: FLOW_FEST_EUC_PEDAL_SEPARATION_METERS,
-        contactPose: "flow-fest-euc-mounted-pose-rig",
+        // On foot there are no pedals and the ground is the contact surface.
+        pedalSurfaceHeightMeters: update.mounted
+          ? FLOW_FEST_EUC_PEDAL_SURFACE_HEIGHT_METERS
+          : null,
+        stanceWidthMeters: update.mounted
+          ? FLOW_FEST_EUC_PEDAL_SEPARATION_METERS
+          : null,
+        contactPose: update.mounted
+          ? "flow-fest-euc-mounted-pose-rig"
+          : "scene-3d-foot-planting",
       },
       longitudinalAccelerationMetersPerSecondSquared:
         electricUnicycleLongitudinalAcceleration,
@@ -1602,14 +1687,24 @@
     const liveMovement = liveProof?.movement as
       | Record<string, unknown>
       | undefined;
+    const bodyVelocity = physicsProvider?.getVelocity() ?? {
+      x: 0,
+      y: 0,
+      z: 0,
+    };
     if (liveMovement) {
       liveMovement.hasInput = isMoving;
-      liveMovement.velocity = physicsProvider?.getVelocity() ?? {
-        x: 0,
-        y: 0,
-        z: 0,
-      };
+      liveMovement.velocity = bodyVelocity;
     }
+    measuredVerticalVelocity = bodyVelocity.y;
+    measuredGrounded = physicsProvider?.isGrounded() ?? true;
+    // A single frame's velocity jitters across collision resolution and
+    // terrain seams. The gait reads the smoothed value so a bump cannot
+    // flip the character between idle and walking mid-stride.
+    const rawGroundSpeed = Math.hypot(bodyVelocity.x, bodyVelocity.z);
+    const speedBlend =
+      delta > 0 && delta < 0.25 ? 1 - Math.exp(-GROUND_SPEED_SMOOTHING * delta) : 1;
+    measuredGroundSpeed += (rawGroundSpeed - measuredGroundSpeed) * speedBlend;
     const livePlayer = liveProof?.player as Record<string, unknown> | undefined;
     if (livePlayer && playerState?.collider) {
       livePlayer.currentCapsuleHalfHeight = playerState.collider.halfHeight();
@@ -1738,6 +1833,25 @@
   <T is={overlay} />
 {/if}
 
+<!--
+  On foot the player is a rendered character like every NPC in the scene.
+  While mounted the body belongs to the wheel's own rider rig, which poses
+  the feet onto the pedals, so exactly one of the two is ever present.
+-->
+{#if initialized && !(props.electricUnicycleEnabled && electricUnicycleMounted)}
+  <FlowFestOnFootPlayer
+    position={playerPosition}
+    bodyCentreAboveGroundMeters={BODY_CENTRE_ABOVE_GROUND}
+    facingAngle={playerYaw}
+    isMoving={isMoving}
+    moveSpeedMetersPerSecond={measuredGroundSpeed}
+    moveDirection={moveDirection}
+    characterId={props.playerCharacterId ?? DEFAULT_PLAYER_CHARACTER_ID}
+    isGrounded={measuredGrounded}
+    verticalVelocity={measuredVerticalVelocity}
+  />
+{/if}
+
 {#if props.electricUnicycleEnabled && initialized}
   <FlowFestElectricUnicycle
     position={electricUnicycleWheelPosition}
@@ -1761,12 +1875,7 @@
     />
     <UnifiedCameraController
       destinationId={DESTINATION_ID}
-      destinationDefaults={{
-        [DESTINATION_ID]:
-          props.electricUnicycleEnabled && electricUnicycleMounted
-            ? CameraMode.THIRD_PERSON
-            : CameraMode.FIRST_PERSON,
-      }}
+      destinationDefaults={{ [DESTINATION_ID]: CameraMode.THIRD_PERSON }}
       preferencesKey="flow-fest-gate2-camera"
       {avatarState}
       {physicsProvider}
@@ -1777,14 +1886,14 @@
       externalYaw={props.electricUnicycleEnabled && electricUnicycleMounted
         ? playerYaw
         : null}
-      allowedModes={props.electricUnicycleEnabled && electricUnicycleMounted
-        ? [CameraMode.THIRD_PERSON]
-        : [CameraMode.FIRST_PERSON]}
+      allowedModes={[CameraMode.THIRD_PERSON]}
       disableModeToggle={true}
       showControlsHint={false}
       moveSpeed={props.moveSpeedMetersPerSecond ??
         REVIEW_WALK_SPEED_METERS_PER_SECOND}
-      sprintMultiplier={props.sprintMultiplier ?? 1}
+      sprintMultiplier={effectiveSprintMultiplier}
+      groundAcceleration={props.groundAccelerationMetersPerSecondSquared}
+      groundDeceleration={props.groundDecelerationMetersPerSecondSquared}
       jumpForce={props.jumpForce ?? 0}
       gravity={9.81}
       maximumFrameDeltaSeconds={props.electricUnicycleEnabled &&
@@ -1815,6 +1924,9 @@
         props.onViewRotationChange?.(yaw, pitch);
       }}
       onInputStateChange={(input) => {
+        sprintHeld =
+          input.activeCodes.includes("ShiftLeft") ||
+          input.activeCodes.includes("ShiftRight");
         if (props.electricUnicycleEnabled) {
           handleElectricUnicycleCodes(input.activeCodes);
         }

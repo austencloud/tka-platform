@@ -302,7 +302,10 @@
     overflow: visible;
     padding: 0; /* Removed padding - parent SequenceDisplay handles top spacing for word label */
     box-sizing: border-box;
-    transition: all var(--duration-emphasis) ease-out;
+    /* No transition: these are the flex ancestors of the step grid. Animating
+       `all` made every workspace resize (each added step) tween layout
+       properties for the whole emphasis duration. Step arrival is animated by
+       StepCell's own compositor-friendly entrance. */
   }
 
   .content-wrapper {
@@ -314,7 +317,6 @@
     height: 100%;
     flex: 1;
     min-height: 0;
-    transition: all var(--duration-emphasis) ease-out;
   }
 
   .label-and-beatframe-unit {
@@ -326,7 +328,6 @@
     gap: 0;
     flex: 1 1 auto;
     min-height: 0;
-    transition: all var(--duration-emphasis) ease-out;
   }
 
   /* Equal workspace-action tracks keep the sequence information centered

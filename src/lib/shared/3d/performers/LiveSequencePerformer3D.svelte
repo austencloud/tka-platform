@@ -54,6 +54,13 @@
     enableLocomotion?: boolean;
     enableFootPlanting?: boolean;
     /**
+     * Pin the prop to an explicit length in centimetres instead of the length
+     * this body can hold inside its own hug. Omit it — every production host
+     * does — and the body-derived fit stands. A comparison surface passes it
+     * so one variable can be held still while the other sweeps.
+     */
+    propLengthCm?: number | null;
+    /**
      * Scene markers drawn inside the rig's own root group, so they inherit the
      * performer's world position, ground offset, and facing instead of sitting
      * at the world origin. Hosts pass the same wrapper the sequence viewer
@@ -98,9 +105,13 @@
   );
   // A body that cannot hold any supported staff keeps the global default
   // rather than rendering a nonsense prop; the fit result says so explicitly.
-  const propLength = $derived(
-    staffFit?.fits ? cmToUnits(staffFit.recommendedStaffLengthCm) : undefined
-  );
+  const propLength = $derived.by(() => {
+    const pinned = props.propLengthCm;
+    if (pinned != null && Number.isFinite(pinned)) return cmToUnits(pinned);
+    return staffFit?.fits
+      ? cmToUnits(staffFit.recommendedStaffLengthCm)
+      : undefined;
+  });
   // The turn's timing is planned once per sequence, not re-derived per frame:
   // the curve needs the whole score to know when to start leading.
   const stanceTrack = $derived(
@@ -205,6 +216,10 @@
   }}
   gridSlot={props.gridSlot}
   onAvatarSwapped={() => {
+    // Arm lengths belong to a body. A swapped character carries a different
+    // skeleton, so the held measurement — and the prop length derived from
+    // it — has to be taken again against the rig that just loaded.
+    reachMeasurements = null;
     if (readyReported) return;
     readyReported = true;
     props.onReady?.();

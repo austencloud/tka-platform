@@ -12,6 +12,16 @@ interface ContainModel {
   headerMinPx: number;
 }
 
+/**
+ * The box the Card's host pane is heading toward during a structural change.
+ * Structurally identical to the viewer's pane box, restated here so the Card's
+ * sizing owner does not depend on the sequence viewer.
+ */
+export interface ChoreoCardMotionBox {
+  width: number;
+  height: number;
+}
+
 export interface ChoreoCardSizingDeps {
   readonly containerElement: HTMLDivElement | undefined;
   readonly previewStackElement: HTMLDivElement | undefined;
@@ -20,6 +30,7 @@ export interface ChoreoCardSizingDeps {
   readonly needsScroll: boolean;
   readonly fitWidth: boolean;
   readonly containSizeMotion: "focus" | "return" | "restore" | null;
+  readonly containMotionBox: ChoreoCardMotionBox | null;
   readonly containModel: ContainModel;
 }
 
@@ -42,6 +53,25 @@ export interface ChoreoCardSizingDeps {
  */
 const MIN_MEASURABLE_MOTION_SIZE = 240;
 
+/**
+ * Largest plausible chrome between the host pane and the Card's own content
+ * box. The inset is learned from a settled frame; this caps what a stray
+ * measurement can teach it.
+ */
+const MAX_MOTION_BOX_INSET = 64;
+
+/**
+ * How much smaller than its destination a container may be and still count as
+ * settled. Chrome between the pane and the Card's box is a percent or two of
+ * the pane; a pane that is still easing open is far below this.
+ */
+const SETTLED_CONTAINER_RATIO = 0.92;
+
+function clampInset(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  return Math.min(value, MAX_MOTION_BOX_INSET);
+}
+
 export function createChoreoCardSizingState(
   getDeps: () => ChoreoCardSizingDeps
 ) {
@@ -54,6 +84,57 @@ export function createChoreoCardSizingState(
   let flipSuppressed = $state(false);
   let containerWasZero = false;
   let flipTimer: ReturnType<typeof setTimeout> | null = null;
+  let sizeJump = $state(false);
+  let jumpFrame: number | null = null;
+  // Chrome between the host pane's box and the Card's content box (padding and
+  // borders on the panes in between). Learned from settled frames so the
+  // destination solve does not need to know the host's markup.
+  let motionBoxInsetWidth = 0;
+  let motionBoxInsetHeight = 0;
+  // The same learned chrome, measured against the container box rather than
+  // the content box, so the layout pickers can be aimed at the destination too.
+  let containerBoxInsetWidth = 0;
+  let containerBoxInsetHeight = 0;
+  // The container box the layout pickers should solve against while the pane
+  // is still opening. Null whenever the live measurement is the truth.
+  let motionContainerWidth = $state<number | null>(null);
+  let motionContainerHeight = $state<number | null>(null);
+  // Whether this host supplies pane destinations at all. It separates "the
+  // pane is collapsing away, so there is no box to aim at" from "this host
+  // never had one", which are different situations with different answers.
+  let sawMotionBox = false;
+
+  /**
+   * The width and height the Card is currently painted at.
+   *
+   * A transition that was interrupted mid-flight leaves the painted box far
+   * from the box state believes in, and it is the painted box the next
+   * transition would animate out of.
+   */
+  function paintedStackSize(): Size | null {
+    const stack = getDeps().previewStackElement;
+    if (!stack) return null;
+    const rect = stack.getBoundingClientRect();
+    return { width: rect.width, height: rect.height };
+  }
+
+  /**
+   * Paints the next contained box without a transition.
+   *
+   * Svelte applies the flag and the new dimensions in one DOM commit, so the
+   * after-change style already carries `transition: none` and no transition
+   * starts. Two frames later the flag clears and ordinary size motion resumes.
+   */
+  function requestSizeJump(): void {
+    if (jumpFrame !== null) cancelAnimationFrame(jumpFrame);
+    sizeJump = true;
+    jumpFrame = requestAnimationFrame(() => {
+      jumpFrame = requestAnimationFrame(() => {
+        jumpFrame = null;
+        sizeJump = false;
+      });
+    });
+  }
 
   /**
    * `measured` carries the size a ResizeObserver already computed for us.
@@ -108,7 +189,68 @@ export function createChoreoCardSizingState(
         parseFloat(style.paddingBottom);
     }
 
-    if (
+    const destination = deps.containMotionBox;
+    const hasDestination =
+      destination !== null && destination.width > 0 && destination.height > 0;
+
+    // Whether the host pane has reached the box it is heading toward. Decided
+    // from geometry rather than from the motion flag, because the incoming
+    // Card can mount after the flag has cleared and still find a sliver.
+    const paneStillOpening =
+      hasDestination &&
+      (containerWidth < destination.width * SETTLED_CONTAINER_RATIO ||
+        containerHeight < destination.height * SETTLED_CONTAINER_RATIO);
+
+    if (hasDestination && deps.containSizeMotion === null && !paneStillOpening) {
+      // A settled frame: the container is where the destination said it would
+      // be, so the difference between them is the host's chrome.
+      if (availableWidth > 0 && availableHeight > 0) {
+        motionBoxInsetWidth = clampInset(destination.width - availableWidth);
+        motionBoxInsetHeight = clampInset(destination.height - availableHeight);
+      }
+      if (containerWidth > 0 && containerHeight > 0) {
+        containerBoxInsetWidth = clampInset(destination.width - containerWidth);
+        containerBoxInsetHeight = clampInset(
+          destination.height - containerHeight
+        );
+      }
+      motionContainerWidth = null;
+      motionContainerHeight = null;
+    }
+
+    if (hasDestination) sawMotionBox = true;
+
+    // Measured whenever a destination is on hand, not only while the motion
+    // flag is set: the incoming Card can mount after that flag has cleared,
+    // and it is still a speck that must be placed rather than flown.
+    const paintedBefore: Size | null = hasDestination
+      ? paintedStackSize()
+      : null;
+    if (hasDestination && (deps.containSizeMotion !== null || paneStillOpening)) {
+      // The pane's flex allocation animates from nothing, so its live geometry
+      // describes where the Card is, not where it is going. Solve against the
+      // endpoint instead, so the Card renders at final size for the whole
+      // structural change rather than inflating along with its container.
+      availableWidth = Math.max(0, destination.width - motionBoxInsetWidth);
+      availableHeight = Math.max(0, destination.height - motionBoxInsetHeight);
+      // The grid picker chooses columns and start placement from the container
+      // box. Left on the live measurement it picks a wide, shallow grid for the
+      // sliver the pane starts as, and that grid is what gets remembered as the
+      // Card's readable shape. Aim it at the destination as well.
+      motionContainerWidth = Math.max(
+        0,
+        destination.width - containerBoxInsetWidth
+      );
+      motionContainerHeight = Math.max(
+        0,
+        destination.height - containerBoxInsetHeight
+      );
+    } else if (deps.containSizeMotion !== null && sawMotionBox) {
+      // The pane is collapsing away, so it has no destination box. Hold the
+      // painted Card and let the closing pane clip it. Shrinking it toward
+      // nothing leaves a speck behind for its next entrance to grow out of.
+      return;
+    } else if (
       deps.containSizeMotion !== null &&
       containedWidth !== null &&
       containedHeight !== null &&
@@ -117,9 +259,9 @@ export function createChoreoCardSizingState(
       (availableWidth < MIN_MEASURABLE_MOTION_SIZE ||
         availableHeight < MIN_MEASURABLE_MOTION_SIZE)
     ) {
-      // The destination track has not opened yet. Hold the painted box for this
-      // frame rather than solving against the sliver; the next measurement above
-      // the floor resumes the transition toward the real destination.
+      // No destination to aim at, and the track has not opened yet. Hold the
+      // painted box rather than solving against the sliver; the next
+      // measurement above the floor resumes toward the real destination.
       return;
     }
 
@@ -146,8 +288,12 @@ export function createChoreoCardSizingState(
 
     if (deps.forceContain && deps.fitWidth) {
       const heightFromWidth = availableWidth / aspectRatio;
+      // Focus motion used to skip this clamp because the only height on hand
+      // was the small one the Card was leaving. With a destination box the
+      // height is the one it is arriving at, so the clamp is correct again --
+      // without it the Card overshoots past the bottom of the focused pane.
       if (
-        deps.containSizeMotion !== "focus" &&
+        (hasDestination || deps.containSizeMotion !== "focus") &&
         Number.isFinite(heightFromWidth) &&
         heightFromWidth > availableHeight
       ) {
@@ -209,6 +355,27 @@ export function createChoreoCardSizingState(
       (nextHeight === null ||
         containedHeight === null ||
         Math.abs(nextHeight - containedHeight) > 0.5);
+
+    // Growing a speck into a full Card reads as a burst from nowhere. There was
+    // no readable Card to animate from, so place it rather than fly it.
+    //
+    // The comparison is against the painted box, not the stored one. An
+    // interrupted exit can leave the Card painted at a few pixels while its
+    // stored size still says otherwise, and that is the case that bursts: the
+    // dimensions never change, so only killing the running transition stops it.
+    if (paintedBefore !== null) {
+      const unreadableBefore =
+        paintedBefore.width < MIN_MEASURABLE_MOTION_SIZE ||
+        paintedBefore.height < MIN_MEASURABLE_MOTION_SIZE;
+      if (unreadableBefore && nextWidth > paintedBefore.width * 2) {
+        requestSizeJump();
+      }
+    } else if (
+      (widthChanged || heightChanged) &&
+      (containedWidth === null || containedHeight === null)
+    ) {
+      requestSizeJump();
+    }
 
     if (widthChanged) containedWidth = nextWidth;
     if (heightChanged) containedHeight = nextHeight;
@@ -285,6 +452,7 @@ export function createChoreoCardSizingState(
     void deps.needsScroll;
     void deps.fitWidth;
     void deps.containSizeMotion;
+    void deps.containMotionBox;
     updateContainedDimensions();
   });
 
@@ -303,6 +471,7 @@ export function createChoreoCardSizingState(
   $effect(() => {
     return () => {
       if (flipTimer !== null) clearTimeout(flipTimer);
+      if (jumpFrame !== null) cancelAnimationFrame(jumpFrame);
     };
   });
 
@@ -314,13 +483,16 @@ export function createChoreoCardSizingState(
       return containedHeight;
     },
     get containerWidth() {
-      return containerWidth;
+      return motionContainerWidth ?? containerWidth;
     },
     get containerHeight() {
-      return containerHeight;
+      return motionContainerHeight ?? containerHeight;
     },
     get cellWidth() {
       return cellWidth;
+    },
+    get sizeJump() {
+      return sizeJump;
     },
     get flipSuppressed() {
       // The Card surface already owns the workspace resize. Letting its cells

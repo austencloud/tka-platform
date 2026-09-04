@@ -24,8 +24,11 @@
   import ViewerPracticeLane from "./ViewerPracticeLane.svelte";
   import PracticeCountInOverlay from "./PracticeCountInOverlay.svelte";
   import {
+    readViewerCardPaneBox,
+    rememberViewerCardPaneBox,
     resolveViewerPanelDirection,
     resolveViewerPanelLayout,
+    resolveViewerPaneDestinationBox,
     resolveViewerPaneRevealReady,
     type ViewerFocusedPane,
     type ViewerPanelDirection,
@@ -292,6 +295,113 @@
       previewPanelHeight = 0;
     }
   });
+  /**
+   * The box the Card's pane occupies right now, from the split's own measured
+   * size and the allocation the layout has decided.
+   */
+  const liveCardPaneBox = $derived(
+    resolveViewerPaneDestinationBox({
+      pane: "image",
+      direction: panelLayout.direction,
+      sizes: panelLayout.sizes,
+      splitWidth,
+      splitHeight,
+    })
+  );
+
+  /**
+   * The box the Card's pane is heading toward, remembered from the last frame
+   * this layout settled at this viewport.
+   *
+   * Nothing about the pane's live geometry describes its destination during a
+   * mode change: its flex allocation animates from nothing, and the split it
+   * sits in resizes at the same time as the dock collapses. Two boxes matter
+   * to the Card -- the one a focused mode gives it and the one side-by-side
+   * gives it, which differ on narrow screens -- and modes that replace the
+   * Card entirely give it a third that must never be taught here.
+   *
+   * `suppressCloseButton` is set for every focused mode and clear for
+   * side-by-side, which is exactly that distinction.
+   *
+   * The panel direction is deliberately not part of the key. A box is already
+   * a width and a height, so direction adds nothing a settled measurement does
+   * not carry -- and it resolves a frame or two behind the mode change, which
+   * would miss the lookup on exactly the entries that need it.
+   */
+  const cardPaneBoxKey = $derived(
+    layout.suppressCloseButton ? "focus" : "split"
+  );
+
+  /**
+   * Only a layout that actually shows the Card may teach its destination.
+   *
+   * Tunnel focuses the same pane the Card does but keeps the dock open, so its
+   * stage is some hundreds of pixels narrower. Letting it write the focused
+   * box would teach the Card a size it never occupies.
+   */
+  const cardIsSelectedCompanion = $derived(
+    splitConfig.leftPane === "card" || splitConfig.rightPane === "card"
+  );
+
+  /**
+   * How long a pane box must hold still before it counts as settled.
+   *
+   * The motion flag clears while the pane is still easing open, so a frame
+   * taken the moment it drops is a mid-animation size. No opening frame
+   * survives this long at one size; a real layout change does.
+   */
+  const PANE_BOX_SETTLE_MS = 180;
+
+  let paneBoxSettleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    const box = cardContainSizeMotion === null ? liveCardPaneBox : null;
+    const eligible =
+      box !== null &&
+      cardIsSelectedCompanion &&
+      layout.focusedPane !== "animation";
+    const key = cardPaneBoxKey;
+    if (paneBoxSettleTimer !== null) clearTimeout(paneBoxSettleTimer);
+    if (!eligible) return;
+    paneBoxSettleTimer = setTimeout(() => {
+      paneBoxSettleTimer = null;
+      rememberViewerCardPaneBox(
+        key,
+        window.innerWidth,
+        window.innerHeight,
+        box
+      );
+    }, PANE_BOX_SETTLE_MS);
+    return () => {
+      if (paneBoxSettleTimer !== null) clearTimeout(paneBoxSettleTimer);
+      paneBoxSettleTimer = null;
+    };
+  });
+
+  const cardContainMotionBox = $derived.by(() => {
+    const remembered = readViewerCardPaneBox(
+      cardPaneBoxKey,
+      window.innerWidth,
+      window.innerHeight
+    );
+    // Before this layout has settled once at this viewport there is nothing to
+    // remember. Publishing no destination is better than publishing the box
+    // the Card is leaving: that one makes it solve a grid for the wrong shape
+    // and correct in public. Let the ordinary measurement path carry the first
+    // entry instead.
+    if (remembered === null) return liveCardPaneBox;
+    if (cardContainSizeMotion !== null) return remembered;
+    if (liveCardPaneBox === null) return remembered;
+    // A pane measurably smaller than the one this layout settled at is still
+    // opening, whatever the motion flag says. The incoming Card can mount a
+    // frame before the flag is set, and a sliver read as a settled measurement
+    // is what makes it solve for a speck and then grow.
+    const stillOpening =
+      liveCardPaneBox.width < remembered.width * 0.98 ||
+      liveCardPaneBox.height < remembered.height * 0.98;
+    return stillOpening ? remembered : liveCardPaneBox;
+  });
+
   $effect(() => {
     animationPanelReady = resolveViewerPaneRevealReady({
       pane: "animation",
@@ -425,6 +535,7 @@
       {onChoreoCardContextMenu}
       {cardAutoLayoutOverride}
       {cardContainSizeMotion}
+      {cardContainMotionBox}
       {onAutoLayoutResolved}
       {onPlaybackToggle}
       {playbackMode}
@@ -509,6 +620,7 @@
         {onChoreoCardContextMenu}
         {cardAutoLayoutOverride}
         {cardContainSizeMotion}
+        {cardContainMotionBox}
         {onAutoLayoutResolved}
         {onPlaybackToggle}
         {playbackMode}

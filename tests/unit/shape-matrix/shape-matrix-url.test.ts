@@ -9,6 +9,7 @@ import {
   writeShapeMatrixRouteState,
 } from "../../../src/routes/(public)/notation/shape-matrix/_state/shape-matrix-url";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { DEFAULT_THEORY_BAND } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
 
 const COMMON = {
   surface: "matrix" as const,
@@ -16,6 +17,7 @@ const COMMON = {
   theoryRightRatio: { propRotations: 1, handCycles: 3 },
   theoryMode: "SS" as const,
   theoryPair: null,
+  theoryBand: DEFAULT_THEORY_BAND,
   activeAxis: "both" as const,
   propType: PropType.STAFF,
   propMode: null,
@@ -113,6 +115,7 @@ describe("shape matrix URL state", () => {
       theoryRightRatio: { propRotations: 1, handCycles: 3 },
       theoryMode: "SS",
       theoryPair: null,
+      theoryBand: DEFAULT_THEORY_BAND,
       level: 4,
       leftTurn: 0.75,
       rightTurn: 1.5,
@@ -231,15 +234,26 @@ describe("shape matrix URL state", () => {
     expect(state.theoryPair?.left.style).toBe("anti");
     expect(state.theoryPair?.left.ori).toBe("in");
     expect(state.theoryPair?.right.style).toBe("pro");
+    // `1:2-pro-out` was written before the axis stopped emitting coincident
+    // starts. At two hand cycles `out` is `in` re-entered half a period later
+    // and draws the same curve, so the link keeps its shape under the name
+    // that survived.
+    expect(state.theoryPair?.right.ori).toBe("in");
 
     writeShapeMatrixRouteState(url, state);
     expect(url.searchParams.get("ref")).toBe("theory");
     expect(url.searchParams.get("theory")).toBe("1");
+    // A Theory link says how far the ratio field opens and says nothing about
+    // a Kinetic Alphabet level, because the surface does not sit at one.
+    expect(url.searchParams.get("band")).toBe("4");
+    expect(url.searchParams.get("level")).toBeNull();
     expect(url.searchParams.get("leftRatio")).toBe("2:9");
     expect(url.searchParams.get("rightRatio")).toBe("1:2");
     expect(url.searchParams.get("pairing")).toBe("QO");
     expect(url.searchParams.get("theoryLeft")).toBe("2:9-anti-in");
-    expect(url.searchParams.get("theoryRight")).toBe("1:2-pro-out");
+    // Written back under the surviving name, so the next reader gets an exact
+    // match rather than the collapse path again.
+    expect(url.searchParams.get("theoryRight")).toBe("1:2-pro-in");
   });
 
   it("restores the one-axis legacy link onto both axes", () => {
@@ -263,13 +277,29 @@ describe("shape matrix URL state", () => {
     expect(url.searchParams.get("pairing")).toBe("SS");
   });
 
-  it("falls back from a ratio the requested level does not contain", () => {
-    // 2:9 is real, but only Level 4 opens the band far enough to hold it.
-    const state = readShapeMatrixRouteState("?theory=1&leftRatio=2:9&level=2");
+  it("falls back from a ratio the requested band does not contain", () => {
+    // 2:9 is real, but only the widest band holds it.
+    const state = readShapeMatrixRouteState("?theory=1&leftRatio=2:9&band=2");
     expect(state.theoryLeftRatio).toEqual({ propRotations: 1, handCycles: 3 });
     expect(
-      readShapeMatrixRouteState("?theory=1&leftRatio=3:10&level=4")
+      readShapeMatrixRouteState("?theory=1&leftRatio=3:10&band=4")
         .theoryLeftRatio
     ).toEqual({ propRotations: 1, handCycles: 3 });
+  });
+
+  it("reads a pre-split theory link's band out of its level parameter", () => {
+    // Links shared before the band had its own parameter carried it in
+    // `level`. They still open on the flower they were shared for.
+    const legacy = readShapeMatrixRouteState("?theory=1&leftRatio=2:9&level=4");
+    expect(legacy.theoryBand).toBe(4);
+    expect(legacy.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+  });
+
+  it("never reads a matrix link's level as a ratio band", () => {
+    // The two ladders are unrelated, so `level=4` on the Matrix must not open
+    // the Theory field to ninths behind the user's back.
+    const state = readShapeMatrixRouteState("?level=4&leftTurn=0.25");
+    expect(state.surface).toBe("matrix");
+    expect(state.theoryBand).toBe(DEFAULT_THEORY_BAND);
   });
 });

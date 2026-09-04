@@ -42,6 +42,21 @@ function timingFromPhase(delta: number): PropTimingRelationship {
 }
 
 /**
+ * The prop timing between two prop bearings, in radians.
+ *
+ * Exported because a surface with no sequence to read bearings off has to
+ * classify the same three cases. The Theory ratios take their bearings from
+ * the QfT knobs rather than from a step's start orientation, and that is the
+ * only difference: the thresholds stay here, in one place.
+ */
+export function propTimingBetween(
+  a: number,
+  b: number
+): PropTimingRelationship {
+  return timingFromPhase(normalizedPhaseDelta(a, b));
+}
+
+/**
  * Classify the props separately from the hands. Direction survives unequal
  * turn rates; timing does not. Float is neither clockwise nor counter-clockwise,
  * so it deliberately returns no VTG direction/timing classification.

@@ -546,6 +546,12 @@
             navigationState.setActiveTab(loadResult.targetTab);
           }
 
+          // A deep-linked sequence already carries its start position. Bring
+          // Construct's picker state into line with that sequence immediately,
+          // otherwise the workspace asks for a start position the user has
+          // already chosen and hides the available next pictographs.
+          syncConstructWorkspaceUi();
+
           hasDeepLink = true;
         }
 

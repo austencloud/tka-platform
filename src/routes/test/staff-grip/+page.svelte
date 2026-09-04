@@ -1,450 +1,334 @@
 <script lang="ts">
+  /**
+   * The staff grip lab.
+   *
+   * A grip failure is a relationship between a body, a prop and a moment in a
+   * sequence. One body holding one staff through one fixture can only ever
+   * show one point in that space, so this page makes all three axes
+   * selectable, puts every axis in the URL, and reports the measurements that
+   * distinguish "this body cannot hold this prop" from "this pose is wrong".
+   *
+   * Composition only. The controls are the app's own pickers, the numbers come
+   * from the shared reach owner, the cameras come from `inspection-framing`,
+   * and the URL is written through the shared navigation writer. This file
+   * arranges them and owns one playback clock for every pane.
+   */
   import { Canvas, T } from "@threlte/core";
+  import { onMount } from "svelte";
   import type {
     AvatarGripDiagnostics,
     AvatarPoseDiagnostics,
     CollisionEvent,
   } from "@austencloud/scene-3d";
-  import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import { page } from "$app/state";
-  import { FALG } from "$lib/shared/combination/domain/demo-fixtures";
-  import type { CharacterId } from "$lib/shared/3d/domain/character-model";
-  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-  import StaffGripStage from "./StaffGripStage.svelte";
-  import StanceTimingChart from "./StanceTimingChart.svelte";
+  import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     describeStanceYawTrack,
     stanceYawAngularVelocity,
     type StanceYawTrack,
   } from "$lib/shared/3d/collision/stance-yaw-track";
+
+  import PanelContent from "$lib/shared/components/panel/PanelContent.svelte";
+  import PanelHeader from "$lib/shared/components/panel/PanelHeader.svelte";
+  import PanelState from "$lib/shared/components/panel/PanelState.svelte";
+
+  import CoverageMatrixMount from "./CoverageMatrixMount.svelte";
+  import LabControls from "./LabControls.svelte";
+  import LabInspector from "./LabInspector.svelte";
+  import LabTransport from "./LabTransport.svelte";
+  import StaffGripStage from "./StaffGripStage.svelte";
+  import type { CoverageMatrix } from "./coverage-matrix-contract";
   import {
     INSPECTION_FOV_DEG,
     INSPECTION_VIEWS,
     inspectionShotForView,
   } from "./inspection-framing";
+  import {
+    bodyDerivedLengthCm,
+    compareLengths,
+    readBodyPropFit,
+    type BodyPropFit,
+  } from "./lab-body-fit";
+  import {
+    DEFAULT_LAB_SEQUENCE_ID,
+    labCharacterName,
+    labFixture,
+    labPropLabel,
+    labSequenceLabel,
+    labSweepCharacter,
+    resolveLabSequence,
+  } from "./lab-catalog";
+  import {
+    collectFrameMetrics,
+    EMPTY_GRIP_METRIC,
+    EMPTY_POSE_METRIC,
+    formatMetric,
+    type GripMetric,
+    type PoseMetric,
+  } from "./lab-metrics";
+  import { StaffLabState } from "./lab-state.svelte";
 
-  interface GripMetric {
-    axisErrorDeg: number | null;
-    contactOffsetMm: number | null;
-  }
-
-  interface PoseMetric {
-    requestedYawDeg: number | null;
-    achievedYawDeg: number | null;
-    headDodgeDeg: number | null;
-    torsoPitchDeg: number | null;
-    collisionCount: number;
-    collisionZones: string;
-    deepestCollisionMm: number;
-    collisionDescriptions: string;
-    audienceGripSeparationMm: number | null;
-    depthGripSeparationMm: number | null;
-    /** Each grip's offset along the chest-lateral (audience depth) axis. */
-    blueGripDepthMm: number | null;
-    redGripDepthMm: number | null;
-    /** Half the shoulder span: the elbow line the grips must stay inside. */
-    shoulderHalfSpanMm: number | null;
-    /** Straight-line distance between the two palms: the hug measurement. */
-    palmSeparationMm: number | null;
-    /** Palm separation along the audience-depth axis alone. */
-    palmDepthSeparationMm: number | null;
-    /**
-     * Distance between the two rendered grips. Unlike the palms this exists on
-     * every rig, so it is the portable hand-convergence measurement.
-     */
-    gripSeparationMm: number | null;
-    /** Elbow world positions, for proving the hug kept them put. */
-    leftElbow: string;
-    rightElbow: string;
-    /**
-     * How far each hand swings toward the chest-forward midline BEYOND its own
-     * forearm direction. This is the wrist's own contribution to the hug: 0 is
-     * a hand that continues straight out of the forearm, positive is a wrist
-     * rotated inward toward the centerline.
-     */
-    leftWristInwardDeg: number | null;
-    rightWristInwardDeg: number | null;
-    /** Total wrist bend between forearm and hand, whatever its direction. */
-    leftWristBendDeg: number | null;
-    rightWristBendDeg: number | null;
-    /** Distance from each palm to the grip point the grid authored for it. */
-    leftPalmToAuthoredMm: number | null;
-    rightPalmToAuthoredMm: number | null;
-    /** Measured arm segments and the staff length they permit. */
-    upperArmMm: number | null;
-    forearmMm: number | null;
-    reachMm: number | null;
-    renderedStaffLengthMm: number | null;
-    renderedStepNumber: number;
-    renderedBeatProgress: number;
-  }
-
-  const sequence = FALG;
-  const displayWord = simplifyRepeatedWord(sequence.word ?? sequence.id);
-  // `?character=<catalog id>` swaps the posed rig so the same frozen frames can
-  // be swept across materially different bodies.
-  const characterId = $derived(
-    (page.url.searchParams.get("character") as CharacterId | null) ?? undefined
-  );
-  let phase = $state(7.99);
-  /**
-   * One clock for four panes. Each pane holds its own performer, so letting
-   * them run their own playback would drift them apart within a few seconds;
-   * seeking every pane from this page's phase keeps all four cameras on the
-   * same frame of the same turn.
-   */
-  let playing = $state(false);
   /** Motion steps per second. Slow enough to read a 0.16-step stagger. */
   const PLAYBACK_STEPS_PER_SECOND = 1.2;
-  let stanceTrack = $state<StanceYawTrack | null>(null);
-  const stanceSummary = $derived(describeStanceYawTrack(stanceTrack));
-  const stanceVelocity = $derived(stanceYawAngularVelocity(stanceTrack, phase));
 
-  $effect(() => {
-    if (!playing) return;
-    let frame = 0;
-    let previous = performance.now();
-    const span = sequence.steps.length;
-    // The callback reads and writes `phase` outside the effect's tracking
-    // scope, so advancing it cannot restart this loop.
-    const tick = (now: number) => {
-      const elapsed = Math.min(0.1, (now - previous) / 1000);
-      previous = now;
-      const next = phase + elapsed * PLAYBACK_STEPS_PER_SECOND;
-      phase = next >= span - 0.01 ? next - span : next;
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+  let sequence = $state<SequenceData | null>(
+    labFixture(DEFAULT_LAB_SEQUENCE_ID)?.sequence ?? null
+  );
+  let sequenceLoading = $state(false);
+
+  /**
+   * The whole lab's state, in the address bar. Constructed at init because it
+   * declares reactive class fields; it is handed a step-count reader rather
+   * than the sequence itself so phase can clamp to whatever is loaded.
+   */
+  const stepCount = $derived(sequence?.steps.length ?? 1);
+
+  const lab = new StaffLabState({
+    stepCount: () => stepCount,
   });
+
+  /**
+   * The sweep engine at `shared/3d/diagnostics/` is being built separately and
+   * is deliberately not imported. Hand a `CoverageMatrix` in here and the
+   * Matrix panel renders it, every cell linking back into this lab already set
+   * to that configuration. See `coverage-matrix-contract.ts`.
+   */
+  const coverageMatrix: CoverageMatrix | null = null;
+
+  let leftMetric = $state<GripMetric>({ ...EMPTY_GRIP_METRIC });
+  let rightMetric = $state<GripMetric>({ ...EMPTY_GRIP_METRIC });
+  let poseMetric = $state<PoseMetric>({ ...EMPTY_POSE_METRIC });
+  let bodyFit = $state<BodyPropFit | null>(null);
+  let stanceTrack = $state<StanceYawTrack | null>(null);
+
+  const stanceSummary = $derived(describeStanceYawTrack(stanceTrack));
+  const stanceVelocity = $derived(
+    stanceYawAngularVelocity(stanceTrack, lab.phase)
+  );
+
+  const characterName = $derived(labCharacterName(lab.character));
+  const propLabel = $derived(labPropLabel(lab.prop));
+  const displayWord = $derived(
+    sequence ? labSequenceLabel(sequence) : lab.sequenceId
+  );
+
+  const bodyLengthCm = $derived(bodyDerivedLengthCm(bodyFit));
+
+  /**
+   * The length this configuration ASKS the prop to be: the pinned number, or
+   * the one this body's hug derives. This is what `propLength` carries into
+   * the rig, so it is what the drawn staff measures.
+   */
+  const configuredLengthCm = $derived(
+    lab.propLength === "body" ? bodyLengthCm : lab.propLength
+  );
+
+  /**
+   * The length the COLLISION model is using, read back off the grip segment.
+   * It does not follow `propLength`: the scene package builds that segment
+   * from the global `userProportionsState.staffLength`, so a per-performer
+   * length changes the picture and not the physics. Surfacing both is the
+   * point — a silent divergence here is exactly the class of problem that
+   * only shows up on a body the default length does not suit.
+   */
+  const collisionLengthCm = $derived(
+    poseMetric.collisionStaffLengthMm === null
+      ? null
+      : poseMetric.collisionStaffLengthMm / 10
+  );
+
+  /** Can this body clear the shaft this configuration asked for? */
+  const fitComparison = $derived(compareLengths(bodyFit, configuredLengthCm));
+
+  /**
+   * When the body on stage is one of the controlled proportion sweep rigs, the
+   * generator recorded what it measured off the GLB's rest pose and whether it
+   * expected a staff to fit. The lab measures the same body live, through the
+   * running solve. Showing both is the point: agreement means the offline
+   * sweep can be trusted to pre-filter a coverage matrix, and disagreement is
+   * a finding in one of the two, not a rounding difference to average away.
+   */
+  const sweepCharacter = $derived(labSweepCharacter(lab.character));
+
+  /**
+   * A divergence worth naming, not a rounding difference. Below this the two
+   * numbers are the same measurement read two ways.
+   */
+  const LENGTH_DIVERGENCE_NOISE_CM = 0.5;
+  const lengthDivergenceCm = $derived(
+    configuredLengthCm === null || collisionLengthCm === null
+      ? null
+      : Math.abs(collisionLengthCm - configuredLengthCm) <
+          LENGTH_DIVERGENCE_NOISE_CM
+        ? null
+        : collisionLengthCm - configuredLengthCm
+  );
+
+  /** Quad shows the set; a solo view gives one camera the whole stage. */
+  const activeViews = $derived(
+    lab.view === "quad"
+      ? INSPECTION_VIEWS
+      : INSPECTION_VIEWS.filter((view) => view.id === lab.view)
+  );
+
   // Each pane solves its own shot against its own aspect ratio, so a tall
   // reference column and a squat inspection cell both frame their subject
   // instead of one of them cropping it.
   let paneWidths = $state<number[]>(INSPECTION_VIEWS.map(() => 0));
   let paneHeights = $state<number[]>(INSPECTION_VIEWS.map(() => 0));
   const shots = $derived(
-    INSPECTION_VIEWS.map((view, index) => {
+    activeViews.map((view, index) => {
       const width = paneWidths[index] ?? 0;
       const height = paneHeights[index] ?? 0;
       const aspectRatio = width > 0 && height > 0 ? width / height : 1;
       return inspectionShotForView(view, aspectRatio);
     })
   );
-  let leftMetric = $state<GripMetric>({
-    axisErrorDeg: null,
-    contactOffsetMm: null,
-  });
-  let rightMetric = $state<GripMetric>({
-    axisErrorDeg: null,
-    contactOffsetMm: null,
-  });
-  let poseMetric = $state<PoseMetric>({
-    requestedYawDeg: null,
-    achievedYawDeg: null,
-    headDodgeDeg: null,
-    torsoPitchDeg: null,
-    collisionCount: 0,
-    collisionZones: "",
-    deepestCollisionMm: 0,
-    collisionDescriptions: "",
-    audienceGripSeparationMm: null,
-    depthGripSeparationMm: null,
-    blueGripDepthMm: null,
-    redGripDepthMm: null,
-    shoulderHalfSpanMm: null,
-    palmSeparationMm: null,
-    palmDepthSeparationMm: null,
-    gripSeparationMm: null,
-    leftElbow: "",
-    rightElbow: "",
-    leftWristInwardDeg: null,
-    rightWristInwardDeg: null,
-    leftWristBendDeg: null,
-    rightWristBendDeg: null,
-    leftPalmToAuthoredMm: null,
-    rightPalmToAuthoredMm: null,
-    upperArmMm: null,
-    forearmMm: null,
-    reachMm: null,
-    renderedStaffLengthMm: null,
-    renderedStepNumber: 0,
-    renderedBeatProgress: 0,
-  });
 
   const phaseLabel = $derived(
-    `${Math.floor(phase) + 1}.${Math.round((phase % 1) * 100)
+    `${Math.floor(lab.phase) + 1}.${Math.round((lab.phase % 1) * 100)
       .toString()
       .padStart(2, "0")}`
   );
-
-  function axisErrorDegrees(
-    axis: Readonly<{ x: number; y: number; z: number }> | null,
-    segment: AvatarGripDiagnostics["blueStaffSegment"]
-  ): number | null {
-    if (!axis || !segment) return null;
-    const sx = segment.b.x - segment.a.x;
-    const sy = segment.b.y - segment.a.y;
-    const sz = segment.b.z - segment.a.z;
-    const shaftLength = Math.hypot(sx, sy, sz);
-    const axisLength = Math.hypot(axis.x, axis.y, axis.z);
-    if (shaftLength < 1e-6 || axisLength < 1e-6) return null;
-    const dot = Math.abs(
-      (sx * axis.x + sy * axis.y + sz * axis.z) / (shaftLength * axisLength)
-    );
-    return (Math.acos(Math.max(-1, Math.min(1, dot))) * 180) / Math.PI;
-  }
-
-  function contactOffsetMillimeters(
-    palm: Readonly<{ x: number; y: number; z: number }> | null,
-    grip: Readonly<{ x: number; y: number; z: number }> | null
-  ): number | null {
-    if (!palm || !grip) return null;
-    return Math.hypot(palm.x - grip.x, palm.y - grip.y, palm.z - grip.z) * 1000;
-  }
-
-  interface WristGeometry {
-    inwardDeg: number | null;
-    bendDeg: number | null;
-  }
-
-  const NO_WRIST_GEOMETRY: WristGeometry = { inwardDeg: null, bendDeg: null };
-
-  type Point = Readonly<{ x: number; y: number; z: number }>;
-
-  function unit(from: Point, to: Point): [number, number, number] | null {
-    const x = to.x - from.x;
-    const y = to.y - from.y;
-    const z = to.z - from.z;
-    const length = Math.hypot(x, y, z);
-    if (length < 1e-6) return null;
-    return [x / length, y / length, z / length];
-  }
-
-  function arcsinDegrees(value: number): number {
-    return (Math.asin(Math.max(-1, Math.min(1, value))) * 180) / Math.PI;
-  }
-
-  /**
-   * Split the hand's direction into the part the forearm already carries and
-   * the part the wrist adds. The chest-lateral axis is rebuilt from the
-   * achieved shoulder yaw: at yaw 0 the performer's anatomical right is world
-   * -X, and the shoulder frame turns it about Y. Medial (toward the
-   * chest-forward midline) is +lateral for the left hand and -lateral for the
-   * right, matching the animator's own palm-socket convention.
-   */
-  function wristGeometry(
-    side: "left" | "right",
-    elbow: Point | null | undefined,
-    wrist: Point | null | undefined,
-    palm: Point | null | undefined,
-    achievedYawRad: number
-  ): WristGeometry {
-    if (!elbow || !wrist || !palm) return NO_WRIST_GEOMETRY;
-    const forearm = unit(elbow, wrist);
-    const hand = unit(wrist, palm);
-    if (!forearm || !hand) return NO_WRIST_GEOMETRY;
-    const medialSign = side === "left" ? 1 : -1;
-    const lateralX = -Math.cos(achievedYawRad) * medialSign;
-    const lateralZ = Math.sin(achievedYawRad) * medialSign;
-    const handMedial = arcsinDegrees(hand[0] * lateralX + hand[2] * lateralZ);
-    const forearmMedial = arcsinDegrees(
-      forearm[0] * lateralX + forearm[2] * lateralZ
-    );
-    const dot =
-      forearm[0] * hand[0] + forearm[1] * hand[1] + forearm[2] * hand[2];
-    return {
-      inwardDeg: handMedial - forearmMedial,
-      bendDeg: (Math.acos(Math.max(-1, Math.min(1, dot))) * 180) / Math.PI,
-    };
-  }
-
-  function separationMillimeters(
-    a: Point | null | undefined,
-    b: Point | null | undefined
-  ): number | null {
-    if (!a || !b) return null;
-    return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) * 1000;
-  }
 
   function collectGripMetrics(
     events: CollisionEvent[],
     diagnostics: AvatarPoseDiagnostics,
     gripDiagnostics: AvatarGripDiagnostics
   ): void {
-    leftMetric = {
-      axisErrorDeg: axisErrorDegrees(
-        gripDiagnostics.leftGripAxis,
-        gripDiagnostics.blueStaffSegment
-      ),
-      contactOffsetMm: contactOffsetMillimeters(
-        gripDiagnostics.leftPalm,
-        gripDiagnostics.renderedBlueGrip
-      ),
-    };
-    rightMetric = {
-      axisErrorDeg: axisErrorDegrees(
-        gripDiagnostics.rightGripAxis,
-        gripDiagnostics.redStaffSegment
-      ),
-      contactOffsetMm: contactOffsetMillimeters(
-        gripDiagnostics.rightPalm,
-        gripDiagnostics.renderedRedGrip
-      ),
-    };
+    const frame = collectFrameMetrics(events, diagnostics, gripDiagnostics);
+    leftMetric = frame.left;
+    rightMetric = frame.right;
+    poseMetric = frame.pose;
+    const fit = readBodyPropFit(diagnostics);
+    if (fit) bodyFit = fit;
+  }
 
-    const leftWrist = wristGeometry(
-      "left",
-      diagnostics.leftElbowWorld,
-      gripDiagnostics.leftWrist,
-      gripDiagnostics.leftPalm,
-      diagnostics.achievedShoulderYawRad
+  onMount(() => {
+    // This route breaks out of the app layout, so nothing has set the theme
+    // variables the shared pickers and chips paint with. Reading the device's
+    // own saved background keeps the lab in the app's palette instead of every
+    // primitive falling back to its hardcoded default.
+    void import("$lib/shared/settings/utils/background-theme-calculator").then(
+      ({ ensureThemeApplied }) => ensureThemeApplied()
     );
-    const rightWrist = wristGeometry(
-      "right",
-      diagnostics.rightElbowWorld,
-      gripDiagnostics.rightWrist,
-      gripDiagnostics.rightPalm,
-      diagnostics.achievedShoulderYawRad
-    );
+  });
 
-    poseMetric = {
-      requestedYawDeg: radiansToDegrees(diagnostics.requestedStanceYawRad),
-      achievedYawDeg: radiansToDegrees(diagnostics.achievedShoulderYawRad),
-      headDodgeDeg: radiansToDegrees(diagnostics.appliedHeadDodgeRad),
-      torsoPitchDeg: radiansToDegrees(diagnostics.achievedTorsoPitchRad),
-      collisionCount: events.length,
-      collisionZones: events
-        .map(({ zone, severity }) => `${zone}:${severity}`)
-        .sort()
-        .join(","),
-      deepestCollisionMm:
-        Math.max(0, ...events.map(({ penetrationDepth }) => penetrationDepth)) *
-        1000,
-      collisionDescriptions: events
-        .map(({ description }) => description)
-        .join(" | "),
-      audienceGripSeparationMm:
-        gripDiagnostics.authoredBlueGrip && gripDiagnostics.authoredRedGrip
-          ? Math.hypot(
-              gripDiagnostics.authoredBlueGrip.x -
-                gripDiagnostics.authoredRedGrip.x,
-              gripDiagnostics.authoredBlueGrip.y -
-                gripDiagnostics.authoredRedGrip.y
-            ) * 1000
-          : null,
-      depthGripSeparationMm:
-        gripDiagnostics.authoredBlueGrip && gripDiagnostics.authoredRedGrip
-          ? Math.abs(
-              gripDiagnostics.authoredBlueGrip.z -
-                gripDiagnostics.authoredRedGrip.z
-            ) * 1000
-          : null,
-      blueGripDepthMm: gripDiagnostics.authoredBlueGrip
-        ? gripDiagnostics.authoredBlueGrip.z * 1000
-        : null,
-      redGripDepthMm: gripDiagnostics.authoredRedGrip
-        ? gripDiagnostics.authoredRedGrip.z * 1000
-        : null,
-      shoulderHalfSpanMm: (diagnostics.shoulderWidth / 2) * 1000,
-      palmSeparationMm:
-        gripDiagnostics.leftPalm && gripDiagnostics.rightPalm
-          ? Math.hypot(
-              gripDiagnostics.leftPalm.x - gripDiagnostics.rightPalm.x,
-              gripDiagnostics.leftPalm.y - gripDiagnostics.rightPalm.y,
-              gripDiagnostics.leftPalm.z - gripDiagnostics.rightPalm.z
-            ) * 1000
-          : null,
-      palmDepthSeparationMm:
-        gripDiagnostics.leftPalm && gripDiagnostics.rightPalm
-          ? Math.abs(gripDiagnostics.leftPalm.z - gripDiagnostics.rightPalm.z) *
-            1000
-          : null,
-      gripSeparationMm:
-        gripDiagnostics.renderedBlueGrip && gripDiagnostics.renderedRedGrip
-          ? Math.hypot(
-              gripDiagnostics.renderedBlueGrip.x -
-                gripDiagnostics.renderedRedGrip.x,
-              gripDiagnostics.renderedBlueGrip.y -
-                gripDiagnostics.renderedRedGrip.y,
-              gripDiagnostics.renderedBlueGrip.z -
-                gripDiagnostics.renderedRedGrip.z
-            ) * 1000
-          : null,
-      leftElbow: formatPoint(diagnostics.leftElbowWorld),
-      rightElbow: formatPoint(diagnostics.rightElbowWorld),
-      leftWristInwardDeg: leftWrist.inwardDeg,
-      rightWristInwardDeg: rightWrist.inwardDeg,
-      leftWristBendDeg: leftWrist.bendDeg,
-      rightWristBendDeg: rightWrist.bendDeg,
-      leftPalmToAuthoredMm: separationMillimeters(
-        gripDiagnostics.leftPalm,
-        gripDiagnostics.authoredBlueGrip
-      ),
-      rightPalmToAuthoredMm: separationMillimeters(
-        gripDiagnostics.rightPalm,
-        gripDiagnostics.authoredRedGrip
-      ),
-      upperArmMm:
-        ((diagnostics.leftUpperArmLength + diagnostics.rightUpperArmLength) /
-          2) *
-        1000,
-      forearmMm:
-        ((diagnostics.leftForearmLength + diagnostics.rightForearmLength) / 2) *
-        1000,
-      reachMm:
-        ((diagnostics.leftUpperArmLength +
-          diagnostics.leftForearmLength +
-          diagnostics.rightUpperArmLength +
-          diagnostics.rightForearmLength) /
-          2) *
-        1000,
-      renderedStaffLengthMm: gripDiagnostics.blueStaffSegment
-        ? Math.hypot(
-            gripDiagnostics.blueStaffSegment.b.x -
-              gripDiagnostics.blueStaffSegment.a.x,
-            gripDiagnostics.blueStaffSegment.b.y -
-              gripDiagnostics.blueStaffSegment.a.y,
-            gripDiagnostics.blueStaffSegment.b.z -
-              gripDiagnostics.blueStaffSegment.a.z
-          ) * 1000
-        : null,
-      renderedStepNumber: gripDiagnostics.stepNumber,
-      renderedBeatProgress: gripDiagnostics.beatProgress,
+  // A pasted link or a reload arrives as a real navigation, which is the one
+  // URL change SvelteKit still reports through `page.url`. Reading its href
+  // here is what makes re-seeding the lab's mirror reactive.
+  $effect(() => {
+    void page.url.href;
+    lab.syncFromNavigation();
+  });
+
+  // Back and Forward move the address bar without any framework signal at
+  // all, because every write here is shallow routing. This is the only way
+  // history navigation reaches the lab.
+  $effect(() => lab.attachUrlSync());
+
+  // Someone reaching for the address bar blurs the window first, so that is
+  // the moment a still-moving phase has to be pinned exactly.
+  $effect(() => lab.attachFlushOnBlur());
+
+  // A character swap changes the skeleton every measurement was taken from.
+  $effect(() => {
+    void lab.character;
+    bodyFit = null;
+  });
+
+  $effect(() => {
+    const id = lab.sequenceId;
+    const fixture = labFixture(id);
+    if (fixture) {
+      sequence = fixture.sequence;
+      sequenceLoading = false;
+      return;
+    }
+    // A library or community id: the product's own loader resolves it, which
+    // is what lets a pasted lab URL reproduce a library sequence cold.
+    let cancelled = false;
+    sequenceLoading = true;
+    void resolveLabSequence(id).then((loaded) => {
+      if (cancelled) return;
+      sequenceLoading = false;
+      if (loaded) sequence = loaded;
+    });
+    return () => {
+      cancelled = true;
     };
-  }
+  });
 
-  function formatPoint(
-    point: Readonly<{ x: number; y: number; z: number }> | null | undefined
-  ): string {
-    if (!point) return "";
-    return `${(point.x * 1000).toFixed(1)},${(point.y * 1000).toFixed(1)},${(
-      point.z * 1000
-    ).toFixed(1)}`;
-  }
-
-  function radiansToDegrees(radians: number): number {
-    return (radians * 180) / Math.PI;
-  }
-
-  function formatMetric(value: number | null, digits = 1): string {
-    return value === null ? "—" : value.toFixed(digits);
-  }
+  /**
+   * One clock for every pane. Each pane holds its own performer, so letting
+   * them run their own playback would drift them apart within seconds; seeking
+   * every pane from this phase keeps all the cameras on the same frame of the
+   * same turn. The tick reads and writes phase outside the effect's tracking
+   * scope, so advancing it cannot restart the loop.
+   */
+  $effect(() => {
+    if (!lab.playing) return;
+    const span = sequence?.steps.length ?? 0;
+    if (span <= 0) return;
+    let frame = 0;
+    let previous = performance.now();
+    const tick = (now: number) => {
+      const elapsed = Math.min(0.1, (now - previous) / 1000);
+      previous = now;
+      const next = lab.phase + elapsed * PLAYBACK_STEPS_PER_SECOND;
+      lab.setPhase(next >= span - 0.01 ? next - span : next);
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  });
 </script>
 
 <svelte:head>
-  <title>Staff Grip Inspection</title>
+  <title>Staff Grip Lab</title>
   <meta
     name="description"
-    content="Inspect one two-staff pose from four camera angles."
+    content="Compare one grip across characters, props and sequences."
   />
 </svelte:head>
 
 <main
-  class="grip-inspection"
-  data-sequence-source="validated-production-fixture"
-  data-sequence-id={sequence.id}
-  data-character-id={characterId ?? "intake-current"}
-  data-phase={phase.toFixed(2)}
+  class="grip-lab"
+  data-sequence-source={labFixture(lab.sequenceId)
+    ? "validated-production-fixture"
+    : "library"}
+  data-sequence-id={lab.sequenceId}
+  data-sequence-steps={sequence?.steps.length ?? 0}
+  data-character-id={lab.character}
+  data-prop={lab.prop}
+  data-prop-length-mode={lab.propLength === "body" ? "body" : "pinned"}
+  data-prop-length-cm={lab.propLength === "body"
+    ? "body"
+    : lab.propLength.toFixed(0)}
+  data-view={lab.view}
+  data-panel={lab.panel}
+  data-grid-labels={lab.gridLabels ? "1" : "0"}
+  data-lab-href={lab.fullyQualifiedHref()}
+  data-phase={lab.phase.toFixed(2)}
+  data-body-max-staff-cm={formatMetric(
+    bodyFit?.fit.maxStaffLengthCm ?? null,
+    2
+  )}
+  data-body-recommended-staff-cm={formatMetric(bodyLengthCm, 2)}
+  data-body-shoulder-half-span-mm={formatMetric(
+    bodyFit ? bodyFit.geometry.shoulderHalfSpanM * 1000 : null,
+    2
+  )}
+  data-body-torso-depth-mm={formatMetric(
+    bodyFit ? bodyFit.torsoDepthM * 1000 : null,
+    2
+  )}
+  data-configured-length-cm={formatMetric(configuredLengthCm, 2)}
+  data-collision-length-cm={formatMetric(collisionLengthCm, 2)}
+  data-length-divergence-cm={formatMetric(lengthDivergenceCm, 2)}
+  data-fit-verdict={fitComparison.verdict}
+  data-fit-delta-cm={formatMetric(fitComparison.deltaCm, 2)}
   data-left-axis-error-deg={formatMetric(leftMetric.axisErrorDeg, 3)}
   data-right-axis-error-deg={formatMetric(rightMetric.axisErrorDeg, 3)}
   data-left-contact-offset-mm={formatMetric(leftMetric.contactOffsetMm, 3)}
@@ -480,8 +364,8 @@
   data-upper-arm-mm={formatMetric(poseMetric.upperArmMm, 2)}
   data-forearm-mm={formatMetric(poseMetric.forearmMm, 2)}
   data-reach-mm={formatMetric(poseMetric.reachMm, 2)}
-  data-rendered-staff-length-mm={formatMetric(
-    poseMetric.renderedStaffLengthMm,
+  data-collision-staff-length-mm={formatMetric(
+    poseMetric.collisionStaffLengthMm,
     2
   )}
   data-audience-grip-separation-mm={formatMetric(
@@ -497,7 +381,7 @@
   data-shoulder-half-span-mm={formatMetric(poseMetric.shoulderHalfSpanMm, 3)}
   data-rendered-step-number={poseMetric.renderedStepNumber}
   data-rendered-beat-progress={formatMetric(poseMetric.renderedBeatProgress, 3)}
-  data-playing={playing}
+  data-playing={lab.playing}
   data-stance-lead-steps={formatMetric(stanceSummary.onsetLeadSteps, 4)}
   data-stance-spine-lead-steps={formatMetric(
     stanceSummary.spineOnsetLeadSteps,
@@ -521,228 +405,235 @@
   data-stance-arrival-head={formatMetric(stanceSummary.arrivals.head, 4)}
   data-stance-angular-velocity={formatMetric(stanceVelocity, 5)}
 >
-  <div class="views">
-    <section class="console" style:grid-area="console">
-      <header class="console-head">
-        <h1>Staff grip inspection</h1>
-        <p class="console-sub">
-          {displayWord} · {characterId ?? "intake-current"}
-        </p>
-      </header>
+  <aside class="rail" aria-label="Lab configuration and measurements">
+    <!--
+      The app's own panel masthead, at the rank a page owes its document. The
+      lab used to open on a 17px heading, which is smaller than the section
+      labels under it and the first thing that read as a debug console.
+    -->
+    <PanelHeader
+      headingLevel={1}
+      icon="fa-flask"
+      title="Staff grip lab"
+      subtitle={`${characterName} · ${propLabel} · ${displayWord}`}
+    />
 
-      <div class="scrubber">
-        <button
-          type="button"
-          class="transport"
-          aria-pressed={playing}
-          onclick={() => (playing = !playing)}
-        >
-          {playing ? "Pause" : "Play"}
-        </button>
-        <label for="grip-phase">Step {phaseLabel}</label>
-        <input
-          id="grip-phase"
-          type="range"
-          min="0"
-          max={sequence.steps.length - 0.01}
-          step="0.01"
-          bind:value={phase}
+    <PanelContent>
+      <div class="rail-sections">
+        <LabControls
+          {lab}
+          {sequence}
+          {sequenceLoading}
+          {bodyLengthCm}
+          bodyMeasured={bodyFit !== null}
+        />
+
+        <LabInspector
+          {lab}
+          {sweepCharacter}
+          fit={bodyFit}
+          verdict={fitComparison.verdict}
+          deltaCm={fitComparison.deltaCm}
+          {configuredLengthCm}
+          {collisionLengthCm}
+          {lengthDivergenceCm}
+          {leftMetric}
+          {rightMetric}
+          {poseMetric}
+          {stanceTrack}
+          {stanceSummary}
+          {stanceVelocity}
+          {coverageMatrix}
         />
       </div>
+    </PanelContent>
+  </aside>
 
-      <dl class="readout" aria-live="polite">
-        <div class="metric">
-          <dt>Blue axis / contact</dt>
-          <dd>
-            {formatMetric(leftMetric.axisErrorDeg)}° · {formatMetric(
-              leftMetric.contactOffsetMm
-            )} mm
-          </dd>
-        </div>
-        <div class="metric">
-          <dt>Red axis / contact</dt>
-          <dd>
-            {formatMetric(rightMetric.axisErrorDeg)}° · {formatMetric(
-              rightMetric.contactOffsetMm
-            )} mm
-          </dd>
-        </div>
-        <div class="metric">
-          <dt>Yaw requested → achieved</dt>
-          <dd>
-            {formatMetric(poseMetric.requestedYawDeg, 0)}° → {formatMetric(
-              poseMetric.achievedYawDeg,
-              0
-            )}°
-          </dd>
-        </div>
-        <div class="metric">
-          <dt>Head dodge</dt>
-          <dd>{formatMetric(poseMetric.headDodgeDeg, 0)}°</dd>
-        </div>
-        <div class="metric">
-          <dt>Grip depth of shoulder half-span</dt>
-          <dd>
-            {formatMetric(poseMetric.blueGripDepthMm, 0)} / {formatMetric(
-              poseMetric.redGripDepthMm,
-              0
-            )} mm of ±{formatMetric(poseMetric.shoulderHalfSpanMm, 0)}
-          </dd>
-        </div>
-        <div class="metric">
-          <dt>Wrist inward blue / red</dt>
-          <dd>
-            {formatMetric(poseMetric.leftWristInwardDeg, 0)}° / {formatMetric(
-              poseMetric.rightWristInwardDeg,
-              0
-            )}°
-          </dd>
-        </div>
-        <div class="metric">
-          <dt>Grip separation</dt>
-          <dd>{formatMetric(poseMetric.gripSeparationMm, 0)} mm</dd>
-        </div>
-        <div class="metric">
-          <dt>Collisions</dt>
-          <dd>{poseMetric.collisionCount}</dd>
-        </div>
-      </dl>
-    </section>
-
-    {#each INSPECTION_VIEWS as view, index (view.id)}
-      <section
-        class="view"
-        style:grid-area={view.id}
-        aria-label={`${view.label}: ${view.hint}`}
-        bind:clientWidth={paneWidths[index]}
-        bind:clientHeight={paneHeights[index]}
-      >
-        <Canvas shadows>
-          <T.Color attach="background" args={["#0a101a"]} />
-          <T.PerspectiveCamera
-            makeDefault
-            position={shots[index].position}
-            fov={INSPECTION_FOV_DEG}
+  <div class="stage">
+    <div class="views" data-layout={lab.view === "quad" ? "quad" : "solo"}>
+      {#if sequence}
+        {#each activeViews as view, index (view.id)}
+          <section
+            class="view"
+            aria-label={`${view.label}: ${view.hint}`}
+            bind:clientWidth={paneWidths[index]}
+            bind:clientHeight={paneHeights[index]}
           >
-            <OrbitControls
-              enableDamping
-              enablePan={false}
-              rightDragAction="rotate"
-              target={shots[index].target}
-              minDistance={0.3}
-              maxDistance={12}
-              maxPolarAngle={Math.PI}
-            />
-          </T.PerspectiveCamera>
+            <!--
+              No scene clear colour. An alpha buffer lets the pane's own app
+              surface show through, so the canvases sit on the product's ground
+              rather than on a navy rectangle that appears nowhere else.
+            -->
+            <Canvas shadows rendererParameters={{ alpha: true }}>
+              <T.PerspectiveCamera
+                makeDefault
+                position={shots[index].position}
+                fov={INSPECTION_FOV_DEG}
+              >
+                <OrbitControls
+                  enableDamping
+                  enablePan={false}
+                  rightDragAction="rotate"
+                  target={shots[index].target}
+                  minDistance={0.3}
+                  maxDistance={12}
+                  maxPolarAngle={Math.PI}
+                />
+              </T.PerspectiveCamera>
 
-          <StaffGripStage
-            id={`staff-grip-${view.id}`}
-            {phase}
-            {sequence}
-            {characterId}
-            gridEmphasis={view.grid}
-            onCollisionEvents={index === 0 ? collectGripMetrics : undefined}
-          onStanceTrack={index === 0
-            ? (track) => {
-                stanceTrack = track;
-              }
-            : undefined}
-          />
-        </Canvas>
-        <span class="view-label">
-          <b>{view.label}</b>
-          <i>{view.hint}</i>
-        </span>
-      </section>
-    {/each}
+              <StaffGripStage
+                id={`staff-grip-${view.id}`}
+                phase={lab.phase}
+                {sequence}
+                characterId={lab.character}
+                propType={lab.prop}
+                propLengthCm={lab.propLength === "body" ? null : lab.propLength}
+                gridEmphasis={view.grid}
+                showGridLabels={lab.gridLabels}
+                onCollisionEvents={index === 0 ? collectGripMetrics : undefined}
+                onStanceTrack={index === 0
+                  ? (track) => {
+                      stanceTrack = track;
+                    }
+                  : undefined}
+              />
+            </Canvas>
+            <span class="view-label">
+              <b>{view.label}</b>
+              <i>{view.hint}</i>
+            </span>
+          </section>
+        {/each}
+      {:else}
+        <div class="stage-empty">
+          <PanelState type="loading" message="Loading sequence…" />
+        </div>
+      {/if}
+    </div>
 
-    <section
-      class="timing-band"
-      style:grid-area="timing"
-      aria-label="Stance turn timing"
-    >
-      <StanceTimingChart track={stanceTrack} scoreTime={phase} />
-    </section>
+    <!--
+      The transport lives under the cameras, where the app puts one, and is the
+      shared TransportControls the rest of the product plays with. It stays
+      mounted while a sequence resolves so the stage above it never resizes.
+    -->
+    <LabTransport {lab} {stepCount} {phaseLabel} disabled={!sequence} />
   </div>
+
+  <!--
+    The matrix has a home in the inspector rail, which is where it belongs on a
+    laptop. Past a very wide canvas the rail is the wrong shape for a table, so
+    the same contract also mounts as a band under the cameras.
+  -->
+  {#if lab.panel === "matrix"}
+    <div class="stage-matrix" aria-label="Coverage matrix">
+      <CoverageMatrixMount matrix={coverageMatrix} />
+    </div>
+  {/if}
 </main>
 
 <style>
-  .grip-inspection {
+  .grip-lab {
     position: relative;
+    display: grid;
     min-height: 100dvh;
-    background: #0a101a;
-    color: var(--color-text-primary, #f4f7fb);
-    container-type: inline-size;
+    background: var(--background, #0a0a0a);
+    color: var(--theme-text, #fff);
+
+    /* Narrow is the base: the rail first, so the controls and the numbers are
+       reachable without scrolling past a stack of canvases. */
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "rail"
+      "stage"
+      "matrix";
   }
 
   /*
-   * Narrow is the base: one column, console first so the scrubber and the
-   * numbers are reachable without scrolling past four canvases.
+   * The rail is an app panel: a masthead that does not scroll over a body that
+   * does. PanelHeader and PanelContent own the padding and the scroll, so this
+   * rule only places the panel and paints its surface.
    */
+  .rail {
+    grid-area: rail;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--panel-bg-current, rgba(255, 255, 255, 0.05));
+    backdrop-filter: var(--glass-backdrop, blur(20px));
+    border-bottom: var(--glass-border, 1px solid rgba(255, 255, 255, 0.08));
+  }
+
+  /*
+   * The panel body flows into as many columns as its own width affords.
+   * Stacked above the stage on a tablet it is the full viewport wide, and a
+   * single column there stretches a two-word segmented control across 700px
+   * and pushes every camera below the fold. Two columns keep each control at
+   * the measure it has as a desktop rail and halve the height the stage sits
+   * under. As a side rail — 20rem to 34rem — this resolves to one column, so
+   * no breakpoint has to name the difference.
+   */
+  .rail-sections {
+    display: grid;
+    /* min() so the track can fall below its own floor rather than
+       overflowing a rail narrower than 19rem, which is the 19rem side
+       rail a folded phone gets once padding is taken out of it. */
+    grid-template-columns: repeat(auto-fit, minmax(min(19rem, 100%), 1fr));
+    align-content: start;
+    align-items: start;
+    gap: 1rem 1.25rem;
+    min-width: 0;
+  }
+
+  /* Cameras over a transport, the way the product stacks a player. */
+  .stage {
+    grid-area: stage;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    min-width: 0;
+    min-height: 0;
+  }
+
   .views {
     display: grid;
+    min-width: 0;
+    min-height: 0;
+    /* A Threlte canvas reports the size it was last measured at, so an auto
+       row would let a pane keep a height it is no longer entitled to. */
     grid-template-columns: minmax(0, 1fr);
-    /*
-     * Every pane places itself by name, so the narrow tier has to name the
-     * areas too. Without this the idents resolve to nothing and all five
-     * sections collapse into one cell on top of each other.
-     */
-    grid-template-areas:
-      "console"
-      "timing"
-      "audience"
-      "grip-front"
-      "grip-quarter"
-      "grip-overhead";
-    /*
-     * Explicit row heights: a Threlte canvas reports the size it was last
-     * measured at, so an auto row lets a pane keep whatever height the wide
-     * layout gave it instead of shrinking to the stacked one.
-     */
-    /*
-     * The band is size-contained so its own contents cannot report a height,
-     * which means an `auto` row collapses to the minimum and crushes the two
-     * lanes under a readout that wraps to five lines at this width. In a
-     * column that scrolls anyway, buy the chart the height outright.
-     */
-    grid-template-rows: auto minmax(0, 30rem) repeat(4, minmax(0, 52svh));
-    min-height: 100dvh;
+    grid-auto-rows: minmax(0, 52svh);
   }
 
-  .view,
-  .console,
-  .timing-band {
+  .views[data-layout="solo"] {
+    grid-auto-rows: minmax(0, 72svh);
+  }
+
+  .stage-empty {
+    display: grid;
+    place-items: center;
+    min-height: 40svh;
     min-width: 0;
-    min-height: 0;
-    border-bottom: 1px solid rgb(148 178 206 / 18%);
-    background: #0a101a;
   }
 
-  .timing-band {
-    display: flex;
-    /*
-     * The band is a reading height, not a share of the viewport: the curves
-     * need room for curvature, and a band that grew with the screen would take
-     * the canvases' space at 4K without showing anything more. Its grid row
-     * owns that height, so the item itself stays collapsible.
-     */
-    min-height: 0;
-    overflow: hidden;
-    container: timing-band / size;
-  }
-
-  .timing-band > :global(*) {
-    flex: 1 1 auto;
+  .stage-matrix {
+    grid-area: matrix;
+    /* On narrow and laptop widths the rail's own Matrix panel is the one that
+       shows; this band only appears where a table has room to be read. */
+    display: none;
     min-width: 0;
+    padding: 0.9rem 1.1rem;
+    background: var(--panel-bg-current, rgba(255, 255, 255, 0.05));
+    border-top: var(--glass-border, 1px solid rgba(255, 255, 255, 0.08));
+    overflow: auto;
   }
 
   .view {
     position: relative;
+    min-width: 0;
+    min-height: 0;
     overflow: hidden;
-  }
-
-  .views > :nth-child(5) {
-    border-bottom: 0;
+    border-bottom: var(--glass-border, 1px solid rgba(255, 255, 255, 0.08));
+    background: var(--surface-inset, rgba(0, 0, 0, 0.2));
   }
 
   .view :global(canvas) {
@@ -760,314 +651,133 @@
     gap: 0.1rem;
     max-width: calc(100% - 1.5rem);
     padding: 0.35rem 0.6rem;
-    border: 1px solid rgb(148 178 206 / 24%);
+    border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.08));
     border-radius: 0.4rem;
-    background: rgb(5 12 21 / 78%);
+    background: var(--surface-glass, rgba(0, 0, 0, 0.5));
+    box-shadow: var(--shadow-glass);
     pointer-events: none;
-    backdrop-filter: blur(8px);
+    backdrop-filter: var(--glass-backdrop, blur(20px));
   }
 
   .view-label b {
-    color: rgb(238 246 252 / 92%);
-    font-size: 0.875rem;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-sm, 0.875rem);
     font-weight: 650;
-    letter-spacing: 0.01em;
   }
 
   .view-label i {
-    color: rgb(206 226 242 / 74%);
-    font-size: 0.8125rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+    font-size: var(--font-size-xs, 0.8125rem);
     font-style: normal;
   }
 
-  .console {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem 1.15rem 1.25rem;
-    overflow: auto;
-  }
-
-  .console-head h1 {
-    margin: 0;
-    color: rgb(240 247 253 / 94%);
-    font-size: 1.05rem;
-    font-weight: 640;
-    letter-spacing: 0.01em;
-  }
-
-  .console-sub {
-    margin: 0.15rem 0 0;
-    color: rgb(206 226 242 / 74%);
-    font-size: 0.8125rem;
-  }
-
-  .scrubber {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-height: 2.75rem;
-    padding: 0.45rem 0.7rem;
-    border: 1px solid rgb(111 231 255 / 34%);
-    border-radius: 0.65rem;
-    background: rgb(5 14 24 / 88%);
-  }
-
-  .transport {
-    flex: 0 0 auto;
-    /*
-     * A real button, not a text link: this is the control that turns the lab
-     * from a scrubber into playback, and it has to read as pressable.
-     */
-    min-width: 5rem;
-    min-height: 2.5rem;
-    padding: 0 0.9rem;
-    border: 1px solid rgb(111 231 255 / 45%);
-    border-radius: 0.5rem;
-    background: rgb(111 231 255 / 12%);
-    color: #a8efff;
-    font: inherit;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color var(--transition-fast, 120ms) ease;
-  }
-
-  .transport:hover {
-    background: rgb(111 231 255 / 22%);
-  }
-
-  .transport[aria-pressed="true"] {
-    border-color: rgb(111 231 255 / 75%);
-    background: rgb(111 231 255 / 28%);
-    color: #eaf9ff;
-  }
-
-  .transport:focus-visible {
-    outline: 2px solid #6fe7ff;
-    outline-offset: 3px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .transport {
-      transition: none;
+  /*
+   * Mid: the four panes pair up. One stacked column on a tablet leaves every
+   * pane wide and short, so the framing solver fits the subject to the height
+   * and the width goes to empty stage either side of it.
+   */
+  @media (min-width: 40rem) {
+    .views[data-layout="quad"] {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-  }
-
-  .scrubber label {
-    flex: 0 0 auto;
-    min-width: 5rem;
-    color: rgb(232 242 250 / 88%);
-    font-size: 0.875rem;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .scrubber input {
-    width: 100%;
-    min-height: 2rem;
-    accent-color: #6fe7ff;
-    cursor: ew-resize;
-  }
-
-  .scrubber input:focus-visible {
-    outline: 2px solid #6fe7ff;
-    outline-offset: 3px;
-  }
-
-  .readout {
-    display: grid;
-    /*
-     * Two columns even on the narrowest phone: one column of eight readings
-     * pushes every camera below the fold, and these values are short enough to
-     * pair without truncating.
-     */
-    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-    gap: 0.55rem 1rem;
-    margin: 0;
-  }
-
-  .metric {
-    min-width: 0;
-  }
-
-  .metric dt {
-    color: rgb(196 219 238 / 72%);
-    font-size: 0.75rem;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-  }
-
-  .metric dd {
-    margin: 0.1rem 0 0;
-    color: #a8efff;
-    font-size: 0.9375rem;
-    font-variant-numeric: tabular-nums;
-    /*
-     * The number is the thing that changes; a fixed line box keeps a value
-     * losing a digit from nudging the rows below it.
-     */
-    min-height: 1.4em;
   }
 
   /*
-   * Mid: two columns. One stacked column on a tablet or a folded phone in
-   * landscape leaves every pane wide and short, so the framing solver fits the
-   * subject to the height and most of the width goes to empty stage either
-   * side of it.
+   * Wide: the rail becomes a column and the stage owns the rest of the
+   * viewport. The rail is a reading width, not a share of the screen — it
+   * grows a little on a wider canvas and then stops, and the space it does not
+   * take goes to the cameras, which are what benefits from it.
    */
-  @container (min-width: 40rem) {
-    .views {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      grid-template-areas:
-        "console      console"
-        "timing       timing"
-        "audience     grip-front"
-        "grip-quarter grip-overhead";
-      grid-template-rows: auto minmax(0, 24rem) repeat(2, minmax(0, 52svh));
+  @media (min-width: 64rem) {
+    .grip-lab {
+      grid-template-columns: clamp(20rem, 21vw, 26rem) minmax(0, 1fr);
+      grid-template-areas: "rail stage";
+      height: 100dvh;
+      overflow: hidden;
     }
 
-    /* Second and fourth in DOM order are the left-hand column. */
-    .views > :nth-child(2),
-    .views > :nth-child(4) {
-      border-right: 1px solid rgb(148 178 206 / 18%);
-    }
-
-    .views > :nth-child(4),
-    .views > :nth-child(5) {
+    .rail {
+      border-right: var(--glass-border, 1px solid rgba(255, 255, 255, 0.08));
       border-bottom: 0;
-    }
-
-    .timing-band {
-      border-bottom: 1px solid rgb(148 178 206 / 18%);
-    }
-
-    /*
-     * Short and wide — a folded phone in landscape, or any window with more
-     * width than height. A full-width console band would take two thirds of
-     * the screen and leave the panes as slivers, so the readings become a rail
-     * and the four panes keep the whole height.
-     */
-    @media (max-height: 34rem) {
-      .grip-inspection {
-        overflow: hidden;
-      }
-
-      .views {
-        grid-template-columns: minmax(0, 21rem) minmax(0, 1fr) minmax(0, 1fr);
-        grid-template-areas:
-          "console audience     grip-front"
-          "console grip-quarter grip-overhead"
-          "timing  timing       timing";
-        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 12rem);
-        height: 100dvh;
-        min-height: 0;
-      }
-
-      /* The console is now the first column rather than a band above. */
-      .views > :nth-child(1) {
-        border-right: 1px solid rgb(148 178 206 / 18%);
-        border-bottom: 0;
-      }
-
-      .readout {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      /*
-       * A two-line caption over a 205px pane covers the subject it is naming.
-       * The pane keeps its name; the sentence explaining it stays in the
-       * section's accessible name, which is where a screen reader reads it
-       * from at every width.
-       */
-      .view-label i {
-        display: none;
-      }
-    }
-  }
-
-  /*
-   * Wide: the audience reference owns a full-height column so the standing
-   * figure is framed portrait, and the three close inspections plus the
-   * console fill the two-by-two block beside it.
-   */
-  @container (min-width: 60rem) {
-    .grip-inspection {
       overflow: hidden;
     }
 
     .views {
-      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1fr);
-      /*
-       * The band is a chart, so it is allowed to take more canvas when there
-       * is more canvas: the lower lane draws four curves whose separation is
-       * the thing being read. The floor keeps 1080 exactly where it was
-       * measured, and the cap stops a 4K panel from turning a readout strip
-       * into a third of the page.
-       */
-      grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) minmax(0, clamp(16rem, 18vh, 24rem));
-      grid-template-areas:
-        "audience grip-front    grip-quarter"
-        "audience grip-overhead console"
-        "timing   timing        timing";
+      grid-auto-rows: unset;
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+
+    .views[data-layout="solo"] {
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .view:nth-child(odd) {
+      border-right: var(--glass-border, 1px solid rgba(255, 255, 255, 0.08));
+    }
+
+    .view:nth-last-child(-n + 2) {
+      border-bottom: 0;
+    }
+  }
+
+  /*
+   * Wide and short — a folded phone in landscape. The rail still takes a
+   * column, but it can afford less of one, and the pane captions lose their
+   * second line: a two-line caption over a 200px pane covers the subject it is
+   * naming. The sentence stays in the section's accessible name, which is
+   * where a screen reader reads it from at every width.
+   */
+  @media (min-width: 40rem) and (max-height: 34rem) {
+    .grip-lab {
+      grid-template-columns: minmax(0, 19rem) minmax(0, 1fr);
+      grid-template-areas: "rail stage";
       height: 100dvh;
+      overflow: hidden;
     }
 
-    .view,
-    .console {
-      border-right: 1px solid rgb(148 178 206 / 18%);
-      border-bottom: 1px solid rgb(148 178 206 / 18%);
-    }
-
-    .timing-band {
-      border-top: 1px solid rgb(148 178 206 / 18%);
+    .rail {
+      border-right: var(--glass-border, 1px solid rgba(255, 255, 255, 0.08));
       border-bottom: 0;
+      overflow: hidden;
     }
 
-    /*
-     * Wide and short — a folded phone in landscape. The band keeps both lanes
-     * and every reading, at the smallest height they stay legible in, so the
-     * four canvases are still worth looking at.
-     */
-    @media (max-height: 34rem) {
-      .views {
-        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 12rem);
-      }
+    .views {
+      grid-auto-rows: unset;
+      grid-template-rows: repeat(2, minmax(0, 1fr));
     }
 
-    .views > :last-child,
-    .views > :nth-child(3),
-    .views > :nth-child(5) {
-      border-right: 0;
+    .views[data-layout="solo"] {
+      grid-template-rows: minmax(0, 1fr);
     }
 
-    .views > :nth-child(4),
-    .views > :nth-child(5) {
-      border-bottom: 0;
+    .view-label i {
+      display: none;
+    }
+  }
+
+  /*
+   * Very wide: a coverage matrix is a table, and a table does not read in a
+   * 26rem rail. Past this width it gets a band under the cameras instead,
+   * where a character-by-prop grid is actually legible.
+   */
+  /* A 26rem rail is a tenth of a 4K canvas: the inspector's paired metrics
+     collapse to one narrow column while the stage sits on space it does not
+     need. Widen the control band with the viewport so the numbers stay in
+     two readable columns. The stage still takes everything left over. */
+  @media (min-width: 100rem) {
+    .grip-lab {
+      grid-template-columns: clamp(26rem, 17vw, 34rem) minmax(0, 1fr);
     }
 
-    .view {
-      min-height: 0;
+    .grip-lab:has(.stage-matrix) {
+      grid-template-areas:
+        "rail stage"
+        "rail matrix";
+      grid-template-rows: minmax(0, 1fr) minmax(0, clamp(12rem, 22vh, 22rem));
     }
 
-    .console {
-      justify-content: center;
-      padding: 1.25rem 1.4rem;
-    }
-
-    /*
-     * The console cell grows with the canvas, but a readout stretched across a
-     * 4K column becomes six thin strips of digits with the eye travelling a
-     * foot between a label and its neighbour. Capping and centring the reading
-     * block keeps the numbers one scannable group at every width.
-     */
-    .console > * {
-      width: 100%;
-      max-width: 32rem;
-      margin-inline: auto;
-    }
-
-    .readout {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .stage-matrix {
+      display: block;
     }
   }
 </style>
