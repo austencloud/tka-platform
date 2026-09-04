@@ -159,6 +159,11 @@ export class ScenePostProcessingPipeline {
     );
   }
 
+  /** The framebuffer used by the production scene pass before effects. */
+  get sceneRenderTarget(): WebGLRenderTarget | null {
+    return this.composer?.inputBuffer ?? null;
+  }
+
   resize(width: number, height: number): void {
     if (this.disposed || !this.composer) return;
 

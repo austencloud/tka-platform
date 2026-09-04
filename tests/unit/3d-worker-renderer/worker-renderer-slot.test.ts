@@ -10,6 +10,23 @@ class FakeWorker {
   terminate = vi.fn();
 }
 
+function fakeCanvas(kind: "render" | "poster") {
+  const bitmapContext = { transferFromImageBitmap: vi.fn() };
+  const canvas = {
+    className: "",
+    style: {} as CSSStyleDeclaration,
+    width: 300,
+    height: 150,
+    setAttribute: vi.fn(),
+    transferControlToOffscreen: vi.fn(() => ({ width: 1, height: 1 })),
+    getContext: vi.fn((type: string) =>
+      kind === "poster" && type === "bitmaprenderer" ? bitmapContext : null
+    ),
+    remove: vi.fn(),
+  } as unknown as HTMLCanvasElement;
+  return { canvas, bitmapContext };
+}
+
 describe("worker renderer slot", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -22,17 +39,15 @@ describe("worker renderer slot", () => {
   });
 
   function fixture() {
-    const worker = new FakeWorker();
-    const canvas = {
-      className: "",
-      style: {} as CSSStyleDeclaration,
-      setAttribute: vi.fn(),
-      transferControlToOffscreen: vi.fn(() => ({ width: 1, height: 1 })),
-      remove: vi.fn(),
-    } as unknown as HTMLCanvasElement;
-    vi.mocked(document.createElement).mockReturnValueOnce(canvas);
+    const workers: FakeWorker[] = [];
+    const render = fakeCanvas("render");
+    const poster = fakeCanvas("poster");
+    vi.mocked(document.createElement)
+      .mockReturnValueOnce(render.canvas)
+      .mockReturnValueOnce(poster.canvas);
     const container = {
       append: vi.fn(),
+      insertBefore: vi.fn(),
     } as unknown as HTMLElement;
     const onDestroyed = vi.fn();
     const onMessage = vi.fn();
@@ -47,103 +62,142 @@ describe("worker renderer slot", () => {
       viewport: { width: 640, height: 360, dpr: 1 },
       camera: { position: [0, 2, 8], target: [0, 0, 0], fov: 45 },
       qualityTier: "medium",
-      createWorker: () => worker as unknown as Worker,
+      createWorker: () => {
+        const worker = new FakeWorker();
+        workers.push(worker);
+        return worker as unknown as Worker;
+      },
       onMessage,
       onError: vi.fn(),
       onDestroyed,
     });
-    return { worker, canvas, container, onDestroyed, onMessage, slot };
+    return {
+      workers,
+      render,
+      poster,
+      container,
+      onDestroyed,
+      onMessage,
+      slot,
+    };
   }
 
-  it("transfers a fresh canvas and sends exactly one initialize message", () => {
-    const { worker, canvas, container } = fixture();
+  it("transfers one render canvas and keeps a separate hidden poster", () => {
+    const { workers, render, poster, container } = fixture();
 
-    expect(container.append).toHaveBeenCalledWith(canvas);
-    expect(worker.postMessage).toHaveBeenCalledTimes(1);
-    expect(worker.postMessage.mock.calls[0]?.[0]).toMatchObject({
+    expect(container.append).toHaveBeenCalledWith(
+      render.canvas,
+      poster.canvas
+    );
+    expect(workers[0]?.postMessage).toHaveBeenCalledTimes(1);
+    expect(workers[0]?.postMessage.mock.calls[0]?.[0]).toMatchObject({
       type: "initialize",
       requestId: 7,
       environment: "rainbow",
       qualityTier: "medium",
     });
-    expect(worker.postMessage.mock.calls[0]?.[1]).toHaveLength(1);
+    expect(workers[0]?.postMessage.mock.calls[0]?.[1]).toHaveLength(1);
+    expect(poster.canvas.style.opacity).toBe("0");
   });
 
-  it("includes the resolved effect frame in the worker initialization", () => {
-    const worker = new FakeWorker();
-    const canvas = {
-      className: "",
-      style: {} as CSSStyleDeclaration,
-      setAttribute: vi.fn(),
-      transferControlToOffscreen: vi.fn(() => ({ width: 1, height: 1 })),
-      remove: vi.fn(),
-    } as unknown as HTMLCanvasElement;
-    vi.mocked(document.createElement).mockReturnValueOnce(canvas);
-    const effects = { playing: true, sources: [] } as const;
+  it("installs a transferred bitmap above the live render canvas", () => {
+    const { poster, slot } = fixture();
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
 
-    new WorkerRendererSlot({
-      container: { append: vi.fn() } as unknown as HTMLElement,
+    slot.installPoster(bitmap);
+
+    expect(poster.bitmapContext.transferFromImageBitmap).toHaveBeenCalledWith(
+      bitmap
+    );
+    expect(poster.canvas.style.opacity).toBe("1");
+    expect(bitmap.close).not.toHaveBeenCalled();
+
+    slot.clearPoster();
+    expect(poster.canvas.style.opacity).toBe("0");
+  });
+
+  it("keeps the poster while replacing a failed worker session", () => {
+    const { workers, poster, render, container, slot } = fixture();
+    const replacement = fakeCanvas("render");
+    vi.mocked(document.createElement).mockReturnValueOnce(replacement.canvas);
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    slot.installPoster(bitmap);
+
+    slot.restart({
       state: {
-        id: "effects",
+        id: "a",
         requestId: 8,
         environment: "ocean",
         status: "booting",
       },
-      viewport: { width: 640, height: 360, dpr: 1 },
-      camera: { position: [0, 2, 8], target: [0, 0, 0], fov: 45 },
+      viewport: { width: 800, height: 450, dpr: 1 },
+      camera: { position: [0, 3, 9], target: [0, 0, 0], fov: 50 },
       qualityTier: "high",
-      effects,
-      createWorker: () => worker as unknown as Worker,
-      onMessage: vi.fn(),
-      onError: vi.fn(),
-      onDestroyed: vi.fn(),
     });
 
-    expect(worker.postMessage.mock.calls[0]?.[0]).toMatchObject({
-      effects,
-      qualityTier: "high",
+    expect(workers).toHaveLength(2);
+    expect(workers[0]?.terminate).toHaveBeenCalledOnce();
+    expect(render.canvas.remove).toHaveBeenCalledOnce();
+    expect(container.insertBefore).toHaveBeenCalledWith(
+      replacement.canvas,
+      poster.canvas
+    );
+    expect(poster.canvas.remove).not.toHaveBeenCalled();
+    expect(poster.canvas.style.opacity).toBe("1");
+    expect(workers[1]?.postMessage.mock.calls[0]?.[0]).toMatchObject({
+      type: "initialize",
+      requestId: 8,
+      environment: "ocean",
     });
   });
 
-  it("destroys once when the worker acknowledges disposal", () => {
-    const { worker, canvas, onDestroyed, slot } = fixture();
+  it("passes session messages to the one persistent worker", () => {
+    const { workers, slot } = fixture();
+
+    slot.post({
+      type: "quality",
+      requestId: 7,
+      qualityTier: "low",
+    });
+
+    expect(workers[0]?.postMessage).toHaveBeenLastCalledWith(
+      {
+        type: "quality",
+        requestId: 7,
+        qualityTier: "low",
+      },
+      []
+    );
+  });
+
+  it("destroys once when the worker acknowledges terminal disposal", () => {
+    const { workers, render, poster, onDestroyed, slot } = fixture();
     const after = vi.fn();
 
     slot.destroy(after);
-    worker.onmessage?.(
+    workers[0]?.onmessage?.(
       new MessageEvent("message", {
         data: { type: "disposed", requestId: 7 },
       })
     );
     vi.advanceTimersByTime(200);
 
-    expect(worker.terminate).toHaveBeenCalledTimes(1);
-    expect(canvas.remove).toHaveBeenCalledTimes(1);
-    expect(onDestroyed).toHaveBeenCalledTimes(1);
-    expect(after).toHaveBeenCalledTimes(1);
+    expect(workers[0]?.terminate).toHaveBeenCalledOnce();
+    expect(render.canvas.remove).toHaveBeenCalledOnce();
+    expect(poster.canvas.remove).toHaveBeenCalledOnce();
+    expect(onDestroyed).toHaveBeenCalledOnce();
+    expect(after).toHaveBeenCalledOnce();
   });
 
   it("force-terminates a worker that does not acknowledge disposal", () => {
-    const { worker, onDestroyed, slot } = fixture();
+    const { workers, onDestroyed, slot } = fixture();
     const after = vi.fn();
 
     slot.destroy(after);
     vi.advanceTimersByTime(100);
 
-    expect(worker.terminate).toHaveBeenCalledTimes(1);
-    expect(onDestroyed).toHaveBeenCalledTimes(1);
-    expect(after).toHaveBeenCalledTimes(1);
-  });
-
-  it("terminates a superseded staging worker synchronously", () => {
-    const { worker, canvas, onDestroyed, slot } = fixture();
-    const after = vi.fn();
-
-    slot.terminate(after);
-
-    expect(worker.terminate).toHaveBeenCalledTimes(1);
-    expect(canvas.remove).toHaveBeenCalledTimes(1);
-    expect(onDestroyed).toHaveBeenCalledTimes(1);
-    expect(after).toHaveBeenCalledTimes(1);
+    expect(workers[0]?.terminate).toHaveBeenCalledOnce();
+    expect(onDestroyed).toHaveBeenCalledOnce();
+    expect(after).toHaveBeenCalledOnce();
   });
 });

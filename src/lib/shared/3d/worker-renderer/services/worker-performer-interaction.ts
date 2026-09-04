@@ -108,6 +108,13 @@ interface BadgeProxy {
   unregister: () => void;
 }
 
+interface CachedElementRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 function createCameraArbitrationAdapter(
   options: WorkerPerformerInteractionBridgeOptions
 ): CameraControls | null {
@@ -155,8 +162,15 @@ export class WorkerPerformerInteractionBridge {
     stageBounds: { width: 0, depth: 0 },
   };
   private detachInteraction: (() => void) | null = null;
+  private layoutObserver: ResizeObserver | null = null;
+  private surfaceRect: CachedElementRect;
+  private projectionRect: CachedElementRect;
   private attachmentRequested = false;
   private disposed = false;
+
+  private readonly refreshAfterViewportMove = (): void => {
+    this.refreshLayout();
+  };
 
   private readonly trackPointerDown = (event: PointerEvent): void => {
     this.activePointerIds.add(event.pointerId);
@@ -169,6 +183,22 @@ export class WorkerPerformerInteractionBridge {
   constructor(
     private readonly options: WorkerPerformerInteractionBridgeOptions
   ) {
+    this.surfaceRect = this.measureRect(options.interactionSurface);
+    this.projectionRect = this.measureRect(
+      options.projectionContainer ?? options.interactionSurface
+    );
+    if (typeof ResizeObserver !== "undefined") {
+      this.layoutObserver = new ResizeObserver(() => this.refreshLayout());
+      this.layoutObserver.observe(options.interactionSurface);
+      if (
+        options.projectionContainer &&
+        options.projectionContainer !== options.interactionSurface
+      ) {
+        this.layoutObserver.observe(options.projectionContainer);
+      }
+    }
+    window.addEventListener("scroll", this.refreshAfterViewportMove, true);
+    window.addEventListener("resize", this.refreshAfterViewportMove);
     const cameraControls = createCameraArbitrationAdapter(options);
     const viewer = {
       get primaryPerformerIndex() {
@@ -241,7 +271,7 @@ export class WorkerPerformerInteractionBridge {
 
   getCapability(): WorkerPerformerInteractionCapability {
     const surface = this.options.interactionSurface;
-    const rect = surface.getBoundingClientRect();
+    const rect = this.surfaceRect;
     return assessWorkerPerformerInteractionCapability({
       camera: this.frame.camera,
       cameraArbitrationAvailable: this.options.cameraArbiter !== null,
@@ -317,10 +347,8 @@ export class WorkerPerformerInteractionBridge {
     worldY = this.frame.groundY + 0.08
   ): ProjectedWorkerStagePosition | null {
     if (!this.frame.camera) return null;
-    const surfaceRect = this.options.interactionSurface.getBoundingClientRect();
-    const hostRect = (
-      this.options.projectionContainer ?? this.options.interactionSurface
-    ).getBoundingClientRect();
+    const surfaceRect = this.surfaceRect;
+    const hostRect = this.projectionRect;
     if (surfaceRect.width <= 0 || surfaceRect.height <= 0) return null;
     const projected = new Vector3(position.x, worldY, position.z).project(
       this.camera
@@ -351,11 +379,15 @@ export class WorkerPerformerInteractionBridge {
     this.clearProxies();
     this.pickMaterial.dispose();
     this.badgeMaterial.dispose();
+    this.layoutObserver?.disconnect();
+    this.layoutObserver = null;
+    window.removeEventListener("scroll", this.refreshAfterViewportMove, true);
+    window.removeEventListener("resize", this.refreshAfterViewportMove);
     this.disposed = true;
   }
 
   private applyCamera(snapshot: WorkerCameraSnapshot): void {
-    const rect = this.options.interactionSurface.getBoundingClientRect();
+    const rect = this.surfaceRect;
     this.camera.aspect =
       rect.width > 0 && rect.height > 0 ? rect.width / rect.height : 1;
     this.camera.fov = snapshot.fov;
@@ -369,6 +401,28 @@ export class WorkerPerformerInteractionBridge {
     else this.camera.lookAt(...snapshot.target);
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld(true);
+  }
+
+  /**
+   * Cache layout after the browser has already performed it. Reading the same
+   * rect from every choreography-frame update forced a synchronous reflow in
+   * the production viewer while a replacement worker was booting.
+   */
+  private refreshLayout(): void {
+    this.surfaceRect = this.measureRect(this.options.interactionSurface);
+    this.projectionRect = this.measureRect(
+      this.options.projectionContainer ?? this.options.interactionSurface
+    );
+  }
+
+  private measureRect(element: HTMLElement): CachedElementRect {
+    const rect = element.getBoundingClientRect();
+    return {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
   }
 
   private synchronizeProxies(

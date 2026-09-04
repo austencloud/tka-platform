@@ -321,16 +321,15 @@
   // (not CurrentWritable), but camera is a CurrentWritable with .current.
   $effect(() => {
     const cam = camera.current;
-    if (renderer && scene && cam) {
-      viewer3DState.registerThrelteInternals({
-        renderer,
-        scene,
-        camera: cam,
-        runFrame,
-        pauseAutoLoop,
-        resumeAutoLoop,
-      });
-    }
+    if (!renderer || !scene || !cam) return;
+    return viewer3DState.registerThrelteInternals({
+      renderer,
+      scene,
+      camera: cam,
+      runFrame,
+      pauseAutoLoop,
+      resumeAutoLoop,
+    });
   });
 
   // All performers from the manager - the scene renders one rig per entry.

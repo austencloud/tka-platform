@@ -69,6 +69,17 @@ describe("worker environment performer interaction adapter", () => {
     );
   });
 
+  it("does not make the incoming-frame effect depend on state it writes", () => {
+    expect(interactionAdapter).toContain(
+      'import { onMount, untrack } from "svelte"'
+    );
+    expect(interactionAdapter).toContain("untrack(updateBridge)");
+    expect(interactionAdapter).toContain("updateInteractionState();");
+    expect(interactionAdapter).not.toContain(
+      "updateInteractionState(true);\n    if (!("
+    );
+  });
+
   it("mirrors production camera-drag arbitration and adaptive DPR", () => {
     expect(environmentRenderer).toContain(
       "onControlStart: handleCameraInteractionStart"

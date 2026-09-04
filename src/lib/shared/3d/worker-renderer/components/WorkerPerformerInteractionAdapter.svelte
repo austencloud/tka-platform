@@ -20,7 +20,7 @@
 </script>
 
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   import type { ApplicationThreadCameraSnapshot } from "../domain/application-thread-camera";
   import {
@@ -128,8 +128,10 @@
   function reportCapability(
     capability: WorkerPerformerInteractionCapability
   ): void {
-    supported = capability.supported;
-    updateInteractionState(true);
+    if (supported !== capability.supported) {
+      supported = capability.supported;
+    }
+    updateInteractionState();
     if (!("blockers" in capability)) {
       lastFailureKey = null;
       return;
@@ -235,7 +237,11 @@
   $effect(() => {
     void frame;
     void cameraSnapshot;
-    updateBridge();
+    // updateBridge synchronizes imperative bridge state back into this
+    // component. Its reads are not dependencies of the incoming frame effect;
+    // tracking them made the effect subscribe to the same state it writes and
+    // produced an effect_update_depth_exceeded loop in the real viewer.
+    untrack(updateBridge);
   });
 
   $effect(() => {

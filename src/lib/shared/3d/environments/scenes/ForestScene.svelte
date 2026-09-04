@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { ForestVariant } from "./domain/enums/environment-enums";
-  import type { ForestSceneConfig } from "./domain/models/scene-configs";
+  import type { ForestVariant } from "../domain/enums/environment-enums";
+  import type { ForestSceneConfig } from "../domain/models/scene-configs";
   import ForestConfigurableScene from "./forest/ForestConfigurableScene.svelte";
   import ForestProductionScene from "./forest/ForestProductionScene.svelte";
 

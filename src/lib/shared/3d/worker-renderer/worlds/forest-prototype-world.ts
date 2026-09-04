@@ -1,4 +1,4 @@
-import { Scene, TextureLoader, type Texture } from "three";
+import { Scene, type Texture } from "three";
 import {
   GLTFLoader,
   type GLTF,
@@ -17,6 +17,7 @@ import type {
   WorkerWorldContext,
 } from "./worker-environment-world";
 import { disposeWorkerWorldTree } from "./worker-environment-world";
+import { loadWorkerTexture } from "./worker-texture-loader";
 
 export type ForestPrototypeWorld = Omit<
   WorkerEnvironmentWorld,
@@ -87,9 +88,7 @@ export async function createForestPrototypeWorld(
           )
         )
       ),
-      new TextureLoader().loadAsync(
-        absoluteAssetUrl(FOREST_ENVIRONMENT_ASSET_URLS.moon)
-      ),
+      loadWorkerTexture(absoluteAssetUrl(FOREST_ENVIRONMENT_ASSET_URLS.moon)),
     ]);
   } finally {
     draco.dispose();
@@ -121,6 +120,7 @@ export async function createForestPrototypeWorld(
     shadowsEnabled: true,
     qualityTier: QualityTier.MEDIUM,
     assetUrl: absoluteAssetUrl,
+    loadTexture: loadWorkerTexture,
   });
   scene.add(world.root);
   scene.fog = world.fog;

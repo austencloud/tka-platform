@@ -110,12 +110,19 @@
   let globalTipEffectMap = $state<TipEffectMap>(
     visibility.effectsConfigState?.tipEffectMap ?? {}
   );
-  let performers = $state<readonly WorkerPerformerSnapshot[]>([]);
-  let effects = $state<WorkerSceneEffectsSnapshot>({
+  // These are complete immutable transport snapshots, replaced once per
+  // application frame. Keeping them raw matters: a deep Svelte proxy forces
+  // WorkerEnvironmentRenderer to recursively snapshot the whole performer and
+  // effect graph before postMessage performs its own structured clone. A
+  // production trace measured 1.51s inside that redundant snapshot traversal.
+  let performers = $state.raw<readonly WorkerPerformerSnapshot[]>([]);
+  let effects = $state.raw<WorkerSceneEffectsSnapshot>({
     playing: false,
     sources: [],
   });
-  let interactionFrame = $state<WorkerPerformerInteractionFrame | null>(null);
+  let interactionFrame = $state.raw<WorkerPerformerInteractionFrame | null>(
+    null
+  );
   let interactionState = $state<WorkerPerformerInteractionStateSnapshot>({
     hoveredIndex: null,
     draggingIndex: null,

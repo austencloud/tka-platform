@@ -41,6 +41,14 @@ function firePointer(
 function buildHarness() {
   const captured = new Set<number>();
   const canvas = new EventTarget() as HTMLCanvasElement;
+  let surfaceRect = { left: 0, top: 0, width: 100, height: 100 };
+  let projectionRect = { left: 0, top: 0, width: 100, height: 100 };
+  const getBoundingClientRect = vi.fn(
+    () => ({ ...surfaceRect }) as DOMRect
+  );
+  const projectionContainer = {
+    getBoundingClientRect: vi.fn(() => ({ ...projectionRect }) as DOMRect),
+  } as unknown as HTMLElement;
   Object.assign(canvas, {
     style: {},
     dataset: {},
@@ -48,8 +56,7 @@ function buildHarness() {
     getContext: vi.fn(() => {
       throw new Error("The interaction bridge must not request WebGL");
     }),
-    getBoundingClientRect: () =>
-      ({ left: 0, top: 0, width: 100, height: 100 }) as DOMRect,
+    getBoundingClientRect,
     setPointerCapture: (id: number) => captured.add(id),
     hasPointerCapture: (id: number) => captured.has(id),
     releasePointerCapture: (id: number) => captured.delete(id),
@@ -89,6 +96,7 @@ function buildHarness() {
   const cameraArbiter = { enabled: true, azimuthAngle: 0 };
   const bridge = createWorkerPerformerInteractionBridge({
     interactionSurface: canvas,
+    projectionContainer,
     viewer,
     cameraArbiter,
   });
@@ -107,7 +115,23 @@ function buildHarness() {
   };
   expect(bridge.update(frame)).toEqual({ supported: true });
   expect(bridge.attach()).toEqual({ supported: true });
-  return { bridge, cameraArbiter, canvas, captured, frame, performers, viewer };
+  return {
+    bridge,
+    cameraArbiter,
+    canvas,
+    captured,
+    frame,
+    getBoundingClientRect,
+    performers,
+    setRects(
+      nextSurface: typeof surfaceRect,
+      nextProjection: typeof projectionRect
+    ) {
+      surfaceRect = nextSurface;
+      projectionRect = nextProjection;
+    },
+    viewer,
+  };
 }
 
 describe("worker performer interaction bridge", () => {
@@ -220,6 +244,34 @@ describe("worker performer interaction bridge", () => {
     expect(projected?.x).toBeCloseTo(50);
     expect(projected?.y).toBeCloseTo(50);
     expect(projected?.visible).toBe(true);
+    bridge.dispose();
+  });
+
+  it("does not force a fresh DOM layout on every choreography frame", () => {
+    const { bridge, frame, getBoundingClientRect } = buildHarness();
+    const measuredAtMount = getBoundingClientRect.mock.calls.length;
+
+    bridge.update(frame);
+    bridge.update(frame);
+    bridge.projectStagePosition({ x: 0, z: 0 }, 1);
+
+    expect(getBoundingClientRect).toHaveBeenCalledTimes(measuredAtMount);
+    bridge.dispose();
+  });
+
+  it("refreshes position-only layout changes after the viewport moves", () => {
+    const { bridge, setRects } = buildHarness();
+    expect(bridge.projectStagePosition({ x: 0, z: 0 }, 1)?.x).toBeCloseTo(50);
+
+    setRects(
+      { left: 120, top: 40, width: 100, height: 100 },
+      { left: 20, top: 10, width: 100, height: 100 }
+    );
+    window.dispatchEvent(new Event("scroll"));
+
+    const moved = bridge.projectStagePosition({ x: 0, z: 0 }, 1);
+    expect(moved?.x).toBeCloseTo(150);
+    expect(moved?.y).toBeCloseTo(80);
     bridge.dispose();
   });
 

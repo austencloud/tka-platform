@@ -225,8 +225,8 @@
       applyCameraSnapshot(cameraController.getSnapshot());
     });
     cameraResizeObserver.observe(mountedInteractionSurface);
-    renderer.setPerformers($state.snapshot(performers));
-    renderer.setEffects($state.snapshot(effects));
+    renderer.setPerformers(performers);
+    renderer.setEffects(effects);
     renderer.switchTo(environment);
 
     return () => {
@@ -249,11 +249,11 @@
   });
 
   $effect(() => {
-    renderer?.setPerformers($state.snapshot(performers));
+    renderer?.setPerformers(performers);
   });
 
   $effect(() => {
-    renderer?.setEffects($state.snapshot(effects));
+    renderer?.setEffects(effects);
   });
 
   $effect(() => {

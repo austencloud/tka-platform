@@ -3,6 +3,7 @@ import {
   clampWorkerViewport,
   isWorkerRendererOutMessage,
   resolveWorkerRenderQuality,
+  WORKER_PREPARATION_VIEWPORT,
 } from "$lib/shared/3d/worker-renderer/domain/worker-renderer-protocol";
 import { QualityTier, TIER_CONFIGS } from "$lib/shared/3d/effects/types";
 
@@ -29,6 +30,14 @@ describe("worker renderer protocol", () => {
     expect(
       clampWorkerViewport({ width: 100.4, height: 200.6, dpr: 0.25 })
     ).toEqual({ width: 100, height: 201, dpr: 0.5 });
+  });
+
+  it("primes hidden replacement scenes against one physical pixel", () => {
+    expect(WORKER_PREPARATION_VIEWPORT).toEqual({
+      width: 1,
+      height: 1,
+      dpr: 1,
+    });
   });
 
   it.each([

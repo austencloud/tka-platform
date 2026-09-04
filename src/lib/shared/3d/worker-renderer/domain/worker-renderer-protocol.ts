@@ -47,6 +47,18 @@ export interface WorkerViewport {
   dpr: number;
 }
 
+/**
+ * Hidden replacement scenes compile and upload against one physical pixel.
+ * Their requested viewport is retained for camera framing and restored before
+ * the first handoff frame. This keeps background preparation from rasterizing
+ * dozens of full-size prime frames beside the scene the user is watching.
+ */
+export const WORKER_PREPARATION_VIEWPORT = {
+  width: 1,
+  height: 1,
+  dpr: 1,
+} as const satisfies WorkerViewport;
+
 export interface WorkerCameraSnapshot {
   position: readonly [number, number, number];
   target: readonly [number, number, number];
@@ -446,6 +458,22 @@ export interface InitializeWorkerRendererMessage {
   effects?: WorkerSceneEffectsSnapshot;
 }
 
+export interface SwitchWorkerRendererEnvironmentMessage {
+  type: "switch-environment";
+  requestId: number;
+  environment: WorkerEnvironmentKey;
+}
+
+export interface PosterReadyWorkerRendererMessage {
+  type: "poster-ready";
+  requestId: number;
+}
+
+export interface LivePresentedWorkerRendererMessage {
+  type: "live-presented";
+  requestId: number;
+}
+
 export interface ResizeWorkerRendererMessage {
   type: "resize";
   requestId: number;
@@ -497,6 +525,9 @@ export interface DisposeWorkerRendererMessage {
 
 export type WorkerRendererInMessage =
   | InitializeWorkerRendererMessage
+  | SwitchWorkerRendererEnvironmentMessage
+  | PosterReadyWorkerRendererMessage
+  | LivePresentedWorkerRendererMessage
   | ResizeWorkerRendererMessage
   | CameraWorkerRendererMessage
   | PerformersWorkerRendererMessage
@@ -525,6 +556,13 @@ export interface WorkerRendererFirstFrameMessage {
   requestId: number;
   environment: WorkerEnvironmentKey;
   metrics: WorkerRendererBootMetrics;
+}
+
+export interface WorkerRendererPosterMessage {
+  type: "poster";
+  requestId: number;
+  environment: WorkerEnvironmentKey;
+  bitmap: ImageBitmap;
 }
 
 export interface WorkerRendererFrameMessage {
@@ -566,6 +604,7 @@ export interface WorkerRendererInteractionMessage {
 export type WorkerRendererOutMessage =
   | WorkerRendererBootingMessage
   | WorkerRendererProgressMessage
+  | WorkerRendererPosterMessage
   | WorkerRendererFirstFrameMessage
   | WorkerRendererFrameMessage
   | WorkerRendererErrorMessage
@@ -582,6 +621,7 @@ export function isWorkerRendererOutMessage(
     typeof candidate.requestId === "number" &&
     (candidate.type === "booting" ||
       candidate.type === "progress" ||
+      candidate.type === "poster" ||
       candidate.type === "first-frame" ||
       candidate.type === "frame" ||
       candidate.type === "error" ||

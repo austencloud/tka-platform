@@ -286,6 +286,7 @@ describe("ScenePostProcessingPipeline", () => {
     expect(harness.renderer.shadowMap.enabled).toBe(true);
     expect(harness.renderer.toneMapping).toBe(ACESFilmicToneMapping);
     expect(harness.renderer.toneMappingExposure).toBe(1.15);
+    expect(pipeline.sceneRenderTarget).toBe(composer.inputBuffer);
 
     pipeline.dispose();
   });
@@ -309,6 +310,7 @@ describe("ScenePostProcessingPipeline", () => {
     expect(harness.renderer.shadowMap.enabled).toBe(false);
     expect(harness.renderer.toneMapping).toBe(NoToneMapping);
     expect(harness.renderer.toneMappingExposure).toBe(0.9);
+    expect(pipeline.sceneRenderTarget).toBe(latestComposer().inputBuffer);
 
     pipeline.dispose();
   });
@@ -436,6 +438,7 @@ describe("ScenePostProcessingPipeline", () => {
     expect(harness.renderer.shadowMap.enabled).toBe(false);
     expect(harness.renderer.toneMapping).toBe(NoToneMapping);
     expect(harness.renderer.toneMappingExposure).toBe(0.9);
+    expect(pipeline.sceneRenderTarget).toBeNull();
 
     pipeline.render(0.1);
     expect(harness.render).not.toHaveBeenCalled();

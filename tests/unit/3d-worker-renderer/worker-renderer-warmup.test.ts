@@ -7,20 +7,26 @@ import {
 } from "three";
 import { describe, expect, it, vi } from "vitest";
 import { warmWorkerRenderer } from "$lib/shared/3d/worker-renderer/services/worker-renderer-warmup";
-import { primeWorkerRenderer } from "$lib/shared/3d/worker-renderer/services/worker-renderer-warmup";
+import {
+  primeWorkerRenderer,
+  WORKER_PRIME_BATCH_SIZE,
+} from "$lib/shared/3d/worker-renderer/services/worker-renderer-warmup";
 
 describe("worker renderer warm-up", () => {
-  it("prepares one distinct program per turn so the visible worker keeps drawing", async () => {
+  it("dispatches every distinct program before awaiting driver completion", async () => {
     const scene = new Scene();
     const shared = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
     const duplicate = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
     const distinct = new Mesh(new BoxGeometry(), new MeshStandardMaterial());
     scene.add(shared, duplicate, distinct);
-    const compileAsync = vi.fn(async () => undefined);
+    const releases: Array<() => void> = [];
+    const compileAsync = vi.fn(
+      () => new Promise<void>((resolve) => releases.push(resolve))
+    );
     const yieldBetween = vi.fn(async () => undefined);
     const progress: number[] = [];
 
-    const metrics = await warmWorkerRenderer(
+    const warming = warmWorkerRenderer(
       {
         renderer: { compileAsync } as never,
         scene,
@@ -32,12 +38,15 @@ describe("worker renderer warm-up", () => {
       }
     );
 
-    expect(compileAsync).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => expect(compileAsync).toHaveBeenCalledTimes(2));
     expect(compileAsync.mock.calls.map(([target]) => target)).toEqual([
       shared,
       distinct,
     ]);
     expect(yieldBetween).toHaveBeenCalledTimes(1);
+    expect(progress).toEqual([]);
+    for (const release of releases) release();
+    const metrics = await warming;
     expect(progress).toEqual([0.5, 1]);
     expect(metrics.map(({ label }) => label)).toEqual([
       "MeshBasicMaterial",
@@ -61,13 +70,22 @@ describe("worker renderer warm-up", () => {
     expect(hidden.visible).toBe(false);
   });
 
-  it("primes one visible renderable per turn and restores the complete scene", async () => {
+  it("primes bounded batches per turn and restores the complete scene", async () => {
     const scene = new Scene();
-    const first = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
-    const second = new Mesh(new BoxGeometry(), new MeshStandardMaterial());
-    first.name = "first";
-    second.name = "second";
-    scene.add(first, second);
+    const meshes = Array.from(
+      { length: WORKER_PRIME_BATCH_SIZE + 2 },
+      (_, index) => {
+        const mesh = new Mesh(
+          new BoxGeometry(),
+          index % 2 === 0
+            ? new MeshBasicMaterial()
+            : new MeshStandardMaterial()
+        );
+        mesh.name = `mesh-${index}`;
+        return mesh;
+      }
+    );
+    scene.add(...meshes);
     const visiblePerDraw: string[][] = [];
     const render = vi.fn(() => {
       const visible: string[] = [];
@@ -87,10 +105,12 @@ describe("worker renderer warm-up", () => {
       { yieldBetween }
     );
 
-    expect(count).toBe(2);
-    expect(visiblePerDraw).toEqual([["first"], ["second"]]);
+    expect(count).toBe(meshes.length);
+    expect(visiblePerDraw).toEqual([
+      meshes.slice(0, WORKER_PRIME_BATCH_SIZE).map(({ name }) => name),
+      meshes.slice(WORKER_PRIME_BATCH_SIZE).map(({ name }) => name),
+    ]);
     expect(yieldBetween).toHaveBeenCalledTimes(1);
-    expect(first.visible).toBe(true);
-    expect(second.visible).toBe(true);
+    expect(meshes.every(({ visible }) => visible)).toBe(true);
   });
 });
