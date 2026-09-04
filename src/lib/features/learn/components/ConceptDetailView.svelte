@@ -255,7 +255,10 @@ Supports two navigation modes:
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    transition:
+      background var(--duration-normal) var(--ease-out),
+      border-color var(--duration-normal) var(--ease-out),
+      transform var(--duration-normal) var(--ease-out);
   }
 
   .back-button:hover {
@@ -287,7 +290,10 @@ Supports two navigation modes:
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
-    transition: all var(--duration-normal) ease;
+    transition:
+      background var(--duration-normal) var(--ease-out),
+      border-color var(--duration-normal) var(--ease-out),
+      color var(--duration-normal) var(--ease-out);
   }
 
   .reference-link:hover,
