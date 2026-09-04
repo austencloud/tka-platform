@@ -18,7 +18,7 @@ function recipe(
     generationLevel: 1,
     maxTurnIntensity: 0,
     gridMode: GridMode.DIAMOND,
-    constraintPreset: "mixed",
+    constraintPreset: "smooth",
     handPathMode: "mixed",
     motionTypeFilter: null,
     startLocation: null,
@@ -61,7 +61,7 @@ describe("Fuse recipe summaries", () => {
   it("names non-default style and starting-condition choices", () => {
     const summaries = buildFuseRecipeSummaries(
       recipe({
-        constraintPreset: "smooth",
+        constraintPreset: "mixed",
         handPathMode: "choppy",
         motionTypeFilter: "prefer-dash",
         startLocation: GridLocation.NORTHEAST,
@@ -70,9 +70,7 @@ describe("Fuse recipe summaries", () => {
       })
     );
 
-    expect(summaries.style).toBe(
-      "Props: Smooth · Hands: Choppy · Dashes: High"
-    );
+    expect(summaries.style).toBe("Props: Mixed · Hands: Choppy · Dashes: High");
     expect(summaries.starting).toBe("Northeast · Out · CCW");
   });
 });

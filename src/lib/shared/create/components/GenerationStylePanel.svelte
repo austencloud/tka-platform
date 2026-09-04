@@ -1,10 +1,16 @@
 <!--
-StyleExpandPanel.svelte - 3-axis style config (Prop Reversals, Hand Reversals, Dashes)
+GenerationStylePanel.svelte - shared 3-axis generation style control
 
-Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip is active.
+Used by Generate and Fuse so both tools expose one style vocabulary and policy.
 -->
 <script lang="ts">
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import type {
+    GenerationDashChoice,
+    GenerationMotionTypeFilter,
+    GenerationStyleAxis,
+    GenerationStylePolicy,
+  } from "$lib/shared/create/domain/generation-style";
 
   let {
     constraintPreset,
@@ -16,24 +22,20 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     onHandsChange,
     onDashesChange,
   }: {
-    constraintPreset: "smooth" | "mixed" | "choppy";
-    handPathMode: "smooth" | "mixed" | "choppy";
-    motionTypeFilter: "no-dash" | "prefer-dash" | null;
+    constraintPreset: GenerationStyleAxis;
+    handPathMode: GenerationStyleAxis;
+    motionTypeFilter: GenerationMotionTypeFilter;
     /**
      * The untouched value of each axis, marked in the row so the baseline is
      * visible. Without it, Props defaulting to Smooth while Hands and Dashes
      * default to Mixed is invisible, and a summary reading "Props: Mixed" with
      * all three showing Mixed looks arbitrary.
      */
-    baseline?: {
-      constraintPreset: "smooth" | "mixed" | "choppy";
-      handPathMode: "smooth" | "mixed" | "choppy";
-      motionTypeFilter: "no-dash" | "prefer-dash" | null;
-    };
+    baseline?: GenerationStylePolicy;
     haptic: HapticFeedback | null;
-    onPropsChange: (v: "smooth" | "mixed" | "choppy") => void;
-    onHandsChange: (v: "smooth" | "mixed" | "choppy") => void;
-    onDashesChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
+    onPropsChange: (v: GenerationStyleAxis) => void;
+    onHandsChange: (v: GenerationStyleAxis) => void;
+    onDashesChange: (v: GenerationDashChoice) => void;
   } = $props();
 
   const propsOptions = [
@@ -58,14 +60,14 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
   // reversal on every step, which is a narrow target — worth saying so, because
   // "the generator keeps giving me the same thing" is what it looks like from
   // the outside. Mirrors createConstraintSet in constraint-presets.ts.
-  const REVERSAL_HINTS: Record<"smooth" | "mixed" | "choppy", string> = {
+  const REVERSAL_HINTS: Record<GenerationStyleAxis, string> = {
     smooth: "Reversals kept to a minimum.",
     mixed: "Reversals allowed where they fit.",
     choppy:
       "A reversal on every step — a narrow target, so results repeat more.",
   };
 
-  const DASH_HINTS: Record<"no-dash" | "mixed" | "prefer-dash", string> = {
+  const DASH_HINTS: Record<GenerationDashChoice, string> = {
     "no-dash": "Dashes avoided.",
     mixed: "Dashes allowed where they fit.",
     "prefer-dash": "Dashes favored.",
@@ -87,17 +89,17 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     return f === "no-dash" || f === "prefer-dash" ? f : "mixed";
   });
 
-  function handleProps(v: "smooth" | "mixed" | "choppy") {
+  function handleProps(v: GenerationStyleAxis) {
     haptic?.trigger("selection");
     onPropsChange(v);
   }
 
-  function handleHands(v: "smooth" | "mixed" | "choppy") {
+  function handleHands(v: GenerationStyleAxis) {
     haptic?.trigger("selection");
     onHandsChange(v);
   }
 
-  function handleDashes(v: "no-dash" | "mixed" | "prefer-dash") {
+  function handleDashes(v: GenerationDashChoice) {
     haptic?.trigger("selection");
     onDashesChange(v);
   }
