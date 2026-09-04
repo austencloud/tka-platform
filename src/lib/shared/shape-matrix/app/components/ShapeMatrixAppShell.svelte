@@ -310,11 +310,11 @@
         <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
         <span class="identity-note">
           <span class="identity-note-sizer" aria-hidden="true">
-            Type any two ratios to build a 4×4 grid
+            Enter hand cycles : prop rotations from 0–15
           </span>
           <span class="identity-note-live">
             {theory
-              ? "Type any two ratios to build a 4×4 grid"
+              ? "Enter hand cycles : prop rotations from 0–15"
               : `Lorq’s 144 Shape Matrix: VTG ratios ${ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}`}
           </span>
         </span>
@@ -325,8 +325,7 @@
       <!-- The surface choice outranks everything below it. Matrix adds its
            difficulty beside that choice; Theory has no parallel setting. -->
       <div class="header-meta">
-        <div class="control-cell surface-control-cell">
-          <span class="control-label">Explore</span>
+        <div class="surface-control-cell">
           <ShapeMatrixSurfaceControl />
         </div>
         {#if !theory}
@@ -498,7 +497,7 @@
   .top-action {
     min-height: var(--min-touch-target, 44px);
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 999px;
+    border-radius: 10px;
     background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
     color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
     text-decoration: none;
@@ -704,7 +703,9 @@
   }
 
   .surface-control-cell {
+    display: flex;
     flex: 0 0 auto;
+    align-items: center;
   }
 
   /* The bento cell: a caption row over its control, each cell carrying its
@@ -796,19 +797,6 @@
     min-width: max-content;
     justify-content: flex-end;
     gap: 0.4rem;
-  }
-
-  /* Theory's surface switch is a small part of the ratio-building task. It
-     reads as one compact header control instead of a tall card competing with
-     the editor. */
-  @container shape-matrix-app (min-width: 75rem) and (min-height: 42rem) {
-    .shape-app.theory .surface-control-cell {
-      display: flex;
-      grid-template-rows: none;
-      align-items: center;
-      gap: 0.55rem;
-      padding: 0.3rem 0.45rem;
-    }
   }
 
   /* The complete ratio instrument fits beside the page identity once the
