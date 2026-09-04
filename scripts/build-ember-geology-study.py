@@ -240,6 +240,14 @@ R4_MIDFLANK_FLOW_PATH = (
     R4_DOWNSLOPE_EXIT,
 )
 
+# Gate 1.1 R5 preserves the R4 source-to-exit drainage and the colossal
+# mountain-above / country-below composition.  The correction is topographic:
+# the performer now occupies a small irregular widening within a continuously
+# inclined flank instead of a broad near-level ledge.
+R5_MIDFLANK_SOURCE = R4_MIDFLANK_SOURCE
+R5_DOWNSLOPE_EXIT = R4_DOWNSLOPE_EXIT
+R5_MIDFLANK_FLOW_PATH = R4_MIDFLANK_FLOW_PATH
+
 
 def gaussian(
     x0: float,
@@ -294,6 +302,19 @@ def embed_performance_bench(height: np.ndarray, target_height: float) -> np.ndar
 def smoothstep01(value: np.ndarray) -> np.ndarray:
     clamped = np.clip(value, 0.0, 1.0)
     return clamped * clamped * (3.0 - 2.0 * clamped)
+
+
+def integrated_smoothstep_run(distance: np.ndarray, width: float) -> np.ndarray:
+    """Integrate a 0-to-1 smoothstep slope transition over ``distance``.
+
+    The returned profile has continuous grade at both ends: zero before the
+    transition, a smooth accumulated bend through ``width``, then a unit-grade
+    run.  It avoids the shelf-like knuckles produced by clipped linear ramps.
+    """
+
+    u = np.clip(distance / width, 0.0, 1.0)
+    transition = width * (u**3 - 0.5 * u**4)
+    return np.where(distance <= 0.0, 0.0, np.where(distance < width, transition, 0.5 * width + distance - width))
 
 
 def rotated_coordinates(
@@ -672,7 +693,126 @@ def midflank_height_r4(candidate: Candidate) -> np.ndarray:
     return height
 
 
+def midflank_r5_masks() -> dict[str, np.ndarray]:
+    """Return the spatial regions for the Gate 1.1 R5 slanted flank."""
+
+    # The old-flow contact is an irregular geomorphic patch, not a platform.
+    # It crosses enough of the orbit to read as one material/erosional event
+    # while retaining the six-to-ten-degree regional grade.
+    contact_u, contact_v = rotated_coordinates(2.0, -1.5, -8.0)
+    contact_warp = 1.0 + 0.10 * np.sin((contact_u - 1.35 * contact_v) / 8.3)
+    contact_metric = (np.abs(contact_u) / (35.0 * contact_warp)) ** 3.4 + (np.abs(contact_v) / 18.0) ** 3.0
+    older_flow_contact = smoothstep01((1.24 - contact_metric) / 0.48)
+
+    # Only the action disc and a short irregular feather are locally corrected.
+    # The >=0.98 core is about 11-12 m across, rather than R4's 138 x 66 m ledge.
+    patch_u, patch_v = rotated_coordinates(-0.3, 0.2, -11.0)
+    patch_warp = 1.0 + 0.08 * np.sin((patch_u + 1.8 * patch_v) / 3.8)
+    patch_metric = (np.abs(patch_u) / (6.2 * patch_warp)) ** 4.0 + (np.abs(patch_v) / 5.7) ** 4.0
+    stable_patch = smoothstep01((1.36 - patch_metric) / 0.52)
+
+    upper_massif = smoothstep01((Z_GRID - 24.0) / 132.0)
+    downslope_drop = smoothstep01((-Z_GRID - 24.0) / 104.0)
+    crater_rim = np.clip(
+        gaussian(-83.0, 169.0, 54.0, 35.0, 1.0, -8.0)
+        + gaussian(47.0, 181.0, 68.0, 30.0, 0.78, 9.0),
+        0.0,
+        1.0,
+    )
+    crater_saddle = gaussian(-31.0, 145.0, 24.0, 19.0, 1.0, -4.0)
+    lower_buttresses = np.clip(
+        gaussian(-112.0, -81.0, 45.0, 70.0, 1.0, -15.0)
+        + gaussian(104.0, -100.0, 51.0, 62.0, 0.82, 13.0),
+        0.0,
+        1.0,
+    )
+    distance, _ = distance_and_progress_to_polyline(R5_MIDFLANK_FLOW_PATH)
+    active_ravine = np.exp(-0.5 * (distance / 8.0) ** 2)
+    return {
+        "olderFlowContact": older_flow_contact,
+        "stablePatch": stable_patch,
+        "upperMassif": upper_massif,
+        "downslopeDrop": downslope_drop,
+        "craterRim": crater_rim,
+        "craterSaddle": crater_saddle,
+        "lowerButtresses": lower_buttresses,
+        "activeRavine": active_ravine,
+    }
+
+
+def midflank_height_r5(candidate: Candidate) -> np.ndarray:
+    """Build the R5 compound-grade mid-flank Fire Pilgrimage terrain."""
+
+    if not candidate.id.startswith("a-"):
+        raise ValueError("The Gate 1.1 R5 correction applies only to Breached Rift Bench")
+
+    masks = midflank_r5_masks()
+    distance, progress = distance_and_progress_to_polyline(R5_MIDFLANK_FLOW_PATH)
+
+    # The entire performer neighborhood now belongs to a 6.8-degree flank.
+    # Grade increases continuously toward the upper and lower edifice rather
+    # than beginning at two clipped shelf edges.
+    central_grade = 0.12
+    north_distance = Z_GRID - 10.0
+    south_distance = -Z_GRID - 10.0
+    height = 0.12 + central_grade * Z_GRID - 0.018 * X_GRID
+    height += (0.515 - central_grade) * integrated_smoothstep_run(north_distance, 44.0)
+    height -= (0.425 - central_grade) * integrated_smoothstep_run(south_distance, 36.0)
+
+    roughness = smoothstep01((np.abs(Z_GRID) - 14.0) / 78.0)
+    height += roughness * (
+        1.05 * np.sin((X_GRID + 1.35 * Z_GRID) / 24.0)
+        + 0.66 * np.sin((1.8 * X_GRID - Z_GRID) / 15.0)
+    )
+
+    # Preserve R4's world-scale upper and lower masses.
+    height += masks["upperMassif"] * (
+        17.0 * gaussian(-74.0, 151.0, 87.0, 69.0, 1.0, -8.0)
+        + 12.0 * gaussian(76.0, 162.0, 96.0, 62.0, 1.0, 10.0)
+    )
+    height += masks["craterRim"] * 29.0
+    height -= masks["craterSaddle"] * 16.0 * masks["upperMassif"]
+    height += masks["lowerButtresses"] * masks["downslopeDrop"] * 14.0
+    height -= gaussian(9.0, -121.0, 48.0, 50.0, 17.0, 3.0) * masks["downslopeDrop"]
+
+    # A thin older-flow remnant gives a geological reason for the local change
+    # in texture and micro-relief without cancelling the regional grade.
+    contact_u, contact_v = rotated_coordinates(2.0, -1.5, -8.0)
+    contact_relief = 0.16 * np.sin((contact_u - 0.65 * contact_v) / 5.7)
+    contact_relief += 0.10 * np.sin((1.7 * contact_u + contact_v) / 8.6)
+    height += masks["olderFlowContact"] * contact_relief
+
+    # The ravine remains terrain-cut and is derived from the new slanted flank.
+    points = np.asarray(R5_MIDFLANK_FLOW_PATH, dtype=float)
+    segment_lengths = np.hypot(np.diff(points[:, 0]), np.diff(points[:, 1]))
+    point_progress = np.concatenate(([0.0], np.cumsum(segment_lengths)))
+    point_progress /= point_progress[-1]
+    point_elevations = np.asarray(
+        [sample_height(height, float(x), float(z)) for x, z in R5_MIDFLANK_FLOW_PATH],
+        dtype=float,
+    )
+    point_elevations = np.minimum.accumulate(point_elevations - np.linspace(1.2, 2.2, len(points)))
+    channel_bed = np.interp(progress, point_progress, point_elevations)
+    channel_width = 4.0 + 2.8 * smoothstep01((progress - 0.46) / 0.42)
+    channel_influence = np.exp(-0.5 * (distance / channel_width) ** 2)
+    height = height * (1.0 - channel_influence) + channel_bed * channel_influence
+
+    # Broken flow ribs divert the hot drainage past the protected action zone.
+    height += gaussian(-8.2, 4.0, 1.9, 16.0, 2.2, -5.0)
+    height += gaussian(-18.8, -4.0, 2.0, 13.0, 1.5, 8.0)
+
+    # The stable patch is the sole performer-centred correction.  It keeps a
+    # small 1.2-degree fall and irregular feather instead of becoming level.
+    stable_surface = 0.18 + 0.012 * X_GRID + 0.018 * Z_GRID
+    stable_surface += 0.025 * np.sin((X_GRID - 0.7 * Z_GRID) / 3.8)
+    stable_patch = masks["stablePatch"]
+    height = height * (1.0 - stable_patch) + stable_surface * stable_patch
+    return height
+
+
 def candidate_height(candidate: Candidate, revision: str = "r1") -> np.ndarray:
+    if revision == "r5":
+        return midflank_height_r5(candidate)
     if revision == "r4":
         return midflank_height_r4(candidate)
     if revision == "r3":

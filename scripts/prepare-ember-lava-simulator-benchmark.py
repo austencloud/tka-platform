@@ -33,6 +33,10 @@ R4_ROOT = BENCHMARK_ROOT / "gate-1-1-r4"
 R4_DEM_PATH = R4_ROOT / "ember-midflank-fire-pilgrimage-r4.asc"
 R4_MANIFEST_PATH = R4_ROOT / "calibration-manifest.json"
 R4_SELECTED_PATH = R4_ROOT / "selected-flowy-thickness.asc"
+R5_ROOT = BENCHMARK_ROOT / "gate-1-1-r5"
+R5_DEM_PATH = R5_ROOT / "ember-midflank-fire-pilgrimage-r5.asc"
+R5_MANIFEST_PATH = R5_ROOT / "calibration-manifest.json"
+R5_SELECTED_PATH = R5_ROOT / "selected-flowy-thickness.asc"
 FLOWY_WSL_BINARY = "/mnt/e/tka-platform-ember-geology-sources/flowy/build-mamba/flowy"
 
 RNG_SEED = 6301
@@ -75,6 +79,14 @@ R4_CALIBRATIONS = (
     Calibration("r4n-c03-braided-20m2", 1040, 18720.0, n_flows=4, lobe_area_m2=20.0, lobe_exponent=0.035),
     Calibration("r4n-c04-lobate-24m2", 1200, 25920.0, n_flows=4, lobe_area_m2=24.0, lobe_exponent=0.05),
     Calibration("r4n-c05-heavy-30m2", 1400, 37800.0, n_flows=5, lobe_area_m2=30.0, lobe_exponent=0.065),
+)
+
+R5_CALIBRATIONS = (
+    Calibration("r5f-c01-threaded-12m2", 720, 7776.0, n_flows=3, lobe_area_m2=12.0, lobe_exponent=0.01),
+    Calibration("r5f-c02-channel-16m2", 880, 12672.0, n_flows=3, lobe_area_m2=16.0, lobe_exponent=0.02),
+    Calibration("r5f-c03-braided-20m2", 1040, 18720.0, n_flows=4, lobe_area_m2=20.0, lobe_exponent=0.035),
+    Calibration("r5f-c04-lobate-24m2", 1200, 25920.0, n_flows=4, lobe_area_m2=24.0, lobe_exponent=0.05),
+    Calibration("r5f-c05-heavy-30m2", 1400, 37800.0, n_flows=5, lobe_area_m2=30.0, lobe_exponent=0.065),
 )
 
 
@@ -253,6 +265,66 @@ max_aspect_ratio = 2.5
 def flowy_r4_config(calibration: Calibration) -> str:
     return f'''run_name = "ember_gate1_1_{calibration.id.replace("-", "_")}"
 source = "../../ember-midflank-fire-pilgrimage-r4.asc"
+output_folder = "output"
+write_lobes_csv = false
+print_remaining_time = false
+save_final_dem = true
+rng_seed = {RNG_SEED}
+masking_tolerance = 0.00001
+masking_max_iter = 20
+volume_correction = false
+
+vent_flag = 0
+x_vent = [-34.0]
+y_vent = [132.0]
+east_to_vent = 380.0
+west_to_vent = 380.0
+south_to_vent = 380.0
+north_to_vent = 380.0
+hazard_flag = 0
+masking_threshold = 0.97
+n_flows = {calibration.n_flows}
+min_n_lobes = {calibration.lobes_per_flow}
+max_n_lobes = {calibration.lobes_per_flow}
+total_volume = {calibration.total_volume_m3}
+fixed_dimension_flag = 1
+lobe_area = {calibration.lobe_area_m2}
+thickness_ratio = {calibration.thickness_ratio}
+thickening_parameter = {calibration.thickening_parameter}
+lobe_exponent = {calibration.lobe_exponent}
+max_slope_prob = {calibration.max_slope_probability}
+inertial_exponent = {calibration.inertial_exponent}
+
+[Output]
+crop_to_content = false
+use_netcdf = false
+compression = false
+compression_level = 0
+shuffle = false
+packing_data_type = "float"
+
+[Advanced]
+restart_files = []
+restart_filling_parameters = []
+saveraster_flag = 1
+flag_threshold = 1
+a_beta = 0.0
+b_beta = 0.0
+force_max_length = 0
+max_length = 360
+n_init = 1
+n_check_loop = 0
+start_from_dist_flag = 0
+dist_fact = 0.82
+npoints = 36
+aspect_ratio_coeff = 2.0
+max_aspect_ratio = 2.5
+'''
+
+
+def flowy_r5_config(calibration: Calibration) -> str:
+    return f'''run_name = "ember_gate1_1_{calibration.id.replace("-", "_")}"
+source = "../../ember-midflank-fire-pilgrimage-r5.asc"
 output_folder = "output"
 write_lobes_csv = false
 print_remaining_time = false
@@ -822,6 +894,190 @@ def analyze_r4() -> dict[str, object]:
     return manifest
 
 
+def prepare_r5() -> None:
+    study = load_geology_study()
+    candidate = next(item for item in study.CANDIDATES if item.id == "a-breached-rift-bench")
+    height = study.candidate_height(candidate, revision="r5")
+
+    R5_ROOT.mkdir(parents=True, exist_ok=True)
+    write_esri_ascii(R5_DEM_PATH, height)
+    input_digests: dict[str, str] = {}
+    for calibration in R5_CALIBRATIONS:
+        calibration_dir = R5_ROOT / "calibrations" / calibration.id
+        (calibration_dir / "output").mkdir(parents=True, exist_ok=True)
+        config_path = calibration_dir / "input.toml"
+        config_path.write_bytes(flowy_r5_config(calibration).encode("utf-8"))
+        input_digests[calibration.id] = sha256_path(config_path)
+
+    manifest = {
+        "schemaVersion": 1,
+        "purpose": "Gate 1.1 slanted-flank drainage, orbit clearance, and downslope-continuation calibration; not calibrated hazard science.",
+        "terrainRevision": "r5",
+        "candidate": "midflank-fire-pilgrimage-slanted-flank",
+        "dem": {
+            "path": str(R5_DEM_PATH),
+            "sha256": sha256_path(R5_DEM_PATH),
+            "columns": int(height.shape[1]),
+            "rows": int(height.shape[0]),
+            "cellSizeM": 1.0,
+            "xRangeM": list(study.WORLD_X),
+            "zRangeM": list(study.WORLD_Z),
+            "minimumElevationM": round(float(height.min()), 4),
+            "maximumElevationM": round(float(height.max()), 4),
+        },
+        "sourceRuntimeXZ": list(study.R5_MIDFLANK_SOURCE),
+        "downslopeExitRuntimeXZ": list(study.R5_DOWNSLOPE_EXIT),
+        "actionRadiusM": study.ACTION_RADIUS_M,
+        "activeThicknessThresholdM": 0.01,
+        "requiredClearanceBeyondActionEnvelopeM": 2.5,
+        "requiredMidflankPassCellCount": 12,
+        "requiredSouthExitCellCount": 8,
+        "requiredDownstreamMedianWidthM": 6.0,
+        "calibrations": [asdict(calibration) for calibration in R5_CALIBRATIONS],
+        "inputTomlSha256": input_digests,
+        "selectedCalibration": None,
+        "results": [],
+        "implementation": {
+            "repository": "https://github.com/flowy-code/flowy",
+            "commit": "4ce1036d1073d581085c74c569b1d0e95a4ae0bd",
+            "license": "GPL-3.0",
+            "binary": FLOWY_WSL_BINARY,
+            "binarySha256": flowy_binary_sha256(),
+        },
+        "limitations": [
+            "The terrain is an authored Gate 1.1 spatial hypothesis, not a surveyed volcano.",
+            "The sweep tests route continuity, clearance, and scene-boundary continuation, not eruption-history fit.",
+            "Simulator output owns the proposed deposit footprint but is not final render geometry.",
+            "The south-boundary exit intentionally states that the drainage continues beyond the review world; it is not a terminal pool.",
+            "The small stable patch is a production accommodation embedded in a continuously inclined flank, not a claim about a named field site.",
+        ],
+    }
+    write_json(R5_MANIFEST_PATH, manifest)
+    print(f"R5 DEM: {R5_DEM_PATH}")
+    print(f"R5 calibrations: {len(R5_CALIBRATIONS)}")
+    print(f"R5 manifest: {R5_MANIFEST_PATH}")
+
+
+def r5_run_name(calibration: Calibration) -> str:
+    return f"ember_gate1_1_{calibration.id.replace('-', '_')}"
+
+
+def r5_output_path(calibration: Calibration) -> Path:
+    output_dir = R5_ROOT / "calibrations" / calibration.id / "output"
+    exact = output_dir / f"{r5_run_name(calibration)}_thickness_full.asc"
+    legacy_numbered = output_dir / f"{r5_run_name(calibration)}_000_thickness_full.asc"
+    return exact if exact.exists() or not legacy_numbered.exists() else legacy_numbered
+
+
+def run_r5_flowy() -> None:
+    if not R5_MANIFEST_PATH.exists():
+        prepare_r5()
+    for calibration in R5_CALIBRATIONS:
+        calibration_dir = R5_ROOT / "calibrations" / calibration.id
+        output_path = r5_output_path(calibration)
+        if output_path.exists():
+            print(f"Reuse {calibration.id}: {output_path}")
+            continue
+        command = (
+            f"cd '{wsl_path(calibration_dir)}' && "
+            f"'{FLOWY_WSL_BINARY}' --name '{r5_run_name(calibration)}' input.toml"
+        )
+        started = time.perf_counter()
+        subprocess.run(["wsl.exe", "-e", "bash", "-lc", command], check=True)
+        print(f"Ran {calibration.id} in {time.perf_counter() - started:.3f} s")
+
+
+def analyze_r5() -> dict[str, object]:
+    study = load_geology_study()
+    manifest = json.loads(R5_MANIFEST_PATH.read_text(encoding="utf-8"))
+    results: list[dict[str, object]] = []
+    for calibration in R5_CALIBRATIONS:
+        output_path = r5_output_path(calibration)
+        if not output_path.exists():
+            raise FileNotFoundError(f"Missing Flowy result: {output_path}")
+        thickness = read_esri_ascii(output_path)
+        active = thickness > float(manifest["activeThicknessThresholdM"])
+        if not np.any(active):
+            raise RuntimeError(f"Flowy result has no active cells: {output_path}")
+        active_x = study.X_GRID[active]
+        active_z = study.Z_GRID[active]
+        cell_half_extent = float(manifest["dem"]["cellSizeM"]) * 0.5
+        active_support_distances = np.hypot(
+            np.maximum(np.abs(active_x) - cell_half_extent, 0.0),
+            np.maximum(np.abs(active_z) - cell_half_extent, 0.0),
+        )
+        clearance = float(active_support_distances.min()) - float(study.ACTION_RADIUS_M)
+        midflank_zone = (
+            (study.X_GRID >= -24.0)
+            & (study.X_GRID <= -7.0)
+            & (study.Z_GRID >= -24.0)
+            & (study.Z_GRID <= 24.0)
+        )
+        south_exit_zone = study.Z_GRID <= -140.0
+        midflank_cells = int(np.count_nonzero(active & midflank_zone))
+        south_exit_cells = int(np.count_nonzero(active & south_exit_zone))
+        downstream_widths = active[study.Z_VALUES <= -90.0].sum(axis=1)
+        downstream_widths = downstream_widths[downstream_widths > 0]
+        downstream_median_width = float(np.median(downstream_widths)) if downstream_widths.size else 0.0
+        occupied_rows = np.flatnonzero(active.any(axis=1))
+        occupied_row_gap_count = int(np.sum(np.diff(occupied_rows) > 1)) if occupied_rows.size > 1 else 0
+        meets_clearance = clearance >= float(manifest["requiredClearanceBeyondActionEnvelopeM"])
+        passes_midflank = midflank_cells >= int(manifest["requiredMidflankPassCellCount"])
+        reaches_exit = south_exit_cells >= int(manifest["requiredSouthExitCellCount"])
+        continuous = occupied_row_gap_count == 0
+        meets_downstream_width = downstream_median_width >= float(manifest["requiredDownstreamMedianWidthM"])
+        results.append(
+            {
+                "calibrationId": calibration.id,
+                "output": str(output_path),
+                "activeCellCount": int(active.sum()),
+                "activeAreaM2": round(float(active.sum()), 3),
+                "boundsRuntimeXZ": {
+                    "minX": round(float(active_x.min()), 3),
+                    "maxX": round(float(active_x.max()), 3),
+                    "minZ": round(float(active_z.min()), 3),
+                    "maxZ": round(float(active_z.max()), 3),
+                },
+                "minimumDistanceToPerformerM": round(float(active_support_distances.min()), 3),
+                "clearanceBeyondActionEnvelopeM": round(clearance, 3),
+                "midflankPassActiveCellCount": midflank_cells,
+                "southExitActiveCellCount": south_exit_cells,
+                "downstreamMedianWidthM": round(downstream_median_width, 3),
+                "occupiedRowGapCount": occupied_row_gap_count,
+                "passesMidflank": passes_midflank,
+                "reachesDownslopeExit": reaches_exit,
+                "continuousDownslope": continuous,
+                "meetsActionClearance": meets_clearance,
+                "meetsDownstreamWidth": meets_downstream_width,
+                "eligible": passes_midflank and reaches_exit and continuous and meets_clearance and meets_downstream_width,
+            }
+        )
+
+    eligible = [result for result in results if result["eligible"]]
+    if not eligible:
+        selected = min(results, key=lambda result: float(result["boundsRuntimeXZ"]["minZ"]))
+        selection_status = "no-eligible-calibration"
+    else:
+        selected = min(
+            eligible,
+            key=lambda result: (
+                abs(float(result["downstreamMedianWidthM"]) - 12.0),
+                abs(int(result["activeCellCount"]) - 5000),
+            ),
+        )
+        selection_status = "selected-continuous-slanted-midflank-to-south-exit"
+
+    shutil.copy2(Path(str(selected["output"])), R5_SELECTED_PATH)
+    manifest["results"] = results
+    manifest["selectedCalibration"] = selected["calibrationId"]
+    manifest["selectionStatus"] = selection_status
+    manifest["selectedOutput"] = str(R5_SELECTED_PATH)
+    manifest["selectedOutputSha256"] = sha256_path(R5_SELECTED_PATH)
+    write_json(R5_MANIFEST_PATH, manifest)
+    print(json.dumps({"selectionStatus": selection_status, "selected": selected}, indent=2))
+    return manifest
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -838,6 +1094,10 @@ def main() -> None:
             "run-r4",
             "analyze-r4",
             "all-r4",
+            "prepare-r5",
+            "run-r5",
+            "analyze-r5",
+            "all-r5",
         ),
     )
     args = parser.parse_args()
@@ -859,10 +1119,20 @@ def main() -> None:
         run_r4_flowy()
     elif args.command == "analyze-r4":
         analyze_r4()
-    else:
+    elif args.command == "all-r4":
         prepare_r4()
         run_r4_flowy()
         analyze_r4()
+    elif args.command == "prepare-r5":
+        prepare_r5()
+    elif args.command == "run-r5":
+        run_r5_flowy()
+    elif args.command == "analyze-r5":
+        analyze_r5()
+    else:
+        prepare_r5()
+        run_r5_flowy()
+        analyze_r5()
 
 
 if __name__ == "__main__":

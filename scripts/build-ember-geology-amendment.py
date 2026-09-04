@@ -1,4 +1,4 @@
-"""Build Ember's true-scale mid-flank Gate 1.1 R4 correction package.
+"""Build Ember's true-scale slanted-flank Gate 1.1 R5 correction package.
 
 The terrain comes from ``build-ember-geology-study.py`` and the lava footprint
 comes from Flowy calibration outputs prepared by
@@ -24,21 +24,21 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parents[1]
 STUDY_SCRIPT = ROOT / "scripts/build-ember-geology-study.py"
 SIMULATOR_ROOT = Path(
-    "E:/tka-platform-ember-geology-sources/ember-simulator-benchmark/gate-1-1-r4"
+    "E:/tka-platform-ember-geology-sources/ember-simulator-benchmark/gate-1-1-r5"
 )
 SIMULATOR_MANIFEST = SIMULATOR_ROOT / "calibration-manifest.json"
 OUTPUT_DIR = (
     ROOT
-    / "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4"
+    / "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5"
 )
-REPORT_PATH = OUTPUT_DIR / "ember-midflank-fire-pilgrimage-r4-gate1-1-report.json"
+REPORT_PATH = OUTPUT_DIR / "ember-midflank-fire-pilgrimage-r5-gate1-1-report.json"
 PLAN_PATH = OUTPUT_DIR / "01-north-up-measured-plan.png"
 SECTIONS_PATH = OUTPUT_DIR / "02-true-scale-midflank-section.png"
 VIEWPOINTS_PATH = OUTPUT_DIR / "03-runtime-uphill-downhill-proof.png"
 SIGHTLINES_PATH = OUTPUT_DIR / "04-orbit-sightline-study.png"
 CALIBRATION_PATH = OUTPUT_DIR / "05-flowy-calibration-sweep.png"
-CONTACT_PATH = OUTPUT_DIR / "ember-midflank-fire-pilgrimage-r4-gate1-1-contact-sheet.png"
-SELECTED_DATA_PATH = ROOT / "static/data/ember/review/ember-midflank-fire-pilgrimage-r4-flowy-thickness.f32"
+CONTACT_PATH = OUTPUT_DIR / "ember-midflank-fire-pilgrimage-r5-gate1-1-contact-sheet.png"
+SELECTED_DATA_PATH = ROOT / "static/data/ember/review/ember-midflank-fire-pilgrimage-r5-flowy-thickness.f32"
 
 INK = (235, 237, 239)
 MUTED = (155, 165, 174)
@@ -181,10 +181,10 @@ def map_panel(
 ) -> Image.Image:
     canvas = Image.new("RGBA", size, (*PAPER, 255))
     draw = ImageDraw.Draw(canvas)
-    draw.text((64, 42), "EMBER GATE 1.1 R4 · MID-FLANK NORTH-UP PLAN", font=FONT_44, fill=INK)
+    draw.text((64, 42), "EMBER GATE 1.1 R5 · SLANTED MID-FLANK NORTH-UP PLAN", font=FONT_44, fill=INK)
     draw.text(
         (66, 101),
-        "Summit continues uphill · performer occupies contour ledge · drainage exits downslope",
+        "Summit continues uphill · performer occupies a small widening within the slope · drainage exits downslope",
         font=FONT_22,
         fill=MUTED,
     )
@@ -201,10 +201,9 @@ def map_panel(
     add_raster_overlay(canvas, study.contour_mask(height, interval=10.0), rect, INK, 88)
 
     add_raster_overlay(canvas, thickness > 0.01, rect, LAVA, 150)
-    add_raster_overlay(canvas, masks["upperMassif"], rect, HEADWALL, 235, edges_only=True)
     add_raster_overlay(canvas, masks["craterRim"], rect, BREACH, 220, edges_only=True)
-    add_raster_overlay(canvas, masks["performanceLedge"], rect, CYAN, 230, edges_only=True)
-    add_raster_overlay(canvas, masks["downslopeDrop"], rect, TALUS, 210, edges_only=True)
+    add_raster_overlay(canvas, masks["olderFlowContact"], rect, HEADWALL, 205, edges_only=True)
+    add_raster_overlay(canvas, masks["stablePatch"], rect, CYAN, 245, edges_only=True)
 
     draw = ImageDraw.Draw(canvas)
     stage = world_to_pixel(study, 0.0, 0.0, rect)
@@ -215,13 +214,13 @@ def map_panel(
     draw.line((stage[0] - 10, stage[1], stage[0] + 10, stage[1]), fill=PAPER, width=3)
     draw.line((stage[0], stage[1] - 10, stage[0], stage[1] + 10), fill=PAPER, width=3)
 
-    source = world_to_pixel(study, *study.R4_MIDFLANK_SOURCE, rect)
+    source = world_to_pixel(study, *study.R5_MIDFLANK_SOURCE, rect)
     draw.polygon(
         ((source[0], source[1] - 13), (source[0] - 12, source[1] + 10), (source[0] + 12, source[1] + 10)),
         fill=LAVA_HOT,
         outline=PAPER,
     )
-    exit_point = world_to_pixel(study, *study.R4_DOWNSLOPE_EXIT, rect)
+    exit_point = world_to_pixel(study, *study.R5_DOWNSLOPE_EXIT, rect)
 
     # Explicit orientation and route labels. Each is legible without prose.
     north_x = rect[0] + 62
@@ -243,10 +242,10 @@ def map_panel(
     label(draw, (source[0] + 20, source[1] - 28), "2 · FURNACE SADDLE + HIGH SOURCE", color=LAVA_HOT)
     ravine_pt = world_to_pixel(study, -22.0, 58.0, rect)
     label(draw, (ravine_pt[0] + 24, ravine_pt[1] - 18), "3 · GRAVITY-LED RAVINE", color=LAVA_HOT)
-    label(draw, (stage[0] - 255, stage[1] + 53), "4 · MID-FLANK CONTOUR LEDGE", color=CYAN)
+    label(draw, (stage[0] - 360, stage[1] + 53), "4 · SMALL STABLE PATCH IN SLOPING OLD-FLOW CONTACT", color=CYAN)
     label(draw, (stage[0] - 58, stage[1] - 48), "PERFORMER", color=INK)
     drop_pt = world_to_pixel(study, 52.0, -67.0, rect)
-    label(draw, (drop_pt[0] + 24, drop_pt[1] - 8), "5 · LOWER ESCARPMENT / RUNOUT PLAIN", color=TALUS)
+    label(draw, (drop_pt[0] + 24, drop_pt[1] - 8), "5 · GRADUALLY STEEPENING LOWER FLANK", color=TALUS)
     label(draw, (exit_point[0] + 34, exit_point[1] - 36), "6 · FLOW CONTINUES BEYOND SCENE", color=LAVA_HOT)
     audience = world_to_pixel(study, 0.0, -21.5, rect)
     draw.polygon(
@@ -272,7 +271,7 @@ def map_panel(
     draw.text((rect[0], legend_y), "PLAN CONTRACT", font=FONT_22, fill=CYAN)
     legend = (
         "380 × 335 m · 1 m DEM · 10 m contours · white = protected 4.5 m action envelope · "
-        "cyan ring = 25 m orbit · orange = Flowy cells > 0.01 m · cyan outline = long contour ledge"
+        "cyan ring = 25 m orbit · orange = Flowy cells > 0.01 m · tan = sloping old-flow contact · cyan = stable patch"
     )
     draw.text((rect[0], legend_y + 38), legend, font=FONT_18, fill=MUTED)
     return canvas
@@ -282,13 +281,13 @@ def section_board(study: Any, candidate: Any, height: np.ndarray) -> tuple[Image
     del candidate
     canvas = Image.new("RGB", (2400, 1800), PAPER)
     draw = ImageDraw.Draw(canvas)
-    draw.text((64, 42), "EMBER GATE 1.1 R4 · TRUE-SCALE MOUNTAIN SECTION", font=FONT_44, fill=INK)
+    draw.text((64, 42), "EMBER GATE 1.1 R5 · TRUE-SCALE COMPOUND-FLANK SECTION", font=FONT_44, fill=INK)
     draw.text((66, 101), "One horizontal metre equals one vertical metre · no vertical exaggeration", font=FONT_22, fill=MUTED)
 
-    profile_path = ((-18.0, 190.0), (-26.0, 158.0), *study.R4_MIDFLANK_FLOW_PATH)
+    profile_path = ((-18.0, 190.0), (-26.0, 158.0), *study.R5_MIDFLANK_FLOW_PATH)
     distances, xs, zs = study.interpolate_path(profile_path, samples=900)
     elevations = np.asarray([study.sample_height(height, float(x), float(z)) for x, z in zip(xs, zs)])
-    drainage_distances, drainage_xs, drainage_zs = study.interpolate_path(study.R4_MIDFLANK_FLOW_PATH, samples=720)
+    drainage_distances, drainage_xs, drainage_zs = study.interpolate_path(study.R5_MIDFLANK_FLOW_PATH, samples=720)
     drainage_elevations = np.asarray(
         [study.sample_height(height, float(x), float(z)) for x, z in zip(drainage_xs, drainage_zs)]
     )
@@ -320,18 +319,18 @@ def section_board(study: Any, candidate: Any, height: np.ndarray) -> tuple[Image
     points = [long_point(float(d), float(e)) for d, e in zip(distances, elevations)]
     draw.polygon(points + [(plot_right, plot_bottom), (plot_left, plot_bottom)], fill=(43, 47, 48), outline=HEADWALL)
 
-    source_index = int(np.argmin((xs - study.R4_MIDFLANK_SOURCE[0]) ** 2 + (zs - study.R4_MIDFLANK_SOURCE[1]) ** 2))
-    exit_index = int(np.argmin((xs - study.R4_DOWNSLOPE_EXIT[0]) ** 2 + (zs - study.R4_DOWNSLOPE_EXIT[1]) ** 2))
+    source_index = int(np.argmin((xs - study.R5_MIDFLANK_SOURCE[0]) ** 2 + (zs - study.R5_MIDFLANK_SOURCE[1]) ** 2))
+    exit_index = int(np.argmin((xs - study.R5_DOWNSLOPE_EXIT[0]) ** 2 + (zs - study.R5_DOWNSLOPE_EXIT[1]) ** 2))
     lava_points = points[source_index : exit_index + 1]
     draw.line(lava_points, fill=LAVA, width=8)
     draw.line(lava_points, fill=LAVA_HOT, width=3)
 
     annotations = (
         ((-18.0, 190.0), "SUMMIT CONTINUES"),
-        (study.R4_MIDFLANK_SOURCE, "HIGH SOURCE"),
-        ((-12.0, 2.0), "PERFORMER LEDGE"),
-        ((-7.0, -62.0), "LOWER ESCARPMENT"),
-        (study.R4_DOWNSLOPE_EXIT, "OUTFLOW CONTINUES"),
+        (study.R5_MIDFLANK_SOURCE, "HIGH SOURCE"),
+        ((-2.0, 1.0), "SMALL STABLE PATCH"),
+        ((-7.0, -62.0), "STEEPENING LOWER FLANK"),
+        (study.R5_DOWNSLOPE_EXIT, "OUTFLOW CONTINUES"),
     )
     for (x0, z0), text_value in annotations:
         index = int(np.argmin((xs - x0) ** 2 + (zs - z0) ** 2))
@@ -348,14 +347,27 @@ def section_board(study: Any, candidate: Any, height: np.ndarray) -> tuple[Image
     performer_elevation = study.sample_height(height, 0.0, 0.0)
     upper_rise = float(height.max()) - performer_elevation
     downhill_fall = performer_elevation - float(height.min())
+    dz, dx = np.gradient(height, 1.0, 1.0)
+    slope_degrees = np.degrees(np.arctan(np.hypot(dx, dz)))
+    radius = np.hypot(study.X_GRID, study.Z_GRID)
+    surrounding_annulus = (radius >= 8.0) & (radius <= 25.0)
+    older_flow_contact = study.midflank_r5_masks()["olderFlowContact"] >= 0.5
+    near_level_neighborhood = (radius <= 35.0) & (slope_degrees < 2.0)
+    action_median_slope = float(np.median(slope_degrees[radius <= study.ACTION_RADIUS_M]))
+    surrounding_median_slope = float(np.median(slope_degrees[surrounding_annulus]))
+    contact_median_slope = float(np.median(slope_degrees[older_flow_contact]))
+    near_level_area = int(np.count_nonzero(near_level_neighborhood))
     metric_x = plot_left + 22
     metric_y = plot_top + 26
     label(draw, (metric_x, metric_y), f"UPHILL RISE ABOVE PERFORMER  +{upper_rise:.1f} m", color=HEADWALL)
     label(draw, (metric_x, metric_y + 48), f"DOWNHILL FALL BELOW PERFORMER  -{downhill_fall:.1f} m", color=TALUS)
     label(draw, (metric_x, metric_y + 96), f"TOTAL VERTICAL SPAN  {float(height.max() - height.min()):.1f} m", color=INK)
+    label(draw, (metric_x, metric_y + 144), f"ACTION PATCH MEDIAN SLOPE  {action_median_slope:.1f}°", color=CYAN)
+    label(draw, (metric_x, metric_y + 192), f"8-25 m SURROUNDING MEDIAN SLOPE  {surrounding_median_slope:.1f}°", color=HEADWALL)
+    label(draw, (metric_x, metric_y + 240), f"NEAR-LEVEL AREA WITHIN 35 m  {near_level_area} m²", color=INK)
     draw.text((plot_right - 210, plot_bottom + 50), "distance along flank (m)", font=FONT_16, fill=MUTED)
-    draw.text((left + 28, top + 20), "LONGITUDINAL · upper rim → performer ledge → lower plain", font=FONT_22, fill=INK)
-    draw.text((left + 28, bottom - 54), "PASS CONDITION: the performer is visibly between substantial mountain above and substantial country below.", font=FONT_18, fill=MUTED)
+    draw.text((left + 28, top + 20), "LONGITUDINAL · upper rim → compound slanted flank → lower country", font=FONT_22, fill=INK)
+    draw.text((left + 28, bottom - 54), "PASS: the performer remains on the mountain grade; only the action footprint is locally eased.", font=FONT_18, fill=MUTED)
 
     local_samples = []
     for x in np.linspace(-study.ACTION_RADIUS_M, study.ACTION_RADIUS_M, 31):
@@ -374,6 +386,10 @@ def section_board(study: Any, candidate: Any, height: np.ndarray) -> tuple[Image
         "totalVerticalSpanM": round(float(height.max() - height.min()), 3),
         "verticalExaggeration": 1.0,
         "actionEnvelopeLocalReliefM": round(float(local_relief), 3),
+        "actionEnvelopeMedianSlopeDegrees": round(action_median_slope, 3),
+        "surroundingEightToTwentyFiveMetreMedianSlopeDegrees": round(surrounding_median_slope, 3),
+        "olderFlowContactMedianSlopeDegrees": round(contact_median_slope, 3),
+        "nearLevelAreaWithinThirtyFiveMetresM2": near_level_area,
     }
     return canvas, metrics
 
@@ -563,7 +579,7 @@ def calibration_board(study: Any, height: np.ndarray, manifest: dict[str, Any]) 
     canvas = Image.new("RGBA", (3840, 1280), (*PAPER, 255))
     draw = ImageDraw.Draw(canvas)
     draw.text((60, 38), "FLOWY CALIBRATION SWEEP · SAME CORRECTED DEM", font=FONT_44, fill=INK)
-    draw.text((62, 96), "Orange is solver output. Green cards pass the ledge, preserve performer clearance, and continue through the south scene boundary.", font=FONT_22, fill=MUTED)
+    draw.text((62, 96), "Orange is solver output. Green cards cross the slanted mid-flank, preserve performer clearance, and continue through the south boundary.", font=FONT_22, fill=MUTED)
     results = manifest.get("results", [])
     panel_width = 720
     for index, result in enumerate(results):
@@ -653,7 +669,7 @@ def sightline_board(study: Any, height: np.ndarray) -> tuple[Image.Image, list[d
 def contact_sheet(paths: list[Path]) -> Image.Image:
     canvas = Image.new("RGB", (3840, 2160), PAPER)
     draw = ImageDraw.Draw(canvas)
-    draw.text((60, 35), "EMBER MID-FLANK FIRE PILGRIMAGE · GATE 1.1 R4 REVIEW", font=FONT_44, fill=INK)
+    draw.text((60, 35), "EMBER MID-FLANK FIRE PILGRIMAGE · GATE 1.1 R5 REVIEW", font=FONT_44, fill=INK)
     draw.text((62, 93), "North-up plan · true-scale section · exact uphill/downhill orbit proof · clearance", font=FONT_22, fill=MUTED)
     slots = ((45, 150, 1905, 1135), (1935, 150, 3795, 1135), (45, 1165, 1905, 2120), (1935, 1165, 3795, 2120))
     for path, slot in zip(paths, slots):
@@ -667,10 +683,10 @@ def contact_sheet(paths: list[Path]) -> Image.Image:
 
 
 def build() -> dict[str, Any]:
-    study = load_module(STUDY_SCRIPT, "ember_geology_study_r4")
+    study = load_module(STUDY_SCRIPT, "ember_geology_study_r5")
     candidate = next(item for item in study.CANDIDATES if item.id == "a-breached-rift-bench")
-    height = study.candidate_height(candidate, revision="r4")
-    masks = study.midflank_r4_masks()
+    height = study.candidate_height(candidate, revision="r5")
+    masks = study.midflank_r5_masks()
     manifest = json.loads(SIMULATOR_MANIFEST.read_text(encoding="utf-8"))
     selected = selected_result(manifest)
     thickness = read_esri_ascii(Path(selected["output"]))
@@ -688,27 +704,29 @@ def build() -> dict[str, Any]:
     calibration_board(study, height, manifest).convert("RGB").save(CALIBRATION_PATH, optimize=True)
     contact_sheet([PLAN_PATH, SECTIONS_PATH, VIEWPOINTS_PATH, SIGHTLINES_PATH]).save(CONTACT_PATH, optimize=True)
 
-    shelf = masks["performanceLedge"] >= 0.98
-    shelf_x = study.X_GRID[shelf]
-    shelf_z = study.Z_GRID[shelf]
-    shelf_covariance = np.cov(np.column_stack((shelf_x, shelf_z)), rowvar=False)
-    shelf_eigenvalues = np.linalg.eigvalsh(shelf_covariance)
-    shelf_pca_aspect = math.sqrt(float(shelf_eigenvalues[-1] / shelf_eigenvalues[0]))
+    stable_patch = masks["stablePatch"] >= 0.98
+    stable_x = study.X_GRID[stable_patch]
+    stable_z = study.Z_GRID[stable_patch]
+    contact = masks["olderFlowContact"] >= 0.5
+    contact_x = study.X_GRID[contact]
+    contact_z = study.Z_GRID[contact]
     report = {
         "schemaVersion": 1,
         "sceneId": "ember-broken-rift",
-        "directionId": "midflank-fire-pilgrimage-r4",
+        "directionId": "midflank-fire-pilgrimage-r5",
         "gateId": "measured-plan",
         "status": "ready-for-review",
-        "artifact": "Ember Mid-Flank Fire Pilgrimage Gate 1.1 R4 measured-plan correction",
+        "artifact": "Ember Mid-Flank Fire Pilgrimage Gate 1.1 R5 slanted-flank correction",
         "generatedBy": "scripts/build-ember-geology-amendment.py",
-        "terrainOwner": "scripts/build-ember-geology-study.py#midflank_height_r4",
+        "terrainOwner": "scripts/build-ember-geology-study.py#midflank_height_r5",
         "simulatorCalibrationOwner": "scripts/prepare-ember-lava-simulator-benchmark.py",
         "museumTracker": {
             "midflankRequirement": "BvN1DiylOnfdbrofcwaM",
-            "gate1R4CompletionReference": "FZftIaWtEdGTrqXRv9JS",
-            "historicalR3Correction": "lIPwVa2kGFcoQsgICkWI",
-            "historicalR3Completion": "gEMxamy48PKkf6kL1vj8",
+            "broadLedgeRejection": "Vwm6XTLdDbDfxuoVE7z9",
+            "r5CandidateProposal": "5P5KVEq04dpHxu9F0ViI",
+            "gate1R5CompletionReference": "Iur86OmZX40nTqdwgxDq",
+            "historicalGate1R4Approval": "xFcagbaZTQAq615IbZgT",
+            "historicalGate1R4Completion": "FZftIaWtEdGTrqXRv9JS",
         },
         "worldContract": {
             "runtimeXRangeM": list(study.WORLD_X),
@@ -718,22 +736,29 @@ def build() -> dict[str, Any]:
             "cellSizeM": 1.0,
             "actionRadiusM": study.ACTION_RADIUS_M,
             "interactiveOrbitCapM": study.ORBIT_RADIUS_M,
-            "sourceRuntimeXZ": list(study.R4_MIDFLANK_SOURCE),
-            "downslopeExitRuntimeXZ": list(study.R4_DOWNSLOPE_EXIT),
-            "drainageCenterlineRuntimeXZ": [list(point) for point in study.R4_MIDFLANK_FLOW_PATH],
+            "sourceRuntimeXZ": list(study.R5_MIDFLANK_SOURCE),
+            "downslopeExitRuntimeXZ": list(study.R5_DOWNSLOPE_EXIT),
+            "drainageCenterlineRuntimeXZ": [list(point) for point in study.R5_MIDFLANK_FLOW_PATH],
         },
         "terrainMetrics": {
             "minimumElevationM": round(float(height.min()), 3),
             "maximumElevationM": round(float(height.max()), 3),
             "performerElevationM": round(study.sample_height(height, 0.0, 0.0), 3),
-            "midflankLedgeCoreBoundsRuntimeXZ": {
-                "minX": round(float(shelf_x.min()), 3),
-                "maxX": round(float(shelf_x.max()), 3),
-                "minZ": round(float(shelf_z.min()), 3),
-                "maxZ": round(float(shelf_z.max()), 3),
+            "stablePatchCoreBoundsRuntimeXZ": {
+                "minX": round(float(stable_x.min()), 3),
+                "maxX": round(float(stable_x.max()), 3),
+                "minZ": round(float(stable_z.min()), 3),
+                "maxZ": round(float(stable_z.max()), 3),
             },
-            "midflankLedgeCoreAxisRatio": round(float(np.ptp(shelf_x) / np.ptp(shelf_z)), 3),
-            "midflankLedgeCorePcaAspectRatio": round(shelf_pca_aspect, 3),
+            "stablePatchCoreWidthXM": round(float(np.ptp(stable_x)), 3),
+            "stablePatchCoreWidthZM": round(float(np.ptp(stable_z)), 3),
+            "stablePatchCoreAreaM2": int(np.count_nonzero(stable_patch)),
+            "olderFlowContactBoundsRuntimeXZ": {
+                "minX": round(float(contact_x.min()), 3),
+                "maxX": round(float(contact_x.max()), 3),
+                "minZ": round(float(contact_z.min()), 3),
+                "maxZ": round(float(contact_z.max()), 3),
+            },
             **section_metrics,
         },
         "simulator": {
@@ -785,6 +810,12 @@ def build() -> dict[str, Any]:
             manifest.get("selectionStatus", "").startswith("selected-")
             and all(bool(item["clear"]) for item in sightline_metrics)
             and section_metrics["actionEnvelopeLocalReliefM"] <= 0.35
+            and section_metrics["actionEnvelopeMedianSlopeDegrees"] <= 2.0
+            and 6.0 <= section_metrics["surroundingEightToTwentyFiveMetreMedianSlopeDegrees"] <= 10.0
+            and 6.0 <= section_metrics["olderFlowContactMedianSlopeDegrees"] <= 10.0
+            and section_metrics["nearLevelAreaWithinThirtyFiveMetresM2"] <= 150
+            and 9.0 <= float(np.ptp(stable_x)) <= 15.0
+            and 9.0 <= float(np.ptp(stable_z)) <= 15.0
             and section_metrics["uphillRiseAbovePerformerM"] >= 100.0
             and section_metrics["downhillFallBelowPerformerM"] >= 60.0
             and section_metrics["totalVerticalSpanM"] >= 180.0
@@ -812,12 +843,16 @@ def verify() -> dict[str, Any]:
         ),
         "runtime-uphill-downhill-proof": VIEWPOINTS_PATH.exists() and Image.open(VIEWPOINTS_PATH).size == (3840, 1320),
         "eight-sightlines": len(report["orbitSightlines"]) == 8 and all(item["clear"] for item in report["orbitSightlines"]),
-        "attached-oblique-midflank-ledge": (
-            float(report["terrainMetrics"]["midflankLedgeCorePcaAspectRatio"]) >= 2.0
-            and float(report["terrainMetrics"]["midflankLedgeCoreBoundsRuntimeXZ"]["minX"]) <= -25.0
-            and float(report["terrainMetrics"]["midflankLedgeCoreBoundsRuntimeXZ"]["maxX"]) >= 25.0
+        "small-irregular-stable-patch": (
+            9.0 <= float(report["terrainMetrics"]["stablePatchCoreWidthXM"]) <= 15.0
+            and 9.0 <= float(report["terrainMetrics"]["stablePatchCoreWidthZM"]) <= 15.0
+            and int(report["terrainMetrics"]["stablePatchCoreAreaM2"]) <= 200
         ),
         "walkable-action-envelope": float(report["terrainMetrics"]["actionEnvelopeLocalReliefM"]) <= 0.35,
+        "locally-eased-action-grade": float(report["terrainMetrics"]["actionEnvelopeMedianSlopeDegrees"]) <= 2.0,
+        "continuous-surrounding-grade": 6.0 <= float(report["terrainMetrics"]["surroundingEightToTwentyFiveMetreMedianSlopeDegrees"]) <= 10.0,
+        "sloping-old-flow-contact": 6.0 <= float(report["terrainMetrics"]["olderFlowContactMedianSlopeDegrees"]) <= 10.0,
+        "no-broad-near-level-platform": int(report["terrainMetrics"]["nearLevelAreaWithinThirtyFiveMetresM2"]) <= 150,
         "mountain-rises-above-performer": float(report["terrainMetrics"]["uphillRiseAbovePerformerM"]) >= 100.0,
         "country-falls-below-performer": float(report["terrainMetrics"]["downhillFallBelowPerformerM"]) >= 60.0,
         "world-scale-vertical-span": float(report["terrainMetrics"]["totalVerticalSpanM"]) >= 180.0,
