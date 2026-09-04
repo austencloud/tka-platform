@@ -11,7 +11,7 @@
     theoryHeaderArtworkSrc,
   } from "$lib/shared/shape-matrix/services/theory-matrix-artwork";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
-  import ShapeMatrixTheoryCorner from "./ShapeMatrixTheoryCorner.svelte";
+  import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
 
   interface Props {
     /** The shell owns navigation, the same way it does for the Matrix. */
@@ -30,7 +30,7 @@
 </script>
 
 {#snippet cornerGuide()}
-  <ShapeMatrixTheoryCorner />
+  <ShapeMatrixGridCorner onrandom={state.selectRandomTheoryPair} />
 {/snippet}
 
 <section class="theory-pane" aria-label="Theory matrix">

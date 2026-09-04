@@ -12,7 +12,7 @@
   const options = [
     {
       value: "matrix" as const,
-      label: "144 Matrix. Browse the classic system.",
+      label: "Level Matrix. Explore Levels 1 through 4.",
     },
     {
       // The Matrix sits at a Kinetic Alphabet level and Theory does not sit at
@@ -29,17 +29,15 @@
     <strong>
       {compact
         ? surface === "matrix"
-          ? "144"
+          ? "Levels"
           : "Ratios"
         : surface === "matrix"
-          ? "144 Matrix"
+          ? "Level Matrix"
           : "Ratio Playground"}
     </strong>
     {#if !compact}
       <small>
-        {surface === "matrix"
-          ? "Browse the classic system"
-          : "Build your own 4×4"}
+        {surface === "matrix" ? "Explore Levels 1–4" : "Build your own 4×4"}
       </small>
     {/if}
   </span>

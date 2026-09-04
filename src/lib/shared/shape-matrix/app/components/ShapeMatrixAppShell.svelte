@@ -295,7 +295,7 @@
             <span>{theory ? "Playground" : "Matrix"}</span>
           </button>
         {:else}
-          <strong>{theory ? "Ratio Playground" : "Shape Matrix"}</strong>
+          <strong>{theory ? "Ratio Playground" : "Level Matrix"}</strong>
         {/if}
         <!-- The compact value editor keeps the grid as the hero. Matrix opens
              its level and turns; Theory names ratio editing directly and

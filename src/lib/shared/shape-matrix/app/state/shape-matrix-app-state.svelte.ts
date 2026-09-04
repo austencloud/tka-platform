@@ -6,6 +6,7 @@ import {
   type MatrixLabelMode,
 } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
 import {
+  flowerKey,
   flowerPetals,
   type Flower,
   type FlowerStyle,
@@ -181,6 +182,29 @@ function supportsTimedPropRelationship(
     pair.right.turns !== "fl" &&
     pair.left.turns === pair.right.turns
   );
+}
+
+function randomPairFromAxes<T>(
+  rows: readonly T[],
+  columns: readonly T[],
+  current: { left: T; right: T } | null,
+  keyOf: (value: T) => string,
+  random: () => number
+): { left: T; right: T } | null {
+  const pairs = rows.flatMap((left) =>
+    columns.map((right) => ({ left, right }))
+  );
+  if (pairs.length === 0) return null;
+
+  const pairKey = ({ left, right }: { left: T; right: T }) =>
+    `${keyOf(left)}|${keyOf(right)}`;
+  const currentKey = current ? pairKey(current) : null;
+  const choices =
+    pairs.length > 1
+      ? pairs.filter((candidate) => pairKey(candidate) !== currentKey)
+      : pairs;
+  const unit = Math.min(0.999999, Math.max(0, random()));
+  return choices[Math.floor(unit * choices.length)] ?? null;
 }
 
 export function createShapeMatrixAppState(
@@ -455,25 +479,25 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
-  function selectRandomTheoryPair(random: () => number = Math.random): void {
-    const pairs = theoryRowAxis.flatMap((left) =>
-      theoryColAxis.map((right) => ({ left, right }))
+  function selectRandomPair(random: () => number = Math.random): void {
+    const choice = randomPairFromAxes(
+      rowAxis,
+      colAxis,
+      selectedPair,
+      flowerKey,
+      random
     );
-    if (pairs.length === 0) return;
+    if (choice) selectPair(choice);
+  }
 
-    const currentKey = theoryPair
-      ? `${theoryFlowerKey(theoryPair.left)}|${theoryFlowerKey(theoryPair.right)}`
-      : null;
-    const choices =
-      pairs.length > 1
-        ? pairs.filter(
-            ({ left, right }) =>
-              `${theoryFlowerKey(left)}|${theoryFlowerKey(right)}` !==
-              currentKey
-          )
-        : pairs;
-    const unit = Math.min(0.999999, Math.max(0, random()));
-    const choice = choices[Math.floor(unit * choices.length)];
+  function selectRandomTheoryPair(random: () => number = Math.random): void {
+    const choice = randomPairFromAxes(
+      theoryRowAxis,
+      theoryColAxis,
+      theoryPair,
+      theoryFlowerKey,
+      random
+    );
     if (choice) selectTheoryPair(choice);
   }
 
@@ -745,6 +769,7 @@ export function createShapeMatrixAppState(
     unlinkTheoryRatios,
     setTheoryMode,
     selectTheoryPair,
+    selectRandomPair,
     selectRandomTheoryPair,
     setPropType,
     selectPair,

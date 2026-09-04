@@ -34,9 +34,10 @@ describe("Kinetic Shape Engine identity", () => {
     expect(page).toContain("KINETIC_SHAPE_ENGINE_NAME");
     expect(page).toContain("SHAPE_MATRIX_EXPLORER_LEGACY_NAME");
     expect(shell).toContain("{KINETIC_SHAPE_ENGINE_NAME}");
-    expect(shell).toContain('theory ? "Ratio Playground" : "Shape Matrix"');
+    expect(shell).toContain('theory ? "Ratio Playground" : "Level Matrix"');
     expect(surface).toContain('ariaLabel="Choose a Shape Engine mode"');
-    expect(surface).toContain('"144 Matrix"');
+    expect(surface).toContain('"Level Matrix"');
+    expect(surface).toContain('"Explore Levels 1–4"');
     expect(surface).toContain('"Ratio Playground"');
   });
 

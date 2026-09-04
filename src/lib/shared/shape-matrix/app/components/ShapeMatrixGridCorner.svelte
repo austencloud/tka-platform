@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  interface Props {
+    onrandom: () => void;
+  }
 
-  const state = getShapeMatrixAppContext();
+  const { onrandom }: Props = $props();
 </script>
 
 <div class="corner-frame">
@@ -14,7 +16,7 @@
     <button
       type="button"
       aria-label="Pick a random crossing"
-      onclick={() => state.selectRandomTheoryPair()}
+      onclick={() => onrandom()}
     >
       <i class="fas fa-dice" aria-hidden="true"></i>
       <span>Surprise me</span>
@@ -125,13 +127,13 @@
     outline-offset: -3px;
   }
 
-  @container (max-width: 10rem) {
+  @container (max-width: 7.5rem) {
     .axis-guide {
       display: none;
     }
   }
 
-  @container (max-height: 10rem) {
+  @container (max-height: 7.5rem) {
     .axis-guide {
       display: none;
     }
