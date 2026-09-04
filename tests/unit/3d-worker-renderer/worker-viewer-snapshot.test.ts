@@ -118,7 +118,7 @@ describe("worker viewer snapshot", () => {
     expect(mocks.createWorkerPerformerSnapshot).not.toHaveBeenCalled();
   });
 
-  it("uses actual effect sources and locomotion requests for fail-closed reasons", () => {
+  it("accepts exact worker locomotion while still rejecting unsupported effects", () => {
     const source = input();
     source.performers[0].options.enableLocomotion = true;
     source.effects.sources = [
@@ -153,7 +153,7 @@ describe("worker viewer snapshot", () => {
     expect(createWorkerViewerSnapshot(source)).toEqual({
       backend: "legacy",
       snapshot: null,
-      fallbackReasons: ["locomotion-not-migrated", "effects-not-migrated"],
+      fallbackReasons: ["effects-not-migrated"],
     });
   });
 

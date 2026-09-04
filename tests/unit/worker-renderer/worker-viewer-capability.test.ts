@@ -8,7 +8,7 @@ import {
 const migratedEnvironments = new Set(["ocean", "rainbow", "void"] as const);
 
 function supported(
-  overrides: Partial<WorkerViewerCapabilitySnapshot> = {},
+  overrides: Partial<WorkerViewerCapabilitySnapshot> = {}
 ): WorkerViewerCapabilitySnapshot {
   return {
     offscreenCanvasAvailable: true,
@@ -42,8 +42,8 @@ describe("decideWorkerViewerCapability", () => {
         supported({
           offscreenCanvasAvailable: false,
           environment: "forest",
-        }),
-      ),
+        })
+      )
     ).toEqual({
       backend: "legacy",
       fallbackReasons: [
@@ -67,11 +67,10 @@ describe("decideWorkerViewerCapability", () => {
           cameraMode: "choreography",
           captureActive: true,
           requiresRendererHandle: true,
-        }),
-      ).fallbackReasons,
+        })
+      ).fallbackReasons
     ).toEqual([
       "prop-family-not-migrated",
-      "locomotion-not-migrated",
       "effects-not-migrated",
       "scene-markers-not-migrated",
       "audience-not-migrated",
@@ -87,11 +86,11 @@ describe("decideWorkerViewerCapability", () => {
     "keeps the %s camera on the legacy renderer until parity exists",
     (cameraMode) => {
       expect(
-        decideWorkerViewerCapability(supported({ cameraMode })),
+        decideWorkerViewerCapability(supported({ cameraMode }))
       ).toMatchObject({
         backend: "legacy",
         fallbackReasons: ["camera-mode-not-migrated"],
       });
-    },
+    }
   );
 });

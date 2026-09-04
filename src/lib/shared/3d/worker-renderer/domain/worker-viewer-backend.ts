@@ -24,7 +24,7 @@ export const WORKER_ENVIRONMENT_BY_BACKGROUND = {
   [BackgroundType.EMBER]: null,
   [BackgroundType.BLOSSOM]: "blossom",
   [BackgroundType.FOREST]: "forest",
-  [BackgroundType.AUTUMN]: null,
+  [BackgroundType.AUTUMN]: "autumn",
   [BackgroundType.CELESTIAL]: "celestial",
   [BackgroundType.VOID]: "void",
 } as const satisfies Readonly<

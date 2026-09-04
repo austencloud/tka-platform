@@ -25,6 +25,7 @@ import { createCelestialPrototypeWorld } from "../worlds/celestial-prototype-wor
 import { createCosmicPrototypeWorld } from "../worlds/cosmic-prototype-world";
 import { createForestPrototypeWorld } from "../worlds/forest-prototype-world";
 import { createBlossomPrototypeWorld } from "../worlds/blossom-prototype-world";
+import { createAutumnPrototypeWorld } from "../worlds/autumn-prototype-world";
 import type {
   WorkerEnvironmentWorld,
   WorkerWorldFactory,
@@ -58,6 +59,7 @@ const WORLD_FACTORIES: Readonly<
   cosmic: createCosmicPrototypeWorld,
   forest: createForestPrototypeWorld,
   blossom: createBlossomPrototypeWorld,
+  autumn: createAutumnPrototypeWorld,
 };
 
 let requestId = 0;

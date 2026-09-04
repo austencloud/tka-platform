@@ -40,6 +40,7 @@ describe("worker viewer backend", () => {
       Object.values(BackgroundType).sort()
     );
     expect([...MIGRATED_WORKER_ENVIRONMENTS].sort()).toEqual([
+      "autumn",
       "blossom",
       "celestial",
       "cosmic",
@@ -50,7 +51,7 @@ describe("worker viewer backend", () => {
       "winter",
     ]);
     expect(getWorkerEnvironmentKey(SceneEnvironmentId.RAINBOW)).toBe("rainbow");
-    expect(getWorkerEnvironmentKey(SceneEnvironmentId.AUTUMN)).toBeNull();
+    expect(getWorkerEnvironmentKey(SceneEnvironmentId.AUTUMN)).toBe("autumn");
     expect(getWorkerEnvironmentKey(SceneEnvironmentId.EMBER)).toBeNull();
   });
 
@@ -94,7 +95,7 @@ describe("worker viewer backend", () => {
   it("fails closed with every exact reason instead of dropping content", () => {
     const decision = decideWorkerViewerBackend(
       supported({
-        environmentId: SceneEnvironmentId.AUTUMN,
+        environmentId: SceneEnvironmentId.EMBER,
         conditions: {
           offscreenCanvasAvailable: false,
           visibleSceneMarkerCount: 1,
@@ -120,7 +121,6 @@ describe("worker viewer backend", () => {
         "offscreen-canvas-unavailable",
         "environment-not-migrated",
         "prop-family-not-migrated",
-        "locomotion-not-migrated",
         "effects-not-migrated",
         "scene-markers-not-migrated",
         "audience-not-migrated",

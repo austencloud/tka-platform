@@ -11,7 +11,6 @@ export type WorkerViewerFallbackReason =
   | "offscreen-canvas-unavailable"
   | "environment-not-migrated"
   | "prop-family-not-migrated"
-  | "locomotion-not-migrated"
   | "effects-not-migrated"
   | "scene-markers-not-migrated"
   | "audience-not-migrated"
@@ -52,7 +51,7 @@ export interface WorkerViewerCapabilityDecision {
  * silently rendering less than the viewer asked for.
  */
 export function decideWorkerViewerCapability(
-  snapshot: WorkerViewerCapabilitySnapshot,
+  snapshot: WorkerViewerCapabilitySnapshot
 ): WorkerViewerCapabilityDecision {
   const fallbackReasons: WorkerViewerFallbackReason[] = [];
 
@@ -61,16 +60,13 @@ export function decideWorkerViewerCapability(
   }
   if (
     !snapshot.migratedEnvironments.has(
-      snapshot.environment as WorkerEnvironmentKey,
+      snapshot.environment as WorkerEnvironmentKey
     )
   ) {
     fallbackReasons.push("environment-not-migrated");
   }
   if (!snapshot.performerPropsSupported) {
     fallbackReasons.push("prop-family-not-migrated");
-  }
-  if (snapshot.locomotionActive) {
-    fallbackReasons.push("locomotion-not-migrated");
   }
   if (snapshot.effectsActive) {
     fallbackReasons.push("effects-not-migrated");
