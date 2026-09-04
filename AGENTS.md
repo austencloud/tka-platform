@@ -1,121 +1,69 @@
-# Flow Arts Composer Agent Instructions
+# Flow Arts Composer Agent Contract
 
-This file is the always-loaded project entry point. Keep stable policy here;
-keep detailed, domain-specific rules in `.claude/rules/` and durable architecture
-in `docs/architecture/`. Do not add incident histories, tool inventories, model
-versions, machine setup notes, or duplicated rule text to this file.
+This is the project entry point. Keep only stable, project-wide constraints
+here. The current user request has priority over repository rules and skills
+unless a higher-priority platform or safety instruction conflicts.
 
-## Working Agreement
+## Request Boundary
 
-- Classify the request before acting. Investigation, assessment, explanation,
-  brainstorming, and recommendations are read-only unless Austen explicitly
-  asks for a change. A direct request to build, fix, rewrite, or implement is
-  approval for that stated scope.
-- Answer questions the repository or available tools can answer. Ask Austen only
-  for a material product choice, user-only credential or interaction, destructive
-  action outside the approved workflow, or a genuine blocker.
-- Stay within scope. Do not turn an approved change into adjacent cleanup.
-- Preserve unrelated and in-flight work. Never revert or overwrite changes you
-  do not own.
-- Report evidence, not predictions. If verification is impossible, state what
-  failed, what you tried, and what remains unverified. Do not hand routine checks
-  back to Austen.
+- Reviews, explanations, investigations, and recommendations are read-only.
+- A direct request to build, fix, update, rewrite, or implement authorizes that
+  stated repository change and its normal verification lifecycle.
+- Do not expand approved work into adjacent cleanup, deployment, external-data
+  mutation, purchases, messages, or personal-account actions.
+- Resolve routine questions from code and tools. Ask Austen only for a material
+  product choice, user-only interaction, destructive scope outside the approved
+  workflow, or a genuine blocker.
+- Preserve unrelated and in-flight changes.
 
-## Worktrees and Git
+## Repository Lifecycle
 
-- Every modifying task uses one dedicated Git worktree based on `main`. The
-  primary checkout at `E:/tka-platform` is read-only except for final integration
-  or when Austen explicitly requests direct work there.
-- If a modifying task starts in the primary checkout, move it with Codex Handoff
-  or create one repository-adjacent task worktree before editing. Never nest or
-  repurpose worktrees.
-- Create a unique `codex/<task-slug>` branch before committing. Check status
-  before editing and before each commit.
-- Stage and commit only task-owned paths. Never use `git add -A`, `git add .`,
-  `git add -u`, a bare `git commit`, or destructive reset/checkout commands.
-- Implementation approval covers proportionate verification, scoped commits,
-  guarded local integration, and cleanup. Finish from the primary checkout with
-  `npm run wt:finish -- <branch> --route /real-route` for visual work or
+- Every modifying task uses one dedicated worktree based on `main`. The primary
+  checkout at `E:/tka-platform` is reserved for read-only investigation, the
+  dev server, and final integration unless Austen explicitly requests direct
+  edits there.
+- Create a unique `codex/<task-slug>` branch. Stage and commit only task-owned
+  paths; never use broad staging, a bare commit, or destructive reset/checkout.
+- In this repository, implementation approval includes scoped commits, guarded
+  local integration, and clean worktree removal. From the primary checkout run
+  `npm run wt:finish -- <branch> --route /real-route` for reviewable UI or
   `npm run wt:finish -- <branch> --nonvisual` otherwise.
-- If an integration gate fails, leave the branch and worktree intact and report
-  the exact conflict. Never delete a dirty worktree or another task's branch.
-
-Read `.claude/rules/worktree-workflow.md` and
-`.claude/rules/commit-only-your-own-changes.md` before modifying repository
-files.
+- If any gate fails, leave the branch and worktree intact and report the exact
+  blocker. Never delete another task's branch or dirty worktree.
 
 ## Verification
 
-- Run the relevant checks yourself and fix task-caused failures. Do not absorb
-  unrelated pre-existing failures into the task.
-- Match evidence to the claim: tests or runtime queries for behavior, build
-  output for build integrity, and observed screenshots for appearance.
-- Visual changes that affect size, position, count, structure, responsiveness,
-  or a reported visual defect require browser inspection. Copy-only changes and
-  equivalent token swaps do not.
-- Verifying a localhost visual diff in the dedicated agent browser has standing
-  permission. Do not ask first. Mutating external data, acting in Austen's own
-  signed-in session, purchases, messages, or destructive browser actions still
-  require explicit approval.
-- Use `scripts/launch-chrome-debug.ps1`, one task-owned background tab, per-page
-  viewport emulation, and the required viewport set from the canonical rule.
-  Close only the task-owned tab and clear its emulation afterward.
+- Match evidence to risk and stop after appropriate checks pass. Documentation
+  and instruction-only changes need formatting, reference, and focused contract
+  checks, not the full Svelte check. Code changes need the closest tests for
+  silent behavior plus the narrowest relevant type, lint, or build check.
+- Visual changes need direct browser inspection when they alter geometry,
+  responsiveness, element count, structure, or a reported visual defect. Use
+  the viewport tiers that can exercise the changed behavior; use the full seven
+  viewport matrix for new surfaces or cross-breakpoint layout work.
+- Localhost verification in the dedicated agent browser is part of approved UI
+  implementation. External mutation and Austen's personal session still require
+  explicit authorization.
+- Port 5173 is Austen's IPv6 HTTPS/2 dev server. Never start, restart, replace,
+  or kill it. Probe it with `curl.exe -k -g "https://[::1]:5173/"`. A task-owned
+  server must use a free port and be stopped in the same turn.
 
-Read `.claude/rules/verification-protocol.md`,
-`.claude/rules/visual-verification-mandatory.md`, and
-`.claude/rules/resource-budget.md` before their matching work.
+## Exact Routing
 
-## Shared Development Environment
+Read only the row that matches the task. Do not scan `.claude/rules/` generally.
 
-- Port 5173 is Austen's HTTPS/2 dev server. Never start, stop, restart, replace,
-  or kill it. Diagnose it without changing it.
-- Because it binds IPv6, probe it with
-  `curl.exe -k -g "https://[::1]:5173/"`; `curl localhost:5173` is not a valid
-  health check.
-- If a task needs its own server, use a free non-5173 port after the resource
-  gate and stop that server in the same turn.
-- Use PowerShell for Windows process work. Never run bare `find` or query Windows
-  processes from Git Bash.
+| Trigger                                                | Required guidance                                                                                                                  |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Worktree, commit, integration                          | `.claude/rules/worktree-workflow.md`, `.claude/rules/commit-only-your-own-changes.md`                                              |
+| Tests or verification strategy                         | `.agents/skills/testing/SKILL.md`, `.claude/rules/verification-protocol.md`                                                        |
+| UI layout, CSS, motion, responsive structure           | `src/AGENTS.md`, `docs/architecture/visual-design-canon.md`                                                                        |
+| New shared component, service, utility, or behavior    | `.claude/rules/never-hand-roll.md`; search `docs/architecture/canonical-capabilities.md` with `rg` instead of reading it wholesale |
+| TKA facts, pictographs, or sequence generation         | `mcp-server/AGENTS.md`                                                                                                             |
+| Locomotion, gait, feet, retargeting, terrain traversal | `src/lib/shared/3d/AGENTS.md`, `docs/architecture/locomotion-research-canon.md`                                                    |
+| Firestore query or index changes                       | `.claude/rules/firestore-cost-discipline.md`                                                                                       |
+| Marketing, UI, or documentation copy                   | `docs/reference/ai-writing-guide.md`                                                                                               |
+| Heavy checks or local services                         | `.claude/rules/resource-budget.md`, `.claude/rules/never-start-the-dev-server.md`                                                  |
 
-Read `.claude/rules/never-start-the-dev-server.md`,
-`.claude/rules/fast-iteration-loop.md`, and `.claude/rules/resource-budget.md`
-before starting heavy checks or local services.
-
-## TKA Domain and Generation
-
-- Treat the Flow Arts MCP server as ground truth for TKA letters, positions,
-  pictographs, VTG, transitions, terminology, and sequence feasibility. Use a
-  current-turn MCP result for user-facing domain claims.
-- Use the appropriate Flow Arts MCP generation or viewing tool for pictographs
-  and sequences. Never recreate TKA rendering with scripts, inline code, or
-  guessed data.
-- If the MCP server is unavailable, stop the domain-dependent portion and report
-  the missing capability. Do not substitute model memory.
-- Named-word generation may include a tagline, but do not modify
-  `mcp-server/src/core/humor-profile.json` unless Austen explicitly asks to save
-  the choice as training data.
-- Effect previews use the production LOOP generator and policy. Do not use short
-  hand-authored fixtures or playback resets.
-
-Read `.claude/rules/mcp-ground-truth.md`, `.claude/rules/tka-domain.md`,
-`.claude/rules/verify-at-canonical-source.md`, and
-`.claude/rules/sequence-generation.md` for domain work.
-
-## Architecture and Product Quality
-
-- Search by meaning before creating a new component, service, utility, or
-  renderer. Reuse, extend, or compose the canonical owner instead of building a
-  parallel implementation.
-- For UI work, read `docs/architecture/visual-design-canon.md` and the matching
-  design rules. Structural movement uses the shared reduced-motion-aware motion
-  system; accidental layout shift is prevented.
-- Before locomotion, gait, foot-contact, retargeting, terrain, or motion-matching
-  work, read `.claude/rules/locomotion.md` and
-  `docs/architecture/locomotion-research-canon.md`.
-- For marketing, interface, and documentation copy, follow
-  `docs/reference/ai-writing-guide.md`. Verify that every described feature
-  exists.
-
-Before non-trivial work, inspect `.claude/rules/` and read the files whose names
-match the task. `.claude/rules/never-hand-roll.md` is the general ownership
-rule; feature-specific rules take precedence within their domain.
+Rule explanations and historical documents provide context, not authority. When
+guidance conflicts, follow the current user request, then this file, then the
+most specific matching contract.

@@ -1,3 +1,10 @@
+---
+paths:
+  - "src/lib/shared/3d/**/*"
+  - "src/lib/features/stage/**/*"
+  - "packages/camera-3d/**/*"
+---
+
 # Locomotion Ownership and Evidence (ENFORCED)
 
 Read `docs/architecture/locomotion-research-canon.md` before changing walking,

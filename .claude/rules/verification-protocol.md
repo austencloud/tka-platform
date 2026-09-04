@@ -1,19 +1,21 @@
-# Verification Protocol — ENFORCED
+# Verification Contract
 
-Every "done," "fixed," or "should work" claim ships with its evidence in the
-same message: test output, runtime query output, console log, or a screenshot
-you took and actually read. Can you prove it works, or are you guessing? If
-you're guessing, say so; if you can prove it, show the proof. There is no
-third option.
+A completion claim includes evidence matched to the changed risk.
 
-- **Visual/UI changes:** the evidence is a screenshot per
-  `visual-verification-mandatory.md`. Passing tests and a green
-  `npm run check` are not visual verification — both were green the day a
-  1765px-wide control shipped.
-- **Non-visual changes:** runtime state query, or a test run with its output.
-- **Genuinely unverifiable:** say exactly what you could not verify and why,
-  and what you tried. This is reserved for tools that won't run — not for
-  handing the check back to the user.
+- Documentation and instructions: formatting, reference resolution, and focused
+  contract checks.
+- Pure logic or data behavior: focused unit tests with meaningful assertions.
+- Integration or runtime behavior: the narrowest runtime query or integration
+  check that exercises the changed path.
+- Build configuration or dependency wiring: the affected build/type/lint gate.
+- Appearance or interaction geometry: direct observation under
+  `visual-verification-mandatory.md`; tests alone are insufficient.
 
-Don't predict what the user will experience ("reload and try it", "you should
-now see...") in place of evidence.
+Run broader checks only when the change crosses broad boundaries, a focused
+check fails for a task-related reason, or the final integration gate requires
+them. Once appropriate evidence passes, stop repeating or widening checks
+without a concrete new risk.
+
+If a required check cannot run, report its exact failure, attempted alternatives,
+and remaining uncertainty. Do not replace evidence with “should work” or hand a
+routine verification command to Austen.
