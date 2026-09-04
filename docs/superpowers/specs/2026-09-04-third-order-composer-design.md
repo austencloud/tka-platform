@@ -54,7 +54,7 @@ Radial and tangent are deliberately separate. Radial describes where the parent 
 
 ## Timing modes
 
-- **Phrase per count:** one complete child phrase plays during each carrier count. This is the default because it makes the nested unit legible immediately.
+- **Fit to carrier:** one complete child phrase plays during one complete carrier phrase. This is the default because it preserves the source phrase while aligning both loop seams.
 - **Shared counts:** child count 1 advances with carrier count 1 and wraps at the child's own length.
 - **Independent clock:** the child advances from the master clock at an editable rate from 0.1x to 4x.
 

@@ -14,9 +14,8 @@
 <main class="stage-shell" aria-label="Third Order motion stage">
   <header class="stage-header">
     <div>
-      <span class="eyebrow">Third Order</span>
-      <h1>Motion inside motion</h1>
-      <p>Two complete coordinate systems, carried by one larger sequence.</p>
+      <h1>Third Order</h1>
+      <p>Move complete sequences through a larger coordinate system.</p>
     </div>
     {#if compact}
       <div class="compact-actions">
@@ -134,13 +133,9 @@
     min-height: 0;
     width: 100%;
     height: 100%;
-    padding: 18px clamp(14px, 2vw, 26px) 12px;
+    padding: 16px clamp(14px, 2vw, 22px) 12px;
     overflow: hidden;
-    background: radial-gradient(
-      circle at 50% 38%,
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 8%, transparent),
-      transparent 46%
-    );
+    background: var(--theme-panel-elevated-bg, var(--theme-panel-bg));
   }
   .stage-header {
     display: flex;
@@ -149,22 +144,16 @@
     gap: 16px;
   }
   .stage-header h1 {
-    margin: 3px 0 0;
+    margin: 0;
     color: var(--theme-text, #fff);
-    font-size: clamp(21px, 2.2vw, 30px);
-    letter-spacing: -0.025em;
+    font-size: clamp(20px, 1.5vw, 24px);
+    font-weight: 650;
+    letter-spacing: -0.015em;
   }
   .stage-header p {
     margin: 4px 0 0;
     color: var(--theme-text-dim, #9ca3af);
-    font-size: 13px;
-  }
-  .eyebrow {
-    color: var(--theme-accent, #a78bfa);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    font-size: var(--font-size-min, 14px);
   }
   .compact-actions {
     display: flex;
@@ -179,11 +168,11 @@
     min-height: 44px;
     padding: 8px 11px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    border-radius: 11px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.07));
+    border-radius: var(--border-radius-md, 8px);
+    background: var(--theme-card-bg);
     color: var(--theme-text, #fff);
-    font-size: 12px;
-    font-weight: 650;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
     cursor: pointer;
   }
   .canvas-well {
@@ -204,15 +193,8 @@
         var(--theme-stroke-strong, rgba(255, 255, 255, 0.2)) 80%,
         transparent
       );
-    border-radius: clamp(16px, 2vw, 24px);
-    background: radial-gradient(
-      circle at center,
-      color-mix(in srgb, var(--theme-card-bg, #12141c) 96%, #171329),
-      var(--theme-bg, #090a0f) 72%
-    );
-    box-shadow:
-      0 24px 70px rgba(0, 0, 0, 0.28),
-      inset 0 0 90px rgba(139, 92, 246, 0.035);
+    border-radius: var(--border-radius-lg, 12px);
+    background: var(--theme-card-bg);
     isolation: isolate;
   }
   .carrier-canvas,
@@ -223,7 +205,7 @@
   }
   .carrier-canvas {
     z-index: 1;
-    opacity: 0.72;
+    opacity: 0.42;
   }
   .child-grid {
     z-index: 2;
@@ -247,21 +229,18 @@
     z-index: 4;
     display: grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     translate: -50% -50%;
     border: 1px solid currentColor;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--theme-bg, #090b12) 80%, transparent);
+    background: var(--theme-panel-bg);
     color: var(--theme-text, #fff);
-    font-size: 11px;
-    font-weight: 850;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
     cursor: pointer;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
-    transition:
-      width var(--duration-normal) ease,
-      height var(--duration-normal) ease,
-      box-shadow var(--duration-normal) ease;
+    transition: box-shadow var(--transition-normal);
   }
   .child-target.grid-blue {
     color: var(--prop-blue, #60a5fa);
@@ -270,8 +249,6 @@
     color: var(--prop-red, #f87171);
   }
   .child-target.selected {
-    width: 42px;
-    height: 42px;
     box-shadow:
       0 0 0 5px color-mix(in srgb, currentColor 18%, transparent),
       0 5px 20px rgba(0, 0, 0, 0.4);
@@ -287,7 +264,7 @@
     top: 50%;
     translate: -50% 15px;
     color: var(--theme-text-dim, #9ca3af);
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     letter-spacing: 0.04em;
     pointer-events: none;
   }
@@ -297,7 +274,7 @@
     gap: 15px;
     min-height: 28px;
     color: var(--theme-text-dim, #9ca3af);
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
   }
   .stage-legend > span {
     display: inline-flex;

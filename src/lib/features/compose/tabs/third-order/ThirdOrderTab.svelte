@@ -126,15 +126,25 @@
   .third-order-workspace {
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
+    gap: var(--spacing-sm, 8px);
     width: 100%;
     height: 100%;
     min-width: 0;
     min-height: 0;
+    padding: var(--spacing-lg, 16px);
     overflow: hidden;
-    background: var(--color-bg-primary, #080910);
+    background: transparent;
     container-type: size;
   }
-  .workspace-main,
+  .workspace-main {
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--border-radius-lg, 12px);
+    background: var(--theme-panel-bg);
+    box-shadow: var(--theme-shadow, 0 14px 36px rgba(0, 0, 0, 0.28));
+  }
   .drawer-content {
     min-width: 0;
     min-height: 0;
@@ -145,5 +155,11 @@
   }
   :global(.third-order-drawer) {
     --drawer-width: min(92vw, 390px);
+  }
+  @media (max-width: 767px), (max-height: 620px) {
+    .third-order-workspace {
+      gap: var(--spacing-xs, 6px);
+      padding: var(--spacing-xs, 6px);
+    }
   }
 </style>

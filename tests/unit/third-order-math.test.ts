@@ -15,14 +15,18 @@ describe("third-order coordinate math", () => {
     expect(wrapThirdOrderBeat(-0.5, 16)).toBeCloseTo(15.5);
   });
 
-  it("fits one complete child phrase inside every carrier count", () => {
-    expect(mapThirdOrderChildStep(3.25, 8, "phrase")).toBeCloseTo(2);
-    expect(mapThirdOrderChildStep(3.75, 8, "phrase")).toBeCloseTo(6);
+  it("fits one complete child phrase across one carrier phrase", () => {
+    expect(mapThirdOrderChildStep(4, 8, 16, "phrase")).toBeCloseTo(2);
+    expect(mapThirdOrderChildStep(12, 8, 16, "phrase")).toBeCloseTo(6);
+  });
+
+  it("does not accelerate an equal-length child phrase", () => {
+    expect(mapThirdOrderChildStep(3.25, 16, 16, "phrase")).toBeCloseTo(3.25);
   });
 
   it("supports shared and independent child clocks", () => {
-    expect(mapThirdOrderChildStep(5.5, 4, "beats")).toBeCloseTo(1.5);
-    expect(mapThirdOrderChildStep(5.5, 4, "independent", 2)).toBeCloseTo(3);
+    expect(mapThirdOrderChildStep(5.5, 4, 16, "beats")).toBeCloseTo(1.5);
+    expect(mapThirdOrderChildStep(5.5, 4, 16, "independent", 2)).toBeCloseTo(3);
   });
 
   it("places an east carrier hand at the canonical hand radius", () => {
