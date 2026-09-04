@@ -24,6 +24,7 @@
     onDangerAction?: () => void;
     onSelectAll: () => void;
     onExitSelection: () => void;
+    showExitAction?: boolean;
     onClearSelection?: () => void;
     showClearAction?: boolean;
     primaryBusy?: boolean;
@@ -46,6 +47,7 @@
     onDangerAction,
     onSelectAll,
     onExitSelection,
+    showExitAction = true,
     onClearSelection,
     showClearAction = true,
     primaryBusy = false,
@@ -66,14 +68,16 @@
   aria-label="Selection actions"
 >
   <div class="toolbar-status">
-    <button
-      type="button"
-      class="toolbar-button icon-button exit-button"
-      onclick={onExitSelection}
-      aria-label="Exit selection mode"
-    >
-      <i class="fas fa-times" aria-hidden="true"></i>
-    </button>
+    {#if showExitAction}
+      <button
+        type="button"
+        class="toolbar-button icon-button exit-button"
+        onclick={onExitSelection}
+        aria-label="Exit selection mode"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    {/if}
 
     <span class="selected-count" aria-live="polite" aria-atomic="true">
       <span class="count-sizer" aria-hidden="true">{totalCount} selected</span>
