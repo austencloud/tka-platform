@@ -17,6 +17,11 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
 import { resolveTnDFamilyCards } from "$lib/features/lab/vtg-lab/services/resolve-tnd-family-cards";
+import {
+  buildTnDSeedClasses,
+  getTnDFamilyOptions,
+} from "$lib/features/choreo-card/services/deck-composer";
+import { loadTndBaseWords } from "$lib/features/choreo-card/services/tnd-base-word-snapshot";
 import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import { processReversals } from "$lib/shared/create/services/reversal-detector";
 import { transformSequence } from "$lib/features/choreo-card/services/reversal-seed-service";
@@ -62,7 +67,7 @@ export function loadCanonicalTnDBaseSequences(): Promise<
   readonly SequenceData[]
 > {
   if (!basePoolPromise) {
-    basePoolPromise = resolvePool(["0|0"]).catch((err) => {
+    basePoolPromise = resolveBasePool().catch((err) => {
       basePoolPromise = null;
       throw err;
     });
@@ -70,17 +75,35 @@ export function loadCanonicalTnDBaseSequences(): Promise<
   return basePoolPromise;
 }
 
-async function resolvePool(
-  patterns?: readonly string[]
-): Promise<readonly SequenceData[]> {
+async function resolveBasePool(): Promise<readonly SequenceData[]> {
+  const snapshots = await loadTndBaseWords();
+  const byId = new Map(snapshots.map((sequence) => [sequence.id, sequence]));
+  const families = getTnDFamilyOptions(buildTnDSeedClasses(snapshots), [
+    "diamond",
+  ]);
+
+  return families.flatMap((family) =>
+    family.entries.flatMap((entry) => {
+      const sequence = byId.get(entry.sequenceId);
+      if (!sequence) return [];
+      return [
+        updateSequenceData(sequence, {
+          author: CANONICAL_TND_AUTHOR,
+          dateAdded: TND_BIRTHDAY,
+          birthday: TND_BIRTHDAY,
+          metadata: { ...sequence.metadata, familyId: family.familyId },
+        }),
+      ];
+    })
+  );
+}
+
+async function resolvePool(): Promise<readonly SequenceData[]> {
   const out: SequenceData[] = [];
   // Sequential per family: each call shares the same cached base catalog, and
   // the resolution work is CPU-bound — parallelism buys nothing but jank.
   for (const element of TND_ELEMENTS) {
-    const matrices = await resolveTnDFamilyCards(
-      element.familyId,
-      patterns ? { patterns } : undefined
-    );
+    const matrices = await resolveTnDFamilyCards(element.familyId);
     for (const matrix of matrices) {
       for (const [pattern, seq] of matrix.byTurn) {
         const tagged = updateSequenceData(seq, {
