@@ -12,7 +12,6 @@
 
 <aside class="source-rail" aria-label="Third Order sources">
   <header class="rail-header">
-    <span class="eyebrow">Coordinate systems</span>
     <h2>Sources</h2>
     <p>
       Each child keeps its own timing and prop relationship while its center
@@ -73,30 +72,22 @@
     {/each}
   </div>
 
-  <button
-    class="duplicate-button"
-    type="button"
-    onclick={state.duplicateBlueToRed}
-  >
+  <PanelButton fullWidth onclick={state.duplicateBlueToRed}>
     <i class="fas fa-clone" aria-hidden="true"></i>
     Duplicate blue setup to red
-  </button>
+  </PanelButton>
 </aside>
 
 <style>
   .source-rail {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
     min-width: 0;
     height: 100%;
-    padding: 18px;
+    padding: 16px;
     overflow: auto;
-    background: color-mix(
-      in srgb,
-      var(--theme-card-bg, #11131a) 86%,
-      transparent
-    );
+    background: var(--theme-panel-bg);
   }
 
   .rail-header {
@@ -106,19 +97,18 @@
   .rail-header h2 {
     margin: 0;
     color: var(--theme-text, #fff);
-    font-size: 20px;
+    font-size: 18px;
   }
   .rail-header p {
     margin: 0;
     color: var(--theme-text-dim, #9ca3af);
-    font-size: 13px;
+    font-size: var(--font-size-min, 14px);
     line-height: 1.45;
   }
-  .eyebrow,
   .source-kicker {
     color: var(--theme-accent, #8b5cf6);
-    font-size: 11px;
-    font-weight: 750;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
@@ -128,15 +118,14 @@
     gap: 11px;
     padding: 14px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.13));
-    border-radius: 14px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.055));
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    border-radius: var(--border-radius-md, 8px);
+    background: var(--theme-card-bg);
   }
 
   .child-card {
     transition:
-      border-color var(--duration-normal) ease,
-      box-shadow var(--duration-normal) ease;
+      border-color var(--transition-normal),
+      box-shadow var(--transition-normal);
   }
   .child-card.selected.blue {
     border-color: color-mix(in srgb, var(--prop-blue, #3b82f6) 72%, white);
@@ -191,7 +180,7 @@
     width: 38px;
     height: 38px;
     flex: 0 0 38px;
-    border-radius: 11px;
+    border-radius: var(--border-radius-md, 8px);
     background: color-mix(in srgb, currentColor 13%, transparent);
     color: var(--theme-accent, #8b5cf6);
   }
@@ -221,26 +210,6 @@
   .child-sources {
     display: grid;
     gap: 12px;
-  }
-
-  .duplicate-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 9px 12px;
-    border: 1px dashed var(--theme-stroke-strong, rgba(255, 255, 255, 0.22));
-    border-radius: 11px;
-    background: transparent;
-    color: var(--theme-text-dim, #b8bec9);
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .duplicate-button:hover {
-    border-style: solid;
-    color: var(--theme-text, #fff);
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
   }
 
   @media (prefers-reduced-motion: reduce) {

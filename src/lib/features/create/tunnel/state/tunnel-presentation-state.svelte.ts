@@ -72,7 +72,8 @@ export function createTunnelPresentationState(
       inputs.initialLeftBuugengFlipped
   );
   let rightBuugengFlipped = $state(
-    initialSnapshot?.props.rightBuugengFlipped ?? inputs.initialRightBuugengFlipped
+    initialSnapshot?.props.rightBuugengFlipped ??
+      inputs.initialRightBuugengFlipped
   );
   let unattachedTunnel = $state({
     config: clone(
@@ -108,7 +109,8 @@ export function createTunnelPresentationState(
     },
     updateSettings(patch) {
       if (patch.leftPropType !== undefined) leftPropType = patch.leftPropType;
-      if (patch.rightPropType !== undefined) rightPropType = patch.rightPropType;
+      if (patch.rightPropType !== undefined)
+        rightPropType = patch.rightPropType;
       if (patch.leftBuugengFlipped !== undefined) {
         leftBuugengFlipped = patch.leftBuugengFlipped;
       }
@@ -170,6 +172,9 @@ export function createTunnelPresentationState(
     controller = next;
     if (initialSnapshot) {
       applyTunnelSnapshot(snapshotDeps(next), initialSnapshot);
+      if (inputs.initialFormation) {
+        next.applyConfig(inputs.initialFormation);
+      }
     } else {
       next.applyConfig(unattachedTunnel.config, unattachedTunnel.presetRecipe);
       next.gridVisible = unattachedTunnel.gridVisible;

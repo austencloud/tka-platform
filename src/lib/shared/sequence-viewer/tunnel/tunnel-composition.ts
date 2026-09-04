@@ -11,8 +11,15 @@ import {
 } from "./tunnel-config";
 import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
+import {
+  cloneTunnelStage,
+  createExplicitTunnelStage,
+  createLegacyTunnelStage,
+  fitTunnelStageToFormation,
+  type TunnelStage,
+} from "./tunnel-stage";
 
-export const TUNNEL_COMPOSITION_VERSION = 1;
+export const TUNNEL_COMPOSITION_VERSION = 2;
 export const MAX_AUTHORED_TUNNEL_PERFORMERS = 8;
 export const MAX_TUNNEL_CYCLE_STEPS = 256;
 
@@ -88,6 +95,8 @@ export interface TunnelComposition {
   id: string;
   name: string;
   performers: TunnelPerformer[];
+  /** The visible cast. Formation supplies positions; stage says who occupies them. */
+  stage: TunnelStage;
   formation: TunnelConfig;
   createdAt: number;
   updatedAt: number;
@@ -105,6 +114,7 @@ export interface TunnelCompositionValidation {
 }
 
 export interface TunnelLayerPlan {
+  stageInstanceId: string;
   arm: number;
   performerId: string;
   performerLabel: string;
@@ -218,7 +228,19 @@ const TunnelPerformerSchema = z.object({
   }),
 });
 
-export const TunnelCompositionSchema = z.object({
+const TunnelStageSchema = z.object({
+  instances: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        performerId: z.string().min(1),
+        arm: z.number().int().nonnegative(),
+      })
+    )
+    .min(1),
+});
+
+const TunnelCompositionEnvelopeSchema = z.object({
   version: z.number().int().positive(),
   id: z.string().min(1),
   name: z.string().min(1),
@@ -226,10 +248,40 @@ export const TunnelCompositionSchema = z.object({
     .array(TunnelPerformerSchema)
     .min(1)
     .max(MAX_AUTHORED_TUNNEL_PERFORMERS),
+  stage: TunnelStageSchema.optional(),
   formation: TunnelConfigSchema,
   createdAt: z.number(),
   updatedAt: z.number(),
 });
+
+type TunnelCompositionEnvelope = z.infer<
+  typeof TunnelCompositionEnvelopeSchema
+>;
+
+/** Materialize the old implicit round-robin cast without changing its picture. */
+export function migrateTunnelComposition(
+  composition: TunnelCompositionEnvelope | TunnelComposition
+): TunnelComposition {
+  const performers = composition.performers.map(clonePerformer);
+  const formation = cloneConfig(composition.formation);
+  return {
+    ...composition,
+    version: TUNNEL_COMPOSITION_VERSION,
+    performers,
+    stage: composition.stage
+      ? cloneTunnelStage(composition.stage)
+      : createLegacyTunnelStage(
+          performers.map((performer) => performer.id),
+          formation
+        ),
+    formation,
+  };
+}
+
+export const TunnelCompositionSchema =
+  TunnelCompositionEnvelopeSchema.transform((composition) =>
+    migrateTunnelComposition(composition)
+  );
 
 function randomId(prefix: string): string {
   const token =
@@ -285,16 +337,27 @@ export function createTunnelComposition(
     id?: string;
     name?: string;
     formation?: TunnelConfig;
+    stage?: TunnelStage;
+    /** Reconstruct every generated arm for a pre-creator one-source tunnel. */
+    legacyGeneratedStage?: boolean;
     now?: number;
   } = {}
 ): TunnelComposition {
   const now = options.now ?? Date.now();
+  const formation = cloneConfig(options.formation ?? DEFAULT_CONFIG);
+  const clonedPerformers = performers.map(clonePerformer);
+  const performerIds = clonedPerformers.map((performer) => performer.id);
   return {
     version: TUNNEL_COMPOSITION_VERSION,
     id: options.id ?? randomId("tunnel"),
     name: options.name ?? "Untitled tunnel",
-    performers: performers.map(clonePerformer),
-    formation: cloneConfig(options.formation ?? DEFAULT_CONFIG),
+    performers: clonedPerformers,
+    stage: options.stage
+      ? cloneTunnelStage(options.stage)
+      : options.legacyGeneratedStage
+        ? createLegacyTunnelStage(performerIds, formation)
+        : createExplicitTunnelStage(performerIds, formation),
+    formation,
     createdAt: now,
     updatedAt: now,
   };
@@ -323,6 +386,7 @@ export function cloneTunnelComposition(
   return {
     ...composition,
     performers: composition.performers.map(clonePerformer),
+    stage: cloneTunnelStage(composition.stage),
     formation: cloneConfig(composition.formation),
   };
 }
@@ -379,19 +443,24 @@ export function validateTunnelComposition(
   composition: TunnelComposition
 ): TunnelCompositionValidation {
   const parsed = TunnelCompositionSchema.safeParse(composition);
-  const errors = parsed.success
-    ? []
-    : parsed.error.issues.map((issue) => issue.message);
+  if (!parsed.success) {
+    return {
+      valid: false,
+      errors: parsed.error.issues.map((issue) => issue.message),
+    };
+  }
+  const normalized = parsed.data;
+  const errors: string[] = [];
 
   const ids = new Set<string>();
-  for (const performer of composition.performers) {
+  for (const performer of normalized.performers) {
     if (ids.has(performer.id)) {
       errors.push(`Performer id "${performer.id}" is duplicated.`);
     }
     ids.add(performer.id);
   }
 
-  for (const performer of composition.performers) {
+  for (const performer of normalized.performers) {
     if (
       performer.source.kind === "derived" &&
       !ids.has(performer.source.performerId)
@@ -402,21 +471,53 @@ export function validateTunnelComposition(
     }
   }
 
-  const cycle = findRelationshipCycle(composition.performers);
+  const cycle = findRelationshipCycle(normalized.performers);
   if (cycle.length > 0) {
     errors.push(`Performer relationship cycle: ${cycle.join(" -> ")}.`);
   }
 
-  const cycleSteps = tunnelCompositionCycleSteps(composition);
+  const cycleSteps = tunnelCompositionCycleSteps(normalized);
   if (cycleSteps > MAX_TUNNEL_CYCLE_STEPS) {
     errors.push(
       `This cast needs a ${cycleSteps}-step cycle; the supported ceiling is ${MAX_TUNNEL_CYCLE_STEPS}.`
     );
   }
 
-  if (imageCount(composition.formation) < composition.performers.length) {
+  const stageIds = new Set<string>();
+  const occupiedArms = new Set<number>();
+  const stagedPerformerIds = new Set<string>();
+  const formationSlots = imageCount(normalized.formation);
+  for (const instance of normalized.stage.instances) {
+    if (stageIds.has(instance.id)) {
+      errors.push(`Stage instance id "${instance.id}" is duplicated.`);
+    }
+    stageIds.add(instance.id);
+    if (!ids.has(instance.performerId)) {
+      errors.push(
+        `Stage instance "${instance.id}" references a performer that is not in this tunnel.`
+      );
+    }
+    stagedPerformerIds.add(instance.performerId);
+    if (instance.arm < 0 || instance.arm >= formationSlots) {
+      errors.push(
+        `Stage instance "${instance.id}" uses position ${instance.arm + 1}, but this formation has ${formationSlots}.`
+      );
+    }
+    if (occupiedArms.has(instance.arm)) {
+      errors.push(`Formation position ${instance.arm + 1} is occupied twice.`);
+    }
+    occupiedArms.add(instance.arm);
+  }
+
+  for (const performer of normalized.performers) {
+    if (!stagedPerformerIds.has(performer.id)) {
+      errors.push(`${performer.label} has no stage instance.`);
+    }
+  }
+
+  if (normalized.stage.instances.length > formationSlots) {
     errors.push(
-      `The formation has ${imageCount(composition.formation)} performer slots for a cast of ${composition.performers.length}.`
+      `The formation has ${formationSlots} positions for ${normalized.stage.instances.length} stage instances.`
     );
   }
 
@@ -507,22 +608,30 @@ export function resolveTunnelLayerPlans(
   composition: TunnelComposition,
   formation: TunnelConfig = composition.formation
 ): TunnelLayerPlan[] {
-  const validation = validateTunnelComposition({
-    ...composition,
-    formation,
-  });
+  const migrated = migrateTunnelComposition({ ...composition, formation });
+  const fittedStage = fitTunnelStageToFormation(migrated.stage, formation);
+  if (!fittedStage) {
+    throw new Error(
+      `The formation has ${imageCount(formation)} positions for ${migrated.stage.instances.length} stage instances.`
+    );
+  }
+  const normalized = { ...migrated, stage: fittedStage };
+  const validation = validateTunnelComposition(normalized);
   if (!validation.valid) {
     throw new Error(validation.errors.join(" "));
   }
 
-  const sources = resolveSources(composition.performers);
+  const sources = resolveSources(normalized.performers);
   const formationOps: CopyOp[][] = [[], ...generateCopyOps(formation)];
   const modulators = copyModulators(formation);
-  const count = imageCount(formation);
+  const performerIndex = new Map(
+    normalized.performers.map((performer, index) => [performer.id, index])
+  );
 
-  return Array.from({ length: count }, (_, arm) => {
-    const authoredPerformerIndex = arm % composition.performers.length;
-    const performer = composition.performers[authoredPerformerIndex]!;
+  return fittedStage.instances.map((instance) => {
+    const arm = instance.arm;
+    const authoredPerformerIndex = performerIndex.get(instance.performerId)!;
+    const performer = normalized.performers[authoredPerformerIndex]!;
     const source = sources.get(performer.id)!;
     const mod =
       arm === 0
@@ -530,6 +639,7 @@ export function resolveTunnelLayerPlans(
         : (modulators[arm - 1] ?? { staggerSteps: 0, speed: 1 });
 
     return {
+      stageInstanceId: instance.id,
       arm,
       performerId: performer.id,
       performerLabel: performer.label,

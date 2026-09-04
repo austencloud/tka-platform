@@ -23,14 +23,18 @@ export function wrapThirdOrderBeat(beat: number, totalBeats: number): number {
 export function mapThirdOrderChildStep(
   masterBeat: number,
   childSteps: number,
+  carrierSteps: number,
   mode: ThirdOrderTimingMode,
   rate = 1
 ): number {
   if (childSteps <= 0) return 0;
 
   if (mode === "phrase") {
-    const carrierTransitionPhase = wrapThirdOrderBeat(masterBeat, 1);
-    return carrierTransitionPhase * childSteps;
+    if (carrierSteps <= 0) return 0;
+    return wrapThirdOrderBeat(
+      masterBeat * (childSteps / carrierSteps),
+      childSteps
+    );
   }
 
   const resolvedRate = mode === "independent" ? Math.max(0.05, rate) : 1;

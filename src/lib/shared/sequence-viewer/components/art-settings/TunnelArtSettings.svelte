@@ -1,6 +1,6 @@
 <!-- Tunnel settings route each substantial rail section to its presentation owner. -->
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, type Snippet } from "svelte";
   import { fly } from "svelte/transition";
   import IconRailNav from "$lib/shared/animation-panel/pill-nav/IconRailNav.svelte";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
@@ -42,7 +42,12 @@
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
   type TunnelRailId =
-    "tunnel" | "props" | "speed" | "effects" | "effort" | "playback";
+    | "tunnel"
+    | "props"
+    | "speed"
+    | "effects"
+    | "effort"
+    | "playback";
 
   interface Props {
     controller: TunnelViewController;
@@ -68,6 +73,9 @@
     onArtSettingChange?: ArtSettingChangeHandler;
     exporting: boolean;
     reduceMotion: boolean;
+    formationContent?: Snippet<[boolean]>;
+    formationSummaryOverride?: string;
+    stageAware?: boolean;
   }
 
   let {
@@ -94,6 +102,9 @@
     onArtSettingChange,
     exporting,
     reduceMotion,
+    formationContent,
+    formationSummaryOverride,
+    stageAware = false,
   }: Props = $props();
 
   function reportSetting(
@@ -133,7 +144,8 @@
     return EFFORTS.find((effort) => effort.id === id) ?? EFFORTS[0]!;
   });
   const formationSummary = $derived(
-    `${controller.presetRecipe?.name ?? "Custom"} · ${controller.performerCount} ${controller.performerCount === 1 ? "instance" : "instances"}`
+    formationSummaryOverride ??
+      `${controller.presetRecipe?.name ?? "Custom"} · ${controller.performerCount} ${controller.performerCount === 1 ? "instance" : "instances"}`
   );
   const tunnelRail = $derived<
     {
@@ -168,7 +180,7 @@
     {
       id: "speed",
       icon: "fa-gauge-high",
-      label: "Copy Speed",
+      label: stageAware ? "Stage Speed" : "Copy Speed",
       summary: controller.hasSpeedOverrides ? "Mixed rates" : "Uniform",
       accentColor: RAIL_CATEGORY_ACCENTS.speed,
     },
@@ -261,13 +273,17 @@
 
 {#snippet tunnelSectionBody(id: TunnelRailId, dense: boolean)}
   {#if id === "tunnel"}
-    <TunnelLookSettings
-      {controller}
-      {dense}
-      {onSaveTunnel}
-      {saveTunnelLabel}
-      {onArtSettingChange}
-    />
+    {#if formationContent}
+      {@render formationContent(dense)}
+    {:else}
+      <TunnelLookSettings
+        {controller}
+        {dense}
+        {onSaveTunnel}
+        {saveTunnelLabel}
+        {onArtSettingChange}
+      />
+    {/if}
   {:else if id === "props"}
     <!-- Prop selection — the same BentoPropGrid the 2D Download panel uses. The
          chosen prop flows through the viewer's shared handlePropTypeChange, so it
@@ -293,7 +309,12 @@
       {/if}
     </div>
   {:else if id === "speed"}
-    <TunnelSpeedSettings {controller} {dense} {onArtSettingChange} />
+    <TunnelSpeedSettings
+      {controller}
+      {dense}
+      {stageAware}
+      {onArtSettingChange}
+    />
   {:else if id === "effects"}
     <TunnelEffectsSettings
       {controller}
