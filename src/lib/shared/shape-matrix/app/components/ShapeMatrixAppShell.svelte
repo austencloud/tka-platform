@@ -505,7 +505,16 @@
 
   .topbar {
     display: grid;
-    grid-template-columns: minmax(6rem, 1fr) auto minmax(6rem, 1fr);
+    /* The control pair always gets its full width (an `auto` track let the
+       fr columns bite into it), and the side columns share the slack
+       equally, so the pair sits centred whenever the row has room. The
+       actions column can never shrink below its buttons: a 6rem floor let
+       it, and the About button then left the row on small laptops. The
+       identity column's floor holds the title; its note truncates inside. */
+    grid-template-columns:
+      minmax(11rem, 1fr)
+      max-content
+      minmax(max-content, 1fr);
     grid-template-areas:
       "identity meta actions"
       "controls controls controls";
@@ -558,6 +567,9 @@
   /* Preserve the existing action footprint while giving the attributed source
      label enough text width to render Lorq's name without an ellipsis. */
   .source-action {
+    /* Lorq's name and "original" run past the shared 11rem cap at this
+       font, so the button ellipsized at every width. */
+    max-width: 12.5rem;
     padding-inline: 0.6rem;
   }
 
@@ -854,6 +866,24 @@
     gap: 0.4rem;
   }
 
+  /* The narrowest wide hosts (small laptops, just above the compact seam):
+     the title, the Explore-and-Difficulty pair, and two labelled actions add
+     up to more than the row. The actions keep their glyph and aria-label and
+     drop the word until the row can hold it; the seam is where the title
+     floor, the widest control pair (level 4 plus Surprise), and both worded
+     actions fit together. The height clause keeps this out of the compact
+     tier, whose Detail and Relationships pills need their words. */
+  @container shape-matrix-app (75rem <= width < 84.5rem) and (height >= 42rem) {
+    .top-actions .top-action {
+      max-width: none;
+      padding-inline: 0;
+    }
+
+    .top-actions .top-action span {
+      display: none;
+    }
+  }
+
   /* The complete ratio instrument fits beside the page identity once the
      identity line can remain readable. Laptop widths keep it on its own row
      rather than squeezing the axis labels and copy actions. */
@@ -916,7 +946,10 @@
     overflow: hidden;
   }
 
-  @container shape-matrix-app (max-width: 74.99rem) or (max-height: 41.99rem) {
+  /* The compact seam. ShapeMatrixApp decides `compact` in script from the
+     same two rem bounds, so the markup and this stylesheet always change
+     tiers together, whatever the root font size. Keep the two in step. */
+  @container shape-matrix-app (width < 75rem) or (height < 42rem) {
     .topbar {
       grid-template-columns: minmax(0, 1fr) auto auto;
       grid-template-areas:
