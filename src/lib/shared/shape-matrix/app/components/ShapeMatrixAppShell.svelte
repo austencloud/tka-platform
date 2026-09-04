@@ -11,7 +11,6 @@
   import {
     KINETIC_SHAPE_ENGINE_NAME,
     ORIGINAL_SHAPE_MATRIX_URL,
-    ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
   } from "../shape-engine-identity";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
@@ -334,10 +333,8 @@
       <div class="identity">
         <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
         {#if !theory}
-          <span class="identity-note">
-            Lorq’s 144 Shape Matrix: VTG ratios
-            {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}
-          </span>
+          <span class="identity-note">Explore hand paths across Levels 1–4</span
+          >
         {/if}
       </div>
     {/if}
