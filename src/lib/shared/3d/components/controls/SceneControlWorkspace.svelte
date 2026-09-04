@@ -1,5 +1,6 @@
 <script lang="ts">
   import MobileSceneControls from "../MobileSceneControls.svelte";
+  import BottomSheet from "./BottomSheet.svelte";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import {
     resolveSceneControlLayout,
@@ -82,7 +83,9 @@
      * is open. A host panel's own close button has to route back through that
      * owner rather than keeping a second copy of the open state.
      */
-    hostPanel?: Snippet<[() => void]>;
+    hostPanel?: Snippet<[() => void, boolean]>;
+    hostPanelTitle?: string;
+    hostPanelOpen?: boolean;
     /** Fires when the host panel opens or closes. */
     onHostPanelChange?: (open: boolean) => void;
     /** Compact sheets are independent from the desktop rail. Hosts can use
@@ -110,6 +113,8 @@
     onCompactSheetChange,
     hostTool = null,
     hostPanel,
+    hostPanelTitle = "Scene editor",
+    hostPanelOpen = $bindable(false),
     onHostPanelChange,
   }: Props = $props();
 
@@ -117,7 +122,6 @@
   let workspaceHeight = $state(0);
   let workspaceEl = $state<HTMLElement | null>(null);
   let activeTool = $state<SceneControlTool | null>(null);
-  let hostPanelOpen = $state(false);
   let panelEl = $state<HTMLElement | null>(null);
   let saveSceneOpen = $state(false);
   let showInteractionHint = $state(false);
@@ -125,6 +129,7 @@
   let compactSheet = $state<"performer" | "scene" | null>(null);
   let performerOpenRequest = $state(0);
   let performerCloseRequest = $state(0);
+  let closeSheetsRequest = $state(0);
   const viewer = getViewer3DContext();
 
   onMount(() => {
@@ -148,7 +153,7 @@
       }
 
       if (layout.presentation === "compact") performerOpenRequest += 1;
-      else activeTool = "performer";
+      else chooseTool("performer");
     };
     window.addEventListener(
       "tka-performer-interaction-hint-dismissed",
@@ -199,7 +204,7 @@
   }
 
   const inspectorUsesDock = $derived(
-    activeTool === "performer" || activeTool === "dev"
+    activeTool === "performer" || activeTool === "dev" || hostPanelOpen
   );
   const rightColumnOpen = $derived(activeTool !== null || hostPanelOpen);
 
@@ -230,7 +235,7 @@
     if (viewer.selectedPerformerIndices.length === 0) return;
     viewer.setPerformerSelectionMode(false);
     if (layout.presentation === "compact") performerOpenRequest += 1;
-    else activeTool = "performer";
+    else chooseTool("performer");
   }
 
   function cancelMultiSelection(): void {
@@ -242,8 +247,20 @@
 
   function handleCompactSheetChange(sheet: "performer" | "scene" | null): void {
     compactSheet = sheet;
-    onCompactSheetChange?.(sheet);
+    if (sheet !== null) hostPanelOpen = false;
   }
+
+  let reportedCompactSheet: "performer" | "scene" | null = null;
+  $effect(() => {
+    // A host editor needs the same room above the transport as scene settings.
+    const sheet =
+      layout.presentation === "compact" && hostPanelOpen
+        ? "scene"
+        : compactSheet;
+    if (sheet === reportedCompactSheet) return;
+    reportedCompactSheet = sheet;
+    onCompactSheetChange?.(sheet);
+  });
 
   const dismiss = createSheetDismiss(
     closeInspector,
@@ -267,6 +284,10 @@
     const current = hostPanelOpen;
     if (current === lastReportedHostPanel) return;
     lastReportedHostPanel = current;
+    if (current) {
+      activeTool = null;
+      closeSheetsRequest += 1;
+    }
     onHostPanelChange?.(current);
   });
 
@@ -284,7 +305,6 @@
   $effect(() => {
     if (layout.presentation === "compact") {
       activeTool = null;
-      hostPanelOpen = false;
     }
   });
 
@@ -347,7 +367,8 @@
   class:docked={layout.presentation === "docked"}
   class:overlay={layout.presentation === "overlay"}
   class:compact={layout.presentation === "compact"}
-  class:compact-sheet-open={compactSheet !== null}
+  class:compact-sheet-open={compactSheet !== null ||
+    (hostPanelOpen && layout.presentation === "compact")}
   bind:this={workspaceEl}
   bind:clientWidth={workspaceWidth}
   bind:clientHeight={workspaceHeight}
@@ -375,8 +396,18 @@
         {onPerformerEdit}
         openPerformerRequest={performerOpenRequest}
         closePerformerRequest={performerCloseRequest}
+        {closeSheetsRequest}
         onSheetChange={handleCompactSheetChange}
       />
+      {#if hostPanel}
+        <BottomSheet
+          open={hostPanelOpen}
+          title={hostPanelTitle}
+          onClose={closeHostPanel}
+        >
+          {@render hostPanel(closeHostPanel, true)}
+        </BottomSheet>
+      {/if}
     </div>
   {:else}
     <!-- Choosing who you are editing changes the 3D scene, not just a panel, so
@@ -388,8 +419,9 @@
       <PerformerSpine
         {onSettingChange}
         onScopeSelect={() =>
-          (activeTool =
-            viewer.selectedPerformerIndices.length > 0 ? "performer" : null)}
+          chooseTool(
+            viewer.selectedPerformerIndices.length > 0 ? "performer" : null
+          )}
       />
       {#if showInteractionHint}
         <p class="interaction-hint" transition:flyFade>
@@ -429,11 +461,11 @@
     {:else if hostPanelOpen && hostPanel}
       <div
         class="inspector-anchor"
-        data-tool={hostTool?.id}
+        data-tool={hostTool?.id ?? "host"}
         bind:this={panelEl}
         transition:dockSlide={{ duration: 280, distance: 24 }}
       >
-        {@render hostPanel(closeHostPanel)}
+        {@render hostPanel(closeHostPanel, false)}
       </div>
     {/if}
   {/if}

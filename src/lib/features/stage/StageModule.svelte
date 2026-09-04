@@ -186,6 +186,8 @@
 
   let chartRaised = $state(false);
   let tikaDirectorOpen = $state(false);
+  let tikaPrompt = $state("");
+  let tikaMessages = $state<TikaDirectorConversationMessage[]>([]);
   let starterVisible = $state(!handoff);
   let starterSceneBlank = $state(false);
   let starterCurtainVisible = $state(false);
@@ -865,7 +867,7 @@
       active={tikaDirectorOpen}
       onclick={(event: MouseEvent) => {
         event.stopPropagation();
-        tikaDirectorOpen = true;
+        tikaDirectorOpen = !tikaDirectorOpen;
       }}
     />
   {/if}
@@ -883,6 +885,20 @@
 
 {#snippet floorPaths()}
   <StageFloorPaths />
+{/snippet}
+
+{#snippet tikaPanel(close: () => void, compact: boolean)}
+  <TikaDirectorPanel
+    onClose={close}
+    active={tikaDirectorOpen}
+    {compact}
+    bind:prompt={tikaPrompt}
+    bind:messages={tikaMessages}
+    sceneName={choreography.name}
+    performerCount={choreography.performers.length}
+    currentBeat={stageState.currentBeat}
+    onSubmit={directStageWithTika}
+  />
 {/snippet}
 
 {#snippet stageOverlay()}
@@ -991,6 +1007,9 @@
         {performerSteps}
         worldChildren={starterSceneBlank ? undefined : floorPaths}
         hudActions={stageHudActions}
+        hostPanel={tikaPanel}
+        hostPanelTitle="Direct with TIKA"
+        bind:hostPanelOpen={tikaDirectorOpen}
         overlayChildren={stageOverlay}
         hideCanvasOverlays
         sceneControlsBottomOffset="0.75rem"
@@ -1042,14 +1061,6 @@
     bind:sizes={workspaceSizes}
   />
 </div>
-
-<TikaDirectorPanel
-  bind:open={tikaDirectorOpen}
-  sceneName={choreography.name}
-  performerCount={choreography.performers.length}
-  currentBeat={stageState.currentBeat}
-  onSubmit={directStageWithTika}
-/>
 
 <SequencePickerModal
   bind:open={pickerOpen}
