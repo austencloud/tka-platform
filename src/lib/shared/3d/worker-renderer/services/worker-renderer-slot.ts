@@ -117,6 +117,11 @@ export class WorkerRendererSlot {
     );
   }
 
+  terminate(after?: () => void): void {
+    if (after) this.afterDestroy.add(after);
+    this.finishDestroy();
+  }
+
   private finishDestroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
