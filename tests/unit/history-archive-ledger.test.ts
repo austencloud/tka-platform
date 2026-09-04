@@ -96,6 +96,7 @@ describe("four-lane history archive ledger", () => {
         "https://www.homeofpoi.com/en/community/forums/topics/120838/How-do-you-define-a-weave",
       ])
     );
+    expect(homeOfPoi.citations).toHaveLength(3);
   });
 
   it("labels the related movement-language records with their actual 2009–2010 range", () => {
