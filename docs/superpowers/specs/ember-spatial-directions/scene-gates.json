@@ -3,7 +3,7 @@
   "sceneId": "ember-broken-rift",
   "title": "Ember Broken Rift",
   "domainProofRequired": false,
-  "currentGate": 2,
+  "currentGate": 3,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
     "roomShellSource": "src/lib/shared/3d/environments/scenes/EmberScene.svelte",
@@ -49,7 +49,8 @@
       "LfdgqBhR1T31jk77cFhf",
       "Iur86OmZX40nTqdwgxDq",
       "Szxybxm6NlLkPyPL6dQt",
-      "1hlrU13Dg8VqdQaLJPib"
+      "1hlrU13Dg8VqdQaLJPib",
+      "3XyhXLyzv8ASNl2fLoCo"
     ]
   },
   "sequenceFingerprints": [],
@@ -538,7 +539,7 @@
       ],
       "approval": {
         "approvedBy": "Austen",
-          "approvedAt": "2026-09-04T20:15:18.980Z",
+        "approvedAt": "2026-09-04T20:15:18.980Z",
         "quote": "I think I'll trust your judgment and let's pass this game",
         "museumTrackerItem": "Szxybxm6NlLkPyPL6dQt",
         "visualComprehensionConfirmed": true,
@@ -547,7 +548,7 @@
     },
     {
       "id": "playable-graybox",
-      "status": "ready-for-review",
+      "status": "approved",
       "evidence": [
         {
           "kind": "blender-source",
@@ -601,7 +602,14 @@
           "evidence": "Four human-scale proxies reproduce the approved downslope/lateral standing pockets, at least 5.349 m beyond the action envelope and 14.5 m from active lava."
         }
       ],
-      "approval": null
+      "approval": {
+        "approvedBy": "Austen",
+        "approvedAt": "2026-09-04T20:41:36.000Z",
+        "quote": "This is it brother It's looking good",
+        "museumTrackerItem": "3XyhXLyzv8ASNl2fLoCo",
+        "visualComprehensionConfirmed": true,
+        "note": "Austen explicitly selected the integrated R5 Blender artifact with 'This is it' after being asked whether the central ground reads as a cooled lava bench inside a continuing slope with the small audience downhill rather than another flat stage. Approval locks the Gate 2 spatial artifact and authorizes Gate 3; it does not approve Gate 3 materials, lighting, atmosphere, final silhouette, Gate 4, runtime integration, or Meshy spending."
+      }
     },
     {
       "id": "registered-visual-target",

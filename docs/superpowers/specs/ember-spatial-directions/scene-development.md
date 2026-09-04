@@ -1,6 +1,6 @@
 # Ember Spatial Directions
 
-Status: Mid-Flank Fire Pilgrimage Gate 1.1 R5 approved; Gate 2 R5 ready for review; R4 and earlier Gate 1/2 work is historical
+Status: Mid-Flank Fire Pilgrimage Gate 2 R5 approved; Gate 3 authorized and pending; R4 and earlier Gate 1/2 work is historical
 
 Date: 2026-09-04
 
@@ -21,7 +21,8 @@ authorization `lIPwVa2kGFcoQsgICkWI`, mid-flank requirement
 `BvN1DiylOnfdbrofcwaM`, broad-ledge rejection
 `Vwm6XTLdDbDfxuoVE7z9`, R5 candidate `5P5KVEq04dpHxu9F0ViI`, R5 evidence
 reference `Iur86OmZX40nTqdwgxDq`, Gate 1.1 approval `Szxybxm6NlLkPyPL6dQt`,
-and Gate 2 review reference `1hlrU13Dg8VqdQaLJPib`
+Gate 2 review reference `1hlrU13Dg8VqdQaLJPib`, and Gate 2 approval
+`3XyhXLyzv8ASNl2fLoCo`
 
 ## Current active geometry contract
 
@@ -563,9 +564,10 @@ Current evidence:
 - canonical report:
   `evidence/gate-1-1-geology-amendment-r5/ember-midflank-fire-pilgrimage-r5-gate1-1-report.json`.
 
-Gate 1.1 R5 is approved in `Szxybxm6NlLkPyPL6dQt`. Gate 2 R5 is ready for
-rendered review under `1hlrU13Dg8VqdQaLJPib`. No shipping runtime, final
-material, atmosphere, Meshy asset, or Meshy credit changed.
+Gate 1.1 R5 is approved in `Szxybxm6NlLkPyPL6dQt`. Gate 2 R5 was approved in
+`3XyhXLyzv8ASNl2fLoCo` after rendered review under `1hlrU13Dg8VqdQaLJPib`.
+Gate 3 is authorized and pending. No shipping runtime, final material,
+atmosphere, Meshy asset, or Meshy credit changed.
 
 ## Mid-Flank Fire Pilgrimage Gate 2 R5
 
@@ -595,7 +597,8 @@ of net descent, zero occupied-row gaps, 7.097 m clearance beyond the performer
 action envelope, and the four audience proxies at least 5.349 m beyond that
 envelope and 14.5 m from active lava. Blender source, GLB geometry, collision,
 registered cameras, source digests, portable paths, and continuous orbit all
-pass. Gate 2 approval remains unset; Gate 3 has not started.
+pass. Austen approved Gate 2 in `3XyhXLyzv8ASNl2fLoCo`; Gate 3 is authorized
+and has not started.
 
 ## Historical Mid-Flank Fire Pilgrimage Gate 1.1 / Gate 2 R4
 
