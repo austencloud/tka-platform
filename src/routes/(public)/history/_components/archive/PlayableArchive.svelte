@@ -37,7 +37,7 @@
 	import ResearchSubmissionGuide from "./ResearchSubmissionGuide.svelte";
 
 	const HASH_PREFIX = "#archive-record-";
-	const DEFAULT_ENTRY_ID = "playpoi";
+	const DEFAULT_ENTRY_ID = "home-of-poi";
 
 	let activeEntry = $state<ArchiveEntry>(archiveEntry(DEFAULT_ENTRY_ID));
 	let recordDrawerOpen = $state(false);

@@ -107,7 +107,7 @@ describe("playable archive: selection context", () => {
   });
 
   it("starts at the earliest trace rather than a hardcoded later record", () => {
-    expect(archiveSource).toContain('const DEFAULT_ENTRY_ID = "playpoi"');
+    expect(archiveSource).toContain('const DEFAULT_ENTRY_ID = "home-of-poi"');
   });
 
   it("uses record hashes and browser history for restorable deep links", () => {
