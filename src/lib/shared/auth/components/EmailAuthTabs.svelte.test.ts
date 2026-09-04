@@ -16,7 +16,7 @@ vi.mock("./EmailPasswordAuth.svelte", async () => ({
     .default,
 }));
 
-vi.mock("./LastUsedBadge.svelte", async () => ({
+vi.mock("$lib/shared/components/LastUsedBadge.svelte", async () => ({
   default: (await import("./__test-stubs__/EmailAuthMethodStub.svelte"))
     .default,
 }));
