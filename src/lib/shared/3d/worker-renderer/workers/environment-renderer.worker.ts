@@ -21,6 +21,7 @@ import { createOceanPrototypeWorld } from "../worlds/ocean-prototype-world";
 import { createRainbowPrototypeWorld } from "../worlds/rainbow-prototype-world";
 import { createVoidPrototypeWorld } from "../worlds/void-prototype-world";
 import { createWinterPrototypeWorld } from "../worlds/winter-prototype-world";
+import { createCelestialPrototypeWorld } from "../worlds/celestial-prototype-world";
 import type {
   WorkerEnvironmentWorld,
   WorkerWorldFactory,
@@ -50,6 +51,7 @@ const WORLD_FACTORIES: Readonly<
   rainbow: createRainbowPrototypeWorld,
   void: createVoidPrototypeWorld,
   winter: createWinterPrototypeWorld,
+  celestial: createCelestialPrototypeWorld,
 };
 
 let requestId = 0;

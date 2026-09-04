@@ -1,6 +1,11 @@
 import type { SceneEffectTipSource3D } from "../../effects/scene-effects/scene-effect-source-3d";
 
-export type WorkerEnvironmentKey = "ocean" | "rainbow" | "void" | "winter";
+export type WorkerEnvironmentKey =
+  | "ocean"
+  | "rainbow"
+  | "void"
+  | "winter"
+  | "celestial";
 
 export interface WorkerViewport {
   width: number;

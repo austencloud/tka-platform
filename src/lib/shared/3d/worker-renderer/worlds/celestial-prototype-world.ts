@@ -1,6 +1,5 @@
 import { Scene } from "three";
 
-import { CLOUDBREAK_LAYOUT } from "../../environments/scenes/celestial/cloudbreak-layout";
 import {
   attachCelestialEnvironmentWorld,
   createLoadedCelestialEnvironmentWorld,
@@ -55,9 +54,3 @@ export async function createCelestialPrototypeWorld(
     },
   };
 }
-
-export const CELESTIAL_PROTOTYPE_CAMERA = {
-  position: CLOUDBREAK_LAYOUT.cameraPresets.desktop.position,
-  target: CLOUDBREAK_LAYOUT.cameraPresets.desktop.target,
-  fov: CLOUDBREAK_LAYOUT.cameraPresets.desktop.fovDegrees,
-};

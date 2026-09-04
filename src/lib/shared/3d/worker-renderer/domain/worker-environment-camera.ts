@@ -2,6 +2,7 @@ import type {
   WorkerCameraSnapshot,
   WorkerEnvironmentKey,
 } from "./worker-renderer-protocol";
+import { CLOUDBREAK_LAYOUT } from "../../environments/scenes/celestial/cloudbreak-layout";
 
 const CAMERA_BY_ENVIRONMENT: Readonly<
   Record<WorkerEnvironmentKey, WorkerCameraSnapshot>
@@ -25,6 +26,11 @@ const CAMERA_BY_ENVIRONMENT: Readonly<
     position: [0, 4.2, 17],
     target: [0, 1.1, -1],
     fov: 48,
+  },
+  celestial: {
+    position: CLOUDBREAK_LAYOUT.cameraPresets.desktop.position,
+    target: CLOUDBREAK_LAYOUT.cameraPresets.desktop.target,
+    fov: CLOUDBREAK_LAYOUT.cameraPresets.desktop.fovDegrees,
   },
 };
 
