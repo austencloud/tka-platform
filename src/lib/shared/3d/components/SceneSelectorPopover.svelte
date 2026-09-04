@@ -11,6 +11,10 @@
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import {
+    warmDecoderRuntimes,
+    warmSceneCode,
+  } from "../scene-boot/scene-prefetch";
 
   interface Props {
     value?: SceneEnvironmentId;
@@ -24,6 +28,26 @@
     value ?? viewer?.environmentId ?? DEFAULT_SCENE_ENVIRONMENT_ID
   );
   const hasSceneFeatures = tryGetSceneFeatureContext() !== undefined;
+
+  // Switching scenes starts with a cold module fetch, then the models that
+  // module asks for, and only after both does anything render. Pointing at a
+  // tile is the earliest honest signal of which scene that will be, so the
+  // download starts there rather than on click. Opening the picker at all is
+  // enough to justify the decoders, which every scene needs and no scene picks.
+  $effect(() => {
+    warmDecoderRuntimes();
+  });
+
+  // A pointer crossing the grid is not a choice, but the chunk is small enough
+  // to fetch for every tile it touches. The models deliberately do NOT ride
+  // along: a warm-up cannot hand them to the loader, so it would only download
+  // them twice (see `warmSceneCode`).
+  function warmTile(environmentId: SceneEnvironmentId) {
+    const rendererKey = SCENE_ENVIRONMENTS.find(
+      ({ id }) => id === environmentId
+    )?.rendererKey;
+    if (rendererKey !== undefined) warmSceneCode(rendererKey);
+  }
 
   function selectScene(e: MouseEvent, environmentId: SceneEnvironmentId) {
     e.stopPropagation();
@@ -46,6 +70,8 @@
       class="scene-tile"
       class:active={currentEnvironment === environment.id}
       onclick={(e) => selectScene(e, environment.id)}
+      onpointerenter={() => warmTile(environment.id)}
+      onfocus={() => warmTile(environment.id)}
       aria-pressed={currentEnvironment === environment.id}
       aria-label={environment.label}
       title={environment.label}
