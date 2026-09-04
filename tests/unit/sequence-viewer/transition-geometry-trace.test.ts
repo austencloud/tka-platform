@@ -85,12 +85,15 @@ function sample(
     tunnelLayerOpacityMaximum: 0,
     tunnelLayerOpacityMean: 0,
     tunnelPerceptibleLayerCount: 0,
+    tunnelMovingLayerCount: 0,
+    tunnelTrailSuppressedLayerCount: 0,
     tunnelLayerSeparation: 0,
     tunnelGridOpacity: 1,
     tunnelPaintFrame: 0,
     tunnelPaintedPropCount: 0,
     tunnelPaintedPerceptiblePropCount: 0,
     tunnelPaintedOpacityMean: 0,
+    tunnelFormationTrailCaptures: 0,
     tunnelPresented: false,
     tunnelCanvasReady: true,
     animatorIdentity: 1,
@@ -918,6 +921,8 @@ describe("Sequence Viewer geometry trace", () => {
       tunnelLayerOpacityMaximum: opacity,
       tunnelLayerOpacityMean: mean,
       tunnelPerceptibleLayerCount: perceptible,
+      tunnelMovingLayerCount: opacity > 0 && opacity < 1 ? 7 : 0,
+      tunnelTrailSuppressedLayerCount: opacity > 0 && opacity < 1 ? 7 : 0,
       tunnelPaintFrame: index + 1,
       tunnelPaintedPropCount: opacity > 0 ? 14 : 0,
       tunnelPaintedPerceptiblePropCount: perceptible * 2,
@@ -950,6 +955,34 @@ describe("Sequence Viewer geometry trace", () => {
       growthFrames: 5,
       durationMs: 480,
     });
+    expect(summary.tunnelUnguardedFormationFrames).toBe(0);
+    expect(summary.tunnelFormationTrailCaptures).toBe(0);
+  });
+
+  it("flags trail samples accepted during Tunnel formation travel", () => {
+    const trace: TransitionGeometryTrace = {
+      command: "tunnel-first",
+      duration: 32,
+      samples: [
+        sample(0, 900, 1),
+        {
+          ...sample(16, 900, 1),
+          selectedMode: "tunnel",
+          phase: "show-tunnel",
+          tunnelOpacity: 0.4,
+          tunnelLayerCount: 7,
+          tunnelMovingLayerCount: 7,
+          tunnelTrailSuppressedLayerCount: 5,
+          tunnelFormationTrailCaptures: 3,
+        },
+      ],
+      modeCommits: [],
+    };
+
+    const summary = summarizeTransitionGeometry(trace);
+
+    expect(summary.tunnelUnguardedFormationFrames).toBe(1);
+    expect(summary.tunnelFormationTrailCaptures).toBe(3);
   });
 
   it("flags a Tunnel backing-store change after the overlay is opaque", () => {

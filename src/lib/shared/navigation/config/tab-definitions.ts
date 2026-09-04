@@ -240,16 +240,6 @@ export const COMPOSE_TABS: Section[] = [
     color: "#f59e0b",
     gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
-  {
-    id: "third-order",
-    labelKey: "tab_compose_third_order",
-    descKey: "tab_desc_compose_third_order",
-    label: "Third Order",
-    icon: '<i class="fas fa-atom" aria-hidden="true"></i>',
-    description: "Move complete sequences through a larger sequence",
-    color: "#c084fc",
-    gradient: "linear-gradient(135deg, #60a5fa 0%, #c084fc 50%, #f87171 100%)",
-  },
 ];
 
 // Train tabs configuration
@@ -852,6 +842,16 @@ export const TOYS_TABS: Section[] = [
       "Explore shape pairings in an interactive matrix and watch each path traced live",
     color: "#2dd4bf",
     gradient: "linear-gradient(135deg, #5eead4 0%, #2dd4bf 100%)",
+  },
+  {
+    id: "third-order",
+    labelKey: "tab_toys_third_order",
+    descKey: "tab_desc_toys_third_order",
+    label: "Third Order",
+    icon: '<i class="fas fa-atom" aria-hidden="true"></i>',
+    description: "Explore sequences moving inside a larger moving grid",
+    color: "#c084fc",
+    gradient: "linear-gradient(135deg, #60a5fa 0%, #c084fc 50%, #f87171 100%)",
   },
 ];
 

@@ -1,12 +1,12 @@
-# Third Order Composer
+# Third Order Toy
 
 Status: implementation contract
 
 ## Purpose
 
-Third Order turns a complete Flow Arts Composer sequence into a moving coordinate system. The sequence still animates its own one-prop or two-prop relationship. Its grid center is then carried by one lane of a larger sequence, as if the larger sequence belonged to a higher-dimensional performer moving the entire child grid with one hand.
+Third Order is an interactive motion toy that turns a complete Flow Arts Composer sequence into a moving coordinate system. The sequence still animates its own one-prop or two-prop relationship. Its grid center is then carried by one lane of a larger sequence, as if the larger sequence belonged to a higher-dimensional performer moving the entire child grid with one hand.
 
-The feature lives in Compose as the **Third Order** tab. It is composition behavior, not a new letter level and not an extension of the Kinetic Alphabet notation model.
+The feature lives in Toys as the **Third Order** tab. It is an exploratory visualization, not a production composition workflow, a new letter level, or an extension of the Kinetic Alphabet notation model. A future authoring system may reuse the proven motion model, but this toy does not imply Compose persistence, export, or publication support.
 
 ## Product contract
 
@@ -18,8 +18,8 @@ The first complete workspace contains:
 - a master transport and tempo control;
 - child controls for carrier lane, frame orientation, timing, playback rate, and visibility;
 - the shared sequence picker for replacing any source;
-- desktop source rail, stage, and inspector panels;
-- compact source and inspector drawers at narrow widths and short landscape heights.
+- one dominant stage beside one setup panel on desktop;
+- one setup drawer at narrow widths and short landscape heights.
 
 The initial composition duplicates one circular 16-count demonstration sequence into all three slots. This gives the feature a moving result on first open without creating a second renderer or a special fixture format.
 
@@ -69,7 +69,7 @@ Third Order does not add fields to `SequenceData`. A separately versioned `Third
 - each child's source, carrier lane, orientation mode, timing mode, rate, and visibility;
 - master BPM.
 
-The UI currently edits an in-memory version 1 draft. Persistence, sharing, export, and import should serialize this composition object later without changing the sequence schema.
+The toy edits an in-memory version 1 draft. Persistence, sharing, export, and import remain outside the toy. A future production owner may serialize this composition object without changing the sequence schema.
 
 ## Architecture ownership
 
@@ -78,6 +78,7 @@ Existing owners remain authoritative:
 - `SequenceAnimationOrchestrator` samples all carrier and child prop states.
 - `AnimatorCanvas` renders every grid and prop.
 - `calculatePropCenter` owns the mapping from animated prop state to carrier hand position.
+- `ToysModule` and `TOYS_TABS` own module placement and routing.
 - `PanelGroup`, `Drawer`, `SegmentedControl`, `TransportControls`, `TempoControl`, and `SequencePickerModal` own their established UI behavior.
 
 The only new behavior owner is `ThirdOrderCompositionSampler`. It maps one master beat into carrier state, child state, and each child coordinate-frame transform.
@@ -101,7 +102,7 @@ The domain shape uses a child array so more simultaneous grids can be added with
 
 ## Acceptance criteria
 
-- Opening Compose > Third Order immediately displays a moving carrier and two nested real FAC canvases.
+- Opening Toys > Third Order immediately displays a carrier and two nested real FAC canvases.
 - Play, pause, seek, half-count step, full-count step, restart, and BPM changes operate without desynchronizing the three sequences.
 - Blue and Red child systems may load distinct source sequences.
 - A child can follow either carrier lane.

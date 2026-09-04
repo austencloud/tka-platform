@@ -3,6 +3,7 @@
   import { getThirdOrderContext } from "../context/third-order-context";
   import type { ThirdOrderChildDraft } from "../domain/third-order-composition";
 
+  let { embedded = false }: { embedded?: boolean } = $props();
   const state = getThirdOrderContext();
 
   function sequenceName(sequence: ThirdOrderChildDraft["sequence"]): string {
@@ -10,31 +11,33 @@
   }
 </script>
 
-<aside class="source-rail" aria-label="Third Order sources">
+<section class="source-rail" class:embedded aria-label="Third Order sources">
   <header class="rail-header">
     <h2>Sources</h2>
-    <p>
-      Each child keeps its own timing and prop relationship while its center
-      rides the carrier.
-    </p>
+    <p>Choose the outer path and the two sequences traveling inside it.</p>
   </header>
 
-  <section class="source-card carrier-card">
-    <div class="card-heading">
+  <section class="source-row carrier-row">
+    <div class="source-identity static-source">
       <span class="source-icon carrier-icon" aria-hidden="true">
         <i class="fas fa-atom"></i>
       </span>
-      <div>
+      <span class="source-copy">
         <span class="source-kicker">Outer path</span>
-        <h3>Carrier</h3>
-      </div>
+        <strong>Carrier</strong>
+        <span class="sequence-word">
+          {sequenceName(state.composition.carrier)}
+        </span>
+        <small>
+          {state.composition.carrier.steps.length} counts · both lanes
+        </small>
+      </span>
     </div>
-    <p class="sequence-word">{sequenceName(state.composition.carrier)}</p>
-    <p class="source-meta">
-      {state.composition.carrier.steps.length} counts · both carrier lanes
-    </p>
-    <PanelButton fullWidth onclick={() => state.openPicker("carrier")}>
-      Change carrier
+    <PanelButton
+      ariaLabel="Choose carrier sequence"
+      onclick={() => state.openPicker("carrier")}
+    >
+      Choose
     </PanelButton>
   </section>
 
@@ -44,10 +47,10 @@
         class:blue={child.id === "grid-blue"}
         class:red={child.id === "grid-red"}
         class:selected={state.selectedChildId === child.id}
-        class="source-card child-card"
+        class="source-row child-row"
       >
         <button
-          class="select-source"
+          class="source-identity"
           type="button"
           onclick={() => state.selectChild(child.id)}
           aria-pressed={state.selectedChildId === child.id}
@@ -55,18 +58,20 @@
           <span class="source-icon" aria-hidden="true">
             <i class="fas fa-border-all"></i>
           </span>
-          <span class="source-title">
+          <span class="source-copy">
             <span class="source-kicker">Inner system</span>
             <strong>{child.label}</strong>
+            <span class="sequence-word">{sequenceName(child.sequence)}</span>
+            <small>
+              {child.sequence.steps.length} counts · {child.lane} carrier
+            </small>
           </span>
-          <i class="fas fa-chevron-right select-chevron" aria-hidden="true"></i>
         </button>
-        <p class="sequence-word">{sequenceName(child.sequence)}</p>
-        <p class="source-meta">
-          {child.sequence.steps.length} counts · rides {child.lane} carrier
-        </p>
-        <PanelButton fullWidth onclick={() => state.openPicker(child.id)}>
-          Change sequence
+        <PanelButton
+          ariaLabel={`Choose sequence for ${child.label}`}
+          onclick={() => state.openPicker(child.id)}
+        >
+          Choose
         </PanelButton>
       </section>
     {/each}
@@ -76,7 +81,7 @@
     <i class="fas fa-clone" aria-hidden="true"></i>
     Duplicate blue setup to red
   </PanelButton>
-</aside>
+</section>
 
 <style>
   .source-rail {
@@ -88,6 +93,12 @@
     padding: 16px;
     overflow: auto;
     background: var(--theme-panel-bg);
+  }
+  .source-rail.embedded {
+    height: auto;
+    padding: 0;
+    overflow: visible;
+    background: transparent;
   }
 
   .rail-header {
@@ -113,37 +124,36 @@
     text-transform: uppercase;
   }
 
-  .source-card {
+  .source-row {
     display: grid;
-    gap: 11px;
-    padding: 14px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.13));
     border-radius: var(--border-radius-md, 8px);
     background: var(--theme-card-bg);
   }
 
-  .child-card {
+  .child-row {
     transition:
       border-color var(--transition-normal),
       box-shadow var(--transition-normal);
   }
-  .child-card.selected.blue {
+  .child-row.selected.blue {
     border-color: color-mix(in srgb, var(--prop-blue, #3b82f6) 72%, white);
     box-shadow: 0 0 0 2px
       color-mix(in srgb, var(--prop-blue, #3b82f6) 22%, transparent);
   }
-  .child-card.selected.red {
+  .child-row.selected.red {
     border-color: color-mix(in srgb, var(--prop-red, #ef4444) 72%, white);
     box-shadow: 0 0 0 2px
       color-mix(in srgb, var(--prop-red, #ef4444) 22%, transparent);
   }
-  .card-heading,
-  .select-source {
+  .source-identity {
     display: flex;
     align-items: center;
     gap: 10px;
-  }
-  .select-source {
     width: 100%;
     min-height: 44px;
     padding: 0;
@@ -153,25 +163,27 @@
     text-align: left;
     cursor: pointer;
   }
-  .select-source:focus-visible {
+  .static-source {
+    cursor: default;
+  }
+  .source-identity:focus-visible {
     outline: 3px solid var(--theme-focus-ring, #a78bfa);
     outline-offset: 4px;
     border-radius: 8px;
   }
-  .source-title {
+  .source-copy {
     display: grid;
     gap: 2px;
     flex: 1;
+    min-width: 0;
   }
-  .source-title strong,
-  .card-heading h3 {
-    margin: 0;
+  .source-copy strong {
     color: var(--theme-text, #fff);
     font-size: 15px;
   }
-  .select-chevron {
+  .source-copy small {
     color: var(--theme-text-dim, #9ca3af);
-    font-size: 12px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .source-icon {
@@ -194,18 +206,11 @@
     color: #c084fc;
   }
   .sequence-word {
-    margin: 0;
     overflow: hidden;
-    color: var(--theme-text, #fff);
-    font-size: 14px;
-    font-weight: 650;
+    color: var(--theme-text-dim, #9ca3af);
+    font-size: var(--font-size-compact, 12px);
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-  .source-meta {
-    margin: -6px 0 0;
-    color: var(--theme-text-dim, #9ca3af);
-    font-size: 12px;
   }
   .child-sources {
     display: grid;
@@ -213,7 +218,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .child-card {
+    .child-row {
       transition: none;
     }
   }

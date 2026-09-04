@@ -5,7 +5,7 @@ import {
   resolveThirdOrderGridPose,
   THIRD_ORDER_CHILD_SCALE,
   wrapThirdOrderBeat,
-} from "$lib/features/compose/tabs/third-order/domain/third-order-math";
+} from "$lib/features/toys/tabs/third-order/domain/third-order-math";
 
 const EAST: PropState = { centerPathAngle: 0, staffRotationAngle: 0 };
 
