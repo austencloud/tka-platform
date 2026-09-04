@@ -3,7 +3,7 @@
   "sceneId": "ember-broken-rift",
   "title": "Ember Broken Rift",
   "domainProofRequired": false,
-  "currentGate": 1,
+  "currentGate": 2,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/look-development.md",
     "roomShellSource": "src/lib/shared/3d/environments/scenes/EmberScene.svelte",
@@ -33,7 +33,8 @@
       "4UjoQo3gLUdLtkGSiTYN",
       "ZgRNLK66C9Hz2wMPbOXc",
       "MLcFRgJSpxKaPo2xlMTH",
-      "EdDA3juqt6NiTDDQpHTR"
+      "EdDA3juqt6NiTDDQpHTR",
+      "anf4rcwDOr4j1LuyOX3l"
     ]
   },
   "sequenceFingerprints": [],
@@ -357,7 +358,7 @@
     },
     {
       "id": "measured-plan",
-      "status": "ready-for-review",
+      "status": "approved",
       "evidence": [
         {
           "kind": "floor-plan",
@@ -402,13 +403,84 @@
           "evidence": "Direction A assigns one older western/northwestern collapse scarp as the dominant mass, preserves an open east/southeast horizon, and routes the lava through the audience-side frame rather than terminating beside the performer."
         }
       ],
-      "approval": null
+      "approval": {
+        "approvedBy": "Austen",
+        "approvedAt": "2026-09-04T05:17:32.224Z",
+        "quote": "I'm in . Let's do this!",
+        "museumTrackerItem": "ZgRNLK66C9Hz2wMPbOXc",
+        "visualComprehensionConfirmed": true
+      }
     },
     {
       "id": "playable-graybox",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "blender/ember-breached-rift-bench-graybox.blend"
+        },
+        {
+          "kind": "coordinate-manifest",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/ember-breached-rift-bench-coordinate-manifest.json"
+        },
+        {
+          "kind": "graybox-glb",
+          "path": "static/models/ember/review/ember-breached-rift-bench-graybox.glb"
+        },
+        {
+          "kind": "review-contact-sheet",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/ember-breached-rift-bench-gate2-contact-sheet.png"
+        },
+        {
+          "kind": "simulator-plan",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/09-plan-simulator-guide.png"
+        },
+        {
+          "kind": "longitudinal-section",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/10-longitudinal-section.png"
+        },
+        {
+          "kind": "verification-report",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/ember-breached-rift-bench-graybox-report.json"
+        }
+      ],
+      "checks": [
+        {
+          "name": "artifact-digest",
+          "status": "passed",
+          "evidence": "The Gate 2 report records SHA-256 and byte length for the builder, approved terrain owner, research contract, coordinate data, editable Blend, review GLB, eleven registered captures, and 3840 by 2160 contact sheet."
+        },
+        {
+          "name": "collision",
+          "status": "passed",
+          "evidence": "EMBER_Terrain is the sole visible collider in the isolated artifact; there are no invisible barrier or duplicate collision meshes."
+        },
+        {
+          "name": "route-duration",
+          "status": "passed",
+          "evidence": "Not applicable under Austen's recorded Gate 2 exemption: Ember is a 25 m orbit backdrop with no authored player route, and the registered 45-degree orbit set is the approved equivalent."
+        },
+        {
+          "name": "sequence-parity",
+          "status": "passed",
+          "evidence": "Not applicable under Austen's recorded Gate 2 exemption: the isolated environment graybox neither selects nor modifies a TKA sequence."
+        },
+        {
+          "name": "terrain-source-lock",
+          "status": "passed",
+          "evidence": "The coordinate manifest and Blender scene record the SHA-256 of scripts/build-ember-geology-study.py, and verification rejects drift."
+        },
+        {
+          "name": "downhill-drainage",
+          "status": "passed",
+          "evidence": "The registered 314.1 m source-to-continuation footprint descends 22.6 m and thickens at the approved southern slope breaks."
+        },
+        {
+          "name": "performer-clearance",
+          "status": "passed",
+          "evidence": "The imported Flowy guide preserves 4.444 m clearance beyond the protected 4.5 m action envelope."
+        }
+      ],
       "approval": null
     },
     {
