@@ -59,32 +59,29 @@ node scripts/spec-drift-detector.cjs --json out.json       # machine-readable
 Compares what each spec SAYS against what the repository DOES. Read-only; it
 never edits a spec. Exit 1 when actionable drift exists.
 
-| Verdict | Meaning | Action |
-|---|---|---|
-| `DIVERGENT` | claims not-built, but its own named files have heavy topical commit traffic since | **Rebuild hazard.** Reconcile before doing anything the spec says |
-| `PHANTOM_OPEN` | every box in its acceptance ledger is checked, still in `active/` | Free close-out → `shipped/` |
-| `LIKELY_DONE` | body declares implemented/shipped/superseded, still in `active/` | Verify, then move |
-| `GHOST_PATHS` | most named deliverables were **deleted** (existed once, gone now) | Spec is describing removed code — likely superseded |
-| `WATCH` | moderate topical traffic against a not-built claim | Inconclusive, glance at it |
-| `NO_STATE` | no status line and no ledger | State unknowable from the file; needs a read |
+| Verdict        | Meaning                                                                           | Action                                                            |
+| -------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `DIVERGENT`    | claims not-built, but its own named files have heavy topical commit traffic since | **Rebuild hazard.** Reconcile before doing anything the spec says |
+| `PHANTOM_OPEN` | every box in its acceptance ledger is checked, still in `active/`                 | Free close-out → `shipped/`                                       |
+| `LIKELY_DONE`  | body declares implemented/shipped/superseded, still in `active/`                  | Verify, then move                                                 |
+| `GHOST_PATHS`  | most named deliverables were **deleted** (existed once, gone now)                 | Spec is describing removed code — likely superseded               |
+| `WATCH`        | moderate topical traffic against a not-built claim                                | Inconclusive, glance at it                                        |
+| `NO_STATE`     | no status line and no ledger                                                      | State unknowable from the file; needs a read                      |
 
 **Adjudicate, don't auto-apply.** The detector shortlists; a human or agent
 decides. Two known false-positive modes:
 
 - **Homonyms.** Topic words match unrelated commits — `physical-merch-store`
-  matched "SvelteKit page *store* migration", `error-boundary` matched
+  matched "SvelteKit page _store_ migration", `error-boundary` matched
   "svelte-check *error*s". Check that the sample commit subjects are really
   about the spec.
 - **Broad paths.** A spec naming `src/lib/features/` inherits traffic from the
   whole repo. The `N topical of M touching its paths` ratio exposes this — a low
   topical fraction with `0 on named files` is weak evidence.
 
-Why this exists: `shop-operations-go-live` claimed "Not yet built" about a store
-already taking Stripe payments, and seven onboarding specs sat "Ready for Fable"
-with 45/50 ledger items done and one uncommitted command between them and closed.
-Both were mechanically detectable. Hand-maintained `remaining` prose drifts
-silently, and the Remaining Refresh Trigger below relies on discipline that does
-not hold across many parallel agents — so detect it instead of trusting it.
+Hand-maintained `remaining` prose can drift while code and ledgers advance.
+Treat detector output as evidence to adjudicate, not as an automatic status
+change.
 
 ## `$queue claim` — Parallel Agent Safety
 
@@ -120,14 +117,14 @@ After finishing work on a spec:
 
 ```yaml
 ---
-status: backlog          # active | backlog
-value: 4                 # 1-5 (5 = highest user impact)
-effort: M                # XS | S | M | L | XL
+status: backlog # active | backlog
+value: 4 # 1-5 (5 = highest user impact)
+effort: M # XS | S | M | L | XL
 remaining: "What's left"
-depends_on: ""           # spec filename or "external: description"
-plan_path: ""            # relative path to implementation plan
-tags: []                 # domain tags for filtering
-last_triaged: 2026-04-26
+depends_on: "" # spec filename or "external: description"
+plan_path: "" # relative path to implementation plan
+tags: [] # domain tags for filtering
+last_triaged: <YYYY-MM-DD>
 ---
 ```
 
@@ -138,12 +135,12 @@ last_triaged: 2026-04-26
 Score = `value × effort_multiplier`. Higher = better ROI.
 
 | Effort | Multiplier | Example: value 4 |
-|--------|-----------|-------------------|
-| XS | 5 | 20 |
-| S | 4 | 16 |
-| M | 3 | 12 |
-| L | 2 | 8 |
-| XL | 1 | 4 |
+| ------ | ---------- | ---------------- |
+| XS     | 5          | 20               |
+| S      | 4          | 16               |
+| M      | 3          | 12               |
+| L      | 2          | 8                |
+| XL     | 1          | 4                |
 
 Weights are intentionally steep: an XS task at value 3 (score 15) outranks an L task at value 4 (score 8). This matches the reality that small completable items deliver more value per session than ambitious starts.
 
@@ -187,6 +184,7 @@ When writing a new spec via brainstorming:
 ## Remaining Refresh Trigger
 
 Update a spec's `remaining` field whenever:
+
 - A commit touches files that are deliverables of that spec
 - A `$queue triage` is run on the spec
 - Work on the spec completes or pauses

@@ -20,6 +20,7 @@ import { generatePresetPositions } from "./formation-presets";
 import type { UnifiedPlaybackContext } from "$lib/shared/timeline/unified-playback-context";
 import type { StagePerformanceFrame } from "../domain/stage-performance-sampler";
 import { normalizeFormations } from "../domain/formation-invariants";
+import { resolveStageTravel } from "../domain/stage-travel-plan";
 import {
   sampleFormationPerformance,
   sampleStageFormations,
@@ -60,6 +61,7 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
   readonly interpolatedPositions: InterpolatedPosition[];
   readonly canUndo: boolean;
   readonly canRedo: boolean;
+  readonly historyRevision: number;
   setEnvironmentId(environmentId: SceneEnvironmentId): void;
   seek(progress: number): void;
   togglePlay(): void;
@@ -109,6 +111,16 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
     facingAngle: number | undefined
   ): void;
   applyPresetToFormation(formationId: string, preset: FormationPresetId): void;
+  applyFormationTransition(
+    endFormation: FormationPresetId,
+    durationBeats: number,
+    startFormation?: FormationPresetId,
+    atBeat?: number
+  ): boolean;
+  assertFormationTransitionAllowed(
+    startFormation?: FormationPresetId,
+    atBeat?: number
+  ): void;
   beginDrag(): void;
   addSequenceClip(
     performerId: string,
@@ -279,6 +291,7 @@ export function createStageChoreographyState(
   // disabled no matter how many edits had been made.
   let undoStack = $state<string[]>([]);
   let redoStack = $state<string[]>([]);
+  let historyRevision = $state(0);
 
   function snapshotHistory(): string {
     return JSON.stringify({
@@ -305,6 +318,7 @@ export function createStageChoreographyState(
   }
 
   function pushUndo() {
+    historyRevision++;
     undoStack.push(snapshotHistory());
     if (undoStack.length > MAX_UNDO_STACK) undoStack.shift();
     redoStack = [];
@@ -339,6 +353,7 @@ export function createStageChoreographyState(
 
   function undo() {
     if (undoStack.length === 0) return;
+    historyRevision++;
     redoStack.push(snapshotHistory());
     const prev = undoStack.pop()!;
     restoreHistory(prev);
@@ -346,6 +361,7 @@ export function createStageChoreographyState(
 
   function redo() {
     if (redoStack.length === 0) return;
+    historyRevision++;
     undoStack.push(snapshotHistory());
     const next = redoStack.pop()!;
     restoreHistory(next);
@@ -823,6 +839,148 @@ export function createStageChoreographyState(
     normalizeFormationTrack();
   }
 
+  function presetSpots(
+    preset: FormationPresetId,
+    source?: Formation
+  ): Formation["spots"] {
+    const positions = generatePresetPositions(
+      preset,
+      choreography.performers.length,
+      choreography.stageWidth,
+      choreography.stageDepth
+    );
+    return Object.fromEntries(
+      choreography.performers.map((performer, index) => {
+        const position = positions[index] ?? {
+          x: choreography.stageWidth / 2,
+          z: choreography.stageDepth / 2,
+        };
+        const existing = source?.spots[performer.id];
+        return [
+          performer.id,
+          {
+            ...(existing ?? {
+              walkStyle: "direct" as const,
+              easing: "linear" as const,
+            }),
+            ...position,
+            facingAngle: position.facingAngle,
+          },
+        ];
+      })
+    );
+  }
+
+  function assertFormationTransitionAllowed(
+    startFormation?: FormationPresetId,
+    atBeat = currentBeat
+  ): void {
+    const startBeat = Number.isFinite(atBeat)
+      ? Math.max(0, Math.round(atBeat))
+      : 0;
+    const nextIndex = choreography.formations.findIndex(
+      (formation) => formation.atBeat >= startBeat
+    );
+    const next = choreography.formations[nextIndex];
+    if (!next || nextIndex === 0) return;
+    if (next.atBeat === startBeat && !startFormation) return;
+
+    // Replacing an incoming path with a held anchor would rewrite counts the
+    // user already authored. Keep them intact until we can split that path exactly.
+    const changesEarlierTravel = choreography.performers.some((performer) => {
+      const travel = resolveStageTravel(choreography, performer.id, nextIndex);
+      // A zero-distance segment can still turn the performer. Splitting only
+      // its position would erase that earlier facing change too.
+      return travel && travel.departureBeat < startBeat;
+    });
+    if (changesEarlierTravel) {
+      throw new Error(
+        `This would change movement before beat ${startBeat}. Move the playhead to a formation set and ask for the destination only, or start at beat 0.`
+      );
+    }
+  }
+
+  /** Author one uninterrupted move without rewriting the incoming travel. */
+  function applyFormationTransition(
+    endFormation: FormationPresetId,
+    durationBeats: number,
+    startFormation?: FormationPresetId,
+    atBeat = currentBeat
+  ): boolean {
+    if (choreography.performers.length === 0) return false;
+    assertFormationTransitionAllowed(startFormation, atBeat);
+    const startBeat = Number.isFinite(atBeat)
+      ? Math.max(0, Math.round(atBeat))
+      : 0;
+    const duration = Number.isFinite(durationBeats)
+      ? Math.max(1, Math.round(durationBeats))
+      : 1;
+    const endBeat = startBeat + duration;
+    const existingStart = choreography.formations.find(
+      (formation) => formation.atBeat === startBeat
+    );
+    const existingEnd = choreography.formations.find(
+      (formation) => formation.atBeat === endBeat
+    );
+    const sampledStartSpots: Formation["spots"] = Object.fromEntries(
+      choreography.performers.map((performer) => {
+        const sampled = sampleFormationPerformance(
+          choreography,
+          performer.id,
+          startBeat
+        );
+        return [
+          performer.id,
+          {
+            x: sampled.stagePosition.x,
+            z: sampled.stagePosition.z,
+            facingAngle: sampled.bodyFacing,
+            walkStyle: "direct" as const,
+            easing: "linear" as const,
+          },
+        ];
+      })
+    );
+
+    pushUndo();
+    choreography.formations = choreography.formations.filter(
+      (formation) => formation.atBeat <= startBeat || formation.atBeat > endBeat
+    );
+
+    let start = existingStart;
+    if (startFormation && start) {
+      start.spots = presetSpots(startFormation, start);
+      start.presetId = startFormation;
+    } else if (!start) {
+      start = {
+        id: crypto.randomUUID(),
+        atBeat: startBeat,
+        transitionBeats: 0,
+        spots: startFormation ? presetSpots(startFormation) : sampledStartSpots,
+        ...(startFormation ? { presetId: startFormation } : {}),
+      };
+      choreography.formations.push(start);
+    }
+
+    const destination: Formation = existingEnd ?? {
+      id: crypto.randomUUID(),
+      atBeat: endBeat,
+      transitionBeats: duration,
+      spots: {},
+    };
+    destination.atBeat = endBeat;
+    destination.transitionBeats = duration;
+    destination.spots = Object.fromEntries(
+      Object.entries(presetSpots(endFormation, existingEnd)).map(
+        ([id, spot]) => [id, { ...spot, travel: undefined }]
+      )
+    );
+    destination.presetId = endFormation;
+    choreography.formations.push(destination);
+    normalizeFormationTrack();
+    return true;
+  }
+
   function beginDrag() {
     pushUndo();
   }
@@ -1054,6 +1212,9 @@ export function createStageChoreographyState(
     get canRedo() {
       return redoStack.length > 0;
     },
+    get historyRevision() {
+      return historyRevision;
+    },
     seek,
     togglePlay,
     toggleLoop,
@@ -1075,6 +1236,8 @@ export function createStageChoreographyState(
     updateSpotEasing,
     updateSpotFacing,
     applyPresetToFormation,
+    applyFormationTransition,
+    assertFormationTransitionAllowed,
     beginDrag,
     addSequenceClip,
     removeSequenceClip,

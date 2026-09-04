@@ -7,6 +7,10 @@ import {
   resolveThirdOrderGridPose,
   wrapThirdOrderBeat,
 } from "../../domain/third-order-math";
+import {
+  sampleThirdOrderFlowerPose,
+  thirdOrderFlowerTotalBeats,
+} from "../../domain/third-order-flower-path";
 import type {
   ThirdOrderCompositionDraft,
   ThirdOrderCompositionFrame,
@@ -31,13 +35,21 @@ export class ThirdOrderCompositionSampler implements IThirdOrderCompositionSampl
     masterBeat: number
   ): ThirdOrderCompositionFrame {
     const carrierSampler = this.samplerFor(composition.carrier);
-    const totalBeats = carrierSampler?.totalSteps ?? 0;
+    const carrierSteps = carrierSampler?.totalSteps ?? 0;
+    const totalBeats =
+      composition.carrierPath.mode === "flower"
+        ? thirdOrderFlowerTotalBeats(
+            composition.carrierPath.ratio,
+            carrierSteps
+          )
+        : carrierSteps;
     const resolvedBeat = wrapThirdOrderBeat(masterBeat, totalBeats);
+    const carrierBeat = wrapThirdOrderBeat(resolvedBeat, carrierSteps);
     const carrierProps = carrierSampler
-      ? this.sampleTrack(carrierSampler, resolvedBeat)
+      ? this.sampleTrack(carrierSampler, carrierBeat)
       : { left: { ...DEFAULT_PROP }, right: { ...DEFAULT_PROP } };
 
-    const lookAheadBeat = wrapThirdOrderBeat(resolvedBeat + 0.01, totalBeats);
+    const lookAheadBeat = wrapThirdOrderBeat(carrierBeat + 0.01, carrierSteps);
     const nextCarrierProps = carrierSampler
       ? this.sampleTrack(carrierSampler, lookAheadBeat)
       : carrierProps;
@@ -57,24 +69,32 @@ export class ThirdOrderCompositionSampler implements IThirdOrderCompositionSampl
         : { left: { ...DEFAULT_PROP }, right: { ...DEFAULT_PROP } };
       const carrier = carrierProps[child.lane];
       const nextCarrier = nextCarrierProps[child.lane];
+      const flowerSample =
+        composition.carrierPath.mode === "flower"
+          ? sampleThirdOrderFlowerPose(
+              composition.carrierPath,
+              child.lane,
+              resolvedBeat,
+              carrierSteps,
+              child.orientationMode
+            )
+          : null;
 
       return {
         ...child,
         props,
         step: childStep,
         totalSteps: childTotalSteps,
-        pose: resolveThirdOrderGridPose(
-          carrier,
-          nextCarrier,
-          child.orientationMode
-        ),
+        pose:
+          flowerSample?.pose ??
+          resolveThirdOrderGridPose(
+            carrier,
+            nextCarrier,
+            child.orientationMode
+          ),
+        decomposition: flowerSample?.decomposition,
       };
     });
-
-    // Sampling the look-ahead pose advances the carrier sampler internally.
-    // Return it to the visible beat so effects that read it later see the frame
-    // the user is looking at, not the derivative probe.
-    if (carrierSampler) this.sampleTrack(carrierSampler, resolvedBeat);
 
     return {
       masterBeat: resolvedBeat,
@@ -109,7 +129,6 @@ export class ThirdOrderCompositionSampler implements IThirdOrderCompositionSampl
     sampler: SequenceSampler,
     step: number
   ): { left: PropState; right: PropState } {
-    sampler.orchestrator.calculateState(step);
-    return sampler.orchestrator.getCurrentPropStates();
+    return sampler.orchestrator.samplePropStateAt(step);
   }
 }

@@ -10,7 +10,7 @@ generation.
 
 It is not a claim that every cited method is implemented. Each entry separates
 what the source establishes from the decision TKA has made and the code owner
-that would carry it. Read `.claude/rules/canonical-capabilities.md` and the
+that would carry it. Search `docs/architecture/canonical-capabilities.md` and the
 design at
 `docs/superpowers/specs/active/2026-09-02-film-director-channel-architecture-design.md`
 before changing the camera or animation representation.
@@ -483,4 +483,4 @@ Recorded so the next agent does not repeat the search.
 - `docs/reference/film-director-capability-matrix.md` — what the language can and
   cannot say today, including the named rejections
 - `docs/architecture/locomotion-research-canon.md` — the format this file follows
-- `.claude/rules/canonical-capabilities.md`, `.claude/rules/no-fabrication.md`
+- `docs/architecture/canonical-capabilities.md`, `.claude/rules/no-fabrication.md`

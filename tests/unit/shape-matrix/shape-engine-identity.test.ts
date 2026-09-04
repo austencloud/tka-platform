@@ -34,8 +34,11 @@ describe("Kinetic Shape Engine identity", () => {
     expect(page).toContain("KINETIC_SHAPE_ENGINE_NAME");
     expect(page).toContain("SHAPE_MATRIX_EXPLORER_LEGACY_NAME");
     expect(shell).toContain("{KINETIC_SHAPE_ENGINE_NAME}");
-    expect(shell).toContain('theory ? "Theory Matrix" : "Shape Matrix"');
-    expect(surface).toContain('ariaLabel="Shape Engine surface"');
+    expect(shell).toContain('theory ? "Ratio Playground" : "Level Matrix"');
+    expect(surface).toContain('ariaLabel="Choose a Shape Engine mode"');
+    expect(surface).toContain('"Level Matrix"');
+    expect(surface).toContain('"Explore Levels 1–4"');
+    expect(surface).toContain('"Ratio Playground"');
   });
 
   it("keeps Lorq Nichols' source visible and the independent-work boundary explicit", () => {
@@ -46,6 +49,9 @@ describe("Kinetic Shape Engine identity", () => {
     const page = read("src/routes/(public)/notation/shape-matrix/+page.svelte");
     const shell = read(
       "src/lib/shared/shape-matrix/app/components/ShapeMatrixAppShell.svelte"
+    );
+    const surface = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixSurfaceControl.svelte"
     );
     const about = read(
       "src/lib/shared/shape-matrix/app/components/ShapeMatrixAboutModal.svelte"
@@ -59,7 +65,7 @@ describe("Kinetic Shape Engine identity", () => {
     expect(page).toContain("ORIGINAL_SHAPE_MATRIX_VTG_RATIOS");
     expect(shell).toContain("ORIGINAL_SHAPE_MATRIX_VTG_RATIOS");
     expect(shell).toContain("<span>Lorq Nichols’ original</span>");
-    expect(shell).toContain("Pair any two whole-number ratios in a 4×4 grid");
+    expect(surface).toContain("Build your own 4×4");
     expect(shell).not.toContain("prop:hand ratios");
     expect(about).toContain("<h2>Lorq Nichols’ 144 Shape Matrix</h2>");
     expect(about).toContain("Each supplied four even-petaled");

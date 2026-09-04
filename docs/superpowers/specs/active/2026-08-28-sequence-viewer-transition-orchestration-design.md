@@ -1188,6 +1188,192 @@ Timing spread must remain between 0.08 and 0.28 so the copies retain depth
 without becoming seven serial disclosures. Rapid reversal still retraces the
 same per-layer progress and uses one opacity owner.
 
+#### Formation-trail correction · 2026-09-04
+
+The spatial peel made a second ownership error visible. Additional props now
+travel from the live pair into their Tunnel formation, but the interpolated prop
+coordinates were also sent to every trail recorder. The trail engines correctly
+joined those samples, painting temporary source-to-target squiggles behind the
+copies. Formation travel is stage composition, not authored choreography, so it
+must remain visible without entering trail history.
+
+Each additional layer now carries an explicit formation-transition marker and a
+trail-capture suppression marker. `TrailCapturer`, the Canvas2D overlay, and the
+WebGL2 overlay all enforce that boundary at capture time. Existing painted
+overlay accumulators keep fading naturally; only the moving copy's live rings
+are reset. When the copy settles, capture resumes from one fresh point at its
+destination, so no connector can be drawn across the transition. The legacy
+array renderer has no path-break marker and therefore clears only that copy's
+buffer when suppression changes. The base red/blue pair remains unaffected.
+
+Gate 3 now instruments the behavior at both ends of the contract:
+
+- `Trail-safe formation` counts any frame in which a moving copy was not marked
+  capture-suppressed.
+- `Formation trail captures` counts points that actually entered an overlay ring
+  while a layer reported formation travel. The counter is armed only by the
+  review harness, so ordinary playback pays no telemetry-write cost.
+
+At 820 × 1180 a direct production-frame probe caught the peel at blend `0.744`
+with one moving layer and one suppressed layer. The full replay recorded 17
+spatial-peel frames, zero unguarded frames, and zero formation captures. A rapid
+reversal recorded 59 peel frames with the same two zeroes. The complete viewport
+pass remained clean:
+
+| Viewport    | Moving frames sampled | Unguarded frames | Formation captures | Horizontal overflow |
+| ----------- | --------------------: | ---------------: | -----------------: | ------------------: |
+| 375 × 667   |                    41 |                0 |                  0 |                  No |
+| 960 × 412   |                    37 |                0 |                  0 |                  No |
+| 820 × 1180  |                    57 |                0 |                  0 |                  No |
+| 1440 × 900  |                    27 |                0 |                  0 |                  No |
+| 1920 × 1080 |                    59 |                0 |                  0 |                  No |
+| 2560 × 1440 |                    60 |                0 |                  0 |                  No |
+| 3840 × 2160 |                    42 |                0 |                  0 |                  No |
+
+Native WebP captures at all seven viewports show the settled props feeding clean
+circular choreography trails with no connector left across the formation path.
+Focused trail and Gate 3 checks pass 6 files / 89 tests. The broader
+sequence-viewer and animation-engine run passes 351 tests across 45 files; its
+sole failure is the pre-existing `ArtSettingsPanel` 500-line ownership cap,
+which reproduces unchanged on `main` at 518 lines. `svelte-check` reports 0
+errors and 0 warnings.
+
+#### Formation choreography correction · 2026-09-04
+
+The trail correction removed the connector artifact but left the underlying
+motion intact: every additional performer still travelled from the live red / blue
+pair into its authored Tunnel pose. With several copies moving and rotating at
+once, the entrance read as a scramble even though the trail recorder was now
+clean. This was the wrong visual premise. Tunnel is a presentation change, not
+choreography performed by the props.
+
+The corrected handoff does not run a second hidden canvas or a duplicate
+playback loop. While 2D remains visible, `TunnelViewController` already computes
+the lightweight formation sample at the live playhead and `AnimatorCanvas`
+preloads the required prop textures without drawing the extra layers. Once that
+preparation is ready, every copy is rendered immediately at its sampled Tunnel
+pose. Only opacity changes, using the existing 480 ms reveal and its shallow 18%
+center-out stagger. The ordinary effect map and trail capture remain live from
+the first visible frame, so authored effects play normally from the destination
+poses instead of being paused or faked during the handoff.
+
+The previous `interpolateTunnelLayerProp` path and its viewer-owned formation
+travel / trail-suppression flags are gone. The generic trail engine boundary is
+retained for other composition changes, but Gate 3 no longer needs to invoke it.
+The runtime instrument now compares each rendered left/right prop with the
+prepared pose for the same layer and playhead. `Formation placement` fails on
+any drift above 0.1% of a grid radius or on any drifting reveal frame; this
+grades the visible behavior rather than trusting a declarative transition flag.
+
+Before this correction, the 820 × 1180 replay measured a spatial peel reaching
+200% of a grid radius over 17 frames, and rapid reversal extended that travel to
+59 frames. After the correction, the full viewport sweep records zero formation
+drift and zero moving layers while retaining a multi-frame opacity bloom:
+
+| Viewport    | Maximum pose drift | Drifting frames | Layer-bloom frames | Horizontal overflow |
+| ----------- | -----------------: | --------------: | -----------------: | ------------------: |
+| 375 × 667   |               0.0% |               0 |                 24 |                  No |
+| 960 × 412   |               0.0% |               0 |                 11 |                  No |
+| 820 × 1180  |               0.0% |               0 |                  7 |                  No |
+| 1440 × 900  |               0.0% |               0 |                 13 |                  No |
+| 1920 × 1080 |               0.0% |               0 |                 12 |                  No |
+| 2560 × 1440 |               0.0% |               0 |                 15 |                  No |
+| 3840 × 2160 |               0.0% |               0 |                 18 |                  No |
+
+The 1920 × 1080 stress reversal records the direct
+`animation -> tunnel -> animation -> tunnel -> animation` path, 28 bloom
+frames, zero moving layers, zero suppressed layers, zero formation trail
+captures, and zero pose drift. Mid-transition WebP captures at all seven
+viewports show the active Trails effect painting from the already-placed props;
+there is no source-to-target line because there is no source-to-target travel.
+The reveal, geometry-trace, and orchestration contract checks pass 58 tests.
+The broader sequence-viewer run passes 244 of 245 tests; its only failure is the
+unchanged `TunnelArtSettings` 500-line ownership cap (518 lines by the test's
+newline count on both this branch and `main`). `svelte-check` reports 0 errors
+and 0 warnings, and the seven-viewport browser pass produced no console warnings
+or errors.
+
+#### Shared Animator presentation ownership · 2026-09-04
+
+2D and Tunnel are now two compositions of one persistent Animator canvas, so a
+visibility control cannot honestly belong to either mode. The Grid buttons had
+violated that rule: 2D wrote the persisted `AnimationVisibilityStateManager`,
+while Tunnel wrote `TunnelViewController.gridVisible`. The two controls could
+therefore disagree even though they affected the same rendered layer.
+
+The viewer now supplies its animation visibility manager to the Tunnel
+controller. `gridVisible` delegates to that owner and observes changes coming
+from the 2D Display panel, making the relationship bidirectional without a
+mode-switch copy step. Embedded Tunnel Creator sessions retain the same
+behavior through their scoped visibility manager; standalone poster/detail
+previews, which intentionally have no surrounding animation scope, keep their
+snapshot-local fallback. Loading an older saved Tunnel stages its grid choice
+through the shared visibility owner, preserving the saved appearance while
+making the next 2D/Tunnel switch coherent.
+
+Effects required no new synchronization mechanism. The orchestrator already
+creates one `EffectsConfigState`, both the 2D and Tunnel settings panels edit
+that instance, and the persistent Animator canvas reads it. The same ownership
+rule applies to effort, path policy, prop choice, tempo, playback mode, and the
+playhead. Formation, fold/mirror/flip/echo, copy stagger and speed, Tunnel copy
+coloring, and performer selection remain Tunnel-authored state because they do
+not describe the base Animator canvas.
+
+The bidirectional grid-owner and saved-Tunnel staging checks pass alongside the
+Tunnel snapshot and both viewer URL-slice suites: 5 files / 42 tests.
+`svelte-check` reports 0 errors and 0 warnings. The broader sequence-viewer run
+passes 40 of 41 files / 370 of 371 tests; its only failure is the same unchanged
+`TunnelArtSettings` 500-line ownership cap described above, reproduced on
+`main` at 518 lines.
+
+#### Shared Animator inspector shell · 2026-09-04
+
+The shared state described above still arrived through two visibly different
+inspectors. 2D Animation owned its rail, section transition, scroll frame, and
+bright export footer in `AnimationPanel`; Tunnel duplicated those boundaries in
+`TunnelArtSettings`, added a separate heading band, ordered the same concepts
+differently, and finished with a subdued bordered export action. Switching the
+canvas therefore looked like entering another product even when the selected
+effect and visibility values were already the same objects.
+
+Both desktop modes now compose `AnimatorInspectorShell` and
+`AnimatorInspectorFooter`. The shell is the single owner of rail geometry,
+section fly/fade, body scrolling, headings, wide-container behavior, and the
+footer slot. The footer is the single owner of action height, accent fill,
+progress, readiness, cancellation, and estimate placement; only the action
+label and icon differ (`Export Animation` versus `Export Video`). Tunnel's
+former title band is gone.
+
+The common rail leads with the same four pages in the same order:
+**Effects, Props, Motion, Display**. Tunnel's color policy is the prelude of its
+Effects page rather than a parallel inspector concept, and its desktop Motion
+page combines Effort and Playback exactly as 2D does. Formation and Copy Speed
+follow as Tunnel-only pages; Export remains 2D-only because Tunnel exports from
+the persistent footer. The substantial Tunnel Motion and Display bodies live in
+their own presentation owners, bringing the Tunnel coordinator below its
+500-line architecture ceiling instead of weakening that guard.
+
+`ViewerAnimatorInspectorState` lives above both persistent inspector layers.
+Selecting a common page in either mode keeps that page open in the other. A
+mode-only page remains selected for its owning mode; the other mode temporarily
+shows the last common page and returning restores the mode-only page. Existing
+setting owners remain unchanged: an interactive browser pass toggled Grid off
+in Tunnel and read it back off on 2D Display, then selected Fire in 2D and read
+Tunnel's Fire controls on the same Effects page.
+
+Production-route WebP captures at 375 x 667, 960 x 412, 820 x 1180,
+1440 x 900, 1920 x 1080, 2560 x 1440, and 3840 x 2160 show the compact bottom
+dock at phone/short-landscape layouts and the same persistent inspector shell
+at desktop layouts, with no visible clipping or horizontal overflow. At
+1440 x 900 the 2D and Tunnel footers have identical geometry and accent styling;
+the Effects body retains its scroll allocation when Tunnel inserts Colors above
+it. Artifacts are retained under
+`artifacts/unified-animator-inspector/` in the local main workspace.
+
+The sequence-viewer regression run passes 31 files / 258 tests, including the
+new shared-section state and ownership contracts, and `svelte-check` reports
+0 errors and 0 warnings.
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of

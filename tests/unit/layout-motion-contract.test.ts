@@ -8,16 +8,16 @@ const read = (path: string) => readFileSync(resolve(root, path), "utf8");
 describe("canonical layout motion", () => {
   it("routes structural changes through one documented owner map", () => {
     const rule = read(".claude/rules/no-layout-shift.md");
-    const capabilities = read(".claude/rules/canonical-capabilities.md");
+    const capabilities = read("docs/architecture/canonical-capabilities.md");
 
     expect(rule).toMatch(
       /An intentional layout change that instantly pops to its new location is a UI\s+defect\./
     );
     expect(rule).toContain("## Canonical Motion Routing");
     expect(rule).toContain("prefers-reduced-motion: reduce");
-    expect(capabilities).toContain(
-      "layout motion, reflow, panel expand, collapse, insert, remove, reorder"
-    );
+    expect(capabilities).toContain("| layout motion, reflow");
+    expect(capabilities).toContain("shared/panels/PanelGroup.svelte");
+    expect(capabilities).toContain("shared/transitions/layout-flip.ts");
   });
 
   it("keeps shared helpers reduced-motion aware and generically named", () => {

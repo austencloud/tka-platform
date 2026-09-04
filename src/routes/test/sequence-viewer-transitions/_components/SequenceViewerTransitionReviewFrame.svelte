@@ -425,6 +425,7 @@
     capture.dataset.tunnelPaintedPropCount = "0";
     capture.dataset.tunnelPaintedPerceptiblePropCount = "0";
     capture.dataset.tunnelPaintedOpacityMean = "0.000";
+    capture.dataset.tunnelFormationTrailCaptures = "0";
     capture.dataset.tunnelPaintHistory = "";
   }
 
@@ -708,8 +709,13 @@
         Number(persistentAnimator?.dataset.tunnelLayerOpacityMean) || 0,
       tunnelPerceptibleLayerCount:
         Number(persistentAnimator?.dataset.tunnelPerceptibleLayerCount) || 0,
-      tunnelLayerSeparation:
-        Number(persistentAnimator?.dataset.tunnelLayerSeparation) || 0,
+      tunnelMovingLayerCount:
+        Number(persistentAnimator?.dataset.tunnelMovingLayerCount) || 0,
+      tunnelTrailSuppressedLayerCount:
+        Number(persistentAnimator?.dataset.tunnelTrailSuppressedLayerCount) ||
+        0,
+      tunnelFormationPoseDrift:
+        Number(persistentAnimator?.dataset.tunnelFormationPoseDrift) || 0,
       tunnelGridOpacity:
         Number(persistentAnimator?.dataset.tunnelGridOpacity) || 0,
       tunnelPaintFrame:
@@ -722,6 +728,9 @@
         ) || 0,
       tunnelPaintedOpacityMean:
         Number(document.documentElement.dataset.tunnelPaintedOpacityMean) || 0,
+      tunnelFormationTrailCaptures:
+        Number(document.documentElement.dataset.tunnelFormationTrailCaptures) ||
+        0,
       tunnelPresented: Boolean(activeTunnelSurface) || tunnelBlend > 0,
       tunnelCanvasReady,
       animatorIdentity: elementIdentity("[data-persistent-animator]"),

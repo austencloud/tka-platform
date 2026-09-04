@@ -2,7 +2,7 @@
 
 **Concept ID:** `hand-motions-intro`
 
-**Review state:** APPROVED TERMINOLOGY / REDESIGN REQUIRED
+**Review state:** APPROVED TERMINOLOGY / IMPLEMENTED
 
 **Implementation gate:** OPEN for previously approved text and terminology;
 CLOSED for new teaching explanation pending exact-copy approval
@@ -44,8 +44,19 @@ This chapter follows Shift, Dash, and Static in the same lesson.
 
 ### Bridge
 
-> Time compares the hands: together, split, or quarter. Direction compares
-> their travel: same or opposite.
+> Compare when your hands move and which way they travel.
+
+On narrow screens, the preferred break is after “move,” keeping the two
+phrases intact. The controls already name the available relationships.
+
+The two concept labels are exactly:
+
+> Timing
+>
+> Direction
+
+“Timing” names the concept as a whole. The individual relationships continue
+to use “together time,” “split time,” and “quarter time.”
 
 ### Six demonstrations
 
@@ -124,3 +135,57 @@ the lesson does not repeat Water, Earth, Sun, Fire, Air, or Moon as headings.
   a relationship, and removal of the duplicated top-left element icon when the
   canonical glyph is already visible at bottom right. No new explanatory prose
   was approved.
+- 2026-09-04 — Implemented the approved five-stage flow and exact bridge copy.
+  The six-up board now opens each relationship into a synchronized live
+  animation and production hand-path Choreo Card; the duplicate focused icon
+  is removed. The lesson remains BUILT pending Austen's hands-on confirmation.
+- 2026-09-04 — Austen replaced the bridge's inert panels and plus sign with
+  simple animated examples: paired bouncing balls show together, split, and
+  quarter timing, while paired tracks show same and opposite direction. He
+  specified “Timing” as the whole-concept label and required “Timing” and
+  “Direction” to remain on the same line. No new teaching prose was added.
+- 2026-09-04 — Austen rejected the vertically stacked, slow synchronized
+  treatment because it made the three timing relationships read as one
+  comparison. The bridge now gives Together, Split, and Quarter separate
+  side-by-side motion bays, offsets their clocks, and uses a quicker
+  gravity-shaped bounce with impact squash and rebound. No learner-facing copy
+  changed.
+- 2026-09-04 — Austen rejected bouncing balls as a timing metaphor because
+  unbelievable physics competed with the concept. The bridge now uses one
+  selectable phase dial for Together, Split, and Quarter and one selectable
+  arrow runway for Same and Opposite. The dial states the selected relationship
+  as the same point, half a cycle apart, or one quarter of a cycle apart. The
+  five relationship names are unchanged.
+- 2026-09-04 — Austen asked for one shared track, a more native composition,
+  and sentence-aware wrapping without overexplaining. The bridge now uses one
+  shared circle in each instrument, matched diagram sizes, native segmented
+  controls, and the shorter bridge sentence above. Together's coincident hands
+  form a blue/red marker; Split and Quarter separate on that same radius.
+  Direction uses tangent arrowheads and short tails, with the red hand reversing
+  for Opposite. Timing captions are “In sync,” “½ cycle apart,” and “¼ cycle
+  apart”; direction captions are “Same way” and “Opposite ways.” These are
+  implementation choices under the delegated redesign, pending Austen's review.
+
+## Shared-path Refinement Verification — 2026-09-04
+
+Record: `hand-motions-shared-path-polish-2026-09-04`.
+
+- Flow Arts MCP's current `vtg` topic verified together, split, and quarter
+  phase relationships and that direction compares hand paths.
+- Inspected the running lesson in Chrome at 375×667, 960×412, 820×1180,
+  1440×900, 1920×1080, 2560×1440, and 3840×2160. Both headings aligned,
+  circle diameters matched, all five labels stayed inside their controls, and
+  all controls retained 44px height. No horizontal page overflow.
+- Also inspected 720×450, the reflow-equivalent CSS viewport for a 1440×900
+  window at 200%. This caught and fixed cramped landscape selectors. A native
+  browser-zoom shortcut did not change the emulated viewport; this is viewport
+  reflow evidence, not a claim of native browser-zoom verification.
+- Runtime checks confirmed 0°, 180°, and 90° timing offsets. Same-direction
+  markers advanced together; Opposite advanced with opposite signs. Keyboard
+  arrow selection stayed on lesson step four.
+- Targeted reduced-motion emulation stopped both instruments while preserving
+  instant selection and the selected timing offset. No runtime errors; only the
+  development environment's disabled-analytics warning.
+- Eleven canonical lesson tests passed; Svelte check reported zero errors and
+  zero warnings; scoped CSS lint passed. Screenshots were inspected inline;
+  the browser tool denied the requested local screenshot output directory.

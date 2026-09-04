@@ -1,6 +1,8 @@
 # Responsive Design Strategy
 
-TKA supports small phones, tablets, ordinary desktop windows, and wide high-density displays. This is the working architecture reference. The governing design is [Logical-Pixel Responsive Composition](../superpowers/specs/active/2026-08-27-logical-pixel-responsive-composition-design.md).
+TKA supports small phones, tablets, ordinary desktop windows, and wide
+high-density displays. This is the current architecture reference for responsive
+composition.
 
 ## The model
 

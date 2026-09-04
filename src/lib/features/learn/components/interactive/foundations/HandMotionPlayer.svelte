@@ -11,6 +11,8 @@
     playbackAllowed = true,
     externalPlaying = null,
     onExternalPlayingChange = undefined,
+    onStepChange = undefined,
+    onSeekRef = undefined,
     framed = true,
   }: {
     sequence: SequenceData;
@@ -20,6 +22,8 @@
     playbackAllowed?: boolean;
     externalPlaying?: boolean | null;
     onExternalPlayingChange?: (playing: boolean) => void;
+    onStepChange?: (currentStep: number, sequenceId: string | null) => void;
+    onSeekRef?: (seek: ((step: number) => void) | null) => void;
     framed?: boolean;
   } = $props();
 
@@ -64,6 +68,8 @@
     resumeWhenPlaybackAllowed
     {externalPlaying}
     {onExternalPlayingChange}
+    {onStepChange}
+    {onSeekRef}
   />
 </div>
 

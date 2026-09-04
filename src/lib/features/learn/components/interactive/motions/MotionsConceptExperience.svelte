@@ -1,7 +1,7 @@
 <!--
-  Hand Motions keeps the first three paths one at a time, then places all six
-  time-and-direction relationships on one comparison board. The board is the
-  final lesson step and the review destination, so focusing a relationship
+  Hand Motions keeps the first three paths one at a time, introduces Timing and
+  Direction as a system, then places all six relationships on one comparison
+  board. The board stays the review destination, so focusing a relationship
   never sends the learner backward through the lesson carousel.
 -->
 <script lang="ts">
@@ -21,7 +21,12 @@
     HAND_PATH_STEPS,
     type TimingDirectionMode,
   } from "../foundations/pictograph-foundation-content";
+  import {
+    HAND_MOTIONS_STAGE_SCHEMA_VERSION,
+    migrateHandMotionsSavedStep,
+  } from "./hand-motions-stage";
   import TimingDirectionBoard from "./TimingDirectionBoard.svelte";
+  import TimingDirectionIntro from "./TimingDirectionIntro.svelte";
 
   let {
     onComplete,
@@ -50,7 +55,8 @@
   const ELEMENTAL_MODES = TND_ELEMENTS.map((element) =>
     requireMode(element.familyId)
   );
-  const comparisonIndex = HAND_PATH_STEPS.length;
+  const timingDirectionIndex = HAND_PATH_STEPS.length;
+  const comparisonIndex = timingDirectionIndex + 1;
   const totalStages = comparisonIndex + 1;
 
   const levelOnePlaces = getConceptPlacesByLevel(1);
@@ -62,26 +68,38 @@
   const haptic = getHapticFeedback();
   const persistence = getExperiencePersistence("hand-motions-intro");
   const saved = persistence.load();
+  const savedSchemaVersion = persistence.getPhaseData("stageSchemaVersion", 1);
+  const savedStep = migrateHandMotionsSavedStep(
+    saved.step,
+    savedSchemaVersion,
+    HAND_PATH_STEPS.length
+  );
   let stepIndex = $state(
     viewMode === "scroll"
       ? comparisonIndex
-      : Math.min(comparisonIndex, Math.max(0, (saved.step || 1) - 1))
+      : Math.min(comparisonIndex, Math.max(0, savedStep - 1))
   );
   let comparisonBoard: TimingDirectionBoard | null = $state(null);
+  let comparisonFocused = $state(false);
+
+  if (viewMode !== "scroll" && savedStep !== (saved.step || 1)) {
+    persistence.saveStep(savedStep);
+    persistence.savePhaseData(
+      "stageSchemaVersion",
+      HAND_MOTIONS_STAGE_SCHEMA_VERSION
+    );
+  }
 
   const activeMotion = $derived(
     stepIndex < HAND_PATH_STEPS.length ? HAND_PATH_STEPS[stepIndex] : undefined
   );
+  const isTimingDirectionIntro = $derived(stepIndex === timingDirectionIndex);
   const isComparison = $derived(stepIndex === comparisonIndex);
-  const headingTitle = $derived(activeMotion?.name ?? "Time + Direction");
+  const headingTitle = $derived(activeMotion?.name ?? "Timing and Direction");
   const headingEyebrow = $derived(
     activeMotion
       ? `Hand motion ${stepIndex + 1} of ${HAND_PATH_STEPS.length}`
       : "Two hands"
-  );
-  const headingDescription = $derived(
-    activeMotion?.guideCaption ??
-      "Time compares the hands: together, split, or quarter. Direction compares their travel: same or opposite."
   );
 
   function goToStep(next: number): void {
@@ -89,6 +107,10 @@
     if (clamped === stepIndex) return;
     stepIndex = clamped;
     persistence.saveStep(stepIndex + 1);
+    persistence.savePhaseData(
+      "stageSchemaVersion",
+      HAND_MOTIONS_STAGE_SCHEMA_VERSION
+    );
     haptic?.trigger("selection");
   }
 
@@ -134,6 +156,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 <div
   class="motions-experience"
+  class:has-focused-comparison={comparisonFocused}
   onkeydown={handleKeydown}
   tabindex="0"
   role="application"
@@ -146,7 +169,14 @@
         title={headingTitle}
         eyebrow={headingEyebrow}
       >
-        <p>{headingDescription}</p>
+        <p class="motion-description">
+          {#if activeMotion}
+            {activeMotion.guideCaption}
+          {:else}
+            <span class="description-phrase">Compare when your hands move</span>
+            <span class="description-phrase">and which way they travel.</span>
+          {/if}
+        </p>
       </LessonStageHeading>
     {/snippet}
 
@@ -165,11 +195,16 @@
               <strong>Left hand</strong>
             </div>
           </div>
+        {:else if isTimingDirectionIntro}
+          <div class="artifact-state timing-direction-state">
+            <TimingDirectionIntro />
+          </div>
         {:else}
           <div class="artifact-state comparison-state">
             <TimingDirectionBoard
               bind:this={comparisonBoard}
               modes={ELEMENTAL_MODES}
+              onFocusChange={(focused) => (comparisonFocused = focused)}
             />
           </div>
         {/if}
@@ -208,6 +243,16 @@
 
   .motions-experience :global(.lesson-stage-frame) {
     --lesson-artifact-wide-max: var(--shell-w, 96rem);
+  }
+
+  .motion-description {
+    max-width: 60ch;
+    text-wrap: balance;
+  }
+
+  .description-phrase {
+    display: inline-block;
+    max-width: 100%;
   }
 
   .artifact-state {
@@ -260,9 +305,42 @@
     min-height: 22rem;
   }
 
-  @media (max-width: 640px), (max-height: 540px) {
+  .timing-direction-state {
+    display: grid;
+    place-items: center;
+  }
+
+  @media (max-width: 800px), (max-height: 540px) {
     .comparison-state {
       min-height: 0;
+    }
+  }
+
+  @media (max-width: 800px) {
+    .motions-experience.has-focused-comparison,
+    .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
+      height: auto;
+      min-height: 60rem;
+    }
+
+    .motions-experience.has-focused-comparison {
+      overflow: visible;
+    }
+  }
+
+  @media (max-height: 540px) and (min-width: 801px) {
+    .motions-experience.has-focused-comparison,
+    .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
+      height: auto;
+      min-height: 36rem;
+    }
+
+    .motions-experience.has-focused-comparison {
+      overflow: visible;
+    }
+
+    .timing-direction-state {
+      place-items: start center;
     }
   }
 </style>

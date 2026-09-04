@@ -1,6 +1,6 @@
 # Ember geology, lava, and composition research
 
-Status: complete research package; Breached Rift Bench Gate 1.1 R3 ready for review and Gate 2 pending
+Status: complete research package; Mid-Flank Fire Pilgrimage Gate 2 R5 approved; Gate 3 authorized and pending
 
 Date: 2026-09-03
 
@@ -12,19 +12,18 @@ Prior lava correction: museum tracker `hMO9hB97M2y1ZVGrxCt3`
 
 Rebuild Ember's spatial backbone, but do not discard the whole scene.
 
-The strongest first graybox is **A. Breached Rift Bench**: a broad basaltic
-rift/caldera landscape in which one older collapse scarp occupies the west and
-northwest, one fissure-fed lava system descends from `(-22, 25)`, the active
-flow skirts a compact irregular quiet patch, and the east/southeast horizon
-remains open. The plan is directional rather than radial. The performer stands
-on continuous older cooled terrain, not a disk placed inside a ring of
-spectacle.
+The active correction candidate is **Mid-Flank Fire Pilgrimage R5**: a
+continuously inclined volcanic flank in which only a 12 by 11 m irregular patch
+locally eases the performer footing. The surrounding old-flow contact retains a
+6-10 degree grade, then steepens gradually into the upper edifice and lower
+country. One high fissure-fed system descends from `(-34, 132)`, passes west of
+the performer, and continues beyond the south review boundary.
 
-This direction is the Gate 1.1 R3 review candidate under Austen's delegated
-spatial authority and his “attack it!” correction authorization in trackers
-`7uoHBfOCOqMmFeKBRh7l` and `lIPwVa2kGFcoQsgICkWI`. A Gate 2 candidate was built
-to falsify the plan in registered cameras, but remains noncanonical until Gate
-1.1 receives explicit artifact approval.
+Austen's accepted tracker decision `Vwm6XTLdDbDfxuoVE7z9` retains R4's
+mountain-above / country-below direction but rejects its broad near-level ledge.
+The measured R5 artifact was approved in `Szxybxm6NlLkPyPL6dQt`. Its R5
+Blender graybox and review GLB are ready for Gate 2 review in
+`evidence/gate-2-geology-graybox-r5/`. R4 Gate 1/2 evidence remains historical.
 
 The restart should preserve Ember's useful infrastructure, surface work, and
 atmosphere while replacing two failed owners:
@@ -589,7 +588,7 @@ The [source ledger](geology-research-source-ledger.md) records all measured,
 scientific, production, repository, licensing, and Meshy references used by the
 study.
 
-## Gate 1.1 R3 correction evidence
+## Historical Gate 1.1 R3 correction evidence
 
 The R1 and R2 adversarial audits and corrective authorizations are recorded in
 museum tracker items `xSjtvI2XVvvMdn8pHqwP`, `WS9FU4nn2fCSbOn68IeB`,
@@ -607,3 +606,48 @@ Direction A remains the accepted creative direction. Gate 1.1 R3 is
 started.
 The R3 correction changes no production runtime, final material, atmosphere,
 or Meshy asset and spends no Meshy credits.
+
+## Historical Gate 1.1 / Gate 2 R4 evidence
+
+Austen's tracker decision `BvN1DiylOnfdbrofcwaM` rejects the R3 broad-basin
+spatial target. The current R4 plan, 1:1 vertical section, opposite-side runtime
+orbit proof, sightline study, simulator sweep, contact sheet, canonical report,
+and selected float32 footprint live in
+`evidence/gate-1-1-geology-amendment-r4/`. Reproduce them with:
+
+- `py -3 scripts/prepare-ember-lava-simulator-benchmark.py all-r4`
+- `py -3 scripts/build-ember-geology-amendment.py build`
+- `py -3 scripts/build-ember-geology-amendment.py verify`
+
+Gate 1.1 R4 was approved, then invalidated at Gate 1 by Austen's slope-
+continuity correction `Vwm6XTLdDbDfxuoVE7z9`. Gate 2 R4 evidence lives in
+`evidence/gate-2-geology-graybox-r4/` and remains historical under tracker
+`lXhTllDFV2Ne1E7foCkS`. The R4 pass changed no production runtime, final
+material, atmosphere, Meshy asset, or Meshy credit.
+
+## Gate 1.1 R5 slanted-flank correction evidence
+
+R5 answers Austen's accepted broad-ledge rejection
+`Vwm6XTLdDbDfxuoVE7z9` while preserving the colossal vertical-world direction.
+The north-up plan, true-scale compound section, opposite-side runtime orbit
+proof, eight-point sightline study, fresh Flowy sweep, contact sheet, canonical
+report, and selected float32 footprint live in
+`evidence/gate-1-1-geology-amendment-r5/`. Reproduce them with:
+
+- `py -3 scripts/prepare-ember-lava-simulator-benchmark.py all-r5`
+- `py -3 scripts/build-ember-geology-amendment.py build`
+- `py -3 scripts/build-ember-geology-amendment.py verify`
+
+The 4.5 m action envelope has 0.205 m relief and a 1.286 degree median slope.
+The surrounding 8-25 m annulus has a 9.188 degree median slope, the old-flow
+contact has an 8.209 degree median slope, and only 92 m² within 35 m is below
+two degrees. Fresh Flowy calibration `r5f-c03-braided-20m2` keeps 7.097 m of
+clearance beyond the action envelope and exits the south boundary continuously.
+
+Gate 1.1 R5 is approved in `Szxybxm6NlLkPyPL6dQt`. Gate 2 R5 was approved in
+`3XyhXLyzv8ASNl2fLoCo` after review under `1hlrU13Dg8VqdQaLJPib`; its editable
+Blend, review GLB, exact cameras, audience standing crescent, contact sheet,
+continuous orbit, and machine report live in `evidence/gate-2-geology-graybox-r5/`.
+Gate 3 is authorized and pending. The R4 Gate 1 approval and Gate 2 graybox
+are historical because the terrain and sightlines changed. No production
+runtime, final material, atmosphere, Meshy asset, or Meshy credit changed.

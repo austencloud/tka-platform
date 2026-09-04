@@ -25,11 +25,9 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import {
-    interpolateTunnelLayerProp,
     resolveTunnelGridOpacity,
     resolveTunnelLayerOpacity,
-    resolveTunnelLayerProgress,
-    tunnelLayerPositionSeparation,
+    tunnelLayerPoseDifference,
     TUNNEL_REVEAL_DURATION,
   } from "../tunnel/tunnel-layer-reveal";
   import type { AdditionalLayerTextureStatus } from "$lib/shared/animation-engine/services/animation-engine.svelte";
@@ -194,31 +192,17 @@
   const tunnelVisualActive = $derived(tunnelReveal.current > 0.001);
   const tunnelLayers = $derived.by(() => {
     if (!tunnelVisualActive) return [];
-    return preparedTunnelLayers.map((layer, index) => {
-      const progress = resolveTunnelLayerProgress(
+    return preparedTunnelLayers.map((layer, index) => ({
+      ...layer,
+      // The formation has already been sampled at the live playhead. Render it
+      // where it belongs and vary only opacity; flying these authored poses out
+      // of the base pair turned a quiet mode change into a scramble.
+      opacity: resolveTunnelLayerOpacity(
         tunnelReveal.current,
         index,
         preparedTunnelLayers.length
-      );
-      return {
-        ...layer,
-        leftProp: interpolateTunnelLayerProp(
-          playback.animationState.leftPropState,
-          layer.leftProp,
-          progress
-        ),
-        rightProp: interpolateTunnelLayerProp(
-          playback.animationState.rightPropState,
-          layer.rightProp,
-          progress
-        ),
-        opacity: resolveTunnelLayerOpacity(
-          tunnelReveal.current,
-          index,
-          preparedTunnelLayers.length
-        ),
-      };
-    });
+      ),
+    }));
   });
   const tunnelLayerOpacityMinimum = $derived(
     tunnelLayers.length === 0
@@ -239,20 +223,23 @@
   const tunnelPerceptibleLayerCount = $derived(
     tunnelLayers.filter((layer) => (layer.opacity ?? 1) >= 0.1).length
   );
-  const tunnelLayerSeparation = $derived(
-    Math.max(
-      0,
-      ...tunnelLayers.flatMap((layer) => [
-        tunnelLayerPositionSeparation(
-          playback.animationState.leftPropState,
-          layer.leftProp
-        ),
-        tunnelLayerPositionSeparation(
-          playback.animationState.rightPropState,
-          layer.rightProp
-        ),
-      ])
-    )
+  const tunnelLayerPoseDifferences = $derived(
+    tunnelLayers.map((layer, index) => {
+      const expected = preparedTunnelLayers[index];
+      return Math.max(
+        tunnelLayerPoseDifference(expected?.leftProp ?? null, layer.leftProp),
+        tunnelLayerPoseDifference(expected?.rightProp ?? null, layer.rightProp)
+      );
+    })
+  );
+  const tunnelMovingLayerCount = $derived(
+    tunnelLayerPoseDifferences.filter((difference) => difference > 0.001).length
+  );
+  const tunnelTrailSuppressedLayerCount = $derived(
+    tunnelLayers.filter((layer) => layer.trailCaptureSuppressed).length
+  );
+  const tunnelFormationPoseDrift = $derived(
+    Math.max(0, ...tunnelLayerPoseDifferences)
   );
   // The grid is part of the same transformation as the copies. Driving its
   // alpha from the shared reveal keeps a quick reversal continuous instead of
@@ -598,7 +585,9 @@
     data-tunnel-layer-opacity-max={tunnelLayerOpacityMaximum.toFixed(3)}
     data-tunnel-layer-opacity-mean={tunnelLayerOpacityMean.toFixed(3)}
     data-tunnel-perceptible-layer-count={tunnelPerceptibleLayerCount}
-    data-tunnel-layer-separation={tunnelLayerSeparation.toFixed(3)}
+    data-tunnel-moving-layer-count={tunnelMovingLayerCount}
+    data-tunnel-trail-suppressed-layer-count={tunnelTrailSuppressedLayerCount}
+    data-tunnel-formation-pose-drift={tunnelFormationPoseDrift.toFixed(3)}
     data-tunnel-grid-opacity={tunnelGridOpacity.toFixed(3)}
     data-presented={is2DPresented}
     inert={!isAnimatorActive}

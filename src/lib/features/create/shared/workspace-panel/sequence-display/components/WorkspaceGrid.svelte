@@ -41,6 +41,7 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import {
     createLayoutMotion,
     LAYOUT_MOTION_DURATION_MS,
@@ -77,6 +78,7 @@
     displayState,
     scrollState,
     selectedStepNumber = null,
+    autoFocusSelectedStep = true,
     practiceStepNumber = null,
     activeMode = null,
     removingStepIndex = null,
@@ -84,6 +86,7 @@
     isClearing = false,
     historyTransition = null,
     historyTransitionEpoch = 0,
+    animateStepMembership = false,
     highlightedSteps = null,
     onStepClick,
     onStartClick,
@@ -113,6 +116,8 @@
     displayState: StepGridDisplayState;
     scrollState: ScrollState;
     selectedStepNumber?: number | null;
+    /** Prevent playback-driven selection from stealing focus from nearby UI. */
+    autoFocusSelectedStep?: boolean;
     practiceStepNumber?: number | null;
     activeMode?: BuildModeId | null;
     removingStepIndex?: number | null;
@@ -120,6 +125,7 @@
     isClearing?: boolean;
     historyTransition?: HistoryTransitionPlan | null;
     historyTransitionEpoch?: number;
+    animateStepMembership?: boolean;
     highlightedSteps?: Map<number, { bg: string; border: string }> | null;
     onStepClick?: (
       stepNumber: number,
@@ -489,6 +495,11 @@
     // only the inside would park a black square at the destination and have the
     // pictograph slide over to cover it.
     cancelSelectors: [".history-layout-shell", ".step-cell"],
+    // A slot-preserving performer swap can change both the grid geometry and
+    // every pictograph at once. In that case the outer tile owns the reflow;
+    // prop, arrow and selection transitions resume after it lands instead of
+    // stacking a second gesture inside the moving tile.
+    suspendDescendantTransitions: animateStepMembership,
     getDuration: () => motionDuration(LAYOUT_MOTION_DURATION_MS),
     easing: LAYOUT_MOTION_EASING,
   });
@@ -518,7 +529,9 @@
   let arrivalCapturePending = false;
 
   function getHistoryMembershipDuration(identity: string): number {
-    if (!historyTransition) return 0;
+    if (!historyTransition) {
+      return animateStepMembership ? motionDuration(DURATION.fast) : 0;
+    }
     const changesMembership =
       historyTransition.insertedStepIdentities.has(identity) ||
       historyTransition.removedStepIdentities.has(identity);
@@ -972,6 +985,7 @@
                     onLongPress={() => onStepLongPress?.(step.stepNumber)}
                     shouldAnimate={isStepCascading(stepIndex)}
                     isSelected={selectedStepNumber === step.stepNumber}
+                    autoFocusOnSelection={autoFocusSelectedStep}
                     isPracticeStep={practiceStepNumber === step.stepNumber}
                     {activeMode}
                     highlightStyle={highlightedSteps?.get(step.stepNumber) ??
@@ -1077,6 +1091,7 @@
               onLongPress={() => onStepLongPress?.(step.stepNumber)}
               shouldAnimate={isStepCascading(index)}
               isSelected={selectedStepNumber === step.stepNumber}
+              autoFocusOnSelection={autoFocusSelectedStep}
               isPracticeStep={practiceStepNumber === step.stepNumber}
               {activeMode}
               highlightStyle={highlightedSteps?.get(step.stepNumber) ?? null}
@@ -1483,6 +1498,25 @@
 
   .grid-surface :global(.pictograph-renderer) {
     border: none !important;
+  }
+
+  /* Layout motion is the sole gesture while a slot-based preview recomposes.
+     Its target pictographs paint immediately inside the moving tiles; their
+     normal CSS travel remains available for same-geometry performer swaps. */
+  :global(.grid-surface[data-layout-motion-suspend-descendants] .prop-svg),
+  :global(.grid-surface[data-layout-motion-suspend-descendants] .arrow-svg),
+  :global(.grid-surface[data-layout-motion-suspend-descendants] .step-cell),
+  :global(
+    .grid-surface[data-layout-motion-suspend-descendants] .selection-skin
+  ) {
+    transition: none !important;
+  }
+
+  :global(
+    .grid-surface[data-layout-motion-suspend-descendants]
+      .step-cell.selected::before
+  ) {
+    animation: none !important;
   }
 
   .mandala-layout-item {

@@ -1,157 +1,269 @@
-<!-- Theory is an equation, not a serial settings form. Both axis ratios stay
-     visible so the control reads the same way as the grid it builds. -->
+<!-- The two ratio editors are one instrument. This component owns their
+     relationship so linked editing is a durable state rather than a copy
+     command the user has to remember pressing. -->
 <script lang="ts">
-  import { THEORY_RATIO_MAX_PART } from "$lib/shared/shape-matrix/domain/theory-ratio";
+  import { spinRatioKey } from "@vtg/domain";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import { theoryRatioLabel } from "$lib/shared/shape-matrix/domain/theory-ratio";
+  import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import ShapeMatrixRatioEntry from "./ShapeMatrixRatioEntry.svelte";
+
+  type RatioFocus = "left" | "right" | "both" | null;
 
   interface Props {
     layout?: "ribbon" | "tray";
-    onfocuschange?: (hand: "left" | "right" | null) => void;
+    onfocuschange?: (hand: RatioFocus) => void;
   }
   let { layout = "ribbon", onfocuschange }: Props = $props();
+
+  const appState = getShapeMatrixAppContext();
+  const leftLabel = $derived(theoryRatioLabel(appState.theoryLeftRatio));
+  const rightLabel = $derived(theoryRatioLabel(appState.theoryRightRatio));
+  const ratiosMatch = $derived(
+    spinRatioKey(appState.theoryLeftRatio) ===
+      spinRatioKey(appState.theoryRightRatio)
+  );
+  let choosingSource = $state(false);
+
+  $effect(() => {
+    if (appState.theoryRatiosLinked) choosingSource = false;
+  });
+
+  function requestLink(): void {
+    if (ratiosMatch) {
+      appState.linkTheoryRatios("left");
+      return;
+    }
+    choosingSource = true;
+  }
+
+  function linkUsing(source: "left" | "right"): void {
+    appState.linkTheoryRatios(source);
+    choosingSource = false;
+  }
 </script>
 
 <section
   class="theory-builder"
   class:tray={layout === "tray"}
-  aria-labelledby="theory-ratio-builder-title"
+  class:linked={appState.theoryRatiosLinked}
+  aria-label="Ratio Playground editor. Enter whole numbers from 0 through 15."
 >
-  <header class="builder-head">
-    <span class="builder-title" id="theory-ratio-builder-title">
-      Build a 4×4 ratio grid
-    </span>
-    <span class="builder-hint">
-      Any whole number 0–{THEORY_RATIO_MAX_PART}
-    </span>
-  </header>
+  <Crossfade
+    key={appState.theoryRatiosLinked
+      ? "linked"
+      : choosingSource
+        ? "choosing"
+        : "separate"}
+    animateHeight={layout === "tray"}
+  >
+    {#if appState.theoryRatiosLinked}
+      <div class="linked-layout">
+        <ShapeMatrixRatioEntry hand="both" {layout} {onfocuschange} />
+        <div class="relationship-control linked-control">
+          <span class="relationship-note">Editing either changes both</span>
+          <PanelButton
+            fullWidth
+            ariaPressed={true}
+            ariaLabel="Unlink row and column ratios"
+            onclick={appState.unlinkTheoryRatios}
+          >
+            <i class="fas fa-link" aria-hidden="true"></i>
+            <strong>Linked</strong>
+          </PanelButton>
+        </div>
+      </div>
+    {:else}
+      <div class="split-layout">
+        <ShapeMatrixRatioEntry hand="left" {layout} {onfocuschange} />
 
-  <div class="ratio-equation">
-    <ShapeMatrixRatioEntry hand="left" {layout} {onfocuschange} />
-    <span class="against">against</span>
-    <ShapeMatrixRatioEntry hand="right" {layout} {onfocuschange} />
-  </div>
+        <div class="relationship-control">
+          {#if choosingSource}
+            <span class="relationship-note">Which ratio should both use?</span>
+            <div class="source-choices">
+              <PanelButton
+                ariaLabel={`Link ratios using row ratio ${leftLabel}`}
+                onclick={() => linkUsing("left")}
+              >
+                <span class="axis-dot left-dot" aria-hidden="true"></span>
+                <span>Rows {leftLabel}</span>
+              </PanelButton>
+              <PanelButton
+                ariaLabel={`Link ratios using column ratio ${rightLabel}`}
+                onclick={() => linkUsing("right")}
+              >
+                <span class="axis-dot right-dot" aria-hidden="true"></span>
+                <span>Columns {rightLabel}</span>
+              </PanelButton>
+              <button
+                type="button"
+                class="cancel-link"
+                aria-label="Cancel linking ratios"
+                onclick={() => (choosingSource = false)}
+              >
+                <i class="fas fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
+          {:else}
+            <span class="relationship-note">Keep edits in sync</span>
+            <PanelButton
+              fullWidth
+              ariaPressed={false}
+              ariaLabel="Link row and column ratios"
+              onclick={requestLink}
+            >
+              <i class="fas fa-link" aria-hidden="true"></i>
+              <strong>Link ratios</strong>
+            </PanelButton>
+          {/if}
+        </div>
+
+        <ShapeMatrixRatioEntry hand="right" {layout} {onfocuschange} />
+      </div>
+    {/if}
+  </Crossfade>
 </section>
 
 <style>
   .theory-builder {
-    display: grid;
     width: fit-content;
     max-width: 100%;
-    gap: 0.5rem;
-    padding: 0.55rem;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 12px;
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, #101721) 88%,
-      transparent
-    );
-    box-shadow: inset 0 1px 0
-      color-mix(in srgb, var(--theme-text, #fff) 4%, transparent);
   }
 
-  .builder-head {
-    display: flex;
+  .split-layout,
+  .linked-layout {
+    display: grid;
+    align-items: start;
+    gap: 0.8rem;
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .split-layout {
+    grid-template-columns: 20rem 15rem 20rem;
+  }
+
+  .linked-layout {
+    grid-template-columns: 20rem 15rem;
+  }
+
+  .relationship-control {
+    display: grid;
     min-width: 0;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
+    gap: 0.25rem;
+    padding-top: 0.25rem;
   }
 
-  .builder-title {
-    color: var(--theme-text, #fff);
+  .relationship-note {
+    min-height: 1.1rem;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
     font-size: var(--font-size-min, 0.875rem);
-    font-weight: 750;
-  }
-
-  .builder-hint {
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 600;
+    line-height: 1.1rem;
+    text-align: center;
     white-space: nowrap;
   }
 
-  .ratio-equation {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
-    align-items: center;
-    gap: 0.55rem;
+  .relationship-control :global(.panel-btn) {
     min-width: 0;
+    padding-inline: 0.7rem;
+    border-color: var(--theme-stroke-strong, rgb(255 255 255 / 0.2));
+    background: color-mix(in srgb, var(--theme-text, #fff) 5%, transparent);
+    white-space: nowrap;
   }
 
-  .against {
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
+  .relationship-control :global(.panel-btn:hover) {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 55%,
+      transparent
+    );
+  }
+
+  .linked-control :global(.panel-btn) {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 55%,
+      var(--theme-stroke, transparent)
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 12%,
+      transparent
+    );
+  }
+
+  .source-choices {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(
+        --min-touch-target,
+        44px
+      );
+    gap: 0.3rem;
+  }
+
+  .source-choices :global(.panel-btn) {
+    padding-inline: 0.45rem;
     font-size: var(--font-size-min, 0.875rem);
-    font-weight: 650;
   }
 
-  /* On the full header, the instruction is the equation's legend rather than
-     another row above it. That keeps the inputs close to the matrix without
-     making the two axis groups fight for width. */
-  .theory-builder:not(.tray) {
-    grid-template-columns: 8.25rem auto;
-    align-items: stretch;
-    gap: 0.7rem;
-    padding: 0.65rem;
+  .axis-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    flex: 0 0 auto;
+    border-radius: 50%;
   }
 
-  .theory-builder:not(.tray) .builder-head {
-    align-items: flex-start;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.2rem;
-    padding-inline: 0.15rem;
+  .left-dot {
+    background: var(--prop-blue-text, #818cf8);
   }
 
-  .theory-builder:not(.tray) .builder-title {
-    line-height: 1.2;
+  .right-dot {
+    background: var(--prop-red-text, #f87171);
   }
 
-  .theory-builder:not(.tray) .builder-hint {
-    line-height: 1.35;
-    white-space: normal;
+  .cancel-link {
+    display: grid;
+    width: var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
+    cursor: pointer;
   }
 
-  .theory-builder:not(.tray) .ratio-equation {
-    gap: 0.65rem;
+  .cancel-link:hover {
+    border-color: var(--theme-stroke-strong, rgb(255 255 255 / 0.22));
+    color: var(--theme-text, #fff);
+  }
+
+  .cancel-link:focus-visible {
+    outline: 2px solid var(--theme-accent, #f59e0b);
+    outline-offset: 2px;
   }
 
   .theory-builder.tray {
-    width: min(21rem, calc(100vw - 2.5rem));
-    border: 0;
-    padding: 0;
-    background: transparent;
-    box-shadow: none;
+    width: min(23rem, calc(100vw - 3rem));
   }
 
-  .theory-builder.tray .builder-head {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  .theory-builder.tray .ratio-equation {
+  .theory-builder.tray .split-layout,
+  .theory-builder.tray .linked-layout {
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.35rem;
+    width: 100%;
+    gap: 0.55rem;
   }
 
-  .theory-builder.tray .against {
-    justify-self: center;
+  .theory-builder.tray .relationship-control {
+    order: 2;
+    padding-top: 0;
   }
 
-  @media (min-width: 50rem) and (max-height: 30rem) {
-    .theory-builder.tray {
-      width: min(34rem, calc(100vw - 2.5rem));
-    }
-
-    .theory-builder.tray .builder-head {
-      align-items: baseline;
-      flex-direction: row;
-      gap: 1rem;
-    }
-
-    .theory-builder.tray .ratio-equation {
-      grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
-      gap: 0.55rem;
-    }
+  .theory-builder.tray .split-layout > :global(.ratio-side.right) {
+    order: 3;
   }
 </style>

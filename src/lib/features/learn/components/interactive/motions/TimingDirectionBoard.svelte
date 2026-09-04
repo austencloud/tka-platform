@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onDestroy, tick } from "svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import { CARD_SIZES } from "$lib/features/choreo-card/domain/card-sizes";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
   import { motionDuration } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
@@ -11,20 +13,44 @@
     TimingDirectionModeId,
   } from "../foundations/pictograph-foundation-content";
 
-  let { modes }: { modes: readonly TimingDirectionMode[] } = $props();
+  let {
+    modes,
+    onFocusChange,
+    articleHrefFor,
+    showDirectionRowLabels = false,
+  }: {
+    modes: readonly TimingDirectionMode[];
+    onFocusChange?: (focused: boolean) => void;
+    articleHrefFor?: (mode: TimingDirectionMode) => string;
+    showDirectionRowLabels?: boolean;
+  } = $props();
 
   const haptic = getHapticFeedback();
+  const pokerCardAspectRatio =
+    CARD_SIZES.poker.widthInches / CARD_SIZES.poker.heightInches;
   let boardElement: HTMLDivElement | null = $state(null);
   let focusCloseButton: HTMLButtonElement | null = $state(null);
   let focusedModeId = $state<TimingDirectionModeId | null>(null);
   let playing = $state(true);
+  let highlightedStepIndex = $state<number | null>(null);
+  let seekFocusedPlayer = $state<((step: number) => void) | null>(null);
 
   const focusedMode = $derived(
     modes.find((mode) => mode.id === focusedModeId) ?? null
   );
+  const groupedModes = $derived.by(() => {
+    if (!showDirectionRowLabels) return modes;
+    return [
+      ...modes.filter((mode) => mode.direction === "Same"),
+      ...modes.filter((mode) => mode.direction === "Opposite"),
+    ];
+  });
   const orderedModes = $derived.by(() => {
-    if (!focusedMode) return modes;
-    return [focusedMode, ...modes.filter((mode) => mode.id !== focusedMode.id)];
+    if (!focusedMode) return groupedModes;
+    return [
+      focusedMode,
+      ...groupedModes.filter((mode) => mode.id !== focusedMode.id),
+    ];
   });
 
   const boardMotion = createLayoutMotion({
@@ -51,7 +77,10 @@
     if (nextModeId === focusedModeId) return;
     const previousModeId = focusedModeId;
     const captured = boardMotion.capture();
+    highlightedStepIndex = null;
+    seekFocusedPlayer = null;
     focusedModeId = nextModeId;
+    onFocusChange?.(nextModeId !== null);
     haptic?.trigger("selection");
     await tick();
     if (captured) boardMotion.play();
@@ -75,8 +104,33 @@
     playing = nextPlaying;
   }
 
+  function syncFocusedStep(
+    currentStep: number,
+    sequenceId: string | null
+  ): void {
+    if (!focusedMode || sequenceId !== focusedMode.sequence.id) return;
+    highlightedStepIndex =
+      currentStep < 1
+        ? null
+        : Math.min(
+            focusedMode.sequence.steps.length - 1,
+            Math.max(0, Math.floor(currentStep) - 1)
+          );
+  }
+
+  function seekToCardStep(stepIndex: number): void {
+    seekFocusedPlayer?.(stepIndex + 1);
+    haptic?.trigger("selection");
+  }
+
   function handleBoardKeydown(event: KeyboardEvent): void {
-    if (event.key !== "Escape" || !focusedModeId) return;
+    if (
+      event.key !== "Escape" ||
+      !focusedModeId ||
+      !boardElement?.contains(event.target as Node)
+    ) {
+      return;
+    }
     event.preventDefault();
     void setFocusedMode(null);
   }
@@ -90,13 +144,14 @@
   onDestroy(() => boardMotion.cancel());
 </script>
 
+<svelte:window onkeydown={handleBoardKeydown} />
+
 <div
   class="comparison-board"
   class:has-focus={focusedMode !== null}
   bind:this={boardElement}
-  onkeydown={handleBoardKeydown}
   role="region"
-  aria-label="Six time and direction relationships"
+  aria-label="Six timing and direction relationships"
 >
   <div class="board-toolbar">
     <div class="selection-status" aria-live="polite">
@@ -116,54 +171,126 @@
     </PanelButton>
   </div>
 
-  <div class="mode-grid" class:has-focus={focusedMode !== null}>
-    {#each orderedModes as mode (mode.id)}
+  <div
+    class="mode-grid"
+    class:has-focus={focusedMode !== null}
+    class:with-row-labels={showDirectionRowLabels}
+  >
+    {#each orderedModes as mode, index (mode.id)}
+      {#if showDirectionRowLabels && !focusedMode && (index === 0 || orderedModes[index - 1]?.direction !== mode.direction)}
+        <h3 class="direction-row-label">{mode.direction} Direction</h3>
+      {/if}
       {@const isFocused = mode.id === focusedModeId}
+      {@const articleHref = articleHrefFor?.(mode)}
       <article
         class="mode-tile"
         class:is-focused={isFocused}
         data-mode-id={mode.id}
+        data-timing={mode.timing}
+        data-direction={mode.direction}
         style:--element-accent={mode.element.accentColor}
+        style:--element-dark={mode.element.darkComplement}
         aria-label={`${codeFor(mode)}. ${definitionFor(mode)}`}
       >
         <header class="mode-header">
           <div class="mode-identity">
-            <img src={mode.element.iconPath} alt="" />
-            <strong>{codeFor(mode)}</strong>
-            {#if isFocused}
-              <span>{fullNameFor(mode)}</span>
+            {#if focusedMode && !isFocused}
+              <img src={mode.element.iconPath} alt="" />
             {/if}
+            <strong>{codeFor(mode)}</strong>
+            <span
+              >{isFocused || focusedMode
+                ? fullNameFor(mode)
+                : definitionFor(mode)}</span
+            >
           </div>
 
           {#if isFocused}
-            <PanelButton
-              bind:ref={focusCloseButton}
-              variant="secondary"
-              onclick={() => void setFocusedMode(null)}
-              ariaLabel="Back to all six relationships"
-            >
-              <i class="fa-solid fa-compress" aria-hidden="true"></i>
-              <span>All six</span>
-            </PanelButton>
+            <div class="mode-actions">
+              {#if articleHref}
+                <a
+                  class="mode-article-link"
+                  href={articleHref}
+                  aria-label={`Read the ${fullNameFor(mode)} article`}
+                >
+                  <span>Read article</span>
+                  <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                </a>
+              {/if}
+              <PanelButton
+                bind:ref={focusCloseButton}
+                variant="secondary"
+                onclick={() => void setFocusedMode(null)}
+                ariaLabel="Back to all six relationships"
+              >
+                <i class="fa-solid fa-compress" aria-hidden="true"></i>
+                <span>All six</span>
+              </PanelButton>
+            </div>
           {/if}
         </header>
 
-        <div class="mode-player">
-          <HandMotionPlayer
-            sequence={mode.sequence}
-            ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
-            showElementalGlyph
-            interactive={isFocused}
-            playbackAllowed={focusedMode === null || isFocused}
-            externalPlaying={playing}
-            onExternalPlayingChange={syncPlaying}
-            framed={false}
-          />
-        </div>
-
         {#if isFocused}
-          <p class="mode-definition">{definitionFor(mode)}</p>
+          <div class="study-surfaces">
+            <div class="mode-player">
+              <HandMotionPlayer
+                sequence={mode.sequence}
+                ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
+                showElementalGlyph
+                interactive
+                externalPlaying={playing}
+                onExternalPlayingChange={syncPlaying}
+                onStepChange={syncFocusedStep}
+                onSeekRef={(seek) => (seekFocusedPlayer = seek)}
+                framed={false}
+              />
+            </div>
+            <div
+              class="mode-card"
+              aria-label={`${fullNameFor(mode)} hand paths by step`}
+            >
+              <ChoreoCard
+                sequence={mode.sequence}
+                handPathMode
+                darkMode
+                frameColors={{
+                  accent: mode.element.accentColor,
+                  dark: mode.element.darkComplement,
+                }}
+                cardAspectRatio={pokerCardAspectRatio}
+                showWord={false}
+                customTitleText={mode.element.name}
+                showDifficultyLevel={false}
+                includeStartPosition
+                columnCount={2}
+                showNotes
+                customNotesText={definitionFor(mode)}
+                showLoopGlyph={false}
+                showQRCode={false}
+                showStepNumbers
+                forceContain
+                showHighlight
+                {highlightedStepIndex}
+                onStepClick={seekToCardStep}
+              />
+            </div>
+          </div>
         {:else}
+          <div class="mode-player">
+            <HandMotionPlayer
+              sequence={mode.sequence}
+              ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
+              showElementalGlyph
+              interactive={focusedMode === null}
+              playbackAllowed={focusedMode === null}
+              externalPlaying={playing}
+              onExternalPlayingChange={syncPlaying}
+              framed={false}
+            />
+          </div>
+        {/if}
+
+        {#if !isFocused}
           <button
             type="button"
             class="mode-select"
@@ -208,7 +335,7 @@
     min-width: 0;
     overflow: hidden;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 0.875rem);
+    font-size: clamp(0.875rem, calc(0.72rem + 0.25cqw), 1.125rem);
     font-weight: 650;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -224,8 +351,24 @@
   }
 
   .mode-grid.has-focus {
-    grid-template-columns: minmax(0, 2.35fr) minmax(11rem, 0.65fr);
+    grid-template-columns: minmax(0, 3fr) minmax(16rem, 0.75fr);
     grid-template-rows: repeat(5, minmax(0, 1fr));
+  }
+
+  .mode-grid.with-row-labels:not(.has-focus) {
+    grid-template-columns: minmax(7.5rem, auto) repeat(3, minmax(0, 1fr));
+  }
+
+  .direction-row-label {
+    min-width: 0;
+    display: grid;
+    place-items: center start;
+    margin: 0;
+    padding-inline: 0.35rem;
+    color: var(--theme-text);
+    font-size: clamp(0.875rem, calc(0.72rem + 0.25cqw), 1.125rem);
+    font-weight: 750;
+    line-height: 1.2;
   }
 
   .mode-tile {
@@ -250,7 +393,7 @@
   .mode-tile.is-focused {
     grid-column: 1;
     grid-row: 1 / 6;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
     border-color: color-mix(
       in srgb,
       var(--element-accent) 72%,
@@ -274,11 +417,36 @@
     justify-content: center;
   }
 
+  .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem;
+    text-align: center;
+  }
+
+  .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity img {
+    width: clamp(1.75rem, calc(1.45rem + 0.35cqw), 2.25rem);
+    height: clamp(1.75rem, calc(1.45rem + 0.35cqw), 2.25rem);
+  }
+
+  .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity strong {
+    font-size: clamp(1.2rem, calc(1rem + 0.22cqw), 1.5rem);
+  }
+
+  .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity span {
+    overflow: visible;
+    font-size: clamp(1rem, calc(0.9rem + 0.16cqw), 1.25rem);
+    line-height: 1.25;
+    text-overflow: clip;
+  }
+
   .mode-header {
     position: relative;
     z-index: 5;
     min-width: 0;
-    min-height: 2.6rem;
+    min-height: 3rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -307,7 +475,7 @@
 
   .mode-identity strong {
     color: var(--theme-text);
-    font-size: var(--font-size-min, 0.875rem);
+    font-size: clamp(1.125rem, calc(0.9rem + 0.28cqw), 1.35rem);
     font-weight: 800;
     letter-spacing: 0.04em;
   }
@@ -316,10 +484,10 @@
     min-width: 0;
     overflow: hidden;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 0.875rem);
+    font-size: clamp(1rem, calc(0.85rem + 0.2cqw), 1.25rem);
     font-weight: 650;
+    line-height: 1.2;
     text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .mode-header :global(.panel-btn) {
@@ -328,19 +496,68 @@
     padding: 0.4rem 0.65rem;
   }
 
+  .mode-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .mode-article-link {
+    min-height: var(--min-touch-target, 44px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.65rem;
+    color: var(--theme-text);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 650;
+    text-decoration: none;
+    border: 1px solid var(--element-accent);
+    border-radius: var(--radius-md, 0.5rem);
+    background: color-mix(
+      in srgb,
+      var(--element-accent) 14%,
+      var(--theme-card-bg)
+    );
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
+  }
+
+  .mode-article-link:hover {
+    background: color-mix(
+      in srgb,
+      var(--element-accent) 22%,
+      var(--theme-card-bg)
+    );
+  }
+
+  .mode-article-link:focus-visible {
+    outline: 3px solid var(--element-accent);
+    outline-offset: 2px;
+  }
+
   .mode-player {
     min-width: 0;
     min-height: 0;
   }
 
-  .mode-definition {
-    margin: 0;
-    padding: 0.55rem 0.75rem 0.65rem;
-    color: var(--theme-text);
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 650;
-    line-height: 1.35;
-    text-align: center;
+  .study-surfaces {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(18rem, 0.92fr);
+    gap: clamp(0.5rem, 1cqw, 0.9rem);
+    min-width: 0;
+    min-height: 0;
+    padding: clamp(0.5rem, 0.8cqw, 0.8rem);
+  }
+
+  .study-surfaces .mode-player,
+  .mode-card {
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .mode-select {
@@ -377,9 +594,20 @@
       grid-template-rows: repeat(3, minmax(0, 1fr));
     }
 
+    .mode-grid.with-row-labels:not(.has-focus) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1fr);
+    }
+
+    .direction-row-label {
+      grid-column: 1 / -1;
+      place-items: end start;
+      padding: 0.1rem 0;
+    }
+
     .mode-grid.has-focus {
       grid-template-columns: repeat(5, minmax(0, 1fr));
-      grid-template-rows: minmax(0, 1fr) minmax(4.5rem, auto);
+      grid-template-rows: minmax(0, 1fr) minmax(5.5rem, auto);
     }
 
     .mode-tile.is-focused {
@@ -398,26 +626,28 @@
 
     .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity {
       flex-direction: column;
-      gap: 0.15rem;
+      gap: 0.25rem;
+      padding: 0.3rem;
+    }
+
+    .study-surfaces {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: repeat(2, minmax(0, 1fr));
     }
   }
 
   @container motion-board (max-width: 28rem) {
     .board-toolbar {
-      min-height: 2.5rem;
+      min-height: var(--min-touch-target, 44px);
     }
 
     .board-toolbar :global(.panel-btn) {
-      min-height: 2.5rem;
+      min-height: var(--min-touch-target, 44px);
       padding: 0.3rem 0.55rem;
     }
 
-    .selection-status {
-      font-size: var(--font-size-compact, 0.75rem);
-    }
-
     .mode-header {
-      min-height: 2.25rem;
+      min-height: 2.75rem;
       padding: 0.25rem 0.4rem;
     }
 
@@ -427,13 +657,23 @@
     }
 
     .mode-identity strong,
-    .mode-identity span,
-    .mode-definition {
-      font-size: var(--font-size-compact, 0.75rem);
+    .mode-identity span {
+      font-size: var(--font-size-min, 0.875rem);
+    }
+
+    .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      clip-path: inset(50%);
     }
 
     .mode-header :global(.panel-btn span),
-    .board-toolbar :global(.panel-btn span) {
+    .board-toolbar :global(.panel-btn span),
+    .mode-article-link span {
       position: absolute;
       width: 1px;
       height: 1px;
@@ -444,7 +684,7 @@
     }
   }
 
-  @media (max-height: 540px) and (min-width: 701px) {
+  @media (max-height: 540px) and (min-width: 801px) {
     .comparison-board {
       grid-template-rows: minmax(0, 1fr);
     }
@@ -485,6 +725,17 @@
       grid-template-rows: minmax(0, 1fr);
     }
 
+    .mode-grid.with-row-labels:not(.has-focus) {
+      grid-template-columns: minmax(7.5rem, auto) repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+
+    .mode-grid.with-row-labels:not(.has-focus) .direction-row-label {
+      grid-column: auto;
+      place-items: center start;
+      padding-inline: 0.35rem;
+    }
+
     .mode-grid.has-focus {
       grid-template-columns: repeat(6, minmax(0, 1fr));
       grid-template-rows: repeat(3, minmax(0, 1fr));
@@ -508,11 +759,33 @@
     .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity {
       flex-direction: row;
       gap: 0.35rem;
+      padding: 0.25rem;
+      text-align: left;
+    }
+
+    .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity img {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity strong {
+      font-size: 1rem;
+    }
+
+    .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity span {
+      font-size: var(--font-size-min, 0.875rem);
+    }
+
+    .study-surfaces {
+      grid-template-columns: minmax(0, 1.08fr) minmax(15rem, 0.92fr);
+      grid-template-rows: minmax(0, 1fr);
+      padding: 0.35rem;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .mode-select {
+    .mode-select,
+    .mode-article-link {
       transition: none;
     }
   }

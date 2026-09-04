@@ -40,9 +40,15 @@ function semanticVariant(flower: Flower): number {
 
 function createState(compact: boolean) {
   const syncState = vi.fn();
+  const axis = buildFlowerAxis();
   const state = createShapeMatrixAppState(
     {
-      loadMatrix: vi.fn(),
+      loadMatrix: vi.fn().mockResolvedValue({
+        axis,
+        left: new Map(),
+        right: new Map(),
+        clubTipDx: 100,
+      }),
       syncState,
     },
     {
@@ -314,6 +320,106 @@ describe("shape matrix app state", () => {
       handCycles: 15,
     });
     expect(syncState).toHaveBeenCalledTimes(1);
+  });
+
+  it("links both ratios until the user unlinks them", () => {
+    const { state, syncState } = createState(false);
+
+    state.setTheoryRatios(
+      { propRotations: 2, handCycles: 5 },
+      { propRotations: 1, handCycles: 2 }
+    );
+    state.linkTheoryRatios("left");
+
+    expect(state.theoryRatiosLinked).toBe(true);
+    expect(state.theoryLeftRatio).toEqual({
+      propRotations: 2,
+      handCycles: 5,
+    });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 2,
+      handCycles: 5,
+    });
+
+    state.setTheoryRatioFor("right", {
+      propRotations: 3,
+      handCycles: 7,
+    });
+    expect(state.theoryLeftRatio).toEqual({
+      propRotations: 3,
+      handCycles: 7,
+    });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 3,
+      handCycles: 7,
+    });
+    expect(syncState).toHaveBeenLastCalledWith(
+      expect.objectContaining({ theoryRatiosLinked: true })
+    );
+
+    state.unlinkTheoryRatios();
+    state.setTheoryRatioFor("right", {
+      propRotations: 4,
+      handCycles: 9,
+    });
+    expect(state.theoryLeftRatio).toEqual({
+      propRotations: 3,
+      handCycles: 7,
+    });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 4,
+      handCycles: 9,
+    });
+  });
+
+  it("rolls a new Ratio Playground grid, crossing, and hand relationship", () => {
+    const { state } = createState(false);
+    state.setSurface("theory");
+    const rolls = [0, 0, 0, 0.999999];
+
+    state.surpriseMe(() => rolls.shift() ?? 0);
+
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 0, handCycles: 1 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 0, handCycles: 1 });
+    expect(state.theoryRowAxis).toHaveLength(4);
+    expect(state.theoryColAxis).toHaveLength(4);
+    expect(state.theoryPair).toEqual({
+      left: state.theoryRowAxis[0],
+      right: state.theoryColAxis[0],
+    });
+    expect(state.theoryMode).toBe("QO");
+  });
+
+  it("rolls a new Level Matrix within the current difficulty", async () => {
+    const { state } = createState(false);
+    await state.load();
+    const rolls = [0, 0, 0.999999];
+
+    state.surpriseMe(() => rolls.shift() ?? 0);
+
+    expect(state.rowAxis).toHaveLength(4);
+    expect(state.colAxis).toHaveLength(4);
+    expect(state.level).toBe(2);
+    expect(state.leftTurn).toBe(0);
+    expect(state.rightTurn).toBe(1);
+    expect(state.selectedPair).toEqual({
+      left: state.rowAxis[0],
+      right: state.colAxis[0],
+    });
+    expect(state.selectedMode).toBe("QO");
+    expect(state.selectedPropMode).toBeNull();
+  });
+
+  it("opens the rolled result on compact layouts unless navigation is deferred", async () => {
+    const { state } = createState(true);
+    await state.load();
+
+    state.surpriseMe(() => 0, { navigate: false });
+    expect(state.activeView).toBe("matrix");
+
+    state.surpriseMe(() => 0);
+    expect(state.activeView).toBe("detail");
+    expect(state.compactFocusRequest?.target).toBe("detail");
   });
 
   it("rejects an invalid two-ratio update without moving either axis", () => {

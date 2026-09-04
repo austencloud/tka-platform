@@ -6,6 +6,7 @@
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo";
   import ThirdOrderSourceRail from "./components/ThirdOrderSourceRail.svelte";
+  import ThirdOrderPathControls from "./components/ThirdOrderPathControls.svelte";
   import ThirdOrderStage from "./components/ThirdOrderStage.svelte";
   import ThirdOrderInspector from "./components/ThirdOrderInspector.svelte";
   import ThirdOrderTransport from "./components/ThirdOrderTransport.svelte";
@@ -41,6 +42,7 @@
 
 {#snippet setup()}
   <aside class="setup-panel" aria-label="Third Order setup">
+    <ThirdOrderPathControls />
     <ThirdOrderSourceRail embedded />
     <ThirdOrderInspector embedded />
   </aside>
@@ -65,6 +67,7 @@
             id: "setup",
             content: setup,
             defaultSize: 0.92,
+            preferredSize: "380px",
             minSize: 300,
             maxSize: 420,
           },
@@ -87,7 +90,8 @@
     title="Third Order setup"
     onClose={() => thirdOrder.setSetupDrawerOpen(false)}
   />
-  <div class="drawer-content">
+  <div class="setup-drawer-body">
+    <ThirdOrderPathControls />
     <ThirdOrderSourceRail embedded />
     <ThirdOrderInspector embedded />
   </div>
@@ -128,12 +132,11 @@
     overflow: auto;
     background: var(--theme-panel-bg);
   }
-  .drawer-content {
+  .setup-drawer-body {
+    flex: 1;
     min-width: 0;
     min-height: 0;
-    height: calc(100% - 58px);
     padding: 16px;
-    overflow: hidden;
     overflow-y: auto;
   }
   :global(.third-order-drawer) {

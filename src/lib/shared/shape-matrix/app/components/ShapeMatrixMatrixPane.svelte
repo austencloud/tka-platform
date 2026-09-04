@@ -2,6 +2,7 @@
   import ShapeMatrixGrid from "$lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte";
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
 
   interface Props {
     /** The shell owns navigation (and the compact tile-to-hero morph). */
@@ -11,6 +12,10 @@
 
   const state = getShapeMatrixAppContext();
 </script>
+
+{#snippet cornerGuide()}
+  <ShapeMatrixGridCorner />
+{/snippet}
 
 <section class="matrix-pane" aria-label="Shape matrix">
   <div class="matrix-stage">
@@ -29,6 +34,7 @@
         maxCellPx={320}
         selectedPair={state.selectedPair}
         claimSelected={state.compact && state.activeView === "matrix"}
+        corner={cornerGuide}
         onselect={onselect ?? state.selectPair}
       />
     {/if}

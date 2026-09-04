@@ -11,7 +11,6 @@
   import {
     KINETIC_SHAPE_ENGINE_NAME,
     ORIGINAL_SHAPE_MATRIX_URL,
-    ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
   } from "../shape-engine-identity";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
@@ -83,7 +82,7 @@
   let detailPaneElement: HTMLDivElement;
   let theoryPaneElement: HTMLDivElement;
   let theoryDetailElement: HTMLDivElement;
-  let theoryEditingAxis = $state<"left" | "right" | null>(null);
+  let theoryEditingAxis = $state<"left" | "right" | "both" | null>(null);
 
   $effect(() => {
     if (!theory) theoryEditingAxis = null;
@@ -117,6 +116,16 @@
       return;
     }
     runMandalaMorph(appState, () => appState.showMatrix());
+  }
+
+  function surpriseMe(): void {
+    if (!appState.compact || theory || appState.activeView === "detail") {
+      appState.surpriseMe();
+      return;
+    }
+    runMandalaMorph(appState, () => appState.showDetail(), {
+      before: () => appState.surpriseMe(Math.random, { navigate: false }),
+    });
   }
 
   $effect(() => {
@@ -164,6 +173,21 @@
   >
     <ShapeMatrixMatrixPane onselect={selectPair} />
   </div>
+{/snippet}
+
+{#snippet surpriseAction(compact = false)}
+  <button
+    type="button"
+    class="top-action surprise-action"
+    class:compact
+    aria-label="Surprise me with a new grid, crossing, and hand relationship"
+    title="Pick a new grid, crossing, and hand relationship"
+    disabled={!theory && !appState.data}
+    onclick={surpriseMe}
+  >
+    <i class="fas fa-dice" aria-hidden="true"></i>
+    {#if !compact}<span>Surprise me</span>{/if}
+  </button>
 {/snippet}
 
 {#snippet detailPane()}
@@ -292,10 +316,10 @@
             onclick={showMatrix}
           >
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
-            <span>{theory ? "Theory" : "Matrix"}</span>
+            <span>{theory ? "Playground" : "Matrix"}</span>
           </button>
         {:else}
-          <strong>{theory ? "Theory Matrix" : "Shape Matrix"}</strong>
+          <strong>{theory ? "Ratio Playground" : "Level Matrix"}</strong>
         {/if}
         <!-- The compact value editor keeps the grid as the hero. Matrix opens
              its level and turns; Theory names ratio editing directly and
@@ -308,16 +332,10 @@
     {:else if variant === "standalone"}
       <div class="identity">
         <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
-        <span class="identity-note">
-          <span class="identity-note-sizer" aria-hidden="true">
-            Type any two ratios to build a 4×4 grid
-          </span>
-          <span class="identity-note-live">
-            {theory
-              ? "Type any two ratios to build a 4×4 grid"
-              : `Lorq’s 144 Shape Matrix: VTG ratios ${ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}`}
-          </span>
-        </span>
+        {#if !theory}
+          <span class="identity-note">Explore hand paths across Levels 1–4</span
+          >
+        {/if}
       </div>
     {/if}
 
@@ -325,9 +343,11 @@
       <!-- The surface choice outranks everything below it. Matrix adds its
            difficulty beside that choice; Theory has no parallel setting. -->
       <div class="header-meta">
-        <div class="control-cell surface-control-cell">
-          <span class="control-label">Explore</span>
+        <div class="surface-control-cell">
           <ShapeMatrixSurfaceControl />
+        </div>
+        <div class="surprise-presence">
+          {@render surpriseAction()}
         </div>
         {#if !theory}
           <!-- The wrapper owns the gap as well as the cell width, so removing
@@ -396,6 +416,7 @@
 
     <div class="top-actions">
       {#if appState.compact}
+        {@render surpriseAction(true)}
         {#if appState.activeView === "matrix" && hasPair}
           <button
             type="button"
@@ -484,7 +505,16 @@
 
   .topbar {
     display: grid;
-    grid-template-columns: minmax(6rem, 1fr) auto minmax(6rem, 1fr);
+    /* The control pair always gets its full width (an `auto` track let the
+       fr columns bite into it), and the side columns share the slack
+       equally, so the pair sits centred whenever the row has room. The
+       actions column can never shrink below its buttons: a 6rem floor let
+       it, and the About button then left the row on small laptops. The
+       identity column's floor holds the title; its note truncates inside. */
+    grid-template-columns:
+      minmax(11rem, 1fr)
+      max-content
+      minmax(max-content, 1fr);
     grid-template-areas:
       "identity meta actions"
       "controls controls controls";
@@ -498,7 +528,7 @@
   .top-action {
     min-height: var(--min-touch-target, 44px);
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 999px;
+    border-radius: 10px;
     background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
     color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
     text-decoration: none;
@@ -537,6 +567,9 @@
   /* Preserve the existing action footprint while giving the attributed source
      label enough text width to render Lorq's name without an ellipsis. */
   .source-action {
+    /* Lorq's name and "original" run past the shared 11rem cap at this
+       font, so the button ellipsized at every width. */
+    max-width: 12.5rem;
     padding-inline: 0.6rem;
   }
 
@@ -557,6 +590,39 @@
   .top-action:focus-visible {
     outline: 2px solid var(--theme-accent, #f59e0b);
     outline-offset: 2px;
+  }
+
+  .surprise-action {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 58%,
+      var(--theme-stroke, transparent)
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 13%,
+      var(--theme-card-bg, transparent)
+    );
+    color: var(--theme-text, #fff);
+    font-weight: 750;
+  }
+
+  .surprise-action i {
+    color: var(--theme-accent, #f59e0b);
+  }
+
+  .surprise-action:disabled {
+    border-color: var(--theme-stroke, rgb(255 255 255 / 0.09));
+    background: transparent;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.42));
+    cursor: wait;
+    opacity: 0.6;
+  }
+
+  .surprise-action.compact {
+    width: var(--min-touch-target, 44px);
+    max-width: none;
+    padding: 0;
   }
 
   .identity {
@@ -580,17 +646,6 @@
     color: var(--theme-text-dim, rgb(255 255 255 / 0.68));
     font-size: var(--font-size-min, 0.875rem);
     white-space: nowrap;
-  }
-
-  .identity-note > span {
-    grid-area: 1 / 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .identity-note-sizer {
-    visibility: hidden;
   }
 
   .compact-context {
@@ -704,7 +759,20 @@
   }
 
   .surface-control-cell {
+    display: flex;
     flex: 0 0 auto;
+    align-items: center;
+  }
+
+  .surprise-presence {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    margin-left: 0.5rem;
+  }
+
+  .surprise-presence .surprise-action {
+    min-height: 3.65rem;
   }
 
   /* The bento cell: a caption row over its control, each cell carrying its
@@ -798,16 +866,21 @@
     gap: 0.4rem;
   }
 
-  /* Theory's surface switch is a small part of the ratio-building task. It
-     reads as one compact header control instead of a tall card competing with
-     the editor. */
-  @container shape-matrix-app (min-width: 75rem) and (min-height: 42rem) {
-    .shape-app.theory .surface-control-cell {
-      display: flex;
-      grid-template-rows: none;
-      align-items: center;
-      gap: 0.55rem;
-      padding: 0.3rem 0.45rem;
+  /* The narrowest wide hosts (small laptops, just above the compact seam):
+     the title, the Explore-and-Difficulty pair, and two labelled actions add
+     up to more than the row. The actions keep their glyph and aria-label and
+     drop the word until the row can hold it; the seam is where the title
+     floor, the widest control pair (level 4 plus Surprise), and both worded
+     actions fit together. The height clause keeps this out of the compact
+     tier, whose Detail and Relationships pills need their words. */
+  @container shape-matrix-app (75rem <= width < 84.5rem) and (height >= 42rem) {
+    .top-actions .top-action {
+      max-width: none;
+      padding-inline: 0;
+    }
+
+    .top-actions .top-action span {
+      display: none;
     }
   }
 
@@ -873,7 +946,10 @@
     overflow: hidden;
   }
 
-  @container shape-matrix-app (max-width: 74.99rem) or (max-height: 41.99rem) {
+  /* The compact seam. ShapeMatrixApp decides `compact` in script from the
+     same two rem bounds, so the markup and this stylesheet always change
+     tiers together, whatever the root font size. Keep the two in step. */
+  @container shape-matrix-app (width < 75rem) or (height < 42rem) {
     .topbar {
       grid-template-columns: minmax(0, 1fr) auto auto;
       grid-template-areas:

@@ -11,12 +11,13 @@
     theoryHeaderArtworkSrc,
   } from "$lib/shared/shape-matrix/services/theory-matrix-artwork";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
 
   interface Props {
     /** The shell owns navigation, the same way it does for the Matrix. */
     onselect?: (pair: { left: TheoryFlower; right: TheoryFlower }) => void;
     /** The ratio editor points back to the grid axis it is changing. */
-    emphasizedAxis?: "left" | "right" | null;
+    emphasizedAxis?: "left" | "right" | "both" | null;
   }
   let { onselect, emphasizedAxis = null }: Props = $props();
 
@@ -27,6 +28,10 @@
   // the one thing it borrows, and the standard staff covers the wait.
   const tipDx = $derived(state.data?.clubTipDx ?? MANDALA_STANDARD_TIP_DX);
 </script>
+
+{#snippet cornerGuide()}
+  <ShapeMatrixGridCorner />
+{/snippet}
 
 <section class="theory-pane" aria-label="Theory matrix">
   <div class="theory-stage">
@@ -43,6 +48,7 @@
       paintCell={(left, right, sizePx) =>
         theoryCellArtworkSrc(left, right, tipDx, sizePx)}
       {emphasizedAxis}
+      corner={cornerGuide}
       onselect={onselect ?? state.selectTheoryPair}
     />
   </div>

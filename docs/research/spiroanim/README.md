@@ -25,11 +25,11 @@ a transcription of other people's systems into TKA's vocabulary. Credit them on
 any surface built from this. See `.claude/rules/no-fabrication.md` and the
 `feedback_source_tiering` memory.
 
-Quarter Space Tech predates SpiroAnim. Mentive preserved its data and three
-original documents in SpiroAnim, but those bundled documents do not identify an
-individual creator. The imported collection therefore credits the Quarter Space
-Tech archive, Mentive's preservation in SpiroAnim, and `@rbgirard` without
-inventing a personal creator identity.
+Mentive directly confirmed that the Quarter Space Tech source documents were
+his work, based on Alex Kurowski's grid. The imported collection credits both
+contributions and identifies SpiroAnim as the transcription source. Public
+credit uses Mentive, his requested public name. Randy is the preferred name when
+a real name is required.
 
 ## Method
 
@@ -125,6 +125,19 @@ shared start frame, the column sets the continuation.
   with a source ref when the relevant inputs differ.
 - `scripts/import-spiroanim-qst.cjs`: idempotent private-library importer for the
   `Quarter Space Tech Archive` collection.
+
+## History archive preservation
+
+The public `/history#archive-record-quarter-space-tech` record preserves the
+three PDF exports byte-for-byte and renders all 50 pages as lossless WebP images
+for the in-page document reader. The PDFs carry a March 15, 2024 export date.
+That date identifies these copies, not the origin of Quarter Space Tech.
+
+| Document                | Pages | Patterns | SHA-256                                                            |
+| ----------------------- | ----: | -------: | ------------------------------------------------------------------ |
+| Quarter “Time” Breaks   |     7 |       56 | `4a9ef6c8b77cfde6210427e78e2d2b521574a30c0b079bfa7f5890c39cd42547` |
+| Quarter “Time” Advanced |    16 |       64 | `d90369e4980a4e98be827f50092a2fef4f362c2b2489830151f53eeafe6aa429` |
+| Quarter Space Beyond    |    27 |      108 | `80169e9ea7e24c9b7abe9909b89f190045f1b85888a8cd7da9b1dd0e225ef068` |
 
 ## What he has that TKA does not
 

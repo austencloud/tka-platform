@@ -11,15 +11,31 @@
 
   let { embedded = false }: { embedded?: boolean } = $props();
   const state = getThirdOrderContext();
-  const laneOptions = [
-    { value: "left", label: "Blue carrier", shortLabel: "Blue", tone: "blue" },
-    { value: "right", label: "Red carrier", shortLabel: "Red", tone: "red" },
+  const laneOptions = $derived([
+    {
+      value: "left",
+      label:
+        state.composition.carrierPath.mode === "flower"
+          ? "Blue path"
+          : "Blue carrier",
+      shortLabel: "Blue",
+      tone: "blue",
+    },
+    {
+      value: "right",
+      label:
+        state.composition.carrierPath.mode === "flower"
+          ? "Red path"
+          : "Red carrier",
+      shortLabel: "Red",
+      tone: "red",
+    },
   ] satisfies Array<{
     value: ThirdOrderCarrierLane;
     label: string;
     shortLabel: string;
     tone: "blue" | "red";
-  }>;
+  }>);
   const orientationOptions = [
     {
       value: "world",
@@ -38,7 +54,7 @@
     },
     {
       value: "carrier",
-      label: "Follow carrier direction",
+      label: "Follow carrier heading",
       shortLabel: "Carrier",
     },
   ] satisfies Array<{
@@ -47,7 +63,7 @@
     shortLabel: string;
   }>;
   const timingOptions = [
-    { value: "phrase", label: "Fit to carrier", shortLabel: "Fit" },
+    { value: "phrase", label: "Fit to outer path", shortLabel: "Fit" },
     { value: "beats", label: "Shared counts", shortLabel: "Counts" },
     { value: "independent", label: "Independent rate", shortLabel: "Rate" },
   ] satisfies Array<{
@@ -56,18 +72,20 @@
     shortLabel: string;
   }>;
 
-  const orientationHelp: Record<ThirdOrderOrientationMode, string> = {
+  const orientationHelp = $derived<Record<ThirdOrderOrientationMode, string>>({
     world:
       "The child grid keeps one fixed orientation while its center travels.",
     radial:
       "The child grid’s north axis always points toward the parent center.",
     tangent:
       "The child grid turns to face the direction its center is traveling.",
-    carrier: "The child grid inherits the carrier prop’s own staff direction.",
-  };
+    carrier:
+      state.composition.carrierPath.mode === "flower"
+        ? "The child grid turns with the flower’s primary orbit vector."
+        : "The child grid inherits the carrier prop’s own staff direction.",
+  });
   const timingHelp: Record<ThirdOrderTimingMode, string> = {
-    phrase:
-      "The child completes one sequence during one complete carrier loop.",
+    phrase: "The child completes one sequence during one complete outer path.",
     beats: "Child and carrier advance count-for-count; shorter sequences loop.",
     independent: "The child advances from the master clock at its own rate.",
   };
@@ -100,15 +118,19 @@
 
   <section class="control-section">
     <div class="section-heading">
-      <h3>Carrier lane</h3>
-      <p>Which virtual hand moves this whole grid?</p>
+      <h3>
+        {state.composition.carrierPath.mode === "flower"
+          ? "Path lane"
+          : "Carrier lane"}
+      </h3>
+      <p>Which parent relationship lane moves this whole grid?</p>
     </div>
     <SegmentedControl
       options={laneOptions}
       value={state.selectedChild.lane}
       onchange={(lane) => state.setChildLane(state.selectedChildId, lane)}
       semantics="radiogroup"
-      ariaLabel="Carrier lane"
+      ariaLabel="Parent path lane"
     />
   </section>
 

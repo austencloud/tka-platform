@@ -37,7 +37,11 @@
   import { createDeckArchiveState } from "./state/deck-archive-state.svelte";
   import { createDeckReleaseState } from "./state/deck-release-state.svelte";
   import { createDeckProductionState } from "./state/deck-production-state.svelte";
-  import { isGalleryRelease, isLoopRelease } from "./deck-release-model";
+  import {
+    isGalleryRelease,
+    isHandPathRelease,
+    isLoopRelease,
+  } from "./deck-release-model";
   import { setDeckReleaserContext } from "./context/deck-releaser-context";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { mintSeed, nextReferenceNumber } from "../../services/deck-recipe";
@@ -183,7 +187,8 @@
   // Gallery, composed or released. Drives the in-deck prop switcher + prop unpin.
   const deckFollowsLiveProp = $derived(
     rs.viewingRelease
-      ? !isLoopRelease(rs.viewingRelease)
+      ? !isLoopRelease(rs.viewingRelease) &&
+          !isHandPathRelease(rs.viewingRelease)
       : rs.deckMode !== "loop"
   );
   // Gallery deck currently on screen (drives the Refresh-from-gallery action).
@@ -505,6 +510,8 @@
   }
 
   async function handleSelectRelease(release: DeckRelease) {
+    print.includeHowToRead = Boolean(release.insertCard);
+    if (isHandPathRelease(release)) print.copies = 1;
     if (visibleStep === "review") {
       runDeckReleaserTransition("content", "forward", () => {
         releaseHistory.activate(release);
@@ -604,6 +611,8 @@
         getAiSummary={print.getAiSummary}
         sortedSequences={print.sortedSequences}
         sortedFooters={print.sortedFooters}
+        cardTitles={print.cardTitles}
+        cardProfile={print.cardProfile}
         tndElements={print.tndElements}
         copiesPresets={print.copiesPresets}
         copiesAnnotate={print.copiesAnnotate}
@@ -731,6 +740,16 @@
               onDeleteRelease={handleDeleteRelease}
               onReuseRecipe={handleReuseRecipe}
             />
+            {#if releaseHistory.handPathReleases.length > 0}
+              <ReleaseHistoryPanel
+                title="Hand Path Decks"
+                releases={releaseHistory.handPathReleases}
+                isLoading={releaseHistory.isLoading}
+                activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
+                onSelectRelease={handleSelectRelease}
+                onDeleteRelease={handleDeleteRelease}
+              />
+            {/if}
             {#if releaseHistory.galleryReleases.length > 0}
               <ReleaseHistoryPanel
                 title="Gallery Decks"
@@ -776,9 +795,9 @@
       {:else}
         <div class="sidebar-view">
           <div class="sidebar-body">
-            {#if visibleStep === "review" && rs.cards.length > 0}
+            {#if visibleStep === "review" && print.renderTotal > 0}
               <PrintPanel
-                cardCount={rs.cards.length}
+                cardCount={print.renderTotal}
                 tndElements={print.tndElements}
                 cardSize={print.cardSize}
                 paperSize={print.paperSize}

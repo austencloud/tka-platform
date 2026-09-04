@@ -98,6 +98,9 @@
   } from "../tunnel/tunnel-composition";
   import { createViewerInspectorHostState } from "../state/viewer-inspector-host-state.svelte";
   import { setViewerInspectorHostContext } from "../context/viewer-inspector-host-context";
+  import { createViewerAnimatorInspectorState } from "../state/viewer-animator-inspector-state.svelte";
+  import { setViewerAnimatorInspectorContext } from "../context/viewer-animator-inspector-context";
+  import { loadActivePill } from "$lib/shared/animation-panel/state/active-pill-persistence";
   import { createCardPresentationState } from "$lib/shared/share/state/card-presentation-state.svelte";
   import {
     cardPresentationFromFooterSettings,
@@ -213,6 +216,9 @@
   let artInspectorTarget = $state<HTMLElement | null>(null);
   const inspectorHost = createViewerInspectorHostState();
   setViewerInspectorHostContext(inspectorHost);
+  const animatorInspector =
+    createViewerAnimatorInspectorState(loadActivePill());
+  setViewerAnimatorInspectorContext(animatorInspector);
   $effect(() => inspectorHost.setTarget(artInspectorTarget));
 
   const imageCompositionDefaults = getImageCompositionManager();
@@ -603,7 +609,9 @@
   // the download stay untouched — this is an extra destination, not a
   // replacement.
   const canSaveFilmToSequence = $derived(
-    ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED && !!(ctx.effectiveSequence ?? sequence)
+    ctx.isLoggedIn &&
+      VIDEO_UPLOAD_ENABLED &&
+      !!(ctx.effectiveSequence ?? sequence)
   );
 
   async function saveFilmToSequence(): Promise<void> {
@@ -622,7 +630,6 @@
       throw error;
     }
   }
-
 </script>
 
 <div

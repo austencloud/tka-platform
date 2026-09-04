@@ -32,8 +32,13 @@
     AdditiveBlending,
     Group,
   } from "three";
+  import {
+    CHARACTER_DEFINITIONS,
+    DEFAULT_CHARACTER_ID,
+  } from "../domain/character-model";
   import type { CharacterInstanceState } from "../state/character-instance-state.svelte";
   import { getPerformerColor } from "../constants/performer-colors";
+  import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
   import { motionDuration } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
 
@@ -66,9 +71,7 @@
   let previousCharacterId = $state(performer.characterId);
   let modelReady = $state(false);
   let swapOpacity = $state(1);
-  const visiblePresence = $derived(
-    Math.min(1, Math.max(0, presenceProgress))
-  );
+  const visiblePresence = $derived(Math.min(1, Math.max(0, presenceProgress)));
   const characterOpacity = $derived(swapOpacity * visiblePresence);
   // The fourth-root curve preserves a nearly full-size silhouette through most
   // of the dissolve, then takes the character, props, and effects cleanly to a
@@ -79,6 +82,7 @@
   const presenceOffset = $derived((1 - visiblePresence) * -0.12);
 
   let wrapperGroup = $state<Group | undefined>(undefined);
+  const sceneUndo = getSceneUndoManager();
 
   function handleCharacterSwapped(_id: string) {
     modelReady = true;
@@ -88,7 +92,34 @@
   // New performers can then clone the intended body without ever showing the
   // procedural fallback as an intermediate frame.
   onMount(() => {
-    void prepareCharacter(performer.characterId).catch(() => {});
+    const requestedCharacterId = performer.characterId;
+    let active = true;
+    void prepareCharacter(requestedCharacterId).catch(() => {
+      // A local-evaluation rig can outlive its gitignored GLB in persisted
+      // viewer state. Keep that stale selection from pinning the performer to
+      // the procedural mannequin: recover to the deployed default without
+      // creating a user-facing undo entry. A newer selection always wins.
+      if (
+        !active ||
+        requestedCharacterId === DEFAULT_CHARACTER_ID ||
+        performer.characterId !== requestedCharacterId ||
+        CHARACTER_DEFINITIONS.find(
+          (definition) => definition.id === requestedCharacterId
+        )?.availability !== "local-evaluation"
+      ) {
+        return;
+      }
+
+      sceneUndo.withoutUndo(() => {
+        if (performer.characterId === requestedCharacterId) {
+          performer.setCharacter(DEFAULT_CHARACTER_ID);
+        }
+      });
+    });
+
+    return () => {
+      active = false;
+    };
   });
 
   const pos: Vector3[] = [];

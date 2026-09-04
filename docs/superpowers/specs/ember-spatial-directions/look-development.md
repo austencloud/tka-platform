@@ -1,6 +1,6 @@
 # Broken Rift Gate Look Development
 
-Status: historical Gate 3 study; superseded by the geology-first Gate 1.1 R3 restart
+Status: historical Gate 3 study; superseded by the geology-first Gate 1.1 R5 slanted-mid-flank restart
 
 Date: 2026-08-27
 
@@ -10,7 +10,7 @@ Reopen authority: museum tracker `rn25Qau62kXyyOJpgm7Z`
 
 Selection authority: museum tracker `QRHbwRQLhM7Zn9LyYHOd`
 
-Current authority is `geology-lava-composition-research.md` and the R3 evidence
+Current authority is `geology-lava-composition-research.md` and the R4 evidence
 named by `scene-gates.json`. Nothing in this document is an active Gate 3
 approval or current geometry contract.
 
@@ -153,7 +153,8 @@ full-orbit outcrops. Its review evidence lives in `evidence/gate-4-columnar-r4/`
 
 ## Gate 4 Volcanic World R5 amendment
 
-R4 solved several surface-level tells but remained compositionally contained.
+Historical Gate 4 Columnar R4 solved several surface-level tells but remained
+compositionally contained.
 Austen's R5 direction, recorded in museum tracker `nu73zqvPJRxio4T2sWz7`, is
 larger than adding more scenery: Ember should read as a lava landscape or the
 interior of a volcano, with distant scale and a credible molten river.

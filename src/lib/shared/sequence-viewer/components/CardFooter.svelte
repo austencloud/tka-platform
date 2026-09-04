@@ -35,7 +35,7 @@
   <div
     class="footer-section"
     class:dark-mode={activeDarkMode}
-    style="height: {scaledFooterHeight}px; padding-left: {footerMargin}px; padding-right: {footerMargin}px; font-size: {footerFontSize}px;"
+    style="height: {scaledFooterHeight}px; padding-left: {footerMargin}px; padding-right: {footerMargin}px; font-size: max(var(--font-size-compact, 12px), {footerFontSize}px);"
     transition:fly|local={{ y: 20, duration: 250, easing: cubicOut }}
   >
     {#if showNotes}
@@ -65,7 +65,10 @@
     flex-shrink: 0;
     width: 100%;
     box-sizing: border-box;
-    transition: background-color 350ms ease, border-color 350ms ease, color 350ms ease;
+    transition:
+      background-color 350ms ease,
+      border-color 350ms ease,
+      color 350ms ease;
   }
 
   .footer-section.dark-mode {
