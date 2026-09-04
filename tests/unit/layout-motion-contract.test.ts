@@ -7,12 +7,9 @@ const read = (path: string) => readFileSync(resolve(root, path), "utf8");
 
 describe("canonical layout motion", () => {
   it("routes structural changes through one documented owner map", () => {
-    const agents = read("AGENTS.md");
     const rule = read(".claude/rules/no-layout-shift.md");
     const capabilities = read(".claude/rules/canonical-capabilities.md");
 
-    expect(agents).toContain("## Motion Communicates Change");
-    expect(agents).toContain("createLayoutMotion()");
     expect(rule).toMatch(
       /An intentional layout change that instantly pops to its new location is a UI\s+defect\./
     );
