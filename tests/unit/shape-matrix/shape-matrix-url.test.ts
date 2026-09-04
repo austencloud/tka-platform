@@ -234,6 +234,11 @@ describe("shape matrix URL state", () => {
     expect(state.theoryPair?.left.style).toBe("anti");
     expect(state.theoryPair?.left.ori).toBe("in");
     expect(state.theoryPair?.right.style).toBe("pro");
+    // `1:2-pro-out` was written before the axis stopped emitting coincident
+    // starts. At two hand cycles `out` is `in` re-entered half a period later
+    // and draws the same curve, so the link keeps its shape under the name
+    // that survived.
+    expect(state.theoryPair?.right.ori).toBe("in");
 
     writeShapeMatrixRouteState(url, state);
     expect(url.searchParams.get("ref")).toBe("theory");
@@ -246,7 +251,9 @@ describe("shape matrix URL state", () => {
     expect(url.searchParams.get("rightRatio")).toBe("1:2");
     expect(url.searchParams.get("pairing")).toBe("QO");
     expect(url.searchParams.get("theoryLeft")).toBe("2:9-anti-in");
-    expect(url.searchParams.get("theoryRight")).toBe("1:2-pro-out");
+    // Written back under the surviving name, so the next reader gets an exact
+    // match rather than the collapse path again.
+    expect(url.searchParams.get("theoryRight")).toBe("1:2-pro-in");
   });
 
   it("restores the one-axis legacy link onto both axes", () => {
