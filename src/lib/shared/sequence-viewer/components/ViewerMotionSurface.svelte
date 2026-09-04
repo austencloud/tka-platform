@@ -24,7 +24,11 @@
   import { getViewerTunnelStageContext } from "../context/viewer-tunnel-stage-context";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
-  import { resolveTunnelLayerOpacity } from "../tunnel/tunnel-layer-reveal";
+  import {
+    resolveTunnelGridOpacity,
+    resolveTunnelLayerOpacity,
+    TUNNEL_REVEAL_DURATION,
+  } from "../tunnel/tunnel-layer-reveal";
 
   let {
     side,
@@ -122,14 +126,14 @@
         duration:
           retainedMotionPane === "animation-3d"
             ? 0
-            : motionDuration(DURATION.emphasis),
+            : motionDuration(TUNNEL_REVEAL_DURATION),
         easing: cubicInOut,
       });
       return;
     }
 
     if (is3DActive && tunnelReveal.current > 0.001) {
-      const resetDelay = motionDuration(DURATION.emphasis);
+      const resetDelay = motionDuration(TUNNEL_REVEAL_DURATION);
       if (resetDelay === 0) {
         void tunnelReveal.set(0, { duration: 0 });
       } else {
@@ -144,7 +148,7 @@
     }
 
     void tunnelReveal.set(0, {
-      duration: motionDuration(DURATION.emphasis),
+      duration: motionDuration(TUNNEL_REVEAL_DURATION),
       easing: cubicInOut,
     });
   });
@@ -162,6 +166,22 @@
       ),
     }));
   });
+  const tunnelLayerOpacityMinimum = $derived(
+    tunnelLayers.length === 0
+      ? 0
+      : Math.min(...tunnelLayers.map((layer) => layer.opacity ?? 1))
+  );
+  const tunnelLayerOpacityMaximum = $derived(
+    tunnelLayers.length === 0
+      ? 0
+      : Math.max(...tunnelLayers.map((layer) => layer.opacity ?? 1))
+  );
+  // The grid is part of the same transformation as the copies. Driving its
+  // alpha from the shared reveal keeps a quick reversal continuous instead of
+  // asking the renderer's independent visibility timer to catch up.
+  const tunnelGridOpacity = $derived(
+    resolveTunnelGridOpacity(tunnelReveal.current, tunnelController.gridVisible)
+  );
   const activeEffect = $derived(effectsConfig?.activeEffect ?? "none");
   const tunnelTipEffectMap = $derived<TipEffectMap | undefined>(
     tunnelVisualActive && activeEffect !== "none"
@@ -175,9 +195,7 @@
   // Selecting 3D presents a 3D-owned surface immediately. Its preparation
   // screen can then report the real engine, asset, performer, and shader phases
   // instead of leaving the old 2D mode on screen for an unknowable wait.
-  const is3DPresented = $derived(
-    is3DActive || keep3DUntilTunnelPaints
-  );
+  const is3DPresented = $derived(is3DActive || keep3DUntilTunnelPaints);
   const is2DPresented = $derived(
     is2DActive || (isTunnelActive && !keep3DUntilTunnelPaints)
   );
@@ -311,18 +329,16 @@
       // the lease to what was actually painted: release only once 2D is hidden
       // (or once a reversal makes it the destination again).
       if (!is2DPresented && outgoingOpacity > 0.05) {
-        preparationCanvasWidthReleaseFrame = requestAnimationFrame(
-          releaseWhenCovered
-        );
+        preparationCanvasWidthReleaseFrame =
+          requestAnimationFrame(releaseWhenCovered);
         return;
       }
 
       preparationCanvasWidth = null;
     };
 
-    preparationCanvasWidthReleaseFrame = requestAnimationFrame(
-      releaseWhenCovered
-    );
+    preparationCanvasWidthReleaseFrame =
+      requestAnimationFrame(releaseWhenCovered);
   }
 
   $effect.pre(() => {
@@ -493,6 +509,11 @@
     data-persistent-animator
     data-renderer-mode={isTunnelActive ? "tunnel" : "2d"}
     data-tunnel-blend={tunnelReveal.current.toFixed(3)}
+    data-tunnel-layers-ready={tunnelController.layersReady}
+    data-tunnel-layer-count={tunnelLayers.length}
+    data-tunnel-layer-opacity-min={tunnelLayerOpacityMinimum.toFixed(3)}
+    data-tunnel-layer-opacity-max={tunnelLayerOpacityMaximum.toFixed(3)}
+    data-tunnel-grid-opacity={tunnelGridOpacity.toFixed(3)}
     data-presented={is2DPresented}
     inert={!isAnimatorActive}
     aria-hidden={!isAnimatorActive}
@@ -556,7 +577,8 @@
             ? tunnelController.spotlightLayers
             : null}
           gridMode={sequence?.gridMode}
-          gridVisible={tunnelVisualActive ? tunnelController.gridVisible : true}
+          gridVisible={true}
+          gridOpacity={tunnelGridOpacity}
           letter={playback.currentLetter}
           stepData={playback.currentStepData}
           word={sequence?.word}

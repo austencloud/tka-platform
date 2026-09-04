@@ -38,6 +38,7 @@
   import type { ViewerSplitPaneProps } from "./viewer-split-pane-types";
   import { onDestroy } from "svelte";
   import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
+  import { TUNNEL_REVEAL_DURATION } from "../tunnel/tunnel-layer-reveal";
   import type { TunnelViewState } from "../tunnel/tunnel-view-state";
   import { tryGetViewerUrlSessionContext } from "../services/viewer-url-session";
   import {
@@ -125,6 +126,9 @@
   const tunnelController = new TunnelViewController({
     getSequence: () => playback.animationState.sequenceData ?? sequence,
     getComposition: () => tunnelComposition,
+    // 2D and Tunnel share this canvas. Keep its formation prepared while 2D is
+    // showing so a quick return can reverse the live reveal with no rebuild.
+    prepareWhileInactive: true,
     ...(tnSeed ? { initialViewState: tnSeed, persistViewState: false } : {}),
   });
   const tunnelStage = createViewerTunnelStageState(tunnelController);
@@ -459,7 +463,7 @@
       return;
     }
 
-    const releaseDelay = motionDuration(DURATION.emphasis);
+    const releaseDelay = motionDuration(TUNNEL_REVEAL_DURATION);
     if (releaseDelay === 0) {
       tunnelController.active = false;
       return;

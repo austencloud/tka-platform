@@ -29,6 +29,7 @@
   import { shareTarget } from "$lib/shared/mobile/share-action.svelte";
   import { logConstructFullPlay } from "$lib/features/create/construct/services/construct-analytics";
   import OptionInteractionBanner from "$lib/features/create/construct/option-picker/components/OptionInteractionBanner.svelte";
+  import { logSequenceActionSurfaceShown } from "$lib/shared/create/analytics/sequence-action-events";
 
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
   const {
@@ -98,6 +99,14 @@
     constructTutorialState.isActive &&
       constructTutorialState.stage === "play-sequence"
   );
+  let sequenceActionsSurfaceLogged = false;
+
+  $effect(() => {
+    if (showSequenceActions && visible && !sequenceActionsSurfaceLogged) {
+      sequenceActionsSurfaceLogged = true;
+      logSequenceActionSurfaceShown("workspace_button");
+    }
+  });
 
   function handleFullSequencePlay() {
     onViewSequence?.();
@@ -506,14 +515,6 @@
     .button-panel.assemble-layout .right-zone {
       grid-area: right;
       justify-self: end;
-    }
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    @container create-module-workspace (min-width: 1180px) {
-      .right-zone > .sequence-actions-workspace-trigger {
-        display: none;
-      }
     }
   }
 </style>

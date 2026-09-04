@@ -53,7 +53,7 @@ import { MandalaPathPreparer } from "$lib/shared/mandala/services/mandala-path-p
 import {
   DEFAULT_MANDALA_OVERLAY_CONFIG,
   type MandalaOverlayConfig,
-  MANDALA_GUIDE_FLOOR_OPACITY
+  MANDALA_GUIDE_FLOOR_OPACITY,
 } from "$lib/shared/mandala/domain/mandala-overlay-types";
 import type { MandalaHandVisibility } from "$lib/shared/mandala/domain/mandala-types";
 import type { RenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
@@ -1334,6 +1334,12 @@ export class AnimationRenderLoop {
 
     // Apply visibility settings
     const effectiveGridVisible = gridVisible && visibility.gridVisible;
+    const effectiveGridOpacity =
+      params.gridOpacity === undefined
+        ? undefined
+        : effectiveGridVisible
+          ? Math.max(0, Math.min(1, params.gridOpacity))
+          : 0;
     const effectivePropsVisible = visibility.propsVisible;
     const effectiveTrailsVisible = hasTrailTips(params.tipEffectMap);
 
@@ -1522,6 +1528,7 @@ export class AnimationRenderLoop {
       leftProp: props.leftProp,
       rightProp: props.rightProp,
       gridVisible: effectiveGridVisible,
+      gridOpacity: effectiveGridOpacity,
       gridMode: gridMode?.toString() ?? null,
       letter: letter ?? null,
       turnsTuple,

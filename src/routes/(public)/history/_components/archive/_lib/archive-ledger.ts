@@ -41,7 +41,6 @@ export interface ArchiveActivity {
 export interface ArchiveLane {
 	id: ArchiveLaneId;
 	label: string;
-	shortLabel: string;
 	description: string;
 }
 
@@ -65,7 +64,7 @@ export interface ArchiveEntry {
 	evidenceBasis: EvidenceBasis;
 	evidenceLabel: string;
 	evidenceShortLabel: string;
-	evidenceNote: string;
+	evidenceNote?: string;
 	citations: ArchiveCitation[];
 	catalogEntry?: CatalogEntry;
 }
@@ -94,31 +93,25 @@ export const ARCHIVE_YEAR_TICKS = [2004, 2010, 2016, 2022, 2026] as const;
 export const ARCHIVE_LANES: ArchiveLane[] = [
 	{
 		id: "notation",
-		label: "Notation Systems",
-		shortLabel: "Systems",
-		description:
-			"Explicit visual, textual, or computational ways to record movement.",
+		label: "Recording Systems",
+		description: "Published systems that turn movement into a record.",
 	},
 	{
 		id: "languages",
 		label: "Movement Languages",
-		shortLabel: "Languages",
-		description:
-			"Shared geometries, relations, and vocabularies used to discuss movement.",
+		description: "Shared geometries and vocabularies used to discuss movement.",
 	},
 	{
 		id: "teaching",
-		label: "Teaching & Transmission",
-		shortLabel: "Teaching",
+		label: "Teaching & Archives",
 		description:
-			"People and institutions that made structured knowledge easier to learn and share.",
+			"People and institutions that preserve and teach structured knowledge.",
 	},
 	{
 		id: "research",
-		label: "Current Research",
-		shortLabel: "Research",
+		label: "Research & Experiments",
 		description:
-			"Developing systems and public experiments whose language is still changing.",
+			"Public experiments testing new ways to describe movement.",
 	},
 ];
 
@@ -126,16 +119,16 @@ export const ARCHIVE_LANES: ArchiveLane[] = [
  * Four distinct records land in almost the same two calendar years. Treating
  * them as four overlapping ticks made the archive illegible and implied a
  * precision the sources do not support. The overview names the density; the
- * cluster tray preserves every record without stretching calendar time.
+ * inline expansion preserves every record without stretching calendar time.
  */
 export const ARCHIVE_CLUSTERS: ArchiveCluster[] = [
 	{
 		id: "movement-language-foundations",
 		lane: "languages",
-		label: "4 movement-language records",
-		dateLabel: "2009–2011",
+		label: "4 related records",
+		dateLabel: "2009–2010",
 		startYear: 2009,
-		endYear: 2011,
+		endYear: 2010,
 		entryIds: ["caps", "trochoid", "nine-square", "vtg"],
 	},
 ];
@@ -192,7 +185,7 @@ const CATALOG_CLASSIFICATION: Record<
 		dateLabel: "2012",
 		evidenceBasis: "directly-observed",
 		evidenceNote:
-			"Nichols' published works are directly reachable. The cited sources establish the publications, not current activity, so this record makes no activity claim.",
+			"The linked publications establish the works and dates. Current activity is unknown.",
 	},
 	poinotation: {
 		lane: "notation",
@@ -201,17 +194,18 @@ const CATALOG_CLASSIFICATION: Record<
 		evidenceBasis: "directly-observed",
 		evidenceLabel: "Repository record",
 		evidenceNote:
-			"The surviving evidence is a public code repository. This entry does not claim broad adoption or historical influence.",
+			"The public repository establishes authorship and a machine-readable text format. Adoption and influence are unverified.",
 	},
 	tka: {
 		lane: "notation",
 		shortTitle: "TKA",
 		firstDocumentedYear: 2022,
 		evidenceBasis: "directly-observed",
+		evidenceLabel: "Current guide",
 		activity: {
 			status: "active",
 			lastVerifiedYear: 2026,
-			note: "The Kinetic Alphabet guide is live and was opened directly during the 2026 review.",
+			note: "The live guide was the latest source reviewed in 2026.",
 		},
 	},
 };
@@ -282,7 +276,7 @@ const CATALOG_SOURCE_SUPPORTS: Record<
 	poinotation: [
 		{
 			supports:
-				"The surviving public repository, its authorship, and its machine-readable text format. It does not establish broad adoption.",
+				"The public repository, its authorship, and its machine-readable text format.",
 			basis: "directly-observed",
 		},
 	],
@@ -333,9 +327,7 @@ const catalogEntries: ArchiveEntry[] = NOTATION_CATALOG.map((catalogEntry) => {
 			catalogEntry.id === "poinotation"
 				? "Repository only"
 				: EVIDENCE_BASIS_LABELS[classification.evidenceBasis],
-		evidenceNote:
-			classification.evidenceNote ??
-			"This record comes from the existing /notation catalog, where every published claim is tied to a primary source that was read during catalog review.",
+		evidenceNote: classification.evidenceNote,
 		citations: catalogEntry.sources.map((source, sourceIndex) =>
 			catalogCitation(catalogEntry.id, source, sourceIndex)
 		),
@@ -352,19 +344,19 @@ const researchEntries: ArchiveEntry[] = [
 		activity: {
 			status: "active",
 			lastVerifiedYear: 2026,
-			note: "A 2026 workshop post shows the vocabulary in current use. It supports continued use, not a settled origin.",
+			note: "A 2026 workshop post is the latest dated source in this record.",
 		},
 		title: "Fan Alphabet",
 		shortTitle: "Fan Alphabet",
 		people:
 			"A community teaching vocabulary; Clarissa Ohm is an early documented teacher.",
 		summary:
-			"A vocabulary for fan relations and transitions. Public teaching records show the term in use from at least 2019 through 2026, but the sources reviewed so far do not establish a sole inventor.",
+			"A vocabulary for fan relations and transitions. Public lessons show the term in use from at least 2019 through 2026. No reviewed source names a sole inventor.",
 		evidenceBasis: "unresolved",
 		evidenceLabel: "Attribution unresolved",
 		evidenceShortLabel: "Unresolved",
 		evidenceNote:
-			"The vocabulary is documented. Its origin is not settled, so this archive names an early documented teacher instead of assigning invention.",
+			"Origin unresolved. Clarissa Ohm is the earliest documented teacher in the sources reviewed.",
 		citations: [
 			{
 				label: "Clarissa Ohm: Intro to Tech Fans discussion, 2019",
@@ -377,7 +369,7 @@ const researchEntries: ArchiveEntry[] = [
 				label: "Flow Collective Chicago workshop post, 2026",
 				href: "https://www.instagram.com/p/DbjxPAnRUmC/",
 				supports:
-					"Continued use of the term in a public fan workshop. A dated post like this shows the term publicly in use by this date; it does not prove invention or importance.",
+					"A public 2026 fan workshop using the term.",
 				basis: "community-attested",
 			},
 		],
@@ -390,18 +382,16 @@ const researchEntries: ArchiveEntry[] = [
 		activity: {
 			status: "active",
 			lastVerifiedYear: 2026,
-			note: "PLAYPOI's own current camp listing supports 'active, verified 2026', not uninterrupted year-by-year activity.",
+			note: "A current camp listing was the latest source reviewed in 2026.",
 		},
 		title: "PLAYPOI",
 		shortTitle: "PLAYPOI",
 		people: "Nick Woolsey",
 		summary:
-			"A poi movement laboratory and teaching project built around instructional media, workshops, retreats, and community exchange. PLAYPOI belongs here for transmission, not as a notation system.",
+			"A poi movement laboratory and teaching project built around instructional media, workshops, retreats, and community exchange.",
 		evidenceBasis: "creators-account",
 		evidenceLabel: "Organization source",
 		evidenceShortLabel: "Org source",
-		evidenceNote:
-			"The launch date and description come from PLAYPOI's own published history. They are presented as the organization's account.",
 		citations: [
 			{
 				label: "About PLAYPOI",
@@ -421,7 +411,7 @@ const researchEntries: ArchiveEntry[] = [
 				label: "Leviathan Flow Camp listing",
 				href: "https://playpoi.com/2025/01/08/leviathan-flow-camp-2025/",
 				supports:
-					"A dated public event listing verified during the 2026 review. It supports 'active, verified 2026' and nothing more.",
+					"A current camp listing reviewed in 2026.",
 				basis: "creators-account",
 			},
 		],
@@ -434,18 +424,18 @@ const researchEntries: ArchiveEntry[] = [
 		activity: {
 			status: "active",
 			lastVerifiedYear: 2026,
-			note: "Current festival listings support 'active, verified 2026', not uninterrupted year-by-year activity.",
+			note: "Festival listings were the latest sources reviewed in 2026.",
 		},
 		title: "Flow Arts Institute",
 		shortTitle: "FAI",
 		people: "Flow Arts Institute",
 		summary:
-			"An education and festival network that publishes resources and brings workshop-based learning into flow-arts gatherings. The 2007 marker is its own retrospective's date for becoming involved with Fire Drums, not a claimed founding date.",
+			"An education and festival network that publishes resources and brings workshop-based learning into flow-arts gatherings. Its history marks 2007 as the year it became involved with Fire Drums.",
 		evidenceBasis: "creators-account",
 		evidenceLabel: "Organization retrospective",
 		evidenceShortLabel: "Org source",
 		evidenceNote:
-			"The date is deliberately labeled as documented involvement. It must not be rewritten as the organization's founding year without another source.",
+			"The 2007 marker dates Fire Drums involvement, according to the organization's retrospective.",
 		citations: [
 			{
 				label: "The History of the Term ‘Flow Arts’",
@@ -465,7 +455,7 @@ const researchEntries: ArchiveEntry[] = [
 				label: "Flow Arts Institute festival listings, 2026",
 				href: "https://flowartsinstitute.com/",
 				supports:
-					"Current festival listings verified during the 2026 review. They support 'active, verified 2026' and nothing more.",
+					"Festival listings visible during the 2026 review.",
 				basis: "creators-account",
 			},
 		],
@@ -478,13 +468,13 @@ const researchEntries: ArchiveEntry[] = [
 		activity: {
 			status: "active",
 			lastVerifiedYear: 2026,
-			note: "A public 2026 event calendar supports 'active, verified 2026', not uninterrupted year-by-year activity.",
+			note: "A public event calendar was the latest source reviewed in 2026.",
 		},
 		title: "DrexFactor / Weird Science",
 		shortTitle: "DrexFactor",
 		people: "Ben Drexler",
 		summary:
-			"A long-running public record of poi theory, tutorials, diagrams, experiments, corrections, and community documents. It matters as a transmission archive as much as for any single model it explains.",
+			"A public archive of poi theory, tutorials, diagrams, experiments, corrections, and community documents.",
 		evidenceBasis: "creators-account",
 		evidenceLabel: "Creator archive",
 		evidenceShortLabel: "Creator source",
@@ -509,7 +499,7 @@ const researchEntries: ArchiveEntry[] = [
 				label: "DrexFactor event calendar, 2026",
 				href: "https://drexfactor.com/calendar/2026",
 				supports:
-					"A public 2026 event calendar verified during the 2026 review. It supports 'active, verified 2026' and nothing more.",
+					"A public event calendar reviewed in 2026.",
 				basis: "creators-account",
 			},
 		],
@@ -522,7 +512,7 @@ const researchEntries: ArchiveEntry[] = [
 		activity: {
 			status: "unknown",
 			lastVerifiedYear: 2024,
-			note: "The creators' 2024 development note is the latest dated public trace reviewed. The archive makes no claim past it.",
+			note: "The creators' 2024 development note is the latest dated source in this record.",
 		},
 		title: "Staff Science",
 		shortTitle: "Staff Science",
@@ -533,7 +523,7 @@ const researchEntries: ArchiveEntry[] = [
 		evidenceLabel: "Creators' account",
 		evidenceShortLabel: "Creator source",
 		evidenceNote:
-			"This is presented as a developing system and pedagogy, not a finished or universally adopted notation. The 2019 start date rests on the creators' own 2024 statement.",
+			"The creators' 2024 post dates their work on the system to 2019 and describes it as ongoing.",
 		citations: [
 			{
 				label: "Staff Science profile",
@@ -560,12 +550,10 @@ const researchEntries: ArchiveEntry[] = [
 		shortTitle: "Visual Notes",
 		people: "Charlie Nayler",
 		summary:
-			"Visual annotations layered over contact-staff video. Nayler explicitly describes the work as an experiment in fusing media rather than a complete notation system.",
+			"Visual annotations layered over contact-staff video, presented by Nayler as an experiment in combining diagrams and footage.",
 		evidenceBasis: "creators-account",
 		evidenceLabel: "Creator-defined experiment",
 		evidenceShortLabel: "Creator source",
-		evidenceNote:
-			"The archive preserves the creator's limit: this is an experiment, not evidence of a complete system.",
 		citations: [
 			{
 				label: "Visual Notes 01",
@@ -584,18 +572,16 @@ const researchEntries: ArchiveEntry[] = [
 		activity: {
 			status: "active",
 			lastVerifiedYear: 2026,
-			note: "Public posts were directly visible during the August 2026 source review. That supports current visibility, not standardization.",
+			note: "Public posts from August 2026 are the latest dated sources in this record.",
 		},
 		title: "Contact-staff pathway research",
 		shortTitle: "Flowgoesapien",
 		people: "Alex Hatt, publishing as flowgoesapien",
 		summary:
-			"Public practice notes name and demonstrate contact-staff pathways, including the ‘smudge’ concept. This is living technique research, not a claimed notation system.",
+			"Public practice notes that name and demonstrate contact-staff pathways, including the ‘smudge’ concept.",
 		evidenceBasis: "creators-account",
 		evidenceLabel: "Current creator posts",
 		evidenceShortLabel: "Creator source",
-		evidenceNote:
-			"Current means the work was publicly visible during the August 2026 source review. It is not a claim that the vocabulary is standardized.",
 		citations: [
 			{
 				label: "Smudge concept post",
