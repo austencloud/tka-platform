@@ -33,6 +33,12 @@ mocks.createWorkerPerformerSnapshot.mockImplementation(
     groundY: 0,
     staffLength: 1.5,
     staffThickness: 0.02,
+    propBuild: {
+      finish: "fire",
+      fanBuild: "pictograph",
+      fanFrameColor: "black",
+      fanCover: "bare",
+    },
     leftPropType: "staff",
     rightPropType: "staff",
     leftProp: null,
@@ -62,6 +68,12 @@ function input(): WorkerViewerSnapshotInput & {
         options: {
           leftPropType: "staff",
           rightPropType: "staff",
+          propBuild: {
+            finish: "fire",
+            fanBuild: "pictograph",
+            fanFrameColor: "black",
+            fanCover: "bare",
+          },
         },
       },
     ],
@@ -105,10 +117,10 @@ describe("worker viewer snapshot", () => {
     }
   });
 
-  it("does not serialize performers after an unsupported prop fails the gate", () => {
+  it("does not serialize performers after an unknown prop fails the gate", () => {
     mocks.createWorkerPerformerSnapshot.mockClear();
     const source = input();
-    source.performers[0].options.leftPropType = "fan";
+    source.performers[0].options.leftPropType = "not-a-prop";
 
     expect(createWorkerViewerSnapshot(source)).toEqual({
       backend: "legacy",

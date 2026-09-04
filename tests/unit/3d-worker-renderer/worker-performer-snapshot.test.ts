@@ -7,6 +7,11 @@ import {
   supportsWorkerPerformer,
 } from "$lib/shared/3d/worker-renderer/services/worker-performer-snapshot";
 import { CANONICAL_PERFORMER_ANCHOR_Y } from "$lib/shared/3d/environments/domain/stage-coordinate-frame";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import {
+  resolveLed3D,
+  resolveTrails3D,
+} from "$lib/shared/effects/translators/webgl3d-translator";
 
 vi.mock("$lib/shared/3d/domain/performer-upper-body-stance", () => ({
   resolvePerformerUpperBodyStance: () => ({
@@ -15,6 +20,13 @@ vi.mock("$lib/shared/3d/domain/performer-upper-body-stance", () => ({
     segments: { spine1Rad: 0.1, spine2Rad: 0.2, headLagRad: 0.3 },
   }),
 }));
+
+const PROP_BUILD = {
+  finish: "fire",
+  fanBuild: "pictograph",
+  fanFrameColor: "black",
+  fanCover: "bare",
+} as const;
 
 function performer(): CharacterInstanceState {
   const prop = {
@@ -57,29 +69,43 @@ describe("worker performer snapshots", () => {
 
   it("allows only prop geometry the worker owns exactly", () => {
     expect(
-      supportsWorkerPerformer({ leftPropType: "staff", rightPropType: "staff" })
+      supportsWorkerPerformer({
+        leftPropType: "staff",
+        rightPropType: "staff",
+        propBuild: PROP_BUILD,
+      })
     ).toBe(true);
     expect(
-      supportsWorkerPerformer({ leftPropType: "fan", rightPropType: "staff" })
-    ).toBe(false);
+      supportsWorkerPerformer({
+        leftPropType: "fan",
+        rightPropType: "staff",
+        propBuild: PROP_BUILD,
+      })
+    ).toBe(true);
     expect(
-      supportsWorkerPerformer({ leftPropType: "hand", rightPropType: "hand" })
+      supportsWorkerPerformer({
+        leftPropType: "hand",
+        rightPropType: "hand",
+        propBuild: PROP_BUILD,
+      })
     ).toBe(true);
   });
 
-  it("refuses to serialize a prop the worker cannot reproduce", () => {
+  it("refuses to serialize an unknown prop", () => {
     expect(() =>
       createWorkerPerformerSnapshot(performer(), {
-        leftPropType: PropType.FAN,
+        leftPropType: "not-a-prop",
         rightPropType: PropType.STAFF,
+        propBuild: PROP_BUILD,
       })
-    ).toThrow("cannot reproduce fan/staff exactly");
+    ).toThrow("cannot reproduce not-a-prop/staff exactly");
   });
 
   it("serializes resolved Choreo transforms without moving their ownership", () => {
     const snapshot = createWorkerPerformerSnapshot(performer(), {
       leftPropType: "staff",
       rightPropType: "staff",
+      propBuild: PROP_BUILD,
       badge: {
         index: 2,
         selected: false,
@@ -110,6 +136,7 @@ describe("worker performer snapshots", () => {
     const snapshot = createWorkerPerformerSnapshot(performer(), {
       leftPropType: "staff",
       rightPropType: "staff",
+      propBuild: PROP_BUILD,
       badge: { index: 0, selected: true, allMode: false, visible: false },
     });
 
@@ -120,6 +147,7 @@ describe("worker performer snapshots", () => {
     const snapshot = createWorkerPerformerSnapshot(performer(), {
       leftPropType: "staff",
       rightPropType: "staff",
+      propBuild: PROP_BUILD,
       enableLocomotion: true,
     });
 
@@ -133,5 +161,76 @@ describe("worker performer snapshots", () => {
       turnRequest: null,
     });
     expect(() => structuredClone(snapshot)).not.toThrow();
+  });
+
+  it("serializes app-owned effect choices and final selection state without coordinates", () => {
+    const effectIntent = {
+      playing: true,
+      sampledAtMs: 1234,
+      currentStep: 2.5,
+      totalSteps: 16,
+      seamlesslyLoopable: true,
+      qualityTier: "high" as const,
+      propBuild: PROP_BUILD,
+      tips: [
+        {
+          propIndex: 0 as const,
+          tipIndex: 1 as const,
+          effect: "trails" as const,
+        },
+      ],
+      trails: resolveTrails3D(DEFAULT_EFFECTS_CONFIG.trails),
+      led: resolveLed3D(DEFAULT_EFFECTS_CONFIG.led),
+      pooled: {},
+    };
+    const snapshot = createWorkerPerformerSnapshot(performer(), {
+      leftPropType: "staff",
+      rightPropType: "staff",
+      propBuild: PROP_BUILD,
+      effectIntent,
+      selectionMarker: {
+        color: 0x3b82f6,
+        selected: true,
+        allPerformersSelected: false,
+        present: true,
+        pulsePhase: 1.25,
+        hovered: true,
+        dragging: false,
+      },
+    });
+
+    expect(snapshot.effectIntent).toEqual(effectIntent);
+    expect(snapshot.effectIntent).not.toBe(effectIntent);
+    expect(snapshot.selectionMarker?.groundPosition).toEqual([
+      6,
+      userProportionsState.groundY + CANONICAL_PERFORMER_ANCHOR_Y,
+      7,
+    ]);
+    expect(() => structuredClone(snapshot)).not.toThrow();
+  });
+
+  it("fails closed before serializing an unsupported effect", () => {
+    const invalid = {
+      playing: true,
+      sampledAtMs: 0,
+      currentStep: 0,
+      totalSteps: 1,
+      seamlesslyLoopable: false,
+      qualityTier: "high" as const,
+      propBuild: PROP_BUILD,
+      tips: [{ propIndex: 0, tipIndex: 0, effect: "zap" }],
+      trails: resolveTrails3D(DEFAULT_EFFECTS_CONFIG.trails),
+      led: resolveLed3D(DEFAULT_EFFECTS_CONFIG.led),
+      pooled: {},
+    };
+
+    expect(() =>
+      createWorkerPerformerSnapshot(performer(), {
+        leftPropType: "staff",
+        rightPropType: "staff",
+        propBuild: PROP_BUILD,
+        effectIntent: invalid as never,
+      })
+    ).toThrow("cannot reproduce zap exactly");
   });
 });

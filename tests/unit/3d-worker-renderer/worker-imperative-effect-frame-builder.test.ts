@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Matrix4, Quaternion, Vector3 } from "three";
+import { Quaternion, Vector3 } from "three";
 import {
   Plane,
   PropType,
@@ -7,6 +7,11 @@ import {
   type PropState3D,
 } from "@austencloud/scene-3d";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import {
+  resolveLed3D,
+  resolveSparkles3D,
+  resolveTrails3D,
+} from "$lib/shared/effects/translators/webgl3d-translator";
 import {
   WorkerImperativeEffectFrameBuilder,
   type WorkerImperativeEffectFrameInput,
@@ -35,49 +40,60 @@ function input(
 ): WorkerImperativeEffectFrameInput {
   return {
     performerId: "p1",
-    playing: true,
+    sourceIdBase: 9,
     deltaSeconds: 1 / 60,
-    sampledAtMs: 1_000,
-    qualityTier: "high" as const,
     staffHalfLength: 0.5,
-    propBuild: propFinishState.build,
-    effectSpaceMatrix: new Matrix4().makeTranslation(4, 5, 6),
+    collisionFloorY: -1.5,
+    intent: {
+      playing: true,
+      sampledAtMs: 1_000,
+      currentStep: 2.5,
+      totalSteps: 16,
+      seamlesslyLoopable: true,
+      qualityTier: "high" as const,
+      propBuild: propFinishState.build,
+      tips: [
+        { propIndex: 0, tipIndex: 0, effect },
+        { propIndex: 0, tipIndex: 1, effect },
+      ],
+      trails: resolveTrails3D(DEFAULT_EFFECTS_CONFIG.trails),
+      led: resolveLed3D({
+        ...DEFAULT_EFFECTS_CONFIG.led,
+        device: { kind: device, ledCount: device === "capsule" ? 2 : 32 },
+      }),
+      pooled: {},
+    },
     left: {
       state: prop(),
       propType: PropType.STAFF,
-      handPosition: { x: 0.2, z: 0.1 },
+      worldCenter: [4.2, 5, 6.1],
+      worldRotation: [0, 0, 0, 1],
     },
     right: {
       state: null,
       propType: PropType.STAFF,
-      handPosition: { x: -0.2, z: 0.1 },
-    },
-    tipEffectMap: { "*": { effect } },
-    globalTipEffectMap: {},
-    trails: DEFAULT_EFFECTS_CONFIG.trails,
-    led: {
-      ...DEFAULT_EFFECTS_CONFIG.led,
-      device: { kind: device, ledCount: device === "capsule" ? 2 : 32 },
+      worldCenter: [0, 0, 0],
+      worldRotation: [0, 0, 0, 1],
     },
   };
 }
 
 describe("worker imperative effect frame builder", () => {
-  it("resolves default trails on the app thread into world-space clone-safe frames", () => {
+  it("derives trails from the worker-owned world prop center", () => {
     const defaultTrails = input("trails");
-    defaultTrails.tipEffectMap = undefined;
-    defaultTrails.globalTipEffectMap = { "*": { effect: "trails" } };
-    const frames = new WorkerImperativeEffectFrameBuilder().build(
+    const output = new WorkerImperativeEffectFrameBuilder().build(
       defaultTrails
     );
-    const trails = frames.filter((frame) => frame.renderer === "trail");
+    const trails = output.imperative?.filter(
+      (frame) => frame.renderer === "trail"
+    );
 
     expect(trails).toHaveLength(2);
     expect(trails.map((frame) => frame.sourceId)).toEqual([
       "p1:0:left-end",
       "p1:0:right-end",
     ]);
-    expect(trails[0]?.position[0]).toBeGreaterThan(3);
+    expect(trails?.[0]?.position[0]).toBeGreaterThan(3);
     expect(trails[0]?.position[1]).toBe(5);
     expect(trails[0]?.config).toMatchObject({
       maxPoints: 256,
@@ -85,18 +101,22 @@ describe("worker imperative effect frame builder", () => {
       mode: "fade",
       fadeDuration: 2,
     });
-    expect(() => structuredClone(frames)).not.toThrow();
+    expect(() => structuredClone(output)).not.toThrow();
   });
 
-  it("keeps LED pattern sampling and sub-frame supersampling on the app thread", () => {
+  it("keeps LED pattern sampling and sub-frame supersampling inside the worker", () => {
     const builder = new WorkerImperativeEffectFrameBuilder();
     const first = builder.build(input("led"));
     const secondInput = input("led");
-    secondInput.left.state = prop(0.2);
-    secondInput.sampledAtMs = 1_016;
+    secondInput.left.worldCenter = [4.4, 5, 6.1];
+    secondInput.intent.sampledAtMs = 1_016;
     const second = builder.build(secondInput);
-    const firstLed = first.find((frame) => frame.renderer === "led");
-    const secondLed = second.find((frame) => frame.renderer === "led");
+    const firstLed = first.imperative?.find(
+      (frame) => frame.renderer === "led"
+    );
+    const secondLed = second.imperative?.find(
+      (frame) => frame.renderer === "led"
+    );
 
     expect(firstLed?.tips).toHaveLength(2);
     expect(secondLed?.tips).toHaveLength(16);
@@ -107,27 +127,29 @@ describe("worker imperative effect frame builder", () => {
   });
 
   it("materializes a pixel-staff frame instead of substituting capsule LEDs", () => {
-    const frames = new WorkerImperativeEffectFrameBuilder().build(
+    const output = new WorkerImperativeEffectFrameBuilder().build(
       input("led", "pixel-staff")
     );
-    const pov = frames.find((frame) => frame.renderer === "pov");
+    const pov = output.imperative?.find((frame) => frame.renderer === "pov");
 
     expect(pov).toMatchObject({ ledCount: 32, brightness: expect.any(Number) });
     expect(pov?.pattern.ledCount).toBe(32);
     expect(() => structuredClone(pov)).not.toThrow();
   });
 
-  it("materializes the exact moon-fan diffuser frame on the app thread", () => {
+  it("materializes the exact moon-fan frame from the worker prop rotation", () => {
     const moonInput = input("led");
     moonInput.left.propType = PropType.FAN;
     moonInput.left.state = prop();
-    moonInput.propBuild = {
+    moonInput.intent.propBuild = {
       ...propFinishState.build,
       fanBuild: "moon",
     };
 
-    const frames = new WorkerImperativeEffectFrameBuilder().build(moonInput);
-    const moonFan = frames.find((frame) => frame.renderer === "moon-fan");
+    const output = new WorkerImperativeEffectFrameBuilder().build(moonInput);
+    const moonFan = output.imperative?.find(
+      (frame) => frame.renderer === "moon-fan"
+    );
 
     expect(moonFan).toMatchObject({
       sourceId: "p1:0:moon-fan",
@@ -139,6 +161,27 @@ describe("worker imperative effect frame builder", () => {
     });
     expect(moonFan?.ledColors).toHaveLength(78);
     expect(() => structuredClone(moonFan)).not.toThrow();
+  });
+
+  it("publishes pooled sources with stable worker-owned ids and Choreo timing", () => {
+    const sparkle = input("trails");
+    sparkle.intent.tips = [{ propIndex: 0, tipIndex: 0, effect: "sparkles" }];
+    sparkle.intent.pooled.sparkles = resolveSparkles3D(
+      DEFAULT_EFFECTS_CONFIG.sparkles
+    );
+
+    const output = new WorkerImperativeEffectFrameBuilder().build(sparkle);
+
+    expect(output.sources).toEqual([
+      expect.objectContaining({
+        sourceId: 9,
+        effect: "sparkles",
+        currentStep: 2.5,
+        totalSteps: 16,
+        seamlesslyLoopable: true,
+        position: expect.objectContaining({ y: 5 }),
+      }),
+    ]);
   });
 
   it("names every exact and fail-closed effect family", () => {

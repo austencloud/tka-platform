@@ -1,5 +1,26 @@
 import type { SceneEffectTipSource3D } from "../../effects/scene-effects/scene-effect-source-3d";
 import type { StripPattern } from "$lib/shared/poi/domain/strip-pattern";
+import type { EffectType } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+import type {
+  Animal3DParams,
+  Bloom3DParams,
+  Bubbles3DParams,
+  Charcoal3DParams,
+  Fire3DParams,
+  Goo3DParams,
+  Ink3DParams,
+  Led3DParams,
+  Petals3DParams,
+  Pulse3DParams,
+  Silk3DParams,
+  Smoke3DParams,
+  Sparkles3DParams,
+  Trails3DParams,
+} from "$lib/shared/effects/translators/webgl3d-types";
+import type {
+  CanonicalWorkerPropType,
+  WorkerPropBuild,
+} from "../worlds/props/worker-prop-factory-types";
 import type {
   LateralGait,
   ScheduledGaitTimingSample,
@@ -38,22 +59,53 @@ export type WorkerVector3 = readonly [number, number, number];
 export type WorkerQuaternion = readonly [number, number, number, number];
 
 /**
- * Prop visuals the worker can reproduce through a renderer-neutral canonical
- * owner. The staff aliases all route through scene-3d's `createStaffObject`;
- * `hand` deliberately mounts no prop mesh, matching Prop3D's bare-hand branch.
- *
- * Every other production prop remains fail-closed until scene-3d exports its
- * existing geometry as a worker-safe factory. Importing the package's Svelte
- * components into an OffscreenCanvas worker, or copying their geometry here,
- * would create a second renderer that can silently drift from the app.
+ * Prop visuals the renderer-neutral worker factory reproduces exactly. Keep
+ * this clone-safe protocol list pinned to that factory with a contract test;
+ * importing the factory's runtime module here would pull every prop model and
+ * material implementation into the application bundle just to validate a
+ * string.
  */
 export const WORKER_PERFORMER_PROP_TYPES = [
   "staff",
   "simple_staff",
-  "staff_v2",
   "bigstaff",
+  "staff_v2",
+  "club",
+  "bigclub",
+  "fan",
+  "bigfan",
+  "triad",
+  "bigtriad",
+  "minihoop",
+  "bighoop",
+  "fractalgeng",
+  "triquetra",
+  "triquetra2",
+  "eightrings",
+  "bigeightrings",
+  "contactball",
+  "bigcontactball",
+  "quiad",
+  "torch",
+  "bigtorch",
+  "poi",
+  "buugeng",
+  "bigbuugeng",
+  "chicken",
+  "bigchicken",
+  "guitar",
+  "ukulele",
+  "sword",
+  "sickles",
+  "trigeng",
+  "doublestar",
+  "bigdoublestar",
+  "doublecontactball",
+  "bigdoublecontactball",
+  "capsule_baton",
+  "fire_double_staff",
   "hand",
-] as const;
+] as const satisfies readonly CanonicalWorkerPropType[];
 
 export type WorkerPerformerPropType =
   (typeof WORKER_PERFORMER_PROP_TYPES)[number];
@@ -97,6 +149,60 @@ export interface WorkerPerformerBadgeSnapshot {
   selected: boolean;
 }
 
+export interface WorkerSelectionMarkerSnapshot {
+  groundPosition: WorkerVector3;
+  color: number;
+  selected: boolean;
+  allPerformersSelected: boolean;
+  present: boolean;
+  pulsePhase: number;
+  hovered: boolean;
+  dragging: boolean;
+}
+
+export interface WorkerTipEffectDecision {
+  propIndex: 0 | 1;
+  tipIndex: 0 | 1;
+  effect: EffectType;
+}
+
+export interface WorkerPooledEffectConfigs {
+  sparkles?: Sparkles3DParams;
+  goo?: Goo3DParams;
+  bubbles?: Bubbles3DParams;
+  petals?: Petals3DParams;
+  smoke?: Smoke3DParams;
+  ink?: Ink3DParams;
+  silk?: Silk3DParams;
+  animal?: Animal3DParams;
+  pulse?: Pulse3DParams;
+  bloom?: Bloom3DParams;
+  fire?: Fire3DParams;
+  charcoal?: Charcoal3DParams;
+}
+
+/**
+ * Clone-safe decisions already resolved by the application.
+ *
+ * The worker may turn these decisions into renderer coordinates, but it may
+ * not choose an effect, interpret a card, translate user-facing settings, or
+ * advance the Choreo clock. That keeps worker rendering incapable of changing
+ * what the sequence means.
+ */
+export interface WorkerPerformerEffectIntent {
+  playing: boolean;
+  sampledAtMs: number;
+  currentStep: number;
+  totalSteps: number;
+  seamlesslyLoopable: boolean;
+  qualityTier: WorkerEffectQualityTier;
+  propBuild: WorkerPropBuild;
+  tips: readonly WorkerTipEffectDecision[];
+  trails: Trails3DParams;
+  led: Led3DParams;
+  pooled: WorkerPooledEffectConfigs;
+}
+
 export interface WorkerPerformerLocomotionSnapshot {
   isMoving: boolean;
   moveSpeed: number;
@@ -116,6 +222,7 @@ export interface WorkerPerformerSnapshot {
   groundY: number;
   staffLength: number;
   staffThickness: number;
+  propBuild: WorkerPropBuild;
   leftPropType: WorkerPerformerPropType;
   rightPropType: WorkerPerformerPropType;
   leftProp: WorkerPropSnapshot | null;
@@ -124,6 +231,8 @@ export interface WorkerPerformerSnapshot {
   stanceSegments: WorkerStanceSegments | null;
   spinePitchOffset: number;
   badge?: WorkerPerformerBadgeSnapshot | null;
+  selectionMarker?: WorkerSelectionMarkerSnapshot | null;
+  effectIntent?: WorkerPerformerEffectIntent | null;
   locomotion?: WorkerPerformerLocomotionSnapshot | null;
 }
 
@@ -200,11 +309,8 @@ export interface WorkerMoonFanEffectFrame {
 }
 
 /**
- * Final renderer inputs produced by the app-owned effect resolver.
- *
- * The worker never chooses an effect, samples a Choreo beat, or interprets an
- * LED source. It only advances the canonical heavyweight renderer named by
- * each frame. Typed arrays inside StripPattern are structured-clone-safe.
+ * Final renderer inputs produced from the worker performer's exact rig and prop
+ * transforms. Typed arrays inside StripPattern remain structured-clone-safe.
  */
 export type WorkerImperativeEffectFrame =
   | WorkerTrailEffectFrame
@@ -213,11 +319,8 @@ export type WorkerImperativeEffectFrame =
   | WorkerMoonFanEffectFrame;
 
 /**
- * Structured-clone-safe output of the app-owned effect resolver.
- *
- * Effect selection and Choreo timing stay on the application thread. The
- * worker receives the final world-space tip sources and owns only their
- * heavyweight Three.js renderers.
+ * Worker-collected renderer output. The application never authors these
+ * world-space coordinates; it sends WorkerPerformerEffectIntent instead.
  */
 export interface WorkerSceneEffectsSnapshot {
   playing: boolean;

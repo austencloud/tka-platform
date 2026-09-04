@@ -3,16 +3,21 @@ import type { CharacterInstanceState } from "../../state/character-instance-stat
 import { resolvePerformerUpperBodyStance } from "../../domain/performer-upper-body-stance";
 import { CANONICAL_PERFORMER_ANCHOR_Y } from "../../environments/domain/stage-coordinate-frame";
 import type {
+  WorkerPerformerEffectIntent,
   WorkerPerformerSnapshot,
   WorkerPerformerPropType,
   WorkerPropSnapshot,
+  WorkerSelectionMarkerSnapshot,
 } from "../domain/worker-renderer-protocol";
 import { isWorkerPerformerPropType } from "../domain/worker-renderer-protocol";
 import { getPerformerColor } from "../../constants/performer-colors";
+import type { WorkerPropBuild } from "../worlds/props/worker-prop-factory-types";
+import { isWorkerEffectExact } from "../effects/worker-effect-support";
 
 export interface WorkerPerformerSnapshotOptions {
   leftPropType: string;
   rightPropType: string;
+  propBuild: WorkerPropBuild;
   enableLocomotion?: boolean;
   badge?: {
     index: number;
@@ -20,6 +25,8 @@ export interface WorkerPerformerSnapshotOptions {
     allMode: boolean;
     visible: boolean;
   };
+  selectionMarker?: Omit<WorkerSelectionMarkerSnapshot, "groundPosition">;
+  effectIntent?: WorkerPerformerEffectIntent | null;
 }
 
 type SupportedWorkerPerformerSnapshotOptions =
@@ -51,6 +58,29 @@ export function supportsWorkerPerformer(
   );
 }
 
+function assertExactEffectIntent(
+  intent: WorkerPerformerEffectIntent | null | undefined
+): void {
+  if (!intent) return;
+  for (const decision of intent.tips) {
+    if (!isWorkerEffectExact(decision.effect)) {
+      throw new Error(
+        `Worker performer cannot reproduce ${decision.effect} exactly`
+      );
+    }
+    if (
+      decision.effect !== "none" &&
+      decision.effect !== "trails" &&
+      decision.effect !== "led" &&
+      !intent.pooled[decision.effect]
+    ) {
+      throw new Error(
+        `Worker performer is missing resolved ${decision.effect} parameters`
+      );
+    }
+  }
+}
+
 /**
  * Serialize the app's already-resolved Choreo state without moving semantic
  * timing or plane math into the rendering worker.
@@ -62,6 +92,19 @@ export function createWorkerPerformerSnapshot(
   if (!supportsWorkerPerformer(options)) {
     throw new Error(
       `Worker performer cannot reproduce ${options.leftPropType}/${options.rightPropType} exactly`
+    );
+  }
+  assertExactEffectIntent(options.effectIntent);
+  if (
+    options.effectIntent &&
+    (options.effectIntent.propBuild.finish !== options.propBuild.finish ||
+      options.effectIntent.propBuild.fanBuild !== options.propBuild.fanBuild ||
+      options.effectIntent.propBuild.fanFrameColor !==
+        options.propBuild.fanFrameColor ||
+      options.effectIntent.propBuild.fanCover !== options.propBuild.fanCover)
+  ) {
+    throw new Error(
+      "Worker performer effect intent uses a different prop build"
     );
   }
   const stance = resolvePerformerUpperBodyStance(performer);
@@ -82,6 +125,7 @@ export function createWorkerPerformerSnapshot(
         ? userProportionsState.staffLength
         : cmToUnits(staffLengthCm),
     staffThickness: userProportionsState.dimensions.staffRadius,
+    propBuild: { ...options.propBuild },
     leftPropType: options.leftPropType,
     rightPropType: options.rightPropType,
     leftProp: performer.showLeft
@@ -104,6 +148,19 @@ export function createWorkerPerformerSnapshot(
               : 0.35,
           selected: options.badge.selected,
         }
+      : null,
+    selectionMarker: options.selectionMarker
+      ? {
+          ...options.selectionMarker,
+          groundPosition: [
+            performer.position.x,
+            userProportionsState.groundY + CANONICAL_PERFORMER_ANCHOR_Y,
+            performer.position.z,
+          ],
+        }
+      : null,
+    effectIntent: options.effectIntent
+      ? structuredClone(options.effectIntent)
       : null,
     locomotion: options.enableLocomotion
       ? {

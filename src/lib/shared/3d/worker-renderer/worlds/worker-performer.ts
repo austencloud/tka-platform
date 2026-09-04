@@ -1,32 +1,44 @@
 import {
   Box3,
+  DoubleSide,
   Euler,
   Group,
+  Mesh,
+  MeshBasicMaterial,
   Quaternion,
+  RingGeometry,
   Sprite,
   SpriteMaterial,
   Vector3,
   type Object3D,
   type Scene,
 } from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import {
   GripType,
   cmToUnits,
   createAvatarServices,
-  createStaffObject,
   getAvatarModelPath,
   type AvatarServices,
   type PropState3D,
-  type StaffObject,
 } from "@austencloud/scene-3d/worker";
 import type {
+  WorkerSceneEffectsSnapshot,
   WorkerPerformerSnapshot,
-  WorkerPerformerPropType,
   WorkerPropSnapshot,
+  WorkerSelectionMarkerSnapshot,
+  WorkerVector3,
 } from "../domain/worker-renderer-protocol";
 import { isWorkerPerformerPropType } from "../domain/worker-renderer-protocol";
 import { createPerformerBadgeTexture } from "../../rendering/performer-badge-texture";
 import { WorkerPerformerLocomotion } from "./worker-performer-locomotion";
+import {
+  createWorkerPropVisual,
+  type WorkerPropVisual,
+} from "./props/worker-prop-factory";
+import { createWorkerSelectionMarker } from "./selection-markers/worker-selection-marker";
+import type { WorkerSelectionMarkerVisual } from "./selection-markers/worker-selection-marker";
+import { WorkerImperativeEffectFrameBuilder } from "../effects/worker-imperative-effect-frame-builder";
 
 const STAFF_HORIZONTAL_QUATERNION = new Quaternion().setFromEuler(
   new Euler(0, 0, Math.PI / 2)
@@ -35,7 +47,7 @@ const STAFF_HORIZONTAL_QUATERNION = new Quaternion().setFromEuler(
 export interface WorkerPropObject {
   anchor: Group;
   correction: Group;
-  visual: StaffObject | null;
+  visual: WorkerPropVisual;
   state: PropState3D;
   setSnapshot(snapshot: WorkerPropSnapshot | null): void;
   dispose(): void;
@@ -45,6 +57,53 @@ interface WorkerPerformerBadgeObject {
   key: string;
   sprite: Sprite;
   material: SpriteMaterial;
+}
+
+export interface WorkerPerformerHoverMarker {
+  mesh: Mesh<RingGeometry, MeshBasicMaterial>;
+  material: MeshBasicMaterial;
+  update(
+    marker: WorkerSelectionMarkerSnapshot | null | undefined,
+    performerPosition: WorkerVector3
+  ): void;
+  dispose(): void;
+}
+
+export function createWorkerPerformerHoverMarker(): WorkerPerformerHoverMarker {
+  const material = new MeshBasicMaterial({
+    color: 0xffffff,
+    side: DoubleSide,
+    transparent: true,
+    opacity: 0.55,
+    depthWrite: false,
+  });
+  const mesh = new Mesh(new RingGeometry(0.48, 0.64, 48), material);
+  mesh.name = "worker-performer-hover-ring";
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.visible = false;
+  return {
+    mesh,
+    material,
+    update(marker, performerPosition) {
+      if (!marker) {
+        mesh.visible = false;
+        return;
+      }
+      mesh.position.set(
+        marker.groundPosition[0] - performerPosition[0],
+        marker.groundPosition[1] - performerPosition[1] + 0.02,
+        marker.groundPosition[2] - performerPosition[2]
+      );
+      material.color.setHex(marker.color);
+      material.opacity = marker.dragging ? 0.86 : 0.55;
+      mesh.visible = marker.present && (marker.hovered || marker.dragging);
+    },
+    dispose() {
+      mesh.removeFromParent();
+      mesh.geometry.dispose();
+      material.dispose();
+    },
+  };
 }
 
 function propState(snapshot: WorkerPropSnapshot): PropState3D {
@@ -58,23 +117,31 @@ function propState(snapshot: WorkerPropSnapshot): PropState3D {
   };
 }
 
-function createCanonicalPropVisual(
-  propType: WorkerPerformerPropType,
-  side: "left" | "right",
-  snapshot: WorkerPerformerSnapshot
-): StaffObject | null {
-  if (propType === "hand") return null;
-  return createStaffObject({
-    color: side === "left" ? "blue" : "red",
-    length: snapshot.staffLength,
-    thickness: snapshot.staffThickness,
-  });
+class WorkerPropModelCache {
+  private readonly loader = new GLTFLoader();
+  private readonly models = new Map<string, Promise<Object3D>>();
+
+  load(url: string): Promise<Object3D> {
+    const cached = this.models.get(url);
+    if (cached) return cached;
+    const pending = this.loader
+      .loadAsync(url)
+      .then((gltf) => gltf.scene)
+      .catch((error) => {
+        this.models.delete(url);
+        throw error;
+      });
+    this.models.set(url, pending);
+    return pending;
+  }
 }
 
-export function createWorkerPerformerProp(
+const propModels = new WorkerPropModelCache();
+
+export async function createWorkerPerformerProp(
   side: "left" | "right",
   snapshot: WorkerPerformerSnapshot
-): WorkerPropObject {
+): Promise<WorkerPropObject> {
   const propType =
     side === "left" ? snapshot.leftPropType : snapshot.rightPropType;
   if (!isWorkerPerformerPropType(propType)) {
@@ -88,8 +155,17 @@ export function createWorkerPerformerProp(
   const correction = new Group();
   correction.name = `${side}-prop-correction`;
   anchor.add(correction);
-  const visual = createCanonicalPropVisual(propType, side, snapshot);
-  if (visual) correction.add(visual.root);
+  const factoryResult = await createWorkerPropVisual({
+    propType,
+    color: side === "left" ? "blue" : "red",
+    length: snapshot.staffLength,
+    thickness: snapshot.staffThickness,
+    build: snapshot.propBuild,
+    loadModel: (url) => propModels.load(url),
+  });
+  if (!factoryResult.ok) throw new Error(factoryResult.detail);
+  const visual = factoryResult.visual;
+  correction.add(visual.root);
 
   const source = side === "left" ? snapshot.leftProp : snapshot.rightProp;
   const state = source
@@ -102,7 +178,7 @@ export function createWorkerPerformerProp(
         worldRotation: new Quaternion(),
       };
 
-  const result: WorkerPropObject = {
+  const propObject: WorkerPropObject = {
     anchor,
     correction,
     visual,
@@ -117,16 +193,16 @@ export function createWorkerPerformerProp(
       state.worldRotation.fromArray(next.worldRotation);
       state.gripType = next.gripType as PropState3D["gripType"];
       anchor.position.copy(state.worldPosition);
-      visual?.setState(state);
+      visual.setState(state);
     },
     dispose() {
-      visual?.dispose();
+      visual.dispose();
       anchor.removeFromParent();
       anchor.clear();
     },
   };
-  result.setSnapshot(source);
-  return result;
+  propObject.setSnapshot(source);
+  return propObject;
 }
 
 /**
@@ -141,16 +217,27 @@ export class WorkerPerformer {
   readonly id: string;
 
   private readonly services: AvatarServices;
-  private readonly left: WorkerPropObject;
-  private readonly right: WorkerPropObject;
+  private left!: WorkerPropObject;
+  private right!: WorkerPropObject;
   private readonly leftTarget = new Vector3();
   private readonly rightTarget = new Vector3();
   private readonly rigWorldQuaternion = new Quaternion();
   private readonly leftOrientation = new Quaternion();
   private readonly rightOrientation = new Quaternion();
+  private readonly leftEffectRotation = new Quaternion();
+  private readonly rightEffectRotation = new Quaternion();
   private snapshot: WorkerPerformerSnapshot;
   private avatarRoot: Object3D | null = null;
   private badge: WorkerPerformerBadgeObject | null = null;
+  private readonly selectionMarker: WorkerSelectionMarkerVisual;
+  private readonly hoverMarker: WorkerPerformerHoverMarker;
+  private readonly effectFrames = new WorkerImperativeEffectFrameBuilder();
+  private effectSourceIdBase = 1;
+  private effectOutput: WorkerSceneEffectsSnapshot = {
+    playing: false,
+    sources: [],
+    imperative: [],
+  };
   private readonly locomotion: WorkerPerformerLocomotion | null;
   private disposed = false;
 
@@ -167,9 +254,11 @@ export class WorkerPerformer {
     this.locomotion = enableLocomotion
       ? new WorkerPerformerLocomotion(this.services)
       : null;
-    this.left = createWorkerPerformerProp("left", snapshot);
-    this.right = createWorkerPerformerProp("right", snapshot);
-    this.root.add(this.left.anchor, this.right.anchor);
+    this.selectionMarker = createWorkerSelectionMarker(
+      this.localSelectionMarker(snapshot)
+    );
+    this.hoverMarker = createWorkerPerformerHoverMarker();
+    this.root.add(this.selectionMarker.root, this.hoverMarker.mesh);
   }
 
   static async create(
@@ -177,6 +266,11 @@ export class WorkerPerformer {
   ): Promise<WorkerPerformer> {
     const performer = new WorkerPerformer(snapshot);
     try {
+      [performer.left, performer.right] = await Promise.all([
+        createWorkerPerformerProp("left", snapshot),
+        createWorkerPerformerProp("right", snapshot),
+      ]);
+      performer.root.add(performer.left.anchor, performer.right.anchor);
       await performer.loadAvatar();
       performer.setSnapshot(snapshot);
       return performer;
@@ -195,6 +289,11 @@ export class WorkerPerformer {
       snapshot.rightPropType === this.snapshot.rightPropType &&
       snapshot.staffLength === this.snapshot.staffLength &&
       snapshot.staffThickness === this.snapshot.staffThickness &&
+      snapshot.propBuild.finish === this.snapshot.propBuild.finish &&
+      snapshot.propBuild.fanBuild === this.snapshot.propBuild.fanBuild &&
+      snapshot.propBuild.fanFrameColor ===
+        this.snapshot.propBuild.fanFrameColor &&
+      snapshot.propBuild.fanCover === this.snapshot.propBuild.fanCover &&
       (snapshot.locomotion != null) === (this.snapshot.locomotion != null)
     );
   }
@@ -244,6 +343,40 @@ export class WorkerPerformer {
     this.applyPropSnapshot(this.left, snapshot.leftProp);
     this.applyPropSnapshot(this.right, snapshot.rightProp);
     this.applyBadgeSnapshot(snapshot);
+    this.selectionMarker.update(this.localSelectionMarker(snapshot));
+    this.hoverMarker.update(snapshot.selectionMarker, snapshot.position);
+  }
+
+  setEffectSourceIdBase(sourceIdBase: number): void {
+    this.effectSourceIdBase = sourceIdBase;
+  }
+
+  getEffects(): WorkerSceneEffectsSnapshot {
+    return this.effectOutput;
+  }
+
+  private localSelectionMarker(snapshot: WorkerPerformerSnapshot) {
+    const marker = snapshot.selectionMarker;
+    if (!marker) {
+      return {
+        groundPosition: [0, snapshot.groundY, 0] as const,
+        color: 0,
+        selected: false,
+        allPerformersSelected: false,
+        present: false,
+        pulsePhase: 0,
+        hovered: false,
+        dragging: false,
+      };
+    }
+    return {
+      ...marker,
+      groundPosition: [
+        marker.groundPosition[0] - snapshot.position[0],
+        marker.groundPosition[1] - snapshot.position[1],
+        marker.groundPosition[2] - snapshot.position[2],
+      ] as const,
+    };
   }
 
   private applyBadgeSnapshot(snapshot: WorkerPerformerSnapshot): void {
@@ -253,7 +386,7 @@ export class WorkerPerformer {
       return;
     }
     const key = `${badge.index}:${badge.color}:${badge.selected}`;
-    if (!this.badge || this.badge.key !== key) {
+    if (this.badge?.key !== key) {
       this.disposeBadge();
       if (typeof OffscreenCanvas === "undefined") return;
       const texture = createPerformerBadgeTexture(
@@ -351,6 +484,49 @@ export class WorkerPerformer {
     }
     this.services.animator.update(deltaSeconds);
     this.services.skeleton.updateMatrices();
+    this.updateEffects(deltaSeconds, leftState, rightState);
+  }
+
+  private updateEffects(
+    deltaSeconds: number,
+    leftState: PropState3D | null,
+    rightState: PropState3D | null
+  ): void {
+    const intent = this.snapshot.effectIntent;
+    if (!intent) {
+      this.effectOutput = { playing: false, sources: [], imperative: [] };
+      return;
+    }
+    this.root.updateMatrixWorld(true);
+    this.left.anchor.getWorldPosition(this.leftTarget);
+    this.right.anchor.getWorldPosition(this.rightTarget);
+    this.root.getWorldQuaternion(this.rigWorldQuaternion);
+    this.leftEffectRotation
+      .copy(this.rigWorldQuaternion)
+      .multiply(this.left.state.worldRotation);
+    this.rightEffectRotation
+      .copy(this.rigWorldQuaternion)
+      .multiply(this.right.state.worldRotation);
+    this.effectOutput = this.effectFrames.build({
+      performerId: this.id,
+      sourceIdBase: this.effectSourceIdBase,
+      deltaSeconds,
+      staffHalfLength: this.snapshot.staffLength / 2,
+      collisionFloorY: this.root.position.y + this.snapshot.groundY,
+      intent,
+      left: {
+        state: leftState,
+        propType: this.snapshot.leftPropType,
+        worldCenter: this.leftTarget.toArray(),
+        worldRotation: this.leftEffectRotation.toArray(),
+      },
+      right: {
+        state: rightState,
+        propType: this.snapshot.rightPropType,
+        worldCenter: this.rightTarget.toArray(),
+        worldRotation: this.rightEffectRotation.toArray(),
+      },
+    });
   }
 
   getDiagnostics(): {
@@ -442,8 +618,11 @@ export class WorkerPerformer {
     if (this.disposed) return;
     this.disposed = true;
     this.disposeBadge();
-    this.left.dispose();
-    this.right.dispose();
+    this.selectionMarker.dispose();
+    this.hoverMarker.dispose();
+    this.effectFrames.reset();
+    this.left?.dispose();
+    this.right?.dispose();
     this.locomotion?.dispose();
     this.services.fingers.dispose();
     this.services.skeleton.dispose();
@@ -459,6 +638,8 @@ interface WorkerPerformerLike {
   matchesConfiguration(snapshot: WorkerPerformerSnapshot): boolean;
   setSnapshot(snapshot: WorkerPerformerSnapshot): void;
   update(deltaSeconds: number): void;
+  setEffectSourceIdBase?(sourceIdBase: number): void;
+  getEffects?(): WorkerSceneEffectsSnapshot;
   getDiagnostics?(): {
     renderables: number;
     visibleRenderables: number;
@@ -483,6 +664,8 @@ export class WorkerPerformerStage {
   private performers = new Map<string, WorkerPerformerLike>();
   private pending = new Map<string, Promise<void>>();
   private snapshots = new Map<string, WorkerPerformerSnapshot>();
+  private effectSourceIdBases = new Map<string, number>();
+  private nextEffectSourceIdBase = 1;
   private disposed = false;
 
   constructor(
@@ -523,8 +706,13 @@ export class WorkerPerformerStage {
     const inFlight = this.pending.get(snapshot.id);
     if (inFlight) return inFlight;
 
-    let loading!: Promise<void>;
-    loading = this.createPerformer(snapshot)
+    let effectSourceIdBase = this.effectSourceIdBases.get(snapshot.id);
+    if (effectSourceIdBase === undefined) {
+      effectSourceIdBase = this.nextEffectSourceIdBase;
+      this.nextEffectSourceIdBase += 4;
+      this.effectSourceIdBases.set(snapshot.id, effectSourceIdBase);
+    }
+    const loading = this.createPerformer(snapshot)
       .then(async (performer) => {
         const latest = this.snapshots.get(snapshot.id);
         if (this.disposed || !latest) {
@@ -537,6 +725,7 @@ export class WorkerPerformerStage {
           await this.ensurePerformer(latest);
           return;
         }
+        performer.setEffectSourceIdBase?.(effectSourceIdBase);
         this.performers.set(snapshot.id, performer);
         this.scene.add(performer.root);
         performer.setSnapshot(latest);
@@ -561,6 +750,22 @@ export class WorkerPerformerStage {
     for (const performer of this.performers.values()) {
       performer.update(deltaSeconds);
     }
+  }
+
+  getEffects(): WorkerSceneEffectsSnapshot {
+    const sources = [] as WorkerSceneEffectsSnapshot["sources"][number][];
+    const imperative = [] as NonNullable<
+      WorkerSceneEffectsSnapshot["imperative"]
+    >[number][];
+    let playing = false;
+    for (const performer of this.performers.values()) {
+      const output = performer.getEffects?.();
+      if (!output) continue;
+      playing ||= output.playing;
+      sources.push(...output.sources);
+      imperative.push(...(output.imperative ?? []));
+    }
+    return { playing, sources, imperative };
   }
 
   getDiagnostics(): {
@@ -640,5 +845,6 @@ export class WorkerPerformerStage {
     this.performers.clear();
     this.pending.clear();
     this.snapshots.clear();
+    this.effectSourceIdBases.clear();
   }
 }
