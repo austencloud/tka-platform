@@ -29,11 +29,12 @@ export const EVIDENCE_BASIS_LABELS: Record<EvidenceBasis, string> = {
 /**
  * Activity is two verified endpoints, never a lifespan. A record with no
  * activity claim asserts nothing beyond its documented trace. `active` means
- * a dated public trace from the current review cycle; `unknown` means the
- * latest trace is older and the archive makes no claim past it.
+ * a dated public trace from the current review cycle. `archive-online` means
+ * the material survives but its former community is dormant. `unknown` means
+ * the latest trace is older and the archive makes no claim past it.
  */
 export interface ArchiveActivity {
-	status: "active" | "unknown";
+	status: "active" | "archive-online" | "unknown";
 	lastVerifiedYear: number;
 	note: string;
 }
@@ -51,6 +52,16 @@ export interface ArchiveCitation {
 	basis: EvidenceBasis;
 }
 
+export interface ArchiveDocument {
+	id: string;
+	title: string;
+	shortTitle: string;
+	pdfHref: string;
+	pageImagePrefix: string;
+	pageCount: number;
+	note: string;
+}
+
 export interface ArchiveEntry {
 	id: string;
 	lane: ArchiveLaneId;
@@ -66,6 +77,7 @@ export interface ArchiveEntry {
 	evidenceShortLabel: string;
 	evidenceNote?: string;
 	citations: ArchiveCitation[];
+	documents?: ArchiveDocument[];
 	catalogEntry?: CatalogEntry;
 }
 
@@ -342,15 +354,15 @@ const researchEntries: ArchiveEntry[] = [
 		dateLabel: "1998",
 		firstDocumentedYear: 1998,
 		activity: {
-			status: "active",
+			status: "archive-online",
 			lastVerifiedYear: 2026,
-			note: "The lesson library and forum archive were live when reviewed in 2026.",
+			note: "The lessons and forum archive remain online. The newest visible forum post is from April 2025, while most movement boards last posted between 2018 and 2021.",
 		},
 		title: "Home of Poi",
 		shortTitle: "Home of Poi",
 		people: "Malcolm Crawshay and the Home of Poi community",
 		summary:
-			"One of the first online poi schools and a vast community archive. Malcolm Crawshay launched it in 1998; its lessons and hundreds of thousands of forum posts preserved technique, terminology, safety practice, and debate.",
+			"One of the first online poi schools and once a major gathering place. Malcolm Crawshay launched it in 1998; its lessons and hundreds of thousands of forum posts preserve technique, terminology, safety practice, and debate.",
 		evidenceBasis: "creators-account",
 		evidenceLabel: "Organization history",
 		evidenceShortLabel: "Org source",
@@ -361,21 +373,21 @@ const researchEntries: ArchiveEntry[] = [
 				label: "Home of Poi: Our mission and values",
 				href: "https://www.homeofpoi.com/us/company/information-mission.php",
 				supports:
-					"The October 26, 1998 launch, Malcolm Crawshay's authorship, and the site's educational and community purpose.",
+					"The 1998 launch, founder Malcolm Crawshay, and the site's teaching mission.",
 				basis: "creators-account",
 			},
 			{
 				label: "Home of Poi forum archive",
 				href: "https://www.homeofpoi.com/us/community/forums/",
 				supports:
-					"The surviving archive and its hundreds of thousands of public movement, teaching, and community posts.",
+					"The archive's scale and sparse recent activity across its public boards.",
 				basis: "directly-observed",
 			},
 			{
 				label: "How do you define a weave?, 2002",
 				href: "https://www.homeofpoi.com/en/community/forums/topics/120838/How-do-you-define-a-weave",
 				supports:
-					"A dated example of members working through movement terminology and teaching language in public.",
+					"A 2002 discussion of weave terminology and teaching language in public.",
 				basis: "community-attested",
 			},
 		],
@@ -415,6 +427,88 @@ const researchEntries: ArchiveEntry[] = [
 				supports:
 					"A public 2026 fan workshop using the term.",
 				basis: "community-attested",
+			},
+		],
+	},
+	{
+		id: "quarter-space-tech",
+		lane: "languages",
+		dateLabel: "PDF archive · 2024",
+		firstDocumentedYear: 2024,
+		title: "Quarter Space Tech",
+		shortTitle: "QST",
+		people: "Mentive, based on Alex Kurowski's grid",
+		summary:
+			"Mentive's three visual reference documents organize 228 patterns across Quarter “Time” Breaks, Quarter “Time” Advanced, and Quarter Space Beyond. Mentive identifies the documents as his work, based on Alex Kurowski's grid.",
+		evidenceBasis: "creators-account",
+		evidenceLabel: "Creator attribution and preserved documents",
+		evidenceShortLabel: "Creator source",
+		evidenceNote:
+			"The PDFs were exported from quarterspace.tech on March 15, 2024. That dates these copies, not the system's origin. Mentive identifies himself as the document author and Alex Kurowski's grid as the foundation.",
+		citations: [
+			{
+				label: 'Quarter “Time” Breaks, complete PDF',
+				href: "/history/sources/quarter-space-tech/quarter-time-breaks.pdf",
+				supports:
+					"The seven-page diagram set and its 56 Quarter “Time” Break patterns.",
+				basis: "directly-observed",
+			},
+			{
+				label: 'Quarter “Time” Advanced, complete PDF',
+				href: "/history/sources/quarter-space-tech/quarter-time-advanced.pdf",
+				supports:
+					"The sixteen-page diagram set and its 64 advanced patterns.",
+				basis: "directly-observed",
+			},
+			{
+				label: "Quarter Space Beyond, complete PDF",
+				href: "/history/sources/quarter-space-tech/quarter-space-beyond.pdf",
+				supports:
+					"The twenty-seven-page diagram set and its 108 beyond patterns.",
+				basis: "directly-observed",
+			},
+			{
+				label: "SpiroAnim Quarter Space Tech document archive",
+				href:
+					"https://github.com/rbgirard/spiroanim/tree/main/public/docs/qst",
+				supports:
+					"Mentive's public software archive containing all three PDF exports.",
+				basis: "directly-observed",
+			},
+		],
+		documents: [
+			{
+				id: "breaks",
+				title: 'Quarter “Time” Breaks',
+				shortTitle: "Breaks",
+				pdfHref:
+					"/history/sources/quarter-space-tech/quarter-time-breaks.pdf",
+				pageImagePrefix:
+					"/images/history/quarter-space-tech/breaks",
+				pageCount: 7,
+				note: "56 patterns across seven parts, preserved as seven diagram pages.",
+			},
+			{
+				id: "advanced",
+				title: 'Quarter “Time” Advanced',
+				shortTitle: "Advanced",
+				pdfHref:
+					"/history/sources/quarter-space-tech/quarter-time-advanced.pdf",
+				pageImagePrefix:
+					"/images/history/quarter-space-tech/advanced",
+				pageCount: 16,
+				note: "64 advanced patterns, preserved as sixteen diagram pages.",
+			},
+			{
+				id: "beyond",
+				title: "Quarter Space Beyond",
+				shortTitle: "Beyond",
+				pdfHref:
+					"/history/sources/quarter-space-tech/quarter-space-beyond.pdf",
+				pageImagePrefix:
+					"/images/history/quarter-space-tech/beyond",
+				pageCount: 27,
+				note: "108 beyond patterns, preserved as twenty-seven diagram pages.",
 			},
 		],
 	},
@@ -681,6 +775,23 @@ export function archiveEntry(entryId: string): ArchiveEntry {
 	return match;
 }
 
+export function archiveDocumentPageImage(
+	document: ArchiveDocument,
+	pageNumber: number
+): string {
+	if (
+		!Number.isInteger(pageNumber) ||
+		pageNumber < 1 ||
+		pageNumber > document.pageCount
+	) {
+		throw new Error(
+			`Page ${pageNumber} is outside ${document.title}'s ${document.pageCount}-page range`
+		);
+	}
+
+	return `${document.pageImagePrefix}-${String(pageNumber).padStart(2, "0")}.webp`;
+}
+
 export function archiveClusterForEntry(
 	entryId: string
 ): ArchiveCluster | undefined {
@@ -704,9 +815,13 @@ export function entrySpanEndYear(entry: ArchiveEntry): number {
  */
 export function activityLabel(entry: ArchiveEntry): string | undefined {
 	if (!entry.activity) return undefined;
-	return entry.activity.status === "active"
-		? `Active · verified ${entry.activity.lastVerifiedYear}`
-		: `Last public trace ${entry.activity.lastVerifiedYear}`;
+	if (entry.activity.status === "active") {
+		return `Active · verified ${entry.activity.lastVerifiedYear}`;
+	}
+	if (entry.activity.status === "archive-online") {
+		return "Archive online · community dormant";
+	}
+	return `Last public trace ${entry.activity.lastVerifiedYear}`;
 }
 
 /**

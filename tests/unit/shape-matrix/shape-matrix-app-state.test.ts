@@ -316,6 +316,76 @@ describe("shape matrix app state", () => {
     expect(syncState).toHaveBeenCalledTimes(1);
   });
 
+  it("links both ratios until the user unlinks them", () => {
+    const { state, syncState } = createState(false);
+
+    state.setTheoryRatios(
+      { propRotations: 2, handCycles: 5 },
+      { propRotations: 1, handCycles: 2 }
+    );
+    state.linkTheoryRatios("left");
+
+    expect(state.theoryRatiosLinked).toBe(true);
+    expect(state.theoryLeftRatio).toEqual({
+      propRotations: 2,
+      handCycles: 5,
+    });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 2,
+      handCycles: 5,
+    });
+
+    state.setTheoryRatioFor("right", {
+      propRotations: 3,
+      handCycles: 7,
+    });
+    expect(state.theoryLeftRatio).toEqual({
+      propRotations: 3,
+      handCycles: 7,
+    });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 3,
+      handCycles: 7,
+    });
+    expect(syncState).toHaveBeenLastCalledWith(
+      expect.objectContaining({ theoryRatiosLinked: true })
+    );
+
+    state.unlinkTheoryRatios();
+    state.setTheoryRatioFor("right", {
+      propRotations: 4,
+      handCycles: 9,
+    });
+    expect(state.theoryLeftRatio).toEqual({
+      propRotations: 3,
+      handCycles: 7,
+    });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 4,
+      handCycles: 9,
+    });
+  });
+
+  it("randomizes within the current 4x4 without changing either ratio", () => {
+    const { state } = createState(false);
+    const first = {
+      left: state.theoryRowAxis[0]!,
+      right: state.theoryColAxis[0]!,
+    };
+    state.selectTheoryPair(first);
+
+    state.selectRandomTheoryPair(() => 0);
+
+    expect(state.theoryPair).not.toEqual(first);
+    expect(state.theoryRowAxis).toHaveLength(4);
+    expect(state.theoryColAxis).toHaveLength(4);
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 1, handCycles: 3 });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 1,
+      handCycles: 3,
+    });
+  });
+
   it("rejects an invalid two-ratio update without moving either axis", () => {
     const { state, syncState } = createState(false);
 

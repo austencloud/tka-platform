@@ -35,18 +35,62 @@ const SMOOTH_BOX_STEPS: SoloPropStepData[] = BOX_ORBIT.slice(0, -1).map(
   })
 );
 
+const COUNTERPOINT_BOX_ORBIT = [
+  GridLocation.SOUTHEAST,
+  GridLocation.SOUTHWEST,
+  GridLocation.NORTHWEST,
+  GridLocation.NORTHEAST,
+  GridLocation.SOUTHEAST,
+  GridLocation.SOUTHWEST,
+  GridLocation.NORTHWEST,
+  GridLocation.NORTHEAST,
+  GridLocation.SOUTHEAST,
+] as const;
+
+const COUNTERPOINT_BOX_STEPS: SoloPropStepData[] = COUNTERPOINT_BOX_ORBIT.slice(
+  0,
+  -1
+).map((startLocation, index) => ({
+  startLocation,
+  endLocation: COUNTERPOINT_BOX_ORBIT[index + 1]!,
+  startOrientation: Orientation.IN,
+  endOrientation: Orientation.IN,
+  motionType: MotionType.PRO,
+  rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+  turns: 0,
+  duration: 1,
+}));
+
+function createReviewSequence(
+  steps: SoloPropStepData[],
+  startLocation: GridLocation,
+  authoredHand: AuthoredHand,
+  name: string
+): SequenceData {
+  const soloProp = createSoloProp(steps, startLocation, Orientation.IN, {
+    name,
+    notes: "Production-shaped solo fixture for the Construct handoff review.",
+  });
+
+  return soloPropToSequence(soloProp, authoredHand);
+}
+
 export function createConstructSoloReviewSequence(
   authoredHand: AuthoredHand
 ): SequenceData {
-  const soloProp = createSoloProp(
+  return createReviewSequence(
     SMOOTH_BOX_STEPS,
     GridLocation.NORTHWEST,
-    Orientation.IN,
-    {
-      name: "Smooth box orbit",
-      notes: "Production-shaped solo fixture for the Construct handoff review.",
-    }
+    authoredHand,
+    "Smooth box orbit"
   );
+}
 
-  return soloPropToSequence(soloProp, authoredHand);
+export function createConstructRedPartnerReviewSequence(): SequenceData {
+  return createReviewSequence(
+    COUNTERPOINT_BOX_STEPS,
+    GridLocation.SOUTHEAST,
+    "right",
+    "Counterpoint box orbit"
+  );
 }

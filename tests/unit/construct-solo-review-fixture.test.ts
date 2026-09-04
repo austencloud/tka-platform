@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
-import { createConstructSoloReviewSequence } from "../../src/routes/test/construct-solo-handoff/construct-solo-review-fixture";
+import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  createConstructRedPartnerReviewSequence,
+  createConstructSoloReviewSequence,
+} from "../../src/routes/test/construct-solo-handoff/construct-solo-review-fixture";
 
 describe("Construct solo review fixture", () => {
   it.each(["left", "right"] as const)(
@@ -20,4 +24,17 @@ describe("Construct solo review fixture", () => {
       });
     }
   );
+
+  it("gives the red pairing choice a visibly distinct counterpath", () => {
+    const blue = createConstructSoloReviewSequence("left");
+    const red = createConstructRedPartnerReviewSequence();
+
+    expect(blue.startPosition?.motions.left?.startLocation).toBe(
+      GridLocation.NORTHWEST
+    );
+    expect(red.startPosition?.motions.right?.startLocation).toBe(
+      GridLocation.SOUTHEAST
+    );
+    expect(red.name).toBe("Counterpoint box orbit");
+  });
 });
