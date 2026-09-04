@@ -15,6 +15,7 @@ import { filterPremiumCosmeticProps } from "$lib/shared/subscription/domain/prem
 import type { StageChoreography } from "../domain/stage-types";
 import {
   TikaDirectorResponseSchema,
+  TIKA_DIRECTOR_MAX_HISTORY,
   type TikaDirectorAction,
   type TikaDirectorConversationMessage,
   type TikaDirectorRequest,
@@ -28,8 +29,19 @@ export async function resolveStageDirection(input: {
   choreography: StageChoreography;
   currentBeat: number;
   viewer: Viewer3DState;
+  signal?: AbortSignal;
 }): Promise<TikaDirectorResponse> {
-  const local = interpretStageDirectionLocally(input.prompt);
+  if (input.conversation.length > TIKA_DIRECTOR_MAX_HISTORY) {
+    throw new Error(
+      "This direction conversation is full. Reload the Stage to start a new one, and restate any constraints you want to keep."
+    );
+  }
+  // Follow-up answers need the previous questions and constraints even when
+  // the latest sentence looks like a complete command on its own.
+  const local =
+    input.conversation.length === 0
+      ? interpretStageDirectionLocally(input.prompt)
+      : null;
   if (local) return local;
 
   const user = authState.user;
@@ -37,10 +49,11 @@ export async function resolveStageDirection(input: {
     throw new Error("Sign in before asking TIKA to direct this scene.");
   }
   const token = await user.getIdToken();
+  input.signal?.throwIfAborted();
   const viewerSnapshot = input.viewer.serialize();
   const body: TikaDirectorRequest = {
     prompt: input.prompt,
-    conversation: [...input.conversation].slice(-8),
+    conversation: [...input.conversation],
     scene: {
       id: input.choreography.id,
       name: input.choreography.name,
@@ -70,6 +83,7 @@ export async function resolveStageDirection(input: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
+    signal: input.signal,
   });
   const payload: unknown = await response.json();
   if (!response.ok) {
