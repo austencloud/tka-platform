@@ -31,6 +31,11 @@ interface CloudbreakLayout {
     angularDiameterDegrees: number;
   };
   cameraPresets: {
+    desktop: {
+      position: [number, number, number];
+      target: [number, number, number];
+      fovDegrees: number;
+    };
     reverse: {
       position: [number, number, number];
       target: [number, number, number];

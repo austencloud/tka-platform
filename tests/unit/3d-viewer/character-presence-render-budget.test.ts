@@ -8,7 +8,7 @@ const swapSource = readFileSync(
 );
 const stageSource = readFileSync(
   resolve(
-    "src/lib/shared/3d/environments/scenes/ocean/runtime/RuinsPlatform.svelte"
+    "src/lib/shared/3d/environments/worlds/ocean/ocean-ruins-platform.ts"
   ),
   "utf8"
 );
@@ -37,9 +37,8 @@ describe("performer add render budget", () => {
   });
 
   it("creates ocean stage materials once and updates their uniforms", () => {
-    expect(stageSource).toContain("onMount(() => {");
     expect(stageSource).toContain(
-      "applyDaisConfig(bodyMaterial, materialConfig)"
+      "applyDaisConfig(bodyMaterial, shaderConfig)"
     );
     expect(stageSource.match(/createBodyMaterial\(/g)).toHaveLength(2);
     expect(stageSource.match(/createTopMaterial\(/g)).toHaveLength(1);
