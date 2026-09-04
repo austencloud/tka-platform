@@ -67,6 +67,10 @@
     worldChildren?: Snippet;
     /** Host commands added to the left of the HUD's command bar. */
     hudActions?: Snippet;
+    /** Host editor shares the scene inspector's space and dismissal behavior. */
+    hostPanel?: Snippet<[() => void, boolean]>;
+    hostPanelTitle?: string;
+    hostPanelOpen?: boolean;
     /**
      * Host chrome layered over the canvas — a transport, a timeline, a chart.
      * It sits below the scene controls, so a host that reserves space with
@@ -121,6 +125,9 @@
     performerSteps = null,
     worldChildren,
     hudActions,
+    hostPanel,
+    hostPanelTitle,
+    hostPanelOpen = $bindable(false),
     overlayChildren,
     hideCanvasOverlays = false,
     sceneControlsBottomOffset,
@@ -296,6 +303,9 @@
         bottomOffset={sceneControlsBottomOffset}
         leftOffset={sceneControlsLeftOffset}
         {allowSaveScene}
+        {hostPanel}
+        {hostPanelTitle}
+        bind:hostPanelOpen
         onCompactSheetChange={onCompactSceneSheetChange}
         onLayoutChange={(next) => (sceneControlLayout = next)}
       />

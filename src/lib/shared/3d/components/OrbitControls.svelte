@@ -24,42 +24,15 @@
 
   import { onMount, onDestroy } from "svelte";
   import { useThrelte, useTask } from "@threlte/core";
-  import {
-    Vector2,
-    Vector3,
-    Vector4,
-    Quaternion,
-    Matrix4,
-    Spherical,
-    Box3,
-    Sphere,
-    Raycaster,
-    MathUtils,
-    type Object3D,
-  } from "three";
+  import { Vector3, type Object3D } from "three";
   import type { PerspectiveCamera, WebGLRenderer } from "three";
-  import CameraControls from "camera-controls";
-
-  // Safe to call more than once - dedupes internally. Ensures the
-  // library has the three.js subset it needs regardless of which
-  // consumer mounts first.
-  CameraControls.install({
-    THREE: {
-      Vector2,
-      Vector3,
-      Vector4,
-      Quaternion,
-      Matrix4,
-      Spherical,
-      Box3,
-      Sphere,
-      Raycaster,
-      MathUtils,
-    },
-  });
+  import {
+    applyCameraControlsInputActions,
+    CameraControls,
+  } from "../camera/camera-controls-runtime";
+  import type { CameraRightDragAction } from "../camera/camera-controls-runtime";
 
   type Vec3Tuple = [number, number, number];
-  type RightDragAction = "pan" | "rotate" | "none";
 
   interface Props {
     /** Live CameraControls instance - null until the component mounts. */
@@ -103,7 +76,7 @@
      * behavior. Omit to preserve the standard contract: pan when enabled,
      * otherwise no action.
      */
-    rightDragAction?: RightDragAction;
+    rightDragAction?: CameraRightDragAction;
     autoRotate?: boolean;
     /** Matches three.js OrbitControls units (~6deg/s per unit at 60fps). */
     autoRotateSpeed?: number;
@@ -267,14 +240,7 @@
             : enablePan
               ? CameraControls.ACTION.TRUCK
               : CameraControls.ACTION.NONE;
-    controls.mouseButtons.right = rightAction;
-    if (!enablePan) {
-      controls.mouseButtons.middle = CameraControls.ACTION.DOLLY;
-      controls.touches.two = CameraControls.ACTION.TOUCH_DOLLY_ROTATE;
-    } else {
-      controls.mouseButtons.middle = CameraControls.ACTION.DOLLY;
-      controls.touches.two = CameraControls.ACTION.TOUCH_DOLLY_TRUCK;
-    }
+    applyCameraControlsInputActions(controls, rightAction, enablePan);
   });
   $effect(() => {
     if (!controls || !target) return;

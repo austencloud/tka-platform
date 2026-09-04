@@ -233,6 +233,18 @@ describe("four-lane history archive ledger", () => {
     expect(lorq?.position).toBe(historicalYearPosition(2012));
   });
 
+  it("separates the edge-aligned 1994 book from Home of Poi without shifting dates", () => {
+    const placements = placeArchiveEntries(entriesForLane("teaching"));
+    const book = placements.find(({ entry }) => entry.id === "modern-club-swinging")!;
+    const homeOfPoi = placements.find(({ entry }) => entry.id === "home-of-poi")!;
+
+    // These bubbles overlapped on the 1994–2026 map at 1600×900: the
+    // first is edge-aligned, while the 1998 bubble is centered on its year.
+    expect(book.track).not.toBe(homeOfPoi.track);
+    expect(book.position).toBe(historicalYearPosition(1994));
+    expect(homeOfPoi.position).toBe(historicalYearPosition(1998));
+  });
+
   it("keeps verified-activity spans off each other's tracks", () => {
     // Home of Poi, PLAYPOI, FAI, and DrexFactor all carry observation
     // connectors reaching 2026. If track assignment ignored the span end, a

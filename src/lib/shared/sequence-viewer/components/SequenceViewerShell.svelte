@@ -838,7 +838,13 @@
                         {tunnelSaveTarget}
                         {onTunnelSaved}
                         renderMode={ctx.renderMode}
-                        isExporting={interactions.videoBusy}
+                        rendererHandleRequired={ctx.renderMode === "3d" &&
+                          (layout.isRecordSceneActive ||
+                            ctx.countdownValue > 0 ||
+                            ctx.isRecording3D ||
+                            ctx.isExporting ||
+                            !!ctx.pendingFilmRender ||
+                            interactions.videoBusy)}
                         bpm={ctx.bpmLocal}
                         onBpmChange={(bpm) =>
                           interactions.handleBpmChange(bpm, "viewer")}

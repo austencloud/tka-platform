@@ -369,25 +369,25 @@ const researchEntries: ArchiveEntry[] = [
 			{
 				label: "Read the complete book",
 				href: "http://www.semlyen.net/cosmosjugglers/lib/contents.htm",
-				supports: "All 20 lessons, supporting chapters, and additional pole-spinning articles.",
+				supports: "20 lessons, chapters, and pole articles.",
 				basis: "creators-account",
 			},
 			{
-				label: "Lesson 6: Reels and alternating timing",
+				label: "Lesson 6: Reels",
 				href: "http://www.semlyen.net/cosmosjugglers/lib/lesson6.pdf",
-				supports: "The original lesson on alternating timing, club reels, and pole holds.",
+				supports: "Alternating timing, club reels, and pole holds.",
 				basis: "directly-observed",
 			},
 			{
-				label: "Author and illustration credits",
+				label: "Author and illustrator",
 				href: "http://www.semlyen.net/cosmosjugglers/lib/ackbook.htm",
-				supports: "Anna Jillings' 1994 copyright notice and Julie Wilson's illustration credit.",
+				supports: "Original author and illustrator credits.",
 				basis: "creators-account",
 			},
 			{
-				label: "Anna's club-swinging bibliography",
+				label: "Earlier teaching resources",
 				href: "http://www.semlyen.net/cosmosjugglers/lib/bibcs.htm",
-				supports: "Earlier teaching resources and the book's 1994 Butterfingers publication details.",
+				supports: "Earlier teaching and publication details.",
 				basis: "creators-account",
 			},
 		],
@@ -877,7 +877,9 @@ export function activityLabel(entry: ArchiveEntry): string | undefined {
  */
 export function placeArchiveEntries(
 	entries: ArchiveEntry[],
-	minimumGapYears = 4
+	// On the 32-year map, four years leaves the edge-aligned 1994 book
+	// overlapping the centered Home of Poi marker. Keep those on separate tracks.
+	minimumGapYears = 5
 ): ArchiveTrackPlacement[] {
 	const lastYearByTrack: number[] = [];
 

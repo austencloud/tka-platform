@@ -42,7 +42,7 @@
   // Bump when rendered pixels change for reasons NOT captured by the keyed
   // options below — e.g. the canonical profile changes. Rotates all keys so
   // stale persisted renders self-invalidate.
-  const CARD_RENDER_SCHEMA = "v7";
+  const CARD_RENDER_SCHEMA = "v9";
 
   interface Props {
     sequences: SequenceData[];
@@ -635,6 +635,7 @@
       leftPropType: resolvedLeftProp,
       rightPropType: resolvedRightProp,
       theme: resolvedBackground,
+      handPathMode: cardProfile === "hand-path",
       iconPaths: (footers ?? [])
         .map((footer) => footer.iconPath)
         .filter((path): path is string => !!path),

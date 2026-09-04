@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolvePerformerPlaybackStep,
   resolvePerformerStepSource,
+  synchronizePerformerPlayback,
 } from "$lib/shared/3d/domain/performer-step-timing";
 
 describe("performer step timing", () => {
@@ -43,5 +44,24 @@ describe("resolvePerformerStepSource", () => {
 
   it("clamps at zero when the performer has no sequence", () => {
     expect(resolvePerformerStepSource(-3, 0, 0, 0)).toBe(0);
+  });
+});
+
+describe("synchronizePerformerPlayback", () => {
+  it("applies the same wrapped beat and fractional progress to either renderer", () => {
+    const calls: Array<["step" | "progress", number]> = [];
+    const performer = {
+      totalSteps: 8,
+      goToStep: (step: number) => calls.push(["step", step]),
+      setProgress: (progress: number) => calls.push(["progress", progress]),
+    };
+
+    expect(synchronizePerformerPlayback(performer, undefined, 7.75, 1)).toBe(
+      0.75
+    );
+    expect(calls).toEqual([
+      ["step", 0],
+      ["progress", 0.75],
+    ]);
   });
 });

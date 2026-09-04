@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { computeBundleSignature } from "../card-pool-prewarm";
+import {
+  computeBundleSignature,
+  resolvePrewarmPropTypes,
+} from "../card-pool-prewarm";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
-const seq = (id: string) => ({ id, word: id, steps: [] }) as unknown as SequenceData;
+const seq = (id: string) =>
+  ({ id, word: id, steps: [] }) as unknown as SequenceData;
 const base = {
   sequences: [seq("a"), seq("b")],
   leftPropType: PropType.STAFF,
@@ -14,13 +18,19 @@ const base = {
 describe("computeBundleSignature", () => {
   it("is stable for the same inputs regardless of sequence order", () => {
     const s1 = computeBundleSignature(base);
-    const s2 = computeBundleSignature({ ...base, sequences: [seq("b"), seq("a")] });
+    const s2 = computeBundleSignature({
+      ...base,
+      sequences: [seq("b"), seq("a")],
+    });
     expect(s1).toBe(s2);
   });
 
   it("changes when a sequence id set changes", () => {
     const s1 = computeBundleSignature(base);
-    const s2 = computeBundleSignature({ ...base, sequences: [seq("a"), seq("c")] });
+    const s2 = computeBundleSignature({
+      ...base,
+      sequences: [seq("a"), seq("c")],
+    });
     expect(s1).not.toBe(s2);
   });
 
@@ -28,5 +38,21 @@ describe("computeBundleSignature", () => {
     const s1 = computeBundleSignature(base);
     const s2 = computeBundleSignature({ ...base, rightPropType: PropType.FAN });
     expect(s1).not.toBe(s2);
+  });
+
+  it("seeds hand-path pools with hand assets regardless of live prop settings", () => {
+    const handPath = { ...base, handPathMode: true };
+
+    expect(resolvePrewarmPropTypes(handPath)).toEqual({
+      leftPropType: PropType.HAND,
+      rightPropType: PropType.HAND,
+    });
+    expect(computeBundleSignature(handPath)).toBe(
+      computeBundleSignature({
+        ...base,
+        leftPropType: PropType.HAND,
+        rightPropType: PropType.HAND,
+      })
+    );
   });
 });
