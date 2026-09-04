@@ -179,7 +179,7 @@ describe("canonical concept lesson composition", () => {
 
     // Step machinery: hand-held one-word-at-a-time flow (grid-lesson pattern),
     // in the guide's Alpha/Beta Words order.
-    expect(words).toContain("ExperienceProgressIndicator");
+    expect(words).toContain("LessonStageControls");
     expect(words).toContain("LEARNING_LETTERS_TOTAL_STEPS");
     expect(words).toContain("recapStepIndex");
     expect(progress).toContain(
@@ -224,6 +224,7 @@ describe("canonical concept lesson composition", () => {
     expect(words).not.toContain("visitedSequenceIds");
     expect(stage).toContain("InlineAnimationPlayer");
     expect(stage).toContain("ChoreoCard");
+    expect(stage).toContain("PanelGroup");
     expect(stage).toContain("Performance video");
     expect(stage).toContain("Guide notes");
     expect(stage).toContain("showWordHeader={false}");
@@ -232,7 +233,9 @@ describe("canonical concept lesson composition", () => {
     expect(stage).toContain("derivePropElementalType");
     expect(stage).toContain("visibilityManagerOverride={lessonVisibility}");
     expect(stage).not.toContain("disableContextMenu");
-    expect(stage).toContain("grid-template-columns: repeat(3");
+    expect(stage).toContain('id: "performance"');
+    expect(stage).toContain('id: "animation"');
+    expect(stage).toContain('id: "card"');
     expect(content).toContain("LEARNING_LETTERS_DECK_WORDS");
     expect(content).toContain("video: null");
     expect(content).toContain("explanation: null");

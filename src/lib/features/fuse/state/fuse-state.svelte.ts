@@ -77,8 +77,10 @@ import {
   type FuseSide,
 } from "./fuse-shuffle-pool.svelte";
 import { normalizeLegacyHandPair } from "@tka/tka-types";
+import { DEFAULT_GENERATION_STYLE } from "$lib/shared/create/domain/generation-style";
 
 const STORAGE_KEY = "fuse-tab-state";
+const STYLE_DEFAULTS_VERSION = 1;
 const DEFAULT_BPM = 60;
 // Persist the live playback step at most this often while the clock runs, so a
 // remount can resume near where playback was without writing on every frame.
@@ -178,6 +180,7 @@ interface FusePersistedSelection {
 }
 
 interface PersistedFuseState {
+  styleDefaultsVersion?: number;
   bpm?: number;
   length?: number;
   left?: FusePersistedSelection;
@@ -375,7 +378,19 @@ function readPersistedState(): PersistedFuseState {
         result.generationLevel ?? DEFAULT_SOLO_LOOP_RECIPE.level
       );
     }
-    if (isContinuityPreference(record.constraintPreset)) {
+    // Fuse originally persisted Mixed/Mixed/Mixed as its untouched style while
+    // Generate correctly began at Smooth/Mixed/Mixed. Migrate only that exact
+    // legacy baseline (including stores that predate the two secondary keys),
+    // so an explicitly customized Hands or Dashes choice keeps its Prop value.
+    const hasLegacyUntouchedStyle =
+      record.styleDefaultsVersion === undefined &&
+      record.constraintPreset === "mixed" &&
+      (record.handPathMode === undefined || record.handPathMode === "mixed") &&
+      (record.motionTypeFilter === undefined ||
+        record.motionTypeFilter === null);
+    if (hasLegacyUntouchedStyle) {
+      result.constraintPreset = DEFAULT_GENERATION_STYLE.constraintPreset;
+    } else if (isContinuityPreference(record.constraintPreset)) {
       result.constraintPreset = record.constraintPreset;
     }
     if (isContinuityPreference(record.handPathMode)) {
@@ -383,6 +398,12 @@ function readPersistedState(): PersistedFuseState {
     }
     if (isMotionTypeFilter(record.motionTypeFilter)) {
       result.motionTypeFilter = record.motionTypeFilter;
+    }
+    if (
+      typeof record.styleDefaultsVersion === "number" &&
+      Number.isFinite(record.styleDefaultsVersion)
+    ) {
+      result.styleDefaultsVersion = record.styleDefaultsVersion;
     }
     const persistedGridMode =
       result.gridMode ?? DEFAULT_SOLO_LOOP_RECIPE.gridMode;
@@ -422,7 +443,13 @@ function readPersistedState(): PersistedFuseState {
 function writePersistedState(data: PersistedFuseState): void {
   try {
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          ...data,
+          styleDefaultsVersion: STYLE_DEFAULTS_VERSION,
+        })
+      );
     }
   } catch {
     // A private or full browser store should not stop the current session.

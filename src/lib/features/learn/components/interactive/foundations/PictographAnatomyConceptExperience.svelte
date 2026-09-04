@@ -5,7 +5,6 @@
   import ArtifactRegionSpotlight from "$lib/shared/components/ArtifactRegionSpotlight.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -17,7 +16,7 @@
   import { derivePropElementalType } from "$lib/shared/shape-matrix/domain/prop-relationship";
   import type { ExperienceViewMode } from "../../../domain/types";
   import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
-  import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
+  import LessonStageControls from "../LessonStageControls.svelte";
 
   let {
     onComplete,
@@ -167,91 +166,86 @@
   aria-label="Pictograph anatomy lesson, use arrow keys to navigate"
 >
   <main class="lesson-shell">
-    <section class="anatomy-step" aria-labelledby="anatomy-title">
-      <div class="instruction-rail">
-        <p class="eyebrow">Read a pictograph</p>
-        <h1 id="anatomy-title">{current.label}</h1>
-        <div class="instruction-copy">
-          <Crossfade
-            key={stepIndex}
-            mode="swap"
-            motion="step"
-            {direction}
-            animateHeight
-          >
-            <p>{current.text}</p>
-          </Crossfade>
+    <section
+      class="anatomy-studio"
+      aria-label={`Pictograph anatomy: ${current.label}`}
+    >
+      <div class="anatomy-step">
+        <div class="instruction-rail">
+          <div class="instruction-meta">
+            <span>Pictograph anatomy</span>
+            <span>Step {stepIndex + 1} of {STEPS.length}</span>
+          </div>
+          <div class="instruction-story" aria-live="polite">
+            <Crossfade key={stepIndex} mode="swap" motion="step" {direction}>
+              <div class="instruction-copy">
+                <h1>{current.label}</h1>
+                <p>{current.text}</p>
+              </div>
+            </Crossfade>
+          </div>
+          <span class="rail-pointer" aria-hidden="true">
+            <i class="fa-solid fa-arrow-right"></i>
+          </span>
         </div>
-      </div>
 
-      <div class="artifact-column">
-        <div class="pictograph-frame">
-          {#if loading}
-            <div class="load-state" role="status">
-              <ProgressRing percent={-1} size={40} strokeWidth={3} />
-              <span>Loading pictograph…</span>
-            </div>
-          {:else if error || !anatomyStep}
-            <div class="load-state" role="alert">
-              <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"
-              ></i>
-              <span>Pictograph unavailable</span>
-            </div>
-          {:else}
-            <PictographContainer
-              pictographData={anatomyStep}
-              gridMode={GridMode.DIAMOND}
-              leftPropTypeOverride={PropType.STAFF}
-              rightPropTypeOverride={PropType.STAFF}
-              showGrid
-              showTKA
-              showPositions
-              showElemental
-              showTnD={false}
-              showReversals={false}
-              showNonRadialPoints={false}
-              showHandPoints
-              stepNumberOverride
-              {propElementalType}
-            />
-            {#if current.region}
-              <ArtifactRegionSpotlight
-                x={current.region.x}
-                y={current.region.y}
-                width={current.region.width}
-                height={current.region.height}
+        <div class="artifact-stage">
+          <div class="pictograph-frame">
+            {#if loading}
+              <div class="load-state" role="status">
+                <ProgressRing percent={-1} size={40} strokeWidth={3} />
+                <span>Loading pictograph…</span>
+              </div>
+            {:else if error || !anatomyStep}
+              <div class="load-state" role="alert">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"
+                ></i>
+                <span>Pictograph unavailable</span>
+              </div>
+            {:else}
+              <PictographContainer
+                pictographData={anatomyStep}
+                gridMode={GridMode.DIAMOND}
+                leftPropTypeOverride={PropType.STAFF}
+                rightPropTypeOverride={PropType.STAFF}
+                showGrid
+                showTKA
+                showPositions
+                showElemental
+                showTnD={false}
+                showReversals={false}
+                showNonRadialPoints={false}
+                showHandPoints
+                stepNumberOverride
+                {propElementalType}
               />
+              {#if current.region}
+                <ArtifactRegionSpotlight
+                  x={current.region.x}
+                  y={current.region.y}
+                  width={current.region.width}
+                  height={current.region.height}
+                />
+              {/if}
             {/if}
-          {/if}
+          </div>
         </div>
       </div>
-    </section>
 
-    <footer class="lesson-actions">
-      <PanelButton
-        variant="secondary"
-        onclick={handleBack}
-        disabled={stepIndex === 0}
-      >
-        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-        <span>Previous</span>
-      </PanelButton>
-      <ExperienceProgressIndicator
-        currentStep={stepIndex + 1}
-        totalSteps={STEPS.length}
-      />
-      {#if stepIndex === STEPS.length - 1}
-        <PanelButton variant="primary" onclick={complete}>
-          <span>Finish lesson</span>
-          <i class="fa-solid fa-check" aria-hidden="true"></i>
-        </PanelButton>
-      {:else}
-        <PanelButton variant="primary" onclick={() => goToStep(stepIndex + 1)}>
-          <span>Next</span>
-          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-        </PanelButton>
-      {/if}
-    </footer>
+      <footer class="lesson-transport">
+        <LessonStageControls
+          label={stepIndex === STEPS.length - 1 ? "Finish lesson" : "Next"}
+          currentStep={stepIndex + 1}
+          totalSteps={STEPS.length}
+          onAction={stepIndex === STEPS.length - 1
+            ? complete
+            : () => goToStep(stepIndex + 1)}
+          onPrevious={handleBack}
+          previousDisabled={stepIndex === 0}
+          actionIcon={stepIndex === STEPS.length - 1 ? "check" : "arrow"}
+        />
+      </footer>
+    </section>
   </main>
 </div>
 
@@ -265,71 +259,124 @@
     outline: none;
     scrollbar-gutter: stable;
   }
+
   .lesson-shell {
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: 1rem;
-    width: min(100%, 96rem);
+    place-items: center;
+    width: min(100%, 126rem);
     min-height: 100%;
     margin-inline: auto;
-    padding: clamp(4.5rem, 5cqw, 5.5rem) clamp(0.75rem, 2.5cqw, 2.5rem)
+    padding: clamp(4.5rem, 5cqw, 5.5rem) clamp(0.75rem, 2.2cqw, 2.5rem)
       clamp(0.75rem, 1.5cqw, 1.5rem);
   }
-  .anatomy-step {
+
+  .anatomy-studio {
     display: grid;
-    grid-template-columns: minmax(16rem, 23rem) minmax(0, 1fr);
-    align-items: center;
-    gap: clamp(1rem, 3cqw, 3.5rem);
-    min-height: 0;
-  }
-  .instruction-rail {
-    display: grid;
-    align-content: center;
-    gap: 0.85rem;
-    min-height: 12rem;
-    padding: clamp(1rem, 1.6cqw, 1.6rem);
+    grid-template-rows: minmax(0, 1fr) auto;
+    width: 100%;
+    min-height: min(52rem, calc(100dvh - 8rem));
+    overflow: hidden;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-lg, 0.75rem);
     background: var(--theme-panel-bg);
+    box-shadow: 0 1.5rem 4rem color-mix(in srgb, black 22%, transparent);
   }
-  .eyebrow {
+
+  .anatomy-step {
+    display: grid;
+    grid-template-columns: minmax(20rem, 28rem) minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .instruction-rail {
+    position: relative;
+    display: grid;
+    align-content: center;
+    gap: clamp(1.25rem, 1.7cqw, 1.75rem);
+    min-width: 0;
+    padding: clamp(1.5rem, 2.25cqw, 2.5rem);
+    border-right: 1px solid var(--theme-stroke);
+    background: color-mix(in srgb, var(--theme-card-bg) 78%, transparent);
+  }
+
+  .instruction-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
     margin: 0;
-    color: var(--theme-accent);
+    color: var(--theme-text-dim);
     font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
   }
+
+  .instruction-meta > :first-child {
+    color: var(--theme-text);
+  }
+
+  .instruction-story {
+    display: grid;
+    min-height: 12rem;
+    align-content: center;
+  }
+
+  .instruction-copy {
+    display: grid;
+    gap: 1rem;
+  }
+
   h1 {
     margin: 0 !important;
-    font-size: clamp(1.65rem, 2.7cqw, 2.8rem);
-    line-height: 1.05;
+    max-width: 11ch;
+    font-size: clamp(2rem, 2.65cqw, 3.25rem);
+    line-height: 1;
     text-wrap: balance;
   }
-  .instruction-copy {
-    min-height: 4.8rem;
-    color: var(--theme-text-dim);
-    font-size: clamp(1rem, 1.25cqw, 1.15rem);
-    line-height: 1.55;
-  }
+
   .instruction-copy p {
+    max-width: 31ch;
     margin: 0;
+    color: var(--theme-text-dim);
+    font-size: clamp(1rem, 1.2cqw, 1.2rem);
+    line-height: 1.6;
   }
-  .artifact-column {
+
+  .rail-pointer {
+    position: absolute;
+    top: 50%;
+    right: -1.15rem;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 2.3rem;
+    height: 2.3rem;
+    border: 1px solid var(--theme-stroke-strong, var(--theme-stroke));
+    border-radius: 50%;
+    background: var(--theme-panel-bg);
+    color: var(--theme-text);
+    transform: translateY(-50%);
+  }
+
+  .artifact-stage {
     display: grid;
     place-items: center;
     min-width: 0;
     min-height: 0;
+    padding: clamp(1rem, 2cqw, 2.25rem);
+    background: color-mix(in srgb, var(--theme-panel-bg) 88%, transparent);
   }
+
   .pictograph-frame {
     position: relative;
-    width: min(100%, 46rem, 70dvh);
+    width: min(100%, 50rem, 72dvh);
     aspect-ratio: 1;
     overflow: hidden;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-lg, 0.75rem);
+    border-radius: var(--radius-md, 0.5rem);
     background: var(--theme-card-bg);
+    box-shadow: 0 1.25rem 3.5rem color-mix(in srgb, black 34%, transparent);
   }
+
   .load-state {
     display: grid;
     place-content: center;
@@ -344,94 +391,130 @@
     color: var(--semantic-error);
     font-size: 1.5rem;
   }
-  .lesson-actions {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 0.75rem;
+
+  .lesson-transport {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--theme-stroke);
+    background: color-mix(in srgb, var(--theme-card-bg) 82%, transparent);
   }
-  .lesson-actions > :global(:first-child) {
-    justify-self: start;
-  }
-  .lesson-actions > :global(:last-child) {
-    justify-self: end;
-  }
+
   @container pictograph-anatomy (max-width: 760px) {
     .lesson-shell {
-      gap: 0.65rem;
       padding-top: 3.9rem;
     }
+
+    .anatomy-studio {
+      min-height: auto;
+    }
+
     .anatomy-step {
       grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: auto minmax(0, 1fr);
-      align-content: start;
-      gap: 0.65rem;
+      grid-template-rows: auto auto;
     }
+
     .instruction-rail {
-      gap: 0.4rem;
-      min-height: 7.25rem;
-      padding: 0.65rem 0.75rem;
-    }
-    .instruction-copy {
-      min-height: 3.2rem;
-      line-height: 1.4;
-    }
-    .pictograph-frame {
-      width: min(100%, 19rem, 42dvh);
-    }
-    .lesson-actions {
-      grid-template-columns: 1fr 1fr;
-    }
-    .lesson-actions :global(.progress-indicator) {
-      grid-column: 1 / -1;
-      grid-row: 2;
-      justify-self: center;
-    }
-    .lesson-actions :global(.panel-btn) {
-      width: 100%;
-    }
-  }
-  @container pictograph-anatomy (min-width: 1680px) {
-    .lesson-shell {
-      width: min(100%, 124rem);
-    }
-    .anatomy-step {
-      grid-template-columns: minmax(20rem, 27rem) minmax(0, 1fr);
-    }
-    .pictograph-frame {
-      width: min(100%, 54rem, 70dvh);
-    }
-  }
-  @container pictograph-anatomy (min-width: 2600px) {
-    .lesson-shell {
-      width: min(100%, 158rem);
-    }
-    .anatomy-step {
-      grid-template-columns: minmax(24rem, 34rem) minmax(0, 1fr);
-    }
-    .instruction-rail {
-      min-height: 16rem;
-    }
-    .instruction-copy {
-      font-size: 1.45rem;
-    }
-    .pictograph-frame {
-      width: min(100%, 70rem, 70dvh);
-    }
-  }
-  @media (max-height: 620px) and (min-width: 761px) {
-    .lesson-shell {
-      padding-top: 4rem;
-    }
-    .anatomy-step {
-      grid-template-columns: minmax(15rem, 21rem) minmax(0, 1fr);
-    }
-    .instruction-rail {
+      gap: 0.75rem;
       min-height: 10rem;
+      padding: 1rem;
+      border-right: 0;
+      border-bottom: 1px solid var(--theme-stroke);
+    }
+
+    .instruction-story {
+      min-height: 6rem;
+    }
+
+    .instruction-copy {
+      gap: 0.55rem;
+    }
+
+    .instruction-copy p {
+      max-width: 46ch;
+      line-height: 1.45;
+    }
+
+    .rail-pointer {
+      top: auto;
+      right: 50%;
+      bottom: -1.15rem;
+      transform: translateX(50%);
+    }
+
+    .rail-pointer i {
+      transform: rotate(90deg);
+    }
+
+    .artifact-stage {
+      min-height: min(56dvh, 28rem);
       padding: 0.75rem;
     }
+
     .pictograph-frame {
-      width: min(100%, 28rem, 55dvh);
+      width: min(100%, 24rem, 50dvh);
+    }
+  }
+
+  @container pictograph-anatomy (min-width: 1680px) {
+    .lesson-shell {
+      width: min(100%, 150rem);
+    }
+
+    .anatomy-step {
+      grid-template-columns: minmax(24rem, 31rem) minmax(0, 1fr);
+    }
+
+    .pictograph-frame {
+      width: min(100%, 58rem, 72dvh);
+    }
+  }
+
+  @container pictograph-anatomy (min-width: 2600px) {
+    .lesson-shell {
+      width: min(100%, 220rem);
+    }
+
+    .anatomy-step {
+      grid-template-columns: minmax(27rem, 36rem) minmax(0, 1fr);
+    }
+
+    .pictograph-frame {
+      width: min(100%, 78rem, 72dvh);
+    }
+  }
+
+  @media (max-height: 620px) and (min-width: 761px) {
+    .lesson-shell {
+      padding-top: 3.9rem;
+      padding-bottom: 0.5rem;
+    }
+
+    .anatomy-studio {
+      min-height: calc(100dvh - 4.4rem);
+    }
+
+    .anatomy-step {
+      grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
+    }
+
+    .instruction-rail {
+      gap: 0.7rem;
+      padding: 0.9rem 1.1rem;
+    }
+
+    .instruction-story {
+      min-height: 7rem;
+    }
+
+    h1 {
+      font-size: clamp(1.65rem, 2.5cqw, 2.35rem);
+    }
+
+    .pictograph-frame {
+      width: min(100%, 31rem, 55dvh);
+    }
+
+    .lesson-transport {
+      padding-block: 0.45rem;
     }
   }
 </style>

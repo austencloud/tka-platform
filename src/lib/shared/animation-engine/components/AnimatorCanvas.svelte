@@ -39,7 +39,10 @@ Last audit: 2025-12-27
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { AnimationEngine } from "../services/animation-engine.svelte";
+  import {
+    AnimationEngine,
+    type AdditionalLayerTextureStatus,
+  } from "../services/animation-engine.svelte";
   import {
     getAnimationVisibilityManager,
     type AnimationVisibilityStateManager,
@@ -71,6 +74,7 @@ Last audit: 2025-12-27
     leftProp,
     rightProp,
     additionalLayers = [],
+    preloadAdditionalLayers = [],
     tunnelSpectrum = true,
     tunnelPropColors = null,
     tunnelSelectedLayer = null,
@@ -121,6 +125,7 @@ Last audit: 2025-12-27
     resizePaused = false,
     onInitialized: onInitializedCallback = undefined,
     onEffectError = undefined,
+    onAdditionalLayerTextureStatusChange = undefined,
     visibilityManagerOverride = undefined,
     effectsConfigState = undefined,
     externalToggleDisassemble = undefined,
@@ -146,6 +151,7 @@ Last audit: 2025-12-27
     leftProp: PropState | null;
     rightProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
+    preloadAdditionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
     tunnelPropColors?: TunnelPropColorPair | null;
     tunnelSelectedLayer?: number | readonly number[] | null;
@@ -224,6 +230,9 @@ Last audit: 2025-12-27
     onInitialized?: () => void;
     /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
     onEffectError?: (effectName: string, error: Error) => void;
+    onAdditionalLayerTextureStatusChange?: (
+      status: AdditionalLayerTextureStatus
+    ) => void;
     /** Per-instance visibility manager. When provided, this canvas uses its own
      * manager instead of the global singleton. Enables multiple canvases to have
      * independent visibility/effect settings (e.g. landing page with two players). */
@@ -742,6 +751,7 @@ Last audit: 2025-12-27
       {leftProp}
       {rightProp}
       {additionalLayers}
+      {preloadAdditionalLayers}
       {tunnelSpectrum}
       {tunnelPropColors}
       {tunnelSelectedLayer}
@@ -790,6 +800,7 @@ Last audit: 2025-12-27
       {onCanvasReady}
       onInitialized={onInitializedCallback}
       {onEffectError}
+      {onAdditionalLayerTextureStatusChange}
       cornerControl={cornerToggle ? cornerToggleControl : undefined}
     />
 
