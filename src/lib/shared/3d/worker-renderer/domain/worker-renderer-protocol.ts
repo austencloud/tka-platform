@@ -1,4 +1,5 @@
 import type { SceneEffectTipSource3D } from "../../effects/scene-effects/scene-effect-source-3d";
+import type { StripPattern } from "$lib/shared/poi/domain/strip-pattern";
 import type {
   LateralGait,
   ScheduledGaitTimingSample,
@@ -125,6 +126,91 @@ export interface WorkerPerformerSnapshot {
   locomotion?: WorkerPerformerLocomotionSnapshot | null;
 }
 
+export type WorkerEffectQualityTier = "high" | "medium" | "low";
+
+export interface WorkerTrailEffectConfig {
+  maxPoints: number;
+  width: number;
+  color: string;
+  opacity: number;
+  rainbow: boolean;
+  qualityTier: WorkerEffectQualityTier;
+  mode: "fade" | "loop_clear" | "persistent";
+  fadeDuration: number;
+  emissiveStrength: number;
+}
+
+export interface WorkerTrailEffectFrame {
+  renderer: "trail";
+  sourceId: string;
+  sampleSequence: number;
+  enabled: boolean;
+  position: WorkerVector3;
+  config: WorkerTrailEffectConfig;
+}
+
+export interface WorkerLedTipFrame {
+  position: WorkerVector3;
+  r: number;
+  g: number;
+  b: number;
+  brightness: number;
+  velocity: WorkerVector3;
+  speed: number;
+}
+
+export interface WorkerLedEffectFrame {
+  renderer: "led";
+  sourceId: string;
+  sampleSequence: number;
+  enabled: boolean;
+  qualityTier: WorkerEffectQualityTier;
+  sampledAtSeconds: number;
+  tips: readonly WorkerLedTipFrame[];
+}
+
+export interface WorkerPovEffectFrame {
+  renderer: "pov";
+  sourceId: string;
+  sampleSequence: number;
+  enabled: boolean;
+  qualityTier: WorkerEffectQualityTier;
+  ledCount: number;
+  staffAxis: WorkerVector3;
+  staffCenter: WorkerVector3;
+  staffHalfLength: number;
+  frameIndex: number;
+  pattern: StripPattern;
+  sampledAtSeconds: number;
+  brightness: number;
+  persistenceDuration: number;
+}
+
+export interface WorkerMoonFanEffectFrame {
+  renderer: "moon-fan";
+  sourceId: string;
+  sampleSequence: number;
+  enabled: boolean;
+  worldCenter: WorkerVector3;
+  worldRotation: WorkerQuaternion;
+  ledColors: readonly { r: number; g: number; b: number }[];
+  brightness: number;
+  scale: number;
+}
+
+/**
+ * Final renderer inputs produced by the app-owned effect resolver.
+ *
+ * The worker never chooses an effect, samples a Choreo beat, or interprets an
+ * LED source. It only advances the canonical heavyweight renderer named by
+ * each frame. Typed arrays inside StripPattern are structured-clone-safe.
+ */
+export type WorkerImperativeEffectFrame =
+  | WorkerTrailEffectFrame
+  | WorkerLedEffectFrame
+  | WorkerPovEffectFrame
+  | WorkerMoonFanEffectFrame;
+
 /**
  * Structured-clone-safe output of the app-owned effect resolver.
  *
@@ -135,6 +221,7 @@ export interface WorkerPerformerSnapshot {
 export interface WorkerSceneEffectsSnapshot {
   playing: boolean;
   sources: readonly SceneEffectTipSource3D[];
+  imperative?: readonly WorkerImperativeEffectFrame[];
 }
 
 export type WorkerRendererProgressPhase =
