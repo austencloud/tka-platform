@@ -20,6 +20,7 @@
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import PerformerCharacterPicker from "$lib/shared/3d/components/controls/PerformerCharacterPicker.svelte";
   import ScenePropPicker from "$lib/shared/3d/components/controls/ScenePropPicker.svelte";
+  import { scenePropAuthoredLengthCm } from "$lib/shared/3d/domain/scene-prop-catalog";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import type { CharacterId } from "$lib/shared/3d/domain/character-model";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -111,6 +112,13 @@
   ]);
 
   const lengthMode = $derived(lab.propLength === "body" ? "body" : "pinned");
+
+  /**
+   * A model-backed build draws at its authored length and never reads this
+   * control, so the control has to say so rather than report a number that
+   * reaches nothing. The catalog owns which builds those are.
+   */
+  const authoredLengthCm = $derived(scenePropAuthoredLengthCm(lab.prop));
   const pinnedLengthCm = $derived(
     lab.propLength === "body" ? Math.round(bodyLengthCm ?? 91) : lab.propLength
   );
@@ -211,6 +219,12 @@
           </p>
         {/if}
       </div>
+      {#if authoredLengthCm !== null}
+        <p class="note">
+          {propLabel} is drawn from a model at {authoredLengthCm.toFixed(0)} cm
+          and ignores this. Pick Staff to size the mesh.
+        </p>
+      {/if}
     </div>
   </section>
 

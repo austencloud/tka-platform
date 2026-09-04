@@ -49,14 +49,16 @@ Shows how the two hands coordinate across the timing and direction axes.
       color: "#F472B6",
       direction: "Opposite (hands arc opposite ways)",
       timing: "Split (180° apart at the downbeat)",
-      description: "Hands arc opposite ways, sweeping through together and apart; 180° apart at the downbeat",
+      description:
+        "Hands arc opposite ways, sweeping through together and apart; 180° apart at the downbeat",
     },
     TO: {
       name: "Together-Opposite",
       color: "#FB923C",
       direction: "Opposite (hands arc opposite ways)",
       timing: "Together (in sync at the downbeat)",
-      description: "Hands arc opposite ways, sweeping through apart and back; together at the downbeat",
+      description:
+        "Hands arc opposite ways, sweeping through apart and back; together at the downbeat",
     },
     QS: {
       name: "Quarter-Same",
@@ -70,7 +72,8 @@ Shows how the two hands coordinate across the timing and direction axes.
       color: "var(--semantic-warning)",
       direction: "Opposite (hands arc opposite ways)",
       timing: "Quarter (90° apart at the downbeat)",
-      description: "Hands arc opposite ways, sweeping through together and apart; 90° apart at the downbeat",
+      description:
+        "Hands arc opposite ways, sweeping through together and apart; 90° apart at the downbeat",
     },
   };
 
@@ -112,7 +115,11 @@ Shows how the two hands coordinate across the timing and direction axes.
   // timing offset and, for Opposite modes, the reversed arc direction — which is
   // what makes those modes visibly converge and diverge.
   const DOWNBEAT = Math.PI / 2; // bottom of the circle (SVG y grows downward)
-  function handAngle(progress: number, isLeft: boolean, vtgMode: VTGMode): number {
+  function handAngle(
+    progress: number,
+    isLeft: boolean,
+    vtgMode: VTGMode
+  ): number {
     if (isLeft) return DOWNBEAT + progress * Math.PI * 2;
     return (
       DOWNBEAT +
@@ -221,7 +228,12 @@ Shows how the two hands coordinate across the timing and direction axes.
     />
 
     <!-- Center point -->
-    <circle cx="50" cy="50" r="2" fill="var(--theme-stroke, rgba(255,255,255,0.2))" />
+    <circle
+      cx="50"
+      cy="50"
+      r="2"
+      fill="var(--theme-stroke, rgba(255,255,255,0.2))"
+    />
 
     <!-- Hand trails (when animating) -->
     {#if animating}
@@ -316,14 +328,19 @@ Shows how the two hands coordinate across the timing and direction axes.
         <span class="info-value">{info.direction}</span>
       </div>
       <div class="info-row">
-        <span class="info-label">Timing:</span>
+        <span class="info-label">Time:</span>
         <span class="info-value">{info.timing}</span>
       </div>
     </div>
   {/if}
 
   <!-- Play button -->
-  <button class="play-button" onclick={playAnimation} disabled={animating} aria-label={animating ? "Playing animation" : "Play animation"}>
+  <button
+    class="play-button"
+    onclick={playAnimation}
+    disabled={animating}
+    aria-label={animating ? "Playing animation" : "Play animation"}
+  >
     {#if animating}
       <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
       Playing...
@@ -432,7 +449,8 @@ Shows how the two hands coordinate across the timing and direction axes.
       color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent) 0%,
       color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent) 100%
     );
-    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
     border-radius: 10px;
     color: var(--theme-accent, #22d3ee);
     font-size: 0.9375rem;
@@ -448,7 +466,11 @@ Shows how the two hands coordinate across the timing and direction axes.
       color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 0%,
       color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 100%
     );
-    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 60%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #22d3ee) 60%,
+      transparent
+    );
   }
 
   .play-button:disabled {

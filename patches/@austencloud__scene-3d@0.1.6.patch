@@ -1918,98 +1918,23 @@ diff --git a/dist/lib/components/PerformerRig.svelte.d.ts.map b/dist/lib/compone
 deleted file mode 100644
 index 9ec67da0c77ac3ae765e84157869663c61696d90..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/Staff3D.svelte b/dist/lib/components/Staff3D.svelte
-index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3fed7dc3d8 100644
+index c483f07b26cd339a40a34fafe5c34d9f003d5d05..5b12a19efcebdbbd549a6a31186b6c166bbe23cc 100644
 --- a/dist/lib/components/Staff3D.svelte
 +++ b/dist/lib/components/Staff3D.svelte
-@@ -1,3 +1,87 @@
-+<script module lang="ts">
+@@ -13,8 +13,11 @@
+ 
+   import { T } from "@threlte/core";
+   import type { PropState3D } from "../domain/models/PropState3D";
+-  import { computePropRotation } from "./props/prop3d-transforms";
+   import { userProportionsState } from "../state/user-proportions-state.svelte";
 +  import {
-+    CylinderGeometry,
-+    MeshBasicMaterial,
-+    MeshStandardMaterial,
-+    SphereGeometry,
-+    TorusGeometry,
-+  } from "three";
-+
-+  interface StaffGeometrySet {
-+    shaft: CylinderGeometry;
-+    tBar: CylinderGeometry;
-+    tBarCap: SphereGeometry;
-+    endCap: SphereGeometry;
-+    grip: TorusGeometry;
-+  }
-+
-+  interface StaffMaterialSet {
-+    main: MeshStandardMaterial;
-+    dark: MeshStandardMaterial;
-+    grip: MeshStandardMaterial;
-+    trail: MeshBasicMaterial;
-+  }
-+
-+  const geometrySets = new Map<string, StaffGeometrySet>();
-+  const materialSets = new Map<"blue" | "red", StaffMaterialSet>();
-+
-+  function getStaffGeometrySet(
-+    length: number,
-+    thickness: number
-+  ): StaffGeometrySet {
-+    const key = `${length}:${thickness}`;
-+    const cached = geometrySets.get(key);
-+    if (cached) return cached;
-+
-+    const tBarLength = length * 0.228;
-+    const geometry = {
-+      shaft: new CylinderGeometry(thickness, thickness, length, 16, 1),
-+      tBar: new CylinderGeometry(thickness, thickness, tBarLength, 12, 1),
-+      tBarCap: new SphereGeometry(thickness, 12, 12),
-+      endCap: new SphereGeometry(thickness, 16, 16),
-+      grip: new TorusGeometry(thickness * 1.15, thickness * 0.15, 12, 24),
-+    };
-+    geometrySets.set(key, geometry);
-+    return geometry;
-+  }
-+
-+  function getStaffMaterialSet(color: "blue" | "red"): StaffMaterialSet {
-+    const cached = materialSets.get(color);
-+    if (cached) return cached;
-+
-+    const palette =
-+      color === "blue"
-+        ? { main: "#3b82f6", dark: "#1d4ed8" }
-+        : { main: "#ef4444", dark: "#b91c1c" };
-+    const materials = {
-+      main: new MeshStandardMaterial({
-+        color: palette.main,
-+        roughness: 0.3,
-+        metalness: 0.2,
-+      }),
-+      dark: new MeshStandardMaterial({
-+        color: palette.dark,
-+        roughness: 0.3,
-+        metalness: 0.2,
-+      }),
-+      grip: new MeshStandardMaterial({
-+        color: "white",
-+        roughness: 0.4,
-+        metalness: 0.1,
-+      }),
-+      trail: new MeshBasicMaterial({
-+        color: palette.main,
-+        opacity: 0.3,
-+        transparent: true,
-+      }),
-+    };
-+    materialSets.set(color, materials);
-+    return materials;
-+  }
-+
-+  const trailGeometry = new SphereGeometry(0.015, 8, 8);
-+</script>
-+
- <script lang="ts">
-   /**
-    * Staff3D Component
-@@ -52,21 +136,16 @@
++    createStaffObject,
++    type StaffObject,
++  } from "../rendering/create-staff-object";
+   import {
+     LAYER_WORLD,
+     LAYER_PLAYER_BODY,
+@@ -52,101 +55,27 @@
    // Use user proportions as defaults if not explicitly provided
    const effectiveLength = $derived(length ?? userProportionsState.staffLength);
    const effectiveThickness = $derived(
@@ -2017,9 +1942,9 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 +    thickness ?? userProportionsState.dimensions.staffRadius
    );
  
-   // T-bar dimensions - proportional to staff
-   // T-bar length (perpendicular extent) from SVG ratio: 57.6/252.8 = 22.8%
-   const tBarLength = $derived(effectiveLength * 0.228); // ~68 for length 300
+-  // T-bar dimensions - proportional to staff
+-  // T-bar length (perpendicular extent) from SVG ratio: 57.6/252.8 = 22.8%
+-  const tBarLength = $derived(effectiveLength * 0.228); // ~68 for length 300
 -  // T-bar thickness should match shaft thickness (in SVG they're nearly equal: 18.2 vs 17)
 -  const tBarThickness = $derived(effectiveThickness); // Slightly thinner than main shaft
 -
@@ -2029,17 +1954,33 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 -    red: { main: "#ef4444", dark: "#b91c1c", light: "#f87171" },
 -  };
 -  const palette = $derived(colors[color]);
-+  const geometry = $derived(
-+    getStaffGeometrySet(effectiveLength, effectiveThickness)
-+  );
-+  const materials = $derived(getStaffMaterialSet(color));
++  let staff = $state<StaffObject | null>(null);
  
-   // Rotation only - position is handled by the parent PerformerRig scene graph.
-   // Facing rotation is inherited from the PerformerRig parent group.
-@@ -80,73 +159,59 @@
-   <T.Group {rotation} layers={staffLayer}>
-     <!-- Staff CENTER (grip) is at the hand/grid point -->
-     <!-- Main staff body - cylinder along Y axis -->
+-  // Rotation only - position is handled by the parent PerformerRig scene graph.
+-  // Facing rotation is inherited from the PerformerRig parent group.
+-  const rotation = $derived(computePropRotation(propState));
++  $effect(() => {
++    const next = createStaffObject({
++      color,
++      length: effectiveLength,
++      thickness: effectiveThickness,
++      layer: staffLayer,
++    });
++    staff = next;
++    return () => next.dispose();
++  });
+ 
+-  // Half length for positioning end caps
+-  const halfLength = $derived(effectiveLength / 2);
++  $effect(() => {
++    staff?.setState(propState);
++  });
+ </script>
+ 
+-{#if visible}
+-  <T.Group {rotation} layers={staffLayer}>
+-    <!-- Staff CENTER (grip) is at the hand/grid point -->
+-    <!-- Main staff body - cylinder along Y axis -->
 -    <T.Mesh>
 -      <T.CylinderGeometry
 -        args={[effectiveThickness, effectiveThickness, effectiveLength, 16, 1]}
@@ -2050,16 +1991,11 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 -        metalness={0.2}
 -      />
 -    </T.Mesh>
-+    <T.Mesh
-+      geometry={geometry.shaft}
-+      material={materials.main}
-+      dispose={false}
-+    />
- 
-     <!-- T-bar at thumb end - PERPENDICULAR crossbar like in 2D SVG -->
-     <!-- With positive quaternion (X-negated coords), +Y end points toward center for IN -->
-     <T.Group position={[0, halfLength, 0]}>
-       <!-- Perpendicular crossbar - rotated 90° around Z to cross the shaft -->
+-
+-    <!-- T-bar at thumb end - PERPENDICULAR crossbar like in 2D SVG -->
+-    <!-- With positive quaternion (X-negated coords), +Y end points toward center for IN -->
+-    <T.Group position={[0, halfLength, 0]}>
+-      <!-- Perpendicular crossbar - rotated 90° around Z to cross the shaft -->
 -      <T.Mesh rotation={[0, 0, Math.PI / 2]}>
 -        <T.CylinderGeometry
 -          args={[tBarThickness, tBarThickness, tBarLength, 12, 1]}
@@ -2070,13 +2006,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 -          metalness={0.2}
 -        />
 -      </T.Mesh>
-+      <T.Mesh
-+        geometry={geometry.tBar}
-+        material={materials.main}
-+        rotation={[0, 0, Math.PI / 2]}
-+        dispose={false}
-+      />
-       <!-- Left cap of T-bar -->
+-      <!-- Left cap of T-bar -->
 -      <T.Mesh position={[-tBarLength / 2, 0, 0]}>
 -        <T.SphereGeometry args={[tBarThickness, 12, 12]} />
 -        <T.MeshStandardMaterial
@@ -2085,13 +2015,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 -          metalness={0.2}
 -        />
 -      </T.Mesh>
-+      <T.Mesh
-+        geometry={geometry.tBarCap}
-+        material={materials.dark}
-+        position={[-tBarLength / 2, 0, 0]}
-+        dispose={false}
-+      />
-       <!-- Right cap of T-bar -->
+-      <!-- Right cap of T-bar -->
 -      <T.Mesh position={[tBarLength / 2, 0, 0]}>
 -        <T.SphereGeometry args={[tBarThickness, 12, 12]} />
 -        <T.MeshStandardMaterial
@@ -2100,15 +2024,9 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 -          metalness={0.2}
 -        />
 -      </T.Mesh>
-+      <T.Mesh
-+        geometry={geometry.tBarCap}
-+        material={materials.dark}
-+        position={[tBarLength / 2, 0, 0]}
-+        dispose={false}
-+      />
-     </T.Group>
- 
-     <!-- Rounded cap at pinky end -->
+-    </T.Group>
+-
+-    <!-- Rounded cap at pinky end -->
 -    <T.Mesh position={[0, -halfLength, 0]}>
 -      <T.SphereGeometry args={[effectiveThickness, 16, 16]} />
 -      <T.MeshStandardMaterial
@@ -2117,38 +2035,23 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 -        metalness={0.2}
 -      />
 -    </T.Mesh>
-+    <T.Mesh
-+      geometry={geometry.endCap}
-+      material={materials.dark}
-+      position={[0, -halfLength, 0]}
-+      dispose={false}
-+    />
- 
-     <!-- Center grip ring (white, at the hand point) -->
+-
+-    <!-- Center grip ring (white, at the hand point) -->
 -    <T.Mesh>
 -      <T.TorusGeometry
 -        args={[effectiveThickness * 1.15, effectiveThickness * 0.15, 12, 24]}
 -      />
 -      <T.MeshStandardMaterial color="white" roughness={0.4} metalness={0.1} />
 -    </T.Mesh>
-+    <T.Mesh
-+      geometry={geometry.grip}
-+      material={materials.grip}
-+      dispose={false}
-+    />
-   </T.Group>
- 
-   <!-- Trail indicator (small sphere at prop position for path visualization) -->
+-  </T.Group>
+-
+-  <!-- Trail indicator (small sphere at prop position for path visualization) -->
 -  <T.Mesh layers={staffLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
 -    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
 -  </T.Mesh>
-+  <T.Mesh
-+    geometry={trailGeometry}
-+    material={materials.trail}
-+    layers={staffLayer}
-+    dispose={false}
-+  />
++{#if visible && staff}
++  <T is={staff.root} dispose={false} />
  {/if}
 diff --git a/dist/lib/components/Staff3D.svelte.d.ts b/dist/lib/components/Staff3D.svelte.d.ts
 deleted file mode 100644
@@ -6840,6 +6743,150 @@ index a9693dbc6643a1cd535885cfeab7cc25a624a25f..00000000000000000000000000000000
 diff --git a/dist/lib/layers/layer-constants.d.ts.map b/dist/lib/layers/layer-constants.d.ts.map
 deleted file mode 100644
 index e289ae7771cbefc1f8f071fac3b62b1241d79704..0000000000000000000000000000000000000000
+diff --git a/dist/lib/rendering/create-staff-object.d.ts b/dist/lib/rendering/create-staff-object.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..67b207b0e66a87be71a2e24fbdaede769803c1c1
+--- /dev/null
++++ b/dist/lib/rendering/create-staff-object.d.ts
+@@ -0,0 +1,15 @@
++import { Group } from "three";
++import type { PropState3D } from "../domain/models/PropState3D";
++export interface StaffObjectOptions {
++    color: "blue" | "red";
++    length: number;
++    thickness: number;
++    layer?: number;
++}
++export interface StaffObject {
++    root: Group;
++    setState(state: Pick<PropState3D, "worldRotation">): void;
++    dispose(): void;
++}
++/** Build the canonical rendered staff without a framework dependency. */
++export declare function createStaffObject(options: StaffObjectOptions): StaffObject;
+diff --git a/dist/lib/rendering/create-staff-object.js b/dist/lib/rendering/create-staff-object.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..729ccd6c0de315244566ed57ac9e0eba770bfea2
+--- /dev/null
++++ b/dist/lib/rendering/create-staff-object.js
+@@ -0,0 +1,117 @@
++import {
++  CylinderGeometry,
++  Euler,
++  Group,
++  Mesh,
++  MeshBasicMaterial,
++  MeshStandardMaterial,
++  Quaternion,
++  SphereGeometry,
++  TorusGeometry
++} from "three";
++const geometrySets = /* @__PURE__ */ new Map();
++const materialSets = /* @__PURE__ */ new Map();
++const trailGeometry = new SphereGeometry(0.015, 8, 8);
++const HORIZONTAL_QUAT = new Quaternion().setFromEuler(
++  new Euler(0, 0, Math.PI / 2)
++);
++function getStaffGeometrySet(length, thickness) {
++  const key = `${length}:${thickness}`;
++  const cached = geometrySets.get(key);
++  if (cached) return cached;
++  const tBarLength = length * 0.228;
++  const geometry = {
++    shaft: new CylinderGeometry(thickness, thickness, length, 16, 1),
++    tBar: new CylinderGeometry(thickness, thickness, tBarLength, 12, 1),
++    tBarCap: new SphereGeometry(thickness, 12, 12),
++    endCap: new SphereGeometry(thickness, 16, 16),
++    grip: new TorusGeometry(thickness * 1.15, thickness * 0.15, 12, 24)
++  };
++  geometrySets.set(key, geometry);
++  return geometry;
++}
++function getStaffMaterialSet(color) {
++  const cached = materialSets.get(color);
++  if (cached) return cached;
++  const palette = color === "blue" ? { main: "#3b82f6", dark: "#1d4ed8" } : { main: "#ef4444", dark: "#b91c1c" };
++  const materials = {
++    main: new MeshStandardMaterial({
++      color: palette.main,
++      roughness: 0.3,
++      metalness: 0.2
++    }),
++    dark: new MeshStandardMaterial({
++      color: palette.dark,
++      roughness: 0.3,
++      metalness: 0.2
++    }),
++    grip: new MeshStandardMaterial({
++      color: "white",
++      roughness: 0.4,
++      metalness: 0.1
++    }),
++    trail: new MeshBasicMaterial({
++      color: palette.main,
++      opacity: 0.3,
++      transparent: true
++    })
++  };
++  materialSets.set(color, materials);
++  return materials;
++}
++function mesh(geometry, material, layer) {
++  const result = new Mesh(geometry, material);
++  result.layers.set(layer);
++  return result;
++}
++function createStaffObject(options) {
++  const layer = options.layer ?? 0;
++  const geometry = getStaffGeometrySet(options.length, options.thickness);
++  const materials = getStaffMaterialSet(options.color);
++  const halfLength = options.length / 2;
++  const tBarLength = options.length * 0.228;
++  const root = new Group();
++  root.name = `staff-${options.color}`;
++  root.layers.set(layer);
++  const rotated = new Group();
++  rotated.name = "staff-rotated-body";
++  rotated.layers.set(layer);
++  root.add(rotated);
++  rotated.add(mesh(geometry.shaft, materials.main, layer));
++  const thumbEnd = new Group();
++  thumbEnd.name = "staff-thumb-end";
++  thumbEnd.position.y = halfLength;
++  thumbEnd.layers.set(layer);
++  rotated.add(thumbEnd);
++  const crossbar = mesh(geometry.tBar, materials.main, layer);
++  crossbar.rotation.z = Math.PI / 2;
++  thumbEnd.add(crossbar);
++  const leftCap = mesh(geometry.tBarCap, materials.dark, layer);
++  leftCap.position.x = -tBarLength / 2;
++  thumbEnd.add(leftCap);
++  const rightCap = mesh(geometry.tBarCap, materials.dark, layer);
++  rightCap.position.x = tBarLength / 2;
++  thumbEnd.add(rightCap);
++  const pinkyCap = mesh(geometry.endCap, materials.dark, layer);
++  pinkyCap.position.y = -halfLength;
++  rotated.add(pinkyCap);
++  rotated.add(mesh(geometry.grip, materials.grip, layer));
++  const trail = mesh(trailGeometry, materials.trail, layer);
++  trail.name = "staff-trail-indicator";
++  root.add(trail);
++  const finalQuaternion = new Quaternion();
++  return {
++    root,
++    setState(state) {
++      finalQuaternion.copy(state.worldRotation).multiply(HORIZONTAL_QUAT);
++      rotated.quaternion.copy(finalQuaternion);
++    },
++    dispose() {
++      root.removeFromParent();
++      root.clear();
++    }
++  };
++}
++export {
++  createStaffObject
++};
 diff --git a/dist/lib/scale/scale-constants.d.ts b/dist/lib/scale/scale-constants.d.ts
 deleted file mode 100644
 index ef6cccc850025c82919b91010c3666d6c065483d..0000000000000000000000000000000000000000
@@ -15218,6 +15265,48 @@ index f18ca9b67211f249b0b65867abedc535d776db81..00000000000000000000000000000000
 diff --git a/dist/lib/state/user-proportions-state.svelte.d.ts.map b/dist/lib/state/user-proportions-state.svelte.d.ts.map
 deleted file mode 100644
 index a8fd5a41c1434bf568841daf28c8443ba1515e65..0000000000000000000000000000000000000000
+diff --git a/dist/worker.d.ts b/dist/worker.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..2cf0ca587cacf5549d224894a2840060c5862e6b
+--- /dev/null
++++ b/dist/worker.d.ts
+@@ -0,0 +1,9 @@
++export { getAvatarModelPath } from "./lib/config/avatar-definitions";
++export { cmToUnits } from "./lib/config/avatar-proportions";
++export { GripType } from "./lib/domain/models/GripPose";
++export { createStaffObject } from "./lib/rendering/create-staff-object";
++export { createAvatarServices } from "./lib/services/implementations/AvatarServicesFactory";
++export type { AvatarId } from "./lib/config/avatar-definitions";
++export type { PropState3D } from "./lib/domain/models/PropState3D";
++export type { StaffObject, StaffObjectOptions } from "./lib/rendering/create-staff-object";
++export type { AvatarServices } from "./lib/services/implementations/AvatarServicesFactory";
+diff --git a/dist/worker.js b/dist/worker.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..db308d7c43e6dfaa482af802933ec77f35bfeee1
+--- /dev/null
++++ b/dist/worker.js
+@@ -0,0 +1,5 @@
++export { getAvatarModelPath } from "./lib/config/avatar-definitions";
++export { cmToUnits } from "./lib/config/avatar-proportions";
++export { GripType } from "./lib/domain/models/GripPose";
++export { createStaffObject } from "./lib/rendering/create-staff-object";
++export { createAvatarServices } from "./lib/services/implementations/AvatarServicesFactory";
+diff --git a/package.json b/package.json
+index 525808ca7068a828865a64e176f7bbd641ccc013..ff0ffc3ad65cb6c617fb582992f392fa0a447971 100644
+--- a/package.json
++++ b/package.json
+@@ -15,6 +15,11 @@
+     "./state": {
+       "svelte": "./src/lib/state/user-proportions-state.svelte.ts",
+       "import": "./dist/state/user-proportions-state.svelte.js"
++    },
++    "./worker": {
++      "types": "./dist/worker.d.ts",
++      "svelte": "./src/worker.ts",
++      "import": "./dist/worker.js"
+     }
+   },
+   "files": [
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
 index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..91314c3b0e8ad15a0566ff3a9ea347c7c7fe987a 100644
 --- a/src/lib/components/Avatar3D.svelte
@@ -17411,98 +17500,23 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..93bd4f8c5440f158e74b4f33e4634ffc
        {@render effectsSlot({
          bluePropState,
 diff --git a/src/lib/components/Staff3D.svelte b/src/lib/components/Staff3D.svelte
-index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3fed7dc3d8 100644
+index c483f07b26cd339a40a34fafe5c34d9f003d5d05..5b12a19efcebdbbd549a6a31186b6c166bbe23cc 100644
 --- a/src/lib/components/Staff3D.svelte
 +++ b/src/lib/components/Staff3D.svelte
-@@ -1,3 +1,87 @@
-+<script module lang="ts">
+@@ -13,8 +13,11 @@
+ 
+   import { T } from "@threlte/core";
+   import type { PropState3D } from "../domain/models/PropState3D";
+-  import { computePropRotation } from "./props/prop3d-transforms";
+   import { userProportionsState } from "../state/user-proportions-state.svelte";
 +  import {
-+    CylinderGeometry,
-+    MeshBasicMaterial,
-+    MeshStandardMaterial,
-+    SphereGeometry,
-+    TorusGeometry,
-+  } from "three";
-+
-+  interface StaffGeometrySet {
-+    shaft: CylinderGeometry;
-+    tBar: CylinderGeometry;
-+    tBarCap: SphereGeometry;
-+    endCap: SphereGeometry;
-+    grip: TorusGeometry;
-+  }
-+
-+  interface StaffMaterialSet {
-+    main: MeshStandardMaterial;
-+    dark: MeshStandardMaterial;
-+    grip: MeshStandardMaterial;
-+    trail: MeshBasicMaterial;
-+  }
-+
-+  const geometrySets = new Map<string, StaffGeometrySet>();
-+  const materialSets = new Map<"blue" | "red", StaffMaterialSet>();
-+
-+  function getStaffGeometrySet(
-+    length: number,
-+    thickness: number
-+  ): StaffGeometrySet {
-+    const key = `${length}:${thickness}`;
-+    const cached = geometrySets.get(key);
-+    if (cached) return cached;
-+
-+    const tBarLength = length * 0.228;
-+    const geometry = {
-+      shaft: new CylinderGeometry(thickness, thickness, length, 16, 1),
-+      tBar: new CylinderGeometry(thickness, thickness, tBarLength, 12, 1),
-+      tBarCap: new SphereGeometry(thickness, 12, 12),
-+      endCap: new SphereGeometry(thickness, 16, 16),
-+      grip: new TorusGeometry(thickness * 1.15, thickness * 0.15, 12, 24),
-+    };
-+    geometrySets.set(key, geometry);
-+    return geometry;
-+  }
-+
-+  function getStaffMaterialSet(color: "blue" | "red"): StaffMaterialSet {
-+    const cached = materialSets.get(color);
-+    if (cached) return cached;
-+
-+    const palette =
-+      color === "blue"
-+        ? { main: "#3b82f6", dark: "#1d4ed8" }
-+        : { main: "#ef4444", dark: "#b91c1c" };
-+    const materials = {
-+      main: new MeshStandardMaterial({
-+        color: palette.main,
-+        roughness: 0.3,
-+        metalness: 0.2,
-+      }),
-+      dark: new MeshStandardMaterial({
-+        color: palette.dark,
-+        roughness: 0.3,
-+        metalness: 0.2,
-+      }),
-+      grip: new MeshStandardMaterial({
-+        color: "white",
-+        roughness: 0.4,
-+        metalness: 0.1,
-+      }),
-+      trail: new MeshBasicMaterial({
-+        color: palette.main,
-+        opacity: 0.3,
-+        transparent: true,
-+      }),
-+    };
-+    materialSets.set(color, materials);
-+    return materials;
-+  }
-+
-+  const trailGeometry = new SphereGeometry(0.015, 8, 8);
-+</script>
-+
- <script lang="ts">
-   /**
-    * Staff3D Component
-@@ -52,21 +136,16 @@
++    createStaffObject,
++    type StaffObject,
++  } from "../rendering/create-staff-object";
+   import {
+     LAYER_WORLD,
+     LAYER_PLAYER_BODY,
+@@ -52,101 +55,27 @@
    // Use user proportions as defaults if not explicitly provided
    const effectiveLength = $derived(length ?? userProportionsState.staffLength);
    const effectiveThickness = $derived(
@@ -17510,9 +17524,9 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 +    thickness ?? userProportionsState.dimensions.staffRadius
    );
  
-   // T-bar dimensions - proportional to staff
-   // T-bar length (perpendicular extent) from SVG ratio: 57.6/252.8 = 22.8%
-   const tBarLength = $derived(effectiveLength * 0.228); // ~68 for length 300
+-  // T-bar dimensions - proportional to staff
+-  // T-bar length (perpendicular extent) from SVG ratio: 57.6/252.8 = 22.8%
+-  const tBarLength = $derived(effectiveLength * 0.228); // ~68 for length 300
 -  // T-bar thickness should match shaft thickness (in SVG they're nearly equal: 18.2 vs 17)
 -  const tBarThickness = $derived(effectiveThickness); // Slightly thinner than main shaft
 -
@@ -17522,17 +17536,33 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 -    red: { main: "#ef4444", dark: "#b91c1c", light: "#f87171" },
 -  };
 -  const palette = $derived(colors[color]);
-+  const geometry = $derived(
-+    getStaffGeometrySet(effectiveLength, effectiveThickness)
-+  );
-+  const materials = $derived(getStaffMaterialSet(color));
++  let staff = $state<StaffObject | null>(null);
  
-   // Rotation only - position is handled by the parent PerformerRig scene graph.
-   // Facing rotation is inherited from the PerformerRig parent group.
-@@ -80,73 +159,59 @@
-   <T.Group {rotation} layers={staffLayer}>
-     <!-- Staff CENTER (grip) is at the hand/grid point -->
-     <!-- Main staff body - cylinder along Y axis -->
+-  // Rotation only - position is handled by the parent PerformerRig scene graph.
+-  // Facing rotation is inherited from the PerformerRig parent group.
+-  const rotation = $derived(computePropRotation(propState));
++  $effect(() => {
++    const next = createStaffObject({
++      color,
++      length: effectiveLength,
++      thickness: effectiveThickness,
++      layer: staffLayer,
++    });
++    staff = next;
++    return () => next.dispose();
++  });
+ 
+-  // Half length for positioning end caps
+-  const halfLength = $derived(effectiveLength / 2);
++  $effect(() => {
++    staff?.setState(propState);
++  });
+ </script>
+ 
+-{#if visible}
+-  <T.Group {rotation} layers={staffLayer}>
+-    <!-- Staff CENTER (grip) is at the hand/grid point -->
+-    <!-- Main staff body - cylinder along Y axis -->
 -    <T.Mesh>
 -      <T.CylinderGeometry
 -        args={[effectiveThickness, effectiveThickness, effectiveLength, 16, 1]}
@@ -17543,16 +17573,11 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 -        metalness={0.2}
 -      />
 -    </T.Mesh>
-+    <T.Mesh
-+      geometry={geometry.shaft}
-+      material={materials.main}
-+      dispose={false}
-+    />
- 
-     <!-- T-bar at thumb end - PERPENDICULAR crossbar like in 2D SVG -->
-     <!-- With positive quaternion (X-negated coords), +Y end points toward center for IN -->
-     <T.Group position={[0, halfLength, 0]}>
-       <!-- Perpendicular crossbar - rotated 90° around Z to cross the shaft -->
+-
+-    <!-- T-bar at thumb end - PERPENDICULAR crossbar like in 2D SVG -->
+-    <!-- With positive quaternion (X-negated coords), +Y end points toward center for IN -->
+-    <T.Group position={[0, halfLength, 0]}>
+-      <!-- Perpendicular crossbar - rotated 90° around Z to cross the shaft -->
 -      <T.Mesh rotation={[0, 0, Math.PI / 2]}>
 -        <T.CylinderGeometry
 -          args={[tBarThickness, tBarThickness, tBarLength, 12, 1]}
@@ -17563,13 +17588,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 -          metalness={0.2}
 -        />
 -      </T.Mesh>
-+      <T.Mesh
-+        geometry={geometry.tBar}
-+        material={materials.main}
-+        rotation={[0, 0, Math.PI / 2]}
-+        dispose={false}
-+      />
-       <!-- Left cap of T-bar -->
+-      <!-- Left cap of T-bar -->
 -      <T.Mesh position={[-tBarLength / 2, 0, 0]}>
 -        <T.SphereGeometry args={[tBarThickness, 12, 12]} />
 -        <T.MeshStandardMaterial
@@ -17578,13 +17597,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 -          metalness={0.2}
 -        />
 -      </T.Mesh>
-+      <T.Mesh
-+        geometry={geometry.tBarCap}
-+        material={materials.dark}
-+        position={[-tBarLength / 2, 0, 0]}
-+        dispose={false}
-+      />
-       <!-- Right cap of T-bar -->
+-      <!-- Right cap of T-bar -->
 -      <T.Mesh position={[tBarLength / 2, 0, 0]}>
 -        <T.SphereGeometry args={[tBarThickness, 12, 12]} />
 -        <T.MeshStandardMaterial
@@ -17593,15 +17606,9 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 -          metalness={0.2}
 -        />
 -      </T.Mesh>
-+      <T.Mesh
-+        geometry={geometry.tBarCap}
-+        material={materials.dark}
-+        position={[tBarLength / 2, 0, 0]}
-+        dispose={false}
-+      />
-     </T.Group>
- 
-     <!-- Rounded cap at pinky end -->
+-    </T.Group>
+-
+-    <!-- Rounded cap at pinky end -->
 -    <T.Mesh position={[0, -halfLength, 0]}>
 -      <T.SphereGeometry args={[effectiveThickness, 16, 16]} />
 -      <T.MeshStandardMaterial
@@ -17610,38 +17617,23 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3f
 -        metalness={0.2}
 -      />
 -    </T.Mesh>
-+    <T.Mesh
-+      geometry={geometry.endCap}
-+      material={materials.dark}
-+      position={[0, -halfLength, 0]}
-+      dispose={false}
-+    />
- 
-     <!-- Center grip ring (white, at the hand point) -->
+-
+-    <!-- Center grip ring (white, at the hand point) -->
 -    <T.Mesh>
 -      <T.TorusGeometry
 -        args={[effectiveThickness * 1.15, effectiveThickness * 0.15, 12, 24]}
 -      />
 -      <T.MeshStandardMaterial color="white" roughness={0.4} metalness={0.1} />
 -    </T.Mesh>
-+    <T.Mesh
-+      geometry={geometry.grip}
-+      material={materials.grip}
-+      dispose={false}
-+    />
-   </T.Group>
- 
-   <!-- Trail indicator (small sphere at prop position for path visualization) -->
+-  </T.Group>
+-
+-  <!-- Trail indicator (small sphere at prop position for path visualization) -->
 -  <T.Mesh layers={staffLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
 -    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
 -  </T.Mesh>
-+  <T.Mesh
-+    geometry={trailGeometry}
-+    material={materials.trail}
-+    layers={staffLayer}
-+    dispose={false}
-+  />
++{#if visible && staff}
++  <T is={staff.root} dispose={false} />
  {/if}
 diff --git a/src/lib/components/props/Buugeng3D.svelte b/src/lib/components/props/Buugeng3D.svelte
 index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148b34594b8 100644
@@ -22669,6 +22661,193 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..dd1bcbfbf68691a56a68ae2210b26bea
 +// The .d.ts already declares this; the runtime half was missing, which broke
 +// every consumer of the barrel (AvatarSwapTransition.svelte) in the browser.
 +export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache";
+diff --git a/src/lib/rendering/create-staff-object.ts b/src/lib/rendering/create-staff-object.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..ecfaca907a475b4d454e2352e63601da4dfa3a97
+--- /dev/null
++++ b/src/lib/rendering/create-staff-object.ts
+@@ -0,0 +1,181 @@
++import {
++  CylinderGeometry,
++  Euler,
++  Group,
++  Mesh,
++  MeshBasicMaterial,
++  MeshStandardMaterial,
++  Quaternion,
++  SphereGeometry,
++  TorusGeometry,
++} from "three";
++import type { PropState3D } from "../domain/models/PropState3D";
++
++interface StaffGeometrySet {
++  shaft: CylinderGeometry;
++  tBar: CylinderGeometry;
++  tBarCap: SphereGeometry;
++  endCap: SphereGeometry;
++  grip: TorusGeometry;
++}
++
++interface StaffMaterialSet {
++  main: MeshStandardMaterial;
++  dark: MeshStandardMaterial;
++  grip: MeshStandardMaterial;
++  trail: MeshBasicMaterial;
++}
++
++export interface StaffObjectOptions {
++  color: "blue" | "red";
++  length: number;
++  thickness: number;
++  layer?: number;
++}
++
++export interface StaffObject {
++  root: Group;
++  setState(state: Pick<PropState3D, "worldRotation">): void;
++  dispose(): void;
++}
++
++const geometrySets = new Map<string, StaffGeometrySet>();
++const materialSets = new Map<"blue" | "red", StaffMaterialSet>();
++const trailGeometry = new SphereGeometry(0.015, 8, 8);
++const HORIZONTAL_QUAT = new Quaternion().setFromEuler(
++  new Euler(0, 0, Math.PI / 2),
++);
++
++function getStaffGeometrySet(
++  length: number,
++  thickness: number,
++): StaffGeometrySet {
++  const key = `${length}:${thickness}`;
++  const cached = geometrySets.get(key);
++  if (cached) return cached;
++
++  const tBarLength = length * 0.228;
++  const geometry = {
++    shaft: new CylinderGeometry(thickness, thickness, length, 16, 1),
++    tBar: new CylinderGeometry(thickness, thickness, tBarLength, 12, 1),
++    tBarCap: new SphereGeometry(thickness, 12, 12),
++    endCap: new SphereGeometry(thickness, 16, 16),
++    grip: new TorusGeometry(thickness * 1.15, thickness * 0.15, 12, 24),
++  };
++  geometrySets.set(key, geometry);
++  return geometry;
++}
++
++function getStaffMaterialSet(color: "blue" | "red"): StaffMaterialSet {
++  const cached = materialSets.get(color);
++  if (cached) return cached;
++
++  const palette =
++    color === "blue"
++      ? { main: "#3b82f6", dark: "#1d4ed8" }
++      : { main: "#ef4444", dark: "#b91c1c" };
++  const materials = {
++    main: new MeshStandardMaterial({
++      color: palette.main,
++      roughness: 0.3,
++      metalness: 0.2,
++    }),
++    dark: new MeshStandardMaterial({
++      color: palette.dark,
++      roughness: 0.3,
++      metalness: 0.2,
++    }),
++    grip: new MeshStandardMaterial({
++      color: "white",
++      roughness: 0.4,
++      metalness: 0.1,
++    }),
++    trail: new MeshBasicMaterial({
++      color: palette.main,
++      opacity: 0.3,
++      transparent: true,
++    }),
++  };
++  materialSets.set(color, materials);
++  return materials;
++}
++
++function mesh(
++  geometry: CylinderGeometry | SphereGeometry | TorusGeometry,
++  material: MeshBasicMaterial | MeshStandardMaterial,
++  layer: number,
++): Mesh {
++  const result = new Mesh(geometry, material);
++  result.layers.set(layer);
++  return result;
++}
++
++/**
++ * Build the canonical rendered staff without a framework dependency.
++ *
++ * Staff3D.svelte and worker renderers both mount this exact object. Geometry
++ * and materials remain module-cached just as the original component's module
++ * script did; an instance dispose therefore detaches its graph without
++ * destroying resources shared by another performer.
++ */
++export function createStaffObject(options: StaffObjectOptions): StaffObject {
++  const layer = options.layer ?? 0;
++  const geometry = getStaffGeometrySet(options.length, options.thickness);
++  const materials = getStaffMaterialSet(options.color);
++  const halfLength = options.length / 2;
++  const tBarLength = options.length * 0.228;
++
++  const root = new Group();
++  root.name = `staff-${options.color}`;
++  root.layers.set(layer);
++
++  const rotated = new Group();
++  rotated.name = "staff-rotated-body";
++  rotated.layers.set(layer);
++  root.add(rotated);
++
++  rotated.add(mesh(geometry.shaft, materials.main, layer));
++
++  const thumbEnd = new Group();
++  thumbEnd.name = "staff-thumb-end";
++  thumbEnd.position.y = halfLength;
++  thumbEnd.layers.set(layer);
++  rotated.add(thumbEnd);
++
++  const crossbar = mesh(geometry.tBar, materials.main, layer);
++  crossbar.rotation.z = Math.PI / 2;
++  thumbEnd.add(crossbar);
++
++  const leftCap = mesh(geometry.tBarCap, materials.dark, layer);
++  leftCap.position.x = -tBarLength / 2;
++  thumbEnd.add(leftCap);
++
++  const rightCap = mesh(geometry.tBarCap, materials.dark, layer);
++  rightCap.position.x = tBarLength / 2;
++  thumbEnd.add(rightCap);
++
++  const pinkyCap = mesh(geometry.endCap, materials.dark, layer);
++  pinkyCap.position.y = -halfLength;
++  rotated.add(pinkyCap);
++
++  rotated.add(mesh(geometry.grip, materials.grip, layer));
++
++  const trail = mesh(trailGeometry, materials.trail, layer);
++  trail.name = "staff-trail-indicator";
++  root.add(trail);
++
++  const finalQuaternion = new Quaternion();
++  return {
++    root,
++    setState(state) {
++      finalQuaternion
++        .copy(state.worldRotation)
++        .multiply(HORIZONTAL_QUAT);
++      rotated.quaternion.copy(finalQuaternion);
++    },
++    dispose() {
++      root.removeFromParent();
++      root.clear();
++    },
++  };
++}
 diff --git a/src/lib/services/bone-name-normalization.ts b/src/lib/services/bone-name-normalization.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..164a88b402d8501ad7b09fa33e727f75550e8999
@@ -34097,3 +34276,22 @@ index 0000000000000000000000000000000000000000..0392476d03b2fde881b69ea77a9e8330
 +export function propHasFanAppearanceOptions(propType: PropType): boolean {
 +	return PROPS_WITH_FAN_APPEARANCE.has(propType);
 +}
+diff --git a/src/worker.ts b/src/worker.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..f70848486c293ada8307edb24449ca0c465b1b7d
+--- /dev/null
++++ b/src/worker.ts
+@@ -0,0 +1,13 @@
++export { getAvatarModelPath } from "./lib/config/avatar-definitions";
++export { cmToUnits } from "./lib/config/avatar-proportions";
++export { GripType } from "./lib/domain/models/GripPose";
++export { createStaffObject } from "./lib/rendering/create-staff-object";
++export { createAvatarServices } from "./lib/services/implementations/AvatarServicesFactory";
++
++export type { AvatarId } from "./lib/config/avatar-definitions";
++export type { PropState3D } from "./lib/domain/models/PropState3D";
++export type {
++  StaffObject,
++  StaffObjectOptions,
++} from "./lib/rendering/create-staff-object";
++export type { AvatarServices } from "./lib/services/implementations/AvatarServicesFactory";

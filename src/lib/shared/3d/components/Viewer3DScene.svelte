@@ -73,6 +73,11 @@
   } from "../collision/stance-yaw-track";
   import { getAvatarSequenceCollisionAudit } from "../collision/avatar-sequence-collision-audit";
   import { getAvatarGripMotionAudit } from "../diagnostics/avatar-grip-motion-audit";
+  import {
+    resolveViewerBaseLighting,
+    VIEWER_KEY_LIGHT_POSITION,
+    VIEWER_PROTECTED_LIGHTING,
+  } from "../rendering/viewer-lighting-rig";
 
   // Performer layer membership inherits through the nested PerformerRig tree.
   layers();
@@ -562,6 +567,9 @@
       backgroundType === BackgroundType.COSMIC ||
       backgroundType === BackgroundType.OCEAN
   );
+  const viewerBaseLighting = $derived(
+    resolveViewerBaseLighting(hasEnvironment, isNightEnvironment)
+  );
 
   const petalEnvironmentProfile = $derived(
     resolvePetalEnvironmentProfile(backgroundType)
@@ -724,18 +732,21 @@
 
 <!-- Lighting - reduced when the environment provides its own -->
 <T.AmbientLight
-  intensity={isNightEnvironment ? 0.2 : hasEnvironment ? 0.3 : 0.4}
+  intensity={viewerBaseLighting.ambientIntensity}
 />
 <T.DirectionalLight
-  position={[5, 10, 5]}
-  intensity={isNightEnvironment ? 0.4 : hasEnvironment ? 0.6 : 0.8}
+  position={VIEWER_KEY_LIGHT_POSITION}
+  intensity={viewerBaseLighting.directionalIntensity}
 />
 
 <!-- Stable performer-only lighting for the protected transition pass. -->
-<T.AmbientLight intensity={0.75} layers={PROTECTED_PERFORMER_LAYER} />
+<T.AmbientLight
+  intensity={VIEWER_PROTECTED_LIGHTING.ambientIntensity}
+  layers={PROTECTED_PERFORMER_LAYER}
+/>
 <T.DirectionalLight
-  position={[-4, 9, 7]}
-  intensity={1.1}
+  position={VIEWER_PROTECTED_LIGHTING.directionalPosition}
+  intensity={VIEWER_PROTECTED_LIGHTING.directionalIntensity}
   layers={PROTECTED_PERFORMER_LAYER}
 />
 

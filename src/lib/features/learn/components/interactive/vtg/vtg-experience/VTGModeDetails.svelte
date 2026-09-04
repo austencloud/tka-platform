@@ -19,7 +19,7 @@ VTGModeDetails - Shows direction and timing details for a mode
     <span class="detail-value">{directionLabel}</span>
   </div>
   <div class="detail-row">
-    <span class="detail-label">Timing:</span>
+    <span class="detail-label">Time:</span>
     <span class="detail-value">{timingLabel}</span>
   </div>
 </div>

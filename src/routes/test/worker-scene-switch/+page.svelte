@@ -1,7 +1,11 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import WorkerEnvironmentRenderer from "$lib/shared/3d/worker-renderer/components/WorkerEnvironmentRenderer.svelte";
-  import type { WorkerEnvironmentKey } from "$lib/shared/3d/worker-renderer/domain/worker-renderer-protocol";
+  import type {
+    WorkerEnvironmentKey,
+    WorkerPerformerSnapshot,
+    WorkerPropSnapshot,
+  } from "$lib/shared/3d/worker-renderer/domain/worker-renderer-protocol";
   import type { WorkerSceneSwitchSnapshot } from "$lib/shared/3d/worker-renderer/services/worker-environment-renderer";
 
   interface WorkerSceneSwitchBenchmarkApi {
@@ -20,9 +24,52 @@
 
   let environment = $state<WorkerEnvironmentKey>("rainbow");
   let snapshot = $state<WorkerSceneSwitchSnapshot | null>(null);
+  // The first worker must stage the same complete frame as every replacement.
+  // Starting empty would let it report readiness before the avatar exists, then
+  // load the performer through the live-update path after the canvas is visible.
+  let performers = $state<readonly WorkerPerformerSnapshot[]>([performerAt(0)]);
   let heartbeat: HTMLDivElement;
   let heartbeatRequest = 0;
   let heartbeatCount = 0;
+  let choreographyRequest = 0;
+
+  function propAt(angle: number, phase: number): WorkerPropSnapshot {
+    const pathRadius = 0.54;
+    const spin = angle * 1.7 + phase;
+    return {
+      centerPathAngle: angle,
+      staffRotationAngle: spin,
+      plane: "wall",
+      worldPosition: [
+        Math.sin(angle) * pathRadius,
+        Math.cos(angle) * pathRadius,
+        0,
+      ],
+      worldRotation: [0, 0, Math.sin(spin / 2), Math.cos(spin / 2)],
+      gripType: "square",
+    };
+  }
+
+  function performerAt(time: number): WorkerPerformerSnapshot {
+    const beat = time / 950;
+    return {
+      id: "benchmark-performer",
+      avatarId: "x-bot",
+      position: [0, 0, 0],
+      facingAngle: 0,
+      avatarHeightCm: 190.5,
+      groundY: -1.5,
+      staffLength: 0.8636,
+      staffThickness: 0.0125,
+      leftPropType: "staff",
+      rightPropType: "staff",
+      leftProp: propAt(beat, 0),
+      rightProp: propAt(-beat + Math.PI, Math.PI / 2),
+      stanceYaw: Math.sin(beat * 0.5) * 0.18,
+      stanceSegments: null,
+      spinePitchOffset: 0,
+    };
+  }
 
   function select(next: WorkerEnvironmentKey): void {
     environment = next;
@@ -87,14 +134,28 @@
       heartbeatRequest = requestAnimationFrame(moveHeartbeat);
     };
     heartbeatRequest = requestAnimationFrame(moveHeartbeat);
+
+    const moveChoreography = (time: number) => {
+      performers = [performerAt(time)];
+      choreographyRequest = requestAnimationFrame(moveChoreography);
+    };
+    choreographyRequest = requestAnimationFrame(moveChoreography);
   });
 
   onDestroy(() => {
     cancelAnimationFrame(heartbeatRequest);
+    cancelAnimationFrame(choreographyRequest);
     delete window.__workerSceneSwitchBenchmark;
   });
 
   const last = $derived(snapshot?.lastMeasurement ?? null);
+  const slowestCompileTarget = $derived(
+    last?.workerBoot.compileTargets.reduce(
+      (slowest, current) =>
+        !slowest || current.durationMs > slowest.durationMs ? current : slowest,
+      null as (typeof last.workerBoot.compileTargets)[number] | null
+    ) ?? null
+  );
   const gateLabel = $derived(
     snapshot?.phase === "error"
       ? "Worker handoff failed"
@@ -113,7 +174,7 @@
 
 <main class="benchmark-shell">
   <section class="stage" aria-label="Worker-rendered environment">
-    <WorkerEnvironmentRenderer {environment} {onSnapshot} />
+    <WorkerEnvironmentRenderer {environment} {performers} {onSnapshot} />
     <div class="stage-vignette"></div>
     <div class="heartbeat-track" aria-label="Application-thread heartbeat">
       <div class="heartbeat" bind:this={heartbeat}></div>
@@ -125,9 +186,10 @@
       <p class="eyebrow">OffscreenCanvas worker proof</p>
       <h1>Atomic world handoff</h1>
       <p>
-        The visible worker keeps drawing while a second worker prepares the
-        requested world. The canvas flips only after the replacement reports a
-        rendered frame.
+        The visible worker keeps drawing the environment, avatar, and live
+        Choreo prop transforms while a second worker prepares the requested
+        world. The canvas flips only after the replacement reports a rendered
+        frame.
       </p>
     </header>
 
@@ -179,12 +241,127 @@
           <dd>{last.workerBoot.firstFrameMs.toFixed(0)} ms</dd>
         </div>
         <div>
+          <dt>Renderer</dt>
+          <dd>{last.workerBoot.rendererMs.toFixed(0)} ms</dd>
+        </div>
+        <div>
+          <dt>Environment</dt>
+          <dd>{last.workerBoot.environmentMs.toFixed(0)} ms</dd>
+        </div>
+        <div>
+          <dt>Performer</dt>
+          <dd>{last.workerBoot.performerMs.toFixed(0)} ms</dd>
+        </div>
+        <div>
+          <dt>Shader preparation</dt>
+          <dd>{last.workerBoot.compileMs.toFixed(0)} ms</dd>
+        </div>
+        <div>
+          <dt>Slowest shader</dt>
+          <dd>
+            {slowestCompileTarget?.label ?? "none"} ·
+            {slowestCompileTarget?.durationMs.toFixed(0) ?? "0"} ms
+          </dd>
+        </div>
+        <div>
+          <dt>Resource priming</dt>
+          <dd>
+            {last.workerBoot.primeMs.toFixed(0)} ms ·
+            {last.workerBoot.primeTargets} draws
+          </dd>
+        </div>
+        <div>
+          <dt>Complete-frame preflight</dt>
+          <dd>
+            {last.workerBoot.finalizeCompileMs.toFixed(0)} ms compile ·
+            {last.workerBoot.preflightMs.toFixed(0)} ms draw
+          </dd>
+        </div>
+        <div>
+          <dt>Geometry uploads</dt>
+          <dd>
+            {last.workerBoot.memoryAfterCompile.geometries} →
+            {last.workerBoot.memoryAfterPrime.geometries} →
+            {last.workerBoot.memoryAfterFinalize.geometries} →
+            {last.workerBoot.memoryAfterPreflight.geometries} →
+            {last.workerBoot.memoryAfterFirstRender.geometries}
+          </dd>
+        </div>
+        <div>
+          <dt>Texture uploads</dt>
+          <dd>
+            {last.workerBoot.memoryAfterCompile.textures} →
+            {last.workerBoot.memoryAfterPrime.textures} →
+            {last.workerBoot.memoryAfterFinalize.textures} →
+            {last.workerBoot.memoryAfterPreflight.textures} →
+            {last.workerBoot.memoryAfterFirstRender.textures}
+          </dd>
+        </div>
+        <div>
+          <dt>GPU programs</dt>
+          <dd>
+            {last.workerBoot.memoryAfterCompile.programs} →
+            {last.workerBoot.memoryAfterPrime.programs} →
+            {last.workerBoot.memoryAfterFinalize.programs} →
+            {last.workerBoot.memoryAfterPreflight.programs} →
+            {last.workerBoot.memoryAfterFirstRender.programs}
+          </dd>
+        </div>
+        <div>
+          <dt>Performer graph</dt>
+          <dd>
+            {last.workerBoot.performers.count} performer ·
+            {last.workerBoot.performers.visibleRenderables}/{last.workerBoot
+              .performers.renderables} visible · {last.workerBoot.performers
+              .effectivelyVisibleRenderables} effective · layers
+            {last.workerBoot.performers.layerMasks.join(",")} · root
+            {last.workerBoot.performers.rootVisible
+              ? "visible"
+              : "hidden"}/{last.workerBoot.performers.rootLayerMask} · opacity
+            {last.workerBoot.performers.materialOpacity?.join("–") ?? "none"}
+          </dd>
+        </div>
+        <div>
+          <dt>Performer bounds</dt>
+          <dd>
+            {last.workerBoot.performers.boundsCenter
+              ? `${last.workerBoot.performers.boundsCenter.map((value) => value.toFixed(2)).join(", ")} · ${last.workerBoot.performers.boundsSize?.map((value) => value.toFixed(2)).join(", ")}`
+              : "none"}
+          </dd>
+        </div>
+        <div>
+          <dt>Performer on screen</dt>
+          <dd>
+            {last.workerBoot.performers.projectedCenter
+              ?.map((value) => value.toFixed(2))
+              .join(", ") ?? "none"}
+          </dd>
+        </div>
+        <div>
+          <dt>First render</dt>
+          <dd>{last.workerBoot.firstRenderMs.toFixed(0)} ms</dd>
+        </div>
+        <div>
+          <dt>Frame scheduling</dt>
+          <dd>{last.workerBoot.presentationWaitMs.toFixed(0)} ms</dd>
+        </div>
+        <div>
+          <dt>Confirmation render</dt>
+          <dd>{last.workerBoot.confirmationRenderMs.toFixed(0)} ms</dd>
+        </div>
+        <div>
           <dt>Main-thread max gap</dt>
-          <dd>{last.mainThreadMaxGapMs.toFixed(1)} ms</dd>
+          <dd>
+            {last.mainThreadMaxGapMs.toFixed(1)} ms ·
+            {last.mainThreadMaxGapPhase ?? "unknown"}
+          </dd>
         </div>
         <div>
           <dt>Outgoing frame max gap</dt>
-          <dd>{last.outgoingWorkerMaxFrameGapMs.toFixed(1)} ms</dd>
+          <dd>
+            {last.outgoingWorkerMaxFrameGapMs.toFixed(1)} ms ·
+            {last.outgoingWorkerMaxFrameGapPhase ?? "unknown"}
+          </dd>
         </div>
         <div>
           <dt>Handoff delay</dt>
@@ -195,10 +372,6 @@
           <dd>
             {last.liveWorkersAtSwap} / {last.liveWorkersAfterCleanup ?? "…"}
           </dd>
-        </div>
-        <div>
-          <dt>GPU programs</dt>
-          <dd>{last.workerBoot.programs}</dd>
         </div>
         <div>
           <dt>GPU textures</dt>
@@ -224,13 +397,14 @@
   .benchmark-shell {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(19rem, 25rem);
-    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
     background: #08090d;
   }
 
   .stage {
     position: relative;
-    min-height: 100dvh;
+    min-height: 0;
     overflow: hidden;
   }
 
@@ -270,6 +444,8 @@
 
   .console-panel {
     z-index: 3;
+    min-height: 0;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 1rem;
