@@ -109,13 +109,12 @@ Next steps through Alpha → Beta → Gamma, one at a time. Eyebrow shows VTG no
 between positions as a teaching transition (the slide is NOT part of the
 position; positions are static).
 
-**Stage 2 — compare (NEXT TO BUILD).** Cute transition: the single center
-pictograph glides right into slot 3 while the other two slide out from behind it,
-landing as a row Alpha · Beta · Gamma. A held moment to observe differences.
-Caption ~ "These are the three basic positions."
+**Stage 2 — compare (BUILT).** The shared stage widens into three inspectable
+Alpha, Beta, and Gamma choices. Each choice keeps the same grid treatment as the
+walkthrough and remains a full-size touch target on narrow screens.
 
-**Stage 3 — "Same letter, many faces" (SPEC'd 2026-06-19, building).** Tap a card
-on the compare row → it expands into a focus panel below. Approach C (chosen):
+**Stage 3 — "Same letter, many faces" (BUILT).** Tap a card on the compare row
+and the same artifact becomes a transform playground. Approach C (chosen):
 - ONE live pictograph at that position's true base (alpha1 = N/S), rendered with
   the lesson's own grid+hand renderer (kept for visual consistency with screens
   1–4; NOT PictographRenderer/PositionVisualizer — those pull the full prop
@@ -135,9 +134,10 @@ Reused data shape from position-quiz-data.ts (diamond/box variation split).
 
 **Stage 4 — quiz (PARKED).** Identify-the-position check after all three seen.
 
-## WIRED INTO REAL MODULE (2026-06-20)
+## WIRED INTO REAL MODULE (updated 2026-09-04)
 
-The design now IS the live `hand-positions` experience:
+The design is the live `hand-positions` experience and shares its heading,
+artifact, and controls frame with the preceding Grid lesson:
 `src/lib/features/learn/components/interactive/positions/PositionsConceptExperience.svelte`
 (slot already wired in `ConceptDetailView`). Ships on dev.tka → Concepts → Hand
 Positions. `/test/positions-concept` is the throwaway scratch copy (superseded;

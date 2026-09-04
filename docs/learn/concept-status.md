@@ -1,6 +1,6 @@
 # Concept Lesson Status Tracker
 
-Last updated: 2026-09-03
+Last updated: 2026-09-04
 
 ## Status Legend
 
@@ -19,8 +19,8 @@ Last updated: 2026-09-03
 
 | #   | ID                       | Name                        | Status      | Notes                                                                                                                                                                                                                                                 |
 | --- | ------------------------ | --------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `grid`                   | The Grid                    | REDESIGN    | Core grid, mode-merge, and point-type stages retained. Rejected Build the Grid tap sequence removed; completion now continues directly to Hand Positions. Awaiting hands-on review.                                                                   |
-| 2   | `hand-positions`         | Hand Positions              | BUILT       | Redesigned: Discovery phase (drag hands on grid to discover alpha/beta/gamma), Construction Quiz (10 questions, semantic feedback), Speed Rounds (timed classification with streak system). Old info pages + button quiz deleted. Needs user testing. |
+| 1   | `grid`                   | The Grid                    | BUILT       | Core grid, mode-merge, and point-type stages retained. Rejected Build the Grid tap sequence removed. The shared stage now carries the completed grid directly into Hand Positions. Awaiting hands-on review.                                         |
+| 2   | `hand-positions`         | Hand Positions              | BUILT       | Rewritten on the Grid lesson's shared stage: Alpha/Beta/Gamma walkthrough, three-up comparison, and the rotate/mirror/swap playground. Awaiting hands-on review.                                                                                      |
 | 3   | `hand-motions-intro`     | Hand Motions Overview       | BUILT       | 2026-09-03: guide-faithful Shift, Dash, and Static lesson. One letter-free animated hand path per step, then a three-motion recap. Awaiting hands-on review.                                                                                          |
 | 4   | `rotation-direction`     | Rotation Direction          | BUILT       | Focused pro/anti discovery using canonical A/B pictographs. Needs Austen's hands-on review.                                                                                                                                                           |
 | 5   | `dual-shifts-alpha-beta` | Dual-Shifts: Alpha & Beta   | BUILT       | 2026-09-03: introduces Split-Same, Tog-Same, Split-Opp, and Tog-Opp as letter-free animated hand timing/direction modes. One mode per step. Awaiting hands-on review.                                                                                 |
