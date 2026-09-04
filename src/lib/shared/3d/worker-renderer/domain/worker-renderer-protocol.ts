@@ -12,14 +12,117 @@ export interface WorkerCameraSnapshot {
   fov: number;
 }
 
+export type WorkerVector3 = readonly [number, number, number];
+export type WorkerQuaternion = readonly [number, number, number, number];
+
+/**
+ * Structured-clone-safe form of the already-resolved choreography state.
+ *
+ * The application remains the authority for Choreo timing and plane math.
+ * Workers receive final transforms, so this renderer boundary cannot change
+ * what a card or sequence means.
+ */
+export interface WorkerPropSnapshot {
+  centerPathAngle: number;
+  staffRotationAngle: number;
+  plane: string;
+  worldPosition: WorkerVector3;
+  worldRotation: WorkerQuaternion;
+  gripType?: string;
+}
+
+export interface WorkerStanceSegments {
+  spine1Rad: number;
+  spine2Rad: number;
+  headLagRad: number;
+}
+
+export interface WorkerPerformerSnapshot {
+  id: string;
+  avatarId: string;
+  position: WorkerVector3;
+  facingAngle: number;
+  avatarHeightCm: number;
+  groundY: number;
+  staffLength: number;
+  staffThickness: number;
+  leftPropType: string;
+  rightPropType: string;
+  leftProp: WorkerPropSnapshot | null;
+  rightProp: WorkerPropSnapshot | null;
+  stanceYaw: number;
+  stanceSegments: WorkerStanceSegments | null;
+  spinePitchOffset: number;
+}
+
+export type WorkerRendererProgressPhase =
+  | "renderer"
+  | "assets"
+  | "construct"
+  | "performer"
+  | "compile"
+  | "prime"
+  | "finalize"
+  | "preflight"
+  | "first-frame";
+
+export interface WorkerRendererProgramMetric {
+  label: string;
+  durationMs: number;
+}
+
+export interface WorkerPerformerDiagnostics {
+  count: number;
+  renderables: number;
+  visibleRenderables: number;
+  effectivelyVisibleRenderables: number;
+  layerMasks: readonly number[];
+  rootVisible: boolean;
+  rootLayerMask: number;
+  materialOpacity: readonly [number, number] | null;
+  boundsCenter: WorkerVector3 | null;
+  boundsSize: WorkerVector3 | null;
+  projectedCenter: WorkerVector3 | null;
+}
+
 export interface WorkerRendererBootMetrics {
   acceptedAt: number;
+  rendererReadyAt: number;
+  environmentReadyAt: number;
+  performerReadyAt: number;
   worldReadyAt: number;
   compiledAt: number;
+  primedAt: number;
+  finalizedAt: number;
+  preflightedAt: number;
   firstFrameAt: number;
+  rendererMs: number;
+  environmentMs: number;
+  performerMs: number;
   worldMs: number;
   compileMs: number;
+  primeMs: number;
+  primeTargets: number;
+  finalizeCompileMs: number;
+  preflightMs: number;
+  firstRenderMs: number;
+  presentationWaitMs: number;
+  confirmationRenderMs: number;
+  firstFrameWaitMs: number;
   firstFrameMs: number;
+  compileTargets: readonly WorkerRendererProgramMetric[];
+  memoryAfterCompile: WorkerRendererMemoryMetric;
+  memoryAfterPrime: WorkerRendererMemoryMetric;
+  memoryAfterFinalize: WorkerRendererMemoryMetric;
+  memoryAfterPreflight: WorkerRendererMemoryMetric;
+  memoryAfterFirstRender: WorkerRendererMemoryMetric;
+  performers: WorkerPerformerDiagnostics;
+  geometries: number;
+  textures: number;
+  programs: number;
+}
+
+export interface WorkerRendererMemoryMetric {
   geometries: number;
   textures: number;
   programs: number;
@@ -32,6 +135,7 @@ export interface InitializeWorkerRendererMessage {
   environment: WorkerEnvironmentKey;
   viewport: WorkerViewport;
   camera: WorkerCameraSnapshot;
+  performers: readonly WorkerPerformerSnapshot[];
 }
 
 export interface ResizeWorkerRendererMessage {
@@ -52,6 +156,12 @@ export interface VisibilityWorkerRendererMessage {
   visible: boolean;
 }
 
+export interface PerformersWorkerRendererMessage {
+  type: "performers";
+  requestId: number;
+  performers: readonly WorkerPerformerSnapshot[];
+}
+
 export interface DisposeWorkerRendererMessage {
   type: "dispose";
   requestId: number;
@@ -61,6 +171,7 @@ export type WorkerRendererInMessage =
   | InitializeWorkerRendererMessage
   | ResizeWorkerRendererMessage
   | CameraWorkerRendererMessage
+  | PerformersWorkerRendererMessage
   | VisibilityWorkerRendererMessage
   | DisposeWorkerRendererMessage;
 
@@ -74,7 +185,7 @@ export interface WorkerRendererBootingMessage {
 export interface WorkerRendererProgressMessage {
   type: "progress";
   requestId: number;
-  phase: "assets" | "construct" | "compile" | "first-frame";
+  phase: WorkerRendererProgressPhase;
   fraction: number;
 }
 

@@ -55,7 +55,7 @@ prop rotations before hand cycles.
 
 The About copy separates three things: Nichols' original matrix, the level and
 ratio matrices this engine generates, and the independent software built by
-The Kinetic Alphabet. `Shape Matrix` and `Theory Matrix` remain the names of
+Austen Cloud. `Shape Matrix` and `Theory Matrix` remain the names of
 matrix surfaces inside the larger engine. Source and About links stay present
 without implying permission, collaboration, or endorsement.
 

@@ -72,6 +72,7 @@ export function collectedTunnelComposition(
       id: tunnel.id,
       name: tunnel.name,
       formation: tunnel.snapshot.tunnel.config,
+      legacyGeneratedStage: true,
     }
   );
 }

@@ -4,10 +4,17 @@ import {
   MAX_AUTHORED_TUNNEL_PERFORMERS,
   createDerivedTunnelPerformer,
   createIndependentTunnelPerformer,
+  migrateTunnelComposition,
   type TunnelComposition,
   type TunnelPerformer,
   type TunnelSourceProvenance,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
+import {
+  cloneTunnelStage,
+  createExplicitTunnelStage,
+  fitTunnelStageToFormation,
+  type TunnelStage,
+} from "$lib/shared/sequence-viewer/tunnel/tunnel-stage";
 import {
   DEFAULT_CONFIG,
   FOLD_OPTIONS,
@@ -86,8 +93,11 @@ export function createTunnelCreatorState(
   const restoredDraft = dependencies.initialComposition
     ? null
     : (dependencies.initialDraft ?? null);
-  const initial =
+  const initialSource =
     dependencies.initialComposition ?? restoredDraft?.composition ?? undefined;
+  const initial = initialSource
+    ? migrateTunnelComposition(initialSource)
+    : undefined;
   const compositionId = initial?.id ?? createId();
   const createdAt = initial?.createdAt ?? now();
   const restoredSources = new Map(
@@ -186,13 +196,18 @@ export function createTunnelCreatorState(
       : (restoredDraft?.relationship ?? DEFAULT_TUNNEL_RELATIONSHIP)),
   });
   let formation = $state<TunnelConfig>({
-    ...(dependencies.initialFormation ?? initial?.formation ?? DEFAULT_CONFIG),
+    ...(initial?.formation ?? dependencies.initialFormation ?? DEFAULT_CONFIG),
     speedOverrides: {
-      ...(dependencies.initialFormation?.speedOverrides ??
-        initial?.formation.speedOverrides ??
+      ...(initial?.formation.speedOverrides ??
+        dependencies.initialFormation?.speedOverrides ??
         DEFAULT_CONFIG.speedOverrides),
     },
   });
+  let stage = $state<TunnelStage>(
+    initial?.stage
+      ? cloneTunnelStage(initial.stage)
+      : createExplicitTunnelStage([], formation)
+  );
   let pickerTarget = $state<TunnelPickerTarget | null>(null);
   let selectedPerformerId = $state<string | null>(initialSlots[0]!.id);
   let pairingTargetId = $state<string | null>(initialSlots[1]?.id ?? null);
@@ -427,6 +442,7 @@ export function createTunnelCreatorState(
       rebuildLinkedPartner();
     }
     rebuildDerivedDependants(targetId);
+    reconcileStageWithPerformers();
     return true;
   }
 
@@ -477,12 +493,13 @@ export function createTunnelCreatorState(
 
   function addPerformer(): string | null {
     if (slots.length >= MAX_INTERACTIVE_TUNNEL_PERFORMERS) return null;
-    if (slots.length >= imageCount(formation)) return null;
+    if (!ensureFormationCapacity(slots.length + 1)) return null;
     const slot = createSlot(slots.length);
     slots = [...slots, slot];
     if (workflow === "seeded" && slots[0]?.performer) {
       seedPerformer(slot.id, slots.length - 1, slots.length);
     }
+    reconcileStageWithPerformers();
     selectedPerformerId = slot.id;
     return slot.id;
   }
@@ -542,6 +559,7 @@ export function createTunnelCreatorState(
       const targetId = slots[index]?.id;
       if (targetId) seedPerformer(targetId, index, count);
     }
+    reconcileStageWithPerformers();
   }
 
   function setPerformerCount(requested: number): boolean {
@@ -565,6 +583,7 @@ export function createTunnelCreatorState(
         return false;
       }
       slots = normalizeSlotLabels(retained);
+      reconcileStageWithPerformers();
       if (!slots.some((slot) => slot.id === selectedPerformerId)) {
         selectedPerformerId = slots.at(-1)?.id ?? null;
       }
@@ -583,6 +602,7 @@ export function createTunnelCreatorState(
         if (targetId) seedPerformer(targetId, index, count);
       }
     }
+    reconcileStageWithPerformers();
     selectedPerformerId = slots.at(-1)?.id ?? selectedPerformerId;
     return true;
   }
@@ -607,6 +627,7 @@ export function createTunnelCreatorState(
       return false;
     }
     slots = normalizeSlotLabels(slots.filter((slot) => slot.id !== targetId));
+    reconcileStageWithPerformers();
     if (selectedPerformerId === targetId) {
       selectedPerformerId = slots[Math.min(index, slots.length - 1)]!.id;
     }
@@ -680,6 +701,7 @@ export function createTunnelCreatorState(
       );
       if (targetIndex === 1) mode = "separate";
       if (targetIndex === 1) linkedPartnerIsSynthetic = false;
+      reconcileStageWithPerformers();
       return true;
     }
 
@@ -698,6 +720,7 @@ export function createTunnelCreatorState(
       relationship = { ...target.relationship };
       linkedPartnerIsSynthetic = false;
     }
+    reconcileStageWithPerformers();
     return true;
   }
 
@@ -718,6 +741,7 @@ export function createTunnelCreatorState(
 
     if (next === "linked") {
       rebuildLinkedPartner();
+      reconcileStageWithPerformers();
       return;
     }
 
@@ -727,6 +751,7 @@ export function createTunnelCreatorState(
     slots = slots.map((slot, index) =>
       index === 1 ? { ...slot, performer } : slot
     );
+    reconcileStageWithPerformers();
   }
 
   function setRelationship(patch: Partial<TunnelRelationshipRule>): void {
@@ -747,6 +772,7 @@ export function createTunnelCreatorState(
       relationship = { ...nextRelationship };
     }
     rebuildDerivedPerformer(targetId);
+    reconcileStageWithPerformers();
   }
 
   function setPerformerTiming(
@@ -774,6 +800,7 @@ export function createTunnelCreatorState(
         ? { ...candidate, timing, performer }
         : candidate
     );
+    reconcileStageWithPerformers();
   }
 
   function setPartnerTiming(patch: Partial<TunnelPerformer["timing"]>): void {
@@ -781,12 +808,16 @@ export function createTunnelCreatorState(
     if (targetId) setPerformerTiming(targetId, patch);
   }
 
-  function setFormation(next: TunnelConfig): void {
-    if (configKey(next) === configKey(formation)) return;
+  function setFormation(next: TunnelConfig): boolean {
+    if (configKey(next) === configKey(formation)) return true;
+    const fitted = fitTunnelStageToFormation(stage, next);
+    if (!fitted) return false;
     formation = {
       ...next,
       speedOverrides: { ...next.speedOverrides },
     };
+    stage = fitted;
+    return true;
   }
 
   function openWorkspacePanel(
@@ -834,6 +865,130 @@ export function createTunnelCreatorState(
       .filter((performer): performer is TunnelPerformer => performer !== null);
   }
 
+  /** Keep the visible stage honest as authored choreography is added or removed. */
+  function reconcileStageWithPerformers(): void {
+    const performers = activePerformers();
+    const performerIds = new Set(performers.map((performer) => performer.id));
+    const instances = stage.instances
+      .filter((instance) => performerIds.has(instance.performerId))
+      .map((instance) => ({ ...instance }));
+    const appearancesByPerformer = new Map<string, number>();
+    for (const instance of instances) {
+      appearancesByPerformer.set(
+        instance.performerId,
+        (appearancesByPerformer.get(instance.performerId) ?? 0) + 1
+      );
+    }
+
+    for (const performer of performers) {
+      if ((appearancesByPerformer.get(performer.id) ?? 0) > 0) continue;
+      const reusable = [...instances]
+        .reverse()
+        .find(
+          (instance) =>
+            (appearancesByPerformer.get(instance.performerId) ?? 0) > 1
+        );
+      if (reusable) {
+        appearancesByPerformer.set(
+          reusable.performerId,
+          (appearancesByPerformer.get(reusable.performerId) ?? 1) - 1
+        );
+        reusable.performerId = performer.id;
+        appearancesByPerformer.set(performer.id, 1);
+        continue;
+      }
+      instances.push({
+        id: `stage-${createId()}`,
+        performerId: performer.id,
+        arm: 0,
+      });
+      appearancesByPerformer.set(performer.id, 1);
+    }
+
+    if (!ensureFormationCapacity(instances.length)) return;
+    const fitted = fitTunnelStageToFormation({ instances }, formation);
+    if (fitted) stage = fitted;
+  }
+
+  function canRemoveStageInstance(instanceId: string): boolean {
+    const instance = stage.instances.find(
+      (candidate) => candidate.id === instanceId
+    );
+    if (!instance) return false;
+    return (
+      stage.instances.filter(
+        (candidate) => candidate.performerId === instance.performerId
+      ).length > 1
+    );
+  }
+
+  function addStageInstance(performerId: string): boolean {
+    if (
+      !activePerformers().some((performer) => performer.id === performerId) ||
+      stage.instances.length >= imageCount(formation)
+    ) {
+      return false;
+    }
+    const fitted = fitTunnelStageToFormation(
+      {
+        instances: [
+          ...stage.instances.map((instance) => ({ ...instance })),
+          {
+            id: `stage-${createId()}`,
+            performerId,
+            arm: 0,
+          },
+        ],
+      },
+      formation
+    );
+    if (!fitted) return false;
+    stage = fitted;
+    return true;
+  }
+
+  function removeStageInstance(instanceId: string): boolean {
+    if (!canRemoveStageInstance(instanceId)) return false;
+    const fitted = fitTunnelStageToFormation(
+      {
+        instances: stage.instances
+          .filter((instance) => instance.id !== instanceId)
+          .map((instance) => ({ ...instance })),
+      },
+      formation
+    );
+    if (!fitted) return false;
+    stage = fitted;
+    return true;
+  }
+
+  function setStageInstancePerformer(
+    instanceId: string,
+    performerId: string
+  ): boolean {
+    if (!activePerformers().some((performer) => performer.id === performerId)) {
+      return false;
+    }
+    const current = stage.instances.find(
+      (instance) => instance.id === instanceId
+    );
+    if (!current) return false;
+    if (
+      current.performerId !== performerId &&
+      !canRemoveStageInstance(instanceId)
+    ) {
+      return false;
+    }
+    stage = {
+      instances: stage.instances.map((instance) =>
+        instance.id === instanceId
+          ? { ...instance, performerId }
+          : { ...instance }
+      ),
+    };
+    return true;
+  }
+
   function compositionWithFormation(
     nextFormation: TunnelConfig = formation
   ): TunnelComposition | null {
@@ -847,12 +1002,8 @@ export function createTunnelCreatorState(
     if (!currentLead()) return null;
     const timestamp = now();
     const performers = activePerformers();
-    if (
-      performers.length === 0 ||
-      imageCount(nextFormation) < performers.length
-    ) {
-      return null;
-    }
+    const fittedStage = fitTunnelStageToFormation(stage, nextFormation);
+    if (performers.length === 0 || !fittedStage) return null;
     return {
       version: TUNNEL_COMPOSITION_VERSION,
       id: compositionId,
@@ -866,6 +1017,7 @@ export function createTunnelCreatorState(
         }) ||
           "Untitled tunnel"),
       performers,
+      stage: cloneTunnelStage(fittedStage),
       formation: {
         ...nextFormation,
         speedOverrides: { ...nextFormation.speedOverrides },
@@ -878,8 +1030,9 @@ export function createTunnelCreatorState(
   function draftSnapshot(): TunnelCreatorDraft {
     const performers = activePerformers();
     const timestamp = now();
+    const fittedStage = fitTunnelStageToFormation(stage, formation);
     const composition =
-      performers.length === 0
+      performers.length === 0 || !fittedStage
         ? null
         : {
             version: TUNNEL_COMPOSITION_VERSION,
@@ -889,6 +1042,7 @@ export function createTunnelCreatorState(
               (deriveTunnelName({ composition: { performers }, formation }) ||
                 "Untitled tunnel"),
             performers,
+            stage: cloneTunnelStage(fittedStage),
             formation: {
               ...formation,
               speedOverrides: { ...formation.speedOverrides },
@@ -1013,20 +1167,26 @@ export function createTunnelCreatorState(
     get formationCapacity() {
       return imageCount(formation);
     },
-    get canAddPerformer() {
+    get stageInstances() {
+      return stage.instances.map((instance) => ({ ...instance }));
+    },
+    get renderedInstanceCount() {
+      return stage.instances.length;
+    },
+    get canAddStageInstance() {
       return (
-        slots.length < MAX_INTERACTIVE_TUNNEL_PERFORMERS &&
-        slots.length < imageCount(formation)
+        activePerformers().length > 0 &&
+        stage.instances.length < imageCount(formation)
       );
+    },
+    get canAddPerformer() {
+      return slots.length < MAX_INTERACTIVE_TUNNEL_PERFORMERS;
     },
     get addPerformerBlockedReason() {
       if (slots.length >= MAX_INTERACTIVE_TUNNEL_PERFORMERS) {
         return slots.length > MAX_INTERACTIVE_TUNNEL_PERFORMERS
           ? `${slots.length} legacy performers are preserved. New Tunnel casts use up to four.`
           : "Tunnel casts can contain up to four authored performers.";
-      }
-      if (slots.length >= imageCount(formation)) {
-        return `Increase the formation above ${imageCount(formation)} instances before adding another performer.`;
       }
       return null;
     },
@@ -1073,17 +1233,21 @@ export function createTunnelCreatorState(
       );
     },
     canMovePerformer,
+    canRemoveStageInstance,
     selectPerformer(targetId: string) {
       if (!slots.some((slot) => slot.id === targetId)) return false;
       selectedPerformerId = selectedPerformerId === targetId ? null : targetId;
       return true;
     },
     addPerformer,
+    addStageInstance,
     setPerformerCount,
     setWorkflow,
     removePerformer,
+    removeStageInstance,
     movePerformer,
     setPerformerSource,
+    setStageInstancePerformer,
     setMode,
     setPerformerSequence,
     setLeadSequence,

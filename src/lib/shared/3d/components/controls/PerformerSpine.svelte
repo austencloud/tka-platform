@@ -140,7 +140,7 @@
     <div class="selection-track">
       <button
         class="spine-chip all-chip"
-        aria-pressed={selectedIndex === null}
+        aria-pressed={viewer.isAllPerformersSelected}
         aria-label="All performers"
         title="All performers"
         onclick={selectAll}

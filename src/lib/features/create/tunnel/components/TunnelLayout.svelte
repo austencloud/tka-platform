@@ -24,6 +24,7 @@
   import { getTunnelCreatorContext } from "../context/tunnel-creator-context";
   import TunnelPerformerRoster from "./TunnelPerformerRoster.svelte";
   import TunnelRelationshipEditor from "./TunnelRelationshipEditor.svelte";
+  import TunnelStageFormationSettings from "./TunnelStageFormationSettings.svelte";
   import ShapeMatrixTunnelSourcePicker from "./ShapeMatrixTunnelSourcePicker.svelte";
   import type { ModeRealization } from "$lib/shared/shape-matrix/services/build-mode-realizations";
   import type { SequenceSource } from "$lib/shared/browse/engine/types";
@@ -99,17 +100,17 @@
       creator.previewCompositionWithFormation(creator.initialFormation),
     onLayersChange: (layers) => {
       const next: typeof performerDisplays = {};
-      for (const [arm, layer] of layers.entries()) {
+      for (const layer of layers) {
         const current = next[layer.performerId];
         next[layer.performerId] = {
-          sequence: current?.sequence ?? layer.sequence,
+          sequence: current?.sequence ?? layer.performerSequence,
           stageTransformLabel:
             current?.stageTransformLabel ??
             (layer.formationOps.length
               ? copyOpsLabel(layer.formationOps)
               : null),
           generatedInstanceCount: (current?.generatedInstanceCount ?? 0) + 1,
-          stageArms: [...(current?.stageArms ?? []), arm],
+          stageArms: [...(current?.stageArms ?? []), layer.arm],
         };
       }
       performerDisplays = next;
@@ -296,16 +297,25 @@
   }
 
   function changeCastCount(count: number): void {
-    if (count > controller.performerCount) {
+    const projectedStageCount =
+      creator.renderedInstanceCount +
+      Math.max(0, count - creator.authoredPerformerCount);
+    if (projectedStageCount > controller.formationSlotCount) {
       const multiplier =
         (controller.mirror ? 2 : 1) * (controller.flip ? 2 : 1);
-      const nextFold = FOLD_OPTIONS.find((fold) => fold * multiplier >= count);
+      const nextFold = FOLD_OPTIONS.find(
+        (fold) => fold * multiplier >= projectedStageCount
+      );
       if (nextFold) controller.setFold(nextFold);
       creator.setFormation(controller.config);
     }
     creator.setPerformerCount(count);
   }
 </script>
+
+{#snippet stageFormationContent(dense: boolean)}
+  <TunnelStageFormationSettings {creator} {controller} {dense} />
+{/snippet}
 
 {#snippet settingsPanel(isMobile: boolean, layout: "bottom" | "sidebar")}
   <div class="drawer-panel settings-panel">
@@ -335,6 +345,9 @@
         animationSettingsState={creator.presentation.animationSettings}
         exporting={false}
         {reduceMotion}
+        formationContent={stageFormationContent}
+        formationSummaryOverride={`${creator.renderedInstanceCount} on stage · ${controller.formationSlotCount} positions`}
+        stageAware={true}
       />
     </div>
   </div>
