@@ -449,6 +449,7 @@
         secondaryLabel="Cancel"
         secondaryIcon="fa-xmark"
         onSecondaryAction={cancelMultiSelection}
+        secondaryDisabledWhenEmpty={false}
         onSelectAll={() => viewer.selectAllPerformers()}
         onClearSelection={() => viewer.clearPerformerSelection()}
         onExitSelection={cancelMultiSelection}

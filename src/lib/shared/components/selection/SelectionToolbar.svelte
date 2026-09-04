@@ -18,6 +18,7 @@
     secondaryLabel?: string;
     secondaryIcon?: string;
     onSecondaryAction?: () => void;
+    secondaryDisabledWhenEmpty?: boolean;
     dangerLabel?: string;
     dangerIcon?: string;
     onDangerAction?: () => void;
@@ -39,6 +40,7 @@
     secondaryLabel,
     secondaryIcon,
     onSecondaryAction,
+    secondaryDisabledWhenEmpty = true,
     dangerLabel,
     dangerIcon,
     onDangerAction,
@@ -133,7 +135,8 @@
         type="button"
         class="toolbar-button secondary-button"
         onclick={onSecondaryAction}
-        disabled={selectedCount === 0 || actionsDisabled}
+        disabled={(secondaryDisabledWhenEmpty && selectedCount === 0) ||
+          actionsDisabled}
         aria-label={secondaryLabel}
       >
         <i class="fas {secondaryIcon}" aria-hidden="true"></i>
@@ -320,11 +323,7 @@
 
   .selection-toolbar.destructive-primary .danger-button:hover:not(:disabled) {
     background: color-mix(in srgb, var(--semantic-error, #ef4444) 86%, black);
-    border-color: color-mix(
-      in srgb,
-      var(--semantic-error, #ef4444) 86%,
-      black
-    );
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 86%, black);
   }
 
   .toolbar-button:active:not(:disabled) {
