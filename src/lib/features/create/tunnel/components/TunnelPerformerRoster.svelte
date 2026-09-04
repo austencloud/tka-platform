@@ -25,6 +25,7 @@
 
   let {
     displays,
+    activeStepIndices = {},
     leftPropType,
     rightPropType,
     colorMode,
@@ -40,6 +41,7 @@
     onSelectPerformer,
   }: {
     displays: Record<string, TunnelPerformerDisplay>;
+    activeStepIndices?: Readonly<Record<string, number>>;
     leftPropType: PropType;
     rightPropType: PropType;
     colorMode: TunnelPropColorMode;
@@ -184,6 +186,7 @@
         bind:this={cardRefs[slot.id]}
         performer={slot.performer}
         displaySequence={display?.sequence ?? null}
+        activeStepIndex={activeStepIndices[slot.id] ?? null}
         stageTransformLabel={display?.stageTransformLabel ?? null}
         generatedInstanceCount={display?.generatedInstanceCount ?? 0}
         formationCopy={index === 1 && creator.partnerIsFormationCopy}

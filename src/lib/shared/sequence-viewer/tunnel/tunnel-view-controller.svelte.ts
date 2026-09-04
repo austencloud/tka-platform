@@ -10,7 +10,7 @@ import {
   buildTunnelCompositionLayers,
   type BuiltTunnelLayer,
 } from "./tunnel-layer-builder";
-import { sampleTunnelProps } from "./tunnel-prop-sampling";
+import { sampleTunnelProps, tunnelStepIndexAt } from "./tunnel-prop-sampling";
 import {
   DEFAULT_CONFIG,
   MAX_IMAGES,
@@ -608,14 +608,56 @@ export class TunnelViewController {
         left: { ...DEFAULT_PROP_STATE },
         right: { ...DEFAULT_PROP_STATE },
       };
-    const baseSpeed = (layer?.speed ?? 1) * (this.speedOverrides[0] ?? 1);
+    const timing = layer
+      ? this.#samplingTimingForArm(layer, 0)
+      : { offset: 0, speed: this.speedOverrides[0] ?? 1 };
     return sampleTunnelProps(
       seq,
       currentStep,
       this.#ease,
-      layer?.stepOffset ?? 0,
-      baseSpeed
+      timing.offset,
+      timing.speed
     );
+  }
+
+  /** The performed cell for each authored card at this exact canvas frame. */
+  authoredPerformerStepIndicesAt(currentStep: number): Record<string, number> {
+    const indices: Record<string, number> = {};
+    for (const [arm, layer] of this.#layers.entries()) {
+      // A generated formation copy can be staggered away from its source card.
+      // One card gets one border, so follow that performer's first authored
+      // stage instance rather than flashing several contradictory cells.
+      if (indices[layer.performerId] !== undefined) continue;
+      const timing = this.#samplingTimingForArm(layer, arm);
+      const index = tunnelStepIndexAt(
+        layer.performerSequence.steps.length,
+        currentStep,
+        timing.offset,
+        timing.speed
+      );
+      if (index !== null) indices[layer.performerId] = index;
+    }
+    return indices;
+  }
+
+  #samplingTimingForArm(
+    layer: BuiltTunnelLayer,
+    arm: number
+  ): { offset: number; speed: number } {
+    if (arm === 0) {
+      return {
+        offset: layer.stepOffset,
+        speed: layer.speed * (this.speedOverrides[0] ?? 1),
+      };
+    }
+    const mod = copyModulators(this.config)[arm - 1] ?? {
+      staggerSteps: 0,
+      speed: 1,
+    };
+    return {
+      offset: layer.stepOffset + mod.staggerSteps,
+      speed: layer.speed * mod.speed,
+    };
   }
 
   /** Per-copy prop states at the live playhead, each shifted by its Stagger +
@@ -623,15 +665,14 @@ export class TunnelViewController {
    *  index-for-index with the baked layers (same generation order). */
   additionalLayersAt(currentStep: number): AdditionalLayerProps[] {
     if (!this.active) return [];
-    const mods = copyModulators(this.config);
     return this.#layers.slice(1).map((layer, i) => {
-      const m = mods[i] ?? { staggerSteps: 0, speed: 1 };
+      const timing = this.#samplingTimingForArm(layer, i + 1);
       const p = sampleTunnelProps(
         layer.sequence,
         currentStep,
         this.#ease,
-        layer.stepOffset + m.staggerSteps,
-        layer.speed * m.speed
+        timing.offset,
+        timing.speed
       );
       // Every copy inherits the viewer's global prop — a layer carries no explicit
       // per-hand prop type, so the engine falls back to the global prop (the same
