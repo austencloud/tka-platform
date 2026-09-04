@@ -1,10 +1,5 @@
-<!--
-  Two direct instruments introduce the independent Timing and Direction axes.
-  Timing uses a phase dial instead of simulated physics; Direction uses paths
-  with explicit arrowheads. Only the selected relationship animates in each
-  instrument, so the learner never has to reconcile five competing clocks.
--->
 <script lang="ts">
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
   type TimingMode = "together" | "split" | "quarter";
@@ -15,56 +10,19 @@
     { value: "split", label: "Split" },
     { value: "quarter", label: "Quarter" },
   ];
-
   const directionOptions: Array<{ value: DirectionMode; label: string }> = [
     { value: "same", label: "Same" },
     { value: "opposite", label: "Opposite" },
   ];
-
-  const timingDetails: Record<
-    TimingMode,
-    { value: string; unit: string; ariaLabel: string }
-  > = {
-    together: {
-      value: "0",
-      unit: "same point",
-      ariaLabel:
-        "Together timing. The blue and red hands stay at the same point in the cycle.",
-    },
-    split: {
-      value: "½",
-      unit: "cycle apart",
-      ariaLabel:
-        "Split timing. The blue and red hands stay half a cycle apart.",
-    },
-    quarter: {
-      value: "¼",
-      unit: "cycle apart",
-      ariaLabel:
-        "Quarter timing. The blue and red hands stay one quarter of a cycle apart.",
-    },
-  };
-
-  const directionDetails: Record<
-    DirectionMode,
-    { label: string; ariaLabel: string }
-  > = {
-    same: {
-      label: "same way",
-      ariaLabel: "Same direction. The blue and red hands travel the same way.",
-    },
-    opposite: {
-      label: "opposite ways",
-      ariaLabel:
-        "Opposite direction. The blue and red hands travel opposite ways.",
-    },
-  };
+  const timingDetails = {
+    together: { angle: 0, label: "In sync" },
+    split: { angle: 180, label: "½ cycle apart" },
+    quarter: { angle: 90, label: "¼ cycle apart" },
+  } satisfies Record<TimingMode, { angle: number; label: string }>;
 
   let timingMode = $state<TimingMode>("together");
   let directionMode = $state<DirectionMode>("same");
-
   const timingDetail = $derived(timingDetails[timingMode]);
-  const directionDetail = $derived(directionDetails[directionMode]);
 </script>
 
 <div
@@ -75,41 +33,50 @@
   <section class="concept-panel timing-panel" aria-labelledby="timing-heading">
     <h3 id="timing-heading">Timing</h3>
 
+    <div
+      class="instrument phase-instrument"
+      data-timing={timingMode}
+      role="img"
+      aria-label={`${timingOptions.find((option) => option.value === timingMode)?.label} timing: ${timingDetail.label.toLowerCase()}. Both hands follow the same circle.`}
+    >
+      <svg class="motion-dial" viewBox="0 0 240 240" aria-hidden="true">
+        <circle class="shared-path" cx="120" cy="120" r="88" />
+        <path
+          class="phase-ticks"
+          d="M120 21v5 M214 120h5 M120 214v5 M21 120h5"
+        />
+        <g class="orbit timing-orbit">
+          <circle class="hand-dot blue-dot" cx="120" cy="32" r="12" />
+          <g
+            class="phase-offset"
+            style:--phase-angle={`${timingDetail.angle}deg`}
+          >
+            <circle class="hand-dot red-dot" cx="120" cy="32" r="12" />
+            <!-- Coincident hands share one center; the two halves keep both identities visible. -->
+            <path
+              class="together-half blue-dot"
+              d="M120 20a12 12 0 0 0 0 24Z"
+            />
+            <path class="together-seam" d="M120 22v20" />
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <div class="relationship-caption" aria-live="polite" aria-atomic="true">
+      <Crossfade key={timingMode}><span>{timingDetail.label}</span></Crossfade>
+    </div>
+
     <div class="selector timing-selector">
       <SegmentedControl
         options={timingOptions}
         value={timingMode}
         onchange={(value) => (timingMode = value)}
         color="accent"
-        density="compact"
+        density="tight"
         semantics="radiogroup"
         ariaLabel="Timing relationship"
       />
-    </div>
-
-    <div
-      class="instrument phase-instrument"
-      data-timing={timingMode}
-      role="img"
-      aria-label={timingDetail.ariaLabel}
-    >
-      <svg class="phase-dial" viewBox="0 0 220 220" aria-hidden="true">
-        <circle class="phase-ring outer-ring" cx="110" cy="110" r="78"></circle>
-        <circle class="phase-ring inner-ring" cx="110" cy="110" r="53"></circle>
-
-        <path class="phase-ticks" d="M110 20v8 M110 192v8 M20 110h8 M192 110h8"
-        ></path>
-
-        <g class="phase-orbit blue-orbit">
-          <circle class="phase-dot blue-dot" cx="110" cy="32" r="9"></circle>
-        </g>
-        <g class="phase-orbit red-orbit">
-          <circle class="phase-dot red-dot" cx="110" cy="57" r="9"></circle>
-        </g>
-
-        <text class="phase-value" x="110" y="107">{timingDetail.value}</text>
-        <text class="phase-unit" x="110" y="129">{timingDetail.unit}</text>
-      </svg>
     </div>
   </section>
 
@@ -119,88 +86,85 @@
   >
     <h3 id="direction-heading">Direction</h3>
 
+    <div
+      class="instrument direction-instrument"
+      data-direction={directionMode}
+      role="img"
+      aria-label={`${directionMode === "same" ? "Same direction: both hands go the same way" : "Opposite direction: the hands go opposite ways"} around one circle. Arrowheads show their travel.`}
+    >
+      <Crossfade key={directionMode} fill>
+        <svg class="motion-dial" viewBox="0 0 240 240" aria-hidden="true">
+          <circle class="shared-path" cx="120" cy="120" r="88" />
+          <g class="orbit direction-orbit blue-orbit">
+            <path
+              class="motion-tail blue-tail"
+              d="M76 43.79A88 88 0 0 1 120 32"
+            />
+            <circle class="hand-dot blue-dot" cx="120" cy="32" r="12" />
+            <path class="travel-chevron" d="m117 27 5 5-5 5" />
+          </g>
+          <g class="direction-offset">
+            <g
+              class="orbit direction-orbit red-orbit"
+              class:reverse={directionMode === "opposite"}
+            >
+              <g class:reverse-marker={directionMode === "opposite"}>
+                <path
+                  class="motion-tail red-tail"
+                  d="M76 43.79A88 88 0 0 1 120 32"
+                />
+                <circle class="hand-dot red-dot" cx="120" cy="32" r="12" />
+                <path class="travel-chevron" d="m117 27 5 5-5 5" />
+              </g>
+            </g>
+          </g>
+        </svg>
+      </Crossfade>
+    </div>
+
+    <div class="relationship-caption" aria-live="polite" aria-atomic="true">
+      <Crossfade key={directionMode}
+        ><span>{directionMode === "same" ? "Same way" : "Opposite ways"}</span
+        ></Crossfade
+      >
+    </div>
+
     <div class="selector direction-selector">
       <SegmentedControl
         options={directionOptions}
         value={directionMode}
         onchange={(value) => (directionMode = value)}
         color="accent"
-        density="compact"
+        density="tight"
         semantics="radiogroup"
         ariaLabel="Direction relationship"
       />
-    </div>
-
-    <div
-      class="instrument direction-instrument"
-      data-direction={directionMode}
-      role="img"
-      aria-label={directionDetail.ariaLabel}
-    >
-      <svg class="direction-diagram" viewBox="0 0 280 150" aria-hidden="true">
-        <path class="travel-track" d="M30 42H250"></path>
-        <path class="travel-track" d="M30 98H250"></path>
-
-        <path class="travel-arrow blue-arrow" d="M239 33l11 9-11 9"></path>
-        <path class="travel-arrow red-arrow same-arrow" d="M239 89l11 9-11 9"
-        ></path>
-        <path
-          class="travel-arrow red-arrow opposite-arrow"
-          d="M41 89l-11 9 11 9"
-        ></path>
-
-        <circle class="runner blue-runner" cx="39" cy="42" r="9"></circle>
-        <circle class="runner red-runner" cx="39" cy="98" r="9"></circle>
-
-        <text class="direction-value" x="140" y="139">
-          {directionDetail.label}
-        </text>
-      </svg>
     </div>
   </section>
 </div>
 
 <style>
   .concept-model {
-    --phase-cycle: calc(
-      var(--duration-dramatic) + var(--duration-dramatic) +
-        var(--duration-dramatic) + var(--duration-dramatic) +
-        var(--duration-dramatic) + var(--duration-dramatic) +
-        var(--duration-dramatic) + var(--duration-dramatic)
-    );
-    --travel-cycle: calc(
-      var(--duration-dramatic) + var(--duration-dramatic) +
-        var(--duration-dramatic) + var(--duration-dramatic) +
-        var(--duration-dramatic) + var(--duration-dramatic)
-    );
-    --scene-delay: calc(0ms - var(--duration-emphasis));
-    --quarter-delay: calc(
-      0ms - var(--duration-dramatic) - var(--duration-dramatic)
-    );
-    --half-delay: calc(
-      0ms - var(--duration-dramatic) - var(--duration-dramatic) -
-        var(--duration-dramatic) - var(--duration-dramatic)
-    );
-
+    --cycle-duration: calc(var(--duration-dramatic) * 10);
     display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    width: min(100%, 72rem);
-    height: min(100%, 18rem);
-    min-height: min(100%, 15rem);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(100%, 64rem);
+    height: min(100%, 28rem);
+    min-height: 0;
     margin-inline: auto;
-    overflow: hidden;
     border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-lg, 0.75rem);
+    border-radius: var(--radius-xl, 1rem);
     background: var(--theme-card-bg);
   }
 
   .concept-panel {
     display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr);
-    gap: clamp(0.5rem, 1.4cqh, 0.8rem);
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    justify-items: center;
+    gap: clamp(0.5rem, 1.5cqh, 0.875rem);
     min-width: 0;
     min-height: 0;
-    padding: clamp(0.85rem, 1.8cqw, 1.35rem);
+    padding: clamp(1rem, 2cqw, 2rem);
   }
 
   .direction-panel {
@@ -210,290 +174,208 @@
   h3 {
     margin: 0;
     color: var(--theme-text);
-    font-size: clamp(1.35rem, 2.1cqw, 2rem);
-    line-height: 1.1;
+    font-size: clamp(1.25rem, 2cqw, 1.75rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
     text-align: center;
   }
 
-  .selector {
-    width: 100%;
-    margin-inline: auto;
-  }
-
-  .timing-selector {
-    max-width: 24rem;
-  }
-
-  .direction-selector {
-    max-width: 16rem;
-  }
-
   .instrument {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: relative;
+    width: 100%;
     min-width: 0;
     min-height: 0;
-    overflow: hidden;
   }
 
-  .phase-dial {
+  .motion-dial {
+    position: absolute;
+    inset: 0;
     display: block;
-    width: auto;
-    max-width: 100%;
-    height: min(100%, 11.5rem);
+    width: 100%;
+    height: 100%;
     overflow: visible;
   }
 
-  .phase-ring {
+  .shared-path {
     fill: none;
-    stroke: var(--theme-stroke-strong);
-    stroke-width: 2;
-  }
-
-  .inner-ring {
-    stroke: var(--theme-stroke);
+    stroke: color-mix(in srgb, var(--theme-text) 22%, transparent);
+    stroke-width: 1.5;
   }
 
   .phase-ticks {
     fill: none;
     stroke: var(--theme-text-dim);
     stroke-linecap: round;
-    stroke-width: 3;
-  }
-
-  .phase-orbit {
-    transform-box: view-box;
-    transform-origin: center;
-    animation: phase-rotation var(--phase-cycle) linear infinite both;
-    animation-delay: var(--scene-delay);
-  }
-
-  .phase-instrument[data-timing="split"] .red-orbit {
-    animation-delay: calc(var(--scene-delay) + var(--half-delay));
-  }
-
-  .phase-instrument[data-timing="quarter"] .red-orbit {
-    animation-delay: calc(var(--scene-delay) + var(--quarter-delay));
-  }
-
-  .phase-dot {
-    stroke: color-mix(in srgb, var(--theme-text) 18%, transparent);
     stroke-width: 2;
   }
 
-  .blue-dot,
-  .blue-runner {
+  .orbit,
+  .phase-offset,
+  .direction-offset,
+  .reverse-marker {
+    transform-box: view-box;
+    transform-origin: center;
+  }
+
+  .orbit {
+    animation: orbit-cycle var(--cycle-duration) linear infinite;
+  }
+  .timing-orbit {
+    animation-delay: calc(var(--cycle-duration) * -0.125);
+  }
+
+  .phase-offset {
+    transform: rotate(var(--phase-angle));
+    transition: transform var(--duration-dramatic) var(--ease-out);
+  }
+
+  .hand-dot {
+    stroke: color-mix(in srgb, var(--theme-text) 45%, transparent);
+    stroke-width: 1.5;
+  }
+
+  .blue-dot {
     fill: var(--prop-blue, #3d44b8);
   }
-
-  .red-dot,
-  .red-runner {
+  .red-dot {
     fill: var(--prop-red, #ed1c24);
   }
-
-  .phase-value,
-  .phase-unit,
-  .direction-value {
-    text-anchor: middle;
+  .together-half,
+  .together-seam {
+    opacity: 0;
+  }
+  [data-timing="together"] .together-half,
+  [data-timing="together"] .together-seam {
+    opacity: 1;
   }
 
-  .phase-value {
-    fill: var(--theme-text);
-    font-size: 1.55rem;
-    font-weight: 800;
-  }
-
-  .phase-unit,
-  .direction-value {
-    fill: var(--theme-text-dim);
-    font-size: 0.78rem;
-    font-weight: 650;
-  }
-
-  .direction-diagram {
-    display: block;
-    width: min(100%, 18rem);
-    max-height: 100%;
-    height: auto;
-    overflow: visible;
-  }
-
-  .travel-track {
+  .together-seam {
     fill: none;
-    stroke: color-mix(in srgb, var(--theme-stroke-strong) 72%, transparent);
+    stroke: color-mix(in srgb, var(--theme-text) 65%, transparent);
+    stroke-width: 1;
+  }
+
+  .direction-offset {
+    transform: rotate(180deg);
+  }
+  .reverse {
+    animation-direction: reverse;
+  }
+  .reverse-marker {
+    transform: scaleX(-1);
+  }
+
+  .motion-tail {
+    fill: none;
+    stroke-width: 4;
     stroke-linecap: round;
-    stroke-width: 17;
+    opacity: 0.65;
   }
 
-  .travel-arrow {
+  .blue-tail {
+    stroke: var(--prop-blue, #3d44b8);
+  }
+  .red-tail {
+    stroke: var(--prop-red, #ed1c24);
+  }
+  .travel-chevron {
     fill: none;
-    stroke: var(--theme-text-dim);
+    stroke: white;
     stroke-linecap: round;
     stroke-linejoin: round;
-    stroke-width: 3;
+    stroke-width: 2;
   }
 
-  .opposite-arrow {
-    display: none;
+  .relationship-caption {
+    height: 1.5rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 0.875rem);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5rem;
+    text-align: center;
+    white-space: nowrap;
   }
 
-  .direction-instrument[data-direction="opposite"] .same-arrow {
-    display: none;
+  .selector {
+    width: 100%;
+    max-width: 19.5rem;
+    min-width: 0;
+  }
+  .direction-selector {
+    max-width: 13rem;
   }
 
-  .direction-instrument[data-direction="opposite"] .opposite-arrow {
-    display: inline;
-  }
-
-  .runner {
-    transform-box: view-box;
-    animation: direction-travel-forward var(--travel-cycle) linear infinite both;
-    animation-delay: var(--scene-delay);
-  }
-
-  .direction-instrument[data-direction="opposite"] .red-runner {
-    animation-name: direction-travel-reverse;
-  }
-
-  @keyframes phase-rotation {
+  @keyframes orbit-cycle {
     to {
       transform: rotate(360deg);
     }
   }
 
-  @keyframes direction-travel-forward {
-    0%,
-    8% {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    82% {
-      opacity: 1;
-      transform: translateX(202px);
-    }
-    88% {
-      opacity: 0;
-      transform: translateX(202px);
-    }
-    89% {
-      opacity: 0;
-      transform: translateX(0);
-    }
-    100% {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes direction-travel-reverse {
-    0%,
-    8% {
-      opacity: 1;
-      transform: translateX(202px);
-    }
-    82% {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    88% {
-      opacity: 0;
-      transform: translateX(0);
-    }
-    89% {
-      opacity: 0;
-      transform: translateX(202px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateX(202px);
-    }
-  }
-
   @media (max-width: 640px) {
     .concept-model {
-      height: min(100%, 17.5rem);
-      min-height: min(100%, 16rem);
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      height: min(100%, 18rem);
     }
-
     .concept-panel {
-      gap: 0.45rem;
-      padding: 0.7rem 0.45rem;
+      padding: 0.875rem 0.25rem;
+      gap: 0.5rem;
     }
-
-    h3 {
-      font-size: 1.25rem;
-    }
-
-    .phase-dial {
-      height: min(100%, 9.5rem);
-    }
-
-    .phase-value {
-      font-size: 1.35rem;
+    .instrument {
+      width: min(100%, 7.5rem);
     }
   }
 
   @media (max-height: 540px) and (min-width: 641px) {
-    .concept-model {
-      height: 9.5rem;
-      min-height: 9.5rem;
-    }
-
     .concept-panel {
-      gap: 0.18rem;
-      padding: 0.35rem 0.6rem;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      align-items: center;
+      column-gap: 0.75rem;
+      row-gap: 0.35rem;
+      padding: 0.75rem;
     }
-
     h3 {
-      font-size: 1.05rem;
+      grid-column: 1;
+      font-size: 1.25rem;
     }
-
-    .phase-dial {
-      height: min(100%, 4.2rem);
+    .instrument {
+      grid-column: 2;
+      grid-row: 1 / -1;
+      align-self: stretch;
     }
-
-    .direction-diagram {
-      width: min(100%, 11rem);
+    .relationship-caption {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .selector {
+      grid-column: 1;
+      grid-row: 3;
     }
   }
 
-  @media (min-width: 1680px) {
+  @media (min-width: 2400px) and (min-height: 1300px) {
     .concept-model {
-      width: min(100%, 82rem);
+      width: min(100%, 84rem);
+      height: min(100%, 36rem);
     }
   }
 
-  @media (min-width: 2600px) {
-    .concept-model {
-      width: min(100%, 96rem);
+  @media (max-height: 540px) and (min-width: 641px) and (max-width: 800px) {
+    .instrument {
+      grid-row: 1 / 3;
+    }
+    .selector {
+      grid-column: 1 / -1;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .phase-orbit,
-    .runner {
+    .orbit {
       animation: none;
     }
-
-    .phase-instrument[data-timing="split"] .red-orbit {
-      transform: rotate(180deg);
-    }
-
-    .phase-instrument[data-timing="quarter"] .red-orbit {
-      transform: rotate(90deg);
-    }
-
-    .direction-instrument[data-direction="same"] .runner {
-      transform: translateX(72px);
-    }
-
-    .direction-instrument[data-direction="opposite"] .blue-runner {
-      transform: translateX(72px);
-    }
-
-    .direction-instrument[data-direction="opposite"] .red-runner {
-      transform: translateX(130px);
+    .phase-offset {
+      transition: none;
     }
   }
 </style>

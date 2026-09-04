@@ -2,15 +2,21 @@
  * TikaPictographLoader - Loads and caches TKA pictograph data
  *
  * Handles CSV parsing for diamond/box mode pictographs,
- * JSON loading for glossary and letter types,
+ * canonical glossary and letter types,
  * and builds position mapping indexes for sequence validation.
  */
 
 import fs from "fs";
 import path from "path";
+import {
+  GLOSSARY,
+  LETTER_TYPES,
+  type GlossaryEntry,
+  type LetterTypeDefinition,
+} from "@tka/domain";
 
 export interface MotionData {
-  color: string;
+  hand: "left" | "right";
   startLocation: string;
   endLocation: string;
   motionType: string;
@@ -28,23 +34,6 @@ export interface PictographData {
 export interface PictographDataWithMode extends PictographData {
   gridMode: "diamond" | "box";
 }
-export interface GlossaryEntry {
-  definition: string;
-  examples: string[];
-  relatedTerms: string[];
-  category: string;
-}
-export interface LetterTypeInfo {
-  name: string;
-  description: string;
-  characteristics: string[];
-  letters: string[];
-  motionPattern: {
-    leftMotion: string;
-    rightMotion: string;
-    note?: string;
-  };
-}
 export interface LetterPositionMapping {
   startPosition: string;
   endPosition: string;
@@ -56,8 +45,6 @@ export class TikaPictographLoader {
   private allPictographs: PictographData[] = [];
   private diamondPictographs: PictographDataWithMode[] = [];
   private boxPictographs: PictographDataWithMode[] = [];
-  private glossary: Record<string, GlossaryEntry> = {};
-  private letterTypes: Record<string, LetterTypeInfo> = {};
   private letterPositionMappings: Record<string, LetterPositionMapping> = {};
   private bridgeLettersByTransition: Record<string, string[]> = {};
 
@@ -67,7 +54,6 @@ export class TikaPictographLoader {
   ensureLoaded(): void {
     if (!this.dataLoaded) {
       this.loadDataframe();
-      this.loadKnowledgeBase();
       this.dataLoaded = true;
     }
     if (!this.positionMappingsLoaded) {
@@ -92,13 +78,11 @@ export class TikaPictographLoader {
   }
 
   getGlossary(): Record<string, GlossaryEntry> {
-    this.ensureLoaded();
-    return this.glossary;
+    return GLOSSARY;
   }
 
-  getLetterTypes(): Record<string, LetterTypeInfo> {
-    this.ensureLoaded();
-    return this.letterTypes;
+  getLetterTypes(): Record<string, LetterTypeDefinition> {
+    return LETTER_TYPES;
   }
 
   getLetterPositionMappings(): Record<string, LetterPositionMapping> {
@@ -209,35 +193,6 @@ export class TikaPictographLoader {
         error
       );
       return [];
-    }
-  }
-
-  private loadKnowledgeBase(): void {
-    try {
-      const glossaryPath = path.join(
-        process.cwd(),
-        "mcp-server",
-        "data",
-        "tka-glossary.json"
-      );
-      const typesPath = path.join(
-        process.cwd(),
-        "mcp-server",
-        "data",
-        "letter-types.json"
-      );
-
-      if (fs.existsSync(glossaryPath)) {
-        this.glossary = JSON.parse(fs.readFileSync(glossaryPath, "utf-8"));
-      }
-      if (fs.existsSync(typesPath)) {
-        this.letterTypes = JSON.parse(fs.readFileSync(typesPath, "utf-8"));
-      }
-    } catch (error) {
-      console.error(
-        "[TikaPictographLoader] Failed to load knowledge base:",
-        error
-      );
     }
   }
 

@@ -101,10 +101,6 @@
       ? `Hand motion ${stepIndex + 1} of ${HAND_PATH_STEPS.length}`
       : "Two hands"
   );
-  const headingDescription = $derived(
-    activeMotion?.guideCaption ??
-      "Time compares the hands: together, split, or quarter. Direction compares their travel: same or opposite."
-  );
 
   function goToStep(next: number): void {
     const clamped = Math.min(comparisonIndex, Math.max(0, next));
@@ -173,7 +169,14 @@
         title={headingTitle}
         eyebrow={headingEyebrow}
       >
-        <p>{headingDescription}</p>
+        <p class="motion-description">
+          {#if activeMotion}
+            {activeMotion.guideCaption}
+          {:else}
+            <span class="description-phrase">Compare when your hands move</span>
+            <span class="description-phrase">and which way they travel.</span>
+          {/if}
+        </p>
       </LessonStageHeading>
     {/snippet}
 
@@ -240,6 +243,16 @@
 
   .motions-experience :global(.lesson-stage-frame) {
     --lesson-artifact-wide-max: var(--shell-w, 96rem);
+  }
+
+  .motion-description {
+    max-width: 60ch;
+    text-wrap: balance;
+  }
+
+  .description-phrase {
+    display: inline-block;
+    max-width: 100%;
   }
 
   .artifact-state {

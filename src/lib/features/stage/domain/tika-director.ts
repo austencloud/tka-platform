@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const TIKA_DIRECTOR_MAX_HISTORY = 40;
+
 export const TIKA_DIRECTOR_FORMATIONS = [
   "line",
   "triangle",
@@ -59,14 +61,16 @@ export const TikaDirectorResponseSchema = z.discriminatedUnion("kind", [
 const TikaDirectorConversationMessageSchema = z
   .object({
     role: z.enum(["user", "assistant"]),
-    content: z.string().min(1).max(1_000),
+    content: z.string().min(1).max(2_000),
   })
   .strict();
 
 export const TikaDirectorRequestSchema = z
   .object({
     prompt: z.string().trim().min(1).max(2_000),
-    conversation: z.array(TikaDirectorConversationMessageSchema).max(8),
+    conversation: z
+      .array(TikaDirectorConversationMessageSchema)
+      .max(TIKA_DIRECTOR_MAX_HISTORY),
     scene: z
       .object({
         id: z.string().min(1).max(160),
