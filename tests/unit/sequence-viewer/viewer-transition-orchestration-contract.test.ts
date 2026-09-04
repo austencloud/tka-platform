@@ -382,12 +382,14 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(reviewFrame).toContain('canvas[data-animation-layer="props"]');
     expect(canvas2DRenderer).toContain("publishTunnelPaintTelemetry(");
     expect(canvas2DRenderer).toContain(
-      'canvas.dataset.captureTunnelPaint !== "true"'
+      'capture.dataset.captureTunnelPaint !== "true"'
     );
     expect(canvas2DRenderer).toContain(
       "paintedTunnelOpacities.push(ctx.globalAlpha)"
     );
     expect(reviewFrame).toContain("setTunnelPaintCapture(true)");
+    expect(reviewFrame).toContain("readTunnelPaintHistory()");
+    expect(reviewFrame).toContain("tunnelPaintSamples:");
     expect(reviewFrame).toContain("tunnelPaintedOpacityMean:");
     expect(geometryTrace).toContain("Reveal-before-layers frames:");
     expect(geometryTrace).toContain("Largest grid alpha step:");

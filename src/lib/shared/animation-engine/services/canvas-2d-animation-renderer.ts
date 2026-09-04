@@ -840,7 +840,13 @@ export class Canvas2DAnimationRenderer {
 
     // 5. Draw glyph (with fade transition)
     this.renderGlyph(ctx, params.currentTime, canvasSize);
-    this.publishTunnelPaintTelemetry(paintedTunnelOpacities);
+    this.publishTunnelPaintTelemetry(
+      paintedTunnelOpacities,
+      Math.max(
+        0,
+        ...(params.additionalLayers?.map((layer) => layer.opacity) ?? [])
+      )
+    );
   }
 
   /**
@@ -852,21 +858,36 @@ export class Canvas2DAnimationRenderer {
    * describe the paint work that produced the composited frame without adding
    * a production DOM write on ordinary playback.
    */
-  private publishTunnelPaintTelemetry(opacities: number[]): void {
-    const canvas = this.appManager.getCanvas();
-    if (!canvas || canvas.dataset.captureTunnelPaint !== "true") return;
-    const frame = (Number(canvas.dataset.tunnelPaintFrame) || 0) + 1;
+  private publishTunnelPaintTelemetry(
+    opacities: number[],
+    progress: number
+  ): void {
+    const capture = document.documentElement;
+    if (capture.dataset.captureTunnelPaint !== "true") return;
+    const frame = (Number(capture.dataset.tunnelPaintFrame) || 0) + 1;
     const mean =
       opacities.length === 0
         ? 0
         : opacities.reduce((total, opacity) => total + opacity, 0) /
           opacities.length;
-    canvas.dataset.tunnelPaintFrame = String(frame);
-    canvas.dataset.tunnelPaintedPropCount = String(opacities.length);
-    canvas.dataset.tunnelPaintedPerceptiblePropCount = String(
-      opacities.filter((opacity) => opacity >= 0.1).length
-    );
-    canvas.dataset.tunnelPaintedOpacityMean = mean.toFixed(3);
+    const perceptible = opacities.filter((opacity) => opacity >= 0.1).length;
+    capture.dataset.tunnelPaintFrame = String(frame);
+    capture.dataset.tunnelPaintedPropCount = String(opacities.length);
+    capture.dataset.tunnelPaintedPerceptiblePropCount = String(perceptible);
+    capture.dataset.tunnelPaintedOpacityMean = mean.toFixed(3);
+
+    const entry = [
+      performance.now().toFixed(1),
+      progress.toFixed(3),
+      opacities.length,
+      perceptible,
+      mean.toFixed(3),
+    ].join(",");
+    const history = capture.dataset.tunnelPaintHistory
+      ? capture.dataset.tunnelPaintHistory.split(";")
+      : [];
+    history.push(entry);
+    capture.dataset.tunnelPaintHistory = history.slice(-240).join(";");
   }
 
   getLastPropTransforms(): {

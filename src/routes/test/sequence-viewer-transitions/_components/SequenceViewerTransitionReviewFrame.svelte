@@ -24,6 +24,7 @@
   import type {
     InspectorLayerId,
     InspectorRevealSample,
+    TunnelPaintSample,
     TransitionGeometrySample,
     TransitionGeometryTrace,
     TransitionTraceCommand,
@@ -413,21 +414,36 @@
   }
 
   function setTunnelPaintCapture(active: boolean): void {
+    const capture = document.documentElement;
     if (!active) {
-      document
-        .querySelectorAll<HTMLCanvasElement>(
-          'canvas[data-animation-layer="props"][data-capture-tunnel-paint="true"]'
-        )
-        .forEach((canvas) => delete canvas.dataset.captureTunnelPaint);
+      delete capture.dataset.captureTunnelPaint;
       return;
     }
-    const canvas = tunnelCanvas();
-    if (!canvas || canvas.dataset.captureTunnelPaint === "true") return;
-    canvas.dataset.captureTunnelPaint = "true";
-    canvas.dataset.tunnelPaintFrame = "0";
-    canvas.dataset.tunnelPaintedPropCount = "0";
-    canvas.dataset.tunnelPaintedPerceptiblePropCount = "0";
-    canvas.dataset.tunnelPaintedOpacityMean = "0.000";
+    if (capture.dataset.captureTunnelPaint === "true") return;
+    capture.dataset.captureTunnelPaint = "true";
+    capture.dataset.tunnelPaintFrame = "0";
+    capture.dataset.tunnelPaintedPropCount = "0";
+    capture.dataset.tunnelPaintedPerceptiblePropCount = "0";
+    capture.dataset.tunnelPaintedOpacityMean = "0.000";
+    capture.dataset.tunnelPaintHistory = "";
+  }
+
+  function readTunnelPaintHistory(): TunnelPaintSample[] {
+    return (document.documentElement.dataset.tunnelPaintHistory ?? "")
+      .split(";")
+      .filter(Boolean)
+      .map((entry) => {
+        const [time, progress, painted, perceptible, mean] = entry
+          .split(",")
+          .map(Number);
+        return {
+          time: time ?? 0,
+          progress: progress ?? 0,
+          paintedPropCount: painted ?? 0,
+          perceptiblePropCount: perceptible ?? 0,
+          meanAlpha: mean ?? 0,
+        };
+      });
   }
 
   async function waitForTunnelPresentation(version: number): Promise<boolean> {
@@ -697,14 +713,15 @@
       tunnelGridOpacity:
         Number(persistentAnimator?.dataset.tunnelGridOpacity) || 0,
       tunnelPaintFrame:
-        Number(activeTunnelCanvas?.dataset.tunnelPaintFrame) || 0,
+        Number(document.documentElement.dataset.tunnelPaintFrame) || 0,
       tunnelPaintedPropCount:
-        Number(activeTunnelCanvas?.dataset.tunnelPaintedPropCount) || 0,
+        Number(document.documentElement.dataset.tunnelPaintedPropCount) || 0,
       tunnelPaintedPerceptiblePropCount:
-        Number(activeTunnelCanvas?.dataset.tunnelPaintedPerceptiblePropCount) ||
-        0,
+        Number(
+          document.documentElement.dataset.tunnelPaintedPerceptiblePropCount
+        ) || 0,
       tunnelPaintedOpacityMean:
-        Number(activeTunnelCanvas?.dataset.tunnelPaintedOpacityMean) || 0,
+        Number(document.documentElement.dataset.tunnelPaintedOpacityMean) || 0,
       tunnelPresented: Boolean(activeTunnelSurface) || tunnelBlend > 0,
       tunnelCanvasReady,
       animatorIdentity: elementIdentity("[data-persistent-animator]"),
@@ -763,7 +780,13 @@
     cancelAnimationFrame(traceFrame);
     tracePhase = phase;
     traceStartedAt = performance.now();
-    activeTrace = { command, duration: 0, samples: [], modeCommits: [] };
+    activeTrace = {
+      command,
+      duration: 0,
+      samples: [],
+      tunnelPaintSamples: [],
+      modeCommits: [],
+    };
     setTunnelPaintCapture(true);
     captureGeometrySample();
   }
@@ -779,6 +802,7 @@
     cancelAnimationFrame(traceFrame);
     activeTrace.duration =
       Math.round((performance.now() - traceStartedAt) * 10) / 10;
+    activeTrace.tunnelPaintSamples = readTunnelPaintHistory();
     window.parent.postMessage(
       {
         source: "sequence-viewer-transition-frame",
