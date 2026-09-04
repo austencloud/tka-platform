@@ -551,6 +551,40 @@ The Gate 1.1 evidence is:
 - canonical measured report:
   `evidence/gate-1-1-geology-amendment-r4/ember-midflank-fire-pilgrimage-r4-gate1-1-report.json`.
 
-Gate 1.1 R4 is `ready-for-review` with approval unset. No Blender graybox,
-shipping runtime, final material, atmosphere, Meshy asset, or Meshy credit was
-changed. Gate 2 may begin only after explicit R4 artifact approval.
+Gate 1.1 R4 was approved by Austen on 2026-09-04 with “Yeah that's better let's
+go with that” in tracker `xFcagbaZTQAq615IbZgT`. No shipping runtime, final
+material, atmosphere, Meshy asset, or Meshy credit changed at that gate.
+
+## Mid-Flank Fire Pilgrimage Gate 2 R4
+
+The existing `scripts/build-ember-geology-graybox.py` owner now derives the
+Blender scene from the approved R4 heightfield and the same checked-in Flowy
+thickness raster used by Gate 1.1. The terrain has 128,016 registered 1 m
+samples. The visible lava body has exactly one top quad for each of the 2,154
+active simulator cells, closes every exposed edge with terrain-conforming
+support faces, and carries the source raster and coordinate-manifest digests in
+both the Blend and review GLB.
+
+The 1.75 m performer proxy remains on the long contour ledge. A furnace-saddle
+fissure and sparse upper/lower flank buttresses clarify the vertical hierarchy
+without hiding the approved terrain. Plan-only action and ledge guides are
+excluded from the GLB. One visible terrain collider carries
+`tka_camera_collision=true`; no decorative mesh collides.
+
+The review package in `evidence/gate-2-geology-graybox-r4/` includes the exact
+default audience camera, eight exact 25 m orbit stops, a 48-frame continuous
+orbit, north-up plan, true-scale summit-to-outflow section, director overview,
+mid-flank oblique, 4K contact sheet, coordinate manifest, and verification
+report. The editable source is
+`blender/ember-midflank-fire-pilgrimage-graybox-r4.blend`; the spatially
+equivalent review asset is
+`static/models/ember/review/ember-midflank-fire-pilgrimage-graybox-r4.glb`.
+
+Automated verification confirms a connected 296.196 m source-to-south deposit
+trace with 195.588 m net descent, 13 south-exit cells, zero occupied-row gaps,
+9 m downstream median width, and 6.0 m clearance beyond the protected action
+envelope. Blender/GLB geometry, camera, material, collision, transform, and
+source-digest equivalence checks pass. Gate 2 R4 is `ready-for-review` with
+approval unset in tracker reference `lXhTllDFV2Ne1E7foCkS`. Gate 3 has not
+started; no production runtime, final material, atmosphere, Meshy asset, or
+Meshy credit changed.

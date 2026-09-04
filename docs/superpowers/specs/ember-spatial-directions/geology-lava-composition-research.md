@@ -1,6 +1,6 @@
 # Ember geology, lava, and composition research
 
-Status: complete research package; Mid-Flank Fire Pilgrimage Gate 1.1 R4 ready for review and Gate 2 pending
+Status: complete research package; Mid-Flank Fire Pilgrimage Gate 1.1 R4 approved and Gate 2 R4 ready for review
 
 Date: 2026-09-03
 
@@ -19,10 +19,11 @@ passes west of the performer, and continues beyond the south review boundary.
 The performer is neither on a disk nor at the bottom of a basin; the mountain
 continues materially above and below the orbit.
 
-This direction is the Gate 1.1 R4 review candidate under Austen's explicit
-mid-flank requirement in tracker `BvN1DiylOnfdbrofcwaM`. The R3 Gate 2 package
-is historical. No new Blender graybox becomes canonical until Gate 1.1 R4
-receives explicit artifact approval.
+This direction is the approved Gate 1.1 R4 contract under Austen's explicit
+mid-flank requirement in tracker `BvN1DiylOnfdbrofcwaM` and approval in
+`xFcagbaZTQAq615IbZgT`. The R3 Gate 2 package is historical. The R4 Blender
+graybox now carries this contract into Gate 2 without changing the shipping
+runtime.
 
 The restart should preserve Ember's useful infrastructure, surface work, and
 atmosphere while replacing two failed owners:
@@ -618,6 +619,7 @@ and selected float32 footprint live in
 - `py -3 scripts/build-ember-geology-amendment.py build`
 - `py -3 scripts/build-ember-geology-amendment.py verify`
 
-Gate 1.1 R4 is `ready-for-review` with approval unset; Gate 2 remains pending.
-The R4 correction changes no production runtime, final material, atmosphere,
-Blender source, Meshy asset, or Meshy credit.
+Gate 1.1 R4 is approved. Gate 2 R4 evidence lives in
+`evidence/gate-2-geology-graybox-r4/` and is `ready-for-review` with approval
+unset in tracker `lXhTllDFV2Ne1E7foCkS`. The correction changes no production runtime, final material,
+atmosphere, Meshy asset, or Meshy credit.
