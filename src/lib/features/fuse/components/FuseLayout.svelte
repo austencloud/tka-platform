@@ -15,6 +15,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     fitsFuseRecipeColumn,
+    fitsFuseTallPortraitWorkspace,
     getBestFuseStepColumns,
     negotiateFuseColumnWidths,
     resolveBalancedFuseWorkspaceSplit,
@@ -37,6 +38,7 @@
   let compact = $state(true);
   let landscapeSplit = $state(false);
   let shortLandscape = $state(false);
+  let tallPortrait = $state(false);
   let settingsOpen = $state(false);
   let settingsDestination = $state<FuseSettingsDestination>(null);
   let actionSide = $state<FuseSide | null>(null);
@@ -84,6 +86,8 @@
   const CARD_CHROME_V = 96; // card vertical chrome: padding + the Back/Shuffle row
   const PREVIEW_CHROME_V = 190; // matches FusePreviewStage's square frame cap
   const PREVIEW_HPAD = 48; // maximum desktop stage padding, both sides
+  const TALL_PORTRAIT_MIN_HEIGHT = 1280;
+  const TALL_PORTRAIT_MIN_ASPECT = 2.1;
 
   let containerWidth = $state(0);
   let containerHeight = $state(0);
@@ -473,11 +477,20 @@
         width >= BREAKPOINTS.PORTRAIT_MOBILE &&
         width > height &&
         height < LANDSCAPE_THRESHOLDS.MAX_PHONE_HEIGHT;
-      const useCompactLayout = width < BREAKPOINTS.MOBILE || useShortLandscape;
+      const useTallPortrait = fitsFuseTallPortraitWorkspace({
+        width,
+        height,
+        mobileMaxWidth: BREAKPOINTS.PORTRAIT_MOBILE,
+        minHeight: TALL_PORTRAIT_MIN_HEIGHT,
+        minAspectRatio: TALL_PORTRAIT_MIN_ASPECT,
+      });
+      const useCompactLayout =
+        (width < BREAKPOINTS.MOBILE && !useTallPortrait) || useShortLandscape;
       const useFullCards = width >= 1100 && height >= 780;
       const aspectRatio = height > 0 ? width / height : 1;
       compact = useCompactLayout;
       shortLandscape = useShortLandscape;
+      tallPortrait = useTallPortrait;
       fullCard = useFullCards;
       wideWorkspace = width >= 1680 && height >= 900;
       // Use the measured Fuse slot, not the physical screen: Android chrome and
@@ -636,6 +649,7 @@
     bind:this={workspaceEl}
     class:compact-workspace={compact}
     class:short-landscape-workspace={shortLandscape}
+    class:tall-portrait-workspace={tallPortrait}
     class:landscape-workspace={landscapeSplit}
     class:full-card-workspace={fullCard}
     class:wide-workspace={wideWorkspace}
@@ -841,6 +855,24 @@
       "preview";
     gap: var(--fuse-col-gap);
     padding: var(--settings-spacing-sm, 8px);
+    overflow: hidden;
+  }
+
+  /* A phone-width slot can still be a tall workspace. Once there is enough
+     height for both lean source cards and a useful result, spend that space on
+     the full Fuse story instead of stretching one compact preview through the
+     entire column. Ordinary phones remain animation-first. */
+  .fuse-workspace.tall-portrait-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows:
+      max-content minmax(0, 0.85fr) minmax(0, 0.85fr)
+      minmax(0, 1.3fr);
+    grid-template-areas:
+      "header"
+      "left"
+      "right"
+      "preview";
+    align-content: stretch;
     overflow: hidden;
   }
 

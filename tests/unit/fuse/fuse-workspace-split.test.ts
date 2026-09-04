@@ -2,11 +2,54 @@ import { describe, expect, it } from "vitest";
 import {
   FUSE_LIVE_GRID_GAP,
   fitsFuseRecipeColumn,
+  fitsFuseTallPortraitWorkspace,
   fuseRecipeColumnFloor,
   getBestFuseStepColumns,
   getFittedFuseCellSize,
   resolveBalancedFuseWorkspaceSplit,
 } from "$lib/features/fuse/services/fuse-workspace-split";
+
+const TALL_PORTRAIT = {
+  mobileMaxWidth: 600,
+  minHeight: 1280,
+  minAspectRatio: 2.1,
+};
+
+describe("Fuse tall portrait fit", () => {
+  it("uses the source-and-result tower only when both height gates clear", () => {
+    expect(
+      fitsFuseTallPortraitWorkspace({
+        ...TALL_PORTRAIT,
+        width: 430,
+        height: 1400,
+      })
+    ).toBe(true);
+    expect(
+      fitsFuseTallPortraitWorkspace({
+        ...TALL_PORTRAIT,
+        width: 430,
+        height: 932,
+      })
+    ).toBe(false);
+    expect(
+      fitsFuseTallPortraitWorkspace({
+        ...TALL_PORTRAIT,
+        width: 700,
+        height: 1400,
+      })
+    ).toBe(false);
+  });
+
+  it("keeps tablet-width slots out of the phone tower", () => {
+    expect(
+      fitsFuseTallPortraitWorkspace({
+        ...TALL_PORTRAIT,
+        width: 600,
+        height: 1800,
+      })
+    ).toBe(false);
+  });
+});
 
 // FuseLayout's constants. Kept here so a change to any of them has to face the
 // sizes below rather than silently moving the seam.
