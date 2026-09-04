@@ -86,15 +86,16 @@ At the post-cleanup snapshot, the following worktrees remained registered and we
 - `worktrees/tka-platform/option-raf`
 - `worktrees/tka-platform/tunnel-pixel-cascade`
 
-## Product Decisions Still Required
+## Product Decisions Resolved
 
 ### Performer workspace multi-selection
 
-`codex/performer-workspace-fill` contains four commits absent from `main` plus five dirty paths. Its central product choice is a multi-performer editing workspace, while current `main` follows the later single-selected-performer interaction model. Decide whether multi-selection is still desired before reconciling or retiring this branch.
+`codex/performer-workspace-fill` contains four commits absent from `main` plus five dirty paths. Austen confirmed that the full capability is desired: arbitrary multi-performer selection, group movement and nudging, and bulk character, prop, effect, effort, and settings edits. Preserve the worktree and branch as source material until this behavior has been reconciled through the current 3D selection and editing owners. Do not merge the stale branch wholesale.
 
 ## Accepted Follow-up Reconciliation
 
 - Reconcile the unique left/right locomotion work against the current planner, animator, terminal-transition, and foot-contact owners. Do not merge the stale branch wholesale.
 - Reconcile the unique performer Place-mode and drag-guide work against the current 3D interaction owners. Do not merge the stale branch wholesale.
+- Reconcile the full performer multi-selection workflow against the current `viewer-3d-state` owner: arbitrary selection sets, Stage and 3D selection synchronization, group movement and nudging, and bulk character, prop, effect, effort, and settings edits. Keep `codex/performer-workspace-fill` intact until the replacement is verified; do not merge the stale branch wholesale.
 - Reconcile the unique Portrait Director page capture and camera work as a Screen Take acquisition flow for Post Studio. Post Studio remains the 9:16 composition owner, and the shared frame capturer and background encoder remain the output owners. Do not merge the standalone Director shell or route.
 - After each reconciliation is verified on current `main`, delete its archival branch.
