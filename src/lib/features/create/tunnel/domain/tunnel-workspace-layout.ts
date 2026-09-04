@@ -26,7 +26,11 @@ export function resolveTunnelWorkspaceMode({
   width,
   height,
 }: TunnelWorkspaceSize): TunnelWorkspaceMode {
-  if (width >= 600 && width > height && height <= 540) {
+  // Two short-landscape tracks need enough room for the choreography controls
+  // and the stage controls without either side enforcing its min-content width
+  // on the other. Below this threshold an honest vertical stack also provides
+  // the expected 200% browser-zoom reflow for a 1440px desktop viewport.
+  if (width >= 840 && width > height && height <= 540) {
     return "short-landscape";
   }
   if (width >= 1000) return "split";
