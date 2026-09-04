@@ -70,15 +70,22 @@ function handles(renderer: unknown, scene: FakeObject): WarmupHandles {
   return { renderer, scene, camera: {} } as unknown as WarmupHandles;
 }
 
+async function drainTasks(): Promise<void> {
+  for (let i = 0; i < 8; i += 1) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  }
+}
+
 describe("warmupRenderer", () => {
   it("dispatches every unique program before waiting on any of them", async () => {
     const meshes = [meshWithProgram("a"), meshWithProgram("b"), meshWithProgram("c")];
     const { renderer, peak, releaseAll } = deferredRenderer();
 
-    // compileAsync is issued synchronously, so the peak is already final by the
-    // time warmupRenderer hands back its promise. One-at-a-time awaiting would
-    // leave this at 1.
+    // Every dispatch still happens before any link promise is awaited. The
+    // browser may receive a turn between expensive dispatches, so allow those
+    // task boundaries to drain before checking peak overlap.
     const done = warmupRenderer(handles(renderer, sceneOf(meshes)));
+    await drainTasks();
     expect(peak()).toBe(meshes.length);
 
     releaseAll();
