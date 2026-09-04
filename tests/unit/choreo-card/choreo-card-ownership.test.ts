@@ -45,7 +45,9 @@ describe("ChoreoCard ownership boundaries", () => {
   it("keeps non-letter artifact titles in the canonical card header", () => {
     expect(facade).toContain("customTitleText?: string");
     expect(facade).toContain("frameColors?:");
+    expect(facade).toContain("cardAspectRatio?: number");
     expect(facade).toContain("class:has-frame={!!frameColors}");
+    expect(facade).toContain("class:has-card-aspect");
     expect(facade).toContain("{customTitleText}");
     expect(cardHeader).toContain("{customTitleText}");
     expect(cardHeader).toContain("text-title");
