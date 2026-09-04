@@ -8,6 +8,7 @@
     theoryRatioSpokenLabel,
     THEORY_RATIO_MAX_PART,
   } from "$lib/shared/shape-matrix/domain/theory-ratio";
+  import { growFade } from "$lib/shared/transitions/motion";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
 
   interface Props {
@@ -186,9 +187,13 @@
 
   <div class="feedback" aria-live="polite">
     {#if problem}
-      <span class="problem">{problem}</span>
+      <span class="problem" transition:growFade={{ axis: "y" }}>
+        {problem}
+      </span>
     {:else if reducedNote}
-      <span class="reduced">Reduces to {reducedNote}</span>
+      <span class="reduced" transition:growFade={{ axis: "y" }}>
+        Reduces to {reducedNote}
+      </span>
     {/if}
   </div>
 
@@ -202,7 +207,7 @@
     --axis-color: var(--theme-accent, #f59e0b);
     --axis-base: var(--theme-accent, #f59e0b);
     display: grid;
-    grid-template-rows: auto auto 1.9rem;
+    grid-template-rows: auto auto;
     width: 15rem;
     min-width: 0;
     gap: 0.45rem;
@@ -357,6 +362,10 @@
     line-height: 1.25;
   }
 
+  .feedback:empty {
+    display: none;
+  }
+
   .problem {
     color: color-mix(in srgb, var(--semantic-danger, #ef4444) 30%, #fff);
   }
@@ -365,6 +374,49 @@
     color: color-mix(in srgb, var(--theme-accent, #f59e0b) 82%, #fff);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
+  }
+
+  /* The axis title and copy action no longer compete for one cramped line.
+     The action sits beside the values it copies, and an empty feedback region
+     occupies no space. Validation expands below through the shared motion
+     primitive only when there is something useful to say. */
+  .ratio-side:not(.tray) {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      "axis axis"
+      "entry action"
+      "feedback feedback";
+    width: 20rem;
+    gap: 0 0.65rem;
+    padding: 0.65rem;
+  }
+
+  .ratio-side:not(.tray) .side-head {
+    display: contents;
+  }
+
+  .ratio-side:not(.tray) .axis-label {
+    grid-area: axis;
+  }
+
+  .ratio-side:not(.tray) .entry-row {
+    grid-area: entry;
+    margin-top: 0.55rem;
+  }
+
+  .ratio-side:not(.tray) .use-both {
+    grid-area: action;
+    align-self: end;
+    margin-top: 0.55rem;
+  }
+
+  .ratio-side:not(.tray) .feedback {
+    grid-area: feedback;
+  }
+
+  .ratio-side:not(.tray) .feedback:not(:empty) {
+    margin-top: 0.45rem;
   }
 
   .ratio-side.tray {

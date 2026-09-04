@@ -310,11 +310,11 @@
         <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
         <span class="identity-note">
           <span class="identity-note-sizer" aria-hidden="true">
-            Pair any two whole-number ratios in a 4×4 grid
+            Type any two ratios to build a 4×4 grid
           </span>
           <span class="identity-note-live">
             {theory
-              ? "Pair any two whole-number ratios in a 4×4 grid"
+              ? "Type any two ratios to build a 4×4 grid"
               : `Lorq’s 144 Shape Matrix: VTG ratios ${ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}`}
           </span>
         </span>
@@ -798,12 +798,23 @@
     gap: 0.4rem;
   }
 
-  /* Theory's two-ratio equation is the complete instrument, and it is narrow
-     enough to share the title row at every non-compact size. Keeping it in a
-     second full-width row stranded most of the header while pushing the
-     actual matrix down the page. Matrix keeps its two-row composition until
-     its much wider turn ribbon reaches the dedicated wide-canvas seam. */
+  /* Theory's surface switch is a small part of the ratio-building task. It
+     reads as one compact header control instead of a tall card competing with
+     the editor. */
   @container shape-matrix-app (min-width: 75rem) and (min-height: 42rem) {
+    .shape-app.theory .surface-control-cell {
+      display: flex;
+      grid-template-rows: none;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.3rem 0.45rem;
+    }
+  }
+
+  /* The complete ratio instrument fits beside the page identity once the
+     identity line can remain readable. Laptop widths keep it on its own row
+     rather than squeezing the axis labels and copy actions. */
+  @container shape-matrix-app (min-width: 112rem) and (min-height: 42rem) {
     .shape-app.theory .topbar {
       grid-template-columns:
         minmax(max-content, 1fr)
@@ -811,6 +822,12 @@
         minmax(0, max-content)
         minmax(max-content, 1fr);
       grid-template-areas: "identity meta controls actions";
+    }
+
+    .shape-app.theory .identity {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.15rem;
     }
   }
 

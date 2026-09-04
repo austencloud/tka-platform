@@ -84,6 +84,37 @@
     font-weight: 650;
   }
 
+  /* On the full header, the instruction is the equation's legend rather than
+     another row above it. That keeps the inputs close to the matrix without
+     making the two axis groups fight for width. */
+  .theory-builder:not(.tray) {
+    grid-template-columns: 8.25rem auto;
+    align-items: stretch;
+    gap: 0.7rem;
+    padding: 0.65rem;
+  }
+
+  .theory-builder:not(.tray) .builder-head {
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.2rem;
+    padding-inline: 0.15rem;
+  }
+
+  .theory-builder:not(.tray) .builder-title {
+    line-height: 1.2;
+  }
+
+  .theory-builder:not(.tray) .builder-hint {
+    line-height: 1.35;
+    white-space: normal;
+  }
+
+  .theory-builder:not(.tray) .ratio-equation {
+    gap: 0.65rem;
+  }
+
   .theory-builder.tray {
     width: min(21rem, calc(100vw - 2.5rem));
     border: 0;
