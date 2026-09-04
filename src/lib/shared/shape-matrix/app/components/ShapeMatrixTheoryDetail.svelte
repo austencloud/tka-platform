@@ -9,7 +9,7 @@
   The dock is the same component the drill mounts, reading the same animation
   scope, so Effects, Props, Effort, Playback and Display are one set of choices
   that follow you across the surface switch rather than two sets that drift. The
-  ratio field is the thing the switch changes; how the ratio is played is not.
+  ratio pair is the thing the switch changes; how the ratio is played is not.
 
   A ratio is chosen by picking a cell, which is how the Matrix has always
   worked. There were sliders here for a while and they answered a different
@@ -122,7 +122,7 @@
   const alignKey = $derived(
     pair
       ? `${app.theoryMode}|${cellKey}` +
-        `|${pair.left.style}${pair.left.ori}|${pair.right.style}${pair.right.ori}`
+          `|${pair.left.style}${pair.left.ori}|${pair.right.style}${pair.right.ori}`
       : app.theoryMode
   );
   let appliedAlign = $state("");

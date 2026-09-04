@@ -12,6 +12,7 @@
     KINETIC_SHAPE_ENGINE_NAME,
     ORIGINAL_SHAPE_MATRIX_NAME,
     ORIGINAL_SHAPE_MATRIX_URL,
+    ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
     SHAPE_ENGINE_SHORT_NAME,
     SHAPE_MATRIX_EXPLORER_LEGACY_NAME,
   } from "$lib/shared/shape-matrix/app/shape-engine-identity";
@@ -65,6 +66,7 @@
       "@type": "CreativeWork",
       "name": "${ORIGINAL_SHAPE_MATRIX_NAME}",
       "url": "${ORIGINAL_SHAPE_MATRIX_URL}",
+      "description": "A 12-by-12 matrix built from VTG ${ORIGINAL_SHAPE_MATRIX_VTG_RATIOS} driving-style ratios.",
       "creator": {
         "@type": "Person",
         "name": "Lorq Nichols",

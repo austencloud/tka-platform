@@ -4,7 +4,9 @@
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import {
     KINETIC_SHAPE_ENGINE_NAME,
+    ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS,
     ORIGINAL_SHAPE_MATRIX_URL,
+    ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
     SPIN_SCIENCE_URL,
     SPIN_SCIENCE_WORK_URL,
   } from "../shape-engine-identity";
@@ -16,7 +18,7 @@
   <ModalHeader
     id="shape-matrix-about-title"
     title={`About ${KINETIC_SHAPE_ENGINE_NAME}`}
-    subtitle="Lorq’s foundation and what this engine adds"
+    subtitle="Lorq’s VTG foundation and what this engine adds"
     icon="fa-table-cells-large"
     iconColor="#d9901a"
     onClose={state.closeAbout}
@@ -36,8 +38,12 @@
       Shape Matrix and publishes as
       <a href={SPIN_SCIENCE_URL} target="_blank" rel="noopener noreferrer"
         >Spin Science</a
-      >. His matrix pairs one hand's driving style with the other hand's so the
-      resulting flower shapes can be seen together.
+      >. The VTG ratios at its core were {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}, as
+      labeled in the original. Each ratio contributes four even-petaled driving
+      styles, giving twelve choices per hand. Pairing the left-hand columns with
+      the right-hand rows produced 144 basic and hybrid combinations. This
+      engine writes prop rotations before hand cycles, so those same families
+      appear here as {ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS}.
     </p>
     <p>
       <strong>What this engine adds.</strong>

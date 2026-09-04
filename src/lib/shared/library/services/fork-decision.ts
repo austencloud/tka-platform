@@ -7,7 +7,8 @@
  *
  * The subtlety this module owns: `incomingHash` is computed under the ACTIVE
  * hash version, but the stored doc may have been hashed under an OLDER version
- * (see HASH_VERSION_V1 / HASH_VERSION_V2 in `sequence-content-hasher`). A basis
+ * (see HASH_VERSION_V1 / HASH_VERSION_V2 / HASH_VERSION_V3 in
+ * `sequence-content-hasher`). A basis
  * change alone must NOT look like a content change — otherwise flipping the hash
  * version would fork every unmigrated doc on its next save. So on a version
  * mismatch we recompute the STORED content's hash at the active version and

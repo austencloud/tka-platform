@@ -46,12 +46,18 @@ As of 2026-09-04, the formal product identity is `Kinetic Shape Engine`, with
 legacy alternate name so old references stay intelligible; it is no longer the
 visible product identity. The stable route remains `/notation/shape-matrix`.
 
-The visible source line says `Lorq Nichols’ 144 Shape Matrix was the starting
-point`. The About copy separates three things: Nichols' original matrix, the
-level and ratio matrices this engine generates, and the independent software
-built by The Kinetic Alphabet. `Shape Matrix` and `Theory Matrix` remain the
-names of matrix surfaces inside the larger engine. Source and About links stay
-present without implying permission, collaboration, or endorsement.
+The visible source line identifies the original matrix's VTG ratios: `1:1`,
+`1:3`, and `1:5`. The About copy explains that Lorq used four even-petaled
+driving styles from each ratio family, giving twelve choices for each hand and
+144 left/right pairings. It also resolves the notation convention: Lorq's
+labels appear as `1:1`, `3:1`, and `5:1` in this engine because its controls put
+prop rotations before hand cycles.
+
+The About copy separates three things: Nichols' original matrix, the level and
+ratio matrices this engine generates, and the independent software built by
+The Kinetic Alphabet. `Shape Matrix` and `Theory Matrix` remain the names of
+matrix surfaces inside the larger engine. Source and About links stay present
+without implying permission, collaboration, or endorsement.
 
 ## Selection and sharing
 

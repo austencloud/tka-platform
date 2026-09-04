@@ -392,7 +392,48 @@ collider, a 314.1 m downhill path with 22.6 m net descent, 4.444 m simulator
 clearance beyond the protected action envelope, coordinate-source digests, and
 the required review GLB nodes.
 
-Gate 2 is `ready-for-review` with approval unset. The production Ember asset,
-runtime scene, final materials, atmosphere, and remaining 40 Meshy credits are
-unchanged. Gate 3 and all later work remain blocked until Austen reviews the
-graybox relationship and explicitly approves this gate.
+R1 initially marked Gate 2 `ready-for-review` with approval unset. That state is
+historical and is superseded by the Gate 1.1 regression below. The production
+Ember asset, runtime scene, final materials, atmosphere, and remaining 40 Meshy
+credits were unchanged.
+
+## Gate 1.1 adversarial correction
+
+The independent audit in museum tracker `xSjtvI2XVvvMdn8pHqwP` rejected the R1
+Gate 2 artifact before approval. It found an upstream spatial contradiction:
+the performer sat inside a circular flattened bowl, the west feature read as a
+smooth mound rather than a collapse, the short Flowy guide stopped near runtime
+Z `-5` while an unrelated authored ribbon continued to `-145`, and the plan,
+clearance claims, GLB contents, and checkout digests were not mutually
+equivalent. Austen authorized the corrective scope with “do so” in tracker
+`WS9FU4nn2fCSbOn68IeB`.
+
+The correction therefore reopens Gate 1 instead of polishing the failed
+graybox. The terrain owner remains `scripts/build-ember-geology-study.py`, now
+with an explicit R2 formation contract:
+
+- an offset, warped old-flow shelf replaces the radial bench;
+- a surviving west/northwest headwall, removed breach volume, and talus apron
+  replace the smooth Gaussian hill;
+- a broad constructional apron and shallow eastern drainage connect the fissure
+  source to the downstream country;
+- the default audience camera and all eight 25 m orbit bearings remain clear;
+- the open east/southeast horizon remains structurally empty.
+
+The selected Flowy calibration uses three lobe chains, 1,200 possible lobes per
+chain, 65 m² lobes, a 46,800 m³ preproduction volume, a 0.03 parent-lobe
+exponent, and deterministic seed 6301. The run exits the DEM after 426 processed
+lobes. Its active footprint reaches runtime Z `-144`, remains 17.720 m from the
+performer center, preserves 13.220 m beyond the 4.5 m action envelope, widens
+from an 11 m upstream median to a 14 m downstream median, and covers 3,558 m².
+These figures are route-and-composition evidence, not calibration to a named
+eruption or a claim of hazard accuracy.
+
+The corrected north-up plan, measured sections, eight-point sightline study,
+calibration sweep, contact sheet, selected float32 simulator raster, and
+canonical report live in
+`evidence/gate-1-1-geology-amendment-r2/`. Gate 1 is
+`ready-for-review` with approval unset. The former R1 Gate 1 approval and Gate 2
+artifact remain in repository and regression history, but no longer authorize
+later work. Gate 2 R2 begins only after Austen describes and approves the named
+Gate 1.1 spatial relationship.
