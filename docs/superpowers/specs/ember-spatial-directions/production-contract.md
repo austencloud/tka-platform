@@ -1,6 +1,6 @@
 # Ember Broken Rift production contract
 
-**Status:** Mid-Flank Fire Pilgrimage Gate 1.1 R5 approved; Gate 2 R5 ready for review; R4 and prior Gate 1/2 production is historical
+**Status:** Mid-Flank Fire Pilgrimage Gate 2 R5 approved; Gate 3 authorized and pending; R4 and prior Gate 1/2 production is historical
 
 **Scene ID:** `ember-broken-rift`
 
@@ -22,15 +22,17 @@
 `BvN1DiylOnfdbrofcwaM`, `xFcagbaZTQAq615IbZgT`,
 `lXhTllDFV2Ne1E7foCkS`, `Vwm6XTLdDbDfxuoVE7z9`,
 `5P5KVEq04dpHxu9F0ViI`, `Iur86OmZX40nTqdwgxDq`,
-`Szxybxm6NlLkPyPL6dQt`, and `1hlrU13Dg8VqdQaLJPib`.
+`Szxybxm6NlLkPyPL6dQt`, `1hlrU13Dg8VqdQaLJPib`, and
+`3XyhXLyzv8ASNl2fLoCo`.
 
 ## R5 regression notice
 
 Mid-Flank Fire Pilgrimage R5 is the only active spatial candidate. Austen
 retained R4's colossal mid-flank direction but rejected its broad flat ledge in
 `Vwm6XTLdDbDfxuoVE7z9`. Gate 1.1 R5 is approved in
-`Szxybxm6NlLkPyPL6dQt`; Gate 2 R5 is ready for review under
-`1hlrU13Dg8VqdQaLJPib`, and every later gate is pending. The R5 Gate 1 sources are
+`Szxybxm6NlLkPyPL6dQt`; Gate 2 R5 was approved in
+`3XyhXLyzv8ASNl2fLoCo` after review under `1hlrU13Dg8VqdQaLJPib`. Gate 3 is
+authorized and pending, and every later gate remains pending. The R5 Gate 1 sources are
 `scripts/build-ember-geology-study.py`,
 `scripts/prepare-ember-lava-simulator-benchmark.py`,
 and `scripts/build-ember-geology-amendment.py`. Current evidence lives in
@@ -82,7 +84,8 @@ atmospheric systems, and unspent Meshy credits. It replaces the macro terrain,
 inboard basin, same-level source, lava footprint, and composition with a
 true-scale upper edifice, compound slanted mid-flank, small stable widening,
 gradually steepening lower country, and explicit off-world continuation. Gate
-1.1 R5 is approved; Gate 2 R5 is ready for review and all later gates are pending.
+1.1 R5 and Gate 2 R5 are approved; Gate 3 is authorized and pending, and all
+later gates are pending.
 
 ## Authority ledger
 
@@ -159,7 +162,7 @@ downslope continuation.
 
 ## Gate 2: Playable graybox
 
-Gate 2 R5 is `ready-for-review`. The existing graybox owner derives the editable
+Gate 2 R5 is `approved`. The existing graybox owner derives the editable
 Blend, review-equivalent GLB, exact camera evidence, and continuous orbit from
 the approved R5 heightfield and checked-in Flowy thickness raster. It also
 includes the four approved downslope/lateral audience standing proxies.
@@ -180,8 +183,9 @@ includes the four approved downslope/lateral audience standing proxies.
 The diagnostic 12 by 11 m bench outline and action ring are excluded from the
 GLB. The muted old-flow material marks the whole geological contact, not a
 performer-centred stage. Final surface materials, ember response, runtime
-integration, and Meshy assets remain outside Gate 2. R4 Gate 2 evidence remains
-historical under tracker `lXhTllDFV2Ne1E7foCkS`; Gate 3 remains pending.
+integration, and Meshy assets remain outside Gate 2. Austen approved this exact
+artifact in `3XyhXLyzv8ASNl2fLoCo`. R4 Gate 2 evidence remains historical under
+tracker `lXhTllDFV2Ne1E7foCkS`; Gate 3 is authorized and pending.
 
 ### Historical R3 Gate 2 evidence
 

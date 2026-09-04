@@ -164,7 +164,15 @@ describe("four-lane history archive ledger", () => {
       firstDocumentedYear: 1998,
       people: "Malcolm Crawshay and the Home of Poi community",
       evidenceBasis: "creators-account",
+      activity: {
+        status: "archive-online",
+        lastVerifiedYear: 2026,
+      },
     });
+    expect(activityLabel(homeOfPoi)).toBe("Archive online · community dormant");
+    expect(homeOfPoi.activity?.note).toContain(
+      "newest visible forum post is from April 2025"
+    );
     expect(homeOfPoi.citations.map((citation) => citation.href)).toEqual(
       expect.arrayContaining([
         "https://www.homeofpoi.com/us/company/information-mission.php",
@@ -230,14 +238,9 @@ describe("four-lane history archive ledger", () => {
       );
     }
 
-    // The four teaching projects were verified active in 2026 from dated
+    // The three teaching projects were verified active in 2026 from dated
     // public listings; the claim is "active, verified 2026" and nothing more.
-    for (const id of [
-      "home-of-poi",
-      "playpoi",
-      "flow-arts-institute",
-      "drexfactor",
-    ]) {
+    for (const id of ["playpoi", "flow-arts-institute", "drexfactor"]) {
       const entry = archiveEntry(id);
       expect(entry.activity?.status, id).toBe("active");
       expect(entry.activity?.lastVerifiedYear, id).toBe(2026);

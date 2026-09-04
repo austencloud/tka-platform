@@ -13,6 +13,11 @@ import {
   createIndependentTunnelPerformer,
   createTunnelComposition,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  HandSide,
+  Orientation,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   createTunnelRevision,
   prepareTunnelRevision,
@@ -110,6 +115,46 @@ describe("CollectedTunnelSchema", () => {
     expect(parsed.success).toBe(true);
     if (!parsed.success) return;
     expect(parsed.data.composition?.performers[1]).toEqual(partner);
+  });
+
+  it("preserves each hand's exact orientations across the storage boundary", () => {
+    const orientedStep = {
+      id: "step-1",
+      letter: null,
+      startPosition: null,
+      endPosition: null,
+      stepNumber: 1,
+      duration: 1,
+      leftReversal: false,
+      rightReversal: false,
+      isBlank: false,
+      motions: {
+        [HandSide.LEFT]: createMotionData({
+          hand: HandSide.LEFT,
+          startOrientation: Orientation.CLOCK_IN,
+          endOrientation: Orientation.COUNTER_OUT,
+        }),
+        [HandSide.RIGHT]: createMotionData({
+          hand: HandSide.RIGHT,
+          startOrientation: Orientation.CENTER_NE,
+          endOrientation: Orientation.CENTER_SW,
+        }),
+      },
+    };
+
+    const parsed = CollectedTunnelSchema.parse({
+      ...valid,
+      steps: [orientedStep],
+    });
+
+    expect(parsed.steps[0]?.motions[HandSide.LEFT]).toMatchObject({
+      startOrientation: Orientation.CLOCK_IN,
+      endOrientation: Orientation.COUNTER_OUT,
+    });
+    expect(parsed.steps[0]?.motions[HandSide.RIGHT]).toMatchObject({
+      startOrientation: Orientation.CENTER_NE,
+      endOrientation: Orientation.CENTER_SW,
+    });
   });
 
   it("stores choreography transforms in the immutable tunnel revision", async () => {

@@ -29,11 +29,12 @@ export const EVIDENCE_BASIS_LABELS: Record<EvidenceBasis, string> = {
 /**
  * Activity is two verified endpoints, never a lifespan. A record with no
  * activity claim asserts nothing beyond its documented trace. `active` means
- * a dated public trace from the current review cycle; `unknown` means the
- * latest trace is older and the archive makes no claim past it.
+ * a dated public trace from the current review cycle. `archive-online` means
+ * the material survives but its former community is dormant. `unknown` means
+ * the latest trace is older and the archive makes no claim past it.
  */
 export interface ArchiveActivity {
-	status: "active" | "unknown";
+	status: "active" | "archive-online" | "unknown";
 	lastVerifiedYear: number;
 	note: string;
 }
@@ -353,15 +354,15 @@ const researchEntries: ArchiveEntry[] = [
 		dateLabel: "1998",
 		firstDocumentedYear: 1998,
 		activity: {
-			status: "active",
+			status: "archive-online",
 			lastVerifiedYear: 2026,
-			note: "The lesson library and forum archive were live when reviewed in 2026.",
+			note: "The lessons and forum archive remain online. The newest visible forum post is from April 2025, while most movement boards last posted between 2018 and 2021.",
 		},
 		title: "Home of Poi",
 		shortTitle: "Home of Poi",
 		people: "Malcolm Crawshay and the Home of Poi community",
 		summary:
-			"One of the first online poi schools and a vast community archive. Malcolm Crawshay launched it in 1998; its lessons and hundreds of thousands of forum posts preserved technique, terminology, safety practice, and debate.",
+			"One of the first online poi schools and once a major gathering place. Malcolm Crawshay launched it in 1998; its lessons and hundreds of thousands of forum posts preserve technique, terminology, safety practice, and debate.",
 		evidenceBasis: "creators-account",
 		evidenceLabel: "Organization history",
 		evidenceShortLabel: "Org source",
@@ -379,7 +380,7 @@ const researchEntries: ArchiveEntry[] = [
 				label: "Home of Poi forum archive",
 				href: "https://www.homeofpoi.com/us/community/forums/",
 				supports:
-					"The surviving archive and its hundreds of thousands of public movement, teaching, and community posts.",
+					"The archive's scale and sparse recent activity across its public boards.",
 				basis: "directly-observed",
 			},
 			{
@@ -814,9 +815,13 @@ export function entrySpanEndYear(entry: ArchiveEntry): number {
  */
 export function activityLabel(entry: ArchiveEntry): string | undefined {
 	if (!entry.activity) return undefined;
-	return entry.activity.status === "active"
-		? `Active · verified ${entry.activity.lastVerifiedYear}`
-		: `Last public trace ${entry.activity.lastVerifiedYear}`;
+	if (entry.activity.status === "active") {
+		return `Active · verified ${entry.activity.lastVerifiedYear}`;
+	}
+	if (entry.activity.status === "archive-online") {
+		return "Archive online · community dormant";
+	}
+	return `Last public trace ${entry.activity.lastVerifiedYear}`;
 }
 
 /**

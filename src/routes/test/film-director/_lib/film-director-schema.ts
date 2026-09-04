@@ -16,7 +16,7 @@ import {
   CAMERA_CHANNEL_IDS,
   type CameraChannelId,
 } from "./director-camera-channels";
-import { directiveSchema } from "./directives";
+import { directiveSchema } from "$lib/features/film-director/domain/directives";
 import { normalizeFilmDirectorInput } from "./normalize-film-director-input";
 import type { ResolvedDirectorBlockingKeyframe } from "./blocking-language";
 import {
