@@ -31,7 +31,7 @@
   <title>Quarter Space Tech · Prop-only 3D viewer</title>
   <meta
     name="description"
-    content="Prop-only inspection of the Quarter Space Tech archive translated from SpiroAnim."
+    content="Prop-only inspection of Quarter Space Tech patterns documented by Mentive from Alex Kurowski's grid."
   />
 </svelte:head>
 
