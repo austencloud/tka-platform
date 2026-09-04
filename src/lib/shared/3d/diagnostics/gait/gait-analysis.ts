@@ -12,7 +12,13 @@
  * report a clean gait over a broken one.
  */
 
-import type { GaitFrame, Stance, Support, Vec3 } from "./gait-frame";
+import type {
+  FootFrame,
+  GaitFrame,
+  Stance,
+  Support,
+  Vec3,
+} from "./gait-frame";
 import {
   analyzeKneeAnatomy,
   EMPTY_KNEE_ANATOMY,
@@ -21,9 +27,16 @@ import {
 
 export interface GaitThresholds {
   /**
-   * How far above the lowest point of the session an ankle may sit and still
-   * count as bearing weight, in metres. Roughly the ankle travel across a
-   * flat-footed stance on a human-scaled rig.
+   * How far above the local floor the lowest tracked point of a foot may sit
+   * and still count as bearing weight, in metres.
+   *
+   * Measured against the foot's lowest point, never its ankle alone. A
+   * forefoot strike holds the ankle near rest height while the ball of the
+   * foot carries the entire body, so an ankle-only test scores it as flight:
+   * ch07 running a circle registered zero right-foot contacts across sixty
+   * seconds while its toe sat two and a half centimetres off the floor, and
+   * nine downstream metrics went red for a reason that had nothing to do with
+   * the gait. Clinical labs mark the heel and the toe for the same reason.
    */
   contactBand: number;
   /** Root speed below which the character counts as stopped, m/s. */
@@ -383,7 +396,19 @@ function mean(xs: readonly number[]): number {
 }
 
 /**
- * The floor, taken as the lowest an ankle ever got.
+ * How close to the floor this foot is, in world Y.
+ *
+ * The lowest joint the probe tracks on that foot, which is the ball on a rig
+ * that has one and the ankle on a rig that does not. Every floor estimate and
+ * every contact test in this file goes through here, so the ground and the
+ * thing measured against it are always the same quantity.
+ */
+export function footFloorY(foot: FootFrame): number {
+  return foot.toe ? Math.min(foot.ankle.y, foot.toe.y) : foot.ankle.y;
+}
+
+/**
+ * The floor, taken as the lowest either foot ever got.
  *
  * Reading it from the data rather than being told keeps the probe honest on a
  * stage that sits at a nonzero Y, and on a rig whose sole offset is not the
@@ -392,7 +417,7 @@ function mean(xs: readonly number[]): number {
 export function resolveGroundY(frames: readonly GaitFrame[]): number {
   let lowest = Infinity;
   for (const frame of frames) {
-    lowest = Math.min(lowest, frame.left.ankle.y, frame.right.ankle.y);
+    lowest = Math.min(lowest, footFloorY(frame.left), footFloorY(frame.right));
   }
   return Number.isFinite(lowest) ? lowest : 0;
 }
@@ -402,10 +427,10 @@ export function resolveGroundY(frames: readonly GaitFrame[]): number {
  *
  * A single session-wide floor does not survive contact with a real rig: the
  * stage avatars' standing pose parks both ankles about 11cm higher than their
- * walking pose does, so measuring against the lowest ankle of the whole
+ * walking pose does, so measuring against the lowest point of the whole
  * session throws every standing frame into flight and the walk reports two
- * footfalls in thirty seconds. Taking the lowest ankle within about a stride
- * either side adapts to that, and to sloped or stepped floors, without
+ * footfalls in thirty seconds. Taking the lowest foot point within about a
+ * stride either side adapts to that, and to sloped or stepped floors, without
  * anyone having to tell the instrument where the ground is.
  */
 export function localGroundSeries(
@@ -424,11 +449,11 @@ export function localGroundSeries(
     let lowest = Infinity;
     for (let j = lo; j < hi; j++) {
       const f = frames[j]!;
-      lowest = Math.min(lowest, f.left.ankle.y, f.right.ankle.y);
+      lowest = Math.min(lowest, footFloorY(f.left), footFloorY(f.right));
     }
     ground[i] = Number.isFinite(lowest)
       ? lowest
-      : Math.min(frames[i]!.left.ankle.y, frames[i]!.right.ankle.y);
+      : Math.min(footFloorY(frames[i]!.left), footFloorY(frames[i]!.right));
   }
   return ground;
 }
@@ -439,8 +464,8 @@ export function supportOf(
   groundY: number,
   band: number
 ): Support {
-  const left = frame.left.ankle.y - groundY <= band;
-  const right = frame.right.ankle.y - groundY <= band;
+  const left = footFloorY(frame.left) - groundY <= band;
+  const right = footFloorY(frame.right) - groundY <= band;
   if (left && right) return "both";
   if (left) return "left";
   if (right) return "right";
@@ -550,7 +575,7 @@ export function extractStances(
 
     for (let i = 0; i < frames.length; i++) {
       const down =
-        frames[i]![foot].ankle.y - groundAt(i) <= thresholds.contactBand;
+        footFloorY(frames[i]![foot]) - groundAt(i) <= thresholds.contactBand;
       if (down && runStart === null) runStart = i;
       else if (!down && runStart !== null) close(i);
     }

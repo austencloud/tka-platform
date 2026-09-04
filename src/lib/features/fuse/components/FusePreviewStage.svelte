@@ -73,7 +73,6 @@
 >
   <header class="preview-heading">
     <div>
-      <span class="preview-eyebrow">Result</span>
       <h3 id="fuse-preview-heading">Combined preview</h3>
     </div>
     <div class="preview-heading-tools">
@@ -223,15 +222,16 @@
       </div>
 
       <div class="result-actions" aria-label="Combined sequence actions">
-        <div class="share-slot">
+        <div class="viewer-slot">
           <ActionButton
-            label="Share result"
-            busyLabel="Opening share..."
-            icon="fa-share-nodes"
+            label="Open viewer"
+            busyLabel="Opening viewer..."
+            icon={fuseState.isFusing ? "fa-spinner fa-spin" : "fa-expand"}
             color="fuse"
             fullWidth={true}
             ariaDisabled={!fuseState.canFuse}
-            onclick={() => void onShare()}
+            busy={fuseState.isFusing}
+            onclick={() => void onOpenViewer()}
           />
         </div>
         <div class="save-slot">
@@ -250,21 +250,14 @@
             {isSaving ? "Saving..." : "Save result"}
           </PanelButton>
         </div>
-        <div class="viewer-slot">
+        <div class="share-slot">
           <PanelButton
             variant="secondary"
             fullWidth={true}
-            disabled={!fuseState.canFuse || fuseState.isFusing}
-            ariaBusy={fuseState.isFusing}
-            onclick={() => void onOpenViewer()}
+            disabled={!fuseState.canFuse}
+            onclick={() => void onShare()}
           >
-            <i
-              class="fas {fuseState.isFusing
-                ? 'fa-spinner fa-spin'
-                : 'fa-expand'}"
-              aria-hidden="true"
-            ></i>
-            Open viewer
+            Share
           </PanelButton>
         </div>
       </div>
@@ -284,7 +277,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 16px;
     background: var(--theme-panel-bg, #0c0e16);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+    box-shadow: 0 12px 40px var(--theme-shadow);
   }
 
   .preview-stage {
@@ -303,13 +296,7 @@
         var(--theme-stroke)
       );
     border-radius: var(--settings-radius-lg, 20px);
-    background:
-      radial-gradient(
-        circle at 50% 42%,
-        color-mix(in srgb, var(--semantic-warning, #f97316) 10%, transparent),
-        transparent 58%
-      ),
-      var(--theme-panel-bg, rgba(12, 14, 22, 0.96));
+    background: var(--theme-panel-bg, rgba(12, 14, 22, 0.96));
     container: fuse-preview / inline-size;
   }
 
@@ -337,13 +324,7 @@
       var(--theme-stroke)
     );
     border-radius: var(--settings-radius-lg, 18px);
-    background:
-      radial-gradient(
-        circle at 50% 34%,
-        color-mix(in srgb, var(--semantic-warning, #f97316) 8%, transparent),
-        transparent 50%
-      ),
-      var(--theme-panel-bg);
+    background: var(--theme-panel-bg);
   }
 
   .preview-stage.compact .preview-heading {
@@ -407,16 +388,10 @@
     font-weight: 750;
   }
 
-  .preview-eyebrow,
   .preview-meta {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
     font-size: var(--font-size-compact, 12px);
     font-weight: 700;
-  }
-
-  .preview-eyebrow {
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
   }
 
   .preview-meta {
@@ -443,18 +418,7 @@
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--settings-radius-lg, 18px);
-    background:
-      linear-gradient(
-        var(--theme-stroke, rgba(255, 255, 255, 0.045)) 1px,
-        transparent 1px
-      ),
-      linear-gradient(
-        90deg,
-        var(--theme-stroke, rgba(255, 255, 255, 0.045)) 1px,
-        transparent 1px
-      ),
-      color-mix(in srgb, var(--theme-card-bg, #161821) 76%, black);
-    background-size: 28px 28px;
+    background: color-mix(in srgb, var(--theme-card-bg, #161821) 76%, black);
   }
 
   @container fuse (min-width: 1680px) and (min-height: 900px) {
@@ -466,7 +430,6 @@
       font-size: 1.25rem;
     }
 
-    .preview-eyebrow,
     .preview-meta {
       font-size: 14px;
     }
@@ -494,7 +457,6 @@
       font-size: 1.5rem;
     }
 
-    .preview-eyebrow,
     .preview-meta {
       font-size: var(--font-size-compact, 16px);
     }
@@ -503,7 +465,7 @@
       gap: var(--settings-spacing-md, 14px);
     }
 
-    .share-slot :global(.action-button),
+    .viewer-slot :global(.action-button),
     .result-actions :global(.panel-btn) {
       min-height: var(--min-touch-target, 64px);
       font-size: var(--font-size-min, 18px);
@@ -585,7 +547,7 @@
     border: 2px solid
       color-mix(in srgb, var(--semantic-warning, #f97316) 72%, white);
     border-radius: calc(var(--settings-radius-lg, 18px) - 2px);
-    animation: preview-change 240ms ease-out both;
+    animation: preview-change var(--duration-emphasis) var(--ease-out) both;
   }
 
   .stage-controls {
@@ -619,7 +581,7 @@
     min-width: 0;
   }
 
-  .share-slot :global(.action-button),
+  .viewer-slot :global(.action-button),
   .result-actions :global(.panel-btn) {
     min-width: 0;
     min-height: 54px;
@@ -641,9 +603,8 @@
     }
   }
 
-  /* A narrow result pane cannot honestly fit tempo plus three labelled actions
-     on one line. Give Share the deliberate full-width row, then keep tempo,
-     save, and viewer equally readable beneath it. */
+  /* A narrow result pane gives the next step its own row, then keeps tempo,
+     save, and sharing equally readable beneath it. */
   @container fuse-preview (max-width: 620px) {
     .preview-heading {
       align-items: flex-start;
@@ -658,8 +619,8 @@
     .stage-controls {
       grid-template-columns: 110px repeat(2, minmax(0, 1fr));
       grid-template-areas:
-        "share share share"
-        "tempo save viewer";
+        "viewer viewer viewer"
+        "tempo save share";
     }
 
     .bpm-compact {
@@ -670,16 +631,16 @@
       display: contents;
     }
 
-    .share-slot {
-      grid-area: share;
-    }
-
     .save-slot {
       grid-area: save;
     }
 
     .viewer-slot {
       grid-area: viewer;
+    }
+
+    .share-slot {
+      grid-area: share;
     }
   }
 

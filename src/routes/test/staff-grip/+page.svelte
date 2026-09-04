@@ -186,12 +186,6 @@
     })
   );
 
-  const phaseLabel = $derived(
-    `${Math.floor(lab.phase) + 1}.${Math.round((lab.phase % 1) * 100)
-      .toString()
-      .padStart(2, "0")}`
-  );
-
   function collectGripMetrics(
     events: CollisionEvent[],
     diagnostics: AvatarPoseDiagnostics,
@@ -516,7 +510,7 @@
       shared TransportControls the rest of the product plays with. It stays
       mounted while a sequence resolves so the stage above it never resizes.
     -->
-    <LabTransport {lab} {stepCount} {phaseLabel} disabled={!sequence} />
+    <LabTransport {lab} {stepCount} disabled={!sequence} />
   </div>
 
   <!--

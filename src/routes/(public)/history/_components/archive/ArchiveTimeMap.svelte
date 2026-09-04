@@ -42,14 +42,12 @@
 <section class="time-map" aria-labelledby="archive-time-map-title">
 	<header class="map-heading">
 		<div>
-			<p class="eyebrow">Timeline by first documented year</p>
-			<h2 id="archive-time-map-title">How flow arts knowledge was recorded and shared</h2>
+			<h2 id="archive-time-map-title">First documented year</h2>
 		</div>
 		<p class="scale-note">
 			<span aria-hidden="true"></span>
-			Each trace sits in the lane that best matches the evidence. Its position
-			marks the first documented year; a dotted line ends at the latest verified
-			public trace. Select a marker to open its record and sources.
+			Markers show when each record first appeared. Dotted lines end at the
+			latest dated source. Select a marker for the record and sources.
 		</p>
 	</header>
 

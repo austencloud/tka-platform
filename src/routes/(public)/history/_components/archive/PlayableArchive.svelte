@@ -136,10 +136,10 @@
 >
 	<header class="archive-header">
 		<div>
-			<p>Writing flow arts down</p>
+			<p>{ARCHIVE_START_YEAR}–{ARCHIVE_END_YEAR}</p>
 			<h1>Flow arts history</h1>
 			<p class="premise">
-				{ARCHIVE_ENTRIES.length} documented traces from {ARCHIVE_START_YEAR}–{ARCHIVE_END_YEAR}, not a definitive history. Each entry says exactly what its sources support, and better evidence changes the record.
+				{ARCHIVE_ENTRIES.length} sourced records of how people documented flow arts and passed the knowledge on.
 			</p>
 		</div>
 		<PanelButton

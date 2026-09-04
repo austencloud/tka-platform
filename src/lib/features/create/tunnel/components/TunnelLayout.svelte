@@ -89,6 +89,7 @@
       }
     >
   >({});
+  let activePerformerStepIndices = $state<Record<string, number>>({});
   const controller = new TunnelViewController({
     getSequence: () => creator.leadSequence,
     getComposition: () =>
@@ -123,7 +124,6 @@
 
   const compact = $derived(rootWidth < 720);
   const shortLandscape = $derived(rootWidth >= 600 && rootHeight <= 540);
-  const compactRecipe = $derived(rootWidth < 1680 || rootHeight < 900);
   const focusPerformers = $derived(rootWidth < 900 || rootHeight < 1100);
   const canInlineInspector = $derived(rootWidth >= 1000 && rootHeight >= 700);
   const settingsOpen = $derived(creator.activePanel === "settings");
@@ -454,15 +454,9 @@
 
       <TunnelRecipeRail
         {controller}
-        compact={compactRecipe}
         short={shortLandscape}
-        bpm={creator.presentation.bpm}
-        playbackMode={creator.presentation.playbackMode}
         onCastChange={changeCastCount}
         onOpenSettings={openSettings}
-        onOpenGeneration={(performerId) => void openGeneration(performerId)}
-        onOpenShapeMatrix={(performerId) => (shapeMatrixTarget = performerId)}
-        onOpenBrowse={(performerId) => creator.openPicker(performerId)}
       />
     </header>
 
@@ -470,6 +464,7 @@
       <TunnelPerformerRoster
         bind:this={performerRoster}
         displays={performerDisplays}
+        activeStepIndices={activePerformerStepIndices}
         {leftPropType}
         {rightPropType}
         colorMode={controller.colorMode}
@@ -523,6 +518,8 @@
             animationSettingsState={creator.presentation.animationSettings}
             visibilityManager={creator.presentation.visibility}
             stageFit="contain"
+            onActivePerformerStepsChange={(stepIndices) =>
+              (activePerformerStepIndices = { ...stepIndices })}
           />
           {#if !creator.ready}
             <div class="preview-guidance" role="status">

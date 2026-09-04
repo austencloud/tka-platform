@@ -64,12 +64,36 @@ export const CONCEPT_EXPERIENCES = [
       import("../components/interactive/rotation/RotationDirectionConceptExperience.svelte"),
   }),
   experience({
+    conceptId: "dual-shifts-alpha-beta",
+    guideSlug: "hm-type1",
+    guideLabel: "Type 1 Dual-Shifts: Alpha and Beta",
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/foundations/DualShiftsConceptExperience.svelte"),
+  }),
+  experience({
+    conceptId: "gamma-motion",
+    guideSlug: "hm-gamma",
+    guideLabel: "Gamma: Quarter-Opp and Quarter-Same",
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/foundations/GammaMotionConceptExperience.svelte"),
+  }),
+  experience({
     conceptId: "staff-positions",
     guideSlug: "staff-positions",
     guideLabel: "Staff Positions and Rotations",
     reviewStatus: "built",
     load: () =>
       import("../components/interactive/staff/StaffConceptExperience.svelte"),
+  }),
+  experience({
+    conceptId: "letter-codex-intro",
+    guideSlug: "codex",
+    guideLabel: "Codex",
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/foundations/PictographAnatomyConceptExperience.svelte"),
   }),
   experience({
     conceptId: "type1-abc-ghi",

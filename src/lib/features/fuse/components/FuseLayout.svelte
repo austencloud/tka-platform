@@ -87,7 +87,7 @@
   const PREVIEW_CHROME_V = 190; // matches FusePreviewStage's square frame cap
   const PREVIEW_HPAD = 48; // maximum desktop stage padding, both sides
   const TALL_PORTRAIT_SPLIT_WIDTH = 520;
-  const TALL_PORTRAIT_NARROW_MIN_HEIGHT = 1650;
+  const TALL_PORTRAIT_NARROW_MIN_HEIGHT = 1480;
   const TALL_PORTRAIT_SPLIT_MIN_HEIGHT = 1280;
   const TALL_PORTRAIT_MIN_ASPECT = 2.1;
 
@@ -869,8 +869,8 @@
   .fuse-workspace.tall-portrait-workspace {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows:
-      max-content minmax(430px, auto) minmax(430px, auto)
-      minmax(520px, 1fr);
+      max-content minmax(360px, 0.9fr) minmax(360px, 0.9fr)
+      minmax(500px, 1.2fr);
     grid-template-areas:
       "header"
       "left"

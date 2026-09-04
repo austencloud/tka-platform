@@ -1039,12 +1039,14 @@ fade while Tunnel layers used the viewer's 280 ms reveal. The grid, props, and
 formation therefore looked like several effects triggered near each other rather
 than one transformation.
 
-The viewer now prepares Tunnel layers while 2D remains active and holds reveal
-progress at zero until the complete formation is ready. The same reversible
-progress drives every Tunnel copy and the 2D grid alpha. An authored Tunnel grid
-stays visible; otherwise the 2D grid leaves as the copies arrive. The existing
-renderer fade remains the default for every caller that does not supply this
-viewer-owned opacity.
+The viewer now prepares Tunnel layers while 2D remains active. Readiness remains
+an instrumented invariant rather than a prerequisite of the reveal tween: gating
+the tween on the asynchronous flag created a circular handoff in which Tunnel
+mode committed at zero reveal and the layer list could never become visible. The
+same reversible progress drives every Tunnel copy and the 2D grid alpha. An
+authored Tunnel grid stays visible; otherwise the 2D grid leaves as the copies
+arrive. The existing renderer fade remains the default for every caller that does
+not supply this viewer-owned opacity.
 
 The Gate 3 trace now reads the painted boundary directly: layer readiness/count,
 minimum and maximum layer alpha, and grid alpha. It grades reveal-before-ready
@@ -1067,6 +1069,18 @@ and singleton checks remain exact regardless of cadence. `svelte-check` reports
 0 errors and 0 warnings. The sequence-viewer and animation-engine suites pass 61
 files / 432 tests, including the new reversible grid-curve cases and orchestration
 contract.
+
+Follow-up review showed that continuity alone was not enough: seven prepared
+layers were starting inside the first 24% of the reveal, and at 78% progress
+their measured alpha occupied a narrow band. The copies therefore read as one
+group pop even though the numbers were technically interpolating. The formation
+now uses the canonical dramatic clock, spreads center-out starts across 62% of
+that clock, and gives each layer smoothstep shoulders. The ordinary 2D grid
+clears during the opening 38%, leaving the middle and outer performers room to
+arrive as distinct overlapping waves. A new `Layer cascade spread` metric fails
+traces whose moving layers never separate by at least 0.35 alpha. The seven-layer
+unit sample measures more than 0.45 spread at the midpoint, remains monotonic
+from center to edge, and reverses by retracing the same master progress.
 
 ## Gate 6 baseline · 2026-09-01
 

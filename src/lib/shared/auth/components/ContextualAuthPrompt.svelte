@@ -5,7 +5,7 @@
   } from "$lib/shared/auth/domain/auth-nudge-trigger";
   import { getLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
   import EmailAuthTabs from "./EmailAuthTabs.svelte";
-  import LastUsedBadge from "./LastUsedBadge.svelte";
+  import LastUsedBadge from "$lib/shared/components/LastUsedBadge.svelte";
   import SocialAuthCompact from "./SocialAuthCompact.svelte";
 
   interface Props {

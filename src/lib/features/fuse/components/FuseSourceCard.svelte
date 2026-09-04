@@ -333,13 +333,38 @@
     await fuseState.setSource(side, sequence, { kind: "vtg", label });
   }
 
-  const compactSourceMenuItems = $derived([
+  const sourceMenuItems = $derived([
+    {
+      label: "Choose saved LOOP",
+      icon: "fas fa-book",
+      action: () => void openLibraryPicker(),
+    },
+    {
+      label: "Choose a shape",
+      icon: "fas fa-fan",
+      action: openVtgPicker,
+    },
+    {
+      label: "Build a custom path",
+      icon: "fas fa-route",
+      action: (): void => onBuildPath(side),
+    },
     {
       label: "View Choreo Card",
       icon: "fas fa-id-card",
       action: viewChoreoCard,
       disabled: !source.sequence,
     },
+    {
+      label: isSavingLoop ? "Saving to library..." : "Save to library",
+      icon: isSavingLoop ? "fas fa-spinner fa-spin" : "fas fa-bookmark",
+      action: (): void => {
+        void saveCurrentLoop();
+      },
+      disabled: isSavingLoop || !source.sequence,
+    },
+  ]);
+  const compactSourceMenuItems = $derived([
     ...(source.canGoBack
       ? [
           {
@@ -351,29 +376,7 @@
           },
         ]
       : []),
-    {
-      label: "Choose saved LOOP",
-      icon: "fas fa-book",
-      action: () => void openLibraryPicker(),
-    },
-    {
-      label: "Choose path",
-      icon: "fas fa-fan",
-      action: openVtgPicker,
-    },
-    {
-      label: "Build a path",
-      icon: "fas fa-route",
-      action: (): void => onBuildPath(side),
-    },
-    {
-      label: isSavingLoop ? "Saving LOOP..." : "Save LOOP",
-      icon: isSavingLoop ? "fas fa-spinner fa-spin" : "fas fa-bookmark",
-      action: (): void => {
-        void saveCurrentLoop();
-      },
-      disabled: isSavingLoop || !source.sequence,
-    },
+    ...sourceMenuItems,
   ]);
 </script>
 
@@ -393,12 +396,19 @@
       <strong>{label}</strong>
       <span class="toolbar-step">{compactStepLabel}</span>
     </div>
+  {:else if !compactHero}
+    <h3 class="source-identity">
+      <span class="source-dot" aria-hidden="true"></span>
+      {label} path
+    </h3>
   {/if}
 
   <div
     class="notation-stage"
     bind:this={stageEl}
     oncontextmenu={openCardContextMenu}
+    role="group"
+    aria-label="{label} path notation"
   >
     {#if compactHero && compactStep}
       <div class="compact-live-pictograph">
@@ -468,6 +478,7 @@
         class="compact-derived-indicator"
         class:interactive={Boolean(onEditPairing)}
         type={onEditPairing ? "button" : undefined}
+        role={onEditPairing ? undefined : "status"}
         onclick={onEditPairing}
         title="{followerTransformLabel} of {driverLabel}"
         aria-label={onEditPairing
@@ -536,7 +547,7 @@
         <div>
           <i class="fas fa-arrow-pointer" aria-hidden="true"></i>
           <span
-            ><strong>Choose the new step 1.</strong> Click any beat above.</span
+            ><strong>Choose the new step 1.</strong> Click any step above.</span
           >
         </div>
         <PanelButton variant="secondary" onclick={onCancelFirstStep}>
@@ -551,7 +562,6 @@
           disabled={sourceControlsDisabled || !source.canGoBack}
           onclick={() => fuseState.previous(side)}
         >
-          <i class="fas fa-arrow-rotate-left" aria-hidden="true"></i>
           Previous
         </PanelButton>
         <!-- The one button most people will press, and the only way to get a
@@ -569,47 +579,25 @@
             Regenerate
           </PanelButton>
         </div>
-        <PanelButton
-          variant="secondary"
-          disabled={sourceControlsDisabled || !source.sequence || isSavingLoop}
-          ariaBusy={isSavingLoop}
-          onclick={() => void saveCurrentLoop()}
-        >
-          <i
-            class="fas {isSavingLoop ? 'fa-spinner fa-spin' : 'fa-bookmark'}"
-            aria-hidden="true"
-          ></i>
-          {isSavingLoop ? "Saving..." : "Save LOOP"}
-        </PanelButton>
-        <PanelButton
-          variant="secondary"
-          disabled={sourceControlsDisabled}
-          onclick={() => void openLibraryPicker()}
-        >
-          <i class="fas fa-book" aria-hidden="true"></i>
-          Saved LOOP
-        </PanelButton>
-        <PanelButton
-          variant="secondary"
-          disabled={sourceControlsDisabled}
-          onclick={openVtgPicker}
-        >
-          <i class="fas fa-fan" aria-hidden="true"></i>
-          Shape path
-        </PanelButton>
-        <PanelButton
-          variant="secondary"
-          disabled={sourceControlsDisabled}
-          onclick={() => onBuildPath(side)}
-        >
-          <i class="fas fa-route" aria-hidden="true"></i>
-          Build path
-        </PanelButton>
         <FuseSourceActionPopover
           {side}
           disabled={sourceControlsDisabled || !source.sequence}
           {onChooseFirstStep}
         />
+        <div class="source-more">
+          <OverflowMenu
+            items={sourceMenuItems}
+            disabled={sourceControlsDisabled}
+            ariaLabel="More {label} path actions"
+            align={side}
+            triggerPresentation="labelled"
+          >
+            {#snippet trigger()}
+              <span>More</span>
+              <i class="fas fa-chevron-down" aria-hidden="true"></i>
+            {/snippet}
+          </OverflowMenu>
+        </div>
       </div>
     {/if}
   {/if}
@@ -750,6 +738,18 @@
     background: var(--theme-panel-bg);
   }
 
+  .source-identity {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 20px;
+    margin: 0;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    line-height: 1;
+  }
+
   .notation-scroll {
     position: relative;
     z-index: 0;
@@ -847,6 +847,16 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--settings-spacing-sm, 8px);
     margin-top: auto;
+  }
+
+  .source-more,
+  .source-more :global(.overflow-menu) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .source-more :global(.overflow-dropdown) {
+    min-width: 230px;
   }
 
   .source-actions :global(.panel-btn) {
@@ -1230,37 +1240,11 @@
   /* The toolbar responds to the source card, not the whole Fuse workspace.
      This matters around split-pane and browser-zoom seams where the page can
      be wide while the card itself is still too narrow for seven labels. */
-  @container fuse-source (min-width: 340px) {
-    .source-actions {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  @container fuse-source (min-width: 340px) and (max-width: 519px) {
-    .source-actions > :global(:last-child) {
-      grid-column: 1 / -1;
-    }
-  }
-
   @container fuse-source (min-width: 520px) {
     .source-actions {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-  }
-
-  /* Seven buttons across eight tracks: Regenerate takes two of them. Equal
-     tracks said all seven choices carry equal weight, and they do not — this
-     is the one you press if you press nothing else. */
-  /* 900, not 940: at 1920 this card's content box measures 935px, five pixels
-     under the old seam, so the one-row layout was falling back to two ragged
-     rows at the most common desktop width. */
-  @container fuse-source (min-width: 900px) {
-    .source-actions {
-      grid-template-columns: repeat(8, minmax(0, 1fr));
-    }
-
-    .shuffle-slot {
-      grid-column: span 2;
+      grid-template-columns:
+        minmax(0, 0.8fr) minmax(0, 1.25fr) minmax(0, 1fr)
+        minmax(0, 0.8fr);
     }
   }
 
