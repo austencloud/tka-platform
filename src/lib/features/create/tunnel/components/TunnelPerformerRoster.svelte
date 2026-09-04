@@ -523,10 +523,6 @@
   }
 
   @container tunnel (max-width: 430px) {
-    .performer-roster {
-      min-height: min(30rem, 72dvh);
-    }
-
     .roster-heading {
       gap: 6px;
       padding: 6px 8px;
