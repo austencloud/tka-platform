@@ -1,6 +1,6 @@
 # Ember geology, lava, and composition research
 
-Status: complete research package; Mid-Flank Fire Pilgrimage Gate 1.1 R5 approved; Gate 2 R5 ready for review
+Status: complete research package; Mid-Flank Fire Pilgrimage Gate 2 R5 approved; Gate 3 authorized and pending
 
 Date: 2026-09-03
 
@@ -644,9 +644,10 @@ contact has an 8.209 degree median slope, and only 92 m² within 35 m is below
 two degrees. Fresh Flowy calibration `r5f-c03-braided-20m2` keeps 7.097 m of
 clearance beyond the action envelope and exits the south boundary continuously.
 
-Gate 1.1 R5 is approved in `Szxybxm6NlLkPyPL6dQt`. Gate 2 R5 is
-`ready-for-review` under `1hlrU13Dg8VqdQaLJPib`; its editable Blend, review GLB,
-exact cameras, audience standing crescent, contact sheet, continuous orbit, and
-machine report live in `evidence/gate-2-geology-graybox-r5/`. The R4 Gate 1 approval and Gate 2 graybox
+Gate 1.1 R5 is approved in `Szxybxm6NlLkPyPL6dQt`. Gate 2 R5 was approved in
+`3XyhXLyzv8ASNl2fLoCo` after review under `1hlrU13Dg8VqdQaLJPib`; its editable
+Blend, review GLB, exact cameras, audience standing crescent, contact sheet,
+continuous orbit, and machine report live in `evidence/gate-2-geology-graybox-r5/`.
+Gate 3 is authorized and pending. The R4 Gate 1 approval and Gate 2 graybox
 are historical because the terrain and sightlines changed. No production
 runtime, final material, atmosphere, Meshy asset, or Meshy credit changed.
