@@ -3,7 +3,7 @@
   "sceneId": "ember-broken-rift",
   "title": "Ember Broken Rift",
   "domainProofRequired": false,
-  "currentGate": 1,
+  "currentGate": 2,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
     "roomShellSource": "src/lib/shared/3d/environments/scenes/EmberScene.svelte",
@@ -47,7 +47,9 @@
       "Vwm6XTLdDbDfxuoVE7z9",
       "5P5KVEq04dpHxu9F0ViI",
       "LfdgqBhR1T31jk77cFhf",
-      "Iur86OmZX40nTqdwgxDq"
+      "Iur86OmZX40nTqdwgxDq",
+      "Szxybxm6NlLkPyPL6dQt",
+      "1hlrU13Dg8VqdQaLJPib"
     ]
   },
   "sequenceFingerprints": [],
@@ -476,7 +478,7 @@
     },
     {
       "id": "measured-plan",
-      "status": "ready-for-review",
+      "status": "approved",
       "evidence": [
         {
           "kind": "floor-plan",
@@ -534,13 +536,71 @@
           "evidence": "The canonical R5 Gate 1.1 report records SHA-256 digests for every review image and the fresh little-endian float32 Flowy raster."
         }
       ],
-      "approval": null
+      "approval": {
+        "approvedBy": "Austen",
+          "approvedAt": "2026-09-04T20:15:18.980Z",
+        "quote": "I think I'll trust your judgment and let's pass this game",
+        "museumTrackerItem": "Szxybxm6NlLkPyPL6dQt",
+        "visualComprehensionConfirmed": true,
+        "note": "In context, Austen explicitly passed Gate 1.1 and delegated the final spatial read. The describe-back ritual is transparently waived; no unstated description is attributed to him. Approval covers the measured R5 terrain, hardened-lava bench, and audience relationship, not later materials or ember-response treatment."
+      }
     },
     {
       "id": "playable-graybox",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "blender/ember-midflank-fire-pilgrimage-graybox-r5.blend"
+        },
+        {
+          "kind": "coordinate-manifest",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/ember-midflank-fire-pilgrimage-r5-coordinate-manifest.json"
+        },
+        {
+          "kind": "graybox-glb",
+          "path": "static/models/ember/review/ember-midflank-fire-pilgrimage-graybox-r5.glb"
+        },
+        {
+          "kind": "first-person-walk",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/14-continuous-runtime-orbit.webp"
+        },
+        {
+          "kind": "review-contact-sheet",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/ember-midflank-fire-pilgrimage-r5-gate2-contact-sheet.png"
+        },
+        {
+          "kind": "verification-report",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/ember-midflank-fire-pilgrimage-r5-graybox-report.json"
+        }
+      ],
+      "checks": [
+        {
+          "name": "artifact-digest",
+          "status": "passed",
+          "evidence": "The R5 graybox report records SHA-256 and byte length for every Blender, GLB, raster, still, motion, manifest, and source artifact."
+        },
+        {
+          "name": "collision",
+          "status": "passed",
+          "evidence": "EMBER_Terrain is the sole visible collider and exports tka_camera_collision=true."
+        },
+        {
+          "name": "route-duration",
+          "status": "passed",
+          "evidence": "The orbit-backdrop exemption is fulfilled by a 48-frame continuous exact-camera orbit plus eight registered 45-degree stills."
+        },
+        {
+          "name": "sequence-parity",
+          "status": "passed",
+          "evidence": "The isolated R5 environment graybox does not select or modify a TKA sequence."
+        },
+        {
+          "name": "audience-spatial-contract",
+          "status": "passed",
+          "evidence": "Four human-scale proxies reproduce the approved downslope/lateral standing pockets, at least 5.349 m beyond the action envelope and 14.5 m from active lava."
+        }
+      ],
       "approval": null
     },
     {
