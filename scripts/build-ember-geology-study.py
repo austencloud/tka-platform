@@ -29,8 +29,8 @@ GRID_COLUMNS = 381
 GRID_ROWS = 336
 ACTION_RADIUS_M = 4.5
 ORBIT_RADIUS_M = 25.0
-CAMERA_HEIGHT_M = 7.0
-CAMERA_TARGET_HEIGHT_M = 1.2
+CAMERA_HEIGHT_M = 8.25
+CAMERA_TARGET_HEIGHT_M = 1.75
 DEFAULT_CAMERA_XZ = (0.0, -21.5)
 
 X_VALUES = np.linspace(WORLD_X[0], WORLD_X[1], GRID_COLUMNS)
@@ -194,6 +194,27 @@ R2_BREACHED_RIFT_FLOW_PATH = (
     (47.0, -84.0),
     (56.0, -122.0),
     (64.0, -145.0),
+)
+
+# Gate 1.1 R3 is composed from the performer outward.  The active event now
+# begins inside the real 25 m review composition while the older western mass
+# continues to carry the full 380 x 335 m landscape.  The diagnostic path is a
+# section axis only; Flowy remains the deposit-footprint owner.
+R3_BREACHED_RIFT_SOURCE = (-22.0, 25.0)
+R3_TERMINAL_BASIN_CENTER = (4.0, -112.0)
+R3_TERMINAL_BASIN_RADII = (22.0, 15.0)
+R3_BREACHED_RIFT_FLOW_PATH = (
+    R3_BREACHED_RIFT_SOURCE,
+    (-20.0, 16.0),
+    (-18.0, 7.0),
+    (-17.0, -3.0),
+    (-18.0, -14.0),
+    (-15.0, -27.0),
+    (-10.0, -42.0),
+    (-7.0, -58.0),
+    (-4.0, -75.0),
+    (0.0, -96.0),
+    R3_TERMINAL_BASIN_CENTER,
 )
 
 
@@ -363,7 +384,154 @@ def breached_rift_height_r2(candidate: Candidate) -> np.ndarray:
     return height
 
 
+def breached_rift_r3_masks() -> dict[str, np.ndarray]:
+    """Return the performer-centred formation regions for Gate 1.1 R3."""
+
+    # The performer stands on one attached old-flow tongue. It extends east of
+    # the orbit and is deliberately off-axis, so it cannot become a round stage
+    # island even where the immediate action area is quiet.
+    shelf_u, shelf_v = rotated_coordinates(11.0, -1.5, -7.0)
+    shelf_warp = 1.0 + 0.10 * np.sin((shelf_u + 1.8 * shelf_v) / 7.5)
+    shelf_metric = (np.abs(shelf_u) / (32.0 * shelf_warp)) ** 3.4 + (np.abs(shelf_v) / 9.5) ** 3.4
+    quiet_peninsula = smoothstep01((1.24 - shelf_metric) / 0.42)
+
+    # A warped crescent face replaces the R3 orthogonal wall. Three depth masks
+    # later create unequal retained benches/bedding behind the failed crown.
+    scarp_line_x = -30.0 + 0.045 * (Z_GRID - 31.0) + 4.8 * np.sin((Z_GRID - 3.0) / 15.0)
+    scarp_line_x += 1.8 * np.sin((Z_GRID + 11.0) / 6.5)
+    face_depth = scarp_line_x - X_GRID
+    near_window = np.exp(-0.5 * ((Z_GRID - 42.0) / 38.0) ** 2)
+    near_window *= smoothstep01((Z_GRID + 4.0) / 12.0)
+    surviving_headwall = smoothstep01((face_depth + 4.0) / 10.0) * near_window
+    headwall_mid_step = smoothstep01((face_depth - 5.0) / 11.0) * near_window
+    headwall_back_step = smoothstep01((face_depth - 19.0) / 14.0) * near_window
+
+    breach_u, breach_v = rotated_coordinates(-23.0, 30.0, -17.0)
+    collapse_breach = np.exp(-0.5 * ((breach_u / 11.5) ** 2 + (breach_v / 17.0) ** 2))
+    collapse_breach *= smoothstep01((Z_GRID - 4.0) / 11.0)
+
+    # Overlapping lobes grade downslope from the crown. Their asymmetry and
+    # decreasing amplitude describe runout rather than a decorative rock pile.
+    talus = np.zeros_like(X_GRID)
+    for x0, z0, sigma_x, sigma_z, amplitude, angle in (
+        (-27.0, 19.0, 9.5, 13.0, 1.00, -18.0),
+        (-32.0, 8.0, 10.0, 12.0, 0.76, -7.0),
+        (-18.0, 5.0, 8.0, 12.0, 0.61, -27.0),
+        (-25.0, -6.0, 12.0, 9.0, 0.42, -10.0),
+    ):
+        talus += gaussian(x0, z0, sigma_x, sigma_z, amplitude, angle)
+    talus = np.clip(talus, 0.0, 1.0)
+
+    basin_x, basin_z = R3_TERMINAL_BASIN_CENTER
+    basin_rx, basin_rz = R3_TERMINAL_BASIN_RADII
+    terminal_basin = gaussian(basin_x, basin_z, basin_rx, basin_rz, 1.0, 0.0)
+    terminal_rim = gaussian(basin_x + 2.0, basin_z - 19.0, 27.0, 6.5, 1.0, 0.0)
+
+    # Attached low shelves make the open orbit breathe without becoming empty
+    # or enclosing the performer. They remain discontinuous and below eye line.
+    open_side_depth = np.clip(
+        gaussian(27.0, 20.0, 13.0, 7.5, 1.0, 10.0)
+        + gaussian(39.0, -17.0, 17.0, 8.0, 0.88, -11.0)
+        + gaussian(24.0, -43.0, 13.0, 8.0, 0.72, 16.0),
+        0.0,
+        1.0,
+    )
+
+    return {
+        "performanceShelf": quiet_peninsula,
+        "survivingHeadwall": surviving_headwall,
+        "headwallMidStep": headwall_mid_step,
+        "headwallBackStep": headwall_back_step,
+        "collapseBreach": collapse_breach,
+        "talusApron": talus,
+        "terminalBasin": terminal_basin,
+        "terminalBasinRim": terminal_rim,
+        "openSideDepth": open_side_depth,
+    }
+
+
+def breached_rift_height_r3(candidate: Candidate) -> np.ndarray:
+    """Build the performer-first Breached Rift Bench correction."""
+
+    if not candidate.id.startswith("a-"):
+        raise ValueError("The Gate 1.1 R3 correction applies only to Breached Rift Bench")
+
+    masks = breached_rift_r3_masks()
+    distance, progress = distance_and_progress_to_polyline(R3_BREACHED_RIFT_FLOW_PATH)
+
+    base = -1.40 + 0.0265 * (Z_GRID - WORLD_Z[0]) - 0.0018 * X_GRID
+    base += 0.15 * np.sin((X_GRID + 1.7 * Z_GRID) / 34.0)
+    base += 0.10 * np.sin((1.4 * X_GRID - Z_GRID) / 19.0)
+
+    height = base
+    height += masks["survivingHeadwall"] * 4.8
+    height += masks["headwallMidStep"] * 3.7
+    height += masks["headwallBackStep"] * 2.6
+    height += gaussian(-104.0, 112.0, 48.0, 47.0, 11.0, 7.0)
+    height += gaussian(-125.0, 24.0, 42.0, 63.0, 7.0, -8.0)
+    height += gaussian(-74.0, 159.0, 52.0, 24.0, 5.0, 9.0)
+
+    # Remove a deep, downslope-open bite.  It crosses the scarp edge, so it
+    # reads as missing rock instead of a decorative arch or notch.
+    height -= masks["collapseBreach"] * (
+        5.8
+        + 5.0 * masks["survivingHeadwall"]
+        + 3.2 * masks["headwallMidStep"]
+        + 2.0 * masks["headwallBackStep"]
+    )
+    height += masks["talusApron"] * (2.7 - 0.006 * np.clip(24.0 - Z_GRID, 0.0, 80.0))
+
+    # The active drainage is a real depression whose longitudinal bed is
+    # monotonically descending. A paired shallow slope-break channel permits a
+    # secondary breakout lobe without claiming that it reconnects downstream.
+    # Most relief is shed through the breached chute before the flow passes the
+    # performer; the distal reach keeps a gentler but still negative grade.
+    channel_bed = -1.50 + 2.5 * (1.0 - progress) + 6.3 * np.exp(-progress / 0.12)
+    channel_width = 4.4 + 2.8 * smoothstep01((progress - 0.34) / 0.34)
+    channel_influence = np.exp(-0.5 * (distance / channel_width) ** 2)
+    height = height * (1.0 - channel_influence) + channel_bed * channel_influence
+
+    breakout_path = ((-13.0, -27.0), (-2.0, -41.0), (3.0, -55.0), (0.0, -69.0), (-4.0, -76.0))
+    breakout_distance, breakout_progress = distance_and_progress_to_polyline(breakout_path)
+    breakout_window = smoothstep01((Z_GRID + 82.0) / 10.0) * smoothstep01((-22.0 - Z_GRID) / 10.0)
+    breakout_global_progress = 0.36 + breakout_progress * 0.24
+    breakout_bed = (
+        -1.50
+        + 2.5 * (1.0 - breakout_global_progress)
+        + 6.3 * np.exp(-breakout_global_progress / 0.12)
+        + 0.04
+    )
+    breakout_influence = np.exp(-0.5 * (breakout_distance / 4.6) ** 2) * breakout_window
+    height = height * (1.0 - breakout_influence) + breakout_bed * breakout_influence
+
+    # Blend the attached old-flow tongue toward a subtly graded, varied surface.
+    # It stays quiet inside the action radius and grows rougher toward the east.
+    quiet_plane = 2.22 + 0.0045 * X_GRID + 0.0025 * Z_GRID
+    quiet_surface = quiet_plane + 0.035 * np.sin((X_GRID + 0.7 * Z_GRID) / 4.8)
+    quiet_surface += 0.10 * smoothstep01((X_GRID - 8.0) / 24.0) * np.sin((X_GRID - 0.9 * Z_GRID) / 5.8)
+    quiet_patch = masks["performanceShelf"]
+    height = height * (1.0 - quiet_patch) + quiet_surface * quiet_patch
+
+    # A real inboard terminal low and containing downslope lip replace the false
+    # world-edge threshold. Simulator eligibility requires occupying this low
+    # without touching the south boundary.
+    height -= masks["terminalBasin"] * 2.15
+    height += masks["terminalBasinRim"] * 2.0
+
+    # One discontinuous old-flow shoulder deflects the active reach around the
+    # protected ground.  It is a local bank on the west side, not a ring.
+    height += gaussian(-8.5, -2.0, 1.8, 14.5, 2.6, -3.0)
+    height += gaussian(-11.8, 12.0, 2.1, 7.5, 1.5, -14.0)
+    height += gaussian(0.8, 8.7, 7.5, 1.7, 1.7, 2.0)
+
+    # Nonblocking open-side depth: broken low shelves, never a radial berm.
+    height += masks["openSideDepth"] * 1.8
+    return height
+
+
 def candidate_height(candidate: Candidate, revision: str = "r1") -> np.ndarray:
+    if revision == "r3":
+        return breached_rift_height_r3(candidate)
     if revision == "r2":
         return breached_rift_height_r2(candidate)
     if revision != "r1":
@@ -529,15 +697,22 @@ def interpolate_path(path: tuple[tuple[float, float], ...], samples: int = 320) 
 
 def sightline_clearance(height: np.ndarray) -> list[dict[str, float | bool]]:
     results: list[dict[str, float | bool]] = []
+    performer_ground = sample_height(height, 0.0, 0.0)
+    camera_y = performer_ground + CAMERA_HEIGHT_M
+    target_y = performer_ground + CAMERA_TARGET_HEIGHT_M
+    horizontal_radius = math.sqrt(
+        ORBIT_RADIUS_M * ORBIT_RADIUS_M
+        - (CAMERA_HEIGHT_M - CAMERA_TARGET_HEIGHT_M) ** 2
+    )
     for angle_deg in range(0, 360, 45):
         angle = math.radians(angle_deg)
-        camera_x = math.sin(angle) * ORBIT_RADIUS_M
-        camera_z = -math.cos(angle) * ORBIT_RADIUS_M
+        camera_x = math.sin(angle) * horizontal_radius
+        camera_z = -math.cos(angle) * horizontal_radius
         minimum_clearance = math.inf
         for t in np.linspace(0.08, 0.92, 80):
             x = camera_x * (1.0 - t)
             z = camera_z * (1.0 - t)
-            ray_y = CAMERA_HEIGHT_M * (1.0 - t) + CAMERA_TARGET_HEIGHT_M * t
+            ray_y = camera_y * (1.0 - t) + target_y * t
             clearance = ray_y - sample_height(height, x, z)
             minimum_clearance = min(minimum_clearance, clearance)
         results.append(

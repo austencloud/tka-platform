@@ -1,6 +1,6 @@
 # Ember geology, lava, and composition research
 
-Status: complete research package; Breached Rift Bench Gate 2 R2 ready for review
+Status: complete research package; Breached Rift Bench Gate 1.1 R3 ready for review and Gate 2 pending
 
 Date: 2026-09-03
 
@@ -14,16 +14,17 @@ Rebuild Ember's spatial backbone, but do not discard the whole scene.
 
 The strongest first graybox is **A. Breached Rift Bench**: a broad basaltic
 rift/caldera landscape in which one older collapse scarp occupies the west and
-northwest, one fissure-fed lava system descends from `(-72, 137)`, the active
-flow skirts the performance bench on its east side, and the east/southeast
-horizon remains open. The plan is directional rather than radial. The stage is
-a locally smooth patch of an older cooled surface, not a disk placed inside a
-ring of spectacle.
+northwest, one fissure-fed lava system descends from `(-22, 25)`, the active
+flow skirts a compact irregular quiet patch, and the east/southeast horizon
+remains open. The plan is directional rather than radial. The performer stands
+on continuous older cooled terrain, not a disk placed inside a ring of
+spectacle.
 
-This direction is approved through Gate 1.1 under Austen's delegated spatial
-authority in tracker `7uoHBfOCOqMmFeKBRh7l`. It earned the R2 graybox because it
-is the best combined answer to geology, lava causality, camera resilience,
-performer clearance, and the remaining Meshy budget.
+This direction is the Gate 1.1 R3 review candidate under Austen's delegated
+spatial authority and his “attack it!” correction authorization in trackers
+`7uoHBfOCOqMmFeKBRh7l` and `lIPwVa2kGFcoQsgICkWI`. A Gate 2 candidate was built
+to falsify the plan in registered cameras, but remains noncanonical until Gate
+1.1 receives explicit artifact approval.
 
 The restart should preserve Ember's useful infrastructure, surface work, and
 atmosphere while replacing two failed owners:
@@ -374,14 +375,20 @@ mountain must not close it.
 
 ### Lava path
 
-The source begins behind/in relation to the older scarp, crosses the upper
-middle distance, passes to the east of the performer, and widens toward the
-audience-side/southern slope break. The eye therefore travels source → channel
-→ performer relationship → lobe field → continuation out of frame.
+The source begins against the older scarp, crosses the failed crown, and enters
+a main drainage that skirts the protected performer area. A secondary breakout
+lobe may die where the slope loses energy; it must not be described as a
+reconnection unless the simulator proves one. The main deposit settles in a
+shallow inboard southern low behind a containing lip rather than disappearing
+through the DEM boundary. The eye therefore travels source → breach → channel
+→ performer relationship → breakout/main drainage → terminal low.
 
 ### Camera behavior
 
-The default audience view receives the clearest complete causal sequence. Side
+The default audience view must make the source, breach, initial drainage, and
+performer relationship clear without labels. The north-up plan, measured
+section, and whole-scene director view own the complete route to the inboard
+terminal low. Side
 views discover different contacts and depth layers. Rear views may be quieter,
 but the performer must remain legible and the terrain must remain continuous.
 The target is not eight equally poster-like views; it is one intentional hero,
@@ -449,12 +456,15 @@ final lava materials or spend Meshy credits.
 
 Gate 2 passes when:
 
-- the stage reads as terrain from every captured view;
+- the performer stands on an attached old-flow peninsula, not a radial island;
 - one dominant mass and one open horizon remain legible;
 - the drainage is downhill and avoids the action envelope;
-- the flow widens/thickens where the terrain explains it;
+- any flow bifurcation is described exactly as the simulator proves it;
+- an actual inboard terminal low and containing lip are visible in plan and
+  whole-scene evidence, and the deposit does not touch the south world edge;
 - no view exposes a world edge, artificial ring, or empty set back;
-- the audience view communicates source-to-continuation without labels.
+- the audience view communicates source-to-breach-to-initial-drainage without
+  labels; plan, section, and director evidence communicate the full route.
 
 ### Gate 3: register the visual target
 
@@ -528,11 +538,13 @@ reads as a volcanic place rather than a decorated stage.
 - Direction A's breach can regress into another giant arch. The graybox must
   show a broken scarp with asymmetric bedding, talus, and a credible missing
   volume, not a freestanding portal.
-- Historical R1 risk: the first 8,000 m³ simulator test stopped near the
-  performer region rather than filling the authored 314 m route. Gate 1.1 now
-  resolves that specific contradiction with a five-run width/morphology sweep;
-  the selected simulator footprint reaches runtime Z `-144` with 13.220 m of
-  clearance beyond the action envelope. Artifact approval remains pending.
+- Historical R1 and R2 risk: earlier simulator evidence either stopped short or
+  used false continuation semantics. Gate 1.1 R3 resolves that contradiction
+  with a five-run morphology sweep; the selected footprint reaches the named
+  inboard terminal basin, keeps its nearest visible cell support 9.618 m from
+  performer center, preserves 5.118 m beyond the action envelope, and contains
+  39 observable branched rows. The nearest active cell center is 10.198 m away;
+  that center-sample value is not used as the clearance claim.
 - Simulator agreement is encouraging but not geological validation. Both models
   inherit related elliptical-lobe assumptions and the same invented DEM.
 - A 1 m planning grid cannot own sub-meter crust form. It is a macro/meso guide.
@@ -577,17 +589,21 @@ The [source ledger](geology-research-source-ledger.md) records all measured,
 scientific, production, repository, licensing, and Meshy references used by the
 study.
 
-## Gate 1.1 amendment evidence
+## Gate 1.1 R3 correction evidence
 
-The independent R1 audit and corrective authorization are recorded in museum
-tracker items `xSjtvI2XVvvMdn8pHqwP` and `WS9FU4nn2fCSbOn68IeB`. The replacement
-north-up plan, sections, sightlines, simulator sweep, contact sheet, canonical
-report, and selected float32 footprint live in
-`evidence/gate-1-1-geology-amendment-r2/`. Reproduce them with:
+The R1 and R2 adversarial audits and corrective authorizations are recorded in
+museum tracker items `xSjtvI2XVvvMdn8pHqwP`, `WS9FU4nn2fCSbOn68IeB`,
+`torsiCoIaMMrkMklUMSq`, and `lIPwVa2kGFcoQsgICkWI`. The current north-up plan,
+sections, sightlines, simulator sweep, contact sheet, canonical report, and
+selected float32 footprint live in
+`evidence/gate-1-1-geology-amendment-r3/`. Reproduce them with:
 
-- `py -3 scripts/prepare-ember-lava-simulator-benchmark.py all-r2`
+- `py -3 scripts/prepare-ember-lava-simulator-benchmark.py all-r3`
 - `py -3 scripts/build-ember-geology-amendment.py build`
 - `py -3 scripts/build-ember-geology-amendment.py verify`
 
-Direction A remains the accepted creative direction, but its corrected Gate 1.1
-artifact is `ready-for-review` rather than approved. Gate 2 R2 is pending.
+Direction A remains the accepted creative direction. Gate 1.1 R3 is
+`ready-for-review` with approval unset; Gate 2 remains pending. Gate 3 has not
+started.
+The R3 correction changes no production runtime, final material, atmosphere,
+or Meshy asset and spends no Meshy credits.
