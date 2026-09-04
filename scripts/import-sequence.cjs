@@ -352,7 +352,7 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
  */
 function buildFirestoreDoc(raw, fieldValue, loopInfo, opts = {}) {
   const optVisibility = opts.visibility ?? visibility;
-  const optNotes = opts.notes ?? notes;
+  const optNotes = opts.notes ?? raw.notes ?? notes;
   const optForceCircular = opts.forceCircular ?? forceCircular;
   const optForceLoopType = opts.forceLoopType ?? forceLoopType;
 
@@ -371,7 +371,7 @@ function buildFirestoreDoc(raw, fieldValue, loopInfo, opts = {}) {
   const now = fieldValue.serverTimestamp();
 
   const word = raw.word || "";
-  const name = word;
+  const name = raw.name || word;
 
   // Use CLI override > LOOP detector > manual end-matches-start check
   const steps = raw.steps || [];
@@ -405,10 +405,11 @@ function buildFirestoreDoc(raw, fieldValue, loopInfo, opts = {}) {
     name,
     word,
     steps: steps.map((step, i) => ({
-      beat: step.beat ?? i,
+      stepNumber: step.stepNumber ?? i + 1,
       letter: step.letter,
       startPosition: step.startPosition,
       endPosition: step.endPosition,
+      duration: step.duration ?? 1,
       motions: step.motions,
     })),
     startPosition: startPosObject,
@@ -416,12 +417,20 @@ function buildFirestoreDoc(raw, fieldValue, loopInfo, opts = {}) {
     gridMode: raw.gridMode || "diamond",
     sequenceLength: steps.length,
     thumbnails: [],
-    tags: opts.demo ? ["demo"] : [],
+    tags: Array.from(
+      new Set([
+        ...(Array.isArray(raw.tags) ? raw.tags : []),
+        ...(opts.demo ? ["demo"] : []),
+      ])
+    ),
     isFavorite: false,
     isCircular,
     // Legacy readers still inspect metadata.visibility, so keep it aligned
     // with the top-level owner field even though imports cannot publish.
-    metadata: { visibility: optVisibility },
+    metadata: {
+      ...(raw.metadata && typeof raw.metadata === "object" ? raw.metadata : {}),
+      visibility: optVisibility,
+    },
     ownerId: AUSTEN_UID,
     visibility: optVisibility,
     birthday: now,
@@ -429,6 +438,10 @@ function buildFirestoreDoc(raw, fieldValue, loopInfo, opts = {}) {
     updatedAt: now,
     _version: 1,
   };
+
+  if (raw.displayName) {
+    doc.displayName = raw.displayName;
+  }
 
   if (opts.demo) {
     doc.demo = true;
