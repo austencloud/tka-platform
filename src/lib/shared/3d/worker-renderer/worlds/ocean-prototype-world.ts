@@ -1,21 +1,26 @@
-import {
-  AmbientLight,
-  Color,
-  DirectionalLight,
-  DoubleSide,
-  FogExp2,
-  Group,
-  Mesh,
-  PlaneGeometry,
-  Scene,
-  ShaderMaterial,
-} from "three";
+import { Group, Scene } from "three";
 import {
   GLTFLoader,
   type GLTF,
 } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
+import {
+  causticUniforms,
+  DEFAULT_CAUSTIC_STRENGTH,
+} from "../../environments/scenes/ocean/runtime/atmosphere/seabed-caustics";
+import { oceanFloraSceneUrl } from "../../environments/scenes/ocean/authored/ocean-flora-url";
+import {
+  createOceanAuthoredFloraController,
+  enhanceOceanSeabed,
+} from "../../environments/worlds/ocean/ocean-authored-flora";
+import { createOceanDepthGradient } from "../../environments/worlds/ocean/ocean-depth-gradient";
+import { createOceanGodRayShafts } from "../../environments/worlds/ocean/ocean-god-ray-shafts";
+import { createOceanLightingRig } from "../../environments/worlds/ocean/ocean-lighting-rig";
+import { createOceanMarineParticles } from "../../environments/worlds/ocean/ocean-marine-particles";
+import { createOceanRuinsPlatform } from "../../environments/worlds/ocean/ocean-ruins-platform";
+import { applyOceanSceneAppearance } from "../../environments/worlds/ocean/ocean-scene-appearance";
+import { createOceanWaterSurface } from "../../environments/worlds/ocean/ocean-water-surface";
 import {
   disposeWorkerWorldTree,
   type WorkerEnvironmentWorld,
@@ -31,29 +36,41 @@ function absoluteAssetUrl(path: string): string {
 function loadGltf(
   loader: GLTFLoader,
   url: string,
-  onProgress: (loaded: number, total: number) => void
+  onProgress: (loaded: number, total: number) => void,
 ): Promise<GLTF> {
   return new Promise((resolve, reject) => {
     loader.load(
       absoluteAssetUrl(url),
       resolve,
       (event) => onProgress(event.loaded, event.total),
-      reject
+      reject,
     );
   });
 }
 
+/**
+ * Ocean's exact static production layers in the worker renderer.
+ *
+ * Fauna, interaction/audio, and post-processing remain explicit later parity
+ * gates; the authored reef, seabed treatment, stage, atmosphere, water, fog,
+ * IBL, and complete motivated light rig all come from the production owners.
+ */
 export async function createOceanPrototypeWorld(
-  context: WorkerWorldContext
+  context: WorkerWorldContext,
 ): Promise<WorkerEnvironmentWorld> {
   const scene = new Scene();
-  const waterColor = new Color("#071f34");
-  scene.background = waterColor;
-  scene.fog = new FogExp2(waterColor, 0.026);
-
   const world = new Group();
+  world.name = "OceanWorld";
   world.position.y = OCEAN_WORLD_Y_OFFSET;
   scene.add(world);
+
+  let groundY = context.performers[0]?.groundY ?? -1.5;
+  const appearance = applyOceanSceneAppearance({
+    scene,
+    renderer: context.renderer,
+    enableFog: true,
+    enableImageBasedLighting: true,
+  });
 
   const loader = new GLTFLoader();
   loader.setMeshoptDecoder(MeshoptDecoder);
@@ -77,83 +94,111 @@ export async function createOceanPrototypeWorld(
   try {
     [seabed, flora] = await Promise.all([
       loadGltf(loader, "/models/ocean/ocean-environment.glb", (value, total) =>
-        report(0, value, total)
+        report(0, value, total),
       ),
-      loadGltf(loader, "/models/ocean/ocean_flora_scene.glb", (value, total) =>
-        report(1, value, total)
+      loadGltf(loader, oceanFloraSceneUrl(), (value, total) =>
+        report(1, value, total),
       ),
     ]);
   } finally {
-    // The loaded textures retain their GPU resources. The transcoder's nested
-    // worker pool is only needed during load, so release it before this world
-    // enters the steady render loop.
     ktx2Loader.dispose();
   }
   context.reportProgress("assets", 1);
 
-  seabed.scene.traverse((object) => {
-    const mesh = object as Mesh;
-    if (!mesh.isMesh) return;
-    mesh.receiveShadow = true;
-    mesh.castShadow = false;
-  });
-  flora.scene.traverse((object) => {
-    const mesh = object as Mesh;
-    if (!mesh.isMesh) return;
-    mesh.receiveShadow = true;
-    mesh.castShadow = true;
+  enhanceOceanSeabed(seabed.scene, { enableCaustics: true });
+  const floraController = createOceanAuthoredFloraController(flora.scene, {
+    groundY: groundY + OCEAN_WORLD_Y_OFFSET,
+    swayEnabled: true,
   });
   world.add(seabed.scene, flora.scene);
 
-  const waterMaterial = new ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uColor: { value: new Color("#0a5272") } },
-    vertexShader: /* glsl */ `
-      uniform float uTime;
-      varying vec3 vWorld;
-      void main() {
-        vec3 p = position;
-        p.z += sin(position.x * 0.12 + uTime * 0.35) * 0.18;
-        p.z += cos(position.y * 0.09 - uTime * 0.22) * 0.12;
-        vec4 world = modelMatrix * vec4(p, 1.0);
-        vWorld = world.xyz;
-        gl_Position = projectionMatrix * viewMatrix * world;
-      }
-    `,
-    fragmentShader: /* glsl */ `
-      uniform vec3 uColor;
-      varying vec3 vWorld;
-      void main() {
-        float shimmer = 0.72 + 0.28 * sin(vWorld.x * 0.25 + vWorld.z * 0.18);
-        gl_FragColor = vec4(uColor * shimmer, 0.34);
-      }
-    `,
-    transparent: true,
-    depthWrite: false,
-    side: DoubleSide,
+  const depth = createOceanDepthGradient();
+  const water = createOceanWaterSurface({ groundY });
+  const godRays = createOceanGodRayShafts({
+    groundY,
+    worldYOffset: OCEAN_WORLD_Y_OFFSET,
+    enabled: true,
   });
-  const water = new Mesh(new PlaneGeometry(70, 70, 48, 48), waterMaterial);
-  water.rotation.x = -Math.PI / 2;
-  water.position.y = 19.7;
-  water.renderOrder = 10;
-  world.add(water);
+  const particles = createOceanMarineParticles({ count: 4000, groundY });
+  const ruins = createOceanRuinsPlatform(
+    {
+      enabled: true,
+      width: 8,
+      depth: 6,
+      height: 0.5,
+      elevation: 0.5,
+      stoneColor: "#9d9482",
+      runeGlowColor: "#44ddaa",
+      glowIntensity: 0.55,
+      mossIntensity: 0.8,
+      columnCount: 6,
+      groundOffset: 1.5,
+      zOffset: 0,
+    },
+    groundY,
+  );
+  const lighting = createOceanLightingRig({
+    groundY,
+    hemisphereEnabled: true,
+  });
+  world.add(
+    depth.object,
+    water.object,
+    godRays.object,
+    particles.object,
+    ruins.object,
+    lighting.object,
+  );
 
-  scene.add(new AmbientLight("#35799c", 0.8));
-  const key = new DirectionalLight("#a3dbf0", 3.2);
-  key.position.set(-7, 13, 8);
-  key.castShadow = true;
-  scene.add(key);
-  const rim = new DirectionalLight("#1b8fb5", 2.1);
-  rim.position.set(10, 8, -12);
-  scene.add(rim);
-
+  causticUniforms.uGroundY.value = groundY + OCEAN_WORLD_Y_OFFSET;
+  causticUniforms.uCausticStrength.value = DEFAULT_CAUSTIC_STRENGTH;
   context.reportProgress("construct", 1);
+
+  function setGroundY(nextGroundY: number): void {
+    if (nextGroundY === groundY) return;
+    groundY = nextGroundY;
+    water.setGroundY(groundY);
+    godRays.setGroundY(groundY, OCEAN_WORLD_Y_OFFSET);
+    particles.setGroundY(groundY);
+    ruins.setGroundY(groundY);
+    lighting.setGroundY(groundY);
+    floraController.setGroundY(groundY + OCEAN_WORLD_Y_OFFSET);
+    causticUniforms.uGroundY.value = groundY + OCEAN_WORLD_Y_OFFSET;
+  }
+
   return {
     environment: "ocean",
     scene,
-    update(_deltaSeconds, elapsedSeconds) {
-      waterMaterial.uniforms.uTime!.value = elapsedSeconds;
+    useViewerBaseLighting: false,
+    update(deltaSeconds) {
+      causticUniforms.uTime.value += deltaSeconds;
+      depth.update(context.camera);
+      water.update(deltaSeconds, context.camera);
+      godRays.update(deltaSeconds);
+      particles.update(deltaSeconds);
+      ruins.update(deltaSeconds);
+      floraController.update(deltaSeconds, context.camera);
+    },
+    setPerformers(performers) {
+      setGroundY(performers[0]?.groundY ?? -1.5);
     },
     dispose() {
+      floraController.dispose();
+      appearance.dispose();
+      world.remove(
+        depth.object,
+        water.object,
+        godRays.object,
+        particles.object,
+        ruins.object,
+        lighting.object,
+      );
+      depth.dispose();
+      water.dispose();
+      godRays.dispose();
+      particles.dispose();
+      ruins.dispose();
+      lighting.dispose();
       disposeWorkerWorldTree(scene);
       scene.background = null;
       scene.fog = null;

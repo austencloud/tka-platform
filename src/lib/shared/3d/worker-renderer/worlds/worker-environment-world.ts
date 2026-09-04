@@ -8,19 +8,24 @@ import {
 } from "three";
 import type {
   WorkerEnvironmentKey,
+  WorkerPerformerSnapshot,
   WorkerRendererProgressMessage,
 } from "../domain/worker-renderer-protocol";
 
 export interface WorkerEnvironmentWorld {
   environment: WorkerEnvironmentKey;
   scene: Scene;
+  /** False when the environment owns its complete production light rig. */
+  useViewerBaseLighting?: boolean;
   update(deltaSeconds: number, elapsedSeconds: number): void;
+  setPerformers?(performers: readonly WorkerPerformerSnapshot[]): void;
   dispose(): void;
 }
 
 export interface WorkerWorldContext {
   renderer: WebGLRenderer;
   camera: PerspectiveCamera;
+  performers: readonly WorkerPerformerSnapshot[];
   requestId: number;
   reportProgress(
     phase: WorkerRendererProgressMessage["phase"],

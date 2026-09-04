@@ -163,6 +163,7 @@ async function initialize(
   world = await factory({
     renderer,
     camera,
+    performers: performerSnapshots,
     requestId,
     reportProgress(phase, fraction) {
       post({
@@ -174,11 +175,13 @@ async function initialize(
     },
   });
   if (disposed) return;
-  world.scene.add(
-    createViewerBaseLightingGroup(
-      resolveViewerBaseLighting(true, environment === "ocean")
-    )
-  );
+  if (world.useViewerBaseLighting !== false) {
+    world.scene.add(
+      createViewerBaseLightingGroup(
+        resolveViewerBaseLighting(true, environment === "ocean")
+      )
+    );
+  }
   const environmentReadyAt = performance.now();
   post({ type: "progress", requestId, phase: "performer", fraction: 0 });
   performerStage = new WorkerPerformerStage(world.scene);
@@ -357,6 +360,7 @@ scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
       break;
     case "performers":
       performerSnapshots = message.performers;
+      world?.setPerformers?.(performerSnapshots);
       void performerStage?.setSnapshots(performerSnapshots).catch((error) => {
         post({
           type: "error",
