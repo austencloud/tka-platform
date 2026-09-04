@@ -202,6 +202,10 @@
         class:active={environment === "ocean"}
         onclick={() => select("ocean")}>Ocean</button
       >
+      <button
+        class:active={environment === "void"}
+        onclick={() => select("void")}>Void</button
+      >
     </div>
 
     <div class="status-card" aria-live="polite">
