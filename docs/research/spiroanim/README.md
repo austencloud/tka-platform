@@ -25,11 +25,11 @@ a transcription of other people's systems into TKA's vocabulary. Credit them on
 any surface built from this. See `.claude/rules/no-fabrication.md` and the
 `feedback_source_tiering` memory.
 
-Quarter Space Tech predates SpiroAnim. Mentive preserved its data and three
-original documents in SpiroAnim, but those bundled documents do not identify an
-individual creator. The imported collection therefore credits the Quarter Space
-Tech archive, Mentive's preservation in SpiroAnim, and `@rbgirard` without
-inventing a personal creator identity.
+Mentive directly confirmed that the Quarter Space Tech source documents were
+his work, based on Alex Kurowski's grid. The imported collection credits both
+contributions and identifies SpiroAnim as the transcription source. Public
+credit uses Mentive, his requested public name. Randy is the preferred name when
+a real name is required.
 
 ## Method
 

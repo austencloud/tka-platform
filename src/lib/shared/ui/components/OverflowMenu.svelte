@@ -216,7 +216,13 @@
     right: 0;
     min-width: 180px;
     padding: 4px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    /* The menu floats over dense cards and pictographs. Paint the theme wash
+       over a solid base so content behind it never competes with its labels. */
+    background-color: #12141c;
+    background-image: linear-gradient(
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98)),
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98))
+    );
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);

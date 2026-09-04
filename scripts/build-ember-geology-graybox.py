@@ -1,4 +1,4 @@
-"""Build and verify Ember's performer-centred Breached Rift Bench Gate 2 R3 graybox.
+"""Build and verify Ember's Mid-Flank Fire Pilgrimage Gate 2 R4 graybox.
 
 The Gate 1.1 geology amendment review candidate remains the terrain authority. This
 script derives one checkout-stable coordinate manifest from it, makes the
@@ -37,19 +37,19 @@ STUDY_PATH = ROOT / "scripts/build-ember-geology-study.py"
 RESEARCH_PATH = ROOT / "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md"
 GATE1_REPORT_PATH = ROOT / (
     "docs/superpowers/specs/ember-spatial-directions/evidence/"
-    "gate-1-1-geology-amendment-r3/ember-breached-rift-bench-gate1-1-report.json"
+    "gate-1-1-geology-amendment-r4/ember-midflank-fire-pilgrimage-r4-gate1-1-report.json"
 )
-GATE_DIR = ROOT / "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r3"
-MANIFEST_PATH = GATE_DIR / "ember-breached-rift-bench-r3-coordinate-manifest.json"
-REPORT_PATH = GATE_DIR / "ember-breached-rift-bench-r3-graybox-report.json"
-CONTACT_SHEET_PATH = GATE_DIR / "ember-breached-rift-bench-r3-gate2-contact-sheet.png"
+GATE_DIR = ROOT / "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4"
+MANIFEST_PATH = GATE_DIR / "ember-midflank-fire-pilgrimage-r4-coordinate-manifest.json"
+REPORT_PATH = GATE_DIR / "ember-midflank-fire-pilgrimage-r4-graybox-report.json"
+CONTACT_SHEET_PATH = GATE_DIR / "ember-midflank-fire-pilgrimage-r4-gate2-contact-sheet.png"
 ORBIT_STRIP_PATH = GATE_DIR / "11-sampled-runtime-orbit-board.png"
 ORBIT_VIDEO_PATH = GATE_DIR / "14-continuous-runtime-orbit.webp"
-TERRAIN_DATA_PATH = ROOT / "static/data/ember/review/ember-breached-rift-bench-r3-height.f32"
-SIMULATOR_THICKNESS_PATH = ROOT / "static/data/ember/review/ember-breached-rift-bench-r3-flowy-thickness.f32"
-BLEND_PATH = ROOT / "blender/ember-breached-rift-bench-graybox-r3.blend"
-GLB_PATH = ROOT / "static/models/ember/review/ember-breached-rift-bench-graybox-r3.glb"
-CACHE_DIR = ROOT / ".cache/ember/gate2-r3"
+TERRAIN_DATA_PATH = ROOT / "static/data/ember/review/ember-midflank-fire-pilgrimage-r4-height.f32"
+SIMULATOR_THICKNESS_PATH = ROOT / "static/data/ember/review/ember-midflank-fire-pilgrimage-r4-flowy-thickness.f32"
+BLEND_PATH = ROOT / "blender/ember-midflank-fire-pilgrimage-graybox-r4.blend"
+GLB_PATH = ROOT / "static/models/ember/review/ember-midflank-fire-pilgrimage-graybox-r4.glb"
+CACHE_DIR = ROOT / ".cache/ember/gate2-r4"
 BLENDER_SNAPSHOT_PATH = CACHE_DIR / "blender-verification.json"
 BLENDER_EXE = Path("C:/Program Files/Blender Foundation/Blender 5.0/blender.exe")
 
@@ -70,7 +70,7 @@ REVIEW_IMAGE_NAMES = (
     "09-north-up-plan.png",
     "10-longitudinal-section.png",
     "12-director-overview.png",
-    "13-collapse-oblique.png",
+    "13-midflank-oblique.png",
 )
 
 
@@ -162,7 +162,8 @@ def build_manifest() -> dict[str, Any]:
     study = load_geology_study()
     candidate = next(item for item in study.CANDIDATES if item.id == "a-breached-rift-bench")
     gate1_report = load_json(GATE1_REPORT_PATH)
-    height = study.candidate_height(candidate, revision="r3").astype("<f4")
+    selected = gate1_report["simulator"]["selectedResult"]
+    height = study.candidate_height(candidate, revision="r4").astype("<f4")
     rows, columns = height.shape
     simulator = read_numpy_grid(SIMULATOR_THICKNESS_PATH, rows, columns)
     active = simulator > ACTIVE_THICKNESS_M
@@ -179,33 +180,32 @@ def build_manifest() -> dict[str, Any]:
         np.maximum(np.abs(active_x) - cell_half_extent, 0.0),
         np.maximum(np.abs(active_z) - cell_half_extent, 0.0),
     )
-    source = study.R3_BREACHED_RIFT_SOURCE
+    source = study.R4_MIDFLANK_SOURCE
     source_y = study.sample_height(height, *source)
-    r3_path = study.R3_BREACHED_RIFT_FLOW_PATH
-    terminus_y = study.sample_height(height, *r3_path[-1])
-    cumulative, path_length = polyline_metrics(r3_path)
-    upstream_widths = active[(study.Z_VALUES >= -30.0) & (study.Z_VALUES <= -5.0)].sum(axis=1)
+    r4_path = study.R4_MIDFLANK_FLOW_PATH
+    terminus_y = study.sample_height(height, *r4_path[-1])
+    cumulative, path_length = polyline_metrics(r4_path)
+    upstream_widths = active[(study.Z_VALUES >= 30.0) & (study.Z_VALUES <= 100.0)].sum(axis=1)
     upstream_widths = upstream_widths[upstream_widths > 0]
     downstream_widths = active[study.Z_VALUES <= -80.0].sum(axis=1)
     downstream_widths = downstream_widths[downstream_widths > 0]
     upstream_median_width = float(np.median(upstream_widths)) if upstream_widths.size else 0.0
     downstream_median_width = float(np.median(downstream_widths)) if downstream_widths.size else 0.0
-    branched_rows = 0
-    for row in active:
-        occupied = np.flatnonzero(row)
-        if occupied.size > 1 and np.any(np.diff(occupied) >= 3):
-            branched_rows += 1
 
     source_row = int(round(source[1] - study.WORLD_Z[0]))
     source_column = int(round(source[0] - study.WORLD_X[0]))
     start_row, start_column = source_row, source_column
     if not active[start_row, start_column]:
         raise RuntimeError("Selected Flowy footprint is not active at the registered fissure source")
-    basin_x, basin_z = (float(value) for value in study.R3_TERMINAL_BASIN_CENTER)
-    goal_row = int(round(basin_z - study.WORLD_Z[0]))
-    goal_column = int(round(basin_x - study.WORLD_X[0]))
-    if not active[goal_row, goal_column]:
-        raise RuntimeError("Selected Flowy footprint is not active at the registered terminal-basin centre")
+    south_rows, south_columns = np.nonzero(active & (study.Z_GRID <= -139.0))
+    if south_rows.size == 0:
+        raise RuntimeError("Selected Flowy footprint has no active south-boundary outflow guard cell")
+    exit_x, exit_z = (float(value) for value in study.R4_DOWNSLOPE_EXIT)
+    south_x = float(study.WORLD_X[0]) + south_columns.astype(float)
+    south_z = float(study.WORLD_Z[0]) + south_rows.astype(float)
+    exit_index = int(np.argmin(np.hypot(south_x - exit_x, south_z - exit_z)))
+    goal_row = int(south_rows[exit_index])
+    goal_column = int(south_columns[exit_index])
 
     queue: list[tuple[float, int, int]] = [(0.0, start_row, start_column)]
     costs: dict[tuple[int, int], float] = {(start_row, start_column): 0.0}
@@ -237,7 +237,7 @@ def build_manifest() -> dict[str, Any]:
                     parents[neighbour] = cell
                     heapq.heappush(queue, (candidate_cost, neighbour[0], neighbour[1]))
     if goal is None:
-        raise RuntimeError("Selected Flowy footprint has no connected source-to-inboard-basin path")
+        raise RuntimeError("Selected Flowy footprint has no connected source-to-south-outflow path")
     traced_cells: list[tuple[int, int]] = []
     cursor: tuple[int, int] | None = goal
     while cursor is not None:
@@ -297,21 +297,21 @@ def build_manifest() -> dict[str, Any]:
         (
             {
                 "id": "director-overview",
-                "positionWorldXYZ": [95.0, 115.0, -43.0],
-                "targetWorldXYZ": [0.0, 0.0, -45.0],
+                "positionWorldXYZ": [110.0, 160.0, -95.0],
+                "targetWorldXYZ": [-8.0, 25.0, 25.0],
                 "verticalFovDegrees": 48.0,
                 "runtimeEquivalent": False,
                 "reviewImage": REVIEW_IMAGE_NAMES[11],
-                "reviewRole": "bird-eye-whole-scene",
+                "reviewRole": "bird-eye-summit-ledge-lower-country",
             },
             {
-                "id": "collapse-oblique",
-                "positionWorldXYZ": [13.0, 24.0, 30.0],
-                "targetWorldXYZ": [-25.0, 7.0, 25.0],
+                "id": "midflank-oblique",
+                "positionWorldXYZ": [62.0, 45.0, -55.0],
+                "targetWorldXYZ": [-12.0, 12.0, 25.0],
                 "verticalFovDegrees": 50.0,
                 "runtimeEquivalent": False,
                 "reviewImage": REVIEW_IMAGE_NAMES[12],
-                "reviewRole": "collapse-anatomy",
+                "reviewRole": "midflank-vertical-composition",
             },
         )
     )
@@ -319,14 +319,18 @@ def build_manifest() -> dict[str, Any]:
     contract: dict[str, Any] = {
         "schemaVersion": 1,
         "sceneId": "ember-broken-rift",
-        "directionId": candidate.id,
-        "revisionId": "gate2-r3",
+        "directionId": "midflank-fire-pilgrimage-r4",
+        "revisionId": "gate2-r4",
         "gateId": "playable-graybox",
-        "status": "candidate-pending-gate-1-1-approval",
+        "status": "gate1-approved-gate2-in-progress",
+        "museumTracker": {
+            "gate1Approval": "xFcagbaZTQAq615IbZgT",
+            "gate2ReviewReference": "lXhTllDFV2Ne1E7foCkS",
+        },
         "sourceAuthority": {
-            "selectedDirection": candidate.id,
+            "selectedDirection": "midflank-fire-pilgrimage-r4",
             "terrainOwner": rel(STUDY_PATH),
-            "terrainRevision": "r3",
+            "terrainRevision": "r4",
             "gate1AmendmentReport": rel(GATE1_REPORT_PATH),
             "researchContract": rel(RESEARCH_PATH),
             "simulatorDepositSource": rel(SIMULATOR_THICKNESS_PATH),
@@ -359,7 +363,12 @@ def build_manifest() -> dict[str, Any]:
         },
         "lavaPlan": {
             "sourceWorldXZ": list(source),
-            "diagnosticCenterlineWorldXZ": [list(point) for point in r3_path],
+            "diagnosticCenterlineWorldXZ": [list(point) for point in r4_path],
+            "compositionSectionWorldXZ": [
+                [-18.0, 190.0],
+                [-26.0, 158.0],
+                *[list(point) for point in r4_path],
+            ],
             "pathLengthMeters": round(path_length, 6),
             "sourceTerrainElevationMeters": round(source_y, 6),
             "terminusTerrainElevationMeters": round(terminus_y, 6),
@@ -398,14 +407,16 @@ def build_manifest() -> dict[str, Any]:
             "distanceMeasurement": "Minimum distance from performer origin to the visible 1 m cell support, computed against each active square's nearest point.",
             "clearanceBeyondActionEnvelopeMeters": round(float(active_support_distances.min()) - float(study.ACTION_RADIUS_M), 6),
             "upstreamMedianWidthMeters": round(upstream_median_width, 6),
-            "upstreamWidthSamplingRuntimeZ": {"minimum": -30.0, "maximum": -5.0},
+            "upstreamWidthSamplingRuntimeZ": {"minimum": 30.0, "maximum": 100.0},
             "downstreamMedianWidthMeters": round(downstream_median_width, 6),
             "downstreamWidthSamplingRuntimeZ": {"maximum": -80.0},
             "downstreamWideningRatio": round(downstream_median_width / max(1.0, upstream_median_width), 6),
-            "reachesInboardTerminalBasin": gate1_report["simulator"]["selectedResult"]["reachesInboardTerminalBasin"],
-            "branchedRowCount": branched_rows,
-            "terminalBasinActiveCellCount": gate1_report["simulator"]["selectedResult"]["terminalBasinActiveCellCount"],
-            "touchesSouthBoundaryGuard": gate1_report["simulator"]["selectedResult"]["touchesSouthBoundaryGuard"],
+            "passesMidflank": bool(selected["passesMidflank"]),
+            "reachesDownslopeExit": bool(selected["reachesDownslopeExit"]),
+            "continuousDownslope": bool(selected["continuousDownslope"]),
+            "midflankPassActiveCellCount": int(selected["midflankPassActiveCellCount"]),
+            "southExitActiveCellCount": int(selected["southExitActiveCellCount"]),
+            "occupiedRowGapCount": int(selected["occupiedRowGapCount"]),
             "depositSectionWorldXZ": deposit_section,
             "depositSectionLengthMeters": round(deposit_trace_length, 6),
             "depositSectionSourceElevationMeters": round(trace_source_y, 6),
@@ -423,15 +434,17 @@ def build_manifest() -> dict[str, Any]:
             "walkable": False,
         },
         "compositionContract": {
-            "dominantMass": candidate.dominant_mass,
-            "openHorizon": candidate.open_horizon,
-            "sourceToTerminalBasin": "near northwest fissure through breach, main drainage with one failed breakout lobe, and inboard terminal deposition low",
+            "dominantMass": "colossal upper volcanic massif and furnace saddle rising north of the performer",
+            "openHorizon": "lower southern country falls far below the performer and continues beyond the world edge",
+            "sourceToDownslopeExit": "high furnace saddle to western passing ravine, past the mid-flank ledge, over the lower escarpment, and out through the south boundary",
             "antiPatterns": [
                 "decorative arch",
                 "circular stage island",
                 "radial basin",
                 "spline-owned lava footprint",
                 "visible world edge from the 25 m orbit",
+                "inboard terminal pool",
+                "flat horizon that erases the mid-flank read",
             ],
         },
         "reviewCameras": cameras,
@@ -631,23 +644,23 @@ def annotate_plan() -> None:
     title_font = image_font(32, True)
     label_font = image_font(21, True)
     note_font = image_font(18)
-    draw.rounded_rectangle((24, 22, 530, 112), radius=12, fill=(8, 12, 16, 220), outline=(98, 111, 120, 230), width=2)
+    draw.rounded_rectangle((24, 22, 675, 112), radius=12, fill=(8, 12, 16, 220), outline=(98, 111, 120, 230), width=2)
     draw.text((42, 35), "NORTH-UP PLAN", fill=(240, 236, 226, 255), font=title_font)
-    draw.text((43, 78), "orange = Flowy deposit · violet = collapse guide", fill=(205, 174, 231, 255), font=note_font)
+    draw.text((43, 78), "orange = Flowy deposit · violet/cyan = mid-flank ledge guide", fill=(205, 174, 231, 255), font=note_font)
     arrow_x = image.width - 72
     draw.line((arrow_x, 116, arrow_x, 45), fill=(235, 239, 242, 255), width=6)
     draw.polygon(((arrow_x, 30), (arrow_x - 13, 55), (arrow_x + 13, 55)), fill=(235, 239, 242, 255))
     draw.text((arrow_x - 12, 118), "N", fill=(235, 239, 242, 255), font=label_font)
     draw.rounded_rectangle(
-        (image.width - 340, image.height - 60, image.width - 22, image.height - 18),
+        (image.width - 520, image.height - 60, image.width - 22, image.height - 18),
         radius=8,
         fill=(8, 12, 16, 220),
         outline=(98, 111, 120, 230),
         width=2,
     )
     draw.text(
-        (image.width - 325, image.height - 52),
-        "INBOARD TERMINAL LOW",
+        (image.width - 505, image.height - 52),
+        "SOUTH-BOUNDARY OUTFLOW CONTINUES",
         fill=(240, 171, 55, 255),
         font=label_font,
     )
@@ -663,25 +676,26 @@ def annotate_section(contract: dict[str, Any]) -> None:
     title_font = image_font(30, True)
     label_font = image_font(19, True)
     note_font = image_font(17)
-    distance = float(contract["simulatorDeposit"]["depositSectionWorldXZ"][-1][1])
-    _, trace_length = polyline_metrics(contract["simulatorDeposit"]["depositSectionWorldXZ"])
-    draw.rounded_rectangle((24, 20, 840, 112), radius=12, fill=(8, 12, 16, 226), outline=(98, 111, 120, 230), width=2)
-    draw.text((42, 32), "FLOWY DEPOSIT LONGITUDINAL SECTION", fill=(240, 236, 226, 255), font=title_font)
+    distance = float(contract["lavaPlan"]["compositionSectionWorldXZ"][-1][1])
+    _, trace_length = polyline_metrics(contract["lavaPlan"]["compositionSectionWorldXZ"])
+    draw.rounded_rectangle((24, 20, 1025, 112), radius=12, fill=(8, 12, 16, 226), outline=(98, 111, 120, 230), width=2)
+    draw.text((42, 32), "TRUE-SCALE MID-FLANK LONGITUDINAL SECTION", fill=(240, 236, 226, 255), font=title_font)
     draw.text(
         (43, 75),
-        f"trace {trace_length:.1f} m · 4× vertical · exact source thickness · terminal z {distance:.0f} m",
+        f"trace {trace_length:.1f} m · 1× vertical · summit → performer ledge → outflow · final z {distance:.0f} m",
         fill=(174, 184, 190, 255),
         font=note_font,
     )
     axis_y = image.height - 42
     draw.line((88, axis_y, image.width - 48, axis_y), fill=(225, 229, 232, 230), width=3)
     draw.polygon(((image.width - 34, axis_y), (image.width - 57, axis_y - 9), (image.width - 57, axis_y + 9)), fill=(225, 229, 232, 230))
-    draw.text((92, axis_y - 31), "SOURCE", fill=(255, 172, 72, 255), font=label_font)
-    draw.text((image.width - 250, axis_y - 31), "TERMINAL BASIN", fill=(255, 172, 72, 255), font=label_font)
-    draw.text((image.width // 2 - 90, axis_y - 31), "distance along active deposit", fill=(190, 198, 203, 255), font=note_font)
+    draw.text((92, axis_y - 31), "SUMMIT → SOURCE", fill=(255, 172, 72, 255), font=label_font)
+    draw.text((image.width - 325, axis_y - 31), "OUTFLOW CONTINUES", fill=(255, 172, 72, 255), font=label_font)
+    draw.text((image.width // 2 - 110, axis_y - 31), "distance along volcanic flank", fill=(190, 198, 203, 255), font=note_font)
+    draw.text((image.width // 2 - 90, axis_y - 105), "PERFORMER LEDGE", fill=(99, 210, 225, 255), font=label_font)
     draw.line((48, image.height - 74, 48, 152), fill=(225, 229, 232, 230), width=3)
     draw.polygon(((48, 134), (39, 157), (57, 157)), fill=(225, 229, 232, 230))
-    draw.text((62, 145), "elevation (m) · 4×", fill=(190, 198, 203, 255), font=note_font)
+    draw.text((62, 145), "elevation (m) · true scale", fill=(190, 198, 203, 255), font=note_font)
     image.save(path, compress_level=6)
 
 
@@ -694,7 +708,7 @@ def compose_orbit_strip() -> None:
     title_font = image_font(40, True)
     label_font = image_font(22, True)
     note_font = image_font(20)
-    draw.text((42, 30), "EMBER GATE 2 R3 · SAMPLED RUNTIME ORBIT", fill=(240, 236, 226), font=title_font)
+    draw.text((42, 30), "EMBER GATE 2 R4 · SAMPLED MID-FLANK RUNTIME ORBIT", fill=(240, 236, 226), font=title_font)
     draw.text(
         (44, 83),
         "Eight 45° runtime-equivalent stops, clockwise from the default audience side",
@@ -751,10 +765,10 @@ def compose_contact_sheet(contract: dict[str, Any]) -> None:
     draw = ImageDraw.Draw(canvas)
 
     title_font, subtitle_font, label_font = image_font(54, True), image_font(25), image_font(20, True)
-    draw.text((66, 42), "EMBER GATE 2 R3 · PERFORMER-CENTRED BREACHED RIFT", fill=(241, 236, 225), font=title_font)
+    draw.text((66, 42), "EMBER GATE 2 R4 · MID-FLANK FIRE PILGRIMAGE", fill=(241, 236, 225), font=title_font)
     draw.text(
         (69, 109),
-        "Near fissure and breach · exact Flowy footprint/thickness · runtime camera contract · north-up plan",
+        "Mountain and fire above · lower country below · exact Flowy footprint/thickness · 25 m runtime camera contract",
         fill=(161, 174, 183),
         font=subtitle_font,
     )
@@ -770,9 +784,9 @@ def compose_contact_sheet(contract: dict[str, Any]) -> None:
         "ORBIT 270°",
         "ORBIT 315°",
         "NORTH-UP PLAN",
-        "LONGITUDINAL SECTION · 4× VERTICAL",
+        "LONGITUDINAL SECTION · TRUE SCALE",
         "DIRECTOR OVERVIEW · BIRD'S-EYE",
-        "COLLAPSE OBLIQUE",
+        "MID-FLANK OBLIQUE",
     ]
     columns, rows = 5, 3
     margin_x, gap_x, gap_y = 66, 22, 25
@@ -798,7 +812,9 @@ def compose_contact_sheet(contract: dict[str, Any]) -> None:
         f"380 × 335 m terrain · 4.5 m protected action radius · "
         f"{contract['lavaPlan']['pathLengthMeters']:.1f} m authored section axis · "
         f"{contract['simulatorDeposit']['depositSectionLengthMeters']:.1f} m connected deposit trace · "
-        f"{contract['simulatorDeposit']['activeAreaSquareMeters']:.0f} m² active Flowy footprint"
+        f"{contract['simulatorDeposit']['activeAreaSquareMeters']:.0f} m² active Flowy footprint · "
+        f"+{contract['terrain']['maximumElevationMeters'] - contract['terrain']['performerElevationMeters']:.1f} / "
+        f"-{contract['terrain']['performerElevationMeters'] - contract['terrain']['minimumElevationMeters']:.1f} m vertical context"
     )
     draw.text((68, 2079), footer, fill=(161, 174, 183), font=subtitle_font)
     CONTACT_SHEET_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -821,7 +837,7 @@ def blender_build() -> None:
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene
-    scene.name = "Ember Breached Rift Bench Gate 2 R3"
+    scene.name = "Ember Mid-Flank Fire Pilgrimage Gate 2 R4"
     scene.unit_settings.system = "METRIC"
     scene.unit_settings.scale_length = 1.0
     scene.render.engine = "BLENDER_EEVEE"
@@ -840,7 +856,7 @@ def blender_build() -> None:
     scene["ember_coordinate_manifest_sha256"] = sha256_path(MANIFEST_PATH)
     scene["ember_terrain_owner_sha256"] = contract["sourceDigests"]["terrainOwnerSha256"]
 
-    world = bpy.data.worlds.new("Ember Gate 2 R3 Diagnostic World")
+    world = bpy.data.worlds.new("Ember Gate 2 R4 Diagnostic World")
     world.use_nodes = True
     background = world.node_tree.nodes.get("Background")
     background.inputs["Color"].default_value = (0.010, 0.015, 0.021, 1.0)
@@ -896,15 +912,16 @@ def blender_build() -> None:
         return item
 
     mats = {
-        "basalt": material("EMBER_GB_Basalt", (0.070, 0.086, 0.102, 1.0), roughness=0.96),
-        "basalt_dark": material("EMBER_GB_SteepScarp", (0.025, 0.032, 0.040, 1.0), roughness=0.99),
-        "old_flow": material("EMBER_GB_OldFlowPeninsula", (0.155, 0.178, 0.188, 1.0), roughness=0.93),
-        "open_shelf": material("EMBER_GB_OpenSideShelves", (0.105, 0.132, 0.145, 1.0), roughness=0.95),
+        "basalt": material("EMBER_GB_MidFlankBasalt", (0.070, 0.086, 0.102, 1.0), roughness=0.96),
+        "basalt_dark": material("EMBER_GB_SteepEscarpment", (0.025, 0.032, 0.040, 1.0), roughness=0.99),
+        "upper_mass": material("EMBER_GB_UpperVolcanicMass", (0.105, 0.116, 0.126, 1.0), roughness=0.94),
+        "contour_ledge": material("EMBER_GB_ContourLedge", (0.155, 0.178, 0.188, 1.0), roughness=0.93),
+        "lower_country": material("EMBER_GB_LowerCountry", (0.090, 0.112, 0.126, 1.0), roughness=0.97),
         "crust": material("EMBER_GB_SimulatorCrust", (0.105, 0.026, 0.012, 1.0), roughness=0.90),
         "molten": material("EMBER_GB_ExposedHeat", (0.48, 0.035, 0.004, 1.0), roughness=0.48, emission=1.8),
         "hot": material("EMBER_GB_HotCore", (0.82, 0.085, 0.006, 1.0), roughness=0.38, emission=3.2),
         "performer": material("EMBER_GB_Performer", (0.08, 0.55, 0.74, 1.0), roughness=0.48, emission=0.35),
-        "guide": material("EMBER_GB_CollapseGuide", (0.31, 0.18, 0.78, 0.42), roughness=0.64, emission=0.55, alpha=0.42),
+        "guide": material("EMBER_GB_MidflankLedgeGuide", (0.31, 0.18, 0.78, 0.42), roughness=0.64, emission=0.55, alpha=0.42),
         "line": material("EMBER_GB_ReviewLine", (0.04, 0.62, 0.78, 1.0), roughness=0.6, emission=0.65),
         "source": material("EMBER_GB_SourceFissure", (1.0, 0.48, 0.025, 1.0), roughness=0.28, emission=11.0),
         "section_rock": material("EMBER_GB_SectionRock", (0.18, 0.205, 0.22, 1.0), roughness=0.92, emission=0.20),
@@ -958,8 +975,8 @@ def blender_build() -> None:
         terrain_vertices,
         terrain_faces,
         collections["terrain"],
-        [mats["basalt"], mats["basalt_dark"], mats["old_flow"], mats["open_shelf"]],
-        "candidate-heightfield-and-visible-collider",
+        [mats["basalt"], mats["basalt_dark"], mats["upper_mass"], mats["contour_ledge"], mats["lower_country"]],
+        "r4-midflank-heightfield-and-visible-collider",
         collides=True,
     )
     terrain_obj["ember_source_data_sha256"] = terrain["dataSha256"]
@@ -980,39 +997,18 @@ def blender_build() -> None:
         local_z = -dx * math.sin(angle) + dz * math.cos(angle)
         return amplitude * math.exp(-0.5 * ((local_x / sigma_x) ** 2 + (local_z / sigma_z) ** 2))
 
-    def peninsula_signal(x: float, z: float) -> float:
-        angle = math.radians(-7.0)
-        dx, dz = x - 11.0, z + 1.5
-        u = dx * math.cos(angle) + dz * math.sin(angle)
-        v = -dx * math.sin(angle) + dz * math.cos(angle)
-        warp = 1.0 + 0.10 * math.sin((u + 1.8 * v) / 7.5)
-        metric = (abs(u) / (32.0 * warp)) ** 3.4 + (abs(v) / 9.5) ** 3.4
-        t = max(0.0, min(1.0, (1.24 - metric) / 0.42))
-        return t * t * (3.0 - 2.0 * t)
-
-    def open_shelf_signal(x: float, z: float) -> float:
-        return min(
-            1.0,
-            gaussian_signal(x, z, 27.0, 20.0, 13.0, 7.5, 1.0, 10.0)
-            + gaussian_signal(x, z, 39.0, -17.0, 17.0, 8.0, 0.88, -11.0)
-            + gaussian_signal(x, z, 24.0, -43.0, 13.0, 8.0, 0.72, 16.0),
-        )
-
     for polygon in terrain_obj.data.polygons:
         cx, cy, cz = polygon.center
         slope = 1.0 - abs(polygon.normal.y)
-        peninsula = peninsula_signal(float(cx), float(cz))
-        open_shelf = open_shelf_signal(float(cx), float(cz))
-        if cx < -24.0 and cz > 5.0 and slope > 0.075:
+        ledge = gaussian_signal(float(cx), float(cz), 0.0, -2.0, 68.0, 25.0, 1.0, -2.0)
+        if slope > 0.16:
             polygon.material_index = 1
-        elif cx < -18.0 and cz > 5.0 and cy > 5.0:
+        elif cz > 38.0 or cy > 32.0:
             polygon.material_index = 2
-        elif peninsula > 0.34 and slope < 0.18:
-            polygon.material_index = 2
-        elif open_shelf > 0.24 and slope < 0.18:
+        elif ledge > 0.35 and -40.0 <= cz <= 38.0 and slope < 0.12:
             polygon.material_index = 3
-        elif slope > 0.14:
-            polygon.material_index = 1
+        elif cz < -48.0 or cy < -18.0:
+            polygon.material_index = 4
         else:
             polygon.material_index = 0
         polygon.use_smooth = True
@@ -1119,32 +1115,40 @@ def blender_build() -> None:
     for polygon, material_index in zip(lava_obj.data.polygons, lava_face_materials):
         polygon.material_index = material_index
 
-    # The plan-only polygon shows the failed rock volume as absence. The
-    # visible terrain already contains the breach; this diagnostic overlay is
-    # hidden from cinematic views and excluded from the GLB review export.
-    collapse_outline = (
-        (-35.0, 43.0),
-        (-26.0, 45.0),
-        (-17.0, 38.0),
-        (-14.0, 28.0),
-        (-18.0, 17.0),
-        (-27.0, 13.0),
-        (-35.0, 22.0),
+    # The plan-only polygon identifies the long contour ledge that makes the
+    # performer read halfway up the volcanic flank. It is excluded from the GLB.
+    ledge_outline = (
+        (-68.0, -15.0),
+        (-45.0, 22.0),
+        (0.0, 32.0),
+        (45.0, 25.0),
+        (72.0, -5.0),
+        (55.0, -25.0),
+        (10.0, -32.0),
+        (-40.0, -28.0),
     )
-    collapse_vertices = [
+    ledge_vertices = [
         (x, bilinear_height(values, terrain, bounds, x, z) + 0.34, z)
-        for x, z in collapse_outline
+        for x, z in ledge_outline
     ]
-    collapse_faces = [tuple(range(len(collapse_vertices)))]
-    collapse_guide = mesh_object(
-        "EMBER_CollapseGuide",
-        collapse_vertices,
-        collapse_faces,
+    ledge_vertices += [
+        (x * 0.93, bilinear_height(values, terrain, bounds, x * 0.93, z * 0.93) + 0.35, z * 0.93)
+        for x, z in ledge_outline
+    ]
+    ledge_count = len(ledge_outline)
+    ledge_faces = [
+        (index, (index + 1) % ledge_count, ledge_count + (index + 1) % ledge_count, ledge_count + index)
+        for index in range(ledge_count)
+    ]
+    ledge_guide = mesh_object(
+        "EMBER_MidflankLedgeGuide",
+        ledge_vertices,
+        ledge_faces,
         collections["guide"],
         [mats["guide"]],
-        "plan-only-missing-collapse-volume",
+        "plan-only-midflank-contour-ledge",
     )
-    collapse_guide.hide_render = True
+    ledge_guide.hide_render = True
 
     def append_octahedron(
         vertices: list[tuple[float, float, float]],
@@ -1213,24 +1217,28 @@ def blender_build() -> None:
                 (base + 3, base + 7, base + 4, base + 0),
             )
         )
-    talus_vertices: list[tuple[float, float, float]] = []
-    talus_faces: list[tuple[int, int, int]] = []
-    for index in range(34):
-        fraction = index / 33.0
-        x = -35.0 + 17.0 * fraction + 6.0 * math.sin(index * 1.73)
-        z = 8.0 + 29.0 * fraction + 5.0 * math.sin(index * 2.11)
+    buttress_vertices: list[tuple[float, float, float]] = []
+    buttress_faces: list[tuple[int, ...]] = []
+    buttress_positions = [
+        (-67.0 + 2.9 * index + 5.0 * math.sin(index * 1.37), 66.0 + 5.3 * index)
+        for index in range(14)
+    ] + [
+        (42.0 + 3.0 * index + 5.0 * math.sin(index * 1.81), -64.0 - 3.9 * index)
+        for index in range(14)
+    ]
+    for index, (x, z) in enumerate(buttress_positions):
         y = bilinear_height(values, terrain, bounds, x, z)
-        sx = 0.65 + 1.8 * ((index * 17) % 13) / 12.0
-        sy = 0.35 + 1.55 * ((index * 11) % 9) / 8.0
-        sz = 0.65 + 1.65 * ((index * 7) % 11) / 10.0
-        append_fractured_block(talus_vertices, talus_faces, x, y - 0.06, z, sx, sy, sz, -31.0 + index * 19.0)
-    talus_obj = mesh_object(
-        "EMBER_TalusApron",
-        talus_vertices,
-        talus_faces,
+        sx = 0.9 + 2.0 * ((index * 17) % 13) / 12.0
+        sy = 0.8 + 2.8 * ((index * 11) % 9) / 8.0
+        sz = 0.9 + 2.1 * ((index * 7) % 11) / 10.0
+        append_fractured_block(buttress_vertices, buttress_faces, x, y - 0.16, z, sx, sy, sz, -31.0 + index * 19.0)
+    buttress_obj = mesh_object(
+        "EMBER_FlankButtresses",
+        buttress_vertices,
+        buttress_faces,
         collections["landform"],
         [mats["basalt_dark"]],
-        "visible-collapse-talus-and-failed-headwall-blocks",
+        "sparse-upper-ravine-and-lower-escarpment-buttresses",
     )
 
     def build_strip(
@@ -1258,20 +1266,20 @@ def blender_build() -> None:
                 faces.append((base - 2, base, base + 1, base - 1))
         return vertices, faces
 
-    fissure_points = ((-35.0, 31.5), (-30.0, 29.0), (-25.5, 26.5), (-22.0, 25.0), (-18.0, 23.5), (-14.0, 22.0))
-    fissure_vertices, fissure_faces = build_strip(fissure_points, (0.7, 1.0, 1.4, 1.6, 1.2, 0.7), 0.62)
+    fissure_points = ((-48.0, 134.5), (-42.0, 133.5), (-36.0, 132.0), (-30.0, 131.0), (-24.0, 130.0))
+    fissure_vertices, fissure_faces = build_strip(fissure_points, (0.7, 1.1, 1.7, 1.2, 0.7), 0.62)
     source_fissure = mesh_object(
         "EMBER_SourceFissure",
         fissure_vertices,
         fissure_faces,
         collections["landform"],
         [mats["source"]],
-        "elongated-fissure-source-spatial-event",
+        "furnace-saddle-high-source",
     )
 
     rampart_vertices: list[tuple[float, float, float]] = []
     rampart_faces: list[tuple[int, int, int]] = []
-    for index, (x, z) in enumerate(((-35.0, 33.0), (-30.0, 31.0), (-25.0, 29.0), (-19.0, 26.5), (-14.0, 24.0), (-31.0, 26.0), (-25.0, 23.0), (-19.0, 21.5), (-15.0, 20.5))):
+    for index, (x, z) in enumerate(((-48.0, 137.0), (-42.0, 136.0), (-36.0, 135.0), (-30.0, 134.0), (-24.0, 133.0), (-44.0, 129.0), (-37.0, 128.0), (-30.0, 127.5), (-24.0, 127.0))):
         y = bilinear_height(values, terrain, bounds, x, z)
         append_octahedron(
             rampart_vertices,
@@ -1289,7 +1297,7 @@ def blender_build() -> None:
         rampart_faces,
         collections["landform"],
         [mats["basalt_dark"]],
-        "fractured-fissure-rampart",
+        "fractured-furnace-saddle-rampart",
     )
 
     performer_y = float(contract["performerContract"]["originWorldXYZ"][1])
@@ -1400,7 +1408,7 @@ def blender_build() -> None:
     collections["review"].objects.link(plan_camera)
 
     GATE_DIR.mkdir(parents=True, exist_ok=True)
-    collapse_guide.hide_render = True
+    ledge_guide.hide_render = True
     action_ring.hide_render = True
     for camera_spec in contract["reviewCameras"]:
         scene.camera = cameras[camera_spec["id"]]
@@ -1447,21 +1455,21 @@ def blender_build() -> None:
     scene.render.filepath = str(CACHE_DIR / "orbit-frame-")
     bpy.ops.render.render(animation=True)
 
-    collapse_guide.hide_render = False
+    ledge_guide.hide_render = False
     action_ring.hide_render = False
     scene.camera = plan_camera
     scene.render.resolution_x = 1400
     scene.render.resolution_y = 1000
     scene.render.filepath = str(GATE_DIR / REVIEW_IMAGE_NAMES[9])
     bpy.ops.render.render(write_still=True)
-    collapse_guide.hide_render = True
+    ledge_guide.hide_render = True
     action_ring.hide_render = True
 
     # Longitudinal section is a second scene inside the same editable Blend.
-    section = bpy.data.scenes.new("Ember Gate 2 R3 Longitudinal Section")
+    section = bpy.data.scenes.new("Ember Gate 2 R4 Mid-Flank Section")
     section.render.engine = "BLENDER_EEVEE"
     section.render.resolution_x = 1400
-    section.render.resolution_y = 700
+    section.render.resolution_y = 900
     section.render.resolution_percentage = 100
     section.render.image_settings.file_format = "PNG"
     section.render.image_settings.color_mode = "RGB"
@@ -1469,7 +1477,7 @@ def blender_build() -> None:
     section.world = world
     section_collection = bpy.data.collections.new("EMBER_SECTION_Geometry")
     section.collection.children.link(section_collection)
-    section_path = deposit["depositSectionWorldXZ"]
+    section_path = contract["lavaPlan"]["compositionSectionWorldXZ"]
     cumulative, path_length = polyline_metrics(section_path)
     section_samples: list[tuple[float, float, float]] = []
     for sample_index in range(241):
@@ -1486,8 +1494,8 @@ def blender_build() -> None:
         y = bilinear_height(values, terrain, bounds, x, z)
         thick = lava_top(x, z)[0] - y
         section_samples.append((distance_along, y, thick))
-    vertical_exaggeration = 4.0
-    base_y = -8.0
+    vertical_exaggeration = 1.0
+    base_y = -105.0
     rock_vertices = [(distance, 0.0, base_y * vertical_exaggeration) for distance, _, _ in section_samples]
     rock_vertices += [(distance, 0.0, elevation * vertical_exaggeration) for distance, elevation, _ in section_samples]
     count = len(section_samples)
@@ -1518,10 +1526,10 @@ def blender_build() -> None:
     )
     section_camera_data = bpy.data.cameras.new("EMBER_SECTION_Camera_Data")
     section_camera_data.type = "ORTHO"
-    section_camera_data.ortho_scale = 178.0
+    section_camera_data.ortho_scale = 290.0
     section_camera = bpy.data.objects.new("EMBER_SECTION_Camera", section_camera_data)
-    section_camera.location = (path_length * 0.5, -220.0, 31.0)
-    look_at(section_camera, (path_length * 0.5, 0.0, 31.0))
+    section_camera.location = (path_length * 0.5, -260.0, 30.0)
+    look_at(section_camera, (path_length * 0.5, 0.0, 30.0))
     section.collection.objects.link(section_camera)
     section.camera = section_camera
     section_light_data = bpy.data.lights.new("EMBER_SECTION_Key_Data", "AREA")
@@ -1541,17 +1549,17 @@ def blender_build() -> None:
     # Leave both scenes portable and the main Blend in the exact default
     # runtime-equivalent review state.  No checkout-specific render path is
     # persisted in the editable source.
-    collapse_guide.hide_render = True
+    ledge_guide.hide_render = True
     action_ring.hide_render = True
     scene.camera = cameras["default-audience"]
     scene.render.resolution_x = REVIEW_WIDTH
     scene.render.resolution_y = REVIEW_HEIGHT
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
-    scene.render.filepath = "//ember-gate2-r3-preview.png"
+    scene.render.filepath = "//ember-gate2-r4-preview.png"
     scene.frame_start = 1
     scene.frame_end = 48
-    section.render.filepath = "//ember-gate2-r3-longitudinal-section.png"
+    section.render.filepath = "//ember-gate2-r4-midflank-section.png"
 
     BLEND_PATH.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH))
@@ -1562,7 +1570,7 @@ def blender_build() -> None:
         world_root,
         terrain_obj,
         lava_obj,
-        talus_obj,
+        buttress_obj,
         source_fissure,
         source_rampart,
         performer,
@@ -1589,7 +1597,7 @@ def blender_build() -> None:
     scene.camera = cameras["default-audience"]
     scene.render.resolution_x = REVIEW_WIDTH
     scene.render.resolution_y = REVIEW_HEIGHT
-    scene.render.filepath = "//ember-gate2-r3-preview.png"
+    scene.render.filepath = "//ember-gate2-r4-preview.png"
     bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH))
     print(
         json.dumps(
@@ -1614,12 +1622,12 @@ def blender_verify() -> None:
     from mathutils import Vector  # type: ignore
 
     contract = load_json(MANIFEST_PATH)
-    scene = bpy.data.scenes.get("Ember Breached Rift Bench Gate 2 R3")
+    scene = bpy.data.scenes.get("Ember Mid-Flank Fire Pilgrimage Gate 2 R4")
     root = bpy.data.objects.get("EMBER_WorldRoot")
     terrain = bpy.data.objects.get("EMBER_Terrain")
     lava = bpy.data.objects.get("EMBER_LavaSimulatorDeposit")
-    talus = bpy.data.objects.get("EMBER_TalusApron")
-    collapse = bpy.data.objects.get("EMBER_CollapseGuide")
+    buttress = bpy.data.objects.get("EMBER_FlankButtresses")
+    ledge = bpy.data.objects.get("EMBER_MidflankLedgeGuide")
     source = bpy.data.objects.get("EMBER_SourceFissure")
     rampart = bpy.data.objects.get("EMBER_SourceRampart")
     performer = bpy.data.objects.get("EMBER_PerformerProxy")
@@ -1769,7 +1777,7 @@ def blender_verify() -> None:
                 terrain is not None
                 and len(terrain.data.vertices) == expected_terrain_vertices
                 and not terrain.hide_render
-                and terrain.get("ember_role") == "candidate-heightfield-and-visible-collider"
+                and terrain.get("ember_role") == "r4-midflank-heightfield-and-visible-collider"
             ),
             "evidence": {
                 "vertexCount": len(terrain.data.vertices) if terrain else None,
@@ -1819,10 +1827,10 @@ def blender_verify() -> None:
             },
         },
         "review-equivalence-signals": {
-            "passed": all(item is not None for item in (talus, collapse, source, rampart, performer, action)),
+            "passed": all(item is not None for item in (buttress, ledge, source, rampart, performer, action)),
             "evidence": [
                 item.name if item is not None else None
-                for item in (talus, collapse, source, rampart, performer, action)
+                for item in (buttress, ledge, source, rampart, performer, action)
             ],
         },
         "registered-cameras": {
@@ -1845,8 +1853,8 @@ def blender_verify() -> None:
             "evidence": list(plan_camera.rotation_euler) if plan_camera else None,
         },
         "section-scene": {
-            "passed": bpy.data.scenes.get("Ember Gate 2 R3 Longitudinal Section") is not None,
-            "evidence": "Ember Gate 2 R3 Longitudinal Section",
+            "passed": bpy.data.scenes.get("Ember Gate 2 R4 Mid-Flank Section") is not None,
+            "evidence": "Ember Gate 2 R4 Mid-Flank Section",
         },
         "performer-scale": {
             "passed": performer is not None and abs(
@@ -1924,7 +1932,7 @@ def verify_outer() -> dict[str, Any]:
         "EMBER_Terrain",
         "EMBER_LavaSimulatorDeposit",
         "EMBER_PerformerProxy",
-        "EMBER_TalusApron",
+        "EMBER_FlankButtresses",
         "EMBER_SourceFissure",
         "EMBER_SourceRampart",
         "EMBER_Camera_plan",
@@ -1982,12 +1990,12 @@ def verify_outer() -> dict[str, Any]:
             "expectedVerticalFovDegrees": expected_fov,
             "aspectRatio": aspect,
         }
-    diagnostic_nodes_absent = not {"EMBER_ActionEnvelope", "EMBER_CollapseGuide"}.intersection(glb_node_names)
+    diagnostic_nodes_absent = not {"EMBER_ActionEnvelope", "EMBER_MidflankLedgeGuide"}.intersection(glb_node_names)
     required_geometry_nodes = {
         "EMBER_Terrain",
         "EMBER_LavaSimulatorDeposit",
         "EMBER_PerformerProxy",
-        "EMBER_TalusApron",
+        "EMBER_FlankButtresses",
         "EMBER_SourceFissure",
         "EMBER_SourceRampart",
     }
@@ -2211,9 +2219,11 @@ def verify_outer() -> dict[str, Any]:
         },
         "downhill-drainage": {
             "passed": (
-                descent > 5.0
-                and contract["simulatorDeposit"]["reachesInboardTerminalBasin"]
-                and not contract["simulatorDeposit"]["touchesSouthBoundaryGuard"]
+                descent > 150.0
+                and contract["simulatorDeposit"]["reachesDownslopeExit"]
+                and contract["simulatorDeposit"]["continuousDownslope"]
+                and int(contract["simulatorDeposit"]["southExitActiveCellCount"]) >= 8
+                and int(contract["simulatorDeposit"]["occupiedRowGapCount"]) == 0
                 and float(contract["simulatorDeposit"]["depositSectionDownhillFraction"]) >= 0.85
                 and float(contract["simulatorDeposit"]["depositSectionMaximumLocalRiseMeters"]) <= 0.5
             ),
@@ -2222,9 +2232,10 @@ def verify_outer() -> dict[str, Any]:
                 "sourceTerrainElevationMeters": contract["simulatorDeposit"]["depositSectionSourceElevationMeters"],
                 "terminusTerrainElevationMeters": contract["simulatorDeposit"]["depositSectionTerminusElevationMeters"],
                 "netDescentMeters": descent,
-                "reachesInboardTerminalBasin": contract["simulatorDeposit"]["reachesInboardTerminalBasin"],
-                "terminalBasinActiveCellCount": contract["simulatorDeposit"]["terminalBasinActiveCellCount"],
-                "touchesSouthBoundaryGuard": contract["simulatorDeposit"]["touchesSouthBoundaryGuard"],
+                "reachesDownslopeExit": contract["simulatorDeposit"]["reachesDownslopeExit"],
+                "continuousDownslope": contract["simulatorDeposit"]["continuousDownslope"],
+                "southExitActiveCellCount": contract["simulatorDeposit"]["southExitActiveCellCount"],
+                "occupiedRowGapCount": contract["simulatorDeposit"]["occupiedRowGapCount"],
                 "depositSectionDownhillFraction": contract["simulatorDeposit"]["depositSectionDownhillFraction"],
                 "depositSectionMaximumLocalRiseMeters": contract["simulatorDeposit"]["depositSectionMaximumLocalRiseMeters"],
             },
@@ -2242,11 +2253,17 @@ def verify_outer() -> dict[str, Any]:
                 "actionRadiusMeters": contract["performerContract"]["actionRadiusMeters"],
             },
         },
-        "observable-bifurcation": {
-            "passed": int(contract["simulatorDeposit"]["branchedRowCount"]) >= 3,
+        "midflank-continuity": {
+            "passed": (
+                contract["simulatorDeposit"]["passesMidflank"]
+                and int(contract["simulatorDeposit"]["midflankPassActiveCellCount"]) >= 12
+                and float(contract["simulatorDeposit"]["downstreamMedianWidthMeters"]) >= 6.0
+                and int(contract["simulatorDeposit"]["occupiedRowGapCount"]) == 0
+            ),
             "evidence": {
-                "branchedRowCount": contract["simulatorDeposit"]["branchedRowCount"],
-                "claim": "Separated active runs prove bifurcation only; no downstream reconnection is claimed.",
+                "passesMidflank": contract["simulatorDeposit"]["passesMidflank"],
+                "midflankPassActiveCellCount": contract["simulatorDeposit"]["midflankPassActiveCellCount"],
+                "occupiedRowGapCount": contract["simulatorDeposit"]["occupiedRowGapCount"],
                 "upstreamMedianWidthMeters": contract["simulatorDeposit"]["upstreamMedianWidthMeters"],
                 "upstreamWidthSamplingRuntimeZ": contract["simulatorDeposit"]["upstreamWidthSamplingRuntimeZ"],
                 "downstreamMedianWidthMeters": contract["simulatorDeposit"]["downstreamMedianWidthMeters"],
@@ -2311,7 +2328,8 @@ def verify_outer() -> dict[str, Any]:
         "schemaVersion": 1,
         "sceneId": contract["sceneId"],
         "gateId": "playable-graybox",
-        "status": "candidate-pending-gate-1-1-approval",
+        "status": "ready-for-review",
+        "museumTracker": contract["museumTracker"],
         "blenderVersion": blender_snapshot["blenderVersion"],
         "commands": {
             "build": "py -3 scripts/build-ember-geology-graybox.py build",
@@ -2326,13 +2344,14 @@ def verify_outer() -> dict[str, Any]:
             "cameraCount": len(contract["reviewCameras"]),
             "planIsNorthUp": True,
             "planIncludesSimulatorDeposit": True,
-            "sectionVerticalExaggeration": 4.0,
+            "sectionVerticalExaggeration": 1.0,
         },
         "reviewAssertions": {
-            "geologicalCausalityReadsFromDefaultCamera": "requires-human-review",
-            "collapseReadsAsMissingVolumeAndTalus": "requires-human-review",
-            "attachedOldFlowPeninsulaDoesNotReadAsAStageIsland": "requires-human-review",
-            "allOrbitSectorsHaveUsefulDepthWithoutClosingTheEastHorizon": "requires-human-review",
+            "performerReadsHalfwayUpAColossalVolcanicFlank": "requires-human-review",
+            "uphillMountainAndFireContinueBeyondTheFrame": "requires-human-review",
+            "downhillTerrainFallsTowardLowerCountry": "requires-human-review",
+            "flowReadsCausalContinuousAndSouthBound": "requires-human-review",
+            "allOrbitSectorsHaveUsefulDepthWithoutFormingAStageIsland": "requires-human-review",
         },
         "limitations": contract["limitations"],
     }

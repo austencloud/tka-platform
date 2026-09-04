@@ -162,7 +162,9 @@
 <div class="qst-viewer">
   <header class="viewer-header">
     <div class="title-block">
-      <span class="eyebrow">Quarter Space Tech archive</span>
+      <span class="eyebrow"
+        >Quarter Space Tech by Mentive · Based on Alex Kurowski's grid</span
+      >
       <h1>Prop-only 3D loop viewer</h1>
       <p>Drag the scene to orbit. The figure is intentionally absent.</p>
     </div>
