@@ -421,6 +421,40 @@ motion at speed, from useful camera angles, on every supported rig.
 - pattern-specific checks for sidestep, front crossover, back crossover, and
   grapevine.
 
+### Anatomical validity
+
+Every measurement above describes the path a foot traced or how far a joint
+moved. None describes the plane a limb moved in, so a leg posed sideways scores
+identically to a correct one. Two layers cover that, added 2026-09-03:
+
+- **Static intake**, `tests/unit/3d/rig-anatomy-contract.test.ts`. Reads the
+  bind pose of every shipped character and drives nothing: leg completeness,
+  hip line level and square, derived knee hinge within 10 degrees of the body's
+  mediolateral axis, left-right segment symmetry within 2 percent, femur-tibia
+  ratio, and bind bend small enough not to steer the calibration. One GLB parse
+  per rig, no frames, 74 checks in under half a second. This is the layer that
+  catches a small calibration error, where a 10-degree fault is enormous.
+- **Motion grading**, `analyzeKneeAnatomy` in
+  `src/lib/shared/3d/diagnostics/gait/knee-anatomy.ts`, reported as three rows
+  in every maneuver profile and driven with `FootPlanter` in the loop by
+  `tests/unit/3d/locomotion-anatomy.test.ts`. Per frame and per side: how far
+  the plane the knee bends in is turned off the body's frontal normal, the
+  knee's worst departure from the hip-ankle line as a fraction of leg length,
+  and whether the shank ever sits in front of the thigh. Frames below 20 degrees
+  of flexion are excluded, because a near-straight leg has no measurable bend
+  direction, and the excluded share is reported so a projection artefact cannot
+  become a verdict.
+
+Bands come from measurement, not from a guess: all twelve shipped characters,
+walk and run, planted, measure 7.5 to 12.1 degrees of mean plane tilt, which
+independently lands on the clinical figure of 8 to 12 degrees of frontal-plane
+knee travel across a healthy gait cycle. Warn at 16, fail at 25.
+
+The two layers cover different ranges and neither replaces the other. Injected
+hinge error produces about 0.88 degrees of reading per degree at a walk and 0.72
+at a run, on a baseline near 10, so motion grading resolves a 20-degree fault
+and above while the static contract resolves everything smaller.
+
 ### Visual acceptance
 
 Use Walk Lab in the approved in-app browser or Chrome DevTools setup. Inspect
@@ -467,6 +501,31 @@ in as the new bind pose (see `clear_imported_pose` in
 bake does not invalidate it and it does not excuse leaving the bake in place.
 
 
+### Foot-path and knee-angle metrics can see a leg posed in the wrong plane
+Rejected 2026-09-03, by fault injection against the full gait report.
+
+`ch07` shipped with its left knee's IK hinge axis derived 84 degrees off
+sagittal, so the leg folded sideways under `FootPlanter`. Every row of the gait
+report stayed green through it and Austen found it by looking at the screen.
+
+Rotating `ch01`'s hinge by a controlled amount and re-reading the whole report
+shows why. At 3.9 m/s, between a healthy hinge and one turned 84 degrees, peak
+foot slip holds at 9.2 cm and `kneeJerkRms` holds at 11187.982 -- the two
+readings differ in their eighth significant figure. The foot rows cannot
+respond because the fault does not move the feet; it folds the leg between
+them. `kneeJerkRms` looks like it should, being a knee measurement, but it is
+the second time derivative of `kneeAngle`, and `kneeAngle` is the unsigned
+interior angle at the joint. Turning the plane a knee bends in leaves how far it
+bends exactly where it was.
+
+This is structural, not a threshold that was set too loosely. A metric built
+from unsigned joint angles and foot trajectories is blind to limb orientation by
+construction, and no retuning of one makes it see this class of defect. The
+harness compounded it: it stopped at the animator, and foot IK is where a leg is
+finally posed, so the suite could not have observed the defect even had a metric
+existed. Both are addressed under Anatomical validity above; the blindness
+itself is pinned by an assertion so the claim cannot go stale silently.
+
 | Assumption                                               | Why it is rejected                                                                                                                                     |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Root motion eliminates footskate                         | Source root and foot motion can still mismatch the world controller, retargeted rig, warping, blending, or contact anchors.                            |
@@ -480,6 +539,8 @@ bake does not invalidate it and it does not excuse leaving the bake in place.
 | Exact root endpoint plus step count equals exact arrival | Root mark, terminal plant, and stable two-foot goal stance are different events.                                                                       |
 | A public dataset is product-cleared                      | Code, annotations, video, music, performer data, body models, and derived assets can carry different terms.                                            |
 | A cited technique is implemented                         | Research, adopted architecture, prototypes, and shipped behavior are separate status classes.                                                          |
+| A knee metric detects a knee posed wrong                  | `kneeJerkRms` is the second derivative of an unsigned joint angle, which a rotated bend plane preserves exactly. Grading a limb needs the plane it moved in, not only how far it moved.  |
+| A harness that drives the animator tests the pose         | Foot IK poses the leg after the animator. A harness that stops short of it cannot observe an IK defect at all, whatever it measures.                                                    |
 | Green unit tests prove top-tier motion                   | Tests cannot see twitching, implausible weight transfer, mesh penetration, or a bad silhouette. Live visual evidence is mandatory.                     |
 
 ## Open gaps, in priority order

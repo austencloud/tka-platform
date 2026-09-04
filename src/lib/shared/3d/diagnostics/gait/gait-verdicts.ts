@@ -63,6 +63,28 @@ const paceOf = (r: GaitReport) => (r.cadence / 60) * r.meanStepLength;
 const WALK_BAND_PACE = 1.26;
 
 /**
+ * Whether a knee bends like a knee, which is true of every maneuver.
+ *
+ * Cadence and step length are walking norms, so they have to be swapped out or
+ * dropped when the character is running, stepping sideways or pivoting. These
+ * three are not norms, they are anatomy: there is no gait in which a knee is
+ * allowed to fold sideways. They stay in every profile.
+ */
+const ANATOMY_METRICS = [
+  "Knee bend plane",
+  "Knee sideways offset",
+  "Knee bends backward",
+] as const;
+
+/**
+ * Below this share of frames the knee was too straight to have a bend
+ * direction at all, so the angles above would be a handful of moments rather
+ * than a reading. Reporting them anyway is how a projection artefact becomes a
+ * verdict.
+ */
+const MIN_ANATOMY_COVERAGE = 0.25;
+
+/**
  * The same measurements, read against running instead of walking.
  *
  * Running is not walking played faster. It trades double support for a flight
@@ -163,6 +185,8 @@ export function verdictRows(
 ): VerdictRow[] {
   const r = report;
   if (!r || r.stances.length === 0) return [];
+  const anatomyMeasured =
+    r.anatomy.minConditionedFraction >= MIN_ANATOMY_COVERAGE;
   const rows = [
     {
       name: "Foot slip per step",
@@ -310,6 +334,36 @@ export function verdictRows(
       verdict: r.weightShiftAlternates ? "good" : "bad",
       tell: "the sway must change sides with the foot, or it is not transfer",
     },
+    {
+      name: "Knee bend plane",
+      value: r.anatomy.worstMeanPlaneTilt.toFixed(1),
+      unit: "deg",
+      human: "under 16",
+      verdict: anatomyMeasured
+        ? band(r.anatomy.worstMeanPlaneTilt, [0, 16], [0, 25])
+        : "none",
+      tell: "how far the plane this knee bends in is turned off a hinge's",
+    },
+    {
+      name: "Knee sideways offset",
+      value: pct(r.anatomy.worstPeakMedialOffset),
+      unit: "%",
+      human: "under 6",
+      verdict: anatomyMeasured
+        ? band(r.anatomy.worstPeakMedialOffset, [0, 0.06], [0, 0.12])
+        : "none",
+      tell: "knee's worst departure from the hip-ankle line, over leg length",
+    },
+    {
+      name: "Knee bends backward",
+      value: pct(r.anatomy.worstReversedFraction),
+      unit: "%",
+      human: "0",
+      verdict: anatomyMeasured
+        ? band(r.anatomy.worstReversedFraction, [0, 0.02], [0, 0.1])
+        : "none",
+      tell: "share of the bend spent with the shank in front of the thigh",
+    },
   ];
   const arrivalMetrics = new Set([
     "Foot slip per step",
@@ -320,6 +374,7 @@ export function verdictRows(
     "Knee twitches",
     "Knee jerk",
     "Cycling on the spot",
+    ...ANATOMY_METRICS,
   ]);
   if (scope === "arrival") {
     return rows.filter((row) => arrivalMetrics.has(row.name));
@@ -343,6 +398,7 @@ export function verdictRows(
       "Knee twitches",
       "Knee jerk",
       "Weight alternates",
+      ...ANATOMY_METRICS,
     ]);
     return rows.filter((row) => turnMetrics.has(row.name));
   }
@@ -358,6 +414,7 @@ export function verdictRows(
       "Cycling on the spot",
       "Body over the foot",
       "Weight alternates",
+      ...ANATOMY_METRICS,
     ]);
     return [
       ...rows.filter((row) => crossoverMetrics.has(row.name)),
@@ -408,6 +465,7 @@ export function verdictRows(
       "Cycling on the spot",
       "Body over the foot",
       "Weight alternates",
+      ...ANATOMY_METRICS,
     ]);
     return rows.filter((row) => lateralMetrics.has(row.name));
   }
