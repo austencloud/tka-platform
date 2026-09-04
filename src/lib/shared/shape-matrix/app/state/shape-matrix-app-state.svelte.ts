@@ -31,6 +31,7 @@ import {
   asTheoryBand,
   clampTheoryRatioToBand,
   DEFAULT_THEORY_BAND,
+  narrowestBandFor,
   theoryRatiosForBand,
   type TheoryBand,
 } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
@@ -414,9 +415,25 @@ export function createShapeMatrixAppState(
     }
   }
 
+  /**
+   * Take a requested ratio at its word when the catalog holds it.
+   *
+   * The band says how much of the field is on offer; it is not a licence the
+   * ratio needs. A request the catalog can answer is answered, and the band
+   * widens to the narrowest one that holds it, so the control ends up
+   * reporting where that ratio lives. Only a ratio outside the catalog
+   * entirely still falls back to the nearest thing the band can name.
+   */
+  function admitTheoryRatio(nextRatio: SpinRatio): SpinRatio {
+    const home = narrowestBandFor(nextRatio);
+    if (home === null) return allowedTheoryRatio(nextRatio, theoryBand);
+    if (home > theoryBand) theoryBand = home;
+    return nextRatio;
+  }
+
   /** One named axis, for the live tuners that edit a specific hand. */
   function setTheoryRatioFor(hand: "left" | "right", nextRatio: SpinRatio): void {
-    const allowed = allowedTheoryRatio(nextRatio, theoryBand);
+    const allowed = admitTheoryRatio(nextRatio);
     applyTheoryRatios(
       hand === "left" ? allowed : theoryLeftRatio,
       hand === "right" ? allowed : theoryRightRatio
@@ -426,7 +443,7 @@ export function createShapeMatrixAppState(
 
   /** Honours the Apply to target, exactly as the Matrix turn control does. */
   function setTheoryRatio(nextRatio: SpinRatio): void {
-    const allowed = allowedTheoryRatio(nextRatio, theoryBand);
+    const allowed = admitTheoryRatio(nextRatio);
     applyTheoryRatios(
       activeAxis === "right" ? theoryLeftRatio : allowed,
       activeAxis === "left" ? theoryRightRatio : allowed
