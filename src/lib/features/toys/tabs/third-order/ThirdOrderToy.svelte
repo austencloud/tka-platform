@@ -88,7 +88,7 @@
     title="Third Order setup"
     onClose={() => thirdOrder.setSetupDrawerOpen(false)}
   />
-  <div class="drawer-content">
+  <div class="setup-drawer-body">
     <ThirdOrderSourceRail embedded />
     <ThirdOrderInspector embedded />
   </div>
@@ -129,12 +129,11 @@
     overflow: auto;
     background: var(--theme-panel-bg);
   }
-  .drawer-content {
+  .setup-drawer-body {
+    flex: 1;
     min-width: 0;
     min-height: 0;
-    height: calc(100% - 58px);
     padding: 16px;
-    overflow: hidden;
     overflow-y: auto;
   }
   :global(.third-order-drawer) {
