@@ -30,7 +30,7 @@
 </script>
 
 {#snippet cornerGuide()}
-  <ShapeMatrixGridCorner onrandom={state.selectRandomTheoryPair} />
+  <ShapeMatrixGridCorner />
 {/snippet}
 
 <section class="theory-pane" aria-label="Theory matrix">
