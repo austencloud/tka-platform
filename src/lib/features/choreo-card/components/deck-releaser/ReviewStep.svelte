@@ -74,6 +74,8 @@
     getAiSummary: () => string;
     sortedSequences: SequenceData[];
     sortedFooters: CardFooter[];
+    cardTitles?: string[];
+    cardProfile?: "sequence" | "hand-path";
     tndElements: (TnDElement | undefined)[];
     copiesPresets: number[];
     copiesAnnotate: (n: number) => { blanks: number; perfect: boolean } | null;
@@ -132,6 +134,8 @@
     getAiSummary,
     sortedSequences,
     sortedFooters,
+    cardTitles = [],
+    cardProfile = "sequence",
     tndElements,
     copiesPresets,
     copiesAnnotate,
@@ -178,8 +182,9 @@
 
   const distribution = $derived.by(() => {
     const dist: Record<number, number> = {};
-    for (const c of cards) {
-      dist[c.stepCount] = (dist[c.stepCount] ?? 0) + 1;
+    for (const sequence of sortedSequences) {
+      const stepCount = sequence.steps?.length ?? 0;
+      dist[stepCount] = (dist[stepCount] ?? 0) + 1;
     }
     return Object.entries(dist)
       .sort(([a], [b]) => Number(b) - Number(a))
@@ -193,6 +198,8 @@
       ? `${distribution[0]!.step}-step`
       : distribution.map((d) => `${d.step}-step ×${d.count}`).join("  ·  ")
   );
+  const contentCardCount = $derived(sortedSequences.length);
+  const isHandPathDeck = $derived(cardProfile === "hand-path");
 
   function handleCardClick(
     sequence: SequenceData,
@@ -253,9 +260,9 @@
         <span
           class="meta-cards"
           title={includeHowToRead
-            ? `${cards.length} sequence cards + 1 How to Read card`
-            : `${cards.length} sequence cards`}
-          >{cards.length + (includeHowToRead ? 1 : 0)} cards</span
+            ? `${contentCardCount} ${isHandPathDeck ? "reference" : "sequence"} cards + 1 How to Read card`
+            : `${contentCardCount} ${isHandPathDeck ? "reference" : "sequence"} cards`}
+          >{contentCardCount + (includeHowToRead ? 1 : 0)} cards</span
         >
         {#if stepSummary}
           <span class="meta-sep" aria-hidden="true">·</span>
@@ -335,7 +342,7 @@
   <PrintPreviewToolbar
     {cardSize}
     {paperSize}
-    totalCards={cards.length}
+    totalCards={contentCardCount}
     {isRendering}
     {renderProgress}
     {renderTotal}
@@ -346,10 +353,10 @@
     {onCopiesChange}
     {copiesPresets}
     {copiesAnnotate}
-    {groupByElement}
-    {onGroupByElementChange}
-    {groupByLetter}
-    {onGroupByLetterChange}
+    groupByElement={isHandPathDeck ? undefined : groupByElement}
+    onGroupByElementChange={isHandPathDeck ? undefined : onGroupByElementChange}
+    groupByLetter={isHandPathDeck ? undefined : groupByLetter}
+    onGroupByLetterChange={isHandPathDeck ? undefined : onGroupByLetterChange}
   />
 
   <div class="preview-area">
@@ -365,6 +372,8 @@
       {groupByElement}
       {sideFilter}
       footers={sortedFooters}
+      {cardTitles}
+      {cardProfile}
       {tndElements}
       isLoading={false}
       includeStartPosition={true}
@@ -375,8 +384,8 @@
       deckId={String(nextDeckNumber).padStart(3, "0")}
       deckName={`LOOP Deck #${nextDeckNumber}`}
       {deckSummary}
-      onCardClick={handleCardClick}
-      onCardContextMenu={onContextMenu
+      onCardClick={isHandPathDeck ? undefined : handleCardClick}
+      onCardContextMenu={!isHandPathDeck && onContextMenu
         ? (x, y, rerender, sequence) => onContextMenu(x, y, rerender, sequence)
         : undefined}
       {onPairPreparerReady}
