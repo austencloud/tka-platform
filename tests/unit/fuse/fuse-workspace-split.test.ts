@@ -11,7 +11,9 @@ import {
 
 const TALL_PORTRAIT = {
   mobileMaxWidth: 600,
-  minHeight: 1280,
+  splitMinWidth: 520,
+  narrowMinHeight: 1650,
+  splitMinHeight: 1280,
   minAspectRatio: 2.1,
 };
 
@@ -21,7 +23,7 @@ describe("Fuse tall portrait fit", () => {
       fitsFuseTallPortraitWorkspace({
         ...TALL_PORTRAIT,
         width: 430,
-        height: 1400,
+        height: 1750,
       })
     ).toBe(true);
     expect(
@@ -38,6 +40,26 @@ describe("Fuse tall portrait fit", () => {
         height: 1400,
       })
     ).toBe(false);
+  });
+
+  it("keeps shorter narrow panes compact instead of introducing a scrollbar", () => {
+    expect(
+      fitsFuseTallPortraitWorkspace({
+        ...TALL_PORTRAIT,
+        width: 430,
+        height: 1400,
+      })
+    ).toBe(false);
+  });
+
+  it("uses the side-by-side tower when a slightly wider pane can fit it", () => {
+    expect(
+      fitsFuseTallPortraitWorkspace({
+        ...TALL_PORTRAIT,
+        width: 550,
+        height: 1400,
+      })
+    ).toBe(true);
   });
 
   it("keeps tablet-width slots out of the phone tower", () => {
