@@ -144,6 +144,64 @@ Recorded so it is not silently assumed solved:
 
 ---
 
+---
+
+## 8. The pocket, frame by frame
+
+**Source: Austen, spoken description, requesting the filmstrip at
+`/test/negative-space-reach` be rebuilt around exactly this.** Quoted in full,
+because the shape he is describing does not survive paraphrase:
+
+> "I want to see 4 frames I want to see the frame where I'm the avatar has one
+> staff in their right hand holding it at the north point with the side
+> orientation in towards the center then I want to see the next 25% through the
+> shift over to east in which the the thumb end needs to be in front of the
+> avatar's face but since the avatar is reaching their elbow forward and raising
+> their arm high enough it creates a pocket and AU shape between the face and the
+> top of the shoulder and the arm which has its elbow moving towards the
+> audience as a result of this pocket that thumb end that was in front of the
+> face can now just move slightly over to the right so we want to see the next I
+> don't know maybe 10% into that frame so we can see how it moves and then the
+> wrist on top is gradually moving as well with that motion and once it clears
+> that space the thumb end ends up out on the right and the pinky end ends up in
+> front with the thumb side out. what we're failing to do with the anti turn is
+> to actually make it go through that pocket i'm not sure you understand what
+> that pocket is that's why I'm hoping I can really break it down into tiny
+> little frame by frames don't put all this text on my screen that's not that
+> useful to me unless you're using it and take the other prop out of the
+> equation just have that hand hang out with no blue prop. we need to hone in on
+> the anti through negative space And we're not going to be able to do that
+> until we can get the avatar to be comfortable possibly leaning back ever so
+> slightly possibly pushing their elbow towards the audience possibly raising
+> their arm up which makes the center point of the staff raise above the normal
+> N point that would normally represent that hand point but it's OK because
+> they're only doing that because they need to get through that space that's the
+> only way to do that potentially if the prop is too long don't worry about the
+> prongs that come off of the red and blue Staffs here those are just to
+> represent visually what the thumb end is from afar here in the app"
+
+Two things fall out of this that were not obvious from §§1–7:
+
+- **The pocket is a shape, not a point.** It is the gap between the face, the
+  top of the shoulder, and the upper arm — open only while the elbow is pushed
+  toward the audience and the arm is raised. The thumb end has to cross that gap
+  while it is open, not before or after.
+- **Getting through it may require leaving the notated hand point.** Leaning
+  back, pushing the elbow downstage, and raising the arm above the plain North
+  point are named as things the avatar may need to do *only* to clear the
+  pocket — not as errors to correct once the through-pass works.
+
+The filmstrip built from this — four frozen frames at 0%, 25%, 35% and 100% of
+the reach, one body, the red staff only, one shared "over the shoulder" camera
+angle chosen to keep the face/shoulder/arm shape in frame — shows the anti-route
+rig **not** entering the pocket at any of the four default frames: at every one,
+the measured thumb end sits downstage of the forearm rather than tucked behind
+it and above the shoulder, so `inPocket` reads false throughout. This confirms
+the complaint above rather than resolving it; fixing the route to actually pass
+through the pocket is separate work, tracked outside this document.
+
+---
+
 ## Related
 
 - `.claude/rules/tka-domain.md` — terminology guardrails

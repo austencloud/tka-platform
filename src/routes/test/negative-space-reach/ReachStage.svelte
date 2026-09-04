@@ -14,7 +14,12 @@
    */
 
   import { T } from "@threlte/core";
-  import { Plane, PlaneMode, STAGE } from "@austencloud/scene-3d";
+  import {
+    Plane,
+    PlaneMode,
+    STAGE,
+    setViewerVisibilityContext,
+  } from "@austencloud/scene-3d";
   import type {
     AvatarGripDiagnostics,
     AvatarPoseDiagnostics,
@@ -72,6 +77,23 @@
   const WALL_PLANE = new Set([Plane.WALL]);
 
   const showLabels = $derived(gridEmphasis === "reference");
+
+  /**
+   * Austen: "take the other prop out of the equation just have that hand
+   * hang out with no blue prop." This is the package's own visibility gate —
+   * `Avatar3D` reads `blueMotion`/`redMotion` off this context to decide
+   * whether to render `bluePropState`/`redPropState` at all — so the left
+   * hand keeps its existing gripping-shape pose and simply holds nothing.
+   * Nothing here touches pose, IK, or the collision owner.
+   */
+  setViewerVisibilityContext({
+    showProps: true,
+    showGrid: true,
+    showAvatar: true,
+    showEffects: false,
+    blueMotion: false,
+    redMotion: true,
+  });
 </script>
 
 <T.AmbientLight intensity={1.15} />
