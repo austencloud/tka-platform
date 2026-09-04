@@ -31,6 +31,7 @@ import {
 
 import {
   DEFAULT_LAB_CHARACTER_ID,
+  DEFAULT_LAB_PROP,
   DEFAULT_LAB_SEQUENCE_ID,
   isLabCharacterId,
   isLabPropType,
@@ -141,9 +142,24 @@ export class StaffLabState {
     return raw && isLabCharacterId(raw) ? raw : DEFAULT_LAB_CHARACTER_ID;
   });
 
+  /**
+   * The LED Baton, not the plain Staff.
+   *
+   * `Staff3D` draws a T-bar at the thumb end: a crossbar 22.8% of the shaft's
+   * length with a dark cap on each tip, carried over from the 2D pictograph
+   * where it marks which end the thumb reads. It is notation. No staff anyone
+   * spins has it, and on a body it reads as a spike coming off the prop —
+   * which is the first thing anyone looking at this lab has to explain away
+   * before they can look at the grip. The Baton is the same Double Staff
+   * family, a real prop, and the smaller of the two model-backed builds
+   * (86.36 cm against the Fire Staff's 90).
+   *
+   * It is a catalog build like any other, so the picker still owns the
+   * choice and `?prop=staff` still reaches the procedural staff.
+   */
   readonly prop = $derived.by((): PropType => {
     const raw = this.#url.searchParams.get(LAB_PARAM.prop);
-    return raw && isLabPropType(raw) ? raw : PropType.STAFF;
+    return raw && isLabPropType(raw) ? raw : DEFAULT_LAB_PROP;
   });
 
   readonly propLength = $derived.by((): LabPropLength => {

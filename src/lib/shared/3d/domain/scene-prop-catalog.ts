@@ -138,6 +138,59 @@ export function findScenePropFamilyByRepresentative(
 }
 
 /* -------------------------------------------------------------------------
+   How long a build draws
+   -------------------------------------------------------------------------
+   Length is a property of a build, so it belongs beside the rest of what the
+   catalog knows about one.
+
+   Two of the three Double Staff builds are drawn from authored GLB models
+   rather than procedural geometry, and a model draws at the size it was
+   authored: the scene package's `Prop3D` hands `length` to every procedural
+   component and drops it on the GLTF branch. So every length control in the
+   product — the performer's own `staffLengthCm`, a pinned lab length, the
+   body-derived hug fit — reaches the plain Staff and stops at the LED Baton
+   and the Fire Staff. Anything reporting a prop's size has to say which of
+   those two it is looking at.
+
+   The numbers are each model's own `authored_length_m` node extra, written by
+   scripts/build-capsule-baton-model.py (0.8636 m, "a 34\" baton, the same
+   overall length as the default staff") and
+   scripts/build-fire-double-staff-model.py (0.9 m), and confirmed against the
+   shipped GLBs' POSITION accessor bounds.
+
+   The table covers the Double Staff family because that is the only family
+   whose builds mix procedural and model-backed geometry, so it is the only
+   one where the distinction changes a reading. Other model-backed props
+   ignore length the same way; they are absent because nothing asks them for
+   a length yet.
+   ------------------------------------------------------------------------- */
+
+const AUTHORED_MODEL_LENGTH_CM: Partial<Record<PropType, number>> = {
+  [PropType.CAPSULE_BATON]: 86.36,
+  [PropType.FIRE_DOUBLE_STAFF]: 90,
+};
+
+/**
+ * The authored length of a model-backed build, or null when the build is
+ * procedural and therefore draws whatever length it is handed.
+ */
+export function scenePropAuthoredLengthCm(prop: PropType): number | null {
+  return AUTHORED_MODEL_LENGTH_CM[prop] ?? null;
+}
+
+/**
+ * The length a build actually draws at, given the length it was asked for.
+ * A procedural build honours the request; a model-backed one answers with its
+ * authored length no matter what was asked.
+ */
+export function scenePropDrawnLengthCm(
+  prop: PropType,
+  requestedCm: number | null
+): number | null {
+  return scenePropAuthoredLengthCm(prop) ?? requestedCm;
+}
+
+/* -------------------------------------------------------------------------
    Build previews
    -------------------------------------------------------------------------
    Every build choice a prop offers — which member of its family, which

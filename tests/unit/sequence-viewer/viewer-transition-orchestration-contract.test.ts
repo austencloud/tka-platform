@@ -56,6 +56,9 @@ const tunnelLayerReveal = read(
 const canvasApplicationManager = read(
   "src/lib/shared/animation-engine/services/canvas2d/canvas-2d-application-manager.ts"
 );
+const canvas2DRenderer = read(
+  "src/lib/shared/animation-engine/services/canvas-2d-animation-renderer.ts"
+);
 const sceneLoadingCurtain = read(
   "src/lib/shared/3d/scene-features/components/SceneLoadingCurtain.svelte"
 );
@@ -67,6 +70,21 @@ const companionSurface = read(
 );
 const choreoCard = read(
   "src/lib/shared/sequence-viewer/components/ChoreoCard.svelte"
+);
+const animationPanel = read(
+  "src/lib/shared/animation-panel/components/AnimationPanel.svelte"
+);
+const tunnelArtSettings = read(
+  "src/lib/shared/sequence-viewer/components/art-settings/TunnelArtSettings.svelte"
+);
+const animatorInspectorShell = read(
+  "src/lib/shared/animation-panel/components/AnimatorInspectorShell.svelte"
+);
+const animatorInspectorFooter = read(
+  "src/lib/shared/animation-panel/components/AnimatorInspectorFooter.svelte"
+);
+const animatorInspectorState = read(
+  "src/lib/shared/sequence-viewer/state/viewer-animator-inspector-state.svelte.ts"
 );
 const cardSizingState = read(
   "src/lib/shared/choreo-card/state/choreo-card-sizing-state.svelte.ts"
@@ -85,6 +103,22 @@ const performanceStage = read(
 );
 
 describe("Sequence Viewer transition orchestration contract", () => {
+  it("composes 2D and Tunnel settings from one inspector shell", () => {
+    expect(animationPanel).toContain("<AnimatorInspectorShell");
+    expect(tunnelArtSettings).toContain("<AnimatorInspectorShell");
+    expect(animationPanel).toContain("<AnimatorInspectorFooter");
+    expect(tunnelArtSettings).toContain("<AnimatorInspectorFooter");
+    expect(animatorInspectorShell).toContain("<IconRailNav");
+    expect(animatorInspectorShell).toContain('class="panel-transition"');
+    expect(animatorInspectorFooter).toContain("background: var(--theme-accent");
+    expect(animatorInspectorState).toContain(
+      '"effects",\n  "props",\n  "motion",\n  "display"'
+    );
+    expect(tunnelArtSettings).toContain('id: "display"');
+    expect(tunnelArtSettings).toContain('id: "motion" as const');
+    expect(tunnelArtSettings).toContain("<TunnelEffectsSettings");
+  });
+
   it("names both responsive switchers as Sequence views", () => {
     expect(contentRail).toContain('aria-label="Sequence views"');
     expect(modeBottomBar).toContain('aria-label="Sequence views"');
@@ -348,9 +382,14 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(motionSurface).toContain("data-tunnel-blend");
     expect(motionSurface).toContain("additionalLayers={tunnelLayers}");
     expect(motionSurface.match(/<AnimatorCanvas/g)).toHaveLength(1);
-    expect(motionSurface).toContain("resolveTunnelLayerProgress(");
-    expect(motionSurface).toContain("interpolateTunnelLayerProp(");
     expect(motionSurface).toContain("resolveTunnelLayerOpacity(");
+    expect(motionSurface).toContain("tunnelLayerPoseDifference(");
+    expect(motionSurface).not.toContain("interpolateTunnelLayerProp(");
+    expect(motionSurface).not.toContain("trailCaptureSuppressed:");
+    expect(motionSurface).toContain(
+      'tunnelVisualActive && activeEffect !== "none"'
+    );
+    expect(motionSurface).toContain("tipEffectMap={tunnelTipEffectMap}");
     expect(splitPane).toContain("prepareWhileInactive: true");
     expect(tunnelController).toContain("get layersReady(): boolean");
     expect(tunnelController).toContain("preparedAdditionalLayersAt(");
@@ -371,22 +410,31 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(motionSurface).toContain("data-tunnel-layer-opacity-max");
     expect(motionSurface).toContain("data-tunnel-layer-opacity-mean");
     expect(motionSurface).toContain("data-tunnel-perceptible-layer-count");
-    expect(motionSurface).toContain("data-tunnel-layer-separation");
+    expect(motionSurface).toContain("data-tunnel-formation-pose-drift");
     expect(reviewFrame).toContain("tunnelLayerOpacityMaximum:");
     expect(canvasApplicationManager).toContain(
       'this.canvas.dataset.animationLayer = "props"'
     );
     expect(reviewFrame).toContain('canvas[data-animation-layer="props"]');
-    expect(reviewFrame).toContain("tunnelSpectrumPixelCount(");
-    expect(reviewFrame).toContain("TUNNEL_PIXEL_SAMPLE_INTERVAL_MS");
-    expect(reviewFrame).toContain("tunnelSpectrumSampled:");
+    expect(canvas2DRenderer).toContain("publishTunnelPaintTelemetry(");
+    expect(canvas2DRenderer).toContain(
+      'capture.dataset.captureTunnelPaint !== "true"'
+    );
+    expect(canvas2DRenderer).toContain(
+      "paintedTunnelOpacities.push(ctx.globalAlpha)"
+    );
+    expect(reviewFrame).toContain("setTunnelPaintCapture(true)");
+    expect(reviewFrame).toContain("readTunnelPaintHistory()");
+    expect(reviewFrame).toContain("tunnelPaintSamples:");
+    expect(reviewFrame).toContain("tunnelPaintedOpacityMean:");
     expect(geometryTrace).toContain("Reveal-before-layers frames:");
     expect(geometryTrace).toContain("Largest grid alpha step:");
     expect(geometryTrace).toContain("Layer timing spread:");
     expect(geometryTrace).toContain("Ensemble legibility:");
-    expect(geometryTrace).toContain("Painted spectrum arrival:");
-    expect(geometryTrace).toContain("one copy peels spatially");
-    expect(geometryTrace).toContain("Spatial peel:");
+    expect(geometryTrace).toContain("Painted prop arrival:");
+    expect(geometryTrace).toContain("Formation trail captures:");
+    expect(geometryTrace).toContain("Trail-safe formation:");
+    expect(geometryTrace).toContain("Formation placement:");
     expect(viewerModeDissolve).toContain(
       'GATE_THREE_STAGE_MODES.has(previousMode) && nextMode === "tunnel"'
     );

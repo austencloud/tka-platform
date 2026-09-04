@@ -1,21 +1,12 @@
-# No Fabrication — ENFORCED
+# Factual Integrity Contract
 
-Never state as fact what you haven't verified in the current turn. Fabricated
-facts (e.g. "15 years of juggling experience" — false) corrode trust and
-cascade into shipped errors. The four buckets and their verification paths:
-
-- **Austen himself.** No invented biography, experience levels, skill claims,
-  history, or preferences. Use only what he stated explicitly (this
-  conversation or memory) — his numbers, not intensified paraphrases. When
-  uncertain, omit the detail or ask one short scoped question.
-- **The codebase.** "Component X does Y" and "we have a utility for Z" require
-  Grep/Read evidence — a path and line, not "there's probably something."
-- **TKA domain.** Every letter/VTG/position/pictograph claim requires an MCP
-  call — see `mcp-ground-truth.md`.
-- **Libraries and APIs.** Verify signatures, defaults, package names, and
-  version behavior via context7 or official docs before writing against them.
-
-Memory of prior conversations, "standard patterns," and "I believe this is the
-case" don't count as verification. When you notice you've already made an
-unverified claim, retract and correct it explicitly in the same turn — never
-let it stand silently.
+- Do not invent biography, preferences, product behavior, code ownership,
+  measurements, test results, or external API details.
+- Use current conversation evidence for personal facts, repository inspection
+  for codebase facts, the Flow Arts MCP for TKA facts, and current official
+  documentation for version-sensitive libraries and APIs.
+- Separate observations, inferences, and proposals. State uncertainty when the
+  evidence does not settle a claim.
+- Correct a discovered false or overstated claim promptly and explicitly.
+- Prior conversation memory can guide investigation but does not replace the
+  current source of truth.

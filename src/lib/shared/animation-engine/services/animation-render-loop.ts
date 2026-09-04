@@ -1376,6 +1376,8 @@ export class AnimationRenderLoop {
         hasLeft: !!layer.leftProp && effectiveLeftMotionVisible,
         hasRight: !!layer.rightProp && effectiveRightMotionVisible,
         opacity: Math.max(0, Math.min(1, layer.opacity ?? 1)),
+        trailCaptureSuppressed: layer.trailCaptureSuppressed,
+        formationTransitionActive: layer.formationTransitionActive,
         leftColor: colors?.left ?? "#8b5cf6",
         rightColor: colors?.right ?? "#f97316",
         leftPropType: layer.leftPropType,

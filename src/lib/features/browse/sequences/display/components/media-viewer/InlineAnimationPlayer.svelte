@@ -122,6 +122,7 @@
     showWordHeader = false,
     showPositionGlyph = false,
     onStepChange = undefined,
+    onSeekRef = undefined,
     scrubbable = false,
     singlePlay = false,
     beatIndicators = true,
@@ -175,6 +176,8 @@
      * other hosts (gallery, Arena) omit it and pay no per-frame cost.
      */
     onStepChange?: (currentStep: number, sequenceId: string | null) => void;
+    /** Exposes the player's canonical step seek without exposing its controller. */
+    onSeekRef?: (seek: ((step: number) => void) | null) => void;
     /**
      * "full" (default) = external play button + BpmChips grid + the in-canvas
      * UnifiedTimeline scrubber (gallery detail, Arena).
@@ -779,6 +782,13 @@
   function handleSeek(targetStep: number) {
     playbackController?.seekToStep(targetStep);
   }
+
+  $effect(() => {
+    const publishSeek = onSeekRef;
+    if (!publishSeek) return;
+    publishSeek(handleSeek);
+    return () => publishSeek(null);
+  });
 </script>
 
 <div class="inline-animation-player" use:renderGateTarget={activityGate}>

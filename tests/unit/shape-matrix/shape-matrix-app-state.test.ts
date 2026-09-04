@@ -40,9 +40,15 @@ function semanticVariant(flower: Flower): number {
 
 function createState(compact: boolean) {
   const syncState = vi.fn();
+  const axis = buildFlowerAxis();
   const state = createShapeMatrixAppState(
     {
-      loadMatrix: vi.fn(),
+      loadMatrix: vi.fn().mockResolvedValue({
+        axis,
+        left: new Map(),
+        right: new Map(),
+        clubTipDx: 100,
+      }),
       syncState,
     },
     {
@@ -246,18 +252,23 @@ describe("shape matrix app state", () => {
     expect(syncState).not.toHaveBeenCalled();
   });
 
-  it("moves both theory axes together and honours the Apply-to target", () => {
+  it("edits either theory axis directly", () => {
     const { state, syncState } = createState(false);
 
     state.setSurface("theory");
-    state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
+    state.setTheoryRatios(
+      { propRotations: 2, handCycles: 9 },
+      { propRotations: 2, handCycles: 9 }
+    );
 
     expect(state.surface).toBe("theory");
     expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
     expect(state.theoryRightRatio).toEqual({ propRotations: 2, handCycles: 9 });
 
-    state.setActiveAxis("right");
-    state.setTheoryRatio({ propRotations: 1, handCycles: 2 });
+    state.setTheoryRatioFor("right", {
+      propRotations: 1,
+      handCycles: 2,
+    });
     expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
     expect(state.theoryRightRatio).toEqual({ propRotations: 1, handCycles: 2 });
 
@@ -271,10 +282,14 @@ describe("shape matrix app state", () => {
     const { state } = createState(false);
 
     state.setSurface("theory");
-    state.setActiveAxis("left");
-    state.setTheoryRatio({ propRotations: 15, handCycles: 4 });
-    state.setActiveAxis("right");
-    state.setTheoryRatio({ propRotations: 4, handCycles: 15 });
+    state.setTheoryRatioFor("left", {
+      propRotations: 15,
+      handCycles: 4,
+    });
+    state.setTheoryRatioFor("right", {
+      propRotations: 4,
+      handCycles: 15,
+    });
 
     expect(state.theoryLeftRatio).toEqual({
       propRotations: 15,
@@ -288,11 +303,138 @@ describe("shape matrix app state", () => {
     expect(state.theoryColAxis).toHaveLength(4);
   });
 
+  it("commits both visible theory ratios in one state update", () => {
+    const { state, syncState } = createState(false);
+
+    state.setTheoryRatios(
+      { propRotations: 15, handCycles: 14 },
+      { propRotations: 14, handCycles: 15 }
+    );
+
+    expect(state.theoryLeftRatio).toEqual({
+      propRotations: 15,
+      handCycles: 14,
+    });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 14,
+      handCycles: 15,
+    });
+    expect(syncState).toHaveBeenCalledTimes(1);
+  });
+
+  it("links both ratios until the user unlinks them", () => {
+    const { state, syncState } = createState(false);
+
+    state.setTheoryRatios(
+      { propRotations: 2, handCycles: 5 },
+      { propRotations: 1, handCycles: 2 }
+    );
+    state.linkTheoryRatios("left");
+
+    expect(state.theoryRatiosLinked).toBe(true);
+    expect(state.theoryLeftRatio).toEqual({
+      propRotations: 2,
+      handCycles: 5,
+    });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 2,
+      handCycles: 5,
+    });
+
+    state.setTheoryRatioFor("right", {
+      propRotations: 3,
+      handCycles: 7,
+    });
+    expect(state.theoryLeftRatio).toEqual({
+      propRotations: 3,
+      handCycles: 7,
+    });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 3,
+      handCycles: 7,
+    });
+    expect(syncState).toHaveBeenLastCalledWith(
+      expect.objectContaining({ theoryRatiosLinked: true })
+    );
+
+    state.unlinkTheoryRatios();
+    state.setTheoryRatioFor("right", {
+      propRotations: 4,
+      handCycles: 9,
+    });
+    expect(state.theoryLeftRatio).toEqual({
+      propRotations: 3,
+      handCycles: 7,
+    });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 4,
+      handCycles: 9,
+    });
+  });
+
+  it("randomizes within the current 4x4 without changing either ratio", () => {
+    const { state } = createState(false);
+    const first = {
+      left: state.theoryRowAxis[0]!,
+      right: state.theoryColAxis[0]!,
+    };
+    state.selectTheoryPair(first);
+
+    state.selectRandomTheoryPair(() => 0);
+
+    expect(state.theoryPair).not.toEqual(first);
+    expect(state.theoryRowAxis).toHaveLength(4);
+    expect(state.theoryColAxis).toHaveLength(4);
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 1, handCycles: 3 });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 1,
+      handCycles: 3,
+    });
+  });
+
+  it("randomizes within the visible Level Matrix without changing its level or turns", async () => {
+    const { state } = createState(false);
+    await state.load();
+    const first = {
+      left: state.rowAxis[0]!,
+      right: state.colAxis[0]!,
+    };
+    state.selectPair(first);
+
+    state.selectRandomPair(() => 0);
+
+    expect(state.selectedPair).not.toEqual(first);
+    expect(state.rowAxis).toHaveLength(4);
+    expect(state.colAxis).toHaveLength(4);
+    expect(state.level).toBe(2);
+    expect(state.leftTurn).toBe(0);
+    expect(state.rightTurn).toBe(0);
+  });
+
+  it("rejects an invalid two-ratio update without moving either axis", () => {
+    const { state, syncState } = createState(false);
+
+    state.setTheoryRatios(
+      { propRotations: 16, handCycles: 15 },
+      { propRotations: 14, handCycles: 15 }
+    );
+
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 1, handCycles: 3 });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 1,
+      handCycles: 3,
+    });
+    expect(syncState).not.toHaveBeenCalled();
+  });
+
   it("rejects theory values outside the 0–15 field", () => {
     const { state } = createState(false);
 
     state.setSurface("theory");
-    state.setTheoryRatio({ propRotations: 16, handCycles: 15 });
+    state.setTheoryRatioFor("left", {
+      propRotations: 16,
+      handCycles: 15,
+    });
 
     expect(state.theoryLeftRatio).toEqual({ propRotations: 1, handCycles: 3 });
     expect(state.theoryRightRatio).toEqual({ propRotations: 1, handCycles: 3 });
@@ -302,7 +444,10 @@ describe("shape matrix app state", () => {
     const { state } = createState(false);
 
     state.setSurface("theory");
-    state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
+    state.setTheoryRatios(
+      { propRotations: 2, handCycles: 9 },
+      { propRotations: 2, handCycles: 9 }
+    );
 
     // The Matrix's turn vocabulary remains independent from Theory's ratios.
     state.setLevel(1);

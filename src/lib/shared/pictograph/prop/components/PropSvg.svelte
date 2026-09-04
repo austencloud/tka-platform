@@ -593,6 +593,12 @@ even when Svelte recreates the component instance.
     transition: none;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .prop-svg {
+      transition: none;
+    }
+  }
+
   .prop-svg.clickable {
     pointer-events: auto;
     cursor: pointer;

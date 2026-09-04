@@ -1,15 +1,14 @@
 <!--
   ToysModule.svelte - User-facing interactive toys, one tab per toy.
-  Successor to the dissolved Playground module; toys are added one at a
-  time on Austen's explicit request. First toy: Shape Matrix.
+  Successor to the dissolved Playground module.
 -->
 <script lang="ts">
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { TOYS_TABS } from "$lib/shared/navigation/config/tab-definitions";
 
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
-    "shape-matrix": () =>
-      import("./tabs/shape-matrix/ShapeMatrixToy.svelte"),
+    "shape-matrix": () => import("./tabs/shape-matrix/ShapeMatrixToy.svelte"),
+    "third-order": () => import("./tabs/third-order/ThirdOrderToy.svelte"),
   };
 
   const activeTab = $derived(

@@ -1,61 +1,48 @@
-<!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixRatioEntry.svelte
-  Type the ratio. Two whole numbers, prop rotations over hand cycles.
-
-  This replaces the ratio catalog, which asked a viewer who already knew they
-  wanted 4:9 to go find it in a long list. Each number is bounded at 15 instead:
-  any pair in that square can be typed straight in.
-
-  It reduces on the way in, so 2:4 applies 1:2, and it says so in the caption
-  rather than rewriting the digits under the cursor. -->
+<!-- One directly editable VTG ratio. Theory composes one for each axis so
+     neither half of the grid is hidden behind an Apply-to mode. -->
 <script lang="ts">
-  import { spinRatioEquals, spinRatioKey, type SpinRatio } from "@vtg/domain";
+  import { spinRatioKey, type SpinRatio } from "@vtg/domain";
   import {
     theoryRatioFromParts,
+    theoryRatioLabel,
     theoryRatioSpokenLabel,
     THEORY_RATIO_MAX_PART,
   } from "$lib/shared/shape-matrix/domain/theory-ratio";
   import { growFade } from "$lib/shared/transitions/motion";
-  import ShapeMatrixRibbonCell from "./ShapeMatrixRibbonCell.svelte";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
 
   interface Props {
-    /** Ribbon: the header band. Tray: the compact detail sheet. */
+    hand: "left" | "right" | "both";
     layout?: "ribbon" | "tray";
+    onfocuschange?: (hand: "left" | "right" | "both" | null) => void;
   }
-  let { layout = "ribbon" }: Props = $props();
+  let { hand, layout = "ribbon", onfocuschange }: Props = $props();
 
   const appState = getShapeMatrixAppContext();
-
-  /*
-   * The two axes can hold different ratios, and then there is no single pair of
-   * numbers to show. Apply to says which axis is being edited, so this reads
-   * the one it points at, and blanks only when "both" is aimed at a split pair.
-   */
-  const mixed = $derived(
-    appState.activeAxis === "both" &&
-      !spinRatioEquals(appState.theoryLeftRatio, appState.theoryRightRatio)
+  const current = $derived(
+    hand === "right" ? appState.theoryRightRatio : appState.theoryLeftRatio
   );
-  const current = $derived(appState.activeTheoryRatio);
-  const currentKey = $derived(mixed ? "" : spinRatioKey(current));
+  const currentKey = $derived(spinRatioKey(current));
+  const axisLabel = $derived(
+    hand === "left"
+      ? "Left-hand rows"
+      : hand === "right"
+        ? "Right-hand columns"
+        : "Rows + columns"
+  );
 
   let propText = $state("");
   let handText = $state("");
 
-  /*
-   * The fields are typed into, so they cannot simply mirror the state.
-   * Reduction would rewrite 2:4 to 1:2 the instant the second digit landed,
-   * and an emptied field would refill itself before the next keystroke. So the
-   * text follows the applied ratio only when that ratio changed somewhere
-   * ELSE: the grid, a link, or the Apply to axis. `seededKey` is what
-   * this control has already accounted for.
-   */
+  /* An emptied field must stay empty long enough for the next digit. The text
+     only reseeds when the applied ratio changed outside this editor. */
   let seededKey = $state<string | null>(null);
 
   $effect(() => {
     if (currentKey === seededKey) return;
     seededKey = currentKey;
-    propText = mixed ? "" : String(current.propRotations);
-    handText = mixed ? "" : String(current.handCycles);
+    propText = String(current.propRotations);
+    handText = String(current.handCycles);
   });
 
   function readPart(text: string): number | null {
@@ -64,22 +51,16 @@
     return Number(trimmed);
   }
 
-  /** The reduced ratio a pair of fields describes, or null while it cannot. */
-  function reduceTyped(prop: string, hand: string): SpinRatio | null {
+  function reduceTyped(prop: string, cycle: string): SpinRatio | null {
     const propRotations = readPart(prop);
-    const handCycles = readPart(hand);
+    const handCycles = readPart(cycle);
     if (propRotations === null || handCycles === null) return null;
     return theoryRatioFromParts(propRotations, handCycles);
   }
 
   const typed = $derived(reduceTyped(propText, handText));
-
-  /**
-   * Why the typed pair is not on screen, or null when it is.
-   *
-   * Each case names the bound it crossed rather than reporting "invalid".
-   * Each typed number may reach 15 independently. Only 0:0 has no ratio.
-   */
+  const propValue = $derived(readPart(propText));
+  const handValue = $derived(readPart(handText));
   const problem = $derived.by<string | null>(() => {
     const propRotations = readPart(propText);
     const handCycles = readPart(handText);
@@ -96,7 +77,6 @@
     return null;
   });
 
-  /** Shown when what was typed is not already in lowest terms. */
   const reducedNote = $derived.by<string | null>(() => {
     if (!typed || problem) return null;
     const propRotations = readPart(propText);
@@ -107,25 +87,35 @@
     ) {
       return null;
     }
-    return spinRatioKey(typed);
+    return theoryRatioLabel(typed);
   });
 
-  function apply(): void {
-    if (!typed || problem) return;
-    appState.setTheoryRatio(typed);
-    // Account for the change here so the seeding effect leaves the digits
-    // alone. Without it, typing 2 and 4 would snap the fields to 1 and 2.
-    seededKey = spinRatioKey(typed);
+  function apply(nextProp: string, nextHand: string): void {
+    const nextRatio = reduceTyped(nextProp, nextHand);
+    const nextPropValue = readPart(nextProp);
+    const nextHandValue = readPart(nextHand);
+    if (
+      !nextRatio ||
+      nextPropValue === null ||
+      nextHandValue === null ||
+      (nextPropValue === 0 && nextHandValue === 0) ||
+      nextPropValue > THEORY_RATIO_MAX_PART ||
+      nextHandValue > THEORY_RATIO_MAX_PART
+    ) {
+      return;
+    }
+    appState.setTheoryRatioFor(hand === "right" ? "right" : "left", nextRatio);
+    // Keep 2:4 under the cursor while the grid correctly applies 1:2.
+    seededKey = spinRatioKey(nextRatio);
   }
 
   function onPart(next: string, side: "prop" | "hand"): void {
-    // Drop non-digits rather than refusing the keystroke: a field that
-    // silently eats input reads as broken. Two digits is past every bound,
-    // which is enough to let the message explain the bound.
     const digits = next.replace(/\D/g, "").slice(0, 2);
-    if (side === "prop") propText = digits;
-    else handText = digits;
-    apply();
+    const nextProp = side === "prop" ? digits : propText;
+    const nextHand = side === "hand" ? digits : handText;
+    propText = nextProp;
+    handText = nextHand;
+    apply(nextProp, nextHand);
   }
 
   function nudge(side: "prop" | "hand", delta: number): void {
@@ -143,95 +133,274 @@
       nudge(side, -1);
     }
   }
+
+  function onFocusOut(event: FocusEvent): void {
+    const host = event.currentTarget as HTMLElement | null;
+    const next = event.relatedTarget;
+    if (!host || !(next instanceof Node) || !host.contains(next)) {
+      onfocuschange?.(null);
+    }
+  }
 </script>
 
-<div class="entry-host" class:tray={layout === "tray"}>
-  <ShapeMatrixRibbonCell label="Ratio" tray={layout === "tray"} keepLabel>
-    {#snippet note()}
-      {#if reducedNote}
-        <span class="reduced">is {reducedNote}</span>
-      {/if}
-    {/snippet}
-    <div class="entry-stack">
-      <div class="entry-row" class:invalid={Boolean(problem)}>
+<section
+  class="ratio-side"
+  class:left={hand === "left"}
+  class:right={hand === "right"}
+  class:both={hand === "both"}
+  class:tray={layout === "tray"}
+  aria-label={`${axisLabel} ratio`}
+  onfocusin={() => onfocuschange?.(hand)}
+  onfocusout={onFocusOut}
+>
+  <header class="side-head">
+    <span class="axis-dot" aria-hidden="true"></span>
+    <span class="axis-label">{axisLabel}</span>
+  </header>
+
+  <div class="entry-row" class:invalid={Boolean(problem)}>
+    <div class="part-field">
+      <span>Hand cycles</span>
+      <span class="part-stepper">
+        <button
+          type="button"
+          aria-label={`Decrease ${axisLabel} hand cycles`}
+          disabled={(handValue ?? 0) <= 0}
+          onclick={() => nudge("hand", -1)}>−</button
+        >
         <input
-          class="part"
           type="text"
-          inputmode="numeric"
-          autocomplete="off"
-          value={propText}
-          placeholder={mixed ? "–" : ""}
-          aria-label="Prop rotations"
-          aria-invalid={Boolean(problem)}
-          oninput={(event) => onPart(event.currentTarget.value, "prop")}
-          onkeydown={(event) => onKey(event, "prop")}
-        />
-        <span class="colon" aria-hidden="true">:</span>
-        <input
-          class="part"
-          type="text"
+          role="spinbutton"
           inputmode="numeric"
           autocomplete="off"
           value={handText}
-          placeholder={mixed ? "–" : ""}
-          aria-label="Hand cycles"
+          aria-label={`${axisLabel} hand cycles`}
+          aria-valuemin="0"
+          aria-valuemax={THEORY_RATIO_MAX_PART}
+          aria-valuenow={handValue ?? undefined}
           aria-invalid={Boolean(problem)}
           oninput={(event) => onPart(event.currentTarget.value, "hand")}
           onkeydown={(event) => onKey(event, "hand")}
         />
-      </div>
-
-      <!-- Out of flow in the ribbon, so a refused pair explains itself without
-           resizing the header band and shifting the grid below it. The tray
-           clips its own overflow, so there the message joins the flow and the
-           sheet grows to hold it. -->
-      {#if problem}
-        <p class="entry-problem" role="status" transition:growFade>{problem}</p>
-      {/if}
-
-      <!-- Two labelled number fields say what to type but never what came of
-           it. The scroller this replaced spoke the whole ratio on every step,
-           and that is the part worth keeping. -->
-      <span class="sr-only" aria-live="polite">
-        {mixed ? "Mixed axis ratios" : theoryRatioSpokenLabel(current)}
+        <button
+          type="button"
+          aria-label={`Increase ${axisLabel} hand cycles`}
+          disabled={(handValue ?? 0) >= THEORY_RATIO_MAX_PART}
+          onclick={() => nudge("hand", 1)}>+</button
+        >
       </span>
     </div>
-  </ShapeMatrixRibbonCell>
-</div>
+
+    <span class="colon" aria-hidden="true">:</span>
+
+    <div class="part-field">
+      <span>Prop rotations</span>
+      <span class="part-stepper">
+        <button
+          type="button"
+          aria-label={`Decrease ${axisLabel} prop rotations`}
+          disabled={(propValue ?? 0) <= 0}
+          onclick={() => nudge("prop", -1)}>−</button
+        >
+        <input
+          type="text"
+          role="spinbutton"
+          inputmode="numeric"
+          autocomplete="off"
+          value={propText}
+          aria-label={`${axisLabel} prop rotations`}
+          aria-valuemin="0"
+          aria-valuemax={THEORY_RATIO_MAX_PART}
+          aria-valuenow={propValue ?? undefined}
+          aria-invalid={Boolean(problem)}
+          oninput={(event) => onPart(event.currentTarget.value, "prop")}
+          onkeydown={(event) => onKey(event, "prop")}
+        />
+        <button
+          type="button"
+          aria-label={`Increase ${axisLabel} prop rotations`}
+          disabled={(propValue ?? 0) >= THEORY_RATIO_MAX_PART}
+          onclick={() => nudge("prop", 1)}>+</button
+        >
+      </span>
+    </div>
+  </div>
+
+  <div class="feedback" aria-live="polite">
+    {#if problem}
+      <span class="problem" transition:growFade={{ axis: "y" }}>
+        {problem}
+      </span>
+    {:else if reducedNote}
+      <span class="reduced" transition:growFade={{ axis: "y" }}>
+        Reduces to {reducedNote}
+      </span>
+    {/if}
+  </div>
+
+  <span class="sr-only" aria-live="polite">
+    {theoryRatioSpokenLabel(current)}
+  </span>
+</section>
 
 <style>
-  .entry-host {
-    display: contents;
+  .ratio-side {
+    --axis-color: var(--theme-accent, #f59e0b);
+    --axis-base: var(--theme-accent, #f59e0b);
+    display: grid;
+    grid-template-rows: auto auto;
+    width: 20rem;
+    min-width: 0;
+    gap: 0.45rem;
+    padding: 0.25rem;
   }
 
-  .entry-stack {
-    position: relative;
+  .ratio-side.left {
+    --axis-color: var(--prop-blue-text, #818cf8);
+    --axis-base: var(--prop-blue, #2e3192);
   }
 
-  .entry-row {
-    display: flex;
-    align-items: center;
-    gap: 0.15rem;
-    /* Every control beside this one measures 44px, in the ribbon and in the
-       tray. A short field would read as a lesser control and miss the touch
-       floor, so the row carries the height and the inputs fill it. */
-    min-height: 2.75rem;
-    padding: 0.1rem 0.3rem;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.14));
-    border-radius: 9px;
-    background: color-mix(in srgb, #000 24%, transparent);
-    transition: border-color var(--transition-fast, 140ms) ease;
+  .ratio-side.right {
+    --axis-color: var(--prop-red-text, #f87171);
+    --axis-base: var(--prop-red, #ed1c24);
   }
 
-  .entry-row:focus-within {
-    border-color: color-mix(
+  .ratio-side.both {
+    --axis-color: color-mix(
       in srgb,
-      var(--theme-accent, #f59e0b) 72%,
-      transparent
+      var(--prop-blue-text, #818cf8) 50%,
+      var(--prop-red-text, #f87171)
+    );
+    --axis-base: color-mix(
+      in srgb,
+      var(--prop-blue, #2e3192) 50%,
+      var(--prop-red, #ed1c24)
     );
   }
 
-  .entry-row.invalid {
+  .side-head {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .axis-label {
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .axis-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--axis-color);
+    box-shadow: 0 0 0.65rem
+      color-mix(in srgb, var(--axis-color) 42%, transparent);
+  }
+
+  .entry-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: end;
+    gap: 0.35rem;
+  }
+
+  .part-field {
+    display: grid;
+    min-width: 0;
+    gap: 0.25rem;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .part-stepper {
+    display: grid;
+    grid-template-columns:
+      var(--min-touch-target, 44px) minmax(2.6rem, 1fr)
+      var(--min-touch-target, 44px);
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke-strong, rgb(255 255 255 / 0.2));
+    border-radius: 9px;
+    background: color-mix(in srgb, #000 34%, transparent);
+    transition:
+      border-color var(--duration-fast, 150ms) var(--transition-easing, ease),
+      background var(--duration-fast, 150ms) var(--transition-easing, ease);
+  }
+
+  .part-stepper:hover {
+    border-color: color-mix(in srgb, var(--axis-color) 48%, transparent);
+  }
+
+  .part-stepper:focus-within {
+    border-color: var(--axis-color);
+    outline: 2px solid color-mix(in srgb, var(--axis-color) 72%, transparent);
+    outline-offset: 1px;
+    background: color-mix(in srgb, var(--axis-base) 12%, #000 88%);
+  }
+
+  .part-stepper input,
+  .part-stepper button {
+    height: var(--min-touch-target, 44px);
+    border: 0;
+    background: transparent;
+    color: var(--theme-text, #fff);
+    font: inherit;
+  }
+
+  .part-stepper input {
+    width: 100%;
+    min-width: 0;
+    padding: 0 0.35rem;
+    border-right: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    border-left: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    font-size: 1.125rem;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+
+  .part-stepper input:focus-visible {
+    outline: 0;
+  }
+
+  .part-stepper button {
+    display: grid;
+    place-items: center;
+    min-width: var(--min-touch-target, 44px);
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
+    cursor: pointer;
+    font-size: 1.15rem;
+    font-weight: 700;
+    transition:
+      color var(--duration-fast, 150ms) ease,
+      background var(--duration-fast, 150ms) ease;
+  }
+
+  .part-stepper button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--axis-color) 13%, transparent);
+    color: var(--theme-text, #fff);
+  }
+
+  .part-stepper button:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid var(--theme-text, #fff);
+    outline-offset: -3px;
+  }
+
+  .part-stepper button:disabled {
+    color: color-mix(in srgb, var(--theme-text, #fff) 22%, transparent);
+    cursor: not-allowed;
+  }
+
+  .entry-row.invalid .part-stepper {
     border-color: color-mix(
       in srgb,
       var(--semantic-danger, #ef4444) 68%,
@@ -239,95 +408,44 @@
     );
   }
 
-  /* A definite width, not a content width: a field growing from one digit to
-     two would shove the colon and its neighbour on every keystroke. */
-  .part {
-    align-self: stretch;
-    width: 2.25rem;
-    padding: 0;
-    border: 0;
-    border-radius: 5px;
-    background: transparent;
-    color: var(--theme-text, #fff);
-    font: inherit;
-    /* Read and chosen, so it keeps the 14px essential-text step. */
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    text-align: center;
-  }
-
-  .part:focus-visible {
-    outline: 2px solid
-      color-mix(in srgb, var(--theme-accent, #f59e0b) 80%, transparent);
-    outline-offset: 1px;
-  }
-
   .colon {
+    display: grid;
+    height: var(--min-touch-target, 44px);
+    place-items: center;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.55));
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 700;
+    font-size: 1.125rem;
+    font-weight: 750;
+  }
+
+  .feedback {
+    min-width: 0;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.25;
+  }
+
+  .feedback:empty {
+    display: none;
+  }
+
+  .problem {
+    color: color-mix(in srgb, var(--semantic-danger, #ef4444) 30%, #fff);
   }
 
   .reduced {
     color: color-mix(in srgb, var(--theme-accent, #f59e0b) 82%, #fff);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.02em;
-    text-transform: none;
   }
 
-  .entry-problem {
-    position: absolute;
-    top: calc(100% + 0.3rem);
-    left: 0;
-    z-index: 6;
-    margin: 0;
-    /* Out of flow against a two-field row, so shrink-to-fit would cap this at
-       the row's own ~76px and stack the sentence one word per line. Ask for the
-       content width and clamp it instead, and let the clamp track the viewport
-       so a cell sitting near the right edge cannot push the page sideways. */
-    width: max-content;
-    max-width: min(14rem, calc(100vw - 1.5rem));
-    padding: 0.3rem 0.45rem;
-    border: 1px solid
-      color-mix(in srgb, var(--semantic-danger, #ef4444) 42%, transparent);
-    border-radius: 8px;
-    background: var(--theme-panel-bg, #101721);
-    box-shadow: 0 6px 18px rgb(0 0 0 / 0.38);
-    color: color-mix(in srgb, var(--semantic-danger, #ef4444) 30%, #fff);
-    font-size: var(--font-size-compact, 0.75rem);
-    line-height: 1.25;
-  }
-
-  /* The tray is a scrolling sheet with its own bounds, so an absolutely
-     positioned message is sliced off at the panel edge. In flow it is the last
-     thing in the last cell, so it pushes nothing and the sheet simply grows. */
-  /* The tray gives every control the full cell — the Apply to row spans it, and
-     a 92px ratio box floating at its left edge read as an unfinished one. It
-     also gives the message below a real width to fill. */
-  .entry-host.tray .entry-stack {
+  .ratio-side.tray {
     width: 100%;
-  }
-
-  .entry-host.tray .entry-row {
-    justify-content: center;
-  }
-
-  .entry-host.tray .entry-problem {
-    position: static;
-    /* The sheet sizes itself from its contents, so a sentence joining the flow
-       would widen the whole panel and reflow the controls above it. Zero width
-       contributes nothing to that measurement; the percentage minimum then
-       fills whatever width the sheet settled on for everything else. */
-    width: 0;
-    min-width: 100%;
-    max-width: none;
-    margin-top: 0.35rem;
+    padding-inline: 0;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .entry-row {
+    .part-stepper,
+    .part-stepper button {
       transition: none;
     }
   }

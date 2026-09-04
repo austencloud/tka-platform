@@ -843,6 +843,16 @@ export const TOYS_TABS: Section[] = [
     color: "#2dd4bf",
     gradient: "linear-gradient(135deg, #5eead4 0%, #2dd4bf 100%)",
   },
+  {
+    id: "third-order",
+    labelKey: "tab_toys_third_order",
+    descKey: "tab_desc_toys_third_order",
+    label: "Third Order",
+    icon: '<i class="fas fa-atom" aria-hidden="true"></i>',
+    description: "Explore sequences moving inside a larger moving grid",
+    color: "#c084fc",
+    gradient: "linear-gradient(135deg, #60a5fa 0%, #c084fc 50%, #f87171 100%)",
+  },
 ];
 
 // Video module tabs (graduated from Lab Mar 2026)

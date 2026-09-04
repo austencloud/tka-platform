@@ -90,6 +90,12 @@
     browseViewMode?: import("$lib/shared/browse/domain/browse-view-mode").BrowseViewMode;
     // Settings
     darkMode?: boolean;
+    /** Optional physical-card frame painted behind the canonical card content. */
+    frameColors?: { readonly accent: string; readonly dark: string };
+    /** Optional width-to-height ratio for a physical card presentation. */
+    cardAspectRatio?: number;
+    /** Plain-text artifact title for cards whose identity is not a TKA word. */
+    customTitleText?: string;
     customNotesText?: string;
     // Prop overrides
     leftPropType?: PropType;
@@ -154,6 +160,9 @@
     handPathMode = false,
     browseViewMode,
     darkMode = false,
+    frameColors,
+    cardAspectRatio,
+    customTitleText,
     customNotesText = "Created using Flow Arts Composer",
     leftPropType,
     rightPropType,
@@ -266,6 +275,7 @@
       browseViewMode,
       handPathMode,
       showWord,
+      customTitleText,
       showDifficultyLevel,
       hideSoloHeader,
       showLoopGlyph,
@@ -390,16 +400,27 @@
   // raw container measurements feed layout; the resolved layout model then
   // determines the contained box and cell width.
   let layoutState: ReturnType<typeof createChoreoCardLayoutState>;
+  const fixedCardAspectRatio = $derived(
+    typeof cardAspectRatio === "number" &&
+      Number.isFinite(cardAspectRatio) &&
+      cardAspectRatio > 0
+      ? cardAspectRatio
+      : null
+  );
+  function activePreviewAspectRatio(): number {
+    return fixedCardAspectRatio ?? layoutState.previewAspectRatio;
+  }
   const sizingState = createChoreoCardSizingState(() => ({
     containerElement,
     previewStackElement,
-    previewAspectRatio: layoutState.previewAspectRatio,
+    previewAspectRatio: activePreviewAspectRatio(),
     forceContain,
     needsScroll: layoutState.needsScroll,
     fitWidth,
     containSizeMotion,
     containMotionBox,
     containModel: layoutState.containModel,
+    squareGridContain: fixedCardAspectRatio !== null,
   }));
 
   layoutState = createChoreoCardLayoutState(() => ({
@@ -436,7 +457,7 @@
   const effectiveRows = $derived(layoutState.effectiveRows);
   const mandalaLayoutOverride = $derived(layoutState.mandalaLayoutOverride);
   const mandalaPlacements = $derived(layoutState.mandalaPlacements);
-  const previewAspectRatio = $derived(layoutState.previewAspectRatio);
+  const previewAspectRatio = $derived(activePreviewAspectRatio());
   const scaledHeaderHeight = $derived(layoutState.scaledHeaderHeight);
   const scaledFooterHeight = $derived(layoutState.scaledFooterHeight);
   const stepNumFontSize = $derived(layoutState.stepNumFontSize);
@@ -636,7 +657,9 @@
     crossfader,
     sizingState
   );
-  const flipDuration = $derived(renderLifecycle.flipDuration);
+  const flipDuration = $derived(
+    fixedCardAspectRatio !== null ? 0 : renderLifecycle.flipDuration
+  );
 
   /**
    * For solo mode, extract the end location of the kept color's motion
@@ -836,9 +859,19 @@
     <div
       class="preview-stack"
       class:scroll-mode={needsScroll}
+      class:has-frame={!!frameColors}
+      class:has-card-aspect={fixedCardAspectRatio !== null}
       style={needsScroll
         ? ""
         : `width: ${containedWidth ? `${containedWidth}px` : "auto"}; height: ${containedHeight ? `${containedHeight}px` : "auto"};${!containedWidth || !containedHeight || cellWidth < 1 ? " visibility: hidden;" : ""}`}
+      style:--card-frame-accent={frameColors?.accent}
+      style:--card-frame-dark={frameColors?.dark}
+      style:--fixed-grid-width={fixedCardAspectRatio !== null
+        ? `${cellWidth * effectiveColumns}px`
+        : undefined}
+      style:--fixed-grid-height={fixedCardAspectRatio !== null
+        ? `${cellWidth * effectiveRows}px`
+        : undefined}
       bind:this={previewStackElement}
     >
       <!-- Header section -->
@@ -848,6 +881,7 @@
         {isBrowseSoloMode}
         {soloHand}
         {browseViewMode}
+        {customTitleText}
         showDifficultyLevel={effectiveShowDifficulty}
         {difficultyLevel}
         {currentLevelStyle}
@@ -1006,6 +1040,46 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .preview-stack.has-frame {
+    box-sizing: border-box;
+    padding: max(4px, 2%);
+    background:
+      linear-gradient(#f5f5f5 0 0) content-box,
+      repeating-linear-gradient(
+          135deg,
+          var(--card-frame-accent) 0 0.45rem,
+          var(--card-frame-dark) 0.45rem 0.9rem
+        )
+        padding-box;
+  }
+
+  .choreo-card-root.dark-mode .preview-stack.has-frame {
+    background:
+      linear-gradient(#000 0 0) content-box,
+      repeating-linear-gradient(
+          135deg,
+          var(--card-frame-accent) 0 0.45rem,
+          var(--card-frame-dark) 0.45rem 0.9rem
+        )
+        padding-box;
+  }
+
+  .preview-stack.has-card-aspect :global(.grid-section) {
+    flex: 0 0 var(--fixed-grid-height);
+    width: min(100%, var(--fixed-grid-width));
+    align-self: center;
+    margin-block: auto;
+    grid-auto-rows: 1fr;
+  }
+
+  .preview-stack.has-card-aspect :global(.cell-flip-wrapper) {
+    aspect-ratio: 1;
+  }
+
+  .preview-stack.has-card-aspect :global(.pictograph-cell) {
+    height: 100%;
   }
 
   /* The Card was never readable at its previous size, so there is nothing to

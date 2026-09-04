@@ -592,7 +592,7 @@
             items={sourceMenuItems}
             disabled={sourceControlsDisabled}
             ariaLabel="More {label} path actions"
-            align={side}
+            align="right"
             triggerPresentation="labelled"
           >
             {#snippet trigger()}

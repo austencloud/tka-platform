@@ -83,6 +83,11 @@
   let detailPaneElement: HTMLDivElement;
   let theoryPaneElement: HTMLDivElement;
   let theoryDetailElement: HTMLDivElement;
+  let theoryEditingAxis = $state<"left" | "right" | "both" | null>(null);
+
+  $effect(() => {
+    if (!theory) theoryEditingAxis = null;
+  });
 
   // Compact navigation runs as a shared-element morph between the selected
   // tile and the hero. Wide layouts show both panes at once, so the same
@@ -217,7 +222,7 @@
     inert={appState.compact && appState.activeView !== "matrix"}
     aria-hidden={appState.compact && appState.activeView !== "matrix"}
   >
-    <ShapeMatrixTheoryPane />
+    <ShapeMatrixTheoryPane emphasizedAxis={theoryEditingAxis} />
   </div>
 {/snippet}
 
@@ -287,25 +292,28 @@
             onclick={showMatrix}
           >
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
-            <span>{theory ? "Theory" : "Matrix"}</span>
+            <span>{theory ? "Playground" : "Matrix"}</span>
           </button>
         {:else}
-          <strong>{theory ? "Theory Matrix" : "Shape Matrix"}</strong>
+          <strong>{theory ? "Ratio Playground" : "Level Matrix"}</strong>
         {/if}
-        <!-- One level-and-turns chip on both compact panes. The full ribbon
-             stacked four control groups above the grid on a phone and let
-             the turn scroller run past the right edge; the chip keeps the
-             matrix the hero and opens every control in its popover. -->
+        <!-- The compact value editor keeps the grid as the hero. Matrix opens
+             its level and turns; Theory names ratio editing directly and
+             opens both axis ratios together. -->
         <ShapeMatrixSurfaceControl compact />
-        <ShapeMatrixTurnPopover />
+        <ShapeMatrixTurnPopover
+          onratiofocuschange={(hand) => (theoryEditingAxis = hand)}
+        />
       </div>
     {:else if variant === "standalone"}
       <div class="identity">
         <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
-        <span
-          >Lorq’s 144 Shape Matrix: VTG ratios
-          {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}</span
-        >
+        {#if !theory}
+          <span class="identity-note">
+            Lorq’s 144 Shape Matrix: VTG ratios
+            {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}
+          </span>
+        {/if}
       </div>
     {/if}
 
@@ -313,8 +321,7 @@
       <!-- The surface choice outranks everything below it. Matrix adds its
            difficulty beside that choice; Theory has no parallel setting. -->
       <div class="header-meta">
-        <div class="control-cell surface-control-cell">
-          <span class="control-label">Explore</span>
+        <div class="surface-control-cell">
           <ShapeMatrixSurfaceControl />
         </div>
         {#if !theory}
@@ -355,7 +362,9 @@
         >
           {#if theory}
             <div class="surface-controls">
-              <ShapeMatrixTheoryControls />
+              <ShapeMatrixTheoryControls
+                onfocuschange={(hand) => (theoryEditingAxis = hand)}
+              />
             </div>
           {:else}
             <div class="matrix-controls">
@@ -484,7 +493,7 @@
   .top-action {
     min-height: var(--min-touch-target, 44px);
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 999px;
+    border-radius: 10px;
     background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
     color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
     text-decoration: none;
@@ -560,11 +569,11 @@
     white-space: nowrap;
   }
 
-  .identity span {
+  .identity-note {
+    display: grid;
     overflow: hidden;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.68));
     font-size: var(--font-size-min, 0.875rem);
-    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
@@ -679,7 +688,9 @@
   }
 
   .surface-control-cell {
+    display: flex;
     flex: 0 0 auto;
+    align-items: center;
   }
 
   /* The bento cell: a caption row over its control, each cell carrying its
@@ -771,6 +782,26 @@
     min-width: max-content;
     justify-content: flex-end;
     gap: 0.4rem;
+  }
+
+  /* The complete ratio instrument fits beside the page identity once the
+     identity line can remain readable. Laptop widths keep it on its own row
+     rather than squeezing the axis labels and copy actions. */
+  @container shape-matrix-app (min-width: 112rem) and (min-height: 42rem) {
+    .shape-app.theory .topbar {
+      grid-template-columns:
+        minmax(max-content, 1fr)
+        auto
+        minmax(0, max-content)
+        minmax(max-content, 1fr);
+      grid-template-areas: "identity meta controls actions";
+    }
+
+    .shape-app.theory .identity {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.15rem;
+    }
   }
 
   .relationships-action i {
@@ -878,7 +909,7 @@
     }
   }
   @container shape-matrix-app (max-width: 99.99rem) {
-    .identity span {
+    .identity > .identity-note {
       display: none;
     }
   }

@@ -51,6 +51,13 @@ export {
 /** Every prop the shared 3D catalog supports. The lab reaches all of them. */
 export const LAB_PROP_TYPES: readonly PropType[] = SCENE_PROP_TYPES;
 
+/**
+ * The build the lab opens on: a real LED double staff from the shared
+ * catalog's Double Staff family. `StaffLabState.prop` explains why it is not
+ * the procedural Staff.
+ */
+export const DEFAULT_LAB_PROP: PropType = PropType.CAPSULE_BATON;
+
 const LAB_PROP_TYPE_SET = new Set<PropType>(LAB_PROP_TYPES);
 
 export function isLabPropType(value: string): value is PropType {

@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/**/*.{svelte,css}"
+---
+
 # 4K Is Home: Composition, Not Auto-Zoom — ENFORCED
 
 ## What 4K Means
@@ -68,7 +73,10 @@ controls, padding, or gaps.
 
 ## Verification
 
-Visual changes must be verified at these CSS viewports:
+New surfaces and cross-breakpoint layout changes must be verified at these CSS
+viewports. A local visual fix that cannot affect responsive composition uses
+only the affected tiers and states, as defined by
+`visual-verification-mandatory.md`:
 
 - 375×667
 - 960×412
@@ -78,9 +86,10 @@ Visual changes must be verified at these CSS viewports:
 - 2560×1440
 - 3840×2160
 
-Also check 200% browser zoom for reflow, clipping, keyboard reachability, and
-dialog access. Record the CSS viewport and computed root font size in the
-evidence. A physical monitor resolution is not a viewport measurement.
+For new or responsive layouts, also check 200% browser zoom for reflow,
+clipping, keyboard reachability, and dialog access. Record the CSS viewport and
+computed root font size in the evidence. A physical monitor resolution is not a
+viewport measurement.
 
 ## Forbidden
 
@@ -93,10 +102,10 @@ evidence. A physical monitor resolution is not a viewport measurement.
 - Stretching paragraphs across a wide shell to eliminate empty rail.
 - A hard content band that never grows on wide screens unless the surface is a
   deliberate reading or media measure.
-- Shipping a visual layout change without the full viewport verification pass.
+- Shipping a new surface or cross-breakpoint layout change without the full
+  viewport pass, or a focused visual fix without its affected tiers and states.
 
 ## Related
 
 - `docs/architecture/responsive-design.md`
-- `docs/superpowers/specs/active/2026-08-27-logical-pixel-responsive-composition-design.md`
 - `no-layout-shift.md`, `never-hand-roll.md`, `verification-protocol.md`

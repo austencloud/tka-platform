@@ -1,11 +1,32 @@
+<!--
+  Hand Motions keeps the first three paths one at a time, introduces Timing and
+  Direction as a system, then places all six relationships on one comparison
+  board. The board stays the review destination, so focusing a relationship
+  never sends the learner backward through the lesson carousel.
+-->
 <script lang="ts">
+  import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { getConceptPlacesByLevel } from "../../../domain/concept-place-registry";
   import type { ExperienceViewMode } from "../../../domain/types";
   import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
-  import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
+  import LessonStageControls from "../LessonStageControls.svelte";
+  import LessonStageFrame from "../LessonStageFrame.svelte";
+  import LessonStageHeading from "../LessonStageHeading.svelte";
   import HandMotionPlayer from "../foundations/HandMotionPlayer.svelte";
-  import { HAND_PATH_STEPS } from "../foundations/pictograph-foundation-content";
+  import {
+    ALPHA_BETA_MODES,
+    GAMMA_MODES,
+    HAND_PATH_STEPS,
+    type TimingDirectionMode,
+  } from "../foundations/pictograph-foundation-content";
+  import {
+    HAND_MOTIONS_STAGE_SCHEMA_VERSION,
+    migrateHandMotionsSavedStep,
+  } from "./hand-motions-stage";
+  import TimingDirectionBoard from "./TimingDirectionBoard.svelte";
+  import TimingDirectionIntro from "./TimingDirectionIntro.svelte";
 
   let {
     onComplete,
@@ -17,20 +38,83 @@
     viewMode?: ExperienceViewMode;
   }>();
 
+  const allModes: readonly TimingDirectionMode[] = [
+    ...ALPHA_BETA_MODES,
+    ...GAMMA_MODES,
+  ];
+  const modeByFamily = new Map(
+    allModes.map((mode) => [mode.element.familyId, mode])
+  );
+
+  function requireMode(familyId: string): TimingDirectionMode {
+    const mode = modeByFamily.get(familyId);
+    if (!mode) throw new Error(`Missing hand-motion lesson mode ${familyId}`);
+    return mode;
+  }
+
+  const ELEMENTAL_MODES = TND_ELEMENTS.map((element) =>
+    requireMode(element.familyId)
+  );
+  const timingDirectionIndex = HAND_PATH_STEPS.length;
+  const comparisonIndex = timingDirectionIndex + 1;
+  const totalStages = comparisonIndex + 1;
+
+  const levelOnePlaces = getConceptPlacesByLevel(1);
+  const curriculumIndex = levelOnePlaces.findIndex(
+    (place) => place.id === "1.3"
+  );
+  const curriculumLabel = `Level 1 · ${curriculumIndex + 1} of ${levelOnePlaces.length}`;
+
   const haptic = getHapticFeedback();
   const persistence = getExperiencePersistence("hand-motions-intro");
-  const summaryIndex = HAND_PATH_STEPS.length;
   const saved = persistence.load();
-  let stepIndex = $state(
-    Math.min(summaryIndex, Math.max(0, (saved.step || 1) - 1))
+  const savedSchemaVersion = persistence.getPhaseData("stageSchemaVersion", 1);
+  const savedStep = migrateHandMotionsSavedStep(
+    saved.step,
+    savedSchemaVersion,
+    HAND_PATH_STEPS.length
   );
-  const activeMotion = $derived(HAND_PATH_STEPS[stepIndex] ?? null);
+  let stepIndex = $state(
+    viewMode === "scroll"
+      ? comparisonIndex
+      : Math.min(comparisonIndex, Math.max(0, savedStep - 1))
+  );
+  let comparisonBoard: TimingDirectionBoard | null = $state(null);
+  let comparisonFocused = $state(false);
+
+  if (viewMode !== "scroll" && savedStep !== (saved.step || 1)) {
+    persistence.saveStep(savedStep);
+    persistence.savePhaseData(
+      "stageSchemaVersion",
+      HAND_MOTIONS_STAGE_SCHEMA_VERSION
+    );
+  }
+
+  const activeMotion = $derived(
+    stepIndex < HAND_PATH_STEPS.length ? HAND_PATH_STEPS[stepIndex] : undefined
+  );
+  const isTimingDirectionIntro = $derived(stepIndex === timingDirectionIndex);
+  const isComparison = $derived(stepIndex === comparisonIndex);
+  const headingTitle = $derived(activeMotion?.name ?? "Timing and Direction");
+  const headingEyebrow = $derived(
+    activeMotion
+      ? `Hand motion ${stepIndex + 1} of ${HAND_PATH_STEPS.length}`
+      : "Two hands"
+  );
+  const headingDescription = $derived(
+    activeMotion?.guideCaption ??
+      "Time compares the hands: together, split, or quarter. Direction compares their travel: same or opposite."
+  );
 
   function goToStep(next: number): void {
-    const clamped = Math.min(summaryIndex, Math.max(0, next));
+    const clamped = Math.min(comparisonIndex, Math.max(0, next));
     if (clamped === stepIndex) return;
     stepIndex = clamped;
     persistence.saveStep(stepIndex + 1);
+    persistence.savePhaseData(
+      "stageSchemaVersion",
+      HAND_MOTIONS_STAGE_SCHEMA_VERSION
+    );
     haptic?.trigger("selection");
   }
 
@@ -40,11 +124,19 @@
     onComplete?.();
   }
 
+  function handlePrimaryAction(): void {
+    if (isComparison) {
+      complete();
+      return;
+    }
+    goToStep(stepIndex + 1);
+  }
+
   function handleKeydown(event: KeyboardEvent): void {
     if (viewMode !== "step") return;
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
       event.preventDefault();
-      goToStep(stepIndex + 1);
+      handlePrimaryAction();
     } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
       event.preventDefault();
       handleBack();
@@ -52,6 +144,11 @@
   }
 
   export function handleBack(): void {
+    if (comparisonBoard?.collapseFocus()) return;
+    if (viewMode === "scroll") {
+      onBack?.();
+      return;
+    }
     if (stepIndex > 0) {
       goToStep(stepIndex - 1);
       return;
@@ -62,278 +159,175 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 <div
-  class="experience"
+  class="motions-experience"
+  class:has-focused-comparison={comparisonFocused}
   onkeydown={handleKeydown}
   tabindex="0"
   role="application"
   aria-label="Hand motions lesson, use arrow keys to navigate"
 >
-  <main class="lesson-shell">
-    {#if activeMotion}
-      <section class="motion-step" aria-labelledby="motion-title">
-        <div class="instruction-rail">
-          <p class="eyebrow">Hand motion {stepIndex + 1} of 3</p>
-          <h1 id="motion-title">{activeMotion.name}</h1>
-          <p class="guide-caption">{activeMotion.guideCaption}</p>
-          <div class="motion-key" aria-label="Blue hand">
-            <span class="hand-dot" aria-hidden="true"></span>
-            <span>Blue hand</span>
-          </div>
-        </div>
-
-        <div class="artifact-stage">
-          <HandMotionPlayer
-            sequence={activeMotion.sequence}
-            ariaLabel={`${activeMotion.name}: ${activeMotion.guideCaption}`}
-          />
-        </div>
-      </section>
-    {:else}
-      <section class="summary" aria-labelledby="motion-summary-title">
-        <p class="eyebrow">Hand motions</p>
-        <h1 id="motion-summary-title">Three paths</h1>
-        <p class="guide-copy">
-          There are three fundamental hand motions in the Alphabet.<br />
-          The arrow shows the direction of motion.<br />
-          The hand shows the end position.
-        </p>
-        <div class="motion-recap">
-          {#each HAND_PATH_STEPS as motion, index (motion.id)}
-            <button type="button" onclick={() => goToStep(index)}>
-              <strong>{motion.name}</strong>
-              <span>{motion.guideCaption}</span>
-            </button>
-          {/each}
-        </div>
-      </section>
-    {/if}
-
-    <footer class="lesson-actions">
-      <PanelButton
-        variant="secondary"
-        onclick={handleBack}
-        disabled={stepIndex === 0}
+  <LessonStageFrame artifactLayout={activeMotion ? "square" : "wide"}>
+    {#snippet heading()}
+      <LessonStageHeading
+        key={stepIndex}
+        title={headingTitle}
+        eyebrow={headingEyebrow}
       >
-        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-        <span>Previous</span>
-      </PanelButton>
-      <ExperienceProgressIndicator
+        <p>{headingDescription}</p>
+      </LessonStageHeading>
+    {/snippet}
+
+    {#snippet artifact()}
+      <Crossfade key={stepIndex} fill>
+        {#if activeMotion}
+          <div class="artifact-state motion-state">
+            <div class="player-frame">
+              <HandMotionPlayer
+                sequence={activeMotion.sequence}
+                ariaLabel={`${activeMotion.name}: ${activeMotion.guideCaption}`}
+              />
+            </div>
+            <div class="hand-key" aria-label="Left hand is blue">
+              <span aria-hidden="true"></span>
+              <strong>Left hand</strong>
+            </div>
+          </div>
+        {:else if isTimingDirectionIntro}
+          <div class="artifact-state timing-direction-state">
+            <TimingDirectionIntro />
+          </div>
+        {:else}
+          <div class="artifact-state comparison-state">
+            <TimingDirectionBoard
+              bind:this={comparisonBoard}
+              modes={ELEMENTAL_MODES}
+              onFocusChange={(focused) => (comparisonFocused = focused)}
+            />
+          </div>
+        {/if}
+      </Crossfade>
+    {/snippet}
+
+    {#snippet controls()}
+      <LessonStageControls
+        label={isComparison
+          ? viewMode === "scroll"
+            ? "Done"
+            : "Finish lesson"
+          : "Next"}
         currentStep={stepIndex + 1}
-        totalSteps={summaryIndex + 1}
+        totalSteps={totalStages}
+        onAction={handlePrimaryAction}
+        onPrevious={handleBack}
+        previousLabel={viewMode === "scroll" ? "Close review" : "Previous"}
+        previousDisabled={viewMode !== "scroll" && stepIndex === 0}
+        actionIcon={isComparison ? "check" : "arrow"}
+        {curriculumLabel}
       />
-      {#if stepIndex === summaryIndex}
-        <PanelButton variant="primary" onclick={complete}>
-          <span>Finish lesson</span>
-          <i class="fa-solid fa-check" aria-hidden="true"></i>
-        </PanelButton>
-      {:else}
-        <PanelButton variant="primary" onclick={() => goToStep(stepIndex + 1)}>
-          <span>Next</span>
-          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-        </PanelButton>
-      {/if}
-    </footer>
-  </main>
+    {/snippet}
+  </LessonStageFrame>
 </div>
 
 <style>
-  .experience {
-    container: hand-motions / inline-size;
+  .motions-experience {
     width: 100%;
     height: 100%;
-    overflow-y: auto;
+    min-height: 0;
+    overflow: hidden;
     color: var(--theme-text);
     outline: none;
-    scrollbar-gutter: stable;
   }
-  .lesson-shell {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: 1rem;
-    width: min(100%, 100rem);
-    min-height: 100%;
-    margin-inline: auto;
-    padding: clamp(4.5rem, 5cqw, 5.5rem) clamp(0.75rem, 2.5cqw, 2.5rem)
-      clamp(0.75rem, 1.5cqw, 1.5rem);
+
+  .motions-experience :global(.lesson-stage-frame) {
+    --lesson-artifact-wide-max: var(--shell-w, 96rem);
   }
-  .motion-step {
-    display: grid;
-    grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
-    align-items: center;
-    gap: clamp(1rem, 2.2cqw, 2.5rem);
+
+  .artifact-state {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
     min-height: 0;
   }
-  .instruction-rail {
+
+  .motion-state {
+    position: relative;
     display: grid;
-    align-content: center;
-    gap: 1rem;
-    padding: clamp(1rem, 1.6cqw, 1.6rem);
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-lg, 0.75rem);
-    background: var(--theme-panel-bg);
+    place-items: center;
   }
-  .eyebrow {
-    margin: 0;
-    color: var(--theme-accent);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+
+  .player-frame {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
   }
-  h1 {
-    margin: 0 !important;
-    font-size: clamp(1.8rem, 3cqw, 3.2rem);
-    line-height: 1.05;
-  }
-  .guide-caption,
-  .guide-copy {
-    margin: 0;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-base, 1rem);
-    line-height: 1.55;
-  }
-  .motion-key {
+
+  .hand-key {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.45rem;
+    min-height: 2.25rem;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 999px;
+    background: var(--theme-panel-bg);
     color: var(--theme-text-dim);
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 700;
+    font-size: var(--font-size-min, 0.875rem);
   }
-  .hand-dot {
-    width: 0.85rem;
-    height: 0.85rem;
+
+  .hand-key span {
+    width: 0.8rem;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: var(--prop-blue, #3d44b8);
   }
-  .artifact-stage {
-    min-width: 0;
-    height: clamp(24rem, 68dvh, 48rem);
-    min-height: 0;
-  }
-  .summary {
-    display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: 1rem;
-    width: min(100%, 58rem);
-    margin-inline: auto;
-    text-align: center;
-  }
-  .motion-recap {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
-    width: 100%;
-  }
-  .motion-recap button {
-    display: grid;
-    gap: 0.35rem;
-    min-height: 6rem;
-    padding: 0.9rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-lg, 0.75rem);
-    background: var(--theme-card-bg);
+
+  .hand-key strong {
     color: var(--theme-text);
-    font: inherit;
-    cursor: pointer;
   }
-  .motion-recap button:hover,
-  .motion-recap button:focus-visible {
-    border-color: var(--theme-stroke-strong);
-    background: var(--theme-card-hover-bg);
+
+  .comparison-state {
+    min-height: 22rem;
   }
-  .motion-recap button:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-  .motion-recap span {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-sm, 0.875rem);
-  }
-  .lesson-actions {
+
+  .timing-direction-state {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 0.75rem;
+    place-items: center;
   }
-  .lesson-actions > :global(:first-child) {
-    justify-self: start;
-  }
-  .lesson-actions > :global(:last-child) {
-    justify-self: end;
-  }
-  @container hand-motions (max-width: 760px) {
-    .lesson-shell {
-      gap: 0.65rem;
-      padding-top: 3.9rem;
-    }
-    .motion-step {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: auto minmax(0, 1fr);
-      gap: 0.65rem;
-    }
-    .instruction-rail {
-      gap: 0.4rem;
-      padding: 0.65rem 0.75rem;
-    }
-    .artifact-stage {
-      height: min(42dvh, 19rem);
+
+  @media (max-width: 800px), (max-height: 540px) {
+    .comparison-state {
       min-height: 0;
     }
-    .lesson-actions {
-      grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 800px) {
+    .motions-experience.has-focused-comparison,
+    .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
+      height: auto;
+      min-height: 60rem;
     }
-    .lesson-actions :global(.progress-indicator) {
-      grid-column: 1 / -1;
-      grid-row: 2;
-      justify-self: center;
-    }
-    .lesson-actions :global(.panel-btn) {
-      width: 100%;
+
+    .motions-experience.has-focused-comparison {
+      overflow: visible;
     }
   }
-  @container hand-motions (max-width: 520px) {
-    .motion-recap {
-      grid-template-columns: minmax(0, 1fr);
+
+  @media (max-height: 540px) and (min-width: 801px) {
+    .motions-experience.has-focused-comparison,
+    .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
+      height: auto;
+      min-height: 36rem;
     }
-    .motion-recap button {
-      min-height: 4.5rem;
+
+    .motions-experience.has-focused-comparison {
+      overflow: visible;
     }
-  }
-  @container hand-motions (min-width: 1680px) {
-    .lesson-shell {
-      width: min(100%, 132rem);
-    }
-    .motion-step {
-      grid-template-columns: minmax(18rem, 28rem) minmax(0, 1fr);
-    }
-  }
-  @container hand-motions (min-width: 2600px) {
-    .lesson-shell {
-      width: min(100%, 190rem);
-    }
-    .motion-step {
-      grid-template-columns: minmax(24rem, 34rem) minmax(0, 1fr);
-    }
-    .artifact-stage {
-      height: clamp(36rem, 58dvh, 64rem);
-    }
-  }
-  @media (max-height: 620px) and (min-width: 761px) {
-    .lesson-shell {
-      padding-top: 4rem;
-    }
-    .motion-step {
-      grid-template-columns: minmax(13rem, 19rem) minmax(0, 1fr);
-    }
-    .instruction-rail {
-      gap: 0.55rem;
-      padding: 0.75rem;
-    }
-    .artifact-stage {
-      height: min(55dvh, 14rem);
-      min-height: 0;
+
+    .timing-direction-state {
+      place-items: start center;
     }
   }
 </style>

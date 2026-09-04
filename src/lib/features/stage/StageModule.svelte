@@ -37,12 +37,17 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { FormationPresetId } from "./domain/stage-types";
+  import type {
+    TikaDirectorConversationMessage,
+    TikaDirectorResponse,
+  } from "./domain/tika-director";
 
   import FormationOverlay from "./components/FormationOverlay.svelte";
   import SetProperties from "./components/SetProperties.svelte";
   import StageFloorPaths from "./components/StageFloorPaths.svelte";
   import StageTimeline from "./components/StageTimeline.svelte";
   import StageStarter from "./components/StageStarter.svelte";
+  import TikaDirectorPanel from "./components/TikaDirectorPanel.svelte";
   import SceneExportModal from "./scene/components/SceneExportModal.svelte";
   import { createSceneVideoExport } from "./scene/services/create-scene-video-export.svelte";
   import { setStageChoreographyContext } from "./context/stage-choreography-context";
@@ -63,6 +68,10 @@
     applyStageCastToViewer,
     applyStagePerformerMotion,
   } from "./services/stage-viewer-adapter";
+  import {
+    resolveDirectorAppearanceAssignments,
+    resolveStageDirection,
+  } from "./services/tika-director-service";
 
   type SequenceLoadState = "loading" | "ready" | "error";
   type TimelineDisclosure = "hidden" | "dock" | "editor";
@@ -81,12 +90,75 @@
   setStageChoreographyContext(stageState);
   const editMode = createStageEditMode();
 
+  function performerIdAt(index: number): string | null {
+    return stageState.choreography.performers[index]?.id ?? null;
+  }
+
+  function performerIndexForId(id: string | null): number | null {
+    if (!id) return null;
+    const index = stageState.choreography.performers.findIndex(
+      (performer) => performer.id === id
+    );
+    return index >= 0 ? index : null;
+  }
+
   // The Stage is the same 3D surface as every other one in the app: the shared
   // viewer state is what makes the control rail's tools — performers, formation,
   // camera, scene, presets — reach real rigs instead of doing nothing.
   const viewer = createViewer3DState(undefined, {
     firstUseEnvironment: stageState.choreography.environmentId,
     appDefaultProp: settings.leftPropType ?? null,
+    performerSelection: {
+      getSelectedIndices: () => {
+        if (editMode.selection.kind === "performers") {
+          return editMode.selection.performerIds
+            .map((id) => performerIndexForId(id))
+            .filter((index): index is number => index !== null);
+        }
+        const focusedIndex = performerIndexForId(editMode.selectedPerformerId);
+        return focusedIndex === null ? [] : [focusedIndex];
+      },
+      getPrimaryIndex: () => performerIndexForId(editMode.selectedPerformerId),
+      replace: (index) => {
+        const id = performerIdAt(index);
+        if (id) editMode.selectPerformer(id);
+      },
+      toggle: (index) => {
+        const id = performerIdAt(index);
+        if (id) editMode.selectPerformer(id, true);
+      },
+      clear: () => editMode.clearSelection(),
+      selectAll: (count) => {
+        const ids = stageState.choreography.performers
+          .slice(0, count)
+          .map((performer) => performer.id);
+        editMode.selectPerformers(ids);
+      },
+      setSelection: (indices, primaryIndex) => {
+        const ids = indices
+          .map((index) => performerIdAt(index))
+          .filter((id): id is string => id !== null);
+        editMode.selectPerformers(
+          ids,
+          primaryIndex === undefined
+            ? undefined
+            : (performerIdAt(primaryIndex) ?? undefined)
+        );
+      },
+      removeSelection: (indices) => {
+        const ids = indices
+          .map((index) => performerIdAt(index))
+          .filter((id): id is string => id !== null);
+        if (ids.length === 0) return false;
+        const firstIndex = Math.min(...indices);
+        if (!stageState.removePerformers(ids)) return false;
+        const remaining = stageState.choreography.performers;
+        const next = remaining[Math.min(firstIndex, remaining.length - 1)];
+        if (next) editMode.selectPerformer(next.id);
+        else editMode.clearSelection();
+        return true;
+      },
+    },
   });
   setViewer3DContext(viewer);
   viewer.setEnvironmentId(stageState.choreography.environmentId);
@@ -112,6 +184,7 @@
   const performanceFrames = $derived(stageState.performanceFrames);
 
   let chartRaised = $state(false);
+  let tikaDirectorOpen = $state(false);
   let starterVisible = $state(!handoff);
   let starterSceneBlank = $state(false);
   let starterCurtainVisible = $state(false);
@@ -211,6 +284,79 @@
         ) || null
       : null
   );
+
+  async function directStageWithTika(
+    prompt: string,
+    conversation: readonly TikaDirectorConversationMessage[]
+  ): Promise<{
+    response: TikaDirectorResponse;
+    undo?: () => void;
+  }> {
+    try {
+      const response = await resolveStageDirection({
+        prompt,
+        conversation,
+        choreography,
+        currentBeat: stageState.currentBeat,
+        viewer,
+      });
+      if (response.kind !== "apply") return { response };
+
+      const formationActions = response.actions.filter(
+        (action) => action.type === "formation-transition"
+      );
+      if (formationActions.length > 1) {
+        throw new Error(
+          "TIKA returned competing formation moves. Ask for one transition at a time."
+        );
+      }
+
+      const performerIds = choreography.performers.map(
+        (performer) => performer.id
+      );
+      const assignments = resolveDirectorAppearanceAssignments({
+        actions: response.actions,
+        performerIds,
+        seedKey: `${choreography.id}:${prompt}`,
+      });
+      const viewerChanged =
+        assignments.length > 0 &&
+        viewer.applyPerformerAppearanceAssignments(assignments);
+      const formation = formationActions[0];
+      const stageChanged = formation
+        ? stageState.applyFormationTransition(
+            formation.endFormation,
+            formation.durationBeats,
+            formation.startFormation,
+            stageState.currentBeat
+          )
+        : false;
+
+      return {
+        response,
+        ...(viewerChanged || stageChanged
+          ? {
+              undo: () => {
+                if (stageChanged) stageState.undo();
+                if (viewerChanged) viewer.undo();
+              },
+            }
+          : {}),
+      };
+    } catch (cause) {
+      const failure = cause instanceof Error ? cause : new Error(String(cause));
+      getErrorHandler().showUserError({
+        message: "TIKA could not direct this scene.",
+        technicalDetails: failure.message,
+        error: failure,
+        context: {
+          module: "stage",
+          action: "direct-stage-with-tika",
+        },
+      });
+      throw failure;
+    }
+  }
 
   // Resolve every sequence the document references. One request per id, redone
   // whenever the set of ids changes or the user retries a failure.
@@ -683,6 +829,18 @@
 </script>
 
 {#snippet stageHudActions()}
+  {#if authState.isAdmin || import.meta.env.DEV}
+    <SceneChromeButton
+      icon="fa-wand-magic-sparkles"
+      label="Direct with TIKA"
+      tooltipSide="bottom"
+      active={tikaDirectorOpen}
+      onclick={(event: MouseEvent) => {
+        event.stopPropagation();
+        tikaDirectorOpen = true;
+      }}
+    />
+  {/if}
   <SceneChromeButton
     icon="fa-border-all"
     label={chartRaised ? "Hide drill chart" : "Drill chart"}
@@ -856,6 +1014,14 @@
     bind:sizes={workspaceSizes}
   />
 </div>
+
+<TikaDirectorPanel
+  bind:open={tikaDirectorOpen}
+  sceneName={choreography.name}
+  performerCount={choreography.performers.length}
+  currentBeat={stageState.currentBeat}
+  onSubmit={directStageWithTika}
+/>
 
 <SequencePickerModal
   bind:open={pickerOpen}

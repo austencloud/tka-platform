@@ -16,11 +16,11 @@
   position={[position.x, groundY + 0.02, position.z]}
   rotation={[-Math.PI / 2, 0, 0]}
 >
-  <T.RingGeometry args={[0.53, 0.61, 32]} />
+  <T.RingGeometry args={[0.48, 0.64, 48]} />
   <T.MeshBasicMaterial
     {color}
     transparent
-    opacity={dragging ? 0.7 : 0.28}
+    opacity={dragging ? 0.86 : 0.55}
     side={DoubleSide}
     depthWrite={false}
   />

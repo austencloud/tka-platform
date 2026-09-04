@@ -1,9 +1,8 @@
 <!-- Tunnel settings route each substantial rail section to its presentation owner. -->
 <script lang="ts">
-  import { onDestroy } from "svelte";
-  import { fly } from "svelte/transition";
-  import IconRailNav from "$lib/shared/animation-panel/pill-nav/IconRailNav.svelte";
-  import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
+  import { onDestroy, type Snippet } from "svelte";
+  import AnimatorInspectorShell from "$lib/shared/animation-panel/components/AnimatorInspectorShell.svelte";
+  import AnimatorInspectorFooter from "$lib/shared/animation-panel/components/AnimatorInspectorFooter.svelte";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
   import { createGlobalChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -16,7 +15,10 @@
   import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
-  import { computePlaybackSummary } from "$lib/shared/animation-panel/pill-nav/pill-summaries";
+  import {
+    computeDisplaySummary,
+    computePlaybackSummary,
+  } from "$lib/shared/animation-panel/pill-nav/pill-summaries";
   import { RAIL_CATEGORY_ACCENTS } from "$lib/shared/animation-panel/pill-nav/rail-category-accents";
   import ControlDock, {
     type ControlDockAction,
@@ -24,10 +26,10 @@
   } from "../ControlDock.svelte";
   import type { TunnelViewController } from "../../tunnel/tunnel-view-controller.svelte";
   import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import ArtSettingsSidebarFrame from "./ArtSettingsSidebarFrame.svelte";
-  import ArtActionFooter from "./ArtActionFooter.svelte";
   import TunnelEffectsSettings from "./TunnelEffectsSettings.svelte";
+  import TunnelDisplaySettings from "./TunnelDisplaySettings.svelte";
   import TunnelLookSettings from "./TunnelLookSettings.svelte";
+  import TunnelMotionSettings from "./TunnelMotionSettings.svelte";
   import TunnelPlaybackSettings from "./TunnelPlaybackSettings.svelte";
   import TunnelSpeedSettings from "./TunnelSpeedSettings.svelte";
   import { reportArtSetting } from "./art-setting-change";
@@ -40,9 +42,18 @@
     animationSettings,
     type AnimationSettingsState,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { getOptionalViewerAnimatorInspectorContext } from "../../context/viewer-animator-inspector-context";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   type TunnelRailId =
-    "tunnel" | "props" | "speed" | "effects" | "effort" | "playback";
+    | "tunnel"
+    | "props"
+    | "speed"
+    | "effects"
+    | "motion"
+    | "display"
+    | "effort"
+    | "playback";
 
   interface Props {
     controller: TunnelViewController;
@@ -68,6 +79,10 @@
     onArtSettingChange?: ArtSettingChangeHandler;
     exporting: boolean;
     reduceMotion: boolean;
+    formationContent?: Snippet<[boolean]>;
+    formationSummaryOverride?: string;
+    stageAware?: boolean;
+    sequence?: SequenceData;
   }
 
   let {
@@ -94,7 +109,13 @@
     onArtSettingChange,
     exporting,
     reduceMotion,
+    formationContent,
+    formationSummaryOverride,
+    stageAware = false,
+    sequence,
   }: Props = $props();
+
+  const viewerAnimatorInspector = getOptionalViewerAnimatorInspectorContext();
 
   function reportSetting(
     group: string,
@@ -133,8 +154,24 @@
     return EFFORTS.find((effort) => effort.id === id) ?? EFFORTS[0]!;
   });
   const formationSummary = $derived(
-    `${controller.presetRecipe?.name ?? "Custom"} · ${controller.performerCount} ${controller.performerCount === 1 ? "instance" : "instances"}`
+    formationSummaryOverride ??
+      `${controller.presetRecipe?.name ?? "Custom"} · ${controller.performerCount} ${controller.performerCount === 1 ? "instance" : "instances"}`
   );
+  const displaySummary = $derived.by(() => {
+    void visibilityVersion;
+    const settings = visibility.getSettings();
+    return computeDisplaySummary({
+      tkaGlyph: settings.tkaGlyph,
+      elementalGlyph: settings.elementalGlyph,
+      stepNumbers: settings.stepNumbers,
+      props: settings.props,
+      wordHeader: settings.wordHeader,
+      mandala: settings.mandala,
+      pathLines: settings.leftPathLines || settings.rightPathLines,
+      grid: visibility.isGridVisible(),
+    });
+  });
+  const motionMerged = $derived(layout === "sidebar");
   const tunnelRail = $derived<
     {
       id: TunnelRailId;
@@ -146,12 +183,15 @@
       accentColor?: string;
     }[]
   >([
+    // Shared pages lead in the same order as 2D Animation. Their component,
+    // selection state, and section bodies now survive the mode switch; the
+    // two Tunnel-only destinations follow them instead of reshuffling the rail.
     {
-      id: "tunnel",
-      icon: "fa-shapes",
-      label: "Formation",
-      summary: formationSummary,
-      accentColor: RAIL_CATEGORY_ACCENTS.formation,
+      id: "effects",
+      icon: "fa-wand-magic-sparkles",
+      label: "Effects",
+      summary: "Colors & effects",
+      accentColor: RAIL_CATEGORY_ACCENTS.effects,
     },
     ...(onPropChange
       ? [
@@ -165,56 +205,92 @@
           },
         ]
       : []),
+    ...(motionMerged
+      ? [
+          {
+            id: "motion" as const,
+            icon: "fa-gauge-high",
+            label: "Motion",
+            summary: activeEffort.label,
+            accentColor: activeEffort.color,
+          },
+        ]
+      : [
+          {
+            id: "effort" as const,
+            label: "Effort",
+            summary: activeEffort.label,
+            accentColor: activeEffort.color,
+          },
+          {
+            id: "playback" as const,
+            icon: "fa-route",
+            label: "Playback",
+            summary: computePlaybackSummary(bpm, playbackMode),
+            accentColor: RAIL_CATEGORY_ACCENTS.playback,
+          },
+        ]),
+    {
+      id: "display",
+      icon: "fa-eye",
+      label: "Display",
+      summary: displaySummary,
+      accentColor: RAIL_CATEGORY_ACCENTS.display,
+    },
+    {
+      id: "tunnel",
+      icon: "fa-shapes",
+      label: "Formation",
+      summary: formationSummary,
+      accentColor: RAIL_CATEGORY_ACCENTS.formation,
+    },
     {
       id: "speed",
       icon: "fa-gauge-high",
-      label: "Copy Speed",
+      label: stageAware ? "Stage Speed" : "Copy Speed",
       summary: controller.hasSpeedOverrides ? "Mixed rates" : "Uniform",
       accentColor: RAIL_CATEGORY_ACCENTS.speed,
     },
-    {
-      id: "effects",
-      icon: "fa-wand-magic-sparkles",
-      label: "Effects",
-      summary: "Colors & effects",
-      accentColor: RAIL_CATEGORY_ACCENTS.effects,
-    },
-    {
-      id: "effort",
-      label: "Effort",
-      summary: activeEffort.label,
-      accentColor: activeEffort.color,
-    },
-    {
-      id: "playback",
-      icon: "fa-route",
-      label: "Playback",
-      summary: computePlaybackSummary(bpm, playbackMode),
-      accentColor: RAIL_CATEGORY_ACCENTS.playback,
-    },
   ]);
-  // Active section lives on the controller so it persists with the rest of the
-  // tunnel view state (load/save in TunnelViewController).
-  const tunnelSection = $derived<TunnelRailId>(controller.section);
+
+  const tunnelOrder = $derived(tunnelRail.map((pill) => pill.id));
+  const controllerRailSection = $derived<TunnelRailId>(
+    motionMerged &&
+      (controller.section === "effort" || controller.section === "playback")
+      ? "motion"
+      : controller.section
+  );
+  const tunnelSection = $derived<TunnelRailId>(
+    layout === "sidebar" && viewerAnimatorInspector
+      ? ((viewerAnimatorInspector.resolve(tunnelOrder) ??
+          "effects") as TunnelRailId)
+      : controllerRailSection
+  );
   const tunnelSectionLabel = $derived(
     tunnelRail.find((p) => p.id === tunnelSection)?.label ?? ""
   );
 
-  const tunnelOrder = $derived(tunnelRail.map((p) => p.id));
   let flyDir = $state(1);
+
+  function rememberTunnelSection(id: TunnelRailId): void {
+    if (id === "motion") {
+      controller.section = "effort";
+    } else if (id !== "display") {
+      controller.section = id;
+    }
+  }
+
   function selectTunnel(id: TunnelRailId): void {
     const previous = tunnelSection;
     const prev = tunnelOrder.indexOf(tunnelSection);
     const next = tunnelOrder.indexOf(id);
     flyDir = next >= prev ? 1 : -1;
-    controller.section = id;
+    rememberTunnelSection(id);
+    if (layout === "sidebar") viewerAnimatorInspector?.select(id);
     reportSetting("art_navigation", "desktop_tunnel_section", previous, id);
   }
 
-  // In the viewer this dock overlays the art, so it starts collapsed. The
-  // creator gives it a dedicated stacked surface on phones; leaving that
-  // surface empty would make the controls look missing, so that host opts in
-  // to opening the saved section immediately.
+  // The creator's dedicated phone surface opens the saved section immediately.
   let openTunnelTab = $state<TunnelRailId | null>(
     bottomStartsOpen ? controller.section : null
   );
@@ -224,7 +300,7 @@
     const tid = id as TunnelRailId;
     const previous = openTunnelTab;
     openTunnelTab = previous === tid ? null : tid;
-    if (openTunnelTab) controller.section = tid;
+    if (openTunnelTab) rememberTunnelSection(openTunnelTab);
     reportSetting(
       "art_navigation",
       "mobile_tunnel_section",
@@ -243,12 +319,6 @@
       accentColor: p.accentColor,
     }))
   );
-  // Colors gets the live accent-pair dots (matching the native mandala dock);
-  // "download" is excluded — it's the trailing Export action, not a tray tab.
-
-  // Export is the dock's one trailing action now. Share moved out entirely:
-  // the header carries it on every pane, and a second one down here was the
-  // duplicate Austen asked to be rid of.
   const tunnelDockExport = $derived<ControlDockAction>({
     icon: "fa-film",
     label: "Export Video",
@@ -261,13 +331,17 @@
 
 {#snippet tunnelSectionBody(id: TunnelRailId, dense: boolean)}
   {#if id === "tunnel"}
-    <TunnelLookSettings
-      {controller}
-      {dense}
-      {onSaveTunnel}
-      {saveTunnelLabel}
-      {onArtSettingChange}
-    />
+    {#if formationContent}
+      {@render formationContent(dense)}
+    {:else}
+      <TunnelLookSettings
+        {controller}
+        {dense}
+        {onSaveTunnel}
+        {saveTunnelLabel}
+        {onArtSettingChange}
+      />
+    {/if}
   {:else if id === "props"}
     <!-- Prop selection — the same BentoPropGrid the 2D Download panel uses. The
          chosen prop flows through the viewer's shared handlePropTypeChange, so it
@@ -293,7 +367,12 @@
       {/if}
     </div>
   {:else if id === "speed"}
-    <TunnelSpeedSettings {controller} {dense} {onArtSettingChange} />
+    <TunnelSpeedSettings
+      {controller}
+      {dense}
+      {stageAware}
+      {onArtSettingChange}
+    />
   {:else if id === "effects"}
     <TunnelEffectsSettings
       {controller}
@@ -306,18 +385,18 @@
       {onArtSettingChange}
     />
   {:else if id === "effort"}
-    <div class="section-pad">
-      {#if !dense}<p class="section-hint">
-          How each beat speeds up and slows down.
-        </p>{/if}
-      <EffortPanel
-        columns={dense ? 4 : 2}
-        showSubtitles={!dense}
-        onSettingChange={(previousValue, value) =>
-          reportSetting("art_effort", "preset", previousValue, value)}
-      />
-    </div>
-  {:else}
+    <TunnelMotionSettings
+      {dense}
+      includePlayback={false}
+      {bpm}
+      {playbackMode}
+      {isPlaying}
+      {onBpmChange}
+      {onPlaybackModeChange}
+      {onPlaybackToggle}
+      {onArtSettingChange}
+    />
+  {:else if id === "playback"}
     <TunnelPlaybackSettings
       {dense}
       {bpm}
@@ -326,6 +405,23 @@
       {onBpmChange}
       {onPlaybackModeChange}
       {onPlaybackToggle}
+      {onArtSettingChange}
+    />
+  {:else if id === "motion"}
+    <TunnelMotionSettings
+      {bpm}
+      {playbackMode}
+      {isPlaying}
+      {onBpmChange}
+      {onPlaybackModeChange}
+      {onPlaybackToggle}
+      {onArtSettingChange}
+    />
+  {:else}
+    <TunnelDisplaySettings
+      {sequence}
+      propType={selectedPropType}
+      {dense}
       {onArtSettingChange}
     />
   {/if}
@@ -348,120 +444,35 @@
     {/snippet}
   </ControlDock>
 {:else}
-  <ArtSettingsSidebarFrame label="Tunnel" {exporting} showLabel={showTitle}>
-    <div class="sidebar-rail-layout">
-      <IconRailNav
-        pills={tunnelRail}
-        activeId={tunnelSection}
-        onSelect={selectTunnel}
-      />
-
-      <div class="sidebar-main">
-        <div class="panel-scroll">
-          <div class="panel-content-center">
-            {#key tunnelSection}
-              <div
-                class="panel-transition"
-                in:fly={{
-                  x: reduceMotion ? 0 : flyDir * 28,
-                  duration: reduceMotion ? 0 : 240,
-                  delay: reduceMotion ? 0 : 60,
-                  opacity: 0,
-                }}
-                out:fly={{
-                  x: reduceMotion ? 0 : flyDir * -20,
-                  duration: reduceMotion ? 0 : 130,
-                  opacity: 0,
-                }}
-              >
-                <div class="panel-center-inner">
-                  <h2 class="panel-title">{tunnelSectionLabel}</h2>
-
-                  {@render tunnelSectionBody(tunnelSection, false)}
-                </div>
-              </div>
-            {/key}
-          </div>
-        </div>
-
-        {#if showExport}
-          <ArtActionFooter
-            {onExport}
-            exportLabel="Export Video"
-            busy={exporting}
-          />
-        {/if}
-      </div>
-    </div>
-  </ArtSettingsSidebarFrame>
+  <AnimatorInspectorShell
+    pills={tunnelRail}
+    activeId={tunnelSection}
+    activeLabel={tunnelSectionLabel}
+    onSelect={selectTunnel}
+    direction={flyDir}
+    {reduceMotion}
+    fillBody={tunnelSection === "display"}
+    {exporting}
+    artPanel
+    regionLabel={showTitle ? "Tunnel settings" : "Animation controls"}
+  >
+    {#snippet body()}{@render tunnelSectionBody(tunnelSection, false)}{/snippet}
+    {#snippet footer()}
+      {#if showExport}
+        <AnimatorInspectorFooter
+          onAction={onExport}
+          label="Export Video"
+          icon="fa-film"
+          busy={exporting}
+          disabled={exporting}
+          testId="art-export-button"
+        />
+      {/if}
+    {/snippet}
+  </AnimatorInspectorShell>
 {/if}
 
 <style>
-  /* [ rail | section body ] — mirrors AnimationPanel's .sidebar-rail-layout. */
-  .sidebar-rail-layout {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-  }
-  .sidebar-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-  }
-  .panel-scroll {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    display: flex;
-    flex-direction: column;
-  }
-  .panel-scroll::-webkit-scrollbar {
-    width: 5px;
-  }
-  .panel-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .panel-scroll::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 3px;
-  }
-
-  /* Tunnel: vertically center the active section in the tall body, and host the
-     keyed in/out fly transition (mirrors AnimationPanel's centered swap). */
-  .panel-content-center {
-    flex: 1;
-    position: relative;
-    min-height: 0;
-    overflow: hidden;
-  }
-  .panel-transition {
-    position: absolute;
-    inset: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
-  /* auto block margins center the content but collapse to 0 when it overflows,
-     so long sections (Effects) still scroll from the top — no clipping. */
-  .panel-center-inner {
-    margin: auto 0;
-    width: 100%;
-  }
-  .panel-title {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    text-align: center;
-    color: rgba(255, 255, 255, 0.7);
-    margin: 0;
-    padding: 12px 16px 4px;
-  }
   .section-pad {
     display: flex;
     flex-direction: column;
@@ -473,15 +484,6 @@
     padding-top: 14px;
     border-top: 1px solid var(--theme-stroke);
   }
-  .section-hint {
-    font-size: var(--font-size-compact, 12px);
-    color: rgba(255, 255, 255, 0.6);
-    text-align: center;
-    line-height: 1.4;
-    margin: 0;
-    padding: 0 8px;
-  }
-
   /* Mobile dock tray: tighten the shared section bodies. Buttons/inputs keep
      their var(--min-touch-target) floor — only gaps and outer paddings collapse
      so the tray stays compact floating over the art. */

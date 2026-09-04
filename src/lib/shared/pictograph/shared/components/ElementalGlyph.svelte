@@ -135,6 +135,7 @@ text embedded within the elemental shape. Known non-Type1 letters are rejected.
             : "Toggle Elemental symbol visibility",
         }
       : {
+          role: "img",
           "aria-label": ariaLabel ?? `Elemental symbol: ${elementalType}`,
         }}
   >

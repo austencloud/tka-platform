@@ -440,6 +440,60 @@ describe("stage choreography state", () => {
     state.destroy();
   });
 
+  it("authors and undoes one uninterrupted Director formation transition", () => {
+    const state = createStageChoreographyState();
+    const before = JSON.parse(JSON.stringify(state.choreography.formations));
+
+    expect(state.applyFormationTransition("circle", 4, "v-shape", 8)).toBe(
+      true
+    );
+
+    const start = state.choreography.formations.find(
+      (formation) => formation.atBeat === 8
+    );
+    const destination = state.choreography.formations.find(
+      (formation) => formation.atBeat === 12
+    );
+    expect(start).toMatchObject({ presetId: "v-shape" });
+    expect(destination).toMatchObject({
+      presetId: "circle",
+      transitionBeats: 4,
+    });
+    expect(
+      sampleStageFormations(state.choreography, 10).every(
+        (frame) => frame.isMoving
+      )
+    ).toBe(true);
+
+    state.undo();
+    expect(state.choreography.formations).toEqual(before);
+    state.destroy();
+  });
+
+  it("anchors an unqualified transition to the exact sampled live positions", () => {
+    const state = createStageChoreographyState();
+    const atBeat = 24;
+    const before = sampleStageFormations(state.choreography, atBeat);
+
+    state.applyFormationTransition("circle", 4, undefined, atBeat);
+
+    const anchor = state.choreography.formations.find(
+      (formation) => formation.atBeat === atBeat
+    );
+    expect(anchor).toBeDefined();
+    for (const frame of before) {
+      expect(anchor!.spots[frame.performerId]!.x).toBeCloseTo(
+        frame.stagePosition.x,
+        6
+      );
+      expect(anchor!.spots[frame.performerId]!.z).toBeCloseTo(
+        frame.stagePosition.z,
+        6
+      );
+    }
+    state.destroy();
+  });
+
   it("authors and undoes one performer's Floor timing without moving the set", () => {
     const state = createStageChoreographyState();
     const performer = state.choreography.performers[0]!;

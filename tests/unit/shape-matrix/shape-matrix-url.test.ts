@@ -253,6 +253,22 @@ describe("shape matrix URL state", () => {
     expect(url.searchParams.get("theoryRight")).toBe("1:2-pro-in");
   });
 
+  it("round-trips a linked ratio relationship only for equal ratios", () => {
+    const linked = readShapeMatrixRouteState(
+      "?theory=1&leftRatio=2:9&rightRatio=2:9&linkRatios=1"
+    );
+    expect(linked.theoryRatiosLinked).toBe(true);
+
+    const url = new URL("https://tkaflowarts.com/notation/shape-matrix");
+    writeShapeMatrixRouteState(url, linked);
+    expect(url.searchParams.get("linkRatios")).toBe("1");
+
+    const contradictory = readShapeMatrixRouteState(
+      "?theory=1&leftRatio=2:9&rightRatio=1:2&linkRatios=1"
+    );
+    expect(contradictory.theoryRatiosLinked).toBeFalsy();
+  });
+
   it("restores the one-axis legacy link onto both axes", () => {
     const state = readShapeMatrixRouteState("?theory=1&ratio=2:9&level=4");
     expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });

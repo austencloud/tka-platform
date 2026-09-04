@@ -519,7 +519,7 @@
             summary.tunnelLayerOpacitySpreadMaximum > 0.28)}
         >Layer timing spread: {summary.tunnelPreparedLayerCountMaximum > 1
           ? summary.tunnelLayerOpacitySpreadMaximum.toFixed(2)
-          : "n/a · one copy peels spatially"}</span
+          : "n/a · one copy"}</span
       >
       <span
         data-problem={summary.tunnelPreparedLayerCountMaximum > 0 &&
@@ -537,23 +537,32 @@
       <span
         data-problem={summary.tunnelPaintedArrival === null ||
           (summary.longestSampleGap <= 80 &&
-            (summary.tunnelPaintedArrival.quarterFill < 0.15 ||
-              summary.tunnelPaintedArrival.halfwayFill < 0.5 ||
+            (summary.tunnelPaintedArrival.allPropsPerceptibleProgress ===
+              null ||
+              summary.tunnelPaintedArrival.allPropsPerceptibleProgress > 0.35 ||
+              summary.tunnelPaintedArrival.quarterMeanAlpha < 0.15 ||
+              summary.tunnelPaintedArrival.halfwayMeanAlpha < 0.35 ||
               summary.tunnelPaintedArrival.growthFrames < 4))}
-        title="Counts green, yellow, and purple pixels sampled from the rendered canvas, not reactive layer state."
-        >Painted spectrum arrival: {summary.tunnelPaintedArrival === null
+        title="Reads completed additional-prop draw calls from the Canvas2D renderer, not reactive layer state."
+        >Painted prop arrival: {summary.tunnelPaintedArrival === null
           ? "unavailable"
-          : `${Math.round(summary.tunnelPaintedArrival.quarterFill * 100)}% by quarter · ${Math.round(summary.tunnelPaintedArrival.halfwayFill * 100)}% by halfway · ${summary.tunnelPaintedArrival.growthFrames} growth frames`}</span
+          : `all ${summary.tunnelPaintedArrival.peakProps} by ${summary.tunnelPaintedArrival.allPropsPerceptibleProgress === null ? "never" : `${Math.round(summary.tunnelPaintedArrival.allPropsPerceptibleProgress * 100)}% reveal`} · ${Math.round(summary.tunnelPaintedArrival.quarterMeanAlpha * 100)}% mean alpha at quarter · ${Math.round(summary.tunnelPaintedArrival.halfwayMeanAlpha * 100)}% at halfway · ${summary.tunnelPaintedArrival.growthFrames} rendered growth frames`}</span
+      >
+      <span data-problem={summary.tunnelUnguardedFormationFrames > 0}
+        >Trail-safe formation: {summary.tunnelUnguardedFormationFrames} moving frames
+        unguarded</span
+      >
+      <span data-problem={summary.tunnelFormationTrailCaptures > 0}
+        >Formation trail captures: {summary.tunnelFormationTrailCaptures}</span
       >
       <span
-        data-problem={summary.tunnelPreparedLayerCountMaximum > 0 &&
-          summary.tunnelLayerSeparationMaximum > 0.08 &&
-          summary.tunnelSpatialPeelFrames < 3}
-        >Spatial peel: {(summary.tunnelLayerSeparationMaximum * 100).toFixed(
-          0
-        )}% radius over {summary.tunnelSpatialPeelFrames} frames · {(
-          summary.tunnelLayerSeparationStepMaximum * 100
-        ).toFixed(0)}% max step</span
+        data-problem={summary.tunnelFormationPoseDriftMaximum > 0.001 ||
+          summary.tunnelFormationPoseDriftFrames > 0}
+        title="Compares every rendered copy with the authored Tunnel pose prepared at the same playhead. The handoff should change opacity only."
+        >Formation placement: {(
+          summary.tunnelFormationPoseDriftMaximum * 100
+        ).toFixed(1)}% max drift · {summary.tunnelFormationPoseDriftFrames}
+        drifting frames</span
       >
       <span data-dissolve={summary.tunnelCrossfadeFrames > 0}
         >Layer-bloom frames: {summary.tunnelCrossfadeFrames}</span

@@ -1,5 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "tab_toys_third_order": "الحركة من الرتبة الثالثة",
+  "tab_desc_toys_third_order": "حرّك تسلسلات كاملة داخل تسلسل أكبر",
   "action_cancel": "إلغاء",
   "action_close": "إغلاق",
   "action_confirm": "تأكيد",

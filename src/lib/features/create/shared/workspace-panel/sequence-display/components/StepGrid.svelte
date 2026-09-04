@@ -58,6 +58,7 @@
     onStepDelete,
     onStepLongPress,
     selectedStepNumber = null,
+    autoFocusSelectedStep = true,
     removingStepIndex = null,
     removingStepIndices = new Set<number>(),
     isClearing = false,
@@ -77,6 +78,8 @@
     allowFewStepOverflowOnNarrow = true,
     fitAllSteps = false,
     sizingProfile = "workbench",
+    stepIdentityMode = "step",
+    stepIdentityPrefix = "step-grid",
     selectedStepNumbers = new Set<number>(),
     isMultiSelectMode = false,
     onStartLongPress,
@@ -104,6 +107,8 @@
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: (stepNumber: number) => void;
     selectedStepNumber?: number | null;
+    /** Prevent playback-driven selection from stealing focus from nearby UI. */
+    autoFocusSelectedStep?: boolean;
     removingStepIndex?: number | null;
     removingStepIndices?: Set<number>;
     isClearing?: boolean;
@@ -125,6 +130,10 @@
     fitAllSteps?: boolean;
     /** Preview grids trade edit-hover breathing room for larger notation. */
     sizingProfile?: "workbench" | "preview";
+    /** Keep visual positions alive while a preview swaps to another sequence. */
+    stepIdentityMode?: "step" | "slot";
+    /** Namespaces slot identities so independent grids never share motion caches. */
+    stepIdentityPrefix?: string;
     selectedStepNumbers?: Set<number>;
     isMultiSelectMode?: boolean;
     onStartLongPress?: () => void;
@@ -698,7 +707,11 @@
     onStartClick?.();
   }
 
-  const stepIdentities = $derived(createStableStepIdentities(steps));
+  const stepIdentities = $derived(
+    stepIdentityMode === "slot"
+      ? steps.map((_step, index) => `${stepIdentityPrefix}:slot:${index}`)
+      : createStableStepIdentities(steps)
+  );
   const getStepKey = (_step: StepData, index: number) =>
     stepIdentities[index] ?? `missing-step:${index}`;
 
@@ -766,6 +779,7 @@
       {scrollState}
       edgePadding={edgeReserve}
       {selectedStepNumber}
+      {autoFocusSelectedStep}
       {practiceStepNumber}
       {activeMode}
       {removingStepIndex}
@@ -773,6 +787,7 @@
       {isClearing}
       {historyTransition}
       {historyTransitionEpoch}
+      animateStepMembership={stepIdentityMode === "slot"}
       {highlightedSteps}
       onStepClick={handleStepClick}
       onStartClick={handleStartClick}

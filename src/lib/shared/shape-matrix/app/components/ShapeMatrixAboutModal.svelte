@@ -3,12 +3,11 @@
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import {
+    KINETIC_SHAPE_ENGINE_AUTHOR,
     KINETIC_SHAPE_ENGINE_NAME,
-    ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS,
     ORIGINAL_SHAPE_MATRIX_URL,
     ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
     SPIN_SCIENCE_URL,
-    SPIN_SCIENCE_WORK_URL,
   } from "../shape-engine-identity";
 
   const state = getShapeMatrixAppContext();
@@ -28,60 +27,61 @@
 <BaseModal
   open={state.aboutOpen}
   onclose={state.closeAbout}
-  size="fit"
+  size="xl"
   labelledBy="shape-matrix-about-title"
   {header}
 >
   <div class="about-copy">
-    <p>
-      <strong>The foundation.</strong> Lorq Nichols created the original 144
-      Shape Matrix and publishes as
-      <a href={SPIN_SCIENCE_URL} target="_blank" rel="noopener noreferrer"
-        >Spin Science</a
-      >. The VTG ratios at its core were {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}, as
-      labeled in the original. Each ratio contributes four even-petaled driving
-      styles, giving twelve choices per hand. Pairing the left-hand columns with
-      the right-hand rows produced 144 basic and hybrid combinations. This
-      engine writes prop rotations before hand cycles, so those same families
-      appear here as {ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS}.
-    </p>
-    <p>
-      <strong>What this engine adds.</strong>
-      {KINETIC_SHAPE_ENGINE_NAME} keeps that pairing model as its starting point.
-      The Shape Matrix view extends it through TKA Levels 1–4 with independently selected
-      turn bands. The Theory Matrix builds exact flower paths from whole-number spin
-      ratios. Prop selection, element relationships, live animation, and pictograph
-      readouts are additions made here.
-    </p>
-    <p>
-      <strong>Independent work.</strong> This app was built independently by The Kinetic
-      Alphabet. It does not reproduce Nichols' original diagram and is not an official
-      Spin Science release.
-    </p>
-    <p>
-      <strong>Element relationships.</strong> Choose a hand timing and direction.
-      The prop result follows automatically. When the selected flowers support two
-      exact prop phases, both choices appear so you can pick the result you want.
-    </p>
-    <p>
-      <strong>The Theory Matrix.</strong> Its two axes contain exact whole-number
-      spin ratios. The widest current band spans values from 0 through 15, except
-      0:0, and every cell resolves to a closed flower path. TKA Levels 1–4 name zero,
-      whole, half, Float, and quarter-turn values. Ratios such as 1:3 or 4:9 have
-      no TKA turn, letter, or level. VTG can classify timing and direction where they
-      apply, but it does not name the complete ratio pair.
-    </p>
+    <div class="about-columns">
+      <section>
+        <span class="section-kicker">The foundation</span>
+        <h2>Lorq Nichols’ 144 Shape Matrix</h2>
+        <p>
+          Lorq Nichols, publishing as
+          <a href={SPIN_SCIENCE_URL} target="_blank" rel="noopener noreferrer"
+            >Spin Science</a
+          >, created the original matrix. Its VTG families were labeled
+          {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}. Each supplied four even-petaled
+          driving styles, giving twelve choices per hand and 144 left/right
+          combinations.
+        </p>
+      </section>
+
+      <section>
+        <span class="section-kicker">The independent work</span>
+        <h2>What Austen Cloud built</h2>
+        <p>
+          {KINETIC_SHAPE_ENGINE_NAME} keeps Lorq’s row-and-column pairing as a starting
+          point, then extends it through TKA Levels 1–4 and a Theory Matrix of exact
+          whole-number ratios. Prop selection, relationship solving, live animation,
+          and pictograph readouts are additions made here.
+        </p>
+        <p>
+          This app was built independently by {KINETIC_SHAPE_ENGINE_AUTHOR}. It
+          does not reproduce Nichols’ original diagram and is not an official
+          Spin Science release.
+        </p>
+      </section>
+    </div>
     <div class="source-links">
+      <a href="/guide/ratios">
+        Read ratios in TKA
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </a>
+      <a href="/history#archive-record-vtg">
+        VTG in the history archive
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </a>
+      <a href="/history#archive-record-lorq">
+        Lorq’s work in the history archive
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </a>
       <a
         href={ORIGINAL_SHAPE_MATRIX_URL}
         target="_blank"
         rel="noopener noreferrer"
       >
         View Lorq Nichols’ 144 Shape Matrix
-        <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-      </a>
-      <a href={SPIN_SCIENCE_WORK_URL} target="_blank" rel="noopener noreferrer">
-        Explore Spin Science
         <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
       </a>
     </div>
@@ -91,16 +91,28 @@
 <style>
   .about-copy {
     display: grid;
-    gap: 1rem;
-    max-width: 42rem;
-    padding: 1.25rem;
+    gap: 1.5rem;
+    padding: clamp(1rem, 2.2vw, 2rem);
     color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
     font-size: 0.98rem;
     line-height: 1.65;
   }
 
+  .about-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1.5rem, 4vw, 4rem);
+  }
+
+  section {
+    display: grid;
+    align-content: start;
+    gap: 0.8rem;
+  }
+
   p {
     margin: 0;
+    max-inline-size: var(--measure-prose, 68ch);
   }
 
   p a {
@@ -108,14 +120,28 @@
     text-underline-offset: 0.2em;
   }
 
-  p strong {
+  h2 {
     color: var(--theme-text, #fff);
-    font-weight: 650;
+  }
+
+  .section-kicker {
+    color: #f4b54c;
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 750;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: -0.25rem 0 0;
+    font-size: clamp(1.2rem, 1.8vw, 1.55rem);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
   }
 
   .source-links {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.65rem;
     margin-top: 0.25rem;
   }
@@ -146,10 +172,23 @@
     outline-offset: 2px;
   }
 
+  @media (max-width: 72rem) {
+    .source-links {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 52rem) {
+    .about-columns {
+      grid-template-columns: 1fr;
+    }
+  }
+
   @media (max-width: 36rem) {
     .source-links {
       grid-template-columns: 1fr;
     }
+
     .about-copy {
       padding: 1rem;
     }

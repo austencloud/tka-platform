@@ -24,6 +24,7 @@
   import type {
     InspectorLayerId,
     InspectorRevealSample,
+    TunnelPaintSample,
     TransitionGeometrySample,
     TransitionGeometryTrace,
     TransitionTraceCommand,
@@ -42,8 +43,6 @@
    * recorded.
    */
   const SETTLE_TAIL_MS = DURATION.emphasis * 2 + DURATION.normal + 200;
-  const TUNNEL_PIXEL_GRID_SIZE = 64;
-  const TUNNEL_PIXEL_SAMPLE_INTERVAL_MS = 48;
   type ReviewModeLabel =
     | "Side by Side"
     | "2D Animation"
@@ -404,80 +403,48 @@
 
   function tunnelSurface(): HTMLElement | null {
     return document.querySelector<HTMLElement>(
-      '[data-persistent-animator][data-renderer-mode="tunnel"]'
+      '[data-persistent-animator][data-presented="true"]:not([aria-hidden="true"])[data-renderer-mode="tunnel"]'
     );
   }
 
   function tunnelCanvas(): HTMLCanvasElement | null {
     return document.querySelector<HTMLCanvasElement>(
-      '[data-persistent-animator] canvas[data-animation-layer="props"]'
+      '[data-persistent-animator][data-presented="true"]:not([aria-hidden="true"]) canvas[data-animation-layer="props"]'
     );
   }
 
-  /**
-   * Count colored pixels that the red/blue 2D pair cannot contribute.
-   *
-   * Tunnel fans its copies through green, yellow, and purple. Sampling those
-   * pixels from the canvas itself proves that the copies reached a painted
-   * frame; a reactive opacity value alone cannot make that claim.
-   */
-  function tunnelSpectrumPixelCount(source: HTMLCanvasElement | null): number {
-    if (!source || source.width === 0 || source.height === 0) return 0;
-    // Read the renderer's own buffer. Copying this live canvas into a probe
-    // canvas returns a transparent frame in Chromium even while the compositor
-    // is presenting it, which would turn the visual grade into a false zero.
-    const context = source.getContext("2d");
-    if (!context) return 0;
-    const pixels = context.getImageData(0, 0, source.width, source.height).data;
-    const stride = Math.max(
-      1,
-      Math.floor(Math.max(source.width, source.height) / TUNNEL_PIXEL_GRID_SIZE)
-    );
-    let count = 0;
-    for (let y = 0; y < source.height; y += stride) {
-      for (let x = 0; x < source.width; x += stride) {
-        const index = (y * source.width + x) * 4;
-        const red = pixels[index] ?? 0;
-        const green = pixels[index + 1] ?? 0;
-        const blue = pixels[index + 2] ?? 0;
-        const alpha = pixels[index + 3] ?? 0;
-        const maximum = Math.max(red, green, blue);
-        const minimum = Math.min(red, green, blue);
-        const chroma = maximum - minimum;
-        if (alpha < 64 || maximum < 60 || chroma < 24) continue;
-
-        let sector = 0;
-        if (maximum === red) sector = ((green - blue) / chroma) % 6;
-        else if (maximum === green) sector = (blue - red) / chroma + 2;
-        else sector = (red - green) / chroma + 4;
-        const hue = (sector * 60 + 360) % 360;
-        if ((hue >= 30 && hue < 180) || (hue >= 270 && hue < 330)) {
-          count += 1;
-        }
-      }
-    }
-    return count;
-  }
-
-  let lastTunnelPixelSampleAt = Number.NEGATIVE_INFINITY;
-  let lastTunnelSpectrumPixelCount = 0;
-
-  function sampleTunnelSpectrum(
-    source: HTMLCanvasElement | null,
-    active: boolean
-  ): { count: number; sampled: boolean } {
+  function setTunnelPaintCapture(active: boolean): void {
+    const capture = document.documentElement;
     if (!active) {
-      lastTunnelPixelSampleAt = Number.NEGATIVE_INFINITY;
-      lastTunnelSpectrumPixelCount = 0;
-      return { count: 0, sampled: false };
+      delete capture.dataset.captureTunnelPaint;
+      return;
     }
-    const now = performance.now();
-    if (now - lastTunnelPixelSampleAt < TUNNEL_PIXEL_SAMPLE_INTERVAL_MS) {
-      return { count: lastTunnelSpectrumPixelCount, sampled: false };
-    }
-    lastTunnelPixelSampleAt = now;
-    lastTunnelSpectrumPixelCount = tunnelSpectrumPixelCount(source);
-    return { count: lastTunnelSpectrumPixelCount, sampled: true };
+    if (capture.dataset.captureTunnelPaint === "true") return;
+    capture.dataset.captureTunnelPaint = "true";
+    capture.dataset.tunnelPaintFrame = "0";
+    capture.dataset.tunnelPaintedPropCount = "0";
+    capture.dataset.tunnelPaintedPerceptiblePropCount = "0";
+    capture.dataset.tunnelPaintedOpacityMean = "0.000";
+    capture.dataset.tunnelFormationTrailCaptures = "0";
+    capture.dataset.tunnelPaintHistory = "";
+  }
+
+  function readTunnelPaintHistory(): TunnelPaintSample[] {
+    return (document.documentElement.dataset.tunnelPaintHistory ?? "")
+      .split(";")
+      .filter(Boolean)
+      .map((entry) => {
+        const [time, progress, painted, perceptible, mean] = entry
+          .split(",")
+          .map(Number);
+        return {
+          time: time ?? 0,
+          progress: progress ?? 0,
+          paintedPropCount: painted ?? 0,
+          perceptiblePropCount: perceptible ?? 0,
+          meanAlpha: mean ?? 0,
+        };
+      });
   }
 
   async function waitForTunnelPresentation(version: number): Promise<boolean> {
@@ -499,6 +466,16 @@
 
   function captureGeometrySample(): void {
     if (!activeTrace) return;
+    if (
+      activeTrace.command === "tunnel-first" ||
+      activeTrace.command === "tunnel-3d" ||
+      activeTrace.command === "tunnel-interrupt"
+    ) {
+      // DualSourceCrossfade may replace the presented animator after the trace
+      // begins. Arm whichever canvas owns this paint before reading it; the
+      // renderer will publish on its next completed frame.
+      setTunnelPaintCapture(true);
+    }
     const splitView = document.querySelector<HTMLElement>(".split-view");
     const direction =
       splitView?.dataset.panelDirection === "vertical"
@@ -570,19 +547,17 @@
           .split(/\s+/)
           .filter(Boolean).length
       : 0;
-    const persistentAnimator = document.querySelector<HTMLElement>(
-      "[data-persistent-animator]"
-    );
+    const persistentAnimator =
+      activeTunnelSurface ??
+      document.querySelector<HTMLElement>(
+        '[data-persistent-animator][data-presented="true"]:not([aria-hidden="true"])'
+      );
     const tunnelBlend = Number(persistentAnimator?.dataset.tunnelBlend) || 0;
     const tunnelBounds = activeTunnelCanvas?.getBoundingClientRect();
     const tunnelCanvasReady = Boolean(
       activeTunnelCanvas &&
       activeTunnelCanvas.width > 0 &&
       activeTunnelCanvas.height > 0
-    );
-    const tunnelSpectrum = sampleTunnelSpectrum(
-      activeTunnelCanvas,
-      tunnelBlend > 0
     );
     const selectedMode = selectedViewerMode();
     const motion3DSurface = document.querySelector<HTMLElement>(
@@ -734,17 +709,33 @@
         Number(persistentAnimator?.dataset.tunnelLayerOpacityMean) || 0,
       tunnelPerceptibleLayerCount:
         Number(persistentAnimator?.dataset.tunnelPerceptibleLayerCount) || 0,
-      tunnelLayerSeparation:
-        Number(persistentAnimator?.dataset.tunnelLayerSeparation) || 0,
+      tunnelMovingLayerCount:
+        Number(persistentAnimator?.dataset.tunnelMovingLayerCount) || 0,
+      tunnelTrailSuppressedLayerCount:
+        Number(persistentAnimator?.dataset.tunnelTrailSuppressedLayerCount) ||
+        0,
+      tunnelFormationPoseDrift:
+        Number(persistentAnimator?.dataset.tunnelFormationPoseDrift) || 0,
       tunnelGridOpacity:
         Number(persistentAnimator?.dataset.tunnelGridOpacity) || 0,
-      tunnelSpectrumPixelCount: tunnelSpectrum.count,
-      tunnelSpectrumSampled: tunnelSpectrum.sampled,
+      tunnelPaintFrame:
+        Number(document.documentElement.dataset.tunnelPaintFrame) || 0,
+      tunnelPaintedPropCount:
+        Number(document.documentElement.dataset.tunnelPaintedPropCount) || 0,
+      tunnelPaintedPerceptiblePropCount:
+        Number(
+          document.documentElement.dataset.tunnelPaintedPerceptiblePropCount
+        ) || 0,
+      tunnelPaintedOpacityMean:
+        Number(document.documentElement.dataset.tunnelPaintedOpacityMean) || 0,
+      tunnelFormationTrailCaptures:
+        Number(document.documentElement.dataset.tunnelFormationTrailCaptures) ||
+        0,
       tunnelPresented: Boolean(activeTunnelSurface) || tunnelBlend > 0,
       tunnelCanvasReady,
       animatorIdentity: elementIdentity("[data-persistent-animator]"),
       animatorCanvasCount: document.querySelectorAll(
-        '[data-persistent-animator] canvas[data-animation-layer="props"]'
+        '[data-persistent-animator][data-presented="true"]:not([aria-hidden="true"]) canvas[data-animation-layer="props"]'
       ).length,
       activeArtSettingsCount: document.querySelectorAll(
         '[data-viewer-art-inspector-target] [data-active="true"][data-art-settings]'
@@ -798,7 +789,14 @@
     cancelAnimationFrame(traceFrame);
     tracePhase = phase;
     traceStartedAt = performance.now();
-    activeTrace = { command, duration: 0, samples: [], modeCommits: [] };
+    activeTrace = {
+      command,
+      duration: 0,
+      samples: [],
+      tunnelPaintSamples: [],
+      modeCommits: [],
+    };
+    setTunnelPaintCapture(true);
     captureGeometrySample();
   }
 
@@ -813,6 +811,7 @@
     cancelAnimationFrame(traceFrame);
     activeTrace.duration =
       Math.round((performance.now() - traceStartedAt) * 10) / 10;
+    activeTrace.tunnelPaintSamples = readTunnelPaintHistory();
     window.parent.postMessage(
       {
         source: "sequence-viewer-transition-frame",
@@ -821,6 +820,7 @@
       },
       window.location.origin
     );
+    setTunnelPaintCapture(false);
     activeTrace = null;
   }
 

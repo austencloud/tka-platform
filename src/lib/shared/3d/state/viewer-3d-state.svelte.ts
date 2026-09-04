@@ -15,11 +15,13 @@ import type { CameraStateSnapshot } from "@austencloud/scene-3d";
 import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
 import type {
   DefaultsDomainSnapshot,
+  PerformerDomainSnapshot,
   PerformerPositionSnapshot,
+  SceneUndoOperationType,
   ViewerDomainSnapshot,
   VisibilityDomainSnapshot,
 } from "../undo/scene-undo-types";
-import { Plane, PlaneMode } from "@austencloud/scene-3d";
+import { Plane, PlaneMode, type PropBuild } from "@austencloud/scene-3d";
 import type { CharacterInstanceState } from "./character-instance-state.svelte";
 import { derivePlaneModeFromHands } from "./character-instance-state.svelte";
 import type {
@@ -101,6 +103,12 @@ const STORAGE_KEY_ENVIRONMENT = VIEWER_3D_ENVIRONMENT_STORAGE_KEY;
 
 export type ViewerNavMode = "orbit" | "fly" | "walk";
 
+export interface ViewerPerformerAppearanceAssignment {
+  index: number;
+  characterId?: CharacterId;
+  prop?: PropType;
+}
+
 type CameraSnapTo = (
   position: { x: number; y: number; z: number },
   target: { x: number; y: number; z: number },
@@ -161,6 +169,7 @@ function persistDefaultProp(prop: PropType) {
 const STORAGE_KEY_PERFORMERS = "tka-viewer3d-performers";
 const STORAGE_KEY_ACTIVE_FORMATION = "tka-viewer3d-activeFormation";
 const STORAGE_KEY_SELECTED_INDEX = "tka-viewer3d-selectedIndex";
+const STORAGE_KEY_SELECTED_INDICES = "tka-viewer3d-selectedIndices";
 const STORAGE_KEY_DEFAULT_PROP = "tka-viewer3d-defaultProp";
 
 /** Per-performer cascade overrides; null = inherit the viewer default. */
@@ -356,6 +365,30 @@ function persistSelectedIndex(value: number | null): void {
   }
 }
 
+function loadPersistedSelectedIndices(): number[] | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_SELECTED_INDICES);
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    return parsed.filter(
+      (value): value is number => Number.isInteger(value) && value >= 0
+    );
+  } catch {
+    return null;
+  }
+}
+
+function persistSelectedIndices(value: readonly number[]): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY_SELECTED_INDICES, JSON.stringify(value));
+  } catch {
+    // Quota exceeded or unavailable
+  }
+}
+
 /**
  * One-time migration: if the old single-character visiblePlanes key exists and
  * the new per-performer key does not, construct a single-performer snapshot
@@ -440,8 +473,20 @@ const WRITERS = {
   performers: persistPerformers,
   activeFormation: persistActiveFormation,
   selectedIndex: persistSelectedIndex,
+  selectedIndices: persistSelectedIndices,
   effectToggles: persistEffectToggles,
 } as const;
+
+export interface ViewerPerformerSelectionController {
+  getSelectedIndices(): readonly number[];
+  getPrimaryIndex(): number | null;
+  replace(index: number): void;
+  toggle(index: number): void;
+  clear(): void;
+  selectAll(count: number): void;
+  setSelection(indices: readonly number[], primaryIndex?: number): void;
+  removeSelection?(indices: readonly number[]): boolean;
+}
 
 /**
  * Optional construction seed. Every field present here is used INSTEAD OF the
@@ -518,6 +563,9 @@ export interface Viewer3DStateOptions {
    * shared `tka-scene-features` key is then ignored in both directions.
    */
   viewOnlySceneFeatures?: Record<string, boolean>;
+  /** A document host can own performer selection while the shared viewer
+   * exposes the same index-based interaction surface to scene controls. */
+  performerSelection?: ViewerPerformerSelectionController;
 }
 
 function buildViewer3DState(
@@ -562,7 +610,9 @@ function buildViewer3DState(
       ? consumeViewer3DPresetIntent()
       : true;
   const seededEnvironment =
-    seed?.environmentId ?? seed?.backgroundType ?? options.viewOnlyEnvironmentId;
+    seed?.environmentId ??
+    seed?.backgroundType ??
+    options.viewOnlyEnvironmentId;
   /**
    * A link override reads its environment from the URL and writes none back.
    * `loadPersistedEnvironment` is skipped entirely, which also skips its
@@ -585,6 +635,7 @@ function buildViewer3DState(
   const persistPerformers = persistent ? WRITERS.performers : noop;
   const persistActiveFormation = persistent ? WRITERS.activeFormation : noop;
   const persistSelectedIndex = persistent ? WRITERS.selectedIndex : noop;
+  const persistSelectedIndices = persistent ? WRITERS.selectedIndices : noop;
   const persistEffectToggles = persistent ? WRITERS.effectToggles : noop;
   const persistSceneEnvironment =
     persistent && !environmentIsViewOnly ? persistEnvironment : noop;
@@ -673,9 +724,74 @@ function buildViewer3DState(
     persistent,
   });
 
-  // Viewer-specific selection scope. Lives on top of PerformerManager so
-  // realm/museum/duet keep their simpler index-only model. null = "All".
-  let selectedPerformerIndex = $state<number | null>(null);
+  // Viewer-specific selection scope. A null local set is explicit All, while
+  // an empty array is explicit None. A document host can inject the same
+  // contract so Stage IDs remain canonical without creating a second store.
+  let localSelectedPerformerIndices = $state<number[] | null>(null);
+  let localPrimaryPerformerIndex = $state<number | null>(null);
+  let performerSelectionMode = $state(false);
+
+  function normalizeSelectedIndices(indices: readonly number[]): number[] {
+    const count = performerManager.performers.length;
+    return [...new Set(indices)].filter(
+      (index) => Number.isInteger(index) && index >= 0 && index < count
+    );
+  }
+
+  function selectedPerformerIndices(): number[] {
+    const controlled = options.performerSelection?.getSelectedIndices();
+    if (controlled) return normalizeSelectedIndices(controlled);
+    if (localSelectedPerformerIndices === null) {
+      return performerManager.performers.map((_, index) => index);
+    }
+    return normalizeSelectedIndices(localSelectedPerformerIndices);
+  }
+
+  function primaryPerformerIndex(): number | null {
+    const selected = selectedPerformerIndices();
+    if (selected.length === 0) return null;
+    const controlled = options.performerSelection?.getPrimaryIndex();
+    if (
+      controlled !== undefined &&
+      controlled !== null &&
+      selected.includes(controlled)
+    ) {
+      return controlled;
+    }
+    if (
+      localPrimaryPerformerIndex !== null &&
+      selected.includes(localPrimaryPerformerIndex)
+    ) {
+      return localPrimaryPerformerIndex;
+    }
+    return selected.at(-1) ?? null;
+  }
+
+  function allPerformersSelected(): boolean {
+    const count = performerManager.performers.length;
+    return count > 0 && selectedPerformerIndices().length === count;
+  }
+
+  function persistLocalSelection(): void {
+    if (options.performerSelection || !_performersPersistReady) return;
+    persistSelectedIndices(selectedPerformerIndices());
+    persistSelectedIndex(
+      allPerformersSelected() ? null : primaryPerformerIndex()
+    );
+  }
+
+  function setLocalSelection(
+    indices: readonly number[],
+    primaryIndex?: number
+  ): void {
+    const selected = normalizeSelectedIndices(indices);
+    localSelectedPerformerIndices = selected;
+    localPrimaryPerformerIndex =
+      primaryIndex !== undefined && selected.includes(primaryIndex)
+        ? primaryIndex
+        : (selected.at(-1) ?? null);
+    persistLocalSelection();
+  }
 
   // Whether prop size is linked (global) or per-performer.
   let propSizeLinked = $state(true);
@@ -698,14 +814,12 @@ function buildViewer3DState(
 
   /**
    * Return the set of performers that should receive scoped writes.
-   * - null selection → every performer
-   * - valid index   → single performer
-   * - bad index     → empty (caller should no-op)
+   * The ordered selection is the edit scope. None is a safe no-op.
    */
   function scopedPerformers(): CharacterInstanceState[] {
-    if (selectedPerformerIndex === null) return performerManager.performers;
-    const p = performerManager.performers[selectedPerformerIndex];
-    return p ? [p] : [];
+    return selectedPerformerIndices()
+      .map((index) => performerManager.performers[index])
+      .filter((performer): performer is CharacterInstanceState => !!performer);
   }
 
   function currentViewportAspect(): number {
@@ -809,14 +923,55 @@ function buildViewer3DState(
     );
   }
 
-  /**
-   * Set the current selection scope. Pass null for "All".
-   * Out-of-bounds indices are allowed - scopedPerformers() will return []
-   * so individual write helpers no-op cleanly.
-   */
+  function setPerformerSelection(
+    indices: readonly number[],
+    primaryIndex?: number
+  ): void {
+    if (options.performerSelection) {
+      options.performerSelection.setSelection(indices, primaryIndex);
+      return;
+    }
+    setLocalSelection(indices, primaryIndex);
+  }
+
+  function replacePerformerSelection(index: number): void {
+    if (options.performerSelection) options.performerSelection.replace(index);
+    else setLocalSelection([index], index);
+  }
+
+  function togglePerformerSelection(index: number): void {
+    if (options.performerSelection) {
+      options.performerSelection.toggle(index);
+      return;
+    }
+    const selected = selectedPerformerIndices();
+    setLocalSelection(
+      selected.includes(index)
+        ? selected.filter((candidate) => candidate !== index)
+        : [...selected, index],
+      index
+    );
+  }
+
+  function clearPerformerSelection(): void {
+    if (options.performerSelection) options.performerSelection.clear();
+    else setLocalSelection([]);
+  }
+
+  function selectAllPerformers(): void {
+    const count = performerManager.performers.length;
+    if (options.performerSelection) options.performerSelection.selectAll(count);
+    else {
+      localSelectedPerformerIndices = null;
+      localPrimaryPerformerIndex = null;
+      persistLocalSelection();
+    }
+  }
+
+  /** Compatibility adapter: null remains All, a number remains replace. */
   function selectPerformerScope(index: number | null): void {
-    selectedPerformerIndex = index;
-    persistSelectedIndex(index);
+    if (index === null) selectAllPerformers();
+    else replacePerformerSelection(index);
   }
 
   /**
@@ -840,7 +995,7 @@ function buildViewer3DState(
         }
         propSizeLinked = false;
       } else {
-        const sourceIdx = selectedPerformerIndex ?? 0;
+        const sourceIdx = primaryPerformerIndex() ?? 0;
         const source = performerManager.performers[sourceIdx];
         if (source?.settings.staffLengthCm != null) {
           userProportionsState.setStaffLengthCm(source.settings.staffLengthCm);
@@ -934,73 +1089,272 @@ function buildViewer3DState(
     sceneUndo.commitState();
   }
 
-  /**
-   * Fan-out: assign a hand plane on every performer in the current scope.
-   * Used by the Planes tab when "All" is selected or a single performer is picked.
-   */
-  function setHandPlaneScoped(hand: "left" | "right", plane: Plane): void {
-    const targets = scopedPerformers();
-    if (targets.length <= 1) {
-      for (const p of targets) p.setHandPlane(hand, plane);
-      return;
-    }
-    const beforeSnap = captureViewerSnapshot();
+  type ScopedPerformerSnapshot = {
+    performer: CharacterInstanceState;
+    snapshot: PerformerDomainSnapshot;
+  };
+
+  function captureScopedEditingSnapshots(
+    targets: readonly CharacterInstanceState[]
+  ): ScopedPerformerSnapshot[] {
+    return targets.map((performer) => ({
+      performer,
+      snapshot: performer.captureEditingSnapshot(),
+    }));
+  }
+
+  function restoreScopedEditingSnapshots(
+    snapshots: readonly ScopedPerformerSnapshot[]
+  ): void {
     sceneUndo.withoutUndo(() => {
-      for (const p of targets) p.setHandPlane(hand, plane);
-    });
-    const afterSnap = captureViewerSnapshot();
-    sceneUndo.pushSelfRestoringEntry(
-      "set-hand-plane",
-      `All ${hand}: ${plane}`,
-      {
-        undo: () => restoreViewerSnapshot(beforeSnap),
-        redo: () => restoreViewerSnapshot(afterSnap),
+      for (const { performer, snapshot } of snapshots) {
+        performer.restoreEditingSnapshot(snapshot);
       }
+    });
+  }
+
+  function applyScopedPerformerEdit(
+    type: SceneUndoOperationType,
+    description: string,
+    mutate: (performer: CharacterInstanceState) => void,
+    coalescingKey?: string,
+    sideEffects?: { undo: () => void; redo: () => void }
+  ): boolean {
+    const targets = scopedPerformers();
+    if (targets.length === 0) return false;
+    const before = captureScopedEditingSnapshots(targets);
+    sceneUndo.withoutUndo(() => {
+      for (const performer of targets) mutate(performer);
+    });
+    const after = captureScopedEditingSnapshots(targets);
+    const restore = {
+      undo: () => {
+        restoreScopedEditingSnapshots(before);
+        sideEffects?.undo();
+      },
+      redo: () => {
+        restoreScopedEditingSnapshots(after);
+        sideEffects?.redo();
+      },
+    };
+    if (coalescingKey) {
+      sceneUndo.pushSelfRestoringEntryCoalescing(
+        type,
+        description,
+        restore,
+        `${coalescingKey}:${targets.map((performer) => performer.id).join(",")}`
+      );
+    } else {
+      sceneUndo.pushSelfRestoringEntry(type, description, restore);
+    }
+    return true;
+  }
+
+  function setHandPlaneScoped(hand: "left" | "right", plane: Plane): boolean {
+    const scopeLabel =
+      scopedPerformers().length > 1 ? "Selected performers" : hand;
+    return applyScopedPerformerEdit(
+      "set-hand-plane",
+      `${scopeLabel}: ${plane}`,
+      (performer) => performer.setHandPlane(hand, plane)
     );
   }
 
   function setCharacterScoped(modelId: CharacterId): boolean {
-    const changes = scopedPerformers()
-      .filter((performer) => performer.characterId !== modelId)
-      .map((performer) => ({
-        performer,
-        previousModelId: performer.characterId,
-      }));
-    if (changes.length === 0) return false;
-
-    if (changes.length === 1) {
-      changes[0]!.performer.setCharacter(modelId);
-      return true;
-    }
-
-    sceneUndo.withoutUndo(() => {
-      for (const { performer } of changes) performer.setCharacter(modelId);
-    });
     const name =
       CHARACTER_DEFINITIONS.find((definition) => definition.id === modelId)
         ?.name ?? modelId;
-    sceneUndo.pushSelfRestoringEntry("change-character", `Character: ${name}`, {
-      undo: () => {
-        for (const { performer, previousModelId } of changes) {
-          performer.setCharacter(previousModelId);
+    return applyScopedPerformerEdit(
+      "change-character",
+      `Character: ${name}`,
+      (performer) => performer.setCharacter(modelId)
+    );
+  }
+
+  function setPropScoped(prop: PropType): boolean {
+    return applyScopedPerformerEdit(
+      "change-prop",
+      `Prop: ${prop}`,
+      (performer) => performer.setProp(prop)
+    );
+  }
+
+  /**
+   * Apply a per-performer cast plan as one viewer history entry. Director
+   * instructions intentionally bypass the current selection: their indices
+   * address the whole live cast that was included in the interpreted scene.
+   */
+  function applyPerformerAppearanceAssignments(
+    assignments: readonly ViewerPerformerAppearanceAssignment[]
+  ): boolean {
+    const byIndex = new Map(
+      assignments.map((assignment) => [assignment.index, assignment])
+    );
+    const targets = [...byIndex]
+      .map(([index, assignment]) => ({
+        performer: performerManager.performers[index],
+        assignment,
+      }))
+      .filter(
+        (
+          target
+        ): target is {
+          performer: CharacterInstanceState;
+          assignment: ViewerPerformerAppearanceAssignment;
+        } => !!target.performer
+      );
+    if (targets.length === 0) return false;
+
+    const before = captureScopedEditingSnapshots(
+      targets.map((target) => target.performer)
+    );
+    sceneUndo.withoutUndo(() => {
+      for (const { performer, assignment } of targets) {
+        if (assignment.characterId) {
+          performer.setCharacter(assignment.characterId);
         }
-      },
-      redo: () => {
-        for (const { performer } of changes) performer.setCharacter(modelId);
-      },
+        if (assignment.prop) performer.setProp(assignment.prop);
+      }
     });
+    const after = captureScopedEditingSnapshots(
+      targets.map((target) => target.performer)
+    );
+    sceneUndo.pushSelfRestoringEntry(
+      targets.some((target) => target.assignment.characterId)
+        ? "change-character"
+        : "change-prop",
+      "TIKA: direct cast",
+      {
+        undo: () => restoreScopedEditingSnapshots(before),
+        redo: () => restoreScopedEditingSnapshots(after),
+      }
+    );
     return true;
+  }
+
+  function setPropBuildScoped(propBuild: Partial<PropBuild>): boolean {
+    return applyScopedPerformerEdit(
+      "change-prop-build",
+      "Prop build",
+      (performer) => performer.setPropBuild(propBuild)
+    );
+  }
+
+  function setEffortScoped(effortId: EffortId): boolean {
+    return applyScopedPerformerEdit(
+      "change-effort",
+      `Effort: ${effortId}`,
+      (performer) => performer.setEffort(effortId)
+    );
+  }
+
+  function setEffectScoped(effect: EffectType | null): boolean {
+    return applyScopedPerformerEdit(
+      "toggle-effect",
+      `Effect: ${effect ?? "inherit"}`,
+      (performer) => performer.setEffect(effect)
+    );
+  }
+
+  function setHandEffectsScoped(left: EffectType, right: EffectType): boolean {
+    return applyScopedPerformerEdit(
+      "toggle-effect",
+      `Effects: ${left} / ${right}`,
+      (performer) => performer.setHandEffects(left, right)
+    );
+  }
+
+  function setStaffLengthScoped(cm: number | null): boolean {
+    return applyScopedPerformerEdit(
+      "change-staff-length",
+      "Prop size",
+      (performer) => performer.setStaffLengthCm(cm),
+      "selection-staff-length"
+    );
+  }
+
+  function resetPropScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "change-prop",
+      "Reset selected props",
+      (p) => p.resetProp()
+    );
+  }
+
+  function resetPropBuildScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "change-prop-build",
+      "Reset selected prop builds",
+      (performer) => performer.resetPropBuild()
+    );
+  }
+
+  function resetEffortScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "change-effort",
+      "Reset selected efforts",
+      (performer) => performer.resetEffort()
+    );
+  }
+
+  function resetEffectsScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "toggle-effect",
+      "Reset selected effects",
+      (performer) => performer.resetEffects()
+    );
+  }
+
+  function resetPlanesScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "set-hand-plane",
+      "Reset selected planes",
+      (performer) => {
+        performer.resetPlanes();
+        performer.clearBeatPlaneOverrides();
+      }
+    );
+  }
+
+  function resetAllOverridesScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "reset-all-overrides",
+      "Reset selected performer settings",
+      (performer) => performer.resetAllOverrides()
+    );
   }
 
   /**
    * Fan-out: load a sequence onto every performer in the current scope.
    * The viewer's "change sequence for this performer" control routes here.
    */
-  function loadSequenceScoped(sequenceData: SequenceData): void {
+  function loadSequenceScoped(sequenceData: SequenceData): boolean {
+    const previousSequence = _currentSequenceData;
     _currentSequenceData = sequenceData;
-    for (const p of scopedPerformers()) {
-      p.loadSequence(sequenceData);
-    }
+    const applied = applyScopedPerformerEdit(
+      "change-sequence",
+      `Sequence: ${sequenceData.word ?? sequenceData.name ?? "Untitled"}`,
+      (performer) => performer.loadSequence(sequenceData),
+      undefined,
+      {
+        undo: () => {
+          _currentSequenceData = previousSequence;
+        },
+        redo: () => {
+          _currentSequenceData = sequenceData;
+        },
+      }
+    );
+    if (!applied) _currentSequenceData = previousSequence;
+    return applied;
+  }
+
+  function clearSequenceScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "change-sequence",
+      "Clear selected sequences",
+      (performer) => performer.clearSequence()
+    );
   }
 
   // Track the most recently applied formation preset so undo snapshots can
@@ -1019,7 +1373,10 @@ function buildViewer3DState(
 
     return structuredClone({
       performers: performerSnapshots,
-      selectedPerformerIndex,
+      selectedPerformerIndex: allPerformersSelected()
+        ? null
+        : primaryPerformerIndex(),
+      selectedPerformerIndices: selectedPerformerIndices(),
       activeFormation,
     });
   }
@@ -1055,7 +1412,13 @@ function buildViewer3DState(
     });
 
     activeFormation = snap.activeFormation;
-    selectedPerformerIndex = snap.selectedPerformerIndex;
+    setPerformerSelection(
+      snap.selectedPerformerIndices ??
+        (snap.selectedPerformerIndex === null
+          ? performerManager.performers.map((_, index) => index)
+          : [snap.selectedPerformerIndex]),
+      snap.selectedPerformerIndex ?? undefined
+    );
   }
 
   function restoreVisibilitySnapshot(snap: VisibilityDomainSnapshot): void {
@@ -1068,7 +1431,7 @@ function buildViewer3DState(
     if (performerManager.performers.length >= performerManager.maxPerformers)
       return false;
 
-    const sourceIndex = selectedPerformerIndex ?? 0;
+    const sourceIndex = primaryPerformerIndex() ?? 0;
     const source = performerManager.performers[sourceIndex];
 
     const layoutTargets = performerManager.addPerformer();
@@ -1086,7 +1449,7 @@ function buildViewer3DState(
       }
     });
 
-    selectedPerformerIndex = newIndex;
+    replacePerformerSelection(newIndex);
     return true;
   }
 
@@ -1099,21 +1462,43 @@ function buildViewer3DState(
     sceneUndo.commitState();
   }
 
-  function removePerformerWithoutUndo(): boolean {
+  function removePerformerAtIndexWithoutUndo(index: number): boolean {
     if (performerManager.performers.length <= 1) return false;
-    const removedIndex =
-      selectedPerformerIndex ?? performerManager.performers.length - 1;
-    const layoutTargets = performerManager.removePerformer(removedIndex);
+    const layoutTargets = performerManager.removePerformer(index);
     if (!layoutTargets) return false;
-    selectedPerformerIndex = Math.min(
-      removedIndex,
-      performerManager.performers.length - 1
+    return true;
+  }
+
+  function removePerformerWithoutUndo(): boolean {
+    const selected = selectedPerformerIndices();
+    if (
+      selected.length === 0 ||
+      selected.length >= performerManager.performers.length
+    ) {
+      return false;
+    }
+
+    if (options.performerSelection?.removeSelection) {
+      return options.performerSelection.removeSelection(selected);
+    }
+
+    const firstRemoved = Math.min(...selected);
+    for (const index of [...selected].sort((a, b) => b - a)) {
+      if (!removePerformerAtIndexWithoutUndo(index)) return false;
+    }
+    replacePerformerSelection(
+      Math.min(firstRemoved, performerManager.performers.length - 1)
     );
     return true;
   }
 
   function removePerformerFromUI(): void {
     if (performerManager.performers.length <= 1) return;
+
+    if (options.performerSelection?.removeSelection) {
+      removePerformerWithoutUndo();
+      return;
+    }
 
     sceneUndo.captureState("remove-performer", "Remove performer");
     removePerformerWithoutUndo();
@@ -1140,7 +1525,20 @@ function buildViewer3DState(
       for (let iteration = 0; iteration < iterationLimit; iteration += 1) {
         const before = performerManager.performers.length;
         if (before < boundedTarget) spawnPerformerWithoutUndo();
-        else if (before > boundedTarget) removePerformerWithoutUndo();
+        else if (before > boundedTarget) {
+          removePerformerAtIndexWithoutUndo(before - 1);
+          const normalized = normalizeSelectedIndices(
+            selectedPerformerIndices()
+          );
+          if (normalized.length === 0) {
+            replacePerformerSelection(performerManager.performers.length - 1);
+          } else {
+            setPerformerSelection(
+              normalized,
+              primaryPerformerIndex() ?? undefined
+            );
+          }
+        }
         if (performerManager.performers.length === before) break;
       }
     });
@@ -1178,7 +1576,10 @@ function buildViewer3DState(
       });
     const afterSnap: ViewerDomainSnapshot = {
       performers: afterPerformers,
-      selectedPerformerIndex,
+      selectedPerformerIndex: allPerformersSelected()
+        ? null
+        : primaryPerformerIndex(),
+      selectedPerformerIndices: selectedPerformerIndices(),
       activeFormation: preset,
     };
 
@@ -1419,9 +1820,13 @@ function buildViewer3DState(
     persistActiveFormation(activeFormation);
   });
 
-  // Persist which performer is currently selected (null = "All").
+  // Persist the ordered selection and its compatibility primary index.
   $effect(() => {
-    persistSelectedIndex(selectedPerformerIndex);
+    const selected = selectedPerformerIndices();
+    persistSelectedIndices(selected);
+    persistSelectedIndex(
+      allPerformersSelected() ? null : primaryPerformerIndex()
+    );
   });
 
   /**
@@ -1498,8 +1903,33 @@ function buildViewer3DState(
     // Restore viewer-level state.
     const savedFormation = loadPersistedActiveFormation();
     if (savedFormation) activeFormation = savedFormation;
-    const savedSelection = loadPersistedSelectedIndex();
-    selectedPerformerIndex = savedSelection;
+    if (!options.performerSelection) {
+      const savedSelection = seeded(
+        seed?.selectedPerformerIndices,
+        loadPersistedSelectedIndices
+      );
+      if (savedSelection !== null) {
+        const savedPrimary =
+          seed?.selectedPerformerIndex ?? loadPersistedSelectedIndex();
+        if (
+          savedPrimary === null &&
+          savedSelection.length === performerManager.performers.length
+        ) {
+          localSelectedPerformerIndices = null;
+          localPrimaryPerformerIndex = null;
+        } else {
+          setLocalSelection(savedSelection, savedPrimary ?? undefined);
+        }
+      } else {
+        const legacySelection = seeded(
+          seed?.selectedPerformerIndex,
+          loadPersistedSelectedIndex
+        );
+        localSelectedPerformerIndices =
+          legacySelection === null ? null : [legacySelection];
+        localPrimaryPerformerIndex = legacySelection;
+      }
+    }
 
     renderMode = "3d";
     persistMode("3d");
@@ -1570,7 +2000,10 @@ function buildViewer3DState(
           staffLengthCm: p.settings.staffLengthCm,
         },
       })),
-      selectedPerformerIndex,
+      selectedPerformerIndex: allPerformersSelected()
+        ? null
+        : primaryPerformerIndex(),
+      selectedPerformerIndices: selectedPerformerIndices(),
       activeFormation,
       defaultProp: String(_defaultSettings.prop),
       oceanVariant: String(oceanVariant),
@@ -1661,8 +2094,15 @@ function buildViewer3DState(
 
       if (config.activeFormation !== undefined)
         activeFormation = config.activeFormation;
-      if (config.selectedPerformerIndex !== undefined)
-        selectedPerformerIndex = config.selectedPerformerIndex;
+      if (config.selectedPerformerIndices !== undefined) {
+        setPerformerSelection(
+          config.selectedPerformerIndices,
+          config.selectedPerformerIndex ?? undefined
+        );
+      } else if (config.selectedPerformerIndex !== undefined) {
+        if (config.selectedPerformerIndex === null) selectAllPerformers();
+        else replacePerformerSelection(config.selectedPerformerIndex);
+      }
 
       // `setDefaultProp` is the owner; its undo capture is already suppressed
       // by the enclosing `withoutUndo`, so this is exactly the inline write.
@@ -1856,7 +2296,25 @@ function buildViewer3DState(
       return performerManager;
     },
     get selectedPerformerIndex() {
-      return selectedPerformerIndex;
+      return !options.performerSelection &&
+        localSelectedPerformerIndices === null
+        ? null
+        : primaryPerformerIndex();
+    },
+    get primaryPerformerIndex() {
+      return primaryPerformerIndex();
+    },
+    get selectedPerformerIndices() {
+      return selectedPerformerIndices();
+    },
+    get isAllPerformersSelected() {
+      return allPerformersSelected();
+    },
+    get performerSelectionMode() {
+      return performerSelectionMode;
+    },
+    setPerformerSelectionMode(value: boolean) {
+      performerSelectionMode = value;
     },
     get isCameraDragging() {
       return isCameraDragging;
@@ -1873,14 +2331,33 @@ function buildViewer3DState(
     },
     scopedPerformers,
     selectPerformerScope,
+    setPerformerSelection,
+    replacePerformerSelection,
+    togglePerformerSelection,
+    clearPerformerSelection,
+    selectAllPerformers,
     frameAllPerformers,
     get propSizeLinked() {
       return propSizeLinked;
     },
     togglePropSizeLink,
     setCharacterScoped,
+    setPropScoped,
+    applyPerformerAppearanceAssignments,
+    setPropBuildScoped,
+    setEffortScoped,
+    setEffectScoped,
+    setHandEffectsScoped,
+    setStaffLengthScoped,
     setHandPlaneScoped,
     loadSequenceScoped,
+    clearSequenceScoped,
+    resetPropScoped,
+    resetPropBuildScoped,
+    resetEffortScoped,
+    resetEffectsScoped,
+    resetPlanesScoped,
+    resetAllOverridesScoped,
     get canUndo() {
       undoRevision;
       return sceneUndo.canUndo;
@@ -2171,6 +2648,8 @@ export interface Viewer3DPersistConfig {
   camera: CameraStateSnapshot | null;
   performers: StoredPerformerSnapshot[];
   selectedPerformerIndex: number | null;
+  /** Ordered selection. Optional on scenes saved before multi-selection. */
+  selectedPerformerIndices?: number[];
   activeFormation: FormationPreset | "manual" | "custom";
   defaultProp: string;
   oceanVariant: string;
@@ -2216,6 +2695,12 @@ export function writeViewer3DConfig(
       config.selectedPerformerIndex === null
         ? "null"
         : String(config.selectedPerformerIndex)
+    );
+  }
+  if (config.selectedPerformerIndices !== undefined) {
+    set(
+      STORAGE_KEY_SELECTED_INDICES,
+      JSON.stringify(config.selectedPerformerIndices)
     );
   }
   if (config.defaultProp !== undefined)

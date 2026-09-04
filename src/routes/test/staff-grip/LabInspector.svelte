@@ -33,8 +33,14 @@
     fit: BodyPropFit | null;
     verdict: FitVerdict;
     deltaCm: number | null;
-    /** What this configuration asks the prop to be. Drives the drawn mesh. */
+    /** What this configuration asks the prop to be. */
     configuredLengthCm: number | null;
+    /** What is actually drawn. Equals the ask only on a procedural build. */
+    drawnLengthCm: number | null;
+    /** Set when the build draws at an authored length and ignores the ask. */
+    authoredLengthCm: number | null;
+    /** How tall the body on stage stands, in centimetres. */
+    characterHeightCm: number;
     /** What the collision model is using. Does not follow the configuration. */
     collisionLengthCm: number | null;
     /** Signed gap between the two, or null when they agree. */
@@ -55,6 +61,9 @@
     verdict,
     deltaCm,
     configuredLengthCm,
+    drawnLengthCm,
+    authoredLengthCm,
+    characterHeightCm,
     collisionLengthCm,
     lengthDivergenceCm,
     leftMetric,
@@ -75,6 +84,23 @@
    * measuring a different body than it thinks.
    */
   const SWEEP_AGREEMENT_TOLERANCE_CM = 1;
+
+  /**
+   * Centimetres are what the solver works in; feet and inches are what a prop
+   * is bought in. Both, always, so neither has to be converted in someone's
+   * head while they are looking at a body.
+   */
+  const CM_PER_INCH = 2.54;
+
+  function imperial(valueCm: number | null): string {
+    if (valueCm === null || !Number.isFinite(valueCm)) return "—";
+    const totalInches = valueCm / CM_PER_INCH;
+    const feet = Math.floor(totalInches / 12);
+    const inches = totalInches - feet * 12;
+    return feet > 0
+      ? `${feet} ft ${inches.toFixed(1)} in`
+      : `${inches.toFixed(1)} in`;
+  }
 
   const sweepDeltaCm = $derived(
     sweepCharacter && fit
@@ -145,12 +171,27 @@
       {#if lab.panel === "fit"}
         <div class="panel">
           <p class="verdict" data-verdict={verdict}>
-            <b>{cm(configuredLengthCm)} cm</b> configured ·
+            <b>{cm(drawnLengthCm)} cm</b>
+            {authoredLengthCm === null ? "configured" : "on screen"} ·
             {VERDICT_COPY[verdict]}{deltaCm !== null && verdict !== "fits"
               ? ` by ${Math.abs(deltaCm).toFixed(1)} cm`
               : ""}
           </p>
           <dl class="readout">
+            <div class="metric">
+              <dt>Character height</dt>
+              <dd>
+                {cm(characterHeightCm)} cm
+                <span class="sub">· {imperial(characterHeightCm)}</span>
+              </dd>
+            </div>
+            <div class="metric" data-diverged={authoredLengthCm !== null}>
+              <dt>Prop drawn length</dt>
+              <dd>
+                {cm(drawnLengthCm)} cm
+                <span class="sub">· {imperial(drawnLengthCm)}</span>
+              </dd>
+            </div>
             <div class="metric">
               <dt>Reach (shoulder to grip)</dt>
               <dd>{cm(fit ? fit.measurements.reachM * 100 : null)} cm</dd>
@@ -206,7 +247,7 @@
                   <span class="sub"
                     >· {lengthDivergenceCm > 0 ? "+" : "−"}{Math.abs(
                       lengthDivergenceCm
-                    ).toFixed(1)} cm vs configured</span
+                    ).toFixed(1)} cm vs drawn</span
                   >
                 {/if}
               </dd>
@@ -245,12 +286,24 @@
               live reading above should agree within a centimetre.
             </p>
           {/if}
+          {#if authoredLengthCm !== null}
+            <p class="note">
+              This build is drawn from an authored model, so it measures {cm(
+                authoredLengthCm
+              )} cm whatever it is asked for: the scene package's
+              <code>Prop3D</code> hands <code>length</code> to procedural
+              geometry and drops it on its GLTF branch. Prop length above asks
+              for {cm(configuredLengthCm)} cm and nothing receives it. Switch to
+              the plain Staff to make the control reach the mesh, or change the
+              model's own <code>AUTHORED_LENGTH_M</code> and rebuild it.
+            </p>
+          {/if}
           <p class="note">
-            Two lengths are live at once. The configured one reaches the drawn
-            prop through <code>propLength</code>; the collision model builds
-            its segment from the scene package's global
-            <code>staffLength</code> and ignores it, so a per-body length
-            changes the picture and not the physics.
+            Three lengths are live at once. The configured one reaches the drawn
+            prop through <code>propLength</code>, and only a procedural build
+            answers it. The collision model builds its segment from the scene
+            package's global <code>staffLength</code> and ignores both, so a
+            per-body length changes the picture and not the physics.
           </p>
           <p class="note">
             The production sequence viewer takes a third route: it sizes the

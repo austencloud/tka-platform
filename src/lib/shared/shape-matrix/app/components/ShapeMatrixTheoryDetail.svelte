@@ -29,6 +29,7 @@
   } from "$lib/shared/shape-matrix/domain/theory-flower";
   import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
   import { theoryPropRelationship } from "$lib/shared/shape-matrix/domain/theory-prop-relationship";
+  import { theoryRatioLabel } from "$lib/shared/shape-matrix/domain/theory-ratio";
   import {
     FAMILY_BY_MODE,
     propModeOf,
@@ -99,6 +100,7 @@
   const handPeriod = $derived((4 * 60000) / Math.max(1, animationState.bpm));
 
   let alignToken = $state(0);
+  let boundaryOpen = $state(false);
 
   const pair = $derived(app.theoryPair);
 
@@ -288,11 +290,11 @@
           <header class="pair-heading">
             <div class="pair-keys">
               <strong style={`color: ${BLUE};`}>
-                {spinRatioKey(pair.left.ratio)}
+                {theoryRatioLabel(pair.left.ratio)}
               </strong>
               <span class="against">against</span>
               <strong style={`color: ${RED};`}>
-                {spinRatioKey(pair.right.ratio)}
+                {theoryRatioLabel(pair.right.ratio)}
               </strong>
             </div>
           </header>
@@ -319,17 +321,34 @@
           </div>
         {/if}
 
-        <!-- Outside the branch on purpose: it is true of the whole surface, not
-             of one selected pair, and a visitor who has not picked a cell yet
-             is exactly the one who needs to read it. -->
+        <!-- Outside the branch on purpose: it is true of the whole surface.
+             The short question stays visible; the explanation waits until
+             someone asks for it so this pane still feels like a toy. -->
         {#if !controlsOpen}
-          <p class="boundary-note" transition:growFade={{ axis: "y" }}>
-            This surface stands outside the level system. Levels name turn
-            values down to a quarter turn, so a ratio like 1:3 has no turn, no
-            letter and no level, and VTG classifies timing and direction rather
-            than the whole rational field. These paths are exact; neither
-            notation covers them.
-          </p>
+          <div class="boundary-disclosure" transition:growFade={{ axis: "y" }}>
+            <PanelButton
+              fullWidth
+              ariaExpanded={boundaryOpen}
+              onclick={() => (boundaryOpen = !boundaryOpen)}
+            >
+              <span>
+                <i class="fas fa-circle-question" aria-hidden="true"></i>
+                Why no letter or level?
+              </span>
+              <i
+                class="fas fa-chevron-down boundary-toggle-icon"
+                class:open={boundaryOpen}
+                aria-hidden="true"
+              ></i>
+            </PanelButton>
+            {#if boundaryOpen}
+              <p class="boundary-note" transition:growFade={{ axis: "y" }}>
+                Levels only name turn values down to a quarter turn. A ratio
+                like 3:7 falls outside that ladder, while VTG still tells you
+                its timing and direction. The path shown here is exact.
+              </p>
+            {/if}
+          </div>
         {/if}
       </div>
 
@@ -558,12 +577,39 @@
     height: 100%;
   }
 
+  .boundary-disclosure {
+    display: grid;
+    flex: 0 0 auto;
+    gap: 0.45rem;
+  }
+
+  .boundary-disclosure :global(.panel-btn) {
+    justify-content: space-between;
+    padding-inline: 0.75rem;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
+  }
+
+  .boundary-disclosure :global(.panel-btn > span) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .boundary-toggle-icon {
+    transition: transform var(--duration-fast, 150ms) ease;
+  }
+
+  .boundary-toggle-icon.open {
+    transform: rotate(180deg);
+  }
+
   .boundary-note {
     margin: 0;
+    padding: 0 0.25rem 0.2rem;
     flex: 0 0 auto;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.5));
-    font-size: var(--font-size-compact, 0.75rem);
-    line-height: 1.5;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.68));
+    font-size: var(--font-size-min, 0.875rem);
+    line-height: 1.55;
   }
 
   .prop-catalogue {
@@ -614,6 +660,12 @@
     .theory-detail {
       border: 0;
       border-radius: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .boundary-toggle-icon {
+      transition: none;
     }
   }
 
