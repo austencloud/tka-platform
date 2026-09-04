@@ -1,7 +1,7 @@
 # Worker Renderer Scene-Switch Prototype
 
 **Date:** 2026-09-03  
-**Status:** implementation approved; Ocean and Rainbow proof in progress
+**Status:** renderer boundary and exact Rainbow world proven; production viewer migration in progress
 
 ## Outcome
 
@@ -145,7 +145,9 @@ never replace a newer choice.
 - A staging error leaves the active canvas untouched and terminates only the
   failed slot.
 - A context loss before handoff behaves like a staging error. A context loss in
-  the active slot requests a replacement while leaving DOM controls usable.
+  the active slot removes the dead slot and exposes the error while leaving DOM
+  controls usable. It does not auto-restart: an automatic retry loop on a
+  device that cannot sustain the context would repeatedly allocate and fail.
 - Rapid selection cancels and terminates the stale staging worker. Latest
   request wins.
 
@@ -153,12 +155,12 @@ never replace a newer choice.
 
 ### Rainbow
 
-The proof uses procedural Three geometry and custom shader programs to
-exercise shader creation without network assets. It is a benchmark world, not
-yet the visual-parity implementation. Production migration requires extracting
-`RainbowScene.svelte`, `PrismPlatform.svelte`, `SkyGradient.svelte`, and
-`FallingParticles.svelte` into shared worker-safe factories, then making both
-the Svelte adapter and worker call those owners.
+Rainbow now has one canonical, renderer-neutral Three.js world factory in
+`environments/worlds/rainbow/`. It owns the production sky, aurora, caustic
+ground, prism platform, light shafts, orbiting lights, fog, and all four
+particle fields. `RainbowScene.svelte` is a thin Threlte lifecycle adapter and
+the worker world is a thin worker lifecycle adapter around that same owner.
+There is no reduced worker-only Rainbow implementation.
 
 ### Ocean
 
@@ -209,8 +211,10 @@ migration; it does not get softened into a pass.
   and never exceed two live slots.
 - A staging failure cannot remove the active slot.
 - Worker world disposal releases scene resources and renderer context.
-- Focused tests transform the worker entry so a worker-only syntax error cannot
-  hide behind a green Svelte check.
+- Focused tests cover protocol, handoff, slot lifecycle, context bounds, and the
+  canonical Rainbow world. A standalone worker-entry bundle plus the full
+  production build verify worker-only imports and syntax that Svelte check does
+  not necessarily traverse.
 
 ### Runtime
 
@@ -226,8 +230,8 @@ migration; it does not get softened into a pass.
 
 ## Migration after the proof
 
-1. Extract production Rainbow construction into worker-safe Three factories;
-   prove pixel/feature parity, then enable Rainbow in the shared backend.
+1. ~~Extract production Rainbow construction into worker-safe Three
+   factories.~~ Complete: both renderers now call one exact world owner.
 2. Extract Ocean in bounded layers: static seabed/reef, atmosphere/water,
    fauna compute/render, interaction/audio bridge, then postprocessing. Each
    layer gets a visual and memory parity gate.
@@ -245,5 +249,36 @@ migration; it does not get softened into a pass.
   rejected as a boot-time fix by measurement.
 - Texture cooking as a load-time fix. It remains a separate VRAM decision.
 - Keeping every environment resident.
-- Claiming Ocean or Rainbow production parity from this architectural proof.
+- Claiming Ocean production parity or production-viewer migration from this
+  architectural proof.
+
+## Measured proof, 2026-09-04
+
+The exact shared Rainbow world retained the worker handoff's responsiveness in
+four alternating steady-state switches:
+
+| Incoming world | Click to swap | Worker preparation | Main-thread max gap | Outgoing-frame max gap |
+| -------------- | ------------: | -----------------: | ------------------: | ---------------------: |
+| Ocean          |        745 ms |             572 ms |             17.8 ms |                16.8 ms |
+| Rainbow        |        564 ms |             361 ms |             17.5 ms |                66.7 ms |
+| Ocean          |        797 ms |             609 ms |             17.1 ms |                16.8 ms |
+| Rainbow        |        580 ms |             393 ms |             20.3 ms |                66.7 ms |
+
+Every steady-state switch passed the input, outgoing-frame, and context-count
+gates. At swap there were two contexts; 500 ms later there was one.
+
+The first cold Rainbow load on the Vite development server did **not** pass the
+input gate: its largest application-thread gap was 102.9 ms. The exact cause is
+not yet isolated, and this proof therefore does not claim that cold startup is
+flawless. It does prove that environment construction, shader compilation, and
+GPU upload can occur without freezing the application or the outgoing 3D world
+once the worker module is resident.
+
+The production sequence viewer still uses the main-thread Threlte renderer.
+Moving the environment alone into a second canvas is not an exact solution:
+separate contexts cannot share depth, fog, lighting, occlusion, or postprocess
+state. Production migration requires the worker to own the complete 3D frame,
+including performer, props, effects, and camera, while Choreo timing and UI
+remain on the application thread.
+
 - Rewriting the Choreo Card, sequence, or application UI systems.
