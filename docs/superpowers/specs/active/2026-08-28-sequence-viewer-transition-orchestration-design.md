@@ -1169,13 +1169,15 @@ The corrected phrase has one ease and a small depth offset:
    remains present while the ensemble becomes legible, then yields as the
    formation takes ownership.
 4. The Canvas2D owner marks its primary canvas as
-   `data-animation-layer="props"`. During a trace, the harness asks that canvas
-   to publish paint telemetry. The renderer records each additional prop only
-   after its `drawImage` completes, then reports the number drawn, the number at
-   perceptible alpha, and their mean painted alpha. This avoids racing the live
-   canvas between its clear and draw tasks, and adds no DOM writes during
-   ordinary playback. The grade fails visibly as `Painted prop arrival:
-unavailable` if the renderer boundary cannot be read.
+   `data-animation-layer="props"`. During a trace, the harness arms a
+   document-level capture that survives a `DualSourceCrossfade` canvas swap.
+   The renderer records each additional prop only after its `drawImage`
+   completes, including the host progress, count drawn, count at perceptible
+   alpha, and mean painted alpha. It retains the bounded render-frame history
+   so an outer review sampler starved by the browser cannot collapse the phrase
+   to one apparent step. There are no telemetry writes during ordinary
+   playback. The grade fails visibly as `Painted prop arrival: unavailable` if
+   the renderer boundary cannot be read.
 
 The new Gate 3 acceptance contract requires all layers to be perceptible by 35%
 master progress and at least 35% mean layer opacity near halfway. At the renderer

@@ -930,6 +930,13 @@ describe("Sequence Viewer geometry trace", () => {
       command: "tunnel-first",
       duration: 480,
       samples: reveal,
+      tunnelPaintSamples: reveal.map((sample) => ({
+        time: sample.time,
+        progress: sample.tunnelOpacity,
+        paintedPropCount: sample.tunnelPaintedPropCount,
+        perceptiblePropCount: sample.tunnelPaintedPerceptiblePropCount,
+        meanAlpha: sample.tunnelPaintedOpacityMean,
+      })),
       modeCommits: [],
     });
 
