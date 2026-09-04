@@ -29,6 +29,7 @@
   } from "$lib/shared/shape-matrix/domain/theory-flower";
   import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
   import { theoryPropRelationship } from "$lib/shared/shape-matrix/domain/theory-prop-relationship";
+  import { theoryRatioLabel } from "$lib/shared/shape-matrix/domain/theory-ratio";
   import {
     FAMILY_BY_MODE,
     propModeOf,
@@ -288,11 +289,11 @@
           <header class="pair-heading">
             <div class="pair-keys">
               <strong style={`color: ${BLUE};`}>
-                {spinRatioKey(pair.left.ratio)}
+                {theoryRatioLabel(pair.left.ratio)}
               </strong>
               <span class="against">against</span>
               <strong style={`color: ${RED};`}>
-                {spinRatioKey(pair.right.ratio)}
+                {theoryRatioLabel(pair.right.ratio)}
               </strong>
             </div>
           </header>
@@ -325,7 +326,7 @@
         {#if !controlsOpen}
           <p class="boundary-note" transition:growFade={{ axis: "y" }}>
             This surface stands outside the level system. Levels name turn
-            values down to a quarter turn, so a ratio like 1:3 has no turn, no
+            values down to a quarter turn, so a ratio like 3:7 has no turn, no
             letter and no level, and VTG classifies timing and direction rather
             than the whole rational field. These paths are exact; neither
             notation covers them.

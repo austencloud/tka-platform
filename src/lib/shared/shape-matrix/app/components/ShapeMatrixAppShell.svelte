@@ -310,11 +310,11 @@
         <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
         <span class="identity-note">
           <span class="identity-note-sizer" aria-hidden="true">
-            Build a 4×4 grid from any two prop:hand ratios
+            Pair any two whole-number ratios in a 4×4 grid
           </span>
           <span class="identity-note-live">
             {theory
-              ? "Build a 4×4 grid from any two prop:hand ratios"
+              ? "Pair any two whole-number ratios in a 4×4 grid"
               : `Lorq’s 144 Shape Matrix: VTG ratios ${ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}`}
           </span>
         </span>
