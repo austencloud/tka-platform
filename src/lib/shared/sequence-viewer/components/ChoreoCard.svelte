@@ -90,6 +90,10 @@
     browseViewMode?: import("$lib/shared/browse/domain/browse-view-mode").BrowseViewMode;
     // Settings
     darkMode?: boolean;
+    /** Optional physical-card frame painted behind the canonical card content. */
+    frameColors?: { readonly accent: string; readonly dark: string };
+    /** Plain-text artifact title for cards whose identity is not a TKA word. */
+    customTitleText?: string;
     customNotesText?: string;
     // Prop overrides
     leftPropType?: PropType;
@@ -154,6 +158,8 @@
     handPathMode = false,
     browseViewMode,
     darkMode = false,
+    frameColors,
+    customTitleText,
     customNotesText = "Created using Flow Arts Composer",
     leftPropType,
     rightPropType,
@@ -266,6 +272,7 @@
       browseViewMode,
       handPathMode,
       showWord,
+      customTitleText,
       showDifficultyLevel,
       hideSoloHeader,
       showLoopGlyph,
@@ -836,9 +843,12 @@
     <div
       class="preview-stack"
       class:scroll-mode={needsScroll}
+      class:has-frame={!!frameColors}
       style={needsScroll
         ? ""
         : `width: ${containedWidth ? `${containedWidth}px` : "auto"}; height: ${containedHeight ? `${containedHeight}px` : "auto"};${!containedWidth || !containedHeight || cellWidth < 1 ? " visibility: hidden;" : ""}`}
+      style:--card-frame-accent={frameColors?.accent}
+      style:--card-frame-dark={frameColors?.dark}
       bind:this={previewStackElement}
     >
       <!-- Header section -->
@@ -848,6 +858,7 @@
         {isBrowseSoloMode}
         {soloHand}
         {browseViewMode}
+        {customTitleText}
         showDifficultyLevel={effectiveShowDifficulty}
         {difficultyLevel}
         {currentLevelStyle}
@@ -1006,6 +1017,16 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .preview-stack.has-frame {
+    box-sizing: border-box;
+    padding: max(4px, 2%);
+    background: repeating-linear-gradient(
+      135deg,
+      var(--card-frame-accent) 0 0.45rem,
+      var(--card-frame-dark) 0.45rem 0.9rem
+    );
   }
 
   /* The Card was never readable at its previous size, so there is nothing to

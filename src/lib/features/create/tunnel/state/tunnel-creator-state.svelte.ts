@@ -209,7 +209,6 @@ export function createTunnelCreatorState(
       : createExplicitTunnelStage([], formation)
   );
   let pickerTarget = $state<TunnelPickerTarget | null>(null);
-  let selectedPerformerId = $state<string | null>(initialSlots[0]!.id);
   let pairingTargetId = $state<string | null>(initialSlots[1]?.id ?? null);
   let opening = $state(false);
   const restoredGenerationTarget =
@@ -227,6 +226,9 @@ export function createTunnelCreatorState(
   );
   let generationTargetId = $state<string | null>(
     activePanel === "generation" ? restoredGenerationTarget : null
+  );
+  let selectedPerformerId = $state<string | null>(
+    generationTargetId ?? initialSlots[0]!.id
   );
 
   function currentLead(): TunnelPerformer | null {
@@ -849,6 +851,7 @@ export function createTunnelCreatorState(
   function selectGenerationTarget(targetId: string): boolean {
     if (!slots.some((slot) => slot.id === targetId)) return false;
     generationTargetId = targetId;
+    selectedPerformerId = targetId;
     return true;
   }
 
@@ -1236,7 +1239,7 @@ export function createTunnelCreatorState(
     canRemoveStageInstance,
     selectPerformer(targetId: string) {
       if (!slots.some((slot) => slot.id === targetId)) return false;
-      selectedPerformerId = selectedPerformerId === targetId ? null : targetId;
+      selectedPerformerId = targetId;
       return true;
     },
     addPerformer,

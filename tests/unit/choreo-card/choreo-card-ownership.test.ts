@@ -10,6 +10,12 @@ describe("ChoreoCard ownership boundaries", () => {
   const facadePath =
     "src/lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   const facade = source(facadePath);
+  const cardHeader = source(
+    "src/lib/shared/sequence-viewer/components/CardHeader.svelte"
+  );
+  const cardFooter = source(
+    "src/lib/shared/sequence-viewer/components/CardFooter.svelte"
+  );
 
   it("keeps the public component as a facade over named behavior owners", () => {
     expect(facade).toContain("createChoreoCardDisplayState");
@@ -34,5 +40,15 @@ describe("ChoreoCard ownership boundaries", () => {
         )
       )
     ).toBe(false);
+  });
+
+  it("keeps non-letter artifact titles in the canonical card header", () => {
+    expect(facade).toContain("customTitleText?: string");
+    expect(facade).toContain("frameColors?:");
+    expect(facade).toContain("class:has-frame={!!frameColors}");
+    expect(facade).toContain("{customTitleText}");
+    expect(cardHeader).toContain("{customTitleText}");
+    expect(cardHeader).toContain("text-title");
+    expect(cardFooter).toContain("var(--font-size-compact, 12px)");
   });
 });
