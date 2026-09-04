@@ -262,7 +262,7 @@
 
   .lesson-shell {
     display: grid;
-    place-items: center;
+    place-items: start center;
     width: min(100%, 126rem);
     min-height: 100%;
     margin-inline: auto;
@@ -278,7 +278,8 @@
     overflow: hidden;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-lg, 0.75rem);
-    background: var(--theme-panel-bg);
+    background: color-mix(in srgb, var(--theme-panel-bg) 86%, transparent);
+    backdrop-filter: blur(1.5rem) saturate(1.08);
     box-shadow: 0 1.5rem 4rem color-mix(in srgb, black 22%, transparent);
   }
 
@@ -479,6 +480,28 @@
 
     .pictograph-frame {
       width: min(100%, 78rem, 72dvh);
+    }
+
+    .instruction-meta {
+      font-size: 1rem;
+    }
+
+    h1 {
+      font-size: 4rem;
+    }
+
+    .instruction-copy p {
+      font-size: 1.4rem;
+    }
+
+    .instruction-rail {
+      padding-inline: 3rem;
+    }
+
+    .rail-pointer {
+      right: -1.5rem;
+      width: 3rem;
+      height: 3rem;
     }
   }
 

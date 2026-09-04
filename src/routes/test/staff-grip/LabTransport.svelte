@@ -78,6 +78,20 @@
   const markers = $derived(labContinuityMarkers(continuity, scrubMax));
 
   /**
+   * Whether the lane may draw yet.
+   *
+   * `lab.sequenceId` changes the instant a goal is pressed; `stepCount` only
+   * catches up when that sequence finishes loading. In between, a four-step
+   * sequence's markers would be laid out against the eight-step track still on
+   * screen and sit at visibly wrong positions for a moment. The sweep records
+   * how many steps it walked, so a disagreement is exactly that window: hold
+   * the lane empty through it rather than publish a placement that is wrong.
+   */
+  const laneMatchesSequence = $derived(
+    continuity.state === "unswept" || continuity.sweptStepCount === stepCount
+  );
+
+  /**
    * Land on a discontinuity and stop there. Same contract as a frame step: a
    * running clock would overwrite the landing on its very next tick.
    */
@@ -184,7 +198,23 @@
       role="group"
       aria-label="Prop discontinuities in this sequence"
     >
-      {#if markers.length === 0}
+      <!-- Blue over red rather than side by side: the two spans overlap to
+           within a couple of thousandths of a step, so stacking is what keeps
+           the one from hiding the other. -->
+      {#snippet mark(marker: (typeof markers)[number])}
+        <span class="marker-bars" aria-hidden="true">
+          <span class="marker-bar is-blue" class:is-absent={!marker.blue}
+          ></span>
+          <span class="marker-bar is-red" class:is-absent={!marker.red}></span>
+        </span>
+        <span class="marker-stem" aria-hidden="true"></span>
+      {/snippet}
+
+      {#if !laneMatchesSequence}
+        <!-- A sequence is still loading. The lane holds its height and says
+             nothing, because everything it could say right now belongs to the
+             sequence being replaced. -->
+      {:else if markers.length === 0}
         <p class="marker-empty">
           {continuity.state === "unswept"
             ? "Not in the continuity sweep"
@@ -201,18 +231,30 @@
             {disabled}
             onclick={() => seek(marker.seekPhase, marker.labelRange)}
           >
-            <!-- Blue over red rather than side by side: the two spans overlap
-                 to within a couple of thousandths of a step, so stacking is
-                 what keeps the one from hiding the other. -->
-            <span class="marker-bars" aria-hidden="true">
-              <span class="marker-bar is-blue" class:is-absent={!marker.blue}
-              ></span>
-              <span class="marker-bar is-red" class:is-absent={!marker.red}
-              ></span>
-            </span>
-            <span class="marker-stem" aria-hidden="true"></span>
+            {@render mark(marker)}
           </button>
         {/each}
+
+        <!--
+          The same four positions, drawn instead of pressed.
+
+          A button carries the design system's 44px floor, and the closest pair
+          the sweep produces sits 16% of a track apart, so below a 288px lane
+          two targets would cover each other and a tap would land on the wrong
+          one. Under that width the buttons give way to these: identical marks
+          at identical positions, no target to miss. The scrub underneath is
+          untouched and still reaches every phase.
+        -->
+        <span class="marker-ticks" aria-hidden="true">
+          {#each markers as marker (marker.key)}
+            <span
+              class="marker-tick"
+              style={`left: ${(marker.start + marker.width / 2) * 100}%;`}
+            >
+              {@render mark(marker)}
+            </span>
+          {/each}
+        </span>
       {/if}
     </div>
 
@@ -364,6 +406,10 @@
     height: var(--min-touch-target, 44px);
     margin-inline: calc(var(--scrub-thumb) / 2);
     min-width: 0;
+    /* The lane decides for itself whether its marks can be targets. Its own
+       width is what the arithmetic below is about, and the dock hands it a
+       different one at nearly every viewport, so it is the container. */
+    container-type: inline-size;
   }
 
   /* Reserved, not conditional: a clean sequence holds the same lane a sequence
@@ -404,7 +450,7 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    width: 18px;
+    width: min(18px, 100%);
     padding: 4px 0 2px;
   }
 
@@ -455,6 +501,42 @@
   .marker:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+  }
+
+  /*
+   * Pins or ticks.
+   *
+   * `app.css` floors every button at `--min-touch-target`, so a marker cannot
+   * be made narrower than 44px and stay a button. The tightest pair the sweep
+   * produces sits 15.9% of a track apart, which clears 44px only while the
+   * lane is at least 277px; 18rem is the nearest token-shaped width above
+   * that, and it keeps pins on a 375px phone (lane 292px, gap 46px) while
+   * handing the 820px tablet and the folded landscape phone their ticks. The
+   * scrub is untouched either way, so every phase stays reachable.
+   */
+  .marker-ticks {
+    display: none;
+  }
+
+  .marker-tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 18px;
+  }
+
+  @container (max-width: 18rem) {
+    .marker {
+      display: none;
+    }
+
+    .marker-ticks {
+      display: contents;
+    }
   }
 
   .frame-group {
