@@ -276,7 +276,12 @@
     padding: 14px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 16px;
-    background: var(--theme-panel-bg, #0c0e16);
+    background:
+      linear-gradient(
+        var(--theme-panel-bg, rgba(12, 14, 22, 0.96)),
+        var(--theme-panel-bg, rgba(12, 14, 22, 0.96))
+      ),
+      color-mix(in srgb, var(--theme-text, white) 8%, black);
     box-shadow: 0 12px 40px var(--theme-shadow);
   }
 

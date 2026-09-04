@@ -23,6 +23,11 @@ import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/g
 import { fitLoopRhythmToLength } from "$lib/shared/create/services/loop-rhythm-gating";
 import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 import { normalizePersistedGenerationConfig } from "../domain/generator-persistence-normalizer";
+import {
+  DEFAULT_GENERATION_STYLE,
+  type GenerationMotionTypeFilter,
+  type GenerationStyleAxis,
+} from "$lib/shared/create/domain/generation-style";
 
 // Re-export for convenience
 export type { UIGenerationConfig };
@@ -45,9 +50,9 @@ interface SerializedConfig {
   reflectionAxis?: ReflectionAxis;
   timestamp: number;
   // 3-axis constraint system
-  constraintPreset?: "smooth" | "mixed" | "choppy";
-  handPathMode?: "smooth" | "mixed" | "choppy";
-  motionTypeFilter?: "no-dash" | "prefer-dash" | null;
+  constraintPreset?: GenerationStyleAxis;
+  handPathMode?: GenerationStyleAxis;
+  motionTypeFilter?: GenerationMotionTypeFilter;
   // Duration rhythm template
   durationTemplateId?: string | null;
   // Spell mode length override
@@ -217,9 +222,7 @@ const DEFAULT_CONFIG: UIGenerationConfig = {
   period: Period.QUARTERED,
   loopType: LOOPType.ROTATED,
   reflectionAxis: "north-south",
-  constraintPreset: "smooth",
-  handPathMode: "mixed",
-  motionTypeFilter: null,
+  ...DEFAULT_GENERATION_STYLE,
   durationTemplateId: null,
   spellTargetLength: null,
 };

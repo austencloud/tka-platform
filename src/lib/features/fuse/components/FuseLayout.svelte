@@ -668,6 +668,7 @@
   >
     <FuseWorkspaceHeader
       recipeOpen={settingsOpen}
+      flatRecipeRail={wideWorkspace}
       onOpenRecipe={toggleRecipe}
       onOpenSetting={openSettings}
       onModeChange={changeMode}
