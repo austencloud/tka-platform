@@ -492,6 +492,9 @@
       <span data-problem={summary.tunnelUnpreparedLayerFrames > 0}
         >Reveal-before-layers frames: {summary.tunnelUnpreparedLayerFrames}</span
       >
+      <span data-problem={summary.tunnelUnpreparedTextureFrames > 0}
+        >Reveal-before-textures frames: {summary.tunnelUnpreparedTextureFrames}</span
+      >
       <span data-problem={summary.tunnelLateLayerArrivals > 0}
         >Late layer arrivals: {summary.tunnelLateLayerArrivals}</span
       >
@@ -510,11 +513,22 @@
         )}</span
       >
       <span
-        data-problem={summary.tunnelLayerOpacitySpreadMaximum < 0.35 &&
+        data-problem={summary.tunnelPreparedLayerCountMaximum > 1 &&
+          summary.tunnelLayerOpacitySpreadMaximum < 0.35 &&
           summary.tunnelCrossfadeFrames > 2}
-        >Layer cascade spread: {summary.tunnelLayerOpacitySpreadMaximum.toFixed(
-          2
-        )}</span
+        >Layer cascade spread: {summary.tunnelPreparedLayerCountMaximum > 1
+          ? summary.tunnelLayerOpacitySpreadMaximum.toFixed(2)
+          : "n/a · one copy peels spatially"}</span
+      >
+      <span
+        data-problem={summary.tunnelPreparedLayerCountMaximum > 0 &&
+          summary.tunnelLayerSeparationMaximum > 0.08 &&
+          summary.tunnelSpatialPeelFrames < 3}
+        >Spatial peel: {(summary.tunnelLayerSeparationMaximum * 100).toFixed(
+          0
+        )}% radius over {summary.tunnelSpatialPeelFrames} frames · {(
+          summary.tunnelLayerSeparationStepMaximum * 100
+        ).toFixed(0)}% max step</span
       >
       <span data-dissolve={summary.tunnelCrossfadeFrames > 0}
         >Layer-bloom frames: {summary.tunnelCrossfadeFrames}</span

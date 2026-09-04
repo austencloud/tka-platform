@@ -345,27 +345,34 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(motionSurface).toContain("data-tunnel-blend");
     expect(motionSurface).toContain("additionalLayers={tunnelLayers}");
     expect(motionSurface.match(/<AnimatorCanvas/g)).toHaveLength(1);
-    expect(motionSurface).toContain(
-      "resolveTunnelLayerOpacity(\n        tunnelReveal.current"
-    );
+    expect(motionSurface).toContain("resolveTunnelLayerProgress(");
+    expect(motionSurface).toContain("interpolateTunnelLayerProp(");
+    expect(motionSurface).toContain("resolveTunnelLayerOpacity(");
     expect(splitPane).toContain("prepareWhileInactive: true");
     expect(tunnelController).toContain("get layersReady(): boolean");
+    expect(tunnelController).toContain("preparedAdditionalLayersAt(");
     expect(motionSurface).not.toContain("if (!tunnelController.layersReady)");
+    expect(motionSurface).toContain(
+      "preloadAdditionalLayers={preparedTunnelLayers}"
+    );
+    expect(motionSurface).toContain("data-tunnel-textures-ready");
+    expect(motionSurface).toContain(
+      "if (!tunnelController.layersReady || !tunnelTexturesReady) return"
+    );
     expect(tunnelLayerReveal).toContain(
       "export function resolveTunnelGridOpacity("
     );
-    expect(tunnelLayerReveal).toContain(
-      "export const TUNNEL_REVEAL_DURATION = DURATION.dramatic"
-    );
-    expect(splitPane).toContain(
-      "motionDuration(TUNNEL_REVEAL_DURATION)"
-    );
+    expect(tunnelLayerReveal).toContain("DURATION.emphasis + DURATION.normal");
+    expect(splitPane).toContain("motionDuration(TUNNEL_REVEAL_DURATION)");
     expect(motionSurface).toContain("gridOpacity={tunnelGridOpacity}");
     expect(motionSurface).toContain("data-tunnel-layer-opacity-max");
+    expect(motionSurface).toContain("data-tunnel-layer-separation");
     expect(reviewFrame).toContain("tunnelLayerOpacityMaximum:");
     expect(geometryTrace).toContain("Reveal-before-layers frames:");
     expect(geometryTrace).toContain("Largest grid alpha step:");
     expect(geometryTrace).toContain("Layer cascade spread:");
+    expect(geometryTrace).toContain("one copy peels spatially");
+    expect(geometryTrace).toContain("Spatial peel:");
     expect(viewerModeDissolve).toContain(
       'GATE_THREE_STAGE_MODES.has(previousMode) && nextMode === "tunnel"'
     );
