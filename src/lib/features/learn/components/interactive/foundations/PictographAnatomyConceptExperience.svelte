@@ -57,13 +57,13 @@
       region: { x: 0, y: 68, width: 38, height: 32 },
     },
     {
-      text: "Bottom right: the hands’ timing and direction.",
-      label: "Hand timing and direction",
+      text: "Bottom right: the hands’ time and direction.",
+      label: "Hand time and direction",
       region: { x: 67, y: 68, width: 33, height: 32 },
     },
     {
-      text: "Top right: the props’ timing and direction.",
-      label: "Prop timing and direction",
+      text: "Top right: the props’ time and direction.",
+      label: "Prop time and direction",
       region: { x: 68, y: 0, width: 32, height: 28 },
     },
     {

@@ -10,10 +10,13 @@ describe("worker renderer responsiveness accounting", () => {
     const state = createWorkerRendererResponsivenessState(7, 100);
 
     recordMainThreadTimer(state, 116);
+    state.currentPhase = "performer";
     recordMainThreadTimer(state, 181);
+    state.currentPhase = "compile";
     recordMainThreadTimer(state, 214);
 
     expect(state.mainThreadMaxGapMs).toBe(65);
+    expect(state.mainThreadMaxGapPhase).toBe("performer");
     expect(state.mainThreadGapsOver50Ms).toBe(1);
   });
 
@@ -21,9 +24,12 @@ describe("worker renderer responsiveness accounting", () => {
     const state = createWorkerRendererResponsivenessState(9, 200);
 
     recordOutgoingWorkerFrame(state, 16.7);
+    state.currentPhase = "compile";
     recordOutgoingWorkerFrame(state, 84.2);
+    state.currentPhase = "first-frame";
     recordOutgoingWorkerFrame(state, 33.4);
 
     expect(state.outgoingWorkerMaxFrameGapMs).toBe(84.2);
+    expect(state.outgoingWorkerMaxFrameGapPhase).toBe("compile");
   });
 });

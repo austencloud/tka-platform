@@ -75,12 +75,7 @@ export async function buildFuseFlowerPath(
 ): Promise<SequenceData> {
   const { matrices, edges } = await loadBuildContext();
   const archetype = resolveFlowerArchetype(matrices, flower.style);
-  const flowerSequence = buildFlowerSequence(
-    archetype,
-    flower,
-    side === "left" ? "blue" : "red",
-    edges
-  );
+  const flowerSequence = buildFlowerSequence(archetype, flower, side, edges);
   const color = side === "left" ? HandSide.LEFT : HandSide.RIGHT;
   const locationBeat = variation.startLocation
     ? flowerSequence.steps.findIndex(

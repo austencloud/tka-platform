@@ -48,6 +48,7 @@ export class ThirdOrderCompositionSampler implements IThirdOrderCompositionSampl
       const childStep = mapThirdOrderChildStep(
         resolvedBeat,
         childTotalSteps,
+        totalBeats,
         child.timingMode,
         child.rate
       );

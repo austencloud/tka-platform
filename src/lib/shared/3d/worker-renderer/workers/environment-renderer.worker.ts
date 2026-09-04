@@ -2,6 +2,8 @@ import {
   ACESFilmicToneMapping,
   PerspectiveCamera,
   SRGBColorSpace,
+  Vector3,
+  Vector4,
   WebGLRenderer,
 } from "three";
 import type {
@@ -10,6 +12,7 @@ import type {
   WorkerRendererBootMetrics,
   WorkerRendererInMessage,
   WorkerRendererOutMessage,
+  WorkerPerformerSnapshot,
   WorkerViewport,
 } from "../domain/worker-renderer-protocol";
 import { clampWorkerViewport } from "../domain/worker-renderer-protocol";
@@ -19,6 +22,15 @@ import type {
   WorkerEnvironmentWorld,
   WorkerWorldFactory,
 } from "../worlds/worker-environment-world";
+import { WorkerPerformerStage } from "../worlds/worker-performer";
+import {
+  primeWorkerRenderer,
+  warmWorkerRenderer,
+} from "../services/worker-renderer-warmup";
+import {
+  createViewerBaseLightingGroup,
+  resolveViewerBaseLighting,
+} from "../../rendering/viewer-lighting-rig";
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 
@@ -34,6 +46,8 @@ let environment: WorkerEnvironmentKey | null = null;
 let renderer: WebGLRenderer | null = null;
 let camera: PerspectiveCamera | null = null;
 let world: WorkerEnvironmentWorld | null = null;
+let performerStage: WorkerPerformerStage | null = null;
+let performerSnapshots: readonly WorkerPerformerSnapshot[] = [];
 let animationFrame = 0;
 let frameCount = 0;
 let previousFrameAt = 0;
@@ -85,6 +99,7 @@ function renderFrame(now: number): void {
   previousFrameAt = now;
   if (visible) {
     world.update(Math.min(deltaMs / 1000, 0.1), now / 1000);
+    performerStage?.update(Math.min(deltaMs / 1000, 0.1));
     renderer.render(world.scene, camera);
     frameCount += 1;
     post({
@@ -119,6 +134,8 @@ async function initialize(
     acceptedAt,
   });
 
+  post({ type: "progress", requestId, phase: "renderer", fraction: 0 });
+
   message.canvas.addEventListener("webglcontextlost", (event) => {
     event.preventDefault();
     post({ type: "context-lost", requestId, environment });
@@ -138,8 +155,11 @@ async function initialize(
   camera = new PerspectiveCamera(message.camera.fov, 1, 0.05, 500);
   applyViewport(message.viewport);
   applyCamera(message.camera);
+  const rendererReadyAt = performance.now();
+  post({ type: "progress", requestId, phase: "renderer", fraction: 1 });
 
   const factory = WORLD_FACTORIES[environment];
+  performerSnapshots = message.performers;
   world = await factory({
     renderer,
     camera,
@@ -154,26 +174,100 @@ async function initialize(
     },
   });
   if (disposed) return;
-  const worldReadyAt = performance.now();
+  world.scene.add(
+    createViewerBaseLightingGroup(
+      resolveViewerBaseLighting(true, environment === "ocean")
+    )
+  );
+  const environmentReadyAt = performance.now();
+  post({ type: "progress", requestId, phase: "performer", fraction: 0 });
+  performerStage = new WorkerPerformerStage(world.scene);
+  await performerStage.setSnapshots(performerSnapshots);
+  if (disposed) return;
+  const performerReadyAt = performance.now();
+  const worldReadyAt = performerReadyAt;
+  post({ type: "progress", requestId, phase: "performer", fraction: 1 });
 
   post({ type: "progress", requestId, phase: "compile", fraction: 0 });
-  await renderer.compileAsync(world.scene, camera);
+  const compileTargets = await warmWorkerRenderer(
+    { renderer, scene: world.scene, camera },
+    {
+      onProgress(fraction) {
+        post({ type: "progress", requestId, phase: "compile", fraction });
+      },
+      async yieldBetween() {
+        await nextWorkerFrame();
+      },
+      shouldStop: () => disposed,
+    }
+  );
   if (disposed) return;
   const compiledAt = performance.now();
-  post({ type: "progress", requestId, phase: "compile", fraction: 1 });
+  const memoryAfterCompile = rendererMemory();
 
+  post({ type: "progress", requestId, phase: "prime", fraction: 0 });
+  const primeTargets = await primeWorkerRenderer(
+    { renderer, scene: world.scene, camera },
+    {
+      onProgress(fraction) {
+        post({ type: "progress", requestId, phase: "prime", fraction });
+      },
+      async yieldBetween() {
+        await nextWorkerFrame();
+      },
+      shouldStop: () => disposed,
+    }
+  );
+  if (disposed) return;
+  const primedAt = performance.now();
+  const memoryAfterPrime = rendererMemory();
+
+  post({ type: "progress", requestId, phase: "finalize", fraction: 0 });
+  await renderer.compileAsync(world.scene, camera);
+  if (disposed) return;
+  const finalizedAt = performance.now();
+  const memoryAfterFinalize = rendererMemory();
+  post({ type: "progress", requestId, phase: "finalize", fraction: 1 });
+
+  post({ type: "progress", requestId, phase: "preflight", fraction: 0 });
+  const previousViewport = renderer.getViewport(new Vector4());
+  renderer.setViewport(0, 0, 1, 1);
+  try {
+    world.update(0, finalizedAt / 1000);
+    performerStage.update(0);
+    renderer.render(world.scene, camera);
+  } finally {
+    renderer.setViewport(previousViewport);
+  }
+  const preflightedAt = performance.now();
+  const memoryAfterPreflight = rendererMemory();
+  post({ type: "progress", requestId, phase: "preflight", fraction: 1 });
+
+  post({ type: "progress", requestId, phase: "first-frame", fraction: 0 });
+  const firstRenderStartedAt = performance.now();
   world.update(0, compiledAt / 1000);
+  performerStage.update(0);
   renderer.render(world.scene, camera);
-  const presentedAt = await nextWorkerFrame();
+  const firstRenderCompletedAt = performance.now();
+  const memoryAfterFirstRender = rendererMemory();
+  await nextWorkerFrame();
+  const presentedAt = performance.now();
   if (disposed || !renderer || !world) return;
   world.update(
     Math.min((presentedAt - compiledAt) / 1000, 0.1),
     presentedAt / 1000
   );
+  performerStage.update(Math.min((presentedAt - compiledAt) / 1000, 0.1));
   renderer.render(world.scene, camera);
   const firstFrameAt = performance.now();
   frameCount = 1;
   previousFrameAt = firstFrameAt;
+  const performerDiagnostics = performerStage.getDiagnostics();
+  const projectedCenter = performerDiagnostics.boundsCenter
+    ? new Vector3(...performerDiagnostics.boundsCenter)
+        .project(camera)
+        .toArray()
+    : null;
 
   post({ type: "progress", requestId, phase: "first-frame", fraction: 1 });
   post({
@@ -182,12 +276,39 @@ async function initialize(
     environment: world.environment,
     metrics: {
       acceptedAt,
+      rendererReadyAt,
+      environmentReadyAt,
+      performerReadyAt,
       worldReadyAt,
       compiledAt,
+      primedAt,
+      finalizedAt,
+      preflightedAt,
       firstFrameAt,
+      rendererMs: rendererReadyAt - acceptedAt,
+      environmentMs: environmentReadyAt - rendererReadyAt,
+      performerMs: performerReadyAt - environmentReadyAt,
       worldMs: worldReadyAt - acceptedAt,
       compileMs: compiledAt - worldReadyAt,
+      primeMs: primedAt - compiledAt,
+      primeTargets,
+      finalizeCompileMs: finalizedAt - primedAt,
+      preflightMs: preflightedAt - finalizedAt,
+      firstRenderMs: firstRenderCompletedAt - firstRenderStartedAt,
+      presentationWaitMs: presentedAt - firstRenderCompletedAt,
+      confirmationRenderMs: firstFrameAt - presentedAt,
+      firstFrameWaitMs: firstFrameAt - preflightedAt,
       firstFrameMs: firstFrameAt - acceptedAt,
+      compileTargets,
+      memoryAfterCompile,
+      memoryAfterPrime,
+      memoryAfterFinalize,
+      memoryAfterPreflight,
+      memoryAfterFirstRender,
+      performers: {
+        ...performerDiagnostics,
+        projectedCenter,
+      },
       ...rendererMemory(),
     },
   });
@@ -199,6 +320,8 @@ function dispose(): void {
   disposed = true;
   if (animationFrame) scope.cancelAnimationFrame(animationFrame);
   animationFrame = 0;
+  performerStage?.dispose();
+  performerStage = null;
   world?.dispose();
   world = null;
   renderer?.renderLists.dispose();
@@ -231,6 +354,18 @@ scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
       break;
     case "camera":
       applyCamera(message.camera);
+      break;
+    case "performers":
+      performerSnapshots = message.performers;
+      void performerStage?.setSnapshots(performerSnapshots).catch((error) => {
+        post({
+          type: "error",
+          requestId,
+          environment,
+          message: errorMessage(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+      });
       break;
     case "visibility":
       visible = message.visible;

@@ -239,6 +239,40 @@ describe("tunnel creator draft", () => {
     expect(migrated?.presentation).toEqual(presentation);
   });
 
+  it("migrates a version-five draft by materializing its visible stage", () => {
+    const composition = createTunnelComposition([
+      createIndependentTunnelPerformer(sequence, 0, "Performer 1"),
+    ]);
+    const { stage: _stage, ...legacyComposition } = composition;
+    const legacy = {
+      version: 5,
+      workflow: "seeded",
+      mode: "linked",
+      composition: { ...legacyComposition, version: 1 },
+      relationship: {
+        rotationSteps: 0,
+        reflect: "none",
+        invert: false,
+        rewind: false,
+      },
+      sourceStates: [],
+      workspace: { activePanel: null, generationTargetId: null },
+      editingTunnel: null,
+      presentation,
+    };
+
+    const migrated = parseTunnelCreatorDraft(legacy);
+
+    expect(migrated?.version).toBe(TUNNEL_CREATOR_DRAFT_VERSION);
+    expect(migrated?.composition?.version).toBe(2);
+    expect(migrated?.composition?.stage.instances).toHaveLength(2);
+    expect(
+      migrated?.composition?.stage.instances.map(
+        (instance) => instance.performerId
+      )
+    ).toEqual([composition.performers[0]!.id, composition.performers[0]!.id]);
+  });
+
   it("round-trips generated and library source provenance without approximating it", () => {
     const generated = {
       kind: "generator-recipe" as const,
