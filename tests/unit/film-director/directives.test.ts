@@ -6,8 +6,8 @@ import {
   isDirectiveExpression,
   normalizeDirective,
   type DirectiveValue,
-} from "../../../src/routes/test/film-director/_lib/directives";
-import { resolveCastAxis } from "../../../src/routes/test/film-director/_lib/resolve-directives";
+} from "$lib/features/film-director/domain/directives";
+import { resolveCastAxis } from "$lib/features/film-director/domain/resolve-directives";
 
 const propValue = z.enum(["staff", "fan", "club"]);
 const schema = directiveSchema(propValue);
