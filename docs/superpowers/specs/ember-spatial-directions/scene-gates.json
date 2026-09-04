@@ -46,6 +46,7 @@
       "lXhTllDFV2Ne1E7foCkS",
       "Vwm6XTLdDbDfxuoVE7z9",
       "5P5KVEq04dpHxu9F0ViI",
+      "LfdgqBhR1T31jk77cFhf",
       "Iur86OmZX40nTqdwgxDq"
     ]
   },
@@ -60,11 +61,12 @@
     {
       "id": "C-002",
       "class": "invention",
-      "statement": "The active R5 Mid-Flank Fire Pilgrimage candidate places the performer in a 12 by 11 m irregular stable patch embedded in a continuously inclined compound flank between 131.368 m of upper mountain and 69.916 m of lower-country fall; a high-source Flowy drainage clears the protected 4.5 m action radius and continues through the south scene boundary.",
+      "statement": "The active R5 Mid-Flank Fire Pilgrimage candidate places the performer on a 12 by 11 m irregular old, cooled lava bench embedded in a continuously inclined compound flank between 131.368 m of upper mountain and 69.916 m of lower-country fall; a small audience standing crescent follows the downslope and lateral contour outside the protected 4.5 m action radius, while a high-source Flowy drainage clears that radius and continues through the south scene boundary.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/01-north-up-measured-plan.png",
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/02-true-scale-midflank-section.png",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/03-runtime-uphill-downhill-proof.png"
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/03-runtime-uphill-downhill-proof.png",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/06-performance-ground-detail.png"
       ]
     },
     {
@@ -99,6 +101,14 @@
       "statement": "In the historical R1 benchmark, Flowy and MrLavaLoba2 produced 78.0 percent footprint intersection-over-union on the shared authored Ember DEM and benchmark parameters.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/lava-simulator-comparison-report.json"
+      ]
+    },
+    {
+      "id": "C-007",
+      "class": "invention",
+      "statement": "Reserved Gate 3/4 response, not an R5 measured-terrain claim: the full older-flow contact may read slightly darker and denser than adjacent rubble, and only pre-existing peripheral fractures may carry a restrained low-area ember pulse; the performance surface underfoot remains cooled and non-emissive.",
+      "evidence": [
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/06-performance-ground-detail.png"
       ]
     }
   ],
@@ -487,6 +497,10 @@
         {
           "kind": "emplacement-calibration",
           "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/05-flowy-calibration-sweep.png"
+        },
+        {
+          "kind": "performance-ground-detail",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/06-performance-ground-detail.png"
         },
         {
           "kind": "verification-report",
