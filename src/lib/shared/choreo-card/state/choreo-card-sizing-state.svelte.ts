@@ -441,10 +441,22 @@ export function createChoreoCardSizingState(
     const widthUnits = deps.containModel.cols;
     const stack = deps.previewStackElement;
     if (!stack || widthUnits <= 0) return;
-    const stackSize = measuredSize ?? {
-      width: stack.clientWidth,
-      height: stack.clientHeight,
-    };
+    let stackSize = measuredSize;
+    if (!stackSize) {
+      // clientWidth/clientHeight include the striped frame padding. The first
+      // synchronous measurement happens before ResizeObserver's content-box
+      // delivery, so remove that padding here as well or the grid and footer
+      // overflow a fixed-aspect card until another resize happens.
+      const style = getComputedStyle(stack);
+      const horizontalPadding =
+        parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+      const verticalPadding =
+        parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+      stackSize = {
+        width: stack.clientWidth - horizontalPadding,
+        height: stack.clientHeight - verticalPadding,
+      };
+    }
     if (stackSize.width < 1 || stackSize.height < 1) return;
     const nextCellWidth = deps.squareGridContain
       ? fitSquareGridCell(stackSize, deps.containModel)
