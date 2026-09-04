@@ -89,6 +89,7 @@
       }
     >
   >({});
+  let activePerformerStepIndices = $state<Record<string, number>>({});
   const controller = new TunnelViewController({
     getSequence: () => creator.leadSequence,
     getComposition: () =>
@@ -470,6 +471,7 @@
       <TunnelPerformerRoster
         bind:this={performerRoster}
         displays={performerDisplays}
+        activeStepIndices={activePerformerStepIndices}
         {leftPropType}
         {rightPropType}
         colorMode={controller.colorMode}
@@ -523,6 +525,8 @@
             animationSettingsState={creator.presentation.animationSettings}
             visibilityManager={creator.presentation.visibility}
             stageFit="contain"
+            onActivePerformerStepsChange={(stepIndices) =>
+              (activePerformerStepIndices = { ...stepIndices })}
           />
           {#if !creator.ready}
             <div class="preview-guidance" role="status">
@@ -1122,12 +1126,12 @@
 
   @container tunnel (max-width: 719px) {
     .tunnel-workspace:not(.compact-settings-task) {
-      grid-template-rows: max-content minmax(32rem, auto) minmax(24rem, auto);
+      grid-template-rows: max-content minmax(26rem, auto) minmax(24rem, auto);
       padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
     }
 
     .tunnel-workspace:not(.compact-settings-task) .source-column {
-      min-height: 32rem;
+      min-height: 26rem;
       overflow: visible;
     }
 
@@ -1324,6 +1328,10 @@
     }
 
     .short-landscape .preview-stage {
+      min-height: 0;
+    }
+
+    .short-landscape .source-column {
       min-height: 0;
     }
 

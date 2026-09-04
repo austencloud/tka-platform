@@ -489,6 +489,26 @@
       <span data-problem={summary.tunnelUnreadyFrames > 0}
         >Unready Tunnel frames: {summary.tunnelUnreadyFrames}</span
       >
+      <span data-problem={summary.tunnelUnpreparedLayerFrames > 0}
+        >Reveal-before-layers frames: {summary.tunnelUnpreparedLayerFrames}</span
+      >
+      <span data-problem={summary.tunnelLateLayerArrivals > 0}
+        >Late layer arrivals: {summary.tunnelLateLayerArrivals}</span
+      >
+      <span
+        data-problem={summary.tunnelLayerOpacityStepMaximum > 0.35 &&
+          summary.longestSampleGap <= 80}
+        >Largest layer alpha step: {summary.tunnelLayerOpacityStepMaximum.toFixed(
+          2
+        )}</span
+      >
+      <span
+        data-problem={summary.tunnelGridOpacityStepMaximum > 0.35 &&
+          summary.longestSampleGap <= 80}
+        >Largest grid alpha step: {summary.tunnelGridOpacityStepMaximum.toFixed(
+          2
+        )}</span
+      >
       <span data-dissolve={summary.tunnelCrossfadeFrames > 0}
         >Layer-bloom frames: {summary.tunnelCrossfadeFrames}</span
       >
@@ -825,19 +845,19 @@
     <!-- The dock is the cause the arrival only hints at: a held panel whose
        basis snaps between a length and a keyword re-lays out the whole group
        in one frame. A collapse that takes a single frame is that snap. -->
-  {#if summary.dockCollapse}
-    <span
-      data-problem={summary.dockCollapse.frames <= 1 &&
-        summary.dockCollapse.travelPx > 24}
-      title="A held dock is sized by its flex-basis alone, and CSS cannot interpolate between a length and a keyword. A collapse that takes one frame is that snap."
-      >Dock collapse: {Math.round(summary.dockCollapse.stepPx)} px step · {Math.round(
-        summary.dockCollapse.travelPx
-      )} px over {summary.dockCollapse.frames} frames · {Math.round(
-        summary.dockCollapse.ms
-      )} ms</span
-    >
-  {/if}
-  {#if summary.cardArrival}
+    {#if summary.dockCollapse}
+      <span
+        data-problem={summary.dockCollapse.frames <= 1 &&
+          summary.dockCollapse.travelPx > 24}
+        title="A held dock is sized by its flex-basis alone, and CSS cannot interpolate between a length and a keyword. A collapse that takes one frame is that snap."
+        >Dock collapse: {Math.round(summary.dockCollapse.stepPx)} px step · {Math.round(
+          summary.dockCollapse.travelPx
+        )} px over {summary.dockCollapse.frames} frames · {Math.round(
+          summary.dockCollapse.ms
+        )} ms</span
+      >
+    {/if}
+    {#if summary.cardArrival}
       <span
         data-problem={summary.cardArrival.offstagePx > 0 ||
           (summary.cardArrival.travelPx > 24 &&

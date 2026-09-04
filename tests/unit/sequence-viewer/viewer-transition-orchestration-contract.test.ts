@@ -47,6 +47,12 @@ const geometryTrace = read(
 const motionSurface = read(
   "src/lib/shared/sequence-viewer/components/ViewerMotionSurface.svelte"
 );
+const tunnelController = read(
+  "src/lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte.ts"
+);
+const tunnelLayerReveal = read(
+  "src/lib/shared/sequence-viewer/tunnel/tunnel-layer-reveal.ts"
+);
 const sceneLoadingCurtain = read(
   "src/lib/shared/3d/scene-features/components/SceneLoadingCurtain.svelte"
 );
@@ -153,7 +159,9 @@ describe("Sequence Viewer transition orchestration contract", () => {
     // basis is its size. That decision moved to the panel-flex owner, which is
     // where the measured-handoff rule can be tested without a layout engine.
     expect(panelFlex).toContain("if (panel.fixedSize)");
-    expect(panelFlex).toContain("if (panel.preferredSize && !options.manuallySized)");
+    expect(panelFlex).toContain(
+      "if (panel.preferredSize && !options.manuallySized)"
+    );
     expect(panelGroup).toContain("resolvePanelFlex(panel, {");
     // A held dock that swaps `480px` for `auto` cannot be interpolated by CSS,
     // so PanelGroup measures both ends rather than letting the group re-lay out
@@ -162,7 +170,7 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(panelFlex).toContain("isHeldPanel(previous) && isHeldPanel(next)");
     expect(panelGroup).toContain("needsMeasuredBasisHandoff(previous, next)");
     expect(panelGroup).toContain("startBasisHandoff");
-    expect(panelGroup).toContain('element.style.flexBasis = `${from}px`');
+    expect(panelGroup).toContain("element.style.flexBasis = `${from}px`");
     expect(panelGroup).toContain("prefersReducedMotion()");
     expect(panelGroup).toContain("data-manually-sized=");
     expect(panelGroup).toContain("panel.resizeLabel ??");
@@ -340,6 +348,17 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(motionSurface).toContain(
       "resolveTunnelLayerOpacity(\n        tunnelReveal.current"
     );
+    expect(splitPane).toContain("prepareWhileInactive: true");
+    expect(tunnelController).toContain("get layersReady(): boolean");
+    expect(motionSurface).not.toContain("if (!tunnelController.layersReady)");
+    expect(tunnelLayerReveal).toContain(
+      "export function resolveTunnelGridOpacity("
+    );
+    expect(motionSurface).toContain("gridOpacity={tunnelGridOpacity}");
+    expect(motionSurface).toContain("data-tunnel-layer-opacity-max");
+    expect(reviewFrame).toContain("tunnelLayerOpacityMaximum:");
+    expect(geometryTrace).toContain("Reveal-before-layers frames:");
+    expect(geometryTrace).toContain("Largest grid alpha step:");
     expect(viewerModeDissolve).toContain(
       'GATE_THREE_STAGE_MODES.has(previousMode) && nextMode === "tunnel"'
     );

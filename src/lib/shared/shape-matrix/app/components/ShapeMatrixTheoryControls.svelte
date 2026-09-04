@@ -7,9 +7,9 @@
   pane, which is where the Matrix has always kept them.
 
   The ratio is TYPED rather than scrolled. The Matrix scrolls turn values
-  because there are eight of them and they are a ladder; the ratio field is
-  twenty-nine values wide and is not, so a viewer who knows they want 4:9 says
-  4:9 instead of hunting for it. -->
+  because there are eight of them and they are a ladder; the ratio field spans
+  every pair from 0 through 15, so a viewer who knows they want 12:5 says 12:5
+  instead of hunting through a catalog. -->
 <script lang="ts">
   import ShapeMatrixAxisControl from "./ShapeMatrixAxisControl.svelte";
   import ShapeMatrixRatioEntry from "./ShapeMatrixRatioEntry.svelte";

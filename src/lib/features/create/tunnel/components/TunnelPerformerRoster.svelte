@@ -25,6 +25,7 @@
 
   let {
     displays,
+    activeStepIndices = {},
     leftPropType,
     rightPropType,
     colorMode,
@@ -40,6 +41,7 @@
     onSelectPerformer,
   }: {
     displays: Record<string, TunnelPerformerDisplay>;
+    activeStepIndices?: Readonly<Record<string, number>>;
     leftPropType: PropType;
     rightPropType: PropType;
     colorMode: TunnelPropColorMode;
@@ -146,17 +148,31 @@
       </h3>
     </div>
     {#if focusMode}
-      <div class="performer-switcher" role="tablist" aria-label="Performers">
-        {#each creator.performerSlots as slot}
-          <button
-            type="button"
-            role="tab"
-            aria-selected={creator.selectedPerformerId === slot.id}
-            onclick={() => select(slot.id)}
+      <div class="roster-toolbar">
+        <div class="performer-switcher" role="tablist" aria-label="Performers">
+          {#each creator.performerSlots as slot}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={creator.selectedPerformerId === slot.id}
+              onclick={() => select(slot.id)}
+            >
+              {slot.label.replace("Performer ", "P")}
+            </button>
+          {/each}
+        </div>
+        {#if creator.canAddPerformer}
+          <PanelButton
+            variant="secondary"
+            onclick={add}
+            ariaLabel="Add another authored performer"
           >
-            {slot.label.replace("Performer ", "P")}
-          </button>
-        {/each}
+            <i class="fas fa-user-plus" aria-hidden="true"></i>
+            <span class="compact-add-count">
+              {creator.performerSlots.length}/4
+            </span>
+          </PanelButton>
+        {/if}
       </div>
     {/if}
   </header>
@@ -170,6 +186,7 @@
         bind:this={cardRefs[slot.id]}
         performer={slot.performer}
         displaySequence={display?.sequence ?? null}
+        activeStepIndex={activeStepIndices[slot.id] ?? null}
         stageTransformLabel={display?.stageTransformLabel ?? null}
         generatedInstanceCount={display?.generatedInstanceCount ?? 0}
         formationCopy={index === 1 && creator.partnerIsFormationCopy}
@@ -211,26 +228,27 @@
     {/each}
   </div>
 
-  <footer class="roster-footer">
-    <PanelButton
-      variant="secondary"
-      disabled={!creator.canAddPerformer}
-      onclick={add}
-      ariaLabel={creator.addPerformerBlockedReason ??
-        "Add another authored performer"}
-    >
-      <i class="fas fa-user-plus" aria-hidden="true"></i>
-      Add performer
-      <span
-        >{creator.performerSlots.length}{creator.performerSlots.length > 4
-          ? " preserved"
-          : "/4"}</span
+  {#if creator.canAddPerformer && !focusMode}
+    <footer class="roster-footer">
+      <PanelButton
+        variant="secondary"
+        onclick={add}
+        ariaLabel="Add another authored performer"
       >
-    </PanelButton>
-    {#if creator.addPerformerBlockedReason}
-      <p role="status">{creator.addPerformerBlockedReason}</p>
-    {/if}
-  </footer>
+        <i class="fas fa-user-plus" aria-hidden="true"></i>
+        Add performer
+        <span
+          >{creator.performerSlots.length}{creator.performerSlots.length > 4
+            ? " preserved"
+            : "/4"}</span
+        >
+      </PanelButton>
+    </footer>
+  {:else if creator.addPerformerBlockedReason}
+    <p class="sr-only" role="status">
+      {creator.addPerformerBlockedReason}
+    </p>
+  {/if}
 </section>
 
 <style>
@@ -271,6 +289,26 @@
     align-items: center;
     gap: 4px;
     min-width: 0;
+  }
+
+  .roster-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    margin-left: auto;
+  }
+
+  .roster-toolbar :global(.panel-btn) {
+    min-width: var(--min-touch-target, 48px);
+    min-height: var(--min-touch-target, 48px);
+    padding-inline: 8px;
+  }
+
+  .compact-add-count {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
   }
 
   .performer-switcher button {
@@ -365,8 +403,6 @@
   }
 
   .roster-footer {
-    align-items: flex-start;
-    flex-direction: column;
     border-top: 1px solid var(--theme-stroke);
   }
 
@@ -379,18 +415,30 @@
     color: var(--theme-text-dim);
   }
 
-  .roster-footer p {
-    line-height: 1.35;
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   @container tunnel (max-width: 719px) {
     .performer-roster {
-      min-height: min(32rem, 72dvh);
+      min-height: min(26rem, 64dvh);
       max-height: none;
     }
   }
 
-  @container tunnel (min-width: 720px) and (max-height: 500px) {
+  @container tunnel (min-width: 600px) and (max-height: 540px) {
+    .performer-roster.short {
+      min-height: 0;
+    }
+
     .roster-heading,
     .roster-footer {
       padding-block: 5px;
@@ -433,13 +481,30 @@
     }
 
     .performer-switcher {
-      margin-left: auto;
+      margin-left: 0;
     }
 
     .performer-switcher button {
       min-width: 44px;
       min-height: 44px;
       padding-inline: 8px;
+    }
+
+    .roster-toolbar :global(.panel-btn) {
+      width: 44px;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0;
+    }
+
+    .compact-add-count {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      clip-path: inset(50%);
     }
   }
 

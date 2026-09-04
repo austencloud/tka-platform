@@ -10,6 +10,9 @@ export interface ExactTurnFraction {
   denominator: number;
 }
 
+/** Largest value accepted in either field of the Theory ratio editor. */
+export const THEORY_SPIN_RATIO_MAX_PART = 15;
+
 function assertRatioPart(value: number, name: string): void {
   if (!Number.isSafeInteger(value) || value < 0) {
     throw new RangeError(`${name} must be a non-negative safe integer`);
@@ -163,7 +166,37 @@ export function buildBoundedSpinRatios(order: number): SpinRatio[] {
   );
 }
 
-/** Farey-9 finite catalog plus the stationary-hand 1:0 endpoint. */
+/**
+ * Every reduced ratio reachable by entering two values from 0 through 15.
+ *
+ * The editor bounds the values a person types, not the resulting fraction.
+ * Building the atlas from the same square keeps ratios above 1:1, floats, and
+ * the stationary-hand endpoint under one domain owner.
+ */
 export function buildTheorySpinRatioAtlas(): SpinRatio[] {
-  return [...buildBoundedSpinRatios(9), makeSpinRatio(1, 0)];
+  const ratios = new Map<string, SpinRatio>();
+  for (
+    let propRotations = 0;
+    propRotations <= THEORY_SPIN_RATIO_MAX_PART;
+    propRotations += 1
+  ) {
+    for (
+      let handCycles = 0;
+      handCycles <= THEORY_SPIN_RATIO_MAX_PART;
+      handCycles += 1
+    ) {
+      if (propRotations === 0 && handCycles === 0) continue;
+      const ratio = makeSpinRatio(propRotations, handCycles);
+      ratios.set(spinRatioKey(ratio), ratio);
+    }
+  }
+
+  return [...ratios.values()].sort((left, right) => {
+    if (left.handCycles === 0) return 1;
+    if (right.handCycles === 0) return -1;
+    return (
+      left.propRotations * right.handCycles -
+      right.propRotations * left.handCycles
+    );
+  });
 }

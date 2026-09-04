@@ -41,7 +41,6 @@ export interface ArchiveActivity {
 export interface ArchiveLane {
 	id: ArchiveLaneId;
 	label: string;
-	shortLabel: string;
 	description: string;
 }
 
@@ -94,31 +93,25 @@ export const ARCHIVE_YEAR_TICKS = [2004, 2010, 2016, 2022, 2026] as const;
 export const ARCHIVE_LANES: ArchiveLane[] = [
 	{
 		id: "notation",
-		label: "Notation Systems",
-		shortLabel: "Systems",
-		description:
-			"Explicit visual, textual, or computational ways to record movement.",
+		label: "Recording Systems",
+		description: "Published systems that turn movement into a record.",
 	},
 	{
 		id: "languages",
 		label: "Movement Languages",
-		shortLabel: "Languages",
-		description:
-			"Shared geometries, relations, and vocabularies used to discuss movement.",
+		description: "Shared geometries and vocabularies used to discuss movement.",
 	},
 	{
 		id: "teaching",
-		label: "Teaching & Transmission",
-		shortLabel: "Teaching",
+		label: "Teaching & Archives",
 		description:
-			"People and institutions that made structured knowledge easier to learn and share.",
+			"People and institutions that preserve and teach structured knowledge.",
 	},
 	{
 		id: "research",
-		label: "Current Research",
-		shortLabel: "Research",
+		label: "Research & Experiments",
 		description:
-			"Developing systems and public experiments whose language is still changing.",
+			"Public experiments testing new ways to describe movement.",
 	},
 ];
 
@@ -126,16 +119,16 @@ export const ARCHIVE_LANES: ArchiveLane[] = [
  * Four distinct records land in almost the same two calendar years. Treating
  * them as four overlapping ticks made the archive illegible and implied a
  * precision the sources do not support. The overview names the density; the
- * cluster tray preserves every record without stretching calendar time.
+ * inline expansion preserves every record without stretching calendar time.
  */
 export const ARCHIVE_CLUSTERS: ArchiveCluster[] = [
 	{
 		id: "movement-language-foundations",
 		lane: "languages",
-		label: "4 movement-language records",
-		dateLabel: "2009–2011",
+		label: "4 related records",
+		dateLabel: "2009–2010",
 		startYear: 2009,
-		endYear: 2011,
+		endYear: 2010,
 		entryIds: ["caps", "trochoid", "nine-square", "vtg"],
 	},
 ];
