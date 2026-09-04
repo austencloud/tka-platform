@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import ScrubbableNumber from "$lib/shared/ui/components/ScrubbableNumber.svelte";
   import { getThirdOrderContext } from "../context/third-order-context";
@@ -23,36 +24,31 @@
       value: "world",
       label: "World locked",
       shortLabel: "World",
-      icon: "fas fa-lock",
     },
     {
       value: "radial",
       label: "Radial to center",
       shortLabel: "Radial",
-      icon: "fas fa-bullseye",
     },
     {
       value: "tangent",
       label: "Follow path tangent",
       shortLabel: "Tangent",
-      icon: "fas fa-route",
     },
     {
       value: "carrier",
       label: "Follow carrier direction",
       shortLabel: "Carrier",
-      icon: "fas fa-compass",
     },
   ] satisfies Array<{
     value: ThirdOrderOrientationMode;
     label: string;
     shortLabel: string;
-    icon: string;
   }>;
   const timingOptions = [
-    { value: "phrase", label: "Phrase per count", shortLabel: "Phrase" },
-    { value: "beats", label: "Shared counts", shortLabel: "Shared" },
-    { value: "independent", label: "Independent clock", shortLabel: "Free" },
+    { value: "phrase", label: "Fit to carrier", shortLabel: "Fit" },
+    { value: "beats", label: "Shared counts", shortLabel: "Counts" },
+    { value: "independent", label: "Independent rate", shortLabel: "Rate" },
   ] satisfies Array<{
     value: ThirdOrderTimingMode;
     label: string;
@@ -68,12 +64,18 @@
       "The child grid turns to face the direction its center is traveling.",
     carrier: "The child grid inherits the carrier prop’s own staff direction.",
   };
+  const timingHelp: Record<ThirdOrderTimingMode, string> = {
+    phrase:
+      "The child completes one sequence during one complete carrier loop.",
+    beats: "Child and carrier advance count-for-count; shorter sequences loop.",
+    independent: "The child advances from the master clock at its own rate.",
+  };
 </script>
 
 <aside class="inspector" aria-label="Third Order inspector">
   <header class="inspector-header">
     <div>
-      <span class="eyebrow">Selected system</span>
+      <span class="context-label">Selected system</span>
       <h2>{state.selectedChild.label}</h2>
     </div>
     <button
@@ -97,10 +99,7 @@
 
   <section class="control-section">
     <div class="section-heading">
-      <div>
-        <span class="section-number">01</span>
-        <h3>Carrier lane</h3>
-      </div>
+      <h3>Carrier lane</h3>
       <p>Which virtual hand moves this whole grid?</p>
     </div>
     <SegmentedControl
@@ -114,10 +113,7 @@
 
   <section class="control-section">
     <div class="section-heading">
-      <div>
-        <span class="section-number">02</span>
-        <h3>Frame orientation</h3>
-      </div>
+      <h3>Frame orientation</h3>
       <p>How does the child coordinate system turn along its route?</p>
     </div>
     <SegmentedControl
@@ -130,18 +126,16 @@
       semantics="radiogroup"
       ariaLabel="Frame orientation"
     />
-    <div class="mode-explanation">
-      <i class="fas fa-circle-info" aria-hidden="true"></i>
-      <span>{orientationHelp[state.selectedChild.orientationMode]}</span>
-    </div>
+    <Crossfade key={state.selectedChild.orientationMode} animateHeight>
+      <p class="choice-help">
+        {orientationHelp[state.selectedChild.orientationMode]}
+      </p>
+    </Crossfade>
   </section>
 
   <section class="control-section">
     <div class="section-heading">
-      <div>
-        <span class="section-number">03</span>
-        <h3>Inner timing</h3>
-      </div>
+      <h3>Inner timing</h3>
       <p>How the child sequence advances against the carrier.</p>
     </div>
     <SegmentedControl
@@ -153,6 +147,9 @@
       semantics="radiogroup"
       ariaLabel="Inner timing"
     />
+    <Crossfade key={state.selectedChild.timingMode} animateHeight>
+      <p class="choice-help">{timingHelp[state.selectedChild.timingMode]}</p>
+    </Crossfade>
     {#if state.selectedChild.timingMode === "independent"}
       <div class="rate-row">
         <span>Playback rate</span>
@@ -170,13 +167,13 @@
     {/if}
   </section>
 
-  <section class="geometry-note">
-    <span class="geometry-mark" aria-hidden="true">2×</span>
+  <section class="geometry-summary">
+    <span class="geometry-value" aria-hidden="true">1:2</span>
     <div>
-      <h3>Aligned geometry</h3>
+      <h3>Child-to-carrier scale</h3>
       <p>
-        The carrier grid is twice the child grid. Center, hand point, and outer
-        point meet on one line.
+        Child centers sit on the carrier hand ring, keeping the two grids
+        geometrically aligned.
       </p>
     </div>
   </section>
@@ -186,16 +183,12 @@
   .inspector {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
     height: 100%;
     min-width: 0;
-    padding: 18px;
+    padding: 16px;
     overflow: auto;
-    background: color-mix(
-      in srgb,
-      var(--theme-card-bg, #11131a) 86%,
-      transparent
-    );
+    background: var(--theme-panel-bg);
   }
   .inspector-header {
     display: flex;
@@ -206,12 +199,12 @@
   .inspector-header h2 {
     margin: 4px 0 0;
     color: var(--theme-text, #fff);
-    font-size: 20px;
+    font-size: 18px;
   }
-  .eyebrow {
-    color: var(--theme-accent, #8b5cf6);
-    font-size: 11px;
-    font-weight: 750;
+  .context-label {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
@@ -219,14 +212,14 @@
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    min-height: 40px;
+    min-height: var(--min-touch-target, 44px);
     padding: 8px 11px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     border-radius: 10px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     color: var(--theme-text, #fff);
-    font-size: 12px;
-    font-weight: 650;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
     cursor: pointer;
   }
   .visibility-button.muted {
@@ -242,49 +235,29 @@
     display: grid;
     gap: 4px;
   }
-  .section-heading > div {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
   .section-heading h3,
-  .geometry-note h3 {
+  .geometry-summary h3 {
     margin: 0;
     color: var(--theme-text, #fff);
     font-size: 14px;
   }
   .section-heading p,
-  .geometry-note p {
+  .geometry-summary p {
     margin: 0;
     color: var(--theme-text-dim, #9ca3af);
     font-size: 12px;
     line-height: 1.45;
   }
-  .section-number {
-    color: var(--theme-accent, #8b5cf6);
-    font-size: 11px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-  }
-  .mode-explanation {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    min-height: 48px;
-    padding: 10px 11px;
-    border-radius: 10px;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 10%,
-      transparent
-    );
-    color: var(--theme-text-dim, #aeb5c1);
-    font-size: 12px;
+  .choice-help {
+    min-height: 36px;
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--border-radius-md, 8px);
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
     line-height: 1.45;
-  }
-  .mode-explanation i {
-    margin-top: 2px;
-    color: var(--theme-accent, #a78bfa);
   }
   .rate-row {
     display: flex;
@@ -293,37 +266,27 @@
     gap: 12px;
     min-height: 46px;
     color: var(--theme-text-dim, #aeb5c1);
-    font-size: 13px;
+    font-size: var(--font-size-min, 14px);
   }
-  .geometry-note {
+  .geometry-summary {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-top: auto;
-    padding: 13px;
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 28%, transparent);
-    border-radius: 13px;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 11%, transparent),
-      transparent
-    );
+    padding-top: 16px;
+    border-top: 1px solid var(--theme-stroke);
   }
-  .geometry-mark {
+  .geometry-value {
     display: grid;
     place-items: center;
-    width: 46px;
-    height: 46px;
-    flex: 0 0 46px;
-    border-radius: 50%;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 18%,
-      transparent
-    );
-    color: var(--theme-accent, #c084fc);
-    font-size: 15px;
-    font-weight: 850;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--border-radius-md, 8px);
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
   }
 </style>
