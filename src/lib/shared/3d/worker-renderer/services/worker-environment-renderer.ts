@@ -142,7 +142,7 @@ export class WorkerEnvironmentRenderer {
     if (decision.type === "ignored") return;
     this.handoff = decision.state;
     if (decision.type === "cancel") {
-      this.destroySlot(decision.dispose.requestId);
+      this.destroySlot(decision.dispose.requestId, undefined, true);
       this.endProbe();
       this.phase = "idle";
       this.progress = 1;
@@ -150,7 +150,13 @@ export class WorkerEnvironmentRenderer {
       this.publish();
       return;
     }
-    if (decision.dispose) this.destroySlot(decision.dispose.requestId);
+    if (decision.dispose) {
+      // A superseded staging context has never been visible and can be
+      // terminated immediately. Waiting for its dispose acknowledgement before
+      // creating the latest request would either delay the user's choice or
+      // temporarily exceed the two-context memory bound.
+      this.destroySlot(decision.dispose.requestId, undefined, true);
+    }
 
     this.lastError = null;
     this.progress = 0;
@@ -177,7 +183,9 @@ export class WorkerEnvironmentRenderer {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.endProbe();
-    for (const requestId of [...this.slots.keys()]) this.destroySlot(requestId);
+    for (const requestId of [...this.slots.keys()]) {
+      this.destroySlot(requestId, undefined, true);
+    }
     this.handoff = createWorkerRendererHandoffState();
   }
 
@@ -195,6 +203,7 @@ export class WorkerEnvironmentRenderer {
           this.handleFailure(source.state.requestId, message),
         onDestroyed: (source) => {
           this.slots.delete(source.state.requestId);
+          if (!this.disposed) this.publish();
         },
       });
       this.slots.set(state.requestId, slot);
@@ -249,7 +258,7 @@ export class WorkerEnvironmentRenderer {
   ): void {
     const decision = acceptWorkerFirstFrame(this.handoff, slot.state.requestId);
     if (decision.type !== "swap") {
-      this.destroySlot(slot.state.requestId);
+      this.destroySlot(slot.state.requestId, undefined, true);
       return;
     }
     this.handoff = decision.state;
@@ -316,7 +325,7 @@ export class WorkerEnvironmentRenderer {
   private handleFailure(requestId: number, message: string): void {
     const decision = rejectWorkerEnvironment(this.handoff, requestId);
     if (decision.type === "ignored") {
-      this.destroySlot(requestId);
+      this.destroySlot(requestId, undefined, true);
       return;
     }
     this.handoff = decision.state;
@@ -331,7 +340,7 @@ export class WorkerEnvironmentRenderer {
       // loop on a device that cannot sustain another WebGL context.
       this.phase = this.handoff.staging ? "booting" : "error";
     }
-    this.destroySlot(requestId);
+    this.destroySlot(requestId, undefined, true);
     this.publish();
   }
 
@@ -366,13 +375,18 @@ export class WorkerEnvironmentRenderer {
     slot.post(message);
   }
 
-  private destroySlot(requestId: number, after?: () => void): void {
+  private destroySlot(
+    requestId: number,
+    after?: () => void,
+    immediate = false
+  ): void {
     const slot = this.slots.get(requestId);
     if (!slot) {
       after?.();
       return;
     }
-    slot.destroy(after);
+    if (immediate) slot.terminate(after);
+    else slot.destroy(after);
   }
 
   private publish(): void {

@@ -1070,6 +1070,18 @@ and singleton checks remain exact regardless of cadence. `svelte-check` reports
 files / 432 tests, including the new reversible grid-curve cases and orchestration
 contract.
 
+Follow-up review showed that continuity alone was not enough: seven prepared
+layers were starting inside the first 24% of the reveal, and at 78% progress
+their measured alpha occupied a narrow band. The copies therefore read as one
+group pop even though the numbers were technically interpolating. The formation
+now uses the canonical dramatic clock, spreads center-out starts across 62% of
+that clock, and gives each layer smoothstep shoulders. The ordinary 2D grid
+clears during the opening 38%, leaving the middle and outer performers room to
+arrive as distinct overlapping waves. A new `Layer cascade spread` metric fails
+traces whose moving layers never separate by at least 0.35 alpha. The seven-layer
+unit sample measures more than 0.45 spread at the midpoint, remains monotonic
+from center to edge, and reverses by retracing the same master progress.
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of
