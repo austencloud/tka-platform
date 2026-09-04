@@ -78,6 +78,7 @@
     displayState,
     scrollState,
     selectedStepNumber = null,
+    autoFocusSelectedStep = true,
     practiceStepNumber = null,
     activeMode = null,
     removingStepIndex = null,
@@ -115,6 +116,8 @@
     displayState: StepGridDisplayState;
     scrollState: ScrollState;
     selectedStepNumber?: number | null;
+    /** Prevent playback-driven selection from stealing focus from nearby UI. */
+    autoFocusSelectedStep?: boolean;
     practiceStepNumber?: number | null;
     activeMode?: BuildModeId | null;
     removingStepIndex?: number | null;
@@ -977,6 +980,7 @@
                     onLongPress={() => onStepLongPress?.(step.stepNumber)}
                     shouldAnimate={isStepCascading(stepIndex)}
                     isSelected={selectedStepNumber === step.stepNumber}
+                    autoFocusOnSelection={autoFocusSelectedStep}
                     isPracticeStep={practiceStepNumber === step.stepNumber}
                     {activeMode}
                     highlightStyle={highlightedSteps?.get(step.stepNumber) ??
@@ -1082,6 +1086,7 @@
               onLongPress={() => onStepLongPress?.(step.stepNumber)}
               shouldAnimate={isStepCascading(index)}
               isSelected={selectedStepNumber === step.stepNumber}
+              autoFocusOnSelection={autoFocusSelectedStep}
               isPracticeStep={practiceStepNumber === step.stepNumber}
               {activeMode}
               highlightStyle={highlightedSteps?.get(step.stepNumber) ?? null}

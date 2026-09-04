@@ -523,6 +523,10 @@
   }
 
   @container tunnel (max-width: 430px) {
+    .performer-roster {
+      min-height: min(30rem, 72dvh);
+    }
+
     .roster-heading {
       gap: 6px;
       padding: 6px 8px;
@@ -535,11 +539,24 @@
     }
 
     .workflow-control {
+      width: 100%;
       min-width: 9rem;
+      max-width: none;
+    }
+
+    .roster-heading-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .roster-toolbar {
+      width: 100%;
+      margin-left: 0;
     }
 
     .performer-switcher {
-      margin-left: 0;
+      flex: 1;
     }
 
     .performer-switcher button {

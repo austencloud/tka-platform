@@ -316,6 +316,7 @@
           previewSequence?.startingPosition ??
           null}
         selectedStepNumber={activeStepNumber}
+        autoFocusSelectedStep={false}
         activeMode={null}
         isTimelineMode={false}
         fitAllSteps={true}
@@ -631,6 +632,17 @@
   }
 
   @container (max-width: 22rem) {
+    .identity-row h3 {
+      white-space: nowrap;
+    }
+
+    /* The prop colors are already visible in every pictograph. On a phone the
+       L/R chips compete with the performer name, difficulty, LOOP state, and
+       primary actions, so the action menu remains the compact source of truth. */
+    .hand-key {
+      display: none;
+    }
+
     .source-meta span:not(:first-child) {
       display: none;
     }
