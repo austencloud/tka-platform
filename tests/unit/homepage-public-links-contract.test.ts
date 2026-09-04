@@ -22,9 +22,7 @@ const siteFooter = readSource(
 const marketingChrome = readSource(
   "src/lib/shared/landing/components/MarketingChrome.svelte"
 );
-const pageSurface = readSource(
-  "src/lib/shared/landing/domain/page-surface.ts"
-);
+const pageSurface = readSource("src/lib/shared/landing/domain/page-surface.ts");
 const historyPage = readSource("src/routes/(public)/history/+page.svelte");
 
 interface HrefEntry {
@@ -219,9 +217,10 @@ describe("homepage public-links contract", () => {
     expect(marketingChrome).toContain('path === "/about"');
     expect(marketingChrome).toContain('"sitemap"');
     expect(marketingChrome).toContain('"full"');
-    expect(marketingChrome).toContain(
-      "<SiteFooter variant={footerVariant} surface={footerSurface} />"
-    );
+    expect(marketingChrome).toContain("<SiteFooter");
+    expect(marketingChrome).toContain("variant={footerVariant}");
+    expect(marketingChrome).toContain("surface={footerSurface}");
+    expect(marketingChrome).toContain("immersive={footerImmersive}");
     // A page that paints its own opaque surface to the viewport edge hands it
     // to the footer, which continues it instead of settling onto the star
     // field. Without that the 4.5rem handoff gap shows a band of sky, and the
@@ -230,9 +229,11 @@ describe("homepage public-links contract", () => {
     expect(marketingChrome).toContain("pageSurface(path)");
     expect(pageSurface).toContain('path === "/history" ? ARCHIVE_INK');
     expect(siteFooter).toContain("surface?: string");
+    expect(siteFooter).toContain("immersive?: boolean");
     expect(siteFooter).toContain("class:surfaced={Boolean(surface)}");
     expect(siteFooter).toContain("style:background={surface}");
     expect(siteFooter).toContain(".site-footer.surfaced");
+    expect(siteFooter).toContain(".site-footer.immersive");
     // The surfaced footer drops all three: gap, scrim, hairline.
     expect(siteFooter).toMatch(
       /\.site-footer\.surfaced \{[^}]*margin-top: 0;[^}]*border-top: 0;/
