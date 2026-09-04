@@ -1,56 +1,126 @@
-<!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixTheoryControls.svelte
-  The Theory ribbon. Same cells, same order, same behaviour as the Matrix
-  ribbon: Apply to, then the value band for the chosen axis. Where the Matrix
-  scrolls TKA turn values, Theory scrolls prop-to-hand ratios.
-
-  Timing and direction are NOT here. They sit above the animation in the detail
-  pane, which is where the Matrix has always kept them.
-
-  The ratio is TYPED rather than scrolled. The Matrix scrolls turn values
-  because there are eight of them and they are a ladder; the ratio field spans
-  every pair from 0 through 15, so a viewer who knows they want 12:5 says 12:5
-  instead of hunting through a catalog. -->
+<!-- Theory is an equation, not a serial settings form. Both axis ratios stay
+     visible so the control reads the same way as the grid it builds. -->
 <script lang="ts">
-  import ShapeMatrixAxisControl from "./ShapeMatrixAxisControl.svelte";
+  import { THEORY_RATIO_MAX_PART } from "$lib/shared/shape-matrix/domain/theory-ratio";
   import ShapeMatrixRatioEntry from "./ShapeMatrixRatioEntry.svelte";
 
   interface Props {
-    /** Ribbon: the header band. Tray: the compact detail sheet. */
     layout?: "ribbon" | "tray";
+    onfocuschange?: (hand: "left" | "right" | null) => void;
   }
-  let { layout = "ribbon" }: Props = $props();
+  let { layout = "ribbon", onfocuschange }: Props = $props();
 </script>
 
-<div class="theory-editor" class:tray={layout === "tray"}>
-  <ShapeMatrixAxisControl {layout} steers="the ratio control" />
-  <ShapeMatrixRatioEntry {layout} />
-</div>
+<section
+  class="theory-builder"
+  class:tray={layout === "tray"}
+  aria-labelledby="theory-ratio-builder-title"
+>
+  <header class="builder-head">
+    <span class="builder-title" id="theory-ratio-builder-title">
+      Build a 4×4 ratio grid
+    </span>
+    <span class="builder-hint">
+      Any whole number 0–{THEORY_RATIO_MAX_PART}
+    </span>
+  </header>
+
+  <div class="ratio-equation">
+    <ShapeMatrixRatioEntry hand="left" {layout} {onfocuschange} />
+    <span class="against">against</span>
+    <ShapeMatrixRatioEntry hand="right" {layout} {onfocuschange} />
+  </div>
+</section>
 
 <style>
-  .theory-editor {
-    display: flex;
-    flex: 0 1 auto;
-    align-items: stretch;
+  .theory-builder {
+    display: grid;
+    width: fit-content;
+    max-width: 100%;
     gap: 0.5rem;
+    padding: 0.55rem;
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
+    border-radius: 12px;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #101721) 88%,
+      transparent
+    );
+    box-shadow: inset 0 1px 0
+      color-mix(in srgb, var(--theme-text, #fff) 4%, transparent);
+  }
+
+  .builder-head {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .builder-title {
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 750;
+  }
+
+  .builder-hint {
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
+    font-size: var(--font-size-compact, 0.75rem);
+    white-space: nowrap;
+  }
+
+  .ratio-equation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
+    align-items: center;
+    gap: 0.55rem;
     min-width: 0;
   }
 
-  .theory-editor.tray {
+  .against {
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 650;
+  }
+
+  .theory-builder.tray {
+    width: min(21rem, calc(100vw - 2.5rem));
+    border: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .theory-builder.tray .builder-head {
+    align-items: flex-start;
     flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
+    gap: 0.15rem;
   }
 
-  @container shape-matrix-app (max-width: 74.99rem) or (max-height: 41.99rem) {
-    .theory-editor:not(.tray) {
-      gap: 0.4rem;
+  .theory-builder.tray .ratio-equation {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.35rem;
+  }
+
+  .theory-builder.tray .against {
+    justify-self: center;
+  }
+
+  @media (min-width: 50rem) and (max-height: 30rem) {
+    .theory-builder.tray {
+      width: min(34rem, calc(100vw - 2.5rem));
     }
-  }
 
-  @container shape-matrix-app (max-width: 25rem) {
-    .theory-editor:not(.tray) {
-      overflow-x: auto;
-      scrollbar-width: none;
+    .theory-builder.tray .builder-head {
+      align-items: baseline;
+      flex-direction: row;
+      gap: 1rem;
+    }
+
+    .theory-builder.tray .ratio-equation {
+      grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
+      gap: 0.55rem;
     }
   }
 </style>

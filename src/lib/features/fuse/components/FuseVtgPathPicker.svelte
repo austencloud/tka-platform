@@ -101,10 +101,7 @@
           data.clubTipDx,
           ...tipPoints.map((point) => Math.hypot(point.dx, point.dy))
         );
-        built.set(
-          key,
-          renderHeader(geometry, side, TILE_PX, reach)
-        );
+        built.set(key, renderHeader(geometry, side, TILE_PX, reach));
       }
       if (cancelled) return;
       tileCache.set(keyForRun, built);
@@ -218,6 +215,9 @@
   :global(dialog.base-modal.fuse-vtg-picker[data-size="lg"]) {
     width: min(88vw, 1180px);
     max-height: min(82dvh, 980px);
+    background:
+      linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
+      color-mix(in srgb, var(--theme-text) 8%, black);
   }
 
   .picker-body.red {
@@ -276,7 +276,7 @@
   }
 
   .tile-label {
-    font-size: 0.75rem;
+    font-size: var(--font-size-min, 14px);
     line-height: 1.2;
     text-align: center;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));

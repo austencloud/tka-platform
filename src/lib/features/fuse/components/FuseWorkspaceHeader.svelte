@@ -1,8 +1,5 @@
 <script lang="ts">
-  import { BackgroundType } from "@austencloud/backgrounds";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import { getCardColors } from "$lib/shared/create/domain/card-colors";
-  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import type { FuseRecipeDestination } from "../domain/fuse-recipe-destination";
   import { buildFuseRecipeSummaries } from "../domain/fuse-recipe-summaries";
@@ -15,6 +12,7 @@
     onOpenSetting = () => {},
     onModeChange,
     recipeOpen = false,
+    flatRecipeRail = false,
   }: {
     onOpenRecipe?: () => void;
     onOpenSetting?: (destination: FuseRecipeDestination) => void;
@@ -22,6 +20,9 @@
     /** Whether the recipe panel is showing. The trigger is a toggle, so it has
      *  to say which way it points. */
     recipeOpen?: boolean;
+    /** True while the individual recipe cards are visible. Portaled editors
+     * must close when a resize replaces that rail with the recipe button. */
+    flatRecipeRail?: boolean;
   } = $props();
 
   const { state: fuseState } = getFuseContext();
@@ -31,11 +32,6 @@
     fuseState.isLoadingLength ||
       fuseState.pendingSide !== null ||
       fuseState.isFusing
-  );
-  const cardColors = $derived(
-    getCardColors(
-      settingsService.settings.backgroundType ?? BackgroundType.WINTER
-    )
   );
   const summaries = $derived(
     buildFuseRecipeSummaries({
@@ -60,6 +56,10 @@
 
   $effect(() => {
     if (optionsDisabled) activeSetting = null;
+  });
+
+  $effect(() => {
+    if (!flatRecipeRail) activeSetting = null;
   });
 
   function setTileOpen(
@@ -95,7 +95,6 @@
 
   <FuseRecipeRail
     {summaries}
-    {cardColors}
     disabled={optionsDisabled}
     {activeSetting}
     onSettingOpenChange={setTileOpen}

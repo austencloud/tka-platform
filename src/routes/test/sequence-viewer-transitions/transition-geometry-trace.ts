@@ -124,9 +124,20 @@ export interface TransitionGeometrySample {
   tunnelOpacity: number;
   tunnelLayersReady: boolean;
   tunnelLayerCount: number;
+  tunnelPreparedLayerCount: number;
+  tunnelTextureRequested: number;
+  tunnelTextureLoaded: number;
+  tunnelTexturesReady: boolean;
   tunnelLayerOpacityMinimum: number;
   tunnelLayerOpacityMaximum: number;
+  tunnelLayerOpacityMean: number;
+  tunnelPerceptibleLayerCount: number;
+  tunnelLayerSeparation: number;
   tunnelGridOpacity: number;
+  tunnelPaintFrame: number;
+  tunnelPaintedPropCount: number;
+  tunnelPaintedPerceptiblePropCount: number;
+  tunnelPaintedOpacityMean: number;
   tunnelPresented: boolean;
   tunnelCanvasReady: boolean;
   animatorIdentity: number;
@@ -160,10 +171,28 @@ export interface TransitionGeometryTrace {
   command: TransitionTraceCommand;
   duration: number;
   samples: TransitionGeometrySample[];
+  tunnelPaintSamples?: TunnelPaintSample[];
   modeCommits: Array<{
     mode: "split" | "animation" | "animation-3d" | "card" | "tunnel" | "videos";
     latency: number;
   }>;
+}
+
+export interface TunnelPaintSample {
+  time: number;
+  progress: number;
+  paintedPropCount: number;
+  perceptiblePropCount: number;
+  meanAlpha: number;
+}
+
+export interface TunnelPaintedArrival {
+  peakProps: number;
+  allPropsPerceptibleProgress: number | null;
+  quarterMeanAlpha: number;
+  halfwayMeanAlpha: number;
+  growthFrames: number;
+  durationMs: number;
 }
 
 export interface TransitionGeometrySummary {
@@ -225,10 +254,18 @@ export interface TransitionGeometrySummary {
   motionInspectorSize: TransitionValueRange | null;
   tunnelUnreadyFrames: number;
   tunnelUnpreparedLayerFrames: number;
+  tunnelUnpreparedTextureFrames: number;
   tunnelLateLayerArrivals: number;
   tunnelLayerOpacityStepMaximum: number;
   tunnelGridOpacityStepMaximum: number;
   tunnelLayerOpacitySpreadMaximum: number;
+  tunnelAllLayersPerceptibleProgress: number | null;
+  tunnelLayerMeanOpacityAtHalf: number | null;
+  tunnelPaintedArrival: TunnelPaintedArrival | null;
+  tunnelPreparedLayerCountMaximum: number;
+  tunnelLayerSeparationMaximum: number;
+  tunnelLayerSeparationStepMaximum: number;
+  tunnelSpatialPeelFrames: number;
   tunnelCrossfadeFrames: number;
   tunnelDoubleFadeFrames: number;
   tunnelBlankFrames: number;
@@ -799,6 +836,100 @@ function lateTunnelLayerArrivals(samples: TransitionGeometrySample[]): number {
   return arrivals;
 }
 
+function firstTunnelReveal(
+  samples: TransitionGeometrySample[]
+): TransitionGeometrySample[] {
+  let start = -1;
+  for (let index = 1; index < samples.length; index += 1) {
+    if (
+      samples[index].tunnelOpacity >
+      samples[index - 1].tunnelOpacity + 0.001
+    ) {
+      start = index - 1;
+      break;
+    }
+  }
+  if (start < 0) return [];
+  let end = samples.length - 1;
+  for (let index = start + 1; index < samples.length; index += 1) {
+    if (samples[index].tunnelOpacity >= 0.99) {
+      end = index;
+      break;
+    }
+  }
+  return samples.slice(start, end + 1);
+}
+
+function closestTunnelSample(
+  samples: TransitionGeometrySample[],
+  target: number
+): TransitionGeometrySample | null {
+  if (samples.length === 0) return null;
+  return samples.reduce((closest, sample) =>
+    Math.abs(sample.tunnelOpacity - target) <
+    Math.abs(closest.tunnelOpacity - target)
+      ? sample
+      : closest
+  );
+}
+
+/** Grade the additional props the Canvas2D renderer actually drew. */
+function tunnelPaintedArrival(
+  samples: TunnelPaintSample[]
+): TunnelPaintedArrival | null {
+  const reveal: TunnelPaintSample[] = [];
+  let started = false;
+  let baseline: TunnelPaintSample | null = null;
+  let previousProgress = 0;
+  for (const sample of samples) {
+    if (!started) {
+      if (sample.progress <= 0) {
+        baseline = sample;
+        continue;
+      }
+      started = true;
+      if (baseline) reveal.push(baseline);
+    }
+    if (sample.progress + 0.001 < previousProgress) break;
+    reveal.push(sample);
+    previousProgress = sample.progress;
+    if (sample.progress >= 0.999) break;
+  }
+  if (reveal.length < 2) return null;
+  const start = reveal[0];
+  const end = reveal[reveal.length - 1];
+  const peakProps = Math.max(
+    0,
+    ...reveal.map((sample) => sample.paintedPropCount)
+  );
+  const duration = Math.max(0, end.time - start.time);
+  if (peakProps <= 0 || duration <= 0) return null;
+
+  const atProgress = (progress: number): TunnelPaintSample =>
+    reveal.reduce((closest, sample) =>
+      Math.abs(sample.progress - progress) <
+      Math.abs(closest.progress - progress)
+        ? sample
+        : closest
+    );
+
+  return {
+    peakProps,
+    allPropsPerceptibleProgress:
+      reveal.find(
+        (sample) =>
+          sample.paintedPropCount >= peakProps &&
+          sample.perceptiblePropCount >= peakProps
+      )?.progress ?? null,
+    quarterMeanAlpha: Math.round(atProgress(0.25).meanAlpha * 1000) / 1000,
+    halfwayMeanAlpha: Math.round(atProgress(0.5).meanAlpha * 1000) / 1000,
+    growthFrames: reveal.filter(
+      (sample) => sample.meanAlpha >= 0.05 && sample.meanAlpha <= 0.95
+    ).length,
+    durationMs: Math.round(duration * 10) / 10,
+  };
+}
+
 function uniquePerformanceSurfacePath(
   samples: TransitionGeometrySample[]
 ): string[] {
@@ -1222,6 +1353,9 @@ export function summarizeTransitionGeometry(
 ): TransitionGeometrySummary {
   const isMotionTrace = trace.command.startsWith("3d");
   const isTunnelTrace = trace.command.startsWith("tunnel");
+  const tunnelRevealSamples = isTunnelTrace
+    ? firstTunnelReveal(trace.samples)
+    : [];
   const isCardStageTrace = trace.command.startsWith("card-");
   const isPerformanceTrace = trace.command.startsWith("performances-");
   const tinyCardFrames = trace.samples.filter(
@@ -1554,6 +1688,14 @@ export function summarizeTransitionGeometry(
           (sample) => sample.tunnelOpacity >= 0.05 && !sample.tunnelLayersReady
         ).length
       : 0,
+    tunnelUnpreparedTextureFrames: isTunnelTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.tunnelOpacity >= 0.05 &&
+            (!sample.tunnelTexturesReady ||
+              sample.tunnelTextureLoaded < sample.tunnelPreparedLayerCount)
+        ).length
+      : 0,
     tunnelLateLayerArrivals: isTunnelTrace
       ? lateTunnelLayerArrivals(trace.samples)
       : 0,
@@ -1577,6 +1719,49 @@ export function summarizeTransitionGeometry(
             )
           ) * 1000
         ) / 1000
+      : 0,
+    tunnelAllLayersPerceptibleProgress: isTunnelTrace
+      ? (tunnelRevealSamples.find(
+          (sample) =>
+            sample.tunnelPreparedLayerCount > 0 &&
+            sample.tunnelPerceptibleLayerCount >=
+              sample.tunnelPreparedLayerCount
+        )?.tunnelOpacity ?? null)
+      : null,
+    tunnelLayerMeanOpacityAtHalf: isTunnelTrace
+      ? (closestTunnelSample(tunnelRevealSamples, 0.5)
+          ?.tunnelLayerOpacityMean ?? null)
+      : null,
+    tunnelPaintedArrival: isTunnelTrace
+      ? tunnelPaintedArrival(trace.tunnelPaintSamples ?? [])
+      : null,
+    tunnelPreparedLayerCountMaximum: isTunnelTrace
+      ? Math.max(
+          0,
+          ...trace.samples.map((sample) => sample.tunnelPreparedLayerCount)
+        )
+      : 0,
+    tunnelLayerSeparationMaximum: isTunnelTrace
+      ? Math.round(
+          Math.max(
+            0,
+            ...trace.samples.map((sample) => sample.tunnelLayerSeparation)
+          ) * 1000
+        ) / 1000
+      : 0,
+    tunnelLayerSeparationStepMaximum: isTunnelTrace
+      ? maximumSampleStep(
+          trace.samples,
+          (sample) => sample.tunnelLayerSeparation
+        )
+      : 0,
+    tunnelSpatialPeelFrames: isTunnelTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.tunnelOpacity >= 0.05 &&
+            sample.tunnelOpacity <= 0.95 &&
+            sample.tunnelLayerSeparation > 0.02
+        ).length
       : 0,
     tunnelCrossfadeFrames: isTunnelTrace
       ? trace.samples.filter(

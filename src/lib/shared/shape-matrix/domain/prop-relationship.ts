@@ -9,6 +9,7 @@ import {
   mapPositionToAngle,
 } from "$lib/shared/animation-engine/services/angle-calculator";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export type PropDirectionRelationship = "same" | "opp";
 export type PropTimingRelationship = "tog" | "split" | "quarter";
@@ -63,14 +64,22 @@ export function propTimingBetween(
  */
 export function derivePropRelationship(
   sequence: SequenceData,
-  pair: { left: Flower; right: Flower }
+  pair: {
+    left: Pick<Flower, "turns">;
+    right: Pick<Flower, "turns">;
+  }
 ): PropRelationship {
   const step = sequence.steps.find(
     (candidate) => candidate.motions.left && candidate.motions.right
   );
   const left = step?.motions.left;
   const right = step?.motions.right;
-  if (!left || !right || pair.left.turns === "fl" || pair.right.turns === "fl") {
+  if (
+    !left ||
+    !right ||
+    pair.left.turns === "fl" ||
+    pair.right.turns === "fl"
+  ) {
     return { kind: "float", direction: null, timing: null, element: null };
   }
   if (
@@ -100,4 +109,27 @@ export function derivePropRelationship(
     throw new Error(`No element for prop relationship ${timing}-${direction}`);
   }
   return { kind: "full", direction, timing, element };
+}
+
+/**
+ * A sequence already carries the two turn values needed to classify its prop
+ * relationship. This adapter keeps ordinary viewers out of the Shape Matrix's
+ * flower-selection model while routing the calculation through the same owner.
+ */
+export function derivePropElementalType(
+  sequence: SequenceData
+): ElementalType | null {
+  const step = sequence.steps.find(
+    (candidate) => candidate.motions.left && candidate.motions.right
+  );
+  const left = step?.motions.left;
+  const right = step?.motions.right;
+  if (!left || !right) return null;
+  const relationship = derivePropRelationship(sequence, {
+    left: { turns: left.turns },
+    right: { turns: right.turns },
+  });
+  return relationship.kind === "full"
+    ? (relationship.element.element as ElementalType)
+    : null;
 }

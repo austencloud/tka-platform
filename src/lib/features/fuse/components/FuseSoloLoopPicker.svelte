@@ -59,7 +59,13 @@
   }
 </script>
 
-<BaseModal bind:open onclose={onClose} size="xl" labelledBy="solo-loop-title">
+<BaseModal
+  bind:open
+  onclose={onClose}
+  size="xl"
+  class="fuse-solo-loop-picker"
+  labelledBy="solo-loop-title"
+>
   {#snippet header()}
     <div class="picker-header">
       <div>
@@ -118,6 +124,12 @@
 </BaseModal>
 
 <style>
+  :global(dialog.base-modal.fuse-solo-loop-picker) {
+    background:
+      linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
+      color-mix(in srgb, var(--theme-text) 8%, black);
+  }
+
   .picker-header {
     display: flex;
     align-items: flex-start;

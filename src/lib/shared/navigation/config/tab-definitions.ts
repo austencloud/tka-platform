@@ -240,6 +240,16 @@ export const COMPOSE_TABS: Section[] = [
     color: "#f59e0b",
     gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
+  {
+    id: "third-order",
+    labelKey: "tab_compose_third_order",
+    descKey: "tab_desc_compose_third_order",
+    label: "Third Order",
+    icon: '<i class="fas fa-atom" aria-hidden="true"></i>',
+    description: "Move complete sequences through a larger sequence",
+    color: "#c084fc",
+    gradient: "linear-gradient(135deg, #60a5fa 0%, #c084fc 50%, #f87171 100%)",
+  },
 ];
 
 // Train tabs configuration
@@ -487,6 +497,16 @@ export const SETTINGS_TABS: Section[] = [
     description: "Workflow and behavior preferences",
     color: "#f97316",
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+  },
+  {
+    id: "keyboard",
+    labelKey: "tab_settings_keyboard",
+    descKey: "tab_desc_settings_keyboard",
+    label: "Keyboard",
+    icon: '<i class="fas fa-keyboard" aria-hidden="true"></i>',
+    description: "Review and change keyboard shortcuts",
+    color: "#a855f7",
+    gradient: "linear-gradient(135deg, #c084fc 0%, #9333ea 100%)",
   },
   {
     id: "language",

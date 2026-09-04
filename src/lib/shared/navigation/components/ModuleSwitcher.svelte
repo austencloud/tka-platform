@@ -11,8 +11,9 @@
   import { desktopSidebarState } from "../../layout/desktop-sidebar-state.svelte";
   import type { ModuleDefinition, ModuleId } from "../domain/types";
   import ModuleList from "./ModuleList.svelte";
+  import ModuleDestinationList from "./ModuleDestinationList.svelte";
   import type { HapticFeedback } from "../../application/services/haptic-feedback";
-  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
+  import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import Drawer from "../../foundation/ui/Drawer.svelte";
   import AccountRow from "./account/AccountRow.svelte";
@@ -21,6 +22,10 @@
   import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
   import { supportModalState } from "../../support/state/support-modal-state.svelte";
   import { whatsNewState } from "../../settings/state/whats-new-state.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { navigationState } from "../state/navigation-state.svelte";
+  import { getAccessibleSectionsForModule } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
 
   let {
     // Current state
@@ -32,16 +37,30 @@
 
     // Callbacks
     onModuleChange,
+    onModuleHomeSelect,
   } = $props<{
     currentModule: ModuleId;
     currentModuleName: string;
     modules: ModuleDefinition[];
-    onModuleChange?: (moduleId: ModuleId) => void;
+    onModuleChange?: (
+      moduleId: ModuleId,
+      targetTab?: string
+    ) => void | Promise<void>;
+    onModuleHomeSelect?: (moduleId: ModuleId) => void;
   }>();
 
   let hapticService: HapticFeedback = null!;
   let deviceDetector: DeviceDetector | null = null;
   let isOpen = $state(false);
+  let selectedModuleId = $state<ModuleId | null>(null);
+
+  const selectedModule = $derived(
+    modules.find((module) => module.id === selectedModuleId) ?? null
+  );
+  const selectedSections = $derived(
+    selectedModuleId ? getAccessibleSectionsForModule(selectedModuleId) : []
+  );
+  const drillDirection = $derived<-1 | 1>(selectedModuleId ? 1 : -1);
 
   const hasUnread = $derived(inboxState.totalUnreadCount > 0);
   const unreadCount = $derived(inboxState.totalUnreadCount);
@@ -75,6 +94,7 @@
 
   function openDrawer() {
     hapticService?.trigger("selection");
+    selectedModuleId = null;
     isOpen = true;
   }
 
@@ -111,9 +131,34 @@
     };
   });
 
-  function handleModuleSelect(moduleId: ModuleId) {
-    onModuleChange?.(moduleId);
+  async function handleModuleSelect(moduleId: ModuleId) {
+    const module = modules.find((candidate) => candidate.id === moduleId);
+    if (!module) return;
+
+    const sections = getAccessibleSectionsForModule(moduleId);
+    if (module.home || sections.length > 1) {
+      selectedModuleId = moduleId;
+      return;
+    }
+
+    await onModuleChange?.(moduleId, sections[0]?.id);
     closeDrawer();
+  }
+
+  async function handleDestinationSelect(sectionId?: string) {
+    if (!selectedModule) return;
+    hapticService?.trigger("selection");
+    if (sectionId) {
+      await onModuleChange?.(selectedModule.id, sectionId);
+    } else {
+      onModuleHomeSelect?.(selectedModule.id);
+    }
+    closeDrawer();
+  }
+
+  function handleDrillBack() {
+    hapticService?.trigger("selection");
+    selectedModuleId = null;
   }
 
   function handleAccountSettings() {
@@ -179,10 +224,25 @@
   <div class="module-switcher-container">
     <!-- Header -->
     <div class="module-switcher-header">
+      <button
+        type="button"
+        class="drill-back-button"
+        class:visible={selectedModule !== null}
+        aria-label="Back to all modules"
+        aria-hidden={selectedModule === null}
+        tabindex={selectedModule === null ? -1 : 0}
+        onclick={handleDrillBack}
+      >
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      </button>
       <div class="header-content">
-        <h2>Navigation</h2>
+        <h2>{selectedModule?.label ?? "Navigation"}</h2>
         <div class="current-location">
-          <span class="module-name">{currentModuleName}</span>
+          <span class="module-name">
+            {selectedModule
+              ? "Choose a destination"
+              : `Currently in ${currentModuleName}`}
+          </span>
         </div>
       </div>
       <button
@@ -195,13 +255,36 @@
     </div>
 
     <!-- Content -->
-    <div class="module-switcher-content themed-scrollbar">
-      <!-- Module Selection -->
-      <ModuleList
-        {currentModule}
-        {modules}
-        onModuleSelect={handleModuleSelect}
-      />
+    <div class="module-switcher-content">
+      <Crossfade
+        key={selectedModuleId ?? "__modules__"}
+        mode="swap"
+        motion="step"
+        direction={drillDirection}
+        duration={DURATION.normal}
+        fill={true}
+      >
+        <div class="navigator-scroll themed-scrollbar">
+          {#if selectedModule}
+            <ModuleDestinationList
+              module={selectedModule}
+              sections={selectedSections}
+              {currentModule}
+              currentSection={navigationState.activeTab}
+              moduleHomeActive={navigationState.isModuleHomeOpen(
+                selectedModule.id
+              )}
+              onSelect={handleDestinationSelect}
+            />
+          {:else}
+            <ModuleList
+              {currentModule}
+              {modules}
+              onModuleSelect={handleModuleSelect}
+            />
+          {/if}
+        </div>
+      </Crossfade>
     </div>
 
     <!-- Account Footer -->
@@ -216,17 +299,27 @@
       />
       <div class="account-footer-actions" class:full-account={isFullAccount}>
         {#if isFullAccount}
-          <button class="drawer-action inbox" onclick={handleInboxClick}>
+          <button
+            class="drawer-action inbox"
+            onclick={handleInboxClick}
+            aria-label="Inbox"
+          >
             <div class="drawer-action-icon-wrapper">
               <i class="fas fa-inbox" aria-hidden="true"></i>
               {#if hasUnread && unreadCount > 0}
-                <span class="drawer-unread-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+                <span class="drawer-unread-badge"
+                  >{unreadCount > 99 ? "99+" : unreadCount}</span
+                >
               {/if}
             </div>
             <span>Inbox</span>
           </button>
         {/if}
-        <button class="drawer-action" onclick={handleAccountSettings}>
+        <button
+          class="drawer-action"
+          onclick={handleAccountSettings}
+          aria-label="Settings"
+        >
           <i class="fas fa-cog" aria-hidden="true"></i>
           <span>Settings</span>
         </button>
@@ -241,12 +334,17 @@
         <button
           class="drawer-action support"
           onclick={() => supportModalState.show()}
+          aria-label="Support"
         >
           <i class="fas fa-heart" aria-hidden="true"></i>
           <span>Support</span>
         </button>
         {#if isFullAccount}
-          <button class="drawer-action sign-out" onclick={handleSignOut}>
+          <button
+            class="drawer-action sign-out"
+            onclick={handleSignOut}
+            aria-label="Sign out"
+          >
             <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
             <span>Sign Out</span>
           </button>
@@ -283,7 +381,8 @@
     :global(.module-switcher-drawer[data-placement="bottom"]) {
       --sheet-max-height: 85dvh;
       height: auto;
-      border-radius: var(--sheet-radius-large, 20px) var(--sheet-radius-large, 20px) 0 0;
+      border-radius: var(--sheet-radius-large, 20px)
+        var(--sheet-radius-large, 20px) 0 0;
     }
   }
 
@@ -319,9 +418,11 @@
   }
 
   .module-switcher-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: var(--min-touch-target) minmax(0, 1fr) var(
+        --min-touch-target
+      );
     align-items: center;
-    justify-content: space-between;
     padding: 16px 16px 14px; /* Adjusted for larger close button */
     border-bottom: 1px solid var(--theme-stroke);
     flex-shrink: 0;
@@ -351,8 +452,44 @@
   }
 
   .header-content {
-    flex: 1;
     min-width: 0;
+  }
+
+  .drill-back-button {
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
+    display: grid;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity var(--transition-normal),
+      background-color var(--transition-normal),
+      border-color var(--transition-normal),
+      color var(--transition-normal);
+  }
+
+  .drill-back-button.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .drill-back-button:hover {
+    border-color: var(--theme-stroke);
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
+  }
+
+  .drill-back-button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 
   .module-switcher-header h2 {
@@ -398,7 +535,11 @@
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-base); /* Slightly larger icon */
-    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+      background-color var(--transition-normal),
+      border-color var(--transition-normal),
+      color var(--transition-normal),
+      transform var(--transition-normal);
     flex-shrink: 0;
   }
 
@@ -414,18 +555,32 @@
   }
 
   .module-switcher-content {
-    padding: 20px 20px 40px; /* More generous padding for modern spacious feel */
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Bottom drawers are content-sized, so a percentage-height fill child has
+     no definite block size to resolve against. Pin the canonical Crossfade to
+     this flex item; the parent still owns the stable geometry. */
+  .module-switcher-content :global(.crossfade.fill) {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+  }
+
+  .navigator-scroll {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 20px 20px 40px;
     overflow-y: auto;
     overflow-x: hidden;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-
-    /* Smooth scrolling */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
   }
-
 
   /* Landscape mobile - optimize for left drawer */
   @media (max-height: 600px) and (orientation: landscape) {
@@ -441,7 +596,7 @@
       font-size: var(--font-size-compact);
     }
 
-    .module-switcher-content {
+    .navigator-scroll {
       padding: 14px 16px 24px;
     }
 
@@ -466,14 +621,14 @@
       font-size: var(--font-size-sm); /* Maintain readability */
     }
 
-    .module-switcher-content {
+    .navigator-scroll {
       padding: 16px 16px 32px; /* Maintain generous padding on mobile */
     }
   }
 
   /* Widescreen bottom drawer: tighten padding so content is compact */
   @media (min-width: 700px) and (min-height: 500px) {
-    .module-switcher-content {
+    .navigator-scroll {
       padding: 12px 20px 16px;
     }
 
@@ -483,7 +638,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .close-button {
+    .close-button,
+    .drill-back-button {
       transition: none;
     }
 
@@ -532,7 +688,11 @@
     cursor: pointer;
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background-color var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast),
+      transform var(--transition-fast);
   }
 
   /* Every label reserves two lines so icons stay aligned when Release Notes
@@ -568,18 +728,34 @@
   /* Inbox - blue accent */
   .drawer-action.inbox {
     color: var(--semantic-info, #3b82f6);
-    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 25%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-info, #3b82f6) 25%,
+      transparent
+    );
   }
 
   .drawer-action.inbox:hover {
-    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 10%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 40%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-info, #3b82f6) 10%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-info, #3b82f6) 40%,
+      transparent
+    );
   }
 
   /* Sign Out - red by default */
   .drawer-action.sign-out {
     color: var(--semantic-error, #ef4444);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 25%,
+      transparent
+    );
   }
 
   .drawer-action.sign-out:hover {
@@ -614,21 +790,30 @@
   /* A 280px landscape drawer cannot hold five useful columns. Three actions
      stay on the first row; Support and Sign Out sit centered beneath them. */
   @media (max-height: 600px) and (orientation: landscape) {
+    .account-footer {
+      padding: 6px;
+      gap: 0;
+    }
+
+    :global(.account-footer .account-row.drawer) {
+      display: none;
+    }
+
+    .account-footer-actions,
     .account-footer-actions.full-account {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      display: flex;
+      gap: 4px;
     }
 
-    .account-footer-actions.full-account .drawer-action {
-      grid-column: span 2;
+    .drawer-action {
+      min-height: var(--min-touch-target);
+      padding: 4px;
+      gap: 0;
+      border-radius: 10px;
     }
 
-    .account-footer-actions.full-account .drawer-action.support {
-      grid-column: 2 / span 2;
-    }
-
-    .account-footer-actions.full-account .drawer-action.sign-out {
-      grid-column: 4 / span 2;
+    .drawer-action > span {
+      display: none;
     }
   }
 

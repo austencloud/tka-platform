@@ -11,9 +11,10 @@
  *    20-22 (PMPM/QNQN/RORO at gamma9) were added later by the gamma-split work
  *    and appear in no shipped card data. This corpus takes ids 1-19.
  *
- * 2. The seven fixtures the staff-grip lab pins, straight from
- *    `ALL_FIXTURE_LOOPS` - the same objects `lab-catalog.ts` turns into its
- *    picker options.
+ * 2. The seven demo fixtures, straight from `ALL_FIXTURE_LOOPS` - the same
+ *    objects `lab-catalog.ts` keeps resolvable so an existing lab URL still
+ *    loads. The lab pins the 19 above as its goal list; these remain its
+ *    harness, and `fx-falg` is the only eight-step sequence in the corpus.
  */
 
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
@@ -96,7 +97,7 @@ export function coreTnDCorpus(): CorpusEntry[] {
   );
 }
 
-/** The seven fixtures the staff-grip lab pins. */
+/** The seven demo fixtures the staff-grip lab can still resolve. */
 export function labFixtureCorpus(): CorpusEntry[] {
   return ALL_FIXTURE_LOOPS.map(([, sequence]) => ({
     id: sequence.id,

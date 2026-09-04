@@ -342,7 +342,9 @@
     width: 100%;
     height: 100%;
     min-height: 0;
-    background: var(--theme-panel-bg);
+    background:
+      linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
+      color-mix(in srgb, var(--theme-text) 8%, black);
   }
 
   .path-builder-modal-content {
@@ -526,7 +528,9 @@
     width: min(90vw, 88rem);
     height: min(88dvh, 58rem);
     border: 1px solid var(--theme-stroke-strong);
-    background: var(--theme-panel-bg);
+    background:
+      linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
+      color-mix(in srgb, var(--theme-text) 8%, black);
   }
 
   :global(dialog.fuse-path-builder-modal .modal-body) {

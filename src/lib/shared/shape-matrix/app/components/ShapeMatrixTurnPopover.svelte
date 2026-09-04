@@ -1,18 +1,8 @@
-<!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixTurnPopover.svelte
-  Compact detail axis editor. The trigger shows the pair's two hand values
-  (blue left, red right); it opens a popover anchored under it that holds the
-  vocabulary control, the notation toggle, and the canonical turn controls,
-  sized to those controls and nothing more. An edit here stays on the detail
-  pane, so the animator restages under the user's eyes and the matrix is
-  already rebuilt when they go back.
-
-  What the vocabulary control is differs by surface, and the difference is real
-  rather than cosmetic. The Matrix picks a Kinetic Alphabet level, so it gets
-  the level badge and the LevelSelector. Theory picks how far the rational
-  field opens, which is not a level at all, so it gets neither. -->
+<!-- Compact value editor. Matrix opens its level, notation and turn controls;
+     Theory opens the same two-sided ratio builder used in the wide ribbon. -->
 <script lang="ts">
   import { Popover } from "bits-ui";
-  import { flyFade } from "$lib/shared/transitions/motion";
+  import { flyFade, growFade } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
@@ -30,18 +20,20 @@
     SHAPE_MATRIX_LEVELS,
     SHAPE_MATRIX_LEVEL_DESCRIPTIONS,
   } from "../shape-matrix-levels";
-  import { THEORY_BAND_DESCRIPTIONS } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
   import { spinRatioKey } from "@vtg/domain";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
-  import ShapeMatrixBandControl from "./ShapeMatrixBandControl.svelte";
   import ShapeMatrixTheoryControls from "./ShapeMatrixTheoryControls.svelte";
   import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
+
+  interface Props {
+    onratiofocuschange?: (hand: "left" | "right" | null) => void;
+  }
+  let { onratiofocuschange }: Props = $props();
 
   const appState = getShapeMatrixAppContext();
   let open = $state(false);
 
-  /* One chip for both surfaces. What it edits changes with the surface; that
-     it is the way into the axis values does not. */
+  /* One chip for both surfaces. Its visible action changes with the job. */
   const theory = $derived(appState.surface === "theory");
 
   const LABEL_OPTIONS = [
@@ -66,12 +58,10 @@
   );
   const triggerLabel = $derived(
     theory
-      ? `Edit ratios, timing and direction. Ratio field: ${THEORY_BAND_DESCRIPTIONS[appState.theoryBand].name}. Left ${leftVisible}, right ${rightVisible}.`
+      ? `Edit ratios. Left ${leftVisible} against right ${rightVisible}.`
       : `Edit level and turns. Level ${appState.level}. Left ${spoken(appState.leftTurn)}, right ${spoken(appState.rightTurn)}.`
   );
-  const popoverTitle = $derived(
-    theory ? "Ratios and timing" : "Level and turns"
-  );
+  const popoverTitle = $derived(theory ? "Edit ratios" : "Level and turns");
   const closeLabel = $derived(
     theory ? "Close ratio editor" : "Close level and turn editor"
   );
@@ -82,6 +72,10 @@
   function applyLevel(level: TurnLevel): void {
     appState.setLevel(level, { stayOnDetail: true });
   }
+
+  $effect(() => {
+    if (!open) onratiofocuschange?.(null);
+  });
 </script>
 
 <Popover.Root bind:open>
@@ -93,13 +87,23 @@
         class="turn-trigger"
         aria-label={triggerLabel}
       >
-        {#if !theory}
+        {#if theory}
+          <span class="theory-trigger-copy" aria-hidden="true">
+            <span class="trigger-action">Edit ratios</span>
+            <span class="trigger-pair">
+              <span class="hand blue">{leftVisible}</span>
+              <span class="pair-divider">against</span>
+              <span class="hand red">{rightVisible}</span>
+            </span>
+          </span>
+          <i class="fas fa-pen" aria-hidden="true"></i>
+        {:else}
           <DifficultyBadge level={appState.level} size="1.5rem" />
+          <span class="hand blue" aria-hidden="true">{leftVisible}</span>
+          <span class="divider" aria-hidden="true">·</span>
+          <span class="hand red" aria-hidden="true">{rightVisible}</span>
+          <i class="fas fa-sliders" aria-hidden="true"></i>
         {/if}
-        <span class="hand blue" aria-hidden="true">{leftVisible}</span>
-        <span class="divider" aria-hidden="true">·</span>
-        <span class="hand red" aria-hidden="true">{rightVisible}</span>
-        <i class="fas fa-sliders" aria-hidden="true"></i>
       </button>
     {/snippet}
   </Popover.Trigger>
@@ -134,11 +138,12 @@
                   <i class="fas fa-xmark" aria-hidden="true"></i>
                 </button>
               </div>
-              <div class="level-row">
-                <span class="row-label">{theory ? "Ratio field" : "Level"}</span>
-                {#if theory}
-                  <ShapeMatrixBandControl stayOnDetail={true} />
-                {:else}
+              {#if !theory}
+                <div
+                  class="level-row"
+                  transition:growFade={{ duration: DURATION.normal }}
+                >
+                  <span class="row-label">Level</span>
                   <LevelSelector
                     value={appState.level}
                     levels={SHAPE_MATRIX_LEVELS}
@@ -147,10 +152,13 @@
                     compact={true}
                     ariaLabel="Kinetic Alphabet level"
                   />
-                {/if}
-              </div>
+                </div>
+              {/if}
               {#if theory}
-                <ShapeMatrixTheoryControls layout="tray" />
+                <ShapeMatrixTheoryControls
+                  layout="tray"
+                  onfocuschange={onratiofocuschange}
+                />
               {:else}
                 <div class="notation">
                   <span class="row-label">Notation</span>
@@ -250,14 +258,43 @@
     font-size: 0.8em;
   }
 
+  .theory-trigger-copy {
+    display: grid;
+    min-width: 0;
+    gap: 0.05rem;
+    justify-items: start;
+    line-height: 1.1;
+  }
+
+  .trigger-action {
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .trigger-pair {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 650;
+  }
+
+  .trigger-pair .hand {
+    padding: 0;
+    background: transparent;
+  }
+
+  .pair-divider {
+    font-weight: 550;
+  }
+
   /* Sized to the controls it holds; the viewport only caps it. */
   .turn-popover {
     display: grid;
     width: max-content;
-    max-width: var(
-      --bits-popover-content-available-width,
-      calc(100vw - 16px)
-    );
+    max-width: var(--bits-popover-content-available-width, calc(100vw - 16px));
     max-height: var(
       --bits-popover-content-available-height,
       calc(100dvh - 16px)
@@ -351,6 +388,17 @@
     .turn-trigger,
     .popover-close {
       transition: none;
+    }
+  }
+
+  @media (max-width: 25rem) {
+    .turn-trigger:has(.theory-trigger-copy) {
+      gap: 0.25rem;
+      padding-inline: 0.5rem;
+    }
+
+    .turn-trigger:has(.theory-trigger-copy) > i {
+      display: none;
     }
   }
 </style>

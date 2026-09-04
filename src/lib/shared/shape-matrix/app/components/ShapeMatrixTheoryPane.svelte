@@ -15,8 +15,10 @@
   interface Props {
     /** The shell owns navigation, the same way it does for the Matrix. */
     onselect?: (pair: { left: TheoryFlower; right: TheoryFlower }) => void;
+    /** The ratio editor points back to the grid axis it is changing. */
+    emphasizedAxis?: "left" | "right" | null;
   }
-  let { onselect }: Props = $props();
+  let { onselect, emphasizedAxis = null }: Props = $props();
 
   const state = getShapeMatrixAppContext();
 
@@ -40,6 +42,7 @@
         theoryHeaderArtworkSrc(flower, hand, tipDx, sizePx)}
       paintCell={(left, right, sizePx) =>
         theoryCellArtworkSrc(left, right, tipDx, sizePx)}
+      {emphasizedAxis}
       onselect={onselect ?? state.selectTheoryPair}
     />
   </div>

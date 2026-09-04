@@ -1,5 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "tab_compose_third_order": "3차 모션",
+  "tab_desc_compose_third_order": "완전한 시퀀스를 더 큰 시퀀스 안에서 움직입니다",
   "action_cancel": "취소",
   "action_close": "닫기",
   "action_confirm": "확인",
@@ -464,6 +466,8 @@
   "sort_difficulty": "어려움",
   "sort_length": "길이",
   "sort_recent": "최근의",
+  "tab_desc_settings_keyboard": "키보드 단축키 확인 및 변경",
+  "tab_settings_keyboard": "키보드",
   "tab_settings_profile": "계정",
   "train_accuracy_percent": "{value} % 정확도",
   "train_all_completed": "모든 도전 과제를 완료했습니다! 곧 다시 확인해 주세요.",

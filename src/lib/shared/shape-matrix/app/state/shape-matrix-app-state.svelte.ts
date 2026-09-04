@@ -22,19 +22,15 @@ import {
 } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { requestShapeMatrixTransition } from "$lib/shared/shape-matrix/debug/shape-matrix-transition-recorder";
-import { makeSpinRatio, spinRatioEquals, type SpinRatio } from "@vtg/domain";
+import { spinRatioEquals, type SpinRatio } from "@vtg/domain";
 import {
   buildTheoryAxis,
   type TheoryFlower,
 } from "$lib/shared/shape-matrix/domain/theory-flower";
 import {
-  asTheoryBand,
-  clampTheoryRatioToBand,
-  DEFAULT_THEORY_BAND,
-  narrowestBandFor,
-  theoryRatiosForBand,
-  type TheoryBand,
-} from "$lib/shared/shape-matrix/domain/theory-ratio-band";
+  DEFAULT_THEORY_RATIO,
+  theoryRatioFromParts,
+} from "$lib/shared/shape-matrix/domain/theory-ratio";
 
 export type ShapeMatrixAppView = "matrix" | "detail";
 export type ShapeMatrixSurface = "matrix" | "theory";
@@ -76,13 +72,6 @@ export interface ShapeMatrixAppSnapshot {
    */
   theoryMode: VtgMode;
   theoryPair: { left: TheoryFlower; right: TheoryFlower } | null;
-  /**
-   * How far the Theory ratio field opens. Deliberately NOT `level`: a band
-   * counts denominators and a level names turn values, and the two ladders
-   * are independent. Sharing one number told a Theory visitor that a
-   * hand-cycle bound was a Kinetic Alphabet level.
-   */
-  theoryBand: TheoryBand;
   level: TurnLevel;
   leftTurn: TurnValue;
   rightTurn: TurnValue;
@@ -112,28 +101,6 @@ const LEVEL_LANDING_TURN: Record<TurnLevel, TurnValue> = {
   3: 0.5,
   4: 0.25,
 };
-
-export const DEFAULT_THEORY_RATIO = makeSpinRatio(1, 3);
-
-function allowedTheoryRatio(ratio: SpinRatio, band: TheoryBand): SpinRatio {
-  try {
-    return clampTheoryRatioToBand(ratio, band);
-  } catch {
-    return clampTheoryRatioToBand(DEFAULT_THEORY_RATIO, band);
-  }
-}
-
-function bandHoldingRatios(
-  startingBand: TheoryBand,
-  ratios: readonly SpinRatio[]
-): TheoryBand {
-  let band = startingBand;
-  for (const ratio of ratios) {
-    const home = narrowestBandFor(ratio);
-    if (home !== null && home > band) band = home;
-  }
-  return band;
-}
 
 /**
  * Carry a selection across a ratio change instead of dropping it.
@@ -218,17 +185,18 @@ export function createShapeMatrixAppState(
   initial: ShapeMatrixAppSnapshot,
   initialCompact: boolean
 ) {
-  const initialTheoryBand = bandHoldingRatios(initial.theoryBand, [
-    initial.theoryLeftRatio,
-    initial.theoryRightRatio,
-  ]);
   let surface = $state<ShapeMatrixSurface>(initial.surface);
-  let theoryBand = $state<TheoryBand>(initialTheoryBand);
   let theoryLeftRatio = $state(
-    allowedTheoryRatio(initial.theoryLeftRatio, initialTheoryBand)
+    theoryRatioFromParts(
+      initial.theoryLeftRatio.propRotations,
+      initial.theoryLeftRatio.handCycles
+    ) ?? DEFAULT_THEORY_RATIO
   );
   let theoryRightRatio = $state(
-    allowedTheoryRatio(initial.theoryRightRatio, initialTheoryBand)
+    theoryRatioFromParts(
+      initial.theoryRightRatio.propRotations,
+      initial.theoryRightRatio.handCycles
+    ) ?? DEFAULT_THEORY_RATIO
   );
   let theoryMode = $state<VtgMode>(initial.theoryMode);
   let theoryPair = $state(initial.theoryPair);
@@ -269,7 +237,6 @@ export function createShapeMatrixAppState(
   let mandalaHandoff = $state(false);
 
   const availableTurns = $derived(matrixTurnsForLevel(level));
-  const availableTheoryRatios = $derived(theoryRatiosForBand(theoryBand));
   const theoryRowAxis = $derived(buildTheoryAxis(theoryLeftRatio));
   const theoryColAxis = $derived(buildTheoryAxis(theoryRightRatio));
   const filters = $derived(matrixFiltersForTurns(leftTurn, rightTurn));
@@ -343,29 +310,6 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
-  /**
-   * Open or close the Theory ratio field.
-   *
-   * The counterpart of `setLevel` and nothing more: it moves the Farey order,
-   * never a turn value, and it leaves the Matrix's level exactly where the
-   * user left it. Ratios the new band can still hold are kept; the rest fall
-   * to the nearest one it holds, so a narrowing band moves the axis a little
-   * rather than throwing the user's place away.
-   */
-  function setTheoryBand(
-    nextBand: TheoryBand,
-    options: ShapeMatrixSetTurnOptions = {}
-  ): void {
-    if (theoryBand === nextBand) return;
-    theoryBand = nextBand;
-    applyTheoryRatios(
-      clampTheoryRatioToBand(theoryLeftRatio, theoryBand),
-      clampTheoryRatioToBand(theoryRightRatio, theoryBand)
-    );
-    if (compact && !options.stayOnDetail) activeView = "matrix";
-    syncState();
-  }
-
   function setTurn(
     nextTurn: TurnValue,
     options: ShapeMatrixSetTurnOptions = {}
@@ -430,28 +374,16 @@ export function createShapeMatrixAppState(
     }
   }
 
-  /**
-   * Take a requested ratio at its word when the catalog holds it.
-   *
-   * The band says how much of the field is on offer; it is not a licence the
-   * ratio needs. A request inside the 0–15 field is answered, and the band
-   * widens to the narrowest one that holds it, so the control ends up
-   * reporting where that ratio lives. Only a ratio outside the catalog
-   * entirely still falls back to the nearest thing the band can name.
-   */
-  function admitTheoryRatio(nextRatio: SpinRatio): SpinRatio {
-    const home = narrowestBandFor(nextRatio);
-    if (home === null) return allowedTheoryRatio(nextRatio, theoryBand);
-    if (home > theoryBand) theoryBand = home;
-    return nextRatio;
-  }
-
   /** One named axis, for the live tuners that edit a specific hand. */
   function setTheoryRatioFor(
     hand: "left" | "right",
     nextRatio: SpinRatio
   ): void {
-    const allowed = admitTheoryRatio(nextRatio);
+    const allowed = theoryRatioFromParts(
+      nextRatio.propRotations,
+      nextRatio.handCycles
+    );
+    if (!allowed) return;
     applyTheoryRatios(
       hand === "left" ? allowed : theoryLeftRatio,
       hand === "right" ? allowed : theoryRightRatio
@@ -459,13 +391,21 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
-  /** Honours the Apply to target, exactly as the Matrix turn control does. */
-  function setTheoryRatio(nextRatio: SpinRatio): void {
-    const allowed = admitTheoryRatio(nextRatio);
-    applyTheoryRatios(
-      activeAxis === "right" ? theoryLeftRatio : allowed,
-      activeAxis === "left" ? theoryRightRatio : allowed
+  /** Two visible editors commit together when one ratio is copied across. */
+  function setTheoryRatios(
+    nextLeftRatio: SpinRatio,
+    nextRightRatio: SpinRatio
+  ): void {
+    const allowedLeft = theoryRatioFromParts(
+      nextLeftRatio.propRotations,
+      nextLeftRatio.handCycles
     );
+    const allowedRight = theoryRatioFromParts(
+      nextRightRatio.propRotations,
+      nextRightRatio.handCycles
+    );
+    if (!allowedLeft || !allowedRight) return;
+    applyTheoryRatios(allowedLeft, allowedRight);
     syncState();
   }
 
@@ -501,21 +441,19 @@ export function createShapeMatrixAppState(
   function restoreState(snapshot: ShapeMatrixAppSnapshot): void {
     surface = snapshot.surface ?? "matrix";
     level = snapshot.level;
-    // A snapshot written before the band split its own field carries the band
-    // in `level`, exactly as a pre-split link does. Read it there rather than
-    // dropping a returning visitor back to band 1.
-    const restoredBand =
-      snapshot.theoryBand ??
-      (snapshot.level ? asTheoryBand(snapshot.level) : DEFAULT_THEORY_BAND);
     const restoredLeftRatio = snapshot.theoryLeftRatio ?? DEFAULT_THEORY_RATIO;
     const restoredRightRatio =
       snapshot.theoryRightRatio ?? DEFAULT_THEORY_RATIO;
-    theoryBand = bandHoldingRatios(restoredBand, [
-      restoredLeftRatio,
-      restoredRightRatio,
-    ]);
-    theoryLeftRatio = allowedTheoryRatio(restoredLeftRatio, theoryBand);
-    theoryRightRatio = allowedTheoryRatio(restoredRightRatio, theoryBand);
+    theoryLeftRatio =
+      theoryRatioFromParts(
+        restoredLeftRatio.propRotations,
+        restoredLeftRatio.handCycles
+      ) ?? DEFAULT_THEORY_RATIO;
+    theoryRightRatio =
+      theoryRatioFromParts(
+        restoredRightRatio.propRotations,
+        restoredRightRatio.handCycles
+      ) ?? DEFAULT_THEORY_RATIO;
     theoryMode = snapshot.theoryMode ?? "SS";
     theoryPair = snapshot.theoryPair
       ? {
@@ -637,7 +575,6 @@ export function createShapeMatrixAppState(
       theoryRightRatio,
       theoryMode,
       theoryPair,
-      theoryBand,
       level,
       leftTurn,
       rightTurn,
@@ -660,10 +597,6 @@ export function createShapeMatrixAppState(
     get theoryRightRatio() {
       return theoryRightRatio;
     },
-    /** The ratio the Apply to target currently edits. */
-    get activeTheoryRatio() {
-      return activeAxis === "right" ? theoryRightRatio : theoryLeftRatio;
-    },
     get theoryMode() {
       return theoryMode;
     },
@@ -675,12 +608,6 @@ export function createShapeMatrixAppState(
     },
     get theoryColAxis() {
       return theoryColAxis;
-    },
-    get availableTheoryRatios() {
-      return availableTheoryRatios;
-    },
-    get theoryBand() {
-      return theoryBand;
     },
     get level() {
       return level;
@@ -751,13 +678,12 @@ export function createShapeMatrixAppState(
     load,
     restoreState,
     setLevel,
-    setTheoryBand,
     setTurn,
     setActiveAxis,
     setLabelMode,
     setSurface,
-    setTheoryRatio,
     setTheoryRatioFor,
+    setTheoryRatios,
     setTheoryMode,
     selectTheoryPair,
     setPropType,

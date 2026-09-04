@@ -1,34 +1,30 @@
 <!--
-  PositionsConceptExperience — Hand Positions lesson ("the grid way").
-
-  Walkthrough (alpha → beta → gamma, one hero pictograph, left anchored at south,
-  right animates N → S → E) → compare beat (the three morph into a row) → tap a
-  position to open a transform playground that proves the Symmetry Invariance
-  Principle: rotate / mirror / swap-colors, the letter never changes, and a
-  discovery tray fills in (8 for alpha/beta, 16 for gamma).
-
-  Real assets: animated hand prop via propSvgLoader, real grid hand-points
-  (grid-coordinates.ts), canonical letter glyph (TKAGlyph), canonical bases
-  (alpha1 / beta5 / gamma11). Transforms are one-shot algebra on the live state.
+  Hand Positions continues directly from the Grid lesson. The grid keeps the
+  same stage, heading rhythm, and controls while the hands become the subject.
+  Alpha, Beta, and Gamma share one live artifact so their relationship is shown
+  by the hands moving, not by replacing the whole page.
 -->
 <script lang="ts">
-  import { onMount, tick } from "svelte";
-  import { slide } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
-  import { propSvgLoader } from "$lib/shared/pictograph/prop/services/prop-svg-loader";
+  import { onMount } from "svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import LessonGridDisplay from "$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/prop-placement-data";
+  import { propSvgLoader } from "$lib/shared/pictograph/prop/services/prop-svg-loader";
   import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/prop-placement-data";
-  import LessonGridDisplay from "$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte";
   import type { ExperienceViewMode } from "../../../domain/types";
+  import LessonStageControls from "../LessonStageControls.svelte";
+  import LessonStageFrame from "../LessonStageFrame.svelte";
+  import LessonStageHeading from "../LessonStageHeading.svelte";
 
   let {
     onComplete,
     onBack,
     viewMode = "step",
   } = $props<{
-    onComplete?: () => void;
+    onComplete?: (nextConceptId?: string) => void;
     onBack?: () => void;
     viewMode?: ExperienceViewMode;
   }>();
@@ -38,29 +34,29 @@
     viewBox: { width: number; height: number };
     center: { x: number; y: number };
   };
-  type Pt = { x: number; y: number };
+  type Point = { x: number; y: number };
+  type PositionKind = "alpha" | "beta" | "gamma";
+  type PositionStep = {
+    name: string;
+    vtg: string;
+    kind: PositionKind;
+    caption: string;
+  };
 
-  // The 8 hand points around the grid (radius ~143 from center), clockwise from N.
-  // Even index = diamond (cardinal); odd index = box (intercardinal). grid-coordinates.ts.
-  const PTS: Pt[] = [
-    { x: 475.0, y: 331.9 }, // 0  N  diamond
-    { x: 576.2, y: 373.8 }, // 1  NE box
-    { x: 618.1, y: 475.0 }, // 2  E  diamond
-    { x: 576.2, y: 576.2 }, // 3  SE box
-    { x: 475.0, y: 618.1 }, // 4  S  diamond
-    { x: 373.8, y: 576.2 }, // 5  SW box
-    { x: 331.9, y: 475.0 }, // 6  W  diamond
-    { x: 373.8, y: 373.8 }, // 7  NW box
+  const points: Point[] = [
+    { x: 475, y: 331.9 },
+    { x: 576.2, y: 373.8 },
+    { x: 618.1, y: 475 },
+    { x: 576.2, y: 576.2 },
+    { x: 475, y: 618.1 },
+    { x: 373.8, y: 576.2 },
+    { x: 331.9, y: 475 },
+    { x: 373.8, y: 373.8 },
   ];
-  const isDiamondPt = (idx: number) => idx % 2 === 0;
-  const wrap8 = (n: number) => ((n % 8) + 8) % 8;
+  const betaOffset = 16;
+  const wrap = (value: number) => ((value % 8) + 8) % 8;
 
-  // beta's two hand props share one grid point; offset them a constant L/R amount.
-  const BETA_DX = 16;
-
-  type PosKind = "alpha" | "beta" | "gamma";
-  type PosStep = { name: string; vtg: string; kind: PosKind; caption: string };
-  const steps: PosStep[] = [
+  const steps: PositionStep[] = [
     {
       name: "Alpha",
       vtg: "Split",
@@ -80,70 +76,87 @@
       caption: "Hands at neighboring points, a right angle apart.",
     },
   ];
-  // Canonical bases (left, right): left anchors south, right animates N → S → E.
-  //   alpha1 = left S, right N | beta5 = left S, right S | gamma11 = left S, right E
-  const BASE: Record<PosKind, { right: number; left: number }> = {
+
+  const base: Record<PositionKind, { right: number; left: number }> = {
     alpha: { right: 0, left: 4 },
     beta: { right: 4, left: 4 },
     gamma: { right: 2, left: 4 },
   };
 
-  // Canonical letter glyph, bottom-left at x=50 y=800 in the 950 space (per TKAGlyph).
-  const GLYPH: Record<PosKind, { src: string; w: number; h: number }> = {
-    alpha: { src: "/images/letters_trimmed/Type6/α.svg", w: 92.22, h: 100 },
-    beta: { src: "/images/letters_trimmed/Type6/β.svg", w: 66.05, h: 100 },
-    gamma: { src: "/images/letters_trimmed/Type6/γ.svg", w: 79, h: 100.11 },
+  const glyphs: Record<
+    PositionKind,
+    { src: string; width: number; height: number }
+  > = {
+    alpha: {
+      src: "/images/letters_trimmed/Type6/α.svg",
+      width: 92.22,
+      height: 100,
+    },
+    beta: {
+      src: "/images/letters_trimmed/Type6/β.svg",
+      width: 66.05,
+      height: 100,
+    },
+    gamma: {
+      src: "/images/letters_trimmed/Type6/γ.svg",
+      width: 79,
+      height: 100.11,
+    },
   };
 
-  // Hands from explicit current point indices. Transforms mutate these directly
-  // (one-shot algebra), so rotation stays clockwise no matter what came before.
-  function handsFor(kind: PosKind, rightIdx, leftIdx) {
-    const rp = PTS[rightIdx]!;
-    let right = rp;
-    let left = PTS[leftIdx]!;
-    if (kind === "beta") {
-      right = { x: rp.x + BETA_DX, y: rp.y };
-      left = { x: rp.x - BETA_DX, y: rp.y };
-    }
-    // discovery identity + variation count:
-    //  alpha = 4 pairs × 2 colorings, beta = 8 points → 8; gamma = 8 pairs × 2 → 16.
-    let cell: number, total: number;
-    if (kind === "gamma") {
-      const diff = wrap8(leftIdx - rightIdx); // 2 (right leads) or 6 (left leads)
-      cell = rightIdx + (diff === 2 ? 0 : 8);
-      total = 16;
-    } else {
-      cell = rightIdx;
-      total = 8;
-    }
-    return { right, left, diamond: isDiamondPt(rightIdx), cell, total };
-  }
-  const baseHands = (kind: PosKind) =>
-    handsFor(kind, BASE[kind].right, BASE[kind].left);
-
-  const COMPARE = steps.length; // index of the compare-row stage
-  const TOTAL = steps.length + 1;
-
-  let i = $state(0);
-  const isCompare = $derived(i === COMPARE);
-  const step = $derived(steps[Math.min(i, steps.length - 1)]!);
-  const lastIdx = steps.length - 1; // gamma
-  const FLIP_MS = 600;
-  const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
-
-  // FLIP morph refs: big hero ↔ gamma row card; peel refs for alpha/beta.
-  let heroEl = $state<HTMLDivElement>();
-  let squareEls = $state<(HTMLElement | undefined)[]>([]);
-  let figureEls = $state<(HTMLElement | undefined)[]>([]);
-  let stackOriginLeft = 0;
-
+  const compareStage = steps.length;
+  const totalStages = steps.length + 1;
+  let stage = $state(0);
+  let focus = $state<number | null>(null);
+  let rightIndex = $state(0);
+  let leftIndex = $state(0);
+  let visited = $state<Set<number>>(new Set());
+  let lastAction = $state("");
   let rightHand = $state<SvgData | null>(null);
   let leftHand = $state<SvgData | null>(null);
 
-  async function loadHand(color: HandSide): Promise<SvgData | null> {
+  const isCompare = $derived(stage === compareStage);
+  const step = $derived(steps[Math.min(stage, steps.length - 1)]!);
+  const focusedStep = $derived(focus === null ? null : steps[focus]);
+  const focusHands = $derived(
+    focusedStep ? handsFor(focusedStep.kind, rightIndex, leftIndex) : null
+  );
+  const artifactKey = $derived(
+    !isCompare ? "position" : focus === null ? "comparison" : `focus-${focus}`
+  );
+  const headingKey = $derived(
+    `${stage}-${focus ?? "none"}-${lastAction}`
+  );
+  const headingTitle = $derived(
+    focusedStep?.name ?? (isCompare ? "Hand Positions" : step.name)
+  );
+  const headingEyebrow = $derived(
+    focusedStep?.vtg ?? (isCompare ? undefined : step.vtg)
+  );
+  const headingDescription = $derived.by(() => {
+    if (focusedStep) {
+      return (
+        lastAction ||
+        `Rotate, mirror, or swap hands. It stays ${focusedStep.name}.`
+      );
+    }
+    if (isCompare) {
+      return "These are the three basic positions. Tap one to play with it.";
+    }
+    return step.caption;
+  });
+  const currentCell = $derived(focusHands?.cell ?? 0);
+  const focusTotal = $derived(focusHands?.total ?? 8);
+
+  $effect(() => {
+    if (focus === null || visited.has(currentCell)) return;
+    visited = new Set(visited).add(currentCell);
+  });
+
+  async function loadHand(hand: HandSide): Promise<SvgData | null> {
     const motionData = {
       propType: PropType.HAND,
-      color,
+      hand,
     } as unknown as MotionData;
     const propData = {
       positionX: 0,
@@ -155,10 +168,10 @@
       manualAdjustmentX: 0,
       manualAdjustmentY: 0,
     } as unknown as PropPlacementData;
-    const r = await propSvgLoader.loadPropSvg(propData, motionData, true, {
+    const result = await propSvgLoader.loadPropSvg(propData, motionData, true, {
       themeMode: "light",
     });
-    return r.svgData as SvgData | null;
+    return result.svgData as SvgData | null;
   }
 
   onMount(async () => {
@@ -168,856 +181,485 @@
     ]);
   });
 
-  function prefersReduced() {
-    return (
-      typeof matchMedia !== "undefined" &&
-      matchMedia("(prefers-reduced-motion: reduce)").matches
-    );
-  }
-
-  // FLIP: animate `el` from a previously-measured rect to its current spot.
-  function flipFrom(el: HTMLElement | undefined, first: DOMRect | null) {
-    if (!el || !first || prefersReduced()) return;
-    const last = el.getBoundingClientRect();
-    if (!last.width || !last.height) return;
-    el.animate(
-      [
-        {
-          transformOrigin: "top left",
-          transform: `translate(${first.left - last.left}px, ${first.top - last.top}px) scale(${first.width / last.width}, ${first.height / last.height})`,
-        },
-        { transformOrigin: "top left", transform: "none" },
-      ],
-      { duration: FLIP_MS, easing: EASE }
-    );
-  }
-
-  // alpha/beta peel: slides between own slot and gamma's column + fades.
-  function peelTransition(
-    node: Element,
-    params: { slots: number },
-    opts?: { direction?: string }
-  ) {
-    if (prefersReduced() || node === figureEls[lastIdx]) return { duration: 0 };
-    const me = node.getBoundingClientRect();
-    const g = squareEls[lastIdx]?.getBoundingClientRect();
-    const targetLeft = g ? g.left : stackOriginLeft;
-    const offset = targetLeft - me.left;
-    const fadeOutEarly = opts?.direction === "out";
+  function handsFor(kind: PositionKind, right: number, left: number) {
+    let rightPoint = points[right]!;
+    let leftPoint = points[left]!;
+    if (kind === "beta") {
+      rightPoint = { x: rightPoint.x + betaOffset, y: rightPoint.y };
+      leftPoint = { x: leftPoint.x - betaOffset, y: leftPoint.y };
+    }
+    const difference = wrap(left - right);
+    const cell = kind === "gamma" ? right + (difference === 2 ? 0 : 8) : right;
     return {
-      delay: Math.max(0, params.slots - 1) * 90,
-      duration: 520,
-      easing: cubicOut,
-      css: (t: number) => {
-        const o = fadeOutEarly ? Math.max(0, (t - 0.45) / 0.55) : t;
-        return `transform: translateX(${(1 - t) * offset}px); opacity: ${o};`;
-      },
+      right: rightPoint,
+      left: leftPoint,
+      diamond: right % 2 === 0,
+      cell,
+      total: kind === "gamma" ? 16 : 8,
     };
   }
 
-  // ---- transform playground: tap a position → prove invariance ----
-  let focus = $state<number | null>(null);
-  let rightIdx = $state(0);
-  let leftIdx = $state(0);
-  let visited = $state<Set<number>>(new Set());
-  let lastAction = $state("");
-  // playground opens on an intro beat (explains the 3 transforms) before the buttons
-  let phase = $state<"intro" | "play">("intro");
+  function baseHands(kind: PositionKind) {
+    return handsFor(kind, base[kind].right, base[kind].left);
+  }
 
-  // On mobile the playground opens as a full sheet (so it isn't buried below the row).
-  let isMobile = $state(false);
-  $effect(() => {
-    if (typeof matchMedia === "undefined") return;
-    const mq = matchMedia("(max-width: 640px)");
-    const update = () => (isMobile = mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  });
+  function go(next: number) {
+    focus = null;
+    lastAction = "";
+    stage = Math.max(0, Math.min(compareStage, next));
+  }
 
-  const focusStep = $derived(focus === null ? null : steps[focus]);
-  const focusHands = $derived(
-    focusStep ? handsFor(focusStep.kind, rightIdx, leftIdx) : null
-  );
-  const currentCell = $derived(focusHands ? focusHands.cell : 0);
-  const focusTotal = $derived(focusHands ? focusHands.total : 8);
-
-  $effect(() => {
-    if (focus !== null && !visited.has(currentCell)) {
-      visited = new Set(visited).add(currentCell);
-    }
-  });
-
-  function openFocus(idx: number) {
-    if (focus === idx) {
-      focus = null;
-      return;
-    }
-    focus = idx;
-    const k = steps[idx]!.kind;
-    rightIdx = BASE[k].right;
-    leftIdx = BASE[k].left;
+  function openFocus(index: number) {
+    focus = index;
+    const kind = steps[index]!.kind;
+    rightIndex = base[kind].right;
+    leftIndex = base[kind].left;
     visited = new Set();
     lastAction = "";
-    phase = "intro";
-  }
-  function doRotate() {
-    rightIdx = wrap8(rightIdx + 1);
-    leftIdx = wrap8(leftIdx + 1);
-    lastAction = `Rotated clockwise, still ${steps[focus!]!.name}.`;
-  }
-  function doMirror() {
-    const nr = wrap8(8 - rightIdx),
-      nb = wrap8(8 - leftIdx);
-    const noChange = nr === rightIdx && nb === leftIdx;
-    rightIdx = nr;
-    leftIdx = nb;
-    lastAction = noChange
-      ? `Mirror does nothing here. This one's symmetric. Still ${steps[focus!]!.name}.`
-      : `Mirrored, still ${steps[focus!]!.name}.`;
-  }
-  function doSwap() {
-    const noChange = rightIdx === leftIdx;
-    [rightIdx, leftIdx] = [leftIdx, rightIdx];
-    lastAction = noChange
-      ? `Swap does nothing here. Both hands share a point. Still ${steps[focus!]!.name}.`
-      : `Swapped colors, still ${steps[focus!]!.name}.`;
   }
 
-  async function go(n: number) {
-    focus = null;
-    const from = i;
-    const to = Math.max(0, Math.min(TOTAL - 1, n));
-    if (to === from) return;
+  function rotate() {
+    rightIndex = wrap(rightIndex + 1);
+    leftIndex = wrap(leftIndex + 1);
+    lastAction = `Rotated clockwise, still ${focusedStep!.name}.`;
+  }
 
-    const entering = to === COMPARE && from === lastIdx;
-    const leaving = from === COMPARE && to === lastIdx;
+  function mirror() {
+    const nextRight = wrap(8 - rightIndex);
+    const nextLeft = wrap(8 - leftIndex);
+    const unchanged = nextRight === rightIndex && nextLeft === leftIndex;
+    rightIndex = nextRight;
+    leftIndex = nextLeft;
+    lastAction = unchanged
+      ? `Mirror does nothing here. This one's symmetric. Still ${focusedStep!.name}.`
+      : `Mirrored, still ${focusedStep!.name}.`;
+  }
 
-    let firstRect: DOMRect | null = null;
-    if (entering && heroEl) firstRect = heroEl.getBoundingClientRect();
-    else if (leaving && squareEls[lastIdx])
-      firstRect = squareEls[lastIdx]!.getBoundingClientRect();
-    if (leaving && firstRect) {
-      stackOriginLeft = firstRect.left;
-      const gFig = figureEls[lastIdx];
-      if (gFig) gFig.style.opacity = "0";
+  function swap() {
+    const unchanged = rightIndex === leftIndex;
+    [rightIndex, leftIndex] = [leftIndex, rightIndex];
+    lastAction = unchanged
+      ? `Swap does nothing here. Both hands share a point. Still ${focusedStep!.name}.`
+      : `Swapped colors, still ${focusedStep!.name}.`;
+  }
+
+  function handlePrimaryAction() {
+    if (stage === compareStage) {
+      onComplete?.("hand-motions-intro");
+      return;
     }
-
-    i = to;
-    await tick();
-
-    if (entering) flipFrom(squareEls[lastIdx], firstRect);
-    else if (leaving) flipFrom(heroEl, firstRect);
+    go(stage + 1);
   }
 
-  // Lets the shell's header Back step within the lesson before closing.
+  function handleKeydown(event: KeyboardEvent) {
+    if (viewMode !== "step") return;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      event.preventDefault();
+      handlePrimaryAction();
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      handleBack();
+    }
+  }
+
   export function handleBack() {
-    if (i > 0) {
-      go(i - 1);
+    if (focus !== null) {
+      focus = null;
+      lastAction = "";
+      return;
+    }
+    if (stage > 0) {
+      go(stage - 1);
       return;
     }
     onBack?.();
   }
 </script>
 
-{#snippet hand(sd: SvgData, p: Pt, mirror: boolean)}
+{#snippet hand(svg: SvgData, point: Point, mirrorHand: boolean)}
   <g
     class="hand"
-    style="transform: translate({p.x}px, {p.y}px) {mirror
+    style="transform: translate({point.x}px, {point.y}px) {mirrorHand
       ? 'scaleX(-1) '
-      : ''}translate({-sd.center.x}px, {-sd.center.y}px);"
+      : ''}translate({-svg.center.x}px, {-svg.center.y}px);"
   >
-    {@html sd.svgContent}
+    {@html svg.svgContent}
   </g>
 {/snippet}
 
-{#snippet letterGlyph(kind: PosKind)}
+{#snippet glyph(kind: PositionKind)}
   <image
     class="glyph"
-    href={GLYPH[kind].src}
+    href={glyphs[kind].src}
     x="50"
     y="800"
-    width={GLYPH[kind].w}
-    height={GLYPH[kind].h}
+    width={glyphs[kind].width}
+    height={glyphs[kind].height}
     aria-hidden="true"
   />
 {/snippet}
 
-{#snippet squareInner(s: PosStep)}
-  {@const b = baseHands(s.kind)}
-  <div class="card-grid">
-    <LessonGridDisplay type="diamond" showLabels={false} size="medium" />
+{#snippet positionArt(kind: PositionKind, hands: ReturnType<typeof handsFor>)}
+  <div class="position-art">
+    <div class="grid-layer">
+      <LessonGridDisplay
+        type={hands.diamond ? "diamond" : "box"}
+        showLabels={false}
+        size="large"
+      />
+    </div>
+    <svg class="hand-layer" viewBox="0 0 950 950" aria-hidden="true">
+      {@render glyph(kind)}
+      {#if rightHand}{@render hand(rightHand, hands.right, true)}{/if}
+      {#if leftHand}{@render hand(leftHand, hands.left, false)}{/if}
+    </svg>
   </div>
-  <svg class="card-hands" viewBox="0 0 950 950" aria-hidden="true">
-    {@render letterGlyph(s.kind)}
-    {#if rightHand}{@render hand(rightHand, b.right, true)}{/if}
-    {#if leftHand}{@render hand(leftHand, b.left, false)}{/if}
-  </svg>
 {/snippet}
 
-<div class="positions-experience">
-  <div class="stage">
-    {#if isCompare}
-      <div class="pane">
-        <div class="compare">
-          {#each steps as s, idx (s.name)}
-            <figure
-              class="card"
-              class:selected={focus === idx}
-              style="z-index:{idx};"
-              bind:this={figureEls[idx]}
-              transition:peelTransition|global={{
-                slots: steps.length - 1 - idx,
-              }}
-            >
-              <button
-                type="button"
-                class="card-square"
-                bind:this={squareEls[idx]}
-                onclick={() => openFocus(idx)}
-                aria-pressed={focus === idx}
-                aria-label={`Explore ${s.name}`}
-              >
-                {@render squareInner(s)}
-              </button>
-              <figcaption>
-                <span class="eyebrow">{s.vtg}</span>
-                <b>{s.name}</b>
-              </figcaption>
-            </figure>
-          {/each}
-        </div>
-        <div class="label">
-          <p>These are the three basic positions. Tap one to play with it.</p>
-        </div>
+<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
+<div
+  class="positions-experience"
+  onkeydown={handleKeydown}
+  tabindex="0"
+  role="application"
+  aria-label="Hand Positions lesson, use arrow keys to navigate"
+>
+  <LessonStageFrame artifactLayout={isCompare ? "wide" : "square"}>
+    {#snippet heading()}
+      <LessonStageHeading
+        key={headingKey}
+        title={headingTitle}
+        eyebrow={headingEyebrow}
+      >
+        <p>{headingDescription}</p>
+      </LessonStageHeading>
+    {/snippet}
 
-        {#if focus !== null && focusStep && focusHands}
-          <div
-            class="focus"
-            class:focus--sheet={isMobile}
-            class:intro-mode={phase === "intro"}
-            transition:slide={{ duration: 320 }}
-          >
-            {#if isMobile}
-              <button
-                type="button"
-                class="sheet-close"
-                onclick={() => (focus = null)}
-                aria-label="Close">✕</button
-              >
-            {/if}
-            <div class="focus-head">
-              <span class="eyebrow">{focusStep.vtg}</span>
-              <h2>{focusStep.name}</h2>
-            </div>
-
-            <div class="focus-pic">
-              <div class="grid-layer">
-                <LessonGridDisplay
-                  type={focusHands.diamond ? "diamond" : "box"}
-                  showLabels={false}
-                  size="large"
-                />
-              </div>
-              <svg class="hand-layer" viewBox="0 0 950 950" aria-hidden="true">
-                {@render letterGlyph(focusStep.kind)}
-                {#if rightHand}{@render hand(
-                    rightHand,
-                    focusHands.right,
-                    true
-                  )}{/if}
-                {#if leftHand}{@render hand(
-                    leftHand,
-                    focusHands.left,
-                    false
-                  )}{/if}
-              </svg>
-            </div>
-
-            {#if phase === "intro"}
-              <div class="intro">
-                <p class="intro-lead">
-                  Three ways to change a pictograph, and it stays {focusStep.name}:
-                </p>
-                <ul class="intro-list">
-                  <li>
-                    <span class="ic">⟳</span><span
-                      ><b>Rotate</b>: turn it around the grid.</span
-                    >
-                  </li>
-                  <li>
-                    <span class="ic">⇄</span><span
-                      ><b>Mirror</b>: flip it left to right.</span
-                    >
-                  </li>
-                  <li>
-                    <span class="ic">◐</span><span
-                      ><b>Swap colors</b>: swap which hand is which.</span
-                    >
-                  </li>
-                </ul>
+    {#snippet artifact()}
+      <Crossfade key={artifactKey} fill>
+        {#if !isCompare}
+          {@const hands = baseHands(step.kind)}
+          <div class="artifact-state hero-state">
+            {@render positionArt(step.kind, hands)}
+          </div>
+        {:else if focus === null}
+          <div class="artifact-state comparison-state">
+            <div class="comparison-grid">
+              {#each steps as option, index (option.name)}
+                {@const hands = baseHands(option.kind)}
                 <button
                   type="button"
-                  class="navbtn primary intro-go"
-                  onclick={() => (phase = "play")}>Try it →</button
+                  class="position-option"
+                  onclick={() => openFocus(index)}
+                  aria-label={`Explore ${option.name}`}
                 >
-              </div>
-            {:else}
-              <p class="focus-caption">
-                {lastAction ||
-                  `Rotate, mirror, or swap hands. It stays ${focusStep.name}.`}
-              </p>
+                  <span class="option-art">
+                    {@render positionArt(option.kind, hands)}
+                  </span>
+                  <span class="option-copy">
+                    <span class="option-eyebrow">{option.vtg}</span>
+                    <strong>{option.name}</strong>
+                  </span>
+                </button>
+              {/each}
+            </div>
+          </div>
+        {:else if focusedStep && focusHands}
+          <div class="artifact-state focus-state">
+            <div class="focus-art">
+              {@render positionArt(focusedStep.kind, focusHands)}
+            </div>
 
-              <div class="focus-controls">
-                <button type="button" class="tbtn" onclick={doRotate}
-                  >⟳ Rotate</button
-                >
-                <button type="button" class="tbtn" onclick={doMirror}
-                  >⇄ Mirror</button
-                >
-                <button type="button" class="tbtn" onclick={doSwap}
-                  >◐ Swap</button
-                >
+            <div class="focus-actions">
+              <div class="transform-actions">
+                <PanelButton fullWidth onclick={rotate}>
+                  <span aria-hidden="true">⟳</span><span>Rotate</span>
+                </PanelButton>
+                <PanelButton fullWidth onclick={mirror}>
+                  <span aria-hidden="true">⇄</span><span>Mirror</span>
+                </PanelButton>
+                <PanelButton fullWidth onclick={swap}>
+                  <span aria-hidden="true">◐</span><span>Swap colors</span>
+                </PanelButton>
               </div>
-
-              <div class="tray">
+              <div class="discovery-tray">
                 <div
                   class="tray-grid"
-                  style="grid-template-columns: repeat({focusTotal > 8
-                    ? 8
-                    : 4}, auto);"
+                  style:grid-template-columns={`repeat(${focusTotal > 8 ? 8 : 4}, 1fr)`}
                 >
-                  {#each Array(focusTotal) as _, c}
-                    <span class="cell" class:lit={visited.has(c)}></span>
+                  {#each Array(focusTotal) as _, cell}
+                    <span class="tray-cell" class:lit={visited.has(cell)}></span>
                   {/each}
                 </div>
-                <span class="tray-count"
-                  >Discovered {visited.size} of {focusTotal}</span
-                >
+                <span>Discovered {visited.size} of {focusTotal}</span>
               </div>
-            {/if}
+            </div>
           </div>
         {/if}
-      </div>
-    {:else}
-      {@const hb = baseHands(step.kind)}
-      <div class="pane pane-front">
-        <div class="hero" bind:this={heroEl}>
-          <div class="grid-layer">
-            <LessonGridDisplay type="diamond" showLabels={false} size="large" />
-          </div>
-          <svg class="hand-layer" viewBox="0 0 950 950" aria-hidden="true">
-            {@render letterGlyph(step.kind)}
-            {#if rightHand}{@render hand(rightHand, hb.right, true)}{/if}
-            {#if leftHand}{@render hand(leftHand, hb.left, false)}{/if}
-          </svg>
-        </div>
+      </Crossfade>
+    {/snippet}
 
-        {#key i}
-          <div class="label">
-            <span class="eyebrow">{step.vtg}</span>
-            <h1>{step.name}</h1>
-            <p>{step.caption}</p>
-          </div>
-        {/key}
-      </div>
-    {/if}
-  </div>
-
-  <footer class="nav">
-    <button class="navbtn" disabled={i === 0} onclick={() => go(i - 1)}
-      >‹ Back</button
-    >
-    <div class="ticks">
-      {#each Array(TOTAL) as _, idx}
-        <button
-          class="tick"
-          class:on={idx === i}
-          onclick={() => go(idx)}
-          aria-label={`Stage ${idx + 1}`}
-        ></button>
-      {/each}
-    </div>
-    {#if i === TOTAL - 1}
-      <button class="navbtn primary" onclick={() => onComplete?.()}
-        >Finish ✓</button
-      >
-    {:else}
-      <button class="navbtn primary" onclick={() => go(i + 1)}>Next ›</button>
-    {/if}
-  </footer>
+    {#snippet controls()}
+      <LessonStageControls
+        label={stage === compareStage ? "Finish ✓" : "Next ›"}
+        currentStep={stage + 1}
+        totalSteps={totalStages}
+        onAction={handlePrimaryAction}
+      />
+    {/snippet}
+  </LessonStageFrame>
 </div>
 
 <style>
   .positions-experience {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
     width: 100%;
-    background: #0c0c12;
-    color: #f0f0f5;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    color: var(--theme-text);
+    outline: none;
   }
 
-  .stage {
-    flex: 1;
+  .artifact-state,
+  .position-art {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+  }
+
+  .artifact-state {
     display: grid;
     place-items: center;
-    padding: 3rem 1.5rem 2rem;
-  }
-  /* both swap panes share one grid cell so they overlap (not stack) mid-transition */
-  .pane {
-    grid-area: 1 / 1;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2rem;
-    width: 100%;
-  }
-  .pane-front {
-    z-index: 2;
   }
 
-  .hero {
+  .position-art {
     position: relative;
-    width: min(70vh, 560px);
-    aspect-ratio: 1;
-  }
-  .grid-layer {
-    position: absolute;
-    inset: 0;
-  }
-  .grid-layer :global(.lesson-grid-display) {
-    width: 100%;
-  }
-  .grid-layer :global(.grid-svg) {
-    max-width: 100% !important;
   }
 
+  .grid-layer,
   .hand-layer {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    overflow: visible;
-  }
-  .hand {
-    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  /* letter glyph: black source recolored to off-white for the dark bg */
+  .grid-layer :global(.lesson-grid-display),
+  .grid-layer :global(.grid-svg) {
+    width: 100%;
+    max-width: none !important;
+  }
+
+  .hand-layer {
+    overflow: visible;
+  }
+
+  .hand {
+    transition: transform var(--duration-emphasis) var(--ease-out);
+  }
+
   .glyph {
     filter: invert(0.85);
   }
 
-  /* compare-row stage */
-  .compare {
-    --gap: clamp(1rem, 4vw, 2.5rem);
-    display: flex;
-    gap: var(--gap);
-    align-items: flex-start;
-    justify-content: center;
-  }
-  .card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.6rem;
-  }
-  .card-square {
-    position: relative;
-    width: min(26vh, 220px);
-    aspect-ratio: 1;
-    border: 1px solid transparent;
-    border-radius: 16px;
-    background: transparent;
-    padding: 0;
-    cursor: pointer;
-    transition:
-      border-color 0.2s ease,
-      background 0.2s ease,
-      transform 0.2s ease;
-  }
-  .card-square:hover {
-    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.18));
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.03));
-  }
-  .card-square:focus-visible {
-    outline: 2px solid #4ea7e8;
-    outline-offset: 2px;
-  }
-  .card.selected .card-square {
-    border-color: #4ea7e8;
-    background: rgba(78, 167, 232, 0.08);
-  }
-  .card-grid {
-    position: absolute;
-    inset: 0;
-  }
-  .card-grid :global(.lesson-grid-display) {
-    width: 100%;
-  }
-  .card-grid :global(.grid-svg) {
-    max-width: 100% !important;
-  }
-  .card-hands {
-    position: absolute;
-    inset: 0;
+  .comparison-grid {
     width: 100%;
     height: 100%;
-    overflow: visible;
-  }
-  .card figcaption {
-    text-align: center;
-  }
-  .card figcaption b {
-    display: block;
-    font-size: 1.4rem;
-    font-style: italic;
-    font-weight: 600;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: center;
+    gap: clamp(0.5rem, 2cqw, 1rem);
   }
 
-  /* transform playground */
-  .focus {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    width: 100%;
-    max-width: 520px;
-    padding: 1.5rem 1rem 0;
-  }
-  /* mobile: playground takes over the screen as a sheet so it isn't buried */
-  .focus--sheet {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    height: 100svh; /* small viewport height — accounts for the mobile browser toolbars */
-    max-width: none;
-    background: #0c0c12;
-    overflow: hidden; /* everything is sized to fit — no scroll */
-    justify-content: center; /* balance the content in the available height */
-    gap: 0.75rem;
-    padding: 2.75rem 1rem 4.5rem; /* bottom clears the global app nav */
-  }
-  .sheet-close {
-    position: fixed;
-    top: 0.75rem;
-    right: 0.75rem;
-    z-index: 51;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    background: rgba(20, 20, 28, 0.92);
-    color: #e6e6f0;
-    font-size: 1.05rem;
-    cursor: pointer;
-  }
-  .focus-head {
-    text-align: center;
-  }
-  .focus-head h2 {
-    font-size: 2.2rem;
-    font-style: italic;
-    margin: 0;
-  }
-  .focus-pic {
-    position: relative;
-    width: min(52vh, 380px);
-    aspect-ratio: 1;
-  }
-  .focus-caption {
-    font-size: 1rem;
-    color: #c4c4d4;
-    margin: 0;
-    min-height: 1.4em;
-    text-align: center;
-  }
-  .focus-controls {
-    display: flex;
-    gap: 0.6rem;
-    flex-wrap: nowrap;
-    justify-content: center;
-    width: 100%;
-    max-width: 420px;
-  }
-  .tbtn {
-    flex: 1 1 0;
+  .position-option {
     min-width: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    padding: 0.6rem 0.8rem;
-    border-radius: 10px;
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: #e6e6f0;
-    font-size: 0.95rem;
-    white-space: nowrap;
+    container-type: inline-size;
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: 0.5rem;
+    padding: 0.45rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 14px;
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
     cursor: pointer;
-    min-height: 44px;
+    transition:
+      background var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
   }
 
-  /* intro beat: explain the three transforms before handing over the buttons */
-  .intro {
-    display: flex;
-    flex-direction: column;
-    gap: 0.9rem;
-    align-items: center;
-    width: 100%;
-    max-width: 420px;
+  .position-option:hover {
+    border-color: var(--theme-stroke-strong);
+    background: var(--theme-card-hover-bg);
   }
-  .intro-lead {
-    font-size: 1rem;
-    color: #c4c4d4;
-    margin: 0;
-    text-align: center;
+
+  .position-option:active {
+    transform: scale(0.98);
   }
-  .intro-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-    width: 100%;
-  }
-  .intro-list li {
-    display: flex;
-    gap: 0.65rem;
-    align-items: flex-start;
-    font-size: 0.95rem;
-    color: #d8d8e4;
-    line-height: 1.4;
-  }
-  .intro-list .ic {
-    color: #4ea7e8;
-    font-size: 1.25rem;
-    width: 1.4em;
-    text-align: center;
-    flex: none;
-    line-height: 1.2;
-  }
-  .intro-list b {
-    color: #fff;
-  }
-  .intro-go {
-    margin-top: 0.25rem;
-  }
-  .tbtn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
-  }
-  .tbtn:active {
-    transform: scale(0.96);
-  }
-  .tbtn:focus-visible {
-    outline: 2px solid #4ea7e8;
+
+  .position-option:focus-visible,
+  .transform-actions :global(.panel-btn:focus-visible) {
+    outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
 
-  .tray {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
+  .option-art {
+    display: block;
+    width: min(100cqi, calc(100cqh - 3.25rem));
+    aspect-ratio: 1;
+    justify-self: center;
   }
+
+  .option-copy {
+    display: grid;
+    justify-items: center;
+    gap: 0.15rem;
+  }
+
+  .option-copy strong {
+    font-size: clamp(1rem, 2.5cqw, 1.35rem);
+  }
+
+  .option-eyebrow {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .focus-state {
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 0.65rem;
+  }
+
+  .focus-art {
+    width: min(100%, 75cqh);
+    aspect-ratio: 1;
+  }
+
+  .focus-actions {
+    width: min(100%, 28rem);
+  }
+
+  .transform-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .transform-actions :global(.panel-btn) {
+    min-width: 0;
+    min-height: max(var(--min-touch-target, 44px), 3.25rem);
+    padding: 0.75rem 0.65rem;
+    border-radius: 12px;
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 700;
+  }
+
+  .discovery-tray {
+    display: grid;
+    justify-items: center;
+    gap: 0.35rem;
+    margin-top: 0.55rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-variant-numeric: tabular-nums;
+  }
+
   .tray-grid {
     display: grid;
-    gap: 0.4rem;
-    justify-content: center;
+    gap: 0.3rem;
   }
-  .cell {
-    width: 16px;
-    height: 16px;
-    border-radius: 4px;
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.22));
+
+  .tray-cell {
+    width: 0.8rem;
+    aspect-ratio: 1;
+    border: 1px solid var(--theme-stroke-strong);
+    border-radius: 3px;
     background: transparent;
     transition:
-      background 0.3s ease,
-      border-color 0.3s ease,
-      transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .cell.lit {
-    background: #4ea7e8;
-    border-color: #4ea7e8;
-    transform: scale(1.12);
-  }
-  .tray-count {
-    font-size: 0.8rem;
-    letter-spacing: 0.04em;
-    color: #8a8aa0;
+      background var(--duration-normal) var(--ease-out),
+      border-color var(--duration-normal) var(--ease-out),
+      transform var(--duration-normal) var(--ease-out);
   }
 
-  .label {
-    text-align: center;
-    max-width: 600px;
-  }
-  .eyebrow {
-    display: block;
-    font-size: 0.8rem;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: #6f6f88;
-    margin-bottom: 0.35rem;
-  }
-  .label h1 {
-    font-size: 3rem;
-    font-style: italic;
-    margin: 0 0 0.4rem;
-    animation: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .label p {
-    font-size: 1.1rem;
-    color: #c4c4d4;
-    margin: 0;
-    line-height: 1.5;
+  .tray-cell.lit {
+    border-color: var(--theme-accent);
+    background: var(--theme-accent);
+    transform: scale(1.1);
   }
 
-  @keyframes pop {
-    0% {
-      opacity: 0;
-      transform: scale(0.7) translateY(8px);
+  @media (max-width: 640px) {
+    .comparison-grid {
+      gap: 0.25rem;
     }
-    100% {
-      opacity: 1;
-      transform: scale(1) translateY(0);
+
+    .position-option {
+      padding: 0.2rem;
     }
+
+    .option-copy strong {
+      font-size: var(--font-size-min, 0.875rem);
+    }
+
+    .option-eyebrow {
+      font-size: 0.7rem;
+    }
+
+    .focus-art {
+      width: min(100%, 68cqh);
+    }
+
   }
 
-  .nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1.75rem;
-    padding: 1rem;
-    background: rgba(12, 12, 18, 0.92);
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    backdrop-filter: blur(8px);
-  }
-  .navbtn {
-    padding: 0.6rem 1.5rem;
-    border-radius: 10px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.18));
-    background: transparent;
-    color: #d0d0e0;
-    font-size: 0.95rem;
-    cursor: pointer;
-    min-height: 44px;
-  }
-  .navbtn.primary {
-    background: #4ea7e8;
-    border-color: #4ea7e8;
-    color: #06121d;
-    font-weight: 600;
-  }
-  .navbtn:disabled {
-    opacity: 0.35;
-    cursor: default;
-  }
-  .ticks {
-    display: flex;
-    gap: 0.5rem;
-  }
-  .tick {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
-    background: transparent;
-    cursor: pointer;
-    padding: 0;
-  }
-  .tick.on {
-    background: #4ea7e8;
-    border-color: #4ea7e8;
+  @media (max-height: 480px) and (min-width: 641px) {
+    .comparison-grid {
+      gap: 0.75rem;
+    }
+
+    .position-option {
+      gap: 0.2rem;
+      padding: 0.2rem;
+    }
+
+    .option-copy {
+      grid-template-columns: auto auto;
+      justify-content: center;
+      align-items: baseline;
+      gap: 0.4rem;
+    }
+
+    .option-copy strong,
+    .option-eyebrow {
+      font-size: 0.75rem;
+    }
+
+    .focus-state {
+      grid-template-columns: minmax(0, 1fr) minmax(18rem, 1.25fr);
+      grid-template-rows: minmax(0, 1fr);
+      gap: 1rem;
+    }
+
+    .focus-art {
+      width: min(100%, 100cqh);
+      align-self: center;
+      justify-self: end;
+    }
+
+    .focus-actions {
+      align-self: center;
+      justify-self: start;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hand {
+    .hand,
+    .position-option,
+    .tray-cell {
       transition: none;
-    }
-    .card {
-      transition: none;
-    }
-    .label h1 {
-      animation: none;
-    }
-  }
-
-  /* mobile (portrait): everything sized to FIT the viewport height — never scroll */
-  @media (max-width: 640px) {
-    .stage {
-      padding: 1.25rem 1rem;
-    }
-    /* hero sized by HEIGHT (svh) so name + caption + footer always fit */
-    .hero {
-      width: auto;
-      height: min(86vw, 42svh);
-    }
-    .label h1 {
-      font-size: 2rem;
-      margin-bottom: 0.25rem;
-    }
-    .label p {
-      font-size: 1rem;
-    }
-    /* keep all three side by side, shrunk to fit width */
-    .compare {
-      gap: 0.5rem;
-      align-items: flex-start;
-    }
-    .card-square {
-      width: min(29vw, 130px);
-    }
-    .card figcaption b {
-      font-size: 1rem;
-    }
-    .card figcaption .eyebrow {
-      font-size: 0.58rem;
-      letter-spacing: 0.08em;
-      margin-bottom: 0.1rem;
-    }
-    .focus-head h2 {
-      font-size: 1.7rem;
-    }
-    .tbtn {
-      padding: 0.55rem 0.35rem;
-      font-size: 0.85rem;
-      gap: 0.3rem;
-    }
-    .nav {
-      gap: 1rem;
-    }
-    .navbtn {
-      padding: 0.6rem 1.1rem;
-    }
-
-    /* sheet pictographs sized by HEIGHT so the whole sheet fits with no scroll */
-    .focus--sheet .focus-pic {
-      width: auto;
-      height: min(86vw, 38svh);
-    }
-    .focus--sheet.intro-mode .focus-pic {
-      width: auto;
-      height: min(60vw, 26svh);
-    }
-    .focus--sheet.intro-mode .intro {
-      gap: 0.55rem;
-    }
-    .focus--sheet .intro-lead {
-      font-size: 0.9rem;
-    }
-    .focus--sheet .intro-list li {
-      font-size: 0.88rem;
-    }
-    .focus--sheet .focus-caption {
-      font-size: 0.9rem;
     }
   }
 </style>

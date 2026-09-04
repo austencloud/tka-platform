@@ -14,7 +14,10 @@ const expectedPublishedIds = [
   "hand-positions",
   "hand-motions-intro",
   "rotation-direction",
+  "dual-shifts-alpha-beta",
+  "gamma-motion",
   "staff-positions",
+  "letter-codex-intro",
   "type1-abc-ghi",
   "words-alpha-beta",
 ];

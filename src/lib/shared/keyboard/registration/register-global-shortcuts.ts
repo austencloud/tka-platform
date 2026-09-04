@@ -33,6 +33,7 @@ import { toast } from "../../toast/state/toast-state.svelte";
 import { BackgroundType } from "@austencloud/backgrounds";
 import { BACKGROUND_CARD_REGISTRY } from "@austencloud/backgrounds/card";
 import { applyThemeFromColors } from "../../settings/utils/background-theme-calculator";
+import { openShortcutSettings } from "../open-shortcut-settings";
 import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
 import {
   getAllPropTypes,
@@ -97,9 +98,7 @@ export function registerGlobalShortcuts(
     context: "global",
     scope: "help",
     priority: "critical",
-    action: () => {
-      state.openHelp();
-    },
+    action: () => void openShortcutSettings("keyboard_shortcut"),
   });
 
   // ==================== Module Switching (Ctrl + Numbers) ====================

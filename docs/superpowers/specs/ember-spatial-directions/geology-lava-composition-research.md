@@ -1,6 +1,6 @@
 # Ember geology, lava, and composition research
 
-Status: complete research package; spatial direction awaits Austen's review
+Status: complete research package; Breached Rift Bench Gate 2 R2 ready for review
 
 Date: 2026-09-03
 
@@ -20,9 +20,10 @@ horizon remains open. The plan is directional rather than radial. The stage is
 a locally smooth patch of an older cooled surface, not a disk placed inside a
 ring of spectacle.
 
-This is a recommendation, not an approved production direction. It earns the
-next graybox because it is the best combined answer to geology, lava causality,
-camera resilience, performer clearance, and the remaining Meshy budget.
+This direction is approved through Gate 1.1 under Austen's delegated spatial
+authority in tracker `7uoHBfOCOqMmFeKBRh7l`. It earned the R2 graybox because it
+is the best combined answer to geology, lava causality, camera resilience,
+performer clearance, and the remaining Meshy budget.
 
 The restart should preserve Ember's useful infrastructure, surface work, and
 atmosphere while replacing two failed owners:
@@ -440,10 +441,11 @@ A is the current recommendation.
 
 ### Gate 2: build the real graybox
 
-Create one terrain height field and massing model from the approved plan. Import
-the simulator footprint as a guide. Use flat diagnostic materials. Capture the
-default audience, 45° increments around the orbit, plan, and longitudinal
-section. Do not build final lava or spend Meshy credits.
+Create one terrain height field and massing model from the approved plan. Use
+the selected simulator thickness raster as the visible deposit owner. Use flat
+diagnostic materials. Capture the default audience, 45° increments around the
+orbit, north-up plan, longitudinal section, and director overview. Do not build
+final lava materials or spend Meshy credits.
 
 Gate 2 passes when:
 
@@ -526,9 +528,11 @@ reads as a volcanic place rather than a decorated stage.
 - Direction A's breach can regress into another giant arch. The graybox must
   show a broken scarp with asymmetric bedding, talus, and a credible missing
   volume, not a freestanding portal.
-- The first 8,000 m³ simulator test stops near the performer region rather than
-  filling the authored 314 m route. Production planning will need a calibrated
-  volume/lobe-count sweep after the terrain is approved.
+- Historical R1 risk: the first 8,000 m³ simulator test stopped near the
+  performer region rather than filling the authored 314 m route. Gate 1.1 now
+  resolves that specific contradiction with a five-run width/morphology sweep;
+  the selected simulator footprint reaches runtime Z `-144` with 13.220 m of
+  clearance beyond the action envelope. Artifact approval remains pending.
 - Simulator agreement is encouraging but not geological validation. Both models
   inherit related elliptical-lobe assumptions and the same invented DEM.
 - A 1 m planning grid cannot own sub-meter crust form. It is a macro/meso guide.
@@ -572,3 +576,18 @@ Reproduction scripts:
 The [source ledger](geology-research-source-ledger.md) records all measured,
 scientific, production, repository, licensing, and Meshy references used by the
 study.
+
+## Gate 1.1 amendment evidence
+
+The independent R1 audit and corrective authorization are recorded in museum
+tracker items `xSjtvI2XVvvMdn8pHqwP` and `WS9FU4nn2fCSbOn68IeB`. The replacement
+north-up plan, sections, sightlines, simulator sweep, contact sheet, canonical
+report, and selected float32 footprint live in
+`evidence/gate-1-1-geology-amendment-r2/`. Reproduce them with:
+
+- `py -3 scripts/prepare-ember-lava-simulator-benchmark.py all-r2`
+- `py -3 scripts/build-ember-geology-amendment.py build`
+- `py -3 scripts/build-ember-geology-amendment.py verify`
+
+Direction A remains the accepted creative direction, but its corrected Gate 1.1
+artifact is `ready-for-review` rather than approved. Gate 2 R2 is pending.

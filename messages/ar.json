@@ -1,5 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "tab_compose_third_order": "الحركة من الرتبة الثالثة",
+  "tab_desc_compose_third_order": "حرّك تسلسلات كاملة داخل تسلسل أكبر",
   "action_cancel": "إلغاء",
   "action_close": "إغلاق",
   "action_confirm": "تأكيد",
@@ -464,6 +466,8 @@
   "sort_difficulty": "صعوبة",
   "sort_length": "طول",
   "sort_recent": "مؤخرًا",
+  "tab_desc_settings_keyboard": "مراجعة اختصارات لوحة المفاتيح وتغييرها",
+  "tab_settings_keyboard": "لوحة المفاتيح",
   "tab_settings_profile": "الحساب",
   "train_accuracy_percent": "{value}% الدقة",
   "train_all_completed": "تم إنجاز جميع التحديات! تابعونا قريباً.",

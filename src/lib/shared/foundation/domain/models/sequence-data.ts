@@ -24,7 +24,10 @@ import type {
 import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
 import type { SoloPropData } from "./solo-prop-data";
 import type { StepPairingData } from "./step-pairing-data";
-import type { WallFeasibilityMetadata } from "$lib/shared/3d/domain/models/wall-feasibility";
+import type {
+  WallFeasibilityMetadata,
+  WallPlaneSourceAssessment,
+} from "$lib/shared/3d/domain/models/wall-feasibility";
 import { normalizeLegacySequence } from "@tka/tka-types";
 import type { CardPresentation } from "$lib/shared/share/domain/models/card-presentation";
 
@@ -128,9 +131,12 @@ export interface SequenceData {
    *   Absent or "arc" = default arc behavior. "linear" = straight-line shifts. "concave" = inward-curving astroid.
    * - `wallFeasibility`: {@link WallFeasibilityMetadata} - written offline by the wall-plane
    *   feasibility scanner. Absent = unscanned; viewer makes no wall-plane claims.
+   * - `wallPlaneSourceAssessment`: {@link WallPlaneSourceAssessment} - an
+   *   attributed external caution, kept separate from scanner truth.
    */
   readonly metadata: Record<string, unknown> & {
     wallFeasibility?: WallFeasibilityMetadata;
+    wallPlaneSourceAssessment?: WallPlaneSourceAssessment;
   };
 
   // Equivalence detection fields

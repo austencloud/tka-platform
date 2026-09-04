@@ -8,9 +8,10 @@
   open, over the same browse engine. This component only arranges them into the
   app's card vocabulary and writes each choice into the URL.
 
-  The verified fixtures sit under that picker as a pinned row rather than above
-  it as the headline. They are a shortcut to seven known-good loops, not the
-  set of sequences this lab can play.
+  The 19 core TnD sequences sit under that picker as the lab's goal list,
+  grouped the way VTG groups them. Each carries what the committed continuity
+  sweep found for it, so the row answers "which of these still teleport" at a
+  glance. The picker above stays the way to reach everything else.
 -->
 <script lang="ts">
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
@@ -26,12 +27,16 @@
 
   import {
     isLocalOnlyCharacter,
-    LAB_FIXTURES,
     labCharacterName,
     labFixture,
     labPropLabel,
     labSequenceLabel,
   } from "./lab-catalog";
+  import {
+    labContinuityStatus,
+    labGoalContinuitySummary,
+  } from "./lab-continuity";
+  import { LAB_GOAL_FAMILIES, labGoal } from "./lab-goals";
   import {
     LAB_LENGTH_MAX_CM,
     LAB_LENGTH_MIN_CM,
@@ -72,16 +77,28 @@
    * always shows in its smallest form, which `labSequenceLabel` owns.
    */
   const activeFixture = $derived(labFixture(lab.sequenceId));
+  const activeGoal = $derived(labGoal(lab.sequenceId));
   const sequenceWord = $derived(
-    activeFixture?.label ??
+    activeGoal?.label ??
+      activeFixture?.label ??
       (sequence ? labSequenceLabel(sequence) : lab.sequenceId)
   );
   const sequenceStepCount = $derived(
     activeFixture?.stepCount ?? sequence?.steps.length ?? null
   );
   const sequenceSource = $derived(
-    activeFixture ? "verified fixture" : "from the library"
+    activeGoal
+      ? `core goal ${activeGoal.order} of 19`
+      : activeFixture
+        ? "verified fixture"
+        : "from the library"
   );
+
+  /** What the committed sweep says about whatever is currently loaded. */
+  const activeContinuity = $derived(labContinuityStatus(lab.sequenceId));
+
+  /** How far the goal list is from a teleport-free pass. Static per artifact. */
+  const goalSummary = labGoalContinuitySummary();
 
   const viewOptions = $derived([
     { value: "quad" as LabView, label: "Quad", ariaLabel: "All four cameras" },
@@ -219,27 +236,75 @@
       {#if sequenceLoading}
         Loading sequence…
       {:else if sequenceStepCount !== null}
-        {sequenceStepCount} steps · {sequenceSource}
+        {sequenceStepCount} steps · {sequenceSource} · {activeContinuity.summary}
       {:else}
         Nothing loaded
       {/if}
     </p>
 
+    <!--
+      The goal list. Nineteen controls in one wrapped row reads as a wall, so
+      they keep the six VTG families they already belong to: three or four per
+      family, each family one line wide enough to hold it.
+
+      State rides the glyph, never a strip on the container's edge. Selection
+      is the solid fill, which is a value contrast rather than a hue, so it
+      survives nineteen chips and a colour-blind reader alike.
+
+      No count on the chip. Every sequence the sweep faults carries exactly
+      four events, so thirteen identical badges discriminate nothing and cost
+      the row about twenty pixels a chip — enough to strand the fourth chip of
+      Quarter-Same on a line of its own in a 236px rail. The numbers live on
+      the loaded sequence's line, in each chip's accessible name, and under the
+      scrub, where they differ from one another.
+    -->
     <div class="field">
-      <span class="field-label" id="lab-fixtures-label">Pinned fixtures</span>
-      <div class="chip-row" role="group" aria-labelledby="lab-fixtures-label">
-        {#each LAB_FIXTURES as fixture (fixture.id)}
-          <FilterChipBase
-            mode="toggle"
-            emphasis="solid"
-            size="sm"
-            label={fixture.label}
-            active={lab.sequenceId === fixture.id}
-            ariaLabel={`${fixture.label}, ${fixture.stepCount} steps`}
-            onclick={() => lab.setSequence(fixture.id)}
-          />
+      <div class="goals-head">
+        <span class="field-label" id="lab-goals-label">Core goals</span>
+        <span class="goals-summary">
+          {goalSummary.clean}/{goalSummary.total} clean
+        </span>
+      </div>
+      <div class="goal-families" role="group" aria-labelledby="lab-goals-label">
+        {#each LAB_GOAL_FAMILIES as family (family.id)}
+          <div class="goal-family">
+            <span class="goal-family-label" id={`lab-goal-${family.id}`}>
+              {family.label}
+            </span>
+            <div class="chip-row" role="group" aria-labelledby={`lab-goal-${family.id}`}>
+              {#each family.goals as goal (goal.id)}
+                {@const status = labContinuityStatus(goal.id)}
+                {@const isActive = lab.sequenceId === goal.id}
+                {#snippet goalGlyph()}
+                  <span
+                    class="goal-glyph"
+                    class:on-accent={isActive}
+                    style={`--goal-glyph-color: ${status.color};`}
+                  >
+                    <i class={status.icon} aria-hidden="true"></i>
+                  </span>
+                {/snippet}
+                <FilterChipBase
+                  mode="toggle"
+                  emphasis="solid"
+                  size="sm"
+                  labelScale="readable"
+                  label={goal.label}
+                  iconSnippet={goalGlyph}
+                  chipColor={status.color}
+                  active={isActive}
+                  ariaLabel={`${goal.label}, ${family.label}, ${status.summary}`}
+                  onclick={() => lab.setSequence(goal.id)}
+                />
+              {/each}
+            </div>
+          </div>
         {/each}
       </div>
+      <p class="note goals-legend">
+        Check: no discontinuities. Bolt: jumps. From the committed sweep, not
+        measured live.
+      </p>
     </div>
   </section>
 
@@ -387,8 +452,81 @@
     font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     /* The caption changes with the loaded sequence; reserving the line keeps
-       the fixtures below it from stepping up and down as one loads. */
+       the goals below it from stepping up and down as one loads. */
     min-height: 1.15rem;
+  }
+
+  /* The goal list's own heading row: its label and how far the list has to go. */
+  .goals-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .goals-summary {
+    font-size: var(--font-size-compact, 0.75rem);
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+  }
+
+  .goal-families {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  /*
+   * The family name sits above its goals at every width, so the chips always
+   * get the rail's whole measure.
+   *
+   * A label column beside them was tried and removed. It read well and halved
+   * the block's height, but a 6.25rem column plus its gap takes 112px, and the
+   * rail's own measure runs from 220px (folded phone) to 470px (4K). At 342px
+   * — an 820px tablet — that left 230px for a family, and Quarter-Same's four
+   * chips need more, so V dropped to a line of its own. Split-Opp and
+   * Quarter-Opp stranded their third chip the same way. Six extra label lines
+   * in a rail that already scrolls is the cheaper price.
+   */
+  .goal-family {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .goal-family-label {
+    font-size: var(--font-size-compact, 0.75rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+    white-space: nowrap;
+  }
+
+  /*
+   * The continuity glyph. Colour reinforces the state; the icon's shape
+   * carries it on its own. On the selected chip the solid
+   * accent fill owns the surface, so the glyph switches to on-accent rather
+   * than sitting a themed hue on top of one.
+   */
+  .goal-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    color: var(--goal-glyph-color);
+  }
+
+  .goal-glyph.on-accent {
+    color: var(--theme-text-on-accent, #fff);
+  }
+
+  .goal-glyph i {
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .goals-legend {
+    min-height: 0;
   }
 
   /*

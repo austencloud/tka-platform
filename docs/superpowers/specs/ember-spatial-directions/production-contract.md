@@ -1,6 +1,6 @@
 # Ember Broken Rift production contract
 
-**Status:** Fresh Rift approved at Gate 3; Gate 4 production in progress
+**Status:** Geology-first restart at Gate 2 R2 ready for review; later production is historical
 
 **Scene ID:** `ember-broken-rift`
 
@@ -15,7 +15,10 @@
 `5otAzYdNg5Wp5E27mgfo`, `nu73zqvPJRxio4T2sWz7`,
 `ATURN84Ov2hmjWUndebl`, `ZSnkB98pb0wz6PO17XKp`,
 `sDKmB6cUEXLfHgz4DGd4`, `s3cxnp6hOLBVQR5dDF42`,
-`uXmi4z9lL7zCiNq5ULCp`, and `ahPuPwh34G3FeqvUEHsB`.
+`uXmi4z9lL7zCiNq5ULCp`, `ahPuPwh34G3FeqvUEHsB`,
+`gqImqDqgfctdYi1kr6pH`, `ZgRNLK66C9Hz2wMPbOXc`,
+`xSjtvI2XVvvMdn8pHqwP`, `WS9FU4nn2fCSbOn68IeB`, and
+`7uoHBfOCOqMmFeKBRh7l`.
 
 ## Outcome
 
@@ -129,11 +132,16 @@ far-field gate.
 
 ## Gate 2: Playable graybox
 
-- Blender source: `blender/ember-spatial-directions-r1.blend`
+- Blender source: `blender/ember-breached-rift-bench-graybox-r2.blend`
 - Coordinate and camera manifest:
-  `evidence/r1/ember-spatial-directions-r1-report.json`
+  `evidence/gate-2-geology-graybox-r2/ember-breached-rift-bench-r2-coordinate-manifest.json`
+- Review GLB:
+  `../../../static/models/ember/review/ember-breached-rift-bench-graybox-r2.glb`
 - Review contact sheet:
-  `evidence/r1/ember-spatial-directions-r1-e-camera-board.png`
+  `evidence/gate-2-geology-graybox-r2/ember-breached-rift-bench-r2-gate2-contact-sheet.png`
+- Orbit equivalent and north-up plan:
+  `evidence/gate-2-geology-graybox-r2/11-registered-orbit-strip.png` and
+  `evidence/gate-2-geology-graybox-r2/09-north-up-plan.png`
 - Environment-specific exemptions are recorded in `scene-gates.json`; the
   review object is an orbit backdrop, so room navigation, route timing, and
   sequence parity are not applicable.

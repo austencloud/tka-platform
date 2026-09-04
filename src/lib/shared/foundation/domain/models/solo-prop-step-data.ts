@@ -6,6 +6,7 @@ import type {
   HandPath,
   SkewDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { Plane } from "@tka/tka-types";
 
 export interface SoloPropStepData {
   readonly startLocation: GridLocation;
@@ -19,6 +20,8 @@ export interface SoloPropStepData {
   readonly skewSteps?: number | null;
   readonly skewDir?: SkewDirection | null;
   readonly duration: number;
+  /** Authored 3D plane for this step. Absent keeps the legacy Wall fallback. */
+  readonly plane?: Plane;
   // When motionType === "float", this holds the original pro/anti type the
   // float collapsed from. Required for letter/turn-color resolution because
   // float motions have noRotation, which destroys the pro-vs-anti signal.

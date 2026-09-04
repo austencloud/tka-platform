@@ -1,772 +1,659 @@
+<!--
+  Hand Motions continues the shared Grid → Hand Positions lesson stage. The
+  artifact changes from one-hand path families to the six two-hand
+  timing/direction relationships without replacing the surrounding layout.
+-->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { getCodexLetterMappingRepo } from "$lib/features/learn/codex/get-codex-letter-mapping-repo";
-  import {
-    Letter as TkaLetter,
-    type Letter,
-  } from "$lib/shared/foundation/domain/models/letter";
-  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { HandMotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import type { ExperienceViewMode } from "../../../domain/types";
   import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
-  import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
+  import LessonStageControls from "../LessonStageControls.svelte";
+  import LessonStageFrame from "../LessonStageFrame.svelte";
+  import LessonStageHeading from "../LessonStageHeading.svelte";
+  import HandMotionPlayer from "../foundations/HandMotionPlayer.svelte";
   import {
-    HAND_MOTION_LESSON,
-    HAND_MOTION_QUESTIONS,
-  } from "../shared/canonical-lesson-content";
-  import LessonPictographStage from "../shared/LessonPictographStage.svelte";
+    ALPHA_BETA_MODES,
+    GAMMA_MODES,
+    HAND_PATH_STEPS,
+    type TimingDirectionMode,
+  } from "../foundations/pictograph-foundation-content";
 
   let {
     onComplete,
     onBack,
     viewMode = "step",
-  }: {
+  } = $props<{
     onComplete?: () => void;
     onBack?: () => void;
     viewMode?: ExperienceViewMode;
-  } = $props();
+  }>();
+
+  const allModes: readonly TimingDirectionMode[] = [
+    ...ALPHA_BETA_MODES,
+    ...GAMMA_MODES,
+  ];
+  const modeByFamily = new Map(
+    allModes.map((mode) => [mode.element.familyId, mode])
+  );
+
+  function requireMode(familyId: string): TimingDirectionMode {
+    const mode = modeByFamily.get(familyId);
+    if (!mode) throw new Error(`Missing hand-motion lesson mode ${familyId}`);
+    return mode;
+  }
+
+  // TND_ELEMENTS owns the product's canonical order: the three same-direction
+  // relationships, then the three opposite-direction relationships.
+  const ELEMENTAL_MODES = TND_ELEMENTS.map((element) =>
+    requireMode(element.familyId)
+  );
+  const bridgeIndex = HAND_PATH_STEPS.length;
+  const elementalStart = bridgeIndex + 1;
+  const recapIndex = elementalStart + ELEMENTAL_MODES.length;
+  const totalStages = recapIndex + 1;
 
   const haptic = getHapticFeedback();
   const persistence = getExperiencePersistence("hand-motions-intro");
   const saved = persistence.load();
-
-  let phase = $state(Math.min(3, Math.max(1, saved.step || 1)));
-  let selectedMotion = $state<HandMotionType>(
-    persistence.getPhaseData<HandMotionType>("selectedMotion", "shift")
+  let stepIndex = $state(
+    Math.min(recapIndex, Math.max(0, (saved.step || 1) - 1))
   );
-  let questionIndex = $state(
-    Math.min(
-      HAND_MOTION_QUESTIONS.length - 1,
-      persistence.getPhaseData<number>("questionIndex", 0)
-    )
-  );
-  let selectedAnswer = $state<HandMotionType | null>(null);
-  let answerState = $state<"correct" | "wrong" | null>(null);
-  let pictographs = $state<Partial<Record<Letter, PictographData>>>({});
-  let loading = $state(true);
 
   const activeMotion = $derived(
-    HAND_MOTION_LESSON.find((item) => item.id === selectedMotion) ??
-      HAND_MOTION_LESSON[0]
+    stepIndex < HAND_PATH_STEPS.length ? HAND_PATH_STEPS[stepIndex] : undefined
   );
-  const activeQuestion = $derived(HAND_MOTION_QUESTIONS[questionIndex]);
-  const questionMotion = $derived(
-    HAND_MOTION_LESSON.find((item) => item.id === activeQuestion.answer) ??
-      HAND_MOTION_LESSON[0]
+  const activeMode = $derived(ELEMENTAL_MODES[stepIndex - elementalStart]);
+  const isBridge = $derived(stepIndex === bridgeIndex);
+  const isRecap = $derived(stepIndex === recapIndex);
+  const headingTitle = $derived(
+    activeMotion?.name ??
+      (activeMode
+        ? capitalize(activeMode.element.element)
+        : isBridge
+          ? "Timing + Direction"
+          : "Hand Motions + Elements")
   );
-  const feedbackMotion = $derived(
-    HAND_MOTION_LESSON.find((item) => item.id === selectedAnswer) ?? null
+  const headingEyebrow = $derived(
+    activeMotion
+      ? `Hand motion ${stepIndex + 1} of ${HAND_PATH_STEPS.length}`
+      : activeMode
+        ? "Timing + direction"
+        : isBridge
+          ? "Two hands"
+          : "Review"
+  );
+  const headingDescription = $derived(
+    activeMotion?.guideCaption ??
+      (activeMode
+        ? `${activeMode.timing} timing, ${activeMode.direction.toLowerCase()} direction.`
+        : isBridge
+          ? "Timing compares the hands: together, split, or quarter. Direction compares their travel: same or opposite."
+          : "Choose any motion or element to review it.")
   );
 
-  onMount(async () => {
-    loading = true;
-    getCodexLetterMappingRepo();
-    const letters = [TkaLetter.W, TkaLetter.PHI, TkaLetter.ALPHA] as const;
-    const results = await Promise.all(
-      letters.map(async (letter) => ({
-        letter,
-        pictograph: await letterQueryHandler.getPictographByLetter(
-          letter,
-          GridMode.DIAMOND
-        ),
-      }))
-    );
+  function capitalize(value: string): string {
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
 
-    pictographs = Object.fromEntries(
-      results
-        .filter(
-          (result): result is { letter: Letter; pictograph: PictographData } =>
-            Boolean(result.pictograph)
-        )
-        .map((result) => [result.letter, result.pictograph])
-    );
-    loading = false;
-  });
-
-  function chooseMotion(motion: HandMotionType) {
-    selectedMotion = motion;
-    persistence.savePhaseData("selectedMotion", motion);
+  function goToStep(next: number): void {
+    const clamped = Math.min(recapIndex, Math.max(0, next));
+    if (clamped === stepIndex) return;
+    stepIndex = clamped;
+    persistence.saveStep(stepIndex + 1);
     haptic?.trigger("selection");
   }
 
-  function goToPhase(nextPhase: number) {
-    phase = Math.min(3, Math.max(1, nextPhase));
-    persistence.saveStep(phase);
-    selectedAnswer = null;
-    answerState = null;
-    haptic?.trigger("selection");
-  }
-
-  function answerQuestion(answer: HandMotionType) {
-    selectedAnswer = answer;
-    answerState = answer === activeQuestion.answer ? "correct" : "wrong";
-    haptic?.trigger(answerState === "correct" ? "success" : "warning");
-  }
-
-  function nextQuestion() {
-    if (questionIndex < HAND_MOTION_QUESTIONS.length - 1) {
-      questionIndex += 1;
-      persistence.savePhaseData("questionIndex", questionIndex);
-      selectedAnswer = null;
-      answerState = null;
-      haptic?.trigger("selection");
-      return;
-    }
-    goToPhase(3);
-  }
-
-  function complete() {
+  function complete(): void {
     persistence.reset();
     haptic?.trigger("success");
     onComplete?.();
   }
 
-  export function handleBack() {
-    if (phase > 1) {
-      goToPhase(phase - 1);
+  function handlePrimaryAction(): void {
+    if (isRecap) {
+      complete();
+      return;
+    }
+    goToStep(stepIndex + 1);
+  }
+
+  function handleKeydown(event: KeyboardEvent): void {
+    if (viewMode !== "step") return;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      event.preventDefault();
+      handlePrimaryAction();
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      handleBack();
+    }
+  }
+
+  export function handleBack(): void {
+    if (stepIndex > 0) {
+      goToStep(stepIndex - 1);
       return;
     }
     onBack?.();
   }
 </script>
 
-<div class="experience" class:review-mode={viewMode === "scroll"}>
-  {#if phase === 1}
-    <section class="lesson-grid" aria-labelledby="motions-title">
-      <div class="lesson-copy">
-        <p class="eyebrow">Hand paths</p>
-        <h1 id="motions-title">Shift, dash, or stay put?</h1>
-        <p class="lede">
-          A motion name describes where the <strong>hand</strong> travels. Choose
-          a path, then replay the real pictograph to see it happen.
-        </p>
-
-        <div class="motion-picker" aria-label="Choose a hand path">
-          {#each HAND_MOTION_LESSON as item}
-            <button
-              type="button"
-              class="motion-choice"
-              class:active={selectedMotion === item.id}
-              aria-pressed={selectedMotion === item.id}
-              style:--choice-accent={item.accent}
-              onclick={() => chooseMotion(item.id)}
-            >
-              <span class="choice-name">{item.name}</span>
-              <span class="choice-cue">{item.cue}</span>
-            </button>
-          {/each}
-        </div>
-
-        <div class="definition" style:--choice-accent={activeMotion.accent}>
-          <span
-            class="definition-letter"
-            aria-label="Letter {activeMotion.letter}"
-          >
-            {activeMotion.letter}
-          </span>
-          <div>
-            <strong>{activeMotion.name}</strong>
-            <p>{activeMotion.meaning}</p>
-          </div>
-        </div>
-
-        <button
-          class="primary-action"
-          type="button"
-          onclick={() => goToPhase(2)}
-        >
-          Try the path check
-          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-        </button>
-      </div>
-
-      <div class="visual-column">
-        <span class="visual-label">Canonical letter {activeMotion.letter}</span>
-        <LessonPictographStage
-          pictograph={pictographs[activeMotion.letter] ?? null}
-          {loading}
-          accent={activeMotion.accent}
-        />
-        <p class="visual-note">
-          Watch the hand point and the prop independently. Static means the hand
-          stays still, not the prop.
-        </p>
-      </div>
-    </section>
-  {:else if phase === 2}
-    <section class="challenge" aria-labelledby="motion-check-title">
-      <div class="challenge-header">
-        <p class="eyebrow">
-          Path check · {questionIndex + 1} of {HAND_MOTION_QUESTIONS.length}
-        </p>
-        <h1 id="motion-check-title">{activeQuestion.prompt}</h1>
-        <p>Replay the pictograph, then name the hand path.</p>
-      </div>
-
-      <div class="challenge-grid">
-        <div class="challenge-visual">
-          <LessonPictographStage
-            pictograph={pictographs[activeQuestion.letter] ?? null}
-            {loading}
-            accent={questionMotion.accent}
-          />
-        </div>
-
-        <div class="answer-panel">
-          <div class="answers" aria-label="Choose the hand path">
-            {#each HAND_MOTION_LESSON as item}
-              <button
-                type="button"
-                class="answer-button"
-                class:selected={selectedAnswer === item.id}
-                class:correct={answerState !== null &&
-                  item.id === activeQuestion.answer}
-                class:wrong={answerState === "wrong" &&
-                  selectedAnswer === item.id}
-                disabled={answerState === "correct"}
-                style:--choice-accent={item.accent}
-                onclick={() => answerQuestion(item.id)}
-              >
-                <span>{item.name}</span>
-                <small>{item.cue}</small>
-              </button>
-            {/each}
-          </div>
-
-          {#if answerState === "wrong" && feedbackMotion}
-            <div class="feedback wrong-feedback" role="status">
-              <i class="fa-solid fa-route" aria-hidden="true"></i>
-              <p>
-                <strong>{feedbackMotion.name}</strong> means
-                {feedbackMotion.meaning.toLowerCase()} This example is
-                <strong>{questionMotion.name.toLowerCase()}</strong>.
-              </p>
-            </div>
-          {:else if answerState === "correct"}
-            <div class="feedback correct-feedback" role="status">
-              <i class="fa-solid fa-check" aria-hidden="true"></i>
-              <p>
-                <strong>{questionMotion.name}.</strong>
-                {questionMotion.meaning}
-              </p>
-            </div>
-          {/if}
-
-          <button
-            class="primary-action"
-            type="button"
-            disabled={answerState !== "correct"}
-            onclick={nextQuestion}
-          >
-            {questionIndex === HAND_MOTION_QUESTIONS.length - 1
-              ? "See the pattern"
-              : "Next pictograph"}
-            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </button>
-        </div>
-      </div>
-    </section>
-  {:else}
-    <section class="summary" aria-labelledby="motion-summary-title">
-      <p class="eyebrow">Pattern found</p>
-      <h1 id="motion-summary-title">Read the hand path first</h1>
-      <p class="summary-lede">
-        Every pictograph separates the hand's route from the prop's rotation.
-        These three paths are the foundation.
-      </p>
-
-      <div class="summary-grid">
-        {#each HAND_MOTION_LESSON as item}
-          <article class="summary-card" style:--choice-accent={item.accent}>
-            <span class="summary-letter">{item.letter}</span>
-            <div>
-              <h2>{item.name}</h2>
-              <p>{item.meaning}</p>
-            </div>
-          </article>
-        {/each}
-      </div>
-
-      <button
-        class="primary-action complete-action"
-        type="button"
-        onclick={complete}
+<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
+<div
+  class="motions-experience"
+  onkeydown={handleKeydown}
+  tabindex="0"
+  role="application"
+  aria-label="Hand motions lesson, use arrow keys to navigate"
+>
+  <LessonStageFrame artifactLayout={activeMotion ? "square" : "wide"}>
+    {#snippet heading()}
+      <LessonStageHeading
+        key={stepIndex}
+        title={headingTitle}
+        eyebrow={headingEyebrow}
       >
-        Complete hand paths
-        <i class="fa-solid fa-check" aria-hidden="true"></i>
-      </button>
-    </section>
-  {/if}
+        <p>{headingDescription}</p>
+      </LessonStageHeading>
+    {/snippet}
 
-  <ExperienceProgressIndicator currentStep={phase} totalSteps={3} />
+    {#snippet artifact()}
+      <Crossfade key={stepIndex} fill>
+        {#if activeMotion}
+          <div class="artifact-state motion-state">
+            <div class="player-frame">
+              <HandMotionPlayer
+                sequence={activeMotion.sequence}
+                ariaLabel={`${activeMotion.name}: ${activeMotion.guideCaption}`}
+              />
+            </div>
+            <div class="hand-key" aria-label="Left hand is blue">
+              <span aria-hidden="true"></span>
+              <strong>Left hand</strong>
+            </div>
+          </div>
+        {:else if isBridge}
+          <div class="artifact-state bridge-state">
+            <section class="comparison-axis" aria-labelledby="timing-axis">
+              <h2 id="timing-axis">Timing</h2>
+              <div class="axis-values">
+                <strong>Together</strong>
+                <strong>Split</strong>
+                <strong>Quarter</strong>
+              </div>
+            </section>
+            <section class="comparison-axis" aria-labelledby="direction-axis">
+              <h2 id="direction-axis">Direction</h2>
+              <div class="axis-values">
+                <strong>Same</strong>
+                <strong>Opposite</strong>
+              </div>
+            </section>
+          </div>
+        {:else if activeMode}
+          <div
+            class="artifact-state element-state"
+            style:--element-accent={activeMode.element.accentColor}
+          >
+            <div class="element-player">
+              <HandMotionPlayer
+                sequence={activeMode.sequence}
+                ariaLabel={`${capitalize(activeMode.element.element)}: ${activeMode.timing} timing and ${activeMode.direction.toLowerCase()} direction`}
+              />
+            </div>
+            <aside class="element-properties">
+              <img src={activeMode.element.iconPath} alt="" />
+              <dl>
+                <div>
+                  <dt>Timing</dt>
+                  <dd>{activeMode.timing}</dd>
+                </div>
+                <div>
+                  <dt>Direction</dt>
+                  <dd>{activeMode.direction}</dd>
+                </div>
+              </dl>
+            </aside>
+          </div>
+        {:else}
+          <div class="artifact-state recap-state">
+            <div class="recap-content">
+              <section
+                class="recap-section"
+                aria-labelledby="motion-recap-title"
+              >
+                <h2 id="motion-recap-title">Three hand motions</h2>
+                <div class="motion-recap">
+                  {#each HAND_PATH_STEPS as motion, index (motion.id)}
+                    <button type="button" onclick={() => goToStep(index)}>
+                      <strong>{motion.name}</strong>
+                      <span>{motion.guideCaption}</span>
+                    </button>
+                  {/each}
+                </div>
+              </section>
+
+              <section
+                class="recap-section"
+                aria-labelledby="element-recap-title"
+              >
+                <h2 id="element-recap-title">Six elements</h2>
+                <div class="element-recap">
+                  {#each ELEMENTAL_MODES as mode, index (mode.id)}
+                    <button
+                      type="button"
+                      style:--element-accent={mode.element.accentColor}
+                      onclick={() => goToStep(elementalStart + index)}
+                    >
+                      <img src={mode.element.iconPath} alt="" />
+                      <strong>{capitalize(mode.element.element)}</strong>
+                      <span>{mode.timing} · {mode.direction}</span>
+                    </button>
+                  {/each}
+                </div>
+              </section>
+
+              <section class="attribution" aria-labelledby="attribution-title">
+                <h2 id="attribution-title">Where the model comes from</h2>
+                <p>
+                  Vulcan Tech Gospel codified and widely distributed Split-Same,
+                  Together-Same, Split-Opposite, and Together-Opposite as
+                  timing-and-direction categories.
+                </p>
+                <p>
+                  The four elemental names are community-developed extensions of
+                  those categories. Their original creator is not yet
+                  documented.
+                </p>
+                <p>
+                  The Kinetic Alphabet adds Sun and Moon for Quarter-Same and
+                  Quarter-Opposite.
+                </p>
+              </section>
+            </div>
+          </div>
+        {/if}
+      </Crossfade>
+    {/snippet}
+
+    {#snippet controls()}
+      <LessonStageControls
+        label={isRecap ? "Finish lesson" : "Next"}
+        currentStep={stepIndex + 1}
+        totalSteps={totalStages}
+        onAction={handlePrimaryAction}
+        onPrevious={handleBack}
+        previousDisabled={stepIndex === 0}
+        actionIcon={isRecap ? "check" : "arrow"}
+      />
+    {/snippet}
+  </LessonStageFrame>
 </div>
 
 <style>
-  .experience {
-    --lesson-max: 78rem;
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: 1rem;
+  .motions-experience {
     width: 100%;
     height: 100%;
     min-height: 0;
-    padding: 4.75rem clamp(1rem, 3vw, 3rem) 1rem;
-    overflow: auto;
-    container-type: inline-size;
+    overflow: hidden;
+    color: var(--theme-text);
+    outline: none;
   }
 
-  .lesson-grid,
-  .challenge,
-  .summary {
-    width: min(100%, var(--lesson-max));
-    margin: auto;
-  }
-
-  .lesson-grid {
-    display: grid;
-    grid-template-columns: minmax(18rem, 0.88fr) minmax(20rem, 1.12fr);
-    align-items: center;
-    gap: clamp(2rem, 5vw, 5.5rem);
-  }
-
-  .lesson-copy,
-  .visual-column,
-  .challenge-header,
-  .answer-panel,
-  .summary {
+  .artifact-state {
+    width: 100%;
+    height: 100%;
     min-width: 0;
+    min-height: 0;
   }
 
-  .lesson-copy {
-    display: grid;
-    align-content: center;
-    gap: 1.2rem;
-  }
-
-  .eyebrow {
-    margin: 0;
-    color: var(--theme-accent);
-    font-size: clamp(0.72rem, 0.8vw, 0.9rem);
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-
-  h1 {
-    max-width: 16ch;
-    margin: 0;
-    color: var(--theme-text);
-    font-size: clamp(2rem, 4.3cqw, 4.6rem);
-    font-weight: 850;
-    letter-spacing: -0.045em;
-    line-height: 0.98;
-    text-wrap: balance;
-  }
-
-  .lede,
-  .challenge-header > p:last-child,
-  .summary-lede {
-    max-width: 58ch;
-    margin: 0;
-    color: var(--theme-text-dim);
-    font-size: clamp(1rem, 1.45cqw, 1.2rem);
-    line-height: 1.55;
-  }
-
-  .lede strong {
-    color: var(--theme-text);
-  }
-
-  .motion-picker {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.55rem;
-  }
-
-  .motion-choice,
-  .answer-button {
-    min-height: 4.5rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 0.9rem;
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .motion-choice {
-    display: grid;
-    gap: 0.2rem;
-    padding: 0.8rem;
-  }
-
-  .motion-choice:hover,
-  .motion-choice.active {
-    border-color: color-mix(in srgb, var(--choice-accent) 75%, white 10%);
-    background: color-mix(
-      in srgb,
-      var(--choice-accent) 14%,
-      var(--theme-card-bg)
-    );
-    box-shadow: inset 0 -3px 0 var(--choice-accent);
-  }
-
-  .choice-name {
-    font-size: 1rem;
-    font-weight: 800;
-  }
-
-  .choice-cue {
-    color: var(--theme-text-dim);
-    font-size: 0.76rem;
-    line-height: 1.25;
-  }
-
-  .definition {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    gap: 0.9rem;
-    padding: 1rem;
-    border-left: 4px solid var(--choice-accent);
-    border-radius: 0 0.9rem 0.9rem 0;
-    background: color-mix(
-      in srgb,
-      var(--choice-accent) 10%,
-      var(--theme-card-bg)
-    );
-  }
-
-  .definition-letter,
-  .summary-letter {
+  .motion-state {
+    position: relative;
     display: grid;
     place-items: center;
-    width: 3rem;
-    aspect-ratio: 1;
-    border-radius: 0.75rem;
-    background: color-mix(
-      in srgb,
-      var(--choice-accent) 22%,
-      var(--theme-panel-bg)
-    );
-    color: var(--theme-text);
-    font-size: 1.55rem;
-    font-weight: 900;
   }
 
-  .definition strong {
-    color: var(--theme-text);
-    font-size: 1rem;
+  .player-frame {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
   }
 
-  .definition p {
-    margin: 0.2rem 0 0;
-    color: var(--theme-text-dim);
-    font-size: 0.9rem;
-    line-height: 1.45;
-  }
-
-  .primary-action {
+  .hand-key {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    justify-self: start;
-    gap: 0.65rem;
-    min-height: 3.2rem;
-    padding: 0.75rem 1.2rem;
-    border: 1px solid color-mix(in srgb, var(--theme-accent) 70%, white 14%);
-    border-radius: 0.85rem;
-    background: var(--theme-accent);
-    color: #061013;
-    font: inherit;
-    font-weight: 850;
-    cursor: pointer;
-  }
-
-  .primary-action:hover:not(:disabled) {
-    filter: brightness(1.12);
-    transform: translateY(-1px);
-  }
-
-  .primary-action:disabled {
-    cursor: not-allowed;
-    filter: saturate(0.2);
-    opacity: 0.38;
-  }
-
-  button:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--theme-accent) 72%, white);
-    outline-offset: 3px;
-  }
-
-  .visual-column {
-    display: grid;
-    justify-items: center;
-    gap: 0.7rem;
-  }
-
-  .visual-label {
+    gap: 0.45rem;
+    min-height: 2.25rem;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 999px;
+    background: var(--theme-panel-bg);
     color: var(--theme-text-dim);
-    font-size: 0.76rem;
-    font-weight: 750;
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .hand-key span {
+    width: 0.8rem;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--prop-blue, #3d44b8);
+  }
+
+  .hand-key strong {
+    color: var(--theme-text);
+  }
+
+  .bridge-state {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: center;
+    gap: clamp(0.75rem, 2cqw, 1.5rem);
+  }
+
+  .comparison-axis {
+    display: grid;
+    align-content: center;
+    gap: 1rem;
+    min-height: min(100%, 18rem);
+    padding: clamp(1rem, 3cqw, 2rem);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-lg, 0.75rem);
+    background: var(--theme-card-bg);
+    text-align: center;
+  }
+
+  .comparison-axis h2,
+  .recap-section h2,
+  .attribution h2 {
+    margin: 0;
+    color: var(--theme-text);
+    font-size: clamp(1rem, 2cqw, 1.35rem);
+  }
+
+  .axis-values {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .comparison-axis:last-child .axis-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .axis-values strong {
+    min-height: var(--min-touch-target, 44px);
+    display: grid;
+    place-items: center;
+    padding: 0.65rem;
+    border-radius: var(--radius-md, 0.5rem);
+    background: var(--theme-panel-bg);
+    color: var(--theme-text);
+  }
+
+  .element-state {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
+    align-items: stretch;
+    gap: clamp(0.75rem, 2cqw, 1.5rem);
+  }
+
+  .element-player {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .element-properties {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 1rem;
+    min-width: 0;
+    padding: clamp(0.75rem, 2cqw, 1.5rem);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-lg, 0.75rem);
+    background: color-mix(
+      in srgb,
+      var(--element-accent) 10%,
+      var(--theme-card-bg)
+    );
+  }
+
+  .element-properties img {
+    width: clamp(3rem, 8cqw, 5rem);
+    height: clamp(3rem, 8cqw, 5rem);
+    object-fit: contain;
+  }
+
+  .element-properties dl {
+    width: 100%;
+    display: grid;
+    gap: 0.65rem;
+    margin: 0;
+  }
+
+  .element-properties dl > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding-block: 0.55rem;
+    border-bottom: 1px solid var(--theme-stroke);
+  }
+
+  .element-properties dl > div:last-child {
+    border-bottom: 0;
+  }
+
+  dt {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
-  .visual-note {
-    max-width: 46ch;
+  dd {
     margin: 0;
-    color: var(--theme-text-dim);
-    font-size: 0.82rem;
-    line-height: 1.45;
-    text-align: center;
-  }
-
-  .challenge {
-    display: grid;
-    align-content: center;
-    gap: clamp(1.3rem, 3vw, 2.5rem);
-  }
-
-  .challenge-header {
-    display: grid;
-    justify-items: center;
-    gap: 0.55rem;
-    text-align: center;
-  }
-
-  .challenge-header h1 {
-    max-width: 22ch;
-    font-size: clamp(1.8rem, 3.6cqw, 3.5rem);
-  }
-
-  .challenge-grid {
-    display: grid;
-    grid-template-columns: minmax(18rem, 1fr) minmax(18rem, 0.9fr);
-    align-items: center;
-    gap: clamp(1.5rem, 4vw, 4rem);
-  }
-
-  .answer-panel {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .answers {
-    display: grid;
-    gap: 0.65rem;
-  }
-
-  .answer-button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.85rem 1rem;
-  }
-
-  .answer-button span {
-    font-weight: 850;
-  }
-
-  .answer-button small {
-    color: var(--theme-text-dim);
-  }
-
-  .answer-button:hover:not(:disabled),
-  .answer-button.selected {
-    border-color: var(--choice-accent);
-    background: color-mix(
-      in srgb,
-      var(--choice-accent) 12%,
-      var(--theme-card-bg)
-    );
-  }
-
-  .answer-button.correct {
-    border-color: var(--semantic-success);
-    box-shadow: inset 4px 0 0 var(--semantic-success);
-  }
-
-  .answer-button.wrong {
-    border-color: var(--semantic-error);
-    box-shadow: inset 4px 0 0 var(--semantic-error);
-  }
-
-  .feedback {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: start;
-    gap: 0.7rem;
-    min-height: 4.6rem;
-    padding: 0.9rem 1rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 0.85rem;
-    background: var(--theme-card-bg);
-  }
-
-  .feedback p {
-    margin: 0;
-    color: var(--theme-text-dim);
-    font-size: 0.9rem;
-    line-height: 1.45;
-  }
-
-  .feedback strong {
     color: var(--theme-text);
+    font-weight: 800;
   }
 
-  .wrong-feedback i {
-    color: var(--semantic-warning, #f0b429);
+  .recap-state {
+    overflow-y: auto;
+    scrollbar-gutter: stable;
   }
 
-  .correct-feedback i {
-    color: var(--semantic-success);
-  }
-
-  .summary {
+  .recap-content {
+    /* The shared wide artifact is already the responsive width owner. Filling
+       it keeps the recap from becoming a prose-column-sized island on 4K while
+       leaving ordinary desktop and phone geometry unchanged. */
+    width: 100%;
+    min-height: 100%;
     display: grid;
     align-content: center;
-    justify-items: center;
-    gap: 1.25rem;
-    text-align: center;
+    gap: 1rem;
+    margin-inline: auto;
+    padding: 0.25rem;
   }
 
-  .summary h1 {
-    max-width: 18ch;
-  }
-
-  .summary-grid {
+  .recap-section {
     display: grid;
+    gap: 0.55rem;
+  }
+
+  .motion-recap,
+  .element-recap {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .motion-recap {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.8rem;
-    width: 100%;
-    max-width: 64rem;
   }
 
-  .summary-card {
+  .element-recap {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .motion-recap button,
+  .element-recap button {
+    min-height: var(--min-touch-target, 44px);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-md, 0.5rem);
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .motion-recap button {
     display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: start;
-    gap: 0.9rem;
-    padding: 1.1rem;
-    border: 1px solid
-      color-mix(in srgb, var(--choice-accent) 45%, var(--theme-stroke));
-    border-radius: 1rem;
+    gap: 0.15rem;
+    padding: 0.65rem;
+  }
+
+  .element-recap button {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.1rem 0.55rem;
+    padding: 0.55rem 0.65rem;
     background: color-mix(
       in srgb,
-      var(--choice-accent) 9%,
+      var(--element-accent) 9%,
       var(--theme-card-bg)
     );
     text-align: left;
   }
 
-  .summary-card h2 {
-    margin: 0;
-    color: var(--theme-text);
-    font-size: 1.05rem;
+  .motion-recap button:hover,
+  .element-recap button:hover {
+    border-color: var(--theme-stroke-strong);
+    background: var(--theme-card-hover-bg);
   }
 
-  .summary-card p {
-    margin: 0.35rem 0 0;
+  .motion-recap button:focus-visible,
+  .element-recap button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .motion-recap span,
+  .element-recap span {
     color: var(--theme-text-dim);
-    font-size: 0.84rem;
+    font-size: var(--font-size-compact, 0.75rem);
+  }
+
+  .element-recap img {
+    grid-row: 1 / 3;
+    width: 1.65rem;
+    height: 1.65rem;
+    object-fit: contain;
+  }
+
+  .attribution {
+    display: grid;
+    gap: 0.4rem;
+    padding-top: 0.25rem;
+    text-align: center;
+  }
+
+  .attribution p {
+    margin: 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 0.875rem);
     line-height: 1.45;
   }
 
-  .complete-action {
-    justify-self: center;
-  }
-
-  :global(.experience > .progress-indicator) {
-    justify-self: center;
-  }
-
-  @container (max-width: 760px) {
-    .lesson-grid,
-    .challenge-grid {
-      grid-template-columns: 1fr;
+  @media (max-width: 700px) {
+    .element-state {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 0.5rem;
     }
 
-    .lesson-grid {
-      gap: 1.5rem;
+    .element-properties {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.75rem;
+      padding: 0.65rem 0.75rem;
     }
 
-    .visual-column {
-      order: -1;
+    .element-properties img {
+      width: 2.75rem;
+      height: 2.75rem;
     }
 
-    h1 {
-      font-size: clamp(2rem, 10cqw, 3.4rem);
+    .element-properties dl {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
     }
 
-    .summary-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @container (max-width: 480px) {
-    .experience {
-      padding: 4rem 0.75rem 0.75rem;
+    .element-properties dl > div {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.1rem;
+      padding: 0;
+      border-bottom: 0;
     }
 
-    .motion-picker {
-      grid-template-columns: 1fr;
+    .bridge-state {
+      gap: 0.5rem;
     }
 
-    .motion-choice {
-      grid-template-columns: 5.2rem 1fr;
-      align-items: center;
-      min-height: 3.5rem;
-    }
-
-    .answer-button {
-      min-height: 3.5rem;
-    }
-  }
-
-  @media (max-height: 560px) and (min-width: 700px) {
-    .experience {
-      padding-top: 3.9rem;
-    }
-
-    .lesson-grid,
-    .challenge-grid {
-      align-items: start;
-    }
-
-    .lesson-copy {
-      gap: 0.65rem;
-    }
-
-    h1 {
-      font-size: clamp(1.7rem, 4cqw, 2.6rem);
-    }
-
-    .lede,
-    .visual-note {
-      font-size: 0.8rem;
-    }
-
-    .motion-choice {
-      min-height: 3.5rem;
-      padding: 0.55rem 0.7rem;
-    }
-
-    .definition {
+    .comparison-axis {
+      gap: 0.5rem;
       padding: 0.65rem;
     }
+
+    .axis-values {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .comparison-axis:last-child .axis-values {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .axis-values strong {
+      padding: 0.35rem;
+    }
+
+    .element-recap {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .primary-action,
-    .motion-choice,
-    .answer-button {
-      transition: none;
+  @media (max-width: 440px) {
+    .motion-recap {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-height: 520px) and (min-width: 701px) {
+    .element-state {
+      grid-template-columns: minmax(0, 1fr) minmax(11rem, 14rem);
+    }
+
+    .element-properties {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.65rem;
+      padding: 0.65rem;
+    }
+
+    .element-properties img {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+
+    .element-properties dl {
+      gap: 0.25rem;
+    }
+
+    .element-properties dl > div {
+      padding-block: 0.25rem;
     }
   }
 </style>

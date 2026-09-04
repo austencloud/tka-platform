@@ -28,6 +28,7 @@
     currentSection = "",
     onSectionChange = () => {},
     sectionHome = null,
+    onSectionHomeSelect = () => {},
     onModuleSwitcherTap = () => {},
     onHeightChange = () => {},
     showModuleSwitcher = true,
@@ -40,6 +41,7 @@
     currentSection: string;
     onSectionChange?: (sectionId: string) => void;
     sectionHome?: SectionHomeDestination | null;
+    onSectionHomeSelect?: () => void;
     onModuleSwitcherTap?: () => void;
     onHeightChange?: (height: number) => void;
     showModuleSwitcher?: boolean;
@@ -75,12 +77,11 @@
   );
 
   // Create has too many peer methods for the bottom bar, so it always uses the
-  // compact selector. The Create home is the selector itself, not another
-  // method inside it; while that landing surface is open, the reserved center
-  // slot fades out and the edge controls stay put.
+  // compact selector. The module home appears in that selector alongside the
+  // methods, preserving the same hierarchy as desktop and the module drawer.
   let shouldUseOverflowSelector = $derived(
     sectionHome !== null ||
-      (availableWidth > 0 && availableWidth < requiredWidth),
+      (availableWidth > 0 && availableWidth < requiredWidth)
   );
 
   // Handle tap on peek indicator to reveal navigation
@@ -100,7 +101,7 @@
   // Determine if navigation sections should be hidden (any modal panel open in side-by-side layout)
   let shouldHideNav = $derived(shouldHideUIForPanels());
   let shouldHideCenterSelector = $derived(
-    shouldHideNav || sectionHome?.active === true,
+    shouldHideNav || sectionHome?.active === true
   );
 
   function handleSectionClick(section: Section) {
@@ -122,10 +123,7 @@
     try {
       hapticService = getHapticFeedback();
     } catch (error) {
-      console.warn(
-        "BottomNavigation: Failed to resolve HapticFeedback",
-        error
-      );
+      console.warn("BottomNavigation: Failed to resolve HapticFeedback", error);
     }
 
     // Set up ResizeObserver to measure navigation height and width
@@ -208,6 +206,8 @@
         {sections}
         {currentSection}
         {onSectionChange}
+        {sectionHome}
+        {onSectionHomeSelect}
         selectorLabel={sectionHome ? "Choose creation method" : "Select tab"}
       />
     </div>
@@ -621,7 +621,8 @@
 
   /* Single entrance animation - plays once when indicator appears */
   .peek-indicator.animate-entrance i {
-    animation: peek-entrance var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: peek-entrance var(--duration-dramatic)
+      cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
 
   @keyframes peek-entrance {
@@ -634,7 +635,6 @@
       transform: translateY(0);
     }
   }
-
 
   /* High contrast mode */
   @media (prefers-contrast: high) {

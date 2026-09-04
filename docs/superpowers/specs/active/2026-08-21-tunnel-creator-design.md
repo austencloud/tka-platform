@@ -183,6 +183,50 @@ the cast as left/right component props. Performer cards remain at least 44 px
 interactive, use component-scoped theme variables, and recompose at laptop,
 tablet, short-landscape, phone, and all three 4K tiers.
 
+### Workspace ownership correction (2026-09-04)
+
+Tunnel is not a Generate recipe. Its workspace must not present performer
+sources, cast structure, stage formation, and playback as one row of peer
+setting cards. Each control stays beside the artifact region it changes:
+
+- The page header owns the current tunnel's identity and the saved **Tunnels**
+  library entrance.
+- The choreography roster owns the Separate / Linked sequence decision and
+  direct add, remove, select, and reorder actions.
+- A performer card owns Generate, generation recipe, Browse, Shape Matrix,
+  Previous, and relationship editing for that performer.
+- The preview owns formation, look, effects, timing, playback, and its single
+  **Stage settings** entrance.
+- Composition cycle length is status, not a setting. It appears once with the
+  preview as an N-step loop.
+
+The same ownership remains visible at every breakpoint. Responsive layouts may
+compact labels, focus one performer card, or move an existing inspector into a
+drawer, but they may not make a second settings entrance or hide a capability
+because an arbitrary width was crossed.
+
+### Responsive clarity correction (2026-09-04)
+
+Tunnel keeps one capability hierarchy across every measured Create slot. Screen
+size changes arrangement, never the number or meaning of visible controls:
+
+- The roster shows one selected performer at a time at every width. P1, P2, and
+  later performer tabs switch the card in place without expanding the page.
+- Every performer card exposes the same primary **Generate** action and one
+  labelled **More** menu. Recipe, Browse, Shape Matrix, Previous, relationship,
+  reorder, and removal actions live in that menu when available; wide screens
+  do not promote them into a second toolbar.
+- The four measured workspace modes are stack, portrait, short landscape, and
+  split. Portrait stacks a full-width choreography workspace above the stage;
+  short landscape keeps both artifacts side by side; split gives the stage the
+  remaining width after a capped choreography rail.
+- Stage, pairing, and generation inspectors appear inline only when the split
+  workspace has enough width and height. The same panels use the canonical
+  Create drawer everywhere else.
+- Responsive transitions preserve the selected performer, source sequences,
+  Previous history, open task, and animation time. A breakpoint may not swap in
+  a reduced feature set or create a second control inventory.
+
 ## Migration and Compatibility
 
 - Viewer-created single-source tunnels continue to work unchanged.

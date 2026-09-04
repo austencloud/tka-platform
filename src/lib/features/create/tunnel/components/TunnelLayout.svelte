@@ -24,10 +24,14 @@
   import { getTunnelCreatorContext } from "../context/tunnel-creator-context";
   import TunnelPerformerRoster from "./TunnelPerformerRoster.svelte";
   import TunnelRelationshipEditor from "./TunnelRelationshipEditor.svelte";
+  import TunnelStageFormationSettings from "./TunnelStageFormationSettings.svelte";
   import ShapeMatrixTunnelSourcePicker from "./ShapeMatrixTunnelSourcePicker.svelte";
-  import TunnelRecipeRail from "./TunnelRecipeRail.svelte";
   import type { ModeRealization } from "$lib/shared/shape-matrix/services/build-mode-realizations";
   import type { SequenceSource } from "$lib/shared/browse/engine/types";
+  import {
+    canInlineTunnelInspector,
+    resolveTunnelWorkspaceMode,
+  } from "../domain/tunnel-workspace-layout";
 
   let {
     onOpenLibrary,
@@ -96,17 +100,17 @@
       creator.previewCompositionWithFormation(creator.initialFormation),
     onLayersChange: (layers) => {
       const next: typeof performerDisplays = {};
-      for (const [arm, layer] of layers.entries()) {
+      for (const layer of layers) {
         const current = next[layer.performerId];
         next[layer.performerId] = {
-          sequence: current?.sequence ?? layer.sequence,
+          sequence: current?.sequence ?? layer.performerSequence,
           stageTransformLabel:
             current?.stageTransformLabel ??
             (layer.formationOps.length
               ? copyOpsLabel(layer.formationOps)
               : null),
           generatedInstanceCount: (current?.generatedInstanceCount ?? 0) + 1,
-          stageArms: [...(current?.stageArms ?? []), arm],
+          stageArms: [...(current?.stageArms ?? []), layer.arm],
         };
       }
       performerDisplays = next;
@@ -123,23 +127,26 @@
   let shapeMatrixTarget = $state<string | null>(null);
 
   const compact = $derived(rootWidth < 720);
-  const shortLandscape = $derived(rootWidth >= 600 && rootHeight <= 540);
-  const focusPerformers = $derived(rootWidth < 900 || rootHeight < 1100);
-  const canInlineInspector = $derived(rootWidth >= 1000 && rootHeight >= 700);
+  const workspaceMode = $derived(
+    resolveTunnelWorkspaceMode({ width: rootWidth, height: rootHeight })
+  );
+  const shortLandscape = $derived(workspaceMode === "short-landscape");
+  const canInlineInspector = $derived(
+    canInlineTunnelInspector({ width: rootWidth, height: rootHeight })
+  );
   const settingsOpen = $derived(creator.activePanel === "settings");
-  const settingsUseWorkspace = $derived(rootWidth >= 720 && settingsOpen);
   const pairingOpen = $derived(creator.activePanel === "pairing");
   const generationOpen = $derived(creator.activePanel === "generation");
   const activeInlineInspector: TunnelInspector | null = $derived(
-    settingsUseWorkspace
-      ? "settings"
-      : canInlineInspector
-        ? pairingOpen
+    canInlineInspector
+      ? settingsOpen
+        ? "settings"
+        : pairingOpen
           ? "pairing"
           : generationOpen
             ? "generation"
             : null
-        : null
+      : null
   );
   const generationTargetLabel = $derived(
     creator.performerSlots.find(
@@ -221,14 +228,6 @@
     return () => media.removeEventListener("change", update);
   });
 
-  function toggleSettings(): void {
-    if (settingsOpen) {
-      creator.closeWorkspacePanel();
-    } else {
-      creator.openWorkspacePanel("settings");
-    }
-  }
-
   function openSettings(): void {
     creator.openWorkspacePanel("settings");
   }
@@ -298,10 +297,15 @@
   }
 
   function changeCastCount(count: number): void {
-    if (count > controller.performerCount) {
+    const projectedStageCount =
+      creator.renderedInstanceCount +
+      Math.max(0, count - creator.authoredPerformerCount);
+    if (projectedStageCount > controller.formationSlotCount) {
       const multiplier =
         (controller.mirror ? 2 : 1) * (controller.flip ? 2 : 1);
-      const nextFold = FOLD_OPTIONS.find((fold) => fold * multiplier >= count);
+      const nextFold = FOLD_OPTIONS.find(
+        (fold) => fold * multiplier >= projectedStageCount
+      );
       if (nextFold) controller.setFold(nextFold);
       creator.setFormation(controller.config);
     }
@@ -309,11 +313,15 @@
   }
 </script>
 
+{#snippet stageFormationContent(dense: boolean)}
+  <TunnelStageFormationSettings {creator} {controller} {dense} />
+{/snippet}
+
 {#snippet settingsPanel(isMobile: boolean, layout: "bottom" | "sidebar")}
   <div class="drawer-panel settings-panel">
     <PanelHeader
-      title="Tunnel settings"
-      subtitle="Formation, playback, and props"
+      title="Stage settings"
+      subtitle="Formation, appearance, and playback"
       {isMobile}
       onClose={creator.closeWorkspacePanel}
     />
@@ -337,6 +345,9 @@
         animationSettingsState={creator.presentation.animationSettings}
         exporting={false}
         {reduceMotion}
+        formationContent={stageFormationContent}
+        formationSummaryOverride={`${creator.renderedInstanceCount} on stage · ${controller.formationSlotCount} positions`}
+        stageAware={true}
       />
     </div>
   </div>
@@ -383,9 +394,9 @@
   <div
     class="tunnel-workspace themed-scrollbar"
     class:inline-inspector={activeInlineInspector !== null}
-    class:settings-task={settingsUseWorkspace && !canInlineInspector}
-    class:compact-settings-task={compact && settingsOpen}
     class:short-landscape={shortLandscape}
+    class:portrait-workspace={workspaceMode === "portrait"}
+    class:split-workspace={workspaceMode === "split"}
   >
     <header class="workspace-header">
       <!-- Editing arrives here by a tab switch, which wipes every trace of the
@@ -416,8 +427,7 @@
         <div class="title-block">
           <h2>Build a tunnel</h2>
           <p>
-            Compose one to four performers; generated copies stay out of the
-            cast.
+            Give each performer choreography, then arrange the cast on stage.
           </p>
         </div>
       {/if}
@@ -436,28 +446,7 @@
             >
           </PanelButton>
         </div>
-        <div class="settings-trigger">
-          <PanelButton
-            variant="secondary"
-            onclick={toggleSettings}
-            ariaExpanded={settingsOpen}
-            ariaLabel={settingsOpen
-              ? "Close tunnel settings"
-              : "Open tunnel settings"}
-          >
-            <i class="fas fa-sliders" aria-hidden="true"></i>
-            <span>Tunnel settings</span>
-            <i class="fas fa-chevron-right" aria-hidden="true"></i>
-          </PanelButton>
-        </div>
       </div>
-
-      <TunnelRecipeRail
-        {controller}
-        short={shortLandscape}
-        onCastChange={changeCastCount}
-        onOpenSettings={openSettings}
-      />
     </header>
 
     <div class="source-column">
@@ -470,8 +459,8 @@
         colorMode={controller.colorMode}
         customPropColors={controller.customPropColors}
         renderedInstanceCount={controller.performerCount}
-        focusMode={focusPerformers}
         short={shortLandscape}
+        onCastChange={changeCastCount}
         onChoose={(performerId) => creator.openPicker(performerId)}
         onChooseShapeMatrix={(performerId) => (shapeMatrixTarget = performerId)}
         onGenerateNow={(performerId) => void generatePerformer(performerId)}
@@ -485,20 +474,14 @@
     <section class="preview-stage" aria-label="Tunnel preview">
       <header class="preview-heading">
         <div>
-          <span>Result</span>
-          <h3>Tunnel preview</h3>
+          <span>Stage</span>
+          <h3>Preview</h3>
         </div>
         <div class="preview-summary">
           <p>
-            {creator.authoredPerformerCount} authored · {controller.performerCount}
-            rendered instances · {controller.propCount} props
-          </p>
-          <p>
-            {controller.colorMode === "custom"
-              ? `Custom pair ${controller.customPropColors.left.toUpperCase()} / ${controller.customPropColors.right.toUpperCase()}`
-              : controller.colorMode === "spectrum"
-                ? "Spectrum stage colors"
-                : "Pictograph hand colors"}
+            {controller.performerCount}
+            {controller.performerCount === 1 ? "performer" : "performers"} · {controller.propCount}
+            props
           </p>
         </div>
       </header>
@@ -542,13 +525,15 @@
 
       <footer class="stage-controls">
         <div class="result-meta">
-          <strong>{creator.presentation.bpm}</strong>
-          <span>BPM</span>
+          <strong>{creator.presentation.bpm} BPM</strong>
+          <span>
+            · {controller.loopSteps}-step loop
+          </span>
         </div>
         <div class="result-actions">
           <PanelButton variant="secondary" onclick={openSettings}>
             <i class="fas fa-sliders" aria-hidden="true"></i>
-            Settings
+            Stage settings
           </PanelButton>
           <PanelButton
             variant="primary"
@@ -563,19 +548,13 @@
       </footer>
     </section>
 
-    {#if compact && settingsOpen}
-      <aside class="compact-settings-surface" aria-label="Tunnel settings">
-        {@render settingsPanel(true, "bottom")}
-      </aside>
-    {/if}
-
-    {#if rootWidth >= 720 && (canInlineInspector || settingsOpen)}
+    {#if canInlineInspector}
       <aside
         class="inspector-column"
         class:open={activeInlineInspector !== null}
         aria-label={inspectorColumn
           ? inspectorColumn === "settings"
-            ? "Tunnel settings"
+            ? "Stage settings"
             : inspectorColumn === "pairing"
               ? "Tunnel pairing"
               : `${generationTargetLabel} generation recipe`
@@ -606,6 +585,17 @@
 </div>
 
 {#if !canInlineInspector}
+  <CreatePanelDrawer
+    isOpen={settingsOpen}
+    panelName="tunnel-settings"
+    fullHeightOnMobile={true}
+    closeOnBackdrop={false}
+    ariaLabel="Stage settings"
+    onClose={creator.closeWorkspacePanel}
+  >
+    {@render settingsPanel(compact, compact ? "bottom" : "sidebar")}
+  </CreatePanelDrawer>
+
   <CreatePanelDrawer
     isOpen={pairingOpen}
     panelName="tunnel-pairing"
@@ -771,8 +761,7 @@
     margin-left: auto;
   }
 
-  .library-trigger,
-  .settings-trigger {
+  .library-trigger {
     flex: 0 1 auto;
     min-width: 0;
   }
@@ -795,16 +784,6 @@
     font-weight: 750;
   }
 
-  .settings-trigger :global(.panel-btn) {
-    min-width: 13rem;
-    justify-content: flex-start;
-  }
-
-  .settings-trigger :global(.panel-btn span) {
-    flex: 1;
-    text-align: left;
-  }
-
   .source-column {
     grid-area: sources;
     min-width: 0;
@@ -822,16 +801,6 @@
     grid-template-rows: auto minmax(0, 1fr) auto;
     min-width: 0;
     min-height: 31rem;
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--settings-radius-lg, 20px);
-    background: var(--theme-panel-bg);
-  }
-
-  .compact-settings-surface {
-    grid-area: inspector;
-    min-width: 0;
-    min-height: 0;
     overflow: hidden;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--settings-radius-lg, 20px);
@@ -1080,55 +1049,53 @@
     border-radius: 0;
   }
 
-  @container tunnel (min-width: 720px) {
-    .tunnel-workspace {
-      grid-template-columns: minmax(20rem, 0.92fr) minmax(0, 1.08fr);
-      grid-template-rows: max-content minmax(0, 1fr);
-      grid-template-areas:
-        "header header"
-        "sources preview";
-      align-content: stretch;
-      overflow: hidden;
-    }
-
-    .preview-stage {
-      min-height: 0;
-    }
+  /* Portrait tablets keep the complete two-part story on one screen. Giving
+     each half the full container width protects the choreography instead of
+     crushing it into the 349px desktop rail seen at 820px. */
+  .tunnel-workspace.portrait-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: max-content minmax(0, 0.95fr) minmax(0, 1.05fr);
+    grid-template-areas:
+      "header"
+      "sources"
+      "preview";
+    align-content: stretch;
+    overflow: hidden;
   }
 
-  /* When three useful tracks do not fit, settings becomes the second job:
-     source cards yield and the result stays visible beside its inspector. */
-  @container tunnel (min-width: 720px) {
-    .tunnel-workspace.settings-task {
-      --inspector-open-width: 100%;
-      grid-template-columns: minmax(16rem, 1fr) minmax(20rem, 0.9fr);
-      grid-template-rows: max-content minmax(0, 1fr);
-      grid-template-areas:
-        "header header"
-        "preview inspector";
-    }
+  .portrait-workspace .source-column,
+  .portrait-workspace .preview-stage {
+    min-height: 0;
+  }
 
-    .tunnel-workspace.settings-task .source-column {
-      display: none;
-    }
+  /* Desktop is the only ordinary side-by-side workspace. More width changes
+     the allocation, never the visible controls or the number of open cards. */
+  .tunnel-workspace.split-workspace {
+    grid-template-columns: minmax(25rem, min(44%, 72rem)) minmax(0, 1fr);
+    grid-template-rows: max-content minmax(0, 1fr);
+    grid-template-areas:
+      "header header"
+      "sources preview";
+    align-content: stretch;
+    overflow: hidden;
+  }
 
-    .tunnel-workspace.settings-task .inspector-column .drawer-panel {
-      width: 100%;
-    }
+  .split-workspace .preview-stage {
+    min-height: 0;
   }
 
   @container tunnel (max-width: 719px) {
-    .tunnel-workspace:not(.compact-settings-task) {
+    .tunnel-workspace {
       grid-template-rows: max-content minmax(26rem, auto) minmax(24rem, auto);
       padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
     }
 
-    .tunnel-workspace:not(.compact-settings-task) .source-column {
+    .tunnel-workspace .source-column {
       min-height: 26rem;
       overflow: visible;
     }
 
-    .tunnel-workspace:not(.compact-settings-task) .preview-stage {
+    .tunnel-workspace .preview-stage {
       min-height: 24rem;
     }
 
@@ -1138,29 +1105,6 @@
 
     .workspace-actions {
       margin-left: auto;
-    }
-
-    .tunnel-workspace.compact-settings-task {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: minmax(15rem, 0.95fr) minmax(15rem, 1.05fr);
-      grid-template-areas:
-        "preview"
-        "inspector";
-      align-content: stretch;
-      overflow: hidden;
-    }
-
-    .tunnel-workspace.compact-settings-task .workspace-header,
-    .tunnel-workspace.compact-settings-task .source-column {
-      display: none;
-    }
-
-    .tunnel-workspace.compact-settings-task .preview-stage {
-      min-height: 0;
-    }
-
-    .compact-settings-surface .drawer-scroll {
-      overflow: hidden;
     }
   }
 
@@ -1179,9 +1123,7 @@
     }
 
     .title-block p,
-    .library-label,
-    .settings-trigger :global(.panel-btn span),
-    .settings-trigger :global(.panel-btn .fa-chevron-right) {
+    .library-label {
       display: none;
     }
 
@@ -1190,8 +1132,7 @@
       height: 32px;
     }
 
-    .library-trigger :global(.panel-btn),
-    .settings-trigger :global(.panel-btn) {
+    .library-trigger :global(.panel-btn) {
       width: var(--min-touch-target, 48px);
       min-width: var(--min-touch-target, 48px);
       padding: 0;
@@ -1240,12 +1181,12 @@
      covering the result they change. The track always exists at zero width so
      opening and closing can interpolate without a grid pop. */
   @container tunnel (min-width: 1000px) and (min-height: 700px) {
-    .tunnel-workspace {
+    .tunnel-workspace.split-workspace {
       --inspector-open-width: clamp(24rem, 26cqw, 36rem);
       --inspector-seam: 0px;
       --inspector-width: 0px;
       grid-template-columns:
-        minmax(17rem, 0.95fr) var(--tunnel-gap) minmax(18rem, 1.1fr)
+        minmax(25rem, min(38%, 64rem)) var(--tunnel-gap) minmax(22rem, 1fr)
         var(--inspector-seam) var(--inspector-width);
       grid-template-rows: max-content minmax(0, 1fr);
       grid-template-areas:
@@ -1257,7 +1198,7 @@
         var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
     }
 
-    .tunnel-workspace.inline-inspector {
+    .tunnel-workspace.split-workspace.inline-inspector {
       --inspector-seam: var(--tunnel-gap);
       --inspector-width: var(--inspector-open-width);
     }
@@ -1291,57 +1232,51 @@
     }
   }
 
-  @container tunnel (min-width: 600px) and (max-height: 540px) {
-    .tunnel-workspace.short-landscape {
-      grid-template-columns: minmax(19rem, 0.95fr) minmax(20rem, 1.05fr);
-      grid-template-rows: max-content minmax(0, 1fr);
-      grid-template-areas:
-        "header header"
-        "sources preview";
-      align-content: stretch;
-      overflow: hidden;
-    }
+  .tunnel-workspace.short-landscape {
+    grid-template-columns: minmax(19rem, 0.95fr) minmax(20rem, 1.05fr);
+    grid-template-rows: max-content minmax(0, 1fr);
+    grid-template-areas:
+      "header header"
+      "sources preview";
+    align-content: stretch;
+    overflow: hidden;
+  }
 
-    .short-landscape .workspace-header {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 4px 8px;
-      padding: 4px 6px;
-    }
+  .short-landscape .workspace-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 8px;
+    padding: 4px 6px;
+  }
 
-    .short-landscape .workspace-header > :global(.tunnel-recipe) {
-      grid-column: 1 / -1;
-    }
+  .short-landscape .title-block p,
+  .short-landscape .preview-summary,
+  .short-landscape .preview-heading > div:first-child > span,
+  .short-landscape .result-meta span {
+    display: none;
+  }
 
-    .short-landscape .title-block p,
-    .short-landscape .preview-summary,
-    .short-landscape .preview-heading > div:first-child > span,
-    .short-landscape .result-meta span {
-      display: none;
-    }
+  .short-landscape .preview-stage {
+    min-height: 0;
+  }
 
-    .short-landscape .preview-stage {
-      min-height: 0;
-    }
+  .short-landscape .source-column {
+    min-height: 0;
+  }
 
-    .short-landscape .source-column {
-      min-height: 0;
-    }
+  .short-landscape .preview-heading,
+  .short-landscape .stage-controls {
+    min-height: var(--min-touch-target, 48px);
+    padding: 4px 8px;
+  }
 
-    .short-landscape .preview-heading,
-    .short-landscape .stage-controls {
-      min-height: var(--min-touch-target, 48px);
-      padding: 4px 8px;
-    }
+  .short-landscape .result-meta {
+    min-width: 0;
+  }
 
-    .short-landscape .result-meta {
-      min-width: 0;
-    }
-
-    .short-landscape .result-actions :global(.panel-btn) {
-      min-width: var(--min-touch-target, 48px);
-      padding-inline: 10px;
-    }
+  .short-landscape .result-actions :global(.panel-btn) {
+    min-width: var(--min-touch-target, 48px);
+    padding-inline: 10px;
   }
 
   @container tunnel (min-width: 1680px) and (min-height: 900px) {

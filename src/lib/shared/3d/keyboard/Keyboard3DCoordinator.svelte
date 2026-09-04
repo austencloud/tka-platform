@@ -9,7 +9,7 @@
 
   import { onMount } from "svelte";
   import { getKeyboardShortcutManager } from "$lib/shared/keyboard/get-keyboard-shortcut-manager";
-  import { keyboardShortcutState } from "$lib/shared/keyboard/state/keyboard-shortcut-state.svelte";
+  import { openShortcutSettings } from "$lib/shared/keyboard/open-shortcut-settings";
   import {
     createViewer3DShortcuts,
     getNextSpeedUp,
@@ -114,7 +114,7 @@
         toggleGrid: () => setShowGrid(!showGrid),
         togglePanel: () => setPanelOpen(!panelOpen),
         openBrowser: () => setBrowserOpen(true),
-        showHelp: () => keyboardShortcutState.toggleHelp(),
+        showHelp: () => void openShortcutSettings("viewer_3d"),
       };
 
       // Update the actions on the statically-registered shortcuts

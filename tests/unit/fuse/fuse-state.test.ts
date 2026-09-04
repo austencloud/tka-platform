@@ -300,6 +300,53 @@ describe("Fuse state", () => {
     expect(restored.traversalDirection).toBe("counterclockwise");
   });
 
+  it("migrates only the untouched legacy Fuse style to the shared default", () => {
+    localStorage.setItem(
+      "fuse-tab-state",
+      JSON.stringify({
+        constraintPreset: "mixed",
+        handPathMode: "mixed",
+        motionTypeFilter: null,
+      })
+    );
+
+    const migrated = createState(createLoader([]));
+    expect(migrated.constraintPreset).toBe("smooth");
+    expect(migrated.handPathMode).toBe("mixed");
+    expect(migrated.motionTypeFilter).toBeNull();
+
+    // Once a person deliberately chooses Mixed, the persisted schema marker
+    // keeps that choice from being mistaken for the retired Fuse baseline.
+    migrated.setConstraintPreset("mixed");
+    expect(JSON.parse(localStorage.getItem("fuse-tab-state") ?? "{}")).toEqual(
+      expect.objectContaining({
+        styleDefaultsVersion: 1,
+        constraintPreset: "mixed",
+      })
+    );
+
+    const restored = createState(createLoader([]));
+    expect(restored.constraintPreset).toBe("mixed");
+    migrated.dispose();
+    restored.dispose();
+  });
+
+  it("preserves a legacy Mixed prop choice when another style axis was customized", () => {
+    localStorage.setItem(
+      "fuse-tab-state",
+      JSON.stringify({
+        constraintPreset: "mixed",
+        handPathMode: "choppy",
+        motionTypeFilter: null,
+      })
+    );
+
+    const state = createState(createLoader([]));
+    expect(state.constraintPreset).toBe("mixed");
+    expect(state.handPathMode).toBe("choppy");
+    state.dispose();
+  });
+
   it("clears a start point that does not belong to the selected grid", () => {
     const state = createState(createLoader([]), {
       generateSoloLoop: createSoloGenerator(),

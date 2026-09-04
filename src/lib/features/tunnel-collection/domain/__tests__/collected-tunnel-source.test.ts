@@ -218,7 +218,7 @@ describe("collectedTunnelComposition", () => {
     const formation = tunnel.snapshot.tunnel.config;
     const solo = createTunnelComposition(
       [createIndependentTunnelPerformer(collectedTunnelSequence(tunnel), 0)],
-      { formation }
+      { formation, legacyGeneratedStage: true }
     );
 
     const before = resolveTunnelLayerPlans(solo);

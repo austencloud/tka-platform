@@ -7,12 +7,13 @@ import {
   getBestFuseStepColumns,
   getFittedFuseCellSize,
   resolveBalancedFuseWorkspaceSplit,
+  resolveFuseWingWorkspace,
 } from "$lib/features/fuse/services/fuse-workspace-split";
 
 const TALL_PORTRAIT = {
   mobileMaxWidth: 600,
   splitMinWidth: 520,
-  narrowMinHeight: 1650,
+  narrowMinHeight: 1480,
   splitMinHeight: 1280,
   minAspectRatio: 2.1,
 };
@@ -23,7 +24,7 @@ describe("Fuse tall portrait fit", () => {
       fitsFuseTallPortraitWorkspace({
         ...TALL_PORTRAIT,
         width: 430,
-        height: 1750,
+        height: 1500,
       })
     ).toBe(true);
     expect(
@@ -198,5 +199,73 @@ describe("Fuse desktop workspace split", () => {
   it("keeps manual seam grid selection aligned with the visible cell size", () => {
     expect(getBestFuseStepColumns(1930, 837, 8, 44)).toBe(4);
     expect(getBestFuseStepColumns(900, 487, 4, 44)).toBe(2);
+  });
+});
+
+describe("Fuse wide workbench", () => {
+  const WINGS = {
+    availableHeight: 1230,
+    previewIdealWidth: 1100,
+    sourceFloor: 520,
+    sourceCap: 820,
+    previewFloor: 760,
+    recipeWidth: 0,
+    columnGap: 18,
+    minHeight: 900,
+  };
+
+  it("places both source cards beside a dominant result on an ultrawide workspace", () => {
+    const layout = resolveFuseWingWorkspace({
+      ...WINGS,
+      availableWidth: 3000,
+    });
+
+    expect(layout).toEqual({
+      fits: true,
+      sourceWidth: 820,
+      previewWidth: 1324,
+    });
+  });
+
+  it("keeps an ordinary 1080p workspace on the stacked source layout", () => {
+    expect(
+      resolveFuseWingWorkspace({
+        ...WINGS,
+        availableWidth: 1800,
+        availableHeight: 1000,
+        previewIdealWidth: 900,
+      }).fits
+    ).toBe(false);
+  });
+
+  it("counts Recipe as a fourth column instead of squeezing the result", () => {
+    const roomy = resolveFuseWingWorkspace({
+      ...WINGS,
+      availableWidth: 3000,
+      previewIdealWidth: 1300,
+      recipeWidth: 620,
+    });
+    const tight = resolveFuseWingWorkspace({
+      ...WINGS,
+      availableWidth: 2440,
+      recipeWidth: 620,
+    });
+
+    expect(roomy).toEqual({
+      fits: true,
+      sourceWidth: 520,
+      previewWidth: 1286,
+    });
+    expect(tight.fits).toBe(false);
+  });
+
+  it("rejects short windows even when they are extremely wide", () => {
+    expect(
+      resolveFuseWingWorkspace({
+        ...WINGS,
+        availableWidth: 3000,
+        availableHeight: 820,
+      }).fits
+    ).toBe(false);
   });
 });

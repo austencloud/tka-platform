@@ -48,8 +48,8 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
 import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
 import { buildForEffect } from "../domain/build-for-effect";
 import { findScenePropFamily } from "../domain/scene-prop-catalog";
-import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PerformerDomainSnapshot } from "../undo/scene-undo-types";
+import { isSeamlesslyLoopable3D } from "../services/sequence-loopability-3d";
 
 // Position Constants (all in meters)
 
@@ -75,53 +75,6 @@ export function derivePlaneModeFromHands(
   if (leftPlane === Plane.WHEEL && rightPlane === Plane.WHEEL)
     return PlaneMode.DUAL_WHEEL;
   return PlaneMode.CUSTOM;
-}
-
-/**
- * Check if a sequence is seamlessly loopable (ends where it starts).
- * Mirrors SequenceLoopabilityChecker logic from the 2D animator.
- */
-function isSeamlesslyLoopable(sequence: SequenceData): boolean {
-  if (!sequence.steps || sequence.steps.length === 0) {
-    return false;
-  }
-
-  const firstStep = sequence.steps[0];
-  const lastStep = sequence.steps[sequence.steps.length - 1];
-
-  if (!firstStep || !lastStep) {
-    return false;
-  }
-
-  // Check if positions match
-  if (firstStep.startPosition !== lastStep.endPosition) {
-    return false;
-  }
-
-  // Check blue prop orientations
-  // invisible placeholder = hand not really there (both-required Step shape)
-  const leftFirst = firstStep.motions?.left;
-  const leftLast = lastStep.motions?.left;
-  if (isVisibleMotion(leftFirst) && isVisibleMotion(leftLast)) {
-    if (leftFirst.startOrientation !== leftLast.endOrientation) {
-      return false;
-    }
-  } else if (isVisibleMotion(leftFirst) || isVisibleMotion(leftLast)) {
-    return false;
-  }
-
-  // Check red prop orientations
-  const rightFirst = firstStep.motions?.right;
-  const rightLast = lastStep.motions?.right;
-  if (isVisibleMotion(rightFirst) && isVisibleMotion(rightLast)) {
-    if (rightFirst.startOrientation !== rightLast.endOrientation) {
-      return false;
-    }
-  } else if (isVisibleMotion(rightFirst) || isVisibleMotion(rightLast)) {
-    return false;
-  }
-
-  return true;
 }
 
 /**
@@ -378,7 +331,7 @@ export function createCharacterInstanceState(
   // Derived state
   const hasSequence = $derived(loadedSequence !== null);
   const isCircular = $derived(
-    loadedSequence ? isSeamlesslyLoopable(loadedSequence) : false
+    loadedSequence ? isSeamlesslyLoopable3D(loadedSequence) : false
   );
   const currentStep = $derived<StepMotionConfigs | null>(
     stepConfigs.length > 0 ? (stepConfigs[currentStepIndex] ?? null) : null
@@ -461,7 +414,10 @@ export function createCharacterInstanceState(
    * geometry the renderer will present when the playhead gets there.
    */
   function propStatesAtScoreTime(scoreTime: number) {
-    const motionSteps = Math.max(0, stepConfigs.length - motionStepOffsetValue());
+    const motionSteps = Math.max(
+      0,
+      stepConfigs.length - motionStepOffsetValue()
+    );
     if (motionSteps === 0) return { left: null, right: null };
     const wrapped = playback.loop
       ? ((scoreTime % motionSteps) + motionSteps) % motionSteps
@@ -543,7 +499,7 @@ export function createCharacterInstanceState(
     updateVisibilityFromStep(stepConfigs[0]);
 
     // Auto-enable loop for circular sequences
-    if (isSeamlesslyLoopable(sequence)) {
+    if (isSeamlesslyLoopable3D(sequence)) {
       playback.loop = true;
     }
   }
@@ -962,6 +918,9 @@ export function createCharacterInstanceState(
     return structuredClone({
       index: -1, // filled by caller if needed
       selectedPerformerIndex: null,
+      characterId,
+      displayName,
+      loadedSequence: $state.snapshot(loadedSequence),
       settings: {
         prop: _settings.prop,
         effortId: _settings.effortId,
@@ -980,6 +939,8 @@ export function createCharacterInstanceState(
   }
 
   function restorePerformerSnapshot(snap: PerformerDomainSnapshot): void {
+    characterId = snap.characterId;
+    displayName = snap.displayName;
     _settings = {
       prop: snap.settings.prop,
       effortId: snap.settings.effortId,
@@ -991,6 +952,8 @@ export function createCharacterInstanceState(
     customLeftPlane = snap.planes.customLeftPlane;
     customRightPlane = snap.planes.customRightPlane;
     planeMode = snap.planes.planeMode;
+    if (snap.loadedSequence) loadSequence(snap.loadedSequence);
+    else clearSequence();
     beatPlaneOverrides = new Map(snap.planes.beatPlaneOverrides);
     reconvertWithConfig(getEffectiveModeConfig(effectivePlaneMode));
   }
@@ -1375,6 +1338,8 @@ export function createCharacterInstanceState(
       return displayName;
     },
     setDisplayName,
+    captureEditingSnapshot: capturePerformerSnapshot,
+    restoreEditingSnapshot: restorePerformerSnapshot,
 
     // Sequence state
     get hasSequence() {

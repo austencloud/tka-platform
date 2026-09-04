@@ -6,9 +6,13 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
-  import ShapeMatrixBandControl from "./ShapeMatrixBandControl.svelte";
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
+  import {
+    KINETIC_SHAPE_ENGINE_NAME,
+    ORIGINAL_SHAPE_MATRIX_URL,
+    ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
+  } from "../shape-engine-identity";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import { createShapeMatrixAnimationState } from "../state/shape-matrix-animation-state.svelte";
@@ -50,11 +54,8 @@
   } from "../shape-matrix-levels";
 
   /* Both surfaces are a grid of pairs with a detail beside it, so the shell
-     runs one layout and swaps what fills the panes. The vocabulary control is
-     the one thing that does not merely change its labels between them: the
-     Matrix picks a Kinetic Alphabet level, Theory picks how far the rational
-     field opens, and those are different systems rather than two readings of
-     one number. Each surface gets its own control. */
+     runs one layout and swaps what fills the panes. Matrix adds a Kinetic
+     Alphabet difficulty choice; Theory's typed ratios need no second bound. */
   const theory = $derived(appState.surface === "theory");
 
   /* The app always mounts on the Matrix and restores its saved or linked
@@ -82,6 +83,11 @@
   let detailPaneElement: HTMLDivElement;
   let theoryPaneElement: HTMLDivElement;
   let theoryDetailElement: HTMLDivElement;
+  let theoryEditingAxis = $state<"left" | "right" | null>(null);
+
+  $effect(() => {
+    if (!theory) theoryEditingAxis = null;
+  });
 
   // Compact navigation runs as a shared-element morph between the selected
   // tile and the hero. Wide layouts show both panes at once, so the same
@@ -216,7 +222,7 @@
     inert={appState.compact && appState.activeView !== "matrix"}
     aria-hidden={appState.compact && appState.activeView !== "matrix"}
   >
-    <ShapeMatrixTheoryPane />
+    <ShapeMatrixTheoryPane emphasizedAxis={theoryEditingAxis} />
   </div>
 {/snippet}
 
@@ -271,7 +277,7 @@
 <main
   class="shape-app"
   class:compact-detail={appState.compact && appState.activeView === "detail"}
-  class:theory={theory}
+  class:theory
 >
   <header class="topbar">
     {#if appState.compact}
@@ -291,54 +297,51 @@
         {:else}
           <strong>{theory ? "Theory Matrix" : "Shape Matrix"}</strong>
         {/if}
-        <!-- One level-and-turns chip on both compact panes. The full ribbon
-             stacked four control groups above the grid on a phone and let
-             the turn scroller run past the right edge; the chip keeps the
-             matrix the hero and opens every control in its popover. -->
+        <!-- The compact value editor keeps the grid as the hero. Matrix opens
+             its level and turns; Theory names ratio editing directly and
+             opens both axis ratios together. -->
         <ShapeMatrixSurfaceControl compact />
-        <ShapeMatrixTurnPopover />
+        <ShapeMatrixTurnPopover
+          onratiofocuschange={(hand) => (theoryEditingAxis = hand)}
+        />
       </div>
     {:else if variant === "standalone"}
       <div class="identity">
-        <strong>Shape Matrix Explorer</strong>
-        <span>Built on Lorq Nichols’ Shape Matrix</span>
+        <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
+        <span class="identity-note">
+          <span class="identity-note-sizer" aria-hidden="true">
+            Build a 4×4 grid from any two prop:hand ratios
+          </span>
+          <span class="identity-note-live">
+            {theory
+              ? "Build a 4×4 grid from any two prop:hand ratios"
+              : `Lorq’s 144 Shape Matrix: VTG ratios ${ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}`}
+          </span>
+        </span>
       </div>
     {/if}
 
     {#if !appState.compact}
-      <!-- Which surface, and how much of its vocabulary: two app-level choices
-           that outrank everything below them, so they sit on the title line.
-           That hands the whole second line to the turn row, which level 4
-           needs for fourteen values without becoming a thin scroller. -->
+      <!-- The surface choice outranks everything below it. Matrix adds its
+           difficulty beside that choice; Theory has no parallel setting. -->
       <div class="header-meta">
         <div class="control-cell surface-control-cell">
           <span class="control-label">Explore</span>
           <ShapeMatrixSurfaceControl />
         </div>
-        <div class="control-cell level-control">
-          <!-- The caption rides the same clock as the control below it. Left
-               outside the transition it flipped on the first frame, so
-               "Difficulty" sat over the band bounds for the length of the
-               fade — the exact pairing this surface exists to deny. -->
-          <Crossfade
-            key={theory ? "band" : "level"}
-            mode="swap"
-            duration={booted ? DURATION.normal : 0}
+        {#if !theory}
+          <!-- The wrapper owns the gap as well as the cell width, so removing
+               Difficulty releases one continuous piece of space instead of
+               leaving a final half-rem gap to snap away at teardown. -->
+          <div
+            class="level-presence"
+            transition:growFade={{
+              axis: "x",
+              duration: booted ? DURATION.normal : 0,
+            }}
           >
-            <span class="control-label">
-              {theory ? "Ratio field" : "Difficulty"}
-            </span>
-          </Crossfade>
-          <!-- Same cell, two different systems. The swap runs sequentially so
-               a level numeral is never readable over a band name. -->
-          <Crossfade
-            key={theory ? "band" : "level"}
-            mode="swap"
-            duration={booted ? DURATION.normal : 0}
-          >
-            {#if theory}
-              <ShapeMatrixBandControl />
-            {:else}
+            <div class="control-cell level-control">
+              <span class="control-label">Difficulty</span>
               <LevelSelector
                 value={appState.level}
                 levels={SHAPE_MATRIX_LEVELS}
@@ -347,9 +350,9 @@
                 compact={true}
                 ariaLabel="Kinetic Alphabet level"
               />
-            {/if}
-          </Crossfade>
-        </div>
+            </div>
+          </div>
+        {/if}
       </div>
       <!-- The two ribbons already shared one grid area, so a pair of
            independent fades painted Matrix's turn row through Theory's ratio
@@ -364,7 +367,9 @@
         >
           {#if theory}
             <div class="surface-controls">
-              <ShapeMatrixTheoryControls />
+              <ShapeMatrixTheoryControls
+                onfocuschange={(hand) => (theoryEditingAxis = hand)}
+              />
             </div>
           {:else}
             <div class="matrix-controls">
@@ -423,17 +428,21 @@
       {:else}
         <a
           class="top-action source-action"
-          href="http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/"
+          href={ORIGINAL_SHAPE_MATRIX_URL}
           target="_blank"
           rel="noopener noreferrer"
+          aria-label="Open Lorq Nichols’ original 144 Shape Matrix"
         >
           <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-          <span>Original</span>
+          <!-- The fuller identity line yields below 1600px to protect the
+               control ribbon. Keep the visible action itself attributable so
+               that breakpoint never reduces Lorq's work to a generic source. -->
+          <span>Lorq Nichols’ original</span>
         </a>
         <button
           class="top-action"
           type="button"
-          aria-label="About the Shape Matrix"
+          aria-label={`About ${KINETIC_SHAPE_ENGINE_NAME}`}
           onclick={appState.openAbout}
         >
           <i class="fas fa-circle-info" aria-hidden="true"></i>
@@ -525,6 +534,12 @@
     text-overflow: ellipsis;
   }
 
+  /* Preserve the existing action footprint while giving the attributed source
+     label enough text width to render Lorq's name without an ellipsis. */
+  .source-action {
+    padding-inline: 0.6rem;
+  }
+
   .top-action:hover {
     color: var(--theme-text, #fff);
     border-color: color-mix(
@@ -559,12 +574,23 @@
     white-space: nowrap;
   }
 
-  .identity span {
+  .identity-note {
+    display: grid;
     overflow: hidden;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.68));
     font-size: var(--font-size-min, 0.875rem);
-    text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .identity-note > span {
+    grid-area: 1 / 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .identity-note-sizer {
+    visibility: hidden;
   }
 
   .compact-context {
@@ -673,7 +699,7 @@
     display: flex;
     align-items: stretch;
     justify-self: center;
-    gap: 0.5rem;
+    gap: 0;
     min-width: 0;
   }
 
@@ -703,26 +729,17 @@
       color-mix(in srgb, var(--theme-text, #fff) 3.5%, transparent);
   }
 
-  .level-control {
-    grid-area: level;
+  .level-presence {
     flex: 0 0 auto;
-    /* One reserved box for two systems. The cell carries a level selector on
-       the Matrix and a band selector on Theory, and sizing it to whichever is
-       mounted slid the whole centred header sideways on every surface change
-       for no information. The three widths track LevelSelector's own
-       1680/2600 ramp, which is what sets the wider of the two. */
+    margin-left: 0.5rem;
+  }
+
+  .level-control {
+    /* The three widths track LevelSelector's own 1680/2600 ramp. */
     min-width: 17.5rem;
   }
 
-  /* Fill the reserved box rather than sitting in it with dead space alongside.
-     SegmentedControl already divides the room into equal segments, so the band
-     names get the same breathing space the level badges have. */
-  .level-control :global(.crossfade) {
-    width: 100%;
-  }
-
-  /* Centre the badges in the reserved box. Left-aligned they left a ragged gap
-     down the right-hand side that read as a mis-sized cell. */
+  /* Centre the badges in the cell. */
   .level-control :global(.level-selector) {
     width: 100%;
     justify-content: center;
@@ -843,7 +860,11 @@
     }
 
     .header-meta {
-      gap: 0.4rem;
+      gap: 0;
+    }
+
+    .level-presence {
+      margin-left: 0.4rem;
     }
 
     /* Compact hosts trade the captions for canvas; the cells keep their
@@ -858,8 +879,7 @@
       border-radius: 10px;
     }
 
-    /* A narrow host has no room to reserve; the swap is not visible here
-       anyway, since this tier trades the whole title-line pair for canvas. */
+    /* This tier trades the whole title-line pair for compact chrome. */
     .level-control {
       min-width: 0;
     }
@@ -883,7 +903,7 @@
     }
   }
   @container shape-matrix-app (max-width: 99.99rem) {
-    .identity span {
+    .identity > .identity-note {
       display: none;
     }
   }
