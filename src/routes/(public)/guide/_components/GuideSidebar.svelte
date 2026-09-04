@@ -71,6 +71,7 @@
     return pathname === `/guide/level-1/${id}`;
   }
   const codexActive = $derived(pathname.startsWith("/guide/codex"));
+  const ratiosActive = $derived(pathname === "/guide/ratios");
 
   // ── sessionStorage scroll position - restore on (re)mount ──────────────
   // GuideSidebar remounts fresh whenever the reader crosses from level-1 to
@@ -178,6 +179,18 @@
         </div>
       {/each}
     {/if}
+  </div>
+
+  <div class="chapter-group">
+    <a
+      class="chapter-title"
+      class:active={ratiosActive}
+      aria-current={ratiosActive ? "page" : undefined}
+      href="/guide/ratios"
+      onclick={() => onLinkClick?.()}
+    >
+      Ratios
+    </a>
   </div>
 
   <div class="chapter-group">

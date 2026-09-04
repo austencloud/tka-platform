@@ -25,6 +25,12 @@
       action: "Read Level 2",
     },
     {
+      title: "Ratios",
+      description: "Translate spin ratios into TKA turns and flower petals.",
+      href: "/guide/ratios",
+      action: "Translate ratios",
+    },
+    {
       title: "The Codex",
       description: "Every published Kinetic Alphabet letter.",
       href: "/guide/codex",
