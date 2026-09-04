@@ -46,7 +46,10 @@ captureEffectDiagnostics to the context menu.
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import PathLinesOverlay from "./layers/PathLinesOverlay.svelte";
   import ProgressOverlay from "./layers/ProgressOverlay.svelte";
-  import { AnimationEngine } from "../services/animation-engine.svelte";
+  import {
+    AnimationEngine,
+    type AdditionalLayerTextureStatus,
+  } from "../services/animation-engine.svelte";
   import { createRenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
   import {
     getAnimationVisibilityManager,
@@ -78,6 +81,7 @@ captureEffectDiagnostics to the context menu.
     leftProp,
     rightProp,
     additionalLayers = [],
+    preloadAdditionalLayers = [],
     tunnelSpectrum = true,
     tunnelPropColors = null,
     tunnelSelectedLayer = null,
@@ -130,6 +134,7 @@ captureEffectDiagnostics to the context menu.
     onCanvasReady = () => {},
     onInitialized = undefined,
     onEffectError = undefined,
+    onAdditionalLayerTextureStatusChange = undefined,
     // Bound back to the parent so it can drive resize + diagnostics
     engine = $bindable(),
     // Optional overlay pinned inside the square .canvas-wrapper (position:relative),
@@ -140,6 +145,7 @@ captureEffectDiagnostics to the context menu.
     leftProp: PropState | null;
     rightProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
+    preloadAdditionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
     tunnelPropColors?: TunnelPropColorPair | null;
     tunnelSelectedLayer?: number | readonly number[] | null;
@@ -195,6 +201,9 @@ captureEffectDiagnostics to the context menu.
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
     onInitialized?: () => void;
     onEffectError?: (effectName: string, error: Error) => void;
+    onAdditionalLayerTextureStatusChange?: (
+      status: AdditionalLayerTextureStatus
+    ) => void;
     /** The engine instance, bound back to the parent for resize + diagnostics control. */
     engine?: AnimationEngine;
     /** Optional overlay pinned inside the square canvas (e.g. a corner toggle). */
@@ -431,6 +440,8 @@ captureEffectDiagnostics to the context menu.
       leftProp,
       rightProp,
       additionalLayers,
+      preloadAdditionalLayers,
+      onAdditionalLayerTextureStatusChange,
       tunnelSpectrum,
       tunnelPropColors,
       tunnelSelectedLayer,

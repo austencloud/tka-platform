@@ -124,8 +124,13 @@ export interface TransitionGeometrySample {
   tunnelOpacity: number;
   tunnelLayersReady: boolean;
   tunnelLayerCount: number;
+  tunnelPreparedLayerCount: number;
+  tunnelTextureRequested: number;
+  tunnelTextureLoaded: number;
+  tunnelTexturesReady: boolean;
   tunnelLayerOpacityMinimum: number;
   tunnelLayerOpacityMaximum: number;
+  tunnelLayerSeparation: number;
   tunnelGridOpacity: number;
   tunnelPresented: boolean;
   tunnelCanvasReady: boolean;
@@ -225,10 +230,15 @@ export interface TransitionGeometrySummary {
   motionInspectorSize: TransitionValueRange | null;
   tunnelUnreadyFrames: number;
   tunnelUnpreparedLayerFrames: number;
+  tunnelUnpreparedTextureFrames: number;
   tunnelLateLayerArrivals: number;
   tunnelLayerOpacityStepMaximum: number;
   tunnelGridOpacityStepMaximum: number;
   tunnelLayerOpacitySpreadMaximum: number;
+  tunnelPreparedLayerCountMaximum: number;
+  tunnelLayerSeparationMaximum: number;
+  tunnelLayerSeparationStepMaximum: number;
+  tunnelSpatialPeelFrames: number;
   tunnelCrossfadeFrames: number;
   tunnelDoubleFadeFrames: number;
   tunnelBlankFrames: number;
@@ -1554,6 +1564,14 @@ export function summarizeTransitionGeometry(
           (sample) => sample.tunnelOpacity >= 0.05 && !sample.tunnelLayersReady
         ).length
       : 0,
+    tunnelUnpreparedTextureFrames: isTunnelTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.tunnelOpacity >= 0.05 &&
+            (!sample.tunnelTexturesReady ||
+              sample.tunnelTextureLoaded < sample.tunnelPreparedLayerCount)
+        ).length
+      : 0,
     tunnelLateLayerArrivals: isTunnelTrace
       ? lateTunnelLayerArrivals(trace.samples)
       : 0,
@@ -1577,6 +1595,34 @@ export function summarizeTransitionGeometry(
             )
           ) * 1000
         ) / 1000
+      : 0,
+    tunnelPreparedLayerCountMaximum: isTunnelTrace
+      ? Math.max(
+          0,
+          ...trace.samples.map((sample) => sample.tunnelPreparedLayerCount)
+        )
+      : 0,
+    tunnelLayerSeparationMaximum: isTunnelTrace
+      ? Math.round(
+          Math.max(
+            0,
+            ...trace.samples.map((sample) => sample.tunnelLayerSeparation)
+          ) * 1000
+        ) / 1000
+      : 0,
+    tunnelLayerSeparationStepMaximum: isTunnelTrace
+      ? maximumSampleStep(
+          trace.samples,
+          (sample) => sample.tunnelLayerSeparation
+        )
+      : 0,
+    tunnelSpatialPeelFrames: isTunnelTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.tunnelOpacity >= 0.05 &&
+            sample.tunnelOpacity <= 0.95 &&
+            sample.tunnelLayerSeparation > 0.02
+        ).length
       : 0,
     tunnelCrossfadeFrames: isTunnelTrace
       ? trace.samples.filter(

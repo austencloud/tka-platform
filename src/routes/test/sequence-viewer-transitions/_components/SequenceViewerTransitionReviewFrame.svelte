@@ -646,10 +646,20 @@
         persistentAnimator?.dataset.tunnelLayersReady === "true",
       tunnelLayerCount:
         Number(persistentAnimator?.dataset.tunnelLayerCount) || 0,
+      tunnelPreparedLayerCount:
+        Number(persistentAnimator?.dataset.tunnelPreparedLayerCount) || 0,
+      tunnelTextureRequested:
+        Number(persistentAnimator?.dataset.tunnelTextureRequested) || 0,
+      tunnelTextureLoaded:
+        Number(persistentAnimator?.dataset.tunnelTextureLoaded) || 0,
+      tunnelTexturesReady:
+        persistentAnimator?.dataset.tunnelTexturesReady === "true",
       tunnelLayerOpacityMinimum:
         Number(persistentAnimator?.dataset.tunnelLayerOpacityMin) || 0,
       tunnelLayerOpacityMaximum:
         Number(persistentAnimator?.dataset.tunnelLayerOpacityMax) || 0,
+      tunnelLayerSeparation:
+        Number(persistentAnimator?.dataset.tunnelLayerSeparation) || 0,
       tunnelGridOpacity:
         Number(persistentAnimator?.dataset.tunnelGridOpacity) || 0,
       tunnelPresented: Boolean(activeTunnelSurface) || tunnelBlend > 0,

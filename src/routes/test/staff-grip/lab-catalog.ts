@@ -32,6 +32,8 @@ import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifi
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
 
+import { isLabGoalId, loadLabGoalSequence } from "./lab-goals";
+
 /**
  * Rigs that exist on this machine under `static/models/avatars/bakeoff/` but
  * are not part of the deployable catalog. `personal-metaperson` already ships
@@ -182,6 +184,11 @@ export interface LabSequenceOption {
  * `DiamondPictographDataframe.csv` and is enforced by
  * `tests/unit/combination/fixtures.test.ts`, so they are stable targets that
  * need neither a network round trip nor a signed-in library.
+ *
+ * These are the lab's harness, not its goal list. The goals — the 19 core TnD
+ * sequences in `lab-goals.ts` — are what the controls pin; the fixtures stay
+ * here so every URL that already names one keeps resolving, synchronously and
+ * without a network round trip.
  */
 export const LAB_FIXTURES: readonly LabSequenceOption[] = ALL_FIXTURE_LOOPS.map(
   ([fixtureKey, sequence]) => ({
@@ -192,7 +199,15 @@ export const LAB_FIXTURES: readonly LabSequenceOption[] = ALL_FIXTURE_LOOPS.map(
   })
 );
 
-/** The fixture the existing grip verification runs against. */
+/**
+ * The sequence the lab opens on.
+ *
+ * Deliberately a fixture rather than goal one. It resolves from the bundle, so
+ * the stage has a sequence on the first frame instead of waiting on a catalog
+ * fetch, and at eight steps it is the longest sequence the sweep covers — the
+ * one that exercises the scrub's marker track at its densest. The goal list is
+ * one press away and every goal id is a shareable URL.
+ */
 export const DEFAULT_LAB_SEQUENCE_ID = "fx-falg";
 
 export function labFixture(id: string): LabSequenceOption | undefined {
@@ -201,14 +216,16 @@ export function labFixture(id: string): LabSequenceOption | undefined {
 
 /**
  * Turn a sequence id from the URL back into a sequence. Fixtures resolve
- * synchronously; anything else is a real library or community sequence and
- * goes through the product's own identifier loader, which is what makes a
- * pasted lab URL reproduce a library sequence on a cold load.
+ * synchronously; a goal comes from the baked `l1-tnd-motions` catalog, the same
+ * documents the deck ships; anything else is a real library or community
+ * sequence and goes through the product's own identifier loader, which is what
+ * makes a pasted lab URL reproduce a library sequence on a cold load.
  */
 export async function resolveLabSequence(
   id: string
 ): Promise<SequenceData | null> {
   const fixture = labFixture(id);
   if (fixture) return fixture.sequence;
+  if (isLabGoalId(id)) return loadLabGoalSequence(id);
   return loadByIdentifier(id);
 }

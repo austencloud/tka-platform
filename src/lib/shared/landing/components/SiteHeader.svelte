@@ -205,10 +205,10 @@
       icon: "fa-language",
       items: [
         {
-          label: "Shape Matrix",
+          label: "Shape Engine",
           href: "/notation/shape-matrix",
           icon: "fa-diagram-project",
-          desc: "Lorq Nichols' 144 flowers, decoded",
+          desc: "Generate exact flowers from level and ratio matrices",
         },
         {
           label: "CAPs",
