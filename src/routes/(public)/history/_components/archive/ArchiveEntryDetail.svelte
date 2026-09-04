@@ -301,10 +301,7 @@
 	.evidence-card h3,
 	.evidence-card p,
 	.detail-screen-heading p,
-	.detail-screen-heading h2,
-	.source-list p,
-	.work-list p,
-	.video-list p {
+	.detail-screen-heading h2 {
 		margin: 0;
 	}
 
@@ -591,16 +588,7 @@
 		line-height: 1.35;
 	}
 
-	.work-list p,
-	.video-list p {
-		margin-top: 0.15rem;
-		color: var(--theme-text-dim, oklch(0.74 0.02 270));
-		font-size: var(--font-size-min, 0.875rem);
-		line-height: 1.35;
-	}
-
-	.source-list small,
-	.video-list small {
+	.source-list small {
 		display: block;
 		margin-top: 0.15rem;
 		color: var(--theme-text-dim, oklch(0.74 0.02 270));
@@ -647,9 +635,7 @@
 	}
 
 	.source-list li > a:hover,
-	.source-list li > a:focus-visible,
-	.video-list a:hover,
-	.video-list a:focus-visible {
+	.source-list li > a:focus-visible {
 		background: color-mix(in oklch, var(--artifact-accent) 8%, transparent);
 		outline: none;
 	}
@@ -695,9 +681,7 @@
 		.source-list strong,
 		.source-support,
 		.work-list strong,
-		.work-list p,
 		.video-list strong,
-		.video-list p,
 		.source-list li > a {
 			font-size: 1rem;
 		}
