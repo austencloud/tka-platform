@@ -29,6 +29,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     gridColumnSpan = 2,
     cardIndex = 0,
     headerFontSize = "9px",
+    appearance = "vivid",
   } = $props<{
     title: string;
     currentValue: number;
@@ -46,6 +47,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     gridColumnSpan?: number;
     cardIndex?: number;
     headerFontSize?: string;
+    appearance?: "vivid" | "quiet";
   }>();
 
   let hapticService: HapticFeedback;
@@ -73,7 +75,6 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     }
     return undefined;
   });
-
 
   function handleIncrement() {
     if (currentValue < maxValue) {
@@ -128,7 +129,9 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     }
   }
 
-  const canIncrement = $derived(currentValue < maxValue || !!onIncrementBlocked);
+  const canIncrement = $derived(
+    currentValue < maxValue || !!onIncrementBlocked
+  );
   const canDecrement = $derived(currentValue > minValue);
   const displayValue = $derived(formatValue(currentValue));
 </script>
@@ -137,6 +140,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
   bind:this={cardElement}
   class="stepper-card"
   class:transitioning={isTransitioning}
+  class:quiet={appearance === "quiet"}
   style="--card-color: {color}; --prev-color: {previousColor}; --shadow-color: {shadowColor}; --text-color: {textColor}; --card-index: {cardIndex}; grid-column: span {gridColumnSpan};"
   role="group"
   aria-label={title}
@@ -217,6 +221,26 @@ Landscape: Left half decrements, right half increments (horizontal layout)
        which replays animations and causes visible opacity flashing */
   }
 
+  .stepper-card.quiet {
+    --text-color: var(--theme-text) !important;
+    --card-title-letter-spacing: 0;
+    --card-title-transform: none;
+    --card-description-letter-spacing: 0;
+    --card-description-transform: none;
+    --card-description-size: var(--font-size-compact, 12px);
+    --card-subtitle-size: var(--font-size-compact, 12px);
+    --card-value-shadow: none;
+    border: 1px solid var(--theme-stroke);
+    background: var(--theme-card-bg);
+    box-shadow: none;
+    color: var(--theme-text);
+  }
+
+  .stepper-card.quiet::before,
+  .stepper-card.quiet::after {
+    display: none;
+  }
+
   /* Gradient crossfade: ::before shows OLD gradient, background shows NEW gradient */
   .stepper-card::before {
     content: "";
@@ -260,6 +284,14 @@ Landscape: Left half decrements, right half increments (horizontal layout)
 
   /* Desktop hover - Only on hover-capable devices */
   @media (hover: hover) {
+    .stepper-card.quiet:hover {
+      border-color: var(--theme-stroke-strong);
+      background: var(--theme-card-hover-bg);
+      box-shadow: none;
+      filter: none;
+      transform: translateY(-1px);
+    }
+
     .stepper-card:hover {
       transform: scale(1.02);
       filter: brightness(1.05);
@@ -276,6 +308,11 @@ Landscape: Left half decrements, right half increments (horizontal layout)
   .stepper-card:active {
     transform: scale(0.97);
     transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .stepper-card.quiet:active {
+    box-shadow: none;
+    transform: scale(0.99);
   }
 
   .stepper-card:focus-within {

@@ -2,10 +2,14 @@ import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const cliModule = require.resolve("@gltf-transform/cli");
 const cliEntry = resolve(dirname(cliModule), "../bin/cli.js");
+const alphaModeStep = fileURLToPath(
+  new URL("./character-alpha-modes.mjs", import.meta.url)
+);
 
 export function buildCharacterOptimizationSteps(
   input,
@@ -35,6 +39,10 @@ export function buildCharacterOptimizationSteps(
  * Weld, simplify, join, Draco, and meshopt are intentionally absent. The first
  * three can alter a skinned character and the latter two need decoders that the
  * character loader does not install.
+ *
+ * A final pass corrects materials the source export mislabelled as blends. It
+ * runs last, after dedup has settled which texture each material samples, and
+ * in its own process so this function stays synchronous.
  */
 export function optimizeCharacterGlb({
   input,
@@ -71,6 +79,11 @@ export function optimizeCharacterGlb({
   } finally {
     rmSync(temporary, { recursive: true, force: true });
   }
+
+  onStep("alpha-modes");
+  execFileSync(process.execPath, [alphaModeStep, destination], {
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 
   return destination;
 }

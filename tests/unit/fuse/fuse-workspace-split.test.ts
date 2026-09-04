@@ -12,7 +12,7 @@ import {
 const TALL_PORTRAIT = {
   mobileMaxWidth: 600,
   splitMinWidth: 520,
-  narrowMinHeight: 1650,
+  narrowMinHeight: 1480,
   splitMinHeight: 1280,
   minAspectRatio: 2.1,
 };
@@ -23,7 +23,7 @@ describe("Fuse tall portrait fit", () => {
       fitsFuseTallPortraitWorkspace({
         ...TALL_PORTRAIT,
         width: 430,
-        height: 1750,
+        height: 1500,
       })
     ).toBe(true);
     expect(

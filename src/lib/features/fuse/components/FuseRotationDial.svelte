@@ -43,7 +43,9 @@
       option.steps === 0 ? "No rotation" : `Rotate ${option.label} clockwise`,
   }));
 
-  const selected = $derived(points.find((p) => p.steps === value) ?? points[0]!);
+  const selected = $derived(
+    points.find((p) => p.steps === value) ?? points[0]!
+  );
 
   // A zero-width conic sweep is invisible, which is correct: nothing has been
   // rotated. Every other amount paints its own arc.
@@ -190,7 +192,7 @@
     border-radius: 999px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
     background: color-mix(in srgb, var(--theme-text, #fff) 9%, transparent);
-    font-size: 11px;
+    font-size: var(--font-size-min, 14px);
     font-weight: 750;
     font-variant-numeric: tabular-nums;
     line-height: 1.1;
@@ -210,9 +212,10 @@
 
   .dial-point.selected .point-tick {
     border-color: var(--dial-accent);
-    color: #06121a;
+    color: var(--theme-text-on-accent, #06121a);
     background: var(--dial-accent);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--dial-accent) 22%, transparent);
+    box-shadow: 0 0 0 4px
+      color-mix(in srgb, var(--dial-accent) 22%, transparent);
   }
 
   .dial-point:focus-visible {

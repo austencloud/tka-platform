@@ -63,11 +63,12 @@ Primary product reference: <https://www.lighttoys.cz/product/moon-fans-ft/>
 
 ## In flight
 
-- None. The authoring branch was `codex/moon-led-fan-polish`. The session that
-  created this handoff is responsible for rebasing it onto current `main`,
-  running `npm run wt:finish -- codex/moon-led-fan-polish --route
-  /test/prop-3d-studio/capture?prop=fan&fanBuild=moon&effect=led&ledPattern=rainbow&rz=-90&zoom=0.92`,
-  and preserving the branch/worktree if any safety gate fails.
+- None. The authoring branch `codex/moon-led-fan-polish` was integrated into
+  local `main` by merge commit `5fa6106b1a`. Its task branch and worktree were
+  removed after ancestry and path checks. The merged HTTPS route was then
+  rendered again at 1920 × 1080 on port 5173: the capture diagnostics reported
+  the expected `0.602:0.399:0.035` prop bounds, the full rainbow diffuser was
+  visible, and the browser console contained no warnings, errors, or issues.
 
 ## Loose ends — ranked
 

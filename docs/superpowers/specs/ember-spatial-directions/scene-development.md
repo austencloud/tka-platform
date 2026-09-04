@@ -1,8 +1,8 @@
 # Ember Spatial Directions
 
-Status: Fresh Rift approved at Gate 3; Gate 4 production in progress
+Status: Breached Rift Bench Gate 2 graybox ready for review; prior Gate 4 is historical
 
-Date: 2026-08-25
+Date: 2026-09-04
 
 Historical final acceptance: museum tracker `wqUAKQMa79rTYDYa0N5m`
 
@@ -12,7 +12,10 @@ Current regression authority: museum trackers `rn25Qau62kXyyOJpgm7Z`,
 `nu73zqvPJRxio4T2sWz7`, `ATURN84Ov2hmjWUndebl`,
 `ZSnkB98pb0wz6PO17XKp`, `sDKmB6cUEXLfHgz4DGd4`,
 `s3cxnp6hOLBVQR5dDF42`, `uXmi4z9lL7zCiNq5ULCp`, and
-`ahPuPwh34G3FeqvUEHsB`
+`ahPuPwh34G3FeqvUEHsB`; geology-first restart authority:
+`hMO9hB97M2y1ZVGrxCt3`, `gqImqDqgfctdYi1kr6pH`,
+`ZgRNLK66C9Hz2wMPbOXc`, and Gate 2 evidence reference
+`anf4rcwDOr4j1LuyOX3l`
 
 ## Why this exists
 
@@ -345,3 +348,51 @@ The deterministic builder is `scripts/build-ember-production-slice.py
 is `static/models/ember/ember-production-slice-r10.glb`; and Gate 4 evidence
 lives in `evidence/gate-4-living-caldera-r10/`. The shipping GLB remains the
 stable `ember-production-slice.glb` capability owner.
+
+## Geology-first restart R1
+
+Austen's 2026-09-03 review rejected the accumulated scene as insufficiently
+realistic and asked to restart from bird's-eye composition before any further
+production iteration. The later lava correction also rejects two unrelated
+sources and requires one visibly moving, gravity-legible drainage from a high
+source through the environment to a pool or continuation.
+
+The restart reopens Gate 1. It preserves the runtime environment owner,
+performer/action contract, Fresh Rift surface research, Blackglass atmospheric
+systems, and any Meshy asset that can be embedded credibly. It invalidates the
+current macro terrain, radial/basin composition, stage-to-world transition,
+landmark arrangement, and spline ribbon as owner of the lava footprint.
+
+The governing research is
+`geology-lava-composition-research.md`, with provenance in
+`geology-research-source-ledger.md`. Three measured 380 by 335 m plans compare
+Breached Rift Bench, Perched Channel Terraces, and Inflated Rift Apron from plan,
+longitudinal section, and eight orbit sightlines. Austen approved Breached Rift
+Bench for Gate 2 on 2026-09-04 in tracker `ZgRNLK66C9Hz2wMPbOXc`.
+
+Two independent open-source emplacement solvers were run on that candidate's
+authored 1 m DEM. Flowy and MrLavaLoba2 produced 78.0% footprint
+intersection-over-union with similar active area and thickness. This supports
+terrain-driven flow planning while remaining explicitly short of geological
+validation.
+
+## Breached Rift Bench Gate 2
+
+The isolated Gate 2 builder is `scripts/build-ember-geology-graybox.py`. It
+derives a hash-locked coordinate manifest from the approved Gate 1 heightfield,
+imports the registered Flowy footprint as a diagnostic guide, and creates one
+editable Blender graybox plus one review GLB. The full lava body remains a
+flat-material source-to-continuation mass derived from the approved path and
+widths; it is not the final Gate 4 lava surface.
+
+The registered review set captures the default audience view, eight 45-degree
+orbit positions, the bird's-eye simulator overlay, and a four-times-exaggerated
+longitudinal section. Automated verification confirms one visible terrain
+collider, a 314.1 m downhill path with 22.6 m net descent, 4.444 m simulator
+clearance beyond the protected action envelope, coordinate-source digests, and
+the required review GLB nodes.
+
+Gate 2 is `ready-for-review` with approval unset. The production Ember asset,
+runtime scene, final materials, atmosphere, and remaining 40 Meshy credits are
+unchanged. Gate 3 and all later work remain blocked until Austen reviews the
+graybox relationship and explicitly approves this gate.
