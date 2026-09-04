@@ -16,9 +16,11 @@
 	import { pressSpring } from "$lib/actions/press-spring";
 	import { magnetic } from "$lib/actions/magnetic";
 	import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+	import Crossfade from "$lib/shared/components/Crossfade.svelte";
 	import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
 	import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
 	import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+	import { DURATION } from "$lib/shared/transitions/transitions";
 	import {
 		ARCHIVE_END_YEAR,
 		ARCHIVE_ENTRIES,
@@ -31,7 +33,7 @@
 	import ArchiveTimeMap from "./ArchiveTimeMap.svelte";
 	import ArchiveChronologicalIndex from "./ArchiveChronologicalIndex.svelte";
 	import ArchiveRecordVisual from "./ArchiveRecordVisual.svelte";
-	import ArchiveEntryDetail from "./ArchiveEntryDetail.svelte";
+	import ArchiveEntryDetail, { type InspectorScreen } from "./ArchiveEntryDetail.svelte";
 	import ResearchSubmissionGuide from "./ResearchSubmissionGuide.svelte";
 
 	const HASH_PREFIX = "#archive-record-";
@@ -39,6 +41,7 @@
 
 	let activeEntry = $state<ArchiveEntry>(archiveEntry(DEFAULT_ENTRY_ID));
 	let recordDrawerOpen = $state(false);
+	let drawerInspectorScreen = $state<InspectorScreen>("overview");
 	let submissionOpen = $state(false);
 	let announcement = $state("");
 
@@ -69,7 +72,10 @@
 	);
 
 	$effect(() => {
-		if (!usesRecordDrawer.current) recordDrawerOpen = false;
+		if (!usesRecordDrawer.current) {
+			recordDrawerOpen = false;
+			drawerInspectorScreen = "overview";
+		}
 	});
 
 	function entryFromHash(hash: string): ArchiveEntry | undefined {
@@ -87,6 +93,7 @@
 
 	function applyEntry(entry: ArchiveEntry, openSelectedRecord: boolean) {
 		activeEntry = entry;
+		drawerInspectorScreen = "overview";
 		if (openSelectedRecord && usesRecordDrawer.current) recordDrawerOpen = true;
 		announcement = `${entry.dateLabel}, ${entry.title}. ${archiveLane(entry.lane).label}. Record ${ARCHIVE_ENTRIES.findIndex((candidate) => candidate.id === entry.id) + 1} of ${ARCHIVE_ENTRIES.length}.`;
 		getHapticFeedback().trigger("selection");
@@ -96,6 +103,7 @@
 		if (entry.id !== activeEntry.id) {
 			applyEntry(entry, true);
 		} else if (usesRecordDrawer.current) {
+			drawerInspectorScreen = "overview";
 			recordDrawerOpen = true;
 		}
 		writeEntryHistory(entry);
@@ -110,6 +118,7 @@
 		const linkedEntry = entryFromHash(window.location.hash);
 		if (linkedEntry) {
 			activeEntry = linkedEntry;
+			drawerInspectorScreen = "overview";
 			if (usesRecordDrawer.current) recordDrawerOpen = true;
 		}
 
@@ -117,10 +126,12 @@
 			const restoredEntry = entryFromHash(window.location.hash);
 			if (restoredEntry) {
 				activeEntry = restoredEntry;
+				drawerInspectorScreen = "overview";
 				if (usesRecordDrawer.current) recordDrawerOpen = true;
 				return;
 			}
 			activeEntry = archiveEntry(DEFAULT_ENTRY_ID);
+			drawerInspectorScreen = "overview";
 			recordDrawerOpen = false;
 		};
 
@@ -235,12 +246,10 @@
 						</div>
 					</section>
 
-					<div class="record-detail" tabindex="0" aria-label={`${activeEntry.title} record and sources`}>
-						<ArchiveEntryDetail
-							entry={activeEntry}
-							index={activeIndex}
-							count={ARCHIVE_ENTRIES.length}
-						/>
+					<div class="record-inspector-host" aria-label={`${activeEntry.title} record details`}>
+						{#key activeEntry.id}
+							<ArchiveEntryDetail entry={activeEntry} contained />
+						{/key}
 					</div>
 				</div>
 				</section>
@@ -257,40 +266,65 @@
 	ariaLabel={`${activeEntry.title}, artifact, record, and sources`}
 	showHandle={!usesSideDrawer.current}
 >
-	<div class="record-drawer" style:--artifact-accent={accent}>
+	<div
+		class="record-drawer"
+		class:is-drilled={drawerInspectorScreen !== "overview"}
+		style:--artifact-accent={accent}
+	>
 		<header>
 			<p><span>{activeEntry.dateLabel}</span>{lane.label}</p>
-			<PanelButton variant="secondary" onclick={() => (recordDrawerOpen = false)}>
+			<PanelButton
+				variant="secondary"
+				onclick={() => {
+					recordDrawerOpen = false;
+					drawerInspectorScreen = "overview";
+				}}
+			>
 				Close
 			</PanelButton>
 		</header>
-		<section class="drawer-artifact" aria-label={`${activeEntry.title} artifact`}>
-			<ArchiveRecordVisual entry={activeEntry} active />
-		</section>
-		<nav class="drawer-neighbors" aria-label="Previous and next archive records">
-			<PanelButton
-				variant="secondary"
-				disabled={!previousEntry}
-				ariaLabel={previousEntry ? `Previous record: ${previousEntry.title}` : "No previous record"}
-				onclick={() => selectNeighbor(previousEntry)}
+		<div class="drawer-context">
+			<Crossfade
+				key={drawerInspectorScreen === "overview"}
+				animateHeight
+				mode="swap"
+				motion="step"
+				direction={drawerInspectorScreen === "overview" ? -1 : 1}
+				duration={DURATION.normal}
 			>
-				<span aria-hidden="true">←</span> {previousEntry?.shortTitle ?? "Previous"}
-			</PanelButton>
-			<PanelButton
-				variant="secondary"
-				disabled={!nextEntry}
-				ariaLabel={nextEntry ? `Next record: ${nextEntry.title}` : "No next record"}
-				onclick={() => selectNeighbor(nextEntry)}
-			>
-				{nextEntry?.shortTitle ?? "Next"} <span aria-hidden="true">→</span>
-			</PanelButton>
-		</nav>
+				{#if drawerInspectorScreen === "overview"}
+					<div class="drawer-context-content">
+						<section class="drawer-artifact" aria-label={`${activeEntry.title} artifact`}>
+							<ArchiveRecordVisual entry={activeEntry} active />
+						</section>
+						<nav class="drawer-neighbors" aria-label="Previous and next archive records">
+							<PanelButton
+								variant="secondary"
+								disabled={!previousEntry}
+								ariaLabel={previousEntry ? `Previous record: ${previousEntry.title}` : "No previous record"}
+								onclick={() => selectNeighbor(previousEntry)}
+							>
+								<span aria-hidden="true">←</span> {previousEntry?.shortTitle ?? "Previous"}
+							</PanelButton>
+							<PanelButton
+								variant="secondary"
+								disabled={!nextEntry}
+								ariaLabel={nextEntry ? `Next record: ${nextEntry.title}` : "No next record"}
+								onclick={() => selectNeighbor(nextEntry)}
+							>
+								{nextEntry?.shortTitle ?? "Next"} <span aria-hidden="true">→</span>
+							</PanelButton>
+						</nav>
+					</div>
+				{:else}
+					<div class="drawer-context-empty" aria-hidden="true"></div>
+				{/if}
+			</Crossfade>
+		</div>
 		<div class="drawer-detail">
-			<ArchiveEntryDetail
-				entry={activeEntry}
-				index={activeIndex}
-				count={ARCHIVE_ENTRIES.length}
-			/>
+			{#key activeEntry.id}
+				<ArchiveEntryDetail entry={activeEntry} bind:screen={drawerInspectorScreen} />
+			{/key}
 		</div>
 	</div>
 </Drawer>
@@ -452,7 +486,7 @@
 
 	.record-body {
 		display: grid;
-		grid-template-rows: minmax(18rem, 0.9fr) minmax(0, 1.1fr);
+		grid-template-rows: minmax(16rem, 0.8fr) minmax(0, 1.2fr);
 		min-width: 0;
 		min-height: 0;
 	}
@@ -510,17 +544,11 @@
 		color: oklch(0.13 0.01 270);
 	}
 
-	.record-detail {
+	.record-inspector-host {
 		min-width: 0;
 		min-height: 0;
-		overflow: auto;
+		overflow: hidden;
 		padding: clamp(0.9rem, 1.6vw, 1.4rem);
-		scrollbar-gutter: stable;
-	}
-
-	.record-detail:focus-visible {
-		outline: 2px solid var(--artifact-accent);
-		outline-offset: -3px;
 	}
 
 	.compact-archive {
@@ -531,6 +559,22 @@
 		display: grid;
 		gap: 1rem;
 		padding: 0.5rem clamp(1rem, 4vw, 1.5rem) 2rem;
+	}
+
+	.drawer-context {
+		min-width: 0;
+	}
+
+	.drawer-context-content {
+		display: grid;
+		gap: 1rem;
+	}
+
+	.drawer-context-empty {
+		/* ResizeObserver does not deliver a box that disappears to exactly zero in
+		   every engine. One device pixel keeps Crossfade's height measurement alive
+		   while remaining visually empty. */
+		height: 1px;
 	}
 
 	.record-drawer > header {
@@ -666,6 +710,21 @@
 			max-width: 8.5rem;
 			white-space: normal;
 		}
+
+		.record-drawer {
+			gap: 0.75rem;
+			padding-bottom: 1rem;
+		}
+
+		.drawer-context-content {
+			gap: 0.75rem;
+		}
+
+		/* The bottom sheet opens to the record's decisions, not a nearly
+		   full-screen repeat of the artifact the user just selected. */
+		.drawer-artifact {
+			height: clamp(10.5rem, 27vh, 12rem);
+		}
 	}
 
 	@media (min-width: 700px) and (max-height: 560px) {
@@ -694,6 +753,21 @@
 		.compact-archive {
 			min-height: 0;
 			overflow: hidden;
+		}
+
+		.record-drawer {
+			gap: 0.5rem;
+			padding-bottom: 0.5rem;
+		}
+
+		.drawer-context-content {
+			gap: 0.5rem;
+		}
+
+		/* In a short landscape window the artifact is a label-sized preview;
+		   the overview and its drill-downs are the reason the drawer opened. */
+		.drawer-artifact {
+			height: 7rem;
 		}
 	}
 
