@@ -103,6 +103,12 @@ const STORAGE_KEY_ENVIRONMENT = VIEWER_3D_ENVIRONMENT_STORAGE_KEY;
 
 export type ViewerNavMode = "orbit" | "fly" | "walk";
 
+export interface ViewerPerformerAppearanceAssignment {
+  index: number;
+  characterId?: CharacterId;
+  prop?: PropType;
+}
+
 type CameraSnapTo = (
   position: { x: number; y: number; z: number },
   target: { x: number; y: number; z: number },
@@ -1171,6 +1177,59 @@ function buildViewer3DState(
       `Prop: ${prop}`,
       (performer) => performer.setProp(prop)
     );
+  }
+
+  /**
+   * Apply a per-performer cast plan as one viewer history entry. Director
+   * instructions intentionally bypass the current selection: their indices
+   * address the whole live cast that was included in the interpreted scene.
+   */
+  function applyPerformerAppearanceAssignments(
+    assignments: readonly ViewerPerformerAppearanceAssignment[]
+  ): boolean {
+    const byIndex = new Map(
+      assignments.map((assignment) => [assignment.index, assignment])
+    );
+    const targets = [...byIndex]
+      .map(([index, assignment]) => ({
+        performer: performerManager.performers[index],
+        assignment,
+      }))
+      .filter(
+        (
+          target
+        ): target is {
+          performer: CharacterInstanceState;
+          assignment: ViewerPerformerAppearanceAssignment;
+        } => !!target.performer
+      );
+    if (targets.length === 0) return false;
+
+    const before = captureScopedEditingSnapshots(
+      targets.map((target) => target.performer)
+    );
+    sceneUndo.withoutUndo(() => {
+      for (const { performer, assignment } of targets) {
+        if (assignment.characterId) {
+          performer.setCharacter(assignment.characterId);
+        }
+        if (assignment.prop) performer.setProp(assignment.prop);
+      }
+    });
+    const after = captureScopedEditingSnapshots(
+      targets.map((target) => target.performer)
+    );
+    sceneUndo.pushSelfRestoringEntry(
+      targets.some((target) => target.assignment.characterId)
+        ? "change-character"
+        : "change-prop",
+      "TIKA: direct cast",
+      {
+        undo: () => restoreScopedEditingSnapshots(before),
+        redo: () => restoreScopedEditingSnapshots(after),
+      }
+    );
+    return true;
   }
 
   function setPropBuildScoped(propBuild: Partial<PropBuild>): boolean {
@@ -2284,6 +2343,7 @@ function buildViewer3DState(
     togglePropSizeLink,
     setCharacterScoped,
     setPropScoped,
+    applyPerformerAppearanceAssignments,
     setPropBuildScoped,
     setEffortScoped,
     setEffectScoped,

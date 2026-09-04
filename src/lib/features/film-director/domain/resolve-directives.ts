@@ -9,19 +9,11 @@ export interface CastAxisInput<T extends string | number> {
   axis: string;
   sceneId: string;
   performerIds: readonly string[];
-  /** One effective directive per performer (precedence already applied). */
   values: readonly DirectiveValue<T>[];
-  /** Full legal values for the axis, or null when the axis is unbounded. */
   catalog: readonly T[] | null;
   random: () => number;
 }
 
-/**
- * Compiles one axis's directives into concrete values. Order matters for
- * determinism: literals first (they count as taken for distinct), then
- * constrained picks in performer order drawing from one seeded shuffle,
- * then sameAs copies last so they can reference picked values.
- */
 export function resolveCastAxis<T extends string | number>(
   input: CastAxisInput<T>
 ): T[] {
@@ -52,8 +44,9 @@ export function resolveCastAxis<T extends string | number>(
       }
       return undefined;
     }
-    const shuffled = seededShuffle([...poolSet], random);
-    return shuffled.find((candidate) => !exclude.has(candidate));
+    return seededShuffle([...poolSet], random).find(
+      (candidate) => !exclude.has(candidate)
+    );
   };
 
   const distinctCount = normalized.filter(
@@ -71,18 +64,13 @@ export function resolveCastAxis<T extends string | number>(
     const candidates = pool.filter((value) => !exclude.has(value));
     if (candidates.length === 0) {
       if (directive.distinct) {
-        // Report the pool the director actually had to draw from, not the
-        // catalog/`from` list before this directive's own `not` trimmed it —
-        // a `not` exclusion can be the entire reason the pool ran out, and
-        // naming the pre-exclusion count hides that from the director. Only
-        // this directive's own exclusions count here — the cumulative
-        // `taken` set (other performers' already-resolved values) is a
-        // separate reason to run out and stays out of the pool description.
         const staticExclude = new Set<T>(directive.exclude);
         const postExclusionPool = pool.filter(
           (value) => !staticExclude.has(value)
         );
-        const excludedFromPool = pool.filter((value) => staticExclude.has(value));
+        const excludedFromPool = pool.filter((value) =>
+          staticExclude.has(value)
+        );
         const poolClause =
           excludedFromPool.length > 0
             ? `${postExclusionPool.length} (${postExclusionPool.join(", ")}) after excluding ${excludedFromPool.join(", ")}`
@@ -96,7 +84,9 @@ export function resolveCastAxis<T extends string | number>(
       );
     }
     const pick =
-      pool === catalog ? draw(pool, exclude) : seededShuffle(candidates, random)[0];
+      pool === catalog
+        ? draw(pool, exclude)
+        : seededShuffle(candidates, random)[0];
     if (pick === undefined) {
       throw new Error(
         `${where}: internal error — no value drawn despite non-empty candidates.`
