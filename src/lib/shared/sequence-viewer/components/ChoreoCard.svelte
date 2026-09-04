@@ -92,6 +92,8 @@
     darkMode?: boolean;
     /** Optional physical-card frame painted behind the canonical card content. */
     frameColors?: { readonly accent: string; readonly dark: string };
+    /** Optional width-to-height ratio for a physical card presentation. */
+    cardAspectRatio?: number;
     /** Plain-text artifact title for cards whose identity is not a TKA word. */
     customTitleText?: string;
     customNotesText?: string;
@@ -159,6 +161,7 @@
     browseViewMode,
     darkMode = false,
     frameColors,
+    cardAspectRatio,
     customTitleText,
     customNotesText = "Created using Flow Arts Composer",
     leftPropType,
@@ -397,10 +400,20 @@
   // raw container measurements feed layout; the resolved layout model then
   // determines the contained box and cell width.
   let layoutState: ReturnType<typeof createChoreoCardLayoutState>;
+  const fixedCardAspectRatio = $derived(
+    typeof cardAspectRatio === "number" &&
+      Number.isFinite(cardAspectRatio) &&
+      cardAspectRatio > 0
+      ? cardAspectRatio
+      : null
+  );
+  function activePreviewAspectRatio(): number {
+    return fixedCardAspectRatio ?? layoutState.previewAspectRatio;
+  }
   const sizingState = createChoreoCardSizingState(() => ({
     containerElement,
     previewStackElement,
-    previewAspectRatio: layoutState.previewAspectRatio,
+    previewAspectRatio: activePreviewAspectRatio(),
     forceContain,
     needsScroll: layoutState.needsScroll,
     fitWidth,
@@ -443,7 +456,7 @@
   const effectiveRows = $derived(layoutState.effectiveRows);
   const mandalaLayoutOverride = $derived(layoutState.mandalaLayoutOverride);
   const mandalaPlacements = $derived(layoutState.mandalaPlacements);
-  const previewAspectRatio = $derived(layoutState.previewAspectRatio);
+  const previewAspectRatio = $derived(activePreviewAspectRatio());
   const scaledHeaderHeight = $derived(layoutState.scaledHeaderHeight);
   const scaledFooterHeight = $derived(layoutState.scaledFooterHeight);
   const stepNumFontSize = $derived(layoutState.stepNumFontSize);
@@ -643,7 +656,9 @@
     crossfader,
     sizingState
   );
-  const flipDuration = $derived(renderLifecycle.flipDuration);
+  const flipDuration = $derived(
+    fixedCardAspectRatio !== null ? 0 : renderLifecycle.flipDuration
+  );
 
   /**
    * For solo mode, extract the end location of the kept color's motion
@@ -844,6 +859,7 @@
       class="preview-stack"
       class:scroll-mode={needsScroll}
       class:has-frame={!!frameColors}
+      class:has-card-aspect={fixedCardAspectRatio !== null}
       style={needsScroll
         ? ""
         : `width: ${containedWidth ? `${containedWidth}px` : "auto"}; height: ${containedHeight ? `${containedHeight}px` : "auto"};${!containedWidth || !containedHeight || cellWidth < 1 ? " visibility: hidden;" : ""}`}
@@ -1027,6 +1043,19 @@
       var(--card-frame-accent) 0 0.45rem,
       var(--card-frame-dark) 0.45rem 0.9rem
     );
+  }
+
+  .preview-stack.has-card-aspect :global(.grid-section) {
+    align-content: center;
+    grid-auto-rows: auto;
+  }
+
+  .preview-stack.has-card-aspect :global(.cell-flip-wrapper) {
+    aspect-ratio: 1;
+  }
+
+  .preview-stack.has-card-aspect :global(.pictograph-cell) {
+    height: 100%;
   }
 
   /* The Card was never readable at its previous size, so there is nothing to
