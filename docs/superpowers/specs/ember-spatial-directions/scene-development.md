@@ -536,6 +536,15 @@ footprint. It yields 2,400 active cells, 7.097 m clearance beyond the action
 envelope, zero occupied-row gaps, 13 m downstream median width, and 31 cells in
 the south-exit guard. All eight exact 25 m sightlines clear.
 
+The performance-ground clarification in proposal `LfdgqBhR1T31jk77cFhf`
+interprets the stable core as an old, cooled lava bench embedded in the larger
+sloping contact. The Order clears loose clinker but does not quarry a geometric
+platform. A small standing crescent follows the contour downslope and laterally,
+outside the protected action radius. A darker whole-contact material read and
+low-area pulse in pre-existing peripheral fractures remain Gate 3/4 inventions;
+the cooled surface underfoot does not become emissive. This clarification does
+not change the R5 heightfield or selected Flowy calibration.
+
 Current evidence:
 
 - north-up measured plan:
@@ -548,6 +557,8 @@ Current evidence:
   `evidence/gate-1-1-geology-amendment-r5/04-orbit-sightline-study.png`;
 - Flowy calibration sweep:
   `evidence/gate-1-1-geology-amendment-r5/05-flowy-calibration-sweep.png`;
+- performance-ground and audience clarification:
+  `evidence/gate-1-1-geology-amendment-r5/06-performance-ground-detail.png`;
 - canonical report:
   `evidence/gate-1-1-geology-amendment-r5/ember-midflank-fire-pilgrimage-r5-gate1-1-report.json`.
 
