@@ -3,9 +3,14 @@
 
   Nothing here owns a choice. The character gallery is the product's
   PerformerCharacterPicker over CHARACTER_DEFINITIONS, the prop gallery is the
-  canonical ScenePropPicker over the shared 3D catalog, and the library half of
-  the sequence picker is SequencePickerModal. This component only arranges them
-  and writes each choice into the URL.
+  canonical ScenePropPicker over the shared 3D catalog, and choosing what plays
+  goes through SequencePickerModal — the same picker Stage and the effects lab
+  open, over the same browse engine. This component only arranges them into the
+  app's card vocabulary and writes each choice into the URL.
+
+  The verified fixtures sit under that picker as a pinned row rather than above
+  it as the headline. They are a shortcut to seven known-good loops, not the
+  set of sequences this lab can play.
 -->
 <script lang="ts">
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
@@ -50,13 +55,8 @@
     bodyMeasured: boolean;
   }
 
-  let {
-    lab,
-    sequence,
-    sequenceLoading,
-    bodyLengthCm,
-    bodyMeasured,
-  }: Props = $props();
+  let { lab, sequence, sequenceLoading, bodyLengthCm, bodyMeasured }: Props =
+    $props();
 
   let characterOpen = $state(false);
   let propOpen = $state(false);
@@ -68,28 +68,20 @@
   const propLabel = $derived(labPropLabel(lab.prop));
 
   /**
-   * The verified fixtures plus, when one is loaded, the library sequence
-   * itself. Keeping the loaded sequence in the option list is what lets a
-   * single-select control stay honest: there is always exactly one active
-   * option, whichever source it came from.
+   * The loaded sequence, named the way the product names it. A repeating word
+   * always shows in its smallest form, which `labSequenceLabel` owns.
    */
-  const sequenceOptions = $derived.by(() => {
-    const options = LAB_FIXTURES.map((fixture) => ({
-      value: fixture.id,
-      label: fixture.label,
-      ariaLabel: `${fixture.label}, ${fixture.stepCount} steps`,
-      count: fixture.stepCount,
-    }));
-    if (!labFixture(lab.sequenceId) && sequence) {
-      options.push({
-        value: lab.sequenceId,
-        label: labSequenceLabel(sequence),
-        ariaLabel: `${labSequenceLabel(sequence)}, from the library`,
-        count: sequence.steps.length,
-      });
-    }
-    return options;
-  });
+  const activeFixture = $derived(labFixture(lab.sequenceId));
+  const sequenceWord = $derived(
+    activeFixture?.label ??
+      (sequence ? labSequenceLabel(sequence) : lab.sequenceId)
+  );
+  const sequenceStepCount = $derived(
+    activeFixture?.stepCount ?? sequence?.steps.length ?? null
+  );
+  const sequenceSource = $derived(
+    activeFixture ? "verified fixture" : "from the library"
+  );
 
   const viewOptions = $derived([
     { value: "quad" as LabView, label: "Quad", ariaLabel: "All four cameras" },
@@ -103,17 +95,7 @@
 
   const lengthMode = $derived(lab.propLength === "body" ? "body" : "pinned");
   const pinnedLengthCm = $derived(
-    lab.propLength === "body"
-      ? Math.round(bodyLengthCm ?? 91)
-      : lab.propLength
-  );
-
-  const stepCount = $derived(sequence?.steps.length ?? 1);
-
-  const phaseLabel = $derived(
-    `${Math.floor(lab.phase) + 1}.${Math.round((lab.phase % 1) * 100)
-      .toString()
-      .padStart(2, "0")}`
+    lab.propLength === "body" ? Math.round(bodyLengthCm ?? 91) : lab.propLength
   );
 
   async function copyLink(): Promise<void> {
@@ -148,8 +130,8 @@
 </script>
 
 <div class="controls">
-  <section class="group" aria-label="Stage">
-    <h2 class="group-title">Stage</h2>
+  <section class="card" aria-label="Stage">
+    <h2 class="card-title">Stage</h2>
     <div class="chip-row">
       <FilterChipBase
         mode="dropdown"
@@ -171,108 +153,98 @@
     {#if isLocalOnlyCharacter(lab.character)}
       <p class="note">Local rig — not in the deployable catalog.</p>
     {/if}
-  </section>
 
-  <section class="group" aria-label="Prop length">
-    <h2 class="group-title">Prop length</h2>
-    <SegmentedControl
-      options={[
-        {
-          value: "body",
-          label: "Body fit",
-          ariaLabel: "Length this body can hold",
-        },
-        { value: "pinned", label: "Pinned", ariaLabel: "Fixed length in cm" },
-      ]}
-      value={lengthMode}
-      density="tight"
-      ariaLabel="How prop length is chosen"
-      onchange={(mode) =>
-        lab.setPropLength(mode === "body" ? "body" : pinnedLengthCm)}
-    />
-    <div class="length-value" class:is-pinned={lengthMode === "pinned"}>
-      {#if lengthMode === "pinned"}
-        <ScrubbableNumber
-          value={pinnedLengthCm}
-          min={LAB_LENGTH_MIN_CM}
-          max={LAB_LENGTH_MAX_CM}
-          step={1}
-          label="Pinned prop length"
-          unit=" cm"
-          onchange={(cm) => lab.setPropLength(cm)}
-        />
-      {:else}
-        <p class="derived">
-          {#if bodyLengthCm !== null}
-            {bodyLengthCm.toFixed(0)} cm from this body
-          {:else if bodyMeasured}
-            No supported length fits this body
-          {:else}
-            Measuring…
-          {/if}
-        </p>
-      {/if}
+    <div class="field">
+      <span class="field-label">Prop length</span>
+      <SegmentedControl
+        options={[
+          {
+            value: "body",
+            label: "Body fit",
+            ariaLabel: "Length this body can hold",
+          },
+          { value: "pinned", label: "Pinned", ariaLabel: "Fixed length in cm" },
+        ]}
+        value={lengthMode}
+        density="tight"
+        ariaLabel="How prop length is chosen"
+        onchange={(mode) =>
+          lab.setPropLength(mode === "body" ? "body" : pinnedLengthCm)}
+      />
+      <div class="length-value" class:is-pinned={lengthMode === "pinned"}>
+        {#if lengthMode === "pinned"}
+          <ScrubbableNumber
+            value={pinnedLengthCm}
+            min={LAB_LENGTH_MIN_CM}
+            max={LAB_LENGTH_MAX_CM}
+            step={1}
+            label="Pinned prop length"
+            unit=" cm"
+            onchange={(cm) => lab.setPropLength(cm)}
+          />
+        {:else}
+          <p class="derived">
+            {#if bodyLengthCm !== null}
+              {bodyLengthCm.toFixed(0)} cm from this body
+            {:else if bodyMeasured}
+              No supported length fits this body
+            {:else}
+              Measuring…
+            {/if}
+          </p>
+        {/if}
+      </div>
     </div>
   </section>
 
-  <section class="group" aria-label="Sequence">
-    <h2 class="group-title">Sequence</h2>
-    <SegmentedControl
-      options={sequenceOptions}
-      value={lab.sequenceId}
-      density="tight"
-      columns={2}
-      ariaLabel="Loaded sequence"
-      onchange={(id) => lab.setSequence(id)}
-    />
+  <section class="card" aria-label="Sequence">
+    <h2 class="card-title">Sequence</h2>
+    <!--
+      The front door. Everything the browse engine can reach is one press
+      away, which is what lets this lab reproduce a grip failure somebody hit
+      on a sequence of their own.
+    -->
     <div class="chip-row">
       <FilterChipBase
-        mode="action"
+        mode="dropdown"
         icon="fa-book-open"
-        label="Browse library"
-        size="sm"
+        label={sequenceWord}
+        count={sequenceStepCount}
+        expanded={libraryOpen}
+        ariaLabel={`Sequence: ${sequenceWord}. Choose another from the library.`}
         onclick={() => (libraryOpen = true)}
       />
+    </div>
+    <p class="note" aria-live="polite">
       {#if sequenceLoading}
-        <span class="note" role="status">Loading sequence…</span>
+        Loading sequence…
+      {:else if sequenceStepCount !== null}
+        {sequenceStepCount} steps · {sequenceSource}
+      {:else}
+        Nothing loaded
       {/if}
+    </p>
+
+    <div class="field">
+      <span class="field-label" id="lab-fixtures-label">Pinned fixtures</span>
+      <div class="chip-row" role="group" aria-labelledby="lab-fixtures-label">
+        {#each LAB_FIXTURES as fixture (fixture.id)}
+          <FilterChipBase
+            mode="toggle"
+            emphasis="solid"
+            size="sm"
+            label={fixture.label}
+            active={lab.sequenceId === fixture.id}
+            ariaLabel={`${fixture.label}, ${fixture.stepCount} steps`}
+            onclick={() => lab.setSequence(fixture.id)}
+          />
+        {/each}
+      </div>
     </div>
   </section>
 
-  <section class="group" aria-label="Playback">
-    <h2 class="group-title">Playback</h2>
-    <div class="transport">
-      <button
-        type="button"
-        class="transport-button"
-        aria-pressed={lab.playing}
-        onclick={() => lab.setPlaying(!lab.playing)}
-      >
-        <i
-          class="fas {lab.playing ? 'fa-pause' : 'fa-play'}"
-          aria-hidden="true"
-        ></i>
-        <span>{lab.playing ? "Pause" : "Play"}</span>
-      </button>
-      <span class="step-readout">Step {phaseLabel}</span>
-    </div>
-    <label class="scrub" for="grip-phase">
-      <span class="visually-hidden">Position in sequence</span>
-      <input
-        id="grip-phase"
-        type="range"
-        min="0"
-        max={stepCount - 0.01}
-        step="0.01"
-        value={lab.phase}
-        oninput={(event) => lab.setPhase(event.currentTarget.valueAsNumber)}
-        onchange={() => lab.flushPhase()}
-      />
-    </label>
-  </section>
-
-  <section class="group" aria-label="Cameras">
-    <h2 class="group-title">Cameras</h2>
+  <section class="card" aria-label="View">
+    <h2 class="card-title">View</h2>
     <SegmentedControl
       options={viewOptions}
       value={lab.view}
@@ -340,7 +312,7 @@
 
 <SequencePickerModal
   bind:open={libraryOpen}
-  title="Load a sequence"
+  title="Choose the sequence this lab plays"
   onClose={() => (libraryOpen = false)}
   onSelect={chooseLibrarySequence}
 />
@@ -350,21 +322,45 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-lg, 1rem);
-  }
-
-  .group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
     min-width: 0;
   }
 
-  .group-title {
+  /*
+   * The app's own settings-card treatment — the one GridSettingsPanel and the
+   * scene control inspector use. The lab's sections used to be bare headings
+   * on a glass rail, which is what made a page full of real product pickers
+   * still read as a debug console.
+   */
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 0;
+    padding: 1rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+  }
+
+  .card-title {
     margin: 0;
-    font-size: var(--font-size-xs, 0.75rem);
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 600;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+  }
+
+  /* A labelled sub-group inside a card: its own quiet label, then its control. */
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+
+  .field-label {
+    font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
   }
 
@@ -388,8 +384,11 @@
 
   .note {
     margin: 0;
-    font-size: var(--font-size-xs, 0.75rem);
+    font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+    /* The caption changes with the loaded sequence; reserving the line keeps
+       the fixtures below it from stepping up and down as one loads. */
+    min-height: 1.15rem;
   }
 
   /*
@@ -409,83 +408,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .transport {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-  }
-
-  .transport-button {
-    display: inline-flex;
-    flex: 0 0 auto;
-    align-items: center;
-    gap: 0.45rem;
-    min-height: 44px;
-    padding: 0 1rem;
-    border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.08));
-    border-radius: 999px;
-    background: var(--card-bg-current, rgba(255, 255, 255, 0.05));
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      background-color var(--transition-fast, 120ms) ease,
-      border-color var(--transition-fast, 120ms) ease;
-  }
-
-  .transport-button:hover {
-    background: var(--surface-glass-hover, rgba(255, 255, 255, 0.1));
-  }
-
-  .transport-button[aria-pressed="true"] {
-    border-color: var(--theme-accent, #7a73da);
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #7a73da) 22%,
-      transparent
-    );
-  }
-
-  .transport-button:focus-visible {
-    outline: 2px solid var(--theme-accent, #7a73da);
-    outline-offset: 2px;
-  }
-
-  .step-readout {
-    font-size: var(--font-size-sm, 0.875rem);
-    font-variant-numeric: tabular-nums;
-    color: var(--theme-text, #fff);
-    /*
-     * The step label grows a digit at step 10. Reserving the widest form keeps
-     * the transport row from nudging when a longer sequence loads.
-     */
-    min-width: 5.5ch;
-  }
-
-  .scrub {
-    display: block;
-    width: 100%;
-  }
-
-  .scrub input {
-    width: 100%;
-    min-height: 44px;
-    accent-color: var(--theme-accent, #7a73da);
-  }
-
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
   .modal-title {
     margin: 0;
     padding: 0.85rem 1.1rem 0;
@@ -497,11 +419,5 @@
     max-height: min(70dvh, 640px);
     overflow-y: auto;
     padding: 0.85rem 1.1rem 1.1rem;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .transport-button {
-      transition: none;
-    }
   }
 </style>

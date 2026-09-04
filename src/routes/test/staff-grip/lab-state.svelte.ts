@@ -338,7 +338,14 @@ export class StaffLabState {
   #adoptLocation(): void {
     if (!browser) return;
     const href = window.location.href;
-    if (this.#url.href === href) return;
+    if (this.#url.href === href) {
+      // First run after mount. The mirror was seeded from `page.url`, which on
+      // a fresh load already equals `window.location`, so the href guard would
+      // skip the one adoption a pasted `phase=` depends on and the lab would
+      // open on `DEFAULT_LAB_PHASE` instead of the frame the link names.
+      if (!this.#adopted) this.adoptUrlPhase();
+      return;
+    }
     this.#url = new URL(href);
     this.adoptUrlPhase();
   }
