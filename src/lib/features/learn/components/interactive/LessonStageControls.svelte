@@ -11,6 +11,7 @@
     previousLabel = "Previous",
     previousDisabled = false,
     actionIcon = "arrow",
+    curriculumLabel = undefined,
   }: {
     label: string;
     currentStep: number;
@@ -20,6 +21,7 @@
     previousLabel?: string;
     previousDisabled?: boolean;
     actionIcon?: "arrow" | "check";
+    curriculumLabel?: string;
   } = $props();
 </script>
 
@@ -33,7 +35,12 @@
       <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
       <span>{previousLabel}</span>
     </PanelButton>
-    <ExperienceProgressIndicator {currentStep} {totalSteps} />
+    <div class="progress-stack">
+      <ExperienceProgressIndicator {currentStep} {totalSteps} />
+      {#if curriculumLabel}
+        <span class="curriculum-progress">{curriculumLabel}</span>
+      {/if}
+    </div>
     <PanelButton variant="primary" onclick={onAction}>
       <span>{label}</span>
       {#if actionIcon === "check"}
@@ -61,6 +68,20 @@
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     width: 100%;
+  }
+
+  .progress-stack {
+    display: grid;
+    justify-items: center;
+    gap: 0.2rem;
+  }
+
+  .curriculum-progress {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
   }
 
   .navigation > :global(:first-child) {
@@ -120,7 +141,7 @@
       gap: 0.5rem;
     }
 
-    .navigation :global(.progress-indicator) {
+    .navigation .progress-stack {
       grid-column: 1 / -1;
       grid-row: 2;
       justify-self: center;

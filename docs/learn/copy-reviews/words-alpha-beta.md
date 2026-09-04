@@ -38,7 +38,7 @@ canonical glyphs remain exempt.
 Each taught word now uses one coordinated Composer-style stage with a reserved
 performance-video region, the live animation, and the production Choreo Card
 visible together. The animation keeps the full context menu and shows hand
-timing/direction at bottom right and prop timing/direction at top right. The
+time/direction at bottom right and prop time/direction at top right. The
 video and explanation stay attached to the same typed 19-word curriculum
 record so future media cannot drift to a different word.
 
@@ -205,5 +205,5 @@ other explanatory prose still requires a new approval entry here.
   supplied or approved; those slots remain empty.
 - 2026-09-03 — Austen approved the pre-letter hand-motion and pictograph
   anatomy sequence, the full animation menu, and visible hand/prop
-  timing-direction regions. The word lesson still introduces only its six
+  time-direction regions. The word lesson still introduces only its six
   guide-assigned Alpha/Beta words.

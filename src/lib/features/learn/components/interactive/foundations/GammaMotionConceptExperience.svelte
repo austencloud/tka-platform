@@ -23,7 +23,7 @@
 <TimingDirectionExperience
   bind:this={experience}
   conceptId="gamma-motion"
-  title="Quarter timing/direction"
+  title="Quarter time/direction"
   modes={GAMMA_MODES}
   {onComplete}
   {onBack}

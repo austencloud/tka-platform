@@ -17,9 +17,9 @@
 >
 > Bottom left: the TKA letter and its turns.
 >
-> Bottom right: the hands’ timing and direction.
+> Bottom right: the hands’ time and direction.
 >
-> Top right: the props’ timing and direction.
+> Top right: the props’ time and direction.
 >
 > In the middle: the props and the paths your hands follow.
 
@@ -37,4 +37,4 @@ navigation labels are exempt.
 ## Approval Record
 
 - 2026-09-03 — Austen supplied and approved the exact anatomy wording above,
-  including the prop timing/direction region at top right.
+  including the prop time/direction region at top right.
