@@ -41,6 +41,7 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import {
     createLayoutMotion,
     LAYOUT_MOTION_DURATION_MS,
@@ -84,6 +85,7 @@
     isClearing = false,
     historyTransition = null,
     historyTransitionEpoch = 0,
+    animateStepMembership = false,
     highlightedSteps = null,
     onStepClick,
     onStartClick,
@@ -120,6 +122,7 @@
     isClearing?: boolean;
     historyTransition?: HistoryTransitionPlan | null;
     historyTransitionEpoch?: number;
+    animateStepMembership?: boolean;
     highlightedSteps?: Map<number, { bg: string; border: string }> | null;
     onStepClick?: (
       stepNumber: number,
@@ -518,7 +521,9 @@
   let arrivalCapturePending = false;
 
   function getHistoryMembershipDuration(identity: string): number {
-    if (!historyTransition) return 0;
+    if (!historyTransition) {
+      return animateStepMembership ? motionDuration(DURATION.fast) : 0;
+    }
     const changesMembership =
       historyTransition.insertedStepIdentities.has(identity) ||
       historyTransition.removedStepIdentities.has(identity);
