@@ -75,6 +75,7 @@ Last audit: 2025-12-27
     tunnelPropColors = null,
     tunnelSelectedLayer = null,
     gridVisible = true,
+    gridOpacity = undefined,
     gridMode = GridMode.DIAMOND,
     backgroundAlpha = 1,
     letter = null,
@@ -149,6 +150,9 @@ Last audit: 2025-12-27
     tunnelPropColors?: TunnelPropColorPair | null;
     tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
+    /** Optional externally choreographed grid alpha. The Sequence Viewer uses
+     * this when 2D transforms into Tunnel on one reversible timeline. */
+    gridOpacity?: number;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;
     letter?: Letter | null;
@@ -742,6 +746,7 @@ Last audit: 2025-12-27
       {tunnelPropColors}
       {tunnelSelectedLayer}
       {gridVisible}
+      {gridOpacity}
       {gridMode}
       {backgroundAlpha}
       {letter}
