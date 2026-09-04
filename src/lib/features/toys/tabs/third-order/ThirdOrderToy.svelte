@@ -117,6 +117,7 @@
     container-type: size;
   }
   .workspace-main {
+    display: flex;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
