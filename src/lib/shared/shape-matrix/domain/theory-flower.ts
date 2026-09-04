@@ -23,6 +23,7 @@ import {
   type SpinStyle,
 } from "@vtg/domain";
 import type { QftKnobs } from "$lib/shared/notation/qft/qft-model";
+import { theoryRatioLabel } from "./theory-ratio";
 import type { VtgMode } from "../services/shape-matrix-realizations";
 
 /** Where the prop points at the downbeat, relative to the hand's bearing. */
@@ -107,11 +108,11 @@ export function parseTheoryFlowerKey(key: string): TheoryFlower | null {
 }
 
 export function theoryFlowerLabel(flower: TheoryFlower): string {
-  const key = spinRatioKey(flower.ratio);
-  if (isStationaryRatio(flower.ratio)) return `${key} stationary hand`;
-  if (isFloatRatio(flower.ratio)) return `${key} float ${flower.ori}`;
+  const label = theoryRatioLabel(flower.ratio);
+  if (isStationaryRatio(flower.ratio)) return `${label} stationary hand`;
+  if (isFloatRatio(flower.ratio)) return `${label} float ${flower.ori}`;
   const style = flower.style === "pro" ? "prospin" : "antispin";
-  return `${key} ${style} ${flower.ori} · ${flower.petals}p`;
+  return `${label} ${style} ${flower.ori} · ${flower.petals}p`;
 }
 
 /**

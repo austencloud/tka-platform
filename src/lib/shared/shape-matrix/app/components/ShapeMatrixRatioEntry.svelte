@@ -1,9 +1,10 @@
-<!-- One directly editable prop-to-hand ratio. Theory composes one for each
-     axis so neither half of the grid is hidden behind an Apply-to mode. -->
+<!-- One directly editable VTG ratio. Theory composes one for each axis so
+     neither half of the grid is hidden behind an Apply-to mode. -->
 <script lang="ts">
   import { spinRatioKey, type SpinRatio } from "@vtg/domain";
   import {
     theoryRatioFromParts,
+    theoryRatioLabel,
     theoryRatioSpokenLabel,
     THEORY_RATIO_MAX_PART,
   } from "$lib/shared/shape-matrix/domain/theory-ratio";
@@ -53,7 +54,7 @@
   }
 
   const typed = $derived(reduceTyped(propText, handText));
-  const actionKey = $derived(typed ? spinRatioKey(typed) : currentKey);
+  const actionLabel = $derived(theoryRatioLabel(typed ?? current));
 
   const problem = $derived.by<string | null>(() => {
     const propRotations = readPart(propText);
@@ -81,7 +82,7 @@
     ) {
       return null;
     }
-    return spinRatioKey(typed);
+    return theoryRatioLabel(typed);
   });
 
   function apply(): void {
@@ -144,7 +145,7 @@
       type="button"
       class="use-both"
       disabled={!typed || Boolean(problem)}
-      aria-label={`Use ${actionKey} for both axes`}
+      aria-label={`Use ${actionLabel} for both axes`}
       onclick={useForBoth}
     >
       Use for both
@@ -152,22 +153,6 @@
   </header>
 
   <div class="entry-row" class:invalid={Boolean(problem)}>
-    <label class="part-field">
-      <span>Prop rotations</span>
-      <input
-        type="text"
-        inputmode="numeric"
-        autocomplete="off"
-        value={propText}
-        aria-label={`${axisLabel} prop rotations`}
-        aria-invalid={Boolean(problem)}
-        oninput={(event) => onPart(event.currentTarget.value, "prop")}
-        onkeydown={(event) => onKey(event, "prop")}
-      />
-    </label>
-
-    <span class="colon" aria-hidden="true">:</span>
-
     <label class="part-field">
       <span>Hand cycles</span>
       <input
@@ -179,6 +164,22 @@
         aria-invalid={Boolean(problem)}
         oninput={(event) => onPart(event.currentTarget.value, "hand")}
         onkeydown={(event) => onKey(event, "hand")}
+      />
+    </label>
+
+    <span class="colon" aria-hidden="true">:</span>
+
+    <label class="part-field">
+      <span>Prop rotations</span>
+      <input
+        type="text"
+        inputmode="numeric"
+        autocomplete="off"
+        value={propText}
+        aria-label={`${axisLabel} prop rotations`}
+        aria-invalid={Boolean(problem)}
+        oninput={(event) => onPart(event.currentTarget.value, "prop")}
+        onkeydown={(event) => onKey(event, "prop")}
       />
     </label>
   </div>

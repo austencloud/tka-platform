@@ -20,7 +20,7 @@
     SHAPE_MATRIX_LEVELS,
     SHAPE_MATRIX_LEVEL_DESCRIPTIONS,
   } from "../shape-matrix-levels";
-  import { spinRatioKey } from "@vtg/domain";
+  import { theoryRatioLabel } from "$lib/shared/shape-matrix/domain/theory-ratio";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import ShapeMatrixTheoryControls from "./ShapeMatrixTheoryControls.svelte";
   import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
@@ -49,11 +49,13 @@
   }
 
   const leftVisible = $derived(
-    theory ? spinRatioKey(appState.theoryLeftRatio) : visible(appState.leftTurn)
+    theory
+      ? theoryRatioLabel(appState.theoryLeftRatio)
+      : visible(appState.leftTurn)
   );
   const rightVisible = $derived(
     theory
-      ? spinRatioKey(appState.theoryRightRatio)
+      ? theoryRatioLabel(appState.theoryRightRatio)
       : visible(appState.rightTurn)
   );
   const triggerLabel = $derived(

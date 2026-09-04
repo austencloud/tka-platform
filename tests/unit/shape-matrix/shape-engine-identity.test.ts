@@ -6,7 +6,6 @@ import {
   KINETIC_SHAPE_ENGINE_AUTHOR,
   KINETIC_SHAPE_ENGINE_NAME,
   ORIGINAL_SHAPE_MATRIX_NAME,
-  ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS,
   ORIGINAL_SHAPE_MATRIX_URL,
   ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
   SHAPE_ENGINE_SHORT_NAME,
@@ -43,7 +42,6 @@ describe("Kinetic Shape Engine identity", () => {
     expect(ORIGINAL_SHAPE_MATRIX_NAME).toBe("144 Shape Matrix");
     expect(ORIGINAL_SHAPE_MATRIX_URL).toContain("spinscience.xyz");
     expect(ORIGINAL_SHAPE_MATRIX_VTG_RATIOS).toBe("1:1, 1:3, and 1:5");
-    expect(ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS).toBe("1:1, 3:1, and 5:1");
 
     const page = read("src/routes/(public)/notation/shape-matrix/+page.svelte");
     const shell = read(
@@ -61,10 +59,12 @@ describe("Kinetic Shape Engine identity", () => {
     expect(page).toContain("ORIGINAL_SHAPE_MATRIX_VTG_RATIOS");
     expect(shell).toContain("ORIGINAL_SHAPE_MATRIX_VTG_RATIOS");
     expect(shell).toContain("<span>Lorq Nichols’ original</span>");
+    expect(shell).toContain("Pair any two whole-number ratios in a 4×4 grid");
+    expect(shell).not.toContain("prop:hand ratios");
     expect(about).toContain("<h2>Lorq Nichols’ 144 Shape Matrix</h2>");
     expect(about).toContain("Each supplied four even-petaled");
     expect(about).toContain("giving twelve choices per hand");
-    expect(about).toContain("ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS");
+    expect(about).not.toContain("prop rotations : hand cycles");
     expect(about).toContain("<h2>What Austen Cloud built</h2>");
     expect(about).toContain("KINETIC_SHAPE_ENGINE_AUTHOR");
     expect(about).toMatch(/not an official\s+Spin Science release/);

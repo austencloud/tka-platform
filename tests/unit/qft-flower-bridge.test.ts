@@ -57,8 +57,7 @@ describe("flowerToKnobs", () => {
     }
   });
 
-  it("turns the VTG ratio numerator into the downbeat count", () => {
-    /* ratioLabel(turns) is "(2·turns+1):1", so downbeats IS that numerator. */
+  it("turns the VTG ratio's prop count into the downbeat count", () => {
     expect(flowerToKnobs({ ...AXIS[0]!, turns: 0 }).downbeats).toBe(1);
     expect(flowerToKnobs({ ...AXIS[0]!, turns: 1 }).downbeats).toBe(3);
     expect(flowerToKnobs({ ...AXIS[0]!, turns: 2 }).downbeats).toBe(5);
@@ -144,7 +143,9 @@ describe("realizationToHands", () => {
       expect(realizationToHands(left, right, mode).right.handDirection).toBe(1);
     }
     for (const mode of ["SO", "TO", "QO"] as const) {
-      expect(realizationToHands(left, right, mode).right.handDirection).toBe(-1);
+      expect(realizationToHands(left, right, mode).right.handDirection).toBe(
+        -1
+      );
     }
   });
 

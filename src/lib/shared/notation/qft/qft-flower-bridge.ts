@@ -45,8 +45,8 @@ export const FLOWER_RADIUS = 1;
  *
  * `turns` is the only field that carries a conversion: TKA counts a turn as
  * 180° of prop rotation on top of the hand's own revolution, so a t-turn flower
- * is 2t + 1 prop rotations per hand rotation — QfT's `downbeats`, and the same
- * number as the VTG ratio's numerator (`ratioLabel`).
+ * is 2t + 1 prop rotations per hand rotation. That is QfT's `downbeats` and
+ * the prop-rotation side of the VTG label returned by `ratioLabel`.
  */
 export function flowerToKnobs(flower: Flower): QftKnobs {
   return {
