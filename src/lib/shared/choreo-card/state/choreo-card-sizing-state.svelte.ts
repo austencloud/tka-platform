@@ -4,7 +4,7 @@ interface Size {
   height: number;
 }
 
-interface ContainModel {
+export interface ContainModel {
   cols: number;
   gridHeightUnits: number;
   headerUnits: number;
@@ -32,6 +32,43 @@ export interface ChoreoCardSizingDeps {
   readonly containSizeMotion: "focus" | "return" | "restore" | null;
   readonly containMotionBox: ChoreoCardMotionBox | null;
   readonly containModel: ContainModel;
+  /** Fit a square-cell grid inside a separately fixed outer card ratio. */
+  readonly squareGridContain?: boolean;
+}
+
+/**
+ * Resolve the largest square cell that fits both axes of a fixed-ratio card.
+ * Header and footer scale with the cell; the on-screen header floor is solved
+ * separately when it is taller than the proportional allocation.
+ */
+export function fitSquareGridCell(size: Size, model: ContainModel): number {
+  if (
+    !(size.width > 0) ||
+    !(size.height > 0) ||
+    !(model.cols > 0) ||
+    !(model.gridHeightUnits > 0)
+  ) {
+    return 0;
+  }
+
+  const widthBound = size.width / model.cols;
+  const proportionalHeightUnits =
+    model.gridHeightUnits + model.headerUnits + model.footerUnits;
+  let heightBound = size.height / proportionalHeightUnits;
+
+  if (
+    model.headerMinPx > 0 &&
+    model.headerUnits > 0 &&
+    heightBound * model.headerUnits < model.headerMinPx
+  ) {
+    const flexibleHeightUnits = model.gridHeightUnits + model.footerUnits;
+    heightBound =
+      flexibleHeightUnits > 0
+        ? (size.height - model.headerMinPx) / flexibleHeightUnits
+        : 0;
+  }
+
+  return Math.max(0, Math.min(widthBound, heightBound));
 }
 
 /**
@@ -201,7 +238,11 @@ export function createChoreoCardSizingState(
       (containerWidth < destination.width * SETTLED_CONTAINER_RATIO ||
         containerHeight < destination.height * SETTLED_CONTAINER_RATIO);
 
-    if (hasDestination && deps.containSizeMotion === null && !paneStillOpening) {
+    if (
+      hasDestination &&
+      deps.containSizeMotion === null &&
+      !paneStillOpening
+    ) {
       // A settled frame: the container is where the destination said it would
       // be, so the difference between them is the host's chrome.
       if (availableWidth > 0 && availableHeight > 0) {
@@ -226,7 +267,10 @@ export function createChoreoCardSizingState(
     const paintedBefore: Size | null = hasDestination
       ? paintedStackSize()
       : null;
-    if (hasDestination && (deps.containSizeMotion !== null || paneStillOpening)) {
+    if (
+      hasDestination &&
+      (deps.containSizeMotion !== null || paneStillOpening)
+    ) {
       // The pane's flex allocation animates from nothing, so its live geometry
       // describes where the Card is, not where it is going. Solve against the
       // endpoint instead, so the Card renders at final size for the whole
@@ -391,17 +435,22 @@ export function createChoreoCardSizingState(
     }
   }
 
-  function updateCellWidth(measuredWidth?: number): void {
+  function updateCellWidth(measuredSize?: Size): void {
     if (cellWidthSuppressed) return;
     const deps = getDeps();
     const widthUnits = deps.containModel.cols;
     const stack = deps.previewStackElement;
     if (!stack || widthUnits <= 0) return;
-    const stackWidth = measuredWidth ?? stack.clientWidth;
-    if (stackWidth < 1) return;
-    const nextCellWidth = Number.isFinite(stackWidth / widthUnits)
-      ? stackWidth / widthUnits
-      : 0;
+    const stackSize = measuredSize ?? {
+      width: stack.clientWidth,
+      height: stack.clientHeight,
+    };
+    if (stackSize.width < 1 || stackSize.height < 1) return;
+    const nextCellWidth = deps.squareGridContain
+      ? fitSquareGridCell(stackSize, deps.containModel)
+      : Number.isFinite(stackSize.width / widthUnits)
+        ? stackSize.width / widthUnits
+        : 0;
     if (Math.abs(nextCellWidth - cellWidth) > 0.5) {
       cellWidth = nextCellWidth;
     }
@@ -461,7 +510,10 @@ export function createChoreoCardSizingState(
     if (!stack) return;
 
     const observer = new ResizeObserver((entries) => {
-      updateCellWidth(entries[entries.length - 1]?.contentRect.width);
+      const rect = entries[entries.length - 1]?.contentRect;
+      updateCellWidth(
+        rect ? { width: rect.width, height: rect.height } : undefined
+      );
     });
     observer.observe(stack);
     updateCellWidth();

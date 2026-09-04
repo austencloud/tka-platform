@@ -420,6 +420,7 @@
     containSizeMotion,
     containMotionBox,
     containModel: layoutState.containModel,
+    squareGridContain: fixedCardAspectRatio !== null,
   }));
 
   layoutState = createChoreoCardLayoutState(() => ({
@@ -865,6 +866,12 @@
         : `width: ${containedWidth ? `${containedWidth}px` : "auto"}; height: ${containedHeight ? `${containedHeight}px` : "auto"};${!containedWidth || !containedHeight || cellWidth < 1 ? " visibility: hidden;" : ""}`}
       style:--card-frame-accent={frameColors?.accent}
       style:--card-frame-dark={frameColors?.dark}
+      style:--fixed-grid-width={fixedCardAspectRatio !== null
+        ? `${cellWidth * effectiveColumns}px`
+        : undefined}
+      style:--fixed-grid-height={fixedCardAspectRatio !== null
+        ? `${cellWidth * effectiveRows}px`
+        : undefined}
       bind:this={previewStackElement}
     >
       <!-- Header section -->
@@ -1038,16 +1045,33 @@
   .preview-stack.has-frame {
     box-sizing: border-box;
     padding: max(4px, 2%);
-    background: repeating-linear-gradient(
-      135deg,
-      var(--card-frame-accent) 0 0.45rem,
-      var(--card-frame-dark) 0.45rem 0.9rem
-    );
+    background:
+      linear-gradient(#f5f5f5 0 0) content-box,
+      repeating-linear-gradient(
+          135deg,
+          var(--card-frame-accent) 0 0.45rem,
+          var(--card-frame-dark) 0.45rem 0.9rem
+        )
+        padding-box;
+  }
+
+  .choreo-card-root.dark-mode .preview-stack.has-frame {
+    background:
+      linear-gradient(#000 0 0) content-box,
+      repeating-linear-gradient(
+          135deg,
+          var(--card-frame-accent) 0 0.45rem,
+          var(--card-frame-dark) 0.45rem 0.9rem
+        )
+        padding-box;
   }
 
   .preview-stack.has-card-aspect :global(.grid-section) {
-    align-content: center;
-    grid-auto-rows: auto;
+    flex: 0 0 var(--fixed-grid-height);
+    width: min(100%, var(--fixed-grid-width));
+    align-self: center;
+    margin-block: auto;
+    grid-auto-rows: 1fr;
   }
 
   .preview-stack.has-card-aspect :global(.cell-flip-wrapper) {
