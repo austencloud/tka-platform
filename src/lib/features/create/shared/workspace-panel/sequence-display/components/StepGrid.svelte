@@ -58,6 +58,7 @@
     onStepDelete,
     onStepLongPress,
     selectedStepNumber = null,
+    autoFocusSelectedStep = true,
     removingStepIndex = null,
     removingStepIndices = new Set<number>(),
     isClearing = false,
@@ -106,6 +107,8 @@
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: (stepNumber: number) => void;
     selectedStepNumber?: number | null;
+    /** Prevent playback-driven selection from stealing focus from nearby UI. */
+    autoFocusSelectedStep?: boolean;
     removingStepIndex?: number | null;
     removingStepIndices?: Set<number>;
     isClearing?: boolean;
@@ -776,6 +779,7 @@
       {scrollState}
       edgePadding={edgeReserve}
       {selectedStepNumber}
+      {autoFocusSelectedStep}
       {practiceStepNumber}
       {activeMode}
       {removingStepIndex}
