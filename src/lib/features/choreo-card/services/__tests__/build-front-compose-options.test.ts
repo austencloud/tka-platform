@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { buildFrontComposeOptions } from "../build-front-compose-options";
 import type { PrintRenderOptions } from "../types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const SEQ: SequenceData = {
   id: "seq-1",
@@ -134,13 +135,18 @@ describe("buildFrontComposeOptions", () => {
       customName: "Tog-Opp",
       showMandala: true,
       showQRCode: true,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.FAN,
     });
 
     expect(composeOptions.addWord).toBe(true);
     expect(composeOptions.customName).toBe("Tog-Opp");
+    expect(composeOptions.renderWordAsText).toBe(true);
     expect(composeOptions.addDifficultyLevel).toBe(false);
     expect(composeOptions.addReversalSymbols).toBe(false);
     expect(composeOptions.showLoopGlyph).toBe(false);
+    expect(composeOptions.leftPropTypeOverride).toBe(PropType.HAND);
+    expect(composeOptions.rightPropTypeOverride).toBe(PropType.HAND);
     expect(composeOptions.visibilityOverrides).toMatchObject({
       handPathMode: true,
       showTKA: false,

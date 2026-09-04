@@ -431,7 +431,8 @@ export async function paintCardFrontChrome(
   if (loopComponents) {
     const isHandPath = visibility.handPathMode ?? false;
     const isSolo =
-      visibility.showLeftMotion === false || visibility.showRightMotion === false;
+      visibility.showLeftMotion === false ||
+      visibility.showRightMotion === false;
     if (isHandPath || isSolo) {
       const filtered = new Set(loopComponents);
       if (isSolo) filtered.delete(LOOPComponent.SWAPPED);
@@ -491,6 +492,7 @@ export async function paintCardFrontChrome(
       overlayComponents: showLoopGlyph ? overlayComponents : undefined,
       accentColor: options.accentColor,
       accentTintOpacity: options.accentTintOpacity,
+      renderAsText: options.renderWordAsText,
     });
   }
 
