@@ -4,27 +4,33 @@
   import type { ExperienceViewMode } from "../../../domain/types";
   import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
   import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
-  import HandMotionPlayer from "../foundations/HandMotionPlayer.svelte";
-  import { HAND_PATH_STEPS } from "../foundations/pictograph-foundation-content";
+  import HandMotionPlayer from "./HandMotionPlayer.svelte";
+  import type { TimingDirectionMode } from "./pictograph-foundation-content";
 
   let {
+    conceptId,
+    title,
+    modes,
     onComplete,
     onBack,
     viewMode = "step",
-  } = $props<{
+  }: {
+    conceptId: string;
+    title: string;
+    modes: readonly TimingDirectionMode[];
     onComplete?: () => void;
     onBack?: () => void;
     viewMode?: ExperienceViewMode;
-  }>();
+  } = $props();
 
   const haptic = getHapticFeedback();
-  const persistence = getExperiencePersistence("hand-motions-intro");
-  const summaryIndex = HAND_PATH_STEPS.length;
+  const persistence = getExperiencePersistence(conceptId);
   const saved = persistence.load();
+  const summaryIndex = modes.length;
   let stepIndex = $state(
     Math.min(summaryIndex, Math.max(0, (saved.step || 1) - 1))
   );
-  const activeMotion = $derived(HAND_PATH_STEPS[stepIndex] ?? null);
+  const activeMode = $derived(modes[stepIndex] ?? null);
 
   function goToStep(next: number): void {
     const clamped = Math.min(summaryIndex, Math.max(0, next));
@@ -66,42 +72,60 @@
   onkeydown={handleKeydown}
   tabindex="0"
   role="application"
-  aria-label="Hand motions lesson, use arrow keys to navigate"
+  aria-label={`${title} lesson, use arrow keys to navigate`}
 >
   <main class="lesson-shell">
-    {#if activeMotion}
-      <section class="motion-step" aria-labelledby="motion-title">
+    {#if activeMode}
+      <section
+        class="mode-step"
+        style:--mode-accent={activeMode.element.accentColor}
+        aria-labelledby="mode-title"
+      >
         <div class="instruction-rail">
-          <p class="eyebrow">Hand motion {stepIndex + 1} of 3</p>
-          <h1 id="motion-title">{activeMotion.name}</h1>
-          <p class="guide-caption">{activeMotion.guideCaption}</p>
-          <div class="motion-key" aria-label="Blue hand">
-            <span class="hand-dot" aria-hidden="true"></span>
-            <span>Blue hand</span>
+          <p class="eyebrow">Hand timing + direction</p>
+          <div class="mode-heading">
+            <img src={activeMode.element.iconPath} alt="" />
+            <h1 id="mode-title">{activeMode.name}</h1>
+          </div>
+
+          <dl class="mode-properties">
+            <div>
+              <dt>Timing</dt>
+              <dd>{activeMode.timing}</dd>
+            </div>
+            <div>
+              <dt>Direction</dt>
+              <dd>{activeMode.direction}</dd>
+            </div>
+          </dl>
+
+          <div class="step-count">
+            {stepIndex + 1} of {modes.length}
           </div>
         </div>
 
         <div class="artifact-stage">
           <HandMotionPlayer
-            sequence={activeMotion.sequence}
-            ariaLabel={`${activeMotion.name}: ${activeMotion.guideCaption}`}
+            sequence={activeMode.sequence}
+            ariaLabel={`${activeMode.name}: ${activeMode.timing} timing and ${activeMode.direction.toLowerCase()} hand-path direction`}
           />
         </div>
       </section>
     {:else}
-      <section class="summary" aria-labelledby="motion-summary-title">
-        <p class="eyebrow">Hand motions</p>
-        <h1 id="motion-summary-title">Three paths</h1>
-        <p class="guide-copy">
-          There are three fundamental hand motions in the Alphabet.<br />
-          The arrow shows the direction of motion.<br />
-          The hand shows the end position.
-        </p>
-        <div class="motion-recap">
-          {#each HAND_PATH_STEPS as motion, index (motion.id)}
-            <button type="button" onclick={() => goToStep(index)}>
-              <strong>{motion.name}</strong>
-              <span>{motion.guideCaption}</span>
+      <section class="summary" aria-labelledby="mode-summary-title">
+        <p class="eyebrow">Complete</p>
+        <h1 id="mode-summary-title">{title}</h1>
+        <div class="mode-recap">
+          {#each modes as mode, index (mode.id)}
+            <button
+              type="button"
+              class="recap-button"
+              style:--mode-accent={mode.element.accentColor}
+              onclick={() => goToStep(index)}
+            >
+              <img src={mode.element.iconPath} alt="" />
+              <span>{mode.name}</span>
+              <small>{mode.timing} · {mode.direction}</small>
             </button>
           {/each}
         </div>
@@ -138,7 +162,7 @@
 
 <style>
   .experience {
-    container: hand-motions / inline-size;
+    container: timing-direction / inline-size;
     width: 100%;
     height: 100%;
     overflow-y: auto;
@@ -146,32 +170,42 @@
     outline: none;
     scrollbar-gutter: stable;
   }
+
   .lesson-shell {
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
     gap: 1rem;
-    width: min(100%, 100rem);
+    width: min(100%, 108rem);
     min-height: 100%;
     margin-inline: auto;
     padding: clamp(4.5rem, 5cqw, 5.5rem) clamp(0.75rem, 2.5cqw, 2.5rem)
       clamp(0.75rem, 1.5cqw, 1.5rem);
   }
-  .motion-step {
+
+  .mode-step {
     display: grid;
     grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
     align-items: center;
     gap: clamp(1rem, 2.2cqw, 2.5rem);
+    width: 100%;
     min-height: 0;
   }
+
   .instruction-rail {
     display: grid;
     align-content: center;
-    gap: 1rem;
+    gap: 1.25rem;
+    min-width: 0;
     padding: clamp(1rem, 1.6cqw, 1.6rem);
     border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-lg, 0.75rem);
-    background: var(--theme-panel-bg);
+    background: color-mix(
+      in srgb,
+      var(--mode-accent) 10%,
+      var(--theme-panel-bg)
+    );
   }
+
   .eyebrow {
     margin: 0;
     color: var(--theme-accent);
@@ -180,157 +214,242 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
+
+  .mode-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .mode-heading img {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+  }
+
   h1 {
     margin: 0 !important;
-    font-size: clamp(1.8rem, 3cqw, 3.2rem);
+    font-size: clamp(1.7rem, 2.6cqw, 2.8rem);
     line-height: 1.05;
+    text-wrap: balance;
   }
-  .guide-caption,
-  .guide-copy {
+
+  .mode-properties {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
     margin: 0;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-base, 1rem);
-    line-height: 1.55;
   }
-  .motion-key {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
+
+  .mode-properties > div {
+    display: grid;
+    gap: 0.25rem;
+    min-height: 4.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-md, 0.5rem);
+    background: var(--theme-card-bg);
+  }
+
+  dt {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--font-size-base, 1rem);
+    font-weight: 800;
+  }
+
+  .step-count {
     color: var(--theme-text-dim);
     font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 700;
+    font-variant-numeric: tabular-nums;
   }
-  .hand-dot {
-    width: 0.85rem;
-    height: 0.85rem;
-    border-radius: 50%;
-    background: var(--prop-blue, #3d44b8);
-  }
+
   .artifact-stage {
     min-width: 0;
     height: clamp(24rem, 68dvh, 48rem);
     min-height: 0;
   }
+
   .summary {
     display: grid;
     align-content: center;
     justify-items: center;
     gap: 1rem;
-    width: min(100%, 58rem);
+    width: min(100%, 64rem);
     margin-inline: auto;
     text-align: center;
   }
-  .motion-recap {
+
+  .mode-recap {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
     width: 100%;
   }
-  .motion-recap button {
+
+  .recap-button {
     display: grid;
-    gap: 0.35rem;
-    min-height: 6rem;
-    padding: 0.9rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.2rem 0.75rem;
+    min-height: 5.5rem;
+    padding: 0.85rem 1rem;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-lg, 0.75rem);
-    background: var(--theme-card-bg);
+    background: color-mix(in srgb, var(--mode-accent) 9%, var(--theme-card-bg));
     color: var(--theme-text);
     font: inherit;
+    text-align: left;
     cursor: pointer;
   }
-  .motion-recap button:hover,
-  .motion-recap button:focus-visible {
+
+  .recap-button:hover,
+  .recap-button:focus-visible {
     border-color: var(--theme-stroke-strong);
-    background: var(--theme-card-hover-bg);
+    background: color-mix(
+      in srgb,
+      var(--mode-accent) 16%,
+      var(--theme-card-bg)
+    );
   }
-  .motion-recap button:focus-visible {
+
+  .recap-button:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
-  .motion-recap span {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-sm, 0.875rem);
+
+  .recap-button img {
+    grid-row: 1 / 3;
+    width: 1.7rem;
+    height: 1.7rem;
   }
+
+  .recap-button span {
+    font-weight: 800;
+  }
+
+  .recap-button small {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+  }
+
   .lesson-actions {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 0.75rem;
   }
+
   .lesson-actions > :global(:first-child) {
     justify-self: start;
   }
+
   .lesson-actions > :global(:last-child) {
     justify-self: end;
   }
-  @container hand-motions (max-width: 760px) {
+
+  @container timing-direction (max-width: 760px) {
     .lesson-shell {
       gap: 0.65rem;
       padding-top: 3.9rem;
     }
-    .motion-step {
+
+    .mode-step {
       grid-template-columns: minmax(0, 1fr);
       grid-template-rows: auto minmax(0, 1fr);
       gap: 0.65rem;
     }
+
     .instruction-rail {
-      gap: 0.4rem;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-content: start;
+      gap: 0.4rem 0.75rem;
       padding: 0.65rem 0.75rem;
     }
+
+    .instruction-rail .eyebrow,
+    .mode-properties {
+      grid-column: 1 / -1;
+    }
+
+    .mode-properties {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .step-count {
+      align-self: center;
+    }
+
     .artifact-stage {
-      height: min(42dvh, 19rem);
+      height: min(36dvh, 17rem);
       min-height: 0;
     }
+
     .lesson-actions {
       grid-template-columns: 1fr 1fr;
     }
+
     .lesson-actions :global(.progress-indicator) {
       grid-column: 1 / -1;
       grid-row: 2;
       justify-self: center;
     }
+
     .lesson-actions :global(.panel-btn) {
       width: 100%;
     }
   }
-  @container hand-motions (max-width: 520px) {
-    .motion-recap {
+
+  @container timing-direction (max-width: 440px) {
+    .mode-recap {
       grid-template-columns: minmax(0, 1fr);
     }
-    .motion-recap button {
-      min-height: 4.5rem;
-    }
   }
-  @container hand-motions (min-width: 1680px) {
+
+  @container timing-direction (min-width: 1680px) {
     .lesson-shell {
-      width: min(100%, 132rem);
+      width: min(100%, 142rem);
     }
-    .motion-step {
+
+    .mode-step {
       grid-template-columns: minmax(18rem, 28rem) minmax(0, 1fr);
     }
   }
-  @container hand-motions (min-width: 2600px) {
+
+  @container timing-direction (min-width: 2600px) {
     .lesson-shell {
       width: min(100%, 190rem);
     }
-    .motion-step {
+
+    .mode-step {
       grid-template-columns: minmax(24rem, 34rem) minmax(0, 1fr);
     }
+
     .artifact-stage {
       height: clamp(36rem, 58dvh, 64rem);
     }
   }
+
   @media (max-height: 620px) and (min-width: 761px) {
     .lesson-shell {
       padding-top: 4rem;
     }
-    .motion-step {
+
+    .mode-step {
       grid-template-columns: minmax(13rem, 19rem) minmax(0, 1fr);
     }
+
     .instruction-rail {
-      gap: 0.55rem;
+      gap: 0.65rem;
       padding: 0.75rem;
     }
+
     .artifact-stage {
       height: min(55dvh, 14rem);
       min-height: 0;
