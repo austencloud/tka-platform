@@ -9,7 +9,6 @@ import {
   writeShapeMatrixRouteState,
 } from "../../../src/routes/(public)/notation/shape-matrix/_state/shape-matrix-url";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { DEFAULT_THEORY_BAND } from "$lib/shared/shape-matrix/domain/theory-ratio-band";
 
 const COMMON = {
   surface: "matrix" as const,
@@ -17,7 +16,6 @@ const COMMON = {
   theoryRightRatio: { propRotations: 1, handCycles: 3 },
   theoryMode: "SS" as const,
   theoryPair: null,
-  theoryBand: DEFAULT_THEORY_BAND,
   activeAxis: "both" as const,
   propType: PropType.STAFF,
   propMode: null,
@@ -115,7 +113,6 @@ describe("shape matrix URL state", () => {
       theoryRightRatio: { propRotations: 1, handCycles: 3 },
       theoryMode: "SS",
       theoryPair: null,
-      theoryBand: DEFAULT_THEORY_BAND,
       level: 4,
       leftTurn: 0.75,
       rightTurn: 1.5,
@@ -243,9 +240,9 @@ describe("shape matrix URL state", () => {
     writeShapeMatrixRouteState(url, state);
     expect(url.searchParams.get("ref")).toBe("theory");
     expect(url.searchParams.get("theory")).toBe("1");
-    // A Theory link says how far the ratio field opens and says nothing about
-    // a Kinetic Alphabet level, because the surface does not sit at one.
-    expect(url.searchParams.get("band")).toBe("4");
+    // Theory ratios are self-contained; the link needs neither a field bound
+    // nor a Kinetic Alphabet level.
+    expect(url.searchParams.get("band")).toBeNull();
     expect(url.searchParams.get("level")).toBeNull();
     expect(url.searchParams.get("leftRatio")).toBe("2:9");
     expect(url.searchParams.get("rightRatio")).toBe("1:2");
@@ -277,17 +274,21 @@ describe("shape matrix URL state", () => {
     expect(url.searchParams.get("pairing")).toBe("SS");
   });
 
-  it("widens a stale band instead of replacing a valid ratio", () => {
+  it("ignores a retired band instead of replacing a valid ratio", () => {
     const state = readShapeMatrixRouteState("?theory=1&leftRatio=2:9&band=2");
     expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
-    expect(state.theoryBand).toBe(4);
 
     const full = readShapeMatrixRouteState(
       "?theory=1&leftRatio=15:4&rightRatio=4:15&band=1"
     );
     expect(full.theoryLeftRatio).toEqual({ propRotations: 15, handCycles: 4 });
     expect(full.theoryRightRatio).toEqual({ propRotations: 4, handCycles: 15 });
-    expect(full.theoryBand).toBe(5);
+
+    const url = new URL(
+      "https://tkaflowarts.com/notation/shape-matrix?theory=1&band=1"
+    );
+    writeShapeMatrixRouteState(url, full);
+    expect(url.searchParams.get("band")).toBeNull();
   });
 
   it("rejects a typed part above 15", () => {
@@ -296,22 +297,11 @@ describe("shape matrix URL state", () => {
     );
     expect(state.theoryLeftRatio).toEqual({ propRotations: 1, handCycles: 3 });
     expect(state.theoryRightRatio).toEqual({ propRotations: 1, handCycles: 3 });
-    expect(state.theoryBand).toBe(5);
   });
 
-  it("reads a pre-split theory link's band out of its level parameter", () => {
-    // Links shared before the band had its own parameter carried it in
-    // `level`. They still open on the flower they were shared for.
+  it("preserves a pre-split theory link's ratio without its retired level", () => {
     const legacy = readShapeMatrixRouteState("?theory=1&leftRatio=2:9&level=4");
-    expect(legacy.theoryBand).toBe(4);
     expect(legacy.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
-  });
-
-  it("never reads a matrix link's level as a ratio band", () => {
-    // The two ladders are unrelated, so `level=4` on the Matrix must not open
-    // the Theory field to ninths behind the user's back.
-    const state = readShapeMatrixRouteState("?level=4&leftTurn=0.25");
-    expect(state.surface).toBe("matrix");
-    expect(state.theoryBand).toBe(DEFAULT_THEORY_BAND);
+    expect("theoryBand" in legacy).toBe(false);
   });
 });

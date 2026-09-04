@@ -3,11 +3,9 @@
   "N of M" position readout, prev/next steppers, and a scrolling segmented
   control whose selection is always brought into view.
 
-  Built for the TKA turn band, extracted when the Theory surface needed the
-  same control for its ratio band. Both lists have the same problem: a first
-  time viewer reads the row as a caption on the grid rather than as the thing
-  that CHANGES the grid, and concludes the app is one 4x4 matrix. The readout,
-  the steppers, and the segment chrome are the three signals that correct it. -->
+  A first-time viewer can read the turn row as a caption on the grid rather
+  than as the thing that changes it, and conclude the app is one 4x4 matrix.
+  The readout, steppers, and segment chrome are the signals that correct it. -->
 <script lang="ts">
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import ShapeMatrixRibbonCell from "./ShapeMatrixRibbonCell.svelte";
@@ -61,7 +59,9 @@
     const at = index;
     const host = viewport;
     if (!host || at < 0) return;
-    const optionIndex = options.findIndex((option) => option.value === keys[at]);
+    const optionIndex = options.findIndex(
+      (option) => option.value === keys[at]
+    );
     if (optionIndex < 0) return;
     const segment = host.querySelectorAll<HTMLElement>(".segment")[optionIndex];
     segment?.scrollIntoView({
