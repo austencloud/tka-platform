@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { Box3, Mesh, Object3D, Quaternion } from "three";
+import {
+  Box3,
+  DataTexture,
+  Mesh,
+  Object3D,
+  Quaternion,
+  ShaderMaterial,
+} from "three";
 import { PropType } from "@austencloud/scene-3d";
 
 import {
   MOON_FAN_LED_COUNT,
+  MOON_FAN_ZONE_LED_COUNT,
   MoonFanDiffuserRenderer3D,
   createMoonFanDiffuserGeometry,
   moonFanZoneSampleIndices,
@@ -16,6 +24,7 @@ import {
 describe("Moon fan LED surface", () => {
   it("samples the center of both 39-emitter control zones", () => {
     expect(MOON_FAN_LED_COUNT).toBe(78);
+    expect(MOON_FAN_ZONE_LED_COUNT).toBe(39);
     expect(moonFanZoneSampleIndices()).toEqual([19, 58]);
     expect(moonFanZoneSampleIndices(40)).toEqual([10, 30]);
   });
@@ -49,7 +58,7 @@ describe("Moon fan LED surface", () => {
     const parent = new Object3D();
     const renderer = new MoonFanDiffuserRenderer3D();
     renderer.initialize(parent);
-    expect(parent.children).toHaveLength(1);
+    expect(parent.children).toHaveLength(2);
 
     renderer.update({
       propState: {
@@ -57,22 +66,35 @@ describe("Moon fan LED surface", () => {
         worldRotation: new Quaternion(),
       },
       rigLocalCenter: { x: 1, y: 2, z: 3 },
-      zoneA: { r: 1, g: 0.25, b: 0.1 },
-      zoneB: { r: 0.1, g: 0.25, b: 1 },
+      ledColors: Array.from({ length: MOON_FAN_LED_COUNT }, (_, index) => ({
+        r: index === 0 ? 1 : 0,
+        g: 0.25,
+        b: index === MOON_FAN_LED_COUNT - 1 ? 1 : 0,
+      })),
       brightness: 0.8,
       scale: 1.4,
-      elapsedSeconds: 2,
     });
 
-    const mesh = parent.children[0] as Mesh;
-    expect(mesh.visible).toBe(true);
-    expect(mesh.position.toArray()).toEqual([1, 2, 3]);
-    expect(mesh.scale.toArray()).toEqual([1.4, 1.4, 1.4]);
-    const worldBounds = new Box3().setFromObject(mesh);
+    const front = parent.children[0] as Mesh;
+    const back = parent.children[1] as Mesh;
+    expect(front.visible).toBe(true);
+    expect(back.visible).toBe(true);
+    expect(front.position.toArray()).toEqual([1, 2, 3.012]);
+    expect(back.position.toArray()).toEqual([1, 2, 2.988]);
+    expect(front.scale.toArray()).toEqual([1.4, 1.4, 1.4]);
+    expect(front.geometry).toBe(back.geometry);
+    expect(front.material).toBe(back.material);
+    const texture = (front.material as ShaderMaterial).uniforms.uLedStrip!
+      .value as DataTexture;
+    const pixels = texture.image.data as Uint8Array;
+    expect(Array.from(pixels.slice(0, 4))).toEqual([255, 64, 0, 255]);
+    expect(Array.from(pixels.slice(-4))).toEqual([0, 64, 255, 255]);
+    const worldBounds = new Box3().setFromObject(front);
     expect(worldBounds.isEmpty()).toBe(false);
 
     renderer.reset();
-    expect(mesh.visible).toBe(false);
+    expect(front.visible).toBe(false);
+    expect(back.visible).toBe(false);
     renderer.dispose();
     expect(parent.children).toHaveLength(0);
   });

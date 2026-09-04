@@ -28,7 +28,6 @@
   import {
     MOON_FAN_LED_COUNT,
     MoonFanDiffuserRenderer3D,
-    moonFanZoneSampleIndices,
   } from "./led/moon-fan-diffuser-renderer-3d";
   import {
     CharcoalRenderer3D,
@@ -639,6 +638,11 @@
   // renderers in the SAME frame tick (bypasses Svelte's batched prop updates).
   const leftLedTips: LedTipInput[] = [];
   const rightLedTips: LedTipInput[] = [];
+  const moonLedColors = Array.from({ length: MOON_FAN_LED_COUNT }, () => ({
+    r: 0,
+    g: 0,
+    b: 0,
+  }));
   const charcoalTips: CharcoalTipInput[] = [];
   const fireTips: FireTipInput[] = [];
   let interactiveRenderersPrepared = false;
@@ -753,6 +757,15 @@
       const c = getPixel(moonStrip, moonFrame, ledIndex % moonStrip.ledCount);
       return { r: c.r / 255, g: c.g / 255, b: c.b / 255 };
     };
+    if (moonStrip) {
+      for (let index = 0; index < MOON_FAN_LED_COUNT; index++) {
+        const pixel = getPixel(moonStrip, moonFrame, index);
+        const color = moonLedColors[index]!;
+        color.r = pixel.r / 255;
+        color.g = pixel.g / 255;
+        color.b = pixel.b / 255;
+      }
+    }
     const ledSupersampleCount = LED_SUPERSAMPLE_BY_TIER[qualityTier] ?? 4;
 
     /**
@@ -1082,7 +1095,6 @@
       syncRendererQuality(imperativeParent);
     }
 
-    const [moonZoneAIndex, moonZoneBIndex] = moonFanZoneSampleIndices();
     if (
       moonStrip &&
       leftIsMoonFan &&
@@ -1093,11 +1105,9 @@
       leftMoonDiffuser?.update({
         propState: visualLeftProp,
         rigLocalCenter: leftRigCenter,
-        zoneA: moonColorAt(moonZoneAIndex),
-        zoneB: moonColorAt(moonZoneBIndex),
+        ledColors: moonLedColors,
         brightness: ledBrightness,
         scale: leftPropType === PropType.BIGFAN ? 1.4 : 1,
-        elapsedSeconds: ledElapsedMs / 1000,
       });
     } else {
       leftMoonDiffuser?.reset();
@@ -1112,11 +1122,9 @@
       rightMoonDiffuser?.update({
         propState: visualRightProp,
         rigLocalCenter: rightRigCenter,
-        zoneA: moonColorAt(moonZoneAIndex),
-        zoneB: moonColorAt(moonZoneBIndex),
+        ledColors: moonLedColors,
         brightness: ledBrightness,
         scale: rightPropType === PropType.BIGFAN ? 1.4 : 1,
-        elapsedSeconds: ledElapsedMs / 1000,
       });
     } else {
       rightMoonDiffuser?.reset();
@@ -1181,18 +1189,13 @@
           rightPovRenderer?.reset();
         }
 
-        if (leftIsMoonFan && leftLedTips.length > 0) {
-          leftLedRenderer?.update(leftLedTips, cam!, now);
-        } else {
-          leftLedRenderer?.reset();
-        }
-        if (rightIsMoonFan && rightLedTips.length > 0) {
-          rightLedRenderer?.update(rightLedTips, cam!, now);
-        } else {
-          rightLedRenderer?.reset();
-        }
+        // Moon fans render their full 78-emitter optical field through the
+        // diffuser shader. Generic tip billboards would add five oversized
+        // bulbs that do not exist on the physical fan.
+        leftLedRenderer?.reset();
+        rightLedRenderer?.reset();
       } else {
-        if (leftLedTips.length > 0) {
+        if (leftLedTips.length > 0 && !leftIsMoonFan) {
           if (!leftLedRenderer) {
             leftLedRenderer = new LedRenderer3D(qualityTier);
             leftLedRenderer.initialize(imperativeParent);
@@ -1202,7 +1205,7 @@
           leftLedRenderer?.reset();
         }
 
-        if (rightLedTips.length > 0) {
+        if (rightLedTips.length > 0 && !rightIsMoonFan) {
           if (!rightLedRenderer) {
             rightLedRenderer = new LedRenderer3D(qualityTier);
             rightLedRenderer.initialize(imperativeParent);
