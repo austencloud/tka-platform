@@ -56,6 +56,9 @@ const tunnelLayerReveal = read(
 const canvasApplicationManager = read(
   "src/lib/shared/animation-engine/services/canvas2d/canvas-2d-application-manager.ts"
 );
+const canvas2DRenderer = read(
+  "src/lib/shared/animation-engine/services/canvas-2d-animation-renderer.ts"
+);
 const sceneLoadingCurtain = read(
   "src/lib/shared/3d/scene-features/components/SceneLoadingCurtain.svelte"
 );
@@ -377,14 +380,20 @@ describe("Sequence Viewer transition orchestration contract", () => {
       'this.canvas.dataset.animationLayer = "props"'
     );
     expect(reviewFrame).toContain('canvas[data-animation-layer="props"]');
-    expect(reviewFrame).toContain("tunnelSpectrumPixelCount(");
-    expect(reviewFrame).toContain("TUNNEL_PIXEL_SAMPLE_INTERVAL_MS");
-    expect(reviewFrame).toContain("tunnelSpectrumSampled:");
+    expect(canvas2DRenderer).toContain("publishTunnelPaintTelemetry(");
+    expect(canvas2DRenderer).toContain(
+      'canvas.dataset.captureTunnelPaint !== "true"'
+    );
+    expect(canvas2DRenderer).toContain(
+      "paintedTunnelOpacities.push(ctx.globalAlpha)"
+    );
+    expect(reviewFrame).toContain("setTunnelPaintCapture(true)");
+    expect(reviewFrame).toContain("tunnelPaintedOpacityMean:");
     expect(geometryTrace).toContain("Reveal-before-layers frames:");
     expect(geometryTrace).toContain("Largest grid alpha step:");
     expect(geometryTrace).toContain("Layer timing spread:");
     expect(geometryTrace).toContain("Ensemble legibility:");
-    expect(geometryTrace).toContain("Painted spectrum arrival:");
+    expect(geometryTrace).toContain("Painted prop arrival:");
     expect(geometryTrace).toContain("one copy peels spatially");
     expect(geometryTrace).toContain("Spatial peel:");
     expect(viewerModeDissolve).toContain(

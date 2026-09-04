@@ -87,8 +87,10 @@ function sample(
     tunnelPerceptibleLayerCount: 0,
     tunnelLayerSeparation: 0,
     tunnelGridOpacity: 1,
-    tunnelSpectrumPixelCount: 0,
-    tunnelSpectrumSampled: false,
+    tunnelPaintFrame: 0,
+    tunnelPaintedPropCount: 0,
+    tunnelPaintedPerceptiblePropCount: 0,
+    tunnelPaintedOpacityMean: 0,
     tunnelPresented: false,
     tunnelCanvasReady: true,
     animatorIdentity: 1,
@@ -894,17 +896,17 @@ describe("Sequence Viewer geometry trace", () => {
     });
   });
 
-  it("measures whether Tunnel's painted spectrum arrives throughout the reveal", () => {
+  it("measures whether Tunnel's painted props arrive throughout the reveal", () => {
     const reveal = [
-      [0, 0, 0, 0, 0],
-      [60, 0.25, 0.22, 7, 40],
-      [120, 0.5, 0.46, 7, 95],
-      [180, 0.7, 0.65, 7, 120],
-      [240, 0.85, 0.8, 7, 145],
-      [300, 0.95, 0.93, 7, 155],
-      [360, 0.98, 0.97, 7, 158],
-      [480, 1, 1, 7, 160],
-    ].map(([time, opacity, mean, perceptible, pixels]) => ({
+      [0, 0, 0, 0],
+      [60, 0.25, 0.22, 7],
+      [120, 0.5, 0.46, 7],
+      [180, 0.7, 0.65, 7],
+      [240, 0.85, 0.8, 7],
+      [300, 0.95, 0.93, 7],
+      [360, 0.98, 0.97, 7],
+      [480, 1, 1, 7],
+    ].map(([time, opacity, mean, perceptible], index) => ({
       ...sample(time, 900, 1),
       phase: "show-tunnel" as const,
       selectedMode: "tunnel" as const,
@@ -916,8 +918,10 @@ describe("Sequence Viewer geometry trace", () => {
       tunnelLayerOpacityMaximum: opacity,
       tunnelLayerOpacityMean: mean,
       tunnelPerceptibleLayerCount: perceptible,
-      tunnelSpectrumPixelCount: pixels,
-      tunnelSpectrumSampled: true,
+      tunnelPaintFrame: index + 1,
+      tunnelPaintedPropCount: opacity > 0 ? 14 : 0,
+      tunnelPaintedPerceptiblePropCount: perceptible * 2,
+      tunnelPaintedOpacityMean: mean,
       tunnelPresented: opacity > 0,
       tunnelCanvasReady: true,
     }));
@@ -932,10 +936,11 @@ describe("Sequence Viewer geometry trace", () => {
     expect(summary.tunnelAllLayersPerceptibleProgress).toBe(0.25);
     expect(summary.tunnelLayerMeanOpacityAtHalf).toBe(0.46);
     expect(summary.tunnelPaintedArrival).toMatchObject({
-      peakPixels: 160,
-      quarterFill: 0.25,
-      halfwayFill: 0.594,
-      growthFrames: 4,
+      peakProps: 14,
+      allPropsPerceptibleProgress: 0.25,
+      quarterMeanAlpha: 0.22,
+      halfwayMeanAlpha: 0.46,
+      growthFrames: 5,
       durationMs: 480,
     });
   });
