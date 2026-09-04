@@ -161,7 +161,7 @@
             {#snippet leftContent()}
               <div class="prop-editor">
                 <PropTurnsControl
-                  color="blue"
+                  hand="left"
                   turns={leftTurns}
                   rotationDirection={leftRotation}
                   showRotation={leftCanChooseRotation}
@@ -176,7 +176,7 @@
             {#snippet rightContent()}
               <div class="prop-editor">
                 <PropTurnsControl
-                  color="red"
+                  hand="right"
                   turns={rightTurns}
                   rotationDirection={rightRotation}
                   showRotation={rightCanChooseRotation}
@@ -629,7 +629,7 @@
 
   .variation-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(6.8rem, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.65rem;
   }
 
@@ -807,7 +807,7 @@
 
     .variation-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       overflow: visible;
       padding: 0;
     }
