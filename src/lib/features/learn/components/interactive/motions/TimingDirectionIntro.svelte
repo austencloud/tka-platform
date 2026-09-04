@@ -1,58 +1,115 @@
 <!--
-  Five distinct motion bays model the two independent Timing and Direction
-  axes. The ball examples intentionally run on offset clocks so each reads as
-  its own idea instead of becoming one synchronized comparison instrument.
+  Two direct instruments introduce the independent Timing and Direction axes.
+  Timing uses a phase dial instead of simulated physics; Direction uses paths
+  with explicit arrowheads. Only the selected relationship animates in each
+  instrument, so the learner never has to reconcile five competing clocks.
 -->
+<script lang="ts">
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+
+  type TimingMode = "together" | "split" | "quarter";
+  type DirectionMode = "same" | "opposite";
+
+  const timingOptions: Array<{ value: TimingMode; label: string }> = [
+    { value: "together", label: "Together" },
+    { value: "split", label: "Split" },
+    { value: "quarter", label: "Quarter" },
+  ];
+
+  const directionOptions: Array<{ value: DirectionMode; label: string }> = [
+    { value: "same", label: "Same" },
+    { value: "opposite", label: "Opposite" },
+  ];
+
+  const timingDetails: Record<
+    TimingMode,
+    { value: string; unit: string; ariaLabel: string }
+  > = {
+    together: {
+      value: "0",
+      unit: "same point",
+      ariaLabel:
+        "Together timing. The blue and red hands stay at the same point in the cycle.",
+    },
+    split: {
+      value: "½",
+      unit: "cycle apart",
+      ariaLabel:
+        "Split timing. The blue and red hands stay half a cycle apart.",
+    },
+    quarter: {
+      value: "¼",
+      unit: "cycle apart",
+      ariaLabel:
+        "Quarter timing. The blue and red hands stay one quarter of a cycle apart.",
+    },
+  };
+
+  const directionDetails: Record<
+    DirectionMode,
+    { label: string; ariaLabel: string }
+  > = {
+    same: {
+      label: "same way",
+      ariaLabel: "Same direction. The blue and red hands travel the same way.",
+    },
+    opposite: {
+      label: "opposite ways",
+      ariaLabel:
+        "Opposite direction. The blue and red hands travel opposite ways.",
+    },
+  };
+
+  let timingMode = $state<TimingMode>("together");
+  let directionMode = $state<DirectionMode>("same");
+
+  const timingDetail = $derived(timingDetails[timingMode]);
+  const directionDetail = $derived(directionDetails[directionMode]);
+</script>
+
 <div
   class="concept-model"
   role="group"
-  aria-label="Animated timing and direction examples"
+  aria-label="Interactive timing and direction examples"
 >
   <section class="concept-panel timing-panel" aria-labelledby="timing-heading">
     <h3 id="timing-heading">Timing</h3>
 
-    <div class="examples timing-examples">
-      <div class="example-bay timing-example together" data-phase="0">
-        <strong>Together</strong>
-        <div class="bounce-stage" role="img" aria-label="Together timing">
-          <div class="bounce-lane blue">
-            <span class="ball" aria-hidden="true"></span>
-            <span class="ball-shadow" aria-hidden="true"></span>
-          </div>
-          <div class="bounce-lane red">
-            <span class="ball" aria-hidden="true"></span>
-            <span class="ball-shadow" aria-hidden="true"></span>
-          </div>
-        </div>
-      </div>
+    <div class="selector timing-selector">
+      <SegmentedControl
+        options={timingOptions}
+        value={timingMode}
+        onchange={(value) => (timingMode = value)}
+        color="accent"
+        density="compact"
+        semantics="radiogroup"
+        ariaLabel="Timing relationship"
+      />
+    </div>
 
-      <div class="example-bay timing-example split" data-phase="half">
-        <strong>Split</strong>
-        <div class="bounce-stage" role="img" aria-label="Split timing">
-          <div class="bounce-lane blue">
-            <span class="ball" aria-hidden="true"></span>
-            <span class="ball-shadow" aria-hidden="true"></span>
-          </div>
-          <div class="bounce-lane red">
-            <span class="ball" aria-hidden="true"></span>
-            <span class="ball-shadow" aria-hidden="true"></span>
-          </div>
-        </div>
-      </div>
+    <div
+      class="instrument phase-instrument"
+      data-timing={timingMode}
+      role="img"
+      aria-label={timingDetail.ariaLabel}
+    >
+      <svg class="phase-dial" viewBox="0 0 220 220" aria-hidden="true">
+        <circle class="phase-ring outer-ring" cx="110" cy="110" r="78"></circle>
+        <circle class="phase-ring inner-ring" cx="110" cy="110" r="53"></circle>
 
-      <div class="example-bay timing-example quarter" data-phase="quarter">
-        <strong>Quarter</strong>
-        <div class="bounce-stage" role="img" aria-label="Quarter timing">
-          <div class="bounce-lane blue">
-            <span class="ball" aria-hidden="true"></span>
-            <span class="ball-shadow" aria-hidden="true"></span>
-          </div>
-          <div class="bounce-lane red">
-            <span class="ball" aria-hidden="true"></span>
-            <span class="ball-shadow" aria-hidden="true"></span>
-          </div>
-        </div>
-      </div>
+        <path class="phase-ticks" d="M110 20v8 M110 192v8 M20 110h8 M192 110h8"
+        ></path>
+
+        <g class="phase-orbit blue-orbit">
+          <circle class="phase-dot blue-dot" cx="110" cy="32" r="9"></circle>
+        </g>
+        <g class="phase-orbit red-orbit">
+          <circle class="phase-dot red-dot" cx="110" cy="57" r="9"></circle>
+        </g>
+
+        <text class="phase-value" x="110" y="107">{timingDetail.value}</text>
+        <text class="phase-unit" x="110" y="129">{timingDetail.unit}</text>
+      </svg>
     </div>
   </section>
 
@@ -62,45 +119,53 @@
   >
     <h3 id="direction-heading">Direction</h3>
 
-    <div class="examples direction-examples">
-      <div class="example-bay direction-example same" data-direction="same">
-        <strong>Same</strong>
-        <div class="travel-stage" role="img" aria-label="Same direction">
-          <div class="travel-lane blue">
-            <span class="direction-arrow" aria-hidden="true">›</span>
-            <span class="traveler" aria-hidden="true"></span>
-          </div>
-          <div class="travel-lane red">
-            <span class="direction-arrow" aria-hidden="true">›</span>
-            <span class="traveler" aria-hidden="true"></span>
-          </div>
-        </div>
-      </div>
+    <div class="selector direction-selector">
+      <SegmentedControl
+        options={directionOptions}
+        value={directionMode}
+        onchange={(value) => (directionMode = value)}
+        color="accent"
+        density="compact"
+        semantics="radiogroup"
+        ariaLabel="Direction relationship"
+      />
+    </div>
 
-      <div
-        class="example-bay direction-example opposite"
-        data-direction="opposite"
-      >
-        <strong>Opposite</strong>
-        <div class="travel-stage" role="img" aria-label="Opposite direction">
-          <div class="travel-lane blue">
-            <span class="direction-arrow" aria-hidden="true">›</span>
-            <span class="traveler" aria-hidden="true"></span>
-          </div>
-          <div class="travel-lane red">
-            <span class="direction-arrow" aria-hidden="true">‹</span>
-            <span class="traveler" aria-hidden="true"></span>
-          </div>
-        </div>
-      </div>
+    <div
+      class="instrument direction-instrument"
+      data-direction={directionMode}
+      role="img"
+      aria-label={directionDetail.ariaLabel}
+    >
+      <svg class="direction-diagram" viewBox="0 0 280 150" aria-hidden="true">
+        <path class="travel-track" d="M30 42H250"></path>
+        <path class="travel-track" d="M30 98H250"></path>
+
+        <path class="travel-arrow blue-arrow" d="M239 33l11 9-11 9"></path>
+        <path class="travel-arrow red-arrow same-arrow" d="M239 89l11 9-11 9"
+        ></path>
+        <path
+          class="travel-arrow red-arrow opposite-arrow"
+          d="M41 89l-11 9 11 9"
+        ></path>
+
+        <circle class="runner blue-runner" cx="39" cy="42" r="9"></circle>
+        <circle class="runner red-runner" cx="39" cy="98" r="9"></circle>
+
+        <text class="direction-value" x="140" y="139">
+          {directionDetail.label}
+        </text>
+      </svg>
     </div>
   </section>
 </div>
 
 <style>
   .concept-model {
-    --concept-cycle: calc(
+    --phase-cycle: calc(
       var(--duration-dramatic) + var(--duration-dramatic) +
+        var(--duration-dramatic) + var(--duration-dramatic) +
+        var(--duration-dramatic) + var(--duration-dramatic) +
         var(--duration-dramatic) + var(--duration-dramatic)
     );
     --travel-cycle: calc(
@@ -108,31 +173,38 @@
         var(--duration-dramatic) + var(--duration-dramatic) +
         var(--duration-dramatic) + var(--duration-dramatic)
     );
-    --phase-quarter: calc(0ms - var(--duration-dramatic));
-    --phase-half: calc(
+    --scene-delay: calc(0ms - var(--duration-emphasis));
+    --quarter-delay: calc(
       0ms - var(--duration-dramatic) - var(--duration-dramatic)
     );
-    --bounce-rise: 4.6rem;
-    --quarter-rest: 2.3rem;
-    --ball-size: 1.05rem;
-    --track-width: 7.5rem;
-    --track-travel: 6.45rem;
+    --half-delay: calc(
+      0ms - var(--duration-dramatic) - var(--duration-dramatic) -
+        var(--duration-dramatic) - var(--duration-dramatic)
+    );
 
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    gap: clamp(0.65rem, 1.3cqw, 1rem);
     width: min(100%, 72rem);
     height: min(100%, 18rem);
     min-height: min(100%, 15rem);
     margin-inline: auto;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-lg, 0.75rem);
+    background: var(--theme-card-bg);
   }
 
   .concept-panel {
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: clamp(0.65rem, 1.6cqh, 0.95rem);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: clamp(0.5rem, 1.4cqh, 0.8rem);
     min-width: 0;
     min-height: 0;
+    padding: clamp(0.85rem, 1.8cqw, 1.35rem);
+  }
+
+  .direction-panel {
+    border-inline-start: 1px solid var(--theme-stroke);
   }
 
   h3 {
@@ -143,387 +215,246 @@
     text-align: center;
   }
 
-  .examples {
-    display: grid;
-    gap: clamp(0.45rem, 0.9cqw, 0.75rem);
-    min-width: 0;
-    min-height: 0;
+  .selector {
+    width: 100%;
+    margin-inline: auto;
   }
 
-  .timing-examples {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .timing-selector {
+    max-width: 24rem;
   }
 
-  .direction-examples {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .direction-selector {
+    max-width: 16rem;
   }
 
-  .example-bay {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    align-items: stretch;
-    gap: clamp(0.45rem, 1.2cqh, 0.7rem);
-    min-width: 0;
-    min-height: 0;
-    padding: clamp(0.7rem, 1.35cqw, 1rem);
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-lg, 0.75rem);
-    background: var(--theme-card-bg);
-  }
-
-  .example-bay > strong {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 0.875rem);
-    line-height: 1.2;
-    text-align: center;
-  }
-
-  .timing-example {
-    --scene-delay: calc(0ms - var(--duration-fast));
-  }
-
-  .split {
-    --scene-delay: calc(0ms - var(--duration-emphasis));
-  }
-
-  .quarter {
-    --scene-delay: calc(0ms - var(--duration-dramatic));
-  }
-
-  .bounce-stage {
-    position: relative;
+  .instrument {
     display: flex;
-    align-items: stretch;
+    align-items: center;
     justify-content: center;
-    gap: clamp(1rem, 1.8cqw, 1.55rem);
-    min-height: calc(var(--bounce-rise) + var(--ball-size) + 0.5rem);
-  }
-
-  .bounce-stage::after {
-    content: "";
-    position: absolute;
-    right: 18%;
-    bottom: 0;
-    left: 18%;
-    height: 1px;
-    background: var(--theme-stroke-strong);
-  }
-
-  .bounce-lane {
-    position: relative;
-    z-index: 1;
-    width: var(--ball-size);
-    height: calc(var(--bounce-rise) + var(--ball-size) + 0.25rem);
-    min-width: var(--ball-size);
-  }
-
-  .ball,
-  .traveler {
-    display: block;
-    width: var(--ball-size);
-    aspect-ratio: 1;
-    border-radius: 50%;
-  }
-
-  .ball {
-    position: absolute;
-    z-index: 1;
-    top: 0;
-    left: 0;
-    transform: translateY(var(--bounce-rise)) scale(1.14, 0.86);
-    transform-origin: center bottom;
-    animation: timing-bounce var(--concept-cycle) linear infinite both;
-    animation-delay: calc(var(--scene-delay, 0ms) + var(--phase-delay, 0ms));
-  }
-
-  .ball-shadow {
-    position: absolute;
-    right: 0.04rem;
-    bottom: 0.08rem;
-    left: 0.04rem;
-    height: 0.28rem;
-    border-radius: 50%;
-    background: var(--theme-text);
-    opacity: 0.36;
-    animation: timing-shadow var(--concept-cycle) linear infinite both;
-    animation-delay: calc(var(--scene-delay, 0ms) + var(--phase-delay, 0ms));
-  }
-
-  .blue .ball,
-  .blue .traveler {
-    background: var(--prop-blue, #3d44b8);
-  }
-
-  .red .ball,
-  .red .traveler {
-    background: var(--prop-red, #ed1c24);
-  }
-
-  .split .red {
-    --phase-delay: var(--phase-half);
-  }
-
-  .quarter .red {
-    --phase-delay: var(--phase-quarter);
-  }
-
-  .travel-stage {
-    display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: clamp(0.8rem, 2cqh, 1.15rem);
     min-width: 0;
+    min-height: 0;
+    overflow: hidden;
   }
 
-  .travel-lane {
-    position: relative;
-    width: min(100%, var(--track-width));
-    height: var(--ball-size);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--theme-stroke) 70%, transparent);
+  .phase-dial {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: min(100%, 11.5rem);
+    overflow: visible;
   }
 
-  .direction-arrow {
-    position: absolute;
-    top: 50%;
-    right: 0.28rem;
-    translate: 0 -52%;
-    color: var(--theme-text-dim);
-    font-size: 1rem;
+  .phase-ring {
+    fill: none;
+    stroke: var(--theme-stroke-strong);
+    stroke-width: 2;
+  }
+
+  .inner-ring {
+    stroke: var(--theme-stroke);
+  }
+
+  .phase-ticks {
+    fill: none;
+    stroke: var(--theme-text-dim);
+    stroke-linecap: round;
+    stroke-width: 3;
+  }
+
+  .phase-orbit {
+    transform-box: view-box;
+    transform-origin: center;
+    animation: phase-rotation var(--phase-cycle) linear infinite both;
+    animation-delay: var(--scene-delay);
+  }
+
+  .phase-instrument[data-timing="split"] .red-orbit {
+    animation-delay: calc(var(--scene-delay) + var(--half-delay));
+  }
+
+  .phase-instrument[data-timing="quarter"] .red-orbit {
+    animation-delay: calc(var(--scene-delay) + var(--quarter-delay));
+  }
+
+  .phase-dot {
+    stroke: color-mix(in srgb, var(--theme-text) 18%, transparent);
+    stroke-width: 2;
+  }
+
+  .blue-dot,
+  .blue-runner {
+    fill: var(--prop-blue, #3d44b8);
+  }
+
+  .red-dot,
+  .red-runner {
+    fill: var(--prop-red, #ed1c24);
+  }
+
+  .phase-value,
+  .phase-unit,
+  .direction-value {
+    text-anchor: middle;
+  }
+
+  .phase-value {
+    fill: var(--theme-text);
+    font-size: 1.55rem;
     font-weight: 800;
-    line-height: 1;
   }
 
-  .opposite .red .direction-arrow {
-    right: auto;
-    left: 0.28rem;
+  .phase-unit,
+  .direction-value {
+    fill: var(--theme-text-dim);
+    font-size: 0.78rem;
+    font-weight: 650;
   }
 
-  .traveler {
-    position: absolute;
-    top: 0;
-    left: 0;
+  .direction-diagram {
+    display: block;
+    width: min(100%, 18rem);
+    max-height: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .travel-track {
+    fill: none;
+    stroke: color-mix(in srgb, var(--theme-stroke-strong) 72%, transparent);
+    stroke-linecap: round;
+    stroke-width: 17;
+  }
+
+  .travel-arrow {
+    fill: none;
+    stroke: var(--theme-text-dim);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 3;
+  }
+
+  .opposite-arrow {
+    display: none;
+  }
+
+  .direction-instrument[data-direction="opposite"] .same-arrow {
+    display: none;
+  }
+
+  .direction-instrument[data-direction="opposite"] .opposite-arrow {
+    display: inline;
+  }
+
+  .runner {
+    transform-box: view-box;
     animation: direction-travel-forward var(--travel-cycle) linear infinite both;
-    animation-delay: calc(0ms - var(--duration-fast));
+    animation-delay: var(--scene-delay);
   }
 
-  .opposite .traveler {
-    animation-delay: calc(0ms - var(--duration-dramatic));
-  }
-
-  .opposite .red .traveler {
+  .direction-instrument[data-direction="opposite"] .red-runner {
     animation-name: direction-travel-reverse;
   }
 
-  @keyframes timing-bounce {
-    0%,
-    4% {
-      transform: translateY(var(--bounce-rise)) scale(1.14, 0.86);
-      animation-timing-function: var(--ease-out);
-    }
-    12% {
-      transform: translateY(calc(var(--bounce-rise) - 0.45rem))
-        scale(0.94, 1.06);
-      animation-timing-function: var(--ease-out);
-    }
-    46% {
-      transform: translateY(0) scale(1);
-      animation-timing-function: var(--ease-in);
-    }
-    78% {
-      transform: translateY(var(--bounce-rise)) scale(1.16, 0.84);
-      animation-timing-function: var(--ease-out);
-    }
-    84% {
-      transform: translateY(calc(var(--bounce-rise) - 0.35rem))
-        scale(0.96, 1.04);
-      animation-timing-function: var(--ease-in);
-    }
-    92%,
-    100% {
-      transform: translateY(var(--bounce-rise)) scale(1.05, 0.95);
-    }
-  }
-
-  @keyframes timing-shadow {
-    0%,
-    4%,
-    78%,
-    100% {
-      opacity: 0.38;
-      transform: scaleX(1);
-      animation-timing-function: var(--ease-out);
-    }
-    46% {
-      opacity: 0.09;
-      transform: scaleX(0.34);
-      animation-timing-function: var(--ease-in);
-    }
-    84% {
-      opacity: 0.24;
-      transform: scaleX(0.7);
+  @keyframes phase-rotation {
+    to {
+      transform: rotate(360deg);
     }
   }
 
   @keyframes direction-travel-forward {
-    0% {
+    0%,
+    8% {
       opacity: 1;
       transform: translateX(0);
     }
-    45% {
+    82% {
       opacity: 1;
-      transform: translateX(var(--track-travel));
+      transform: translateX(202px);
     }
-    48% {
+    88% {
       opacity: 0;
-      transform: translateX(var(--track-travel));
+      transform: translateX(202px);
     }
-    50% {
+    89% {
       opacity: 0;
       transform: translateX(0);
-    }
-    52% {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    97% {
-      opacity: 1;
-      transform: translateX(var(--track-travel));
     }
     100% {
-      opacity: 0;
-      transform: translateX(var(--track-travel));
+      opacity: 1;
+      transform: translateX(0);
     }
   }
 
   @keyframes direction-travel-reverse {
-    0% {
+    0%,
+    8% {
       opacity: 1;
-      transform: translateX(var(--track-travel));
+      transform: translateX(202px);
     }
-    45% {
+    82% {
       opacity: 1;
       transform: translateX(0);
     }
-    48% {
+    88% {
       opacity: 0;
       transform: translateX(0);
     }
-    50% {
+    89% {
       opacity: 0;
-      transform: translateX(var(--track-travel));
-    }
-    52% {
-      opacity: 1;
-      transform: translateX(var(--track-travel));
-    }
-    97% {
-      opacity: 1;
-      transform: translateX(0);
+      transform: translateX(202px);
     }
     100% {
-      opacity: 0;
-      transform: translateX(0);
+      opacity: 1;
+      transform: translateX(202px);
     }
   }
 
   @media (max-width: 640px) {
     .concept-model {
-      --bounce-rise: 2.35rem;
-      --quarter-rest: 1.15rem;
-      --ball-size: 0.8rem;
-      --track-width: 3.6rem;
-      --track-travel: 2.8rem;
-
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.45rem;
       height: min(100%, 17.5rem);
       min-height: min(100%, 16rem);
     }
 
     .concept-panel {
       gap: 0.45rem;
+      padding: 0.7rem 0.45rem;
     }
 
     h3 {
       font-size: 1.25rem;
     }
 
-    .examples {
-      gap: 0.35rem;
+    .phase-dial {
+      height: min(100%, 9.5rem);
     }
 
-    .timing-examples {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-template-rows: repeat(2, minmax(0, 1fr));
-    }
-
-    .timing-examples .together {
-      grid-column: 1 / -1;
-    }
-
-    .direction-examples {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .example-bay {
-      gap: 0.3rem;
-      padding: 0.45rem 0.35rem;
-    }
-
-    .bounce-stage {
-      gap: 0.8rem;
-      min-height: calc(var(--bounce-rise) + var(--ball-size) + 0.25rem);
-    }
-
-    .bounce-stage::after {
-      right: 12%;
-      left: 12%;
-    }
-
-    .travel-stage {
-      gap: 0.65rem;
+    .phase-value {
+      font-size: 1.35rem;
     }
   }
 
   @media (max-height: 540px) and (min-width: 641px) {
     .concept-model {
-      --bounce-rise: 1.45rem;
-      --quarter-rest: 0.7rem;
-      --ball-size: 0.72rem;
-      --track-width: 5rem;
-      --track-travel: 4.28rem;
-
-      height: 8rem;
-      min-height: 8rem;
-      gap: 0.5rem;
+      height: 9.5rem;
+      min-height: 9.5rem;
     }
 
     .concept-panel {
-      gap: 0.2rem;
+      gap: 0.18rem;
+      padding: 0.35rem 0.6rem;
     }
 
     h3 {
       font-size: 1.05rem;
     }
 
-    .examples {
-      gap: 0.35rem;
+    .phase-dial {
+      height: min(100%, 4.2rem);
     }
 
-    .example-bay {
-      gap: 0.15rem;
-      padding: 0.3rem 0.4rem;
-    }
-
-    .bounce-stage {
-      gap: 0.8rem;
-      min-height: calc(var(--bounce-rise) + var(--ball-size) + 0.12rem);
-    }
-
-    .travel-stage {
-      gap: 0.4rem;
+    .direction-diagram {
+      width: min(100%, 11rem);
     }
   }
 
@@ -540,40 +471,29 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .ball,
-    .ball-shadow,
-    .traveler {
+    .phase-orbit,
+    .runner {
       animation: none;
     }
 
-    .split .red .ball {
-      transform: translateY(0) scale(1);
+    .phase-instrument[data-timing="split"] .red-orbit {
+      transform: rotate(180deg);
     }
 
-    .quarter .red .ball {
-      transform: translateY(var(--quarter-rest));
+    .phase-instrument[data-timing="quarter"] .red-orbit {
+      transform: rotate(90deg);
     }
 
-    .split .red .ball-shadow {
-      opacity: 0.09;
-      transform: scaleX(0.34);
+    .direction-instrument[data-direction="same"] .runner {
+      transform: translateX(72px);
     }
 
-    .quarter .red .ball-shadow {
-      opacity: 0.24;
-      transform: scaleX(0.7);
+    .direction-instrument[data-direction="opposite"] .blue-runner {
+      transform: translateX(72px);
     }
 
-    .same .traveler {
-      transform: translateX(1.1rem);
-    }
-
-    .opposite .blue .traveler {
-      transform: translateX(1.1rem);
-    }
-
-    .opposite .red .traveler {
-      transform: translateX(calc(var(--track-travel) - 1.1rem));
+    .direction-instrument[data-direction="opposite"] .red-runner {
+      transform: translateX(130px);
     }
   }
 </style>

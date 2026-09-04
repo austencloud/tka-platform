@@ -96,11 +96,6 @@ export class ThirdOrderCompositionSampler implements IThirdOrderCompositionSampl
       };
     });
 
-    // Sampling the look-ahead pose advances the carrier sampler internally.
-    // Return it to the visible beat so effects that read it later see the frame
-    // the user is looking at, not the derivative probe.
-    if (carrierSampler) this.sampleTrack(carrierSampler, carrierBeat);
-
     return {
       masterBeat: resolvedBeat,
       totalBeats,
@@ -134,7 +129,6 @@ export class ThirdOrderCompositionSampler implements IThirdOrderCompositionSampl
     sampler: SequenceSampler,
     step: number
   ): { left: PropState; right: PropState } {
-    sampler.orchestrator.calculateState(step);
-    return sampler.orchestrator.getCurrentPropStates();
+    return sampler.orchestrator.samplePropStateAt(step);
   }
 }

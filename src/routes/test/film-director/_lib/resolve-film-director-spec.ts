@@ -31,14 +31,17 @@ import {
 } from "./blocking-language";
 import { convertSceneBeatTimes } from "./director-beat-times";
 import { resolveDirectorCameraTrack } from "./director-camera-track";
-import { isDirectiveExpression, type DirectiveValue } from "./directives";
+import {
+  isDirectiveExpression,
+  type DirectiveValue,
+} from "$lib/features/film-director/domain/directives";
 import {
   createAxisStream,
   resolveFilmSeed,
   seededPick,
   type FilmSeed,
-} from "./directive-random";
-import { resolveCastAxis } from "./resolve-directives";
+} from "$lib/features/film-director/domain/directive-random";
+import { resolveCastAxis } from "$lib/features/film-director/domain/resolve-directives";
 import {
   assertSequenceDirective,
   transformSourceId,

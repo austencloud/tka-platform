@@ -1,35 +1,22 @@
 <!--
   TunnelDetailPreview.svelte — a live, in-page reproduction of a saved tunnel.
 
-  Mounts the real kaleidoscope renderer (TunnelArtView) with a fully per-instance
-  seam: a local TunnelViewController seeded from the saved config, and a local
-  effects-config context built with persist:false so it never touches the user's
-  global effects. TunnelArtView also reads three GLOBAL singletons that can't be
-  passed as props (effort preset, path shapes, and the legacy trail settings) — so
-  we sandbox those: capture the live values on mount, apply the snapshot's, and
-  restore on destroy. Merely previewing a saved tunnel must not mutate the user's
-  live viewer state.
-
-  The controller itself persists its view state to localStorage via an internal
-  $effect, so we also capture/restore that key around this preview's lifetime —
-  otherwise browsing the collection would silently overwrite the tunnel config the
-  real viewer boots with.
+  Mounts the real kaleidoscope renderer (TunnelArtView) with fully per-instance
+  state. The saved sequence reconstruction restores its start pose, and an
+  authored composition stays attached so this preview performs the same cast as
+  the viewer. Merely previewing a saved tunnel must not mutate the user's live
+  viewer state.
 -->
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
   import TunnelArtView from "$lib/shared/sequence-viewer/tunnel/TunnelArtView.svelte";
   import { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte";
-  import {
-    loadTunnelViewState,
-    saveTunnelViewState,
-  } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-state";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { createAnimationSettingsState } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { ViewerPlaybackState } from "$lib/shared/sequence-viewer/domain/viewer-prop-groups";
   import type { CollectedTunnel } from "../domain/tunnel-collection-types";
+  import { collectedTunnelViewerSequence } from "../domain/collected-tunnel-source";
 
   const { tunnel }: { tunnel: CollectedTunnel } = $props();
 
@@ -44,29 +31,37 @@
   const data = $state.snapshot(tunnel) as CollectedTunnel;
   const snap = data.snapshot;
 
-  // Capture the pristine persisted tunnel-view state BEFORE constructing the
-  // controller (its persist $effect writes this key on every config change).
-  const prevTunnelViewState = loadTunnelViewState();
-
   // Per-instance effects context (NEVER the global; persist:false so it can't read
   // from or write to the shared tka_effects_config key).
   const effects = createEffectsConfigState(snap.effects, { persist: false });
   setEffectsConfigContext(effects);
 
-  // Per-instance tunnel controller seeded from the saved config. gridMode is
-  // recovered from the steps so the correct grid renders (same rule the viewer
-  // uses). Steps were captured from a hydrated sequence, so they carry motions.
-  const sequence = createSequenceData({
-    id: data.id,
-    name: data.name,
-    word: data.name,
-    steps: [...data.steps],
-    gridMode: data.steps.find((s) => s.gridMode)?.gridMode,
+  const visibility = new AnimationVisibilityStateManager({ ephemeral: true });
+  visibility.setGridMode(snap.tunnel.gridVisible ? "8point" : "none");
+  visibility.setEffortPreset(snap.effort);
+  visibility.setPathPolicy({
+    pathShape: snap.paths.pathShape,
+    motionAwarePaths: snap.paths.motionAwarePaths,
   });
-  const controller = new TunnelViewController({ getSequence: () => sequence });
-  controller.applyConfig(snap.tunnel.config);
-  controller.gridVisible = snap.tunnel.gridVisible;
-  controller.colors = snap.tunnel.colors;
+  visibility.setVisibility("leftPathLines", snap.paths.leftPathLines);
+  visibility.setVisibility("rightPathLines", snap.paths.rightPathLines);
+
+  const previewAnimationSettings = createAnimationSettingsState({
+    ephemeral: true,
+  });
+  previewAnimationSettings.updateSettings({ trail: snap.trailRender });
+
+  // Use the same saved-source owner as Open in Viewer. Rebuilding from only
+  // `steps` dropped the start pose at the loop boundary, and omitting the
+  // composition made authored performers revert to generated lead copies.
+  const sequence = collectedTunnelViewerSequence(data);
+  const controller = new TunnelViewController({
+    getSequence: () => sequence,
+    getComposition: () => data.composition ?? null,
+    initialViewState: snap.tunnel,
+    persistViewState: false,
+    visibilityManager: visibility,
+  });
   controller.active = true;
 
   // Minimal stub playback: TunnelArtView only reads
@@ -75,39 +70,6 @@
   const playback = {
     animationState: { sequenceData: undefined },
   } as unknown as ViewerPlaybackState;
-
-  // Sandbox the three globals TunnelArtView / the controller read (effort, paths,
-  // trail): snapshot the live values, apply the saved ones on mount, restore on
-  // destroy.
-  const vm = getAnimationVisibilityManager();
-  const prev = {
-    effort: vm.getEffortPreset(),
-    pathShape: vm.getPathShape(),
-    motionAware: vm.getMotionAwarePaths(),
-    leftLines: vm.getVisibility("leftPathLines"),
-    rightLines: vm.getVisibility("rightPathLines"),
-    trail: animationSettings.trail,
-  };
-
-  onMount(() => {
-    vm.setEffortPreset(snap.effort);
-    vm.setPathShape(snap.paths.pathShape);
-    vm.setMotionAwarePaths(snap.paths.motionAwarePaths);
-    vm.setVisibility("leftPathLines", snap.paths.leftPathLines);
-    vm.setVisibility("rightPathLines", snap.paths.rightPathLines);
-    animationSettings.updateSettings({ trail: snap.trailRender });
-  });
-
-  onDestroy(() => {
-    vm.setEffortPreset(prev.effort);
-    vm.setPathShape(prev.pathShape);
-    vm.setMotionAwarePaths(prev.motionAware);
-    vm.setVisibility("leftPathLines", prev.leftLines);
-    vm.setVisibility("rightPathLines", prev.rightLines);
-    animationSettings.updateSettings({ trail: prev.trail });
-    // Undo the controller's persisted view-state writes.
-    saveTunnelViewState(prevTunnelViewState);
-  });
 </script>
 
 <div class="preview-stage">
@@ -119,6 +81,10 @@
       bpm={snap.playback.bpm}
       leftPropType={snap.props.leftPropType}
       rightPropType={snap.props.rightPropType}
+      leftBuugengFlipped={snap.props.leftBuugengFlipped}
+      rightBuugengFlipped={snap.props.rightBuugengFlipped}
+      animationSettingsState={previewAnimationSettings}
+      visibilityManager={visibility}
       bind:playing
       stageFit="contain"
     />

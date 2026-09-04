@@ -495,6 +495,11 @@
     // only the inside would park a black square at the destination and have the
     // pictograph slide over to cover it.
     cancelSelectors: [".history-layout-shell", ".step-cell"],
+    // A slot-preserving performer swap can change both the grid geometry and
+    // every pictograph at once. In that case the outer tile owns the reflow;
+    // prop, arrow and selection transitions resume after it lands instead of
+    // stacking a second gesture inside the moving tile.
+    suspendDescendantTransitions: animateStepMembership,
     getDuration: () => motionDuration(LAYOUT_MOTION_DURATION_MS),
     easing: LAYOUT_MOTION_EASING,
   });
@@ -1493,6 +1498,25 @@
 
   .grid-surface :global(.pictograph-renderer) {
     border: none !important;
+  }
+
+  /* Layout motion is the sole gesture while a slot-based preview recomposes.
+     Its target pictographs paint immediately inside the moving tiles; their
+     normal CSS travel remains available for same-geometry performer swaps. */
+  :global(.grid-surface[data-layout-motion-suspend-descendants] .prop-svg),
+  :global(.grid-surface[data-layout-motion-suspend-descendants] .arrow-svg),
+  :global(.grid-surface[data-layout-motion-suspend-descendants] .step-cell),
+  :global(
+    .grid-surface[data-layout-motion-suspend-descendants] .selection-skin
+  ) {
+    transition: none !important;
+  }
+
+  :global(
+    .grid-surface[data-layout-motion-suspend-descendants]
+      .step-cell.selected::before
+  ) {
+    animation: none !important;
   }
 
   .mandala-layout-item {

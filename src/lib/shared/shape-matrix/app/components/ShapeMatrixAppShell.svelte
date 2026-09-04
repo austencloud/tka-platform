@@ -83,7 +83,7 @@
   let detailPaneElement: HTMLDivElement;
   let theoryPaneElement: HTMLDivElement;
   let theoryDetailElement: HTMLDivElement;
-  let theoryEditingAxis = $state<"left" | "right" | null>(null);
+  let theoryEditingAxis = $state<"left" | "right" | "both" | null>(null);
 
   $effect(() => {
     if (!theory) theoryEditingAxis = null;
@@ -292,10 +292,10 @@
             onclick={showMatrix}
           >
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
-            <span>{theory ? "Theory" : "Matrix"}</span>
+            <span>{theory ? "Playground" : "Matrix"}</span>
           </button>
         {:else}
-          <strong>{theory ? "Theory Matrix" : "Shape Matrix"}</strong>
+          <strong>{theory ? "Ratio Playground" : "Level Matrix"}</strong>
         {/if}
         <!-- The compact value editor keeps the grid as the hero. Matrix opens
              its level and turns; Theory names ratio editing directly and
@@ -308,16 +308,12 @@
     {:else if variant === "standalone"}
       <div class="identity">
         <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
-        <span class="identity-note">
-          <span class="identity-note-sizer" aria-hidden="true">
-            Enter hand cycles : prop rotations from 0–15
+        {#if !theory}
+          <span class="identity-note">
+            Lorq’s 144 Shape Matrix: VTG ratios
+            {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}
           </span>
-          <span class="identity-note-live">
-            {theory
-              ? "Enter hand cycles : prop rotations from 0–15"
-              : `Lorq’s 144 Shape Matrix: VTG ratios ${ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}`}
-          </span>
-        </span>
+        {/if}
       </div>
     {/if}
 
@@ -579,17 +575,6 @@
     color: var(--theme-text-dim, rgb(255 255 255 / 0.68));
     font-size: var(--font-size-min, 0.875rem);
     white-space: nowrap;
-  }
-
-  .identity-note > span {
-    grid-area: 1 / 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .identity-note-sizer {
-    visibility: hidden;
   }
 
   .compact-context {
