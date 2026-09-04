@@ -25,7 +25,7 @@ import {
   axisSeedValue,
   resolveFilmSeed,
   type FilmSeed,
-} from "./directive-random";
+} from "$lib/features/film-director/domain/directive-random";
 import type {
   DirectorCameraInput,
   DirectorCameraPreset,
