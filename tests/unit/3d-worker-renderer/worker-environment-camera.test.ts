@@ -9,6 +9,8 @@ describe("worker environment camera", () => {
     "winter",
     "celestial",
     "cosmic",
+    "forest",
+    "blossom",
   ] as const)("provides a finite complete %s snapshot", (environment) => {
     const snapshot = getWorkerEnvironmentCamera(environment);
     expect(

@@ -218,6 +218,14 @@
         class:active={environment === "cosmic"}
         onclick={() => select("cosmic")}>Cosmic</button
       >
+      <button
+        class:active={environment === "forest"}
+        onclick={() => select("forest")}>Forest</button
+      >
+      <button
+        class:active={environment === "blossom"}
+        onclick={() => select("blossom")}>Blossom</button
+      >
     </div>
 
     <div class="status-card" aria-live="polite">

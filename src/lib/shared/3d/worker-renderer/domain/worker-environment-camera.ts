@@ -37,6 +37,16 @@ const CAMERA_BY_ENVIRONMENT: Readonly<
     target: [0, 1.1, -1],
     fov: 48,
   },
+  forest: {
+    position: [0, 4.6, 19],
+    target: [0, 1.3, -1.5],
+    fov: 46,
+  },
+  blossom: {
+    position: [0, 4.2, 17],
+    target: [0, 1.1, -1],
+    fov: 48,
+  },
 };
 
 export function getWorkerEnvironmentCamera(

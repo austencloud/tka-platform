@@ -12,7 +12,9 @@ export type WorkerEnvironmentKey =
   | "void"
   | "winter"
   | "celestial"
-  | "cosmic";
+  | "cosmic"
+  | "forest"
+  | "blossom";
 
 export interface WorkerViewport {
   width: number;
