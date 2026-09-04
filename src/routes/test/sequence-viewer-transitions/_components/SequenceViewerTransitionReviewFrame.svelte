@@ -714,8 +714,8 @@
       tunnelTrailSuppressedLayerCount:
         Number(persistentAnimator?.dataset.tunnelTrailSuppressedLayerCount) ||
         0,
-      tunnelLayerSeparation:
-        Number(persistentAnimator?.dataset.tunnelLayerSeparation) || 0,
+      tunnelFormationPoseDrift:
+        Number(persistentAnimator?.dataset.tunnelFormationPoseDrift) || 0,
       tunnelGridOpacity:
         Number(persistentAnimator?.dataset.tunnelGridOpacity) || 0,
       tunnelPaintFrame:
