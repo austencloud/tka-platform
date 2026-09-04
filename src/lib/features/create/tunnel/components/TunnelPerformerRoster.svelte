@@ -34,7 +34,6 @@
     colorMode,
     customPropColors,
     renderedInstanceCount,
-    focusMode = false,
     short = false,
     onCastChange,
     onChoose,
@@ -51,7 +50,6 @@
     colorMode: TunnelPropColorMode;
     customPropColors: TunnelPropColorPair;
     renderedInstanceCount: number;
-    focusMode?: boolean;
     short?: boolean;
     onCastChange: (count: number) => void;
     onChoose: (performerId: string) => void;
@@ -68,16 +66,17 @@
   const workflowOptions = [
     {
       value: "custom" as TunnelWorkflowMode,
-      label: "Custom cast",
-      shortLabel: "Custom",
-      ariaLabel: "Custom cast. Every performer may use different choreography.",
+      label: "Separate",
+      shortLabel: "Separate",
+      ariaLabel:
+        "Separate sequences. Every performer has their own choreography.",
     },
     {
       value: "seeded" as TunnelWorkflowMode,
-      label: "Seeded canon",
-      shortLabel: "Seeded",
+      label: "Linked",
+      shortLabel: "Linked",
       ariaLabel:
-        "Seeded canon. Performer 1 creates linked choreography for the remaining cast.",
+        "Linked sequences. Performer 1 creates choreography for the remaining cast.",
     },
   ];
   const canGrowCast = $derived(
@@ -85,8 +84,8 @@
   );
   const workflowDescription = $derived(
     creator.workflow === "seeded"
-      ? "Performer 1 creates the linked cast."
-      : "Each performer can use a different sequence."
+      ? "Performer 1 drives the linked cast."
+      : "Each performer has their own sequence."
   );
 
   function sourceLabel(performerId: string): string | null {
@@ -162,24 +161,23 @@
 </script>
 
 <section
-  class="performer-roster"
-  class:few-cards={creator.performerSlots.length <= 2}
-  class:focus-mode={focusMode}
+  class="performer-roster focus-mode"
   class:short
   aria-labelledby="performer-roster-title"
 >
   <header class="roster-heading">
     <div class="roster-identity">
       <span>Cast</span>
-      <h3 id="performer-roster-title">Performer choreography</h3>
+      <h3 id="performer-roster-title">Choreography</h3>
       <p class="roster-summary">
-        {creator.authoredPerformerCount} of {creator.performerSlots.length} ready
-        · {workflowDescription}
+        {creator.performerSlots.length}
+        {creator.performerSlots.length === 1 ? "performer" : "performers"} · {creator.authoredPerformerCount}
+        ready · {workflowDescription}
       </p>
     </div>
     <div class="roster-heading-actions">
       <div class="workflow-control">
-        <span id="tunnel-cast-pattern-label">Cast pattern</span>
+        <span id="tunnel-cast-pattern-label">Sequences</span>
         <SegmentedControl
           options={workflowOptions}
           value={creator.workflow}
@@ -190,39 +188,33 @@
           ariaLabelledby="tunnel-cast-pattern-label"
         />
       </div>
-      {#if focusMode}
-        <div class="roster-toolbar">
-          <div
-            class="performer-switcher"
-            role="tablist"
-            aria-label="Performers"
-          >
-            {#each creator.performerSlots as slot}
-              <button
-                type="button"
-                role="tab"
-                aria-selected={creator.selectedPerformerId === slot.id}
-                onclick={() => select(slot.id)}
-              >
-                {slot.label.replace("Performer ", "P")}
-              </button>
-            {/each}
-          </div>
-          {#if canGrowCast}
-            <PanelButton
-              variant="secondary"
-              onclick={add}
-              ariaLabel="Add another performer"
+      <div class="roster-toolbar">
+        <div class="performer-switcher" role="tablist" aria-label="Performers">
+          {#each creator.performerSlots as slot}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={creator.selectedPerformerId === slot.id}
+              onclick={() => select(slot.id)}
             >
-              <i class="fas fa-user-plus" aria-hidden="true"></i>
-              <span class="compact-add-count">
-                {creator.performerSlots
-                  .length}/{MAX_INTERACTIVE_TUNNEL_PERFORMERS}
-              </span>
-            </PanelButton>
-          {/if}
+              {slot.label.replace("Performer ", "P")}
+            </button>
+          {/each}
         </div>
-      {/if}
+        {#if canGrowCast}
+          <PanelButton
+            variant="secondary"
+            onclick={add}
+            ariaLabel="Add another performer"
+          >
+            <i class="fas fa-user-plus" aria-hidden="true"></i>
+            <span class="compact-add-count">
+              {creator.performerSlots
+                .length}/{MAX_INTERACTIVE_TUNNEL_PERFORMERS}
+            </span>
+          </PanelButton>
+        {/if}
+      </div>
     </div>
   </header>
 
@@ -244,10 +236,7 @@
         sourcePerformerLabel={sourceLabel(slot.id)}
         selected={creator.selectedPerformerId === slot.id}
         {short}
-        expanded={focusMode
-          ? creator.selectedPerformerId === slot.id
-          : creator.performerSlots.length <= 2 ||
-            creator.selectedPerformerId === slot.id}
+        expanded={creator.selectedPerformerId === slot.id}
         sourceOrigin={slot.origin}
         previousCount={slot.previousCount}
         {leftPropType}
@@ -276,25 +265,6 @@
       />
     {/each}
   </div>
-
-  {#if canGrowCast && !focusMode}
-    <footer class="roster-footer">
-      <PanelButton
-        variant="secondary"
-        onclick={add}
-        ariaLabel="Add another performer"
-      >
-        <i class="fas fa-user-plus" aria-hidden="true"></i>
-        Add performer
-        <span
-          >{creator.performerSlots.length}{creator.performerSlots.length >
-          MAX_INTERACTIVE_TUNNEL_PERFORMERS
-            ? " preserved"
-            : `/${MAX_INTERACTIVE_TUNNEL_PERFORMERS}`}</span
-        >
-      </PanelButton>
-    </footer>
-  {/if}
 </section>
 
 <style>
@@ -310,8 +280,7 @@
     background: var(--theme-panel-bg);
   }
 
-  .roster-heading,
-  .roster-footer {
+  .roster-heading {
     align-items: center;
     justify-content: space-between;
     gap: var(--settings-spacing-sm, 8px);
@@ -321,12 +290,8 @@
 
   .roster-heading {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     border-bottom: 1px solid var(--theme-stroke);
-  }
-
-  .roster-footer {
-    display: flex;
   }
 
   .roster-identity {
@@ -346,7 +311,9 @@
   .roster-heading-actions {
     display: flex;
     align-items: flex-end;
+    justify-content: space-between;
     gap: var(--settings-spacing-sm, 8px);
+    width: 100%;
     min-width: 0;
   }
 
@@ -366,6 +333,12 @@
     align-items: center;
     gap: 4px;
     min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .performer-switcher::-webkit-scrollbar {
+    display: none;
   }
 
   .roster-toolbar {
@@ -443,11 +416,6 @@
     overscroll-behavior: contain;
   }
 
-  .performer-roster.few-cards .roster-scroll :global(.source-card.expanded) {
-    flex: 1 1 0;
-    min-height: 17rem;
-  }
-
   .performer-roster.focus-mode .roster-scroll {
     display: grid;
     grid-template: minmax(0, 1fr) / minmax(0, 1fr);
@@ -470,25 +438,6 @@
     visibility: visible;
     pointer-events: auto;
     transition-delay: 0s;
-  }
-
-  .performer-roster.focus-mode.few-cards
-    .roster-scroll
-    :global(.source-card.expanded) {
-    min-height: 0;
-  }
-
-  .roster-footer {
-    border-top: 1px solid var(--theme-stroke);
-  }
-
-  .roster-footer :global(.panel-btn) {
-    width: 100%;
-  }
-
-  .roster-footer :global(.panel-btn span:last-child) {
-    margin-left: auto;
-    color: var(--theme-text-dim);
   }
 
   @container tunnel (max-width: 719px) {
@@ -519,8 +468,7 @@
       min-height: 0;
     }
 
-    .roster-heading,
-    .roster-footer {
+    .roster-heading {
       padding-block: 5px;
     }
 
@@ -534,8 +482,7 @@
       flex: 0 0 min(22rem, 78cqw);
     }
 
-    .performer-roster.short .roster-identity,
-    .performer-roster.short .roster-footer {
+    .performer-roster.short .roster-identity {
       display: none;
     }
 
