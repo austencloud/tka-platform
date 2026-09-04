@@ -50,7 +50,9 @@ describe("playable archive: chronological overview", () => {
     expect(timeMapSource).toContain("ARCHIVE_LANES");
     expect(timeMapSource).toContain("ARCHIVE_YEAR_TICKS");
     expect(timeMapSource).toContain("historicalYearPosition");
-    expect(timeMapSource).toContain("marks the first documented year");
+    expect(timeMapSource).toContain(
+      "Markers show when each record first appeared."
+    );
   });
 
   it("expands the 2009–2010 group inside its owning lane", () => {
@@ -69,9 +71,12 @@ describe("playable archive: chronological overview", () => {
     expect(timeMapSource).toContain("aria-controls");
   });
 
-  it("presents documented traces, not a definitive history", () => {
-    expect(archiveSource).toContain("not a definitive history.");
-    expect(archiveSource).toContain("better evidence changes the record");
+  it("introduces the sourced record without repeating a methodology disclaimer", () => {
+    expect(archiveSource).toContain(
+      "sourced records of how people documented flow arts"
+    );
+    expect(archiveSource).not.toContain("not a definitive history");
+    expect(archiveSource).not.toContain("better evidence changes the record");
   });
 
   it("draws activity as a dotted observation connector, never a solid lifespan bar", () => {
@@ -131,9 +136,10 @@ describe("playable archive: claim-level evidence", () => {
     expect(detailSource).not.toContain("sourceType");
   });
 
-  it("accepts corrections and counter-evidence, not just new records", () => {
+  it("accepts sourced corrections, not just new records", () => {
     expect(submissionSource).toContain("Correct a record");
-    expect(submissionSource).toContain("Counter-evidence");
+    expect(submissionSource).toContain("source that contradicts");
+    expect(submissionSource).toContain("Confirmed corrections update the page");
   });
 });
 
@@ -141,8 +147,8 @@ describe("playable archive: compact screens", () => {
   it("recomposes into a chronological index instead of hiding the overview", () => {
     expect(archiveSource).toContain("ArchiveChronologicalIndex");
     expect(mobileIndexSource).toContain("ARCHIVE_ENTRIES");
-    expect(mobileIndexSource).toContain("Chronological index");
-    expect(mobileIndexSource).toContain("artifact, claims, and sources");
+    expect(mobileIndexSource).toContain("All {ARCHIVE_ENTRIES.length} records");
+    expect(mobileIndexSource).toContain("artifact and sources");
   });
 
   it("opens the selected record in the shared drawer whenever the persistent panel will not fit", () => {

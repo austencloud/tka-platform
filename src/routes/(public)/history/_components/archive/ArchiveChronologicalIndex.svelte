@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { pressSpring } from "$lib/actions/press-spring";
 	import {
+		ARCHIVE_END_YEAR,
 		ARCHIVE_ENTRIES,
+		ARCHIVE_START_YEAR,
 		archiveClusterForEntry,
 		archiveLane,
 		type ArchiveEntry,
@@ -20,13 +22,10 @@
 <section class="chronological-index" aria-labelledby="chronological-index-title">
 	<header>
 		<div>
-			<p>All {ARCHIVE_ENTRIES.length} documented traces</p>
-			<h2 id="chronological-index-title">Chronological index</h2>
+			<p>{ARCHIVE_START_YEAR}–{ARCHIVE_END_YEAR}</p>
+			<h2 id="chronological-index-title">All {ARCHIVE_ENTRIES.length} records</h2>
 		</div>
-		<span
-			>Documented traces, not a definitive history. Select a record to open its
-			artifact, claims, and sources.</span
-		>
+		<span>Select a record to see its artifact and sources.</span>
 	</header>
 
 	<ol>
