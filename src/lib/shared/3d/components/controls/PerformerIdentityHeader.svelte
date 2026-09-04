@@ -11,6 +11,8 @@
   interface Props {
     performer: CharacterInstanceState | null;
     performerCount: number;
+    selectedCount: number;
+    isAllMode: boolean;
     performerColor: string;
     sequenceWord: string | null;
     sequenceSteps: number | null;
@@ -22,6 +24,8 @@
   let {
     performer,
     performerCount,
+    selectedCount,
+    isAllMode,
     performerColor,
     sequenceWord,
     sequenceSteps,
@@ -30,7 +34,7 @@
     onSettingChange,
   }: Props = $props();
 
-  const isAllMode = $derived(performer === null);
+  const isMultiMode = $derived(selectedCount > 1 && !isAllMode);
   const characterDefinition = $derived(
     CHARACTER_DEFINITIONS.find(
       (character) => character.id === performer?.characterId
@@ -106,21 +110,39 @@
 </script>
 
 <div class="header" style:--performer-color={performerColor}>
-  {#if isAllMode}
+  {#if isAllMode || isMultiMode}
     <div class="identity">
       <div class="character-circle all-mode" aria-hidden="true">
         <i class="fas fa-users"></i>
       </div>
       <div class="identity-meta">
-        <span class="performer-name">All Performers</span>
+        <span class="performer-name">
+          {isAllMode ? "All performers" : `${selectedCount} performers`}
+        </span>
         <div class="sub-row">
           <span class="count-badge" style:background-color={performerColor}
             >{performerCount}</span
           >
-          <span class="all-hint">Changes apply to everyone</span>
+          <span class="all-hint">
+            {isAllMode
+              ? `Changes apply to all ${performerCount}`
+              : "Changes apply to the selected group"}
+          </span>
         </div>
       </div>
     </div>
+    {#if canRemove}
+      <button
+        class="remove-button"
+        type="button"
+        onclick={onRemove}
+        aria-label={`Remove ${selectedCount} performers`}
+        title={`Remove ${selectedCount} performers`}
+      >
+        <i class="fas fa-trash-alt" aria-hidden="true"></i>
+        <span>Remove {selectedCount}</span>
+      </button>
+    {/if}
   {:else if performer}
     <div class="identity">
       <div class="character-circle" aria-hidden="true">

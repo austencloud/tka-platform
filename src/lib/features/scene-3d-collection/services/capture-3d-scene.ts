@@ -15,7 +15,8 @@ function readSceneFeatures(): Record<string, boolean> {
     const raw = localStorage.getItem(SCENE_FEATURES_STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw) as unknown;
-    if (parsed && typeof parsed === "object") return parsed as Record<string, boolean>;
+    if (parsed && typeof parsed === "object")
+      return parsed as Record<string, boolean>;
     return {};
   } catch {
     return {};
@@ -36,7 +37,7 @@ export interface CaptureScene3DOptions {
 
 export function captureScene3DSnapshot(
   viewer3DState: Viewer3DState,
-  options: CaptureScene3DOptions = {},
+  options: CaptureScene3DOptions = {}
 ): Scene3DSnapshot {
   const cfg = viewer3DState.serialize();
   const d = viewer3DState.defaultSettings;
@@ -60,6 +61,7 @@ export function captureScene3DSnapshot(
     camera: cfg.camera,
     performers,
     selectedPerformerIndex: cfg.selectedPerformerIndex,
+    selectedPerformerIndices: cfg.selectedPerformerIndices,
     activeFormation: String(cfg.activeFormation),
     propSizeLinked: viewer3DState.propSizeLinked,
     defaultSettings: {
@@ -78,8 +80,12 @@ export function captureScene3DSnapshot(
     effectToggles: cfg.effectToggles ?? {},
     sceneFeatures: readSceneFeatures(),
     props: {
-      leftPropType: settings.leftPropType ? String(settings.leftPropType) : undefined,
-      rightPropType: settings.rightPropType ? String(settings.rightPropType) : undefined,
+      leftPropType: settings.leftPropType
+        ? String(settings.leftPropType)
+        : undefined,
+      rightPropType: settings.rightPropType
+        ? String(settings.rightPropType)
+        : undefined,
     },
     ...(options.bpm !== undefined ? { bpm: options.bpm } : {}),
     ...(options.groups ? { groups: { ...options.groups } } : {}),
