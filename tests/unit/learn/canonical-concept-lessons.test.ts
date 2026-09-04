@@ -114,7 +114,7 @@ describe("canonical concept lesson composition", () => {
     expect(type1).not.toContain("Type1ProspinPage");
   });
 
-  it("walks the guide's six words step by step before the deck capstone", () => {
+  it("walks the guide's six words step by step before a six-word recap", () => {
     const words = readSource(
       "src/lib/features/learn/components/interactive/words/WordsConceptExperience.svelte"
     );
@@ -126,7 +126,7 @@ describe("canonical concept lesson composition", () => {
     // in the guide's Alpha/Beta Words order.
     expect(words).toContain("ExperienceProgressIndicator");
     expect(words).toContain("LEARNING_LETTERS_TOTAL_STEPS");
-    expect(words).toContain("capstoneStepIndex");
+    expect(words).toContain("recapStepIndex");
     expect(progress).toContain(
       '"AAAA",\n  "BBBB",\n  "CCCC",\n  "GGGG",\n  "HHHH",\n  "IIII",'
     );
@@ -139,36 +139,49 @@ describe("canonical concept lesson composition", () => {
     expect(words).toContain(
       "you’ll need to use body turns and/or negative space"
     );
-    expect(words).toContain(
-      "Practice each word once in both directions, then again starting\n              with thumbs out."
+    expect(words.replace(/\s+/g, " ")).toContain(
+      "Practice each word once in both directions, then again starting with thumbs out."
     );
   });
 
-  it("loads the founding Learning Letters deck and keeps every card inspectable", () => {
+  it("keeps video, animation, card, and notes together without revealing the full deck", () => {
     const stage = readSource(
-      "src/lib/features/learn/components/interactive/words/WordSequencePair.svelte"
+      "src/lib/features/learn/components/interactive/words/LearningWordStage.svelte"
     );
     const words = readSource(
       "src/lib/features/learn/components/interactive/words/WordsConceptExperience.svelte"
     );
-
-    expect(words).toContain("loadFoundingCollectionSequences");
-    expect(words).toContain("ChoreoCardThumbnail");
-    expect(words).toContain("SegmentedControl");
-    expect(words).toContain("TKAWordGlyph");
-    expect(words).toContain("word-choices");
-    expect(words).toContain("selected-workspace");
-    expect(words).toContain("visitedSequenceIds");
-    expect(stage).toContain("InlineAnimationPlayer");
-    expect(stage).toContain("ChoreoCard");
-    expect(stage).toContain(
-      "grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)"
+    const content = readSource(
+      "src/lib/features/learn/components/interactive/words/learning-letter-teaching-content.ts"
+    );
+    const detail = readSource(
+      "src/lib/features/learn/components/ConceptDetailView.svelte"
     );
 
-    // Composition guards: track count follows the active family (no phantom
-    // 4th column), and big-screen tiers use the 1680/2600 seams — a 2200
-    // seam is dead on 4K@200% (4k-native-layout.md).
-    expect(words).toContain("--family-cols");
+    expect(words).toContain("loadFoundingCollectionSequences");
+    expect(words).toContain("TKAWordGlyph");
+    expect(words).toContain("LearningWordStage");
+    expect(words).toContain("recap-families");
+    expect(words).not.toContain("ChoreoCardThumbnail");
+    expect(words).not.toContain("SegmentedControl");
+    expect(words).not.toContain("word-choices");
+    expect(words).not.toContain("selected-workspace");
+    expect(words).not.toContain("visitedSequenceIds");
+    expect(stage).toContain("InlineAnimationPlayer");
+    expect(stage).toContain("ChoreoCard");
+    expect(stage).toContain("Performance video");
+    expect(stage).toContain("Guide notes");
+    expect(stage).toContain("showWordHeader={false}");
+    expect(stage).toContain("showWord={false}");
+    expect(stage).toContain("hideTkaGlyph");
+    expect(stage).toContain("grid-template-columns: repeat(3");
+    expect(content).toContain("LEARNING_LETTERS_DECK_WORDS");
+    expect(content).toContain("video: null");
+    expect(content).toContain("explanation: null");
+    expect(detail).toContain("background: transparent");
+
+    // Big-screen tiers use the 1680/2600 seams — a 2200 seam is dead on
+    // 4K@200% (4k-native-layout.md).
     expect(words).not.toContain("min-width: 2200px");
     expect(stage).not.toContain("min-width: 2200px");
 
