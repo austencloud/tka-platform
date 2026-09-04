@@ -1,6 +1,6 @@
 # Ember Broken Rift production contract
 
-**Status:** Mid-Flank Fire Pilgrimage Gate 1.1 R4 ready for review and Gate 2 pending; all R3 and prior Gate 2+ production is historical
+**Status:** Mid-Flank Fire Pilgrimage Gate 1.1 R4 approved; Gate 2 R4 ready for review; all R3 and prior Gate 2+ production is historical
 
 **Scene ID:** `ember-broken-rift`
 
@@ -18,19 +18,22 @@
 `uXmi4z9lL7zCiNq5ULCp`, `ahPuPwh34G3FeqvUEHsB`,
 `gqImqDqgfctdYi1kr6pH`, `ZgRNLK66C9Hz2wMPbOXc`,
 `xSjtvI2XVvvMdn8pHqwP`, `WS9FU4nn2fCSbOn68IeB`,
-`7uoHBfOCOqMmFeKBRh7l`, `lIPwVa2kGFcoQsgICkWI`, and
-`BvN1DiylOnfdbrofcwaM`.
+`7uoHBfOCOqMmFeKBRh7l`, `lIPwVa2kGFcoQsgICkWI`,
+`BvN1DiylOnfdbrofcwaM`, `xFcagbaZTQAq615IbZgT`, and
+`lXhTllDFV2Ne1E7foCkS`.
 
 ## R4 supersession notice
 
-Mid-Flank Fire Pilgrimage R4 is the only active spatial contract. Its Gate 1.1
-plan is `ready-for-review`; Gate 2 remains pending behind explicit R4 artifact
-approval. Gate 3 has not started. The R4 sources are
+Mid-Flank Fire Pilgrimage R4 is the only active spatial contract. Austen
+approved its Gate 1.1 plan in `xFcagbaZTQAq615IbZgT`; Gate 2 R4 is now
+`ready-for-review` with approval unset. Gate 3 has not started. The R4 sources are
 `scripts/build-ember-geology-study.py`,
 `scripts/prepare-ember-lava-simulator-benchmark.py`,
-and `scripts/build-ember-geology-amendment.py`. Current evidence lives in
-`evidence/gate-1-1-geology-amendment-r4/`. The R3 Blender source, GLB, and
-Gate 2 evidence are historical only.
+`scripts/build-ember-geology-amendment.py`, and
+`scripts/build-ember-geology-graybox.py`. Current evidence lives in
+`evidence/gate-1-1-geology-amendment-r4/` and
+`evidence/gate-2-geology-graybox-r4/`. The R3 Blender source, GLB, and Gate 2
+evidence are historical only.
 
 Every later-gate section below is retained as historical production evidence,
 not as an active direction, approval, or implementation plan. The shipping
@@ -72,8 +75,8 @@ The active boundary preserves the shared Ember scene owner, performer identity,
 atmospheric systems, and unspent Meshy credits. It replaces the macro terrain,
 inboard basin, same-level source, lava footprint, and composition with a
 true-scale upper edifice, mid-flank ledge, lower escarpment, and explicit
-off-world continuation. Gate 1.1 R4 is `ready-for-review`; Gate 2 and all later
-gates are pending.
+off-world continuation. Gate 1.1 R4 is approved; Gate 2 R4 is ready for review;
+all later gates are pending.
 
 ## Authority ledger
 
@@ -85,8 +88,8 @@ gates are pending.
 | Performer roster           | Viewer3D runtime                 | `src/routes/test/viewer-3d/Viewer3DWorkbench.svelte`      | No performer identity is changed                                              |
 | TKA motion                 | Not applicable                   | `domainProofRequired: false` in `scene-gates.json`        | No letter, position, motion, or sequence fact is asserted                     |
 | Selected sequence variants | Not applicable                   | `domainProofRequired: false` in `scene-gates.json`        | No sequence is selected                                                       |
-| Spatial geometry           | Ember R4 geology builders        | `scripts/build-ember-geology-study.py` and `scripts/build-ember-geology-amendment.py` | Gate 1.1 R4 awaits explicit review; Gate 2 has not begun |
-| Blender output             | Historical Ember Gate 2 R3 builder | `scripts/build-ember-geology-graybox.py`                | R3 review artifact only; no R4 Blender or shipping GLB changed                 |
+| Spatial geometry           | Ember R4 geology builders        | `scripts/build-ember-geology-study.py`, `scripts/build-ember-geology-amendment.py`, and `scripts/build-ember-geology-graybox.py` | Gate 1.1 R4 approved; Gate 2 R4 review pending |
+| Blender output             | Ember Gate 2 R4 builder          | `scripts/build-ember-geology-graybox.py`                | R4 review Blend/GLB only; no shipping GLB changed                              |
 | Runtime behavior           | Existing Ember scene owner       | `src/lib/shared/3d/environments/scenes/EmberScene.svelte` | R4 does not change runtime behavior                                            |
 
 ## Claim ledger
@@ -94,7 +97,7 @@ gates are pending.
 | ID    | Class     | Statement                                                                                                                                   | Evidence or proposal source                        | Status   |
 | ----- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | -------- |
 | C-001 | literal   | Viewer3D gives Ember a 25 m maximum orbit distance.                                                                                         | `src/lib/shared/3d/components/Viewer3DCamera.svelte` | verified |
-| C-002 | invention | R4 places the performer on a long contour ledge between a 100+ m upper edifice and 60+ m lower fall, with one high-source Flowy drainage continuing through the south scene boundary. | Gate 1.1 R4 evidence | Gate 1.1 review pending |
+| C-002 | invention | R4 places the performer on a long contour ledge between a 100+ m upper edifice and 60+ m lower fall, with one high-source Flowy drainage continuing through the south scene boundary. | Gate 1.1 R4 evidence | Gate 1.1 approved; Gate 2 review pending |
 | C-003 | invention | Blue-black basalt and rough obsidian dominate; orange is confined to fissures and the banked, crusted river, with restrained mineral ochre. | `look-development.md`, Blackglass Mineral Rift | reserved for future Gate 3/4 |
 | C-004 | literal   | The shared performer contract preserves a clear 4.5 m action radius around world origin. | R4 Gate 1.1 report | verified |
 
@@ -147,8 +150,23 @@ off-world downslope continuation.
 
 ## Gate 2: Playable graybox
 
-Pending explicit Gate 1.1 R4 approval. The historical R3 Blender source and
-coordinate manifest are retained for audit but are not a base geometry contract.
+Gate 2 R4 is `ready-for-review` with approval unset. The existing graybox owner
+derives its editable Blender source, review GLB, cameras, plan, section, and
+machine report from the approved R4 coordinate contract. Tracker reference:
+`lXhTllDFV2Ne1E7foCkS`. Current evidence:
+
+- Editable source: `../../../blender/ember-midflank-fire-pilgrimage-graybox-r4.blend`
+- Review GLB: `../../../static/models/ember/review/ember-midflank-fire-pilgrimage-graybox-r4.glb`
+- Coordinate manifest: `evidence/gate-2-geology-graybox-r4/ember-midflank-fire-pilgrimage-r4-coordinate-manifest.json`
+- Contact sheet: `evidence/gate-2-geology-graybox-r4/ember-midflank-fire-pilgrimage-r4-gate2-contact-sheet.png`
+- Continuous orbit: `evidence/gate-2-geology-graybox-r4/14-continuous-runtime-orbit.webp`
+- Verification report: `evidence/gate-2-geology-graybox-r4/ember-midflank-fire-pilgrimage-r4-graybox-report.json`
+
+The R4 graybox preserves 2,154 active Flowy cells exactly, proves a connected
+195.588 m net descent to the south outflow guard, and leaves 6.0 m beyond the
+protected action envelope. Gate 3 remains pending. The historical R3 Blender
+source and coordinate manifest are retained for audit but are not a base
+geometry contract.
 
 ### Historical R3 Gate 2 evidence
 
