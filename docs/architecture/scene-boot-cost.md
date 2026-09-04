@@ -220,6 +220,26 @@ staged scene construction, or moving the renderer to an `OffscreenCanvas`
 worker. Switching engines does not remove that architectural requirement; it
 creates a second renderer and parity surface.
 
+### Shader-dispatch slicing
+
+Rainbow and Autumn showed a separate, reachable failure: multiple synchronous
+program-creation calls accumulated inside one task before the async driver-link
+promises were awaited. `warmupRenderer` now yields only after those dispatches
+have consumed 50 ms. Fast scenes keep their contiguous path, while expensive
+scenes let input and painting run between programs; every link promise remains
+in flight and is still awaited as one group.
+
+Three fresh-context runs after the change:
+
+| Scene | Previous longest stall | New longest stalls |
+| --- | ---: | --- |
+| Autumn | 4,264 ms | 1,343 / 1,258 / 1,299 ms |
+| Rainbow | 5,218 ms | 1,696 / 2,531 / 1,735 ms |
+
+This is a material reduction, not a zero-jank result. The remaining 1.3-2.5 s
+calls are individually synchronous and cannot be split by yielding around them.
+Ocean also remains dominated by its assets phase rather than this warm-up loop.
+
 ## Re-measuring
 
 1. Open `https://localhost:5173/test/ocean-scene?bootprofile=1`. Any route

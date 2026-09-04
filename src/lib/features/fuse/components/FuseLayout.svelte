@@ -86,7 +86,9 @@
   const CARD_CHROME_V = 96; // card vertical chrome: padding + the Back/Shuffle row
   const PREVIEW_CHROME_V = 190; // matches FusePreviewStage's square frame cap
   const PREVIEW_HPAD = 48; // maximum desktop stage padding, both sides
-  const TALL_PORTRAIT_MIN_HEIGHT = 1280;
+  const TALL_PORTRAIT_SPLIT_WIDTH = 520;
+  const TALL_PORTRAIT_NARROW_MIN_HEIGHT = 1650;
+  const TALL_PORTRAIT_SPLIT_MIN_HEIGHT = 1280;
   const TALL_PORTRAIT_MIN_ASPECT = 2.1;
 
   let containerWidth = $state(0);
@@ -481,7 +483,9 @@
         width,
         height,
         mobileMaxWidth: BREAKPOINTS.PORTRAIT_MOBILE,
-        minHeight: TALL_PORTRAIT_MIN_HEIGHT,
+        splitMinWidth: TALL_PORTRAIT_SPLIT_WIDTH,
+        narrowMinHeight: TALL_PORTRAIT_NARROW_MIN_HEIGHT,
+        splitMinHeight: TALL_PORTRAIT_SPLIT_MIN_HEIGHT,
         minAspectRatio: TALL_PORTRAIT_MIN_ASPECT,
       });
       const useCompactLayout =
@@ -874,7 +878,22 @@
       "preview";
     align-content: start;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: hidden;
+  }
+
+  /* Once a portrait pane is wide enough for two lean cards, stop paying for
+     their height twice. This is the seam visible when the Browser sidebar is
+     widened a few pixels: sources share one row and the result owns the rest. */
+  @container fuse (min-width: 520px) and (max-width: 599px) {
+    .fuse-workspace.tall-portrait-workspace {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: max-content minmax(0, 0.9fr) minmax(0, 1.1fr);
+      grid-template-areas:
+        "header header"
+        "left right"
+        "preview preview";
+      align-content: stretch;
+    }
   }
 
   @container fuse (min-width: 600px) {

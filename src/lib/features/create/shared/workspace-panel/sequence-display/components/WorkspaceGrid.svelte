@@ -99,6 +99,7 @@
     rightColorOverride = undefined,
     sequenceWord = "",
     arrivalRequest = null,
+    edgePadding = 16,
     scrollContainerRef = $bindable(),
   }: {
     steps: ReadonlyArray<StepData> | StepData[];
@@ -140,6 +141,7 @@
     rightColorOverride?: string;
     sequenceWord?: string;
     arrivalRequest?: PictographArrivalRequest | null;
+    edgePadding?: number;
     scrollContainerRef?: HTMLElement;
   } = $props();
 
@@ -809,6 +811,7 @@
   class="scroll-wrapper"
   class:has-scrollbar={scrollState.hasVerticalScrollbar}
   bind:this={scrollContainerRef}
+  style:--scroll-edge-padding="{edgePadding}px"
 >
   <div
     bind:this={gridSurfaceRef}
@@ -1145,7 +1148,7 @@
     min-height: 0;
     /* Breathing room so a selected/hovered cell's scaled gold border + glow
        on the outer rows/columns isn't clipped at the wrapper edge. */
-    padding: 16px;
+    padding: var(--scroll-edge-padding, 16px);
     box-sizing: border-box;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
