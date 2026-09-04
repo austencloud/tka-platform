@@ -1,12 +1,9 @@
 <!--
   FuseRecipeRail — the whole Fuse recipe as one row of the app's setting cards.
 
-  Every slot here is a card from the Generate bento, not a Fuse-local imitation
-  of one: StepperCard for Length, LevelCard for Level (which is what fades blue
-  to silver to gold as the level changes), GridModeCard for Grid, ToggleCard for
-  Pairing, BaseCard for the two slots whose editors open in a popover. Fuse owns
-  the wiring and the arrangement; the cards own how a setting card looks and
-  feels.
+  Every slot here is a quiet appearance of a card from the Generate bento, not
+  a Fuse-local imitation. Fuse owns the wiring and arrangement; the shared
+  cards own interaction, accessibility, and responsive behavior.
 
   One width for all of them. These are answers to the same question — what is
   this fuse made of — so the row is an even set rather than eight widths arguing
@@ -23,7 +20,6 @@
   import ToggleCard from "$lib/features/create/generate/components/cards/ToggleCard.svelte";
   import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
   import StepperCard from "$lib/shared/components/stepper-card/StepperCard.svelte";
-  import type { CardColors } from "$lib/shared/create/domain/card-colors";
   import {
     maxTurnIntensitiesForLevel,
     type TurnLevel,
@@ -39,7 +35,6 @@
 
   let {
     summaries,
-    cardColors,
     disabled = false,
     activeSetting = null,
     onSettingOpenChange,
@@ -47,7 +42,6 @@
     onEditRule,
   }: {
     summaries: FuseRecipeSummaries;
-    cardColors: CardColors;
     disabled?: boolean;
     activeSetting?: FuseRecipeDestination | null;
     onSettingOpenChange: (
@@ -137,8 +131,7 @@
       onDecrement={() => changeLength(-1)}
       formatValue={(value: number) => String(value)}
       subtitle="steps"
-      color={cardColors.length.color}
-      shadowColor={cardColors.length.shadowColor}
+      appearance="quiet"
       gridColumnSpan={1}
       headerFontSize="var(--rail-card-title-size)"
     />
@@ -148,6 +141,7 @@
     <LevelCard
       currentLevel={levelMap[fuseState.generationLevel]}
       onLevelChange={selectLevel}
+      appearance="quiet"
       gridColumnSpan={1}
       headerFontSize="var(--rail-card-title-size)"
     />
@@ -163,6 +157,7 @@
       currentIntensity={displayedTurnIntensity}
       allowedValues={allowedTurnIntensities}
       onIntensityChange={selectTurnIntensity}
+      appearance="quiet"
       gridColumnSpan={1}
       headerFontSize="var(--rail-card-title-size)"
     />
@@ -172,8 +167,7 @@
     <GridModeCard
       currentMode={fuseState.gridMode}
       onModeChange={selectGridMode}
-      color={cardColors.gridMode.color}
-      shadowColor={cardColors.gridMode.shadowColor}
+      appearance="quiet"
       gridColumnSpan={1}
       headerFontSize="var(--rail-card-title-size)"
     />
@@ -184,8 +178,6 @@
       destination="style"
       title="Style"
       summary={summaries.style}
-      color={cardColors.customize.color}
-      shadowColor={cardColors.customize.shadowColor}
       width="36rem"
       open={activeSetting === "style"}
       headerFontSize="var(--rail-card-title-size)"
@@ -198,8 +190,6 @@
       destination="starting"
       title="Starting"
       summary={summaries.starting}
-      color={cardColors.startEnd.color}
-      shadowColor={cardColors.startEnd.shadowColor}
       width="54rem"
       open={activeSetting === "starting"}
       headerFontSize="var(--rail-card-title-size)"
@@ -216,8 +206,7 @@
       option2={{ value: "symmetry" as FuseMode, label: "Linked" }}
       activeOption={fuseState.mode}
       onToggle={onModeChange}
-      color={cardColors.mode.color}
-      shadowColor={cardColors.mode.shadowColor}
+      appearance="quiet"
       gridColumnSpan={1}
       headerFontSize="var(--rail-card-title-size)"
     />
@@ -232,8 +221,7 @@
     <BaseCard
       title="Rule"
       currentValue={ruleLabel}
-      color={cardColors.period.color}
-      shadowColor={cardColors.period.shadowColor}
+      appearance="quiet"
       gridColumnSpan={1}
       headerFontSize="var(--rail-card-title-size)"
       ariaLabel="Rule that rebuilds from {driverLabel}: {ruleLabel}. Opens the rule editor."
@@ -262,14 +250,11 @@
     min-height: 0;
   }
 
-  /* An open popover holds its card lit, so the row says which door is standing
-     open rather than the popover being the only clue. */
+  /* An open popover holds its card distinct, so the row identifies the active
+     editor without reintroducing the Generate screen's colored card glow. */
   .card-slot :global(.base-card[data-state="open"]) {
-    filter: brightness(1.1);
-    box-shadow:
-      0 2px 4px hsl(var(--shadow-color) / 0.12),
-      0 8px 16px hsl(var(--shadow-color) / 0.1),
-      0 0 40px hsl(var(--shadow-color) / 0.28);
+    border-color: var(--theme-stroke-strong);
+    background: var(--theme-card-hover-bg);
   }
 
   /* Two cards come and go with the recipe: Turns above level 1, Rule when the
@@ -303,7 +288,7 @@
       grid-template-columns:
         minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0fr) minmax(0, 1fr)
         minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0fr);
-      grid-auto-rows: 6.75rem;
+      grid-auto-rows: 5.25rem;
       gap: 8px;
       /* 100% basis is what puts the rail on its own row under the centred
          title. Keep it in this shorthand — a bare `flex-basis` earlier in the
@@ -315,11 +300,11 @@
       margin-inline: auto;
       /* The card text scales off each card's own box, so one declaration here
          keeps all seven reading at the same size. */
-      --rail-card-title-size: 9px;
-      --card-text-size: clamp(0.95rem, 21cqh, 1.6rem);
+      --rail-card-title-size: var(--font-size-compact, 12px);
+      --card-text-size: clamp(0.9rem, 18cqh, 1.25rem);
       --card-text-weight: 750;
       --card-text-spacing: 0;
-      --card-text-shadow: 0 2px 6px var(--theme-shadow);
+      --card-text-shadow: none;
       transition: grid-template-columns var(--duration-emphasis, 280ms)
         var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
     }
@@ -351,10 +336,10 @@
 
   @container fuse (min-width: 2600px) and (min-height: 1400px) {
     .recipe-rail {
-      grid-auto-rows: 9rem;
+      grid-auto-rows: 6.5rem;
       gap: 12px;
-      --rail-card-title-size: 0.8rem;
-      --card-text-size: clamp(1.2rem, 20cqh, 2.1rem);
+      --rail-card-title-size: var(--font-size-min, 14px);
+      --card-text-size: clamp(1.05rem, 17cqh, 1.5rem);
     }
   }
 

@@ -18,6 +18,7 @@ Uses stepper pattern for space-efficient level selection
     gridColumnSpan = 2,
     cardIndex = 0,
     headerFontSize = "9px",
+    appearance = "vivid",
   } = $props<{
     currentLevel: DifficultyLevel;
     onLevelChange: (level: DifficultyLevel) => void;
@@ -26,6 +27,7 @@ Uses stepper pattern for space-efficient level selection
     gridColumnSpan?: number;
     cardIndex?: number;
     headerFontSize?: string;
+    appearance?: "vivid" | "quiet";
   }>();
 
   // The app follows its selected background. Isolated embeds can pin the
@@ -205,4 +207,5 @@ Uses stepper pattern for space-efficient level selection
   {gridColumnSpan}
   {cardIndex}
   {headerFontSize}
+  {appearance}
 />

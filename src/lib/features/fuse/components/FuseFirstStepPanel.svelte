@@ -65,7 +65,7 @@
       {onClose}
     />
     <div class="first-step-content">
-      <p>Choose the beat that should become step 1.</p>
+      <p>Choose the step that should become step 1.</p>
       {#if sequence}
         <div class="first-step-card themed-scrollbar">
           <ChoreoCard
