@@ -126,7 +126,10 @@
   }
 
   .front-door-inner {
-    width: min(calc(100% - clamp(20px, 5cqi, 80px)), 960px);
+    width: min(
+      calc(100% - clamp(20px, 5cqi, 80px)),
+      clamp(960px, 76cqi, 1440px)
+    );
     min-height: 100%;
     margin: 0 auto;
     padding-block: clamp(20px, 4cqh, 52px);
@@ -302,12 +305,12 @@
 
     .method-index {
       grid-template-columns: repeat(6, minmax(0, 1fr));
-      column-gap: 12px;
-      row-gap: 16px;
+      column-gap: 16px;
+      row-gap: 20px;
     }
 
     h1 {
-      font-size: calc(var(--font-size-3xl, 1.875rem) * 1.2);
+      font-size: 2.5rem;
     }
 
     .method-item.primary-method {
@@ -320,16 +323,16 @@
 
     .method-card,
     .method-item.default-method .method-card {
-      min-height: 132px;
+      min-height: 160px;
       display: grid;
-      grid-template-columns: 48px minmax(0, 1fr);
+      grid-template-columns: 56px minmax(0, 1fr);
       align-items: center;
-      gap: 16px;
-      padding: 18px;
+      gap: 20px;
+      padding: 22px;
     }
 
     .method-item.primary-method .method-card {
-      min-height: 144px;
+      min-height: 176px;
     }
 
     .method-card {
@@ -337,25 +340,23 @@
     }
 
     .method-icon {
-      width: 48px;
-      height: 48px;
-      font-size: var(--font-size-lg, 1.125rem);
+      width: 56px;
+      height: 56px;
+      font-size: var(--font-size-xl, 1.25rem);
     }
 
     .method-name {
-      font-size: var(--font-size-xl, 1.25rem);
+      font-size: 1.375rem;
     }
-  }
 
-  @container create-entry (min-width: 1680px) {
-    .front-door-inner {
-      width: min(calc(100% - 160px), clamp(1040px, 50cqi, 1280px));
+    .method-description {
+      font-size: var(--font-size-base, 1rem);
     }
   }
 
   @container create-entry (min-width: 2600px) {
     .front-door-inner {
-      width: min(calc(100% - 240px), clamp(1280px, 42cqi, 1600px));
+      width: min(calc(100% - 240px), 1600px);
     }
   }
 
@@ -402,6 +403,7 @@
     }
 
     .method-description {
+      font-size: var(--font-size-min, 14px);
       line-height: 1.25;
     }
   }

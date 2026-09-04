@@ -1,7 +1,12 @@
 <script lang="ts">
   import InlineAnimationPlayer from "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";
+  import {
+    AnimationVisibilityStateManager,
+    getAnimationVisibilityManager,
+  } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { derivePropElementalType } from "$lib/shared/shape-matrix/domain/prop-relationship";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import type { LearningLetterTeachingContent } from "./learning-letter-teaching-content";
 
@@ -12,6 +17,19 @@
     sequence: SequenceData;
     content: LearningLetterTeachingContent | null;
   } = $props();
+
+  const sharedVisibility = getAnimationVisibilityManager();
+  const lessonVisibility = new AnimationVisibilityStateManager({
+    ephemeral: true,
+  });
+  lessonVisibility.replaceAll({
+    ...sharedVisibility.snapshot(),
+    elementalGlyph: true,
+    tkaGlyph: false,
+    wordHeader: false,
+  });
+  lessonVisibility.setMotionPolicySource(sharedVisibility);
+  const propElementalType = $derived(derivePropElementalType(sequence));
 </script>
 
 <div class="learning-word-stage">
@@ -72,8 +90,11 @@
           hideTkaGlyph
           leftPropType="staff"
           rightPropType="staff"
-          disableContextMenu
+          visibilityManagerOverride={lessonVisibility}
+          {propElementalType}
           hoverHint="badge"
+          glyphFrame="stage"
+          backgroundAlpha={0}
         />
       </div>
     </section>
@@ -141,8 +162,8 @@
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     min-width: 0;
-    min-height: clamp(24rem, 48dvh, 38rem);
-    background: color-mix(in srgb, var(--theme-panel-bg) 86%, transparent);
+    min-height: clamp(20rem, 34dvh, 34rem);
+    background: var(--theme-panel-bg);
   }
 
   .pane-heading {
@@ -152,7 +173,7 @@
     min-height: 2.75rem;
     padding: 0.55rem 0.75rem;
     border-bottom: 1px solid var(--theme-stroke);
-    background: color-mix(in srgb, var(--theme-card-bg) 88%, transparent);
+    background: var(--theme-card-bg);
     color: var(--theme-text-dim);
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 700;
@@ -183,12 +204,12 @@
   }
 
   .animation-body {
-    background: color-mix(in srgb, var(--theme-card-bg) 72%, transparent);
+    background: var(--theme-card-bg);
   }
 
   .card-body {
     padding: clamp(0.45rem, 0.75cqw, 0.85rem);
-    background: color-mix(in srgb, var(--theme-panel-bg) 92%, transparent);
+    background: var(--theme-panel-bg);
   }
 
   .empty-state {
@@ -199,9 +220,9 @@
     width: min(100%, 28rem);
     aspect-ratio: 16 / 9;
     padding: 1.25rem;
-    border: 1px dashed var(--theme-stroke-strong, var(--theme-stroke));
+    border: 1px solid var(--theme-stroke-strong, var(--theme-stroke));
     border-radius: var(--radius-md, 0.5rem);
-    background: color-mix(in srgb, var(--theme-card-bg) 58%, transparent);
+    background: var(--theme-card-bg);
     color: var(--theme-text-dim);
     text-align: center;
   }
@@ -226,7 +247,7 @@
     padding: clamp(0.8rem, 1.1cqw, 1.1rem);
     border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-lg, 0.75rem);
-    background: color-mix(in srgb, var(--theme-panel-bg) 78%, transparent);
+    background: var(--theme-panel-bg);
   }
 
   .guide-notes header {
@@ -302,6 +323,22 @@
 
     .guide-notes {
       min-height: 5rem;
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .media-pane {
+      min-height: clamp(34rem, 42dvh, 48rem);
+    }
+
+    .guide-notes {
+      min-height: 8rem;
+    }
+
+    .empty-icon {
+      width: 4rem;
+      height: 4rem;
+      font-size: 1.5rem;
     }
   }
 </style>

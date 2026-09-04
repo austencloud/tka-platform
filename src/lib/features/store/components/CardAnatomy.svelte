@@ -22,6 +22,7 @@
   import { buildCardMenuSection } from "$lib/shared/choreo-card/services/card-menu-section";
   import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import SkeletonLoader from "$lib/shared/foundation/ui/SkeletonLoader.svelte";
+  import ArtifactRegionSpotlight from "$lib/shared/components/ArtifactRegionSpotlight.svelte";
 
   let {
     highlight = null,
@@ -379,10 +380,13 @@
 
 {#snippet spotlight(face: "front" | "back")}
   {#if activeRegion && activeRegion.face === face}
-    <div
-      class="region"
-      style="left: {activeRegion.x}%; top: {activeRegion.y}%; width: {activeRegion.w}%; height: {activeRegion.h}%"
-    ></div>
+    <ArtifactRegionSpotlight
+      x={activeRegion.x}
+      y={activeRegion.y}
+      width={activeRegion.w}
+      height={activeRegion.h}
+      radius="10px"
+    />
   {/if}
 {/snippet}
 
@@ -730,30 +734,7 @@
     container-type: size;
   }
 
-  /* Spotlight: the region outline plus a huge shadow that dims the rest of
-     the card (clipped by the card's overflow:hidden). */
-  .region {
-    position: absolute;
-    border-radius: 10px;
-    outline: 1.5px solid oklch(0.95 0.01 270 / 0.9);
-    box-shadow: 0 0 0 200vmax oklch(0.08 0.02 270 / 0.55);
-    pointer-events: none;
-    animation: region-in 180ms ease both;
-  }
-
-  @keyframes region-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .region {
-      animation: none;
-    }
     .face {
       transition: none;
     }
