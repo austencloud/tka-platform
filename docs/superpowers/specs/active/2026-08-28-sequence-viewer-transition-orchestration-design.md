@@ -1082,6 +1082,54 @@ traces whose moving layers never separate by at least 0.35 alpha. The seven-laye
 unit sample measures more than 0.45 spread at the midpoint, remains monotonic
 from center to edge, and reverses by retracing the same master progress.
 
+#### Pixel correction · 2026-09-04
+
+The alpha-only follow-up above did not prove that the canvas painted a
+choreographed entrance. The production review fixture has one additional
+performer pair, so its measured layer-to-layer spread is necessarily zero. More
+importantly, the renderer did not begin generating that pair's prop sprites
+until the visible additional-layer array became non-empty. A reveal clock could
+therefore advance while there was nothing drawable, then display both completed
+sprites together. The state trace passed a curve that the pixels never had the
+resources to paint.
+
+The animation engine now accepts a preparation-only additional-layer list. It
+loads and reports those sprites while the visible list remains empty, and the
+viewer waits for both prepared geometry and loaded sprites before moving the
+reversible reveal away from zero. The instrument records requested and loaded
+texture counts and fails any frame whose reveal precedes its drawable sprites.
+
+Opacity is no longer asked to impersonate choreography. Each additional pair
+starts transparent at the live red/blue pair, then peels through canvas space
+into its authored Tunnel position while gaining opacity. The ordinary pair and
+the copy therefore have a visible relationship even in the one-copy fixture.
+Canvas-space interpolation avoids a direction flip when moving props straddle
+the angular 180-degree seam. The same per-copy progress folds the pair back into
+the live props on a rapid reversal. The phrase uses the canonical emphasis plus
+normal clock (480 ms), with no feature-local duration or easing.
+
+Pixel capture at 820 x 1180, with playback held, records the reveal at blends
+`0.000`, `0.087`, `0.561`, `0.920`, `0.997`, and `1.000`: the purple/green pair
+is tucked under the red/blue pair in the first frame, visibly separates in the
+intermediate frames, and reaches the opposite formation edge at rest. The DOM
+instrument records the same trip as `0.000 -> 2.000` grid-radius units over 30
+painted frames in 500 ms. A 1440 x 900 rapid reversal reports:
+
+| Measure                       | Result                             |
+| ----------------------------- | ---------------------------------- |
+| Reveal before textures        | 0 frames                           |
+| Spatial peel during reversals | 20 frames                          |
+| Largest layer alpha step      | 0.11                               |
+| Largest grid alpha step       | 0.19                               |
+| Blank frames                  | 0                                  |
+| Mode path                     | 2D -> Tunnel -> 2D -> Tunnel -> 2D |
+
+The settled Tunnel was visually checked with native emulation at 375 x 667,
+960 x 412, 820 x 1180, 1440 x 900, 1920 x 1080, 2560 x 1440, and 3840 x 2160.
+Every viewport reports zero horizontal overflow; the compact controls remain
+present at 820 x 1180. The sequence-viewer and focused animation-engine checks
+pass 30 files / 254 tests, and `svelte-check` reports 0 errors and 0 warnings.
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of

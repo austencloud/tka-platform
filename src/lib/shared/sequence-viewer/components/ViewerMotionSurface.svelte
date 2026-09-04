@@ -25,10 +25,14 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import {
+    interpolateTunnelLayerProp,
     resolveTunnelGridOpacity,
     resolveTunnelLayerOpacity,
+    resolveTunnelLayerProgress,
+    tunnelLayerPositionSeparation,
     TUNNEL_REVEAL_DURATION,
   } from "../tunnel/tunnel-layer-reveal";
+  import type { AdditionalLayerTextureStatus } from "$lib/shared/animation-engine/services/animation-engine.svelte";
 
   let {
     side,
@@ -109,7 +113,36 @@
   let scene3DReady = $state(false);
   let animatorReady = $state(false);
   let animatorReadyFrame = 0;
-  const tunnelReveal = new Tween(isTunnelActive ? 1 : 0, {
+  const preparedTunnelLayers = $derived(
+    tunnelController.preparedAdditionalLayersAt(playback.currentStep)
+  );
+  let tunnelTextureStatus = $state<AdditionalLayerTextureStatus>({
+    requested: 0,
+    loaded: 0,
+    loading: 0,
+  });
+  const tunnelTexturesReady = $derived(
+    preparedTunnelLayers.length === 0 ||
+      (tunnelTextureStatus.requested === preparedTunnelLayers.length &&
+        tunnelTextureStatus.loaded === preparedTunnelLayers.length)
+  );
+
+  function handleTunnelTextureStatus(
+    status: AdditionalLayerTextureStatus
+  ): void {
+    if (
+      status.requested === tunnelTextureStatus.requested &&
+      status.loaded === tunnelTextureStatus.loaded &&
+      status.loading === tunnelTextureStatus.loading
+    ) {
+      return;
+    }
+    tunnelTextureStatus = status;
+  }
+
+  // Even an initial Tunnel load starts from the complete 2D frame; its copies
+  // enter only after their sprites are drawable.
+  const tunnelReveal = new Tween(0, {
     easing: cubicInOut,
   });
   let tunnelRevealResetTimer: ReturnType<typeof setTimeout> | undefined;
@@ -118,6 +151,10 @@
     tunnelRevealResetTimer = undefined;
 
     if (isTunnelActive) {
+      // Sprite preparation is independent of the visible layer list, so it can
+      // safely gate the first painted frame without deadlocking the reveal.
+      // Until it resolves, the live 2D pair remains an honest complete frame.
+      if (!tunnelController.layersReady || !tunnelTexturesReady) return;
       // 2D and Tunnel are one renderer, so their change reads as layers
       // blooming onto the live base. 3D is a distinct renderer: arrive at a
       // fully composed Tunnel before the canonical surface crossfade begins,
@@ -156,15 +193,31 @@
   const tunnelVisualActive = $derived(tunnelReveal.current > 0.001);
   const tunnelLayers = $derived.by(() => {
     if (!tunnelVisualActive) return [];
-    const layers = tunnelController.additionalLayersAt(playback.currentStep);
-    return layers.map((layer, index) => ({
-      ...layer,
-      opacity: resolveTunnelLayerOpacity(
+    return preparedTunnelLayers.map((layer, index) => {
+      const progress = resolveTunnelLayerProgress(
         tunnelReveal.current,
         index,
-        layers.length
-      ),
-    }));
+        preparedTunnelLayers.length
+      );
+      return {
+        ...layer,
+        leftProp: interpolateTunnelLayerProp(
+          playback.animationState.leftPropState,
+          layer.leftProp,
+          progress
+        ),
+        rightProp: interpolateTunnelLayerProp(
+          playback.animationState.rightPropState,
+          layer.rightProp,
+          progress
+        ),
+        opacity: resolveTunnelLayerOpacity(
+          tunnelReveal.current,
+          index,
+          preparedTunnelLayers.length
+        ),
+      };
+    });
   });
   const tunnelLayerOpacityMinimum = $derived(
     tunnelLayers.length === 0
@@ -175,6 +228,21 @@
     tunnelLayers.length === 0
       ? 0
       : Math.max(...tunnelLayers.map((layer) => layer.opacity ?? 1))
+  );
+  const tunnelLayerSeparation = $derived(
+    Math.max(
+      0,
+      ...tunnelLayers.flatMap((layer) => [
+        tunnelLayerPositionSeparation(
+          playback.animationState.leftPropState,
+          layer.leftProp
+        ),
+        tunnelLayerPositionSeparation(
+          playback.animationState.rightPropState,
+          layer.rightProp
+        ),
+      ])
+    )
   );
   // The grid is part of the same transformation as the copies. Driving its
   // alpha from the shared reveal keeps a quick reversal continuous instead of
@@ -511,8 +579,13 @@
     data-tunnel-blend={tunnelReveal.current.toFixed(3)}
     data-tunnel-layers-ready={tunnelController.layersReady}
     data-tunnel-layer-count={tunnelLayers.length}
+    data-tunnel-prepared-layer-count={preparedTunnelLayers.length}
+    data-tunnel-texture-requested={tunnelTextureStatus.requested}
+    data-tunnel-texture-loaded={tunnelTextureStatus.loaded}
+    data-tunnel-textures-ready={tunnelTexturesReady}
     data-tunnel-layer-opacity-min={tunnelLayerOpacityMinimum.toFixed(3)}
     data-tunnel-layer-opacity-max={tunnelLayerOpacityMaximum.toFixed(3)}
+    data-tunnel-layer-separation={tunnelLayerSeparation.toFixed(3)}
     data-tunnel-grid-opacity={tunnelGridOpacity.toFixed(3)}
     data-presented={is2DPresented}
     inert={!isAnimatorActive}
@@ -571,6 +644,8 @@
           leftProp={playback.animationState.leftPropState}
           rightProp={playback.animationState.rightPropState}
           additionalLayers={tunnelLayers}
+          preloadAdditionalLayers={preparedTunnelLayers}
+          onAdditionalLayerTextureStatusChange={handleTunnelTextureStatus}
           tunnelSpectrum={tunnelController.spectrum}
           tunnelPropColors={tunnelController.exactPropColors}
           tunnelSelectedLayer={tunnelVisualActive
