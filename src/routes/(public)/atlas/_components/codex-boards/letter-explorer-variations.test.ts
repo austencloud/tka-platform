@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -11,7 +12,10 @@ vi.mock("$lib/shared/pictograph/prop/services/orientation-calculator", () => ({
     motion.turns === 0 || motion.turns === "fl" ? "in" : "out",
 }));
 
-import { applyTurnsToVariations } from "./letter-explorer-variations";
+import {
+  applyTurnsToVariations,
+  motionAllowsFloat,
+} from "./letter-explorer-variations";
 
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
@@ -64,5 +68,12 @@ describe("applyTurnsToVariations", () => {
     expect(results[1]?.motions.right?.rotationDirection).toBe(CCW);
     expect(inputs[0]?.motions.left?.turns).toBe(0);
     expect(inputs[1]?.motions.right?.turns).toBe(0);
+  });
+
+  it("uses the selected hand motion to decide whether float is available", () => {
+    const input = variation("Z-", MotionType.DASH, MotionType.ANTI);
+
+    expect(motionAllowsFloat(input, HandSide.LEFT)).toBe(false);
+    expect(motionAllowsFloat(input, HandSide.RIGHT)).toBe(true);
   });
 });
