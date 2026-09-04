@@ -7,6 +7,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import LessonGridDisplay from "$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/prop-placement-data";
@@ -23,7 +24,7 @@
     onBack,
     viewMode = "step",
   } = $props<{
-    onComplete?: () => void;
+    onComplete?: (nextConceptId?: string) => void;
     onBack?: () => void;
     viewMode?: ExperienceViewMode;
   }>();
@@ -107,7 +108,6 @@
   const totalStages = steps.length + 1;
   let stage = $state(0);
   let focus = $state<number | null>(null);
-  let focusPhase = $state<"intro" | "play">("intro");
   let rightIndex = $state(0);
   let leftIndex = $state(0);
   let visited = $state<Set<number>>(new Set());
@@ -125,7 +125,7 @@
     !isCompare ? "position" : focus === null ? "comparison" : `focus-${focus}`
   );
   const headingKey = $derived(
-    `${stage}-${focus ?? "none"}-${focusPhase}-${lastAction}`
+    `${stage}-${focus ?? "none"}-${lastAction}`
   );
   const headingTitle = $derived(
     focusedStep?.name ?? (isCompare ? "Hand Positions" : step.name)
@@ -135,9 +135,6 @@
   );
   const headingDescription = $derived.by(() => {
     if (focusedStep) {
-      if (focusPhase === "intro") {
-        return `Three ways to change a pictograph, and it stays ${focusedStep.name}:`;
-      }
       return (
         lastAction ||
         `Rotate, mirror, or swap hands. It stays ${focusedStep.name}.`
@@ -156,10 +153,10 @@
     visited = new Set(visited).add(currentCell);
   });
 
-  async function loadHand(color: HandSide): Promise<SvgData | null> {
+  async function loadHand(hand: HandSide): Promise<SvgData | null> {
     const motionData = {
       propType: PropType.HAND,
-      color,
+      hand,
     } as unknown as MotionData;
     const propData = {
       positionX: 0,
@@ -208,7 +205,6 @@
 
   function go(next: number) {
     focus = null;
-    focusPhase = "intro";
     lastAction = "";
     stage = Math.max(0, Math.min(compareStage, next));
   }
@@ -220,7 +216,6 @@
     leftIndex = base[kind].left;
     visited = new Set();
     lastAction = "";
-    focusPhase = "intro";
   }
 
   function rotate() {
@@ -250,7 +245,7 @@
 
   function handlePrimaryAction() {
     if (stage === compareStage) {
-      onComplete?.();
+      onComplete?.("hand-motions-intro");
       return;
     }
     go(stage + 1);
@@ -270,7 +265,6 @@
   export function handleBack() {
     if (focus !== null) {
       focus = null;
-      focusPhase = "intro";
       lastAction = "";
       return;
     }
@@ -376,47 +370,30 @@
               {@render positionArt(focusedStep.kind, focusHands)}
             </div>
 
-            {#if focusPhase === "intro"}
-              <div class="focus-actions intro-actions">
-                <ul class="transform-list">
-                  <li>
-                    <span aria-hidden="true">⟳</span><strong>Rotate</strong>
-                  </li>
-                  <li>
-                    <span aria-hidden="true">⇄</span><strong>Mirror</strong>
-                  </li>
-                  <li>
-                    <span aria-hidden="true">◐</span><strong>Swap colors</strong
-                    >
-                  </li>
-                </ul>
-                <button
-                  type="button"
-                  class="try-action"
-                  onclick={() => (focusPhase = "play")}>Try it →</button
+            <div class="focus-actions">
+              <div class="transform-actions">
+                <PanelButton fullWidth onclick={rotate}>
+                  <span aria-hidden="true">⟳</span><span>Rotate</span>
+                </PanelButton>
+                <PanelButton fullWidth onclick={mirror}>
+                  <span aria-hidden="true">⇄</span><span>Mirror</span>
+                </PanelButton>
+                <PanelButton fullWidth onclick={swap}>
+                  <span aria-hidden="true">◐</span><span>Swap colors</span>
+                </PanelButton>
+              </div>
+              <div class="discovery-tray">
+                <div
+                  class="tray-grid"
+                  style:grid-template-columns={`repeat(${focusTotal > 8 ? 8 : 4}, 1fr)`}
                 >
-              </div>
-            {:else}
-              <div class="focus-actions play-actions">
-                <div class="transform-actions">
-                  <button type="button" onclick={rotate}>⟳ Rotate</button>
-                  <button type="button" onclick={mirror}>⇄ Mirror</button>
-                  <button type="button" onclick={swap}>◐ Swap</button>
+                  {#each Array(focusTotal) as _, cell}
+                    <span class="tray-cell" class:lit={visited.has(cell)}></span>
+                  {/each}
                 </div>
-                <div class="discovery-tray">
-                  <div
-                    class="tray-grid"
-                    style:grid-template-columns={`repeat(${focusTotal > 8 ? 8 : 4}, 1fr)`}
-                  >
-                    {#each Array(focusTotal) as _, cell}
-                      <span class="tray-cell" class:lit={visited.has(cell)}
-                      ></span>
-                    {/each}
-                  </div>
-                  <span>Discovered {visited.size} of {focusTotal}</span>
-                </div>
+                <span>Discovered {visited.size} of {focusTotal}</span>
               </div>
-            {/if}
+            </div>
           </div>
         {/if}
       </Crossfade>
@@ -523,8 +500,7 @@
   }
 
   .position-option:focus-visible,
-  .try-action:focus-visible,
-  .transform-actions button:focus-visible {
+  .transform-actions :global(.panel-btn:focus-visible) {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
@@ -568,65 +544,19 @@
     width: min(100%, 28rem);
   }
 
-  .transform-list {
-    list-style: none;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
-    margin: 0;
-    padding: 0;
-  }
-
-  .transform-list li {
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 0.875rem);
-  }
-
-  .transform-list strong {
-    color: var(--theme-text);
-  }
-
-  .try-action,
-  .transform-actions button {
-    min-height: var(--min-touch-target, 44px);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 700;
-    cursor: pointer;
-    transition:
-      background var(--duration-fast) var(--ease-out),
-      border-color var(--duration-fast) var(--ease-out),
-      transform var(--duration-fast) var(--ease-out);
-  }
-
-  .try-action {
-    width: 100%;
-    margin-top: 0.55rem;
-  }
-
   .transform-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.4rem;
+    gap: 0.55rem;
   }
 
-  .try-action:hover,
-  .transform-actions button:hover {
-    border-color: var(--theme-stroke-strong);
-    background: var(--theme-card-hover-bg);
-  }
-
-  .try-action:active,
-  .transform-actions button:active {
-    transform: scale(0.98);
+  .transform-actions :global(.panel-btn) {
+    min-width: 0;
+    min-height: max(var(--min-touch-target, 44px), 3.25rem);
+    padding: 0.75rem 0.65rem;
+    border-radius: 12px;
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 700;
   }
 
   .discovery-tray {
@@ -683,11 +613,6 @@
       width: min(100%, 68cqh);
     }
 
-    .transform-list li {
-      flex-direction: column;
-      gap: 0.05rem;
-      text-align: center;
-    }
   }
 
   @media (max-height: 480px) and (min-width: 641px) {
@@ -733,8 +658,6 @@
   @media (prefers-reduced-motion: reduce) {
     .hand,
     .position-option,
-    .try-action,
-    .transform-actions button,
     .tray-cell {
       transition: none;
     }

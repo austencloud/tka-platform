@@ -39,6 +39,7 @@ export interface Scene3DSnapshot {
   camera: CameraStateSnapshot | null;
   performers: StoredPerformerSnapshot[];
   selectedPerformerIndex: number | null;
+  selectedPerformerIndices?: number[];
   activeFormation: string;
   propSizeLinked: boolean;
   defaultSettings: {
@@ -81,7 +82,6 @@ export interface StoredPerformerSnapshot {
   /** Absent = no overrides (v1 snapshots). */
   settings?: StoredPerformerSettings;
 }
-
 
 /** How the camera was driven while the film was recorded. */
 export type FilmCameraMode = "free" | "auto-orbit";
@@ -168,6 +168,9 @@ export const Scene3DSnapshotSchema = z.preprocess(
     camera: z.any().nullable(),
     performers: z.array(StoredPerformerSnapshotSchema),
     selectedPerformerIndex: z.number().nullable(),
+    selectedPerformerIndices: z
+      .array(z.number().int().nonnegative())
+      .optional(),
     activeFormation: z.string(),
     propSizeLinked: z.boolean(),
     defaultSettings: z.object({
@@ -209,7 +212,6 @@ export function getScene3DEnvironmentId(
     snapshot.scene.environmentId ?? snapshot.scene.backgroundType
   );
 }
-
 
 const CameraKeyframeSchema = z.object({
   timestamp: z.number(),

@@ -6342,10 +6342,38 @@ diff --git a/dist/lib/config/avatar-definitions.d.ts.map b/dist/lib/config/avata
 deleted file mode 100644
 index 00bac5f8e9f0e499668207b35e5eb79c49861922..0000000000000000000000000000000000000000
 diff --git a/dist/lib/config/avatar-definitions.js b/dist/lib/config/avatar-definitions.js
-index 6625f568525aa5f1f2dc0560861e3627aff5d1e2..fc31d04a168a9ca104d71b018d9f67917193c0c7 100644
+index 6625f568525aa5f1f2dc0560861e3627aff5d1e2..f5814637ca3adc515f36cb83e8c38072f5bb7b4e 100644
 --- a/dist/lib/config/avatar-definitions.js
 +++ b/dist/lib/config/avatar-definitions.js
-@@ -17,7 +17,7 @@ function getOptimizedAvatarPath(id) {
+@@ -7,17 +7,34 @@
+ /** R2 CDN base URL for large assets */
+ const R2_CDN = "https://assets.tkaflowarts.com";
+ const OPTIMIZED_AVATAR_VERSION = "v2026-07-23-r1";
++// These GLBs are served immutable for a year, so a re-export cannot reuse its
++// old URL: edge entries keep answering with the previous bytes long after the
++// origin object changes, and they expire per cache shard rather than all at
++// once. A corrected character therefore carries its own revision instead of
++// forcing every avatar onto a new prefix.
++//
++// ch01 and ch12 pack hair and body into one texture atlas. Because the sheet
++// carries alpha for the eyelashes, their exporter marked the body material
++// BLEND, which in three.js also clears depthWrite, so the torso rendered in
++// the transparent pass and tore against itself as the camera moved. Both were
++// re-exported OPAQUE on 2026-09-04; every byte outside that one flag is
++// unchanged.
++const AVATAR_REVISIONS = {
++    ch01: "v2026-09-04-r1",
++    ch12: "v2026-09-04-r1",
++};
+ function getOptimizedAvatarPath(id) {
+     // Cloudflare's default cache eligibility is extension-based. Keeping .bin
+     // last lets these binary GLBs use the native edge cache while Content-Type
+     // still identifies the payload as model/gltf-binary.
+-    return `${R2_CDN}/models/avatars/${OPTIMIZED_AVATAR_VERSION}/${id}.glb.bin`;
++    const version = AVATAR_REVISIONS[id] ?? OPTIMIZED_AVATAR_VERSION;
++    return `${R2_CDN}/models/avatars/${version}/${id}.glb.bin`;
+ }
+ /**
   * Available avatars
   * Note: Height scaling is handled automatically based on model proportions
   */
@@ -6354,7 +6382,7 @@ index 6625f568525aa5f1f2dc0560861e3627aff5d1e2..fc31d04a168a9ca104d71b018d9f6791
      {
          id: "x-bot",
          name: "X-Bot",
-@@ -131,6 +131,28 @@ export const AVATAR_DEFINITIONS = [
+@@ -131,6 +148,28 @@ export const AVATAR_DEFINITIONS = [
          description: "Mixamo Quinn",
      },
  ];
@@ -22112,10 +22140,41 @@ index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff
 +  return shape;
 +}
 diff --git a/src/lib/config/avatar-definitions.ts b/src/lib/config/avatar-definitions.ts
-index e3c577e94a6b79bbca1bc222fd79886eaf88962b..51564323a068692e0d291cec92502d091414bd77 100644
+index e3c577e94a6b79bbca1bc222fd79886eaf88962b..b3d4bd79bb2801c45c3f1636290ad38e2707da90 100644
 --- a/src/lib/config/avatar-definitions.ts
 +++ b/src/lib/config/avatar-definitions.ts
-@@ -22,13 +22,17 @@ export interface AvatarDefinition {
+@@ -9,11 +9,29 @@
+ const R2_CDN = "https://assets.tkaflowarts.com";
+ const OPTIMIZED_AVATAR_VERSION = "v2026-07-23-r1";
+ 
++// These GLBs are served immutable for a year, so a re-export cannot reuse its
++// old URL: edge entries keep answering with the previous bytes long after the
++// origin object changes, and they expire per cache shard rather than all at
++// once. A corrected character therefore carries its own revision instead of
++// forcing every avatar onto a new prefix.
++//
++// ch01 and ch12 pack hair and body into one texture atlas. Because the sheet
++// carries alpha for the eyelashes, their exporter marked the body material
++// BLEND, which in three.js also clears depthWrite, so the torso rendered in
++// the transparent pass and tore against itself as the camera moved. Both were
++// re-exported OPAQUE on 2026-09-04; every byte outside that one flag is
++// unchanged.
++const AVATAR_REVISIONS: Record<string, string> = {
++  ch01: "v2026-09-04-r1",
++  ch12: "v2026-09-04-r1",
++};
++
+ function getOptimizedAvatarPath(id: string): string {
+   // Cloudflare's default cache eligibility is extension-based. Keeping .bin
+   // last lets these binary GLBs use the native edge cache while Content-Type
+   // still identifies the payload as model/gltf-binary.
+-  return `${R2_CDN}/models/avatars/${OPTIMIZED_AVATAR_VERSION}/${id}.glb.bin`;
++  const version = AVATAR_REVISIONS[id] ?? OPTIMIZED_AVATAR_VERSION;
++  return `${R2_CDN}/models/avatars/${version}/${id}.glb.bin`;
+ }
+ 
+ export interface AvatarDefinition {
+@@ -22,13 +40,17 @@ export interface AvatarDefinition {
    modelPath: string;
    icon?: string; // FontAwesome icon class
    description?: string;
@@ -22134,7 +22193,7 @@ index e3c577e94a6b79bbca1bc222fd79886eaf88962b..51564323a068692e0d291cec92502d09
    {
      id: "x-bot",
      name: "X-Bot",
-@@ -143,6 +147,35 @@ export const AVATAR_DEFINITIONS: AvatarDefinition[] = [
+@@ -143,6 +165,35 @@ export const AVATAR_DEFINITIONS: AvatarDefinition[] = [
    },
  ];
  

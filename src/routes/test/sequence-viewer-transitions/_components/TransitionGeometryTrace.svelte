@@ -537,13 +537,16 @@
       <span
         data-problem={summary.tunnelPaintedArrival === null ||
           (summary.longestSampleGap <= 80 &&
-            (summary.tunnelPaintedArrival.quarterFill < 0.15 ||
-              summary.tunnelPaintedArrival.halfwayFill < 0.5 ||
+            (summary.tunnelPaintedArrival.allPropsPerceptibleProgress ===
+              null ||
+              summary.tunnelPaintedArrival.allPropsPerceptibleProgress > 0.35 ||
+              summary.tunnelPaintedArrival.quarterMeanAlpha < 0.15 ||
+              summary.tunnelPaintedArrival.halfwayMeanAlpha < 0.35 ||
               summary.tunnelPaintedArrival.growthFrames < 4))}
-        title="Counts green, yellow, and purple pixels sampled from the rendered canvas, not reactive layer state."
-        >Painted spectrum arrival: {summary.tunnelPaintedArrival === null
+        title="Reads completed additional-prop draw calls from the Canvas2D renderer, not reactive layer state."
+        >Painted prop arrival: {summary.tunnelPaintedArrival === null
           ? "unavailable"
-          : `${Math.round(summary.tunnelPaintedArrival.quarterFill * 100)}% by quarter · ${Math.round(summary.tunnelPaintedArrival.halfwayFill * 100)}% by halfway · ${summary.tunnelPaintedArrival.growthFrames} growth frames`}</span
+          : `all ${summary.tunnelPaintedArrival.peakProps} by ${summary.tunnelPaintedArrival.allPropsPerceptibleProgress === null ? "never" : `${Math.round(summary.tunnelPaintedArrival.allPropsPerceptibleProgress * 100)}% reveal`} · ${Math.round(summary.tunnelPaintedArrival.quarterMeanAlpha * 100)}% mean alpha at quarter · ${Math.round(summary.tunnelPaintedArrival.halfwayMeanAlpha * 100)}% at halfway · ${summary.tunnelPaintedArrival.growthFrames} rendered growth frames`}</span
       >
       <span
         data-problem={summary.tunnelPreparedLayerCountMaximum > 0 &&

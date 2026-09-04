@@ -42,7 +42,9 @@
   const firstScene = director.film.scenes[0]!;
   const reservedPerformerCount = $derived(
     Math.max(
-      ...director.film.scenes.map((scene) => scene.performance.performers.length)
+      ...director.film.scenes.map(
+        (scene) => scene.performance.performers.length
+      )
     )
   );
   const retainedEnvironmentTypes = $derived(
@@ -54,9 +56,12 @@
       )
     )
   );
-  const sceneFeatures = createSceneFeatureState(firstScene.location.sceneFeatures, {
-    isolated: true,
-  });
+  const sceneFeatures = createSceneFeatureState(
+    firstScene.location.sceneFeatures,
+    {
+      isolated: true,
+    }
+  );
   const effectsConfig = createEffectsConfigState(undefined, { persist: false });
   const viewer = createViewer3DState(buildDirectorViewerSeed(firstScene));
   const transitionProfiler = createFilmDirectorTransitionProfiler();
@@ -256,7 +261,9 @@
     // previous scene left in this map.
     appliedStepChanges.clear();
 
-    for (const [feature, enabled] of Object.entries(scene.location.sceneFeatures)) {
+    for (const [feature, enabled] of Object.entries(
+      scene.location.sceneFeatures
+    )) {
       if (sceneFeatures.isEnabled(feature) !== enabled)
         sceneFeatures.toggle(feature);
     }
@@ -452,9 +459,7 @@
       // needs to pick them up.
       onSceneResolved: (sceneId) => {
         if (!active || sceneId !== appliedSceneId) return;
-        const scene = film.scenes.find(
-          (candidate) => candidate.id === sceneId
-        );
+        const scene = film.scenes.find((candidate) => candidate.id === sceneId);
         // Full re-application, not a bare loadSequence sweep: loading a
         // sequence resets that performer's per-step plane overrides, so the
         // scene's plane direction has to go back on afterwards.
@@ -492,8 +497,10 @@
     // The dock lists every reserved performer slot, which can outnumber the
     // current scene's cast. Naming the missing slot rather than dropping the
     // edit lets the rejection say which performer this scene does not have.
-    const performerIds =
-      edit.performerIndex === null
+    const indices = edit.performerIndices;
+    const performerIds = indices
+      ? indices.map((index) => cast[index]?.id ?? `performer-${index + 1}`)
+      : edit.performerIndex === null
         ? cast.map((performer) => performer.id)
         : [
             cast[edit.performerIndex]?.id ??

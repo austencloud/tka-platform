@@ -48,4 +48,20 @@ describe("Stage selection", () => {
     expect(editMode.selection).toEqual({ kind: "none" });
     expect(editMode.selectedPerformerId).toBeNull();
   });
+
+  it("sets and normalizes a whole performer selection atomically", () => {
+    const editMode = createStageEditMode();
+
+    editMode.selectPerformers(["a", "b", "a"], "a");
+
+    expect(editMode.selection).toEqual({
+      kind: "performers",
+      performerIds: ["a", "b"],
+      anchorId: "a",
+    });
+    expect(editMode.selectedPerformerId).toBe("a");
+
+    editMode.selectPerformers([]);
+    expect(editMode.selection).toEqual({ kind: "none" });
+  });
 });

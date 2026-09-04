@@ -1,6 +1,6 @@
 # Ember geology, lava, and composition research
 
-Status: complete research package; spatial direction awaits Austen's review
+Status: complete research package; Breached Rift Bench Gate 2 R2 ready for review
 
 Date: 2026-09-03
 
@@ -20,9 +20,10 @@ horizon remains open. The plan is directional rather than radial. The stage is
 a locally smooth patch of an older cooled surface, not a disk placed inside a
 ring of spectacle.
 
-This is a recommendation, not an approved production direction. It earns the
-next graybox because it is the best combined answer to geology, lava causality,
-camera resilience, performer clearance, and the remaining Meshy budget.
+This direction is approved through Gate 1.1 under Austen's delegated spatial
+authority in tracker `7uoHBfOCOqMmFeKBRh7l`. It earned the R2 graybox because it
+is the best combined answer to geology, lava causality, camera resilience,
+performer clearance, and the remaining Meshy budget.
 
 The restart should preserve Ember's useful infrastructure, surface work, and
 atmosphere while replacing two failed owners:
@@ -440,10 +441,11 @@ A is the current recommendation.
 
 ### Gate 2: build the real graybox
 
-Create one terrain height field and massing model from the approved plan. Import
-the simulator footprint as a guide. Use flat diagnostic materials. Capture the
-default audience, 45° increments around the orbit, plan, and longitudinal
-section. Do not build final lava or spend Meshy credits.
+Create one terrain height field and massing model from the approved plan. Use
+the selected simulator thickness raster as the visible deposit owner. Use flat
+diagnostic materials. Capture the default audience, 45° increments around the
+orbit, north-up plan, longitudinal section, and director overview. Do not build
+final lava materials or spend Meshy credits.
 
 Gate 2 passes when:
 

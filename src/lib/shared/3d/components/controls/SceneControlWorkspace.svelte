@@ -16,11 +16,16 @@
   import { shouldDeferEscapeShortcut } from "$lib/shared/keyboard/domain/escape-shortcut-target";
   import SaveSceneModal from "$lib/features/scene-3d-collection/components/SaveSceneModal.svelte";
   import PerformerSpine from "./PerformerSpine.svelte";
+  import SelectionToolbar from "$lib/shared/components/selection/SelectionToolbar.svelte";
   import SceneControlInspector from "./SceneControlInspector.svelte";
   import SceneControlRail from "./SceneControlRail.svelte";
   import type { PerformerEditSink } from "./performer-hub-types";
   import { onMount, type Snippet } from "svelte";
-  import { flyFade } from "$lib/shared/transitions/motion";
+  import { flyFade, growFade } from "$lib/shared/transitions/motion";
+  import {
+    DIRECT_PERFORMER_SELECTION_EVENT,
+    type DirectPerformerSelectionDetail,
+  } from "../performer-interaction/performer-pointer-interaction.svelte";
 
   interface Props {
     bpm?: number;
@@ -110,6 +115,7 @@
 
   let workspaceWidth = $state(0);
   let workspaceHeight = $state(0);
+  let workspaceEl = $state<HTMLElement | null>(null);
   let activeTool = $state<SceneControlTool | null>(null);
   let hostPanelOpen = $state(false);
   let panelEl = $state<HTMLElement | null>(null);
@@ -117,6 +123,8 @@
   let showInteractionHint = $state(false);
   let interactionAnnouncement = $state("");
   let compactSheet = $state<"performer" | "scene" | null>(null);
+  let performerOpenRequest = $state(0);
+  let performerCloseRequest = $state(0);
   const viewer = getViewer3DContext();
 
   onMount(() => {
@@ -127,11 +135,30 @@
     const announce = (event: Event) => {
       interactionAnnouncement = (event as CustomEvent<string>).detail;
     };
+    const openDirectlySelectedPerformer = (event: Event) => {
+      const { selectedPerformerIndices, openInspector } = (
+        event as CustomEvent<DirectPerformerSelectionDetail>
+      ).detail;
+      if (workspaceEl?.closest("[inert], [aria-hidden='true']")) return;
+
+      if (selectedPerformerIndices.length === 0 || !openInspector) {
+        if (activeTool === "performer") activeTool = null;
+        performerCloseRequest += 1;
+        return;
+      }
+
+      if (layout.presentation === "compact") performerOpenRequest += 1;
+      else activeTool = "performer";
+    };
     window.addEventListener(
       "tka-performer-interaction-hint-dismissed",
       dismissHint
     );
     window.addEventListener("tka-performer-interaction-announcement", announce);
+    window.addEventListener(
+      DIRECT_PERFORMER_SELECTION_EVENT,
+      openDirectlySelectedPerformer
+    );
     return () => {
       window.removeEventListener(
         "tka-performer-interaction-hint-dismissed",
@@ -140,6 +167,10 @@
       window.removeEventListener(
         "tka-performer-interaction-announcement",
         announce
+      );
+      window.removeEventListener(
+        DIRECT_PERFORMER_SELECTION_EVENT,
+        openDirectlySelectedPerformer
       );
     };
   });
@@ -195,6 +226,20 @@
     hostPanelOpen = false;
   }
 
+  function finishMultiSelection(): void {
+    if (viewer.selectedPerformerIndices.length === 0) return;
+    viewer.setPerformerSelectionMode(false);
+    if (layout.presentation === "compact") performerOpenRequest += 1;
+    else activeTool = "performer";
+  }
+
+  function cancelMultiSelection(): void {
+    viewer.setPerformerSelectionMode(false);
+    viewer.clearPerformerSelection();
+    if (activeTool === "performer") activeTool = null;
+    performerCloseRequest += 1;
+  }
+
   function handleCompactSheetChange(sheet: "performer" | "scene" | null): void {
     compactSheet = sheet;
     onCompactSheetChange?.(sheet);
@@ -243,6 +288,19 @@
     }
   });
 
+  let selectionModeWasActive = false;
+  $effect(() => {
+    const isActive = viewer.performerSelectionMode;
+    if (!isActive || selectionModeWasActive) {
+      selectionModeWasActive = isActive;
+      return;
+    }
+    selectionModeWasActive = true;
+    if (activeTool === "performer") activeTool = null;
+    if (hostPanelOpen) hostPanelOpen = false;
+    performerCloseRequest += 1;
+  });
+
   let dockWasOpen = false;
   $effect(() => {
     const dockIsOpen =
@@ -266,6 +324,15 @@
   }}
   onkeydown={(event) => {
     if (
+      event.key === "Escape" &&
+      viewer.performerSelectionMode &&
+      !shouldDeferEscapeShortcut(document) &&
+      !isModalTarget(event.target)
+    ) {
+      viewer.setPerformerSelectionMode(false);
+      event.preventDefault();
+      event.stopPropagation();
+    } else if (
       rightColumnOpen &&
       !shouldDeferEscapeShortcut(document) &&
       !isModalTarget(event.target)
@@ -281,6 +348,7 @@
   class:overlay={layout.presentation === "overlay"}
   class:compact={layout.presentation === "compact"}
   class:compact-sheet-open={compactSheet !== null}
+  bind:this={workspaceEl}
   bind:clientWidth={workspaceWidth}
   bind:clientHeight={workspaceHeight}
   data-scene-control-workspace
@@ -305,6 +373,8 @@
         {onStepBackward}
         {onSettingChange}
         {onPerformerEdit}
+        openPerformerRequest={performerOpenRequest}
+        closePerformerRequest={performerCloseRequest}
         onSheetChange={handleCompactSheetChange}
       />
     </div>
@@ -317,11 +387,13 @@
     <div class="performer-bar-anchor">
       <PerformerSpine
         {onSettingChange}
-        onScopeSelect={() => (activeTool = "performer")}
+        onScopeSelect={() =>
+          (activeTool =
+            viewer.selectedPerformerIndices.length > 0 ? "performer" : null)}
       />
       {#if showInteractionHint}
         <p class="interaction-hint" transition:flyFade>
-          Click a performer to select · drag to move
+          Click to edit · Ctrl/Cmd-click to select several · drag to move
         </p>
       {/if}
     </div>
@@ -364,6 +436,26 @@
         {@render hostPanel(closeHostPanel)}
       </div>
     {/if}
+  {/if}
+
+  {#if viewer.performerSelectionMode}
+    <div class="selection-toolbar-anchor" transition:growFade={{ axis: "y" }}>
+      <SelectionToolbar
+        selectedCount={viewer.selectedPerformerIndices.length}
+        totalCount={viewer.performerManager.performers.length}
+        primaryLabel="Done"
+        primaryIcon="fa-check"
+        onPrimaryAction={finishMultiSelection}
+        secondaryLabel="Cancel"
+        secondaryIcon="fa-xmark"
+        onSecondaryAction={cancelMultiSelection}
+        secondaryDisabledWhenEmpty={false}
+        showExitAction={false}
+        onSelectAll={() => viewer.selectAllPerformers()}
+        onClearSelection={() => viewer.clearPerformerSelection()}
+        onExitSelection={cancelMultiSelection}
+      />
+    </div>
   {/if}
 </div>
 
@@ -478,6 +570,23 @@
     inset: 0;
     z-index: 30;
     pointer-events: none;
+  }
+
+  .selection-toolbar-anchor {
+    position: absolute;
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: calc(var(--scene-controls-bottom, 5.5rem) + 0.75rem);
+    left: max(0.75rem, env(safe-area-inset-left));
+    z-index: 35;
+    max-width: 46rem;
+    margin-inline: auto;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke-strong);
+    border-radius: 1rem;
+    background: var(--theme-panel-bg);
+    box-shadow: var(--theme-panel-shadow);
+    pointer-events: auto;
+    container: gallery / inline-size;
   }
 
   @media (prefers-reduced-motion: reduce) {

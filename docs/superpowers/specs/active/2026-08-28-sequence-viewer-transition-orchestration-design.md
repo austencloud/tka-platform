@@ -1169,20 +1169,24 @@ The corrected phrase has one ease and a small depth offset:
    remains present while the ensemble becomes legible, then yields as the
    formation takes ownership.
 4. The Canvas2D owner marks its primary canvas as
-   `data-animation-layer="props"`. The review harness samples that canvas's own
-   readable buffer every 48 ms and counts green, yellow, cyan, and purple pixels
-   that the red/blue 2D pair cannot contribute. Copying into a probe canvas is
-   deliberately avoided because Chromium returned a transparent proxy for this
-   live renderer. The grade now fails visibly as `Painted spectrum arrival:
-unavailable` if the pixel boundary cannot be read.
+   `data-animation-layer="props"`. During a trace, the harness arms a
+   document-level capture that survives a `DualSourceCrossfade` canvas swap.
+   The renderer records each additional prop only after its `drawImage`
+   completes, including the host progress, count drawn, count at perceptible
+   alpha, and mean painted alpha. It retains the bounded render-frame history
+   so an outer review sampler starved by the browser cannot collapse the phrase
+   to one apparent step. There are no telemetry writes during ordinary
+   playback. The grade fails visibly as `Painted prop arrival: unavailable` if
+   the renderer boundary cannot be read.
 
 The new Gate 3 acceptance contract requires all layers to be perceptible by 35%
-master progress, at least 35% mean layer opacity near halfway, at least 15% of
-the final painted spectrum by quarter progress, at least 50% by halfway, and at
-least four independently sampled growth frames. Timing spread must remain
-between 0.08 and 0.28 so the copies retain depth without becoming seven serial
-disclosures. Rapid reversal still retraces the same per-layer progress and uses
-one opacity owner.
+master progress and at least 35% mean layer opacity near halfway. At the renderer
+boundary, every additional prop must be perceptible by 35% progress, mean
+painted alpha must reach at least 15% by quarter progress and 35% by halfway,
+and the reveal must contain at least four independently rendered growth frames.
+Timing spread must remain between 0.08 and 0.28 so the copies retain depth
+without becoming seven serial disclosures. Rapid reversal still retraces the
+same per-layer progress and uses one opacity owner.
 
 ## Gate 6 baseline · 2026-09-01
 

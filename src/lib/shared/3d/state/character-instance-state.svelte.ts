@@ -918,6 +918,9 @@ export function createCharacterInstanceState(
     return structuredClone({
       index: -1, // filled by caller if needed
       selectedPerformerIndex: null,
+      characterId,
+      displayName,
+      loadedSequence: $state.snapshot(loadedSequence),
       settings: {
         prop: _settings.prop,
         effortId: _settings.effortId,
@@ -936,6 +939,8 @@ export function createCharacterInstanceState(
   }
 
   function restorePerformerSnapshot(snap: PerformerDomainSnapshot): void {
+    characterId = snap.characterId;
+    displayName = snap.displayName;
     _settings = {
       prop: snap.settings.prop,
       effortId: snap.settings.effortId,
@@ -947,6 +952,8 @@ export function createCharacterInstanceState(
     customLeftPlane = snap.planes.customLeftPlane;
     customRightPlane = snap.planes.customRightPlane;
     planeMode = snap.planes.planeMode;
+    if (snap.loadedSequence) loadSequence(snap.loadedSequence);
+    else clearSequence();
     beatPlaneOverrides = new Map(snap.planes.beatPlaneOverrides);
     reconvertWithConfig(getEffectiveModeConfig(effectivePlaneMode));
   }
@@ -1331,6 +1338,8 @@ export function createCharacterInstanceState(
       return displayName;
     },
     setDisplayName,
+    captureEditingSnapshot: capturePerformerSnapshot,
+    restoreEditingSnapshot: restorePerformerSnapshot,
 
     // Sequence state
     get hasSequence() {
