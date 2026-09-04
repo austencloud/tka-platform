@@ -54,8 +54,14 @@
     const restored = persistence?.restore() ?? null;
     if (restored) state.restoreState(restored);
 
+    // The compact seam is the shell stylesheet's `(width < 75rem) or
+    // (height < 42rem)` container query. Measuring in rem here, not fixed
+    // pixels, keeps the compact markup and the compact styles switching on
+    // the same frame when the root font size is anything but 16px.
     const applyLayout = (width: number, height: number) => {
-      const compact = width < 1200 || height < 672;
+      const rem =
+        parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const compact = width < 75 * rem || height < 42 * rem;
       state.setCompact(compact);
     };
     const bounds = host.getBoundingClientRect();
