@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { derivePropRelationship } from "$lib/shared/shape-matrix/domain/prop-relationship";
+import {
+  derivePropElementalType,
+  derivePropRelationship,
+} from "$lib/shared/shape-matrix/domain/prop-relationship";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
@@ -27,11 +30,13 @@ function sequence(
             startLocation: "s",
             startOrientation: "in",
             rotationDirection: leftDirection,
+            turns: 0,
           },
           right: {
             startLocation: "n",
             startOrientation: redOrientation,
             rotationDirection: rightDirection,
+            turns: 0,
           },
         },
       },
@@ -61,6 +66,10 @@ describe("prop relationship", () => {
     });
     expect(result.kind).toBe("full");
     if (result.kind === "full") expect(result.element.element).toBe("water");
+  });
+
+  it("adapts a sequence directly for ordinary viewer annotations", () => {
+    expect(derivePropElementalType(sequence("cw", "cw"))).toBe("water");
   });
 
   it("does not invent direction or timing for float", () => {

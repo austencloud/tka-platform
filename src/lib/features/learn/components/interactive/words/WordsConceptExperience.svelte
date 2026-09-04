@@ -56,7 +56,7 @@
   // TKAWordGlyph receives a pixel height, so only the canonical 1680/2600
   // big-screen seams can increase the rendered glyph size.
   const glyphScale = $derived(
-    shellWidth >= 2600 ? 1.45 : shellWidth >= 1680 ? 1.15 : 1
+    shellWidth >= 2600 ? 2 : shellWidth >= 1680 ? 1.15 : 1
   );
 
   const coreSequences = $derived(
@@ -258,14 +258,6 @@
               <img src={activeCoreFamily.element.iconPath} alt="" />
               <span>{activeCoreFamily.element.name}</span>
             </span>
-            <div class="word-identity">
-              <TKAWordGlyph
-                word={displayWord(activeCoreSequence)}
-                height={Math.round(40 * glyphScale)}
-                darkMode
-                fitToParent
-              />
-            </div>
             <span class="sequence-position">
               Word {activeCoreIndex + 1} / {LEARNING_LETTERS_CORE_WORDS.length}
             </span>
@@ -504,13 +496,6 @@
     object-fit: contain;
   }
 
-  .word-identity {
-    display: grid;
-    place-items: center;
-    min-width: 4rem;
-    max-width: min(16rem, 42cqw);
-  }
-
   .sequence-position {
     color: var(--theme-text-dim);
     font-size: var(--font-size-sm, 0.875rem);
@@ -704,7 +689,20 @@
     }
 
     .recap-word {
-      min-height: 6.25rem;
+      gap: 0.35rem;
+      min-height: 5rem;
+    }
+
+    .recap-header {
+      gap: 0.35rem;
+    }
+
+    .recap-header .guide-prose {
+      line-height: 1.35;
+    }
+
+    .recap-family .family-heading {
+      min-height: 2.75rem;
     }
   }
 
@@ -721,11 +719,27 @@
 
   @container learning-letters (min-width: 2600px) {
     .lesson-shell {
-      width: min(100%, 152rem);
+      width: min(100%, 214rem);
     }
 
     .word-step {
-      width: min(100%, 142rem);
+      width: min(100%, 200rem);
+    }
+
+    .recap-step {
+      max-width: 160rem;
+    }
+
+    .recap-step h1 {
+      font-size: 3.8rem;
+    }
+
+    .recap-step .guide-prose {
+      font-size: 1.45rem;
+    }
+
+    .recap-word {
+      min-height: 12rem;
     }
 
     .family-identity img {
@@ -735,11 +749,6 @@
 
     .word-header {
       min-height: 4.25rem;
-    }
-
-    .word-identity {
-      min-width: 5rem;
-      max-width: min(22rem, 42cqw);
     }
   }
 
