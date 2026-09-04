@@ -533,6 +533,12 @@
     text-overflow: ellipsis;
   }
 
+  /* Preserve the existing action footprint while giving the attributed source
+     label enough text width to render Lorq's name without an ellipsis. */
+  .source-action {
+    padding-inline: 0.6rem;
+  }
+
   .top-action:hover {
     color: var(--theme-text, #fff);
     border-color: color-mix(
