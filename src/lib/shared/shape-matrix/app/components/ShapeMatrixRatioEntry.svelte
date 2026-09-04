@@ -12,19 +12,23 @@
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
 
   interface Props {
-    hand: "left" | "right";
+    hand: "left" | "right" | "both";
     layout?: "ribbon" | "tray";
-    onfocuschange?: (hand: "left" | "right" | null) => void;
+    onfocuschange?: (hand: "left" | "right" | "both" | null) => void;
   }
   let { hand, layout = "ribbon", onfocuschange }: Props = $props();
 
   const appState = getShapeMatrixAppContext();
   const current = $derived(
-    hand === "left" ? appState.theoryLeftRatio : appState.theoryRightRatio
+    hand === "right" ? appState.theoryRightRatio : appState.theoryLeftRatio
   );
   const currentKey = $derived(spinRatioKey(current));
   const axisLabel = $derived(
-    hand === "left" ? "Left-hand rows" : "Right-hand columns"
+    hand === "left"
+      ? "Left-hand rows"
+      : hand === "right"
+        ? "Right-hand columns"
+        : "Rows + columns"
   );
 
   let propText = $state("");
@@ -55,6 +59,8 @@
   }
 
   const typed = $derived(reduceTyped(propText, handText));
+  const propValue = $derived(readPart(propText));
+  const handValue = $derived(readPart(handText));
   const problem = $derived.by<string | null>(() => {
     const propRotations = readPart(propText);
     const handCycles = readPart(handText);
@@ -84,18 +90,32 @@
     return theoryRatioLabel(typed);
   });
 
-  function apply(): void {
-    if (!typed || problem) return;
-    appState.setTheoryRatioFor(hand, typed);
+  function apply(nextProp: string, nextHand: string): void {
+    const nextRatio = reduceTyped(nextProp, nextHand);
+    const nextPropValue = readPart(nextProp);
+    const nextHandValue = readPart(nextHand);
+    if (
+      !nextRatio ||
+      nextPropValue === null ||
+      nextHandValue === null ||
+      (nextPropValue === 0 && nextHandValue === 0) ||
+      nextPropValue > THEORY_RATIO_MAX_PART ||
+      nextHandValue > THEORY_RATIO_MAX_PART
+    ) {
+      return;
+    }
+    appState.setTheoryRatioFor(hand === "right" ? "right" : "left", nextRatio);
     // Keep 2:4 under the cursor while the grid correctly applies 1:2.
-    seededKey = spinRatioKey(typed);
+    seededKey = spinRatioKey(nextRatio);
   }
 
   function onPart(next: string, side: "prop" | "hand"): void {
     const digits = next.replace(/\D/g, "").slice(0, 2);
-    if (side === "prop") propText = digits;
-    else handText = digits;
-    apply();
+    const nextProp = side === "prop" ? digits : propText;
+    const nextHand = side === "hand" ? digits : handText;
+    propText = nextProp;
+    handText = nextHand;
+    apply(nextProp, nextHand);
   }
 
   function nudge(side: "prop" | "hand", delta: number): void {
@@ -127,45 +147,83 @@
   class="ratio-side"
   class:left={hand === "left"}
   class:right={hand === "right"}
+  class:both={hand === "both"}
   class:tray={layout === "tray"}
   aria-label={`${axisLabel} ratio`}
   onfocusin={() => onfocuschange?.(hand)}
   onfocusout={onFocusOut}
 >
   <header class="side-head">
+    <span class="axis-dot" aria-hidden="true"></span>
     <span class="axis-label">{axisLabel}</span>
   </header>
 
   <div class="entry-row" class:invalid={Boolean(problem)}>
-    <label class="part-field">
+    <div class="part-field">
       <span>Hand cycles</span>
-      <input
-        type="text"
-        inputmode="numeric"
-        autocomplete="off"
-        value={handText}
-        aria-label={`${axisLabel} hand cycles`}
-        aria-invalid={Boolean(problem)}
-        oninput={(event) => onPart(event.currentTarget.value, "hand")}
-        onkeydown={(event) => onKey(event, "hand")}
-      />
-    </label>
+      <span class="part-stepper">
+        <button
+          type="button"
+          aria-label={`Decrease ${axisLabel} hand cycles`}
+          disabled={(handValue ?? 0) <= 0}
+          onclick={() => nudge("hand", -1)}>−</button
+        >
+        <input
+          type="text"
+          role="spinbutton"
+          inputmode="numeric"
+          autocomplete="off"
+          value={handText}
+          aria-label={`${axisLabel} hand cycles`}
+          aria-valuemin="0"
+          aria-valuemax={THEORY_RATIO_MAX_PART}
+          aria-valuenow={handValue ?? undefined}
+          aria-invalid={Boolean(problem)}
+          oninput={(event) => onPart(event.currentTarget.value, "hand")}
+          onkeydown={(event) => onKey(event, "hand")}
+        />
+        <button
+          type="button"
+          aria-label={`Increase ${axisLabel} hand cycles`}
+          disabled={(handValue ?? 0) >= THEORY_RATIO_MAX_PART}
+          onclick={() => nudge("hand", 1)}>+</button
+        >
+      </span>
+    </div>
 
     <span class="colon" aria-hidden="true">:</span>
 
-    <label class="part-field">
+    <div class="part-field">
       <span>Prop rotations</span>
-      <input
-        type="text"
-        inputmode="numeric"
-        autocomplete="off"
-        value={propText}
-        aria-label={`${axisLabel} prop rotations`}
-        aria-invalid={Boolean(problem)}
-        oninput={(event) => onPart(event.currentTarget.value, "prop")}
-        onkeydown={(event) => onKey(event, "prop")}
-      />
-    </label>
+      <span class="part-stepper">
+        <button
+          type="button"
+          aria-label={`Decrease ${axisLabel} prop rotations`}
+          disabled={(propValue ?? 0) <= 0}
+          onclick={() => nudge("prop", -1)}>−</button
+        >
+        <input
+          type="text"
+          role="spinbutton"
+          inputmode="numeric"
+          autocomplete="off"
+          value={propText}
+          aria-label={`${axisLabel} prop rotations`}
+          aria-valuemin="0"
+          aria-valuemax={THEORY_RATIO_MAX_PART}
+          aria-valuenow={propValue ?? undefined}
+          aria-invalid={Boolean(problem)}
+          oninput={(event) => onPart(event.currentTarget.value, "prop")}
+          onkeydown={(event) => onKey(event, "prop")}
+        />
+        <button
+          type="button"
+          aria-label={`Increase ${axisLabel} prop rotations`}
+          disabled={(propValue ?? 0) >= THEORY_RATIO_MAX_PART}
+          onclick={() => nudge("prop", 1)}>+</button
+        >
+      </span>
+    </div>
   </div>
 
   <div class="feedback" aria-live="polite">
@@ -191,7 +249,7 @@
     --axis-base: var(--theme-accent, #f59e0b);
     display: grid;
     grid-template-rows: auto auto;
-    width: 15rem;
+    width: 20rem;
     min-width: 0;
     gap: 0.45rem;
     padding: 0.25rem;
@@ -207,17 +265,41 @@
     --axis-base: var(--prop-red, #ed1c24);
   }
 
+  .ratio-side.both {
+    --axis-color: color-mix(
+      in srgb,
+      var(--prop-blue-text, #818cf8) 50%,
+      var(--prop-red-text, #f87171)
+    );
+    --axis-base: color-mix(
+      in srgb,
+      var(--prop-blue, #2e3192) 50%,
+      var(--prop-red, #ed1c24)
+    );
+  }
+
   .side-head {
     display: flex;
     min-width: 0;
     align-items: center;
+    gap: 0.45rem;
   }
 
   .axis-label {
-    color: var(--axis-color);
+    color: var(--theme-text, #fff);
     font-size: var(--font-size-min, 0.875rem);
     font-weight: 700;
     white-space: nowrap;
+  }
+
+  .axis-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--axis-color);
+    box-shadow: 0 0 0.65rem
+      color-mix(in srgb, var(--axis-color) 42%, transparent);
   }
 
   .entry-row {
@@ -232,42 +314,93 @@
     min-width: 0;
     gap: 0.25rem;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: var(--font-size-min, 0.875rem);
     font-weight: 600;
     text-align: center;
   }
 
-  .part-field input {
-    width: 100%;
+  .part-stepper {
+    display: grid;
+    grid-template-columns:
+      var(--min-touch-target, 44px) minmax(2.6rem, 1fr)
+      var(--min-touch-target, 44px);
     min-width: 0;
-    height: var(--min-touch-target, 44px);
-    padding: 0 0.35rem;
+    overflow: hidden;
     border: 1px solid var(--theme-stroke-strong, rgb(255 255 255 / 0.2));
-    border-radius: 8px;
+    border-radius: 9px;
     background: color-mix(in srgb, #000 34%, transparent);
-    color: var(--theme-text, #fff);
-    font: inherit;
-    font-size: 1.125rem;
-    font-weight: 750;
-    font-variant-numeric: tabular-nums;
-    text-align: center;
     transition:
       border-color var(--duration-fast, 150ms) var(--transition-easing, ease),
       background var(--duration-fast, 150ms) var(--transition-easing, ease);
   }
 
-  .part-field input:hover {
+  .part-stepper:hover {
     border-color: color-mix(in srgb, var(--axis-color) 48%, transparent);
   }
 
-  .part-field input:focus-visible {
+  .part-stepper:focus-within {
     border-color: var(--axis-color);
     outline: 2px solid color-mix(in srgb, var(--axis-color) 72%, transparent);
     outline-offset: 1px;
     background: color-mix(in srgb, var(--axis-base) 12%, #000 88%);
   }
 
-  .entry-row.invalid .part-field input {
+  .part-stepper input,
+  .part-stepper button {
+    height: var(--min-touch-target, 44px);
+    border: 0;
+    background: transparent;
+    color: var(--theme-text, #fff);
+    font: inherit;
+  }
+
+  .part-stepper input {
+    width: 100%;
+    min-width: 0;
+    padding: 0 0.35rem;
+    border-right: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    border-left: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    font-size: 1.125rem;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+
+  .part-stepper input:focus-visible {
+    outline: 0;
+  }
+
+  .part-stepper button {
+    display: grid;
+    place-items: center;
+    min-width: var(--min-touch-target, 44px);
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
+    cursor: pointer;
+    font-size: 1.15rem;
+    font-weight: 700;
+    transition:
+      color var(--duration-fast, 150ms) ease,
+      background var(--duration-fast, 150ms) ease;
+  }
+
+  .part-stepper button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--axis-color) 13%, transparent);
+    color: var(--theme-text, #fff);
+  }
+
+  .part-stepper button:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid var(--theme-text, #fff);
+    outline-offset: -3px;
+  }
+
+  .part-stepper button:disabled {
+    color: color-mix(in srgb, var(--theme-text, #fff) 22%, transparent);
+    cursor: not-allowed;
+  }
+
+  .entry-row.invalid .part-stepper {
     border-color: color-mix(
       in srgb,
       var(--semantic-danger, #ef4444) 68%,
@@ -311,7 +444,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .part-field input {
+    .part-stepper,
+    .part-stepper button {
       transition: none;
     }
   }

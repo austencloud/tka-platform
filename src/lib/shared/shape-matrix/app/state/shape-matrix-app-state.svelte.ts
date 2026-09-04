@@ -25,6 +25,7 @@ import { requestShapeMatrixTransition } from "$lib/shared/shape-matrix/debug/sha
 import { spinRatioEquals, type SpinRatio } from "@vtg/domain";
 import {
   buildTheoryAxis,
+  theoryFlowerKey,
   type TheoryFlower,
 } from "$lib/shared/shape-matrix/domain/theory-flower";
 import {
@@ -66,6 +67,8 @@ export interface ShapeMatrixAppSnapshot {
   theoryLeftRatio: SpinRatio;
   /** Theory columns: the red hand's prop-to-hand ratio. */
   theoryRightRatio: SpinRatio;
+  /** When true, either ratio editor moves both axes together. */
+  theoryRatiosLinked?: boolean;
   /**
    * The timing-and-direction pairing on the Theory surface, named by the same
    * six VTG modes (and the same six elements) a Matrix realization carries.
@@ -197,6 +200,10 @@ export function createShapeMatrixAppState(
       initial.theoryRightRatio.propRotations,
       initial.theoryRightRatio.handCycles
     ) ?? DEFAULT_THEORY_RATIO
+  );
+  let theoryRatiosLinked = $state(
+    Boolean(initial.theoryRatiosLinked) &&
+      spinRatioEquals(theoryLeftRatio, theoryRightRatio)
   );
   let theoryMode = $state<VtgMode>(initial.theoryMode);
   let theoryPair = $state(initial.theoryPair);
@@ -384,10 +391,28 @@ export function createShapeMatrixAppState(
       nextRatio.handCycles
     );
     if (!allowed) return;
+    if (theoryRatiosLinked) {
+      applyTheoryRatios(allowed, allowed);
+      syncState();
+      return;
+    }
     applyTheoryRatios(
       hand === "left" ? allowed : theoryLeftRatio,
       hand === "right" ? allowed : theoryRightRatio
     );
+    syncState();
+  }
+
+  function linkTheoryRatios(source: "left" | "right"): void {
+    const kept = source === "left" ? theoryLeftRatio : theoryRightRatio;
+    theoryRatiosLinked = true;
+    applyTheoryRatios(kept, kept);
+    syncState();
+  }
+
+  function unlinkTheoryRatios(): void {
+    if (!theoryRatiosLinked) return;
+    theoryRatiosLinked = false;
     syncState();
   }
 
@@ -405,6 +430,9 @@ export function createShapeMatrixAppState(
       nextRightRatio.handCycles
     );
     if (!allowedLeft || !allowedRight) return;
+    if (theoryRatiosLinked && !spinRatioEquals(allowedLeft, allowedRight)) {
+      theoryRatiosLinked = false;
+    }
     applyTheoryRatios(allowedLeft, allowedRight);
     syncState();
   }
@@ -425,6 +453,28 @@ export function createShapeMatrixAppState(
       requestCompactFocus("detail");
     }
     syncState();
+  }
+
+  function selectRandomTheoryPair(random: () => number = Math.random): void {
+    const pairs = theoryRowAxis.flatMap((left) =>
+      theoryColAxis.map((right) => ({ left, right }))
+    );
+    if (pairs.length === 0) return;
+
+    const currentKey = theoryPair
+      ? `${theoryFlowerKey(theoryPair.left)}|${theoryFlowerKey(theoryPair.right)}`
+      : null;
+    const choices =
+      pairs.length > 1
+        ? pairs.filter(
+            ({ left, right }) =>
+              `${theoryFlowerKey(left)}|${theoryFlowerKey(right)}` !==
+              currentKey
+          )
+        : pairs;
+    const unit = Math.min(0.999999, Math.max(0, random()));
+    const choice = choices[Math.floor(unit * choices.length)];
+    if (choice) selectTheoryPair(choice);
   }
 
   /*
@@ -454,6 +504,9 @@ export function createShapeMatrixAppState(
         restoredRightRatio.propRotations,
         restoredRightRatio.handCycles
       ) ?? DEFAULT_THEORY_RATIO;
+    theoryRatiosLinked =
+      Boolean(snapshot.theoryRatiosLinked) &&
+      spinRatioEquals(theoryLeftRatio, theoryRightRatio);
     theoryMode = snapshot.theoryMode ?? "SS";
     theoryPair = snapshot.theoryPair
       ? {
@@ -573,6 +626,7 @@ export function createShapeMatrixAppState(
       surface,
       theoryLeftRatio,
       theoryRightRatio,
+      theoryRatiosLinked,
       theoryMode,
       theoryPair,
       level,
@@ -596,6 +650,9 @@ export function createShapeMatrixAppState(
     },
     get theoryRightRatio() {
       return theoryRightRatio;
+    },
+    get theoryRatiosLinked() {
+      return theoryRatiosLinked;
     },
     get theoryMode() {
       return theoryMode;
@@ -684,8 +741,11 @@ export function createShapeMatrixAppState(
     setSurface,
     setTheoryRatioFor,
     setTheoryRatios,
+    linkTheoryRatios,
+    unlinkTheoryRatios,
     setTheoryMode,
     selectTheoryPair,
+    selectRandomTheoryPair,
     setPropType,
     selectPair,
     setMode,
