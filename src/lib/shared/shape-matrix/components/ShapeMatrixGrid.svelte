@@ -55,9 +55,15 @@
     /** Spoken description of an axis item. Defaults to the flower label. */
     labelOf?: (item: TAxis) => string;
     /** Header artwork source at a measured size. Defaults to the flower painter. */
-    paintHeader?: (item: TAxis, hand: "left" | "right", sizePx: number) => string;
+    paintHeader?: (
+      item: TAxis,
+      hand: "left" | "right",
+      sizePx: number
+    ) => string;
     /** Cell artwork source at a measured size. Defaults to the flower painter. */
     paintCell?: (left: TAxis, right: TAxis, sizePx: number) => string;
+    /** Optional focus feedback from an external axis editor. */
+    emphasizedAxis?: "left" | "right" | null;
   }
   let {
     data,
@@ -83,6 +89,7 @@
     ) => string,
     paintHeader,
     paintCell,
+    emphasizedAxis = null,
   }: Props = $props();
 
   // Track counts for the CSS tile formula: the row-header column and the
@@ -94,13 +101,12 @@
   // canvas's own guide painter, at each tile's measured size (the primitive
   // measures itself), so the strokes are the animator's strokes from the 44px
   // touch-target floor through the 320px 4K layout.
-  const headerPaint =
-    (f: TAxis, hand: "left" | "right") => (sizePx: number) =>
-      paintHeader
-        ? paintHeader(f, hand, sizePx)
-        : data
-          ? headerArtworkSrc(data, f as Flower, hand, sizePx, painter)
-          : "";
+  const headerPaint = (f: TAxis, hand: "left" | "right") => (sizePx: number) =>
+    paintHeader
+      ? paintHeader(f, hand, sizePx)
+      : data
+        ? headerArtworkSrc(data, f as Flower, hand, sizePx, painter)
+        : "";
   const cellPaint = (b: TAxis, r: TAxis) => (sizePx: number) =>
     paintCell
       ? paintCell(b, r, sizePx)
@@ -154,7 +160,12 @@
           <th class="corner" scope="col" aria-label="left rows by right columns"
           ></th>
           {#each colAxis as rf, colIndex (colIndex)}
-            <th class="colhead" scope="col" title={labelOf(rf)}>
+            <th
+              class="colhead"
+              class:axis-emphasized={emphasizedAxis === "right"}
+              scope="col"
+              title={labelOf(rf)}
+            >
               <ShapeMatrixMandalaArt
                 paint={headerPaint(rf, "right")}
                 artKey={`right:${keyOf(rf)}`}
@@ -167,7 +178,12 @@
       <tbody>
         {#each rowAxis as bf, rowIndex (rowIndex)}
           <tr>
-            <th class="rowhead" scope="row" title={labelOf(bf)}>
+            <th
+              class="rowhead"
+              class:axis-emphasized={emphasizedAxis === "left"}
+              scope="row"
+              title={labelOf(bf)}
+            >
               <ShapeMatrixMandalaArt
                 paint={headerPaint(bf, "left")}
                 artKey={`left:${keyOf(bf)}`}
@@ -297,6 +313,33 @@
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-card-bg, #111922);
   }
+
+  .colhead,
+  .rowhead {
+    transition:
+      background var(--duration-fast, 150ms) var(--transition-easing, ease),
+      box-shadow var(--duration-fast, 150ms) var(--transition-easing, ease);
+  }
+
+  .colhead.axis-emphasized {
+    background: color-mix(
+      in srgb,
+      var(--prop-red, #ed1c24) 14%,
+      var(--theme-card-bg, #111922)
+    );
+    box-shadow: inset 0 0 0 2px
+      color-mix(in srgb, var(--prop-red-text, #f87171) 72%, transparent);
+  }
+
+  .rowhead.axis-emphasized {
+    background: color-mix(
+      in srgb,
+      var(--prop-blue, #2e3192) 18%,
+      var(--theme-card-bg, #111922)
+    );
+    box-shadow: inset 0 0 0 2px
+      color-mix(in srgb, var(--prop-blue-text, #818cf8) 72%, transparent);
+  }
   /* The art fills the header's content box. Sized to the tile itself it sat
      one border wider than its cell and the whole table overflowed its
      viewport by a few pixels, which is a scrollbar under a grid that fits. */
@@ -422,7 +465,9 @@
 
   @media (prefers-reduced-motion: reduce) {
     .cell,
-    .artwork {
+    .artwork,
+    .colhead,
+    .rowhead {
       transition: none;
     }
     /* The ring and wash still answer; only the artwork motion is dropped. */
