@@ -18,6 +18,7 @@ const STAFF_PROP_TYPES = new Set([
 export interface WorkerPerformerSnapshotOptions {
   leftPropType: string;
   rightPropType: string;
+  enableLocomotion?: boolean;
   badge?: {
     index: number;
     selected: boolean;
@@ -96,6 +97,33 @@ export function createWorkerPerformerSnapshot(
               ? 0.6
               : 0.35,
           selected: options.badge.selected,
+        }
+      : null,
+    locomotion: options.enableLocomotion
+      ? {
+          isMoving: performer.isMoving,
+          moveSpeed: performer.moveSpeed,
+          moveDirection: {
+            x: performer.moveDirection.x,
+            z: performer.moveDirection.z,
+          },
+          lateralGait: "sidestep",
+          gaitTimingSample: performer.gaitTimingSample
+            ? { ...performer.gaitTimingSample }
+            : null,
+          terminalStepPlan: performer.terminalStepPlan
+            ? {
+                ...performer.terminalStepPlan,
+                stepDistances: [
+                  ...performer.terminalStepPlan.stepDistances,
+                ] as [number, number],
+              }
+            : null,
+          // The production viewer does not currently schedule authored root
+          // turns: every supported plane mode keeps body heading at zero.
+          // Keep the protocol lane explicit so a future app-owned planner can
+          // supply a real request without moving that decision into rendering.
+          turnRequest: null,
         }
       : null,
   };

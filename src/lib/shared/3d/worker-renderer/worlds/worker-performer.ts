@@ -24,6 +24,7 @@ import type {
   WorkerPropSnapshot,
 } from "../domain/worker-renderer-protocol";
 import { createPerformerBadgeTexture } from "../../rendering/performer-badge-texture";
+import { WorkerPerformerLocomotion } from "./worker-performer-locomotion";
 
 const STAFF_PROP_TYPES = new Set([
   "staff",
@@ -119,17 +120,22 @@ export class WorkerPerformer {
   private snapshot: WorkerPerformerSnapshot;
   private avatarRoot: Object3D | null = null;
   private badge: WorkerPerformerBadgeObject | null = null;
+  private readonly locomotion: WorkerPerformerLocomotion | null;
   private disposed = false;
 
   private constructor(snapshot: WorkerPerformerSnapshot) {
     this.snapshot = snapshot;
     this.id = snapshot.id;
     this.root.name = `worker-performer-${snapshot.id}`;
+    const enableLocomotion = snapshot.locomotion != null;
     this.services = createAvatarServices({
-      enableLocomotion: false,
+      enableLocomotion,
       enableRootMotion: false,
-      enableFootPlanting: false,
+      enableFootPlanting: enableLocomotion,
     });
+    this.locomotion = enableLocomotion
+      ? new WorkerPerformerLocomotion(this.services)
+      : null;
     this.left = createProp("left", snapshot);
     this.right = createProp("right", snapshot);
     this.root.add(this.left.anchor, this.right.anchor);
@@ -157,7 +163,8 @@ export class WorkerPerformer {
       snapshot.leftPropType === this.snapshot.leftPropType &&
       snapshot.rightPropType === this.snapshot.rightPropType &&
       snapshot.staffLength === this.snapshot.staffLength &&
-      snapshot.staffThickness === this.snapshot.staffThickness
+      snapshot.staffThickness === this.snapshot.staffThickness &&
+      (snapshot.locomotion != null) === (this.snapshot.locomotion != null)
     );
   }
 
@@ -184,6 +191,7 @@ export class WorkerPerformer {
 
     const fingerChains = this.services.skeleton.getState().fingerChains;
     if (fingerChains) this.services.fingers.initialize(fingerChains);
+    if (this.locomotion) await this.locomotion.initialize(this.avatarRoot);
   }
 
   setSnapshot(snapshot: WorkerPerformerSnapshot): void {
@@ -267,6 +275,24 @@ export class WorkerPerformer {
   update(deltaSeconds: number): void {
     if (this.disposed || !this.avatarRoot) return;
     this.root.updateMatrixWorld(true);
+
+    if (this.locomotion && this.snapshot.locomotion) {
+      const frame = this.locomotion.update(
+        deltaSeconds,
+        this.snapshot.locomotion,
+        this.root,
+        this.snapshot.facingAngle,
+        cmToUnits(this.snapshot.avatarHeightCm),
+        this.snapshot.groundY
+      );
+      this.root.position.set(
+        this.snapshot.position[0] + frame.offset[0],
+        this.snapshot.position[1] + frame.offset[1],
+        this.snapshot.position[2] + frame.offset[2]
+      );
+      this.root.rotation.set(0, frame.facingAngle, 0);
+      this.root.updateMatrixWorld(true);
+    }
 
     const leftState = this.snapshot.leftProp ? this.left.state : null;
     const rightState = this.snapshot.rightProp ? this.right.state : null;
@@ -396,6 +422,7 @@ export class WorkerPerformer {
     this.disposeBadge();
     this.left.staff.dispose();
     this.right.staff.dispose();
+    this.locomotion?.dispose();
     this.services.fingers.dispose();
     this.services.skeleton.dispose();
     this.root.removeFromParent();

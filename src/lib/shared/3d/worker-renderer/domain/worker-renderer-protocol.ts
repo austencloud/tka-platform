@@ -1,4 +1,10 @@
 import type { SceneEffectTipSource3D } from "../../effects/scene-effects/scene-effect-source-3d";
+import type {
+  LateralGait,
+  ScheduledGaitTimingSample,
+  TerminalStepPlan,
+  TurnRequest,
+} from "@austencloud/scene-3d";
 
 export type WorkerEnvironmentKey =
   | "ocean"
@@ -55,6 +61,16 @@ export interface WorkerPerformerBadgeSnapshot {
   selected: boolean;
 }
 
+export interface WorkerPerformerLocomotionSnapshot {
+  isMoving: boolean;
+  moveSpeed: number;
+  moveDirection: { x: number; z: number };
+  lateralGait: LateralGait;
+  gaitTimingSample: ScheduledGaitTimingSample | null;
+  terminalStepPlan: TerminalStepPlan | null;
+  turnRequest: TurnRequest | null;
+}
+
 export interface WorkerPerformerSnapshot {
   id: string;
   avatarId: string;
@@ -72,6 +88,7 @@ export interface WorkerPerformerSnapshot {
   stanceSegments: WorkerStanceSegments | null;
   spinePitchOffset: number;
   badge?: WorkerPerformerBadgeSnapshot | null;
+  locomotion?: WorkerPerformerLocomotionSnapshot | null;
 }
 
 /**

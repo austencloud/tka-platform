@@ -35,6 +35,18 @@ function performer(): CharacterInstanceState {
     showRight: false,
     leftPropState: prop,
     rightPropState: prop,
+    isMoving: true,
+    moveSpeed: 1.25,
+    moveDirection: { x: 0.25, z: 0.75 },
+    gaitTimingSample: {
+      planId: "gait-a",
+      gaitStep: 2.5,
+      cadence: 1.8,
+      arrived: false,
+      settled: false,
+      settleProgress: 0,
+    },
+    terminalStepPlan: null,
   } as unknown as CharacterInstanceState;
 }
 
@@ -90,5 +102,24 @@ describe("worker performer snapshots", () => {
     });
 
     expect(snapshot.badge).toBeNull();
+  });
+
+  it("serializes clone-safe locomotion and the canonical turn request", () => {
+    const snapshot = createWorkerPerformerSnapshot(performer(), {
+      leftPropType: "staff",
+      rightPropType: "staff",
+      enableLocomotion: true,
+    });
+
+    expect(snapshot.locomotion).toEqual({
+      isMoving: true,
+      moveSpeed: 1.25,
+      moveDirection: { x: 0.25, z: 0.75 },
+      lateralGait: "sidestep",
+      gaitTimingSample: expect.objectContaining({ planId: "gait-a" }),
+      terminalStepPlan: null,
+      turnRequest: null,
+    });
+    expect(() => structuredClone(snapshot)).not.toThrow();
   });
 });
