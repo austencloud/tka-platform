@@ -3,10 +3,7 @@
   (Left / Both / Right) and the cumulative, level-appropriate turn control in
   the current label system. The matrix ribbon and the compact detail tray
   both present this component; only where the edit navigates differs, and
-  the host decides that through `onturn`.
-
-  The cell chrome and the stepping value scroller are shared with the Theory
-  ribbon, which needed the identical control for its ratio band. -->
+  the host decides that through `onturn`. -->
 <script lang="ts">
   import {
     matrixTurnSpokenLabel,
