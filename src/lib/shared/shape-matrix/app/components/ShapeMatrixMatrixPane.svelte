@@ -14,7 +14,7 @@
 </script>
 
 {#snippet cornerGuide()}
-  <ShapeMatrixGridCorner onrandom={state.selectRandomPair} />
+  <ShapeMatrixGridCorner />
 {/snippet}
 
 <section class="matrix-pane" aria-label="Shape matrix">
