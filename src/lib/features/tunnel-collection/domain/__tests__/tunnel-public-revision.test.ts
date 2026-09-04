@@ -123,6 +123,7 @@ describe("sanitizeTunnelComposition", () => {
     expect(sanitized.performers[1].source).toEqual(
       composition.performers[1].source
     );
+    expect(sanitized.stage).toEqual(composition.stage);
     expect(sanitized.formation).toEqual(composition.formation);
   });
 

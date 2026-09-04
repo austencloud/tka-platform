@@ -176,6 +176,28 @@ describe("tunnel creator edit state", () => {
     ).toEqual({ lead: 2, partner: 2, third: 2, fourth: 2 });
   });
 
+  it("turns a legacy duplicate into a newly authored performer before growing the stage", () => {
+    const initial = composition();
+    initial.formation = { ...DEFAULT_CONFIG, fold: 4, speedOverrides: {} };
+    const state = createState({
+      openComposition: vi.fn(),
+      initialComposition: initial,
+      createId: () => "fourth",
+    });
+
+    expect(
+      state.stageInstances.map((instance) => instance.performerId)
+    ).toEqual(["lead", "partner", "third", "lead"]);
+    expect(state.setPerformerCount(4)).toBe(true);
+    const fourthId = state.performerIdAt(3)!;
+
+    expect(state.renderedInstanceCount).toBe(4);
+    expect(
+      state.stageInstances.map((instance) => instance.performerId)
+    ).toEqual(["lead", "partner", "third", fourthId]);
+    expect(state.initialFormation.fold).toBe(4);
+  });
+
   it("keeps normal authoring to four stable performer cards", () => {
     const state = createState({
       openComposition: vi.fn(),
@@ -269,6 +291,66 @@ describe("tunnel creator edit state", () => {
     expect(performers.map((performer) => performer.timing.stepOffset)).toEqual([
       0, 4, 8, 12,
     ]);
+  });
+
+  it("puts each newly authored performer on stage exactly once", () => {
+    const state = createState({
+      openComposition: vi.fn(),
+      initialFormation: { ...DEFAULT_CONFIG, fold: 4, speedOverrides: {} },
+      createId: (() => {
+        let id = 0;
+        return () => `exact-${++id}`;
+      })(),
+    });
+    const firstId = state.performerIdAt(0)!;
+    const secondId = state.performerIdAt(1)!;
+    state.setPerformerSequence(firstId, sequence);
+    state.setPerformerSequence(secondId, { ...sequence, id: "second" });
+    const thirdId = state.addPerformer()!;
+    state.setPerformerSequence(thirdId, { ...sequence, id: "third" });
+
+    const composition = state.compositionWithFormation(state.initialFormation)!;
+    const layers = resolveTunnelLayerPlans(composition);
+
+    expect(state.authoredPerformerCount).toBe(3);
+    expect(state.renderedInstanceCount).toBe(3);
+    expect(layers.map((layer) => layer.performerId)).toEqual([
+      firstId,
+      secondId,
+      thirdId,
+    ]);
+    expect(layers.map((layer) => layer.arm)).toEqual([0, 1, 3]);
+  });
+
+  it("makes repeated stage appearances explicit without losing cast coverage", () => {
+    const state = createState({
+      openComposition: vi.fn(),
+      initialFormation: { ...DEFAULT_CONFIG, fold: 4, speedOverrides: {} },
+      createId: (() => {
+        let id = 0;
+        return () => `appearance-${++id}`;
+      })(),
+    });
+    const firstId = state.performerIdAt(0)!;
+    const secondId = state.performerIdAt(1)!;
+    state.setPerformerSequence(firstId, sequence);
+    state.setPerformerSequence(secondId, { ...sequence, id: "second" });
+
+    expect(state.addStageInstance(firstId)).toBe(true);
+    expect(state.renderedInstanceCount).toBe(3);
+    const duplicate = state.stageInstances.at(-1)!;
+    expect(state.setStageInstancePerformer(duplicate.id, secondId)).toBe(true);
+    expect(
+      state.stageInstances.filter(
+        (instance) => instance.performerId === secondId
+      )
+    ).toHaveLength(2);
+    expect(state.removeStageInstance(duplicate.id)).toBe(true);
+    expect(state.stageInstances).toHaveLength(2);
+    expect(state.canRemoveStageInstance(state.stageInstances[0]!.id)).toBe(
+      false
+    );
+    expect(state.removeStageInstance(state.stageInstances[0]!.id)).toBe(false);
   });
 
   it("keeps derived lineage valid while reordering and removing cards", () => {
