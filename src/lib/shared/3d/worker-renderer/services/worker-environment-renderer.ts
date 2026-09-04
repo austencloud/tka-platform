@@ -59,6 +59,7 @@ export interface WorkerEnvironmentRendererOptions {
   container: HTMLElement;
   qualityTier?: WorkerEffectQualityTier;
   onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
+  onFrame?: (deltaMs: number) => void;
   onInteraction?: (
     message: Extract<WorkerRendererOutMessage, { type: "interaction" }>
   ) => void;
@@ -83,6 +84,7 @@ function createRendererWorker(): Worker {
 export class WorkerEnvironmentRenderer {
   private readonly container: HTMLElement;
   private readonly onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
+  private readonly onFrame?: (deltaMs: number) => void;
   private readonly createWorker: () => Worker;
   private readonly onInteraction?: WorkerEnvironmentRendererOptions["onInteraction"];
   private readonly supported: boolean;
@@ -112,6 +114,7 @@ export class WorkerEnvironmentRenderer {
   constructor(options: WorkerEnvironmentRendererOptions) {
     this.container = options.container;
     this.onSnapshot = options.onSnapshot;
+    this.onFrame = options.onFrame;
     this.onInteraction = options.onInteraction;
     this.createWorker = options.createWorker ?? createRendererWorker;
     this.qualityTier = options.qualityTier ?? this.qualityTier;
@@ -293,6 +296,7 @@ export class WorkerEnvironmentRenderer {
       case "frame":
         if (this.handoff.active?.requestId === message.requestId) {
           this.responsiveness.recordOutgoingFrame(message.deltaMs);
+          this.onFrame?.(message.deltaMs);
         }
         return;
       case "error":

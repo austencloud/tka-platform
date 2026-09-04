@@ -689,6 +689,7 @@
             {enableEffects}
             {enablePerformerLocomotion}
             effectQualityTier={effectQualityTier ?? adaptiveQuality.tier}
+            renderQualityTier={adaptiveQuality.tier}
             {performerStepOffsets}
             {performerSteps}
             {visiblePerformerCount}
@@ -698,6 +699,15 @@
             conditions={workerConditions}
             onSnapshot={handleWorkerSnapshot}
             onFallback={failWorkerRenderer}
+            onWorkerFrame={(deltaSeconds) =>
+              adaptiveQuality.observeFrame(
+                deltaSeconds,
+                sceneReady &&
+                  isPlaying &&
+                  !viewer3DState.isExporting &&
+                  (typeof document === "undefined" ||
+                    document.visibilityState === "visible")
+              )}
           />
         {:else}
           <Canvas

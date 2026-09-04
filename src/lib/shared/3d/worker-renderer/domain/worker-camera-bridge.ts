@@ -5,13 +5,14 @@ import type {
   WorkerCameraSnapshot,
   WorkerQuaternion,
 } from "./worker-renderer-protocol";
+import { isValidViewerCameraSnapshot } from "../../camera/viewer-camera-framing";
 
 /** Translate the existing viewer camera state without changing its authority. */
 export function toWorkerCameraSnapshot(
   snapshot: CameraStateSnapshot | null,
   fallback: WorkerCameraSnapshot
 ): WorkerCameraSnapshot {
-  if (!snapshot) return fallback;
+  if (!isValidViewerCameraSnapshot(snapshot)) return fallback;
   const quaternion = new Quaternion().setFromEuler(
     new Euler(snapshot.rotation.x, snapshot.rotation.y, snapshot.rotation.z)
   );

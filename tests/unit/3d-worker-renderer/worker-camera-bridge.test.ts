@@ -42,4 +42,28 @@ describe("worker camera bridge", () => {
   it("uses the environment camera when no viewer pose exists", () => {
     expect(toWorkerCameraSnapshot(null, fallback)).toBe(fallback);
   });
+
+  it("rejects a corrupt persisted pose instead of poisoning the worker camera", () => {
+    const corrupt = {
+      position: { x: Number.NaN, y: 5, z: 11 },
+      rotation: { x: 0, y: 0, z: 0 },
+      target: { x: 0, y: 0, z: 0 },
+      fov: 57,
+      timestamp: 1,
+    };
+
+    expect(toWorkerCameraSnapshot(corrupt, fallback)).toBe(fallback);
+  });
+
+  it("rejects a pose inside OrbitControls' minimum radius", () => {
+    const tooClose = {
+      position: { x: 0, y: 0, z: 0.5 },
+      rotation: { x: 0, y: 0, z: 0 },
+      target: { x: 0, y: 0, z: 0 },
+      fov: 57,
+      timestamp: 1,
+    };
+
+    expect(toWorkerCameraSnapshot(tooClose, fallback)).toBe(fallback);
+  });
 });

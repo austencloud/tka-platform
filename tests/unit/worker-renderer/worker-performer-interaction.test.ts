@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { describe, expect, it, vi } from "vitest";
 
 import { createWorkerPerformerInteractionBridge } from "$lib/shared/3d/worker-renderer/services/worker-performer-interaction";

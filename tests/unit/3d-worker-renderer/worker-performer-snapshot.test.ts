@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Plane, PropType, userProportionsState } from "@austencloud/scene-3d";
+import {
+  GRID_OFFSETS,
+  Plane,
+  PlaneMode,
+  PLANE_MODE_CONFIGS,
+  PropType,
+  userProportionsState,
+} from "@austencloud/scene-3d";
 import { Quaternion, Vector3 } from "three";
 import type { CharacterInstanceState } from "$lib/shared/3d/state/character-instance-state.svelte";
 import {
@@ -19,6 +26,8 @@ vi.mock("$lib/shared/3d/domain/performer-upper-body-stance", () => ({
     yawRad: 0.25,
     pitchRad: -0.1,
     segments: { spine1Rad: 0.1, spine2Rad: 0.2, headLagRad: 0.3 },
+    leftDepthOffsetM: 0.07,
+    rightDepthOffsetM: -0.04,
   }),
 }));
 
@@ -43,6 +52,7 @@ function performer(): CharacterInstanceState {
     characterId: "x-bot",
     position: { x: 6, y: 99, z: 7 },
     facingAngle: 0.4,
+    planeMode: PlaneMode.WALL,
     settings: { staffLengthCm: null },
     showLeft: true,
     showRight: false,
@@ -122,6 +132,12 @@ describe("worker performer snapshots", () => {
       userProportionsState.dimensions.staffRadius
     );
     expect(snapshot.leftProp?.worldPosition).toEqual([3, 4, 5]);
+    expect(snapshot.leftProp?.handAnchor).toEqual([
+      PLANE_MODE_CONFIGS[PlaneMode.WALL].blueLateralOffset,
+      0,
+      GRID_OFFSETS[PlaneMode.WALL] + 0.07,
+    ]);
+    expect(snapshot.leftProp?.flipped).toBe(false);
     expect(snapshot.rightProp).toBeNull();
     expect(snapshot.stanceYaw).toBe(0.25);
     expect(snapshot.spinePitchOffset).toBe(-0.1);
@@ -131,6 +147,19 @@ describe("worker performer snapshots", () => {
       opacity: 0.6,
       selected: false,
     });
+  });
+
+  it("serializes Buugeng chirality at the same correction boundary as PerformerRig", () => {
+    const snapshot = createWorkerPerformerSnapshot(performer(), {
+      leftPropType: "buugeng",
+      rightPropType: "buugeng",
+      propBuild: PROP_BUILD,
+      leftPropFlipped: true,
+      rightPropFlipped: false,
+    });
+
+    expect(snapshot.leftProp?.flipped).toBe(true);
+    expect(snapshot.rightProp).toBeNull();
   });
 
   it("omits the badge when scene markers are hidden", () => {

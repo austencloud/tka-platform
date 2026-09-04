@@ -1,4 +1,10 @@
-import { cmToUnits, userProportionsState } from "@austencloud/scene-3d";
+import {
+  cmToUnits,
+  GRID_OFFSETS,
+  PlaneMode,
+  PLANE_MODE_CONFIGS,
+  userProportionsState,
+} from "@austencloud/scene-3d";
 import type { CharacterInstanceState } from "../../state/character-instance-state.svelte";
 import { resolvePerformerUpperBodyStance } from "../../domain/performer-upper-body-stance";
 import { CANONICAL_PERFORMER_ANCHOR_Y } from "../../environments/domain/stage-coordinate-frame";
@@ -18,6 +24,8 @@ export interface WorkerPerformerSnapshotOptions {
   leftPropType: string;
   rightPropType: string;
   propBuild: WorkerPropBuild;
+  leftPropFlipped?: boolean;
+  rightPropFlipped?: boolean;
   enableLocomotion?: boolean;
   badge?: {
     index: number;
@@ -36,13 +44,17 @@ type SupportedWorkerPerformerSnapshotOptions =
   };
 
 function serializeProp(
-  state: CharacterInstanceState["leftPropState"]
+  state: CharacterInstanceState["leftPropState"],
+  handAnchor: readonly [number, number, number],
+  flipped: boolean
 ): WorkerPropSnapshot | null {
   if (!state) return null;
   return {
     centerPathAngle: state.centerPathAngle,
     staffRotationAngle: state.staffRotationAngle,
     plane: state.plane,
+    handAnchor: [...handAnchor],
+    flipped,
     worldPosition: state.worldPosition.toArray(),
     worldRotation: state.worldRotation.toArray(),
     gripType: state.gripType,
@@ -135,6 +147,20 @@ export function createWorkerPerformerSnapshot(
     );
   }
   const stance = resolvePerformerUpperBodyStance(performer);
+  const staffLength = resolveWorkerPerformerStaffLength(performer);
+  const modeConfig = PLANE_MODE_CONFIGS[performer.planeMode];
+  const dualWheel = performer.planeMode === PlaneMode.DUAL_WHEEL;
+  const gridOffset = GRID_OFFSETS[performer.planeMode];
+  const leftHandAnchor = [
+    dualWheel ? staffLength / 2 : modeConfig.blueLateralOffset,
+    0,
+    dualWheel ? 0 : gridOffset + stance.leftDepthOffsetM,
+  ] as const;
+  const rightHandAnchor = [
+    dualWheel ? -staffLength / 2 : modeConfig.redLateralOffset,
+    0,
+    dualWheel ? 0 : gridOffset + stance.rightDepthOffsetM,
+  ] as const;
   return {
     id: performer.id,
     avatarId: performer.characterId,
@@ -146,16 +172,24 @@ export function createWorkerPerformerSnapshot(
     facingAngle: performer.facingAngle,
     avatarHeightCm: userProportionsState.heightCm,
     groundY: userProportionsState.groundY,
-    staffLength: resolveWorkerPerformerStaffLength(performer),
+    staffLength,
     staffThickness: userProportionsState.dimensions.staffRadius,
     propBuild: { ...options.propBuild },
     leftPropType: options.leftPropType,
     rightPropType: options.rightPropType,
     leftProp: performer.showLeft
-      ? serializeProp(performer.leftPropState)
+      ? serializeProp(
+          performer.leftPropState,
+          leftHandAnchor,
+          options.leftPropFlipped ?? false
+        )
       : null,
     rightProp: performer.showRight
-      ? serializeProp(performer.rightPropState)
+      ? serializeProp(
+          performer.rightPropState,
+          rightHandAnchor,
+          options.rightPropFlipped ?? false
+        )
       : null,
     stanceYaw: stance.yawRad,
     stanceSegments: stance.segments,

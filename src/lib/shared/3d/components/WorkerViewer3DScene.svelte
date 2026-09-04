@@ -23,6 +23,8 @@
   import type { QualityTier } from "../effects/types";
   import { resolvePerformerProp } from "../state/performer-prop-resolution";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
+  import { computeViewerAlignedCamera } from "../camera/viewer-camera-framing";
   import WorkerEnvironmentRenderer from "../worker-renderer/components/WorkerEnvironmentRenderer.svelte";
   import type {
     WorkerPerformerInteractionFailure,
@@ -30,7 +32,6 @@
   } from "../worker-renderer/components/WorkerPerformerInteractionAdapter.svelte";
   import type { ApplicationThreadCameraSnapshot } from "../worker-renderer/domain/application-thread-camera";
   import { toViewerCameraSnapshot, toWorkerCameraSnapshot } from "../worker-renderer/domain/worker-camera-bridge";
-  import { getWorkerEnvironmentCamera } from "../worker-renderer/domain/worker-environment-camera";
   import type {
     WorkerEnvironmentKey,
     WorkerPerformerSnapshot,
@@ -60,6 +61,7 @@
     enableEffects?: boolean;
     enablePerformerLocomotion?: boolean;
     effectQualityTier: QualityTier;
+    renderQualityTier: QualityTier;
     performerStepOffsets?: readonly number[];
     performerSteps?: readonly (number | null | undefined)[] | null;
     visiblePerformerCount?: number;
@@ -68,6 +70,7 @@
     cameraFov?: number;
     conditions: WorkerViewerActualConditions;
     onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
+    onWorkerFrame?: (deltaSeconds: number) => void;
     onFallback?: (reasons: readonly WorkerViewerFallbackReason[]) => void;
   }
 
@@ -83,6 +86,7 @@
     enableEffects = true,
     enablePerformerLocomotion = true,
     effectQualityTier,
+    renderQualityTier,
     performerStepOffsets = [],
     performerSteps = null,
     visiblePerformerCount,
@@ -91,6 +95,7 @@
     cameraFov,
     conditions,
     onSnapshot,
+    onWorkerFrame,
     onFallback,
   }: Props = $props();
 
@@ -99,6 +104,9 @@
     getEffectsConfigContext() ??
     createEffectsConfigState(undefined, { persist: false });
   const visibility = getAnimationVisibilityManager();
+  type SettingsService =
+    (typeof import("$lib/shared/settings/state/settings-state.svelte"))["settingsService"];
+  let viewerSettings = $state<SettingsService | null>(null);
   let globalTipEffectMap = $state<TipEffectMap>(
     visibility.effectsConfigState?.tipEffectMap ?? {}
   );
@@ -112,12 +120,28 @@
     hoveredIndex: null,
     draggingIndex: null,
   });
-  let camera = $state(
-    toWorkerCameraSnapshot(
-      viewer.persistedCamera,
-      getWorkerEnvironmentCamera(environment)
-    )
+  const alignedCamera = computeViewerAlignedCamera({
+    environmentId: viewer.environmentId,
+    fov: cameraFov ?? 50,
+  });
+  const cameraFallback = {
+    position: [
+      alignedCamera.position.x,
+      alignedCamera.position.y,
+      alignedCamera.position.z,
+    ] as const,
+    target: [
+      alignedCamera.target.x,
+      alignedCamera.target.y,
+      alignedCamera.target.z,
+    ] as const,
+    fov: cameraFov ?? 50,
+  };
+  const restoredCamera = toWorkerCameraSnapshot(
+    viewer.persistedCamera,
+    cameraFallback
   );
+  let camera = $state({ ...restoredCamera, fov: cameraFov ?? 50 });
   let renderReady = $state(false);
   let fallbackReported = false;
   let ringPulsePhase = 0;
@@ -168,6 +192,12 @@
       leftPropType: resolvedLeft,
       rightPropType: resolvedRight,
       propBuild: { ...performer.effectivePropBuild },
+      leftPropFlipped:
+        isBuugengFamilyProp(resolvedLeft) &&
+        (viewerSettings?.settings?.leftBuugengFlipped ?? false),
+      rightPropFlipped:
+        isBuugengFamilyProp(resolvedRight) &&
+        (viewerSettings?.settings?.rightBuugengFlipped ?? false),
       enableLocomotion: enablePerformerLocomotion,
       badge: {
         index,
@@ -327,6 +357,12 @@
   }
 
   onMount(() => {
+    let mounted = true;
+    void import("$lib/shared/settings/state/settings-state.svelte").then(
+      ({ settingsService }) => {
+        if (mounted) viewerSettings = settingsService;
+      }
+    );
     const updateMap = () => {
       globalTipEffectMap = visibility.effectsConfigState?.tipEffectMap ?? {};
     };
@@ -343,6 +379,7 @@
     updateFrame(previous, 0);
     frame = requestAnimationFrame(tick);
     return () => {
+      mounted = false;
       cancelAnimationFrame(frame);
       visibility.unregisterObserver(updateMap);
     };
@@ -359,7 +396,8 @@
     maxOrbitDistance={maxOrbitDistance}
     {cameraFov}
     {pixelRatio}
-    qualityTier={effectQualityTier}
+    qualityTier={renderQualityTier}
+    onFrame={(deltaMs) => onWorkerFrame?.(deltaMs / 1000)}
     performerInteractionFrame={interactionFrame}
     interactionViewer={viewer}
     onPerformerInteractionChange={(snapshot) => (interactionState = snapshot)}

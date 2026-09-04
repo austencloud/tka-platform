@@ -17,6 +17,8 @@ const STATE: WorkerPropSnapshot = {
   centerPathAngle: 0.25,
   staffRotationAngle: 0.5,
   plane: "wall",
+  handAnchor: [0.25, 0, 0.4],
+  flipped: false,
   worldPosition: [1, 2, 3],
   worldRotation: [0, 0, 0, 1],
   gripType: "square",
@@ -86,7 +88,7 @@ describe("worker performer prop geometry", () => {
       expect(
         prop.correction.getObjectByName("staff-trail-indicator")
       ).toBeTruthy();
-      expect(prop.anchor.position.toArray()).toEqual([1, 2, 3]);
+      expect(prop.anchor.position.toArray()).toEqual([1.25, 2, 3.4]);
 
       prop.dispose();
       expect(prop.anchor.children).toHaveLength(0);
@@ -99,7 +101,7 @@ describe("worker performer prop geometry", () => {
     expect(prop.visual.source).toBe("hand");
     expect(prop.visual.root.children).toHaveLength(0);
     expect(prop.anchor.visible).toBe(true);
-    expect(prop.anchor.position.toArray()).toEqual([1, 2, 3]);
+    expect(prop.anchor.position.toArray()).toEqual([1.25, 2, 3.4]);
 
     prop.setSnapshot(null);
     expect(prop.anchor.visible).toBe(false);
@@ -116,6 +118,14 @@ describe("worker performer prop geometry", () => {
       .clone()
       .multiply(new Quaternion().setFromEuler(new Euler(0, 0, Math.PI / 2)));
     expect(body?.quaternion.angleTo(expected)).toBeCloseTo(0, 8);
+  });
+
+  it("applies Buugeng chirality at the canonical correction group", async () => {
+    const prop = await createWorkerPerformerProp("left", snapshot("staff"));
+
+    prop.setSnapshot({ ...STATE, flipped: true });
+
+    expect(prop.correction.scale.x).toBe(-1);
   });
 
   it("rejects an invalid snapshot at the renderer boundary", async () => {

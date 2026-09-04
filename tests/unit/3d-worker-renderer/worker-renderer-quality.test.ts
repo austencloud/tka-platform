@@ -25,6 +25,10 @@ function fakeCanvas(): HTMLCanvasElement {
 describe("worker renderer adaptive quality", () => {
   beforeEach(() => {
     vi.stubGlobal("Worker", FakeWorker);
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      callback(performance.now());
+      return 1;
+    });
     vi.spyOn(document, "createElement");
     Object.defineProperty(
       window.HTMLCanvasElement.prototype,
@@ -97,6 +101,70 @@ describe("worker renderer adaptive quality", () => {
       qualityTier: "low",
     });
 
+    renderer.dispose();
+  });
+
+  it("reports frame cadence from only the active worker", () => {
+    const workers: FakeWorker[] = [];
+    vi.mocked(document.createElement)
+      .mockReturnValueOnce(fakeCanvas())
+      .mockReturnValueOnce(fakeCanvas());
+    const onFrame = vi.fn();
+    const renderer = new WorkerEnvironmentRenderer({
+      container: {
+        append: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        getBoundingClientRect: vi.fn(() => ({ width: 640, height: 360 })),
+      } as unknown as HTMLElement,
+      onFrame,
+      createWorker: () => {
+        const worker = new FakeWorker();
+        workers.push(worker);
+        return worker as unknown as Worker;
+      },
+    });
+
+    renderer.switchTo("ocean");
+    workers[0]?.onmessage?.(
+      new MessageEvent("message", {
+        data: {
+          type: "first-frame",
+          requestId: 1,
+          environment: "ocean",
+          metrics: {},
+        },
+      })
+    );
+    workers[0]?.onmessage?.(
+      new MessageEvent("message", {
+        data: {
+          type: "frame",
+          requestId: 1,
+          environment: "ocean",
+          frame: 2,
+          renderedAt: 100,
+          deltaMs: 24,
+        },
+      })
+    );
+
+    renderer.switchTo("rainbow");
+    workers[1]?.onmessage?.(
+      new MessageEvent("message", {
+        data: {
+          type: "frame",
+          requestId: 2,
+          environment: "rainbow",
+          frame: 1,
+          renderedAt: 120,
+          deltaMs: 99,
+        },
+      })
+    );
+
+    expect(onFrame).toHaveBeenCalledOnce();
+    expect(onFrame).toHaveBeenCalledWith(24);
     renderer.dispose();
   });
 

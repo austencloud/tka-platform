@@ -132,6 +132,10 @@ export interface WorkerPropSnapshot {
   centerPathAngle: number;
   staffRotationAngle: number;
   plane: string;
+  /** PerformerRig's hand group translation, resolved by the application. */
+  handAnchor: WorkerVector3;
+  /** Buugeng-family chirality, applied at the correction group. */
+  flipped: boolean;
   worldPosition: WorkerVector3;
   worldRotation: WorkerQuaternion;
   gripType?: string;

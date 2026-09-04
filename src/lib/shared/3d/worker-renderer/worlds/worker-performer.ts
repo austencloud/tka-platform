@@ -192,7 +192,10 @@ export async function createWorkerPerformerProp(
       state.worldPosition.fromArray(next.worldPosition);
       state.worldRotation.fromArray(next.worldRotation);
       state.gripType = next.gripType as PropState3D["gripType"];
-      anchor.position.copy(state.worldPosition);
+      anchor.position
+        .fromArray(next.handAnchor)
+        .add(state.worldPosition);
+      correction.scale.x = next.flipped ? -1 : 1;
       visual.setState(state);
     },
     dispose() {

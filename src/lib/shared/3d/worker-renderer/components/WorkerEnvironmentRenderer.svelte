@@ -44,6 +44,7 @@
     cameraFov?: number;
     pixelRatio?: number;
     qualityTier?: WorkerEffectQualityTier;
+    onFrame?: (deltaMs: number) => void;
     performerInteractionFrame?: WorkerPerformerInteractionFrame | null;
     interactionViewer?: WorkerPerformerInteractionViewer | null;
     interactionCameraArbiter?: WorkerPerformerInteractionCameraArbiter | null;
@@ -74,6 +75,7 @@
     cameraFov,
     pixelRatio,
     qualityTier = "medium",
+    onFrame,
     performerInteractionFrame = null,
     interactionViewer = null,
     interactionCameraArbiter = null,
@@ -185,6 +187,7 @@
     renderer = new WorkerEnvironmentRenderer({
       container: mountedInteractionSurface,
       onSnapshot,
+      onFrame,
       onInteraction: handleInteraction,
       qualityTier,
     });
