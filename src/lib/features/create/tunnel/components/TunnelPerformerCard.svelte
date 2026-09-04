@@ -1,5 +1,6 @@
 <script lang="ts">
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import OverflowMenu from "$lib/shared/ui/components/OverflowMenu.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -18,6 +19,7 @@
     linked = false,
     expanded = false,
     selected = false,
+    short = false,
     generatedInstanceCount = 0,
     sourcePerformerLabel = null,
     leftPropType,
@@ -50,6 +52,7 @@
     linked?: boolean;
     expanded?: boolean;
     selected?: boolean;
+    short?: boolean;
     generatedInstanceCount?: number;
     sourcePerformerLabel?: string | null;
     leftPropType?: PropType;
@@ -111,6 +114,73 @@
     return sourceOrigin === "generated" ? "Generated" : null;
   });
   const primaryStageColors = $derived(stageColors[0] ?? null);
+  const compactActions = $derived.by(() => {
+    const items: Array<{
+      label: string;
+      icon: string;
+      action: () => void;
+      variant?: "danger";
+      disabled?: boolean;
+      hint?: string;
+    }> = [];
+
+    if (onEditPairing) {
+      items.push({
+        label: linked ? "Edit relationship" : `Link ${label}`,
+        icon: "fas fa-link",
+        action: onEditPairing,
+      });
+    }
+    if (previousCount > 0 && onPrevious) {
+      items.push({
+        label: "Previous sequence",
+        icon: "fas fa-clock-rotate-left",
+        action: onPrevious,
+      });
+    }
+    if (onEditGeneration) {
+      items.push({
+        label: "Generation recipe",
+        icon: "fas fa-sliders",
+        action: onEditGeneration,
+      });
+    }
+    items.push({
+      label: "Browse sequences",
+      icon: "fas fa-folder-open",
+      action: onChoose,
+    });
+    if (onChooseShapeMatrix) {
+      items.push({
+        label: "Shape Matrix",
+        icon: "fas fa-shapes",
+        action: onChooseShapeMatrix,
+      });
+    }
+    if (canMoveUp) {
+      items.push({
+        label: "Move earlier",
+        icon: "fas fa-arrow-up",
+        action: onMoveUp,
+      });
+    }
+    if (canMoveDown) {
+      items.push({
+        label: "Move later",
+        icon: "fas fa-arrow-down",
+        action: onMoveDown,
+      });
+    }
+    if (onRemove && canRemove) {
+      items.push({
+        label: `Remove ${label}`,
+        icon: "fas fa-user-minus",
+        action: onRemove,
+        variant: "danger",
+      });
+    }
+    return items;
+  });
 
   let gridRef:
     | {
@@ -132,6 +202,7 @@
   class="source-card"
   class:expanded
   class:selected
+  class:short
   aria-label={`${label} sequence`}
 >
   <header class="source-heading">
@@ -144,28 +215,33 @@
     >
       <div>
         <h3>{label}</h3>
-        <p>
+        <p class="source-meta">
           {#if previewSequence}
-            {previewSequence.steps.length} steps{#if sourceDescriptor}
-              · {sourceDescriptor}
-            {/if}{#if linked && sourceLabel}
-              · Follows {sourcePerformerLabel ?? "earlier performer"} · {sourceLabel}
-            {/if}{#if linked && stageTransformLabel}
-              · On stage: {stageTransformLabel}
+            <span>{previewSequence.steps.length} steps</span>
+            {#if sourceDescriptor}<span>{sourceDescriptor}</span>{/if}
+            {#if linked && sourceLabel}
+              <span>Follows {sourcePerformerLabel ?? "earlier performer"}</span>
+              <span>{sourceLabel}</span>
+            {/if}
+            {#if linked && stageTransformLabel}
+              <span>On stage: {stageTransformLabel}</span>
             {/if}
             {#if formationCopy}
-              · Formation copy (not authored)
+              <span>Formation copy (not authored)</span>
             {/if}
             {#if generatedInstanceCount > 0}
-              · Drives {generatedInstanceCount} stage {generatedInstanceCount ===
-              1
-                ? "instance"
-                : "instances"}
+              <span>
+                Drives {generatedInstanceCount} stage {generatedInstanceCount ===
+                1
+                  ? "instance"
+                  : "instances"}
+              </span>
             {/if}
           {:else if linked}
-            Follows {sourcePerformerLabel ?? "an earlier performer"}
+            <span>Follows {sourcePerformerLabel ?? "an earlier performer"}</span
+            >
           {:else}
-            Complete two-prop sequence
+            <span>Complete two-prop sequence</span>
           {/if}
         </p>
       </div>
@@ -200,7 +276,10 @@
     </div>
 
     {#if expanded}
-      <div class="source-actions" aria-label={`${label} source actions`}>
+      <div
+        class="source-actions desktop-source-actions"
+        aria-label={`${label} source actions`}
+      >
         {#if onEditPairing}
           <PanelButton
             variant="secondary"
@@ -292,6 +371,26 @@
             </span>
           {/if}
         </div>
+      </div>
+      <div
+        class="compact-source-actions"
+        aria-label={`${label} compact source actions`}
+      >
+        {#if onGenerateNow}
+          <PanelButton
+            variant="primary"
+            onclick={onGenerateNow}
+            ariaLabel={`Generate a new ${label} sequence with the current settings`}
+          >
+            <i class="fas fa-dice" aria-hidden="true"></i>
+            <span class="compact-generate-label">Generate</span>
+          </PanelButton>
+        {/if}
+        <OverflowMenu
+          items={compactActions}
+          placement="bottom"
+          ariaLabel={`More ${label} actions`}
+        />
       </div>
     {/if}
   </header>
@@ -489,11 +588,26 @@
   }
 
   p {
-    overflow: hidden;
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact, 12px);
-    text-overflow: ellipsis;
+  }
+
+  .source-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px 10px;
+    line-height: 1.25;
+  }
+
+  .source-meta span {
+    position: relative;
     white-space: nowrap;
+  }
+
+  .source-meta span + span::before {
+    position: absolute;
+    left: -7px;
+    content: "·";
   }
 
   .workbench-stage {
@@ -551,6 +665,10 @@
     min-height: 0;
     padding: var(--settings-spacing-xs, 6px);
     overflow: hidden;
+  }
+
+  .compact-source-actions {
+    display: none;
   }
 
   .source-empty {
@@ -620,6 +738,85 @@
     .hand i {
       font-size: var(--font-size-compact, 12px);
     }
+  }
+
+  @container (max-width: 34rem) {
+    .desktop-source-actions {
+      display: none;
+    }
+
+    .compact-source-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--settings-spacing-xs, 6px);
+      width: 100%;
+    }
+
+    .compact-source-actions :global(.panel-btn) {
+      flex: 1;
+      min-height: var(--min-touch-target, 48px);
+    }
+
+    .compact-source-actions :global(.overflow-trigger) {
+      width: var(--min-touch-target, 48px);
+      height: var(--min-touch-target, 48px);
+      border-color: var(--theme-stroke);
+      background: var(--theme-card-bg);
+    }
+
+    .compact-source-actions :global(.overflow-dropdown) {
+      max-height: min(12rem, 34dvh);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+  }
+
+  .source-card.short .source-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--min-touch-target, 48px);
+    padding: 3px 6px;
+  }
+
+  .source-card.short .source-identity {
+    flex-basis: auto;
+    min-height: var(--min-touch-target, 48px);
+  }
+
+  .source-card.short .source-meta {
+    max-height: 1.25em;
+    overflow: hidden;
+  }
+
+  .source-card.short .expand-indicator,
+  .source-card.short .word-rail {
+    display: none;
+  }
+
+  .source-card.short .compact-source-actions {
+    width: auto;
+  }
+
+  .source-card.short .compact-source-actions :global(.panel-btn) {
+    flex: 0 0 var(--min-touch-target, 48px);
+    width: var(--min-touch-target, 48px);
+    padding-inline: 0;
+  }
+
+  .source-card.short .compact-generate-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+  }
+
+  .source-card.short .workbench-stage {
+    grid-template-rows: minmax(0, 1fr);
   }
 
   @container (max-width: 56rem) {
