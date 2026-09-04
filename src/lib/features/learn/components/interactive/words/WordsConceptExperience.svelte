@@ -862,6 +862,18 @@
       grid-template-rows: repeat(2, minmax(0, 1fr));
     }
 
+    .chapter-label {
+      font-size: 1.1rem;
+    }
+
+    h1 {
+      font-size: 4rem;
+    }
+
+    .guide-prose {
+      font-size: 1.4rem;
+    }
+
     .recap-family {
       grid-template-columns: 18rem minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr);
@@ -875,13 +887,24 @@
       border-bottom: 0;
     }
 
+    .family-identity,
+    .sequence-position {
+      font-size: 1.15rem;
+    }
+
+    .family-heading > span:last-child,
+    .recap-word {
+      font-size: 1rem;
+    }
+
     .family-identity img {
       width: 1.6rem;
       height: 1.6rem;
     }
 
     .word-header {
-      min-height: 4.25rem;
+      min-height: 5rem;
+      padding-inline: 1.4rem;
     }
 
     .recap-word {

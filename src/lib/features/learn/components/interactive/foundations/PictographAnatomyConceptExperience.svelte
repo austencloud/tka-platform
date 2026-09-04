@@ -494,6 +494,10 @@
       font-size: 1.4rem;
     }
 
+    .instruction-rail {
+      padding-inline: 3rem;
+    }
+
     .rail-pointer {
       right: -1.5rem;
       width: 3rem;
