@@ -262,7 +262,8 @@ slots only after the incoming worker reports a rendered frame, then terminates
 the outgoing worker. The bound is two WebGL contexts during preparation and one
 at steady state.
 
-Four alternating steady-state switches measured:
+Four alternating steady-state environment-only switches measured before the
+performer moved into the worker:
 
 | Incoming world | Click to swap | Worker preparation | Main-thread max gap | Outgoing-frame max gap |
 | -------------- | ------------: | -----------------: | ------------------: | ---------------------: |
@@ -277,10 +278,28 @@ cheaper visual stand-in. The first cold Rainbow development load still produced
 a 102.9 ms application-thread gap, so cold startup has not met the 50 ms input
 gate. Steady switching did.
 
-This is an architectural proof, not a production-viewer claim. The shipping
-viewer still renders on the main thread. Exact migration means moving the full
-3D frame into the worker. A background-only worker canvas would lose shared
-depth, fog, lighting, occlusion, and postprocessing with the performer.
+The next checkpoint moved a real X-Bot, its IK/finger solve, and two live staffs
+into the same worker-owned frame as the exact Rainbow world. Across sixteen
+alternating complete-frame switches, median click-to-swap was 2,112 ms into
+Ocean and 1,735 ms into Rainbow. Thirteen of sixteen stayed inside the 50 ms
+application-thread gate. All sixteen stayed inside the 100 ms outgoing-frame
+continuity gate, although one interval reached 50.1 ms instead of the usual
+16.8-17.5 ms. Context count was two at handoff and one after cleanup on every
+observed switch.
+
+This remains an architectural proof, not a production-viewer claim. The
+shipping viewer still renders on the main thread. Rainbow has exact world,
+performer, staff-family prop, and shared-lighting ownership in the worker;
+Ocean is representative, and locomotion, turns, contact locking, non-staff
+props, effects, picking, badges, grids, and postprocessing remain outside the
+worker boundary. A background-only worker canvas is still forbidden because
+it loses shared depth, fog, lighting, occlusion, and postprocessing with the
+performer.
+
+Do not call this flawless. Three of sixteen complete-frame switches missed the
+input gate. The worker architecture has removed the multi-second main-thread
+freeze as the normal behavior, but the remaining scheduler/GPU outliers and
+full production parity are open work.
 
 Canonical design and acceptance gates:
 `docs/superpowers/specs/2026-09-03-worker-renderer-scene-switch-prototype-design.md`.

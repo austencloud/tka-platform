@@ -2,12 +2,15 @@ export interface WorkerRendererResponsivenessResult {
   requestId: number;
   requestedAt: number;
   mainThreadMaxGapMs: number;
+  mainThreadMaxGapPhase: string | null;
   mainThreadGapsOver50Ms: number;
   outgoingWorkerMaxFrameGapMs: number;
+  outgoingWorkerMaxFrameGapPhase: string | null;
 }
 
 export interface WorkerRendererResponsivenessState extends WorkerRendererResponsivenessResult {
   previousTimerAt: number;
+  currentPhase: string | null;
 }
 
 export function createWorkerRendererResponsivenessState(
@@ -19,8 +22,11 @@ export function createWorkerRendererResponsivenessState(
     requestedAt,
     previousTimerAt: requestedAt,
     mainThreadMaxGapMs: 0,
+    mainThreadMaxGapPhase: null,
     mainThreadGapsOver50Ms: 0,
     outgoingWorkerMaxFrameGapMs: 0,
+    outgoingWorkerMaxFrameGapPhase: null,
+    currentPhase: "worker",
   };
 }
 
@@ -30,7 +36,10 @@ export function recordMainThreadTimer(
 ): void {
   const gap = now - state.previousTimerAt;
   state.previousTimerAt = now;
-  state.mainThreadMaxGapMs = Math.max(state.mainThreadMaxGapMs, gap);
+  if (gap > state.mainThreadMaxGapMs) {
+    state.mainThreadMaxGapMs = gap;
+    state.mainThreadMaxGapPhase = state.currentPhase;
+  }
   if (gap > 50) state.mainThreadGapsOver50Ms += 1;
 }
 
@@ -38,10 +47,10 @@ export function recordOutgoingWorkerFrame(
   state: WorkerRendererResponsivenessState,
   deltaMs: number
 ): void {
-  state.outgoingWorkerMaxFrameGapMs = Math.max(
-    state.outgoingWorkerMaxFrameGapMs,
-    deltaMs
-  );
+  if (deltaMs > state.outgoingWorkerMaxFrameGapMs) {
+    state.outgoingWorkerMaxFrameGapMs = deltaMs;
+    state.outgoingWorkerMaxFrameGapPhase = state.currentPhase;
+  }
 }
 
 export class WorkerRendererResponsivenessProbe {
@@ -63,6 +72,10 @@ export class WorkerRendererResponsivenessProbe {
     }, 16);
   }
 
+  setPhase(phase: string | null): void {
+    if (this.active) this.active.currentPhase = phase;
+  }
+
   recordOutgoingFrame(deltaMs: number): void {
     if (this.active) recordOutgoingWorkerFrame(this.active, deltaMs);
   }
@@ -77,8 +90,10 @@ export class WorkerRendererResponsivenessProbe {
       requestId: active.requestId,
       requestedAt: active.requestedAt,
       mainThreadMaxGapMs: active.mainThreadMaxGapMs,
+      mainThreadMaxGapPhase: active.mainThreadMaxGapPhase,
       mainThreadGapsOver50Ms: active.mainThreadGapsOver50Ms,
       outgoingWorkerMaxFrameGapMs: active.outgoingWorkerMaxFrameGapMs,
+      outgoingWorkerMaxFrameGapPhase: active.outgoingWorkerMaxFrameGapPhase,
     };
   }
 }

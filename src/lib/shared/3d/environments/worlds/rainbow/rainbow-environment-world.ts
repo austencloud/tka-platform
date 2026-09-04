@@ -10,7 +10,6 @@ import {
   Group,
   HemisphereLight,
   Mesh,
-  MeshPhysicalMaterial,
   MeshStandardMaterial,
   PointLight,
   RingGeometry,
@@ -270,15 +269,14 @@ export function createRainbowEnvironmentWorld(
     const core = new Mesh(
       sharedCoreGeometry,
       material(
-        new MeshPhysicalMaterial({
+        new MeshStandardMaterial({
           color: orbConfig.color,
-          roughness: 0.05,
-          metalness: 0.1,
-          transmission: 0.6,
+          roughness: 0.08,
+          metalness: 0.15,
           transparent: true,
-          opacity: 0.8,
+          opacity: 0.58,
           emissive: orbConfig.color,
-          emissiveIntensity: 0.8,
+          emissiveIntensity: 1,
           side: DoubleSide,
         })
       )
@@ -431,14 +429,15 @@ export function createRainbowEnvironmentWorld(
         )
       ),
       material(
-        new MeshPhysicalMaterial({
-          color: "#ffffff",
-          transmission: 0.7,
-          roughness: 0.05,
-          metalness: 0,
+        new MeshStandardMaterial({
+          color: "#f6efff",
+          roughness: 0.12,
+          metalness: 0.12,
           transparent: true,
-          opacity: 0.5,
-          ior: 1.5,
+          opacity: 0.38,
+          emissive: "#35135c",
+          emissiveIntensity: 0.22,
+          side: DoubleSide,
         })
       )
     );

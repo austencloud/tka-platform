@@ -1,7 +1,7 @@
 # Worker Renderer Scene-Switch Prototype
 
 **Date:** 2026-09-03  
-**Status:** renderer boundary and exact Rainbow world proven; production viewer migration in progress
+**Status:** complete-frame Rainbow proof measured; production viewer migration in progress
 
 ## Outcome
 
@@ -120,9 +120,12 @@ explicit price of a no-blank, no-frozen-world handoff.
 
 Main to worker:
 
-- `initialize`: transferred canvas, request id, environment, size, DPR, camera
+- `initialize`: transferred canvas, request id, environment, size, DPR, camera,
+  and immutable performer snapshots
 - `resize`: CSS size and DPR
 - `camera`: position, target, and field of view
+- `performers`: latest avatar, body, and prop snapshots; newer snapshots
+  coalesce while an avatar is loading
 - `visibility`: whether this slot should continue animating
 - `dispose`: deterministic teardown
 
@@ -171,6 +174,21 @@ actual network, parse, upload, and shader path. It deliberately does not claim
 parity for fish GPGPU, jellyfish interaction/audio, postprocessing, or every
 authored material patch. Those must be extracted into worker-safe owners before
 Ocean is enabled in the production viewer.
+
+### Complete-frame performer
+
+The proof now stages the real X-Bot through the package's renderer-neutral
+avatar, skeleton, IK, and finger services. The application thread continues to
+own choreography and sends compact performer snapshots; the worker owns the
+avatar graph, body solve, and canonical rendered staff objects. The Svelte
+`Staff3D` adapter and worker both call the same `createStaffObject` owner through
+`@austencloud/scene-3d/worker`.
+
+The worker and production viewer also consume one shared base-lighting profile.
+This proves one exact staff-family performer inside the same depth, fog,
+lighting, and WebGL context as Rainbow. It does not yet cover every prop family,
+locomotion and turn clips, contact locking, effects, interaction picking,
+badges, grids, or Ocean-specific postprocessing.
 
 ## Choreo Card contract
 
@@ -235,8 +253,10 @@ migration; it does not get softened into a pass.
 2. Extract Ocean in bounded layers: static seabed/reef, atmosphere/water,
    fauna compute/render, interaction/audio bridge, then postprocessing. Each
    layer gets a visual and memory parity gate.
-3. Move performer/prop construction or establish the protected foreground
-   renderer only after measuring compositing, lighting, and interaction parity.
+3. Extend the proven complete-frame performer boundary from exact avatar plus
+   staff-family props to locomotion, turns, contact locking, every prop family,
+   effects, picking, badges, and grids. Keep choreography ownership on the
+   application thread.
 4. Migrate the remaining eight environments through the same factory contract,
    ranked by measured stall cost.
 5. Enable the backend by capability and quality tier, retain the current
@@ -251,6 +271,7 @@ migration; it does not get softened into a pass.
 - Keeping every environment resident.
 - Claiming Ocean production parity or production-viewer migration from this
   architectural proof.
+- Rewriting the Choreo Card, sequence, or application UI systems.
 
 ## Measured proof, 2026-09-04
 
@@ -281,4 +302,30 @@ state. Production migration requires the worker to own the complete 3D frame,
 including performer, props, effects, and camera, while Choreo timing and UI
 remain on the application thread.
 
-- Rewriting the Choreo Card, sequence, or application UI systems.
+### Complete-frame Rainbow checkpoint
+
+The benchmark now includes the real X-Bot, live two-staff Choreo snapshots, the
+shared production lighting profile, and the exact Rainbow world. Sixteen
+alternating switches produced these medians:
+
+| Incoming world | Median click to swap | Main-thread gap | Outgoing-frame gap |
+| -------------- | -------------------: | --------------: | -----------------: |
+| Ocean          |             2,112 ms | 18.7-161.6 ms   |       16.9-50.1 ms |
+| Rainbow        |             1,735 ms | 18.2-25.4 ms    |       16.8-17.0 ms |
+
+The formal gates are at most 50 ms of application-thread delay and at most
+100 ms between outgoing worker frames. Three application-thread outliers were
+87.0, 91.0, and 161.6 ms. Fifteen of sixteen outgoing intervals remained near
+a 60 fps cadence; one reached 50.1 ms but still passed the formal continuity
+gate. Every swap observed two live contexts and returned to one after cleanup.
+
+Rainbow's transmissive orb and platform materials were also removed after
+measurement showed they triggered a hidden whole-scene transmission pass. GPU
+program count fell from 17 after first render to 12 throughout preparation;
+complete-frame preflight fell from 205-236 ms to 3-7 ms, and the first rendered
+frame fell to 1-4 ms in the measured runs.
+
+This checkpoint does **not** meet the word "flawless": 3 of 16 switches missed
+the input gate, Ocean remains representative rather than exact, and the
+production viewer is not routed through this backend. The proof earns the
+complete-frame worker architecture; it does not earn a production parity claim.

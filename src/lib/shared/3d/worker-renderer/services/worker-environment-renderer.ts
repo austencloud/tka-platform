@@ -13,6 +13,7 @@ import {
   type WorkerRendererBootMetrics,
   type WorkerRendererInMessage,
   type WorkerRendererOutMessage,
+  type WorkerPerformerSnapshot,
   type WorkerViewport,
 } from "../domain/worker-renderer-protocol";
 import { WorkerRendererResponsivenessProbe } from "./worker-renderer-responsiveness-probe";
@@ -41,8 +42,10 @@ export interface WorkerSceneSwitchMeasurement {
   clickToSwapMs: number;
   workerBoot: WorkerRendererBootMetrics;
   mainThreadMaxGapMs: number;
+  mainThreadMaxGapPhase: string | null;
   mainThreadGapsOver50Ms: number;
   outgoingWorkerMaxFrameGapMs: number;
+  outgoingWorkerMaxFrameGapPhase: string | null;
   handoffDelayMs: number;
   liveWorkersAtSwap: number;
   liveWorkersAfterCleanup: number | null;
@@ -103,6 +106,7 @@ export class WorkerEnvironmentRenderer {
   private lastMeasurement: WorkerSceneSwitchMeasurement | null = null;
   private history: WorkerSceneSwitchMeasurement[] = [];
   private disposed = false;
+  private performers: readonly WorkerPerformerSnapshot[] = [];
 
   constructor(options: WorkerEnvironmentRendererOptions) {
     this.container = options.container;
@@ -177,6 +181,17 @@ export class WorkerEnvironmentRenderer {
     }
   }
 
+  setPerformers(performers: readonly WorkerPerformerSnapshot[]): void {
+    this.performers = performers;
+    for (const slot of this.slots.values()) {
+      this.post(slot, {
+        type: "performers",
+        requestId: slot.state.requestId,
+        performers,
+      });
+    }
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
@@ -196,6 +211,7 @@ export class WorkerEnvironmentRenderer {
         state,
         viewport: this.viewport,
         camera: CAMERA_BY_ENVIRONMENT[state.environment],
+        performers: this.performers,
         createWorker: this.createWorker,
         onMessage: (source, message) =>
           this.handleWorkerMessage(source, message),
@@ -225,6 +241,7 @@ export class WorkerEnvironmentRenderer {
         if (this.handoff.staging?.requestId === message.requestId) {
           this.progress = message.fraction;
           this.progressPhase = message.phase;
+          this.responsiveness.setPhase(message.phase);
           this.publish();
         }
         return;
@@ -289,8 +306,11 @@ export class WorkerEnvironmentRenderer {
         clickToSwapMs: swappedAt - (probe?.requestedAt ?? receivedAt),
         workerBoot,
         mainThreadMaxGapMs: probe?.mainThreadMaxGapMs ?? 0,
+        mainThreadMaxGapPhase: probe?.mainThreadMaxGapPhase ?? null,
         mainThreadGapsOver50Ms: probe?.mainThreadGapsOver50Ms ?? 0,
         outgoingWorkerMaxFrameGapMs: probe?.outgoingWorkerMaxFrameGapMs ?? 0,
+        outgoingWorkerMaxFrameGapPhase:
+          probe?.outgoingWorkerMaxFrameGapPhase ?? null,
         handoffDelayMs: swappedAt - receivedAt,
         liveWorkersAtSwap: this.slots.size,
         liveWorkersAfterCleanup: null,
