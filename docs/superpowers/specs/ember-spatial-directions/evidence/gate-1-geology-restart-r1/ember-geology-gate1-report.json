@@ -1,0 +1,297 @@
+{
+  "schemaVersion": 1,
+  "artifact": "Ember geology-first Gate 1 comparison",
+  "generatedBy": "scripts/build-ember-geology-study.py",
+  "worldContract": {
+    "runtimeXRangeM": [
+      -190.0,
+      190.0
+    ],
+    "runtimeZRangeM": [
+      -145.0,
+      190.0
+    ],
+    "actionRadiusM": 4.5,
+    "interactiveOrbitCapM": 25.0,
+    "defaultAudienceCameraRuntimeXZ": [
+      0.0,
+      -21.5
+    ]
+  },
+  "disclaimer": "These are deterministic preproduction hypotheses, not physical lava simulations or approved art direction.",
+  "recommendedForFirstGraybox": "a-breached-rift-bench",
+  "recommendationBasis": "Best combined geology causality, one-mass/one-horizon composition, runtime fit, and Meshy efficiency. User approval remains required.",
+  "contactSheet": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/ember-geology-gate1-directions.png",
+  "candidates": [
+    {
+      "candidateId": "a-breached-rift-bench",
+      "candidateName": "A. Breached Rift Bench",
+      "status": "research-proposal",
+      "worldBoundsRuntimeXZ": {
+        "x": [
+          -190.0,
+          190.0
+        ],
+        "z": [
+          -145.0,
+          190.0
+        ]
+      },
+      "terrainGrid": {
+        "columns": 381,
+        "rows": 336,
+        "cellSizeM": 1.0
+      },
+      "terrainElevationM": {
+        "minimum": -1.15,
+        "maximum": 38.162,
+        "atPerformer": 0.658
+      },
+      "performerContract": {
+        "actionRadiusM": 4.5,
+        "orbitRadiusM": 25.0,
+        "flowCenterlineMinimumDistanceM": 14.446,
+        "conservativeFlowEdgeToActionEnvelopeClearanceM": 4.946
+      },
+      "longitudinalProfile": {
+        "pathLengthM": 314.088,
+        "sourceTerrainElevationM": 21.45,
+        "terminusTerrainElevationM": -1.15,
+        "netTerrainDescentM": 22.6,
+        "averageGradePercent": 7.195
+      },
+      "orbitSightlines": [
+        {
+          "bearingDegreesClockwiseFromAudience": 0,
+          "minimumTerrainClearanceM": 1.008,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 45,
+          "minimumTerrainClearanceM": 1.049,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 90,
+          "minimumTerrainClearanceM": 1.071,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 135,
+          "minimumTerrainClearanceM": 1.047,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 180,
+          "minimumTerrainClearanceM": 1.004,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 225,
+          "minimumTerrainClearanceM": 0.984,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 270,
+          "minimumTerrainClearanceM": 0.98,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 315,
+          "minimumTerrainClearanceM": 0.988,
+          "clear": true
+        }
+      ],
+      "researchScore": {
+        "geologicCausality": 5,
+        "lavaLegibility": 5,
+        "heroComposition": 5,
+        "orbitResilience": 4,
+        "runtimeFit": 5,
+        "meshyEfficiency": 5,
+        "scale": "1\u20135 directional estimate; requires graybox proof"
+      },
+      "evidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/a-breached-rift-bench-measured-board.png"
+    },
+    {
+      "candidateId": "b-perched-channel-terraces",
+      "candidateName": "B. Perched Channel Terraces",
+      "status": "research-proposal",
+      "worldBoundsRuntimeXZ": {
+        "x": [
+          -190.0,
+          190.0
+        ],
+        "z": [
+          -145.0,
+          190.0
+        ]
+      },
+      "terrainGrid": {
+        "columns": 381,
+        "rows": 336,
+        "cellSizeM": 1.0
+      },
+      "terrainElevationM": {
+        "minimum": -1.059,
+        "maximum": 42.357,
+        "atPerformer": 1.137
+      },
+      "performerContract": {
+        "actionRadiusM": 4.5,
+        "orbitRadiusM": 25.0,
+        "flowCenterlineMinimumDistanceM": 14.507,
+        "conservativeFlowEdgeToActionEnvelopeClearanceM": 4.507
+      },
+      "longitudinalProfile": {
+        "pathLengthM": 326.913,
+        "sourceTerrainElevationM": 26.972,
+        "terminusTerrainElevationM": -1.059,
+        "netTerrainDescentM": 28.032,
+        "averageGradePercent": 8.575
+      },
+      "orbitSightlines": [
+        {
+          "bearingDegreesClockwiseFromAudience": 0,
+          "minimumTerrainClearanceM": 0.528,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 45,
+          "minimumTerrainClearanceM": 0.657,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 90,
+          "minimumTerrainClearanceM": 0.693,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 135,
+          "minimumTerrainClearanceM": 0.545,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 180,
+          "minimumTerrainClearanceM": -0.233,
+          "clear": false
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 225,
+          "minimumTerrainClearanceM": -5.598,
+          "clear": false
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 270,
+          "minimumTerrainClearanceM": -5.478,
+          "clear": false
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 315,
+          "minimumTerrainClearanceM": -2.621,
+          "clear": false
+        }
+      ],
+      "researchScore": {
+        "geologicCausality": 4,
+        "lavaLegibility": 5,
+        "heroComposition": 4,
+        "orbitResilience": 4,
+        "runtimeFit": 4,
+        "meshyEfficiency": 4,
+        "scale": "1\u20135 directional estimate; requires graybox proof"
+      },
+      "evidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/b-perched-channel-terraces-measured-board.png"
+    },
+    {
+      "candidateId": "c-inflated-rift-apron",
+      "candidateName": "C. Inflated Rift Apron",
+      "status": "research-proposal",
+      "worldBoundsRuntimeXZ": {
+        "x": [
+          -190.0,
+          190.0
+        ],
+        "z": [
+          -145.0,
+          190.0
+        ]
+      },
+      "terrainGrid": {
+        "columns": 381,
+        "rows": 336,
+        "cellSizeM": 1.0
+      },
+      "terrainElevationM": {
+        "minimum": -0.9,
+        "maximum": 16.49,
+        "atPerformer": 0.931
+      },
+      "performerContract": {
+        "actionRadiusM": 4.5,
+        "orbitRadiusM": 25.0,
+        "flowCenterlineMinimumDistanceM": 13.7,
+        "conservativeFlowEdgeToActionEnvelopeClearanceM": 1.7
+      },
+      "longitudinalProfile": {
+        "pathLengthM": 304.435,
+        "sourceTerrainElevationM": 15.1,
+        "terminusTerrainElevationM": -0.9,
+        "netTerrainDescentM": 16.0,
+        "averageGradePercent": 5.256
+      },
+      "orbitSightlines": [
+        {
+          "bearingDegreesClockwiseFromAudience": 0,
+          "minimumTerrainClearanceM": 0.765,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 45,
+          "minimumTerrainClearanceM": 0.624,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 90,
+          "minimumTerrainClearanceM": 0.529,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 135,
+          "minimumTerrainClearanceM": 0.562,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 180,
+          "minimumTerrainClearanceM": 0.559,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 225,
+          "minimumTerrainClearanceM": 0.818,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 270,
+          "minimumTerrainClearanceM": 0.871,
+          "clear": true
+        },
+        {
+          "bearingDegreesClockwiseFromAudience": 315,
+          "minimumTerrainClearanceM": 0.851,
+          "clear": true
+        }
+      ],
+      "researchScore": {
+        "geologicCausality": 5,
+        "lavaLegibility": 3,
+        "heroComposition": 4,
+        "orbitResilience": 5,
+        "runtimeFit": 4,
+        "meshyEfficiency": 4,
+        "scale": "1\u20135 directional estimate; requires graybox proof"
+      },
+      "evidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/c-inflated-rift-apron-measured-board.png"
+    }
+  ]
+}

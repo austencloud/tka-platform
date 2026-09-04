@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "dataset": {
+    "title": "Mauna Loa 2022 lava flow digital elevation models and thickness maps",
+    "authors": [
+      "Hannah R. Dietterich",
+      "Michael H. Zoeller",
+      "Paul R. Lundgren"
+    ],
+    "publicationDate": "2026-03-12",
+    "doi": "10.5066/P1NBKNMC",
+    "license": "CC0 / USGS public domain",
+    "sourcePage": "https://www.usgs.gov/data/mauna-loa-2022-lava-flow-digital-elevation-models-and-thickness-maps",
+    "localSourceRoot": "E:\\tka-platform-ember-geology-sources\\usgs-mauna-loa-2022",
+    "sourceFiles": [
+      "ML_20221210_mosaic_align.tif",
+      "ML_20221210_thickness.tif",
+      "ML22demmetadata.xml"
+    ]
+  },
+  "dem": {
+    "width": 6238,
+    "height": 9248,
+    "crs": "EPSG:6635",
+    "bounds": [
+      220552.552,
+      2148915.093,
+      239597.703,
+      2177150.034
+    ],
+    "resolutionM": [
+      3.053086,
+      3.053086
+    ],
+    "nodata": -3.4028234663852886e+38
+  },
+  "thickness": {
+    "width": 6106,
+    "height": 9108,
+    "crs": "EPSG:6635",
+    "bounds": [
+      220754.056,
+      2149116.597,
+      239396.2,
+      2176924.105
+    ],
+    "resolutionM": [
+      3.053086,
+      3.053086
+    ],
+    "nodata": -3.4028230607370965e+38
+  },
+  "sample": {
+    "outShape": [
+      1368,
+      920
+    ],
+    "positiveThresholdM": 0.5,
+    "positiveSampleCount": 101631,
+    "percentilesM": {
+      "5": 2.704,
+      "25": 3.698,
+      "50": 4.447,
+      "75": 6.611,
+      "90": 11.396,
+      "95": 14.54,
+      "99": 19.2
+    },
+    "histogramLabels": [
+      "0.5\u20132 m",
+      "2\u20135 m",
+      "5\u201310 m",
+      "10\u201320 m",
+      ">20 m"
+    ],
+    "histogramCounts": [
+      1074,
+      62435,
+      24723,
+      12712,
+      687
+    ],
+    "warning": "Downsampled diagnostic only; not a scientific volume calculation."
+  },
+  "publishedAccuracy": {
+    "horizontalResolutionM": 3.05,
+    "horizontalMappingAgreement": "within one pixel (less than 3 m)",
+    "unchangedTerrainVerticalOneSigmaM": 1.09,
+    "verticalShiftRemovedM": 2.5,
+    "source": "ML22demmetadata.xml"
+  },
+  "derivedBoard": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/usgs-mauna-loa-2022-reference-board.png"
+}
