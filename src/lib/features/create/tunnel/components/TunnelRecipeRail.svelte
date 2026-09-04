@@ -14,6 +14,8 @@
     controller,
     bpm,
     playbackMode,
+    compact = false,
+    short = false,
     onCastChange,
     onOpenSettings,
     onOpenGeneration,
@@ -23,6 +25,8 @@
     controller: TunnelViewController;
     bpm: number;
     playbackMode: PlaybackMode;
+    compact?: boolean;
+    short?: boolean;
     onCastChange: (count: number) => void;
     onOpenSettings: () => void;
     onOpenGeneration: (performerId: string) => void;
@@ -108,7 +112,12 @@
   }
 </script>
 
-<section class="tunnel-recipe" aria-label="Tunnel recipe">
+<section
+  class="tunnel-recipe"
+  class:compact
+  class:short
+  aria-label="Tunnel recipe"
+>
   <div class="recipe-cards themed-scrollbar">
     <div class="card-slot mode-card">
       <ToggleCard
@@ -160,7 +169,7 @@
       {/if}
     </div>
 
-    <div class="card-slot">
+    <div class="card-slot source-recipe-card">
       <BaseCard
         title={`Generate ${selectedShortLabel}`}
         currentValue={selectedSourceLabel}
@@ -173,7 +182,7 @@
       />
     </div>
 
-    <div class="card-slot">
+    <div class="card-slot source-recipe-card">
       <BaseCard
         title="Shape Matrix"
         currentValue={`${selectedShortLabel} · TnD`}
@@ -186,7 +195,7 @@
       />
     </div>
 
-    <div class="card-slot">
+    <div class="card-slot source-recipe-card">
       <BaseCard
         title="Browse"
         currentValue="Public + Yours"
@@ -199,7 +208,7 @@
       />
     </div>
 
-    <div class="card-slot">
+    <div class="card-slot settings-card">
       <BaseCard
         title="Formation"
         currentValue={formationLabel}
@@ -212,7 +221,7 @@
       />
     </div>
 
-    <div class="card-slot">
+    <div class="card-slot extended-settings-card">
       <BaseCard
         title="Timing"
         currentValue={`Together in ${controller.loopSteps}`}
@@ -225,7 +234,7 @@
       />
     </div>
 
-    <div class="card-slot colors-card">
+    <div class="card-slot colors-card extended-settings-card">
       <BaseCard
         title="Colors"
         currentValue={controller.colorMode === "custom"
@@ -242,7 +251,7 @@
       />
     </div>
 
-    <div class="card-slot">
+    <div class="card-slot extended-settings-card">
       <BaseCard
         title="Playback"
         currentValue={playbackLabel}
@@ -305,6 +314,32 @@
     flex: 1;
     min-width: 0;
     min-height: 0;
+  }
+
+  .tunnel-recipe.compact .recipe-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-columns: auto;
+    grid-auto-flow: row;
+    grid-auto-rows: 4.75rem;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
+  .tunnel-recipe.compact .source-recipe-card,
+  .tunnel-recipe.compact .extended-settings-card {
+    display: none;
+  }
+
+  .tunnel-recipe.short {
+    gap: 0;
+  }
+
+  .tunnel-recipe.short .recipe-cards {
+    grid-auto-rows: 3.5rem;
+  }
+
+  .tunnel-recipe.short .recipe-summary {
+    display: none;
   }
 
   .recipe-summary {
