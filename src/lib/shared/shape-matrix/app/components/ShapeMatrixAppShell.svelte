@@ -798,6 +798,22 @@
     gap: 0.4rem;
   }
 
+  /* Theory's two-ratio equation is the complete instrument, and it is narrow
+     enough to share the title row at every non-compact size. Keeping it in a
+     second full-width row stranded most of the header while pushing the
+     actual matrix down the page. Matrix keeps its two-row composition until
+     its much wider turn ribbon reaches the dedicated wide-canvas seam. */
+  @container shape-matrix-app (min-width: 75rem) and (min-height: 42rem) {
+    .shape-app.theory .topbar {
+      grid-template-columns:
+        minmax(max-content, 1fr)
+        auto
+        minmax(0, max-content)
+        minmax(max-content, 1fr);
+      grid-template-areas: "identity meta controls actions";
+    }
+  }
+
   .relationships-action i {
     color: var(--theme-accent, #f59e0b);
   }
