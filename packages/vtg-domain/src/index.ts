@@ -74,4 +74,5 @@ export {
 	spinRatioPetals,
 	spinRatioToTkaTurns,
 	spinRatioToTkaTurnFraction,
+	THEORY_SPIN_RATIO_MAX_PART,
 } from "./reference/spin-ratio.js";

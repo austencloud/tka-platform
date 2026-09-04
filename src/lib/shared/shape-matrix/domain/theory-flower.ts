@@ -1,11 +1,11 @@
 /**
  * The Theory surface's axis vocabulary: the Shape Matrix's own row-and-column
- * idea, carried onto rational prop-to-hand ratios TKA has no turn value for.
+ * idea, carried onto rational prop-to-hand ratios beyond the named turn set.
  *
  * A matrix row is one hand doing one thing. On the Matrix surface that thing
- * is a TKA turn value, which pins the ratio to (2t+1):1 — only three points of
- * the Farey line ever appear (0:1, 1:2, 1:1). Here the ratio is chosen
- * directly, so the same four variants per hand open onto twenty-nine more.
+ * is a TKA turn value, which pins the ratio to the turn ladder rather than
+ * accepting a fraction directly. Here the ratio is chosen directly, so the
+ * same four variants per hand open onto the complete 0–15 ratio field.
  *
  * Timing and direction stay where VTG puts them: BETWEEN the two hands. The
  * QfT model already carries both as knobs (`handPhase`, `handDirection`), so
@@ -130,11 +130,7 @@ export function theoryFlowerLabel(flower: TheoryFlower): string {
  * every ratio with an even hand-cycle count loses a start this way, and one
  * whose count divides by four keeps only a single compass start.
  */
-function startsCoincide(
-  ratio: SpinRatio,
-  a: TheoryOri,
-  b: TheoryOri
-): boolean {
+function startsCoincide(ratio: SpinRatio, a: TheoryOri, b: TheoryOri): boolean {
   return (Math.abs(ORI_PHASE[a] - ORI_PHASE[b]) * ratio.handCycles) % 8 === 0;
 }
 
@@ -164,6 +160,24 @@ function distinctStarts(ratio: SpinRatio, limit: number): TheoryOri[] {
 }
 
 /**
+ * Two semantic starts keep every rotating ratio on the same four-entry axis.
+ *
+ * Some closed paths re-enter the same locus from several compass starts. Those
+ * starts still describe different downbeat orientations, which matter when two
+ * hands are played together. When geometry leaves only one distinct locus, the
+ * second entry therefore preserves the familiar in/out pairing instead of
+ * collapsing the matrix to 2×2.
+ */
+function gridStarts(ratio: SpinRatio): [TheoryOri, TheoryOri] {
+  const starts = distinctStarts(ratio, 2);
+  if (starts.length === 2) return [starts[0], starts[1]];
+
+  const first = starts[0] ?? "in";
+  const second = START_PREFERENCE.find((ori) => ori !== first) ?? "out";
+  return [first, second];
+}
+
+/**
  * The variants one hand has at a ratio.
  *
  * Two spins, each with the starts that genuinely draw something different —
@@ -174,8 +188,9 @@ function distinctStarts(ratio: SpinRatio, limit: number): TheoryOri[] {
  * same motion and the four DISTINCT starts are the four compass quarters —
  * the float axis the Matrix already builds. A stationary hand has no bearing
  * for the prop to be offset from, so 1:0 traces one circle and gets one row.
- * An even-cycle ratio is the third case: `startsCoincide` says which of its
- * starts survive.
+ * An even-cycle ratio is the third case: `startsCoincide` chooses the most
+ * visually distinct starts available, while `gridStarts` keeps the four-entry
+ * interaction contract when every compass start shares one locus.
  */
 export function buildTheoryAxis(ratio: SpinRatio): TheoryFlower[] {
   const petalsFor = (style: SpinStyle) => spinRatioPetals(ratio, style);
@@ -193,9 +208,7 @@ export function buildTheoryAxis(ratio: SpinRatio): TheoryFlower[] {
     }));
   }
 
-  // Two starts per spin wherever two exist. 1:4 and 3:4 have one, and 1:8
-  // through 7:8 have one for any start at all, so those axes are two rows.
-  const starts = distinctStarts(ratio, 2);
+  const starts = gridStarts(ratio);
   const variants: TheoryFlower[] = [];
   for (const style of ["pro", "anti"] as const) {
     for (const ori of starts) {
@@ -211,7 +224,7 @@ export function buildTheoryAxis(ratio: SpinRatio): TheoryFlower[] {
  * This is the hand's own shape and nothing else, which is exactly what a tile
  * draws. A Matrix tile is the blue hand's mandala against the red hand's, with
  * no pairing baked into either, and a Theory tile is that same picture at
- * ratios TKA has no turn value for.
+ * ratios the Matrix's turn selector does not enumerate directly.
  */
 export function theorySoloKnobs(flower: TheoryFlower): QftKnobs {
   const stationary = isStationaryRatio(flower.ratio);
