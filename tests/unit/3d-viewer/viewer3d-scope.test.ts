@@ -293,6 +293,45 @@ describe("viewer-3d-state: selection scope", () => {
     ).toEqual([PropType.FAN, null, PropType.FAN]);
   });
 
+  it("applies a Director cast plan by index as one viewer history entry", () => {
+    const state = makeState();
+    state.performerManager.initialize();
+    state.performerManager.addPerformer();
+    state.performerManager.addPerformer();
+    const before = state.performerManager.performers.map((performer) => ({
+      characterId: performer.characterId,
+      prop: performer.settings.prop,
+    }));
+    state.sceneUndo.clear();
+
+    expect(
+      state.applyPerformerAppearanceAssignments([
+        { index: 0, characterId: "y-bot", prop: PropType.FAN },
+        { index: 1, characterId: "x-bot", prop: PropType.CLUB },
+        { index: 2, characterId: "ch26", prop: PropType.POI },
+      ])
+    ).toBe(true);
+    expect(state.sceneUndo.historySize).toBe(1);
+    expect(
+      state.performerManager.performers.map((performer) => ({
+        characterId: performer.characterId,
+        prop: performer.settings.prop,
+      }))
+    ).toEqual([
+      { characterId: "y-bot", prop: PropType.FAN },
+      { characterId: "x-bot", prop: PropType.CLUB },
+      { characterId: "ch26", prop: PropType.POI },
+    ]);
+
+    state.sceneUndo.undo();
+    expect(
+      state.performerManager.performers.map((performer) => ({
+        characterId: performer.characterId,
+        prop: performer.settings.prop,
+      }))
+    ).toEqual(before);
+  });
+
   it("records every bulk performer setting class as one undoable edit", () => {
     const state = makeState();
     state.performerManager.initialize();

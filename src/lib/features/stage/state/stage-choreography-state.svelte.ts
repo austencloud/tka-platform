@@ -109,6 +109,12 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
     facingAngle: number | undefined
   ): void;
   applyPresetToFormation(formationId: string, preset: FormationPresetId): void;
+  applyFormationTransition(
+    endFormation: FormationPresetId,
+    durationBeats: number,
+    startFormation?: FormationPresetId,
+    atBeat?: number
+  ): boolean;
   beginDrag(): void;
   addSequenceClip(
     performerId: string,
@@ -823,6 +829,118 @@ export function createStageChoreographyState(
     normalizeFormationTrack();
   }
 
+  function presetSpots(
+    preset: FormationPresetId,
+    source?: Formation
+  ): Formation["spots"] {
+    const positions = generatePresetPositions(
+      preset,
+      choreography.performers.length,
+      choreography.stageWidth,
+      choreography.stageDepth
+    );
+    return Object.fromEntries(
+      choreography.performers.map((performer, index) => {
+        const position = positions[index] ?? {
+          x: choreography.stageWidth / 2,
+          z: choreography.stageDepth / 2,
+        };
+        const existing = source?.spots[performer.id];
+        return [
+          performer.id,
+          {
+            ...(existing ?? {
+              walkStyle: "direct" as const,
+              easing: "linear" as const,
+            }),
+            ...position,
+            facingAngle: position.facingAngle,
+          },
+        ];
+      })
+    );
+  }
+
+  /**
+   * Author one uninterrupted formation move as a single Stage undo step.
+   * A missing start preset captures the exact sampled positions at the current
+   * beat, so "transition to circle" begins from what the cast is doing now.
+   */
+  function applyFormationTransition(
+    endFormation: FormationPresetId,
+    durationBeats: number,
+    startFormation?: FormationPresetId,
+    atBeat = currentBeat
+  ): boolean {
+    if (choreography.performers.length === 0) return false;
+    const startBeat = Number.isFinite(atBeat)
+      ? Math.max(0, Math.round(atBeat))
+      : 0;
+    const duration = Number.isFinite(durationBeats)
+      ? Math.max(1, Math.round(durationBeats))
+      : 1;
+    const endBeat = startBeat + duration;
+    const existingStart = choreography.formations.find(
+      (formation) => formation.atBeat === startBeat
+    );
+    const existingEnd = choreography.formations.find(
+      (formation) => formation.atBeat === endBeat
+    );
+    const sampledStartSpots: Formation["spots"] = Object.fromEntries(
+      choreography.performers.map((performer) => {
+        const sampled = sampleFormationPerformance(
+          choreography,
+          performer.id,
+          startBeat
+        ).stagePosition;
+        return [
+          performer.id,
+          {
+            x: sampled.x,
+            z: sampled.z,
+            facingAngle: sampled.facingAngle,
+            walkStyle: "direct" as const,
+            easing: "linear" as const,
+          },
+        ];
+      })
+    );
+
+    pushUndo();
+    choreography.formations = choreography.formations.filter(
+      (formation) => formation.atBeat <= startBeat || formation.atBeat > endBeat
+    );
+
+    let start = existingStart;
+    if (startFormation && start) {
+      start.spots = presetSpots(startFormation, start);
+      start.presetId = startFormation;
+    } else if (!start) {
+      start = {
+        id: crypto.randomUUID(),
+        atBeat: startBeat,
+        transitionBeats: 0,
+        spots: startFormation ? presetSpots(startFormation) : sampledStartSpots,
+        ...(startFormation ? { presetId: startFormation } : {}),
+      };
+      choreography.formations.push(start);
+    }
+
+    const destination: Formation = existingEnd ?? {
+      id: crypto.randomUUID(),
+      atBeat: endBeat,
+      transitionBeats: duration,
+      spots: {},
+    };
+    destination.atBeat = endBeat;
+    destination.transitionBeats = duration;
+    destination.spots = presetSpots(endFormation, existingEnd);
+    destination.presetId = endFormation;
+    choreography.formations.push(destination);
+    normalizeFormationTrack();
+    return true;
+  }
+
   function beginDrag() {
     pushUndo();
   }
@@ -1075,6 +1193,7 @@ export function createStageChoreographyState(
     updateSpotEasing,
     updateSpotFacing,
     applyPresetToFormation,
+    applyFormationTransition,
     beginDrag,
     addSequenceClip,
     removeSequenceClip,
