@@ -34,14 +34,14 @@ It attributes the boot window by patching `createImageBitmap` and the WebGL
 prototypes, and unions the resulting intervals rather than summing them —
 summing 210 concurrent texture decodes describes no elapsed time. Categories:
 
-| Category | What it patches |
-| --- | --- |
-| `fetch` | `PerformanceObserver` resource entries |
-| `decode` | `createImageBitmap` |
+| Category        | What it patches                                                                                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fetch`         | `PerformanceObserver` resource entries                                                                                                            |
+| `decode`        | `createImageBitmap`                                                                                                                               |
 | `textureUpload` | `texImage2D`, `texSubImage2D`, `texImage3D`, `texSubImage3D`, `texStorage2D`, `compressedTexImage2D`, `compressedTexSubImage2D`, `generateMipmap` |
-| `bufferUpload` | `bufferData`, `bufferSubData` |
-| `shaderSync` | `compileShader`, `linkProgram`, `getProgramParameter`, `getShaderParameter`, `getProgramInfoLog` |
-| `gpuSync` | `finish`, `readPixels` |
+| `bufferUpload`  | `bufferData`, `bufferSubData`                                                                                                                     |
+| `shaderSync`    | `compileShader`, `linkProgram`, `getProgramParameter`, `getShaderParameter`, `getProgramInfoLog`                                                  |
+| `gpuSync`       | `finish`, `readPixels`                                                                                                                            |
 
 It also reports `blockedMs` (union of long tasks), `unexplainedBlockedMs`
 (blocked minus instrumented GPU calls — i.e. GLB parse and scene-graph work),
@@ -59,22 +59,22 @@ it.
 
 Ocean scene, dev server, `/test/ocean-scene?bootprofile=1`.
 
-| Run | assets | compile | settle | total |
-| --- | --- | --- | --- | --- |
+| Run  | assets   | compile  | settle   | total     |
+| ---- | -------- | -------- | -------- | --------- |
 | Cold | 5,530 ms | 5,242 ms | 3,250 ms | 14,024 ms |
-| Warm | 2,709 ms | 1,823 ms | 3,167 ms | 7,700 ms |
+| Warm | 2,709 ms | 1,823 ms | 3,167 ms | 7,700 ms  |
 
 Warm-run attribution across the whole 7,700 ms window:
 
-| Slice | Wall | Calls |
-| --- | --- | --- |
-| `fetch` | 6,603 ms | 563 |
-| `shaderSync` | **980 ms** | 107 |
-| unexplained main-thread block (GLB parse, scene graph) | **583 ms** | — |
-| `textureUpload` | 132 ms | 23 |
-| `decode` | 47 ms | 15 |
-| `bufferUpload` | 18 ms | 102 |
-| idle | 603 ms | — |
+| Slice                                                  | Wall       | Calls |
+| ------------------------------------------------------ | ---------- | ----- |
+| `fetch`                                                | 6,603 ms   | 563   |
+| `shaderSync`                                           | **980 ms** | 107   |
+| unexplained main-thread block (GLB parse, scene graph) | **583 ms** | —     |
+| `textureUpload`                                        | 132 ms     | 23    |
+| `decode`                                               | 47 ms      | 15    |
+| `bufferUpload`                                         | 18 ms      | 102   |
+| idle                                                   | 603 ms     | —     |
 
 **Only `fetch` is contaminated.** Those 563 requests are the dev server's
 unbundled modules, not the production bundle. Every GPU and JS category above
@@ -111,10 +111,10 @@ reads exactly like a one-line 1.2-second win.
 
 A/B, stubbing the info-log calls to return instantly:
 
-| Call | Baseline | Info-log stubbed |
-| --- | --- | --- |
-| `getProgramInfoLog` | 1,240 ms / 39 | ~0 |
-| `getProgramParameter` | 18 ms / 256 | **1,135 ms / 280** |
+| Call                  | Baseline      | Info-log stubbed   |
+| --------------------- | ------------- | ------------------ |
+| `getProgramInfoLog`   | 1,240 ms / 39 | ~0                 |
+| `getProgramParameter` | 18 ms / 256   | **1,135 ms / 280** |
 
 The wait relocated. It is driver link time, and it does not disappear by
 declining to ask for it. Any future "just skip the shader error check" patch
@@ -125,11 +125,11 @@ is this same non-fix; measure before believing it.
 Both leads below were investigated and closed. The numbers are same-machine
 before/after on `/test/ocean-scene`, warm, page foregrounded.
 
-| Phase | Before | After |
-| --- | --- | --- |
-| assets | 2,842 ms | 2,185 ms |
-| compile | 2,942 ms | **673 ms** |
-| settle | 1,590 ms, `capped` | **191 ms, `passed`** |
+| Phase   | Before             | After                |
+| ------- | ------------------ | -------------------- |
+| assets  | 2,842 ms           | 2,185 ms             |
+| compile | 2,942 ms           | **673 ms**           |
+| settle  | 1,590 ms, `capped` | **191 ms, `passed`** |
 
 ### The frame gate could not pass at 30fps
 
@@ -157,7 +157,7 @@ scene, a phone, a loaded machine — that was paying 1.5 s.
 `compileAsync` (`three.module.js:16992`) does its traversal and program
 creation synchronously and then returns a promise that polls
 `KHR_parallel_shader_compile` on a **10 ms `setTimeout` chain**. Awaiting them
-in turn therefore paid every driver link end to end *plus* a poll tick per
+in turn therefore paid every driver link end to end _plus_ a poll tick per
 program, with the GPU idle in between.
 
 The calls are now dispatched together and awaited as a group. Same-server A/B,
@@ -184,18 +184,18 @@ One first-visit pass through the production build produced these click-to-reveal
 times. The machine was shared and loaded, so use the numbers to rank the scenes,
 not as a release benchmark:
 
-| Scene | Reveal | Longest UI stall | Dominant phase |
-| --- | ---: | ---: | --- |
-| Cosmic | 1.2 s | 0.6 s | cached/very light |
-| Void | 1.8 s | 1.2 s | shader compile |
-| Celestial | 3.0 s | 1.0 s | assets |
-| Forest | 5.3 s | 1.4 s | assets |
-| Blossom | 5.6 s | 2.1 s | assets + compile |
-| Rainbow | 6.0 s | **5.3 s** | shader compile |
-| Ember | 6.7 s | 3.1 s | assets + settle |
-| Autumn | 7.9 s | **4.4 s** | shader compile |
-| Winter | 9.1 s | 2.8 s | assets + compile |
-| Ocean | exceeded the 60 s probe on this loaded pass | 2.9 s | assets |
+| Scene     |                                      Reveal | Longest UI stall | Dominant phase    |
+| --------- | ------------------------------------------: | ---------------: | ----------------- |
+| Cosmic    |                                       1.2 s |            0.6 s | cached/very light |
+| Void      |                                       1.8 s |            1.2 s | shader compile    |
+| Celestial |                                       3.0 s |            1.0 s | assets            |
+| Forest    |                                       5.3 s |            1.4 s | assets            |
+| Blossom   |                                       5.6 s |            2.1 s | assets + compile  |
+| Rainbow   |                                       6.0 s |        **5.3 s** | shader compile    |
+| Ember     |                                       6.7 s |            3.1 s | assets + settle   |
+| Autumn    |                                       7.9 s |        **4.4 s** | shader compile    |
+| Winter    |                                       9.1 s |            2.8 s | assets + compile  |
+| Ocean     | exceeded the 60 s probe on this loaded pass |            2.9 s | assets            |
 
 The shared transition now warms each environment's small JavaScript chunk when
 its picker tile is pointed at or focused, warms decoder runtimes when the picker
@@ -231,10 +231,10 @@ in flight and is still awaited as one group.
 
 Three fresh-context runs after the change:
 
-| Scene | Previous longest stall | New longest stalls |
-| --- | ---: | --- |
-| Autumn | 4,264 ms | 1,343 / 1,258 / 1,299 ms |
-| Rainbow | 5,218 ms | 1,696 / 2,531 / 1,735 ms |
+| Scene   | Previous longest stall | New longest stalls       |
+| ------- | ---------------------: | ------------------------ |
+| Autumn  |               4,264 ms | 1,343 / 1,258 / 1,299 ms |
+| Rainbow |               5,218 ms | 1,696 / 2,531 / 1,735 ms |
 
 This is a material reduction, not a zero-jank result. The remaining 1.3-2.5 s
 calls are individually synchronous and cannot be split by yielding around them.
@@ -248,6 +248,61 @@ Ocean also remains dominated by its assets phase rather than this warm-up loop.
 2. Read `window.__sceneBootProfile`, or the console report at reveal.
 3. Say which run was cold and which was warm. They differ by ~2x.
 4. State that `fetch` is dev-contaminated whenever quoting a dev-server run.
+
+## OffscreenCanvas worker handoff, measured 2026-09-04
+
+Yielding reduced the worst main-thread stalls, but it cannot interrupt one GLB
+parse, Three.js scene-construction call, or GPU program-creation call after that
+call begins. A two-slot `OffscreenCanvas` worker backend was therefore tested
+against exact production Rainbow construction and real Ocean assets.
+
+The active worker keeps presenting the outgoing world while a second worker
+constructs and compiles the replacement. The main thread flips the two canvas
+slots only after the incoming worker reports a rendered frame, then terminates
+the outgoing worker. The bound is two WebGL contexts during preparation and one
+at steady state.
+
+Four alternating steady-state environment-only switches measured before the
+performer moved into the worker:
+
+| Incoming world | Click to swap | Worker preparation | Main-thread max gap | Outgoing-frame max gap |
+| -------------- | ------------: | -----------------: | ------------------: | ---------------------: |
+| Ocean          |        745 ms |             572 ms |             17.8 ms |                16.8 ms |
+| Rainbow        |        564 ms |             361 ms |             17.5 ms |                66.7 ms |
+| Ocean          |        797 ms |             609 ms |             17.1 ms |                16.8 ms |
+| Rainbow        |        580 ms |             393 ms |             20.3 ms |                66.7 ms |
+
+The exact Rainbow scene graph is now shared by its Svelte adapter and worker
+adapter through `environments/worlds/rainbow/`; the worker result is not a
+cheaper visual stand-in. The first cold Rainbow development load still produced
+a 102.9 ms application-thread gap, so cold startup has not met the 50 ms input
+gate. Steady switching did.
+
+The next checkpoint moved a real X-Bot, its IK/finger solve, and two live staffs
+into the same worker-owned frame as the exact Rainbow world. Across sixteen
+alternating complete-frame switches, median click-to-swap was 2,112 ms into
+Ocean and 1,735 ms into Rainbow. Thirteen of sixteen stayed inside the 50 ms
+application-thread gate. All sixteen stayed inside the 100 ms outgoing-frame
+continuity gate, although one interval reached 50.1 ms instead of the usual
+16.8-17.5 ms. Context count was two at handoff and one after cleanup on every
+observed switch.
+
+This remains an architectural proof, not a production-viewer claim. The
+shipping viewer still renders on the main thread. Rainbow has exact world,
+performer, staff-family prop, and shared-lighting ownership in the worker;
+Ocean is representative, and locomotion, turns, contact locking, non-staff
+props, effects, picking, badges, grids, and postprocessing remain outside the
+worker boundary. A background-only worker canvas is still forbidden because
+it loses shared depth, fog, lighting, occlusion, and postprocessing with the
+performer.
+
+Do not call this flawless. Three of sixteen complete-frame switches missed the
+input gate. The worker architecture has removed the multi-second main-thread
+freeze as the normal behavior, but the remaining scheduler/GPU outliers and
+full production parity are open work.
+
+Canonical design and acceptance gates:
+`docs/superpowers/specs/2026-09-03-worker-renderer-scene-switch-prototype-design.md`.
 
 ## Related
 

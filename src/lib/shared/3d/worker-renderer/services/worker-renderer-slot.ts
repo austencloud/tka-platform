@@ -4,6 +4,7 @@ import {
   type WorkerCameraSnapshot,
   type WorkerRendererInMessage,
   type WorkerRendererOutMessage,
+  type WorkerPerformerSnapshot,
   type WorkerViewport,
 } from "../domain/worker-renderer-protocol";
 
@@ -14,6 +15,7 @@ export interface WorkerRendererSlotOptions {
   state: WorkerRendererSlotState;
   viewport: WorkerViewport;
   camera: WorkerCameraSnapshot;
+  performers?: readonly WorkerPerformerSnapshot[];
   createWorker: () => Worker;
   onMessage: (
     slot: WorkerRendererSlot,
@@ -80,6 +82,7 @@ export class WorkerRendererSlot {
         environment: this.state.environment,
         viewport: options.viewport,
         camera: options.camera,
+        performers: options.performers ?? [],
       };
       this.worker.postMessage(message, [offscreen]);
     } catch (error) {

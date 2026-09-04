@@ -1,6 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { WorkerEnvironmentKey } from "../domain/worker-renderer-protocol";
+  import type {
+    WorkerEnvironmentKey,
+    WorkerPerformerSnapshot,
+  } from "../domain/worker-renderer-protocol";
   import {
     WorkerEnvironmentRenderer,
     type WorkerSceneSwitchSnapshot,
@@ -8,10 +11,11 @@
 
   interface Props {
     environment: WorkerEnvironmentKey;
+    performers?: readonly WorkerPerformerSnapshot[];
     onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
   }
 
-  let { environment, onSnapshot }: Props = $props();
+  let { environment, performers = [], onSnapshot }: Props = $props();
   let container: HTMLDivElement;
   let renderer: WorkerEnvironmentRenderer | null = null;
 
@@ -20,6 +24,7 @@
       container,
       onSnapshot,
     });
+    renderer.setPerformers($state.snapshot(performers));
     renderer.switchTo(environment);
     return () => {
       renderer?.dispose();
@@ -30,6 +35,10 @@
   $effect(() => {
     const selected = environment;
     renderer?.switchTo(selected);
+  });
+
+  $effect(() => {
+    renderer?.setPerformers($state.snapshot(performers));
   });
 </script>
 
