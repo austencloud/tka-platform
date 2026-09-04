@@ -526,9 +526,11 @@ reads as a volcanic place rather than a decorated stage.
 - Direction A's breach can regress into another giant arch. The graybox must
   show a broken scarp with asymmetric bedding, talus, and a credible missing
   volume, not a freestanding portal.
-- The first 8,000 m³ simulator test stops near the performer region rather than
-  filling the authored 314 m route. Production planning will need a calibrated
-  volume/lobe-count sweep after the terrain is approved.
+- Historical R1 risk: the first 8,000 m³ simulator test stopped near the
+  performer region rather than filling the authored 314 m route. Gate 1.1 now
+  resolves that specific contradiction with a five-run width/morphology sweep;
+  the selected simulator footprint reaches runtime Z `-144` with 13.220 m of
+  clearance beyond the action envelope. Artifact approval remains pending.
 - Simulator agreement is encouraging but not geological validation. Both models
   inherit related elliptical-lobe assumptions and the same invented DEM.
 - A 1 m planning grid cannot own sub-meter crust form. It is a macro/meso guide.
@@ -572,3 +574,18 @@ Reproduction scripts:
 The [source ledger](geology-research-source-ledger.md) records all measured,
 scientific, production, repository, licensing, and Meshy references used by the
 study.
+
+## Gate 1.1 amendment evidence
+
+The independent R1 audit and corrective authorization are recorded in museum
+tracker items `xSjtvI2XVvvMdn8pHqwP` and `WS9FU4nn2fCSbOn68IeB`. The replacement
+north-up plan, sections, sightlines, simulator sweep, contact sheet, canonical
+report, and selected float32 footprint live in
+`evidence/gate-1-1-geology-amendment-r2/`. Reproduce them with:
+
+- `py -3 scripts/prepare-ember-lava-simulator-benchmark.py all-r2`
+- `py -3 scripts/build-ember-geology-amendment.py build`
+- `py -3 scripts/build-ember-geology-amendment.py verify`
+
+Direction A remains the accepted creative direction, but its corrected Gate 1.1
+artifact is `ready-for-review` rather than approved. Gate 2 R2 is pending.

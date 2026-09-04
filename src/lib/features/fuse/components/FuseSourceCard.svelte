@@ -30,6 +30,7 @@
   import { createCircularFuseSoloSequence } from "../services/fuse-solo-sequence";
   import {
     FUSE_LIVE_GRID_GAP,
+    getBestFuseStepColumns,
     getFittedFuseCellSize,
   } from "../services/fuse-workspace-split";
 
@@ -38,7 +39,7 @@
     full = false,
     compactHero = false,
     toolbarOnly = false,
-    stepCols = 4,
+    stepCols = null,
     onChooseFirstStep,
     onBuildPath,
     firstStepPickerActive = false,
@@ -56,9 +57,9 @@
     /** Compact source identity and actions without a second pictograph. The
      * shared decomposed animator owns the live hand view in this mode. */
     toolbarOnly?: boolean;
-    // Step column count FuseLayout picked to maximize pictograph size for the
-    // current seam width and length. Only used in full (desktop) mode.
-    stepCols?: number;
+    // The stacked desktop solver coordinates this with its draggable seam.
+    // A null value lets a full-height side card fit itself from its own stage.
+    stepCols?: number | null;
     onChooseFirstStep: (side: FuseSide) => void;
     onBuildPath: (side: FuseSide) => void;
     firstStepPickerActive?: boolean;
@@ -82,8 +83,8 @@
   // The notation stage's live size. ChoreoCard's autoFit reads a landscape
   // stage as "one long row" — 8 tiny cells with dead space above and below.
   // Instead we measure the real stage and pick the column count that maximizes
-  // pictograph size, the same optimization the desktop seam runs. (Full/desktop
-  // keeps FuseLayout's seam-aware count and a start-position left column.)
+  // pictograph size, the same optimization the desktop seam runs. A stacked
+  // full card keeps FuseLayout's seam-aware count; a side card fits itself.
   let stageEl = $state<HTMLDivElement | null>(null);
   let stageW = $state(0);
   let stageH = $state(0);
@@ -137,10 +138,9 @@
       : null
   );
 
-  // Full mode: FuseLayout hands down a seam-aware column count. Non-full: pick
-  // the count that maximizes cell size for the measured stage — fewer columns
-  // (more rows) when the stage is tall, more when it's wide — so the pictographs
-  // fill the card instead of shrinking into one thin autoFit row.
+  // The stacked desktop passes its seam-aware count. Full-height side cards and
+  // lean cards solve from their own measured stage, so moving Left and Right
+  // beside the result makes the notation taller instead of merely narrower.
   const STAGE_COL_CANDIDATES = [2, 4, 6, 8] as const;
   function bestStageCols(w: number, h: number, steps: number): number {
     if (w <= 0 || h <= 0 || steps <= 0) return Math.min(4, Math.max(1, steps));
@@ -157,8 +157,10 @@
     }
     return best;
   }
-  const stepColumns = $derived<number | null>(
-    full ? stepCols : bestStageCols(stageW, stageH, stepCount)
+  const stepColumns = $derived(
+    full
+      ? (stepCols ?? getBestFuseStepColumns(stageW, stageH, stepCount, 0))
+      : bestStageCols(stageW, stageH, stepCount)
   );
   const liveGridColumns = $derived(Math.max(1, stepColumns ?? 1));
   const liveGridRows = $derived(
@@ -382,6 +384,7 @@
 
 <section
   class="source-card {side}-source"
+  data-fuse-layout-region="source-{side}"
   class:loading={source.isLoading}
   class:compact-hero={compactHero}
   class:compact-toolbar={toolbarOnly}

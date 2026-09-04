@@ -19,12 +19,12 @@ describe("Tunnel layer reveal", () => {
     expect(resolveTunnelLayerOpacity(2, 3, 4)).toBe(1);
   });
 
-  it("blooms the closest layer before the farthest layer", () => {
+  it("starts the whole ensemble during the opening fifth", () => {
     const near = resolveTunnelLayerOpacity(0.2, 0, 4);
     const far = resolveTunnelLayerOpacity(0.2, 3, 4);
 
     expect(near).toBeGreaterThan(far);
-    expect(far).toBe(0);
+    expect(far).toBeGreaterThan(0);
   });
 
   it("settles every layer together at the transition endpoint", () => {
@@ -35,13 +35,18 @@ describe("Tunnel layer reveal", () => {
     expect(opacities).toEqual([1, 1, 1, 1, 1, 1]);
   });
 
-  it("holds a readable center-out spread through the middle of the reveal", () => {
+  it("keeps a subtle depth spread without backloading the outer copies", () => {
     const opacities = Array.from({ length: 7 }, (_, index) =>
       resolveTunnelLayerOpacity(0.5, index, 7)
     );
 
-    expect(opacities[0] - opacities[6]).toBeGreaterThan(0.45);
+    expect(Math.min(...opacities)).toBeGreaterThan(0.35);
+    expect(opacities[0] - opacities[6]).toBeLessThan(0.15);
     expect(opacities).toEqual([...opacities].sort((a, b) => b - a));
+  });
+
+  it("does not ease the shared reveal clock a second time", () => {
+    expect(resolveTunnelLayerProgress(0.5, 0, 7)).toBe(0.5);
   });
 
   it("uses the same reversible progress for position and opacity", () => {
@@ -94,8 +99,7 @@ describe("Tunnel layer reveal", () => {
 describe("Tunnel grid reveal", () => {
   it("removes the 2D grid on the same reversible progress as Tunnel", () => {
     expect(resolveTunnelGridOpacity(0, false)).toBe(1);
-    expect(resolveTunnelGridOpacity(0.19, false)).toBeCloseTo(0.5);
-    expect(resolveTunnelGridOpacity(0.38, false)).toBe(0);
+    expect(resolveTunnelGridOpacity(0.5, false)).toBe(0.5);
     expect(resolveTunnelGridOpacity(1, false)).toBe(0);
   });
 
