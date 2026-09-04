@@ -55,6 +55,7 @@ describe("Kinetic Shape Engine identity", () => {
     expect(shell).toContain(
       "Lorq Nichols’ 144 Shape Matrix was the starting point"
     );
+    expect(shell).toContain("<span>Lorq Nichols’ original</span>");
     expect(about).toContain("<strong>The foundation.</strong>");
     expect(about).toContain("<strong>What this engine adds.</strong>");
     expect(about).toMatch(/not an official\s+Spin Science release/);
