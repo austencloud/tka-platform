@@ -196,9 +196,12 @@ describe("canonical concept lesson composition", () => {
     expect(timingBoard).toContain("showWord={false}");
     expect(timingBoard).toContain("includeStartPosition={false}");
     expect(timingBoard).not.toContain("clickableStart");
-    expect(timingBoard).toContain("choreo-card-artifact");
-    expect(timingBoard).toContain("var(--element-dark)");
-    expect(timingBoard).toContain("card-identity");
+    expect(timingBoard).toContain("customTitleText={mode.element.name}");
+    expect(timingBoard).toContain("customNotesText={definitionFor(mode)}");
+    expect(timingBoard).toContain("frameColors={{");
+    expect(timingBoard).not.toContain("choreo-card-artifact");
+    expect(timingBoard).toContain("dark: mode.element.darkComplement");
+    expect(timingBoard).not.toContain("card-identity");
     expect(timingBoard).toContain("onStepClick={seekToCardStep}");
     expect(timingBoard).toContain("onStepChange={syncFocusedStep}");
     expect(timingBoard).toContain("showElementalGlyph");

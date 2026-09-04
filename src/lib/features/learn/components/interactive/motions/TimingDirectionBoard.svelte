@@ -246,30 +246,28 @@
               class="mode-card"
               aria-label={`${fullNameFor(mode)} hand paths by step`}
             >
-              <div class="choreo-card-artifact">
-                <div class="card-grid-surface">
-                  <ChoreoCard
-                    sequence={mode.sequence}
-                    handPathMode
-                    darkMode
-                    showWord={false}
-                    showDifficultyLevel={false}
-                    includeStartPosition={false}
-                    showNotes={false}
-                    showLoopGlyph={false}
-                    showQRCode={false}
-                    showStepNumbers
-                    forceContain
-                    showHighlight
-                    {highlightedStepIndex}
-                    onStepClick={seekToCardStep}
-                  />
-                </div>
-                <footer class="card-identity">
-                  <strong>{codeFor(mode)}</strong>
-                  <span>{definitionFor(mode)}</span>
-                </footer>
-              </div>
+              <ChoreoCard
+                sequence={mode.sequence}
+                handPathMode
+                darkMode
+                frameColors={{
+                  accent: mode.element.accentColor,
+                  dark: mode.element.darkComplement,
+                }}
+                showWord={false}
+                customTitleText={mode.element.name}
+                showDifficultyLevel={false}
+                includeStartPosition={false}
+                showNotes
+                customNotesText={definitionFor(mode)}
+                showLoopGlyph={false}
+                showQRCode={false}
+                showStepNumbers
+                forceContain
+                showHighlight
+                {highlightedStepIndex}
+                onStepClick={seekToCardStep}
+              />
             </div>
           </div>
         {:else}
@@ -557,65 +555,6 @@
     overflow: hidden;
   }
 
-  .choreo-card-artifact {
-    box-sizing: border-box;
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    padding: clamp(0.45rem, 0.9cqw, 0.75rem);
-    overflow: hidden;
-    background:
-      linear-gradient(
-          to bottom,
-          rgba(255, 255, 255, 0.16),
-          transparent 18%,
-          transparent 82%,
-          rgba(255, 255, 255, 0.1)
-        )
-        border-box,
-      repeating-linear-gradient(
-          135deg,
-          var(--element-accent) 0 0.45rem,
-          var(--element-dark) 0.45rem 0.9rem
-        )
-        border-box;
-  }
-
-  .card-grid-surface {
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-    background: color-mix(in srgb, var(--theme-panel-bg) 86%, #000);
-  }
-
-  .card-identity {
-    min-width: 0;
-    min-height: 3.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    column-gap: 0.7rem;
-    row-gap: 0.15rem;
-    padding: 0.55rem 0.8rem;
-    border-top: 1px solid var(--theme-stroke);
-    background: color-mix(in srgb, var(--theme-panel-bg) 88%, #000);
-    color: var(--theme-text);
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(1rem, calc(0.9rem + 0.15cqw), 1.2rem);
-    font-weight: 700;
-    line-height: 1.2;
-    text-align: center;
-  }
-
-  .card-identity strong {
-    font-size: clamp(1.2rem, calc(1rem + 0.2cqw), 1.45rem);
-    letter-spacing: 0.04em;
-  }
-
   .mode-select {
     position: absolute;
     inset: 0;
@@ -836,12 +775,6 @@
       grid-template-columns: minmax(0, 1.08fr) minmax(15rem, 0.92fr);
       grid-template-rows: minmax(0, 1fr);
       padding: 0.35rem;
-    }
-
-    .card-identity {
-      min-height: 2.75rem;
-      padding: 0.35rem 0.55rem;
-      font-size: var(--font-size-min, 0.875rem);
     }
   }
 
