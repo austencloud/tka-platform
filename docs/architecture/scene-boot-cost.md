@@ -173,6 +173,73 @@ before the warm-up runs at all — programs linking at first draw as each mesh
 mounts. Moving that work earlier, or reducing the distinct program count
 (material variants, `defines` permutations), is the next lever. Not attempted.
 
+## Scene switching, measured 2026-09-03
+
+A scene switch is another complete boot, not a cheap background swap. The
+renderer and canvas survive, but the outgoing environment unmounts and the
+incoming Svelte/three.js scene graph is rebuilt. A 16 ms timer measured whether
+the rest of the page could answer while that happened.
+
+One first-visit pass through the production build produced these click-to-reveal
+times. The machine was shared and loaded, so use the numbers to rank the scenes,
+not as a release benchmark:
+
+| Scene | Reveal | Longest UI stall | Dominant phase |
+| --- | ---: | ---: | --- |
+| Cosmic | 1.2 s | 0.6 s | cached/very light |
+| Void | 1.8 s | 1.2 s | shader compile |
+| Celestial | 3.0 s | 1.0 s | assets |
+| Forest | 5.3 s | 1.4 s | assets |
+| Blossom | 5.6 s | 2.1 s | assets + compile |
+| Rainbow | 6.0 s | **5.3 s** | shader compile |
+| Ember | 6.7 s | 3.1 s | assets + settle |
+| Autumn | 7.9 s | **4.4 s** | shader compile |
+| Winter | 9.1 s | 2.8 s | assets + compile |
+| Ocean | exceeded the 60 s probe on this loaded pass | 2.9 s | assets |
+
+The shared transition now warms each environment's small JavaScript chunk when
+its picker tile is pointed at or focused, warms decoder runtimes when the picker
+exists, and freezes the unrelated animated page background until the switch
+settles. These remove avoidable serial work and contention for every scene.
+They do not make scene construction preemptible.
+
+Two tempting follow-ups were measured and rejected:
+
+- Fetching GLBs on tile hover doubled large model transfers. The same 12.3 MB
+  Blossom model transferred once during hover and again during mount; files at
+  12 MB and above repeatedly missed the preview server's cache.
+- Yielding or batching the existing shader-warmup dispatch made the heaviest
+  scene slower. Eight-target batches moved Ocean's median compile from 647 ms
+  to 913 ms, and yielded per-target dispatch increased total switch time while
+  leaving the real 1.3 s scene-mount task untouched.
+
+The remaining multi-second stalls are inside individual environment mount and
+GPU program creation calls. JavaScript cannot interrupt one of those calls once
+it starts. Removing them requires scene-specific shader/material consolidation,
+staged scene construction, or moving the renderer to an `OffscreenCanvas`
+worker. Switching engines does not remove that architectural requirement; it
+creates a second renderer and parity surface.
+
+### Shader-dispatch slicing
+
+Rainbow and Autumn showed a separate, reachable failure: multiple synchronous
+program-creation calls accumulated inside one task before the async driver-link
+promises were awaited. `warmupRenderer` now yields only after those dispatches
+have consumed 50 ms. Fast scenes keep their contiguous path, while expensive
+scenes let input and painting run between programs; every link promise remains
+in flight and is still awaited as one group.
+
+Three fresh-context runs after the change:
+
+| Scene | Previous longest stall | New longest stalls |
+| --- | ---: | --- |
+| Autumn | 4,264 ms | 1,343 / 1,258 / 1,299 ms |
+| Rainbow | 5,218 ms | 1,696 / 2,531 / 1,735 ms |
+
+This is a material reduction, not a zero-jank result. The remaining 1.3-2.5 s
+calls are individually synchronous and cannot be split by yielding around them.
+Ocean also remains dominated by its assets phase rather than this warm-up loop.
+
 ## Re-measuring
 
 1. Open `https://localhost:5173/test/ocean-scene?bootprofile=1`. Any route

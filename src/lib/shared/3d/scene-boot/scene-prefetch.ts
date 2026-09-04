@@ -9,6 +9,10 @@ import {
 import { isDesktop } from "$lib/shared/desktop/is-desktop";
 
 import { DECODER_RUNTIME_URLS, sceneAssetUrls } from "./scene-asset-manifest";
+import {
+  _resetForTests as _resetSceneModulesForTests,
+  warmSceneModule,
+} from "./scene-module-prefetch";
 
 const warmed = new Set<string>();
 
@@ -67,6 +71,26 @@ export function warmSceneAssets(background: BackgroundType): void {
 }
 
 /**
+ * Warm just the scene's component chunk. Environment3D cannot request a single
+ * model until that module has landed, so on a scene the session has not shown
+ * yet this download is the front of the wait — and it is small enough to start
+ * on a glance. Safe to call for every tile a pointer crosses.
+ *
+ * Deliberately code only. Warming the scene's MODELS from the same gesture was
+ * measured and removed: a hover-warmed 12.3 MB `blossom_environment.glb`
+ * transferred in full a second time when the mount asked for it 450 ms later
+ * (`transferSize` 12,324,516 on both entries), and a controlled retry put the
+ * boundary between a 5 MB model, which came back from cache, and models of
+ * 12 MB and up, which never did. Those are exactly the scenes worth warming, so
+ * on that path the warm-up only doubles the bytes and the decode the user is
+ * already waiting through.
+ */
+export function warmSceneCode(background: BackgroundType): void {
+  if (shouldSkipWarming()) return;
+  warmSceneModule(background);
+}
+
+/**
  * Warm the environment the viewer will actually open, read from the same
  * remembered choice the viewer boots with, plus the shared decoders. Callers
  * that only know 3D is one click away — the split pane, fullscreen, a saved
@@ -93,4 +117,5 @@ export function warmDecoderRuntimes(): void {
 
 export function _resetForTests(): void {
   warmed.clear();
+  _resetSceneModulesForTests();
 }
