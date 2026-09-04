@@ -1,5 +1,6 @@
 <script lang="ts">
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import OverflowMenu from "$lib/shared/ui/components/OverflowMenu.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -10,6 +11,7 @@
   import SequenceMetadataRail from "$lib/features/create/shared/workspace-panel/sequence-display/components/SequenceMetadataRail.svelte";
   import WordLabel from "$lib/features/create/shared/workspace-panel/sequence-display/components/WordLabel.svelte";
   import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import type { TunnelSourceOrigin } from "../domain/tunnel-creator-draft";
 
   let {
@@ -208,40 +210,48 @@
   aria-label={`${label} sequence`}
 >
   <header class="source-heading">
-    <div class="source-identity">
-      <div class="identity-row">
-        <h3>{label}</h3>
-        <SequenceMetadataRail
-          sequence={previewSequence}
-          {loopDisplay}
-          presentation="inline"
-        />
-      </div>
-      <p class="source-meta">
-        {#if previewSequence}
-          <span>{previewSequence.steps.length} steps</span>
-          {#if sourceDescriptor}<span>{sourceDescriptor}</span>{/if}
-          {#if linked && sourceLabel}
-            <span>Linked to {sourcePerformerLabel ?? "earlier performer"}</span>
-          {/if}
-          {#if formationCopy}
-            <span>Formation copy (not authored)</span>
-          {/if}
-          {#if generatedInstanceCount > 0}
-            <span
-              title={stageTransformLabel
-                ? `Stage placement: ${stageTransformLabel}`
-                : undefined}
-            >
-              {generatedInstanceCount} on stage
-            </span>
-          {/if}
-        {:else if linked}
-          <span>Follows {sourcePerformerLabel ?? "an earlier performer"}</span>
-        {:else}
-          <span>Complete two-prop sequence</span>
-        {/if}
-      </p>
+    <div class="identity-transition">
+      <Crossfade key={performer?.id ?? label} duration={DURATION.fast}>
+        <div class="source-identity">
+          <div class="identity-row">
+            <h3>{label}</h3>
+            <SequenceMetadataRail
+              sequence={previewSequence}
+              {loopDisplay}
+              presentation="inline"
+            />
+          </div>
+          <p class="source-meta">
+            {#if previewSequence}
+              <span>{previewSequence.steps.length} steps</span>
+              {#if sourceDescriptor}<span>{sourceDescriptor}</span>{/if}
+              {#if linked && sourceLabel}
+                <span
+                  >Linked to {sourcePerformerLabel ?? "earlier performer"}</span
+                >
+              {/if}
+              {#if formationCopy}
+                <span>Formation copy (not authored)</span>
+              {/if}
+              {#if generatedInstanceCount > 0}
+                <span
+                  title={stageTransformLabel
+                    ? `Stage placement: ${stageTransformLabel}`
+                    : undefined}
+                >
+                  {generatedInstanceCount} on stage
+                </span>
+              {/if}
+            {:else if linked}
+              <span
+                >Follows {sourcePerformerLabel ?? "an earlier performer"}</span
+              >
+            {:else}
+              <span>Complete two-prop sequence</span>
+            {/if}
+          </p>
+        </div>
+      </Crossfade>
     </div>
 
     <div
@@ -305,7 +315,13 @@
   <div class="workbench-stage">
     {#if displayWord}
       <div class="word-rail">
-        <WordLabel word={displayWord} scrollMode={false} />
+        <Crossfade
+          key={`${performer?.id ?? label}:${displayWord}`}
+          duration={DURATION.fast}
+          fill
+        >
+          <WordLabel word={displayWord} scrollMode={false} />
+        </Crossfade>
       </div>
     {/if}
     <div class="live-grid">
@@ -388,6 +404,10 @@
     display: grid;
     align-content: center;
     gap: 2px;
+    min-width: 0;
+  }
+
+  .identity-transition {
     min-width: 0;
   }
 

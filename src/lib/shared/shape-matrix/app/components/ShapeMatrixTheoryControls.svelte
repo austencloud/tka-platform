@@ -1,6 +1,6 @@
-<!-- Both ratios form one instrument. Each entry owns its fields; this parent
-     owns the relationship between them so copy actions can name both their
-     source and destination. -->
+<!-- The two ratio editors are one instrument. This component owns their
+     relationship so linked editing is a durable state rather than a copy
+     command the user has to remember pressing. -->
 <script lang="ts">
   import { spinRatioKey } from "@vtg/domain";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
@@ -9,9 +9,11 @@
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import ShapeMatrixRatioEntry from "./ShapeMatrixRatioEntry.svelte";
 
+  type RatioFocus = "left" | "right" | "both" | null;
+
   interface Props {
     layout?: "ribbon" | "tray";
-    onfocuschange?: (hand: "left" | "right" | null) => void;
+    onfocuschange?: (hand: RatioFocus) => void;
   }
   let { layout = "ribbon", onfocuschange }: Props = $props();
 
@@ -22,102 +24,156 @@
     spinRatioKey(appState.theoryLeftRatio) ===
       spinRatioKey(appState.theoryRightRatio)
   );
+  let choosingSource = $state(false);
 
-  function copyRowsToColumns(): void {
-    appState.setTheoryRatios(
-      appState.theoryLeftRatio,
-      appState.theoryLeftRatio
-    );
+  $effect(() => {
+    if (appState.theoryRatiosLinked) choosingSource = false;
+  });
+
+  function requestLink(): void {
+    if (ratiosMatch) {
+      appState.linkTheoryRatios("left");
+      return;
+    }
+    choosingSource = true;
   }
 
-  function copyColumnsToRows(): void {
-    appState.setTheoryRatios(
-      appState.theoryRightRatio,
-      appState.theoryRightRatio
-    );
+  function linkUsing(source: "left" | "right"): void {
+    appState.linkTheoryRatios(source);
+    choosingSource = false;
   }
 </script>
 
 <section
   class="theory-builder"
   class:tray={layout === "tray"}
-  aria-label="Theory ratio editor. Enter whole numbers from 0 through 15."
+  class:linked={appState.theoryRatiosLinked}
+  aria-label="Ratio Playground editor. Enter whole numbers from 0 through 15."
 >
-  <ShapeMatrixRatioEntry hand="left" {layout} {onfocuschange} />
-
-  <div class="ratio-transfer">
-    <Crossfade
-      key={ratiosMatch ? "matched" : "different"}
-      fill={layout === "ribbon"}
-      animateHeight={layout === "tray"}
-    >
-      {#if ratiosMatch}
-        <div class="match-state" role="status">
-          <span class="match-check" aria-hidden="true">✓</span>
-          <span>Rows and columns use <strong>{leftLabel}</strong></span>
-        </div>
-      {:else}
-        <div class="copy-actions">
+  <Crossfade
+    key={appState.theoryRatiosLinked
+      ? "linked"
+      : choosingSource
+        ? "choosing"
+        : "separate"}
+    animateHeight={layout === "tray"}
+  >
+    {#if appState.theoryRatiosLinked}
+      <div class="linked-layout">
+        <ShapeMatrixRatioEntry hand="both" {layout} {onfocuschange} />
+        <div class="relationship-control linked-control">
+          <span class="relationship-note">Editing either changes both</span>
           <PanelButton
             fullWidth
-            ariaLabel={`Set right-hand columns to ${leftLabel}, matching left-hand rows`}
-            onclick={copyRowsToColumns}
+            ariaPressed={true}
+            ariaLabel="Unlink row and column ratios"
+            onclick={appState.unlinkTheoryRatios}
           >
-            <strong class="left-value">{leftLabel}</strong>
-            <span class="direction-arrow" aria-hidden="true">→</span>
-            <span class="right-destination">columns</span>
-          </PanelButton>
-          <PanelButton
-            fullWidth
-            ariaLabel={`Set left-hand rows to ${rightLabel}, matching right-hand columns`}
-            onclick={copyColumnsToRows}
-          >
-            <span class="left-destination">rows</span>
-            <span class="direction-arrow" aria-hidden="true">←</span>
-            <strong class="right-value">{rightLabel}</strong>
+            <i class="fas fa-link" aria-hidden="true"></i>
+            <strong>Linked</strong>
           </PanelButton>
         </div>
-      {/if}
-    </Crossfade>
-  </div>
+      </div>
+    {:else}
+      <div class="split-layout">
+        <ShapeMatrixRatioEntry hand="left" {layout} {onfocuschange} />
 
-  <ShapeMatrixRatioEntry hand="right" {layout} {onfocuschange} />
+        <div class="relationship-control">
+          {#if choosingSource}
+            <span class="relationship-note">Which ratio should both use?</span>
+            <div class="source-choices">
+              <PanelButton
+                ariaLabel={`Link ratios using row ratio ${leftLabel}`}
+                onclick={() => linkUsing("left")}
+              >
+                <span class="axis-dot left-dot" aria-hidden="true"></span>
+                <span>Rows {leftLabel}</span>
+              </PanelButton>
+              <PanelButton
+                ariaLabel={`Link ratios using column ratio ${rightLabel}`}
+                onclick={() => linkUsing("right")}
+              >
+                <span class="axis-dot right-dot" aria-hidden="true"></span>
+                <span>Columns {rightLabel}</span>
+              </PanelButton>
+              <button
+                type="button"
+                class="cancel-link"
+                aria-label="Cancel linking ratios"
+                onclick={() => (choosingSource = false)}
+              >
+                <i class="fas fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
+          {:else}
+            <span class="relationship-note">Keep edits in sync</span>
+            <PanelButton
+              fullWidth
+              ariaPressed={false}
+              ariaLabel="Link row and column ratios"
+              onclick={requestLink}
+            >
+              <i class="fas fa-link" aria-hidden="true"></i>
+              <strong>Link ratios</strong>
+            </PanelButton>
+          {/if}
+        </div>
+
+        <ShapeMatrixRatioEntry hand="right" {layout} {onfocuschange} />
+      </div>
+    {/if}
+  </Crossfade>
 </section>
 
 <style>
   .theory-builder {
-    display: grid;
-    grid-template-columns: max-content 20.5rem max-content;
-    align-items: start;
     width: fit-content;
     max-width: 100%;
-    gap: 0.65rem;
   }
 
-  /* The transfer controls align with the editable values, while validation
-     can expand beneath either ratio without dragging its neighbour downward. */
-  .ratio-transfer {
-    width: 20.5rem;
-    height: var(--min-touch-target, 44px);
-    margin-top: 2.65rem;
-  }
-
-  .copy-actions {
+  .split-layout,
+  .linked-layout {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.4rem;
-    width: 100%;
-    height: 100%;
+    align-items: start;
+    gap: 0.8rem;
+    width: fit-content;
+    max-width: 100%;
   }
 
-  .copy-actions :global(.panel-btn) {
-    padding-inline: 0.65rem;
+  .split-layout {
+    grid-template-columns: 20rem 15rem 20rem;
+  }
+
+  .linked-layout {
+    grid-template-columns: 20rem 15rem;
+  }
+
+  .relationship-control {
+    display: grid;
+    min-width: 0;
+    gap: 0.25rem;
+    padding-top: 0.25rem;
+  }
+
+  .relationship-note {
+    min-height: 1.1rem;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 600;
+    line-height: 1.1rem;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .relationship-control :global(.panel-btn) {
+    min-width: 0;
+    padding-inline: 0.7rem;
     border-color: var(--theme-stroke-strong, rgb(255 255 255 / 0.2));
     background: color-mix(in srgb, var(--theme-text, #fff) 5%, transparent);
     white-space: nowrap;
   }
 
-  .copy-actions :global(.panel-btn:hover) {
+  .relationship-control :global(.panel-btn:hover) {
     border-color: color-mix(
       in srgb,
       var(--theme-accent, #f59e0b) 55%,
@@ -125,62 +181,89 @@
     );
   }
 
-  .copy-actions strong,
-  .match-state strong {
-    font-variant-numeric: tabular-nums;
+  .linked-control :global(.panel-btn) {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 55%,
+      var(--theme-stroke, transparent)
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 12%,
+      transparent
+    );
   }
 
-  .direction-arrow {
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
-    font-size: 1rem;
+  .source-choices {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(
+        --min-touch-target,
+        44px
+      );
+    gap: 0.3rem;
   }
 
-  .left-value,
-  .left-destination {
-    color: var(--prop-blue-text, #818cf8);
-  }
-
-  .right-value,
-  .right-destination {
-    color: var(--prop-red-text, #f87171);
-  }
-
-  .match-state {
-    display: flex;
-    width: 100%;
-    height: var(--min-touch-target, 44px);
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
+  .source-choices :global(.panel-btn) {
+    padding-inline: 0.45rem;
     font-size: var(--font-size-min, 0.875rem);
   }
 
-  .match-check {
-    color: var(--semantic-success, #22c55e);
-    font-size: 1rem;
-    font-weight: 800;
+  .axis-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    flex: 0 0 auto;
+    border-radius: 50%;
   }
 
-  .match-state strong {
+  .left-dot {
+    background: var(--prop-blue-text, #818cf8);
+  }
+
+  .right-dot {
+    background: var(--prop-red-text, #f87171);
+  }
+
+  .cancel-link {
+    display: grid;
+    width: var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
+    cursor: pointer;
+  }
+
+  .cancel-link:hover {
+    border-color: var(--theme-stroke-strong, rgb(255 255 255 / 0.22));
     color: var(--theme-text, #fff);
   }
 
+  .cancel-link:focus-visible {
+    outline: 2px solid var(--theme-accent, #f59e0b);
+    outline-offset: 2px;
+  }
+
   .theory-builder.tray {
+    width: min(23rem, calc(100vw - 3rem));
+  }
+
+  .theory-builder.tray .split-layout,
+  .theory-builder.tray .linked-layout {
     grid-template-columns: minmax(0, 1fr);
-    /* Leave room for the popover's padding and collision gutter at phone
-       widths; the fixed cap keeps wider compact layouts content-sized. */
-    width: min(21rem, calc(100vw - 3rem));
-    gap: 0.45rem;
-  }
-
-  .theory-builder.tray .ratio-transfer {
     width: 100%;
-    height: auto;
-    margin-top: 0;
+    gap: 0.55rem;
   }
 
-  .theory-builder.tray .copy-actions {
-    height: var(--min-touch-target, 44px);
+  .theory-builder.tray .relationship-control {
+    order: 2;
+    padding-top: 0;
+  }
+
+  .theory-builder.tray .split-layout > :global(.ratio-side.right) {
+    order: 3;
   }
 </style>

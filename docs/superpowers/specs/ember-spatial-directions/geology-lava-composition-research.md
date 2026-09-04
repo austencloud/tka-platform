@@ -1,6 +1,6 @@
 # Ember geology, lava, and composition research
 
-Status: complete research package; Mid-Flank Fire Pilgrimage Gate 1.1 R5 ready for review; Gate 2 pending
+Status: complete research package; Mid-Flank Fire Pilgrimage Gate 2 R5 approved; Gate 3 authorized and pending
 
 Date: 2026-09-03
 
@@ -21,9 +21,9 @@ the performer, and continues beyond the south review boundary.
 
 Austen's accepted tracker decision `Vwm6XTLdDbDfxuoVE7z9` retains R4's
 mountain-above / country-below direction but rejects its broad near-level ledge.
-The measured R5 artifact is ready for Gate 1.1 review in reference
-`Iur86OmZX40nTqdwgxDq`; approval is unset. R4 Gate 1/2 evidence remains
-historical and no R5 Blender graybox exists yet.
+The measured R5 artifact was approved in `Szxybxm6NlLkPyPL6dQt`. Its R5
+Blender graybox and review GLB are ready for Gate 2 review in
+`evidence/gate-2-geology-graybox-r5/`. R4 Gate 1/2 evidence remains historical.
 
 The restart should preserve Ember's useful infrastructure, surface work, and
 atmosphere while replacing two failed owners:
@@ -644,7 +644,10 @@ contact has an 8.209 degree median slope, and only 92 m² within 35 m is below
 two degrees. Fresh Flowy calibration `r5f-c03-braided-20m2` keeps 7.097 m of
 clearance beyond the action envelope and exits the south boundary continuously.
 
-Gate 1.1 R5 is `ready-for-review` with approval unset. Gate 2 is pending. The
-R4 Gate 1 approval and Gate 2 graybox are historical because the terrain and
-sightlines changed. No production runtime, final material, atmosphere, Meshy
-asset, or Meshy credit changed.
+Gate 1.1 R5 is approved in `Szxybxm6NlLkPyPL6dQt`. Gate 2 R5 was approved in
+`3XyhXLyzv8ASNl2fLoCo` after review under `1hlrU13Dg8VqdQaLJPib`; its editable
+Blend, review GLB, exact cameras, audience standing crescent, contact sheet,
+continuous orbit, and machine report live in `evidence/gate-2-geology-graybox-r5/`.
+Gate 3 is authorized and pending. The R4 Gate 1 approval and Gate 2 graybox
+are historical because the terrain and sightlines changed. No production
+runtime, final material, atmosphere, Meshy asset, or Meshy credit changed.

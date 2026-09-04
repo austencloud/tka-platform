@@ -1,17 +1,34 @@
 import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   ARCHIVE_CLUSTERS,
+  ARCHIVE_END_YEAR,
   ARCHIVE_ENTRIES,
   ARCHIVE_LANES,
+  ARCHIVE_START_YEAR,
+  ARCHIVE_YEAR_TICKS,
   EVIDENCE_BASIS_LABELS,
   activityLabel,
   archiveClusterForEntry,
+  archiveDocumentPageImage,
   archiveEntry,
   entriesForLane,
   entrySpanEndYear,
   historicalYearPosition,
   placeArchiveEntries,
 } from "../../src/routes/(public)/history/_components/archive/_lib/archive-ledger";
+
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../.."
+);
+
+function staticFile(publicPath: string): string {
+  return path.join(repoRoot, "static", publicPath.replace(/^\//, ""));
+}
 
 describe("four-lane history archive ledger", () => {
   it("requires every published entry to carry evidence with a claim-level basis", () => {
@@ -45,6 +62,68 @@ describe("four-lane history archive ledger", () => {
     }
   });
 
+  it("preserves Mentive's complete Quarter Space Tech documents and credits Alex Kurowski's grid", () => {
+    const qst = archiveEntry("quarter-space-tech");
+    const documents = qst.documents ?? [];
+    const expectedDocuments = [
+      {
+        id: "breaks",
+        pageCount: 7,
+        sha256:
+          "4a9ef6c8b77cfde6210427e78e2d2b521574a30c0b079bfa7f5890c39cd42547",
+      },
+      {
+        id: "advanced",
+        pageCount: 16,
+        sha256:
+          "d90369e4980a4e98be827f50092a2fef4f362c2b2489830151f53eeafe6aa429",
+      },
+      {
+        id: "beyond",
+        pageCount: 27,
+        sha256:
+          "80169e9ea7e24c9b7abe9909b89f190045f1b85888a8cd7da9b1dd0e225ef068",
+      },
+    ];
+
+    expect(qst.people).toBe("Mentive, based on Alex Kurowski's grid");
+    expect(qst.summary).toContain("228 patterns");
+    expect(qst.evidenceNote).toContain(
+      "That dates these copies, not the system's origin"
+    );
+    expect(documents.map(({ id, pageCount }) => ({ id, pageCount }))).toEqual(
+      expectedDocuments.map(({ id, pageCount }) => ({ id, pageCount }))
+    );
+
+    for (const expected of expectedDocuments) {
+      const document = documents.find(
+        (candidate) => candidate.id === expected.id
+      );
+      expect(document, expected.id).toBeDefined();
+      if (!document) continue;
+
+      const pdf = readFileSync(staticFile(document.pdfHref));
+      expect(
+        createHash("sha256").update(pdf).digest("hex"),
+        `${expected.id} source PDF`
+      ).toBe(expected.sha256);
+
+      for (
+        let pageNumber = 1;
+        pageNumber <= document.pageCount;
+        pageNumber += 1
+      ) {
+        const pageImage = readFileSync(
+          staticFile(archiveDocumentPageImage(document, pageNumber))
+        );
+        expect(
+          pageImage.subarray(0, 4).toString("ascii"),
+          `${expected.id} page ${pageNumber}`
+        ).toBe("RIFF");
+      }
+    }
+  });
+
   it("keeps every entry in exactly one named lane", () => {
     const laneIds = new Set(ARCHIVE_LANES.map((lane) => lane.id));
     expect(laneIds.size).toBe(4);
@@ -68,9 +147,40 @@ describe("four-lane history archive ledger", () => {
   });
 
   it("uses proportional calendar spacing instead of equal carousel spacing", () => {
-    expect(historicalYearPosition(2004)).toBe(0);
+    expect(historicalYearPosition(1998)).toBe(0);
     expect(historicalYearPosition(2026)).toBe(100);
-    expect(historicalYearPosition(2015)).toBe(50);
+    expect(historicalYearPosition(2012)).toBe(50);
+    expect(ARCHIVE_YEAR_TICKS).toEqual([1998, 2005, 2012, 2019, 2026]);
+  });
+
+  it("opens with Home of Poi as a sourced teaching archive", () => {
+    const homeOfPoi = archiveEntry("home-of-poi");
+
+    expect(ARCHIVE_START_YEAR).toBe(1998);
+    expect(ARCHIVE_END_YEAR).toBe(2026);
+    expect(ARCHIVE_ENTRIES[0]?.id).toBe("home-of-poi");
+    expect(homeOfPoi).toMatchObject({
+      lane: "teaching",
+      firstDocumentedYear: 1998,
+      people: "Malcolm Crawshay and the Home of Poi community",
+      evidenceBasis: "creators-account",
+      activity: {
+        status: "archive-online",
+        lastVerifiedYear: 2026,
+      },
+    });
+    expect(activityLabel(homeOfPoi)).toBe("Archive online · community dormant");
+    expect(homeOfPoi.activity?.note).toContain(
+      "newest visible forum post is from April 2025"
+    );
+    expect(homeOfPoi.citations.map((citation) => citation.href)).toEqual(
+      expect.arrayContaining([
+        "https://www.homeofpoi.com/us/company/information-mission.php",
+        "https://www.homeofpoi.com/us/community/forums/",
+        "https://www.homeofpoi.com/en/community/forums/topics/120838/How-do-you-define-a-weave",
+      ])
+    );
+    expect(homeOfPoi.citations).toHaveLength(3);
   });
 
   it("labels the related movement-language records with their actual 2009–2010 range", () => {
@@ -107,9 +217,9 @@ describe("four-lane history archive ledger", () => {
   });
 
   it("keeps verified-activity spans off each other's tracks", () => {
-    // PLAYPOI, FAI, and DrexFactor all carry observation connectors reaching
-    // 2026. If track assignment ignored the span end, a later chip would sit
-    // on top of an earlier record's connector.
+    // Home of Poi, PLAYPOI, FAI, and DrexFactor all carry observation
+    // connectors reaching 2026. If track assignment ignored the span end, a
+    // later chip would sit on top of an earlier record's connector.
     const placements = placeArchiveEntries(entriesForLane("teaching"));
     const tracks = placements.map((placement) => placement.track);
     expect(new Set(tracks).size).toBe(placements.length);

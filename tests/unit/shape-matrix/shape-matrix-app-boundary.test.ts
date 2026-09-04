@@ -295,6 +295,12 @@ describe("Shape Matrix app boundary", () => {
       ),
       "utf8"
     );
+    const ratioEntrySource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixRatioEntry.svelte"
+      ),
+      "utf8"
+    );
     const segmentedSource = readFileSync(
       resolve("src/lib/shared/ui/components/SegmentedControl.svelte"),
       "utf8"
@@ -314,6 +320,11 @@ describe("Shape Matrix app boundary", () => {
     expect(theorySource).toContain("<ShapeMatrixRatioEntry");
     expect(theorySource).not.toContain("<ShapeMatrixValueScroller");
     expect(theorySource).not.toContain("SegmentedControl");
+    expect(theorySource).toContain("Link ratios");
+    expect(theorySource).toContain("Which ratio should both use?");
+    expect(theorySource).toContain('hand="both"');
+    expect(ratioEntrySource).toContain('onclick={() => nudge("hand", -1)}');
+    expect(ratioEntrySource).toContain('onclick={() => nudge("prop", 1)}');
     // The indicator tracks the chosen cell on both axes.
     expect(segmentedSource).toContain(".grid .indicator {");
     expect(segmentedSource).toContain("--row: {selectedRow}");
