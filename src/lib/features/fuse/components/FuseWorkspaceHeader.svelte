@@ -1,8 +1,5 @@
 <script lang="ts">
-  import { BackgroundType } from "@austencloud/backgrounds";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import { getCardColors } from "$lib/shared/create/domain/card-colors";
-  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import type { FuseRecipeDestination } from "../domain/fuse-recipe-destination";
   import { buildFuseRecipeSummaries } from "../domain/fuse-recipe-summaries";
@@ -31,11 +28,6 @@
     fuseState.isLoadingLength ||
       fuseState.pendingSide !== null ||
       fuseState.isFusing
-  );
-  const cardColors = $derived(
-    getCardColors(
-      settingsService.settings.backgroundType ?? BackgroundType.WINTER
-    )
   );
   const summaries = $derived(
     buildFuseRecipeSummaries({
@@ -95,7 +87,6 @@
 
   <FuseRecipeRail
     {summaries}
-    {cardColors}
     disabled={optionsDisabled}
     {activeSetting}
     onSettingOpenChange={setTileOpen}

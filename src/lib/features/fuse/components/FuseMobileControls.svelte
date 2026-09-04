@@ -91,17 +91,14 @@
   </div>
 
   <div class="result-row" role="group" aria-label="Combined sequence actions">
-    <div class="share-control">
-      <ActionButton
-        label="Share result"
-        busyLabel="Opening share"
-        icon="fa-share-nodes"
-        color="fuse"
-        fullWidth={true}
-        ariaDisabled={!fuseState.canFuse}
-        onclick={() => void onShare()}
-      />
-    </div>
+    <PanelButton
+      variant="secondary"
+      fullWidth={true}
+      disabled={!fuseState.canFuse}
+      onclick={() => void onShare()}
+    >
+      Share
+    </PanelButton>
     <PanelButton
       variant="secondary"
       fullWidth={true}
@@ -161,18 +158,15 @@
 
   .result-row {
     display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--settings-spacing-sm, 8px);
   }
 
-  .share-control,
-  .share-control :global(.action-button),
   .result-row :global(.panel-btn) {
     min-width: 0;
     min-height: var(--min-touch-target, 48px);
   }
 
-  .share-control :global(.action-button),
   .result-row :global(.panel-btn) {
     border-radius: var(--settings-radius-md, 14px);
   }

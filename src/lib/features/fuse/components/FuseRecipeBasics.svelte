@@ -1,9 +1,7 @@
 <script lang="ts">
-  import { BackgroundType } from "@austencloud/backgrounds";
   import GridModeCard from "$lib/features/create/generate/components/cards/GridModeCard.svelte";
   import LevelCard from "$lib/features/create/generate/components/cards/LevelCard.svelte";
   import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
-  import { getCardColors } from "$lib/shared/create/domain/card-colors";
   import {
     maxTurnIntensitiesForLevel,
     type TurnLevel,
@@ -11,7 +9,6 @@
   import StepperCard from "$lib/shared/components/stepper-card/StepperCard.svelte";
   import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import { FUSE_LENGTHS } from "../state/fuse-state.svelte";
 
@@ -42,11 +39,6 @@
     fuseState.isLoadingLength ||
       fuseState.pendingSide !== null ||
       fuseState.isFusing
-  );
-  const cardColors = $derived(
-    getCardColors(
-      settingsService.settings.backgroundType ?? BackgroundType.WINTER
-    )
   );
   const lengthIndex = $derived(FUSE_LENGTHS.indexOf(fuseState.requestedLength));
   const allowedTurnIntensities = $derived(
@@ -91,7 +83,6 @@
 
 <div
   class="recipe-basic-editor {presentation}"
-  class:drill-fill={presentation === "drawer"}
   class:level-editor={section === "level"}
   class:turns-visible={turnsVisible}
   class:disabled
@@ -109,8 +100,7 @@
         onDecrement={() => changeLength(-1)}
         formatValue={(value) => String(value)}
         subtitle="steps"
-        color={cardColors.length.color}
-        shadowColor={cardColors.length.shadowColor}
+        appearance="quiet"
         gridColumnSpan={3}
         headerFontSize="var(--recipe-editor-title-size)"
       />
@@ -120,6 +110,7 @@
       <LevelCard
         currentLevel={levelMap[fuseState.generationLevel]}
         onLevelChange={selectLevel}
+        appearance="quiet"
         gridColumnSpan={3}
         headerFontSize="var(--recipe-editor-title-size)"
       />
@@ -135,6 +126,7 @@
         currentIntensity={displayedTurnIntensity}
         allowedValues={allowedTurnIntensities}
         onIntensityChange={selectTurnIntensity}
+        appearance="quiet"
         gridColumnSpan={3}
         headerFontSize="var(--recipe-editor-title-size)"
       />
@@ -144,8 +136,7 @@
       <GridModeCard
         currentMode={fuseState.gridMode}
         onModeChange={selectGridMode}
-        color={cardColors.gridMode.color}
-        shadowColor={cardColors.gridMode.shadowColor}
+        appearance="quiet"
         gridColumnSpan={3}
         headerFontSize="var(--recipe-editor-title-size)"
       />
@@ -214,20 +205,18 @@
     opacity: 1;
     transform: translateX(0) scale(1);
     pointer-events: auto;
-    transition-delay: 60ms, 0ms, 0ms;
+    transition-delay: var(--duration-instant), 0ms, 0ms;
   }
 
-  /* The drill pane runs the full height of the recipe column — over 1000px on a
-     desktop — while one stepper card is 11rem. Left alone the card sits at the
-     very top and the section dead-ends a fifth of the way down. Take the pane's
-     height, grow the card to a size that reads as deliberate, and centre what is
-     left instead of stranding it. Capped, not stretched: a 900px-tall Length
-     card is the opposite mistake. */
+  /* Basic editors are content-sized. The drill shell may be very tall, but a
+     single setting should never expand to impersonate a full workspace. */
   @media (min-width: 561px) {
     .recipe-basic-editor.drawer {
-      height: 100%;
-      align-content: center;
-      grid-auto-rows: minmax(min-content, min(24rem, 100%));
+      align-self: start;
+    }
+
+    .drawer .card-wrapper {
+      height: clamp(11rem, 22vh, 15rem);
     }
   }
 
@@ -282,7 +271,7 @@
     .level-editor .turn-intensity-slot.visible {
       min-height: 10rem;
       transform: translateY(0) scale(1);
-      transition-delay: 0ms, 60ms, 0ms, 0ms;
+      transition-delay: 0ms, var(--duration-instant), 0ms, 0ms;
     }
 
     .card-wrapper {

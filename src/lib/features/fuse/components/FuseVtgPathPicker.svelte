@@ -101,10 +101,7 @@
           data.clubTipDx,
           ...tipPoints.map((point) => Math.hypot(point.dx, point.dy))
         );
-        built.set(
-          key,
-          renderHeader(geometry, side, TILE_PX, reach)
-        );
+        built.set(key, renderHeader(geometry, side, TILE_PX, reach));
       }
       if (cancelled) return;
       tileCache.set(keyForRun, built);
@@ -276,7 +273,7 @@
   }
 
   .tile-label {
-    font-size: 0.75rem;
+    font-size: var(--font-size-min, 14px);
     line-height: 1.2;
     text-align: center;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
