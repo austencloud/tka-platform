@@ -192,7 +192,12 @@
   // /notation is a subtree: the per-prop and per-system pages
   // (/notation/staves, /notation/fans, ...) all render the same persistent
   // chrome. Its own index only redirects to /history.
-  const MARKETING_SUBTREES = ["/shop", "/notation", "/learn/concepts"];
+  const MARKETING_SUBTREES = [
+    "/shop",
+    "/notation",
+    "/learn/concepts",
+    "/timing-and-direction",
+  ];
   // Carve-outs inside those subtrees. The QfT app is an instrument, not a page
   // about one: it wants the whole viewport, owns its own bottom chrome, and
   // carries its own way back out to /history. The persistent site header on

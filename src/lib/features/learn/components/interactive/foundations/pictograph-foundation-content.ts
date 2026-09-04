@@ -297,3 +297,13 @@ export const GAMMA_MODES = [
     [null, null, null, null]
   ),
 ] as const satisfies readonly TimingDirectionMode[];
+
+/**
+ * The public article explorer and the Learn lessons demonstrate the same six
+ * relationships. Keep their playable sequences on this one authored list so a
+ * corrected motion reaches both surfaces.
+ */
+export const TIMING_DIRECTION_MODES: readonly TimingDirectionMode[] = [
+  ...ALPHA_BETA_MODES,
+  ...GAMMA_MODES,
+];

@@ -230,6 +230,12 @@
           desc: "Learn TKA one concept at a time",
         },
         {
+          label: "Timing & Direction",
+          href: "/timing-and-direction",
+          icon: "fa-arrows-rotate",
+          desc: "The six ways two props share phase and direction",
+        },
+        {
           label: "Read the Guide",
           href: "/guide",
           icon: "fa-book-open",
