@@ -34,8 +34,8 @@
     <div class="stage-canvas">
       <div class="carrier-canvas" aria-hidden="true">
         <AnimatorCanvas
-          leftProp={state.frame.carrierProps.left}
-          rightProp={state.frame.carrierProps.right}
+          leftProp={null}
+          rightProp={null}
           sequenceData={state.composition.carrier}
           currentStep={state.frame.masterBeat}
           isPlaying={state.isPlaying}
