@@ -390,8 +390,24 @@
       min-height: min(64dvh, 78rem);
     }
 
+    .pane-heading {
+      min-height: 3.5rem;
+      padding-inline: 1rem;
+      font-size: 1.1rem;
+    }
+
     .guide-notes {
+      grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr);
       min-height: 8rem;
+      font-size: 1.1rem;
+    }
+
+    .guide-notes h2 {
+      font-size: 1.2rem;
+    }
+
+    .empty-state {
+      font-size: 1.1rem;
     }
 
     .empty-icon {
