@@ -17,13 +17,17 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
   import PlayableArchive from "./_components/archive/PlayableArchive.svelte";
-  import { ARCHIVE_ENTRIES } from "./_components/archive/_lib/archive-ledger";
+  import {
+    ARCHIVE_ENTRIES,
+    ARCHIVE_START_YEAR,
+    ARCHIVE_END_YEAR,
+  } from "./_components/archive/_lib/archive-ledger";
   import { ARCHIVE_INK } from "$lib/shared/landing/domain/page-surface";
 
   // The archive documents eight systems, seven of them other people's. A
   // "| The Kinetic Alphabet" suffix here implied it owned all of them.
   const TITLE = "Flow Arts History Archive: Who Wrote It Down";
-  const DESCRIPTION = `${ARCHIVE_ENTRIES.length} sourced records of flow-arts notation systems, movement languages, teaching archives, and research from 1998 to 2026.`;
+  const DESCRIPTION = `${ARCHIVE_ENTRIES.length} sourced records of flow-arts notation systems, movement languages, teaching archives, and research from ${ARCHIVE_START_YEAR} to ${ARCHIVE_END_YEAR}.`;
   const URL = "https://tkaflowarts.com/history";
 
   const jsonLd = {
