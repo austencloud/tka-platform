@@ -269,6 +269,28 @@ describe("shape matrix app state", () => {
     );
   });
 
+  it("accepts independent ratios through 15 and keeps a 4x4 matrix", () => {
+    const { state } = createState(false);
+
+    state.setSurface("theory");
+    state.setActiveAxis("left");
+    state.setTheoryRatio({ propRotations: 15, handCycles: 4 });
+    state.setActiveAxis("right");
+    state.setTheoryRatio({ propRotations: 4, handCycles: 15 });
+
+    expect(state.theoryLeftRatio).toEqual({
+      propRotations: 15,
+      handCycles: 4,
+    });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 4,
+      handCycles: 15,
+    });
+    expect(state.theoryBand).toBe(5);
+    expect(state.theoryRowAxis).toHaveLength(4);
+    expect(state.theoryColAxis).toHaveLength(4);
+  });
+
   it("keeps every theory ratio inside the band the user chose", () => {
     const { state } = createState(false);
 
@@ -287,7 +309,11 @@ describe("shape matrix app state", () => {
           ratio.handCycles === state.theoryLeftRatio.handCycles
       )
     ).toBe(true);
-    expect(state.availableTheoryRatios).toHaveLength(3);
+    expect(
+      state.availableTheoryRatios.every(
+        (ratio) => ratio.handCycles > 0 && ratio.handCycles <= 2
+      )
+    ).toBe(true);
   });
 
   it("moves the Kinetic Alphabet level without touching the ratio band", () => {

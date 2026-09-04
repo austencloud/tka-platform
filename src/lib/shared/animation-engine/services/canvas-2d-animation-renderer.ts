@@ -451,12 +451,16 @@ export class Canvas2DAnimationRenderer {
     const gridFadeState = this.gridFadeManager.updateProgress(
       params.currentTime
     );
+    const gridAlpha =
+      params.gridOpacity === undefined
+        ? gridFadeState.alpha
+        : Math.max(0, Math.min(1, params.gridOpacity));
     const gridImage = this.imageLoader.getGridImage();
 
     // Draw grid if alpha > 0 (either visible, or fading out)
-    if (gridFadeState.alpha > 0 && gridImage) {
+    if (gridAlpha > 0 && gridImage) {
       ctx.save();
-      ctx.globalAlpha = gridFadeState.alpha;
+      ctx.globalAlpha = gridAlpha;
 
       // In Dark Mode the grid (black ink) must render off-white. ctx.filter is
       // unsupported on iOS Safari, so we draw a pre-tinted offscreen copy
@@ -707,7 +711,8 @@ export class Canvas2DAnimationRenderer {
         };
         const loadedRightType = this.imageLoader.getRightPropType();
         const rightTextureMatchesRequest =
-          params.rightPropType?.toLowerCase() === loadedRightType?.toLowerCase();
+          params.rightPropType?.toLowerCase() ===
+          loadedRightType?.toLowerCase();
         const rightCrossfadeActive =
           previousRightProp != null && !rightCrossfade.isComplete;
         const rightSharedTransform =
@@ -772,7 +777,9 @@ export class Canvas2DAnimationRenderer {
             rightPropImage,
             displayedRightDimensions,
             rightSharedTransform,
-            rightTextureMatchesRequest ? rightFlipped : this.previousRightPropFlipped,
+            rightTextureMatchesRequest
+              ? rightFlipped
+              : this.previousRightPropFlipped,
             displayedRightType
           );
           if (displayedRightType) {

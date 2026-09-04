@@ -125,6 +125,7 @@ export interface RenderFrameParams {
   currentStep: number;
   trailSettings: TrailSettings;
   gridVisible: boolean;
+  gridOpacity?: number;
   gridMode: GridMode | null;
   letter: Letter | null;
   props: RenderPropsState;

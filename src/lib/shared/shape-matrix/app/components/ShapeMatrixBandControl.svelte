@@ -5,13 +5,11 @@
   that component. LevelSelector wears the Kinetic Alphabet's level identity —
   the numeral in the card-badge gradient, the level colour, the "Level 4" name
   — and Theory has no level. Wearing it there told a visitor that a 4:9 flower
-  sits at Level 4, which the turn system does not say about any ratio past the
-  first band.
+  sits at Level 4, when this control only reports hand-cycle bounds.
 
   So this is a plain SegmentedControl over the four band names, per
   chip-primitives.md: single-select, exactly one active, no numerals, no level
-  colour. Band 1's label carries the boundary itself, because that is the band
-  the Kinetic Alphabet reaches. -->
+  colour. The full band reaches 15 cycles, matching the ratio editor's cap. -->
 <script lang="ts">
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import {

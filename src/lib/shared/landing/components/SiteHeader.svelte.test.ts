@@ -32,6 +32,32 @@ async function click(trigger: HTMLButtonElement) {
 beforeEach(() => setPath("/"));
 
 describe("SiteHeader desktop disclosures", () => {
+  it("keeps History as a direct destination outside the Notation disclosure", async () => {
+    setPath("/history");
+    render(SiteHeader);
+    const desktopNav = document.querySelector<HTMLElement>(".desktop-nav");
+    expect(desktopNav).not.toBeNull();
+    desktopNav!.style.display = "flex";
+
+    const history = document.querySelector<HTMLAnchorElement>(
+      '.desktop-nav > a[href="/history"]'
+    );
+    expect(history).not.toBeNull();
+    expect(history).toHaveClass("active");
+    expect(history).toHaveAttribute("aria-current", "page");
+    expect(history!.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+
+    const notation = desktopTrigger("Notation");
+    expect(notation).toHaveAttribute("aria-expanded", "false");
+    expect(notation.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+    await click(notation);
+
+    const notationHrefs = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>(".desktop-nav .panel a")
+    ).map((link) => link.getAttribute("href"));
+    expect(notationHrefs).toEqual(["/notation/shape-matrix", "/notation/caps"]);
+  });
+
   it("keeps hover visual-only and opens on click", async () => {
     render(SiteHeader);
     const notation = desktopTrigger("Notation");

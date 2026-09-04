@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { pressSpring } from "$lib/actions/press-spring";
 	import {
+		ARCHIVE_END_YEAR,
 		ARCHIVE_ENTRIES,
+		ARCHIVE_START_YEAR,
+		archiveClusterForEntry,
 		archiveLane,
 		type ArchiveEntry,
 	} from "./_lib/archive-ledger";
@@ -19,18 +22,16 @@
 <section class="chronological-index" aria-labelledby="chronological-index-title">
 	<header>
 		<div>
-			<p>All {ARCHIVE_ENTRIES.length} documented traces</p>
-			<h2 id="chronological-index-title">Chronological index</h2>
+			<p>{ARCHIVE_START_YEAR}–{ARCHIVE_END_YEAR}</p>
+			<h2 id="chronological-index-title">All {ARCHIVE_ENTRIES.length} records</h2>
 		</div>
-		<span
-			>Documented traces, not a definitive history. Select a record to open its
-			artifact, claims, and sources.</span
-		>
+		<span>Select a record to see its artifact and sources.</span>
 	</header>
 
 	<ol>
 		{#each ARCHIVE_ENTRIES as entry (entry.id)}
 			{@const lane = archiveLane(entry.lane)}
+			{@const cluster = archiveClusterForEntry(entry.id)}
 			<li style:--entry-accent={archiveAccent(entry.id)}>
 				<span class="year" aria-hidden="true">{entry.firstDocumentedYear}</span>
 				<a
@@ -44,9 +45,12 @@
 					use:pressSpring
 				>
 					<span class="record-copy">
-						<span class="record-meta">{entry.dateLabel} · {lane.shortLabel} · {entry.citations.length} {entry.citations.length === 1 ? "source" : "sources"}</span>
+						<span class="record-meta">{entry.dateLabel} · {lane.label} · {entry.citations.length} {entry.citations.length === 1 ? "source" : "sources"}</span>
 						<strong>{entry.title}</strong>
 						<small>{entry.people}</small>
+						{#if cluster}
+							<small class="group-meta">Part of the {cluster.dateLabel} group of four related records</small>
+						{/if}
 					</span>
 					<span class="open-label">Open <span aria-hidden="true">→</span></span>
 				</a>
@@ -164,11 +168,10 @@
 	}
 
 	.record-copy > strong {
-		overflow: hidden;
 		font-size: 1rem;
 		font-weight: 750;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		line-height: 1.25;
+		white-space: normal;
 	}
 
 	.record-meta,
@@ -182,9 +185,17 @@
 	}
 
 	.record-meta {
+		overflow: visible;
 		color: var(--entry-accent);
 		font-variant-numeric: tabular-nums;
 		font-weight: 700;
+		text-overflow: clip;
+		white-space: normal;
+	}
+
+	.group-meta {
+		color: var(--theme-accent, oklch(0.76 0.13 290));
+		font-weight: 650;
 	}
 
 	.open-label {
