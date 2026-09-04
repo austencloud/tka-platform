@@ -14,7 +14,6 @@ export type WorkerViewerFallbackReason =
   | "locomotion-not-migrated"
   | "effects-not-migrated"
   | "scene-markers-not-migrated"
-  | "performer-badges-not-migrated"
   | "audience-not-migrated"
   | "world-children-not-migrated"
   | "retained-environments-not-migrated"
@@ -30,7 +29,6 @@ export interface WorkerViewerCapabilitySnapshot {
   locomotionActive: boolean;
   effectsActive: boolean;
   sceneMarkersVisible: boolean;
-  performerBadgesVisible: boolean;
   audienceVisible: boolean;
   hasWorldChildren: boolean;
   retainsEnvironments: boolean;
@@ -79,9 +77,6 @@ export function decideWorkerViewerCapability(
   }
   if (snapshot.sceneMarkersVisible) {
     fallbackReasons.push("scene-markers-not-migrated");
-  }
-  if (snapshot.performerBadgesVisible) {
-    fallbackReasons.push("performer-badges-not-migrated");
   }
   if (snapshot.audienceVisible) {
     fallbackReasons.push("audience-not-migrated");
