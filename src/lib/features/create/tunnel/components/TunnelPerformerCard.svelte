@@ -13,6 +13,7 @@
   let {
     performer,
     displaySequence = null,
+    activeStepIndex = null,
     stageTransformLabel = null,
     formationCopy = false,
     label,
@@ -44,6 +45,7 @@
   }: {
     performer: TunnelPerformer | null;
     displaySequence?: SequenceData | null;
+    activeStepIndex?: number | null;
     stageTransformLabel?: string | null;
     /** A reconstructed legacy arm: visible for performed-result inspection,
      * but absent from the authored composition until the user edits it. */
@@ -80,6 +82,12 @@
     performer?.source.kind === "independent" ? performer.source.sequence : null
   );
   const previewSequence = $derived(displaySequence ?? ownSequence);
+  const activeStepNumber = $derived.by(() => {
+    if (activeStepIndex === null) return null;
+    return (
+      previewSequence?.steps[activeStepIndex]?.stepNumber ?? activeStepIndex + 1
+    );
+  });
   const displayWord = $derived(
     previewSequence
       ? simplifyRepeatedWord(
@@ -408,6 +416,7 @@
         startPosition={previewSequence?.startPosition ??
           previewSequence?.startingPosition ??
           null}
+        selectedStepNumber={activeStepNumber}
         activeMode={null}
         isTimelineMode={false}
         fitAllSteps={true}
