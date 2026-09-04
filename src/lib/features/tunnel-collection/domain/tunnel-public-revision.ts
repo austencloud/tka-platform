@@ -10,6 +10,7 @@ import type {
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import type { PublicArtifactEnvelope } from "$lib/shared/artifact-revisions/domain/public-artifact";
 import type { TunnelConfig } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
+import type { TunnelStage } from "$lib/shared/sequence-viewer/tunnel/tunnel-stage";
 import {
   CollectedTunnelSchema,
   type CollectedTunnel,
@@ -55,6 +56,7 @@ export interface PublicTunnelComposition {
   readonly id: string;
   readonly name: string;
   readonly performers: PublicTunnelPerformer[];
+  readonly stage: TunnelStage;
   readonly formation: TunnelConfig;
   readonly createdAt: number;
   readonly updatedAt: number;
@@ -154,6 +156,11 @@ export function sanitizeTunnelComposition(
         speed: performer.timing.speed,
       },
     })),
+    stage: {
+      instances: composition.stage.instances.map((instance) => ({
+        ...instance,
+      })),
+    },
     formation: { ...composition.formation },
     createdAt: composition.createdAt,
     updatedAt: composition.updatedAt,

@@ -172,6 +172,37 @@ describe("tunnel presentation state", () => {
     });
   });
 
+  it("uses the composition formation when an older snapshot disagrees", () => {
+    const snapshot = savedSnapshot();
+    const state = createTunnelPresentationState({
+      initialSnapshot: snapshot,
+      initialFormation: {
+        ...DEFAULT_CONFIG,
+        fold: 2,
+        mirror: false,
+        speedOverrides: {},
+      },
+      effects: createEffectsConfigState(undefined, { persist: false }),
+      visibility: new AnimationVisibilityStateManager({ ephemeral: true }),
+      animationSettings: createAnimationSettingsState({ ephemeral: true }),
+      initialLeftPropType: "staff",
+      initialRightPropType: "staff",
+      initialLeftBuugengFlipped: false,
+      initialRightBuugengFlipped: false,
+    });
+    const controller = controllerFor();
+
+    state.attachController(controller);
+
+    expect(state.capture()).toMatchObject({
+      tunnel: {
+        config: { fold: 2, mirror: false },
+        gridVisible: true,
+      },
+      playback: { bpm: 132, playbackMode: "step" },
+    });
+  });
+
   it("starts new creator stages with hand colors and preserves saved exact colors", () => {
     const create = (initialSnapshot?: TunnelSnapshot) => {
       const state = createTunnelPresentationState({

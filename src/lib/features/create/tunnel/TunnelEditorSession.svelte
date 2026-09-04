@@ -93,9 +93,10 @@
   const presentation = createTunnelPresentationState({
     initialSnapshot: input?.snapshot ?? restoredDraft?.presentation ?? null,
     initialFormation:
-      input?.snapshot?.tunnel.config ??
+      input?.composition?.formation ??
+      restoredDraft?.composition?.formation ??
       input?.formation ??
-      restoredDraft?.composition?.formation,
+      input?.snapshot?.tunnel.config,
     effects,
     visibility,
     animationSettings: localAnimationSettings,
