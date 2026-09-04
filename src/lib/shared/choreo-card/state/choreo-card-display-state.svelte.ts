@@ -18,6 +18,7 @@ export interface ChoreoCardDisplayDeps {
   readonly browseViewMode: BrowseViewMode | undefined;
   readonly handPathMode: boolean;
   readonly showWord: boolean;
+  readonly customTitleText: string | undefined;
   readonly showDifficultyLevel: boolean;
   readonly hideSoloHeader: boolean;
   readonly showLoopGlyph: boolean;
@@ -94,6 +95,10 @@ export function createChoreoCardDisplayState(
   );
   const isHandsMode = $derived(getDeps().browseViewMode?.subject === "hands");
 
+  const customTitleVisible = $derived(
+    !!getDeps().customTitleText?.trim() && !isSoloMode
+  );
+
   const difficultyLevel = $derived.by(() => {
     const steps = getDeps().sequence.steps;
     return steps.length > 0 ? calculateDifficultyLevel([...steps]) : 1;
@@ -126,6 +131,7 @@ export function createChoreoCardDisplayState(
 
   const wordVisible = $derived(
     getDeps().showWord &&
+      !customTitleVisible &&
       !!getDeps().sequence.word &&
       !isSoloMode &&
       !isHandsMode
@@ -135,6 +141,7 @@ export function createChoreoCardDisplayState(
   );
   const showHeader = $derived(
     (isBrowseSoloMode && !getDeps().hideSoloHeader) ||
+      customTitleVisible ||
       effectiveShowDifficulty ||
       (getDeps().showLoopGlyph && !!loopComponents) ||
       wordVisible
@@ -220,6 +227,9 @@ export function createChoreoCardDisplayState(
     },
     get wordVisible() {
       return wordVisible;
+    },
+    get customTitleVisible() {
+      return customTitleVisible;
     },
     get effectiveShowDifficulty() {
       return effectiveShowDifficulty;
