@@ -252,7 +252,19 @@ describe("collectedTunnelViewerSequence", () => {
     expect(collectedTunnelViewerSequence(tunnel)).toEqual(authoredSequence);
   });
 
-  it("keeps the legacy step projection for records without a composition", () => {
-    expect(collectedTunnelViewerSequence(savedTunnel()).id).toBe("tunnel-42");
+  it("rebuilds the legacy start pose so the saved loop keeps its orientation", () => {
+    const sequence = collectedTunnelViewerSequence(
+      savedTunnel(undefined, { steps: hydratedSteps })
+    );
+
+    expect(sequence.id).toBe("tunnel-42");
+    expect(sequence.startPosition?.motions?.[HandSide.LEFT]).toMatchObject({
+      startLocation: GridLocation.WEST,
+      endLocation: GridLocation.WEST,
+    });
+    expect(sequence.startPosition?.motions?.[HandSide.RIGHT]).toMatchObject({
+      startLocation: GridLocation.SOUTH,
+      endLocation: GridLocation.SOUTH,
+    });
   });
 });
