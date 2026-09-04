@@ -11,6 +11,7 @@
   import {
     KINETIC_SHAPE_ENGINE_NAME,
     ORIGINAL_SHAPE_MATRIX_URL,
+    ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
   } from "../shape-engine-identity";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
@@ -301,7 +302,10 @@
     {:else if variant === "standalone"}
       <div class="identity">
         <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
-        <span>Lorq Nichols’ 144 Shape Matrix was the starting point</span>
+        <span
+          >Lorq’s 144 Shape Matrix: VTG ratios
+          {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}</span
+        >
       </div>
     {/if}
 
