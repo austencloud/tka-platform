@@ -20,7 +20,7 @@
   import { motionDuration } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { Tween } from "svelte/motion";
-  import { cubicInOut } from "svelte/easing";
+  import { cubicOut } from "svelte/easing";
   import { getViewerTunnelStageContext } from "../context/viewer-tunnel-stage-context";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
@@ -143,7 +143,7 @@
   // Even an initial Tunnel load starts from the complete 2D frame; its copies
   // enter only after their sprites are drawable.
   const tunnelReveal = new Tween(0, {
-    easing: cubicInOut,
+    easing: cubicOut,
   });
   let tunnelRevealResetTimer: ReturnType<typeof setTimeout> | undefined;
   $effect(() => {
@@ -164,7 +164,7 @@
           retainedMotionPane === "animation-3d"
             ? 0
             : motionDuration(TUNNEL_REVEAL_DURATION),
-        easing: cubicInOut,
+        easing: cubicOut,
       });
       return;
     }
@@ -186,7 +186,7 @@
 
     void tunnelReveal.set(0, {
       duration: motionDuration(TUNNEL_REVEAL_DURATION),
-      easing: cubicInOut,
+      easing: cubicOut,
     });
   });
   $effect(() => () => clearTimeout(tunnelRevealResetTimer));
@@ -228,6 +228,15 @@
     tunnelLayers.length === 0
       ? 0
       : Math.max(...tunnelLayers.map((layer) => layer.opacity ?? 1))
+  );
+  const tunnelLayerOpacityMean = $derived(
+    tunnelLayers.length === 0
+      ? 0
+      : tunnelLayers.reduce((total, layer) => total + (layer.opacity ?? 1), 0) /
+          tunnelLayers.length
+  );
+  const tunnelPerceptibleLayerCount = $derived(
+    tunnelLayers.filter((layer) => (layer.opacity ?? 1) >= 0.1).length
   );
   const tunnelLayerSeparation = $derived(
     Math.max(
@@ -585,6 +594,8 @@
     data-tunnel-textures-ready={tunnelTexturesReady}
     data-tunnel-layer-opacity-min={tunnelLayerOpacityMinimum.toFixed(3)}
     data-tunnel-layer-opacity-max={tunnelLayerOpacityMaximum.toFixed(3)}
+    data-tunnel-layer-opacity-mean={tunnelLayerOpacityMean.toFixed(3)}
+    data-tunnel-perceptible-layer-count={tunnelPerceptibleLayerCount}
     data-tunnel-layer-separation={tunnelLayerSeparation.toFixed(3)}
     data-tunnel-grid-opacity={tunnelGridOpacity.toFixed(3)}
     data-presented={is2DPresented}
