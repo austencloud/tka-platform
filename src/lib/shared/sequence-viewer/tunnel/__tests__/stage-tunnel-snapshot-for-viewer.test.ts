@@ -41,6 +41,7 @@ describe("stageTunnelSnapshotForViewer", () => {
   it("fans every pre-mount field into the viewer's canonical owners", () => {
     const dependencies = {
       visibility: {
+        setGridMode: vi.fn(),
         setEffortPreset: vi.fn(),
         setPathPolicy: vi.fn(),
         setVisibility: vi.fn(),
@@ -55,6 +56,7 @@ describe("stageTunnelSnapshotForViewer", () => {
 
     stageTunnelSnapshotForViewer(snapshot, dependencies);
 
+    expect(dependencies.visibility.setGridMode).toHaveBeenCalledWith("8point");
     expect(dependencies.visibility.setEffortPreset).toHaveBeenCalledWith(
       "punch"
     );

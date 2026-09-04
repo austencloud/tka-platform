@@ -804,6 +804,17 @@
 		}
 	}
 
+	/* On tall canvases the artifact earns the extra room. Reversing the normal
+	   40/60 split keeps the inspector at a generous, stable reading height
+	   instead of turning sparse record metadata into a full-height empty rail.
+	   The row stays fixed across overview and drill-down screens, so opening
+	   Sources never makes the artifact jump. */
+	@media (min-width: 981px) and (min-height: 1200px) {
+		.record-body {
+			grid-template-rows: minmax(24rem, 1.2fr) minmax(28rem, 0.8fr);
+		}
+	}
+
 	@container selected-record (min-width: 70rem) {
 		.record-body {
 			grid-template-columns: minmax(0, 1.1fr) minmax(28rem, 0.9fr);
