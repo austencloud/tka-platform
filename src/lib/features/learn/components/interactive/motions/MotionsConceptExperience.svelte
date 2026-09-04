@@ -1,11 +1,24 @@
+<!--
+  Hand Motions continues the shared Grid → Hand Positions lesson stage. The
+  artifact changes from one-hand path families to the six two-hand
+  timing/direction relationships without replacing the surrounding layout.
+-->
 <script lang="ts">
+  import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import type { ExperienceViewMode } from "../../../domain/types";
   import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
-  import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
+  import LessonStageControls from "../LessonStageControls.svelte";
+  import LessonStageFrame from "../LessonStageFrame.svelte";
+  import LessonStageHeading from "../LessonStageHeading.svelte";
   import HandMotionPlayer from "../foundations/HandMotionPlayer.svelte";
-  import { HAND_PATH_STEPS } from "../foundations/pictograph-foundation-content";
+  import {
+    ALPHA_BETA_MODES,
+    GAMMA_MODES,
+    HAND_PATH_STEPS,
+    type TimingDirectionMode,
+  } from "../foundations/pictograph-foundation-content";
 
   let {
     onComplete,
@@ -17,17 +30,75 @@
     viewMode?: ExperienceViewMode;
   }>();
 
+  const allModes: readonly TimingDirectionMode[] = [
+    ...ALPHA_BETA_MODES,
+    ...GAMMA_MODES,
+  ];
+  const modeByFamily = new Map(
+    allModes.map((mode) => [mode.element.familyId, mode])
+  );
+
+  function requireMode(familyId: string): TimingDirectionMode {
+    const mode = modeByFamily.get(familyId);
+    if (!mode) throw new Error(`Missing hand-motion lesson mode ${familyId}`);
+    return mode;
+  }
+
+  // TND_ELEMENTS owns the product's canonical order: the three same-direction
+  // relationships, then the three opposite-direction relationships.
+  const ELEMENTAL_MODES = TND_ELEMENTS.map((element) =>
+    requireMode(element.familyId)
+  );
+  const bridgeIndex = HAND_PATH_STEPS.length;
+  const elementalStart = bridgeIndex + 1;
+  const recapIndex = elementalStart + ELEMENTAL_MODES.length;
+  const totalStages = recapIndex + 1;
+
   const haptic = getHapticFeedback();
   const persistence = getExperiencePersistence("hand-motions-intro");
-  const summaryIndex = HAND_PATH_STEPS.length;
   const saved = persistence.load();
   let stepIndex = $state(
-    Math.min(summaryIndex, Math.max(0, (saved.step || 1) - 1))
+    Math.min(recapIndex, Math.max(0, (saved.step || 1) - 1))
   );
-  const activeMotion = $derived(HAND_PATH_STEPS[stepIndex] ?? null);
+
+  const activeMotion = $derived(
+    stepIndex < HAND_PATH_STEPS.length ? HAND_PATH_STEPS[stepIndex] : undefined
+  );
+  const activeMode = $derived(ELEMENTAL_MODES[stepIndex - elementalStart]);
+  const isBridge = $derived(stepIndex === bridgeIndex);
+  const isRecap = $derived(stepIndex === recapIndex);
+  const headingTitle = $derived(
+    activeMotion?.name ??
+      (activeMode
+        ? capitalize(activeMode.element.element)
+        : isBridge
+          ? "Timing + Direction"
+          : "Hand Motions + Elements")
+  );
+  const headingEyebrow = $derived(
+    activeMotion
+      ? `Hand motion ${stepIndex + 1} of ${HAND_PATH_STEPS.length}`
+      : activeMode
+        ? "Timing + direction"
+        : isBridge
+          ? "Two hands"
+          : "Review"
+  );
+  const headingDescription = $derived(
+    activeMotion?.guideCaption ??
+      (activeMode
+        ? `${activeMode.timing} timing, ${activeMode.direction.toLowerCase()} direction.`
+        : isBridge
+          ? "Timing compares the hands: together, split, or quarter. Direction compares their travel: same or opposite."
+          : "Choose any motion or element to review it.")
+  );
+
+  function capitalize(value: string): string {
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
 
   function goToStep(next: number): void {
-    const clamped = Math.min(summaryIndex, Math.max(0, next));
+    const clamped = Math.min(recapIndex, Math.max(0, next));
     if (clamped === stepIndex) return;
     stepIndex = clamped;
     persistence.saveStep(stepIndex + 1);
@@ -40,11 +111,19 @@
     onComplete?.();
   }
 
+  function handlePrimaryAction(): void {
+    if (isRecap) {
+      complete();
+      return;
+    }
+    goToStep(stepIndex + 1);
+  }
+
   function handleKeydown(event: KeyboardEvent): void {
     if (viewMode !== "step") return;
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
       event.preventDefault();
-      goToStep(stepIndex + 1);
+      handlePrimaryAction();
     } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
       event.preventDefault();
       handleBack();
@@ -62,278 +141,519 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 <div
-  class="experience"
+  class="motions-experience"
   onkeydown={handleKeydown}
   tabindex="0"
   role="application"
   aria-label="Hand motions lesson, use arrow keys to navigate"
 >
-  <main class="lesson-shell">
-    {#if activeMotion}
-      <section class="motion-step" aria-labelledby="motion-title">
-        <div class="instruction-rail">
-          <p class="eyebrow">Hand motion {stepIndex + 1} of 3</p>
-          <h1 id="motion-title">{activeMotion.name}</h1>
-          <p class="guide-caption">{activeMotion.guideCaption}</p>
-          <div class="motion-key" aria-label="Blue hand">
-            <span class="hand-dot" aria-hidden="true"></span>
-            <span>Blue hand</span>
-          </div>
-        </div>
-
-        <div class="artifact-stage">
-          <HandMotionPlayer
-            sequence={activeMotion.sequence}
-            ariaLabel={`${activeMotion.name}: ${activeMotion.guideCaption}`}
-          />
-        </div>
-      </section>
-    {:else}
-      <section class="summary" aria-labelledby="motion-summary-title">
-        <p class="eyebrow">Hand motions</p>
-        <h1 id="motion-summary-title">Three paths</h1>
-        <p class="guide-copy">
-          There are three fundamental hand motions in the Alphabet.<br />
-          The arrow shows the direction of motion.<br />
-          The hand shows the end position.
-        </p>
-        <div class="motion-recap">
-          {#each HAND_PATH_STEPS as motion, index (motion.id)}
-            <button type="button" onclick={() => goToStep(index)}>
-              <strong>{motion.name}</strong>
-              <span>{motion.guideCaption}</span>
-            </button>
-          {/each}
-        </div>
-      </section>
-    {/if}
-
-    <footer class="lesson-actions">
-      <PanelButton
-        variant="secondary"
-        onclick={handleBack}
-        disabled={stepIndex === 0}
+  <LessonStageFrame artifactLayout={activeMotion ? "square" : "wide"}>
+    {#snippet heading()}
+      <LessonStageHeading
+        key={stepIndex}
+        title={headingTitle}
+        eyebrow={headingEyebrow}
       >
-        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-        <span>Previous</span>
-      </PanelButton>
-      <ExperienceProgressIndicator
+        <p>{headingDescription}</p>
+      </LessonStageHeading>
+    {/snippet}
+
+    {#snippet artifact()}
+      <Crossfade key={stepIndex} fill>
+        {#if activeMotion}
+          <div class="artifact-state motion-state">
+            <div class="player-frame">
+              <HandMotionPlayer
+                sequence={activeMotion.sequence}
+                ariaLabel={`${activeMotion.name}: ${activeMotion.guideCaption}`}
+              />
+            </div>
+            <div class="hand-key" aria-label="Left hand is blue">
+              <span aria-hidden="true"></span>
+              <strong>Left hand</strong>
+            </div>
+          </div>
+        {:else if isBridge}
+          <div class="artifact-state bridge-state">
+            <section class="comparison-axis" aria-labelledby="timing-axis">
+              <h2 id="timing-axis">Timing</h2>
+              <div class="axis-values">
+                <strong>Together</strong>
+                <strong>Split</strong>
+                <strong>Quarter</strong>
+              </div>
+            </section>
+            <section class="comparison-axis" aria-labelledby="direction-axis">
+              <h2 id="direction-axis">Direction</h2>
+              <div class="axis-values">
+                <strong>Same</strong>
+                <strong>Opposite</strong>
+              </div>
+            </section>
+          </div>
+        {:else if activeMode}
+          <div
+            class="artifact-state element-state"
+            style:--element-accent={activeMode.element.accentColor}
+          >
+            <div class="element-player">
+              <HandMotionPlayer
+                sequence={activeMode.sequence}
+                ariaLabel={`${capitalize(activeMode.element.element)}: ${activeMode.timing} timing and ${activeMode.direction.toLowerCase()} direction`}
+              />
+            </div>
+            <aside class="element-properties">
+              <img src={activeMode.element.iconPath} alt="" />
+              <dl>
+                <div>
+                  <dt>Timing</dt>
+                  <dd>{activeMode.timing}</dd>
+                </div>
+                <div>
+                  <dt>Direction</dt>
+                  <dd>{activeMode.direction}</dd>
+                </div>
+              </dl>
+            </aside>
+          </div>
+        {:else}
+          <div class="artifact-state recap-state">
+            <div class="recap-content">
+              <section
+                class="recap-section"
+                aria-labelledby="motion-recap-title"
+              >
+                <h2 id="motion-recap-title">Three hand motions</h2>
+                <div class="motion-recap">
+                  {#each HAND_PATH_STEPS as motion, index (motion.id)}
+                    <button type="button" onclick={() => goToStep(index)}>
+                      <strong>{motion.name}</strong>
+                      <span>{motion.guideCaption}</span>
+                    </button>
+                  {/each}
+                </div>
+              </section>
+
+              <section
+                class="recap-section"
+                aria-labelledby="element-recap-title"
+              >
+                <h2 id="element-recap-title">Six elements</h2>
+                <div class="element-recap">
+                  {#each ELEMENTAL_MODES as mode, index (mode.id)}
+                    <button
+                      type="button"
+                      style:--element-accent={mode.element.accentColor}
+                      onclick={() => goToStep(elementalStart + index)}
+                    >
+                      <img src={mode.element.iconPath} alt="" />
+                      <strong>{capitalize(mode.element.element)}</strong>
+                      <span>{mode.timing} · {mode.direction}</span>
+                    </button>
+                  {/each}
+                </div>
+              </section>
+
+              <section class="attribution" aria-labelledby="attribution-title">
+                <h2 id="attribution-title">Where the model comes from</h2>
+                <p>
+                  Vulcan Tech Gospel codified and widely distributed Split-Same,
+                  Together-Same, Split-Opposite, and Together-Opposite as
+                  timing-and-direction categories.
+                </p>
+                <p>
+                  The four elemental names are community-developed extensions of
+                  those categories. Their original creator is not yet
+                  documented.
+                </p>
+                <p>
+                  The Kinetic Alphabet adds Sun and Moon for Quarter-Same and
+                  Quarter-Opposite.
+                </p>
+              </section>
+            </div>
+          </div>
+        {/if}
+      </Crossfade>
+    {/snippet}
+
+    {#snippet controls()}
+      <LessonStageControls
+        label={isRecap ? "Finish lesson" : "Next"}
         currentStep={stepIndex + 1}
-        totalSteps={summaryIndex + 1}
+        totalSteps={totalStages}
+        onAction={handlePrimaryAction}
+        onPrevious={handleBack}
+        previousDisabled={stepIndex === 0}
+        actionIcon={isRecap ? "check" : "arrow"}
       />
-      {#if stepIndex === summaryIndex}
-        <PanelButton variant="primary" onclick={complete}>
-          <span>Finish lesson</span>
-          <i class="fa-solid fa-check" aria-hidden="true"></i>
-        </PanelButton>
-      {:else}
-        <PanelButton variant="primary" onclick={() => goToStep(stepIndex + 1)}>
-          <span>Next</span>
-          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-        </PanelButton>
-      {/if}
-    </footer>
-  </main>
+    {/snippet}
+  </LessonStageFrame>
 </div>
 
 <style>
-  .experience {
-    container: hand-motions / inline-size;
+  .motions-experience {
     width: 100%;
     height: 100%;
-    overflow-y: auto;
+    min-height: 0;
+    overflow: hidden;
     color: var(--theme-text);
     outline: none;
-    scrollbar-gutter: stable;
   }
-  .lesson-shell {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: 1rem;
-    width: min(100%, 100rem);
-    min-height: 100%;
-    margin-inline: auto;
-    padding: clamp(4.5rem, 5cqw, 5.5rem) clamp(0.75rem, 2.5cqw, 2.5rem)
-      clamp(0.75rem, 1.5cqw, 1.5rem);
-  }
-  .motion-step {
-    display: grid;
-    grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
-    align-items: center;
-    gap: clamp(1rem, 2.2cqw, 2.5rem);
+
+  .artifact-state {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
     min-height: 0;
   }
-  .instruction-rail {
+
+  .motion-state {
+    position: relative;
     display: grid;
-    align-content: center;
-    gap: 1rem;
-    padding: clamp(1rem, 1.6cqw, 1.6rem);
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-lg, 0.75rem);
-    background: var(--theme-panel-bg);
+    place-items: center;
   }
-  .eyebrow {
-    margin: 0;
-    color: var(--theme-accent);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+
+  .player-frame {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
   }
-  h1 {
-    margin: 0 !important;
-    font-size: clamp(1.8rem, 3cqw, 3.2rem);
-    line-height: 1.05;
-  }
-  .guide-caption,
-  .guide-copy {
-    margin: 0;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-base, 1rem);
-    line-height: 1.55;
-  }
-  .motion-key {
+
+  .hand-key {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.45rem;
+    min-height: 2.25rem;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 999px;
+    background: var(--theme-panel-bg);
     color: var(--theme-text-dim);
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 700;
+    font-size: var(--font-size-min, 0.875rem);
   }
-  .hand-dot {
-    width: 0.85rem;
-    height: 0.85rem;
+
+  .hand-key span {
+    width: 0.8rem;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: var(--prop-blue, #3d44b8);
   }
-  .artifact-stage {
+
+  .hand-key strong {
+    color: var(--theme-text);
+  }
+
+  .bridge-state {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: center;
+    gap: clamp(0.75rem, 2cqw, 1.5rem);
+  }
+
+  .comparison-axis {
+    display: grid;
+    align-content: center;
+    gap: 1rem;
+    min-height: min(100%, 18rem);
+    padding: clamp(1rem, 3cqw, 2rem);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-lg, 0.75rem);
+    background: var(--theme-card-bg);
+    text-align: center;
+  }
+
+  .comparison-axis h2,
+  .recap-section h2,
+  .attribution h2 {
+    margin: 0;
+    color: var(--theme-text);
+    font-size: clamp(1rem, 2cqw, 1.35rem);
+  }
+
+  .axis-values {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .comparison-axis:last-child .axis-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .axis-values strong {
+    min-height: var(--min-touch-target, 44px);
+    display: grid;
+    place-items: center;
+    padding: 0.65rem;
+    border-radius: var(--radius-md, 0.5rem);
+    background: var(--theme-panel-bg);
+    color: var(--theme-text);
+  }
+
+  .element-state {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
+    align-items: stretch;
+    gap: clamp(0.75rem, 2cqw, 1.5rem);
+  }
+
+  .element-player {
     min-width: 0;
-    height: clamp(24rem, 68dvh, 48rem);
     min-height: 0;
   }
-  .summary {
+
+  .element-properties {
     display: grid;
     align-content: center;
     justify-items: center;
     gap: 1rem;
-    width: min(100%, 58rem);
-    margin-inline: auto;
-    text-align: center;
-  }
-  .motion-recap {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
-    width: 100%;
-  }
-  .motion-recap button {
-    display: grid;
-    gap: 0.35rem;
-    min-height: 6rem;
-    padding: 0.9rem;
+    min-width: 0;
+    padding: clamp(0.75rem, 2cqw, 1.5rem);
     border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-lg, 0.75rem);
+    background: color-mix(
+      in srgb,
+      var(--element-accent) 10%,
+      var(--theme-card-bg)
+    );
+  }
+
+  .element-properties img {
+    width: clamp(3rem, 8cqw, 5rem);
+    height: clamp(3rem, 8cqw, 5rem);
+    object-fit: contain;
+  }
+
+  .element-properties dl {
+    width: 100%;
+    display: grid;
+    gap: 0.65rem;
+    margin: 0;
+  }
+
+  .element-properties dl > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding-block: 0.55rem;
+    border-bottom: 1px solid var(--theme-stroke);
+  }
+
+  .element-properties dl > div:last-child {
+    border-bottom: 0;
+  }
+
+  dt {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--theme-text);
+    font-weight: 800;
+  }
+
+  .recap-state {
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+
+  .recap-content {
+    /* The shared wide artifact is already the responsive width owner. Filling
+       it keeps the recap from becoming a prose-column-sized island on 4K while
+       leaving ordinary desktop and phone geometry unchanged. */
+    width: 100%;
+    min-height: 100%;
+    display: grid;
+    align-content: center;
+    gap: 1rem;
+    margin-inline: auto;
+    padding: 0.25rem;
+  }
+
+  .recap-section {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .motion-recap,
+  .element-recap {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .motion-recap {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .element-recap {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .motion-recap button,
+  .element-recap button {
+    min-height: var(--min-touch-target, 44px);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-md, 0.5rem);
     background: var(--theme-card-bg);
     color: var(--theme-text);
     font: inherit;
     cursor: pointer;
   }
+
+  .motion-recap button {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.65rem;
+  }
+
+  .element-recap button {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.1rem 0.55rem;
+    padding: 0.55rem 0.65rem;
+    background: color-mix(
+      in srgb,
+      var(--element-accent) 9%,
+      var(--theme-card-bg)
+    );
+    text-align: left;
+  }
+
   .motion-recap button:hover,
-  .motion-recap button:focus-visible {
+  .element-recap button:hover {
     border-color: var(--theme-stroke-strong);
     background: var(--theme-card-hover-bg);
   }
-  .motion-recap button:focus-visible {
+
+  .motion-recap button:focus-visible,
+  .element-recap button:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
-  .motion-recap span {
+
+  .motion-recap span,
+  .element-recap span {
     color: var(--theme-text-dim);
-    font-size: var(--font-size-sm, 0.875rem);
+    font-size: var(--font-size-compact, 0.75rem);
   }
-  .lesson-actions {
+
+  .element-recap img {
+    grid-row: 1 / 3;
+    width: 1.65rem;
+    height: 1.65rem;
+    object-fit: contain;
+  }
+
+  .attribution {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 0.75rem;
+    gap: 0.4rem;
+    padding-top: 0.25rem;
+    text-align: center;
   }
-  .lesson-actions > :global(:first-child) {
-    justify-self: start;
+
+  .attribution p {
+    margin: 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 0.875rem);
+    line-height: 1.45;
   }
-  .lesson-actions > :global(:last-child) {
-    justify-self: end;
-  }
-  @container hand-motions (max-width: 760px) {
-    .lesson-shell {
-      gap: 0.65rem;
-      padding-top: 3.9rem;
-    }
-    .motion-step {
+
+  @media (max-width: 700px) {
+    .element-state {
       grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: auto minmax(0, 1fr);
-      gap: 0.65rem;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 0.5rem;
     }
-    .instruction-rail {
-      gap: 0.4rem;
+
+    .element-properties {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.75rem;
       padding: 0.65rem 0.75rem;
     }
-    .artifact-stage {
-      height: min(42dvh, 19rem);
-      min-height: 0;
+
+    .element-properties img {
+      width: 2.75rem;
+      height: 2.75rem;
     }
-    .lesson-actions {
-      grid-template-columns: 1fr 1fr;
+
+    .element-properties dl {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
     }
-    .lesson-actions :global(.progress-indicator) {
-      grid-column: 1 / -1;
-      grid-row: 2;
-      justify-self: center;
+
+    .element-properties dl > div {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.1rem;
+      padding: 0;
+      border-bottom: 0;
     }
-    .lesson-actions :global(.panel-btn) {
-      width: 100%;
+
+    .bridge-state {
+      gap: 0.5rem;
+    }
+
+    .comparison-axis {
+      gap: 0.5rem;
+      padding: 0.65rem;
+    }
+
+    .axis-values {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .comparison-axis:last-child .axis-values {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .axis-values strong {
+      padding: 0.35rem;
+    }
+
+    .element-recap {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
-  @container hand-motions (max-width: 520px) {
+
+  @media (max-width: 440px) {
     .motion-recap {
       grid-template-columns: minmax(0, 1fr);
     }
-    .motion-recap button {
-      min-height: 4.5rem;
-    }
   }
-  @container hand-motions (min-width: 1680px) {
-    .lesson-shell {
-      width: min(100%, 132rem);
+
+  @media (max-height: 520px) and (min-width: 701px) {
+    .element-state {
+      grid-template-columns: minmax(0, 1fr) minmax(11rem, 14rem);
     }
-    .motion-step {
-      grid-template-columns: minmax(18rem, 28rem) minmax(0, 1fr);
+
+    .element-properties {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.65rem;
+      padding: 0.65rem;
     }
-  }
-  @container hand-motions (min-width: 2600px) {
-    .lesson-shell {
-      width: min(100%, 190rem);
+
+    .element-properties img {
+      width: 2.75rem;
+      height: 2.75rem;
     }
-    .motion-step {
-      grid-template-columns: minmax(24rem, 34rem) minmax(0, 1fr);
+
+    .element-properties dl {
+      gap: 0.25rem;
     }
-    .artifact-stage {
-      height: clamp(36rem, 58dvh, 64rem);
-    }
-  }
-  @media (max-height: 620px) and (min-width: 761px) {
-    .lesson-shell {
-      padding-top: 4rem;
-    }
-    .motion-step {
-      grid-template-columns: minmax(13rem, 19rem) minmax(0, 1fr);
-    }
-    .instruction-rail {
-      gap: 0.55rem;
-      padding: 0.75rem;
-    }
-    .artifact-stage {
-      height: min(55dvh, 14rem);
-      min-height: 0;
+
+    .element-properties dl > div {
+      padding-block: 0.25rem;
     }
   }
 </style>
