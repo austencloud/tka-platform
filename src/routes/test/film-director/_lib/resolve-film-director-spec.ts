@@ -39,7 +39,10 @@ import {
   type FilmSeed,
 } from "./directive-random";
 import { resolveCastAxis } from "./resolve-directives";
-import { assertSequenceDirective } from "./sequence-language";
+import {
+  assertSequenceDirective,
+  transformSourceId,
+} from "./sequence-language";
 import {
   DIRECTOR_EFFORT_IDS,
   DIRECTOR_FORMATIONS,
@@ -47,10 +50,17 @@ import {
   type DirectorCastInput,
   type DirectorPerformerSequence,
   type DirectorSceneBlockingInput,
+  type DirectorSceneBlockingPhaseInput,
   type DirectorSceneInput,
   type FilmDirectorInput,
   type ResolvedDirectorPerformer,
   type ResolvedDirectorScene,
+  type ResolvedDirectorHold,
+  type DirectorPropBuild,
+  type ResolvedDirectorHandEffects,
+  type ResolvedDirectorStepEffect,
+  type ResolvedDirectorStepEffort,
+  type ResolvedDirectorStepStaffLength,
   type ResolvedDirectorStepPlane,
   type ResolvedFilmDirectorSpec,
 } from "./film-director-schema";
@@ -101,17 +111,21 @@ function createHandPlaneAxisStream(
 // because their schema fields are un-narrowed `z.string()` refinements —
 // the registry-type cast happens once, on the resolved concrete value, same
 // as this file did before directives existed.
-const PROP_CATALOG = Object.values(PropType);
-const EFFECT_CATALOG: readonly string[] = [
+//
+// Exported because they are what a directive may actually resolve to. Any
+// surface that shows a director their options reads these, so the offered set
+// and the accepted set cannot drift apart.
+export const PROP_CATALOG = Object.values(PropType);
+export const EFFECT_CATALOG: readonly string[] = [
   "none",
   ...EFFECTS.map((effect) => effect.id),
 ];
-const EFFORT_CATALOG = [...DIRECTOR_EFFORT_IDS] as EffortId[];
-const ENVIRONMENT_CATALOG = Object.values(SceneEnvironmentId);
-const PLANE_CATALOG = Object.values(Plane) as Plane[];
+export const EFFORT_CATALOG = [...DIRECTOR_EFFORT_IDS] as EffortId[];
+export const ENVIRONMENT_CATALOG = Object.values(SceneEnvironmentId);
+export const PLANE_CATALOG = Object.values(Plane) as Plane[];
 // "custom" needs per-performer positions, so an open formation pick never
 // selects it — the count filter below narrows further, per scene.
-const FORMATION_CATALOG = DIRECTOR_FORMATIONS.filter(
+export const FORMATION_CATALOG = DIRECTOR_FORMATIONS.filter(
   (preset) => preset !== "custom"
 ) as FormationPreset[];
 
@@ -122,7 +136,9 @@ interface ResolvedPerformerFields {
   name?: string;
   characterId: CharacterId;
   prop: PropType;
+  propBuild?: DirectorPropBuild;
   effect: EffectType;
+  handEffects?: ResolvedDirectorHandEffects;
   effort: EffortId;
   sequence: DirectorPerformerSequence;
   position?: { x: number; z: number };
@@ -133,6 +149,59 @@ interface ResolvedPerformerFields {
   leftPlane: Plane;
   rightPlane: Plane;
   stepPlanes: ResolvedDirectorStepPlane[];
+  stepEffects: ResolvedDirectorStepEffect[];
+  stepEfforts: ResolvedDirectorStepEffort[];
+  stepStaffLengths: ResolvedDirectorStepStaffLength[];
+  holds: ResolvedDirectorHold[];
+}
+
+/**
+ * Gap 26. What a director may say where an effect is expected: one value, or
+ * one per hand. Each side keeps the full directive grammar.
+ */
+export interface HandEffectPair {
+  left: DirectiveValue<string>;
+  right: DirectiveValue<string>;
+}
+type SpokenEffect = DirectiveValue<string> | HandEffectPair;
+
+function isHandEffectPair(value: SpokenEffect): value is HandEffectPair {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "left" in value &&
+    "right" in value
+  );
+}
+
+/**
+ * Gap 20. Where performer `index` of `count` lands on a level ramp. The ends
+ * are exactly `from` and `to`; between them the line is walked and rounded, so
+ * a 1-to-3 ramp across four performers reads 1, 2, 2, 3 rather than inventing
+ * fractional levels the generator has no meaning for.
+ */
+export function rampedSequenceLevel(
+  ramp: { from: number; to: number },
+  index: number,
+  count: number
+): number {
+  if (count <= 1) return ramp.from;
+  const walked = ramp.from + ((ramp.to - ramp.from) * index) / (count - 1);
+  return Math.min(3, Math.max(1, Math.round(walked)));
+}
+
+/**
+ * Gap 20. Reads a spoken `beatOffset` for one performer. A plain number is
+ * everyone's offset; `{canon}` staggers the cast, performer k entering k
+ * offsets after the first, which is what a canon means.
+ */
+export function spreadBeatOffset(
+  spoken: number | { canon: number } | undefined,
+  index: number
+): number | undefined {
+  if (spoken === undefined) return undefined;
+  if (typeof spoken === "number") return spoken;
+  return index * spoken.canon;
 }
 
 function contextualEnvironmentFromEffects(
@@ -146,6 +215,10 @@ function contextualEnvironmentFromEffects(
 }
 
 function defaultFormation(count: number): FormationPreset {
+  // Gap 21. Nobody is standing anywhere, so no preset describes the stage.
+  // "custom" is the honest answer: the arrangement is exactly the (empty)
+  // list of positions.
+  if (count === 0) return "custom";
   if (count === 1) return "solo";
   if (count <= 4) return "grid-2x2";
   return "circle";
@@ -250,7 +323,8 @@ function resolveStepPlanesForPerformer(
   }[],
   performerId: string,
   sceneId: string,
-  seed: FilmSeed
+  seed: FilmSeed,
+  seedSceneId: string = sceneId
 ): ResolvedDirectorStepPlane[] {
   return entries.map((entry) => ({
     step: entry.step,
@@ -268,15 +342,170 @@ function resolveStepPlanesForPerformer(
       PLANE_CATALOG,
       // NUL-separated like createAxisStream's own key: authored ids may
       // contain spaces, so a space-joined key would be ambiguous.
-      `${sceneId}\u0000${performerId}\u0000${entry.step}\u0000${entry.hand === "left" ? "blue" : "red"}`
+      `${seedSceneId}\u0000${performerId}\u0000${entry.step}\u0000${entry.hand === "left" ? "blue" : "red"}`
     ),
   }));
+}
+
+/**
+ * Rejects two entries that address the same step. Directors write these lists
+ * by hand and a duplicate is always a mistake: whichever entry the reader
+ * believes is in force, the other one is dead text.
+ */
+function assertOneEntryPerStep(
+  entries: readonly { step: number }[],
+  field: string,
+  performerId: string,
+  sceneId: string
+): void {
+  const seen = new Set<number>();
+  for (const entry of entries) {
+    if (seen.has(entry.step)) {
+      throw new Error(
+        `Scene "${sceneId}": performer "${performerId}" ${field} names step ${entry.step} twice.`
+      );
+    }
+    seen.add(entry.step);
+  }
+}
+
+/**
+ * Resolves one performer's effective stepEffects list. Each entry's value is a
+ * scene-scoped directive on axis "stepEffect", so a single
+ * `seed.axes.stepEffect` reroll reshuffles every stepEffects entry in the
+ * film, while each (performer, step) pair still draws from its own stream via
+ * a distinguishing streamKey — the same arrangement stepPlanes uses.
+ */
+function resolveStepEffectsForPerformer(
+  entries: readonly { step: number; effect: SpokenEffect }[],
+  performerId: string,
+  sceneId: string,
+  seed: FilmSeed,
+  seedSceneId: string = sceneId
+): ResolvedDirectorStepEffect[] {
+  assertOneEntryPerStep(entries, "stepEffects", performerId, sceneId);
+  const resolveOne = (
+    value: DirectiveValue<string>,
+    entryStep: number,
+    // Gap 26. The hands of one entry must not share a stream key, or a
+    // `pick: "any"` pair would draw the same effect for both.
+    handKey: string
+  ): EffectType =>
+    resolveSceneDirective<string>(
+      value,
+      "stepEffect",
+      () => {
+        throw new Error(
+          `Scene "${sceneId}": stepEffects entry for "${performerId}" at step ${entryStep} is missing an effect.`
+        );
+      },
+      sceneId,
+      seed,
+      EFFECT_CATALOG,
+      // NUL-separated like createAxisStream's own key: authored ids may
+      // contain spaces, so a space-joined key would be ambiguous.
+      `${seedSceneId}\u0000${performerId}\u0000${entryStep}\u0000stepEffect${handKey}`
+    ) as EffectType;
+
+  return entries.map((entry) => {
+    if (!isHandEffectPair(entry.effect)) {
+      return {
+        step: entry.step,
+        effect: resolveOne(entry.effect, entry.step, ""),
+      };
+    }
+    const left = resolveOne(entry.effect.left, entry.step, "");
+    const right = resolveOne(entry.effect.right, entry.step, "-right");
+    return { step: entry.step, effect: left, handEffects: { left, right } };
+  });
+}
+
+/** The effort twin of resolveStepEffectsForPerformer, axis "stepEffort". */
+function resolveStepEffortsForPerformer(
+  entries: readonly { step: number; effort: DirectiveValue<EffortId> }[],
+  performerId: string,
+  sceneId: string,
+  seed: FilmSeed,
+  seedSceneId: string = sceneId
+): ResolvedDirectorStepEffort[] {
+  assertOneEntryPerStep(entries, "stepEfforts", performerId, sceneId);
+  return entries.map((entry) => ({
+    step: entry.step,
+    effort: resolveSceneDirective<EffortId>(
+      entry.effort,
+      "stepEffort",
+      () => {
+        throw new Error(
+          `Scene "${sceneId}": stepEfforts entry for "${performerId}" at step ${entry.step} is missing an effort.`
+        );
+      },
+      sceneId,
+      seed,
+      EFFORT_CATALOG,
+      `${seedSceneId}\u0000${performerId}\u0000${entry.step}\u0000stepEffort`
+    ),
+  }));
+}
+
+/**
+ * Sorts a performer's holds by where they start and proves none overlaps the
+ * next. Overlapping holds have no honest meaning: the lag the first one adds
+ * would move the second one's window out from under the number the director
+ * wrote.
+ */
+function resolveHoldsForPerformer(
+  holds: readonly { fromStep: number; steps: number; progress?: number }[],
+  performerId: string,
+  sceneId: string
+): ResolvedDirectorHold[] {
+  const sorted = [...holds].sort((a, b) => a.fromStep - b.fromStep);
+  for (let index = 1; index < sorted.length; index += 1) {
+    const previous = sorted[index - 1]!;
+    const current = sorted[index]!;
+    if (current.fromStep < previous.fromStep + previous.steps) {
+      throw new Error(
+        `Scene "${sceneId}": performer "${performerId}" holds overlap: step ${previous.fromStep} for ${previous.steps} steps and step ${current.fromStep} for ${current.steps} steps.`
+      );
+    }
+  }
+  return sorted.map((hold) => ({
+    fromStep: hold.fromStep,
+    steps: hold.steps,
+    // Gap 19. Absent stays absent so a film that never fixes the frozen pose
+    // resolves exactly as it did before the word existed.
+    ...(hold.progress !== undefined ? { progress: hold.progress } : {}),
+  }));
+}
+
+/**
+ * Gap 17. A prop-length list is a ramp, so it resolves sorted with every
+ * entry's arrival stated. `linear` is the default because a director naming a
+ * second length is usually describing growth, not a jump cut.
+ */
+function resolveStepStaffLengthsForPerformer(
+  entries: readonly {
+    step: number;
+    staffLengthCm: number;
+    ease?: "cut" | "linear";
+  }[],
+  performerId: string,
+  sceneId: string
+): ResolvedDirectorStepStaffLength[] {
+  assertOneEntryPerStep(entries, "stepStaffLengths", performerId, sceneId);
+  return [...entries]
+    .sort((a, b) => a.step - b.step)
+    .map((entry) => ({
+      step: entry.step,
+      staffLengthCm: entry.staffLengthCm,
+      ease: entry.ease ?? "linear",
+    }));
 }
 
 function resolveEffectPresets(
   effectPresets: Record<string, string | { pick: "any" }>,
   sceneId: string,
-  seed: FilmSeed
+  seed: FilmSeed,
+  seedSceneId: string = sceneId
 ): Record<string, string> {
   const resolved: Record<string, string> = {};
   for (const [effectId, presetValue] of Object.entries(effectPresets)) {
@@ -310,7 +539,7 @@ function resolveEffectPresets(
     const picked = presetIds?.length
       ? seededPick(
           presetIds,
-          createAxisStream(seed, sceneId, `effectPreset:${effectId}`)
+          createAxisStream(seed, seedSceneId, `effectPreset:${effectId}`)
         )
       : undefined;
     if (picked === undefined) {
@@ -391,7 +620,7 @@ const MARK_ARRIVED_METERS = 0.05;
 function movesToMark(
   mark: { x: number; z: number },
   start: { x: number; z: number },
-  blocking: DirectorSceneBlockingInput
+  blocking: DirectorSceneBlockingPhaseInput
 ): DirectorBlockingMove[] {
   if (Math.hypot(mark.x - start.x, mark.z - start.z) < MARK_ARRIVED_METERS) {
     return [{ move: "stand", durationSeconds: blocking.durationSeconds }];
@@ -410,12 +639,77 @@ function movesToMark(
   ];
 }
 
+/**
+ * Gap 18. Cast staging is a timeline, not one instruction. A phase list says
+ * "line up, hold, then break into a circle on the drop", and each phase may
+ * open on a stated second (the converter has already turned a count or a cue
+ * into one) or simply follow the one before it.
+ *
+ * Phases run in the order written and may not overlap, because two formations
+ * cannot both own the cast at once, and the error has to name both phases or
+ * the director cannot tell which pair to move.
+ */
+function assertOrderedPhases(
+  phases: readonly DirectorSceneBlockingPhaseInput[],
+  durationSeconds: number,
+  sceneId: string
+): void {
+  let cursor = 0;
+  let previousIndex = 0;
+  let previousEnd = 0;
+  for (const [index, phase] of phases.entries()) {
+    const start = phase.startSeconds ?? cursor;
+    if (index > 0 && start < previousEnd) {
+      throw new Error(
+        `Scene "${sceneId}": blocking phase ${index + 1} starts at ${fmtSeconds(start)}s, before phase ${previousIndex + 1} finishes at ${fmtSeconds(previousEnd)}s.`
+      );
+    }
+    cursor = start + (phase.durationSeconds ?? 0);
+    if (cursor > durationSeconds + 1e-6) {
+      throw new Error(
+        `Scene "${sceneId}": blocking phase ${index + 1} finishes at ${fmtSeconds(cursor)}s, past the scene's ${fmtSeconds(durationSeconds)}s.`
+      );
+    }
+    previousIndex = index;
+    previousEnd = cursor;
+  }
+}
+
+const fmtSeconds = (value: number): string => String(Number(value.toFixed(2)));
+
+/** One performer's walk through every phase, standing through the gaps. */
+function movesThroughPhases(
+  phases: readonly DirectorSceneBlockingPhaseInput[],
+  start: { x: number; z: number },
+  index: number,
+  count: number
+): DirectorBlockingMove[] {
+  const moves: DirectorBlockingMove[] = [];
+  let cursor = 0;
+  let at = start;
+  for (const phase of phases) {
+    const phaseStart = phase.startSeconds ?? cursor;
+    if (phaseStart > cursor) {
+      moves.push({ move: "stand", durationSeconds: phaseStart - cursor });
+    }
+    const mark = endFormationMarks(phase.endFormation, count)[index]!;
+    moves.push(...movesToMark(mark, at, phase));
+    at = mark;
+    cursor = phaseStart + (phase.durationSeconds ?? 0);
+  }
+  return moves;
+}
+
 function buildResolvedPerformers(
   inputs: readonly ResolvedPerformerFields[],
   formationPreset: FormationPreset,
   durationSeconds: number,
-  sceneBlocking: DirectorSceneBlockingInput | undefined
+  sceneBlocking: DirectorSceneBlockingInput | undefined,
+  sceneId: string
 ): ResolvedDirectorPerformer[] {
+  // Gap 21. No preset lists 0 as a valid count, and none should: an empty
+  // stage has nothing to arrange, so there is no arrangement to check.
+  if (inputs.length === 0) return [];
   const validCounts = PRESET_VALID_COUNTS[formationPreset];
   if (!validCounts.includes(inputs.length)) {
     throw new Error(
@@ -430,8 +724,11 @@ function buildResolvedPerformers(
   }
 
   const formation = createFormationFromPreset(formationPreset, inputs.length);
-  const marks = sceneBlocking
-    ? endFormationMarks(sceneBlocking.endFormation, inputs.length)
+  const phases = Array.isArray(sceneBlocking) ? sceneBlocking : null;
+  if (phases) assertOrderedPhases(phases, durationSeconds, sceneId);
+  const single = Array.isArray(sceneBlocking) ? null : (sceneBlocking ?? null);
+  const marks = single
+    ? endFormationMarks(single.endFormation, inputs.length)
     : null;
   const seenIds = new Set<string>();
 
@@ -466,16 +763,20 @@ function buildResolvedPerformers(
     // said where this one goes, which is not "and also join the formation."
     const moves =
       input.blocking ??
-      (marks && sceneBlocking
-        ? movesToMark(marks[index]!, position, sceneBlocking)
-        : []);
+      (phases
+        ? movesThroughPhases(phases, position, index, inputs.length)
+        : marks && single
+          ? movesToMark(marks[index]!, position, single)
+          : []);
 
     return {
       id,
       name: input.name ?? `Performer ${index + 1}`,
       characterId: input.characterId,
       prop: input.prop,
+      ...(input.propBuild ? { propBuild: input.propBuild } : {}),
       effect: input.effect,
+      ...(input.handEffects ? { handEffects: input.handEffects } : {}),
       effort: input.effort,
       sequence: input.sequence,
       position: { ...position },
@@ -491,6 +792,14 @@ function buildResolvedPerformers(
       leftPlane: input.leftPlane,
       rightPlane: input.rightPlane,
       stepPlanes: input.stepPlanes,
+      stepEffects: input.stepEffects,
+      stepEfforts: input.stepEfforts,
+      // Absent, not empty: a prop that keeps one length has no ramp, and an
+      // empty array in every snapshot would be noise.
+      ...(input.stepStaffLengths.length
+        ? { stepStaffLengths: input.stepStaffLengths }
+        : {}),
+      holds: input.holds,
     };
   });
 }
@@ -499,6 +808,7 @@ function resolveScene(
   rawScene: DirectorSceneInput,
   sceneIndex: number,
   startSeconds: number,
+  startStep: number,
   aspectRatio: number,
   filmSeed: FilmSeed
 ): ResolvedDirectorScene {
@@ -512,15 +822,22 @@ function resolveScene(
   const scene = convertSceneBeatTimes(rawScene, {
     value: bpm,
     stated: bpmStated,
+    beatsPerBar: rawScene.performance?.meter?.beatsPerBar,
   });
   const durationSeconds = scene.durationSeconds ?? 8;
   const cast = scene.performance?.cast;
+  /**
+   * Gap 14. Which scene's name the seeded draws happen under. Every stream
+   * key below uses this; error text keeps using `scene.id`, so a rejection
+   * still names the scene the director is reading.
+   */
+  const seedSceneId = scene.seedAs ?? scene.id;
 
+  // Gap 21. A stated empty cast, by either spelling, is an empty stage.
+  // Only silence about the cast falls back to the lone default performer.
   const rawInputs: PerformerInput[] = cast
     ? buildCastPerformerInputs(cast)
-    : scene.performance?.performers?.length
-      ? scene.performance.performers
-      : [{}];
+    : (scene.performance?.performers ?? [{}]);
 
   const performerIds = rawInputs.map(
     (input, index) => input.id ?? `performer-${index + 1}`
@@ -539,8 +856,15 @@ function resolveScene(
   const propValues: DirectiveValue<PropType>[] = rawInputs.map(
     (input) => input.prop ?? cast?.defaults?.prop ?? PropType.STAFF
   );
-  const effectValues: DirectiveValue<string>[] = rawInputs.map(
+  // Gap 26. An effect is one value or a hand pair. The left column is what
+  // the axis has always resolved, so a film that never speaks a pair draws
+  // exactly the numbers it drew before; the right column runs as a second
+  // stream over only the performers who did speak one.
+  const spokenEffects = rawInputs.map(
     (input) => input.effect ?? cast?.defaults?.effect ?? "none"
+  );
+  const effectValues: DirectiveValue<string>[] = spokenEffects.map((value) =>
+    isHandEffectPair(value) ? value.left : (value as DirectiveValue<string>)
   );
   const effortValues: DirectiveValue<EffortId>[] = rawInputs.map(
     (input) => input.effort ?? cast?.defaults?.effort ?? "linear"
@@ -565,7 +889,7 @@ function resolveScene(
     performerIds,
     values: characterIdValues,
     catalog: DEFAULT_CHARACTERS,
-    random: createCharacterAxisStream(filmSeed, scene.id),
+    random: createCharacterAxisStream(filmSeed, seedSceneId),
   });
   const resolvedProps = resolveCastAxis<PropType>({
     axis: "prop",
@@ -573,7 +897,7 @@ function resolveScene(
     performerIds,
     values: propValues,
     catalog: PROP_CATALOG,
-    random: createAxisStream(filmSeed, scene.id, "prop"),
+    random: createAxisStream(filmSeed, seedSceneId, "prop"),
   });
   const resolvedEffects = resolveCastAxis<string>({
     axis: "effect",
@@ -581,15 +905,38 @@ function resolveScene(
     performerIds,
     values: effectValues,
     catalog: EFFECT_CATALOG,
-    random: createAxisStream(filmSeed, scene.id, "effect"),
+    random: createAxisStream(filmSeed, seedSceneId, "effect"),
   });
+  const pairIndices = spokenEffects
+    .map((value, index) => (isHandEffectPair(value) ? index : -1))
+    .filter((index) => index >= 0);
+  const resolvedHandEffects: (ResolvedDirectorHandEffects | undefined)[] =
+    rawInputs.map(() => undefined);
+  if (pairIndices.length > 0) {
+    const rightHands = resolveCastAxis<string>({
+      axis: "effect",
+      sceneId: scene.id,
+      performerIds: pairIndices.map((index) => performerIds[index]!),
+      values: pairIndices.map(
+        (index) => (spokenEffects[index] as HandEffectPair).right
+      ),
+      catalog: EFFECT_CATALOG,
+      random: createAxisStream(filmSeed, seedSceneId, "effect:right"),
+    });
+    pairIndices.forEach((index, cursor) => {
+      resolvedHandEffects[index] = {
+        left: resolvedEffects[index]! as EffectType,
+        right: rightHands[cursor]! as EffectType,
+      };
+    });
+  }
   const resolvedEfforts = resolveCastAxis<EffortId>({
     axis: "effort",
     sceneId: scene.id,
     performerIds,
     values: effortValues,
     catalog: EFFORT_CATALOG,
-    random: createAxisStream(filmSeed, scene.id, "effort"),
+    random: createAxisStream(filmSeed, seedSceneId, "effort"),
   });
 
   // staffLengthCm has no finite catalog (a pick needs an explicit "from"),
@@ -625,7 +972,7 @@ function resolveScene(
       performerIds: staffIndices.map((index) => performerIds[index]!),
       values: staffIndices.map((index) => staffLengthStates[index]!),
       catalog: null,
-      random: createAxisStream(filmSeed, scene.id, "staffLengthCm"),
+      random: createAxisStream(filmSeed, seedSceneId, "staffLengthCm"),
     });
     staffIndices.forEach((index, cursor) => {
       resolvedStaffLengths[index] = resolved[cursor]!;
@@ -644,7 +991,7 @@ function resolveScene(
     performerIds,
     values: leftPlaneValues,
     catalog: PLANE_CATALOG,
-    random: createHandPlaneAxisStream(filmSeed, scene.id, "left"),
+    random: createHandPlaneAxisStream(filmSeed, seedSceneId, "left"),
   });
   const resolvedRightPlanes = resolveCastAxis<Plane>({
     axis: "rightPlane",
@@ -652,7 +999,7 @@ function resolveScene(
     performerIds,
     values: rightPlaneValues,
     catalog: PLANE_CATALOG,
-    random: createHandPlaneAxisStream(filmSeed, scene.id, "right"),
+    random: createHandPlaneAxisStream(filmSeed, seedSceneId, "right"),
   });
 
   // A performer's own stepPlanes list REPLACES cast defaults entirely — it
@@ -661,23 +1008,101 @@ function resolveScene(
   // whatever the cast shares."
   const resolvedStepPlanes: ResolvedDirectorStepPlane[][] = rawInputs.map(
     (input, index) => {
-      const entries = input.stepPlanes ?? cast?.defaults?.stepPlanes ?? [];
+      const entries = (input.stepPlanes ??
+        cast?.defaults?.stepPlanes ??
+        []) as readonly {
+        step: number;
+        hand: "left" | "right";
+        plane: DirectiveValue<Plane>;
+      }[];
+      // convertSceneBeatTimes has already turned every cue name into the
+      // count it stands for, so these steps are numbers by the time the
+      // resolver sees them (gap 15).
       return resolveStepPlanesForPerformer(
         entries,
         performerIds[index]!,
         scene.id,
-        filmSeed
+        filmSeed,
+        seedSceneId
       );
     }
   );
 
-  // Sequences resolve as literals, not through resolveCastAxis: the mirror
-  // form names one specific performer, so there is no catalog to pick from.
-  // The mirror graph is validated exactly one level deep — a mirror of a
-  // mirror has no original of its own to reflect, and letting it resolve
-  // would silently hand both performers the same reflection.
+  // Same replace-not-merge rule as stepPlanes above: naming a performer's
+  // steps is dictation, not an addition to what the cast shares.
+  const resolvedStepEffects: ResolvedDirectorStepEffect[][] = rawInputs.map(
+    (input, index) =>
+      resolveStepEffectsForPerformer(
+        (input.stepEffects ?? cast?.defaults?.stepEffects ?? []) as readonly {
+          step: number;
+          effect: DirectiveValue<string>;
+        }[],
+        performerIds[index]!,
+        scene.id,
+        filmSeed,
+        seedSceneId
+      )
+  );
+  const resolvedStepEfforts: ResolvedDirectorStepEffort[][] = rawInputs.map(
+    (input, index) =>
+      resolveStepEffortsForPerformer(
+        (input.stepEfforts ?? cast?.defaults?.stepEfforts ?? []) as readonly {
+          step: number;
+          effort: DirectiveValue<EffortId>;
+        }[],
+        performerIds[index]!,
+        scene.id,
+        filmSeed,
+        seedSceneId
+      )
+  );
+  const resolvedStepStaffLengths: ResolvedDirectorStepStaffLength[][] =
+    rawInputs.map((input, index) =>
+      resolveStepStaffLengthsForPerformer(
+        (input.stepStaffLengths ??
+          cast?.defaults?.stepStaffLengths ??
+          []) as readonly {
+          step: number;
+          staffLengthCm: number;
+          ease?: "cut" | "linear";
+        }[],
+        performerIds[index]!,
+        scene.id
+      )
+    );
+  const resolvedHolds: ResolvedDirectorHold[][] = rawInputs.map(
+    (input, index) =>
+      resolveHoldsForPerformer(
+        (input.holds ?? cast?.defaults?.holds ?? []) as readonly {
+          fromStep: number;
+          steps: number;
+          progress?: number;
+        }[],
+        performerIds[index]!,
+        scene.id
+      )
+  );
+
+  // Sequences resolve as literals, not through resolveCastAxis: the derived
+  // forms name one specific performer, so there is no catalog to pick from.
+  // The derived graph is validated exactly one level deep — a sequence derived
+  // from a derived one has no original of its own to change, and letting it
+  // resolve would silently hand both performers the same result.
   const resolvedSequences: DirectorPerformerSequence[] = rawInputs.map(
-    (input) => input.sequence ?? cast?.defaults?.sequence ?? { source: "demo" }
+    (input, index) => {
+      const sequence =
+        input.sequence ?? cast?.defaults?.sequence ?? { source: "demo" };
+      // Gap 20. A level ramp is a cast-wide statement, so it is spent here,
+      // where the performer's place in the cast is known, and the sequence
+      // that leaves this map carries the plain level it resolved to.
+      const level = (sequence as { level?: unknown }).level;
+      if (typeof level !== "object" || level === null) return sequence;
+      const { ramp } = level as { ramp: { from: number; to: number } };
+      return {
+        ...sequence,
+        level: rampedSequenceLevel(ramp, index, rawInputs.length),
+      } as DirectorPerformerSequence;
+    }
   );
   resolvedSequences.forEach((sequence, index) => {
     const self = performerIds[index]!;
@@ -685,21 +1110,23 @@ function resolveScene(
       sequence,
       `Scene "${scene.id}", performer "${self}"`
     );
-    if (!("mirrorOf" in sequence)) return;
-    const targetIndex = performerIds.indexOf(sequence.mirrorOf);
-    if (sequence.mirrorOf === self) {
+    const sourceId = transformSourceId(sequence);
+    if (sourceId === null) return;
+    const verb = "mirrorOf" in sequence ? "mirror" : "transform";
+    if (sourceId === self) {
       throw new Error(
-        `Scene "${scene.id}": performer "${self}" cannot mirror themselves.`
+        `Scene "${scene.id}": performer "${self}" cannot ${verb} themselves.`
       );
     }
+    const targetIndex = performerIds.indexOf(sourceId);
     if (targetIndex < 0) {
       throw new Error(
-        `Scene "${scene.id}": performer "${self}" mirrors "${sequence.mirrorOf}", who is not in this scene.`
+        `Scene "${scene.id}": performer "${self}" ${verb}s "${sourceId}", who is not in this scene.`
       );
     }
-    if ("mirrorOf" in resolvedSequences[targetIndex]!) {
+    if (transformSourceId(resolvedSequences[targetIndex]!) !== null) {
       throw new Error(
-        `Scene "${scene.id}": performer "${self}" mirrors "${sequence.mirrorOf}", who is already a mirror. Mirror the original instead.`
+        `Scene "${scene.id}": performer "${self}" ${verb}s "${sourceId}", whose sequence is already derived from another performer's. Derive from the original instead.`
       );
     }
   });
@@ -710,17 +1137,32 @@ function resolveScene(
       name: input.name,
       characterId: resolvedCharacterIds[index]! as CharacterId,
       prop: resolvedProps[index]!,
+      // Absent, not an empty object: a performer who takes the scene's build
+      // unchanged says nothing about it (gap 23).
+      ...(input.propBuild ?? cast?.defaults?.propBuild
+        ? { propBuild: input.propBuild ?? cast!.defaults!.propBuild! }
+        : {}),
       effect: resolvedEffects[index]! as EffectType,
+      ...(resolvedHandEffects[index]
+        ? { handEffects: resolvedHandEffects[index]! }
+        : {}),
       effort: resolvedEfforts[index]!,
       sequence: resolvedSequences[index]!,
       position: input.position,
       facingDegrees: input.facingDegrees,
       blocking: input.blocking ?? cast?.defaults?.blocking,
-      beatOffset: input.beatOffset,
+      beatOffset: spreadBeatOffset(
+        input.beatOffset ?? cast?.defaults?.beatOffset,
+        index
+      ),
       staffLengthCm: resolvedStaffLengths[index]!,
       leftPlane: resolvedLeftPlanes[index]!,
       rightPlane: resolvedRightPlanes[index]!,
       stepPlanes: resolvedStepPlanes[index]!,
+      stepEffects: resolvedStepEffects[index]!,
+      stepEfforts: resolvedStepEfforts[index]!,
+      stepStaffLengths: resolvedStepStaffLengths[index]!,
+      holds: resolvedHolds[index]!,
     })
   );
 
@@ -730,7 +1172,8 @@ function resolveScene(
     () => contextualEnvironmentFromEffects(resolvedFields.map((f) => f.effect)),
     scene.id,
     filmSeed,
-    ENVIRONMENT_CATALOG
+    ENVIRONMENT_CATALOG,
+    seedSceneId
   );
 
   const performerCount = resolvedFields.length;
@@ -743,14 +1186,16 @@ function resolveScene(
     () => defaultFormation(performerCount),
     scene.id,
     filmSeed,
-    formationCatalog
+    formationCatalog,
+    seedSceneId
   );
 
   const performers = buildResolvedPerformers(
     resolvedFields,
     formation,
     durationSeconds,
-    scene.performance?.blocking
+    scene.performance?.blocking,
+    scene.id
   );
 
   const showStage = scene.location?.showStage ?? false;
@@ -767,7 +1212,8 @@ function resolveScene(
   const effectPresets = resolveEffectPresets(
     scene.effectPresets ?? {},
     scene.id,
-    filmSeed
+    filmSeed,
+    seedSceneId
   );
   const effectOverrides = { ...(scene.effectOverrides ?? {}) };
   validateEffectOverrides(effectOverrides);
@@ -786,6 +1232,7 @@ function resolveScene(
     groundOffset,
     formation,
     sceneId: scene.id,
+    filmSeed,
     performers: performers.map((performer) => ({
       ...performer,
       position: {
@@ -795,18 +1242,29 @@ function resolveScene(
     })),
   });
 
+  // A cut is instantaneous by definition: it has no window to dissolve over.
+  // Only a stated duration can give one a length.
+  const transitionKind =
+    scene.transition?.kind ?? (sceneIndex === 0 ? "cut" : "environment-dissolve");
+
   return {
     id: scene.id,
     title: scene.title,
     intent: scene.intent ?? null,
+    // Spread for the same reason as the two below: a film that states no
+    // category carries no key and resolves exactly as it did before.
+    ...(scene.category === undefined ? {} : { category: scene.category }),
+    // Gaps 13 and 14. Spread so an unrelated scene carries neither key and
+    // resolves exactly as it did before round 2.
+    ...(scene.extends === undefined ? {} : { extends: scene.extends }),
+    ...(scene.seedAs === undefined ? {} : { seedSource: scene.seedAs }),
     startSeconds,
     durationSeconds,
     transition: {
-      kind:
-        scene.transition?.kind ??
-        (sceneIndex === 0 ? "cut" : "environment-dissolve"),
+      kind: transitionKind,
       durationSeconds:
-        scene.transition?.durationSeconds ?? (sceneIndex === 0 ? 0 : 0.8),
+        scene.transition?.durationSeconds ??
+        (sceneIndex === 0 || transitionKind === "cut" ? 0 : 0.8),
     },
     location: {
       environmentId,
@@ -817,6 +1275,13 @@ function resolveScene(
     },
     performance: {
       bpm,
+      // Gap 16. "continue" hands this scene the count the last one ended on,
+      // so a tempo change reads as the same phrase getting faster rather than
+      // the phrase starting over. Absent when the scene restarts, which is
+      // every scene written before this word existed.
+      ...(rawScene.performance?.phrase === "continue"
+        ? { stepOffset: startStep }
+        : {}),
       sequence: {
         source: "demo",
         loop: scene.performance?.sequence?.loop ?? true,
@@ -838,6 +1303,9 @@ function resolveScene(
 function collectStageExtent(
   performers: readonly ResolvedDirectorPerformer[]
 ): { x: number; z: number }[] {
+  // Gap 21. An empty stage still needs ground under the camera, so the origin
+  // stands in for the marks nobody reaches.
+  if (performers.length === 0) return [{ x: 0, z: 0 }];
   return performers.flatMap((performer) => [
     { ...performer.position },
     ...performer.blocking.map((keyframe) => ({ ...keyframe.position })),
@@ -857,19 +1325,32 @@ export function resolveFilmDirectorSpec(
   const filmSeed = resolveFilmSeed(input.id, input.seed);
   const seenSceneIds = new Set<string>();
   let cursorSeconds = 0;
+  // Where the shared count stood when the previous scene ended. A scene that
+  // restarts still advances it, so the scene after a restart can continue from
+  // a real number rather than from zero.
+  let cursorStep = 0;
 
   const scenes = input.scenes.map((scene, index) => {
     if (seenSceneIds.has(scene.id))
       throw new Error(`Scene id "${scene.id}" is duplicated.`);
     seenSceneIds.add(scene.id);
+    if (scene.performance?.phrase === "continue" && index === 0) {
+      throw new Error(
+        `Scene "${scene.id}" continues the previous phrase, but it opens the film and there is no previous phrase to continue.`
+      );
+    }
     const resolved = resolveScene(
       scene,
       index,
       cursorSeconds,
+      cursorStep,
       aspectRatio,
       filmSeed
     );
     cursorSeconds += resolved.durationSeconds;
+    cursorStep =
+      (resolved.performance.stepOffset ?? 0) +
+      (resolved.durationSeconds * resolved.performance.bpm) / 60;
     return resolved;
   });
 

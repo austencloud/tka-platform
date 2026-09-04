@@ -43,6 +43,7 @@ import type { EffectsConfigState } from "$lib/shared/effects/state/effects-confi
 
 import { LiveRenderContext } from "./render-context";
 import type { RenderContext } from "./render-context-registry";
+import type { RenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
 
 // Extracted modules
 import {
@@ -81,6 +82,9 @@ export interface AnimationEngineProps {
   rightProp: PropState | null;
   additionalLayers?: AdditionalLayerProps[];
   gridVisible?: boolean;
+  /** Direct grid alpha for a host-owned transition. Undefined keeps the
+   * renderer's ordinary visibility-toggle fade. */
+  gridOpacity?: number;
   gridMode?: GridMode | null;
   backgroundAlpha?: number;
   letter?: Letter | null;
@@ -195,6 +199,13 @@ export class AnimationEngine {
   private fireDefaultsLoader: FireDefaultsLoader | null = null;
 
   private containerElement: HTMLDivElement | null = null;
+  /**
+   * Canonical off-screen / hidden-tab gate for this engine's render loop.
+   * Set by the on-screen host (CanvasSurface) before or after initialize();
+   * the offscreen export engine never sets one, so its deterministic driver is
+   * never paused for being parked at left:-9999px.
+   */
+  private activityGate: RenderActivityGate | null = null;
   private callbacks: AnimationEngineCallbacks = {};
   private instanceId = Math.random().toString(36).substring(2, 8);
   /** Per-instance visibility manager override. When set, this engine uses its own
@@ -388,6 +399,10 @@ export class AnimationEngine {
 
     await this.lifecycleManager.initialize(ctx);
 
+    // The render loop only exists after the lifecycle manager builds it, so a
+    // gate handed to the engine before initialize() is applied here.
+    this.lifecycleManager.renderLoop?.setActivityGate(this.activityGate);
+
     // Sync previousGridMode with the grid texture loaded during initialization.
     const initGridMode =
       this.playbackSync.lastPropsRef?.gridMode?.toString() ?? "diamond";
@@ -571,6 +586,16 @@ export class AnimationEngine {
   }
 
   /**
+   * Route this engine's render loop through the canonical off-screen /
+   * hidden-tab gate. Safe before initialize(): the gate is re-applied once the
+   * loop exists. See `shared/render-gating/render-activity-gate.ts`.
+   */
+  setActivityGate(gate: RenderActivityGate | null): void {
+    this.activityGate = gate;
+    this.lifecycleManager.renderLoop?.setActivityGate(gate);
+  }
+
+  /**
    * Invalidate the fire frame cache so the simulation re-records from scratch.
    * Call after video export (which uses jumpToStep frame-by-frame) to prevent
    * stale cached fire frames from replaying when normal playback resumes.
@@ -696,6 +721,7 @@ export class AnimationEngine {
     });
 
     this.containerElement = null;
+    this.activityGate = null;
     this.playbackSync.reset();
     this.frameSystem.resetHandPresenceCache();
   }

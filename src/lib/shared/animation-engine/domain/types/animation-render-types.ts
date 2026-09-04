@@ -30,6 +30,9 @@ export interface RenderSceneParams {
   leftProp: PropState | null;
   rightProp: PropState | null;
   gridVisible: boolean;
+  /** Host-owned alpha for a coordinated transformation. Undefined leaves the
+   * grid visibility manager in charge of ordinary toggles. */
+  gridOpacity?: number;
   gridMode: string | null;
   letter: string | null;
   turnsTuple: string | null;

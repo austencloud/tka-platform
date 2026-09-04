@@ -4,7 +4,6 @@
   import { onMount, onDestroy, tick, type Snippet } from "svelte";
   import {
     PerformerRig,
-    PLANE_MODE_CONFIGS,
     type AvatarGripDiagnostics,
     type AvatarPoseDiagnostics,
     type CollisionEvent,
@@ -17,7 +16,7 @@
   import { getSceneFeatureContext } from "../scene-features/context/scene-feature-context";
   import SeatedAudience3D from "./SeatedAudience3D.svelte";
   import { Plane, GRID_OFFSETS, cmToUnits } from "@austencloud/scene-3d";
-  import type { GridMode } from "@austencloud/scene-3d";
+  import type { GridMode, PlaneMode } from "@austencloud/scene-3d";
   import Grid3D from "./Grid3D.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
@@ -66,7 +65,11 @@
     createPerformerPointerInteraction,
     type PerformerPointerInteraction,
   } from "./performer-interaction/performer-pointer-interaction.svelte";
-  import { planUpperBodyStance } from "../collision/upper-body-stance-planner";
+  import {
+    buildStanceYawTrackForSource,
+    resolveTrackedUpperBodyStance,
+    type StanceYawTrack,
+  } from "../collision/stance-yaw-track";
   import { getAvatarSequenceCollisionAudit } from "../collision/avatar-sequence-collision-audit";
   import { getAvatarGripMotionAudit } from "../diagnostics/avatar-grip-motion-audit";
 
@@ -83,23 +86,54 @@
     ? getAvatarGripMotionAudit()
     : null;
 
-  function resolveUpperBodyStance(performer: CharacterInstanceState) {
-    const mode = PLANE_MODE_CONFIGS[performer.planeMode];
-    const gridOffset = GRID_OFFSETS[performer.planeMode];
-    return planUpperBodyStance({
-      left: performer.leftPropState
-        ? {
-            x: mode.blueLateralOffset + performer.leftPropState.worldPosition.x,
-            z: gridOffset + performer.leftPropState.worldPosition.z,
-          }
-        : null,
-      right: performer.rightPropState
-        ? {
-            x: mode.redLateralOffset + performer.rightPropState.worldPosition.x,
-            z: gridOffset + performer.rightPropState.worldPosition.z,
-          }
-        : null,
+  // One track per performer, rebuilt only when that performer's sequence,
+  // plane mode, or step count changes. Sampling it is per-frame; planning it
+  // is not.
+  const stanceTracks = new WeakMap<
+    CharacterInstanceState,
+    {
+      sequence: SequenceData | null;
+      planeMode: PlaneMode;
+      stepCount: number;
+      loop: boolean;
+      track: StanceYawTrack | null;
+    }
+  >();
+
+  function resolveStanceTrack(performer: CharacterInstanceState) {
+    const sequence = performer.loadedSequence;
+    const planeMode = performer.planeMode;
+    const stepCount = performer.motionStepCount;
+    const loop = performer.loop;
+    const cached = stanceTracks.get(performer);
+    if (
+      cached &&
+      cached.sequence === sequence &&
+      cached.planeMode === planeMode &&
+      cached.stepCount === stepCount &&
+      cached.loop === loop
+    ) {
+      return cached.track;
+    }
+    const track = buildStanceYawTrackForSource(performer, planeMode);
+    stanceTracks.set(performer, {
+      sequence,
+      planeMode,
+      stepCount,
+      loop,
+      track,
     });
+    return track;
+  }
+
+  function resolveUpperBodyStance(performer: CharacterInstanceState) {
+    return resolveTrackedUpperBodyStance(
+      resolveStanceTrack(performer),
+      performer.scoreTime,
+      performer.planeMode,
+      performer.leftPropState,
+      performer.rightPropState
+    );
   }
 
   interface Props {
@@ -790,7 +824,15 @@
          Performer Hub effect selection actually reach the renderer. -->
       {@const perfEffect =
         performer.rawEffect ?? globalTipEffectMap["*"]?.effect ?? "none"}
-      {@const perfTipMap = { "*": { effect: perfEffect } }}
+      <!-- When the two hands run different effects, key the map per prop
+         instead of the wildcard. resolveEffect already reads propIndex, so
+         prop 0 (blue, left) and prop 1 (red, right) each take their own. -->
+      {@const perfTipMap = performer.rawHandEffects
+        ? {
+            "0": { effect: performer.rawHandEffects.left },
+            "1": { effect: performer.rawHandEffects.right },
+          }
+        : { "*": { effect: perfEffect } }}
       {@const performerCurrentStep = resolvePerformerStepSource(
         performerSteps?.[i],
         currentStep,
@@ -840,7 +882,10 @@
               gaitTimingSample={performer.gaitTimingSample}
               terminalStepPlan={performer.terminalStepPlan}
               stanceYaw={upperBodyStance.yawRad}
+              stanceSegments={upperBodyStance.segments}
               spinePitchOffset={upperBodyStance.pitchRad}
+              blueHandDepthOffset={upperBodyStance.leftDepthOffsetM}
+              redHandDepthOffset={upperBodyStance.rightDepthOffsetM}
               headDodge={true}
               onCollisionEvents={collisionAudit || gripMotionAudit
                 ? (
@@ -878,11 +923,16 @@
                   </T.Group>
                 {/if}
               {/snippet}
+              <!-- PerformerRig's external compatibility API still names the
+                 snippet payload blue/red. Rename at this seam so the
+                 orchestrator receives real prop states; destructuring the
+                 app-side left/right names here left both undefined and
+                 silently disabled every 3D effect. -->
               {#snippet effectsSlot({
-                leftPropState,
-                rightPropState,
-                leftHandPos,
-                rightHandPos,
+                bluePropState: leftPropState,
+                redPropState: rightPropState,
+                blueHandPos: leftHandPos,
+                redHandPos: rightHandPos,
                 isPlaying: rigPlaying,
                 staffHalfLength,
                 effectsParentRef,

@@ -132,7 +132,13 @@ export interface DirectorSequenceControls {
   startPosition?: DirectorPositionRef;
   startOrientation?: DirectorStartOrientation;
   turns?: DirectorTurns;
-  level?: DirectorSequenceLevel;
+  /**
+   * Gap 20. One level, or a ramp the cast walks from `from` to `to`. The ramp
+   * is only sayable in cast defaults; the schema rejects it on one performer.
+   */
+  level?:
+    | DirectorSequenceLevel
+    | { ramp: { from: DirectorSequenceLevel; to: DirectorSequenceLevel } };
   gridMode?: GridMode;
   /** Prop spin continuity. */
   flow?: DirectorContinuity;
@@ -148,26 +154,113 @@ export type DirectorGeneratedSequence =
   | ({ word: string } & DirectorSequenceControls)
   | ({ length: number } & DirectorSequenceControls);
 
+/** Hands a transform may address. `both` is the default everywhere it applies. */
+export type DirectorTransformHand = "left" | "right" | "both";
+
+export const DIRECTOR_ROTATION_DEGREES = [
+  45, 90, 135, 180, 225, 270, 315,
+] as const;
+export type DirectorRotationDegrees = (typeof DIRECTOR_ROTATION_DEGREES)[number];
+
+/**
+ * One operation on another performer's sequence, applied in the order
+ * written. Every op maps onto a function the Create module's Actions panel
+ * already owns in `sequence-transformer.ts`; the film adds words, not math.
+ *
+ * - `mirror`: reflect across the north-south axis (what `mirrorOf` does).
+ * - `flip`: reflect across the east-west axis.
+ * - `rotate`: turn the whole pattern about the grid center, 45° steps.
+ * - `swap-hands`: the left hand's motions go to the right hand and back.
+ * - `invert`: pro and anti trade, and every rotation direction reverses.
+ * - `rewind`: play the sequence backwards (retrograde).
+ * - `start-at`: rotate the phrase so the named step is danced first.
+ */
+export type DirectorSequenceTransform =
+  | { op: "mirror"; hand?: DirectorTransformHand }
+  | { op: "flip"; hand?: DirectorTransformHand }
+  | {
+      op: "rotate";
+      degrees: DirectorRotationDegrees;
+      direction: "cw" | "ccw";
+      hand?: DirectorTransformHand;
+    }
+  | { op: "swap-hands" }
+  | { op: "invert"; hand?: DirectorTransformHand }
+  | { op: "rewind"; hand?: DirectorTransformHand }
+  | { op: "start-at"; step: number };
+
+export interface DirectorTransformedSequence {
+  transformOf: string;
+  transforms: DirectorSequenceTransform[];
+}
+
+/** A saved sequence in the public library, by its `publicSequences` id. */
+export interface DirectorLibrarySequence {
+  library: string;
+}
+
 /**
  * What one performer spins. `demo` is the film's shared sequence; `word` and
  * `length` generate a new one through the same pipeline the Create module
  * uses; `mirrorOf` reflects another performer's sequence across the
- * north-south axis — the transform that makes a pair read as mirrored rather
- * than merely synchronized.
+ * north-south axis, the one-word spelling of
+ * `{transformOf, transforms: [{op: "mirror"}]}`; `transformOf` applies any
+ * chain of the Actions-panel transforms to another performer's sequence; and
+ * `library` plays a sequence someone saved to the public library.
  *
- * `demo` and `mirrorOf` take no controls. A mirror is its source's sequence
- * reflected, so a turn figure written on the mirror would have to disagree
- * with the thing it claims to reflect.
+ * `{source: "none"}` is a performer who stands and watches: no prop phrase, no
+ * generated sequence, the body idling in place. Blocking still applies, so a
+ * watcher can walk on, stand, and turn.
+ *
+ * `demo`, `none`, `mirrorOf`, `transformOf`, and `library` take no controls. A
+ * derived sequence is its source's sequence changed in a stated way, so a turn
+ * figure written on it would have to disagree with the thing it claims to
+ * derive from; a library sequence is already finished; and a performer who
+ * spins nothing has nothing for a control to shape.
  */
 export type DirectorPerformerSequence =
   | { source: "demo" }
+  | { source: "none" }
   | { mirrorOf: string }
+  | DirectorTransformedSequence
+  | DirectorLibrarySequence
   | DirectorGeneratedSequence;
+
+/** A performer who spins nothing this scene and simply stands and watches. */
+export function isIdleSequence(
+  sequence: DirectorPerformerSequence
+): sequence is { source: "none" } {
+  return "source" in sequence && sequence.source === "none";
+}
 
 export function isGeneratedSequence(
   sequence: DirectorPerformerSequence
 ): sequence is DirectorGeneratedSequence {
   return "word" in sequence || "length" in sequence;
+}
+
+export function isTransformedSequence(
+  sequence: DirectorPerformerSequence
+): sequence is DirectorTransformedSequence {
+  return "transformOf" in sequence;
+}
+
+export function isLibrarySequence(
+  sequence: DirectorPerformerSequence
+): sequence is DirectorLibrarySequence {
+  return "library" in sequence;
+}
+
+/**
+ * The performer a derived sequence reads from, or null for a sequence that
+ * stands on its own. `mirrorOf` and `transformOf` are the two derived forms.
+ */
+export function transformSourceId(
+  sequence: DirectorPerformerSequence
+): string | null {
+  if ("mirrorOf" in sequence) return sequence.mirrorOf;
+  if ("transformOf" in sequence) return sequence.transformOf;
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -430,7 +523,12 @@ export function compileSequenceDirective(
   sequence: DirectorGeneratedSequence,
   where = "sequence"
 ): GenerationOptions {
-  const level = sequence.level ?? DEFAULT_SEQUENCE_LEVEL;
+  // Gap 20. A cast-wide level ramp is spent during resolution, where the
+  // performer's place in the cast is known, so what reaches the compiler is
+  // always a plain level. The narrowing states that rather than assuming it.
+  const spokenLevel = sequence.level;
+  const level =
+    typeof spokenLevel === "number" ? spokenLevel : DEFAULT_SEQUENCE_LEVEL;
   const turns = compileTurns(sequence.turns, level, where);
   const startPosition = sequence.startPosition
     ? resolvePositionRef(sequence.startPosition, `${where} start position`)
@@ -502,6 +600,11 @@ export function sequenceDirectiveKey(
   sequence: DirectorPerformerSequence
 ): string {
   if ("mirrorOf" in sequence) return `mirrorOf:${sequence.mirrorOf}`;
+  if ("transformOf" in sequence) {
+    return `transformOf:${sequence.transformOf}:${stableJson(sequence.transforms)}`;
+  }
+  if ("library" in sequence) return `library:${sequence.library}`;
+  if (isIdleSequence(sequence)) return "none";
   if (!isGeneratedSequence(sequence)) return "demo";
   return `generated:${stableJson(sequence)}`;
 }

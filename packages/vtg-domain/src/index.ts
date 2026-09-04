@@ -24,6 +24,12 @@ export type {
 	VTGSearchResult,
 	VTGSearchResultType,
 } from "./reference/search.js";
+export type {
+	ExactTurnFraction,
+	SpinRatio,
+	SpinStyle,
+	TkaTurnEquivalent,
+} from "./reference/spin-ratio.js";
 
 export { VTG_CATEGORIES } from "./data/categories.js";
 export { VTG_SHAPES } from "./data/shapes.js";
@@ -56,3 +62,17 @@ export {
 } from "./reference/category-lookup.js";
 export { vtgToTKA, tkaToVTG } from "./reference/cross-domain.js";
 export { searchVTG } from "./reference/search.js";
+export {
+	buildBoundedSpinRatios,
+	buildTheorySpinRatioAtlas,
+	jointSpinRatioClosureHandCycles,
+	makeSpinRatio,
+	parseSpinRatio,
+	spinRatioClosureHandCycles,
+	spinRatioEquals,
+	spinRatioKey,
+	spinRatioPetals,
+	spinRatioToTkaTurns,
+	spinRatioToTkaTurnFraction,
+	THEORY_SPIN_RATIO_MAX_PART,
+} from "./reference/spin-ratio.js";

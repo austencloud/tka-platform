@@ -39,6 +39,7 @@
   } from "$lib/shared/foundation/domain/models/sequence-data";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import SceneControlWorkspace from "$lib/shared/3d/components/controls/SceneControlWorkspace.svelte";
+  import ComposerEffectStrip from "./ComposerEffectStrip.svelte";
   import {
     COMPOSER_3D_DEMO_SEED,
     normalizeComposer3DDemoState,
@@ -50,18 +51,25 @@
   // ── contexts (must be set during component init, not onMount) ────────────
   const viewer = createViewer3DState(COMPOSER_3D_DEMO_SEED);
   setViewer3DContext(viewer);
-  setEffectsConfigContext(
+  const effects = setEffectsConfigContext(
     createEffectsConfigState(undefined, { persist: false })
   );
   setScene3DRenderContext(createScene3DRenderState());
 
-  const sequence = createSequenceData({
-    id: "composer-3d-demo",
-    name: sourceSequence.word,
-    word: sourceSequence.word,
-    steps: sourceSequence.steps,
-    gridMode: sourceSequence.gridMode,
-  });
+  // Derived, not snapshotted: the page swaps this prop in place when the
+  // visitor composes or generates a new sequence. Remounting the component
+  // instead would tear down the Threlte scene, and a dispose landing while
+  // renderer.compileAsync is still polling KHR_parallel_shader_compile throws
+  // inside three's own timer, where nothing downstream can catch it.
+  const sequence = $derived(
+    createSequenceData({
+      id: "composer-3d-demo",
+      name: sourceSequence.word,
+      word: sourceSequence.word,
+      steps: sourceSequence.steps,
+      gridMode: sourceSequence.gridMode,
+    })
+  );
 
   // Scene, performer count, formation, and props are all owned by the rail's
   // own tools, which write straight onto the viewer state. The label reads that
@@ -89,8 +97,31 @@
 
   let ready = $state(false);
 
+  // The strip starts on a lit effect so the stage shows what it does before
+  // the visitor touches anything. It is armed once the scene reports ready,
+  // after shader warmup: switching effect materials while compileAsync is
+  // still polling a program it just built throws inside three's timer.
+  let effectArmed = false;
+  function armDefaultEffect(sceneReady: boolean): void {
+    if (!sceneReady || effectArmed) return;
+    effectArmed = true;
+    effects.setActiveEffect("fire");
+  }
+
+  // Reload the new choreography onto the performers already on stage. The
+  // scene, camera, environment, and every compiled shader survive.
+  let loadedWord: string | null = null;
+  $effect(() => {
+    const next = sequence;
+    if (!ready || loadedWord === null || loadedWord === next.word) return;
+    loadedWord = next.word;
+    viewer.loadSequenceScoped(next);
+    currentStep = 0;
+  });
+
   onMount(() => {
     viewer.enter3D(sequence);
+    loadedWord = sequence.word;
     normalizeComposer3DDemoState(viewer);
     ready = true;
 
@@ -122,6 +153,7 @@
           {isPlaying}
           bpm={BPM}
           hideOverlays
+          onSceneReadyChange={armDefaultEffect}
         />
       {:else}
         <div class="stage-curtain" aria-hidden="true"></div>
@@ -150,6 +182,10 @@
       ></i>
     </button>
   </div>
+
+  {#if ready}
+    <ComposerEffectStrip />
+  {/if}
 </div>
 
 <style>

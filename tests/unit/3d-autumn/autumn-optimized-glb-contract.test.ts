@@ -194,8 +194,8 @@ describe("optimized Autumn GLB contracts", () => {
   it("retains the full authored ecology for spatial runtime culling", () => {
     const triangles = authoredTriangleCount();
 
-    expect(triangles).toBeGreaterThan(1_900_000);
-    expect(triangles).toBeLessThan(2_050_000);
+    expect(triangles).toBeGreaterThan(2_000_000);
+    expect(triangles).toBeLessThan(2_100_000);
   });
 
   it("carries the fogged ground beyond every supported review sightline", () => {
@@ -239,9 +239,10 @@ describe("optimized Autumn GLB contracts", () => {
         candidate.name?.startsWith(prefix)
       );
       expect(material, `${prefix} disappeared from the GLB`).toBeDefined();
-      expect(material?.doubleSided, `${prefix} regressed to double-sided`).toBe(
-        false
-      );
+      expect(
+        material?.doubleSided ?? false,
+        `${prefix} regressed to double-sided`
+      ).toBe(false);
     }
 
     for (const prefix of [

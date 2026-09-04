@@ -53,8 +53,10 @@ import { MandalaPathPreparer } from "$lib/shared/mandala/services/mandala-path-p
 import {
   DEFAULT_MANDALA_OVERLAY_CONFIG,
   type MandalaOverlayConfig,
+  MANDALA_GUIDE_FLOOR_OPACITY,
 } from "$lib/shared/mandala/domain/mandala-overlay-types";
 import type { MandalaHandVisibility } from "$lib/shared/mandala/domain/mandala-types";
+import type { RenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
 
 // Longtask observer singleton - one PerformanceObserver shared across every
 // AnimationRenderLoop instance. Without this, each loop attaches its own
@@ -114,9 +116,10 @@ const MANDALA_GUIDE_CONFIG: MandalaOverlayConfig = {
   ...DEFAULT_MANDALA_OVERLAY_CONFIG,
   enabled: true,
   mode: "guide",
-  // Match the Shape Matrix's ghost-guide treatment so the live trail remains
-  // the brightest read while it runs directly over the mandala path.
-  opacity: 0.55,
+  // Shared with the Shape Matrix hero floor so the live trail remains the
+  // brightest read while it runs directly over the mandala path, and the
+  // still floor → live guide handoff changes nothing on screen.
+  opacity: MANDALA_GUIDE_FLOOR_OPACITY,
 };
 
 /**
@@ -206,6 +209,10 @@ export class AnimationRenderLoop {
   // and race the export driver (which pinned prop fade alpha to 0 → props
   // dropped from fire/charcoal/LED exports).
   private externallyDriven = false;
+  // Canonical off-screen / hidden-tab gate. Null means "always render" (the
+  // pre-gating behavior), which is what every deterministic driver keeps.
+  private activityGate: RenderActivityGate | null = null;
+  private unsubscribeGate: (() => void) | null = null;
   private needsRender: boolean = false;
   private getFrameParamsCallback: (() => RenderFrameParams) | null = null;
   private isDisposed: boolean = false; // Prevent RAF from continuing after disposal
@@ -361,9 +368,84 @@ export class AnimationRenderLoop {
     if (this.externallyDriven) return;
     this.getFrameParamsCallback = getFrameParams;
     this.framesRenderedSinceStart = 0;
+    if (!this.gateAllows()) return;
     if (this.rafId === null && this.renderer) {
       this.rafId = requestAnimationFrame(this.renderLoop);
     }
+  }
+
+  /**
+   * Route this loop through the canonical off-screen / hidden-tab gate.
+   * See `shared/render-gating/render-activity-gate.ts`.
+   *
+   * While the gate is closed the rAF stops entirely: the canvas keeps its last
+   * painted frame and costs nothing. When it reopens, the frame clock is
+   * re-seeded before the first frame so a surface parked off screen for thirty
+   * seconds cannot resume with a thirty-second timestep, and the loop restarts
+   * from whatever the last caller asked for.
+   *
+   * An externally driven loop (offscreen export) is never gated — it has no
+   * rAF to pause and its frames are produced deliberately.
+   */
+  setActivityGate(gate: RenderActivityGate | null): void {
+    if (gate === this.activityGate) return;
+    this.unsubscribeGate?.();
+    this.unsubscribeGate = null;
+    this.activityGate = gate;
+    if (gate) {
+      this.unsubscribeGate = gate.subscribe((active) => {
+        if (active) this.resumeFromGate();
+        else this.pauseForGate();
+      });
+      if (!gate.active) this.pauseForGate();
+      return;
+    }
+    this.resumeFromGate();
+  }
+
+  private gateAllows(): boolean {
+    if (this.externallyDriven) return true;
+    return this.activityGate === null || this.activityGate.active;
+  }
+
+  /**
+   * Park the loop without touching the render state it will resume into. Unlike
+   * stop(), this keeps `getFrameParamsCallback` and the effect-error bookkeeping
+   * so scrolling back into view resumes the same picture rather than re-running
+   * a cold start.
+   */
+  private pauseForGate(): void {
+    if (this.rafId === null) return;
+    cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    this.resetFrameClocks();
+  }
+
+  private resumeFromGate(): void {
+    if (this.isDisposed || this.externallyDriven) return;
+    if (this.rafId !== null) return;
+    if (!this.renderer || !this.getFrameParamsCallback) return;
+    this.resetFrameClocks();
+    // A surface that has been frozen needs one frame drawn on arrival even if
+    // nothing else is "active work", or it reveals a stale composite.
+    this.needsRender = true;
+    this.consecutiveIdleFrames = 0;
+    this.framesRenderedSinceStart = 0;
+    this.rafId = requestAnimationFrame(this.renderLoop);
+  }
+
+  /**
+   * Drop every wall-clock anchor so the next frame derives its own delta from
+   * scratch. `lastFrameTime = 0` makes dtSeconds fall back to 1/60 instead of
+   * the full paused span; the trail and loop anchors re-seed the same way.
+   */
+  private resetFrameClocks(): void {
+    this.lastFrameTime = 0;
+    this.lastTrailFrameTime = 0;
+    this.lastStampedTrailTime = null;
+    this.loopStartTime = 0;
+    this.effectLastFrameTime.clear();
+    this.fpsWindowStart = 0;
   }
 
   /** See IAnimationRenderLoop.setExternallyDriven. Disables the rAF loop for
@@ -409,6 +491,8 @@ export class AnimationRenderLoop {
     this.needsRender = true;
     this.consecutiveIdleFrames = 0; // Reset idle counter - new work incoming
     this.getFrameParamsCallback = getFrameParams;
+    // Off screen or hidden tab: remember the request, draw it on resume.
+    if (!this.gateAllows()) return;
     if (this.rafId === null && this.renderer) {
       this.framesRenderedSinceStart = 0; // Reset warm-up on loop restart
       this.rafId = requestAnimationFrame(this.renderLoop);
@@ -468,6 +552,9 @@ export class AnimationRenderLoop {
     // Mark as disposed FIRST to stop any pending RAF callbacks
     this.isDisposed = true;
     this.stop();
+    this.unsubscribeGate?.();
+    this.unsubscribeGate = null;
+    this.activityGate = null;
     this.longTaskSubscriberDispose?.();
     this.longTaskSubscriberDispose = null;
     this.renderer = null;
@@ -1032,6 +1119,14 @@ export class AnimationRenderLoop {
       return;
     }
 
+    // The gate can close between a frame being scheduled and that frame being
+    // dispatched. Bail here rather than paint a surface nobody can see; the
+    // gate subscription re-schedules when it reopens.
+    if (!this.gateAllows()) {
+      this.rafId = null;
+      return;
+    }
+
     if (!this.renderer || !this.getFrameParamsCallback) {
       this.rafId = null;
       return;
@@ -1141,9 +1236,11 @@ export class AnimationRenderLoop {
     if (shouldContinueLoop) {
       this.render(params, effectiveTime);
       this.needsRender = false;
-      // Only schedule next frame if not disposed AND not externally driven
-      // (the offscreen export engine renders via renderSync only).
-      if (!this.isDisposed && !this.externallyDriven) {
+      // Only schedule next frame if not disposed, not externally driven (the
+      // offscreen export engine renders via renderSync only), and still on
+      // screen — a gate that closed during this frame must not be resurrected
+      // by the loop's own self-reschedule.
+      if (!this.isDisposed && !this.externallyDriven && this.gateAllows()) {
         this.rafId = requestAnimationFrame(this.renderLoop);
       } else {
         this.rafId = null;
@@ -1237,6 +1334,12 @@ export class AnimationRenderLoop {
 
     // Apply visibility settings
     const effectiveGridVisible = gridVisible && visibility.gridVisible;
+    const effectiveGridOpacity =
+      params.gridOpacity === undefined
+        ? undefined
+        : effectiveGridVisible
+          ? Math.max(0, Math.min(1, params.gridOpacity))
+          : 0;
     const effectivePropsVisible = visibility.propsVisible;
     const effectiveTrailsVisible = hasTrailTips(params.tipEffectMap);
 
@@ -1425,6 +1528,7 @@ export class AnimationRenderLoop {
       leftProp: props.leftProp,
       rightProp: props.rightProp,
       gridVisible: effectiveGridVisible,
+      gridOpacity: effectiveGridOpacity,
       gridMode: gridMode?.toString() ?? null,
       letter: letter ?? null,
       turnsTuple,

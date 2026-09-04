@@ -18,6 +18,9 @@
   import { isNamedRouteMorphActive } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
   import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
+  import { marketingBackground } from "../state/marketing-background-state.svelte";
+  import { pageSurface } from "../domain/page-surface";
+  import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
   import SiteHeader from "./SiteHeader.svelte";
   import SiteFooter from "./SiteFooter.svelte";
 
@@ -29,8 +32,17 @@
   // A type-only import keeps the backgrounds package out of the first-paint
   // module graph. Its public index re-exports every renderer, even though this
   // shell only needs the string value until the live host is loaded.
-  const BG = "cosmic" as BackgroundType;
   let LiveBackground = $state<BackgroundHostComponent | null>(null);
+  let applyTheme = $state<((type: BackgroundType) => void) | null>(null);
+
+  // Re-tune the interface colors whenever the chosen background changes, and
+  // once when the calculator module finishes loading. A page that drives
+  // marketingBackground (the composer showcase) gets the matching theme
+  // without knowing when the lazy import resolved.
+  $effect(() => {
+    const type = marketingBackground.type;
+    applyTheme?.(type);
+  });
 
   onMount(() => {
     if (isConstrainedConnection()) return;
@@ -51,7 +63,7 @@
 
         void import("$lib/shared/settings/utils/background-theme-calculator").then(
           ({ applyThemeForBackground }) => {
-            if (mounted) applyThemeForBackground(BG);
+            if (mounted) applyTheme = applyThemeForBackground;
           }
         );
       });
@@ -66,12 +78,25 @@
 
   const path = $derived(page.url.pathname);
   const footerVariant = $derived(
-    path === "/" || path === "/composer"
+    path === "/" || path === "/composer" || path === "/history"
       ? "compact"
       : path === "/about"
         ? "sitemap"
         : "full"
   );
+
+  // A page that paints its own opaque surface to the viewport edge hands it to
+  // the footer, which continues that surface instead of settling onto the star
+  // field. Without it the footer's standing 4.5rem margin shows a band of sky
+  // between the two, and its scrim and hairline finish the job of making the
+  // bottom of the page look like a different site.
+  const footerSurface = $derived(pageSurface(path));
+
+  // The archive is a single-room research surface on larger viewports. Its
+  // header already carries every site destination, while a second navigation
+  // slab below a viewport-sized room creates a fake extra page. Phones keep the
+  // compact footer after their document-flow chronology; larger tiers omit it.
+  const footerImmersive = $derived(path === "/history");
 
   // Named route morphs suppress the keyed content fade only while that exact
   // allowlisted navigation is active. Ordinary marketing navigation keeps the
@@ -83,7 +108,7 @@
   <div class="mkt-fallback" aria-hidden="true"></div>
   <div class="mkt-bg">
     {#if LiveBackground}
-      <LiveBackground backgroundType={BG} />
+      <LiveBackground backgroundType={marketingBackground.type} />
     {/if}
   </div>
 
@@ -106,11 +131,16 @@
     <!-- Persistent chrome like the header: outside the keyed crossfade, so it
          never re-fades between pages; below the growing stage, so it pins to
          the viewport bottom on short pages (sticky-footer flex column). -->
-    <!-- The homepage already is a complete navigation surface. Interior pages
-         keep the sitemap; the host owns that route decision so SiteFooter also
+    <!-- The homepage and archive already carry complete navigation in their
+         primary surfaces. The host owns the route decision so SiteFooter also
          remains safe for its independent GuideShell host. -->
-    <SiteFooter variant={footerVariant} />
+    <SiteFooter
+      variant={footerVariant}
+      surface={footerSurface}
+      immersive={footerImmersive}
+    />
   </div>
+  <ToastContainer />
 </div>
 
 <style>
@@ -133,6 +163,9 @@
        One token each, so neither face can drift per-page. */
     --page-title-font: "Fraunces", Georgia, serif;
     --landing-heading-font: "Playfair Display", Georgia, serif;
+    /* The fixed SiteHeader bar's height, published once so a page that wants
+       to own the first viewport can subtract it instead of guessing. */
+    --marketing-header-h: 64px;
   }
 
   .mkt-bg {

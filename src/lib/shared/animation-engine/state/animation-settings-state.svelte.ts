@@ -184,6 +184,15 @@ export type AnimationSettingsState = {
   updateSettings: (partial: Partial<AnimationSettings>) => void;
   resetToDefaults: () => void;
 
+  // View-only link sessions (viewer URL state). A shared link borrows this
+  // global store instead of constructing a parallel instance, because ~7 viewer
+  // files and 2 services read the module singleton directly with no injection
+  // seam. Snapshot -> suspend -> replaceAll -> (on close) replaceAll(snapshot)
+  // -> resume leaves the recipient's disk untouched.
+  setPersistenceSuspended: (suspended: boolean) => void;
+  snapshot: () => AnimationSettings;
+  replaceAll: (next: AnimationSettings) => void;
+
   // Current prop type (set by AnimationEngine, used for UI labels)
   readonly currentPropType: string;
   setCurrentPropType: (propType: string) => void;
@@ -203,6 +212,12 @@ export function createAnimationSettingsState(options?: {
       : loadSettings()
   );
   let propType = $state("staff");
+  let persistenceSuspended = false;
+  // The autosave effect flushes asynchronously, so a restore performed while
+  // suspended can still have a pending run scheduled when persistence resumes.
+  // Comparing against the last written payload makes that run a no-op instead
+  // of a redundant write, which is what keeps the restore path write-free.
+  let lastPersisted: string | null = null;
 
   if (!ephemeral) {
     // Auto-save on any changes (using $effect.root for module-level usage)
@@ -225,7 +240,11 @@ export function createAnimationSettingsState(options?: {
         void settings.trail.tailLength;
         void settings.trail.hideProps;
 
+        if (persistenceSuspended) return;
+        const serialized = JSON.stringify(settings);
+        if (serialized === lastPersisted) return;
         settingsPersistence.setupAutoSave(settings);
+        lastPersisted = serialized;
       });
     });
   }
@@ -330,6 +349,16 @@ export function createAnimationSettingsState(options?: {
         ...DEFAULT_ANIMATION_SETTINGS,
         trail: { ...DEFAULT_TRAIL_SETTINGS },
       };
+    },
+
+    setPersistenceSuspended: (suspended: boolean) => {
+      persistenceSuspended = suspended;
+    },
+
+    snapshot: () => $state.snapshot(settings) as AnimationSettings,
+
+    replaceAll: (next: AnimationSettings) => {
+      settings = structuredClone(next);
     },
 
     // Current prop type (for UI labels like trail tracking mode)

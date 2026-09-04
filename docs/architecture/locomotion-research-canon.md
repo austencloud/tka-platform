@@ -77,6 +77,36 @@ The owners have deliberately different jobs:
    controller did not build or query the database. Treat it as unfinished
    infrastructure, not a shipping motion-matching solver and not a reason to
    create a parallel system.
+7. `measureStandingStance` / `planStandingStance` / `applyStandingStance` in
+   `@austencloud/scene-3d` `src/lib/services/leg-geometry.ts` own the **static
+   standing base** a performer holds when nothing is driving its legs. This is
+   not locomotion: it owns no gait clock, no contact schedule, and no footfall
+   plan. `Avatar3D.svelte` calls it once at load, and only when
+   `enableLocomotion` is false. The moment a clip or a planner drives the legs,
+   that owner writes the same bones every frame and the standing pose is gone,
+   which is the intended relationship. Do not add a second stance solver, and do
+   not extend this one into swing, contact, or step planning.
+
+8. The **speed axis** of a gait is owned by `LocomotionAnimator`, not by any
+   caller. `RUN_TIER_KEYS` maps `forward`, `strafeLeft`, and `strafeRight` onto
+   `runForward`, `runStrafeLeft`, and `runStrafeRight`; `runTierFraction()`
+   derives the crossover band from the two clips' own measured `nativeSpeed`
+   (`WALK_TIER_CEILING` 1.15 to `RUN_TIER_FLOOR` 0.8) rather than from a written
+   speed; and `getGaitTier()` reports the blend a viewer can see. Both tiers
+   read the same `gaitSteps` clock, so the crossover is phase-matched by
+   construction and needs no transition state. Reaching a run by multiplying
+   playback rate is forbidden: `updateGaitSplit` caps authored stride at 1.15,
+   so past that everything lands on rate and the result is a speed-walk, which
+   has double support where a run has flight. Shipped 2026-09-03; design in
+   `docs/superpowers/specs/2026-09-03-locomotion-gait-tiers-design.md`.
+9. **How fast a body is allowed to become** is a separate owner:
+   `advanceGroundVelocity()` in `packages/camera-3d/src/lib/ground-velocity.ts`,
+   called by `UnifiedCameraController` through `groundAcceleration` and
+   `groundDeceleration`. It bounds the velocity *vector*, so a hard turn carries
+   through its arc; it selects its rate by comparing magnitudes, so releasing a
+   sprint brakes rather than coasts; and omitting the props means infinite
+   acceleration, which reproduces instant response exactly. This is not a gait
+   owner and must not acquire clip, contact, or phase knowledge.
 
 The governing TKA designs are:
 
@@ -391,6 +421,40 @@ motion at speed, from useful camera angles, on every supported rig.
 - pattern-specific checks for sidestep, front crossover, back crossover, and
   grapevine.
 
+### Anatomical validity
+
+Every measurement above describes the path a foot traced or how far a joint
+moved. None describes the plane a limb moved in, so a leg posed sideways scores
+identically to a correct one. Two layers cover that, added 2026-09-03:
+
+- **Static intake**, `tests/unit/3d/rig-anatomy-contract.test.ts`. Reads the
+  bind pose of every shipped character and drives nothing: leg completeness,
+  hip line level and square, derived knee hinge within 10 degrees of the body's
+  mediolateral axis, left-right segment symmetry within 2 percent, femur-tibia
+  ratio, and bind bend small enough not to steer the calibration. One GLB parse
+  per rig, no frames, 74 checks in under half a second. This is the layer that
+  catches a small calibration error, where a 10-degree fault is enormous.
+- **Motion grading**, `analyzeKneeAnatomy` in
+  `src/lib/shared/3d/diagnostics/gait/knee-anatomy.ts`, reported as three rows
+  in every maneuver profile and driven with `FootPlanter` in the loop by
+  `tests/unit/3d/locomotion-anatomy.test.ts`. Per frame and per side: how far
+  the plane the knee bends in is turned off the body's frontal normal, the
+  knee's worst departure from the hip-ankle line as a fraction of leg length,
+  and whether the shank ever sits in front of the thigh. Frames below 20 degrees
+  of flexion are excluded, because a near-straight leg has no measurable bend
+  direction, and the excluded share is reported so a projection artefact cannot
+  become a verdict.
+
+Bands come from measurement, not from a guess: all twelve shipped characters,
+walk and run, planted, measure 7.5 to 12.1 degrees of mean plane tilt, which
+independently lands on the clinical figure of 8 to 12 degrees of frontal-plane
+knee travel across a healthy gait cycle. Warn at 16, fail at 25.
+
+The two layers cover different ranges and neither replaces the other. Injected
+hinge error produces about 0.88 degrees of reading per degree at a walk and 0.72
+at a run, on a baseline near 10, so motion grading resolves a 20-degree fault
+and above while the static contract resolves everything smaller.
+
 ### Visual acceptance
 
 Use Walk Lab in the approved in-app browser or Chrome DevTools setup. Inspect
@@ -406,6 +470,62 @@ metric improved.
 
 ## Rejected assumptions
 
+### A single hard-coded rotation can serve as a stance for every rig
+Rejected 2026-09-03, with runtime bone measurements on four rigs.
+
+`Avatar3D.svelte` widened the default stance with a fixed 8-degree rotation
+about each upper leg's **own local Z**. A bone's local axes are a property of
+the export, not of the body, so one constant behaved differently on every rig:
+it abducted the Mixamo-derived catalog rigs (ch18 321 mm -> 549 mm ankle
+separation, ch01 318 -> 564, ch07 326 -> 567) and adducted the intake rig
+(239 mm -> 18 mm), which is the feet-stuck-together silhouette Austen reported
+on `/test/staff-grip`. The rotation also raised the ankles off the bind pose
+that `getFeetOffset()` had already measured, so every affected performer stood
+a centimetre or two above the floor without anything reporting it.
+
+A stance must be measured from the body it belongs to: hip sockets, ankles, and
+the frontal plane they define. The replacement targets ankle separation equal to
+the rig's own hip-socket separation, applies the rotation in world space about a
+measured abduction axis, restores each foot's authored world orientation, and
+returns the ankle height change so the host can re-ground the performer.
+
+Two different upstream shapes feed that measurement, so do not read one rig's
+numbers as the catalog's. The Mixamo-derived catalog rigs arrive at runtime in
+their authored bind pose, ankles about 1.7x hip width apart. The intake rig
+arrives with ankles at exactly 1.0x hip width, which is the signature of a
+Blender intake that baked the GLB's embedded `mixamo.com` action - that clip's
+first frame stands the rig at attention, and `pose.armature_apply()` writes it
+in as the new bind pose (see `clear_imported_pose` in
+`scripts/characters/blender-proportion-rescale.py`, landed 2026-09-03 in
+`40180e87a8`). The runtime stance normalizes both shapes, so fixing the intake
+bake does not invalidate it and it does not excuse leaving the bake in place.
+
+
+### Foot-path and knee-angle metrics can see a leg posed in the wrong plane
+Rejected 2026-09-03, by fault injection against the full gait report.
+
+`ch07` shipped with its left knee's IK hinge axis derived 84 degrees off
+sagittal, so the leg folded sideways under `FootPlanter`. Every row of the gait
+report stayed green through it and Austen found it by looking at the screen.
+
+Rotating `ch01`'s hinge by a controlled amount and re-reading the whole report
+shows why. At 3.9 m/s, between a healthy hinge and one turned 84 degrees, peak
+foot slip holds at 9.2 cm and `kneeJerkRms` holds at 11187.982 -- the two
+readings differ in their eighth significant figure. The foot rows cannot
+respond because the fault does not move the feet; it folds the leg between
+them. `kneeJerkRms` looks like it should, being a knee measurement, but it is
+the second time derivative of `kneeAngle`, and `kneeAngle` is the unsigned
+interior angle at the joint. Turning the plane a knee bends in leaves how far it
+bends exactly where it was.
+
+This is structural, not a threshold that was set too loosely. A metric built
+from unsigned joint angles and foot trajectories is blind to limb orientation by
+construction, and no retuning of one makes it see this class of defect. The
+harness compounded it: it stopped at the animator, and foot IK is where a leg is
+finally posed, so the suite could not have observed the defect even had a metric
+existed. Both are addressed under Anatomical validity above; the blindness
+itself is pinned by an assertion so the claim cannot go stale silently.
+
 | Assumption                                               | Why it is rejected                                                                                                                                     |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Root motion eliminates footskate                         | Source root and foot motion can still mismatch the world controller, retargeted rig, warping, blending, or contact anchors.                            |
@@ -419,6 +539,8 @@ metric improved.
 | Exact root endpoint plus step count equals exact arrival | Root mark, terminal plant, and stable two-foot goal stance are different events.                                                                       |
 | A public dataset is product-cleared                      | Code, annotations, video, music, performer data, body models, and derived assets can carry different terms.                                            |
 | A cited technique is implemented                         | Research, adopted architecture, prototypes, and shipped behavior are separate status classes.                                                          |
+| A knee metric detects a knee posed wrong                  | `kneeJerkRms` is the second derivative of an unsigned joint angle, which a rotated bend plane preserves exactly. Grading a limb needs the plane it moved in, not only how far it moved.  |
+| A harness that drives the animator tests the pose         | Foot IK poses the leg after the animator. A harness that stops short of it cannot observe an IK defect at all, whatever it measures.                                                    |
 | Green unit tests prove top-tier motion                   | Tests cannot see twitching, implausible weight transfer, mesh penetration, or a bad silhouette. Live visual evidence is mandatory.                     |
 
 ## Open gaps, in priority order
@@ -429,9 +551,14 @@ metric improved.
 2. **Contact-aware retargeting across shipped rigs.** Measure how one source
    motion changes on short and tall rigs. Preserve intentional self-contact
    while preventing interpenetration.
-3. **Terminal transition coverage.** Complete stop assets or distance-matched
-   profiles for terminal foot, approach speed, remaining distance, and desired
-   facing. Prove that `targetFacing` executes.
+3. **Terminal transition coverage.** The state machine exists and runs
+   (`TerminalKey`, armed/braking/landed/settled, `terminalEntryBlend`, contact
+   curves), but the only shipped assets are `walk-stop-left` and
+   `walk-stop-right`, so **stopping from a run plays a walk stop**. Author a run
+   stop through `scripts/build-terminal-stops.py`; this is an asset gap, not a
+   code gap. Also still open: distance-matched profiles for terminal foot,
+   approach speed, remaining distance, and desired facing, and proof that
+   `targetFacing` executes.
 4. **External score-time gait schedule.** Land and prove `GaitTimingPlan` across
    different render-frame partitions without changing the requested plant times.
 5. **Footprint-target runtime seam.** After timing works, add explicit left and
@@ -443,11 +570,22 @@ metric improved.
 7. **Asset provenance inventory.** Record every current locomotion clip's source,
    license, skeleton, root-motion curve, contacts, mirrored status, and supported
    rigs.
-8. **Human evaluation protocol.** Add repeatable blinded comparisons for
+8. **Run-tier clip coverage.** There is no backward run, no jog mid-tier, and
+   no run terminal stop. Each is a missing clip, and each is deliberately left
+   as a gap rather than faked with playback rate. Importing CC0 clips
+   (Quaternius is the candidate) is blocked on retargeting:
+   `remapClipToSkeleton` recognises only `mixamorig1`, `mixamorig:`,
+   `mixamorig`, and `""` bone prefixes. The dataset and asset gate applies
+   before any download, conversion, or commit.
+9. **A straight steady-state pattern for the walk lab.** Every sustained sample
+   rides `CIRCLE_R = 2.6`, which at 3.9 m/s is a 1.5 rad/s turn no runner holds.
+   This confounds `overSupportFraction`, which reads 49% at a walk and 0% at a
+   run, and it cannot be separated without a straight sample.
+10. **Human evaluation protocol.** Add repeatable blinded comparisons for
    grounding, weight, continuity, intent, and preference alongside diagnostics.
-9. **Terrain scope.** Make an explicit product decision before adding slope or
+11. **Terrain scope.** Make an explicit product decision before adding slope or
    obstacle logic to flat-stage locomotion.
-10. **Learned controller threshold.** Define the data volume, web runtime budget,
+12. **Learned controller threshold.** Define the data volume, web runtime budget,
     determinism, editability, and licensing evidence required before training or
     shipping one.
 

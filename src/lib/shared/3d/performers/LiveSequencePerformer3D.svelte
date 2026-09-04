@@ -3,8 +3,9 @@
    * A world-space performer whose character, hands, props, and tip effects all
    * come from the production sequence stack.
    */
-  import { onDestroy, untrack } from "svelte";
+  import { onDestroy, untrack, type Snippet } from "svelte";
   import {
+    cmToUnits,
     PerformerRig,
     Plane,
     PlaneMode,
@@ -23,6 +24,16 @@
     makeStandaloneDeps,
   } from "$lib/shared/3d/state/character-instance-state.svelte";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
+  import {
+    buildStanceYawTrackForSource,
+    resolveTrackedUpperBodyStance,
+    type StanceYawTrack,
+  } from "$lib/shared/3d/collision/stance-yaw-track";
+  import {
+    fitStaffLengthForHug,
+    measurePerformerReach,
+    type PerformerReachMeasurements,
+  } from "$lib/shared/3d/domain/performer-reach-measurements";
   import { buildTipEffectMap } from "$lib/shared/animation-engine/domain/tip-effect-map";
   import EffectOrchestrator3D from "$lib/shared/3d/effects/EffectOrchestrator3D.svelte";
 
@@ -42,7 +53,27 @@
     showEffects?: boolean;
     enableLocomotion?: boolean;
     enableFootPlanting?: boolean;
+    /**
+     * Pin the prop to an explicit length in centimetres instead of the length
+     * this body can hold inside its own hug. Omit it — every production host
+     * does — and the body-derived fit stands. A comparison surface passes it
+     * so one variable can be held still while the other sweeps.
+     */
+    propLengthCm?: number | null;
+    /**
+     * Scene markers drawn inside the rig's own root group, so they inherit the
+     * performer's world position, ground offset, and facing instead of sitting
+     * at the world origin. Hosts pass the same wrapper the sequence viewer
+     * uses: a group at GRID_OFFSETS[planeMode] around Grid3D.
+     */
+    gridSlot?: Snippet;
     onReady?: () => void;
+    /**
+     * The planned turn for the loaded sequence, handed out once it exists.
+     * Only a lab that draws the curve needs this; the pose itself is already
+     * resolved here, so nothing downstream re-plans from it.
+     */
+    onStanceTrack?: (track: StanceYawTrack | null) => void;
     onCollisionEvents?: (
       events: CollisionEvent[],
       diagnostics: AvatarPoseDiagnostics,
@@ -65,19 +96,69 @@
     },
     makeStandaloneDeps()
   );
+  // Measured off the rig's own skeleton the first frame the arm chains report
+  // real lengths. Held rather than re-derived per frame so the prop length and
+  // the hug lane stay stable while the arms move.
+  let reachMeasurements = $state<PerformerReachMeasurements | null>(null);
+  const staffFit = $derived(
+    reachMeasurements ? fitStaffLengthForHug(reachMeasurements) : null
+  );
+  // A body that cannot hold any supported staff keeps the global default
+  // rather than rendering a nonsense prop; the fit result says so explicitly.
+  const propLength = $derived.by(() => {
+    const pinned = props.propLengthCm;
+    if (pinned != null && Number.isFinite(pinned)) return cmToUnits(pinned);
+    return staffFit?.fits
+      ? cmToUnits(staffFit.recommendedStaffLengthCm)
+      : undefined;
+  });
+  // The turn's timing is planned once per sequence, not re-derived per frame:
+  // the curve needs the whole score to know when to start leading.
+  const stanceTrack = $derived(
+    buildStanceYawTrackForSource(performerState, PlaneMode.WALL)
+  );
+  const upperBodyStance = $derived(
+    resolveTrackedUpperBodyStance(
+      stanceTrack,
+      performerState.scoreTime,
+      PlaneMode.WALL,
+      performerState.leftPropState,
+      performerState.rightPropState,
+      reachMeasurements
+    )
+  );
   let readyReported = false;
+
+  function captureReach(diagnostics: AvatarPoseDiagnostics): void {
+    if (reachMeasurements) return;
+    const measured = measurePerformerReach({
+      leftUpperArmM: diagnostics.leftUpperArmLength,
+      leftForearmM: diagnostics.leftForearmLength,
+      rightUpperArmM: diagnostics.rightUpperArmLength,
+      rightForearmM: diagnostics.rightForearmLength,
+      shoulderWidthM: diagnostics.shoulderWidth,
+    });
+    if (measured) reachMeasurements = measured;
+  }
 
   $effect(() => {
     const sequence = props.sequence;
-    const phase = props.phaseOffsetSteps ?? 0;
+    const phase = props.phaseOffsetSteps;
     untrack(() => {
       performerState.loadSequence(sequence);
       performerState.loop = true;
-      if (sequence.steps.length > 0) {
+      if (phase == null) {
+        performerState.goToStep(0);
+      } else if (sequence.steps.length > 0) {
         const wrapped =
           ((phase % sequence.steps.length) + sequence.steps.length) %
           sequence.steps.length;
-        performerState.goToStep(Math.floor(wrapped));
+        // A live phase is motion-relative: 0.00 is the beginning of beat 1 and
+        // 7.99 the end of beat 8. The state owner says where beat 1 lives,
+        // because it reserves index 0 for a static start pose when one exists.
+        performerState.goToStep(
+          Math.floor(wrapped) + performerState.motionStepOffset
+        );
         performerState.setProgress(wrapped - Math.floor(wrapped));
       }
       performerState.speed = props.playbackSpeed ?? 1;
@@ -95,6 +176,11 @@
     });
   });
 
+  $effect(() => {
+    const track = stanceTrack;
+    props.onStanceTrack?.(track);
+  });
+
   onDestroy(() => performerState.destroy());
 </script>
 
@@ -104,7 +190,7 @@
   planeMode={PlaneMode.WALL}
   avatarState={performerState}
   avatarId={props.characterId}
-  showGrid={false}
+  showGrid={props.gridSlot != null}
   visiblePlanes={new Set([Plane.WALL])}
   bluePropType={toScenePropType(props.propType)}
   redPropType={toScenePropType(props.propType)}
@@ -114,12 +200,26 @@
   enableLocomotion={props.enableLocomotion ?? true}
   enableFootPlanting={props.enableFootPlanting ?? true}
   weldGrip={props.weldGrip ?? false}
+  {propLength}
   headDodge={true}
+  stanceYaw={upperBodyStance.yawRad}
+  stanceSegments={upperBodyStance.segments}
+  spinePitchOffset={upperBodyStance.pitchRad}
+  blueHandDepthOffset={upperBodyStance.leftDepthOffsetM}
+  redHandDepthOffset={upperBodyStance.rightDepthOffsetM}
   showEffects={props.showEffects ?? true}
   {tipEffectMap}
   isPlaying={performerState.isPlaying}
-  onCollisionEvents={props.onCollisionEvents}
+  onCollisionEvents={(events, diagnostics, gripDiagnostics) => {
+    captureReach(diagnostics);
+    props.onCollisionEvents?.(events, diagnostics, gripDiagnostics);
+  }}
+  gridSlot={props.gridSlot}
   onAvatarSwapped={() => {
+    // Arm lengths belong to a body. A swapped character carries a different
+    // skeleton, so the held measurement — and the prop length derived from
+    // it — has to be taken again against the rig that just loaded.
+    reachMeasurements = null;
     if (readyReported) return;
     readyReported = true;
     props.onReady?.();

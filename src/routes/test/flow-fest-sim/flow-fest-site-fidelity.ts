@@ -14,6 +14,38 @@ export interface FlowFestCanopyEvidence {
   height: number;
 }
 
+export interface FlowFestBoundsWorldMeters {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
+
+/**
+ * How one detection pass reads the canopy raster. Every field defaults to the
+ * registered site survey, so an unconfigured call behaves exactly as before.
+ *
+ * The options exist because the raster is a full square kilometre while the
+ * site is a 540 x 210 m strip inside it. The land beyond the property line is
+ * measured woodland — 38.9% of its samples clear the tall-canopy threshold,
+ * against 43.8% inside — and the horizon read as bare hills only because
+ * nothing ever sampled it.
+ */
+export interface FlowFestCanopyPeakOptions {
+  /** Sample window. Defaults to the contract's active site bounds. */
+  readonly bounds?: FlowFestBoundsWorldMeters;
+  /** A window to skip, so two passes cannot both claim the same peak. */
+  readonly excludeBounds?: FlowFestBoundsWorldMeters | null;
+  /** Distance between retained peaks. Defaults to the site's 7.5 m. */
+  readonly minimumSpacingMeters?: number;
+  /**
+   * Whether candidates are cut away from registered routes and zones. Only the
+   * site has those; a pass over the surrounding county has nothing to avoid,
+   * and the per-sample segment distance is the expensive part of this loop.
+   */
+  readonly avoidRegisteredSurfaces?: boolean;
+}
+
 export interface FlowFestCanopyPeak {
   x: number;
   z: number;
@@ -39,17 +71,35 @@ const ZONE_EDGE_CLEARANCE_METERS = 3;
 export function deriveFlowFestCanopyPeaks(
   contract: FlowFestRuntimeContract,
   terrain: ImportedTerrainDataV2,
-  canopy: FlowFestCanopyEvidence
+  canopy: FlowFestCanopyEvidence,
+  options: FlowFestCanopyPeakOptions = {}
 ): FlowFestCanopyPeak[] {
   const candidates: FlowFestCanopyPeak[] = [];
-  const routes = uniqueFlowFestSurfaceSegments(contract);
-  const bounds = contract.surfaceEvidenceProxy.activeBoundsWorldMeters;
+  const avoidRegisteredSurfaces = options.avoidRegisteredSurfaces ?? true;
+  const routes = avoidRegisteredSurfaces
+    ? uniqueFlowFestSurfaceSegments(contract)
+    : [];
+  const bounds =
+    options.bounds ?? contract.surfaceEvidenceProxy.activeBoundsWorldMeters;
+  const excludeBounds = options.excludeBounds ?? null;
+  const minimumSpacingMeters =
+    options.minimumSpacingMeters ?? MINIMUM_PEAK_SPACING_METERS;
 
   for (let z = Math.ceil(bounds.minZ); z <= Math.floor(bounds.maxZ); z += 1) {
     for (let x = Math.ceil(bounds.minX); x <= Math.floor(bounds.maxX); x += 1) {
       if (
-        pointInRegisteredZone(x, z, contract.zones) ||
-        pointNearRoutes(x, z, routes, ROUTE_EDGE_CLEARANCE_METERS)
+        excludeBounds &&
+        x >= excludeBounds.minX &&
+        x <= excludeBounds.maxX &&
+        z >= excludeBounds.minZ &&
+        z <= excludeBounds.maxZ
+      ) {
+        continue;
+      }
+      if (
+        avoidRegisteredSurfaces &&
+        (pointInRegisteredZone(x, z, contract.zones) ||
+          pointNearRoutes(x, z, routes, ROUTE_EDGE_CLEARANCE_METERS))
       ) {
         continue;
       }
@@ -111,18 +161,33 @@ export function deriveFlowFestCanopyPeaks(
       first.z - second.z ||
       first.x - second.x
   );
+  // Bucket retained peaks by spacing-sized cell. A peak closer than the spacing
+  // can only live in the eight cells around the candidate's own, so this is the
+  // same result the pairwise scan produced, without its quadratic cost over the
+  // thousands of candidates a full-raster pass turns up.
   const retained: FlowFestCanopyPeak[] = [];
+  const occupied = new Map<string, FlowFestCanopyPeak[]>();
   for (const candidate of candidates) {
-    if (
-      retained.some(
-        (peak) =>
-          Math.hypot(peak.x - candidate.x, peak.z - candidate.z) <
-          MINIMUM_PEAK_SPACING_METERS
-      )
-    ) {
-      continue;
+    const cellX = Math.floor(candidate.x / minimumSpacingMeters);
+    const cellZ = Math.floor(candidate.z / minimumSpacingMeters);
+    let crowded = false;
+    for (let dz = -1; dz <= 1 && !crowded; dz += 1) {
+      for (let dx = -1; dx <= 1 && !crowded; dx += 1) {
+        const cell = occupied.get(`${cellX + dx}:${cellZ + dz}`);
+        if (!cell) continue;
+        crowded = cell.some(
+          (peak) =>
+            Math.hypot(peak.x - candidate.x, peak.z - candidate.z) <
+            minimumSpacingMeters
+        );
+      }
     }
+    if (crowded) continue;
     retained.push(candidate);
+    const key = `${cellX}:${cellZ}`;
+    const cell = occupied.get(key);
+    if (cell) cell.push(candidate);
+    else occupied.set(key, [candidate]);
   }
   return retained;
 }

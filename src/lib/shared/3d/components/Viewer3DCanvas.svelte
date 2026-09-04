@@ -24,7 +24,7 @@
    * so the workspace exists before choreography is chosen.
    */
 
-  import type { Snippet } from "svelte";
+  import { onDestroy, type Snippet } from "svelte";
   import { Canvas } from "@threlte/core";
   import { WebGLRenderer } from "three";
 
@@ -63,6 +63,8 @@
   import { createEnvironmentTransitionVisualState } from "../environments/state/environment-transition-visual-state.svelte";
   import type { QualityTier } from "../effects/types";
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import { tryGetViewerUrlSessionContext } from "$lib/shared/sequence-viewer/services/viewer-url-session";
+  import { captureT3Slice } from "$lib/shared/sequence-viewer/services/viewer-url-slices/t3-slice";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CameraStateSnapshot } from "@austencloud/scene-3d";
@@ -251,8 +253,11 @@
   );
   // A seeded viewer (a saved-scene preview) carries its own feature set and is
   // isolated from the shared `tka-scene-features` key; an ordinary viewer reads
-  // and writes that key as before.
-  const seededFeatures = viewer3DState.seededSceneFeatures;
+  // and writes that key as before. A shared-link override (`t3` URL slice)
+  // takes the same isolated path for the same reason: the sender's toggles must
+  // render without the recipient's key being read or written.
+  const seededFeatures =
+    viewer3DState.seededSceneFeatures ?? viewer3DState.viewOnlySceneFeatures;
   const inheritedSceneFeatureState = tryGetSceneFeatureContext();
   const sceneFeatureState =
     seededFeatures !== null
@@ -262,6 +267,35 @@
         })
       : (inheritedSceneFeatureState ?? createSceneFeatureState());
   setSceneFeatureContext(sceneFeatureState);
+
+  // ── t3 URL slice ─────────────────────────────────────────────────────────
+  // The 3D pane, not the orchestrator, owns the scene-feature state, so the
+  // capture registers here. `undefined` outside a sequence viewer (saved-scene
+  // tiles, the composer demo, test routes all mount this canvas) — registration
+  // is then a no-op. The seed half of the slice was already applied upstream,
+  // through `viewOnlyEnvironmentId` / `viewOnlySceneFeatures`.
+  const viewerUrlSession = tryGetViewerUrlSessionContext();
+  const captureT3 = (options: { full?: boolean } = {}) =>
+    captureT3Slice(
+      {
+        environmentId: viewer3DState.environmentId,
+        features: sceneFeatureState,
+      },
+      options
+    );
+  if (viewerUrlSession) {
+    const unregisterT3Slice = viewerUrlSession.registerSlice("t3", captureT3);
+    onDestroy(unregisterT3Slice);
+  }
+  // The orchestrator's live-sync effect settled before this pane's chunk
+  // finished loading, so it never tracked the state above and cannot re-run on
+  // it. This effect does that tracking pane-side and asks the session for a
+  // write — the same gap `an`'s visibility observer closes on the 2D side.
+  $effect(() => {
+    if (!viewerUrlSession) return;
+    void captureT3();
+    viewerUrlSession.scheduleUrlWrite();
+  });
   // Primary performer - gates the Canvas on performer[0] existing. Multi-
   // performer rendering iterates inside Viewer3DScene itself, but the Canvas
   // still waits on this to avoid mounting WebGL before any performer exists.
@@ -362,6 +396,7 @@
   let interactivePropsReady = $state(false);
   let effectsRuntimeReady = $state(!enableEffects);
   let sceneReady = $state(false);
+  let environmentSettled = $state(true);
   let readyPerformerCount = $state(0);
   let totalPerformerCount = $state(0);
   const performersReady = $derived(
@@ -403,6 +438,7 @@
   function handleEnvironmentTransitionChange(
     observation: EnvironmentTransitionObservation<BackgroundType>
   ): void {
+    environmentSettled = observation.settled;
     if (!observation.settled) adaptiveQuality.armSettleWindow();
     onEnvironmentTransitionChange?.(observation);
   }
@@ -417,9 +453,14 @@
   // geometry upload and shader compile need every millisecond of the main
   // thread. Fullscreen occludes it outright. Freeze rather than unmount: the
   // window is short and re-initializing costs more than it saves.
+  //
+  // The scene-ready flag is a first-load latch, so it covered only that boot.
+  // Switching scenes runs the same pipeline again behind the same veil, and the
+  // backdrop was painting through every frame of it — so the transition holds
+  // too, from the moment it starts until it settles.
   const backgroundHoldKey = `viewer3d-boot:${nextViewer3DInstanceId()}`;
   $effect(() => {
-    const shouldHold = !sceneReady || fullScreen;
+    const shouldHold = !sceneReady || !environmentSettled || fullScreen;
     if (shouldHold) holdBackground(backgroundHoldKey);
     else releaseBackground(backgroundHoldKey);
 

@@ -172,6 +172,10 @@
               },
               { command: "card-tunnel", label: "Replay with Tunnel" },
               {
+                command: "card-performances",
+                label: "Replay with Performances",
+              },
+              {
                 command: "card-stage-interrupt",
                 label: "Stress reversal",
                 primary: true,
@@ -262,11 +266,13 @@
                     ? "Moving directly from Card into a ready 3D view and back…"
                     : command === "card-tunnel"
                       ? "Moving directly from Card into the Tunnel view and back…"
-                      : command === "performances-2d"
-                        ? "Letting Performances inherit the 2D viewer stage and returning…"
-                        : command === "performances-3d"
-                          ? "Letting Performances inherit the ready 3D viewer stage and returning…"
-                          : `Replaying the ${command === "2d" ? "2D" : "Card"} round trip…`;
+                      : command === "card-performances"
+                        ? "Moving directly from Card into Performances and back…"
+                        : command === "performances-2d"
+                          ? "Letting Performances inherit the 2D viewer stage and returning…"
+                          : command === "performances-3d"
+                            ? "Letting Performances inherit the ready 3D viewer stage and returning…"
+                            : `Replaying the ${command === "2d" ? "2D" : "Card"} round trip…`;
     frameElement.contentWindow.postMessage(
       {
         source: "sequence-viewer-transition-review",
@@ -383,6 +389,7 @@
             trace.command === "card-2d" ||
             trace.command === "card-3d" ||
             trace.command === "card-tunnel" ||
+            trace.command === "card-performances" ||
             trace.command === "card-stage-interrupt" ||
             trace.command === "performances-2d" ||
             trace.command === "performances-3d" ||

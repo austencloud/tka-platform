@@ -18,8 +18,11 @@
     applyDirectorEffectPresets,
     applyDirectorPerformerMotion,
     applyDirectorSceneToViewer,
+    applyDirectorStepChanges,
     buildDirectorViewerSeed,
+    type DirectorAppliedStepChange,
   } from "../_lib/director-viewer-adapter";
+  import { resolveHeldStep } from "../_lib/director-step-holds";
   import { sampleDirectorBlockingTrack } from "../_lib/director-blocking-track";
   import { getPreviewCameraFov } from "../_lib/director-camera-track";
   import { createDirectorSequenceLibrary } from "../_lib/director-sequence-library";
@@ -32,6 +35,7 @@
   import SceneControlWorkspace from "$lib/shared/3d/components/controls/SceneControlWorkspace.svelte";
   import type { PerformerHubEdit } from "$lib/shared/3d/components/controls/performer-hub-types";
   import type { SceneControlTool } from "$lib/shared/3d/domain/scene-control-layout";
+  import FilmDirectorCapabilityPanel from "./FilmDirectorCapabilityPanel.svelte";
 
   const director = getFilmDirectorContext();
   const sequence = demoSequenceJson as unknown as SequenceData;
@@ -92,7 +96,11 @@
     director.film.format.width / director.film.format.height
   );
   const warmupPlan = $derived(
-    createFilmDirectorWarmupPlan(director.film.scenes.length)
+    createFilmDirectorWarmupPlan(
+      director.film.scenes.length,
+      undefined,
+      director.warmupSceneIndex
+    )
   );
   const presentedScene = $derived(
     director.preparation.complete
@@ -106,6 +114,57 @@
           (performer) => performer.beatOffset
         )
   );
+  /**
+   * Each performer's own playhead once their holds are applied, or null for a
+   * performer who states none — null falls through to the viewer's shared
+   * clock plus `performerStepOffsets`, so a film with no holds drives the
+   * viewer exactly as it did before this existed.
+   *
+   * The fractional value is deliberate: `Viewer3DScene` floors it for
+   * `goToStep` and passes the remainder to `setProgress`, so one number pins
+   * both the step and how far into it the performer sits.
+   *
+   * Sequence length is unknown here — the sequence lives in the viewer — so
+   * `resolveHeldStep` is called with 0 and the viewer's
+   * `resolvePerformerStepSource` does the wrapping it already does.
+   */
+  const presentedHeldSteps = $derived(
+    presentedScene.performance.performers.map((performer, index) => {
+      if (performer.holds.length === 0) return null;
+      const shared = director.preparation.complete
+        ? director.frame.sequenceStep
+        : 0;
+      const whole = Math.floor(shared);
+      const held = resolveHeldStep(
+        whole,
+        shared - whole,
+        presentedStepOffsets[index] ?? 0,
+        performer.holds,
+        0
+      );
+      return held.step + held.progress;
+    })
+  );
+
+  /**
+   * The step each performer's per-step effect and effort read from: the held
+   * playhead where one exists, the shared clock plus their offset where it
+   * does not.
+   */
+  const presentedEffectiveSteps = $derived(
+    presentedScene.performance.performers.map((_, index) => {
+      const held = presentedHeldSteps[index];
+      if (held !== null && held !== undefined) return held;
+      const shared = director.preparation.complete
+        ? director.frame.sequenceStep
+        : 0;
+      return shared + (presentedStepOffsets[index] ?? 0);
+    })
+  );
+
+  /** Last per-step effect/effort written per performer id — see applyDirectorStepChanges. */
+  const appliedStepChanges = new Map<string, DirectorAppliedStepChange>();
+
   // Warmup renders a scene the playhead is not on, so its cast stands at its
   // own opening marks rather than wherever scene one's track happens to be.
   const presentedMotion = $derived(
@@ -191,6 +250,11 @@
 
   function applyScene(scene: ResolvedDirectorScene): void {
     appliedSceneId = scene.id;
+
+    // A cut re-establishes every performer from the scene document, so the
+    // next frame must write its per-step values rather than trust what the
+    // previous scene left in this map.
+    appliedStepChanges.clear();
 
     for (const [feature, enabled] of Object.entries(scene.location.sceneFeatures)) {
       if (sceneFeatures.isEnabled(feature) !== enabled)
@@ -377,15 +441,25 @@
   $effect(() => {
     const film = director.film;
     let active = true;
-    void sequenceLibrary.prepare(film).then(() => {
-      if (!active) return;
-      const scene = film.scenes.find(
-        (candidate) => candidate.id === appliedSceneId
-      );
-      // Full re-application, not a bare loadSequence sweep: loading a sequence
-      // resets that performer's per-step plane overrides, so the scene's plane
-      // direction has to go back on afterwards.
-      if (scene) applyScene(scene);
+    // A film opened on one scene resolves that scene's sequences first, so the
+    // scene the viewer is actually watching stops spinning the shared demo
+    // without waiting behind twenty-three it is not showing.
+    const warmed = director.warmupSceneIndex;
+    void sequenceLibrary.prepare(film, {
+      focusSceneId: warmed === null ? null : (film.scenes[warmed]?.id ?? null),
+      // Per scene rather than once at the end: the scenes behind the focused
+      // one land later, and whichever is on screen when its turn comes still
+      // needs to pick them up.
+      onSceneResolved: (sceneId) => {
+        if (!active || sceneId !== appliedSceneId) return;
+        const scene = film.scenes.find(
+          (candidate) => candidate.id === sceneId
+        );
+        // Full re-application, not a bare loadSequence sweep: loading a
+        // sequence resets that performer's per-step plane overrides, so the
+        // scene's plane direction has to go back on afterwards.
+        if (scene) applyScene(scene);
+      },
     });
     return () => {
       active = false;
@@ -443,6 +517,11 @@
     if (tool) director.pause();
   }
 
+  /** The chair edits the scene on screen too, so it stops the film the same way. */
+  function handleChairChange(open: boolean): void {
+    if (open) director.pause();
+  }
+
   $effect(() => {
     const camera = director.frame.camera;
     director.sceneReady;
@@ -453,6 +532,12 @@
     const motion = presentedMotion;
     director.sceneReady;
     applyDirectorPerformerMotion(viewer, motion);
+  });
+
+  $effect(() => {
+    const steps = presentedEffectiveSteps;
+    director.sceneReady;
+    applyDirectorStepChanges(viewer, presentedScene, steps, appliedStepChanges);
   });
 
   onDestroy(() => {
@@ -485,6 +570,7 @@
     {effectQualityTier}
     waitForPerformersOnInitialReveal={true}
     performerStepOffsets={presentedStepOffsets}
+    performerSteps={presentedHeldSteps}
     visiblePerformerCount={presentedScene.performance.performers.length}
     stageBoundsPositions={presentedScene.performance.stageExtent}
     {retainedEnvironmentTypes}
@@ -522,7 +608,17 @@
     allowSaveScene={false}
     onPerformerEdit={handlePerformerEdit}
     onInspectorChange={handleInspectorChange}
-  />
+    hostTool={{
+      id: "director-chair",
+      label: "Director's chair",
+      icon: "fa-clapperboard",
+    }}
+    onHostPanelChange={handleChairChange}
+  >
+    {#snippet hostPanel(close: () => void)}
+      <FilmDirectorCapabilityPanel onClose={close} />
+    {/snippet}
+  </SceneControlWorkspace>
 {/if}
 
 <style>

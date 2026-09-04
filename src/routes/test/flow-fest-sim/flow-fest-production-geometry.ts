@@ -60,10 +60,18 @@ import {
 } from "./flow-fest-ground-surface";
 import { deriveFlowFestLowerCampOccupancy } from "./flow-fest-lower-camp-occupancy";
 import {
+  FLOW_FEST_PARKED_CAR_MODELS,
+  flowFestParkedCarModel,
+  settleFlowFestParkedCarOnGround,
+  type FlowFestParkedCarPlacement,
+} from "./flow-fest-parked-cars";
+import { FLOW_FEST_SITE_TREE_LAYOUT } from "./flow-fest-site-tree-layout";
+import {
   deriveFlowFestForestEcology,
   type FlowFestForestEcologyLayout,
   type FlowFestForestTreePlacement,
 } from "./flow-fest-forest-ecology";
+import { flowFestTreeFamilyPlan } from "./flow-fest-tree-species";
 import { buildFlowFestEntranceScene } from "./flow-fest-entrance-geometry";
 import { pointInsideFlowFestEntranceFixtureClearance } from "./flow-fest-entrance-reference";
 
@@ -76,6 +84,12 @@ export interface FlowFestProductionDressing {
    */
   campPlan: FlowFestCampPlan;
   forestEcology: FlowFestForestEcologyLayout;
+  /**
+   * The lower-loop car park. Bodies are GLB assets that load asynchronously
+   * in `FlowFestParkedCars.svelte`; only their walk-up colliders live in
+   * `collision.staticMesh`.
+   */
+  parkedCars: FlowFestParkedCarPlacement[];
   groundSurface: FlowFestGroundFamilyMask;
   festivalCommunity: FlowFestFestivalCommunityLayout;
   festivalCommunityAudit: ReturnType<typeof auditFlowFestLivingCommunity>;
@@ -111,9 +125,14 @@ export interface FlowFestProductionDressing {
     lowerTentMaximumLoopDistance: number;
     lowerCenterVehicleCount: number;
     lowerCenterTentCount: number;
+    lowerCenterCanopyCount: number;
     lowerInnerRoadsideTentCount: number;
     lowerOuterTreeLineTentCount: number;
     lowerCenterVehicleOutsideLoopCount: number;
+    lowerCenterVehicleAisleIntrusionCount: number;
+    lowerCenterVehicleWalkLaneIntrusionCount: number;
+    lowerCenterGearWalkLaneIntrusionCount: number;
+    lowerCenterVehicleEmptyStallCount: number;
     lowerInnerRoadsideTentOutsideLoopCount: number;
     lowerOuterTreeLineTentInsideLoopCount: number;
     minimumCanopyPeakDistance: number;
@@ -138,6 +157,10 @@ interface Placement {
 }
 
 const TENT_COLORS = ["#e56c4c", "#e6b859", "#6fa68c", "#6f7fc2", "#bd77a0"];
+/** Pop-up canopy tops: the white, navy, tan and forest green a big-box shop sells. */
+const CANOPY_COLORS = ["#e8e6df", "#2f3f66", "#c9b68a", "#3f6b4b"];
+/** Open ground around the lower gate check-in where no stall may sit. */
+const LOWER_GATE_CHECK_IN_APRON_RADIUS_METERS = 10;
 
 export function buildFlowFestProductionDressing(
   contract: FlowFestRuntimeContract,
@@ -166,12 +189,24 @@ export function buildFlowFestProductionDressing(
     contract,
     terrain,
     canopy,
-    campPlan
+    campPlan,
+    { speciesPlan: FLOW_FEST_SITE_TREE_LAYOUT }
   );
   const entranceClearedTrees = sourceForestEcology.trees.filter(
     (tree) =>
       !pointInsideFlowFestEntranceFixtureClearance(tree, tree.crownRadiusMeters)
   );
+  // The ecology lists measured-canopy trees first and infill trees after them,
+  // so the audit split survives the entrance clearing without a per-tree flag.
+  const entranceClearedMeasuredTrees = sourceForestEcology.trees
+    .slice(0, sourceForestEcology.audit.measuredCanopyPlacements)
+    .filter(
+      (tree) =>
+        !pointInsideFlowFestEntranceFixtureClearance(
+          tree,
+          tree.crownRadiusMeters
+        )
+    ).length;
   const entranceClearedGrass = sourceForestEcology.grass.filter(
     (grass) => !pointInsideFlowFestEntranceFixtureClearance(grass, 0.6)
   );
@@ -188,10 +223,14 @@ export function buildFlowFestProductionDressing(
       sourceTreeFamilies: new Set(
         entranceClearedTrees.map((tree) => tree.familyId)
       ).size,
-      plantFactoryTreePlacements: entranceClearedTrees.filter((tree) =>
-        tree.familyId.startsWith("plantcatalog-")
-      ).length,
-      measuredCanopyPlacements: entranceClearedTrees.length,
+      sourceTreeSpecies: new Set(
+        entranceClearedTrees.map(
+          (tree) => flowFestTreeFamilyPlan(tree.familyId)?.speciesId ?? "unknown"
+        )
+      ).size,
+      measuredCanopyPlacements: entranceClearedMeasuredTrees,
+      infillTreePlacements:
+        entranceClearedTrees.length - entranceClearedMeasuredTrees,
       grassPlacements: entranceClearedGrass.length,
       groundLifePlacements: entranceClearedGroundLife.length,
     },
@@ -226,6 +265,7 @@ export function buildFlowFestProductionDressing(
     root,
     campPlan,
     forestEcology,
+    parkedCars: camp.parkedCars,
     groundSurface: buildFlowFestGroundFamilyMask(
       campPlan,
       forestEcology,
@@ -242,6 +282,7 @@ export function buildFlowFestProductionDressing(
         trees.count +
           camp.staticTents +
           camp.vehicles +
+          camp.canopies +
           entrance.collisionVisibleObjectCount
       ),
       campEstablishedMesh: mergeProductionCollisionParts(
@@ -646,6 +687,8 @@ function buildCampClusters(
   tents: number;
   staticTents: number;
   vehicles: number;
+  canopies: number;
+  parkedCars: FlowFestParkedCarPlacement[];
   spatialAudit: Pick<
     FlowFestProductionDressing["spatialAudit"],
     | "campRouteViolations"
@@ -657,9 +700,14 @@ function buildCampClusters(
     | "lowerTentMaximumLoopDistance"
     | "lowerCenterVehicleCount"
     | "lowerCenterTentCount"
+    | "lowerCenterCanopyCount"
     | "lowerInnerRoadsideTentCount"
     | "lowerOuterTreeLineTentCount"
     | "lowerCenterVehicleOutsideLoopCount"
+    | "lowerCenterVehicleAisleIntrusionCount"
+    | "lowerCenterVehicleWalkLaneIntrusionCount"
+    | "lowerCenterGearWalkLaneIntrusionCount"
+    | "lowerCenterVehicleEmptyStallCount"
     | "lowerInnerRoadsideTentOutsideLoopCount"
     | "lowerOuterTreeLineTentInsideLoopCount"
   >;
@@ -673,7 +721,10 @@ function buildCampClusters(
   const lowerInnerRoadsideTentPlacements: Placement[] = [];
   const lowerOuterTreeLineTentPlacements: Placement[] = [];
   const lowerCenterTentPlacements: Placement[] = [];
-  const vehiclePlacements: Placement[] = [];
+  const canopyPlacements: Placement[] = [];
+  const vehiclePlacements: Array<
+    Placement & Pick<FlowFestParkedCarPlacement, "modelId" | "paintIndex" | "pitch" | "roll">
+  > = [];
   const routes = allFlowFestCampPlanLines(campPlan).map(
     flowFestCampPlanLineToRuntimeSegment
   );
@@ -712,10 +763,24 @@ function buildCampClusters(
   const lowerRng = makeRng(
     childSeed(FLOW_FEST_MASTER_SEED, "lower-campground-occupancy")
   );
+  const lowerGateCamera = contract.reviewCameras.find(
+    (camera) => camera.id === "lower-gate"
+  );
   const lowerOccupancy = deriveFlowFestLowerCampOccupancy({
     rng: lowerRng,
     loop: lowerLoop,
     routes,
+    // The check-in apron stays open: the gate crew stands there and arriving
+    // cars queue through it before they pick a row.
+    keepClear: lowerGateCamera
+      ? [
+          {
+            x: lowerGateCamera.positionWorld[0],
+            z: lowerGateCamera.positionWorld[2],
+            radiusMeters: LOWER_GATE_CHECK_IN_APRON_RADIUS_METERS,
+          },
+        ]
+      : [],
   });
   for (const [
     index,
@@ -747,12 +812,31 @@ function buildCampClusters(
     );
   }
 
+  for (const placement of lowerOccupancy.centerCanopies) {
+    canopyPlacements.push({
+      ...groundTentPlacement(placement, terrain),
+      rotation: placement.rotation + (lowerRng() - 0.5) * 0.3,
+      colorIndex: Math.floor(lowerRng() * CANOPY_COLORS.length),
+    });
+  }
+
+  // The GLB bodies are grounded at their own y=0. Each one settles on the
+  // heightfield under its four wheels, so a car on a cross-slope rolls with
+  // the field instead of hovering over its uphill tyres.
   vehiclePlacements.push(
-    ...lowerOccupancy.centerVehicles.map((placement, index) => ({
-      ...placement,
-      y: sampleFlowFestTerrainWorldY(terrain, placement.x, placement.z) + 0.65,
+    ...lowerOccupancy.centerVehicles.map((placement) => ({
+      x: placement.x,
+      z: placement.z,
+      rotation: placement.rotation,
+      modelId: placement.modelId,
+      paintIndex: placement.paintIndex,
+      ...settleFlowFestParkedCarOnGround(
+        flowFestParkedCarModel(placement.modelId),
+        placement,
+        (x, z) => sampleFlowFestTerrainWorldY(terrain, x, z)
+      ),
       scale: 1,
-      colorIndex: index % 4,
+      colorIndex: 0,
     }))
   );
 
@@ -857,42 +941,67 @@ function buildCampClusters(
   playerTent.receiveShadow = true;
   playerTent.visible = false;
 
-  const vehicleGeometry = buildParkedCarGeometry();
-  // The car now sits on the field instead of straddling it, so the collider
-  // has to wrap the whole body or the camera walks through a parked windscreen.
-  const vehicleCollisionProxy = new BoxGeometry(4.5, 1.9, 2.05);
-  vehicleCollisionProxy.translate(0, 0.95, 0);
-  const vehicleMesh = createInstancedMesh(
-    vehicleGeometry,
-    new MeshStandardMaterial({
-      color: "#ffffff",
-      roughness: 0.52,
-      metalness: 0.18,
-      vertexColors: true,
-    }),
-    vehiclePlacements,
+  // The visible bodies are GLB assets rendered by FlowFestParkedCars.svelte.
+  // What the walk-up collider sees is one box per body, sized from the same
+  // catalogue footprint the stall arithmetic used, so the camera stops at a
+  // van's flank and a hatchback's, not at one average car.
+  for (const model of FLOW_FEST_PARKED_CAR_MODELS) {
+    const modelPlacements = vehiclePlacements.filter(
+      (placement) => placement.modelId === model.id
+    );
+    if (modelPlacements.length === 0) continue;
+    const vehicleCollisionProxy = new BoxGeometry(
+      model.lengthMeters + 0.1,
+      model.heightMeters,
+      model.widthMeters + 0.1
+    );
+    vehicleCollisionProxy.translate(0, model.heightMeters / 2, 0);
+    appendPlacementCollisionParts(
+      staticCollisionParts,
+      vehicleCollisionProxy,
+      modelPlacements,
+      applyVehiclePlacement
+    );
+  }
+
+  // Pop-up canopies off the tailgates. The walk-up collider only sees the four
+  // legs, so a camper can still step under the shade.
+  const canopyGeometry = buildPopUpCanopyGeometry();
+  const canopyMesh = createInstancedMesh(
+    canopyGeometry,
+    tentMaterial(),
+    canopyPlacements,
     applyPlacement,
-    (placement) =>
-      new Color(
-        ["#71808a", "#a45f4c", "#d2cbb7", "#516c59"][placement.colorIndex]!
-      )
+    (placement) => new Color(CANOPY_COLORS[placement.colorIndex]!)
   );
+  canopyMesh.name = "FFS_Canopies_AuthoredFestivalDressing";
+  canopyMesh.castShadow = true;
+  canopyMesh.receiveShadow = true;
+  const canopyLegCollisionProxy = buildPopUpCanopyLegCollisionProxy();
   appendPlacementCollisionParts(
     staticCollisionParts,
-    vehicleCollisionProxy,
-    vehiclePlacements,
+    canopyLegCollisionProxy,
+    canopyPlacements,
     applyPlacement
   );
-  vehicleMesh.name = "FFS_Cars_AuthoredFestivalDressing";
-  vehicleMesh.castShadow = true;
-  vehicleMesh.receiveShadow = true;
-  group.add(tentMesh, domeTentMesh, playerTent, vehicleMesh);
+  group.add(tentMesh, domeTentMesh, playerTent, canopyMesh);
   const allTentPlacements = occupiedTentPlacements;
   return {
     group,
     tents: tentPlacements.length + 1,
     staticTents: tentPlacements.length,
     vehicles: vehiclePlacements.length,
+    canopies: canopyPlacements.length,
+    parkedCars: vehiclePlacements.map((placement) => ({
+      x: placement.x,
+      y: placement.y,
+      z: placement.z,
+      rotation: placement.rotation,
+      pitch: placement.pitch,
+      roll: placement.roll,
+      modelId: placement.modelId,
+      paintIndex: placement.paintIndex,
+    })),
     spatialAudit: {
       campRouteViolations:
         allTentPlacements.filter((placement) =>
@@ -926,10 +1035,19 @@ function buildCampClusters(
       ),
       lowerCenterVehicleCount: vehiclePlacements.length,
       lowerCenterTentCount: lowerCenterTentPlacements.length,
+      lowerCenterCanopyCount: canopyPlacements.length,
       lowerInnerRoadsideTentCount: lowerInnerRoadsideTentPlacements.length,
       lowerOuterTreeLineTentCount: lowerOuterTreeLineTentPlacements.length,
       lowerCenterVehicleOutsideLoopCount:
         lowerOccupancy.audit.centerVehicleOutsideLoopCount,
+      lowerCenterVehicleAisleIntrusionCount:
+        lowerOccupancy.audit.centerVehicleAisleIntrusionCount,
+      lowerCenterVehicleWalkLaneIntrusionCount:
+        lowerOccupancy.audit.centerVehicleWalkLaneIntrusionCount,
+      lowerCenterGearWalkLaneIntrusionCount:
+        lowerOccupancy.audit.centerGearWalkLaneIntrusionCount,
+      lowerCenterVehicleEmptyStallCount:
+        lowerOccupancy.audit.centerVehicleEmptyStallCount,
       lowerInnerRoadsideTentOutsideLoopCount:
         lowerOccupancy.audit.innerRoadsideTentOutsideLoopCount,
       lowerOuterTreeLineTentInsideLoopCount:
@@ -1165,6 +1283,88 @@ function mergeCampParts(parts: BufferGeometry[], label: string): BufferGeometry 
   return merged;
 }
 
+const CANOPY_HALF_SIZE = 1.5;
+const CANOPY_LEG_HEIGHT = 2.05;
+const CANOPY_PEAK_RISE = 0.7;
+const CANOPY_VALANCE_DROP = 0.22;
+
+/**
+ * A 3 m pop-up canopy off a tailgate: four legs, a shallow four-sided peak,
+ * and the valance that hangs off its eave, plus the folding table and cooler
+ * that live under every one of them. The instance colour is the fabric; the
+ * legs, table and cooler take their shade from vertex colour.
+ */
+function buildPopUpCanopyGeometry(): BufferGeometry {
+  const parts: BufferGeometry[] = [];
+  for (const x of [-1, 1]) {
+    for (const z of [-1, 1]) {
+      const leg = new CylinderGeometry(0.03, 0.03, CANOPY_LEG_HEIGHT, 6);
+      leg.translate(
+        x * (CANOPY_HALF_SIZE - 0.05),
+        CANOPY_LEG_HEIGHT / 2,
+        z * (CANOPY_HALF_SIZE - 0.05)
+      );
+      parts.push(shadeCampPart(leg, CAMP_SHADE.pole));
+    }
+  }
+  const peak = new ConeGeometry(
+    CANOPY_HALF_SIZE * Math.SQRT2,
+    CANOPY_PEAK_RISE,
+    4,
+    1,
+    true
+  );
+  peak.rotateY(Math.PI / 4);
+  peak.translate(0, CANOPY_LEG_HEIGHT + CANOPY_PEAK_RISE / 2, 0);
+  parts.push(shadeCampPart(peak, CAMP_SHADE.fly));
+  const eave = CANOPY_LEG_HEIGHT;
+  const hem = CANOPY_LEG_HEIGHT - CANOPY_VALANCE_DROP;
+  const s = CANOPY_HALF_SIZE;
+  const valanceSides: Array<
+    ReadonlyArray<readonly [number, number, number]>
+  > = [
+    [[-s, eave, s], [s, eave, s], [s, hem, s], [-s, hem, s]],
+    [[s, eave, -s], [-s, eave, -s], [-s, hem, -s], [s, hem, -s]],
+    [[s, eave, s], [s, eave, -s], [s, hem, -s], [s, hem, s]],
+    [[-s, eave, -s], [-s, eave, s], [-s, hem, s], [-s, hem, -s]],
+  ];
+  for (const corners of valanceSides) {
+    parts.push(buildCampPanel(corners, CAMP_SHADE.panel));
+  }
+  const tableTop = new BoxGeometry(1.2, 0.04, 0.6);
+  tableTop.translate(0.3, 0.74, -0.5);
+  parts.push(shadeCampPart(tableTop, CAMP_SHADE.trim));
+  for (const x of [-0.5, 0.5]) {
+    const tableLeg = new BoxGeometry(0.04, 0.72, 0.5);
+    tableLeg.translate(0.3 + x, 0.36, -0.5);
+    parts.push(shadeCampPart(tableLeg, CAMP_SHADE.pole));
+  }
+  const cooler = new BoxGeometry(0.72, 0.44, 0.42);
+  cooler.translate(-0.8, 0.22, 0.7);
+  parts.push(shadeCampPart(cooler, CAMP_SHADE.door));
+  return mergeCampParts(parts, "pop-up canopy");
+}
+
+/** Only the legs stop a walker; the shade itself is open on every side. */
+function buildPopUpCanopyLegCollisionProxy(): BufferGeometry {
+  const parts: BufferGeometry[] = [];
+  for (const x of [-1, 1]) {
+    for (const z of [-1, 1]) {
+      const leg = new BoxGeometry(0.18, CANOPY_LEG_HEIGHT, 0.18);
+      leg.translate(
+        x * (CANOPY_HALF_SIZE - 0.05),
+        CANOPY_LEG_HEIGHT / 2,
+        z * (CANOPY_HALF_SIZE - 0.05)
+      );
+      parts.push(leg);
+    }
+  }
+  const merged = mergeGeometries(parts, false);
+  for (const part of parts) part.dispose();
+  if (!merged) throw new Error("Flow Fest canopy collision proxy failed to merge");
+  return merged;
+}
+
 const RIDGE_TENT_HALF_LENGTH = 1.32;
 const RIDGE_TENT_HALF_WIDTH = 1.06;
 const RIDGE_TENT_RIDGE_HEIGHT = 1.52;
@@ -1319,43 +1519,6 @@ function buildDomeTentGeometry(): BufferGeometry {
   );
 
   return mergeCampParts(parts, "dome tent");
-}
-
-/**
- * A parked car, not a shipping container. The old dressing was a single
- * 4.6 x 1.3 x 2.1 box centred on the placement, so half of every vehicle sat
- * under the field and the visible half read as a slab. This sits on the
- * ground and carries the four silhouette cues that make a car legible at
- * distance: body, greenhouse, roof, wheels.
- */
-function buildParkedCarGeometry(): BufferGeometry {
-  const parts: BufferGeometry[] = [];
-  const body = new BoxGeometry(4.42, 0.78, 1.96);
-  body.translate(0, 0.74, 0);
-  parts.push(shadeCampPart(body, CAMP_SHADE.fly));
-
-  const sill = new BoxGeometry(4.5, 0.16, 2.02);
-  sill.translate(0, 0.42, 0);
-  parts.push(shadeCampPart(sill, CAMP_SHADE.trim));
-
-  const glass = new BoxGeometry(2.42, 0.56, 1.82);
-  glass.translate(-0.24, 1.4, 0);
-  parts.push(shadeCampPart(glass, CAMP_SHADE.glass));
-
-  const roof = new BoxGeometry(2.26, 0.14, 1.74);
-  roof.translate(-0.24, 1.74, 0);
-  parts.push(shadeCampPart(roof, CAMP_SHADE.fly));
-
-  for (const x of [1.42, -1.38]) {
-    for (const z of [0.98, -0.98]) {
-      const wheel = new CylinderGeometry(0.37, 0.37, 0.26, 10);
-      wheel.rotateX(Math.PI / 2);
-      wheel.translate(x, 0.37, z);
-      parts.push(shadeCampPart(wheel, CAMP_SHADE.tyre));
-    }
-  }
-
-  return mergeCampParts(parts, "parked car");
 }
 
 const FIRE_PIT_INNER_RADIUS_METERS = 1.42;
@@ -1963,6 +2126,16 @@ function createInstancedMesh<TPlacement extends Placement>(
 function applyPlacement(placement: Placement, object: Object3D): void {
   object.position.set(placement.x, placement.y, placement.z);
   object.rotation.y = placement.rotation;
+  object.scale.setScalar(placement.scale);
+}
+
+/** A settled car: yaw, then pitch about its axle line, then roll across it. */
+function applyVehiclePlacement(
+  placement: Placement & Pick<FlowFestParkedCarPlacement, "pitch" | "roll">,
+  object: Object3D
+): void {
+  object.position.set(placement.x, placement.y, placement.z);
+  object.rotation.set(placement.roll, placement.rotation, placement.pitch, "YZX");
   object.scale.setScalar(placement.scale);
 }
 

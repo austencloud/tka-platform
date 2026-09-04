@@ -4,6 +4,7 @@ import {
   getAutumnBootProgress,
   getAutumnEnvironmentUrl,
   isAutumnBootReady,
+  scheduleAutumnBootStatus,
   setAutumnBootAsset,
 } from "./autumn-boot-state";
 
@@ -28,6 +29,29 @@ describe("Autumn boot state", () => {
         pondNormals: "ready",
       })
     ).toBe(false);
+  });
+
+  it("delivers synchronous child readiness after the parent reset window", async () => {
+    const statuses: string[] = [];
+    let cancelled = false;
+
+    scheduleAutumnBootStatus(
+      (status) => statuses.push(status),
+      "ready",
+      () => cancelled
+    );
+    expect(statuses).toEqual([]);
+    await Promise.resolve();
+    expect(statuses).toEqual(["ready"]);
+
+    scheduleAutumnBootStatus(
+      (status) => statuses.push(status),
+      "failed",
+      () => cancelled
+    );
+    cancelled = true;
+    await Promise.resolve();
+    expect(statuses).toEqual(["ready"]);
   });
 
   it("gives each retry a distinct loader cache identity", () => {

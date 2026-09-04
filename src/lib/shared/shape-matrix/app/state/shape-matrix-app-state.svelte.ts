@@ -1,6 +1,8 @@
 import { applyFilter } from "$lib/shared/shape-matrix/domain/filter-flower-axis";
 import {
   matrixFiltersForTurns,
+  clampMatrixTurnToLevel,
+  matrixTurnsForLevel,
   type MatrixLabelMode,
 } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
 import {
@@ -13,34 +15,80 @@ import type {
   TurnLevel,
   TurnValue,
 } from "$lib/shared/create/services/level-turn-values";
-import {
-  clampTurnToLevel,
-  turnValuesForLevel,
-} from "$lib/shared/create/services/level-turn-values";
 import type { ShapeMatrixData } from "$lib/shared/shape-matrix/services/shape-matrix-flowers";
 import {
   MODE_ORDER,
   type VtgMode,
 } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { requestShapeMatrixTransition } from "$lib/shared/shape-matrix/debug/shape-matrix-transition-recorder";
+import { makeSpinRatio, spinRatioEquals, type SpinRatio } from "@vtg/domain";
+import {
+  buildTheoryAxis,
+  type TheoryFlower,
+} from "$lib/shared/shape-matrix/domain/theory-flower";
+import {
+  asTheoryBand,
+  clampTheoryRatioToBand,
+  DEFAULT_THEORY_BAND,
+  narrowestBandFor,
+  theoryRatiosForBand,
+  type TheoryBand,
+} from "$lib/shared/shape-matrix/domain/theory-ratio-band";
 
 export type ShapeMatrixAppView = "matrix" | "detail";
+export type ShapeMatrixSurface = "matrix" | "theory";
 export interface ShapeMatrixCompactFocusRequest {
   id: number;
   target: ShapeMatrixAppView;
 }
 export type ShapeMatrixAxisTarget = "left" | "both" | "right";
-export type ShapeMatrixRelationshipDriver = "hands" | "props";
+
+export interface ShapeMatrixSelectPairOptions {
+  /**
+   * False records the selection without moving a compact layout to the
+   * detail pane. The host then navigates itself (through the shared-element
+   * morph), which needs the clicked tile to be the selection BEFORE the
+   * view flips so the morph starts from that tile.
+   */
+  navigate?: boolean;
+}
+
+export interface ShapeMatrixSetTurnOptions {
+  /**
+   * Keep the compact layout on the detail pane after a turn or level edit.
+   * The matrix ribbon returns to the matrix (existing navigation); the detail
+   * pane's own popover stays put so the animator restages under the user's
+   * eyes.
+   */
+  stayOnDetail?: boolean;
+}
 
 export interface ShapeMatrixAppSnapshot {
+  surface: ShapeMatrixSurface;
+  /** Theory rows: the blue hand's prop-to-hand ratio. */
+  theoryLeftRatio: SpinRatio;
+  /** Theory columns: the red hand's prop-to-hand ratio. */
+  theoryRightRatio: SpinRatio;
+  /**
+   * The timing-and-direction pairing on the Theory surface, named by the same
+   * six VTG modes (and the same six elements) a Matrix realization carries.
+   */
+  theoryMode: VtgMode;
+  theoryPair: { left: TheoryFlower; right: TheoryFlower } | null;
+  /**
+   * How far the Theory ratio field opens. Deliberately NOT `level`: a band
+   * counts denominators and a level names turn values, and the two ladders
+   * are independent. Sharing one number told a Theory visitor that a
+   * hand-cycle bound was a Kinetic Alphabet level.
+   */
+  theoryBand: TheoryBand;
   level: TurnLevel;
   leftTurn: TurnValue;
   rightTurn: TurnValue;
   activeAxis: ShapeMatrixAxisTarget;
   labelMode: MatrixLabelMode;
   propType: PropType;
-  relationshipDriver: ShapeMatrixRelationshipDriver;
   pair: { left: Flower; right: Flower } | null;
   mode: VtgMode | null;
   propMode: VtgMode | null;
@@ -64,6 +112,51 @@ const LEVEL_LANDING_TURN: Record<TurnLevel, TurnValue> = {
   3: 0.5,
   4: 0.25,
 };
+
+export const DEFAULT_THEORY_RATIO = makeSpinRatio(1, 3);
+
+function allowedTheoryRatio(ratio: SpinRatio, band: TheoryBand): SpinRatio {
+  try {
+    return clampTheoryRatioToBand(ratio, band);
+  } catch {
+    return clampTheoryRatioToBand(DEFAULT_THEORY_RATIO, band);
+  }
+}
+
+function bandHoldingRatios(
+  startingBand: TheoryBand,
+  ratios: readonly SpinRatio[]
+): TheoryBand {
+  let band = startingBand;
+  for (const ratio of ratios) {
+    const home = narrowestBandFor(ratio);
+    if (home !== null && home > band) band = home;
+  }
+  return band;
+}
+
+/**
+ * Carry a selection across a ratio change instead of dropping it.
+ *
+ * The user picked prospin-out in the top-left corner; changing the ratio is a
+ * request to see THAT variant at the new ratio, the same way the Matrix keeps
+ * a cell's style and orientation when its turn value moves. The endpoints have
+ * fewer variants, so the axis is asked what actually survives.
+ */
+function theoryFlowerAt(
+  ratio: SpinRatio,
+  remembered: TheoryFlower | null
+): TheoryFlower {
+  const axis = buildTheoryAxis(ratio);
+  const match = remembered
+    ? axis.find(
+        (candidate) =>
+          candidate.style === remembered.style &&
+          candidate.ori === remembered.ori
+      )
+    : undefined;
+  return match ?? (axis[0] as TheoryFlower);
+}
 
 function semanticVariant(flower: Flower): SemanticVariant {
   if (flower.style === "float") {
@@ -125,19 +218,30 @@ export function createShapeMatrixAppState(
   initial: ShapeMatrixAppSnapshot,
   initialCompact: boolean
 ) {
+  const initialTheoryBand = bandHoldingRatios(initial.theoryBand, [
+    initial.theoryLeftRatio,
+    initial.theoryRightRatio,
+  ]);
+  let surface = $state<ShapeMatrixSurface>(initial.surface);
+  let theoryBand = $state<TheoryBand>(initialTheoryBand);
+  let theoryLeftRatio = $state(
+    allowedTheoryRatio(initial.theoryLeftRatio, initialTheoryBand)
+  );
+  let theoryRightRatio = $state(
+    allowedTheoryRatio(initial.theoryRightRatio, initialTheoryBand)
+  );
+  let theoryMode = $state<VtgMode>(initial.theoryMode);
+  let theoryPair = $state(initial.theoryPair);
   let level = $state(initial.level);
   let leftTurn = $state<TurnValue>(
-    clampTurnToLevel(initial.leftTurn, initial.level)
+    clampMatrixTurnToLevel(initial.leftTurn, initial.level)
   );
   let rightTurn = $state<TurnValue>(
-    clampTurnToLevel(initial.rightTurn, initial.level)
+    clampMatrixTurnToLevel(initial.rightTurn, initial.level)
   );
   let activeAxis = $state<ShapeMatrixAxisTarget>(initial.activeAxis);
   let labelMode = $state(initial.labelMode);
   let propType = $state(initial.propType);
-  let relationshipDriver = $state<ShapeMatrixRelationshipDriver>(
-    initial.relationshipDriver
-  );
   let selectedPair = $state(initial.pair);
   let rememberedVariants = $state<{
     left: SemanticVariant;
@@ -150,10 +254,7 @@ export function createShapeMatrixAppState(
     initial.pair ? (initial.mode ?? MODE_ORDER[0] ?? null) : null
   );
   let selectedPropMode = $state<VtgMode | null>(
-    initial.relationshipDriver === "props" &&
-      supportsTimedPropRelationship(initial.pair)
-      ? initial.propMode
-      : null
+    supportsTimedPropRelationship(initial.pair) ? initial.propMode : null
   );
   let data = $state<ShapeMatrixData | null>(null);
   let loading = $state(false);
@@ -165,8 +266,12 @@ export function createShapeMatrixAppState(
   let compactFocusRequest = $state<ShapeMatrixCompactFocusRequest | null>(null);
   let aboutOpen = $state(false);
   let propPickerOpen = $state(false);
+  let mandalaHandoff = $state(false);
 
-  const availableTurns = $derived(turnValuesForLevel(level));
+  const availableTurns = $derived(matrixTurnsForLevel(level));
+  const availableTheoryRatios = $derived(theoryRatiosForBand(theoryBand));
+  const theoryRowAxis = $derived(buildTheoryAxis(theoryLeftRatio));
+  const theoryColAxis = $derived(buildTheoryAxis(theoryRightRatio));
   const filters = $derived(matrixFiltersForTurns(leftTurn, rightTurn));
   const rowAxis = $derived(
     data ? applyFilter(data.axis, filters.left, false) : []
@@ -201,28 +306,70 @@ export function createShapeMatrixAppState(
     };
   }
 
-  function setLevel(nextLevel: TurnLevel): void {
+  function setLevel(
+    nextLevel: TurnLevel,
+    options: ShapeMatrixSetTurnOptions = {}
+  ): void {
     if (level === nextLevel) return;
     level = nextLevel;
+
     const landingTurn = LEVEL_LANDING_TURN[level];
     // A higher level should change the picture, not merely add quiet options
     // around the current Level 1 matrix. Move the edited axis into the new
     // vocabulary while preserving the other axis whenever it remains legal.
     const nextLeftTurn =
-      activeAxis === "right" ? clampTurnToLevel(leftTurn, level) : landingTurn;
+      activeAxis === "right"
+        ? clampMatrixTurnToLevel(leftTurn, level)
+        : landingTurn;
     const nextRightTurn =
-      activeAxis === "left" ? clampTurnToLevel(rightTurn, level) : landingTurn;
+      activeAxis === "left"
+        ? clampMatrixTurnToLevel(rightTurn, level)
+        : landingTurn;
+    if (
+      selectedPair &&
+      (nextLeftTurn !== leftTurn || nextRightTurn !== rightTurn)
+    ) {
+      requestShapeMatrixTransition(
+        `level:${level}:${String(nextLeftTurn)}:${String(nextRightTurn)}`
+      );
+    }
     updateSelectedPairTurns(nextLeftTurn, nextRightTurn);
     if (nextLeftTurn === "fl" || nextLeftTurn !== nextRightTurn) {
       selectedPropMode = null;
     }
     leftTurn = nextLeftTurn;
     rightTurn = nextRightTurn;
-    if (compact) activeView = "matrix";
+    if (compact && !options.stayOnDetail) activeView = "matrix";
     syncState();
   }
 
-  function setTurn(nextTurn: TurnValue): void {
+  /**
+   * Open or close the Theory ratio field.
+   *
+   * The counterpart of `setLevel` and nothing more: it moves the Farey order,
+   * never a turn value, and it leaves the Matrix's level exactly where the
+   * user left it. Ratios the new band can still hold are kept; the rest fall
+   * to the nearest one it holds, so a narrowing band moves the axis a little
+   * rather than throwing the user's place away.
+   */
+  function setTheoryBand(
+    nextBand: TheoryBand,
+    options: ShapeMatrixSetTurnOptions = {}
+  ): void {
+    if (theoryBand === nextBand) return;
+    theoryBand = nextBand;
+    applyTheoryRatios(
+      clampTheoryRatioToBand(theoryLeftRatio, theoryBand),
+      clampTheoryRatioToBand(theoryRightRatio, theoryBand)
+    );
+    if (compact && !options.stayOnDetail) activeView = "matrix";
+    syncState();
+  }
+
+  function setTurn(
+    nextTurn: TurnValue,
+    options: ShapeMatrixSetTurnOptions = {}
+  ): void {
     if (!availableTurns.includes(nextTurn)) return;
     if (selectedPair) {
       rememberedVariants = {
@@ -246,7 +393,7 @@ export function createShapeMatrixAppState(
     }
     leftTurn = nextLeftTurn;
     rightTurn = nextRightTurn;
-    if (compact) activeView = "matrix";
+    if (compact && !options.stayOnDetail) activeView = "matrix";
     syncState();
   }
 
@@ -262,35 +409,125 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
-  function setRelationshipDriver(
-    nextDriver: ShapeMatrixRelationshipDriver
-  ): void {
-    if (relationshipDriver === nextDriver) return;
-    relationshipDriver = nextDriver;
-    if (nextDriver === "hands") selectedPropMode = null;
+  function setSurface(nextSurface: ShapeMatrixSurface): void {
+    if (surface === nextSurface) return;
+    surface = nextSurface;
     syncState();
   }
 
-  async function setPropType(nextPropType: PropType): Promise<void> {
-    if (propType === nextPropType) {
-      propPickerOpen = false;
-      return;
-    }
-    await load(nextPropType);
-    if (!loadError) {
-      propPickerOpen = false;
-      syncState();
+  function applyTheoryRatios(nextLeft: SpinRatio, nextRight: SpinRatio): void {
+    const moved =
+      !spinRatioEquals(nextLeft, theoryLeftRatio) ||
+      !spinRatioEquals(nextRight, theoryRightRatio);
+    if (!moved) return;
+    theoryLeftRatio = nextLeft;
+    theoryRightRatio = nextRight;
+    if (theoryPair) {
+      theoryPair = {
+        left: theoryFlowerAt(nextLeft, theoryPair.left),
+        right: theoryFlowerAt(nextRight, theoryPair.right),
+      };
     }
   }
 
+  /**
+   * Take a requested ratio at its word when the catalog holds it.
+   *
+   * The band says how much of the field is on offer; it is not a licence the
+   * ratio needs. A request inside the 0–15 field is answered, and the band
+   * widens to the narrowest one that holds it, so the control ends up
+   * reporting where that ratio lives. Only a ratio outside the catalog
+   * entirely still falls back to the nearest thing the band can name.
+   */
+  function admitTheoryRatio(nextRatio: SpinRatio): SpinRatio {
+    const home = narrowestBandFor(nextRatio);
+    if (home === null) return allowedTheoryRatio(nextRatio, theoryBand);
+    if (home > theoryBand) theoryBand = home;
+    return nextRatio;
+  }
+
+  /** One named axis, for the live tuners that edit a specific hand. */
+  function setTheoryRatioFor(
+    hand: "left" | "right",
+    nextRatio: SpinRatio
+  ): void {
+    const allowed = admitTheoryRatio(nextRatio);
+    applyTheoryRatios(
+      hand === "left" ? allowed : theoryLeftRatio,
+      hand === "right" ? allowed : theoryRightRatio
+    );
+    syncState();
+  }
+
+  /** Honours the Apply to target, exactly as the Matrix turn control does. */
+  function setTheoryRatio(nextRatio: SpinRatio): void {
+    const allowed = admitTheoryRatio(nextRatio);
+    applyTheoryRatios(
+      activeAxis === "right" ? theoryLeftRatio : allowed,
+      activeAxis === "left" ? theoryRightRatio : allowed
+    );
+    syncState();
+  }
+
+  function setTheoryMode(nextMode: VtgMode): void {
+    if (theoryMode === nextMode) return;
+    theoryMode = nextMode;
+    syncState();
+  }
+
+  function selectTheoryPair(
+    pair: { left: TheoryFlower; right: TheoryFlower },
+    options: ShapeMatrixSelectPairOptions = {}
+  ): void {
+    theoryPair = pair;
+    if (compact && options.navigate !== false) {
+      activeView = "detail";
+      requestCompactFocus("detail");
+    }
+    syncState();
+  }
+
+  /*
+   * The picker stays open. It sits beside the animation rather than over it,
+   * so a choice is meant to be watched: pick a prop, see the shape traced by
+   * it, pick the next one. Closing is its own action.
+   */
+  async function setPropType(nextPropType: PropType): Promise<void> {
+    if (propType === nextPropType) return;
+    await load(nextPropType);
+    if (!loadError) syncState();
+  }
+
   function restoreState(snapshot: ShapeMatrixAppSnapshot): void {
+    surface = snapshot.surface ?? "matrix";
     level = snapshot.level;
-    leftTurn = clampTurnToLevel(snapshot.leftTurn, snapshot.level);
-    rightTurn = clampTurnToLevel(snapshot.rightTurn, snapshot.level);
+    // A snapshot written before the band split its own field carries the band
+    // in `level`, exactly as a pre-split link does. Read it there rather than
+    // dropping a returning visitor back to band 1.
+    const restoredBand =
+      snapshot.theoryBand ??
+      (snapshot.level ? asTheoryBand(snapshot.level) : DEFAULT_THEORY_BAND);
+    const restoredLeftRatio = snapshot.theoryLeftRatio ?? DEFAULT_THEORY_RATIO;
+    const restoredRightRatio =
+      snapshot.theoryRightRatio ?? DEFAULT_THEORY_RATIO;
+    theoryBand = bandHoldingRatios(restoredBand, [
+      restoredLeftRatio,
+      restoredRightRatio,
+    ]);
+    theoryLeftRatio = allowedTheoryRatio(restoredLeftRatio, theoryBand);
+    theoryRightRatio = allowedTheoryRatio(restoredRightRatio, theoryBand);
+    theoryMode = snapshot.theoryMode ?? "SS";
+    theoryPair = snapshot.theoryPair
+      ? {
+          left: theoryFlowerAt(theoryLeftRatio, snapshot.theoryPair.left),
+          right: theoryFlowerAt(theoryRightRatio, snapshot.theoryPair.right),
+        }
+      : null;
+    leftTurn = clampMatrixTurnToLevel(snapshot.leftTurn, snapshot.level);
+    rightTurn = clampMatrixTurnToLevel(snapshot.rightTurn, snapshot.level);
     activeAxis = snapshot.activeAxis;
     labelMode = snapshot.labelMode;
     propType = snapshot.propType;
-    relationshipDriver = snapshot.relationshipDriver;
     if (snapshot.pair) {
       rememberedVariants = {
         left: semanticVariant(snapshot.pair.left),
@@ -306,14 +543,15 @@ export function createShapeMatrixAppState(
     selectedMode = selectedPair
       ? (snapshot.mode ?? MODE_ORDER[0] ?? null)
       : null;
-    selectedPropMode =
-      snapshot.relationshipDriver === "props" &&
-      supportsTimedPropRelationship(selectedPair)
-        ? snapshot.propMode
-        : null;
+    selectedPropMode = supportsTimedPropRelationship(selectedPair)
+      ? snapshot.propMode
+      : null;
   }
 
-  function selectPair(pair: { left: Flower; right: Flower }): void {
+  function selectPair(
+    pair: { left: Flower; right: Flower },
+    options: ShapeMatrixSelectPairOptions = {}
+  ): void {
     selectedPair = pair;
     rememberedVariants = {
       left: semanticVariant(pair.left),
@@ -321,7 +559,7 @@ export function createShapeMatrixAppState(
     };
     selectedMode ??= MODE_ORDER[0] ?? null;
     if (!supportsTimedPropRelationship(pair)) selectedPropMode = null;
-    if (compact) {
+    if (compact && options.navigate !== false) {
       activeView = "detail";
       requestCompactFocus("detail");
     }
@@ -332,16 +570,13 @@ export function createShapeMatrixAppState(
     selectedMode = selectedPair
       ? (mode ?? selectedMode ?? MODE_ORDER[0] ?? null)
       : null;
-    if (relationshipDriver === "hands") selectedPropMode = null;
     syncState();
   }
 
   function setPropMode(mode: VtgMode | null): void {
-    selectedPropMode =
-      relationshipDriver === "props" &&
-      supportsTimedPropRelationship(selectedPair)
-        ? mode
-        : null;
+    selectedPropMode = supportsTimedPropRelationship(selectedPair)
+      ? mode
+      : null;
     syncState();
   }
 
@@ -350,7 +585,7 @@ export function createShapeMatrixAppState(
     if (compact) requestCompactFocus("matrix");
   }
   function showDetail(): void {
-    if (selectedPair) {
+    if (surface === "theory" ? theoryPair : selectedPair) {
       activeView = "detail";
       if (compact) requestCompactFocus("detail");
     }
@@ -364,7 +599,11 @@ export function createShapeMatrixAppState(
   function setCompact(nextCompact: boolean): void {
     if (compact === nextCompact) return;
     compact = nextCompact;
-    if (compact) activeView = selectedPair ? "detail" : "matrix";
+    if (compact) {
+      activeView = (surface === "theory" ? theoryPair : selectedPair)
+        ? "detail"
+        : "matrix";
+    }
   }
   function openAbout(): void {
     aboutOpen = true;
@@ -372,22 +611,39 @@ export function createShapeMatrixAppState(
   function closeAbout(): void {
     aboutOpen = false;
   }
-  function openPropPicker(): void {
-    propPickerOpen = true;
+  /**
+   * One entry point. The Props control under the animation is a disclosure:
+   * pressing it again puts the stage back the way it was.
+   */
+  function togglePropPicker(): void {
+    propPickerOpen = !propPickerOpen;
   }
+  /** For the drill, when another dock section claims the space. */
   function closePropPicker(): void {
     propPickerOpen = false;
+  }
+  /** A tile-to-hero shared-element transition is capturing or animating. */
+  function beginMandalaHandoff(): void {
+    mandalaHandoff = true;
+  }
+  function endMandalaHandoff(): void {
+    mandalaHandoff = false;
   }
 
   function syncState(): void {
     dependencies.syncState({
+      surface,
+      theoryLeftRatio,
+      theoryRightRatio,
+      theoryMode,
+      theoryPair,
+      theoryBand,
       level,
       leftTurn,
       rightTurn,
       activeAxis,
       labelMode,
       propType,
-      relationshipDriver,
       pair: selectedPair,
       mode: selectedMode,
       propMode: selectedPropMode,
@@ -395,6 +651,37 @@ export function createShapeMatrixAppState(
   }
 
   return {
+    get surface() {
+      return surface;
+    },
+    get theoryLeftRatio() {
+      return theoryLeftRatio;
+    },
+    get theoryRightRatio() {
+      return theoryRightRatio;
+    },
+    /** The ratio the Apply to target currently edits. */
+    get activeTheoryRatio() {
+      return activeAxis === "right" ? theoryRightRatio : theoryLeftRatio;
+    },
+    get theoryMode() {
+      return theoryMode;
+    },
+    get theoryPair() {
+      return theoryPair;
+    },
+    get theoryRowAxis() {
+      return theoryRowAxis;
+    },
+    get theoryColAxis() {
+      return theoryColAxis;
+    },
+    get availableTheoryRatios() {
+      return availableTheoryRatios;
+    },
+    get theoryBand() {
+      return theoryBand;
+    },
     get level() {
       return level;
     },
@@ -415,9 +702,6 @@ export function createShapeMatrixAppState(
     },
     get propType() {
       return propType;
-    },
-    get relationshipDriver() {
-      return relationshipDriver;
     },
     get availableTurns() {
       return availableTurns;
@@ -455,6 +739,9 @@ export function createShapeMatrixAppState(
     get propPickerOpen() {
       return propPickerOpen;
     },
+    get mandalaHandoff() {
+      return mandalaHandoff;
+    },
     get rowAxis() {
       return rowAxis;
     },
@@ -464,10 +751,15 @@ export function createShapeMatrixAppState(
     load,
     restoreState,
     setLevel,
+    setTheoryBand,
     setTurn,
     setActiveAxis,
     setLabelMode,
-    setRelationshipDriver,
+    setSurface,
+    setTheoryRatio,
+    setTheoryRatioFor,
+    setTheoryMode,
+    selectTheoryPair,
     setPropType,
     selectPair,
     setMode,
@@ -477,8 +769,10 @@ export function createShapeMatrixAppState(
     setCompact,
     openAbout,
     closeAbout,
-    openPropPicker,
+    togglePropPicker,
     closePropPicker,
+    beginMandalaHandoff,
+    endMandalaHandoff,
   };
 }
 

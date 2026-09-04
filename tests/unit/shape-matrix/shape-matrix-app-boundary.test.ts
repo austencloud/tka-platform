@@ -47,7 +47,8 @@ describe("Shape Matrix app boundary", () => {
     );
 
     expect(drillSource).toContain("disableContextMenu: false");
-    expect(drillSource).toContain('disassemblyLayout: "sidecar"');
+    // The drill lets the animator pick sidecar vs stacked from its host box.
+    expect(drillSource).toContain('disassemblyLayout: "auto"');
     expect(drillSource).toContain(
       'import("$lib/shared/timeline/StepStrip.svelte")'
     );
@@ -64,10 +65,18 @@ describe("Shape Matrix app boundary", () => {
     expect(drillSource).not.toContain("fadeSettlementTimer");
     expect(drillSource).toContain("retryPlayerLoad");
     expect(drillSource).toContain("railLoadError");
-    expect(drillSource).toContain(
-      '<i class="fas fa-arrow-right derivation-arrow" aria-hidden="true"></i>'
+    // The Hands -> Props derivation lives in the shared relationship bridge.
+    const bridgeSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/components/PropRelationshipChipRow.svelte"
+      ),
+      "utf8"
     );
-    expect(drillSource).toContain('<span class="sr-only">produces</span>');
+    expect(drillSource).toContain("PropRelationshipChipRow");
+    expect(bridgeSource).toContain(
+      '<i class="fas fa-arrow-right bridge-arrow" aria-hidden="true"></i>'
+    );
+    expect(bridgeSource).toContain('<span class="sr-only">produces</span>');
   });
 
   it("threads the optional prop element through the canonical animation overlay", () => {
@@ -143,9 +152,9 @@ describe("Shape Matrix app boundary", () => {
 
     expect(inlinePlayerSource).toContain("{disassemblyLayout}");
     expect(animatorSource).toContain(
-      "data-disassembly-layout={disassemblyLayout}"
+      "data-disassembly-layout={resolvedDisassemblyLayout}"
     );
-    expect(animatorSource).toContain("layout={disassemblyLayout}");
+    expect(animatorSource).toContain("layout={resolvedDisassemblyLayout}");
     expect(animatorSource).toContain("{backgroundAlpha}");
     expect(splitSource.match(/\{backgroundAlpha\}/g)).toHaveLength(2);
     expect(splitSource).not.toContain("backgroundAlpha={1}");
@@ -175,11 +184,139 @@ describe("Shape Matrix app boundary", () => {
       "utf8"
     );
 
+    // No reserved hand-path row and no in-flow slot that could reflow the
+    // stage. The result crossfade is content-sized with an eased height: the
+    // branching phase variant is taller than the one-line result, and `fill`
+    // made its absolute layers spill out over the animation below.
     expect(propPickerSource).not.toContain("hand-choice-slot");
     expect(propPickerSource).toContain(
-      "selectedGroup && selectedGroup.candidates.length > 1"
+      "<Crossfade key={resultKey} animateHeight"
     );
-    expect(propPickerSource).toContain('transition:growFade={{ axis: "y" }}');
+    expect(propPickerSource).not.toContain("<Crossfade key={resultKey} fill");
+    expect(propPickerSource).not.toContain("transition:growFade");
+  });
+
+  it("chooses a prop beside the animation, never over it", () => {
+    const drillSource = readFileSync(
+      resolve("src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte"),
+      "utf8"
+    );
+    const detailSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixDetailPane.svelte"
+      ),
+      "utf8"
+    );
+    const appSource = readFileSync(
+      resolve("src/lib/shared/shape-matrix/app/ShapeMatrixApp.svelte"),
+      "utf8"
+    );
+    const stateSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte.ts"
+      ),
+      "utf8"
+    );
+
+    // The catalogue is a region of the drill, so the element relationships and
+    // the pictograph carousel stay on screen while a prop is chosen.
+    expect(drillSource).toContain("BentoPropGrid");
+    expect(drillSource).toContain('class="prop-catalogue"');
+    expect(drillSource).toContain("class:picking-props={propPickerOpen}");
+    // Survivors travel to their new boxes through the canonical owner.
+    expect(drillSource).toContain("createLayoutMotion");
+    expect(drillSource).toContain('data-drill-region="hero"');
+    // FLIP membership is for survivors only. capture() cancels every animation
+    // on the elements it tracks, so tracking the catalogue would cancel the
+    // very outro that removes it and strand a sliver of it on the stage.
+    expect(drillSource).not.toContain('data-drill-region="props"');
+
+    // No drawer, and prop choosing is not one of the dock's tray sections.
+    expect(appSource).not.toContain("PropPickerModal");
+    expect(detailSource).not.toContain('setActiveSection("props")');
+
+    // Choosing keeps the catalogue open, so the change can be watched: pick a
+    // prop, see the shape traced by it, pick the next one.
+    expect(stateSource).toContain("async function setPropType");
+    expect(stateSource).toContain("The picker stays open.");
+  });
+
+  it("offers prop choice once, under the animation", () => {
+    const overflowSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixOverflowMenu.svelte"
+      ),
+      "utf8"
+    );
+
+    // The Props control under the canvas owns the choice; a second entry in
+    // the overflow menu pointed at the same catalogue.
+    expect(overflowSource).not.toContain("Choose prop");
+    expect(overflowSource).not.toContain("getPropTypeDisplayInfo");
+  });
+
+  it("marks the chosen relationship with more than a colour", () => {
+    const chipSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/components/RelationshipChoiceChip.svelte"
+      ),
+      "utf8"
+    );
+
+    // Six element accents, several of them dark: a tint difference alone did
+    // not answer "which one did I pick?" at a glance.
+    expect(chipSource).toContain('class="choice-check"');
+    expect(chipSource).toContain("aria-pressed={active}");
+    expect(chipSource).toContain(".relationship-choice.active .choice-check {");
+    // Whole-surface treatment, never a decorative edge strip.
+    expect(chipSource).toContain("inset 0 0 0 2px var(--choice-accent)");
+    expect(chipSource).not.toMatch(/border-(left|right|top|bottom):\s*\d/);
+  });
+
+  it("wraps a long value palette instead of scrolling it sideways", () => {
+    // The scroller owns the long-band behaviour wherever a surface picks from
+    // an ordered palette. That is the Matrix turn band. Theory types its ratio
+    // instead, so it is checked below for the entry rather than the scroller.
+    const scrollerSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixValueScroller.svelte"
+      ),
+      "utf8"
+    );
+    const turnSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixTurnControls.svelte"
+      ),
+      "utf8"
+    );
+    const theorySource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixTheoryControls.svelte"
+      ),
+      "utf8"
+    );
+    const segmentedSource = readFileSync(
+      resolve("src/lib/shared/ui/components/SegmentedControl.svelte"),
+      "utf8"
+    );
+
+    // Level 4 lists fourteen ratios. The tray splits them over two rows and
+    // spends the saved room on full-size segments.
+    expect(scrollerSource).toContain("columns={trayColumns}");
+    expect(scrollerSource).toContain(
+      ".scroller-host:not(.tray) .value-control :global(.segmented-control)"
+    );
+    // The turn ribbon may not fork it back into a local palette.
+    expect(turnSource).toContain("<ShapeMatrixValueScroller");
+    expect(turnSource).not.toContain("trayColumns");
+    // The 0–15 ratio square is a field, not a ladder, so Theory takes the two
+    // numbers directly and must not grow a palette of its own.
+    expect(theorySource).toContain("<ShapeMatrixRatioEntry");
+    expect(theorySource).not.toContain("<ShapeMatrixValueScroller");
+    expect(theorySource).not.toContain("SegmentedControl");
+    // The indicator tracks the chosen cell on both axes.
+    expect(segmentedSource).toContain(".grid .indicator {");
+    expect(segmentedSource).toContain("--row: {selectedRow}");
   });
 
   it("keeps each elemental button's visible mode and name in its accessible name", () => {

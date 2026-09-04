@@ -25,6 +25,21 @@ export interface FlowFestMobilitySnapshot {
   odometerMeters: number;
 }
 
+/**
+ * How the player is travelling on their own legs.
+ *
+ * The mounted half of this state has always reported a mode - Cruise or
+ * Performance - and the on-foot half reported nothing, so the HUD said
+ * "Walking" while the body was sprinting. `sprinting` is the player's own
+ * request, matching how the wheel's modes are also input rather than measured
+ * physics; `speedMetersPerSecond` is the body's real travel, which is what
+ * separates a held Shift from an actual run.
+ */
+export interface FlowFestOnFootMotion {
+  speedMetersPerSecond: number;
+  sprinting: boolean;
+}
+
 export interface FlowFestMobilityRuntimeUpdate {
   mounted: boolean;
   player: FlowFestMobilityPoint;
@@ -38,6 +53,7 @@ export interface FlowFestMobilityRuntimeUpdate {
   interactionMessage: string;
   gamepadConnected: boolean;
   collisionLimited: boolean;
+  onFoot: FlowFestOnFootMotion;
 }
 
 const EMPTY_INPUT: FlowFestElectricUnicycleInput = {
@@ -144,6 +160,7 @@ export function createFlowFestMobilityState() {
     interactionMessage: "Park wheel",
     gamepadConnected: false,
     collisionLimited: false,
+    onFoot: { speedMetersPerSecond: 0, sprinting: false },
   });
   let persistenceTimer: ReturnType<typeof setTimeout> | null = null;
   let pageHideAttached = false;

@@ -76,6 +76,7 @@
     preferWidthSizingOnNarrow = false,
     allowFewStepOverflowOnNarrow = true,
     fitAllSteps = false,
+    sizingProfile = "workbench",
     selectedStepNumbers = new Set<number>(),
     isMultiSelectMode = false,
     onStartLongPress,
@@ -122,6 +123,8 @@
     allowFewStepOverflowOnNarrow?: boolean;
     /** Fit the whole sequence in the container instead of scrolling it. */
     fitAllSteps?: boolean;
+    /** Preview grids trade edit-hover breathing room for larger notation. */
+    sizingProfile?: "workbench" | "preview";
     selectedStepNumbers?: Set<number>;
     isMultiSelectMode?: boolean;
     onStartLongPress?: () => void;
@@ -203,19 +206,18 @@
       : steps.slice(0, presentedStepCount)
   );
 
-  // Breathing room (px, each side) reserved around the grid so a selected or
-  // hovered cell's gold border + scale "pop" never reaches the hard clip on
-  // .scroll-wrapper (overflow-x: hidden) / .step-grid-container (overflow:
-  // hidden). MUST equal the .scroll-wrapper padding in WorkspaceGrid.svelte —
-  // that padding is where the pop renders, and reserving it here keeps cells
-  // sized to the wrapper's content box so they don't spill into it.
-  const POP_RESERVE = 16;
+  // An editable workbench needs room for its selected-cell glow and scale pop.
+  // A passive preview has no such interaction, so it spends that edge reserve
+  // on the notation instead. WorkspaceGrid consumes this same value as padding
+  // so the sizing calculation and painted content box stay aligned.
+  const edgeReserve = $derived(sizingProfile === "preview" ? 4 : 16);
 
   // The cell cap is a px constant, so on a surface that ramps its root font for
   // large displays every rem around the grid grows while the pictographs stay
   // 1080p-sized. Scaling the cap by the same ramp keeps them in lockstep. The
   // app shell does not ramp, so this resolves to the stock cap there.
   const BASE_MAX_CELL_SIZE = 200;
+  const PREVIEW_MAX_CELL_SIZE = 360;
   const rootFontRamp = createRootFontRamp();
   const rampedMaxCellSize = $derived(rootFontRamp.scaled(BASE_MAX_CELL_SIZE));
 
@@ -231,11 +233,15 @@
         : narrowMaxColumns;
     return calculateGridLayout(
       stepCount,
-      Math.max(0, containerWidth - 2 * POP_RESERVE),
-      Math.max(0, containerHeight - 2 * POP_RESERVE),
+      Math.max(0, containerWidth - 2 * edgeReserve),
+      Math.max(0, containerHeight - 2 * edgeReserve),
       deviceDetector,
       {
-        maxCellSize: rampedMaxCellSize,
+        minCellSize: sizingProfile === "preview" ? 28 : undefined,
+        maxCellSize:
+          sizingProfile === "preview"
+            ? Math.max(rampedMaxCellSize, PREVIEW_MAX_CELL_SIZE)
+            : rampedMaxCellSize,
         isSideBySideLayout,
         heightSizingRowThreshold,
         manualColumnCount,
@@ -246,6 +252,8 @@
           isNarrowAssemble || preferWidthSizingOnNarrow,
         allowFewStepOverflowOnNarrow,
         fitAllSteps,
+        widthPaddingRatio: sizingProfile === "preview" ? 1 : undefined,
+        heightPaddingRatio: sizingProfile === "preview" ? 1 : undefined,
       }
     );
   }
@@ -262,7 +270,7 @@
           containerHeight,
           gridLayout.rows,
           gridLayout.cellSize,
-          2 * POP_RESERVE
+          2 * edgeReserve
         )
   );
 
@@ -282,7 +290,7 @@
       containerHeight,
       previousLayout.rows,
       previousLayout.cellSize,
-      2 * POP_RESERVE
+      2 * edgeReserve
     );
   });
 
@@ -301,7 +309,7 @@
       return fallback;
     if (containerWidth <= 0) return manualColumnCount;
 
-    const sizingWidth = Math.max(0, containerWidth - 2 * POP_RESERVE);
+    const sizingWidth = Math.max(0, containerWidth - 2 * edgeReserve);
     const usable = sizingWidth - calculateTimelinePadding(containerWidth);
     const hasStart = Boolean(startPosition && !startPosition.isBlank);
     const maxUnits = Math.floor(usable / TIMELINE_MIN_UNIT);
@@ -337,12 +345,12 @@
       ? Math.max(Math.min(actualCellCount, fullRowUnits), 2)
       : Math.max(fullRowUnits, 2);
 
-    // Reserve the .scroll-wrapper padding (POP_RESERVE each side) so cells are
+    // Reserve the .scroll-wrapper padding on each side so cells are
     // sized to the wrapper's CONTENT box, not its full width. This keeps edge
     // cells off the scroll-wrapper/step-grid-container clip boundary, leaving
     // that padding as guaranteed room for the selected/hovered cell's gold
     // border + pop to render without being cut (horizontal AND vertical).
-    const sizingWidth = Math.max(0, containerWidth - 2 * POP_RESERVE);
+    const sizingWidth = Math.max(0, containerWidth - 2 * edgeReserve);
     const widthBased = calculateTimelineUnitSize(sizingWidth, totalUnits);
 
     // Constrain by available height so all rows fit without scrolling. A
@@ -355,7 +363,7 @@
       widthBased,
       containerHeight,
       rowCount,
-      POP_RESERVE
+      edgeReserve
     );
   });
 
@@ -756,6 +764,7 @@
       {timelinePadding}
       {displayState}
       {scrollState}
+      edgePadding={edgeReserve}
       {selectedStepNumber}
       {practiceStepNumber}
       {activeMode}

@@ -10,6 +10,8 @@
     type TransitionGeometryTrace,
     type TransitionTravelSummary,
     type TransitionValueRange,
+    type TransitionContentDrift,
+    type InspectorRevealSummary,
   } from "../transition-geometry-trace";
 
   interface Props {
@@ -85,6 +87,39 @@
   function formatTravel(value: TransitionTravelSummary | null): string {
     if (!value) return "n/a";
     return `${Math.round(value.start)} → ${Math.round(value.end)} px · ${Math.round(value.backtrack)} px backtrack · ${Math.round(value.overshoot)} px overshoot`;
+  }
+
+  function formatReveal(value: InspectorRevealSummary): string {
+    const parts = [
+      `${Math.round(value.maxClippedLeft)} px left cut`,
+      `${Math.round(value.maxClippedRight)} px right cut`,
+      `${Math.round(value.maxUncovered)} px undrawn`,
+    ];
+    const held = [
+      value.clippedMs > 0 ? `${Math.round(value.clippedMs)} ms cut` : "",
+      value.uncoveredMs > 0
+        ? `${Math.round(value.uncoveredMs)} ms undrawn`
+        : "",
+    ].filter(Boolean);
+    return `${parts.join(" · ")}${held.length ? ` · ${held.join(" · ")}` : ""}`;
+  }
+
+  function revealBroken(value: InspectorRevealSummary): boolean {
+    return (
+      value.maxClippedLeft > 1 ||
+      value.maxClippedRight > 1 ||
+      value.maxUncovered > 1
+    );
+  }
+
+  function formatDrift(value: TransitionContentDrift | null): string {
+    if (!value) return "n/a";
+    return `${Math.round(value.width)} px width · ${Math.round(value.origin)} px origin · ${Math.round(value.vertical)} px vertical`;
+  }
+
+  function drifted(value: TransitionContentDrift | null): boolean {
+    if (!value) return false;
+    return value.width > 1 || value.origin > 1 || value.vertical > 1;
   }
 
   function formatRange(value: TransitionValueRange | null): string {
@@ -427,6 +462,19 @@
           (summary.cardStageInspectorEntry?.overshoot ?? 0) > 1}
         >Inspector return: {formatTravel(summary.cardStageInspectorEntry)}</span
       >
+      <span data-problem={drifted(summary.artSettingsContentDrift)}
+        >Art settings drift: {formatDrift(
+          summary.artSettingsContentDrift
+        )}</span
+      >
+      <span data-problem={drifted(summary.cardSettingsContentDrift)}
+        >Card settings drift: {formatDrift(
+          summary.cardSettingsContentDrift
+        )}</span
+      >
+      <span data-problem={summary.longestSampleGap > 80}
+        >Longest sample gap: {Math.round(summary.longestSampleGap)} ms</span
+      >
       <span data-dissolve={summary.dissolveFrames > 0}
         >Workspace dissolve frames: {summary.dissolveFrames}</span
       >
@@ -440,6 +488,26 @@
     {:else if isTunnelTrace}
       <span data-problem={summary.tunnelUnreadyFrames > 0}
         >Unready Tunnel frames: {summary.tunnelUnreadyFrames}</span
+      >
+      <span data-problem={summary.tunnelUnpreparedLayerFrames > 0}
+        >Reveal-before-layers frames: {summary.tunnelUnpreparedLayerFrames}</span
+      >
+      <span data-problem={summary.tunnelLateLayerArrivals > 0}
+        >Late layer arrivals: {summary.tunnelLateLayerArrivals}</span
+      >
+      <span
+        data-problem={summary.tunnelLayerOpacityStepMaximum > 0.35 &&
+          summary.longestSampleGap <= 80}
+        >Largest layer alpha step: {summary.tunnelLayerOpacityStepMaximum.toFixed(
+          2
+        )}</span
+      >
+      <span
+        data-problem={summary.tunnelGridOpacityStepMaximum > 0.35 &&
+          summary.longestSampleGap <= 80}
+        >Largest grid alpha step: {summary.tunnelGridOpacityStepMaximum.toFixed(
+          2
+        )}</span
       >
       <span data-dissolve={summary.tunnelCrossfadeFrames > 0}
         >Layer-bloom frames: {summary.tunnelCrossfadeFrames}</span
@@ -747,6 +815,65 @@
         >
       {/if}
     {/if}
+    <!-- Reveal geometry applies to every gate that resizes the inspector, so it
+         is rendered outside the per-gate metric branches. -->
+    {#if summary.inspectorSurfaceStep}
+      <span data-problem={summary.inspectorSurfaceStep.widthPx > 1}
+        >Inspector surface step: {Math.round(
+          summary.inspectorSurfaceStep.widthPx
+        )} px · {summary.inspectorSurfaceStep.alphaDrop.toFixed(2)} alpha · {Math.round(
+          summary.inspectorSurfaceStep.ms
+        )} ms</span
+      >
+    {/if}
+    <!-- The Card's size pin outlives the last mode step, so this reads the
+         settle tail rather than any one gate's phase. -->
+    {#if summary.cardSizePinRelease}
+      <span data-problem={summary.cardSizePinRelease.stepPx > 2}
+        >Card size pin release: {Math.round(summary.cardSizePinRelease.stepPx)} px
+        step · {Math.round(summary.cardSizePinRelease.travelPx)} px over {summary
+          .cardSizePinRelease.frames} frames · {Math.round(
+          summary.cardSizePinRelease.ms
+        )} ms · fill {summary.cardSizePinRelease.fillBefore.toFixed(2)} → {summary.cardSizePinRelease.fillAfter.toFixed(
+          2
+        )}</span
+      >
+    {/if}
+    <!-- Measured from the commit into card, not from a gate phase: the
+         arrival is what the user watches, and it outlives the step that
+         started it. -->
+    <!-- The dock is the cause the arrival only hints at: a held panel whose
+       basis snaps between a length and a keyword re-lays out the whole group
+       in one frame. A collapse that takes a single frame is that snap. -->
+    {#if summary.dockCollapse}
+      <span
+        data-problem={summary.dockCollapse.frames <= 1 &&
+          summary.dockCollapse.travelPx > 24}
+        title="A held dock is sized by its flex-basis alone, and CSS cannot interpolate between a length and a keyword. A collapse that takes one frame is that snap."
+        >Dock collapse: {Math.round(summary.dockCollapse.stepPx)} px step · {Math.round(
+          summary.dockCollapse.travelPx
+        )} px over {summary.dockCollapse.frames} frames · {Math.round(
+          summary.dockCollapse.ms
+        )} ms</span
+      >
+    {/if}
+    {#if summary.cardArrival}
+      <span
+        data-problem={summary.cardArrival.offstagePx > 0 ||
+          (summary.cardArrival.travelPx > 24 &&
+            summary.cardArrival.frames <= 1)}
+        >Card arrival: {Math.round(summary.cardArrival.stepPx)} px step · {Math.round(
+          summary.cardArrival.travelPx
+        )} px climbed over {summary.cardArrival.frames} frames · {Math.round(
+          summary.cardArrival.ms
+        )} ms · {Math.round(summary.cardArrival.offstagePx)} px offstage</span
+      >
+    {/if}
+    {#each summary.inspectorReveal as reveal (reveal.layer)}
+      <span data-problem={revealBroken(reveal)}
+        >{reveal.layer} reveal: {formatReveal(reveal)}</span
+      >
+    {/each}
   </div>
 
   {#if firstTinyCardSample}

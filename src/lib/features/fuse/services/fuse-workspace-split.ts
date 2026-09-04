@@ -17,6 +17,44 @@ export interface FuseWorkspaceSplit {
   stepColumns: number;
 }
 
+export interface FuseTallPortraitInput {
+  width: number;
+  height: number;
+  mobileMaxWidth: number;
+  splitMinWidth: number;
+  narrowMinHeight: number;
+  splitMinHeight: number;
+  minAspectRatio: number;
+}
+
+/**
+ * Identifies a narrow slot with enough vertical room to show both source paths
+ * and the result instead of spending the entire surface on the compact hero.
+ */
+export function fitsFuseTallPortraitWorkspace(
+  input: FuseTallPortraitInput
+): boolean {
+  const {
+    width,
+    height,
+    mobileMaxWidth,
+    splitMinWidth,
+    narrowMinHeight,
+    splitMinHeight,
+    minAspectRatio,
+  } = input;
+  if (width <= 0 || height <= 0) return false;
+
+  const requiredHeight =
+    width >= splitMinWidth ? splitMinHeight : narrowMinHeight;
+
+  return (
+    width < mobileMaxWidth &&
+    height >= requiredHeight &&
+    height / width >= minAspectRatio
+  );
+}
+
 function stepColumnCandidates(stepCount: number): readonly number[] {
   const twoRowCeiling = Math.max(1, Math.ceil(stepCount / 2));
   return STEP_COLUMN_CANDIDATES.filter((columns) => columns <= twoRowCeiling);

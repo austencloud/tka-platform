@@ -58,6 +58,9 @@ describe("canonical hand terminology", () => {
 
     expect(glossary.blue?.definition).toContain("performer's left hand");
     expect(glossary.red?.definition).toContain("performer's right hand");
+    expect(glossary.turns?.definition).toContain("turns = (P/Q - 1) / 2");
+    expect(glossary.turns?.definition).toContain("-0.25 for 1:2");
+    expect(glossary.turns?.definition).toContain("exceptional 0:1 ratio");
     expect(JSON.stringify({ glossary, aliases }).toLowerCase()).not.toContain(
       "lead hand"
     );

@@ -111,6 +111,42 @@ describe("convertSceneBeatTimes", () => {
     ).toBe(2);
   });
 
+  it("converts a camera shot's own duration and the moves inside it", () => {
+    const input = baseScene({
+      camera: {
+        shots: [
+          {
+            subject: { kind: "group" },
+            shotSize: "wide",
+            durationBeats: 8,
+            moves: [{ move: "push-in", durationBeats: 4 }],
+          },
+          { subject: { kind: "group" }, shotSize: "medium" },
+        ],
+      },
+    } as unknown as Partial<DirectorSceneInput>);
+    const scene = convertSceneBeatTimes(input, bpm(120));
+    expect(scene.camera?.shots?.[0]?.durationSeconds).toBe(4);
+    expect(scene.camera?.shots?.[0]?.moves?.[0]?.durationSeconds).toBe(2);
+    expect(
+      scene.camera?.shots?.[0] && "durationBeats" in scene.camera.shots[0]
+    ).toBe(false);
+    // The input keeps its beats: conversion clones, never rewrites in place.
+    expect(input.camera?.shots?.[0]?.durationBeats).toBe(8);
+  });
+
+  it("returns the same camera object when shots state only seconds", () => {
+    const input = baseScene({
+      camera: {
+        shots: [
+          { subject: { kind: "group" }, durationSeconds: 4 },
+          { subject: { kind: "group" } },
+        ],
+      },
+    } as unknown as Partial<DirectorSceneInput>);
+    expect(convertSceneBeatTimes(input, bpm(120))).toBe(input);
+  });
+
   it("converts camera keyframe atBeats to atSeconds", () => {
     const scene = convertSceneBeatTimes(
       baseScene({
@@ -224,5 +260,77 @@ describe("convertSceneBeatTimes", () => {
     // couldn't pass this test by doing nothing.
     expect(converted).not.toBe(original);
     expect(converted.durationSeconds).toBe(8);
+  });
+});
+
+/**
+ * Gap 22. Bars are the unit a director counts off, and they are beats times
+ * the meter. The conversion happens here so the compilers downstream still
+ * only ever see seconds.
+ */
+describe("convertSceneBeatTimes, bars", () => {
+  const waltz = (value: number): SceneBpm => ({
+    value,
+    stated: true,
+    beatsPerBar: 3,
+  });
+
+  it("converts a scene durationBars through the stated meter", () => {
+    // 8 bars of 3 at 90 bpm is 24 beats, which is 16 seconds.
+    const scene = convertSceneBeatTimes(
+      baseScene({ durationBars: 8 } as Partial<DirectorSceneInput>),
+      waltz(90)
+    );
+    expect(scene.durationSeconds).toBe(16);
+    expect("durationBars" in scene && scene.durationBars).toBeFalsy();
+  });
+
+  it("counts four to the bar when no meter is stated", () => {
+    const scene = convertSceneBeatTimes(
+      baseScene({ durationBars: 4 } as Partial<DirectorSceneInput>),
+      bpm(120)
+    );
+    expect(scene.durationSeconds).toBe(8);
+  });
+
+  it("converts bars on camera moves, keyframes, and blocking", () => {
+    const scene = convertSceneBeatTimes(
+      baseScene({
+        durationBars: 4,
+        performance: {
+          bpm: 90,
+          meter: { beatsPerBar: 3 },
+          performers: [
+            {
+              blocking: [{ move: "walk", to: { x: 1, z: 0 }, durationBars: 1 }],
+            },
+          ],
+        },
+        camera: {
+          moves: [{ move: "push-in", durationBars: 2 }],
+          keyframes: [
+            { atSeconds: 0, position: [0, 1, -4] },
+            { atBars: 2, position: [0, 1, -2] },
+          ],
+        },
+      } as unknown as Partial<DirectorSceneInput>),
+      waltz(90)
+    );
+    expect(scene.durationSeconds).toBe(8);
+    expect(scene.camera!.moves![0]!.durationSeconds).toBe(4);
+    expect(scene.camera!.keyframes![1]!.atSeconds).toBe(4);
+    expect(
+      scene.performance!.performers![0]!.blocking![0]!.durationSeconds
+    ).toBe(2);
+  });
+
+  it("speaks the rejection in the bars the director actually counted", () => {
+    expect(() =>
+      convertSceneBeatTimes(
+        // 40 bars of 3 at 66 bpm is 120 beats, well past the 60-second ceiling.
+        baseScene({ durationBars: 40 } as Partial<DirectorSceneInput>),
+        { value: 66, stated: true, beatsPerBar: 3 }
+      )
+    ).toThrow(/40 bars of 3 at 66 bpm is 109\.09s/);
   });
 });

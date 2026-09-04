@@ -5,6 +5,10 @@
 		resolveMandalaRenderExtent,
 	} from "$lib/shared/mandala/services/mandala-renderer";
 	import { onMount, untrack } from "svelte";
+	import {
+		createRenderActivityGate,
+		renderGateTarget
+	} from "$lib/shared/render-gating/render-activity-gate";
 	import { cubicInOut } from "svelte/easing";
 	import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 	import type {
@@ -287,6 +291,22 @@
 		morphRafId = requestAnimationFrame(stepMorph);
 	});
 
+	// Off-screen / hidden-tab gating. A mandala that has scrolled away keeps its
+	// last painted frame instead of repainting the canvas every frame. Phase is
+	// accumulated from frame deltas inside the tick, so a resume restarts from a
+	// fresh `lastTime` and continues from where it stopped — no jump.
+	const activityGate = createRenderActivityGate({ name: "sequence-mandala" });
+	let gateActive = $state(activityGate.active);
+	$effect(() => {
+		const unsubscribe = activityGate.subscribe((next) => {
+			gateActive = next;
+		});
+		return () => {
+			unsubscribe();
+			activityGate.dispose();
+		};
+	});
+
 	// Animation loop depends ONLY on `animate`. Every tunable (min/max dx, period,
 	// rotation, easing) is read live inside the rAF tick — which runs outside the
 	// reactive tracking context — so adjusting speed/spin/depth retunes the motion
@@ -294,7 +314,7 @@
 	// accumulated from frame deltas, so changing the period only changes the rate,
 	// never the position (no jump, fully continuous).
 	$effect(() => {
-		if (!animate) {
+		if (!animate || !gateActive) {
 			if (rafId) {
 				cancelAnimationFrame(rafId);
 				rafId = 0;
@@ -548,11 +568,19 @@
 </script>
 
 {#if useCanvas}
-	<div class="mandala-container" style="width: {size}px; height: {size}px; transform: rotate({rotationDeg}deg);">
+	<div
+		class="mandala-container"
+		style="width: {size}px; height: {size}px; transform: rotate({rotationDeg}deg);"
+		use:renderGateTarget={activityGate}
+	>
 		<canvas bind:this={canvasEl} class="mandala-canvas"></canvas>
 	</div>
 {:else if svgString}
-	<div class="mandala-container" style="width: {size}px; height: {size}px; transform: rotate({rotationDeg}deg);">
+	<div
+		class="mandala-container"
+		style="width: {size}px; height: {size}px; transform: rotate({rotationDeg}deg);"
+		use:renderGateTarget={activityGate}
+	>
 		{@html svgString}
 	</div>
 {/if}

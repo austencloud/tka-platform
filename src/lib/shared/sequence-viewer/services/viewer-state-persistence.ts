@@ -43,14 +43,16 @@ const VIEWER_MODE_KEY = 'tka-viewer-mode';
 const SPLIT_CONFIG_KEY = 'tka-viewer-split-config';
 const LEGACY_EDITING_PANE_KEY = 'tka-viewer-editing-pane';
 
-function migrateFromLegacy(): { viewerMode: ViewerMode; exportContext: ExportContext } | null {
+function migrateFromLegacy(
+	allowWrites = true
+): { viewerMode: ViewerMode; exportContext: ExportContext } | null {
 	if (typeof localStorage === 'undefined') return null;
 	try {
 		const raw = localStorage.getItem(LEGACY_EDITING_PANE_KEY);
 		if (!raw) return null;
 		const parsed = JSON.parse(raw);
 		const pane = parsed.pane as string | undefined;
-		localStorage.removeItem(LEGACY_EDITING_PANE_KEY);
+		if (allowWrites) localStorage.removeItem(LEGACY_EDITING_PANE_KEY);
 
 		switch (pane) {
 			case 'animation':
@@ -65,12 +67,18 @@ function migrateFromLegacy(): { viewerMode: ViewerMode; exportContext: ExportCon
 	}
 }
 
-export function loadViewerMode(): ViewerMode {
+/**
+ * `persist: false` makes this a pure read: the legacy/mandala migrations still
+ * resolve in memory but never touch disk. View-only viewer mounts (a URL that
+ * overrides the user's own state) use it so nothing about the visit is written.
+ */
+export function loadViewerMode(options?: { persist?: boolean }): ViewerMode {
 	if (typeof localStorage === 'undefined') return 'split';
+	const allowWrites = options?.persist ?? true;
 
-	const migrated = migrateFromLegacy();
+	const migrated = migrateFromLegacy(allowWrites);
 	if (migrated) {
-		persistViewerMode(migrated.viewerMode);
+		if (allowWrites) persistViewerMode(migrated.viewerMode);
 		return migrated.viewerMode;
 	}
 
@@ -79,7 +87,7 @@ export function loadViewerMode(): ViewerMode {
 		// Mandala now opens from the workspace card. A remembered viewer mode
 		// should not bring someone back to a surface they can no longer choose.
 		if (raw === 'mandala') {
-			persistViewerMode('split');
+			if (allowWrites) persistViewerMode('split');
 			return 'split';
 		}
 		// 'videos' is gated off (VIDEO_UPLOAD_ENABLED) — never restore a stale
@@ -106,15 +114,17 @@ export function persistViewerMode(mode: ViewerMode): void {
 	}
 }
 
-export function loadSplitConfig(): SplitConfig {
+/** `persist: false` behaves as a pure read — see `loadViewerMode`. */
+export function loadSplitConfig(options?: { persist?: boolean }): SplitConfig {
 	if (typeof localStorage === 'undefined') return { leftPane: 'animation', rightPane: 'card' };
+	const allowWrites = options?.persist ?? true;
 	try {
 		const raw = localStorage.getItem(SPLIT_CONFIG_KEY);
 		if (!raw) return { leftPane: 'animation', rightPane: 'card' };
 		const parsed = JSON.parse(raw) as SplitConfig;
 		if (isValidContentType(parsed.leftPane) && isValidContentType(parsed.rightPane)) {
 			const migrated = retireMandalaFromSplit(parsed);
-			if (migrated !== parsed) persistSplitConfig(migrated);
+			if (migrated !== parsed && allowWrites) persistSplitConfig(migrated);
 			return migrated;
 		}
 		return { leftPane: 'animation', rightPane: 'card' };
@@ -143,6 +153,22 @@ export function persistSplitConfig(config: SplitConfig): void {
 	}
 }
 
-function isValidContentType(value: unknown): value is ContentType {
+export function isValidContentType(value: unknown): value is ContentType {
 	return value === 'animation' || value === 'animation-3d' || value === 'card' || value === 'videos' || value === 'mandala' || value === 'tunnel';
+}
+
+/**
+ * Every mode a viewer can legitimately be in, including `post-studio` — which
+ * `loadViewerMode` refuses to RESTORE but a URL may legitimately REQUEST.
+ * Hand-edited garbage (`?pane=lol`) fails here and falls back to defaults.
+ */
+export function isValidViewerMode(value: unknown): value is ViewerMode {
+	return value === 'split' || value === 'post-studio' || isValidContentType(value);
+}
+
+/** A `SplitConfig` whose panes are both real content types. */
+export function isValidSplitConfig(value: unknown): value is SplitConfig {
+	if (!value || typeof value !== 'object') return false;
+	const candidate = value as Partial<SplitConfig>;
+	return isValidContentType(candidate.leftPane) && isValidContentType(candidate.rightPane);
 }

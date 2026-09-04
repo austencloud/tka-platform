@@ -1,11 +1,11 @@
 import type { ExperienceState } from "../../../state/experience-persistence.svelte";
 
-export const LEARNING_LETTERS_SCHEMA_VERSION = 3;
+export const LEARNING_LETTERS_SCHEMA_VERSION = 4;
 
 /**
  * The six words the guide's Alpha/Beta Words page (lt1-abc-ghi) teaches, in
  * the guide's own order: the α block (Start = α), then the β block (Start = β).
- * The lesson walks these one at a time before revealing the full deck.
+ * The lesson walks these one at a time before recapping only these six words.
  */
 export const LEARNING_LETTERS_CORE_WORDS = [
   "AAAA",
@@ -16,15 +16,13 @@ export const LEARNING_LETTERS_CORE_WORDS = [
   "IIII",
 ] as const;
 
-/** Intro step + one step per core word + the full-deck capstone. */
+/** Intro step + one step per core word + the six-word recap. */
 export const LEARNING_LETTERS_TOTAL_STEPS =
   LEARNING_LETTERS_CORE_WORDS.length + 2;
 
 export interface LearningLettersProgress {
   schemaVersion: typeof LEARNING_LETTERS_SCHEMA_VERSION;
   stepIndex: number;
-  selectedSequenceId: string;
-  visitedSequenceIds: string[];
 }
 
 export interface NormalizedLearningLettersProgress {
@@ -33,24 +31,23 @@ export interface NormalizedLearningLettersProgress {
 }
 
 /**
- * Older Learning Letters builds stored quiz phases (v1) or the single-screen
- * deck browser (v2) in the same concept slot. Accept only the current schema,
- * then fence the stored step to the lesson and every stored id to the live
- * deck.
+ * Older Learning Letters builds stored quiz phases (v1), the single-screen
+ * deck browser (v2), or full-deck selection state (v3) in the same concept
+ * slot. The v3 step is still meaningful in this lesson, so preserve it while
+ * stripping its retired sequence ids. Earlier shapes restart at the intro.
  */
 export function normalizeLearningLettersProgress(
-  saved: ExperienceState,
-  validSequenceIds: readonly string[]
+  saved: ExperienceState
 ): NormalizedLearningLettersProgress {
-  const firstSequenceId = validSequenceIds[0] ?? "";
   const phaseData = saved.phaseData;
-  if (phaseData?.["schemaVersion"] !== LEARNING_LETTERS_SCHEMA_VERSION) {
+  const storedSchema = phaseData?.["schemaVersion"];
+  const canPreserveStep =
+    storedSchema === 3 || storedSchema === LEARNING_LETTERS_SCHEMA_VERSION;
+  if (!canPreserveStep) {
     return {
       progress: {
         schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
         stepIndex: 0,
-        selectedSequenceId: firstSequenceId,
-        visitedSequenceIds: [],
       },
       migrated: true,
     };
@@ -62,45 +59,21 @@ export function normalizeLearningLettersProgress(
     Math.max(0, storedStep - 1)
   );
 
-  const validIds = new Set(validSequenceIds);
-  const storedSelected = phaseData["selectedSequenceId"];
-  const selectedSequenceId =
-    typeof storedSelected === "string" && validIds.has(storedSelected)
-      ? storedSelected
-      : firstSequenceId;
-  const storedVisited = Array.isArray(phaseData["visitedSequenceIds"])
-    ? phaseData["visitedSequenceIds"]
-    : [];
-  const visitedSequenceIds = [
-    ...new Set(
-      storedVisited.filter(
-        (id): id is string => typeof id === "string" && validIds.has(id)
-      )
-    ),
-  ];
-
-  // Keys outside the v3 shape are residue from a rejected build
-  // (e.g. questionIndex) — flag them so the caller rewrites a clean slot.
-  const knownKeys = new Set([
-    "schemaVersion",
-    "selectedSequenceId",
-    "visitedSequenceIds",
-  ]);
+  // The step itself lives in ExperienceState. Current phase data has only the
+  // schema marker, so old selection state and rejected quiz keys are residue.
+  const knownKeys = new Set(["schemaVersion"]);
   const hasForeignKeys = Object.keys(phaseData).some(
     (key) => !knownKeys.has(key)
   );
 
   const migrated =
+    storedSchema !== LEARNING_LETTERS_SCHEMA_VERSION ||
     hasForeignKeys ||
-    storedStep !== stepIndex + 1 ||
-    selectedSequenceId !== storedSelected ||
-    visitedSequenceIds.length !== storedVisited.length;
+    storedStep !== stepIndex + 1;
   return {
     progress: {
       schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
       stepIndex,
-      selectedSequenceId,
-      visitedSequenceIds,
     },
     migrated,
   };

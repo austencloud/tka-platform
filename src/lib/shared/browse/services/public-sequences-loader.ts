@@ -30,7 +30,27 @@ import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
 import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
 import type { GalleryOfflineCache } from "$lib/shared/offline/services/gallery-offline-cache";
 import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
+import { isDesktop } from "$lib/shared/desktop/is-desktop";
 import { normalizeLegacySequence } from "@tka/tka-types";
+
+/** How long the desktop viewer waits on Firestore before opening from the bundled index. */
+const DESKTOP_SOURCE_READ_TIMEOUT_MS = 2500;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(null), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
 
 export class PublicSequencesLoader {
   private cachedSequences: SequenceData[] | null = null;
@@ -265,9 +285,23 @@ export class PublicSequencesLoader {
       return null;
     }
 
+    // The warmed index already carries hydrated steps for every sequence
+    // published with compositional fields. Offline, that IS the sequence —
+    // a Firestore read would only fail or hang. On desktop the read is still
+    // attempted (the source document is authoritative) but bounded, so a
+    // captive portal or a dead Wi-Fi link never stalls the viewer when the
+    // bundled index can open it immediately.
+    const local = this.findRenderableCached(sequenceName, sequenceId);
+    if (local && !networkStatusState.isOnline) return local;
+
     // Fetch full data from the source reference
     const firestore = await getFirestoreInstance();
-    const fullDoc = await getDoc(doc(firestore, sourceRef));
+    const read = getDoc(doc(firestore, sourceRef));
+    const fullDoc =
+      local && isDesktop()
+        ? await withTimeout(read, DESKTOP_SOURCE_READ_TIMEOUT_MS)
+        : await read;
+    if (!fullDoc) return local;
     if (!fullDoc.exists()) {
       if (fullDoc.metadata.fromCache) {
         throw new Error(
@@ -282,6 +316,18 @@ export class PublicSequencesLoader {
 
     const data = fullDoc.data();
     return this.mapFirestoreToSequenceData(data, fullDoc.id);
+  }
+
+  private findRenderableCached(
+    sequenceName: string,
+    sequenceId?: string
+  ): SequenceData | null {
+    const match = this.cachedSequences?.find((sequence) =>
+      sequenceId
+        ? sequence.id === sequenceId
+        : sequence.name === sequenceName || sequence.word === sequenceName
+    );
+    return match && (match.steps?.length ?? 0) > 0 ? match : null;
   }
 
   /**

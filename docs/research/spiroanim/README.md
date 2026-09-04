@@ -57,13 +57,16 @@ Inspin and outspin differ only by starting phase — exactly `Flower.ori`.
 
 ## Result
 
-**1,584 patterns, 8,640 steps, 100% resolved to TKA letters. Zero unresolved.**
+**1,584 transcribed patterns, 8,640 steps, 100% resolved to TKA letters. Zero
+unresolved.** A further 1,728 entries for the 1:2, 1:4, 2:3 and 2:5 ratios
+were derived from those on 2026-09-01 (see `bridge.md` → Speed ratios), for
+3,312 entries in the file.
 
 The concept ↔ position mapping is exact, with no exceptions across the corpus:
 
 | His concept | TKA letters | TKA positions |
 |---|---|---|
-| `vtg` (6×6, 3 speed ratios) | **A–L** (SS=ABC, TO=DEF, TS=GHI, SO=JKL) | alpha / beta |
+| `vtg` (6×6, 7 speed ratios) | **A–L** (SS=ABC, TO=DEF, TS=GHI, SO=JKL) | alpha / beta |
 | `qtr` (quarter spacing) | **M–V** (QO=M–R, QS=S–V) | gamma |
 | `eight-step` (8×9) | all 22 | all three |
 
@@ -71,8 +74,9 @@ His entire application is **TKA Type 1 (dual-shift) and nothing else** — 22 of
 47 letters. Structural facts measured over the corpus:
 
 - every hand arc is exactly 90° (one adjacent-cardinal shift), 15,552/15,552
-- prop rotations are only ±90/±270/±450 → plain integer turns 0–2, no halves
-- six motions cover the whole app: `pro 0t/1t/2t`, `anti 0t/1t/2t`
+- at 1:1/1:3/1:5, prop rotations are only ±90/±270/±450 → integer turns 0–2;
+  the even-denominator and two-cycle ratios add 0.25/0.5/0.75/1.5 turns
+- the motion vocabulary is `pro` and `anti` at those turn values, nothing else
 - both diamond and box grids are used (box mode puts initial arcs at 45/135/225)
 
 **The 25 letters he never touches are the non-continuous vocabulary:** Type 2
@@ -86,8 +90,9 @@ shared start frame, the column sets the continuation.
 
 ## Files
 
-- `tka-transcription.json` — all 1,584 patterns; per step: letter, start/end
-  position, per-hand turns, colour-swap flag.
+- `tka-transcription.json` — 3,312 patterns (1,584 transcribed at 1:1/1:3/1:5
+  plus 1,728 derived for 1:2/1:4/2:3/2:5); per step: letter, start/end
+  position, per-hand turns (`blueTurns`/`redTurns`), colour-swap flag.
 - `cell-catalogue.json` — 288 rows, the canonical reading of each cell
   (diamond, non-anti, Qtr #1), with its TKA word and start position.
 - `editor-v9-quarter-turn-club-loop.json`: the 24-step TKA transcription of
@@ -112,7 +117,8 @@ shared start frame, the column sets the continuation.
 4. **Parallel-transport plane solving** — plane is relative to an orthogonal
    reference transported through every preceding frame, not a fixed CW/CCW
    lookup, which breaks when the capping hand reverses.
-5. Speed ratios 1:1 / 1:3 / 1:5 as a first-class axis.
+5. Speed ratio as a first-class axis (1:1, 1:2, 1:3, 1:4, 1:5, 2:3, 2:5 bridge
+   to TKA turns; 2:1 has no TKA reading).
 
 ## Two cautions for anything built on this
 

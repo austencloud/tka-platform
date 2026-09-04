@@ -30,9 +30,9 @@ const routeSourceByPath: Record<string, string[]> = {
   "/learn/concepts": [
     "src/lib/features/learn/components/ConceptPathView.svelte",
   ],
-  "/notation": [
-    "src/routes/(public)/notation/+page.svelte",
-    "src/routes/(public)/notation/_components/archive/PlayableArchive.svelte",
+  "/history": [
+    "src/routes/(public)/history/+page.svelte",
+    "src/routes/(public)/history/_components/archive/PlayableArchive.svelte",
   ],
   "/faq": ["src/routes/(public)/faq/+page.svelte"],
   "/atlas": ["src/routes/(public)/atlas/+page.svelte"],
@@ -122,7 +122,7 @@ describe("landing route morph allowlist", () => {
     expect(navigationMorphs(location("/composer"), location("/faq"))).toBe(
       false
     );
-    expect(navigationMorphs(location("/browse"), location("/notation"))).toBe(
+    expect(navigationMorphs(location("/browse"), location("/history"))).toBe(
       false
     );
     expect(
@@ -273,7 +273,7 @@ describe("landing shared-element contract", () => {
       "src/lib/shared/landing/components/launchpad/LaunchpadGrid.svelte"
     );
     const composer = readSource("src/routes/(public)/composer/+page.svelte");
-    const notation = readSource("src/routes/(public)/notation/+page.svelte");
+    const archive = readSource("src/routes/(public)/history/+page.svelte");
     // The Choreo Cards tile lands on /shop now; the print pipeline behind the
     // front door's card art is the media that has to stay out of the morph.
     const choreoCards = readSource(
@@ -296,12 +296,22 @@ describe("landing shared-element contract", () => {
     expect(launchpad).toContain('typeof IntersectionObserver === "undefined"');
     expect(launchpad).toContain("active={mediaActive.has(tile.id)}");
     expect(launchpad).toContain("visible={visible.has(tile.id)}");
+    // /composer rolls live sequences the way the home hero does. No baked
+    // example may be seeded here — the hero shows its pending state until the
+    // first generated draw lands.
+    expect(composer).not.toContain("FALLBACK_DEMO");
+    expect(composer).toContain("const heroAct = createHeroAct()");
+    expect(composer).toContain("runAfterNamedRouteMorphIdle(heroAct.start)");
+    // The hero keeps auto-advancing; the tunnel and 3D bands latch its first
+    // draw so a Threlte scene is never torn down under a reading visitor.
+    expect(composer).toContain("sequence={heroAct.sequence}");
     expect(composer).toContain(
-      'import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo"'
+      "const carriedSequence = $derived(visitorSequence ?? latchedHeroSequence)"
     );
     expect(composer).toContain(
-      "let sequence = $state<SequenceData>(FALLBACK_DEMO)"
+      "if (first && !latchedHeroSequence) latchedHeroSequence = first;"
     );
+    expect(composer).not.toContain("{#key carriedSequence?.id}");
     expect(composer).toContain(
       'loader={() => import("./_sections/ConstructSection.svelte")}'
     );
@@ -322,10 +332,10 @@ describe("landing shared-element contract", () => {
       'import { loadActiveProducts } from "../services/product-loader"'
     );
     expect(anatomy).toContain('await import("../services/product-loader")');
-    // /notation used to lazy-load a shape-matrix teaser to keep it out of the
-    // morph window. The 2026-07-27 rebuild dropped that component entirely, so
-    // there is no heavy media left on the page to defer.
-    expect(notation).not.toContain("ShapeMatrixTeaser");
+    // The archive used to lazy-load a shape-matrix teaser to keep it out of
+    // the morph window. The 2026-07-27 rebuild dropped that component
+    // entirely, so there is no heavy media left on the page to defer.
+    expect(archive).not.toContain("ShapeMatrixTeaser");
   });
 
   it("keeps the Choreo Card preview truthful through catalog loading and failure", () => {
@@ -369,11 +379,11 @@ describe("landing shared-element contract", () => {
     expect(composer).toContain("error={constructLoadError}");
     expect(composer).toContain("error={tunnelLoadError}");
     expect(composer).toContain("error={viewerLoadError}");
-    expect(composer).toContain("error={shelfLoadError}");
+    expect(composer).toContain("error={galleryLoadError}");
     expect(composer).toContain("The step-by-step demonstration did not load.");
     expect(composer).toContain("The tunnel demonstration did not load.");
     expect(composer).toContain("The 3D demonstration did not load.");
-    expect(composer).toContain("The gallery shelf did not load.");
+    expect(composer).toContain("The community gallery did not load.");
     expect(generate).toContain("classifyComposerGenerationFailure(error)");
     expect(generate).toContain('result === "no-result"');
     expect(generate).toContain("The generator couldn't run. Try again.");
@@ -425,15 +435,16 @@ describe("landing shared-element contract", () => {
     expect(generate).toContain("onclick={() => void generate(true)}");
   });
 
-  it("keeps the verification corpus out of public notation route chunks", () => {
-    const notation = readSource("src/routes/(public)/notation/+page.svelte");
+  it("keeps the verification corpus out of the archive and loops chunks", () => {
+    const archive = readSource("src/routes/(public)/history/+page.svelte");
     const loops = readSource("src/routes/(public)/notation/loops/+page.svelte");
 
-    // The catalog stopped rendering a loop teaser when /notation was rebuilt as
-    // a text catalog on 2026-07-27. Only the loops page still shows one — but
-    // the corpus must stay out of BOTH chunks, which is the actual guard here.
+    // The catalog stopped rendering a loop teaser when the archive was
+    // rebuilt as a text catalog on 2026-07-27. Only the loops page still
+    // shows one — but the corpus must stay out of BOTH chunks, which is the
+    // actual guard here.
     expect(loops).toContain("notation-loop-teaser");
-    for (const source of [notation, loops]) {
+    for (const source of [archive, loops]) {
       expect(source).not.toContain(
         'from "$lib/shared/loop-explorer/domain/curated-seeds"'
       );

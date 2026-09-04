@@ -100,9 +100,29 @@ describe("loopDistance", () => {
     expect(rot.length).toBe(1);
   });
 
-  it("returns Infinity for unequal sample counts", () => {
+  it("returns Infinity for sample counts that are not whole laps", () => {
     const small = pathFrom(closed(circle(40, 100)));
     expect(loopDistance(pathPoints(a), pathPoints(small))).toBe(Infinity);
+  });
+
+  it("matches a locus traced twice against one lap of it", () => {
+    // A whole-turn hand paired with a quarter-turn hand closes on the
+    // eight-step wheel and draws its four-step flower twice.
+    const teardrop = circle(60, 100).map((p, i) => ({
+      x: p.x,
+      y: p.y * (1 + 0.6 * (i / 60)),
+    }));
+    const once = pathFrom(closed(teardrop));
+    const twice = pathFrom(closed([...teardrop, ...teardrop]));
+    expect(loopDistance(pathPoints(once), pathPoints(twice))).toBeLessThan(
+      0.05
+    );
+    // A second lap that is a rotated copy is still the defect.
+    const turned = rotate(teardrop, 90);
+    const skewed = pathFrom(closed([...teardrop, ...turned]));
+    expect(loopDistance(pathPoints(once), pathPoints(skewed))).toBeGreaterThan(
+      MATCH_EPS * 3
+    );
   });
 
   it("rejects matching open paths instead of treating them as closed loops", () => {

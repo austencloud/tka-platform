@@ -42,11 +42,18 @@
       animation, and pictograph readouts are additions made here.
     </p>
     <p>
-      <strong>Hands and props.</strong> In the shape detail pane, choose a hand
-      path to see the prop relationship it produces, or choose a prop
-      relationship to find a matching hand path. The paired result stays below
-      the animation. Both controls describe the same shape from a different
-      starting point.
+      <strong>Element relationships.</strong> Choose a hand timing and direction.
+      The prop result follows automatically. When the selected flowers support two
+      exact prop phases, both choices appear so you can pick the result you want.
+    </p>
+    <p>
+      <strong>Theory.</strong> The Theory view opens the rational field past what
+      either notation names. Kinetic Alphabet levels name turn values down to a
+      quarter turn, which inside this field covers Float, 1:2 and isolation and
+      nothing finer, so a ratio like 1:3 or 4:9 has no turn, no letter and no
+      level. VTG classifies timing and direction rather than the whole field.
+      Those shapes are exact and worth exploring; they stand outside both
+      notations rather than at the top of either.
     </p>
     <div class="source-links">
       <a

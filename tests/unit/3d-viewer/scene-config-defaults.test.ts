@@ -37,8 +37,10 @@ const factories = {
 };
 
 const expectedHashes: Record<keyof typeof factories, string> = {
+  // Re-baselined 2026-09-01 by 9ba0e1c614 (fix(autumn): preserve distant
+  // ground through haze) after the approved fog and horizon-colour retune.
   createDefaultAutumnConfig:
-    "4e63abf17da3189cc0601ede6596b111ae5e8a0982c5ff4e8f6102a03bf0bb65",
+    "2707056bcbed71fb20af8acb0eecb3888b4238ddb64edc8ff153a56340f9b3ef",
   // Re-baselined 2026-08-23 by 7f67e5c785 (feat(blossom): preserve the
   // site-system review build) — the approved sky/fog/petal/moonlight retune.
   createDefaultBlossomConfig:

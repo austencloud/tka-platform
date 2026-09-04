@@ -886,13 +886,15 @@ Three stable elements. Three that permute with grid rotation. The same-direction
 
 | Type | Behavior | Turn count |
 |------|----------|------------|
-| **Pro** | Rotates with the arc direction | 0, 1, 2, 3, ... |
-| **Anti** | Rotates against the arc direction | 0, 1, 2, 3, ... |
+| **Pro** | Rotates with the arc direction | Standard palette: 0, 1, 2, 3, ... |
+| **Anti** | Rotates against the arc direction | Standard palette: 0, 1, 2, 3, ... |
 | **Float** | Holds absolute spatial angle | N/A |
 
 Pro and anti are defined relative to the arc ("with" and "against"). They are NOT absolute CW/CCW -- the same pro motion at different grid positions rotates different absolute directions.
 
-**Float** is absence of prop rotation in absolute spatial terms. The center-relative orientation CHANGES because the hand traces a curve. Float has no turn count -- it is a single binary state. No "degrees of float." Negative turns do not exist.
+**Float** is absence of prop rotation in absolute spatial terms. The center-relative orientation CHANGES because the hand traces a curve. Float has no turn count -- it is a single binary state. No "degrees of float." In VTG prop:hand notation, Float is the exceptional **0:1** ratio; it is not numeric -0.5 turns.
+
+The standard TKA level palettes begin at 0, but 0 is a historical baseline rather than a mathematical boundary. For a positive VTG prop:hand ratio **P:Q**, the corresponding TKA value is **turns = (P/Q - 1) / 2**. The Shape Matrix therefore uses **-0.25 turns** for **1:2**, its currently supported negative turn value. Other sub-1 ratios can produce other negative fractions, but TKA's current eight-orientation wheel only represents quarter-turn increments directly.
 
 **Float only applies to shifts** because it requires a curved hand path. Without a curve, there is no distinction between float and 0-turn static.
 

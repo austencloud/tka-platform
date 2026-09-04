@@ -89,6 +89,7 @@
       }
     >
   >({});
+  let activePerformerStepIndices = $state<Record<string, number>>({});
   const controller = new TunnelViewController({
     getSequence: () => creator.leadSequence,
     getComposition: () =>
@@ -122,6 +123,9 @@
   let shapeMatrixTarget = $state<string | null>(null);
 
   const compact = $derived(rootWidth < 720);
+  const shortLandscape = $derived(rootWidth >= 600 && rootHeight <= 540);
+  const compactRecipe = $derived(rootWidth < 1680 || rootHeight < 900);
+  const focusPerformers = $derived(rootWidth < 900 || rootHeight < 1100);
   const canInlineInspector = $derived(rootWidth >= 1000 && rootHeight >= 700);
   const settingsOpen = $derived(creator.activePanel === "settings");
   const settingsUseWorkspace = $derived(rootWidth >= 720 && settingsOpen);
@@ -144,7 +148,9 @@
     )?.label ?? "Performer"
   );
   const leftPropType = $derived(creator.presentation.leftPropType as PropType);
-  const rightPropType = $derived(creator.presentation.rightPropType as PropType);
+  const rightPropType = $derived(
+    creator.presentation.rightPropType as PropType
+  );
   const propType = $derived(leftPropType ? String(leftPropType) : "staff");
   const generationAnimationTarget: GenerationAnimationTarget = {
     clear() {
@@ -380,6 +386,7 @@
     class:inline-inspector={activeInlineInspector !== null}
     class:settings-task={settingsUseWorkspace && !canInlineInspector}
     class:compact-settings-task={compact && settingsOpen}
+    class:short-landscape={shortLandscape}
   >
     <header class="workspace-header">
       <!-- Editing arrives here by a tab switch, which wipes every trace of the
@@ -448,6 +455,8 @@
 
       <TunnelRecipeRail
         {controller}
+        compact={compactRecipe}
+        short={shortLandscape}
         bpm={creator.presentation.bpm}
         playbackMode={creator.presentation.playbackMode}
         onCastChange={changeCastCount}
@@ -462,11 +471,14 @@
       <TunnelPerformerRoster
         bind:this={performerRoster}
         displays={performerDisplays}
+        activeStepIndices={activePerformerStepIndices}
         {leftPropType}
         {rightPropType}
         colorMode={controller.colorMode}
         customPropColors={controller.customPropColors}
         renderedInstanceCount={controller.performerCount}
+        focusMode={focusPerformers}
+        short={shortLandscape}
         onChoose={(performerId) => creator.openPicker(performerId)}
         onChooseShapeMatrix={(performerId) => (shapeMatrixTarget = performerId)}
         onGenerateNow={(performerId) => void generatePerformer(performerId)}
@@ -513,6 +525,8 @@
             animationSettingsState={creator.presentation.animationSettings}
             visibilityManager={creator.presentation.visibility}
             stageFit="contain"
+            onActivePerformerStepsChange={(stepIndices) =>
+              (activePerformerStepIndices = { ...stepIndices })}
           />
           {#if !creator.ready}
             <div class="preview-guidance" role="status">
@@ -803,6 +817,10 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .source-column > :global(.performer-roster) {
+    height: 100%;
   }
 
   .preview-stage {
@@ -1107,6 +1125,20 @@
   }
 
   @container tunnel (max-width: 719px) {
+    .tunnel-workspace:not(.compact-settings-task) {
+      grid-template-rows: max-content minmax(26rem, auto) minmax(24rem, auto);
+      padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    }
+
+    .tunnel-workspace:not(.compact-settings-task) .source-column {
+      min-height: 26rem;
+      overflow: visible;
+    }
+
+    .tunnel-workspace:not(.compact-settings-task) .preview-stage {
+      min-height: 24rem;
+    }
+
     .workspace-header {
       flex-wrap: wrap;
     }
@@ -1147,6 +1179,10 @@
 
     .workspace-header {
       padding: 7px 8px;
+    }
+
+    .workspace-actions {
+      gap: 4px;
     }
 
     .title-block p,
@@ -1259,6 +1295,59 @@
     .editing-poster {
       width: 32px;
       height: 32px;
+    }
+  }
+
+  @container tunnel (min-width: 600px) and (max-height: 540px) {
+    .tunnel-workspace.short-landscape {
+      grid-template-columns: minmax(19rem, 0.95fr) minmax(20rem, 1.05fr);
+      grid-template-rows: max-content minmax(0, 1fr);
+      grid-template-areas:
+        "header header"
+        "sources preview";
+      align-content: stretch;
+      overflow: hidden;
+    }
+
+    .short-landscape .workspace-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 4px 8px;
+      padding: 4px 6px;
+    }
+
+    .short-landscape .workspace-header > :global(.tunnel-recipe) {
+      grid-column: 1 / -1;
+    }
+
+    .short-landscape .title-block p,
+    .short-landscape .preview-summary,
+    .short-landscape .preview-heading > div:first-child > span,
+    .short-landscape .result-meta span {
+      display: none;
+    }
+
+    .short-landscape .preview-stage {
+      min-height: 0;
+    }
+
+    .short-landscape .source-column {
+      min-height: 0;
+    }
+
+    .short-landscape .preview-heading,
+    .short-landscape .stage-controls {
+      min-height: var(--min-touch-target, 48px);
+      padding: 4px 8px;
+    }
+
+    .short-landscape .result-meta {
+      min-width: 0;
+    }
+
+    .short-landscape .result-actions :global(.panel-btn) {
+      min-width: var(--min-touch-target, 48px);
+      padding-inline: 10px;
     }
   }
 

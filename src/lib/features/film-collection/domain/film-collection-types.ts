@@ -31,7 +31,7 @@ export interface CollectedFilm extends CollectionEntry {
   poster: string;
   /**
    * The authored input document, NOT the resolved spec. Directives are the
-   * intent: a saved `chance-suite` should re-roll from its seed when reopened
+   * intent: a saved film should re-roll from its seed when reopened
    * rather than being frozen to one resolution. It is also what the workbench's
    * JSON editor round-trips, so save → open → edit is lossless.
    */

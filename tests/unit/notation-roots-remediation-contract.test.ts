@@ -6,7 +6,7 @@ import { NOTATION_CATALOG } from "$lib/shared/notation/notation-catalog";
 const readSource = (path: string): string =>
   readFileSync(resolve(process.cwd(), path), "utf-8");
 
-const notationRoute = readSource("src/routes/(public)/notation/+page.svelte");
+const notationRoute = readSource("src/routes/(public)/history/+page.svelte");
 // The hub was gated on 2026-07-26 and rebuilt as a chronological catalog on
 // 2026-07-27 (2026-07-26-notation-catalog-design.md). NotationHubDraft.svelte
 // is deleted; the copy contracts that guarded it are replaced by contracts on
@@ -15,10 +15,10 @@ const notationCatalogData = readSource(
   "src/lib/shared/notation/notation-catalog.ts"
 );
 const notationCatalogView = readSource(
-  "src/routes/(public)/notation/_components/archive/PlayableArchive.svelte"
+  "src/routes/(public)/history/_components/archive/PlayableArchive.svelte"
 );
 const vtgChronicleData = readSource(
-  "src/routes/(public)/notation/_components/archive/_lib/vtg-chronicle.svelte.ts"
+  "src/routes/(public)/history/_components/archive/_lib/vtg-chronicle.svelte.ts"
 );
 const rootRedirect = readSource("src/routes/(public)/roots/+page.ts");
 const softwarePage = readSource(
@@ -48,7 +48,7 @@ describe("notation catalog", () => {
     expect(notationRoute).not.toContain('from "$app/environment"');
     expect(notationRoute).not.toContain("UnderConstruction");
     expect(notationRoute).not.toContain('content="noindex');
-    expect(sitemap).toMatch(/\{ url: "notation" \}/);
+    expect(sitemap).toMatch(/\{ url: "history" \}/);
   });
 
   it("gives every entry at least one source", () => {
@@ -228,20 +228,20 @@ describe("notation catalog", () => {
   });
 });
 
-describe("roots-to-notation route migration", () => {
+describe("roots-to-archive route migration", () => {
   it("keeps a permanent root redirect and public chrome for software history", () => {
-    expect(rootRedirect).toContain('redirect(301, "/notation")');
+    expect(rootRedirect).toContain('redirect(301, "/history")');
     expect(rootRedirect).toContain("export const prerender = false");
     expect(domains).toMatch(/PUBLIC_PATH_PREFIXES[\s\S]*?"\/roots"/);
     expect(rootLayout).toMatch(/MARKETING_EXACT[\s\S]*?"\/roots\/software"/);
   });
 
-  it("keeps Notation in capture registries", () => {
+  it("keeps the history archive in capture registries", () => {
     expect(screenshotOrchestrator).toContain(
-      '{ label: "notation", moduleId: "public", requiresAuth: false }'
+      '{ label: "history", moduleId: "public", requiresAuth: false }'
     );
     expect(screenshotDevices).toMatch(
-      /path: "\/notation",\s*label: "notation",[\s\S]*?waitSelector: "\.playable-viewport \.room-title"/
+      /path: "\/history",\s*label: "history",[\s\S]*?waitSelector: "\.playable-viewport \.room-title"/
     );
   });
 
@@ -252,16 +252,16 @@ describe("roots-to-notation route migration", () => {
     expect(sitemap).toContain('{ url: "roots/software" }');
     expect(sitemap).not.toMatch(/\{ url: "roots",/);
     expect(softwarePage).toMatch(
-      /name:\s*"Notation",\s*item:\s*"https:\/\/tkaflowarts\.com\/notation"/
+      /name:\s*"Flow Arts History",\s*item:\s*"https:\/\/tkaflowarts\.com\/history"/
     );
     expect(softwareCopy).toMatch(
-      /href="\/notation#archive-record-vtg">Notation lineage<\/a\s*>/
+      /href="\/history#archive-record-vtg">VTG record in the history archive<\/a\s*>/
     );
     expect(componentManifest).not.toContain(
       '"file": "routes/(public)/roots/+page.svelte"'
     );
     expect(componentManifest).toContain(
-      '"file": "routes/(public)/notation/+page.svelte"'
+      '"file": "routes/(public)/history/+page.svelte"'
     );
   });
 });

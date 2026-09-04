@@ -1,9 +1,17 @@
+import { recordFeatureReady } from "../../scene-boot/boot-spans";
 import {
   SCENE_FEATURES,
   type SceneFeature,
 } from "../domain/scene-feature-registry";
 
-const STORAGE_KEY = "tka-scene-features";
+/**
+ * Where a non-isolated feature state remembers its toggles. Exported so a
+ * read-only consumer (the viewer's `t3` URL slice) can reproduce the
+ * post-normalize toggle map from disk without constructing a state that
+ * would write the key back.
+ */
+export const SCENE_FEATURES_STORAGE_KEY = "tka-scene-features";
+const STORAGE_KEY = SCENE_FEATURES_STORAGE_KEY;
 
 function loadPersistedToggles(): Record<string, boolean> {
   try {
@@ -145,6 +153,7 @@ export function createSceneFeatureState(
     }
     if (readySet.has(key)) return;
     console.debug(`[SceneFeature] ${key} READY`);
+    recordFeatureReady(key);
     readySet = new Set([...readySet, key]);
   }
 

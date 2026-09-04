@@ -15,6 +15,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     fitsFuseRecipeColumn,
+    fitsFuseTallPortraitWorkspace,
     getBestFuseStepColumns,
     negotiateFuseColumnWidths,
     resolveBalancedFuseWorkspaceSplit,
@@ -37,6 +38,7 @@
   let compact = $state(true);
   let landscapeSplit = $state(false);
   let shortLandscape = $state(false);
+  let tallPortrait = $state(false);
   let settingsOpen = $state(false);
   let settingsDestination = $state<FuseSettingsDestination>(null);
   let actionSide = $state<FuseSide | null>(null);
@@ -71,6 +73,12 @@
   const NATIVE_4K_MAX_LEFT = 2000;
   const NATIVE_4K_CANVAS_FLOOR = 1200;
   const CANVAS_FLOOR = 560; // canvas never narrower than this
+  // Recipe editing is temporary and benefits from keeping all three regions in
+  // view. These slightly tighter floors let a 1440px laptop keep the source,
+  // result, and settings side by side instead of covering the result with a
+  // drawer. The ordinary two-column workspace keeps the roomier floors above.
+  const RECIPE_PATH_FLOOR = 330;
+  const RECIPE_CANVAS_FLOOR = 548;
   const RECIPE_MIN_W = 400; // recipe column: narrow enough for a laptop...
   const RECIPE_MAX_W = 620; // ...wide enough that its editors don't stack at 4K
   const CARD_GAP = 14; // vertical gap between the stacked left/right cards
@@ -78,6 +86,10 @@
   const CARD_CHROME_V = 96; // card vertical chrome: padding + the Back/Shuffle row
   const PREVIEW_CHROME_V = 190; // matches FusePreviewStage's square frame cap
   const PREVIEW_HPAD = 48; // maximum desktop stage padding, both sides
+  const TALL_PORTRAIT_SPLIT_WIDTH = 520;
+  const TALL_PORTRAIT_NARROW_MIN_HEIGHT = 1650;
+  const TALL_PORTRAIT_SPLIT_MIN_HEIGHT = 1280;
+  const TALL_PORTRAIT_MIN_ASPECT = 2.1;
 
   let containerWidth = $state(0);
   let containerHeight = $state(0);
@@ -119,8 +131,8 @@
   // comfortable ones.
   const RECIPE_COLUMN_FIT = {
     recipeMinWidth: RECIPE_MIN_W,
-    pathHardMinWidth: MIN_LEFT,
-    canvasFloor: CANVAS_FLOOR,
+    pathHardMinWidth: RECIPE_PATH_FLOOR,
+    canvasFloor: RECIPE_CANVAS_FLOOR,
     columnGap: CARD_GAP,
   };
   // Measured against the grid's own content box, not the outer container: the
@@ -161,8 +173,14 @@
     const budget = columnBudget(recipeOpen);
     const work = workComfort(budget);
     return negotiateFuseColumnWidths(budget, {
-      path: { comfort: work, floor: MIN_LEFT },
-      canvas: { comfort: Math.max(CANVAS_FLOOR, work), floor: CANVAS_FLOOR },
+      path: {
+        comfort: work,
+        floor: recipeOpen ? RECIPE_PATH_FLOOR : MIN_LEFT,
+      },
+      canvas: {
+        comfort: Math.max(CANVAS_FLOOR, work),
+        floor: recipeOpen ? RECIPE_CANVAS_FLOOR : CANVAS_FLOOR,
+      },
       // A recipe that always took its flat quarter of the window was not a
       // party to the negotiation at all — it simply billed the other two. It
       // now concedes with them, down to the width its editors stop fitting in.
@@ -286,17 +304,24 @@
   // the result off the edge.
   const splitAvailableWidth = () =>
     Math.max(
-      CANVAS_FLOOR + MIN_LEFT,
+      (recipeColumn ? RECIPE_CANVAS_FLOOR : CANVAS_FLOOR) +
+        (recipeColumn ? RECIPE_PATH_FLOOR : MIN_LEFT),
       columnBudget(recipeColumnWidth > 0) - recipeColumnWidth
     );
+  const activePathFloor = () => (recipeColumn ? RECIPE_PATH_FLOOR : MIN_LEFT);
+  const activeCanvasFloor = () =>
+    recipeColumn ? RECIPE_CANVAS_FLOOR : CANVAS_FLOOR;
   const minLeft = () =>
     Math.min(
       columnWidths.path,
-      Math.max(MIN_LEFT, splitAvailableWidth() - CANVAS_FLOOR)
+      Math.max(activePathFloor(), splitAvailableWidth() - activeCanvasFloor())
     );
   const maxLeft = () => {
     if (!wideWorkspace)
-      return Math.max(MIN_LEFT, splitAvailableWidth() - CANVAS_FLOOR);
+      return Math.max(
+        activePathFloor(),
+        splitAvailableWidth() - activeCanvasFloor()
+      );
 
     const nativeFourK = containerWidth >= 2600 && contentH >= 1400;
     return Math.max(
@@ -454,11 +479,22 @@
         width >= BREAKPOINTS.PORTRAIT_MOBILE &&
         width > height &&
         height < LANDSCAPE_THRESHOLDS.MAX_PHONE_HEIGHT;
-      const useCompactLayout = width < BREAKPOINTS.MOBILE || useShortLandscape;
+      const useTallPortrait = fitsFuseTallPortraitWorkspace({
+        width,
+        height,
+        mobileMaxWidth: BREAKPOINTS.PORTRAIT_MOBILE,
+        splitMinWidth: TALL_PORTRAIT_SPLIT_WIDTH,
+        narrowMinHeight: TALL_PORTRAIT_NARROW_MIN_HEIGHT,
+        splitMinHeight: TALL_PORTRAIT_SPLIT_MIN_HEIGHT,
+        minAspectRatio: TALL_PORTRAIT_MIN_ASPECT,
+      });
+      const useCompactLayout =
+        (width < BREAKPOINTS.MOBILE && !useTallPortrait) || useShortLandscape;
       const useFullCards = width >= 1100 && height >= 780;
       const aspectRatio = height > 0 ? width / height : 1;
       compact = useCompactLayout;
       shortLandscape = useShortLandscape;
+      tallPortrait = useTallPortrait;
       fullCard = useFullCards;
       wideWorkspace = width >= 1680 && height >= 900;
       // Use the measured Fuse slot, not the physical screen: Android chrome and
@@ -617,6 +653,7 @@
     bind:this={workspaceEl}
     class:compact-workspace={compact}
     class:short-landscape-workspace={shortLandscape}
+    class:tall-portrait-workspace={tallPortrait}
     class:landscape-workspace={landscapeSplit}
     class:full-card-workspace={fullCard}
     class:wide-workspace={wideWorkspace}
@@ -825,6 +862,40 @@
     overflow: hidden;
   }
 
+  /* A phone-width slot can still be a tall workspace. Once there is enough
+     height for both lean source cards and a useful result, spend that space on
+     the full Fuse story instead of stretching one compact preview through the
+     entire column. Ordinary phones remain animation-first. */
+  .fuse-workspace.tall-portrait-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows:
+      max-content minmax(430px, auto) minmax(430px, auto)
+      minmax(520px, 1fr);
+    grid-template-areas:
+      "header"
+      "left"
+      "right"
+      "preview";
+    align-content: start;
+    overflow-x: hidden;
+    overflow-y: hidden;
+  }
+
+  /* Once a portrait pane is wide enough for two lean cards, stop paying for
+     their height twice. This is the seam visible when the Browser sidebar is
+     widened a few pixels: sources share one row and the result owns the rest. */
+  @container fuse (min-width: 520px) and (max-width: 599px) {
+    .fuse-workspace.tall-portrait-workspace {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: max-content minmax(0, 0.9fr) minmax(0, 1.1fr);
+      grid-template-areas:
+        "header header"
+        "left right"
+        "preview preview";
+      align-content: stretch;
+    }
+  }
+
   @container fuse (min-width: 600px) {
     .fuse-workspace:not(.compact-workspace) {
       --fuse-col-gap: clamp(10px, 1.4cqw, 14px);
@@ -845,7 +916,7 @@
      collapses auto rows in the scroll layouts, so it must not leak there). */
   @container fuse (min-width: 600px) and (min-height: 600px) {
     .fuse-workspace:not(.compact-workspace) {
-      grid-template-rows: max-content minmax(0, 0.9fr) minmax(0, 1.7fr);
+      grid-template-rows: max-content minmax(0, 1.05fr) minmax(0, 1.45fr);
       align-content: stretch;
       overflow: hidden;
     }
@@ -981,9 +1052,6 @@
      growing once its full LOOP cards are comfortably readable. */
   @container fuse (min-width: 1680px) and (min-height: 900px) {
     .fuse-workspace {
-      --font-size-min: 16px;
-      --font-size-compact: 14px;
-      --font-size-sm: 17px;
       --min-touch-target: 48px;
       /* Columns and areas stay with .full-card-workspace, which is always the
          layout in force at this size — a second track list here would fight the
@@ -1008,9 +1076,6 @@
      while the result keeps the larger share of the canvas. */
   @container fuse (min-width: 2600px) and (min-height: 1400px) {
     .fuse-workspace {
-      --font-size-min: 18px;
-      --font-size-compact: 16px;
-      --font-size-sm: 19px;
       --min-touch-target: 64px;
       --fuse-col-gap: 24px;
       gap: var(--fuse-col-gap);

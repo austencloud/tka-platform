@@ -255,6 +255,7 @@ export class FrameParameterBuilder {
     // on RenderFrameParams for why AnimationRenderLoop needs both.
     fp.trailsSuppressedUntilTextureLoad = trailsSuppressedUntilTextureLoad;
     fp.gridVisible = props.gridVisible ?? true;
+    fp.gridOpacity = props.gridOpacity;
     fp.gridMode = props.gridMode ?? GridMode.DIAMOND;
     fp.letter = props.letter ?? null;
 

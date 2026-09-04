@@ -33,7 +33,7 @@ state. FAC can omit it for an isolated session or provide its own state owner.
 | `MODE_ORDER`, `MODE_LABEL`, `VtgMode`                                                                                | `$lib/shared/shape-matrix/services/shape-matrix-realizations` |
 | `buildModeRealizationCandidates`, `ModeRealization`                                                                  | `$lib/shared/shape-matrix/services/build-mode-realizations`   |
 | `findExactParityCandidates`, `flowerPhaseOrientations`, `verifyAndCorrect`, `ParityResult`                           | `$lib/shared/shape-matrix/services/verify-realization-parity` |
-| `renderCell`, `renderHeader`                                                                                         | `$lib/shared/shape-matrix/services/shape-matrix-render`       |
+| `renderCell`, `renderHeader`, `renderExtentFit`, `renderEngineAligned`, `engineExtentBoxRatio` (the animation canvas's guide painter) | `$lib/shared/shape-matrix/services/shape-matrix-render`       |
 | `renderPoiCell`, `renderPoiHeader` (poi light-trail painter; same signatures, swap via the grid's `painter` prop)    | `$lib/shared/shape-matrix/services/shape-matrix-poi-render`   |
 | `Flower`, `flowerKey`, `flowerLabel`, `flowerStartOrientation`, `buildFlowerAxis`, `ratioLabel`, `flowerTurnPattern` | `$lib/shared/shape-matrix/domain/flower-signature`            |
 

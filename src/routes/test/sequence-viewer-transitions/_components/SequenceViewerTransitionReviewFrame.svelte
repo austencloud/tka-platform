@@ -22,6 +22,8 @@
   } from "$lib/shared/transitions/viewer-mode-dissolve";
   import { TRANSITION_REVIEW_SEQUENCE } from "../transition-review-fixture";
   import type {
+    InspectorLayerId,
+    InspectorRevealSample,
     TransitionGeometrySample,
     TransitionGeometryTrace,
     TransitionTraceCommand,
@@ -29,6 +31,17 @@
   } from "../transition-geometry-trace";
 
   type ReplayCommand = TransitionTraceCommand;
+
+  /**
+   * How long the trace keeps sampling after the last mode step returns.
+   *
+   * `chooseMode` returns one emphasis after a commit, but the Card's contained
+   * size stays pinned past the workspace allocation and is released on its own
+   * clock. A trace that stopped when the last step returned ended before that
+   * release, so an untransitioned size change landing after it was never
+   * recorded.
+   */
+  const SETTLE_TAIL_MS = DURATION.emphasis * 2 + DURATION.normal + 200;
   type ReviewModeLabel =
     | "Side by Side"
     | "2D Animation"
@@ -190,6 +203,48 @@
     };
   }
 
+  /**
+   * Sample one inspector layer's clip box against the panel composed inside it.
+   * The layer is the animating track; the panel is the surface pinned at its
+   * own destination width. Comparing the two is what reveals a cut-off label
+   * column or an undrawn band, neither of which shows up in a width or drift
+   * measurement taken on the panel alone.
+   */
+  /**
+   * Alpha of an element's own painted fill, 0 when it paints none.
+   *
+   * The inspector surface can live on the layer or on the panel inside it, and
+   * which one holds it decides whether a band the panel does not reach looks
+   * the same as the rest of the track. Reading it rather than assuming it keeps
+   * the trace honest if the surface moves again.
+   */
+  function elementSurfaceAlpha(selector: string): number {
+    const element = document.querySelector<HTMLElement>(selector);
+    if (!element) return 0;
+    const fill = getComputedStyle(element).backgroundColor;
+    if (!fill || fill === "transparent") return 0;
+    const channels = fill.match(/[\d.]+/g);
+    if (!channels) return 0;
+    return channels.length > 3 ? Number.parseFloat(channels[3]) || 0 : 1;
+  }
+
+  function revealBounds(
+    layerSelector: string,
+    panelSelector: string
+  ): InspectorRevealSample {
+    const layer = elementBounds(layerSelector);
+    const panel = elementBounds(panelSelector);
+    return {
+      layerLeft: layer.left,
+      layerWidth: layer.width,
+      panelLeft: panel.left,
+      panelWidth: panel.width,
+      opacity: layer.width > 0 ? elementOpacity(layerSelector) : 0,
+      layerSurfaceAlpha: elementSurfaceAlpha(layerSelector),
+      panelSurfaceAlpha: elementSurfaceAlpha(panelSelector),
+    };
+  }
+
   function elementFlexGrow(selector: string): number {
     const element = document.querySelector<HTMLElement>(selector);
     if (!element) return 0;
@@ -221,6 +276,11 @@
   function elementDataFlag(selector: string, name: string): boolean {
     const element = document.querySelector<HTMLElement>(selector);
     return element?.dataset[name] === "true";
+  }
+
+  function elementDataValue(selector: string, name: string): string | null {
+    const element = document.querySelector<HTMLElement>(selector);
+    return element?.dataset[name] ?? null;
   }
 
   function elementDataNumber(selector: string, name: string): number {
@@ -389,6 +449,35 @@
     const cardSettings = elementBounds(
       '[aria-label="Card settings"] .panel-center-inner'
     );
+    // Content drift: the settings panels are persistent layers inside the
+    // animating inspector track. Measuring the panel root (width/left) and its
+    // first content block (top) proves whether a panel is composed at its own
+    // destination width and revealed through PanelGroup's moving clip, or is
+    // re-laying itself out on every frame while the seam travels.
+    const cardSettingsPanel = elementBounds(
+      ".card-settings-layer .export-panel"
+    );
+    const inspectorReveal: Record<InspectorLayerId, InspectorRevealSample> = {
+      motion: revealBounds(".motion-settings-layer", ".export-panel.sidebar"),
+      art: revealBounds(
+        ".art-settings-layer",
+        "[data-viewer-art-inspector-target] .art-settings-panel"
+      ),
+      card: revealBounds(
+        ".card-settings-layer",
+        ".card-settings-layer .export-panel"
+      ),
+      performance: revealBounds(
+        ".performance-inspector-layer",
+        ".performance-inspector-layer .performance-inspector"
+      ),
+    };
+    const artSettingsPanel = elementBounds(
+      "[data-viewer-art-inspector-target] .art-settings-panel"
+    );
+    const artSettingsContent = elementBounds(
+      "[data-viewer-art-inspector-target] .sidebar-rail-layout"
+    );
     const mandalaCanvas = document.querySelector<HTMLCanvasElement>(
       '.animation-column canvas[data-animation-layer="mandala"]'
     );
@@ -491,6 +580,10 @@
         ".preview-column .choreo-card-root",
         "layoutRows"
       ),
+      cardContainSizeMotion: elementDataValue(
+        ".preview-column .choreo-card-root",
+        "containSizeMotion"
+      ),
       cardAutoLayoutLocked: elementDataFlag(
         ".preview-column .choreo-card-root",
         "autoLayoutLocked"
@@ -549,6 +642,16 @@
       scenePreparationLabel:
         scenePreparation?.dataset.scenePreparationLabel ?? null,
       tunnelOpacity: tunnelBlend,
+      tunnelLayersReady:
+        persistentAnimator?.dataset.tunnelLayersReady === "true",
+      tunnelLayerCount:
+        Number(persistentAnimator?.dataset.tunnelLayerCount) || 0,
+      tunnelLayerOpacityMinimum:
+        Number(persistentAnimator?.dataset.tunnelLayerOpacityMin) || 0,
+      tunnelLayerOpacityMaximum:
+        Number(persistentAnimator?.dataset.tunnelLayerOpacityMax) || 0,
+      tunnelGridOpacity:
+        Number(persistentAnimator?.dataset.tunnelGridOpacity) || 0,
       tunnelPresented: Boolean(activeTunnelSurface) || tunnelBlend > 0,
       tunnelCanvasReady,
       animatorIdentity: elementIdentity("[data-persistent-animator]"),
@@ -559,6 +662,12 @@
         '[data-viewer-art-inspector-target] [data-active="true"][data-art-settings]'
       ).length,
       artSettingsOpacity: elementOpacity(".art-settings-layer"),
+      artSettingsWidth: artSettingsPanel.width,
+      artSettingsLeft: artSettingsPanel.left,
+      inspectorReveal,
+      artSettingsContentTop: artSettingsContent.top,
+      cardSettingsLeft: cardSettingsPanel.left,
+      cardSettingsContentTop: cardSettings.top,
       tunnelBackingWidth: activeTunnelCanvas
         ? activeTunnelCanvas.width / Math.max(1, window.devicePixelRatio || 1)
         : 0,
@@ -800,6 +909,11 @@
         await wait(motionDuration(DURATION.emphasis) + 90);
         setTracePhase("stage-to-card");
         if (!(await chooseMode("Card", version))) return;
+      } else if (command === "card-performances") {
+        beginGeometryTrace(command, "card-to-performances");
+        if (!(await chooseMode("Performances", version))) return;
+        setTracePhase("performances-to-card");
+        if (!(await chooseMode("Card", version))) return;
       } else if (command === "card-stage-interrupt") {
         beginGeometryTrace(command, "card-stage-interrupt");
         if (!(await chooseMode("2D Animation", version, false))) return;
@@ -849,6 +963,11 @@
         if (!(await chooseMode("2D Animation", version))) return;
       }
 
+      if (activeTrace && version === replayVersion) {
+        setTracePhase("settle");
+        await wait(SETTLE_TAIL_MS);
+      }
+
       const elapsed = Math.round(performance.now() - startedAt);
       report(
         "complete",
@@ -885,6 +1004,7 @@
           message.command === "card-2d" ||
           message.command === "card-3d" ||
           message.command === "card-tunnel" ||
+          message.command === "card-performances" ||
           message.command === "card-stage-interrupt" ||
           message.command === "performances-2d" ||
           message.command === "performances-3d" ||

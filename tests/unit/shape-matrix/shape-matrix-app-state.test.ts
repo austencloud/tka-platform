@@ -16,6 +16,7 @@ import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
 const LEVEL_FOUR_TURNS = [
   "fl",
+  -0.25,
   0,
   0.25,
   0.5,
@@ -45,13 +46,18 @@ function createState(compact: boolean) {
       syncState,
     },
     {
+      surface: "matrix",
+      theoryLeftRatio: { propRotations: 1, handCycles: 3 },
+      theoryRightRatio: { propRotations: 1, handCycles: 3 },
+      theoryMode: "SS",
+      theoryPair: null,
+      theoryBand: 4,
       level: 2,
       leftTurn: 0,
       rightTurn: 0,
       activeAxis: "both",
       labelMode: "turns",
       propType: PropType.STAFF,
-      relationshipDriver: "hands",
       pair: null,
       mode: null,
       propMode: null,
@@ -73,6 +79,7 @@ describe("shape matrix app state", () => {
     state.setLevel(4);
     expect(state.leftTurn).toBe(0.25);
     expect(state.rightTurn).toBe(0.25);
+    expect(state.availableTurns).toEqual(LEVEL_FOUR_TURNS);
 
     state.setLevel(1);
     expect(state.leftTurn).toBe(0);
@@ -208,13 +215,17 @@ describe("shape matrix app state", () => {
     if (!left || !right) throw new Error("Shape Matrix axis is empty");
 
     state.restoreState({
+      surface: "matrix",
+      theoryLeftRatio: { propRotations: 2, handCycles: 5 },
+      theoryRightRatio: { propRotations: 1, handCycles: 2 },
+      theoryMode: "QO",
+      theoryPair: null,
       level: 3,
       leftTurn: 0.5,
       rightTurn: 0.5,
       activeAxis: "both",
       labelMode: "ratios",
       propType: PropType.STAFF,
-      relationshipDriver: "props",
       pair: { left, right },
       mode: "QS",
       propMode: "SO",
@@ -230,7 +241,94 @@ describe("shape matrix app state", () => {
     expect(state.selectedPair?.right.style).toBe(right.style);
     expect(state.selectedMode).toBe("QS");
     expect(state.selectedPropMode).toBe("SO");
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 5 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 1, handCycles: 2 });
+    expect(state.theoryMode).toBe("QO");
     expect(syncState).not.toHaveBeenCalled();
+  });
+
+  it("moves both theory axes together and honours the Apply-to target", () => {
+    const { state, syncState } = createState(false);
+
+    state.setSurface("theory");
+    state.setTheoryBand(4);
+    state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
+
+    expect(state.surface).toBe("theory");
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 2, handCycles: 9 });
+
+    state.setActiveAxis("right");
+    state.setTheoryRatio({ propRotations: 1, handCycles: 2 });
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+    expect(state.theoryRightRatio).toEqual({ propRotations: 1, handCycles: 2 });
+
+    state.setTheoryMode("TO");
+    expect(syncState).toHaveBeenLastCalledWith(
+      expect.objectContaining({ surface: "theory", theoryMode: "TO" })
+    );
+  });
+
+  it("accepts independent ratios through 15 and keeps a 4x4 matrix", () => {
+    const { state } = createState(false);
+
+    state.setSurface("theory");
+    state.setActiveAxis("left");
+    state.setTheoryRatio({ propRotations: 15, handCycles: 4 });
+    state.setActiveAxis("right");
+    state.setTheoryRatio({ propRotations: 4, handCycles: 15 });
+
+    expect(state.theoryLeftRatio).toEqual({
+      propRotations: 15,
+      handCycles: 4,
+    });
+    expect(state.theoryRightRatio).toEqual({
+      propRotations: 4,
+      handCycles: 15,
+    });
+    expect(state.theoryBand).toBe(5);
+    expect(state.theoryRowAxis).toHaveLength(4);
+    expect(state.theoryColAxis).toHaveLength(4);
+  });
+
+  it("keeps every theory ratio inside the band the user chose", () => {
+    const { state } = createState(false);
+
+    state.setSurface("theory");
+    state.setTheoryBand(4);
+    state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
+
+    // Band 1 is the three ratios TKA can already name, so 2:9 has to land on
+    // the nearest one it holds rather than survive a band it is not in.
+    state.setTheoryBand(1);
+    expect(
+      state.availableTheoryRatios.some(
+        (ratio) =>
+          ratio.propRotations === state.theoryLeftRatio.propRotations &&
+          ratio.handCycles === state.theoryLeftRatio.handCycles
+      )
+    ).toBe(true);
+    expect(
+      state.availableTheoryRatios.every(
+        (ratio) => ratio.handCycles > 0 && ratio.handCycles <= 2
+      )
+    ).toBe(true);
+  });
+
+  it("moves the Kinetic Alphabet level without touching the ratio band", () => {
+    const { state } = createState(false);
+
+    state.setSurface("theory");
+    state.setTheoryBand(4);
+    state.setTheoryRatio({ propRotations: 2, handCycles: 9 });
+
+    // The two ladders are independent. A level is a turn vocabulary and a band
+    // is a denominator vocabulary; the surface that reads one must not move
+    // the other, which is what a single shared number used to do.
+    state.setLevel(1);
+    expect(state.theoryBand).toBe(4);
+    expect(state.theoryLeftRatio).toEqual({ propRotations: 2, handCycles: 9 });
   });
 
   it("keeps an exact prop target only while the pair has equal rotating turns", () => {
@@ -242,7 +340,6 @@ describe("shape matrix app state", () => {
     const right = flowers[1];
     if (!left || !right) throw new Error("Expected numeric flowers");
     state.selectPair({ left, right });
-    state.setRelationshipDriver("props");
     state.setPropMode("SS");
     expect(state.selectedPropMode).toBe("SS");
 
@@ -324,5 +421,86 @@ describe("shape matrix app state", () => {
         })
       );
     }
+  });
+  it("keeps a compact visitor on the detail pane for a stay-on-detail level edit", () => {
+    const axis = buildFlowerAxis([0]).filter(
+      (flower) => flower.grid === "diamond"
+    );
+    const left = axis[0];
+    const right = axis[1];
+    if (!left || !right) throw new Error("Expected two flowers");
+    const { state } = createState(true);
+    state.selectPair({ left, right });
+    expect(state.activeView).toBe("detail");
+
+    state.setLevel(3, { stayOnDetail: true });
+    expect(state.level).toBe(3);
+    expect(state.activeView).toBe("detail");
+    expect(state.selectedPair).not.toBeNull();
+
+    // The ribbon's plain call still returns to the matrix.
+    state.setLevel(2);
+    expect(state.activeView).toBe("matrix");
+  });
+
+  it("keeps a compact visitor on the detail pane for a stay-on-detail turn edit", () => {
+    const axis = buildFlowerAxis([0]).filter(
+      (flower) => flower.grid === "diamond"
+    );
+    for (let variant = 0; variant < 4; variant += 1) {
+      const left = axis[variant];
+      const right = axis[3 - variant];
+      if (!left || !right) throw new Error("Expected four semantic variants");
+      const { state } = createState(true);
+      state.setLevel(3);
+      state.selectPair({ left, right });
+      expect(state.activeView).toBe("detail");
+
+      state.setActiveAxis("both");
+      for (const turn of ["fl", 0, 1.5, 3] as const) {
+        state.setTurn(turn, { stayOnDetail: true });
+        expect(state.activeView).toBe("detail");
+        expect(state.leftTurn).toBe(turn);
+        expect(state.rightTurn).toBe(turn);
+        expect(semanticVariant(state.selectedPair!.left)).toBe(variant);
+        expect(semanticVariant(state.selectedPair!.right)).toBe(3 - variant);
+      }
+
+      state.setActiveAxis("left");
+      state.setTurn(0.5, { stayOnDetail: true });
+      expect(state.activeView).toBe("detail");
+      expect(state.leftTurn).toBe(0.5);
+      expect(state.rightTurn).toBe(3);
+      expect(semanticVariant(state.selectedPair!.left)).toBe(variant);
+      expect(semanticVariant(state.selectedPair!.right)).toBe(3 - variant);
+
+      // The matrix-side editor keeps its existing navigation.
+      state.setTurn(1);
+      expect(state.activeView).toBe("matrix");
+    }
+  });
+
+  it("records a compact selection without navigating when the host asks", () => {
+    const { state } = createState(true);
+    const [left, right] = buildFlowerAxis();
+    if (!left || !right) throw new Error("Shape Matrix axis is empty");
+
+    state.selectPair({ left, right }, { navigate: false });
+
+    expect(state.selectedPair).toEqual({ left, right });
+    expect(state.activeView).toBe("matrix");
+    expect(state.compactFocusRequest).toBeNull();
+
+    state.showDetail();
+    expect(state.activeView).toBe("detail");
+  });
+
+  it("tracks the mandala handoff window", () => {
+    const { state } = createState(true);
+    expect(state.mandalaHandoff).toBe(false);
+    state.beginMandalaHandoff();
+    expect(state.mandalaHandoff).toBe(true);
+    state.endMandalaHandoff();
+    expect(state.mandalaHandoff).toBe(false);
   });
 });

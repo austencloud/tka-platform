@@ -28,7 +28,6 @@
     currentSection = "",
     onSectionChange = () => {},
     sectionHome = null,
-    onSectionHomeSelect = () => {},
     onModuleSwitcherTap = () => {},
     onHeightChange = () => {},
     showModuleSwitcher = true,
@@ -41,7 +40,6 @@
     currentSection: string;
     onSectionChange?: (sectionId: string) => void;
     sectionHome?: SectionHomeDestination | null;
-    onSectionHomeSelect?: () => void;
     onModuleSwitcherTap?: () => void;
     onHeightChange?: (height: number) => void;
     showModuleSwitcher?: boolean;
@@ -76,9 +74,10 @@
     sections.length * BUTTON_WIDTH + FIXED_BUTTONS_WIDTH
   );
 
-  // A module home is hierarchy, not another tab. Present it together with the
-  // peer sections in one selector so the backing tab never looks selected
-  // while the user is actually standing on the module landing surface.
+  // Create has too many peer methods for the bottom bar, so it always uses the
+  // compact selector. The Create home is the selector itself, not another
+  // method inside it; while that landing surface is open, the reserved center
+  // slot fades out and the edge controls stay put.
   let shouldUseOverflowSelector = $derived(
     sectionHome !== null ||
       (availableWidth > 0 && availableWidth < requiredWidth),
@@ -100,6 +99,9 @@
 
   // Determine if navigation sections should be hidden (any modal panel open in side-by-side layout)
   let shouldHideNav = $derived(shouldHideUIForPanels());
+  let shouldHideCenterSelector = $derived(
+    shouldHideNav || sectionHome?.active === true,
+  );
 
   function handleSectionClick(section: Section) {
     if (!section.disabled) {
@@ -196,13 +198,16 @@
 
   <!-- Current Module's Sections - Use overflow selector for modules with >4 tabs -->
   {#if shouldUseOverflowSelector}
-    <div class="sections-overflow" class:hidden={shouldHideNav}>
+    <div
+      class="sections-overflow"
+      class:hidden={shouldHideCenterSelector}
+      inert={shouldHideCenterSelector || undefined}
+      aria-hidden={shouldHideCenterSelector ? "true" : undefined}
+    >
       <TabOverflowSelector
         {sections}
         {currentSection}
         {onSectionChange}
-        {sectionHome}
-        {onSectionHomeSelect}
         selectorLabel={sectionHome ? "Choose creation method" : "Select tab"}
       />
     </div>
@@ -682,6 +687,7 @@
   @media (prefers-reduced-motion: reduce) {
     .bottom-navigation,
     .sections,
+    .sections-overflow,
     .peek-indicator {
       transition: none;
     }

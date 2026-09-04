@@ -1,22 +1,35 @@
 <script lang="ts">
-  import type { ModeRealization } from "../services/build-mode-realizations";
-  import {
-    MODE_FAMILY_ID,
-    MODE_ORDER,
-    type VtgMode,
-  } from "../services/shape-matrix-realizations";
-  import { TND_BY_FAMILY } from "$lib/features/choreo-card/domain/tnd-element";
-  import { growFade } from "$lib/shared/transitions/motion";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import type { TnDElement } from "$lib/features/choreo-card/domain/tnd-element";
+  import type { PropRelationship } from "../domain/prop-relationship";
+  import type { VtgMode } from "../services/shape-matrix-realizations";
   import RelationshipChoiceChip from "./RelationshipChoiceChip.svelte";
 
-  interface TargetGroup {
+  /**
+   * Everything this bridge reads, and nothing else.
+   *
+   * A drill realization satisfies it structurally, so that call site is
+   * unchanged. The narrowing is what lets the Theory surface show the same
+   * hands-to-props reading: a spin ratio has no realized sequence, and asking
+   * for one would have forced a second copy of this component rather than a
+   * second caller of it.
+   */
+  export interface RelationshipBridgeEntry {
+    mode: VtgMode;
+    /** The prop relationship's own mode, when the props are in one. */
+    propMode: VtgMode | null;
+    element: TnDElement;
+    propRelationship: PropRelationship;
+  }
+
+  interface PropResultDescription {
     key: string;
     label: string;
     detail: string;
     color: string;
     icon: string | null;
     mode: VtgMode | null;
-    candidates: ModeRealization[];
   }
 
   let {
@@ -24,43 +37,30 @@
     selectedMode,
     selectedPropMode,
     activePropMode,
-    equalRotatingTurns,
     disabled = false,
     building = false,
     ontarget,
-    onhandpick,
   }: {
-    realizations: ModeRealization[];
+    realizations: RelationshipBridgeEntry[];
     selectedMode: VtgMode | null;
     selectedPropMode: VtgMode | null;
     activePropMode: VtgMode | null;
-    equalRotatingTurns: boolean;
     disabled?: boolean;
     building?: boolean;
     ontarget: (mode: VtgMode) => void;
-    onhandpick: (mode: VtgMode) => void;
   } = $props();
 
   function elementName(raw: string): string {
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   }
 
-  function targetKey(realization: ModeRealization): string {
-    const relationship = realization.propRelationship;
-    if (relationship.kind === "full") return relationship.element.familyId;
-    if (relationship.kind === "direction-only") {
-      return `direction-${relationship.direction}`;
-    }
-    return "float";
-  }
-
-  function describeTarget(
-    realization: ModeRealization
-  ): Omit<TargetGroup, "candidates"> {
+  function describe(
+    realization: RelationshipBridgeEntry
+  ): PropResultDescription {
     const relationship = realization.propRelationship;
     if (relationship.kind === "full") {
       return {
-        key: targetKey(realization),
+        key: relationship.element.familyId,
         label: elementName(relationship.element.element),
         detail: relationship.element.name,
         color: relationship.element.accentColor,
@@ -69,14 +69,11 @@
       };
     }
     if (relationship.kind === "direction-only") {
-      const same = relationship.direction === "same";
       return {
-        key: targetKey(realization),
-        label: same ? "Same" : "Opposite",
-        detail: "Direction only · different rates",
-        color: same
-          ? "var(--prop-blue, #73b8ff)"
-          : "var(--theme-accent, #f4b54c)",
+        key: `direction-${relationship.direction}`,
+        label: "Not available",
+        detail: "Mixed prop rates",
+        color: "var(--theme-text-dim, rgb(255 255 255 / 0.62))",
         icon: null,
         mode: null,
       };
@@ -91,182 +88,344 @@
     };
   }
 
-  const groups = $derived.by<TargetGroup[]>(() => {
-    if (equalRotatingTurns) {
-      return MODE_ORDER.map((mode) => {
-        const element = TND_BY_FAMILY[MODE_FAMILY_ID[mode]]!;
-        return {
-          key: element.familyId,
-          label: elementName(element.element),
-          detail: element.name,
-          color: element.accentColor,
-          icon: element.iconPath,
-          mode,
-          candidates: realizations.filter(
-            (realization) => realization.propMode === mode
-          ),
-        };
-      });
-    }
-    const grouped = new Map<string, TargetGroup>();
-    for (const realization of realizations) {
-      const description = describeTarget(realization);
-      const existing = grouped.get(description.key);
-      if (existing) existing.candidates.push(realization);
-      else
-        grouped.set(description.key, {
-          ...description,
-          candidates: [realization],
-        });
-    }
-    return [...grouped.values()];
+  const selectedHand = $derived.by(() => {
+    if (!selectedMode) return null;
+    return (
+      realizations.find((realization) => realization.mode === selectedMode)
+        ?.element ?? null
+    );
   });
-
-  const selectedGroup = $derived(
-    groups.find(
-      (group) =>
-        group.mode === (selectedPropMode ?? activePropMode) ||
-        (group.mode === null &&
-          group.candidates.some((candidate) => candidate.mode === selectedMode))
-    ) ?? null
+  const choices = $derived.by<PropResultDescription[]>(() => {
+    if (!selectedMode) return [];
+    return realizations
+      .filter((realization) => realization.mode === selectedMode)
+      .map(describe);
+  });
+  const selectedChoice = $derived(
+    choices.find(
+      (choice) => choice.mode === (selectedPropMode ?? activePropMode)
+    ) ??
+      choices[0] ??
+      null
   );
-  const compactColumns = $derived(
-    groups.length <= 4 ? Math.max(groups.length, 1) : 3
+  const resultKey = $derived(
+    disabled
+      ? "empty"
+      : choices.length > 1
+        ? `choices:${selectedMode}`
+        : (selectedChoice?.key ?? (building ? "building" : "unavailable"))
   );
 </script>
 
-<div class="prop-picker" aria-label="Prop timing and direction">
+<!-- One shared bridge replaces the former prop-result row and stage footer. -->
+<div
+  class="relationship-bridge"
+  role="group"
+  aria-label="Selected hand relationship and resulting prop relationship"
+>
   <div
-    class="target-row"
-    role="group"
-    aria-label="Prop relationships"
-    style="--target-count: {Math.max(
-      groups.length,
-      1
-    )}; --compact-count: {compactColumns}"
+    class="bridge-side hand-side"
+    style:--bridge-accent={selectedHand?.accentColor}
   >
-    {#each groups as group (group.key)}
-      {@const unavailable = !building && group.candidates.length === 0}
-      <RelationshipChoiceChip
-        accent={group.color}
-        icon={group.icon}
-        code={group.detail}
-        compactCode={group.mode ?? group.detail}
-        label={group.label}
-        active={selectedGroup?.key === group.key}
-        disabled={disabled || unavailable}
-        ariaLabel={`${group.detail} ${group.label}`}
-        onpick={() => {
-          if (group.mode) ontarget(group.mode);
-          else if (group.candidates[0]) onhandpick(group.candidates[0].mode);
-        }}
-      />
-    {/each}
+    <span class="bridge-role">Hands</span>
+    {#if selectedHand}
+      <img src={selectedHand.iconPath} alt="" />
+      <span class="bridge-copy">
+        <strong>{elementName(selectedHand.element)}</strong>
+        <small>{selectedHand.name}</small>
+      </span>
+    {:else}
+      <span class="bridge-dot" aria-hidden="true"></span>
+      <span class="bridge-copy">
+        <strong>Pick a cell</strong>
+        <small>Hand relationship</small>
+      </span>
+    {/if}
   </div>
 
-  {#if selectedGroup && selectedGroup.candidates.length > 1}
-    <div
-      class="hand-choices"
-      role="group"
-      aria-label="Hand paths that produce this prop relationship"
-      transition:growFade={{ axis: "y" }}
-    >
-      <span>Hand path</span>
-      {#each selectedGroup.candidates as candidate (candidate.mode)}
-        <button
-          type="button"
-          class:active={candidate.mode === selectedMode}
-          style="--hand: {candidate.element.accentColor}"
-          aria-pressed={candidate.mode === selectedMode}
-          disabled={building}
-          onclick={() => onhandpick(candidate.mode)}
+  <i class="fas fa-arrow-right bridge-arrow" aria-hidden="true"></i>
+  <span class="sr-only">produces</span>
+
+  <div class="prop-result">
+    <!-- Content-sized with an eased height, NOT `fill`. The branching variant
+         is a label over two chips and is materially taller than the one-line
+         result; filling a 3.5rem parent made its layers absolute and spilled
+         them over the animation below. -->
+    <Crossfade key={resultKey} animateHeight duration={DURATION.fast}>
+      {#if disabled}
+        <div class="bridge-side prop-side pending-result">
+          <span class="bridge-role">Props</span>
+          <span class="bridge-dot" aria-hidden="true"></span>
+          <span class="bridge-copy">
+            <strong>Result</strong>
+            <small>Pick a cell</small>
+          </span>
+        </div>
+      {:else if choices.length > 1}
+        <div class="branching-result">
+          <span class="branch-label">Props · choose phase</span>
+          <div class="result-choices" aria-label="Exact prop phase choices">
+            {#each choices as choice (choice.key)}
+              {#if choice.mode}
+                <RelationshipChoiceChip
+                  accent={choice.color}
+                  icon={choice.icon}
+                  code={choice.detail}
+                  compactCode={choice.mode}
+                  label={choice.label}
+                  active={selectedChoice?.key === choice.key}
+                  disabled={building}
+                  ariaLabel={`Props: ${choice.detail} ${choice.label}`}
+                  onpick={() => ontarget(choice.mode!)}
+                />
+              {/if}
+            {/each}
+          </div>
+        </div>
+      {:else if selectedChoice}
+        <output
+          class="bridge-side prop-side"
+          style="--bridge-accent: {selectedChoice.color}"
+          aria-label={`Props: ${selectedChoice.detail} ${selectedChoice.label}`}
         >
-          <img src={candidate.element.iconPath} alt="" />
-          {candidate.mode}
-        </button>
-      {/each}
-    </div>
-  {/if}
+          <span class="bridge-role">Props</span>
+          {#if selectedChoice.icon}
+            <img src={selectedChoice.icon} alt="" />
+          {:else}
+            <span class="bridge-dot" aria-hidden="true"></span>
+          {/if}
+          <span class="bridge-copy">
+            <strong>{selectedChoice.label}</strong>
+            <small>{selectedChoice.detail}</small>
+          </span>
+        </output>
+      {:else}
+        <div class="bridge-side prop-side pending-result" aria-live="polite">
+          <span class="bridge-role">Props</span>
+          <span class="bridge-dot" aria-hidden="true"></span>
+          <span class="bridge-copy">
+            <strong>{building ? "Finding result…" : "Unavailable"}</strong>
+            <small>Exact relationship</small>
+          </span>
+        </div>
+      {/if}
+    </Crossfade>
+  </div>
 </div>
 
 <style>
-  .prop-picker {
+  .relationship-bridge {
     display: grid;
-    gap: 0.45rem;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: stretch;
+    gap: 0.55rem;
+    min-width: 0;
   }
-  .target-row {
+
+  .bridge-side {
     display: grid;
-    grid-template-columns: repeat(var(--target-count), minmax(0, 1fr));
-    gap: 0.5rem;
-  }
-  .hand-choices img {
-    width: 1.55rem;
-    height: 1.55rem;
-    object-fit: contain;
-  }
-  .hand-choices {
-    display: flex;
+    grid-template-columns: auto auto minmax(0, 1fr);
     align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    min-height: var(--min-touch-target, 44px);
-  }
-  .hand-choices > span {
-    margin-right: 0.2rem;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-  }
-  .hand-choices button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    min-width: 3.2rem;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0.2rem 0.45rem;
-    border: 1px solid color-mix(in srgb, var(--hand) 34%, transparent);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
-    font: inherit;
-    font-size: var(--font-size-min, 0.875rem);
-    cursor: pointer;
-  }
-  .hand-choices button.active {
-    border-color: var(--hand);
-    background: color-mix(in srgb, var(--hand) 18%, transparent);
+    gap: 0.55rem;
+    width: 100%;
+    min-width: 0;
+    min-height: 3.5rem;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--bridge-accent, var(--theme-text)) 36%,
+        transparent
+      );
+    border-radius: 12px;
+    background: color-mix(
+      in srgb,
+      var(--bridge-accent, var(--theme-text)) 8%,
+      transparent
+    );
     color: var(--theme-text, #fff);
   }
-  .hand-choices img {
-    width: 1rem;
-    height: 1rem;
+
+  .bridge-side img {
+    width: 1.55rem;
+    height: 1.55rem;
+    flex: 0 0 auto;
+    object-fit: contain;
   }
-  button:focus-visible {
-    outline: 2px solid var(--target, var(--hand, var(--theme-text, #fff)));
-    outline-offset: 2px;
+
+  .bridge-role,
+  .branch-label {
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 750;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
+
+  .bridge-copy {
+    display: grid;
+    min-width: 0;
+    line-height: 1.08;
+    text-align: left;
+  }
+
+  .bridge-copy strong,
+  .bridge-copy small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .bridge-copy strong {
+    color: color-mix(
+      in srgb,
+      var(--bridge-accent, var(--theme-text)) 80%,
+      white
+    );
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .bridge-copy small {
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
+    font-size: var(--font-size-compact, 0.75rem);
+  }
+
+  .bridge-dot {
+    width: 0.8rem;
+    height: 0.8rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: var(--bridge-accent, var(--theme-text-dim, #999));
+  }
+
+  .bridge-arrow {
+    align-self: center;
+    color: var(--theme-accent, #f4b54c);
+    font-size: 0.85rem;
+  }
+
+  .prop-result {
+    display: grid;
+    align-content: start;
+    min-width: 0;
+    min-height: 3.5rem;
+  }
+
+  .branching-result {
+    display: grid;
+    gap: 0.25rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .branch-label {
+    text-align: center;
+  }
+
+  .result-choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+    width: 100%;
+  }
+
+  .result-choices :global(.relationship-choice) {
+    min-height: 3.5rem;
+    padding-block: 0.3rem;
+  }
+
+  .pending-result {
+    --bridge-accent: var(--theme-text-dim, #999);
+  }
+
   @container shape-matrix-drill (max-width: 30rem) {
-    .target-row {
-      grid-template-columns: repeat(var(--compact-count), minmax(0, 1fr));
+    .relationship-bridge {
+      grid-template-columns: minmax(0, 0.92fr) auto minmax(0, 1.08fr);
+      gap: 0.3rem;
     }
-  }
-  @container shape-matrix-drill (min-width: 42rem) and (max-height: 24rem) {
-    .target-row {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    .bridge-side {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.35rem;
+      padding-inline: 0.45rem;
     }
-  }
-  @container shape-matrix-app (max-width: 25rem) or (max-height: 41.99rem) {
-    .hand-choices > span {
+
+    .bridge-role {
+      grid-column: 1 / -1;
+      line-height: 1;
+    }
+
+    .bridge-copy small {
       display: none;
     }
-    .hand-choices button {
-      min-width: 2.75rem;
+
+    .result-choices {
+      gap: 0.3rem;
+    }
+
+    .result-choices :global(.relationship-choice) {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      padding-inline: 0.25rem;
     }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .hand-choices button {
-      transition: none;
+
+  @container shape-matrix-drill (min-width: 42rem) and (max-height: 24rem) {
+    .bridge-side {
+      min-height: 3.1rem;
+      gap: 0.35rem;
+      padding-inline: 0.45rem;
+      padding-block: 0.25rem;
+    }
+
+    .prop-result,
+    .result-choices :global(.relationship-choice) {
+      min-height: 3.1rem;
+    }
+
+    /* A short, wide drill puts the bridge in a narrow column, where the glyph
+       beside the text left the code about eighteen pixels and rendered it as
+       "S...". Stacking gives the code and the element name the chip's whole
+       width. */
+    .result-choices :global(.relationship-choice) {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      padding-inline: 0.25rem;
+    }
+
+    /* The drill is wide, so the chip spells the relationship out by default.
+       These two do not have the drill's width; they have a column of it. */
+    .result-choices :global(.relationship-choice .code-wide) {
+      display: none;
+    }
+
+    .result-choices :global(.relationship-choice .code-compact) {
+      display: inline;
+    }
+
+    .bridge-copy small,
+    .branch-label {
+      display: none;
+    }
+
+    .bridge-role {
+      font-size: 0;
+    }
+
+    .hand-side .bridge-role::after,
+    .prop-side .bridge-role::after {
+      font-size: var(--font-size-compact, 0.75rem);
+    }
+
+    .hand-side .bridge-role::after {
+      content: "H";
+    }
+
+    .prop-side .bridge-role::after {
+      content: "P";
     }
   }
 </style>

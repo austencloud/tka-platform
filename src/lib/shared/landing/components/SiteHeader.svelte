@@ -20,6 +20,7 @@
   import { trackCtaClick } from "$lib/shared/analytics/landing-events";
   import { analyticsRoute } from "$lib/shared/analytics/analytics-context";
   import type { AuthCta } from "$lib/shared/analytics/auth-events";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   let scrolled = $state(false);
   let mobileOpen = $state(false);
@@ -73,7 +74,8 @@
       if (typeof indexedDB.databases !== "function") return true;
       const dbs = await indexedDB.databases();
       return dbs.some((d) => d.name === "firebaseLocalStorageDb");
-    } catch {
+    } catch (error) {
+      console.debug("[SiteHeader] Auth persistence probe unavailable:", error);
       return true;
     }
   }
@@ -95,17 +97,39 @@
   }
 
   onMount(() => {
+    let mounted = true;
+    let idleHandle: number | undefined;
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
     void (async () => {
       const persisted = await hasFirebaseAuthDb();
+      if (!mounted) return;
       hasPersistedAuth = persisted;
       probeDone = true;
       if (!persisted) return; // signed out → stay Firebase-free
+
+      const loadAuth = () => {
+        if (!mounted) return;
+        void ensureAuthLoaded().catch((error) =>
+          console.warn(
+            "[SiteHeader] Deferred auth initialization failed:",
+            error
+          )
+        );
+      };
+
       if (typeof requestIdleCallback !== "undefined") {
-        requestIdleCallback(() => void ensureAuthLoaded());
+        idleHandle = requestIdleCallback(loadAuth);
       } else {
-        setTimeout(() => void ensureAuthLoaded(), 0);
+        timeoutHandle = setTimeout(loadAuth, 0);
       }
     })();
+
+    return () => {
+      mounted = false;
+      if (idleHandle !== undefined) cancelIdleCallback(idleHandle);
+      if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
+    };
   });
 
   // In-place sign in: open the centered AuthModal over the landing page rather
@@ -173,22 +197,13 @@
   type NavEntry = NavLink | NavGroup;
 
   const NAV: NavEntry[] = [
-    // The Notation group holds systems OTHER people built, which this site
-    // documents and credits. TKA's own material lives under Learn. Keeping
-    // them in one flat group made every reader — including LLMs summarizing
-    // the site — collapse the two into "TKA is built on the Shape Matrix and
-    // CAPs," which is false. The separation is the fix; the nav desc lines
-    // alone never survived into a summary.
+    // History is a site-level destination, not a child of notation. The
+    // Notation group now contains only the two live reference systems it names.
+    { label: "History", href: "/history", icon: "fa-clock-rotate-left" },
     {
       label: "Notation",
       icon: "fa-language",
       items: [
-        {
-          label: "History",
-          href: "/notation",
-          icon: "fa-language",
-          desc: "How flow arts notation developed, 2009 to 2022",
-        },
         {
           label: "Shape Matrix",
           href: "/notation/shape-matrix",
@@ -265,9 +280,10 @@
     return currentPath === href || currentPath.startsWith(href + "/");
   }
 
-  // Some dropdown destinations live under another destination. On /notation/caps,
-  // both /notation and /notation/caps match the current path, but the visitor is
-  // only on the latter. Choosing the longest match keeps one clear location.
+  // Some dropdown destinations live under another destination. On
+  // /shop/loop-deck, both /shop and /shop/loop-deck match the current path, but
+  // the visitor is only on the latter. Choosing the longest match keeps one
+  // clear location.
   function getActiveItemHref(
     items: readonly { href: string }[]
   ): string | null {
@@ -287,8 +303,8 @@
     return getActiveItemHref(group.items) !== null;
   }
 
-  // Desktop disclosures share one owner so opening Learn closes Notation (and
-  // vice versa) in the same state change. A late close from the previous group
+  // Desktop disclosures share one owner so opening Learn closes Notation in
+  // the same state change. A late close from the previous group
   // cannot accidentally close the group the user just opened.
   let desktopOpenGroup = $state<string | null>(null);
 
@@ -362,8 +378,9 @@
     mobileOpen = false;
     try {
       await authApi?.signOut();
-    } catch {
-      // Reactive state swaps back to "Sign in" on success; failure is rare.
+    } catch (error) {
+      console.error("[SiteHeader] Sign out failed:", error);
+      toast.error("Sign out failed. Please try again.");
     }
   }
 </script>
@@ -396,7 +413,11 @@
             onOpenChange={(open) => setDesktopGroup(entry.label, open)}
           />
         {:else}
-          <a href={entry.href} class:active={isActive(entry.href)}>
+          <a
+            href={entry.href}
+            class:active={isActive(entry.href)}
+            aria-current={isActive(entry.href) ? "page" : undefined}
+          >
             {entry.label}
             {#if isActive(entry.href)}<span class="ind" aria-hidden="true"
               ></span>{/if}
@@ -517,7 +538,11 @@
             </ul>
           </div>
         {:else}
-          <a href={entry.href} class:active={isActive(entry.href)}>
+          <a
+            href={entry.href}
+            class:active={isActive(entry.href)}
+            aria-current={isActive(entry.href) ? "page" : undefined}
+          >
             <i class="fas {entry.icon} m-icon" aria-hidden="true"></i>
             <span class="m-label">{entry.label}</span>
             <i class="fas fa-chevron-right m-chev" aria-hidden="true"></i>
@@ -603,7 +628,7 @@
     max-width: var(--shell-w, min(1720px, 92vw));
     margin: 0 auto;
     padding: 0 1.4rem;
-    height: 64px;
+    height: var(--marketing-header-h, 64px);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -617,6 +642,7 @@
     text-decoration: none;
     display: flex;
     align-items: center;
+    min-height: var(--min-touch-target, 44px);
   }
   .logo-text {
     font-family: "Fraunces", Georgia, serif;
@@ -693,7 +719,11 @@
     text-decoration: none;
     font-size: 0.92rem;
     font-weight: 500;
+    display: inline-flex;
+    min-height: var(--min-touch-target, 44px);
+    align-items: center;
     padding: 0.4rem 0;
+    box-sizing: border-box;
     transition: color 0.2s ease;
   }
   .desktop-nav a:hover,
@@ -723,6 +753,7 @@
     color: #9b97bd;
     background: none;
     border: none;
+    min-height: var(--min-touch-target, 44px);
     padding: 0.4rem 0;
     cursor: pointer;
     transition: color 0.2s ease;
@@ -738,7 +769,7 @@
     display: inline-flex;
     align-items: center;
     min-width: 36px;
-    min-height: 32px;
+    min-height: var(--min-touch-target, 44px);
   }
 
   .account {
@@ -750,6 +781,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
     padding: 0;
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 999px;

@@ -8,6 +8,10 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy, untrack } from "svelte";
+  import {
+    createRenderActivityGate,
+    renderGateTarget,
+  } from "$lib/shared/render-gating/render-activity-gate";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
@@ -108,9 +112,13 @@
     leftPropType = null,
     rightPropType = null,
     externalBpm = null,
+    externalPlaying = null,
+    onExternalPlayingChange = undefined,
     chrome = "full",
     fill = false,
     disassemblyLayout = "stacked",
+    disassemblyTarget = null,
+    onDisassemblyTargetChange = undefined,
     showWordHeader = false,
     showPositionGlyph = false,
     onStepChange = undefined,
@@ -155,6 +163,10 @@
     rightPropType?: string | null;
     /** When provided, overrides internal BPM and controls playback speed externally */
     externalBpm?: number | null;
+    /** Shared host playback intent. When present, hidden retained players pause
+     *  without changing this value and resume to match it when visible again. */
+    externalPlaying?: boolean | null;
+    onExternalPlayingChange?: (playing: boolean) => void;
     /**
      * Reports the live 1-based fractional playback step (`currentStep`) and the
      * sequence identity currently loaded in the engine. The identity lets a
@@ -188,7 +200,11 @@
     /** Arrangement used when the canonical canvas is disassembled. The default
      *  vertical stack preserves viewer behavior; square embedded stages can
      *  keep all three canvases inside one atmosphere with the sidecar layout. */
-    disassemblyLayout?: "stacked" | "sidecar";
+    disassemblyLayout?: "stacked" | "sidecar" | "auto";
+    /** Shared stage-level disassembly intent. The canvas still owns the visual
+     *  state machine; the host owns whether every retained canvas is open. */
+    disassemblyTarget?: boolean | null;
+    onDisassemblyTargetChange?: (disassembled: boolean) => void;
     /** Show the sequence word above the canvas and highlight its live step.
      *  Explicit opt-in keeps existing fill-mode embeds canvas-only. */
     showWordHeader?: boolean;
@@ -323,6 +339,14 @@
 
   // Services - per-instance to allow multiple simultaneous players (e.g., Arena)
   let playbackController: AnimationPlaybackController | null = null;
+
+  // Off-screen / hidden-tab gating for THIS player's playhead loop. The canvas
+  // render loop is gated independently inside CanvasSurface; this one stops the
+  // clock that advances the sequence. Created at component init (no DOM work,
+  // SSR-safe) and attached to the root element by `use:renderGateTarget`.
+  const activityGate = createRenderActivityGate({
+    name: "inline-animation-player",
+  });
   let servicesReady = $state(false);
   let loading = $state(true);
   // Once true, reloads never return to the loading-state branch — see the
@@ -361,8 +385,17 @@
   let pausedByPlaybackGate = false;
 
   $effect(() => {
-    if (!servicesReady || !playbackController) return;
+    if (!servicesReady || !animationState.sequenceData || !playbackController)
+      return;
     const controller = playbackController;
+
+    if (externalPlaying !== null) {
+      const shouldPlay = externalPlaying && playbackAllowed;
+      if (animationState.isPlaying !== shouldPlay) {
+        untrack(() => controller.togglePlayback());
+      }
+      return;
+    }
 
     if (!playbackAllowed) {
       if (!isPlaying) return;
@@ -465,6 +498,7 @@
         // drive the workspace's beat highlight for an unrelated sequence.
         syncSharedWorkspaceState: false,
       });
+      playbackController.setActivityGate(activityGate);
       playbackController.onLoopComplete(() => onLoopComplete?.());
       playbackController.onSequenceBoundary(() => {
         const handoff = onSequenceBoundary?.() ?? null;
@@ -491,6 +525,7 @@
   });
 
   onDestroy(() => {
+    activityGate.dispose();
     playbackController?.offLoopComplete();
     playbackController?.offSequenceBoundary();
     playbackController?.dispose();
@@ -548,6 +583,7 @@
     // and never retry.
     if (
       !autoPlay ||
+      externalPlaying !== null ||
       !playbackAllowed ||
       !servicesReady ||
       !animationState.sequenceData
@@ -701,6 +737,10 @@
   });
 
   function togglePlayback() {
+    if (externalPlaying !== null) {
+      onExternalPlayingChange?.(!externalPlaying);
+      return;
+    }
     if (!playbackController) return;
     // Single-play rests on the end pose instead of looping — tapping/hover-
     // badge "play" from there must replay from the start, not silently no-op
@@ -741,7 +781,7 @@
   }
 </script>
 
-<div class="inline-animation-player">
+<div class="inline-animation-player" use:renderGateTarget={activityGate}>
   {#if loading && !hasLoadedOnce}
     <!-- First load only. On RELOADS (sequence prop swap) this branch must NOT
          fire: flipping to it unmounts AnimatorCanvas, which destroys the whole
@@ -791,6 +831,8 @@
         hoverHint={minimal && interactive ? hoverHint : "none"}
         fillContainer={fill}
         {disassemblyLayout}
+        {disassemblyTarget}
+        {onDisassemblyTargetChange}
         {hideTkaGlyph}
         {hideStepNumbers}
         hideHeader={fill && !showWordHeader}

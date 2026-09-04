@@ -32,6 +32,14 @@ const gripTestStage = readFileSync(
   "utf8"
 );
 
+const viewerScene = readFileSync(
+  resolve(
+    process.cwd(),
+    "src/lib/shared/3d/components/Viewer3DScene.svelte"
+  ),
+  "utf8"
+);
+
 const liveSequencePerformer = readFileSync(
   resolve(
     process.cwd(),
@@ -82,21 +90,74 @@ describe("staff grip contact contract", () => {
   });
 
   it("freezes one shared sequence phase across four inspectable camera views", () => {
-    expect(gripTestPage).toContain("const VIEWS: CameraView[]");
-    expect(gripTestPage).toContain("{#each VIEWS as view, index (view.id)}");
+    // The shot vocabulary is owned by ./inspection-framing, which solves each
+    // pane from the performer's proportions and the pane's own aspect ratio.
+    // The page renders those views; it does not carry its own camera table and
+    // must never re-aim a camera from the live pose.
+    expect(gripTestPage).toContain('from "./inspection-framing"');
+    expect(gripTestPage).toContain("INSPECTION_VIEWS");
+    expect(gripTestPage).toContain("inspectionShotForView(view, aspectRatio)");
+    expect(gripTestPage).toContain(
+      "{#each INSPECTION_VIEWS as view, index (view.id)}"
+    );
+    expect(gripTestPage).not.toContain("updateFocus");
     expect(gripTestPage).toContain("{phase}");
     expect(gripTestPage).toContain('type="range"');
     expect(gripTestPage).toContain('rightDragAction="rotate"');
   });
 
   it("publishes measured shaft-axis and palm-contact errors", () => {
-    expect(gripTestPage).toContain("diagnostics.leftGripAxis");
-    expect(gripTestPage).toContain("diagnostics.rightGripAxis");
+    expect(gripTestPage).toContain("gripDiagnostics.leftGripAxis");
+    expect(gripTestPage).toContain("gripDiagnostics.rightGripAxis");
     expect(gripTestPage).toContain("data-left-axis-error-deg");
     expect(gripTestPage).toContain("data-right-axis-error-deg");
+    expect(gripTestPage).toContain("data-requested-yaw-deg");
+    expect(gripTestPage).toContain("data-achieved-yaw-deg");
+    expect(gripTestPage).toContain("data-collision-zones");
+    expect(gripTestPage).toContain("data-deepest-collision-mm");
+    expect(gripTestPage).toContain("data-audience-grip-separation-mm");
+    expect(gripTestPage).toContain("data-rendered-step-number");
+    // The rig's collision callback is also where the performer reads its own
+    // skeleton measurements, so the binding is a wrapper. It must still forward
+    // all three diagnostic arguments to the consumer unchanged.
     expect(liveSequencePerformer).toContain(
-      "onCollisionEvents={props.onCollisionEvents}"
+      "props.onCollisionEvents?.(events, diagnostics, gripDiagnostics)"
     );
+    expect(liveSequencePerformer).toContain("captureReach(diagnostics)");
+  });
+
+  it("uses the same upper-body stance plan as the production viewer", () => {
+    // The turn's shape is geometry and its timing is a score-time curve; both
+    // consumers resolve them through the one shared owner rather than either
+    // of them re-planning. The viewer is checked here too, because a lab that
+    // agreed only with itself is what this contract exists to prevent.
+    expect(liveSequencePerformer).toContain("resolveTrackedUpperBodyStance");
+    expect(viewerScene).toContain("resolveTrackedUpperBodyStance");
+    expect(liveSequencePerformer).toContain("buildStanceYawTrackForSource");
+    expect(viewerScene).toContain("buildStanceYawTrackForSource");
+    expect(liveSequencePerformer).toContain(
+      "stanceYaw={upperBodyStance.yawRad}"
+    );
+    expect(liveSequencePerformer).toContain(
+      "stanceSegments={upperBodyStance.segments}"
+    );
+    expect(viewerScene).toContain("stanceSegments={upperBodyStance.segments}");
+    expect(liveSequencePerformer).toContain(
+      "spinePitchOffset={upperBodyStance.pitchRad}"
+    );
+    expect(liveSequencePerformer).toContain(
+      "redHandDepthOffset={upperBodyStance.rightDepthOffsetM}"
+    );
+  });
+
+  it("maps a live phase through the state owner's motion-step offset", () => {
+    expect(liveSequencePerformer).toContain(
+      "Math.floor(wrapped) + performerState.motionStepOffset"
+    );
+    expect(liveSequencePerformer).not.toContain("Math.floor(wrapped) + 1");
+    // Ambient hosts pass no phase and keep the owner's default seek.
+    expect(liveSequencePerformer).toContain("if (phase == null) {");
+    expect(liveSequencePerformer).toContain("performerState.goToStep(0);");
   });
 
   it("maps sequence hands into the rig's blue and red prop inputs", () => {

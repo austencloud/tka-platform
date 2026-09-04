@@ -40,6 +40,8 @@
   import type { FlowFestFireJamSoundscapeSnapshot } from "$lib/features/flow-fest-sim/services/contracts/IFlowFestFireJamSoundscape";
   import {
     FLOW_FEST_GAMEPLAY_JUMP_FORCE,
+    FLOW_FEST_GAMEPLAY_GROUND_ACCELERATION_METERS_PER_SECOND_SQUARED,
+    FLOW_FEST_GAMEPLAY_GROUND_DECELERATION_METERS_PER_SECOND_SQUARED,
     FLOW_FEST_GAMEPLAY_SPRINT_MULTIPLIER,
     FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND,
   } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
@@ -86,6 +88,13 @@
     type FlowFestEntranceReferenceRequest,
   } from "./flow-fest-entrance-reference";
   import type { FlowFestProductionDressing } from "./flow-fest-production-geometry";
+  import {
+    flowFestViewLinkUrl,
+    flowFestViewPoseChanged,
+    formatFlowFestViewCoordinates,
+    parseFlowFestViewLink,
+    type FlowFestViewPose,
+  } from "./flow-fest-view-link";
   import { getFlowFestVehicleStagePoint } from "./flow-fest-site-fidelity";
   import {
     getFlowFestVisualProfile,
@@ -152,6 +161,29 @@
     z: FLOW_FEST_LOWER_CHECK_IN.z,
   });
   let listenerYaw = $state(0);
+  const initialViewLink = parseFlowFestViewLink(initialSearch);
+  // The entrance reference cameras plus, when the link carried one, the exact
+  // viewpoint it named. Registering it as a review camera rather than adding a
+  // second teleport path means a shared link arrives through the same code that
+  // places every other camera in this route.
+  const reviewCameras = initialViewLink
+    ? [...FLOW_FEST_ENTRANCE_REVIEW_CAMERAS, initialViewLink]
+    : FLOW_FEST_ENTRANCE_REVIEW_CAMERAS;
+  // Live camera eye, mirrored outside `$state` for the same reason the audio
+  // listener below is: it lands every frame, and nothing renders from it at
+  // that rate. The readout and the URL both refresh from a 4 Hz tick.
+  const viewPose: FlowFestViewPose = {
+    x: FLOW_FEST_LOWER_CHECK_IN.x,
+    y: 13.7,
+    z: FLOW_FEST_LOWER_CHECK_IN.z,
+    yawRadians: 0,
+    pitchRadians: 0,
+    horizontalFovDegrees: 65,
+  };
+  let publishedViewPose: FlowFestViewPose | null = null;
+  let viewPoseReported = false;
+  let viewpointCoordinates = $state("");
+  let viewpointHref = $state("");
   // The audio tick reads its own non-reactive mirror of the listener. Reading
   // `position` inside an effect would re-run the whole audio path at render
   // rate; the field only needs a 20 Hz control tick, and everything smoother
@@ -504,6 +536,30 @@
     stageToken += 1;
   }
 
+  function handleCameraPose(pose: FlowFestViewPose): void {
+    Object.assign(viewPose, pose);
+    viewPoseReported = true;
+  }
+
+  /**
+   * Mirror the live camera into `?cam=&look=&fov=` so the address bar always
+   * describes the frame on screen, and a copied link reopens it.
+   *
+   * Raw `history.replaceState` on purpose, matching `EnvironmentReviewCamera`:
+   * routing this through SvelteKit would republish `page.url`, and anything
+   * reading the query back would re-place the camera at the rounded pose on
+   * every write.
+   */
+  function publishViewpoint(): void {
+    if (!browser || fixedReviewEnabled || !viewPoseReported) return;
+    if (!flowFestViewPoseChanged(publishedViewPose, viewPose)) return;
+    publishedViewPose = { ...viewPose };
+    viewpointCoordinates = formatFlowFestViewCoordinates(viewPose);
+    const url = flowFestViewLinkUrl(new URL(window.location.href), viewPose);
+    viewpointHref = url.href;
+    window.history.replaceState(window.history.state, "", url);
+  }
+
   function handlePlayerPosition(nextPosition: {
     x: number;
     y: number;
@@ -664,9 +720,11 @@
     gate6Capture = gate6Review && search.get("capture") === "1";
     const performanceTimer = window.setInterval(refreshGate5Performance, 500);
     const audioTimer = window.setInterval(pumpSiteAudio, 50);
+    const viewpointTimer = window.setInterval(publishViewpoint, 250);
     return () => {
       window.clearInterval(performanceTimer);
       window.clearInterval(audioTimer);
+      window.clearInterval(viewpointTimer);
       mobility.destroy();
       fieldPositioning.destroy();
       fireJamSoundscape.dispose();
@@ -978,6 +1036,14 @@
       sendCamera(reviewCamera.id);
       return;
     }
+    if (initialViewLink) {
+      // An explicit viewpoint outranks the phase-staged cameras below. The
+      // link exists to put someone at one specific spot, and letting the night
+      // composition win would silently discard the coordinates it carried.
+      initialCameraApplied = true;
+      sendCamera(initialViewLink.id);
+      return;
+    }
     if (gate4Review) {
       // The Gate 4 slice starts on the wheel at the fire-jam approach. Reusing
       // the night composition camera here would silently teleport the rider
@@ -1217,13 +1283,15 @@
           {resetToken}
           {cameraToken}
           {cameraId}
-          externalReviewCameras={FLOW_FEST_ENTRANCE_REVIEW_CAMERAS}
+          externalReviewCameras={reviewCameras}
           {stageToken}
           {stagePosition}
           {selectedBranch}
           hostMode="chunked"
           moveSpeedMetersPerSecond={FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND}
           sprintMultiplier={FLOW_FEST_GAMEPLAY_SPRINT_MULTIPLIER}
+          groundAccelerationMetersPerSecondSquared={FLOW_FEST_GAMEPLAY_GROUND_ACCELERATION_METERS_PER_SECOND_SQUARED}
+          groundDecelerationMetersPerSecondSquared={FLOW_FEST_GAMEPLAY_GROUND_DECELERATION_METERS_PER_SECOND_SQUARED}
           jumpForce={FLOW_FEST_GAMEPLAY_JUMP_FORCE}
           enableSprint={true}
           enableJump={true}
@@ -1247,6 +1315,7 @@
             listenerYaw = yaw;
             audioListener.yawRadians = yaw;
           }}
+          onCameraPoseChange={handleCameraPose}
           onElectricUnicycleChange={(update) => mobility.applyRuntime(update)}
           onError={(message) => (error = message)}
         />
@@ -1374,9 +1443,10 @@
       {selectedBranch}
       {position}
       headingRadians={listenerYaw}
+      {viewpointCoordinates}
+      {viewpointHref}
       {targetZone}
       targetDistance={objectiveDistance}
-      currentArea={integratedJourney?.currentArea ?? integratedArea}
       mobility={mobilityRuntime}
       {electricUnicycleSpeedMph}
       {electricUnicycleSpeedKph}
@@ -1491,7 +1561,6 @@
     --action-shadow: 0 0.8rem 2rem rgba(165, 65, 39, 0.28);
     --action-shadow-hover: 0 1rem 2.4rem rgba(165, 65, 39, 0.42);
     --action-focus: #ffe6b0;
-    --sim-ui-scale: 1;
     position: fixed;
     inset: 0;
     min-inline-size: 20rem;
@@ -1541,8 +1610,8 @@
     gap: 0.16rem;
     max-inline-size: min(28rem, calc(100vw - 1.5rem));
     padding: 0.72rem 0.9rem;
-    border-inline-start: 0.2rem solid var(--sim-accent);
-    border-radius: 0.35rem 0.9rem 0.9rem 0.35rem;
+    border: 1px solid var(--sim-stroke);
+    border-radius: 0.9rem;
     background: rgba(7, 13, 10, 0.74);
     box-shadow: 0 0.9rem 2.4rem rgba(2, 7, 4, 0.26);
     pointer-events: none;
@@ -1586,7 +1655,7 @@
     inline-size: min(55rem, calc(100vw - 2rem));
     padding: clamp(1rem, 2vw, 1.5rem);
     border-radius: 1.35rem;
-    transform: translate(-50%, -50%) scale(var(--sim-ui-scale));
+    translate: -50% -50%;
   }
 
   .choice-heading {
@@ -1684,7 +1753,7 @@
     max-inline-size: min(34rem, calc(100vw - 2rem));
     padding: 1rem 1.15rem;
     border-radius: 1.15rem;
-    transform: translate(-50%, -50%) scale(var(--sim-ui-scale));
+    translate: -50% -50%;
   }
 
   .loading-card > div:last-child,
@@ -1795,18 +1864,6 @@
 
     .choice-grid small {
       display: none;
-    }
-  }
-
-  @media (min-width: 1680px) {
-    .festival-page {
-      --sim-ui-scale: 1.12;
-    }
-  }
-
-  @media (min-width: 2600px) {
-    .festival-page {
-      --sim-ui-scale: 1.48;
     }
   }
 
