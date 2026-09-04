@@ -2,16 +2,16 @@
   import GuideShell from "../_components/GuideShell.svelte";
   import GuideSeo from "../level-1/_components/GuideSeo.svelte";
   import {
-    flowerPetals,
-    ratioLabel,
-  } from "$lib/shared/shape-matrix/domain/flower-signature";
-  import { matrixTurnsForLevel } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
+    KINETIC_SHAPE_ENGINE_AUTHOR,
+    ORIGINAL_SHAPE_MATRIX_URL,
+  } from "$lib/shared/shape-matrix/app/shape-engine-identity";
   import { levelForTurnValue } from "$lib/shared/create/services/level-turn-values";
 
   const sourceFamilies = [
     {
-      sourceRatio: "1:1",
+      ratio: "1:1",
       turn: 0,
+      turnLabel: "0 turns",
       styles: [
         "Extension",
         "Isolation",
@@ -20,8 +20,9 @@
       ],
     },
     {
-      sourceRatio: "1:3",
+      ratio: "1:3",
       turn: 1,
+      turnLabel: "1 turn",
       styles: [
         "2-petal horizontal prospin",
         "2-petal vertical prospin",
@@ -30,8 +31,9 @@
       ],
     },
     {
-      sourceRatio: "1:5",
+      ratio: "1:5",
       turn: 2,
+      turnLabel: "2 turns",
       styles: [
         "4-petal box prospin",
         "4-petal diamond prospin",
@@ -41,27 +43,13 @@
     },
   ].map((family) => ({
     ...family,
-    engineRatio: ratioLabel(family.turn),
-    engineHref: `/notation/shape-matrix?level=${levelForTurnValue(family.turn)}&leftTurn=${family.turn}&rightTurn=${family.turn}&axis=both&labels=ratios&prop=staff`,
-  }));
-
-  const turnRows = matrixTurnsForLevel(4).map((turn) => ({
-    turn,
-    turnLabel: turn === "fl" ? "Float" : String(turn),
-    ratio: ratioLabel(turn),
-    level: levelForTurnValue(turn),
-    proPetals:
-      turn === "fl" ? "—" : String(flowerPetals({ style: "pro", turns: turn })),
-    antiPetals:
-      turn === "fl"
-        ? "—"
-        : String(flowerPetals({ style: "anti", turns: turn })),
+    engineHref: `/notation/shape-matrix?level=${levelForTurnValue(family.turn)}&leftTurn=${family.turn}&rightTurn=${family.turn}&axis=both&labels=turns&prop=staff`,
   }));
 </script>
 
 <GuideSeo
-  title="Spin Ratios and TKA Turns · The Kinetic Alphabet Guide"
-  description="Translate Lorq Nichols’ Shape Matrix ratios into Shape Engine prop-to-hand ratios, TKA turn values, and prospin or antispin petal counts."
+  title="The Ratios Behind the Shape Matrix · The Kinetic Alphabet Guide"
+  description="See how Lorq Nichols built the original 144 Shape Matrix from the 1:1, 1:3, and 1:5 VTG families, and how Kinetic Shape Engine carries them forward."
   path="/guide/ratios"
   partOf={{ name: "The Kinetic Alphabet Guide", path: "/guide" }}
   breadcrumbs={[
@@ -76,82 +64,55 @@
   <article class="ratio-guide guide-page-route">
     <header class="hero">
       <div class="hero-copy">
-        <span class="kicker">Translation reference</span>
-        <h1>Spin ratios and TKA turns</h1>
+        <span class="kicker">Lorq’s original 144</span>
+        <h1>Three ratios made the Shape Matrix.</h1>
         <p>
-          Lorq Nichols’ Shape Matrix and Kinetic Shape Engine describe the same
-          flower families from opposite sides of the colon. Here is the exact
-          translation, followed by every ratio named by TKA Levels 1–4.
+          Lorq Nichols built the original matrix from the VTG families
+          <strong>1:1, 1:3, and 1:5.</strong> Each family supplied four driving styles.
+          That gave each hand twelve choices and made 144 pairings.
         </p>
-      </div>
-      <div class="ratio-key" aria-label="Shape Engine ratio reading order">
-        <span>Shape Engine reads</span>
-        <strong>prop rotations : hand cycles</strong>
-        <a
-          href="/notation/shape-matrix?level=2&leftTurn=1&rightTurn=1&axis=both&labels=ratios&prop=staff"
-        >
-          Open Shape Engine in ratio mode
-          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-        </a>
-      </div>
-    </header>
-
-    <section class="translation" aria-labelledby="translation-heading">
-      <div class="section-heading">
-        <span>01</span>
-        <div>
-          <h2 id="translation-heading">One family, two reading orders</h2>
-          <p>
-            Lorq’s publication labels the families 1:1, 1:3, and 1:5. Shape
-            Engine always puts prop rotation first, so the last two ratios flip.
-          </p>
-        </div>
       </div>
 
       <div
-        class="translation-line"
-        aria-label="Lorq labels translated into Shape Engine labels"
+        class="count"
+        aria-label="Three ratio families times four styles equals twelve choices per hand. Twelve times twelve equals 144 pairings."
       >
-        <div>
-          <span>Lorq’s labels</span>
-          <strong>1:1 · 1:3 · 1:5</strong>
-        </div>
-        <i class="fa-solid fa-arrow-right-long" aria-hidden="true"></i>
-        <div>
-          <span>Shape Engine</span>
-          <strong>1:1 · 3:1 · 5:1</strong>
-        </div>
-      </div>
-    </section>
-
-    <section aria-labelledby="families-heading">
-      <div class="section-heading">
-        <span>02</span>
-        <div>
-          <h2 id="families-heading">Lorq’s twelve driving styles</h2>
-          <p>
-            Each source ratio contributes four choices. Twelve left-hand columns
-            crossed with twelve right-hand rows make the original 144.
-          </p>
+        <div><strong>3</strong><span>ratio families</span></div>
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        <div><strong>4</strong><span>styles each</span></div>
+        <i class="fa-solid fa-equals" aria-hidden="true"></i>
+        <div><strong>12</strong><span>per hand</span></div>
+        <div class="pairing">
+          <strong>12 × 12</strong><span>144 pairings</span>
         </div>
       </div>
+    </header>
 
-      <div class="family-grid">
+    <section class="families" aria-labelledby="families-heading">
+      <header class="section-intro">
+        <h2 id="families-heading">The original twelve</h2>
+        <p>Each ratio branches into four ways to drive the prop.</p>
+      </header>
+
+      <div class="family-list">
         {#each sourceFamilies as family}
-          <article class="family-card">
-            <div class="family-ratio">
-              <span>Lorq {family.sourceRatio}</span>
-              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-              <strong>{family.engineRatio}</strong>
+          <article class="family-row">
+            <div class="family-name">
+              <strong>{family.ratio}</strong>
+              <span>{family.turnLabel} in TKA</span>
             </div>
-            <p>TKA: {family.turn} {family.turn === 1 ? "turn" : "turns"}</p>
+
             <ul>
               {#each family.styles as style}
                 <li>{style}</li>
               {/each}
             </ul>
-            <a href={family.engineHref}>
-              See {family.engineRatio} in Shape Engine
+
+            <a
+              href={family.engineHref}
+              aria-label={`Open the ${family.ratio} family in Kinetic Shape Engine`}
+            >
+              Open in Shape Engine
               <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
             </a>
           </article>
@@ -159,98 +120,53 @@
       </div>
     </section>
 
-    <section aria-labelledby="ladder-heading">
-      <div class="section-heading">
-        <span>03</span>
-        <div>
-          <h2 id="ladder-heading">The complete Level 1–4 turn ladder</h2>
-          <p>
-            These rows come from the same turn palette and ratio functions used
-            by Shape Engine. Prospin subtracts the reduced ratio parts; antispin
-            adds them.
-          </p>
-        </div>
-      </div>
-
-      <div class="turn-table-wrap themed-scrollbar">
-        <table>
-          <caption class="sr-only">TKA turn to spin ratio table</caption>
-          <thead>
-            <tr>
-              <th scope="col">Level</th>
-              <th scope="col">TKA turn</th>
-              <th scope="col">Prop : hand</th>
-              <th scope="col">Petals · pro / anti</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each turnRows as row}
-              <tr>
-                <td data-label="Level">Level {row.level}</td>
-                <th scope="row" data-label="TKA turn">{row.turnLabel}</th>
-                <td class="ratio-cell" data-label="Prop : hand">{row.ratio}</td>
-                <td class="petal-cell" data-label="Petals · pro / anti">
-                  <span>{row.proPetals}</span>
-                  <span aria-hidden="true">/</span>
-                  <span>{row.antiPetals}</span>
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="formula-section" aria-labelledby="formula-heading">
-      <div class="section-heading">
-        <span>04</span>
-        <div>
-          <h2 id="formula-heading">Translate in either direction</h2>
-          <p>
-            A TKA turn counts added prop rotation beyond the base movement. The
-            reduced ratio may have more than one hand cycle.
-          </p>
-        </div>
-      </div>
-
-      <div class="formula-grid">
-        <div>
-          <span>TKA turn → ratio</span>
-          <strong>(2 × turns + 1) : 1</strong>
-          <p>One turn becomes 3:1. Two turns become 5:1.</p>
-        </div>
-        <div>
-          <span>Ratio → TKA turn</span>
-          <strong>(prop ÷ hand − 1) ÷ 2</strong>
-          <p>3:2 becomes 0.25 turns. 7:3 becomes ⅔, outside Levels 1–4.</p>
-        </div>
-        <div>
-          <span>Two named exceptions</span>
-          <strong>Float = 0:1 · −0.25 = 1:2</strong>
-          <p>Float has no prospin or antispin petal count.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="source-section" aria-labelledby="sources-heading">
-      <div>
-        <span class="kicker">Follow the lineage</span>
-        <h2 id="sources-heading">History and source material</h2>
+    <section class="continuation" aria-labelledby="continuation-heading">
+      <div class="continuation-copy">
+        <span class="kicker">Where TKA takes it</span>
+        <h2 id="continuation-heading">The matrix became an engine.</h2>
         <p>
-          The archive separates VTG’s shared movement language from Lorq’s later
-          printed matrices. The original publication shows all twelve source
-          styles and the 144 pairings.
+          TKA calls these same families 0 turns, 1 turn, and 2 turns. Kinetic
+          Shape Engine keeps Lorq’s row-and-column pairing, then adds half-turn
+          and quarter-turn bands. Theory Matrix can pair any two whole-number
+          ratios.
         </p>
       </div>
-      <nav aria-label="Ratio history and sources">
-        <a href="/history#archive-record-vtg">VTG history record</a>
-        <a href="/history#archive-record-lorq">Lorq Nichols history record</a>
+
+      <div
+        class="turn-map"
+        aria-label="VTG ratios mapped to Kinetic Alphabet turns"
+      >
+        {#each sourceFamilies as family}
+          <div>
+            <strong>{family.ratio}</strong>
+            <i class="fa-solid fa-arrow-right-long" aria-hidden="true"></i>
+            <span>{family.turnLabel}</span>
+          </div>
+        {/each}
+      </div>
+    </section>
+
+    <section class="lineage" aria-labelledby="lineage-heading">
+      <div>
+        <span class="kicker">Credit where it belongs</span>
+        <h2 id="lineage-heading">VTG to Lorq to Shape Engine</h2>
+        <p>
+          VTG supplied the ratio families. Lorq organized twelve driving styles
+          into the 144 Shape Matrix. {KINETIC_SHAPE_ENGINE_AUTHOR} built Kinetic Shape
+          Engine independently, using that matrix as a starting point for a much larger
+          generator.
+        </p>
+      </div>
+
+      <nav aria-label="Ratio history and source material">
+        <a href="/history#archive-record-vtg">VTG history</a>
+        <a href="/history#archive-record-lorq">Lorq Nichols in the archive</a>
         <a
-          href="http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/"
+          href={ORIGINAL_SHAPE_MATRIX_URL}
           target="_blank"
           rel="noopener noreferrer"
         >
-          Original 144 Shape Matrix
+          Lorq’s original 144
           <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"
           ></i>
         </a>
@@ -265,35 +181,11 @@
     --ratio-text: var(--theme-text, #f6f4ff);
     --ratio-dim: var(--theme-text-dim, rgb(236 233 245 / 0.7));
     --ratio-stroke: var(--theme-stroke, rgb(255 255 255 / 0.12));
-    --ratio-card: var(--theme-card-bg, rgb(255 255 255 / 0.035));
-    width: min(100%, var(--shell-w, 108rem));
+    width: min(100%, 96rem);
     margin-inline: auto;
     padding: clamp(3rem, 6vw, 6rem) clamp(1rem, 4vw, 4.5rem) 7rem;
     color: var(--ratio-text);
     font-family: Inter, system-ui, sans-serif;
-  }
-
-  .hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1.5fr) minmax(18rem, 0.7fr);
-    gap: clamp(2rem, 7vw, 7rem);
-    align-items: end;
-  }
-
-  .hero-copy {
-    max-width: 62rem;
-  }
-
-  .kicker,
-  .section-heading > span,
-  .formula-grid span,
-  .ratio-key > span,
-  .translation-line span {
-    color: color-mix(in srgb, var(--ratio-accent) 80%, white);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 800;
-    letter-spacing: 0.11em;
-    text-transform: uppercase;
   }
 
   h1,
@@ -302,272 +194,273 @@
     margin: 0;
   }
 
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(25rem, 0.75fr);
+    gap: clamp(3rem, 8vw, 8rem);
+    align-items: end;
+  }
+
+  .hero-copy {
+    max-width: 64rem;
+  }
+
+  .kicker {
+    display: block;
+    margin-bottom: 0.9rem;
+    color: color-mix(in srgb, var(--ratio-accent) 80%, white);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
   .hero h1 {
-    max-width: 14ch;
+    max-width: 12ch;
     padding: 0;
-    font-size: clamp(2.8rem, 5vw, 5.7rem);
+    font-size: clamp(3rem, 5.5vw, 6.2rem);
     font-weight: 780;
-    line-height: 0.96;
-    letter-spacing: -0.055em;
+    line-height: 0.94;
+    letter-spacing: -0.06em;
     text-align: left;
     text-wrap: balance;
   }
 
   .hero-copy > p {
-    max-inline-size: var(--measure-lede, 54ch);
-    margin-top: 1.4rem;
+    max-width: 50rem;
+    margin-top: 1.5rem;
     color: var(--ratio-dim);
-    font-size: clamp(1rem, 1.3vw, 1.18rem);
+    font-size: clamp(1.05rem, 1.35vw, 1.25rem);
     line-height: 1.65;
+    text-wrap: pretty;
   }
 
-  .ratio-key {
-    display: grid;
-    gap: 0.75rem;
-    padding: 1.3rem;
-    border: 1px solid var(--ratio-stroke);
-    border-radius: 16px;
-    background: var(--ratio-card);
-  }
-
-  .ratio-key strong {
-    font-size: clamp(1.25rem, 2vw, 1.7rem);
-    letter-spacing: -0.025em;
-  }
-
-  .ratio-key a,
-  .family-card > a,
-  .source-section a {
-    display: inline-flex;
-    min-height: 2.75rem;
-    align-items: center;
-    justify-content: center;
-    gap: 0.55rem;
-    padding: 0.55rem 0.8rem;
-    border: 1px solid color-mix(in srgb, var(--ratio-accent) 44%, transparent);
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--ratio-accent) 8%, transparent);
+  .hero-copy > p strong {
     color: var(--ratio-text);
+    font-weight: 760;
+    white-space: nowrap;
+  }
+
+  .count {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    gap: 0.8rem;
+    align-items: center;
+    padding-block: 1.5rem;
+    border-block: 1px solid var(--ratio-stroke);
+  }
+
+  .count > div:not(.pairing) {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .count strong {
+    color: var(--ratio-text);
+    font-size: clamp(2.2rem, 4vw, 4.2rem);
+    font-variant-numeric: tabular-nums;
+    line-height: 0.9;
+    letter-spacing: -0.055em;
+  }
+
+  .count span {
+    color: var(--ratio-dim);
     font-size: var(--font-size-min, 0.875rem);
-    font-weight: 720;
-    text-align: center;
-    text-decoration: none;
+    line-height: 1.25;
+  }
+
+  .count > i {
+    color: color-mix(in srgb, var(--ratio-accent) 72%, white);
+    font-size: 0.85rem;
+  }
+
+  .count .pairing {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.7rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--ratio-stroke);
+  }
+
+  .count .pairing strong {
+    font-size: clamp(1.35rem, 2vw, 2rem);
   }
 
   section {
-    margin-top: clamp(4.5rem, 8vw, 8rem);
+    margin-top: clamp(5rem, 9vw, 9rem);
   }
 
-  .section-heading {
-    display: grid;
-    grid-template-columns: 3rem minmax(0, 1fr);
-    gap: 1rem;
-    align-items: start;
+  .section-intro,
+  .continuation-copy {
+    max-width: 52rem;
   }
 
-  .section-heading > span {
-    padding-top: 0.4rem;
+  h2 {
+    font-size: clamp(2rem, 3.5vw, 3.5rem);
+    line-height: 1;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
   }
 
-  .section-heading h2,
-  .source-section h2 {
-    font-size: clamp(1.65rem, 3vw, 2.7rem);
-    line-height: 1.08;
-    letter-spacing: -0.04em;
-  }
-
-  .section-heading p,
-  .source-section p {
-    max-inline-size: var(--measure-prose, 68ch);
-    margin-top: 0.65rem;
+  .section-intro p,
+  .continuation-copy p,
+  .lineage p {
+    margin-top: 0.8rem;
     color: var(--ratio-dim);
     line-height: 1.65;
+    text-wrap: pretty;
   }
 
-  .translation-line {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    gap: clamp(1rem, 4vw, 3rem);
-    align-items: center;
+  .family-list {
     margin-top: 2rem;
-    padding: clamp(1.25rem, 3vw, 2rem);
-    border: 1px solid var(--ratio-stroke);
-    border-radius: 18px;
-    background: var(--ratio-card);
+    border-top: 1px solid var(--ratio-stroke);
   }
 
-  .translation-line > div {
+  .family-row {
     display: grid;
-    gap: 0.45rem;
+    grid-template-columns: minmax(10rem, 0.5fr) minmax(22rem, 1.4fr) minmax(
+        12rem,
+        auto
+      );
+    gap: clamp(1.5rem, 4vw, 4rem);
+    align-items: center;
+    min-height: 12rem;
+    padding: 1.5rem clamp(0.25rem, 1vw, 1rem);
+    border-bottom: 1px solid var(--ratio-stroke);
   }
 
-  .translation-line > div:last-child {
-    text-align: right;
+  .family-name {
+    display: grid;
+    gap: 0.5rem;
   }
 
-  .translation-line strong {
-    font-size: clamp(1.4rem, 3vw, 2.6rem);
+  .family-name strong {
+    color: color-mix(in srgb, var(--ratio-accent) 82%, white);
+    font-size: clamp(3rem, 5vw, 5.2rem);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.035em;
+    line-height: 0.9;
+    letter-spacing: -0.065em;
   }
 
-  .translation-line > i {
-    color: var(--ratio-accent);
-    font-size: 1.5rem;
-  }
-
-  .family-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-
-  .family-card {
-    display: grid;
-    grid-template-rows: auto auto 1fr auto;
-    gap: 0.9rem;
-    padding: clamp(1.2rem, 2vw, 1.6rem);
-    border: 1px solid var(--ratio-stroke);
-    border-radius: 16px;
-    background: var(--ratio-card);
-  }
-
-  .family-ratio {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-  }
-
-  .family-ratio span {
+  .family-name span {
     color: var(--ratio-dim);
     font-size: var(--font-size-min, 0.875rem);
     font-weight: 680;
   }
 
-  .family-ratio i {
-    color: var(--ratio-accent);
-  }
-
-  .family-ratio strong {
-    font-size: 1.45rem;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .family-card > p,
-  .family-card li {
-    color: var(--ratio-dim);
-    line-height: 1.5;
-  }
-
-  .family-card > p {
-    font-size: var(--font-size-min, 0.875rem);
-  }
-
-  .family-card ul {
+  .family-row ul {
     display: grid;
-    gap: 0.45rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem clamp(1rem, 3vw, 3rem);
     margin: 0;
-    padding-left: 1.2rem;
+    padding: 0;
+    list-style: none;
   }
 
-  .turn-table-wrap {
-    min-width: 0;
-    max-width: 100%;
-    margin-top: 2rem;
-    overflow-x: auto;
-    border: 1px solid var(--ratio-stroke);
-    border-radius: 16px;
-    background: var(--ratio-card);
-  }
-
-  table {
-    width: 100%;
-    min-width: 34rem;
-    border-collapse: collapse;
-    font-variant-numeric: tabular-nums;
-  }
-
-  th,
-  td {
-    padding: 0.8rem 1rem;
-    border-bottom: 1px solid var(--ratio-stroke);
-    text-align: left;
-  }
-
-  thead th {
+  .family-row li {
+    position: relative;
+    padding-left: 1rem;
     color: var(--ratio-dim);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 750;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
+    line-height: 1.45;
   }
 
-  tbody th,
-  .ratio-cell {
+  .family-row li::before {
+    position: absolute;
+    top: 0.68em;
+    left: 0;
+    width: 0.3rem;
+    height: 0.3rem;
+    border-radius: 50%;
+    background: var(--ratio-accent);
+    content: "";
+  }
+
+  .family-row > a,
+  .lineage a {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid color-mix(in srgb, var(--ratio-accent) 42%, transparent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--ratio-accent) 7%, transparent);
     color: var(--ratio-text);
-    font-weight: 750;
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 720;
+    text-align: center;
+    text-decoration: none;
+    transition:
+      border-color var(--transition-fast),
+      background-color var(--transition-fast);
   }
 
-  tbody tr:last-child > * {
+  .continuation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(24rem, 0.8fr);
+    gap: clamp(3rem, 8vw, 8rem);
+    align-items: end;
+    padding: clamp(2rem, 5vw, 4rem) 0;
+    border-block: 1px solid var(--ratio-stroke);
+  }
+
+  .turn-map {
+    display: grid;
+  }
+
+  .turn-map > div {
+    display: grid;
+    grid-template-columns: 5rem 1.5rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: baseline;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--ratio-stroke);
+  }
+
+  .turn-map > div:last-child {
     border-bottom: 0;
   }
 
-  .petal-cell {
-    display: flex;
-    gap: 0.45rem;
-    align-items: center;
-  }
-
-  .petal-cell span:nth-child(2) {
-    color: var(--ratio-dim);
-  }
-
-  .formula-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-
-  .formula-grid > div {
-    display: grid;
-    gap: 0.7rem;
-    padding: clamp(1.2rem, 2vw, 1.6rem);
-    border: 1px solid var(--ratio-stroke);
-    border-radius: 16px;
-  }
-
-  .formula-grid strong {
-    font-size: clamp(1.15rem, 2vw, 1.55rem);
+  .turn-map strong {
+    color: color-mix(in srgb, var(--ratio-accent) 82%, white);
+    font-size: 1.55rem;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.025em;
   }
 
-  .formula-grid p {
+  .turn-map i {
     color: var(--ratio-dim);
-    line-height: 1.55;
+    font-size: 0.8rem;
   }
 
-  .source-section {
+  .turn-map span {
+    font-weight: 720;
+  }
+
+  .lineage {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.8fr);
-    gap: clamp(2rem, 7vw, 7rem);
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.6fr);
+    gap: clamp(3rem, 8vw, 8rem);
     align-items: end;
-    padding-top: clamp(2rem, 5vw, 4rem);
-    border-top: 1px solid var(--ratio-stroke);
   }
 
-  .source-section nav {
+  .lineage > div {
+    max-width: 58rem;
+  }
+
+  .lineage nav {
     display: grid;
-    gap: 0.7rem;
+    gap: 0.65rem;
   }
 
-  .ratio-key a:hover,
-  .family-card > a:hover,
-  .source-section a:hover {
-    border-color: color-mix(in srgb, var(--ratio-accent) 76%, transparent);
-    background: color-mix(in srgb, var(--ratio-accent) 15%, transparent);
+  .family-row > a:hover,
+  .lineage a:hover {
+    border-color: color-mix(in srgb, var(--ratio-accent) 72%, transparent);
+    background: color-mix(in srgb, var(--ratio-accent) 13%, transparent);
   }
 
   a:focus-visible {
@@ -575,126 +468,76 @@
     outline-offset: 3px;
   }
 
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  @media (max-width: 72rem) {
+  @media (max-width: 78rem) {
     .hero,
-    .source-section {
+    .continuation,
+    .lineage {
       grid-template-columns: 1fr;
       align-items: start;
     }
 
-    .ratio-key,
-    .source-section nav {
-      max-width: 42rem;
-    }
-  }
-
-  @media (max-width: 58rem) {
-    .family-grid,
-    .formula-grid {
-      grid-template-columns: 1fr;
+    .count,
+    .turn-map,
+    .lineage nav {
+      max-width: 44rem;
     }
 
-    .family-card {
-      grid-template-columns: minmax(11rem, 0.75fr) minmax(0, 1fr);
-      grid-template-rows: auto auto auto;
+    .family-row {
+      grid-template-columns: minmax(9rem, 0.45fr) minmax(0, 1fr);
     }
 
-    .family-card ul {
+    .family-row > a {
       grid-column: 2;
-      grid-row: 1 / span 2;
-    }
-
-    .family-card > a {
-      grid-column: 1 / -1;
+      justify-self: start;
     }
   }
 
   @media (max-width: 48rem) {
     .ratio-guide {
-      padding-top: 6.5rem;
+      /* GuideShell already reserves room for the fixed contents button. */
+      padding-top: 2rem;
     }
 
-    .translation-line {
+    .hero {
+      gap: 2.5rem;
+    }
+
+    .family-row {
       grid-template-columns: 1fr;
+      gap: 1.25rem;
+      min-height: 0;
+      padding-block: 2rem;
     }
 
-    .translation-line > i {
-      rotate: 90deg;
-      justify-self: center;
-    }
-
-    .translation-line > div:last-child {
-      text-align: left;
-    }
-
-    .family-card {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto;
-    }
-
-    .family-card ul,
-    .family-card > a {
+    .family-row > a {
       grid-column: auto;
-      grid-row: auto;
+      justify-self: stretch;
     }
 
-    table {
-      min-width: 0;
-      table-layout: fixed;
+    .family-row ul {
+      grid-template-columns: 1fr;
+      gap: 0.55rem;
+    }
+  }
+
+  @media (max-width: 28rem) {
+    .count {
+      grid-template-columns: 1fr auto 1fr;
     }
 
-    thead th:nth-child(1) {
-      width: 22%;
+    .count > div:nth-of-type(3),
+    .count > i:nth-of-type(2) {
+      display: none;
     }
 
-    thead th:nth-child(2) {
-      width: 22%;
-    }
-
-    thead th:nth-child(3) {
-      width: 24%;
-    }
-
-    thead th:nth-child(4) {
-      width: 32%;
-    }
-
-    th,
-    td {
-      padding: 0.7rem 0.45rem;
-    }
-
-    thead th {
-      font-size: 0.64rem;
-      letter-spacing: 0.025em;
-    }
-
-    .petal-cell {
-      gap: 0.3rem;
-    }
-
-    .section-heading {
-      grid-template-columns: 2rem minmax(0, 1fr);
-      gap: 0.65rem;
+    .count .pairing {
+      display: grid;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .ratio-key a,
-    .family-card > a,
-    .source-section a {
+    .family-row > a,
+    .lineage a {
       transition: none;
     }
   }
