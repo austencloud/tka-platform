@@ -2,6 +2,7 @@
   import { onDestroy, tick } from "svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
   import { motionDuration } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
@@ -11,13 +12,21 @@
     TimingDirectionModeId,
   } from "../foundations/pictograph-foundation-content";
 
-  let { modes }: { modes: readonly TimingDirectionMode[] } = $props();
+  let {
+    modes,
+    onFocusChange,
+  }: {
+    modes: readonly TimingDirectionMode[];
+    onFocusChange?: (focused: boolean) => void;
+  } = $props();
 
   const haptic = getHapticFeedback();
   let boardElement: HTMLDivElement | null = $state(null);
   let focusCloseButton: HTMLButtonElement | null = $state(null);
   let focusedModeId = $state<TimingDirectionModeId | null>(null);
   let playing = $state(true);
+  let highlightedStepIndex = $state<number | null>(null);
+  let seekFocusedPlayer = $state<((step: number) => void) | null>(null);
 
   const focusedMode = $derived(
     modes.find((mode) => mode.id === focusedModeId) ?? null
@@ -51,7 +60,10 @@
     if (nextModeId === focusedModeId) return;
     const previousModeId = focusedModeId;
     const captured = boardMotion.capture();
+    highlightedStepIndex = null;
+    seekFocusedPlayer = null;
     focusedModeId = nextModeId;
+    onFocusChange?.(nextModeId !== null);
     haptic?.trigger("selection");
     await tick();
     if (captured) boardMotion.play();
@@ -75,8 +87,33 @@
     playing = nextPlaying;
   }
 
+  function syncFocusedStep(
+    currentStep: number,
+    sequenceId: string | null
+  ): void {
+    if (!focusedMode || sequenceId !== focusedMode.sequence.id) return;
+    highlightedStepIndex =
+      currentStep < 1
+        ? -1
+        : Math.min(
+            focusedMode.sequence.steps.length - 1,
+            Math.max(0, Math.floor(currentStep) - 1)
+          );
+  }
+
+  function seekToCardStep(stepIndex: number): void {
+    seekFocusedPlayer?.(stepIndex < 0 ? 0 : stepIndex + 1);
+    haptic?.trigger("selection");
+  }
+
   function handleBoardKeydown(event: KeyboardEvent): void {
-    if (event.key !== "Escape" || !focusedModeId) return;
+    if (
+      event.key !== "Escape" ||
+      !focusedModeId ||
+      !boardElement?.contains(event.target as Node)
+    ) {
+      return;
+    }
     event.preventDefault();
     void setFocusedMode(null);
   }
@@ -90,11 +127,12 @@
   onDestroy(() => boardMotion.cancel());
 </script>
 
+<svelte:window onkeydown={handleBoardKeydown} />
+
 <div
   class="comparison-board"
   class:has-focus={focusedMode !== null}
   bind:this={boardElement}
-  onkeydown={handleBoardKeydown}
   role="region"
   aria-label="Six time and direction relationships"
 >
@@ -128,11 +166,15 @@
       >
         <header class="mode-header">
           <div class="mode-identity">
-            <img src={mode.element.iconPath} alt="" />
-            <strong>{codeFor(mode)}</strong>
-            {#if isFocused}
-              <span>{fullNameFor(mode)}</span>
+            {#if focusedMode && !isFocused}
+              <img src={mode.element.iconPath} alt="" />
             {/if}
+            <strong>{codeFor(mode)}</strong>
+            <span
+              >{isFocused || focusedMode
+                ? fullNameFor(mode)
+                : definitionFor(mode)}</span
+            >
           </div>
 
           {#if isFocused}
@@ -148,18 +190,57 @@
           {/if}
         </header>
 
-        <div class="mode-player">
-          <HandMotionPlayer
-            sequence={mode.sequence}
-            ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
-            showElementalGlyph
-            interactive={isFocused}
-            playbackAllowed={focusedMode === null || isFocused}
-            externalPlaying={playing}
-            onExternalPlayingChange={syncPlaying}
-            framed={false}
-          />
-        </div>
+        {#if isFocused}
+          <div class="study-surfaces">
+            <div class="mode-player">
+              <HandMotionPlayer
+                sequence={mode.sequence}
+                ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
+                showElementalGlyph
+                interactive
+                externalPlaying={playing}
+                onExternalPlayingChange={syncPlaying}
+                onStepChange={syncFocusedStep}
+                onSeekRef={(seek) => (seekFocusedPlayer = seek)}
+                framed={false}
+              />
+            </div>
+            <div
+              class="mode-card"
+              aria-label={`${fullNameFor(mode)} hand paths by step`}
+            >
+              <ChoreoCard
+                sequence={mode.sequence}
+                handPathMode
+                darkMode
+                showWord={false}
+                showDifficultyLevel={false}
+                showNotes={false}
+                showLoopGlyph={false}
+                showQRCode={false}
+                showStepNumbers
+                forceContain
+                showHighlight
+                {highlightedStepIndex}
+                onStepClick={seekToCardStep}
+                clickableStart
+              />
+            </div>
+          </div>
+        {:else}
+          <div class="mode-player">
+            <HandMotionPlayer
+              sequence={mode.sequence}
+              ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
+              showElementalGlyph
+              interactive={focusedMode === null}
+              playbackAllowed={focusedMode === null}
+              externalPlaying={playing}
+              onExternalPlayingChange={syncPlaying}
+              framed={false}
+            />
+          </div>
+        {/if}
 
         {#if isFocused}
           <p class="mode-definition">{definitionFor(mode)}</p>
@@ -208,7 +289,7 @@
     min-width: 0;
     overflow: hidden;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 0.875rem);
+    font-size: clamp(0.875rem, calc(0.72rem + 0.25cqw), 1.125rem);
     font-weight: 650;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -224,7 +305,7 @@
   }
 
   .mode-grid.has-focus {
-    grid-template-columns: minmax(0, 2.35fr) minmax(11rem, 0.65fr);
+    grid-template-columns: minmax(0, 3fr) minmax(16rem, 0.75fr);
     grid-template-rows: repeat(5, minmax(0, 1fr));
   }
 
@@ -278,7 +359,7 @@
     position: relative;
     z-index: 5;
     min-width: 0;
-    min-height: 2.6rem;
+    min-height: 3rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -307,7 +388,7 @@
 
   .mode-identity strong {
     color: var(--theme-text);
-    font-size: var(--font-size-min, 0.875rem);
+    font-size: clamp(1rem, calc(0.72rem + 0.35cqw), 1.2rem);
     font-weight: 800;
     letter-spacing: 0.04em;
   }
@@ -316,10 +397,10 @@
     min-width: 0;
     overflow: hidden;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 0.875rem);
+    font-size: clamp(0.875rem, calc(0.72rem + 0.3cqw), 1.125rem);
     font-weight: 650;
+    line-height: 1.2;
     text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .mode-header :global(.panel-btn) {
@@ -333,11 +414,27 @@
     min-height: 0;
   }
 
+  .study-surfaces {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(18rem, 0.92fr);
+    gap: clamp(0.5rem, 1cqw, 0.9rem);
+    min-width: 0;
+    min-height: 0;
+    padding: clamp(0.5rem, 0.8cqw, 0.8rem);
+  }
+
+  .study-surfaces .mode-player,
+  .mode-card {
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .mode-definition {
     margin: 0;
     padding: 0.55rem 0.75rem 0.65rem;
     color: var(--theme-text);
-    font-size: var(--font-size-min, 0.875rem);
+    font-size: clamp(0.875rem, calc(0.72rem + 0.25cqw), 1.125rem);
     font-weight: 650;
     line-height: 1.35;
     text-align: center;
@@ -400,24 +497,25 @@
       flex-direction: column;
       gap: 0.15rem;
     }
+
+    .study-surfaces {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
   }
 
   @container motion-board (max-width: 28rem) {
     .board-toolbar {
-      min-height: 2.5rem;
+      min-height: var(--min-touch-target, 44px);
     }
 
     .board-toolbar :global(.panel-btn) {
-      min-height: 2.5rem;
+      min-height: var(--min-touch-target, 44px);
       padding: 0.3rem 0.55rem;
     }
 
-    .selection-status {
-      font-size: var(--font-size-compact, 0.75rem);
-    }
-
     .mode-header {
-      min-height: 2.25rem;
+      min-height: 2.75rem;
       padding: 0.25rem 0.4rem;
     }
 
@@ -429,7 +527,17 @@
     .mode-identity strong,
     .mode-identity span,
     .mode-definition {
-      font-size: var(--font-size-compact, 0.75rem);
+      font-size: var(--font-size-min, 0.875rem);
+    }
+
+    .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      clip-path: inset(50%);
     }
 
     .mode-header :global(.panel-btn span),
@@ -508,6 +616,16 @@
     .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity {
       flex-direction: row;
       gap: 0.35rem;
+    }
+
+    .study-surfaces {
+      grid-template-columns: minmax(0, 1.08fr) minmax(15rem, 0.92fr);
+      grid-template-rows: minmax(0, 1fr);
+      padding: 0.35rem;
+    }
+
+    .mode-definition {
+      padding-block: 0.3rem;
     }
   }
 
