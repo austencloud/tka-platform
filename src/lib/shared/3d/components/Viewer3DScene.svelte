@@ -37,7 +37,7 @@
   import type { SceneEffectsManager3D } from "../effects/scene-effects/scene-effects-manager-3d";
   import type { QualityTier } from "../effects/types";
   import { resolvePetalEnvironmentProfile } from "../effects/petals/petal-world-art-direction";
-  import { resolvePerformerStepSource } from "../domain/performer-step-timing";
+  import { synchronizePerformerPlayback } from "../domain/performer-step-timing";
   import {
     getStageCoordinateFrame,
     isRenderable3DEnvironment,
@@ -385,15 +385,12 @@
     for (const [performerIndex, p] of performerManager.performers
       .slice(0, visiblePerformerCount)
       .entries()) {
-      const performerStep = resolvePerformerStepSource(
+      synchronizePerformerPlayback(
+        p,
         performerSteps?.[performerIndex],
         step,
-        performerStepOffsets[performerIndex] ?? 0,
-        p.totalSteps
+        performerStepOffsets[performerIndex] ?? 0
       );
-      const performerBeat = Math.floor(performerStep);
-      p.goToStep(performerBeat);
-      p.setProgress(performerStep - performerBeat);
     }
 
     // Drive formation transitions. transitionToFormation (called from the
