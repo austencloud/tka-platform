@@ -108,6 +108,9 @@ describe("canonical concept lesson composition", () => {
     const motions = readSource(
       "src/lib/features/learn/components/interactive/motions/MotionsConceptExperience.svelte"
     );
+    const positions = readSource(
+      "src/lib/features/learn/components/interactive/positions/PositionsConceptExperience.svelte"
+    );
     const handPlayer = readSource(
       "src/lib/features/learn/components/interactive/foundations/HandMotionPlayer.svelte"
     );
@@ -125,8 +128,16 @@ describe("canonical concept lesson composition", () => {
     expect(stage).toContain("startPositionDeriver");
     expect(stage).toContain("PropType.STAFF");
     expect(motions).toContain("HandMotionPlayer");
+    expect(motions).toContain("HAND_PATH_STEPS");
+    expect(motions).toContain("ALPHA_BETA_MODES");
+    expect(motions).toContain("GAMMA_MODES");
+    expect(motions).toContain("TND_ELEMENTS");
+    expect(motions).toContain("LessonStageFrame");
     expect(motions).not.toContain("letterQueryHandler");
     expect(motions).not.toContain("LessonPictographStage");
+    expect(positions).toContain('onComplete?.("hand-motions-intro")');
+    expect(positions).toContain("propType: PropType.HAND,\n      hand,");
+    expect(positions).not.toContain("propType: PropType.HAND,\n      color,");
     expect(handPlayer).toContain("InlineAnimationPlayer");
     expect(handPlayer).toContain('leftPropType="hand"');
     expect(handPlayer).toContain("hideTkaGlyph");
