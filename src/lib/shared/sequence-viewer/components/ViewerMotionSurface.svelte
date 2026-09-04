@@ -117,14 +117,6 @@
     tunnelRevealResetTimer = undefined;
 
     if (isTunnelActive) {
-      // The formation is prepared while 2D is showing, but a first visit can
-      // still beat that asynchronous work. Keep the shared 2D frame intact
-      // until every copy exists; otherwise the finished build joins this tween
-      // at its current opacity and all of the props pop in together.
-      if (!tunnelController.layersReady) {
-        void tunnelReveal.set(0, { duration: 0 });
-        return;
-      }
       // 2D and Tunnel are one renderer, so their change reads as layers
       // blooming onto the live base. 3D is a distinct renderer: arrive at a
       // fully composed Tunnel before the canonical surface crossfade begins,
