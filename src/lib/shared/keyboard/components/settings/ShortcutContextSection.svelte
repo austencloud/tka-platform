@@ -28,7 +28,7 @@
 <section class="context-section" aria-labelledby={headingId}>
   <header class="section-header">
     <div>
-      <h3 id={headingId}>{label}</h3>
+      <h2 id={headingId}>{label}</h2>
       <p>
         {shortcuts.length}
         {shortcuts.length === 1 ? "command" : "commands"}
@@ -66,12 +66,12 @@
     background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
   }
 
-  h3,
+  h2,
   p {
     margin: 0;
   }
 
-  h3 {
+  h2 {
     color: var(--theme-text);
     font-size: var(--font-size-base);
     font-weight: 650;
