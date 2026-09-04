@@ -27,7 +27,6 @@
   import ArrangeTab from "./tabs/arrange/ArrangeTab.svelte";
   import BrowseTab from "./tabs/browse/CompositionBrowseTab.svelte";
   import TimelinePanel from "./timeline/components/TimelinePanel.svelte";
-  import ThirdOrderTab from "./tabs/third-order/ThirdOrderTab.svelte";
 
   // Import playback overlay (for Browse tab - legacy saved compositions)
   import PlaybackOverlay from "./tabs/playback/PlaybackTab.svelte";
@@ -47,8 +46,7 @@
     if (
       section === "arrange" ||
       section === "browse" ||
-      section === "timeline" ||
-      section === "third-order"
+      section === "timeline"
     ) {
       composeState.setCurrentTab(section as ComposeTab);
     }
@@ -75,10 +73,7 @@
     const section = navigationState.activeTab;
     if (
       !section ||
-      (section !== "arrange" &&
-        section !== "browse" &&
-        section !== "timeline" &&
-        section !== "third-order")
+      (section !== "arrange" && section !== "browse" && section !== "timeline")
     ) {
       navigationState.setActiveTab("arrange");
     }
@@ -131,8 +126,7 @@
           deepLinkData.tabId &&
           (deepLinkData.tabId === "arrange" ||
             deepLinkData.tabId === "browse" ||
-            deepLinkData.tabId === "timeline" ||
-            deepLinkData.tabId === "third-order")
+            deepLinkData.tabId === "timeline")
         ) {
           navigationState.setActiveTab(deepLinkData.tabId);
           composeState.setCurrentTab(deepLinkData.tabId as ComposeTab);
@@ -162,8 +156,6 @@
           <BrowseTab />
         {:else if isTabActive("timeline")}
           <TimelinePanel />
-        {:else if isTabActive("third-order")}
-          <ThirdOrderTab />
         {/if}
       </div>
     {/key}

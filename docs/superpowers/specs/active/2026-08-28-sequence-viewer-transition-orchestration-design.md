@@ -1188,6 +1188,56 @@ Timing spread must remain between 0.08 and 0.28 so the copies retain depth
 without becoming seven serial disclosures. Rapid reversal still retraces the
 same per-layer progress and uses one opacity owner.
 
+#### Formation-trail correction · 2026-09-04
+
+The spatial peel made a second ownership error visible. Additional props now
+travel from the live pair into their Tunnel formation, but the interpolated prop
+coordinates were also sent to every trail recorder. The trail engines correctly
+joined those samples, painting temporary source-to-target squiggles behind the
+copies. Formation travel is stage composition, not authored choreography, so it
+must remain visible without entering trail history.
+
+Each additional layer now carries an explicit formation-transition marker and a
+trail-capture suppression marker. `TrailCapturer`, the Canvas2D overlay, and the
+WebGL2 overlay all enforce that boundary at capture time. Existing painted
+overlay accumulators keep fading naturally; only the moving copy's live rings
+are reset. When the copy settles, capture resumes from one fresh point at its
+destination, so no connector can be drawn across the transition. The legacy
+array renderer has no path-break marker and therefore clears only that copy's
+buffer when suppression changes. The base red/blue pair remains unaffected.
+
+Gate 3 now instruments the behavior at both ends of the contract:
+
+- `Trail-safe formation` counts any frame in which a moving copy was not marked
+  capture-suppressed.
+- `Formation trail captures` counts points that actually entered an overlay ring
+  while a layer reported formation travel. The counter is armed only by the
+  review harness, so ordinary playback pays no telemetry-write cost.
+
+At 820 × 1180 a direct production-frame probe caught the peel at blend `0.744`
+with one moving layer and one suppressed layer. The full replay recorded 17
+spatial-peel frames, zero unguarded frames, and zero formation captures. A rapid
+reversal recorded 59 peel frames with the same two zeroes. The complete viewport
+pass remained clean:
+
+| Viewport    | Moving frames sampled | Unguarded frames | Formation captures | Horizontal overflow |
+| ----------- | --------------------: | ---------------: | -----------------: | ------------------: |
+| 375 × 667   |                    41 |                0 |                  0 |                  No |
+| 960 × 412   |                    37 |                0 |                  0 |                  No |
+| 820 × 1180  |                    57 |                0 |                  0 |                  No |
+| 1440 × 900  |                    27 |                0 |                  0 |                  No |
+| 1920 × 1080 |                    59 |                0 |                  0 |                  No |
+| 2560 × 1440 |                    60 |                0 |                  0 |                  No |
+| 3840 × 2160 |                    42 |                0 |                  0 |                  No |
+
+Native WebP captures at all seven viewports show the settled props feeding clean
+circular choreography trails with no connector left across the formation path.
+Focused trail and Gate 3 checks pass 6 files / 89 tests. The broader
+sequence-viewer and animation-engine run passes 351 tests across 45 files; its
+sole failure is the pre-existing `ArtSettingsPanel` 500-line ownership cap,
+which reproduces unchanged on `main` at 518 lines. `svelte-check` reports 0
+errors and 0 warnings.
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of

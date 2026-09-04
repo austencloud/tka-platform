@@ -21,19 +21,10 @@
       <div class="compact-actions">
         <button
           type="button"
-          aria-label="Sources"
-          onclick={() => state.setSourceDrawerOpen(true)}
+          aria-label="Open Third Order setup"
+          onclick={() => state.setSetupDrawerOpen(true)}
         >
-          <i class="fas fa-layer-group" aria-hidden="true"></i><span
-            >Sources</span
-          >
-        </button>
-        <button
-          type="button"
-          aria-label="Controls"
-          onclick={() => state.setInspectorDrawerOpen(true)}
-        >
-          <i class="fas fa-sliders" aria-hidden="true"></i><span>Controls</span>
+          <i class="fas fa-sliders" aria-hidden="true"></i><span>Setup</span>
         </button>
       </div>
     {/if}
@@ -43,8 +34,8 @@
     <div class="stage-canvas">
       <div class="carrier-canvas" aria-hidden="true">
         <AnimatorCanvas
-          leftProp={state.frame.carrierProps.left}
-          rightProp={state.frame.carrierProps.right}
+          leftProp={null}
+          rightProp={null}
           sequenceData={state.composition.carrier}
           currentStep={state.frame.masterBeat}
           isPlaying={state.isPlaying}
