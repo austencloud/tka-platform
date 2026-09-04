@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import { growFade } from "$lib/shared/transitions/motion";
@@ -7,10 +8,7 @@
     TikaDirectorResponse,
   } from "../domain/tika-director";
 
-  interface DirectorSubmitResult {
-    response: TikaDirectorResponse;
-    undo?: () => void;
-  }
+  import type { TikaDirectorSubmitResult } from "../state/tika-director-session";
 
   let {
     open = $bindable(false),
@@ -25,15 +23,18 @@
     currentBeat: number;
     onSubmit: (
       prompt: string,
-      conversation: readonly TikaDirectorConversationMessage[]
-    ) => Promise<DirectorSubmitResult>;
+      conversation: readonly TikaDirectorConversationMessage[],
+      signal: AbortSignal
+    ) => Promise<TikaDirectorSubmitResult>;
   } = $props();
 
   let prompt = $state("");
   let messages = $state<TikaDirectorConversationMessage[]>([]);
   let submitting = $state(false);
   let error = $state<string | null>(null);
-  let undoLatest = $state<(() => void) | null>(null);
+  let undoLatest = $state<(() => boolean) | null>(null);
+  let pendingRequest: AbortController | null = null;
+  onDestroy(() => pendingRequest?.abort());
 
   const suggestions = [
     "Give every performer a different prop",
@@ -50,25 +51,33 @@
   async function submitDirection() {
     const nextPrompt = prompt.trim();
     if (!nextPrompt || submitting) return;
-    const history = messages.slice(-8);
+    // Never silently discard old constraints to make room for a new command.
+    const history = [...messages];
     messages.push({ role: "user", content: nextPrompt });
     prompt = "";
     submitting = true;
     error = null;
+    const request = new AbortController();
+    pendingRequest = request;
     try {
-      const result = await onSubmit(nextPrompt, history);
+      const result = await onSubmit(nextPrompt, history, request.signal);
+      if (request.signal.aborted) return;
       messages.push({
         role: "assistant",
         content: responseText(result.response),
       });
       if (result.undo) undoLatest = result.undo;
     } catch (cause) {
+      if (request.signal.aborted) return;
       error =
         cause instanceof Error
           ? cause.message
           : "TIKA could not direct the scene.";
     } finally {
-      submitting = false;
+      if (pendingRequest === request) {
+        pendingRequest = null;
+        submitting = false;
+      }
     }
   }
 
@@ -78,7 +87,12 @@
 
   function handleOpenChange(nextOpen: boolean) {
     open = nextOpen;
-    if (!nextOpen) undoLatest = null;
+    if (!nextOpen) {
+      pendingRequest?.abort();
+      pendingRequest = null;
+      submitting = false;
+      undoLatest = null;
+    }
   }
 
   function handlePromptKeydown(event: KeyboardEvent) {
@@ -88,8 +102,13 @@
   }
 
   function undoTikaChanges() {
-    undoLatest?.();
+    const undone = undoLatest?.() ?? false;
     undoLatest = null;
+    if (!undone) {
+      error =
+        "The scene changed after that direction. Use the scene's Undo controls to step back through those edits.";
+      return;
+    }
     messages.push({
       role: "assistant",
       content: "Undid the last TIKA direction.",
@@ -111,7 +130,6 @@
       title="Direct with TIKA"
       subtitle={`${sceneName} · ${performerCount} ${performerCount === 1 ? "performer" : "performers"} · Beat ${Math.round(currentBeat)}`}
       icon="fa-wand-magic-sparkles"
-      closeDisabled={submitting}
       onClose={() => handleOpenChange(false)}
     />
 
@@ -179,6 +197,7 @@
           class="undo"
           type="button"
           onclick={undoTikaChanges}
+          disabled={submitting}
           in:growFade
         >
           <i class="fas fa-rotate-left" aria-hidden="true"></i>
