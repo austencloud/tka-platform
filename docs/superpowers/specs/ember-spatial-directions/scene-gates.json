@@ -3,7 +3,7 @@
   "sceneId": "ember-broken-rift",
   "title": "Ember Broken Rift",
   "domainProofRequired": false,
-  "currentGate": 2,
+  "currentGate": 1,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/look-development.md",
     "roomShellSource": "src/lib/shared/3d/environments/scenes/EmberScene.svelte",
@@ -34,7 +34,9 @@
       "ZgRNLK66C9Hz2wMPbOXc",
       "MLcFRgJSpxKaPo2xlMTH",
       "EdDA3juqt6NiTDDQpHTR",
-      "anf4rcwDOr4j1LuyOX3l"
+      "anf4rcwDOr4j1LuyOX3l",
+      "xSjtvI2XVvvMdn8pHqwP",
+      "WS9FU4nn2fCSbOn68IeB"
     ]
   },
   "sequenceFingerprints": [],
@@ -77,37 +79,19 @@
       "statement": "Breached Rift Bench is the recommended first geology graybox: one older western collapse scarp, one high fissure source, one terrain-driven flow skirting the performer bench, and one open east-southeast horizon.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/a-breached-rift-bench-measured-board.png"
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/01-north-up-measured-plan.png"
       ]
     },
     {
       "id": "C-006",
       "class": "literal",
-      "statement": "Flowy and MrLavaLoba2 produced 78.0 percent footprint intersection-over-union on the shared authored Ember DEM and benchmark parameters.",
+      "statement": "In the historical R1 benchmark, Flowy and MrLavaLoba2 produced 78.0 percent footprint intersection-over-union on the shared authored Ember DEM and benchmark parameters.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/lava-simulator-comparison-report.json"
       ]
     }
   ],
   "exemptions": [
-    {
-      "gateId": "measured-plan",
-      "type": "evidence",
-      "name": "vertical-section",
-      "rationale": "Ember is an orbit backdrop with no traversable vertical route; the four-camera composition board proves vertical scale for this gate.",
-      "approvedBy": "Austen",
-      "approvedAt": "2026-08-25T22:44:27.322Z",
-      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
-    },
-    {
-      "gateId": "measured-plan",
-      "type": "evidence",
-      "name": "route-storyboard",
-      "rationale": "Viewer3D supplies a free orbit rather than a player navigation route; the locked camera board covers the intended visual sequence.",
-      "approvedBy": "Austen",
-      "approvedAt": "2026-08-25T22:44:27.322Z",
-      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
-    },
     {
       "gateId": "measured-plan",
       "type": "check",
@@ -120,17 +104,8 @@
     {
       "gateId": "playable-graybox",
       "type": "evidence",
-      "name": "graybox-glb",
-      "rationale": "The Blender topology comparison was the review artifact; runtime GLB proof is deliberately reserved for the approved production-slice gate.",
-      "approvedBy": "Austen",
-      "approvedAt": "2026-08-25T22:44:27.322Z",
-      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
-    },
-    {
-      "gateId": "playable-graybox",
-      "type": "evidence",
       "name": "first-person-walk",
-      "rationale": "Viewer3D is evaluated by orbit cameras rather than first-person navigation; the four-camera contact sheet is the equivalent review proof.",
+      "rationale": "Viewer3D is evaluated by a default audience camera and complete registered orbit rather than first-person navigation; the fixed camera set and continuous orbit capture are the equivalent review proof.",
       "approvedBy": "Austen",
       "approvedAt": "2026-08-25T22:44:27.322Z",
       "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
@@ -318,6 +293,39 @@
         "all later-gate visual acceptance evidence"
       ],
       "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/"
+    },
+    {
+      "invalidatedAt": "2026-09-04T06:14:02.295Z",
+      "reopenedGate": 1,
+      "museumTrackerItem": "WS9FU4nn2fCSbOn68IeB",
+      "auditTrackerItem": "xSjtvI2XVvvMdn8pHqwP",
+      "reason": "The independent Gate 2 audit found that the approved R1 plan encoded a circular performance bowl, a smooth mound instead of an explicit collapse volume, a short simulator footprint that contradicted the authored continuation, south-up unlabeled plan evidence, stale clearance claims, and checkout-unstable manifest digests. Geometry and flow ownership therefore regress to Gate 1.1 before any new graybox.",
+      "preserved": [
+        "Breached Rift Bench Direction A",
+        "one fissure source near runtime XZ (-72, 137)",
+        "one south continuation",
+        "west and northwest dominant mass",
+        "open east and southeast horizon",
+        "380 by 335 m world",
+        "4.5 m performer action envelope",
+        "25 m Viewer3D orbit contract",
+        "Fresh Rift material research",
+        "Blackglass atmosphere systems",
+        "existing Meshy assets and remaining credits"
+      ],
+      "invalidated": [
+        "R1 radial performance bench",
+        "R1 smooth Gaussian scarp",
+        "R1 authored full-flow ribbon",
+        "R1 Gate 1 measurements and visual approval",
+        "R1 Gate 2 Blender source, GLB, manifest, renders, exemptions, and checks",
+        "all later-gate evidence"
+      ],
+      "historicalEvidence": [
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/"
     }
   ],
   "gates": [
@@ -358,129 +366,67 @@
     },
     {
       "id": "measured-plan",
-      "status": "approved",
+      "status": "ready-for-review",
       "evidence": [
         {
           "kind": "floor-plan",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/ember-geology-gate1-directions.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/01-north-up-measured-plan.png"
         },
         {
           "kind": "vertical-section",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/a-breached-rift-bench-measured-board.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/02-measured-sections.png"
         },
         {
           "kind": "route-storyboard",
-          "path": "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/01-north-up-measured-plan.png"
         },
         {
           "kind": "sightline-study",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/ember-geology-gate1-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/03-orbit-sightline-study.png"
         },
         {
-          "kind": "emplacement-cross-check",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/lava-simulator-comparison-board.png"
+          "kind": "emplacement-calibration",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/04-flowy-calibration-sweep.png"
+        },
+        {
+          "kind": "verification-report",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/ember-breached-rift-bench-gate1-1-report.json"
         }
       ],
       "checks": [
         {
           "name": "walkability",
           "status": "passed",
-          "evidence": "Ember remains a non-walkable orbit environment; the measured plan substitutes performer action clearance and complete orbit sightlines for a navigation route."
+          "evidence": "Ember remains a Viewer3D orbit environment. The corrected old-flow shelf has 0.161 m local relief inside the protected 4.5 m action envelope and the default audience camera is marked at runtime XZ (0, -21.5)."
         },
         {
           "name": "clearance",
           "status": "passed",
-          "evidence": "Direction A preserves a 4.5 m action radius plus 4.946 m conservative hand-plan flow-edge clearance; two independent solver outputs preserve 4.444 m and 6.270 m clearance beyond the action envelope at the benchmark volume."
+          "evidence": "The selected Flowy footprint stays 17.720 m from the performer center, preserving 13.220 m beyond the protected 4.5 m action envelope."
         },
         {
           "name": "sightlines",
           "status": "passed",
-          "evidence": "The deterministic report samples eight bearings around the 25 m orbit. Directions A and C remain clear at all eight; Direction B fails four and is not recommended."
+          "evidence": "All eight deterministic 45-degree orbit samples clear the 1.2 m performer target from the 7.0 m review camera; measured terrain clearance ranges from 0.845 m to 0.923 m."
         },
         {
           "name": "final-view",
           "status": "passed",
-          "evidence": "Direction A assigns one older western/northwestern collapse scarp as the dominant mass, preserves an open east/southeast horizon, and routes the lava through the audience-side frame rather than terminating beside the performer."
-        }
-      ],
-      "approval": {
-        "approvedBy": "Austen",
-        "approvedAt": "2026-09-04T05:17:32.224Z",
-        "quote": "I'm in . Let's do this!",
-        "museumTrackerItem": "ZgRNLK66C9Hz2wMPbOXc",
-        "visualComprehensionConfirmed": true
-      }
-    },
-    {
-      "id": "playable-graybox",
-      "status": "ready-for-review",
-      "evidence": [
-        {
-          "kind": "blender-source",
-          "path": "blender/ember-breached-rift-bench-graybox.blend"
+          "evidence": "The north-up plan assigns a 21.839 m headwall-to-breach relief, preserves the open east/southeast horizon, and carries the simulator footprint to runtime Z -144 m at the south continuation."
         },
-        {
-          "kind": "coordinate-manifest",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/ember-breached-rift-bench-coordinate-manifest.json"
-        },
-        {
-          "kind": "graybox-glb",
-          "path": "static/models/ember/review/ember-breached-rift-bench-graybox.glb"
-        },
-        {
-          "kind": "review-contact-sheet",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/ember-breached-rift-bench-gate2-contact-sheet.png"
-        },
-        {
-          "kind": "simulator-plan",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/09-plan-simulator-guide.png"
-        },
-        {
-          "kind": "longitudinal-section",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/10-longitudinal-section.png"
-        },
-        {
-          "kind": "verification-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/ember-breached-rift-bench-graybox-report.json"
-        }
-      ],
-      "checks": [
         {
           "name": "artifact-digest",
           "status": "passed",
-          "evidence": "The Gate 2 report records SHA-256 and byte length for the builder, approved terrain owner, research contract, coordinate data, editable Blend, review GLB, eleven registered captures, and 3840 by 2160 contact sheet."
-        },
-        {
-          "name": "collision",
-          "status": "passed",
-          "evidence": "EMBER_Terrain is the sole visible collider in the isolated artifact; there are no invisible barrier or duplicate collision meshes."
-        },
-        {
-          "name": "route-duration",
-          "status": "passed",
-          "evidence": "Not applicable under Austen's recorded Gate 2 exemption: Ember is a 25 m orbit backdrop with no authored player route, and the registered 45-degree orbit set is the approved equivalent."
-        },
-        {
-          "name": "sequence-parity",
-          "status": "passed",
-          "evidence": "Not applicable under Austen's recorded Gate 2 exemption: the isolated environment graybox neither selects nor modifies a TKA sequence."
-        },
-        {
-          "name": "terrain-source-lock",
-          "status": "passed",
-          "evidence": "The coordinate manifest and Blender scene record the SHA-256 of scripts/build-ember-geology-study.py, and verification rejects drift."
-        },
-        {
-          "name": "downhill-drainage",
-          "status": "passed",
-          "evidence": "The registered 314.1 m source-to-continuation footprint descends 22.6 m and thickens at the approved southern slope breaks."
-        },
-        {
-          "name": "performer-clearance",
-          "status": "passed",
-          "evidence": "The imported Flowy guide preserves 4.444 m clearance beyond the protected 4.5 m action envelope."
+          "evidence": "The canonical Gate 1.1 report records SHA-256 digests for all review images and the checked-in little-endian float32 simulator raster."
         }
       ],
+      "approval": null
+    },
+    {
+      "id": "playable-graybox",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
       "approval": null
     },
     {
