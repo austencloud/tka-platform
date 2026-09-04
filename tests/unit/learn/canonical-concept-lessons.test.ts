@@ -114,6 +114,9 @@ describe("canonical concept lesson composition", () => {
     const handPlayer = readSource(
       "src/lib/features/learn/components/interactive/foundations/HandMotionPlayer.svelte"
     );
+    const timingBoard = readSource(
+      "src/lib/features/learn/components/interactive/motions/TimingDirectionBoard.svelte"
+    );
     const foundationContent = readSource(
       "src/lib/features/learn/components/interactive/foundations/pictograph-foundation-content.ts"
     );
@@ -132,7 +135,15 @@ describe("canonical concept lesson composition", () => {
     expect(motions).toContain("ALPHA_BETA_MODES");
     expect(motions).toContain("GAMMA_MODES");
     expect(motions).toContain("TND_ELEMENTS");
+    expect(motions).toContain("TimingDirectionBoard");
+    expect(motions).toContain("const comparisonIndex = HAND_PATH_STEPS.length");
+    expect(motions).toContain("getConceptPlacesByLevel(1)");
     expect(motions).toContain("LessonStageFrame");
+    expect(motions).toContain("var(--shell-w, 96rem)");
+    expect(motions).not.toContain("element-properties");
+    expect(motions).not.toContain("activeMode");
+    expect(motions).not.toContain("recap-state");
+    expect(motions).not.toContain('"Timing + Direction"');
     expect(motions).not.toContain("letterQueryHandler");
     expect(motions).not.toContain("LessonPictographStage");
     expect(positions).toContain('onComplete?.("hand-motions-intro")');
@@ -144,6 +155,16 @@ describe("canonical concept lesson composition", () => {
     expect(handPlayer).toContain("InlineAnimationPlayer");
     expect(handPlayer).toContain('leftPropType="hand"');
     expect(handPlayer).toContain("hideTkaGlyph");
+    expect(handPlayer).toContain("elementalGlyph: showElementalGlyph");
+    expect(timingBoard).toContain("createLayoutMotion");
+    expect(timingBoard).toContain("showElementalGlyph");
+    expect(timingBoard).toContain("externalPlaying={playing}");
+    expect(timingBoard).toContain("Back to all six relationships");
+    expect(timingBoard).toContain("mode.id.toUpperCase()");
+    expect(timingBoard).not.toContain("mode.element.element");
+    expect(timingBoard).not.toMatch(
+      /border-(left|right|top|bottom):\s*[2-9]\d*px/
+    );
     expect(foundationContent).toContain("PropType.HAND");
     expect(rotation).toContain("letterQueryHandler");
     expect(rotation).toContain("LessonPictographStage");
@@ -179,8 +200,8 @@ describe("canonical concept lesson composition", () => {
     expect(anatomy).toContain("ArtifactRegionSpotlight");
     expect(anatomy).toContain("PictographContainer");
     expect(anatomy).toContain("Top left: the step number.");
-    expect(anatomy).toContain("Bottom right: the hands’ timing and direction.");
-    expect(anatomy).toContain("Top right: the props’ timing and direction.");
+    expect(anatomy).toContain("Bottom right: the hands’ time and direction.");
+    expect(anatomy).toContain("Top right: the props’ time and direction.");
   });
 
   it("walks the guide's six words step by step before a six-word recap", () => {

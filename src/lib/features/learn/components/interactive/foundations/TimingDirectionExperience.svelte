@@ -82,7 +82,7 @@
         aria-labelledby="mode-title"
       >
         <div class="instruction-rail">
-          <p class="eyebrow">Hand timing + direction</p>
+          <p class="eyebrow">Hand time + direction</p>
           <div class="mode-heading">
             <img src={activeMode.element.iconPath} alt="" />
             <h1 id="mode-title">{activeMode.name}</h1>
@@ -90,7 +90,7 @@
 
           <dl class="mode-properties">
             <div>
-              <dt>Timing</dt>
+              <dt>Time</dt>
               <dd>{activeMode.timing}</dd>
             </div>
             <div>
@@ -107,7 +107,7 @@
         <div class="artifact-stage">
           <HandMotionPlayer
             sequence={activeMode.sequence}
-            ariaLabel={`${activeMode.name}: ${activeMode.timing} timing and ${activeMode.direction.toLowerCase()} hand-path direction`}
+            ariaLabel={`${activeMode.name}: ${activeMode.timing} time and ${activeMode.direction.toLowerCase()} hand-path direction`}
           />
         </div>
       </section>
