@@ -43,7 +43,7 @@ import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase-interpolator";
 import { findPhraseAtBeat } from "$lib/shared/effort/domain/effort-timeline-types";
 import type { EffortTimeline } from "$lib/shared/effort/domain/effort-timeline-types";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 /**
@@ -354,11 +354,9 @@ export class SequenceAnimationOrchestrator {
    * video export, which over-samples sub-positions to build dense trails and must
    * not disturb the live render's shared state.
    *
-   * Boundary: this covers ONLY the motion-beat interpolation path (step >= 1).
-   * The start-position special case (step < 1) and the missing-motion skip in
-   * calculateState mutate/short-circuit and are intentionally NOT represented
-   * here — a sampler at those positions returns the zero default. Callers that
-   * need start-position angles use calculateInitialAngles directly.
+   * The start position uses the same first-visible-motion rule as live playback,
+   * so an export or nested composition does not jump from a zero placeholder to
+   * the user's real opening pose on its first frame.
    */
   samplePropStateAt(step: number): { left: PropState; right: PropState } {
     const fallback = (): { left: PropState; right: PropState } => ({
@@ -366,8 +364,20 @@ export class SequenceAnimationOrchestrator {
       right: { centerPathAngle: 0, staffRotationAngle: 0 },
     });
 
-    if (this.steps.length === 0 || this.totalSteps === 0 || step < 1) {
+    if (this.steps.length === 0 || this.totalSteps === 0) {
       return fallback();
+    }
+
+    if (step < 1) {
+      const firstStep = this.findFirstBeatWithMotion();
+      if (!firstStep) return fallback();
+      const initial = calculateInitialAngles(firstStep);
+      if (!initial.isValid) return fallback();
+      const fallbackState = fallback();
+      return {
+        left: initial.leftAngles ?? fallbackState.left,
+        right: initial.rightAngles ?? fallbackState.right,
+      };
     }
 
     // Same adjustedBeat + beat-state resolution calculateState uses (verbatim).
@@ -394,7 +404,10 @@ export class SequenceAnimationOrchestrator {
 
     return {
       left: result.leftAngles ?? { centerPathAngle: 0, staffRotationAngle: 0 },
-      right: result.rightAngles ?? { centerPathAngle: 0, staffRotationAngle: 0 },
+      right: result.rightAngles ?? {
+        centerPathAngle: 0,
+        staffRotationAngle: 0,
+      },
     };
   }
 
