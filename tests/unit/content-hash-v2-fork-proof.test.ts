@@ -26,6 +26,7 @@ import {
   computeHash,
   HASH_VERSION_V1,
   HASH_VERSION_V2,
+  HASH_VERSION_V3,
   CONTENT_HASH_VERSION,
 } from "../../src/lib/shared/library/services/sequence-content-hasher";
 import { deriveSteps } from "../../src/lib/shared/foundation/services/step-deriver";
@@ -82,14 +83,18 @@ function makeFixture(overrides?: {
     startPosition: null,
     steps: [
       step(1, false, false),
-      step(2, overrides?.leftReversal ?? false, overrides?.rightReversal ?? false),
+      step(
+        2,
+        overrides?.leftReversal ?? false,
+        overrides?.rightReversal ?? false
+      ),
     ],
   } as unknown as SequenceData;
 }
 
 describe("content-hash V2 — fork-proof contract", () => {
-  it("active version is V2 (corpus migrated + version-aware fork detection shipped 2026-06-30)", () => {
-    expect(CONTENT_HASH_VERSION).toBe(HASH_VERSION_V2);
+  it("active version is V3 (authored motion planes are identity-bearing)", () => {
+    expect(CONTENT_HASH_VERSION).toBe(HASH_VERSION_V3);
   });
 
   it("V1 includes reversal flags; V2 ignores them (FORK-PROOF for reversals)", async () => {
@@ -131,9 +136,32 @@ describe("content-hash V2 — fork-proof contract", () => {
     );
   });
 
-  it("default computeHash() == explicit V2 (active basis is now V2)", async () => {
+  it("default computeHash() == explicit V3", async () => {
     const seq = makeFixture({ leftReversal: true });
-    expect(await computeHash(seq)).toBe(await computeHash(seq, HASH_VERSION_V2));
+    expect(await computeHash(seq)).toBe(
+      await computeHash(seq, HASH_VERSION_V3)
+    );
+  });
+
+  it("V3 distinguishes authored planes while V1/V2 stay byte-compatible", async () => {
+    const inheritedWall = makeFixture();
+    const wall = makeFixture();
+    const wheel = makeFixture();
+    (wall.steps[0]!.motions.left as { plane?: string }).plane = "wall";
+    (wheel.steps[0]!.motions.left as { plane?: string }).plane = "wheel";
+
+    expect(await computeHash(wall, HASH_VERSION_V1)).toBe(
+      await computeHash(wheel, HASH_VERSION_V1)
+    );
+    expect(await computeHash(wall, HASH_VERSION_V2)).toBe(
+      await computeHash(wheel, HASH_VERSION_V2)
+    );
+    expect(await computeHash(wall, HASH_VERSION_V3)).not.toBe(
+      await computeHash(wheel, HASH_VERSION_V3)
+    );
+    expect(await computeHash(inheritedWall, HASH_VERSION_V3)).toBe(
+      await computeHash(wall, HASH_VERSION_V3)
+    );
   });
 
   it("V1 byte-stability lock (golden) — fork detection depends on this never drifting", async () => {
@@ -156,7 +184,11 @@ interface RawDoc {
   rightSoloProp?: { steps: unknown[] };
   blueSoloProp?: { steps: unknown[] };
   redSoloProp?: { steps: unknown[] };
-  stepPairings?: Array<{ letter: string | null; leftReversal?: boolean; rightReversal?: boolean }>;
+  stepPairings?: Array<{
+    letter: string | null;
+    leftReversal?: boolean;
+    rightReversal?: boolean;
+  }>;
 }
 
 function getSoloProps(doc: RawDoc): {
@@ -174,7 +206,9 @@ function loadCorpus(): RawDoc[] {
     projectRoot,
     "static/data/snapshots/public-sequences.json"
   );
-  const parsed = JSON.parse(readFileSync(file, "utf8")) as { documents: RawDoc[] };
+  const parsed = JSON.parse(readFileSync(file, "utf8")) as {
+    documents: RawDoc[];
+  };
   return parsed.documents.filter((doc) => {
     const soloProps = getSoloProps(doc);
     return (
@@ -192,11 +226,22 @@ function loadCorpus(): RawDoc[] {
 function motionFingerprint(doc: RawDoc): string {
   const soloProps = getSoloProps(doc);
   const leftSteps = (soloProps.left?.steps ?? []) as Record<string, unknown>[];
-  const rightSteps = (soloProps.right?.steps ?? []) as Record<string, unknown>[];
+  const rightSteps = (soloProps.right?.steps ?? []) as Record<
+    string,
+    unknown
+  >[];
   const sp = doc.stepPairings ?? [];
   const m = (s: Record<string, unknown> | undefined) =>
     s
-      ? [s.motionType, s.rotationDirection, s.startLocation, s.endLocation, s.turns, s.startOrientation, s.endOrientation].join(",")
+      ? [
+          s.motionType,
+          s.rotationDirection,
+          s.startLocation,
+          s.endLocation,
+          s.turns,
+          s.startOrientation,
+          s.endOrientation,
+        ].join(",")
       : "-";
   const parts: string[] = [];
   for (let i = 0; i < sp.length; i++) {
@@ -266,7 +311,9 @@ describe("content-hash V2 — collision-safe over the published corpus", () => {
         v2Owners.get(v2)!.add(v1);
       }
     }
-    const merges = [...v2Owners.entries()].filter(([, owners]) => owners.size > 1);
+    const merges = [...v2Owners.entries()].filter(
+      ([, owners]) => owners.size > 1
+    );
 
     // A merge is CORRECT (dedup) iff the merged docs share one physical motion
     // fingerprint — they are the same sequence with a stale derived field. A
@@ -305,8 +352,14 @@ describe("content-hash V2 — recompute determinism (the lazy-rehash relies on t
     for (const doc of corpus) {
       let a: string, b: string;
       try {
-        a = await computeHash(hydrate({ ...(doc as object) } as SequenceData), HASH_VERSION_V2);
-        b = await computeHash(hydrate({ ...(doc as object) } as SequenceData), HASH_VERSION_V2);
+        a = await computeHash(
+          hydrate({ ...(doc as object) } as SequenceData),
+          HASH_VERSION_V2
+        );
+        b = await computeHash(
+          hydrate({ ...(doc as object) } as SequenceData),
+          HASH_VERSION_V2
+        );
       } catch {
         continue;
       }

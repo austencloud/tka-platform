@@ -45,7 +45,6 @@ export interface ForkAttribution {
  * Stored at: users/{userId}/sequences/{sequenceId}
  */
 export interface LibrarySequence extends SequenceData {
-
   /** User ID of the library owner */
   readonly ownerId: string;
 
@@ -55,7 +54,6 @@ export interface LibrarySequence extends SequenceData {
   /** Fork attribution (only present if source === "forked") */
   readonly forkAttribution?: ForkAttribution;
 
-
   /** Current visibility state (defaults to "public") */
   readonly visibility: SequenceVisibility;
 
@@ -64,7 +62,6 @@ export interface LibrarySequence extends SequenceData {
 
   /** Whether sequence is featured (admin-controlled) */
   readonly isFeatured?: boolean;
-
 
   /** Collection IDs this sequence belongs to */
   readonly collectionIds: readonly string[];
@@ -89,7 +86,6 @@ export interface LibrarySequence extends SequenceData {
   /** Number of users who starred/liked this */
   readonly starCount: number;
 
-
   /**
    * Monotonically increasing version counter for conflict detection.
    * Incremented on every save. Used to detect when the same sequence
@@ -112,19 +108,17 @@ export interface LibrarySequence extends SequenceData {
 
   /**
    * Identity-hash basis `contentHash` was computed under (see HASH_VERSION_V1 /
-   * HASH_VERSION_V2 in sequence-content-hasher). Absent === V1. Lets fork
+   * HASH_VERSION_V2 / HASH_VERSION_V3 in sequence-content-hasher). Absent === V1. Lets fork
    * detection compare hashes on a common basis and lazy-rehash across a version
    * bump instead of spuriously forking.
    */
   readonly contentHashVersion?: number;
-
 
   /** When the sequence was soft-deleted. Null means not deleted. */
   readonly deletedAt?: Date | null;
 
   /** Whether the sequence is in the recycle bin */
   readonly isDeleted?: boolean;
-
 
   /**
    * Original creation date - when this exact sequence was first saved anywhere.
