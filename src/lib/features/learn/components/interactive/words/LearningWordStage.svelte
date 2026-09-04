@@ -346,7 +346,7 @@
   @container learning-word-stage (max-width: 760px) {
     .studio-body {
       grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: 15rem 24rem 31rem;
+      grid-template-rows: 10.5rem 24rem 31rem;
       grid-template-areas:
         "video"
         "animation"
