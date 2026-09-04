@@ -10,6 +10,9 @@ export interface WorkerCameraSnapshot {
   position: readonly [number, number, number];
   target: readonly [number, number, number];
   fov: number;
+  /** Exact rendered orientation, including viewer roll when present. */
+  quaternion?: WorkerQuaternion;
+  up?: WorkerVector3;
 }
 
 export type WorkerVector3 = readonly [number, number, number];

@@ -75,7 +75,10 @@ function applyCamera(snapshot: WorkerCameraSnapshot): void {
   if (!camera) return;
   camera.position.fromArray(snapshot.position);
   camera.fov = snapshot.fov;
-  camera.lookAt(...snapshot.target);
+  if (snapshot.up) camera.up.fromArray(snapshot.up);
+  else camera.up.set(0, 1, 0);
+  if (snapshot.quaternion) camera.quaternion.fromArray(snapshot.quaternion);
+  else camera.lookAt(...snapshot.target);
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld(true);
 }
