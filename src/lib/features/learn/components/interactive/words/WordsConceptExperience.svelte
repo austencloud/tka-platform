@@ -426,7 +426,7 @@
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
     width: 100%;
-    height: min(58rem, calc(100dvh - 9.5rem));
+    height: min(58rem, calc(100dvh - 10rem));
     min-height: 0;
     overflow: hidden;
     border: 1px solid var(--theme-stroke);
@@ -753,7 +753,7 @@
     }
 
     .lesson-studio {
-      height: calc(100dvh - 5.25rem);
+      height: calc(100dvh - 8.75rem);
     }
 
     .intro-step {
@@ -844,7 +844,7 @@
     }
 
     .lesson-studio {
-      height: min(70rem, calc(100dvh - 9.5rem));
+      height: min(70rem, calc(100dvh - 10rem));
     }
   }
 
@@ -854,7 +854,7 @@
     }
 
     .lesson-studio {
-      height: min(96rem, calc(100dvh - 9.5rem));
+      height: min(96rem, calc(100dvh - 10rem));
     }
 
     .recap-families {
