@@ -14,6 +14,8 @@ export interface SequenceExportOptions {
   combinedGrids: boolean;
   addDifficultyLevel: boolean;
   customName?: string;
+  /** Render the header label literally instead of interpreting it as TKA glyphs. */
+  renderWordAsText?: boolean;
 
   loopType?: LOOPType;
   showLoopGlyph?: boolean;
