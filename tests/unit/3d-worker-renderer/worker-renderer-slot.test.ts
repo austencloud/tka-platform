@@ -63,6 +63,38 @@ describe("worker renderer slot", () => {
     expect(worker.postMessage.mock.calls[0]?.[1]).toHaveLength(1);
   });
 
+  it("includes the resolved effect frame in the worker initialization", () => {
+    const worker = new FakeWorker();
+    const canvas = {
+      className: "",
+      style: {} as CSSStyleDeclaration,
+      setAttribute: vi.fn(),
+      transferControlToOffscreen: vi.fn(() => ({ width: 1, height: 1 })),
+      remove: vi.fn(),
+    } as unknown as HTMLCanvasElement;
+    vi.mocked(document.createElement).mockReturnValueOnce(canvas);
+    const effects = { playing: true, sources: [] } as const;
+
+    new WorkerRendererSlot({
+      container: { append: vi.fn() } as unknown as HTMLElement,
+      state: {
+        id: "effects",
+        requestId: 8,
+        environment: "ocean",
+        status: "booting",
+      },
+      viewport: { width: 640, height: 360, dpr: 1 },
+      camera: { position: [0, 2, 8], target: [0, 0, 0], fov: 45 },
+      effects,
+      createWorker: () => worker as unknown as Worker,
+      onMessage: vi.fn(),
+      onError: vi.fn(),
+      onDestroyed: vi.fn(),
+    });
+
+    expect(worker.postMessage.mock.calls[0]?.[0]).toMatchObject({ effects });
+  });
+
   it("destroys once when the worker acknowledges disposal", () => {
     const { worker, canvas, onDestroyed, slot } = fixture();
     const after = vi.fn();

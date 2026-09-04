@@ -3,6 +3,7 @@
   import type {
     WorkerEnvironmentKey,
     WorkerPerformerSnapshot,
+    WorkerSceneEffectsSnapshot,
   } from "../domain/worker-renderer-protocol";
   import {
     WorkerEnvironmentRenderer,
@@ -18,10 +19,16 @@
   interface Props {
     environment: WorkerEnvironmentKey;
     performers?: readonly WorkerPerformerSnapshot[];
+    effects?: WorkerSceneEffectsSnapshot;
     onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
   }
 
-  let { environment, performers = [], onSnapshot }: Props = $props();
+  let {
+    environment,
+    performers = [],
+    effects = { playing: false, sources: [] },
+    onSnapshot,
+  }: Props = $props();
   let container: HTMLDivElement;
   let renderer: WorkerEnvironmentRenderer | null = null;
   let cameraController: ApplicationThreadCameraController | null = null;
@@ -69,6 +76,7 @@
     });
     cameraResizeObserver.observe(container);
     renderer.setPerformers($state.snapshot(performers));
+    renderer.setEffects($state.snapshot(effects));
     renderer.switchTo(environment);
     return () => {
       renderer?.dispose();
@@ -88,6 +96,10 @@
 
   $effect(() => {
     renderer?.setPerformers($state.snapshot(performers));
+  });
+
+  $effect(() => {
+    renderer?.setEffects($state.snapshot(effects));
   });
 </script>
 

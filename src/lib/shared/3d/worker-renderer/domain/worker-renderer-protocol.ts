@@ -1,3 +1,5 @@
+import type { SceneEffectTipSource3D } from "../../effects/scene-effects/scene-effect-source-3d";
+
 export type WorkerEnvironmentKey = "ocean" | "rainbow" | "void";
 
 export interface WorkerViewport {
@@ -56,6 +58,18 @@ export interface WorkerPerformerSnapshot {
   stanceYaw: number;
   stanceSegments: WorkerStanceSegments | null;
   spinePitchOffset: number;
+}
+
+/**
+ * Structured-clone-safe output of the app-owned effect resolver.
+ *
+ * Effect selection and Choreo timing stay on the application thread. The
+ * worker receives the final world-space tip sources and owns only their
+ * heavyweight Three.js renderers.
+ */
+export interface WorkerSceneEffectsSnapshot {
+  playing: boolean;
+  sources: readonly SceneEffectTipSource3D[];
 }
 
 export type WorkerRendererProgressPhase =
@@ -139,6 +153,7 @@ export interface InitializeWorkerRendererMessage {
   viewport: WorkerViewport;
   camera: WorkerCameraSnapshot;
   performers: readonly WorkerPerformerSnapshot[];
+  effects?: WorkerSceneEffectsSnapshot;
 }
 
 export interface ResizeWorkerRendererMessage {
@@ -165,6 +180,12 @@ export interface PerformersWorkerRendererMessage {
   performers: readonly WorkerPerformerSnapshot[];
 }
 
+export interface EffectsWorkerRendererMessage {
+  type: "effects";
+  requestId: number;
+  effects: WorkerSceneEffectsSnapshot;
+}
+
 export interface PointerWorkerRendererMessage {
   type: "pointer";
   requestId: number;
@@ -183,6 +204,7 @@ export type WorkerRendererInMessage =
   | ResizeWorkerRendererMessage
   | CameraWorkerRendererMessage
   | PerformersWorkerRendererMessage
+  | EffectsWorkerRendererMessage
   | PointerWorkerRendererMessage
   | VisibilityWorkerRendererMessage
   | DisposeWorkerRendererMessage;

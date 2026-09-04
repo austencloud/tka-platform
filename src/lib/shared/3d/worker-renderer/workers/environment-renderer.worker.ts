@@ -13,6 +13,7 @@ import type {
   WorkerRendererInMessage,
   WorkerRendererOutMessage,
   WorkerPerformerSnapshot,
+  WorkerSceneEffectsSnapshot,
   WorkerViewport,
 } from "../domain/worker-renderer-protocol";
 import { clampWorkerViewport } from "../domain/worker-renderer-protocol";
@@ -33,6 +34,11 @@ import {
   resolveViewerBaseLighting,
 } from "../../rendering/viewer-lighting-rig";
 import { ScenePostProcessingPipeline } from "../../effects/post-processing/scene-post-processing-pipeline";
+import { SceneEffectsManager3D } from "../../effects/scene-effects/scene-effects-manager-3d";
+import type {
+  SceneEffectRigFrame3D,
+  SceneEffectTipSource3D,
+} from "../../effects/scene-effects/scene-effect-source-3d";
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 
@@ -51,6 +57,12 @@ let camera: PerspectiveCamera | null = null;
 let world: WorkerEnvironmentWorld | null = null;
 let performerStage: WorkerPerformerStage | null = null;
 let postProcessing: ScenePostProcessingPipeline | null = null;
+let sceneEffectsManager: SceneEffectsManager3D | null = null;
+let sceneEffectsRegistration: { dispose(): void } | null = null;
+const sceneEffectsFrame: SceneEffectRigFrame3D = {
+  playing: false,
+  sources: [],
+};
 let performerSnapshots: readonly WorkerPerformerSnapshot[] = [];
 let animationFrame = 0;
 let frameCount = 0;
@@ -106,9 +118,27 @@ function createPostProcessingPipeline(
 
 function renderCurrentFrame(deltaSeconds: number): void {
   if (!renderer || !camera || !world) return;
+  sceneEffectsManager?.update(deltaSeconds);
   if (postProcessing)
     postProcessing.render(deltaSeconds, { forceBaseRender: true });
   else renderer.render(world.scene, camera);
+}
+
+function applyEffects(snapshot: WorkerSceneEffectsSnapshot): void {
+  sceneEffectsFrame.playing = snapshot.playing;
+  sceneEffectsFrame.sources = Array.from(
+    snapshot.sources
+  ) as SceneEffectTipSource3D[];
+  if (sceneEffectsFrame.sources.length === 0 || !renderer || !world) {
+    if (sceneEffectsFrame.sources.length === 0) sceneEffectsManager?.clear();
+    return;
+  }
+  if (!sceneEffectsManager) {
+    sceneEffectsManager = new SceneEffectsManager3D();
+    sceneEffectsManager.initialize(world.scene, renderer);
+    sceneEffectsRegistration =
+      sceneEffectsManager.registerRig(sceneEffectsFrame);
+  }
 }
 
 function applyCamera(snapshot: WorkerCameraSnapshot): void {
@@ -233,6 +263,7 @@ async function initialize(
   const performerReadyAt = performance.now();
   const worldReadyAt = performerReadyAt;
   post({ type: "progress", requestId, phase: "performer", fraction: 1 });
+  applyEffects(message.effects ?? { playing: false, sources: [] });
   postProcessing = createPostProcessingPipeline(environment);
 
   post({ type: "progress", requestId, phase: "compile", fraction: 0 });
@@ -369,6 +400,12 @@ function dispose(): void {
   animationFrame = 0;
   performerStage?.dispose();
   performerStage = null;
+  sceneEffectsRegistration?.dispose();
+  sceneEffectsRegistration = null;
+  sceneEffectsManager?.dispose();
+  sceneEffectsManager = null;
+  sceneEffectsFrame.playing = false;
+  sceneEffectsFrame.sources = [];
   postProcessing?.dispose();
   postProcessing = null;
   world?.dispose();
@@ -416,6 +453,9 @@ scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
           stack: error instanceof Error ? error.stack : undefined,
         });
       });
+      break;
+    case "effects":
+      applyEffects(message.effects);
       break;
     case "pointer": {
       if (!world || !environment) break;

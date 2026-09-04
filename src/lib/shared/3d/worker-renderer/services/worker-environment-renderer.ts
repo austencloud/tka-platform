@@ -14,6 +14,7 @@ import {
   type WorkerRendererInMessage,
   type WorkerRendererOutMessage,
   type WorkerPerformerSnapshot,
+  type WorkerSceneEffectsSnapshot,
   type WorkerViewport,
 } from "../domain/worker-renderer-protocol";
 import { WorkerRendererResponsivenessProbe } from "./worker-renderer-responsiveness-probe";
@@ -56,10 +57,9 @@ export interface WorkerSceneSwitchSnapshot {
 export interface WorkerEnvironmentRendererOptions {
   container: HTMLElement;
   onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
-  onInteraction?: (message: Extract<
-    WorkerRendererOutMessage,
-    { type: "interaction" }
-  >) => void;
+  onInteraction?: (
+    message: Extract<WorkerRendererOutMessage, { type: "interaction" }>
+  ) => void;
   createWorker?: () => Worker;
 }
 
@@ -98,6 +98,7 @@ export class WorkerEnvironmentRenderer {
   private history: WorkerSceneSwitchMeasurement[] = [];
   private disposed = false;
   private performers: readonly WorkerPerformerSnapshot[] = [];
+  private effects: WorkerSceneEffectsSnapshot = { playing: false, sources: [] };
   private camera: WorkerCameraSnapshot | null = null;
 
   constructor(options: WorkerEnvironmentRendererOptions) {
@@ -189,6 +190,17 @@ export class WorkerEnvironmentRenderer {
     }
   }
 
+  setEffects(effects: WorkerSceneEffectsSnapshot): void {
+    this.effects = effects;
+    for (const slot of this.slots.values()) {
+      this.post(slot, {
+        type: "effects",
+        requestId: slot.state.requestId,
+        effects,
+      });
+    }
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
@@ -212,6 +224,7 @@ export class WorkerEnvironmentRenderer {
         viewport: this.viewport,
         camera: this.camera ?? getWorkerEnvironmentCamera(state.environment),
         performers: this.performers,
+        effects: this.effects,
         createWorker: this.createWorker,
         onMessage: (source, message) =>
           this.handleWorkerMessage(source, message),
