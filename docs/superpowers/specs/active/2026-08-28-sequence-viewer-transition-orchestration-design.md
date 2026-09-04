@@ -1326,6 +1326,54 @@ passes 40 of 41 files / 370 of 371 tests; its only failure is the same unchanged
 `TunnelArtSettings` 500-line ownership cap described above, reproduced on
 `main` at 518 lines.
 
+#### Shared Animator inspector shell · 2026-09-04
+
+The shared state described above still arrived through two visibly different
+inspectors. 2D Animation owned its rail, section transition, scroll frame, and
+bright export footer in `AnimationPanel`; Tunnel duplicated those boundaries in
+`TunnelArtSettings`, added a separate heading band, ordered the same concepts
+differently, and finished with a subdued bordered export action. Switching the
+canvas therefore looked like entering another product even when the selected
+effect and visibility values were already the same objects.
+
+Both desktop modes now compose `AnimatorInspectorShell` and
+`AnimatorInspectorFooter`. The shell is the single owner of rail geometry,
+section fly/fade, body scrolling, headings, wide-container behavior, and the
+footer slot. The footer is the single owner of action height, accent fill,
+progress, readiness, cancellation, and estimate placement; only the action
+label and icon differ (`Export Animation` versus `Export Video`). Tunnel's
+former title band is gone.
+
+The common rail leads with the same four pages in the same order:
+**Effects, Props, Motion, Display**. Tunnel's color policy is the prelude of its
+Effects page rather than a parallel inspector concept, and its desktop Motion
+page combines Effort and Playback exactly as 2D does. Formation and Copy Speed
+follow as Tunnel-only pages; Export remains 2D-only because Tunnel exports from
+the persistent footer. The substantial Tunnel Motion and Display bodies live in
+their own presentation owners, bringing the Tunnel coordinator below its
+500-line architecture ceiling instead of weakening that guard.
+
+`ViewerAnimatorInspectorState` lives above both persistent inspector layers.
+Selecting a common page in either mode keeps that page open in the other. A
+mode-only page remains selected for its owning mode; the other mode temporarily
+shows the last common page and returning restores the mode-only page. Existing
+setting owners remain unchanged: an interactive browser pass toggled Grid off
+in Tunnel and read it back off on 2D Display, then selected Fire in 2D and read
+Tunnel's Fire controls on the same Effects page.
+
+Production-route WebP captures at 375 x 667, 960 x 412, 820 x 1180,
+1440 x 900, 1920 x 1080, 2560 x 1440, and 3840 x 2160 show the compact bottom
+dock at phone/short-landscape layouts and the same persistent inspector shell
+at desktop layouts, with no visible clipping or horizontal overflow. At
+1440 x 900 the 2D and Tunnel footers have identical geometry and accent styling;
+the Effects body retains its scroll allocation when Tunnel inserts Colors above
+it. Artifacts are retained under
+`artifacts/unified-animator-inspector/` in the local main workspace.
+
+The sequence-viewer regression run passes 31 files / 258 tests, including the
+new shared-section state and ownership contracts, and `svelte-check` reports
+0 errors and 0 warnings.
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of

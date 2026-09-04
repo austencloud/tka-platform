@@ -4,6 +4,7 @@ import {
   extractReleasedSequenceIds,
   findDuplicateRelease,
   isGalleryRelease,
+  isHandPathRelease,
   isLoopRelease,
   isTnDRelease,
 } from "../deck-release-model";
@@ -50,6 +51,20 @@ describe("deck release model", () => {
   it("classifies explicit gallery and LOOP releases", () => {
     expect(isGalleryRelease(release(1, "gallery"))).toBe(true);
     expect(isLoopRelease(release(2, "loop"))).toBe(true);
+  });
+
+  it("keeps reference-only hand-path releases out of the TnD sequence list", () => {
+    const handPaths = {
+      ...release(3),
+      cardCount: 6,
+      handPathCards: {
+        version: 1,
+        cardIds: ["ss", "ts", "so", "to", "qo", "qs"] as const,
+      },
+    };
+
+    expect(isHandPathRelease(handPaths)).toBe(true);
+    expect(isTnDRelease(handPaths)).toBe(false);
   });
 
   it("collects released sequence ids without duplicates", () => {

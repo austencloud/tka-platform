@@ -71,6 +71,21 @@ const companionSurface = read(
 const choreoCard = read(
   "src/lib/shared/sequence-viewer/components/ChoreoCard.svelte"
 );
+const animationPanel = read(
+  "src/lib/shared/animation-panel/components/AnimationPanel.svelte"
+);
+const tunnelArtSettings = read(
+  "src/lib/shared/sequence-viewer/components/art-settings/TunnelArtSettings.svelte"
+);
+const animatorInspectorShell = read(
+  "src/lib/shared/animation-panel/components/AnimatorInspectorShell.svelte"
+);
+const animatorInspectorFooter = read(
+  "src/lib/shared/animation-panel/components/AnimatorInspectorFooter.svelte"
+);
+const animatorInspectorState = read(
+  "src/lib/shared/sequence-viewer/state/viewer-animator-inspector-state.svelte.ts"
+);
 const cardSizingState = read(
   "src/lib/shared/choreo-card/state/choreo-card-sizing-state.svelte.ts"
 );
@@ -88,6 +103,22 @@ const performanceStage = read(
 );
 
 describe("Sequence Viewer transition orchestration contract", () => {
+  it("composes 2D and Tunnel settings from one inspector shell", () => {
+    expect(animationPanel).toContain("<AnimatorInspectorShell");
+    expect(tunnelArtSettings).toContain("<AnimatorInspectorShell");
+    expect(animationPanel).toContain("<AnimatorInspectorFooter");
+    expect(tunnelArtSettings).toContain("<AnimatorInspectorFooter");
+    expect(animatorInspectorShell).toContain("<IconRailNav");
+    expect(animatorInspectorShell).toContain('class="panel-transition"');
+    expect(animatorInspectorFooter).toContain("background: var(--theme-accent");
+    expect(animatorInspectorState).toContain(
+      '"effects",\n  "props",\n  "motion",\n  "display"'
+    );
+    expect(tunnelArtSettings).toContain('id: "display"');
+    expect(tunnelArtSettings).toContain('id: "motion" as const');
+    expect(tunnelArtSettings).toContain("<TunnelEffectsSettings");
+  });
+
   it("names both responsive switchers as Sequence views", () => {
     expect(contentRail).toContain('aria-label="Sequence views"');
     expect(modeBottomBar).toContain('aria-label="Sequence views"');

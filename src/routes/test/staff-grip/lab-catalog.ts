@@ -8,21 +8,6 @@
  * deliberately never enter the deployable catalog.
  */
 import {
-  AVATAR_DEFINITIONS,
-  type AvatarDefinition,
-  type AvatarId,
-} from "@austencloud/scene-3d";
-
-import {
-  CHARACTER_DEFINITIONS,
-  type CharacterDefinition,
-  type CharacterId,
-} from "$lib/shared/3d/domain/character-model";
-import {
-  registerProportionSweepCharacters,
-  type ProportionSweepCharacter,
-} from "$lib/shared/3d/domain/proportion-sweep-characters";
-import {
   SCENE_PROP_FAMILIES,
   SCENE_PROP_TYPES,
 } from "$lib/shared/3d/domain/scene-prop-catalog";
@@ -32,113 +17,36 @@ import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifi
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
 
+import {
+  DEFAULT_LAB_CHARACTER_ID,
+  LAB_SWEEP_AXIS_LABEL,
+  isLabCharacterId,
+  isLocalOnlyCharacter,
+  labCharacter,
+  labCharacterName,
+  labCharacters,
+  labSweepCharacter,
+} from "../_lab-kit/lab-characters";
+
 import { isLabGoalId, loadLabGoalSequence } from "./lab-goals";
 
 /**
- * Rigs that exist on this machine under `static/models/avatars/bakeoff/` but
- * are not part of the deployable catalog. `personal-metaperson` already ships
- * as a `local-evaluation` definition inside the scene package; `intake-current`
- * is the slot the latest hand-staged intake lands in, so it has to be
- * registered from the product side.
- *
- * This used to happen inside the render component, which meant the push ran on
- * every stage instantiation and the catalog's contents depended on whether a
- * canvas had mounted yet. Registering here — once, at module load, before any
- * picker reads the catalog — is the honest version of the same seam.
+ * The character roster, the local intake rig and the proportion sweep now live
+ * with the shared lab kit, because the reach lab poses the same bodies. They
+ * are re-exported here so every consumer that already names them through this
+ * catalog keeps working, and so importing this module still registers the
+ * lab-only characters as a side effect.
  */
-const LOCAL_INTAKE_DEFINITIONS: readonly AvatarDefinition[] = [
-  {
-    id: "intake-current" as AvatarId,
-    name: "Current intake",
-    modelPath: "/models/avatars/bakeoff/intake-current.glb",
-    icon: "fa-person-rays",
-    description: "Latest locally staged character intake",
-    availability: "local-evaluation",
-  },
-];
-
-function registerLocalIntakeCharacters(): void {
-  for (const definition of LOCAL_INTAKE_DEFINITIONS) {
-    if (AVATAR_DEFINITIONS.some(({ id }) => id === definition.id)) continue;
-    AVATAR_DEFINITIONS.push(definition);
-  }
-}
-
-registerLocalIntakeCharacters();
-
-/**
- * The controlled proportion sweep: one licensed base rig with exactly one body
- * dimension moved per copy. The deployed catalog varies every dimension at
- * once, so a catalog body that fails the hug fit cannot say which dimension
- * caused it. These can, which is the difference between a lab that reproduces
- * a failure and one that explains it.
- *
- * The GLBs are gitignored, so a checkout without them registers ten characters
- * whose models 404. That is the same trade the intake rig already makes and
- * the same reason neither is the default: the lab opens on a CDN body, and
- * these are one pick away for whoever has them.
- */
-const LAB_SWEEP_CHARACTERS = registerProportionSweepCharacters();
-
-const LAB_SWEEP_BY_ID = new Map<string, ProportionSweepCharacter>(
-  LAB_SWEEP_CHARACTERS.map((character) => [character.id as string, character])
-);
-
-/** The sweep record behind a character, when the character is a sweep body. */
-export function labSweepCharacter(
-  id: string
-): ProportionSweepCharacter | undefined {
-  return LAB_SWEEP_BY_ID.get(id);
-}
-
-/** What a sweep body's axis is called in the lab's own vocabulary. */
-export const LAB_SWEEP_AXIS_LABEL: Readonly<
-  Record<ProportionSweepCharacter["axis"], string>
-> = {
-  none: "Control",
-  stature: "Stature",
-  shoulderWidth: "Shoulder width",
-  armLength: "Arm length",
-  armSegmentRatio: "Arm segment ratio",
-  torsoGirth: "Build",
+export {
+  DEFAULT_LAB_CHARACTER_ID,
+  LAB_SWEEP_AXIS_LABEL,
+  isLabCharacterId,
+  isLocalOnlyCharacter,
+  labCharacter,
+  labCharacterName,
+  labCharacters,
+  labSweepCharacter,
 };
-
-/**
- * The body the lab opens on.
- *
- * Not the intake rig, deliberately. `intake-current.glb` is gitignored local
- * evaluation material, so a fresh checkout that defaults to it opens on an
- * empty stage with no explanation. A catalog character streams from the CDN
- * and is there for everyone. The intake rig stays one pick away, and any URL
- * naming it still resolves.
- */
-export const DEFAULT_LAB_CHARACTER_ID = "ch07" as CharacterId;
-
-/**
- * Every character the lab can pose, catalog and local intake alike. Read
- * through the product's own character vocabulary rather than the package's
- * avatar names, per `.claude/rules/3d-character-terminology.md`.
- */
-export function labCharacters(): readonly CharacterDefinition[] {
-  return CHARACTER_DEFINITIONS;
-}
-
-export function labCharacter(id: string): CharacterDefinition | undefined {
-  return CHARACTER_DEFINITIONS.find((definition) => definition.id === id);
-}
-
-export function isLabCharacterId(id: string): id is CharacterId {
-  return labCharacter(id) !== undefined;
-}
-
-export function labCharacterName(id: string): string {
-  return labCharacter(id)?.name ?? id;
-}
-
-/** True for a rig that only exists on this machine. */
-export function isLocalOnlyCharacter(id: string): boolean {
-  return labCharacter(id)?.availability === "local-evaluation";
-}
 
 /** Every prop the shared 3D catalog supports. The lab reaches all of them. */
 export const LAB_PROP_TYPES: readonly PropType[] = SCENE_PROP_TYPES;

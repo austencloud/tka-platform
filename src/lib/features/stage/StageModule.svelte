@@ -37,10 +37,11 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { FormationPresetId } from "./domain/stage-types";
-  import type {
-    TikaDirectorConversationMessage,
-    TikaDirectorResponse,
-  } from "./domain/tika-director";
+  import type { TikaDirectorConversationMessage } from "./domain/tika-director";
+  import {
+    createTikaDirectorSession,
+    type TikaDirectorSubmitResult,
+  } from "./state/tika-director-session";
 
   import FormationOverlay from "./components/FormationOverlay.svelte";
   import SetProperties from "./components/SetProperties.svelte";
@@ -285,65 +286,91 @@
       : null
   );
 
+  let tikaViewerHistoryRevision = 0;
+  const unsubscribeTikaHistory = viewer.sceneUndo.subscribe(() => {
+    tikaViewerHistoryRevision++;
+  });
+  const tikaSession = createTikaDirectorSession({
+    isDisposed: () => viewer.disposed || !tikaDirectorOpen,
+    getRevision: () =>
+      JSON.stringify(
+        {
+          stageHistory: stageState.historyRevision,
+          viewerHistory: tikaViewerHistoryRevision,
+          choreography,
+          cast: viewer.performerManager.performers.map((performer) =>
+            performer.captureEditingSnapshot()
+          ),
+        },
+        (_key, value) => (value instanceof Map ? [...value] : value)
+      ),
+  });
+
   async function directStageWithTika(
     prompt: string,
-    conversation: readonly TikaDirectorConversationMessage[]
-  ): Promise<{
-    response: TikaDirectorResponse;
-    undo?: () => void;
-  }> {
+    conversation: readonly TikaDirectorConversationMessage[],
+    signal: AbortSignal
+  ): Promise<TikaDirectorSubmitResult> {
+    const requestBeat = stageState.currentBeat;
     try {
-      const response = await resolveStageDirection({
-        prompt,
-        conversation,
-        choreography,
-        currentBeat: stageState.currentBeat,
-        viewer,
-      });
-      if (response.kind !== "apply") return { response };
+      return await tikaSession.execute(
+        () =>
+          resolveStageDirection({
+            prompt,
+            conversation,
+            choreography,
+            currentBeat: requestBeat,
+            viewer,
+            signal,
+          }),
+        (response) => {
+          const formationActions = response.actions.filter(
+            (action) => action.type === "formation-transition"
+          );
+          if (formationActions.length > 1) {
+            throw new Error(
+              "TIKA returned competing formation moves. Ask for one transition at a time."
+            );
+          }
 
-      const formationActions = response.actions.filter(
-        (action) => action.type === "formation-transition"
-      );
-      if (formationActions.length > 1) {
-        throw new Error(
-          "TIKA returned competing formation moves. Ask for one transition at a time."
-        );
-      }
+          const performerIds = choreography.performers.map(
+            (performer) => performer.id
+          );
+          const assignments = resolveDirectorAppearanceAssignments({
+            actions: response.actions,
+            performerIds,
+            seedKey: `${choreography.id}:${prompt}`,
+          });
+          const formation = formationActions[0];
+          if (formation) {
+            stageState.assertFormationTransitionAllowed(
+              formation.startFormation,
+              requestBeat
+            );
+          }
+          const viewerChanged =
+            assignments.length > 0 &&
+            viewer.applyPerformerAppearanceAssignments(assignments);
+          const stageChanged = formation
+            ? stageState.applyFormationTransition(
+                formation.endFormation,
+                formation.durationBeats,
+                formation.startFormation,
+                requestBeat
+              )
+            : false;
 
-      const performerIds = choreography.performers.map(
-        (performer) => performer.id
-      );
-      const assignments = resolveDirectorAppearanceAssignments({
-        actions: response.actions,
-        performerIds,
-        seedKey: `${choreography.id}:${prompt}`,
-      });
-      const viewerChanged =
-        assignments.length > 0 &&
-        viewer.applyPerformerAppearanceAssignments(assignments);
-      const formation = formationActions[0];
-      const stageChanged = formation
-        ? stageState.applyFormationTransition(
-            formation.endFormation,
-            formation.durationBeats,
-            formation.startFormation,
-            stageState.currentBeat
-          )
-        : false;
-
-      return {
-        response,
-        ...(viewerChanged || stageChanged
-          ? {
-              undo: () => {
+          return viewerChanged || stageChanged
+            ? () => {
                 if (stageChanged) stageState.undo();
                 if (viewerChanged) viewer.undo();
-              },
-            }
-          : {}),
-      };
+              }
+            : undefined;
+        },
+        signal
+      );
     } catch (cause) {
+      if (signal.aborted || viewer.disposed || !tikaDirectorOpen) throw cause;
       const failure = cause instanceof Error ? cause : new Error(String(cause));
       getErrorHandler().showUserError({
         message: "TIKA could not direct this scene.",
@@ -501,6 +528,7 @@
   });
 
   onDestroy(() => {
+    unsubscribeTikaHistory();
     stageState.destroy();
     exporter.cancel();
     viewer.dispose();
