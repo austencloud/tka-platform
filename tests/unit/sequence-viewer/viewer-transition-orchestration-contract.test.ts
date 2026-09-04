@@ -354,11 +354,18 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(tunnelLayerReveal).toContain(
       "export function resolveTunnelGridOpacity("
     );
+    expect(tunnelLayerReveal).toContain(
+      "export const TUNNEL_REVEAL_DURATION = DURATION.dramatic"
+    );
+    expect(splitPane).toContain(
+      "motionDuration(TUNNEL_REVEAL_DURATION)"
+    );
     expect(motionSurface).toContain("gridOpacity={tunnelGridOpacity}");
     expect(motionSurface).toContain("data-tunnel-layer-opacity-max");
     expect(reviewFrame).toContain("tunnelLayerOpacityMaximum:");
     expect(geometryTrace).toContain("Reveal-before-layers frames:");
     expect(geometryTrace).toContain("Largest grid alpha step:");
+    expect(geometryTrace).toContain("Layer cascade spread:");
     expect(viewerModeDissolve).toContain(
       'GATE_THREE_STAGE_MODES.has(previousMode) && nextMode === "tunnel"'
     );
