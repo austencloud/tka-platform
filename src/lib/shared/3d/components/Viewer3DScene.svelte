@@ -37,7 +37,10 @@
   import type { SceneEffectsManager3D } from "../effects/scene-effects/scene-effects-manager-3d";
   import type { QualityTier } from "../effects/types";
   import { resolvePetalEnvironmentProfile } from "../effects/petals/petal-world-art-direction";
-  import { synchronizePerformerPlayback } from "../domain/performer-step-timing";
+  import {
+    resolvePerformerStepSource,
+    synchronizePerformerPlayback,
+  } from "../domain/performer-step-timing";
   import {
     getStageCoordinateFrame,
     isRenderable3DEnvironment,
