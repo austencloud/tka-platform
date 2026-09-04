@@ -37,6 +37,22 @@ html.named-route-morph::view-transition {
   background: transparent;
 }
 
+/* The Grid and Hand Positions lessons are one continuous curriculum journey.
+   Their shared stage regions keep their names across the concept-state swap so
+   the grid carries forward while the heading and controls settle around it. */
+::view-transition-group(learn-grid-stage) {
+  animation-duration: var(--duration-dramatic);
+  animation-timing-function: var(--ease-in-out);
+}
+
+::view-transition-old(learn-lesson-heading),
+::view-transition-new(learn-lesson-heading),
+::view-transition-old(learn-lesson-controls),
+::view-transition-new(learn-lesson-controls) {
+  animation-duration: var(--duration-emphasis);
+  animation-timing-function: var(--ease-in-out);
+}
+
 /*
  * REDUCED-MOTION SEQUENCE VIEWER DISSOLVE
  *
