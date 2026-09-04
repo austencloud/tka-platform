@@ -35,6 +35,7 @@ import {
 } from "../domain/types/trail-point-types";
 import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 import { resolveEffect } from "../domain/types/tip-effect-types";
+import { recordTunnelFormationTrailCaptures } from "./tunnel-formation-trail-telemetry";
 
 /** Minimum ring capacity; actual capacity grows with `trailSettings.tailLength`. */
 const RING_BUFFER_MIN = 120;
@@ -142,6 +143,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     [];
   private rightLayerRings: Array<{ left: TrailPoint[]; right: TrailPoint[] }> =
     [];
+  private layerTrailCaptureSuppressed: boolean[] = [];
 
   // Track previous tracking mode to detect changes
   private lastTrackingMode: TrackingMode | null = null;
@@ -523,17 +525,32 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
     // Capture overlaid tunnel-layer tips into per-layer rings (same color/tip
     // gating as the base pair). These draw into the shared blue/red accumulators.
+    let formationTrailCaptures = 0;
     if (additionalLayers && additionalLayers.length > 0) {
       this.ensureLayerRings(additionalLayers.length);
       for (let i = 0; i < additionalLayers.length; i++) {
         const layer = additionalLayers[i]!;
         const leftRings = this.leftLayerRings[i]!;
         const rightRings = this.rightLayerRings[i]!;
+        const captureSuppressed = layer.trailCaptureSuppressed === true;
+        if (this.layerTrailCaptureSuppressed[i] !== captureSuppressed) {
+          leftRings.left.length = 0;
+          leftRings.right.length = 0;
+          rightRings.left.length = 0;
+          rightRings.right.length = 0;
+        }
+        this.layerTrailCaptureSuppressed[i] = captureSuppressed;
+        const pointsBefore =
+          leftRings.left.length +
+          leftRings.right.length +
+          rightRings.left.length +
+          rightRings.right.length;
         if (
           layer.leftProp &&
           layer.hasLeft &&
           leftCaptureLive &&
-          !leftPropSwapSuppressed
+          !leftPropSwapSuppressed &&
+          !captureSuppressed
         ) {
           this.capturePropTipsInto(
             layer.leftProp,
@@ -552,7 +569,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
           layer.rightProp &&
           layer.hasRight &&
           rightCaptureLive &&
-          !rightPropSwapSuppressed
+          !rightPropSwapSuppressed &&
+          !captureSuppressed
         ) {
           this.capturePropTipsInto(
             layer.rightProp,
@@ -567,14 +585,25 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
             currentTime
           );
         }
+        if (layer.formationTransitionActive) {
+          const pointsAfter =
+            leftRings.left.length +
+            leftRings.right.length +
+            rightRings.left.length +
+            rightRings.right.length;
+          formationTrailCaptures += Math.max(0, pointsAfter - pointsBefore);
+        }
       }
+      this.layerTrailCaptureSuppressed.length = additionalLayers.length;
     } else if (
       this.leftLayerRings.length > 0 ||
       this.rightLayerRings.length > 0
     ) {
       this.leftLayerRings = [];
       this.rightLayerRings = [];
+      this.layerTrailCaptureSuppressed = [];
     }
+    recordTunnelFormationTrailCaptures(formationTrailCaptures);
 
     const fadeAmount = this.computeFadeAmount(
       trailSettings.fadeDurationMs,
@@ -610,7 +639,9 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       fadeAmount,
       /* isLeft */ true,
       this.leftLayerRings,
-      additionalLayers?.map((layer) => layer.opacity) ?? []
+      additionalLayers?.map((layer) =>
+        layer.trailCaptureSuppressed ? 0 : layer.opacity
+      ) ?? []
     );
     this.advanceAccumulator(
       this.rightAccumCtx,
@@ -624,7 +655,9 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       fadeAmount,
       /* isLeft */ false,
       this.rightLayerRings,
-      additionalLayers?.map((layer) => layer.opacity) ?? []
+      additionalLayers?.map((layer) =>
+        layer.trailCaptureSuppressed ? 0 : layer.opacity
+      ) ?? []
     );
 
     // Mark each accumulator as "fully cleared while hidden" once its
@@ -765,6 +798,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.rightRightRing = [];
     this.leftLayerRings = [];
     this.rightLayerRings = [];
+    this.layerTrailCaptureSuppressed = [];
     this.leftEnvelope.reset();
     this.rightEnvelope.reset();
     this.leftAccumClearedWhileHidden = true;
@@ -787,6 +821,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.rightRightRing = [];
     this.leftLayerRings = [];
     this.rightLayerRings = [];
+    this.layerTrailCaptureSuppressed = [];
     this.leftAccumClearedWhileHidden = true;
     this.rightAccumClearedWhileHidden = true;
     // Always apply warmup - the orchestrator sets angles synchronously but
@@ -824,6 +859,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.rightRightRing = [];
     this.leftLayerRings = [];
     this.rightLayerRings = [];
+    this.layerTrailCaptureSuppressed = [];
   }
 
   // Internal helpers
