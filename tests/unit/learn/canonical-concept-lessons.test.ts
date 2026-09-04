@@ -162,9 +162,7 @@ describe("canonical concept lesson composition", () => {
     );
     expect(motions).toContain('"stageSchemaVersion"');
     expect(motions).toContain("migrateHandMotionsSavedStep");
-    expect(motions).toContain(
-      'viewMode === "scroll"\n      ? comparisonIndex'
-    );
+    expect(motions).toContain('viewMode === "scroll"\n      ? comparisonIndex');
     expect(motions).toContain("getConceptPlacesByLevel(1)");
     expect(motions).toContain("LessonStageFrame");
     expect(motions).toContain("var(--shell-w, 96rem)");
@@ -191,6 +189,11 @@ describe("canonical concept lesson composition", () => {
     expect(timingBoard).toContain("ChoreoCard");
     expect(timingBoard).toContain("handPathMode");
     expect(timingBoard).toContain("showWord={false}");
+    expect(timingBoard).toContain("includeStartPosition={false}");
+    expect(timingBoard).not.toContain("clickableStart");
+    expect(timingBoard).toContain("choreo-card-artifact");
+    expect(timingBoard).toContain("var(--element-dark)");
+    expect(timingBoard).toContain("card-identity");
     expect(timingBoard).toContain("onStepClick={seekToCardStep}");
     expect(timingBoard).toContain("onStepChange={syncFocusedStep}");
     expect(timingBoard).toContain("showElementalGlyph");
