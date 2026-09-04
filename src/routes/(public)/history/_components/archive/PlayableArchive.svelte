@@ -382,7 +382,7 @@
 		display: grid;
 		grid-template-columns: minmax(0, 1.35fr) minmax(26rem, 0.65fr);
 		grid-template-rows: minmax(0, 1fr);
-		gap: clamp(0.55rem, 1vh, 0.85rem);
+		column-gap: clamp(1.25rem, 1.5vw, 2rem);
 		min-width: 0;
 		min-height: 0;
 	}

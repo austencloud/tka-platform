@@ -139,7 +139,6 @@ class CircularBuffer<T> {
   }
 }
 
-
 /** Wait for panel open and textures before capturing first point */
 const INITIALIZATION_DELAY_MS = 500;
 
@@ -165,7 +164,6 @@ const DEFAULT_BUFFER_CAPACITY = 1000;
 const DEFAULT_PROP_WIDTH = 252.8;
 const DEFAULT_PROP_HEIGHT = 77.8;
 
-
 /**
  * Last captured point tracking for distance-based sampling
  */
@@ -180,8 +178,14 @@ export class TrailCapturer {
   // Configuration
   private config: TrailCaptureConfig = {
     canvasSize: 500,
-    leftPropDimensions: { width: DEFAULT_PROP_WIDTH, height: DEFAULT_PROP_HEIGHT },
-    rightPropDimensions: { width: DEFAULT_PROP_WIDTH, height: DEFAULT_PROP_HEIGHT },
+    leftPropDimensions: {
+      width: DEFAULT_PROP_WIDTH,
+      height: DEFAULT_PROP_HEIGHT,
+    },
+    rightPropDimensions: {
+      width: DEFAULT_PROP_WIDTH,
+      height: DEFAULT_PROP_HEIGHT,
+    },
     trailSettings: {
       mode: TrailMode.OFF,
       effect: TrailEffect.NONE,
@@ -203,14 +207,19 @@ export class TrailCapturer {
   };
 
   // Trail buffers: primary layer
-  private leftTrailBuffer = new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY);
-  private rightTrailBuffer = new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY);
+  private leftTrailBuffer = new CircularBuffer<TrailPoint>(
+    DEFAULT_BUFFER_CAPACITY
+  );
+  private rightTrailBuffer = new CircularBuffer<TrailPoint>(
+    DEFAULT_BUFFER_CAPACITY
+  );
 
   // Trail buffers: additional tunnel layers (lazily created)
   private additionalLayerBuffers: Array<{
     left: CircularBuffer<TrailPoint>;
     right: CircularBuffer<TrailPoint>;
   }> = [];
+  private additionalLayerTrailCaptureSuppressed: boolean[] = [];
 
   // Last captured points for distance-based sampling. Keys include the resolved
   // source identity so changing a tip/custom offset starts a new segment.
@@ -241,16 +250,21 @@ export class TrailCapturer {
     // If prop type changed, clear trails so old endpoint positions don't
     // jump to the new prop's differently-sized endpoints
     const leftPropChanged =
-      config.leftPropType !== undefined && config.leftPropType !== oldLeftPropType;
+      config.leftPropType !== undefined &&
+      config.leftPropType !== oldLeftPropType;
     const rightPropChanged =
-      config.rightPropType !== undefined && config.rightPropType !== oldRightPropType;
+      config.rightPropType !== undefined &&
+      config.rightPropType !== oldRightPropType;
     if (leftPropChanged || rightPropChanged) {
       this.clearTrails();
       return;
     }
 
     // If canvas size changed, scale existing trail points to match new size
-    if (config.canvasSize !== undefined && config.canvasSize !== oldCanvasSize) {
+    if (
+      config.canvasSize !== undefined &&
+      config.canvasSize !== oldCanvasSize
+    ) {
       this.scaleTrailPoints(oldCanvasSize, config.canvasSize);
     }
 
@@ -290,7 +304,10 @@ export class TrailCapturer {
   /**
    * Scale all points in a circular buffer by a factor
    */
-  private scaleBuffer(buffer: CircularBuffer<TrailPoint>, scaleFactor: number): void {
+  private scaleBuffer(
+    buffer: CircularBuffer<TrailPoint>,
+    scaleFactor: number
+  ): void {
     const length = buffer.length;
     for (let i = 0; i < length; i++) {
       const point = buffer.get(i);
@@ -381,6 +398,14 @@ export class TrailCapturer {
       this.ensureAdditionalLayerBuffers(props.additionalLayers.length);
       for (let i = 0; i < props.additionalLayers.length; i++) {
         const layer = props.additionalLayers[i]!;
+        const captureSuppressed = layer.trailCaptureSuppressed === true;
+        if (
+          this.additionalLayerTrailCaptureSuppressed[i] !== captureSuppressed
+        ) {
+          this.resetAdditionalLayerContinuity(i);
+        }
+        this.additionalLayerTrailCaptureSuppressed[i] = captureSuppressed;
+        if (captureSuppressed) continue;
         if (layer.leftProp) {
           this.captureTrailPointForLayer(
             layer.leftProp,
@@ -402,13 +427,21 @@ export class TrailCapturer {
           );
         }
       }
+      this.additionalLayerTrailCaptureSuppressed.length =
+        props.additionalLayers.length;
+    } else {
+      this.additionalLayerTrailCaptureSuppressed.length = 0;
     }
 
     // Prune old trail points (fade mode only)
     this.pruneOldTrailPoints(animRelativeTime);
   }
 
-  getTrailPoints(propIndex: 0 | 1, tipIndex: number, layerIndex: number = 0): TrailPoint[] {
+  getTrailPoints(
+    propIndex: 0 | 1,
+    tipIndex: number,
+    layerIndex: number = 0
+  ): TrailPoint[] {
     const buffer = this.getBufferForProp(propIndex, layerIndex);
     const allPoints = buffer.toArray();
 
@@ -493,10 +526,10 @@ export class TrailCapturer {
       layer.right.clear();
     }
     this.lastCapturedPoints.clear();
+    this.additionalLayerTrailCaptureSuppressed.length = 0;
     this.animationStartTime = null;
     this.totalPointsCaptured = 0;
   }
-
 
   /**
    * Get the appropriate buffer for a prop index and layer
@@ -529,6 +562,22 @@ export class TrailCapturer {
   }
 
   /**
+   * A copy that resumes after formation travel starts a new path at the place
+   * it landed. The legacy array renderer has no path-break marker, so its layer
+   * buffer must be cleared here; the active overlay path keeps old painted
+   * pixels in its accumulator and lets them retire normally.
+   */
+  private resetAdditionalLayerContinuity(additionalLayerIndex: number): void {
+    const buffers = this.additionalLayerBuffers[additionalLayerIndex];
+    buffers?.left.clear();
+    buffers?.right.clear();
+    const prefix = `L${additionalLayerIndex + 1}-`;
+    for (const key of this.lastCapturedPoints.keys()) {
+      if (key.startsWith(prefix)) this.lastCapturedPoints.delete(key);
+    }
+  }
+
+  /**
    * Capture trail point for an additional tunnel layer.
    * Uses the canonical prop-aware endpoint assignment shared by both overlays.
    */
@@ -540,7 +589,8 @@ export class TrailCapturer {
     currentStep: number,
     additionalLayerIndex: number
   ): void {
-    const propType = propIndex === 0 ? this.config.leftPropType : this.config.rightPropType;
+    const propType =
+      propIndex === 0 ? this.config.leftPropType : this.config.rightPropType;
     const trailSources = this.resolveTrailSources(propType);
 
     this.ensureAdditionalLayerBuffers(additionalLayerIndex + 1);
@@ -559,7 +609,7 @@ export class TrailCapturer {
         prop,
         endpointConfig,
         tracked.source,
-        propType,
+        propType
       );
       if (!endpoint) continue;
       const worldX = endpoint.x;
@@ -650,8 +700,12 @@ export class TrailCapturer {
     propType: string | null | undefined
   ): TrackedTrailSource[] {
     const { trailSettings } = this.config;
-    const trailConfig = resolveTrailPointConfig(propType, trailSettings.trackingMode);
-    const candidates: Array<{ source: TrailPointSource; logicalEnd: 0 | 1 }> = [];
+    const trailConfig = resolveTrailPointConfig(
+      propType,
+      trailSettings.trackingMode
+    );
+    const candidates: Array<{ source: TrailPointSource; logicalEnd: 0 | 1 }> =
+      [];
 
     // HAND carries a single prop-center source on the right slot (left is
     // "none"), so it joins RIGHT_END/BOTH_ENDS on the right. Single-ended props
@@ -678,9 +732,10 @@ export class TrailCapturer {
     const uniqueSources = new Map<string, TrackedTrailSource>();
     for (const { source, logicalEnd } of candidates) {
       if (source.type === "none") continue;
-      const sourceKey = source.type === "tip"
-        ? `tip-${source.index}`
-        : `custom-${source.dx}-${source.dy}`;
+      const sourceKey =
+        source.type === "tip"
+          ? `tip-${source.index}`
+          : `custom-${source.dx}-${source.dy}`;
       if (!uniqueSources.has(sourceKey)) {
         uniqueSources.set(sourceKey, {
           source,
@@ -711,7 +766,8 @@ export class TrailCapturer {
     currentStep: number
   ): void {
     const { trailSettings } = this.config;
-    const propType = propIndex === 0 ? this.config.leftPropType : this.config.rightPropType;
+    const propType =
+      propIndex === 0 ? this.config.leftPropType : this.config.rightPropType;
 
     const trailSources = this.resolveTrailSources(propType);
 
@@ -731,7 +787,7 @@ export class TrailCapturer {
         prop,
         endpointConfig,
         tracked.source,
-        propType,
+        propType
       );
       if (!endpoint) continue;
       const worldX = endpoint.x;
