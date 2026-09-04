@@ -12,13 +12,16 @@
     createSoloContinuationOptions,
     pairSoloReviewSequences,
   } from "../construct-solo-proposal";
-  import { createConstructSoloReviewSequence } from "../construct-solo-review-fixture";
+  import {
+    createConstructRedPartnerReviewSequence,
+    createConstructSoloReviewSequence,
+  } from "../construct-solo-review-fixture";
 
   type Stage = "edit-blue" | "choose-red" | "paired";
 
   let stage = $state<Stage>("edit-blue");
   let blueSequence = $state(createConstructSoloReviewSequence("left"));
-  const redSequence = createConstructSoloReviewSequence("right");
+  const redSequence = createConstructRedPartnerReviewSequence();
   let catalog = $state<PictographData[]>([]);
   let catalogLoading = $state(true);
   let catalogError = $state("");
@@ -47,6 +50,13 @@
       : stage === "choose-red"
         ? "Blue is locked while you choose its partner"
         : `${pairedSequence.steps.length} steps · blue and red are active`
+  );
+  const modeLabel = $derived(
+    stage === "edit-blue"
+      ? "Solo edit"
+      : stage === "choose-red"
+        ? "Pairing"
+        : "Paired"
   );
 
   function motionLabel(step: StepData): string {
@@ -103,9 +113,14 @@
   <header class="workbench-header">
     <div class="identity">
       <span class="construct-label">Construct</span>
-      <span class="solo-badge">Solo edit</span>
+      <span class="solo-badge">{modeLabel}</span>
       <div class="hand-title">
-        <span class="hand-dot" aria-hidden="true"></span>
+        <span
+          class="hand-dot"
+          class:red={stage === "choose-red"}
+          class:both={stage === "paired"}
+          aria-hidden="true"
+        ></span>
         <div>
           <h1>{title}</h1>
           <p>{subtitle}</p>
@@ -300,9 +315,6 @@
             <dd>Edit the paired sequence</dd>
           </div>
         </dl>
-        <PanelButton variant="secondary" onclick={returnToBlue}>
-          Remove red path
-        </PanelButton>
       </section>
     {/if}
   </div>
@@ -399,6 +411,16 @@
     height: 11px;
     background: #3b82f6;
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
+  }
+
+  .hand-dot.red {
+    background: #ef233c;
+    box-shadow: 0 0 0 4px rgba(239, 35, 60, 0.13);
+  }
+
+  .hand-dot.both {
+    background: linear-gradient(90deg, #3b82f6 0 50%, #ef233c 50% 100%);
+    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.13);
   }
 
   h1,
