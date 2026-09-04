@@ -247,9 +247,16 @@
       they keep the six VTG families they already belong to: three or four per
       family, each family one line wide enough to hold it.
 
-      State rides the glyph and the count, never a strip on the container's
-      edge. Selection is the solid fill, which is a value contrast rather than
-      a hue, so it survives nineteen chips and a colour-blind reader alike.
+      State rides the glyph, never a strip on the container's edge. Selection
+      is the solid fill, which is a value contrast rather than a hue, so it
+      survives nineteen chips and a colour-blind reader alike.
+
+      No count on the chip. Every sequence the sweep faults carries exactly
+      four events, so thirteen identical badges discriminate nothing and cost
+      the row about twenty pixels a chip — enough to strand the fourth chip of
+      Quarter-Same on a line of its own in a 236px rail. The numbers live on
+      the loaded sequence's line, in each chip's accessible name, and under the
+      scrub, where they differ from one another.
     -->
     <div class="field">
       <div class="goals-head">
@@ -285,7 +292,6 @@
                   label={goal.label}
                   iconSnippet={goalGlyph}
                   chipColor={status.color}
-                  count={status.state === "findings" ? status.eventCount : null}
                   active={isActive}
                   ariaLabel={`${goal.label}, ${family.label}, ${status.summary}`}
                   onclick={() => lab.setSequence(goal.id)}
@@ -296,8 +302,8 @@
         {/each}
       </div>
       <p class="note goals-legend">
-        Check: no discontinuities. Bolt: jumps, counted. From the committed
-        sweep, not measured live.
+        Check: no discontinuities. Bolt: jumps. From the committed sweep, not
+        measured live.
       </p>
     </div>
   </section>
@@ -470,31 +476,25 @@
     flex-direction: column;
     gap: 0.5rem;
     min-width: 0;
-    /* The families recompose against the rail's own width, which changes
-       independently of the viewport: the same rail is a full-width tablet
-       column, a 19rem folded-phone rail and a 34rem 4K rail. */
-    container-type: inline-size;
   }
 
   /*
-   * Narrow: the family name sits above its goals. Once the rail can hold a
-   * label column and three chips beside it, the name moves into that column
-   * and the block halves in height — which is what keeps six families from
-   * pushing the rest of the rail off screen.
+   * The family name sits above its goals at every width, so the chips always
+   * get the rail's whole measure.
+   *
+   * A label column beside them was tried and removed. It read well and halved
+   * the block's height, but a 6.25rem column plus its gap takes 112px, and the
+   * rail's own measure runs from 220px (folded phone) to 470px (4K). At 342px
+   * — an 820px tablet — that left 230px for a family, and Quarter-Same's four
+   * chips need more, so V dropped to a line of its own. Split-Opp and
+   * Quarter-Opp stranded their third chip the same way. Six extra label lines
+   * in a rail that already scrolls is the cheaper price.
    */
   .goal-family {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 0.25rem;
     min-width: 0;
-  }
-
-  @container (min-width: 21rem) {
-    .goal-family {
-      grid-template-columns: 6.25rem minmax(0, 1fr);
-      align-items: center;
-      gap: 0.5rem;
-    }
   }
 
   .goal-family-label {
@@ -504,8 +504,8 @@
   }
 
   /*
-   * The continuity glyph. Colour reinforces the state; the icon's shape and
-   * the chip's count carry it on their own. On the selected chip the solid
+   * The continuity glyph. Colour reinforces the state; the icon's shape
+   * carries it on its own. On the selected chip the solid
    * accent fill owns the surface, so the glyph switches to on-accent rather
    * than sitting a themed hue on top of one.
    */
