@@ -65,6 +65,7 @@
             id: "setup",
             content: setup,
             defaultSize: 0.92,
+            preferredSize: "380px",
             minSize: 300,
             maxSize: 420,
           },
