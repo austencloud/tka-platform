@@ -138,6 +138,10 @@ export interface PrintRenderOptions {
    * leave it unset so the real card keeps its scannable code.
    */
   showQRCode?: boolean;
+  /** Reference cards use hands-only notation and a plain relationship title. */
+  cardProfile?: "sequence" | "hand-path";
+  /** Plain header text used by non-letter reference cards. */
+  customName?: string;
 }
 
 export interface CardPair {

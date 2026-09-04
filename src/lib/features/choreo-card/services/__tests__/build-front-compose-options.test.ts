@@ -126,4 +126,27 @@ describe("buildFrontComposeOptions", () => {
     expect(composeOptions.addDifficultyLevel).toBe(true);
     expect(composeOptions.showLoopGlyph).toBe(true);
   });
+
+  it("uses the hands-only reference-card profile without sequence identity", () => {
+    const { composeOptions } = buildFrontComposeOptions(SEQ, {
+      ...BASE_OPTS,
+      cardProfile: "hand-path",
+      customName: "Tog-Opp",
+      showMandala: true,
+      showQRCode: true,
+    });
+
+    expect(composeOptions.addWord).toBe(true);
+    expect(composeOptions.customName).toBe("Tog-Opp");
+    expect(composeOptions.addDifficultyLevel).toBe(false);
+    expect(composeOptions.addReversalSymbols).toBe(false);
+    expect(composeOptions.showLoopGlyph).toBe(false);
+    expect(composeOptions.visibilityOverrides).toMatchObject({
+      handPathMode: true,
+      showTKA: false,
+      showReversals: false,
+      showQRCode: false,
+      showMandala: false,
+    });
+  });
 });
