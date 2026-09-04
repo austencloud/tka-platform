@@ -38,6 +38,7 @@
   import type { ViewerSplitPaneProps } from "./viewer-split-pane-types";
   import { onDestroy } from "svelte";
   import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
+  import { TUNNEL_REVEAL_DURATION } from "../tunnel/tunnel-layer-reveal";
   import type { TunnelViewState } from "../tunnel/tunnel-view-state";
   import { tryGetViewerUrlSessionContext } from "../services/viewer-url-session";
   import {
@@ -462,7 +463,7 @@
       return;
     }
 
-    const releaseDelay = motionDuration(DURATION.emphasis);
+    const releaseDelay = motionDuration(TUNNEL_REVEAL_DURATION);
     if (releaseDelay === 0) {
       tunnelController.active = false;
       return;

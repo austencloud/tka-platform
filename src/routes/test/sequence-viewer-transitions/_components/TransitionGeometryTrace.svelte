@@ -509,6 +509,13 @@
           2
         )}</span
       >
+      <span
+        data-problem={summary.tunnelLayerOpacitySpreadMaximum < 0.35 &&
+          summary.tunnelCrossfadeFrames > 2}
+        >Layer cascade spread: {summary.tunnelLayerOpacitySpreadMaximum.toFixed(
+          2
+        )}</span
+      >
       <span data-dissolve={summary.tunnelCrossfadeFrames > 0}
         >Layer-bloom frames: {summary.tunnelCrossfadeFrames}</span
       >

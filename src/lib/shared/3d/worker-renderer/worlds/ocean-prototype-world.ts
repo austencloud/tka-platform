@@ -14,6 +14,7 @@ import {
   GLTFLoader,
   type GLTF,
 } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import {
   disposeWorkerWorldTree,
@@ -56,6 +57,10 @@ export async function createOceanPrototypeWorld(
 
   const loader = new GLTFLoader();
   loader.setMeshoptDecoder(MeshoptDecoder);
+  const ktx2Loader = new KTX2Loader()
+    .setTranscoderPath(absoluteAssetUrl("/basis/"))
+    .detectSupport(context.renderer);
+  loader.setKTX2Loader(ktx2Loader);
 
   const loaded = [0, 0];
   const totals = [0, 0];
@@ -67,14 +72,23 @@ export async function createOceanPrototypeWorld(
     context.reportProgress("assets", Math.min(0.95, fraction));
   };
 
-  const [seabed, flora] = await Promise.all([
-    loadGltf(loader, "/models/ocean/ocean-environment.glb", (value, total) =>
-      report(0, value, total)
-    ),
-    loadGltf(loader, "/models/ocean/ocean_flora_scene.glb", (value, total) =>
-      report(1, value, total)
-    ),
-  ]);
+  let seabed: GLTF;
+  let flora: GLTF;
+  try {
+    [seabed, flora] = await Promise.all([
+      loadGltf(loader, "/models/ocean/ocean-environment.glb", (value, total) =>
+        report(0, value, total)
+      ),
+      loadGltf(loader, "/models/ocean/ocean_flora_scene.glb", (value, total) =>
+        report(1, value, total)
+      ),
+    ]);
+  } finally {
+    // The loaded textures retain their GPU resources. The transcoder's nested
+    // worker pool is only needed during load, so release it before this world
+    // enters the steady render loop.
+    ktx2Loader.dispose();
+  }
   context.reportProgress("assets", 1);
 
   seabed.scene.traverse((object) => {
