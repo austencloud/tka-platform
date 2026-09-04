@@ -6,6 +6,7 @@ import type {
   WorkerPerformerSnapshot,
   WorkerPropSnapshot,
 } from "../domain/worker-renderer-protocol";
+import { getPerformerColor } from "../../constants/performer-colors";
 
 const STAFF_PROP_TYPES = new Set([
   "staff",
@@ -17,10 +18,16 @@ const STAFF_PROP_TYPES = new Set([
 export interface WorkerPerformerSnapshotOptions {
   leftPropType: string;
   rightPropType: string;
+  badge?: {
+    index: number;
+    selected: boolean;
+    allMode: boolean;
+    visible: boolean;
+  };
 }
 
 function serializeProp(
-  state: CharacterInstanceState["leftPropState"],
+  state: CharacterInstanceState["leftPropState"]
 ): WorkerPropSnapshot | null {
   if (!state) return null;
   return {
@@ -34,7 +41,7 @@ function serializeProp(
 }
 
 export function supportsWorkerPerformer(
-  options: WorkerPerformerSnapshotOptions,
+  options: WorkerPerformerSnapshotOptions
 ): boolean {
   return (
     STAFF_PROP_TYPES.has(options.leftPropType) &&
@@ -48,7 +55,7 @@ export function supportsWorkerPerformer(
  */
 export function createWorkerPerformerSnapshot(
   performer: CharacterInstanceState,
-  options: WorkerPerformerSnapshotOptions,
+  options: WorkerPerformerSnapshotOptions
 ): WorkerPerformerSnapshot {
   const stance = resolvePerformerUpperBodyStance(performer);
   const staffLengthCm = performer.settings.staffLengthCm;
@@ -70,12 +77,26 @@ export function createWorkerPerformerSnapshot(
     staffThickness: userProportionsState.dimensions.staffRadius,
     leftPropType: options.leftPropType,
     rightPropType: options.rightPropType,
-    leftProp: performer.showLeft ? serializeProp(performer.leftPropState) : null,
+    leftProp: performer.showLeft
+      ? serializeProp(performer.leftPropState)
+      : null,
     rightProp: performer.showRight
       ? serializeProp(performer.rightPropState)
       : null,
     stanceYaw: stance.yawRad,
     stanceSegments: stance.segments,
     spinePitchOffset: stance.pitchRad,
+    badge: options.badge?.visible
+      ? {
+          index: options.badge.index,
+          color: getPerformerColor(options.badge.index),
+          opacity: options.badge.selected
+            ? 1
+            : options.badge.allMode
+              ? 0.6
+              : 0.35,
+          selected: options.badge.selected,
+        }
+      : null,
   };
 }

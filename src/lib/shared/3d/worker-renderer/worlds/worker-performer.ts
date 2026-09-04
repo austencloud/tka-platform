@@ -3,6 +3,8 @@ import {
   Euler,
   Group,
   Quaternion,
+  Sprite,
+  SpriteMaterial,
   Vector3,
   type Object3D,
   type Scene,
@@ -21,6 +23,7 @@ import type {
   WorkerPerformerSnapshot,
   WorkerPropSnapshot,
 } from "../domain/worker-renderer-protocol";
+import { createPerformerBadgeTexture } from "../../rendering/performer-badge-texture";
 
 const STAFF_PROP_TYPES = new Set([
   "staff",
@@ -37,6 +40,12 @@ interface WorkerPropObject {
   correction: Group;
   staff: StaffObject;
   state: PropState3D;
+}
+
+interface WorkerPerformerBadgeObject {
+  key: string;
+  sprite: Sprite;
+  material: SpriteMaterial;
 }
 
 function propState(snapshot: WorkerPropSnapshot): PropState3D {
@@ -109,6 +118,7 @@ export class WorkerPerformer {
   private readonly rightOrientation = new Quaternion();
   private snapshot: WorkerPerformerSnapshot;
   private avatarRoot: Object3D | null = null;
+  private badge: WorkerPerformerBadgeObject | null = null;
   private disposed = false;
 
   private constructor(snapshot: WorkerPerformerSnapshot) {
@@ -194,6 +204,48 @@ export class WorkerPerformer {
 
     this.applyPropSnapshot(this.left, snapshot.leftProp);
     this.applyPropSnapshot(this.right, snapshot.rightProp);
+    this.applyBadgeSnapshot(snapshot);
+  }
+
+  private applyBadgeSnapshot(snapshot: WorkerPerformerSnapshot): void {
+    const badge = snapshot.badge;
+    if (!badge) {
+      this.disposeBadge();
+      return;
+    }
+    const key = `${badge.index}:${badge.color}:${badge.selected}`;
+    if (!this.badge || this.badge.key !== key) {
+      this.disposeBadge();
+      if (typeof OffscreenCanvas === "undefined") return;
+      const texture = createPerformerBadgeTexture(
+        badge.index,
+        badge.color,
+        badge.selected,
+        (width, height) => new OffscreenCanvas(width, height)
+      );
+      const material = new SpriteMaterial({
+        map: texture,
+        transparent: true,
+        opacity: badge.opacity,
+        depthTest: false,
+      });
+      const sprite = new Sprite(material);
+      sprite.name = `worker-performer-badge-${badge.index}`;
+      sprite.scale.set(0.22, 0.22, 1);
+      sprite.renderOrder = 999;
+      this.root.add(sprite);
+      this.badge = { key, sprite, material };
+    }
+    this.badge.material.opacity = badge.opacity;
+    this.badge.sprite.position.set(0, -snapshot.groundY + 0.15, 0);
+  }
+
+  private disposeBadge(): void {
+    if (!this.badge) return;
+    this.root.remove(this.badge.sprite);
+    this.badge.material.map?.dispose();
+    this.badge.material.dispose();
+    this.badge = null;
   }
 
   private applyPropSnapshot(
@@ -341,6 +393,7 @@ export class WorkerPerformer {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.disposeBadge();
     this.left.staff.dispose();
     this.right.staff.dispose();
     this.services.fingers.dispose();

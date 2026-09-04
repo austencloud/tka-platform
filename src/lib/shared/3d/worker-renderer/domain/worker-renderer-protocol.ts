@@ -42,6 +42,13 @@ export interface WorkerStanceSegments {
   headLagRad: number;
 }
 
+export interface WorkerPerformerBadgeSnapshot {
+  index: number;
+  color: string;
+  opacity: number;
+  selected: boolean;
+}
+
 export interface WorkerPerformerSnapshot {
   id: string;
   avatarId: string;
@@ -58,6 +65,7 @@ export interface WorkerPerformerSnapshot {
   stanceYaw: number;
   stanceSegments: WorkerStanceSegments | null;
   spinePitchOffset: number;
+  badge?: WorkerPerformerBadgeSnapshot | null;
 }
 
 /**

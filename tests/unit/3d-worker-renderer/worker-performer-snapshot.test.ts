@@ -45,10 +45,10 @@ describe("worker performer snapshots", () => {
 
   it("allows only prop geometry the worker owns exactly", () => {
     expect(
-      supportsWorkerPerformer({ leftPropType: "staff", rightPropType: "staff" }),
+      supportsWorkerPerformer({ leftPropType: "staff", rightPropType: "staff" })
     ).toBe(true);
     expect(
-      supportsWorkerPerformer({ leftPropType: "fan", rightPropType: "staff" }),
+      supportsWorkerPerformer({ leftPropType: "fan", rightPropType: "staff" })
     ).toBe(false);
   });
 
@@ -56,17 +56,39 @@ describe("worker performer snapshots", () => {
     const snapshot = createWorkerPerformerSnapshot(performer(), {
       leftPropType: "staff",
       rightPropType: "staff",
+      badge: {
+        index: 2,
+        selected: false,
+        allMode: true,
+        visible: true,
+      },
     });
 
     expect(snapshot.position).toEqual([6, CANONICAL_PERFORMER_ANCHOR_Y, 7]);
     expect(snapshot.groundY).toBe(userProportionsState.groundY);
     expect(snapshot.staffLength).toBe(userProportionsState.staffLength);
     expect(snapshot.staffThickness).toBe(
-      userProportionsState.dimensions.staffRadius,
+      userProportionsState.dimensions.staffRadius
     );
     expect(snapshot.leftProp?.worldPosition).toEqual([3, 4, 5]);
     expect(snapshot.rightProp).toBeNull();
     expect(snapshot.stanceYaw).toBe(0.25);
     expect(snapshot.spinePitchOffset).toBe(-0.1);
+    expect(snapshot.badge).toEqual({
+      index: 2,
+      color: expect.any(String),
+      opacity: 0.6,
+      selected: false,
+    });
+  });
+
+  it("omits the badge when scene markers are hidden", () => {
+    const snapshot = createWorkerPerformerSnapshot(performer(), {
+      leftPropType: "staff",
+      rightPropType: "staff",
+      badge: { index: 0, selected: true, allMode: false, visible: false },
+    });
+
+    expect(snapshot.badge).toBeNull();
   });
 });
