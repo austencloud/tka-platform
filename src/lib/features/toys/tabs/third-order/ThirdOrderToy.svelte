@@ -15,7 +15,7 @@
 
   let host = $state<HTMLDivElement | null>(null);
   let compact = $state(false);
-  let panelSizes = $state([0.76, 2.3, 0.9]);
+  let panelSizes = $state([2.4, 0.92]);
   const thirdOrder = setThirdOrderContext(
     createThirdOrderState(getThirdOrderCompositionSampler(), FALLBACK_DEMO)
   );
@@ -35,19 +35,18 @@
   onDestroy(() => thirdOrder.destroy());
 </script>
 
-{#snippet sources()}
-  <ThirdOrderSourceRail />
-{/snippet}
-
 {#snippet stage()}
   <ThirdOrderStage {compact} />
 {/snippet}
 
-{#snippet inspector()}
-  <ThirdOrderInspector />
+{#snippet setup()}
+  <aside class="setup-panel" aria-label="Third Order setup">
+    <ThirdOrderSourceRail embedded />
+    <ThirdOrderInspector embedded />
+  </aside>
 {/snippet}
 
-<div class="third-order-workspace" bind:this={host}>
+<div class="third-order-toy" bind:this={host}>
   <div class="workspace-main">
     {#if compact}
       {@render stage()}
@@ -56,26 +55,18 @@
         direction="horizontal"
         panels={[
           {
-            id: "sources",
-            content: sources,
-            defaultSize: 0.76,
-            minSize: 244,
-            maxSize: 345,
-            resizeLabel: "Resize source rail",
-          },
-          {
             id: "stage",
             content: stage,
-            defaultSize: 2.3,
-            minSize: 430,
-            resizeLabel: "Resize motion stage",
+            defaultSize: 2.4,
+            minSize: 520,
+            resizeLabel: "Resize motion stage and setup",
           },
           {
-            id: "inspector",
-            content: inspector,
-            defaultSize: 0.9,
-            minSize: 270,
-            maxSize: 390,
+            id: "setup",
+            content: setup,
+            defaultSize: 0.92,
+            minSize: 300,
+            maxSize: 420,
           },
         ]}
         bind:sizes={panelSizes}
@@ -86,31 +77,20 @@
 </div>
 
 <Drawer
-  isOpen={thirdOrder.sourceDrawerOpen}
-  onOpenChange={thirdOrder.setSourceDrawerOpen}
-  placement="left"
-  ariaLabel="Third Order sources"
-  class="third-order-drawer"
->
-  <DrawerHeader
-    title="Sources"
-    onClose={() => thirdOrder.setSourceDrawerOpen(false)}
-  />
-  <div class="drawer-content"><ThirdOrderSourceRail /></div>
-</Drawer>
-
-<Drawer
-  isOpen={thirdOrder.inspectorDrawerOpen}
-  onOpenChange={thirdOrder.setInspectorDrawerOpen}
+  isOpen={thirdOrder.setupDrawerOpen}
+  onOpenChange={thirdOrder.setSetupDrawerOpen}
   placement="right"
-  ariaLabel="Third Order controls"
+  ariaLabel="Third Order setup"
   class="third-order-drawer"
 >
   <DrawerHeader
-    title={thirdOrder.selectedChild.label}
-    onClose={() => thirdOrder.setInspectorDrawerOpen(false)}
+    title="Third Order setup"
+    onClose={() => thirdOrder.setSetupDrawerOpen(false)}
   />
-  <div class="drawer-content"><ThirdOrderInspector /></div>
+  <div class="drawer-content">
+    <ThirdOrderSourceRail embedded />
+    <ThirdOrderInspector embedded />
+  </div>
 </Drawer>
 
 <SequencePickerModal
@@ -123,7 +103,7 @@
 />
 
 <style>
-  .third-order-workspace {
+  .third-order-toy {
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
     gap: var(--spacing-sm, 8px);
@@ -131,7 +111,7 @@
     height: 100%;
     min-width: 0;
     min-height: 0;
-    padding: var(--spacing-lg, 16px);
+    padding: var(--spacing-sm, 8px);
     overflow: hidden;
     background: transparent;
     container-type: size;
@@ -140,24 +120,26 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--border-radius-lg, 12px);
+  }
+  .setup-panel {
+    height: 100%;
+    padding: 16px;
+    overflow: auto;
     background: var(--theme-panel-bg);
-    box-shadow: var(--theme-shadow, 0 14px 36px rgba(0, 0, 0, 0.28));
   }
   .drawer-content {
     min-width: 0;
     min-height: 0;
-    overflow: hidden;
-  }
-  .drawer-content {
     height: calc(100% - 58px);
+    padding: 16px;
+    overflow: hidden;
+    overflow-y: auto;
   }
   :global(.third-order-drawer) {
     --drawer-width: min(92vw, 390px);
   }
   @media (max-width: 767px), (max-height: 620px) {
-    .third-order-workspace {
+    .third-order-toy {
       gap: var(--spacing-xs, 6px);
       padding: var(--spacing-xs, 6px);
     }
