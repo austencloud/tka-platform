@@ -8,6 +8,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { derivePropElementalType } from "$lib/shared/shape-matrix/domain/prop-relationship";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
+  import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
   import type { LearningLetterTeachingContent } from "./learning-letter-teaching-content";
 
   let {
@@ -30,11 +31,14 @@
   });
   lessonVisibility.setMotionPolicySource(sharedVisibility);
   const propElementalType = $derived(derivePropElementalType(sequence));
+  let stageWidth = $state(
+    typeof window === "undefined" ? 900 : window.innerWidth
+  );
 </script>
 
-<div class="learning-word-stage">
-  <div class="media-grid">
-    <section class="media-pane video-pane" aria-label="Performance video">
+<div class="learning-word-stage" bind:clientWidth={stageWidth}>
+  {#snippet performancePane()}
+    <section class="studio-pane video-pane" aria-label="Performance video">
       <header class="pane-heading">
         <i class="fa-solid fa-video" aria-hidden="true"></i>
         <span>Performance video</span>
@@ -71,8 +75,10 @@
         {/if}
       </div>
     </section>
+  {/snippet}
 
-    <section class="media-pane animation-pane" aria-label="Animation">
+  {#snippet animationPane()}
+    <section class="studio-pane animation-pane" aria-label="Animation">
       <header class="pane-heading">
         <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
         <span>Animation</span>
@@ -98,8 +104,10 @@
         />
       </div>
     </section>
+  {/snippet}
 
-    <section class="media-pane card-pane" aria-label="Choreo card">
+  {#snippet cardPane()}
+    <section class="studio-pane card-pane" aria-label="Choreo card">
       <header class="pane-heading">
         <i class="fa-regular fa-rectangle-list" aria-hidden="true"></i>
         <span>Choreo card</span>
@@ -121,6 +129,37 @@
         />
       </div>
     </section>
+  {/snippet}
+
+  <div class="studio-body">
+    <PanelGroup
+      direction="horizontal"
+      flattened={stageWidth < 900}
+      gap={6}
+      panels={[
+        {
+          id: "performance",
+          content: performancePane,
+          defaultSize: 1,
+          minSize: 280,
+          resizeLabel: "Resize performance video and animation",
+        },
+        {
+          id: "animation",
+          content: animationPane,
+          defaultSize: 1.35,
+          minSize: 360,
+          resizeLabel: "Resize animation and choreo card",
+        },
+        {
+          id: "card",
+          content: cardPane,
+          defaultSize: 0.82,
+          minSize: 260,
+          resizable: false,
+        },
+      ]}
+    />
   </div>
 
   <section class="guide-notes" aria-labelledby="guide-notes-title">
@@ -142,41 +181,45 @@
 
 <style>
   .learning-word-stage {
+    container: learning-word-stage / inline-size;
     display: grid;
-    gap: clamp(0.65rem, 0.9cqw, 1rem);
+    grid-template-rows: minmax(0, 1fr) auto;
     min-width: 0;
-  }
-
-  .media-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1px;
-    min-width: 0;
+    min-height: 0;
     overflow: hidden;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-lg, 0.75rem);
-    background: var(--theme-stroke);
+    background: transparent;
   }
 
-  .media-pane {
+  .studio-body {
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .studio-body :global(.panel-group) {
+    height: 100%;
+  }
+
+  .studio-pane {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     min-width: 0;
-    min-height: clamp(20rem, 34dvh, 34rem);
-    background: var(--theme-panel-bg);
+    min-height: 0;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--theme-card-bg) 52%, transparent);
   }
 
   .pane-heading {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    min-height: 2.75rem;
-    padding: 0.55rem 0.75rem;
+    min-height: 2.65rem;
+    padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--theme-stroke);
-    background: var(--theme-card-bg);
     color: var(--theme-text-dim);
     font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 700;
+    font-weight: 650;
   }
 
   .pane-heading i {
@@ -192,24 +235,24 @@
   .video-body {
     display: grid;
     place-items: center;
-    padding: clamp(0.65rem, 1cqw, 1rem);
+    padding: clamp(0.75rem, 1.25cqw, 1.25rem);
   }
 
   .video-body video {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    border-radius: var(--radius-md, 0.5rem);
+    border-radius: var(--radius-sm, 0.35rem);
     background: #000;
   }
 
   .animation-body {
-    background: var(--theme-card-bg);
+    background: color-mix(in srgb, var(--theme-panel-bg) 78%, transparent);
   }
 
   .card-body {
-    padding: clamp(0.45rem, 0.75cqw, 0.85rem);
-    background: var(--theme-panel-bg);
+    padding: clamp(0.55rem, 0.9cqw, 1rem);
+    background: color-mix(in srgb, var(--theme-panel-bg) 82%, transparent);
   }
 
   .empty-state {
@@ -217,12 +260,8 @@
     place-items: center;
     align-content: center;
     gap: 0.75rem;
-    width: min(100%, 28rem);
-    aspect-ratio: 16 / 9;
+    width: min(100%, 22rem);
     padding: 1.25rem;
-    border: 1px solid var(--theme-stroke-strong, var(--theme-stroke));
-    border-radius: var(--radius-md, 0.5rem);
-    background: var(--theme-card-bg);
     color: var(--theme-text-dim);
     text-align: center;
   }
@@ -233,7 +272,7 @@
     width: 3rem;
     height: 3rem;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--theme-accent) 16%, transparent);
+    background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
     color: var(--theme-accent);
     font-size: 1.2rem;
   }
@@ -243,11 +282,10 @@
     grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr);
     align-items: center;
     gap: 1rem;
-    min-height: 6.5rem;
+    min-height: 6.75rem;
     padding: clamp(0.8rem, 1.1cqw, 1.1rem);
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-lg, 0.75rem);
-    background: var(--theme-panel-bg);
+    border-top: 1px solid var(--theme-stroke);
+    background: color-mix(in srgb, var(--theme-card-bg) 74%, transparent);
   }
 
   .guide-notes header {
@@ -281,33 +319,60 @@
     gap: 0.5rem;
   }
 
-  @media (max-width: 900px) and (min-height: 621px) {
-    .media-grid {
+  @container learning-word-stage (max-width: 899px) {
+    .studio-body {
+      display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(19rem, 1fr));
+      grid-template-areas:
+        "video animation"
+        "card animation";
+      overflow-y: auto;
+    }
+
+    .video-pane {
+      grid-area: video;
+    }
+
+    .animation-pane {
+      grid-area: animation;
     }
 
     .card-pane {
-      grid-column: 1 / -1;
-      min-height: 32rem;
+      grid-area: card;
     }
   }
 
-  @media (max-width: 760px) {
-    .media-grid {
+  @container learning-word-stage (max-width: 760px) {
+    .studio-body {
       grid-template-columns: minmax(0, 1fr);
-    }
-
-    .media-pane {
-      min-height: 22rem;
+      grid-template-rows: 10.5rem 24rem 31rem;
+      grid-template-areas:
+        "video"
+        "animation"
+        "card";
     }
 
     .video-pane {
       min-height: 15rem;
     }
 
+    .animation-pane {
+      min-height: 24rem;
+    }
+
     .card-pane {
-      grid-column: auto;
       min-height: 31rem;
+    }
+
+    .empty-state {
+      gap: 0.45rem;
+      padding: 0.5rem;
+    }
+
+    .empty-icon {
+      width: 2.5rem;
+      height: 2.5rem;
     }
 
     .guide-notes {
@@ -317,8 +382,12 @@
   }
 
   @media (max-height: 620px) and (min-width: 761px) {
-    .media-pane {
-      min-height: 18rem;
+    .studio-body {
+      overflow-y: auto;
+    }
+
+    .studio-body :global(.panel-group) {
+      min-height: 14rem;
     }
 
     .guide-notes {
@@ -326,13 +395,35 @@
     }
   }
 
-  @media (min-width: 2600px) {
-    .media-pane {
-      min-height: clamp(34rem, 42dvh, 48rem);
+  @container learning-word-stage (min-width: 1680px) {
+    .studio-body {
+      min-height: 0;
+    }
+  }
+
+  @container learning-word-stage (min-width: 2600px) {
+    .studio-body {
+      min-height: 0;
+    }
+
+    .pane-heading {
+      min-height: 3.5rem;
+      padding-inline: 1rem;
+      font-size: 1.1rem;
     }
 
     .guide-notes {
+      grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr);
       min-height: 8rem;
+      font-size: 1.1rem;
+    }
+
+    .guide-notes h2 {
+      font-size: 1.2rem;
+    }
+
+    .empty-state {
+      font-size: 1.1rem;
     }
 
     .empty-icon {

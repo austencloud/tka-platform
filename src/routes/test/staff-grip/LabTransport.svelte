@@ -13,10 +13,15 @@
   the amount the address bar can express, and the readout between its two
   arrows renders the same string the `phase=` param carries. Nothing here reads
   or writes pose, grip or playback rate — the lab is being measured, not tuned.
+
+  Above the scrub it draws what the committed continuity sweep found for the
+  loaded sequence, so the moments worth looking at are already on screen and
+  one press away. The markers annotate the scrub; they never stand in for it.
 -->
 <script lang="ts">
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
 
+  import { labContinuityMarkers, labContinuityStatus } from "./lab-continuity";
   import { LAB_FRAME_STEP, type StaffLabState } from "./lab-state.svelte";
 
   interface Props {
@@ -58,6 +63,45 @@
       2
     )} / ${stepCount}`
   );
+
+  /**
+   * The scrub's own maximum, one frame short of the step count. Markers are
+   * placed against this rather than `stepCount`, so a marker lands on the pixel
+   * the range input puts that phase at instead of a fraction to its left.
+   */
+  const scrubMax = $derived(
+    Math.max(stepCount - LAB_FRAME_STEP, LAB_FRAME_STEP)
+  );
+
+  /** What the committed sweep found for whatever is loaded. Never re-measured. */
+  const continuity = $derived(labContinuityStatus(lab.sequenceId));
+  const markers = $derived(labContinuityMarkers(continuity, scrubMax));
+
+  /**
+   * Whether the lane may draw yet.
+   *
+   * `lab.sequenceId` changes the instant a goal is pressed; `stepCount` only
+   * catches up when that sequence finishes loading. In between, a four-step
+   * sequence's markers would be laid out against the eight-step track still on
+   * screen and sit at visibly wrong positions for a moment. The sweep records
+   * how many steps it walked, so a disagreement is exactly that window: hold
+   * the lane empty through it rather than publish a placement that is wrong.
+   */
+  const laneMatchesSequence = $derived(
+    continuity.state === "unswept" || continuity.sweptStepCount === stepCount
+  );
+
+  /**
+   * Land on a discontinuity and stop there. Same contract as a frame step: a
+   * running clock would overwrite the landing on its very next tick.
+   */
+  function seek(phase: number, label: string): void {
+    if (disabled) return;
+    if (lab.playing) lab.setPlaying(false);
+    lab.setPhase(phase);
+    lab.flushPhase();
+    announcement = `Step ${label}`;
+  }
 
   /**
    * Move by an exact amount and stop.
@@ -143,20 +187,92 @@
     />
   </div>
 
-  <label class="scrub" for="grid-phase">
-    <span class="visually-hidden">Position in sequence</span>
-    <input
-      id="grid-phase"
-      type="range"
-      min="0"
-      max={Math.max(stepCount - LAB_FRAME_STEP, LAB_FRAME_STEP)}
-      step={LAB_FRAME_STEP}
-      value={lab.phase}
-      {disabled}
-      oninput={(event) => lab.setPhase(event.currentTarget.valueAsNumber)}
-      onchange={() => lab.flushPhase()}
-    />
-  </label>
+  <!--
+    The scrub and its annotations. The marker lane keeps its height whether or
+    not the loaded sequence has findings, so switching between a clean sequence
+    and one with jumps cannot move the cameras above it.
+  -->
+  <div class="scrub">
+    <div
+      class="marker-lane"
+      role="group"
+      aria-label="Prop discontinuities in this sequence"
+    >
+      <!-- Blue over red rather than side by side: the two spans overlap to
+           within a couple of thousandths of a step, so stacking is what keeps
+           the one from hiding the other. -->
+      {#snippet mark(marker: (typeof markers)[number])}
+        <span class="marker-bars" aria-hidden="true">
+          <span class="marker-bar is-blue" class:is-absent={!marker.blue}
+          ></span>
+          <span class="marker-bar is-red" class:is-absent={!marker.red}></span>
+        </span>
+        <span class="marker-stem" aria-hidden="true"></span>
+      {/snippet}
+
+      {#if !laneMatchesSequence}
+        <!-- A sequence is still loading. The lane holds its height and says
+             nothing, because everything it could say right now belongs to the
+             sequence being replaced. -->
+      {:else if markers.length === 0}
+        <p class="marker-empty">
+          {continuity.state === "unswept"
+            ? "Not in the continuity sweep"
+            : "No discontinuities in the sweep"}
+        </p>
+      {:else}
+        {#each markers as marker (marker.key)}
+          <button
+            class="marker"
+            type="button"
+            style={`left: ${(marker.start + marker.width / 2) * 100}%;`}
+            title={`${marker.labelRange} · up to ${Math.round(marker.peakMagnitudeCm)} cm`}
+            aria-label={marker.ariaLabel}
+            {disabled}
+            onclick={() => seek(marker.seekPhase, marker.labelRange)}
+          >
+            {@render mark(marker)}
+          </button>
+        {/each}
+
+        <!--
+          The same four positions, drawn instead of pressed.
+
+          A button carries the design system's 44px floor, and the closest pair
+          the sweep produces sits 16% of a track apart, so below a 288px lane
+          two targets would cover each other and a tap would land on the wrong
+          one. Under that width the buttons give way to these: identical marks
+          at identical positions, no target to miss. The scrub underneath is
+          untouched and still reaches every phase.
+        -->
+        <span class="marker-ticks" aria-hidden="true">
+          {#each markers as marker (marker.key)}
+            <span
+              class="marker-tick"
+              style={`left: ${(marker.start + marker.width / 2) * 100}%;`}
+            >
+              {@render mark(marker)}
+            </span>
+          {/each}
+        </span>
+      {/if}
+    </div>
+
+    <label class="scrub-input" for="grid-phase">
+      <span class="visually-hidden">Position in sequence</span>
+      <input
+        id="grid-phase"
+        type="range"
+        min="0"
+        max={scrubMax}
+        step={LAB_FRAME_STEP}
+        value={lab.phase}
+        {disabled}
+        oninput={(event) => lab.setPhase(event.currentTarget.valueAsNumber)}
+        onchange={() => lab.flushPhase()}
+      />
+    </label>
+  </div>
 
   <!--
     The two arrows move the number between them by one frame, which is the
@@ -256,7 +372,7 @@
      would squeeze the buttons. */
   .scrub {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     /* A dock that sizes to its contents needs the scrub to declare a measure
        of its own; `1fr` inside a `fit-content` box collapses to nothing. */
     flex: 1 1 16rem;
@@ -264,10 +380,163 @@
     min-width: 0;
   }
 
+  .scrub-input {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
   .scrub input {
     width: 100%;
     min-height: var(--min-touch-target, 44px);
     accent-color: var(--theme-accent, #7a73da);
+  }
+
+  /*
+   * The marker lane.
+   *
+   * A range input's thumb travels between its own two half-widths, not between
+   * the input's edges, so the lane is inset by half a thumb at each end. That
+   * is what makes a marker sit under the thumb at the phase it names instead of
+   * a few pixels inboard of it.
+   */
+  .marker-lane {
+    --scrub-thumb: 16px;
+    position: relative;
+    height: var(--min-touch-target, 44px);
+    margin-inline: calc(var(--scrub-thumb) / 2);
+    min-width: 0;
+    /* The lane decides for itself whether its marks can be targets. Its own
+       width is what the arithmetic below is about, and the dock hands it a
+       different one at nearly every viewport, so it is the container. */
+    container-type: inline-size;
+  }
+
+  /* Reserved, not conditional: a clean sequence holds the same lane a sequence
+     with four jumps does, so choosing between them moves nothing. */
+  .marker-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    font-size: var(--font-size-compact, 0.75rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+
+  /*
+   * One event, not one finding. The button is a full touch target centred on
+   * the event's own position; what it draws inside is narrow because the event
+   * itself is — six hundredths of a step out of four.
+   */
+  .marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: var(--min-touch-target, 44px);
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+
+  .marker-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: min(18px, 100%);
+    padding: 4px 0 2px;
+  }
+
+  .marker-bar {
+    height: 5px;
+    border-radius: 3px;
+    transition: transform var(--duration-fast, 150ms) var(--ease-out, ease);
+  }
+
+  .marker-bar.is-blue {
+    background: var(--prop-blue-text, #818cf8);
+  }
+
+  .marker-bar.is-red {
+    background: var(--prop-red-text, #f87171);
+  }
+
+  /* The prop was not part of this event. Its row still occupies the same
+     height, so the two events either side of it line up. */
+  .marker-bar.is-absent {
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.14));
+  }
+
+  /* Chart geometry: the line that ties the pair to the position it names. */
+  .marker-stem {
+    flex: 1;
+    width: 2px;
+    border-radius: 1px;
+    background: linear-gradient(
+      to bottom,
+      var(--theme-stroke-strong, rgba(255, 255, 255, 0.36)),
+      transparent
+    );
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .marker:hover:not(:disabled) .marker-bar {
+      transform: scaleX(1.25);
+    }
+  }
+
+  .marker:focus-visible {
+    outline: 2px solid var(--theme-accent, #7a73da);
+    outline-offset: -2px;
+    border-radius: 8px;
+  }
+
+  .marker:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /*
+   * Pins or ticks.
+   *
+   * `app.css` floors every button at `--min-touch-target`, so a marker cannot
+   * be made narrower than 44px and stay a button. The tightest pair the sweep
+   * produces sits 15.9% of a track apart, which clears 44px only while the
+   * lane is at least 277px; 18rem is the nearest token-shaped width above
+   * that, and it keeps pins on a 375px phone (lane 292px, gap 46px) while
+   * handing the 820px tablet and the folded landscape phone their ticks. The
+   * scrub is untouched either way, so every phase stays reachable.
+   */
+  .marker-ticks {
+    display: none;
+  }
+
+  .marker-tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 18px;
+  }
+
+  @container (max-width: 18rem) {
+    .marker {
+      display: none;
+    }
+
+    .marker-ticks {
+      display: contents;
+    }
   }
 
   .frame-group {
@@ -370,7 +639,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .frame-btn,
-    .frame-readout {
+    .frame-readout,
+    .marker-bar {
       transition-duration: 0ms;
     }
 

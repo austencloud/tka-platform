@@ -81,6 +81,11 @@ export interface AnimationEngineProps {
   leftProp: PropState | null;
   rightProp: PropState | null;
   additionalLayers?: AdditionalLayerProps[];
+  /** Layers whose prop sprites should be ready before they enter a frame. */
+  preloadAdditionalLayers?: AdditionalLayerProps[];
+  onAdditionalLayerTextureStatusChange?: (
+    status: AdditionalLayerTextureStatus
+  ) => void;
   gridVisible?: boolean;
   /** Direct grid alpha for a host-owned transition. Undefined keeps the
    * renderer's ordinary visibility-toggle fade. */
@@ -122,6 +127,12 @@ export interface AnimationEngineProps {
   /** Tunnel performer spotlight: the selected performer (0 = base, k = copy arm
    *  k), or null. When set, every other copy dims in the render. Default null. */
   tunnelSelectedLayer?: number | readonly number[] | null;
+}
+
+export interface AdditionalLayerTextureStatus {
+  requested: number;
+  loaded: number;
+  loading: number;
 }
 
 /**

@@ -12,6 +12,7 @@
     onOpenSetting = () => {},
     onModeChange,
     recipeOpen = false,
+    flatRecipeRail = false,
   }: {
     onOpenRecipe?: () => void;
     onOpenSetting?: (destination: FuseRecipeDestination) => void;
@@ -19,6 +20,9 @@
     /** Whether the recipe panel is showing. The trigger is a toggle, so it has
      *  to say which way it points. */
     recipeOpen?: boolean;
+    /** True while the individual recipe cards are visible. Portaled editors
+     * must close when a resize replaces that rail with the recipe button. */
+    flatRecipeRail?: boolean;
   } = $props();
 
   const { state: fuseState } = getFuseContext();
@@ -52,6 +56,10 @@
 
   $effect(() => {
     if (optionsDisabled) activeSetting = null;
+  });
+
+  $effect(() => {
+    if (!flatRecipeRail) activeSetting = null;
   });
 
   function setTileOpen(

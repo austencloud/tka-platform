@@ -1,5 +1,6 @@
 <script lang="ts">
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getBaseMotionColors } from "$lib/shared/animation-engine/services/svg-generator";
@@ -9,6 +10,8 @@
     type TunnelPropColorPair,
   } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
   import { getTunnelCreatorContext } from "../context/tunnel-creator-context";
+  import type { TunnelWorkflowMode } from "../domain/tunnel-creator-draft";
+  import { MAX_INTERACTIVE_TUNNEL_PERFORMERS } from "../state/tunnel-creator-state.svelte";
   import TunnelPerformerCard from "./TunnelPerformerCard.svelte";
 
   interface TunnelPerformerDisplay {
@@ -31,8 +34,8 @@
     colorMode,
     customPropColors,
     renderedInstanceCount,
-    focusMode = false,
     short = false,
+    onCastChange,
     onChoose,
     onChooseShapeMatrix,
     onGenerateNow,
@@ -47,8 +50,8 @@
     colorMode: TunnelPropColorMode;
     customPropColors: TunnelPropColorPair;
     renderedInstanceCount: number;
-    focusMode?: boolean;
     short?: boolean;
+    onCastChange: (count: number) => void;
     onChoose: (performerId: string) => void;
     onChooseShapeMatrix: (performerId: string) => void;
     onGenerateNow: (performerId: string) => void;
@@ -60,6 +63,30 @@
   const creator = getTunnelCreatorContext();
   const baseMotionColors = getBaseMotionColors();
   let cardRefs = $state<Record<string, CardRef | undefined>>({});
+  const workflowOptions = [
+    {
+      value: "custom" as TunnelWorkflowMode,
+      label: "Separate",
+      shortLabel: "Separate",
+      ariaLabel:
+        "Separate sequences. Every performer has their own choreography.",
+    },
+    {
+      value: "seeded" as TunnelWorkflowMode,
+      label: "Linked",
+      shortLabel: "Linked",
+      ariaLabel:
+        "Linked sequences. Performer 1 creates choreography for the remaining cast.",
+    },
+  ];
+  const canGrowCast = $derived(
+    creator.performerSlots.length < MAX_INTERACTIVE_TUNNEL_PERFORMERS
+  );
+  const workflowDescription = $derived(
+    creator.workflow === "seeded"
+      ? "Performer 1 drives the linked cast."
+      : "Each performer has their own sequence."
+  );
 
   function sourceLabel(performerId: string): string | null {
     const performer = creator.performerSlots.find(
@@ -79,9 +106,11 @@
   }
 
   function add(): void {
-    const performerId = creator.addPerformer();
-    if (!performerId) return;
-    onSelectPerformer(performerId);
+    if (!canGrowCast) return;
+    const nextCount = creator.performerSlots.length + 1;
+    onCastChange(nextCount);
+    if (creator.performerSlots.length !== nextCount) return;
+    onSelectPerformer(creator.selectedPerformerId);
   }
 
   function removeReason(performerId: string): string | null {
@@ -132,22 +161,33 @@
 </script>
 
 <section
-  class="performer-roster"
-  class:few-cards={creator.performerSlots.length <= 2}
-  class:focus-mode={focusMode}
+  class="performer-roster focus-mode"
   class:short
   aria-labelledby="performer-roster-title"
 >
   <header class="roster-heading">
-    <div>
-      <span>Authored choreography</span>
-      <h3 id="performer-roster-title">
-        {creator.authoredPerformerCount} authored · {creator.performerSlots
-          .length}
-        {creator.performerSlots.length === 1 ? " card" : " cards"}
-      </h3>
+    <div class="roster-identity">
+      <span>Cast</span>
+      <h3 id="performer-roster-title">Choreography</h3>
+      <p class="roster-summary">
+        {creator.performerSlots.length}
+        {creator.performerSlots.length === 1 ? "performer" : "performers"} · {creator.authoredPerformerCount}
+        ready · {workflowDescription}
+      </p>
     </div>
-    {#if focusMode}
+    <div class="roster-heading-actions">
+      <div class="workflow-control">
+        <span id="tunnel-cast-pattern-label">Sequences</span>
+        <SegmentedControl
+          options={workflowOptions}
+          value={creator.workflow}
+          onchange={creator.setWorkflow}
+          color="accent"
+          density="compact"
+          semantics="radiogroup"
+          ariaLabelledby="tunnel-cast-pattern-label"
+        />
+      </div>
       <div class="roster-toolbar">
         <div class="performer-switcher" role="tablist" aria-label="Performers">
           {#each creator.performerSlots as slot}
@@ -161,20 +201,21 @@
             </button>
           {/each}
         </div>
-        {#if creator.canAddPerformer}
+        {#if canGrowCast}
           <PanelButton
             variant="secondary"
             onclick={add}
-            ariaLabel="Add another authored performer"
+            ariaLabel="Add another performer"
           >
             <i class="fas fa-user-plus" aria-hidden="true"></i>
             <span class="compact-add-count">
-              {creator.performerSlots.length}/4
+              {creator.performerSlots
+                .length}/{MAX_INTERACTIVE_TUNNEL_PERFORMERS}
             </span>
           </PanelButton>
         {/if}
       </div>
-    {/if}
+    </div>
   </header>
 
   <div class="roster-scroll themed-scrollbar">
@@ -195,10 +236,7 @@
         sourcePerformerLabel={sourceLabel(slot.id)}
         selected={creator.selectedPerformerId === slot.id}
         {short}
-        expanded={focusMode
-          ? creator.selectedPerformerId === slot.id
-          : creator.performerSlots.length <= 2 ||
-            creator.selectedPerformerId === slot.id}
+        expanded={creator.selectedPerformerId === slot.id}
         sourceOrigin={slot.origin}
         previousCount={slot.previousCount}
         {leftPropType}
@@ -227,28 +265,6 @@
       />
     {/each}
   </div>
-
-  {#if creator.canAddPerformer && !focusMode}
-    <footer class="roster-footer">
-      <PanelButton
-        variant="secondary"
-        onclick={add}
-        ariaLabel="Add another authored performer"
-      >
-        <i class="fas fa-user-plus" aria-hidden="true"></i>
-        Add performer
-        <span
-          >{creator.performerSlots.length}{creator.performerSlots.length > 4
-            ? " preserved"
-            : "/4"}</span
-        >
-      </PanelButton>
-    </footer>
-  {:else if creator.addPerformerBlockedReason}
-    <p class="sr-only" role="status">
-      {creator.addPerformerBlockedReason}
-    </p>
-  {/if}
 </section>
 
 <style>
@@ -264,9 +280,7 @@
     background: var(--theme-panel-bg);
   }
 
-  .roster-heading,
-  .roster-footer {
-    display: flex;
+  .roster-heading {
     align-items: center;
     justify-content: space-between;
     gap: var(--settings-spacing-sm, 8px);
@@ -275,13 +289,43 @@
   }
 
   .roster-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     border-bottom: 1px solid var(--theme-stroke);
   }
 
-  .roster-heading > div:first-child {
+  .roster-identity {
     display: grid;
     gap: 2px;
     min-width: 0;
+  }
+
+  .roster-summary {
+    overflow: hidden;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .roster-heading-actions {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--settings-spacing-sm, 8px);
+    width: 100%;
+    min-width: 0;
+  }
+
+  .workflow-control {
+    display: grid;
+    width: 11.5rem;
+    min-width: 10rem;
+    gap: 2px;
+  }
+
+  .workflow-control > span {
+    font-weight: 650;
   }
 
   .performer-switcher {
@@ -289,6 +333,12 @@
     align-items: center;
     gap: 4px;
     min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .performer-switcher::-webkit-scrollbar {
+    display: none;
   }
 
   .roster-toolbar {
@@ -339,8 +389,7 @@
     outline-offset: 2px;
   }
 
-  .roster-heading span,
-  .roster-footer p {
+  .roster-heading span {
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact, 12px);
   }
@@ -367,11 +416,6 @@
     overscroll-behavior: contain;
   }
 
-  .performer-roster.few-cards .roster-scroll :global(.source-card.expanded) {
-    flex: 1 1 0;
-    min-height: 17rem;
-  }
-
   .performer-roster.focus-mode .roster-scroll {
     display: grid;
     grid-template: minmax(0, 1fr) / minmax(0, 1fr);
@@ -396,41 +440,26 @@
     transition-delay: 0s;
   }
 
-  .performer-roster.focus-mode.few-cards
-    .roster-scroll
-    :global(.source-card.expanded) {
-    min-height: 0;
-  }
-
-  .roster-footer {
-    border-top: 1px solid var(--theme-stroke);
-  }
-
-  .roster-footer :global(.panel-btn) {
-    width: 100%;
-  }
-
-  .roster-footer :global(.panel-btn span:last-child) {
-    margin-left: auto;
-    color: var(--theme-text-dim);
-  }
-
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
   @container tunnel (max-width: 719px) {
     .performer-roster {
       min-height: min(26rem, 64dvh);
       max-height: none;
+    }
+
+    .roster-heading {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .roster-heading-actions {
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .workflow-control {
+      flex: 1;
+      width: auto;
+      max-width: 15rem;
     }
   }
 
@@ -439,8 +468,7 @@
       min-height: 0;
     }
 
-    .roster-heading,
-    .roster-footer {
+    .roster-heading {
       padding-block: 5px;
     }
 
@@ -454,15 +482,19 @@
       flex: 0 0 min(22rem, 78cqw);
     }
 
-    .performer-roster.short .roster-heading > div:first-child,
-    .performer-roster.short .roster-footer {
+    .performer-roster.short .roster-identity {
       display: none;
     }
 
     .performer-roster.short .roster-heading {
-      justify-content: flex-end;
+      display: flex;
+      justify-content: stretch;
       min-height: var(--min-touch-target, 48px);
       padding-block: 0;
+    }
+
+    .performer-roster.short .roster-heading-actions {
+      flex: 1;
     }
 
     .performer-roster.short .roster-scroll {
@@ -476,8 +508,14 @@
       padding: 6px 8px;
     }
 
-    .roster-heading > div:first-child > span {
+    .roster-identity > span,
+    .roster-summary,
+    .workflow-control > span {
       display: none;
+    }
+
+    .workflow-control {
+      min-width: 9rem;
     }
 
     .performer-switcher {

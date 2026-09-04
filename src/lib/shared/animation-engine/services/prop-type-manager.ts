@@ -32,7 +32,10 @@ import {
   type FanAppearance,
 } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
-import type { AnimationEngineProps } from "./animation-engine.svelte";
+import type {
+  AdditionalLayerTextureStatus,
+  AnimationEngineProps,
+} from "./animation-engine.svelte";
 import type { AnimatorState } from "../state/animator-state.svelte";
 
 /** Callback to obtain current frame params. */
@@ -133,7 +136,8 @@ export class PropTypeManager {
   ): boolean {
     this.latestFrameParamsProvider = getFrameParams;
     const newLeft = props.leftPropType ?? this.propTypeOverrideLeft ?? "staff";
-    const newRight = props.rightPropType ?? this.propTypeOverrideRight ?? "staff";
+    const newRight =
+      props.rightPropType ?? this.propTypeOverrideRight ?? "staff";
     const nextAppearance = normalizeFanAppearance(
       props.fanAppearance ??
         this.settingsService?.currentSettings?.fanAppearance
@@ -247,7 +251,8 @@ export class PropTypeManager {
       this.propTypeChangeService?.state.leftPropType ??
       state.currentLeftPropType;
     const settingsRight =
-      this.propTypeChangeService?.state.rightPropType ?? state.currentRightPropType;
+      this.propTypeChangeService?.state.rightPropType ??
+      state.currentRightPropType;
     const settingsLeftRender = resolveFanRenderKey(
       settingsLeft,
       settingsAppearance
@@ -345,7 +350,11 @@ export class PropTypeManager {
     darkMode = false
   ): void {
     this.latestFrameParamsProvider = getFrameParams;
-    const additionalLayers = props.additionalLayers ?? [];
+    const visibleLayers = props.additionalLayers ?? [];
+    const additionalLayers =
+      visibleLayers.length > 0
+        ? visibleLayers
+        : (props.preloadAdditionalLayers ?? []);
     const layerCount = additionalLayers.length;
     const spectrum = props.tunnelSpectrum ?? true;
     const exactColors = props.tunnelPropColors ?? null;
@@ -375,6 +384,7 @@ export class PropTypeManager {
       this.lastLayerPropSig = propSig;
       this.additionalLayerTexturesLoaded = [];
       this.additionalLayerTexturesLoading = [];
+      this.publishAdditionalLayerTextureStatus(props, layerCount);
     }
 
     if (layerCount > 0 && this.animationRenderer) {
@@ -389,16 +399,13 @@ export class PropTypeManager {
         ) {
           this.additionalLayerTexturesLoading[i] = true;
 
-          const { left: leftColor, right: rightColor } = this.additionalLayerColors(
-            i,
-            layerCount,
-            spectrum,
-            exactColors
-          );
+          const { left: leftColor, right: rightColor } =
+            this.additionalLayerColors(i, layerCount, spectrum, exactColors);
           // Each performer's per-hand prop; falls back to the global prop when a
           // layer carries no explicit type (default 1-skin appearance = today).
           const leftPropType = layer.leftPropType ?? state.currentLeftPropType;
-          const rightPropType = layer.rightPropType ?? state.currentRightPropType;
+          const rightPropType =
+            layer.rightPropType ?? state.currentRightPropType;
           const leftRenderType = resolveFanRenderKey(
             leftPropType,
             this.fanAppearance
@@ -419,6 +426,7 @@ export class PropTypeManager {
             .then(() => {
               this.additionalLayerTexturesLoaded[i] = true;
               this.additionalLayerTexturesLoading[i] = false;
+              this.publishAdditionalLayerTextureStatus(props, layerCount);
 
               // Trigger re-render with new layer textures
               this.triggerRenderWithLatestFrame(state);
@@ -426,10 +434,13 @@ export class PropTypeManager {
             .catch((err) => {
               console.error(`Failed to load layer ${i} prop textures:`, err);
               this.additionalLayerTexturesLoading[i] = false;
+              this.publishAdditionalLayerTextureStatus(props, layerCount);
             });
         }
       }
     }
+
+    this.publishAdditionalLayerTextureStatus(props, layerCount);
 
     if (colorSig !== this.lastBasePropColorSig) {
       this.lastBasePropColorSig = colorSig;
@@ -441,6 +452,19 @@ export class PropTypeManager {
         this.triggerRenderWithLatestFrame(state);
       });
     }
+  }
+
+  private publishAdditionalLayerTextureStatus(
+    props: AnimationEngineProps,
+    requested: number
+  ): void {
+    if (!props.onAdditionalLayerTextureStatusChange) return;
+    const status: AdditionalLayerTextureStatus = {
+      requested,
+      loaded: this.additionalLayerTexturesLoaded.filter(Boolean).length,
+      loading: this.additionalLayerTexturesLoading.filter(Boolean).length,
+    };
+    props.onAdditionalLayerTextureStatusChange(status);
   }
 
   /**
@@ -543,7 +567,10 @@ export class PropTypeManager {
     let rightPropType = state.currentRightPropType;
     let appearance = this.fanAppearance;
 
-    if (this.propTypeOverrideLeft != null || this.propTypeOverrideRight != null) {
+    if (
+      this.propTypeOverrideLeft != null ||
+      this.propTypeOverrideRight != null
+    ) {
       // Use overrides - bypass settings entirely
       leftPropType = this.propTypeOverrideLeft ?? "staff";
       rightPropType = this.propTypeOverrideRight ?? "staff";

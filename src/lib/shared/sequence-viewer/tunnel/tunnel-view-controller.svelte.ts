@@ -665,6 +665,15 @@ export class TunnelViewController {
    *  index-for-index with the baked layers (same generation order). */
   additionalLayersAt(currentStep: number): AdditionalLayerProps[] {
     if (!this.active) return [];
+    return this.preparedAdditionalLayersAt(currentStep);
+  }
+
+  /**
+   * The same sampled copies used by Tunnel, available while 2D is still visible.
+   * The animation engine uses these only to prepare their prop sprites; they do
+   * not join the rendered frame until the shared reveal starts.
+   */
+  preparedAdditionalLayersAt(currentStep: number): AdditionalLayerProps[] {
     return this.#layers.slice(1).map((layer, i) => {
       const timing = this.#samplingTimingForArm(layer, i + 1);
       const p = sampleTunnelProps(

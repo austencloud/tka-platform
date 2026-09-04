@@ -32,7 +32,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     getBlockedPositionsForPreset,
     StartPositionPreset,
   } from "../../shared/domain/start-position-presets";
-  import StyleExpandPanel from "../StyleExpandPanel.svelte";
+  import GenerationStylePanel from "$lib/shared/create/components/GenerationStylePanel.svelte";
   import SettingsDrillPanel, {
     type SettingsDrillItem,
   } from "$lib/shared/ui/components/settings-drill/SettingsDrillPanel.svelte";
@@ -374,7 +374,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
       {#snippet detail(id)}
         {#if id === "style"}
           <div class="drill-fill spread">
-            <StyleExpandPanel
+            <GenerationStylePanel
               constraintPreset={localConstraintPreset}
               handPathMode={localHandPathMode}
               motionTypeFilter={localMotionTypeFilter}
