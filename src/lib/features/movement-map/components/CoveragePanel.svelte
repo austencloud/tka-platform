@@ -65,6 +65,12 @@
         observation. Describing the same instant repeatedly does not advance it.
       </p>
 
+      <p class="explainer">
+        Each movement stands for both sides of the body. Describing what one arm
+        does describes the other arm doing it transposed, so the pair is one
+        thing to map and observations of either side land on it.
+      </p>
+
       {#if report.outsideSpace > 0}
         <p class="warning" role="status">
           {report.outsideSpace} observations describe movements outside Level 1.

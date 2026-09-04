@@ -8,6 +8,12 @@
  * never been looked at - so the next session can go straight at a gap instead of
  * re-describing whatever the last video happened to contain.
  *
+ * Coverage is counted per transposition pair. A movement and the same movement
+ * on the other side of the body are one thing to describe - the right arm doing
+ * it on the right is the left arm doing it mirrored on the left - so describing
+ * either one closes both, and the total is the number of pairs rather than the
+ * number of signatures.
+ *
  * Coverage is counted per phase, not per annotation. Ten observations of the
  * same movement at its landing say much less about what the arm does than three
  * spread across launch, middle and arrival, because the interesting anatomy is
@@ -77,13 +83,17 @@ export function buildCoverageReport(
     ]) {
       if (!signature) continue;
       const key = signatureKey(signature);
-      if (!space.byKey.has(key)) {
+      // Either side of a transposition pair resolves to the one entry, so an
+      // observation of the blue arm credits the red arm doing it mirrored.
+      const movement = space.byKey.get(key);
+      if (!movement) {
         outsideSpace++;
         continue;
       }
-      if (!anchorsByKey.has(key)) anchorsByKey.set(key, new Set());
-      anchorsByKey.get(key)!.add(anchor);
-      countByKey.set(key, (countByKey.get(key) ?? 0) + 1);
+      const classKey = movement.key;
+      if (!anchorsByKey.has(classKey)) anchorsByKey.set(classKey, new Set());
+      anchorsByKey.get(classKey)!.add(anchor);
+      countByKey.set(classKey, (countByKey.get(classKey) ?? 0) + 1);
     }
   }
 
@@ -107,6 +117,7 @@ export function buildCoverageReport(
     });
   }
 
+  // Built before the aliases go in, or a pair would appear in the list twice.
   const gaps = [...byKey.values()]
     .filter((coverage) => coverage.status !== "mapped")
     .sort((a, b) => {
@@ -115,6 +126,14 @@ export function buildCoverageReport(
       }
       return a.movement.key.localeCompare(b.movement.key);
     });
+
+  // A caller holding a raw signature must be able to look it up from either
+  // side, so both keys point at the pair's single coverage record.
+  for (const movement of space.movements) {
+    if (!movement.transposeKey) continue;
+    const coverage = byKey.get(movement.key);
+    if (coverage) byKey.set(movement.transposeKey, coverage);
+  }
 
   const total = space.movements.length;
 
@@ -141,13 +160,21 @@ export function coverageForKeys(
   let mapped = 0;
   let partial = 0;
   let unseen = 0;
+  const counted = new Set<string>();
 
-  for (const key of new Set(keys)) {
+  for (const key of keys) {
     const coverage = report.byKey.get(key);
+    // A sequence that performs a movement and its transposition performs one
+    // movement, not two, so both sides collapse onto the pair's own key before
+    // being counted. A key outside Level 1 has no pair and stands for itself.
+    const identity = coverage ? coverage.movement.key : key;
+    if (counted.has(identity)) continue;
+    counted.add(identity);
+
     if (!coverage || coverage.status === "unseen") unseen++;
     else if (coverage.status === "mapped") mapped++;
     else partial++;
   }
 
-  return { mapped, partial, unseen, total: new Set(keys).size };
+  return { mapped, partial, unseen, total: counted.size };
 }

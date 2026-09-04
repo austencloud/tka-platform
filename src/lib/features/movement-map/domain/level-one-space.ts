@@ -27,6 +27,7 @@ import {
   signatureKey,
   type HandMotionSignature,
 } from "./movement-annotation";
+import { transposeKey } from "./movement-transpose";
 
 /** The orientations Level 1 is allowed to use. */
 export const LEVEL_ONE_ORIENTATIONS: readonly string[] = [
@@ -38,16 +39,30 @@ export function isLevelOneOrientation(orientation: string): boolean {
   return LEVEL_ONE_ORIENTATIONS.includes(orientation);
 }
 
-/** One movement in the space, with the letters that can ask for it. */
+/**
+ * One movement in the space, with the letters that can ask for it.
+ *
+ * A movement stands for its transposition too. Describing what an arm does on
+ * one side of the body describes the other arm doing it on the other side, so
+ * the two are one entry here and `transposeKey` names the reflected signature
+ * that also resolves to it.
+ */
 export interface LevelOneMovement {
   readonly key: string;
   readonly signature: HandMotionSignature;
   /** Letters whose pictographs contain this movement, for orientation. */
   readonly letters: readonly string[];
+  /**
+   * The reflected signature's key, or null when the movement is its own
+   * transposition - a path that crosses the axis it would be reflected in.
+   */
+  readonly transposeKey: string | null;
 }
 
 export interface LevelOneSpace {
+  /** One entry per transposition pair, not per signature. */
   readonly movements: readonly LevelOneMovement[];
+  /** Keyed by EITHER side's signature, both resolving to the one entry. */
   readonly byKey: ReadonlyMap<string, LevelOneMovement>;
   /** Which grid modes were read to build this. */
   readonly gridModes: readonly GridMode[];
@@ -161,7 +176,7 @@ function signaturesForMovement(
 export function buildLevelOneSpaceFromCsv(
   sources: readonly { gridMode: GridMode; csv: string }[]
 ): LevelOneSpace {
-  const byKey = new Map<string, LevelOneMovement>();
+  const signatureByKey = new Map<string, HandMotionSignature>();
   const lettersByKey = new Map<string, Set<string>>();
 
   for (const source of sources) {
@@ -169,8 +184,8 @@ export function buildLevelOneSpaceFromCsv(
       for (const hand of [row.blue, row.red]) {
         for (const signature of signaturesForMovement(hand)) {
           const key = signatureKey(signature);
-          if (!byKey.has(key)) {
-            byKey.set(key, { key, signature, letters: [] });
+          if (!signatureByKey.has(key)) {
+            signatureByKey.set(key, signature);
             lettersByKey.set(key, new Set());
           }
           if (row.letter) lettersByKey.get(key)!.add(row.letter);
@@ -179,16 +194,47 @@ export function buildLevelOneSpaceFromCsv(
     }
   }
 
-  const movements = [...byKey.values()]
-    .map((movement) => ({
-      ...movement,
-      letters: [...(lettersByKey.get(movement.key) ?? [])].sort(),
-    }))
-    .sort((a, b) => a.key.localeCompare(b.key));
+  // Collapse each movement together with its transposition. The pair is one
+  // thing to describe, so it is one entry to count. A twin the dataframe never
+  // produced leaves its partner standing alone rather than inventing it.
+  const movements: LevelOneMovement[] = [];
+  const claimed = new Set<string>();
+
+  for (const key of [...signatureByKey.keys()].sort()) {
+    if (claimed.has(key)) continue;
+    const signature = signatureByKey.get(key)!;
+    const twin = transposeKey(signature);
+    const hasTwin = twin !== key && signatureByKey.has(twin);
+
+    claimed.add(key);
+    if (hasTwin) claimed.add(twin);
+
+    const letters = new Set(lettersByKey.get(key) ?? []);
+    if (hasTwin) {
+      for (const letter of lettersByKey.get(twin) ?? []) letters.add(letter);
+    }
+
+    movements.push({
+      key,
+      signature,
+      letters: [...letters].sort(),
+      transposeKey: hasTwin ? twin : null,
+    });
+  }
+
+  movements.sort((a, b) => a.key.localeCompare(b.key));
+
+  // Either side's signature has to find the entry, or an annotation of the
+  // transposed hand would read as footage from outside Level 1.
+  const byKey = new Map<string, LevelOneMovement>();
+  for (const movement of movements) {
+    byKey.set(movement.key, movement);
+    if (movement.transposeKey) byKey.set(movement.transposeKey, movement);
+  }
 
   return {
     movements,
-    byKey: new Map(movements.map((m) => [m.key, m])),
+    byKey,
     gridModes: sources.map((s) => s.gridMode),
   };
 }
