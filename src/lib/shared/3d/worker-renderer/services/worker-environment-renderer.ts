@@ -9,6 +9,7 @@ import {
 import {
   clampWorkerViewport,
   type WorkerCameraSnapshot,
+  type WorkerEffectQualityTier,
   type WorkerEnvironmentKey,
   type WorkerRendererBootMetrics,
   type WorkerRendererInMessage,
@@ -56,6 +57,7 @@ export interface WorkerSceneSwitchSnapshot {
 
 export interface WorkerEnvironmentRendererOptions {
   container: HTMLElement;
+  qualityTier?: WorkerEffectQualityTier;
   onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
   onInteraction?: (
     message: Extract<WorkerRendererOutMessage, { type: "interaction" }>
@@ -102,12 +104,17 @@ export class WorkerEnvironmentRenderer {
   private performers: readonly WorkerPerformerSnapshot[] = [];
   private effects: WorkerSceneEffectsSnapshot = { playing: false, sources: [] };
   private camera: WorkerCameraSnapshot | null = null;
+  // This is the legacy detector's initial tier. The application normally
+  // replaces it immediately with the adaptive-quality state, while retaining
+  // this value keeps direct service consumers on the same default.
+  private qualityTier: WorkerEffectQualityTier = "medium";
 
   constructor(options: WorkerEnvironmentRendererOptions) {
     this.container = options.container;
     this.onSnapshot = options.onSnapshot;
     this.onInteraction = options.onInteraction;
     this.createWorker = options.createWorker ?? createRendererWorker;
+    this.qualityTier = options.qualityTier ?? this.qualityTier;
     this.supported = supportsWorkerEnvironmentRenderer();
     if (!this.supported) {
       this.phase = "unsupported";
@@ -188,6 +195,18 @@ export class WorkerEnvironmentRenderer {
     this.measureViewport();
   }
 
+  setQualityTier(qualityTier: WorkerEffectQualityTier): void {
+    if (qualityTier === this.qualityTier) return;
+    this.qualityTier = qualityTier;
+    for (const slot of this.slots.values()) {
+      this.post(slot, {
+        type: "quality",
+        requestId: slot.state.requestId,
+        qualityTier,
+      });
+    }
+  }
+
   setPerformers(performers: readonly WorkerPerformerSnapshot[]): void {
     this.performers = performers;
     for (const slot of this.slots.values()) {
@@ -232,6 +251,7 @@ export class WorkerEnvironmentRenderer {
         state,
         viewport: this.viewport,
         camera: this.camera ?? getWorkerEnvironmentCamera(state.environment),
+        qualityTier: this.qualityTier,
         performers: this.performers,
         effects: this.effects,
         createWorker: this.createWorker,

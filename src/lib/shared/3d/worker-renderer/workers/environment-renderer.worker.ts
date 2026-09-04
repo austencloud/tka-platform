@@ -8,6 +8,7 @@ import {
 } from "three";
 import type {
   WorkerCameraSnapshot,
+  WorkerEffectQualityTier,
   WorkerEnvironmentKey,
   WorkerRendererBootMetrics,
   WorkerRendererInMessage,
@@ -16,7 +17,10 @@ import type {
   WorkerSceneEffectsSnapshot,
   WorkerViewport,
 } from "../domain/worker-renderer-protocol";
-import { clampWorkerViewport } from "../domain/worker-renderer-protocol";
+import {
+  clampWorkerViewport,
+  resolveWorkerRenderQuality,
+} from "../domain/worker-renderer-protocol";
 import { createOceanPrototypeWorld } from "../worlds/ocean-prototype-world";
 import { createRainbowPrototypeWorld } from "../worlds/rainbow-prototype-world";
 import { createVoidPrototypeWorld } from "../worlds/void-prototype-world";
@@ -40,7 +44,10 @@ import {
   createViewerBaseLightingGroup,
   resolveViewerBaseLighting,
 } from "../../rendering/viewer-lighting-rig";
-import { ScenePostProcessingPipeline } from "../../effects/post-processing/scene-post-processing-pipeline";
+import {
+  ScenePostProcessingPipeline,
+  type ScenePostProcessingPipelineConfig,
+} from "../../effects/post-processing/scene-post-processing-pipeline";
 import { SceneEffectsManager3D } from "../../effects/scene-effects/scene-effects-manager-3d";
 import { WorkerImperativeEffects3D } from "../effects/worker-imperative-effects-3d";
 import type {
@@ -90,6 +97,7 @@ let frameCount = 0;
 let previousFrameAt = 0;
 let visible = true;
 let disposed = false;
+let qualityTier: WorkerEffectQualityTier = "medium";
 
 function post(message: WorkerRendererOutMessage): void {
   scope.postMessage(message);
@@ -113,28 +121,55 @@ function createPostProcessingPipeline(
   activeEnvironment: WorkerEnvironmentKey
 ): ScenePostProcessingPipeline | null {
   if (!renderer || !camera || !world) return null;
-  const isOcean = activeEnvironment === "ocean";
   return new ScenePostProcessingPipeline({
     renderer,
     scene: world.scene,
     camera,
-    config: {
-      enabled: true,
-      isOcean,
-      tierBloom: true,
-      enableShadows: true,
-      bloomResolutionScale: 1,
-      bloomLevels: 8,
-      tierBloomResolutionScale: 1,
-      tierBloomLevels: 8,
-      enableBloom: true,
-      enableChromaticAberration: true,
-      oceanBloom: true,
-      oceanWaterTint: true,
-      oceanWaterTintStrength: 0.8,
-      oceanUnderwaterDistortion: false,
-    },
+    config: createPostProcessingConfig(activeEnvironment, qualityTier),
   });
+}
+
+function createPostProcessingConfig(
+  activeEnvironment: WorkerEnvironmentKey,
+  activeQualityTier: WorkerEffectQualityTier
+): ScenePostProcessingPipelineConfig {
+  const isOcean = activeEnvironment === "ocean";
+  const quality = resolveWorkerRenderQuality(activeQualityTier, isOcean);
+  return {
+    enabled: quality.composerEnabled,
+    isOcean,
+    tierBloom: quality.tierBloom,
+    enableShadows: quality.enableShadows,
+    bloomResolutionScale: 1,
+    bloomLevels: 8,
+    tierBloomResolutionScale: quality.bloomResolutionScale,
+    tierBloomLevels: quality.bloomLevels,
+    enableBloom: true,
+    enableChromaticAberration: true,
+    oceanBloom: true,
+    oceanWaterTint: true,
+    oceanWaterTintStrength: 0.8,
+    oceanUnderwaterDistortion: false,
+  };
+}
+
+function applyQualityTier(nextTier: WorkerEffectQualityTier): void {
+  qualityTier = nextTier;
+  if (!renderer) return;
+  const quality = resolveWorkerRenderQuality(
+    qualityTier,
+    environment === "ocean"
+  );
+  if (postProcessing && world && camera && environment) {
+    postProcessing.updateConfig(
+      createPostProcessingConfig(environment, qualityTier),
+      world.scene,
+      camera
+    );
+  }
+  // Disabling Ocean's composer restores the renderer state captured when it
+  // was built, so shadows must be assigned after that lifecycle completes.
+  renderer.shadowMap.enabled = quality.enableShadows;
 }
 
 function renderCurrentFrame(deltaSeconds: number): void {
@@ -218,6 +253,7 @@ async function initialize(
 ): Promise<void> {
   requestId = message.requestId;
   environment = message.environment;
+  qualityTier = message.qualityTier;
   disposed = false;
   const acceptedAt = performance.now();
   post({
@@ -243,7 +279,10 @@ async function initialize(
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = resolveWorkerRenderQuality(
+    qualityTier,
+    environment === "ocean"
+  ).enableShadows;
 
   camera = new PerspectiveCamera(message.camera.fov, 1, 0.05, 500);
   applyViewport(message.viewport);
@@ -491,6 +530,9 @@ scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
     case "effects":
       externalEffects = message.effects;
       applyCurrentEffects();
+      break;
+    case "quality":
+      applyQualityTier(message.qualityTier);
       break;
     case "pointer": {
       if (!world || !environment) break;

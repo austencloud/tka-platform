@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   clampWorkerViewport,
   isWorkerRendererOutMessage,
+  resolveWorkerRenderQuality,
 } from "$lib/shared/3d/worker-renderer/domain/worker-renderer-protocol";
+import { QualityTier, TIER_CONFIGS } from "$lib/shared/3d/effects/types";
 
 describe("worker renderer protocol", () => {
   it("accepts only known worker messages with numeric request ids", () => {
@@ -27,5 +29,31 @@ describe("worker renderer protocol", () => {
     expect(
       clampWorkerViewport({ width: 100.4, height: 200.6, dpr: 0.25 })
     ).toEqual({ width: 100, height: 201, dpr: 0.5 });
+  });
+
+  it.each([
+    [QualityTier.HIGH, true, true],
+    [QualityTier.MEDIUM, true, false],
+    [QualityTier.LOW, false, false],
+  ] as const)(
+    "uses the canonical %s tier for composer, bloom, and shadows",
+    (tier, composerEnabled, enableShadows) => {
+      const resolved = resolveWorkerRenderQuality(tier, true);
+      const canonical = TIER_CONFIGS[tier];
+
+      expect(resolved).toEqual({
+        composerEnabled,
+        tierBloom: canonical.enableBloom,
+        enableShadows,
+        bloomResolutionScale: canonical.bloomResolutionScale,
+        bloomLevels: canonical.bloomLevels,
+      });
+    }
+  );
+
+  it("keeps low quality composer-free outside Ocean too", () => {
+    expect(resolveWorkerRenderQuality("low", false).composerEnabled).toBe(
+      false
+    );
   });
 });

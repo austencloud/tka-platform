@@ -2,6 +2,7 @@ import type { WorkerRendererSlotState } from "../domain/worker-renderer-handoff"
 import {
   isWorkerRendererOutMessage,
   type WorkerCameraSnapshot,
+  type WorkerEffectQualityTier,
   type WorkerRendererInMessage,
   type WorkerRendererOutMessage,
   type WorkerPerformerSnapshot,
@@ -16,6 +17,7 @@ export interface WorkerRendererSlotOptions {
   state: WorkerRendererSlotState;
   viewport: WorkerViewport;
   camera: WorkerCameraSnapshot;
+  qualityTier: WorkerEffectQualityTier;
   performers?: readonly WorkerPerformerSnapshot[];
   effects?: WorkerSceneEffectsSnapshot;
   createWorker: () => Worker;
@@ -84,6 +86,7 @@ export class WorkerRendererSlot {
         environment: this.state.environment,
         viewport: options.viewport,
         camera: options.camera,
+        qualityTier: options.qualityTier,
         performers: options.performers ?? [],
         effects: options.effects,
       };

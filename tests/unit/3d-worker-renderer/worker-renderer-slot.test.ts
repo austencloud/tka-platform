@@ -42,6 +42,7 @@ describe("worker renderer slot", () => {
       },
       viewport: { width: 640, height: 360, dpr: 1 },
       camera: { position: [0, 2, 8], target: [0, 0, 0], fov: 45 },
+      qualityTier: "medium",
       createWorker: () => worker as unknown as Worker,
       onMessage,
       onError: vi.fn(),
@@ -59,6 +60,7 @@ describe("worker renderer slot", () => {
       type: "initialize",
       requestId: 7,
       environment: "rainbow",
+      qualityTier: "medium",
     });
     expect(worker.postMessage.mock.calls[0]?.[1]).toHaveLength(1);
   });
@@ -85,6 +87,7 @@ describe("worker renderer slot", () => {
       },
       viewport: { width: 640, height: 360, dpr: 1 },
       camera: { position: [0, 2, 8], target: [0, 0, 0], fov: 45 },
+      qualityTier: "high",
       effects,
       createWorker: () => worker as unknown as Worker,
       onMessage: vi.fn(),
@@ -92,7 +95,10 @@ describe("worker renderer slot", () => {
       onDestroyed: vi.fn(),
     });
 
-    expect(worker.postMessage.mock.calls[0]?.[0]).toMatchObject({ effects });
+    expect(worker.postMessage.mock.calls[0]?.[0]).toMatchObject({
+      effects,
+      qualityTier: "high",
+    });
   });
 
   it("destroys once when the worker acknowledges disposal", () => {

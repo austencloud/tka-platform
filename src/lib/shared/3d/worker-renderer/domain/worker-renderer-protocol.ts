@@ -1,4 +1,5 @@
 import type { SceneEffectTipSource3D } from "../../effects/scene-effects/scene-effect-source-3d";
+import { QualityTier, TIER_CONFIGS } from "../../effects/types";
 import type { StripPattern } from "$lib/shared/poi/domain/strip-pattern";
 import type { EffectType } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 import type {
@@ -238,6 +239,34 @@ export interface WorkerPerformerSnapshot {
 
 export type WorkerEffectQualityTier = "high" | "medium" | "low";
 
+export interface WorkerRenderQualityConfig {
+  composerEnabled: boolean;
+  tierBloom: boolean;
+  enableShadows: boolean;
+  bloomResolutionScale: number;
+  bloomLevels: number;
+}
+
+/**
+ * Mirrors the interactive viewer's quality gates without giving the worker a
+ * second quality policy. Ocean keeps its authored post-processing on medium
+ * and high; low remains composer-free just like ScenePostProcessing.
+ */
+export function resolveWorkerRenderQuality(
+  tier: WorkerEffectQualityTier,
+  isOcean: boolean
+): WorkerRenderQualityConfig {
+  const tierConfig = TIER_CONFIGS[tier as QualityTier];
+  const tierBloom = tierConfig.enableBloom;
+  return {
+    composerEnabled: (isOcean && tier !== QualityTier.LOW) || tierBloom,
+    tierBloom,
+    enableShadows: tierConfig.enableShadows,
+    bloomResolutionScale: tierConfig.bloomResolutionScale,
+    bloomLevels: tierConfig.bloomLevels,
+  };
+}
+
 export interface WorkerTrailEffectConfig {
   maxPoints: number;
   width: number;
@@ -408,6 +437,7 @@ export interface InitializeWorkerRendererMessage {
   environment: WorkerEnvironmentKey;
   viewport: WorkerViewport;
   camera: WorkerCameraSnapshot;
+  qualityTier: WorkerEffectQualityTier;
   performers: readonly WorkerPerformerSnapshot[];
   effects?: WorkerSceneEffectsSnapshot;
 }
@@ -442,6 +472,12 @@ export interface EffectsWorkerRendererMessage {
   effects: WorkerSceneEffectsSnapshot;
 }
 
+export interface QualityWorkerRendererMessage {
+  type: "quality";
+  requestId: number;
+  qualityTier: WorkerEffectQualityTier;
+}
+
 export interface PointerWorkerRendererMessage {
   type: "pointer";
   requestId: number;
@@ -461,6 +497,7 @@ export type WorkerRendererInMessage =
   | CameraWorkerRendererMessage
   | PerformersWorkerRendererMessage
   | EffectsWorkerRendererMessage
+  | QualityWorkerRendererMessage
   | PointerWorkerRendererMessage
   | VisibilityWorkerRendererMessage
   | DisposeWorkerRendererMessage;
