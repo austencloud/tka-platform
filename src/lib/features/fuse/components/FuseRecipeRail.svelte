@@ -200,7 +200,7 @@
       summary={summaries.starting}
       color={cardColors.startEnd.color}
       shadowColor={cardColors.startEnd.shadowColor}
-      width="64rem"
+      width="54rem"
       open={activeSetting === "starting"}
       headerFontSize="var(--rail-card-title-size)"
       onOpenChange={(open) => onSettingOpenChange("starting", open)}
@@ -309,7 +309,10 @@
          title. Keep it in this shorthand — a bare `flex-basis` earlier in the
          block gets reset by this declaration. */
       flex: 1 1 100%;
+      width: 100%;
+      max-width: 200rem;
       min-width: 0;
+      margin-inline: auto;
       /* The card text scales off each card's own box, so one declaration here
          keeps all seven reading at the same size. */
       --rail-card-title-size: 9px;

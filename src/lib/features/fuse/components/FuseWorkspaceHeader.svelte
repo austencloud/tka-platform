@@ -258,6 +258,10 @@
       display: inline;
     }
 
+    .title-block {
+      flex: 0 0 auto;
+    }
+
     .recipe-trigger {
       flex: 1;
     }
