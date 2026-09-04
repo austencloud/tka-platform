@@ -97,9 +97,9 @@ export interface ArchiveTrackPlacement {
 	spanEnd: number;
 }
 
-export const ARCHIVE_START_YEAR = 2004;
+export const ARCHIVE_START_YEAR = 1998;
 export const ARCHIVE_END_YEAR = 2026;
-export const ARCHIVE_YEAR_TICKS = [2004, 2010, 2016, 2022, 2026] as const;
+export const ARCHIVE_YEAR_TICKS = [1998, 2005, 2012, 2019, 2026] as const;
 
 export const ARCHIVE_LANES: ArchiveLane[] = [
 	{
@@ -347,6 +347,50 @@ const catalogEntries: ArchiveEntry[] = NOTATION_CATALOG.map((catalogEntry) => {
 });
 
 const researchEntries: ArchiveEntry[] = [
+	{
+		id: "home-of-poi",
+		lane: "teaching",
+		dateLabel: "1998",
+		firstDocumentedYear: 1998,
+		activity: {
+			status: "active",
+			lastVerifiedYear: 2026,
+			note: "The lesson library and forum archive were live when reviewed in 2026.",
+		},
+		title: "Home of Poi",
+		shortTitle: "Home of Poi",
+		people: "Malcolm Crawshay and the Home of Poi community",
+		summary:
+			"One of the first online poi schools and a vast community archive. Malcolm Crawshay launched it in 1998; its lessons and hundreds of thousands of forum posts preserved technique, terminology, safety practice, and debate.",
+		evidenceBasis: "creators-account",
+		evidenceLabel: "Organization history",
+		evidenceShortLabel: "Org source",
+		evidenceNote:
+			"Home of Poi dates its launch to October 26, 1998 and names Malcolm Crawshay as its founder. The forum archive preserves the community's part of the record.",
+		citations: [
+			{
+				label: "Home of Poi: Our mission and values",
+				href: "https://www.homeofpoi.com/us/company/information-mission.php",
+				supports:
+					"The October 26, 1998 launch, Malcolm Crawshay's authorship, and the site's educational and community purpose.",
+				basis: "creators-account",
+			},
+			{
+				label: "Home of Poi forum archive",
+				href: "https://www.homeofpoi.com/us/community/forums/",
+				supports:
+					"The surviving archive and its hundreds of thousands of public movement, teaching, and community posts.",
+				basis: "directly-observed",
+			},
+			{
+				label: "How do you define a weave?, 2002",
+				href: "https://www.homeofpoi.com/en/community/forums/topics/120838/How-do-you-define-a-weave",
+				supports:
+					"A dated example of members working through movement terminology and teaching language in public.",
+				basis: "community-attested",
+			},
+		],
+	},
 	{
 		id: "fan-alphabet",
 		lane: "languages",

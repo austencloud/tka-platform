@@ -351,6 +351,15 @@
 		min-height: 0;
 	}
 
+	/* The overview is one reading unit. Center that unit when the persistent
+	   rail is taller than its contents; otherwise a flex auto-margin tears the
+	   Sources door away from the evidence it opens and leaves a false void in
+	   the middle of the inspector. `safe` falls back to the start edge if a
+	   record ever needs more room than the rail provides. */
+	.contained .overview-screen {
+		justify-content: safe center;
+	}
+
 	.overview-heading h2,
 	.summary,
 	.evidence-card h3,
@@ -434,7 +443,7 @@
 	.detail-doors {
 		display: grid;
 		gap: 0.5rem;
-		margin-top: auto;
+		margin-top: clamp(0.15rem, 1.25cqh, 0.85rem);
 	}
 
 	.detail-door {
