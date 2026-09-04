@@ -877,7 +877,9 @@ export function activityLabel(entry: ArchiveEntry): string | undefined {
  */
 export function placeArchiveEntries(
 	entries: ArchiveEntry[],
-	minimumGapYears = 4
+	// On the 32-year map, four years leaves the edge-aligned 1994 book
+	// overlapping the centered Home of Poi marker. Keep those on separate tracks.
+	minimumGapYears = 5
 ): ArchiveTrackPlacement[] {
 	const lastYearByTrack: number[] = [];
 
