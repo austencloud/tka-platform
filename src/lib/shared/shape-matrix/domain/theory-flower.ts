@@ -66,20 +66,42 @@ export function theoryFlowerKey(flower: TheoryFlower): string {
   return `${spinRatioKey(flower.ratio)}-${flower.style}-${flower.ori}`;
 }
 
+function isTheoryOri(value: string | undefined): value is TheoryOri {
+  return value !== undefined && value in ORI_PHASE;
+}
+
+function isSpinStyle(value: string | undefined): value is SpinStyle {
+  return value === "pro" || value === "anti";
+}
+
 /**
  * The inverse of `theoryFlowerKey`, for restoring a shared link. Rebuilding
  * from the axis rather than from the key's own parts keeps petals and the
  * endpoint collapses (float, stationary) authoritative in one place.
+ *
+ * A link written before the axis stopped emitting coincident starts still
+ * resolves. `1:2-pro-out` names a start that no longer has a row of its own,
+ * because at two hand cycles `out` is `in` re-entered half a period later and
+ * the two draw one curve. Falling to the start it coincides with shows that
+ * link exactly the shape it always showed, rather than dropping the selection.
  */
 export function parseTheoryFlowerKey(key: string): TheoryFlower | null {
   const parts = key.split("-");
   if (parts.length !== 3) return null;
-  const [ratioKey] = parts;
+  const [ratioKey, styleKey, oriKey] = parts;
   const ratio = parseSpinRatio(ratioKey ?? "");
   if (!ratio) return null;
+
+  const axis = buildTheoryAxis(ratio);
+  const exact = axis.find((candidate) => theoryFlowerKey(candidate) === key);
+  if (exact) return exact;
+
+  if (!isSpinStyle(styleKey) || !isTheoryOri(oriKey)) return null;
   return (
-    buildTheoryAxis(ratio).find(
-      (candidate) => theoryFlowerKey(candidate) === key
+    axis.find(
+      (candidate) =>
+        candidate.style === styleKey &&
+        startsCoincide(ratio, candidate.ori, oriKey)
     ) ?? null
   );
 }
@@ -93,17 +115,67 @@ export function theoryFlowerLabel(flower: TheoryFlower): string {
 }
 
 /**
+ * Whether two prop starts draw the same curve at this ratio.
+ *
+ * The tip is a hand circle plus a prop circle, so shifting time by δ carries
+ * the hand δ eighths and the prop (P/Q)·δ. The hand only returns to its own
+ * start every 8 eighths, so δ = 8k is the only shift a closed curve can
+ * absorb, and such a shift moves the prop start by 8kP/Q. Solving
+ * 8kP/Q ≡ Δφ (mod 8) for an integer k leaves one condition, and it is on the
+ * hand-cycle count alone: Δφ·Q has to be a whole number of eighths.
+ *
+ * At 1:2 that makes `in` and `out` one flower entered half a period apart, and
+ * the grid drew it as two identical tiles with the flipped variant nowhere on
+ * the surface. It is a property of the field rather than a painter artefact:
+ * every ratio with an even hand-cycle count loses a start this way, and one
+ * whose count divides by four keeps only a single compass start.
+ */
+function startsCoincide(
+  ratio: SpinRatio,
+  a: TheoryOri,
+  b: TheoryOri
+): boolean {
+  return (Math.abs(ORI_PHASE[a] - ORI_PHASE[b]) * ratio.handCycles) % 8 === 0;
+}
+
+/**
+ * The prop starts that actually differ, in the order the axis prefers them.
+ *
+ * `in` and `out` lead because they are the pair the Matrix axis uses, so every
+ * odd-cycle ratio keeps exactly the axis it had. Where those two coincide the
+ * quarter-turn starts still do not, and `clock` draws the flower flipped end
+ * for end: the missing variant, not a fifth one.
+ */
+const START_PREFERENCE: readonly TheoryOri[] = [
+  "in",
+  "out",
+  "clock",
+  "counter",
+];
+
+function distinctStarts(ratio: SpinRatio, limit: number): TheoryOri[] {
+  const starts: TheoryOri[] = [];
+  for (const ori of START_PREFERENCE) {
+    if (starts.length >= limit) break;
+    if (starts.some((kept) => startsCoincide(ratio, kept, ori))) continue;
+    starts.push(ori);
+  }
+  return starts;
+}
+
+/**
  * The variants one hand has at a ratio.
  *
- * Four for an ordinary ratio, the same two-by-two the Matrix axis uses:
- * prospin and antispin, each starting with the prop pointing in or out.
+ * Two spins, each with the starts that genuinely draw something different —
+ * usually the same two-by-two the Matrix axis uses, prop pointing in or out.
  *
- * The two endpoints are not four-way, and padding them out with copies would
- * be a lie the grid tells four times. A float prop never rotates, so pro and
- * anti are the same motion and the four DISTINCT starts are the four compass
- * quarters — the float axis the Matrix already builds. A stationary hand has
- * no bearing for the prop to be offset from, so 1:0 traces one circle and
- * gets one row.
+ * Copies are not padding, they are a lie the grid tells once per tile, so no
+ * branch here emits one. A float prop never rotates, so pro and anti are the
+ * same motion and the four DISTINCT starts are the four compass quarters —
+ * the float axis the Matrix already builds. A stationary hand has no bearing
+ * for the prop to be offset from, so 1:0 traces one circle and gets one row.
+ * An even-cycle ratio is the third case: `startsCoincide` says which of its
+ * starts survive.
  */
 export function buildTheoryAxis(ratio: SpinRatio): TheoryFlower[] {
   const petalsFor = (style: SpinStyle) => spinRatioPetals(ratio, style);
@@ -121,9 +193,12 @@ export function buildTheoryAxis(ratio: SpinRatio): TheoryFlower[] {
     }));
   }
 
+  // Two starts per spin wherever two exist. 1:4 and 3:4 have one, and 1:8
+  // through 7:8 have one for any start at all, so those axes are two rows.
+  const starts = distinctStarts(ratio, 2);
   const variants: TheoryFlower[] = [];
   for (const style of ["pro", "anti"] as const) {
-    for (const ori of ["in", "out"] as const) {
+    for (const ori of starts) {
       variants.push({ ratio, style, ori, petals: petalsFor(style) });
     }
   }

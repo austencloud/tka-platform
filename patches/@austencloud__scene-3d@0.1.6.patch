@@ -6771,7 +6771,7 @@ diff --git a/dist/lib/index.d.ts.map b/dist/lib/index.d.ts.map
 deleted file mode 100644
 index e65326b49a5b788b837220aaf39614a7876831ce..0000000000000000000000000000000000000000
 diff --git a/dist/lib/index.js b/dist/lib/index.js
-index 10260a02337aeff1c9a1b880aff958088813053b..d6ba1b8ded600f2c9fe89007fd6d3572c054727c 100644
+index 10260a02337aeff1c9a1b880aff958088813053b..eb7a83eb1648992399ae5bdbeb5061e14bf925ef 100644
 --- a/dist/lib/index.js
 +++ b/dist/lib/index.js
 @@ -47,6 +47,7 @@ export { SCALE, STAGE, WORLDS } from "./scale/scale-constants";
@@ -6782,7 +6782,7 @@ index 10260a02337aeff1c9a1b880aff958088813053b..d6ba1b8ded600f2c9fe89007fd6d3572
  // Context
  export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
  export { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVisibilityContext } from "./context/viewer-visibility-context";
-@@ -66,6 +67,7 @@ export { ClavicleRaiser } from "./services/implementations/ClavicleRaiser";
+@@ -66,13 +67,15 @@ export { ClavicleRaiser } from "./services/implementations/ClavicleRaiser";
  export { SpineTwister } from "./services/implementations/SpineTwister";
  export { ElbowPoleComputer } from "./services/implementations/ElbowPoleComputer";
  export { CollisionDetector } from "./services/implementations/CollisionDetector";
@@ -6790,7 +6790,16 @@ index 10260a02337aeff1c9a1b880aff958088813053b..d6ba1b8ded600f2c9fe89007fd6d3572
  export { HingeConstrainedLegIKSolver } from "./services/implementations/HingeConstrainedLegIKSolver";
  export { ContactCurveCache } from "./services/implementations/ContactCurveCache";
  export { ClipBasedTurnAnimator } from "./services/implementations/ClipBasedTurnAnimator";
-@@ -89,3 +91,6 @@ export { PROP_MODEL_REGISTRY } from "./components/props/prop-model-registry";
+ export { createCameraChoreographer } from "./services/implementations/CameraChoreographer";
+ export { createFormationManager } from "./services/implementations/FormationManager";
+ export { AvatarCustomizer } from "./services/implementations/AvatarCustomizer";
+-export { KneeHingeAxisCalibrator } from "./services/implementations/KneeHingeAxisCalibrator";
++export { KneeHingeAxisCalibrator, kneeHingeReferenceAxis } from "./services/implementations/KneeHingeAxisCalibrator";
++export { buildTwoBoneChain } from "./services/leg-geometry";
+ export { LegAnimator } from "./services/implementations/LegAnimator";
+ export { solveCylinderGrasp } from "./services/implementations/CylinderGraspSolver";
+ export { createPerformerSynchronizer } from "./services/implementations/PerformerSynchronizer";
+@@ -89,3 +92,6 @@ export { PROP_MODEL_REGISTRY } from "./components/props/prop-model-registry";
  export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
  // Data
  export { STAFF_GRIP_POSES } from "./data/grip-poses/staff-grip-poses";
@@ -9797,14 +9806,14 @@ deleted file mode 100644
 index 5040c8a93fa8a008b51c602fb2e84cea444643b3..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/ContactRetargeter.js b/dist/lib/services/implementations/ContactRetargeter.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..112c9dc1c4f2c90c68571b29928a51ceb643e76e
+index 0000000000000000000000000000000000000000..e1562ad4db1067e611855fafaa1f706f34c00492
 --- /dev/null
 +++ b/dist/lib/services/implementations/ContactRetargeter.js
-@@ -0,0 +1,379 @@
+@@ -0,0 +1,386 @@
 +import { AnimationClip, AnimationMixer, Matrix4, Quaternion, QuaternionKeyframeTrack, Vector3, VectorKeyframeTrack, } from "three";
 +import { buildTwoBoneChain } from "../leg-geometry";
 +import { HingeConstrainedLegIKSolver } from "./HingeConstrainedLegIKSolver";
-+import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
++import { KneeHingeAxisCalibrator, kneeHingeReferenceAxis } from "./KneeHingeAxisCalibrator";
 +/** Rotation tracks this bake takes ownership of. Everything else is left alone. */
 +const BAKED = [
 +    "LeftUpLeg",
@@ -9875,6 +9884,13 @@ index 0000000000000000000000000000000000000000..112c9dc1c4f2c90c68571b29928a51ce
 +    if (!hips)
 +        return null;
 +    root.updateMatrixWorld(true);
++    // Referenced to this rig's own hip line, so a rig authored facing some
++    // other way still calibrates. Both legs share one reference.
++    const leftHip = bone("LeftUpLeg");
++    const rightHip = bone("RightUpLeg");
++    const reference = leftHip && rightHip
++        ? kneeHingeReferenceAxis(leftHip, rightHip)
++        : new Vector3(1, 0, 0);
 +    const calibrator = new KneeHingeAxisCalibrator();
 +    const build = (side) => {
 +        const upper = bone(`${side}UpLeg`);
@@ -9886,7 +9902,7 @@ index 0000000000000000000000000000000000000000..112c9dc1c4f2c90c68571b29928a51ce
 +        return {
 +            chain,
 +            toe: bone(`${side}ToeBase`),
-+            hinge: calibrator.compute(chain.rootRestDir, chain.middleRestDir),
++            hinge: calibrator.compute(chain, reference),
 +        };
 +    };
 +    const left = build("Left");
@@ -10594,7 +10610,7 @@ diff --git a/dist/lib/services/implementations/FootPlanter.d.ts.map b/dist/lib/s
 deleted file mode 100644
 index 756125321be9ddfe04e11cf726909db56ac0a0d6..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/FootPlanter.js b/dist/lib/services/implementations/FootPlanter.js
-index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..c384be4be6e9800f797932d23205d24ca67da118 100644
+index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..dbdfef9e3d110c001a2152a2114366cc9840261e 100644
 --- a/dist/lib/services/implementations/FootPlanter.js
 +++ b/dist/lib/services/implementations/FootPlanter.js
 @@ -8,18 +8,42 @@
@@ -10621,7 +10637,8 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..c384be4be6e9800f797932d23205d24c
 -import { Vector3 } from "three";
 +import { Quaternion, Vector3 } from "three";
  import { LocomotionState } from "../contracts/IAnimationStateMachine";
- import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
+-import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
++import { KneeHingeAxisCalibrator, kneeHingeReferenceAxis } from "./KneeHingeAxisCalibrator";
 +import { toeTipClearance } from "../leg-geometry";
 +/**
 + * Critically damped approach, the standard game-loop form. Never overshoots,
@@ -10731,7 +10748,7 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..c384be4be6e9800f797932d23205d24c
      // Per-leg hinge axes derived from bind-pose rest directions at init time.
      // These never change during playback - the knee is a hinge, not a ball joint.
      leftKneeHingeAxis = new Vector3(1, 0, 0);
-@@ -57,16 +142,46 @@ export class FootPlanter {
+@@ -57,28 +142,64 @@ export class FootPlanter {
      tempFootWorld = new Vector3();
      tempHipsWorld = new Vector3();
      tempTarget = new Vector3();
@@ -10779,7 +10796,28 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..c384be4be6e9800f797932d23205d24c
          this.initialized = !!(this.leftLegChain && this.rightLegChain);
          if (!this.initialized) {
              console.warn("[FootPlanter] Leg chains not available - foot IK disabled");
-@@ -86,6 +201,9 @@ export class FootPlanter {
+             return;
+         }
+-        // Derive per-leg hinge axes from bind-pose rest directions
++        // Derive each knee's hinge axis from the bind pose, referenced to this
++        // character's own hip line rather than an assumed facing.
++        const leftHip = skeleton.getBone("LeftUpLeg");
++        const rightHip = skeleton.getBone("RightUpLeg");
++        const reference = leftHip && rightHip
++            ? kneeHingeReferenceAxis(leftHip, rightHip)
++            : new Vector3(1, 0, 0);
+         const calibrator = new KneeHingeAxisCalibrator();
+         if (this.leftLegChain) {
+-            this.leftKneeHingeAxis.copy(calibrator.compute(this.leftLegChain.rootRestDir, this.leftLegChain.middleRestDir));
++            this.leftKneeHingeAxis.copy(calibrator.compute(this.leftLegChain, reference));
+         }
+         if (this.rightLegChain) {
+-            this.rightKneeHingeAxis.copy(calibrator.compute(this.rightLegChain.rootRestDir, this.rightLegChain.middleRestDir));
++            this.rightKneeHingeAxis.copy(calibrator.compute(this.rightLegChain, reference));
+         }
+     }
+     update(delta, input) {
+@@ -86,6 +207,9 @@ export class FootPlanter {
              return;
          if (!this.leftLegChain || !this.rightLegChain)
              return;
@@ -10789,7 +10827,7 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..c384be4be6e9800f797932d23205d24c
          // Skip foot planting during airborne states - let the animation play freely
          if (input.locomotionState === LocomotionState.JUMPING ||
              input.locomotionState === LocomotionState.FALLING) {
-@@ -94,17 +212,14 @@ export class FootPlanter {
+@@ -94,17 +218,14 @@ export class FootPlanter {
              this.fadeOutFoot(this.rightFoot, delta);
              return;
          }
@@ -10812,7 +10850,7 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..c384be4be6e9800f797932d23205d24c
              return;
          }
          // 1. Read current foot positions from animation
-@@ -132,16 +247,24 @@ export class FootPlanter {
+@@ -132,16 +253,24 @@ export class FootPlanter {
          this.leftFoot.prevWorldPos.copy(leftFootPos);
          this.rightFoot.prevWorldPos.copy(rightFootPos);
          // 3. Detect contact phase and manage lock targets
@@ -10844,7 +10882,7 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..c384be4be6e9800f797932d23205d24c
      }
      configure(config) {
          this.config = { ...this.config, ...config };
-@@ -155,8 +278,17 @@ export class FootPlanter {
+@@ -155,8 +284,17 @@ export class FootPlanter {
          this.contactCurveCache = null;
          this.leftLegChain = null;
          this.rightLegChain = null;
@@ -10862,7 +10900,7 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..c384be4be6e9800f797932d23205d24c
          this.leftFoot = createFootState();
          this.rightFoot = createFootState();
      }
-@@ -172,168 +304,592 @@ export class FootPlanter {
+@@ -172,168 +310,592 @@ export class FootPlanter {
          const rawVelocity = Math.sqrt(dx * dx + dy * dy + dz * dz) / dt;
          // Exponential smoothing - 0.3 gives quick response while filtering spikes
          const smoothFactor = 0.3;
@@ -11932,6 +11970,152 @@ index faf9ac5873528872c21a33af4b75aeeb4787c8d1..00000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/KneeHingeAxisCalibrator.d.ts.map b/dist/lib/services/implementations/KneeHingeAxisCalibrator.d.ts.map
 deleted file mode 100644
 index 47c2bd2070a7f0e11cfe987085b9b9f5e928a9d1..0000000000000000000000000000000000000000
+diff --git a/dist/lib/services/implementations/KneeHingeAxisCalibrator.js b/dist/lib/services/implementations/KneeHingeAxisCalibrator.js
+index d3bfef52fae5be915356c52a5547027d328ce240..3949de097b577e1c0bb01fc23de2bf76a4b30406 100644
+--- a/dist/lib/services/implementations/KneeHingeAxisCalibrator.js
++++ b/dist/lib/services/implementations/KneeHingeAxisCalibrator.js
+@@ -1,25 +1,121 @@
+-import { Vector3 } from "three";
++import { Matrix4, Object3D, Vector3 } from "three";
++
+ /**
+- * Derives the knee's sagittal hinge axis from the rest-pose directions
+- * of the UpLeg and Leg bones. The axis is the cross product of the
+- * two rest directions, normalized. This is the axis perpendicular to
+- * the natural bend plane - rotating around it bends the knee forward
+- * or backward but never sideways.
+- *
+- * Called once at skeleton-build time, not per-frame, so allocation
+- * is fine here (unlike the IK hot path which uses pooled temps).
+- *
+- * Fallback: if the two rest directions are nearly parallel (straight
+- * leg in bind pose, cross product near zero), returns world +X which
+- * is the sagittal axis for a character facing +Z (the TKA scene
+- * convention).
++ * Derives the axis a knee is allowed to bend around.
++ *
++ * A knee is a hinge. It flexes about the body's mediolateral axis and has
++ * almost no freedom in the frontal plane -- clinically a whole gait cycle
++ * moves a healthy knee 8-12 degrees there, and sustained deviation past that
++ * is what is called dynamic valgus. So the axis handed to the IK solver
++ * decides whether the leg bends like a leg or folds sideways.
++ *
++ * ## Why this is not the cross product of the two rest directions
++ *
++ * It used to be `cross(chain.rootRestDir, chain.middleRestDir)`. That was
++ * wrong twice over:
++ *
++ * 1. **Mismatched spaces.** `restDirection()` returns each bone's direction in
++ *    *its own parent's* local space, so `rootRestDir` is in UpLeg space and
++ *    `middleRestDir` is in Leg space. Crossing two vectors written in
++ *    different frames does not produce a direction in either of them; what
++ *    came out depended on the exporter's per-bone axis convention.
++ * 2. **Degenerate magnitude.** A bind pose stands with the legs straight, so
++ *    the two directions are near-parallel and the cross product is near-zero.
++ *    Its *direction* is then decided entirely by whichever way the bind knee
++ *    happens to be bent by a fraction of a degree. The old `lengthSq < 1e-6`
++ *    guard could not catch that: for unit inputs `lengthSq` is `sin^2(theta)`,
++ *    so even a 1-degree bind bend gives 3e-4 -- three hundred times over the
++ *    threshold -- and the noise became the axis.
++ *
++ * Measured across the twelve shipped characters, eleven bind poses were
++ * straight enough in those mismatched frames that the cross product came out
++ * exactly zero and the fallback rescued them. `ch07` was not: the guard
++ * missed, and its left knee was handed an axis 84 degrees off sagittal. That
++ * knee bent almost purely sideways under foot planting.
++ *
++ * The fallback was quietly wrong too. It returned world `+X` while the solver
++ * writes the bend into `knee.quaternion`, which rotates in the knee's *parent*
++ * space. On the other eleven rigs that mismatch was worth 1.2 to 7.6 degrees
++ * -- small enough to look fine, large enough to be wrong.
++ *
++ * ## What it does instead
++ *
++ * Both leg directions are taken in world space, where they are comparable, and
++ * the caller supplies the character's own hinge reference from the hip line
++ * rather than assuming a facing. The cross product is used only when the bind
++ * knee is bent far enough for its direction to carry information; otherwise
++ * the reference axis is the answer, because that is what a knee hinge is. The
++ * result is converted into the space the solver actually applies it in.
++ *
++ * Called once at skeleton-build time, not per frame, so allocating here is
++ * fine (unlike the IK hot path, which uses pooled temps).
++ */
++
++/**
++ * `sin^2` of the smallest bind bend whose direction is worth trusting.
++ *
++ * 15 degrees. Below it the cross product is dominated by rounding and by
++ * whatever incidental bend the artist left in the bind pose; above it the leg
++ * is deliberately posed and its bend plane is real. `sin^2(15 deg)` is 0.067,
++ * which is 67000 times the threshold it replaces.
+  */
++const MIN_TRUSTWORTHY_BEND_SIN_SQ = 0.067;
++
++const REFERENCE_FROM = new Vector3();
++const REFERENCE_TO = new Vector3();
++
++/**
++ * The world-space axis a knee hinges about, taken from the character's own
++ * hip line so a rig that was rotated before calibration still calibrates.
++ *
++ * Direction is right hip toward left hip. That is world `+X` on all twelve
++ * shipped characters (measured: the left-to-right hip line reads
++ * `-1.000, 0.000, <0.03` on every one), which is the direction the previous
++ * hardcoded fallback assumed. Passing it the other way round would flip every
++ * knee, so callers take it from here rather than building it themselves.
++ */
++export function kneeHingeReferenceAxis(leftHip, rightHip) {
++  leftHip.getWorldPosition(REFERENCE_TO);
++  rightHip.getWorldPosition(REFERENCE_FROM);
++  const axis = REFERENCE_TO.clone().sub(REFERENCE_FROM);
++  // A rig with both hips at one point has no measurable hip line. Fall back to
++  // the convention every shipped rig matches rather than returning a zero.
++  return axis.lengthSq() < 1e-9 ? new Vector3(1, 0, 0) : axis.normalize();
++}
++
+ export class KneeHingeAxisCalibrator {
+-    compute(upLegRestDir, legRestDir) {
+-        const axis = new Vector3().crossVectors(upLegRestDir, legRestDir);
+-        if (axis.lengthSq() < 1e-6) {
+-            return new Vector3(1, 0, 0);
+-        }
+-        return axis.normalize();
++  /**
++   * @param chain hip -> knee -> ankle, with world matrices already updated.
++   * @param referenceAxisWorld from `kneeHingeReferenceAxis`.
++   * @returns the hinge axis in the chain root's local space, which is where
++   *          the solver applies it.
++   */
++  compute(chain, referenceAxisWorld) {
++    const hip = new Vector3();
++    const knee = new Vector3();
++    const ankle = new Vector3();
++    chain.root.getWorldPosition(hip);
++    chain.middle.getWorldPosition(knee);
++    chain.effector.getWorldPosition(ankle);
++
++    const femur = knee.clone().sub(hip).normalize();
++    const tibia = ankle.clone().sub(knee).normalize();
++
++    const axis = new Vector3().crossVectors(femur, tibia);
++    if (axis.lengthSq() < MIN_TRUSTWORTHY_BEND_SIN_SQ) {
++      axis.copy(referenceAxisWorld).normalize();
++    } else {
++      axis.normalize();
++      // A bent bind pose fixes the plane but not which way along its normal.
++      // Point it with the body so both legs agree and the solver's sign search
++      // starts from the same side on every rig.
++      if (axis.dot(referenceAxisWorld) < 0) axis.negate();
+     }
++
++    // The solver writes its bend into `knee.quaternion`, and a bone's local
++    // quaternion rotates in its parent's space -- here, the UpLeg.
++    return axis
++      .transformDirection(new Matrix4().copy(chain.root.matrixWorld).invert())
++      .normalize();
++  }
+ }
 diff --git a/dist/lib/services/implementations/LegAnimator.d.ts b/dist/lib/services/implementations/LegAnimator.d.ts
 deleted file mode 100644
 index adb85b16968baa585645b13795904a9c25bba11d..0000000000000000000000000000000000000000
@@ -22312,7 +22496,7 @@ index a6a29aa9b928eb98fc102f572da1ed2035c658ba..08994c5b2a1f5816db497d58a030af04
  	BIGTORCH = "bigtorch",
  	POI = "poi",
 diff --git a/src/lib/index.ts b/src/lib/index.ts
-index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..f730d0095921422928d9a1b3857fe3a7d03aac07 100644
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..dd1bcbfbf68691a56a68ae2210b26bea5bcb43ed 100644
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
 @@ -71,6 +71,16 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
@@ -22332,17 +22516,26 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..f730d0095921422928d9a1b3857fe3a7
  
  // Context
  export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
-@@ -78,10 +88,21 @@ export { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVis
+@@ -78,10 +88,29 @@ export { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVis
  export type { ViewerVisibilityState } from "./context/viewer-visibility-context";
  
  // Services - contracts
 -export type { IAvatarAnimator } from "./services/contracts/IAvatarAnimator";
+-export type { IAvatarSkeletonBuilder, BoneName } from "./services/contracts/IAvatarSkeletonBuilder";
 +export type {
 +  AvatarAnimatorDiagnostics,
 +  AvatarGripDiagnostics,
 +  IAvatarAnimator,
 +} from "./services/contracts/IAvatarAnimator";
- export type { IAvatarSkeletonBuilder, BoneName } from "./services/contracts/IAvatarSkeletonBuilder";
++export type {
++  IAvatarSkeletonBuilder,
++  BoneName,
++  BoneChain,
++} from "./services/contracts/IAvatarSkeletonBuilder";
++// Building a leg chain is how a harness hands the real bones to the real
++// planter. Without it a caller has to re-derive rest directions by hand, which
++// is exactly the mixed-space mistake the calibrator doc describes.
++export { buildTwoBoneChain } from "./services/leg-geometry";
  export type { IIKSolver } from "./services/contracts/IIKSolver";
 -export type { ILocomotionAnimator } from "./services/contracts/ILocomotionAnimator";
 +export type {
@@ -22356,7 +22549,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..f730d0095921422928d9a1b3857fe3a7
  export type { IAnimationStateMachine } from "./services/contracts/IAnimationStateMachine";
  export { LocomotionState } from "./services/contracts/IAnimationStateMachine";
  export type { IFootPlanter } from "./services/contracts/IFootPlanter";
-@@ -89,9 +110,21 @@ export type { IRootMotionExtractor } from "./services/contracts/IRootMotionExtra
+@@ -89,9 +118,21 @@ export type { IRootMotionExtractor } from "./services/contracts/IRootMotionExtra
  export type { IFingerAnimator } from "./services/contracts/IFingerAnimator";
  export type { IClavicleRaiser } from "./services/contracts/IClavicleRaiser";
  export type { ISpineTwister } from "./services/contracts/ISpineTwister";
@@ -22380,7 +22573,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..f730d0095921422928d9a1b3857fe3a7
  export type { ICameraChoreographer, PerformerPositionProvider } from "./services/contracts/ICameraChoreographer";
  export type { IFormationManager } from "./services/contracts/IFormationManager";
  export type { IContactCurveCache } from "./services/contracts/IContactCurveCache";
-@@ -113,12 +146,17 @@ export { IKSolver } from "./services/implementations/IKSolver";
+@@ -113,19 +154,27 @@ export { IKSolver } from "./services/implementations/IKSolver";
  export { LocomotionAnimator } from "./services/implementations/LocomotionAnimator";
  export { AnimationStateMachine } from "./services/implementations/AnimationStateMachine";
  export { FootPlanter } from "./services/implementations/FootPlanter";
@@ -22398,7 +22591,18 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..f730d0095921422928d9a1b3857fe3a7
  export { HingeConstrainedLegIKSolver } from "./services/implementations/HingeConstrainedLegIKSolver";
  export { ContactCurveCache } from "./services/implementations/ContactCurveCache";
  export { ClipBasedTurnAnimator } from "./services/implementations/ClipBasedTurnAnimator";
-@@ -151,3 +189,7 @@ export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
+ export { createCameraChoreographer } from "./services/implementations/CameraChoreographer";
+ export { createFormationManager } from "./services/implementations/FormationManager";
+ export { AvatarCustomizer } from "./services/implementations/AvatarCustomizer";
+-export { KneeHingeAxisCalibrator } from "./services/implementations/KneeHingeAxisCalibrator";
++export {
++  KneeHingeAxisCalibrator,
++  kneeHingeReferenceAxis,
++} from "./services/implementations/KneeHingeAxisCalibrator";
+ export { LegAnimator } from "./services/implementations/LegAnimator";
+ export { solveCylinderGrasp } from "./services/implementations/CylinderGraspSolver";
+ export type { GraspResult } from "./services/implementations/CylinderGraspSolver";
+@@ -151,3 +200,7 @@ export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
  
  // Data
  export { STAFF_GRIP_POSES } from "./data/grip-poses/staff-grip-poses";
@@ -27127,10 +27331,10 @@ index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..145b22db339a0b1197cbd5228c7be949
    private segmentToSegmentDistance(a0: Vector3, a1: Vector3, b0: Vector3, b1: Vector3): number {
 diff --git a/src/lib/services/implementations/ContactRetargeter.ts b/src/lib/services/implementations/ContactRetargeter.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..df9962ddd074ebf26af07bc137a37e88efb187fc
+index 0000000000000000000000000000000000000000..51b49af6e0ecca3eb45af1e6e4a2f603c4ef244f
 --- /dev/null
 +++ b/src/lib/services/implementations/ContactRetargeter.ts
-@@ -0,0 +1,710 @@
+@@ -0,0 +1,721 @@
 +import {
 +  AnimationClip,
 +  AnimationMixer,
@@ -27146,7 +27350,10 @@ index 0000000000000000000000000000000000000000..df9962ddd074ebf26af07bc137a37e88
 +import type { ClipFootprint, FootTrack } from "../clip-footprint";
 +import { buildTwoBoneChain } from "../leg-geometry";
 +import { HingeConstrainedLegIKSolver } from "./HingeConstrainedLegIKSolver";
-+import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
++import {
++  KneeHingeAxisCalibrator,
++  kneeHingeReferenceAxis,
++} from "./KneeHingeAxisCalibrator";
 +
 +/** Rotation tracks this bake takes ownership of. Everything else is left alone. */
 +const BAKED = [
@@ -27276,6 +27483,14 @@ index 0000000000000000000000000000000000000000..df9962ddd074ebf26af07bc137a37e88
 +  if (!hips) return null;
 +
 +  root.updateMatrixWorld(true);
++  // Referenced to this rig's own hip line, so a rig authored facing some other
++  // way still calibrates. Both legs share one reference.
++  const leftHip = bone("LeftUpLeg");
++  const rightHip = bone("RightUpLeg");
++  const reference =
++    leftHip && rightHip
++      ? kneeHingeReferenceAxis(leftHip, rightHip)
++      : new Vector3(1, 0, 0);
 +  const calibrator = new KneeHingeAxisCalibrator();
 +  const build = (side: "Left" | "Right"): Omit<Side, "track"> | null => {
 +    const upper = bone(`${side}UpLeg`);
@@ -27286,7 +27501,7 @@ index 0000000000000000000000000000000000000000..df9962ddd074ebf26af07bc137a37e88
 +    return {
 +      chain,
 +      toe: bone(`${side}ToeBase`),
-+      hinge: calibrator.compute(chain.rootRestDir, chain.middleRestDir),
++      hinge: calibrator.compute(chain, reference),
 +    };
 +  };
 +
@@ -28400,10 +28615,10 @@ index 0b10e18f5606c70eae1b5f61a7322173ad38e1d3..276e7f05b2821f5b3099af0aba57b17c
        state.currentRotations[i]!.copy(this.scratchQuat);
        state.bones[i]!.quaternion.copy(this.scratchQuat);
 diff --git a/src/lib/services/implementations/FootPlanter.ts b/src/lib/services/implementations/FootPlanter.ts
-index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e10bc1b0f 100644
+index a47113296e4edce51a40e2a1c3498c4f13969e4f..5ba47207fcc96128e6c77d89ea63f5baf5676c01 100644
 --- a/src/lib/services/implementations/FootPlanter.ts
 +++ b/src/lib/services/implementations/FootPlanter.ts
-@@ -8,27 +8,62 @@
+@@ -8,27 +8,65 @@
   * Algorithm per frame:
   * 1. Read each foot bone's world position (written by animation mixer)
   * 2. Track foot velocity to detect contact phase (velocity near zero = planted)
@@ -28440,7 +28655,11 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
  import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
  import type { IContactCurveCache } from "../contracts/IContactCurveCache";
  import { LocomotionState } from "../contracts/IAnimationStateMachine";
- import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
+-import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
++import {
++  KneeHingeAxisCalibrator,
++  kneeHingeReferenceAxis,
++} from "./KneeHingeAxisCalibrator";
 +import { toeTipClearance } from "../leg-geometry";
 +
 +/**
@@ -28472,7 +28691,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
  
  // ── Defaults ──
  
-@@ -41,8 +76,52 @@ const DEFAULT_CONFIG: Required<FootPlanterConfig> = {
+@@ -41,8 +79,52 @@ const DEFAULT_CONFIG: Required<FootPlanterConfig> = {
    // Measured from typical Mixamo humanoid: ankle joint sits ~7cm above ground.
    // Too small = feet clip into floor. Too large = feet hover.
    footHeightOffset: 0.07,
@@ -28525,7 +28744,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
  /**
   * Per-foot tracking state.
   * Tracks position history for velocity computation and IK blend weight.
-@@ -54,10 +133,109 @@ interface FootState {
+@@ -54,10 +136,109 @@ interface FootState {
    smoothedVelocity: number;
    /** Current IK blend weight: 0 = animation drives, 1 = IK drives */
    ikWeight: number;
@@ -28637,7 +28856,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
  }
  
  function createFootState(): FootState {
-@@ -65,8 +243,19 @@ function createFootState(): FootState {
+@@ -65,8 +246,19 @@ function createFootState(): FootState {
      prevWorldPos: new Vector3(),
      smoothedVelocity: 1, // Start high so feet don't lock on first frame
      ikWeight: 0,
@@ -28658,7 +28877,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
    };
  }
  
-@@ -79,8 +268,13 @@ export class FootPlanter implements IFootPlanter {
+@@ -79,8 +271,13 @@ export class FootPlanter implements IFootPlanter {
    private leftFoot: FootState = createFootState();
    private rightFoot: FootState = createFootState();
  
@@ -28672,7 +28891,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
  
    // Per-leg hinge axes derived from bind-pose rest directions at init time.
    // These never change during playback - the knee is a hinge, not a ball joint.
-@@ -91,12 +285,34 @@ export class FootPlanter implements IFootPlanter {
+@@ -91,12 +288,34 @@ export class FootPlanter implements IFootPlanter {
    private readonly tempFootWorld = new Vector3();
    private readonly tempHipsWorld = new Vector3();
    private readonly tempTarget = new Vector3();
@@ -28708,7 +28927,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
    initialize(
      skeleton: IAvatarSkeletonBuilder,
      legIKSolver: ILegIKSolver,
-@@ -105,8 +321,17 @@ export class FootPlanter implements IFootPlanter {
+@@ -105,8 +324,17 @@ export class FootPlanter implements IFootPlanter {
      this.skeleton = skeleton;
      this.legIKSolver = legIKSolver;
      this.contactCurveCache = contactCurveCache;
@@ -28726,28 +28945,34 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
      this.initialized = !!(this.leftLegChain && this.rightLegChain);
  
      if (!this.initialized) {
-@@ -118,12 +343,18 @@ export class FootPlanter implements IFootPlanter {
+@@ -114,16 +342,23 @@ export class FootPlanter implements IFootPlanter {
+       return;
+     }
+ 
+-    // Derive per-leg hinge axes from bind-pose rest directions
++    // Derive each knee's hinge axis from the bind pose, referenced to this
++    // character's own hip line rather than an assumed facing.
++    const leftHip = skeleton.getBone("LeftUpLeg");
++    const rightHip = skeleton.getBone("RightUpLeg");
++    const reference =
++      leftHip && rightHip
++        ? kneeHingeReferenceAxis(leftHip, rightHip)
++        : new Vector3(1, 0, 0);
      const calibrator = new KneeHingeAxisCalibrator();
      if (this.leftLegChain) {
        this.leftKneeHingeAxis.copy(
 -        calibrator.compute(this.leftLegChain.rootRestDir, this.leftLegChain.middleRestDir)
-+        calibrator.compute(
-+          this.leftLegChain.rootRestDir,
-+          this.leftLegChain.middleRestDir
-+        )
++        calibrator.compute(this.leftLegChain, reference)
        );
      }
      if (this.rightLegChain) {
        this.rightKneeHingeAxis.copy(
 -        calibrator.compute(this.rightLegChain.rootRestDir, this.rightLegChain.middleRestDir)
-+        calibrator.compute(
-+          this.rightLegChain.rootRestDir,
-+          this.rightLegChain.middleRestDir
-+        )
++        calibrator.compute(this.rightLegChain, reference)
        );
      }
    }
-@@ -131,6 +362,9 @@ export class FootPlanter implements IFootPlanter {
+@@ -131,6 +366,9 @@ export class FootPlanter implements IFootPlanter {
    update(delta: number, input: FootPlanterInput): void {
      if (!this.initialized || !this.skeleton || !this.legIKSolver) return;
      if (!this.leftLegChain || !this.rightLegChain) return;
@@ -28757,7 +28982,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
  
      // Skip foot planting during airborne states - let the animation play freely
      if (
-@@ -143,19 +377,16 @@ export class FootPlanter implements IFootPlanter {
+@@ -143,19 +381,16 @@ export class FootPlanter implements IFootPlanter {
        return;
      }
  
@@ -28782,7 +29007,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
        return;
      }
  
-@@ -189,20 +420,43 @@ export class FootPlanter implements IFootPlanter {
+@@ -189,20 +424,43 @@ export class FootPlanter implements IFootPlanter {
      this.rightFoot.prevWorldPos.copy(rightFootPos);
  
      // 3. Detect contact phase and manage lock targets
@@ -28833,7 +29058,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
    }
  
    configure(config: FootPlanterConfig): void {
-@@ -213,16 +467,39 @@ export class FootPlanter implements IFootPlanter {
+@@ -213,16 +471,39 @@ export class FootPlanter implements IFootPlanter {
      return this.initialized;
    }
  
@@ -28876,7 +29101,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
    }
  
    // ── Velocity tracking ──
-@@ -231,7 +508,11 @@ export class FootPlanter implements IFootPlanter {
+@@ -231,7 +512,11 @@ export class FootPlanter implements IFootPlanter {
     * Compute smoothed velocity from position delta.
     * Uses exponential smoothing to filter jitter from animation sampling.
     */
@@ -28889,7 +29114,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
      const dx = currentPos.x - foot.prevWorldPos.x;
      const dy = currentPos.y - foot.prevWorldPos.y;
      const dz = currentPos.z - foot.prevWorldPos.z;
-@@ -239,7 +520,8 @@ export class FootPlanter implements IFootPlanter {
+@@ -239,7 +524,8 @@ export class FootPlanter implements IFootPlanter {
  
      // Exponential smoothing - 0.3 gives quick response while filtering spikes
      const smoothFactor = 0.3;
@@ -28899,7 +29124,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
      // NOTE: prevWorldPos is updated in the main update() method AFTER velocity
      // computation, using pre-IK positions. Do NOT update it here.
    }
-@@ -247,22 +529,127 @@ export class FootPlanter implements IFootPlanter {
+@@ -247,22 +533,127 @@ export class FootPlanter implements IFootPlanter {
    // ── Contact phase detection ──
  
    /**
@@ -29037,7 +29262,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
      if (
        this.contactCurveCache &&
        input.currentClipName &&
-@@ -273,77 +660,304 @@ export class FootPlanter implements IFootPlanter {
+@@ -273,77 +664,304 @@ export class FootPlanter implements IFootPlanter {
          input.currentClipName,
          input.currentClipPhase
        );
@@ -29398,7 +29623,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
    }
  
    /**
-@@ -351,61 +965,232 @@ export class FootPlanter implements IFootPlanter {
+@@ -351,61 +969,232 @@ export class FootPlanter implements IFootPlanter {
     */
    private fadeOutFoot(foot: FootState, delta: number): void {
      foot.isLocked = false;
@@ -29665,7 +29890,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
    }
  
    // ── Foot IK solve ──
-@@ -414,32 +1199,90 @@ export class FootPlanter implements IFootPlanter {
+@@ -414,32 +1203,90 @@ export class FootPlanter implements IFootPlanter {
     * Solve two-bone IK for one leg using the hinge-constrained leg solver.
     * The solver handles weight blending internally, so no slerp is needed here.
     */
@@ -30178,6 +30403,155 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
 +      foot.quaternion.copy(rotation);
      }
 +    foot.updateMatrixWorld(true);
+   }
+ }
+diff --git a/src/lib/services/implementations/KneeHingeAxisCalibrator.ts b/src/lib/services/implementations/KneeHingeAxisCalibrator.ts
+index ce05b8a4253eadc12a846226c96a9d83f63063bc..0d04a3e7f6340dc401dcdf68b59f6af055426ca6 100644
+--- a/src/lib/services/implementations/KneeHingeAxisCalibrator.ts
++++ b/src/lib/services/implementations/KneeHingeAxisCalibrator.ts
+@@ -1,26 +1,125 @@
+-import { Vector3 } from "three";
++import { Matrix4, Object3D, Vector3 } from "three";
++import type { BoneChain } from "../contracts/IAvatarSkeletonBuilder";
+ 
+ /**
+- * Derives the knee's sagittal hinge axis from the rest-pose directions
+- * of the UpLeg and Leg bones. The axis is the cross product of the
+- * two rest directions, normalized. This is the axis perpendicular to
+- * the natural bend plane - rotating around it bends the knee forward
+- * or backward but never sideways.
+- *
+- * Called once at skeleton-build time, not per-frame, so allocation
+- * is fine here (unlike the IK hot path which uses pooled temps).
+- *
+- * Fallback: if the two rest directions are nearly parallel (straight
+- * leg in bind pose, cross product near zero), returns world +X which
+- * is the sagittal axis for a character facing +Z (the TKA scene
+- * convention).
++ * Derives the axis a knee is allowed to bend around.
++ *
++ * A knee is a hinge. It flexes about the body's mediolateral axis and has
++ * almost no freedom in the frontal plane -- clinically a whole gait cycle
++ * moves a healthy knee 8-12 degrees there, and sustained deviation past that
++ * is what is called dynamic valgus. So the axis handed to the IK solver
++ * decides whether the leg bends like a leg or folds sideways.
++ *
++ * ## Why this is not the cross product of the two rest directions
++ *
++ * It used to be `cross(chain.rootRestDir, chain.middleRestDir)`. That was
++ * wrong twice over:
++ *
++ * 1. **Mismatched spaces.** `restDirection()` returns each bone's direction in
++ *    *its own parent's* local space, so `rootRestDir` is in UpLeg space and
++ *    `middleRestDir` is in Leg space. Crossing two vectors written in
++ *    different frames does not produce a direction in either of them; what
++ *    came out depended on the exporter's per-bone axis convention.
++ * 2. **Degenerate magnitude.** A bind pose stands with the legs straight, so
++ *    the two directions are near-parallel and the cross product is near-zero.
++ *    Its *direction* is then decided entirely by whichever way the bind knee
++ *    happens to be bent by a fraction of a degree. The old `lengthSq < 1e-6`
++ *    guard could not catch that: for unit inputs `lengthSq` is `sin^2(theta)`,
++ *    so even a 1-degree bind bend gives 3e-4 -- three hundred times over the
++ *    threshold -- and the noise became the axis.
++ *
++ * Measured across the twelve shipped characters, eleven bind poses were
++ * straight enough in those mismatched frames that the cross product came out
++ * exactly zero and the fallback rescued them. `ch07` was not: the guard
++ * missed, and its left knee was handed an axis 84 degrees off sagittal. That
++ * knee bent almost purely sideways under foot planting.
++ *
++ * The fallback was quietly wrong too. It returned world `+X` while the solver
++ * writes the bend into `knee.quaternion`, which rotates in the knee's *parent*
++ * space. On the other eleven rigs that mismatch was worth 1.2 to 7.6 degrees
++ * -- small enough to look fine, large enough to be wrong.
++ *
++ * ## What it does instead
++ *
++ * Both leg directions are taken in world space, where they are comparable, and
++ * the caller supplies the character's own hinge reference from the hip line
++ * rather than assuming a facing. The cross product is used only when the bind
++ * knee is bent far enough for its direction to carry information; otherwise
++ * the reference axis is the answer, because that is what a knee hinge is. The
++ * result is converted into the space the solver actually applies it in.
++ *
++ * Called once at skeleton-build time, not per frame, so allocating here is
++ * fine (unlike the IK hot path, which uses pooled temps).
+  */
++
++/**
++ * `sin^2` of the smallest bind bend whose direction is worth trusting.
++ *
++ * 15 degrees. Below it the cross product is dominated by rounding and by
++ * whatever incidental bend the artist left in the bind pose; above it the leg
++ * is deliberately posed and its bend plane is real. `sin^2(15 deg)` is 0.067,
++ * which is 67000 times the threshold it replaces.
++ */
++const MIN_TRUSTWORTHY_BEND_SIN_SQ = 0.067;
++
++const REFERENCE_FROM = new Vector3();
++const REFERENCE_TO = new Vector3();
++
++/**
++ * The world-space axis a knee hinges about, taken from the character's own
++ * hip line so a rig that was rotated before calibration still calibrates.
++ *
++ * Direction is right hip toward left hip. That is world `+X` on all twelve
++ * shipped characters (measured: the left-to-right hip line reads
++ * `-1.000, 0.000, <0.03` on every one), which is the direction the previous
++ * hardcoded fallback assumed. Passing it the other way round would flip every
++ * knee, so callers take it from here rather than building it themselves.
++ */
++export function kneeHingeReferenceAxis(
++  leftHip: Object3D,
++  rightHip: Object3D
++): Vector3 {
++  leftHip.getWorldPosition(REFERENCE_TO);
++  rightHip.getWorldPosition(REFERENCE_FROM);
++  const axis = REFERENCE_TO.clone().sub(REFERENCE_FROM);
++  // A rig with both hips at one point has no measurable hip line. Fall back to
++  // the convention every shipped rig matches rather than returning a zero.
++  return axis.lengthSq() < 1e-9 ? new Vector3(1, 0, 0) : axis.normalize();
++}
++
+ export class KneeHingeAxisCalibrator {
+-  compute(upLegRestDir: Vector3, legRestDir: Vector3): Vector3 {
+-    const axis = new Vector3().crossVectors(upLegRestDir, legRestDir);
+-    if (axis.lengthSq() < 1e-6) {
+-      return new Vector3(1, 0, 0);
++  /**
++   * @param chain hip -> knee -> ankle, with world matrices already updated.
++   * @param referenceAxisWorld from `kneeHingeReferenceAxis`.
++   * @returns the hinge axis in the chain root's local space, which is where
++   *          the solver applies it.
++   */
++  compute(chain: BoneChain, referenceAxisWorld: Vector3): Vector3 {
++    const hip = new Vector3();
++    const knee = new Vector3();
++    const ankle = new Vector3();
++    chain.root.getWorldPosition(hip);
++    chain.middle.getWorldPosition(knee);
++    chain.effector.getWorldPosition(ankle);
++
++    const femur = knee.clone().sub(hip).normalize();
++    const tibia = ankle.clone().sub(knee).normalize();
++
++    const axis = new Vector3().crossVectors(femur, tibia);
++    if (axis.lengthSq() < MIN_TRUSTWORTHY_BEND_SIN_SQ) {
++      axis.copy(referenceAxisWorld).normalize();
++    } else {
++      axis.normalize();
++      // A bent bind pose fixes the plane but not which way along its normal.
++      // Point it with the body so both legs agree and the solver's sign search
++      // starts from the same side on every rig.
++      if (axis.dot(referenceAxisWorld) < 0) axis.negate();
+     }
+-    return axis.normalize();
++
++    // The solver writes its bend into `knee.quaternion`, and a bone's local
++    // quaternion rotates in its parent's space -- here, the UpLeg.
++    return axis
++      .transformDirection(new Matrix4().copy(chain.root.matrixWorld).invert())
++      .normalize();
    }
  }
 diff --git a/src/lib/services/implementations/LocomotionAnimator.ts b/src/lib/services/implementations/LocomotionAnimator.ts
