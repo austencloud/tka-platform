@@ -25,7 +25,6 @@
   import TunnelPerformerRoster from "./TunnelPerformerRoster.svelte";
   import TunnelRelationshipEditor from "./TunnelRelationshipEditor.svelte";
   import ShapeMatrixTunnelSourcePicker from "./ShapeMatrixTunnelSourcePicker.svelte";
-  import TunnelRecipeRail from "./TunnelRecipeRail.svelte";
   import type { ModeRealization } from "$lib/shared/shape-matrix/services/build-mode-realizations";
   import type { SequenceSource } from "$lib/shared/browse/engine/types";
 
@@ -221,14 +220,6 @@
     return () => media.removeEventListener("change", update);
   });
 
-  function toggleSettings(): void {
-    if (settingsOpen) {
-      creator.closeWorkspacePanel();
-    } else {
-      creator.openWorkspacePanel("settings");
-    }
-  }
-
   function openSettings(): void {
     creator.openWorkspacePanel("settings");
   }
@@ -312,8 +303,8 @@
 {#snippet settingsPanel(isMobile: boolean, layout: "bottom" | "sidebar")}
   <div class="drawer-panel settings-panel">
     <PanelHeader
-      title="Tunnel settings"
-      subtitle="Formation, playback, and props"
+      title="Stage settings"
+      subtitle="Formation, appearance, and playback"
       {isMobile}
       onClose={creator.closeWorkspacePanel}
     />
@@ -416,8 +407,7 @@
         <div class="title-block">
           <h2>Build a tunnel</h2>
           <p>
-            Compose one to four performers; generated copies stay out of the
-            cast.
+            Give each performer choreography, then arrange the cast on stage.
           </p>
         </div>
       {/if}
@@ -436,28 +426,7 @@
             >
           </PanelButton>
         </div>
-        <div class="settings-trigger">
-          <PanelButton
-            variant="secondary"
-            onclick={toggleSettings}
-            ariaExpanded={settingsOpen}
-            ariaLabel={settingsOpen
-              ? "Close tunnel settings"
-              : "Open tunnel settings"}
-          >
-            <i class="fas fa-sliders" aria-hidden="true"></i>
-            <span>Tunnel settings</span>
-            <i class="fas fa-chevron-right" aria-hidden="true"></i>
-          </PanelButton>
-        </div>
       </div>
-
-      <TunnelRecipeRail
-        {controller}
-        short={shortLandscape}
-        onCastChange={changeCastCount}
-        onOpenSettings={openSettings}
-      />
     </header>
 
     <div class="source-column">
@@ -472,6 +441,7 @@
         renderedInstanceCount={controller.performerCount}
         focusMode={focusPerformers}
         short={shortLandscape}
+        onCastChange={changeCastCount}
         onChoose={(performerId) => creator.openPicker(performerId)}
         onChooseShapeMatrix={(performerId) => (shapeMatrixTarget = performerId)}
         onGenerateNow={(performerId) => void generatePerformer(performerId)}
@@ -491,10 +461,12 @@
         <div class="preview-summary">
           <p>
             {creator.authoredPerformerCount} authored · {controller.performerCount}
-            rendered instances · {controller.propCount} props
+            on stage · {controller.propCount} props
           </p>
           <p>
-            {controller.colorMode === "custom"
+            Together after {controller.loopSteps}
+            {controller.loopSteps === 1 ? "step" : "steps"} · {controller.colorMode ===
+            "custom"
               ? `Custom pair ${controller.customPropColors.left.toUpperCase()} / ${controller.customPropColors.right.toUpperCase()}`
               : controller.colorMode === "spectrum"
                 ? "Spectrum stage colors"
@@ -548,7 +520,7 @@
         <div class="result-actions">
           <PanelButton variant="secondary" onclick={openSettings}>
             <i class="fas fa-sliders" aria-hidden="true"></i>
-            Settings
+            Stage settings
           </PanelButton>
           <PanelButton
             variant="primary"
@@ -564,7 +536,7 @@
     </section>
 
     {#if compact && settingsOpen}
-      <aside class="compact-settings-surface" aria-label="Tunnel settings">
+      <aside class="compact-settings-surface" aria-label="Stage settings">
         {@render settingsPanel(true, "bottom")}
       </aside>
     {/if}
@@ -771,8 +743,7 @@
     margin-left: auto;
   }
 
-  .library-trigger,
-  .settings-trigger {
+  .library-trigger {
     flex: 0 1 auto;
     min-width: 0;
   }
@@ -793,16 +764,6 @@
     font-size: var(--font-size-compact, 12px);
     font-variant-numeric: tabular-nums;
     font-weight: 750;
-  }
-
-  .settings-trigger :global(.panel-btn) {
-    min-width: 13rem;
-    justify-content: flex-start;
-  }
-
-  .settings-trigger :global(.panel-btn span) {
-    flex: 1;
-    text-align: left;
   }
 
   .source-column {
@@ -1179,9 +1140,7 @@
     }
 
     .title-block p,
-    .library-label,
-    .settings-trigger :global(.panel-btn span),
-    .settings-trigger :global(.panel-btn .fa-chevron-right) {
+    .library-label {
       display: none;
     }
 
@@ -1190,8 +1149,7 @@
       height: 32px;
     }
 
-    .library-trigger :global(.panel-btn),
-    .settings-trigger :global(.panel-btn) {
+    .library-trigger :global(.panel-btn) {
       width: var(--min-touch-target, 48px);
       min-width: var(--min-touch-target, 48px);
       padding: 0;
@@ -1307,10 +1265,6 @@
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 4px 8px;
       padding: 4px 6px;
-    }
-
-    .short-landscape .workspace-header > :global(.tunnel-recipe) {
-      grid-column: 1 / -1;
     }
 
     .short-landscape .title-block p,
