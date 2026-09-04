@@ -35,6 +35,37 @@ export type WorkerVector3 = readonly [number, number, number];
 export type WorkerQuaternion = readonly [number, number, number, number];
 
 /**
+ * Prop visuals the worker can reproduce through a renderer-neutral canonical
+ * owner. The staff aliases all route through scene-3d's `createStaffObject`;
+ * `hand` deliberately mounts no prop mesh, matching Prop3D's bare-hand branch.
+ *
+ * Every other production prop remains fail-closed until scene-3d exports its
+ * existing geometry as a worker-safe factory. Importing the package's Svelte
+ * components into an OffscreenCanvas worker, or copying their geometry here,
+ * would create a second renderer that can silently drift from the app.
+ */
+export const WORKER_PERFORMER_PROP_TYPES = [
+  "staff",
+  "simple_staff",
+  "staff_v2",
+  "bigstaff",
+  "hand",
+] as const;
+
+export type WorkerPerformerPropType =
+  (typeof WORKER_PERFORMER_PROP_TYPES)[number];
+
+const WORKER_PERFORMER_PROP_TYPE_SET = new Set<string>(
+  WORKER_PERFORMER_PROP_TYPES
+);
+
+export function isWorkerPerformerPropType(
+  value: string
+): value is WorkerPerformerPropType {
+  return WORKER_PERFORMER_PROP_TYPE_SET.has(value);
+}
+
+/**
  * Structured-clone-safe form of the already-resolved choreography state.
  *
  * The application remains the authority for Choreo timing and plane math.
@@ -82,8 +113,8 @@ export interface WorkerPerformerSnapshot {
   groundY: number;
   staffLength: number;
   staffThickness: number;
-  leftPropType: string;
-  rightPropType: string;
+  leftPropType: WorkerPerformerPropType;
+  rightPropType: WorkerPerformerPropType;
   leftProp: WorkerPropSnapshot | null;
   rightProp: WorkerPropSnapshot | null;
   stanceYaw: number;

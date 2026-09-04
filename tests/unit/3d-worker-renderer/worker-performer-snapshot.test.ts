@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Plane, userProportionsState } from "@austencloud/scene-3d";
+import { Plane, PropType, userProportionsState } from "@austencloud/scene-3d";
 import { Quaternion, Vector3 } from "three";
 import type { CharacterInstanceState } from "$lib/shared/3d/state/character-instance-state.svelte";
 import {
@@ -62,6 +62,18 @@ describe("worker performer snapshots", () => {
     expect(
       supportsWorkerPerformer({ leftPropType: "fan", rightPropType: "staff" })
     ).toBe(false);
+    expect(
+      supportsWorkerPerformer({ leftPropType: "hand", rightPropType: "hand" })
+    ).toBe(true);
+  });
+
+  it("refuses to serialize a prop the worker cannot reproduce", () => {
+    expect(() =>
+      createWorkerPerformerSnapshot(performer(), {
+        leftPropType: PropType.FAN,
+        rightPropType: PropType.STAFF,
+      })
+    ).toThrow("cannot reproduce fan/staff exactly");
   });
 
   it("serializes resolved Choreo transforms without moving their ownership", () => {

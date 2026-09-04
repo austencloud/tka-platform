@@ -21,26 +21,24 @@ import {
 } from "@austencloud/scene-3d/worker";
 import type {
   WorkerPerformerSnapshot,
+  WorkerPerformerPropType,
   WorkerPropSnapshot,
 } from "../domain/worker-renderer-protocol";
+import { isWorkerPerformerPropType } from "../domain/worker-renderer-protocol";
 import { createPerformerBadgeTexture } from "../../rendering/performer-badge-texture";
 import { WorkerPerformerLocomotion } from "./worker-performer-locomotion";
 
-const STAFF_PROP_TYPES = new Set([
-  "staff",
-  "simple_staff",
-  "staff_v2",
-  "bigstaff",
-]);
 const STAFF_HORIZONTAL_QUATERNION = new Quaternion().setFromEuler(
   new Euler(0, 0, Math.PI / 2)
 );
 
-interface WorkerPropObject {
+export interface WorkerPropObject {
   anchor: Group;
   correction: Group;
-  staff: StaffObject;
+  visual: StaffObject | null;
   state: PropState3D;
+  setSnapshot(snapshot: WorkerPropSnapshot | null): void;
+  dispose(): void;
 }
 
 interface WorkerPerformerBadgeObject {
@@ -60,13 +58,26 @@ function propState(snapshot: WorkerPropSnapshot): PropState3D {
   };
 }
 
-function createProp(
+function createCanonicalPropVisual(
+  propType: WorkerPerformerPropType,
+  side: "left" | "right",
+  snapshot: WorkerPerformerSnapshot
+): StaffObject | null {
+  if (propType === "hand") return null;
+  return createStaffObject({
+    color: side === "left" ? "blue" : "red",
+    length: snapshot.staffLength,
+    thickness: snapshot.staffThickness,
+  });
+}
+
+export function createWorkerPerformerProp(
   side: "left" | "right",
   snapshot: WorkerPerformerSnapshot
 ): WorkerPropObject {
   const propType =
     side === "left" ? snapshot.leftPropType : snapshot.rightPropType;
-  if (!STAFF_PROP_TYPES.has(propType)) {
+  if (!isWorkerPerformerPropType(propType)) {
     throw new Error(
       `Worker performer does not yet own exact ${propType} geometry`
     );
@@ -77,12 +88,8 @@ function createProp(
   const correction = new Group();
   correction.name = `${side}-prop-correction`;
   anchor.add(correction);
-  const staff = createStaffObject({
-    color: side === "left" ? "blue" : "red",
-    length: snapshot.staffLength,
-    thickness: snapshot.staffThickness,
-  });
-  correction.add(staff.root);
+  const visual = createCanonicalPropVisual(propType, side, snapshot);
+  if (visual) correction.add(visual.root);
 
   const source = side === "left" ? snapshot.leftProp : snapshot.rightProp;
   const state = source
@@ -95,7 +102,31 @@ function createProp(
         worldRotation: new Quaternion(),
       };
 
-  return { anchor, correction, staff, state };
+  const result: WorkerPropObject = {
+    anchor,
+    correction,
+    visual,
+    state,
+    setSnapshot(next) {
+      anchor.visible = next !== null;
+      if (!next) return;
+      state.centerPathAngle = next.centerPathAngle;
+      state.staffRotationAngle = next.staffRotationAngle;
+      state.plane = next.plane as PropState3D["plane"];
+      state.worldPosition.fromArray(next.worldPosition);
+      state.worldRotation.fromArray(next.worldRotation);
+      state.gripType = next.gripType as PropState3D["gripType"];
+      anchor.position.copy(state.worldPosition);
+      visual?.setState(state);
+    },
+    dispose() {
+      visual?.dispose();
+      anchor.removeFromParent();
+      anchor.clear();
+    },
+  };
+  result.setSnapshot(source);
+  return result;
 }
 
 /**
@@ -136,8 +167,8 @@ export class WorkerPerformer {
     this.locomotion = enableLocomotion
       ? new WorkerPerformerLocomotion(this.services)
       : null;
-    this.left = createProp("left", snapshot);
-    this.right = createProp("right", snapshot);
+    this.left = createWorkerPerformerProp("left", snapshot);
+    this.right = createWorkerPerformerProp("right", snapshot);
     this.root.add(this.left.anchor, this.right.anchor);
   }
 
@@ -260,16 +291,7 @@ export class WorkerPerformer {
     target: WorkerPropObject,
     snapshot: WorkerPropSnapshot | null
   ): void {
-    target.anchor.visible = snapshot !== null;
-    if (!snapshot) return;
-    target.state.centerPathAngle = snapshot.centerPathAngle;
-    target.state.staffRotationAngle = snapshot.staffRotationAngle;
-    target.state.plane = snapshot.plane as PropState3D["plane"];
-    target.state.worldPosition.fromArray(snapshot.worldPosition);
-    target.state.worldRotation.fromArray(snapshot.worldRotation);
-    target.state.gripType = snapshot.gripType as PropState3D["gripType"];
-    target.anchor.position.copy(target.state.worldPosition);
-    target.staff.setState(target.state);
+    target.setSnapshot(snapshot);
   }
 
   update(deltaSeconds: number): void {
@@ -420,8 +442,8 @@ export class WorkerPerformer {
     if (this.disposed) return;
     this.disposed = true;
     this.disposeBadge();
-    this.left.staff.dispose();
-    this.right.staff.dispose();
+    this.left.dispose();
+    this.right.dispose();
     this.locomotion?.dispose();
     this.services.fingers.dispose();
     this.services.skeleton.dispose();

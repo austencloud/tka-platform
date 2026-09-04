@@ -4,16 +4,11 @@ import { resolvePerformerUpperBodyStance } from "../../domain/performer-upper-bo
 import { CANONICAL_PERFORMER_ANCHOR_Y } from "../../environments/domain/stage-coordinate-frame";
 import type {
   WorkerPerformerSnapshot,
+  WorkerPerformerPropType,
   WorkerPropSnapshot,
 } from "../domain/worker-renderer-protocol";
+import { isWorkerPerformerPropType } from "../domain/worker-renderer-protocol";
 import { getPerformerColor } from "../../constants/performer-colors";
-
-const STAFF_PROP_TYPES = new Set([
-  "staff",
-  "simple_staff",
-  "staff_v2",
-  "bigstaff",
-]);
 
 export interface WorkerPerformerSnapshotOptions {
   leftPropType: string;
@@ -26,6 +21,12 @@ export interface WorkerPerformerSnapshotOptions {
     visible: boolean;
   };
 }
+
+type SupportedWorkerPerformerSnapshotOptions =
+  WorkerPerformerSnapshotOptions & {
+    leftPropType: WorkerPerformerPropType;
+    rightPropType: WorkerPerformerPropType;
+  };
 
 function serializeProp(
   state: CharacterInstanceState["leftPropState"]
@@ -43,10 +44,10 @@ function serializeProp(
 
 export function supportsWorkerPerformer(
   options: WorkerPerformerSnapshotOptions
-): boolean {
+): options is SupportedWorkerPerformerSnapshotOptions {
   return (
-    STAFF_PROP_TYPES.has(options.leftPropType) &&
-    STAFF_PROP_TYPES.has(options.rightPropType)
+    isWorkerPerformerPropType(options.leftPropType) &&
+    isWorkerPerformerPropType(options.rightPropType)
   );
 }
 
@@ -58,6 +59,11 @@ export function createWorkerPerformerSnapshot(
   performer: CharacterInstanceState,
   options: WorkerPerformerSnapshotOptions
 ): WorkerPerformerSnapshot {
+  if (!supportsWorkerPerformer(options)) {
+    throw new Error(
+      `Worker performer cannot reproduce ${options.leftPropType}/${options.rightPropType} exactly`
+    );
+  }
   const stance = resolvePerformerUpperBodyStance(performer);
   const staffLengthCm = performer.settings.staffLengthCm;
   return {
