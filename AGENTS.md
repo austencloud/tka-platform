@@ -63,6 +63,7 @@ Read only the row that matches the task. Do not scan `.claude/rules/` generally.
 | Firestore query or index changes                       | `.claude/rules/firestore-cost-discipline.md`                                                                                       |
 | Marketing, UI, or documentation copy                   | `docs/reference/ai-writing-guide.md`                                                                                               |
 | Heavy checks or local services                         | `.claude/rules/resource-budget.md`, `.claude/rules/never-start-the-dev-server.md`                                                  |
+| Subagent, workflow, or Codex dispatch                  | `.claude/rules/model-routing.md`                                                                                                   |
 
 Rule explanations and historical documents provide context, not authority. When
 guidance conflicts, follow the current user request, then this file, then the
