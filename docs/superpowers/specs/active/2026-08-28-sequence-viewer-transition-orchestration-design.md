@@ -1293,6 +1293,39 @@ newline count on both this branch and `main`). `svelte-check` reports 0 errors
 and 0 warnings, and the seven-viewport browser pass produced no console warnings
 or errors.
 
+#### Shared Animator presentation ownership · 2026-09-04
+
+2D and Tunnel are now two compositions of one persistent Animator canvas, so a
+visibility control cannot honestly belong to either mode. The Grid buttons had
+violated that rule: 2D wrote the persisted `AnimationVisibilityStateManager`,
+while Tunnel wrote `TunnelViewController.gridVisible`. The two controls could
+therefore disagree even though they affected the same rendered layer.
+
+The viewer now supplies its animation visibility manager to the Tunnel
+controller. `gridVisible` delegates to that owner and observes changes coming
+from the 2D Display panel, making the relationship bidirectional without a
+mode-switch copy step. Embedded Tunnel Creator sessions retain the same
+behavior through their scoped visibility manager; standalone poster/detail
+previews, which intentionally have no surrounding animation scope, keep their
+snapshot-local fallback. Loading an older saved Tunnel stages its grid choice
+through the shared visibility owner, preserving the saved appearance while
+making the next 2D/Tunnel switch coherent.
+
+Effects required no new synchronization mechanism. The orchestrator already
+creates one `EffectsConfigState`, both the 2D and Tunnel settings panels edit
+that instance, and the persistent Animator canvas reads it. The same ownership
+rule applies to effort, path policy, prop choice, tempo, playback mode, and the
+playhead. Formation, fold/mirror/flip/echo, copy stagger and speed, Tunnel copy
+coloring, and performer selection remain Tunnel-authored state because they do
+not describe the base Animator canvas.
+
+The bidirectional grid-owner and saved-Tunnel staging checks pass alongside the
+Tunnel snapshot and both viewer URL-slice suites: 5 files / 42 tests.
+`svelte-check` reports 0 errors and 0 warnings. The broader sequence-viewer run
+passes 40 of 41 files / 370 of 371 tests; its only failure is the same unchanged
+`TunnelArtSettings` 500-line ownership cap described above, reproduced on
+`main` at 518 lines.
+
 ## Gate 6 baseline · 2026-09-01
 
 Measured on the integrated `main` checkout through the production iframe of

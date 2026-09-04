@@ -142,3 +142,9 @@ the lesson does not repeat Water, Earth, Sun, Fire, Air, or Moon as headings.
   quarter timing, while paired tracks show same and opposite direction. He
   specified “Timing” as the whole-concept label and required “Timing” and
   “Direction” to remain on the same line. No new teaching prose was added.
+- 2026-09-04 — Austen rejected the vertically stacked, slow synchronized
+  treatment because it made the three timing relationships read as one
+  comparison. The bridge now gives Together, Split, and Quarter separate
+  side-by-side motion bays, offsets their clocks, and uses a quicker
+  gravity-shaped bounce with impact squash and rebound. No learner-facing copy
+  changed.

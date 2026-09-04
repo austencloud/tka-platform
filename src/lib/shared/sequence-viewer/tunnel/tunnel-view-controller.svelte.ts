@@ -76,7 +76,8 @@ export interface TunnelControllerSources {
   getComposition?: () => TunnelComposition | null | undefined;
   /** Receives the exact baked layer objects used by the animation canvas. */
   onLayersChange?: (layers: readonly BuiltTunnelLayer[]) => void;
-  /** Scoped effort owner for embedded editors. Defaults to the global viewer. */
+  /** Scoped motion-presentation owner for embedded editors. When supplied, its
+   * effort and grid visibility are shared with the Tunnel. */
   visibilityManager?: AnimationVisibilityStateManager;
   /** Embedded editors must not rewrite the viewer's last-used view state. */
   persistViewState?: boolean;
@@ -138,10 +139,23 @@ export class TunnelViewController {
    * not saved choreography or presentation state. */
   selectedPerformerId = $state<string | null>(null);
 
-  /** Tunnel-specific grid visibility. The kaleidoscope owns this (the global
-   *  Visual/Display toggles don't reach the self-clocked tunnel). Default off —
-   *  the grid is clutter behind a dense overlay. */
-  gridVisible = $state(false);
+  /**
+   * The grid is one canvas layer, even when Tunnel adds performers to it.
+   * Viewer and creator hosts provide their animation visibility owner so the
+   * 2D and Tunnel controls cannot disagree. Standalone previews keep the
+   * snapshot-local fallback because they have no surrounding animation scope.
+   */
+  #gridVisible = $state(false);
+
+  get gridVisible(): boolean {
+    return this.#gridVisible;
+  }
+
+  set gridVisible(visible: boolean) {
+    if (this.#gridVisible === visible) return;
+    this.#gridVisible = visible;
+    this.#sources.visibilityManager?.setGridMode(visible ? "8point" : "none");
+  }
 
   /** One explicit appearance mode plus the last authored exact pair. Keeping
    * the pair while another mode is active lets authors compare looks without
@@ -241,10 +255,23 @@ export class TunnelViewController {
     this.echo = cfg.echo;
     this.staggerSteps = cfg.staggerSteps;
     this.speedOverrides = { ...cfg.speedOverrides };
-    this.gridVisible = view.gridVisible;
+    this.#gridVisible =
+      sources.visibilityManager?.isGridVisible() ?? view.gridVisible;
     this.colorMode = view.colors.mode;
     this.section = view.section;
     this.presetRecipe = cloneTunnelPresetRecipe(view.presetRecipe);
+
+    if (sources.visibilityManager) {
+      $effect(() => {
+        const syncGridVisibility = () => {
+          this.#gridVisible = sources.visibilityManager!.isGridVisible();
+        };
+        sources.visibilityManager!.registerObserver(syncGridVisibility);
+        syncGridVisibility();
+        return () =>
+          sources.visibilityManager!.unregisterObserver(syncGridVisibility);
+      });
+    }
 
     // Persist the live view state on change.
     if (persistViewState) {
