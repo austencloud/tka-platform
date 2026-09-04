@@ -2,7 +2,7 @@ import {
   PRESET_VALID_COUNTS,
   createFormationFromPreset,
   type FormationPreset,
-} from "@austencloud/scene-3d";
+} from "@austencloud/scene-3d/worker";
 
 export interface PerformerStagePosition {
   x: number;

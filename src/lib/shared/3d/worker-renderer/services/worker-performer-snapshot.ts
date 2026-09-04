@@ -58,15 +58,28 @@ export function supportsWorkerPerformer(
   );
 }
 
-function assertExactEffectIntent(
+/**
+ * Resolve the physical prop length from the same owner used by the serialized
+ * performer. Effect anchor construction needs the half-length before the
+ * snapshot exists, so exporting this avoids a second, subtly divergent unit
+ * conversion at the application/worker boundary.
+ */
+export function resolveWorkerPerformerStaffLength(
+  performer: CharacterInstanceState
+): number {
+  const staffLengthCm = performer.settings.staffLengthCm;
+  return staffLengthCm == null
+    ? userProportionsState.staffLength
+    : cmToUnits(staffLengthCm);
+}
+
+export function supportsWorkerPerformerEffectIntent(
   intent: WorkerPerformerEffectIntent | null | undefined
-): void {
-  if (!intent) return;
+): boolean {
+  if (!intent) return true;
   for (const decision of intent.tips) {
     if (!isWorkerEffectExact(decision.effect)) {
-      throw new Error(
-        `Worker performer cannot reproduce ${decision.effect} exactly`
-      );
+      return false;
     }
     if (
       decision.effect !== "none" &&
@@ -74,11 +87,25 @@ function assertExactEffectIntent(
       decision.effect !== "led" &&
       !intent.pooled[decision.effect]
     ) {
-      throw new Error(
-        `Worker performer is missing resolved ${decision.effect} parameters`
-      );
+      return false;
     }
   }
+  return true;
+}
+
+function assertExactEffectIntent(
+  intent: WorkerPerformerEffectIntent | null | undefined
+): void {
+  if (supportsWorkerPerformerEffectIntent(intent)) return;
+  const unsupported = intent?.tips.find(
+    ({ effect }) => !isWorkerEffectExact(effect)
+  )?.effect;
+  if (unsupported) {
+    throw new Error(
+      `Worker performer cannot reproduce ${unsupported} exactly`
+    );
+  }
+  throw new Error("Worker performer is missing resolved effect parameters");
 }
 
 /**
@@ -108,7 +135,6 @@ export function createWorkerPerformerSnapshot(
     );
   }
   const stance = resolvePerformerUpperBodyStance(performer);
-  const staffLengthCm = performer.settings.staffLengthCm;
   return {
     id: performer.id,
     avatarId: performer.characterId,
@@ -120,10 +146,7 @@ export function createWorkerPerformerSnapshot(
     facingAngle: performer.facingAngle,
     avatarHeightCm: userProportionsState.heightCm,
     groundY: userProportionsState.groundY,
-    staffLength:
-      staffLengthCm == null
-        ? userProportionsState.staffLength
-        : cmToUnits(staffLengthCm),
+    staffLength: resolveWorkerPerformerStaffLength(performer),
     staffThickness: userProportionsState.dimensions.staffRadius,
     propBuild: { ...options.propBuild },
     leftPropType: options.leftPropType,

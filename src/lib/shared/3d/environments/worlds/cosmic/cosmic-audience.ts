@@ -5,7 +5,7 @@ import {
   type AnimationClip,
   type Object3D,
 } from "three";
-import { seatedAudienceLoader } from "@austencloud/scene-3d";
+import { seatedAudienceLoader } from "@austencloud/scene-3d/worker";
 import {
   SEATED_AUDIENCE_ANIMATION_URLS,
   SEATED_AUDIENCE_CHARACTER_URLS,

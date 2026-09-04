@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorkerRendererSlot } from "$lib/shared/3d/worker-renderer/services/worker-renderer-slot";
 
@@ -11,10 +13,12 @@ class FakeWorker {
 describe("worker renderer slot", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.spyOn(document, "createElement");
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   function fixture() {

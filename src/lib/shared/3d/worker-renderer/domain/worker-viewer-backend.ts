@@ -87,6 +87,18 @@ export function getWorkerEnvironmentKey(
   ];
 }
 
+/** Map worker handoff observations back into the viewer's public vocabulary. */
+export function getBackgroundTypeForWorkerEnvironment(
+  environment: WorkerEnvironmentKey
+): BackgroundType {
+  for (const [background, workerEnvironment] of Object.entries(
+    WORKER_ENVIRONMENT_BY_BACKGROUND
+  )) {
+    if (workerEnvironment === environment) return background as BackgroundType;
+  }
+  throw new Error(`Unknown worker environment: ${environment}`);
+}
+
 export function createWorkerViewerCapabilitySnapshot(
   input: WorkerViewerBackendInput
 ): WorkerViewerCapabilitySnapshot {

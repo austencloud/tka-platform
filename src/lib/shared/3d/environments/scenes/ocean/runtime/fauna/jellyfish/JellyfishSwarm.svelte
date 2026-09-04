@@ -3,7 +3,7 @@
   import { onDestroy } from "svelte";
   import type { Camera, WebGLRenderer } from "three";
   import type { OceanQualityConfig } from "../../../quality/ocean-quality";
-  import { createOceanJellyfishSwarm } from "../../../../../../worlds/ocean/ocean-jellyfish-swarm";
+  import { createOceanJellyfishSwarm } from "../../../../../worlds/ocean/ocean-jellyfish-swarm";
   import { createJellyfishChime } from "./jellyfish-chime";
 
   interface Props {

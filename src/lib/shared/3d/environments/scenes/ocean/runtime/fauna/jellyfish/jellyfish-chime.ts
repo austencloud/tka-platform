@@ -4,7 +4,7 @@ export {
   buildPentatonicNotes,
   midiName,
   midiToFreq,
-} from "../../../../../../worlds/ocean/ocean-jellyfish-notes";
+} from "../../../../../worlds/ocean/ocean-jellyfish-notes";
 
 // Additive inharmonic partials → per-partial exponential decay → lowpass
 // (underwater muffle) → stereo pan → master, with a shared convolver reverb tail.

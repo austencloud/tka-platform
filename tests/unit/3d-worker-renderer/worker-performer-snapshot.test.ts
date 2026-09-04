@@ -5,6 +5,7 @@ import type { CharacterInstanceState } from "$lib/shared/3d/state/character-inst
 import {
   createWorkerPerformerSnapshot,
   supportsWorkerPerformer,
+  supportsWorkerPerformerEffectIntent,
 } from "$lib/shared/3d/worker-renderer/services/worker-performer-snapshot";
 import { CANONICAL_PERFORMER_ANCHOR_Y } from "$lib/shared/3d/environments/domain/stage-coordinate-frame";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
@@ -232,5 +233,6 @@ describe("worker performer snapshots", () => {
         effectIntent: invalid as never,
       })
     ).toThrow("cannot reproduce zap exactly");
+    expect(supportsWorkerPerformerEffectIntent(invalid as never)).toBe(false);
   });
 });

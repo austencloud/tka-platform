@@ -6,6 +6,7 @@
   import { getWorkerEnvironmentCamera } from "../domain/worker-environment-camera";
   import type {
     WorkerEnvironmentKey,
+    WorkerEffectQualityTier,
     WorkerPerformerSnapshot,
     WorkerSceneEffectsSnapshot,
   } from "../domain/worker-renderer-protocol";
@@ -42,6 +43,7 @@
     maxOrbitDistance?: number;
     cameraFov?: number;
     pixelRatio?: number;
+    qualityTier?: WorkerEffectQualityTier;
     performerInteractionFrame?: WorkerPerformerInteractionFrame | null;
     interactionViewer?: WorkerPerformerInteractionViewer | null;
     interactionCameraArbiter?: WorkerPerformerInteractionCameraArbiter | null;
@@ -71,6 +73,7 @@
     maxOrbitDistance = 25,
     cameraFov,
     pixelRatio,
+    qualityTier = "medium",
     performerInteractionFrame = null,
     interactionViewer = null,
     interactionCameraArbiter = null,
@@ -183,6 +186,7 @@
       container: mountedInteractionSurface,
       onSnapshot,
       onInteraction: handleInteraction,
+      qualityTier,
     });
     const cameraSeed = initialCamera ?? getWorkerEnvironmentCamera(environment);
     cameraController = createApplicationThreadCameraController(
@@ -251,6 +255,10 @@
 
   $effect(() => {
     applyPixelRatio(pixelRatio);
+  });
+
+  $effect(() => {
+    renderer?.setQualityTier(qualityTier);
   });
 </script>
 

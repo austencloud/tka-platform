@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -23,6 +25,7 @@ function fakeCanvas(): HTMLCanvasElement {
 describe("worker renderer adaptive quality", () => {
   beforeEach(() => {
     vi.stubGlobal("Worker", FakeWorker);
+    vi.spyOn(document, "createElement");
     Object.defineProperty(
       window.HTMLCanvasElement.prototype,
       "transferControlToOffscreen",
@@ -47,7 +50,7 @@ describe("worker renderer adaptive quality", () => {
       }
     ).transferControlToOffscreen;
     vi.unstubAllGlobals();
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("updates live slots and retains the tier for the next slot", () => {

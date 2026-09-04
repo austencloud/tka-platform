@@ -18,7 +18,8 @@ export type WorkerViewerFallbackReason =
   | "retained-environments-not-migrated"
   | "camera-mode-not-migrated"
   | "capture-not-migrated"
-  | "renderer-handle-required";
+  | "renderer-handle-required"
+  | "performer-interaction-not-migrated";
 
 export interface WorkerViewerCapabilitySnapshot {
   offscreenCanvasAvailable: boolean;

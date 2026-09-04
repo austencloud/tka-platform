@@ -5,7 +5,7 @@ import {
 	propTipAnchorSignature3D,
 	resolvePropTipAnchors3D,
 } from "./prop-tip-geometry-3d";
-import { propFinishState, type PropBuild } from "@austencloud/scene-3d";
+import type { PropBuild } from "@austencloud/scene-3d/worker";
 
 export type TrailSourceId3D = "left-end" | "right-end" | "hand";
 
@@ -163,7 +163,7 @@ export class TipPositionBridge3D {
 		staffHalfLength: number,
 		deltaTime: number,
 		propType?: string,
-		build: PropBuild = propFinishState.build
+		build: PropBuild
 	): PropTipPositions3D {
 		const center = new Vector3(
 			rigLocalCenter.x,

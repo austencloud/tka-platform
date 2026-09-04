@@ -1,4 +1,4 @@
-import { STAGE } from "@austencloud/scene-3d";
+import { STAGE } from "@austencloud/scene-3d/worker";
 import {
   BoxGeometry,
   Color,

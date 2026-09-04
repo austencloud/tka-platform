@@ -1,8 +1,8 @@
 import {
-  getCharacterModelPath,
-  type CharacterId,
-} from "$lib/shared/3d/domain/character-model";
-import { R2_CDN } from "../constants/r2-cdn";
+  getAvatarModelPath,
+  type AvatarId,
+} from "@austencloud/scene-3d/worker";
+import { R2_CDN } from "../constants/r2-origin";
 
 /**
  * Keep the audience's cast as character IDs, then resolve through scene-3d's
@@ -16,10 +16,10 @@ export const SEATED_AUDIENCE_CHARACTER_IDS = [
   "ch10",
   "ch12",
   "ch44",
-] as const satisfies readonly CharacterId[];
+] as const satisfies readonly AvatarId[];
 
 export const SEATED_AUDIENCE_CHARACTER_URLS =
-  SEATED_AUDIENCE_CHARACTER_IDS.map(getCharacterModelPath);
+  SEATED_AUDIENCE_CHARACTER_IDS.map(getAvatarModelPath);
 
 /**
  * `sitting-idle-a` retargets to a near-horizontal pose — head 0.23m above the

@@ -11,7 +11,7 @@ import {
   PlaneMode,
   PLANE_COLORS,
   PLANE_MODE_CONFIGS,
-} from "@austencloud/scene-3d";
+} from "@austencloud/scene-3d/worker";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
 import {

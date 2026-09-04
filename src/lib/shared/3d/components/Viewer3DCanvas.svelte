@@ -34,6 +34,7 @@
   import PerfMonitor from "./PerfMonitor.svelte";
   import type { RendererPerformanceSample } from "./renderer-performance-window";
   import InteractiveCanvasFrameBridge from "./InteractiveCanvasFrameBridge.svelte";
+  import WorkerViewer3DScene from "./WorkerViewer3DScene.svelte";
   import GaitProbe from "../diagnostics/gait/GaitProbe.svelte";
   import GaitOverlay from "../diagnostics/gait/GaitOverlay.svelte";
   import { gaitProbeState } from "../diagnostics/gait/gait-probe-state.svelte";
@@ -68,9 +69,18 @@
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CameraStateSnapshot } from "@austencloud/scene-3d";
-  import type { BackgroundType } from "@austencloud/backgrounds";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import type { EnvironmentTransitionObservation } from "../environments/domain/environment-transition";
   import { getSceneEnvironmentRendererKey } from "../environments/domain/scene-environment";
+  import { hasExactWorkerSceneFeatures } from "../worker-renderer/domain/worker-scene-feature-capability";
+  import {
+    getBackgroundTypeForWorkerEnvironment,
+    getWorkerEnvironmentKey,
+    type WorkerViewerActualConditions,
+  } from "../worker-renderer/domain/worker-viewer-backend";
+  import type { WorkerViewerFallbackReason } from "../worker-renderer/domain/worker-viewer-capability";
+  import type { WorkerSceneSwitchSnapshot } from "../worker-renderer/services/worker-environment-renderer";
+  import { supportsWorkerEnvironmentRenderer } from "../worker-renderer/services/worker-environment-renderer";
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -225,7 +235,9 @@
   // Provide one stable, hardware-detected visual tier plus adaptive DPR to the
   // scene subtree. Frame pressure may reduce resolution, but it must not swap
   // effects, lighting, or environment detail for a cheaper look mid-session.
-  const adaptiveQuality = createAdaptiveQualityState(getQualityTierDetector());
+  const qualityTierDetector = getQualityTierDetector();
+  qualityTierDetector.detectFromBrowserCapabilities();
+  const adaptiveQuality = createAdaptiveQualityState(qualityTierDetector);
   setAdaptiveQualityContext(adaptiveQuality);
   const environmentTransitionVisual = createEnvironmentTransitionVisualState();
   setEnvironmentTransitionVisualContext(environmentTransitionVisual);
@@ -309,6 +321,56 @@
     retainedEnvironmentTypes.length > 0
       ? getSceneEnvironmentRendererKey(viewer3DState.environmentId)
       : null
+  );
+  const workerEnvironment = $derived(
+    getWorkerEnvironmentKey(viewer3DState.environmentId)
+  );
+  let workerRuntimeFailedFor = $state<BackgroundType | null>(null);
+  const workerConditions = $derived.by(
+    (): WorkerViewerActualConditions => ({
+      offscreenCanvasAvailable: supportsWorkerEnvironmentRenderer(),
+      // Selection, badges, hover, and direct manipulation are exact in the
+      // worker path. Dictated grid planes are not yet clone-safe, so a visible
+      // grid deliberately keeps the full legacy scene.
+      visibleSceneMarkerCount:
+        hideSceneMarkers || viewer3DState.visiblePlanes.size === 0
+          ? 0
+          : viewer3DState.visiblePlanes.size,
+      visibleAudienceMemberCount: sceneFeatureState.isEnabled("audience")
+        ? 1
+        : 0,
+      worldChildCount: worldChildren ? 1 : 0,
+      retainedEnvironmentCount: retainedEnvironmentTypes.length,
+      cameraMode: viewer3DState.navMode,
+      captureInProgress: viewer3DState.isExporting,
+      rendererHandleConsumerCount: onRendererReady ? 1 : 0,
+    })
+  );
+  const workerHostExact = $derived(
+    workerEnvironment !== null &&
+      workerRuntimeFailedFor !==
+        getSceneEnvironmentRendererKey(viewer3DState.environmentId) &&
+      workerConditions.offscreenCanvasAvailable &&
+      workerConditions.visibleSceneMarkerCount === 0 &&
+      workerConditions.visibleAudienceMemberCount === 0 &&
+      workerConditions.worldChildCount === 0 &&
+      workerConditions.retainedEnvironmentCount === 0 &&
+      workerConditions.cameraMode === "orbit" &&
+      !workerConditions.captureInProgress &&
+      workerConditions.rendererHandleConsumerCount === 0 &&
+      hasExactWorkerSceneFeatures(sceneFeatureState) &&
+      initialRevealMode === "gated" &&
+      environmentTransitionVisualMode === "internal" &&
+      !renderEmptyScene &&
+      !stageBoundsPositions &&
+      !stageExtent &&
+      !onPerformanceSample &&
+      !gaitProbeState.enabled &&
+      leftPropType !== null &&
+      rightPropType !== null &&
+      viewer3DState.performerManager.renderablePerformers.every(
+        ({ presencePhase }) => presencePhase === "present"
+      )
   );
 
   // Production viewers give their curtain one frame to paint before WebGL
@@ -443,6 +505,82 @@
     onEnvironmentTransitionChange?.(observation);
   }
 
+  let lastWorkerPhase: WorkerSceneSwitchSnapshot["phase"] | null = null;
+
+  function failWorkerRenderer(
+    reasons: readonly WorkerViewerFallbackReason[] | readonly string[]
+  ): void {
+    const background = getSceneEnvironmentRendererKey(
+      viewer3DState.environmentId
+    );
+    console.warn(
+      `[Viewer3DCanvas] worker renderer fell back for ${background}: ${reasons.join(", ")}`
+    );
+    workerRuntimeFailedFor = background;
+    rendererReady = false;
+    effectsRuntimeReady = !enableEffects;
+    environmentSettled = true;
+    lastWorkerPhase = null;
+    if (sceneFeatureState.isEnabled("environment")) {
+      sceneFeatureState.resetReady("environment");
+    }
+  }
+
+  function handleWorkerSnapshot(snapshot: WorkerSceneSwitchSnapshot): void {
+    (
+      window as typeof window & {
+        __workerSceneSwitch?: WorkerSceneSwitchSnapshot;
+      }
+    ).__workerSceneSwitch = snapshot;
+
+    if (snapshot.phase === "unsupported" || snapshot.phase === "error") {
+      failWorkerRenderer([snapshot.lastError ?? snapshot.phase]);
+      return;
+    }
+
+    const requested = getSceneEnvironmentRendererKey(
+      viewer3DState.environmentId
+    );
+    const mounted = snapshot.active
+      ? getBackgroundTypeForWorkerEnvironment(snapshot.active)
+      : null;
+    if (snapshot.phase === "booting" || snapshot.phase === "swapping") {
+      if (lastWorkerPhase !== "booting" && snapshot.phase === "booting") {
+        sceneFeatureState.resetReady("environment");
+      }
+      lastWorkerPhase = snapshot.phase;
+      environmentSettled = false;
+      handleRendererReadyChange(false);
+      sceneFeatureState.reportProgress("environment", snapshot.progress);
+      onEnvironmentTransitionChange?.({
+        requestedKey: requested,
+        mountedKey: mounted,
+        phase: "waiting",
+        settled: false,
+      });
+      return;
+    }
+
+    if (snapshot.phase === "idle" && snapshot.active === workerEnvironment) {
+      lastWorkerPhase = "idle";
+      sceneFeatureState.reportProgress("environment", 1);
+      sceneFeatureState.reportReady("environment");
+      handlePerformerReadinessChange(
+        viewer3DState.performerManager.performers.length,
+        viewer3DState.performerManager.performers.length
+      );
+      effectsRuntimeReady = true;
+      handleRendererReadyChange(true);
+      environmentSettled = true;
+      onEnvironmentTransitionChange?.({
+        requestedKey: requested,
+        mountedKey: requested,
+        phase: "idle",
+        settled: true,
+      });
+    }
+  }
+
   // Tell the parent so it can withhold the 3D rail chrome until the stage is set.
   $effect(() => {
     onSceneReadyChange?.(sceneReady);
@@ -526,7 +664,11 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="viewer-3d-canvas" data-swipe-block>
+<div
+  class="viewer-3d-canvas"
+  data-swipe-block
+  data-renderer-backend={workerHostExact ? "worker" : "legacy"}
+>
   {#if canRenderScene}
     <!-- The transport is a layout sibling of the stage, not an overlay: it
          takes real space at the bottom and the stage shrinks to fit, so the
@@ -534,7 +676,31 @@
          root so it still covers the transport during the scene-load hold. -->
     <div class="stage-area">
       {#if renderEmptyScene || canvasMountReady || initialRevealMode === "streaming"}
-        <Canvas
+        {#if workerHostExact && workerEnvironment && sequenceData && leftPropType && rightPropType}
+          <WorkerViewer3DScene
+            environment={workerEnvironment}
+            {sequenceData}
+            {currentStep}
+            {isPlaying}
+            leftPropType={leftPropType}
+            rightPropType={rightPropType}
+            {hideSceneMarkers}
+            {hidePerformerBadges}
+            {enableEffects}
+            {enablePerformerLocomotion}
+            effectQualityTier={effectQualityTier ?? adaptiveQuality.tier}
+            {performerStepOffsets}
+            {performerSteps}
+            {visiblePerformerCount}
+            pixelRatio={adaptiveQuality.pixelRatio}
+            maxOrbitDistance={cameraMaxOrbitDistance}
+            {cameraFov}
+            conditions={workerConditions}
+            onSnapshot={handleWorkerSnapshot}
+            onFallback={failWorkerRenderer}
+          />
+        {:else}
+          <Canvas
           dpr={adaptiveQuality.pixelRatio}
           shadows={adaptiveQuality.config.enableShadows}
           createRenderer={(canvas) =>
@@ -609,7 +775,8 @@
               {/await}
             {/if}
           {/if}
-        </Canvas>
+          </Canvas>
+        {/if}
       {/if}
       {#if sequenceData && !hideOverlays}
         {#await loadSceneAudioPlayer() then { default: SceneAudioPlayer }}

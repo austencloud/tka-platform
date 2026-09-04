@@ -1,5 +1,8 @@
 import { Quaternion, Vector3 } from "three";
-import { PROP_COLORS, type PropState3D } from "@austencloud/scene-3d";
+import {
+  PROP_COLORS,
+  type PropState3D,
+} from "@austencloud/scene-3d/worker";
 import { ledBrightnessToFloat } from "$lib/shared/animation-engine/domain/types/led-types";
 import { LedPatternMaterializer } from "$lib/shared/animation-engine/services/led/led-pattern-materializer";
 import { patternFrameIndex } from "$lib/shared/animation-engine/services/led-sampler";
