@@ -204,7 +204,10 @@
     overflow: hidden;
     color: var(--theme-text);
     outline: none;
-    --lesson-artifact-wide-max: 96rem;
+  }
+
+  .motions-experience :global(.lesson-stage-frame) {
+    --lesson-artifact-wide-max: var(--shell-w, 96rem);
   }
 
   .artifact-state {
