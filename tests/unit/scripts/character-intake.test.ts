@@ -524,6 +524,50 @@ describe("character GLB inspection", () => {
     expect(inspection.warnings.join("\n")).not.toContain("normal map");
   });
 
+  it("resolves textures the optimizer moved into EXT_texture_webp", () => {
+    // The WebP pass writes the image reference into the extension and drops
+    // the plain `source`, which once made every optimized character audit as
+    // textureless while its normalized twin audited fine (ch12, 2026-09-05).
+    const directory = temporaryDirectory();
+    const model = resolve(directory, "webp-textures.glb");
+    const fixture = materialFixture(
+      [
+        {
+          name: "Body",
+          pbrMetallicRoughness: {
+            baseColorTexture: { index: 0 },
+            metallicRoughnessTexture: { index: 1 },
+            metallicFactor: 0.5,
+          },
+          normalTexture: { index: 1 },
+        },
+      ],
+      [
+        { bytes: webpVp8xHeader(2048, 2048), mimeType: "image/webp" },
+        { bytes: webpVp8lHeader(1024, 1024), mimeType: "image/webp" },
+      ]
+    );
+    fixture.textures = fixture.textures.map((_texture, index) => ({
+      sampler: 0,
+      extensions: { EXT_texture_webp: { source: index } },
+    }));
+    writeFileSync(model, createFixtureGlb({ material: fixture }));
+
+    const inspection = inspectCharacterGlb(model);
+
+    expect(inspection.materials[0]).toMatchObject({
+      channels: { baseColor: 0, normal: 1, metallicRoughness: 1 },
+      maxTextureSide: 2048,
+    });
+    expect(inspection.materialSummary).toMatchObject({
+      withBaseColorTexture: 1,
+      withNormalTexture: 1,
+      withMetallicRoughnessTexture: 1,
+    });
+    expect(inspection.warnings.join("\n")).not.toContain("normal map");
+    expect(inspection.warnings.join("\n")).not.toContain("renders dark");
+  });
+
   it("flags dark metallic factors and the spec-gloss extension the loader ignores", () => {
     const directory = temporaryDirectory();
     const model = resolve(directory, "metal.glb");
@@ -784,6 +828,7 @@ describe("character preparation", () => {
   it("parses the operational CLI without positional ambiguity", () => {
     expect(
       parseArguments([
+        "--",
         "--source",
         "human.fbx",
         "--provenance",

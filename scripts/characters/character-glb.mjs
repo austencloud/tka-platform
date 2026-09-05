@@ -254,10 +254,23 @@ const UNLIT_EXTENSION = "KHR_materials_unlit";
  */
 const DARK_METAL_FACTOR = 0.5;
 
+/**
+ * Texture extensions that carry the image reference instead of `source`.
+ * The optimizer's WebP pass writes `EXT_texture_webp` and drops the plain
+ * `source`, so an audit that read only `source` reported every optimized
+ * character as textureless (ch12, 2026-09-05).
+ */
+const TEXTURE_SOURCE_EXTENSIONS = ["EXT_texture_webp", "KHR_texture_basisu"];
+
 function imageIndexForTexture(document, textureInfo) {
   if (!textureInfo || typeof textureInfo.index !== "number") return null;
   const texture = document.textures?.[textureInfo.index];
-  return typeof texture?.source === "number" ? texture.source : null;
+  if (!texture) return null;
+  for (const extension of TEXTURE_SOURCE_EXTENSIONS) {
+    const source = texture.extensions?.[extension]?.source;
+    if (typeof source === "number") return source;
+  }
+  return typeof texture.source === "number" ? texture.source : null;
 }
 
 function describeImages(document, binary) {

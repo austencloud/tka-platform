@@ -128,6 +128,27 @@ describe("batch intake pairing", () => {
     expect(() => parseBatchArguments(["--bogus"])).toThrow("Unknown argument");
   });
 
+  it("ignores the bare -- that pnpm run forwards to the script", () => {
+    expect(
+      parseBatchArguments(["--", "--downloads", "in", "--output", "out"])
+    ).toMatchObject({ downloadsDirectory: "in", outputDirectory: "out" });
+    expect(
+      parseStampArguments([
+        "--",
+        "--source",
+        "Malcolm.fbx",
+        "--slot",
+        "1",
+        "--commercial-use",
+        "allowed",
+        "--runtime-distribution",
+        "allowed",
+        "--evidence-note",
+        "read",
+      ])
+    ).toMatchObject({ source: "Malcolm.fbx", slot: 1 });
+  });
+
   it("runs every pair, records failures, and prints one table", async () => {
     const downloads = temporaryDirectory();
     for (const name of [

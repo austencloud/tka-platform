@@ -459,6 +459,8 @@ export function parseArguments(args) {
   const flags = new Set();
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
+    // pnpm run forwards a bare "--" to the script; it separates nothing here.
+    if (argument === "--") continue;
     if (
       [
         "--replace",

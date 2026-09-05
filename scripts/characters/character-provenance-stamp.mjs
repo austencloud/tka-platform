@@ -109,6 +109,8 @@ export function parseStampArguments(args) {
   const flags = new Set();
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
+    // pnpm run forwards a bare "--" to the script; it separates nothing here.
+    if (argument === "--") continue;
     if (FLAG_ARGUMENTS.includes(argument)) {
       flags.add(argument);
       continue;
