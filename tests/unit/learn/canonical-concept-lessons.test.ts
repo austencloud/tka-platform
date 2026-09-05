@@ -220,7 +220,10 @@ describe("canonical concept lesson composition", () => {
     expect(timingIntro).toContain('semantics="radiogroup"');
     expect(timingIntro).toContain("data-timing={timingMode}");
     expect(timingIntro).toContain("data-direction={directionMode}");
-    expect(timingIntro).toContain("@media (prefers-reduced-motion: reduce)");
+    // Static diagrams delegate their selection transitions to the reduced-motion-aware owner.
+    expect(timingIntro).toContain(
+      'import Crossfade from "$lib/shared/components/Crossfade.svelte"'
+    );
     expect(timingIntro).not.toContain("timing-bounce");
     expect(timingIntro).not.toContain("bounce-stage");
     expect(timingIntro).not.toContain("example-bay");

@@ -1,15 +1,182 @@
-<div class="corner-frame">
-  <div class="corner-guide">
-    <strong>Pick a crossing</strong>
-    <div class="axis-guide" aria-hidden="true">
-      <span><i class="row-dot"></i>Rows ↓</span>
-      <span><i class="column-dot"></i>Columns →</span>
+<!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixGridCorner.svelte
+  The grid's top-left corner is where rows and columns meet, so it holds the
+  controls that set them: Surprise on top, then the Rows ↓ value (blue, left
+  hand) aligned with the row headers below it, then the Columns → value (red,
+  right hand) aligned with the column headers beside it. Each value reads in
+  the chosen notation only. The relationship is not repeated here; the
+  detail pane names it. Compact hosts get a bare legend and edit from the
+  header, so this only becomes a control surface on wide layouts. -->
+<script lang="ts">
+  import { spinRatioEquals } from "@vtg/domain";
+  import { flyFade } from "$lib/shared/transitions/motion";
+  import { flowerLabel } from "$lib/shared/shape-matrix/domain/flower-signature";
+  import { matrixTurnSpokenLabel } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
+  import { theoryFlowerLabel } from "$lib/shared/shape-matrix/domain/theory-flower";
+  import { theoryRatioSpokenLabel } from "$lib/shared/shape-matrix/domain/theory-ratio";
+  import { MODE_LABEL } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
+  import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  import { SHAPE_MATRIX_REVEAL } from "../services/shape-matrix-reveal";
+  import ShapeMatrixAxisStepper from "./ShapeMatrixAxisStepper.svelte";
+  import ShapeMatrixRatioEntry from "./ShapeMatrixRatioEntry.svelte";
+
+  interface Props {
+    /** The pane that owns this corner. Both panes stay mounted, so the
+       corner describes its own grid rather than whichever surface shows. */
+    surface: "level" | "theory";
+    onsurprise: () => void;
+    /** Theory's ratio editor points back at the axis it is changing. */
+    onratiofocuschange?: (hand: "left" | "right" | "both" | null) => void;
+  }
+  let { surface, onsurprise, onratiofocuschange }: Props = $props();
+
+  const appState = getShapeMatrixAppContext();
+  const theory = $derived(surface === "theory");
+  const hasPair = $derived(
+    theory ? appState.theoryPair !== null : appState.selectedPair !== null
+  );
+
+  const ratiosMatch = $derived(
+    spinRatioEquals(appState.theoryLeftRatio, appState.theoryRightRatio)
+  );
+  function toggleLink(): void {
+    if (appState.theoryRatiosLinked) {
+      appState.unlinkTheoryRatios();
+      return;
+    }
+    // Linking keeps the rows ratio; the corner reads top to bottom.
+    appState.linkTheoryRatios("left");
+  }
+
+  /* One sentence for assistive technology after each roll, with everything
+     the reveal shows sighted users. Reduced motion gets the same sentence,
+     which is the whole reveal in that case. */
+  let announcement = $state("");
+  let announcedToken: number | null = null;
+  $effect(() => {
+    const token = appState.revealToken;
+    if (announcedToken === null) {
+      announcedToken = token;
+      return;
+    }
+    if (token === announcedToken) return;
+    announcedToken = token;
+    // Both panes stay mounted; only the showing surface speaks the roll.
+    if (theory !== (appState.surface === "theory")) return;
+    const rows = theory
+      ? theoryRatioSpokenLabel(appState.theoryLeftRatio)
+      : matrixTurnSpokenLabel(appState.leftTurn, appState.labelMode);
+    const columns = theory
+      ? theoryRatioSpokenLabel(appState.theoryRightRatio)
+      : matrixTurnSpokenLabel(appState.rightTurn, appState.labelMode);
+    const crossing = theory
+      ? appState.theoryPair
+        ? `${theoryFlowerLabel(appState.theoryPair.left)} over ${theoryFlowerLabel(appState.theoryPair.right)}`
+        : null
+      : appState.selectedPair
+        ? `${flowerLabel(appState.selectedPair.left)} over ${flowerLabel(appState.selectedPair.right)}`
+        : null;
+    const mode = theory ? appState.theoryMode : appState.selectedMode;
+    announcement = [
+      `New grid. Rows ${rows}. Columns ${columns}.`,
+      crossing ? `Crossing: left ${crossing}.` : null,
+      mode ? `Relationship: ${mode}, ${MODE_LABEL[mode]}.` : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  });
+
+  const beat = SHAPE_MATRIX_REVEAL;
+</script>
+
+<div class="corner-frame" class:theory>
+  {#if appState.compact}
+    <div class="corner-guide">
+      <strong>Pick a crossing</strong>
+      <span class="compact-axis" aria-hidden="true">
+        <span class="row-arrow">↓</span>
+        <span class="column-arrow">→</span>
+      </span>
     </div>
-    <span class="compact-axis" aria-hidden="true">
-      <span class="row-arrow">↓</span>
-      <span class="column-arrow">→</span>
-    </span>
-  </div>
+  {:else}
+    <div class="corner-home" role="group" aria-label="Current grid">
+      <button
+        type="button"
+        class="surprise"
+        aria-label="Surprise me with a new grid, crossing, and hand relationship"
+        title="Pick a new grid, crossing, and hand relationship"
+        disabled={!theory && !appState.data}
+        onclick={onsurprise}
+      >
+        <i class="fas fa-dice" aria-hidden="true"></i>
+        <span>Surprise me</span>
+      </button>
+
+      {#key appState.revealToken}
+        <div
+          class="axis rows"
+          in:flyFade={{ y: -4, duration: beat.rows.duration }}
+        >
+          <span class="axis-mark" aria-hidden="true">↓</span>
+          {#if theory}
+            <ShapeMatrixRatioEntry
+              hand="left"
+              layout="corner"
+              onfocuschange={onratiofocuschange}
+            />
+          {:else}
+            <ShapeMatrixAxisStepper hand="left" layout="corner" />
+          {/if}
+        </div>
+      {/key}
+
+      {#key appState.revealToken}
+        <div
+          class="axis columns"
+          in:flyFade={{
+            y: -4,
+            delay: beat.columns.at,
+            duration: beat.columns.duration,
+          }}
+        >
+          <span class="axis-mark" aria-hidden="true">→</span>
+          {#if theory}
+            <ShapeMatrixRatioEntry
+              hand="right"
+              layout="corner"
+              onfocuschange={onratiofocuschange}
+            />
+          {:else}
+            <ShapeMatrixAxisStepper hand="right" layout="corner" />
+          {/if}
+        </div>
+      {/key}
+
+      <div class="foot">
+        {#if theory}
+          <button
+            type="button"
+            class="link"
+            class:linked={appState.theoryRatiosLinked}
+            aria-pressed={appState.theoryRatiosLinked}
+            aria-label={appState.theoryRatiosLinked
+              ? "Unlink row and column ratios"
+              : ratiosMatch
+                ? "Link row and column ratios"
+                : "Link column ratio to the row ratio"}
+            title={appState.theoryRatiosLinked ? "Linked" : "Link ratios"}
+            onclick={toggleLink}
+          >
+            <i class="fas fa-link" aria-hidden="true"></i>
+          </button>
+        {/if}
+        {#if !hasPair}
+          <span class="hint">Pick a crossing</span>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
+  <span class="sr-only" aria-live="polite">{announcement}</span>
 </div>
 
 <style>
@@ -19,112 +186,237 @@
     container-type: size;
   }
 
+  /* The controls scale with the cell: every size below reads in container
+     inline units so the corner stays usable from a laptop's 7rem cell up to
+     the 20rem cell of a wide monitor. */
+  .corner-home {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    height: 100%;
+    gap: clamp(0.2rem, 3.5cqi, 0.6rem);
+    padding: clamp(0.25rem, 5cqi, 0.9rem);
+    color: var(--theme-text, #fff);
+  }
+
+  .surprise {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: clamp(1.75rem, 18cqi, 2.75rem);
+    padding: 0.2rem 0.5rem;
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--theme-accent, #f59e0b) 58%,
+        var(--theme-stroke, transparent)
+      );
+    border-radius: 9px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 13%,
+      var(--theme-card-bg, transparent)
+    );
+    color: var(--theme-text, #fff);
+    cursor: pointer;
+    font: inherit;
+    font-size: clamp(0.75rem, 9cqi, 0.95rem);
+    font-weight: 750;
+    white-space: nowrap;
+    transition:
+      border-color var(--duration-fast, 150ms) ease,
+      background var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
+  }
+
+  .surprise i {
+    color: var(--theme-accent, #f59e0b);
+  }
+
+  .surprise:hover:not(:disabled) {
+    border-color: var(--theme-accent, #f59e0b);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 22%,
+      var(--theme-card-bg, transparent)
+    );
+  }
+
+  .surprise:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .surprise:active:not(:disabled) i {
+    animation: roll 420ms ease;
+  }
+
+  .surprise:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .surprise:focus-visible,
+  .link:focus-visible {
+    outline: 2px solid var(--theme-accent, #f59e0b);
+    outline-offset: 2px;
+  }
+
+  @keyframes roll {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .axis {
+    --axis-color: var(--prop-blue-text, #818cf8);
+    display: flex;
+    align-items: center;
+    gap: clamp(0.2rem, 3cqi, 0.45rem);
+    min-width: 0;
+  }
+
+  .axis.columns {
+    --axis-color: var(--prop-red-text, #f87171);
+  }
+
+  .axis-mark {
+    flex: 0 0 auto;
+    width: 1em;
+    color: var(--axis-color);
+    font-size: clamp(0.85rem, 10cqi, 1.2rem);
+    font-weight: 800;
+    text-align: center;
+    line-height: 1;
+  }
+
+  .axis > :global(:not(.axis-mark)) {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .foot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 1em;
+  }
+
+  .hint {
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
+    font-size: clamp(0.7rem, 8.5cqi, 0.875rem);
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .link {
+    display: grid;
+    width: clamp(1.5rem, 14cqi, 2.25rem);
+    height: clamp(1.5rem, 14cqi, 2.25rem);
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.14));
+    border-radius: 999px;
+    background: transparent;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
+    font-size: clamp(0.65rem, 7cqi, 0.85rem);
+    cursor: pointer;
+    transition:
+      color var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      background var(--duration-fast, 150ms) ease;
+  }
+
+  .link:hover {
+    color: var(--theme-text, #fff);
+    border-color: var(--theme-text-dim, rgb(255 255 255 / 0.4));
+  }
+
+  .link.linked {
+    color: var(--theme-accent, #f59e0b);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 60%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 14%,
+      transparent
+    );
+  }
+
+  /* Compact: the header edits the grid, so the corner only points at the
+     two axes and names the next move. */
   .corner-guide {
     display: grid;
     width: 100%;
     height: 100%;
     place-content: center;
-    gap: clamp(0.35rem, 5cqi, 0.8rem);
-    padding: clamp(0.35rem, 7cqi, 1rem);
+    gap: clamp(0.25rem, 5cqi, 0.6rem);
+    padding: clamp(0.25rem, 6cqi, 0.8rem);
     color: var(--theme-text, #fff);
     text-align: center;
   }
 
   .corner-guide > strong {
-    font-size: clamp(0.875rem, 10cqi, 1.15rem);
+    font-size: clamp(0.8rem, 10cqi, 1rem);
     font-weight: 750;
     line-height: 1.1;
   }
 
-  .axis-guide {
-    display: flex;
-    flex-wrap: wrap;
+  .compact-axis {
+    display: inline-flex;
     justify-content: center;
-    gap: 0.3rem 0.65rem;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.65));
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 600;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: clamp(0.85rem, 18cqi, 1.2rem);
+    font-weight: 800;
+  }
+
+  .row-arrow {
+    color: var(--prop-blue-text, #818cf8);
+  }
+
+  .column-arrow {
+    color: var(--prop-red-text, #f87171);
+  }
+
+  @container (max-width: 5rem) or (max-height: 5rem) {
+    .corner-guide {
+      padding: 0;
+    }
+
+    .corner-guide > strong {
+      display: none;
+    }
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
     white-space: nowrap;
   }
 
-  .axis-guide span {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-  }
-
-  .axis-guide i {
-    display: block;
-    width: 0.45rem;
-    height: 0.45rem;
-    border-radius: 50%;
-  }
-
-  .row-dot {
-    background: var(--prop-blue-text, #818cf8);
-  }
-
-  .column-dot {
-    background: var(--prop-red-text, #f87171);
-  }
-
-  .compact-axis {
-    display: none;
-  }
-
-  @container (max-width: 7.5rem) {
-    .axis-guide {
-      display: none;
-    }
-  }
-
-  @container (max-height: 7.5rem) {
-    .axis-guide {
-      display: none;
-    }
-  }
-
-  @container (max-width: 5rem) {
-    .corner-guide {
-      padding: 0;
+  @media (prefers-reduced-motion: reduce) {
+    .surprise,
+    .link {
+      transition: none;
     }
 
-    .corner-guide > strong {
-      display: none;
+    .surprise:active:not(:disabled) {
+      transform: none;
     }
 
-    .compact-axis {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.2rem;
-      font-size: clamp(0.75rem, 24cqi, 1rem);
-      font-weight: 800;
-    }
-
-    .row-arrow {
-      color: var(--prop-blue-text, #818cf8);
-    }
-
-    .column-arrow {
-      color: var(--prop-red-text, #f87171);
-    }
-  }
-
-  @container (max-height: 5rem) {
-    .corner-guide {
-      padding: 0;
-    }
-
-    .corner-guide > strong {
-      display: none;
-    }
-
-    .compact-axis {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.2rem;
-      font-size: clamp(0.75rem, 24cqi, 1rem);
-      font-weight: 800;
+    .surprise:active:not(:disabled) i {
+      animation: none;
     }
   }
 </style>
