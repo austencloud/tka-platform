@@ -100,7 +100,13 @@ function configureProductionSlice(
       const mesh = child as Mesh;
       if (!mesh.isMesh) return;
       mesh.receiveShadow = true;
-      mesh.castShadow = shadows && child.name !== "EMBER_Terrain";
+      // Thin surface skins receive the mountain's shadows; casting their own
+      // makes the cooled plate look like a floating ledge at grazing angles.
+      mesh.castShadow =
+        shadows &&
+        child.name !== "EMBER_Terrain" &&
+        child.userData.tka_role !== "playable-surface" &&
+        child.userData.tka_role !== "stage-crust-transition";
     });
     return;
   }
