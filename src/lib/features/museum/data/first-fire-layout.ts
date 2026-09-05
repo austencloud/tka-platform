@@ -135,6 +135,9 @@ export interface FirstFireLayout {
   wallRects: WallRect[];
   ceilingRects: CeilingRect[];
 
+  /** What the bay owns — its room plus the corridor it draws. The cave composer
+   *  routes terrain queries by THIS, never by `bayBounds`. */
+  bayFootprint: WorldRect[];
   /** Union bbox of the fire bay. elevationAt throws inside it when nothing matches. */
   bayBounds: WorldRect;
 
@@ -586,7 +589,8 @@ export function buildFirstFireLayout(grid: MuseumGrid): FirstFireLayout | null {
     })),
   ];
 
-  const bayBounds = unionRect([fire, ...corridor]);
+  const bayFootprint: WorldRect[] = [fire, ...corridor];
+  const bayBounds = unionRect(bayFootprint);
   const rockProbe = rockFill.length
     ? rockFill.reduce((widest, r) => (area(r) > area(widest) ? r : widest))
     : fire;
@@ -612,6 +616,7 @@ export function buildFirstFireLayout(grid: MuseumGrid): FirstFireLayout | null {
     floorRects,
     wallRects,
     ceilingRects,
+    bayFootprint,
     bayBounds,
     probes: {
       bridge: centre(bridge),

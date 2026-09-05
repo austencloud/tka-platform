@@ -994,22 +994,37 @@ function buildCirculation(
 /**
  * Routes an elevation/blocking query to the bay that owns the point. Outside
  * every bay the museum datum stands, which is what the tile-built rooms use.
+ *
+ * Ownership is a bay's FOOTPRINT — its room plus the corridor rects it draws —
+ * never its bounding box. A corridor can dogleg well past the room it serves
+ * (Earth's Fire corridor runs 3 m south of the Earth room), and a bbox grown
+ * to hold it swallows the neighbour's corridor and door tiles beside it. That
+ * is how the walk out of the Earth room died: the Earth→Air corridor lay inside
+ * Earth's bbox, Earth was asked first, no Earth floor covers those tiles, and
+ * Earth's loud "no elevation zone" throw killed the frame loop.
  */
 function composeCaveTerrain(
   grid: MuseumGrid,
-  bays: { bounds: WorldRect | undefined; program: MuseumTerrainProgram | null }[]
+  bays: {
+    footprint: WorldRect[] | undefined;
+    program: MuseumTerrainProgram | null;
+  }[]
 ): MuseumTerrainProgram | null {
   const active = bays.filter(
-    (bay): bay is { bounds: WorldRect; program: MuseumTerrainProgram } =>
-      Boolean(bay.bounds && bay.program)
+    (bay): bay is { footprint: WorldRect[]; program: MuseumTerrainProgram } =>
+      Boolean(bay.footprint && bay.program)
   );
   if (active.length === 0) return null;
+  const owns = (footprint: WorldRect[], x: number, z: number) =>
+    footprint.some((rect) => inRectClosed(rect, x, z));
 
   return {
     waterlineY: active[0]!.program.waterlineY,
-    elevationAt(x, z) {
+    elevationAt(x, z, fromY) {
       for (const bay of active) {
-        if (inRectClosed(bay.bounds, x, z)) return bay.program.elevationAt(x, z);
+        if (owns(bay.footprint, x, z)) {
+          return bay.program.elevationAt(x, z, fromY);
+        }
       }
       return 0;
     },
@@ -1027,7 +1042,7 @@ function composeCaveTerrain(
       );
       if (tile?.type === "corridor" || tile?.type === "door") return false;
       for (const bay of active) {
-        if (inRectClosed(bay.bounds, x, z) && bay.program.blockedAt(x, z)) {
+        if (owns(bay.footprint, x, z) && bay.program.blockedAt(x, z)) {
           return true;
         }
       }
@@ -1035,7 +1050,7 @@ function composeCaveTerrain(
     },
     updraftAt(x, z, y) {
       for (const bay of active) {
-        if (inRectClosed(bay.bounds, x, z)) {
+        if (owns(bay.footprint, x, z)) {
           return bay.program.updraftAt?.(x, z, y) ?? 0;
         }
       }
@@ -1049,8 +1064,9 @@ function composeCaveTerrain(
  * contains the cave rooms — the review route's cave-only grid, or the whole
  * museum's single walk grid (`museum-walk.ts`). Physics reads it for ground
  * clamping; each graybox layer reads the same layout for its meshes. Each
- * program answers only inside its own bay, so a bay's loud "no elevation zone"
- * failure can never be swallowed by its neighbour.
+ * program answers only inside its own footprint, so a bay's loud "no elevation
+ * zone" failure can never be swallowed by its neighbour — and never fires for a
+ * neighbour's corridor.
  *
  * Each layout builder returns null when its room is absent from the grid, so
  * this is safe on a grid that carries only some of the chambers.
@@ -1060,27 +1076,27 @@ export function composeCaveTerrainForGrid(
 ): MuseumTerrainProgram | null {
   return composeCaveTerrain(grid, [
     {
-      bounds: buildDrownedGalleryLayout(grid)?.bayBounds,
+      footprint: buildDrownedGalleryLayout(grid)?.bayFootprint,
       program: createDrownedGalleryTerrain(grid),
     },
     {
-      bounds: buildFirstFireLayout(grid)?.bayBounds,
+      footprint: buildFirstFireLayout(grid)?.bayFootprint,
       program: createFirstFireTerrain(grid),
     },
     {
-      bounds: buildEarthCanyonLayout(grid)?.bayBounds,
+      footprint: buildEarthCanyonLayout(grid)?.bayFootprint,
       program: createEarthCanyonTerrain(grid),
     },
     {
-      bounds: buildAirChimneyLayout(grid)?.bayBounds,
+      footprint: buildAirChimneyLayout(grid)?.bayFootprint,
       program: createAirChimneyTerrain(grid),
     },
     {
-      bounds: buildSundialLayout(grid)?.bayBounds,
+      footprint: buildSundialLayout(grid)?.bayFootprint,
       program: createSundialTerrain(grid),
     },
     {
-      bounds: buildMoonLayout(grid)?.bayBounds,
+      footprint: buildMoonLayout(grid)?.bayFootprint,
       program: createMoonTerrain(grid),
     },
   ]);
