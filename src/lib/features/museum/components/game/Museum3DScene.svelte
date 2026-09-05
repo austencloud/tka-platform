@@ -23,7 +23,7 @@
   import MuseumFurniture from "./MuseumFurniture.svelte";
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
   import VulcanCaveScenicLayer from "./VulcanCaveScenicLayer.svelte";
-  import DrownedGalleryGraybox from "./DrownedGalleryGraybox.svelte";
+  import DrownedGalleryAuthored from "./DrownedGalleryAuthored.svelte";
   import FirstFireGraybox from "./FirstFireGraybox.svelte";
   import EarthCanyonGraybox from "./EarthCanyonGraybox.svelte";
   import AirChimneyGraybox from "./AirChimneyGraybox.svelte";
@@ -267,13 +267,17 @@
   const hasVulcanCaveSlice = grid.wings.some(
     (wing) => wing.id === "cave-water"
   );
-  // Graybox for the Drowned Gallery route. Remove with the component when the
-  // authored GLB shell lands (see DrownedGalleryGraybox.svelte).
+  // The Drowned Gallery route renders from its authored Blender shell plus the
+  // walk-side water, pedestals and consoles (see DrownedGalleryAuthored.svelte).
+  // The graybox that preceded it is gone; this flag now gates the authored mount.
+  /** Longest the entrance shader warm-up may hold the museum's ready flag. */
+  const ENTRANCE_WARMUP_CAP_MS = 8000;
+
   const hasDrownedGallery = grid.wings.some(
     (wing) => wing.id === "cave-water-gallery"
   );
-  // Graybox for The First Fire. Same lifetime as the Drowned Gallery box:
-  // remove with the component when the authored GLB shell lands.
+  // Graybox for The First Fire. Remove with the component when its authored
+  // GLB shell lands, the way the Drowned Gallery's graybox went.
   const hasFirstFire = grid.wings.some((wing) => wing.id === "cave-fire");
   // Graybox for the Earth Room (the Canyon Overlook). Same lifetime again.
   const hasEarthCanyon = grid.wings.some((wing) => wing.id === "cave-earth");
@@ -1504,12 +1508,27 @@
         if (chunk.pedestalMesh) compileTargets.push(chunk.pedestalMesh);
         if (chunk.signMesh) compileTargets.push(chunk.signMesh);
       }
+      // three's compileAsync polls program readiness on its own setTimeout and
+      // never rejects. When one of these materials is disposed while that poll
+      // is pending (the streamer drops the lobby chunks the moment a restored
+      // visitor position lands in another wing), the tick throws inside the
+      // timer, the catch below never sees it, and this await parks for good:
+      // geometryReady never flips and the museum boots to a black screen.
+      // Cap the wait the way scene-boot/renderer-warmup.ts does.
       try {
-        await Promise.all(
+        const compiled = Promise.all(
           compileTargets.map((object) =>
             renderer.compileAsync(object, warmupCamera, scene)
           )
+        ).then(() => "settled" as const);
+        const capped = new Promise<"capped">((resolve) =>
+          setTimeout(() => resolve("capped"), ENTRANCE_WARMUP_CAP_MS)
         );
+        if ((await Promise.race([compiled, capped])) === "capped") {
+          console.warn(
+            `[Museum3DScene] entrance shader warmup capped after ${ENTRANCE_WARMUP_CAP_MS}ms; revealing anyway.`
+          );
+        }
       } catch (error) {
         // Rendering remains usable without precompilation. Preserve the normal
         // ready path and retain the driver error for diagnosis.
@@ -2115,6 +2134,9 @@
 {#each visiblePerformers as performer (performer.id)}
   {#if villageEmbedMounted && performer.id.startsWith("collab-")}
     <!-- Skip: replaced by MuseumVillageEmbed -->
+  {:else if hasDrownedGallery && performer.id.startsWith("cave-water-")}
+    <!-- Skip: the Water wing stands its three cases on pedestals and drives
+         them from its consoles (DrownedGalleryAuthored) -->
   {:else if performer.id.includes("telekinetic-formation")}
     {@const posOverride =
       overrideVersion >= 0
@@ -2234,9 +2256,10 @@
 {/if}
 
 {#if hasDrownedGallery}
-  <DrownedGalleryGraybox
+  <DrownedGalleryAuthored
     {grid}
     currentRoomId={currentPlayerRoomId}
+    {playerPosition}
     onLightPlanChange={handleAuthoredPointLightPlanChange}
     visible={props.visible !== false}
   />
