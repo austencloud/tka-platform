@@ -632,7 +632,7 @@
     visible && currentRoomId !== null && WATER_ROUTE.has(currentRoomId)
   );
 
-  const lightPlan = layout
+  const fixtureLights = layout
     ? [
         {
           x: cx(layout.approach),
@@ -708,6 +708,24 @@
         })),
       ]
     : [];
+
+  // The key-light lift on the performer each console owns rises with the
+  // visitor's approach. It travels through the pooled plan so the renderer keeps
+  // its three fixed PointLights; a per-station light would grow the shader
+  // signature with every console that woke up.
+  const lightPlan = $derived([
+    ...fixtureLights,
+    ...consoles
+      .filter((station) => station.awake > 0)
+      .map((station) => ({
+        x: station.keyLight[0],
+        y: station.keyLight[1],
+        z: station.keyLight[2],
+        color: "#ffe2c0",
+        intensity: station.awake * 9,
+        distance: 8,
+      })),
+  ]);
 
   $effect(() => {
     if (!layout || !onLightPlanChange) return;
@@ -817,17 +835,6 @@
         modified={station.modified}
         tint={WATER_TINT}
       />
-      <!-- The key-light lift on the performer this console owns: rises with
-           the visitor's approach, never dims anything else. -->
-      {#if lit && station.awake > 0}
-        <T.PointLight
-          position={station.keyLight}
-          color="#ffe2c0"
-          intensity={station.awake * 9}
-          distance={8}
-          decay={2}
-        />
-      {/if}
     {/each}
   </T.Group>
 {/if}
