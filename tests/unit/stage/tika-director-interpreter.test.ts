@@ -44,6 +44,21 @@ describe("TIKA Stage direction interpreter", () => {
   });
 
   it.each([
+    ["Make all the avatars female", "feminine"],
+    ["Make every avatar female.", "feminine"],
+    ["make all of the avatars women", "feminine"],
+    ["Make every avatar male", "masculine"],
+    ["Please make all the avatars men", "masculine"],
+    ["Make all the avatars androgynous", "androgynous"],
+    ["make every avatar nonbinary", "androgynous"],
+  ])("reads a presentation request: %s", (prompt, presentation) => {
+    expect(interpretStageDirectionLocally(prompt)).toMatchObject({
+      kind: "apply",
+      actions: [{ type: "assign-distinct-characters", presentation }],
+    });
+  });
+
+  it.each([
     "Transition to a circle over 8 counts",
     "Go to a circle in 8 counts",
     "Move to a circle over 8 beats!",

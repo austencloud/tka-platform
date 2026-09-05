@@ -72,6 +72,19 @@ describe("TIKA Director provider boundary", () => {
     }
   );
 
+  it("tells the planner how presentation filtering works and when it fails", () => {
+    expect(TIKA_DIRECTOR_SYSTEM_PROMPT).toMatch(/presentation/);
+    expect(TIKA_DIRECTOR_SYSTEM_PROMPT).toMatch(/characterPresentationCounts/);
+    expect(TIKA_DIRECTOR_SYSTEM_PROMPT).toMatch(
+      /feminine.*masculine.*androgynous/s
+    );
+    expect(TIKA_DIRECTOR_SYSTEM_PROMPT).toMatch(/presentation:'feminine'/);
+    expect(TIKA_DIRECTOR_SYSTEM_PROMPT).not.toMatch(
+      /cannot filter avatars by gender/i
+    );
+    expect(TIKA_DIRECTOR_SYSTEM_PROMPT).toMatch(/still partial execution/);
+  });
+
   it("accepts the full allowed prompt length when it becomes conversation history", () => {
     const prompt = "x".repeat(2_000);
     expect(

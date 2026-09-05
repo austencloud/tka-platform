@@ -37,6 +37,8 @@ const scene: TikaDirectorRequest["scene"] = {
     prop: "staff",
   })),
   formations: [{ atBeat: 0, presetId: "line" }],
+  // Mirrors the deployed catalog labels in shared/3d/config/character-presentation.
+  characterPresentationCounts: { masculine: 6, feminine: 6, androgynous: 4 },
 };
 type LiveCase = {
   name: string;
@@ -80,6 +82,21 @@ const formationExactly =
   (end: string, beats: number, start?: string) => (r: TikaDirectorResponse) => {
     assert.equal(r.kind, "apply", JSON.stringify(r));
     formationOrAsk(end, beats, start)(r);
+  };
+/** Exactly one distinct-characters action carrying the given presentation. */
+const charactersWith =
+  (presentation: string | undefined) => (r: TikaDirectorResponse) => {
+    exactly(["assign-distinct-characters"])(r);
+    if (r.kind !== "apply") return;
+    const action = r.actions[0]!;
+    assert.equal(action.type, "assign-distinct-characters");
+    assert.equal(
+      action.type === "assign-distinct-characters"
+        ? action.presentation
+        : "n/a",
+      presentation,
+      JSON.stringify(r)
+    );
   };
 const performer = (label: string) => ({
   id: label,
@@ -277,7 +294,7 @@ function adversarialCases(): LiveCase[] {
     {
       name: "adv gender permission inline",
       prompt: "different avatars for everyone, I don't care about gender",
-      check: exactly(["assign-distinct-characters"]),
+      check: charactersWith(undefined),
     },
     {
       name: "adv reversed clause order",
@@ -465,26 +482,22 @@ const cases: Array<{
     check: (r) => assert.notEqual(r.kind, "apply"),
   },
   {
-    name: "gender clarification",
+    name: "presentation feminine",
     prompt: "Make all the avatars female.",
-    check: (r) => assert.equal(r.kind, "clarify"),
+    check: charactersWith("feminine"),
   },
   {
     name: "clarification answer",
     prompt: "Yes, make every avatar different and leave gender unconstrained.",
     conversation: [
-      { role: "user", content: "Make all the avatars female and different." },
+      { role: "user", content: "Make all the avatars elderly and different." },
       {
         role: "assistant",
         content:
-          "I cannot filter gender. Should I assign different avatars without that constraint?",
+          "I cannot filter avatars by age. Should I assign different avatars without that constraint?",
       },
     ],
-    check: (r) => {
-      assert.equal(r.kind, "apply");
-      if (r.kind === "apply")
-        assert.deepEqual(r.actions, [{ type: "assign-distinct-characters" }]);
-    },
+    check: charactersWith(undefined),
   },
   {
     name: "context preserves exclusion",
@@ -635,7 +648,168 @@ const cases: Array<{
   // --grep=adv. Each check is as strict as the product contract allows and
   // never accepts a wrong action.
   ...adversarialCases(),
+  ...presentationCases(),
 ];
+
+function presentationCases(): LiveCase[] {
+  const eight = {
+    performers: "ABCDEFGH".split("").map(performer),
+  };
+  return [
+    {
+      name: "pres all women",
+      prompt: "make them all women",
+      check: charactersWith("feminine"),
+    },
+    {
+      name: "pres girls slang",
+      prompt: "girls only pls, different ones",
+      check: charactersWith("feminine"),
+    },
+    {
+      // No verb at all: confirming is fine, applying anything else is not.
+      name: "pres ladies caps",
+      prompt: "ALL LADIES",
+      check: (r) => {
+        if (r.kind === "apply") charactersWith("feminine")(r);
+      },
+    },
+    {
+      name: "pres guys",
+      prompt: "make the cast all guys",
+      check: charactersWith("masculine"),
+    },
+    {
+      name: "pres masculine word",
+      prompt: "give everyone a different masculine avatar",
+      check: charactersWith("masculine"),
+    },
+    {
+      name: "pres nonbinary",
+      prompt: "make every avatar nonbinary",
+      check: charactersWith("androgynous"),
+    },
+    {
+      name: "pres neutral",
+      prompt: "gender neutral avatars for the whole cast",
+      check: charactersWith("androgynous"),
+    },
+    {
+      name: "pres spanish",
+      prompt: "que todas sean mujeres",
+      check: charactersWith("feminine"),
+    },
+    {
+      name: "pres too many feminine",
+      prompt: "make them all female",
+      scene: eight,
+      check: noApply,
+    },
+    {
+      name: "pres too many androgynous",
+      prompt: "make them all androgynous",
+      scene: { performers: "ABCDE".split("").map(performer) },
+      check: noApply,
+    },
+    {
+      name: "pres exact fit",
+      prompt: "make them all androgynous",
+      scene: { performers: "ABCD".split("").map(performer) },
+      check: charactersWith("androgynous"),
+    },
+    {
+      name: "pres unknown counts",
+      prompt: "make all the avatars female",
+      scene: { characterPresentationCounts: undefined },
+      check: (r) => {
+        if (r.kind === "apply") charactersWith("feminine")(r);
+      },
+    },
+    {
+      name: "pres age filter",
+      prompt: "make every avatar an old woman",
+      check: noApply,
+    },
+    {
+      name: "pres skin tone",
+      prompt: "make all the avatars black women",
+      check: noApply,
+    },
+    {
+      name: "pres robots",
+      prompt: "make them all female robots",
+      check: noApply,
+    },
+    {
+      name: "pres mixed cast",
+      prompt: "two women and one man",
+      check: noApply,
+    },
+    { name: "pres subset", prompt: "make performer A female", check: noApply },
+    {
+      name: "pres with props",
+      prompt: "all female avatars and different props for everyone",
+      check: (r) => {
+        exactly(["assign-distinct-characters", "assign-distinct-props"])(r);
+        if (r.kind !== "apply") return;
+        const a = r.actions.find(
+          (x) => x.type === "assign-distinct-characters"
+        )!;
+        assert.equal(
+          a.type === "assign-distinct-characters" ? a.presentation : "n/a",
+          "feminine"
+        );
+      },
+    },
+    {
+      name: "pres with transition",
+      prompt: "make them all men and move to a circle over 8 beats",
+      check: (r) => {
+        exactly(["assign-distinct-characters", "formation-transition"])(r);
+        if (r.kind !== "apply") return;
+        const a = r.actions.find(
+          (x) => x.type === "assign-distinct-characters"
+        )!;
+        assert.equal(
+          a.type === "assign-distinct-characters" ? a.presentation : "n/a",
+          "masculine"
+        );
+        assert.equal(transition(r)!.durationBeats, 8);
+      },
+    },
+    {
+      // Excluding one outcome of a random draw is not expressible; asking or
+      // applying unfiltered are both honest. Applying feminine is not.
+      name: "pres negation",
+      prompt: "different avatars but don't make them all female",
+      check: (r) => {
+        if (r.kind === "apply") charactersWith(undefined)(r);
+      },
+    },
+    {
+      // "Can you X?" with a concrete X reads as a request in this product.
+      name: "pres question only",
+      prompt: "can you make them all female?",
+      check: (r) => {
+        if (r.kind === "apply") charactersWith("feminine")(r);
+      },
+    },
+    {
+      name: "pres drop filter",
+      prompt: "actually forget the female part, just different avatars",
+      conversation: [
+        { role: "user", content: "make them all female" },
+        {
+          role: "assistant",
+          content:
+            "Only 6 feminine avatars are deployed, but this cast has 8 performers.",
+        },
+      ],
+      scene: eight,
+      check: charactersWith(undefined),
+    },
+  ];
+}
 
 let failed = 0;
 let inputTokens = 0;
@@ -657,6 +831,7 @@ for (const testCase of cases) {
   attempted++;
   const started = Date.now();
   let observed: TikaDirectorResponse | undefined;
+  let planned: TikaDirectorResponse | undefined;
   try {
     const result = await planStageDirection(
       model,
@@ -669,6 +844,7 @@ for (const testCase of cases) {
     );
     inputTokens += result.usage.inputTokens ?? 0;
     outputTokens += result.usage.outputTokens ?? 0;
+    planned = result.response;
     const reviewed = await reviewStageDirection(
       reviewer,
       {
@@ -706,6 +882,7 @@ for (const testCase of cases) {
         case: testCase.name,
         pass: false,
         error: cause instanceof Error ? cause.name : "UnknownError",
+        planned,
         response: observed,
         generatedText,
       })

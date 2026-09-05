@@ -1,8 +1,32 @@
 import type {
   TikaDirectorAction,
   TikaDirectorFormation,
+  TikaDirectorPresentation,
   TikaDirectorResponse,
 } from "./tika-director";
+
+const PRESENTATION_WORDS: ReadonlyMap<string, TikaDirectorPresentation> =
+  new Map([
+    ["feminine", "feminine"],
+    ["female", "feminine"],
+    ["women", "feminine"],
+    ["woman", "feminine"],
+    ["girls", "feminine"],
+    ["ladies", "feminine"],
+    ["masculine", "masculine"],
+    ["male", "masculine"],
+    ["men", "masculine"],
+    ["man", "masculine"],
+    ["guys", "masculine"],
+    ["boys", "masculine"],
+    ["androgynous", "androgynous"],
+    ["nonbinary", "androgynous"],
+    ["non-binary", "androgynous"],
+    ["gender neutral", "androgynous"],
+    ["gender-neutral", "androgynous"],
+  ]);
+const PRESENTATION_COMMAND =
+  /^make (?:every avatar|all(?: of)? the avatars|the avatars(?: all)?) (?:a |all )?(?<look>[a-z -]+?)$/;
 
 const FORMATION_ALIASES: ReadonlyMap<string, TikaDirectorFormation> = new Map([
   ["v", "v-shape"],
@@ -99,6 +123,11 @@ export function interpretStageDirectionLocally(
     )
   ) {
     action = { type: "assign-distinct-characters" };
+  } else if (PRESENTATION_COMMAND.test(command)) {
+    const look = PRESENTATION_COMMAND.exec(command)!.groups!.look!;
+    const presentation = PRESENTATION_WORDS.get(look);
+    if (!presentation) return null;
+    action = { type: "assign-distinct-characters", presentation };
   } else if (
     /^give (?:every|each) performer(?: in this scene)? a (?:different|distinct|unique) (?:sequence|word)(?: (?:from|out of) (?:my|the|their) library)?$/.test(
       command
@@ -114,7 +143,9 @@ export function interpretStageDirectionLocally(
     action.type === "assign-distinct-props"
       ? "distinct props"
       : action.type === "assign-distinct-characters"
-        ? "distinct avatars"
+        ? action.presentation
+          ? `distinct ${action.presentation} avatars`
+          : "distinct avatars"
         : action.type === "assign-distinct-sequences"
           ? "a different library sequence to every performer"
           : `${action.startFormation ? `${action.startFormation} to ` : ""}${action.endFormation} over ${action.durationBeats} beats`;

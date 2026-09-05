@@ -4,6 +4,10 @@ import {
 } from "$lib/features/film-director/domain/directive-random";
 import { resolveCastAxis } from "$lib/features/film-director/domain/resolve-directives";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import {
+  charactersWithPresentation,
+  countCharacterPresentations,
+} from "$lib/shared/3d/config/character-presentation";
 import { DEPLOYED_CHARACTER_IDS } from "$lib/shared/3d/config/deployed-characters";
 import type { CharacterId } from "$lib/shared/3d/domain/character-model";
 import type {
@@ -78,6 +82,7 @@ export async function resolveStageDirection(input: {
       ...(input.librarySequenceCount !== undefined
         ? { librarySequenceCount: input.librarySequenceCount }
         : {}),
+      characterPresentationCounts: countCharacterPresentations(),
     },
   };
 
@@ -109,9 +114,14 @@ export function resolveDirectorAppearanceAssignments(input: {
   performerIds: readonly string[];
   seedKey: string;
 }): ViewerPerformerAppearanceAssignment[] {
-  const assignCharacters = input.actions.some(
+  const characterAction = input.actions.find(
     (action) => action.type === "assign-distinct-characters"
   );
+  const assignCharacters = characterAction !== undefined;
+  const presentation =
+    characterAction?.type === "assign-distinct-characters"
+      ? characterAction.presentation
+      : undefined;
   const assignProps = input.actions.some(
     (action) => action.type === "assign-distinct-props"
   );
@@ -119,13 +129,24 @@ export function resolveDirectorAppearanceAssignments(input: {
 
   const seed = resolveFilmSeed(input.seedKey);
   const sceneId = "live-stage";
+  const characterCatalog = presentation
+    ? charactersWithPresentation(presentation)
+    : DEPLOYED_CHARACTER_IDS;
+  if (assignCharacters && characterCatalog.length < input.performerIds.length) {
+    throw new Error(
+      `Only ${characterCatalog.length} ${presentation ?? ""} avatars are deployed, but this cast has ${input.performerIds.length} performers.`.replace(
+        "  ",
+        " "
+      )
+    );
+  }
   const characters = assignCharacters
     ? resolveCastAxis<string>({
         axis: "characterId",
         sceneId,
         performerIds: input.performerIds,
         values: input.performerIds.map(() => ({ pick: "distinct" as const })),
-        catalog: DEPLOYED_CHARACTER_IDS,
+        catalog: characterCatalog,
         random: createAxisStream(seed, sceneId, "characterId"),
       })
     : null;

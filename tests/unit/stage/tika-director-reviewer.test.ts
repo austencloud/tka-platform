@@ -115,5 +115,8 @@ describe("TIKA Director independent review", () => {
     expect(result.response).toBe(sequences);
     expect(system).toContain("assign-distinct-sequences");
     expect(system).toMatch(/librarySequenceCount/);
+    expect(system).toMatch(/presentation/);
+    expect(system).toMatch(/count per label was already checked/);
+    expect(system).not.toMatch(/cannot filter gender/);
   });
 });
