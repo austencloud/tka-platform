@@ -87,6 +87,7 @@ const NOISE = /* glsl */ `
 varying vec3 vMidflankWorld;
 varying vec2 vMidflankFlow;
 varying float vMidflankBank;
+varying float vMidflankHeat;
 uniform float uMidflankTime;
 float mfHash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float mfNoise(vec2 p) {
@@ -99,7 +100,7 @@ float mfFbm(vec2 p) {
 }
 `;
 
-/** Animate only the authored simulator surface; never draw a second river. */
+/** Animate the authored river network without adding runtime surface geometry. */
 export function createMidflankLava(
   terrain: Object3D,
   groundY: number
@@ -117,17 +118,18 @@ export function createMidflankLava(
     vertexColors: true,
   });
   material.name = "Ember_Midflank_R5_thermal-crust";
-  material.customProgramCacheKey = () => "ember-midflank-flowing-skin-v2";
+  material.customProgramCacheKey = () => "ember-midflank-flowing-network-v3";
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uMidflankTime = time;
     shader.vertexShader =
-      "varying vec3 vMidflankWorld;\nvarying vec2 vMidflankFlow;\nvarying float vMidflankBank;\nuniform float uMidflankTime;\n" +
+      "varying vec3 vMidflankWorld;\nvarying vec2 vMidflankFlow;\nvarying float vMidflankBank;\nvarying float vMidflankHeat;\nuniform float uMidflankTime;\n" +
       shader.vertexShader;
     shader.vertexShader = shader.vertexShader.replace(
       "#include <begin_vertex>",
       `#include <begin_vertex>
       vMidflankFlow = uv;
       vMidflankBank = color.r;
+      vMidflankHeat = color.g / max(color.r, .001);
       float along = uv.y - uMidflankTime * .72;
       float surge = .028 * sin(along * 2.1 + sin(uv.x * 1.8))
                   + .012 * sin(along * 5.3 + uv.x * .9);
@@ -153,21 +155,25 @@ export function createMidflankLava(
       float fissure = 1.-smoothstep(.015,.07,abs(mfFbm(p*vec2(1.1,.54)+warp)-.49));
       float heat = max(opening,fissure*.32) * smoothstep(.05,.85,vMidflankBank);
       vec3 mfRadiance = mix(vec3(1.1,.035,.001),vec3(2.8,.32,.008),opening);
-      totalEmissiveRadiance = mfRadiance * heat;
+      totalEmissiveRadiance = mfRadiance * heat * vMidflankHeat;
       diffuseColor.rgb = mix(vec3(.026,.022,.020),vec3(.035,.008,.002),heat);
     `
     );
   };
-  for (const name of ["EMBER_LavaSimulatorDeposit"]) {
-    const source = terrain.getObjectByName(name);
-    source?.traverse((child) => {
-      const mesh = child as Mesh;
-      if (!mesh.isMesh || !(mesh.material instanceof MeshStandardMaterial))
-        return;
-      originals.push({ mesh, material: mesh.material });
-      mesh.material = material;
-    });
-  }
+  terrain.traverse((child) => {
+    const mesh = child as Mesh;
+    if (
+      !mesh.isMesh ||
+      !(mesh.material instanceof MeshStandardMaterial) ||
+      !(
+        mesh.name === "EMBER_LavaSimulatorDeposit" ||
+        mesh.userData.ember_flow_surface
+      )
+    )
+      return;
+    originals.push({ mesh, material: mesh.material });
+    mesh.material = material;
+  });
   const deposit = terrain.getObjectByName("EMBER_LavaSimulatorDeposit") as
     | Mesh
     | undefined;
@@ -190,6 +196,22 @@ export function createMidflankLava(
       )
     )
     .filter((path) => path.length > 5);
+  const secondaryPaths = originals
+    .filter(({ mesh }) => mesh !== deposit)
+    .flatMap(
+      ({ mesh }) => (mesh.userData.ember_flow_paths ?? []) as number[][][]
+    )
+    .map((points) =>
+      measureFlowPath(points.map((p) => new Vector3(p[0], p[1], p[2])))
+    )
+    .filter((path) => path.length > 5);
+  // Keep the approved close river's 240 rafts and their trajectories intact.
+  const raftPaths = paths.length
+    ? Array.from({ length: 240 }, (_, index) => paths[index % paths.length])
+    : [];
+  for (const path of secondaryPaths) {
+    raftPaths.push(...Array.from({ length: 32 }, () => path));
+  }
   const raftMaterial = new MeshStandardMaterial({
     color: "#292321",
     roughness: 0.82,
@@ -205,8 +227,8 @@ export function createMidflankLava(
     .applyMatrix4(template.matrixWorld)
     .center();
   const rafts =
-    raftGeometry && paths.length
-      ? new InstancedMesh(raftGeometry, raftMaterial, 240)
+    raftGeometry && raftPaths.length
+      ? new InstancedMesh(raftGeometry, raftMaterial, raftPaths.length)
       : null;
   const dummy = new Object3D();
   const tangent = new Vector3();
@@ -220,7 +242,7 @@ export function createMidflankLava(
   const updateRafts = () => {
     if (!rafts) return;
     for (let index = 0; index < rafts.count; index++) {
-      const path = paths[index % paths.length];
+      const path = raftPaths[index];
       const phase = (index * 0.61803398875) % 1;
       const distance =
         phase * path.length + time.value * (0.62 + (index % 7) * 0.025);
@@ -237,7 +259,8 @@ export function createMidflankLava(
       // Crust forms/melts near a path endpoint instead of visibly teleporting.
       const travel = distance % path.length;
       const fade = Math.min(1, travel / 1.8, (path.length - travel) / 1.8);
-      const size = (0.35 + (index % 11) * 0.08) * fade;
+      const size =
+        (0.35 + (index % 11) * 0.08) * fade * (index < 240 ? 1 : 0.55);
       dummy.scale.set(size, 1, size * (1.1 + (index % 3) * 0.2));
       dummy.updateMatrix();
       rafts.setMatrixAt(index, dummy.matrix);

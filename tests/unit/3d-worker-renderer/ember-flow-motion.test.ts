@@ -87,10 +87,42 @@ describe("Ember drifting crust", () => {
     expect(
       gltf.scene.getObjectByName("EMBER_BakedLavaClinker")
     ).toBeUndefined();
+    const branches = ["EMBER_EastDistributary", "EMBER_UpperBraidedBranch"].map(
+      (name) => gltf.scene.getObjectByName(name) as Mesh
+    );
+    for (const branch of branches) {
+      expect(branch.userData.ember_flow_surface).toBe(true);
+      const path = branch.userData.ember_flow_paths[0] as number[][];
+      for (let index = 1; index < path.length; index++) {
+        expect(path[index][1]).toBeLessThan(path[index - 1][1]);
+        expect(Math.hypot(path[index][0], path[index][2])).toBeGreaterThan(
+          24.5
+        );
+      }
+      const coordinates = branch.geometry.getAttribute("uv");
+      const vertices = branch.geometry.getAttribute("position");
+      let first = { v: Infinity, y: 0 },
+        last = { v: -Infinity, y: 0 };
+      for (let index = 0; index < coordinates.count; index++) {
+        const v = coordinates.getY(index);
+        sample
+          .fromBufferAttribute(vertices, index)
+          .applyMatrix4(branch.matrixWorld);
+        if (v < first.v) first = { v, y: sample.y };
+        if (v > last.v) last = { v, y: sample.y };
+      }
+      expect(last.y).toBeLessThan(first.y - 50);
+    }
+    const cold = gltf.scene.getObjectByName("EMBER_AbandonedOverflow") as Mesh;
+    const coldMaterial = cold.material;
     const runtime = createMidflankLava(gltf.scene, -1.5);
+    expect(cold.material).toBe(coldMaterial);
+    for (const branch of branches)
+      expect(branch.material).toBe(deposit.material);
     const rafts = runtime.object.getObjectByName(
       "EmberDriftingCrust"
     ) as InstancedMesh;
+    expect(rafts.count).toBe(304);
     const bounds = new Box3().setFromBufferAttribute(
       rafts.geometry.getAttribute("position")
     );
@@ -108,6 +140,13 @@ describe("Ember drifting crust", () => {
     expect(b.z).toBeLessThan(a.z);
     expect(a.distanceTo(b)).toBeGreaterThan(0.5);
     expect(a.distanceTo(b)).toBeLessThan(0.9);
+    rafts.getMatrixAt(240, before);
+    for (let frame = 0; frame < 60; frame++) runtime.update(1 / 60, frame / 60);
+    rafts.getMatrixAt(240, after);
+    a.setFromMatrixPosition(before);
+    b.setFromMatrixPosition(after);
+    expect(b.z).toBeLessThan(a.z);
+    expect(b.y).toBeLessThan(a.y);
     const frozen = rafts.instanceMatrix.array.slice();
     runtime.update(0, 99);
     expect(rafts.instanceMatrix.array).toEqual(frozen);
