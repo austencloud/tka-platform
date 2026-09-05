@@ -1,9 +1,10 @@
 <!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixTurnControls.svelte
-  The one turn editor for the Shape Matrix app: the Apply-to axis control
-  (Left / Both / Right) and the cumulative, level-appropriate turn control in
-  the current label system. The matrix ribbon and the compact detail tray
-  both present this component; only where the edit navigates differs, and
-  the host decides that through `onturn`. -->
+  The compact tray's turn editor: one cumulative, level-appropriate value
+  control per axis in the current label system. Rows (left hand) and columns
+  (right hand) are edited directly, so there is no Apply-to target and no
+  "Mixed" placeholder. The wide layout edits the same values from the recipe
+  bar above the grid; only where the edit navigates differs, and the host
+  decides that through `onturn`. -->
 <script lang="ts">
   import {
     matrixTurnSpokenLabel,
@@ -14,83 +15,67 @@
     turnValueToKey,
     type TurnValue,
   } from "$lib/shared/create/services/level-turn-values";
-  import ShapeMatrixAxisControl from "./ShapeMatrixAxisControl.svelte";
   import ShapeMatrixRibbonCell from "./ShapeMatrixRibbonCell.svelte";
   import ShapeMatrixValueScroller from "./ShapeMatrixValueScroller.svelte";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
 
   interface Props {
-    /** Ribbon: the header band. Tray: the compact detail sheet. */
+    /** Ribbon: a header band. Tray: the compact detail sheet. */
     layout?: "ribbon" | "tray";
-    onturn: (turn: TurnValue) => void;
+    onturn: (hand: "left" | "right", turn: TurnValue) => void;
   }
-  let { layout = "ribbon", onturn }: Props = $props();
+  let { layout = "tray", onturn }: Props = $props();
 
   const appState = getShapeMatrixAppContext();
 
-  const turnControlLabel = $derived(
-    appState.labelMode === "ratios" ? "VTG ratio" : "TKA turn"
+  const unit = $derived(appState.labelMode === "ratios" ? "ratio" : "turn");
+  const axes = $derived(
+    (["left", "right"] as const).map((hand) => ({
+      hand,
+      label: hand === "left" ? `Rows ↓ ${unit}` : `Columns → ${unit}`,
+      value: turnValueToKey(
+        hand === "left" ? appState.leftTurn : appState.rightTurn
+      ),
+      options: appState.availableTurns.map((turn) => ({
+        value: turnValueToKey(turn),
+        label: matrixTurnSpokenLabel(turn, appState.labelMode),
+        shortLabel: matrixTurnVisibleLabel(turn, appState.labelMode),
+        tone: hand === "left" ? "blue" : "red",
+      })),
+    }))
   );
-  const turnOptions = $derived([
-    ...(appState.activeAxis === "both" &&
-    appState.leftTurn !== appState.rightTurn
-      ? [
-          {
-            value: "mixed",
-            label: "Mixed axis values",
-            shortLabel: "Mixed",
-            disabled: true,
-          },
-        ]
-      : []),
-    ...appState.availableTurns.map((turn) => ({
-      value: turnValueToKey(turn),
-      label: matrixTurnSpokenLabel(turn, appState.labelMode),
-      shortLabel: matrixTurnVisibleLabel(turn, appState.labelMode),
-      tone:
-        appState.activeAxis === "left"
-          ? "blue"
-          : appState.activeAxis === "right"
-            ? "red"
-            : "both",
-    })),
-  ]);
   const turnKeys = $derived(appState.availableTurns.map(turnValueToKey));
-  const selectedTurnKey = $derived(
-    appState.activeAxis === "both" && appState.leftTurn !== appState.rightTurn
-      ? "mixed"
-      : turnValueToKey(appState.activeTurn)
-  );
 </script>
 
 <div class="turn-editor" class:tray={layout === "tray"}>
-  <ShapeMatrixAxisControl {layout} steers="the turn control" />
-  {#if appState.availableTurns.length === 1}
-    <ShapeMatrixRibbonCell
-      label={turnControlLabel}
-      tray={layout === "tray"}
-      keepLabel
-    >
-      <output
-        class="fixed-turn-value"
-        aria-label={`${turnControlLabel}: ${turnOptions[0]?.label ?? "Zero"}`}
+  {#each axes as axis (axis.hand)}
+    {#if appState.availableTurns.length === 1}
+      <ShapeMatrixRibbonCell
+        label={axis.label}
+        tray={layout === "tray"}
+        keepLabel
       >
-        {turnOptions[0]?.shortLabel ?? "0"}
-        <span>Only value at Level 1</span>
-      </output>
-    </ShapeMatrixRibbonCell>
-  {:else}
-    <ShapeMatrixValueScroller
-      label={turnControlLabel}
-      options={turnOptions}
-      keys={turnKeys}
-      value={selectedTurnKey}
-      onchange={(key) => {
-        if (key !== "mixed") onturn(keyToTurnValue(key));
-      }}
-      {layout}
-    />
-  {/if}
+        <output
+          class="fixed-turn-value"
+          class:blue={axis.hand === "left"}
+          class:red={axis.hand === "right"}
+          aria-label={`${axis.label}: ${axis.options[0]?.label ?? "Zero"}`}
+        >
+          {axis.options[0]?.shortLabel ?? "0"}
+          <span>Only value at Level 1</span>
+        </output>
+      </ShapeMatrixRibbonCell>
+    {:else}
+      <ShapeMatrixValueScroller
+        label={axis.label}
+        options={axis.options}
+        keys={turnKeys}
+        value={axis.value}
+        onchange={(key) => onturn(axis.hand, keyToTurnValue(key))}
+        {layout}
+      />
+    {/if}
+  {/each}
 </div>
 
 <style>
@@ -119,6 +104,14 @@
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
+  }
+
+  .fixed-turn-value.blue {
+    color: var(--prop-blue-text, #818cf8);
+  }
+
+  .fixed-turn-value.red {
+    color: var(--prop-red-text, #f87171);
   }
 
   .fixed-turn-value span {

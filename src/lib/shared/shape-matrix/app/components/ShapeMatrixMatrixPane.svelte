@@ -3,12 +3,15 @@
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
+  import ShapeMatrixRecipeBar from "./ShapeMatrixRecipeBar.svelte";
 
   interface Props {
     /** The shell owns navigation (and the compact tile-to-hero morph). */
     onselect?: (pair: { left: Flower; right: Flower }) => void;
+    /** The shell owns the roll too, for the same compact morph. */
+    onsurprise?: () => void;
   }
-  let { onselect }: Props = $props();
+  let { onselect, onsurprise }: Props = $props();
 
   const state = getShapeMatrixAppContext();
 </script>
@@ -18,6 +21,10 @@
 {/snippet}
 
 <section class="matrix-pane" aria-label="Shape matrix">
+  <ShapeMatrixRecipeBar
+    surface="level"
+    onsurprise={onsurprise ?? (() => state.surpriseMe())}
+  />
   <div class="matrix-stage">
     {#if state.loadError}
       <div class="status error" role="alert">
@@ -35,6 +42,7 @@
         selectedPair={state.selectedPair}
         claimSelected={state.compact && state.activeView === "matrix"}
         corner={cornerGuide}
+        revealToken={state.revealToken}
         onselect={onselect ?? state.selectPair}
       />
     {/if}
@@ -46,7 +54,7 @@
     height: 100%;
     min-height: 0;
     display: grid;
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
     border-radius: 16px;

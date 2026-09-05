@@ -12,21 +12,28 @@
   } from "$lib/shared/shape-matrix/services/theory-matrix-artwork";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
+  import ShapeMatrixRecipeBar from "./ShapeMatrixRecipeBar.svelte";
 
   interface Props {
     /** The shell owns navigation, the same way it does for the Matrix. */
     onselect?: (pair: { left: TheoryFlower; right: TheoryFlower }) => void;
-    /** The ratio editor points back to the grid axis it is changing. */
+    onsurprise?: () => void;
+    /** The compact header popover points back at the axis it is changing. */
     emphasizedAxis?: "left" | "right" | "both" | null;
   }
-  let { onselect, emphasizedAxis = null }: Props = $props();
+  let { onselect, onsurprise, emphasizedAxis = null }: Props = $props();
 
-  const state = getShapeMatrixAppContext();
+  const appState = getShapeMatrixAppContext();
+
+  /* The recipe bar's ratio editors point back at the grid axis they change.
+     Both live in this pane, so the pane owns that pointer. */
+  let editingAxis = $state<"left" | "right" | "both" | null>(null);
+  const emphasis = $derived(editingAxis ?? emphasizedAxis);
 
   // Theory geometry comes from the QfT model, not from a realized sequence, so
   // the grid renders before the pictograph data finishes loading. Prop reach is
   // the one thing it borrows, and the standard staff covers the wait.
-  const tipDx = $derived(state.data?.clubTipDx ?? MANDALA_STANDARD_TIP_DX);
+  const tipDx = $derived(appState.data?.clubTipDx ?? MANDALA_STANDARD_TIP_DX);
 </script>
 
 {#snippet cornerGuide()}
@@ -34,22 +41,28 @@
 {/snippet}
 
 <section class="theory-pane" aria-label="Theory matrix">
+  <ShapeMatrixRecipeBar
+    surface="theory"
+    onsurprise={onsurprise ?? (() => appState.surpriseMe())}
+    onratiofocuschange={(hand) => (editingAxis = hand)}
+  />
   <div class="theory-stage">
     <ShapeMatrixGrid
-      rowAxis={state.theoryRowAxis}
-      colAxis={state.theoryColAxis}
+      rowAxis={appState.theoryRowAxis}
+      colAxis={appState.theoryColAxis}
       maxCellPx={320}
-      selectedPair={state.theoryPair}
-      claimSelected={state.compact && state.activeView === "matrix"}
+      selectedPair={appState.theoryPair}
+      claimSelected={appState.compact && appState.activeView === "matrix"}
       keyOf={theoryFlowerKey}
       labelOf={theoryFlowerLabel}
       paintHeader={(flower, hand, sizePx) =>
         theoryHeaderArtworkSrc(flower, hand, tipDx, sizePx)}
       paintCell={(left, right, sizePx) =>
         theoryCellArtworkSrc(left, right, tipDx, sizePx)}
-      {emphasizedAxis}
+      emphasizedAxis={emphasis}
       corner={cornerGuide}
-      onselect={onselect ?? state.selectTheoryPair}
+      revealToken={appState.revealToken}
+      onselect={onselect ?? appState.selectTheoryPair}
     />
   </div>
 </section>
@@ -59,7 +72,7 @@
     height: 100%;
     min-height: 0;
     display: grid;
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
     border-radius: 16px;
