@@ -35,12 +35,21 @@ describe("canonical layout motion", () => {
 
   it("makes structural panel motion the PanelGroup default", () => {
     const panels = read("src/lib/shared/panels/PanelGroup.svelte");
+    // 5389447adc moved the manual-size-vs-preferredSize decision into
+    // panel-flex.ts so it could be tested without a layout engine; the
+    // `panelKey` lookup that used to live inline in PanelGroup.svelte is
+    // gone, replaced by the `manuallySized` flag it now hands to
+    // resolvePanelFlex.
+    const panelFlex = read("src/lib/shared/panels/panel-flex.ts");
 
     expect(panels).toContain("transition:flexPresence");
     expect(panels).toContain("transition:growFade");
     expect(panels).toContain("preferredSize?: string");
     expect(panels).toContain(":scope > .panel-wrapper");
-    expect(panels).toContain("manuallySizedPanels.has(panelKey)");
+    expect(panels).toContain("manuallySizedPanels.has(panel.id ?? index)");
+    expect(panelFlex).toContain(
+      "if (panel.preferredSize && !options.manuallySized) {"
+    );
     expect(panels).toContain("flex-grow var(--transition-emphasis)");
     expect(panels).toContain(".panel-group.dragging .panel-wrapper");
     expect(panels).toContain("transition: none");

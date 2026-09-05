@@ -136,6 +136,7 @@ export interface FlowFestProductionDressing {
     lowerInnerRoadsideTentOutsideLoopCount: number;
     lowerOuterTreeLineTentInsideLoopCount: number;
     minimumCanopyPeakDistance: number;
+    minimumSiteTreeDistance: number;
     tracedConnectorSurfaceCount: number;
     forestTreeRouteIntrusions: number;
     forestGrassRouteIntrusions: number;
@@ -327,7 +328,16 @@ export function buildFlowFestProductionDressing(
     },
     spatialAudit: {
       ...camp.spatialAudit,
-      minimumCanopyPeakDistance: minimumPairDistance(trees.placements),
+      // The ecology lists measured LiDAR canopy peaks first and jittered-grid
+      // infill after them, and the two populations are held to different
+      // spacings: the peak detector rejects a second peak within 7.5 m, the
+      // infill pass rejects a candidate within 4.5 m of any tree already
+      // placed. Auditing them as one pool reported the infill floor under a
+      // name that promises the peak floor, so each is measured on its own.
+      minimumCanopyPeakDistance: minimumPairDistance(
+        trees.placements.slice(0, forestEcology.audit.measuredCanopyPlacements)
+      ),
+      minimumSiteTreeDistance: minimumPairDistance(trees.placements),
       tracedConnectorSurfaceCount: siteSurfaces.tracedConnectorCount,
       forestTreeRouteIntrusions: forestEcology.audit.treeRouteIntrusions,
       forestGrassRouteIntrusions: forestEcology.audit.grassRouteIntrusions,
@@ -487,6 +497,9 @@ function createPlanRibbon(
   return mesh;
 }
 
+/** Centreline sample step for every generated plan ribbon. */
+const RIBBON_SAMPLE_SPACING_METERS = 0.75;
+
 function buildTerrainConformingPlanRibbonGeometry(
   terrain: ImportedTerrainDataV2,
   segment: FlowFestRuntimeSegment,
@@ -507,7 +520,10 @@ function buildTerrainConformingPlanRibbonGeometry(
     const end = pathPoints[(index + 1) % pathPoints.length]!;
     const steps = Math.max(
       1,
-      Math.ceil(Math.hypot(end.x - start.x, end.z - start.z) / 0.75)
+      Math.ceil(
+        Math.hypot(end.x - start.x, end.z - start.z) /
+          RIBBON_SAMPLE_SPACING_METERS
+      )
     );
     for (let step = 0; step < steps; step += 1) {
       const ratio = step / steps;
@@ -519,7 +535,24 @@ function buildTerrainConformingPlanRibbonGeometry(
   }
   if (!closed && pathPoints.length > 0) {
     const last = pathPoints.at(-1)!;
-    samples.push({ x: last.x, z: last.z });
+    const previous = samples.at(-1);
+    // A traced polyline can end on a segment far shorter than one sample step,
+    // and the terminus then lands a couple of centimetres past the last sample.
+    // Two rows that close together are still swept by the full ribbon width, so
+    // the half-width offsets rotate further than the centreline advances and the
+    // final quads fold back on themselves with downward normals. Snap the last
+    // sample onto the terminus instead of adding a sliver row: the ribbon still
+    // ends exactly on the traced endpoint.
+    if (
+      previous &&
+      Math.hypot(previous.x - last.x, previous.z - last.z) <
+        RIBBON_SAMPLE_SPACING_METERS / 2
+    ) {
+      previous.x = last.x;
+      previous.z = last.z;
+    } else {
+      samples.push({ x: last.x, z: last.z });
+    }
   }
 
   const columns = 12;

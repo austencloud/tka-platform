@@ -73,6 +73,7 @@ export async function optimizeGltfKtx2({
   materialTransform = null,
   inspect = true,
   encodeTextures = true,
+  keepAttributes = false,
 }) {
   const source = resolve(input);
   const destination = resolve(output);
@@ -110,6 +111,7 @@ export async function optimizeGltfKtx2({
         "--instance true",
         "--flatten false",
         "--join false",
+        `--prune-attributes ${!keepAttributes}`,
       ].join(" ")
     );
 

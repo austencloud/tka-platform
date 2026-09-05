@@ -53,7 +53,8 @@
       "3XyhXLyzv8ASNl2fLoCo",
       "n37Lcgy1czQrqITMnB8f",
       "HyW3fFQVRHU3Uc0ezeWO",
-      "GLYjYdoqw6cDfzcLAGiq"
+      "GLYjYdoqw6cDfzcLAGiq",
+      "CFmmTJ8PS6cLgVDu5l8V"
     ]
   },
   "sequenceFingerprints": [],
@@ -683,11 +684,15 @@
       "evidence": [
         {
           "kind": "vertical-slice-build",
-          "path": "static/models/ember/ember-midflank-production-r5.glb"
+          "path": "static/models/ember/ember-midflank-lava-flow-r1.glb"
         },
         {
           "kind": "blender-source",
-          "path": "blender/ember-midflank-production-r5.blend"
+          "path": "blender/ember-midflank-lava-flow-r1.blend"
+        },
+        {
+          "kind": "lava-motion-correction",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-lava-flow-r1/verification.md"
         },
         {
           "kind": "interaction-capture",

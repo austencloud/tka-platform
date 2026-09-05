@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>Ember flow — actual shared world review</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #161c21;
+    }
+    canvas {
+      display: block;
+    }
+    aside {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      color: white;
+      background: #121212dc;
+      padding: 10px;
+      font: 14px system-ui;
+    }
+  </style>
+  <aside>
+    <button id="pause">Pause flow</button>
+    <output id="status">Loading shared Ember world</output>
+  </aside>
+  <script type="module" src="./ember-lava-flow.ts"></script>
+</html>
