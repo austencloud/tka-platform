@@ -46,7 +46,9 @@ export async function resolveStageDirection(input: {
   // the latest sentence looks like a complete command on its own.
   const local =
     input.conversation.length === 0
-      ? interpretStageDirectionLocally(input.prompt)
+      ? interpretStageDirectionLocally(input.prompt, {
+          currentBeat: input.currentBeat,
+        })
       : null;
   if (local) return local;
 
