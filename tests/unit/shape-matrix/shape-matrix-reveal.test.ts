@@ -15,8 +15,15 @@ interface Call {
   delay: number;
 }
 
+// The shared vitest setup stubs the global `document.createElement` with a
+// canvas-friendly fake element (no querySelectorAll/closest/classList) so
+// canvas-capture tests can run under jsdom. This suite needs real DOM nodes
+// to drive selectors and class toggles, so it builds them from a separate
+// HTML document whose native createElement was never touched.
+const domDocument = document.implementation.createHTMLDocument("");
+
 function gridHost(): HTMLElement {
-  const host = document.createElement("div");
+  const host = domDocument.createElement("div");
   host.innerHTML = `
     <table>
       <thead><tr>
@@ -120,7 +127,7 @@ describe("shape matrix surprise reveal", () => {
   });
 
   it("lands the relationship chip and breathes the hero in after the grid", () => {
-    const host = document.createElement("div");
+    const host = domDocument.createElement("div");
     host.innerHTML = `
       <button class="relationship-choice" aria-pressed="false"></button>
       <button class="relationship-choice" aria-pressed="true" id="chip"></button>
