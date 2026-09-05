@@ -18,8 +18,13 @@ export const STRESS_POSE_IDS = [
   "low",
 ] as const;
 
-export type CandidateId = (typeof CANDIDATE_IDS)[number];
+export const LIGHTING_IDS = ["studio", "room"] as const;
+
+export type FixedCandidateId = (typeof CANDIDATE_IDS)[number];
+export type StagedCandidateId = `intake-${string}`;
+export type CandidateId = FixedCandidateId | StagedCandidateId;
 export type StressPoseId = (typeof STRESS_POSE_IDS)[number];
+export type LightingId = (typeof LIGHTING_IDS)[number];
 
 export interface BakeoffCandidate {
   id: CandidateId;
@@ -31,7 +36,7 @@ export interface BakeoffCandidate {
   note: string;
 }
 
-export const BAKEOFF_CANDIDATES: Record<CandidateId, BakeoffCandidate> = {
+export const BAKEOFF_CANDIDATES: Record<FixedCandidateId, BakeoffCandidate> = {
   "current-raw": {
     id: "current-raw",
     label: "Current avatar · raw",
@@ -84,7 +89,7 @@ export const BAKEOFF_CANDIDATES: Record<CandidateId, BakeoffCandidate> = {
     modelUrl: "/models/avatars/bakeoff/intake-current.glb",
     bytes: null,
     continuity: "current",
-    note: "The latest locally staged intake. Review every stress pose before catalog promotion.",
+    note: "The most recent locally staged intake. Every staged character also appears by name under Staged intakes.",
   },
   "avatar-sdk": {
     id: "avatar-sdk",
@@ -115,16 +120,143 @@ export const BAKEOFF_CANDIDATES: Record<CandidateId, BakeoffCandidate> = {
   },
 };
 
-export function parseCandidateId(value: string | null): CandidateId {
-  return CANDIDATE_IDS.includes(value as CandidateId)
-    ? (value as CandidateId)
-    : "current-optimized";
+export const LIGHTING_OPTIONS: Record<
+  LightingId,
+  { label: string; note: string }
+> = {
+  studio: {
+    label: "Studio lights",
+    note: "Hemisphere and three directional lights with no environment map. This is closest to the production viewer, which lights performers with an ambient and one key light.",
+  },
+  room: {
+    label: "Room environment",
+    note: "Adds a prefiltered neutral room as the scene environment so roughness and metalness have something to reflect. Compare the same pose under both to separate what the character brings from what the rig withholds.",
+  },
+};
+
+/** Written by `pnpm run characters:intake -- --stage-bakeoff` into the ignored stage directory. */
+export const INTAKE_MANIFEST_URL =
+  "/models/avatars/bakeoff/intake-manifest.json";
+const STAGE_DIRECTORY_URL = "/models/avatars/bakeoff";
+const STAGED_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const STAGED_FILE_PATTERN = /^[A-Za-z0-9._-]+\.glb$/;
+
+export interface StagedIntakeEntry {
+  id: string;
+  label: string;
+  source: string;
+  file: string;
+  bytes: number | null;
+  note: string;
+  stagedAt: string;
+}
+
+function stringField(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+/**
+ * Read the manifest defensively: it is a local file written by a script, and
+ * a half-written or hand-edited record must not take the whole route down.
+ * Entries that cannot name a valid file are dropped rather than repaired.
+ */
+export function parseIntakeManifest(value: unknown): StagedIntakeEntry[] {
+  if (value === null || typeof value !== "object") return [];
+  const candidates = (value as { candidates?: unknown }).candidates;
+  if (!Array.isArray(candidates)) return [];
+  const entries: StagedIntakeEntry[] = [];
+  const seen = new Set<string>();
+  for (const raw of candidates) {
+    if (raw === null || typeof raw !== "object") continue;
+    const record = raw as Record<string, unknown>;
+    const id = stringField(record.id);
+    const file = stringField(record.file);
+    if (!STAGED_ID_PATTERN.test(id) || !STAGED_FILE_PATTERN.test(file))
+      continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    entries.push({
+      id,
+      label: stringField(record.label, id),
+      source: stringField(record.source, "Local character intake pipeline"),
+      file,
+      bytes: typeof record.bytes === "number" ? record.bytes : null,
+      note: stringField(record.note),
+      stagedAt: stringField(record.stagedAt),
+    });
+  }
+  return entries;
+}
+
+export function stagedCandidateId(entryId: string): StagedCandidateId {
+  return `intake-${entryId}`;
+}
+
+export function stagedCandidate(entry: StagedIntakeEntry): BakeoffCandidate {
+  return {
+    id: stagedCandidateId(entry.id),
+    label: entry.label,
+    source: entry.source,
+    modelUrl: `${STAGE_DIRECTORY_URL}/${entry.file}`,
+    bytes: entry.bytes,
+    continuity: "current",
+    note:
+      entry.note ||
+      "Locally staged intake. Review every stress pose before catalog promotion.",
+  };
+}
+
+export async function loadStagedIntakeCandidates(
+  fetchImpl: typeof fetch = fetch
+): Promise<BakeoffCandidate[]> {
+  try {
+    const response = await fetchImpl(INTAKE_MANIFEST_URL, {
+      cache: "no-store",
+    });
+    if (!response.ok) return [];
+    return parseIntakeManifest(await response.json()).map(stagedCandidate);
+  } catch {
+    return [];
+  }
+}
+
+function isFixedCandidateId(value: string): value is FixedCandidateId {
+  return (CANDIDATE_IDS as readonly string[]).includes(value);
+}
+
+export function parseCandidateId(
+  value: string | null,
+  staged: readonly BakeoffCandidate[] = []
+): CandidateId {
+  if (value === null) return "current-optimized";
+  if (isFixedCandidateId(value)) return value;
+  if (staged.some((candidate) => candidate.id === value)) {
+    return value as StagedCandidateId;
+  }
+  return "current-optimized";
+}
+
+export function resolveCandidate(
+  id: CandidateId,
+  staged: readonly BakeoffCandidate[] = []
+): BakeoffCandidate {
+  if (isFixedCandidateId(id)) return BAKEOFF_CANDIDATES[id];
+  return (
+    staged.find((candidate) => candidate.id === id) ??
+    BAKEOFF_CANDIDATES["current-optimized"]
+  );
 }
 
 export function parseStressPoseId(value: string | null): StressPoseId {
   return STRESS_POSE_IDS.includes(value as StressPoseId)
     ? (value as StressPoseId)
     : "cross-body";
+}
+
+export function parseLightingId(value: string | null): LightingId {
+  return LIGHTING_IDS.includes(value as LightingId)
+    ? (value as LightingId)
+    : "studio";
 }
 
 export function formatMegabytes(bytes: number | null): string {

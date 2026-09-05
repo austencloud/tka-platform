@@ -204,13 +204,28 @@ describe("notation catalog", () => {
     expect(notationCatalogView).not.toContain("cta-button");
   });
 
+  it("keeps Lorq’s source distinct from Austen’s extension", () => {
+    const lorq = NOTATION_CATALOG.find((entry) => entry.id === "lorq");
+    const tka = NOTATION_CATALOG.find((entry) => entry.id === "tka");
+    expect(lorq?.explore?.href).toBe(
+      "http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/"
+    );
+    expect(
+      NOTATION_CATALOG.filter(
+        (entry) => entry.explore?.href === "/notation/shape-matrix"
+      ).map((entry) => entry.id)
+    ).toEqual(["tka"]);
+    expect(tka?.records).toContain("Lorq Nichols");
+  });
+
   it("keeps only substantiated systems and exposes every built destination", () => {
     expect(NOTATION_CATALOG.map((entry) => entry.id)).not.toContain(
       "unit-circle"
     );
     for (const entry of NOTATION_CATALOG.filter((item) => item.explore)) {
       expect(notationCatalogView).toContain("activeEntry.catalogEntry.explore");
-      expect(entry.explore?.href).toMatch(/^\/notation\//);
+      if (entry.id !== "lorq")
+        expect(entry.explore?.href).toMatch(/^\/notation\//);
     }
   });
 

@@ -31,7 +31,7 @@ get_letter_explanation({ letter: "A" })
 get_term_definition({ term: "shift" })
 ```
 
-If unsure about domain rules, read `.claude/rules/tka-domain.md` or `src/lib/features/learn/ai/system-prompts.ts`.
+If unsure about domain rules, read `.claude/rules/tka-domain.md` or `src/lib/features/tika/ai/system-prompts.ts`.
 
 ---
 
