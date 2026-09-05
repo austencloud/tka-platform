@@ -1,0 +1,20 @@
+{
+  "source": "blender\\ember-midflank-production-r5.blend",
+  "preservedMeshes": {
+    "EMBER_Terrain": "080223e1cfb8283021d0c72974dfa209e1c0f65e92274e755ed2af8e7a851585",
+    "EMBER_SimulatorReference": "58a3aecba839d8cd0c73c92537f8342bbaa74ba186a4985c7e9da4362659a3e8"
+  },
+  "sourceTopCells": 2400,
+  "flowVertices": 40260,
+  "flowFaces": 38400,
+  "roundedBoundaryVertices": 3732,
+  "paths": 9,
+  "pathSamples": 1620,
+  "fixedChannelClinkerRemoved": true,
+  "terrainAndBenchUnchanged": true,
+  "surfaceTreatment": "Coarse bank relaxation followed by restrained irregular plan deformation and two subdivisions. Final banks meet unchanged terrain; scientific reference remains hidden.",
+  "nativeBlendSha256": "a6e3fc9e612db1d1dc133f760287d6125e18cbf0932567684a4582d8794f788e",
+  "coarseBankRelaxationSteps": 48,
+  "maximumFootprintShiftMeters": 2.968994564155161,
+  "exportedFlowV": "1 - world Z; increasing V travels downhill"
+}

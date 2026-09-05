@@ -101,7 +101,7 @@ export function createViewerOrchestratorContextState(
     isPlayingLocal: inputs.playback.isPlayingLocal,
     currentStepLocal: inputs.playback.currentStepLocal,
     bpmLocal: inputs.playback.bpmLocal,
-    currentLetter: inputs.presentation.currentLetter,
+    currentLetter: inputs.getIsHandPath() ? null : inputs.presentation.currentLetter,
     currentStepData: inputs.presentation.currentStepData,
     highlightedStepIndex: inputs.presentation.highlightedStepIndex,
     animationLoading: inputs.interactive.animationLoading,
@@ -163,7 +163,13 @@ export function createViewerOrchestratorContextState(
 
     canvasReady:
       (inputs.viewer3DState.renderMode === "3d"
-        ? !!inputs.viewer3DState.webglCanvas
+        ? !!inputs.viewer3DState.webglCanvas &&
+          !!inputs.viewer3DState.threlteRenderer &&
+          !!inputs.viewer3DState.threlteScene &&
+          !!inputs.viewer3DState.threlteCamera &&
+          !!inputs.viewer3DState.threlteRunFrame &&
+          !!inputs.viewer3DState.threltePauseAutoLoop &&
+          !!inputs.viewer3DState.threlteResumeAutoLoop
         : !!inputs.exportCoordinator.animationCanvas) &&
       !!inputs.interactive.playbackController,
     onRenderProgress: inputs.handlers.onRenderProgress,
@@ -251,7 +257,7 @@ export function createViewerOrchestratorContextState(
       animationLoading: inputs.interactive.animationLoading,
       currentStep: inputs.playback.currentStepLocal,
       isPlaying: inputs.playback.isPlayingLocal,
-      currentLetter: inputs.presentation.currentLetter,
+      currentLetter: inputs.getIsHandPath() ? null : inputs.presentation.currentLetter,
       currentStepData: inputs.presentation.currentStepData,
       highlightedStepIndex: inputs.presentation.highlightedStepIndex,
       getPlaybackController: () => inputs.interactive.playbackController,
@@ -291,4 +297,3 @@ export function createViewerOrchestratorContextState(
     },
   };
 }
-

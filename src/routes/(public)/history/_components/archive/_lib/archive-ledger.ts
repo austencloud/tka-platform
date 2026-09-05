@@ -98,9 +98,9 @@ export interface ArchiveTrackPlacement {
 	spanEnd: number;
 }
 
-export const ARCHIVE_START_YEAR = 1998;
+export const ARCHIVE_START_YEAR = 1994;
 export const ARCHIVE_END_YEAR = 2026;
-export const ARCHIVE_YEAR_TICKS = [1998, 2005, 2012, 2019, 2026] as const;
+export const ARCHIVE_YEAR_TICKS = [1994, 2002, 2010, 2018, 2026] as const;
 
 export const ARCHIVE_LANES: ArchiveLane[] = [
 	{
@@ -348,6 +348,50 @@ const catalogEntries: ArchiveEntry[] = NOTATION_CATALOG.map((catalogEntry) => {
 });
 
 const researchEntries: ArchiveEntry[] = [
+	{
+		id: "modern-club-swinging",
+		lane: "teaching",
+		dateLabel: "1994",
+		firstDocumentedYear: 1994,
+		title: "Modern Club Swinging and Pole Spinning",
+		shortTitle: "Jillings",
+		people: "Anna Jillings (now Anna Semlyen), illustrated by Julie Wilson",
+		summary:
+			"A teaching book with 20 lessons on club swinging and related pole techniques, including alternating timing, grips, and transitions. The complete book and additional articles are free to read on the author's Cosmos Jugglers website.",
+		evidenceBasis: "creators-account",
+		evidenceLabel: "Author's online edition",
+		evidenceShortLabel: "Author source",
+		evidenceNote:
+			"The book is dated 1994. Its acknowledgements credit Julie Wilson's illustrations, based on Anna Jillings' sketches. All reading links go to the author's site.",
+		// The author serves these files over HTTP; the HTTPS URLs do not load.
+		// Keep this record link-only. The personal reading copy is not a site asset.
+		citations: [
+			{
+				label: "Read the complete book",
+				href: "http://www.semlyen.net/cosmosjugglers/lib/contents.htm",
+				supports: "20 lessons, chapters, and pole articles.",
+				basis: "creators-account",
+			},
+			{
+				label: "Lesson 6: Reels",
+				href: "http://www.semlyen.net/cosmosjugglers/lib/lesson6.pdf",
+				supports: "Alternating timing, club reels, and pole holds.",
+				basis: "directly-observed",
+			},
+			{
+				label: "Author and illustrator",
+				href: "http://www.semlyen.net/cosmosjugglers/lib/ackbook.htm",
+				supports: "Original author and illustrator credits.",
+				basis: "creators-account",
+			},
+			{
+				label: "Earlier teaching resources",
+				href: "http://www.semlyen.net/cosmosjugglers/lib/bibcs.htm",
+				supports: "Earlier teaching and publication details.",
+				basis: "creators-account",
+			},
+		],
+	},
 	{
 		id: "home-of-poi",
 		lane: "teaching",
@@ -833,7 +877,9 @@ export function activityLabel(entry: ArchiveEntry): string | undefined {
  */
 export function placeArchiveEntries(
 	entries: ArchiveEntry[],
-	minimumGapYears = 4
+	// On the 32-year map, four years leaves the edge-aligned 1994 book
+	// overlapping the centered Home of Poi marker. Keep those on separate tracks.
+	minimumGapYears = 5
 ): ArchiveTrackPlacement[] {
 	const lastYearByTrack: number[] = [];
 

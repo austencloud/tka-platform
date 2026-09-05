@@ -13,7 +13,9 @@
 
   interface Props {
     hand: "left" | "right" | "both";
-    layout?: "ribbon" | "tray";
+    /** Corner: the grid's corner cell names the axis and sizes the fields
+       in its own container units; only the two numbers remain. */
+    layout?: "ribbon" | "tray" | "corner";
     onfocuschange?: (hand: "left" | "right" | "both" | null) => void;
   }
   let { hand, layout = "ribbon", onfocuschange }: Props = $props();
@@ -149,6 +151,7 @@
   class:right={hand === "right"}
   class:both={hand === "both"}
   class:tray={layout === "tray"}
+  class:corner={layout === "corner"}
   aria-label={`${axisLabel} ratio`}
   onfocusin={() => onfocuschange?.(hand)}
   onfocusout={onFocusOut}
@@ -441,6 +444,51 @@
   .ratio-side.tray {
     width: 100%;
     padding-inline: 0;
+  }
+
+  /* The corner cell already carries the axis mark and colour, and has no
+     room for four nudge buttons, so the entry keeps only its two typed
+     numbers. Arrow keys still nudge them. Feedback is spoken through the
+     live region; the invalid outline is the visible cue. */
+  .ratio-side.corner {
+    position: relative;
+    width: auto;
+    grid-template-rows: auto;
+    gap: 0;
+    padding: 0;
+  }
+
+  .ratio-side.corner .side-head,
+  .ratio-side.corner .part-field > span:first-child,
+  .ratio-side.corner .part-stepper button,
+  .ratio-side.corner .feedback {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .ratio-side.corner .entry-row {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 0.15rem;
+  }
+
+  .ratio-side.corner .part-stepper {
+    grid-template-columns: minmax(0, 1fr);
+    border-radius: 8px;
+  }
+
+  .ratio-side.corner .part-stepper input,
+  .ratio-side.corner .colon {
+    height: clamp(1.5rem, 18cqi, 2.75rem);
+    font-size: clamp(0.9rem, 11cqi, 1.4rem);
+  }
+
+  .ratio-side.corner .part-stepper input {
+    padding-inline: 0.15rem;
+    text-align: center;
   }
 
   @media (prefers-reduced-motion: reduce) {

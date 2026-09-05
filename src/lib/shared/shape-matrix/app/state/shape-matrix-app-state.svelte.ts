@@ -31,6 +31,7 @@ import {
 } from "$lib/shared/shape-matrix/domain/theory-flower";
 import {
   DEFAULT_THEORY_RATIO,
+  THEORY_RATIO_MAX_PART,
   theoryRatioFromParts,
 } from "$lib/shared/shape-matrix/domain/theory-ratio";
 
@@ -49,6 +50,11 @@ export interface ShapeMatrixSelectPairOptions {
    * morph), which needs the clicked tile to be the selection BEFORE the
    * view flips so the morph starts from that tile.
    */
+  navigate?: boolean;
+}
+
+export interface ShapeMatrixSurpriseOptions {
+  /** Let the shell defer compact navigation until its shared-element handoff. */
   navigate?: boolean;
 }
 
@@ -207,6 +213,39 @@ function randomPairFromAxes<T>(
   return choices[Math.floor(unit * choices.length)] ?? null;
 }
 
+function randomItem<T>(items: readonly T[], random: () => number): T | null {
+  if (items.length === 0) return null;
+  const unit = Math.min(0.999999, Math.max(0, random()));
+  return items[Math.floor(unit * items.length)] ?? null;
+}
+
+/**
+ * Random theory grids should sample the ratios the playground can actually
+ * display, not over-weight reducible spellings such as 2:4 and 3:6.
+ */
+const THEORY_RANDOM_RATIOS = (() => {
+  const unique = new Map<string, SpinRatio>();
+  for (
+    let handCycles = 0;
+    handCycles <= THEORY_RATIO_MAX_PART;
+    handCycles += 1
+  ) {
+    for (
+      let propRotations = 0;
+      propRotations <= THEORY_RATIO_MAX_PART;
+      propRotations += 1
+    ) {
+      const ratio = theoryRatioFromParts(propRotations, handCycles);
+      // A stationary hand intentionally collapses to one axis entry. The
+      // playground still accepts it when typed, but a "new 4×4" roll should
+      // only choose ratios that keep four distinct row/column choices.
+      if (!ratio || buildTheoryAxis(ratio).length !== 4) continue;
+      unique.set(`${ratio.propRotations}:${ratio.handCycles}`, ratio);
+    }
+  }
+  return [...unique.values()];
+})();
+
 export function createShapeMatrixAppState(
   dependencies: ShapeMatrixAppDependencies,
   initial: ShapeMatrixAppSnapshot,
@@ -266,6 +305,11 @@ export function createShapeMatrixAppState(
   let aboutOpen = $state(false);
   let propPickerOpen = $state(false);
   let mandalaHandoff = $state(false);
+  /**
+   * Bumped once per Surprise roll. The panes key their reveal choreography on
+   * it, so the animation belongs to the roll and never to an ordinary edit.
+   */
+  let revealToken = $state(0);
 
   const availableTurns = $derived(matrixTurnsForLevel(level));
   const theoryRowAxis = $derived(buildTheoryAxis(theoryLeftRatio));
@@ -341,25 +385,23 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
-  function setTurn(
-    nextTurn: TurnValue,
-    options: ShapeMatrixSetTurnOptions = {}
+  function commitTurns(
+    nextLeftTurn: TurnValue,
+    nextRightTurn: TurnValue,
+    transitionLabel: string,
+    options: ShapeMatrixSetTurnOptions
   ): void {
-    if (!availableTurns.includes(nextTurn)) return;
     if (selectedPair) {
       rememberedVariants = {
         left: semanticVariant(selectedPair.left),
         right: semanticVariant(selectedPair.right),
       };
     }
-
-    const nextLeftTurn = activeAxis === "right" ? leftTurn : nextTurn;
-    const nextRightTurn = activeAxis === "left" ? rightTurn : nextTurn;
     if (nextLeftTurn === leftTurn && nextRightTurn === rightTurn) return;
 
     if (selectedPair) {
       requestShapeMatrixTransition(
-        `turn:${activeAxis}:${String(nextLeftTurn)}:${String(nextRightTurn)}`
+        `turn:${transitionLabel}:${String(nextLeftTurn)}:${String(nextRightTurn)}`
       );
     }
     updateSelectedPairTurns(nextLeftTurn, nextRightTurn);
@@ -370,6 +412,39 @@ export function createShapeMatrixAppState(
     rightTurn = nextRightTurn;
     if (compact && !options.stayOnDetail) activeView = "matrix";
     syncState();
+  }
+
+  /** Edit the axis the Apply-to target names (kept for restored links). */
+  function setTurn(
+    nextTurn: TurnValue,
+    options: ShapeMatrixSetTurnOptions = {}
+  ): void {
+    if (!availableTurns.includes(nextTurn)) return;
+    commitTurns(
+      activeAxis === "right" ? leftTurn : nextTurn,
+      activeAxis === "left" ? rightTurn : nextTurn,
+      activeAxis,
+      options
+    );
+  }
+
+  /**
+   * Edit one named axis directly. The recipe bar above the grid gives rows
+   * and columns their own stepper, so no Apply-to mode stands between the
+   * user and the axis they mean.
+   */
+  function setTurnFor(
+    hand: "left" | "right",
+    nextTurn: TurnValue,
+    options: ShapeMatrixSetTurnOptions = {}
+  ): void {
+    if (!availableTurns.includes(nextTurn)) return;
+    commitTurns(
+      hand === "left" ? nextTurn : leftTurn,
+      hand === "right" ? nextTurn : rightTurn,
+      hand,
+      options
+    );
   }
 
   function setActiveAxis(nextAxis: ShapeMatrixAxisTarget): void {
@@ -479,26 +554,107 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
-  function selectRandomPair(random: () => number = Math.random): void {
-    const choice = randomPairFromAxes(
-      rowAxis,
-      colAxis,
-      selectedPair,
-      flowerKey,
-      random
-    );
-    if (choice) selectPair(choice);
-  }
+  /**
+   * Roll the whole experience in one state transition: a new 4×4, one of its
+   * crossings, and one hand relationship for the resulting animation.
+   */
+  function surpriseMe(
+    random: () => number = Math.random,
+    options: ShapeMatrixSurpriseOptions = {}
+  ): void {
+    if (surface === "theory") {
+      const nextLeft = randomItem(THEORY_RANDOM_RATIOS, random);
+      const nextRight = randomItem(THEORY_RANDOM_RATIOS, random);
+      if (!nextLeft || !nextRight) return;
 
-  function selectRandomTheoryPair(random: () => number = Math.random): void {
-    const choice = randomPairFromAxes(
-      theoryRowAxis,
-      theoryColAxis,
-      theoryPair,
-      theoryFlowerKey,
-      random
-    );
-    if (choice) selectTheoryPair(choice);
+      // A surprise always opens a different grid. Advance one axis if the two
+      // independent rolls happened to reproduce the current pair exactly.
+      let resolvedLeft = nextLeft;
+      if (
+        spinRatioEquals(nextLeft, theoryLeftRatio) &&
+        spinRatioEquals(nextRight, theoryRightRatio)
+      ) {
+        const currentIndex = THEORY_RANDOM_RATIOS.indexOf(nextLeft);
+        resolvedLeft =
+          THEORY_RANDOM_RATIOS[
+            (currentIndex + 1) % THEORY_RANDOM_RATIOS.length
+          ] ?? nextLeft;
+      }
+
+      const nextRows = buildTheoryAxis(resolvedLeft);
+      const nextColumns = buildTheoryAxis(nextRight);
+      const nextPair = randomPairFromAxes(
+        nextRows,
+        nextColumns,
+        null,
+        theoryFlowerKey,
+        random
+      );
+      const nextMode = randomItem(MODE_ORDER, random);
+      if (!nextPair || !nextMode) return;
+
+      theoryLeftRatio = resolvedLeft;
+      theoryRightRatio = nextRight;
+      theoryRatiosLinked = false;
+      theoryPair = nextPair;
+      theoryMode = nextMode;
+    } else {
+      if (!data) return;
+      const turnPairs = availableTurns.flatMap((nextLeftTurn) =>
+        availableTurns.map((nextRightTurn) => ({
+          left: nextLeftTurn,
+          right: nextRightTurn,
+        }))
+      );
+      const differentTurnPairs = turnPairs.filter(
+        (turns) => turns.left !== leftTurn || turns.right !== rightTurn
+      );
+      const nextTurns = randomItem(
+        differentTurnPairs.length > 0 ? differentTurnPairs : turnPairs,
+        random
+      );
+      if (!nextTurns) return;
+
+      const nextFilters = matrixFiltersForTurns(
+        nextTurns.left,
+        nextTurns.right
+      );
+      const nextRows = applyFilter(data.axis, nextFilters.left, false);
+      const nextColumns = applyFilter(data.axis, nextFilters.right, false);
+      const nextPair = randomPairFromAxes(
+        nextRows,
+        nextColumns,
+        null,
+        flowerKey,
+        random
+      );
+      const nextMode = randomItem(MODE_ORDER, random);
+      if (!nextPair || !nextMode) return;
+
+      if (selectedPair) {
+        requestShapeMatrixTransition(
+          `surprise:${String(nextTurns.left)}:${String(nextTurns.right)}`
+        );
+      }
+      leftTurn = nextTurns.left;
+      rightTurn = nextTurns.right;
+      selectedPair = nextPair;
+      rememberedVariants = {
+        left: semanticVariant(nextPair.left),
+        right: semanticVariant(nextPair.right),
+      };
+      selectedMode = nextMode;
+      // The hand relationship is the roll; let the drill resolve its matching
+      // prop relationship instead of carrying a stale explicit choice across.
+      selectedPropMode = null;
+    }
+
+    revealToken += 1;
+    if (compact && options.navigate !== false) {
+      activeView = "detail";
+      requestCompactFocus("detail");
+    }
+    syncState();
   }
 
   /*
@@ -750,6 +906,9 @@ export function createShapeMatrixAppState(
     get mandalaHandoff() {
       return mandalaHandoff;
     },
+    get revealToken() {
+      return revealToken;
+    },
     get rowAxis() {
       return rowAxis;
     },
@@ -760,6 +919,7 @@ export function createShapeMatrixAppState(
     restoreState,
     setLevel,
     setTurn,
+    setTurnFor,
     setActiveAxis,
     setLabelMode,
     setSurface,
@@ -769,8 +929,7 @@ export function createShapeMatrixAppState(
     unlinkTheoryRatios,
     setTheoryMode,
     selectTheoryPair,
-    selectRandomPair,
-    selectRandomTheoryPair,
+    surpriseMe,
     setPropType,
     selectPair,
     setMode,

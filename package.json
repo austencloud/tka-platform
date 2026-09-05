@@ -1,6 +1,6 @@
 {
   "name": "@tka/composer",
-  "version": "0.40.0",
+  "version": "0.41.0",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",
@@ -11,6 +11,7 @@
     "skills:check": "node scripts/sync-codex-skills.mjs --check",
     "sequence:publish": "node scripts/publish-sequence.cjs",
     "sequence:transfer": "node --import tsx scripts/transfer-sequence.ts",
+    "deck:release:hand-path": "node --import tsx scripts/release-hand-path-deck.ts",
     "pictograph": "tsx scripts/pictograph-cli.ts",
     "half:templates": "tsx scripts/build-half-arrow-templates.mjs",
     "half:ingest": "tsx scripts/ingest-half-arrows.mjs",

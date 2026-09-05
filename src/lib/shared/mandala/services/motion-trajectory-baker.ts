@@ -47,6 +47,17 @@ export function bakeMotionCompositionTrajectories(
   options: MotionTrajectoryBakeOptions
 ): WorldTrajectorySet3D {
   const durationBeats = options.durationBeats ?? composition.loop.durationBeats;
+  return bakeWorldTrajectories((beat) => sampleFrame(composition, beat), {
+    ...options,
+    durationBeats,
+  });
+}
+
+export function bakeWorldTrajectories(
+  sampleFrame: (beat: number) => MotionCompositionFrame,
+  options: MotionTrajectoryBakeOptions & { durationBeats: number }
+): WorldTrajectorySet3D {
+  const { durationBeats } = options;
   if (!Number.isFinite(durationBeats) || durationBeats <= 0) {
     throw new Error("Trajectory duration must be a positive number of beats");
   }
@@ -68,7 +79,7 @@ export function bakeMotionCompositionTrajectories(
 
   for (let index = 0; index < frameCount; index += 1) {
     const beat = (durationBeats * index) / intervalCount;
-    const frame = sampleFrame(composition, beat);
+    const frame = sampleFrame(beat);
     const currentLayerIds = new Set<string>();
 
     for (const stream of Object.values(frame.streams)) {
@@ -98,6 +109,7 @@ export function bakeMotionCompositionTrajectories(
           x: endpoint.position[0],
           y: endpoint.position[1],
           z: endpoint.position[2],
+          ...(stream.breakBefore ? { breakBefore: true } : {}),
         });
       }
     }

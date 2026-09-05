@@ -66,6 +66,7 @@ describe("AnimationPlaybackController ownership (HMR remount clobber)", () => {
       getMetadata: vi.fn(() => ({ totalSteps: 4, word: "TEST", author: "x" })),
       getTotalDurationWithStartPosition: vi.fn(() => 4),
       getCurrentPropStates: vi.fn(() => ({ left: {}, right: {} })),
+      calculateState: vi.fn(),
       getActiveVisibilityManager: vi.fn(() => ({ setSpeed: vi.fn() })),
     } as unknown as SequenceAnimationOrchestrator;
   }
@@ -73,6 +74,34 @@ describe("AnimationPlaybackController ownership (HMR remount clobber)", () => {
   // steps.length < 1 → isSeamlesslyLoopable returns false without touching the
   // rest of the shape, so an empty-steps stub is a safe minimal sequence.
   const seq = { steps: [] } as unknown as SequenceData;
+
+  it("a clock follower samples exact fractional steps without starting a second loop", () => {
+    const loop = new AnimationLoop();
+    const engine = makeEngine();
+    const state = makeState();
+    const controller = new AnimationPlaybackController(engine, loop, {
+      syncSharedWorkspaceState: false,
+    });
+    sharedAnimationState.setCurrentStep(7);
+    controller.initialize(seq, state);
+
+    for (const step of [0, 1.25, 3.875, 1]) {
+      controller.calculateStateForStep(step);
+      expect(state.setCurrentStep).toHaveBeenLastCalledWith(step);
+      expect(engine.calculateState).toHaveBeenLastCalledWith(step);
+      expect(loop.isRunning()).toBe(false);
+      expect(state.isPlaying).toBe(false);
+    }
+
+    // Choosing another mode loads new motion, then joins the existing clock.
+    controller.initialize({ ...seq, id: "another-mode" }, state);
+    controller.calculateStateForStep(2.625);
+    expect(state.setCurrentStep).toHaveBeenLastCalledWith(2.625);
+    expect(engine.calculateState).toHaveBeenLastCalledWith(2.625);
+    expect(loop.isRunning()).toBe(false);
+    expect(sharedAnimationState.currentStep).toBe(7);
+    controller.dispose(state);
+  });
 
   it("a stale owner's dispose() does not clobber a newer owner's live claim", () => {
     const loop = new AnimationLoop();

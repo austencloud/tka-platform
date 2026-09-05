@@ -252,6 +252,19 @@ export async function hydrateSelfContainedShortCodePayload(
   code: string,
   data: ShortCodeData
 ): Promise<SequenceData | null> {
+  if (data.payloadKind === "hand-path") {
+    const sequence =
+      hydrateEmbeddedWordShortCodePayload(code, data) ??
+      (await decodeWordShortCodePayload(code, data));
+    if (
+      !sequence ||
+      sequence.sequenceKind !== "hand-path" ||
+      sequence.steps.length !== data.payloadStepCount
+    )
+      return null;
+    const title = data.payloadTitle || sequence.displayName || sequence.name;
+    return { ...sequence, word: "", name: title, displayName: title };
+  }
   if (data.payloadKind === "solo") {
     return hydrateSoloShortCodePayload(code, data);
   }

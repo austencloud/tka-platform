@@ -1,0 +1,197 @@
+{
+  "revision": "midflank-r5",
+  "nativeSurfaceY": 0.5,
+  "sourceWorldXYZ": [
+    -34,
+    79.32807952880859,
+    132
+  ],
+  "reviewCameras": [
+    {
+      "id": "default-audience",
+      "positionWorldXYZ": [
+        0.0,
+        8.75,
+        -21.5
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        2.25,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "00-default-audience.png"
+    },
+    {
+      "id": "orbit-000",
+      "bearingDegreesClockwiseFromAudience": 0,
+      "positionWorldXYZ": [
+        0.0,
+        8.75,
+        -24.140215
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        2.25,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "01-orbit-000.png"
+    },
+    {
+      "id": "orbit-045",
+      "bearingDegreesClockwiseFromAudience": 45,
+      "positionWorldXYZ": [
+        17.06971,
+        8.75,
+        -17.06971
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        2.25,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "02-orbit-045.png"
+    },
+    {
+      "id": "orbit-090",
+      "bearingDegreesClockwiseFromAudience": 90,
+      "positionWorldXYZ": [
+        24.140215,
+        8.75,
+        -0.0
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        2.25,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "03-orbit-090.png"
+    },
+    {
+      "id": "orbit-135",
+      "bearingDegreesClockwiseFromAudience": 135,
+      "positionWorldXYZ": [
+        17.06971,
+        8.75,
+        17.06971
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        2.25,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "04-orbit-135.png"
+    },
+    {
+      "id": "orbit-180",
+      "bearingDegreesClockwiseFromAudience": 180,
+      "positionWorldXYZ": [
+        0.0,
+        8.75,
+        24.140215
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        2.25,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "05-orbit-180.png"
+    },
+    {
+      "id": "orbit-225",
+      "bearingDegreesClockwiseFromAudience": 225,
+      "positionWorldXYZ": [
+        -17.06971,
+        8.75,
+        17.06971
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        2.25,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "06-orbit-225.png"
+    },
+    {
+      "id": "orbit-270",
+      "bearingDegreesClockwiseFromAudience": 270,
+      "positionWorldXYZ": [
+        -24.140215,
+        8.75,
+        0.0
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        2.25,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "07-orbit-270.png"
+    },
+    {
+      "id": "orbit-315",
+      "bearingDegreesClockwiseFromAudience": 315,
+      "positionWorldXYZ": [
+        -17.06971,
+        8.75,
+        -17.06971
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        2.25,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "08-orbit-315.png"
+    },
+    {
+      "id": "director-overview",
+      "positionWorldXYZ": [
+        110.0,
+        160.32,
+        -95.0
+      ],
+      "targetWorldXYZ": [
+        -8.0,
+        25.32,
+        25.0
+      ],
+      "verticalFovDegrees": 48.0,
+      "runtimeEquivalent": false,
+      "reviewImage": "12-director-overview.png",
+      "reviewRole": "bird-eye-summit-hardened-bench-lower-country"
+    },
+    {
+      "id": "midflank-oblique",
+      "positionWorldXYZ": [
+        62.0,
+        45.32,
+        -55.0
+      ],
+      "targetWorldXYZ": [
+        -12.0,
+        12.32,
+        25.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": false,
+      "reviewImage": "13-midflank-oblique.png",
+      "reviewRole": "midflank-vertical-composition"
+    }
+  ]
+}

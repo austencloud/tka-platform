@@ -4,6 +4,10 @@ import {
 } from "$lib/features/film-director/domain/directive-random";
 import { resolveCastAxis } from "$lib/features/film-director/domain/resolve-directives";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import {
+  charactersWithPresentation,
+  countCharacterPresentations,
+} from "$lib/shared/3d/config/character-presentation";
 import { DEPLOYED_CHARACTER_IDS } from "$lib/shared/3d/config/deployed-characters";
 import type { CharacterId } from "$lib/shared/3d/domain/character-model";
 import type {
@@ -15,6 +19,7 @@ import { filterPremiumCosmeticProps } from "$lib/shared/subscription/domain/prem
 import type { StageChoreography } from "../domain/stage-types";
 import {
   TikaDirectorResponseSchema,
+  TIKA_DIRECTOR_MAX_HISTORY,
   type TikaDirectorAction,
   type TikaDirectorConversationMessage,
   type TikaDirectorRequest,
@@ -28,8 +33,23 @@ export async function resolveStageDirection(input: {
   choreography: StageChoreography;
   currentBeat: number;
   viewer: Viewer3DState;
+  /** Saved sequences the cast can borrow; omitted when the library is unreadable. */
+  librarySequenceCount?: number;
+  signal?: AbortSignal;
 }): Promise<TikaDirectorResponse> {
-  const local = interpretStageDirectionLocally(input.prompt);
+  if (input.conversation.length > TIKA_DIRECTOR_MAX_HISTORY) {
+    throw new Error(
+      "This direction conversation is full. Reload the Stage to start a new one, and restate any constraints you want to keep."
+    );
+  }
+  // Follow-up answers need the previous questions and constraints even when
+  // the latest sentence looks like a complete command on its own.
+  const local =
+    input.conversation.length === 0
+      ? interpretStageDirectionLocally(input.prompt, {
+          currentBeat: input.currentBeat,
+        })
+      : null;
   if (local) return local;
 
   const user = authState.user;
@@ -37,10 +57,11 @@ export async function resolveStageDirection(input: {
     throw new Error("Sign in before asking TIKA to direct this scene.");
   }
   const token = await user.getIdToken();
+  input.signal?.throwIfAborted();
   const viewerSnapshot = input.viewer.serialize();
   const body: TikaDirectorRequest = {
     prompt: input.prompt,
-    conversation: [...input.conversation].slice(-8),
+    conversation: [...input.conversation],
     scene: {
       id: input.choreography.id,
       name: input.choreography.name,
@@ -60,6 +81,10 @@ export async function resolveStageDirection(input: {
         atBeat: formation.atBeat,
         ...(formation.presetId ? { presetId: formation.presetId } : {}),
       })),
+      ...(input.librarySequenceCount !== undefined
+        ? { librarySequenceCount: input.librarySequenceCount }
+        : {}),
+      characterPresentationCounts: countCharacterPresentations(),
     },
   };
 
@@ -70,6 +95,7 @@ export async function resolveStageDirection(input: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
+    signal: input.signal,
   });
   const payload: unknown = await response.json();
   if (!response.ok) {
@@ -90,9 +116,14 @@ export function resolveDirectorAppearanceAssignments(input: {
   performerIds: readonly string[];
   seedKey: string;
 }): ViewerPerformerAppearanceAssignment[] {
-  const assignCharacters = input.actions.some(
+  const characterAction = input.actions.find(
     (action) => action.type === "assign-distinct-characters"
   );
+  const assignCharacters = characterAction !== undefined;
+  const presentation =
+    characterAction?.type === "assign-distinct-characters"
+      ? characterAction.presentation
+      : undefined;
   const assignProps = input.actions.some(
     (action) => action.type === "assign-distinct-props"
   );
@@ -100,13 +131,24 @@ export function resolveDirectorAppearanceAssignments(input: {
 
   const seed = resolveFilmSeed(input.seedKey);
   const sceneId = "live-stage";
+  const characterCatalog = presentation
+    ? charactersWithPresentation(presentation)
+    : DEPLOYED_CHARACTER_IDS;
+  if (assignCharacters && characterCatalog.length < input.performerIds.length) {
+    throw new Error(
+      `Only ${characterCatalog.length} ${presentation ?? ""} avatars are deployed, but this cast has ${input.performerIds.length} performers.`.replace(
+        "  ",
+        " "
+      )
+    );
+  }
   const characters = assignCharacters
     ? resolveCastAxis<string>({
         axis: "characterId",
         sceneId,
         performerIds: input.performerIds,
         values: input.performerIds.map(() => ({ pick: "distinct" as const })),
-        catalog: DEPLOYED_CHARACTER_IDS,
+        catalog: characterCatalog,
         random: createAxisStream(seed, sceneId, "characterId"),
       })
     : null;

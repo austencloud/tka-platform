@@ -102,6 +102,18 @@
       mode: CameraMode;
     }) => void;
     onControlReadinessChange?: (ready: boolean) => void;
+    /**
+     * Third-person boom overrides for bodies bigger than a person. A car
+     * wants the camera further back and higher than the 5 m / 1.15 m walking
+     * rig; the wheel-zoom range follows. Omit any of them for the defaults.
+     * They seed the rig when the controller mounts; a host that changes them
+     * re-keys the controller.
+     */
+    thirdPersonDistance?: number;
+    thirdPersonMinDistance?: number;
+    thirdPersonMaxDistance?: number;
+    thirdPersonHeight?: number;
+    thirdPersonLookAtHeight?: number;
   }
 
   const props: Props = $props();
@@ -266,8 +278,8 @@
   const desiredCamPos = new Vector3();
   const CAMERA_COLLISION_OFFSET = 0.3;
   const MIN_CAMERA_DISTANCE = 0.5;
-  let smoothedCameraDistance = 5.0;
-  let desiredDistance = 5.0;
+  let smoothedCameraDistance = props.thirdPersonDistance ?? 5.0;
+  let desiredDistance = props.thirdPersonDistance ?? 5.0;
   const CAMERA_PULL_IN_SPEED = 10;
   const CAMERA_RECOVERY_SPEED = 3;
 
@@ -283,12 +295,12 @@
   const SETTINGS = {
     lookSensitivity: CAMERA_DEFAULTS.MOUSE_SENSITIVITY,
     thirdPerson: {
-      distance: 5.0,
-      minDistance: 1.5,
-      maxDistance: 10.0,
+      distance: props.thirdPersonDistance ?? 5.0,
+      minDistance: props.thirdPersonMinDistance ?? 1.5,
+      maxDistance: props.thirdPersonMaxDistance ?? 10.0,
       zoomSpeed: 0.5,
-      height: 1.15,
-      lookAtHeight: 0.35,
+      height: props.thirdPersonHeight ?? 1.15,
+      lookAtHeight: props.thirdPersonLookAtHeight ?? 0.35,
       minPitch: -1.2,
       maxPitch: 1.2,
     },

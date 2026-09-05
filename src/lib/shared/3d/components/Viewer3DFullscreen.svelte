@@ -41,6 +41,7 @@
     word: string | null;
     /** A stage the host authored, in metres — see Viewer3DScene. */
     stageExtent?: { width: number; depth: number } | null;
+    cameraFov?: number;
     leftPropType?: string | null;
     rightPropType?: string | null;
     onClose?: () => void;
@@ -67,6 +68,10 @@
     worldChildren?: Snippet;
     /** Host commands added to the left of the HUD's command bar. */
     hudActions?: Snippet;
+    /** Host editor shares the scene inspector's space and dismissal behavior. */
+    hostPanel?: Snippet<[() => void, boolean]>;
+    hostPanelTitle?: string;
+    hostPanelOpen?: boolean;
     /**
      * Host chrome layered over the canvas — a transport, a timeline, a chart.
      * It sits below the scene controls, so a host that reserves space with
@@ -117,10 +122,14 @@
     onExport,
     exportBusy = false,
     renderEmptyScene = false,
+    cameraFov,
     visiblePerformerCount,
     performerSteps = null,
     worldChildren,
     hudActions,
+    hostPanel,
+    hostPanelTitle,
+    hostPanelOpen = $bindable(false),
     overlayChildren,
     hideCanvasOverlays = false,
     sceneControlsBottomOffset,
@@ -267,6 +276,7 @@
       {onPlaybackToggle}
       {onProgressBarSeek}
       {renderEmptyScene}
+      {cameraFov}
       {visiblePerformerCount}
       {performerSteps}
       {worldChildren}
@@ -296,6 +306,9 @@
         bottomOffset={sceneControlsBottomOffset}
         leftOffset={sceneControlsLeftOffset}
         {allowSaveScene}
+        {hostPanel}
+        {hostPanelTitle}
+        bind:hostPanelOpen
         onCompactSheetChange={onCompactSceneSheetChange}
         onLayoutChange={(next) => (sceneControlLayout = next)}
       />

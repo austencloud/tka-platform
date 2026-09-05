@@ -71,8 +71,11 @@ describe("inbox inline sequence player contract", () => {
     expect(player).toContain('hoverHint = "badge"');
     expect(player).toContain("cornerToggle = false");
     expect(player).toContain("playbackAllowed = true");
+    // dead6c994e (shape-matrix animation workspace) added a sequenceData
+    // guard to this same early-return; the contract is still "don't sync
+    // playback without the services and controller this effect needs."
     expect(player).toContain(
-      "if (!servicesReady || !playbackController) return;"
+      "if (!servicesReady || !animationState.sequenceData || !playbackController)"
     );
     expect(player).toContain("{cornerToggle}");
     expect(player).toContain("pausedByPlaybackGate");

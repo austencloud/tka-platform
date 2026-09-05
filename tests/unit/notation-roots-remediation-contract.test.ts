@@ -254,8 +254,12 @@ describe("roots-to-archive route migration", () => {
     expect(softwarePage).toMatch(
       /name:\s*"Flow Arts History",\s*item:\s*"https:\/\/tkaflowarts\.com\/history"/
     );
+    // The source wraps this `<a>` across lines (f13606f440 reformatted it as
+    // an incidental side effect of an unrelated edit further down the file),
+    // which leaves whitespace between the closing quote and `>` once this
+    // raw-source check collapses runs of whitespace to one space.
     expect(softwareCopy).toMatch(
-      /href="\/history#archive-record-vtg">VTG record in the history archive<\/a\s*>/
+      /href="\/history#archive-record-vtg"\s*>VTG record in the history archive<\/a\s*>/
     );
     expect(componentManifest).not.toContain(
       '"file": "routes/(public)/roots/+page.svelte"'

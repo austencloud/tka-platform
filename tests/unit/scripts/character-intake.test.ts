@@ -294,8 +294,19 @@ describe("character GLB inspection", () => {
     const changes = normalizeRuntimeJointNames(model);
     const after = inspectCharacterGlb(model);
 
-    expect(before.fingerChains).toBe(false);
+    // The runtime mapper normalizes bone names on its own, so a namespaced
+    // rig already resolves its finger chains before intake touches the file.
+    // What intake owns is what is written back: every joint loses the
+    // namespace so the checked-in GLB is canonical on disk rather than
+    // relying on the loader to forgive it.
+    expect(before.fingerChains).toBe(true);
     expect(changes).toHaveLength(52);
+    expect(changes.every(({ from }) => from.startsWith("mixamorig12:"))).toBe(
+      true
+    );
+    expect(changes.map(({ to }) => to)).toEqual(
+      changes.map(({ from }) => from.slice("mixamorig12:".length))
+    );
     expect(after.mappedBodyBoneCount).toBe(22);
     expect(after.fingerChains).toBe(true);
     expect(after.errors).toEqual([]);

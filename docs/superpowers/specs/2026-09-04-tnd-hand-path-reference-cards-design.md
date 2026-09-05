@@ -1,7 +1,7 @@
 # TnD Hand-Path Reference Cards
 
 **Date:** 2026-09-04
-**Status:** Product decision approved; physical release integration pending
+**Status:** Six-card standalone deck released; TnD-volume integration pending
 
 ## Outcome
 
@@ -17,6 +17,29 @@ reference cards, one for each relationship:
 
 These are part of the Choreo Card game system, not disposable packaging and not
 lesson-only illustrations.
+
+## Standalone Release
+
+Version 1 was released on 2026-09-04 as **Deck #010, Timing & Direction Hand
+Paths**. Its canonical record is
+`deckReleases/counter/manifests/010`.
+
+- Six content cards, with no How to Read insert.
+- Manifest flag: `handPathCards.version = 1`.
+- No sequence records, QR short codes, or physical scan identities.
+- Printable through the existing Deck Releaser as poker fronts with standard
+  Choreo Card backs.
+
+The release order is Split-Same, Tog-Same, Split-Opp, Tog-Opp, Quarter-Opp,
+Quarter-Same.
+
+### Reversed Traversals
+
+Reversing both hands yields a useful alternate traversal for each card while
+preserving its timing/direction relationship. That makes a coherent 12-card
+edition possible, but those six alternates are not additional relationship
+categories. They are reserved for a versioned follow-up after the first six
+physical cards are reviewed; version 1 stays the compact reference set.
 
 ## TKA One Count
 
@@ -70,12 +93,14 @@ facsimile.
 
 The digital source of truth is the existing canonical stack:
 
-1. Timing & Direction relationship sequences and element identity come from
-   `pictograph-foundation-content.ts`.
-2. Card presentation comes from `ChoreoCard.svelte` with `handPathMode` and the
+1. Timing & Direction relationship metadata lives in
+   `hand-path-reference-card-manifest.ts`; its authored sequences live beside it
+   in `hand-path-reference-cards.ts`.
+2. Learn reuses those definitions through `pictograph-foundation-content.ts`.
+3. Card presentation comes from `ChoreoCard.svelte` with `handPathMode` and the
    canonical `CardGridLayout.svelte` Start cell.
-3. Physical geometry comes from `CARD_SIZES.poker`.
-4. Print integration belongs to the existing deck-release manifest and export
+4. Physical geometry comes from `CARD_SIZES.poker`.
+5. Print integration belongs to the existing deck-release manifest and export
    services; it must not create a second hand-path renderer.
 
 The shipped 2026-03-19 “Deck Hand Path Cards” design remains valid for catalog
@@ -84,11 +109,11 @@ than this universal six-card physical set.
 
 ## Implementation Boundary
 
-This decision records the approved product and count contract. The lesson's
-Start-position change can ship independently. Physical release integration,
-export parity, store-count updates, and print-resolution proof require a
-separate implementation pass through the deck releaser before any 25-card TKA
-One product claim is published.
+The standalone six-card deck and its release/export plumbing are implemented.
+Automatically attaching the set to every TnD volume, updating store counts, and
+proving the 25-card TKA One manufacturing export remain separate work. Do not
+publish the 25-card TKA One product claim until that bundle verification is
+complete.
 
 ## Required Physical Verification
 

@@ -1,38 +1,13 @@
 import { z } from "zod";
+import { TikaDirectorActionSchema } from "./tika-capabilities";
 
-export const TIKA_DIRECTOR_FORMATIONS = [
-  "line",
-  "triangle",
-  "diamond",
-  "circle",
-  "v-shape",
-  "grid",
-  "grid-2x2",
-  "stagger",
-  "cluster",
-  "diagonal",
-  "solo",
-  "tunnel-stack",
-  "back-to-back",
-  "facing-each-other",
-  "stage-lr",
-  "side-by-side",
-] as const;
+export const TIKA_DIRECTOR_MAX_HISTORY = 40;
 
-export const TikaDirectorFormationSchema = z.enum(TIKA_DIRECTOR_FORMATIONS);
-
-export const TikaDirectorActionSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("assign-distinct-props") }).strict(),
-  z.object({ type: z.literal("assign-distinct-characters") }).strict(),
-  z
-    .object({
-      type: z.literal("formation-transition"),
-      startFormation: TikaDirectorFormationSchema.optional(),
-      endFormation: TikaDirectorFormationSchema,
-      durationBeats: z.number().int().min(1).max(64),
-    })
-    .strict(),
-]);
+export * from "./tika-director-vocabulary";
+export {
+  TikaDirectorActionSchema,
+  type TikaDirectorAction,
+} from "./tika-capabilities";
 
 export const TikaDirectorResponseSchema = z.discriminatedUnion("kind", [
   z
@@ -59,14 +34,16 @@ export const TikaDirectorResponseSchema = z.discriminatedUnion("kind", [
 const TikaDirectorConversationMessageSchema = z
   .object({
     role: z.enum(["user", "assistant"]),
-    content: z.string().min(1).max(1_000),
+    content: z.string().min(1).max(2_000),
   })
   .strict();
 
 export const TikaDirectorRequestSchema = z
   .object({
     prompt: z.string().trim().min(1).max(2_000),
-    conversation: z.array(TikaDirectorConversationMessageSchema).max(8),
+    conversation: z
+      .array(TikaDirectorConversationMessageSchema)
+      .max(TIKA_DIRECTOR_MAX_HISTORY),
     scene: z
       .object({
         id: z.string().min(1).max(160),
@@ -96,13 +73,29 @@ export const TikaDirectorRequestSchema = z
               .strict()
           )
           .max(100),
+        /**
+         * How many sequences the caller's library can lend the cast. The
+         * planner refuses distinct sequences when this cannot cover the cast;
+         * older clients omit it and the client-side pick reports the shortfall.
+         */
+        librarySequenceCount: z.number().int().min(0).optional(),
+        /**
+         * How many deployed avatars carry each presentation label, so the
+         * planner can refuse a filtered cast the catalog cannot cover.
+         */
+        characterPresentationCounts: z
+          .object({
+            masculine: z.number().int().min(0),
+            feminine: z.number().int().min(0),
+            androgynous: z.number().int().min(0),
+          })
+          .strict()
+          .optional(),
       })
       .strict(),
   })
   .strict();
 
-export type TikaDirectorFormation = z.infer<typeof TikaDirectorFormationSchema>;
-export type TikaDirectorAction = z.infer<typeof TikaDirectorActionSchema>;
 export type TikaDirectorResponse = z.infer<typeof TikaDirectorResponseSchema>;
 export type TikaDirectorRequest = z.infer<typeof TikaDirectorRequestSchema>;
 export type TikaDirectorConversationMessage =

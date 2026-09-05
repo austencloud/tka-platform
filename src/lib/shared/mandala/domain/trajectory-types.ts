@@ -5,6 +5,7 @@ export interface WorldTrajectorySample3D {
   x: number;
   y: number;
   z: number;
+  breakBefore?: boolean;
 }
 
 export interface WorldTrajectoryLayer3D {
@@ -36,6 +37,8 @@ export type TrajectoryProjectionSpec =
 export interface ProjectedTrajectoryPoint {
   x: number;
   y: number;
+  beat?: number;
+  breakBefore?: boolean;
 }
 
 export interface ProjectedTrajectoryLayer {

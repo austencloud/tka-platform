@@ -43,6 +43,10 @@ const SCENES_DIR = path.join(
   repoRoot,
   "src/lib/shared/3d/environments/scenes"
 );
+const WORLDS_DIR = path.join(
+  repoRoot,
+  "src/lib/shared/3d/environments/worlds"
+);
 
 /**
  * Which environment owns each scene folder, and each root-level `*Scene.svelte`
@@ -100,18 +104,23 @@ function ownerOf(relativePath: string): BackgroundType | null {
 /** Every model URL a viewer-mounted scene source names, grouped by environment. */
 function collectFromSources(): Map<BackgroundType, Map<string, string>> {
   const byOwner = new Map<BackgroundType, Map<string, string>>();
-  for (const relative of sourceFiles(SCENES_DIR)) {
-    const text = readFileSync(path.join(SCENES_DIR, relative), "utf8");
-    const urls = text.match(MODEL_URL);
-    if (!urls) continue;
-    const owner = ownerOf(relative);
-    expect(
-      owner,
-      `${relative} names a model but no environment owns it — add its folder to SCENE_OWNERS`
-    ).not.toBeNull();
-    const bucket = byOwner.get(owner!) ?? new Map<string, string>();
-    for (const url of urls) bucket.set(url, relative);
-    byOwner.set(owner!, bucket);
+  for (const [label, sourceRoot] of [
+    ["scenes", SCENES_DIR],
+    ["worlds", WORLDS_DIR],
+  ] as const) {
+    for (const relative of sourceFiles(sourceRoot)) {
+      const text = readFileSync(path.join(sourceRoot, relative), "utf8");
+      const urls = text.match(MODEL_URL);
+      if (!urls) continue;
+      const owner = ownerOf(relative);
+      expect(
+        owner,
+        `${label}/${relative} names a model but no environment owns it — add its folder to SCENE_OWNERS`
+      ).not.toBeNull();
+      const bucket = byOwner.get(owner!) ?? new Map<string, string>();
+      for (const url of urls) bucket.set(url, `${label}/${relative}`);
+      byOwner.set(owner!, bucket);
+    }
   }
   return byOwner;
 }

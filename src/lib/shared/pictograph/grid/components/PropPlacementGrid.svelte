@@ -54,6 +54,8 @@
     disabled?: boolean;
     leftNoun?: string;
     rightNoun?: string;
+    /** A teaching surface can own the instruction beside the board. Empty hides it. */
+    promptText?: string;
     showUndo?: boolean;
     allowUndoAfterComplete?: boolean;
     renderTray?: boolean;
@@ -86,6 +88,7 @@
     disabled = false,
     leftNoun = "left prop",
     rightNoun = "right prop",
+    promptText,
     showUndo = true,
     allowUndoAfterComplete = true,
     renderTray = true,
@@ -251,12 +254,13 @@
   class:disabled
   class:complete={placement.isComplete}
   class:has-tray={renderTray}
+  class:board-only={promptText === "" && !renderTray}
   class:aiming={aim.dragHand !== null}
 >
-  {#if prompt.text}
+  {#if promptText ?? prompt.text}
     <p class="prompt-text" data-testid="placement-prompt">
       <span class="prompt-line">
-        {#if prompt.parts}
+        {#if promptText === undefined && prompt.parts}
           {prompt.parts.lead}
           <span
             class="prompt-noun"
@@ -266,7 +270,7 @@
           >{#if prompt.parts.aim}:
             <span class="prompt-aim">{prompt.parts.aim}</span>{/if}
         {:else}
-          {prompt.text}
+          {promptText ?? prompt.text}
         {/if}
       </span>
     </p>
@@ -664,5 +668,11 @@
     .label-short {
       display: inline;
     }
+  }
+  .placement-grid.board-only {
+    grid-template-areas: "board";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
   }
 </style>

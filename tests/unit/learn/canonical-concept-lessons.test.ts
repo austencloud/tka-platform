@@ -161,9 +161,6 @@ describe("canonical concept lesson composition", () => {
       "const comparisonIndex = timingDirectionIndex + 1"
     );
     expect(motions).toContain('activeMotion?.name ?? "Timing and Direction"');
-    expect(motions).toContain(
-      "Time compares the hands: together, split, or quarter. Direction compares their travel: same or opposite."
-    );
     expect(motions).toContain('"stageSchemaVersion"');
     expect(motions).toContain("migrateHandMotionsSavedStep");
     expect(motions).toContain('viewMode === "scroll"\n      ? comparisonIndex');
@@ -178,9 +175,11 @@ describe("canonical concept lesson composition", () => {
     expect(motions).not.toContain("letterQueryHandler");
     expect(motions).not.toContain("LessonPictographStage");
     expect(positions).toContain('onComplete?.("hand-motions-intro")');
-    expect(positions).toContain("propType: PropType.HAND,\n      hand,");
-    expect(positions).not.toContain("propType: PropType.HAND,\n      color,");
-    expect(positions).toContain("<PanelButton fullWidth onclick={rotate}>");
+    expect(positions).toContain("PropPlacementGrid");
+    expect(positions).toContain("PictographContainer");
+    expect(positions).toContain("leftPropType={PropType.HAND}");
+    expect(positions).toContain("rightPropType={PropType.HAND}");
+    expect(positions).toContain("TKAWordGlyph");
     expect(positions).not.toContain("focusPhase");
     expect(positions).not.toContain("Try it");
     expect(handPlayer).toContain("InlineAnimationPlayer");
@@ -223,18 +222,10 @@ describe("canonical concept lesson composition", () => {
     expect(timingIntro).toContain('semantics="radiogroup"');
     expect(timingIntro).toContain("data-timing={timingMode}");
     expect(timingIntro).toContain("data-direction={directionMode}");
-    expect(timingIntro).toContain("phase-ring outer-ring");
-    expect(timingIntro).toContain("phase-ring inner-ring");
-    expect(timingIntro).toContain("phase-ticks");
-    expect(timingIntro).toContain("@keyframes phase-rotation");
-    expect(timingIntro).toContain("@keyframes direction-travel-forward");
-    expect(timingIntro).toContain("@keyframes direction-travel-reverse");
+    // Static diagrams delegate their selection transitions to the reduced-motion-aware owner.
     expect(timingIntro).toContain(
-      "grid-template-columns: minmax(0, 3fr) minmax(0, 2fr)"
+      'import Crossfade from "$lib/shared/components/Crossfade.svelte"'
     );
-    expect(timingIntro).toContain('value: "½"');
-    expect(timingIntro).toContain('value: "¼"');
-    expect(timingIntro).toContain("@media (prefers-reduced-motion: reduce)");
     expect(timingIntro).not.toContain("timing-bounce");
     expect(timingIntro).not.toContain("bounce-stage");
     expect(timingIntro).not.toContain("example-bay");

@@ -25,11 +25,11 @@ Work on a feedback item from the queue.
 
 ### Step 1: Fetch (ONE shell call)
 
-| Input       | Command                                            |
-| ----------- | -------------------------------------------------- |
-| No argument | `node scripts/fetch-feedback.js`                   |
+| Input       | Command                                           |
+| ----------- | ------------------------------------------------- |
+| No argument | `node scripts/fetch-feedback.js`                  |
 | ID provided | `node scripts/fetch-feedback.js claim <arguments>` |
-| "list"      | `node scripts/fetch-feedback.js list`              |
+| "list"      | `node scripts/fetch-feedback.js list`             |
 
 Auth is cached. Do not run `whoami`, `mine`, or any other pre-check. Go straight to the command above.
 

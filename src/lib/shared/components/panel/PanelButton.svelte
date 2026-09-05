@@ -10,6 +10,10 @@
   interface Props {
     /** Button variant */
     variant?: ButtonVariant;
+    /** Navigation keeps native link behavior with the same panel treatment. */
+    href?: string;
+    /** Optional domain identity tint across the whole control. */
+    accentColor?: string;
     /** Content to render */
     children: Snippet;
     /** Click handler */
@@ -36,6 +40,8 @@
 
   let {
     variant = "secondary",
+    href,
+    accentColor,
     children,
     onclick,
     disabled = false,
@@ -50,21 +56,42 @@
   }: Props = $props();
 </script>
 
-<button
-  data-save-shortcut={saveShortcut ? "" : undefined}
-  bind:this={ref}
-  class="panel-btn panel-btn--{variant}"
-  class:panel-btn--full-width={fullWidth}
-  {onclick}
-  {disabled}
-  {type}
-  aria-label={ariaLabel}
-  aria-busy={ariaBusy}
-  aria-expanded={ariaExpanded}
-  aria-pressed={ariaPressed}
->
-  {@render children()}
-</button>
+{#if href !== undefined}
+  <a
+    href={disabled ? undefined : href}
+    class="panel-btn panel-btn--{variant}"
+    class:panel-btn--full-width={fullWidth}
+    class:panel-btn--tinted={!!accentColor}
+    style:--panel-accent={accentColor}
+    aria-label={ariaLabel}
+    aria-disabled={disabled || undefined}
+    tabindex={disabled ? -1 : undefined}
+    onclick={(event) => {
+      if (disabled) event.preventDefault();
+      else onclick?.(event);
+    }}
+  >
+    {@render children()}
+  </a>
+{:else}
+  <button
+    data-save-shortcut={saveShortcut ? "" : undefined}
+    bind:this={ref}
+    class="panel-btn panel-btn--{variant}"
+    class:panel-btn--full-width={fullWidth}
+    class:panel-btn--tinted={!!accentColor}
+    style:--panel-accent={accentColor}
+    {onclick}
+    {disabled}
+    {type}
+    aria-label={ariaLabel}
+    aria-busy={ariaBusy}
+    aria-expanded={ariaExpanded}
+    aria-pressed={ariaPressed}
+  >
+    {@render children()}
+  </button>
+{/if}
 
 <style>
   .panel-btn {
@@ -76,12 +103,17 @@
     border-radius: 8px;
     font-size: var(--font-size-sm);
     font-weight: 500;
+    font-family: inherit;
+    text-decoration: none;
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    transition:
+      background-color var(--transition-normal),
+      border-color var(--transition-normal);
     min-height: var(--min-touch-target);
   }
 
-  .panel-btn:disabled {
+  .panel-btn:disabled,
+  .panel-btn[aria-disabled="true"] {
     opacity: 0.5;
     cursor: not-allowed;
   }
@@ -111,6 +143,34 @@
   .panel-btn--secondary:hover:not(:disabled) {
     background: var(--theme-card-hover-bg);
     border-color: var(--theme-stroke-strong);
+  }
+
+  .panel-btn--tinted {
+    background: color-mix(
+      in srgb,
+      var(--panel-accent) 14%,
+      var(--theme-card-bg)
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--panel-accent) 40%,
+      var(--theme-stroke)
+    );
+    color: var(--theme-text);
+  }
+
+  .panel-btn--tinted:hover:not(:disabled):not([aria-disabled="true"]) {
+    background: color-mix(
+      in srgb,
+      var(--panel-accent) 24%,
+      var(--theme-card-bg)
+    );
+    border-color: var(--panel-accent);
+  }
+
+  .panel-btn:focus-visible {
+    outline: 3px solid var(--panel-accent, var(--theme-accent));
+    outline-offset: 3px;
   }
 
   @media (prefers-reduced-motion: reduce) {

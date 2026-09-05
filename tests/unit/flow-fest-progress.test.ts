@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   advanceFlowFestProgress,
+  createFlowFestGate4ReviewProgress,
   createFlowFestProgress,
+  expectedFlowFestMoment,
   getFlowFestObjective,
   isFlowFestCampEstablishedPhase,
+  isFlowFestDrivingPhase,
   restoreFlowFestProgress,
+  type FlowFestProgressState,
 } from "$lib/features/flow-fest-sim/state/flow-fest-progress";
+import { createFlowFestDefaultLoadout } from "$lib/features/flow-fest-sim/domain/flow-fest-loadout";
 import {
   FLOW_FEST_GAMEPLAY_JUMP_FORCE,
   FLOW_FEST_GAMEPLAY_SPRINT_MULTIPLIER,
@@ -13,6 +18,15 @@ import {
 } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
 
 const FINGERPRINT = "contract-fingerprint";
+
+/** Through the loadout and the drive with the default car at midday. */
+function arriveAtGate(
+  state: FlowFestProgressState,
+  loadout = createFlowFestDefaultLoadout()
+): FlowFestProgressState {
+  state = advanceFlowFestProgress(state, { type: "depart", loadout });
+  return advanceFlowFestProgress(state, { type: "arrive-at-gate" });
+}
 
 describe("Flow Fest Thursday progress", () => {
   // Measured off the shipped clips with the same contact-weighted foot-speed
@@ -68,7 +82,10 @@ describe("Flow Fest Thursday progress", () => {
     (branch) => {
       let state = createFlowFestProgress(FINGERPRINT);
       expect(advanceFlowFestProgress(state, { type: "make-camp" })).toBe(state);
+      expect(advanceFlowFestProgress(state, { type: "check-in" })).toBe(state);
 
+      state = arriveAtGate(state);
+      expect(state.phase).toBe("gate-check-in");
       state = advanceFlowFestProgress(state, { type: "check-in" });
       state = advanceFlowFestProgress(state, { type: "choose-camp", branch });
       state = advanceFlowFestProgress(state, { type: "arrive-at-camp" });
@@ -100,7 +117,7 @@ describe("Flow Fest Thursday progress", () => {
   );
 
   it("keeps authored vehicle travel untimed", () => {
-    let state = createFlowFestProgress(FINGERPRINT);
+    let state = arriveAtGate(createFlowFestProgress(FINGERPRINT));
     state = advanceFlowFestProgress(state, { type: "check-in" });
     state = advanceFlowFestProgress(state, {
       type: "choose-camp",
@@ -147,6 +164,123 @@ describe("Flow Fest Thursday progress", () => {
         FINGERPRINT
       )
     ).toBeNull();
+  });
+
+  it("seeds the drive from the departure and drains energy only on the road", () => {
+    const initial = createFlowFestProgress(FINGERPRINT);
+    expect(initial.phase).toBe("loadout");
+    expect(initial.loadout).toBeNull();
+    expect(getFlowFestObjective(initial).title).toBe("Pack the car");
+    expect(advanceFlowFestProgress(initial, { type: "drain-energy", percent: 5 })).toBe(
+      initial
+    );
+
+    const loadout = { ...createFlowFestDefaultLoadout(), departure: "early" as const };
+    let state = advanceFlowFestProgress(initial, { type: "depart", loadout });
+    expect(state).toMatchObject({
+      phase: "drive-in",
+      moment: "afternoon",
+      energyPercent: 70,
+      completed: ["loadout"],
+    });
+    expect(state.loadout).toEqual(loadout);
+    expect(state.loadout).not.toBe(loadout);
+    expect(isFlowFestDrivingPhase(state.phase)).toBe(true);
+    expect(getFlowFestObjective(state)).toMatchObject({
+      title: "Drive to the front gate",
+      targetZoneId: "lower-gate-zone",
+      actionLabel: null,
+      progressStep: 2,
+      progressTotal: 13,
+    });
+
+    // 25 s of driving at 3 %/min.
+    state = advanceFlowFestProgress(state, { type: "drain-energy", percent: 1.25 });
+    expect(state.energyPercent).toBe(68.75);
+    state = advanceFlowFestProgress(state, { type: "drain-energy", percent: 500 });
+    expect(state.energyPercent).toBe(0);
+    expect(advanceFlowFestProgress(state, { type: "depart", loadout })).toBe(state);
+    expect(restoreFlowFestProgress(state, FINGERPRINT)).toEqual(state);
+
+    state = advanceFlowFestProgress(state, { type: "arrive-at-gate" });
+    expect(state).toMatchObject({
+      phase: "gate-check-in",
+      moment: "afternoon",
+      completed: ["loadout", "drive-in"],
+    });
+    expect(isFlowFestDrivingPhase(state.phase)).toBe(false);
+  });
+
+  it("carries a late departure into golden hour until the camp is made", () => {
+    const late = { ...createFlowFestDefaultLoadout(), departure: "late" as const };
+    let state = advanceFlowFestProgress(createFlowFestProgress(FINGERPRINT), {
+      type: "depart",
+      loadout: late,
+    });
+    expect(state).toMatchObject({ moment: "golden-hour", energyPercent: 95 });
+    state = advanceFlowFestProgress(state, { type: "arrive-at-gate" });
+    state = advanceFlowFestProgress(state, { type: "check-in" });
+    expect(state.moment).toBe("golden-hour");
+    expect(restoreFlowFestProgress(state, FINGERPRINT)).toEqual(state);
+    // The same snapshot claiming afternoon light is not one a late run produced.
+    expect(
+      restoreFlowFestProgress({ ...state, moment: "afternoon" }, FINGERPRINT)
+    ).toBeNull();
+    expect(expectedFlowFestMoment("vehicle-settle", late)).toBe("golden-hour");
+    expect(expectedFlowFestMoment("vehicle-settle", createFlowFestDefaultLoadout())).toBe(
+      "afternoon"
+    );
+    expect(expectedFlowFestMoment("night-return", late)).toBe("night");
+  });
+
+  it("rejects snapshots whose loadout disagrees with the phase", () => {
+    const initial = createFlowFestProgress(FINGERPRINT);
+    const loadout = createFlowFestDefaultLoadout();
+    expect(restoreFlowFestProgress({ ...initial, loadout }, FINGERPRINT)).toBeNull();
+    const gate = arriveAtGate(initial);
+    expect(restoreFlowFestProgress(gate, FINGERPRINT)).toEqual(gate);
+    expect(restoreFlowFestProgress({ ...gate, loadout: null }, FINGERPRINT)).toBeNull();
+    expect(
+      restoreFlowFestProgress(
+        { ...gate, loadout: { ...loadout, carModelId: "hovercraft" } },
+        FINGERPRINT
+      )
+    ).toBeNull();
+    expect(
+      restoreFlowFestProgress({ ...gate, energyPercent: 101 }, FINGERPRINT)
+    ).toBeNull();
+    expect(
+      restoreFlowFestProgress({ ...gate, completed: ["loadout"] }, FINGERPRINT)
+    ).toBeNull();
+    // A version-2 session (no loadout, gate first) restarts at the loadout.
+    expect(
+      restoreFlowFestProgress(
+        {
+          version: 2,
+          contractFingerprint: FINGERPRINT,
+          masterSeed: initial.masterSeed,
+          phase: "gate-check-in",
+          moment: "afternoon",
+          branch: null,
+          fireJamState: "not-started",
+          completed: [],
+        },
+        FINGERPRINT
+      )
+    ).toBeNull();
+  });
+
+  it("stages the gate-4 review at night with the default loadout on record", () => {
+    const state = createFlowFestGate4ReviewProgress(FINGERPRINT);
+    expect(state).toMatchObject({
+      phase: "night-free-roam",
+      moment: "night",
+      branch: "lower-tent",
+      energyPercent: 85,
+    });
+    expect(state.loadout).toEqual(createFlowFestDefaultLoadout());
+    expect(state.completed.slice(0, 3)).toEqual(["loadout", "drive-in", "gate-check-in"]);
+    expect(restoreFlowFestProgress(state, FINGERPRINT)).toEqual(state);
   });
 
   it("starts over without changing the contract identity", () => {

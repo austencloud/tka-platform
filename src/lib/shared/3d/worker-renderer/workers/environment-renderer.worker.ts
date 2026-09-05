@@ -8,16 +8,30 @@ import {
 } from "three";
 import type {
   WorkerCameraSnapshot,
+  WorkerEffectQualityTier,
   WorkerEnvironmentKey,
   WorkerRendererBootMetrics,
   WorkerRendererInMessage,
   WorkerRendererOutMessage,
   WorkerPerformerSnapshot,
+  WorkerSceneEffectsSnapshot,
   WorkerViewport,
 } from "../domain/worker-renderer-protocol";
-import { clampWorkerViewport } from "../domain/worker-renderer-protocol";
+import {
+  clampWorkerViewport,
+  resolveWorkerRenderQuality,
+  WORKER_PREPARATION_VIEWPORT,
+} from "../domain/worker-renderer-protocol";
 import { createOceanPrototypeWorld } from "../worlds/ocean-prototype-world";
 import { createRainbowPrototypeWorld } from "../worlds/rainbow-prototype-world";
+import { createVoidPrototypeWorld } from "../worlds/void-prototype-world";
+import { createWinterPrototypeWorld } from "../worlds/winter-prototype-world";
+import { createCelestialPrototypeWorld } from "../worlds/celestial-prototype-world";
+import { createCosmicPrototypeWorld } from "../worlds/cosmic-prototype-world";
+import { createForestPrototypeWorld } from "../worlds/forest-prototype-world";
+import { createBlossomPrototypeWorld } from "../worlds/blossom-prototype-world";
+import { createAutumnPrototypeWorld } from "../worlds/autumn-prototype-world";
+import { createEmberPrototypeWorld } from "../worlds/ember-prototype-world";
 import type {
   WorkerEnvironmentWorld,
   WorkerWorldFactory,
@@ -31,6 +45,21 @@ import {
   createViewerBaseLightingGroup,
   resolveViewerBaseLighting,
 } from "../../rendering/viewer-lighting-rig";
+import {
+  ScenePostProcessingPipeline,
+  type ScenePostProcessingPipelineConfig,
+} from "../../effects/post-processing/scene-post-processing-pipeline";
+import { SceneEffectsManager3D } from "../../effects/scene-effects/scene-effects-manager-3d";
+import { WorkerImperativeEffects3D } from "../effects/worker-imperative-effects-3d";
+import type {
+  SceneEffectRigFrame3D,
+  SceneEffectTipSource3D,
+} from "../../effects/scene-effects/scene-effect-source-3d";
+import { mergeWorkerSceneEffects } from "../effects/merge-worker-scene-effects";
+import {
+  createWorkerProgressReporter,
+  type WorkerProgressReporter,
+} from "../services/worker-progress-reporter";
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 
@@ -39,23 +68,81 @@ const WORLD_FACTORIES: Readonly<
 > = {
   ocean: createOceanPrototypeWorld,
   rainbow: createRainbowPrototypeWorld,
+  void: createVoidPrototypeWorld,
+  winter: createWinterPrototypeWorld,
+  celestial: createCelestialPrototypeWorld,
+  cosmic: createCosmicPrototypeWorld,
+  forest: createForestPrototypeWorld,
+  blossom: createBlossomPrototypeWorld,
+  autumn: createAutumnPrototypeWorld,
+  ember: createEmberPrototypeWorld,
 };
 
+interface SceneRequest {
+  requestId: number;
+  environment: WorkerEnvironmentKey;
+  acceptedAt: number;
+  rendererReadyAt: number;
+}
+
 let requestId = 0;
+let latestRequestedId = 0;
 let environment: WorkerEnvironmentKey | null = null;
 let renderer: WebGLRenderer | null = null;
 let camera: PerspectiveCamera | null = null;
 let world: WorkerEnvironmentWorld | null = null;
 let performerStage: WorkerPerformerStage | null = null;
+let postProcessing: ScenePostProcessingPipeline | null = null;
+let sceneEffectsManager: SceneEffectsManager3D | null = null;
+let sceneEffectsRegistration: { dispose(): void } | null = null;
+let imperativeEffects: WorkerImperativeEffects3D | null = null;
+const sceneEffectsFrame: SceneEffectRigFrame3D = {
+  playing: false,
+  sources: [],
+};
 let performerSnapshots: readonly WorkerPerformerSnapshot[] = [];
+let externalEffects: WorkerSceneEffectsSnapshot = {
+  playing: false,
+  sources: [],
+};
 let animationFrame = 0;
 let frameCount = 0;
 let previousFrameAt = 0;
 let visible = true;
 let disposed = false;
+let qualityTier: WorkerEffectQualityTier = "medium";
+let preparingFirstFrame = true;
+let requestedViewport: WorkerViewport = WORKER_PREPARATION_VIEWPORT;
+let renderCanvas: OffscreenCanvas | null = null;
+let desiredRequest: SceneRequest | null = null;
+let transitionRunning = false;
+let posterInstalled = false;
+const posterReady = new Set<number>();
+const posterWaiters = new Map<number, () => void>();
 
-function post(message: WorkerRendererOutMessage): void {
-  scope.postMessage(message);
+function post(
+  message: WorkerRendererOutMessage,
+  transfer: Transferable[] = []
+): void {
+  scope.postMessage(message, transfer);
+}
+
+let postProgress: WorkerProgressReporter = createWorkerProgressReporter(
+  ({ phase, fraction }) => {
+    post({ type: "progress", requestId, phase, fraction });
+  }
+);
+
+function resetProgressReporter(progressRequestId: number): void {
+  postProgress.cancel();
+  postProgress = createWorkerProgressReporter(({ phase, fraction }) => {
+    post({
+      type: "progress",
+      requestId: progressRequestId,
+      phase,
+      fraction,
+    });
+  });
 }
 
 function errorMessage(error: unknown): string {
@@ -65,17 +152,107 @@ function errorMessage(error: unknown): string {
 function applyViewport(viewportInput: WorkerViewport): void {
   if (!renderer || !camera) return;
   const viewport = clampWorkerViewport(viewportInput);
-  renderer.setPixelRatio(viewport.dpr);
-  renderer.setSize(viewport.width, viewport.height, false);
+  requestedViewport = viewport;
+  const renderViewport = preparingFirstFrame
+    ? WORKER_PREPARATION_VIEWPORT
+    : viewport;
+  renderer.setPixelRatio(renderViewport.dpr);
+  renderer.setSize(renderViewport.width, renderViewport.height, false);
+  // Framing belongs to the requested display, even while the hidden renderer
+  // rasterizes its preparation passes into a single pixel.
   camera.aspect = viewport.width / viewport.height;
   camera.updateProjectionMatrix();
+  postProcessing?.resize(renderViewport.width, renderViewport.height);
+}
+
+function createPostProcessingPipeline(
+  activeEnvironment: WorkerEnvironmentKey
+): ScenePostProcessingPipeline | null {
+  if (!renderer || !camera || !world) return null;
+  return new ScenePostProcessingPipeline({
+    renderer,
+    scene: world.scene,
+    camera,
+    config: createPostProcessingConfig(activeEnvironment, qualityTier),
+  });
+}
+
+function createPostProcessingConfig(
+  activeEnvironment: WorkerEnvironmentKey,
+  activeQualityTier: WorkerEffectQualityTier
+): ScenePostProcessingPipelineConfig {
+  const isOcean = activeEnvironment === "ocean";
+  const quality = resolveWorkerRenderQuality(activeQualityTier, isOcean);
+  return {
+    enabled: quality.composerEnabled,
+    isOcean,
+    tierBloom: quality.tierBloom,
+    enableShadows: quality.enableShadows,
+    bloomResolutionScale: 1,
+    bloomLevels: 8,
+    tierBloomResolutionScale: quality.bloomResolutionScale,
+    tierBloomLevels: quality.bloomLevels,
+    enableBloom: true,
+    enableChromaticAberration: true,
+    oceanBloom: true,
+    oceanWaterTint: true,
+    oceanWaterTintStrength: 0.8,
+    oceanUnderwaterDistortion: false,
+  };
+}
+
+function applyQualityTier(nextTier: WorkerEffectQualityTier): void {
+  qualityTier = nextTier;
+  if (!renderer) return;
+  const quality = resolveWorkerRenderQuality(
+    qualityTier,
+    environment === "ocean"
+  );
+  if (postProcessing && world && camera && environment) {
+    postProcessing.updateConfig(
+      createPostProcessingConfig(environment, qualityTier),
+      world.scene,
+      camera
+    );
+  }
+  // Disabling Ocean's composer restores the renderer state captured when it
+  // was built, so shadows must be assigned after that lifecycle completes.
+  renderer.shadowMap.enabled = quality.enableShadows;
+}
+
+function renderCurrentFrame(deltaSeconds: number): void {
+  if (!renderer || !camera || !world) return;
+  imperativeEffects?.update(deltaSeconds, camera);
+  sceneEffectsManager?.update(deltaSeconds);
+  if (postProcessing)
+    postProcessing.render(deltaSeconds, { forceBaseRender: true });
+  else renderer.render(world.scene, camera);
+}
+
+function applyEffects(snapshot: WorkerSceneEffectsSnapshot): void {
+  sceneEffectsFrame.playing = snapshot.playing;
+  sceneEffectsFrame.sources = Array.from(
+    snapshot.sources
+  ) as SceneEffectTipSource3D[];
+  if (sceneEffectsFrame.sources.length === 0) sceneEffectsManager?.clear();
+  if (camera) imperativeEffects?.apply(snapshot.imperative ?? [], camera);
+}
+
+function applyCurrentEffects(): void {
+  const performerEffects = performerStage?.getEffects();
+  applyEffects(
+    mergeWorkerSceneEffects(externalEffects, performerEffects ?? null)
+  );
 }
 
 function applyCamera(snapshot: WorkerCameraSnapshot): void {
   if (!camera) return;
   camera.position.fromArray(snapshot.position);
   camera.fov = snapshot.fov;
-  camera.lookAt(...snapshot.target);
+  if (snapshot.up) camera.up.fromArray(snapshot.up);
+  else camera.up.set(0, 1, 0);
+  if (snapshot.quaternion) camera.quaternion.fromArray(snapshot.quaternion);
+  else camera.lookAt(...snapshot.target);
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld(true);
 }
@@ -100,7 +277,8 @@ function renderFrame(now: number): void {
   if (visible) {
     world.update(Math.min(deltaMs / 1000, 0.1), now / 1000);
     performerStage?.update(Math.min(deltaMs / 1000, 0.1));
-    renderer.render(world.scene, camera);
+    applyCurrentEffects();
+    renderCurrentFrame(deltaMs / 1000);
     frameCount += 1;
     post({
       type: "frame",
@@ -120,145 +298,217 @@ async function nextWorkerFrame(): Promise<number> {
   });
 }
 
-async function initialize(
-  message: Extract<WorkerRendererInMessage, { type: "initialize" }>
-): Promise<void> {
-  requestId = message.requestId;
-  environment = message.environment;
-  disposed = false;
-  const acceptedAt = performance.now();
+function queueScene(request: SceneRequest): void {
+  latestRequestedId = request.requestId;
+  desiredRequest = request;
   post({
     type: "booting",
-    requestId,
-    environment,
-    acceptedAt,
+    requestId: request.requestId,
+    environment: request.environment,
+    acceptedAt: request.acceptedAt,
   });
+  if (!transitionRunning) void runTransition();
+}
 
-  post({ type: "progress", requestId, phase: "renderer", fraction: 0 });
+function isSuperseded(sceneRequest: SceneRequest): boolean {
+  return disposed || latestRequestedId !== sceneRequest.requestId;
+}
 
-  message.canvas.addEventListener("webglcontextlost", (event) => {
-    event.preventDefault();
-    post({ type: "context-lost", requestId, environment });
+async function waitForPoster(requestId: number): Promise<void> {
+  if (posterReady.delete(requestId)) return;
+  await new Promise<void>((resolve) => {
+    posterWaiters.set(requestId, resolve);
   });
+}
 
-  renderer = new WebGLRenderer({
-    canvas: message.canvas,
-    antialias: true,
-    alpha: false,
-    powerPreference: "high-performance",
-  });
-  renderer.outputColorSpace = SRGBColorSpace;
-  renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1;
-  renderer.shadowMap.enabled = true;
+async function capturePoster(captureRequestId: number): Promise<void> {
+  if (!renderer || !world || !renderCanvas) return;
+  if (animationFrame) scope.cancelAnimationFrame(animationFrame);
+  animationFrame = 0;
+  const capturedEnvironment = world.environment;
+  renderCurrentFrame(0);
+  const bitmap = renderCanvas.transferToImageBitmap();
+  // Transferring replaces the source image. Re-render synchronously so the
+  // live canvas remains complete until the application installs its poster.
+  renderCurrentFrame(0);
+  post(
+    {
+      type: "poster",
+      requestId: captureRequestId,
+      environment: capturedEnvironment,
+      bitmap,
+    },
+    [bitmap]
+  );
+  await waitForPoster(captureRequestId);
+  if (disposed) return;
+  posterInstalled = true;
+  preparingFirstFrame = true;
+  applyViewport(requestedViewport);
+}
 
-  camera = new PerspectiveCamera(message.camera.fov, 1, 0.05, 500);
-  applyViewport(message.viewport);
-  applyCamera(message.camera);
-  const rendererReadyAt = performance.now();
-  post({ type: "progress", requestId, phase: "renderer", fraction: 1 });
+function disposeSceneRuntime(): void {
+  if (animationFrame) scope.cancelAnimationFrame(animationFrame);
+  animationFrame = 0;
+  previousFrameAt = 0;
+  postProcessing?.dispose();
+  postProcessing = null;
+  performerStage?.dispose();
+  performerStage = null;
+  imperativeEffects?.dispose();
+  imperativeEffects = null;
+  sceneEffectsRegistration?.dispose();
+  sceneEffectsRegistration = null;
+  sceneEffectsManager?.dispose();
+  sceneEffectsManager = null;
+  sceneEffectsFrame.playing = false;
+  sceneEffectsFrame.sources = [];
+  world?.dispose();
+  world = null;
+  renderer?.renderLists.dispose();
+}
 
-  const factory = WORLD_FACTORIES[environment];
-  performerSnapshots = message.performers;
-  world = await factory({
+let reducedMotion = false;
+
+async function prepareScene(sceneRequest: SceneRequest): Promise<boolean> {
+  if (!renderer || !camera) return false;
+  requestId = sceneRequest.requestId;
+  environment = sceneRequest.environment;
+  resetProgressReporter(sceneRequest.requestId);
+  applyQualityTier(qualityTier);
+
+  const factory = WORLD_FACTORIES[sceneRequest.environment];
+  const builtWorld = await factory({
     renderer,
     camera,
-    requestId,
+    performers: performerSnapshots,
+    requestId: sceneRequest.requestId,
+    reducedMotion,
     reportProgress(phase, fraction) {
-      post({
-        type: "progress",
-        requestId,
-        phase,
-        fraction: Math.max(0, Math.min(1, fraction)),
-      });
+      postProgress(phase, fraction);
     },
   });
-  if (disposed) return;
-  world.scene.add(
-    createViewerBaseLightingGroup(
-      resolveViewerBaseLighting(true, environment === "ocean")
-    )
+  if (isSuperseded(sceneRequest)) {
+    builtWorld.dispose();
+    return false;
+  }
+  world = builtWorld;
+  if (world.useViewerBaseLighting !== false) {
+    world.scene.add(
+      createViewerBaseLightingGroup(
+        resolveViewerBaseLighting(
+          true,
+          sceneRequest.environment === "ocean"
+        )
+      )
+    );
+  }
+  sceneEffectsManager = new SceneEffectsManager3D();
+  sceneEffectsManager.initialize(world.scene, renderer);
+  sceneEffectsRegistration = sceneEffectsManager.registerRig(sceneEffectsFrame);
+  imperativeEffects = new WorkerImperativeEffects3D(
+    world.scene,
+    sceneEffectsManager.getDynamicLightManager()
   );
   const environmentReadyAt = performance.now();
-  post({ type: "progress", requestId, phase: "performer", fraction: 0 });
+  postProgress("performer", 0);
   performerStage = new WorkerPerformerStage(world.scene);
   await performerStage.setSnapshots(performerSnapshots);
-  if (disposed) return;
+  if (isSuperseded(sceneRequest)) return false;
   const performerReadyAt = performance.now();
   const worldReadyAt = performerReadyAt;
-  post({ type: "progress", requestId, phase: "performer", fraction: 1 });
+  postProgress("performer", 1);
+  applyCurrentEffects();
+  postProcessing = createPostProcessingPipeline(sceneRequest.environment);
+  const previousRenderTarget = renderer.getRenderTarget();
+  const sceneRenderTarget = postProcessing?.sceneRenderTarget ?? null;
+  renderer.setRenderTarget(sceneRenderTarget);
 
-  post({ type: "progress", requestId, phase: "compile", fraction: 0 });
+  postProgress("compile", 0);
   const compileTargets = await warmWorkerRenderer(
     { renderer, scene: world.scene, camera },
     {
       onProgress(fraction) {
-        post({ type: "progress", requestId, phase: "compile", fraction });
+        postProgress("compile", fraction);
       },
       async yieldBetween() {
         await nextWorkerFrame();
       },
-      shouldStop: () => disposed,
+      shouldStop: () => isSuperseded(sceneRequest),
     }
   );
-  if (disposed) return;
+  if (isSuperseded(sceneRequest)) return false;
   const compiledAt = performance.now();
   const memoryAfterCompile = rendererMemory();
 
-  post({ type: "progress", requestId, phase: "prime", fraction: 0 });
+  postProgress("prime", 0);
   const primeTargets = await primeWorkerRenderer(
     { renderer, scene: world.scene, camera },
     {
       onProgress(fraction) {
-        post({ type: "progress", requestId, phase: "prime", fraction });
+        postProgress("prime", fraction);
       },
       async yieldBetween() {
         await nextWorkerFrame();
       },
-      shouldStop: () => disposed,
+      shouldStop: () => isSuperseded(sceneRequest),
     }
   );
-  if (disposed) return;
+  if (isSuperseded(sceneRequest)) return false;
   const primedAt = performance.now();
   const memoryAfterPrime = rendererMemory();
 
-  post({ type: "progress", requestId, phase: "finalize", fraction: 0 });
+  postProgress("finalize", 0);
   await renderer.compileAsync(world.scene, camera);
-  if (disposed) return;
+  if (isSuperseded(sceneRequest)) return false;
   const finalizedAt = performance.now();
   const memoryAfterFinalize = rendererMemory();
-  post({ type: "progress", requestId, phase: "finalize", fraction: 1 });
+  postProgress("finalize", 1);
+  renderer.setRenderTarget(previousRenderTarget);
 
-  post({ type: "progress", requestId, phase: "preflight", fraction: 0 });
+  postProgress("preflight", 0);
   const previousViewport = renderer.getViewport(new Vector4());
   renderer.setViewport(0, 0, 1, 1);
   try {
     world.update(0, finalizedAt / 1000);
     performerStage.update(0);
-    renderer.render(world.scene, camera);
+    applyCurrentEffects();
+    renderCurrentFrame(0);
   } finally {
     renderer.setViewport(previousViewport);
   }
   const preflightedAt = performance.now();
   const memoryAfterPreflight = rendererMemory();
-  post({ type: "progress", requestId, phase: "preflight", fraction: 1 });
+  postProgress("preflight", 1);
 
-  post({ type: "progress", requestId, phase: "first-frame", fraction: 0 });
+  postProgress("first-frame", 0);
+  preparingFirstFrame = false;
+  applyViewport(requestedViewport);
   const firstRenderStartedAt = performance.now();
   world.update(0, compiledAt / 1000);
   performerStage.update(0);
-  renderer.render(world.scene, camera);
+  applyCurrentEffects();
+  renderCurrentFrame(0);
   const firstRenderCompletedAt = performance.now();
   const memoryAfterFirstRender = rendererMemory();
   await nextWorkerFrame();
   const presentedAt = performance.now();
-  if (disposed || !renderer || !world) return;
+  if (
+    isSuperseded(sceneRequest) ||
+    !renderer ||
+    !camera ||
+    !world ||
+    !performerStage
+  ) {
+    return false;
+  }
   world.update(
     Math.min((presentedAt - compiledAt) / 1000, 0.1),
     presentedAt / 1000
   );
   performerStage.update(Math.min((presentedAt - compiledAt) / 1000, 0.1));
-  renderer.render(world.scene, camera);
+  applyCurrentEffects();
+  renderCurrentFrame(Math.min((presentedAt - compiledAt) / 1000, 0.1));
   const firstFrameAt = performance.now();
   frameCount = 1;
   previousFrameAt = firstFrameAt;
@@ -269,14 +519,14 @@ async function initialize(
         .toArray()
     : null;
 
-  post({ type: "progress", requestId, phase: "first-frame", fraction: 1 });
+  postProgress("first-frame", 1);
   post({
     type: "first-frame",
-    requestId,
+    requestId: sceneRequest.requestId,
     environment: world.environment,
     metrics: {
-      acceptedAt,
-      rendererReadyAt,
+      acceptedAt: sceneRequest.acceptedAt,
+      rendererReadyAt: sceneRequest.rendererReadyAt,
       environmentReadyAt,
       performerReadyAt,
       worldReadyAt,
@@ -285,10 +535,10 @@ async function initialize(
       finalizedAt,
       preflightedAt,
       firstFrameAt,
-      rendererMs: rendererReadyAt - acceptedAt,
-      environmentMs: environmentReadyAt - rendererReadyAt,
+      rendererMs: sceneRequest.rendererReadyAt - sceneRequest.acceptedAt,
+      environmentMs: environmentReadyAt - sceneRequest.rendererReadyAt,
       performerMs: performerReadyAt - environmentReadyAt,
-      worldMs: worldReadyAt - acceptedAt,
+      worldMs: worldReadyAt - sceneRequest.acceptedAt,
       compileMs: compiledAt - worldReadyAt,
       primeMs: primedAt - compiledAt,
       primeTargets,
@@ -298,7 +548,7 @@ async function initialize(
       presentationWaitMs: presentedAt - firstRenderCompletedAt,
       confirmationRenderMs: firstFrameAt - presentedAt,
       firstFrameWaitMs: firstFrameAt - preflightedAt,
-      firstFrameMs: firstFrameAt - acceptedAt,
+      firstFrameMs: firstFrameAt - sceneRequest.acceptedAt,
       compileTargets,
       memoryAfterCompile,
       memoryAfterPrime,
@@ -313,32 +563,140 @@ async function initialize(
     },
   });
   animationFrame = scope.requestAnimationFrame(renderFrame);
+  return true;
+}
+
+async function runTransition(): Promise<void> {
+  if (transitionRunning || disposed) return;
+  transitionRunning = true;
+  try {
+    if (world && !posterInstalled && desiredRequest) {
+      await capturePoster(desiredRequest.requestId);
+    }
+
+    while (desiredRequest && !disposed) {
+      const sceneRequest = desiredRequest;
+      desiredRequest = null;
+      disposeSceneRuntime();
+      if (isSuperseded(sceneRequest)) continue;
+      let prepared = false;
+      try {
+        prepared = await prepareScene(sceneRequest);
+      } catch (error) {
+        post({
+          type: "error",
+          requestId: sceneRequest.requestId,
+          environment: sceneRequest.environment,
+          message: errorMessage(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        return;
+      }
+      if (!prepared) {
+        disposeSceneRuntime();
+        continue;
+      }
+    }
+  } catch (error) {
+    const failed = desiredRequest ?? {
+      requestId: latestRequestedId,
+      environment,
+    };
+    post({
+      type: "error",
+      requestId: failed.requestId,
+      environment: failed.environment,
+      message: errorMessage(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+  } finally {
+    transitionRunning = false;
+    if (desiredRequest && !disposed) void runTransition();
+  }
+}
+
+async function initialize(
+  message: Extract<WorkerRendererInMessage, { type: "initialize" }>
+): Promise<void> {
+  requestId = message.requestId;
+  latestRequestedId = message.requestId;
+  environment = message.environment;
+  qualityTier = message.qualityTier;
+  performerSnapshots = message.performers;
+  externalEffects = message.effects ?? { playing: false, sources: [] };
+  disposed = false;
+  preparingFirstFrame = true;
+  requestedViewport = clampWorkerViewport(message.viewport);
+  renderCanvas = message.canvas;
+  const acceptedAt = performance.now();
+  resetProgressReporter(message.requestId);
+  post({
+    type: "booting",
+    requestId,
+    environment,
+    acceptedAt,
+  });
+  postProgress("renderer", 0);
+
+  renderCanvas.addEventListener("webglcontextlost", (event) => {
+    event.preventDefault();
+    post({ type: "context-lost", requestId, environment });
+  });
+  renderer = new WebGLRenderer({
+    canvas: renderCanvas,
+    antialias: true,
+    alpha: false,
+    powerPreference: "high-performance",
+  });
+  renderer.outputColorSpace = SRGBColorSpace;
+  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1;
+  renderer.shadowMap.enabled = resolveWorkerRenderQuality(
+    qualityTier,
+    environment === "ocean"
+  ).enableShadows;
+  camera = new PerspectiveCamera(message.camera.fov, 1, 0.05, 500);
+  applyViewport(message.viewport);
+  applyCamera(message.camera);
+  const rendererReadyAt = performance.now();
+  postProgress("renderer", 1);
+
+  desiredRequest = {
+    requestId: message.requestId,
+    environment: message.environment,
+    acceptedAt,
+    rendererReadyAt,
+  };
+  await runTransition();
 }
 
 function dispose(): void {
   if (disposed) return;
   disposed = true;
+  postProgress.cancel();
+  for (const resolve of posterWaiters.values()) resolve();
+  posterWaiters.clear();
+  posterReady.clear();
+  desiredRequest = null;
   if (animationFrame) scope.cancelAnimationFrame(animationFrame);
   animationFrame = 0;
-  performerStage?.dispose();
-  performerStage = null;
-  world?.dispose();
-  world = null;
-  renderer?.renderLists.dispose();
+  disposeSceneRuntime();
+  externalEffects = { playing: false, sources: [] };
   renderer?.dispose();
   renderer?.forceContextLoss();
   renderer = null;
   camera = null;
+  renderCanvas = null;
   post({ type: "disposed", requestId });
   scope.close();
 }
 
 scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
   const message = event.data;
-  if (message.type !== "initialize" && message.requestId !== requestId) return;
 
   switch (message.type) {
     case "initialize":
+      reducedMotion = message.reducedMotion ?? false;
       void initialize(message).catch((error) => {
         post({
           type: "error",
@@ -349,6 +707,31 @@ scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
         });
       });
       break;
+    case "switch-environment": {
+      reducedMotion = message.reducedMotion ?? false;
+      if (!renderer || disposed) break;
+      const acceptedAt = performance.now();
+      queueScene({
+        requestId: message.requestId,
+        environment: message.environment,
+        acceptedAt,
+        rendererReadyAt: acceptedAt,
+      });
+      break;
+    }
+    case "poster-ready": {
+      const resolve = posterWaiters.get(message.requestId);
+      if (resolve) {
+        posterWaiters.delete(message.requestId);
+        resolve();
+      } else {
+        posterReady.add(message.requestId);
+      }
+      break;
+    }
+    case "live-presented":
+      if (message.requestId === requestId) posterInstalled = false;
+      break;
     case "resize":
       applyViewport(message.viewport);
       break;
@@ -357,6 +740,7 @@ scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
       break;
     case "performers":
       performerSnapshots = message.performers;
+      world?.setPerformers?.(performerSnapshots);
       void performerStage?.setSnapshots(performerSnapshots).catch((error) => {
         post({
           type: "error",
@@ -367,6 +751,40 @@ scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
         });
       });
       break;
+    case "effects":
+      externalEffects = message.effects;
+      applyCurrentEffects();
+      break;
+    case "quality":
+      applyQualityTier(message.qualityTier);
+      break;
+    case "pointer": {
+      if (!world || !environment || message.requestId !== requestId) break;
+      if (message.action === "leave") {
+        world.pointerLeave?.();
+        post({
+          type: "interaction",
+          requestId,
+          environment,
+          hover: false,
+          chime: null,
+        });
+        break;
+      }
+      const hover = world.pointerMove?.(message.ndcX, message.ndcY) ?? false;
+      const chime =
+        message.action === "down"
+          ? (world.pointerDown?.(message.ndcX, message.ndcY) ?? null)
+          : null;
+      post({
+        type: "interaction",
+        requestId,
+        environment,
+        hover,
+        chime,
+      });
+      break;
+    }
     case "visibility":
       visible = message.visible;
       previousFrameAt = performance.now();

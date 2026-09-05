@@ -13,6 +13,7 @@
   import { setThirdOrderContext } from "./context/third-order-context";
   import { createThirdOrderState } from "./state/third-order-state.svelte";
   import { getThirdOrderCompositionSampler } from "./services/getThirdOrderCompositionSampler";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 
   let host = $state<HTMLDivElement | null>(null);
   let compact = $state(false);
@@ -20,6 +21,13 @@
   const thirdOrder = setThirdOrderContext(
     createThirdOrderState(getThirdOrderCompositionSampler(), FALLBACK_DEMO)
   );
+
+  $effect(() => {
+    thirdOrder.setPropTypes(
+      settingsService.settings.leftPropType ?? "staff",
+      settingsService.settings.rightPropType ?? "staff"
+    );
+  });
 
   onMount(() => {
     if (!host) return;

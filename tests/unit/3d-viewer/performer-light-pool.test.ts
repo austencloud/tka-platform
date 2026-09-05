@@ -7,27 +7,49 @@ const sceneSource = readFileSync(
   "utf8"
 );
 
+// The cast is rendered from `renderablePerformers` so exiting rigs keep their
+// slot for one presence phase. Locating the loop by name keeps this file
+// honest: a rename would otherwise turn every "not inside the loop" assertion
+// below into a comparison against an empty string.
+const performerLoopStart = sceneSource.indexOf(
+  "{#each performerManager.renderablePerformers"
+);
+const performerLoop = sceneSource.slice(
+  performerLoopStart,
+  sceneSource.lastIndexOf("{/each}")
+);
+
 describe("performer selection light", () => {
+  it("finds the performer loop it guards", () => {
+    expect(performerLoopStart).toBeGreaterThan(-1);
+    expect(performerLoop.length).toBeGreaterThan(0);
+  });
+
   it("keeps a constant light count while performer rigs enter and leave", () => {
     expect(sceneSource.match(/<T\.PointLight/g)).toHaveLength(1);
     expect(sceneSource).toContain("position={selectedPerformerLightPosition}");
     expect(sceneSource).toContain("intensity={selectedPerformer ? 6 : 0}");
 
-    const performerLoop = sceneSource.slice(
-      sceneSource.indexOf("{#each performerManager.performers"),
-      sceneSource.lastIndexOf("{/each}")
-    );
     expect(performerLoop).not.toContain("<T.PointLight");
   });
 
-  it("keeps one selection-ring mesh set outside the performer loop", () => {
+  it("mounts one selection-ring mesh set, only for a selected performer", () => {
+    // Multi-performer selection (acd54aaeb6) gives every selected performer
+    // its own identity-colored ring, so the ring set moved inside the loop.
+    // The render budget it still owes: exactly one ring set, mounted behind
+    // the selection gate, so an unselected cast adds no ring meshes and no
+    // second light. Lifting a ring above the gate would put a ring set on
+    // every performer in the scene.
     expect(sceneSource.match(/<T\.RingGeometry/g)).toHaveLength(2);
-    expect(sceneSource).toContain("position={selectedPerformerRingPosition}");
 
-    const performerLoop = sceneSource.slice(
-      sceneSource.indexOf("{#each performerManager.performers"),
-      sceneSource.lastIndexOf("{/each}")
+    const selectionGate = performerLoop.indexOf(
+      "selectedPerformerIndices.has(i)"
     );
-    expect(performerLoop).not.toContain("<T.RingGeometry");
+    expect(selectionGate).toBeGreaterThan(-1);
+    expect(performerLoop.slice(0, selectionGate)).not.toContain(
+      "<T.RingGeometry"
+    );
+    expect(performerLoop.match(/<T\.RingGeometry/g)).toHaveLength(2);
+    expect(performerLoop).toContain("color={selectionColor}");
   });
 });

@@ -1,4 +1,45 @@
-export type WorkerEnvironmentKey = "ocean" | "rainbow";
+import type { SceneEffectTipSource3D } from "../../effects/scene-effects/scene-effect-source-3d";
+import { QualityTier, TIER_CONFIGS } from "../../effects/types";
+import type { StripPattern } from "$lib/shared/poi/domain/strip-pattern";
+import type { EffectType } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+import type {
+  Animal3DParams,
+  Bloom3DParams,
+  Bubbles3DParams,
+  Charcoal3DParams,
+  Fire3DParams,
+  Goo3DParams,
+  Ink3DParams,
+  Led3DParams,
+  Petals3DParams,
+  Pulse3DParams,
+  Silk3DParams,
+  Smoke3DParams,
+  Sparkles3DParams,
+  Trails3DParams,
+} from "$lib/shared/effects/translators/webgl3d-types";
+import type {
+  CanonicalWorkerPropType,
+  WorkerPropBuild,
+} from "../worlds/props/worker-prop-factory-types";
+import type {
+  LateralGait,
+  ScheduledGaitTimingSample,
+  TerminalStepPlan,
+  TurnRequest,
+} from "@austencloud/scene-3d";
+
+export type WorkerEnvironmentKey =
+  | "ocean"
+  | "rainbow"
+  | "void"
+  | "winter"
+  | "celestial"
+  | "cosmic"
+  | "forest"
+  | "blossom"
+  | "autumn"
+  | "ember";
 
 export interface WorkerViewport {
   width: number;
@@ -6,14 +47,91 @@ export interface WorkerViewport {
   dpr: number;
 }
 
+/**
+ * Hidden replacement scenes compile and upload against one physical pixel.
+ * Their requested viewport is retained for camera framing and restored before
+ * the first handoff frame. This keeps background preparation from rasterizing
+ * dozens of full-size prime frames beside the scene the user is watching.
+ */
+export const WORKER_PREPARATION_VIEWPORT = {
+  width: 1,
+  height: 1,
+  dpr: 1,
+} as const satisfies WorkerViewport;
+
 export interface WorkerCameraSnapshot {
   position: readonly [number, number, number];
   target: readonly [number, number, number];
   fov: number;
+  /** Exact rendered orientation, including viewer roll when present. */
+  quaternion?: WorkerQuaternion;
+  up?: WorkerVector3;
 }
 
 export type WorkerVector3 = readonly [number, number, number];
 export type WorkerQuaternion = readonly [number, number, number, number];
+
+/**
+ * Prop visuals the renderer-neutral worker factory reproduces exactly. Keep
+ * this clone-safe protocol list pinned to that factory with a contract test;
+ * importing the factory's runtime module here would pull every prop model and
+ * material implementation into the application bundle just to validate a
+ * string.
+ */
+export const WORKER_PERFORMER_PROP_TYPES = [
+  "staff",
+  "simple_staff",
+  "bigstaff",
+  "staff_v2",
+  "club",
+  "bigclub",
+  "fan",
+  "bigfan",
+  "triad",
+  "bigtriad",
+  "minihoop",
+  "bighoop",
+  "fractalgeng",
+  "triquetra",
+  "triquetra2",
+  "eightrings",
+  "bigeightrings",
+  "contactball",
+  "bigcontactball",
+  "quiad",
+  "torch",
+  "bigtorch",
+  "poi",
+  "buugeng",
+  "bigbuugeng",
+  "chicken",
+  "bigchicken",
+  "guitar",
+  "ukulele",
+  "sword",
+  "sickles",
+  "trigeng",
+  "doublestar",
+  "bigdoublestar",
+  "doublecontactball",
+  "bigdoublecontactball",
+  "capsule_baton",
+  "fire_double_staff",
+  "hand",
+] as const satisfies readonly CanonicalWorkerPropType[];
+
+export type WorkerPerformerPropType =
+  (typeof WORKER_PERFORMER_PROP_TYPES)[number];
+
+const WORKER_PERFORMER_PROP_TYPE_SET = new Set<string>(
+  WORKER_PERFORMER_PROP_TYPES
+);
+
+export function isWorkerPerformerPropType(
+  value: string
+): value is WorkerPerformerPropType {
+  return WORKER_PERFORMER_PROP_TYPE_SET.has(value);
+}
 
 /**
  * Structured-clone-safe form of the already-resolved choreography state.
@@ -26,6 +144,10 @@ export interface WorkerPropSnapshot {
   centerPathAngle: number;
   staffRotationAngle: number;
   plane: string;
+  /** PerformerRig's hand group translation, resolved by the application. */
+  handAnchor: WorkerVector3;
+  /** Buugeng-family chirality, applied at the correction group. */
+  flipped: boolean;
   worldPosition: WorkerVector3;
   worldRotation: WorkerQuaternion;
   gripType?: string;
@@ -37,6 +159,77 @@ export interface WorkerStanceSegments {
   headLagRad: number;
 }
 
+export interface WorkerPerformerBadgeSnapshot {
+  index: number;
+  color: string;
+  opacity: number;
+  selected: boolean;
+}
+
+export interface WorkerSelectionMarkerSnapshot {
+  groundPosition: WorkerVector3;
+  color: number;
+  selected: boolean;
+  allPerformersSelected: boolean;
+  present: boolean;
+  pulsePhase: number;
+  hovered: boolean;
+  dragging: boolean;
+}
+
+export interface WorkerTipEffectDecision {
+  propIndex: 0 | 1;
+  tipIndex: 0 | 1;
+  effect: EffectType;
+}
+
+export interface WorkerPooledEffectConfigs {
+  sparkles?: Sparkles3DParams;
+  goo?: Goo3DParams;
+  bubbles?: Bubbles3DParams;
+  petals?: Petals3DParams;
+  smoke?: Smoke3DParams;
+  ink?: Ink3DParams;
+  silk?: Silk3DParams;
+  animal?: Animal3DParams;
+  pulse?: Pulse3DParams;
+  bloom?: Bloom3DParams;
+  fire?: Fire3DParams;
+  charcoal?: Charcoal3DParams;
+}
+
+/**
+ * Clone-safe decisions already resolved by the application.
+ *
+ * The worker may turn these decisions into renderer coordinates, but it may
+ * not choose an effect, interpret a card, translate user-facing settings, or
+ * advance the Choreo clock. That keeps worker rendering incapable of changing
+ * what the sequence means.
+ */
+export interface WorkerPerformerEffectIntent {
+  playing: boolean;
+  sampledAtMs: number;
+  currentStep: number;
+  totalSteps: number;
+  seamlesslyLoopable: boolean;
+  qualityTier: WorkerEffectQualityTier;
+  propBuild: WorkerPropBuild;
+  tips: readonly WorkerTipEffectDecision[];
+  trails: Trails3DParams;
+  led: Led3DParams;
+  pooled: WorkerPooledEffectConfigs;
+}
+
+export interface WorkerPerformerLocomotionSnapshot {
+  isMoving: boolean;
+  moveSpeed: number;
+  moveDirection: { x: number; z: number };
+  lateralGait: LateralGait;
+  gaitTimingSample: ScheduledGaitTimingSample | null;
+  terminalStepPlan: TerminalStepPlan | null;
+  turnRequest: TurnRequest | null;
+}
+
 export interface WorkerPerformerSnapshot {
   id: string;
   avatarId: string;
@@ -46,13 +239,138 @@ export interface WorkerPerformerSnapshot {
   groundY: number;
   staffLength: number;
   staffThickness: number;
-  leftPropType: string;
-  rightPropType: string;
+  propBuild: WorkerPropBuild;
+  leftPropType: WorkerPerformerPropType;
+  rightPropType: WorkerPerformerPropType;
   leftProp: WorkerPropSnapshot | null;
   rightProp: WorkerPropSnapshot | null;
   stanceYaw: number;
   stanceSegments: WorkerStanceSegments | null;
   spinePitchOffset: number;
+  badge?: WorkerPerformerBadgeSnapshot | null;
+  selectionMarker?: WorkerSelectionMarkerSnapshot | null;
+  effectIntent?: WorkerPerformerEffectIntent | null;
+  locomotion?: WorkerPerformerLocomotionSnapshot | null;
+}
+
+export type WorkerEffectQualityTier = "high" | "medium" | "low";
+
+export interface WorkerRenderQualityConfig {
+  composerEnabled: boolean;
+  tierBloom: boolean;
+  enableShadows: boolean;
+  bloomResolutionScale: number;
+  bloomLevels: number;
+}
+
+/**
+ * Mirrors the interactive viewer's quality gates without giving the worker a
+ * second quality policy. Ocean keeps its authored post-processing on medium
+ * and high; low remains composer-free just like ScenePostProcessing.
+ */
+export function resolveWorkerRenderQuality(
+  tier: WorkerEffectQualityTier,
+  isOcean: boolean
+): WorkerRenderQualityConfig {
+  const tierConfig = TIER_CONFIGS[tier as QualityTier];
+  const tierBloom = tierConfig.enableBloom;
+  return {
+    composerEnabled: (isOcean && tier !== QualityTier.LOW) || tierBloom,
+    tierBloom,
+    enableShadows: tierConfig.enableShadows,
+    bloomResolutionScale: tierConfig.bloomResolutionScale,
+    bloomLevels: tierConfig.bloomLevels,
+  };
+}
+
+export interface WorkerTrailEffectConfig {
+  maxPoints: number;
+  width: number;
+  color: string;
+  opacity: number;
+  rainbow: boolean;
+  qualityTier: WorkerEffectQualityTier;
+  mode: "fade" | "loop_clear" | "persistent";
+  fadeDuration: number;
+  emissiveStrength: number;
+}
+
+export interface WorkerTrailEffectFrame {
+  renderer: "trail";
+  sourceId: string;
+  sampleSequence: number;
+  enabled: boolean;
+  position: WorkerVector3;
+  config: WorkerTrailEffectConfig;
+}
+
+export interface WorkerLedTipFrame {
+  position: WorkerVector3;
+  r: number;
+  g: number;
+  b: number;
+  brightness: number;
+  velocity: WorkerVector3;
+  speed: number;
+}
+
+export interface WorkerLedEffectFrame {
+  renderer: "led";
+  sourceId: string;
+  sampleSequence: number;
+  enabled: boolean;
+  qualityTier: WorkerEffectQualityTier;
+  sampledAtSeconds: number;
+  tips: readonly WorkerLedTipFrame[];
+}
+
+export interface WorkerPovEffectFrame {
+  renderer: "pov";
+  sourceId: string;
+  sampleSequence: number;
+  enabled: boolean;
+  qualityTier: WorkerEffectQualityTier;
+  ledCount: number;
+  staffAxis: WorkerVector3;
+  staffCenter: WorkerVector3;
+  staffHalfLength: number;
+  frameIndex: number;
+  pattern: StripPattern;
+  sampledAtSeconds: number;
+  brightness: number;
+  persistenceDuration: number;
+}
+
+export interface WorkerMoonFanEffectFrame {
+  renderer: "moon-fan";
+  sourceId: string;
+  sampleSequence: number;
+  enabled: boolean;
+  worldCenter: WorkerVector3;
+  worldRotation: WorkerQuaternion;
+  ledColors: readonly { r: number; g: number; b: number }[];
+  brightness: number;
+  scale: number;
+}
+
+/**
+ * Final renderer inputs produced from the worker performer's exact rig and prop
+ * transforms. Typed arrays inside StripPattern remain structured-clone-safe.
+ */
+export type WorkerImperativeEffectFrame =
+  | WorkerTrailEffectFrame
+  | WorkerLedEffectFrame
+  | WorkerPovEffectFrame
+  | WorkerMoonFanEffectFrame;
+
+/**
+ * Worker-collected renderer output. The application never authors these
+ * world-space coordinates; it sends WorkerPerformerEffectIntent instead.
+ */
+export interface WorkerSceneEffectsSnapshot {
+  playing: boolean;
+  sources: readonly SceneEffectTipSource3D[];
+  imperative?: readonly WorkerImperativeEffectFrame[];
 }
 
 export type WorkerRendererProgressPhase =
@@ -135,7 +453,27 @@ export interface InitializeWorkerRendererMessage {
   environment: WorkerEnvironmentKey;
   viewport: WorkerViewport;
   camera: WorkerCameraSnapshot;
+  qualityTier: WorkerEffectQualityTier;
   performers: readonly WorkerPerformerSnapshot[];
+  effects?: WorkerSceneEffectsSnapshot;
+  reducedMotion?: boolean;
+}
+
+export interface SwitchWorkerRendererEnvironmentMessage {
+  type: "switch-environment";
+  requestId: number;
+  environment: WorkerEnvironmentKey;
+  reducedMotion?: boolean;
+}
+
+export interface PosterReadyWorkerRendererMessage {
+  type: "poster-ready";
+  requestId: number;
+}
+
+export interface LivePresentedWorkerRendererMessage {
+  type: "live-presented";
+  requestId: number;
 }
 
 export interface ResizeWorkerRendererMessage {
@@ -162,6 +500,26 @@ export interface PerformersWorkerRendererMessage {
   performers: readonly WorkerPerformerSnapshot[];
 }
 
+export interface EffectsWorkerRendererMessage {
+  type: "effects";
+  requestId: number;
+  effects: WorkerSceneEffectsSnapshot;
+}
+
+export interface QualityWorkerRendererMessage {
+  type: "quality";
+  requestId: number;
+  qualityTier: WorkerEffectQualityTier;
+}
+
+export interface PointerWorkerRendererMessage {
+  type: "pointer";
+  requestId: number;
+  action: "move" | "down" | "leave";
+  ndcX: number;
+  ndcY: number;
+}
+
 export interface DisposeWorkerRendererMessage {
   type: "dispose";
   requestId: number;
@@ -169,9 +527,15 @@ export interface DisposeWorkerRendererMessage {
 
 export type WorkerRendererInMessage =
   | InitializeWorkerRendererMessage
+  | SwitchWorkerRendererEnvironmentMessage
+  | PosterReadyWorkerRendererMessage
+  | LivePresentedWorkerRendererMessage
   | ResizeWorkerRendererMessage
   | CameraWorkerRendererMessage
   | PerformersWorkerRendererMessage
+  | EffectsWorkerRendererMessage
+  | QualityWorkerRendererMessage
+  | PointerWorkerRendererMessage
   | VisibilityWorkerRendererMessage
   | DisposeWorkerRendererMessage;
 
@@ -194,6 +558,13 @@ export interface WorkerRendererFirstFrameMessage {
   requestId: number;
   environment: WorkerEnvironmentKey;
   metrics: WorkerRendererBootMetrics;
+}
+
+export interface WorkerRendererPosterMessage {
+  type: "poster";
+  requestId: number;
+  environment: WorkerEnvironmentKey;
+  bitmap: ImageBitmap;
 }
 
 export interface WorkerRendererFrameMessage {
@@ -224,13 +595,23 @@ export interface WorkerRendererDisposedMessage {
   requestId: number;
 }
 
+export interface WorkerRendererInteractionMessage {
+  type: "interaction";
+  requestId: number;
+  environment: WorkerEnvironmentKey;
+  hover: boolean;
+  chime: { frequencyHz: number; pan: number } | null;
+}
+
 export type WorkerRendererOutMessage =
   | WorkerRendererBootingMessage
   | WorkerRendererProgressMessage
+  | WorkerRendererPosterMessage
   | WorkerRendererFirstFrameMessage
   | WorkerRendererFrameMessage
   | WorkerRendererErrorMessage
   | WorkerRendererContextLostMessage
+  | WorkerRendererInteractionMessage
   | WorkerRendererDisposedMessage;
 
 export function isWorkerRendererOutMessage(
@@ -242,10 +623,12 @@ export function isWorkerRendererOutMessage(
     typeof candidate.requestId === "number" &&
     (candidate.type === "booting" ||
       candidate.type === "progress" ||
+      candidate.type === "poster" ||
       candidate.type === "first-frame" ||
       candidate.type === "frame" ||
       candidate.type === "error" ||
       candidate.type === "context-lost" ||
+      candidate.type === "interaction" ||
       candidate.type === "disposed")
   );
 }
