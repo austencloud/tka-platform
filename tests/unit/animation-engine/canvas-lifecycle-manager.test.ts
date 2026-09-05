@@ -17,6 +17,58 @@ function injectInternals(
 }
 
 describe("CanvasLifecycleManager", () => {
+  it("redraws a paused canvas only after its resized textures are ready", async () => {
+    const container = document.createElement("div");
+    container.getBoundingClientRect = () =>
+      ({ width: 320, height: 320 }) as DOMRect;
+    let finishResize!: () => void;
+    const resize = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishResize = resolve;
+        })
+    );
+    const redraw = vi.fn();
+    const mgr = new CanvasLifecycleManager();
+    injectInternals(mgr, {
+      _animationRenderer: { resize },
+      _containerElement: container,
+    });
+    mgr["_doInitResizeService"](container, redraw);
+
+    const pending = mgr.resizer!.resize(500);
+    expect(resize).toHaveBeenCalledWith(320);
+    expect(redraw).not.toHaveBeenCalled();
+    finishResize();
+    await pending;
+    expect(redraw).toHaveBeenCalledOnce();
+    mgr.dispose();
+  });
+
+  it("does not redraw a player removed while its resize is pending", async () => {
+    const container = document.createElement("div");
+    container.getBoundingClientRect = () =>
+      ({ width: 320, height: 320 }) as DOMRect;
+    let finishResize!: () => void;
+    const resize = () =>
+      new Promise<void>((resolve) => {
+        finishResize = resolve;
+      });
+    const redraw = vi.fn();
+    const mgr = new CanvasLifecycleManager();
+    injectInternals(mgr, {
+      _animationRenderer: { resize },
+      _containerElement: container,
+    });
+    mgr["_doInitResizeService"](container, redraw);
+
+    const pending = mgr.resizer!.resize(500);
+    mgr.dispose();
+    finishResize();
+    await pending;
+    expect(redraw).not.toHaveBeenCalled();
+  });
+
   it("pauseResize delegates to resizer", () => {
     const resizer = { pauseObservation: vi.fn(), resumeObservation: vi.fn() };
     const mgr = new CanvasLifecycleManager();
