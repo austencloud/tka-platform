@@ -40,8 +40,9 @@ export class FacSequenceMotionClipSampler implements IFacSequenceMotionClipSampl
     }
 
     const cached = this.samplerFor(clip.sequence);
-    const propState =
-      cached.orchestrator.samplePropStateAt(localBeat)[stream.channelId];
+    const propState = cached.orchestrator.samplePropStateAt(localBeat + 1)[
+      stream.channelId
+    ];
     const recordedProps = resolveRecordedPropConfig(clip.sequence);
     const propType =
       stream.style.propType ??

@@ -18,6 +18,7 @@ import {
 
 import { VolumetricFireMesh } from "../../../effects/fire/volumetric-fire-mesh";
 import { QualityTier } from "../../../effects/types";
+import { withMidflankAtmosphere } from "./ember-midflank-finish";
 import { resolveCircularStageRadius } from "../../domain/performer-stage-bounds";
 import {
   createDefaultEmberConfig,
@@ -362,9 +363,11 @@ export function createEmberEnvironmentWorld(
   options: EmberEnvironmentWorldOptions,
   assets: EmberEnvironmentAssets
 ): EmberEnvironmentWorld {
-  const baseConfig = options.config ?? createDefaultEmberConfig();
+  const midflank = !!assets.productionSlice.getObjectByName("EMBER_Terrain");
+  const requestedConfig = options.config ?? createDefaultEmberConfig();
+  const baseConfig = midflank ? withMidflankAtmosphere(requestedConfig) : requestedConfig;
   const stageRadius = options.stageRadius ?? 3;
-  const growth = options.stageRadiusGrowth ?? 0;
+  const growth = midflank ? 0 : options.stageRadiusGrowth ?? 0;
   const platformRadius = resolveCircularStageRadius(
     stageRadius,
     baseConfig.platform.radius,
@@ -475,7 +478,7 @@ export function createEmberEnvironmentWorld(
     update(deltaSeconds, elapsedSeconds, camera) {
       if (disposed) return;
       for (const element of elements) {
-        element.update(deltaSeconds, elapsedSeconds, camera);
+        element.update(deltaSeconds * motionScale, motionScale ? elapsedSeconds : 0, camera);
       }
     },
     setGroundY(value) {

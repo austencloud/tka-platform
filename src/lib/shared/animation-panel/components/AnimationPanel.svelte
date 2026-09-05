@@ -1064,7 +1064,7 @@
     onSelect={handlePillSelect}
     direction={panelDirection}
     {reduceMotion}
-    fillBody={resolvedPill === "display"}
+    fillBody={resolvedPill === "display" || resolvedPill === "effects"}
     regionLabel="Animation export settings"
     onNavMount={(element) => {
       pillNavEl = element;

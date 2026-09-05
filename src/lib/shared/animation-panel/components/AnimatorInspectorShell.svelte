@@ -65,7 +65,7 @@
   inert={exporting || undefined}
 >
   <div class="sidebar-rail-layout">
-    <IconRailNav {pills} {activeId} {onSelect} {onNavMount} />
+    <IconRailNav {pills} {activeId} {onSelect} {onNavMount} alignment="start" />
 
     <div class="sidebar-main">
       <div class="panel-scroll" bind:this={panelScrollElement}>
@@ -160,6 +160,7 @@
     position: absolute;
     inset: 0;
     overflow-y: auto;
+    scrollbar-gutter: stable;
     display: flex;
     flex-direction: column;
     will-change: opacity, transform;

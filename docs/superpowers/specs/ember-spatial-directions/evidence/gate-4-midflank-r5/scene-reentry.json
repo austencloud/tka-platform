@@ -1,0 +1,208 @@
+{
+  "measurement": {
+    "clickToSwapMs": 829,
+    "environment": "ember",
+    "handoffDelayMs": 10.699999988079073,
+    "liveWorkersAfterCleanup": 1,
+    "liveWorkersAtSwap": 1,
+    "mainThreadGapsOver50Ms": 0,
+    "mainThreadMaxGapMs": 20.799999982118607,
+    "mainThreadMaxGapPhase": "release",
+    "outgoingVisualMode": "held-frame",
+    "outgoingWorkerMaxFrameGapMs": 0,
+    "outgoingWorkerMaxFrameGapPhase": null,
+    "passedFrameGate": true,
+    "passedInputGate": true,
+    "passedWorkerBound": true,
+    "requestId": 3,
+    "requestedAt": 66498.19999998808,
+    "swappedAt": 67327.19999998808,
+    "workerBoot": {
+      "acceptedAt": 33516.60000002384,
+      "compileMs": 430.90000000596046,
+      "compileTargets": [
+        {
+          "durationMs": 10.700000017881392,
+          "label": "EmberSkyGradient"
+        },
+        {
+          "durationMs": 57.900000005960464,
+          "label": "EMBER_BakedBenchRib"
+        },
+        {
+          "durationMs": 55.099999994039536,
+          "label": "EMBER_LavaSimulatorDeposit"
+        },
+        {
+          "durationMs": 22.700000017881393,
+          "label": "EmberParticles"
+        },
+        {
+          "durationMs": 65.7999999821186,
+          "label": "EmberVolcanicHaze"
+        },
+        {
+          "durationMs": 12.099999994039536,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 0.20000001788139343,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 33.69999998807907,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 10.699999988079073,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 22.5,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 11.199999988079073,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 11.799999982118608,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 32.900000005960464,
+          "label": "smoke-volume-renderer-3d"
+        },
+        {
+          "durationMs": 10.699999988079073,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 10.699999988079073,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 11.300000011920927,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 11.199999988079073,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 21,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 10.800000011920927,
+          "label": "ShaderMaterial"
+        },
+        {
+          "durationMs": 0.19999998807907104,
+          "label": "worker-selection-marker-inner-ring"
+        },
+        {
+          "durationMs": 0.20000001788139343,
+          "label": "worker-selection-marker-center"
+        },
+        {
+          "durationMs": 0.6000000238418579,
+          "label": "worker-performer-hover-ring"
+        },
+        {
+          "durationMs": 0.19999998807907104,
+          "label": "MeshStandardMaterial"
+        },
+        {
+          "durationMs": 66.80000001192093,
+          "label": "Beta_Joints"
+        },
+        {
+          "durationMs": 12.099999994039536,
+          "label": "worker-performer-badge-0"
+        }
+      ],
+      "compiledAt": 34077.10000002384,
+      "confirmationRenderMs": 3.0999999940395355,
+      "environmentMs": 115.7999999821186,
+      "environmentReadyAt": 33632.40000000596,
+      "finalizeCompileMs": 0.5,
+      "finalizedAt": 34300.20000001788,
+      "firstFrameAt": 34333.5,
+      "firstFrameMs": 816.8999999761581,
+      "firstFrameWaitMs": 9.699999988079073,
+      "firstRenderMs": 3.800000011920929,
+      "geometries": 57,
+      "memoryAfterCompile": {
+        "geometries": 23,
+        "programs": 33,
+        "textures": 47
+      },
+      "memoryAfterFinalize": {
+        "geometries": 56,
+        "programs": 33,
+        "textures": 68
+      },
+      "memoryAfterFirstRender": {
+        "geometries": 57,
+        "programs": 38,
+        "textures": 85
+      },
+      "memoryAfterPreflight": {
+        "geometries": 57,
+        "programs": 38,
+        "textures": 85
+      },
+      "memoryAfterPrime": {
+        "geometries": 56,
+        "programs": 33,
+        "textures": 68
+      },
+      "performerMs": 13.800000011920927,
+      "performerReadyAt": 33646.20000001788,
+      "performers": {
+        "boundsCenter": [
+          0,
+          0.6799999999999999,
+          0
+        ],
+        "boundsSize": [
+          4,
+          3.384199999999999,
+          4
+        ],
+        "count": 4,
+        "effectivelyVisibleRenderables": 64,
+        "layerMasks": [
+          1
+        ],
+        "materialOpacity": [
+          0.15,
+          1
+        ],
+        "projectedCenter": [
+          -4.449724877625944e-32,
+          -0.0007219176015451757,
+          0.9957478817255704
+        ],
+        "renderables": 84,
+        "rootLayerMask": 1,
+        "rootVisible": true,
+        "visibleRenderables": 76
+      },
+      "preflightMs": 23.599999994039536,
+      "preflightedAt": 34323.80000001192,
+      "presentationWaitMs": 0.7999999821186066,
+      "primeMs": 222.5999999940395,
+      "primeTargets": 103,
+      "primedAt": 34299.70000001788,
+      "programs": 38,
+      "rendererMs": 0,
+      "rendererReadyAt": 33516.60000002384,
+      "textures": 85,
+      "worldMs": 129.59999999403954,
+      "worldReadyAt": 33646.20000001788
+    }
+  },
+  "ready": true
+}

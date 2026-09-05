@@ -18,13 +18,16 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PreviewCellRenderOptions } from "../services/preview-cell-renderer";
   import type { ViewerPaneBox } from "./viewer-panel-layout";
-  import { onDestroy } from "svelte";
+  import { onDestroy, tick } from "svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { authState as AuthStateModule } from "$lib/shared/auth/state/auth-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
-  import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
+  import {
+    getQRCodeGenerator,
+    getUrlQRCodeGenerator,
+  } from "$lib/shared/qr/get-qr-code-generator";
   import { resolveInfoCellDisplay } from "../services/info-cell-display";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -82,6 +85,8 @@
     showNotes?: boolean;
     showLoopGlyph?: boolean;
     showQRCode?: boolean;
+    /** Reuse a published scan link without creating an account-owned code. */
+    qrUrl?: string;
     /** When true, fill empty col-0 cells with mandala visualizations */
     showMandala?: boolean;
     /** Render as hand path visualization (HAND props, float arrows, no TKA) */
@@ -117,6 +122,8 @@
     fitWidth?: boolean; // Always constrain by width (mobile export: let parent scroll for tall cards)
     // Render progress callback (loaded cells, total cells)
     onRenderProgress?: (loaded: number, total: number) => void;
+    /** All cells and the QR have painted; a hidden host may reveal the card. */
+    onReady?: () => void;
     // Increment to force a full re-render (clears caches and re-renders all cells)
     rerenderTrigger?: number;
     // Suppress solo mode header ("Left Prop Path" / "Right Hand Path")
@@ -156,6 +163,7 @@
     showNotes = true,
     showLoopGlyph = true,
     showQRCode = false,
+    qrUrl,
     showMandala = false,
     handPathMode: requestedHandPathMode = false,
     browseViewMode,
@@ -176,6 +184,7 @@
     forceContain = false,
     fitWidth = false,
     onRenderProgress,
+    onReady,
     rerenderTrigger = 0,
     hideSoloHeader = false,
     onContextMenu,
@@ -213,9 +222,10 @@
     })();
   }
   $effect(() => {
-    if (showQRCode) ensureAuthLoaded();
+    if (showQRCode && !qrUrl) ensureAuthLoaded();
   });
   const isAuthenticated = $derived(authApi?.isAuthenticated ?? false);
+  const canShowQRCode = $derived(isAuthenticated || !!qrUrl);
 
   // Long-press state for touch context menu
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -363,7 +373,7 @@
             containerHeight: containerRawHeight,
             showHeader,
             showFooter,
-            showQRCode: sc > 1 && showQRCode && isAuthenticated,
+            showQRCode: sc > 1 && showQRCode && canShowQRCode,
           })
         : null;
     const spl =
@@ -383,6 +393,7 @@
       showMandala,
       infoCellChoice: compositionManager.getInfoCellChoiceForStepCount(sc),
       isAuthenticated,
+      hasPublishedUrl: !!qrUrl,
     });
   });
   const effShowQRCode = $derived(effectiveInfoCell.showQRCode);
@@ -395,13 +406,14 @@
     () => ({
       sequence,
       showQRCode: effShowQRCode,
+      qrUrl,
       darkMode,
       isAuthenticated,
       leftPropType,
       rightPropType,
       browseViewMode,
     }),
-    { getGenerator: getQRCodeGenerator }
+    { getGenerator: getQRCodeGenerator, getUrlGenerator: getUrlQRCodeGenerator }
   );
   const qrDataUrl = $derived(qrState.dataUrl);
   const qrPending = $derived(qrState.pending);
@@ -441,7 +453,7 @@
     showFooter,
     showQRCode: effShowQRCode,
     autoLayoutReservesQRCode:
-      sequence.steps.length > 1 && showQRCode && isAuthenticated,
+      sequence.steps.length > 1 && showQRCode && canShowQRCode,
     showMandala: effShowMandala,
     forceContain,
     // These feed ONLY the mandala placement (which color fills the info cell).
@@ -481,6 +493,45 @@
   const cellWidth = $derived(sizingState.cellWidth);
   const containedWidth = $derived(sizingState.containedWidth);
   const containedHeight = $derived(sizingState.containedHeight);
+
+  $effect(() => {
+    const ready = onReady;
+    const stack = previewStackElement;
+    if (
+      !ready ||
+      !stack ||
+      !containedWidth ||
+      !containedHeight ||
+      !cells.length ||
+      !cells.every((cell) => cell.isLoaded || cell.renderFailed) ||
+      !qrState.settled
+    )
+      return;
+    let cancelled = false;
+    // Render progress means an image URL exists, not that the browser has drawn
+    // it. Finish decoding and the native cell entrances behind the host's cover.
+    void (async () => {
+      await tick();
+      await Promise.allSettled(
+        [...stack.querySelectorAll("img")].map((image) => image.decode())
+      );
+      await Promise.allSettled(
+        stack
+          .getAnimations({ subtree: true })
+          .filter(
+            (animation) => animation.effect?.getTiming().iterations !== Infinity
+          )
+          .map((animation) => animation.finished)
+      );
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
+      if (!cancelled) ready();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  });
   const containerRawWidth = $derived(sizingState.containerWidth);
   const containerRawHeight = $derived(sizingState.containerHeight);
   const suppressFlip = $derived(sizingState.flipSuppressed);

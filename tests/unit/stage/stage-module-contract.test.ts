@@ -178,9 +178,14 @@ describe("TIKA distinct sequences wiring", () => {
   it("applies assign-distinct-sequences through the stage document, not the viewer", () => {
     const stage = read(STAGE);
     expect(stage).toContain("resolveDirectorSequenceAssignments");
-    expect(stage).toContain("stageState.assignPerformerSequences(");
     expect(stage).toContain("listLibrarySequences");
     expect(stage).not.toContain("loadSequenceScoped(");
+    // The plan runs through one executor so every verb shares the undo closure.
+    expect(stage).toContain("executeTikaDirectorPlan(");
+    const executor = read(
+      "src/lib/features/stage/services/tika-director-executor.ts"
+    );
+    expect(executor).toContain("stageState.assignPerformerSequences(");
   });
 
   it("keeps rig sequence loads out of the direction revision guard", () => {

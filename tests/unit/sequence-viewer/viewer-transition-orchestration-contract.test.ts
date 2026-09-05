@@ -108,9 +108,19 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(tunnelArtSettings).toContain("<AnimatorInspectorShell");
     expect(animationPanel).toContain("<AnimatorInspectorFooter");
     expect(tunnelArtSettings).toContain("<AnimatorInspectorFooter");
+    expect(animationPanel).toContain(
+      'fillBody={resolvedPill === "display" || resolvedPill === "effects"}'
+    );
+    expect(tunnelArtSettings).toContain(
+      'fillBody={tunnelSection === "display" || tunnelSection === "effects"}'
+    );
     expect(animatorInspectorShell).toContain("<IconRailNav");
     expect(animatorInspectorShell).toContain('class="panel-transition"');
+    expect(animatorInspectorShell).toContain("scrollbar-gutter: stable");
     expect(animatorInspectorFooter).toContain("background: var(--theme-accent");
+    expect(animatorInspectorFooter).toContain(
+      "class:empty={!meta || disabled}"
+    );
     expect(animatorInspectorState).toContain(
       '"effects",\n  "props",\n  "motion",\n  "display"'
     );

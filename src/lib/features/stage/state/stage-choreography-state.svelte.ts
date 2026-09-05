@@ -111,6 +111,11 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
     facingAngle: number | undefined
   ): void;
   applyPresetToFormation(formationId: string, preset: FormationPresetId): void;
+  /** Scale about the centroid and/or slide by stage metres; clamps to the floor. */
+  transformFormationSpots(
+    formationId: string,
+    transform: { scale?: number; dx?: number; dz?: number }
+  ): boolean;
   applyFormationTransition(
     endFormation: FormationPresetId,
     durationBeats: number,
@@ -852,6 +857,40 @@ export function createStageChoreographyState(
     normalizeFormationTrack();
   }
 
+  /**
+   * Spacing and nudges for TIKA's Arrange verb. Scales about the set's own
+   * centroid, slides by stage metres, and clamps to the floor. One history
+   * entry, like a drag; the shape becomes custom, like a drag.
+   */
+  function transformFormationSpots(
+    formationId: string,
+    transform: { scale?: number; dx?: number; dz?: number }
+  ): boolean {
+    const formation = findFormation(formationId);
+    if (!formation) return false;
+    const spots = Object.values(formation.spots);
+    if (spots.length === 0) return false;
+    const scale = transform.scale ?? 1;
+    const dx = transform.dx ?? 0;
+    const dz = transform.dz ?? 0;
+    const centerX = spots.reduce((sum, spot) => sum + spot.x, 0) / spots.length;
+    const centerZ = spots.reduce((sum, spot) => sum + spot.z, 0) / spots.length;
+    pushUndo();
+    for (const spot of spots) {
+      spot.x = Math.min(
+        choreography.stageWidth,
+        Math.max(0, centerX + (spot.x - centerX) * scale + dx)
+      );
+      spot.z = Math.min(
+        choreography.stageDepth,
+        Math.max(0, centerZ + (spot.z - centerZ) * scale + dz)
+      );
+    }
+    formation.presetId = "custom";
+    normalizeFormationTrack();
+    return true;
+  }
+
   function presetSpots(
     preset: FormationPresetId,
     source?: Formation
@@ -1295,6 +1334,7 @@ export function createStageChoreographyState(
     updateSpotEasing,
     updateSpotFacing,
     applyPresetToFormation,
+    transformFormationSpots,
     applyFormationTransition,
     assertFormationTransitionAllowed,
     beginDrag,

@@ -9,7 +9,7 @@ keep-separate decision, not for every component.
 | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | scene boot, scene switch, persistent worker renderer, poster handoff, shader warmup, GLB prefetch | `shared/3d/worker-renderer/` owns the persistent production worker for all ten environments; `shared/3d/scene-boot/` owns legacy main-thread boot (Record Scene); `shared/3d/rendering/viewer-lighting-rig.ts` owns viewer lighting; environment worlds under `shared/3d/environments/worlds/` stay renderer-neutral with thin Svelte and worker adapters |
 | filter, chip, pill, toggle row, segmented selector                                        | `FilterChipBase` for independent toggles; `SegmentedControl` for exactly-one selection; see `.claude/rules/chip-primitives.md`                                                                       |
-| crossfade, keyed swap, canvas handoff, animated height                                    | `shared/components/Crossfade.svelte` for cheap keyed content; `shared/components/DualSourceCrossfade.svelte` for heavy or stateful sources; see `.claude/rules/crossfade-primitive.md`               |
+| crossfade, keyed swap, canvas handoff, animated height                                    | `shared/components/Crossfade.svelte` for cheap keyed content; `shared/components/DualSourceCrossfade.svelte` for heavy or stateful sources (`clip={false}` preserves stage-owned overflow controls); see `.claude/rules/crossfade-primitive.md`               |
 | layout motion, reflow, panel presence, reorder, FLIP                                      | `shared/transitions/motion.ts`, `shared/panels/PanelGroup.svelte`, Svelte `animate:flip` with `flipDuration()`, and `shared/transitions/layout-flip.ts`; see `.claude/rules/no-layout-shift.md`      |
 | step grid, pictograph preview swap, visual slot identity, difficulty and LOOP metadata    | `features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte` owns document-vs-slot identity; `SequenceMetadataRail.svelte` owns compact difficulty and LOOP indicators       |
 | BPM, tempo, tap tempo, speed preset                                                       | `shared/animation-engine/domain/tempo-behavior.ts` and `shared/animation-engine/domain/constants/timing.ts`; presentations are `BpmChips.svelte` and `TempoControl.svelte`                           |
@@ -19,7 +19,7 @@ keep-separate decision, not for every component.
 | performance video, collaborative video, upload, step map                                  | `shared/video-collaboration/state/sequence-videos-store.svelte.ts` owns the list; performance workspace state owns selection and mode                                                                |
 | 3D prop picker, prop family, prop build, finish, bare hands                               | `shared/3d/components/controls/ScenePropPicker.svelte`, `shared/3d/domain/scene-prop-catalog.ts`, and `propFinishState`                                                                              |
 | artifact revision, immutable subject, content digest                                      | `shared/artifact-revisions/domain/artifact-revision.ts`; tunnel and sequence persistence use their domain revision owners                                                                            |
-| nested motion, coordinate node, carrier track, world trajectory, arbitrary Mandala layers | `shared/motion-composition/` owns recursive sampling and clock mapping; `shared/mandala/domain/trajectory-types.ts` plus its baker, projector, and layer adapter own source-neutral trajectory art   |
+| nested motion, coordinate node, carrier track, world trajectory, arbitrary Mandala layers | `shared/motion-composition/` owns recursive sampling and clock mapping; `shared/mandala/` owns trajectory baking, projection, layer adaptation, timed reveal and SVG export. `TrajectoryMandala.svelte` presents the stationary canvas.|
 | autocomplete, typeahead, async suggestion, combobox                                       | `shared/ui/components/AsyncSuggestionCombobox.svelte`; callers supply search and row presentation                                                                                                    |
 | legacy tunnel, reopen saved tunnel, rebuild tunnel cast                                   | `features/tunnel-collection/domain/collected-tunnel-source.ts`; viewer and creator handoff owners consume it                                                                                         |
 | locomotion, exact steps, stops, turns, pivots, crossed stepping, foot IK, motion matching | `shared/3d/locomotion/destination-walk-plan.ts`, `@austencloud/scene-3d` `LocomotionAnimator` and `FootPlanter`, and `features/stage/locomotion/motion-matching/`; see `.claude/rules/locomotion.md` |
@@ -34,3 +34,10 @@ keep-separate decision, not for every component.
 
 When no owner exists, record the search evidence and establish one owner. A
 different style or smaller API is not a separate capability.
+
+Choreo Card handoffs extend `ChoreoCard.svelte` (`onReady`: decoded cells, QR,
+and completed cell entrances). Published scan links extend its existing
+`choreo-card-qr-state.svelte.ts` (`qrUrl`) and `getUrlQRCodeGenerator`, rather
+than minting account-owned short codes. Discovery: `onRenderProgress`,
+`onRenderSettled`, `generateForUrl`, and `showQRCode`; lesson cards compose
+these owners with `createLayoutMotion` and `DualSourceCrossfade`.

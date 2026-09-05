@@ -1,57 +1,13 @@
 import { z } from "zod";
+import { TikaDirectorActionSchema } from "./tika-capabilities";
 
 export const TIKA_DIRECTOR_MAX_HISTORY = 40;
 
-export const TIKA_DIRECTOR_FORMATIONS = [
-  "line",
-  "triangle",
-  "diamond",
-  "circle",
-  "v-shape",
-  "grid",
-  "grid-2x2",
-  "stagger",
-  "cluster",
-  "diagonal",
-  "solo",
-  "tunnel-stack",
-  "back-to-back",
-  "facing-each-other",
-  "stage-lr",
-  "side-by-side",
-] as const;
-
-export const TikaDirectorFormationSchema = z.enum(TIKA_DIRECTOR_FORMATIONS);
-
-/** Product-assigned look labels; see shared/3d/config/character-presentation. */
-export const TIKA_DIRECTOR_PRESENTATIONS = [
-  "masculine",
-  "feminine",
-  "androgynous",
-] as const;
-export const TikaDirectorPresentationSchema = z.enum(
-  TIKA_DIRECTOR_PRESENTATIONS
-);
-
-export const TikaDirectorActionSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("assign-distinct-props") }).strict(),
-  z
-    .object({
-      type: z.literal("assign-distinct-characters"),
-      /** Restrict the draw to avatars carrying this presentation label. */
-      presentation: TikaDirectorPresentationSchema.optional(),
-    })
-    .strict(),
-  z.object({ type: z.literal("assign-distinct-sequences") }).strict(),
-  z
-    .object({
-      type: z.literal("formation-transition"),
-      startFormation: TikaDirectorFormationSchema.optional(),
-      endFormation: TikaDirectorFormationSchema,
-      durationBeats: z.number().int().min(1).max(64),
-    })
-    .strict(),
-]);
+export * from "./tika-director-vocabulary";
+export {
+  TikaDirectorActionSchema,
+  type TikaDirectorAction,
+} from "./tika-capabilities";
 
 export const TikaDirectorResponseSchema = z.discriminatedUnion("kind", [
   z
@@ -140,11 +96,6 @@ export const TikaDirectorRequestSchema = z
   })
   .strict();
 
-export type TikaDirectorFormation = z.infer<typeof TikaDirectorFormationSchema>;
-export type TikaDirectorPresentation = z.infer<
-  typeof TikaDirectorPresentationSchema
->;
-export type TikaDirectorAction = z.infer<typeof TikaDirectorActionSchema>;
 export type TikaDirectorResponse = z.infer<typeof TikaDirectorResponseSchema>;
 export type TikaDirectorRequest = z.infer<typeof TikaDirectorRequestSchema>;
 export type TikaDirectorConversationMessage =

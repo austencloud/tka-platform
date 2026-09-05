@@ -1,6 +1,6 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
-  import "$lib/shared/landing/styles/public-editorial.css";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import TimingDirectionAtlas from "./_components/TimingDirectionAtlas.svelte";
   import { TIMING_DIRECTION_ARTICLES } from "./_data/timing-direction-articles";
 
@@ -8,6 +8,30 @@
   const DESCRIPTION =
     "Together, split, and quarter timing crossed with same or opposite direction. See all six flow-arts modes with animations, definitions, history, and TKA examples.";
   const URL = "https://tkaflowarts.com/timing-and-direction";
+
+  const sources = [
+    {
+      date: "August 2002",
+      title: "How do you define a weave?",
+      preview:
+        "Spinners compare split and non-split timing, same and opposite direction, and how those combinations show up in weaves and butterflies.",
+      href: "https://www.homeofpoi.com/en/community/forums/topics/120838/How-do-you-define-a-weave",
+    },
+    {
+      date: "November 2002",
+      title: "Quarter-time butterflies",
+      preview:
+        "Jez names quarter-time butterflies in a discussion about concept moves and plane transitions. An early written use of quarter timing.",
+      href: "https://www.homeofpoi.com/en/community/forums/topics/122222/Concept-moves-and-why-make-lists",
+    },
+    {
+      date: "May 2009",
+      title: "Prop transitioning",
+      preview:
+        "Noel Yee separates timing from direction and works through transitions between the four original combinations.",
+      href: "https://www.homeofpoi.com/fr/community/forums/topics/887635/X-Post-Prop-Transitioning-Article",
+    },
+  ];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -60,9 +84,9 @@
   {@html `<script type="application/ld+json">${JSON.stringify(jsonLd)}<\/script>`}
 </Seo>
 
-<div class="editorial timing-page">
-  <header class="editorial-header">
-    <h1 class="page-title">Timing and Direction</h1>
+<div class="timing-page">
+  <header class="page-header">
+    <h1>Timing and Direction</h1>
     <p class="page-subtitle">
       Compare the timing and direction of the blue and red hands.
     </p>
@@ -72,61 +96,76 @@
 
   <section class="history-sources" aria-labelledby="history-title">
     <h2 id="history-title">History & sources</h2>
-    <p>
-      These terms developed through community practice and teaching. Early poi
-      discussions document the vocabulary before VTG organized it into a
-      transition framework.
+    <p class="history-intro">
+      Read the community discussions behind the terminology.
     </p>
-    <ul>
-      <li>
-        <span>2002</span>
-        <a
-          href="https://www.homeofpoi.com/en/community/forums/topics/120838/How-do-you-define-a-weave"
-        >
-          Weave timing and direction discussions
-        </a>
-      </li>
-      <li>
-        <span>2002</span>
-        <a
-          href="https://www.homeofpoi.com/en/community/forums/topics/122222/Concept-moves-and-why-make-lists"
-        >
-          Jez describes quarter-time butterflies
-        </a>
-      </li>
-      <li>
-        <span>2009</span>
-        <a
-          href="https://www.homeofpoi.com/fr/community/forums/topics/887635/X-Post-Prop-Transitioning-Article"
-        >
-          Noel Yee’s prop-transition article
-        </a>
-      </li>
+    <ul class="source-cards">
+      {#each sources as source (source.href)}
+        <li>
+          <PanelButton href={source.href} fullWidth>
+            <span class="source-content">
+              <span class="source-meta">
+                <span
+                  ><i class="fa-regular fa-comments" aria-hidden="true"></i> Home
+                  of Poi</span
+                >
+                <span>{source.date}</span>
+              </span>
+              <strong class="source-title">{source.title}</strong>
+              <span class="source-preview">{source.preview}</span>
+              <span class="source-action"
+                >Read discussion <i
+                  class="fa-solid fa-arrow-up-right-from-square"
+                  aria-hidden="true"
+                ></i></span
+              >
+            </span>
+          </PanelButton>
+        </li>
+      {/each}
     </ul>
     <nav aria-label="More about timing and direction">
-      <a href="/history">Explore the history</a>
-      <a href="/history#archive-record-vtg">VTG history record</a>
-      <a href="/learn/concepts">Interactive lessons</a>
+      <PanelButton href="/history"
+        ><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>Explore
+        the history</PanelButton
+      >
+      <PanelButton href="/history#archive-record-vtg"
+        ><i class="fa-solid fa-box-archive" aria-hidden="true"></i>VTG history
+        record</PanelButton
+      >
+      <PanelButton href="/learn/concepts"
+        ><i class="fa-solid fa-graduation-cap" aria-hidden="true"
+        ></i>Interactive lessons</PanelButton
+      >
     </nav>
   </section>
 </div>
 
 <style>
   .timing-page {
-    max-width: min(var(--shell-w), 100rem);
-    padding: 88px 1.5rem 3rem;
+    position: relative;
+    margin: 0 auto;
+    font-family: inherit;
+    max-width: min(var(--shell-w), 80rem);
+    padding: 88px 1.5rem 1.5rem;
   }
 
-  .editorial-header {
+  .page-header {
     margin: 0.5rem 0 1.5rem;
-    text-align: left;
+    text-align: center;
   }
 
-  .page-title {
-    font-size: clamp(2rem, 1.5rem + 2vw, 3.5rem);
+  h1 {
+    margin: 0 0 0.6rem;
+    color: var(--theme-text);
+    font-size: clamp(1.875rem, 1.5rem + 1vw, 2.5rem);
+    font-weight: 720;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
   }
 
   .page-subtitle {
+    margin: 0 auto;
     max-width: 46rem;
     color: var(--theme-text-dim);
     font-size: 1rem;
@@ -134,9 +173,10 @@
   }
 
   .history-sources {
-    margin-top: 2.5rem;
-    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
     border-top: 1px solid var(--theme-stroke);
+    text-align: center;
   }
 
   .history-sources h2 {
@@ -145,55 +185,93 @@
     font-size: 1.25rem;
   }
 
-  .history-sources p {
+  .history-intro {
     max-width: 48rem;
-    margin: 0;
+    margin: 0 auto;
     color: var(--theme-text-dim);
     font-size: 1rem;
     line-height: 1.5;
   }
 
-  .history-sources ul {
+  .source-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
     padding: 0;
-    margin: 0.75rem 0;
+    margin: 1rem 0;
     list-style: none;
   }
 
-  .history-sources li {
-    display: flex;
-    align-items: baseline;
-    gap: 1rem;
-    font-size: 0.875rem;
+  .source-cards li {
+    min-width: 0;
   }
 
-  .history-sources li span {
+  .source-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 0.75rem;
     color: var(--theme-text-dim);
+    font-size: 0.875rem;
     font-variant-numeric: tabular-nums;
   }
 
-  .history-sources a {
-    display: inline-flex;
+  .source-cards :global(.panel-btn) {
+    height: 100%;
+    align-items: stretch;
+    padding: 1rem;
+    text-align: left;
+    background: rgb(from var(--theme-card-bg) r g b / 1);
+    border-radius: var(--radius-lg, 0.75rem);
+    white-space: normal;
+  }
+
+  .source-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .source-title {
+    font-size: 1.125rem;
+    line-height: 1.35;
+    font-weight: 650;
+  }
+
+  .source-preview {
+    color: var(--theme-text-dim);
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+
+  .source-action {
+    display: flex;
     align-items: center;
-    min-height: 44px;
-    color: var(--theme-text);
-    text-underline-offset: 0.2em;
-    line-height: 1.4;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    font-size: 1rem;
   }
 
-  .history-sources a:hover {
-    color: var(--theme-accent);
-  }
-
-  .history-sources a:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: 3px;
+  .history-sources i {
+    font-size: 0.875rem;
   }
 
   .history-sources nav {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem 1.5rem;
+    justify-content: center;
+    gap: 0.5rem;
     font-size: 0.875rem;
+  }
+
+  @media (max-width: 760px) {
+    .source-cards {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
   @media (max-width: 600px) {
@@ -202,7 +280,7 @@
       padding: 76px 1rem 2rem;
     }
 
-    .editorial-header {
+    .page-header {
       margin: 0 0 1rem;
     }
 

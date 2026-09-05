@@ -23,7 +23,7 @@ export async function createEmberPrototypeWorld(
     stageRadius: 3,
     qualityTier: QualityTier.HIGH,
     shadows: true,
-    reducedMotion: false,
+    reducedMotion: context.reducedMotion ?? false,
     onProgress: (fraction) => context.reportProgress("assets", fraction),
   });
   scene.add(environment.root);

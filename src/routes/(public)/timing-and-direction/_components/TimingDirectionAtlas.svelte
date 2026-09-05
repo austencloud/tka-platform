@@ -1,7 +1,11 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { reducedMotion } from "$lib/shared/transitions/motion";
+  import {
+    createRenderActivityGate,
+    renderGateTarget,
+  } from "$lib/shared/render-gating/render-activity-gate";
   import HandMotionPlayer from "$lib/features/learn/components/interactive/foundations/HandMotionPlayer.svelte";
   import { TIMING_DIRECTION_MODES } from "$lib/features/learn/components/interactive/foundations/pictograph-foundation-content";
   import {
@@ -20,6 +24,22 @@
   const directions: readonly DirectionValue[] = ["Same", "Opposite"];
   let selectedCode = $state("TS");
   let playing = $state(true);
+  let currentStep = $state(0);
+  let seekClock: ((step: number) => void) | null = null;
+  const clockMode = modes[0]!;
+  const playbackGate = createRenderActivityGate({
+    name: "timing-direction-atlas",
+  });
+
+  function followClock(step: number, sequenceId: string | null): void {
+    if (sequenceId === clockMode.motion.sequence.id) currentStep = step;
+  }
+
+  function registerClockSeek(seek: ((step: number) => void) | null): void {
+    seekClock = seek;
+  }
+
+  onDestroy(() => playbackGate.dispose());
   let detailHeading: HTMLHeadingElement | null = $state(null);
   const selected = $derived(
     modes.find((mode) => mode.article.code === selectedCode)!
@@ -42,7 +62,11 @@
   }
 </script>
 
-<section class="atlas" aria-label="Six timing and direction modes">
+<section
+  class="atlas"
+  aria-label="Six timing and direction modes"
+  use:renderGateTarget={playbackGate}
+>
   <div class="atlas-toolbar">
     <p>Select a preview to see it larger.</p>
     <PanelButton
@@ -90,15 +114,7 @@
                   onclick={() => selectMode(mode.article.code)}
                 >
                   <span class="preview-label">
-                    <strong>
-                      <img
-                        src={mode.motion.element.iconPath}
-                        alt=""
-                        width="18"
-                        height="18"
-                      />
-                      {mode.article.code}
-                    </strong>
+                    <strong>{mode.article.code}</strong>
                     <i
                       class="fa-solid fa-check"
                       class:shown={selectedCode === mode.article.code}
@@ -108,21 +124,24 @@
                   <span class="preview-animation">
                     <HandMotionPlayer
                       sequence={mode.motion.sequence}
+                      showElementalGlyph
                       ariaLabel={mode.article.name}
                       interactive={false}
                       externalPlaying={playing}
+                      externalStep={mode === clockMode ? null : currentStep}
+                      onStepChange={mode === clockMode
+                        ? followClock
+                        : undefined}
+                      onSeekRef={mode === clockMode
+                        ? registerClockSeek
+                        : undefined}
+                      playbackGate={mode === clockMode
+                        ? playbackGate
+                        : undefined}
                       framed={false}
                     />
                   </span>
                 </button>
-                <a
-                  class="article-link"
-                  href={mode.href}
-                  aria-label={`Read ${mode.article.name}`}
-                >
-                  Read article
-                  <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                </a>
               </article>
             {/each}
           </div>
@@ -137,46 +156,47 @@
       style:--mode-accent={selected.motion.element.accentColor}
     >
       <header class="detail-heading" aria-live="polite" aria-atomic="true">
-        <img
-          src={selected.motion.element.iconPath}
-          alt=""
-          width="32"
-          height="32"
-        />
-        <div>
-          <h2 bind:this={detailHeading} tabindex="-1">
-            {selected.article.timing} time
-          </h2>
-          <p>
-            {selected.article.direction} direction
-            <span>· {selected.article.code}</span>
-          </p>
-        </div>
+        <h2 bind:this={detailHeading} tabindex="-1">
+          <span>Timing: {selected.article.timing}</span>
+          <span>Direction: {selected.article.direction}</span>
+        </h2>
       </header>
       <div class="detail-animation">
         <HandMotionPlayer
           sequence={selected.motion.sequence}
+          showElementalGlyph
           ariaLabel={`${selected.article.name}. Drag the playback bar to scrub.`}
           externalPlaying={playing}
+          externalStep={currentStep}
+          onExternalSeek={(step) => seekClock?.(step)}
           onExternalPlayingChange={(nextPlaying) => (playing = nextPlaying)}
           framed={false}
         />
       </div>
       <div class="detail-footer">
         <p>Drag the bar to scrub.</p>
-        <a class="article-link detail-link" href={selected.href}>
-          Read {selected.article.code} article
-          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-        </a>
+        <PanelButton
+          href={selected.href}
+          ariaLabel={`Read ${selected.article.name} article`}
+          accentColor={selected.motion.element.accentColor}
+        >
+          <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+          Read article
+        </PanelButton>
       </div>
-      <a class="compare-link" href="#mode-comparison">Back to all six modes ↑</a
-      >
+      <div class="compare-action">
+        <PanelButton href="#mode-comparison">
+          <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
+          All six modes
+        </PanelButton>
+      </div>
     </section>
   </div>
 </section>
 
 <style>
   .atlas {
+    --sequence-seek-target-size: 48px;
     display: grid;
     gap: 1rem;
     min-width: 0;
@@ -185,7 +205,7 @@
   .atlas-toolbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 1rem;
   }
 
@@ -244,6 +264,7 @@
     font-size: 0.875rem;
     font-weight: 650;
     line-height: 1.25;
+    text-align: center;
   }
 
   .mode,
@@ -256,15 +277,27 @@
   }
 
   .mode {
+    background: color-mix(
+      in srgb,
+      var(--mode-accent) 9%,
+      rgb(from var(--theme-panel-bg) r g b / 1)
+    );
     border-color: color-mix(
       in srgb,
       var(--mode-accent) 45%,
       var(--theme-stroke-strong)
     );
-    transition: border-color var(--duration-fast) var(--ease-out);
+    transition:
+      border-color var(--transition-normal),
+      background-color var(--transition-normal);
   }
 
   .mode.selected {
+    background: color-mix(
+      in srgb,
+      var(--mode-accent) 17%,
+      rgb(from var(--theme-panel-bg) r g b / 1)
+    );
     border-color: var(--mode-accent);
     box-shadow: 0 0 0 1px var(--mode-accent);
   }
@@ -285,23 +318,27 @@
   }
 
   .preview-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0.65rem 0;
-    font-size: 0.875rem;
+    position: relative;
+    display: block;
+    text-align: center;
+    padding: 0.75rem 1.5rem 0;
+    font-size: 1rem;
     line-height: 1.25;
   }
 
   .preview-label i {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.5rem;
     visibility: hidden;
-    color: var(--mode-accent);
+    color: var(--theme-text);
   }
 
   .preview-label strong {
-    display: inline-flex;
-    gap: 0.35rem;
-    align-items: center;
+    color: var(--theme-text);
+    display: grid;
+    gap: 0.125rem;
+    font-weight: 650;
   }
 
   .preview-label i.shown {
@@ -316,27 +353,6 @@
     border-radius: inherit;
   }
 
-  .article-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    min-height: 44px;
-    padding: 0.45rem;
-    border-radius: var(--radius-md, 0.5rem);
-    color: var(--theme-text);
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
-
-  .article-link:hover {
-    background: var(--theme-card-bg);
-    color: var(--mode-accent);
-  }
-
-  .article-link:focus-visible,
   .preview:focus-visible {
     outline: 3px solid var(--theme-accent);
     outline-offset: 3px;
@@ -344,25 +360,31 @@
 
   .detail {
     overflow: hidden;
+    border-color: color-mix(
+      in srgb,
+      var(--mode-accent) 55%,
+      var(--theme-stroke)
+    );
+    background: color-mix(
+      in srgb,
+      var(--mode-accent) 7%,
+      rgb(from var(--theme-panel-bg) r g b / 1)
+    );
   }
 
   .detail-heading {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
+    text-align: center;
     padding: 1rem;
-    min-height: 5.25rem;
-  }
-
-  .detail-heading img {
-    flex: 0 0 auto;
   }
 
   .detail-heading h2 {
+    display: grid;
+    gap: 0.125rem;
     margin: 0;
     color: var(--theme-text);
     font-size: clamp(1.25rem, 1rem + 0.4vw, 1.65rem);
     line-height: 1.25;
+    font-weight: 700;
     scroll-margin-top: 7rem;
   }
 
@@ -371,19 +393,9 @@
     outline-offset: 4px;
   }
 
-  .detail-heading p {
-    margin: 0.25rem 0 0;
-    color: var(--theme-text);
-    font-size: 1rem;
-    line-height: 1.3;
-  }
-
-  .detail-heading p span {
-    color: var(--theme-text-dim);
-  }
-
   .detail-animation {
-    width: 100%;
+    width: min(100%, 26rem);
+    margin-inline: auto;
     aspect-ratio: 1.08;
   }
 
@@ -396,24 +408,10 @@
     padding: 0.35rem 1rem 0.75rem;
   }
 
-  .detail-link {
-    width: fit-content;
-  }
-
-  .compare-link {
+  .compare-action {
     display: none;
-    min-height: 44px;
-    align-items: center;
     justify-content: center;
-    padding: 0.5rem 1rem;
-    color: var(--theme-text);
-    font-size: 0.875rem;
-    text-underline-offset: 0.2em;
-  }
-
-  .compare-link:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: -3px;
+    padding: 0 1rem 0.75rem;
   }
 
   @media (max-width: 900px) {
@@ -426,7 +424,7 @@
       justify-self: center;
     }
 
-    .compare-link {
+    .compare-action {
       display: flex;
     }
   }
@@ -449,11 +447,12 @@
     }
 
     .preview-label {
-      padding: 0.4rem 0.4rem 0;
+      padding: 0.65rem 0.2rem 0;
     }
-
-    .mode .article-link i {
-      display: none;
+    .preview-label i {
+      top: 0.15rem;
+      right: 0.2rem;
+      font-size: 0.75rem;
     }
   }
 

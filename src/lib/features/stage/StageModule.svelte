@@ -70,10 +70,8 @@
     applyStageCastToViewer,
     applyStagePerformerMotion,
   } from "./services/stage-viewer-adapter";
-  import {
-    resolveDirectorAppearanceAssignments,
-    resolveStageDirection,
-  } from "./services/tika-director-service";
+  import { resolveStageDirection } from "./services/tika-director-service";
+  import { executeTikaDirectorPlan } from "./services/tika-director-executor";
   import {
     resolveDirectorSequenceAssignments,
     type DirectorSequenceAssignment,
@@ -374,57 +372,17 @@
           }
           return response;
         },
-        (response) => {
-          const formationActions = response.actions.filter(
-            (action) => action.type === "formation-transition"
-          );
-          if (formationActions.length > 1) {
-            throw new Error(
-              "TIKA returned competing formation moves. Ask for one transition at a time."
-            );
-          }
-
-          const performerIds = choreography.performers.map(
-            (performer) => performer.id
-          );
-          const assignments = resolveDirectorAppearanceAssignments({
-            actions: response.actions,
-            performerIds,
+        (response) =>
+          executeTikaDirectorPlan(response, {
+            stageState,
+            viewer,
+            requestBeat,
+            selectedFormationId: editMode.selectedFormationId,
             seedKey: `${choreography.id}:${prompt}`,
-          });
-          const formation = formationActions[0];
-          if (formation) {
-            stageState.assertFormationTransitionAllowed(
-              formation.startFormation,
-              requestBeat
-            );
-          }
-          const viewerChanged =
-            assignments.length > 0 &&
-            viewer.applyPerformerAppearanceAssignments(assignments);
-          for (const pick of sequencePicks) {
-            preloadedSequences.set(pick.sequence.id, pick.sequence);
-          }
-          const sequencesChanged =
-            sequencePicks.length > 0 &&
-            stageState.assignPerformerSequences(sequencePicks);
-          const stageChanged =
-            (formation
-              ? stageState.applyFormationTransition(
-                  formation.endFormation,
-                  formation.durationBeats,
-                  formation.startFormation,
-                  requestBeat
-                )
-              : false) || sequencesChanged;
-
-          return viewerChanged || stageChanged
-            ? () => {
-                if (stageChanged) stageState.undo();
-                if (viewerChanged) viewer.undo();
-              }
-            : undefined;
-        },
+            sequencePicks,
+            preloadSequence: (pick) =>
+              preloadedSequences.set(pick.sequence.id, pick.sequence),
+          }),
         signal
       );
     } catch (cause) {

@@ -368,6 +368,8 @@ function disposeSceneRuntime(): void {
   renderer?.renderLists.dispose();
 }
 
+let reducedMotion = false;
+
 async function prepareScene(sceneRequest: SceneRequest): Promise<boolean> {
   if (!renderer || !camera) return false;
   requestId = sceneRequest.requestId;
@@ -381,6 +383,7 @@ async function prepareScene(sceneRequest: SceneRequest): Promise<boolean> {
     camera,
     performers: performerSnapshots,
     requestId: sceneRequest.requestId,
+    reducedMotion,
     reportProgress(phase, fraction) {
       postProgress(phase, fraction);
     },
@@ -693,6 +696,7 @@ scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
 
   switch (message.type) {
     case "initialize":
+      reducedMotion = message.reducedMotion ?? false;
       void initialize(message).catch((error) => {
         post({
           type: "error",
@@ -704,6 +708,7 @@ scope.onmessage = (event: MessageEvent<WorkerRendererInMessage>) => {
       });
       break;
     case "switch-environment": {
+      reducedMotion = message.reducedMotion ?? false;
       if (!renderer || disposed) break;
       const acceptedAt = performance.now();
       queueScene({

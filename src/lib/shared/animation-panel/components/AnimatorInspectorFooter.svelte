@@ -85,7 +85,15 @@
           {label}
         {/if}
       </button>
-      {#if meta && !disabled}<span class="time-estimate">{meta}</span>{/if}
+      <!-- Both Animator modes keep the same footer allocation. A missing
+           estimate is visually empty, but it must not give Tunnel a shorter
+           footer and make the Effects viewport jump on every mode switch. -->
+      <span
+        class="time-estimate"
+        class:empty={!meta || disabled}
+        aria-hidden={!meta || disabled}
+        >{meta && !disabled ? meta : "\u00a0"}</span
+      >
     </div>
   {/if}
 </div>
@@ -118,6 +126,10 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+  }
+
+  .time-estimate.empty {
+    visibility: hidden;
   }
 
   .export-btn {

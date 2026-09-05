@@ -1,0 +1,841 @@
+{
+  "revision": "gate3-midflank-r5",
+  "status": "awaiting-visual-review",
+  "gate2Approval": "3XyhXLyzv8ASNl2fLoCo",
+  "gate3Approval": null,
+  "sourceBlend": "blender/ember-midflank-fire-pilgrimage-graybox-r5.blend",
+  "targetBlend": "blender/ember-midflank-fire-pilgrimage-visual-target-r5.blend",
+  "inputs": {
+    "blender/ember-midflank-fire-pilgrimage-graybox-r5.blend": "5f10bdafd3eee0cbed724ba64172b3f35a4b881336148972b6208d9de8ae9c84",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/ember-midflank-fire-pilgrimage-r5-coordinate-manifest.json": "de8676a5b7945912dc8eae55bfab4ee5b0111fb92c396e1ea2cac060ed8d5275",
+    "static/textures/ember-surface-r11/rock-ground-height.jpg": "e4582d578857ec4dc2c1324b28d3595ec9f5dba94f0ebeb6ecfef6d3c8a9a221",
+    "scripts/ember-midflank-lookdev.py": "285d684e35aeb1bbf461a65d17b46b1fb59c6a0b9ca54f9c893eb3e264d935fc",
+    "scripts/build-ember-lookdev-matrix.py": "411d6dcff6e7424195211fe80d8ed4359ecdaebcd8dd3bc31993da557362bdc5"
+  },
+  "checks": {
+    "camera-registration": {
+      "passed": true,
+      "cameraCount": 11,
+      "aspect": "16:9",
+      "cameraSha256": "3b4be99085d432cf3c40385dbca5a07e9a554b3451d29362c02f2134eb59c451"
+    },
+    "silhouette-read": {
+      "passed": true,
+      "scope": "Exact geometry, visibility and world matrices. Material readability requires visual review."
+    },
+    "geometry-lock": {
+      "passed": true,
+      "sourceMeshCount": 9,
+      "geometrySha256": "b7ec9d72c45f2fd215f6bae0f5a0e066b01740bc25a4747c42399e69bb5e977c"
+    },
+    "review-only": {
+      "passed": true,
+      "runtimeChanged": false,
+      "meshyCalls": 0
+    }
+  },
+  "lockedCameras": {
+    "default-audience": {
+      "matrixWorld": [
+        [
+          -1.0,
+          -5.480220011122583e-08,
+          -1.0789879212325104e-07,
+          0.0
+        ],
+        [
+          -8.742277657347586e-08,
+          -0.2893894612789154,
+          0.957211434841156,
+          21.5
+        ],
+        [
+          -8.368206749764795e-08,
+          0.957211434841156,
+          0.2893894612789154,
+          8.430000305175781
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "PERSP",
+      "lens": 25.73408317565918,
+      "sensorWidth": 36.0,
+      "sensorHeight": 24.0,
+      "sensorFit": "VERTICAL",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "clip": [
+        0.10000000149011612,
+        700.0
+      ]
+    },
+    "orbit-000": {
+      "matrixWorld": [
+        [
+          -1.0,
+          -5.878307263174065e-08,
+          -1.0636438219080446e-07,
+          0.0
+        ],
+        [
+          -8.742277657347586e-08,
+          -0.2599998116493225,
+          0.9656086564064026,
+          24.140214920043945
+        ],
+        [
+          -8.44161647250985e-08,
+          0.9656086564064026,
+          0.2599998116493225,
+          8.430000305175781
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "PERSP",
+      "lens": 25.73408317565918,
+      "sensorWidth": 36.0,
+      "sensorHeight": 24.0,
+      "sensorFit": "VERTICAL",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "clip": [
+        0.10000000149011612,
+        700.0
+      ]
+    },
+    "orbit-045": {
+      "matrixWorld": [
+        [
+          -0.7071067690849304,
+          -0.18384771049022675,
+          0.6827884316444397,
+          17.06970977783203
+        ],
+        [
+          0.7071067690849304,
+          -0.18384772539138794,
+          0.6827884316444397,
+          17.06970977783203
+        ],
+        [
+          1.2530972703928e-08,
+          0.9656086564064026,
+          0.25999993085861206,
+          8.430000305175781
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "PERSP",
+      "lens": 25.73408317565918,
+      "sensorWidth": 36.0,
+      "sensorHeight": 24.0,
+      "sensorFit": "VERTICAL",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "clip": [
+        0.10000000149011612,
+        700.0
+      ]
+    },
+    "orbit-090": {
+      "matrixWorld": [
+        [
+          -2.821299744937278e-07,
+          -0.2599998116493225,
+          0.9656086564064026,
+          24.140214920043945
+        ],
+        [
+          1.0,
+          -4.105121576003512e-08,
+          2.8112492600484984e-07,
+          0.0
+        ],
+        [
+          -3.345301990975713e-08,
+          0.9656086564064026,
+          0.2599998116493225,
+          8.430000305175781
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "PERSP",
+      "lens": 25.73408317565918,
+      "sensorWidth": 36.0,
+      "sensorHeight": 24.0,
+      "sensorFit": "VERTICAL",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "clip": [
+        0.10000000149011612,
+        700.0
+      ]
+    },
+    "orbit-135": {
+      "matrixWorld": [
+        [
+          0.7071067690849304,
+          -0.18384772539138794,
+          0.6827884316444397,
+          17.06970977783203
+        ],
+        [
+          0.7071067690849304,
+          0.18384771049022675,
+          -0.6827883720397949,
+          -17.06970977783203
+        ],
+        [
+          3.576218432499445e-09,
+          0.9656086564064026,
+          0.25999993085861206,
+          8.430000305175781
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "PERSP",
+      "lens": 25.73408317565918,
+      "sensorWidth": 36.0,
+      "sensorHeight": 24.0,
+      "sensorFit": "VERTICAL",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "clip": [
+        0.10000000149011612,
+        700.0
+      ]
+    },
+    "orbit-180": {
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.2600000500679016,
+          -0.9656085968017578,
+          -24.140214920043945
+        ],
+        [
+          0.0,
+          0.9656085968017578,
+          0.2600000500679016,
+          8.430000305175781
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "PERSP",
+      "lens": 25.73408317565918,
+      "sensorWidth": 36.0,
+      "sensorHeight": 24.0,
+      "sensorFit": "VERTICAL",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "clip": [
+        0.10000000149011612,
+        700.0
+      ]
+    },
+    "orbit-225": {
+      "matrixWorld": [
+        [
+          0.7071067690849304,
+          0.18384772539138794,
+          -0.6827884316444397,
+          -17.06970977783203
+        ],
+        [
+          -0.7071067690849304,
+          0.18384771049022675,
+          -0.6827883720397949,
+          -17.06970977783203
+        ],
+        [
+          -3.576218432499445e-09,
+          0.9656086564064026,
+          0.25999993085861206,
+          8.430000305175781
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "PERSP",
+      "lens": 25.73408317565918,
+      "sensorWidth": 36.0,
+      "sensorHeight": 24.0,
+      "sensorFit": "VERTICAL",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "clip": [
+        0.10000000149011612,
+        700.0
+      ]
+    },
+    "orbit-270": {
+      "matrixWorld": [
+        [
+          -2.821299744937278e-07,
+          0.2599998116493225,
+          -0.9656086564064026,
+          -24.140214920043945
+        ],
+        [
+          -1.0,
+          -4.105121576003512e-08,
+          2.8112492600484984e-07,
+          0.0
+        ],
+        [
+          3.345301990975713e-08,
+          0.9656086564064026,
+          0.2599998116493225,
+          8.430000305175781
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "PERSP",
+      "lens": 25.73408317565918,
+      "sensorWidth": 36.0,
+      "sensorHeight": 24.0,
+      "sensorFit": "VERTICAL",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "clip": [
+        0.10000000149011612,
+        700.0
+      ]
+    },
+    "orbit-315": {
+      "matrixWorld": [
+        [
+          -0.7071067690849304,
+          0.18384771049022675,
+          -0.6827884316444397,
+          -17.06970977783203
+        ],
+        [
+          -0.7071067690849304,
+          -0.18384772539138794,
+          0.6827884316444397,
+          17.06970977783203
+        ],
+        [
+          -1.2530972703928e-08,
+          0.9656086564064026,
+          0.25999993085861206,
+          8.430000305175781
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "PERSP",
+      "lens": 25.73408317565918,
+      "sensorWidth": 36.0,
+      "sensorHeight": 24.0,
+      "sensorFit": "VERTICAL",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "clip": [
+        0.10000000149011612,
+        700.0
+      ]
+    },
+    "midflank-oblique": {
+      "matrixWorld": [
+        [
+          -0.7340996265411377,
+          -0.19679948687553406,
+          0.6498982310295105,
+          62.0
+        ],
+        [
+          0.6790417432785034,
+          -0.2127564549446106,
+          0.7025930285453796,
+          55.0
+        ],
+        [
+          9.63545190302284e-08,
+          0.9570813179016113,
+          0.28981950879096985,
+          45.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "PERSP",
+      "lens": 25.73408317565918,
+      "sensorWidth": 36.0,
+      "sensorHeight": 24.0,
+      "sensorFit": "VERTICAL",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "clip": [
+        0.10000000149011612,
+        700.0
+      ]
+    },
+    "director-overview": {
+      "matrixWorld": [
+        [
+          -0.7130237817764282,
+          -0.43871572613716125,
+          0.5469237565994263,
+          110.0
+        ],
+        [
+          0.7011398673057556,
+          -0.44615161418914795,
+          0.5561938881874084,
+          95.0
+        ],
+        [
+          -8.188949607301765e-08,
+          0.7800495028495789,
+          0.62571781873703,
+          160.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "PERSP",
+      "lens": 26.95244026184082,
+      "sensorWidth": 36.0,
+      "sensorHeight": 24.0,
+      "sensorFit": "VERTICAL",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "clip": [
+        0.10000000149011612,
+        700.0
+      ]
+    }
+  },
+  "lockedGeometry": {
+    "EMBER_Terrain": {
+      "vertices": 128016,
+      "faces": 127300,
+      "geometrySha256": "ab0cf093679a50b3cbf1aa46558392f8822c3202adf609b82b39a222915efc21",
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "collision": true,
+      "hidden": false,
+      "modifiers": []
+    },
+    "EMBER_LavaSimulatorDeposit": {
+      "vertices": 11468,
+      "faces": 7667,
+      "geometrySha256": "553a1b5a6807820d69055182c4c43b4d55b00a63b051e4ea1c7284feb76c8efb",
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "collision": false,
+      "hidden": false,
+      "modifiers": []
+    },
+    "EMBER_FlankButtresses": {
+      "vertices": 224,
+      "faces": 168,
+      "geometrySha256": "2bf8a73f26b3a150dda68d4dc4801fab3ecccf842cebc84007402324cac78dc5",
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "collision": false,
+      "hidden": false,
+      "modifiers": []
+    },
+    "EMBER_SourceFissure": {
+      "vertices": 10,
+      "faces": 4,
+      "geometrySha256": "62dc2d100e8e39b89c95ee9b0d4e684cff2ba59397aee589612c5552d989a018",
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "collision": false,
+      "hidden": false,
+      "modifiers": []
+    },
+    "EMBER_SourceRampart": {
+      "vertices": 54,
+      "faces": 72,
+      "geometrySha256": "1fcf9127932474105552c8a98f88297431065679754ac35bf6b6fb58ade5777b",
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "collision": false,
+      "hidden": false,
+      "modifiers": []
+    },
+    "EMBER_PerformerProxy": {
+      "vertices": 26,
+      "faces": 20,
+      "geometrySha256": "5465965294bdde9949870089ae71ea3931b065764abd77c23f9f6693a7fb49b2",
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "collision": false,
+      "hidden": false,
+      "modifiers": []
+    },
+    "EMBER_AudienceStandingPockets": {
+      "vertices": 104,
+      "faces": 80,
+      "geometrySha256": "4b2ca5f3da9612a0d4a7f21b2a03f25ca1aa21fe859c72e36ab9fbdcf88cf8c5",
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "collision": false,
+      "hidden": false,
+      "modifiers": []
+    },
+    "EMBER_HardenedLavaBenchGuide": {
+      "vertices": 16,
+      "faces": 8,
+      "geometrySha256": "4da889cc8e7f3d7464e6cb38c21a843c3337173ee59463bdcb67e76070ba90fa",
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "collision": false,
+      "hidden": true,
+      "modifiers": []
+    },
+    "EMBER_ActionEnvelope": {
+      "vertices": 192,
+      "faces": 96,
+      "geometrySha256": "6a41cc096235fc96770982724417113f89fc829fe5b52be674e0c156358d48a7",
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "collision": false,
+      "hidden": true,
+      "modifiers": []
+    }
+  },
+  "renders": [
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-default-audience.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-000.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-045.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-090.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-135.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-180.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-225.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-270.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-315.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-midflank-oblique.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-director-overview.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/alternative-peripheral-ember-peak.png"
+  ],
+  "artifacts": {
+    "blender/ember-midflank-fire-pilgrimage-visual-target-r5.blend": "32f8f1b33dcb16bb2857ef7b5493f3cc0df0d769a3fb2ce2dd9bcd5405817fcc",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-default-audience.png": "24e25cce59c669f14d3a67818d0272ea436a878d7e3e5dd2e23c76d60ae28557",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-000.png": "c8f275bc813dc33b47f297879045ddb4d2cb9f8f47ecb2ead489926375e2adc9",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-045.png": "26007b1c5ef6c65b7607826082800abeb87d1d9e43c4df6358e51a0bc8eba523",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-090.png": "c16c43410beba0531011fb10ff6841b8a6a34c2ff922cf0049123aab078fdebb",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-135.png": "66a6bd5db351f5d4c7564c3315c167851bce13d7df2bf4146607c1e9a6d8ad49",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-180.png": "138b73ce26b3a2f90abcf66d113e50b12cc2c560ce9d643b980429eff800b60f",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-225.png": "b50a553272a6f1ccc52eea99666438130bb6fa38760595e652f38117139ab857",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-270.png": "d6c0a8530971f582012ee0831b19b4ac7569871f6fc80833c9bfc41970d66a1a",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-315.png": "3ef17a9144c56d0ff3a4fa62891c049110892cd314c1cec8fe20440fb75232d4",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-midflank-oblique.png": "a5596e37b22ffafcfdf8134bb6100b89d851168d9aff45e32c473693a15e644d",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-director-overview.png": "977ce58d97611bb02fff8c2a25bcd1da4a3ec101af40d995ad567bb2c184cd9a",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/alternative-peripheral-ember-peak.png": "d2b1eb3165d946a74d0ec8b66ba5f9af1389c4c365ad803f3a14620b10aa9027"
+  },
+  "renderSettings": {
+    "engine": "CYCLES",
+    "samples": 48,
+    "resolution": [
+      1600,
+      900
+    ],
+    "viewTransform": "AgX",
+    "exposure": 0.4000000059604645
+  },
+  "limitations": [
+    "Static material targets do not prove lava transport, pulse timing or runtime frame cost.",
+    "Approved metre raster cell edges and human scale proxies remain visible. Hero mesh refinement belongs to the production slice."
+  ]
+}

@@ -39,11 +39,12 @@ function run(label, command) {
   execSync(command, { stdio: "inherit", env: ENV });
 }
 
-function assertToolchain() {
+function assertToolchain(encodeTextures) {
   if (!existsSync(CLI_PACKAGE)) {
     throw new Error(`glTF Transform CLI is missing: ${CLI_PACKAGE}`);
   }
   if (
+    encodeTextures &&
     !existsSync(resolve(KTX_BIN, "toktx.exe")) &&
     !existsSync(resolve(KTX_BIN, "toktx"))
   ) {
@@ -71,6 +72,8 @@ export async function optimizeGltfKtx2({
   instanceMin = null,
   materialTransform = null,
   inspect = true,
+  encodeTextures = true,
+  keepAttributes = false,
 }) {
   const source = resolve(input);
   const destination = resolve(output);
@@ -83,7 +86,7 @@ export async function optimizeGltfKtx2({
   const etc = resolve(tempDirectory, `_${stem}-etc.glb`);
   const temporaries = [slim, instanced, png, uastc, etc];
 
-  assertToolchain();
+  assertToolchain(encodeTextures);
   if (!existsSync(source)) {
     throw new Error(`${label} source GLB does not exist: ${source}`);
   }
@@ -108,6 +111,7 @@ export async function optimizeGltfKtx2({
         "--instance true",
         "--flatten false",
         "--join false",
+        `--prune-attributes ${!keepAttributes}`,
       ].join(" ")
     );
 
@@ -140,28 +144,30 @@ export async function optimizeGltfKtx2({
       console.log(`  wrote ${png} (${formattedSize(png)})`);
     }
 
-    run(
-      "Encode normal and material maps as KTX2 UASTC",
-      [
-        `${GLTF_CLI} uastc`,
-        `"${png}" "${uastc}"`,
-        '--slots "{normalTexture,metallicRoughnessTexture,occlusionTexture}"',
-        "--level 4",
-        "--zstd 18",
-      ].join(" ")
-    );
-    run(
-      "Encode color and emissive maps as KTX2 ETC1S",
-      [
-        `${GLTF_CLI} etc1s`,
-        `"${uastc}" "${etc}"`,
-        '--slots "{baseColorTexture,emissiveTexture}"',
-        "--quality 200",
-      ].join(" ")
-    );
+    if (encodeTextures) {
+      run(
+        "Encode normal and material maps as KTX2 UASTC",
+        [
+          `${GLTF_CLI} uastc`,
+          `"${png}" "${uastc}"`,
+          '--slots "{normalTexture,metallicRoughnessTexture,occlusionTexture}"',
+          "--level 4",
+          "--zstd 18",
+        ].join(" ")
+      );
+      run(
+        "Encode color and emissive maps as KTX2 ETC1S",
+        [
+          `${GLTF_CLI} etc1s`,
+          `"${uastc}" "${etc}"`,
+          '--slots "{baseColorTexture,emissiveTexture}"',
+          "--quality 200",
+        ].join(" ")
+      );
+    }
     run(
       "Apply meshopt geometry compression",
-      `${GLTF_CLI} meshopt "${etc}" "${destination}"`
+      `${GLTF_CLI} meshopt "${encodeTextures ? etc : png}" "${destination}"`
     );
   } finally {
     for (const path of temporaries) {

@@ -5,9 +5,14 @@
   never sends the learner backward through the lesson carousel.
 -->
 <script lang="ts">
+  import { onDestroy, tick } from "svelte";
   import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
+  import { motionDuration } from "$lib/shared/transitions/motion";
   import { getConceptPlacesByLevel } from "../../../domain/concept-place-registry";
   import type { ExperienceViewMode } from "../../../domain/types";
   import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
@@ -81,13 +86,35 @@
         savedSchemaVersion,
         HAND_PATH_STEPS.length
       );
-  let stepIndex = $state(
+  const initialStepIndex =
     viewMode === "scroll"
       ? comparisonIndex
-      : Math.min(comparisonIndex, Math.max(firstStage, savedStep - 1))
+      : Math.min(comparisonIndex, Math.max(firstStage, savedStep - 1));
+  let stepIndex = $state(
+    initialStepIndex === comparisonIndex
+      ? timingDirectionIndex
+      : initialStepIndex
   );
+  let comparisonMounted = $state(initialStepIndex >= timingDirectionIndex);
+  let comparisonReady = $state(false);
+  let comparisonRequested = $state(initialStepIndex === comparisonIndex);
+  let comparisonPresented = $state(false);
   let comparisonBoard: TimingDirectionBoard | null = $state(null);
   let comparisonFocused = $state(false);
+  let experienceElement: HTMLDivElement;
+  let layoutRevision = 0;
+  const stageMotion = createLayoutMotion({
+    getRoot: () => experienceElement,
+    groups: [
+      { selector: ".stage-artifact", datasetKey: "stageArtifact" },
+      { selector: ".stage-controls", datasetKey: "stageControls" },
+    ],
+    getDuration: () => motionDuration(DURATION.emphasis),
+  });
+  onDestroy(() => {
+    ++layoutRevision;
+    stageMotion.cancel();
+  });
 
   if (viewMode !== "scroll" && savedStep !== (saved.step || 1)) {
     persistence.saveStep(savedStep);
@@ -100,7 +127,6 @@
   const activeMotion = $derived(
     stepIndex < HAND_PATH_STEPS.length ? HAND_PATH_STEPS[stepIndex] : undefined
   );
-  const isTimingDirectionIntro = $derived(stepIndex === timingDirectionIndex);
   const isComparison = $derived(stepIndex === comparisonIndex);
   const headingTitle = $derived(activeMotion?.name ?? "Timing and Direction");
   const headingEyebrow = $derived(
@@ -111,14 +137,33 @@
 
   function goToStep(next: number): void {
     const clamped = Math.min(comparisonIndex, Math.max(firstStage, next));
+    comparisonRequested = false;
+    if (clamped >= timingDirectionIndex) comparisonMounted = true;
+    if (clamped === comparisonIndex && !comparisonReady) {
+      comparisonRequested = true;
+      return;
+    }
     if (clamped === stepIndex) return;
+    const revision = ++layoutRevision;
+    const captured = stageMotion.capture();
+    comparisonPresented = false;
     stepIndex = clamped;
+    if (captured) {
+      void tick().then(() => {
+        if (revision === layoutRevision) stageMotion.play();
+      });
+    }
     persistence.saveStep(stepIndex + 1);
     persistence.savePhaseData(
       "stageSchemaVersion",
       HAND_MOTIONS_STAGE_SCHEMA_VERSION
     );
     haptic?.trigger("selection");
+  }
+
+  function comparisonPrepared(): void {
+    comparisonReady = true;
+    if (comparisonRequested) goToStep(comparisonIndex);
   }
 
   function complete(): void {
@@ -129,6 +174,8 @@
 
   function handlePrimaryAction(): void {
     if (isComparison) {
+      // A double-click on Next must not finish a board that is still arriving.
+      if (!comparisonPresented) return;
       complete();
       return;
     }
@@ -147,7 +194,8 @@
   }
 
   export function handleBack(): void {
-    if (comparisonBoard?.collapseFocus()) return;
+    comparisonRequested = false;
+    if (isComparison && comparisonBoard?.collapseFocus()) return;
     if (viewMode === "scroll") {
       onBack?.();
       return;
@@ -162,7 +210,9 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 <div
+  bind:this={experienceElement}
   class="motions-experience"
+  class:is-intro={!activeMotion && !isComparison}
   class:has-focused-comparison={comparisonFocused}
   onkeydown={handleKeydown}
   tabindex="0"
@@ -172,7 +222,7 @@
   <LessonStageFrame artifactLayout={activeMotion ? "square" : "wide"}>
     {#snippet heading()}
       <LessonStageHeading
-        key={stepIndex}
+        key={headingTitle}
         title={headingTitle}
         eyebrow={headingEyebrow}
       >
@@ -180,42 +230,60 @@
           {#if activeMotion}
             {activeMotion.guideCaption}
           {:else}
-            <span class="description-phrase">Compare when your hands move</span>
-            <span class="description-phrase">and which way they travel.</span>
+            <span class="description-phrase"
+              >When the hands reach the downbeat.</span
+            >
+            <span class="description-phrase">Which way they rotate.</span>
           {/if}
         </p>
       </LessonStageHeading>
     {/snippet}
 
     {#snippet artifact()}
-      <Crossfade key={stepIndex} fill>
-        {#if activeMotion}
-          <div class="artifact-state motion-state">
-            <div class="player-frame">
-              <HandMotionPlayer
-                sequence={activeMotion.sequence}
-                ariaLabel={`${activeMotion.name}: ${activeMotion.guideCaption}`}
+      <DualSourceCrossfade
+        active={isComparison ? "second" : "first"}
+        duration={DURATION.emphasis}
+        clip={false}
+        onsettled={(source) => {
+          comparisonPresented = source === "second" && isComparison;
+        }}
+      >
+        {#snippet first()}
+          <Crossfade key={activeMotion?.name ?? "timing-intro"} fill>
+            {#if activeMotion}
+              <div class="artifact-state motion-state">
+                <div class="player-frame">
+                  <HandMotionPlayer
+                    sequence={activeMotion.sequence}
+                    ariaLabel={`${activeMotion.name}: ${activeMotion.guideCaption}`}
+                  />
+                </div>
+                <div class="hand-key" aria-label="Left hand is blue">
+                  <span aria-hidden="true"></span>
+                  <strong>Left hand</strong>
+                </div>
+              </div>
+            {:else}
+              <div class="artifact-state timing-direction-state">
+                <TimingDirectionIntro />
+              </div>
+            {/if}
+          </Crossfade>
+        {/snippet}
+        {#snippet second()}
+          {#if comparisonMounted}
+            <div class="artifact-state comparison-state">
+              <TimingDirectionBoard
+                bind:this={comparisonBoard}
+                modes={ELEMENTAL_MODES}
+                active={isComparison && comparisonPresented}
+                onReady={comparisonPrepared}
+                onFocusChange={(focused) => (comparisonFocused = focused)}
               />
             </div>
-            <div class="hand-key" aria-label="Left hand is blue">
-              <span aria-hidden="true"></span>
-              <strong>Left hand</strong>
-            </div>
-          </div>
-        {:else if isTimingDirectionIntro}
-          <div class="artifact-state timing-direction-state">
-            <TimingDirectionIntro />
-          </div>
-        {:else}
-          <div class="artifact-state comparison-state">
-            <TimingDirectionBoard
-              bind:this={comparisonBoard}
-              modes={ELEMENTAL_MODES}
-              onFocusChange={(focused) => (comparisonFocused = focused)}
-            />
-          </div>
-        {/if}
-      </Crossfade>
+          {/if}
+        {/snippet}
+      </DualSourceCrossfade>
     {/snippet}
 
     {#snippet controls()}
@@ -224,7 +292,9 @@
           ? viewMode === "scroll"
             ? "Done"
             : "Finish lesson"
-          : "Next"}
+          : comparisonRequested
+            ? "Preparing…"
+            : "Next"}
         currentStep={stepIndex - firstStage + 1}
         totalSteps={totalStages}
         onAction={handlePrimaryAction}
@@ -250,6 +320,23 @@
 
   .motions-experience :global(.lesson-stage-frame) {
     --lesson-artifact-wide-max: var(--shell-w, 96rem);
+  }
+
+  .motions-experience.is-intro {
+    flex-shrink: 0;
+    height: 100%;
+    min-height: 44rem;
+    overflow: visible;
+  }
+
+  .motions-experience.is-intro :global(.lesson-stage-frame) {
+    --lesson-artifact-wide-max: 100cqw;
+  }
+
+  @media (max-width: 640px) {
+    .motions-experience.is-intro {
+      min-height: 48rem;
+    }
   }
 
   .motion-description {

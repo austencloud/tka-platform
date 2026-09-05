@@ -456,12 +456,14 @@ export interface InitializeWorkerRendererMessage {
   qualityTier: WorkerEffectQualityTier;
   performers: readonly WorkerPerformerSnapshot[];
   effects?: WorkerSceneEffectsSnapshot;
+  reducedMotion?: boolean;
 }
 
 export interface SwitchWorkerRendererEnvironmentMessage {
   type: "switch-environment";
   requestId: number;
   environment: WorkerEnvironmentKey;
+  reducedMotion?: boolean;
 }
 
 export interface PosterReadyWorkerRendererMessage {
