@@ -26,6 +26,7 @@ export const TikaDirectorFormationSchema = z.enum(TIKA_DIRECTOR_FORMATIONS);
 export const TikaDirectorActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("assign-distinct-props") }).strict(),
   z.object({ type: z.literal("assign-distinct-characters") }).strict(),
+  z.object({ type: z.literal("assign-distinct-sequences") }).strict(),
   z
     .object({
       type: z.literal("formation-transition"),
@@ -100,6 +101,12 @@ export const TikaDirectorRequestSchema = z
               .strict()
           )
           .max(100),
+        /**
+         * How many sequences the caller's library can lend the cast. The
+         * planner refuses distinct sequences when this cannot cover the cast;
+         * older clients omit it and the client-side pick reports the shortfall.
+         */
+        librarySequenceCount: z.number().int().min(0).optional(),
       })
       .strict(),
   })

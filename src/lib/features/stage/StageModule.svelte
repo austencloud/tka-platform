@@ -73,6 +73,12 @@
     resolveDirectorAppearanceAssignments,
     resolveStageDirection,
   } from "./services/tika-director-service";
+  import {
+    resolveDirectorSequenceAssignments,
+    type DirectorSequenceAssignment,
+  } from "./domain/tika-director-sequences";
+  import { listLibrarySequences } from "$lib/shared/browse/services/library-sequence-list";
+  import { hydrateSequence } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
 
   type SequenceLoadState = "loading" | "ready" | "error";
   type TimelineDisclosure = "hidden" | "dock" | "editor";
@@ -308,23 +314,63 @@
       ),
   });
 
+  async function readLibraryForDirector(): Promise<SequenceData[] | null> {
+    try {
+      return await listLibrarySequences();
+    } catch {
+      return null;
+    }
+  }
+
   async function directStageWithTika(
     prompt: string,
     conversation: readonly TikaDirectorConversationMessage[],
     signal: AbortSignal
   ): Promise<TikaDirectorSubmitResult> {
     const requestBeat = stageState.currentBeat;
+    // Picked and hydrated while the plan resolves, so apply stays synchronous
+    // under the session's revision check and never plays a metadata-only record.
+    let sequencePicks: DirectorSequenceAssignment[] = [];
     try {
       return await tikaSession.execute(
-        () =>
-          resolveStageDirection({
+        async () => {
+          const library = await readLibraryForDirector();
+          const response = await resolveStageDirection({
             prompt,
             conversation,
             choreography,
             currentBeat: requestBeat,
             viewer,
+            ...(library ? { librarySequenceCount: library.length } : {}),
             signal,
-          }),
+          });
+          if (
+            response.kind === "apply" &&
+            response.actions.some(
+              (action) => action.type === "assign-distinct-sequences"
+            )
+          ) {
+            if (!library) {
+              throw new Error(
+                "TIKA could not read your library, so no sequences were assigned."
+              );
+            }
+            const picks = resolveDirectorSequenceAssignments({
+              actions: response.actions,
+              performerIds: choreography.performers.map((p) => p.id),
+              seedKey: `${choreography.id}:${prompt}`,
+              library,
+            });
+            sequencePicks = await Promise.all(
+              picks.map(async (pick) => ({
+                performerId: pick.performerId,
+                sequence: await hydrateSequence(pick.sequence),
+              }))
+            );
+            signal.throwIfAborted();
+          }
+          return response;
+        },
         (response) => {
           const formationActions = response.actions.filter(
             (action) => action.type === "formation-transition"
@@ -353,14 +399,21 @@
           const viewerChanged =
             assignments.length > 0 &&
             viewer.applyPerformerAppearanceAssignments(assignments);
-          const stageChanged = formation
-            ? stageState.applyFormationTransition(
-                formation.endFormation,
-                formation.durationBeats,
-                formation.startFormation,
-                requestBeat
-              )
-            : false;
+          for (const pick of sequencePicks) {
+            preloadedSequences.set(pick.sequence.id, pick.sequence);
+          }
+          const sequencesChanged =
+            sequencePicks.length > 0 &&
+            stageState.assignPerformerSequences(sequencePicks);
+          const stageChanged =
+            (formation
+              ? stageState.applyFormationTransition(
+                  formation.endFormation,
+                  formation.durationBeats,
+                  formation.startFormation,
+                  requestBeat
+                )
+              : false) || sequencesChanged;
 
           return viewerChanged || stageChanged
             ? () => {

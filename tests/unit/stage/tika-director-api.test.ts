@@ -89,6 +89,16 @@ describe("TIKA Director API", () => {
     }
   );
 
+  it("forwards the library size to the planner", async () => {
+    const payload = {
+      ...body,
+      scene: { ...body.scene, librarySequenceCount: 7 },
+    };
+    const response = await POST(event(JSON.stringify(payload)));
+    expect(response.status).toBe(200);
+    expect(mocks.plan.mock.calls[0]?.[1]?.scene?.librarySequenceCount).toBe(7);
+  });
+
   it("returns the validated plan without the provider envelope", async () => {
     const response = await POST(event());
     expect(response.status).toBe(200);
