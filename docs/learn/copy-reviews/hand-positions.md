@@ -1,6 +1,24 @@
 # Hand Positions copy review
 
-State: DRAFT (implemented under the September 5 autonomous audit-and-implement request; exact-wording approval is not claimed).
+State: APPROVED for the September 5 clarity revision below. The earlier domain definitions remain verbatim Guide text.
+
+## Approved clarity revision (2026-09-05)
+
+Austen approved the proposed layout and exact wording: “I'll take all of your recommendations for the layout and wording and fixes”. This followed hands-on feedback about hand identity, editing after Gamma, the next-step button, and tall split-screen balance.
+
+| Approved text                                                                    | Evidence / interaction                                                                                |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Place both hands and see the position’s name. Next, try six practice challenges. | Existing canonical classifier and six authored construction rounds.                                   |
+| Tap a point for your left hand.                                                  | Shared placement state selects the left hand first, and reselects it through Move left hand.          |
+| Now place your right hand.                                                       | Shared placement state advances to the right hand after the first placement.                          |
+| Choose a hand to move, then tap another point.                                   | Existing edit/select-point interaction; does not clear either hand.                                   |
+| Left = blue · Right = red                                                        | Verbatim identity mapping from the Guide; explicitly requested by Austen.                             |
+| Move left hand / Move right hand                                                 | Existing Move blue / Move red actions, renamed by identity rather than color.                         |
+| Clear both hands                                                                 | Existing Clear grid action; preserves completed practice rounds.                                      |
+| Next: Practice →                                                                 | Existing exploration-to-practice transition, now separated from editing.                              |
+| Keep the left hand where it is. Move the right hand to {point}.                  | Same tested correction destination; hand identities follow the approved left/right naming throughout. |
+
+The exploration counter is removed from the presentation; no new prerequisite is introduced. No further wording choice is outstanding for this revision. Final visual approval remains separate from wording approval.
 
 ## Domain evidence
 
@@ -24,6 +42,6 @@ Other UI text names controls, modes, and measured progress: Explore, Your positi
 
 No claims that a position is easier, natural, or smoother. Timing vocabulary is not introduced here. Only construction challenges have answer concealment; exploration examples remain visible before selection.
 
-## Outstanding review
+## Earlier review context
 
-Austen has not yet interacted with this redesign or approved its exact microcopy. Keep the lesson BUILT, not CONFIRMED. The explicit request to audit and implement while Austen is asleep authorizes implementation without the skill's usual intermediate approval pause.
+The initial implementation was authorized by the autonomous audit-and-implement request. Austen subsequently tried it, approved the overall interaction pattern, and requested the clarity revision above. Keep the revised lesson BUILT pending its hands-on review.

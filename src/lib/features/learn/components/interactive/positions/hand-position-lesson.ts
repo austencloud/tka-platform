@@ -104,7 +104,7 @@ export function positionCorrection(
   const point = getPlacementGridPoints(gridMode).find(
     (point) => positionKindFor(left, point.location) === target
   );
-  return `You built ${POSITION_TYPE_INFO[built].label}. ${POSITION_DEFINITIONS[built]}${point ? ` Keep the blue hand where it is. Move the red hand to ${point.label}.` : ""}`;
+  return `You built ${POSITION_TYPE_INFO[built].label}. ${POSITION_DEFINITIONS[built]}${point ? ` Keep the left hand where it is. Move the right hand to ${point.label}.` : ""}`;
 }
 
 export interface PositionWorkshopCheckpoint {

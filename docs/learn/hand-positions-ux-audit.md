@@ -2,6 +2,22 @@
 
 Scope: the shipped hand-positions experience, not a repository-wide code-quality grade.
 
+## September 5 hands-on clarity follow-up
+
+Austen confirmed the spatial construction pattern, then reported unclear hand identity, an unclear way to build another position, ambiguous progression, and poor balance in a tall half-screen browser on a 4K monitor. Approval: “I'll take all of your recommendations for the layout and wording and fixes”.
+
+The approved revision keeps `PropPlacementGrid` and its state/keyboard/history owners. Its optional `promptText` prop lets the lesson position its approved instructions outside the board without hiding content through consumer CSS. The existing shared `LessonStageFrame` workshop presentation now centers the complete authored group in surplus height and provides a full-width navigation region. Square/wide lesson layouts remain unchanged. `PanelButton`, `SegmentedControl`, `PictographContainer`, `TKAWordGlyph`, and `Crossfade` remain the presentation owners.
+
+The hand controls say Move left hand / Move right hand, with a persistent left/blue and right/red key. Clear both hands belongs with editing. Next: Practice belongs in lesson navigation. The unexplained exploration counter is removed without adding a completion requirement. The references align with the top of the grid; the oversized reference spacer is removed. Phones put the live result immediately after the board, retain every edit action, and keep navigation in a sticky footer.
+
+Geometry: the board retains a fixed square, instructions reserve two text lines, and the optional reference uses the existing animated-height Crossfade. There are no decorative panels, custom pictographs, edge accents, or viewport-driven control magnification. The native wide composition uses a broader content band; a tall pane centers the whole lesson, not the reference column independently.
+
+Focused checks: 34 tests passed across the lesson, placement state/view-model, canonical ownership, and decomposition contracts; Svelte check has zero errors and zero warnings.
+
+Direct browser verification on the task-owned preview covered all seven CSS viewport tiers (375×667, 960×412, 820×1180, 1440×900, 1920×1080, 2560×1440, 3840×2160), plus the reported tall-pane shape at 1800×1950. No horizontal overflow. At 1440×900, exploration navigation ends at y=881 and the lesson has no vertical overflow. At 1800×1950, the grid and feedback both begin at y=601; the whole authored group runs from y=397 to y=1665, distributing surplus space above and below. The phone stacks feedback immediately after the grid, with all edit controls and references reachable above the sticky navigation; grid targets measure 46.7 CSS pixels. Browser inspection also caught and corrected low-contrast blue legend text, an underspaced key, and desktop navigation falling below the viewport.
+
+Replayed Gamma construction, moving a hand, clearing both hands, entering practice, a wrong Beta answer corrected into Alpha without clearing, and all six rounds through completion. Correct-answer focus reaches Next, the next round focuses the grid, and completion focuses Continue to Hand Motions. The optional reference remains available in independent practice. Reduced-motion emulation retains these results. At 640×450, the 200%-zoom reflow equivalent, navigation remains reachable with no horizontal overflow; actual browser zoom was not tested. No primary dev server or other task's preview was restarted or stopped.
+
 ## Adversarial findings
 
 The baseline browser shows a static Alpha pictograph with a Next button, then Beta, Gamma, and a comparison. A learner can reach Finish without placing either hand. The source's Review mode ignores the selected review presentation. Exploration is three clicks deep, and its 8/16-cell discovery tray records transformations rather than checking whether someone can construct a relationship. Timing synonyms add a second vocabulary before timing is taught. The entire application region intercepts arrow keys, including keys originating from child controls. On narrow layouts the comparison captions fall below the project's text-size floor.
