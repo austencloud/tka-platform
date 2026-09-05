@@ -48,3 +48,21 @@ Inspect overview and changed selection at 375×667, 960×412, 820×1180, 1440×9
 selection, reachable article links, global pause, and the large player's seek
 bar. Check all six article routes, run existing article/data tests, formatting,
 and the integration type gate. Do not add source-text rendering tests.
+
+### Results
+
+- Inspected all seven CSS viewport sizes, plus 720×450 reflow (the CSS space
+  available on a 1440×900 display at 200% zoom). No horizontal page overflow.
+- Six native article links remain present and labeled at every size; each has
+  a 44px CSS minimum height. All six article routes returned HTTP 200, and the
+  Quarter-Same article opened through the visible link.
+- The previews expose no seek sliders. The large player exposes one: pointer
+  seeking reached 50%, Home reached 0%, and ArrowRight advanced to 25%.
+- Keyboard selection updated the large player, and narrow-screen selection
+  moved focus to its heading. The two comparison rows retained their order.
+- Reduced-motion first load paused the players. A paused resize retained the
+  hands after the redraw fix; no browser errors were logged in the inspected
+  runtime.
+- Eighteen focused tests passed across article data, canonical hand-path cards,
+  resize observation, and lifecycle completion/disposal. Both changed Svelte
+  components compiled without warnings. Integration runs the full type gate.
