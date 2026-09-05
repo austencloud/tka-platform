@@ -12,7 +12,7 @@ file from a new product capability.
 
 Before writing it:
 
-1. Grep `src/lib/components/`, `src/lib/ui/`, `src/lib/shared/`, and relevant
+1. Grep `src/lib/components/`, `src/lib/shared/ui/`, `src/lib/shared/`, and relevant
    `src/lib/features/*/components/` paths for the same user-facing concept and
    interaction. Search at least three terms, including labels, props, callbacks,
    and state names.
@@ -49,7 +49,7 @@ implementation cheaper or safer.
 
 ## New Service
 
-Read the `service-naming` skill. Search `src/lib/services/` and
+Read the `service-naming` skill. Search `src/lib/shared/*/services/` and
 `src/lib/features/*/services/` by responsibility, inputs, outputs, and callers.
 A new service name does not justify a second owner for the same side effect or
 persistence boundary. Extend the owner or create a narrow adapter.
