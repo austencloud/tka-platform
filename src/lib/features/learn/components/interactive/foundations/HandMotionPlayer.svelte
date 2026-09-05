@@ -74,7 +74,7 @@
     hideTkaGlyph
     hideStepNumbers
     leftPropType={neutralMarkers ? "motion_point" : "hand"}
-    rightPropType={neutralMarkers ? "motion_point" : "hand"}
+    rightPropType={neutralMarkers ? "motion_point_inner" : "hand"}
     visibilityManagerOverride={visibility}
     hoverHint={interactive ? "badge" : "none"}
     glyphFrame="stage"

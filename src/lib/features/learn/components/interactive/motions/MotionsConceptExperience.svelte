@@ -184,6 +184,14 @@
 
   function handleKeydown(event: KeyboardEvent): void {
     if (viewMode !== "step") return;
+    if (
+      event.defaultPrevented ||
+      (event.target instanceof Element &&
+        event.target.closest(
+          "button, input, select, textarea, [role='slider'], [role='radiogroup']"
+        ))
+    )
+      return;
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
       event.preventDefault();
       handlePrimaryAction();
@@ -401,7 +409,7 @@
 
   @media (max-width: 640px) {
     .motions-experience.is-intro {
-      min-height: 48rem;
+      min-height: 76rem;
     }
   }
 
