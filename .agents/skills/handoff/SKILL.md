@@ -55,9 +55,8 @@ tried, fragile spots, environment quirks.
 - Every "done" claim carries its evidence inline. The `verification-protocol`
   applies to handoffs doubly — a false "done" costs the next session hours.
 - Convert all relative dates to absolute.
-- If the work changed canon owned by an expert agent
-  (`.claude/rules/expert-routing.md` table), update that agent's `.md` too —
-  a handoff is read once; the expert file is forever.
+- If the work changed canon owned by an expert agent, update
+  that agent's `.md` too — a handoff is read once; the expert file is forever.
 - Commit the doc with explicit pathspec and push it where the next agent will
   look: main if the work is on main, the work branch otherwise — then tell
   Austen exactly where it lives with an absolute Markdown file link.
