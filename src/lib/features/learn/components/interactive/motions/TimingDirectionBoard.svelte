@@ -18,11 +18,15 @@
     onFocusChange,
     articleHrefFor,
     showDirectionRowLabels = false,
+    active = true,
+    onReady,
   }: {
     modes: readonly TimingDirectionMode[];
     onFocusChange?: (focused: boolean) => void;
     articleHrefFor?: (mode: TimingDirectionMode) => string;
     showDirectionRowLabels?: boolean;
+    active?: boolean;
+    onReady?: () => void;
   } = $props();
 
   const haptic = getHapticFeedback();
@@ -34,6 +38,16 @@
   let playing = $state(true);
   let highlightedStepIndex = $state<number | null>(null);
   let seekFocusedPlayer = $state<((step: number) => void) | null>(null);
+  const preparedPlayers = new Set<TimingDirectionModeId>();
+  let reportedReady = false;
+
+  function playerPrepared(id: TimingDirectionModeId): void {
+    preparedPlayers.add(id);
+    if (reportedReady || !modes.every((mode) => preparedPlayers.has(mode.id)))
+      return;
+    reportedReady = true;
+    onReady?.();
+  }
 
   const focusedMode = $derived(
     modes.find((mode) => mode.id === focusedModeId) ?? null
@@ -238,6 +252,7 @@
                 ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
                 showElementalGlyph
                 interactive
+                playbackAllowed={active}
                 externalPlaying={playing}
                 onExternalPlayingChange={syncPlaying}
                 onStepChange={syncFocusedStep}
@@ -282,9 +297,11 @@
               ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
               showElementalGlyph
               interactive={focusedMode === null}
-              playbackAllowed={focusedMode === null}
+              playbackAllowed={active && focusedMode === null}
               externalPlaying={playing}
               onExternalPlayingChange={syncPlaying}
+              onCanvasInitialized={() => playerPrepared(mode.id)}
+              onLoadError={() => playerPrepared(mode.id)}
               framed={false}
             />
           </div>
