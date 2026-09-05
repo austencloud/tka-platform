@@ -211,11 +211,13 @@
 
 <style>
   .mode-page {
+    --sequence-seek-target-size: 48px;
     position: relative;
     max-width: min(var(--shell-w), 100rem);
     margin: 0 auto;
     padding: 88px 1.5rem 3rem;
     color: var(--theme-text);
+    background: rgb(from var(--theme-panel-bg) r g b / 1);
   }
   .page-nav {
     margin-bottom: 1.5rem;
@@ -230,7 +232,7 @@
   .mode-copy,
   .mode-notes {
     min-width: 0;
-    max-width: 44rem;
+    max-width: 65ch;
   }
   .mode-notes {
     grid-column: 1;
@@ -240,10 +242,10 @@
     align-items: center;
     gap: 0.6rem;
     margin-bottom: 0.75rem;
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 650;
     text-transform: capitalize;
-    color: color-mix(in srgb, var(--mode-accent) 50%, var(--theme-text));
+    color: var(--theme-text);
   }
   .mode-identity img {
     object-fit: contain;
@@ -265,10 +267,10 @@
     font-weight: 650;
   }
   p {
-    margin: 0 0 0.875rem;
-    font-size: 1rem;
+    margin: 0 0 1.5lh;
+    font-size: 1.125rem;
     line-height: 1.6;
-    color: var(--theme-text-dim);
+    color: var(--theme-text);
   }
   .definition {
     color: var(--theme-text);
@@ -299,7 +301,7 @@
     justify-content: space-between;
     gap: 0.5rem;
     padding: 0.75rem 1rem 0;
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 600;
   }
   .play-label {
@@ -312,8 +314,8 @@
   }
   figcaption {
     padding: 0.75rem 1rem 1rem;
-    color: var(--theme-text-dim);
-    font-size: 0.875rem;
+    color: var(--theme-text);
+    font-size: 1rem;
     line-height: 1.5;
   }
   .history,
@@ -326,7 +328,7 @@
     max-width: 68ch;
   }
   .source-note {
-    font-size: 0.875rem;
+    font-size: 1rem;
   }
   .sources {
     display: grid;
@@ -350,13 +352,13 @@
     min-width: 0;
   }
   .source-copy strong {
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 600;
   }
   .source-copy > span {
-    font-size: 0.875rem;
-    color: var(--theme-text-dim);
-    line-height: 1.4;
+    font-size: 1rem;
+    color: var(--theme-text);
+    line-height: 1.5;
   }
   .sources i {
     flex-shrink: 0;
@@ -367,6 +369,15 @@
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-top: 1rem;
+  }
+  .mode-page :global(.panel-btn) {
+    font-size: 1rem;
+    min-height: 48px;
+  }
+  .mode-page :global(.panel-btn:focus-visible),
+  .mode-page :global(.progress-bar-container.interactive:focus-visible) {
+    outline: 3px solid var(--theme-text);
+    outline-offset: -3px;
   }
   @media (max-width: 800px) {
     .mode-overview {
