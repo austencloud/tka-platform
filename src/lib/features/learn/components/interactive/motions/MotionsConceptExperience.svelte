@@ -334,6 +334,12 @@
     }
   }
 
+  @media (min-width: 2400px) and (min-height: 1300px) {
+    .motions-experience.is-intro {
+      height: 64rem;
+    }
+  }
+
   .motion-description {
     max-width: 60ch;
     text-wrap: balance;

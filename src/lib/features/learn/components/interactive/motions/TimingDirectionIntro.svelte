@@ -248,4 +248,16 @@
       padding-inline: 0.2rem;
     }
   }
+
+  @media (min-width: 2400px) and (min-height: 1300px) {
+    .concept-model {
+      width: min(100%, 90rem);
+    }
+    .concept-panel {
+      font-size: 1.5rem;
+    }
+    h3 {
+      font-size: 2.5rem;
+    }
+  }
 </style>
