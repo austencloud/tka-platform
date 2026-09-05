@@ -13,7 +13,8 @@
 
   interface Props {
     hand: "left" | "right" | "both";
-    layout?: "ribbon" | "tray";
+    /** Bar: the recipe bar above the grid names the axis itself. */
+    layout?: "ribbon" | "tray" | "bar";
     onfocuschange?: (hand: "left" | "right" | "both" | null) => void;
   }
   let { hand, layout = "ribbon", onfocuschange }: Props = $props();
@@ -149,6 +150,7 @@
   class:right={hand === "right"}
   class:both={hand === "both"}
   class:tray={layout === "tray"}
+  class:bar={layout === "bar"}
   aria-label={`${axisLabel} ratio`}
   onfocusin={() => onfocuschange?.(hand)}
   onfocusout={onFocusOut}
@@ -441,6 +443,47 @@
   .ratio-side.tray {
     width: 100%;
     padding-inline: 0;
+  }
+
+  /* The recipe bar already carries the axis name and colour, so the entry
+     keeps only its two numbers. Feedback floats under the bar rather than
+     growing it, so a typed mistake never shifts the grid. */
+  .ratio-side.bar {
+    position: relative;
+    width: auto;
+    grid-template-rows: auto;
+    gap: 0;
+    padding: 0;
+  }
+
+  .ratio-side.bar .side-head,
+  .ratio-side.bar .part-field > span:first-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .ratio-side.bar .entry-row {
+    grid-template-columns: auto auto auto;
+    gap: 0.2rem;
+  }
+
+  .ratio-side.bar .part-stepper {
+    grid-template-columns:
+      var(--min-touch-target, 44px) 2.4rem
+      var(--min-touch-target, 44px);
+  }
+
+  .ratio-side.bar .feedback {
+    position: absolute;
+    top: calc(100% + 0.2rem);
+    left: 0;
+    right: 0;
+    z-index: 2;
+    text-align: center;
   }
 
   @media (prefers-reduced-motion: reduce) {

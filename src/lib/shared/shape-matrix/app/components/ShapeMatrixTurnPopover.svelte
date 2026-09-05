@@ -68,8 +68,8 @@
     theory ? "Close ratio editor" : "Close level and turn editor"
   );
 
-  function applyTurn(turn: TurnValue): void {
-    appState.setTurn(turn, { stayOnDetail: true });
+  function applyTurn(hand: "left" | "right", turn: TurnValue): void {
+    appState.setTurnFor(hand, turn, { stayOnDetail: true });
   }
   function applyLevel(level: TurnLevel): void {
     appState.setLevel(level, { stayOnDetail: true });

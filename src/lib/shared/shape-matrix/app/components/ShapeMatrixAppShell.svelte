@@ -1,7 +1,6 @@
 <script lang="ts">
   import { tick } from "svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -22,13 +21,12 @@
   import ShapeMatrixDetailPane from "./ShapeMatrixDetailPane.svelte";
   import ShapeMatrixMatrixPane from "./ShapeMatrixMatrixPane.svelte";
   import ShapeMatrixOverflowMenu from "./ShapeMatrixOverflowMenu.svelte";
-  import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
   import ShapeMatrixTurnPopover from "./ShapeMatrixTurnPopover.svelte";
   import ShapeMatrixSurfaceControl from "./ShapeMatrixSurfaceControl.svelte";
-  import ShapeMatrixTheoryControls from "./ShapeMatrixTheoryControls.svelte";
   import ShapeMatrixTheoryDetail from "./ShapeMatrixTheoryDetail.svelte";
   import ShapeMatrixTheoryPane from "./ShapeMatrixTheoryPane.svelte";
   import { runMandalaMorph } from "../services/shape-matrix-mandala-morph";
+  import { runShapeMatrixDetailReveal } from "../services/shape-matrix-reveal";
   import { growFade } from "$lib/shared/transitions/motion";
 
   interface Props {
@@ -128,6 +126,22 @@
     });
   }
 
+  /* The result half of the reveal: the chosen relationship lands, then the
+     hero breathes in. Compact layouts fly the tile to the hero instead, so
+     only the chip beat applies there. Keyed on the roll, never on an edit. */
+  let revealedToken: number | null = null;
+  $effect(() => {
+    const token = appState.revealToken;
+    const previous = revealedToken;
+    revealedToken = token;
+    if (previous === null || previous === token) return;
+    const pane = theory ? theoryDetailElement : detailPaneElement;
+    if (!pane) return;
+    void tick().then(() => {
+      runShapeMatrixDetailReveal(pane, { hero: !appState.compact });
+    });
+  });
+
   $effect(() => {
     const request = appState.compactFocusRequest;
     if (!request || !appState.compact) return;
@@ -171,22 +185,23 @@
     inert={appState.compact && appState.activeView !== "matrix"}
     aria-hidden={appState.compact && appState.activeView !== "matrix"}
   >
-    <ShapeMatrixMatrixPane onselect={selectPair} />
+    <ShapeMatrixMatrixPane onselect={selectPair} onsurprise={surpriseMe} />
   </div>
 {/snippet}
 
-{#snippet surpriseAction(compact = false)}
+<!-- "Surprise me" lives in the recipe bar above the grid. The header keeps a
+     dice only while a compact detail view has hidden that bar. -->
+{#snippet compactSurpriseAction()}
   <button
     type="button"
-    class="top-action surprise-action"
-    class:compact
+    class="top-action surprise-action compact"
     aria-label="Surprise me with a new grid, crossing, and hand relationship"
     title="Pick a new grid, crossing, and hand relationship"
     disabled={!theory && !appState.data}
     onclick={surpriseMe}
+    transition:growFade={{ axis: "x", x: 4 }}
   >
     <i class="fas fa-dice" aria-hidden="true"></i>
-    {#if !compact}<span>Surprise me</span>{/if}
   </button>
 {/snippet}
 
@@ -246,7 +261,10 @@
     inert={appState.compact && appState.activeView !== "matrix"}
     aria-hidden={appState.compact && appState.activeView !== "matrix"}
   >
-    <ShapeMatrixTheoryPane emphasizedAxis={theoryEditingAxis} />
+    <ShapeMatrixTheoryPane
+      emphasizedAxis={theoryEditingAxis}
+      onsurprise={surpriseMe}
+    />
   </div>
 {/snippet}
 
@@ -346,9 +364,6 @@
         <div class="surface-control-cell">
           <ShapeMatrixSurfaceControl />
         </div>
-        <div class="surprise-presence">
-          {@render surpriseAction()}
-        </div>
         {#if !theory}
           <!-- The wrapper owns the gap as well as the cell width, so removing
                Difficulty releases one continuous piece of space instead of
@@ -371,52 +386,33 @@
                 ariaLabel="Kinetic Alphabet level"
               />
             </div>
-          </div>
-        {/if}
-      </div>
-      <!-- The two ribbons already shared one grid area, so a pair of
-           independent fades painted Matrix's turn row through Theory's ratio
-           row: two legible bands of numbers on top of each other for the
-           length of the swap. The shared primitive runs them sequentially in
-           that same cell, so only one ribbon is ever readable. -->
-      <div class="controls-swap">
-        <Crossfade
-          key={theory ? "theory" : "matrix"}
-          mode="swap"
-          duration={booted ? DURATION.normal : 0}
-        >
-          {#if theory}
-            <div class="surface-controls">
-              <ShapeMatrixTheoryControls
-                onfocuschange={(hand) => (theoryEditingAxis = hand)}
+            <!-- The axis values themselves are edited in the recipe bar above
+                 the grid; the header keeps only the settings that shape the
+                 whole surface. -->
+            <div class="control-cell label-control neutral-accent">
+              <span class="control-label">Notation</span>
+              <SegmentedControl
+                options={LABEL_OPTIONS}
+                value={appState.labelMode}
+                onchange={(mode: MatrixLabelMode) =>
+                  appState.setLabelMode(mode)}
+                size="sm"
+                density="tight"
+                color="accent"
+                semantics="radiogroup"
+                ariaLabel="Turn label system"
               />
             </div>
-          {:else}
-            <div class="matrix-controls">
-              <div class="control-cell label-control neutral-accent">
-                <span class="control-label">Notation</span>
-                <SegmentedControl
-                  options={LABEL_OPTIONS}
-                  value={appState.labelMode}
-                  onchange={(mode: MatrixLabelMode) =>
-                    appState.setLabelMode(mode)}
-                  size="sm"
-                  density="tight"
-                  color="accent"
-                  semantics="radiogroup"
-                  ariaLabel="Turn label system"
-                />
-              </div>
-              <ShapeMatrixTurnControls onturn={appState.setTurn} />
-            </div>
-          {/if}
-        </Crossfade>
+          </div>
+        {/if}
       </div>
     {/if}
 
     <div class="top-actions">
       {#if appState.compact}
-        {@render surpriseAction(true)}
+        {#if appState.activeView === "detail"}
+          {@render compactSurpriseAction()}
+        {/if}
         {#if appState.activeView === "matrix" && hasPair}
           <button
             type="button"
@@ -506,9 +502,7 @@
   .topbar {
     display: grid;
     grid-template-columns: minmax(6rem, 1fr) auto minmax(6rem, 1fr);
-    grid-template-areas:
-      "identity meta actions"
-      "controls controls controls";
+    grid-template-areas: "identity meta actions";
     align-items: center;
     gap: 0.3rem 0.8rem;
     padding: 0.3rem 0.75rem 0.45rem;
@@ -702,38 +696,6 @@
     outline-offset: 2px;
   }
 
-  /* The crossfade owns the grid cell both ribbons used to claim directly, so
-     the outgoing and incoming bands are stacked by the primitive rather than
-     by two elements happening to name the same area. */
-  .controls-swap {
-    grid-area: controls;
-    /* Centered, not start-justified: the turn control swings from 4 to 14
-       segments across levels, and a left-packed band strands the width
-       reserved for level 4 as a dead field on the right. Centering splits
-       the slack into balanced gutters at every level. */
-    justify-self: center;
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  .matrix-controls,
-  .surface-controls {
-    /* One shared control height for all ribbon cells: a one-line sm
-       SegmentedControl (44px segment + its own padding and border). Cells
-       size to content — fixed cell widths overflowed once the four level
-       tiles outgrew them, and stretched the tiles into full-width swatches
-       in the stacked compact bands. */
-    --ribbon-control-h: 3.25rem;
-    width: fit-content;
-    max-width: 100%;
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
-    margin-inline: auto;
-    gap: 0.5rem;
-    min-width: 0;
-  }
-
   /* The title-line pair. It carries the ribbon's control height so the two
      cells match the band below rather than shrinking to the title's line box. */
   .header-meta {
@@ -750,17 +712,6 @@
     display: flex;
     flex: 0 0 auto;
     align-items: center;
-  }
-
-  .surprise-presence {
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    margin-left: 0.5rem;
-  }
-
-  .surprise-presence .surprise-action {
-    min-height: 3.65rem;
   }
 
   /* The bento cell: a caption row over its control, each cell carrying its
@@ -786,7 +737,10 @@
   }
 
   .level-presence {
+    display: flex;
     flex: 0 0 auto;
+    align-items: stretch;
+    gap: 0.5rem;
     margin-left: 0.5rem;
   }
 
@@ -842,11 +796,6 @@
     width: 7.5rem;
   }
 
-  .matrix-controls :global(.turn-editor),
-  .surface-controls :global(.theory-editor) {
-    grid-area: turns;
-  }
-
   .top-actions {
     grid-area: actions;
     min-width: max-content;
@@ -854,19 +803,9 @@
     gap: 0.4rem;
   }
 
-  /* The complete ratio instrument fits beside the page identity once the
-     identity line can remain readable. Laptop widths keep it on its own row
-     rather than squeezing the axis labels and copy actions. */
+  /* The identity line can afford its note once the header no longer shares
+     its row with a ratio instrument; the recipe bar carries that now. */
   @container shape-matrix-app (min-width: 112rem) and (min-height: 42rem) {
-    .shape-app.theory .topbar {
-      grid-template-columns:
-        minmax(max-content, 1fr)
-        auto
-        minmax(0, max-content)
-        minmax(max-content, 1fr);
-      grid-template-areas: "identity meta controls actions";
-    }
-
     .shape-app.theory .identity {
       flex-direction: column;
       align-items: flex-start;
@@ -919,20 +858,9 @@
   @container shape-matrix-app (max-width: 74.99rem) or (max-height: 41.99rem) {
     .topbar {
       grid-template-columns: minmax(0, 1fr) auto auto;
-      grid-template-areas:
-        "context meta actions"
-        "controls controls controls";
+      grid-template-areas: "context meta actions";
       gap: 0.3rem 0.5rem;
       padding: 0.3rem 0.45rem 0.45rem;
-    }
-
-    .controls-swap {
-      grid-area: controls;
-    }
-
-    .matrix-controls,
-    .surface-controls {
-      gap: 0.4rem;
     }
 
     .header-meta {
@@ -984,26 +912,6 @@
     }
   }
 
-  /* Wide hosts hold the whole header in one row: identity, the Explore and
-     Difficulty pair, the notation-and-turn band, and the actions. The seam
-     sits above the widest state, level 4's fourteen turn values, and the
-     band column may shrink to zero so any drift degrades into the turn
-     viewport's own scroll rather than page overflow. */
-  @container shape-matrix-app (min-width: 140rem) {
-    .topbar {
-      grid-template-columns:
-        minmax(max-content, 1fr)
-        auto
-        minmax(0, max-content)
-        minmax(max-content, 1fr);
-      grid-template-areas: "identity meta controls actions";
-    }
-
-    .matrix-controls,
-    .surface-controls {
-      min-width: 0;
-    }
-  }
 
   /* Phone widths: the relationships pill keeps its glyph and aria-label and
      drops the word so the turn chip beside it never clips. */
