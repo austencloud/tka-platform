@@ -1,59 +1,25 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import TimingDirectionIntro from "$lib/features/learn/components/interactive/motions/TimingDirectionIntro.svelte";
-  import { growFade, reducedMotion } from "$lib/shared/transitions/motion";
-  import {
-    createRenderActivityGate,
-    renderGateTarget,
-  } from "$lib/shared/render-gating/render-activity-gate";
+  import { reducedMotion } from "$lib/shared/transitions/motion";
   import HandMotionPlayer from "$lib/features/learn/components/interactive/foundations/HandMotionPlayer.svelte";
-  import { TIMING_DIRECTION_MODES } from "$lib/features/learn/components/interactive/foundations/pictograph-foundation-content";
+  import type { DirectionValue } from "../_data/timing-direction-articles";
   import {
-    TIMING_DIRECTION_ARTICLES,
-    type DirectionValue,
-  } from "../_data/timing-direction-articles";
+    getTimingDirectionState,
+    timingDirectionPreviews as modes,
+  } from "../_state/timing-direction-state.svelte";
 
-  const modes = TIMING_DIRECTION_ARTICLES.map((article) => ({
-    article,
-    motion: TIMING_DIRECTION_MODES.find(
-      (mode) =>
-        mode.timing === article.timing && mode.direction === article.direction
-    )!,
-    href: `/timing-and-direction/${article.slug}`,
-  }));
   const directions: readonly DirectionValue[] = ["Same", "Opposite"];
-  let selectedCode = $state("TS");
-  let playing = $state(true);
-  let showIntro = $state(false);
-  let currentStep = $state(0);
-  let seekClock: ((step: number) => void) | null = null;
-  const clockMode = modes[0]!;
-  const playbackGate = createRenderActivityGate({
-    name: "timing-direction-atlas",
-  });
-
-  function followClock(step: number, sequenceId: string | null): void {
-    if (sequenceId === clockMode.motion.sequence.id) currentStep = step;
-  }
-
-  function registerClockSeek(seek: ((step: number) => void) | null): void {
-    seekClock = seek;
-  }
-
-  onDestroy(() => playbackGate.dispose());
+  const playback = getTimingDirectionState();
+  const selectedCode = $derived(playback.selected.article.code);
   let detailHeading: HTMLHeadingElement | null = $state(null);
-  const selected = $derived(
-    modes.find((mode) => mode.article.code === selectedCode)!
-  );
-
-  onMount(() => {
-    if (reducedMotion()) playing = false;
-  });
+  const selected = $derived(playback.selected);
 
   function selectMode(code: string): void {
-    selectedCode = code;
+    playback.select(
+      modes.find((mode) => mode.article.code === code)!.article.slug
+    );
     // On phones the larger player is below the grid; bring the result into view.
     if (window.matchMedia("(max-width: 900px)").matches) {
       detailHeading?.focus({ preventScroll: true });
@@ -65,16 +31,9 @@
   }
 </script>
 
-<section
-  class="atlas"
-  aria-label="Six timing and direction modes"
-  use:renderGateTarget={playbackGate}
->
+<section class="atlas" aria-label="Six timing and direction modes">
   <div class="atlas-toolbar">
-    <PanelButton
-      onclick={() => (showIntro = !showIntro)}
-      ariaExpanded={showIntro}
-    >
+    <PanelButton href="#timing-basics">
       <i class="fa-regular fa-circle-question" aria-hidden="true"></i>
       Learn the basics
     </PanelButton>
@@ -84,18 +43,12 @@
       aria-label="Playback for all six modes"
     >
       <TransportControls
-        isPlaying={playing}
-        onPlaybackToggle={() => (playing = !playing)}
+        isPlaying={playback.playing}
+        onPlaybackToggle={() => (playback.playing = !playback.playing)}
       />
       <span>All animations</span>
     </div>
   </div>
-
-  {#if showIntro}
-    <div class="intro" transition:growFade>
-      <TimingDirectionIntro />
-    </div>
-  {/if}
 
   <div class="atlas-body">
     <div
@@ -104,8 +57,7 @@
       aria-label="Compare all six modes"
     >
       <div class="timing-headings" aria-hidden="true">
-        <span class="timing-axis">Timing</span>
-        <span class="direction-axis">Direction</span>
+        <span></span>
         {#each modes.filter((mode) => mode.article.direction === "Same") as mode}
           <span>{mode.article.timing}</span>
         {/each}
@@ -148,17 +100,8 @@
                         showElementalGlyph
                         ariaLabel={mode.article.name}
                         interactive={false}
-                        externalPlaying={playing}
-                        externalStep={mode === clockMode ? null : currentStep}
-                        onStepChange={mode === clockMode
-                          ? followClock
-                          : undefined}
-                        onSeekRef={mode === clockMode
-                          ? registerClockSeek
-                          : undefined}
-                        playbackGate={mode === clockMode
-                          ? playbackGate
-                          : undefined}
+                        externalPlaying={playback.playing}
+                        externalStep={playback.step}
                         framed={false}
                       />
                     </span>
@@ -179,22 +122,11 @@
     >
       <header class="detail-heading" aria-live="polite" aria-atomic="true">
         <h2 bind:this={detailHeading} tabindex="-1">
-          <span>Timing: {selected.article.timing}</span>
-          <span>Direction: {selected.article.direction}</span>
+          <span><small>Timing</small>{selected.article.timing}</span>
+          <span><small>Direction</small>{selected.article.direction}</span>
         </h2>
       </header>
-      <div class="detail-animation">
-        <HandMotionPlayer
-          sequence={selected.motion.sequence}
-          showElementalGlyph
-          ariaLabel={`${selected.article.name}. Drag the playback bar to scrub.`}
-          externalPlaying={playing}
-          externalStep={currentStep}
-          onExternalSeek={(step) => seekClock?.(step)}
-          onExternalPlayingChange={(nextPlaying) => (playing = nextPlaying)}
-          framed={false}
-        />
-      </div>
+      <div class="detail-animation" use:playback.registerTarget></div>
       <div class="detail-footer">
         <PanelButton
           href={selected.href}
@@ -213,6 +145,19 @@
       </div>
     </section>
   </div>
+  <section
+    id="timing-basics"
+    class="intro"
+    aria-label="Timing and direction lesson"
+  >
+    <TimingDirectionIntro />
+    <div class="lesson-link">
+      <PanelButton href="/learn/concepts/timing-and-direction">
+        <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+        Open full lesson
+      </PanelButton>
+    </div>
+  </section>
 </section>
 
 <style>
@@ -244,6 +189,14 @@
     container-type: inline-size;
     width: min(100%, 60rem);
     margin-inline: auto;
+    margin-top: 2rem;
+    scroll-margin-top: 6rem;
+  }
+
+  .lesson-link {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
   }
 
   .intro :global(.concept-model) {
@@ -310,14 +263,6 @@
     font-weight: 700;
   }
 
-  .timing-axis {
-    grid-column: 2 / -1;
-  }
-
-  .direction-axis {
-    font-size: 0.875rem;
-  }
-
   .direction-rows {
     display: grid;
     grid-template-rows: repeat(2, minmax(0, 1fr));
@@ -341,8 +286,7 @@
     text-align: center;
   }
 
-  .mode,
-  .detail-animation {
+  .mode {
     min-width: 0;
     border: 1px solid var(--theme-stroke-strong);
     border-radius: var(--radius-lg, 0.75rem);
@@ -439,20 +383,6 @@
     min-width: 0;
   }
 
-  .detail-animation {
-    overflow: hidden;
-    border-color: color-mix(
-      in srgb,
-      var(--mode-accent) 55%,
-      var(--theme-stroke)
-    );
-    background: color-mix(
-      in srgb,
-      var(--mode-accent) 7%,
-      var(--theme-panel-bg)
-    );
-  }
-
   .detail-heading {
     text-align: center;
     align-self: end;
@@ -460,13 +390,24 @@
 
   .detail-heading h2 {
     display: grid;
-    gap: 0.125rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
     margin: 0;
     color: var(--theme-text);
     font-size: clamp(1.25rem, 1rem + 0.4vw, 1.65rem);
     line-height: 1.25;
     font-weight: 700;
     scroll-margin-top: 7rem;
+  }
+
+  .detail-heading h2 > span {
+    display: grid;
+    gap: 0.25rem;
+  }
+  .detail-heading small {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--theme-text-dim);
   }
 
   .detail-heading h2:focus-visible {
@@ -477,10 +418,6 @@
   .detail-animation {
     width: 100%;
     min-height: 0;
-  }
-
-  .detail-animation :global(.progress-bar-container) {
-    background: transparent;
   }
 
   .detail-footer {

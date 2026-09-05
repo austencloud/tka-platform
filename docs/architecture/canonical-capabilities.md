@@ -5,6 +5,13 @@ wholesale. Each row names the behavior owner. Verify the path in current code
 before relying on it. Add a row only for shared behavior or an intentional
 keep-separate decision, not for every component.
 
+Timing-and-direction route continuity composes the existing `HandMotionPlayer`,
+`reparentToInspector` mounted-node action (also consumed by `ArtPane`), and
+`navigationMorphs`/`runNamedRouteMorph` route driver. Searches: persistent player,
+canvas handoff, reparent, shared element. The TnD `+layout.svelte` owns one player
+and context state across the hub and articles; route slots move its host without
+remounting it. `MarketingChrome` keeps one content key for this subtree only.
+
 | Search vocabulary                                                                         | Canonical owner                                                                                                                                                                                      |
 | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | scene boot, scene switch, persistent worker renderer, poster handoff, shader warmup, GLB prefetch | `shared/3d/worker-renderer/` owns the persistent production worker for all ten environments; `shared/3d/scene-boot/` owns legacy main-thread boot (Record Scene); `shared/3d/rendering/viewer-lighting-rig.ts` owns viewer lighting; environment worlds under `shared/3d/environments/worlds/` stay renderer-neutral with thin Svelte and worker adapters |
