@@ -3,22 +3,22 @@ import { GLOSSARY } from "../../packages/domain/src/data/glossary";
 import { searchVTG } from "../../packages/vtg-domain/src/reference/search";
 
 describe("VTG shape ratio canon", () => {
-  it("finds the 0:1 Float ratio and the 1:2 negative-quarter ratio", () => {
-    expect(searchVTG("0:1")[0]).toMatchObject({
+  it("finds the 1:0 Float ratio and the 2:1 negative-quarter ratio", () => {
+    expect(searchVTG("1:0")[0]).toMatchObject({
       type: "glossary",
-      name: "0:1 ratio",
+      name: "1:0 ratio",
     });
-    expect(searchVTG("1:2")[0]).toMatchObject({
+    expect(searchVTG("2:1")[0]).toMatchObject({
       type: "glossary",
-      name: "1:2 ratio",
+      name: "2:1 ratio",
     });
   });
 
   it("keeps Float separate from the numeric -0.25 TKA value", () => {
-    expect(GLOSSARY.turns.definition).toContain("-0.25 for the VTG 1:2 ratio");
+    expect(GLOSSARY.turns.definition).toContain("-0.25 for 2:1");
     expect(GLOSSARY.turns.definition).toContain(
       "Float remains a separate shift state"
     );
-    expect(GLOSSARY.turns.definition).toContain("VTG 0:1 ratio");
+    expect(GLOSSARY.turns.definition).toContain("1:0 ratio");
   });
 });

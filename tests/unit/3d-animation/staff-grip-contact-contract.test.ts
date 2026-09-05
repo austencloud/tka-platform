@@ -32,11 +32,35 @@ const gripTestStage = readFileSync(
   "utf8"
 );
 
-const viewerScene = readFileSync(
+// The lab was split into owners: the catalog says what can go on stage, the
+// metrics module turns one rendered frame into numbers, and the scrub is the
+// lab kit's shared transport. The page composes them, so the contract follows
+// each claim to the file that now owns it.
+const gripTestCatalog = readFileSync(
+  resolve(process.cwd(), "src/routes/test/staff-grip/lab-catalog.ts"),
+  "utf8"
+);
+
+const gripTestMetrics = readFileSync(
+  resolve(process.cwd(), "src/routes/test/staff-grip/lab-metrics.ts"),
+  "utf8"
+);
+
+const labTransport = readFileSync(
+  resolve(process.cwd(), "src/routes/test/_lab-kit/LabTransport.svelte"),
+  "utf8"
+);
+
+const performerStanceOwner = readFileSync(
   resolve(
     process.cwd(),
-    "src/lib/shared/3d/components/Viewer3DScene.svelte"
+    "src/lib/shared/3d/domain/performer-upper-body-stance.ts"
   ),
+  "utf8"
+);
+
+const viewerScene = readFileSync(
+  resolve(process.cwd(), "src/lib/shared/3d/components/Viewer3DScene.svelte"),
   "utf8"
 );
 
@@ -72,13 +96,22 @@ describe("staff grip contact contract", () => {
   });
 
   it("plays checked-in sequence data through the shared live performer", () => {
-    expect(gripTestPage).toContain(
-      'import { FALG } from "$lib/shared/combination/domain/demo-fixtures"'
+    // The lab now picks among sequences, so the fixture list lives in the
+    // catalog. It is still the checked-in fixture set the combination tests
+    // enforce rather than anything the lab builds for itself, and the lab
+    // still opens on the FALG fixture.
+    expect(gripTestCatalog).toContain(
+      'import { ALL_FIXTURE_LOOPS } from "$lib/shared/combination/domain/demo-fixtures"'
     );
-    expect(gripTestPage).toContain("const sequence = FALG;");
-    expect(gripTestPage).toContain(
-      'data-sequence-source="validated-production-fixture"'
+    expect(gripTestCatalog).toContain(
+      "export const LAB_FIXTURES: readonly LabSequenceOption[] = ALL_FIXTURE_LOOPS.map("
     );
+    expect(gripTestCatalog).toContain(
+      'export const DEFAULT_LAB_SEQUENCE_ID = "fx-falg";'
+    );
+    // A fixture on stage still declares itself as one, so a headless read can
+    // tell a verified fixture from a library sequence.
+    expect(gripTestPage).toContain('? "validated-production-fixture"');
     expect(gripTestStage).toContain("<LiveSequencePerformer3D");
     expect(gripTestStage).toContain("weldGrip={true}");
     expect(gripTestStage).toContain("enableLocomotion={false}");
@@ -97,18 +130,32 @@ describe("staff grip contact contract", () => {
     expect(gripTestPage).toContain('from "./inspection-framing"');
     expect(gripTestPage).toContain("INSPECTION_VIEWS");
     expect(gripTestPage).toContain("inspectionShotForView(view, aspectRatio)");
+    // Quad renders the whole shot vocabulary and a solo view narrows it, so
+    // the panes are keyed off a filter of the same table rather than a second
+    // one the page keeps.
+    expect(gripTestPage).toContain("? INSPECTION_VIEWS");
     expect(gripTestPage).toContain(
-      "{#each INSPECTION_VIEWS as view, index (view.id)}"
+      ": INSPECTION_VIEWS.filter((view) => view.id === lab.view)"
+    );
+    expect(gripTestPage).toContain(
+      "{#each activeViews as view, index (view.id)}"
     );
     expect(gripTestPage).not.toContain("updateFocus");
-    expect(gripTestPage).toContain("{phase}");
-    expect(gripTestPage).toContain('type="range"');
+    // One clock, read by every pane, so all the cameras sit on the same frame.
+    expect(gripTestPage).toContain("phase={lab.phase}");
+    // The scrub is the lab kit's shared transport, driven by the same phase.
+    expect(gripTestPage).toContain("<LabTransport");
+    expect(labTransport).toContain('type="range"');
+    expect(labTransport).toContain("value={lab.phase}");
     expect(gripTestPage).toContain('rightDragAction="rotate"');
   });
 
   it("publishes measured shaft-axis and palm-contact errors", () => {
-    expect(gripTestPage).toContain("gripDiagnostics.leftGripAxis");
-    expect(gripTestPage).toContain("gripDiagnostics.rightGripAxis");
+    // The measurement itself moved to the lab's metrics owner; the page reads
+    // it back out onto the DOM.
+    expect(gripTestMetrics).toContain("gripDiagnostics.leftGripAxis");
+    expect(gripTestMetrics).toContain("gripDiagnostics.rightGripAxis");
+    expect(gripTestPage).toContain("collectFrameMetrics(");
     expect(gripTestPage).toContain("data-left-axis-error-deg");
     expect(gripTestPage).toContain("data-right-axis-error-deg");
     expect(gripTestPage).toContain("data-requested-yaw-deg");
@@ -131,10 +178,18 @@ describe("staff grip contact contract", () => {
     // consumers resolve them through the one shared owner rather than either
     // of them re-planning. The viewer is checked here too, because a lab that
     // agreed only with itself is what this contract exists to prevent.
+    // The viewer now reaches the same two functions through
+    // `performer-upper-body-stance`, which caches one track per performer for
+    // both render backends. That is still the one owner: the module must call
+    // them, and the viewer must not re-plan the stance itself.
     expect(liveSequencePerformer).toContain("resolveTrackedUpperBodyStance");
-    expect(viewerScene).toContain("resolveTrackedUpperBodyStance");
     expect(liveSequencePerformer).toContain("buildStanceYawTrackForSource");
-    expect(viewerScene).toContain("buildStanceYawTrackForSource");
+    expect(performerStanceOwner).toContain("resolveTrackedUpperBodyStance");
+    expect(performerStanceOwner).toContain("buildStanceYawTrackForSource");
+    expect(viewerScene).toContain(
+      'import { resolvePerformerUpperBodyStance } from "../domain/performer-upper-body-stance"'
+    );
+    expect(viewerScene).toContain("resolvePerformerUpperBodyStance(performer)");
     expect(liveSequencePerformer).toContain(
       "stanceYaw={upperBodyStance.yawRad}"
     );
