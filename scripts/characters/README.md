@@ -63,6 +63,22 @@ roughness-texture coverage, any material still declared `BLEND`, the largest
 source texture, and the optimized size. The same material audit is in every
 `character-intake-report.json` under `optimized.materials`.
 
+## Texture size: how clear it stays when the camera moves in
+
+The optimizer caps every texture at 1024 px. That ceiling was measured at the
+default TKA camera, where the shipped characters lost nothing visible. It is
+also where a character starts to soften once the camera moves in, because a
+1024 sheet has to cover a whole body.
+
+`--texture-size 2048` keeps a source's detail up to 2048 px. The cost is about
+four times the texture bytes and GPU memory for that character, so it is a
+per-character decision, not a new default. Run the batch at the default first
+and read the table's **Source tex** column: a source that never exceeds 1024
+gains nothing from a higher ceiling. Rerun the ones worth it with
+`--replace --texture-size 2048`, compare the **MiB** column, and judge the
+difference in the bake-off before promotion. A performer roster of three or
+four hero characters can afford 2048; a crowd cannot.
+
 ## Reviewing staged characters
 
 `--stage-bakeoff` (on by default in the batch command) copies each optimized

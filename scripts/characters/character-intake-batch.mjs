@@ -3,11 +3,15 @@ import { basename, extname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { REQUIRED_BODY_BONES } from "./character-glb.mjs";
-import { bakeoffReviewPath, intakeCharacter } from "./character-intake.mjs";
+import {
+  bakeoffReviewPath,
+  intakeCharacter,
+  parseTextureSize,
+} from "./character-intake.mjs";
 
 export const SOURCE_EXTENSIONS = [".fbx", ".glb"];
 const PROVENANCE_SUFFIX = ".provenance.json";
-const VALUE_ARGUMENTS = ["--downloads", "--output"];
+const VALUE_ARGUMENTS = ["--downloads", "--output", "--texture-size"];
 const FLAG_ARGUMENTS = [
   "--replace",
   "--skip-optimize",
@@ -84,7 +88,7 @@ export function parseBatchArguments(args) {
     values[argument] = value;
     index += 1;
   }
-  for (const required of VALUE_ARGUMENTS) {
+  for (const required of ["--downloads", "--output"]) {
     if (!values[required]) throw new Error(`${required} is required`);
   }
   return {
@@ -94,6 +98,7 @@ export function parseBatchArguments(args) {
     skipOptimization: flags.has("--skip-optimize"),
     skipThumbnail: flags.has("--skip-thumbnail"),
     stageBakeoff: !flags.has("--no-stage"),
+    textureSize: parseTextureSize(values["--texture-size"]),
   };
 }
 
@@ -110,6 +115,9 @@ export function summarizeIntakeResult(stem, result) {
   }
   const optimized = report.optimized;
   const materials = optimized.materialSummary;
+  const sourceMaterials = report.normalized?.materialSummary ?? null;
+  const pixels = (side) =>
+    side === null || side === undefined ? "?" : `${side}px`;
   return {
     stem,
     id: report.characterId,
@@ -119,8 +127,8 @@ export function summarizeIntakeResult(stem, result) {
     normalMaps: `${materials.withNormalTexture}/${materials.skinnedMaterialCount}`,
     roughnessTextures: `${materials.withMetallicRoughnessTexture}/${materials.skinnedMaterialCount}`,
     blendMaterials: materials.alphaModes.BLEND,
-    maxTexture:
-      materials.maxTextureSide === null ? "?" : `${materials.maxTextureSide}px`,
+    sourceTexture: pixels(sourceMaterials?.maxTextureSide),
+    deliveredTexture: pixels(materials.maxTextureSide),
     mebibytes: (optimized.bytes / 1024 / 1024).toFixed(2),
     review: bakeoffReviewPath(report.characterId, "overhead"),
     detail: "",
@@ -135,7 +143,8 @@ const COLUMNS = [
   ["normalMaps", "Normal maps"],
   ["roughnessTextures", "Roughness tex"],
   ["blendMaterials", "BLEND"],
-  ["maxTexture", "Max texture"],
+  ["sourceTexture", "Source tex"],
+  ["deliveredTexture", "Delivered tex"],
   ["mebibytes", "MiB"],
 ];
 
@@ -193,6 +202,7 @@ export async function intakeBatch(
         skipOptimization: options.skipOptimization,
         skipThumbnail: options.skipThumbnail,
         stageBakeoff: options.stageBakeoff,
+        textureSize: options.textureSize,
       });
       rows.push(summarizeIntakeResult(pair.stem, result));
     } catch (error) {

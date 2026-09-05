@@ -14,6 +14,7 @@ import {
   buildPromotionPacket,
   intakeCharacter,
   parseArguments,
+  parseTextureSize,
 } from "../../../scripts/characters/character-intake.mjs";
 import {
   REQUIRED_BODY_BONES,
@@ -587,6 +588,30 @@ describe("character preparation", () => {
       "dedup",
     ]);
     expect(commandText).not.toMatch(/weld|simplify|join|draco|meshopt/);
+    expect(commands[0]).toEqual(
+      expect.arrayContaining(["--width", "1024", "--height", "1024"])
+    );
+  });
+
+  it("raises the texture ceiling only to a supported size", () => {
+    const [resize] = buildCharacterOptimizationSteps(
+      "source.glb",
+      "output.glb",
+      "temporary",
+      { textureSize: 2048 }
+    );
+
+    expect(resize).toEqual(
+      expect.arrayContaining(["--width", "2048", "--height", "2048"])
+    );
+    expect(() =>
+      buildCharacterOptimizationSteps("source.glb", "output.glb", "temporary", {
+        textureSize: 1500,
+      })
+    ).toThrow("Character texture size must be one of 512, 1024, 2048, 4096");
+    expect(parseTextureSize(undefined)).toBe(1024);
+    expect(parseTextureSize("2048")).toBe(2048);
+    expect(() => parseTextureSize("big")).toThrow("integer number of pixels");
   });
 
   it("emits a deterministic promotion packet with five pending poses", () => {
@@ -641,6 +666,10 @@ describe("character preparation", () => {
     expect(report.sourceSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(report.normalized.sha256).toBe(report.optimized.sha256);
     expect(report.bakeoff.poses).toHaveLength(5);
+    expect(report.optimization).toMatchObject({
+      skipped: true,
+      textureSize: 1024,
+    });
   });
 
   it("stages every intake by name and keeps the manifest current", async () => {
@@ -762,12 +791,15 @@ describe("character preparation", () => {
         "--output",
         "intake",
         "--stage-bakeoff",
+        "--texture-size",
+        "2048",
       ])
     ).toMatchObject({
       source: "human.fbx",
       provenanceFile: "human.json",
       outputDirectory: "intake",
       stageBakeoff: true,
+      textureSize: 2048,
     });
   });
 });

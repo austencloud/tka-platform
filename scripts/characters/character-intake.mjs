@@ -23,7 +23,11 @@ import {
   renderCharacterThumbnail,
   resolveBlenderBinary,
 } from "./character-tools.mjs";
-import { optimizeCharacterGlb } from "../lib/optimize-character-glb.mjs";
+import {
+  DEFAULT_CHARACTER_TEXTURE_SIZE,
+  assertCharacterTextureSize,
+  optimizeCharacterGlb,
+} from "../lib/optimize-character-glb.mjs";
 
 export const STRESS_POSE_IDS = [
   "neutral",
@@ -243,8 +247,10 @@ export async function intakeCharacter({
   skipThumbnail = false,
   stageBakeoff = false,
   stageDirectory = resolve(PROJECT_ROOT, BAKEOFF_STAGE_DIRECTORY),
+  textureSize = DEFAULT_CHARACTER_TEXTURE_SIZE,
   now = () => new Date().toISOString(),
 }) {
+  assertCharacterTextureSize(textureSize);
   const sourcePath = resolve(source);
   const provenancePath = resolve(provenanceFile);
   const outputRoot = resolve(outputDirectory);
@@ -327,6 +333,7 @@ export async function intakeCharacter({
       input: normalizedPath,
       output: optimizedPath,
       temporaryDirectory: resolve(directories.temporary, "optimization"),
+      textureSize,
     });
   }
   const optimizedInspection = inspectCharacterGlb(optimizedPath);
@@ -391,6 +398,7 @@ export async function intakeCharacter({
     optimized: optimizedInspection,
     optimization: {
       skipped: skipOptimization,
+      textureSize,
       byteReduction: normalizedInspection.bytes - optimizedInspection.bytes,
       ratio: Number(
         (optimizedInspection.bytes / normalizedInspection.bytes).toFixed(4)
@@ -437,6 +445,15 @@ export async function intakeCharacter({
   };
 }
 
+export function parseTextureSize(value) {
+  if (value === undefined) return DEFAULT_CHARACTER_TEXTURE_SIZE;
+  const size = Number(value);
+  if (!Number.isInteger(size)) {
+    throw new Error("--texture-size must be an integer number of pixels");
+  }
+  return assertCharacterTextureSize(size);
+}
+
 export function parseArguments(args) {
   const values = {};
   const flags = new Set();
@@ -453,7 +470,11 @@ export function parseArguments(args) {
       flags.add(argument);
       continue;
     }
-    if (!["--source", "--provenance", "--output"].includes(argument)) {
+    if (
+      !["--source", "--provenance", "--output", "--texture-size"].includes(
+        argument
+      )
+    ) {
       throw new Error(`Unknown argument: ${argument}`);
     }
     const value = args[index + 1];
@@ -474,6 +495,7 @@ export function parseArguments(args) {
     skipOptimization: flags.has("--skip-optimize"),
     skipThumbnail: flags.has("--skip-thumbnail"),
     stageBakeoff: flags.has("--stage-bakeoff"),
+    textureSize: parseTextureSize(values["--texture-size"]),
   };
 }
 
@@ -496,7 +518,10 @@ async function main() {
       const materials = result.report.optimized.materialSummary;
       if (materials) {
         console.log(
-          `Materials: ${materials.withNormalTexture}/${materials.skinnedMaterialCount} normal maps · ${materials.withMetallicRoughnessTexture}/${materials.skinnedMaterialCount} metallic-roughness textures · ${materials.alphaModes.BLEND} BLEND · max texture ${materials.maxTextureSide ?? "unknown"} px`
+          `Materials: ${materials.withNormalTexture}/${materials.skinnedMaterialCount} normal maps · ${materials.withMetallicRoughnessTexture}/${materials.skinnedMaterialCount} metallic-roughness textures · ${materials.alphaModes.BLEND} BLEND`
+        );
+        console.log(
+          `Textures: source up to ${result.report.normalized.materialSummary?.maxTextureSide ?? "unknown"} px -> delivered up to ${materials.maxTextureSide ?? "unknown"} px (ceiling ${result.report.optimization.textureSize})`
         );
       }
       if (result.report.staging && !result.report.staging.skipped) {

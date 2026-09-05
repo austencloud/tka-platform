@@ -45,6 +45,9 @@ function reviewableResult(id: string) {
     targetDirectory: `/intake/${id}`,
     report: {
       characterId: id,
+      normalized: {
+        materialSummary: { maxTextureSide: 4096 },
+      },
       optimized: {
         bytes: 2_500_000,
         mappedBodyBoneCount: 22,
@@ -105,6 +108,7 @@ describe("batch intake pairing", () => {
       skipOptimization: false,
       skipThumbnail: false,
       stageBakeoff: true,
+      textureSize: 1024,
     });
     expect(
       parseBatchArguments([
@@ -114,8 +118,10 @@ describe("batch intake pairing", () => {
         "out",
         "--no-stage",
         "--replace",
+        "--texture-size",
+        "2048",
       ])
-    ).toMatchObject({ stageBakeoff: false, replace: true });
+    ).toMatchObject({ stageBakeoff: false, replace: true, textureSize: 2048 });
     expect(() => parseBatchArguments(["--downloads", "in"])).toThrow(
       "--output is required"
     );
@@ -144,10 +150,12 @@ describe("batch intake pairing", () => {
         skipOptimization: true,
         skipThumbnail: true,
         stageBakeoff: true,
+        textureSize: 1024,
       },
       {
-        intake: async (options: { source: string }) => {
+        intake: async (options: { source: string; textureSize: number }) => {
           calls.push(options.source);
+          expect(options.textureSize).toBe(1024);
           if (options.source.endsWith("Broken.fbx")) {
             throw new Error("Blender is required");
           }
@@ -172,7 +180,8 @@ describe("batch intake pairing", () => {
       normalMaps: "3/3",
       roughnessTextures: "0/3",
       blendMaterials: 0,
-      maxTexture: "2048px",
+      sourceTexture: "4096px",
+      deliveredTexture: "2048px",
       mebibytes: "2.38",
       review: "/test/avatar-bakeoff?candidate=intake-malcolm&pose=overhead",
     });
