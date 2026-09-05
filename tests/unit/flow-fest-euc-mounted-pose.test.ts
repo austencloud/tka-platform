@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   Bone,
   BufferAttribute,
@@ -13,6 +13,7 @@ import {
   Uint16BufferAttribute,
   Vector3,
 } from "three";
+import { KneeHingeAxisCalibrator } from "@austencloud/scene-3d";
 import {
   FLOW_FEST_EUC_CONTACT_THRESHOLDS,
   FLOW_FEST_EUC_MAXIMUM_PELVIS_LATERAL_METERS,
@@ -174,7 +175,11 @@ function createSyntheticRider(): SyntheticRider {
 interface SyntheticVehicle {
   anchors: MountedPoseAnchors;
   riderFrame: Object3D;
-  setAttitude(pitchRadians: number, rollRadians: number, headingRadians: number): void;
+  setAttitude(
+    pitchRadians: number,
+    rollRadians: number,
+    headingRadians: number
+  ): void;
   setRider(pitchRadians: number, leanRadians: number, suspension: number): void;
 }
 
@@ -293,7 +298,10 @@ describe("pedal anchor geometry", () => {
   it("separates the anchors by the pedal spacing the vehicle draws", () => {
     const left = flowFestEucPedalAnchorLocal("left");
     const right = flowFestEucPedalAnchorLocal("right");
-    expect(left.x - right.x).toBeCloseTo(FLOW_FEST_EUC_PEDAL_SEPARATION_METERS, 6);
+    expect(left.x - right.x).toBeCloseTo(
+      FLOW_FEST_EUC_PEDAL_SEPARATION_METERS,
+      6
+    );
     expect(left.x - right.x).toBeCloseTo(
       FLOW_FEST_EUC_PEDAL_GEOMETRY.lateralOffsetMeters * 2,
       6
@@ -342,7 +350,10 @@ describe("pedal anchor geometry", () => {
     const frame = readAnchorFrame(vehicle.anchors.left);
     // Heading a quarter turn puts the rider's left on world -Z.
     expect(frame.forward.x).toBeCloseTo(1, 5);
-    expect(frame.position.z).toBeCloseTo(-FLOW_FEST_EUC_PEDAL_GEOMETRY.lateralOffsetMeters, 5);
+    expect(frame.position.z).toBeCloseTo(
+      -FLOW_FEST_EUC_PEDAL_GEOMETRY.lateralOffsetMeters,
+      5
+    );
     expect(frame.position.y).toBeCloseTo(
       FLOW_FEST_EUC_PEDAL_SURFACE_HEIGHT_METERS - 0.04,
       5
@@ -685,6 +696,36 @@ describe("mounted pose rig", () => {
     expect(diagnostic.pass).toBe(false);
   });
 
+  // The rig binds inside the frame task, and three.js asks for the next frame
+  // only after that task returns: a throw here used to stop the whole scene.
+  it("stands down when calibration throws rather than stopping the frame", () => {
+    const rig = new FlowFestEucMountedPoseRig();
+    const rider = createSyntheticRider();
+    const vehicle = createSyntheticVehicle();
+    vehicle.riderFrame.add(rider.root);
+    vehicle.anchors.vehicleRoot.updateMatrixWorld(true);
+    rig.setAnchors(vehicle.anchors);
+    const compute = vi
+      .spyOn(KneeHingeAxisCalibrator.prototype, "compute")
+      .mockImplementation(() => {
+        throw new Error("hinge calibration drifted");
+      });
+    const report = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(rig.attach(rider.root)).toBe(false);
+      expect(report).toHaveBeenCalledTimes(1);
+    } finally {
+      compute.mockRestore();
+      report.mockRestore();
+    }
+    const diagnostic = rig.diagnostic();
+    expect(diagnostic.status).toBe("unsupported-rig");
+    expect(diagnostic.unsupportedReason).toContain("hinge calibration drifted");
+    // The rider checks this before re-binding, so a failed rig is not retried
+    // every frame.
+    expect(rig.isAttachedTo(rider.root)).toBe(true);
+  });
+
   for (const slopeDegrees of [0, 20, 35]) {
     it(`places both soles on their pedals at ${slopeDegrees} degrees`, () => {
       const attitude = slopeAttitude(slopeDegrees);
@@ -715,7 +756,9 @@ describe("mounted pose rig", () => {
           FLOW_FEST_EUC_CONTACT_THRESHOLDS.maximumKneeFlexDegrees
         );
       }
-      expect(Math.abs(diagnostic.pelvisLateralOffsetMeters)).toBeLessThanOrEqual(
+      expect(
+        Math.abs(diagnostic.pelvisLateralOffsetMeters)
+      ).toBeLessThanOrEqual(
         FLOW_FEST_EUC_CONTACT_THRESHOLDS.maximumPelvisLateralOffsetMeters
       );
       expect(diagnostic.pass).toBe(true);
@@ -852,10 +895,7 @@ describe("mounted pose rig", () => {
       diagnostic.leftPoints.anchorWorld.y,
       diagnostic.leftPoints.anchorWorld.z
     );
-    expect(sole.distanceTo(anchor)).toBeCloseTo(
-      diagnostic.left.errorMeters,
-      6
-    );
+    expect(sole.distanceTo(anchor)).toBeCloseTo(diagnostic.left.errorMeters, 6);
   });
 
   it("survives a stance the leg cannot span without poisoning the rig", () => {
