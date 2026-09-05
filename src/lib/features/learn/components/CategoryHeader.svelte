@@ -1,12 +1,3 @@
-<!--
-CategoryHeader - Simple category section divider
-
-Displays:
-- Category icon
-- Category name
-- Progress count (completed/total)
-- Extending line
--->
 <script lang="ts">
   import type { ConceptCategory } from "../domain/types";
   import { CONCEPT_CATEGORIES } from "../domain/concepts";
@@ -16,85 +7,37 @@ Displays:
     completedCount = 0,
     totalCount = 0,
     premiumGated = false,
-  }: {
+  } = $props<{
     category: ConceptCategory;
     completedCount?: number;
     totalCount?: number;
     premiumGated?: boolean;
-  } = $props();
-
-  const categoryInfo = $derived(
-    CONCEPT_CATEGORIES[category as ConceptCategory]
-  );
+  }>();
 </script>
 
-<div class="category-divider" style="--category-color: {categoryInfo.color}">
-  <span class="icon"
-    ><i class="fa-solid {categoryInfo.icon}" aria-hidden="true"></i></span
-  >
-  <span class="name">{categoryInfo.name}</span>
-  {#if premiumGated}
-    <span class="premium-tag">
-      <i class="fas fa-crown" aria-hidden="true"></i>
-      Premium
-    </span>
-  {/if}
-  <span class="count">{completedCount}/{totalCount}</span>
-  <div class="line"></div>
-</div>
+<header class="category-heading">
+  <h3>{CONCEPT_CATEGORIES[category].name}</h3>
+  <span class="count">{completedCount} of {totalCount} completed</span>
+  {#if premiumGated}<span class="premium">Premium</span>{/if}
+</header>
 
 <style>
-  .category-divider {
+  .category-heading {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 0;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
   }
-
-  .icon {
-    font-size: 1rem;
-    line-height: 1;
-    color: var(--category-color);
-    text-shadow: 0 0 12px
-      color-mix(in srgb, var(--category-color) 40%, transparent);
+  h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 650;
+    color: var(--theme-text);
   }
-
-  .name {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--category-color);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .premium-tag {
-    --premium-gold: #fbbf24;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--premium-gold);
-    letter-spacing: 0.03em;
-  }
-
-  .premium-tag i {
-    font-size: 0.625rem;
-  }
-
-  .count {
-    font-size: 0.875rem;
-    font-weight: 500;
+  .count,
+  .premium {
+    font-size: 0.75rem;
     color: var(--theme-text-dim);
-  }
-
-  .line {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(
-      to right,
-      color-mix(in srgb, var(--category-color) 30%, transparent),
-      transparent
-    );
+    font-variant-numeric: tabular-nums;
   }
 </style>

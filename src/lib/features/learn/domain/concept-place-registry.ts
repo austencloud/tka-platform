@@ -94,6 +94,11 @@ export const CONCEPT_RESOURCE_BINDINGS: Readonly<
         label: "Hand Motions lesson",
         coverage: "focused",
       },
+      {
+        lessonId: "timing-and-direction",
+        label: "Timing and Direction lesson",
+        coverage: "focused",
+      },
     ],
     guideRefs: [
       {
