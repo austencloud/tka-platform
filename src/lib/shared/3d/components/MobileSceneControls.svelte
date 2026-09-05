@@ -19,6 +19,8 @@
     openPerformerRequest?: number;
     /** Monotonic request to return the compact canvas to selection. */
     closePerformerRequest?: number;
+    /** A host editor replaces either compact sheet. */
+    closeSheetsRequest?: number;
     /** Lets a host make room for the active compact sheet without teaching
      *  this shared control surface about the host's surrounding layout. */
     onSheetChange?: (sheet: "performer" | "scene" | null) => void;
@@ -33,6 +35,7 @@
     onPerformerEdit,
     openPerformerRequest = 0,
     closePerformerRequest = 0,
+    closeSheetsRequest = 0,
     onSheetChange,
   }: Props = $props();
 
@@ -40,6 +43,12 @@
   let openSheet = $state<Sheet>(null);
   let lastOpenPerformerRequest = $state(openPerformerRequest);
   let lastClosePerformerRequest = $state(closePerformerRequest);
+  let lastCloseSheetsRequest = $state(closeSheetsRequest);
+  $effect(() => {
+    if (closeSheetsRequest === lastCloseSheetsRequest) return;
+    lastCloseSheetsRequest = closeSheetsRequest;
+    openSheet = null;
+  });
 
   function toggle(sheet: Exclude<Sheet, null>) {
     openSheet = openSheet === sheet ? null : sheet;

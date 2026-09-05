@@ -163,7 +163,13 @@ export function createViewerOrchestratorContextState(
 
     canvasReady:
       (inputs.viewer3DState.renderMode === "3d"
-        ? !!inputs.viewer3DState.webglCanvas
+        ? !!inputs.viewer3DState.webglCanvas &&
+          !!inputs.viewer3DState.threlteRenderer &&
+          !!inputs.viewer3DState.threlteScene &&
+          !!inputs.viewer3DState.threlteCamera &&
+          !!inputs.viewer3DState.threlteRunFrame &&
+          !!inputs.viewer3DState.threltePauseAutoLoop &&
+          !!inputs.viewer3DState.threlteResumeAutoLoop
         : !!inputs.exportCoordinator.animationCanvas) &&
       !!inputs.interactive.playbackController,
     onRenderProgress: inputs.handlers.onRenderProgress,
@@ -291,4 +297,3 @@ export function createViewerOrchestratorContextState(
     },
   };
 }
-

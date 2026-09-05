@@ -1737,6 +1737,9 @@ function buildViewer3DState(
   // loop is paused so manual runFrame calls aren't racing with rAF renders.
   let threltePauseAutoLoop = $state<(() => void) | null>(null);
   let threlteResumeAutoLoop = $state<(() => void) | null>(null);
+  // Renderer objects stored in rune state are proxied, so their exposed value
+  // is not a safe identity token for registration ownership.
+  let threlteRegistrationOwner: unknown = null;
 
   // Pause the Threlte render loop when in 2D mode so the hidden 3D canvas
   // doesn't eat CPU/GPU time and stutter the active 2D animation.
@@ -2509,12 +2512,27 @@ function buildViewer3DState(
       pauseAutoLoop: () => void;
       resumeAutoLoop: () => void;
     }) {
+      threlteRegistrationOwner = refs.renderer;
       threlteRenderer = refs.renderer;
       threlteScene = refs.scene;
       threlteCamera = refs.camera;
       threlteRunFrame = refs.runFrame;
       threltePauseAutoLoop = refs.pauseAutoLoop;
       threlteResumeAutoLoop = refs.resumeAutoLoop;
+      return () => {
+        // A replacement legacy canvas can register before the old canvas's
+        // effect cleanup runs. Only the owner of the current handles may clear
+        // them, otherwise Record Scene can get stuck on "Preparing."
+        if (threlteRegistrationOwner !== refs.renderer) return;
+        threlteRegistrationOwner = null;
+        threlteRenderer = null;
+        threlteScene = null;
+        threlteCamera = null;
+        threlteRunFrame = null;
+        threltePauseAutoLoop = null;
+        threlteResumeAutoLoop = null;
+        _loopPausedFor2D = false;
+      };
     },
     get threlteRunFrame() {
       return threlteRunFrame;

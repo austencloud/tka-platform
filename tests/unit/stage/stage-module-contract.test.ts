@@ -173,3 +173,21 @@ describe("One Stage ownership", () => {
     ).toThrow();
   });
 });
+
+describe("TIKA distinct sequences wiring", () => {
+  it("applies assign-distinct-sequences through the stage document, not the viewer", () => {
+    const stage = read(STAGE);
+    expect(stage).toContain("resolveDirectorSequenceAssignments");
+    expect(stage).toContain("stageState.assignPerformerSequences(");
+    expect(stage).toContain("listLibrarySequences");
+    expect(stage).not.toContain("loadSequenceScoped(");
+  });
+
+  it("keeps rig sequence loads out of the direction revision guard", () => {
+    const stage = read(STAGE);
+    expect(stage).toContain("describeCastForDirectorRevision(");
+    expect(stage).not.toMatch(
+      /cast: viewer\.performerManager\.performers\.map\(\(performer\) =>\s*performer\.captureEditingSnapshot\(\)\s*\),/
+    );
+  });
+});

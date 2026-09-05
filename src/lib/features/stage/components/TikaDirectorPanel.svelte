@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import { onDestroy } from "svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import { growFade } from "$lib/shared/transitions/motion";
   import type {
@@ -7,33 +7,47 @@
     TikaDirectorResponse,
   } from "../domain/tika-director";
 
-  interface DirectorSubmitResult {
-    response: TikaDirectorResponse;
-    undo?: () => void;
-  }
+  import type { TikaDirectorSubmitResult } from "../state/tika-director-session";
 
   let {
-    open = $bindable(false),
+    onClose,
+    active = true,
+    compact = false,
+    prompt = $bindable(""),
+    messages = $bindable([]),
     sceneName,
     performerCount,
     currentBeat,
     onSubmit,
   }: {
-    open?: boolean;
+    onClose: () => void;
+    active?: boolean;
+    compact?: boolean;
+    prompt?: string;
+    messages?: TikaDirectorConversationMessage[];
     sceneName: string;
     performerCount: number;
     currentBeat: number;
     onSubmit: (
       prompt: string,
-      conversation: readonly TikaDirectorConversationMessage[]
-    ) => Promise<DirectorSubmitResult>;
+      conversation: readonly TikaDirectorConversationMessage[],
+      signal: AbortSignal
+    ) => Promise<TikaDirectorSubmitResult>;
   } = $props();
 
-  let prompt = $state("");
-  let messages = $state<TikaDirectorConversationMessage[]>([]);
   let submitting = $state(false);
   let error = $state<string | null>(null);
-  let undoLatest = $state<(() => void) | null>(null);
+  let undoLatest = $state<(() => boolean) | null>(null);
+  let pendingRequest: AbortController | null = null;
+  onDestroy(() => pendingRequest?.abort());
+  $effect(() => {
+    if (!active) {
+      pendingRequest?.abort();
+      pendingRequest = null;
+      submitting = false;
+      undoLatest = null;
+    }
+  });
 
   const suggestions = [
     "Give every performer a different prop",
@@ -50,25 +64,33 @@
   async function submitDirection() {
     const nextPrompt = prompt.trim();
     if (!nextPrompt || submitting) return;
-    const history = messages.slice(-8);
+    // Never silently discard old constraints to make room for a new command.
+    const history = [...messages];
     messages.push({ role: "user", content: nextPrompt });
     prompt = "";
     submitting = true;
     error = null;
+    const request = new AbortController();
+    pendingRequest = request;
     try {
-      const result = await onSubmit(nextPrompt, history);
+      const result = await onSubmit(nextPrompt, history, request.signal);
+      if (request.signal.aborted) return;
       messages.push({
         role: "assistant",
         content: responseText(result.response),
       });
       if (result.undo) undoLatest = result.undo;
     } catch (cause) {
+      if (request.signal.aborted) return;
       error =
         cause instanceof Error
           ? cause.message
           : "TIKA could not direct the scene.";
     } finally {
-      submitting = false;
+      if (pendingRequest === request) {
+        pendingRequest = null;
+        submitting = false;
+      }
     }
   }
 
@@ -76,9 +98,12 @@
     prompt = suggestion;
   }
 
-  function handleOpenChange(nextOpen: boolean) {
-    open = nextOpen;
-    if (!nextOpen) undoLatest = null;
+  function closePanel() {
+    pendingRequest?.abort();
+    pendingRequest = null;
+    submitting = false;
+    undoLatest = null;
+    onClose();
   }
 
   function handlePromptKeydown(event: KeyboardEvent) {
@@ -88,8 +113,13 @@
   }
 
   function undoTikaChanges() {
-    undoLatest?.();
+    const undone = undoLatest?.() ?? false;
     undoLatest = null;
+    if (!undone) {
+      error =
+        "The scene changed after that direction. Use the scene's Undo controls to step back through those edits.";
+      return;
+    }
     messages.push({
       role: "assistant",
       content: "Undid the last TIKA direction.",
@@ -97,146 +127,157 @@
   }
 </script>
 
-<Drawer
-  bind:isOpen={open}
-  onOpenChange={handleOpenChange}
-  placement="right"
-  respectLayoutMode
-  focusContainerOnOpen
-  ariaLabel="Direct the Stage with TIKA"
-  class="tika-director-drawer"
+<section
+  class="director-shell"
+  class:compact
+  aria-label="Direct the Stage with TIKA"
 >
-  <div class="director-shell">
+  {#if !compact}
     <DrawerHeader
       title="Direct with TIKA"
       subtitle={`${sceneName} · ${performerCount} ${performerCount === 1 ? "performer" : "performers"} · Beat ${Math.round(currentBeat)}`}
       icon="fa-wand-magic-sparkles"
-      closeDisabled={submitting}
-      onClose={() => handleOpenChange(false)}
+      onClose={closePanel}
     />
+  {/if}
 
-    <div class="director-body">
-      <section
-        class="conversation"
-        aria-label="Direction conversation"
-        aria-live="polite"
-      >
-        {#if messages.length === 0}
-          <div class="welcome">
-            <div class="tika-mark" aria-hidden="true">
-              <i class="fas fa-wand-magic-sparkles"></i>
-            </div>
-            <div>
-              <h3>Tell me what should change.</h3>
-              <p>
-                I can direct this live cast’s avatars, props, and formation
-                timing. If your intent is ambiguous, I’ll ask before touching
-                the scene.
-              </p>
-            </div>
+  <div class="director-body">
+    <section
+      class="conversation"
+      aria-label="Direction conversation"
+      aria-live="polite"
+    >
+      {#if messages.length === 0}
+        <div class="welcome">
+          <div class="tika-mark" aria-hidden="true">
+            <i class="fas fa-wand-magic-sparkles"></i>
           </div>
-          <div class="suggestions" aria-label="Example directions">
-            {#each suggestions as suggestion}
-              <button
-                type="button"
-                onclick={() => useSuggestion(suggestion)}
-                disabled={submitting}
-              >
-                {suggestion}
-              </button>
-            {/each}
+          <div>
+            <h3>Tell me what should change.</h3>
+            <p>
+              I can direct this live cast’s avatars, props, and formation
+              timing. If your intent is ambiguous, I’ll ask before touching the
+              scene.
+            </p>
           </div>
-        {:else}
-          {#each messages as message, index (`${message.role}-${index}`)}
-            <article
-              class:from-user={message.role === "user"}
-              class="message"
-              in:growFade
+        </div>
+        <div class="suggestions" aria-label="Example directions">
+          {#each suggestions as suggestion}
+            <button
+              type="button"
+              onclick={() => useSuggestion(suggestion)}
+              disabled={submitting}
             >
-              <span>{message.role === "user" ? "You" : "TIKA"}</span>
-              <p>{message.content}</p>
-            </article>
+              {suggestion}
+            </button>
           {/each}
-        {/if}
-
-        {#if submitting}
-          <div class="thinking" in:growFade>
-            <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-            Reading the live scene…
-          </div>
-        {/if}
-
-        {#if error}
-          <div class="error" role="alert" in:growFade>
-            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
-            <span>{error}</span>
-          </div>
-        {/if}
-      </section>
-
-      {#if undoLatest}
-        <button
-          class="undo"
-          type="button"
-          onclick={undoTikaChanges}
-          in:growFade
-        >
-          <i class="fas fa-rotate-left" aria-hidden="true"></i>
-          Undo TIKA changes
-        </button>
+        </div>
+      {:else}
+        {#each messages as message, index (`${message.role}-${index}`)}
+          <article
+            class:from-user={message.role === "user"}
+            class="message"
+            in:growFade
+          >
+            <span>{message.role === "user" ? "You" : "TIKA"}</span>
+            <p>{message.content}</p>
+          </article>
+        {/each}
       {/if}
 
-      <form
-        class="composer"
-        onsubmit={(event) => {
-          event.preventDefault();
-          void submitDirection();
-        }}
-      >
-        <label for="tika-stage-direction">Your direction</label>
-        <textarea
-          id="tika-stage-direction"
-          bind:value={prompt}
-          onkeydown={handlePromptKeydown}
-          placeholder="Try: transition to a circle over 8 beats"
-          rows="3"
-          maxlength="2000"
-          disabled={submitting}
-        ></textarea>
-        <div class="composer-footer">
-          <span>Ctrl/⌘ + Enter to send</span>
-          <button
-            class="send"
-            type="submit"
-            disabled={submitting || !prompt.trim()}
-          >
-            <i
-              class:fa-circle-notch={submitting}
-              class:fa-spin={submitting}
-              class:fa-arrow-up={!submitting}
-              class="fas"
-              aria-hidden="true"
-            ></i>
-            {submitting ? "Directing…" : "Direct scene"}
-          </button>
+      {#if submitting}
+        <div class="thinking" in:growFade>
+          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+          Reading the live scene…
         </div>
-      </form>
-    </div>
+      {/if}
+
+      {#if error}
+        <div class="error" role="alert" in:growFade>
+          <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+          <span>{error}</span>
+        </div>
+      {/if}
+    </section>
+
+    {#if undoLatest}
+      <button
+        class="undo"
+        type="button"
+        onclick={undoTikaChanges}
+        disabled={submitting}
+        in:growFade
+      >
+        <i class="fas fa-rotate-left" aria-hidden="true"></i>
+        Undo TIKA changes
+      </button>
+    {/if}
+
+    <form
+      class="composer"
+      onsubmit={(event) => {
+        event.preventDefault();
+        void submitDirection();
+      }}
+    >
+      <label for="tika-stage-direction">Your direction</label>
+      <textarea
+        id="tika-stage-direction"
+        bind:value={prompt}
+        onkeydown={handlePromptKeydown}
+        placeholder="Try: transition to a circle over 8 beats"
+        rows="3"
+        maxlength="2000"
+        disabled={submitting}
+      ></textarea>
+      <div class="composer-footer">
+        <span>Ctrl/⌘ + Enter to send</span>
+        <button
+          class="send"
+          type="submit"
+          disabled={submitting || !prompt.trim()}
+        >
+          <i
+            class:fa-circle-notch={submitting}
+            class:fa-spin={submitting}
+            class:fa-arrow-up={!submitting}
+            class="fas"
+            aria-hidden="true"
+          ></i>
+          {submitting ? "Directing…" : "Direct scene"}
+        </button>
+      </div>
+    </form>
   </div>
-</Drawer>
+</section>
 
 <style>
-  :global(.tika-director-drawer) {
-    --drawer-width: min(30rem, 92vw);
-  }
-
   .director-shell {
     display: flex;
     height: 100%;
     min-height: 0;
     flex-direction: column;
-    background: var(--theme-bg, #090b12);
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 1rem;
+    background: var(--theme-panel-bg);
     color: var(--theme-text, #fff);
+  }
+  .director-shell.compact {
+    height: min(32rem, 60dvh);
+    border: 0;
+    border-radius: 0;
+  }
+  .compact .director-body {
+    overflow-y: auto;
+  }
+  .compact .conversation {
+    flex: none;
+    overflow: visible;
+    min-height: 0;
+  }
+  .compact .composer {
+    flex-shrink: 0;
   }
 
   .director-body {

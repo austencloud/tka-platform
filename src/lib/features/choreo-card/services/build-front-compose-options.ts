@@ -13,6 +13,7 @@ import type { SequenceExportOptions } from "$lib/shared/render/domain/models/seq
 import type { PrintRenderOptions } from "./types";
 import { buildCanonicalCardVisibility } from "../domain/canonical-card-visibility";
 import { getCardFrameContentInset } from "./card-front-frame";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 // MPC poker card defaults (822x1122 at 300 DPI with 36px bleed).
 const MPC_WIDTH = 822;
@@ -82,6 +83,7 @@ export function buildFrontComposeOptions(
     addStepNumbers: true,
     addWord: isHandPath ? true : canonical.addWord,
     customName: options.customName,
+    renderWordAsText: isHandPath,
     addDifficultyLevel: !isHandPath,
     stepSize: 300,
     stepScale: 1,
@@ -107,10 +109,19 @@ export function buildFrontComposeOptions(
     accentTintOpacity: options.tndElement?.cardTintOpacity,
     loopType: sequence.loopType ?? undefined,
     showLoopGlyph: !isHandPath,
-    ...(options.leftPropType && { leftPropTypeOverride: options.leftPropType }),
-    ...(options.rightPropType && {
-      rightPropTypeOverride: options.rightPropType,
-    }),
+    ...(isHandPath
+      ? {
+          leftPropTypeOverride: PropType.HAND,
+          rightPropTypeOverride: PropType.HAND,
+        }
+      : {
+          ...(options.leftPropType && {
+            leftPropTypeOverride: options.leftPropType,
+          }),
+          ...(options.rightPropType && {
+            rightPropTypeOverride: options.rightPropType,
+          }),
+        }),
     ...(options.deckId && { deckId: options.deckId }),
     ...(options.deckName && { deckName: options.deckName }),
     visibilityOverrides: {

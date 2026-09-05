@@ -1,4 +1,4 @@
-import { PropType } from "@austencloud/scene-3d";
+import { PropType } from "@austencloud/scene-3d/worker";
 import {
   BUUGENG_ARTWORK_GEOMETRY,
   BUUGENG_TIP_POINTS,
