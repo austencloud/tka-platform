@@ -139,6 +139,7 @@ export interface ExistingPublicOwnedFields {
  * expose converted dates.
  */
 export interface PublicSequenceProjectionWrite {
+  readonly sequenceKind?: SequenceData["sequenceKind"];
   readonly id: string;
   readonly sourceRef: string;
   readonly ownerId: string;
@@ -251,6 +252,9 @@ export async function buildPublicSequenceProjection(
     }),
 
     name: source.name,
+    ...(source.sequenceKind !== undefined && {
+      sequenceKind: source.sequenceKind,
+    }),
     ...(source.displayName !== undefined && {
       displayName: source.displayName,
     }),

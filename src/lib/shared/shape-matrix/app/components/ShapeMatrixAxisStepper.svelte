@@ -1,22 +1,23 @@
 <!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixAxisStepper.svelte
-  One axis of the Level Matrix recipe bar: a prev/next stepper through the
-  turn values the chosen difficulty allows, showing the value in the current
-  notation with the other notation beside it. Rows (blue, left hand) and
-  columns (red, right hand) each get one, so there is no Apply-to mode and no
-  "Mixed" placeholder: the bar always names both axes exactly. -->
+  One axis of the Level Matrix: a prev/next stepper through the turn values
+  the chosen difficulty allows, showing the value in the current notation
+  only. Rows (blue, left hand) and columns (red, right hand) each get one, so
+  there is no Apply-to mode and no "Mixed" placeholder. The corner layout
+  scales with the grid's corner cell; the plain layout is a header control. -->
 <script lang="ts">
   import {
     matrixTurnSpokenLabel,
     matrixTurnVisibleLabel,
   } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
-  import { ratioLabel } from "$lib/shared/shape-matrix/domain/flower-signature";
   import type { TurnValue } from "$lib/shared/create/services/level-turn-values";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
 
   interface Props {
     hand: "left" | "right";
+    /** Corner: sized in container units inside the grid's corner cell. */
+    layout?: "plain" | "corner";
   }
-  let { hand }: Props = $props();
+  let { hand, layout = "plain" }: Props = $props();
 
   const appState = getShapeMatrixAppContext();
   const axisName = $derived(hand === "left" ? "Rows" : "Columns");
@@ -27,16 +28,7 @@
   const index = $derived(turns.indexOf(turn));
   const canStep = $derived(turns.length > 1);
 
-  /* The value reads in the chosen notation; the other notation rides along
-     small so a roll is legible to both a TKA reader and a VTG reader. */
-  const primary = $derived(matrixTurnVisibleLabel(turn, appState.labelMode));
-  const secondary = $derived(
-    appState.labelMode === "ratios"
-      ? turn === "fl"
-        ? "Float"
-        : `${turn} turn${turn === 1 ? "" : "s"}`
-      : ratioLabel(turn)
-  );
+  const visible = $derived(matrixTurnVisibleLabel(turn, appState.labelMode));
   const spoken = $derived(matrixTurnSpokenLabel(turn, appState.labelMode));
 
   function step(delta: number): void {
@@ -60,6 +52,7 @@
   class="axis-stepper"
   class:rows={hand === "left"}
   class:columns={hand === "right"}
+  class:corner={layout === "corner"}
   role="group"
   aria-label={`${axisName}: ${spoken}`}
 >
@@ -83,8 +76,7 @@
     aria-valuetext={spoken}
     onkeydown={onKey}
   >
-    <strong>{primary}</strong>
-    <span class="secondary">{secondary}</span>
+    {visible}
   </span>
   <button
     type="button"
@@ -100,6 +92,8 @@
 <style>
   .axis-stepper {
     --axis-color: var(--prop-blue-text, #818cf8);
+    --step-size: var(--min-touch-target, 44px);
+    --value-size: var(--font-size-md, 1rem);
     display: inline-flex;
     align-items: stretch;
     min-width: 0;
@@ -113,16 +107,26 @@
     --axis-color: var(--prop-red-text, #f87171);
   }
 
+  /* Inside the corner cell the stepper reads in that cell's container
+     units, so it shrinks with a laptop grid and grows on a wide one. */
+  .axis-stepper.corner {
+    --step-size: clamp(1.5rem, 18cqi, 2.75rem);
+    --value-size: clamp(0.9rem, 11cqi, 1.4rem);
+    border-radius: 8px;
+  }
+
   .step {
     display: grid;
-    width: var(--min-touch-target, 44px);
-    min-height: var(--min-touch-target, 44px);
+    flex: 0 0 auto;
+    width: var(--step-size);
+    min-height: var(--step-size);
     place-items: center;
     padding: 0;
     border: 0;
     background: transparent;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.7));
     font: inherit;
+    font-size: calc(var(--value-size) * 0.7);
     cursor: pointer;
     transition:
       color var(--duration-fast, 150ms) ease,
@@ -147,27 +151,21 @@
 
   .value {
     display: inline-flex;
-    min-width: 5.5rem;
-    align-items: baseline;
+    flex: 1 1 auto;
+    min-width: 3rem;
+    align-items: center;
     justify-content: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.5rem;
+    padding: 0.2rem 0.35rem;
     border-inline: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
-    color: var(--theme-text, #fff);
+    color: var(--axis-color);
+    font-size: var(--value-size);
+    font-weight: 750;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
 
-  .value strong {
-    color: var(--axis-color);
-    font-size: var(--font-size-md, 1rem);
-    font-weight: 750;
-  }
-
-  .secondary {
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 600;
+  .axis-stepper.corner .value {
+    min-width: 0;
   }
 
   @media (prefers-reduced-motion: reduce) {

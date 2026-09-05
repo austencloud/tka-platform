@@ -612,6 +612,7 @@
         sortedSequences={print.sortedSequences}
         sortedFooters={print.sortedFooters}
         cardTitles={print.cardTitles}
+        qrUrls={print.qrUrls}
         cardProfile={print.cardProfile}
         tndElements={print.tndElements}
         copiesPresets={print.copiesPresets}

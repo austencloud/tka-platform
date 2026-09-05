@@ -42,7 +42,7 @@
   // Bump when rendered pixels change for reasons NOT captured by the keyed
   // options below — e.g. the canonical profile changes. Rotates all keys so
   // stale persisted renders self-invalidate.
-  const CARD_RENDER_SCHEMA = "v9";
+  const CARD_RENDER_SCHEMA = "v11";
 
   interface Props {
     sequences: SequenceData[];
@@ -61,7 +61,7 @@
     /** Per-card short URLs, index-aligned with sequences. When supplied, card
      *  rendering stays read-only and skips Firestore short-code resolution. */
     qrUrls?: (string | undefined)[];
-    /** Hands-only reference-card rendering omits TKA, difficulty, LOOP, and QR. */
+    /** Hands-only cards use literal titles and QR links, without prop difficulty or TKA. */
     cardProfile?: "sequence" | "hand-path";
     /** Plain card titles, index-aligned with sequences. */
     cardTitles?: string[];
@@ -450,7 +450,7 @@
       deckId,
       deckName,
       qrUrl: cardIndex != null ? qrUrls?.[cardIndex] : undefined,
-      showQRCode: isHandPath ? false : undefined,
+      showQRCode: isHandPath ? true : undefined,
       cardProfile,
       customName: cardIndex != null ? cardTitles?.[cardIndex] : undefined,
     };

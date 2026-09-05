@@ -133,10 +133,12 @@ export function buildFrontComposeOptions(
         showQRCode: options.showQRCode,
       }),
       ...(isHandPath && {
+        leftPropType: PropType.HAND,
+        rightPropType: PropType.HAND,
         handPathMode: true,
         showTKA: false,
         showReversals: false,
-        showQRCode: false,
+        showQRCode: options.showQRCode ?? true,
         showMandala: false,
       }),
     },

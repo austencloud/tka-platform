@@ -1106,8 +1106,11 @@
                       showInlineExportProgress={false}
                       showTempoControls={false}
                       showPathShape={false}
-                      onPropChange={(prop) =>
-                        interactions.handlePropChange(prop, "video_export")}
+                      onPropChange={ctx.effectiveSequence?.sequenceKind ===
+                      "hand-path"
+                        ? undefined
+                        : (prop) =>
+                            interactions.handlePropChange(prop, "video_export")}
                       onPlaybackToggle={() =>
                         interactions.handlePlaybackToggle("video_export")}
                       onBpmChange={(bpm) =>

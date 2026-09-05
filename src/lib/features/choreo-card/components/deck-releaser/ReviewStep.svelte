@@ -75,6 +75,7 @@
     sortedSequences: SequenceData[];
     sortedFooters: CardFooter[];
     cardTitles?: string[];
+    qrUrls?: (string | undefined)[];
     cardProfile?: "sequence" | "hand-path";
     tndElements: (TnDElement | undefined)[];
     copiesPresets: number[];
@@ -135,6 +136,7 @@
     sortedSequences,
     sortedFooters,
     cardTitles = [],
+    qrUrls,
     cardProfile = "sequence",
     tndElements,
     copiesPresets,
@@ -373,6 +375,7 @@
       {sideFilter}
       footers={sortedFooters}
       {cardTitles}
+      {qrUrls}
       {cardProfile}
       {tndElements}
       isLoading={false}
