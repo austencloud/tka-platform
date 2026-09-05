@@ -224,8 +224,8 @@ Navigation via bottom tabs (mobile-first UX pattern)
     if (routeConceptId) writeConceptUrl(undefined, "replace");
   }
 
-  // The URL is the durable owner of the open lesson. Local persistence only
-  // helps the bare course URL resume an interrupted lesson after a reload.
+  // Public lesson links own the destination. The catalog stays a catalog;
+  // the full app can still restore its interrupted lesson on entry.
   onMount(() => {
     // A public course URL always owns the Concepts mode, even if the full app
     // last persisted Play, TIKA, or Guide. Other Learn entry points keep their
@@ -236,7 +236,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
       navigationState.setLearnMode("concepts");
     }
 
-    syncConceptFromUrl(true);
+    syncConceptFromUrl(!publicCourse);
     const handlePopstate = () => syncConceptFromUrl(false);
     window.addEventListener("popstate", handlePopstate);
     return () => window.removeEventListener("popstate", handlePopstate);

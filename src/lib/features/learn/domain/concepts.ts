@@ -9,7 +9,7 @@
 import type { ConceptCategory, LearnConcept } from "./types";
 
 /**
- * Complete TKA Learning Path - 29 Concepts
+ * Complete TKA Learning Path
  * Based on "The Kinetic Alphabet Level 1" curriculum
  */
 export const TKA_CONCEPTS: LearnConcept[] = [
@@ -21,7 +21,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     category: "foundation",
     name: "The Grid",
     shortName: "Grid",
-    description: "Master the 4-point diamond and box grid system",
+    description: "Find your way around the diamond and box grids.",
     icon: "fa-border-all",
     pdfPages: [7],
     prerequisites: [],
@@ -54,9 +54,9 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     id: "hand-motions-intro",
     order: 3,
     category: "foundation",
-    name: "Hand Motions Overview",
-    shortName: "Motions",
-    description: "Understand the three fundamental hand motions",
+    name: "Hand Motions",
+    shortName: "Hand Motions",
+    description: "Shift, dash, and static: three ways a hand can move.",
     icon: "fa-arrow-right",
     pdfPages: [9],
     prerequisites: ["hand-positions"],
@@ -65,6 +65,23 @@ export const TKA_CONCEPTS: LearnConcept[] = [
       "Shift - move to adjacent point",
       "Dash - move to opposite point",
       "Static - remain at current point",
+    ],
+  },
+  {
+    id: "timing-and-direction",
+    order: 3.5,
+    category: "foundation",
+    name: "Timing and Direction",
+    shortName: "Timing & Direction",
+    description: "Explore timing and direction, then combine them in six ways.",
+    icon: "fa-arrows-left-right",
+    pdfPages: [9, 10, 11],
+    prerequisites: ["hand-motions-intro"],
+    estimatedMinutes: 6,
+    concepts: [
+      "Together, split, and quarter timing",
+      "Same and opposite direction",
+      "The six timing and direction relationships",
     ],
   },
   {
