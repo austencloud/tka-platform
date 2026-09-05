@@ -49,7 +49,11 @@
     flowFestEucSpeedKilometresPerHour,
     flowFestEucSpeedMilesPerHour,
   } from "$lib/features/flow-fest-sim/domain/flow-fest-electric-unicycle";
-  import { createFlowFestMobilityState } from "$lib/features/flow-fest-sim/state/flow-fest-mobility-state.svelte";
+  import {
+    createFlowFestMobilityState,
+    type FlowFestMobilityCarRuntime,
+    type FlowFestMobilityRuntimeUpdate,
+  } from "$lib/features/flow-fest-sim/state/flow-fest-mobility-state.svelte";
   import { createFlowFestFieldPositioningState } from "$lib/features/flow-fest-sim/state/flow-fest-field-positioning-state.svelte";
   import {
     parseGeospatialTerrainManifest,
@@ -62,11 +66,18 @@
     createFlowFestProgress,
     getFlowFestObjective,
     restoreFlowFestProgress,
+    isFlowFestArrivalLightPhase,
     isFlowFestCampEstablishedPhase,
     type FlowFestMoment,
     type FlowFestProgressAction,
     type FlowFestProgressState,
   } from "$lib/features/flow-fest-sim/state/flow-fest-progress";
+  import {
+    flowFestDepartureProfile,
+    flowFestDrivingEnergyDrainPercent,
+    type FlowFestLoadout,
+  } from "$lib/features/flow-fest-sim/domain/flow-fest-loadout";
+  import { FLOW_FEST_CAR_CONFIG } from "$lib/features/flow-fest-sim/domain/flow-fest-car";
   import type { FlowFestProductionCollisionSet } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
   import FlowFestGrayboxWalkScene from "../flow-fest-graybox/FlowFestGrayboxWalkScene.svelte";
   import type { FlowFestGrayboxReadyDetails } from "../flow-fest-graybox/flow-fest-graybox-types";
@@ -77,9 +88,13 @@
   } from "../flow-fest-graybox/flow-fest-runtime-contract";
   import FlowFestProductionLayer from "./FlowFestProductionLayer.svelte";
   import FlowFestHud from "./FlowFestHud.svelte";
+  import FlowFestLoadoutPanel from "./FlowFestLoadoutPanel.svelte";
   import {
     createFlowFestCampPlan,
+    FLOW_FEST_DRIVE_IN_SPAWN,
     FLOW_FEST_LOWER_CHECK_IN,
+    flowFestGateQueueCars,
+    isFlowFestGateArrival,
   } from "./flow-fest-camp-plan";
   import {
     FLOW_FEST_ENTRANCE_REFERENCE,
@@ -207,6 +222,12 @@
   let audioProofRevision = -1;
   let audioProofPublishedAt = 0;
   let resetToken = $state(0);
+  /** Whether the last mobility update had the player in the driver's seat. */
+  let carWasDriving = false;
+  /** Driven seconds not yet charged to the energy bar. */
+  let drivingSecondsBanked = 0;
+  let lastDrivingFrameAt: number | null = null;
+  const ENERGY_DRAIN_TICK_SECONDS = 5;
   let cameraToken = $state(0);
   let cameraId = $state<string | null>(null);
   let stageToken = $state(0);
@@ -364,7 +385,25 @@
       : targetDistance
   );
   const ready = $derived(Boolean(terrainReady && productionReady && progress));
-  const timeLabel = $derived(visualProfile.clockLabel);
+  /**
+   * While the arrival light holds, the clock is the departure's arrival
+   * time; the site clock takes over once camp is being made.
+   */
+  const timeLabel = $derived(
+    !gate3Review.enabled &&
+      progress?.loadout &&
+      isFlowFestArrivalLightPhase(progress.phase)
+      ? flowFestDepartureProfile(progress.loadout.departure).clockLabel
+      : visualProfile.clockLabel
+  );
+  const gateQueueCars = $derived(
+    progress?.loadout &&
+      (progress.phase === "drive-in" || progress.phase === "gate-check-in")
+      ? flowFestGateQueueCars(
+          flowFestDepartureProfile(progress.loadout.departure).gateQueueCars
+        )
+      : []
+  );
   const electricUnicycleSpeedMph = $derived(
     flowFestEucSpeedMilesPerHour(mobilityRuntime.dynamics.speedMetersPerSecond)
   );
@@ -477,6 +516,106 @@
   function dispatch(action: FlowFestProgressAction): void {
     if (!progress) return;
     progress = advanceFlowFestProgress(progress, action);
+  }
+
+  /**
+   * Leave: the road opens at the west edge with hands on the wheel. The car
+   * is the spawn and the unicycle rides as cargo until the gate.
+   */
+  function depart(loadout: FlowFestLoadout): void {
+    if (!contract || progress?.phase !== "loadout") return;
+    const fingerprint =
+      contract.coordinateContentFingerprint.canonicalPayloadSha256;
+    dispatch({ type: "depart", loadout });
+    mobility.reset(
+      fingerprint,
+      { x: FLOW_FEST_DRIVE_IN_SPAWN.x, z: FLOW_FEST_DRIVE_IN_SPAWN.z },
+      FLOW_FEST_DRIVE_IN_SPAWN.headingRadians,
+      {
+        car: { modelId: loadout.carModelId, paintIndex: loadout.paintIndex },
+        driving: true,
+      }
+    );
+    carWasDriving = true;
+    stagePosition = null;
+    stageAwaitingArrival = false;
+  }
+
+  /** Back to Thursday afternoon: progress, car and wheel all start again. */
+  function startOver(): void {
+    if (gate5Review) {
+      restartIntegratedJourney();
+      return;
+    }
+    if (!contract) return;
+    const fingerprint =
+      contract.coordinateContentFingerprint.canonicalPayloadSha256;
+    const [spawnX, , spawnZ] = contract.spawn.positionWorld;
+    dispatch({ type: "start-over" });
+    mobility.reset(
+      fingerprint,
+      { x: spawnX, z: spawnZ },
+      spawnHeadingFor(contract)
+    );
+    carWasDriving = false;
+    stagePosition = null;
+    stageAwaitingArrival = false;
+    resetToken += 1;
+  }
+
+  /**
+   * Parking inside the gate apron ends the drive in. The phase advances the
+   * moment the driver gets out, so the objective changes with the view.
+   */
+  function handleMobilityUpdate(update: FlowFestMobilityRuntimeUpdate): void {
+    mobility.applyRuntime(update);
+    if (update.car === undefined) return;
+    const car = update.car;
+    bankDrivingTime(car);
+    if (
+      carWasDriving &&
+      car &&
+      !car.driving &&
+      progress?.phase === "drive-in" &&
+      isFlowFestGateArrival(car.position)
+    ) {
+      dispatch({ type: "arrive-at-gate" });
+    }
+    carWasDriving = car?.driving ?? false;
+  }
+
+  /**
+   * Driving costs energy at the rate the loadout screen promised, charged in
+   * driven time: frames in which the car was moving, each capped the way the
+   * car caps a slow frame. A tab left in the background drains nothing,
+   * because nothing was driven.
+   */
+  function bankDrivingTime(car: FlowFestMobilityCarRuntime | null): void {
+    const moving =
+      car?.driving === true && car.dynamics.speedMetersPerSecond !== 0;
+    if (!moving || progress?.phase !== "drive-in") {
+      lastDrivingFrameAt = null;
+      return;
+    }
+    const now = performance.now();
+    if (lastDrivingFrameAt !== null) {
+      drivingSecondsBanked += Math.min(
+        (now - lastDrivingFrameAt) / 1000,
+        FLOW_FEST_CAR_CONFIG.maximumSimulationCatchUpSeconds
+      );
+    }
+    lastDrivingFrameAt = now;
+    (globalThis as Record<string, unknown>).__flowFestEnergyBank = {
+      bankedSeconds: drivingSecondsBanked,
+      lastFrameAt: now,
+    };
+    if (drivingSecondsBanked < ENERGY_DRAIN_TICK_SECONDS) return;
+    const seconds = drivingSecondsBanked;
+    drivingSecondsBanked = 0;
+    dispatch({
+      type: "drain-energy",
+      percent: flowFestDrivingEnergyDrainPercent(seconds),
+    });
   }
 
   function chooseCamp(branch: FlowFestBranchId): void {
@@ -659,6 +798,7 @@
       { x: spawnX, z: spawnZ },
       spawnHeadingFor(contract)
     );
+    carWasDriving = false;
     stagePosition = null;
     stageAwaitingArrival = false;
     resetToken += 1;
@@ -1302,6 +1442,9 @@
           {productionCollision}
           productionCampEstablished={campEstablished}
           productionFestivalActive={festivalActive}
+          {gateQueueCars}
+          playerCharacterId={progress?.loadout?.characterId}
+          inputLocked={progress?.phase === "loadout"}
           electricUnicycleEnabled={!fixedReviewEnabled}
           electricUnicycleRevision={mobility.revision}
           electricUnicycleSnapshot={mobility.snapshot}
@@ -1316,7 +1459,7 @@
             audioListener.yawRadians = yaw;
           }}
           onCameraPoseChange={handleCameraPose}
-          onElectricUnicycleChange={(update) => mobility.applyRuntime(update)}
+          onElectricUnicycleChange={handleMobilityUpdate}
           onError={(message) => (error = message)}
         />
         <FlowFestProductionLayer
@@ -1327,6 +1470,7 @@
           {fireJamEnergy}
           playerPosition={position}
           showCampDressing={!entranceReferenceReview.enabled}
+          {gateQueueCars}
           onReady={(details) => {
             productionReady = details;
             productionCollision = details.collision;
@@ -1465,6 +1609,7 @@
       onToggleSound={() => void toggleSound()}
       onRestart={() =>
         gate5Review ? restartIntegratedJourney() : (resetToken += 1)}
+      onStartOver={startOver}
       onReviewGate={() => stageGate5ReviewArea("lower-gate")}
       onReviewEntrance={() => stageGate5ReviewArea("camp-entrance")}
       onReviewParkingGate={() => stageGate5ReviewArea("parking-gate")}
@@ -1490,6 +1635,14 @@
   {/if}
 
   {#if !fixedReviewEnabled}
+    {#if ready && progress?.phase === "loadout"}
+      <section
+        class="loadout-dock glass-panel themed-scrollbar"
+        aria-label="Pack the car"
+      >
+        <FlowFestLoadoutPanel onDepart={depart} />
+      </section>
+    {/if}
     {#if progress?.phase === "choose-camp"}
       <section
         class="camp-choice glass-panel"
@@ -1654,6 +1807,18 @@
     z-index: 45;
     inline-size: min(55rem, calc(100vw - 2rem));
     padding: clamp(1rem, 2vw, 1.5rem);
+    border-radius: 1.35rem;
+    translate: -50% -50%;
+  }
+
+  .loadout-dock {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    z-index: 45;
+    inline-size: min(64rem, calc(100vw - 1.5rem));
+    max-block-size: calc(100dvh - 1.5rem);
+    overflow: auto;
+    padding: clamp(0.9rem, 2vw, 1.5rem);
     border-radius: 1.35rem;
     translate: -50% -50%;
   }
@@ -1825,6 +1990,13 @@
       max-block-size: calc(100vh - 8rem);
       overflow-y: auto;
       padding: 0.8rem;
+    }
+
+    .loadout-dock {
+      inline-size: calc(100vw - 1rem);
+      max-block-size: calc(100dvh - 1rem);
+      padding: 0.75rem;
+      border-radius: 1rem;
     }
 
     .choice-grid {
