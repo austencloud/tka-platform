@@ -37,7 +37,11 @@ export function theoryRatioFromParts(
   }
 }
 
-/** User-facing VTG label. Storage keys remain prop-first for URL stability. */
+/**
+ * User-facing VTG label: hand cycles first, prop rotations second, matching
+ * Noel Yee's own notation (VTG2 index: "1/3 Four Petal Antispin Flower").
+ * Only `spinRatioKey` and the URL parameters stay prop-first, for stability.
+ */
 export function theoryRatioLabel(ratio: SpinRatio): string {
   return `${ratio.handCycles}:${ratio.propRotations}`;
 }

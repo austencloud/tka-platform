@@ -16,24 +16,29 @@
   ];
   const timingDetails = {
     together: {
-      offset: 0,
-      label: "In sync",
-      description: "The two lights flash at the same time.",
+      redX: 120,
+      redY: 174,
+      label: "Together",
+      description:
+        "At blue's downbeat, both hands are at the bottom of the circle.",
     },
     split: {
-      offset: 0.5,
-      label: "½ cycle apart",
-      description: "The two lights take turns, evenly spaced.",
+      redX: 120,
+      redY: 22,
+      label: "½ cycle",
+      description:
+        "At blue's downbeat, red is at the top of the circle: half a cycle apart.",
     },
     quarter: {
-      offset: 0.25,
-      label: "¼ cycle apart",
+      redX: 44,
+      redY: 98,
+      label: "¼ cycle",
       description:
-        "Blue flashes, then red a quarter cycle later, followed by a longer gap.",
+        "At blue's downbeat, red is at the side of the circle: a quarter cycle apart.",
     },
   } satisfies Record<
     TimingMode,
-    { offset: number; label: string; description: string }
+    { redX: number; redY: number; label: string; description: string }
   >;
 
   let timingMode = $state<TimingMode>("together");
@@ -55,62 +60,32 @@
       role="img"
       aria-label={`${timingOptions.find((option) => option.value === timingMode)?.label} timing: ${timingDetail.description}`}
     >
-      <svg class="concept-diagram" viewBox="0 0 240 240" aria-hidden="true">
-        <!-- Brightness carries timing; neither light changes size or position. -->
-        <g class="pulse-lights">
-          {#each ["blue", "red"] as hand, index}
-            <g
-              class="timing-light {hand}"
-              style:--pulse-offset={index === 0 ? 0 : timingDetail.offset}
-            >
-              <circle class="lamp-base" cx={72 + index * 96} cy="120" r="28" />
-              <g class="light-pulse">
-                <circle
-                  class="lamp-halo"
-                  cx={72 + index * 96}
-                  cy="120"
-                  r="38"
-                />
-                <circle
-                  class="lamp-core"
-                  cx={72 + index * 96}
-                  cy="120"
-                  r="28"
-                />
-                <circle
-                  class="lamp-highlight"
-                  cx={72 + index * 96}
-                  cy="120"
-                  r="18"
-                />
-              </g>
-            </g>
-          {/each}
-        </g>
-        <!-- Reduced motion keeps the relationship visible as four stationary beat positions. -->
-        <g class="static-rhythm">
-          {#each [0, 1, 2, 3] as beat}
+      <Crossfade key={timingMode} fill>
+        <svg class="concept-diagram" viewBox="0 0 240 240" aria-hidden="true">
+          <!-- A downbeat snapshot shows phase without choosing a rotation direction. -->
+          <circle class="cycle-reference" cx="120" cy="98" r="76" />
+          <path class="downbeat-reference" d="M92 194h56M120 194v10" />
+          <text class="diagram-label" x="120" y="234">Downbeat</text>
+          <text class="phase-label" x="120" y="108">{timingDetail.label}</text>
+          {#if timingMode === "together"}
+            <!-- Both colors occupy the exact same point, not neighboring tracks. -->
+            <path class="hand-marker blue" d="M120 158a16 16 0 0 0 0 32Z" />
+            <path class="hand-marker red" d="M120 158a16 16 0 0 1 0 32Z" />
+          {:else}
+            <circle class="hand-marker blue" cx="120" cy="174" r="16" />
             <circle
-              class="beat blue"
-              class:beat-on={beat === 0}
-              cx={54 + beat * 44}
-              cy="94"
-              r="13"
+              class="hand-marker red"
+              cx={timingDetail.redX}
+              cy={timingDetail.redY}
+              r="16"
             />
-            <circle
-              class="beat red"
-              class:beat-on={beat === timingDetail.offset * 4}
-              cx={54 + beat * 44}
-              cy="146"
-              r="13"
-            />
-          {/each}
-        </g>
-      </svg>
+          {/if}
+        </svg>
+      </Crossfade>
     </div>
 
     <div class="relationship-caption" aria-live="polite" aria-atomic="true">
-      <Crossfade key={timingMode}><span>{timingDetail.label}</span></Crossfade>
+      <span>At blue’s downbeat</span>
     </div>
 
     <div class="selector timing-selector">
@@ -137,28 +112,36 @@
       data-direction={directionMode}
       role="img"
       aria-label={directionMode === "same"
-        ? "Same direction: both arrows point right."
-        : "Opposite direction: the blue arrow points right and the red arrow points left."}
+        ? "Same rotation direction: both hands circle clockwise. No timing is shown."
+        : "Opposite rotation directions: blue circles clockwise and red circles counterclockwise. No timing is shown."}
     >
       <Crossfade key={directionMode} fill>
         <svg class="concept-diagram" viewBox="0 0 240 240" aria-hidden="true">
-          <path
-            class="direction-arrow blue"
-            d="M54 84h132m-28-28 28 28-28 28"
-          />
-          <path
-            class="direction-arrow red"
-            d={directionMode === "same"
-              ? "M54 156h132m-28-28 28 28-28 28"
-              : "M186 156H54m28-28-28 28 28 28"}
-          />
+          <!-- Rotation symbols have no hand positions or shared beat to imply timing. -->
+          <g transform="translate(60 120)">
+            <path
+              class="direction-arrow blue"
+              d="M-24 24A34 34 0 1 1 34 0M22-12 34 0 46-12"
+            />
+          </g>
+          <g
+            transform={`translate(180 120) scale(${directionMode === "same" ? 1 : -1} 1)`}
+          >
+            <path
+              class="direction-arrow red"
+              d="M-24 24A34 34 0 1 1 34 0M22-12 34 0 46-12"
+            />
+          </g>
         </svg>
       </Crossfade>
     </div>
 
     <div class="relationship-caption" aria-live="polite" aria-atomic="true">
       <Crossfade key={directionMode}
-        ><span>{directionMode === "same" ? "Same way" : "Opposite ways"}</span
+        ><span
+          >{directionMode === "same"
+            ? "Same rotation"
+            : "Opposite rotation"}</span
         ></Crossfade
       >
     </div>
@@ -179,7 +162,6 @@
 
 <style>
   .concept-model {
-    --cycle-duration: calc(var(--duration-dramatic) * 6);
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: min(100%, 64rem);
@@ -238,41 +220,31 @@
     color: var(--prop-red, #ed1c24);
   }
 
-  .lamp-base,
-  .lamp-core {
+  .hand-marker {
     fill: currentColor;
   }
-  .lamp-base {
-    opacity: 0.28;
-  }
-  .lamp-halo {
+  .cycle-reference {
     fill: none;
-    stroke: currentColor;
+    stroke: var(--theme-text-dim);
     stroke-width: 3;
-    opacity: 0.45;
+    opacity: 0.35;
   }
-  .lamp-highlight {
-    fill: white;
-    opacity: 0.28;
-  }
-  .light-pulse {
-    opacity: 0;
-    animation: light-beat var(--cycle-duration) linear infinite;
-    animation-delay: calc(var(--cycle-duration) * var(--pulse-offset));
-  }
-
-  .static-rhythm {
-    display: none;
-  }
-  .beat {
+  .downbeat-reference {
     fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    opacity: 0.4;
+    stroke: var(--theme-text);
+    stroke-width: 3;
+    stroke-linecap: round;
   }
-  .beat-on {
-    fill: currentColor;
-    opacity: 1;
+  .diagram-label,
+  .phase-label {
+    fill: var(--theme-text-dim);
+    font-family: inherit;
+    font-size: 28px;
+    text-anchor: middle;
+  }
+  .phase-label {
+    fill: var(--theme-text);
+    font-weight: 600;
   }
 
   .direction-arrow {
@@ -300,17 +272,6 @@
   }
   .direction-selector {
     max-width: 13rem;
-  }
-
-  @keyframes light-beat {
-    0%,
-    5% {
-      opacity: 1;
-    }
-    20%,
-    100% {
-      opacity: 0;
-    }
   }
 
   @media (max-width: 640px) {
@@ -368,18 +329,6 @@
     }
     .selector {
       grid-column: 1 / -1;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .light-pulse {
-      animation: none;
-    }
-    .pulse-lights {
-      display: none;
-    }
-    .static-rhythm {
-      display: inline;
     }
   }
 </style>
