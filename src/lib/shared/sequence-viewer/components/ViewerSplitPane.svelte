@@ -68,6 +68,7 @@
     onStepClick,
     onQrPlayClick,
     onCanvasReady,
+    rendererHandleRequired = false,
     onChoreoCardContextMenu,
     cardAutoLayoutOverride,
     cardContainSizeMotion = null,
@@ -509,6 +510,7 @@
       {onSaveToLibrary}
       {onUnfocusPane}
       {onCanvasReady}
+      {rendererHandleRequired}
       {onPlaybackToggle}
       {onSystemPlaybackChange}
       {onProgressBarSeek}
@@ -594,6 +596,7 @@
         {onSaveToLibrary}
         {onUnfocusPane}
         {onCanvasReady}
+        {rendererHandleRequired}
         {onPlaybackToggle}
         {onSystemPlaybackChange}
         {onProgressBarSeek}

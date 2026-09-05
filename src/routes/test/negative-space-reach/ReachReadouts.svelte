@@ -30,13 +30,28 @@
     frame: ReachFrame;
     /** Shown above the headline so a pane is identifiable on its own. */
     routeLabel: string;
+    /**
+     * Filmstrip mode: palm facing plus one thumb-end line, nothing else. Per
+     * `.claude/rules/*` and Austen directly — "don't put all this text on my
+     * screen that's not that useful to me unless you're using it" — the full
+     * `<dl>` below stays reachable behind the page's single "Readouts"
+     * disclosure instead of repeating under every pane.
+     */
+    compact?: boolean;
   }
 
-  let { frame, routeLabel }: Props = $props();
+  let { frame, routeLabel, compact = false }: Props = $props();
 
   const verdict = $derived(routeVerdict(frame));
 
   const palmSentence = $derived(facingSentence(frame.palmFacing));
+
+  /** The thumb-end clause of the single compact-mode line. */
+  const thumbSideSentence = $derived(
+    frame.thumbEndVsForearmMm === null
+      ? "Thumb end — no reading"
+      : `Thumb end ${ROUTE_VERDICT_LABEL[verdict]} · ${formatReach(frame.thumbEndVsForearmMm)} mm`
+  );
 
   const extensionPercent = $derived(
     frame.armExtension === null
@@ -104,6 +119,19 @@
   );
 </script>
 
+{#if compact}
+  <section
+    class="readouts compact"
+    aria-label={`Measurements for ${routeLabel}`}
+    data-verdict={verdict}
+  >
+    <p class="compact-line">
+      {palmSentence}
+      <span class="compact-sep">·</span>
+      {thumbSideSentence}
+    </p>
+  </section>
+{:else}
 <section
   class="readouts"
   aria-label={`Measurements for ${routeLabel}`}
@@ -264,6 +292,7 @@
       : "from reported shoulder width — the bone was not found, so depth past the shoulder assumes no chest offset"}.
   </p>
 </section>
+{/if}
 
 <style>
   .readouts {
@@ -449,6 +478,26 @@
   .provenance {
     margin: 0;
     font-size: var(--font-size-xs, 0.75rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+  }
+
+  /*
+    Filmstrip mode: one flowing line, no card chrome — the render is the
+    content. Wraps on a narrow pane, but is never more than one paragraph.
+  */
+  .readouts.compact {
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
+  .compact-line {
+    margin: 0;
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .compact-sep {
+    margin: 0 0.3em;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
   }
 </style>

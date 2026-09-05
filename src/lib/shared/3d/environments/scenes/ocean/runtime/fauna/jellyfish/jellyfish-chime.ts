@@ -1,35 +1,10 @@
 import { browser } from "$app/environment";
 import { sceneAudioState } from "../../../../../../state/scene-audio-state.svelte";
-
-// Major pentatonic — no wrong notes, so taps always harmonize no matter the
-// order they're played in. Offsets in semitones from the root.
-const MAJOR_PENTATONIC = [0, 2, 4, 7, 9];
-const ROOT_MIDI = 60; // C4
-
-const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-
-export function midiToFreq(midi: number): number {
-  return 440 * Math.pow(2, (midi - 69) / 12);
-}
-
-export function midiName(midi: number): string {
-  return NOTE_NAMES[((midi % 12) + 12) % 12]! + (Math.floor(midi / 12) - 1);
-}
-
-/**
- * Build `count` ascending major-pentatonic MIDI notes, wrapping up the octaves.
- * Index 0 is the lowest note; assign by jellyfish depth so the swarm reads as a
- * vertical xylophone (deeper = lower).
- */
-export function buildPentatonicNotes(count: number): number[] {
-  const out: number[] = [];
-  const scale = MAJOR_PENTATONIC;
-  for (let i = 0; i < count; i++) {
-    const oct = Math.floor(i / scale.length);
-    out.push(ROOT_MIDI + scale[i % scale.length]! + oct * 12);
-  }
-  return out;
-}
+export {
+  buildPentatonicNotes,
+  midiName,
+  midiToFreq,
+} from "../../../../../worlds/ocean/ocean-jellyfish-notes";
 
 // Additive inharmonic partials → per-partial exponential decay → lowpass
 // (underwater muffle) → stereo pan → master, with a shared convolver reverb tail.

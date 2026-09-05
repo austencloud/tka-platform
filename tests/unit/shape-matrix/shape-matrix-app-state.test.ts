@@ -629,6 +629,41 @@ describe("shape matrix app state", () => {
     expect(state.activeView).toBe("detail");
   });
 
+  it("edits a named axis directly, without an Apply-to target", () => {
+    const { state } = createState(false);
+    // The state boots at Level 2 with both axes at zero. The Apply-to target
+    // is a restored-link detail the direct edit must ignore.
+    state.setActiveAxis("right");
+
+    state.setTurnFor("left", 2);
+    expect(state.leftTurn).toBe(2);
+    expect(state.rightTurn).toBe(0);
+
+    state.setTurnFor("right", 3);
+    expect(state.leftTurn).toBe(2);
+    expect(state.rightTurn).toBe(3);
+
+    // Outside the level's band the edit is refused, not clamped.
+    state.setTurnFor("left", 0.5);
+    expect(state.leftTurn).toBe(2);
+  });
+
+  it("marks each Surprise roll for the reveal, and nothing else", async () => {
+    const { state } = createState(false);
+    await state.load();
+    expect(state.revealToken).toBe(0);
+
+    state.setTurnFor("left", 1);
+    state.setLevel(3);
+    expect(state.revealToken).toBe(0);
+
+    state.surpriseMe(() => 0.4);
+    expect(state.revealToken).toBe(1);
+    state.setSurface("theory");
+    state.surpriseMe(() => 0.6);
+    expect(state.revealToken).toBe(2);
+  });
+
   it("tracks the mandala handoff window", () => {
     const { state } = createState(true);
     expect(state.mandalaHandoff).toBe(false);

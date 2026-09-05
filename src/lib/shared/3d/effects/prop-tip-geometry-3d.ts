@@ -1,4 +1,4 @@
-import { PropType } from "@austencloud/scene-3d";
+import { PropType } from "@austencloud/scene-3d/worker";
 import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 import {

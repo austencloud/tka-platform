@@ -305,6 +305,11 @@ export function createShapeMatrixAppState(
   let aboutOpen = $state(false);
   let propPickerOpen = $state(false);
   let mandalaHandoff = $state(false);
+  /**
+   * Bumped once per Surprise roll. The panes key their reveal choreography on
+   * it, so the animation belongs to the roll and never to an ordinary edit.
+   */
+  let revealToken = $state(0);
 
   const availableTurns = $derived(matrixTurnsForLevel(level));
   const theoryRowAxis = $derived(buildTheoryAxis(theoryLeftRatio));
@@ -380,25 +385,23 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
-  function setTurn(
-    nextTurn: TurnValue,
-    options: ShapeMatrixSetTurnOptions = {}
+  function commitTurns(
+    nextLeftTurn: TurnValue,
+    nextRightTurn: TurnValue,
+    transitionLabel: string,
+    options: ShapeMatrixSetTurnOptions
   ): void {
-    if (!availableTurns.includes(nextTurn)) return;
     if (selectedPair) {
       rememberedVariants = {
         left: semanticVariant(selectedPair.left),
         right: semanticVariant(selectedPair.right),
       };
     }
-
-    const nextLeftTurn = activeAxis === "right" ? leftTurn : nextTurn;
-    const nextRightTurn = activeAxis === "left" ? rightTurn : nextTurn;
     if (nextLeftTurn === leftTurn && nextRightTurn === rightTurn) return;
 
     if (selectedPair) {
       requestShapeMatrixTransition(
-        `turn:${activeAxis}:${String(nextLeftTurn)}:${String(nextRightTurn)}`
+        `turn:${transitionLabel}:${String(nextLeftTurn)}:${String(nextRightTurn)}`
       );
     }
     updateSelectedPairTurns(nextLeftTurn, nextRightTurn);
@@ -409,6 +412,39 @@ export function createShapeMatrixAppState(
     rightTurn = nextRightTurn;
     if (compact && !options.stayOnDetail) activeView = "matrix";
     syncState();
+  }
+
+  /** Edit the axis the Apply-to target names (kept for restored links). */
+  function setTurn(
+    nextTurn: TurnValue,
+    options: ShapeMatrixSetTurnOptions = {}
+  ): void {
+    if (!availableTurns.includes(nextTurn)) return;
+    commitTurns(
+      activeAxis === "right" ? leftTurn : nextTurn,
+      activeAxis === "left" ? rightTurn : nextTurn,
+      activeAxis,
+      options
+    );
+  }
+
+  /**
+   * Edit one named axis directly. The recipe bar above the grid gives rows
+   * and columns their own stepper, so no Apply-to mode stands between the
+   * user and the axis they mean.
+   */
+  function setTurnFor(
+    hand: "left" | "right",
+    nextTurn: TurnValue,
+    options: ShapeMatrixSetTurnOptions = {}
+  ): void {
+    if (!availableTurns.includes(nextTurn)) return;
+    commitTurns(
+      hand === "left" ? nextTurn : leftTurn,
+      hand === "right" ? nextTurn : rightTurn,
+      hand,
+      options
+    );
   }
 
   function setActiveAxis(nextAxis: ShapeMatrixAxisTarget): void {
@@ -613,6 +649,7 @@ export function createShapeMatrixAppState(
       selectedPropMode = null;
     }
 
+    revealToken += 1;
     if (compact && options.navigate !== false) {
       activeView = "detail";
       requestCompactFocus("detail");
@@ -869,6 +906,9 @@ export function createShapeMatrixAppState(
     get mandalaHandoff() {
       return mandalaHandoff;
     },
+    get revealToken() {
+      return revealToken;
+    },
     get rowAxis() {
       return rowAxis;
     },
@@ -879,6 +919,7 @@ export function createShapeMatrixAppState(
     restoreState,
     setLevel,
     setTurn,
+    setTurnFor,
     setActiveAxis,
     setLabelMode,
     setSurface,

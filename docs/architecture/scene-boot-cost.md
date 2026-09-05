@@ -304,6 +304,49 @@ full production parity are open work.
 Canonical design and acceptance gates:
 `docs/superpowers/specs/2026-09-03-worker-renderer-scene-switch-prototype-design.md`.
 
+## Persistent production worker, measured 2026-09-04
+
+The production sequence viewer now routes all ten exact environments through
+one persistent worker renderer. An ordinary scene switch keeps one worker and
+one WebGL context from request through presentation; a bitmap poster holds the
+last complete frame while the next world replaces only scene-owned resources.
+The same frame owns performers, all canonical prop families, effects, markers,
+lighting, and postprocessing. Record Scene is the intentional exception and
+uses the legacy renderer because capture requires renderer/scene/camera/frame
+handles on the application thread.
+
+One persistent-session sweep exercised Autumn, Blossom, Celestial, Cosmic,
+Ember, Forest, Ocean, Rainbow, Void, and Winter. Every switch finished with one
+worker, one render canvas, one poster canvas, no renderer fallback, no worker
+error, and a complete presented frame. `rendererMs` was zero on every switch
+after the first, proving the renderer and context were reused. Grouping shader
+prime work into batches of eight reduced repeated prime time from about 1.16 s
+to 0.31 s in Cosmic and from about 1.47 s to 0.25 s in Winter in the measured
+runs.
+
+The first persistent implementation still performed a recursive
+`$state.snapshot` of the complete performer/effect transport graph every
+application frame, immediately before `postMessage` cloned it again. A
+production trace, filtered to the tested page's renderer process, attributed
+1.51 s of sampled self time to that Svelte snapshot recursion. The transport
+now keeps complete snapshots as raw immutable values and lets `postMessage` own
+the single clone. A separate renderer process from another open test page also
+contained a 4.77 s task; do not attribute that task to this viewer.
+
+The worker does not make asset preparation instantaneous. On the heavily
+loaded shared verification machine, exact Ocean and Forest construction still
+produced application-timer gaps of roughly 1.3-1.4 s in foreground runs, and a
+later Ocean trace observed a 4.82 s timer gap while other browser sessions were
+also busy. These numbers describe that machine state, not an established
+single-scene CPU cost. Do not call scene switching flawless until an isolated
+production run passes the 50 ms application-input gate for the heavy worlds.
+
+Rapid selection cancels stale, non-abortable preparation by restarting the
+exceptional worker/context under the already-visible poster. Ordinary switches
+continue to reuse the persistent context. This prevents an abandoned Ocean
+parse from delaying a later Void choice while preserving the one-context
+steady-state ceiling.
+
 ## Related
 
 - `src/lib/shared/3d/scene-boot/` — the boot window's owners
