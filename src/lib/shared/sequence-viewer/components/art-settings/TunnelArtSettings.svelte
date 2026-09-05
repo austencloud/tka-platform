@@ -190,7 +190,7 @@
       id: "effects",
       icon: "fa-wand-magic-sparkles",
       label: "Effects",
-      summary: "Colors & effects",
+      summary: "Effects",
       accentColor: RAIL_CATEGORY_ACCENTS.effects,
     },
     ...(onPropChange
@@ -375,7 +375,6 @@
     />
   {:else if id === "effects"}
     <TunnelEffectsSettings
-      {controller}
       {dense}
       {bpm}
       {isPlaying}
@@ -451,7 +450,7 @@
     onSelect={selectTunnel}
     direction={flyDir}
     {reduceMotion}
-    fillBody={tunnelSection === "display"}
+    fillBody={tunnelSection === "display" || tunnelSection === "effects"}
     {exporting}
     artPanel
     regionLabel={showTitle ? "Tunnel settings" : "Animation controls"}
