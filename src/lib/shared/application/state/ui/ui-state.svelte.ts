@@ -5,11 +5,6 @@ import type { TabId } from "../../../navigation/domain/types";
 export const uiState = $state({
   activeModule: null as TabId | null, // Start null - will be set after services load in initializeModulePersistence()
   showSettings: false,
-  // Default to "desktop" mode - mobile will override this when navigation buttons are clicked
-  // Desktop is the primary/default experience (769px+)
-  settingsPanelMode: (typeof window !== "undefined" && window.innerWidth >= 769
-    ? "desktop"
-    : "mobile") as "mobile" | "desktop",
   isFullScreen: false,
   isTransitioning: false,
   isWaitingForModuleLoad: false,
@@ -42,85 +37,12 @@ export function getActiveTab(): TabId | null {
   return getActiveModule();
 }
 
-/** @deprecated Use getActiveModuleOrDefault() instead */
-export function getActiveTabOrDefault(): TabId {
-  return getActiveModuleOrDefault();
-}
-
-/** @deprecated Use setActiveModule() instead */
-export function setActiveTab(module: TabId | null): void {
-  setActiveModule(module);
-}
-
-/** @deprecated Use isModuleActive() instead */
-export function isTabActive(module: string): boolean {
-  return isModuleActive(module);
-}
-
-// SETTINGS STATE (DEPRECATED - Settings is now a module)
-// These functions are deprecated. Use handleModuleChange("settings") instead.
-// The settings panel has been replaced with a full module at ModuleId="settings"
+// SETTINGS STATE (read-only; settings is now a module at ModuleId="settings")
 
 /** @deprecated Settings is now a module. Use handleModuleChange("settings") instead */
 export function getShowSettings(): boolean {
   console.warn("getShowSettings() is deprecated. Settings is now a module.");
   return uiState.showSettings;
-}
-
-/** @deprecated Settings is now a module. This function will be removed. */
-export function getSettingsPanelMode(): "mobile" | "desktop" {
-  console.warn(
-    "getSettingsPanelMode() is deprecated. Settings is now a module."
-  );
-  return uiState.settingsPanelMode;
-}
-
-/** @deprecated Settings is now a module. Use handleModuleChange("settings") instead */
-export function setShowSettings(show: boolean): void {
-  console.warn("setShowSettings() is deprecated. Settings is now a module.");
-  uiState.showSettings = show;
-}
-
-/** @deprecated Settings is now a module. This function will be removed. */
-export function setSettingsPanelMode(mode: "mobile" | "desktop"): void {
-  console.warn(
-    "setSettingsPanelMode() is deprecated. Settings is now a module."
-  );
-  uiState.settingsPanelMode = mode;
-}
-
-/** @deprecated Settings is now a module. Use handleModuleChange("settings") instead */
-export function toggleShowSettings(): void {
-  console.warn("toggleShowSettings() is deprecated. Settings is now a module.");
-  uiState.showSettings = !uiState.showSettings;
-}
-
-/** @deprecated Settings is now a module. Use handleModuleChange("settings") instead */
-export function showSettingsDialog(mode?: "mobile" | "desktop"): void {
-  console.warn(
-    "showSettingsDialog() is deprecated. Settings is now a module. Use handleModuleChange('settings')."
-  );
-  if (mode) {
-    setSettingsPanelMode(mode);
-  }
-  setShowSettings(true);
-}
-
-/** @deprecated Settings is now a module. Use handleModuleChange(previousModule) instead */
-export function hideSettingsDialog(): void {
-  console.warn("hideSettingsDialog() is deprecated. Settings is now a module.");
-  setShowSettings(false);
-}
-
-/** @deprecated Settings is now a module. Use navigation toggle instead */
-export function toggleSettingsDialog(mode?: "mobile" | "desktop"): void {
-  console.warn(
-    "toggleSettingsDialog() is deprecated. Settings is now a module."
-  );
-  if (mode) {
-    setSettingsPanelMode(mode);
-  }
-  toggleShowSettings();
 }
 
 
@@ -148,16 +70,6 @@ export function getIsWaitingForModuleLoad(): boolean {
 
 export function setIsWaitingForModuleLoad(waiting: boolean): void {
   uiState.isWaitingForModuleLoad = waiting;
-}
-
-/** @deprecated Use getIsWaitingForModuleLoad() instead */
-export function getIsWaitingForTabLoad(): boolean {
-  return getIsWaitingForModuleLoad();
-}
-
-/** @deprecated Use setIsWaitingForModuleLoad() instead */
-export function setIsWaitingForTabLoad(waiting: boolean): void {
-  setIsWaitingForModuleLoad(waiting);
 }
 
 // DEBUG PANEL STATE (Admin Only)
