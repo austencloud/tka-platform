@@ -1,12 +1,15 @@
 import {
   DoubleSide,
   Group,
+  InstancedMesh,
+  DynamicDrawUsage,
+  Object3D,
   type Mesh,
   MeshStandardMaterial,
   PointLight,
   Vector3,
-  type Object3D,
 } from "three";
+import { measureFlowPath, sampleFlowPath } from "./ember-flow-motion";
 import type { EmberSceneConfig } from "../../domain/models/scene-configs/ember-scene-config";
 import type { EmberWorldElement } from "./ember-lava-features";
 import midflank from "../../domain/models/scene-configs/ember-midflank-r5.json";
@@ -82,6 +85,8 @@ export function withMidflankAtmosphere(
 
 const NOISE = /* glsl */ `
 varying vec3 vMidflankWorld;
+varying vec2 vMidflankFlow;
+varying float vMidflankBank;
 uniform float uMidflankTime;
 float mfHash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float mfNoise(vec2 p) {
@@ -106,16 +111,32 @@ export function createMidflankLava(
   const originals: Array<{ mesh: Mesh; material: MeshStandardMaterial }> = [];
   const material = new MeshStandardMaterial({
     color: "#191714",
-    roughness: 0.86,
+    roughness: 0.58,
     emissive: "#ffffff",
     side: DoubleSide,
+    vertexColors: true,
   });
   material.name = "Ember_Midflank_R5_thermal-crust";
-  material.customProgramCacheKey = () => "ember-midflank-simulator-crust-v1";
+  material.customProgramCacheKey = () => "ember-midflank-flowing-skin-v2";
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uMidflankTime = time;
     shader.vertexShader =
-      "varying vec3 vMidflankWorld;\n" + shader.vertexShader;
+      "varying vec3 vMidflankWorld;\nvarying vec2 vMidflankFlow;\nvarying float vMidflankBank;\nuniform float uMidflankTime;\n" +
+      shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace(
+      "#include <begin_vertex>",
+      `#include <begin_vertex>
+      vMidflankFlow = uv;
+      vMidflankBank = color.r;
+      float along = uv.y - uMidflankTime * .72;
+      float surge = .028 * sin(along * 2.1 + sin(uv.x * 1.8))
+                  + .012 * sin(along * 5.3 + uv.x * .9);
+      vec3 lavaUp = vec3(modelMatrix[0].y, modelMatrix[1].y, modelMatrix[2].y)
+        / vec3(dot(modelMatrix[0].xyz,modelMatrix[0].xyz),
+               dot(modelMatrix[1].xyz,modelMatrix[1].xyz),
+               dot(modelMatrix[2].xyz,modelMatrix[2].xyz));
+      transformed += lavaUp * surge * vMidflankBank;`
+    );
     shader.vertexShader = shader.vertexShader.replace(
       "#include <worldpos_vertex>",
       "#include <worldpos_vertex>\nvMidflankWorld = (modelMatrix * vec4(transformed, 1.)).xyz;"
@@ -125,19 +146,19 @@ export function createMidflankLava(
       "#include <emissivemap_fragment>",
       /* glsl */ `
       #include <emissivemap_fragment>
-      vec2 p = vMidflankWorld.xz + vec2(0., uMidflankTime*.045);
-      vec2 warp = vec2(mfFbm(p*.37),mfFbm(p*.43+9.2));
-      float crust = mfFbm(p*1.35+warp*2.8);
-      float opening = smoothstep(.64,.79,crust);
-      float fissure = 1.-smoothstep(.008,.025,abs(mfFbm(p*1.8+warp)-.49));
-      float heat = max(opening,fissure*.28);
-      vec3 mfRadiance = mix(vec3(.9,.025,.001),vec3(3.1,.4,.009),opening);
+      vec2 p = vec2(vMidflankFlow.x, vMidflankFlow.y - uMidflankTime*.72);
+      vec2 warp = vec2(mfFbm(p*.44),mfFbm(p*.39+9.2));
+      float crust = mfFbm(p*vec2(1.5,.68)+warp*1.8);
+      float opening = smoothstep(.53,.72,crust);
+      float fissure = 1.-smoothstep(.015,.07,abs(mfFbm(p*vec2(1.1,.54)+warp)-.49));
+      float heat = max(opening,fissure*.32) * smoothstep(.05,.85,vMidflankBank);
+      vec3 mfRadiance = mix(vec3(1.1,.035,.001),vec3(2.8,.32,.008),opening);
       totalEmissiveRadiance = mfRadiance * heat;
-      diffuseColor.rgb = mix(vec3(.012,.014,.014),vec3(.025,.008,.002),heat);
+      diffuseColor.rgb = mix(vec3(.026,.022,.020),vec3(.035,.008,.002),heat);
     `
     );
   };
-  for (const name of ["EMBER_LavaSimulatorDeposit", "EMBER_SourceFissure"]) {
+  for (const name of ["EMBER_LavaSimulatorDeposit"]) {
     const source = terrain.getObjectByName(name);
     source?.traverse((child) => {
       const mesh = child as Mesh;
@@ -151,6 +172,79 @@ export function createMidflankLava(
     | Mesh
     | undefined;
   const position = deposit?.geometry?.getAttribute("position");
+  const template = terrain.getObjectByName("EMBER_FloatingCrustTemplate") as
+    | Mesh
+    | undefined;
+  const rawPaths = deposit?.userData.ember_flow_paths as
+    | number[][][]
+    | undefined;
+  const templateVisible = template?.visible;
+  if (template) template.visible = false;
+  deposit?.updateWorldMatrix(true, false);
+  const paths = (rawPaths ?? [])
+    .map((points) =>
+      measureFlowPath(
+        points.map(
+          (point) => new Vector3(...(point as [number, number, number]))
+        )
+      )
+    )
+    .filter((path) => path.length > 5);
+  const raftMaterial = new MeshStandardMaterial({
+    color: "#292321",
+    roughness: 0.82,
+    emissive: "#3c0801",
+    emissiveIntensity: 0.32,
+    side: DoubleSide,
+  });
+  template?.updateWorldMatrix(true, false);
+  // Decode meshopt's node scale and the Blender axis conversion once. Raft
+  // transforms then use real metres, independent of how the GLB was quantized.
+  const raftGeometry = template?.geometry
+    .clone()
+    .applyMatrix4(template.matrixWorld)
+    .center();
+  const rafts =
+    raftGeometry && paths.length
+      ? new InstancedMesh(raftGeometry, raftMaterial, 240)
+      : null;
+  const dummy = new Object3D();
+  const tangent = new Vector3();
+  if (rafts) {
+    rafts.name = "EmberDriftingCrust";
+    rafts.instanceMatrix.setUsage(DynamicDrawUsage);
+    // A fixed initial sphere would cull moving rafts when they round the bend.
+    rafts.frustumCulled = false;
+    object.add(rafts);
+  }
+  const updateRafts = () => {
+    if (!rafts) return;
+    for (let index = 0; index < rafts.count; index++) {
+      const path = paths[index % paths.length];
+      const phase = (index * 0.61803398875) % 1;
+      const distance =
+        phase * path.length + time.value * (0.62 + (index % 7) * 0.025);
+      sampleFlowPath(path, distance, dummy.position, tangent);
+      dummy.position.y +=
+        0.048 + Math.sin(time.value * 1.7 + phase * 15) * 0.015;
+      dummy.rotation.set(
+        -Math.atan2(tangent.y, Math.hypot(tangent.x, tangent.z)),
+        Math.atan2(tangent.x, tangent.z) +
+          Math.sin(time.value * 0.18 + index) * 0.18,
+        Math.sin(time.value * 0.7 + index) * 0.035,
+        "YXZ"
+      );
+      // Crust forms/melts near a path endpoint instead of visibly teleporting.
+      const travel = distance % path.length;
+      const fade = Math.min(1, travel / 1.8, (path.length - travel) / 1.8);
+      const size = (0.35 + (index % 11) * 0.08) * fade;
+      dummy.scale.set(size, 1, size * (1.1 + (index % 3) * 0.2));
+      dummy.updateMatrix();
+      rafts.setMatrixAt(index, dummy.matrix);
+    }
+    rafts.instanceMatrix.needsUpdate = true;
+  };
+  updateRafts();
   if (deposit && position) {
     deposit.updateWorldMatrix(true, false);
     const point = new Vector3();
@@ -178,6 +272,7 @@ export function createMidflankLava(
     object,
     update(deltaSeconds) {
       time.value += Math.min(Math.max(deltaSeconds, 0), 1 / 15);
+      updateRafts();
     },
     setGroundY(value) {
       object.position.y = value;
@@ -185,6 +280,10 @@ export function createMidflankLava(
     dispose() {
       for (const entry of originals) entry.mesh.material = entry.material;
       material.dispose();
+      rafts?.dispose();
+      raftGeometry?.dispose();
+      raftMaterial.dispose();
+      if (template) template.visible = templateVisible!;
       object.clear();
     },
   };

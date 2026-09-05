@@ -296,21 +296,24 @@ describe("landing shared-element contract", () => {
     expect(launchpad).toContain('typeof IntersectionObserver === "undefined"');
     expect(launchpad).toContain("active={mediaActive.has(tile.id)}");
     expect(launchpad).toContain("visible={visible.has(tile.id)}");
-    // /composer rolls live sequences the way the home hero does. No baked
-    // example may be seeded here — the hero shows its pending state until the
-    // first generated draw lands.
-    expect(composer).not.toContain("FALLBACK_DEMO");
-    expect(composer).toContain("const heroAct = createHeroAct()");
+    // /composer opens on the baked fixture exactly as the home hero does
+    // (21c54ab457): only the live generation itself, not the synchronous
+    // seed, has to stay behind the morph.
+    expect(composer).toContain(
+      "const heroAct = createHeroAct({ initialSequence: FALLBACK_DEMO });"
+    );
     expect(composer).toContain("runAfterNamedRouteMorphIdle(heroAct.start)");
     // The hero keeps auto-advancing; the tunnel and 3D bands latch its first
-    // draw so a Threlte scene is never torn down under a reading visitor.
+    // LIVE draw, skipping the baked fixture by id, so a Threlte scene is never
+    // torn down under a reading visitor.
     expect(composer).toContain("sequence={heroAct.sequence}");
     expect(composer).toContain(
       "const carriedSequence = $derived(visitorSequence ?? latchedHeroSequence)"
     );
     expect(composer).toContain(
-      "if (first && !latchedHeroSequence) latchedHeroSequence = first;"
+      "if (first && first.id !== FALLBACK_DEMO.id && !latchedHeroSequence) {"
     );
+    expect(composer).toContain("latchedHeroSequence = first;");
     expect(composer).not.toContain("{#key carriedSequence?.id}");
     expect(composer).toContain(
       'loader={() => import("./_sections/ConstructSection.svelte")}'
