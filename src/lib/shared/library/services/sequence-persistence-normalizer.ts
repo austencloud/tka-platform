@@ -36,6 +36,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { isHandPathSequence } from "$lib/shared/foundation/domain/models/sequence-kind";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import type { WordDerivationStatus } from "$lib/shared/foundation/services/word-deriver";
 import {
@@ -304,7 +305,10 @@ export async function normalizeSequenceForPersistence<T extends SequenceData>(
   //    is stamped. Same semantics as `requireCompleteWord`, derived once so the
   //    blank gate reads the same status.
   const wordStatus = deriveWordStatus(composed);
-  if (!wordStatus.complete || wordStatus.word.length === 0) {
+  if (
+    !isHandPathSequence(composed) &&
+    (!wordStatus.complete || wordStatus.word.length === 0)
+  ) {
     throw new IncompleteWordError(wordStatus);
   }
   if (wordStatus.blankStepIndexes.length > 0) {
@@ -319,7 +323,8 @@ export async function normalizeSequenceForPersistence<T extends SequenceData>(
       persistedStepCount
     );
   }
-  const exactWord = wordStatus.word;
+  // A hand path has a literal title, not a notation word.
+  const exactWord = isHandPathSequence(composed) ? "" : wordStatus.word;
   const worded = { ...composed, word: exactWord } as T;
 
   // 7. Stamp the canonical sequence length from the persisted source of truth.

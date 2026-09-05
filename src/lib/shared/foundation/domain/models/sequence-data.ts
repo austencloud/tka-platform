@@ -32,6 +32,8 @@ import { normalizeLegacySequence } from "@tka/tka-types";
 import type { CardPresentation } from "$lib/shared/share/domain/models/card-presentation";
 
 export interface SequenceData {
+  /** Omitted on legacy prop choreography. Hand paths never imply a prop. */
+  readonly sequenceKind?: "prop" | "hand-path";
   readonly id: string;
   readonly name: string;
   /** User's custom display name (optional). When set, shown as primary name in UI. */
@@ -259,6 +261,7 @@ export function createSequenceData(
     id: data.id ?? crypto.randomUUID(),
     name: data.name ?? "",
     word: data.word ?? "",
+    ...(data.sequenceKind !== undefined && { sequenceKind: data.sequenceKind }),
     steps,
     ...(data.displayName !== undefined && { displayName: data.displayName }),
     ...(data.intendedWord !== undefined && { intendedWord: data.intendedWord }),
