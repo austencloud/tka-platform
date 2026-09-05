@@ -12,7 +12,7 @@
   } from "$lib/shared/shape-matrix/services/theory-matrix-artwork";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
-  import ShapeMatrixRecipeBar from "./ShapeMatrixRecipeBar.svelte";
+  import ShapeMatrixRecipeStrip from "./ShapeMatrixRecipeStrip.svelte";
 
   interface Props {
     /** The shell owns navigation, the same way it does for the Matrix. */
@@ -25,7 +25,9 @@
 
   const appState = getShapeMatrixAppContext();
 
-  /* The recipe bar's ratio editors point back at the grid axis they change.
+  const surprise = $derived(onsurprise ?? (() => appState.surpriseMe()));
+
+  /* The corner's ratio editors point back at the grid axis they change.
      Both live in this pane, so the pane owns that pointer. */
   let editingAxis = $state<"left" | "right" | "both" | null>(null);
   const emphasis = $derived(editingAxis ?? emphasizedAxis);
@@ -37,15 +39,21 @@
 </script>
 
 {#snippet cornerGuide()}
-  <ShapeMatrixGridCorner />
-{/snippet}
-
-<section class="theory-pane" aria-label="Theory matrix">
-  <ShapeMatrixRecipeBar
+  <ShapeMatrixGridCorner
     surface="theory"
-    onsurprise={onsurprise ?? (() => appState.surpriseMe())}
+    onsurprise={surprise}
     onratiofocuschange={(hand) => (editingAxis = hand)}
   />
+{/snippet}
+
+<section
+  class="theory-pane"
+  class:compact={appState.compact}
+  aria-label="Theory matrix"
+>
+  {#if appState.compact}
+    <ShapeMatrixRecipeStrip surface="theory" onsurprise={surprise} />
+  {/if}
   <div class="theory-stage">
     <ShapeMatrixGrid
       rowAxis={appState.theoryRowAxis}
@@ -72,11 +80,16 @@
     height: 100%;
     min-height: 0;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
     border-radius: 16px;
     background: var(--theme-panel-bg, rgb(16 23 33 / 0.82));
+  }
+
+  /* Compact hosts add the recipe strip above the grid. */
+  .theory-pane.compact {
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .theory-stage {
