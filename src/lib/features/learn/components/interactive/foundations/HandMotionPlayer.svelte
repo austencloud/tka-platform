@@ -18,6 +18,8 @@
     onStepChange = undefined,
     onSeekRef = undefined,
     framed = true,
+    onCanvasInitialized,
+    onLoadError,
   }: {
     sequence: SequenceData;
     ariaLabel: string;
@@ -32,6 +34,8 @@
     onStepChange?: (currentStep: number, sequenceId: string | null) => void;
     onSeekRef?: (seek: ((step: number) => void) | null) => void;
     framed?: boolean;
+    onCanvasInitialized?: () => void;
+    onLoadError?: (message: string) => void;
   } = $props();
 
   const visibility = new AnimationVisibilityStateManager({ ephemeral: true });
@@ -80,6 +84,8 @@
     {onExternalPlayingChange}
     {onStepChange}
     {onSeekRef}
+    {onCanvasInitialized}
+    {onLoadError}
   />
 </div>
 
