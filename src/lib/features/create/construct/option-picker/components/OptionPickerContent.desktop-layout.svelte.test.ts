@@ -134,7 +134,7 @@ describe("OptionPickerContent desktop layout", () => {
   });
 
   it("keeps the filter when direction settings hide every option", async () => {
-    render(OptionPickerDesktopLayoutHarness, {
+    const screen = render(OptionPickerDesktopLayoutHarness, {
       width: 1200,
       height: 700,
       continuous: true,
@@ -146,8 +146,26 @@ describe("OptionPickerContent desktop layout", () => {
     });
 
     await expect
-      .element(page.getByRole("button", { name: "Continuous" }))
+      .element(page.getByRole("button", { name: /^Continuous/ }))
       .toBeInTheDocument();
+    await expect
+      .element(page.getByRole("button", { name: /^Continuous/ }))
+      .toHaveTextContent("6 hidden");
     expect(document.querySelector(".availability-status")).toBeNull();
+
+    await screen.rerender({ continuous: false });
+    await expect
+      .element(page.getByRole("button", { name: "Continuous", exact: true }))
+      .not.toHaveTextContent("hidden");
+
+    await screen.rerender({ continuous: true, hiddenCount: 3 });
+    await expect
+      .element(page.getByRole("button", { name: /^Continuous/ }))
+      .toHaveTextContent("3 hidden");
+
+    await screen.rerender({ hiddenCount: 0, shownCount: 6 });
+    await expect
+      .element(page.getByRole("button", { name: "Continuous", exact: true }))
+      .not.toHaveTextContent("hidden");
   });
 });

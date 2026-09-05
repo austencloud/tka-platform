@@ -13,7 +13,8 @@
  * source level. If it fails, fix the offending file — do not loosen it.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -28,16 +29,43 @@ function read(rel: string): string {
 }
 
 function walk(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    const full = path.join(dir, entry);
-    if (statSync(full).isDirectory()) {
-      if (entry === "node_modules") continue;
+  // withFileTypes, not a statSync per entry: the census covers ~8,000 files and
+  // the extra syscall each is pure overhead.
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === "node_modules") continue;
       walk(full, out);
-    } else if (/\.(ts|svelte)$/.test(entry)) {
+    } else if (/\.(ts|svelte)$/.test(entry.name)) {
       out.push(full);
     }
   }
   return out;
+}
+
+/**
+ * The subset of `paths` whose contents contain `needle`, read through a bounded
+ * pool of concurrent reads.
+ *
+ * Serial readFileSync over the whole src census costs 7.5s on a warm cache, and
+ * behind 1,800 other files in the suite's single fork this test measured
+ * 29.6s against a 30s timeout — a flake waiting to happen. Overlapping the I/O
+ * keeps the same file set and the same string check well inside the budget.
+ */
+async function filesContaining(
+  paths: string[],
+  needle: string
+): Promise<string[]> {
+  const hits: string[] = [];
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < paths.length) {
+      const file = paths[cursor++];
+      if ((await readFile(file, "utf8")).includes(needle)) hits.push(file);
+    }
+  };
+  await Promise.all(Array.from({ length: 32 }, worker));
+  return hits.sort();
 }
 
 describe("public-collection count normalization contract", () => {
@@ -49,13 +77,13 @@ describe("public-collection count normalization contract", () => {
     );
   });
 
-  it("no file outside the loader references countPublicMembers", () => {
+  it("no file outside the loader references countPublicMembers", async () => {
     const srcRoot = path.join(repoRoot, "src");
     const loaderAbs = path.join(repoRoot, LOADER);
-    const offenders = walk(srcRoot)
-      .filter((f) => f !== loaderAbs)
-      .filter((f) => readFileSync(f, "utf8").includes("countPublicMembers"))
-      .map((f) => path.relative(repoRoot, f));
+    const candidates = walk(srcRoot).filter((f) => f !== loaderAbs);
+    const offenders = (
+      await filesContaining(candidates, "countPublicMembers")
+    ).map((f) => path.relative(repoRoot, f));
 
     // A consumer counting for itself means normalization moved back out of
     // the loader — the exact opt-in drift this contract forbids.

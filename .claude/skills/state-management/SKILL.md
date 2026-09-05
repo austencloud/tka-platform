@@ -43,4 +43,4 @@ AnyChild.svelte
 - Create event handler services with `initialize()` callback wiring
 - Create `*-state-ref.svelte.ts` global reference files
 
-Full spec: `docs/superpowers/specs/2026-03-10-unified-state-management-design.md`
+Full spec: `docs/superpowers/specs/shipped/2026-03-10-unified-state-management-design.md`
