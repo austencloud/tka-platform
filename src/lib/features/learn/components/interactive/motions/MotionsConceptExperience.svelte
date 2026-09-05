@@ -71,7 +71,7 @@
   const curriculumIndex = levelOnePlaces.findIndex(
     (place) => place.id === "1.3"
   );
-  const curriculumLabel = `Level 1 · ${curriculumIndex + 1} of ${levelOnePlaces.length}`;
+  const curriculumLabel = `Level 1 · Lesson ${curriculumIndex + 1} of ${levelOnePlaces.length}`;
 
   const haptic = getHapticFeedback();
   const persistence = getExperiencePersistence(
@@ -132,7 +132,7 @@
   const headingEyebrow = $derived(
     activeMotion
       ? `Hand motion ${stepIndex + 1} of ${HAND_PATH_STEPS.length}`
-      : "Two hands"
+      : undefined
   );
 
   function goToStep(next: number): void {
@@ -322,6 +322,24 @@
     --lesson-artifact-wide-max: var(--shell-w, 96rem);
   }
 
+  .motions-experience :global(.curriculum-progress),
+  .motions-experience :global(.progress-text) {
+    font-size: clamp(1rem, 1.1vw, 1.25rem);
+    color: var(--theme-text);
+    line-height: 1.4;
+  }
+
+  .motions-experience :global(.progress-stack) {
+    gap: 0.45rem;
+  }
+
+  .motions-experience.has-focused-comparison {
+    height: min(100%, calc(min(100vw, 170rem) * 0.45 + 17rem));
+    min-height: 40rem;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
   .motions-experience.is-intro {
     flex-shrink: 0;
     height: 100%;
@@ -410,11 +428,11 @@
     }
   }
 
-  @media (max-width: 800px) {
+  @media (max-width: 900px) {
     .motions-experience.has-focused-comparison,
     .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
       height: auto;
-      min-height: 60rem;
+      min-height: 64rem;
     }
 
     .motions-experience.has-focused-comparison {
@@ -422,11 +440,18 @@
     }
   }
 
+  @media (max-width: 480px) {
+    .motions-experience.has-focused-comparison,
+    .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
+      min-height: 78rem;
+    }
+  }
+
   @media (max-height: 540px) and (min-width: 801px) {
     .motions-experience.has-focused-comparison,
     .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
       height: auto;
-      min-height: 36rem;
+      min-height: 48rem;
     }
 
     .motions-experience.has-focused-comparison {
