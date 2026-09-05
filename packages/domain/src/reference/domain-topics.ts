@@ -892,9 +892,9 @@ Three stable elements. Three that permute with grid rotation. The same-direction
 
 Pro and anti are defined relative to the arc ("with" and "against"). They are NOT absolute CW/CCW -- the same pro motion at different grid positions rotates different absolute directions.
 
-**Float** is absence of prop rotation in absolute spatial terms. The center-relative orientation CHANGES because the hand traces a curve. Float has no turn count -- it is a single binary state. No "degrees of float." In VTG prop:hand notation, Float is the exceptional **0:1** ratio; it is not numeric -0.5 turns.
+**Float** is absence of prop rotation in absolute spatial terms. The center-relative orientation CHANGES because the hand traces a curve. Float has no turn count -- it is a single binary state. No "degrees of float." In VTG hand:prop notation, Float is the exceptional **1:0** ratio (one hand cycle, zero prop rotations); it is not numeric -0.5 turns.
 
-The standard TKA level palettes begin at 0, but 0 is a historical baseline rather than a mathematical boundary. For a positive VTG prop:hand ratio **P:Q**, the corresponding TKA value is **turns = (P/Q - 1) / 2**. The Shape Matrix therefore uses **-0.25 turns** for **1:2**, its currently supported negative turn value. Other sub-1 ratios can produce other negative fractions, but TKA's current eight-orientation wheel only represents quarter-turn increments directly.
+The standard TKA level palettes begin at 0, but 0 is a historical baseline rather than a mathematical boundary. VTG writes ratios hand:prop (hand cycles first, prop rotations second). For a hand:prop ratio **H:P** with a moving hand, the corresponding TKA value is **turns = (P/H - 1) / 2**. The Shape Matrix therefore uses **-0.25 turns** for **2:1**, its currently supported negative turn value. Other sub-1 ratios can produce other negative fractions, but TKA's current eight-orientation wheel only represents quarter-turn increments directly.
 
 **Float only applies to shifts** because it requires a curved hand path. Without a curve, there is no distinction between float and 0-turn static.
 

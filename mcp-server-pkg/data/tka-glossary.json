@@ -6,13 +6,24 @@
       "alpha3: hands at E and W",
       "The Type 6 letter α represents holding an alpha position with no motion"
     ],
-    "relatedTerms": ["beta", "gamma", "position"],
+    "relatedTerms": [
+      "beta",
+      "gamma",
+      "position"
+    ],
     "category": "position"
   },
   "beta": {
     "definition": "A position where both hands are at the same grid point (0 degrees apart). The Type 6 letter β (lowercase) shares this name. It represents holding a beta position with no motion, which is also a natural start position for 'together' patterns.",
-    "examples": ["beta1: both hands at N", "beta5: both hands at NE"],
-    "relatedTerms": ["alpha", "gamma", "position"],
+    "examples": [
+      "beta1: both hands at N",
+      "beta5: both hands at NE"
+    ],
+    "relatedTerms": [
+      "alpha",
+      "gamma",
+      "position"
+    ],
     "category": "position"
   },
   "gamma": {
@@ -21,7 +32,11 @@
       "gamma1: hands at N and E",
       "gamma5: hands at NE and NW (box mode)"
     ],
-    "relatedTerms": ["alpha", "beta", "position"],
+    "relatedTerms": [
+      "alpha",
+      "beta",
+      "position"
+    ],
     "category": "position"
   },
   "zeta": {
@@ -29,7 +44,11 @@
     "examples": [
       "One hand cardinal, one intercardinal, forming ~135 degree angle"
     ],
-    "relatedTerms": ["eta", "skewed", "position"],
+    "relatedTerms": [
+      "eta",
+      "skewed",
+      "position"
+    ],
     "category": "position"
   },
   "eta": {
@@ -37,7 +56,11 @@
     "examples": [
       "One hand cardinal, one intercardinal, forming ~45 degree angle"
     ],
-    "relatedTerms": ["zeta", "skewed", "position"],
+    "relatedTerms": [
+      "zeta",
+      "skewed",
+      "position"
+    ],
     "category": "position"
   },
   "tau": {
@@ -46,13 +69,23 @@
       "One hand at center, one hand at N",
       "One hand at center, one hand at NE"
     ],
-    "relatedTerms": ["terra", "centric", "position"],
+    "relatedTerms": [
+      "terra",
+      "centric",
+      "position"
+    ],
     "category": "position"
   },
   "terra": {
     "definition": "A position where both hands are at the center grid point. Introduced in Level 6 with centric grid mode.",
-    "examples": ["Both hands stacked at the center of the grid"],
-    "relatedTerms": ["tau", "centric", "position"],
+    "examples": [
+      "Both hands stacked at the center of the grid"
+    ],
+    "relatedTerms": [
+      "tau",
+      "centric",
+      "position"
+    ],
     "category": "position"
   },
   "position": {
@@ -62,7 +95,15 @@
       "Beta = hands together (0°)",
       "Gamma = right angle (90°)"
     ],
-    "relatedTerms": ["alpha", "beta", "gamma", "zeta", "eta", "tau", "terra"],
+    "relatedTerms": [
+      "alpha",
+      "beta",
+      "gamma",
+      "zeta",
+      "eta",
+      "tau",
+      "terra"
+    ],
     "category": "general"
   },
   "home-position": {
@@ -71,7 +112,11 @@
       "A LOOP returns from its final step to the same hand locations where it began",
       "A position cycle may close before the prop-orientation cycle does"
     ],
-    "relatedTerms": ["position", "loop", "sequence"],
+    "relatedTerms": [
+      "position",
+      "loop",
+      "sequence"
+    ],
     "category": "position"
   },
   "grid": {
@@ -81,7 +126,13 @@
       "Box mode uses the four intercardinal directions",
       "The merged grid combines all eight directions"
     ],
-    "relatedTerms": ["diamond", "box", "center", "hand-point", "outer-point"],
+    "relatedTerms": [
+      "diamond",
+      "box",
+      "center",
+      "hand-point",
+      "outer-point"
+    ],
     "category": "grid"
   },
   "grid-mode": {
@@ -91,7 +142,13 @@
       "Skewed combines diamond and box locations at Level 5",
       "Centric introduces the center point at Level 6"
     ],
-    "relatedTerms": ["grid", "diamond", "box", "centric", "skewed"],
+    "relatedTerms": [
+      "grid",
+      "diamond",
+      "box",
+      "centric",
+      "skewed"
+    ],
     "category": "grid"
   },
   "hand-point": {
@@ -115,7 +172,13 @@
       "A diamond grid has outer markers north, east, south, and west of center",
       "A box grid places its outer markers on the four diagonals"
     ],
-    "relatedTerms": ["grid", "center", "hand-point", "diamond", "box"],
+    "relatedTerms": [
+      "grid",
+      "center",
+      "hand-point",
+      "diamond",
+      "box"
+    ],
     "category": "grid"
   },
   "tka": {
@@ -124,7 +187,12 @@
       "A TKA word is written as a sequence of lettered pictographs",
       "Double staves provide visible thumb-end and pinky-end references"
     ],
-    "relatedTerms": ["pictograph", "letter", "word", "staff-reference"],
+    "relatedTerms": [
+      "pictograph",
+      "letter",
+      "word",
+      "staff-reference"
+    ],
     "category": "general"
   },
   "letter": {
@@ -135,7 +203,12 @@
       "α is a Type 6 letter",
       "τ- is an extended Type 4 letter"
     ],
-    "relatedTerms": ["pictograph", "variation", "letter-type", "word"],
+    "relatedTerms": [
+      "pictograph",
+      "variation",
+      "letter-type",
+      "word"
+    ],
     "category": "general"
   },
   "letter-type": {
@@ -163,7 +236,12 @@
       "TRUST is a 5-letter word",
       "DJ is a 2-letter compound word"
     ],
-    "relatedTerms": ["letter", "sequence", "bridge", "compound-letter"],
+    "relatedTerms": [
+      "letter",
+      "sequence",
+      "bridge",
+      "compound-letter"
+    ],
     "category": "general"
   },
   "sequence": {
@@ -172,7 +250,12 @@
       "A 4-letter word produces a sequence with 5 pictographs (start + 4 steps)",
       "Sequences can be rendered as grid layouts or single-row strips"
     ],
-    "relatedTerms": ["word", "pictograph", "step", "loop"],
+    "relatedTerms": [
+      "word",
+      "pictograph",
+      "step",
+      "loop"
+    ],
     "category": "general"
   },
   "compound-letter": {
@@ -182,7 +265,12 @@
       "EK and FL complete the same position cycle with different prop rotations",
       "MP, NQ, and OR are gamma-to-gamma compound pairs"
     ],
-    "relatedTerms": ["compound-word", "letter", "loop", "vtg"],
+    "relatedTerms": [
+      "compound-word",
+      "letter",
+      "loop",
+      "vtg"
+    ],
     "category": "general"
   },
   "compound-word": {
@@ -192,7 +280,11 @@
       "EK is the anti/anti compound word",
       "FL is the pro/anti hybrid compound word"
     ],
-    "relatedTerms": ["compound-letter", "word", "sequence"],
+    "relatedTerms": [
+      "compound-letter",
+      "word",
+      "sequence"
+    ],
     "category": "sequence"
   },
   "bridge": {
@@ -201,7 +293,11 @@
       "Σ inserted between B and O when no B→O transition exists",
       "Bridge letters appear in the generated sequence but not in the word spelling"
     ],
-    "relatedTerms": ["word", "sequence", "transition"],
+    "relatedTerms": [
+      "word",
+      "sequence",
+      "transition"
+    ],
     "category": "general"
   },
   "level": {
@@ -233,7 +329,12 @@
       "TnD glyph: shows timing & direction relationship between hands",
       "Position glyph: shows start and end positions"
     ],
-    "relatedTerms": ["pictograph", "pads", "vtg", "tka"],
+    "relatedTerms": [
+      "pictograph",
+      "pads",
+      "vtg",
+      "tka"
+    ],
     "category": "notation"
   },
   "dash-notation": {
@@ -243,7 +344,11 @@
       "Σ- is read Sigma-Dash",
       "Φ- is read Phi-Dash and belongs to Type 5"
     ],
-    "relatedTerms": ["glyph", "type-3", "type-5"],
+    "relatedTerms": [
+      "glyph",
+      "type-3",
+      "type-5"
+    ],
     "category": "notation"
   },
   "pads": {
@@ -276,7 +381,13 @@
       "In W(s,1,0), the '1' in the high slot belongs to the shift (shift beats static)",
       "In A(1,0), the '1' in the high slot belongs to the left hand (motion types match, so left goes high)"
     ],
-    "relatedTerms": ["low-slot", "pads", "glyph", "turns", "leading"],
+    "relatedTerms": [
+      "low-slot",
+      "pads",
+      "glyph",
+      "turns",
+      "leading"
+    ],
     "category": "notation"
   },
   "low-slot": {
@@ -286,7 +397,13 @@
       "In Φ(1,0), the '0' in the low slot belongs to the static hand (dash beats static)",
       "In A(1,0), the '0' in the low slot belongs to the right hand"
     ],
-    "relatedTerms": ["high-slot", "pads", "glyph", "turns", "following"],
+    "relatedTerms": [
+      "high-slot",
+      "pads",
+      "glyph",
+      "turns",
+      "following"
+    ],
     "category": "notation"
   },
   "rotational-relationship": {
@@ -297,7 +414,13 @@
       "Φ(1,0): only the dash rotates → no rotational relationship, no dot",
       "Λ(0,1,op): rotating hand is opening. Opening/closing replaces same/opp for Lambda"
     ],
-    "relatedTerms": ["same-dot", "opp-dot", "opening", "closing", "glyph"],
+    "relatedTerms": [
+      "same-dot",
+      "opp-dot",
+      "opening",
+      "closing",
+      "glyph"
+    ],
     "category": "rotation"
   },
   "same-dot": {
@@ -307,7 +430,11 @@
       "Ψ-(s,1,1): Psi-Dash with same-dot, 1 turn on each hand ('Psi-Dash-Same-One-One')",
       "α(s,1,1): alpha with same-dot, 1 turn each ('Alpha-Same-One-One')"
     ],
-    "relatedTerms": ["opp-dot", "rotational-relationship", "glyph"],
+    "relatedTerms": [
+      "opp-dot",
+      "rotational-relationship",
+      "glyph"
+    ],
     "category": "notation"
   },
   "opp-dot": {
@@ -317,7 +444,11 @@
       "Θ-(o,1,1): Theta-Dash with opp-dot, 1 turn each ('Theta-Dash-Opp-One-One')",
       "Φ(o,1,1): Phi with opp-dot. Both dash and static rotating in opposite directions"
     ],
-    "relatedTerms": ["same-dot", "rotational-relationship", "glyph"],
+    "relatedTerms": [
+      "same-dot",
+      "rotational-relationship",
+      "glyph"
+    ],
     "category": "notation"
   },
   "opening": {
@@ -327,7 +458,12 @@
       "Λ-(1,1,op,cl): Lambda-Dash with the left hand opening (toward alpha), right hand closing (toward beta)",
       "γ(op,op): gamma with both hands rotating such that both trajectories resolve to alpha"
     ],
-    "relatedTerms": ["closing", "glyph", "alpha", "rotational-relationship"],
+    "relatedTerms": [
+      "closing",
+      "glyph",
+      "alpha",
+      "rotational-relationship"
+    ],
     "category": "notation"
   },
   "closing": {
@@ -337,7 +473,12 @@
       "Λ-(1,1,cl,cl): Lambda-Dash with both hands closing (both trajectories resolve to beta)",
       "γ(cl,op): gamma with the left hand closing (toward beta), right hand opening (toward alpha)"
     ],
-    "relatedTerms": ["opening", "glyph", "beta", "rotational-relationship"],
+    "relatedTerms": [
+      "opening",
+      "glyph",
+      "beta",
+      "rotational-relationship"
+    ],
     "category": "notation"
   },
   "thumb-switch": {
@@ -368,7 +509,11 @@
       "Repeated 1-turn dashes: N→S→N→S with one turn per step",
       "The prop's two ends: one end prospins, the other antispins. Focus on the antispin end for timing"
     ],
-    "relatedTerms": ["dash", "turns", "thumb-switch"],
+    "relatedTerms": [
+      "dash",
+      "turns",
+      "thumb-switch"
+    ],
     "category": "motion"
   },
   "leading": {
@@ -393,7 +538,13 @@
       "S-Low-One: following hand has 1 turn",
       "T-High-One: leading hand has 1 turn, following has 0"
     ],
-    "relatedTerms": ["leading", "leader-follower", "gamma", "low-slot", "pads"],
+    "relatedTerms": [
+      "leading",
+      "leader-follower",
+      "gamma",
+      "low-slot",
+      "pads"
+    ],
     "category": "position"
   },
   "prop": {
@@ -452,19 +603,36 @@
       "Reaching trigeng in the prop picker means opening the triad card, not the buugeng card",
       "Two trigeng, both radial, ending on different orientations, take no beta offset"
     ],
-    "relatedTerms": ["buugeng", "chirality", "prop", "bilateral"],
+    "relatedTerms": [
+      "buugeng",
+      "chirality",
+      "prop",
+      "bilateral"
+    ],
     "category": "general"
   },
   "bilateral": {
     "definition": "A prop held at its center point, extending equally on both sides of the hand. The prop rotates around its center, which is where the hand grips.",
-    "examples": ["Staff", "Double-ended baton"],
-    "relatedTerms": ["unilateral", "prop"],
+    "examples": [
+      "Staff",
+      "Double-ended baton"
+    ],
+    "relatedTerms": [
+      "unilateral",
+      "prop"
+    ],
     "category": "general"
   },
   "unilateral": {
     "definition": "A prop held at one end, extending outward from the hand in one direction. The prop rotates around the grip point, which is at the edge of the prop.",
-    "examples": ["A single-ended club", "A one-ended baton"],
-    "relatedTerms": ["bilateral", "prop"],
+    "examples": [
+      "A single-ended club",
+      "A one-ended baton"
+    ],
+    "relatedTerms": [
+      "bilateral",
+      "prop"
+    ],
     "category": "general"
   },
   "staff-reference": {
@@ -473,7 +641,12 @@
       "The marked thumb end makes an in orientation unambiguous",
       "A thumb-end marker lets two visually similar staff positions be distinguished"
     ],
-    "relatedTerms": ["prop", "thumb-end", "pinky-end", "orientation"],
+    "relatedTerms": [
+      "prop",
+      "thumb-end",
+      "pinky-end",
+      "orientation"
+    ],
     "category": "general"
   },
   "thumb-end": {
@@ -482,7 +655,12 @@
       "A colored tape mark can identify the thumb end",
       "The thumb end may point in, out, clock, or counter"
     ],
-    "relatedTerms": ["pinky-end", "staff-reference", "orientation", "prop"],
+    "relatedTerms": [
+      "pinky-end",
+      "staff-reference",
+      "orientation",
+      "prop"
+    ],
     "category": "general"
   },
   "pinky-end": {
@@ -491,7 +669,12 @@
       "The pinky end points opposite the thumb end",
       "A pictograph remains readable when either named end is tracked consistently"
     ],
-    "relatedTerms": ["thumb-end", "staff-reference", "orientation", "prop"],
+    "relatedTerms": [
+      "thumb-end",
+      "staff-reference",
+      "orientation",
+      "prop"
+    ],
     "category": "general"
   },
   "rotation": {
@@ -517,7 +700,12 @@
       "1-turn pro: orientation reverses",
       "2-turn pro: orientation preserved again"
     ],
-    "relatedTerms": ["anti", "float", "isolation", "rotation"],
+    "relatedTerms": [
+      "anti",
+      "float",
+      "isolation",
+      "rotation"
+    ],
     "category": "rotation"
   },
   "anti": {
@@ -528,7 +716,11 @@
       "1-turn anti: orientation preserved",
       "2-turn anti: orientation reverses again"
     ],
-    "relatedTerms": ["pro", "float", "rotation"],
+    "relatedTerms": [
+      "pro",
+      "float",
+      "rotation"
+    ],
     "category": "rotation"
   },
   "isolation": {
@@ -537,7 +729,11 @@
       "Pro at 0 turns during a shift: center-relative orientation preserved, prop appears fixed",
       "DJ compound uses isolation (pro/pro at 0 turns)"
     ],
-    "relatedTerms": ["pro", "turns", "rotation"],
+    "relatedTerms": [
+      "pro",
+      "turns",
+      "rotation"
+    ],
     "category": "rotation"
   },
   "float": {
@@ -546,7 +742,13 @@
       "The hand shifts from west to north while the prop keeps the same absolute facing",
       "Float has no clockwise or counterclockwise turn value"
     ],
-    "relatedTerms": ["pro", "anti", "shift", "rotation", "orientation"],
+    "relatedTerms": [
+      "pro",
+      "anti",
+      "shift",
+      "rotation",
+      "orientation"
+    ],
     "category": "rotation"
   },
   "motion-type": {
@@ -556,7 +758,15 @@
       "Float holds absolute angle during a shift",
       "A dash with turns records clockwise or counterclockwise rotation"
     ],
-    "relatedTerms": ["pro", "anti", "float", "shift", "dash", "hash", "static"],
+    "relatedTerms": [
+      "pro",
+      "anti",
+      "float",
+      "shift",
+      "dash",
+      "hash",
+      "static"
+    ],
     "category": "motion"
   },
   "static": {
@@ -565,7 +775,11 @@
       "Type 6 letters (α, β, γ) have both hands static",
       "Type 2 letters have one static hand and one shifting hand"
     ],
-    "relatedTerms": ["shift", "dash", "motion-type"],
+    "relatedTerms": [
+      "shift",
+      "dash",
+      "motion-type"
+    ],
     "category": "motion"
   },
   "shift": {
@@ -575,7 +789,14 @@
       "NE to SE is a shift (8-point grid, 45° arc)",
       "Type 1 and Type 2 letters use shifts"
     ],
-    "relatedTerms": ["static", "dash", "pro", "anti", "float", "motion-type"],
+    "relatedTerms": [
+      "static",
+      "dash",
+      "pro",
+      "anti",
+      "float",
+      "motion-type"
+    ],
     "category": "motion"
   },
   "dash": {
@@ -585,7 +806,12 @@
       "NE to SW is a dash",
       "Type 4 and Type 5 letters use dashes"
     ],
-    "relatedTerms": ["static", "shift", "hash", "motion-type"],
+    "relatedTerms": [
+      "static",
+      "shift",
+      "hash",
+      "motion-type"
+    ],
     "category": "motion"
   },
   "hand-path": {
@@ -608,14 +834,14 @@
     "category": "motion"
   },
   "turns": {
-    "definition": "Additional prop rotation beyond the motion's base rotation. One turn equals 180 degrees. Level 1 uses zero turns, Level 2 adds whole turns, Level 3 adds half turns, and Level 4 adds quarter turns. The standard level palettes begin at 0, but 0 is not a mathematical lower bound: for a positive VTG prop:hand ratio P:Q, TKA turns = (P/Q - 1) / 2. The Shape Matrix therefore uses -0.25 for 1:2. Float remains a separate shift state with no numeric turn count and is the exceptional 0:1 ratio, not -0.5 turns.",
+    "definition": "Additional prop rotation beyond the motion's base rotation. One turn equals 180 degrees. Level 1 uses zero turns, Level 2 adds whole turns, Level 3 adds half turns, and Level 4 adds quarter turns. The standard level palettes begin at 0, but 0 is not a mathematical lower bound: VTG writes ratios hand:prop, and for a hand:prop ratio H:P with a moving hand, TKA turns = (P/H - 1) / 2. The Shape Matrix therefore uses -0.25 for 2:1. Float remains a separate shift state with no numeric turn count and is the exceptional 1:0 ratio, not -0.5 turns.",
     "examples": [
       "0 turns on a pro shift uses only its base rotation",
       "1 turn adds 180 degrees",
       "0.5 turns adds 90 degrees",
       "0.25 turns adds 45 degrees",
-      "-0.25 turns is the Shape Matrix's TKA value for the VTG 1:2 ratio",
-      "Float is the TKA state corresponding to the VTG 0:1 ratio"
+      "-0.25 turns is the Shape Matrix's TKA value for the VTG 2:1 ratio",
+      "Float is the TKA state corresponding to the VTG 1:0 ratio"
     ],
     "relatedTerms": [
       "rotation",
@@ -634,7 +860,13 @@
       "Anti at 0 turns switches orientation (in becomes out)",
       "Level 4 adds clockIn, clockOut, counterIn, counterOut between base orientations"
     ],
-    "relatedTerms": ["pro", "anti", "turns", "rotation", "level"],
+    "relatedTerms": [
+      "pro",
+      "anti",
+      "turns",
+      "rotation",
+      "level"
+    ],
     "category": "rotation"
   },
   "in": {
@@ -643,7 +875,13 @@
       "A staff at the north hand point can face in toward the center",
       "A 0-turn pro shift preserves an in orientation"
     ],
-    "relatedTerms": ["out", "clock", "counter", "radial", "orientation"],
+    "relatedTerms": [
+      "out",
+      "clock",
+      "counter",
+      "radial",
+      "orientation"
+    ],
     "category": "rotation"
   },
   "out": {
@@ -652,7 +890,13 @@
       "A staff at the north hand point can face out away from the center",
       "A 0-turn anti shift can change in to out"
     ],
-    "relatedTerms": ["in", "clock", "counter", "radial", "orientation"],
+    "relatedTerms": [
+      "in",
+      "clock",
+      "counter",
+      "radial",
+      "orientation"
+    ],
     "category": "rotation"
   },
   "clock": {
@@ -694,7 +938,11 @@
       "Step 0 is the start position (no motion yet)",
       "Each step corresponds to one pictograph in the choreo card"
     ],
-    "relatedTerms": ["letter", "pictograph", "sequence"],
+    "relatedTerms": [
+      "letter",
+      "pictograph",
+      "sequence"
+    ],
     "category": "general"
   },
   "beat": {
@@ -703,7 +951,11 @@
       "A half beat is a subdivision of one beat",
       "A held step can last for two beats"
     ],
-    "relatedTerms": ["step", "sequence", "timing"],
+    "relatedTerms": [
+      "step",
+      "sequence",
+      "timing"
+    ],
     "category": "notation"
   },
   "type-1": {
@@ -729,7 +981,12 @@
       "Y and Z move from gamma to beta",
       "Σ, Δ, Θ, and Ω return from alpha or beta to gamma"
     ],
-    "relatedTerms": ["shift", "static", "letter", "type-3"],
+    "relatedTerms": [
+      "shift",
+      "static",
+      "letter",
+      "type-3"
+    ],
     "category": "letterType"
   },
   "type-3": {
@@ -739,7 +996,12 @@
       "Σ-, Δ-, Θ-, and Ω-",
       "Sigma-Dash means the Type 3 letter Σ-"
     ],
-    "relatedTerms": ["letter-type", "shift", "dash", "dash-notation"],
+    "relatedTerms": [
+      "letter-type",
+      "shift",
+      "dash",
+      "dash-notation"
+    ],
     "category": "letterType"
   },
   "type-4": {
@@ -750,7 +1012,13 @@
       "Λ preserves a gamma angle",
       "τ- pairs a perimeter dash with a static center hand"
     ],
-    "relatedTerms": ["letter-type", "dash", "static", "tau-dash", "type-5"],
+    "relatedTerms": [
+      "letter-type",
+      "dash",
+      "static",
+      "tau-dash",
+      "type-5"
+    ],
     "category": "letterType"
   },
   "type-5": {
@@ -760,7 +1028,12 @@
       "Ψ- is a dual-dash letter",
       "Λ- preserves the gamma angle while both hands dash"
     ],
-    "relatedTerms": ["letter-type", "dash", "dash-notation", "type-4"],
+    "relatedTerms": [
+      "letter-type",
+      "dash",
+      "dash-notation",
+      "type-4"
+    ],
     "category": "letterType"
   },
   "type-6": {
@@ -770,7 +1043,13 @@
       "β holds a beta position",
       "γ holds a gamma position"
     ],
-    "relatedTerms": ["letter-type", "static", "alpha", "beta", "gamma"],
+    "relatedTerms": [
+      "letter-type",
+      "static",
+      "alpha",
+      "beta",
+      "gamma"
+    ],
     "category": "letterType"
   },
   "hybrid": {
@@ -791,20 +1070,43 @@
   },
   "diamond": {
     "definition": "A grid mode where hands are placed only on cardinal points (N, E, S, W). The default grid mode.",
-    "examples": ["Standard positions like alpha1 (N/S) use diamond mode"],
-    "relatedTerms": ["box", "skewed", "centric", "grid"],
+    "examples": [
+      "Standard positions like alpha1 (N/S) use diamond mode"
+    ],
+    "relatedTerms": [
+      "box",
+      "skewed",
+      "centric",
+      "grid"
+    ],
     "category": "grid"
   },
   "box": {
     "definition": "A grid mode where hands are placed only on intercardinal points (NE, SE, SW, NW).",
-    "examples": ["Position beta5 (both hands at NE) uses box mode"],
-    "relatedTerms": ["diamond", "skewed", "centric", "grid"],
+    "examples": [
+      "Position beta5 (both hands at NE) uses box mode"
+    ],
+    "relatedTerms": [
+      "diamond",
+      "skewed",
+      "centric",
+      "grid"
+    ],
     "category": "grid"
   },
   "skewed": {
     "definition": "A grid mode introduced in Level 5 where one hand is on a cardinal point and one is on an intercardinal point. Creates zeta and eta positions.",
-    "examples": ["Hand at N and hand at NE", "Creates zeta and eta positions"],
-    "relatedTerms": ["diamond", "box", "centric", "zeta", "eta"],
+    "examples": [
+      "Hand at N and hand at NE",
+      "Creates zeta and eta positions"
+    ],
+    "relatedTerms": [
+      "diamond",
+      "box",
+      "centric",
+      "zeta",
+      "eta"
+    ],
     "category": "grid"
   },
   "centric": {
@@ -813,7 +1115,13 @@
       "One hand at center, one at N (tau position)",
       "Both hands at center (terra position)"
     ],
-    "relatedTerms": ["diamond", "box", "skewed", "tau", "terra"],
+    "relatedTerms": [
+      "diamond",
+      "box",
+      "skewed",
+      "tau",
+      "terra"
+    ],
     "category": "grid"
   },
   "center": {
@@ -822,7 +1130,13 @@
       "Tau position: one hand at center",
       "Terra position: both hands at center"
     ],
-    "relatedTerms": ["centric", "tau", "terra", "cardinal", "intercardinal"],
+    "relatedTerms": [
+      "centric",
+      "tau",
+      "terra",
+      "cardinal",
+      "intercardinal"
+    ],
     "category": "grid"
   },
   "pictograph": {
@@ -831,7 +1145,12 @@
       "Each letter has multiple pictograph variations",
       "Pictographs can be sequenced into choreo cards"
     ],
-    "relatedTerms": ["step", "sequence", "letter", "glyph"],
+    "relatedTerms": [
+      "step",
+      "sequence",
+      "letter",
+      "glyph"
+    ],
     "category": "general"
   },
   "variation": {
@@ -840,7 +1159,11 @@
       "Letter A has variations starting from alpha1, alpha3, etc.",
       "Variations differ by rotation direction and grid locations"
     ],
-    "relatedTerms": ["letter", "pictograph", "position"],
+    "relatedTerms": [
+      "letter",
+      "pictograph",
+      "position"
+    ],
     "category": "general"
   },
   "cardinal": {
@@ -849,7 +1172,11 @@
       "Diamond mode uses cardinal points",
       "N is at the top of the pictograph"
     ],
-    "relatedTerms": ["intercardinal", "diamond", "grid"],
+    "relatedTerms": [
+      "intercardinal",
+      "diamond",
+      "grid"
+    ],
     "category": "grid"
   },
   "intercardinal": {
@@ -858,7 +1185,11 @@
       "Box mode uses intercardinal points",
       "NE is at the top-right of the pictograph"
     ],
-    "relatedTerms": ["cardinal", "box", "grid"],
+    "relatedTerms": [
+      "cardinal",
+      "box",
+      "grid"
+    ],
     "category": "grid"
   },
   "direction": {
@@ -878,14 +1209,26 @@
   },
   "clockwise": {
     "definition": "Clockwise rotation direction, as viewed from above the performer. Abbreviated as 'cw'.",
-    "examples": ["Hand path moving N -> E -> S -> W is clockwise"],
-    "relatedTerms": ["counterclockwise", "direction", "rotation"],
+    "examples": [
+      "Hand path moving N -> E -> S -> W is clockwise"
+    ],
+    "relatedTerms": [
+      "counterclockwise",
+      "direction",
+      "rotation"
+    ],
     "category": "rotation"
   },
   "counterclockwise": {
     "definition": "Counter-clockwise rotation direction, as viewed from above the performer. Abbreviated as 'ccw'.",
-    "examples": ["Hand path moving N -> W -> S -> E is counter-clockwise"],
-    "relatedTerms": ["clockwise", "direction", "rotation"],
+    "examples": [
+      "Hand path moving N -> W -> S -> E is counter-clockwise"
+    ],
+    "relatedTerms": [
+      "clockwise",
+      "direction",
+      "rotation"
+    ],
     "category": "rotation"
   },
   "timing": {
@@ -894,7 +1237,13 @@
       "Together timing places both props at south at once",
       "Split timing places one prop at south and the other at north"
     ],
-    "relatedTerms": ["together", "split", "downbeat", "vtg", "direction"],
+    "relatedTerms": [
+      "together",
+      "split",
+      "downbeat",
+      "vtg",
+      "direction"
+    ],
     "category": "notation"
   },
   "vtg": {
@@ -905,7 +1254,13 @@
       "Split-Opposite (SO): props out of phase, hands arc opposite ways",
       "Together-Opposite (TO): props in sync, hands arc opposite ways"
     ],
-    "relatedTerms": ["split", "together", "downbeat", "timing", "direction"],
+    "relatedTerms": [
+      "split",
+      "together",
+      "downbeat",
+      "timing",
+      "direction"
+    ],
     "category": "notation"
   },
   "split": {
@@ -914,13 +1269,27 @@
       "Letters A, B, C (alpha to alpha) are always split-same",
       "DJ compound can be split-opp depending on variation"
     ],
-    "relatedTerms": ["together", "vtg", "alpha", "downbeat", "timing"],
+    "relatedTerms": [
+      "together",
+      "vtg",
+      "alpha",
+      "downbeat",
+      "timing"
+    ],
     "category": "notation"
   },
   "together": {
     "definition": "A VTG timing classification where both props pass through the downbeat (south) at the same moment. Abbreviated as 'tog'. In TKA terms, together timing corresponds to beta positions (hands at the same point).",
-    "examples": ["Letters G, H, I (beta to beta) are always together-same"],
-    "relatedTerms": ["split", "vtg", "beta", "downbeat", "timing"],
+    "examples": [
+      "Letters G, H, I (beta to beta) are always together-same"
+    ],
+    "relatedTerms": [
+      "split",
+      "vtg",
+      "beta",
+      "downbeat",
+      "timing"
+    ],
     "category": "notation"
   },
   "downbeat": {
@@ -929,31 +1298,64 @@
       "Both props at south simultaneously = together timing",
       "Props 180° out of phase relative to south = split timing"
     ],
-    "relatedTerms": ["vtg", "split", "together", "timing"],
+    "relatedTerms": [
+      "vtg",
+      "split",
+      "together",
+      "timing"
+    ],
     "category": "notation"
   },
   "split-same": {
     "definition": "A VTG category where props are 180° out of phase (split) and both hands arc the same direction. Abbreviated SS.",
-    "examples": ["Letters A, B, C (alpha to alpha) are always split-same"],
-    "relatedTerms": ["split", "vtg", "together-same", "split-opposite"],
+    "examples": [
+      "Letters A, B, C (alpha to alpha) are always split-same"
+    ],
+    "relatedTerms": [
+      "split",
+      "vtg",
+      "together-same",
+      "split-opposite"
+    ],
     "category": "notation"
   },
   "together-same": {
     "definition": "A VTG category where props are in sync (together) and both hands arc the same direction. Abbreviated TS or tog-same.",
-    "examples": ["Letters G, H, I (beta to beta) are always together-same"],
-    "relatedTerms": ["together", "vtg", "split-same", "together-opposite"],
+    "examples": [
+      "Letters G, H, I (beta to beta) are always together-same"
+    ],
+    "relatedTerms": [
+      "together",
+      "vtg",
+      "split-same",
+      "together-opposite"
+    ],
     "category": "notation"
   },
   "split-opposite": {
     "definition": "A VTG category where props are 180° out of phase (split) and hands arc in opposite directions. Abbreviated SO or split-opp.",
-    "examples": ["DJ east-start variation is split-opposite"],
-    "relatedTerms": ["split", "vtg", "split-same", "together-opposite"],
+    "examples": [
+      "DJ east-start variation is split-opposite"
+    ],
+    "relatedTerms": [
+      "split",
+      "vtg",
+      "split-same",
+      "together-opposite"
+    ],
     "category": "notation"
   },
   "together-opposite": {
     "definition": "A VTG category where props are in sync (together) and hands arc in opposite directions. Abbreviated TO or tog-opp.",
-    "examples": ["DJ south-start variation is together-opposite"],
-    "relatedTerms": ["together", "vtg", "together-same", "split-opposite"],
+    "examples": [
+      "DJ south-start variation is together-opposite"
+    ],
+    "relatedTerms": [
+      "together",
+      "vtg",
+      "together-same",
+      "split-opposite"
+    ],
     "category": "notation"
   },
   "quarter-opposite": {
@@ -1009,7 +1411,11 @@
     "examples": [
       "Hand was at N, shifted to E, now shifts back to N. Prop keeps spinning the same way."
     ],
-    "relatedTerms": ["reversal", "prop-reversal", "full-reversal"],
+    "relatedTerms": [
+      "reversal",
+      "prop-reversal",
+      "full-reversal"
+    ],
     "category": "motion"
   },
   "prop-reversal": {
@@ -1017,7 +1423,11 @@
     "examples": [
       "Hand continues N to E, but prop switches from clockwise to counter-clockwise."
     ],
-    "relatedTerms": ["reversal", "hand-reversal", "full-reversal"],
+    "relatedTerms": [
+      "reversal",
+      "hand-reversal",
+      "full-reversal"
+    ],
     "category": "motion"
   },
   "full-reversal": {
@@ -1025,7 +1435,11 @@
     "examples": [
       "Hand goes back to previous point AND prop reverses. Everything rewinds. Pro stays pro."
     ],
-    "relatedTerms": ["reversal", "hand-reversal", "prop-reversal"],
+    "relatedTerms": [
+      "reversal",
+      "hand-reversal",
+      "prop-reversal"
+    ],
     "category": "motion"
   },
   "rotated": {
@@ -1034,7 +1448,11 @@
       "Halved: two halves, each rotates 180° (total 360°)",
       "Quartered: four quarters, each rotates 90° (total 360°)"
     ],
-    "relatedTerms": ["loop", "mirrored", "rewound"],
+    "relatedTerms": [
+      "loop",
+      "mirrored",
+      "rewound"
+    ],
     "category": "sequence"
   },
   "reflection": {
@@ -1044,7 +1462,12 @@
       "An E-W reflection swaps north and south locations",
       "Diagonal reflections are available in every grid mode"
     ],
-    "relatedTerms": ["reflection-axis", "loop", "mirrored", "flipped"],
+    "relatedTerms": [
+      "reflection-axis",
+      "loop",
+      "mirrored",
+      "flipped"
+    ],
     "category": "sequence"
   },
   "reflection-axis": {
@@ -1054,7 +1477,13 @@
       "NE-SW leaves northeast and southwest fixed",
       "A diamond sequence can reflect across a diagonal axis"
     ],
-    "relatedTerms": ["reflection", "grid", "diamond", "box", "skewed"],
+    "relatedTerms": [
+      "reflection",
+      "grid",
+      "diamond",
+      "box",
+      "skewed"
+    ],
     "category": "sequence"
   },
   "mirrored": {
@@ -1063,7 +1492,11 @@
       "Hand at E mirrors to W",
       "Left-right positions swap across the vertical midline"
     ],
-    "relatedTerms": ["loop", "flipped", "rotated"],
+    "relatedTerms": [
+      "loop",
+      "flipped",
+      "rotated"
+    ],
     "category": "sequence"
   },
   "flipped": {
@@ -1072,7 +1505,11 @@
       "Hand at N flips to S",
       "Top-bottom positions swap across the horizontal midline"
     ],
-    "relatedTerms": ["loop", "mirrored", "rotated"],
+    "relatedTerms": [
+      "loop",
+      "mirrored",
+      "rotated"
+    ],
     "category": "sequence"
   },
   "swapped": {
@@ -1081,7 +1518,11 @@
       "The left hand was at N doing pro; now the right hand is at N doing pro",
       "Body has to reorganize to execute the swapped version"
     ],
-    "relatedTerms": ["loop", "mirrored", "inverted"],
+    "relatedTerms": [
+      "loop",
+      "mirrored",
+      "inverted"
+    ],
     "category": "sequence"
   },
   "inverted": {
@@ -1090,7 +1531,12 @@
       "Pro motion in first half becomes anti in second half",
       "Changes the visual pattern significantly while keeping hand paths the same"
     ],
-    "relatedTerms": ["loop", "swapped", "pro", "anti"],
+    "relatedTerms": [
+      "loop",
+      "swapped",
+      "pro",
+      "anti"
+    ],
     "category": "sequence"
   },
   "rewound": {
@@ -1098,7 +1544,11 @@
     "examples": [
       "First half: A→B→C→D. Second half: D→C→B→A (rewound back home)"
     ],
-    "relatedTerms": ["loop", "rotated", "full-reversal"],
+    "relatedTerms": [
+      "loop",
+      "rotated",
+      "full-reversal"
+    ],
     "category": "sequence"
   },
   "negative-space": {
@@ -1107,7 +1557,10 @@
       "Reaching behind the torso while keeping the staff clear",
       "Turning the body to open a path through the space behind the shoulders"
     ],
-    "relatedTerms": ["body-turns", "prop"],
+    "relatedTerms": [
+      "body-turns",
+      "prop"
+    ],
     "category": "execution",
     "benefit": "Extend patterns beyond the front-facing plane"
   },
@@ -1117,7 +1570,10 @@
       "Rotating shoulders to reach behind",
       "Full body rotation during complex sequences"
     ],
-    "relatedTerms": ["negative-space", "prop"],
+    "relatedTerms": [
+      "negative-space",
+      "prop"
+    ],
     "category": "execution",
     "benefit": "Add movement quality, handle longer staves, create dynamic contrast"
   },
@@ -1127,7 +1583,11 @@
       "thumbs-in: starting position with thumbs toward center",
       "thumbs-out: thumbs away from center"
     ],
-    "relatedTerms": ["orientation", "pro", "anti"],
+    "relatedTerms": [
+      "orientation",
+      "pro",
+      "anti"
+    ],
     "category": "execution",
     "importance": "Track rotations and check position on every step"
   },
@@ -1156,7 +1616,11 @@
       "A ends at alpha, next letter starts at alpha = valid transition",
       "B ends at alpha, O starts at gamma = needs bridge letter"
     ],
-    "relatedTerms": ["bridge", "sequence", "word"],
+    "relatedTerms": [
+      "bridge",
+      "sequence",
+      "word"
+    ],
     "category": "general"
   },
   "inversion": {
@@ -1167,7 +1631,12 @@
       "W (pro) ↔ X (anti)",
       "Σ ↔ Δ, Θ ↔ Ω"
     ],
-    "relatedTerms": ["pro", "anti", "inverted", "letter"],
+    "relatedTerms": [
+      "pro",
+      "anti",
+      "inverted",
+      "letter"
+    ],
     "category": "general"
   },
   "choreo-card": {
@@ -1176,7 +1645,11 @@
       "A 4-letter word produces a choreo card with 5 pictographs (start + 4 steps)",
       "Grid layout arranges pictographs in rows, strip layout puts them in a single row"
     ],
-    "relatedTerms": ["sequence", "pictograph", "word"],
+    "relatedTerms": [
+      "sequence",
+      "pictograph",
+      "word"
+    ],
     "category": "notation"
   },
   "left-hand": {
@@ -1185,7 +1658,12 @@
       "The left hand starts at N and shifts to E",
       "Changing the left-hand color changes its prop, arrow, and mandala path together"
     ],
-    "relatedTerms": ["right-hand", "blue", "motion-type", "pictograph"],
+    "relatedTerms": [
+      "right-hand",
+      "blue",
+      "motion-type",
+      "pictograph"
+    ],
     "category": "general"
   },
   "right-hand": {
@@ -1194,7 +1672,12 @@
       "The right hand starts at S and shifts to W",
       "Changing the right-hand color changes its prop, arrow, and mandala path together"
     ],
-    "relatedTerms": ["left-hand", "red", "motion-type", "pictograph"],
+    "relatedTerms": [
+      "left-hand",
+      "red",
+      "motion-type",
+      "pictograph"
+    ],
     "category": "general"
   },
   "blue": {
@@ -1203,7 +1686,12 @@
       "The left hand starts at N and shifts to E",
       "The left prop and arrow use canonical blue in the default palette"
     ],
-    "relatedTerms": ["red", "left-hand", "prop", "pictograph"],
+    "relatedTerms": [
+      "red",
+      "left-hand",
+      "prop",
+      "pictograph"
+    ],
     "category": "general"
   },
   "red": {
@@ -1212,7 +1700,12 @@
       "The right hand starts at S and shifts to W",
       "The right prop and arrow use canonical red in the default palette"
     ],
-    "relatedTerms": ["blue", "right-hand", "prop", "pictograph"],
+    "relatedTerms": [
+      "blue",
+      "right-hand",
+      "prop",
+      "pictograph"
+    ],
     "category": "general"
   },
   "constraint": {
@@ -1222,7 +1715,13 @@
       "constraintPreset: 'isolation' forces all pro motions",
       "Natural language: 'maximize flow with the left hand clockwise'"
     ],
-    "relatedTerms": ["sequence", "word", "pro", "anti", "reversal"],
+    "relatedTerms": [
+      "sequence",
+      "word",
+      "pro",
+      "anti",
+      "reversal"
+    ],
     "category": "sequence"
   },
   "constraint-preset": {
@@ -1232,7 +1731,13 @@
       "'isolation' forces all pro motions like the DJ compound",
       "'maximum-chaos' maximizes every possible reversal"
     ],
-    "relatedTerms": ["constraint", "sequence", "pro", "anti", "reversal"],
+    "relatedTerms": [
+      "constraint",
+      "sequence",
+      "pro",
+      "anti",
+      "reversal"
+    ],
     "category": "sequence"
   },
   "halved": {
@@ -1241,7 +1746,11 @@
       "A 4-letter word halved: first 4 steps + transformed 4 steps = 8-step LOOP",
       "Each half covers 180 degrees of the full rotation"
     ],
-    "relatedTerms": ["quartered", "loop", "rotated"],
+    "relatedTerms": [
+      "quartered",
+      "loop",
+      "rotated"
+    ],
     "category": "sequence"
   },
   "quartered": {
@@ -1250,7 +1759,11 @@
       "A 4-letter word quartered: 4 steps repeated 4 times = 16-step LOOP",
       "Each quarter covers 90 degrees of the full rotation"
     ],
-    "relatedTerms": ["halved", "loop", "rotated"],
+    "relatedTerms": [
+      "halved",
+      "loop",
+      "rotated"
+    ],
     "category": "sequence"
   },
   "spinning-plane": {
@@ -1260,7 +1773,11 @@
       "Wheel plane: the prop traces a circle like a bicycle wheel (side view)",
       "Overhead plane: the prop traces a circle above the performer's head"
     ],
-    "relatedTerms": ["atomic", "level", "prop"],
+    "relatedTerms": [
+      "atomic",
+      "level",
+      "prop"
+    ],
     "category": "general"
   },
   "conjoined-grid": {
@@ -1270,7 +1787,11 @@
       "Layouts: left-right, top-bottom, diagonal arrangements",
       "Patterns where hands are spatially further apart than a single grid allows"
     ],
-    "relatedTerms": ["level", "centric", "position"],
+    "relatedTerms": [
+      "level",
+      "centric",
+      "position"
+    ],
     "category": "grid"
   },
   "atomic": {
@@ -1279,7 +1800,12 @@
       "Left hand doing a wall-plane pattern while right hand does a wheel-plane pattern",
       "Intersecting two planes creates 3D motion even though each individual prop traces a 2D circle"
     ],
-    "relatedTerms": ["spinning-plane", "level", "skewed", "rubiks-cube"],
+    "relatedTerms": [
+      "spinning-plane",
+      "level",
+      "skewed",
+      "rubiks-cube"
+    ],
     "category": "general"
   },
   "rubiks-cube": {
@@ -1288,7 +1814,12 @@
       "Level 5 mixed cardinal and intercardinal on one plane (skewed). Level 9 mixes equivalent points across two intersecting planes.",
       "The 3D grid formed by wall + wheel + overhead planes with in-between access resembles a Rubik's cube"
     ],
-    "relatedTerms": ["atomic", "spinning-plane", "skewed", "level"],
+    "relatedTerms": [
+      "atomic",
+      "spinning-plane",
+      "skewed",
+      "level"
+    ],
     "category": "general"
   },
   "hash": {
@@ -1316,7 +1847,12 @@
       "A prop at 0 turns from a radial start stays radial",
       "Level 1 and Level 2 sequences are radial throughout, because only a half turn or a float can leave radial"
     ],
-    "relatedTerms": ["nonradial", "interradial", "orientation", "layer"],
+    "relatedTerms": [
+      "nonradial",
+      "interradial",
+      "orientation",
+      "layer"
+    ],
     "category": "rotation"
   },
   "nonradial": {
@@ -1326,7 +1862,13 @@
       "A half turn takes a prop from radial to nonradial",
       "Level 3 is where nonradial first becomes possible"
     ],
-    "relatedTerms": ["radial", "interradial", "orientation", "layer", "level"],
+    "relatedTerms": [
+      "radial",
+      "interradial",
+      "orientation",
+      "layer",
+      "level"
+    ],
     "category": "rotation"
   },
   "layer": {
@@ -1353,7 +1895,12 @@
       "1233341112333411: the same signature appears on unrelated words",
       "A repeating sequence whose props change layer an odd number of times takes two passes to come back around"
     ],
-    "relatedTerms": ["layer", "turns", "loop", "level"],
+    "relatedTerms": [
+      "layer",
+      "turns",
+      "loop",
+      "level"
+    ],
     "category": "sequence"
   },
   "interradial": {
@@ -1363,7 +1910,12 @@
       "Level 4 doubles orientation vocabulary from 4 to 8",
       "Quarter turns step through the 8-point radial cycle"
     ],
-    "relatedTerms": ["orientation", "level", "clock", "counter"],
+    "relatedTerms": [
+      "orientation",
+      "level",
+      "clock",
+      "counter"
+    ],
     "category": "rotation"
   },
   "base-rotation": {
@@ -1373,7 +1925,14 @@
       "0-turn anti shift: prop rotates against the arc (base rotation reverses orientation)",
       "0-turn dash: no rotation, no direction (just one state)"
     ],
-    "relatedTerms": ["turns", "pro", "anti", "shift", "dash", "orientation"],
+    "relatedTerms": [
+      "turns",
+      "pro",
+      "anti",
+      "shift",
+      "dash",
+      "orientation"
+    ],
     "category": "rotation"
   },
   "hand-path-modifier": {
@@ -1383,7 +1942,13 @@
       "Dash- (hash): N to center, shortened straight line",
       "Dash+ (L7): perimeter to center of other grid"
     ],
-    "relatedTerms": ["shift", "dash", "hash", "skew", "hand-path"],
+    "relatedTerms": [
+      "shift",
+      "dash",
+      "hash",
+      "skew",
+      "hand-path"
+    ],
     "category": "motion"
   },
   "skew": {
@@ -1393,7 +1958,11 @@
       "Skew- (shift-): shortened arc",
       "Skew++ (shift++): double-extended arc"
     ],
-    "relatedTerms": ["shift", "hand-path-modifier", "hand-path"],
+    "relatedTerms": [
+      "shift",
+      "hand-path-modifier",
+      "hand-path"
+    ],
     "category": "motion"
   },
   "leader-follower": {
@@ -1423,7 +1992,11 @@
       "Swap red/blue: same letter (except STUV hybrids)",
       "U and V exist because color-swapping a quarter-same hybrid changes which motion type leads"
     ],
-    "relatedTerms": ["leader-follower", "dual-shift", "gamma"],
+    "relatedTerms": [
+      "leader-follower",
+      "dual-shift",
+      "gamma"
+    ],
     "category": "general"
   },
   "caps": {
@@ -1434,7 +2007,11 @@
       "CAPs compose per-hand trajectories serially; hybrids compose across hands in parallel",
       "LOOPs compose per-step snapshots (one letter = both hands)"
     ],
-    "relatedTerms": ["loop", "compound", "vtg"],
+    "relatedTerms": [
+      "loop",
+      "compound",
+      "vtg"
+    ],
     "category": "sequence"
   },
   "quarter-time": {
@@ -1444,7 +2021,10 @@
       "In TKA, these are just gamma letters (M through V)",
       "VTG never formally integrated QT into its core four categories"
     ],
-    "relatedTerms": ["vtg", "gamma"],
+    "relatedTerms": [
+      "vtg",
+      "gamma"
+    ],
     "category": "notation"
   },
   "tau-dash": {
@@ -1453,7 +2033,13 @@
       "τ- is classified as Type 4",
       "Its static hand occupies center rather than a perimeter point"
     ],
-    "relatedTerms": ["type-4", "dash", "tau", "centric", "letter"],
+    "relatedTerms": [
+      "type-4",
+      "dash",
+      "tau",
+      "centric",
+      "letter"
+    ],
     "category": "general"
   },
   "elemental-model": {
@@ -1463,7 +2049,12 @@
       "Sun = quarter-same (S,T,U,V), Moon = quarter-opp (MP,NQ,OR compounds)",
       "Diamond DJ = Air/Fire, but Box DJ = Moon"
     ],
-    "relatedTerms": ["vtg", "quarter-time", "gamma", "compound-letter"],
+    "relatedTerms": [
+      "vtg",
+      "quarter-time",
+      "gamma",
+      "compound-letter"
+    ],
     "category": "notation"
   }
 }
