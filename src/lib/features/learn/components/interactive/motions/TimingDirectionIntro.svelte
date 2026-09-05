@@ -159,7 +159,7 @@
   }
   .concept-panel {
     display: grid;
-    grid-template-rows: auto 4.5em minmax(5rem, 1fr) 4.5em auto;
+    grid-template-rows: auto 3em minmax(6rem, 1fr) 3em auto;
     justify-items: center;
     align-content: start;
     gap: 0.75rem;
@@ -246,6 +246,18 @@
     .concept-prose,
     .relationship-caption {
       padding-inline: 0.2rem;
+    }
+  }
+
+  @media (min-width: 2400px) and (min-height: 1300px) {
+    .concept-model {
+      width: min(100%, 90rem);
+    }
+    .concept-panel {
+      font-size: 1.5rem;
+    }
+    h3 {
+      font-size: 2.5rem;
     }
   }
 </style>
