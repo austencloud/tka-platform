@@ -1,32 +1,13 @@
 import { z } from "zod";
-import {
-  TikaDirectorFormationSchema,
-  TikaDirectorPresentationSchema,
-} from "./tika-director-vocabulary";
+import { TikaDirectorActionSchema } from "./tika-capabilities";
 
 export const TIKA_DIRECTOR_MAX_HISTORY = 40;
 
 export * from "./tika-director-vocabulary";
-
-export const TikaDirectorActionSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("assign-distinct-props") }).strict(),
-  z
-    .object({
-      type: z.literal("assign-distinct-characters"),
-      /** Restrict the draw to avatars carrying this presentation label. */
-      presentation: TikaDirectorPresentationSchema.optional(),
-    })
-    .strict(),
-  z.object({ type: z.literal("assign-distinct-sequences") }).strict(),
-  z
-    .object({
-      type: z.literal("formation-transition"),
-      startFormation: TikaDirectorFormationSchema.optional(),
-      endFormation: TikaDirectorFormationSchema,
-      durationBeats: z.number().int().min(1).max(64),
-    })
-    .strict(),
-]);
+export {
+  TikaDirectorActionSchema,
+  type TikaDirectorAction,
+} from "./tika-capabilities";
 
 export const TikaDirectorResponseSchema = z.discriminatedUnion("kind", [
   z
@@ -115,7 +96,6 @@ export const TikaDirectorRequestSchema = z
   })
   .strict();
 
-export type TikaDirectorAction = z.infer<typeof TikaDirectorActionSchema>;
 export type TikaDirectorResponse = z.infer<typeof TikaDirectorResponseSchema>;
 export type TikaDirectorRequest = z.infer<typeof TikaDirectorRequestSchema>;
 export type TikaDirectorConversationMessage =
