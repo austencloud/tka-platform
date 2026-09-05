@@ -95,7 +95,84 @@ function createWorld(bundle = assets()): {
 }
 
 describe("Ember renderer-neutral production world", () => {
-  it("delivers the approved datum and slope without adding a second river or stage", async () => {
+  it("preserves the completed lava revision and keeps the cooled plate above its footing", async () => {
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const load = async (path: string) => {
+      const bytes = readFileSync(path);
+      const data = new Uint8Array(bytes.length);
+      data.set(bytes);
+      const gltf = await loader.parseAsync(data.buffer, "");
+      gltf.scene.updateMatrixWorld(true);
+      return gltf.scene;
+    };
+    const [baseline, current] = await Promise.all([
+      load("static/models/ember/ember-mountain-tributaries-r2.glb"),
+      load("static/models/ember/ember-production-slice.glb"),
+    ]);
+    let channels = 0;
+    baseline.traverse((node) => {
+      const before = node as Mesh;
+      if (
+        !before.isMesh ||
+        !(
+          before.name === "EMBER_LavaSimulatorDeposit" ||
+          before.userData.ember_flow_surface
+        )
+      )
+        return;
+      channels++;
+      const after = current.getObjectByName(before.name) as Mesh;
+      for (const attribute of ["position", "uv", "color"]) {
+        const a = after.geometry.getAttribute(attribute).array;
+        const b = before.geometry.getAttribute(attribute).array;
+        expect(
+          Buffer.from(a.buffer, a.byteOffset, a.byteLength).equals(
+            Buffer.from(b.buffer, b.byteOffset, b.byteLength)
+          )
+        ).toBe(true);
+      }
+      expect(after.matrixWorld.elements).toEqual(before.matrixWorld.elements);
+      expect(after.userData.ember_flow_paths).toEqual(
+        before.userData.ember_flow_paths
+      );
+    });
+    expect(channels).toBe(6);
+    const stage = current.getObjectByName(
+      "EMBER_CooledPerformancePlate"
+    ) as Mesh;
+    const terrain = current.getObjectByName("EMBER_Terrain") as Mesh;
+    const ray = new Raycaster(new Vector3(), new Vector3(0, -1, 0));
+    const samples = [
+      [0, 0],
+      ...Array.from({ length: 8 }, (_, i) => [
+        Math.cos((i * Math.PI) / 4) * 4.2,
+        Math.sin((i * Math.PI) / 4) * 4.2,
+      ]),
+    ];
+    for (const [x, z] of samples) {
+      ray.ray.origin.set(x, 200, z);
+      const plateHit = ray.intersectObject(stage)[0];
+      const groundHit = ray.intersectObject(terrain)[0];
+      expect(plateHit).toBeDefined();
+      const clearance = plateHit.point.y - groundHit.point.y;
+      expect(clearance).toBeGreaterThan(0.005);
+      expect(clearance).toBeLessThan(0.04);
+    }
+    expect((stage.material as MeshStandardMaterial).emissive.getHex()).toBe(0);
+    const fractures = current.getObjectByName(
+      "EMBER_CooledPlatePeripheralFractures"
+    ) as Mesh;
+    const fractureVertices = fractures.geometry.getAttribute("position");
+    const point = new Vector3();
+    for (let index = 0; index < fractureVertices.count; index++) {
+      point
+        .fromBufferAttribute(fractureVertices, index)
+        .applyMatrix4(fractures.matrixWorld);
+      expect(Math.hypot(point.x, point.z)).toBeGreaterThan(4.5);
+    }
+  });
+
+  it("delivers the approved datum and slope without resurrecting the runtime platform", async () => {
     const path = "static/models/ember/ember-production-slice.glb";
     const bytes = readFileSync(path);
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
@@ -117,6 +194,17 @@ describe("Ember renderer-neutral production world", () => {
       bundle
     );
     world.root.updateMatrixWorld(true);
+    expect(
+      (world.root.getObjectByName("EMBER_CooledPerformancePlate") as Mesh)
+        .castShadow
+    ).toBe(false);
+    expect(
+      (
+        world.root.getObjectByName(
+          "EMBER_CooledPlatePeripheralFractures"
+        ) as Mesh
+      ).castShadow
+    ).toBe(false);
     const ray = new Raycaster(new Vector3(0, 200, 0), new Vector3(0, -1, 0));
     expect(ray.intersectObject(source, true)[0].point.y).toBeCloseTo(-1, 1);
     expect(source.geometry.getAttribute("position").array).toEqual(positions);
