@@ -394,7 +394,8 @@
   }
 
   .detail-animation {
-    width: 100%;
+    width: min(100%, 26rem);
+    margin-inline: auto;
     aspect-ratio: 1.08;
   }
 

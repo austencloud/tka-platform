@@ -173,8 +173,8 @@
   }
 
   .history-sources {
-    margin-top: 2.5rem;
-    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
     border-top: 1px solid var(--theme-stroke);
     text-align: center;
   }
@@ -198,7 +198,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1rem;
     padding: 0;
-    margin: 1.5rem 0;
+    margin: 1rem 0;
     list-style: none;
   }
 
@@ -219,7 +219,7 @@
   .source-cards :global(.panel-btn) {
     height: 100%;
     align-items: stretch;
-    padding: 1.25rem;
+    padding: 1rem;
     text-align: left;
     background: rgb(from var(--theme-card-bg) r g b / 1);
     border-radius: var(--radius-lg, 0.75rem);
@@ -229,7 +229,7 @@
   .source-content {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
     min-width: 0;
   }
 
