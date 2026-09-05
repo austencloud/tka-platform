@@ -14,6 +14,8 @@ import {
   transformPosition,
 } from "../../../src/lib/features/learn/components/interactive/positions/hand-position-lesson";
 import { createPositionWorkshopState } from "../../../src/lib/features/learn/components/interactive/positions/positions-experience-state.svelte";
+import { HandSide } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { PropPlacementChange } from "../../../src/lib/shared/pictograph/grid/domain/prop-placement";
 
 function memory(saved?: unknown) {
   let workshop = saved;
@@ -113,6 +115,66 @@ describe("hand position workshop domain", () => {
 });
 
 describe("self-paced practice progress", () => {
+  const alphaPlacement: PropPlacementChange = {
+    leftLocation: GridLocation.NORTH,
+    rightLocation: GridLocation.SOUTH,
+    activeHand: null,
+    complete: true,
+    canUndo: true,
+  };
+
+  it("confirms committed placements immediately without advancing or double-counting", () => {
+    const state = createPositionWorkshopState(memory());
+    state.practice();
+    state.evaluatePlacement(alphaPlacement);
+    expect(state.feedback).toBe("correct");
+    expect(state.builtCount).toBe(1);
+    expect(state.round).toBe(0);
+    state.evaluatePlacement(alphaPlacement);
+    expect(state.builtCount).toBe(1);
+    expect(state.next()).toBe(true);
+    expect(state.builtCount).toBe(1);
+    expect(state.next()).toBe(false);
+  });
+
+  it("withholds confirmation while editing and rechecks an unchanged committed point", () => {
+    const state = createPositionWorkshopState(memory());
+    state.practice();
+    state.evaluatePlacement(alphaPlacement);
+    state.evaluatePlacement({ ...alphaPlacement, activeHand: HandSide.RIGHT });
+    expect(state.feedback).toBe("idle");
+    expect(state.next()).toBe(false);
+    state.evaluatePlacement(alphaPlacement);
+    expect(state.feedback).toBe("correct");
+    state.evaluatePlacement({
+      ...alphaPlacement,
+      rightLocation: null,
+      complete: false,
+    });
+    expect(state.feedback).toBe("idle");
+    expect(state.builtCount).toBe(0);
+    expect(state.next()).toBe(false);
+  });
+
+  it("rechecks wrong constructions but never grades free exploration", () => {
+    const state = createPositionWorkshopState(memory());
+    state.evaluatePlacement(alphaPlacement);
+    expect(state.feedback).toBe("idle");
+    expect(state.builtCount).toBe(0);
+    state.practice();
+    state.evaluatePlacement({
+      ...alphaPlacement,
+      rightLocation: GridLocation.NORTH,
+    });
+    expect(state.feedback).toBe("incorrect");
+    expect(state.next()).toBe(false);
+    state.evaluatePlacement(alphaPlacement);
+    expect(state.feedback).toBe("correct");
+    state.explore();
+    state.evaluatePlacement(alphaPlacement);
+    expect(state.feedback).toBe("idle");
+  });
+
   it("requires each correct construction, invalidates edited answers, and never double-advances", () => {
     const state = createPositionWorkshopState(memory());
     expect(state.next()).toBe(false);
