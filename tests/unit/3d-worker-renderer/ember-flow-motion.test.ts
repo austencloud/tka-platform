@@ -50,6 +50,25 @@ describe("Ember drifting crust", () => {
       "EMBER_LavaSimulatorDeposit"
     ) as Mesh;
     expect(deposit.geometry.getAttribute("uv").count).toBeGreaterThan(20_000);
+    // Check the delivered asset, not Blender's pre-export coordinates. A heat
+    // feature at V-speed*time=constant must move toward decreasing world Z.
+    const uv = deposit.geometry.getAttribute("uv");
+    const positions = deposit.geometry.getAttribute("position");
+    const sample = new Vector3();
+    let upstream = { z: -Infinity, v: 0 },
+      downstream = { z: Infinity, v: 0 };
+    for (let index = 0; index < positions.count; index++) {
+      sample
+        .fromBufferAttribute(positions, index)
+        .applyMatrix4(deposit.matrixWorld);
+      if (sample.z > upstream.z) upstream = { z: sample.z, v: uv.getY(index) };
+      if (sample.z < downstream.z)
+        downstream = { z: sample.z, v: uv.getY(index) };
+    }
+    const metresPerV =
+      (downstream.z - upstream.z) / (downstream.v - upstream.v);
+    expect(metresPerV).toBeCloseTo(-1, 3);
+    expect(0.72 * metresPerV).toBeLessThan(0);
     expect(deposit.geometry.getAttribute("color").count).toBe(
       deposit.geometry.getAttribute("position").count
     );
