@@ -235,6 +235,15 @@ function length(a: Vec3): number {
   return Math.hypot(a.x, a.y, a.z);
 }
 
+/**
+ * Straight-line distance between two world points, in millimetres. Exported
+ * for `reach-settle.ts`, which needs exactly this — how far the wrist moved
+ * between two ticks — and nothing else this module computes.
+ */
+export function distanceMm(a: Vec3, b: Vec3): number {
+  return length(sub(a, b)) * 1000;
+}
+
 function normalize(a: Vec3): Vec3 | null {
   const l = length(a);
   return l < EPSILON ? null : scale(a, 1 / l);

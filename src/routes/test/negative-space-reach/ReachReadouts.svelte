@@ -38,9 +38,17 @@
      * disclosure instead of repeating under every pane.
      */
     compact?: boolean;
+    /**
+     * True while the pane behind this reading hasn't settled since its last
+     * phase change — see `reach-settle.ts`. The line stays fully visible
+     * (this is a real, if not-yet-final, number, not a loading state to
+     * hide) but reads at reduced emphasis so a viewer does not mistake a
+     * mid-transient value for the settled one.
+     */
+    provisional?: boolean;
   }
 
-  let { frame, routeLabel, compact = false }: Props = $props();
+  let { frame, routeLabel, compact = false, provisional = false }: Props = $props();
 
   const verdict = $derived(routeVerdict(frame));
 
@@ -122,6 +130,7 @@
 {#if compact}
   <section
     class="readouts compact"
+    class:provisional
     aria-label={`Measurements for ${routeLabel}`}
     data-verdict={verdict}
   >
@@ -494,10 +503,29 @@
   .compact-line {
     margin: 0;
     font-size: var(--font-size-sm, 0.875rem);
+    /* Only opacity moves here — the text itself never changes size or
+       wraps differently between provisional and final, so there is nothing
+       for a layout-motion owner to animate (no-layout-shift.md). */
+    transition: opacity var(--transition-fast, 150ms) ease;
+  }
+
+  /*
+    Reduced emphasis while this pane hasn't settled (reach-settle.ts): the
+    number stays fully readable, just visually deferred, so a viewer does not
+    mistake a mid-transient value for the real one.
+  */
+  .readouts.compact.provisional .compact-line {
+    opacity: 0.6;
   }
 
   .compact-sep {
     margin: 0 0.3em;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .compact-line {
+      transition: none;
+    }
   }
 </style>
