@@ -276,6 +276,8 @@
               <TimingDirectionBoard
                 bind:this={comparisonBoard}
                 modes={ELEMENTAL_MODES}
+                articleHrefFor={(mode) =>
+                  `/timing-and-direction/${mode.timing.toLowerCase()}-time-${mode.direction.toLowerCase()}-direction`}
                 active={isComparison && comparisonPresented}
                 onReady={comparisonPrepared}
                 onFocusChange={(focused) => (comparisonFocused = focused)}
