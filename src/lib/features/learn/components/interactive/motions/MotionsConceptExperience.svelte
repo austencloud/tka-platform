@@ -323,7 +323,8 @@
   }
 
   .motions-experience.is-intro {
-    height: clamp(40rem, 80dvh, 50rem);
+    flex-shrink: 0;
+    height: clamp(44rem, 80dvh, 50rem);
     overflow: visible;
   }
 

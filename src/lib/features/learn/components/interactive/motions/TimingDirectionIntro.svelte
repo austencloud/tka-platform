@@ -159,7 +159,7 @@
   }
   .concept-panel {
     display: grid;
-    grid-template-rows: auto 4.5em minmax(5rem, 1fr) 4.5em auto;
+    grid-template-rows: auto 3em minmax(6rem, 1fr) 3em auto;
     justify-items: center;
     align-content: start;
     gap: 0.75rem;
