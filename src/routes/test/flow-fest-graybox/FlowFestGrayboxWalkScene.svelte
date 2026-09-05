@@ -26,12 +26,33 @@
   } from "$lib/features/flow-fest-sim/domain/flow-fest-euc-mounted-pose";
   import { FlowFestElectricUnicycleDrive } from "$lib/features/flow-fest-sim/services/flow-fest-electric-unicycle-drive";
   import {
+    FLOW_FEST_CAR_EDGE_MESSAGE,
+    FlowFestCarDrive,
+    type FlowFestCarDriveFrame,
+  } from "$lib/features/flow-fest-sim/services/flow-fest-car-drive";
+  import {
+    FLOW_FEST_CAR_CONFIG,
+    createFlowFestCarDynamics,
+    flowFestCarCargoSetDownPoint,
+    flowFestCarDriverDoorPoint,
+    flowFestCarSpec,
+    type FlowFestCarDynamics,
+    type FlowFestCarSpec,
+  } from "$lib/features/flow-fest-sim/domain/flow-fest-car";
+  import {
+    FLOW_FEST_GROUND_VEHICLE_IDLE_INPUT,
+    type FlowFestGroundVehicleInput,
+  } from "$lib/features/flow-fest-sim/domain/flow-fest-ground-vehicle";
+  import {
+    mobilityCarDynamicsFromSnapshot,
     mobilityDynamicsFromSnapshot,
     type FlowFestMobilityRuntimeUpdate,
     type FlowFestMobilitySnapshot,
   } from "$lib/features/flow-fest-sim/state/flow-fest-mobility-state.svelte";
   import {
+    Euler,
     Mesh,
+    Quaternion,
     TextureLoader,
     Vector3,
     type Group,
@@ -44,7 +65,13 @@
     parseGeospatialTerrainManifest,
   } from "$lib/shared/3d/procedural-engine/generation/geospatial-terrain";
   import { buildFlowFestEntranceGradedTerrain } from "../flow-fest-sim/flow-fest-entrance-terrain";
-  import { FLOW_FEST_CAMP_PLAN_BOUNDS } from "../flow-fest-sim/flow-fest-camp-plan";
+  import {
+    FLOW_FEST_CAMP_PLAN_BOUNDS,
+    createFlowFestCampPlan,
+    identifyFlowFestPlanLocation,
+    type FlowFestCampPlan,
+    type FlowFestGateQueueCar,
+  } from "../flow-fest-sim/flow-fest-camp-plan";
   import {
     createPhysicsWorldState,
     createRigidBody,
@@ -89,6 +116,7 @@
   } from "./flow-fest-review-geometry";
   import type { FlowFestGrayboxReadyDetails } from "./flow-fest-graybox-types";
   import FlowFestElectricUnicycle from "../flow-fest-sim/FlowFestElectricUnicycle.svelte";
+  import FlowFestDrivenCar from "../flow-fest-sim/FlowFestDrivenCar.svelte";
   import FlowFestOnFootPlayer from "./FlowFestOnFootPlayer.svelte";
   import { type CharacterId } from "$lib/shared/3d/domain/character-model";
 
@@ -128,6 +156,8 @@
     productionCollision?: FlowFestProductionCollisionSet | null;
     productionCampEstablished?: boolean;
     productionFestivalActive?: boolean;
+    /** Other arrivals queued at the gate; each gets a static body like a parked car. */
+    gateQueueCars?: readonly FlowFestGateQueueCar[];
     electricUnicycleEnabled?: boolean;
     /**
      * The character the player wears on foot. It defaults to the wheel's
@@ -135,6 +165,12 @@
      * that lets the player pick one passes that choice through here.
      */
     playerCharacterId?: CharacterId;
+    /**
+     * Freeze the controls while a full-screen panel owns the input. The
+     * loadout screen sits over the site: nothing behind it may move, and no
+     * key pressed on the panel may reach the wheel or the body.
+     */
+    inputLocked?: boolean;
     electricUnicycleRevision?: number;
     electricUnicycleSnapshot?: FlowFestMobilitySnapshot | null;
     electricUnicycleLightsOn?: boolean;
@@ -264,6 +300,32 @@
       roughnessMeters: 0,
     });
   let electricUnicycleParkedBody: PhysicsBodyComponent | null = null;
+  /**
+   * The car the player arrived in. It wraps the wheel's drive exactly as the
+   * wheel wraps Rapier: while driving, the wheel is cargo and its drive is a
+   * pass-through; parked, the car is a static box the on-foot body walks
+   * around. Nothing here exists until the loadout screen sends a car through
+   * the mobility snapshot.
+   */
+  let carDrive: FlowFestCarDrive | null = null;
+  let car = $state<{ modelId: string; paintIndex: number } | null>(null);
+  let carDriving = $state(false);
+  let carDynamics = $state<FlowFestCarDynamics>(createFlowFestCarDynamics());
+  let carInput: FlowFestGroundVehicleInput =
+    FLOW_FEST_GROUND_VEHICLE_IDLE_INPUT;
+  /** Body centre on the ground plane; the visual settles its own height. */
+  let carPosition = $state({ x: 0, z: 0 });
+  let carParkedBody: PhysicsBodyComponent | null = null;
+  let gateQueueBodies: PhysicsBodyComponent[] = [];
+  let carCollisionLimited = false;
+  let carEdgeLimited = false;
+  /** The wheel rides in the car: no body, no collider, no mount prompt. */
+  let electricUnicycleCargo = $state(false);
+  let carEnvironmentFrame = 0;
+  let campPlan: FlowFestCampPlan | null = null;
+  let campPlanBranch: FlowFestBranchId | null = null;
+  const carRotation = new Quaternion();
+  const carRotationEuler = new Euler();
   let electricUnicycleLongitudinalAcceleration = $state(0);
   /**
    * A review-camera teleport that ran before the chase rig had produced a frame,
@@ -734,6 +796,7 @@
 
   function resetToGate(): void {
     if (!contract) return;
+    resetCarState();
     const [x, , z] = contract.spawn.positionWorld;
     const position = bodyPositionAt(x, z);
     ensureTerrainColliders(x, z);
@@ -961,18 +1024,40 @@
       : electricUnicycleDistanceToPlayer();
     const canMount =
       !electricUnicycleMounted &&
+      !electricUnicycleCargo &&
       distanceToWheelMeters <= FLOW_FEST_EUC_CONFIG.mountRangeMeters;
     const canDismount =
       electricUnicycleMounted &&
       Math.abs(electricUnicycleDynamics.speedMetersPerSecond) <=
         FLOW_FEST_EUC_CONFIG.safeDismountSpeedMetersPerSecond;
-    electricUnicycleInteractionMessage = electricUnicycleMounted
-      ? canDismount
-        ? "Park wheel"
-        : "Brake below 3.4 mph to step off"
-      : canMount
-        ? "Mount wheel"
-        : `${distanceToWheelMeters.toFixed(1)} m to your wheel`;
+    const spec = carSpec();
+    const distanceToDoorMeters = spec
+      ? carDistanceToDoor()
+      : Number.POSITIVE_INFINITY;
+    const canBoard =
+      Boolean(spec) &&
+      !carDriving &&
+      !electricUnicycleMounted &&
+      distanceToDoorMeters <= FLOW_FEST_CAR_CONFIG.boardRangeMeters;
+    const canExit =
+      carDriving &&
+      Math.abs(carDynamics.speedMetersPerSecond) <=
+        FLOW_FEST_CAR_CONFIG.exitSpeedMetersPerSecond;
+    electricUnicycleInteractionMessage = carDriving
+      ? canExit
+        ? "Get out"
+        : "Brake to a stop to get out"
+      : canBoard
+        ? "Get in the car"
+        : electricUnicycleMounted
+          ? canDismount
+            ? "Park wheel"
+            : "Brake below 3.4 mph to step off"
+          : canMount
+            ? "Mount wheel"
+            : electricUnicycleCargo
+              ? `${distanceToDoorMeters.toFixed(1)} m to your car`
+              : `${distanceToWheelMeters.toFixed(1)} m to your wheel`;
     const update: FlowFestMobilityRuntimeUpdate = {
       mounted: electricUnicycleMounted,
       player: { x: currentPlayer.x, z: currentPlayer.z },
@@ -993,7 +1078,51 @@
         speedMetersPerSecond: measuredGroundSpeed,
         sprinting: sprintHeld && (props.enableSprint ?? false),
       },
+      car:
+        car && spec
+          ? {
+              modelId: car.modelId,
+              paintIndex: car.paintIndex,
+              driving: carDriving,
+              position: { x: carPosition.x, z: carPosition.z },
+              dynamics: { ...carDynamics },
+              input: { ...carInput },
+              distanceToDoorMeters,
+              canBoard,
+              canExit,
+              collisionLimited: carCollisionLimited,
+              edgeMessage: carEdgeLimited ? FLOW_FEST_CAR_EDGE_MESSAGE : null,
+            }
+          : null,
     };
+    (globalThis as Record<string, unknown>).__flowFestCar = update.car
+      ? {
+          ...update.car,
+          label: spec?.label ?? null,
+          wheelAsCargo: electricUnicycleCargo,
+          collider: carDriving
+            ? {
+                shape: "lying-capsule",
+                radiusMeters: (spec?.widthMeters ?? 0) / 2,
+                halfHeightMeters: Math.max(
+                  0.1,
+                  (spec?.lengthMeters ?? 0) / 2 - (spec?.widthMeters ?? 0) / 2
+                ),
+              }
+            : {
+                shape: "parked-box",
+                active: carParkedBody !== null,
+              },
+          camera: carDriving
+            ? {
+                behavior: "collision-aware-heading-chase",
+                distanceMeters: FLOW_FEST_CAR_CONFIG.chaseCameraDistanceMeters,
+                heightMeters: FLOW_FEST_CAR_CONFIG.chaseCameraHeightMeters,
+              }
+            : null,
+          config: FLOW_FEST_CAR_CONFIG,
+        }
+      : null;
     (globalThis as Record<string, unknown>).__flowFestEuc = {
       status: initialized ? "ready" : "initializing",
       coordinateFingerprint:
@@ -1056,6 +1185,332 @@
       config: FLOW_FEST_EUC_CONFIG,
     };
     props.onElectricUnicycleChange?.(update);
+  }
+
+  function carSpec(): FlowFestCarSpec | null {
+    return car ? flowFestCarSpec(car.modelId) : null;
+  }
+
+  function carPose(): { x: number; z: number; headingRadians: number } {
+    return {
+      x: carPosition.x,
+      z: carPosition.z,
+      headingRadians: carDynamics.headingRadians,
+    };
+  }
+
+  function carDistanceToDoor(): number {
+    const spec = carSpec();
+    if (!spec) return Number.POSITIVE_INFINITY;
+    const door = flowFestCarDriverDoorPoint(spec, carPose());
+    const position = physicsProvider?.getPlayerPosition() ?? playerPosition;
+    return Math.hypot(position.x - door.x, position.z - door.z);
+  }
+
+  function sampleCarGroundY(x: number, z: number): number {
+    return terrain ? sampleFlowFestTerrainWorldY(terrain, x, z) : 0;
+  }
+
+  /** Where the driving body sits: the seat capsule's radius above the ground. */
+  function carSeatBodyPosition(
+    spec: FlowFestCarSpec,
+    x: number,
+    z: number
+  ): { x: number; y: number; z: number } {
+    return {
+      x,
+      y: sampleCarGroundY(x, z) + spec.widthMeters / 2 + PLAYER_OFFSET + 0.05,
+      z,
+    };
+  }
+
+  /**
+   * The seat collider is a capsule lying along the car, as wide as the body
+   * and nearly as long. Its rounded ends ride a grade change without the edge
+   * of a box catching the road, and the same character controller keeps
+   * grounding, slopes and collision exactly as it does for the walker.
+   */
+  function applyDrivingCollider(spec: FlowFestCarSpec): void {
+    const rapier = physicsState?.rapier;
+    const collider = playerState?.collider;
+    if (!rapier || !collider) return;
+    const radius = spec.widthMeters / 2;
+    collider.setShape(
+      new rapier.Capsule(Math.max(0.1, spec.lengthMeters / 2 - radius), radius)
+    );
+  }
+
+  function applyWalkingCollider(): void {
+    const rapier = physicsState?.rapier;
+    const collider = playerState?.collider;
+    const rigidBody = playerState?.rigidBody;
+    if (!rapier || !collider || !rigidBody) return;
+    collider.setShape(new rapier.Capsule(PLAYER_HALF_HEIGHT, PLAYER_RADIUS));
+    const upright = { x: 0, y: 0, z: 0, w: 1 };
+    rigidBody.setRotation(upright, true);
+    rigidBody.setNextKinematicRotation(upright);
+  }
+
+  function clearCarParkedBody(): void {
+    if (!carParkedBody || !physicsState) return;
+    removeRigidBody(physicsState, carParkedBody);
+    carParkedBody = null;
+  }
+
+  /** A parked car is a static box the size of its body, resting on the ground. */
+  function createCarStaticBox(
+    spec: FlowFestCarSpec,
+    x: number,
+    z: number,
+    headingRadians: number
+  ): PhysicsBodyComponent | null {
+    if (!physicsState?.world) return null;
+    const halfYaw = (headingRadians - Math.PI / 2) / 2;
+    return createRigidBody(
+      physicsState,
+      {
+        type: "static",
+        position: {
+          x,
+          y: sampleCarGroundY(x, z) + spec.heightMeters / 2,
+          z,
+        },
+        rotation: { x: 0, y: Math.sin(halfYaw), z: 0, w: Math.cos(halfYaw) },
+      },
+      {
+        type: "box",
+        size: {
+          x: spec.lengthMeters,
+          y: spec.heightMeters,
+          z: spec.widthMeters,
+        },
+        friction: 0.6,
+        restitution: 0.05,
+      }
+    );
+  }
+
+  function mountCarParkedBody(spec: FlowFestCarSpec): void {
+    if (!physicsState?.world || carDriving || carParkedBody) return;
+    carParkedBody = createCarStaticBox(
+      spec,
+      carPosition.x,
+      carPosition.z,
+      carDynamics.headingRadians
+    );
+  }
+
+  function clearGateQueueBodies(): void {
+    if (physicsState) {
+      for (const body of gateQueueBodies) removeRigidBody(physicsState, body);
+    }
+    gateQueueBodies = [];
+  }
+
+  function mountGateQueueBodies(cars: readonly FlowFestGateQueueCar[]): void {
+    clearGateQueueBodies();
+    if (!physicsState?.world || !terrain) return;
+    gateQueueBodies = cars.flatMap((car) => {
+      const body = createCarStaticBox(
+        flowFestCarSpec(car.modelId),
+        car.x,
+        car.z,
+        car.headingRadians
+      );
+      return body ? [body] : [];
+    });
+  }
+
+  function resetCarState(): void {
+    clearCarParkedBody();
+    electricUnicycleCargo = false;
+    if (carDriving) {
+      carDrive?.replaceDynamics(carDynamics, false);
+      applyWalkingCollider();
+    }
+    carDriving = false;
+  }
+
+  function handleCarDriveFrame(frame: FlowFestCarDriveFrame): void {
+    carDriving = frame.driving;
+    carDynamics = frame.dynamics;
+    carInput = frame.input;
+    carCollisionLimited = frame.collisionLimited;
+    carEdgeLimited = frame.edgeLimited;
+    if (frame.driving) {
+      playerYaw = frame.dynamics.headingRadians;
+      targetPlayerYaw = frame.dynamics.headingRadians;
+    }
+    emitElectricUnicycleUpdate();
+  }
+
+  /**
+   * Road or field, uphill or down, sampled ten times a second. The plan's
+   * lines are the surveyed road and the camp drives; anything else under the
+   * car is grass or the loose gravel shoulder.
+   */
+  function updateCarEnvironment(position: { x: number; z: number }): void {
+    if (!carDrive || !terrain || !contract) return;
+    carEnvironmentFrame += 1;
+    if (carEnvironmentFrame % 6 !== 0) return;
+    if (!campPlan || campPlanBranch !== props.selectedBranch) {
+      campPlan = createFlowFestCampPlan(contract, props.selectedBranch);
+      campPlanBranch = props.selectedBranch;
+    }
+    const location = identifyFlowFestPlanLocation(campPlan, position);
+    const onSurface =
+      location.kind === "public-road" ||
+      location.kind === "internal-drive" ||
+      location.kind === "landmark";
+    const heading = carDynamics.headingRadians;
+    const forwardX = Math.sin(heading);
+    const forwardZ = Math.cos(heading);
+    const ahead = sampleFlowFestTerrainWorldY(
+      terrain,
+      position.x + forwardX * 2,
+      position.z + forwardZ * 2
+    );
+    const behind = sampleFlowFestTerrainWorldY(
+      terrain,
+      position.x - forwardX * 2,
+      position.z - forwardZ * 2
+    );
+    const rise = ahead - behind;
+    carDrive.setEnvironment({
+      gripFraction: onSurface ? 1 : FLOW_FEST_CAR_CONFIG.offRoadGripFraction,
+      gradeSine: rise / Math.hypot(4, rise),
+    });
+  }
+
+  function boardCar(): void {
+    const spec = carSpec();
+    if (
+      !carDrive ||
+      !spec ||
+      !terrain ||
+      carDriving ||
+      electricUnicycleMounted
+    ) {
+      return;
+    }
+    if (carDistanceToDoor() > FLOW_FEST_CAR_CONFIG.boardRangeMeters) {
+      emitElectricUnicycleUpdate(true);
+      return;
+    }
+    // A wheel parked within reach goes in the boot; one left further away
+    // stays where it was parked.
+    if (
+      !electricUnicycleCargo &&
+      electricUnicycleDistanceToPlayer() <=
+        FLOW_FEST_CAR_CONFIG.electricUnicycleCargoRangeMeters
+    ) {
+      clearElectricUnicycleParkedBody();
+      electricUnicycleCargo = true;
+    }
+    clearCarParkedBody();
+    carDrive.setSpec(spec);
+    const heading = carDynamics.headingRadians;
+    // Boarding stands the walker up first; the seat capsule replaces the
+    // standing one only once nothing will resize it again.
+    carDrive.board(heading);
+    applyDrivingCollider(spec);
+    const body = carSeatBodyPosition(spec, carPosition.x, carPosition.z);
+    ensureTerrainColliders(body.x, body.z);
+    physicsProvider?.teleport?.(body);
+    playerPosition = body;
+    playerYaw = heading;
+    targetPlayerYaw = heading;
+    initialPitch = FLOW_FEST_CAR_CONFIG.chaseCameraPitchRadians;
+    cameraRevision += 1;
+    emitElectricUnicycleUpdate(true);
+  }
+
+  function exitCar(): void {
+    const spec = carSpec();
+    if (!carDrive || !spec || !terrain || !carDriving) return;
+    if (!carDrive.exit()) {
+      emitElectricUnicycleUpdate(true);
+      return;
+    }
+    const pose = carPose();
+    applyWalkingCollider();
+    const door = flowFestCarDriverDoorPoint(spec, pose);
+    const body = bodyPositionAt(door.x, door.z);
+    ensureTerrainColliders(body.x, body.z);
+    physicsProvider?.teleport?.(body);
+    playerPosition = body;
+    mountCarParkedBody(spec);
+    if (electricUnicycleCargo && electricUnicycleDrive) {
+      // The wheel comes out of the boot behind the car, facing the same way.
+      const setDown = flowFestCarCargoSetDownPoint(spec, pose);
+      electricUnicycleCargo = false;
+      electricUnicycleDynamics = createFlowFestElectricUnicycleDynamics({
+        ...electricUnicycleDynamics,
+        speedMetersPerSecond: 0,
+        headingRadians: pose.headingRadians,
+      });
+      electricUnicycleDrive.replaceDynamics(electricUnicycleDynamics, false);
+      electricUnicycleWheelPosition = {
+        x: setDown.x,
+        y: sampleFlowFestTerrainWorldY(terrain, setDown.x, setDown.z),
+        z: setDown.z,
+      };
+      mountElectricUnicycleParkedBody();
+    }
+    playerYaw = pose.headingRadians;
+    targetPlayerYaw = pose.headingRadians;
+    initialPitch = 0;
+    cameraRevision += 1;
+    emitElectricUnicycleUpdate(true);
+  }
+
+  function restoreCarFromSnapshot(snapshot: FlowFestMobilitySnapshot): void {
+    if (!carDrive || !terrain) return;
+    if (!snapshot.car) {
+      car = null;
+      carDrive.replaceDynamics(createFlowFestCarDynamics(), false);
+      return;
+    }
+    car = {
+      modelId: snapshot.car.modelId,
+      paintIndex: snapshot.car.paintIndex,
+    };
+    const spec = flowFestCarSpec(car.modelId);
+    carDrive.setSpec(spec);
+    carPosition = { x: snapshot.car.x, z: snapshot.car.z };
+    carDynamics = mobilityCarDynamicsFromSnapshot(snapshot.car);
+    carDrive.replaceDynamics(carDynamics, snapshot.car.driving);
+    if (snapshot.car.driving) {
+      // The wheel is cargo for the whole drive; it is set down on exit.
+      electricUnicycleCargo = true;
+      applyDrivingCollider(spec);
+      const body = carSeatBodyPosition(spec, carPosition.x, carPosition.z);
+      ensureTerrainColliders(body.x, body.z);
+      physicsProvider?.teleport?.(body);
+      playerPosition = body;
+      playerYaw = carDynamics.headingRadians;
+      targetPlayerYaw = carDynamics.headingRadians;
+      initialPitch = FLOW_FEST_CAR_CONFIG.chaseCameraPitchRadians;
+      return;
+    }
+    mountCarParkedBody(spec);
+  }
+
+  /** E and the gamepad's south button: the seat first, then the door, then the wheel. */
+  function handleInteract(): void {
+    if (carDriving) {
+      exitCar();
+      return;
+    }
+    if (
+      car &&
+      !electricUnicycleMounted &&
+      carDistanceToDoor() <= FLOW_FEST_CAR_CONFIG.boardRangeMeters
+    ) {
+      boardCar();
+      return;
+    }
+    toggleElectricUnicycleMount();
   }
 
   function handleElectricUnicycleDriveFrame(frame: {
@@ -1149,6 +1604,8 @@
 
   function mountElectricUnicycle(): void {
     if (!electricUnicycleDrive || electricUnicycleMounted) return;
+    // The wheel is in the boot; it comes out with the driver, not on its own.
+    if (electricUnicycleCargo) return;
     if (
       electricUnicycleDistanceToPlayer() > FLOW_FEST_EUC_CONFIG.mountRangeMeters
     ) {
@@ -1174,9 +1631,10 @@
 
   function handleElectricUnicycleCodes(activeCodes: readonly string[]): void {
     electricUnicycleDrive?.setKeyboardCodes(activeCodes);
+    carDrive?.setKeyboardCodes(activeCodes);
     const pressed = activeCodes.includes("KeyE");
     if (pressed && !electricUnicycleKeyPressed) {
-      toggleElectricUnicycleMount();
+      handleInteract();
     }
     electricUnicycleKeyPressed = pressed;
   }
@@ -1192,9 +1650,12 @@
     electricUnicycleDrive.setGamepad(
       (gamepad as FlowFestStandardGamepadSample | undefined) ?? null
     );
+    carDrive?.setGamepad(
+      (gamepad as FlowFestStandardGamepadSample | undefined) ?? null
+    );
     const mountPressed = gamepad?.buttons[0]?.pressed ?? false;
     if (mountPressed && !electricUnicycleGamepadButtonPressed) {
-      toggleElectricUnicycleMount();
+      handleInteract();
     }
     electricUnicycleGamepadButtonPressed = mountPressed;
   }
@@ -1211,13 +1672,15 @@
       return;
     }
     clearElectricUnicycleParkedBody();
+    resetCarState();
+    const drivingCar = Boolean(snapshot.car?.driving);
     electricUnicycleDynamics = mobilityDynamicsFromSnapshot(snapshot);
-    electricUnicycleMounted = snapshot.mounted;
+    electricUnicycleMounted = snapshot.mounted && !drivingCar;
     electricUnicycleDrive.replaceDynamics(
       electricUnicycleDynamics,
-      snapshot.mounted
+      electricUnicycleMounted
     );
-    applyElectricUnicycleTraversalEnvelope(snapshot.mounted);
+    applyElectricUnicycleTraversalEnvelope(electricUnicycleMounted);
     const body = bodyPositionAt(snapshot.player.x, snapshot.player.z);
     ensureTerrainColliders(body.x, body.z);
     physicsProvider?.teleport?.(body);
@@ -1237,10 +1700,14 @@
           ),
           z: snapshot.wheel.z,
         };
-    if (!snapshot.mounted) mountElectricUnicycleParkedBody();
+    // A driving snapshot carries the wheel in the car; it is set down on exit.
+    if (!electricUnicycleMounted && !drivingCar) {
+      mountElectricUnicycleParkedBody();
+    }
     playerYaw = snapshot.headingRadians;
     targetPlayerYaw = snapshot.headingRadians;
     initialPitch = 0;
+    restoreCarFromSnapshot(snapshot);
     cameraRevision += 1;
     emitElectricUnicycleUpdate(true);
   }
@@ -1270,6 +1737,12 @@
       props.productionCampEstablished ?? false,
       props.productionFestivalActive ?? false
     );
+  });
+
+  $effect(() => {
+    const cars = props.gateQueueCars ?? [];
+    if (!initialized) return;
+    mountGateQueueBodies(cars);
   });
 
   onMount(async () => {
@@ -1421,7 +1894,13 @@
           undefined,
           handleElectricUnicycleDriveFrame
         );
-        physicsProvider = electricUnicycleDrive;
+        carDrive = new FlowFestCarDrive(
+          electricUnicycleDrive,
+          flowFestCarSpec("ace-hatchback"),
+          undefined,
+          handleCarDriveFrame
+        );
+        physicsProvider = carDrive;
       } else {
         physicsProvider = basePhysicsProvider;
       }
@@ -1703,7 +2182,9 @@
     // flip the character between idle and walking mid-stride.
     const rawGroundSpeed = Math.hypot(bodyVelocity.x, bodyVelocity.z);
     const speedBlend =
-      delta > 0 && delta < 0.25 ? 1 - Math.exp(-GROUND_SPEED_SMOOTHING * delta) : 1;
+      delta > 0 && delta < 0.25
+        ? 1 - Math.exp(-GROUND_SPEED_SMOOTHING * delta)
+        : 1;
     measuredGroundSpeed += (rawGroundSpeed - measuredGroundSpeed) * speedBlend;
     const livePlayer = liveProof?.player as Record<string, unknown> | undefined;
     if (livePlayer && playerState?.collider) {
@@ -1743,10 +2224,33 @@
       updateActiveColliderProof();
       return;
     }
+    if (carDriving && playerState?.rigidBody) {
+      // The seat capsule lies along local Y turned onto the car's nose, then
+      // yawed with the heading; YZX applies exactly that order.
+      carRotationEuler.set(
+        0,
+        carDynamics.headingRadians - Math.PI / 2,
+        -Math.PI / 2,
+        "YZX"
+      );
+      carRotation.setFromEuler(carRotationEuler);
+      playerState.rigidBody.setNextKinematicRotation(carRotation);
+    }
     stepPhysics(physicsState, Math.min(delta, 1 / 30));
     const position = physicsProvider?.getPlayerPosition();
     if (!position) return;
     playerPosition = position;
+    if (carDriving) {
+      carPosition = { x: position.x, z: position.z };
+      updateCarEnvironment(position);
+    }
+    if (electricUnicycleCargo && terrain) {
+      electricUnicycleWheelPosition = {
+        x: carPosition.x,
+        y: sampleFlowFestTerrainWorldY(terrain, carPosition.x, carPosition.z),
+        z: carPosition.z,
+      };
+    }
     if (props.electricUnicycleEnabled && electricUnicycleMounted && terrain) {
       electricUnicycleWheelPosition = {
         x: position.x,
@@ -1791,6 +2295,7 @@
   onDestroy(() => {
     disposed = true;
     clearElectricUnicycleParkedBody();
+    clearGateQueueBodies();
     if (playerState && physicsState) {
       disposePlayerController(physicsState, playerState);
     }
@@ -1838,21 +2343,21 @@
   While mounted the body belongs to the wheel's own rider rig, which poses
   the feet onto the pedals, so exactly one of the two is ever present.
 -->
-{#if initialized && !(props.electricUnicycleEnabled && electricUnicycleMounted)}
+{#if initialized && !(props.electricUnicycleEnabled && electricUnicycleMounted) && !carDriving}
   <FlowFestOnFootPlayer
     position={playerPosition}
     bodyCentreAboveGroundMeters={BODY_CENTRE_ABOVE_GROUND}
     facingAngle={playerYaw}
-    isMoving={isMoving}
+    {isMoving}
     moveSpeedMetersPerSecond={measuredGroundSpeed}
-    moveDirection={moveDirection}
+    {moveDirection}
     characterId={props.playerCharacterId ?? DEFAULT_PLAYER_CHARACTER_ID}
     isGrounded={measuredGrounded}
     verticalVelocity={measuredVerticalVelocity}
   />
 {/if}
 
-{#if props.electricUnicycleEnabled && initialized}
+{#if props.electricUnicycleEnabled && initialized && !electricUnicycleCargo}
   <FlowFestElectricUnicycle
     position={electricUnicycleWheelPosition}
     dynamics={electricUnicycleDynamics}
@@ -1862,6 +2367,19 @@
     longitudinalAccelerationMetersPerSecondSquared={electricUnicycleLongitudinalAcceleration}
     onMountedPoseDiagnostic={handleMountedPoseDiagnostic}
   />
+{/if}
+
+<!-- The body is chosen once on the loadout screen, so the key only ever trips on a new session. -->
+{#if props.electricUnicycleEnabled && initialized && car}
+  {#key car.modelId}
+    <FlowFestDrivenCar
+      modelId={car.modelId}
+      paintIndex={car.paintIndex}
+      position={carPosition}
+      dynamics={carDynamics}
+      sampleGroundY={sampleCarGroundY}
+    />
+  {/key}
 {/if}
 
 {#if initialized && physicsProvider}
@@ -1880,12 +2398,28 @@
       {avatarState}
       {physicsProvider}
       cameraCollisionProbe={probeThirdPersonCameraCollision}
-      enabled={true}
+      enabled={!(props.inputLocked ?? false)}
       initialYaw={playerYaw}
       {initialPitch}
-      externalYaw={props.electricUnicycleEnabled && electricUnicycleMounted
+      externalYaw={(props.electricUnicycleEnabled && electricUnicycleMounted) ||
+      carDriving
         ? playerYaw
         : null}
+      thirdPersonDistance={carDriving
+        ? FLOW_FEST_CAR_CONFIG.chaseCameraDistanceMeters
+        : undefined}
+      thirdPersonMinDistance={carDriving
+        ? FLOW_FEST_CAR_CONFIG.chaseCameraMinDistanceMeters
+        : undefined}
+      thirdPersonMaxDistance={carDriving
+        ? FLOW_FEST_CAR_CONFIG.chaseCameraMaxDistanceMeters
+        : undefined}
+      thirdPersonHeight={carDriving
+        ? FLOW_FEST_CAR_CONFIG.chaseCameraHeightMeters
+        : undefined}
+      thirdPersonLookAtHeight={carDriving
+        ? FLOW_FEST_CAR_CONFIG.chaseCameraLookAtHeightMeters
+        : undefined}
       allowedModes={[CameraMode.THIRD_PERSON]}
       disableModeToggle={true}
       showControlsHint={false}
@@ -1896,20 +2430,24 @@
       groundDeceleration={props.groundDecelerationMetersPerSecondSquared}
       jumpForce={props.jumpForce ?? 0}
       gravity={9.81}
-      maximumFrameDeltaSeconds={props.electricUnicycleEnabled &&
-      electricUnicycleMounted
-        ? FLOW_FEST_EUC_CONFIG.maximumSimulationCatchUpSeconds
-        : undefined}
+      maximumFrameDeltaSeconds={carDriving
+        ? FLOW_FEST_CAR_CONFIG.maximumSimulationCatchUpSeconds
+        : props.electricUnicycleEnabled && electricUnicycleMounted
+          ? FLOW_FEST_EUC_CONFIG.maximumSimulationCatchUpSeconds
+          : undefined}
       firstPersonCameraOffset={CAMERA_OFFSET +
         (props.electricUnicycleEnabled && electricUnicycleMounted
           ? FLOW_FEST_EUC_CONFIG.mountedEyeHeightGainMeters
           : 0)}
       enableSprint={(props.enableSprint ?? false) &&
-        !(props.electricUnicycleEnabled && electricUnicycleMounted)}
+        !(props.electricUnicycleEnabled && electricUnicycleMounted) &&
+        !carDriving}
       enableJump={(props.enableJump ?? false) &&
-        !(props.electricUnicycleEnabled && electricUnicycleMounted)}
+        !(props.electricUnicycleEnabled && electricUnicycleMounted) &&
+        !carDriving}
       enableCrouch={(props.enableCrouch ?? false) &&
-        !(props.electricUnicycleEnabled && electricUnicycleMounted)}
+        !(props.electricUnicycleEnabled && electricUnicycleMounted) &&
+        !carDriving}
       enableNoclip={false}
       onModeChange={(nextMode) => {
         activeCameraMode = nextMode;

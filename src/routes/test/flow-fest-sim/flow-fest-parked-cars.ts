@@ -1,248 +1,35 @@
 import {
   Box3,
+  BufferAttribute,
+  BufferGeometry,
   Color,
+  Float32BufferAttribute,
   Group,
   InstancedMesh,
+  Matrix3,
   Matrix4,
+  Mesh,
   MeshStandardMaterial,
   StaticDrawUsage,
   Vector3,
   type Material,
-  type Mesh,
   type Object3D,
 } from "three";
 
-/**
- * The parked-car lineup for the lower campground. Each catalogue body is
- * instanced across every stall it was assigned, so the field reads as one
- * fleet rather than a handful of identical cars.
- *
- * The footprint drives the walk-up collider and the stall arithmetic; the
- * rendered body is normalised to `lengthMeters` when its GLB loads, so an
- * export at an arbitrary unit scale still parks inside its stall.
- * `sourceYawRadians` turns the export so its nose points along local +X, the
- * convention every placement rotation assumes.
- *
- * `paint` lets one body wear several colours across the lot. The named
- * materials are the painted panels; every other material (glass, chrome,
- * tyres, interior) is left alone. In `recolor` mode the panel albedo map is
- * dropped and the per-instance colour becomes the paint, which keeps the
- * normal, roughness and metalness maps so the panel still reads as painted
- * steel. `tint` mode keeps the albedo and multiplies it, which only works
- * when the source paint is pale.
- */
-export interface FlowFestParkedCarPaint {
-  materialNames: readonly string[];
-  variants: readonly string[];
-  mode: "recolor" | "tint";
-}
+export {
+  FLOW_FEST_PARKED_CAR_MODELS,
+  flowFestParkedCarModel,
+  flowFestParkedCarPaintCount,
+  type FlowFestParkedCarAttribution,
+  type FlowFestParkedCarModel,
+  type FlowFestParkedCarPaint,
+  type FlowFestParkedCarWheelContacts,
+} from "./flow-fest-parked-car-catalog";
+import {
+  type FlowFestParkedCarModel,
+  type FlowFestParkedCarPaint,
+} from "./flow-fest-parked-car-catalog";
 
-export interface FlowFestParkedCarAttribution {
-  title: string;
-  author: string;
-  url: string;
-  license: string;
-}
-
-/**
- * Where the tyres actually touch, in body metres after the GLB is normalised
- * to `lengthMeters`. `+along` is the nose, and the two axles are measured
- * separately because a body's wheels are not centred on its bounding box: an
- * '80 sedan carries more overhang behind the rear axle than ahead of the front
- * one. Grounding a car on its bounding box instead of these patches sampled
- * the field a metre past each bumper, so a body bridging a hollow hovered on
- * its own wheels.
- *
- * Measured from the shipped GLBs by clustering the lowest 4 cm of tyre
- * geometry into four corners; `tests/unit/flow-fest-parked-cars.test.ts`
- * guards the values that grounding depends on.
- */
-export interface FlowFestParkedCarWheelContacts {
-  frontAlongMeters: number;
-  rearAlongMeters: number;
-  halfTrackMeters: number;
-}
-
-export interface FlowFestParkedCarModel {
-  id: string;
-  label: string;
-  url: string;
-  lengthMeters: number;
-  widthMeters: number;
-  heightMeters: number;
-  sourceYawRadians: number;
-  wheels: FlowFestParkedCarWheelContacts;
-  paint?: FlowFestParkedCarPaint;
-  attribution?: FlowFestParkedCarAttribution;
-}
-
-const ZHABOTINSKY = {
-  author: "Daniel Zhabotinsky",
-  license: "CC BY 4.0",
-} as const;
-
-/**
- * Five generic bodies by one artist so the lot reads as one style, plus a
- * classic camper. All CC Attribution; credits are repeated in
- * `static/models/flow-fest/cars/CREDITS.md`. Dimensions are the measured
- * source bounds in metres (length x width x height).
- */
-export const FLOW_FEST_PARKED_CAR_MODELS: readonly FlowFestParkedCarModel[] =
-  Object.freeze([
-    {
-      id: "fairheaven-sedan",
-      label: "'80 sedan",
-      url: "/models/flow-fest/cars/fairheaven-sedan.glb",
-      lengthMeters: 5.0,
-      widthMeters: 1.83,
-      heightMeters: 1.35,
-      sourceYawRadians: 0,
-      wheels: {
-        frontAlongMeters: 1.433,
-        rearAlongMeters: -1.218,
-        halfTrackMeters: 0.749,
-      },
-      paint: {
-        materialNames: ["Fairheaven_LT80_Bodymat"],
-        variants: ["#641c26", "#c9c5bb", "#2c3d5e", "#8a8f93"],
-        mode: "recolor",
-      },
-      attribution: {
-        ...ZHABOTINSKY,
-        title: "Fairheaven LT '80",
-        url: "https://sketchfab.com/3d-models/e2678da920cc4be68dbc193727919ffb",
-      },
-    },
-    {
-      id: "fairheaven-wagon",
-      label: "'84 wagon",
-      url: "/models/flow-fest/cars/fairheaven-wagon.glb",
-      lengthMeters: 5.03,
-      widthMeters: 1.86,
-      heightMeters: 1.4,
-      sourceYawRadians: 0,
-      wheels: {
-        frontAlongMeters: 1.443,
-        rearAlongMeters: -1.21,
-        halfTrackMeters: 0.749,
-      },
-      paint: {
-        materialNames: ["Fairheaven_LT80_Bodymat"],
-        variants: ["#33505a", "#d8d3c4", "#4a5a2f", "#1f2530"],
-        mode: "recolor",
-      },
-      attribution: {
-        ...ZHABOTINSKY,
-        title: "Fairheaven SW '84",
-        url: "https://sketchfab.com/3d-models/aa0becb6e854422596cac6b21bf79787",
-      },
-    },
-    {
-      id: "lightbody-pickup",
-      label: "lifted '85 pickup",
-      url: "/models/flow-fest/cars/lightbody-pickup.glb",
-      lengthMeters: 4.93,
-      widthMeters: 2.14,
-      heightMeters: 1.92,
-      sourceYawRadians: 0,
-      wheels: {
-        frontAlongMeters: 1.587,
-        rearAlongMeters: -1.316,
-        halfTrackMeters: 0.781,
-      },
-      paint: {
-        materialNames: ["krmlgtbdy85_Bodymat"],
-        variants: ["#14121f", "#b7b2a8", "#7a1e1e", "#3b4a3a"],
-        mode: "recolor",
-      },
-      attribution: {
-        ...ZHABOTINSKY,
-        title: "Lightbody Lifted '85",
-        url: "https://sketchfab.com/3d-models/67beae18c3d24be68f9c8f0ec382d8e3",
-      },
-    },
-    {
-      id: "bokaroo-suv",
-      label: "'67 SUV",
-      url: "/models/flow-fest/cars/bokaroo-suv.glb",
-      lengthMeters: 4.59,
-      widthMeters: 2.21,
-      heightMeters: 1.96,
-      sourceYawRadians: 0,
-      wheels: {
-        frontAlongMeters: 1.425,
-        rearAlongMeters: -1.189,
-        halfTrackMeters: 0.794,
-      },
-      paint: {
-        materialNames: ["BUCKAROO_67_Bodymat"],
-        variants: ["#348bb0", "#e6e1d3", "#b8482c", "#6f7a52"],
-        mode: "recolor",
-      },
-      attribution: {
-        ...ZHABOTINSKY,
-        title: "Bokaroo '67",
-        url: "https://sketchfab.com/3d-models/22015d1863d6455aa31cfd738b972c50",
-      },
-    },
-    {
-      id: "ace-hatchback",
-      label: "'11 hatchback",
-      url: "/models/flow-fest/cars/ace-hatchback.glb",
-      lengthMeters: 3.84,
-      widthMeters: 1.83,
-      heightMeters: 1.45,
-      sourceYawRadians: 0,
-      wheels: {
-        frontAlongMeters: 1.101,
-        rearAlongMeters: -1.302,
-        halfTrackMeters: 0.721,
-      },
-      paint: {
-        materialNames: ["Ace11_Bodymat"],
-        variants: ["#cf9a24", "#e8e6e1", "#1e2a44", "#a13a3a"],
-        mode: "recolor",
-      },
-      attribution: {
-        ...ZHABOTINSKY,
-        title: "Ace '11",
-        url: "https://sketchfab.com/3d-models/055ff8a21b8d4d279debca089e2fafcd",
-      },
-    },
-    {
-      id: "t2-camper",
-      label: "classic campervan",
-      url: "/models/flow-fest/cars/t2-camper.glb",
-      lengthMeters: 4.28,
-      widthMeters: 1.97,
-      heightMeters: 1.93,
-      sourceYawRadians: Math.PI / 2,
-      wheels: {
-        frontAlongMeters: 1.132,
-        rearAlongMeters: -1.247,
-        halfTrackMeters: 0.706,
-      },
-      attribution: {
-        title: "Volkswagen T2 Campervan",
-        author: "TheoClarke",
-        license: "CC BY 4.0",
-        url: "https://sketchfab.com/3d-models/96ec638bcdbd44a08be3197d9dece5d5",
-      },
-    },
-  ]);
-
-export function flowFestParkedCarModel(id: string): FlowFestParkedCarModel {
-  const model = FLOW_FEST_PARKED_CAR_MODELS.find((entry) => entry.id === id);
-  if (!model) throw new Error(`Unknown Flow Fest parked-car model "${id}"`);
-  return model;
-}
-
-/** How many paint variants a body offers; a body without a paint seam has one. */
-export function flowFestParkedCarPaintCount(
-  model: Pick<FlowFestParkedCarModel, "paint">
-): number {
-  return Math.max(1, model.paint?.variants.length ?? 1);
-}
 
 export interface FlowFestParkedCarPlacement {
   x: number;
@@ -361,6 +148,37 @@ function paintMaterial(
   return Array.isArray(material) ? material.map(convert) : convert(material);
 }
 
+/**
+ * A single body's paint, resolved to one variant. The lot recolours per
+ * instance through `instanceColor`; the driven car is one mesh per panel,
+ * so its clone carries the colour itself: a recolour replaces the texture,
+ * a tint multiplies into the base colour exactly as an instance colour would.
+ */
+function paintSingleBodyMaterial(
+  material: Material | Material[],
+  paint: FlowFestParkedCarPaint,
+  variant: Color,
+  cache: Map<Material, Material>,
+  owned: Material[]
+): Material | Material[] {
+  const convert = (entry: Material): Material => {
+    if (!paint.materialNames.includes(entry.name)) return entry;
+    const cached = cache.get(entry);
+    if (cached) return cached;
+    const clone = entry.clone() as MeshStandardMaterial;
+    if (paint.mode === "recolor") {
+      if ("map" in clone) clone.map = null;
+      clone.color = variant.clone();
+    } else {
+      clone.color = clone.color.clone().multiply(variant);
+    }
+    cache.set(entry, clone);
+    owned.push(clone);
+    return clone;
+  };
+  return Array.isArray(material) ? material.map(convert) : convert(material);
+}
+
 const WHEEL_MESH_NAME = /wheel|tire|tyre/i;
 
 /**
@@ -384,6 +202,59 @@ function sourceRoadLevel(source: Object3D, fallbackY: number): number {
   return wheels.isEmpty() ? fallbackY : wheels.min.y;
 }
 
+export interface FlowFestCarNormalization {
+  /** Source units to metres. */
+  scale: number;
+  /**
+   * Source root space to body space: the nose along +X, the footprint centred
+   * on the origin, the tyres resting on y = 0, one unit per metre.
+   */
+  matrix: Matrix4;
+  /** Inverse of the source root's world matrix. */
+  sourceInverse: Matrix4;
+}
+
+/**
+ * Measure a loaded body rather than trust it: re-centre it on its footprint,
+ * ground it on its tyres, yaw the nose onto +X and scale it to the catalogue
+ * length. Every mesh of the body, instanced or driven, goes through this.
+ */
+export function computeFlowFestCarNormalization(
+  source: Object3D,
+  model: FlowFestParkedCarModel
+): FlowFestCarNormalization {
+  source.updateMatrixWorld(true);
+  const bounds = new Box3().setFromObject(source);
+  const size = bounds.getSize(new Vector3());
+  const center = bounds.getCenter(new Vector3());
+  const yawQuarterTurns = Math.round(model.sourceYawRadians / (Math.PI / 2));
+  const sourceLength = yawQuarterTurns % 2 === 0 ? size.x : size.z;
+  const scale = model.lengthMeters / Math.max(sourceLength, 0.001);
+  const roadY = sourceRoadLevel(source, bounds.min.y);
+  const matrix = new Matrix4()
+    .makeTranslation(0, -roadY * scale, 0)
+    .multiply(new Matrix4().makeRotationY(model.sourceYawRadians))
+    .multiply(new Matrix4().makeScale(scale, scale, scale))
+    .multiply(new Matrix4().makeTranslation(-center.x, 0, -center.z));
+  return {
+    scale,
+    matrix,
+    sourceInverse: new Matrix4().copy(source.matrixWorld).invert(),
+  };
+}
+
+/** One source mesh's transform into body space. */
+export function flowFestCarMeshBodyMatrix(
+  normalization: FlowFestCarNormalization,
+  mesh: Object3D,
+  target = new Matrix4()
+): Matrix4 {
+  return target
+    .copy(normalization.sourceInverse)
+    .multiply(mesh.matrixWorld)
+    .premultiply(normalization.matrix);
+}
+
 /**
  * Build GPU instances of one loaded car body over its stalls. The source is
  * measured, not trusted: it is re-centred on its footprint, grounded at y=0,
@@ -397,20 +268,7 @@ export function createFlowFestParkedCarInstances(
 ): Group {
   const root = new Group();
   root.name = `FFS_CarsFamily_${model.id}`;
-  source.updateMatrixWorld(true);
-  const bounds = new Box3().setFromObject(source);
-  const size = bounds.getSize(new Vector3());
-  const center = bounds.getCenter(new Vector3());
-  const yawQuarterTurns = Math.round(model.sourceYawRadians / (Math.PI / 2));
-  const sourceLength = yawQuarterTurns % 2 === 0 ? size.x : size.z;
-  const scale = model.lengthMeters / Math.max(sourceLength, 0.001);
-  const roadY = sourceRoadLevel(source, bounds.min.y);
-  const normalize = new Matrix4()
-    .makeTranslation(0, -roadY * scale, 0)
-    .multiply(new Matrix4().makeRotationY(model.sourceYawRadians))
-    .multiply(new Matrix4().makeScale(scale, scale, scale))
-    .multiply(new Matrix4().makeTranslation(-center.x, 0, -center.z));
-  const sourceInverse = new Matrix4().copy(source.matrixWorld).invert();
+  const normalization = computeFlowFestCarNormalization(source, model);
   const placementMatrix = new Matrix4();
   const localMatrix = new Matrix4();
   const instanceMatrix = new Matrix4();
@@ -422,10 +280,7 @@ export function createFlowFestParkedCarInstances(
   source.traverse((child) => {
     const sourceMesh = child as Mesh;
     if (!sourceMesh.isMesh || !sourceMesh.geometry) return;
-    localMatrix
-      .copy(sourceInverse)
-      .multiply(sourceMesh.matrixWorld)
-      .premultiply(normalize);
+    flowFestCarMeshBodyMatrix(normalization, sourceMesh, localMatrix);
     const painted = isPaintMaterial(sourceMesh.material, model.paint);
     const instances = new InstancedMesh(
       sourceMesh.geometry,
@@ -471,4 +326,243 @@ export function disposeFlowFestParkedCarInstances(root: Object3D): void {
     if (mesh.isInstancedMesh) mesh.dispose();
   });
   root.removeFromParent();
+}
+
+export type FlowFestCarWheelCorner = "FL" | "FR" | "RL" | "RR";
+
+export interface FlowFestCarWheelPart {
+  /** Body-space triangles of one source mesh, re-centred on the axle. */
+  geometry: BufferGeometry;
+  material: Material;
+}
+
+export interface FlowFestCarWheel {
+  corner: FlowFestCarWheelCorner;
+  /** Front wheels yaw with the steering. */
+  steers: boolean;
+  /** Axle centre in body metres. */
+  center: Vector3;
+  radiusMeters: number;
+  /** A tyre and, on some bodies, a separate hubcap. */
+  parts: FlowFestCarWheelPart[];
+}
+
+export interface FlowFestCarBody {
+  /** Every non-wheel mesh, in body space. */
+  root: Group;
+  wheels: FlowFestCarWheel[];
+  /** Geometry this body built and must dispose; body panels are shared. */
+  ownedGeometries: BufferGeometry[];
+  /** Painted material clones this body owns. */
+  ownedMaterials: Material[];
+}
+
+const WHEEL_CORNERS: readonly {
+  corner: FlowFestCarWheelCorner;
+  front: boolean;
+  right: boolean;
+}[] = [
+  { corner: "FL", front: true, right: false },
+  { corner: "FR", front: true, right: true },
+  { corner: "RL", front: false, right: false },
+  { corner: "RR", front: false, right: true },
+];
+
+interface WheelTriangleBucket {
+  positions: number[];
+  normals: number[];
+  uvs: number[];
+  bounds: Box3;
+}
+
+function createWheelTriangleBucket(): WheelTriangleBucket {
+  const bounds = new Box3();
+  bounds.makeEmpty();
+  return { positions: [], normals: [], uvs: [], bounds };
+}
+
+/**
+ * These bodies carry all four wheels in one mesh, so a spinning wheel has to
+ * be cut out of it: every triangle goes to the corner its centroid sits in,
+ * front or rear of the axle midpoint and left or right of the centreline.
+ * Positions read through the attribute accessors so quantized sources
+ * dequantize; normals follow the body matrix's normal matrix.
+ */
+export function splitFlowFestCarWheelTriangles(
+  geometry: BufferGeometry,
+  bodyMatrix: Matrix4,
+  axleMidpointX: number
+): Map<FlowFestCarWheelCorner, WheelTriangleBucket> {
+  const buckets = new Map<FlowFestCarWheelCorner, WheelTriangleBucket>();
+  const position = geometry.getAttribute("position") as
+    | BufferAttribute
+    | undefined;
+  if (!position) return buckets;
+  const normal = geometry.getAttribute("normal") as BufferAttribute | undefined;
+  const uv = geometry.getAttribute("uv") as BufferAttribute | undefined;
+  const index = geometry.index;
+  const normalMatrix = new Matrix3().getNormalMatrix(bodyMatrix);
+  const vertices = [new Vector3(), new Vector3(), new Vector3()];
+  const normals = [new Vector3(), new Vector3(), new Vector3()];
+  const centroid = new Vector3();
+  const triangleCount = Math.floor(
+    (index ? index.count : position.count) / 3
+  );
+  for (let triangle = 0; triangle < triangleCount; triangle += 1) {
+    const corners = [0, 1, 2].map((offset) =>
+      index ? index.getX(triangle * 3 + offset) : triangle * 3 + offset
+    );
+    centroid.set(0, 0, 0);
+    corners.forEach((vertexIndex, slot) => {
+      vertices[slot]!
+        .fromBufferAttribute(position, vertexIndex)
+        .applyMatrix4(bodyMatrix);
+      centroid.add(vertices[slot]!);
+      if (normal) {
+        normals[slot]!
+          .fromBufferAttribute(normal, vertexIndex)
+          .applyNormalMatrix(normalMatrix);
+      }
+    });
+    centroid.multiplyScalar(1 / 3);
+    const front = centroid.x >= axleMidpointX;
+    const right = centroid.z >= 0;
+    const corner = WHEEL_CORNERS.find(
+      (entry) => entry.front === front && entry.right === right
+    )!.corner;
+    let bucket = buckets.get(corner);
+    if (!bucket) {
+      bucket = createWheelTriangleBucket();
+      buckets.set(corner, bucket);
+    }
+    corners.forEach((vertexIndex, slot) => {
+      const vertex = vertices[slot]!;
+      bucket.positions.push(vertex.x, vertex.y, vertex.z);
+      bucket.bounds.expandByPoint(vertex);
+      if (normal) {
+        const unit = normals[slot]!;
+        bucket.normals.push(unit.x, unit.y, unit.z);
+      }
+      if (uv) {
+        bucket.uvs.push(uv.getX(vertexIndex), uv.getY(vertexIndex));
+      }
+    });
+  }
+  return buckets;
+}
+
+/**
+ * The player's own body as one articulated object: the panels as meshes in
+ * body space, the wheels cut out per corner so the front pair can steer and
+ * all four can spin. The source is shared with the lot instances and is not
+ * touched; every panel mesh shares the loader's geometry and materials.
+ */
+export function buildFlowFestCarBody(
+  source: Object3D,
+  model: FlowFestParkedCarModel,
+  paintIndex: number
+): FlowFestCarBody {
+  const root = new Group();
+  root.name = `FFS_DrivenCarBody_${model.id}`;
+  const normalization = computeFlowFestCarNormalization(source, model);
+  const bodyMatrix = new Matrix4();
+  const ownedGeometries: BufferGeometry[] = [];
+  const ownedMaterials: Material[] = [];
+  const paintCache = new Map<Material, Material>();
+  const variants = model.paint?.variants ?? [];
+  const variant =
+    variants.length > 0
+      ? new Color(variants[paintIndex % variants.length]!)
+      : null;
+  const axleMidpointX =
+    (model.wheels.frontAlongMeters + model.wheels.rearAlongMeters) / 2;
+  const wheelBuckets = new Map<
+    FlowFestCarWheelCorner,
+    { material: Material; bucket: WheelTriangleBucket }[]
+  >();
+
+  source.traverse((child) => {
+    const sourceMesh = child as Mesh;
+    if (!sourceMesh.isMesh || !sourceMesh.geometry) return;
+    flowFestCarMeshBodyMatrix(normalization, sourceMesh, bodyMatrix);
+    if (WHEEL_MESH_NAME.test(sourceMesh.name)) {
+      const material = Array.isArray(sourceMesh.material)
+        ? sourceMesh.material[0]!
+        : sourceMesh.material;
+      splitFlowFestCarWheelTriangles(
+        sourceMesh.geometry,
+        bodyMatrix,
+        axleMidpointX
+      ).forEach((bucket, corner) => {
+        const entries = wheelBuckets.get(corner) ?? [];
+        entries.push({ material, bucket });
+        wheelBuckets.set(corner, entries);
+      });
+      return;
+    }
+    const painted = isPaintMaterial(sourceMesh.material, model.paint);
+    const panel = new Mesh(
+      sourceMesh.geometry,
+      painted && model.paint && variant
+        ? paintSingleBodyMaterial(
+            sourceMesh.material,
+            model.paint,
+            variant,
+            paintCache,
+            ownedMaterials
+          )
+        : sourceMesh.material
+    );
+    panel.name = `FFS_DrivenCar_${model.id}_${sourceMesh.name || "body"}`;
+    panel.matrix.copy(bodyMatrix);
+    panel.matrixAutoUpdate = false;
+    panel.castShadow = true;
+    panel.receiveShadow = true;
+    // Never a camera collider: the chase camera looks out from inside this
+    // body, and a hit on its own panels would pull the boom to zero.
+    panel.userData.flowFestParkedCarModel = model.id;
+    panel.userData.flowFestPainted = painted;
+    root.add(panel);
+  });
+
+  const wheels: FlowFestCarWheel[] = [];
+  for (const { corner, front } of WHEEL_CORNERS) {
+    const entries = wheelBuckets.get(corner);
+    if (!entries || entries.length === 0) continue;
+    const bounds = new Box3();
+    bounds.makeEmpty();
+    entries.forEach((entry) => bounds.union(entry.bucket.bounds));
+    const center = bounds.getCenter(new Vector3());
+    const radiusMeters = (bounds.max.y - bounds.min.y) / 2;
+    const parts: FlowFestCarWheelPart[] = entries.map((entry) => {
+      const { positions, normals, uvs } = entry.bucket;
+      for (let offset = 0; offset < positions.length; offset += 3) {
+        positions[offset] = positions[offset]! - center.x;
+        positions[offset + 1] = positions[offset + 1]! - center.y;
+        positions[offset + 2] = positions[offset + 2]! - center.z;
+      }
+      const geometry = new BufferGeometry();
+      geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+      if (normals.length === positions.length) {
+        geometry.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+      } else {
+        geometry.computeVertexNormals();
+      }
+      if (uvs.length === (positions.length / 3) * 2) {
+        geometry.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+      }
+      geometry.computeBoundingSphere();
+      ownedGeometries.push(geometry);
+      return { geometry, material: entry.material };
+    });
+    wheels.push({ corner, steers: front, center, radiusMeters, parts });
+  }
+
+  return { root, wheels, ownedGeometries, ownedMaterials };
+}
+
+export function disposeFlowFestCarBody(body: FlowFestCarBody): void {
+  body.ownedGeometries.forEach((geometry) => geometry.dispose());
+  body.ownedMaterials.forEach((material) => material.dispose());
+  body.root.removeFromParent();
 }
