@@ -1345,8 +1345,8 @@ label and icon differ (`Export Animation` versus `Export Video`). Tunnel's
 former title band is gone.
 
 The common rail leads with the same four pages in the same order:
-**Effects, Props, Motion, Display**. Tunnel's color policy is the prelude of its
-Effects page rather than a parallel inspector concept, and its desktop Motion
+**Effects, Props, Motion, Display**. Tunnel's color policy lives on Formation
+(see the anatomy follow-up below), and its desktop Motion
 page combines Effort and Playback exactly as 2D does. Formation and Copy Speed
 follow as Tunnel-only pages; Export remains 2D-only because Tunnel exports from
 the persistent footer. The substantial Tunnel Motion and Display bodies live in
@@ -1366,13 +1366,41 @@ Production-route WebP captures at 375 x 667, 960 x 412, 820 x 1180,
 dock at phone/short-landscape layouts and the same persistent inspector shell
 at desktop layouts, with no visible clipping or horizontal overflow. At
 1440 x 900 the 2D and Tunnel footers have identical geometry and accent styling;
-the Effects body retains its scroll allocation when Tunnel inserts Colors above
-it. Artifacts are retained under
+the export actions use the shared footer. Artifacts are retained under
 `artifacts/unified-animator-inspector/` in the local main workspace.
 
 The sequence-viewer regression run passes 31 files / 258 tests, including the
 new shared-section state and ownership contracts, and `svelte-check` reports
 0 errors and 0 warnings.
+
+#### Effects anatomy follow-up · 2026-09-05
+
+The shared inspector shell still composed different Effects pages. Tunnel added
+an outer padding wrapper and a Colors prelude; the shorter 2D body centered
+vertically while Tunnel aligned at the top. A scrollbar changed the available
+width, and only 2D reserved a footer estimate line. The section rail also centered
+five buttons in 2D and six in Tunnel, shifting the common controls by 32 px.
+
+Both modes now render the same `EffectsPanel` without a Tunnel padding wrapper,
+align Effects at the top, reserve a stable scrollbar gutter, and reserve the
+same footer metadata line. The shared shell anchors its rail at the top, keeping
+Effects, Props, Motion, and Display in fixed slots when mode-only pages change.
+Tunnel color controls retain their existing controller and telemetry and now
+live under Formation, where they describe generated copies.
+
+At 1440 × 900, measured Effects selectors begin at y=154.2 in both modes, the
+tuning card at y=376.8, the reset section at y=712.2, and the footer at y=802.3
+with height 97.7. The four common rail buttons start at y=62.7, 126.7, 190.7,
+and 254.7. The common content differs by less than one pixel horizontally due
+to fractional panel allocation. Switching keeps Effects selected.
+
+Direct WebP/70 browser inspection covered 375 × 667, 960 × 412, 820 × 1180,
+1440 × 900, 1920 × 1080, 2560 × 1440, and 3840 × 2160. Compact layouts retain
+their scrollable Effects tray; desktop layouts retain the same grid, tuning,
+reset, and footer composition. Both desktop mode endpoints and the intervening
+switch were exercised. Formation was opened to verify the color controls remain
+available. The sequence-viewer suite passes 30 files / 253 tests; Svelte check
+reports zero errors and zero warnings.
 
 ## Gate 6 baseline · 2026-09-01
 
