@@ -212,20 +212,51 @@ describe("shape matrix mandala continuity", () => {
     expect(popover).toMatch(/\.turn-popover \{[^}]*width: max-content/);
     expect(popover).not.toMatch(/Drawer/);
     const shell = read("app/components/ShapeMatrixAppShell.svelte");
-    expect(shell).toContain(
-      "<ShapeMatrixTurnControls onturn={appState.setTurn} />"
+    // The axis values are edited from the recipe bar the grid owns, on both
+    // surfaces; the header keeps no turn ribbon of its own. Each axis has its
+    // own control, so no Apply-to target and no "Mixed" placeholder exist.
+    expect(shell).not.toContain("ShapeMatrixTurnControls");
+    expect(shell).not.toContain("ShapeMatrixAxisControl");
+    expect(shell).toContain("<ShapeMatrixTurnPopover");
+    const matrixPane = read("app/components/ShapeMatrixMatrixPane.svelte");
+    const theoryPane = read("app/components/ShapeMatrixTheoryPane.svelte");
+    // Wide hosts: the grid's corner cell owns Surprise and both axis values;
+    // the strip above the grid takes over only on compact hosts.
+    expect(matrixPane).toContain("<ShapeMatrixGridCorner surface=\"level\"");
+    expect(theoryPane).toContain("<ShapeMatrixGridCorner");
+    expect(matrixPane).toMatch(
+      /\{#if state\.compact\}\s*<ShapeMatrixRecipeStrip/
     );
-    expect(shell).toContain("<ShapeMatrixTurnPopover />");
-    // The chip serves both compact panes; the four-group ribbon is wide-only,
-    // so a phone matrix view keeps the grid as the hero. Checked by nesting
-    // rather than adjacency: the surface tab put a header-meta row and a
-    // surface guard between the two, and neither of those weakens the rule.
-    const compactGuard = shell.indexOf("{#if !appState.compact}");
-    const ribbon = shell.indexOf('<div class="matrix-controls"');
-    expect(compactGuard).toBeGreaterThan(-1);
-    expect(ribbon).toBeGreaterThan(compactGuard);
-    expect(shell.split('<div class="matrix-controls"')).toHaveLength(2);
-    expect(shell).not.toMatch(/activeView === "matrix"\}\s*<div class="matrix-controls">/);
+    const corner = read("app/components/ShapeMatrixGridCorner.svelte");
+    expect(corner).toContain("<ShapeMatrixAxisStepper hand=\"left\"");
+    expect(corner).toContain("<ShapeMatrixAxisStepper hand=\"right\"");
+    // Columns (red) sit on the column-header band above Rows (blue), and
+    // both axes point with icon arrows rather than thin text glyphs.
+    expect(corner.indexOf('class="axis columns"')).toBeLessThan(
+      corner.indexOf('class="axis rows"')
+    );
+    expect(corner).toContain("fa-arrow-right");
+    expect(corner).toContain("fa-arrow-down");
+    expect(corner).not.toMatch(/>\s*[↓→]\s*</);
+    expect(corner).toContain("Surprise me");
+    expect(corner).not.toContain("Mixed");
+    // The relationship is named by the detail pane, not repeated up here.
+    expect(corner).not.toContain("relationship-dot");
+    const strip = read("app/components/ShapeMatrixRecipeStrip.svelte");
+    expect(strip).not.toContain("relationship-dot");
+    // One notation at a time: the stepper shows no secondary label.
+    const stepper = read("app/components/ShapeMatrixAxisStepper.svelte");
+    expect(stepper).not.toContain("secondary");
+    const controls = read("app/components/ShapeMatrixTurnControls.svelte");
+    expect(controls).not.toContain("Apply to");
+    expect(controls).not.toContain("mixed");
+    // The tray edits a named axis and stays on the detail pane.
+    expect(popover).toContain("appState.setTurnFor(hand, turn, { stayOnDetail: true })");
+    // Surprise lives with the grid; the header shows a dice only while a
+    // compact detail view has hidden the bar.
+    expect(shell).toMatch(
+      /activeView === "detail"\}\s*\{@render compactSurpriseAction\(\)\}/
+    );
     expect(shell).toContain("runMandalaMorph");
   });
 

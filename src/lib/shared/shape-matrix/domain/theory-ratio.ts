@@ -1,6 +1,5 @@
 import {
   makeSpinRatio,
-  spinRatioKey,
   THEORY_SPIN_RATIO_MAX_PART,
   type SpinRatio,
 } from "@vtg/domain";
@@ -38,10 +37,19 @@ export function theoryRatioFromParts(
   }
 }
 
+/**
+ * User-facing VTG label: hand cycles first, prop rotations second, matching
+ * Noel Yee's own notation (VTG2 index: "1/3 Four Petal Antispin Flower").
+ * Only `spinRatioKey` and the URL parameters stay prop-first, for stability.
+ */
+export function theoryRatioLabel(ratio: SpinRatio): string {
+  return `${ratio.handCycles}:${ratio.propRotations}`;
+}
+
 export function theoryRatioSpokenLabel(ratio: SpinRatio): string {
-  const key = spinRatioKey(ratio);
-  if (ratio.handCycles === 0) return `${key}, stationary hand`;
-  if (ratio.propRotations === 0) return `${key}, float`;
+  const label = theoryRatioLabel(ratio);
+  if (ratio.handCycles === 0) return `${label}, stationary hand`;
+  if (ratio.propRotations === 0) return `${label}, float`;
   const cycles = ratio.handCycles;
-  return `${key}, closes in ${cycles} hand ${cycles === 1 ? "cycle" : "cycles"}`;
+  return `${label}, closes in ${cycles} hand ${cycles === 1 ? "cycle" : "cycles"}`;
 }

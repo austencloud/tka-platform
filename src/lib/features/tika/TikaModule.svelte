@@ -33,6 +33,10 @@
   import type { WelcomeContext } from "./services/tika-welcome-builder";
   import { TIKA_LIMITS } from "./data/firestore-paths";
   import type { ModelOption } from "./types";
+  import {
+    DEFAULT_TIKA_MODEL,
+    resolveTikaModelKey,
+  } from "./domain/tika-model-catalog";
 
   // Persistence keys
   const STORAGE_KEY = "tika-conversation";
@@ -56,13 +60,16 @@
   }
 
   // Load model preference from localStorage
-  function loadModelPreference(): string {
-    if (!browser) return "sonnet-4";
+  function loadModelPreference(
+    key = MODEL_STORAGE_KEY,
+    fallback: string = DEFAULT_TIKA_MODEL
+  ): string {
+    if (!browser) return fallback;
     try {
-      const stored = localStorage.getItem(MODEL_STORAGE_KEY);
-      return stored || "sonnet-4";
+      const stored = localStorage.getItem(key);
+      return stored ? resolveTikaModelKey(stored) ?? fallback : fallback;
     } catch {
-      return "sonnet-4";
+      return fallback;
     }
   }
 
@@ -84,11 +91,9 @@
   let compareMode = $state(false);
   const COMPARE_MODEL_A_KEY = "tika-compare-model-a";
   const COMPARE_MODEL_B_KEY = "tika-compare-model-b";
-  let compareModelA = $state(
-    browser ? localStorage.getItem(COMPARE_MODEL_A_KEY) || "sonnet-4-legacy" : "sonnet-4-legacy"
-  );
+  let compareModelA = $state(loadModelPreference(COMPARE_MODEL_A_KEY));
   let compareModelB = $state(
-    browser ? localStorage.getItem(COMPARE_MODEL_B_KEY) || "sonnet-4" : "sonnet-4"
+    loadModelPreference(COMPARE_MODEL_B_KEY, "sonnet-5")
   );
 
   // Repository module (only active in browser for Firestore access)
@@ -393,19 +398,20 @@
 
       // Validate saved preference still exists
       if (availableModels.length > 0 && !availableModels.find((m) => m.id === selectedModel)) {
-        selectedModel = availableModels[0]?.id || "sonnet-4";
+        selectedModel = availableModels[0]?.id || DEFAULT_TIKA_MODEL;
+      }
+      if (!availableModels.some((model) => model.id === compareModelA)) {
+        compareModelA = availableModels[0]?.id ?? DEFAULT_TIKA_MODEL;
+      }
+      if (!availableModels.some((model) => model.id === compareModelB)) {
+        compareModelB = availableModels[1]?.id ?? availableModels[0]?.id ?? DEFAULT_TIKA_MODEL;
+      }
+      if (compareModelA === compareModelB && availableModels.length > 1) {
+        compareModelB = availableModels.find((model) => model.id !== compareModelA)!.id;
       }
     } catch (error) {
       console.error("[TIKA] Failed to fetch models:", error);
-      // Fallback: show Sonnet only on network error
-      availableModels = [{
-        id: "sonnet-4",
-        name: "Claude Sonnet 4",
-        shortName: "Sonnet 4",
-        icon: "fa-brain",
-        color: "#6366f1",
-        description: "Balanced intelligence",
-      }];
+      availableModels = [];
     }
 
     // Check for a seeded question from another module (e.g. quiz misconception hint)

@@ -63,6 +63,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { GaitFrame } from "$lib/shared/3d/diagnostics/gait/gait-frame";
 import {
   avatar,
+  avatarAssetsPresent,
   driveRig,
   loadPackClips,
   RIGS,
@@ -92,7 +93,11 @@ const last = (values: number[]) => values[values.length - 1] ?? 0;
 const WALK_SPEED = 1.4;
 const RUN_SPEED = 3.9;
 
-describe("locomotion motion quality", () => {
+// The rigs are gitignored (see avatarAssetsPresent): CI and fresh clones skip
+// this suite instead of reporting a missing binary as a broken gait.
+const present = avatarAssetsPresent();
+
+describe.skipIf(!present)("locomotion motion quality", () => {
   describe("pelvis bob", () => {
     it("raises and lowers the pelvis through a walk", async () => {
       const { frames } = await driveRig({
@@ -181,9 +186,7 @@ describe("locomotion motion quality", () => {
       // replaces double support with flight, so its feet are down for a
       // materially smaller share of the cycle than the walk's. A speed-walk
       // driven by playback rate alone would leave this ratio near 1.
-      expect(run.report.dutyFactor).toBeLessThan(
-        walk.report.dutyFactor * 0.6
-      );
+      expect(run.report.dutyFactor).toBeLessThan(walk.report.dutyFactor * 0.6);
       expect(run.report.doubleSupportFraction).toBeLessThan(
         walk.report.doubleSupportFraction + 1e-9
       );
@@ -237,7 +240,9 @@ describe("locomotion motion quality", () => {
       // down. If they did not, the tier change would teleport a leg -- and a
       // teleport is exactly what a body-local acceleration spike is.
       const inBand = report.jolts.filter((jolt) => {
-        const frame = Math.round((jolt.t / Math.max(duration, 1e-6)) * frameCount);
+        const frame = Math.round(
+          (jolt.t / Math.max(duration, 1e-6)) * frameCount
+        );
         return frame >= enter && frame <= exit;
       });
       expect(

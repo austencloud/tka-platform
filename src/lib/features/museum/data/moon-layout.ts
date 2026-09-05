@@ -206,6 +206,9 @@ export interface MoonLayout {
    */
   corridorFloors: WorldRect[];
   corridorWalls: WorldRect[];
+  /** What the bay owns — its room plus the corridor it draws. The cave composer
+   *  routes terrain queries by THIS, never by `bayBounds`. */
+  bayFootprint: WorldRect[];
   bayBounds: WorldRect;
 
   blockedAt(x: number, z: number): boolean;
@@ -499,6 +502,7 @@ export function buildMoonLayout(grid: MuseumGrid): MoonLayout | null {
     ceilingRects,
     corridorFloors,
     corridorWalls,
+    bayFootprint: [shell],
     bayBounds: shell,
     blockedAt,
     elevationAt,

@@ -9,7 +9,7 @@ export function buildVisualSequenceSaveMenuItem(
 ): ContextMenuItem {
   return {
     id: "save-to-library",
-    label: "Save to Library",
+    label: "Save sequence to Library",
     icon: "fa-bookmark",
     disabled: !sequence.steps?.length,
     async action() {

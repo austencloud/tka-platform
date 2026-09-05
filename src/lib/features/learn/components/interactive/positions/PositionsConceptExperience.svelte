@@ -1,23 +1,37 @@
-<!--
-  Hand Positions continues directly from the Grid lesson. The grid keeps the
-  same stage, heading rhythm, and controls while the hands become the subject.
-  Alpha, Beta, and Gamma share one live artifact so their relationship is shown
-  by the hands moving, not by replacing the whole page.
--->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { tick, untrack } from "svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import LessonGridDisplay from "$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import PropPlacementGrid from "$lib/shared/pictograph/grid/components/PropPlacementGrid.svelte";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import {
+    GridMode,
+    type GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { PropPlacementChange } from "$lib/shared/pictograph/grid/domain/prop-placement";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/prop-placement-data";
-  import { propSvgLoader } from "$lib/shared/pictograph/prop/services/prop-svg-loader";
   import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
+  import {
+    POSITION_TYPE_INFO,
+    type PositionType,
+  } from "../../../domain/constants/position-quiz-data";
   import type { ExperienceViewMode } from "../../../domain/types";
-  import LessonStageControls from "../LessonStageControls.svelte";
   import LessonStageFrame from "../LessonStageFrame.svelte";
   import LessonStageHeading from "../LessonStageHeading.svelte";
+  import { createPositionWorkshopState } from "./positions-experience-state.svelte";
+  import {
+    POSITION_CHALLENGES,
+    POSITION_DEFINITIONS,
+    POSITION_KINDS,
+    positionKindFor,
+    positionExample,
+    positionPreview,
+    positionCorrection,
+    transformPosition,
+  } from "./hand-position-lesson";
 
   let {
     onComplete,
@@ -29,637 +43,725 @@
     viewMode?: ExperienceViewMode;
   }>();
 
-  type SvgData = {
-    svgContent: string;
-    viewBox: { width: number; height: number };
-    center: { x: number; y: number };
-  };
-  type Point = { x: number; y: number };
-  type PositionKind = "alpha" | "beta" | "gamma";
-  type PositionStep = {
-    name: string;
-    vtg: string;
-    kind: PositionKind;
-    caption: string;
-  };
-
-  const points: Point[] = [
-    { x: 475, y: 331.9 },
-    { x: 576.2, y: 373.8 },
-    { x: 618.1, y: 475 },
-    { x: 576.2, y: 576.2 },
-    { x: 475, y: 618.1 },
-    { x: 373.8, y: 576.2 },
-    { x: 331.9, y: 475 },
-    { x: 373.8, y: 373.8 },
-  ];
-  const betaOffset = 16;
-  const wrap = (value: number) => ((value % 8) + 8) % 8;
-
-  const steps: PositionStep[] = [
-    {
-      name: "Alpha",
-      vtg: "Split",
-      kind: "alpha",
-      caption: "Hands at opposite points on the grid.",
-    },
-    {
-      name: "Beta",
-      vtg: "Together",
-      kind: "beta",
-      caption: "Both hands at the same point.",
-    },
-    {
-      name: "Gamma",
-      vtg: "Quarter",
-      kind: "gamma",
-      caption: "Hands at neighboring points, a right angle apart.",
-    },
-  ];
-
-  const base: Record<PositionKind, { right: number; left: number }> = {
-    alpha: { right: 0, left: 4 },
-    beta: { right: 4, left: 4 },
-    gamma: { right: 2, left: 4 },
-  };
-
-  const glyphs: Record<
-    PositionKind,
-    { src: string; width: number; height: number }
-  > = {
-    alpha: {
-      src: "/images/letters_trimmed/Type6/α.svg",
-      width: 92.22,
-      height: 100,
-    },
-    beta: {
-      src: "/images/letters_trimmed/Type6/β.svg",
-      width: 66.05,
-      height: 100,
-    },
-    gamma: {
-      src: "/images/letters_trimmed/Type6/γ.svg",
-      width: 79,
-      height: 100.11,
-    },
-  };
-
-  const compareStage = steps.length;
-  const totalStages = steps.length + 1;
-  let stage = $state(0);
-  let focus = $state<number | null>(null);
-  let rightIndex = $state(0);
-  let leftIndex = $state(0);
-  let visited = $state<Set<number>>(new Set());
-  let lastAction = $state("");
-  let rightHand = $state<SvgData | null>(null);
-  let leftHand = $state<SvgData | null>(null);
-
-  const isCompare = $derived(stage === compareStage);
-  const step = $derived(steps[Math.min(stage, steps.length - 1)]!);
-  const focusedStep = $derived(focus === null ? null : steps[focus]);
-  const focusHands = $derived(
-    focusedStep ? handsFor(focusedStep.kind, rightIndex, leftIndex) : null
+  const workshop = createPositionWorkshopState(
+    getExperiencePersistence("hand-positions"),
+    untrack(() => viewMode === "scroll")
   );
-  const artifactKey = $derived(
-    !isCompare ? "position" : focus === null ? "comparison" : `focus-${focus}`
+  let grid = $state<ReturnType<typeof PropPlacementGrid> | null>(null);
+  let boardElement: HTMLDivElement;
+  let forwardButton = $state<HTMLButtonElement | null>(null);
+  let gridMode = $state<GridMode>(
+    workshop.challenge && workshop.phase === "practice"
+      ? workshop.challenge.gridMode
+      : workshop.canFinish
+        ? GridMode.BOX
+        : GridMode.DIAMOND
   );
-  const headingKey = $derived(
-    `${stage}-${focus ?? "none"}-${lastAction}`
+  let preset = $state<{
+    left: GridLocation | null;
+    right: GridLocation | null;
+  }>(
+    workshop.canFinish
+      ? positionExample("beta", GridMode.BOX)
+      : { left: null, right: null }
   );
-  const headingTitle = $derived(
-    focusedStep?.name ?? (isCompare ? "Hand Positions" : step.name)
+  let placement = $state<PropPlacementChange>({
+    leftLocation: null,
+    rightLocation: null,
+    activeHand: HandSide.LEFT,
+    complete: false,
+    canUndo: false,
+  });
+  let epoch = $state(0);
+  let showReference = $state(false);
+  let actionNote = $state("");
+  let boardWidth = $state(300);
+  let boardHeight = $state(320);
+
+  const instruction = $derived(
+    workshop.feedback === "correct" && workshop.challenge
+      ? `Yes, ${POSITION_TYPE_INFO[workshop.challenge.kind].label}.`
+      : placement.activeHand === HandSide.LEFT
+        ? "Tap a point for your left hand."
+        : placement.activeHand === HandSide.RIGHT
+          ? "Now place your right hand."
+          : "Choose a hand to move, then tap another point."
   );
-  const headingEyebrow = $derived(
-    focusedStep?.vtg ?? (isCompare ? undefined : step.vtg)
+
+  const exploring = $derived(workshop.phase === "explore");
+  const built = $derived(
+    positionKindFor(placement.leftLocation, placement.rightLocation)
   );
-  const headingDescription = $derived.by(() => {
-    if (focusedStep) {
-      return (
-        lastAction ||
-        `Rotate, mirror, or swap hands. It stays ${focusedStep.name}.`
+  const referencesVisible = $derived(
+    exploring ||
+      workshop.canFinish ||
+      workshop.challenge?.guided ||
+      showReference
+  );
+  const examples = $derived(
+    POSITION_KINDS.map((kind) => ({
+      kind,
+      data: positionPreview(kind, gridMode),
+    }))
+  );
+  const title = $derived(
+    exploring
+      ? "Hand Positions"
+      : workshop.canFinish
+        ? "All six built"
+        : `Build ${POSITION_TYPE_INFO[workshop.challenge!.kind].label}`
+  );
+  const feedback = $derived.by(() => {
+    if (actionNote) return actionNote;
+    if (workshop.canFinish && !exploring)
+      return "Alpha, Beta, and Gamma on both grids.";
+    if (
+      workshop.feedback === "incorrect" &&
+      placement.leftLocation &&
+      placement.rightLocation &&
+      workshop.challenge
+    ) {
+      return positionCorrection(
+        placement.leftLocation,
+        placement.rightLocation,
+        workshop.challenge.kind,
+        gridMode
       );
     }
-    if (isCompare) {
-      return "These are the three basic positions. Tap one to play with it.";
-    }
-    return step.caption;
-  });
-  const currentCell = $derived(focusHands?.cell ?? 0);
-  const focusTotal = $derived(focusHands?.total ?? 8);
-
-  $effect(() => {
-    if (focus === null || visited.has(currentCell)) return;
-    visited = new Set(visited).add(currentCell);
+    if (workshop.feedback === "correct" && built)
+      return `Yes, ${POSITION_TYPE_INFO[built].label}. ${POSITION_DEFINITIONS[built]}`;
+    if (exploring && built) return POSITION_DEFINITIONS[built];
+    if (!exploring && workshop.challenge?.guided)
+      return POSITION_DEFINITIONS[workshop.challenge.kind];
+    return "Tap two grid points. You can use the same point twice.";
   });
 
-  async function loadHand(hand: HandSide): Promise<SvgData | null> {
-    const motionData = {
-      propType: PropType.HAND,
-      hand,
-    } as unknown as MotionData;
-    const propData = {
-      positionX: 0,
-      positionY: 0,
-      rotationAngle: 0,
-      coordinates: null,
-      svgCenter: null,
-      svgMirrored: false,
-      manualAdjustmentX: 0,
-      manualAdjustmentY: 0,
-    } as unknown as PropPlacementData;
-    const result = await propSvgLoader.loadPropSvg(propData, motionData, true, {
-      themeMode: "light",
-    });
-    return result.svgData as SvgData | null;
+  function changed(change: PropPlacementChange) {
+    const moved =
+      change.leftLocation !== placement.leftLocation ||
+      change.rightLocation !== placement.rightLocation;
+    placement = change;
+    workshop.evaluatePlacement(change);
+    if (!moved) return;
+    actionNote = "";
+    const kind = positionKindFor(change.leftLocation, change.rightLocation);
+    if (exploring && kind) workshop.discover(kind);
   }
 
-  onMount(async () => {
-    [rightHand, leftHand] = await Promise.all([
-      loadHand(HandSide.RIGHT),
-      loadHand(HandSide.LEFT),
-    ]);
-  });
-
-  function handsFor(kind: PositionKind, right: number, left: number) {
-    let rightPoint = points[right]!;
-    let leftPoint = points[left]!;
-    if (kind === "beta") {
-      rightPoint = { x: rightPoint.x + betaOffset, y: rightPoint.y };
-      leftPoint = { x: leftPoint.x - betaOffset, y: leftPoint.y };
-    }
-    const difference = wrap(left - right);
-    const cell = kind === "gamma" ? right + (difference === 2 ? 0 : 8) : right;
-    return {
-      right: rightPoint,
-      left: leftPoint,
-      diamond: right % 2 === 0,
-      cell,
-      total: kind === "gamma" ? 16 : 8,
+  function loadPair(left: GridLocation | null, right: GridLocation | null) {
+    preset = { left, right };
+    placement = {
+      leftLocation: left,
+      rightLocation: right,
+      complete: left !== null && right !== null,
+      activeHand: left ? (right ? null : HandSide.RIGHT) : HandSide.LEFT,
+      canUndo: false,
     };
+    epoch++;
+    workshop.edited();
+    actionNote = "";
   }
 
-  function baseHands(kind: PositionKind) {
-    return handsFor(kind, base[kind].right, base[kind].left);
+  function study(kind: PositionType) {
+    const example = positionExample(kind, gridMode);
+    loadPair(example.left, example.right);
+    actionNote = POSITION_DEFINITIONS[kind];
   }
 
-  function go(next: number) {
-    focus = null;
-    lastAction = "";
-    stage = Math.max(0, Math.min(compareStage, next));
+  function transform(action: "rotate" | "mirror" | "swap") {
+    if (!placement.leftLocation || !placement.rightLocation || !built) return;
+    const before = built;
+    const result = transformPosition(
+      placement.leftLocation,
+      placement.rightLocation,
+      action
+    );
+    const unchanged =
+      result.left === placement.leftLocation &&
+      result.right === placement.rightLocation;
+    loadPair(result.left, result.right);
+    actionNote = unchanged
+      ? `The hands are already in those locations. Still ${POSITION_TYPE_INFO[before].label}.`
+      : `Still ${POSITION_TYPE_INFO[before].label}. ${POSITION_DEFINITIONS[before]}`;
   }
 
-  function openFocus(index: number) {
-    focus = index;
-    const kind = steps[index]!.kind;
-    rightIndex = base[kind].right;
-    leftIndex = base[kind].left;
-    visited = new Set();
-    lastAction = "";
+  function changeGrid(mode: GridMode) {
+    if (mode === gridMode) return;
+    gridMode = mode;
+    if (built) study(built);
+    else loadPair(null, null);
   }
 
-  function rotate() {
-    rightIndex = wrap(rightIndex + 1);
-    leftIndex = wrap(leftIndex + 1);
-    lastAction = `Rotated clockwise, still ${focusedStep!.name}.`;
+  async function practice() {
+    workshop.practice();
+    gridMode = workshop.challenge!.gridMode;
+    showReference = false;
+    loadPair(null, null);
+    await tick();
+    boardElement.focus();
   }
 
-  function mirror() {
-    const nextRight = wrap(8 - rightIndex);
-    const nextLeft = wrap(8 - leftIndex);
-    const unchanged = nextRight === rightIndex && nextLeft === leftIndex;
-    rightIndex = nextRight;
-    leftIndex = nextLeft;
-    lastAction = unchanged
-      ? `Mirror does nothing here. This one's symmetric. Still ${focusedStep!.name}.`
-      : `Mirrored, still ${focusedStep!.name}.`;
+  function explore() {
+    workshop.explore();
+    actionNote = "";
   }
 
-  function swap() {
-    const unchanged = rightIndex === leftIndex;
-    [rightIndex, leftIndex] = [leftIndex, rightIndex];
-    lastAction = unchanged
-      ? `Swap does nothing here. Both hands share a point. Still ${focusedStep!.name}.`
-      : `Swapped colors, still ${focusedStep!.name}.`;
-  }
-
-  function handlePrimaryAction() {
-    if (stage === compareStage) {
-      onComplete?.("hand-motions-intro");
-      return;
+  async function next() {
+    if (!workshop.next()) return;
+    if (workshop.challenge) {
+      gridMode = workshop.challenge.gridMode;
+      showReference = false;
+      loadPair(null, null);
     }
-    go(stage + 1);
+    await tick();
+    if (workshop.canFinish) forwardButton?.focus();
+    else boardElement.focus();
   }
 
-  function handleKeydown(event: KeyboardEvent) {
-    if (viewMode !== "step") return;
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-      event.preventDefault();
-      handlePrimaryAction();
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-      event.preventDefault();
-      handleBack();
-    }
+  function finish() {
+    if (workshop.canFinish) onComplete?.("hand-motions-intro");
   }
 
   export function handleBack() {
-    if (focus !== null) {
-      focus = null;
-      lastAction = "";
-      return;
-    }
-    if (stage > 0) {
-      go(stage - 1);
-      return;
-    }
-    onBack?.();
+    if (!exploring) explore();
+    else onBack?.();
   }
 </script>
 
-{#snippet hand(svg: SvgData, point: Point, mirrorHand: boolean)}
-  <g
-    class="hand"
-    style="transform: translate({point.x}px, {point.y}px) {mirrorHand
-      ? 'scaleX(-1) '
-      : ''}translate({-svg.center.x}px, {-svg.center.y}px);"
-  >
-    {@html svg.svgContent}
-  </g>
-{/snippet}
-
-{#snippet glyph(kind: PositionKind)}
-  <image
-    class="glyph"
-    href={glyphs[kind].src}
-    x="50"
-    y="800"
-    width={glyphs[kind].width}
-    height={glyphs[kind].height}
-    aria-hidden="true"
-  />
-{/snippet}
-
-{#snippet positionArt(kind: PositionKind, hands: ReturnType<typeof handsFor>)}
-  <div class="position-art">
-    <div class="grid-layer">
-      <LessonGridDisplay
-        type={hands.diamond ? "diamond" : "box"}
-        showLabels={false}
-        size="large"
-      />
+{#snippet lessonActions()}
+  <nav class="lesson-navigation" aria-label="Lesson navigation">
+    <div class="navigation-progress">
+      {#if exploring}
+        <span>Explore</span>
+      {:else}
+        <span>{workshop.builtCount} of {POSITION_CHALLENGES.length} built</span>
+        <progress
+          max={POSITION_CHALLENGES.length}
+          value={workshop.builtCount}
+          aria-label="Positions built"
+        ></progress>
+      {/if}
     </div>
-    <svg class="hand-layer" viewBox="0 0 950 950" aria-hidden="true">
-      {@render glyph(kind)}
-      {#if rightHand}{@render hand(rightHand, hands.right, true)}{/if}
-      {#if leftHand}{@render hand(leftHand, hands.left, false)}{/if}
-    </svg>
-  </div>
+    <div class="lesson-actions">
+      {#if exploring}
+        <PanelButton
+          variant={workshop.canFinish ? "secondary" : "primary"}
+          onclick={practice}
+          >{workshop.round > 0 && workshop.round < POSITION_CHALLENGES.length
+            ? "Resume practice"
+            : workshop.canFinish
+              ? "Practice again"
+              : "Next: Practice →"}</PanelButton
+        >
+        {#if workshop.canFinish}
+          <PanelButton variant="primary" onclick={finish}
+            >Continue to Hand Motions</PanelButton
+          >
+        {/if}
+      {:else if workshop.canFinish}
+        <PanelButton onclick={explore}>Keep exploring</PanelButton>
+        <PanelButton variant="primary" bind:ref={forwardButton} onclick={finish}
+          >Continue to Hand Motions</PanelButton
+        >
+      {:else}
+        <PanelButton onclick={explore}>Explore</PanelButton>
+        <PanelButton
+          variant="primary"
+          bind:ref={forwardButton}
+          disabled={workshop.feedback !== "correct"}
+          onclick={next}
+          >{workshop.round === POSITION_CHALLENGES.length - 1
+            ? "Finish practice"
+            : "Next position"}</PanelButton
+        >
+      {/if}
+    </div>
+  </nav>
 {/snippet}
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
-<div
-  class="positions-experience"
-  onkeydown={handleKeydown}
-  tabindex="0"
-  role="application"
-  aria-label="Hand Positions lesson, use arrow keys to navigate"
->
-  <LessonStageFrame artifactLayout={isCompare ? "wide" : "square"}>
+<div class="positions-experience">
+  <LessonStageFrame artifactLayout="workshop">
     {#snippet heading()}
       <LessonStageHeading
-        key={headingKey}
-        title={headingTitle}
-        eyebrow={headingEyebrow}
+        key={title}
+        {title}
+        eyebrow={exploring
+          ? "Explore"
+          : workshop.canFinish
+            ? "Practice complete"
+            : `${workshop.challenge?.guided ? "With a reference" : "On your own"} · ${workshop.round + 1} of ${POSITION_CHALLENGES.length}`}
       >
-        <p>{headingDescription}</p>
+        <p>
+          {exploring
+            ? "Place both hands and see the position’s name. Next, try six practice challenges."
+            : workshop.canFinish
+              ? "Keep exploring, or continue to Hand Motions."
+              : gridMode === GridMode.DIAMOND
+                ? "Diamond grid"
+                : "Box grid"}
+        </p>
       </LessonStageHeading>
     {/snippet}
 
     {#snippet artifact()}
-      <Crossfade key={artifactKey} fill>
-        {#if !isCompare}
-          {@const hands = baseHands(step.kind)}
-          <div class="artifact-state hero-state">
-            {@render positionArt(step.kind, hands)}
+      <div class="placement-instructions">
+        <div class="current-task" aria-live="polite">
+          <Crossfade key={instruction}>{instruction}</Crossfade>
+        </div>
+        <p class="hand-key">
+          <span class="left-hand">Left = blue</span><span aria-hidden="true">
+            ·
+          </span><span class="right-hand">Right = red</span>
+        </p>
+      </div>
+      <div class="workshop" class:exploring>
+        <div class="board-column">
+          <div
+            class="board"
+            bind:this={boardElement}
+            tabindex="-1"
+            role="group"
+            aria-label="Hand placement grid"
+            bind:clientWidth={boardWidth}
+            bind:clientHeight={boardHeight}
+          >
+            <PropPlacementGrid
+              bind:this={grid}
+              {gridMode}
+              leftPropType={PropType.HAND}
+              rightPropType={PropType.HAND}
+              leftNoun="left hand"
+              rightNoun="right hand"
+              promptText=""
+              initialLeftLocation={preset.left}
+              initialRightLocation={preset.right}
+              resetEpoch={epoch}
+              hitTargetRadius={Math.max(
+                75,
+                (44 * 950) /
+                  Math.max(128, Math.min(boardWidth, boardHeight)) /
+                  2
+              )}
+              editAfterCompletion
+              renderTray={false}
+              onChange={changed}
+            />
           </div>
-        {:else if focus === null}
-          <div class="artifact-state comparison-state">
-            <div class="comparison-grid">
-              {#each steps as option, index (option.name)}
-                {@const hands = baseHands(option.kind)}
-                <button
-                  type="button"
-                  class="position-option"
-                  onclick={() => openFocus(index)}
-                  aria-label={`Explore ${option.name}`}
-                >
-                  <span class="option-art">
-                    {@render positionArt(option.kind, hands)}
-                  </span>
-                  <span class="option-copy">
-                    <span class="option-eyebrow">{option.vtg}</span>
-                    <strong>{option.name}</strong>
-                  </span>
-                </button>
-              {/each}
-            </div>
+          <div class="hand-controls" role="group" aria-label="Move the hands">
+            <PanelButton
+              disabled={!placement.complete}
+              accentColor="var(--prop-blue)"
+              ariaPressed={placement.activeHand === HandSide.LEFT}
+              onclick={() => grid?.moveProp(HandSide.LEFT)}
+              >Move left hand</PanelButton
+            >
+            <PanelButton
+              disabled={!placement.complete}
+              accentColor="var(--prop-red)"
+              ariaPressed={placement.activeHand === HandSide.RIGHT}
+              onclick={() => grid?.moveProp(HandSide.RIGHT)}
+              >Move right hand</PanelButton
+            >
+            <PanelButton
+              disabled={!placement.canUndo}
+              onclick={() => grid?.undoPlacement()}>Undo</PanelButton
+            >
+            <PanelButton
+              disabled={!placement.leftLocation && !placement.rightLocation}
+              onclick={() => loadPair(null, null)}>Clear both hands</PanelButton
+            >
           </div>
-        {:else if focusedStep && focusHands}
-          <div class="artifact-state focus-state">
-            <div class="focus-art">
-              {@render positionArt(focusedStep.kind, focusHands)}
-            </div>
+        </div>
 
-            <div class="focus-actions">
-              <div class="transform-actions">
-                <PanelButton fullWidth onclick={rotate}>
-                  <span aria-hidden="true">⟳</span><span>Rotate</span>
-                </PanelButton>
-                <PanelButton fullWidth onclick={mirror}>
-                  <span aria-hidden="true">⇄</span><span>Mirror</span>
-                </PanelButton>
-                <PanelButton fullWidth onclick={swap}>
-                  <span aria-hidden="true">◐</span><span>Swap colors</span>
-                </PanelButton>
+        <div class="lesson-side">
+          <div
+            class="result"
+            class:correct={workshop.feedback === "correct"}
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <Crossfade
+              key={`${built}-${workshop.feedback}-${actionNote}-${referencesVisible}`}
+            >
+              <div class="result-copy">
+                <div class="position-name">
+                  {#if built && (exploring || workshop.feedback !== "idle" || workshop.canFinish)}
+                    <span aria-hidden="true"
+                      ><TKAWordGlyph
+                        word={POSITION_TYPE_INFO[built].symbol}
+                        height={32}
+                        darkMode
+                      /></span
+                    >
+                    <h2>{POSITION_TYPE_INFO[built].label}</h2>
+                    {#if workshop.feedback === "correct"}<span
+                        aria-label="Correct">✓</span
+                      >{/if}
+                  {:else}
+                    <h2>
+                      {exploring
+                        ? "Your position"
+                        : workshop.canFinish
+                          ? "Practice complete"
+                          : "Your turn"}
+                    </h2>
+                  {/if}
+                </div>
+                <p>{feedback}</p>
               </div>
-              <div class="discovery-tray">
+            </Crossfade>
+          </div>
+
+          <div class="reference-area">
+            <Crossfade key={Boolean(referencesVisible)} animateHeight>
+              {#if referencesVisible}
+                <div class="reference-heading">
+                  <h3>{exploring ? "Try an example" : "Reference"}</h3>
+                </div>
                 <div
-                  class="tray-grid"
-                  style:grid-template-columns={`repeat(${focusTotal > 8 ? 8 : 4}, 1fr)`}
+                  class="examples"
+                  role="group"
+                  aria-label="Position examples"
                 >
-                  {#each Array(focusTotal) as _, cell}
-                    <span class="tray-cell" class:lit={visited.has(cell)}></span>
+                  {#each examples as example (example.kind)}
+                    <div class="example">
+                      <div class="example-art" aria-hidden="true">
+                        <PictographContainer
+                          pictographData={example.data}
+                          showTKA={false}
+                          showPositions={false}
+                          showReversals={false}
+                          showTnD={false}
+                          showElemental={false}
+                          leftPropTypeOverride={PropType.HAND}
+                          rightPropTypeOverride={PropType.HAND}
+                        />
+                      </div>
+                      {#if exploring}
+                        <PanelButton
+                          ariaLabel={`Study ${POSITION_TYPE_INFO[example.kind].label} example`}
+                          ariaPressed={built === example.kind}
+                          onclick={() => study(example.kind)}
+                          >{POSITION_TYPE_INFO[example.kind].label}</PanelButton
+                        >
+                      {:else}
+                        <strong>{POSITION_TYPE_INFO[example.kind].label}</strong
+                        >
+                      {/if}
+                    </div>
                   {/each}
                 </div>
-                <span>Discovered {visited.size} of {focusTotal}</span>
+              {:else}
+                <div class="reference-prompt">
+                  <p>Need a reminder?</p>
+                  <PanelButton onclick={() => (showReference = true)}
+                    >Show reference</PanelButton
+                  >
+                </div>
+              {/if}
+            </Crossfade>
+          </div>
+
+          {#if exploring}
+            <div class="explore-tools">
+              <SegmentedControl
+                options={[
+                  { value: GridMode.DIAMOND, label: "Diamond" },
+                  { value: GridMode.BOX, label: "Box" },
+                ]}
+                value={gridMode}
+                onchange={changeGrid}
+                semantics="radiogroup"
+                ariaLabel="Grid mode"
+                color="accent"
+              />
+              <div
+                class="transform-controls"
+                role="group"
+                aria-label="Transform both hands"
+              >
+                <PanelButton
+                  disabled={!built}
+                  onclick={() => transform("rotate")}>Rotate</PanelButton
+                >
+                <PanelButton
+                  disabled={!built}
+                  onclick={() => transform("mirror")}>Mirror</PanelButton
+                >
+                <PanelButton disabled={!built} onclick={() => transform("swap")}
+                  >Swap</PanelButton
+                >
               </div>
             </div>
-          </div>
-        {/if}
-      </Crossfade>
+          {/if}
+        </div>
+      </div>
     {/snippet}
-
-    {#snippet controls()}
-      <LessonStageControls
-        label={stage === compareStage ? "Finish ✓" : "Next ›"}
-        currentStep={stage + 1}
-        totalSteps={totalStages}
-        onAction={handlePrimaryAction}
-      />
-    {/snippet}
+    {#snippet controls()}{@render lessonActions()}{/snippet}
   </LessonStageFrame>
 </div>
 
 <style>
   .positions-experience {
+    display: flex;
+    flex: 1 0 auto;
     width: 100%;
-    height: 100%;
-    min-height: 0;
-    overflow: hidden;
+    min-height: 100%;
     color: var(--theme-text);
-    outline: none;
+    --position-board-size: clamp(20rem, calc(100svh - 34rem), 32rem);
+    --lesson-workshop-max: calc(var(--position-board-size) + 30rem);
   }
-
-  .artifact-state,
-  .position-art {
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-  }
-
-  .artifact-state {
+  .workshop {
     display: grid;
-    place-items: center;
-  }
-
-  .position-art {
-    position: relative;
-  }
-
-  .grid-layer,
-  .hand-layer {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .grid-layer :global(.lesson-grid-display),
-  .grid-layer :global(.grid-svg) {
-    width: 100%;
-    max-width: none !important;
-  }
-
-  .hand-layer {
-    overflow: visible;
-  }
-
-  .hand {
-    transition: transform var(--duration-emphasis) var(--ease-out);
-  }
-
-  .glyph {
-    filter: invert(0.85);
-  }
-
-  .comparison-grid {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-items: center;
-    gap: clamp(0.5rem, 2cqw, 1rem);
-  }
-
-  .position-option {
+    grid-template-columns: minmax(0, var(--position-board-size)) minmax(
+        20rem,
+        1fr
+      );
+    gap: 2rem;
+    align-items: start;
     min-width: 0;
-    container-type: inline-size;
+  }
+  .board-column {
     display: grid;
     grid-template-rows: auto auto;
+    gap: 0.75rem;
+    min-height: 0;
+    container-type: inline-size;
+  }
+  .board {
+    aspect-ratio: 1;
+    height: auto;
+    width: 100%;
+  }
+  .placement-instructions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin-bottom: 1rem;
+  }
+  .current-task {
+    min-height: 3rem;
+    display: grid;
+    align-items: center;
+    max-width: 40ch;
+    font-size: 1rem;
+    font-weight: 650;
+  }
+  .hand-key {
+    display: flex;
+    align-items: center;
     gap: 0.5rem;
-    padding: 0.45rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 14px;
-    background: var(--theme-card-bg);
+    white-space: nowrap;
+    font-size: var(--font-size-min, 14px);
     color: var(--theme-text);
-    cursor: pointer;
-    transition:
-      background var(--duration-fast) var(--ease-out),
-      border-color var(--duration-fast) var(--ease-out),
-      transform var(--duration-fast) var(--ease-out);
+    font-weight: 650;
   }
-
-  .position-option:hover {
-    border-color: var(--theme-stroke-strong);
-    background: var(--theme-card-hover-bg);
+  .left-hand,
+  .right-hand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
   }
-
-  .position-option:active {
-    transform: scale(0.98);
+  .left-hand::before,
+  .right-hand::before {
+    content: "";
+    width: 0.65rem;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--prop-blue);
   }
-
-  .position-option:focus-visible,
-  .transform-actions :global(.panel-btn:focus-visible) {
+  .right-hand::before {
+    background: var(--prop-red);
+  }
+  .lesson-navigation {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 3.5rem;
+  }
+  .navigation-progress {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 7rem;
+    font-size: var(--font-size-min, 14px);
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-dim);
+  }
+  .hand-controls,
+  .transform-controls,
+  .lesson-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .hand-controls {
+    justify-content: flex-start;
+  }
+  .lesson-actions {
+    justify-content: flex-end;
+  }
+  .lesson-side {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 1.25rem;
+  }
+  .result {
+    min-height: 6.5rem;
+  }
+  .result-copy {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .position-name {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.5rem;
+  }
+  h2 {
+    margin: 0;
+    font-size: 1.75rem;
+    line-height: 1.2;
+  }
+  h3 {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+  }
+  p {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    max-width: 38ch;
+    color: var(--theme-text-dim);
+  }
+  .correct .position-name {
+    color: var(--semantic-success);
+  }
+  .reference-area {
+    min-width: 0;
+  }
+  .reference-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .examples {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    max-width: 28rem;
+  }
+  .example {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .example-art {
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+  }
+  .example strong {
+    font-size: var(--font-size-min, 14px);
+  }
+  .example :global(.panel-btn) {
+    padding-inline: 0.75rem;
+  }
+  .example :global(.panel-btn[aria-pressed="true"]) {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
-
-  .option-art {
-    display: block;
-    width: min(100cqi, calc(100cqh - 3.25rem));
-    aspect-ratio: 1;
-    justify-self: center;
-  }
-
-  .option-copy {
+  .reference-prompt {
     display: grid;
-    justify-items: center;
-    gap: 0.15rem;
+    justify-items: start;
+    gap: 0.75rem;
   }
-
-  .option-copy strong {
-    font-size: clamp(1rem, 2.5cqw, 1.35rem);
-  }
-
-  .option-eyebrow {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  .focus-state {
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: 0.65rem;
-  }
-
-  .focus-art {
-    width: min(100%, 75cqh);
-    aspect-ratio: 1;
-  }
-
-  .focus-actions {
-    width: min(100%, 28rem);
-  }
-
-  .transform-actions {
+  .explore-tools {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.55rem;
+    justify-items: start;
+    gap: 0.75rem;
   }
-
-  .transform-actions :global(.panel-btn) {
-    min-width: 0;
-    min-height: max(var(--min-touch-target, 44px), 3.25rem);
-    padding: 0.75rem 0.65rem;
-    border-radius: 12px;
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 700;
+  progress {
+    width: 100%;
+    height: 0.5rem;
+    accent-color: var(--theme-accent);
   }
-
-  .discovery-tray {
-    display: grid;
-    justify-items: center;
-    gap: 0.35rem;
-    margin-top: 0.55rem;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-variant-numeric: tabular-nums;
+  .lesson-actions {
+    min-height: 3rem;
   }
-
-  .tray-grid {
-    display: grid;
-    gap: 0.3rem;
-  }
-
-  .tray-cell {
-    width: 0.8rem;
-    aspect-ratio: 1;
-    border: 1px solid var(--theme-stroke-strong);
-    border-radius: 3px;
-    background: transparent;
-    transition:
-      background var(--duration-normal) var(--ease-out),
-      border-color var(--duration-normal) var(--ease-out),
-      transform var(--duration-normal) var(--ease-out);
-  }
-
-  .tray-cell.lit {
-    border-color: var(--theme-accent);
-    background: var(--theme-accent);
-    transform: scale(1.1);
-  }
-
-  @media (max-width: 640px) {
-    .comparison-grid {
-      gap: 0.25rem;
+  /* A tall split-screen is a reading column, not a wide desktop with a taller
+     grid. Keep the feedback below the work instead of leaving a vacant rail. */
+  @media (max-width: 760px), (max-aspect-ratio: 6/5) {
+    .positions-experience {
+      --position-board-size: clamp(18.5rem, 28svh, 36rem);
+      --lesson-workshop-max: clamp(28rem, 40svh, 38rem);
     }
-
-    .position-option {
-      padding: 0.2rem;
-    }
-
-    .option-copy strong {
-      font-size: var(--font-size-min, 0.875rem);
-    }
-
-    .option-eyebrow {
-      font-size: 0.7rem;
-    }
-
-    .focus-art {
-      width: min(100%, 68cqh);
-    }
-
-  }
-
-  @media (max-height: 480px) and (min-width: 641px) {
-    .comparison-grid {
-      gap: 0.75rem;
-    }
-
-    .position-option {
-      gap: 0.2rem;
-      padding: 0.2rem;
-    }
-
-    .option-copy {
-      grid-template-columns: auto auto;
-      justify-content: center;
-      align-items: baseline;
-      gap: 0.4rem;
-    }
-
-    .option-copy strong,
-    .option-eyebrow {
-      font-size: 0.75rem;
-    }
-
-    .focus-state {
-      grid-template-columns: minmax(0, 1fr) minmax(18rem, 1.25fr);
-      grid-template-rows: minmax(0, 1fr);
+    .workshop {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "board" "hands" "result" "reference";
       gap: 1rem;
     }
-
-    .focus-art {
-      width: min(100%, 100cqh);
-      align-self: center;
-      justify-self: end;
+    .workshop.exploring {
+      grid-template-areas: "board" "hands" "result" "reference" "tools";
     }
-
-    .focus-actions {
-      align-self: center;
-      justify-self: start;
+    .board-column,
+    .lesson-side {
+      display: contents;
+    }
+    .board {
+      grid-area: board;
+      width: min(100%, var(--position-board-size));
+      justify-self: center;
+    }
+    .hand-controls {
+      grid-area: hands;
+      justify-content: center;
+    }
+    .result {
+      grid-area: result;
+      min-height: 5.5rem;
+      width: 100%;
+    }
+    .reference-area {
+      grid-area: reference;
+      width: 100%;
+    }
+    .examples {
+      max-width: none;
+    }
+    .explore-tools {
+      grid-area: tools;
+      grid-template-columns: 1fr;
+      justify-items: center;
+    }
+    .navigation-progress {
+      min-width: 5rem;
+    }
+    .placement-instructions {
+      width: min(100%, var(--position-board-size));
+      margin-inline: auto;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
     }
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    .hand,
-    .position-option,
-    .tray-cell {
-      transition: none;
+  @media (max-width: 760px) {
+    .positions-experience {
+      --position-board-size: 18.5rem;
+      --lesson-workshop-max: 28rem;
     }
   }
 </style>

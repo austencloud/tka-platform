@@ -8,6 +8,7 @@
   floor, lazy paint, and the tile-to-hero shared element stay here.
 -->
 <script lang="ts" generics="TAxis = Flower">
+  import type { Snippet } from "svelte";
   import type { ShapeMatrixData } from "../services/shape-matrix-flowers";
   import {
     flowerKey,
@@ -23,6 +24,7 @@
     type ShapeMatrixArtworkPainter,
   } from "../services/shape-matrix-artwork";
   import ShapeMatrixMandalaArt from "./ShapeMatrixMandalaArt.svelte";
+  import { runShapeMatrixGridReveal } from "../app/services/shape-matrix-reveal";
 
   type CellVerdict = "legal" | "illegal" | "unsure";
 
@@ -63,7 +65,14 @@
     /** Cell artwork source at a measured size. Defaults to the flower painter. */
     paintCell?: (left: TAxis, right: TAxis, sizePx: number) => string;
     /** Optional focus feedback from an external axis editor. */
-    emphasizedAxis?: "left" | "right" | null;
+    emphasizedAxis?: "left" | "right" | "both" | null;
+    /** Optional guide or action for the otherwise-empty axis intersection. */
+    corner?: Snippet;
+    /**
+     * Changes once per Surprise roll. The grid then plays its reveal over the
+     * already-final headers, tiles, and selection; ordinary edits leave it be.
+     */
+    revealToken?: number;
   }
   let {
     data,
@@ -90,7 +99,23 @@
     paintHeader,
     paintCell,
     emphasizedAxis = null,
+    corner,
+    revealToken = 0,
   }: Props = $props();
+
+  /* The reveal answers a token CHANGE after mount. The token the grid mounts
+     with (a restored roll, or zero) is a state to show, not a roll to replay. */
+  let wrap = $state<HTMLDivElement | null>(null);
+  let revealedToken: number | null = null;
+  $effect(() => {
+    const token = revealToken;
+    const host = wrap;
+    if (!host) return;
+    const previous = revealedToken;
+    revealedToken = token;
+    if (previous === null || previous === token) return;
+    runShapeMatrixGridReveal(host);
+  });
 
   // Track counts for the CSS tile formula: the row-header column and the
   // column-header row join the axes.
@@ -146,6 +171,7 @@
      still describe the pane the grid was collapsed in. -->
 <div
   class="wrap"
+  bind:this={wrap}
   style="--cols:{cols}; --rows:{rows}; --cell-max:{maxCellPx}px"
 >
   {#if rowAxis.length === 0 || colAxis.length === 0}
@@ -157,12 +183,19 @@
     >
       <thead>
         <tr>
-          <th class="corner" scope="col" aria-label="left rows by right columns"
-          ></th>
+          <th
+            class="corner"
+            class:interactive-corner={Boolean(corner)}
+            scope="col"
+            aria-label={corner ? undefined : "left rows by right columns"}
+          >
+            {@render corner?.()}
+          </th>
           {#each colAxis as rf, colIndex (colIndex)}
             <th
               class="colhead"
-              class:axis-emphasized={emphasizedAxis === "right"}
+              class:axis-emphasized={emphasizedAxis === "right" ||
+                emphasizedAxis === "both"}
               scope="col"
               title={labelOf(rf)}
             >
@@ -180,7 +213,8 @@
           <tr>
             <th
               class="rowhead"
-              class:axis-emphasized={emphasizedAxis === "left"}
+              class:axis-emphasized={emphasizedAxis === "left" ||
+                emphasizedAxis === "both"}
               scope="row"
               title={labelOf(bf)}
             >
@@ -293,6 +327,10 @@
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-card-bg, #111922);
+  }
+
+  .corner.interactive-corner {
+    overflow: hidden;
   }
 
   .colhead {
@@ -461,6 +499,35 @@
   }
   .cell.dim {
     opacity: 0.25;
+  }
+
+  /* The Surprise reveal names the chosen crossing: its row and column
+     headers light in their hand colour and the tile's ring brightens, then
+     all three settle back to the ordinary selection. */
+  .rowhead:global(.reveal-chosen) {
+    background: color-mix(
+      in srgb,
+      var(--prop-blue, #2e3192) 34%,
+      var(--theme-card-bg, #111922)
+    );
+    box-shadow: inset 0 0 0 2px var(--prop-blue-text, #818cf8);
+  }
+  .colhead:global(.reveal-chosen) {
+    background: color-mix(
+      in srgb,
+      var(--prop-red, #ed1c24) 26%,
+      var(--theme-card-bg, #111922)
+    );
+    box-shadow: inset 0 0 0 2px var(--prop-red-text, #f87171);
+  }
+  .cell:global(.reveal-chosen) {
+    z-index: 3;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 22%,
+      transparent
+    );
+    box-shadow: inset 0 0 0 2px var(--theme-accent, #f59e0b);
   }
 
   @media (prefers-reduced-motion: reduce) {

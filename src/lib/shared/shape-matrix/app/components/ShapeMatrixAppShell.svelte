@@ -1,7 +1,6 @@
 <script lang="ts">
   import { tick } from "svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -11,7 +10,6 @@
   import {
     KINETIC_SHAPE_ENGINE_NAME,
     ORIGINAL_SHAPE_MATRIX_URL,
-    ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
   } from "../shape-engine-identity";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
@@ -23,13 +21,12 @@
   import ShapeMatrixDetailPane from "./ShapeMatrixDetailPane.svelte";
   import ShapeMatrixMatrixPane from "./ShapeMatrixMatrixPane.svelte";
   import ShapeMatrixOverflowMenu from "./ShapeMatrixOverflowMenu.svelte";
-  import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
   import ShapeMatrixTurnPopover from "./ShapeMatrixTurnPopover.svelte";
   import ShapeMatrixSurfaceControl from "./ShapeMatrixSurfaceControl.svelte";
-  import ShapeMatrixTheoryControls from "./ShapeMatrixTheoryControls.svelte";
   import ShapeMatrixTheoryDetail from "./ShapeMatrixTheoryDetail.svelte";
   import ShapeMatrixTheoryPane from "./ShapeMatrixTheoryPane.svelte";
   import { runMandalaMorph } from "../services/shape-matrix-mandala-morph";
+  import { runShapeMatrixDetailReveal } from "../services/shape-matrix-reveal";
   import { growFade } from "$lib/shared/transitions/motion";
 
   interface Props {
@@ -83,7 +80,7 @@
   let detailPaneElement: HTMLDivElement;
   let theoryPaneElement: HTMLDivElement;
   let theoryDetailElement: HTMLDivElement;
-  let theoryEditingAxis = $state<"left" | "right" | null>(null);
+  let theoryEditingAxis = $state<"left" | "right" | "both" | null>(null);
 
   $effect(() => {
     if (!theory) theoryEditingAxis = null;
@@ -118,6 +115,32 @@
     }
     runMandalaMorph(appState, () => appState.showMatrix());
   }
+
+  function surpriseMe(): void {
+    if (!appState.compact || theory || appState.activeView === "detail") {
+      appState.surpriseMe();
+      return;
+    }
+    runMandalaMorph(appState, () => appState.showDetail(), {
+      before: () => appState.surpriseMe(Math.random, { navigate: false }),
+    });
+  }
+
+  /* The result half of the reveal: the chosen relationship lands, then the
+     hero breathes in. Compact layouts fly the tile to the hero instead, so
+     only the chip beat applies there. Keyed on the roll, never on an edit. */
+  let revealedToken: number | null = null;
+  $effect(() => {
+    const token = appState.revealToken;
+    const previous = revealedToken;
+    revealedToken = token;
+    if (previous === null || previous === token) return;
+    const pane = theory ? theoryDetailElement : detailPaneElement;
+    if (!pane) return;
+    void tick().then(() => {
+      runShapeMatrixDetailReveal(pane, { hero: !appState.compact });
+    });
+  });
 
   $effect(() => {
     const request = appState.compactFocusRequest;
@@ -162,8 +185,24 @@
     inert={appState.compact && appState.activeView !== "matrix"}
     aria-hidden={appState.compact && appState.activeView !== "matrix"}
   >
-    <ShapeMatrixMatrixPane onselect={selectPair} />
+    <ShapeMatrixMatrixPane onselect={selectPair} onsurprise={surpriseMe} />
   </div>
+{/snippet}
+
+<!-- "Surprise me" lives in the recipe bar above the grid. The header keeps a
+     dice only while a compact detail view has hidden that bar. -->
+{#snippet compactSurpriseAction()}
+  <button
+    type="button"
+    class="top-action surprise-action compact"
+    aria-label="Surprise me with a new grid, crossing, and hand relationship"
+    title="Pick a new grid, crossing, and hand relationship"
+    disabled={!theory && !appState.data}
+    onclick={surpriseMe}
+    transition:growFade={{ axis: "x", x: 4 }}
+  >
+    <i class="fas fa-dice" aria-hidden="true"></i>
+  </button>
 {/snippet}
 
 {#snippet detailPane()}
@@ -222,7 +261,10 @@
     inert={appState.compact && appState.activeView !== "matrix"}
     aria-hidden={appState.compact && appState.activeView !== "matrix"}
   >
-    <ShapeMatrixTheoryPane emphasizedAxis={theoryEditingAxis} />
+    <ShapeMatrixTheoryPane
+      emphasizedAxis={theoryEditingAxis}
+      onsurprise={surpriseMe}
+    />
   </div>
 {/snippet}
 
@@ -292,10 +334,10 @@
             onclick={showMatrix}
           >
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
-            <span>{theory ? "Theory" : "Matrix"}</span>
+            <span>{theory ? "Playground" : "Matrix"}</span>
           </button>
         {:else}
-          <strong>{theory ? "Theory Matrix" : "Shape Matrix"}</strong>
+          <strong>{theory ? "Ratio Playground" : "Level Matrix"}</strong>
         {/if}
         <!-- The compact value editor keeps the grid as the hero. Matrix opens
              its level and turns; Theory names ratio editing directly and
@@ -308,16 +350,10 @@
     {:else if variant === "standalone"}
       <div class="identity">
         <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
-        <span class="identity-note">
-          <span class="identity-note-sizer" aria-hidden="true">
-            Build a 4×4 grid from any two prop:hand ratios
-          </span>
-          <span class="identity-note-live">
-            {theory
-              ? "Build a 4×4 grid from any two prop:hand ratios"
-              : `Lorq’s 144 Shape Matrix: VTG ratios ${ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}`}
-          </span>
-        </span>
+        {#if !theory}
+          <span class="identity-note">Explore hand paths across Levels 1–4</span
+          >
+        {/if}
       </div>
     {/if}
 
@@ -325,8 +361,7 @@
       <!-- The surface choice outranks everything below it. Matrix adds its
            difficulty beside that choice; Theory has no parallel setting. -->
       <div class="header-meta">
-        <div class="control-cell surface-control-cell">
-          <span class="control-label">Explore</span>
+        <div class="surface-control-cell">
           <ShapeMatrixSurfaceControl />
         </div>
         {#if !theory}
@@ -351,51 +386,33 @@
                 ariaLabel="Kinetic Alphabet level"
               />
             </div>
-          </div>
-        {/if}
-      </div>
-      <!-- The two ribbons already shared one grid area, so a pair of
-           independent fades painted Matrix's turn row through Theory's ratio
-           row: two legible bands of numbers on top of each other for the
-           length of the swap. The shared primitive runs them sequentially in
-           that same cell, so only one ribbon is ever readable. -->
-      <div class="controls-swap">
-        <Crossfade
-          key={theory ? "theory" : "matrix"}
-          mode="swap"
-          duration={booted ? DURATION.normal : 0}
-        >
-          {#if theory}
-            <div class="surface-controls">
-              <ShapeMatrixTheoryControls
-                onfocuschange={(hand) => (theoryEditingAxis = hand)}
+            <!-- The axis values themselves are edited in the recipe bar above
+                 the grid; the header keeps only the settings that shape the
+                 whole surface. -->
+            <div class="control-cell label-control neutral-accent">
+              <span class="control-label">Notation</span>
+              <SegmentedControl
+                options={LABEL_OPTIONS}
+                value={appState.labelMode}
+                onchange={(mode: MatrixLabelMode) =>
+                  appState.setLabelMode(mode)}
+                size="sm"
+                density="tight"
+                color="accent"
+                semantics="radiogroup"
+                ariaLabel="Turn label system"
               />
             </div>
-          {:else}
-            <div class="matrix-controls">
-              <div class="control-cell label-control neutral-accent">
-                <span class="control-label">Notation</span>
-                <SegmentedControl
-                  options={LABEL_OPTIONS}
-                  value={appState.labelMode}
-                  onchange={(mode: MatrixLabelMode) =>
-                    appState.setLabelMode(mode)}
-                  size="sm"
-                  density="tight"
-                  color="accent"
-                  semantics="radiogroup"
-                  ariaLabel="Turn label system"
-                />
-              </div>
-              <ShapeMatrixTurnControls onturn={appState.setTurn} />
-            </div>
-          {/if}
-        </Crossfade>
+          </div>
+        {/if}
       </div>
     {/if}
 
     <div class="top-actions">
       {#if appState.compact}
+        {#if appState.activeView === "detail"}
+          {@render compactSurpriseAction()}
+        {/if}
         {#if appState.activeView === "matrix" && hasPair}
           <button
             type="button"
@@ -484,10 +501,17 @@
 
   .topbar {
     display: grid;
-    grid-template-columns: minmax(6rem, 1fr) auto minmax(6rem, 1fr);
-    grid-template-areas:
-      "identity meta actions"
-      "controls controls controls";
+    /* The control pair always gets its full width (an `auto` track let the
+       fr columns bite into it), and the side columns share the slack
+       equally, so the pair sits centred whenever the row has room. The
+       actions column can never shrink below its buttons: a 6rem floor let
+       it, and the About button then left the row on small laptops. The
+       identity column's floor holds the title; its note truncates inside. */
+    grid-template-columns:
+      minmax(11rem, 1fr)
+      max-content
+      minmax(max-content, 1fr);
+    grid-template-areas: "identity meta actions";
     align-items: center;
     gap: 0.3rem 0.8rem;
     padding: 0.3rem 0.75rem 0.45rem;
@@ -498,7 +522,7 @@
   .top-action {
     min-height: var(--min-touch-target, 44px);
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 999px;
+    border-radius: 10px;
     background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
     color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
     text-decoration: none;
@@ -537,6 +561,9 @@
   /* Preserve the existing action footprint while giving the attributed source
      label enough text width to render Lorq's name without an ellipsis. */
   .source-action {
+    /* Lorq's name and "original" run past the shared 11rem cap at this
+       font, so the button ellipsized at every width. */
+    max-width: 12.5rem;
     padding-inline: 0.6rem;
   }
 
@@ -557,6 +584,39 @@
   .top-action:focus-visible {
     outline: 2px solid var(--theme-accent, #f59e0b);
     outline-offset: 2px;
+  }
+
+  .surprise-action {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 58%,
+      var(--theme-stroke, transparent)
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 13%,
+      var(--theme-card-bg, transparent)
+    );
+    color: var(--theme-text, #fff);
+    font-weight: 750;
+  }
+
+  .surprise-action i {
+    color: var(--theme-accent, #f59e0b);
+  }
+
+  .surprise-action:disabled {
+    border-color: var(--theme-stroke, rgb(255 255 255 / 0.09));
+    background: transparent;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.42));
+    cursor: wait;
+    opacity: 0.6;
+  }
+
+  .surprise-action.compact {
+    width: var(--min-touch-target, 44px);
+    max-width: none;
+    padding: 0;
   }
 
   .identity {
@@ -580,17 +640,6 @@
     color: var(--theme-text-dim, rgb(255 255 255 / 0.68));
     font-size: var(--font-size-min, 0.875rem);
     white-space: nowrap;
-  }
-
-  .identity-note > span {
-    grid-area: 1 / 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .identity-note-sizer {
-    visibility: hidden;
   }
 
   .compact-context {
@@ -659,38 +708,6 @@
     outline-offset: 2px;
   }
 
-  /* The crossfade owns the grid cell both ribbons used to claim directly, so
-     the outgoing and incoming bands are stacked by the primitive rather than
-     by two elements happening to name the same area. */
-  .controls-swap {
-    grid-area: controls;
-    /* Centered, not start-justified: the turn control swings from 4 to 14
-       segments across levels, and a left-packed band strands the width
-       reserved for level 4 as a dead field on the right. Centering splits
-       the slack into balanced gutters at every level. */
-    justify-self: center;
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  .matrix-controls,
-  .surface-controls {
-    /* One shared control height for all ribbon cells: a one-line sm
-       SegmentedControl (44px segment + its own padding and border). Cells
-       size to content — fixed cell widths overflowed once the four level
-       tiles outgrew them, and stretched the tiles into full-width swatches
-       in the stacked compact bands. */
-    --ribbon-control-h: 3.25rem;
-    width: fit-content;
-    max-width: 100%;
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
-    margin-inline: auto;
-    gap: 0.5rem;
-    min-width: 0;
-  }
-
   /* The title-line pair. It carries the ribbon's control height so the two
      cells match the band below rather than shrinking to the title's line box. */
   .header-meta {
@@ -704,7 +721,9 @@
   }
 
   .surface-control-cell {
+    display: flex;
     flex: 0 0 auto;
+    align-items: center;
   }
 
   /* The bento cell: a caption row over its control, each cell carrying its
@@ -730,7 +749,10 @@
   }
 
   .level-presence {
+    display: flex;
     flex: 0 0 auto;
+    align-items: stretch;
+    gap: 0.5rem;
     margin-left: 0.5rem;
   }
 
@@ -786,16 +808,39 @@
     width: 7.5rem;
   }
 
-  .matrix-controls :global(.turn-editor),
-  .surface-controls :global(.theory-editor) {
-    grid-area: turns;
-  }
-
   .top-actions {
     grid-area: actions;
     min-width: max-content;
     justify-content: flex-end;
     gap: 0.4rem;
+  }
+
+  /* The narrowest wide hosts (small laptops, just above the compact seam):
+     the title, the Explore-and-Difficulty pair, and two labelled actions add
+     up to more than the row. The actions keep their glyph and aria-label and
+     drop the word until the row can hold it; the seam is where the title
+     floor, the widest control pair (level 4), and both worded
+     actions fit together. The height clause keeps this out of the compact
+     tier, whose Detail and Relationships pills need their words. */
+  @container shape-matrix-app (75rem <= width < 84.5rem) and (height >= 42rem) {
+    .top-actions .top-action {
+      max-width: none;
+      padding-inline: 0;
+    }
+
+    .top-actions .top-action span {
+      display: none;
+    }
+  }
+
+  /* The identity line can afford its note once the header no longer shares
+     its row with a ratio instrument; the recipe bar carries that now. */
+  @container shape-matrix-app (min-width: 112rem) and (min-height: 42rem) {
+    .shape-app.theory .identity {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.15rem;
+    }
   }
 
   .relationships-action i {
@@ -840,23 +885,15 @@
     overflow: hidden;
   }
 
-  @container shape-matrix-app (max-width: 74.99rem) or (max-height: 41.99rem) {
+  /* The compact seam. ShapeMatrixApp decides `compact` in script from the
+     same two rem bounds, so the markup and this stylesheet always change
+     tiers together, whatever the root font size. Keep the two in step. */
+  @container shape-matrix-app (width < 75rem) or (height < 42rem) {
     .topbar {
       grid-template-columns: minmax(0, 1fr) auto auto;
-      grid-template-areas:
-        "context meta actions"
-        "controls controls controls";
+      grid-template-areas: "context meta actions";
       gap: 0.3rem 0.5rem;
       padding: 0.3rem 0.45rem 0.45rem;
-    }
-
-    .controls-swap {
-      grid-area: controls;
-    }
-
-    .matrix-controls,
-    .surface-controls {
-      gap: 0.4rem;
     }
 
     .header-meta {
@@ -908,26 +945,6 @@
     }
   }
 
-  /* Wide hosts hold the whole header in one row: identity, the Explore and
-     Difficulty pair, the notation-and-turn band, and the actions. The seam
-     sits above the widest state, level 4's fourteen turn values, and the
-     band column may shrink to zero so any drift degrades into the turn
-     viewport's own scroll rather than page overflow. */
-  @container shape-matrix-app (min-width: 140rem) {
-    .topbar {
-      grid-template-columns:
-        minmax(max-content, 1fr)
-        auto
-        minmax(0, max-content)
-        minmax(max-content, 1fr);
-      grid-template-areas: "identity meta controls actions";
-    }
-
-    .matrix-controls,
-    .surface-controls {
-      min-width: 0;
-    }
-  }
 
   /* Phone widths: the relationships pill keeps its glyph and aria-label and
      drops the word so the turn chip beside it never clips. */

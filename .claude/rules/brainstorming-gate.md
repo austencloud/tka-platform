@@ -1,13 +1,15 @@
-# Brainstorming Gate — ENFORCED
+# Design Exploration Contract
 
-Invoke `superpowers:brainstorming` before writing a spec, implementation plan,
-architecture decision, new component/module, multi-file refactor, or
-user-facing copy for a NEW piece of work. Austen's workflow depends on the
-divergent pass happening before the spec — skipping it produces shallow specs
-that cascade into broken implementations ("why are we not brainstorming
-anymore, this really feels shady").
+Use a short divergent pass before a new product concept, architecture decision,
+multi-system refactor, or user-facing experience whose target is not already
+specified.
 
-Already satisfied when: this conversation brainstormed this specific feature,
-Austen said "skip brainstorming" / "just do it," or you're executing a written
-plan brainstormed in a prior session. Memory of a past brainstorm for a
-different feature doesn't count.
+- Inspect existing owners and evidence before proposing alternatives.
+- Compare only materially different approaches and recommend one with its
+  tradeoff.
+- A direct bounded change, bug fix, approved spec, or explicit request to skip
+  exploration does not need another brainstorming phase.
+- Use an available design or planning skill when its trigger matches. Never block
+  work on a missing skill name from a historical workflow.
+- Exploration does not authorize implementation; follow the request boundary in
+  root `AGENTS.md`.

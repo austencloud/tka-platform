@@ -25,7 +25,11 @@
     sampleInterruptibleVector3,
     type TimedTransition,
   } from "../camera/transitions";
-  import { getViewerFrontStageCameraZ } from "../domain/viewer-formation-facing";
+  import {
+    computeViewerAlignedCamera,
+    isValidViewerCameraPose,
+    isValidViewerCameraSnapshot,
+  } from "../camera/viewer-camera-framing";
   import {
     collectEnvironmentCameraCollisionMeshes,
     keepEnvironmentReviewOrbitAboveSurface,
@@ -62,105 +66,10 @@
       (viewer3DState.seededBackgroundType === BackgroundType.BLOSSOM ? 82 : 25)
   );
 
-  // Grid center in 3D world space.
-  // Y=0 is shoulder height (proportions reference). Grid T.Group is at
-  // position.z = gridOffset = +0.3 inside PerformerRig (which has no rotation
-  // in wall mode). Positive Z is in front of the GLTF model at zero rotation.
-  const GRID_CENTER_Y = 0;
-  const GRID_CENTER_Z = 0.3;
-  const GRID_RADIUS_3D = 0.52; // meters
-
-  /**
-   * Compute camera Z distance so the 3D grid matches the 2D canvas grid size.
-   * Reads the actual DOM positions of both the 2D canvas and the 3D pane.
-   */
-  function computeAlignedPosition(): {
-    position: { x: number; y: number; z: number };
-    target: { x: number; y: number; z: number };
-  } {
-    const target = { x: 0, y: GRID_CENTER_Y, z: GRID_CENTER_Z };
-    const fallback = {
-      position: {
-        x: 0,
-        y: 0,
-        z: getViewerFrontStageCameraZ(
-          GRID_CENTER_Z,
-          2.8,
-          viewer3DState.environmentId
-        ),
-      },
-      target,
-    };
-
-    if (typeof document === "undefined") return fallback;
-
-    // Find the 2D animation canvas (square, ~785px)
-    const allCanvases = document.querySelectorAll("canvas");
-    let canvas2D: HTMLCanvasElement | null = null;
-    let paneEl: Element | null = null;
-
-    for (const c of allCanvases) {
-      const r = c.getBoundingClientRect();
-      if (
-        Math.abs(r.width - r.height) < 10 &&
-        r.width > 200 &&
-        r.width < 1200
-      ) {
-        // Square canvas = likely the 2D AnimatorCanvas
-        canvas2D = c;
-        paneEl = c.closest(".animation-pane") || c.closest(".media-pane");
-        break;
-      }
-    }
-
-    if (!canvas2D || !paneEl) return fallback;
-
-    const canvasRect = canvas2D.getBoundingClientRect();
-    const paneRect = paneEl.getBoundingClientRect();
-
-    // 2D grid: hand point radius = 28.6% of canvas width (143/500)
-    const gridRadiusPx = canvasRect.width * 0.286;
-    const gridDiameterPx = gridRadiusPx * 2;
-
-    // Grid center position relative to pane
-    const gridCenterX = canvasRect.left + canvasRect.width / 2 - paneRect.left;
-    const gridCenterY = canvasRect.top + canvasRect.height / 2 - paneRect.top;
-
-    // Grid center as percentage of pane
-    const centerYPct = gridCenterY / paneRect.height;
-
-    // Grid diameter as percentage of pane width
-    const diamPct = gridDiameterPx / paneRect.width;
-
-    // Camera distance: grid diameter (1.04m) should subtend diamPct of viewport width
-    // Visible width at distance d = 2 * d * tan(hFov/2)
-    // hFov = 2 * atan(tan(vFov/2) * aspect)
-    const aspect = paneRect.width / paneRect.height;
-    const vFovRad = ((fov / 2) * Math.PI) / 180;
-    const hFovHalf = Math.atan(Math.tan(vFovRad) * aspect);
-    const visibleWidthAtD1 = 2 * Math.tan(hFovHalf); // visible width per meter of distance
-    const dist = (GRID_RADIUS_3D * 2) / (diamPct * visibleWidthAtD1);
-
-    // Y offset: camera needs to be above grid center so grid projects below viewport center
-    // Grid center at centerYPct of viewport, viewport center at 0.5
-    const yOffsetPct = 0.5 - centerYPct; // negative if grid is below center
-    const visibleHeightAtDist = 2 * dist * Math.tan(vFovRad);
-    const cameraYOffset = yOffsetPct * visibleHeightAtDist;
-
-    const cameraY = GRID_CENTER_Y + cameraYOffset;
-    const cameraZ = getViewerFrontStageCameraZ(
-      GRID_CENTER_Z,
-      dist,
-      viewer3DState.environmentId
-    );
-
-    return {
-      position: { x: 0, y: cameraY, z: cameraZ },
-      target,
-    };
-  }
-
-  const computed = computeAlignedPosition();
+  const computed = computeViewerAlignedCamera({
+    environmentId: viewer3DState.environmentId,
+    fov,
+  });
   const defaultPosition = computed.position;
   const defaultTarget = computed.target;
 
@@ -171,41 +80,9 @@
   // "camera spins in place around itself"). In those cases, throw the
   // persisted snapshot away and fall back to sensible defaults.
   const persisted = viewer3DState.persistedCamera;
-  const persistedPos = persisted?.position;
-  const persistedTarget = persisted?.target;
-
-  function isFinitePoint(
-    p: { x: number; y: number; z: number } | undefined | null
-  ): boolean {
-    return (
-      !!p &&
-      Number.isFinite(p.x) &&
-      Number.isFinite(p.y) &&
-      Number.isFinite(p.z)
-    );
-  }
-
-  function distSq(
-    a: { x: number; y: number; z: number },
-    b: { x: number; y: number; z: number }
-  ): number {
-    const dx = a.x - b.x;
-    const dy = a.y - b.y;
-    const dz = a.z - b.z;
-    return dx * dx + dy * dy + dz * dz;
-  }
-
-  // OrbitControls enforces minDistance=1, so after any legitimate
-  // interaction the camera and target must be at least 1m apart. Anything
-  // tighter than that is corruption and would produce the "rotating in
-  // place from my own head" symptom.
-  const MIN_ORBIT_RADIUS_SQ = 1.0;
-
-  const persistedLooksOk =
-    isFinitePoint(persistedPos) &&
-    isFinitePoint(persistedTarget) &&
-    distSq(persistedPos!, persistedTarget!) >= MIN_ORBIT_RADIUS_SQ &&
-    persistedTarget!.y >= -0.5;
+  const persistedLooksOk = isValidViewerCameraSnapshot(persisted);
+  const persistedPos = persistedLooksOk ? persisted.position : null;
+  const persistedTarget = persistedLooksOk ? persisted.target : null;
 
   // When persisted state is broken, clear it. Without this, handleEnd()
   // would re-save the same broken snapshot on the next orbit-end and we'd
@@ -218,8 +95,8 @@
     }
   }
 
-  const initialPosition = persistedLooksOk ? persistedPos! : defaultPosition;
-  const initialTarget = persistedLooksOk ? persistedTarget! : defaultTarget;
+  const initialPosition = persistedPos ?? defaultPosition;
+  const initialTarget = persistedTarget ?? defaultTarget;
 
   // Live reference to the three.js camera. Populated via bind:ref on
   // <T.PerspectiveCamera> below. camera-controls needs the real camera
@@ -593,10 +470,7 @@
       const live = viewer3DState.persistedCamera;
       const pos = live?.position ?? initialPosition;
       const tgt = live?.target ?? initialTarget;
-      const pOk =
-        isFinitePoint(pos) &&
-        isFinitePoint(tgt) &&
-        distSq(pos, tgt) >= MIN_ORBIT_RADIUS_SQ;
+      const pOk = isValidViewerCameraPose(pos, tgt, fov);
       const usePos = pOk ? pos : defaultPosition;
       const useTgt = pOk ? tgt : defaultTarget;
       c.setLookAt(

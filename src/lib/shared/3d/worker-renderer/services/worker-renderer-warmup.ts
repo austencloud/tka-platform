@@ -15,10 +15,17 @@ export interface WorkerRendererWarmupOptions {
 }
 
 /**
- * Prepares one program at a time and gives the visible renderer a frame between
- * programs. A second WebGL context can otherwise submit the whole replacement
- * scene as one driver burst and visibly pause the scene the user is still
- * watching, even though both renderers live in workers.
+ * Enough work to amortize three.js's whole-scene render traversal without
+ * turning first-use uploads back into one monolithic draw. The worker yields
+ * after every batch, so cancellation and the browser compositor still get a
+ * scheduling opportunity while the outgoing poster remains visible.
+ */
+export const WORKER_PRIME_BATCH_SIZE = 8;
+
+/**
+ * Dispatches each distinct program in a separate turn, then awaits the driver
+ * completions together. The turns keep worker messages flowing while the
+ * grouped wait lets KHR_parallel_shader_compile overlap the actual link work.
  */
 export async function warmWorkerRenderer(
   handles: WorkerRendererWarmupHandles,
@@ -27,7 +34,11 @@ export async function warmWorkerRenderer(
   const { renderer, scene, camera } = handles;
   const targets = collectUniqueCompileTargets(scene);
   if (targets.length === 0) targets.push(scene);
-  const metrics: WorkerRendererProgramMetric[] = [];
+  const metrics: Array<WorkerRendererProgramMetric | undefined> = new Array(
+    targets.length
+  );
+  let settled = 0;
+  const pending: Promise<void>[] = [];
 
   for (let index = 0; index < targets.length; index += 1) {
     if (options.shouldStop?.()) break;
@@ -44,25 +55,39 @@ export async function warmWorkerRenderer(
     const wasVisible = target.visible;
     target.visible = true;
     try {
-      await renderer.compileAsync(target, camera, scene as Scene);
+      const compilation = renderer.compileAsync(target, camera, scene as Scene);
+      pending.push(
+        compilation.then(() => {
+          metrics[index] = {
+            label: target.name || materialLabel || target.type,
+            durationMs: performance.now() - startedAt,
+          };
+          settled += 1;
+          options.onProgress?.(settled / targets.length);
+        })
+      );
     } finally {
       target.visible = wasVisible;
     }
-    metrics.push({
-      label: target.name || materialLabel || target.type,
-      durationMs: performance.now() - startedAt,
-    });
-    options.onProgress?.((index + 1) / targets.length);
+    // Dispatch every program before awaiting any one of them so the parallel
+    // shader extension can actually overlap driver work. A turn between
+    // dispatches keeps cancellation and worker messages flowing without
+    // serializing completion again.
     if (index + 1 < targets.length) await options.yieldBetween?.();
   }
 
-  return metrics;
+  await Promise.all(pending);
+  return metrics.filter(
+    (metric): metric is WorkerRendererProgramMetric => metric !== undefined
+  );
 }
 
 /**
  * Forces first-use geometry and texture uploads in small, separately scheduled
- * draws. The canvas is still hidden, so users see the old complete scene while
- * the replacement pays these costs instead of one large first-frame burst.
+ * batches. Rendering each object separately repeated three.js's whole-scene
+ * traversal 70-90 times on production scenes and caused the browser's main
+ * compositor to stall throughout the prime phase. Small batches preserve the
+ * scheduling breaks without paying that traversal once per object.
  */
 export async function primeWorkerRenderer(
   handles: WorkerRendererWarmupHandles,
@@ -81,25 +106,35 @@ export async function primeWorkerRenderer(
   for (const object of renderables) object.visible = false;
 
   try {
-    for (let index = 0; index < renderables.length; index += 1) {
+    for (
+      let batchStart = 0;
+      batchStart < renderables.length;
+      batchStart += WORKER_PRIME_BATCH_SIZE
+    ) {
       if (options.shouldStop?.()) break;
-      const target = renderables[index]!;
-      const revealed: Object3D[] = [];
-      for (
-        let cursor: Object3D | null = target;
-        cursor;
-        cursor = cursor.parent
-      ) {
-        if (renderableSet.has(cursor)) {
-          cursor.visible = true;
-          revealed.push(cursor);
+      const batchEnd = Math.min(
+        batchStart + WORKER_PRIME_BATCH_SIZE,
+        renderables.length
+      );
+      const revealed = new Set<Object3D>();
+      for (let index = batchStart; index < batchEnd; index += 1) {
+        const target = renderables[index]!;
+        for (
+          let cursor: Object3D | null = target;
+          cursor;
+          cursor = cursor.parent
+        ) {
+          if (renderableSet.has(cursor)) {
+            cursor.visible = true;
+            revealed.add(cursor);
+          }
         }
       }
 
       renderer.render(scene, camera);
       for (const object of revealed) object.visible = false;
-      options.onProgress?.((index + 1) / renderables.length);
-      if (index + 1 < renderables.length) await options.yieldBetween?.();
+      options.onProgress?.(batchEnd / renderables.length);
+      if (batchEnd < renderables.length) await options.yieldBetween?.();
     }
   } finally {
     for (const object of renderables) object.visible = true;

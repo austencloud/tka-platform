@@ -6,7 +6,6 @@ import {
   KINETIC_SHAPE_ENGINE_AUTHOR,
   KINETIC_SHAPE_ENGINE_NAME,
   ORIGINAL_SHAPE_MATRIX_NAME,
-  ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS,
   ORIGINAL_SHAPE_MATRIX_URL,
   ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
   SHAPE_ENGINE_SHORT_NAME,
@@ -35,19 +34,24 @@ describe("Kinetic Shape Engine identity", () => {
     expect(page).toContain("KINETIC_SHAPE_ENGINE_NAME");
     expect(page).toContain("SHAPE_MATRIX_EXPLORER_LEGACY_NAME");
     expect(shell).toContain("{KINETIC_SHAPE_ENGINE_NAME}");
-    expect(shell).toContain('theory ? "Theory Matrix" : "Shape Matrix"');
-    expect(surface).toContain('ariaLabel="Shape Engine surface"');
+    expect(shell).toContain('theory ? "Ratio Playground" : "Level Matrix"');
+    expect(surface).toContain('ariaLabel="Choose a Shape Engine mode"');
+    expect(surface).toContain('"Level Matrix"');
+    expect(surface).toContain('"Explore Levels 1–4"');
+    expect(surface).toContain('"Ratio Playground"');
   });
 
   it("keeps Lorq Nichols' source visible and the independent-work boundary explicit", () => {
     expect(ORIGINAL_SHAPE_MATRIX_NAME).toBe("144 Shape Matrix");
     expect(ORIGINAL_SHAPE_MATRIX_URL).toContain("spinscience.xyz");
     expect(ORIGINAL_SHAPE_MATRIX_VTG_RATIOS).toBe("1:1, 1:3, and 1:5");
-    expect(ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS).toBe("1:1, 3:1, and 5:1");
 
     const page = read("src/routes/(public)/notation/shape-matrix/+page.svelte");
     const shell = read(
       "src/lib/shared/shape-matrix/app/components/ShapeMatrixAppShell.svelte"
+    );
+    const surface = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixSurfaceControl.svelte"
     );
     const about = read(
       "src/lib/shared/shape-matrix/app/components/ShapeMatrixAboutModal.svelte"
@@ -59,12 +63,13 @@ describe("Kinetic Shape Engine identity", () => {
     expect(page).toContain('"isBasedOn"');
     expect(page).toContain('"name": "Lorq Nichols"');
     expect(page).toContain("ORIGINAL_SHAPE_MATRIX_VTG_RATIOS");
-    expect(shell).toContain("ORIGINAL_SHAPE_MATRIX_VTG_RATIOS");
     expect(shell).toContain("<span>Lorq Nichols’ original</span>");
+    expect(surface).toContain("Build your own 4×4");
+    expect(shell).not.toContain("prop:hand ratios");
     expect(about).toContain("<h2>Lorq Nichols’ 144 Shape Matrix</h2>");
     expect(about).toContain("Each supplied four even-petaled");
     expect(about).toContain("giving twelve choices per hand");
-    expect(about).toContain("ORIGINAL_SHAPE_MATRIX_PROP_HAND_RATIOS");
+    expect(about).not.toContain("prop rotations : hand cycles");
     expect(about).toContain("<h2>What Austen Cloud built</h2>");
     expect(about).toContain("KINETIC_SHAPE_ENGINE_AUTHOR");
     expect(about).toMatch(/not an official\s+Spin Science release/);

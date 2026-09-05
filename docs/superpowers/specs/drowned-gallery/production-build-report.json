@@ -1,0 +1,51 @@
+{
+  "sourceDigest": "9fffa81a21bfb51f0f6ca243a4cf9745f3402f65f5b5a6d2c3378a576b35fcc4",
+  "blenderVersion": "5.0.1",
+  "computeDevice": "OPTIX",
+  "fast": false,
+  "shellTriangles": 75894,
+  "floorTriangles": 2484,
+  "lightmaps": {
+    "shell": {
+      "px": 4096,
+      "samples": 256
+    },
+    "floors": {
+      "px": 2048,
+      "samples": 256
+    }
+  },
+  "textureSets": {
+    "rock": "rock_wall_02",
+    "cavefloor": "dry_riverbed_rock",
+    "slab": "monastery_stone_floor"
+  },
+  "uvMetresPerUnit": {
+    "shell": 70.62284947342968,
+    "floors": 45.99038382027869
+  },
+  "exportObjects": [
+    "DG_Shell_Rock",
+    "DG_Floors",
+    "DG_Rails",
+    "DG_Threshold_Jamb_0",
+    "DG_Threshold_Jamb_1",
+    "DG_Threshold_Lintel",
+    "DG_Apse_Lamp_A",
+    "DG_Apse_Lamp_B",
+    "DG_Apse_Lamp_C",
+    "glowworms x106"
+  ],
+  "rawGlbBytes": 31614748,
+  "finalGlbBytes": 3913268,
+  "finalGlbPath": "static/models/museum/cave/drowned-gallery.glb",
+  "renders": {
+    "approach": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-approach.png",
+    "descent": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-descent.png",
+    "bloom": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-bloom.png",
+    "reveal": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-reveal.png",
+    "procession": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-procession.png",
+    "threshold": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-threshold.png",
+    "overview": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-overview.png"
+  }
+}

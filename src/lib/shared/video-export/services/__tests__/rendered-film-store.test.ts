@@ -1,4 +1,5 @@
 import "fake-indexeddb/auto";
+import { Blob as NodeBlob } from "node:buffer";
 import { describe, it, expect } from "vitest";
 import {
   selectRenderedFilmsToPrune,
@@ -47,7 +48,13 @@ function record(
   return {
     ...summary(id, createdAt, byteSize),
     filmEntryId,
-    blob: new Blob([new Uint8Array(byteSize)], { type: "video/webm" }),
+    // jsdom's Blob polyfill is invisible to Node's structuredClone (which
+    // fake-indexeddb uses to emulate IndexedDB's storage semantics), so a
+    // round trip through the fake store silently drops it to `{}`. Node's own
+    // Blob survives the clone; see print-pdf-cache.test.ts for the same fix.
+    blob: new NodeBlob([new Uint8Array(byteSize)], {
+      type: "video/webm",
+    }) as unknown as Blob,
   };
 }
 

@@ -4,8 +4,15 @@ import { resolve } from "node:path";
 
 import sharp from "sharp";
 
+const midflank = process.argv.includes("--midflank-r5");
+const runtime = process.argv.includes("--midflank-runtime-r5");
 const evidenceDir = resolve(
-  "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1"
+  "docs/superpowers/specs/ember-spatial-directions/evidence",
+  runtime
+    ? "gate-4-midflank-r5"
+    : midflank
+      ? "gate-3-midflank-r5"
+      : "gate-4-atmosphere-r1"
 );
 
 const palette = {
@@ -103,72 +110,183 @@ async function buildBoard({
     .toFile(resolve(evidenceDir, output));
 }
 
-await buildBoard({
-  title: "EMBER GATE 4 · ATMOSPHERE AUDITION",
-  subtitle:
-    "Same R7 geometry and hero camera · Blackglass selected for contrast, identity, and performer readability",
-  columns: 3,
-  panelWidth: 640,
-  panelHeight: 360,
-  output: "ember-atmosphere-look-board.png",
-  items: [
-    {
-      file: "look-blackglass-inferno-hero-1920x1080.png",
-      label: "01 · BLACKGLASS INFERNO · SELECTED",
-    },
-    {
-      file: "look-furnace-storm-hero-1920x1080.png",
-      label: "02 · FURNACE STORM",
-    },
-    {
-      file: "look-sulfur-caldera-hero-1920x1080.png",
-      label: "03 · SULFUR CALDERA",
-    },
-  ],
-});
+if (runtime) {
+  await buildBoard({
+    title: "EMBER / LIVE R5 ORBIT",
+    subtitle:
+      "Production worker renderer / eight bearings / unretouched runtime captures",
+    columns: 4,
+    panelWidth: 480,
+    panelHeight: 300,
+    fit: "contain",
+    output: "ember-r5-runtime-orbit-board.png",
+    items: Array.from({ length: 8 }, (_, index) => {
+      const angle = String(index * 45).padStart(3, "0");
+      return {
+        file: `runtime-orbit-${angle}.png`,
+        label: `ORBIT ${angle} DEGREES`,
+      };
+    }),
+  });
+  await buildBoard({
+    title: "EMBER / RUNTIME VIEWPORTS",
+    subtitle:
+      "Seven CSS sizes / emulated screens scaled to fit / black margins belong to capture surface",
+    columns: 4,
+    panelWidth: 480,
+    panelHeight: 360,
+    fit: "contain",
+    output: "ember-r5-runtime-viewport-board.png",
+    items: [
+      [375, 667],
+      [960, 412],
+      [820, 1180],
+      [1440, 900],
+      [1920, 1080],
+      [2560, 1440],
+      [3840, 2160],
+    ].map(([width, height]) => ({
+      file: `viewport-${width}x${height}.png`,
+      label: `${width} x ${height}`,
+    })),
+  });
+  process.exit(0);
+}
 
-const orbitNames = [
-  "front",
-  "front-right",
-  "right",
-  "rear-right",
-  "rear",
-  "rear-left",
-  "left",
-  "front-left",
-];
-await buildBoard({
-  title: "EMBER BLACKGLASS · COMPLETE ORBIT",
-  subtitle:
-    "One selected lighting/material rig · stage readability, continuous terrain, and volcanic identity checked through 360°",
-  columns: 4,
-  panelWidth: 480,
-  panelHeight: 270,
-  output: "ember-blackglass-orbit-board.png",
-  items: orbitNames.map((name, index) => ({
-    file: `orbit-${name}-1920x1080.png`,
-    label: `${String(index + 1).padStart(2, "0")} · ${name.toUpperCase().replace("-", " ")}`,
-  })),
-});
+if (midflank) {
+  await buildBoard({
+    title: "EMBER / MID-FLANK FIRE PILGRIMAGE",
+    subtitle:
+      "Gate 3 / material and lighting review / pale marker: performer / brown: audience",
+    columns: 2,
+    panelWidth: 800,
+    panelHeight: 450,
+    fit: "contain",
+    output: "ember-r5-material-target-board.png",
+    items: [
+      {
+        file: "paintover-default-audience.png",
+        label: "01 / SURFACE FINISH TARGET / AI PAINTOVER",
+      },
+      {
+        file: "target-default-audience.png",
+        label: "02 / SAME CAMERA / EXACT BLENDER STUDY",
+      },
+      {
+        file: "target-midflank-oblique.png",
+        label: "03 / LOCKED WIDE VIEW / BLENDER",
+      },
+      {
+        file: "target-orbit-180.png",
+        label: "04 / LOCKED DOWNHILL VIEW / BLENDER",
+      },
+    ],
+  });
+  await buildBoard({
+    title: "EMBER / REGISTERED R5 ORBIT",
+    subtitle:
+      "Eight approved cameras / unchanged terrain and figure positions / material-only Blender study",
+    columns: 4,
+    panelWidth: 480,
+    panelHeight: 270,
+    fit: "contain",
+    output: "ember-r5-orbit-board.png",
+    items: Array.from({ length: 8 }, (_, index) => {
+      const angle = String(index * 45).padStart(3, "0");
+      return {
+        file: `target-orbit-${angle}.png`,
+        label: `ORBIT ${angle} DEGREES`,
+      };
+    }),
+  });
+  await buildBoard({
+    title: "COOLED BENCH / PERIPHERAL HEAT STUDY",
+    subtitle:
+      "Same camera and fractures / right: authored ember invention at a static peak / no pulse timing claim",
+    columns: 2,
+    panelWidth: 800,
+    panelHeight: 450,
+    fit: "contain",
+    output: "ember-r5-ember-comparison.png",
+    items: [
+      {
+        file: "target-default-audience.png",
+        label: "01 / COLD BENCH / RECOMMENDED",
+      },
+      {
+        file: "alternative-peripheral-ember-peak.png",
+        label: "02 / OPTIONAL PERIPHERAL EMBER PEAK",
+      },
+    ],
+  });
+} else {
+  await buildBoard({
+    title: "EMBER GATE 4 · ATMOSPHERE AUDITION",
+    subtitle:
+      "Same R7 geometry and hero camera · Blackglass selected for contrast, identity, and performer readability",
+    columns: 3,
+    panelWidth: 640,
+    panelHeight: 360,
+    output: "ember-atmosphere-look-board.png",
+    items: [
+      {
+        file: "look-blackglass-inferno-hero-1920x1080.png",
+        label: "01 · BLACKGLASS INFERNO · SELECTED",
+      },
+      {
+        file: "look-furnace-storm-hero-1920x1080.png",
+        label: "02 · FURNACE STORM",
+      },
+      {
+        file: "look-sulfur-caldera-hero-1920x1080.png",
+        label: "03 · SULFUR CALDERA",
+      },
+    ],
+  });
 
-await buildBoard({
-  title: "EMBER BLACKGLASS · VIEWPORT PROOF",
-  subtitle:
-    "Production viewer from 4K TV through iPhone SE · no alternate composition or reduced scene",
-  columns: 4,
-  panelWidth: 400,
-  panelHeight: 250,
-  fit: "contain",
-  output: "ember-blackglass-viewport-board.png",
-  items: [
-    ["viewport-4k-200-1920x1080.png", "4K @ 200% · 1920×1080"],
-    ["viewport-4k-150-2560x1440.png", "4K @ 150% · 2560×1440"],
-    ["viewport-4k-100-3840x2160.png", "4K @ 100% · 3840×2160"],
-    ["viewport-laptop-1440x900.png", "LAPTOP · 1440×900"],
-    ["viewport-tablet-820x1180.png", "TABLET · 820×1180"],
-    ["viewport-fold-landscape-960x412.png", "FOLD · 960×412"],
-    ["viewport-iphone-se-375x667.png", "IPHONE SE · 375×667"],
-  ].map(([file, label]) => ({ file, label })),
-});
+  const orbitNames = [
+    "front",
+    "front-right",
+    "right",
+    "rear-right",
+    "rear",
+    "rear-left",
+    "left",
+    "front-left",
+  ];
+  await buildBoard({
+    title: "EMBER BLACKGLASS · COMPLETE ORBIT",
+    subtitle:
+      "One selected lighting/material rig · stage readability, continuous terrain, and volcanic identity checked through 360°",
+    columns: 4,
+    panelWidth: 480,
+    panelHeight: 270,
+    output: "ember-blackglass-orbit-board.png",
+    items: orbitNames.map((name, index) => ({
+      file: `orbit-${name}-1920x1080.png`,
+      label: `${String(index + 1).padStart(2, "0")} · ${name.toUpperCase().replace("-", " ")}`,
+    })),
+  });
 
-console.log(`Ember atmosphere contact sheets: ${evidenceDir}`);
+  await buildBoard({
+    title: "EMBER BLACKGLASS · VIEWPORT PROOF",
+    subtitle:
+      "Production viewer from 4K TV through iPhone SE · no alternate composition or reduced scene",
+    columns: 4,
+    panelWidth: 400,
+    panelHeight: 250,
+    fit: "contain",
+    output: "ember-blackglass-viewport-board.png",
+    items: [
+      ["viewport-4k-200-1920x1080.png", "4K @ 200% · 1920×1080"],
+      ["viewport-4k-150-2560x1440.png", "4K @ 150% · 2560×1440"],
+      ["viewport-4k-100-3840x2160.png", "4K @ 100% · 3840×2160"],
+      ["viewport-laptop-1440x900.png", "LAPTOP · 1440×900"],
+      ["viewport-tablet-820x1180.png", "TABLET · 820×1180"],
+      ["viewport-fold-landscape-960x412.png", "FOLD · 960×412"],
+      ["viewport-iphone-se-375x667.png", "IPHONE SE · 375×667"],
+    ].map(([file, label]) => ({ file, label })),
+  });
+}
+
+console.log(`Ember contact sheets: ${evidenceDir}`);

@@ -1,14 +1,7 @@
 <script lang="ts">
   import { T, useThrelte, useTask } from "@threlte/core";
   import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
-  import {
-    FogExp2,
-    Color,
-    Mesh,
-    MeshStandardMaterial,
-    type Scene,
-    type WebGLRenderer,
-  } from "three";
+  import { type Scene, type WebGLRenderer } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
   import {
     detectOceanQuality,
@@ -18,29 +11,14 @@
   import { oceanDebugToggles } from "./quality/ocean-debug-toggles.svelte";
   import {
     causticUniforms,
-    patchCausticsMaterial,
   } from "./runtime/atmosphere/seabed-caustics";
+  import { enhanceOceanSeabed } from "../../worlds/ocean/ocean-authored-flora";
+  import { applyOceanSceneAppearance } from "../../worlds/ocean/ocean-scene-appearance";
   import FloraInstances from "./authored/FloraInstances.svelte";
   import OceanRuntimeSystems from "./runtime/OceanRuntimeSystems.svelte";
   import OceanDepthGradient from "./runtime/OceanDepthGradient.svelte";
   import { getSceneFeatureContext } from "../../../scene-features/context/scene-feature-context";
-  import { getRoomEnvironmentTexture } from "../../../rendering/room-environment";
   import { tryGetAdaptiveQualityContext } from "../../../context/adaptive-quality-context";
-
-  // RoomEnvironment is intentionally only a soft specular fill. Direct light,
-  // caustics, and shadows should define the reef's form; a full-strength white
-  // room reflection flattens the underwater grade.
-  // Trimmed 0.08 → 0.05 with the Gate 2 key light: an omnidirectional specular
-  // wash is exactly the thing that stops a keyed scene from having a dark side.
-  const OCEAN_ENVIRONMENT_INTENSITY = 0.05;
-
-  // Moody Twilight Reef depth grade. The seabed GLB is 70 m across while the
-  // authored reef occupies a ~20 m radius, so at the old 0.012 the far edge of
-  // the floor was only ~50% fogged and the bare sand beyond the reef stayed
-  // fully legible — the "objects on a floor" read. At 0.026 the reef sits at
-  // ~24% haze, the sand past it goes to ~80%, and the floor edge is gone.
-  // Comparison: Winter 0.018, Autumn 0.022, Forest 0.034.
-  const OCEAN_FOG_DENSITY = 0.026;
 
   interface Props {
     performerCount?: number;
@@ -62,6 +40,7 @@
     active = true,
   }: Props = $props();
 
+
   const { scene, renderer } = useThrelte() as unknown as {
     scene: Scene;
     renderer: WebGLRenderer;
@@ -80,7 +59,9 @@
   const quality = $derived(getOceanQualityConfig(qualityTier));
   const floraRequired = $derived(quality.enableAuthoredFlora);
 
+
   const sceneFeatures = getSceneFeatureContext();
+
 
   const environmentGlb = useGltf("/models/ocean/ocean-environment.glb", {
     meshoptDecoder: useMeshopt(),
@@ -131,50 +112,17 @@
     }
   });
 
-  $effect(() => {
-    if (!active) return;
-    const s = scene;
-    // Deep blue-teal so distance dissolves into water, not a dead-black void
-    // (was #0d0d10). Pairs with the absorption depth-grade in ScenePostProcessing.
-    const fogColor = new Color("#0a2438");
-    // Keep the backdrop colour always; the dev `fog` toggle only removes the
-    // distance haze veil so a reviewer can see how much of the washout it owns.
-    const fog = oceanDebugToggles.fog
-      ? new FogExp2(fogColor.getHex(), OCEAN_FOG_DENSITY)
-      : null;
-    s.background = fogColor;
-    s.fog = fog;
-    return () => {
-      if (s) {
-        if (s.fog === fog) s.fog = null;
-        if (s.background === fogColor) s.background = null;
-      }
-    };
-  });
 
-  // Keep one scene-level intensity so the seabed and authored reef receive the
-  // same low-energy wet/specular fill. Per-material values stay neutral (1.0).
   $effect(() => {
     if (!active) return;
-    const r = renderer;
-    const s = scene;
-    const previousIntensity = s.environmentIntensity;
-    // Dev `ibl` toggle — drop the env entirely to A/B how much the reflective
-    // wash owns the washed-out read.
-    if (!quality.enableImageBasedLighting || !oceanDebugToggles.ibl) {
-      s.environment = null;
-      s.environmentIntensity = previousIntensity;
-      return () => {
-        s.environmentIntensity = previousIntensity;
-      };
-    }
-    const envTex = getRoomEnvironmentTexture(r);
-    s.environment = envTex;
-    s.environmentIntensity = OCEAN_ENVIRONMENT_INTENSITY;
-    return () => {
-      if (s.environment === envTex) s.environment = null;
-      s.environmentIntensity = previousIntensity;
-    };
+    const appearance = applyOceanSceneAppearance({
+      scene,
+      renderer,
+      enableFog: oceanDebugToggles.fog,
+      enableImageBasedLighting:
+        quality.enableImageBasedLighting && oceanDebugToggles.ibl,
+    });
+    return appearance.dispose;
   });
 
   // The floor receives the hero structures' shadows but does not spend a draw
@@ -183,18 +131,8 @@
   $effect(() => {
     const g = $environmentGlb;
     if (!g) return;
-    g.scene.traverse((o) => {
-      const m = o as Mesh;
-      if (!m.isMesh) return;
-      m.castShadow = false;
-      m.receiveShadow = true;
-      const mats = Array.isArray(m.material) ? m.material : [m.material];
-      for (const mat of mats) {
-        if (mat instanceof MeshStandardMaterial) {
-          mat.envMapIntensity = 1;
-          if (quality.enableCaustics) patchCausticsMaterial(mat);
-        }
-      }
+    enhanceOceanSeabed(g.scene, {
+      enableCaustics: quality.enableCaustics,
     });
   });
 

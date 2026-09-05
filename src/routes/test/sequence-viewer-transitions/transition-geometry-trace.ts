@@ -132,12 +132,16 @@ export interface TransitionGeometrySample {
   tunnelLayerOpacityMaximum: number;
   tunnelLayerOpacityMean: number;
   tunnelPerceptibleLayerCount: number;
-  tunnelLayerSeparation: number;
+  tunnelMovingLayerCount: number;
+  tunnelTrailSuppressedLayerCount: number;
+  /** Maximum difference between a rendered copy and its prepared Tunnel pose. */
+  tunnelFormationPoseDrift: number;
   tunnelGridOpacity: number;
   tunnelPaintFrame: number;
   tunnelPaintedPropCount: number;
   tunnelPaintedPerceptiblePropCount: number;
   tunnelPaintedOpacityMean: number;
+  tunnelFormationTrailCaptures: number;
   tunnelPresented: boolean;
   tunnelCanvasReady: boolean;
   animatorIdentity: number;
@@ -262,10 +266,11 @@ export interface TransitionGeometrySummary {
   tunnelAllLayersPerceptibleProgress: number | null;
   tunnelLayerMeanOpacityAtHalf: number | null;
   tunnelPaintedArrival: TunnelPaintedArrival | null;
+  tunnelFormationTrailCaptures: number;
+  tunnelUnguardedFormationFrames: number;
   tunnelPreparedLayerCountMaximum: number;
-  tunnelLayerSeparationMaximum: number;
-  tunnelLayerSeparationStepMaximum: number;
-  tunnelSpatialPeelFrames: number;
+  tunnelFormationPoseDriftMaximum: number;
+  tunnelFormationPoseDriftFrames: number;
   tunnelCrossfadeFrames: number;
   tunnelDoubleFadeFrames: number;
   tunnelBlankFrames: number;
@@ -834,6 +839,21 @@ function lateTunnelLayerArrivals(samples: TransitionGeometrySample[]): number {
     }
   }
   return arrivals;
+}
+
+/**
+ * Count frames where a Tunnel copy is travelling to its formation while its
+ * trail recorder is still live. Formation travel is visible composition, not
+ * performed motion; one such frame is enough to leave a stray connector behind.
+ */
+function unguardedTunnelFormationFrames(
+  samples: TransitionGeometrySample[]
+): number {
+  return samples.filter(
+    (sample) =>
+      sample.tunnelMovingLayerCount > 0 &&
+      sample.tunnelTrailSuppressedLayerCount < sample.tunnelMovingLayerCount
+  ).length;
 }
 
 function firstTunnelReveal(
@@ -1735,32 +1755,35 @@ export function summarizeTransitionGeometry(
     tunnelPaintedArrival: isTunnelTrace
       ? tunnelPaintedArrival(trace.tunnelPaintSamples ?? [])
       : null,
+    tunnelFormationTrailCaptures: isTunnelTrace
+      ? Math.max(
+          0,
+          ...trace.samples.map((sample) => sample.tunnelFormationTrailCaptures)
+        )
+      : 0,
+    tunnelUnguardedFormationFrames: isTunnelTrace
+      ? unguardedTunnelFormationFrames(trace.samples)
+      : 0,
     tunnelPreparedLayerCountMaximum: isTunnelTrace
       ? Math.max(
           0,
           ...trace.samples.map((sample) => sample.tunnelPreparedLayerCount)
         )
       : 0,
-    tunnelLayerSeparationMaximum: isTunnelTrace
+    tunnelFormationPoseDriftMaximum: isTunnelTrace
       ? Math.round(
           Math.max(
             0,
-            ...trace.samples.map((sample) => sample.tunnelLayerSeparation)
+            ...trace.samples.map((sample) => sample.tunnelFormationPoseDrift)
           ) * 1000
         ) / 1000
       : 0,
-    tunnelLayerSeparationStepMaximum: isTunnelTrace
-      ? maximumSampleStep(
-          trace.samples,
-          (sample) => sample.tunnelLayerSeparation
-        )
-      : 0,
-    tunnelSpatialPeelFrames: isTunnelTrace
+    tunnelFormationPoseDriftFrames: isTunnelTrace
       ? trace.samples.filter(
           (sample) =>
             sample.tunnelOpacity >= 0.05 &&
             sample.tunnelOpacity <= 0.95 &&
-            sample.tunnelLayerSeparation > 0.02
+            sample.tunnelFormationPoseDrift > 0.001
         ).length
       : 0,
     tunnelCrossfadeFrames: isTunnelTrace

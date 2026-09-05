@@ -5,6 +5,7 @@
 <script lang="ts">
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import {
     getScene3DRenderContext,
     setScene3DRenderContext,
@@ -67,6 +68,7 @@
     onStepClick,
     onQrPlayClick,
     onCanvasReady,
+    rendererHandleRequired = false,
     onChoreoCardContextMenu,
     cardAutoLayoutOverride,
     cardContainSizeMotion = null,
@@ -126,6 +128,10 @@
   const tunnelController = new TunnelViewController({
     getSequence: () => playback.animationState.sequenceData ?? sequence,
     getComposition: () => tunnelComposition,
+    // The base pair and Tunnel copies occupy one persistent Animator canvas.
+    // Give both settings panels the same visibility owner so a Grid change is
+    // a canvas preference, not a mode-local value copied during a switch.
+    visibilityManager: getAnimationVisibilityManager(),
     // 2D and Tunnel share this canvas. Keep its formation prepared while 2D is
     // showing so a quick return can reverse the live reveal with no rebuild.
     prepareWhileInactive: true,
@@ -504,6 +510,7 @@
       {onSaveToLibrary}
       {onUnfocusPane}
       {onCanvasReady}
+      {rendererHandleRequired}
       {onPlaybackToggle}
       {onSystemPlaybackChange}
       {onProgressBarSeek}
@@ -589,6 +596,7 @@
         {onSaveToLibrary}
         {onUnfocusPane}
         {onCanvasReady}
+        {rendererHandleRequired}
         {onPlaybackToggle}
         {onSystemPlaybackChange}
         {onProgressBarSeek}

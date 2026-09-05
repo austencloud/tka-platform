@@ -25,11 +25,11 @@ Work on a feedback item from the queue.
 
 ### Step 1: Fetch (ONE shell call)
 
-| Input | Command |
-|-------|---------|
-| No argument | `node scripts/fetch-feedback.js` |
+| Input       | Command                                           |
+| ----------- | ------------------------------------------------- |
+| No argument | `node scripts/fetch-feedback.js`                  |
 | ID provided | `node scripts/fetch-feedback.js claim <arguments>` |
-| "list" | `node scripts/fetch-feedback.js list` |
+| "list"      | `node scripts/fetch-feedback.js list`             |
 
 Auth is cached. Do not run `whoami`, `mine`, or any other pre-check. Go straight to the command above.
 
@@ -41,7 +41,8 @@ Show: title, ID, type, priority, submitter, module/tab, full description.
 
 If images attached, read each from disk AND open for user: `powershell -Command "Invoke-Item '<path>'"`
 
-Assess complexity:
+Assess complexity without hard-coding a model name:
+
 - **TRIVIAL** (low effort): String swaps, single-line fixes, known solution
 - **MEDIUM** (medium effort): CSS fixes, single-file changes, clear bugs with repro
 - **COMPLEX** (high effort): Multi-module, ambiguous requirements, 4+ files, new infra
@@ -63,11 +64,13 @@ another live session owns the item, stop and report the conflict.
 ### Step 3: Implement
 
 Work the item. Use heartbeats for long sessions:
+
 ```powershell
 node scripts/fetch-feedback.js heartbeat <id> "status"
 ```
 
 When done:
+
 ```powershell
 node scripts/fetch-feedback.js <id> in-review "Brief admin notes"
 ```

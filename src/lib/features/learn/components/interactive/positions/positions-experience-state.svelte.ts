@@ -5,7 +5,110 @@
  * Follows the same reactive getter + double-rAF transition pattern as Grid experience state.
  */
 
-import { getExperiencePersistence } from '../../../state/experience-persistence.svelte';
+import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
+import {
+  POSITION_CHALLENGES,
+  positionKindFor,
+  restorePositionWorkshop,
+  type PositionWorkshopCheckpoint,
+} from "./hand-position-lesson";
+import type { PositionType } from "../../../domain/constants/position-quiz-data";
+import type { PropPlacementChange } from "$lib/shared/pictograph/grid/domain/prop-placement";
+
+/** The live lesson's self-paced construction flow. Legacy quiz consumers below
+ * keep their old contract; they are not mounted by the current experience. */
+export function createPositionWorkshopState(
+  persistence: ReturnType<typeof getExperiencePersistence>,
+  review = false
+) {
+  const saved = restorePositionWorkshop(persistence.load().phaseData?.workshop);
+  let phase = $state<PositionWorkshopCheckpoint["phase"]>(
+    review ? "explore" : saved.phase
+  );
+  let round = $state(saved.round);
+  let explored = $state(saved.explored);
+  let feedback = $state<"idle" | "correct" | "incorrect">("idle");
+  const challenge = $derived(POSITION_CHALLENGES[round] ?? null);
+
+  function save() {
+    if (!review)
+      persistence.savePhaseData("workshop", {
+        version: 1,
+        phase,
+        round,
+        explored,
+      });
+  }
+  function discover(kind: PositionType) {
+    if (explored.includes(kind)) return;
+    explored = [...explored, kind];
+    save();
+  }
+  function explore() {
+    phase = "explore";
+    feedback = "idle";
+    save();
+  }
+  function practice() {
+    if (round === POSITION_CHALLENGES.length) round = 0;
+    phase = "practice";
+    feedback = "idle";
+    save();
+  }
+  function check(kind: PositionType | null) {
+    if (phase !== "practice" || !challenge || !kind) return;
+    feedback = kind === challenge.kind ? "correct" : "incorrect";
+  }
+  function edited() {
+    feedback = "idle";
+  }
+  function evaluatePlacement(change: PropPlacementChange) {
+    if (phase !== "practice") return;
+    feedback = "idle";
+    // Selecting a hand to move is not a submitted answer, even if its old
+    // location still forms the requested position.
+    if (!change.complete || change.activeHand !== null) return;
+    check(positionKindFor(change.leftLocation, change.rightLocation));
+  }
+  function next() {
+    if (phase !== "practice" || feedback !== "correct") return false;
+    round++;
+    feedback = "idle";
+    if (round === POSITION_CHALLENGES.length) phase = "complete";
+    save();
+    return true;
+  }
+  return {
+    get phase() {
+      return phase;
+    },
+    get round() {
+      return round;
+    },
+    get explored() {
+      return explored;
+    },
+    get feedback() {
+      return feedback;
+    },
+    get builtCount() {
+      return round + (feedback === "correct" ? 1 : 0);
+    },
+    get challenge() {
+      return challenge;
+    },
+    get canFinish() {
+      return round === POSITION_CHALLENGES.length;
+    },
+    discover,
+    explore,
+    practice,
+    check,
+    edited,
+    evaluatePlacement,
+    next,
+  };
+}
 
 export type PositionsPhase = 'discovery' | 'construction-quiz' | 'speed-rounds' | 'complete';
 

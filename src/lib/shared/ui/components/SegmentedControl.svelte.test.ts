@@ -296,14 +296,20 @@ describe("SegmentedControl", () => {
     await expect.element(alpha).toHaveAttribute("tabindex", "0");
 
     const alphaElement = alpha.element() as HTMLButtonElement;
+    const bubbledKeydown = vi.fn();
+    document.addEventListener("keydown", bubbledKeydown);
     alphaElement.focus();
-    alphaElement.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "End",
-        bubbles: true,
-      })
-    );
+    const keydown = new KeyboardEvent("keydown", {
+      key: "End",
+      bubbles: true,
+      cancelable: true,
+    });
+    alphaElement.dispatchEvent(keydown);
+    document.removeEventListener("keydown", bubbledKeydown);
+
     expect(onchange).toHaveBeenCalledWith("c");
+    expect(keydown.defaultPrevented).toBe(true);
+    expect(bubbledKeydown).not.toHaveBeenCalled();
   });
 
   it("has no AAA a11y violations", async () => {

@@ -5,7 +5,7 @@ import {
   resolveFilmSeed,
   seededPick,
   seededShuffle,
-} from "../../../src/routes/test/film-director/_lib/directive-random";
+} from "$lib/features/film-director/domain/directive-random";
 
 describe("resolveFilmSeed", () => {
   it("derives a stable base from the film id when none is given", () => {

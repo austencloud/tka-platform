@@ -7,20 +7,17 @@ const read = (path: string) => readFileSync(resolve(root, path), "utf8");
 
 describe("canonical layout motion", () => {
   it("routes structural changes through one documented owner map", () => {
-    const agents = read("AGENTS.md");
     const rule = read(".claude/rules/no-layout-shift.md");
-    const capabilities = read(".claude/rules/canonical-capabilities.md");
+    const capabilities = read("docs/architecture/canonical-capabilities.md");
 
-    expect(agents).toContain("## Motion Communicates Change");
-    expect(agents).toContain("createLayoutMotion()");
     expect(rule).toMatch(
       /An intentional layout change that instantly pops to its new location is a UI\s+defect\./
     );
     expect(rule).toContain("## Canonical Motion Routing");
     expect(rule).toContain("prefers-reduced-motion: reduce");
-    expect(capabilities).toContain(
-      "layout motion, reflow, panel expand, collapse, insert, remove, reorder"
-    );
+    expect(capabilities).toContain("| layout motion, reflow");
+    expect(capabilities).toContain("shared/panels/PanelGroup.svelte");
+    expect(capabilities).toContain("shared/transitions/layout-flip.ts");
   });
 
   it("keeps shared helpers reduced-motion aware and generically named", () => {
@@ -38,12 +35,21 @@ describe("canonical layout motion", () => {
 
   it("makes structural panel motion the PanelGroup default", () => {
     const panels = read("src/lib/shared/panels/PanelGroup.svelte");
+    // 5389447adc moved the manual-size-vs-preferredSize decision into
+    // panel-flex.ts so it could be tested without a layout engine; the
+    // `panelKey` lookup that used to live inline in PanelGroup.svelte is
+    // gone, replaced by the `manuallySized` flag it now hands to
+    // resolvePanelFlex.
+    const panelFlex = read("src/lib/shared/panels/panel-flex.ts");
 
     expect(panels).toContain("transition:flexPresence");
     expect(panels).toContain("transition:growFade");
     expect(panels).toContain("preferredSize?: string");
     expect(panels).toContain(":scope > .panel-wrapper");
-    expect(panels).toContain("manuallySizedPanels.has(panelKey)");
+    expect(panels).toContain("manuallySizedPanels.has(panel.id ?? index)");
+    expect(panelFlex).toContain(
+      "if (panel.preferredSize && !options.manuallySized) {"
+    );
     expect(panels).toContain("flex-grow var(--transition-emphasis)");
     expect(panels).toContain(".panel-group.dragging .panel-wrapper");
     expect(panels).toContain("transition: none");

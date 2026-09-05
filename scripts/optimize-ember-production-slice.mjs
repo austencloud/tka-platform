@@ -94,19 +94,46 @@ function applyEmberMaterialProfile(document) {
 }
 
 const runtimeOutput = "static/models/ember/ember-production-slice.glb";
-const versionedOutput = "static/models/ember/ember-production-slice-r10.glb";
+const geology = process.argv.includes("--geology-stage");
+const distant = geology || process.argv.includes("--distant");
+const tributaries = distant || process.argv.includes("--tributaries");
+const tributaryRevision = distant ? "r2" : "r1";
+const flow = tributaries || process.argv.includes("--lava-flow");
+const midflank = flow || process.argv.includes("--midflank-r5");
+const versionedOutput = geology
+  ? "static/models/ember/ember-geology-stage-r1.glb"
+  : tributaries
+    ? `static/models/ember/ember-mountain-tributaries-${tributaryRevision}.glb`
+    : flow
+      ? "static/models/ember/ember-midflank-lava-flow-r2.glb"
+      : midflank
+        ? "static/models/ember/ember-midflank-production-r5.glb"
+        : "static/models/ember/ember-production-slice-r10.glb";
 
 await optimizeGltfKtx2({
-  input: "static/models/ember/ember-production-slice_raw.glb",
+  input: geology
+    ? "static/models/ember/ember-geology-stage-r1_raw.glb"
+    : tributaries
+      ? `static/models/ember/ember-mountain-tributaries-${tributaryRevision}_raw.glb`
+      : flow
+        ? "static/models/ember/ember-midflank-lava-flow-r2_raw.glb"
+        : midflank
+          ? "static/models/ember/ember-midflank-production-r5_raw.glb"
+          : "static/models/ember/ember-production-slice_raw.glb",
   output: runtimeOutput,
   temporaryStem: "ember-production-slice",
-  label: "Ember Living Caldera and Fresh Rift surface ecology",
+  label: midflank
+    ? "Ember Mid-Flank Fire Pilgrimage R5"
+    : "Ember Living Caldera and Fresh Rift surface ecology",
   textureSize: 1024,
   materialTextureSize: 512,
-  simplifyRatio: 0.92,
+  simplifyRatio: midflank ? 1 : 0.92,
   simplifyError: 0.001,
-  materialTransform: applyEmberMaterialProfile,
+  materialTransform: midflank ? undefined : applyEmberMaterialProfile,
+  encodeTextures: !midflank,
+  palette: !midflank,
+  keepAttributes: flow,
 });
 
 await copyFile(runtimeOutput, versionedOutput);
-console.log(`  preserved reversible R10 asset: ${versionedOutput}`);
+console.log(`  preserved reversible asset: ${versionedOutput}`);

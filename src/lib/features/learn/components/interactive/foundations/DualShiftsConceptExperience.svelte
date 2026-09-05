@@ -23,7 +23,7 @@
 <TimingDirectionExperience
   bind:this={experience}
   conceptId="dual-shifts-alpha-beta"
-  title="Alpha and Beta timing/direction"
+  title="Alpha and Beta time/direction"
   modes={ALPHA_BETA_MODES}
   {onComplete}
   {onBack}

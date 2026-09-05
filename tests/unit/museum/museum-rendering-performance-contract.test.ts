@@ -86,7 +86,7 @@ describe("museum rendering performance contract", () => {
     );
 
     expect(caveScenery).toContain("new InstancedMesh(");
-    expect(caveScenery).toContain('<T is={scenicRocks} />');
+    expect(caveScenery).toContain("<T is={scenicRocks} />");
     expect(caveScenery).not.toContain("useGltf");
     expect(caveScenery).not.toContain("source.clone(true)");
     expect(caveScenery).not.toContain("{#each rockInstances");
@@ -159,6 +159,29 @@ describe("museum rendering performance contract", () => {
     expect(controller).not.toContain("lerpVectors");
   });
 
+  it("keeps the portal lights in the renderer's light count while their frames hide", () => {
+    // Three.js keys every lit material's program on the number of visible
+    // lights. When both portal groups flipped visible 15 m out, the point-light
+    // count rose by two and every lit program in the lobby relinked in one
+    // frame (measured 79 links, 3.1 s, ten steps from spawn). The light must
+    // stay visible and fade by intensity instead.
+    const portal = read(
+      "src/lib/features/museum/components/game/MuseumPortal.svelte"
+    );
+
+    expect(portal).toContain("intensity={props.visible !== false ? 3 : 0}");
+    expect(portal).not.toContain("intensity={3}");
+
+    // The toggled group holds only the frame meshes and closes before the
+    // light, so the light never inherits its visibility.
+    const toggledGroup = portal.indexOf(
+      "<T.Group visible={props.visible !== false}>"
+    );
+    expect(toggledGroup).toBeGreaterThan(-1);
+    const toggledGroupClose = portal.indexOf("</T.Group>", toggledGroup);
+    expect(portal.indexOf("<T.PointLight")).toBeGreaterThan(toggledGroupClose);
+  });
+
   it("keeps the player light in the scene across camera modes", () => {
     const scene = read(
       "src/lib/features/museum/components/game/Museum3DScene.svelte"
@@ -177,7 +200,7 @@ describe("museum rendering performance contract", () => {
       "src/lib/features/museum/components/game/Museum3DScene.svelte"
     );
     const pointLightSources = [
-      "DrownedGalleryGraybox.svelte",
+      "DrownedGalleryAuthored.svelte",
       "FirstFireGraybox.svelte",
       "EarthCanyonGraybox.svelte",
       "AirChimneyGraybox.svelte",

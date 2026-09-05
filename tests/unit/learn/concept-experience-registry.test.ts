@@ -13,6 +13,7 @@ const expectedPublishedIds = [
   "grid",
   "hand-positions",
   "hand-motions-intro",
+  "timing-and-direction",
   "rotation-direction",
   "dual-shifts-alpha-beta",
   "gamma-motion",
@@ -39,7 +40,6 @@ describe("concept experience registry", () => {
     const experienceSlugs = CONCEPT_EXPERIENCES.map((entry) => entry.guideSlug);
 
     expect(new Set(experienceIds).size).toBe(experienceIds.length);
-    expect(new Set(experienceSlugs).size).toBe(experienceSlugs.length);
     expect(experienceIds.every((id) => curriculumIds.has(id))).toBe(true);
     expect(experienceSlugs.every((slug) => guideSlugs.has(slug))).toBe(true);
     expect(
@@ -61,5 +61,24 @@ describe("concept experience registry", () => {
     expect(rotationDirection?.guideSlug).toBe("staff-motions");
     expect(rotationDirection?.reviewStatus).toBe("built");
     expect(isConceptExperienceAvailable("rotation-direction")).toBe(true);
+  });
+
+  it("shares the written reference without displacing the full hand-motions lesson", () => {
+    expect(getConceptExperience("timing-and-direction")?.guideSlug).toBe(
+      "hand-motions"
+    );
+    expect(getConceptExperienceForGuideSlug("hand-motions")?.conceptId).toBe(
+      "hand-motions-intro"
+    );
+  });
+
+  it("opens the dedicated timing reference while retaining the Guide association", () => {
+    expect(getConceptExperience("timing-and-direction")?.reference).toEqual({
+      href: "/timing-and-direction",
+      label: "Timing and Direction",
+    });
+    expect(
+      getConceptExperience("hand-motions-intro")?.reference
+    ).toBeUndefined();
   });
 });

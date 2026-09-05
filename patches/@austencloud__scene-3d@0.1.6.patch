@@ -15270,14 +15270,24 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..2cf0ca587cacf5549d224894a2840060c5862e6b
 --- /dev/null
 +++ b/dist/worker.d.ts
-@@ -0,0 +1,9 @@
+@@ -0,0 +1,19 @@
 +export { getAvatarModelPath } from "./lib/config/avatar-definitions";
 +export { cmToUnits } from "./lib/config/avatar-proportions";
++export { GRID_OFFSETS, PLANE_MODE_CONFIGS } from "./lib/domain/constants/plane-mode-configs";
++export { Plane, PLANE_COLORS } from "./lib/domain/enums/Plane";
++export { PlaneMode } from "./lib/domain/enums/PlaneMode";
++export { PropType } from "./lib/domain/enums/PropType";
 +export { GripType } from "./lib/domain/models/GripPose";
++export { PROP_COLORS } from "./lib/components/props/Prop3DProps";
++export { PRESET_VALID_COUNTS, createFormationFromPreset } from "./lib/config/formation-presets";
++export { STAGE } from "./lib/scale/scale-constants";
++export { SeatedAudienceLoader, seatedAudienceLoader } from "./lib/services/implementations/SeatedAudienceLoader";
 +export { createStaffObject } from "./lib/rendering/create-staff-object";
 +export { createAvatarServices } from "./lib/services/implementations/AvatarServicesFactory";
 +export type { AvatarId } from "./lib/config/avatar-definitions";
 +export type { PropState3D } from "./lib/domain/models/PropState3D";
++export type { FormationPreset } from "./lib/config/formation-presets";
++export type { PropBuild } from "./lib/state/prop-finish-state.svelte";
 +export type { StaffObject, StaffObjectOptions } from "./lib/rendering/create-staff-object";
 +export type { AvatarServices } from "./lib/services/implementations/AvatarServicesFactory";
 diff --git a/dist/worker.js b/dist/worker.js
@@ -15285,10 +15295,18 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..db308d7c43e6dfaa482af802933ec77f35bfeee1
 --- /dev/null
 +++ b/dist/worker.js
-@@ -0,0 +1,5 @@
+@@ -0,0 +1,13 @@
 +export { getAvatarModelPath } from "./lib/config/avatar-definitions";
 +export { cmToUnits } from "./lib/config/avatar-proportions";
++export { GRID_OFFSETS, PLANE_MODE_CONFIGS } from "./lib/domain/constants/plane-mode-configs";
++export { Plane, PLANE_COLORS } from "./lib/domain/enums/Plane";
++export { PlaneMode } from "./lib/domain/enums/PlaneMode";
++export { PropType } from "./lib/domain/enums/PropType";
 +export { GripType } from "./lib/domain/models/GripPose";
++export { PROP_COLORS } from "./lib/components/props/Prop3DProps";
++export { PRESET_VALID_COUNTS, createFormationFromPreset } from "./lib/config/formation-presets";
++export { STAGE } from "./lib/scale/scale-constants";
++export { SeatedAudienceLoader, seatedAudienceLoader } from "./lib/services/implementations/SeatedAudienceLoader";
 +export { createStaffObject } from "./lib/rendering/create-staff-object";
 +export { createAvatarServices } from "./lib/services/implementations/AvatarServicesFactory";
 diff --git a/package.json b/package.json
@@ -34281,15 +34299,34 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..f70848486c293ada8307edb24449ca0c465b1b7d
 --- /dev/null
 +++ b/src/worker.ts
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,32 @@
 +export { getAvatarModelPath } from "./lib/config/avatar-definitions";
 +export { cmToUnits } from "./lib/config/avatar-proportions";
++export {
++  GRID_OFFSETS,
++  PLANE_MODE_CONFIGS,
++} from "./lib/domain/constants/plane-mode-configs";
++export { Plane, PLANE_COLORS } from "./lib/domain/enums/Plane";
++export { PlaneMode } from "./lib/domain/enums/PlaneMode";
++export { PropType } from "./lib/domain/enums/PropType";
 +export { GripType } from "./lib/domain/models/GripPose";
++export { PROP_COLORS } from "./lib/components/props/Prop3DProps";
++export {
++  PRESET_VALID_COUNTS,
++  createFormationFromPreset,
++} from "./lib/config/formation-presets";
++export { STAGE } from "./lib/scale/scale-constants";
++export {
++  SeatedAudienceLoader,
++  seatedAudienceLoader,
++} from "./lib/services/implementations/SeatedAudienceLoader";
 +export { createStaffObject } from "./lib/rendering/create-staff-object";
 +export { createAvatarServices } from "./lib/services/implementations/AvatarServicesFactory";
 +
 +export type { AvatarId } from "./lib/config/avatar-definitions";
 +export type { PropState3D } from "./lib/domain/models/PropState3D";
++export type { FormationPreset } from "./lib/config/formation-presets";
++export type { PropBuild } from "./lib/state/prop-finish-state.svelte";
 +export type {
 +  StaffObject,
 +  StaffObjectOptions,

@@ -16,11 +16,22 @@ import {
   GAMMA_MODES,
   HAND_PATH_STEPS,
 } from "../../../src/lib/features/learn/components/interactive/foundations/pictograph-foundation-content";
+import {
+  HAND_MOTIONS_STAGE_SCHEMA_VERSION,
+  migrateHandMotionsSavedStep,
+} from "../../../src/lib/features/learn/components/interactive/motions/hand-motions-stage";
 
 const readSource = (path: string) =>
   readFileSync(resolve(process.cwd(), path), "utf8");
 
 describe("canonical concept lesson content", () => {
+  it("moves legacy comparison progress past the inserted bridge", () => {
+    expect(HAND_MOTIONS_STAGE_SCHEMA_VERSION).toBe(2);
+    expect(migrateHandMotionsSavedStep(4, 1, HAND_PATH_STEPS.length)).toBe(5);
+    expect(migrateHandMotionsSavedStep(4, 2, HAND_PATH_STEPS.length)).toBe(4);
+    expect(migrateHandMotionsSavedStep(2, 1, HAND_PATH_STEPS.length)).toBe(2);
+  });
+
   it("teaches hand paths before any visible letter", () => {
     expect(HAND_PATH_STEPS.map((item) => item.id)).toEqual([
       "shift",
@@ -114,6 +125,15 @@ describe("canonical concept lesson composition", () => {
     const handPlayer = readSource(
       "src/lib/features/learn/components/interactive/foundations/HandMotionPlayer.svelte"
     );
+    const inlinePlayer = readSource(
+      "src/lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
+    );
+    const timingBoard = readSource(
+      "src/lib/features/learn/components/interactive/motions/TimingDirectionBoard.svelte"
+    );
+    const timingIntro = readSource(
+      "src/lib/features/learn/components/interactive/motions/TimingDirectionIntro.svelte"
+    );
     const foundationContent = readSource(
       "src/lib/features/learn/components/interactive/foundations/pictograph-foundation-content.ts"
     );
@@ -132,18 +152,87 @@ describe("canonical concept lesson composition", () => {
     expect(motions).toContain("ALPHA_BETA_MODES");
     expect(motions).toContain("GAMMA_MODES");
     expect(motions).toContain("TND_ELEMENTS");
+    expect(motions).toContain("TimingDirectionBoard");
+    expect(motions).toContain("TimingDirectionIntro");
+    expect(motions).toContain(
+      "const timingDirectionIndex = HAND_PATH_STEPS.length"
+    );
+    expect(motions).toContain(
+      "const comparisonIndex = timingDirectionIndex + 1"
+    );
+    expect(motions).toContain('activeMotion?.name ?? "Timing and Direction"');
+    expect(motions).toContain('"stageSchemaVersion"');
+    expect(motions).toContain("migrateHandMotionsSavedStep");
+    expect(motions).toContain('viewMode === "scroll"\n      ? comparisonIndex');
+    expect(motions).toContain("getConceptPlacesByLevel(1)");
     expect(motions).toContain("LessonStageFrame");
+    expect(motions).toContain("var(--shell-w, 96rem)");
+    expect(motions).not.toContain("element-properties");
+    expect(motions).not.toContain("activeMode");
+    expect(motions).not.toContain("recap-state");
+    expect(motions).not.toContain('"Timing + Direction"');
+    expect(motions).not.toContain('class="axis-join"');
     expect(motions).not.toContain("letterQueryHandler");
     expect(motions).not.toContain("LessonPictographStage");
     expect(positions).toContain('onComplete?.("hand-motions-intro")');
-    expect(positions).toContain("propType: PropType.HAND,\n      hand,");
-    expect(positions).not.toContain("propType: PropType.HAND,\n      color,");
-    expect(positions).toContain("<PanelButton fullWidth onclick={rotate}>");
+    expect(positions).toContain("PropPlacementGrid");
+    expect(positions).toContain("PictographContainer");
+    expect(positions).toContain("leftPropType={PropType.HAND}");
+    expect(positions).toContain("rightPropType={PropType.HAND}");
+    expect(positions).toContain("TKAWordGlyph");
     expect(positions).not.toContain("focusPhase");
     expect(positions).not.toContain("Try it");
     expect(handPlayer).toContain("InlineAnimationPlayer");
     expect(handPlayer).toContain('leftPropType="hand"');
     expect(handPlayer).toContain("hideTkaGlyph");
+    expect(handPlayer).toContain("elementalGlyph: showElementalGlyph");
+    expect(handPlayer).toContain("{onStepChange}");
+    expect(handPlayer).toContain("{onSeekRef}");
+    expect(inlinePlayer).toContain("publishSeek(handleSeek)");
+    expect(timingBoard).toContain("createLayoutMotion");
+    expect(timingBoard).toContain("ChoreoCard");
+    expect(timingBoard).toContain("handPathMode");
+    expect(timingBoard).toContain("showWord={false}");
+    expect(timingBoard).toContain("includeStartPosition");
+    expect(timingBoard).not.toContain("includeStartPosition={false}");
+    expect(timingBoard).not.toContain("startPositionLayoutOverride");
+    expect(timingBoard).not.toContain("clickableStart");
+    expect(timingBoard).toContain("customTitleText={mode.element.name}");
+    expect(timingBoard).toContain("customNotesText={definitionFor(mode)}");
+    expect(timingBoard).toContain("frameColors={{");
+    expect(timingBoard).toContain("CARD_SIZES.poker.widthInches");
+    expect(timingBoard).toContain("cardAspectRatio={pokerCardAspectRatio}");
+    expect(timingBoard).toContain("columnCount={2}");
+    expect(timingBoard).not.toContain("choreo-card-artifact");
+    expect(timingBoard).toContain("dark: mode.element.darkComplement");
+    expect(timingBoard).not.toContain("card-identity");
+    expect(timingBoard).toContain("onStepClick={seekToCardStep}");
+    expect(timingBoard).toContain("onStepChange={syncFocusedStep}");
+    expect(timingBoard).toContain("showElementalGlyph");
+    expect(timingBoard).toContain("externalPlaying={playing}");
+    expect(timingBoard).toContain("Back to all six relationships");
+    expect(timingBoard).toContain("mode.id.toUpperCase()");
+    expect(timingBoard).not.toContain("mode.element.element");
+    expect(timingBoard).not.toMatch(
+      /border-(left|right|top|bottom):\s*[2-9]\d*px/
+    );
+    expect(timingIntro).toContain('<h3 id="timing-heading">Timing</h3>');
+    expect(timingIntro).toContain('<h3 id="direction-heading">Direction</h3>');
+    expect(timingIntro).toContain("SegmentedControl");
+    expect(timingIntro).toContain('semantics="radiogroup"');
+    expect(timingIntro).toContain("data-timing={timingMode}");
+    expect(timingIntro).toContain("data-direction={directionMode}");
+    // Static diagrams delegate their selection transitions to the reduced-motion-aware owner.
+    expect(timingIntro).toContain(
+      'import Crossfade from "$lib/shared/components/Crossfade.svelte"'
+    );
+    expect(timingIntro).not.toContain("timing-bounce");
+    expect(timingIntro).not.toContain("bounce-stage");
+    expect(timingIntro).not.toContain("example-bay");
+    expect(timingIntro).not.toContain("axis-join");
+    expect(timingIntro).not.toMatch(
+      /border-(left|right|top|bottom):\s*[2-9]\d*px/
+    );
     expect(foundationContent).toContain("PropType.HAND");
     expect(rotation).toContain("letterQueryHandler");
     expect(rotation).toContain("LessonPictographStage");
@@ -179,8 +268,8 @@ describe("canonical concept lesson composition", () => {
     expect(anatomy).toContain("ArtifactRegionSpotlight");
     expect(anatomy).toContain("PictographContainer");
     expect(anatomy).toContain("Top left: the step number.");
-    expect(anatomy).toContain("Bottom right: the hands’ timing and direction.");
-    expect(anatomy).toContain("Top right: the props’ timing and direction.");
+    expect(anatomy).toContain("Bottom right: the hands’ time and direction.");
+    expect(anatomy).toContain("Top right: the props’ time and direction.");
   });
 
   it("walks the guide's six words step by step before a six-word recap", () => {

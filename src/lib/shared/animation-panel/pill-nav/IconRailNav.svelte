@@ -31,11 +31,13 @@
     activeId,
     onSelect,
     onNavMount,
+    alignment = "center",
   }: {
     pills: RailPill[];
     activeId: T | null;
     onSelect: (id: T) => void;
     onNavMount?: (el: HTMLElement | null) => void;
+    alignment?: "start" | "center";
   } = $props();
 
   let navEl: HTMLElement | undefined = $state();
@@ -90,6 +92,7 @@
 
 <div
   class="icon-rail"
+  class:align-start={alignment === "start"}
   role="tablist"
   aria-orientation="vertical"
   aria-label="Editor sections"
@@ -145,6 +148,10 @@
     justify-content: center;
     padding: 10px 4px;
     gap: 8px;
+  }
+
+  .icon-rail.align-start {
+    justify-content: flex-start;
   }
 
   /* Mirrors the 3D viewer rail-chip visual language (ViewerPopover.svelte .rail-chip):

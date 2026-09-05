@@ -21,6 +21,12 @@ describe("Tunnel workspace layout", () => {
     );
   });
 
+  it("stacks a narrow landscape slot at the 200% zoom reflow size", () => {
+    expect(resolveTunnelWorkspaceMode({ width: 708, height: 404 })).toBe(
+      "stack"
+    );
+  });
+
   it("uses the drawer until a split workspace has enough height", () => {
     expect(canInlineTunnelInspector({ width: 1400, height: 650 })).toBe(false);
     expect(canInlineTunnelInspector({ width: 1400, height: 700 })).toBe(true);

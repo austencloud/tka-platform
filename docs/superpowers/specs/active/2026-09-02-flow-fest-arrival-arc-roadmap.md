@@ -412,7 +412,7 @@ the screen reveals choices as their consequences land.
 
 Depends on nothing. Its consequences land across sub-projects 1, 3, 4, and 5.
 
-### 1. Drive in — SELECTED, designing next
+### 1. Drive in — BUILT 2026-09-04
 
 Car simulation on the EUC pattern; the ODOT centerline re-clipped to the terrain
 square; careful, slow entry at the front gate; temporary parking off to the side;

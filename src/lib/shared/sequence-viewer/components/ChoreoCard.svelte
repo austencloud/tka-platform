@@ -18,13 +18,16 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PreviewCellRenderOptions } from "../services/preview-cell-renderer";
   import type { ViewerPaneBox } from "./viewer-panel-layout";
-  import { onDestroy } from "svelte";
+  import { onDestroy, tick } from "svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { authState as AuthStateModule } from "$lib/shared/auth/state/auth-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
-  import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
+  import {
+    getQRCodeGenerator,
+    getUrlQRCodeGenerator,
+  } from "$lib/shared/qr/get-qr-code-generator";
   import { resolveInfoCellDisplay } from "../services/info-cell-display";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -82,6 +85,8 @@
     showNotes?: boolean;
     showLoopGlyph?: boolean;
     showQRCode?: boolean;
+    /** Reuse a published scan link without creating an account-owned code. */
+    qrUrl?: string;
     /** When true, fill empty col-0 cells with mandala visualizations */
     showMandala?: boolean;
     /** Render as hand path visualization (HAND props, float arrows, no TKA) */
@@ -90,6 +95,12 @@
     browseViewMode?: import("$lib/shared/browse/domain/browse-view-mode").BrowseViewMode;
     // Settings
     darkMode?: boolean;
+    /** Optional physical-card frame painted behind the canonical card content. */
+    frameColors?: { readonly accent: string; readonly dark: string };
+    /** Optional width-to-height ratio for a physical card presentation. */
+    cardAspectRatio?: number;
+    /** Plain-text artifact title for cards whose identity is not a TKA word. */
+    customTitleText?: string;
     customNotesText?: string;
     // Prop overrides
     leftPropType?: PropType;
@@ -111,6 +122,8 @@
     fitWidth?: boolean; // Always constrain by width (mobile export: let parent scroll for tall cards)
     // Render progress callback (loaded cells, total cells)
     onRenderProgress?: (loaded: number, total: number) => void;
+    /** All cells and the QR have painted; a hidden host may reveal the card. */
+    onReady?: () => void;
     // Increment to force a full re-render (clears caches and re-renders all cells)
     rerenderTrigger?: number;
     // Suppress solo mode header ("Left Prop Path" / "Right Hand Path")
@@ -150,10 +163,14 @@
     showNotes = true,
     showLoopGlyph = true,
     showQRCode = false,
+    qrUrl,
     showMandala = false,
-    handPathMode = false,
+    handPathMode: requestedHandPathMode = false,
     browseViewMode,
     darkMode = false,
+    frameColors,
+    cardAspectRatio,
+    customTitleText: requestedTitleText,
     customNotesText = "Created using Flow Arts Composer",
     leftPropType,
     rightPropType,
@@ -167,6 +184,7 @@
     forceContain = false,
     fitWidth = false,
     onRenderProgress,
+    onReady,
     rerenderTrigger = 0,
     hideSoloHeader = false,
     onContextMenu,
@@ -204,9 +222,10 @@
     })();
   }
   $effect(() => {
-    if (showQRCode) ensureAuthLoaded();
+    if (showQRCode && !qrUrl) ensureAuthLoaded();
   });
   const isAuthenticated = $derived(authApi?.isAuthenticated ?? false);
+  const canShowQRCode = $derived(isAuthenticated || !!qrUrl);
 
   // Long-press state for touch context menu
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -254,6 +273,16 @@
 
   // Container-based sizing for "contain" behavior
   let containerElement: HTMLDivElement | undefined = $state();
+  const handPathMode = $derived(
+    sequence.sequenceKind === "hand-path" || requestedHandPathMode
+  );
+  const customTitleText = $derived(
+    requestedTitleText ??
+      (sequence.sequenceKind === "hand-path"
+        ? sequence.displayName || sequence.name
+        : undefined)
+  );
+
   let previewStackElement: HTMLDivElement | undefined = $state();
 
   let gridScrollRef: HTMLDivElement | undefined = $state();
@@ -266,6 +295,7 @@
       browseViewMode,
       handPathMode,
       showWord,
+      customTitleText,
       showDifficultyLevel,
       hideSoloHeader,
       showLoopGlyph,
@@ -343,7 +373,7 @@
             containerHeight: containerRawHeight,
             showHeader,
             showFooter,
-            showQRCode: sc > 1 && showQRCode && isAuthenticated,
+            showQRCode: sc > 1 && showQRCode && canShowQRCode,
           })
         : null;
     const spl =
@@ -363,6 +393,7 @@
       showMandala,
       infoCellChoice: compositionManager.getInfoCellChoiceForStepCount(sc),
       isAuthenticated,
+      hasPublishedUrl: !!qrUrl,
     });
   });
   const effShowQRCode = $derived(effectiveInfoCell.showQRCode);
@@ -375,13 +406,14 @@
     () => ({
       sequence,
       showQRCode: effShowQRCode,
+      qrUrl,
       darkMode,
       isAuthenticated,
       leftPropType,
       rightPropType,
       browseViewMode,
     }),
-    { getGenerator: getQRCodeGenerator }
+    { getGenerator: getQRCodeGenerator, getUrlGenerator: getUrlQRCodeGenerator }
   );
   const qrDataUrl = $derived(qrState.dataUrl);
   const qrPending = $derived(qrState.pending);
@@ -390,16 +422,27 @@
   // raw container measurements feed layout; the resolved layout model then
   // determines the contained box and cell width.
   let layoutState: ReturnType<typeof createChoreoCardLayoutState>;
+  const fixedCardAspectRatio = $derived(
+    typeof cardAspectRatio === "number" &&
+      Number.isFinite(cardAspectRatio) &&
+      cardAspectRatio > 0
+      ? cardAspectRatio
+      : null
+  );
+  function activePreviewAspectRatio(): number {
+    return fixedCardAspectRatio ?? layoutState.previewAspectRatio;
+  }
   const sizingState = createChoreoCardSizingState(() => ({
     containerElement,
     previewStackElement,
-    previewAspectRatio: layoutState.previewAspectRatio,
+    previewAspectRatio: activePreviewAspectRatio(),
     forceContain,
     needsScroll: layoutState.needsScroll,
     fitWidth,
     containSizeMotion,
     containMotionBox,
     containModel: layoutState.containModel,
+    squareGridContain: fixedCardAspectRatio !== null,
   }));
 
   layoutState = createChoreoCardLayoutState(() => ({
@@ -410,7 +453,7 @@
     showFooter,
     showQRCode: effShowQRCode,
     autoLayoutReservesQRCode:
-      sequence.steps.length > 1 && showQRCode && isAuthenticated,
+      sequence.steps.length > 1 && showQRCode && canShowQRCode,
     showMandala: effShowMandala,
     forceContain,
     // These feed ONLY the mandala placement (which color fills the info cell).
@@ -436,7 +479,7 @@
   const effectiveRows = $derived(layoutState.effectiveRows);
   const mandalaLayoutOverride = $derived(layoutState.mandalaLayoutOverride);
   const mandalaPlacements = $derived(layoutState.mandalaPlacements);
-  const previewAspectRatio = $derived(layoutState.previewAspectRatio);
+  const previewAspectRatio = $derived(activePreviewAspectRatio());
   const scaledHeaderHeight = $derived(layoutState.scaledHeaderHeight);
   const scaledFooterHeight = $derived(layoutState.scaledFooterHeight);
   const stepNumFontSize = $derived(layoutState.stepNumFontSize);
@@ -450,6 +493,45 @@
   const cellWidth = $derived(sizingState.cellWidth);
   const containedWidth = $derived(sizingState.containedWidth);
   const containedHeight = $derived(sizingState.containedHeight);
+
+  $effect(() => {
+    const ready = onReady;
+    const stack = previewStackElement;
+    if (
+      !ready ||
+      !stack ||
+      !containedWidth ||
+      !containedHeight ||
+      !cells.length ||
+      !cells.every((cell) => cell.isLoaded || cell.renderFailed) ||
+      !qrState.settled
+    )
+      return;
+    let cancelled = false;
+    // Render progress means an image URL exists, not that the browser has drawn
+    // it. Finish decoding and the native cell entrances behind the host's cover.
+    void (async () => {
+      await tick();
+      await Promise.allSettled(
+        [...stack.querySelectorAll("img")].map((image) => image.decode())
+      );
+      await Promise.allSettled(
+        stack
+          .getAnimations({ subtree: true })
+          .filter(
+            (animation) => animation.effect?.getTiming().iterations !== Infinity
+          )
+          .map((animation) => animation.finished)
+      );
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
+      if (!cancelled) ready();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  });
   const containerRawWidth = $derived(sizingState.containerWidth);
   const containerRawHeight = $derived(sizingState.containerHeight);
   const suppressFlip = $derived(sizingState.flipSuppressed);
@@ -556,11 +638,12 @@
       // A scan represents the printed card, not the scanner's personal export
       // toggles. Pin the same canonical visibility used when QR creation
       // verifies cloud assets; retain the sequence's participating hands.
-      ...(cloudProbeEnabled && {
-        ...CANONICAL_CARD_VISIBILITY,
-        showLeftMotion,
-        showRightMotion,
-      }),
+      ...(cloudProbeEnabled &&
+        !handPathMode && {
+          ...CANONICAL_CARD_VISIBILITY,
+          showLeftMotion,
+          showRightMotion,
+        }),
       // Scan cards keep numbers as the existing HTML overlay. Re-compositing
       // every cached blob through canvas made a warm phone pay a full
       // decode→draw→encode cycle per cell before it could paint.
@@ -569,7 +652,9 @@
       // context), so a cold scanner downloads pre-rendered cells instead of
       // rasterizing. Unset everywhere else => local render path, no extra latency.
       probeCloud: cloudProbeEnabled,
-      cloudOnly: cloudProbeEnabled,
+      // Hand-path records embed motion data; their cells can be rendered locally
+      // without requiring the prop catalog's prepublished cloud assets.
+      cloudOnly: cloudProbeEnabled && !handPathMode,
     };
   }
 
@@ -636,7 +721,9 @@
     crossfader,
     sizingState
   );
-  const flipDuration = $derived(renderLifecycle.flipDuration);
+  const flipDuration = $derived(
+    fixedCardAspectRatio !== null ? 0 : renderLifecycle.flipDuration
+  );
 
   /**
    * For solo mode, extract the end location of the kept color's motion
@@ -836,9 +923,19 @@
     <div
       class="preview-stack"
       class:scroll-mode={needsScroll}
+      class:has-frame={!!frameColors}
+      class:has-card-aspect={fixedCardAspectRatio !== null}
       style={needsScroll
         ? ""
         : `width: ${containedWidth ? `${containedWidth}px` : "auto"}; height: ${containedHeight ? `${containedHeight}px` : "auto"};${!containedWidth || !containedHeight || cellWidth < 1 ? " visibility: hidden;" : ""}`}
+      style:--card-frame-accent={frameColors?.accent}
+      style:--card-frame-dark={frameColors?.dark}
+      style:--fixed-grid-width={fixedCardAspectRatio !== null
+        ? `${cellWidth * effectiveColumns}px`
+        : undefined}
+      style:--fixed-grid-height={fixedCardAspectRatio !== null
+        ? `${cellWidth * effectiveRows}px`
+        : undefined}
       bind:this={previewStackElement}
     >
       <!-- Header section -->
@@ -848,6 +945,7 @@
         {isBrowseSoloMode}
         {soloHand}
         {browseViewMode}
+        {customTitleText}
         showDifficultyLevel={effectiveShowDifficulty}
         {difficultyLevel}
         {currentLevelStyle}
@@ -1006,6 +1104,46 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .preview-stack.has-frame {
+    box-sizing: border-box;
+    padding: max(4px, 2%);
+    background:
+      linear-gradient(#f5f5f5 0 0) content-box,
+      repeating-linear-gradient(
+          135deg,
+          var(--card-frame-accent) 0 0.45rem,
+          var(--card-frame-dark) 0.45rem 0.9rem
+        )
+        padding-box;
+  }
+
+  .choreo-card-root.dark-mode .preview-stack.has-frame {
+    background:
+      linear-gradient(#000 0 0) content-box,
+      repeating-linear-gradient(
+          135deg,
+          var(--card-frame-accent) 0 0.45rem,
+          var(--card-frame-dark) 0.45rem 0.9rem
+        )
+        padding-box;
+  }
+
+  .preview-stack.has-card-aspect :global(.grid-section) {
+    flex: 0 0 var(--fixed-grid-height);
+    width: min(100%, var(--fixed-grid-width));
+    align-self: center;
+    margin-block: auto;
+    grid-auto-rows: 1fr;
+  }
+
+  .preview-stack.has-card-aspect :global(.cell-flip-wrapper) {
+    aspect-ratio: 1;
+  }
+
+  .preview-stack.has-card-aspect :global(.pictograph-cell) {
+    height: 100%;
   }
 
   /* The Card was never readable at its previous size, so there is nothing to

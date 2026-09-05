@@ -26,6 +26,7 @@
     { id: "victorian", name: "Victorian Wing", theme: "industrial" },
     { id: "digital", name: "Digital Wing", theme: "digital" },
     { id: "suppression", name: "The Suppression", theme: "institutional" },
+    { id: "cross-reference", name: "Cross-Reference Room", theme: "institutional" },
     { id: "crumble", name: "The Crumble", theme: "construction" },
     { id: "gallery", name: "K's Gallery", theme: "gallery" },
     { id: "fear", name: "Room of Fear", theme: "institutional" },

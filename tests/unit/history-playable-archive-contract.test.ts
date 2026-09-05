@@ -107,7 +107,7 @@ describe("playable archive: selection context", () => {
   });
 
   it("starts at the earliest trace rather than a hardcoded later record", () => {
-    expect(archiveSource).toContain('const DEFAULT_ENTRY_ID = "playpoi"');
+    expect(archiveSource).toContain('const DEFAULT_ENTRY_ID = "home-of-poi"');
   });
 
   it("uses record hashes and browser history for restorable deep links", () => {
@@ -170,7 +170,8 @@ describe("playable archive: compact screens", () => {
     expect(marketingChromeSource).toContain("immersive={footerImmersive}");
     expect(footerSource).toContain(".site-footer.immersive");
     expect(mobileIndexSource).toContain("overflow-y: auto");
-    expect(archiveSource).toContain(".record-detail");
+    expect(archiveSource).toContain(".record-inspector-host");
+    expect(archiveSource).not.toContain("scrollbar-gutter: stable");
   });
 
   it("keeps full lane names in the compact chronology", () => {

@@ -12,8 +12,11 @@
 
 import type { DirectorCameraMove } from "./camera-language";
 import type { CameraChannelId } from "./director-camera-channels";
-import { isDirectiveExpression, normalizeDirective } from "./directives";
-import type { DirectiveValue } from "./directives";
+import {
+  isDirectiveExpression,
+  normalizeDirective,
+  type DirectiveValue,
+} from "$lib/features/film-director/domain/directives";
 import { FilmDirectorInputSchema } from "./film-director-schema";
 import type {
   DirectorPerformerSequence,

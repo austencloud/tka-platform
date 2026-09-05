@@ -165,7 +165,7 @@ export interface ShortCodeData {
   payloadStepCount?: number;
   /** 2 = strict word payload; 3 = first-class solo payload. */
   payloadSchemaVersion?: number;
-  payloadKind?: "word" | "solo";
+  payloadKind?: "word" | "solo" | "hand-path";
   /** Schema-3 solo title. Solo records never invent payloadWord. */
   payloadTitle?: string;
   payloadContentHash?: string;

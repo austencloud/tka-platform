@@ -13,6 +13,12 @@ function snapshot(angle: number): WorkerPerformerSnapshot {
     groundY: -1.5,
     staffLength: 0.86,
     staffThickness: 0.0125,
+    propBuild: {
+      finish: "fire",
+      fanBuild: "pictograph",
+      fanFrameColor: "black",
+      fanCover: "bare",
+    },
     leftPropType: "staff",
     rightPropType: "staff",
     leftProp: null,
@@ -84,5 +90,46 @@ describe("worker performer stage", () => {
 
     expect(performer.dispose).toHaveBeenCalledTimes(1);
     expect(scene.children).not.toContain(performer.root);
+  });
+
+  it("collects worker-derived effect outputs with stable performer source ranges", async () => {
+    const firstOutput = {
+      playing: true,
+      sources: [{ sourceId: 1 }],
+      imperative: [{ renderer: "trail", sourceId: "p1:0:left-end" }],
+    };
+    const secondOutput = {
+      playing: false,
+      sources: [{ sourceId: 5 }],
+      imperative: [],
+    };
+    const performers = [firstOutput, secondOutput].map((output, index) => ({
+      id: `performer-${index}`,
+      root: new Group(),
+      matchesConfiguration: () => true,
+      setSnapshot: vi.fn(),
+      setEffectSourceIdBase: vi.fn(),
+      getEffects: () => output,
+      update: vi.fn(),
+      dispose: vi.fn(),
+    }));
+    let created = 0;
+    const stage = new WorkerPerformerStage(
+      new Scene(),
+      vi.fn(async () => performers[created++] as never)
+    );
+
+    await stage.setSnapshots([
+      { ...snapshot(0), id: "performer-0" },
+      { ...snapshot(0), id: "performer-1" },
+    ]);
+
+    expect(performers[0].setEffectSourceIdBase).toHaveBeenCalledWith(1);
+    expect(performers[1].setEffectSourceIdBase).toHaveBeenCalledWith(5);
+    expect(stage.getEffects()).toMatchObject({
+      playing: true,
+      sources: [{ sourceId: 1 }, { sourceId: 5 }],
+      imperative: [{ renderer: "trail", sourceId: "p1:0:left-end" }],
+    });
   });
 });

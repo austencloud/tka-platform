@@ -166,6 +166,7 @@
       );
       if (target === null) return;
       event.preventDefault();
+      event.stopPropagation();
       const targetOption = options[target];
       if (!targetOption) return;
       const currentTarget = event.currentTarget as HTMLButtonElement;
@@ -197,6 +198,7 @@
     }
 
     event.preventDefault();
+    event.stopPropagation();
     if (nextEnabledIndex === null) return;
     const nextOptionIndex = enabledIndexes[nextEnabledIndex];
     if (nextOptionIndex === undefined) return;

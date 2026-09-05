@@ -2,6 +2,7 @@ import type { ResolvedReversalPattern } from "../reversal-transform";
 import type { VariationConfig } from "../../services/deck-variation";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
+import type { HandPathReferenceCardId } from "../hand-path-reference-card-manifest";
 
 export interface CardFooter {
   left?: string;
@@ -39,6 +40,8 @@ export interface CardVariation {
 }
 
 export interface DeckReleaseCard {
+  /** Durable sequence link; shared by copies of a hand-path reference card. */
+  qrUrl?: string;
   sequenceId: string;
   sourceCatalogId: string;
   stepCount: number;
@@ -137,6 +140,14 @@ export interface DeckRelease {
   sequences: DeckReleaseCard[];
   stepCountDistribution: Record<number, number>;
   /**
+   * Hand-path presentation and ordering. Saved sequence records and QR links
+   * live in sequences[]; legacy manifests without them use authored references.
+   */
+  handPathCards?: {
+    version: number;
+    cardIds: HandPathReferenceCardId[];
+  };
+  /**
    * The "How to Read" insert that ships as card 1 of the printed deck. It is a
    * flag rather than a `sequences[]` entry because it carries none of a card
    * record's data (no sequenceId, word, or step count) and is identical in every
@@ -153,8 +164,8 @@ export const INSERT_CARD_VERSION = 1;
 
 /**
  * Physical cards in the printed deck — the number to give a print vendor.
- * `cardCount` deliberately keeps its original meaning (sequence cards only) so
- * manifests released before the insert stay accurate.
+ * `cardCount` is the content-card count. It equals `sequences.length` for older
+ * releases and also includes manifest-declared reference cards in newer ones.
  */
 export function getPrintedCardCount(release: DeckRelease): number {
   return release.cardCount + (release.insertCard ? 1 : 0);

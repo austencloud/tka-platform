@@ -20,7 +20,7 @@
     SHAPE_MATRIX_LEVELS,
     SHAPE_MATRIX_LEVEL_DESCRIPTIONS,
   } from "../shape-matrix-levels";
-  import { spinRatioKey } from "@vtg/domain";
+  import { theoryRatioLabel } from "$lib/shared/shape-matrix/domain/theory-ratio";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import ShapeMatrixTheoryControls from "./ShapeMatrixTheoryControls.svelte";
   import ShapeMatrixTurnControls from "./ShapeMatrixTurnControls.svelte";
@@ -49,11 +49,13 @@
   }
 
   const leftVisible = $derived(
-    theory ? spinRatioKey(appState.theoryLeftRatio) : visible(appState.leftTurn)
+    theory
+      ? theoryRatioLabel(appState.theoryLeftRatio)
+      : visible(appState.leftTurn)
   );
   const rightVisible = $derived(
     theory
-      ? spinRatioKey(appState.theoryRightRatio)
+      ? theoryRatioLabel(appState.theoryRightRatio)
       : visible(appState.rightTurn)
   );
   const triggerLabel = $derived(
@@ -66,8 +68,8 @@
     theory ? "Close ratio editor" : "Close level and turn editor"
   );
 
-  function applyTurn(turn: TurnValue): void {
-    appState.setTurn(turn, { stayOnDetail: true });
+  function applyTurn(hand: "left" | "right", turn: TurnValue): void {
+    appState.setTurnFor(hand, turn, { stayOnDetail: true });
   }
   function applyLevel(level: TurnLevel): void {
     appState.setLevel(level, { stayOnDetail: true });
@@ -392,13 +394,23 @@
   }
 
   @media (max-width: 25rem) {
+    .turn-trigger {
+      width: var(--min-touch-target, 44px);
+      padding: 0;
+      justify-content: center;
+    }
+
+    .turn-trigger > :not(i) {
+      display: none;
+    }
+
     .turn-trigger:has(.theory-trigger-copy) {
-      gap: 0.25rem;
-      padding-inline: 0.5rem;
+      gap: 0;
+      padding: 0;
     }
 
     .turn-trigger:has(.theory-trigger-copy) > i {
-      display: none;
+      display: inline-block;
     }
   }
 </style>

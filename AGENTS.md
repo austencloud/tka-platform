@@ -1,314 +1,70 @@
-# Flow Arts Composer — Project Instructions
+# Flow Arts Composer Agent Contract
 
-## Philosophy
+This is the project entry point. Keep only stable, project-wide constraints
+here. The current user request has priority over repository rules and skills
+unless a higher-priority platform or safety instruction conflicts.
 
-Only the AAA+ approach. No quick fixes, no simplified implementations, no "good enough for now." Research the 2026 state of the art before non-trivial work.
+## Request Boundary
 
-Don't say: "simplified implementation", "for now", "quick fix", "to save tokens", "might be overkill", "simpler approach", "revisit later".
+- Reviews, explanations, investigations, and recommendations are read-only.
+- A direct request to build, fix, update, rewrite, or implement authorizes that
+  stated repository change and its normal verification lifecycle.
+- Do not expand approved work into adjacent cleanup, deployment, external-data
+  mutation, purchases, messages, or personal-account actions.
+- Resolve routine questions from code and tools. Ask Austen only for a material
+  product choice, user-only interaction, destructive scope outside the approved
+  workflow, or a genuine blocker.
+- Preserve unrelated and in-flight changes.
 
-## Git Branches and Worktrees
+## Repository Lifecycle
 
-**Use a dedicated Git worktree for every task that may modify repository files.**
-The primary checkout at `E:/tka-platform` stays on `main` and is reserved for
-Austen's dev server, final integration, and explicitly requested local work.
-Read-only investigation may run in the primary checkout.
-
-Start new modifying chats in the Codex app's Worktree environment based on
-`main`. If a modifying chat starts in the primary checkout, move or hand it off
-to exactly one task-owned worktree before editing. When product-managed handoff
-is unavailable, create one repository-adjacent worktree and do all edits,
-commands, and verification there. Never nest worktrees or reuse a worktree for
-an unrelated task.
-
-Create a unique task branch before committing (`codex/<task-slug>` for Codex;
-use the current client's configured agent prefix elsewhere). Keep commits scoped
-to paths owned by the task. Approval to implement authorizes the complete task
-lifecycle: verify, commit, integrate into local `main`, remove the task branch
-and worktree, and deliver the real `https://localhost:5173` route in the in-app
-Browser. Do not ask separate permission to merge or clean up. Use
-`npm run wt:finish -- <branch> --route /real-route` (or `--nonvisual`) from the
-primary checkout after bringing the task branch current with `main`. On Windows,
-the calling terminal cannot remain inside the worktree being removed. If a
-safety gate fails, leave the branch and worktree intact and report the exact
-conflict. Never delete a dirty worktree until every change is proven landed,
-intentionally discarded by Austen, or preserved elsewhere.
-
-Direct edits in the primary checkout require Austen to request that exact
-workflow in the current conversation. If a task depends on uncommitted primary
-changes, use the app's working-tree starting state or Handoff; do not copy those
-files manually between checkouts.
-
-## MCP-Only for TKA Rendering
-
-Never render pictographs or sequences via bash scripts, inline code, or base64. Only `generate_pictograph` and `generate_sequence` MCP tools. If MCP is unavailable, STOP and tell the user to restart Codex.
-
-## Sequence Generation = Humor Training
-
-When a user asks for a **named word** with creative freedom (e.g. "generate CAKE"):
-
-1. Ask for tagline FIRST — present 4 options across Austen's preferred lenses: DEADPAN (primary), ABSURDIST, SARDONIC, DICTIONARY, DOMAIN, ACRONYM. Avoid SELF_DEPRECATING.
-2. Generate AFTER with the chosen tagline.
-3. Save pair: `node scripts/add-humor-pair.cjs`
-
-Does NOT apply to requests by letter, level, loopType, or length. Those: generate immediately with `constraintPreset: "smooth"`. Full workflow: `docs/reference/sequence-generation-guide.md`.
-
-## Effect Preview Sequences
-
-Effect preset labs, renderer comparisons, and other continuously playing effect
-previews use `InfiniteSequenceGenerator`, the same production generator used by
-the Infinite Spinner and Effects Lab. Generate 16 counts by default, never a
-four-count fixture. Eight counts is the minimum. Validate with
-`isEffectPreviewLoop`, and play straight through the seam with no end hold,
-reset pose, reload flash, or visible jump. If generation fails, show a retryable
-error instead of silently falling back to a short sequence. Full rule:
-`.claude/rules/sequence-generation.md`.
+- Every modifying task uses one dedicated worktree based on `main`. The primary
+  checkout at `E:/tka-platform` is reserved for read-only investigation, the
+  dev server, and final integration unless Austen explicitly requests direct
+  edits there.
+- Create a unique `codex/<task-slug>` branch. Stage and commit only task-owned
+  paths; never use broad staging, a bare commit, or destructive reset/checkout.
+- In this repository, implementation approval includes scoped commits, guarded
+  local integration, and clean worktree removal. From the primary checkout run
+  `npm run wt:finish -- <branch> --route /real-route` for reviewable UI or
+  `npm run wt:finish -- <branch> --nonvisual` otherwise.
+- If any gate fails, leave the branch and worktree intact and report the exact
+  blocker. Never delete another task's branch or dirty worktree.
 
 ## Verification
 
-Every "done" or "fixed" claim needs proof: test output, runtime query output, console log, or screenshot. If you can't show proof, say: _"I've made the changes but need you to verify. Please [specific action] and tell me what you see."_
-
-"Build succeeded", "I updated the config", "I changed the component" do NOT count as verification.
-
-## Do Your Own Job
-
-**Never tell the user to run typecheck, lint, tests, build, or commits.** Those are your job.
-
-Run them yourself. If the tool reports errors, fix them and run again. Keep iterating until green or until you hit a genuine blocker. Only then surface it.
-
-Phrases that mean you're punting and must be removed:
-
-- "Run `npm run check` to verify"
-- "Please typecheck and commit"
-- "Let me know if the build passes"
-- "Typecheck + commit" as a closing line
-
-Report the actual result, not the instruction to produce one.
-
-## Motion Communicates Change
-
-Instant structural UI changes are unacceptable. When a panel opens, an item is
-inserted or removed, a workspace changes mode, or responsive content moves, the
-transition is part of the information architecture: it shows what changed and
-where it went, reducing the mental work required to follow the interface.
-
-Classify every dynamic geometry change before implementation:
-
-- accidental movement gets prevented by reserving stable geometry;
-- intentional movement gets animated through the canonical motion system.
-
-Use `Crossfade`, the reduced-motion-aware helpers in
-`src/lib/shared/transitions/motion.ts`, `PanelGroup` for structural workspaces,
-`animate:flip` with `flipDuration()` for keyed lists, and
-`createLayoutMotion()` for multi-element recomposition. Use `DURATION` and the
-global `--transition-*` tokens. Do not create feature-local durations, easing
-curves, FLIP utilities, or `transition: all` rules.
-
-Pointer-driven dragging follows the pointer without easing. Reduced-motion
-preferences collapse transitions to their accessible final state. Those are
-exceptions to animation, not permission for ordinary disclosure to pop.
-
-The enforced routing matrix, implementation rules, and verification checklist
-live in `.claude/rules/no-layout-shift.md`. Read it before any UI change that
-adds/removes content, changes size/position/structure, or alters a dynamic
-label/icon.
-
-## Answer Your Own Questions
-
-When you catch yourself about to say "want me to research X" / "should I look into Y" / "can I investigate Z" — STOP. Just go do it. You have the codebase, grep, glob, read, web search, and subagents. Use them.
-
-The user can see your context window. If you're about to spend tokens that would genuinely overload it, that's their call to make — but 99% of investigations are cheap. Prodding the code to answer a question is never a permission request.
-
-Banned patterns:
-
-- "Want me to go research..."
-- "May I look into..."
-- "Should I check what Decks uses..."
-- "It would really help to know X — want me to find out?"
-- Listing 4 options and asking the user to pick _before_ narrowing the list via investigation
-
-Correct pattern: investigate → narrow to 1-2 informed options → either decide, or present a concrete recommendation with the tradeoff you actually uncovered. If genuinely 50/50 between two informed options, ask. If you haven't investigated yet, you haven't earned the right to ask.
-
-This rule is load-bearing: model 4.7 has regressed on this specific behavior vs 4.6. Austen will call it out every time.
-
-## Approval Gate Before Implementation
-
-Treat requests to investigate, assess, brainstorm, recommend, or explain what
-could be done as read-only work. Conditional language such as "if I let you,"
-"what would you do," or "start looking" does not authorize edits, commits,
-deployments, or other state changes.
-
-Complete the investigation without asking questions that repository evidence
-can answer. Then present:
-
-1. the recommended outcome and why it is the best target;
-2. the proposed scope, including affected systems or files;
-3. the implementation plan, risks, and verification method; and
-4. any spec or plan document that should govern non-trivial work.
-
-Wait for Austen's explicit approval in the current conversation before starting
-non-trivial implementation. "Run autonomously" means execute the approved plan
-to completion; it does not skip the approval gate. A queue command may rank and
-drift-check the next item, but `PICK AND GO` must stop after presenting the
-recommended plan until Austen approves it.
-
-Once implementation is approved, that approval includes ordinary commit,
-local-main integration, task-worktree cleanup, and in-app delivery. Those are
-not new approval gates.
-
-A direct instruction to make a clearly bounded, trivial change is sufficient
-authorization for that exact change. State the intended edit before making it.
-Do not expand it into adjacent cleanup or unrelated queue work.
-
-## Writing Style (Real-World Copy)
-
-The fire jam test: would Austen say this out loud? State what it does. Be specific. Cut redundancy. Check features exist. No first person without a signature. Vary sentence length.
-
-Avoid: em dashes, superlatives (revolutionary, seamless), vague benefits (unlock potential), "Whether you're...", robotic transitions (Furthermore, Moreover), hedging (It's worth noting), enthusiastic affirmations (Absolutely!).
-
-Scope: marketing, UI, docs. Museum game fiction follows its own rules. Full reference: `docs/reference/ai-writing-guide.md`.
-
-## Dev Server
-
-Port 5173 is the user's VS Code dev server (hooks block `npm run dev`, `kill-port 5173`, and friends). For verification use `curl localhost:5173/path`, `npm run build`, or `npm run check`. If you need your own dev server: `vite --port 5174`.
-
-## Bash Gotchas (Windows Git Bash)
-
-- Never run `find` without a narrow path — Git Bash interprets it as Unix find and searches from root
-- Never query system processes via Git Bash — use PowerShell or cmd.exe
-- If uncertain about a command's scope, don't run it
-
-## Browser Verification (Chrome DevTools MCP)
-
-Playwright is gone. Chrome DevTools MCP is the only browser tool.
-
-Start or reuse the dedicated, persistent browser target with:
-
-```powershell
-pwsh -NoProfile -File scripts/launch-chrome-debug.ps1 -Url about:blank
-```
-
-This is one shared browser process and window for every agent. Never launch
-Chrome directly. The launcher serializes simultaneous calls, reuses the active
-process, and leaves window geometry alone so Chrome restores Austen's last
-manual size and position. Its Chrome shell profile is `Agent DevTools`
-(`Profile 1` inside the dedicated user-data directory). That non-default
-profile gives the agent browser a separate Windows taskbar identity from
-Austen's everyday Chrome. Do not override `-ProfileDirectory`.
-
-If the desktop shortcuts or taskbar identities need repair, run
-`pwsh -NoProfile -File launchers/install-chrome-profile-shortcuts.ps1`. It
-creates `Austen - Chrome` and `Agent DevTools - Chrome` desktop shortcuts with
-matching profile AppUserModelIDs. Austen's shortcut uses Chrome's native profile
-icon; the agent shortcut installs the violet fallback icon and uses its Chrome
-profile badge while running. The installer does not restart Explorer or change
-taskbar pins.
-
-Each agent opens a task-owned tab with `new_page(..., background: true)`, keeps
-the returned page ID, and supplies that `pageId` to every page-scoped tool. Do
-not depend on `select_page` or the globally active tab. Bring a tab forward only
-when Austen must interact with it. Use the default browser context so the tab
-shares the persistent authentication state. When finished, clear emulation and
-close only the task-owned tab; never close the shared browser.
-
-The visible browser must use normal Windows display scaling. Never launch it
-with `--force-device-scale-factor`. Use the MCP `emulate` tool for exact test
-viewports such as `3840x2160x1`; viewport testing must not resize or shrink the
-Chrome window. The dedicated profile preserves manual Google and Firebase
-authentication across sessions without exposing Austen's everyday Chrome.
-Historical plans and handoffs that mention direct Chrome launches,
-`--force-device-scale-factor`, or `resize_page` are stale and do not override
-this section.
-
-Ask the user first before any verification browser use. A user looking at their screen and saying "yes it works" costs ~10 tokens; a screenshot costs ~15,000.
-
-Interactive DevTools commands (`navigate_page`, `click`, `type_text`, `fill`) require **explicit verbal permission** in the current conversation. "Test this yourself" or "Take control of the browser" counts; silence doesn't.
-
-Read-only (`take_snapshot`, `take_screenshot`, `list_console_messages`) is fine when the user asks you to evaluate a page.
-
-### Shared Agent Application Identity
-
-When an approved browser task needs an ordinary TKA sign-in, Codex and Claude
-use the dedicated `Codex + Claude` TKA application account inside the
-`Agent DevTools` Chrome shell profile. Do not use Austen's personal account or
-the Google reviewer account. The profile has normal user access only and must
-never receive admin, tester, premium, or reviewer privileges.
-
-Credentials stay outside the repository in a Windows user-scoped encrypted
-store. Use `scripts/agent-profile-credential.ps1` to copy one field at a time,
-paste it into the task-owned tab, and clear the clipboard immediately. Never
-print, log, commit, or paste the password into chat. See
-`docs/reference/agent-browser-profile.md` for the exact workflow.
-
-## Context Management
-
-Suggest `/compact` at 70% context.
-
-## Architecture Docs
-
-Loaded on demand, not every session. See `docs/architecture/` — currently `save-paths.md` (save paths, public index sync, browse gallery cache).
-
-Before changing locomotion, gait timing, exact steps, stops, turns, lateral or
-crossed stepping, foot planting, retargeting, terrain traversal, or motion
-matching, read `.claude/rules/locomotion.md` and
-`docs/architecture/locomotion-research-canon.md`. The canon separates research,
-adopted architecture, prototypes, shipped behavior, dataset rights, and the
-required visual proof.
-
----
-
-# Codex Onboarding (read this before non-trivial work)
-
-You are Codex, working in the same repo as Claude Code. The sections above are the shared house rules. The sections below are what a Codex agent specifically needs to not step on anything.
-
-## The enforced rule canon lives in `.claude/rules/`
-
-The rules above are a summary. The authoritative, enforced set is in `.claude/rules/*.md`. They are not optional and they are not Claude-specific. Read the relevant one before the matching work. The load-bearing ones:
-
-- `never-hand-roll.md` (MASTER) — one concept, one behavior owner. New feature components and creative work are allowed; parallel implementations of existing capabilities are not. Search by meaning, then reuse, extend, compose, or establish a new owner.
-- `locomotion.md`: enforced planner, animator, terminal-transition, foot-contact, motion-matching, research, licensing, and live-verification boundaries for every locomotion change.
-- `autonomy-and-completeness.md` — answer your own questions from the code, finish the task, do not ask what a grep would tell you.
-- `verification-protocol.md` + `no-fabrication.md` + `no-assumption-without-evidence.md` — every "done"/"fixed" needs proof in the same message. Never claim a file/function/behavior exists without grep or Read output in the same turn.
-- `visual-verification-mandatory.md` + `4k-native-layout.md` — if your diff changes how something LOOKS, you open a browser and screenshot it yourself, unprompted, at 1920/2560/3840/1440/tablet/960x412/375, and iterate until it is genuinely good. Standing permission — do not ask. A green typecheck is not visual proof.
-- `mcp-ground-truth.md` — never state a TKA domain fact (letter behavior, VTG, position, pictograph) from memory. It must come from an MCP call. See the MCP section below for the catch on this machine.
-- `commit-only-your-own-changes.md` — worktree indexes are isolated, but path ownership still matters and Local sessions may share the primary index. Always `git commit -m "..." -- <explicit paths>`. Never a bare `git commit`, never `git add -A`/`.`/`-u`.
-- `worktree-workflow.md`: modifying tasks use dedicated worktrees; the primary checkout is reserved for Austen's dev server, integration, and explicitly requested local work.
-- `fast-iteration-loop.md` + `resource-budget.md` — no full `npm run check`/`build` in the inner loop; capture check output once then grep it; reuse a running dev server before spawning one; one `svelte-check` machine-wide.
-- Design/UI rules: `no-checkboxes.md`, `no-left-edge-accent-bar.md`, `chip-primitives.md`, `crossfade-primitive.md`, `no-layout-shift.md`, `clickables-look-like-buttons.md`, `clickable-links.md`, `simplified-word-display.md`, `sequence-viewer-shell.md`, `primitive-discovery.md`, `3d-character-terminology.md`. Read `docs/architecture/visual-design-canon.md` before establishing or substantially restyling a product surface.
-- Domain rules: `tka-domain.md`, `verify-at-canonical-source.md`.
-
-When in doubt, `ls .claude/rules/` and read the one whose name matches your task.
-
-## Working alongside live Claude sessions (coexistence)
-
-Austen runs several agents against this repo at once. Assume other work is in flight.
-
-- **Port 5173 is Austen's dev server. Never start, stop, restart, or kill it.** It serves HTTPS/2 (h2) only — every localhost URL, curl, and link is `https://`, never `http://` (http returns ERR_EMPTY_RESPONSE). To see your own change in a browser, run your own server on a free port: `vite --port 5174`. Diagnose his with `curl -k https://localhost:5173/...`.
-- **Worktree isolation.** Modifying tasks use dedicated worktrees, which isolate their working trees and indexes while sharing Git objects and refs. Scope every commit with an explicit pathspec and do not stage or revert files you did not touch. See `commit-only-your-own-changes.md`.
-- **Keep the primary checkout agent-edit free.** It stays on `main` for Austen's dev server and final integration. Work there only when Austen explicitly requests that exact workflow. See `worktree-workflow.md`.
-- **Windows shell.** Primary shell is PowerShell. A Git Bash tool exists but never query system processes or run bare `find` from it (it walks from `/`). Use PowerShell for process/registry work.
-- **This is a pnpm workspace** (`packageManager` in `package.json`; `packages/*` are members). When cleaning up a task-owned worktree, never recursively delete a `node_modules` junction to the primary checkout.
-
-## MCP: full domain toolset is wired (server `flow-arts`, 43 tools)
-
-`mcp-ground-truth.md` says all TKA domain facts must come from an MCP call. That is fully satisfied for Codex: the `flow-arts` server (the in-repo Flow Arts Knowledge MCP v3.0.0) is registered globally in `~/.codex/config.toml` → `[mcp_servers.flow-arts]`, launched as `node --import tsx <repo>/mcp-server/index.ts` with `cwd` pinned to `mcp-server/`. It exposes the same 43 tools Claude uses, including the VTG family (`get_vtg_pattern`, `get_vtg_shape`, `get_vtg_category`, `get_vtg_transition`, `get_vtg_transition_between`, `list_vtg_categories`, `search_vtg`, `tka_to_vtg`, `vtg_to_tka`), `get_domain_topic`, the educational tools (`get_letter_explanation`, `get_term_definition`, `get_pictograph_data`, `get_position_info`, `compare_letters`, …), generation (`generate_sequence`, `generate_pictograph`, LOOP tools), and presets/preferences.
-
-Verified 2026-07-17 end to end: Codex called `list_available_letters` (→ 47) and `list_vtg_categories` (→ the six VTG categories). There is no remaining domain-tool gap versus Claude.
-
-**Run mode:** the server runs through `tsx` (its `dev` mode), not the built `dist/` — the full server consumes workspace packages as raw TS source, which `tsx` resolves natively and the compiled `dist` does not. Native `canvas` (3.2.1, N-API prebuilt) is installed in `mcp-server/node_modules`, so rendering tools also work. If you pull changes that touch `mcp-server/` or its workspace deps, nothing to rebuild — tsx picks up source; just restart Codex. `codex mcp list` shows what is wired.
-
-**Fallback (for future maintainers):** a self-contained canvas-free bundle also exists at `mcp-server-pkg/dist/index.js` (`@austencloud/tka-domain-mcp`, 32 tools, no VTG / no `get_domain_topic`). Its five package-root path computations were fixed for the esbuild bundle layout (`resolve(__dirname, "..")` not `"../../.."`); rebuild with `node mcp-server-pkg/build.mjs`. If the `flow-arts` server ever breaks, `codex mcp add flow-arts -- node <repo>/mcp-server-pkg/dist/index.js` restores the core toolset.
-
-## Codex operational notes
-
-- **The right-click menu and taskbar launcher start Codex with `--dangerously-bypass-approvals-and-sandbox`** (the analogue of Claude's `--dangerously-skip-permissions`): no approval prompts, no sandbox. That is deliberate for a trusted local dev box. Installer/launcher: `launchers/install-codex-context-menu.ps1`, `launchers/start-codex.bat`. The launcher also installs the repo-owned Codex status line (model, context, 5-hour/weekly limits, branch) on each Windows machine. Re-run the installer if an npm update relocates the `codex` shim.
-- **The TKA launcher uses a side-by-side Codex build with colored usage meters and direct `/skill-name` aliases for enabled skills.** `launchers/install-codex-tka.ps1` first installs the checksummed asset from the pinned `codex-tka-v*` GitHub release; if no asset exists, it applies `patches/codex-tka-status-bars.patch` to pinned upstream source, runs focused tests, and builds locally. The result lives at `%LOCALAPPDATA%\TKA\codex-tka\bin\codex-tka.exe`; the official executable is never replaced. `.github/workflows/codex-tka-build.yml` creates the Windows artifact and can publish the release assets through manual dispatch. Updating Codex requires deliberately advancing the pinned version/commit/tag and rebasing the patch.
-- **Model:** to use the 5.6 model, run `/model` inside the TUI and pick it, or launch `codex -m <model-id>`. Codex remembers your last choice as the default in `~/.codex/config.toml`.
-- **First run needs auth:** `codex login` (ChatGPT sign-in) or `codex login --with-api-key`. Only Austen can complete this. Check state with `codex login status`.
-- **Config lives in `~/.codex/config.toml`.** `codex doctor` diagnoses install/auth/config health.
-- **Skills for Codex** already exist under `.agents/skills/` (the agent-agnostic mirror of `.claude/skills/`).
-- **Use the `orient` skill for unfamiliar areas and broad architecture questions.** It traces one real path and keeps an evidence ledger instead of bulk-reading arbitrary percentages of the repository.
-- **Restart Codex to pick up new MCP config or a moved binary.**
-
-## Memory
-
-Claude keeps a persistent memory at `C:\Users\Austen\.claude\projects\C--tka-platform\memory\` (index: `MEMORY.md`). It is not machine-readable canon, but skimming `MEMORY.md` is the fastest way to learn non-obvious project state (in-flight releases, known-broken paths like the `canvas` native issue, domain conventions). Codex does not write to it.
+- Match evidence to risk and stop after appropriate checks pass. Documentation
+  and instruction-only changes need formatting, reference, and focused contract
+  checks, not the full Svelte check. Code changes need the closest tests for
+  silent behavior plus the narrowest relevant type, lint, or build check.
+- Visual changes need direct browser inspection when they alter geometry,
+  responsiveness, element count, structure, or a reported visual defect. Use
+  the viewport tiers that can exercise the changed behavior; use the full seven
+  viewport matrix for new surfaces or cross-breakpoint layout work.
+- Localhost verification in the dedicated agent browser is part of approved UI
+  implementation. External mutation and Austen's personal session still require
+  explicit authorization.
+- Port 5173 is Austen's IPv6 HTTPS/2 dev server. Never start, restart, replace,
+  or kill it. Probe it with `curl.exe -k -g "https://[::1]:5173/"`. A task-owned
+  server must use a free port and be stopped in the same turn.
+
+## Exact Routing
+
+Read only the row that matches the task. Do not scan `.claude/rules/` generally.
+
+| Trigger                                                | Required guidance                                                                                                                  |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Worktree, commit, integration                          | `.claude/rules/worktree-workflow.md`, `.claude/rules/commit-only-your-own-changes.md`                                              |
+| Tests or verification strategy                         | `.agents/skills/testing/SKILL.md`, `.claude/rules/verification-protocol.md`                                                        |
+| UI layout, CSS, motion, responsive structure           | `src/AGENTS.md`, `docs/architecture/visual-design-canon.md`                                                                        |
+| New shared component, service, utility, or behavior    | `.claude/rules/never-hand-roll.md`; search `docs/architecture/canonical-capabilities.md` with `rg` instead of reading it wholesale |
+| TKA facts, pictographs, or sequence generation         | `mcp-server/AGENTS.md`                                                                                                             |
+| Locomotion, gait, feet, retargeting, terrain traversal | `src/lib/shared/3d/AGENTS.md`, `docs/architecture/locomotion-research-canon.md`                                                    |
+| Firestore query or index changes                       | `.claude/rules/firestore-cost-discipline.md`                                                                                       |
+| Marketing, UI, or documentation copy                   | `docs/reference/ai-writing-guide.md`                                                                                               |
+| Heavy checks or local services                         | `.claude/rules/resource-budget.md`, `.claude/rules/never-start-the-dev-server.md`                                                  |
+| Subagent, workflow, or Codex dispatch                  | `.claude/rules/model-routing.md`                                                                                                   |
+
+Rule explanations and historical documents provide context, not authority. When
+guidance conflicts, follow the current user request, then this file, then the
+most specific matching contract.

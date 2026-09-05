@@ -147,8 +147,11 @@ Supports two navigation modes:
       {#if experience}
         <a
           class="reference-link"
-          href="/guide/level-1/{experience.guideSlug}"
-          aria-label="Read {experience.guideLabel} in the written Guide"
+          href={experience.reference?.href ??
+            `/guide/level-1/${experience.guideSlug}`}
+          aria-label={experience.reference
+            ? `Read the ${experience.reference.label} reference`
+            : `Read ${experience.guideLabel} in the written Guide`}
         >
           <i class="fa-solid fa-book-open" aria-hidden="true"></i>
           <span>Read this topic</span>
@@ -316,7 +319,9 @@ Supports two navigation modes:
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .lesson-loading {

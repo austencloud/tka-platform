@@ -5,6 +5,11 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import type { FlowFestMobilityRuntimeUpdate } from "$lib/features/flow-fest-sim/state/flow-fest-mobility-state.svelte";
   import { FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
+  import { flowFestCarSpec } from "$lib/features/flow-fest-sim/domain/flow-fest-car";
+  import {
+    flowFestGroundVehicleSpeedKilometresPerHour,
+    flowFestGroundVehicleSpeedMilesPerHour,
+  } from "$lib/features/flow-fest-sim/domain/flow-fest-ground-vehicle";
   import type {
     FlowFestObjective,
     FlowFestProgressState,
@@ -43,6 +48,7 @@
     onObjectiveAction: () => void;
     onToggleSound: () => void;
     onRestart: () => void;
+    onStartOver: () => void;
     onReviewGate: () => void;
     onReviewEntrance: () => void;
     onReviewParkingGate: () => void;
@@ -74,6 +80,7 @@
     onObjectiveAction,
     onToggleSound,
     onRestart,
+    onStartOver,
     onReviewGate,
     onReviewEntrance,
     onReviewParkingGate,
@@ -85,6 +92,11 @@
   const DETAIL_DWELL_MS = 7000;
 
   let guideOpen = $state(false);
+  /** Leaving for the loadout screen closes the guide behind it. */
+  function closeGuideAndStartOver(): void {
+    guideOpen = false;
+    onStartOver();
+  }
   /**
    * The mobility card parks under the map on narrow viewports, so it needs
    * the map's real rendered height rather than a guessed offset.
@@ -115,8 +127,40 @@
   });
 
   const objectiveVisible = $derived(
-    ready && objective !== null && progress?.phase !== "choose-camp"
+    ready &&
+      objective !== null &&
+      progress?.phase !== "loadout" &&
+      progress?.phase !== "choose-camp"
   );
+  const car = $derived(mobility.car ?? null);
+  const driving = $derived(Boolean(car?.driving));
+  const carLabel = $derived(car ? flowFestCarSpec(car.modelId).label : "");
+  const carSpeedMph = $derived(
+    car
+      ? flowFestGroundVehicleSpeedMilesPerHour(
+          car.dynamics.speedMetersPerSecond
+        )
+      : 0
+  );
+  const carSpeedKph = $derived(
+    car
+      ? flowFestGroundVehicleSpeedKilometresPerHour(
+          car.dynamics.speedMetersPerSecond
+        )
+      : 0
+  );
+  const energyPercent = $derived(
+    Math.max(0, Math.min(100, progress?.energyPercent ?? 0))
+  );
+  /** The loadout screen owns the view until the car leaves. */
+  const inWorld = $derived(ready && progress?.phase !== "loadout");
+  /**
+   * The loadout screen is a translucent panel over the site. The wordmark
+   * and the minimap would show through it, so the chrome waits until the
+   * player is actually in the world. While the scene is still loading the
+   * wordmark stays, as it always has.
+   */
+  const chromeVisible = $derived(progress?.phase !== "loadout");
   const showObjectiveAction = $derived(
     Boolean(objective?.actionLabel) && !objectiveActionDisabled
   );
@@ -127,47 +171,65 @@
    * changes only once the player asked to run and the body is genuinely
    * travelling faster than its walk.
    */
+  const carStateLabel = $derived.by(() => {
+    if (!car) return "Stopped";
+    const speed = car.dynamics.speedMetersPerSecond;
+    if (speed < -0.05) return "Reversing";
+    if (Math.abs(speed) <= 0.3) return "Stopped";
+    return car.input.brake > 0 ? "Braking" : "Driving";
+  });
   const mobilityStateLabel = $derived(
-    mobility.mounted
-      ? mobility.input.performanceMode
-        ? "Performance"
-        : "Cruise"
-      : mobility.onFoot.sprinting &&
-          mobility.onFoot.speedMetersPerSecond >
-            FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND
-        ? "Running"
-        : "Walking"
+    driving
+      ? carStateLabel
+      : mobility.mounted
+        ? mobility.input.performanceMode
+          ? "Performance"
+          : "Cruise"
+        : mobility.onFoot.sprinting &&
+            mobility.onFoot.speedMetersPerSecond >
+              FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND
+          ? "Running"
+          : "Walking"
   );
 </script>
 
-<div class="hud-brand">
-  <div class="wordmark">
-    <strong>FLOW FEST</strong>
-    <span>{timeLabel}</span>
+{#if chromeVisible}
+  <div class="hud-brand">
+    <div class="wordmark">
+      <strong>FLOW FEST</strong>
+      <span>{timeLabel}</span>
+    </div>
+    <button
+      type="button"
+      aria-label="Open festival guide and controls"
+      aria-expanded={guideOpen}
+      onclick={() => (guideOpen = true)}
+    >
+      <i class="fas fa-compass" aria-hidden="true"></i>
+    </button>
   </div>
-  <button
-    type="button"
-    aria-label="Open festival guide and controls"
-    aria-expanded={guideOpen}
-    onclick={() => (guideOpen = true)}
-  >
-    <i class="fas fa-compass" aria-hidden="true"></i>
-  </button>
-</div>
 
-<div class="map-dock" bind:clientHeight={mapDockBlockSize}>
-  <FlowFestFestivalMap
-    {contract}
-    branch={selectedBranch}
-    player={position}
-    {headingRadians}
-    {targetZone}
-    {targetDistance}
-  />
-</div>
+  <div class="map-dock" bind:clientHeight={mapDockBlockSize}>
+    <FlowFestFestivalMap
+      {contract}
+      branch={selectedBranch}
+      player={position}
+      {headingRadians}
+      {targetZone}
+      {targetDistance}
+    />
+  </div>
+{/if}
 
 <div class="hud-foot">
-  {#if ready && mobility.interactionMessage}
+  {#if inWorld && car?.edgeMessage}
+    <div class="prompt edge" role="status">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      <span>{car.edgeMessage}</span>
+    </div>
+  {/if}
+
+  {#if inWorld && mobility.interactionMessage}
     <div class="prompt">
       <kbd>E</kbd>
       <span>{mobility.interactionMessage}</span>
@@ -216,27 +278,44 @@
   {/if}
 </div>
 
-{#if ready}
+{#if inWorld}
   <aside
     class="mobility-card"
     style:--hud-map-block-size="{mapDockBlockSize}px"
     aria-live="polite"
   >
     <div class="mobility-heading">
-      <span>{mobility.mounted ? "EUC" : "On foot"}</span>
+      <span>{driving ? carLabel : mobility.mounted ? "EUC" : "On foot"}</span>
       <strong class:performance={mobility.input.performanceMode}>
         {mobilityStateLabel}
       </strong>
     </div>
 
-    {#if mobility.mounted}
+    {#if driving}
+      <div class="speed">
+        <strong>{carSpeedMph.toFixed(0)}</strong>
+        <span>mph<small>{carSpeedKph.toFixed(0)} km/h</small></span>
+      </div>
+      <div
+        class="battery energy"
+        role="meter"
+        aria-label="Energy"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow={Math.round(energyPercent)}
+      >
+        <span><i style:inline-size={`${energyPercent}%`}></i></span>
+        <strong>{Math.round(energyPercent)}%</strong>
+      </div>
+    {:else if mobility.mounted}
       <div class="speed">
         <strong>{electricUnicycleSpeedMph.toFixed(1)}</strong>
         <span>mph<small>{electricUnicycleSpeedKph.toFixed(1)} km/h</small></span
         >
       </div>
       <div class="battery">
-        <span><i style:inline-size={`${mobility.dynamics.batteryPercent}%`}
+        <span
+          ><i style:inline-size={`${mobility.dynamics.batteryPercent}%`}
           ></i></span
         >
         <strong>{Math.round(mobility.dynamics.batteryPercent)}%</strong>
@@ -248,6 +327,7 @@
 <FlowFestUtilityDrawer
   bind:isOpen={guideOpen}
   mounted={mobility.mounted}
+  {driving}
   {soundOn}
   {viewpointCoordinates}
   {viewpointHref}
@@ -256,6 +336,7 @@
   {showReviewTools}
   {onToggleSound}
   {onRestart}
+  onStartOver={closeGuideAndStartOver}
   {onReviewGate}
   {onReviewEntrance}
   {onReviewParkingGate}
@@ -492,7 +573,10 @@
   }
 
   .mobility-heading > span {
+    min-inline-size: 0;
+    overflow: hidden;
     color: var(--sim-muted);
+    text-overflow: ellipsis;
     white-space: nowrap;
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 780;
@@ -573,6 +657,23 @@
     text-align: end;
   }
 
+  .battery.energy i {
+    background: linear-gradient(90deg, var(--sim-accent), #ed6f56);
+  }
+
+  .battery.energy strong {
+    color: var(--sim-accent);
+  }
+
+  .prompt.edge {
+    border-color: rgba(237, 111, 86, 0.5);
+  }
+
+  .prompt.edge i {
+    color: var(--sim-accent);
+    font-size: var(--font-size-compact, 0.75rem);
+  }
+
   kbd {
     display: inline-flex;
     align-items: center;
@@ -607,7 +708,8 @@
 
     .mobility-card {
       inset-block: calc(
-          clamp(0.6rem, 1.1vw, 1rem) + var(--hud-map-block-size, 12rem) + 0.55rem
+          clamp(0.6rem, 1.1vw, 1rem) + var(--hud-map-block-size, 12rem) +
+            0.55rem
         )
         auto;
     }

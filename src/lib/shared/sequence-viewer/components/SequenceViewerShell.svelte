@@ -98,6 +98,9 @@
   } from "../tunnel/tunnel-composition";
   import { createViewerInspectorHostState } from "../state/viewer-inspector-host-state.svelte";
   import { setViewerInspectorHostContext } from "../context/viewer-inspector-host-context";
+  import { createViewerAnimatorInspectorState } from "../state/viewer-animator-inspector-state.svelte";
+  import { setViewerAnimatorInspectorContext } from "../context/viewer-animator-inspector-context";
+  import { loadActivePill } from "$lib/shared/animation-panel/state/active-pill-persistence";
   import { createCardPresentationState } from "$lib/shared/share/state/card-presentation-state.svelte";
   import {
     cardPresentationFromFooterSettings,
@@ -213,6 +216,9 @@
   let artInspectorTarget = $state<HTMLElement | null>(null);
   const inspectorHost = createViewerInspectorHostState();
   setViewerInspectorHostContext(inspectorHost);
+  const animatorInspector =
+    createViewerAnimatorInspectorState(loadActivePill());
+  setViewerAnimatorInspectorContext(animatorInspector);
   $effect(() => inspectorHost.setTarget(artInspectorTarget));
 
   const imageCompositionDefaults = getImageCompositionManager();
@@ -603,7 +609,9 @@
   // the download stay untouched — this is an extra destination, not a
   // replacement.
   const canSaveFilmToSequence = $derived(
-    ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED && !!(ctx.effectiveSequence ?? sequence)
+    ctx.isLoggedIn &&
+      VIDEO_UPLOAD_ENABLED &&
+      !!(ctx.effectiveSequence ?? sequence)
   );
 
   async function saveFilmToSequence(): Promise<void> {
@@ -622,7 +630,6 @@
       throw error;
     }
   }
-
 </script>
 
 <div
@@ -831,7 +838,13 @@
                         {tunnelSaveTarget}
                         {onTunnelSaved}
                         renderMode={ctx.renderMode}
-                        isExporting={interactions.videoBusy}
+                        rendererHandleRequired={ctx.renderMode === "3d" &&
+                          (layout.isRecordSceneActive ||
+                            ctx.countdownValue > 0 ||
+                            ctx.isRecording3D ||
+                            ctx.isExporting ||
+                            !!ctx.pendingFilmRender ||
+                            interactions.videoBusy)}
                         bpm={ctx.bpmLocal}
                         onBpmChange={(bpm) =>
                           interactions.handleBpmChange(bpm, "viewer")}
@@ -1093,8 +1106,11 @@
                       showInlineExportProgress={false}
                       showTempoControls={false}
                       showPathShape={false}
-                      onPropChange={(prop) =>
-                        interactions.handlePropChange(prop, "video_export")}
+                      onPropChange={ctx.effectiveSequence?.sequenceKind ===
+                      "hand-path"
+                        ? undefined
+                        : (prop) =>
+                            interactions.handlePropChange(prop, "video_export")}
                       onPlaybackToggle={() =>
                         interactions.handlePlaybackToggle("video_export")}
                       onBpmChange={(bpm) =>

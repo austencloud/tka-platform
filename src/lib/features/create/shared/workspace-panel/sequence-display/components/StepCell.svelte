@@ -20,6 +20,7 @@
     onLongPress,
     shouldAnimate = false,
     isSelected = false,
+    autoFocusOnSelection = true,
     isPracticeStep = false,
     // Active mode for context-aware messaging
     activeMode = null,
@@ -49,6 +50,14 @@
     onLongPress?: () => void;
     shouldAnimate?: boolean;
     isSelected?: boolean;
+    /**
+     * Whether a newly selected cell should take keyboard focus.
+     *
+     * Editing grids opt into this by default so repeated Delete presses keep
+     * working. Playback previews disable it because their selection advances
+     * automatically and must never steal focus from surrounding controls.
+     */
+    autoFocusOnSelection?: boolean;
     isPracticeStep?: boolean;
     // Active mode
     activeMode?: BuildModeId | null;
@@ -199,7 +208,13 @@
       wasSelected = isSelected;
       return;
     }
-    if (hasMounted && isSelected && !wasSelected && cellElement) {
+    if (
+      autoFocusOnSelection &&
+      hasMounted &&
+      isSelected &&
+      !wasSelected &&
+      cellElement
+    ) {
       // Small delay to ensure DOM is settled after deletion animation
       requestAnimationFrame(() => {
         // Use preventScroll to avoid pulling user's viewport during animation playback

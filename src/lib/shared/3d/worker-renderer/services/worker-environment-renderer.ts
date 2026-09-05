@@ -1,38 +1,28 @@
-import {
-  acceptWorkerFirstFrame,
-  createWorkerRendererHandoffState,
-  rejectWorkerEnvironment,
-  requestWorkerEnvironment,
-  type WorkerRendererHandoffState,
-  type WorkerRendererSlotState,
-} from "../domain/worker-renderer-handoff";
+import type { WorkerRendererSlotState } from "../domain/worker-renderer-handoff";
+import { prefersReducedMotion } from "../../environments/primitives/motion-preference";
 import {
   clampWorkerViewport,
   type WorkerCameraSnapshot,
+  type WorkerEffectQualityTier,
   type WorkerEnvironmentKey,
   type WorkerRendererBootMetrics,
   type WorkerRendererInMessage,
   type WorkerRendererOutMessage,
   type WorkerPerformerSnapshot,
+  type WorkerSceneEffectsSnapshot,
   type WorkerViewport,
 } from "../domain/worker-renderer-protocol";
+import { getWorkerEnvironmentCamera } from "../domain/worker-environment-camera";
 import { WorkerRendererResponsivenessProbe } from "./worker-renderer-responsiveness-probe";
-import { WorkerRendererSlot } from "./worker-renderer-slot";
+import {
+  WorkerRendererSlot,
+  type WorkerRendererSlotStart,
+} from "./worker-renderer-slot";
 
-const CAMERA_BY_ENVIRONMENT: Readonly<
-  Record<WorkerEnvironmentKey, WorkerCameraSnapshot>
-> = {
-  ocean: {
-    position: [0, 4.5, 19],
-    target: [0, 1.6, -2],
-    fov: 46,
-  },
-  rainbow: {
-    position: [0, 4.2, 17],
-    target: [0, 1.1, -1],
-    fov: 48,
-  },
-};
+interface PendingEnvironment {
+  requestId: number;
+  environment: WorkerEnvironmentKey;
+}
 
 export interface WorkerSceneSwitchMeasurement {
   requestId: number;
@@ -46,6 +36,7 @@ export interface WorkerSceneSwitchMeasurement {
   mainThreadGapsOver50Ms: number;
   outgoingWorkerMaxFrameGapMs: number;
   outgoingWorkerMaxFrameGapPhase: string | null;
+  outgoingVisualMode: "none" | "animated" | "held-frame";
   handoffDelayMs: number;
   liveWorkersAtSwap: number;
   liveWorkersAfterCleanup: number | null;
@@ -62,6 +53,7 @@ export interface WorkerSceneSwitchSnapshot {
   progress: number;
   progressPhase: string | null;
   liveWorkers: number;
+  heldFrame: WorkerEnvironmentKey | null;
   lastError: string | null;
   lastMeasurement: WorkerSceneSwitchMeasurement | null;
   history: readonly WorkerSceneSwitchMeasurement[];
@@ -69,11 +61,16 @@ export interface WorkerSceneSwitchSnapshot {
 
 export interface WorkerEnvironmentRendererOptions {
   container: HTMLElement;
+  qualityTier?: WorkerEffectQualityTier;
   onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
+  onFrame?: (deltaMs: number) => void;
+  onInteraction?: (
+    message: Extract<WorkerRendererOutMessage, { type: "interaction" }>
+  ) => void;
   createWorker?: () => Worker;
 }
 
-function supportsWorkerRenderer(): boolean {
+export function supportsWorkerEnvironmentRenderer(): boolean {
   return (
     typeof Worker !== "undefined" &&
     typeof HTMLCanvasElement !== "undefined" &&
@@ -88,16 +85,34 @@ function createRendererWorker(): Worker {
   );
 }
 
+/**
+ * Owns one application-lifetime worker renderer session.
+ *
+ * The outgoing scene is copied into a bitmap poster before its scene-owned
+ * resources are released. The same worker, OffscreenCanvas, WebGLRenderer, and
+ * GPU context then build the requested scene behind that poster. Ordinary
+ * switches never create a second context; only a context loss takes the
+ * exceptional restart path.
+ */
 export class WorkerEnvironmentRenderer {
   private readonly container: HTMLElement;
   private readonly onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
+  private readonly onFrame?: (deltaMs: number) => void;
   private readonly createWorker: () => Worker;
+  private readonly onInteraction?: WorkerEnvironmentRendererOptions["onInteraction"];
   private readonly supported: boolean;
-  private handoff: WorkerRendererHandoffState =
-    createWorkerRendererHandoffState();
-  private readonly slots = new Map<number, WorkerRendererSlot>();
+  private slot: WorkerRendererSlot | null = null;
+  private latestRequestId = 0;
+  private displayedEnvironment: WorkerEnvironmentKey | null = null;
+  private liveEnvironment: WorkerEnvironmentKey | null = null;
+  private pending: PendingEnvironment | null = null;
+  private posterEnvironment: WorkerEnvironmentKey | null = null;
   private viewport: WorkerViewport = { width: 1, height: 1, dpr: 1 };
+  private pixelRatio =
+    typeof window === "undefined" ? 1 : window.devicePixelRatio;
   private resizeObserver: ResizeObserver | null = null;
+  private progressPublishFrame: number | null = null;
+  private presentationFrame: number | null = null;
   private readonly responsiveness = new WorkerRendererResponsivenessProbe();
   private progress = 0;
   private progressPhase: string | null = null;
@@ -107,12 +122,19 @@ export class WorkerEnvironmentRenderer {
   private history: WorkerSceneSwitchMeasurement[] = [];
   private disposed = false;
   private performers: readonly WorkerPerformerSnapshot[] = [];
+  private effects: WorkerSceneEffectsSnapshot = { playing: false, sources: [] };
+  private camera: WorkerCameraSnapshot | null = null;
+  private qualityTier: WorkerEffectQualityTier = "medium";
+  private recoveryAttempted = false;
 
   constructor(options: WorkerEnvironmentRendererOptions) {
     this.container = options.container;
     this.onSnapshot = options.onSnapshot;
+    this.onFrame = options.onFrame;
+    this.onInteraction = options.onInteraction;
     this.createWorker = options.createWorker ?? createRendererWorker;
-    this.supported = supportsWorkerRenderer();
+    this.qualityTier = options.qualityTier ?? this.qualityTier;
+    this.supported = supportsWorkerEnvironmentRenderer();
     if (!this.supported) {
       this.phase = "unsupported";
       this.publish();
@@ -121,6 +143,9 @@ export class WorkerEnvironmentRenderer {
 
     this.resizeObserver = new ResizeObserver(() => this.measureViewport());
     this.resizeObserver.observe(this.container);
+    this.container.addEventListener("pointermove", this.handlePointerMove);
+    this.container.addEventListener("pointerdown", this.handlePointerDown);
+    this.container.addEventListener("pointerleave", this.handlePointerLeave);
     this.measureViewport();
     this.publish();
   }
@@ -128,12 +153,13 @@ export class WorkerEnvironmentRenderer {
   get snapshot(): WorkerSceneSwitchSnapshot {
     return {
       supported: this.supported,
-      active: this.handoff.active?.environment ?? null,
-      staging: this.handoff.staging?.environment ?? null,
+      active: this.displayedEnvironment,
+      staging: this.pending?.environment ?? null,
       phase: this.phase,
       progress: this.progress,
       progressPhase: this.progressPhase,
-      liveWorkers: this.slots.size,
+      liveWorkers: this.slot?.isLive ? 1 : 0,
+      heldFrame: this.posterEnvironment,
       lastError: this.lastError,
       lastMeasurement: this.lastMeasurement,
       history: [...this.history],
@@ -142,54 +168,87 @@ export class WorkerEnvironmentRenderer {
 
   switchTo(environment: WorkerEnvironmentKey): void {
     if (!this.supported || this.disposed) return;
-    const decision = requestWorkerEnvironment(this.handoff, environment);
-    if (decision.type === "ignored") return;
-    this.handoff = decision.state;
-    if (decision.type === "cancel") {
-      this.destroySlot(decision.dispose.requestId, undefined, true);
-      this.endProbe();
-      this.phase = "idle";
-      this.progress = 1;
-      this.progressPhase = null;
+    if (this.pending?.environment === environment) return;
+    if (
+      !this.pending &&
+      this.displayedEnvironment === environment &&
+      this.liveEnvironment === environment
+    ) {
+      return;
+    }
+
+    if (this.presentationFrame !== null) {
+      cancelAnimationFrame(this.presentationFrame);
+      this.presentationFrame = null;
+    }
+
+    const supersedesPending = this.pending !== null;
+    const request: PendingEnvironment = {
+      requestId: ++this.latestRequestId,
+      environment,
+    };
+    this.pending = request;
+    this.lastError = null;
+    this.progress = 0;
+    this.progressPhase = this.slot ? "poster" : "worker";
+    this.phase = "booting";
+    this.beginProbe(request.requestId);
+    this.responsiveness.setPhase(this.progressPhase);
+    this.publish();
+
+    if (!this.slot) {
+      this.createSession(request);
+      return;
+    }
+
+    // GLTF parsing itself is not abortable. Once the outgoing bitmap is safely
+    // on the application thread, keeping an obsolete heavy build alive can
+    // make a rapid final choice wait tens of seconds. Replace that worker and
+    // context under the already-painted poster; ordinary one-at-a-time scene
+    // changes continue to reuse the persistent session.
+    if (supersedesPending && this.slot.isPosterVisible) {
+      this.progressPhase = "worker";
+      this.responsiveness.setPhase("worker");
+      this.slot.restart(this.slotStart(request));
       this.publish();
       return;
     }
-    if (decision.dispose) {
-      // A superseded staging context has never been visible and can be
-      // terminated immediately. Waiting for its dispose acknowledgement before
-      // creating the latest request would either delay the user's choice or
-      // temporarily exceed the two-context memory bound.
-      this.destroySlot(decision.dispose.requestId, undefined, true);
-    }
 
-    this.lastError = null;
-    this.progress = 0;
-    this.progressPhase = "worker";
-    this.phase = "booting";
-    this.beginProbe(decision.slot.requestId);
-    this.createSlot(decision.slot);
-    this.publish();
+    this.slot.state = this.slotState(request, "booting");
+    this.slot.post({
+      type: "switch-environment",
+      requestId: request.requestId,
+      environment: request.environment,
+      reducedMotion: prefersReducedMotion(),
+    });
   }
 
   setCamera(camera: WorkerCameraSnapshot): void {
-    for (const slot of this.slots.values()) {
-      this.post(slot, {
-        type: "camera",
-        requestId: slot.state.requestId,
-        camera,
-      });
-    }
+    this.camera = camera;
+    this.postSessionMessage({ type: "camera", camera });
+  }
+
+  setPixelRatio(pixelRatio: number): void {
+    if (!Number.isFinite(pixelRatio) || pixelRatio <= 0) return;
+    if (pixelRatio === this.pixelRatio) return;
+    this.pixelRatio = pixelRatio;
+    this.measureViewport();
+  }
+
+  setQualityTier(qualityTier: WorkerEffectQualityTier): void {
+    if (qualityTier === this.qualityTier) return;
+    this.qualityTier = qualityTier;
+    this.postSessionMessage({ type: "quality", qualityTier });
   }
 
   setPerformers(performers: readonly WorkerPerformerSnapshot[]): void {
     this.performers = performers;
-    for (const slot of this.slots.values()) {
-      this.post(slot, {
-        type: "performers",
-        requestId: slot.state.requestId,
-        performers,
-      });
-    }
+    this.postSessionMessage({ type: "performers", performers });
+  }
+
+  setEffects(effects: WorkerSceneEffectsSnapshot): void {
+    this.effects = effects;
+    this.postSessionMessage({ type: "effects", effects });
   }
 
   dispose(): void {
@@ -197,35 +256,42 @@ export class WorkerEnvironmentRenderer {
     this.disposed = true;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
-    this.endProbe();
-    for (const requestId of [...this.slots.keys()]) {
-      this.destroySlot(requestId, undefined, true);
+    this.container.removeEventListener("pointermove", this.handlePointerMove);
+    this.container.removeEventListener("pointerdown", this.handlePointerDown);
+    this.container.removeEventListener("pointerleave", this.handlePointerLeave);
+    if (this.progressPublishFrame !== null) {
+      cancelAnimationFrame(this.progressPublishFrame);
+      this.progressPublishFrame = null;
     }
-    this.handoff = createWorkerRendererHandoffState();
+    if (this.presentationFrame !== null) {
+      cancelAnimationFrame(this.presentationFrame);
+      this.presentationFrame = null;
+    }
+    this.endProbe();
+    this.slot?.destroy();
+    this.slot = null;
+    this.pending = null;
+    this.posterEnvironment = null;
   }
 
-  private createSlot(state: WorkerRendererSlotState): void {
+  private createSession(request: PendingEnvironment): void {
+    const start = this.slotStart(request);
     try {
-      const slot = new WorkerRendererSlot({
+      this.slot = new WorkerRendererSlot({
         container: this.container,
-        state,
-        viewport: this.viewport,
-        camera: CAMERA_BY_ENVIRONMENT[state.environment],
-        performers: this.performers,
+        ...start,
         createWorker: this.createWorker,
         onMessage: (source, message) =>
           this.handleWorkerMessage(source, message),
-        onError: (source, message) =>
-          this.handleFailure(source.state.requestId, message),
+        onError: (source, message) => this.handleFailure(source, message),
         onDestroyed: (source) => {
-          this.slots.delete(source.state.requestId);
+          if (this.slot === source) this.slot = null;
           if (!this.disposed) this.publish();
         },
       });
-      this.slots.set(state.requestId, slot);
     } catch (error) {
-      this.handleFailure(
-        state.requestId,
+      this.slot = null;
+      this.failWithoutRecovery(
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -235,133 +301,215 @@ export class WorkerEnvironmentRenderer {
     slot: WorkerRendererSlot,
     message: WorkerRendererOutMessage
   ): void {
-    if (message.requestId !== slot.state.requestId) return;
+    if (slot !== this.slot) {
+      if (message.type === "poster") message.bitmap.close();
+      return;
+    }
+
     switch (message.type) {
       case "progress":
-        if (this.handoff.staging?.requestId === message.requestId) {
+        if (this.pending?.requestId === message.requestId) {
           this.progress = message.fraction;
           this.progressPhase = message.phase;
           this.responsiveness.setPhase(message.phase);
-          this.publish();
+          this.scheduleProgressPublish();
         }
         return;
+      case "poster":
+        this.installPoster(slot, message);
+        return;
       case "first-frame":
-        this.handleFirstFrame(slot, message.metrics);
+        this.handleFirstFrame(slot, message);
         return;
       case "frame":
-        if (this.handoff.active?.requestId === message.requestId) {
+        if (
+          this.phase === "idle" &&
+          !this.posterEnvironment &&
+          this.liveEnvironment === message.environment
+        ) {
           this.responsiveness.recordOutgoingFrame(message.deltaMs);
+          this.onFrame?.(message.deltaMs);
         }
         return;
       case "error":
-        this.handleFailure(slot.state.requestId, message.message);
+        this.handleFailure(slot, message.message);
         return;
       case "context-lost":
-        this.handleFailure(
-          slot.state.requestId,
-          "Worker WebGL context was lost"
-        );
+        this.handleFailure(slot, "Worker WebGL context was lost");
+        return;
+      case "interaction":
+        if (
+          this.phase === "idle" &&
+          !this.posterEnvironment &&
+          this.liveEnvironment === message.environment
+        ) {
+          this.onInteraction?.(message);
+        }
         return;
       case "disposed":
-        return;
       case "booting":
         return;
     }
   }
 
-  private handleFirstFrame(
+  private installPoster(
     slot: WorkerRendererSlot,
-    workerBoot: WorkerRendererBootMetrics
+    message: Extract<WorkerRendererOutMessage, { type: "poster" }>
   ): void {
-    const decision = acceptWorkerFirstFrame(this.handoff, slot.state.requestId);
-    if (decision.type !== "swap") {
-      this.destroySlot(slot.state.requestId, undefined, true);
+    try {
+      slot.installPoster(message.bitmap);
+    } catch (error) {
+      this.handleFailure(
+        slot,
+        error instanceof Error ? error.message : String(error)
+      );
       return;
     }
-    this.handoff = decision.state;
+    this.posterEnvironment = message.environment;
+    this.displayedEnvironment = message.environment;
+    this.progressPhase = "release";
+    this.responsiveness.setPhase("release");
+    this.publish();
+
+    requestAnimationFrame(() => {
+      if (this.disposed || slot !== this.slot || !slot.isLive) return;
+      const latest = this.pending;
+      if (latest && latest.requestId !== message.requestId) {
+        this.progressPhase = "worker";
+        this.responsiveness.setPhase("worker");
+        slot.restart(this.slotStart(latest));
+        this.publish();
+        return;
+      }
+      slot.post({ type: "poster-ready", requestId: message.requestId });
+    });
+  }
+
+  private handleFirstFrame(
+    slot: WorkerRendererSlot,
+    message: Extract<WorkerRendererOutMessage, { type: "first-frame" }>
+  ): void {
+    const request = this.pending;
+    if (!request || request.requestId !== message.requestId) return;
     this.phase = "swapping";
     this.progress = 1;
     this.progressPhase = "handoff";
     const receivedAt = performance.now();
+    const posterWasVisible = slot.isPosterVisible;
     this.publish();
 
-    requestAnimationFrame(() => {
+    this.presentationFrame = requestAnimationFrame(() => {
+      this.presentationFrame = null;
       if (
         this.disposed ||
-        this.handoff.active?.requestId !== slot.state.requestId
-      )
+        slot !== this.slot ||
+        this.pending?.requestId !== request.requestId
+      ) {
         return;
-      const outgoing = decision.outgoing
-        ? this.slots.get(decision.outgoing.requestId)
-        : null;
-      slot.show();
-      outgoing?.hide();
+      }
+
+      slot.clearPoster();
+      this.posterEnvironment = null;
+      this.liveEnvironment = request.environment;
+      this.displayedEnvironment = request.environment;
+      this.pending = null;
+      this.phase = "idle";
+      this.progressPhase = null;
+      this.recoveryAttempted = false;
+      slot.state = this.slotState(request, "active");
+      slot.post({ type: "live-presented", requestId: request.requestId });
+
       const swappedAt = performance.now();
       const probe = this.endProbe();
       const measurement: WorkerSceneSwitchMeasurement = {
-        requestId: slot.state.requestId,
-        environment: slot.state.environment,
+        requestId: request.requestId,
+        environment: request.environment,
         requestedAt: probe?.requestedAt ?? receivedAt,
         swappedAt,
         clickToSwapMs: swappedAt - (probe?.requestedAt ?? receivedAt),
-        workerBoot,
+        workerBoot: message.metrics,
         mainThreadMaxGapMs: probe?.mainThreadMaxGapMs ?? 0,
         mainThreadMaxGapPhase: probe?.mainThreadMaxGapPhase ?? null,
         mainThreadGapsOver50Ms: probe?.mainThreadGapsOver50Ms ?? 0,
-        outgoingWorkerMaxFrameGapMs: probe?.outgoingWorkerMaxFrameGapMs ?? 0,
+        outgoingWorkerMaxFrameGapMs:
+          probe?.outgoingWorkerMaxFrameGapMs ?? 0,
         outgoingWorkerMaxFrameGapPhase:
           probe?.outgoingWorkerMaxFrameGapPhase ?? null,
+        outgoingVisualMode: posterWasVisible
+          ? "held-frame"
+          : this.lastMeasurement
+            ? "animated"
+            : "none",
         handoffDelayMs: swappedAt - receivedAt,
-        liveWorkersAtSwap: this.slots.size,
-        liveWorkersAfterCleanup: null,
+        liveWorkersAtSwap: slot.isLive ? 1 : 0,
+        liveWorkersAfterCleanup: slot.isLive ? 1 : 0,
         passedInputGate: (probe?.mainThreadMaxGapMs ?? 0) <= 50,
         passedFrameGate:
-          !decision.outgoing ||
+          posterWasVisible ||
           (probe?.outgoingWorkerMaxFrameGapMs ?? Infinity) <= 100,
-        passedWorkerBound: this.slots.size <= 2,
+        passedWorkerBound: slot.isLive,
       };
       this.lastMeasurement = measurement;
       this.history = [...this.history, measurement].slice(-20);
-      this.phase = "idle";
-      this.progressPhase = null;
       this.publish();
-
-      requestAnimationFrame(() => {
-        if (decision.outgoing) {
-          this.destroySlot(decision.outgoing.requestId, () => {
-            measurement.liveWorkersAfterCleanup = this.slots.size;
-            measurement.passedWorkerBound =
-              measurement.passedWorkerBound && this.slots.size === 1;
-            this.publish();
-          });
-        } else {
-          measurement.liveWorkersAfterCleanup = this.slots.size;
-          this.publish();
-        }
-      });
     });
   }
 
-  private handleFailure(requestId: number, message: string): void {
-    const decision = rejectWorkerEnvironment(this.handoff, requestId);
-    if (decision.type === "ignored") {
-      this.destroySlot(requestId, undefined, true);
-      return;
-    }
-    this.handoff = decision.state;
+  private handleFailure(slot: WorkerRendererSlot, message: string): void {
+    if (slot !== this.slot || this.disposed) return;
     this.lastError = message;
-    if (decision.role === "staging") {
-      this.endProbe();
-      this.phase = "error";
-    } else {
-      // A context loss in the visible worker must not leave the state pointing
-      // at a dead canvas. If a replacement is already booting, let it finish;
-      // otherwise expose the failure rather than entering an unbounded restart
-      // loop on a device that cannot sustain another WebGL context.
-      this.phase = this.handoff.staging ? "booting" : "error";
+    const request = this.pending;
+    if (request && !this.recoveryAttempted) {
+      this.recoveryAttempted = true;
+      this.progress = 0;
+      this.progressPhase = "worker";
+      this.phase = "booting";
+      this.responsiveness.setPhase("worker");
+      try {
+        slot.restart(this.slotStart(request));
+        this.publish();
+        return;
+      } catch (error) {
+        this.lastError =
+          error instanceof Error ? error.message : String(error);
+      }
     }
-    this.destroySlot(requestId, undefined, true);
+
+    slot.suspend();
+    this.endProbe();
+    this.phase = "error";
     this.publish();
+  }
+
+  private failWithoutRecovery(message: string): void {
+    this.lastError = message;
+    this.endProbe();
+    this.phase = "error";
+    this.publish();
+  }
+
+  private slotStart(request: PendingEnvironment): WorkerRendererSlotStart {
+    return {
+      state: this.slotState(request, "booting"),
+      viewport: this.viewport,
+      camera: this.camera ?? getWorkerEnvironmentCamera(request.environment),
+      qualityTier: this.qualityTier,
+      performers: this.performers,
+      effects: this.effects,
+      reducedMotion: prefersReducedMotion(),
+    };
+  }
+
+  private slotState(
+    request: PendingEnvironment,
+    status: WorkerRendererSlotState["status"]
+  ): WorkerRendererSlotState {
+    return {
+      id: "a",
+      requestId: request.requestId,
+      environment: request.environment,
+      status,
+    };
   }
 
   private beginProbe(nextRequestId: number): void {
@@ -377,36 +525,67 @@ export class WorkerEnvironmentRenderer {
     this.viewport = clampWorkerViewport({
       width: rect.width,
       height: rect.height,
-      dpr: window.devicePixelRatio,
+      dpr: this.pixelRatio,
     });
-    for (const slot of this.slots.values()) {
-      this.post(slot, {
-        type: "resize",
-        requestId: slot.state.requestId,
-        viewport: this.viewport,
-      });
-    }
+    this.postSessionMessage({ type: "resize", viewport: this.viewport });
   }
 
-  private post(
-    slot: WorkerRendererSlot,
-    message: WorkerRendererInMessage
-  ): void {
-    slot.post(message);
+  private readonly handlePointerMove = (event: PointerEvent): void => {
+    this.postPointer("move", event);
+  };
+
+  private readonly handlePointerDown = (event: PointerEvent): void => {
+    this.postPointer("down", event);
+  };
+
+  private readonly handlePointerLeave = (): void => {
+    if (!this.slot || this.phase !== "idle") return;
+    this.slot.post({
+      type: "pointer",
+      requestId: this.latestRequestId,
+      action: "leave",
+      ndcX: 0,
+      ndcY: 0,
+    });
+  };
+
+  private postPointer(action: "move" | "down", event: PointerEvent): void {
+    if (!this.slot || this.phase !== "idle") return;
+    const rect = this.container.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    this.slot.post({
+      type: "pointer",
+      requestId: this.latestRequestId,
+      action,
+      ndcX: ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      ndcY: -((event.clientY - rect.top) / rect.height) * 2 + 1,
+    });
   }
 
-  private destroySlot(
-    requestId: number,
-    after?: () => void,
-    immediate = false
+  private postSessionMessage(
+    message:
+      | Omit<Extract<WorkerRendererInMessage, { type: "camera" }>, "requestId">
+      | Omit<Extract<WorkerRendererInMessage, { type: "resize" }>, "requestId">
+      | Omit<
+          Extract<WorkerRendererInMessage, { type: "performers" }>,
+          "requestId"
+        >
+      | Omit<Extract<WorkerRendererInMessage, { type: "effects" }>, "requestId">
+      | Omit<Extract<WorkerRendererInMessage, { type: "quality" }>, "requestId">
   ): void {
-    const slot = this.slots.get(requestId);
-    if (!slot) {
-      after?.();
-      return;
-    }
-    if (immediate) slot.terminate(after);
-    else slot.destroy(after);
+    if (!this.slot) return;
+    this.slot.post({
+      ...message,
+      requestId: this.latestRequestId,
+    } as WorkerRendererInMessage);
+  }
+
+  private scheduleProgressPublish(): void {
+    if (this.progressPublishFrame !== null) return;
+    this.progressPublishFrame = requestAnimationFrame(() => {
+      this.progressPublishFrame = null;
+      if (!this.disposed) this.publish();
+    });
   }
 
   private publish(): void {

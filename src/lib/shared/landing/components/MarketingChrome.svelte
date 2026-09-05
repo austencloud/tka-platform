@@ -77,8 +77,18 @@
   });
 
   const path = $derived(page.url.pathname);
+  // The TnD explorer and articles share one live player through their layout.
+  const contentKey = $derived(
+    path === "/timing-and-direction" ||
+      path.startsWith("/timing-and-direction/")
+      ? "/timing-and-direction"
+      : path
+  );
   const footerVariant = $derived(
-    path === "/" || path === "/composer" || path === "/history"
+    path === "/" ||
+      path === "/composer" ||
+      path === "/history" ||
+      path === "/timing-and-direction"
       ? "compact"
       : path === "/about"
         ? "sitemap"
@@ -116,7 +126,7 @@
     <SiteHeader />
 
     <div class="mkt-stage">
-      {#key path}
+      {#key contentKey}
         <div
           class="mkt-content"
           in:fade|global={{

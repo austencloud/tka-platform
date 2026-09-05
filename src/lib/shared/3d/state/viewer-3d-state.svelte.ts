@@ -103,6 +103,12 @@ const STORAGE_KEY_ENVIRONMENT = VIEWER_3D_ENVIRONMENT_STORAGE_KEY;
 
 export type ViewerNavMode = "orbit" | "fly" | "walk";
 
+export interface ViewerPerformerAppearanceAssignment {
+  index: number;
+  characterId?: CharacterId;
+  prop?: PropType;
+}
+
 type CameraSnapTo = (
   position: { x: number; y: number; z: number },
   target: { x: number; y: number; z: number },
@@ -1173,6 +1179,59 @@ function buildViewer3DState(
     );
   }
 
+  /**
+   * Apply a per-performer cast plan as one viewer history entry. Director
+   * instructions intentionally bypass the current selection: their indices
+   * address the whole live cast that was included in the interpreted scene.
+   */
+  function applyPerformerAppearanceAssignments(
+    assignments: readonly ViewerPerformerAppearanceAssignment[]
+  ): boolean {
+    const byIndex = new Map(
+      assignments.map((assignment) => [assignment.index, assignment])
+    );
+    const targets = [...byIndex]
+      .map(([index, assignment]) => ({
+        performer: performerManager.performers[index],
+        assignment,
+      }))
+      .filter(
+        (
+          target
+        ): target is {
+          performer: CharacterInstanceState;
+          assignment: ViewerPerformerAppearanceAssignment;
+        } => !!target.performer
+      );
+    if (targets.length === 0) return false;
+
+    const before = captureScopedEditingSnapshots(
+      targets.map((target) => target.performer)
+    );
+    sceneUndo.withoutUndo(() => {
+      for (const { performer, assignment } of targets) {
+        if (assignment.characterId) {
+          performer.setCharacter(assignment.characterId);
+        }
+        if (assignment.prop) performer.setProp(assignment.prop);
+      }
+    });
+    const after = captureScopedEditingSnapshots(
+      targets.map((target) => target.performer)
+    );
+    sceneUndo.pushSelfRestoringEntry(
+      targets.some((target) => target.assignment.characterId)
+        ? "change-character"
+        : "change-prop",
+      "TIKA: direct cast",
+      {
+        undo: () => restoreScopedEditingSnapshots(before),
+        redo: () => restoreScopedEditingSnapshots(after),
+      }
+    );
+    return true;
+  }
+
   function setPropBuildScoped(propBuild: Partial<PropBuild>): boolean {
     return applyScopedPerformerEdit(
       "change-prop-build",
@@ -1678,6 +1737,9 @@ function buildViewer3DState(
   // loop is paused so manual runFrame calls aren't racing with rAF renders.
   let threltePauseAutoLoop = $state<(() => void) | null>(null);
   let threlteResumeAutoLoop = $state<(() => void) | null>(null);
+  // Renderer objects stored in rune state are proxied, so their exposed value
+  // is not a safe identity token for registration ownership.
+  let threlteRegistrationOwner: unknown = null;
 
   // Pause the Threlte render loop when in 2D mode so the hidden 3D canvas
   // doesn't eat CPU/GPU time and stutter the active 2D animation.
@@ -2284,6 +2346,7 @@ function buildViewer3DState(
     togglePropSizeLink,
     setCharacterScoped,
     setPropScoped,
+    applyPerformerAppearanceAssignments,
     setPropBuildScoped,
     setEffortScoped,
     setEffectScoped,
@@ -2449,12 +2512,27 @@ function buildViewer3DState(
       pauseAutoLoop: () => void;
       resumeAutoLoop: () => void;
     }) {
+      threlteRegistrationOwner = refs.renderer;
       threlteRenderer = refs.renderer;
       threlteScene = refs.scene;
       threlteCamera = refs.camera;
       threlteRunFrame = refs.runFrame;
       threltePauseAutoLoop = refs.pauseAutoLoop;
       threlteResumeAutoLoop = refs.resumeAutoLoop;
+      return () => {
+        // A replacement legacy canvas can register before the old canvas's
+        // effect cleanup runs. Only the owner of the current handles may clear
+        // them, otherwise Record Scene can get stuck on "Preparing."
+        if (threlteRegistrationOwner !== refs.renderer) return;
+        threlteRegistrationOwner = null;
+        threlteRenderer = null;
+        threlteScene = null;
+        threlteCamera = null;
+        threlteRunFrame = null;
+        threltePauseAutoLoop = null;
+        threlteResumeAutoLoop = null;
+        _loopPausedFor2D = false;
+      };
     },
     get threlteRunFrame() {
       return threlteRunFrame;

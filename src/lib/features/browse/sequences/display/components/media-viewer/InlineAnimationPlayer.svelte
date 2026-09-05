@@ -11,6 +11,7 @@
   import {
     createRenderActivityGate,
     renderGateTarget,
+    type RenderActivityGate,
   } from "$lib/shared/render-gating/render-activity-gate";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -113,6 +114,9 @@
     rightPropType = null,
     externalBpm = null,
     externalPlaying = null,
+    externalStep = null,
+    onExternalSeek = undefined,
+    playbackGate = undefined,
     onExternalPlayingChange = undefined,
     chrome = "full",
     fill = false,
@@ -122,6 +126,7 @@
     showWordHeader = false,
     showPositionGlyph = false,
     onStepChange = undefined,
+    onSeekRef = undefined,
     scrubbable = false,
     singlePlay = false,
     beatIndicators = true,
@@ -166,6 +171,11 @@
     /** Shared host playback intent. When present, hidden retained players pause
      *  without changing this value and resume to match it when visible again. */
     externalPlaying?: boolean | null;
+    /** A shared clock drives this player; its own playback loop stays stopped. */
+    externalStep?: number | null;
+    onExternalSeek?: (step: number) => void;
+    /** A comparison's clock stays active while any part of its board is visible. */
+    playbackGate?: RenderActivityGate;
     onExternalPlayingChange?: (playing: boolean) => void;
     /**
      * Reports the live 1-based fractional playback step (`currentStep`) and the
@@ -175,6 +185,8 @@
      * other hosts (gallery, Arena) omit it and pay no per-frame cost.
      */
     onStepChange?: (currentStep: number, sequenceId: string | null) => void;
+    /** Exposes the player's canonical step seek without exposing its controller. */
+    onSeekRef?: (seek: ((step: number) => void) | null) => void;
     /**
      * "full" (default) = external play button + BpmChips grid + the in-canvas
      * UnifiedTimeline scrubber (gallery detail, Arena).
@@ -389,6 +401,11 @@
       return;
     const controller = playbackController;
 
+    if (externalStep !== null) {
+      if (animationState.isPlaying) untrack(() => controller.togglePlayback());
+      return;
+    }
+
     if (externalPlaying !== null) {
       const shouldPlay = externalPlaying && playbackAllowed;
       if (animationState.isPlaying !== shouldPlay) {
@@ -411,6 +428,17 @@
     pausedByPlaybackGate = false;
     untrack(() => controller.togglePlayback());
   });
+
+  $effect(() => {
+    const step = externalStep;
+    if (step === null || !servicesReady || loading || !playbackController)
+      return;
+    untrack(() => playbackController?.calculateStateForStep(step));
+  });
+
+  const canvasPlaying = $derived(
+    externalStep !== null ? (externalPlaying ?? false) : isPlaying
+  );
 
   // Derived state for canvas
   // Letters are a PROP-only glyph — a hand pictograph never shows one (a hand has
@@ -498,7 +526,7 @@
         // drive the workspace's beat highlight for an unrelated sequence.
         syncSharedWorkspaceState: false,
       });
-      playbackController.setActivityGate(activityGate);
+      playbackController.setActivityGate(playbackGate ?? activityGate);
       playbackController.onLoopComplete(() => onLoopComplete?.());
       playbackController.onSequenceBoundary(() => {
         const handoff = onSequenceBoundary?.() ?? null;
@@ -559,7 +587,7 @@
   // re-trigger this effect (the same footgun the externalBpm effect avoids).
   $effect(() => {
     const cb = onStepChange;
-    if (!cb) return;
+    if (!cb || loading) return;
     const step = animationState.currentStep;
     const sequenceId = animationState.sequenceData?.id ?? null;
     untrack(() => cb(step, sequenceId));
@@ -583,6 +611,7 @@
     // and never retry.
     if (
       !autoPlay ||
+      externalStep !== null ||
       externalPlaying !== null ||
       !playbackAllowed ||
       !servicesReady ||
@@ -678,7 +707,9 @@
         bpm = externalBpm;
       }
 
-      if (initialStep !== null) {
+      if (externalStep !== null) {
+        playbackController.calculateStateForStep(externalStep);
+      } else if (initialStep !== null) {
         playbackController.seekToStep(initialStep);
       }
 
@@ -769,16 +800,37 @@
   // running if it was already running.
   let wasPlayingBeforeScrub = false;
   function handleScrubStart() {
+    if (externalStep !== null) {
+      wasPlayingBeforeScrub = externalPlaying ?? false;
+      if (wasPlayingBeforeScrub) onExternalPlayingChange?.(false);
+      return;
+    }
     wasPlayingBeforeScrub = animationState.isPlaying;
     if (wasPlayingBeforeScrub) playbackController?.togglePlayback();
   }
   function handleScrubEnd() {
+    if (externalStep !== null) {
+      if (wasPlayingBeforeScrub) onExternalPlayingChange?.(true);
+      wasPlayingBeforeScrub = false;
+      return;
+    }
     if (wasPlayingBeforeScrub) playbackController?.togglePlayback();
     wasPlayingBeforeScrub = false;
   }
   function handleSeek(targetStep: number) {
+    if (externalStep !== null) {
+      onExternalSeek?.(targetStep);
+      return;
+    }
     playbackController?.seekToStep(targetStep);
   }
+
+  $effect(() => {
+    const publishSeek = onSeekRef;
+    if (!publishSeek) return;
+    publishSeek(handleSeek);
+    return () => publishSeek(null);
+  });
 </script>
 
 <div class="inline-animation-player" use:renderGateTarget={activityGate}>
@@ -813,7 +865,7 @@
         sequenceData={animationState.sequenceData}
         word={animationState.sequenceData?.word ?? sequence.word}
         currentStep={animationState.currentStep}
-        {isPlaying}
+        isPlaying={canvasPlaying}
         onPlaybackToggle={togglePlayback}
         trailSettings={trailSettingsOverride ?? animationSettings.trail}
         {backgroundAlpha}

@@ -37,12 +37,19 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { FormationPresetId } from "./domain/stage-types";
+  import type { TikaDirectorConversationMessage } from "./domain/tika-director";
+  import { describeCastForDirectorRevision } from "./domain/tika-director-revision";
+  import {
+    createTikaDirectorSession,
+    type TikaDirectorSubmitResult,
+  } from "./state/tika-director-session";
 
   import FormationOverlay from "./components/FormationOverlay.svelte";
   import SetProperties from "./components/SetProperties.svelte";
   import StageFloorPaths from "./components/StageFloorPaths.svelte";
   import StageTimeline from "./components/StageTimeline.svelte";
   import StageStarter from "./components/StageStarter.svelte";
+  import TikaDirectorPanel from "./components/TikaDirectorPanel.svelte";
   import SceneExportModal from "./scene/components/SceneExportModal.svelte";
   import { createSceneVideoExport } from "./scene/services/create-scene-video-export.svelte";
   import { setStageChoreographyContext } from "./context/stage-choreography-context";
@@ -63,6 +70,14 @@
     applyStageCastToViewer,
     applyStagePerformerMotion,
   } from "./services/stage-viewer-adapter";
+  import { resolveStageDirection } from "./services/tika-director-service";
+  import { executeTikaDirectorPlan } from "./services/tika-director-executor";
+  import {
+    resolveDirectorSequenceAssignments,
+    type DirectorSequenceAssignment,
+  } from "./domain/tika-director-sequences";
+  import { listLibrarySequences } from "$lib/shared/browse/services/library-sequence-list";
+  import { hydrateSequence } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
 
   type SequenceLoadState = "loading" | "ready" | "error";
   type TimelineDisclosure = "hidden" | "dock" | "editor";
@@ -175,6 +190,9 @@
   const performanceFrames = $derived(stageState.performanceFrames);
 
   let chartRaised = $state(false);
+  let tikaDirectorOpen = $state(false);
+  let tikaPrompt = $state("");
+  let tikaMessages = $state<TikaDirectorConversationMessage[]>([]);
   let starterVisible = $state(!handoff);
   let starterSceneBlank = $state(false);
   let starterCurtainVisible = $state(false);
@@ -274,6 +292,114 @@
         ) || null
       : null
   );
+
+  let tikaViewerHistoryRevision = 0;
+  const unsubscribeTikaHistory = viewer.sceneUndo.subscribe(() => {
+    tikaViewerHistoryRevision++;
+  });
+  const tikaSession = createTikaDirectorSession({
+    isDisposed: () => viewer.disposed || !tikaDirectorOpen,
+    getRevision: () =>
+      JSON.stringify(
+        {
+          stageHistory: stageState.historyRevision,
+          viewerHistory: tikaViewerHistoryRevision,
+          choreography,
+          cast: describeCastForDirectorRevision(
+            viewer.performerManager.performers.map((performer) =>
+              performer.captureEditingSnapshot()
+            )
+          ),
+        },
+        (_key, value) => (value instanceof Map ? [...value] : value)
+      ),
+  });
+
+  async function readLibraryForDirector(): Promise<SequenceData[] | null> {
+    try {
+      return await listLibrarySequences();
+    } catch {
+      return null;
+    }
+  }
+
+  async function directStageWithTika(
+    prompt: string,
+    conversation: readonly TikaDirectorConversationMessage[],
+    signal: AbortSignal
+  ): Promise<TikaDirectorSubmitResult> {
+    const requestBeat = stageState.currentBeat;
+    // Picked and hydrated while the plan resolves, so apply stays synchronous
+    // under the session's revision check and never plays a metadata-only record.
+    let sequencePicks: DirectorSequenceAssignment[] = [];
+    try {
+      return await tikaSession.execute(
+        async () => {
+          const library = await readLibraryForDirector();
+          const response = await resolveStageDirection({
+            prompt,
+            conversation,
+            choreography,
+            currentBeat: requestBeat,
+            viewer,
+            ...(library ? { librarySequenceCount: library.length } : {}),
+            signal,
+          });
+          if (
+            response.kind === "apply" &&
+            response.actions.some(
+              (action) => action.type === "assign-distinct-sequences"
+            )
+          ) {
+            if (!library) {
+              throw new Error(
+                "TIKA could not read your library, so no sequences were assigned."
+              );
+            }
+            const picks = resolveDirectorSequenceAssignments({
+              actions: response.actions,
+              performerIds: choreography.performers.map((p) => p.id),
+              seedKey: `${choreography.id}:${prompt}`,
+              library,
+            });
+            sequencePicks = await Promise.all(
+              picks.map(async (pick) => ({
+                performerId: pick.performerId,
+                sequence: await hydrateSequence(pick.sequence),
+              }))
+            );
+            signal.throwIfAborted();
+          }
+          return response;
+        },
+        (response) =>
+          executeTikaDirectorPlan(response, {
+            stageState,
+            viewer,
+            requestBeat,
+            selectedFormationId: editMode.selectedFormationId,
+            seedKey: `${choreography.id}:${prompt}`,
+            sequencePicks,
+            preloadSequence: (pick) =>
+              preloadedSequences.set(pick.sequence.id, pick.sequence),
+          }),
+        signal
+      );
+    } catch (cause) {
+      if (signal.aborted || viewer.disposed || !tikaDirectorOpen) throw cause;
+      const failure = cause instanceof Error ? cause : new Error(String(cause));
+      getErrorHandler().showUserError({
+        message: "TIKA could not direct this scene.",
+        technicalDetails: failure.message,
+        error: failure,
+        context: {
+          module: "stage",
+          action: "direct-stage-with-tika",
+        },
+      });
+      throw failure;
+    }
+  }
 
   // Resolve every sequence the document references. One request per id, redone
   // whenever the set of ids changes or the user retries a failure.
@@ -418,6 +544,7 @@
   });
 
   onDestroy(() => {
+    unsubscribeTikaHistory();
     stageState.destroy();
     exporter.cancel();
     viewer.dispose();
@@ -746,6 +873,18 @@
 </script>
 
 {#snippet stageHudActions()}
+  {#if authState.isAdmin || import.meta.env.DEV}
+    <SceneChromeButton
+      icon="fa-wand-magic-sparkles"
+      label="Direct with TIKA"
+      tooltipSide="bottom"
+      active={tikaDirectorOpen}
+      onclick={(event: MouseEvent) => {
+        event.stopPropagation();
+        tikaDirectorOpen = !tikaDirectorOpen;
+      }}
+    />
+  {/if}
   <SceneChromeButton
     icon="fa-border-all"
     label={chartRaised ? "Hide drill chart" : "Drill chart"}
@@ -760,6 +899,20 @@
 
 {#snippet floorPaths()}
   <StageFloorPaths />
+{/snippet}
+
+{#snippet tikaPanel(close: () => void, compact: boolean)}
+  <TikaDirectorPanel
+    onClose={close}
+    active={tikaDirectorOpen}
+    {compact}
+    bind:prompt={tikaPrompt}
+    bind:messages={tikaMessages}
+    sceneName={choreography.name}
+    performerCount={choreography.performers.length}
+    currentBeat={stageState.currentBeat}
+    onSubmit={directStageWithTika}
+  />
 {/snippet}
 
 {#snippet stageOverlay()}
@@ -868,6 +1021,9 @@
         {performerSteps}
         worldChildren={starterSceneBlank ? undefined : floorPaths}
         hudActions={stageHudActions}
+        hostPanel={tikaPanel}
+        hostPanelTitle="Direct with TIKA"
+        bind:hostPanelOpen={tikaDirectorOpen}
         overlayChildren={stageOverlay}
         hideCanvasOverlays
         sceneControlsBottomOffset="0.75rem"

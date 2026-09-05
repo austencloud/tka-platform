@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/**/*.{svelte,css}"
+---
+
 # No Decorative Edge Accent Strips - ENFORCED
 
 ## Terminology
