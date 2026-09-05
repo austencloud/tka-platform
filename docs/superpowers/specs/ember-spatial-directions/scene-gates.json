@@ -619,12 +619,12 @@
         {
           "kind": "locked-camera-set",
           "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/registered-target-report.json",
-          "sha256": "a676a32a66ebb8214f51800fbe3a8e50ffefd5a8f510f933c8f53af66c90b358"
+          "sha256": "023245d4235641f653a7e13898e40845316deb746a9cb6250f7bbc39185c6725"
         },
         {
           "kind": "visual-target-board",
           "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/ember-r5-material-target-board.png",
-          "sha256": "8217c3a2d921deec1e7c8fecd8522b9d391b62e4b97b2a2c12b0eaa7a5d2cbc6"
+          "sha256": "bad4d28178743b92498c4906e5efa9e81d9191515ddcef076bf0cb1c039aa155"
         },
         {
           "kind": "material-lighting-brief",
@@ -634,12 +634,12 @@
         {
           "kind": "registered-orbit-board",
           "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/ember-r5-orbit-board.png",
-          "sha256": "a2a8bfa454d0ca158ac435720c2a17a3958ea536cdbacbd322ef5a21fa3247fc"
+          "sha256": "bf8701fedfaeb2a1d494c7bff0f3517b3fdd646b5e965edb74e7b5a1c2e65101"
         },
         {
           "kind": "bench-heat-comparison",
           "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/ember-r5-ember-comparison.png",
-          "sha256": "dee266b46604e6bc3f4f0844a740aa967e7cccf1cb52d6c96b02f8a8684a50b0"
+          "sha256": "3f7c227ea392092e0137e0a31cc29d42d04152bcc56e35e95cd567dd4b90509f"
         },
         {
           "kind": "generation-provenance",

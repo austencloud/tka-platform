@@ -9,7 +9,7 @@
     "blender/ember-midflank-fire-pilgrimage-graybox-r5.blend": "5f10bdafd3eee0cbed724ba64172b3f35a4b881336148972b6208d9de8ae9c84",
     "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/ember-midflank-fire-pilgrimage-r5-coordinate-manifest.json": "de8676a5b7945912dc8eae55bfab4ee5b0111fb92c396e1ea2cac060ed8d5275",
     "static/textures/ember-surface-r11/rock-ground-height.jpg": "e4582d578857ec4dc2c1324b28d3595ec9f5dba94f0ebeb6ecfef6d3c8a9a221",
-    "scripts/ember-midflank-lookdev.py": "1678818a6b795022029bbdd527809868c92698725015bf8be840c94a541f2d5d",
+    "scripts/ember-midflank-lookdev.py": "285d684e35aeb1bbf461a65d17b46b1fb59c6a0b9ca54f9c893eb3e264d935fc",
     "scripts/build-ember-lookdev-matrix.py": "411d6dcff6e7424195211fe80d8ed4359ecdaebcd8dd3bc31993da557362bdc5"
   },
   "checks": {
@@ -810,19 +810,19 @@
     "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/alternative-peripheral-ember-peak.png"
   ],
   "artifacts": {
-    "blender/ember-midflank-fire-pilgrimage-visual-target-r5.blend": "5e69f9227cee7df93e477ee9e686a39b2e47e4ce8e78dfdd229a780f475121ef",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-default-audience.png": "6f05bbc26193fd4949e9401ef199938cf4c522abaeef097c6882e72cb8350f58",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-000.png": "c0bb9f65e0adc20ca45f736266943668b9d92059664c38581545f97dc4ba0d34",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-045.png": "508d662a866198ddf28ff4b9c2bffcac85dde79279c611de72743d7864dbe818",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-090.png": "b65cff73a783088f956b6ed6d8d155e2f3ba17feddf156d2dad5096e85b355db",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-135.png": "2ecd11d157c3932be422a0bfa4229adbdc62f6997c15c4f724d4ff96c4ac0c0b",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-180.png": "7bac42ff6daf5a7bc7d67e0f03d868bbfe450ee09c71075ede1d42ac2427e63b",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-225.png": "abc85ebc13d1e1c9d88b32002fbd1f3dcdb8633c40382446d26765f291a4930a",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-270.png": "34886b65042f8ae377d10d9845769f416f27125317a716839fe067b0feafcf46",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-315.png": "663d56d592f0cd7324de98c7417bb4932a0bbabf48ec3ca5893890e1eb3b6ae3",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-midflank-oblique.png": "4c3df3141fc4cd43fc9d560a83f44a7320fb13f09c90a6f69fe82d6b39eee41f",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-director-overview.png": "ccdd73fe9daa7c59ae6b180486b9dc4335a1ce8ac18492e679ceef3bb54a472d",
-    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/alternative-peripheral-ember-peak.png": "44754b014f9a1deed512325366252c2fedb6e4508be60659d18b8becacacbd46"
+    "blender/ember-midflank-fire-pilgrimage-visual-target-r5.blend": "32f8f1b33dcb16bb2857ef7b5493f3cc0df0d769a3fb2ce2dd9bcd5405817fcc",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-default-audience.png": "24e25cce59c669f14d3a67818d0272ea436a878d7e3e5dd2e23c76d60ae28557",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-000.png": "c8f275bc813dc33b47f297879045ddb4d2cb9f8f47ecb2ead489926375e2adc9",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-045.png": "26007b1c5ef6c65b7607826082800abeb87d1d9e43c4df6358e51a0bc8eba523",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-090.png": "c16c43410beba0531011fb10ff6841b8a6a34c2ff922cf0049123aab078fdebb",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-135.png": "66a6bd5db351f5d4c7564c3315c167851bce13d7df2bf4146607c1e9a6d8ad49",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-180.png": "138b73ce26b3a2f90abcf66d113e50b12cc2c560ce9d643b980429eff800b60f",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-225.png": "b50a553272a6f1ccc52eea99666438130bb6fa38760595e652f38117139ab857",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-270.png": "d6c0a8530971f582012ee0831b19b4ac7569871f6fc80833c9bfc41970d66a1a",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-orbit-315.png": "3ef17a9144c56d0ff3a4fa62891c049110892cd314c1cec8fe20440fb75232d4",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-midflank-oblique.png": "a5596e37b22ffafcfdf8134bb6100b89d851168d9aff45e32c473693a15e644d",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/target-director-overview.png": "977ce58d97611bb02fff8c2a25bcd1da4a3ec101af40d995ad567bb2c184cd9a",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/alternative-peripheral-ember-peak.png": "d2b1eb3165d946a74d0ec8b66ba5f9af1389c4c365ad803f3a14620b10aa9027"
   },
   "renderSettings": {
     "engine": "CYCLES",
