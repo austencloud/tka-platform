@@ -19,6 +19,7 @@ export interface WorkerRendererSlotStart {
   qualityTier: WorkerEffectQualityTier;
   performers?: readonly WorkerPerformerSnapshot[];
   effects?: WorkerSceneEffectsSnapshot;
+  reducedMotion?: boolean;
 }
 
 export interface WorkerRendererSlotOptions extends WorkerRendererSlotStart {
@@ -205,6 +206,7 @@ export class WorkerRendererSlot {
         qualityTier: start.qualityTier,
         performers: start.performers ?? [],
         effects: start.effects,
+        reducedMotion: start.reducedMotion,
       };
       worker.postMessage(message, [offscreen]);
     } catch (error) {

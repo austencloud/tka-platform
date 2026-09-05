@@ -18,7 +18,8 @@ export interface InfoCellGeometryArgs {
  * (card-front-assembler) both render, including the 6-count column accommodation.
  */
 export function getInfoCellCount(args: InfoCellGeometryArgs): number {
-  const { stepCount, includeStartPosition, startPositionLayout, columnCount } = args;
+  const { stepCount, includeStartPosition, startPositionLayout, columnCount } =
+    args;
 
   // One-count cards (single beat + start) have no spare cell; the info-cell
   // scheme is anchored to the start position.
@@ -38,7 +39,11 @@ export function getInfoCellCount(args: InfoCellGeometryArgs): number {
       rows = 1 + (remaining > 0 ? Math.ceil(remaining / stepsPerRow) : 0);
     }
   } else {
-    [cols, rows] = calculateLayout(stepCount, includeStartPosition, startPositionLayout);
+    [cols, rows] = calculateLayout(
+      stepCount,
+      includeStartPosition,
+      startPositionLayout
+    );
   }
 
   // Column-layout accommodation (mirrors choreo-card-layout-state.svelte.ts:128):
@@ -60,6 +65,8 @@ export interface ResolveInfoCellArgs extends InfoCellGeometryArgs {
   infoCellChoice: InfoCellChoice;
   /** Guests cannot mint a scannable QR — a "qr" pick degrades to "mandala". */
   isAuthenticated: boolean;
+  /** An already published scan link can be drawn without minting a code. */
+  hasPublishedUrl?: boolean;
 }
 
 /**
@@ -68,28 +75,30 @@ export interface ResolveInfoCellArgs extends InfoCellGeometryArgs {
  * returns the globals untouched, so non-contention paths (a card with only mandala
  * on, multi-cell cards, hidden start position) are unaffected.
  *
- * Guest QR suppression applies in EVERY regime, not just one-spot contention: a
- * guest can't mint a scannable QR (it needs an account-owned short code), so QR
- * is forced off. That matters for the mandala fill — with QR off, the slot it
+ * Guests cannot mint account-owned short codes. They may display a published
+ * scan link supplied by the host; otherwise QR is forced off in every regime.
+ * That matters for the mandala fill — with QR off, the slot it
  * would have reserved flows into getMandalaPlacements, which then fills all
  * available info cells instead of leaving the QR cell blank. This is the single
  * funnel both the preview (ChoreoCard) and the export (card-render-options) pass
  * through, so they stay in lockstep.
  */
-export function resolveInfoCellDisplay(
-  args: ResolveInfoCellArgs
-): { showQRCode: boolean; showMandala: boolean } {
-  const { showQRCode, showMandala, infoCellChoice, isAuthenticated } = args;
+export function resolveInfoCellDisplay(args: ResolveInfoCellArgs): {
+  showQRCode: boolean;
+  showMandala: boolean;
+} {
+  const { showQRCode, showMandala, infoCellChoice } = args;
+  const canShowQRCode = args.isAuthenticated || !!args.hasPublishedUrl;
 
   if (!showQRCode || !showMandala) {
-    return { showQRCode: showQRCode && isAuthenticated, showMandala };
+    return { showQRCode: showQRCode && canShowQRCode, showMandala };
   }
   if (getInfoCellCount(args) !== 1) {
-    return { showQRCode: showQRCode && isAuthenticated, showMandala };
+    return { showQRCode: showQRCode && canShowQRCode, showMandala };
   }
 
   const choice: InfoCellChoice =
-    infoCellChoice === "qr" && !isAuthenticated ? "mandala" : infoCellChoice;
+    infoCellChoice === "qr" && !canShowQRCode ? "mandala" : infoCellChoice;
 
   switch (choice) {
     case "qr":

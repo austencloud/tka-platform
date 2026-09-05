@@ -33,11 +33,17 @@ interface LegSpec {
 }
 
 function leg(spec: LegSpec): FootFrame {
+  // A rising heel carries the ankle off the ball of the foot while the toe
+  // stays on the floor. Sinking the toe instead pushed it through the ground
+  // plane, and contact is read from the foot's lowest joint, so the local
+  // floor followed the buried toe down and the first half of every stance
+  // scored as flight, clipping the very lift this fixture exists to raise.
+  const ankleY = spec.y + (spec.heelLift ?? 0);
   return {
-    ankle: { x: spec.x, y: spec.y, z: spec.z },
-    toe: { x: spec.x, y: spec.y - (spec.heelLift ?? 0), z: spec.z + 0.15 },
-    knee: { x: spec.x, y: spec.y + 0.45, z: spec.z },
-    hip: { x: spec.x, y: spec.y + 0.9, z: spec.z },
+    ankle: { x: spec.x, y: ankleY, z: spec.z },
+    toe: { x: spec.x, y: spec.y, z: spec.z + 0.15 },
+    knee: { x: spec.x, y: ankleY + 0.45, z: spec.z },
+    hip: { x: spec.x, y: ankleY + 0.9, z: spec.z },
     kneeAngle: spec.kneeAngle ?? 175,
     claimedContact: -1,
   };

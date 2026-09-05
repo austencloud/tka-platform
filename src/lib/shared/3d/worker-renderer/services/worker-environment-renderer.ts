@@ -1,4 +1,5 @@
 import type { WorkerRendererSlotState } from "../domain/worker-renderer-handoff";
+import { prefersReducedMotion } from "../../environments/primitives/motion-preference";
 import {
   clampWorkerViewport,
   type WorkerCameraSnapshot,
@@ -218,6 +219,7 @@ export class WorkerEnvironmentRenderer {
       type: "switch-environment",
       requestId: request.requestId,
       environment: request.environment,
+      reducedMotion: prefersReducedMotion(),
     });
   }
 
@@ -494,6 +496,7 @@ export class WorkerEnvironmentRenderer {
       qualityTier: this.qualityTier,
       performers: this.performers,
       effects: this.effects,
+      reducedMotion: prefersReducedMotion(),
     };
   }
 

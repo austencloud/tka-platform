@@ -175,9 +175,11 @@ describe("canonical concept lesson composition", () => {
     expect(motions).not.toContain("letterQueryHandler");
     expect(motions).not.toContain("LessonPictographStage");
     expect(positions).toContain('onComplete?.("hand-motions-intro")');
-    expect(positions).toContain("propType: PropType.HAND,\n      hand,");
-    expect(positions).not.toContain("propType: PropType.HAND,\n      color,");
-    expect(positions).toContain("<PanelButton fullWidth onclick={rotate}>");
+    expect(positions).toContain("PropPlacementGrid");
+    expect(positions).toContain("PictographContainer");
+    expect(positions).toContain("leftPropType={PropType.HAND}");
+    expect(positions).toContain("rightPropType={PropType.HAND}");
+    expect(positions).toContain("TKAWordGlyph");
     expect(positions).not.toContain("focusPhase");
     expect(positions).not.toContain("Try it");
     expect(handPlayer).toContain("InlineAnimationPlayer");
