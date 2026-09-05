@@ -40,9 +40,12 @@
   const label = props.label ?? "";
 </script>
 
-<!-- Glowing rectangular frame around the portal -->
+<!-- The portal's anchor stays visible for the life of the scene. Three.js keys
+     every lit material's shader program on the number of visible lights, so
+     a light that appears with the frame would relink every program in view
+     (measured: 79 links, 3.1 s, ten steps from the lobby spawn). The frame
+     meshes toggle below; the light only fades. -->
 <T.Group
-  visible={props.visible !== false}
   position.x={position[0]}
   position.y={position[1]}
   position.z={position[2]}
@@ -50,67 +53,71 @@
   rotation.y={rotation[1]}
   rotation.z={rotation[2]}
 >
-  <!-- A cheap opaque-enough core preserves the portal silhouette and color. -->
-  <T.Mesh name={`portal-surface-${color}`}>
-    <T.PlaneGeometry args={[width, height]} />
-    <T.MeshBasicMaterial
-      {color}
-      transparent
-      opacity={0.62}
-      depthWrite={false}
-      toneMapped={false}
-    />
-  </T.Mesh>
+  <!-- Glowing rectangular frame around the portal -->
+  <T.Group visible={props.visible !== false}>
+    <!-- A cheap opaque-enough core preserves the portal silhouette and color. -->
+    <T.Mesh name={`portal-surface-${color}`}>
+      <T.PlaneGeometry args={[width, height]} />
+      <T.MeshBasicMaterial
+        {color}
+        transparent
+        opacity={0.62}
+        depthWrite={false}
+        toneMapped={false}
+      />
+    </T.Mesh>
 
-  <!-- Top bar -->
-  <T.Mesh position.y={height / 2} position.z={-0.02}>
-    <T.BoxGeometry args={[width + 0.12, 0.06, 0.06]} />
-    <T.MeshStandardMaterial
-      color={color}
-      emissive={color}
-      emissiveIntensity={1.5}
-      metalness={0.6}
-      roughness={0.3}
-    />
-  </T.Mesh>
-  <!-- Bottom bar -->
-  <T.Mesh position.y={-height / 2} position.z={-0.02}>
-    <T.BoxGeometry args={[width + 0.12, 0.06, 0.06]} />
-    <T.MeshStandardMaterial
-      color={color}
-      emissive={color}
-      emissiveIntensity={1.5}
-      metalness={0.6}
-      roughness={0.3}
-    />
-  </T.Mesh>
-  <!-- Left bar -->
-  <T.Mesh position.x={-width / 2} position.z={-0.02}>
-    <T.BoxGeometry args={[0.06, height + 0.12, 0.06]} />
-    <T.MeshStandardMaterial
-      color={color}
-      emissive={color}
-      emissiveIntensity={1.5}
-      metalness={0.6}
-      roughness={0.3}
-    />
-  </T.Mesh>
-  <!-- Right bar -->
-  <T.Mesh position.x={width / 2} position.z={-0.02}>
-    <T.BoxGeometry args={[0.06, height + 0.12, 0.06]} />
-    <T.MeshStandardMaterial
-      color={color}
-      emissive={color}
-      emissiveIntensity={1.5}
-      metalness={0.6}
-      roughness={0.3}
-    />
-  </T.Mesh>
+    <!-- Top bar -->
+    <T.Mesh position.y={height / 2} position.z={-0.02}>
+      <T.BoxGeometry args={[width + 0.12, 0.06, 0.06]} />
+      <T.MeshStandardMaterial
+        {color}
+        emissive={color}
+        emissiveIntensity={1.5}
+        metalness={0.6}
+        roughness={0.3}
+      />
+    </T.Mesh>
+    <!-- Bottom bar -->
+    <T.Mesh position.y={-height / 2} position.z={-0.02}>
+      <T.BoxGeometry args={[width + 0.12, 0.06, 0.06]} />
+      <T.MeshStandardMaterial
+        {color}
+        emissive={color}
+        emissiveIntensity={1.5}
+        metalness={0.6}
+        roughness={0.3}
+      />
+    </T.Mesh>
+    <!-- Left bar -->
+    <T.Mesh position.x={-width / 2} position.z={-0.02}>
+      <T.BoxGeometry args={[0.06, height + 0.12, 0.06]} />
+      <T.MeshStandardMaterial
+        {color}
+        emissive={color}
+        emissiveIntensity={1.5}
+        metalness={0.6}
+        roughness={0.3}
+      />
+    </T.Mesh>
+    <!-- Right bar -->
+    <T.Mesh position.x={width / 2} position.z={-0.02}>
+      <T.BoxGeometry args={[0.06, height + 0.12, 0.06]} />
+      <T.MeshStandardMaterial
+        {color}
+        emissive={color}
+        emissiveIntensity={1.5}
+        metalness={0.6}
+        roughness={0.3}
+      />
+    </T.Mesh>
+  </T.Group>
 
-  <!-- Point light at the portal - casts colored glow on nearby surfaces -->
+  <!-- Point light at the portal - casts colored glow on nearby surfaces.
+       Always mounted and visible; distance fades it, never visibility. -->
   <T.PointLight
-    color={color}
-    intensity={3}
+    {color}
+    intensity={props.visible !== false ? 3 : 0}
     distance={4}
     position.z={0.3}
   />
