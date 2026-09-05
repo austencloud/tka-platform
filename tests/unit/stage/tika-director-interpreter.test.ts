@@ -15,6 +15,9 @@ describe("TIKA Stage direction interpreter", () => {
       "assign-distinct-characters",
     ],
     ["Make every avatar different", "assign-distinct-characters"],
+    ["Give every performer a different prop!", "assign-distinct-props"],
+    ["Please give every performer a different prop", "assign-distinct-props"],
+    ["give every performer a different prop please", "assign-distinct-props"],
   ])("recognizes the complete cast command: %s", (prompt, type) => {
     expect(interpretStageDirectionLocally(prompt)).toMatchObject({
       kind: "apply",
@@ -35,6 +38,26 @@ describe("TIKA Stage direction interpreter", () => {
           startFormation: "v-shape",
           endFormation: "circle",
           durationBeats: 4,
+        },
+      ],
+    });
+  });
+
+  it.each([
+    "Transition to a circle over 8 counts",
+    "Go to a circle in 8 counts",
+    "Move to a circle over 8 beats!",
+    "Please transition to a circle over 8 beats.",
+  ])("reads counts as beats and tolerates politeness: %s", (prompt) => {
+    // The Stage timeline itself labels beats as counts, so the two words are
+    // one unit to a person directing from it.
+    expect(interpretStageDirectionLocally(prompt)).toMatchObject({
+      kind: "apply",
+      actions: [
+        {
+          type: "formation-transition",
+          endFormation: "circle",
+          durationBeats: 8,
         },
       ],
     });
