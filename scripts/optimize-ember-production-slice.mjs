@@ -94,11 +94,13 @@ function applyEmberMaterialProfile(document) {
 }
 
 const runtimeOutput = "static/models/ember/ember-production-slice.glb";
-const tributaries = process.argv.includes("--tributaries");
+const distant = process.argv.includes("--distant");
+const tributaries = distant || process.argv.includes("--tributaries");
+const tributaryRevision = distant ? "r2" : "r1";
 const flow = tributaries || process.argv.includes("--lava-flow");
 const midflank = flow || process.argv.includes("--midflank-r5");
 const versionedOutput = tributaries
-  ? "static/models/ember/ember-mountain-tributaries-r1.glb"
+  ? `static/models/ember/ember-mountain-tributaries-${tributaryRevision}.glb`
   : flow
     ? "static/models/ember/ember-midflank-lava-flow-r2.glb"
     : midflank
@@ -107,7 +109,7 @@ const versionedOutput = tributaries
 
 await optimizeGltfKtx2({
   input: tributaries
-    ? "static/models/ember/ember-mountain-tributaries-r1_raw.glb"
+    ? `static/models/ember/ember-mountain-tributaries-${tributaryRevision}_raw.glb`
     : flow
       ? "static/models/ember/ember-midflank-lava-flow-r2_raw.glb"
       : midflank

@@ -88,6 +88,7 @@ varying vec3 vMidflankWorld;
 varying vec2 vMidflankFlow;
 varying float vMidflankBank;
 varying float vMidflankHeat;
+varying float vMidflankReflection;
 uniform float uMidflankTime;
 float mfHash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float mfNoise(vec2 p) {
@@ -118,11 +119,11 @@ export function createMidflankLava(
     vertexColors: true,
   });
   material.name = "Ember_Midflank_R5_thermal-crust";
-  material.customProgramCacheKey = () => "ember-midflank-flowing-network-v3";
+  material.customProgramCacheKey = () => "ember-midflank-flowing-network-v4";
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uMidflankTime = time;
     shader.vertexShader =
-      "varying vec3 vMidflankWorld;\nvarying vec2 vMidflankFlow;\nvarying float vMidflankBank;\nvarying float vMidflankHeat;\nuniform float uMidflankTime;\n" +
+      "varying vec3 vMidflankWorld;\nvarying vec2 vMidflankFlow;\nvarying float vMidflankBank;\nvarying float vMidflankHeat;\nvarying float vMidflankReflection;\nuniform float uMidflankTime;\n" +
       shader.vertexShader;
     shader.vertexShader = shader.vertexShader.replace(
       "#include <begin_vertex>",
@@ -130,6 +131,7 @@ export function createMidflankLava(
       vMidflankFlow = uv;
       vMidflankBank = color.r;
       vMidflankHeat = color.g / max(color.r, .001);
+      vMidflankReflection = color.b / max(color.r, .001);
       float along = uv.y - uMidflankTime * .72;
       float surge = .028 * sin(along * 2.1 + sin(uv.x * 1.8))
                   + .012 * sin(along * 5.3 + uv.x * .9);
@@ -144,6 +146,15 @@ export function createMidflankLava(
       "#include <worldpos_vertex>\nvMidflankWorld = (modelMatrix * vec4(transformed, 1.)).xyz;"
     );
     shader.fragmentShader = NOISE + shader.fragmentShader;
+    // Distant, crust-covered channels must not become white ribbons in the
+    // grazing key light. Existing river masks retain their original reflection.
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <lights_physical_fragment>",
+      `#include <lights_physical_fragment>
+      material.specularColor *= vMidflankReflection;
+      material.specularColorBlended *= vMidflankReflection;
+      material.specularF90 *= vMidflankReflection;`
+    );
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <emissivemap_fragment>",
       /* glsl */ `

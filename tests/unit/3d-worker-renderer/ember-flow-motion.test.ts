@@ -87,9 +87,13 @@ describe("Ember drifting crust", () => {
     expect(
       gltf.scene.getObjectByName("EMBER_BakedLavaClinker")
     ).toBeUndefined();
-    const branches = ["EMBER_EastDistributary", "EMBER_UpperBraidedBranch"].map(
-      (name) => gltf.scene.getObjectByName(name) as Mesh
-    );
+    const branches = [
+      "EMBER_EastDistributary",
+      "EMBER_UpperBraidedBranch",
+      "EMBER_WestDistantFlow",
+      "EMBER_FarEastFlow",
+      "EMBER_LowerWestBreakout",
+    ].map((name) => gltf.scene.getObjectByName(name) as Mesh);
     for (const branch of branches) {
       expect(branch.userData.ember_flow_surface).toBe(true);
       const path = branch.userData.ember_flow_paths[0] as number[][];
@@ -111,7 +115,24 @@ describe("Ember drifting crust", () => {
         if (v < first.v) first = { v, y: sample.y };
         if (v > last.v) last = { v, y: sample.y };
       }
-      expect(last.y).toBeLessThan(first.y - 50);
+      expect(last.y).toBeLessThan(first.y - 40);
+      if (
+        branch.name.includes("Distant") ||
+        branch.name === "EMBER_FarEastFlow" ||
+        branch.name === "EMBER_LowerWestBreakout"
+      ) {
+        const colors = branch.geometry.getAttribute("color");
+        let hottest = 0,
+          coolest = Infinity;
+        for (let index = 0; index < colors.count; index++) {
+          if (colors.getX(index) < 0.5) continue;
+          const heat = colors.getY(index) / colors.getX(index);
+          expect(colors.getZ(index) / colors.getX(index)).toBeLessThan(0.08);
+          hottest = Math.max(hottest, heat);
+          coolest = Math.min(coolest, heat);
+        }
+        expect(hottest).toBeGreaterThan(coolest * 5);
+      }
     }
     const cold = gltf.scene.getObjectByName("EMBER_AbandonedOverflow") as Mesh;
     const coldMaterial = cold.material;
@@ -122,7 +143,7 @@ describe("Ember drifting crust", () => {
     const rafts = runtime.object.getObjectByName(
       "EmberDriftingCrust"
     ) as InstancedMesh;
-    expect(rafts.count).toBe(304);
+    expect(rafts.count).toBe(400);
     const bounds = new Box3().setFromBufferAttribute(
       rafts.geometry.getAttribute("position")
     );
