@@ -233,7 +233,10 @@ describe("TIKA arrange admission", () => {
     performers: [{ id: "a", label: "A", characterId: "x-bot", prop: "staff" }],
     formations: [{ atBeat: 0, presetId: "line" }],
   };
-  type Action = Extract<TikaDirectorResponse, { kind: "apply" }>["actions"][number];
+  type Action = Extract<
+    TikaDirectorResponse,
+    { kind: "apply" }
+  >["actions"][number];
   const arrange = (fields: Record<string, string>) =>
     ({ type: "arrange-formation", ...fields }) as Action;
   const transition: Action = {
@@ -247,7 +250,10 @@ describe("TIKA arrange admission", () => {
     actions,
   });
   const check = (prompt: string, actions: Action[]) =>
-    validateTikaDirectorPlan({ prompt, conversation: [], scene }, applyPlan(actions));
+    validateTikaDirectorPlan(
+      { prompt, conversation: [], scene },
+      applyPlan(actions)
+    );
 
   it("rejects arranging and moving in one plan", () => {
     const result = check("circle then wider over 4 beats", [
@@ -259,16 +265,31 @@ describe("TIKA arrange admission", () => {
   });
 
   it("allows a shape followed by one spacing tweak", () => {
-    const plan = applyPlan([arrange({ shape: "circle" }), arrange({ spacing: "wider" })]);
+    const plan = applyPlan([
+      arrange({ shape: "circle" }),
+      arrange({ spacing: "wider" }),
+    ]);
     expect(
-      validateTikaDirectorPlan({ prompt: "a wider circle", conversation: [], scene }, plan)
+      validateTikaDirectorPlan(
+        { prompt: "a wider circle", conversation: [], scene },
+        plan
+      )
     ).toBe(plan);
   });
 
   it("allows a lone tweak and a lone shape", () => {
-    for (const actions of [[arrange({ spacing: "tighter" })], [arrange({ shift: "left" })], [arrange({ shape: "line" })]]) {
+    for (const actions of [
+      [arrange({ spacing: "tighter" })],
+      [arrange({ shift: "left" })],
+      [arrange({ shape: "line" })],
+    ]) {
       const plan = applyPlan(actions);
-      expect(validateTikaDirectorPlan({ prompt: "whatever", conversation: [], scene }, plan)).toBe(plan);
+      expect(
+        validateTikaDirectorPlan(
+          { prompt: "whatever", conversation: [], scene },
+          plan
+        )
+      ).toBe(plan);
     }
   });
 
@@ -277,7 +298,13 @@ describe("TIKA arrange admission", () => {
     [[arrange({ spacing: "wider" }), arrange({ shape: "circle" })]],
     [[arrange({})]],
     [[arrange({ shape: "circle", spacing: "wider" })]],
-    [[arrange({ shape: "circle" }), arrange({ spacing: "wider" }), arrange({ shift: "left" })]],
+    [
+      [
+        arrange({ shape: "circle" }),
+        arrange({ spacing: "wider" }),
+        arrange({ shift: "left" }),
+      ],
+    ],
   ])("rejects malformed arrangement sets", (actions) => {
     const result = check("whatever", actions);
     expect(result.kind).toBe("unsupported");
@@ -285,7 +312,9 @@ describe("TIKA arrange admission", () => {
   });
 
   it("asks when a count is present but the plan only arranges", () => {
-    const result = check("circle over 8 counts", [arrange({ shape: "circle" })]);
+    const result = check("circle over 8 counts", [
+      arrange({ shape: "circle" }),
+    ]);
     expect(result).toEqual({
       kind: "clarify",
       question: "Did you want them in a circle now, or a move over 8 counts?",
@@ -309,7 +338,8 @@ describe("TIKA arrange admission", () => {
             { role: "user", content: "transition to a circle" },
             {
               role: "assistant",
-              content: "Arrange them in a circle now, or move over how many counts?",
+              content:
+                "Arrange them in a circle now, or move over how many counts?",
             },
           ],
           scene,

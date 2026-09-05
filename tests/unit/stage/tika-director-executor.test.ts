@@ -31,7 +31,10 @@ function harness(requestBeat = 0) {
   return { stageState, viewer, context };
 }
 
-function spots(stageState: ReturnType<typeof createStageChoreographyState>, index: number) {
+function spots(
+  stageState: ReturnType<typeof createStageChoreographyState>,
+  index: number
+) {
   return JSON.parse(
     JSON.stringify(stageState.choreography.formations[index]!.spots)
   ) as Record<string, { x: number; z: number }>;
@@ -65,7 +68,9 @@ describe("TIKA Director plan executor", () => {
         z: expected[index]!.z,
       });
     });
-    expect(viewer.performerManager.cancelFormationTransition).toHaveBeenCalledTimes(1);
+    expect(
+      viewer.performerManager.cancelFormationTransition
+    ).toHaveBeenCalledTimes(1);
 
     expect(undo).toBeTypeOf("function");
     undo!();
@@ -116,8 +121,7 @@ describe("TIKA Director plan executor", () => {
       stageState.choreography.stageWidth,
       stageState.choreography.stageDepth
     );
-    const centerX =
-      circle.reduce((sum, p) => sum + p.x, 0) / circle.length;
+    const centerX = circle.reduce((sum, p) => sum + p.x, 0) / circle.length;
     stageState.choreography.performers.forEach((performer, index) => {
       expect(set.spots[performer.id]!.x).toBeCloseTo(
         centerX + (circle[index]!.x - centerX) * 1.15,
@@ -154,7 +158,11 @@ describe("TIKA Director plan executor", () => {
 
     const undo = executeTikaDirectorPlan(
       plan([
-        { type: "formation-transition", endFormation: "circle", durationBeats: 8 },
+        {
+          type: "formation-transition",
+          endFormation: "circle",
+          durationBeats: 8,
+        },
       ]),
       context
     );
@@ -162,7 +170,10 @@ describe("TIKA Director plan executor", () => {
     const destination = stageState.choreography.formations.find(
       (formation) => formation.atBeat === 16
     );
-    expect(destination).toMatchObject({ presetId: "circle", transitionBeats: 8 });
+    expect(destination).toMatchObject({
+      presetId: "circle",
+      transitionBeats: 8,
+    });
     undo!();
     expect(
       stageState.choreography.formations.find((f) => f.atBeat === 16)

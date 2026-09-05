@@ -16,19 +16,19 @@ proved the spec was followed, not that the product was right.
 
 ## Decisions taken in the design conversation
 
-| Question | Decision |
-| --- | --- |
-| Remit | Parity: anything clickable on the Stage can be said to TIKA, delivered in batches. |
-| First batch | Arrange vs Move split with relative tweaks. Later batches: richer moves; naming performers, specific looks, cast size; tempo, seek, play. |
-| Motion verb with no count ("move to a line") | Arrange now. The reply hints how to make it a move. Only an explicit count creates a transition. |
-| Referring to performers (batch 3) | By name, stage position, look, and number. |
-| Bare arrangement mid-transition | Reshape the destination set; the move keeps its timing. |
-| Cast growth (batch 3) | New performers refit the current shape, as the Performers panel does. |
-| Relative tweaks | In batch 1: spacing (wider, tighter) and shift (forward, back, left, right); "more" repeats the last tweak. |
-| Reply style | One line that names every inferred choice. |
-| Live verification budget | Targeted `--grep` subsets only; one full battery before merge. |
-| Architecture | Capability registry: one descriptor per verb generates prompt, reviewer rules, validators, executor wiring, and battery baselines. |
-| Order | Arrange first, in the registry, migrating today's four actions with it. |
+| Question                                     | Decision                                                                                                                                  |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Remit                                        | Parity: anything clickable on the Stage can be said to TIKA, delivered in batches.                                                        |
+| First batch                                  | Arrange vs Move split with relative tweaks. Later batches: richer moves; naming performers, specific looks, cast size; tempo, seek, play. |
+| Motion verb with no count ("move to a line") | Arrange now. The reply hints how to make it a move. Only an explicit count creates a transition.                                          |
+| Referring to performers (batch 3)            | By name, stage position, look, and number.                                                                                                |
+| Bare arrangement mid-transition              | Reshape the destination set; the move keeps its timing.                                                                                   |
+| Cast growth (batch 3)                        | New performers refit the current shape, as the Performers panel does.                                                                     |
+| Relative tweaks                              | In batch 1: spacing (wider, tighter) and shift (forward, back, left, right); "more" repeats the last tweak.                               |
+| Reply style                                  | One line that names every inferred choice.                                                                                                |
+| Live verification budget                     | Targeted `--grep` subsets only; one full battery before merge.                                                                            |
+| Architecture                                 | Capability registry: one descriptor per verb generates prompt, reviewer rules, validators, executor wiring, and battery baselines.        |
+| Order                                        | Arrange first, in the registry, migrating today's four actions with it.                                                                   |
 
 ## The two verbs
 
@@ -47,8 +47,7 @@ from the current count.
    "go to a circle", "transition to a V" arrange now.
 3. A unit TIKA cannot convert (seconds, bars, measures) still gets one
    clarification, as today.
-4. Every Arrange reply names the choice: "Arranged the cast in a line at count
-   0. Say over 8 counts to make it a move." Every Move reply names the count.
+4. Every Arrange reply names the choice: "Arranged the cast in a line at count 0. Say over 8 counts to make it a move." Every Move reply names the count.
 
 ### Target set for Arrange
 
@@ -144,7 +143,10 @@ interface TikaCapability<A extends TikaDirectorAction = TikaDirectorAction> {
   /** Optional model-free patterns for the local interpreter. */
   local?: (command: string) => A | null;
   /** Optional plan-level veto. Never adds or changes actions. */
-  validate?: (request: TikaDirectorRequest, plan: TikaDirectorApply) => TikaDirectorResponse;
+  validate?: (
+    request: TikaDirectorRequest,
+    plan: TikaDirectorApply
+  ) => TikaDirectorResponse;
   /** Human summary fragment for local responses. */
   describe: (action: A) => string;
 }

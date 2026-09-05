@@ -213,14 +213,17 @@ describe("TIKA Stage direction interpreter", () => {
     "circle over 8 counts then wider",
     "put them in a heart",
     "line in 4",
-  ])("defers relative, scoped, or counted arrangement to the model: %s", (prompt) => {
-    const result = interpretStageDirectionLocally(prompt, { currentBeat: 0 });
-    if (result?.kind === "apply") {
-      expect(result.actions[0]!.type).not.toBe("arrange-formation");
-    } else {
-      expect(result).toBeNull();
+  ])(
+    "defers relative, scoped, or counted arrangement to the model: %s",
+    (prompt) => {
+      const result = interpretStageDirectionLocally(prompt, { currentBeat: 0 });
+      if (result?.kind === "apply") {
+        expect(result.actions[0]!.type).not.toBe("arrange-formation");
+      } else {
+        expect(result).toBeNull();
+      }
     }
-  });
+  );
 
   it("keeps a counted shape a move, not an arrangement", () => {
     expect(
@@ -231,7 +234,11 @@ describe("TIKA Stage direction interpreter", () => {
       kind: "apply",
       summary: expect.stringMatching(/over 8 counts, starting at count 4/),
       actions: [
-        { type: "formation-transition", endFormation: "line", durationBeats: 8 },
+        {
+          type: "formation-transition",
+          endFormation: "line",
+          durationBeats: 8,
+        },
       ],
     });
   });

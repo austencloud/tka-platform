@@ -97,7 +97,9 @@ function local(command: string): ArrangeFormationAction | null {
   const shape = shapeText ? FORMATION_ALIASES.get(shapeText) : undefined;
   if (shape) return { type: "arrange-formation", shape };
 
-  const tweak = command.replace(INTENSIFIER, "").replace(/ (?:please|now)$/, "");
+  const tweak = command
+    .replace(INTENSIFIER, "")
+    .replace(/ (?:please|now)$/, "");
   const spacing = SPACING_PHRASES.get(tweak);
   if (spacing) return { type: "arrange-formation", spacing };
 
@@ -182,7 +184,7 @@ export const arrangeFormationCapability: TikaCapability<ArrangeFormationAction> 
     plannerLine:
       "ARRANGE the cast where the playhead sits, adding no timeline movement, like the Stage's Formation tool button. Exactly one field per action: shape (a named formation), spacing ('wider' or 'tighter', one fixed step), or shift ('forward' toward the audience, 'back', 'left', 'right'; one metre). A formation request with NO count is ALWAYS an arrange, even with motion verbs like move, go, transition, snap, or with 'now'. 'A wider circle' is two actions in order: shape, then spacing. 'More' or 'again' repeats the previous tweak from the conversation. The summary names the choice and hints the alternative, e.g. 'Arranging the cast in a line at the current count. Say over 8 counts to make it a move.'",
     reviewerLine:
-      "arrange-formation reshapes the set at the current count without adding timeline movement. A request with no count is an arrange, including motion verbs like move or transition; do not demand a duration for it. It never appears with formation-transition. Exactly one field per action; a shape may be followed by one spacing or shift tweak in the same plan.",
+      "arrange-formation reshapes the current set at the current count with no timeline movement. ACCEPT it whenever the request names a formation, spacing, or shift with NO count, even with the verbs move, go, transition, or snap, or the word now: a missing duration is never a reason to clarify, because the summary already offers the timed move as the alternative. Each action carries exactly one field, so 'a wider circle' is CORRECTLY two actions, {shape:'circle'} then {spacing:'wider'}; accept that pair and never ask for them to be combined. It never appears beside formation-transition.",
     examples: [
       {
         user: "Could you put them in a line",

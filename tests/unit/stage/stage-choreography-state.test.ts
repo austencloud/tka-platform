@@ -803,7 +803,9 @@ describe("assignPerformerSequences", () => {
 });
 
 describe("stage choreography arrange transforms", () => {
-  function snapshotSpots(state: ReturnType<typeof createStageChoreographyState>) {
+  function snapshotSpots(
+    state: ReturnType<typeof createStageChoreographyState>
+  ) {
     return JSON.parse(
       JSON.stringify(state.choreography.formations[0]!.spots)
     ) as Record<string, { x: number; z: number }>;
@@ -814,14 +816,22 @@ describe("stage choreography arrange transforms", () => {
     const set = state.choreography.formations[0]!;
     const before = snapshotSpots(state);
     const ids = Object.keys(before);
-    const centerX = ids.reduce((sum, id) => sum + before[id]!.x, 0) / ids.length;
-    const centerZ = ids.reduce((sum, id) => sum + before[id]!.z, 0) / ids.length;
+    const centerX =
+      ids.reduce((sum, id) => sum + before[id]!.x, 0) / ids.length;
+    const centerZ =
+      ids.reduce((sum, id) => sum + before[id]!.z, 0) / ids.length;
 
     expect(state.transformFormationSpots(set.id, { scale: 1.15 })).toBe(true);
 
     for (const id of ids) {
-      expect(set.spots[id]!.x).toBeCloseTo(centerX + (before[id]!.x - centerX) * 1.15, 6);
-      expect(set.spots[id]!.z).toBeCloseTo(centerZ + (before[id]!.z - centerZ) * 1.15, 6);
+      expect(set.spots[id]!.x).toBeCloseTo(
+        centerX + (before[id]!.x - centerX) * 1.15,
+        6
+      );
+      expect(set.spots[id]!.z).toBeCloseTo(
+        centerZ + (before[id]!.z - centerZ) * 1.15,
+        6
+      );
     }
     expect(set.presetId).toBe("custom");
     expect(state.canUndo).toBe(true);

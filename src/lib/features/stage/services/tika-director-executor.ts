@@ -58,10 +58,7 @@ export interface TikaDirectorExecutionContext {
 
 type ApplyResponse = Extract<TikaDirectorResponse, { kind: "apply" }>;
 type ArrangeAction = Extract<TikaDirectorAction, { type: "arrange-formation" }>;
-type MoveAction = Extract<
-  TikaDirectorAction,
-  { type: "formation-transition" }
->;
+type MoveAction = Extract<TikaDirectorAction, { type: "formation-transition" }>;
 
 /**
  * Apply an accepted plan to the live scene. Returns one closure that undoes
@@ -89,9 +86,7 @@ export function executeTikaDirectorPlan(
   }
 
   const { choreography } = ctx.stageState;
-  const performerIds = choreography.performers.map(
-    (performer) => performer.id
-  );
+  const performerIds = choreography.performers.map((performer) => performer.id);
   const assignments = resolveDirectorAppearanceAssignments({
     actions: response.actions,
     performerIds,
@@ -152,8 +147,7 @@ export function executeTikaDirectorPlan(
     } else if (arrange.spacing) {
       if (
         ctx.stageState.transformFormationSpots(target!.id, {
-          scale:
-            arrange.spacing === "wider" ? SPACING_STEP : 1 / SPACING_STEP,
+          scale: arrange.spacing === "wider" ? SPACING_STEP : 1 / SPACING_STEP,
         })
       ) {
         stageUndos++;

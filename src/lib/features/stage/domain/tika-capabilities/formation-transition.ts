@@ -263,7 +263,7 @@ export const formationTransitionCapability: TikaCapability<FormationTransitionAc
     plannerLine:
       "a timed MOVE: at the request's current beat, optionally establish a named start formation, then reach a named destination in 1–64 integer beats (counts). Only a stated count makes a move; a formation request without one is arrange-formation.",
     reviewerLine:
-      "formation-transition starts at the current beat, optionally establishes a named start formation, and reaches the named end in 1–64 integer beats. At most one transition. No delayed starts. An explicit named start is intentional even when the scene currently has another formation. Its duration must come from the user's request or an unambiguous answer to a duration question, never the current beat; a formation request with no count is arrange-formation, not a transition to reject.",
+      "formation-transition starts at the current beat, optionally establishes a named start formation, and reaches the named end in 1–64 integer beats. At most one transition. No delayed starts. An explicit named start is intentional even when the scene currently has another formation. Its duration must come from the user's request or an unambiguous answer to a duration question, never the current beat. Any formation request WITH a stated count ('put them in a line over 8 counts', 'circle in 4') is a formation-transition with that duration whatever the verb: accept it. A formation request with no count is arrange-formation, not a transition to reject.",
     examples: [
       {
         user: "4 beats circle",
