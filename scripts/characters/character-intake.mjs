@@ -7,7 +7,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { basename, dirname, extname, relative, resolve, sep } from "node:path";
+import { basename, extname, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import {
@@ -32,6 +32,109 @@ export const STRESS_POSE_IDS = [
   "depth",
   "low",
 ];
+
+export const BAKEOFF_STAGE_DIRECTORY = "static/models/avatars/bakeoff";
+export const BAKEOFF_MANIFEST_FILE = "intake-manifest.json";
+/** The single slot predates named staging; older links and docs still point at it. */
+export const LEGACY_BAKEOFF_SLOT = "intake-current.glb";
+
+export function bakeoffCandidateId(characterId) {
+  return `intake-${characterId}`;
+}
+
+export function bakeoffReviewPath(characterId, pose) {
+  return `/test/avatar-bakeoff?candidate=${bakeoffCandidateId(characterId)}&pose=${pose}`;
+}
+
+function materialGateSummary(inspection) {
+  const summary = inspection.materialSummary;
+  if (!summary) return null;
+  return {
+    normalMaps: `${summary.withNormalTexture}/${summary.skinnedMaterialCount}`,
+    metallicRoughnessTextures: `${summary.withMetallicRoughnessTexture}/${summary.skinnedMaterialCount}`,
+    blendMaterials: summary.alphaModes.BLEND,
+    maxTextureSide: summary.maxTextureSide,
+  };
+}
+
+/** One line a reviewer can read in the bake-off nav without opening the report. */
+export function describeStagedIntake(inspection) {
+  const parts = [
+    `${inspection.mappedBodyBoneCount}/${REQUIRED_BODY_BONES.length} body bones`,
+    inspection.fingerChains ? "fingers complete" : "fingers incomplete",
+  ];
+  const materials = materialGateSummary(inspection);
+  if (materials) {
+    parts.push(
+      `${materials.normalMaps} normal maps`,
+      `${materials.metallicRoughnessTextures} roughness textures`
+    );
+    if (materials.blendMaterials > 0)
+      parts.push(`${materials.blendMaterials} BLEND`);
+    if (materials.maxTextureSide !== null) {
+      parts.push(`max texture ${materials.maxTextureSide} px`);
+    }
+  }
+  return parts.join(" · ");
+}
+
+export function stagedIntakeEntry({ provenance, inspection, file, stagedAt }) {
+  return {
+    id: provenance.id,
+    candidateId: bakeoffCandidateId(provenance.id),
+    label: provenance.displayName,
+    source: `${provenance.source.provider} · ${provenance.source.assetName}`,
+    file,
+    bytes: inspection.bytes,
+    sha256: inspection.sha256,
+    stagedAt,
+    note: describeStagedIntake(inspection),
+    rig: {
+      mappedBodyBoneCount: inspection.mappedBodyBoneCount,
+      fingerChains: inspection.fingerChains,
+    },
+    materials: materialGateSummary(inspection),
+  };
+}
+
+/** Replace the entry with the same id and keep every other staged character. */
+export function upsertStagedIntake(manifest, entry, updatedAt) {
+  const candidates = Array.isArray(manifest?.candidates)
+    ? manifest.candidates
+    : [];
+  const others = candidates.filter((candidate) => candidate?.id !== entry.id);
+  return { schemaVersion: 1, updatedAt, candidates: [...others, entry] };
+}
+
+export function readBakeoffManifest(manifestPath) {
+  const empty = { schemaVersion: 1, updatedAt: null, candidates: [] };
+  if (!existsSync(manifestPath)) return empty;
+  try {
+    return JSON.parse(readFileSync(manifestPath, "utf8"));
+  } catch {
+    return empty;
+  }
+}
+
+function stageForBakeoff({
+  stageDirectory,
+  provenance,
+  optimizedPath,
+  inspection,
+  stagedAt,
+}) {
+  mkdirSync(stageDirectory, { recursive: true });
+  const file = `${bakeoffCandidateId(provenance.id)}.glb`;
+  copyFileSync(optimizedPath, resolve(stageDirectory, file));
+  copyFileSync(optimizedPath, resolve(stageDirectory, LEGACY_BAKEOFF_SLOT));
+  const manifestPath = resolve(stageDirectory, BAKEOFF_MANIFEST_FILE);
+  const entry = stagedIntakeEntry({ provenance, inspection, file, stagedAt });
+  writeJson(
+    manifestPath,
+    upsertStagedIntake(readBakeoffManifest(manifestPath), entry, stagedAt)
+  );
+  return { file, manifestPath, entry };
+}
 
 function pathInside(parent, child) {
   const relation = relative(resolve(parent), resolve(child));
@@ -74,6 +177,7 @@ export function buildPromotionPacket({
       optimized: optimizedInspection.errors.length === 0 ? "pass" : "fail",
       runtimeBodyBones: `${optimizedInspection.mappedBodyBoneCount}/${REQUIRED_BODY_BONES.length}`,
       fingerChains: optimizedInspection.fingerChains ? "pass" : "warning",
+      materials: materialGateSummary(optimizedInspection),
     },
     review: {
       harness: "/test/avatar-bakeoff",
@@ -81,7 +185,7 @@ export function buildPromotionPacket({
       poses: STRESS_POSE_IDS.map((pose) => ({
         pose,
         status: "pending",
-        path: `/test/avatar-bakeoff?candidate=intake-current&pose=${pose}`,
+        path: bakeoffReviewPath(provenance.id, pose),
       })),
       dynamicCollisionAudit: "pending",
     },
@@ -138,6 +242,7 @@ export async function intakeCharacter({
   skipOptimization = false,
   skipThumbnail = false,
   stageBakeoff = false,
+  stageDirectory = resolve(PROJECT_ROOT, BAKEOFF_STAGE_DIRECTORY),
   now = () => new Date().toISOString(),
 }) {
   const sourcePath = resolve(source);
@@ -255,13 +360,15 @@ export async function intakeCharacter({
   }
 
   let stagedForBakeoff = false;
+  let staging = null;
   if (stageBakeoff) {
-    const stagePath = resolve(
-      PROJECT_ROOT,
-      "static/models/avatars/bakeoff/intake-current.glb"
-    );
-    mkdirSync(dirname(stagePath), { recursive: true });
-    copyFileSync(optimizedPath, stagePath);
+    staging = stageForBakeoff({
+      stageDirectory: resolve(stageDirectory),
+      provenance,
+      optimizedPath,
+      inspection: optimizedInspection,
+      stagedAt: generatedAt,
+    });
     stagedForBakeoff = true;
   }
 
@@ -298,6 +405,13 @@ export async function intakeCharacter({
         }
       : { skipped: true },
     bakeoff: packet.review,
+    staging: staging
+      ? {
+          file: staging.file,
+          manifest: staging.manifestPath,
+          candidateId: staging.entry.candidateId,
+        }
+      : { skipped: true },
     warnings: [
       ...new Set([
         ...normalizedInspection.warnings,
@@ -379,6 +493,20 @@ async function main() {
       console.log(
         `Size: ${(result.report.normalized.bytes / 1024 / 1024).toFixed(2)} MiB -> ${(result.report.optimized.bytes / 1024 / 1024).toFixed(2)} MiB`
       );
+      const materials = result.report.optimized.materialSummary;
+      if (materials) {
+        console.log(
+          `Materials: ${materials.withNormalTexture}/${materials.skinnedMaterialCount} normal maps · ${materials.withMetallicRoughnessTexture}/${materials.skinnedMaterialCount} metallic-roughness textures · ${materials.alphaModes.BLEND} BLEND · max texture ${materials.maxTextureSide ?? "unknown"} px`
+        );
+      }
+      if (result.report.staging && !result.report.staging.skipped) {
+        console.log(
+          `Bake-off: ${bakeoffReviewPath(result.report.characterId, "overhead")}`
+        );
+      }
+      for (const warning of result.report.warnings) {
+        console.log(`Warning: ${warning}`);
+      }
       console.log(
         "Next gate: review all five bake-off poses and the collision audit"
       );

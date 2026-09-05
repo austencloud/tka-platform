@@ -1,25 +1,3 @@
-<script module lang="ts">
-  import {
-    PMREMGenerator,
-    type Texture,
-    type WebGLRenderer as OceanWebGLRenderer,
-  } from "three";
-  import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-
-  const oceanEnvironmentTextures = new WeakMap<OceanWebGLRenderer, Texture>();
-
-  function getOceanEnvironmentTexture(renderer: OceanWebGLRenderer): Texture {
-    const existing = oceanEnvironmentTextures.get(renderer);
-    if (existing) return existing;
-
-    const pmrem = new PMREMGenerator(renderer);
-    const texture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    pmrem.dispose();
-    oceanEnvironmentTextures.set(renderer, texture);
-    return texture;
-  }
-</script>
-
 <script lang="ts">
   import { T, useThrelte, useTask } from "@threlte/core";
   import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
@@ -46,6 +24,7 @@
   import OceanRuntimeSystems from "./runtime/OceanRuntimeSystems.svelte";
   import OceanDepthGradient from "./runtime/OceanDepthGradient.svelte";
   import { getSceneFeatureContext } from "../../../scene-features/context/scene-feature-context";
+  import { getRoomEnvironmentTexture } from "../../../rendering/room-environment";
   import { tryGetAdaptiveQualityContext } from "../../../context/adaptive-quality-context";
 
   // RoomEnvironment is intentionally only a soft specular fill. Direct light,
@@ -62,7 +41,6 @@
   // ~24% haze, the sand past it goes to ~80%, and the floor edge is gone.
   // Comparison: Winter 0.018, Autumn 0.022, Forest 0.034.
   const OCEAN_FOG_DENSITY = 0.026;
-
 
   interface Props {
     performerCount?: number;
@@ -84,7 +62,6 @@
     active = true,
   }: Props = $props();
 
-
   const { scene, renderer } = useThrelte() as unknown as {
     scene: Scene;
     renderer: WebGLRenderer;
@@ -103,9 +80,7 @@
   const quality = $derived(getOceanQualityConfig(qualityTier));
   const floraRequired = $derived(quality.enableAuthoredFlora);
 
-
   const sceneFeatures = getSceneFeatureContext();
-
 
   const environmentGlb = useGltf("/models/ocean/ocean-environment.glb", {
     meshoptDecoder: useMeshopt(),
@@ -156,7 +131,6 @@
     }
   });
 
-
   $effect(() => {
     if (!active) return;
     const s = scene;
@@ -194,7 +168,7 @@
         s.environmentIntensity = previousIntensity;
       };
     }
-    const envTex = getOceanEnvironmentTexture(r);
+    const envTex = getRoomEnvironmentTexture(r);
     s.environment = envTex;
     s.environmentIntensity = OCEAN_ENVIRONMENT_INTENSITY;
     return () => {

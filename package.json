@@ -103,6 +103,8 @@
     "models:curate": "node scripts/model-curator/curator-server.cjs",
     "characters:intake": "node --import tsx scripts/characters/character-intake.mjs",
     "characters:proportion-sweep": "node --import tsx scripts/characters/character-proportion-sweep.mjs",
+    "characters:provenance": "node --import tsx scripts/characters/character-provenance-stamp.mjs",
+    "characters:intake-batch": "node --import tsx scripts/characters/character-intake-batch.mjs",
     "arrows:placements:seed": "tsx scripts/seed-default-arrow-placements.ts",
     "arrows:placements:export": "tsx scripts/export-default-arrow-placements.ts",
     "arrows:placements:migrate": "tsx scripts/migrate-arrow-placement-frames.ts",
