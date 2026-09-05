@@ -250,6 +250,8 @@ export interface SampledPropStream {
   scale: Vector3Tuple;
   endpoints: readonly SpatialEndpoint[];
   style: PropStreamStyle;
+  /** Lift the pen when a source jumps to a different pose. */
+  breakBefore?: boolean;
 }
 
 export interface MotionCompositionFrame {

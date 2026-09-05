@@ -155,9 +155,11 @@ export function projectWorldTrajectories(
       streamId: layer.streamId,
       tipId: layer.tipId,
       color: layer.color,
-      points: layer.samples.map((sample) =>
-        projectSample(sample, projection, cameraForBeat)
-      ),
+      points: layer.samples.map((sample) => ({
+        ...projectSample(sample, projection, cameraForBeat),
+        beat: sample.beat,
+        ...(sample.breakBefore ? { breakBefore: true } : {}),
+      })),
     })),
   };
 }
