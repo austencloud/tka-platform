@@ -3,7 +3,7 @@
   "sceneId": "ember-broken-rift",
   "title": "Ember Broken Rift",
   "domainProofRequired": false,
-  "currentGate": 3,
+  "currentGate": 4,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
     "roomShellSource": "src/lib/shared/3d/environments/scenes/EmberScene.svelte",
@@ -51,7 +51,9 @@
       "Szxybxm6NlLkPyPL6dQt",
       "1hlrU13Dg8VqdQaLJPib",
       "3XyhXLyzv8ASNl2fLoCo",
-      "n37Lcgy1czQrqITMnB8f"
+      "n37Lcgy1czQrqITMnB8f",
+      "HyW3fFQVRHU3Uc0ezeWO",
+      "GLYjYdoqw6cDfzcLAGiq"
     ]
   },
   "sequenceFingerprints": [],
@@ -614,7 +616,7 @@
     },
     {
       "id": "registered-visual-target",
-      "status": "ready-for-review",
+      "status": "approved",
       "evidence": [
         {
           "kind": "locked-camera-set",
@@ -666,13 +668,57 @@
           "note": "Native orbit and overview inspected: performer visible, slope and lava relationship retained. Close paintover retains the three visible proxies. Wide paintovers with extra markers excluded. Native cell edges, faceted rock and stretched surface detail remain production gaps; final art judgment awaits Austen."
         }
       ],
-      "approval": null
+      "approval": {
+        "approvedBy": "Austen",
+        "approvedAt": "2026-09-05T08:59:15.000Z",
+        "quote": "It's phenomenal. finally a competant llm. next phase. or just send it all the way if you want",
+        "museumTrackerItem": "HyW3fFQVRHU3Uc0ezeWO",
+        "visualComprehensionConfirmed": true,
+        "note": "Approval rests on the explicit next-phase/end-to-end instruction, not praise alone. Austen delegated intermediate production judgment. The cold basalt target is selected; no optional glowing-platform treatment or later runtime visual acceptance is attributed to him. Timestamp is the tracker decision creation time, not a claimed message timestamp."
+      }
     },
     {
       "id": "production-slice",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
+      "status": "in-progress",
+      "evidence": [
+        {
+          "kind": "vertical-slice-build",
+          "path": "static/models/ember/ember-midflank-production-r5.glb"
+        },
+        {
+          "kind": "blender-source",
+          "path": "blender/ember-midflank-production-r5.blend"
+        },
+        {
+          "kind": "interaction-capture",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-midflank-r5/runtime-four-performers.png"
+        },
+        {
+          "kind": "performance-report",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-midflank-r5/runtime-verification.md"
+        },
+        {
+          "kind": "registered-runtime-orbit",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-midflank-r5/ember-r5-runtime-orbit-board.png"
+        }
+      ],
+      "checks": [
+        {
+          "name": "interaction-state",
+          "status": "passed",
+          "evidence": "Four-performer playback and Ember-Cosmic-Ember re-entry retained the cast, cleared the outgoing renderer, and did not restore a circular platform. See the runtime verification report."
+        },
+        {
+          "name": "runtime-console",
+          "status": "passed",
+          "evidence": "No shader or runtime errors observed in the final worker orbit, re-entry, and reduced-motion checks."
+        },
+        {
+          "name": "performance",
+          "status": "failed",
+          "evidence": "Cold boot occasionally exceeds the 50 ms main-thread input-gap threshold (59.3 ms in the native desktop retest). Warm re-entry passes. See worker-boot.json, scene-reentry.json and runtime-verification.md; no exemption is claimed."
+        }
+      ],
       "approval": null
     },
     {

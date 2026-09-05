@@ -41,6 +41,7 @@
     word: string | null;
     /** A stage the host authored, in metres — see Viewer3DScene. */
     stageExtent?: { width: number; depth: number } | null;
+    cameraFov?: number;
     leftPropType?: string | null;
     rightPropType?: string | null;
     onClose?: () => void;
@@ -121,6 +122,7 @@
     onExport,
     exportBusy = false,
     renderEmptyScene = false,
+    cameraFov,
     visiblePerformerCount,
     performerSteps = null,
     worldChildren,
@@ -274,6 +276,7 @@
       {onPlaybackToggle}
       {onProgressBarSeek}
       {renderEmptyScene}
+      {cameraFov}
       {visiblePerformerCount}
       {performerSteps}
       {worldChildren}

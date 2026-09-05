@@ -52,7 +52,8 @@ interface EmberSliceGltf {
   }>;
 }
 
-const optimizedPath = resolve("static/models/ember/ember-production-slice.glb");
+// Keep the historical rollback asset's contracts distinct from the R5 world.
+const optimizedPath = resolve("static/models/ember/ember-production-slice-r10.glb");
 const integratedPath = resolve("static/models/ember/ember-integrated-room.glb");
 const reportPath = resolve(
   "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-report.json"
@@ -73,7 +74,7 @@ function readOptimizedEmberAsset(path: string): EmberSliceGltf {
   ) as EmberSliceGltf;
 }
 
-describe("Ember production-slice contracts", () => {
+describe("Ember historical R10 production-slice contracts", () => {
   const gltf = readOptimizedEmberAsset(optimizedPath);
 
   it("ships GPU-ready KTX2 textures and meshopt geometry under seven megabytes", () => {
@@ -337,14 +338,9 @@ describe("Ember production-slice contracts", () => {
       resolve("src/lib/shared/3d/environments/scenes/EmberScene.svelte"),
       "utf8"
     );
-    expect(sceneSource).toContain(
-      'import GltfAsset from "../primitives/GltfAsset.svelte"'
-    );
+    expect(sceneSource).toContain("createLoadedEmberEnvironmentWorld");
     expect(sceneSource).not.toContain("rock_largeA.glb");
     expect(sceneSource).not.toContain("rock_largeB.glb");
-    expect(sceneSource).toContain(
-      'url="/models/ember/ember-production-slice.glb"'
-    );
     expect(sceneSource).not.toContain("<GroundPlane");
     expect(sceneSource).not.toContain("<CraterGround");
   });

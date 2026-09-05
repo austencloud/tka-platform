@@ -5,9 +5,14 @@ import { resolve } from "node:path";
 import sharp from "sharp";
 
 const midflank = process.argv.includes("--midflank-r5");
+const runtime = process.argv.includes("--midflank-runtime-r5");
 const evidenceDir = resolve(
   "docs/superpowers/specs/ember-spatial-directions/evidence",
-  midflank ? "gate-3-midflank-r5" : "gate-4-atmosphere-r1"
+  runtime
+    ? "gate-4-midflank-r5"
+    : midflank
+      ? "gate-3-midflank-r5"
+      : "gate-4-atmosphere-r1"
 );
 
 const palette = {
@@ -103,6 +108,49 @@ async function buildBoard({
     .composite(composites)
     .png()
     .toFile(resolve(evidenceDir, output));
+}
+
+if (runtime) {
+  await buildBoard({
+    title: "EMBER / LIVE R5 ORBIT",
+    subtitle:
+      "Production worker renderer / eight bearings / unretouched runtime captures",
+    columns: 4,
+    panelWidth: 480,
+    panelHeight: 300,
+    fit: "contain",
+    output: "ember-r5-runtime-orbit-board.png",
+    items: Array.from({ length: 8 }, (_, index) => {
+      const angle = String(index * 45).padStart(3, "0");
+      return {
+        file: `runtime-orbit-${angle}.png`,
+        label: `ORBIT ${angle} DEGREES`,
+      };
+    }),
+  });
+  await buildBoard({
+    title: "EMBER / RUNTIME VIEWPORTS",
+    subtitle:
+      "Seven CSS sizes / emulated screens scaled to fit / black margins belong to capture surface",
+    columns: 4,
+    panelWidth: 480,
+    panelHeight: 360,
+    fit: "contain",
+    output: "ember-r5-runtime-viewport-board.png",
+    items: [
+      [375, 667],
+      [960, 412],
+      [820, 1180],
+      [1440, 900],
+      [1920, 1080],
+      [2560, 1440],
+      [3840, 2160],
+    ].map(([width, height]) => ({
+      file: `viewport-${width}x${height}.png`,
+      label: `${width} x ${height}`,
+    })),
+  });
+  process.exit(0);
 }
 
 if (midflank) {
