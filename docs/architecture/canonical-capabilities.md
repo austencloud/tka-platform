@@ -34,3 +34,10 @@ keep-separate decision, not for every component.
 
 When no owner exists, record the search evidence and establish one owner. A
 different style or smaller API is not a separate capability.
+
+Choreo Card handoffs extend `ChoreoCard.svelte` (`onReady`: decoded cells, QR,
+and completed cell entrances). Published scan links extend its existing
+`choreo-card-qr-state.svelte.ts` (`qrUrl`) and `getUrlQRCodeGenerator`, rather
+than minting account-owned short codes. Discovery: `onRenderProgress`,
+`onRenderSettled`, `generateForUrl`, and `showQRCode`; lesson cards compose
+these owners with `createLayoutMotion` and `DualSourceCrossfade`.
