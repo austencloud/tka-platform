@@ -323,13 +323,20 @@
   }
 
   .motions-experience.is-intro {
-    height: clamp(40rem, 80dvh, 50rem);
+    flex-shrink: 0;
+    height: clamp(44rem, 80dvh, 50rem);
     overflow: visible;
   }
 
   @media (max-width: 640px) {
     .motions-experience.is-intro {
       height: 46rem;
+    }
+  }
+
+  @media (min-width: 2400px) and (min-height: 1300px) {
+    .motions-experience.is-intro {
+      height: 64rem;
     }
   }
 
