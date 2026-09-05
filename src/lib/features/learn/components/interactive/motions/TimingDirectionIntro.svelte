@@ -23,14 +23,14 @@
     split: {
       x: 0,
       y: -54,
-      description: "At the left hand’s downbeat, the right hand is at the top.",
+      description: "The hands are on opposite sides of their circles.",
       offset: "Half a cycle apart.",
     },
     quarter: {
       x: -54,
       y: 0,
       description:
-        "At the left hand’s downbeat, the right hand is at the side.",
+        "When either hand reaches the downbeat, the other is at the side.",
       offset: "A quarter cycle apart.",
     },
   };
@@ -118,14 +118,20 @@
           <!-- Static rotation symbols have no hand positions or rhythm. -->
           <g class="blue" transform="translate(80 80)">
             <path class="rotation-arc" d="M-38.184 38.184A54 54 0 1 1 54 0" />
-            <path class="arrowhead" d="M43-5 65-5 54 13Z" />
+            <path
+              class="arrowhead"
+              d="M40-7 Q37-7 39-4 L52 17 Q54 20 56 17 L69-4 Q71-7 68-7 Z"
+            />
           </g>
           <g
             class="red"
             transform={`translate(240 80) scale(${directionMode === "same" ? 1 : -1} 1)`}
           >
             <path class="rotation-arc" d="M-38.184 38.184A54 54 0 1 1 54 0" />
-            <path class="arrowhead" d="M43-5 65-5 54 13Z" />
+            <path
+              class="arrowhead"
+              d="M40-7 Q37-7 39-4 L52 17 Q54 20 56 17 L69-4 Q71-7 68-7 Z"
+            />
           </g>
         </svg>
       </Crossfade>
@@ -235,7 +241,7 @@
   .rotation-arc {
     fill: none;
     stroke: currentColor;
-    stroke-width: 6;
+    stroke-width: 7.5;
     stroke-linecap: round;
   }
   .selector {
