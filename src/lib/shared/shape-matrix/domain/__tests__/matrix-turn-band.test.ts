@@ -19,10 +19,10 @@ describe("matrix turn bands", () => {
 
   it("names Float and -0.25 in the selected notation system", () => {
     expect(matrixTurnVisibleLabel("fl", "turns")).toBe("Float");
-    expect(matrixTurnVisibleLabel("fl", "ratios")).toBe("0:1");
+    expect(matrixTurnVisibleLabel("fl", "ratios")).toBe("1:0");
     expect(matrixTurnVisibleLabel(-0.25, "turns")).toBe("-0.25");
-    expect(matrixTurnVisibleLabel(-0.25, "ratios")).toBe("1:2");
-    expect(matrixTurnSpokenLabel("fl", "ratios")).toBe("0:1 ratio");
+    expect(matrixTurnVisibleLabel(-0.25, "ratios")).toBe("2:1");
+    expect(matrixTurnSpokenLabel("fl", "ratios")).toBe("1:0 ratio");
     expect(matrixTurnSpokenLabel(-0.25, "turns")).toBe("-0.25 turns");
   });
 });
