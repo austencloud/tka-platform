@@ -10,9 +10,41 @@ export interface WarmupHandles {
 export interface WarmupOptions {
   onProgress?: (fraction: number) => void;
   signal?: AbortSignal;
+  /** Longest the warm-up waits on the driver after its last dispatch. */
+  capMs?: number;
 }
 
 const COMPILE_DISPATCH_SLICE_MS = 50;
+
+// three's compileAsync polls KHR_parallel_shader_compile on its own setTimeout
+// and never rejects. When a material is disposed while that poll is pending
+// (an avatar swap or performer remount mid-boot), the tick throws inside the
+// timer and the promise stays pending for good; awaited plainly, that parked
+// the curtain at "Warming up" until the tab was closed. Long enough that a
+// weak GPU still links every program the honest way, short enough that a dead
+// poll costs a few seconds instead of the session.
+const COMPILE_CAP_MS = 8000;
+
+function afterDelay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise<void>((resolve) => {
+    // An abort only clears the timer; the abort promise wins that race itself.
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => clearTimeout(timer), {
+      once: true,
+    });
+  });
+}
+
+function whenAborted(signal?: AbortSignal): Promise<void> {
+  return new Promise<void>((resolve) => {
+    if (!signal) return;
+    if (signal.aborted) {
+      resolve();
+      return;
+    }
+    signal.addEventListener("abort", () => resolve(), { once: true });
+  });
+}
 
 function yieldToMainThread(): Promise<void> {
   const scheduler = (
@@ -41,7 +73,7 @@ export async function warmupRenderer(
   opts: WarmupOptions = {}
 ): Promise<void> {
   const { renderer, scene, camera } = handles;
-  const { onProgress, signal } = opts;
+  const { onProgress, signal, capMs = COMPILE_CAP_MS } = opts;
 
   if (typeof renderer?.compileAsync !== "function") {
     // Older drivers/renderers without async compile fall through to the
@@ -105,7 +137,8 @@ export async function warmupRenderer(
     }
   }
 
-  await Promise.all(
+  let finished = false;
+  const allSettled = Promise.all(
     pending.map(async (promise) => {
       try {
         await promise;
@@ -113,8 +146,23 @@ export async function warmupRenderer(
         reportFailure(error);
       } finally {
         settled += 1;
-        onProgress?.(settled / pending.length);
+        if (!finished) onProgress?.(settled / pending.length);
       }
     })
-  );
+  ).then(() => "settled" as const);
+
+  // The cap starts after the last dispatch, so a long synchronous program
+  // creation pass never eats into the time the driver gets to link.
+  const outcome = await Promise.race([
+    allSettled,
+    whenAborted(signal).then(() => "aborted" as const),
+    afterDelay(capMs, signal).then(() => "capped" as const),
+  ]);
+  finished = true;
+  if (outcome === "capped") {
+    console.warn(
+      `[scene-boot] shader warmup capped after ${capMs}ms with ${pending.length - settled} of ${pending.length} programs still pending; revealing anyway.`
+    );
+    onProgress?.(1);
+  }
 }

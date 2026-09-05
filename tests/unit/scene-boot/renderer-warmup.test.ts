@@ -19,7 +19,10 @@ import {
 interface FakeObject {
   visible: boolean;
   material?: { vertexShader: string };
-  geometry?: { attributes: Record<string, { itemSize: number }>; morphAttributes: Record<string, unknown[]> };
+  geometry?: {
+    attributes: Record<string, { itemSize: number }>;
+    morphAttributes: Record<string, unknown[]>;
+  };
   traverse?: (callback: (object: FakeObject) => void) => void;
 }
 
@@ -27,7 +30,10 @@ function meshWithProgram(id: string, visible = true): FakeObject {
   return {
     visible,
     material: { vertexShader: `shader-${id}` },
-    geometry: { attributes: { position: { itemSize: 3 } }, morphAttributes: {} },
+    geometry: {
+      attributes: { position: { itemSize: 3 } },
+      morphAttributes: {},
+    },
   };
 }
 
@@ -78,7 +84,11 @@ async function drainTasks(): Promise<void> {
 
 describe("warmupRenderer", () => {
   it("dispatches every unique program before waiting on any of them", async () => {
-    const meshes = [meshWithProgram("a"), meshWithProgram("b"), meshWithProgram("c")];
+    const meshes = [
+      meshWithProgram("a"),
+      meshWithProgram("b"),
+      meshWithProgram("c"),
+    ];
     const { renderer, peak, releaseAll } = deferredRenderer();
 
     // Every dispatch still happens before any link promise is awaited. The
@@ -115,12 +125,19 @@ describe("warmupRenderer", () => {
   });
 
   it("reports progress once per target and finishes at 1", async () => {
-    const meshes = [meshWithProgram("a"), meshWithProgram("b"), meshWithProgram("c")];
+    const meshes = [
+      meshWithProgram("a"),
+      meshWithProgram("b"),
+      meshWithProgram("c"),
+    ];
     const fractions: number[] = [];
 
-    await warmupRenderer(handles({ compileAsync: () => Promise.resolve() }, sceneOf(meshes)), {
-      onProgress: (fraction) => fractions.push(fraction),
-    });
+    await warmupRenderer(
+      handles({ compileAsync: () => Promise.resolve() }, sceneOf(meshes)),
+      {
+        onProgress: (fraction) => fractions.push(fraction),
+      }
+    );
     expect(fractions).toHaveLength(meshes.length);
     expect(fractions.at(-1)).toBe(1);
   });
@@ -130,7 +147,9 @@ describe("warmupRenderer", () => {
     const meshes = [meshWithProgram("a"), meshWithProgram("b")];
     let call = 0;
     const compileAsync = () =>
-      (call++ === 0 ? Promise.reject(new Error("link failed")) : Promise.resolve());
+      call++ === 0
+        ? Promise.reject(new Error("link failed"))
+        : Promise.resolve();
 
     await expect(
       warmupRenderer(handles({ compileAsync }, sceneOf(meshes)))
@@ -139,9 +158,59 @@ describe("warmupRenderer", () => {
     warn.mockRestore();
   });
 
+  // three's compileAsync polls program readiness on its own setTimeout. When a
+  // material is disposed mid-poll the tick throws inside that timer and the
+  // promise never settles either way, so the curtain sat at "Warming up" for
+  // good. The warm-up must be able to give up on such a poll.
+  it("settles as soon as the abort signal fires, even if a compile never does", async () => {
+    const { renderer } = deferredRenderer();
+    const abort = new AbortController();
+
+    const done = warmupRenderer(
+      handles(renderer, sceneOf([meshWithProgram("a")])),
+      {
+        signal: abort.signal,
+      }
+    );
+    await drainTasks();
+    abort.abort();
+
+    await expect(done).resolves.toBeUndefined();
+  });
+
+  it("caps the wait on a compile poll that never settles, warns once and reports done", async () => {
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const { renderer } = deferredRenderer();
+      const fractions: number[] = [];
+
+      const done = warmupRenderer(
+        handles(renderer, sceneOf([meshWithProgram("a")])),
+        {
+          capMs: 500,
+          onProgress: (fraction) => fractions.push(fraction),
+        }
+      );
+      await vi.advanceTimersByTimeAsync(499);
+      expect(fractions).toEqual([]);
+      await vi.advanceTimersByTimeAsync(1);
+
+      await expect(done).resolves.toBeUndefined();
+      expect(fractions.at(-1)).toBe(1);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]?.[0])).toMatch(/capped/);
+    } finally {
+      warn.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it("does nothing but report done when the renderer cannot compile async", async () => {
     const onProgress = vi.fn();
-    await warmupRenderer(handles({}, sceneOf([meshWithProgram("a")])), { onProgress });
+    await warmupRenderer(handles({}, sceneOf([meshWithProgram("a")])), {
+      onProgress,
+    });
     expect(onProgress).toHaveBeenCalledExactlyOnceWith(1);
   });
 });
