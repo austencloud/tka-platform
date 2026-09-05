@@ -159,8 +159,14 @@ describe("Flow Fest production dressing", () => {
       roadMarkingSurfaceCount: 5,
     });
     expect(first.spatialAudit).toMatchObject({ campRouteViolations: 0 });
+    // Measured LiDAR peaks keep the detector's 7.5 m rejection radius; the
+    // jittered-grid infill trees planted between them keep their own 4.5 m
+    // floor, so no two trunks in the site woodland ever fuse.
     expect(first.spatialAudit.minimumCanopyPeakDistance).toBeGreaterThanOrEqual(
       7.5
+    );
+    expect(first.spatialAudit.minimumSiteTreeDistance).toBeGreaterThanOrEqual(
+      4.5
     );
     expect(
       first.spatialAudit.tracedConnectorSurfaceCount
@@ -206,11 +212,15 @@ describe("Flow Fest production dressing", () => {
       festivalFixtures: 5,
       entranceFixtures: 4,
     });
+    // Trees, every tent but the player's own, the parked cars, the tailgate
+    // canopies added with the car campground rows, and the four entrance
+    // fixtures.
     expect(first.collision.staticMesh.visibleObjectCount).toBe(
       first.counts.interpretedTrees +
         first.counts.tents -
         1 +
         first.counts.vehicles +
+        first.spatialAudit.lowerCenterCanopyCount +
         4
     );
     expect(first.collision.campEstablishedMesh.visibleObjectCount).toBe(1);
@@ -411,6 +421,9 @@ describe("Flow Fest production dressing", () => {
       expect(
         dressing.spatialAudit.minimumCanopyPeakDistance
       ).toBeGreaterThanOrEqual(7.5);
+      expect(
+        dressing.spatialAudit.minimumSiteTreeDistance
+      ).toBeGreaterThanOrEqual(4.5);
       expect(dressing.collision.staticMesh.visibleObjectCount).toBe(
         dressing.counts.interpretedTrees + 108
       );
