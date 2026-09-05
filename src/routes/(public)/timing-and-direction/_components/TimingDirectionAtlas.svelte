@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import { reducedMotion } from "$lib/shared/transitions/motion";
+  import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
+  import TimingDirectionIntro from "$lib/features/learn/components/interactive/motions/TimingDirectionIntro.svelte";
+  import { growFade, reducedMotion } from "$lib/shared/transitions/motion";
   import {
     createRenderActivityGate,
     renderGateTarget,
@@ -24,6 +26,7 @@
   const directions: readonly DirectionValue[] = ["Same", "Opposite"];
   let selectedCode = $state("TS");
   let playing = $state(true);
+  let showIntro = $state(false);
   let currentStep = $state(0);
   let seekClock: ((step: number) => void) | null = null;
   const clockMode = modes[0]!;
@@ -68,16 +71,31 @@
   use:renderGateTarget={playbackGate}
 >
   <div class="atlas-toolbar">
-    <p>Select a preview to see it larger.</p>
     <PanelButton
-      onclick={() => (playing = !playing)}
-      ariaLabel={playing ? "Pause all animations" : "Play all animations"}
+      onclick={() => (showIntro = !showIntro)}
+      ariaExpanded={showIntro}
     >
-      <i class="fa-solid {playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"
-      ></i>
-      <span class="play-label">{playing ? "Pause all" : "Play all"}</span>
+      <i class="fa-regular fa-circle-question" aria-hidden="true"></i>
+      Learn the basics
     </PanelButton>
+    <div
+      class="playback-control"
+      role="group"
+      aria-label="Playback for all six modes"
+    >
+      <TransportControls
+        isPlaying={playing}
+        onPlaybackToggle={() => (playing = !playing)}
+      />
+      <span>All animations</span>
+    </div>
   </div>
+
+  {#if showIntro}
+    <div class="intro" transition:growFade>
+      <TimingDirectionIntro />
+    </div>
+  {/if}
 
   <div class="atlas-body">
     <div
@@ -86,67 +104,71 @@
       aria-label="Compare all six modes"
     >
       <div class="timing-headings" aria-hidden="true">
+        <span class="timing-axis">Timing</span>
+        <span class="direction-axis">Direction</span>
         {#each modes.filter((mode) => mode.article.direction === "Same") as mode}
           <span>{mode.article.timing}</span>
         {/each}
       </div>
-      {#each directions as direction}
-        <div
-          class="direction-group"
-          role="group"
-          aria-label={`${direction} direction`}
-        >
-          <h2>{direction} direction</h2>
-          <div class="mode-row">
-            {#each modes.filter((mode) => mode.article.direction === direction) as mode (mode.article.code)}
-              <article
-                class="mode"
-                class:selected={selectedCode === mode.article.code}
-                style:--mode-accent={mode.motion.element.accentColor}
-                aria-label={mode.article.name}
-              >
-                <button
-                  class="preview"
-                  type="button"
-                  aria-label={`Preview ${mode.article.name}`}
-                  aria-pressed={selectedCode === mode.article.code}
-                  aria-controls="timing-detail"
-                  onclick={() => selectMode(mode.article.code)}
+      <div class="direction-rows">
+        {#each directions as direction}
+          <div
+            class="direction-group"
+            role="group"
+            aria-label={`${direction} direction`}
+          >
+            <h2>{direction}</h2>
+            <div class="mode-row">
+              {#each modes.filter((mode) => mode.article.direction === direction) as mode (mode.article.code)}
+                <article
+                  class="mode"
+                  class:selected={selectedCode === mode.article.code}
+                  style:--mode-accent={mode.motion.element.accentColor}
+                  aria-label={mode.article.name}
                 >
-                  <span class="preview-label">
-                    <strong>{mode.article.code}</strong>
-                    <i
-                      class="fa-solid fa-check"
-                      class:shown={selectedCode === mode.article.code}
-                      aria-hidden="true"
-                    ></i>
-                  </span>
-                  <span class="preview-animation">
-                    <HandMotionPlayer
-                      sequence={mode.motion.sequence}
-                      showElementalGlyph
-                      ariaLabel={mode.article.name}
-                      interactive={false}
-                      externalPlaying={playing}
-                      externalStep={mode === clockMode ? null : currentStep}
-                      onStepChange={mode === clockMode
-                        ? followClock
-                        : undefined}
-                      onSeekRef={mode === clockMode
-                        ? registerClockSeek
-                        : undefined}
-                      playbackGate={mode === clockMode
-                        ? playbackGate
-                        : undefined}
-                      framed={false}
-                    />
-                  </span>
-                </button>
-              </article>
-            {/each}
+                  <button
+                    class="preview"
+                    type="button"
+                    aria-label={`Preview ${mode.article.name}`}
+                    aria-pressed={selectedCode === mode.article.code}
+                    aria-controls="timing-detail"
+                    onclick={() => selectMode(mode.article.code)}
+                  >
+                    <span class="preview-label">
+                      <strong>{mode.article.code}</strong>
+                      <i
+                        class="fa-solid fa-check"
+                        class:shown={selectedCode === mode.article.code}
+                        aria-hidden="true"
+                      ></i>
+                    </span>
+                    <span class="preview-animation">
+                      <HandMotionPlayer
+                        sequence={mode.motion.sequence}
+                        showElementalGlyph
+                        ariaLabel={mode.article.name}
+                        interactive={false}
+                        externalPlaying={playing}
+                        externalStep={mode === clockMode ? null : currentStep}
+                        onStepChange={mode === clockMode
+                          ? followClock
+                          : undefined}
+                        onSeekRef={mode === clockMode
+                          ? registerClockSeek
+                          : undefined}
+                        playbackGate={mode === clockMode
+                          ? playbackGate
+                          : undefined}
+                        framed={false}
+                      />
+                    </span>
+                  </button>
+                </article>
+              {/each}
+            </div>
           </div>
-        </div>
-      {/each}
+        {/each}
+      </div>
     </div>
 
     <section
@@ -174,14 +196,13 @@
         />
       </div>
       <div class="detail-footer">
-        <p>Drag the bar to scrub.</p>
         <PanelButton
           href={selected.href}
           ariaLabel={`Read ${selected.article.name} article`}
           accentColor={selected.motion.element.accentColor}
         >
           <i class="fa-solid fa-book-open" aria-hidden="true"></i>
-          Read article
+          Read {selected.article.code} article
         </PanelButton>
       </div>
       <div class="compare-action">
@@ -197,6 +218,7 @@
 <style>
   .atlas {
     --sequence-seek-target-size: 48px;
+    --direction-label-width: 5rem;
     display: grid;
     gap: 1rem;
     min-width: 0;
@@ -207,19 +229,44 @@
     align-items: center;
     justify-content: center;
     gap: 1rem;
+    flex-wrap: wrap;
   }
 
-  .atlas-toolbar p,
-  .detail-footer p {
-    margin: 0;
+  .playback-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     color: var(--theme-text-dim);
     font-size: 0.875rem;
-    line-height: 1.4;
   }
 
-  .play-label {
-    display: inline-block;
-    min-width: 4.25rem;
+  .intro {
+    container-type: inline-size;
+    width: min(100%, 60rem);
+    margin-inline: auto;
+  }
+
+  .intro :global(.concept-model) {
+    height: auto;
+  }
+
+  .intro :global(.concept-panel) {
+    grid-template-rows: auto auto 9rem minmax(5rem, auto) auto;
+    font-size: 1rem;
+  }
+
+  .intro :global(h3) {
+    font-size: 1.35rem;
+  }
+
+  @container (max-width: 600px) {
+    .intro :global(.concept-model) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .intro :global(.direction-panel) {
+      border-inline-start: 0;
+      border-top: 1px solid var(--theme-stroke);
+    }
   }
 
   .atlas-toolbar :global(.panel-btn) {
@@ -229,18 +276,19 @@
   .atlas-body {
     display: grid;
     grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
-    gap: clamp(1.5rem, 3vw, 3rem);
-    align-items: center;
+    grid-template-rows: auto auto auto;
+    gap: 0.75rem clamp(1.5rem, 3vw, 3rem);
+    align-items: stretch;
   }
 
   .comparison {
     display: grid;
-    gap: 0.75rem;
+    grid-row: 1 / 3;
+    grid-template-rows: subgrid;
     min-width: 0;
     scroll-margin-top: 5.5rem;
   }
 
-  .timing-headings,
   .mode-row {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -248,18 +296,44 @@
   }
 
   .timing-headings {
+    display: grid;
+    grid-template-columns: var(--direction-label-width) repeat(
+        3,
+        minmax(0, 1fr)
+      );
+    align-content: end;
+    align-items: end;
+    gap: 0.5rem clamp(0.4rem, 1vw, 0.85rem);
     text-align: center;
     color: var(--theme-text);
     font-size: 1rem;
     font-weight: 700;
   }
 
+  .timing-axis {
+    grid-column: 2 / -1;
+  }
+
+  .direction-axis {
+    font-size: 0.875rem;
+  }
+
+  .direction-rows {
+    display: grid;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
   .direction-group {
+    display: grid;
+    grid-template-columns: var(--direction-label-width) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(0.4rem, 1vw, 0.85rem);
     min-width: 0;
   }
 
   .direction-group h2 {
-    margin: 0 0 0.5rem;
+    margin: 0;
     color: var(--theme-text);
     font-size: 0.875rem;
     font-weight: 650;
@@ -268,19 +342,18 @@
   }
 
   .mode,
-  .detail {
+  .detail-animation {
     min-width: 0;
     border: 1px solid var(--theme-stroke-strong);
     border-radius: var(--radius-lg, 0.75rem);
-    /* Keep the moving background out of the demonstrations. */
-    background: rgb(from var(--theme-panel-bg) r g b / 1);
+    background: var(--theme-panel-bg);
   }
 
   .mode {
     background: color-mix(
       in srgb,
       var(--mode-accent) 9%,
-      rgb(from var(--theme-panel-bg) r g b / 1)
+      var(--theme-panel-bg)
     );
     border-color: color-mix(
       in srgb,
@@ -296,7 +369,7 @@
     background: color-mix(
       in srgb,
       var(--mode-accent) 17%,
-      rgb(from var(--theme-panel-bg) r g b / 1)
+      var(--theme-panel-bg)
     );
     border-color: var(--mode-accent);
     box-shadow: 0 0 0 1px var(--mode-accent);
@@ -359,6 +432,14 @@
   }
 
   .detail {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1 / 4;
+    grid-template-rows: subgrid;
+    min-width: 0;
+  }
+
+  .detail-animation {
     overflow: hidden;
     border-color: color-mix(
       in srgb,
@@ -368,13 +449,13 @@
     background: color-mix(
       in srgb,
       var(--mode-accent) 7%,
-      rgb(from var(--theme-panel-bg) r g b / 1)
+      var(--theme-panel-bg)
     );
   }
 
   .detail-heading {
     text-align: center;
-    padding: 1rem;
+    align-self: end;
   }
 
   .detail-heading h2 {
@@ -394,18 +475,27 @@
   }
 
   .detail-animation {
-    width: min(100%, 26rem);
-    margin-inline: auto;
-    aspect-ratio: 1.08;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .detail-animation :global(.progress-bar-container) {
+    background: transparent;
   }
 
   .detail-footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     flex-wrap: wrap;
     gap: 0.25rem 0.75rem;
-    padding: 0.35rem 1rem 0.75rem;
+    padding: 0.25rem 0;
+  }
+
+  .detail-footer :global(.panel-btn) {
+    min-height: 48px;
+    font-size: 1rem;
+    font-weight: 650;
   }
 
   .compare-action {
@@ -417,11 +507,27 @@
   @media (max-width: 900px) {
     .atlas-body {
       grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto;
+      row-gap: 1.5rem;
+    }
+
+    .comparison {
+      grid-row: auto;
+      grid-template-rows: auto auto;
+      gap: 0.75rem;
     }
 
     .detail {
+      grid-column: 1;
+      grid-row: auto;
+      grid-template-rows: auto auto auto auto;
+      gap: 0.75rem;
       width: min(100%, 36rem);
       justify-self: center;
+    }
+
+    .detail-animation {
+      aspect-ratio: 1.08;
     }
 
     .compare-action {
@@ -432,6 +538,7 @@
   @media (max-width: 480px) {
     .atlas {
       gap: 0.75rem;
+      --direction-label-width: 4rem;
     }
 
     .atlas-toolbar {
