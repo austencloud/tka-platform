@@ -1,8 +1,8 @@
 # Ember Spatial Directions
 
-Status: Mid-Flank Fire Pilgrimage Gate 2 R5 approved; Gate 3 authorized and pending; R4 and earlier Gate 1/2 work is historical
+Status: Mid-Flank Fire Pilgrimage Gate 2 R5 approved; Gate 3 R5 material target ready for review; R4 and earlier Gate 1/2 work is historical
 
-Date: 2026-09-04
+Date: 2026-09-05
 
 Historical final acceptance: museum tracker `wqUAKQMa79rTYDYa0N5m`
 
@@ -22,7 +22,7 @@ authorization `lIPwVa2kGFcoQsgICkWI`, mid-flank requirement
 `Vwm6XTLdDbDfxuoVE7z9`, R5 candidate `5P5KVEq04dpHxu9F0ViI`, R5 evidence
 reference `Iur86OmZX40nTqdwgxDq`, Gate 1.1 approval `Szxybxm6NlLkPyPL6dQt`,
 Gate 2 review reference `1hlrU13Dg8VqdQaLJPib`, and Gate 2 approval
-`3XyhXLyzv8ASNl2fLoCo`
+`3XyhXLyzv8ASNl2fLoCo`; Gate 3 material proposal `n37Lcgy1czQrqITMnB8f`
 
 ## Current active geometry contract
 
@@ -35,8 +35,11 @@ continuously inclined compound flank. The surrounding 8-25 m annulus remains
 slanted at a 9.188 degree median grade. The active source sits high at runtime
 XZ `(-34, 132)`; one fresh simulator-owned drainage passes west of the 4.5 m
 action envelope and leaves the review world at the south boundary. The summit
-and downslope country both continue beyond frame. Gate 1.1 is approved. The R5
-Blender/GLB graybox is ready for Gate 2 review; every later gate remains pending.
+and downslope country both continue beyond frame. Gate 1.1 and Gate 2 are
+approved. The R5 material target is ready for Gate 3 review; later gates remain
+pending. The [material brief](evidence/gate-3-midflank-r5/material-lighting-brief.md)
+distinguishes the illustrative finish target from the exact Blender camera set
+and records the remaining production gaps.
 R4 and all earlier Blender/GLB artifacts are historical evidence only.
 
 ## Why this exists

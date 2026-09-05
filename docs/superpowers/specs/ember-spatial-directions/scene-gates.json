@@ -50,7 +50,8 @@
       "Iur86OmZX40nTqdwgxDq",
       "Szxybxm6NlLkPyPL6dQt",
       "1hlrU13Dg8VqdQaLJPib",
-      "3XyhXLyzv8ASNl2fLoCo"
+      "3XyhXLyzv8ASNl2fLoCo",
+      "n37Lcgy1czQrqITMnB8f"
     ]
   },
   "sequenceFingerprints": [],
@@ -613,9 +614,58 @@
     },
     {
       "id": "registered-visual-target",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "locked-camera-set",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/registered-target-report.json",
+          "sha256": "a676a32a66ebb8214f51800fbe3a8e50ffefd5a8f510f933c8f53af66c90b358"
+        },
+        {
+          "kind": "visual-target-board",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/ember-r5-material-target-board.png",
+          "sha256": "8217c3a2d921deec1e7c8fecd8522b9d391b62e4b97b2a2c12b0eaa7a5d2cbc6"
+        },
+        {
+          "kind": "material-lighting-brief",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/material-lighting-brief.md",
+          "sha256": "254d180078eca6eee9d49e0b714a9cb04d3041097b50c88c2368ef53ff8c03cf"
+        },
+        {
+          "kind": "registered-orbit-board",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/ember-r5-orbit-board.png",
+          "sha256": "a2a8bfa454d0ca158ac435720c2a17a3958ea536cdbacbd322ef5a21fa3247fc"
+        },
+        {
+          "kind": "bench-heat-comparison",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/ember-r5-ember-comparison.png",
+          "sha256": "dee266b46604e6bc3f4f0844a740aa967e7cccf1cb52d6c96b02f8a8684a50b0"
+        },
+        {
+          "kind": "generation-provenance",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/imagegen-provenance.json",
+          "sha256": "b075bbaca6670d41e077cc7e4b661ca2d1be4ed0c172e2407dd386428f6297ce"
+        },
+        {
+          "kind": "illustrative-surface-target",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/paintover-default-audience.png",
+          "sha256": "90bf5a2ac721ba904cfd914c1696dc03671020f647141d37a1403670c317dc29"
+        }
+      ],
+      "checks": [
+        {
+          "name": "camera-registration",
+          "status": "passed",
+          "evidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/registered-target-report.json",
+          "note": "All eleven native cameras and nine source meshes exactly match the approved source. Generated paintover is illustrative only and does not carry this equality claim."
+        },
+        {
+          "name": "silhouette-read",
+          "status": "passed",
+          "evidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/material-lighting-brief.md",
+          "note": "Native orbit and overview inspected: performer visible, slope and lava relationship retained. Close paintover retains the three visible proxies. Wide paintovers with extra markers excluded. Native cell edges, faceted rock and stretched surface detail remain production gaps; final art judgment awaits Austen."
+        }
+      ],
       "approval": null
     },
     {
