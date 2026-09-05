@@ -78,7 +78,10 @@
 
   const path = $derived(page.url.pathname);
   const footerVariant = $derived(
-    path === "/" || path === "/composer" || path === "/history"
+    path === "/" ||
+      path === "/composer" ||
+      path === "/history" ||
+      path === "/timing-and-direction"
       ? "compact"
       : path === "/about"
         ? "sitemap"

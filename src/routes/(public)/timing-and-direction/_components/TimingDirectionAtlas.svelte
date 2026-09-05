@@ -157,8 +157,8 @@
     >
       <header class="detail-heading" aria-live="polite" aria-atomic="true">
         <h2 bind:this={detailHeading} tabindex="-1">
-          <span>{selected.article.timing} time</span>
-          <span>{selected.article.direction} direction</span>
+          <span>Timing: {selected.article.timing}</span>
+          <span>Direction: {selected.article.direction}</span>
         </h2>
       </header>
       <div class="detail-animation">
@@ -205,7 +205,7 @@
   .atlas-toolbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 1rem;
   }
 
@@ -264,6 +264,7 @@
     font-size: 0.875rem;
     font-weight: 650;
     line-height: 1.25;
+    text-align: center;
   }
 
   .mode,
