@@ -32,6 +32,7 @@ export interface TimingDirectionArticle {
   readonly aliases: readonly string[];
   readonly metaDescription: string;
   readonly sources: readonly TimingDirectionSource[];
+  readonly learningResources: readonly TimingDirectionSource[];
 }
 
 const HOW_TO_DEFINE_A_WEAVE =
@@ -65,6 +66,13 @@ const SOURCE_NOEL_TRANSITIONS: TimingDirectionSource = {
     "2009: Noel Yee on transitions between the four timing and direction modes.",
 };
 
+const VTG_LEARNING_RESOURCE: TimingDirectionSource = {
+  label: "Noel Yee: Vulcan Tech Gospel",
+  url: "https://noelyee.com/instruction/vulcan-tech-gospel/",
+  detail:
+    "The four-mode VTG framework, flower patterns, and links to fan and hoop teaching. This overview covers together and split timing.",
+};
+
 const ARTICLE_BY_CODE = {
   SS: {
     slug: "split-time-same-direction",
@@ -87,6 +95,14 @@ const ARTICLE_BY_CODE = {
     history:
       "Poi spinners discussed same-direction split timing in a 2002 weave thread. A 2005 discussion names Split-Same explicitly; Noel Yee includes it in his 2009 transition article.",
     aliases: ["Split-Same", "SS", "Split time", "Follow time"],
+    learningResources: [
+      {
+        label: "Flow Arts Institute: Split-Same",
+        url: "https://flowartsinstitute.com/portfolio-item/split-time-same-direction/",
+        detail: "A short introduction with an embedded video for this mode.",
+      },
+      VTG_LEARNING_RESOURCE,
+    ],
     metaDescription:
       "Split Time, Same Direction: half a cycle apart, turning the same way. See the hand-path animation, poi examples, TKA connection, and historical sources.",
     sources: [
@@ -120,6 +136,14 @@ const ARTICLE_BY_CODE = {
     history:
       "A 2005 poi discussion names Together Time, Same Direction and connects it to parallel weaves. Noel Yee uses the same relationship in his 2009 transition article.",
     aliases: ["Together-Same", "Tog-Same", "TS", "Parallel time"],
+    learningResources: [
+      {
+        label: "Flow Arts Institute: Tog-Same",
+        url: "https://flowartsinstitute.com/portfolio-item/together-time-same-direction/",
+        detail: "A short introduction with an embedded video for this mode.",
+      },
+      VTG_LEARNING_RESOURCE,
+    ],
     metaDescription:
       "Together Time, Same Direction: matching points on the same beat. See the hand-path animation, parallel-weave example, TKA connection, and sources.",
     sources: [
@@ -154,6 +178,15 @@ const ARTICLE_BY_CODE = {
     history:
       "Quarter-time wording appears in a 2002 poi discussion. In 2005, spinners discuss quarter-time weaves while distinguishing timing from direction. A 2009 thread describes the same-direction case in terms of phase.",
     aliases: ["Quarter-Same", "QS", "Quarter time", "90-degree phase"],
+    learningResources: [
+      {
+        label: "DrexFactor: Third-order quarter time chase",
+        url: QUARTER_CHASE,
+        detail:
+          "Advanced poi notes on phasing between quarter time and Split-Same. Written explanation; the page reports its old Flash video as unavailable.",
+      },
+      VTG_LEARNING_RESOURCE,
+    ],
     metaDescription:
       "Quarter Time, Same Direction: a quarter-cycle gap with either side leading. Hand-path animation, poi examples, TKA's Sun family, and historical sources.",
     sources: [
@@ -203,6 +236,14 @@ const ARTICLE_BY_CODE = {
     history:
       "The 2002 weave discussion includes opposite-direction split timing. A 2005 thread explicitly maps Split Time, Opposite Direction to a split-time butterfly.",
     aliases: ["Split-Opposite", "Split-Opp", "SO", "Split-time butterfly"],
+    learningResources: [
+      {
+        label: "Flow Arts Institute: Split-Opp",
+        url: "https://flowartsinstitute.com/portfolio-item/split-time-opposite-direction/",
+        detail: "A short introduction with an embedded video for this mode.",
+      },
+      VTG_LEARNING_RESOURCE,
+    ],
     metaDescription:
       "Split Time, Opposite Direction: opposite rotation with alternating downbeats. See the hand-path animation, butterfly example, TKA connection, and sources.",
     sources: [
@@ -236,6 +277,15 @@ const ARTICLE_BY_CODE = {
     history:
       "The 2005 discussion below names a regular butterfly as Together Time, Opposite Direction. Noel Yee includes the same relationship in his 2009 transition article.",
     aliases: ["Together-Opposite", "Tog-Opp", "TO", "Butterfly"],
+    learningResources: [
+      {
+        label: "Flow Arts Institute: Tog-Opp",
+        url: "https://flowartsinstitute.com/portfolio-item/together-time-opposite-direction/",
+        detail:
+          "A short introduction to the butterfly relationship with an embedded video.",
+      },
+      VTG_LEARNING_RESOURCE,
+    ],
     metaDescription:
       "Together Time, Opposite Direction: opposite rotation on the same beat. See the butterfly relationship, hand-path animation, TKA connection, and sources.",
     sources: [
@@ -274,6 +324,15 @@ const ARTICLE_BY_CODE = {
       "Quarter-Opp",
       "QO",
       "Quarter-time butterfly",
+    ],
+    learningResources: [
+      {
+        label: "AlienJon: Phase and symmetry",
+        url: PHASE_AND_SYMMETRY,
+        detail:
+          "A detailed forum explanation of quarter timing and diagonal mirror symmetry. Look for AlienJon's November 20, 2009 post.",
+      },
+      VTG_LEARNING_RESOURCE,
     ],
     metaDescription:
       "Quarter Time, Opposite Direction: opposite rotation a quarter-cycle apart. Hand-path animation, quarter-time butterflies, TKA's Moon family, and sources.",
