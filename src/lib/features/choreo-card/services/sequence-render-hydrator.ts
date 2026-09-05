@@ -13,6 +13,7 @@ import {
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { normalizeLegacySequence } from "@tka/tka-types";
+import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
 
 function letterFromGridPosition(gridPosition: unknown): Letter | null {
   if (!gridPosition) return null;
@@ -63,7 +64,8 @@ export function hydrateSequence(raw: Record<string, unknown>): SequenceData {
   // QR, and printed-card payloads still carry blue/red field names; once the
   // factory has selected canonical fields those aliases can no longer be
   // recovered.
-  const sequence = createSequenceData(normalizeLegacySequence(raw));
+  const created = createSequenceData(normalizeLegacySequence(raw));
+  const sequence = created.steps.length > 0 ? created : hydrate(created);
   const startPosition = sequence.startPosition
     ? {
         ...sequence.startPosition,

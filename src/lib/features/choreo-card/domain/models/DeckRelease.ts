@@ -40,6 +40,8 @@ export interface CardVariation {
 }
 
 export interface DeckReleaseCard {
+  /** Durable sequence link; shared by copies of a hand-path reference card. */
+  qrUrl?: string;
   sequenceId: string;
   sourceCatalogId: string;
   stepCount: number;
@@ -138,9 +140,8 @@ export interface DeckRelease {
   sequences: DeckReleaseCard[];
   stepCountDistribution: Record<number, number>;
   /**
-   * Versioned reference-card set rendered from the canonical hand paths rather
-   * than stored sequence records. These cards intentionally have no sequence
-   * identity, QR short code, or difficulty level.
+   * Hand-path presentation and ordering. Saved sequence records and QR links
+   * live in sequences[]; legacy manifests without them use authored references.
    */
   handPathCards?: {
     version: number;

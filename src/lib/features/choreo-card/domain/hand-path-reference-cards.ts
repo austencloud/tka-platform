@@ -76,6 +76,12 @@ function buildModeSequence(
   return createSequenceData({
     id: `hand-path-reference-${id}`,
     name,
+    sequenceKind: "hand-path",
+    displayName: getHandPathReferenceDefinition(id).cardTitle,
+    notes: getHandPathReferenceDefinitionNotes(
+      getHandPathReferenceDefinition(id)
+    ),
+    metadata: { isHandPathVisualization: true },
     word: "",
     gridMode: GridMode.DIAMOND,
     isCircular: true,
@@ -220,5 +226,7 @@ export function getHandPathReferenceCards(
 export function getHandPathReferenceNotes(
   referenceCard: HandPathReferenceCard
 ): string {
-  return getHandPathReferenceDefinitionNotes(referenceCard);
+  return getHandPathReferenceDefinitionNotes(
+    getHandPathReferenceDefinition(referenceCard.id)
+  );
 }

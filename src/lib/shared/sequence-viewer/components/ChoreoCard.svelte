@@ -157,12 +157,12 @@
     showLoopGlyph = true,
     showQRCode = false,
     showMandala = false,
-    handPathMode = false,
+    handPathMode: requestedHandPathMode = false,
     browseViewMode,
     darkMode = false,
     frameColors,
     cardAspectRatio,
-    customTitleText,
+    customTitleText: requestedTitleText,
     customNotesText = "Created using Flow Arts Composer",
     leftPropType,
     rightPropType,
@@ -263,6 +263,16 @@
 
   // Container-based sizing for "contain" behavior
   let containerElement: HTMLDivElement | undefined = $state();
+  const handPathMode = $derived(
+    sequence.sequenceKind === "hand-path" || requestedHandPathMode
+  );
+  const customTitleText = $derived(
+    requestedTitleText ??
+      (sequence.sequenceKind === "hand-path"
+        ? sequence.displayName || sequence.name
+        : undefined)
+  );
+
   let previewStackElement: HTMLDivElement | undefined = $state();
 
   let gridScrollRef: HTMLDivElement | undefined = $state();
@@ -577,11 +587,12 @@
       // A scan represents the printed card, not the scanner's personal export
       // toggles. Pin the same canonical visibility used when QR creation
       // verifies cloud assets; retain the sequence's participating hands.
-      ...(cloudProbeEnabled && {
-        ...CANONICAL_CARD_VISIBILITY,
-        showLeftMotion,
-        showRightMotion,
-      }),
+      ...(cloudProbeEnabled &&
+        !handPathMode && {
+          ...CANONICAL_CARD_VISIBILITY,
+          showLeftMotion,
+          showRightMotion,
+        }),
       // Scan cards keep numbers as the existing HTML overlay. Re-compositing
       // every cached blob through canvas made a warm phone pay a full
       // decode→draw→encode cycle per cell before it could paint.
@@ -590,7 +601,9 @@
       // context), so a cold scanner downloads pre-rendered cells instead of
       // rasterizing. Unset everywhere else => local render path, no extra latency.
       probeCloud: cloudProbeEnabled,
-      cloudOnly: cloudProbeEnabled,
+      // Hand-path records embed motion data; their cells can be rendered locally
+      // without requiring the prop catalog's prepublished cloud assets.
+      cloudOnly: cloudProbeEnabled && !handPathMode,
     };
   }
 
