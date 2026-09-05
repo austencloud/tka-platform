@@ -243,6 +243,9 @@ export interface EarthCanyonLayout {
   wallRects: WallRect[];
   ceilingRects: CeilingRect[];
 
+  /** What the bay owns — its room plus the corridor it draws. The cave composer
+   *  routes terrain queries by THIS, never by `bayBounds`. */
+  bayFootprint: WorldRect[];
   /** Union bbox of the earth bay. elevationAt throws inside it when nothing matches. */
   bayBounds: WorldRect;
 
@@ -857,7 +860,8 @@ export function buildEarthCanyonLayout(
     })),
   ];
 
-  const bayBounds = unionRect([earth, ...corridor]);
+  const bayFootprint: WorldRect[] = [earth, ...corridor];
+  const bayBounds = unionRect(bayFootprint);
   const rockProbe = rockFill.length
     ? rockFill.reduce((widest, r) => (area(r) > area(widest) ? r : widest))
     : earth;
@@ -893,6 +897,7 @@ export function buildEarthCanyonLayout(
     floorRects,
     wallRects,
     ceilingRects,
+    bayFootprint,
     bayBounds,
     probes: {
       gullyMouth: centre(gullyMouth),

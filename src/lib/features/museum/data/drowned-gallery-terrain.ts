@@ -332,6 +332,9 @@ export interface DrownedGalleryLayout {
   waterPlanes: WaterPlane[];
   waterVolumes: WaterVolume[];
 
+  /** What the bay owns — its room plus the corridor it draws. The cave composer
+   *  routes terrain queries by THIS, never by `bayBounds`. */
+  bayFootprint: WorldRect[];
   /** Union bbox of the water bay. elevationAt throws inside it when nothing matches. */
   bayBounds: WorldRect;
 
@@ -1525,13 +1528,14 @@ export function buildDrownedGalleryLayout(
     },
   ];
 
-  const bayBounds = unionRect([
+  const bayFootprint: WorldRect[] = [
     approach,
     gallery,
     grotto,
     ...approachCorridor,
     ...galleryCorridor,
-  ]);
+  ];
+  const bayBounds = unionRect(bayFootprint);
 
   const rockProbe = rockFill.reduce((widest, r) =>
     (r.maxX - r.minX) * (r.maxZ - r.minZ) >
@@ -1582,6 +1586,7 @@ export function buildDrownedGalleryLayout(
     roofRects,
     waterPlanes,
     waterVolumes,
+    bayFootprint,
     bayBounds,
     probes: {
       apron: { x: cx(apron), z: cz(apron) },
