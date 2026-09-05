@@ -303,12 +303,17 @@
   let topDownHeight = $state(savedHmrState?.topDownHeight ?? 12);
 
   // ── View mode: unified Q-cycle state machine ──
-  // Q cycles: top-down → first-person → third-person → top-down
+  // Q cycles: top-down → first-person → third-person → top-down.
+  // On foot (startInFps) the 2D map is off the cycle: Q toggles first ↔ third.
   function restoreViewMode(): ViewMode {
-    // When the parent forces 3D on mount (quick-travel into a single room),
-    // honor that over stale sessionStorage. Prevents the 2D → 3D → 2D flash
-    // that happens when HMR state lags behind the latest movement.
-    if (startInFps) return "first-person";
+    // When the parent forces 3D on mount, honor that over stale sessionStorage.
+    // Prevents the 2D → 3D → 2D flash that happens when HMR state lags behind
+    // the latest movement. A third-person choice still survives the remount.
+    if (startInFps) {
+      return savedHmrState?.viewMode === "third-person"
+        ? "third-person"
+        : "first-person";
+    }
     if (!savedHmrState) return "top-down";
     if (savedHmrState.viewMode) return savedHmrState.viewMode;
     return savedHmrState.isInFPS ? "first-person" : "top-down";
@@ -316,6 +321,14 @@
   let viewMode = $state<ViewMode>(restoreViewMode());
   // Derived for backward compat - template uses isInFPS extensively
   let isInFPS = $derived(viewMode !== "top-down");
+  // What Q does next, for the controls hint.
+  const qHint = $derived(
+    !startInFps
+      ? "cycle view"
+      : viewMode === "third-person"
+        ? "first-person"
+        : "third-person"
+  );
 
   // ── Player state (updated every frame by Museum3DScene callback) ──
   let playerWorldX = $state(
@@ -548,6 +561,9 @@
         flipRequested++;
       } else if (viewMode === "first-person") {
         // first-person → third-person: instant switch, no animation
+        modeChangeRequested++;
+      } else if (startInFps) {
+        // third-person → first-person: no 2D map on foot
         modeChangeRequested++;
       } else {
         // third-person → top-down: snap to the 2D camera
@@ -946,7 +962,7 @@
           Stick to move {isInFPS ? "• Drag to look" : "• Pinch to zoom"} • Tap an
           exhibit to examine
         {:else}
-          WASD move {isInFPS ? "• Mouse look" : "• Scroll zoom"} • Q cycle view •
+          WASD move {isInFPS ? "• Mouse look" : "• Scroll zoom"} • Q {qHint} •
           E examine
         {/if}
       </span>

@@ -1058,26 +1058,31 @@
     }
   });
 
-  // Instant mode switch (first-person → third-person) triggered by parent's Q cycle
+  // Instant mode switch (first-person ↔ third-person) triggered by parent's Q cycle
   let lastModeChangeCount = 0;
   $effect(() => {
     const modeChange = props.modeChangeRequested ?? 0;
     if (modeChange !== lastModeChangeCount) {
       lastModeChangeCount = modeChange;
       if (fpsActive) {
-        // Switch to third-person via camera preferences - UCC reacts automatically
-        // via its $effect.pre that syncs mode from cameraPreferences
-        lastCameraMode = CameraMode.THIRD_PERSON;
-        cameraPreferences.setModeForDestination(
-          "museum",
-          CameraMode.THIRD_PERSON
-        );
+        // Toggle via camera preferences - UCC reacts automatically via its
+        // $effect.pre that syncs mode from cameraPreferences
+        const next =
+          lastCameraMode === CameraMode.THIRD_PERSON
+            ? CameraMode.FIRST_PERSON
+            : CameraMode.THIRD_PERSON;
+        const third = next === CameraMode.THIRD_PERSON;
+        lastCameraMode = next;
+        cameraPreferences.setModeForDestination("museum", next);
         try {
-          sessionStorage.setItem(CAMERA_MODE_HMR_KEY, "THIRD_PERSON");
+          sessionStorage.setItem(
+            CAMERA_MODE_HMR_KEY,
+            third ? "THIRD_PERSON" : "FIRST_PERSON"
+          );
         } catch {
           /* non-critical */
         }
-        props.onViewModeChange?.("third-person");
+        props.onViewModeChange?.(third ? "third-person" : "first-person");
       }
     }
   });
