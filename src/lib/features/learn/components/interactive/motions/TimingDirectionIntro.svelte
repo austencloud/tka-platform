@@ -18,17 +18,20 @@
       x: 0,
       y: 54,
       description: "Both hands reach the downbeat together.",
+      offset: "",
     },
     split: {
       x: 0,
       y: -54,
-      description: "At blue’s downbeat, red is at the top. Half a cycle apart.",
+      description: "At the left hand’s downbeat, the right hand is at the top.",
+      offset: "Half a cycle apart.",
     },
     quarter: {
       x: -54,
       y: 0,
       description:
-        "At blue’s downbeat, red is at the side. A quarter cycle apart.",
+        "At the left hand’s downbeat, the right hand is at the side.",
+      offset: "A quarter cycle apart.",
     },
   };
   let timingMode = $state<TimingMode>("together");
@@ -51,11 +54,11 @@
       class="instrument"
       data-timing={timingMode}
       role="img"
-      aria-label={timingDetail.description}
+      aria-label={`${timingDetail.description} ${timingDetail.offset}`.trim()}
     >
       <Crossfade key={timingMode} fill>
         <svg viewBox="0 0 320 160" aria-hidden="true">
-          <!-- A still moment at blue's downbeat: no travel direction is implied. -->
+          <!-- A still moment at the left hand's downbeat: no direction implied. -->
           <g class="blue" transform="translate(80 80)">
             <circle class="cycle-reference" r="54" />
             <circle class="hand-marker" cx="0" cy="54" r="10" />
@@ -73,7 +76,12 @@
       </Crossfade>
     </div>
     <div class="relationship-caption" aria-live="polite" aria-atomic="true">
-      <Crossfade key={timingMode}><p>{timingDetail.description}</p></Crossfade>
+      <Crossfade key={timingMode}>
+        <p>{timingDetail.description}</p>
+        {#if timingDetail.offset}<p class="offset">
+            {timingDetail.offset}
+          </p>{/if}
+      </Crossfade>
     </div>
     <div class="selector timing-selector">
       <SegmentedControl
@@ -103,7 +111,7 @@
       role="img"
       aria-label={directionMode === "same"
         ? "Same rotation: both hands circle clockwise."
-        : "Opposite rotation: blue circles clockwise and red circles counterclockwise."}
+        : "Opposite rotation: the left hand circles clockwise and the right hand circles counterclockwise."}
     >
       <Crossfade key={directionMode} fill>
         <svg viewBox="0 0 320 160" aria-hidden="true">
@@ -149,7 +157,7 @@
   .concept-model {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: min(100%, 68rem);
+    width: 100%;
     height: 100%;
     min-height: 0;
     margin-inline: auto;
@@ -159,14 +167,14 @@
   }
   .concept-panel {
     display: grid;
-    grid-template-rows: auto 3em minmax(6rem, 1fr) 3em auto;
+    grid-template-rows: auto 3em minmax(6rem, 1fr) 4.75em auto;
     justify-items: center;
     align-content: start;
     gap: 0.75rem;
     min-width: 0;
     min-height: 0;
     padding: clamp(1rem, 2cqw, 2rem);
-    font-size: clamp(0.875rem, 1.15vw, 1.125rem);
+    font-size: clamp(1rem, 1.35cqw, 2rem);
   }
   .direction-panel {
     border-inline-start: 1px solid var(--theme-stroke);
@@ -174,7 +182,7 @@
   h3 {
     margin: 0;
     color: var(--theme-text);
-    font-size: clamp(1.35rem, 2cqw, 2rem);
+    font-size: clamp(1.35rem, 2.4cqw, 3.5rem);
     font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1.2;
@@ -188,10 +196,14 @@
     color: var(--theme-text-dim);
     line-height: 1.5;
     text-align: center;
-    text-wrap: pretty;
+    text-wrap: balance;
   }
   .relationship-caption {
     align-self: center;
+  }
+  .offset {
+    margin-top: 0.25em;
+    white-space: nowrap;
   }
   .instrument {
     position: relative;
@@ -241,23 +253,12 @@
     .concept-panel {
       padding: 1rem 0.35rem;
       gap: 0.65rem;
+      font-size: 0.875rem;
       grid-template-rows: auto 9em minmax(5rem, 1fr) 7.5em auto;
     }
     .concept-prose,
     .relationship-caption {
       padding-inline: 0.2rem;
-    }
-  }
-
-  @media (min-width: 2400px) and (min-height: 1300px) {
-    .concept-model {
-      width: min(100%, 90rem);
-    }
-    .concept-panel {
-      font-size: 1.5rem;
-    }
-    h3 {
-      font-size: 2.5rem;
     }
   }
 </style>

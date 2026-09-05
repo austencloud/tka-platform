@@ -324,19 +324,18 @@
 
   .motions-experience.is-intro {
     flex-shrink: 0;
-    height: clamp(44rem, 80dvh, 50rem);
+    height: 100%;
+    min-height: 44rem;
     overflow: visible;
+  }
+
+  .motions-experience.is-intro :global(.lesson-stage-frame) {
+    --lesson-artifact-wide-max: 100cqw;
   }
 
   @media (max-width: 640px) {
     .motions-experience.is-intro {
-      height: 46rem;
-    }
-  }
-
-  @media (min-width: 2400px) and (min-height: 1300px) {
-    .motions-experience.is-intro {
-      height: 64rem;
+      min-height: 48rem;
     }
   }
 
