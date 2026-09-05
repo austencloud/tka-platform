@@ -14,6 +14,7 @@ export interface ConceptExperienceDefinition {
   conceptId: string;
   guideSlug: string;
   guideLabel: string;
+  reference?: { href: string; label: string };
   reviewStatus: "confirmed" | "built";
   load: () => Promise<{ default: ConceptExperienceComponent }>;
 }
@@ -59,6 +60,10 @@ export const CONCEPT_EXPERIENCES = [
     conceptId: "timing-and-direction",
     guideSlug: "hand-motions",
     guideLabel: "Hand Motions",
+    reference: {
+      href: "/timing-and-direction",
+      label: "Timing and Direction",
+    },
     reviewStatus: "built",
     load: () =>
       import("../components/interactive/motions/TimingDirectionConceptExperience.svelte"),
