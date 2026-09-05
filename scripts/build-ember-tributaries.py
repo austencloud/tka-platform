@@ -1,12 +1,14 @@
 """Add subordinate downhill lava branches to the approved R2 mountain asset.
 
 Blender 5.0 --background --factory-startup --python scripts/build-ember-tributaries.py
+Append -- --distant to extend the R1 network across the distant flanks.
 The existing terrain, cooled bench and close river are retained verbatim.
 """
 from array import array
 import hashlib
 import json
 import math
+import sys
 from pathlib import Path
 
 import bpy
@@ -15,10 +17,12 @@ from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / 'docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-tributaries-r1'
-SOURCE = ROOT / 'blender/ember-midflank-lava-flow-r2.blend'
-BLEND = ROOT / 'blender/ember-mountain-tributaries-r1.blend'
-RAW = ROOT / 'static/models/ember/ember-mountain-tributaries-r1_raw.glb'
+DISTANT = '--distant' in sys.argv
+REVISION = 'r2' if DISTANT else 'r1'
+OUT = ROOT / f'docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-tributaries-{REVISION}'
+SOURCE = ROOT / ('blender/ember-mountain-tributaries-r1.blend' if DISTANT else 'blender/ember-midflank-lava-flow-r2.blend')
+BLEND = ROOT / f'blender/ember-mountain-tributaries-{REVISION}.blend'
+RAW = ROOT / f'static/models/ember/ember-mountain-tributaries-{REVISION}_raw.glb'
 heights = np.fromfile(ROOT / 'static/data/ember/review/ember-midflank-fire-pilgrimage-r5-height.f32', dtype='<f4').reshape(336,381)
 
 
@@ -53,7 +57,13 @@ def centerline(controls):
 bpy.ops.wm.open_mainfile(filepath=str(SOURCE))
 world=bpy.data.objects['EMBER_WorldRoot']
 main=bpy.data.objects['EMBER_LavaSimulatorDeposit']
-main_surface=BVHTree.FromPolygons([v.co for v in main.data.vertices],[list(p.vertices) for p in main.data.polygons])
+def surface_tree(obj):
+    return BVHTree.FromPolygons([v.co for v in obj.data.vertices],[list(p.vertices) for p in obj.data.polygons])
+
+source_surfaces=[surface_tree(o) for o in bpy.context.scene.objects
+                 if o.type=='MESH' and (o==main or o.get('ember_flow_surface'))]
+existing_paths=[path for o in bpy.context.scene.objects if o.type=='MESH'
+                for path in o.get('ember_flow_paths',[])]
 locked={o.name:digest(o.data) for o in bpy.context.scene.objects if o.type=='MESH'}
 datum=.32
 # Branch roots overlap the existing upper river. The outer branch returns to
@@ -66,13 +76,28 @@ specs=[
     dict(name='EMBER_AbandonedOverflow',width=3.6,heat=0,
          controls=[(-24,64),(-37,51),(-51,30),(-58,5),(-53,-24),(-46,-47),(-42,-65)]),
 ]
+if DISTANT:
+    specs=[
+        dict(name='EMBER_WestDistantFlow',width=3.8,heat=.55,exposure=.85,
+             controls=[(-33,129),(-53,111),(-75,82),(-97,43),(-116,0),(-128,-45),(-120,-91),(-110,-145)]),
+        dict(name='EMBER_FarEastFlow',width=2.8,heat=.50,exposure=.9,
+             controls=[(26,87),(53,76),(80,49),(96,8),(104,-35),(116,-77),(135,-145)]),
+        dict(name='EMBER_LowerWestBreakout',width=1.8,heat=.42,exposure=.95,
+             source='EMBER_WestDistantFlow',
+             controls=[(-116,0),(-139,-28),(-156,-65),(-159,-101),(-153,-145)]),
+    ]
 report={'source':SOURCE.relative_to(ROOT).as_posix(),'preservedMeshes':locked,'streams':[]}
 plan_lines=[]
 for spec in specs:
+    if spec.get('source'):
+        parent_path=bpy.data.objects[spec['source']]['ember_flow_paths'][0]
+        root=min(parent_path,key=lambda p:abs(p[2]-spec['controls'][0][1]))
+        spec['controls'][0]=(root[0],root[2])
     centers=centerline(spec['controls'])
     root=centers[0]
-    root_contact=main_surface.ray_cast(Vector((root[0],300,root[2])),Vector((0,-1,0)))[0]
-    assert root_contact is not None, (spec['name'],'branch must originate on existing river')
+    root_contact=any(tree.ray_cast(Vector((root[0],300,root[2])),Vector((0,-1,0)))[0] is not None
+                     for tree in source_surfaces)
+    assert root_contact, (spec['name'],'branch must originate on existing river')
     lengths=[0.]
     for a,b in zip(centers,centers[1:]):
         lengths.append(lengths[-1]+math.dist(a,b))
@@ -91,6 +116,9 @@ for spec in specs:
         nx,nz=-dz/norm,dx/norm
         progress=i/(len(centers)-1)
         width=spec['width']*(.84+.19*math.sin(lengths[i]*.13)+.12*math.sin(lengths[i]*.61+2))
+        exposure=spec.get('exposure',0)
+        if exposure:
+            width*=.85+.35*math.sin(lengths[i]*.047+1)**4
         if spec['heat']==0:
             width*=min(1,(1-progress)*10+.08)
         for j in range(across+1):
@@ -103,7 +131,10 @@ for spec in specs:
             py=height(px,pz)+.024+(.065 if spec['heat'] else .014)*bank
             vertices.append((px,py,pz))
             warmth=.67+.23*math.sin(lengths[i]*.073+1)+.1*math.sin(lengths[i]*.23)
-            weights.append((bank,bank*spec['heat']*warmth,bank,1))
+            # Fixed cooler reaches interrupt the distant glow while the molten
+            # pattern continues travelling underneath, using the same shader.
+            warmth*=1-exposure*(.5+.5*math.sin(lengths[i]*.091+2))**3
+            weights.append((bank,bank*spec['heat']*warmth,bank*(.06 if exposure else 1),1))
             uvs.append((offset,-lengths[i]))  # exported V=1+distance downhill
             if i and j:
                 k=i*(across+1)+j
@@ -154,6 +185,7 @@ for spec in specs:
     if spec['heat']:
         obj['ember_flow_paths']=[[[x,y+datum+.07,z] for x,y,z in centers]]
         obj['ember_flow_paths_space']='world-relative-to-groundY'
+        source_surfaces.append(surface_tree(obj))
     clearance=min(math.hypot(v[0],v[2]) for v in vertices)-4.5
     assert clearance>20, (spec['name'],clearance)
     report['streams'].append({**spec,'samples':len(centers),'lengthMeters':lengths[-1],
@@ -172,9 +204,13 @@ svg=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"><rect width=
 def polyline(points,color,width):
     coords=' '.join(f'{400+p[0]*1.8:.1f},{400-p[2]*1.8:.1f}' for p in points)
     return f'<polyline points="{coords}" fill="none" stroke="{color}" stroke-width="{width}" stroke-linecap="round" stroke-linejoin="round"/>'
-for path in main['ember_flow_paths']:
+for path in existing_paths:
     svg.append(polyline(path,'#ff902e',4))
 for name,heat,path in plan_lines:
     svg.append(polyline(path,'#f36528' if heat else '#746b64',3 if heat else 5))
-svg.append('<circle cx="400" cy="400" r="8.1" fill="#a9c7cf"/><text x="415" y="404" font-size="14">4.5 m action envelope</text><text x="30" y="715" font-size="15">Orange: existing close river · red: subordinate active branches</text><text x="30" y="742" font-size="15">Grey: cooled western overflow · north/uphill at top · scale 1.8 px/m</text><text x="30" y="770" font-size="15">Active eastern outflow continues through the south scene boundary.</text></g></svg>')
+legend=('Orange: existing active network · red: new distant branches' if DISTANT else
+        'Orange: existing close river · red: subordinate active branches')
+orientation=('Cold overflow omitted · north/uphill at top · scale 1.8 px/m' if DISTANT else
+             'Grey: cooled western overflow · north/uphill at top · scale 1.8 px/m')
+svg.append(f'<circle cx="400" cy="400" r="8.1" fill="#a9c7cf"/><text x="415" y="404" font-size="14">4.5 m action envelope</text><text x="30" y="715" font-size="15">{legend}</text><text x="30" y="742" font-size="15">{orientation}</text><text x="30" y="770" font-size="15">Active outflows continue through the south scene boundary.</text></g></svg>')
 (OUT/'measured-flow-plan.svg').write_text(''.join(svg),encoding='utf8')

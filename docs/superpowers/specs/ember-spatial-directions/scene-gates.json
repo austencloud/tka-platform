@@ -55,7 +55,8 @@
       "HyW3fFQVRHU3Uc0ezeWO",
       "GLYjYdoqw6cDfzcLAGiq",
       "CFmmTJ8PS6cLgVDu5l8V",
-      "lp8HMzVZQDgdc508l9DK"
+      "lp8HMzVZQDgdc508l9DK",
+      "j3ejDU3TZSXpXz7By4mh"
     ]
   },
   "sequenceFingerprints": [],
@@ -685,11 +686,11 @@
       "evidence": [
         {
           "kind": "vertical-slice-build",
-          "path": "static/models/ember/ember-mountain-tributaries-r1.glb"
+          "path": "static/models/ember/ember-mountain-tributaries-r2.glb"
         },
         {
           "kind": "blender-source",
-          "path": "blender/ember-mountain-tributaries-r1.blend"
+          "path": "blender/ember-mountain-tributaries-r2.blend"
         },
         {
           "kind": "lava-motion-correction",
@@ -698,6 +699,10 @@
         {
           "kind": "branch-network-amendment",
           "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-tributaries-r1/verification.md"
+        },
+        {
+          "kind": "distant-flank-amendment",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-tributaries-r2/verification.md"
         },
         {
           "kind": "interaction-capture",
