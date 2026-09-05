@@ -94,20 +94,25 @@ function applyEmberMaterialProfile(document) {
 }
 
 const runtimeOutput = "static/models/ember/ember-production-slice.glb";
-const flow = process.argv.includes("--lava-flow");
+const tributaries = process.argv.includes("--tributaries");
+const flow = tributaries || process.argv.includes("--lava-flow");
 const midflank = flow || process.argv.includes("--midflank-r5");
-const versionedOutput = flow
-  ? "static/models/ember/ember-midflank-lava-flow-r2.glb"
-  : midflank
-    ? "static/models/ember/ember-midflank-production-r5.glb"
-    : "static/models/ember/ember-production-slice-r10.glb";
+const versionedOutput = tributaries
+  ? "static/models/ember/ember-mountain-tributaries-r1.glb"
+  : flow
+    ? "static/models/ember/ember-midflank-lava-flow-r2.glb"
+    : midflank
+      ? "static/models/ember/ember-midflank-production-r5.glb"
+      : "static/models/ember/ember-production-slice-r10.glb";
 
 await optimizeGltfKtx2({
-  input: flow
-    ? "static/models/ember/ember-midflank-lava-flow-r2_raw.glb"
-    : midflank
-      ? "static/models/ember/ember-midflank-production-r5_raw.glb"
-      : "static/models/ember/ember-production-slice_raw.glb",
+  input: tributaries
+    ? "static/models/ember/ember-mountain-tributaries-r1_raw.glb"
+    : flow
+      ? "static/models/ember/ember-midflank-lava-flow-r2_raw.glb"
+      : midflank
+        ? "static/models/ember/ember-midflank-production-r5_raw.glb"
+        : "static/models/ember/ember-production-slice_raw.glb",
   output: runtimeOutput,
   temporaryStem: "ember-production-slice",
   label: midflank
