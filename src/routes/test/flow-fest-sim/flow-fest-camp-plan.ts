@@ -142,6 +142,24 @@ export const FLOW_FEST_PUBLIC_ROAD_SOURCE = Object.freeze({
   label: "Camden College Corner Rd",
   projectedCrs: "EPSG:26916",
   retrievedAt: "2026-08-27",
+  /** The clip was widened to the whole ±512 m terrain square from the same service. */
+  reclippedAt: "2026-09-04",
+  /** Raw inventory attributes as served; codes are recorded, not decoded. */
+  attributes: Object.freeze({
+    streetName: "CAMDEN COLLEGE CORNER",
+    streetPrefix: "W",
+    countyRouteNumber: 24,
+    functionClassCode: 6,
+    lanes: 2,
+    speedLimitMph: 45,
+    directionOfTravel: "B",
+    surfaceTypeCode: "G",
+    surfaceWidthFeet: 18,
+    roadwayWidthFeet: 20,
+    pavementType: "FLEX",
+    averageDailyTraffic: Object.freeze({ total: 582, year: 2025 }),
+    truckRoute: false,
+  }),
   serviceUrl:
     "https://tims.dot.state.oh.us/ags/rest/services/Roadway_Information/Road_Inventory/FeatureServer/0",
   note: "Clipped from the official centerline into the terrain's registered metre frame. The campground's internal drives remain orthophoto interpretations.",
@@ -254,26 +272,42 @@ export function flowFestNaipPixelToWorld(point: {
  *
  * ODOT supplied NAD83 / UTM 16N coordinates. The terrain manifest owns the
  * conversion: worldX = easting - 690142 and worldZ = 4384552 - northing.
+ * The clip spans the whole ±512 m terrain square: it enters at the west edge,
+ * reaches the camp entrance at station 886.9 m and leaves the square 189 m
+ * later at the east edge. Vertices are the feature's own, rounded to 1 cm.
  */
 export const FLOW_FEST_CAMDEN_COLLEGE_CORNER_ROAD = Object.freeze([
-  { x: -170, z: 21 },
-  { x: -17.3, z: 13.5 },
-  { x: 122.4, z: 5.3 },
-  { x: 161.2, z: 2.6 },
-  { x: 213.2, z: -2.1 },
-  { x: 239.2, z: -6 },
-  { x: 256.3, z: -11.2 },
-  { x: 270.8, z: -18.3 },
+  { x: -512, z: 38 },
+  { x: -397.77, z: 32.83 },
+  { x: -255.04, z: 25.25 },
+  { x: -174.17, z: 20.58 },
+  { x: -17.34, z: 13.49 },
+  { x: 122.38, z: 5.29 },
+  { x: 161.17, z: 2.57 },
+  { x: 213.22, z: -2.11 },
+  { x: 231.91, z: -4.62 },
+  { x: 239.17, z: -5.98 },
+  { x: 244.97, z: -7.33 },
+  { x: 256.33, z: -11.19 },
+  { x: 261.18, z: -13.16 },
+  { x: 270.8, z: -18.28 },
   { x: 280.2, z: -24.4 },
-  { x: 288, z: -31 },
-  { x: 294.9, z: -37.9 },
-  { x: 303.5, z: -49.7 },
-  { x: 310, z: -61.9 },
-  { x: 321.8, z: -86.2 },
-  { x: 329.9, z: -101.2 },
-  { x: 340, z: -117.3 },
-  { x: 354.3, z: -136.7 },
-  { x: 370, z: -157.5 },
+  { x: 287.97, z: -30.97 },
+  { x: 294.88, z: -37.87 },
+  { x: 299.14, z: -43.19 },
+  { x: 303.52, z: -49.69 },
+  { x: 310, z: -61.91 },
+  { x: 321.78, z: -86.24 },
+  { x: 329.93, z: -101.23 },
+  { x: 340.05, z: -117.32 },
+  { x: 354.27, z: -136.72 },
+  { x: 383.82, z: -175.8 },
+  { x: 405.08, z: -204.87 },
+  { x: 418.39, z: -221.21 },
+  { x: 429.28, z: -233.07 },
+  { x: 436.77, z: -239.87 },
+  { x: 445.02, z: -245.76 },
+  { x: 445.04, z: -245.77 },
 ] satisfies Array<Pick<FlowFestRuntimePoint, "x" | "z">>);
 
 export const FLOW_FEST_CAMP_PLAN_BOUNDS = Object.freeze({
@@ -395,6 +429,114 @@ export const FLOW_FEST_LOWER_ENTRANCE_APRON = Object.freeze([
   FLOW_FEST_LOWER_LOOP_ROAD_CROSSING,
   FLOW_FEST_LOWER_CHECK_IN,
 ]);
+
+const LOWER_ENTRANCE_INWARD_HEADING_RADIANS = Math.atan2(
+  FLOW_FEST_LOWER_ENTRANCE_BASIS.driveInwardUnit.x,
+  FLOW_FEST_LOWER_ENTRANCE_BASIS.driveInwardUnit.z
+);
+
+export function flowFestLowerEntranceWorldToLocal(point: {
+  x: number;
+  z: number;
+}): { right: number; depth: number } {
+  const basis = FLOW_FEST_LOWER_ENTRANCE_BASIS;
+  const dx = point.x - basis.origin.x;
+  const dz = point.z - basis.origin.z;
+  return {
+    right: dx * basis.driveRightUnit.x + dz * basis.driveRightUnit.z,
+    depth: dx * basis.driveInwardUnit.x + dz * basis.driveInwardUnit.z,
+  };
+}
+
+/**
+ * Where the drive in begins: 12 m inside the west edge on the official
+ * centreline, facing along the road toward the camp.
+ */
+export const FLOW_FEST_DRIVE_IN_SPAWN = (() => {
+  const first = FLOW_FEST_CAMDEN_COLLEGE_CORNER_ROAD[0]!;
+  const second = FLOW_FEST_CAMDEN_COLLEGE_CORNER_ROAD[1]!;
+  const length = Math.hypot(second.x - first.x, second.z - first.z);
+  const unit = {
+    x: (second.x - first.x) / length,
+    z: (second.z - first.z) / length,
+  };
+  return Object.freeze({
+    x: first.x + unit.x * 12,
+    z: first.z + unit.z * 12,
+    headingRadians: Math.atan2(unit.x, unit.z),
+  });
+})();
+
+/**
+ * Temporary parking at the gate, in the entrance's own frame: the right
+ * shoulder of the drive throat, rear bumper clear of the road surface and the
+ * nose short of the fence line at depth 8.5 m. Authored; the shoulder is not
+ * a surveyed stall.
+ */
+export const FLOW_FEST_GATE_PULL_OFF = Object.freeze({
+  ...flowFestLowerEntranceLocalToWorld({ right: 9, depth: 5.2 }),
+  headingRadians: LOWER_ENTRANCE_INWARD_HEADING_RADIANS,
+});
+
+/** Cars waiting to be checked in, nose to the gatehouse, nearest first. */
+export const FLOW_FEST_GATE_QUEUE_SLOTS = Object.freeze(
+  [18.5, 12.5, 6.5].map((depth) =>
+    Object.freeze({
+      ...flowFestLowerEntranceLocalToWorld({ right: 1, depth }),
+      headingRadians: LOWER_ENTRANCE_INWARD_HEADING_RADIANS,
+    })
+  )
+);
+
+export const FLOW_FEST_GATE_ARRIVAL_RADIUS_METERS = 30;
+
+/** Off the public road and within the gate apron: the drive in is over. */
+export function isFlowFestGateArrival(point: {
+  x: number;
+  z: number;
+}): boolean {
+  const local = flowFestLowerEntranceWorldToLocal(point);
+  return (
+    local.depth >= 0 &&
+    Math.hypot(
+      point.x - FLOW_FEST_CAMP_ROAD_ENTRANCE.x,
+      point.z - FLOW_FEST_CAMP_ROAD_ENTRANCE.z
+    ) <= FLOW_FEST_GATE_ARRIVAL_RADIUS_METERS
+  );
+}
+
+export interface FlowFestGateQueueCar {
+  modelId: string;
+  paintIndex: number;
+  x: number;
+  z: number;
+  headingRadians: number;
+}
+
+/**
+ * The arrivals ahead of you, nearest the gatehouse first: three real
+ * catalogue bodies in real paint, so the queue reads as other people's cars
+ * rather than copies of your own.
+ */
+const FLOW_FEST_GATE_QUEUE_BODIES = Object.freeze([
+  Object.freeze({ modelId: "fairheaven-wagon", paintIndex: 2 }),
+  Object.freeze({ modelId: "bokaroo-suv", paintIndex: 1 }),
+  Object.freeze({ modelId: "fairheaven-sedan", paintIndex: 3 }),
+]);
+
+/** The cars queued at the gate for a departure, capped by the surveyed slots. */
+export function flowFestGateQueueCars(count: number): FlowFestGateQueueCar[] {
+  const cars = Math.max(
+    0,
+    Math.min(FLOW_FEST_GATE_QUEUE_SLOTS.length, Math.floor(count))
+  );
+  return FLOW_FEST_GATE_QUEUE_SLOTS.slice(0, cars).map((slot, index) => ({
+    ...FLOW_FEST_GATE_QUEUE_BODIES[index]!,
+    x: slot.x,
+    z: slot.z,
+    headingRadians: slot.headingRadians,
+  }));
+}
 
 export const FLOW_FEST_ENTRANCE_REGISTRATION = Object.freeze({
   panoramaId: "1Zay8yG4Mf31AxM3p0N25w",
