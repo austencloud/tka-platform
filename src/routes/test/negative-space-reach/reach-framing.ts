@@ -117,7 +117,25 @@ export const REACH_VIEWS: readonly ReachView[] = [
   },
 ];
 
-export const DEFAULT_REACH_VIEW_ID = REACH_VIEWS[0]!.id;
+/**
+ * "Over the shoulder" (`pocket`) is the default, confirmed against the other
+ * three by eye:
+ * - `overhead` is a true plan view, so the head reads as a dark circle and
+ *   the shoulder-top / face relationship the pocket depends on is gone.
+ * - `right-side` looks straight down the performer's own right axis. It is
+ *   the cleanest read of the forearm predicate (that is what it is for), but
+ *   it is a flat profile — the face and the top of the shoulder do not
+ *   separate from the arm as a shape, only as a line.
+ * - `audience` puts stage depth toward the camera, so the exact thing this
+ *   study measures — whether the thumb end sits upstage or downstage of the
+ *   forearm — collapses to zero and cannot be seen at all.
+ * - `pocket` (azimuth -50°, elevation 30°) is the only one of the four that
+ *   keeps face, shoulder top, upper arm and elbow together as a three-quarter
+ *   shape AND keeps depth legible, so a viewer can see whether the thumb end
+ *   actually crosses the U between them — the thing Austen asked the
+ *   filmstrip to show.
+ */
+export const DEFAULT_REACH_VIEW_ID = "pocket";
 
 export function reachViewById(id: string | null | undefined): ReachView {
   return REACH_VIEWS.find((view) => view.id === id) ?? REACH_VIEWS[0]!;

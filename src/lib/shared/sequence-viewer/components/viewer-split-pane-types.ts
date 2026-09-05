@@ -64,7 +64,8 @@ export interface ViewerSplitPaneProps {
   onPlaybackModeChange?: (mode: "continuous" | "step") => void;
   onSceneReadyChange?: (ready: boolean) => void;
   rerenderTrigger?: number;
-  isExporting?: boolean;
+  /** Force a renderer-handle-capable 3D backend for recording/export. */
+  rendererHandleRequired?: boolean;
   splitConfig?: SplitConfig;
   isLoggedIn?: boolean;
   onVideoUpload?: () => void;
@@ -123,6 +124,8 @@ export interface ViewerMotionSurfaceProps {
   onSaveToLibrary?: () => void | Promise<void>;
   onUnfocusPane: () => void;
   onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
+  /** Force a renderer-handle-capable 3D backend for recording/export. */
+  rendererHandleRequired: boolean;
   onPlaybackToggle?: () => void;
   onSystemPlaybackChange?: ViewerSplitPaneProps["onSystemPlaybackChange"];
   onProgressBarSeek?: (targetStep: number) => void;

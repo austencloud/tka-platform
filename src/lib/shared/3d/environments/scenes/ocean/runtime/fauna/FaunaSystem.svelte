@@ -2,7 +2,7 @@
   import type { OceanQualityConfig } from "../../quality/ocean-quality";
   import FishBoids from "./fish/FishBoids.svelte";
   import JellyfishSwarm from "./jellyfish/JellyfishSwarm.svelte";
-  import type { CursorRay } from "../interaction/OceanInteraction.svelte";
+  import type { CursorRay } from "../interaction/cursor-ray";
 
   interface Props {
     quality: OceanQualityConfig;

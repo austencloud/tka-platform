@@ -1,7 +1,7 @@
 # Worker Renderer Scene-Switch Prototype
 
 **Date:** 2026-09-03  
-**Status:** complete-frame Rainbow proof measured; production viewer migration in progress
+**Status:** superseded by the persistent production worker described below
 
 ## Outcome
 
@@ -14,6 +14,39 @@ frame.
 This prototype proves the renderer boundary with Ocean and Rainbow before the
 other environments move. It does not replace the production viewer until its
 visual and interaction parity checks pass.
+
+## Production decision, 2026-09-04
+
+The two-slot design below is the historical prototype, not the shipping
+lifecycle. Production now keeps one dedicated worker, one `OffscreenCanvas`,
+one `WebGLRenderer`, and one WebGL context alive across ordinary environment
+changes. A separate bitmap-backed poster preserves the last complete frame
+while the worker disposes only scene-owned resources and constructs the next
+exact production world at a 1-by-1 preparation viewport. The worker expands to
+the real viewport, compiles and primes the complete frame, and the main thread
+removes the poster only after that frame is presented.
+
+Every production environment uses this boundary: Autumn, Blossom, Celestial,
+Cosmic, Ember, Forest, Ocean, Rainbow, Void, and Winter. The worker frame also
+owns the performers, all canonical prop families, effects, scene markers,
+lighting, and postprocessing. Record Scene deliberately requests the legacy
+renderer because capture/export requires direct renderer, scene, camera, and
+frame-loop handles that cannot cross the worker boundary.
+
+Rapid choices are latest-request-wins. If a newer choice arrives while a
+non-abortable asset parse is in flight, the controller keeps the poster visible
+and replaces that exceptional worker/context so stale construction cannot hold
+the latest choice hostage. Ordinary one-at-a-time switches do not recreate the
+renderer or context.
+
+The application-side transport snapshots are raw immutable values. Do not wrap
+them in deep Svelte proxies or call `$state.snapshot` before `postMessage`:
+`postMessage` already owns the structured clone. A production trace measured
+1.51 seconds in that redundant snapshot traversal before it was removed.
+
+The original two-worker measurements and acceptance reasoning remain below as
+the audit trail that led to this boundary. They must not be read as the current
+implementation.
 
 ## Why the current renderer cannot reach the target
 

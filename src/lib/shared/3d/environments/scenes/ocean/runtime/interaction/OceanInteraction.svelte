@@ -2,15 +2,10 @@
   import { useThrelte, useTask } from '@threlte/core';
   import { Vector3 } from 'three';
   import { createFishScatterState, type CursorRayState } from './fish-scatter';
+  import type { CursorRay } from './cursor-ray';
   import { createOceanAudio } from './ocean-audio';
   import { sceneAudioState } from '../../../../../state/scene-audio-state.svelte';
 
-
-  export interface CursorRay {
-    origin: Vector3;
-    dir: Vector3;
-    active: boolean;
-  }
 
   interface Props {
     cursorRay?: CursorRay;

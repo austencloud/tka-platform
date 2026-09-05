@@ -34,6 +34,7 @@
   import PerfMonitor from "./PerfMonitor.svelte";
   import type { RendererPerformanceSample } from "./renderer-performance-window";
   import InteractiveCanvasFrameBridge from "./InteractiveCanvasFrameBridge.svelte";
+  import WorkerViewer3DScene from "./WorkerViewer3DScene.svelte";
   import GaitProbe from "../diagnostics/gait/GaitProbe.svelte";
   import GaitOverlay from "../diagnostics/gait/GaitOverlay.svelte";
   import { gaitProbeState } from "../diagnostics/gait/gait-probe-state.svelte";
@@ -68,9 +69,19 @@
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CameraStateSnapshot } from "@austencloud/scene-3d";
-  import type { BackgroundType } from "@austencloud/backgrounds";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import type { EnvironmentTransitionObservation } from "../environments/domain/environment-transition";
   import { getSceneEnvironmentRendererKey } from "../environments/domain/scene-environment";
+  import { hasExactWorkerSceneFeatures } from "../worker-renderer/domain/worker-scene-feature-capability";
+  import {
+    getBackgroundTypeForWorkerEnvironment,
+    getWorkerEnvironmentKey,
+    type WorkerViewerActualConditions,
+  } from "../worker-renderer/domain/worker-viewer-backend";
+  import type { WorkerViewerFallbackReason } from "../worker-renderer/domain/worker-viewer-capability";
+  import type { WorkerSceneSwitchSnapshot } from "../worker-renderer/services/worker-environment-renderer";
+  import { supportsWorkerEnvironmentRenderer } from "../worker-renderer/services/worker-environment-renderer";
+  import { resolveWorkerScenePreparationProgress } from "../worker-renderer/domain/worker-scene-preparation-progress";
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -90,6 +101,11 @@
     fullScreen?: boolean;
     onExitFullScreen?: () => void;
     onRendererReady?: (renderer: WebGLRenderer | null) => void;
+    /**
+     * Force the legacy Threlte backend while a caller needs direct renderer,
+     * scene, and camera handles (live 3D recording/export).
+     */
+    rendererHandleRequired?: boolean;
     onEnvironmentTransitionChange?: (
       observation: EnvironmentTransitionObservation<BackgroundType>
     ) => void;
@@ -166,6 +182,7 @@
     fullScreen = false,
     onExitFullScreen,
     onRendererReady,
+    rendererHandleRequired = false,
     onEnvironmentTransitionChange,
     onCameraStateChange,
     onPlaybackToggle,
@@ -225,7 +242,9 @@
   // Provide one stable, hardware-detected visual tier plus adaptive DPR to the
   // scene subtree. Frame pressure may reduce resolution, but it must not swap
   // effects, lighting, or environment detail for a cheaper look mid-session.
-  const adaptiveQuality = createAdaptiveQualityState(getQualityTierDetector());
+  const qualityTierDetector = getQualityTierDetector();
+  qualityTierDetector.detectFromBrowserCapabilities();
+  const adaptiveQuality = createAdaptiveQualityState(qualityTierDetector);
   setAdaptiveQualityContext(adaptiveQuality);
   const environmentTransitionVisual = createEnvironmentTransitionVisualState();
   setEnvironmentTransitionVisualContext(environmentTransitionVisual);
@@ -309,6 +328,57 @@
     retainedEnvironmentTypes.length > 0
       ? getSceneEnvironmentRendererKey(viewer3DState.environmentId)
       : null
+  );
+  const workerEnvironment = $derived(
+    getWorkerEnvironmentKey(viewer3DState.environmentId)
+  );
+  let workerRuntimeFailedFor = $state<BackgroundType | null>(null);
+  const workerConditions = $derived.by(
+    (): WorkerViewerActualConditions => ({
+      offscreenCanvasAvailable: supportsWorkerEnvironmentRenderer(),
+      // Selection, badges, hover, and direct manipulation are exact in the
+      // worker path. Dictated grid planes are not yet clone-safe, so a visible
+      // grid deliberately keeps the full legacy scene.
+      visibleSceneMarkerCount:
+        hideSceneMarkers || viewer3DState.visiblePlanes.size === 0
+          ? 0
+          : viewer3DState.visiblePlanes.size,
+      visibleAudienceMemberCount: sceneFeatureState.isEnabled("audience")
+        ? 1
+        : 0,
+      worldChildCount: worldChildren ? 1 : 0,
+      retainedEnvironmentCount: retainedEnvironmentTypes.length,
+      cameraMode: viewer3DState.navMode,
+      captureInProgress: viewer3DState.isExporting,
+      rendererHandleConsumerCount:
+        (onRendererReady ? 1 : 0) + (rendererHandleRequired ? 1 : 0),
+    })
+  );
+  const workerHostExact = $derived(
+    workerEnvironment !== null &&
+      workerRuntimeFailedFor !==
+        getSceneEnvironmentRendererKey(viewer3DState.environmentId) &&
+      workerConditions.offscreenCanvasAvailable &&
+      workerConditions.visibleSceneMarkerCount === 0 &&
+      workerConditions.visibleAudienceMemberCount === 0 &&
+      workerConditions.worldChildCount === 0 &&
+      workerConditions.retainedEnvironmentCount === 0 &&
+      workerConditions.cameraMode === "orbit" &&
+      !workerConditions.captureInProgress &&
+      workerConditions.rendererHandleConsumerCount === 0 &&
+      hasExactWorkerSceneFeatures(sceneFeatureState) &&
+      initialRevealMode === "gated" &&
+      environmentTransitionVisualMode === "internal" &&
+      !renderEmptyScene &&
+      !stageBoundsPositions &&
+      !stageExtent &&
+      !onPerformanceSample &&
+      !gaitProbeState.enabled &&
+      leftPropType !== null &&
+      rightPropType !== null &&
+      viewer3DState.performerManager.renderablePerformers.every(
+        ({ presencePhase }) => presencePhase === "present"
+      )
   );
 
   // Production viewers give their curtain one frame to paint before WebGL
@@ -443,6 +513,94 @@
     onEnvironmentTransitionChange?.(observation);
   }
 
+  let lastWorkerPhase: WorkerSceneSwitchSnapshot["phase"] | null = null;
+
+  function failWorkerRenderer(
+    reasons: readonly WorkerViewerFallbackReason[] | readonly string[]
+  ): void {
+    const background = getSceneEnvironmentRendererKey(
+      viewer3DState.environmentId
+    );
+    console.warn(
+      `[Viewer3DCanvas] worker renderer fell back for ${background}: ${reasons.join(", ")}`
+    );
+    workerRuntimeFailedFor = background;
+    rendererReady = false;
+    effectsRuntimeReady = !enableEffects;
+    environmentSettled = true;
+    lastWorkerPhase = null;
+    if (sceneFeatureState.isEnabled("environment")) {
+      sceneFeatureState.resetReady("environment");
+    }
+  }
+
+  function handleWorkerSnapshot(snapshot: WorkerSceneSwitchSnapshot): void {
+    (
+      window as typeof window & {
+        __workerSceneSwitch?: WorkerSceneSwitchSnapshot;
+      }
+    ).__workerSceneSwitch = snapshot;
+
+    if (snapshot.phase === "unsupported" || snapshot.phase === "error") {
+      failWorkerRenderer([snapshot.lastError ?? snapshot.phase]);
+      return;
+    }
+
+    const requested = getSceneEnvironmentRendererKey(
+      viewer3DState.environmentId
+    );
+    const mounted = snapshot.active
+      ? getBackgroundTypeForWorkerEnvironment(snapshot.active)
+      : null;
+    if (snapshot.phase === "booting" || snapshot.phase === "swapping") {
+      if (lastWorkerPhase !== "booting" && snapshot.phase === "booting") {
+        sceneFeatureState.resetReady("environment");
+      }
+      lastWorkerPhase = snapshot.phase;
+      environmentSettled = false;
+      handleRendererReadyChange(false);
+      const preparation = resolveWorkerScenePreparationProgress(
+        snapshot.progressPhase,
+        snapshot.progress
+      );
+      sceneFeatureState.reportProgress(
+        "environment",
+        preparation.assetProgress
+      );
+      sceneFeatureState.reportWarmupProgress(preparation.warmupProgress);
+      onEnvironmentTransitionChange?.({
+        requestedKey: requested,
+        mountedKey: mounted,
+        phase: "waiting",
+        settled: false,
+      });
+      return;
+    }
+
+    if (snapshot.phase === "idle" && snapshot.active === workerEnvironment) {
+      lastWorkerPhase = "idle";
+      sceneFeatureState.reportProgress("environment", 1);
+      // Idle is published only after the worker produced a complete frame and
+      // the service atomically exposed its canvas. This is the worker backend's
+      // equivalent of SceneShaderWarmup opening the legacy renderer's gate.
+      sceneFeatureState.reportWarmupProgress(1);
+      sceneFeatureState.reportReady("environment");
+      handlePerformerReadinessChange(
+        viewer3DState.performerManager.performers.length,
+        viewer3DState.performerManager.performers.length
+      );
+      effectsRuntimeReady = true;
+      handleRendererReadyChange(true);
+      environmentSettled = true;
+      onEnvironmentTransitionChange?.({
+        requestedKey: requested,
+        mountedKey: requested,
+        phase: "idle",
+        settled: true,
+      });
+    }
+  }
+
   // Tell the parent so it can withhold the 3D rail chrome until the stage is set.
   $effect(() => {
     onSceneReadyChange?.(sceneReady);
@@ -478,13 +636,11 @@
     if (snapshot) onCameraStateChange?.(snapshot);
   });
 
-  // Hold playback while the curtain is up. Switching into 3D mid-play otherwise
-  // keeps the shared clock advancing behind the loading screen, so the scene
-  // reveals mid-sequence (the "it already went past loading" tell). Pause on
-  // entry, resume on ready — held in place, not reset to 0 (would discard a
-  // deliberate seek). Mirrors the scrub-pause pattern; the 15s force-ready
-  // timeout above guarantees this always releases. The transport is covered by
-  // the curtain during the hold, so the user can't fight it.
+  // Hold playback through every renderer preparation, including worker scene
+  // swaps. Letting the shared clock and all of its DOM consumers keep repainting
+  // while a replacement WebGL context uploads resources forced main-thread
+  // layouts and made an otherwise off-thread switch feel locked. Preserve the
+  // current beat and resume only after the complete replacement frame is live.
   let heldForSceneLoad = false;
   function synchronizeSceneLoadingPlayback(playing: boolean): void {
     if (onSystemPlaybackChange) {
@@ -503,7 +659,7 @@
       return;
     }
     const transition = sceneLoadingPlaybackTransition({
-      sceneReady,
+      sceneReady: sceneReady && environmentSettled,
       isPlaying,
       held: heldForSceneLoad,
     });
@@ -526,7 +682,11 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="viewer-3d-canvas" data-swipe-block>
+<div
+  class="viewer-3d-canvas"
+  data-swipe-block
+  data-renderer-backend={workerHostExact ? "worker" : "legacy"}
+>
   {#if canRenderScene}
     <!-- The transport is a layout sibling of the stage, not an overlay: it
          takes real space at the bottom and the stage shrinks to fit, so the
@@ -534,82 +694,117 @@
          root so it still covers the transport during the scene-load hold. -->
     <div class="stage-area">
       {#if renderEmptyScene || canvasMountReady || initialRevealMode === "streaming"}
-        <Canvas
-          dpr={adaptiveQuality.pixelRatio}
-          shadows={adaptiveQuality.config.enableShadows}
-          createRenderer={(canvas) =>
-            new WebGLRenderer({ canvas, preserveDrawingBuffer: false })}
-        >
-          <InteractiveCanvasFrameBridge />
-          <PerfMonitor
-            visible={viewer3DState.showPerf}
-            adaptive={sceneReady && isPlaying && !viewer3DState.isExporting}
-            active={Boolean(onPerformanceSample) && sceneReady}
-            warmupMs={performanceWarmupMs}
-            onSample={onPerformanceSample}
+        {#if workerHostExact && workerEnvironment && sequenceData && leftPropType && rightPropType}
+          <WorkerViewer3DScene
+            environment={workerEnvironment}
+            {sequenceData}
+            {currentStep}
+            {isPlaying}
+            {leftPropType}
+            {rightPropType}
+            {hideSceneMarkers}
+            {hidePerformerBadges}
+            {enableEffects}
+            {enablePerformerLocomotion}
+            effectQualityTier={effectQualityTier ?? adaptiveQuality.tier}
+            renderQualityTier={adaptiveQuality.tier}
+            {performerStepOffsets}
+            {performerSteps}
+            {visiblePerformerCount}
+            pixelRatio={adaptiveQuality.pixelRatio}
+            maxOrbitDistance={cameraMaxOrbitDistance}
+            {cameraFov}
+            conditions={workerConditions}
+            onSnapshot={handleWorkerSnapshot}
+            onFallback={failWorkerRenderer}
+            onWorkerFrame={(deltaSeconds) =>
+              adaptiveQuality.observeFrame(
+                deltaSeconds,
+                sceneReady &&
+                  isPlaying &&
+                  !viewer3DState.isExporting &&
+                  (typeof document === "undefined" ||
+                    document.visibilityState === "visible")
+              )}
           />
-          <Viewer3DCanvasRef {onRendererReady} />
-          <!-- Reads the legs every host in the app puts on screen. Renders
+        {:else}
+          <Canvas
+            dpr={adaptiveQuality.pixelRatio}
+            shadows={adaptiveQuality.config.enableShadows}
+            createRenderer={(canvas) =>
+              new WebGLRenderer({ canvas, preserveDrawingBuffer: false })}
+          >
+            <InteractiveCanvasFrameBridge />
+            <PerfMonitor
+              visible={viewer3DState.showPerf}
+              adaptive={sceneReady && isPlaying && !viewer3DState.isExporting}
+              active={Boolean(onPerformanceSample) && sceneReady}
+              warmupMs={performanceWarmupMs}
+              onSample={onPerformanceSample}
+            />
+            <Viewer3DCanvasRef {onRendererReady} />
+            <!-- Reads the legs every host in the app puts on screen. Renders
                nothing, and does not run at all unless the instrument was
                asked for with `?gait=1` or window.__gaitProbeEnabled. -->
-          {#if gaitProbeState.enabled}
-            <GaitProbe />
-          {/if}
-          {#if adaptiveQuality.initialized}
-            <InteractivePropAssetWarmup
-              onReadyChange={(ready) => (interactivePropsReady = ready)}
-            />
-            <SceneShaderWarmup
-              onReadyChange={handleRendererReadyChange}
-              waitForAllFeatures={initialRevealMode === "streaming"}
-              cacheKey={shaderWarmupCacheKey}
-              additionalReady={performersReady &&
-                interactivePropsReady &&
-                effectsRuntimeReady}
-            />
-            {#snippet sceneContent()}
-              <Viewer3DCamera
-                cameraPlayerAvatar={cameraPlayer.avatarState}
-                cameraPlayerPhysics={cameraPlayer.physicsProvider}
-                {onSettingChange}
-                maxOrbitDistance={cameraMaxOrbitDistance}
-                fov={cameraFov}
-              />
-              <Viewer3DScene
-                {sequenceData}
-                {currentStep}
-                {isPlaying}
-                {characterState}
-                leftPropTypeOverride={leftPropType}
-                rightPropTypeOverride={rightPropType}
-                {hideSceneMarkers}
-                {hidePerformerBadges}
-                {hideOrientationHelpers}
-                {enableEffects}
-                {enablePerformerLocomotion}
-                {effectQualityTier}
-                {performerStepOffsets}
-                {performerSteps}
-                {worldChildren}
-                {visiblePerformerCount}
-                {stageBoundsPositions}
-                {stageExtent}
-                {retainedEnvironmentTypes}
-                {environmentTransitionVisualMode}
-                onPerformerReadinessChange={handlePerformerReadinessChange}
-                onEnvironmentTransitionChange={handleEnvironmentTransitionChange}
-                onEffectsRuntimeReadyChange={(ready) =>
-                  (effectsRuntimeReady = ready)}
-              />
-            {/snippet}
-            {@render sceneContent()}
-            {#if enableEffects}
-              {#await loadScenePostProcessing() then { default: ScenePostProcessing }}
-                <ScenePostProcessing />
-              {/await}
+            {#if gaitProbeState.enabled}
+              <GaitProbe />
             {/if}
-          {/if}
-        </Canvas>
+            {#if adaptiveQuality.initialized}
+              <InteractivePropAssetWarmup
+                onReadyChange={(ready) => (interactivePropsReady = ready)}
+              />
+              <SceneShaderWarmup
+                onReadyChange={handleRendererReadyChange}
+                waitForAllFeatures={initialRevealMode === "streaming"}
+                cacheKey={shaderWarmupCacheKey}
+                additionalReady={performersReady &&
+                  interactivePropsReady &&
+                  effectsRuntimeReady}
+              />
+              {#snippet sceneContent()}
+                <Viewer3DCamera
+                  cameraPlayerAvatar={cameraPlayer.avatarState}
+                  cameraPlayerPhysics={cameraPlayer.physicsProvider}
+                  {onSettingChange}
+                  maxOrbitDistance={cameraMaxOrbitDistance}
+                  fov={cameraFov}
+                />
+                <Viewer3DScene
+                  {sequenceData}
+                  {currentStep}
+                  {isPlaying}
+                  {characterState}
+                  leftPropTypeOverride={leftPropType}
+                  rightPropTypeOverride={rightPropType}
+                  {hideSceneMarkers}
+                  {hidePerformerBadges}
+                  {hideOrientationHelpers}
+                  {enableEffects}
+                  {enablePerformerLocomotion}
+                  {effectQualityTier}
+                  {performerStepOffsets}
+                  {performerSteps}
+                  {worldChildren}
+                  {visiblePerformerCount}
+                  {stageBoundsPositions}
+                  {stageExtent}
+                  {retainedEnvironmentTypes}
+                  {environmentTransitionVisualMode}
+                  onPerformerReadinessChange={handlePerformerReadinessChange}
+                  onEnvironmentTransitionChange={handleEnvironmentTransitionChange}
+                  onEffectsRuntimeReadyChange={(ready) =>
+                    (effectsRuntimeReady = ready)}
+                />
+              {/snippet}
+              {@render sceneContent()}
+              {#if enableEffects}
+                {#await loadScenePostProcessing() then { default: ScenePostProcessing }}
+                  <ScenePostProcessing />
+                {/await}
+              {/if}
+            {/if}
+          </Canvas>
+        {/if}
       {/if}
       {#if sequenceData && !hideOverlays}
         {#await loadSceneAudioPlayer() then { default: SceneAudioPlayer }}

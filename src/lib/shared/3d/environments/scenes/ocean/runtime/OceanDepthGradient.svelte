@@ -20,13 +20,7 @@
 
   import { T, useTask, useThrelte } from "@threlte/core";
   import { onDestroy, untrack } from "svelte";
-  import {
-    BackSide,
-    Color,
-    ShaderMaterial,
-    SphereGeometry,
-    type Mesh,
-  } from "three";
+  import { createOceanDepthGradient } from "../../../worlds/ocean/ocean-depth-gradient";
 
   interface Props {
     /**
@@ -53,80 +47,21 @@
     radius = 180,
   }: Props = $props();
 
-  const geometry = untrack(() => new SphereGeometry(radius, 32, 32));
   const { camera } = useThrelte();
-
-  // The material must exist when Threlte creates the mesh — supplying it from
-  // an effect after first render leaves the mesh on Three's fallback material
-  // path. Keep one stable material and update its uniforms reactively, the
-  // same way SkyGradient does.
-  const material = untrack(
-    () =>
-      new ShaderMaterial({
-        uniforms: {
-          uShallowColor: { value: new Color(shallowColor) },
-          uMidColor: { value: new Color(midColor) },
-          uDeepColor: { value: new Color(deepColor) },
-        },
-        vertexShader: /* glsl */ `
-        varying vec3 vDirection;
-
-        void main() {
-          vDirection = normalize(position);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-        `,
-        fragmentShader: /* glsl */ `
-        uniform vec3 uShallowColor;
-        uniform vec3 uMidColor;
-        uniform vec3 uDeepColor;
-        varying vec3 vDirection;
-
-        void main() {
-          float height = vDirection.y;
-
-          // Split at the horizon: the downward half ramps mid -> deep and the
-          // upward half ramps mid -> shallow. Eye level therefore always
-          // matches the scene fog colour, so geometry fading into the distance
-          // meets the void with no visible seam.
-          vec3 color = height < 0.0
-            ? mix(uMidColor, uDeepColor, smoothstep(0.0, -0.55, height))
-            : mix(uMidColor, uShallowColor, smoothstep(0.0, 0.75, height));
-
-          gl_FragColor = vec4(color, 1.0);
-        }
-        `,
-        side: BackSide,
-        depthTest: false,
-        depthWrite: false,
-      })
+  const world = untrack(() =>
+    createOceanDepthGradient({ shallowColor, midColor, deepColor, radius })
   );
 
   $effect(() => {
-    material.uniforms.uShallowColor!.value.set(shallowColor);
-    material.uniforms.uMidColor!.value.set(midColor);
-    material.uniforms.uDeepColor!.value.set(deepColor);
+    world.setColors({ shallowColor, midColor, deepColor });
   });
-
-  let domeMesh: Mesh | undefined = $state();
 
   useTask(() => {
     const activeCamera = camera.current;
-    if (activeCamera && domeMesh) {
-      domeMesh.position.copy(activeCamera.position);
-    }
+    if (activeCamera) world.update(activeCamera);
   });
 
-  onDestroy(() => {
-    geometry.dispose();
-    material.dispose();
-  });
+  onDestroy(world.dispose);
 </script>
 
-<T.Mesh
-  bind:ref={domeMesh}
-  {geometry}
-  {material}
-  renderOrder={-1}
-  frustumCulled={false}
-/>
+<T is={world.object} />
