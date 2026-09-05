@@ -137,7 +137,10 @@ export function createChoreoCardDisplayState(
       !isHandsMode
   );
   const effectiveShowDifficulty = $derived(
-    getDeps().showDifficultyLevel && !isHandsMode && !isSoloMode
+    getDeps().showDifficultyLevel &&
+      !getDeps().handPathMode &&
+      !isHandsMode &&
+      !isSoloMode
   );
   const showHeader = $derived(
     (isBrowseSoloMode && !getDeps().hideSoloHeader) ||

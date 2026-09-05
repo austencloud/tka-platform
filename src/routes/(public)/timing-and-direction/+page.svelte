@@ -1,28 +1,13 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
-  import "$lib/shared/landing/styles/public-editorial.css";
-  import TimingDirectionBoard from "$lib/features/learn/components/interactive/motions/TimingDirectionBoard.svelte";
-  import {
-    TIMING_DIRECTION_MODES,
-    type TimingDirectionMode,
-  } from "$lib/features/learn/components/interactive/foundations/pictograph-foundation-content";
-  import {
-    getTimingDirectionArticleByPair,
-    TIMING_DIRECTION_ARTICLES,
-  } from "./_data/timing-direction-articles";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import TimingDirectionAtlas from "./_components/TimingDirectionAtlas.svelte";
+  import { TIMING_DIRECTION_ARTICLES } from "./_data/timing-direction-articles";
 
   const TITLE = "Timing and Direction in Flow Arts: All 6 Modes";
   const DESCRIPTION =
     "Together, split, and quarter timing crossed with same or opposite direction. See all six flow-arts modes with animations, definitions, history, and TKA examples.";
   const URL = "https://tkaflowarts.com/timing-and-direction";
-
-  function articleHrefFor(mode: TimingDirectionMode): string {
-    const article = getTimingDirectionArticleByPair(
-      mode.timing,
-      mode.direction
-    );
-    return `/timing-and-direction/${article.slug}`;
-  }
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -75,149 +60,170 @@
   {@html `<script type="application/ld+json">${JSON.stringify(jsonLd)}<\/script>`}
 </Seo>
 
-<div class="editorial timing-page">
-  <a class="back-link" href="/learn/concepts">← Interactive lessons</a>
-
-  <header class="editorial-header center">
-    <h1 class="page-title">Timing and Direction</h1>
-    <p class="page-subtitle">Three timings × two directions = six modes</p>
+<div class="timing-page">
+  <header class="page-header">
+    <h1>Timing and Direction</h1>
+    <p class="page-subtitle">
+      Compare the timing and direction of the blue and red hands.
+    </p>
   </header>
 
-  <section class="mode-atlas" aria-label="All six timing and direction modes">
-    <div class="board-frame">
-      <TimingDirectionBoard
-        modes={TIMING_DIRECTION_MODES}
-        {articleHrefFor}
-        showDirectionRowLabels
-      />
-    </div>
-    <p class="board-note">Choose a mode to inspect it and open its article.</p>
-  </section>
+  <TimingDirectionAtlas />
 
-  <section class="history-link" aria-labelledby="history-title">
-    <div>
-      <p class="section-kicker">History</p>
-      <h2 id="history-title">Where the vocabulary came from</h2>
-    </div>
-    <a href="/history#archive-record-vtg">
-      <span>Open the VTG history record</span>
-      <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-    </a>
+  <section class="history-sources" aria-labelledby="history-title">
+    <h2 id="history-title">History & sources</h2>
+    <p>
+      These terms developed through community practice and teaching. Early poi
+      discussions document the vocabulary before VTG organized it into a
+      transition framework.
+    </p>
+    <ul>
+      <li>
+        <PanelButton
+          href="https://www.homeofpoi.com/en/community/forums/topics/120838/How-do-you-define-a-weave"
+        >
+          <span class="source-year">2002</span>
+          <span>Weave timing and direction discussions</span>
+          <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"
+          ></i>
+        </PanelButton>
+      </li>
+      <li>
+        <PanelButton
+          href="https://www.homeofpoi.com/en/community/forums/topics/122222/Concept-moves-and-why-make-lists"
+        >
+          <span class="source-year">2002</span>
+          <span>Jez describes quarter-time butterflies</span>
+          <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"
+          ></i>
+        </PanelButton>
+      </li>
+      <li>
+        <PanelButton
+          href="https://www.homeofpoi.com/fr/community/forums/topics/887635/X-Post-Prop-Transitioning-Article"
+        >
+          <span class="source-year">2009</span>
+          <span>Noel Yee’s prop-transition article</span>
+          <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"
+          ></i>
+        </PanelButton>
+      </li>
+    </ul>
+    <nav aria-label="More about timing and direction">
+      <PanelButton href="/history"
+        ><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>Explore
+        the history</PanelButton
+      >
+      <PanelButton href="/history#archive-record-vtg"
+        ><i class="fa-solid fa-box-archive" aria-hidden="true"></i>VTG history
+        record</PanelButton
+      >
+      <PanelButton href="/learn/concepts"
+        ><i class="fa-solid fa-graduation-cap" aria-hidden="true"
+        ></i>Interactive lessons</PanelButton
+      >
+    </nav>
   </section>
 </div>
 
 <style>
   .timing-page {
-    padding-bottom: clamp(3rem, 6vw, 6rem);
+    position: relative;
+    margin: 0 auto;
+    font-family: inherit;
+    max-width: min(var(--shell-w), 100rem);
+    padding: 88px 1.5rem 3rem;
   }
 
-  .editorial-header {
-    margin-bottom: clamp(1.5rem, 3vw, 2.75rem);
+  .page-header {
+    margin: 0.5rem 0 1.5rem;
+    text-align: left;
   }
 
-  .mode-atlas {
-    width: 100%;
-    display: grid;
-    gap: 0.75rem;
+  h1 {
+    margin: 0 0 0.6rem;
+    color: var(--theme-text);
+    font-size: clamp(1.875rem, 1.5rem + 1vw, 2.5rem);
+    font-weight: 720;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
   }
 
-  .board-frame {
-    width: 100%;
-    height: clamp(36rem, 64vh, 48rem);
-    min-height: 0;
-  }
-
-  .board-note {
+  .page-subtitle {
     margin: 0;
+    max-width: 46rem;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-sm, 0.875rem);
-    line-height: 1.45;
-    text-align: center;
+    font-size: 1rem;
+    line-height: 1.5;
   }
 
-  .history-link {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.5rem;
-    margin-top: clamp(2.5rem, 5vw, 5rem);
-    padding-top: clamp(1.5rem, 3vw, 2.5rem);
+  .history-sources {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
     border-top: 1px solid var(--theme-stroke);
   }
 
-  .history-link > div {
-    display: grid;
-    gap: 0.35rem;
+  .history-sources h2 {
+    margin: 0 0 0.5rem;
+    color: var(--theme-text);
+    font-size: 1.25rem;
   }
 
-  .history-link h2 {
+  .history-sources p {
+    max-width: 48rem;
     margin: 0;
-    color: var(--theme-text);
-    font-family: var(--page-title-font, "Fraunces", Georgia, serif);
-    font-size: clamp(1.45rem, 1.25rem + 0.6vw, 2rem);
-    line-height: 1.15;
+    color: var(--theme-text-dim);
+    font-size: 1rem;
+    line-height: 1.5;
   }
 
-  .history-link a {
-    flex: 0 0 auto;
-    min-height: var(--min-touch-target, 44px);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.55rem;
-    padding: 0.65rem 1rem;
-    color: var(--theme-text);
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 700;
-    text-decoration: none;
-    border: 1px solid var(--theme-stroke-strong);
-    border-radius: var(--radius-md, 0.5rem);
-    background: var(--theme-card-bg);
-    transition:
-      background-color var(--duration-fast) var(--ease-out),
-      border-color var(--duration-fast) var(--ease-out);
+  .history-sources ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0.75rem 0;
+    list-style: none;
   }
 
-  .history-link a:hover {
-    border-color: var(--theme-accent);
-    background: var(--theme-card-bg-hover);
+  .history-sources li {
+    font-size: 0.875rem;
   }
 
-  .history-link a:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: 3px;
+  .source-year {
+    color: var(--theme-text-dim);
+    font-variant-numeric: tabular-nums;
   }
 
-  @media (max-width: 820px) {
-    .board-frame {
-      height: 48rem;
-    }
+  .history-sources :global(.panel-btn) {
+    text-align: left;
+    font-size: 0.875rem;
+    line-height: 1.4;
   }
 
-  @media (max-width: 580px) {
-    .board-frame {
-      height: 44rem;
-    }
+  .history-sources i {
+    font-size: 0.875rem;
+  }
 
-    .history-link {
-      align-items: stretch;
-      flex-direction: column;
+  .history-sources nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  @media (max-width: 600px) {
+    .timing-page {
+      max-width: 100%;
+      padding: 76px 1rem 2rem;
     }
 
-    .history-link a {
-      width: 100%;
+    .page-header {
+      margin: 0 0 1rem;
     }
-  }
 
-  @media (max-height: 540px) and (min-width: 701px) {
-    .board-frame {
-      height: 22rem;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .history-link a {
-      transition: none;
+    .page-subtitle {
+      font-size: 0.875rem;
     }
   }
 </style>

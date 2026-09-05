@@ -14,6 +14,13 @@ import {
 } from "../domain/third-order-composition";
 import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
 import type { SpinStyle } from "@vtg/domain";
+import type { ProjectedTrajectorySet } from "$lib/shared/mandala/domain/trajectory-types";
+import {
+  bakeThirdOrderTrajectories,
+  type ThirdOrderPropTypes,
+} from "../services/third-order-trajectories";
+
+export type ThirdOrderMandalaMode = "off" | "trace" | "full";
 
 type ChildId = ThirdOrderChildDraft["id"];
 
@@ -26,6 +33,14 @@ export interface ThirdOrderState {
   readonly selectedChild: ThirdOrderChildDraft;
   readonly pickerTarget: ThirdOrderSourceTarget | null;
   readonly setupDrawerOpen: boolean;
+  readonly mandalaMode: ThirdOrderMandalaMode;
+  readonly showMotion: boolean;
+  readonly traceComplete: boolean;
+  readonly propTypes: ThirdOrderPropTypes;
+  readonly trajectories: ProjectedTrajectorySet;
+  setMandalaMode(mode: ThirdOrderMandalaMode): void;
+  setShowMotion(show: boolean): void;
+  setPropTypes(left: string, right: string): void;
   selectChild(id: ChildId): void;
   setCarrier(sequence: SequenceData): void;
   setChildSequence(id: ChildId, sequence: SequenceData): void;
@@ -99,6 +114,16 @@ export function createThirdOrderState(
   let selectedChildId = $state<ChildId>("grid-blue");
   let pickerTarget = $state<ThirdOrderSourceTarget | null>(null);
   let setupDrawerOpen = $state(false);
+  let mandalaMode = $state<ThirdOrderMandalaMode>("trace");
+  let showMotion = $state(true);
+  let traceComplete = $state(false);
+  let propTypes = $state<ThirdOrderPropTypes>({
+    left: "staff",
+    right: "staff",
+  });
+  const trajectories = $derived(
+    bakeThirdOrderTrajectories(composition, sampler, propTypes)
+  );
   let frame = $state<ThirdOrderCompositionFrame>(
     sampler.sample(composition, 0)
   );
@@ -114,6 +139,7 @@ export function createThirdOrderState(
     id: ChildId,
     update: (child: ThirdOrderChildDraft) => ThirdOrderChildDraft
   ): void {
+    traceComplete = false;
     composition.children = composition.children.map((child) =>
       child.id === id ? update(child) : child
     );
@@ -135,6 +161,7 @@ export function createThirdOrderState(
         (timestamp - previousTimestamp) / 1000
       );
       masterBeat += elapsedSeconds * (composition.bpm / 60);
+      if (masterBeat >= frame.totalBeats) traceComplete = true;
       refresh();
     }
     previousTimestamp = timestamp;
@@ -142,6 +169,32 @@ export function createThirdOrderState(
   }
 
   return {
+    get mandalaMode() {
+      return mandalaMode;
+    },
+    get showMotion() {
+      return showMotion;
+    },
+    get traceComplete() {
+      return traceComplete;
+    },
+    get propTypes() {
+      return propTypes;
+    },
+    get trajectories() {
+      return trajectories;
+    },
+    setMandalaMode(mode) {
+      mandalaMode = mode;
+    },
+    setShowMotion(show) {
+      showMotion = show;
+    },
+    setPropTypes(left, right) {
+      if (left === propTypes.left && right === propTypes.right) return;
+      propTypes = { left, right };
+      traceComplete = false;
+    },
     get composition() {
       return composition;
     },
@@ -172,6 +225,7 @@ export function createThirdOrderState(
       selectedChildId = id;
     },
     setCarrier(sequence) {
+      traceComplete = false;
       stopPlayback();
       composition.carrier = sequence;
       masterBeat = 0;
@@ -210,30 +264,36 @@ export function createThirdOrderState(
       updateChild(id, (child) => ({ ...child, visible }));
     },
     setCarrierPathMode(mode) {
+      traceComplete = false;
       stopPlayback();
       composition.carrierPath.mode = mode;
       masterBeat = 0;
       refresh();
     },
     setFlowerRatio(ratio) {
+      traceComplete = false;
       stopPlayback();
       composition.carrierPath.ratio = ratio;
       masterBeat = 0;
       refresh();
     },
     setFlowerStyle(style) {
+      traceComplete = false;
       composition.carrierPath.style = style;
       refresh();
     },
     setFlowerStrength(strength) {
+      traceComplete = false;
       composition.carrierPath.strength = Math.max(0, Math.min(1, strength));
       refresh();
     },
     setFlowerPhase(phase) {
+      traceComplete = false;
       composition.carrierPath.phase = ((Math.round(phase) % 8) + 8) % 8;
       refresh();
     },
     setFlowerRelationship(relationship) {
+      traceComplete = false;
       composition.carrierPath.relationship = relationship;
       refresh();
     },
@@ -244,16 +304,19 @@ export function createThirdOrderState(
       composition.bpm = Math.max(10, Math.min(300, bpm));
     },
     setMasterBeat(beat) {
+      traceComplete = false;
       stopPlayback();
       masterBeat = beat;
       refresh();
     },
     stepBy(beats) {
+      traceComplete = false;
       stopPlayback();
       masterBeat += beats;
       refresh();
     },
     restart() {
+      traceComplete = false;
       stopPlayback();
       masterBeat = 0;
       refresh();
@@ -277,6 +340,7 @@ export function createThirdOrderState(
       const target = pickerTarget;
       if (!target) return;
       if (target === "carrier") {
+        traceComplete = false;
         stopPlayback();
         composition.carrier = sequence;
         masterBeat = 0;

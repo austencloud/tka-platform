@@ -89,6 +89,9 @@
 
     <ChoreoCard
       {sequence}
+      customTitleText={sequence.sequenceKind === "hand-path"
+        ? sequence.displayName || sequence.name
+        : undefined}
       highlightedStepIndex={side === "right" && layout.focusedPane === "image"
         ? null
         : playback.highlightedStepIndex}
@@ -103,8 +106,11 @@
       showStepNumbers={imageComposition.showStepNumbers}
       showDifficultyLevel={imageComposition.showDifficulty}
       includeStartPosition={imageComposition.showStartPos}
-      showNotes={imageComposition.showNotes}
-      customNotesText={imageComposition.customNotesText}
+      showNotes={sequence.sequenceKind === "hand-path" ||
+        imageComposition.showNotes}
+      customNotesText={sequence.sequenceKind === "hand-path"
+        ? sequence.notes
+        : imageComposition.customNotesText}
       showQRCode={imageComposition.showQRCode}
       showMandala={imageComposition.showMandala ?? false}
       showLoopGlyph={imageComposition.showLoopGlyph ?? true}
