@@ -221,7 +221,7 @@
     align-items: stretch;
     padding: 1rem;
     text-align: left;
-    background: rgb(from var(--theme-card-bg) r g b / 1);
+    background: var(--theme-card-bg);
     border-radius: var(--radius-lg, 0.75rem);
     white-space: normal;
   }

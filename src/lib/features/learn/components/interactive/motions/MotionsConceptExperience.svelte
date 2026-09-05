@@ -71,7 +71,7 @@
   const curriculumIndex = levelOnePlaces.findIndex(
     (place) => place.id === "1.3"
   );
-  const curriculumLabel = `Level 1 · ${curriculumIndex + 1} of ${levelOnePlaces.length}`;
+  const curriculumLabel = `Level 1 · Lesson ${curriculumIndex + 1} of ${levelOnePlaces.length}`;
 
   const haptic = getHapticFeedback();
   const persistence = getExperiencePersistence(
@@ -132,7 +132,7 @@
   const headingEyebrow = $derived(
     activeMotion
       ? `Hand motion ${stepIndex + 1} of ${HAND_PATH_STEPS.length}`
-      : "Two hands"
+      : undefined
   );
 
   function goToStep(next: number): void {
@@ -322,6 +322,71 @@
     --lesson-artifact-wide-max: var(--shell-w, 96rem);
   }
 
+  .motions-experience :global(.curriculum-progress),
+  .motions-experience :global(.progress-text) {
+    font-size: clamp(1rem, 1.1vw, 1.25rem);
+    color: var(--theme-text);
+    line-height: 1.4;
+  }
+
+  .motions-experience :global(.progress-stack) {
+    gap: 0.45rem;
+  }
+
+  .motions-experience.has-focused-comparison {
+    container-type: size;
+    min-height: 40rem;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  @media (min-width: 901px) {
+    .has-focused-comparison :global(.lesson-stage-frame) {
+      width: min(
+        100%,
+        var(--shell-w, 96rem),
+        calc((100cqh - 31rem) * 1.7142857 + clamp(17rem, 24cqw, 24rem) + 8rem)
+      );
+      min-width: min(100%, 52rem);
+      margin-inline: auto;
+      grid-template-rows: auto auto auto;
+      align-content: center;
+      gap: clamp(1.25rem, 2.5vh, 3rem);
+      padding-block: 4.5rem 2rem;
+    }
+
+    .has-focused-comparison :global(.stage-artifact) {
+      height: min(
+        calc(100cqh - var(--focused-reserve, 23rem)),
+        calc(
+          (
+              min(100cqw, var(--shell-w, 96rem)) - clamp(17rem, 24cqw, 24rem) -
+                8rem
+            ) /
+            1.7142857 + 6rem
+        )
+      );
+      min-height: 26rem;
+    }
+  }
+
+  @media (min-width: 2400px) {
+    .has-focused-comparison {
+      --focused-reserve: 26rem;
+    }
+  }
+
+  .has-focused-comparison :global(.stage-controls) {
+    width: 100%;
+    min-height: 0;
+    padding-block: 1.25rem;
+    border-top: 1px solid var(--theme-stroke);
+  }
+
+  .has-focused-comparison :global(.lesson-stage-controls) {
+    gap: clamp(1rem, 3vw, 3rem);
+  }
+
   .motions-experience.is-intro {
     flex-shrink: 0;
     height: 100%;
@@ -410,11 +475,11 @@
     }
   }
 
-  @media (max-width: 800px) {
+  @media (max-width: 900px) {
     .motions-experience.has-focused-comparison,
     .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
       height: auto;
-      min-height: 60rem;
+      min-height: 64rem;
     }
 
     .motions-experience.has-focused-comparison {
@@ -422,11 +487,18 @@
     }
   }
 
+  @media (max-width: 480px) {
+    .motions-experience.has-focused-comparison,
+    .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
+      min-height: 82rem;
+    }
+  }
+
   @media (max-height: 540px) and (min-width: 801px) {
     .motions-experience.has-focused-comparison,
     .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
       height: auto;
-      min-height: 36rem;
+      min-height: 48rem;
     }
 
     .motions-experience.has-focused-comparison {

@@ -192,11 +192,9 @@
   aria-label="Six timing and direction relationships"
 >
   <div class="board-toolbar">
-    <div class="selection-status" aria-live="polite">
-      {focusedMode
-        ? `${codeFor(focusedMode)}. ${definitionFor(focusedMode)}`
-        : "All six relationships"}
-    </div>
+    {#if !focusedMode}<div class="selection-status">
+        All six relationships
+      </div>{/if}
     <PanelButton
       variant="secondary"
       onclick={togglePlaying}
@@ -232,9 +230,7 @@
       >
         <header class="mode-header">
           <div class="mode-identity">
-            {#if focusedMode && !isFocused}
-              <img src={mode.element.iconPath} alt="" />
-            {/if}
+            <img src={mode.element.iconPath} alt="" />
             <strong>{codeFor(mode)}</strong>
             <span
               >{isFocused || focusedMode
@@ -273,7 +269,7 @@
             <HandMotionPlayer
               sequence={mode.sequence}
               ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
-              showElementalGlyph
+              showElementalGlyph={false}
               interactive={isFocused || focusedMode === null}
               playbackAllowed={active &&
                 !moving &&
@@ -377,7 +373,7 @@
   .board-toolbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 0.75rem;
     min-height: var(--min-touch-target, 44px);
   }
@@ -389,6 +385,7 @@
   }
 
   .selection-status {
+    margin-right: auto;
     min-width: 0;
     overflow: hidden;
     color: var(--theme-text-dim);
@@ -408,8 +405,18 @@
   }
 
   .mode-grid.has-focus {
-    grid-template-columns: minmax(0, 3fr) minmax(16rem, 0.75fr);
+    --rail-width: clamp(17rem, 24cqw, 24rem);
+    --study-height: min(
+      calc(100cqh - 8rem),
+      calc((100cqw - var(--rail-width) - 3rem) / 1.7142857)
+    );
+    grid-template-columns:
+      minmax(0, calc(var(--study-height) * 1.7142857 + 1.6rem))
+      var(--rail-width);
     grid-template-rows: repeat(5, minmax(0, 1fr));
+    align-content: start;
+    align-items: start;
+    justify-content: center;
   }
 
   .mode-grid.with-row-labels:not(.has-focus) {
@@ -451,6 +458,7 @@
     grid-column: 1;
     grid-row: 1 / 6;
     grid-template-rows: auto minmax(0, 1fr);
+    align-self: stretch;
     border-color: color-mix(
       in srgb,
       var(--element-accent) 72%,
@@ -463,6 +471,9 @@
   .mode-grid.has-focus .mode-tile:not(.is-focused) {
     grid-column: 2;
     grid-template-rows: minmax(0, 1fr);
+    height: 100%;
+    border: 2px solid
+      color-mix(in srgb, var(--element-accent) 65%, var(--theme-stroke-strong));
   }
 
   .mode-grid.has-focus .mode-tile:not(.is-focused) .study-surfaces {
@@ -473,23 +484,23 @@
 
   .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-header {
     height: 100%;
-    justify-content: center;
+    justify-content: flex-start;
+    padding: 0.6rem 0.8rem;
   }
 
   .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto auto minmax(0, 1fr);
     align-items: center;
     column-gap: 0.6rem;
-    row-gap: 0.2rem;
-    padding: 0.5rem;
+    row-gap: 0;
+    padding: 0;
     text-align: left;
   }
 
   .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity img {
-    grid-row: 1 / 3;
-    width: clamp(1.75rem, calc(1.45rem + 0.35cqw), 2.25rem);
-    height: clamp(1.75rem, calc(1.45rem + 0.35cqw), 2.25rem);
+    width: clamp(2.75rem, 4cqw, 4rem);
+    height: clamp(2.75rem, 4cqw, 4rem);
   }
 
   .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity strong {
@@ -498,7 +509,7 @@
 
   .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity span {
     overflow: visible;
-    font-size: clamp(1rem, calc(0.9rem + 0.16cqw), 1.25rem);
+    font-size: clamp(1rem, 1.2cqw, 1.25rem);
     line-height: 1.25;
     text-overflow: clip;
   }
@@ -529,8 +540,8 @@
 
   .mode-identity img {
     flex: 0 0 auto;
-    width: 1.45rem;
-    height: 1.45rem;
+    width: 2.75rem;
+    height: 2.75rem;
     object-fit: contain;
   }
 
@@ -614,11 +625,22 @@
   }
 
   .is-focused .study-surfaces {
-    grid-template-columns: minmax(0, 1.08fr) minmax(18rem, 0.92fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.7142857fr);
+    align-items: center;
     gap: clamp(0.5rem, 1cqw, 0.9rem);
     min-width: 0;
     min-height: 0;
     padding: clamp(0.5rem, 0.8cqw, 0.8rem);
+  }
+
+  .is-focused .mode-player {
+    width: 100%;
+    aspect-ratio: 1;
+  }
+
+  .is-focused .mode-card {
+    width: 100%;
+    aspect-ratio: 5 / 7;
   }
 
   .study-surfaces .mode-player,
@@ -694,7 +716,7 @@
 
     .mode-grid.has-focus {
       grid-template-columns: repeat(5, minmax(0, 1fr));
-      grid-template-rows: minmax(0, 1fr) minmax(5.5rem, auto);
+      grid-template-rows: min-content 8rem;
     }
 
     .mode-tile.is-focused {
@@ -719,12 +741,20 @@
     }
 
     .is-focused .study-surfaces {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.7142857fr);
+      grid-template-rows: auto;
     }
   }
 
   @container motion-board (max-width: 28rem) {
+    .is-focused .study-surfaces {
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: center;
+    }
+
+    .is-focused .mode-card {
+      width: 80%;
+    }
     .board-toolbar {
       min-height: var(--min-touch-target, 44px);
     }
@@ -740,8 +770,8 @@
     }
 
     .mode-identity img {
-      width: 1.2rem;
-      height: 1.2rem;
+      width: 2.5rem;
+      height: 2.5rem;
     }
 
     .mode-identity strong,
@@ -822,53 +852,6 @@
       grid-column: auto;
       place-items: center start;
       padding-inline: 0.35rem;
-    }
-
-    .mode-grid.has-focus {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      grid-template-rows: repeat(3, minmax(0, 1fr));
-    }
-
-    .mode-tile.is-focused {
-      grid-column: 1 / 5;
-      grid-row: 1 / 4;
-    }
-
-    .mode-grid.has-focus .mode-tile:not(.is-focused) {
-      grid-column: auto;
-      grid-row: auto;
-    }
-
-    .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-header {
-      justify-content: flex-start;
-      padding: 0.25rem 0.4rem;
-    }
-
-    .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity {
-      display: flex;
-      flex-direction: row;
-      gap: 0.35rem;
-      padding: 0.25rem;
-      text-align: left;
-    }
-
-    .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity img {
-      width: 1.5rem;
-      height: 1.5rem;
-    }
-
-    .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity strong {
-      font-size: 1rem;
-    }
-
-    .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity span {
-      font-size: var(--font-size-min, 0.875rem);
-    }
-
-    .is-focused .study-surfaces {
-      grid-template-columns: minmax(0, 1.08fr) minmax(15rem, 0.92fr);
-      grid-template-rows: minmax(0, 1fr);
-      padding: 0.35rem;
     }
   }
 
