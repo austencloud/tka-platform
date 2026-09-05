@@ -18,17 +18,17 @@
   }: {
     heading: Snippet;
     artifact: Snippet;
-    controls: Snippet;
+    controls?: Snippet;
     /**
      * Most lesson artifacts are one persistent square. Comparison/playground
      * states need the same stage position without being squeezed into that
      * square on a short landscape screen.
      */
-    artifactLayout?: "square" | "wide";
+    artifactLayout?: "square" | "wide" | "workshop";
   } = $props();
 </script>
 
-<div class="lesson-stage-frame">
+<div class="lesson-stage-frame" class:workshop={artifactLayout === "workshop"}>
   <div
     class="stage-heading"
     use:claimedViewTransitionName={{ name: "learn-lesson-heading" }}
@@ -39,19 +39,19 @@
   <div class="stage-artifact">
     <div
       class="artifact-inner"
-      class:wide={artifactLayout === "wide"}
+      class:wide={artifactLayout !== "square"}
       use:claimedViewTransitionName={{ name: "learn-grid-stage" }}
     >
       {@render artifact()}
     </div>
   </div>
 
-  <div
-    class="stage-controls"
-    use:claimedViewTransitionName={{ name: "learn-lesson-controls" }}
-  >
-    {@render controls()}
-  </div>
+  {#if controls}<div
+      class="stage-controls"
+      use:claimedViewTransitionName={{ name: "learn-lesson-controls" }}
+    >
+      {@render controls()}
+    </div>{/if}
 </div>
 
 <style>
@@ -101,6 +101,24 @@
     display: grid;
     place-items: center;
     align-self: start;
+  }
+
+  /* Construction lessons have controls and feedback with natural height. The
+     concept shell owns scrolling; the artifact must not shrink to fit it. */
+  .lesson-stage-frame.workshop {
+    height: auto;
+    min-height: 100%;
+    grid-template-rows: auto 1fr;
+    align-content: start;
+  }
+
+  .workshop .stage-artifact {
+    container-type: inline-size;
+    height: auto;
+  }
+
+  .workshop .artifact-inner.wide {
+    height: auto;
   }
 
   @media (max-height: 760px) {

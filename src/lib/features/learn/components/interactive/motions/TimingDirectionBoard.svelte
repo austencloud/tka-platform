@@ -2,7 +2,10 @@
   import { onDestroy, tick } from "svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { CARD_SIZES } from "$lib/features/choreo-card/domain/card-sizes";
+  import { HAND_PATH_REFERENCE_SCAN_URLS } from "$lib/features/choreo-card/domain/hand-path-reference-card-manifest";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
   import { motionDuration } from "$lib/shared/transitions/motion";
@@ -35,9 +38,14 @@
   let boardElement: HTMLDivElement | null = $state(null);
   let focusCloseButton: HTMLButtonElement | null = $state(null);
   let focusedModeId = $state<TimingDirectionModeId | null>(null);
+  let requestedModeId = $state<TimingDirectionModeId | null>(null);
+  let mountedCards = $state(new Set<TimingDirectionModeId>());
+  const readyCards = new Set<TimingDirectionModeId>();
+  let moving = $state(false);
+  let focusRevision = 0;
   let playing = $state(true);
   let highlightedStepIndex = $state<number | null>(null);
-  let seekFocusedPlayer = $state<((step: number) => void) | null>(null);
+  const playerSeeks = new Map<TimingDirectionModeId, (step: number) => void>();
   const preparedPlayers = new Set<TimingDirectionModeId>();
   let reportedReady = false;
 
@@ -88,16 +96,22 @@
   async function setFocusedMode(
     nextModeId: TimingDirectionModeId | null
   ): Promise<void> {
+    requestedModeId = nextModeId;
+    if (nextModeId && !readyCards.has(nextModeId)) {
+      mountedCards = new Set([...mountedCards, nextModeId]);
+      return;
+    }
     if (nextModeId === focusedModeId) return;
+    const revision = ++focusRevision;
     const previousModeId = focusedModeId;
     const captured = boardMotion.capture();
     highlightedStepIndex = null;
-    seekFocusedPlayer = null;
+    moving = true;
     focusedModeId = nextModeId;
     onFocusChange?.(nextModeId !== null);
     haptic?.trigger("selection");
     await tick();
-    if (captured) boardMotion.play();
+    const animations = captured ? boardMotion.play() : [];
     if (nextModeId) {
       focusCloseButton?.focus({ preventScroll: true });
     } else if (previousModeId) {
@@ -107,6 +121,13 @@
         )
         ?.focus({ preventScroll: true });
     }
+    await Promise.allSettled(animations.map((animation) => animation.finished));
+    if (revision === focusRevision) moving = false;
+  }
+
+  function cardPrepared(id: TimingDirectionModeId): void {
+    readyCards.add(id);
+    if (requestedModeId === id) void setFocusedMode(id);
   }
 
   function togglePlaying(): void {
@@ -133,14 +154,14 @@
   }
 
   function seekToCardStep(stepIndex: number): void {
-    seekFocusedPlayer?.(stepIndex + 1);
+    if (focusedModeId) playerSeeks.get(focusedModeId)?.(stepIndex + 1);
     haptic?.trigger("selection");
   }
 
   function handleBoardKeydown(event: KeyboardEvent): void {
     if (
       event.key !== "Escape" ||
-      !focusedModeId ||
+      (!focusedModeId && !requestedModeId) ||
       !boardElement?.contains(event.target as Node)
     ) {
       return;
@@ -150,12 +171,15 @@
   }
 
   export function collapseFocus(): boolean {
-    if (!focusedModeId) return false;
+    if (!focusedModeId && !requestedModeId) return false;
     void setFocusedMode(null);
     return true;
   }
 
-  onDestroy(() => boardMotion.cancel());
+  onDestroy(() => {
+    ++focusRevision;
+    boardMotion.cancel();
+  });
 </script>
 
 <svelte:window onkeydown={handleBoardKeydown} />
@@ -244,77 +268,93 @@
           {/if}
         </header>
 
-        {#if isFocused}
-          <div class="study-surfaces">
-            <div class="mode-player">
-              <HandMotionPlayer
-                sequence={mode.sequence}
-                ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
-                showElementalGlyph
-                interactive
-                playbackAllowed={active}
-                externalPlaying={playing}
-                onExternalPlayingChange={syncPlaying}
-                onStepChange={syncFocusedStep}
-                onSeekRef={(seek) => (seekFocusedPlayer = seek)}
-                framed={false}
-              />
-            </div>
-            <div
-              class="mode-card"
-              aria-label={`${fullNameFor(mode)} hand paths by step`}
-            >
-              <ChoreoCard
-                sequence={mode.sequence}
-                handPathMode
-                darkMode
-                frameColors={{
-                  accent: mode.element.accentColor,
-                  dark: mode.element.darkComplement,
-                }}
-                cardAspectRatio={pokerCardAspectRatio}
-                showWord={false}
-                customTitleText={mode.element.name}
-                showDifficultyLevel={false}
-                includeStartPosition
-                columnCount={2}
-                showNotes
-                customNotesText={definitionFor(mode)}
-                showLoopGlyph={false}
-                showQRCode={false}
-                showStepNumbers
-                forceContain
-                showHighlight
-                {highlightedStepIndex}
-                onStepClick={seekToCardStep}
-              />
-            </div>
-          </div>
-        {:else}
+        <div class="study-surfaces" inert={!!focusedMode && !isFocused}>
           <div class="mode-player">
             <HandMotionPlayer
               sequence={mode.sequence}
               ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
               showElementalGlyph
-              interactive={focusedMode === null}
-              playbackAllowed={active && focusedMode === null}
+              interactive={isFocused || focusedMode === null}
+              playbackAllowed={active &&
+                !moving &&
+                (isFocused || focusedMode === null)}
               externalPlaying={playing}
               onExternalPlayingChange={syncPlaying}
+              onStepChange={syncFocusedStep}
+              onSeekRef={(seek) => {
+                if (seek) playerSeeks.set(mode.id, seek);
+                else playerSeeks.delete(mode.id);
+              }}
               onCanvasInitialized={() => playerPrepared(mode.id)}
               onLoadError={() => playerPrepared(mode.id)}
               framed={false}
             />
           </div>
-        {/if}
+          <div
+            class="mode-card"
+            aria-label={`${fullNameFor(mode)} hand paths by step`}
+          >
+            <DualSourceCrossfade
+              active={isFocused ? "second" : "first"}
+              duration={DURATION.emphasis}
+            >
+              {#snippet first()}{/snippet}
+              {#snippet second()}
+                {#if mountedCards.has(mode.id)}
+                  <ChoreoCard
+                    sequence={mode.sequence}
+                    handPathMode
+                    darkMode
+                    frameColors={{
+                      accent: mode.element.accentColor,
+                      dark: mode.element.darkComplement,
+                    }}
+                    cardAspectRatio={pokerCardAspectRatio}
+                    showWord={false}
+                    customTitleText={mode.element.name}
+                    showDifficultyLevel={false}
+                    includeStartPosition
+                    columnCount={2}
+                    showNotes
+                    customNotesText={definitionFor(mode)}
+                    showLoopGlyph={false}
+                    showQRCode
+                    qrUrl={HAND_PATH_REFERENCE_SCAN_URLS[mode.id]}
+                    onReady={() => cardPrepared(mode.id)}
+                    showStepNumbers
+                    forceContain
+                    showHighlight
+                    highlightedStepIndex={isFocused
+                      ? highlightedStepIndex
+                      : null}
+                    onStepClick={seekToCardStep}
+                  />
+                {/if}
+              {/snippet}
+            </DualSourceCrossfade>
+          </div>
+        </div>
 
         {#if !isFocused}
           <button
             type="button"
             class="mode-select"
             data-mode-select={mode.id}
+            aria-busy={requestedModeId === mode.id &&
+              requestedModeId !== focusedModeId}
             onclick={() => void setFocusedMode(mode.id)}
             aria-label={`Focus ${fullNameFor(mode)}. ${definitionFor(mode)}`}
-          ></button>
+          >
+            {#if requestedModeId === mode.id}
+              <span
+                class="mode-preparing"
+                role="status"
+                aria-label="Preparing Choreo Card"
+              >
+                <ProgressRing percent={-1} size={18} strokeWidth={2} />
+              </span>
+            {/if}
+          </button>
         {/if}
       </article>
     {/each}
@@ -425,8 +465,10 @@
     grid-template-rows: minmax(0, 1fr);
   }
 
-  .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-player {
-    display: none;
+  .mode-grid.has-focus .mode-tile:not(.is-focused) .study-surfaces {
+    position: absolute;
+    inset: 0;
+    visibility: hidden;
   }
 
   .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-header {
@@ -435,15 +477,17 @@
   }
 
   .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
+    column-gap: 0.6rem;
+    row-gap: 0.2rem;
     padding: 0.5rem;
-    text-align: center;
+    text-align: left;
   }
 
   .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity img {
+    grid-row: 1 / 3;
     width: clamp(1.75rem, calc(1.45rem + 0.35cqw), 2.25rem);
     height: clamp(1.75rem, calc(1.45rem + 0.35cqw), 2.25rem);
   }
@@ -562,7 +606,14 @@
   }
 
   .study-surfaces {
+    position: relative;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .is-focused .study-surfaces {
     grid-template-columns: minmax(0, 1.08fr) minmax(18rem, 0.92fr);
     gap: clamp(0.5rem, 1cqw, 0.9rem);
     min-width: 0;
@@ -575,6 +626,12 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .mode-tile:not(.is-focused) .mode-card {
+    position: absolute;
+    inset: 0 0 0 50%;
+    pointer-events: none;
   }
 
   .mode-select {
@@ -603,6 +660,19 @@
   .mode-select:focus-visible {
     outline: 3px solid var(--theme-accent);
     outline-offset: -3px;
+  }
+
+  .mode-select[aria-busy="true"] {
+    cursor: progress;
+    border-color: var(--element-accent);
+  }
+
+  .mode-preparing {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: grid;
+    place-items: center;
   }
 
   @container motion-board (max-width: 50rem) {
@@ -642,12 +712,13 @@
     }
 
     .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity {
+      display: flex;
       flex-direction: column;
       gap: 0.25rem;
       padding: 0.3rem;
     }
 
-    .study-surfaces {
+    .is-focused .study-surfaces {
       grid-template-columns: minmax(0, 1fr);
       grid-template-rows: repeat(2, minmax(0, 1fr));
     }
@@ -774,6 +845,7 @@
     }
 
     .mode-grid.has-focus .mode-tile:not(.is-focused) .mode-identity {
+      display: flex;
       flex-direction: row;
       gap: 0.35rem;
       padding: 0.25rem;
@@ -793,7 +865,7 @@
       font-size: var(--font-size-min, 0.875rem);
     }
 
-    .study-surfaces {
+    .is-focused .study-surfaces {
       grid-template-columns: minmax(0, 1.08fr) minmax(15rem, 0.92fr);
       grid-template-rows: minmax(0, 1fr);
       padding: 0.35rem;
