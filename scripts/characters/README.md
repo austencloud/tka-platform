@@ -63,6 +63,30 @@ roughness-texture coverage, any material still declared `BLEND`, the largest
 source texture, and the optimized size. The same material audit is in every
 `character-intake-report.json` under `optimized.materials`.
 
+## Generate performers with Meshy
+
+`characters:meshy` builds performers that do not exist in any catalog. Each
+manifest asset runs text-to-3D preview (Meshy 7, A-pose), a PBR refine, and
+Meshy auto-rigging, then lands as `<id>.glb` beside a `<id>.provenance.json`
+sidecar, so the folder feeds `characters:intake-batch` unchanged. The four
+festival performers live in `meshy-performers.json`.
+
+```powershell
+pnpm run characters:meshy -- `
+  --manifest scripts/characters/meshy-performers.json `
+  --output D:\Downloads\meshy-performers --dry-run
+```
+
+Drop `--dry-run` to spend credits. The run prices the batch against the
+manifest cap and the live balance first, checkpoints every task id in
+`.meshy-state.json` before polling so a rerun resumes instead of paying twice,
+and never retries a POST. `--only <id>` limits the run; `--force` regenerates
+an asset whose look was rejected. The unrigged refine is kept in `raw/` for
+reference. Meshy needs `MESHY_API_KEY` in the environment or in `.env`.
+
+The sidecar records paid-plan ownership from Meshy's help center. Never publish
+one of these models to the Meshy Community: that releases it under CC0.
+
 ## Texture size: how clear it stays when the camera moves in
 
 The optimizer caps every texture at 1024 px. That ceiling was measured at the

@@ -105,6 +105,7 @@
     "characters:proportion-sweep": "node --import tsx scripts/characters/character-proportion-sweep.mjs",
     "characters:provenance": "node --import tsx scripts/characters/character-provenance-stamp.mjs",
     "characters:intake-batch": "node --import tsx scripts/characters/character-intake-batch.mjs",
+    "characters:meshy": "node --import tsx scripts/characters/meshy-character-generator.mjs",
     "arrows:placements:seed": "tsx scripts/seed-default-arrow-placements.ts",
     "arrows:placements:export": "tsx scripts/export-default-arrow-placements.ts",
     "arrows:placements:migrate": "tsx scripts/migrate-arrow-placement-frames.ts",

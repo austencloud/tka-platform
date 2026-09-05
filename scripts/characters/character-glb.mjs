@@ -64,7 +64,7 @@ export function sha256File(filePath) {
   return createHash("sha256").update(readFileSync(filePath)).digest("hex");
 }
 
-function serializeGlb(document, binary) {
+export function serializeGlb(document, binary) {
   const json = Buffer.from(JSON.stringify(document), "utf8");
   const jsonPadding = (4 - (json.length % 4)) % 4;
   const paddedJson = Buffer.concat([json, Buffer.alloc(jsonPadding, 0x20)]);
