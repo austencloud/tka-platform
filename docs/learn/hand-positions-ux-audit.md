@@ -2,6 +2,14 @@
 
 Scope: the shipped hand-positions experience, not a repository-wide code-quality grade.
 
+## Proportion correction after hands-on rejection
+
+Austen rejected the September 5 alignment pass: the oversized grid still left a largely empty right rail. The earlier measurements below established fit, not appropriate proportions, and do not constitute approval of that composition.
+
+The follow-up keeps the existing `PropPlacementGrid` input/state owner, `PanelButton` actions, `SegmentedControl` choices, `TKAWordGlyph` notation, `PictographContainer` examples, and `Crossfade` feedback. Only the positions lesson's composition changes. Phones and viewports at or below a 6:5 aspect ratio use one vertical flow: task, bounded square grid, hand controls, feedback, three visible references, optional exploration tools, and lesson navigation. Instructions align with the grid. Practice has no empty exploration-tools row. Landscape keeps two columns but caps the grid at 32rem instead of 58rem and sizes the whole band to its content. No new panels, renderers, motion system, or explanatory copy.
+
+Browser evidence: all seven required viewport tiers inspected, plus 1800×1950 and the user's actual 1660×1540 pane. The latter uses a roughly 431px grid rather than a 928px grid, with feedback and references below instead of a vacant right rail. Phone/tablet/short landscape preserve all controls through scrolling; desktop navigation remains in view. No horizontal overflow. Checked empty placement, a correct Alpha answer, exploration, keyboard example selection, and rotation with reduced motion. A 640×450 reflow check retains controls and a 16px root; this is the 200%-zoom viewport equivalent, not an actual browser-zoom test. Focused lesson tests: 23 passed. Svelte check: zero errors and warnings. This remains BUILT pending hands-on review.
+
 ## September 5 hands-on clarity follow-up
 
 Austen confirmed the spatial construction pattern, then reported unclear hand identity, an unclear way to build another position, ambiguous progression, and poor balance in a tall half-screen browser on a 4K monitor. Approval: “I'll take all of your recommendations for the layout and wording and fixes”.

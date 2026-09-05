@@ -327,7 +327,7 @@
           </span><span class="right-hand">Right = red</span>
         </p>
       </div>
-      <div class="workshop">
+      <div class="workshop" class:exploring>
         <div class="board-column">
           <div
             class="board"
@@ -521,11 +521,8 @@
     width: 100%;
     min-height: 100%;
     color: var(--theme-text);
-    --position-board-size: clamp(20rem, calc(100svh - 34rem), 58rem);
-    --lesson-workshop-max: min(
-      var(--shell-w, 96rem),
-      calc(var(--position-board-size) + 37rem)
-    );
+    --position-board-size: clamp(20rem, calc(100svh - 34rem), 32rem);
+    --lesson-workshop-max: calc(var(--position-board-size) + 30rem);
   }
   .workshop {
     display: grid;
@@ -533,7 +530,7 @@
         20rem,
         1fr
       );
-    gap: clamp(1rem, 3cqw, 3rem);
+    gap: 2rem;
     align-items: start;
     min-width: 0;
   }
@@ -718,11 +715,20 @@
   .lesson-actions {
     min-height: 3rem;
   }
-  @media (max-width: 760px) {
+  /* A tall split-screen is a reading column, not a wide desktop with a taller
+     grid. Keep the feedback below the work instead of leaving a vacant rail. */
+  @media (max-width: 760px), (max-aspect-ratio: 6/5) {
+    .positions-experience {
+      --position-board-size: clamp(18.5rem, 28svh, 36rem);
+      --lesson-workshop-max: clamp(28rem, 40svh, 38rem);
+    }
     .workshop {
       grid-template-columns: minmax(0, 1fr);
-      grid-template-areas: "board" "result" "hands" "reference" "tools";
+      grid-template-areas: "board" "hands" "result" "reference";
       gap: 1rem;
+    }
+    .workshop.exploring {
+      grid-template-areas: "board" "hands" "result" "reference" "tools";
     }
     .board-column,
     .lesson-side {
@@ -730,24 +736,24 @@
     }
     .board {
       grid-area: board;
-      width: min(100%, 18.5rem);
+      width: min(100%, var(--position-board-size));
       justify-self: center;
     }
     .hand-controls {
       grid-area: hands;
+      justify-content: center;
     }
     .result {
       grid-area: result;
       min-height: 5.5rem;
+      width: 100%;
     }
     .reference-area {
       grid-area: reference;
+      width: 100%;
     }
     .examples {
-      max-width: 28rem;
-    }
-    .example-art {
-      max-width: 8rem;
+      max-width: none;
     }
     .explore-tools {
       grid-area: tools;
@@ -758,12 +764,17 @@
       min-width: 5rem;
     }
     .placement-instructions {
-      gap: 0.25rem;
+      width: min(100%, var(--position-board-size));
+      margin-inline: auto;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
     }
   }
-  @media (min-width: 2400px) and (min-height: 1300px) {
+  @media (max-width: 760px) {
     .positions-experience {
-      --lesson-workshop-max: min(var(--shell-w, 120rem), 108rem);
+      --position-board-size: 18.5rem;
+      --lesson-workshop-max: 28rem;
     }
   }
 </style>
