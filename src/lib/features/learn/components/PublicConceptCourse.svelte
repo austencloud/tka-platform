@@ -30,8 +30,8 @@
       <span>Learn by doing</span>
       <h1>{concept?.name ?? "Interactive TKA lessons"}</h1>
       <p>
-        Six guided lessons are available now, from the grid through reading TKA
-        words. The interactive course starts when this page loads in your
+        Explore guided lessons from the grid through reading TKA words.
+        The interactive course starts when this page loads in your
         browser.
       </p>
       <a href="/guide">Prefer to read? Open the Guide</a>

@@ -32,10 +32,12 @@
     onComplete,
     onBack,
     viewMode = "step",
+    timingDirectionOnly = false,
   } = $props<{
     onComplete?: () => void;
     onBack?: () => void;
     viewMode?: ExperienceViewMode;
+    timingDirectionOnly?: boolean;
   }>();
 
   const allModes: readonly TimingDirectionMode[] = [
@@ -57,7 +59,8 @@
   );
   const timingDirectionIndex = HAND_PATH_STEPS.length;
   const comparisonIndex = timingDirectionIndex + 1;
-  const totalStages = comparisonIndex + 1;
+  const firstStage = timingDirectionOnly ? timingDirectionIndex : 0;
+  const totalStages = comparisonIndex - firstStage + 1;
 
   const levelOnePlaces = getConceptPlacesByLevel(1);
   const curriculumIndex = levelOnePlaces.findIndex(
@@ -66,18 +69,22 @@
   const curriculumLabel = `Level 1 · ${curriculumIndex + 1} of ${levelOnePlaces.length}`;
 
   const haptic = getHapticFeedback();
-  const persistence = getExperiencePersistence("hand-motions-intro");
+  const persistence = getExperiencePersistence(
+    timingDirectionOnly ? "timing-and-direction" : "hand-motions-intro"
+  );
   const saved = persistence.load();
   const savedSchemaVersion = persistence.getPhaseData("stageSchemaVersion", 1);
-  const savedStep = migrateHandMotionsSavedStep(
-    saved.step,
-    savedSchemaVersion,
-    HAND_PATH_STEPS.length
-  );
+  const savedStep = timingDirectionOnly
+    ? saved.step
+    : migrateHandMotionsSavedStep(
+        saved.step,
+        savedSchemaVersion,
+        HAND_PATH_STEPS.length
+      );
   let stepIndex = $state(
     viewMode === "scroll"
       ? comparisonIndex
-      : Math.min(comparisonIndex, Math.max(0, savedStep - 1))
+      : Math.min(comparisonIndex, Math.max(firstStage, savedStep - 1))
   );
   let comparisonBoard: TimingDirectionBoard | null = $state(null);
   let comparisonFocused = $state(false);
@@ -103,7 +110,7 @@
   );
 
   function goToStep(next: number): void {
-    const clamped = Math.min(comparisonIndex, Math.max(0, next));
+    const clamped = Math.min(comparisonIndex, Math.max(firstStage, next));
     if (clamped === stepIndex) return;
     stepIndex = clamped;
     persistence.saveStep(stepIndex + 1);
@@ -145,7 +152,7 @@
       onBack?.();
       return;
     }
-    if (stepIndex > 0) {
+    if (stepIndex > firstStage) {
       goToStep(stepIndex - 1);
       return;
     }
@@ -160,7 +167,7 @@
   onkeydown={handleKeydown}
   tabindex="0"
   role="application"
-  aria-label="Hand motions lesson, use arrow keys to navigate"
+  aria-label={`${timingDirectionOnly ? "Timing and direction" : "Hand motions"} lesson, use arrow keys to navigate`}
 >
   <LessonStageFrame artifactLayout={activeMotion ? "square" : "wide"}>
     {#snippet heading()}
@@ -218,12 +225,12 @@
             ? "Done"
             : "Finish lesson"
           : "Next"}
-        currentStep={stepIndex + 1}
+        currentStep={stepIndex - firstStage + 1}
         totalSteps={totalStages}
         onAction={handlePrimaryAction}
         onPrevious={handleBack}
         previousLabel={viewMode === "scroll" ? "Close review" : "Previous"}
-        previousDisabled={viewMode !== "scroll" && stepIndex === 0}
+        previousDisabled={viewMode !== "scroll" && stepIndex === firstStage}
         actionIcon={isComparison ? "check" : "arrow"}
         {curriculumLabel}
       />
