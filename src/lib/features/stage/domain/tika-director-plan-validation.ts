@@ -134,6 +134,33 @@ function clarificationDuration(
 }
 
 /**
+ * A presentation filter can only be honored when enough deployed avatars carry
+ * the label. The client resolver would throw anyway; refusing here keeps the
+ * explanation in TIKA's voice and never applies a partial cast.
+ */
+export function validateTikaDirectorPlanCatalog(
+  request: Pick<TikaDirectorRequest, "scene">,
+  response: TikaDirectorResponse
+): TikaDirectorResponse {
+  if (response.kind !== "apply") return response;
+  const counts = request.scene.characterPresentationCounts;
+  if (!counts) return response;
+  const performers = request.scene.performers.length;
+  for (const action of response.actions) {
+    if (action.type !== "assign-distinct-characters" || !action.presentation)
+      continue;
+    const available = counts[action.presentation];
+    if (available >= performers) continue;
+    const noun = available === 1 ? "avatar is" : "avatars are";
+    return {
+      kind: "unsupported",
+      message: `Only ${available} ${action.presentation} ${noun} deployed, but this cast has ${performers} performers. Shrink the cast or drop the ${action.presentation} requirement.`,
+    };
+  }
+  return response;
+}
+
+/**
  * A model may mistake the playhead or a past command for permission to choose
  * timing. This gate only rejects a plan; it never supplies or changes actions.
  */

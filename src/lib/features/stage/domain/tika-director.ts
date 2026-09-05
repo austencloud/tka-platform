@@ -23,9 +23,25 @@ export const TIKA_DIRECTOR_FORMATIONS = [
 
 export const TikaDirectorFormationSchema = z.enum(TIKA_DIRECTOR_FORMATIONS);
 
+/** Product-assigned look labels; see shared/3d/config/character-presentation. */
+export const TIKA_DIRECTOR_PRESENTATIONS = [
+  "masculine",
+  "feminine",
+  "androgynous",
+] as const;
+export const TikaDirectorPresentationSchema = z.enum(
+  TIKA_DIRECTOR_PRESENTATIONS
+);
+
 export const TikaDirectorActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("assign-distinct-props") }).strict(),
-  z.object({ type: z.literal("assign-distinct-characters") }).strict(),
+  z
+    .object({
+      type: z.literal("assign-distinct-characters"),
+      /** Restrict the draw to avatars carrying this presentation label. */
+      presentation: TikaDirectorPresentationSchema.optional(),
+    })
+    .strict(),
   z.object({ type: z.literal("assign-distinct-sequences") }).strict(),
   z
     .object({
@@ -107,12 +123,27 @@ export const TikaDirectorRequestSchema = z
          * older clients omit it and the client-side pick reports the shortfall.
          */
         librarySequenceCount: z.number().int().min(0).optional(),
+        /**
+         * How many deployed avatars carry each presentation label, so the
+         * planner can refuse a filtered cast the catalog cannot cover.
+         */
+        characterPresentationCounts: z
+          .object({
+            masculine: z.number().int().min(0),
+            feminine: z.number().int().min(0),
+            androgynous: z.number().int().min(0),
+          })
+          .strict()
+          .optional(),
       })
       .strict(),
   })
   .strict();
 
 export type TikaDirectorFormation = z.infer<typeof TikaDirectorFormationSchema>;
+export type TikaDirectorPresentation = z.infer<
+  typeof TikaDirectorPresentationSchema
+>;
 export type TikaDirectorAction = z.infer<typeof TikaDirectorActionSchema>;
 export type TikaDirectorResponse = z.infer<typeof TikaDirectorResponseSchema>;
 export type TikaDirectorRequest = z.infer<typeof TikaDirectorRequestSchema>;
