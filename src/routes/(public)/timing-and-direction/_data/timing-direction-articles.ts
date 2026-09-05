@@ -26,7 +26,6 @@ export interface TimingDirectionArticle {
   readonly definition: string;
   readonly watchFor: string;
   readonly example: string;
-  readonly geometry: string;
   readonly commonMistake: string;
   readonly tkaConnection: string;
   readonly history: string;
@@ -56,13 +55,14 @@ const SOURCE_FOUR_MODE_MAPPING: TimingDirectionSource = {
   label: "Can you do this move?",
   url: FOUR_MODE_MAPPING,
   detail:
-    "2005 discussion separating timing from direction and mapping all four original combinations.",
+    "2005: timing and direction defined separately, with examples of all four combinations.",
 };
 
 const SOURCE_NOEL_TRANSITIONS: TimingDirectionSource = {
   label: "Prop Transitioning Article",
   url: NOEL_TRANSITIONS,
-  detail: "Noel Yee's 2009 four-mode transition synthesis.",
+  detail:
+    "2009: Noel Yee on transitions between the four timing and direction modes.",
 };
 
 const ARTICLE_BY_CODE = {
@@ -75,22 +75,20 @@ const ARTICLE_BY_CODE = {
     phase: "180°",
     representativeLetter: "A",
     definition:
-      "Both props rotate in the same direction while staying half a cycle apart. When one prop reaches the top of its circle, the other reaches the bottom.",
+      "Both hands circle in the same direction, half a cycle apart. When one reaches the top, the other reaches the bottom.",
     watchFor:
-      "Watch for a steady chase. The props follow the same rotational route, but the 180-degree phase gap keeps them on opposite sides of their circles.",
+      "The gap stays the same as they move. Neither side catches up with the other.",
     example:
-      "The regular three-beat weave is the standard historical example. Windmills and many fountains also live in Split-Same when their prop relationship stays unchanged.",
-    geometry:
-      "Same direction preserves the phase gap. Once the props are split by 180 degrees, equal-speed rotation keeps that separation in place.",
+      "A regular three-beat poi weave uses Split-Same. So do windmills that keep the same timing.",
     commonMistake:
-      "Split describes timing, not rotational direction. Split-Same can run clockwise or counterclockwise as long as both props turn the same way.",
+      "Split means half a cycle apart. It says nothing about direction: both can turn clockwise, or both counterclockwise.",
     tkaConnection:
-      "TKA letter A is a representative Split-Same dual-shift. The Water element marks this family throughout the current TKA system.",
+      "A is a Split-Same dual-shift. Water identifies this family in TKA.",
     history:
-      "Same-direction split timing appears in the 2002 weave discussion. A 2005 terminology thread then names the full combination and maps the regular weave to it, before Noel's 2009 transition synthesis and VTG's later codification.",
+      "Poi spinners discussed same-direction split timing in a 2002 weave thread. A 2005 discussion names Split-Same explicitly; Noel Yee includes it in his 2009 transition article.",
     aliases: ["Split-Same", "SS", "Split time", "Follow time"],
     metaDescription:
-      "Split Time, Same Direction explained: the 180-degree chase behind weaves and windmills, with animation, history, TKA mapping, and related modes.",
+      "Split Time, Same Direction: half a cycle apart, turning the same way. See the hand-path animation, poi examples, TKA connection, and historical sources.",
     sources: [
       {
         label: "How do you define a weave?",
@@ -110,22 +108,20 @@ const ARTICLE_BY_CODE = {
     phase: "0°",
     representativeLetter: "G",
     definition:
-      "Both props rotate in the same direction and reach corresponding points in their circles at the same moment. Their phase difference is zero.",
+      "Both hands circle in the same direction and reach matching points at the same time.",
     watchFor:
-      "The two prop heads rise, cross, and fall as a matched pair. At equal speed, neither prop gains on the other.",
+      "Both reach the top together, then the side, then the bottom. Their relative timing stays unchanged.",
     example:
-      "A parallel weave is the common historical example. The 2005 four-mode mapping describes a four-beat parallel weave as Together-Same.",
-    geometry:
-      "The prop bearings remain parallel because the direction and speed match. Starting together keeps them together throughout the cycle.",
+      "In poi, a parallel weave uses Together-Same. The 2005 discussion below gives a four-beat parallel weave as an example.",
     commonMistake:
-      "Same direction does not mean a fixed clock direction. Both props may rotate clockwise or both may rotate counterclockwise.",
+      "Same direction can mean both clockwise or both counterclockwise. Together means they share the same beat.",
     tkaConnection:
-      "TKA letter G is a representative Together-Same dual-shift. The Earth element marks this family in the current TKA system.",
+      "G is a Together-Same dual-shift. Earth identifies this family in TKA.",
     history:
-      "The 2002 weave discussion recognizes same-direction motion without split timing. The 2005 terminology thread names the exact combination and maps a parallel weave to it. Noel's 2009 article carries the mode into his transition framework.",
+      "A 2005 poi discussion names Together Time, Same Direction and connects it to parallel weaves. Noel Yee uses the same relationship in his 2009 transition article.",
     aliases: ["Together-Same", "Tog-Same", "TS", "Parallel time"],
     metaDescription:
-      "Together Time, Same Direction explained: zero-degree parallel prop timing, animation, examples, history, TKA mapping, and links to all six modes.",
+      "Together Time, Same Direction: matching points on the same beat. See the hand-path animation, parallel-weave example, TKA connection, and sources.",
     sources: [
       {
         label: "How do you define a weave?",
@@ -146,28 +142,25 @@ const ARTICLE_BY_CODE = {
     phase: "90° / 270°",
     representativeLetter: "S",
     definition:
-      "Both props rotate in the same direction with a quarter-cycle phase gap. One prop leads the other by 90 degrees, and swapping the leader creates the other chirality.",
+      "Both hands circle in the same direction, a quarter-cycle apart. Either hand can lead.",
     watchFor:
-      "The prop bearings stay perpendicular as the pair rotates. The same prop remains one quarter-cycle ahead until the timing changes.",
+      "When one reaches the top, the other is at the side. At equal speed, that quarter-cycle gap stays fixed.",
     example:
-      "Quarter-time weaves were already part of a 2005 naming discussion. Later poi writing applies the relationship to stalls, floats, flowers, and third-order chases.",
-    geometry:
-      "Equal-speed rotation in the same direction preserves the 90-degree phase gap. The relationship has two versions because either prop can lead.",
+      "Quarter-time poi weaves appear in the 2005 discussion below. DrexFactor also uses this timing in a third-order chase in 2011.",
     commonMistake:
-      "Quarter timing is not gamma placement. Quarter describes the props' phase; gamma describes hands occupying adjacent grid points.",
+      "Quarter time describes when things arrive. Gamma describes hands on adjacent grid points. Timing and placement are separate.",
     tkaConnection:
-      "TKA letter S is a representative Quarter-Same dual-shift. The Sun element marks this family, whose TKA letters are S through V.",
+      "S is a Quarter-Same dual-shift. Sun identifies the S–V family in TKA.",
     history:
-      "Quarter time appears in public poi discussions by 2002. The 2005 terminology debate uses quarter-time weaves to show why timing and direction must remain separate. A 2009 phase discussion describes the same-direction quarter geometry directly.",
+      "Quarter-time wording appears in a 2002 poi discussion. In 2005, spinners discuss quarter-time weaves while distinguishing timing from direction. A 2009 thread describes the same-direction case in terms of phase.",
     aliases: ["Quarter-Same", "QS", "Quarter time", "90-degree phase"],
     metaDescription:
-      "Quarter Time, Same Direction explained: the 90-degree same-direction relationship, leader and follower, animation, history, and TKA's Sun family.",
+      "Quarter Time, Same Direction: a quarter-cycle gap with either side leading. Hand-path animation, poi examples, TKA's Sun family, and historical sources.",
     sources: [
       {
         label: "Concept moves and why make lists?",
         url: QUARTER_TIME_BUTTERFLIES,
-        detail:
-          "Earliest explicit quarter-time wording located in this audit, dated 2002.",
+        detail: "2002: quarter-time butterflies discussed by name.",
       },
       SOURCE_FOUR_MODE_MAPPING,
       {
@@ -185,7 +178,7 @@ const ARTICLE_BY_CODE = {
         label: "TKA public repository record",
         url: TKA_PUBLIC_RECORD,
         detail:
-          "Immutable 2025 commit containing quarter/same records in separate timing and direction fields.",
+          "2025: TKA data with separate quarter-time and same-direction fields.",
       },
     ],
   },
@@ -198,22 +191,20 @@ const ARTICLE_BY_CODE = {
     phase: "180°",
     representativeLetter: "J",
     definition:
-      "The props rotate in opposite directions while staying 180 degrees out of phase. Their downbeats alternate instead of arriving together.",
+      "The hands circle in opposite directions. One reaches the bottom halfway between the other's downbeats.",
     watchFor:
-      "The pair mirrors across a horizontal reference when viewed in the standard wall-plane model. One prop reaches the top while the other reaches the bottom.",
+      "In this upright view, one reaches the top as the other reaches the bottom. Their paths mirror each other across a horizontal line.",
     example:
-      "A split-time butterfly is the standard historical example. The 2005 four-mode mapping uses a three-beat split-time butterfly to name the combination.",
-    geometry:
-      "Opposite rotation creates mirror symmetry. The 180-degree timing offset places the mirror line across the horizontal axis in the conventional upright view.",
+      "A split-time poi butterfly uses this relationship. Its downbeats alternate.",
     commonMistake:
-      "Older vocabulary sometimes used split-time as a combined name for this motion. Keeping timing and direction separate prevents that label from swallowing Split-Same.",
+      "Split time also exists in same-direction motion. Add the direction to distinguish a split-time butterfly from a regular weave.",
     tkaConnection:
-      "TKA letter J is a representative Split-Opposite dual-shift. The Fire element marks this family in the current TKA system.",
+      "J is a Split-Opposite dual-shift. Fire identifies this family in TKA.",
     history:
-      "The possibility appears in the 2002 four-relationship discussion. The 2005 thread supplies the exact Split-Time, Opposite-Direction mapping and also preserves the older combined vocabulary that caused confusion.",
+      "The 2002 weave discussion includes opposite-direction split timing. A 2005 thread explicitly maps Split Time, Opposite Direction to a split-time butterfly.",
     aliases: ["Split-Opposite", "Split-Opp", "SO", "Split-time butterfly"],
     metaDescription:
-      "Split Time, Opposite Direction explained: the 180-degree butterfly relationship, animation, symmetry, history, TKA mapping, and related modes.",
+      "Split Time, Opposite Direction: opposite rotation with alternating downbeats. See the hand-path animation, butterfly example, TKA connection, and sources.",
     sources: [
       {
         label: "How do you define a weave?",
@@ -233,22 +224,20 @@ const ARTICLE_BY_CODE = {
     phase: "0°",
     representativeLetter: "D",
     definition:
-      "The props rotate in opposite directions and arrive at corresponding points together. Their downbeats land at the same moment.",
+      "The hands circle in opposite directions and reach the top and bottom together.",
     watchFor:
-      "In the standard upright view, the moving pair reflects across a vertical line. Both props reach the top or bottom of their circles together.",
+      "In this upright view, the two paths mirror each other across a vertical line.",
     example:
-      "The regular butterfly is the standard example. Its two sides move as mirror images while sharing the same beat.",
-    geometry:
-      "Opposite rotation creates a mirror relationship. Zero phase places the mirror line vertically in the conventional wall-plane view.",
+      "A regular poi butterfly uses Together-Opposite. Both poi heads share the same downbeat.",
     commonMistake:
-      "Together describes the phase relationship, not the direction. The props can share a beat while rotating away from each other.",
+      "Together describes timing, not direction. Two motions can share a beat while turning opposite ways.",
     tkaConnection:
-      "TKA letter D is a representative Together-Opposite dual-shift. The Air element marks this family in the current TKA system.",
+      "D is a Together-Opposite dual-shift. Air identifies this family in TKA.",
     history:
-      "Butterfly timing appears in the 2002 discussion. The 2005 four-mode mapping names the regular butterfly as Together Time, Opposite Direction, and Noel's 2009 transition article carries the same variables into VTG's teaching lineage.",
+      "The 2005 discussion below names a regular butterfly as Together Time, Opposite Direction. Noel Yee includes the same relationship in his 2009 transition article.",
     aliases: ["Together-Opposite", "Tog-Opp", "TO", "Butterfly"],
     metaDescription:
-      "Together Time, Opposite Direction explained: butterfly timing, zero-degree mirror symmetry, animation, history, TKA mapping, and related modes.",
+      "Together Time, Opposite Direction: opposite rotation on the same beat. See the butterfly relationship, hand-path animation, TKA connection, and sources.",
     sources: [
       {
         label: "How do you define a weave?",
@@ -269,19 +258,17 @@ const ARTICLE_BY_CODE = {
     phase: "90° / 270°",
     representativeLetter: "M",
     definition:
-      "The props rotate in opposite directions with a quarter-cycle phase gap. One prop leads by 90 degrees, producing left-leading and right-leading versions.",
+      "The hands circle in opposite directions, a quarter-cycle apart. Either hand can lead.",
     watchFor:
-      "The mirror line sits on a diagonal in the standard wall-plane model. Changing which prop leads switches that diagonal to its counterpart.",
+      "In this upright view, the paths mirror each other across a diagonal. Swapping the lead changes which diagonal.",
     example:
-      "Quarter-time butterflies are the earliest explicit quarter-time example located in this audit. The relationship also appears in later phase writing about pendulums, stalls, and circular patterns.",
-    geometry:
-      "Opposite rotation keeps mirror symmetry while the quarter-cycle offset turns its axis from vertical or horizontal to a diagonal. Either prop can lead.",
+      "Quarter-time poi butterflies use this relationship. They are named in the 2002 discussion below.",
     commonMistake:
-      "Quarter timing does not identify where the hands are placed. A Quarter-Opposite prop relationship can be described independently of alpha, beta, or gamma hand placement.",
+      "Quarter time describes when things arrive, not where the hands are placed. Alpha, beta, and gamma describe placement separately.",
     tkaConnection:
-      "TKA letter M is a representative Quarter-Opposite dual-shift. The Moon element marks this family, whose TKA letters are M through R.",
+      "M is a Quarter-Opposite dual-shift. Moon identifies the M–R family in TKA.",
     history:
-      "A public 2002 discussion names quarter-time butterflies. In 2005, quarter-time butterflies become an explicit reason to separate timing from direction. The 2009 phase-and-symmetry discussion describes the opposite-direction quarter case as a diagonal mirror relationship.",
+      "A 2002 poi discussion names quarter-time butterflies. A 2005 thread uses them to explain why timing and direction need separate names. In 2009, spinners describe their diagonal mirror symmetry.",
     aliases: [
       "Quarter-Opposite",
       "Quarter-Opp",
@@ -289,7 +276,7 @@ const ARTICLE_BY_CODE = {
       "Quarter-time butterfly",
     ],
     metaDescription:
-      "Quarter Time, Opposite Direction explained: the 90-degree diagonal mirror relationship, leader and follower, animation, history, and TKA's Moon family.",
+      "Quarter Time, Opposite Direction: opposite rotation a quarter-cycle apart. Hand-path animation, quarter-time butterflies, TKA's Moon family, and sources.",
     sources: [
       {
         label: "Concept moves and why make lists?",
@@ -313,7 +300,7 @@ const ARTICLE_BY_CODE = {
         label: "TKA public repository record",
         url: TKA_PUBLIC_RECORD,
         detail:
-          "Immutable 2025 commit containing quarter/opposite records in separate timing and direction fields.",
+          "2025: TKA data with separate quarter-time and opposite-direction fields.",
       },
     ],
   },
