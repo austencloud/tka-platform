@@ -95,6 +95,15 @@ function configureProductionSlice(
   config: EmberSceneConfig,
   shadows: boolean
 ): void {
+  if (asset.getObjectByName("EMBER_Terrain")) {
+    asset.traverse((child) => {
+      const mesh = child as Mesh;
+      if (!mesh.isMesh) return;
+      mesh.receiveShadow = true;
+      mesh.castShadow = shadows && child.name !== "EMBER_Terrain";
+    });
+    return;
+  }
   const routed = new Map<
     MeshStandardMaterial,
     Map<EmberTreatmentKey, number>
@@ -252,6 +261,18 @@ export function createEmberAuthoredSurface(
 
   const { basin, field } = worldHeightField(object, options.groundY);
   const generated = new Group();
+  if (object.getObjectByName("EMBER_Terrain")) {
+    generated.name = "ember-baked-midflank-surface";
+    return {
+      object: generated,
+      setGroundY(value) {
+        object.position.y = value;
+      },
+      dispose() {
+        for (const patch of patches) patch.dispose();
+      },
+    };
+  }
   generated.name = "ember-surface-ecology";
   const geometries = new Set<BufferGeometry>();
   const materials = new Set<Material>();

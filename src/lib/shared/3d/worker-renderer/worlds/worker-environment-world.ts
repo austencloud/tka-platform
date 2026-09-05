@@ -29,6 +29,7 @@ export interface WorkerEnvironmentWorld {
 }
 
 export interface WorkerWorldContext {
+  reducedMotion?: boolean;
   renderer: WebGLRenderer;
   camera: PerspectiveCamera;
   performers: readonly WorkerPerformerSnapshot[];

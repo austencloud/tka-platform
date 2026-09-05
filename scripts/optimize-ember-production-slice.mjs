@@ -94,19 +94,28 @@ function applyEmberMaterialProfile(document) {
 }
 
 const runtimeOutput = "static/models/ember/ember-production-slice.glb";
-const versionedOutput = "static/models/ember/ember-production-slice-r10.glb";
+const midflank = process.argv.includes("--midflank-r5");
+const versionedOutput = midflank
+  ? "static/models/ember/ember-midflank-production-r5.glb"
+  : "static/models/ember/ember-production-slice-r10.glb";
 
 await optimizeGltfKtx2({
-  input: "static/models/ember/ember-production-slice_raw.glb",
+  input: midflank
+    ? "static/models/ember/ember-midflank-production-r5_raw.glb"
+    : "static/models/ember/ember-production-slice_raw.glb",
   output: runtimeOutput,
   temporaryStem: "ember-production-slice",
-  label: "Ember Living Caldera and Fresh Rift surface ecology",
+  label: midflank
+    ? "Ember Mid-Flank Fire Pilgrimage R5"
+    : "Ember Living Caldera and Fresh Rift surface ecology",
   textureSize: 1024,
   materialTextureSize: 512,
-  simplifyRatio: 0.92,
+  simplifyRatio: midflank ? 1 : 0.92,
   simplifyError: 0.001,
-  materialTransform: applyEmberMaterialProfile,
+  materialTransform: midflank ? undefined : applyEmberMaterialProfile,
+  encodeTextures: !midflank,
+  palette: !midflank,
 });
 
 await copyFile(runtimeOutput, versionedOutput);
-console.log(`  preserved reversible R10 asset: ${versionedOutput}`);
+console.log(`  preserved reversible asset: ${versionedOutput}`);

@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync, statSync } from "node:fs";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import {
   BoxGeometry,
   Group,
@@ -7,6 +10,10 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   Texture,
+  Raycaster,
+  Vector3,
+  ShaderLib,
+  type WebGLProgramParametersWithUniforms,
   type WebGLRenderer,
 } from "three";
 
@@ -88,6 +95,67 @@ function createWorld(bundle = assets()): {
 }
 
 describe("Ember renderer-neutral production world", () => {
+  it("delivers the approved datum and slope without adding a second river or stage", async () => {
+    const path = "static/models/ember/ember-production-slice.glb";
+    const bytes = readFileSync(path);
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const data = new Uint8Array(bytes.length);
+    data.set(bytes);
+    const gltf = await loader.parseAsync(data.buffer, "");
+    const bundle = assets();
+    bundle.productionSlice = gltf.scene;
+    const source = gltf.scene.getObjectByName("EMBER_Terrain") as Mesh;
+    const positions = source.geometry.getAttribute("position").array.slice();
+    const world = createEmberEnvironmentWorld(
+      {
+        renderer: {} as WebGLRenderer,
+        groundY: -1.5,
+        stageRadiusGrowth: 8,
+        reducedMotion: true,
+        random: () => 0.5,
+      },
+      bundle
+    );
+    world.root.updateMatrixWorld(true);
+    const ray = new Raycaster(new Vector3(0, 200, 0), new Vector3(0, -1, 0));
+    expect(ray.intersectObject(source, true)[0].point.y).toBeCloseTo(-1, 1);
+    expect(source.geometry.getAttribute("position").array).toEqual(positions);
+    expect(world.config.platform.enabled).toBe(false);
+    expect(world.root.getObjectByName("EmberLavaRivers")).toBeUndefined();
+    expect(world.root.getObjectByName("ember-surface-ecology")).toBeUndefined();
+    expect(world.root.getObjectByName("EMBER_PerformerProxy")).toBeUndefined();
+    expect(statSync(path).size).toBeLessThan(7_000_000);
+    const surface = world.root.getObjectByName(
+      "EMBER_LavaSimulatorDeposit"
+    ) as Mesh;
+    const material = surface.material as MeshStandardMaterial;
+    const shader = {
+      uniforms: {},
+      vertexShader: ShaderLib.standard.vertexShader,
+      fragmentShader: ShaderLib.standard.fragmentShader,
+    } as WebGLProgramParametersWithUniforms;
+    material.onBeforeCompile(shader, {} as WebGLRenderer);
+    const time = shader.uniforms.uMidflankTime;
+    world.update(1, 10, new PerspectiveCamera());
+    expect(time.value).toBe(0);
+    const dispose = vi.spyOn(material, "dispose");
+    world.dispose();
+    world.dispose();
+    expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the R5 material color instead of whitening untextured basalt", () => {
+    const bundle = assets();
+    const terrain = bundle.productionSlice.children[0] as Mesh;
+    terrain.name = "EMBER_Terrain";
+    const material = terrain.material as MeshStandardMaterial;
+    material.name = "Ember_Midflank_R5_basalt";
+    material.color.setRGB(0.075, 0.082, 0.083);
+    const color = material.color.clone();
+    const { world } = createWorld(bundle);
+    expect(material.color).toEqual(color);
+    world.dispose();
+  });
   it("declares every authored GLB and support texture used by production", () => {
     expect(EMBER_AUTHORED_RESOURCE_URLS).toEqual([
       "/models/ember/ember-production-slice.glb",
@@ -97,10 +165,10 @@ describe("Ember renderer-neutral production world", () => {
       "/textures/moon.png",
       "/textures/ember-surface-r9/young-lava.png",
       "/textures/ember-surface-r9/iron-contact.png",
-      "/textures/ember-surface-r9/fractured-basalt.png",
+      "/textures/ember-midflank-r5/rock-ground-color.jpg",
       "/textures/ember-surface-r9/sheltered-ash.png",
       "/textures/ember-surface-r11/rock-ground-height.jpg",
-      "/textures/ember-surface-r9/fresh-rift-family-mask.png",
+      "/textures/ember-midflank-r5/family-mask.png",
     ]);
   });
 

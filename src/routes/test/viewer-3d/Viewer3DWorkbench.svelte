@@ -1,6 +1,12 @@
 <script lang="ts">
   import { BackgroundType } from "@austencloud/backgrounds";
-  import { Plane, type CameraStateSnapshot } from "@austencloud/scene-3d";
+  import {
+    Plane,
+    userProportionsState,
+    type CameraStateSnapshot,
+  } from "@austencloud/scene-3d";
+  import midflank from "$lib/shared/3d/environments/domain/models/scene-configs/ember-midflank-r5.json";
+  import { SCENE_FEATURES } from "$lib/shared/3d/scene-features/domain/scene-feature-registry";
   import { replaceState } from "$app/navigation";
   import { onDestroy } from "svelte";
 
@@ -30,6 +36,9 @@
     BackgroundType.VOID,
   ]);
   const STREAMED_SCENE_FEATURES = ["environment"] as const;
+  const workerReview =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("renderer") === "worker";
 
   function requestedScene(): BackgroundType {
     if (typeof window === "undefined") return BackgroundType.BLOSSOM;
@@ -49,9 +58,18 @@
       // A seeded workbench must not inherit the user's camera from a different
       // environment. null lets the shared opening-camera policy frame it.
       if (requestedScene() !== BackgroundType.EMBER) return null;
+      const camera = midflank.reviewCameras[0];
       return {
-        position: { x: 0, y: 3.4, z: -9.8 },
-        target: { x: 0, y: 1.4, z: 5.2 },
+        position: {
+          x: camera.positionWorldXYZ[0],
+          y: camera.positionWorldXYZ[1] + userProportionsState.groundY,
+          z: camera.positionWorldXYZ[2],
+        },
+        target: {
+          x: camera.targetWorldXYZ[0],
+          y: camera.targetWorldXYZ[1] + userProportionsState.groundY,
+          z: camera.targetWorldXYZ[2],
+        },
         rotation: { x: 0, y: 0, z: 0 },
         fov: 50,
         timestamp: 0,
@@ -89,13 +107,17 @@
     defaultProp: PropType.STAFF,
     visiblePlanes: [],
     effectToggles: {},
-    sceneFeatures: {
-      environment: true,
-      stage: true,
-      audience: false,
-      campfire: false,
-      tent: false,
-    },
+    sceneFeatures: workerReview
+      ? Object.fromEntries(
+          SCENE_FEATURES.map((feature) => [feature.key, feature.defaultEnabled])
+        )
+      : {
+          environment: true,
+          stage: true,
+          audience: false,
+          campfire: false,
+          tent: false,
+        },
   });
   viewer.enter3D(sequence);
   viewer.hideAllPlanes();
@@ -149,7 +171,8 @@
     word={null}
     leftPropType="staff"
     rightPropType="staff"
-    initialRevealMode="streaming"
+    initialRevealMode={workerReview ? "gated" : "streaming"}
+    cameraFov={requestedCamera()?.fov}
     initialRevealDeferredFeatures={STREAMED_SCENE_FEATURES}
     onClose={() => history.back()}
     onPlaybackToggle={playback.togglePlay}

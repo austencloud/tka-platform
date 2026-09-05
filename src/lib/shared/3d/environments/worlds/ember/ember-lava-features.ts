@@ -21,6 +21,7 @@ import {
 } from "three";
 
 import { QualityTier } from "../../../effects/types";
+import { createMidflankLava } from "./ember-midflank-finish";
 import type {
   EmberSceneConfig,
   LavaCracksConfig,
@@ -233,6 +234,9 @@ export function createEmberLavaRivers(
   qualityTier: QualityTier
 ): EmberWorldElement | null {
   if (!config?.enabled) return null;
+  if (terrain.getObjectByName("EMBER_LavaSimulatorDeposit")) {
+    return createMidflankLava(terrain, groundY);
+  }
   const root = new Group();
   root.name = "EmberLavaRivers";
   const bankLight = { ...DEFAULT_BANK_LIGHT, ...config.bankLight };
