@@ -38,6 +38,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { FormationPresetId } from "./domain/stage-types";
   import type { TikaDirectorConversationMessage } from "./domain/tika-director";
+  import { describeCastForDirectorRevision } from "./domain/tika-director-revision";
   import {
     createTikaDirectorSession,
     type TikaDirectorSubmitResult,
@@ -306,8 +307,10 @@
           stageHistory: stageState.historyRevision,
           viewerHistory: tikaViewerHistoryRevision,
           choreography,
-          cast: viewer.performerManager.performers.map((performer) =>
-            performer.captureEditingSnapshot()
+          cast: describeCastForDirectorRevision(
+            viewer.performerManager.performers.map((performer) =>
+              performer.captureEditingSnapshot()
+            )
           ),
         },
         (_key, value) => (value instanceof Map ? [...value] : value)
