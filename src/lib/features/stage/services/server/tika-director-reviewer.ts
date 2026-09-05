@@ -43,8 +43,7 @@ export async function reviewStageDirection(
     providerOptions: { anthropic: { structuredOutputMode: "jsonTool" } },
     maxOutputTokens: 512,
     maxRetries: 0,
-    // Same words, same plan, as far as a hosted model allows.
-    temperature: 0,
+    // No temperature: Sonnet 5 rejects the parameter as deprecated.
     abortSignal: signal,
     system: TIKA_DIRECTOR_REVIEWER_SYSTEM_PROMPT,
     prompt: JSON.stringify({
