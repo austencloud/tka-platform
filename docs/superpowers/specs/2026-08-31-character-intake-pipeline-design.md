@@ -129,3 +129,36 @@ Adobe download checklist, weighted toward new silhouettes and clothing rather
 than another random set of near-duplicates. Its entries are candidates, not
 catalog promises. Each download still goes through this intake and review
 contract.
+
+## Addendum 2026-09-05: material audit, named staging, batch commands
+
+The rig gates said whether a character could move. Three additions say whether
+it can look like anything once it does, and let a curation batch run as one
+job.
+
+- **Material audit.** `inspectCharacterGlb` now reports, per material, which
+  PBR channels survived export (base colour, normal, metallic-roughness,
+  occlusion, emissive), the alpha declaration, metallic and roughness factors,
+  and the largest texture behind it, read from embedded PNG, JPEG, and WebP
+  headers. Warnings fire only for materials a skinned primitive draws: no
+  normal map, no metallic-roughness texture, a metallic factor with no texture
+  (renders dark under direct light alone), `BLEND` on an opaque base colour
+  (the ch01/ch12 torso tearing class), and `KHR_materials_pbrSpecularGlossiness`,
+  which three r182's GLTFLoader does not read. The audit runs on both the
+  normalized and the optimized file, so the alpha-mode repair step is checked
+  by the same report that flagged the declaration.
+- **Named staging.** `--stage-bakeoff` writes `intake-<id>.glb` and updates
+  `intake-manifest.json` in the ignored stage directory. The bake-off route
+  reads the manifest, lists every staged character, and accepts
+  `?candidate=intake-<id>` deep links. `intake-current.glb` remains for older
+  links. The promotion packet's review paths now name the character.
+- **Batch commands.** `characters:provenance` stamps a Mixamo sidecar beside a
+  download, filling id, name, and description from a curation-queue slot; the
+  two rights assertions must be typed. `characters:intake-batch` pairs every
+  model with its sidecar, runs intake for each, stages them, and prints one
+  table.
+- **Lighting comparison.** The bake-off route gained a `lighting` option. The
+  production viewer sets no environment map, so the default studio lights stay
+  the baseline; the room option adds the shared prefiltered RoomEnvironment
+  (`shared/3d/rendering/room-environment.ts`, the owner the ocean scene now
+  imports) to show what a candidate's roughness and metalness contribute.
