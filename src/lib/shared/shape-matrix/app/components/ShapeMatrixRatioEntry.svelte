@@ -13,8 +13,9 @@
 
   interface Props {
     hand: "left" | "right" | "both";
-    /** Bar: the recipe bar above the grid names the axis itself. */
-    layout?: "ribbon" | "tray" | "bar";
+    /** Corner: the grid's corner cell names the axis and sizes the fields
+       in its own container units; only the two numbers remain. */
+    layout?: "ribbon" | "tray" | "corner";
     onfocuschange?: (hand: "left" | "right" | "both" | null) => void;
   }
   let { hand, layout = "ribbon", onfocuschange }: Props = $props();
@@ -150,7 +151,7 @@
   class:right={hand === "right"}
   class:both={hand === "both"}
   class:tray={layout === "tray"}
-  class:bar={layout === "bar"}
+  class:corner={layout === "corner"}
   aria-label={`${axisLabel} ratio`}
   onfocusin={() => onfocuschange?.(hand)}
   onfocusout={onFocusOut}
@@ -445,10 +446,11 @@
     padding-inline: 0;
   }
 
-  /* The recipe bar already carries the axis name and colour, so the entry
-     keeps only its two numbers. Feedback floats under the bar rather than
-     growing it, so a typed mistake never shifts the grid. */
-  .ratio-side.bar {
+  /* The corner cell already carries the axis mark and colour, and has no
+     room for four nudge buttons, so the entry keeps only its two typed
+     numbers. Arrow keys still nudge them. Feedback is spoken through the
+     live region; the invalid outline is the visible cue. */
+  .ratio-side.corner {
     position: relative;
     width: auto;
     grid-template-rows: auto;
@@ -456,8 +458,10 @@
     padding: 0;
   }
 
-  .ratio-side.bar .side-head,
-  .ratio-side.bar .part-field > span:first-child {
+  .ratio-side.corner .side-head,
+  .ratio-side.corner .part-field > span:first-child,
+  .ratio-side.corner .part-stepper button,
+  .ratio-side.corner .feedback {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -466,23 +470,24 @@
     white-space: nowrap;
   }
 
-  .ratio-side.bar .entry-row {
-    grid-template-columns: auto auto auto;
-    gap: 0.2rem;
+  .ratio-side.corner .entry-row {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 0.15rem;
   }
 
-  .ratio-side.bar .part-stepper {
-    grid-template-columns:
-      var(--min-touch-target, 44px) 2.4rem
-      var(--min-touch-target, 44px);
+  .ratio-side.corner .part-stepper {
+    grid-template-columns: minmax(0, 1fr);
+    border-radius: 8px;
   }
 
-  .ratio-side.bar .feedback {
-    position: absolute;
-    top: calc(100% + 0.2rem);
-    left: 0;
-    right: 0;
-    z-index: 2;
+  .ratio-side.corner .part-stepper input,
+  .ratio-side.corner .colon {
+    height: clamp(1.5rem, 18cqi, 2.75rem);
+    font-size: clamp(0.9rem, 11cqi, 1.4rem);
+  }
+
+  .ratio-side.corner .part-stepper input {
+    padding-inline: 0.15rem;
     text-align: center;
   }
 
