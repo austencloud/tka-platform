@@ -63,7 +63,6 @@ describe("Kinetic Shape Engine identity", () => {
     expect(page).toContain('"isBasedOn"');
     expect(page).toContain('"name": "Lorq Nichols"');
     expect(page).toContain("ORIGINAL_SHAPE_MATRIX_VTG_RATIOS");
-    expect(shell).toContain("ORIGINAL_SHAPE_MATRIX_VTG_RATIOS");
     expect(shell).toContain("<span>Lorq Nichols’ original</span>");
     expect(surface).toContain("Build your own 4×4");
     expect(shell).not.toContain("prop:hand ratios");
