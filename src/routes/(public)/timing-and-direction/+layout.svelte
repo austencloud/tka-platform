@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy, type Snippet } from "svelte";
+  import { browser } from "$app/environment";
   import { page } from "$app/state";
   import HandMotionPlayer from "$lib/features/learn/components/interactive/foundations/HandMotionPlayer.svelte";
   import { reparentToInspector as reparentToSlot } from "$lib/shared/sequence-viewer/components/reparent-to-inspector";
@@ -37,17 +38,21 @@
       style:--mode-accent={playback.selected.motion.element.accentColor}
       use:reparentToSlot={playback.target}
     >
-      <HandMotionPlayer
-        sequence={playback.selected.motion.sequence}
-        initialStep={playback.step}
-        ariaLabel={playback.selected.article.name}
-        showElementalGlyph
-        externalPlaying={playback.playing}
-        onExternalPlayingChange={(value) => (playback.playing = value)}
-        onStepChange={playback.followStep}
-        playbackGate={gate}
-        framed={false}
-      />
+      <!-- The animation engine is stubbed out of the production SSR build
+           (see SSR_STUBBED_SHARED_RENDER_PATHS), so the canvas mounts client-only. -->
+      {#if browser}
+        <HandMotionPlayer
+          sequence={playback.selected.motion.sequence}
+          initialStep={playback.step}
+          ariaLabel={playback.selected.article.name}
+          showElementalGlyph
+          externalPlaying={playback.playing}
+          onExternalPlayingChange={(value) => (playback.playing = value)}
+          onStepChange={playback.followStep}
+          playbackGate={gate}
+          framed={false}
+        />
+      {/if}
     </div>
   </div>
 </div>

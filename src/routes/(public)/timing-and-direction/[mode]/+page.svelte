@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PageData } from "./$types";
+  import { browser } from "$app/environment";
   import { TIMING_DIRECTION_MODES } from "$lib/features/learn/components/interactive/foundations/pictograph-foundation-content";
   import Seo from "$lib/shared/components/Seo.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
@@ -147,10 +148,12 @@
     <figure class="demonstration">
       <div class="demo-toolbar">
         <span>Hand paths</span>
-        <TransportControls
-          isPlaying={playback.playing}
-          onPlaybackToggle={() => (playback.playing = !playback.playing)}
-        />
+        {#if browser}
+          <TransportControls
+            isPlaying={playback.playing}
+            onPlaybackToggle={() => (playback.playing = !playback.playing)}
+          />
+        {/if}
       </div>
       <div class="demo-canvas" use:playback.registerTarget></div>
       <figcaption>
