@@ -32,6 +32,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { isHandPathSequence } from "$lib/shared/foundation/domain/models/sequence-kind";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
@@ -89,7 +90,13 @@ export async function computeHash(
       : version >= HASH_VERSION_V2
         ? V2_OPTS
         : V1_OPTS;
-  return digest(extractContent(sequence, opts));
+  const content = extractContent(sequence, opts);
+  // Namespace the new artifact without changing any existing prop preimage.
+  return digest(
+    isHandPathSequence(sequence)
+      ? { sequenceKind: "hand-path", content }
+      : content
+  );
 }
 
 function extractContent(sequence: SequenceData, opts: ExtractOptions): unknown {

@@ -126,7 +126,12 @@ export function createDeckPrintState(
   );
   const sortedSequences = $derived(
     isHandPathDeck
-      ? handPathCards.map((referenceCard) => referenceCard.sequence)
+      ? handPathCards.map(
+          (referenceCard) =>
+            deck.sequences.find(
+              (sequence) => sequence.id === referenceCard.sequence.id
+            ) ?? referenceCard.sequence
+        )
       : (ordered.sequences as SequenceData[])
   );
   const sortedFooters = $derived(
@@ -135,6 +140,12 @@ export function createDeckPrintState(
           center: getHandPathReferenceNotes(referenceCard),
         }))
       : ordered.footers
+  );
+  const qrUrls = $derived(
+    sortedSequences.map(
+      (sequence) =>
+        deck.cards.find((card) => card.sequenceId === sequence.id)?.qrUrl
+    )
   );
   const tndElements = $derived(
     isHandPathDeck
@@ -684,6 +695,9 @@ export function createDeckPrintState(
     },
     get cardTitles() {
       return cardTitles;
+    },
+    get qrUrls() {
+      return qrUrls;
     },
     get cardProfile() {
       return cardProfile;

@@ -261,6 +261,7 @@ const PublicSequenceWireObjectSchema = z
     ownerAvatarUrl: z.string().optional(),
 
     name: z.string().default(""),
+    sequenceKind: z.enum(["prop", "hand-path"]).optional(),
     displayName: z.string().optional(),
     /** Searched by `browse-filter.ts:196`; never written by the syncer today. */
     intendedWord: z.string().optional(),
@@ -425,6 +426,7 @@ export function toPublicSequenceProjection(
     }),
 
     name: wire.name,
+    ...(wire.sequenceKind !== undefined && { sequenceKind: wire.sequenceKind }),
     ...(wire.displayName !== undefined && { displayName: wire.displayName }),
     ...(wire.intendedWord !== undefined && { intendedWord: wire.intendedWord }),
     word: wire.word,

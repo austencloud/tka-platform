@@ -128,7 +128,7 @@ describe("buildFrontComposeOptions", () => {
     expect(composeOptions.showLoopGlyph).toBe(true);
   });
 
-  it("uses the hands-only reference-card profile without sequence identity", () => {
+  it("uses the hands-only reference-card profile with a QR and without prop difficulty", () => {
     const { composeOptions } = buildFrontComposeOptions(SEQ, {
       ...BASE_OPTS,
       cardProfile: "hand-path",
@@ -151,7 +151,7 @@ describe("buildFrontComposeOptions", () => {
       handPathMode: true,
       showTKA: false,
       showReversals: false,
-      showQRCode: false,
+      showQRCode: true,
       showMandala: false,
     });
   });
