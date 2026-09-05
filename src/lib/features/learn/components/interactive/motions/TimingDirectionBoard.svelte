@@ -413,7 +413,7 @@
     grid-template-columns:
       minmax(0, calc(var(--study-height) * 1.7142857 + 1.6rem))
       var(--rail-width);
-    grid-template-rows: repeat(5, clamp(4.5rem, 6cqw, 6rem));
+    grid-template-rows: repeat(5, minmax(0, 1fr));
     align-content: start;
     align-items: start;
     justify-content: center;
@@ -457,8 +457,8 @@
   .mode-tile.is-focused {
     grid-column: 1;
     grid-row: 1 / 6;
-    grid-template-rows: auto auto;
-    align-self: start;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-self: stretch;
     border-color: color-mix(
       in srgb,
       var(--element-accent) 72%,
