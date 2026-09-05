@@ -15,10 +15,26 @@
     { value: "opposite", label: "Opposite" },
   ];
   const timingDetails = {
-    together: { angle: 0, label: "In sync" },
-    split: { angle: 180, label: "½ cycle apart" },
-    quarter: { angle: 90, label: "¼ cycle apart" },
-  } satisfies Record<TimingMode, { angle: number; label: string }>;
+    together: {
+      offset: 0,
+      label: "In sync",
+      description: "The two lights flash at the same time.",
+    },
+    split: {
+      offset: 0.5,
+      label: "½ cycle apart",
+      description: "The two lights take turns, evenly spaced.",
+    },
+    quarter: {
+      offset: 0.25,
+      label: "¼ cycle apart",
+      description:
+        "Blue flashes, then red a quarter cycle later, followed by a longer gap.",
+    },
+  } satisfies Record<
+    TimingMode,
+    { offset: number; label: string; description: string }
+  >;
 
   let timingMode = $state<TimingMode>("together");
   let directionMode = $state<DirectionMode>("same");
@@ -34,31 +50,61 @@
     <h3 id="timing-heading">Timing</h3>
 
     <div
-      class="instrument phase-instrument"
+      class="instrument timing-instrument"
       data-timing={timingMode}
       role="img"
-      aria-label={`${timingOptions.find((option) => option.value === timingMode)?.label} timing: ${timingDetail.label.toLowerCase()}. Both hands follow the same circle.`}
+      aria-label={`${timingOptions.find((option) => option.value === timingMode)?.label} timing: ${timingDetail.description}`}
     >
-      <svg class="motion-dial" viewBox="0 0 240 240" aria-hidden="true">
-        <circle class="shared-path" cx="120" cy="120" r="88" />
-        <path
-          class="phase-ticks"
-          d="M120 21v5 M214 120h5 M120 214v5 M21 120h5"
-        />
-        <g class="orbit timing-orbit">
-          <circle class="hand-dot blue-dot" cx="120" cy="32" r="12" />
-          <g
-            class="phase-offset"
-            style:--phase-angle={`${timingDetail.angle}deg`}
-          >
-            <circle class="hand-dot red-dot" cx="120" cy="32" r="12" />
-            <!-- Coincident hands share one center; the two halves keep both identities visible. -->
-            <path
-              class="together-half blue-dot"
-              d="M120 20a12 12 0 0 0 0 24Z"
+      <svg class="concept-diagram" viewBox="0 0 240 240" aria-hidden="true">
+        <!-- Brightness carries timing; neither light changes size or position. -->
+        <g class="pulse-lights">
+          {#each ["blue", "red"] as hand, index}
+            <g
+              class="timing-light {hand}"
+              style:--pulse-offset={index === 0 ? 0 : timingDetail.offset}
+            >
+              <circle class="lamp-base" cx={72 + index * 96} cy="120" r="28" />
+              <g class="light-pulse">
+                <circle
+                  class="lamp-halo"
+                  cx={72 + index * 96}
+                  cy="120"
+                  r="38"
+                />
+                <circle
+                  class="lamp-core"
+                  cx={72 + index * 96}
+                  cy="120"
+                  r="28"
+                />
+                <circle
+                  class="lamp-highlight"
+                  cx={72 + index * 96}
+                  cy="120"
+                  r="18"
+                />
+              </g>
+            </g>
+          {/each}
+        </g>
+        <!-- Reduced motion keeps the relationship visible as four stationary beat positions. -->
+        <g class="static-rhythm">
+          {#each [0, 1, 2, 3] as beat}
+            <circle
+              class="beat blue"
+              class:beat-on={beat === 0}
+              cx={54 + beat * 44}
+              cy="94"
+              r="13"
             />
-            <path class="together-seam" d="M120 22v20" />
-          </g>
+            <circle
+              class="beat red"
+              class:beat-on={beat === timingDetail.offset * 4}
+              cx={54 + beat * 44}
+              cy="146"
+              r="13"
+            />
+          {/each}
         </g>
       </svg>
     </div>
@@ -90,34 +136,22 @@
       class="instrument direction-instrument"
       data-direction={directionMode}
       role="img"
-      aria-label={`${directionMode === "same" ? "Same direction: both hands go the same way" : "Opposite direction: the hands go opposite ways"} around one circle. Arrowheads show their travel.`}
+      aria-label={directionMode === "same"
+        ? "Same direction: both arrows point right."
+        : "Opposite direction: the blue arrow points right and the red arrow points left."}
     >
       <Crossfade key={directionMode} fill>
-        <svg class="motion-dial" viewBox="0 0 240 240" aria-hidden="true">
-          <circle class="shared-path" cx="120" cy="120" r="88" />
-          <g class="orbit direction-orbit blue-orbit">
-            <path
-              class="motion-tail blue-tail"
-              d="M76 43.79A88 88 0 0 1 120 32"
-            />
-            <circle class="hand-dot blue-dot" cx="120" cy="32" r="12" />
-            <path class="travel-chevron" d="m117 27 5 5-5 5" />
-          </g>
-          <g class="direction-offset">
-            <g
-              class="orbit direction-orbit red-orbit"
-              class:reverse={directionMode === "opposite"}
-            >
-              <g class:reverse-marker={directionMode === "opposite"}>
-                <path
-                  class="motion-tail red-tail"
-                  d="M76 43.79A88 88 0 0 1 120 32"
-                />
-                <circle class="hand-dot red-dot" cx="120" cy="32" r="12" />
-                <path class="travel-chevron" d="m117 27 5 5-5 5" />
-              </g>
-            </g>
-          </g>
+        <svg class="concept-diagram" viewBox="0 0 240 240" aria-hidden="true">
+          <path
+            class="direction-arrow blue"
+            d="M54 84h132m-28-28 28 28-28 28"
+          />
+          <path
+            class="direction-arrow red"
+            d={directionMode === "same"
+              ? "M54 156h132m-28-28 28 28-28 28"
+              : "M186 156H54m28-28-28 28 28 28"}
+          />
         </svg>
       </Crossfade>
     </div>
@@ -145,7 +179,7 @@
 
 <style>
   .concept-model {
-    --cycle-duration: calc(var(--duration-dramatic) * 10);
+    --cycle-duration: calc(var(--duration-dramatic) * 6);
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: min(100%, 64rem);
@@ -188,7 +222,7 @@
     min-height: 0;
   }
 
-  .motion-dial {
+  .concept-diagram {
     position: absolute;
     inset: 0;
     display: block;
@@ -197,94 +231,56 @@
     overflow: visible;
   }
 
-  .shared-path {
+  .blue {
+    color: var(--prop-blue, #3d44b8);
+  }
+  .red {
+    color: var(--prop-red, #ed1c24);
+  }
+
+  .lamp-base,
+  .lamp-core {
+    fill: currentColor;
+  }
+  .lamp-base {
+    opacity: 0.28;
+  }
+  .lamp-halo {
     fill: none;
-    stroke: color-mix(in srgb, var(--theme-text) 22%, transparent);
-    stroke-width: 1.5;
+    stroke: currentColor;
+    stroke-width: 3;
+    opacity: 0.45;
   }
-
-  .phase-ticks {
-    fill: none;
-    stroke: var(--theme-text-dim);
-    stroke-linecap: round;
-    stroke-width: 2;
+  .lamp-highlight {
+    fill: white;
+    opacity: 0.28;
   }
-
-  .orbit,
-  .phase-offset,
-  .direction-offset,
-  .reverse-marker {
-    transform-box: view-box;
-    transform-origin: center;
-  }
-
-  .orbit {
-    animation: orbit-cycle var(--cycle-duration) linear infinite;
-  }
-  .timing-orbit {
-    animation-delay: calc(var(--cycle-duration) * -0.125);
-  }
-
-  .phase-offset {
-    transform: rotate(var(--phase-angle));
-    transition: transform var(--duration-dramatic) var(--ease-out);
-  }
-
-  .hand-dot {
-    stroke: color-mix(in srgb, var(--theme-text) 45%, transparent);
-    stroke-width: 1.5;
-  }
-
-  .blue-dot {
-    fill: var(--prop-blue, #3d44b8);
-  }
-  .red-dot {
-    fill: var(--prop-red, #ed1c24);
-  }
-  .together-half,
-  .together-seam {
+  .light-pulse {
     opacity: 0;
+    animation: light-beat var(--cycle-duration) linear infinite;
+    animation-delay: calc(var(--cycle-duration) * var(--pulse-offset));
   }
-  [data-timing="together"] .together-half,
-  [data-timing="together"] .together-seam {
+
+  .static-rhythm {
+    display: none;
+  }
+  .beat {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    opacity: 0.4;
+  }
+  .beat-on {
+    fill: currentColor;
     opacity: 1;
   }
 
-  .together-seam {
+  .direction-arrow {
     fill: none;
-    stroke: color-mix(in srgb, var(--theme-text) 65%, transparent);
-    stroke-width: 1;
-  }
-
-  .direction-offset {
-    transform: rotate(180deg);
-  }
-  .reverse {
-    animation-direction: reverse;
-  }
-  .reverse-marker {
-    transform: scaleX(-1);
-  }
-
-  .motion-tail {
-    fill: none;
-    stroke-width: 4;
-    stroke-linecap: round;
-    opacity: 0.65;
-  }
-
-  .blue-tail {
-    stroke: var(--prop-blue, #3d44b8);
-  }
-  .red-tail {
-    stroke: var(--prop-red, #ed1c24);
-  }
-  .travel-chevron {
-    fill: none;
-    stroke: white;
+    stroke: currentColor;
     stroke-linecap: round;
     stroke-linejoin: round;
-    stroke-width: 2;
+    stroke-width: 10;
   }
 
   .relationship-caption {
@@ -306,9 +302,14 @@
     max-width: 13rem;
   }
 
-  @keyframes orbit-cycle {
-    to {
-      transform: rotate(360deg);
+  @keyframes light-beat {
+    0%,
+    5% {
+      opacity: 1;
+    }
+    20%,
+    100% {
+      opacity: 0;
     }
   }
 
@@ -371,11 +372,14 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .orbit {
+    .light-pulse {
       animation: none;
     }
-    .phase-offset {
-      transition: none;
+    .pulse-lights {
+      display: none;
+    }
+    .static-rhythm {
+      display: inline;
     }
   }
 </style>

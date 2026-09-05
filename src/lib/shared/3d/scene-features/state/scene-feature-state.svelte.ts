@@ -1,3 +1,4 @@
+import { untrack } from "svelte";
 import { recordFeatureReady } from "../../scene-boot/boot-spans";
 import {
   SCENE_FEATURES,
@@ -118,54 +119,70 @@ export function createSceneFeatureState(
   }
 
   function reportProgress(key: string, fraction: number): void {
-    const clamped = Math.max(0, Math.min(1, fraction));
-    // Loading progress is monotonic within a load cycle: never let a late or
-    // out-of-order reporter drag the bar backward (e.g. a second asset
-    // resolving after the first has already climbed). resetReady() clears the
-    // key, so a genuine reload starts fresh from 0.
-    const current = progressMap[key] ?? 0;
-    if (clamped <= current) return;
-    console.debug(
-      `[SceneFeature] ${key} progress: ${(clamped * 100).toFixed(0)}%`
-    );
-    progressMap = { ...progressMap, [key]: clamped };
+    untrack(() => {
+      const clamped = Math.max(0, Math.min(1, fraction));
+      // Loading progress is monotonic within a load cycle: never let a late or
+      // out-of-order reporter drag the bar backward (e.g. a second asset
+      // resolving after the first has already climbed). resetReady() clears
+      // the key, so a genuine reload starts fresh from 0.
+      const current = progressMap[key] ?? 0;
+      if (clamped <= current) return;
+      console.debug(
+        `[SceneFeature] ${key} progress: ${(clamped * 100).toFixed(0)}%`
+      );
+      progressMap = { ...progressMap, [key]: clamped };
+    });
   }
+
+  // Reporters are called from inside a scene's load `$effect`. Every one of
+  // them reads the map it writes, and a tracked read there makes the caller's
+  // effect depend on the whole map: it reruns whenever ANY feature reports.
+  // BlossomScene restarts its GLB load on each rerun, so the performers' and
+  // props' progress reports cancelled the environment load nine times per boot
+  // and the disposed materials killed the shader warm-up's compile polls.
+  // `untrack` keeps a report a write-only act from the caller's point of view.
 
   // Shader compile and the frame-smoothness gate run after every asset has
   // downloaded, and used to be invisible: the bar sat at 100% for whole seconds
   // while the scene was still being made ready. This is that stretch.
   function reportWarmupProgress(fraction: number): void {
-    const clamped = Math.max(0, Math.min(1, fraction));
-    if (clamped <= warmupProgress) return;
-    warmupProgress = clamped;
+    untrack(() => {
+      const clamped = Math.max(0, Math.min(1, fraction));
+      if (clamped <= warmupProgress) return;
+      warmupProgress = clamped;
+    });
   }
 
   function reportReady(key: string): void {
-    // Idempotent by necessity: reporters call this from an $effect that reruns
-    // whenever their asset stores settle (see ForestScene's per-GLB progress
-    // effect). Rebuilding errorMap unconditionally handed that effect a brand
-    // new object every run, so it invalidated itself forever —
-    // effect_update_depth_exceeded. Only touch the maps when something actually
-    // changes, and this becomes a no-op once the feature is ready.
-    if (key in errorMap) {
-      const { [key]: _, ...remainingErrors } = errorMap;
-      errorMap = remainingErrors;
-    }
-    if (readySet.has(key)) return;
-    console.debug(`[SceneFeature] ${key} READY`);
-    recordFeatureReady(key);
-    readySet = new Set([...readySet, key]);
+    untrack(() => {
+      // Idempotent by necessity: reporters call this from an $effect that
+      // reruns whenever their asset stores settle (see ForestScene's per-GLB
+      // progress effect). Rebuilding errorMap unconditionally handed that
+      // effect a brand new object every run, so it invalidated itself forever
+      // — effect_update_depth_exceeded. Only touch the maps when something
+      // actually changes, and this becomes a no-op once the feature is ready.
+      if (key in errorMap) {
+        const { [key]: _, ...remainingErrors } = errorMap;
+        errorMap = remainingErrors;
+      }
+      if (readySet.has(key)) return;
+      console.debug(`[SceneFeature] ${key} READY`);
+      recordFeatureReady(key);
+      readySet = new Set([...readySet, key]);
+    });
   }
 
   function reportFailed(key: string, message: string): void {
-    if (readySet.has(key)) {
-      const next = new Set(readySet);
-      next.delete(key);
-      readySet = next;
-    }
-    if (errorMap[key] === message) return;
-    console.error(`[SceneFeature] ${key} FAILED: ${message}`);
-    errorMap = { ...errorMap, [key]: message };
+    untrack(() => {
+      if (readySet.has(key)) {
+        const next = new Set(readySet);
+        next.delete(key);
+        readySet = next;
+      }
+      if (errorMap[key] === message) return;
+      console.error(`[SceneFeature] ${key} FAILED: ${message}`);
+      errorMap = { ...errorMap, [key]: message };
+    });
   }
 
   function resetReady(key: string): void {
@@ -306,7 +323,10 @@ export function createSceneFeatureState(
       if (asyncFeatures.length > 0) {
         let sum = 0;
         for (const feature of asyncFeatures) {
-          if (readySet.has(feature.key) || errorMap[feature.key] !== undefined) {
+          if (
+            readySet.has(feature.key) ||
+            errorMap[feature.key] !== undefined
+          ) {
             sum += 1;
           } else {
             sum += progressMap[feature.key] ?? 0;
