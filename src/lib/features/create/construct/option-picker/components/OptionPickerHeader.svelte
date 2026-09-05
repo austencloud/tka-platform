@@ -39,6 +39,7 @@
     showTurnControls?: boolean;
     showFilter: boolean;
     isContinuousOnly: boolean;
+    optionAvailability?: { shownCount: number; hiddenCount: number };
     onToggleContinuous?: (value: boolean) => void;
     // Level — gates which turn values the hands may take
     level: TurnLevel;
@@ -59,6 +60,7 @@
     showTurnControls = true,
     showFilter,
     isContinuousOnly,
+    optionAvailability,
     onToggleContinuous,
     level,
     onLevelChange,
@@ -78,24 +80,25 @@
   // Level 1 is base motions — there is nothing to dial, so the row isn't there.
   const turnsAvailable = $derived(level > 1);
 
-  // Icon-only: Level is the headline control on this band and the filter was
-  // spending 240px of it on two words. SegmentedControl renders the icon alone
-  // and keeps the label as the aria-label + hover title, so nothing is lost.
-  const filterOptions = $derived(
-    layout === "compact"
-      ? [
-          { value: "all", label: "All" },
-          { value: "continuous", label: "Continuous" },
-        ]
-      : [
-          { value: "all", label: "All", icon: "fas fa-asterisk" },
-          {
-            value: "continuous",
-            label: "Continuous",
-            icon: "fas fa-infinity",
-          },
-        ]
+  const hiddenCount = $derived(
+    isContinuousOnly ? (optionAvailability?.hiddenCount ?? 0) : 0
   );
+  const filterExplanation = $derived(
+    hiddenCount > 0
+      ? `${hiddenCount} dash/static options hidden because their spin direction reverses. Change CW/CCW or choose All to include them.`
+      : "Continuous keeps options that continue the previous spin direction."
+  );
+
+  // Inline controls use icons to leave room for Level. A hidden-option count
+  // belongs inside Continuous so changing spin direction explains its own result.
+  const filterOptions = $derived([
+    { value: "all", label: "All" },
+    {
+      value: "continuous",
+      label:
+        hiddenCount > 0 ? `Continuous. ${filterExplanation}` : "Continuous",
+    },
+  ]);
   const filterValue = $derived(isContinuousOnly ? "continuous" : "all");
 
   // One button per legal turn value at this level: L2 → 0 1 2 3,
@@ -133,7 +136,12 @@
   >
     <div class="oph-side start">
       {#if showFilter}
-        <div class="filter-seg" role="group" aria-label="Option filter">
+        <div
+          class="filter-seg"
+          role="group"
+          aria-label="Option filter"
+          title={filterExplanation}
+        >
           {#if layout === "compact"}
             <span class="control-label">Options</span>
           {/if}
@@ -145,7 +153,25 @@
             ghostKind="option-filter"
             toggleOnActivate
             onchange={(v) => onToggleContinuous?.(v === "continuous")}
-          />
+          >
+            {#snippet optionContent(value)}
+              <span class="filter-option">
+                {#if layout === "compact"}
+                  <span>{value === "all" ? "All" : "Continuous"}</span>
+                {:else}
+                  <i
+                    class={value === "all"
+                      ? "fas fa-asterisk"
+                      : "fas fa-infinity"}
+                    aria-hidden="true"
+                  ></i>
+                {/if}
+                {#if value === "continuous" && hiddenCount > 0}
+                  <span class="filter-hidden-count">{hiddenCount} hidden</span>
+                {/if}
+              </span>
+            {/snippet}
+          </SegmentedControl>
         </div>
       {/if}
     </div>
@@ -269,6 +295,7 @@
 <style>
   /* Header band: faint top gradient + hairline divider separate it from options. */
   .oph {
+    --filter-control-width: calc(var(--min-touch-target, 44px) * 2 + 66px);
     display: flex;
     flex-direction: column;
     /* No gap: the row/row spacing lives on .oph-turns-row's margin-top instead,
@@ -321,12 +348,24 @@
     display: none;
   }
 
-  /* Two genuine 44px targets plus the control's padding, gap, and border. This
-     must derive from the touch-target token rather than rem: the app
-     intentionally scales its root type size, which made rem-based filter
-     buttons narrower than 44px. */
+  /* Reserve room for the count even in All mode, so switching filters or spin
+     directions never pushes the level selector sideways. */
   .filter-seg {
-    width: calc(var(--min-touch-target, 44px) * 2 + 10px);
+    width: var(--filter-control-width);
+  }
+
+  .filter-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .filter-hidden-count {
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    white-space: nowrap;
   }
 
   /* The full level rail fits between equal counterweights at this width. Keep
@@ -335,8 +374,8 @@
   @container (width < 900px) {
     .oph:not(.compact) .oph-bar:not(.filter-only) {
       grid-template-columns:
-        minmax(calc(var(--min-touch-target, 44px) * 2 + 10px), 1fr) auto
-        minmax(calc(var(--min-touch-target, 44px) * 2 + 10px), 1fr);
+        minmax(var(--filter-control-width), 1fr) auto
+        minmax(var(--filter-control-width), 1fr);
     }
 
     .oph:not(.compact) :global(.level-selector) {
@@ -356,7 +395,7 @@
   @container (width < 1000px) {
     .oph:not(.compact) .oph-bar:not(.filter-only) {
       grid-template-columns:
-        calc(var(--min-touch-target, 44px) * 2 + 10px)
+        var(--filter-control-width)
         minmax(0, 1fr);
       gap: 10px;
     }

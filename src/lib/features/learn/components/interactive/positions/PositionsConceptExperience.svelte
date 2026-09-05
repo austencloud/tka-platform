@@ -79,12 +79,12 @@
   let boardHeight = $state(320);
 
   const instruction = $derived(
-    placement.activeHand === HandSide.LEFT
-      ? "Tap a point for your left hand."
-      : placement.activeHand === HandSide.RIGHT
-        ? "Now place your right hand."
-        : workshop.phase === "practice"
-          ? "Place both hands, then check your position."
+    workshop.feedback === "correct" && workshop.challenge
+      ? `Yes, ${POSITION_TYPE_INFO[workshop.challenge.kind].label}.`
+      : placement.activeHand === HandSide.LEFT
+        ? "Tap a point for your left hand."
+        : placement.activeHand === HandSide.RIGHT
+          ? "Now place your right hand."
           : "Choose a hand to move, then tap another point."
   );
 
@@ -133,9 +133,7 @@
     if (exploring && built) return POSITION_DEFINITIONS[built];
     if (!exploring && workshop.challenge?.guided)
       return POSITION_DEFINITIONS[workshop.challenge.kind];
-    return exploring
-      ? "Tap two grid points. You can use the same point twice."
-      : "Place both hands, then check your position.";
+    return "Tap two grid points. You can use the same point twice.";
   });
 
   function changed(change: PropPlacementChange) {
@@ -143,9 +141,9 @@
       change.leftLocation !== placement.leftLocation ||
       change.rightLocation !== placement.rightLocation;
     placement = change;
+    workshop.evaluatePlacement(change);
     if (!moved) return;
     actionNote = "";
-    workshop.edited();
     const kind = positionKindFor(change.leftLocation, change.rightLocation);
     if (exploring && kind) workshop.discover(kind);
   }
@@ -220,12 +218,6 @@
     else boardElement.focus();
   }
 
-  async function check() {
-    workshop.check(built);
-    await tick();
-    forwardButton?.focus();
-  }
-
   function finish() {
     if (workshop.canFinish) onComplete?.("hand-motions-intro");
   }
@@ -242,10 +234,10 @@
       {#if exploring}
         <span>Explore</span>
       {:else}
-        <span>{workshop.round} of {POSITION_CHALLENGES.length} built</span>
+        <span>{workshop.builtCount} of {POSITION_CHALLENGES.length} built</span>
         <progress
           max={POSITION_CHALLENGES.length}
-          value={workshop.round}
+          value={workshop.builtCount}
           aria-label="Positions built"
         ></progress>
       {/if}
@@ -273,20 +265,15 @@
         >
       {:else}
         <PanelButton onclick={explore}>Explore</PanelButton>
-        {#if workshop.feedback === "correct"}
-          <PanelButton variant="primary" bind:ref={forwardButton} onclick={next}
-            >{workshop.round === POSITION_CHALLENGES.length - 1
-              ? "Finish practice"
-              : "Next position"}</PanelButton
-          >
-        {:else}
-          <PanelButton
-            variant="primary"
-            bind:ref={forwardButton}
-            disabled={!built || placement.activeHand !== null}
-            onclick={check}>Check position</PanelButton
-          >
-        {/if}
+        <PanelButton
+          variant="primary"
+          bind:ref={forwardButton}
+          disabled={workshop.feedback !== "correct"}
+          onclick={next}
+          >{workshop.round === POSITION_CHALLENGES.length - 1
+            ? "Finish practice"
+            : "Next position"}</PanelButton
+        >
       {/if}
     </div>
   </nav>
