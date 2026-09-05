@@ -86,7 +86,7 @@ describe("museum rendering performance contract", () => {
     );
 
     expect(caveScenery).toContain("new InstancedMesh(");
-    expect(caveScenery).toContain('<T is={scenicRocks} />');
+    expect(caveScenery).toContain("<T is={scenicRocks} />");
     expect(caveScenery).not.toContain("useGltf");
     expect(caveScenery).not.toContain("source.clone(true)");
     expect(caveScenery).not.toContain("{#each rockInstances");
@@ -177,7 +177,7 @@ describe("museum rendering performance contract", () => {
       "src/lib/features/museum/components/game/Museum3DScene.svelte"
     );
     const pointLightSources = [
-      "DrownedGalleryGraybox.svelte",
+      "DrownedGalleryAuthored.svelte",
       "FirstFireGraybox.svelte",
       "EarthCanyonGraybox.svelte",
       "AirChimneyGraybox.svelte",
