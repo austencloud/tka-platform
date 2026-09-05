@@ -9,6 +9,30 @@
     "Together, split, and quarter timing crossed with same or opposite direction. See all six flow-arts modes with animations, definitions, history, and TKA examples.";
   const URL = "https://tkaflowarts.com/timing-and-direction";
 
+  const sources = [
+    {
+      date: "August 2002",
+      title: "How do you define a weave?",
+      preview:
+        "Spinners compare split and non-split timing, same and opposite direction, and how those combinations show up in weaves and butterflies.",
+      href: "https://www.homeofpoi.com/en/community/forums/topics/120838/How-do-you-define-a-weave",
+    },
+    {
+      date: "November 2002",
+      title: "Quarter-time butterflies",
+      preview:
+        "Jez names quarter-time butterflies in a discussion about concept moves and plane transitions. An early written use of quarter timing.",
+      href: "https://www.homeofpoi.com/en/community/forums/topics/122222/Concept-moves-and-why-make-lists",
+    },
+    {
+      date: "May 2009",
+      title: "Prop transitioning",
+      preview:
+        "Noel Yee separates timing from direction and works through transitions between the four original combinations.",
+      href: "https://www.homeofpoi.com/fr/community/forums/topics/887635/X-Post-Prop-Transitioning-Article",
+    },
+  ];
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -72,42 +96,33 @@
 
   <section class="history-sources" aria-labelledby="history-title">
     <h2 id="history-title">History & sources</h2>
-    <p>
-      These terms developed through community practice and teaching. Early poi
-      discussions document the vocabulary before VTG organized it into a
-      transition framework.
+    <p class="history-intro">
+      Read the community discussions behind the terminology.
     </p>
-    <ul>
-      <li>
-        <PanelButton
-          href="https://www.homeofpoi.com/en/community/forums/topics/120838/How-do-you-define-a-weave"
-        >
-          <span class="source-year">2002</span>
-          <span>Weave timing and direction discussions</span>
-          <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"
-          ></i>
-        </PanelButton>
-      </li>
-      <li>
-        <PanelButton
-          href="https://www.homeofpoi.com/en/community/forums/topics/122222/Concept-moves-and-why-make-lists"
-        >
-          <span class="source-year">2002</span>
-          <span>Jez describes quarter-time butterflies</span>
-          <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"
-          ></i>
-        </PanelButton>
-      </li>
-      <li>
-        <PanelButton
-          href="https://www.homeofpoi.com/fr/community/forums/topics/887635/X-Post-Prop-Transitioning-Article"
-        >
-          <span class="source-year">2009</span>
-          <span>Noel Yee’s prop-transition article</span>
-          <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"
-          ></i>
-        </PanelButton>
-      </li>
+    <ul class="source-cards">
+      {#each sources as source (source.href)}
+        <li>
+          <PanelButton href={source.href} fullWidth>
+            <span class="source-content">
+              <span class="source-meta">
+                <span
+                  ><i class="fa-regular fa-comments" aria-hidden="true"></i> Home
+                  of Poi</span
+                >
+                <span>{source.date}</span>
+              </span>
+              <strong class="source-title">{source.title}</strong>
+              <span class="source-preview">{source.preview}</span>
+              <span class="source-action"
+                >Read discussion <i
+                  class="fa-solid fa-arrow-up-right-from-square"
+                  aria-hidden="true"
+                ></i></span
+              >
+            </span>
+          </PanelButton>
+        </li>
+      {/each}
     </ul>
     <nav aria-label="More about timing and direction">
       <PanelButton href="/history"
@@ -131,13 +146,13 @@
     position: relative;
     margin: 0 auto;
     font-family: inherit;
-    max-width: min(var(--shell-w), 100rem);
-    padding: 88px 1.5rem 3rem;
+    max-width: min(var(--shell-w), 80rem);
+    padding: 88px 1.5rem 1.5rem;
   }
 
   .page-header {
     margin: 0.5rem 0 1.5rem;
-    text-align: left;
+    text-align: center;
   }
 
   h1 {
@@ -150,7 +165,7 @@
   }
 
   .page-subtitle {
-    margin: 0;
+    margin: 0 auto;
     max-width: 46rem;
     color: var(--theme-text-dim);
     font-size: 1rem;
@@ -158,9 +173,10 @@
   }
 
   .history-sources {
-    margin-top: 2.5rem;
-    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
     border-top: 1px solid var(--theme-stroke);
+    text-align: center;
   }
 
   .history-sources h2 {
@@ -169,36 +185,75 @@
     font-size: 1.25rem;
   }
 
-  .history-sources p {
+  .history-intro {
     max-width: 48rem;
-    margin: 0;
+    margin: 0 auto;
     color: var(--theme-text-dim);
     font-size: 1rem;
     line-height: 1.5;
   }
 
-  .history-sources ul {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+  .source-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
     padding: 0;
-    margin: 0.75rem 0;
+    margin: 1rem 0;
     list-style: none;
   }
 
-  .history-sources li {
-    font-size: 0.875rem;
+  .source-cards li {
+    min-width: 0;
   }
 
-  .source-year {
+  .source-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 0.75rem;
     color: var(--theme-text-dim);
+    font-size: 0.875rem;
     font-variant-numeric: tabular-nums;
   }
 
-  .history-sources :global(.panel-btn) {
+  .source-cards :global(.panel-btn) {
+    height: 100%;
+    align-items: stretch;
+    padding: 1rem;
     text-align: left;
-    font-size: 0.875rem;
-    line-height: 1.4;
+    background: rgb(from var(--theme-card-bg) r g b / 1);
+    border-radius: var(--radius-lg, 0.75rem);
+    white-space: normal;
+  }
+
+  .source-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .source-title {
+    font-size: 1.125rem;
+    line-height: 1.35;
+    font-weight: 650;
+  }
+
+  .source-preview {
+    color: var(--theme-text-dim);
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+
+  .source-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    font-size: 1rem;
   }
 
   .history-sources i {
@@ -208,8 +263,15 @@
   .history-sources nav {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 0.5rem;
     font-size: 0.875rem;
+  }
+
+  @media (max-width: 760px) {
+    .source-cards {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
   @media (max-width: 600px) {

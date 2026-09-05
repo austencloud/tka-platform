@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { validateTikaDirectorPlanTiming } from "$lib/features/stage/domain/tika-director-plan-validation";
+import {
+  validateTikaDirectorPlan,
+  validateTikaDirectorPlanTiming,
+} from "$lib/features/stage/domain/tika-director-plan-validation";
 import type {
   TikaDirectorConversationMessage,
   TikaDirectorResponse,
@@ -218,5 +221,131 @@ describe("TIKA plan timing admission", () => {
         )
       ).toBe(response);
     }
+  });
+});
+
+describe("TIKA arrange admission", () => {
+  const scene = {
+    id: "s",
+    name: "S",
+    bpm: 120,
+    currentBeat: 8,
+    performers: [{ id: "a", label: "A", characterId: "x-bot", prop: "staff" }],
+    formations: [{ atBeat: 0, presetId: "line" }],
+  };
+  type Action = Extract<
+    TikaDirectorResponse,
+    { kind: "apply" }
+  >["actions"][number];
+  const arrange = (fields: Record<string, string>) =>
+    ({ type: "arrange-formation", ...fields }) as Action;
+  const transition: Action = {
+    type: "formation-transition",
+    endFormation: "circle",
+    durationBeats: 4,
+  };
+  const applyPlan = (actions: Action[]): TikaDirectorResponse => ({
+    kind: "apply",
+    summary: "x",
+    actions,
+  });
+  const check = (prompt: string, actions: Action[]) =>
+    validateTikaDirectorPlan(
+      { prompt, conversation: [], scene },
+      applyPlan(actions)
+    );
+
+  it("rejects arranging and moving in one plan", () => {
+    const result = check("circle then wider over 4 beats", [
+      arrange({ shape: "circle" }),
+      transition,
+    ]);
+    expect(result.kind).toBe("unsupported");
+    expect(result).not.toHaveProperty("actions");
+  });
+
+  it("allows a shape followed by one spacing tweak", () => {
+    const plan = applyPlan([
+      arrange({ shape: "circle" }),
+      arrange({ spacing: "wider" }),
+    ]);
+    expect(
+      validateTikaDirectorPlan(
+        { prompt: "a wider circle", conversation: [], scene },
+        plan
+      )
+    ).toBe(plan);
+  });
+
+  it("allows a lone tweak and a lone shape", () => {
+    for (const actions of [
+      [arrange({ spacing: "tighter" })],
+      [arrange({ shift: "left" })],
+      [arrange({ shape: "line" })],
+    ]) {
+      const plan = applyPlan(actions);
+      expect(
+        validateTikaDirectorPlan(
+          { prompt: "whatever", conversation: [], scene },
+          plan
+        )
+      ).toBe(plan);
+    }
+  });
+
+  it.each([
+    [[arrange({ shape: "circle" }), arrange({ shape: "line" })]],
+    [[arrange({ spacing: "wider" }), arrange({ shape: "circle" })]],
+    [[arrange({})]],
+    [[arrange({ shape: "circle", spacing: "wider" })]],
+    [
+      [
+        arrange({ shape: "circle" }),
+        arrange({ spacing: "wider" }),
+        arrange({ shift: "left" }),
+      ],
+    ],
+  ])("rejects malformed arrangement sets", (actions) => {
+    const result = check("whatever", actions);
+    expect(result.kind).toBe("unsupported");
+    expect(result).not.toHaveProperty("actions");
+  });
+
+  it("asks when a count is present but the plan only arranges", () => {
+    const result = check("circle over 8 counts", [
+      arrange({ shape: "circle" }),
+    ]);
+    expect(result).toEqual({
+      kind: "clarify",
+      question: "Did you want them in a circle now, or a move over 8 counts?",
+    });
+  });
+
+  it("offers the arrange path when a transition lacks a count", () => {
+    expect(check("transition to a circle", [transition])).toEqual({
+      kind: "clarify",
+      question: "Arrange them in a circle now, or move over how many counts?",
+    });
+  });
+
+  it("accepts a count answered after the arrange-or-move question", () => {
+    const plan = applyPlan([{ ...transition, durationBeats: 8 }]);
+    expect(
+      validateTikaDirectorPlan(
+        {
+          prompt: "8",
+          conversation: [
+            { role: "user", content: "transition to a circle" },
+            {
+              role: "assistant",
+              content:
+                "Arrange them in a circle now, or move over how many counts?",
+            },
+          ],
+          scene,
+        },
+        plan
+      )
+    ).toBe(plan);
   });
 });

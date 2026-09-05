@@ -801,3 +801,66 @@ describe("assignPerformerSequences", () => {
     ).toThrow(/every performer/i);
   });
 });
+
+describe("stage choreography arrange transforms", () => {
+  function snapshotSpots(
+    state: ReturnType<typeof createStageChoreographyState>
+  ) {
+    return JSON.parse(
+      JSON.stringify(state.choreography.formations[0]!.spots)
+    ) as Record<string, { x: number; z: number }>;
+  }
+
+  it("scales the set about its centroid, marks it custom, and undoes in one step", () => {
+    const state = createStageChoreographyState();
+    const set = state.choreography.formations[0]!;
+    const before = snapshotSpots(state);
+    const ids = Object.keys(before);
+    const centerX =
+      ids.reduce((sum, id) => sum + before[id]!.x, 0) / ids.length;
+    const centerZ =
+      ids.reduce((sum, id) => sum + before[id]!.z, 0) / ids.length;
+
+    expect(state.transformFormationSpots(set.id, { scale: 1.15 })).toBe(true);
+
+    for (const id of ids) {
+      expect(set.spots[id]!.x).toBeCloseTo(
+        centerX + (before[id]!.x - centerX) * 1.15,
+        6
+      );
+      expect(set.spots[id]!.z).toBeCloseTo(
+        centerZ + (before[id]!.z - centerZ) * 1.15,
+        6
+      );
+    }
+    expect(set.presetId).toBe("custom");
+    expect(state.canUndo).toBe(true);
+    state.undo();
+    expect(snapshotSpots(state)).toEqual(before);
+    expect(state.canUndo).toBe(false);
+    state.destroy();
+  });
+
+  it("shifts every spot, clamps to the floor, and pushes one history entry", () => {
+    const state = createStageChoreographyState();
+    const set = state.choreography.formations[0]!;
+    const before = snapshotSpots(state);
+    const revision = state.historyRevision;
+
+    state.transformFormationSpots(set.id, { dz: -100 });
+
+    for (const id of Object.keys(before)) {
+      expect(set.spots[id]!.z).toBe(0);
+      expect(set.spots[id]!.x).toBeCloseTo(before[id]!.x, 6);
+    }
+    expect(state.historyRevision).toBe(revision + 1);
+    state.destroy();
+  });
+
+  it("returns false for an unknown set", () => {
+    const state = createStageChoreographyState();
+    expect(state.transformFormationSpots("nope", { dx: 1 })).toBe(false);
+    expect(state.canUndo).toBe(false);
+    state.destroy();
+  });
+});

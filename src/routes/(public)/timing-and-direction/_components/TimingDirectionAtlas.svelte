@@ -114,15 +114,7 @@
                   onclick={() => selectMode(mode.article.code)}
                 >
                   <span class="preview-label">
-                    <strong>
-                      <img
-                        src={mode.motion.element.iconPath}
-                        alt=""
-                        width="18"
-                        height="18"
-                      />
-                      {mode.article.code}
-                    </strong>
+                    <strong>{mode.article.code}</strong>
                     <i
                       class="fa-solid fa-check"
                       class:shown={selectedCode === mode.article.code}
@@ -132,6 +124,7 @@
                   <span class="preview-animation">
                     <HandMotionPlayer
                       sequence={mode.motion.sequence}
+                      showElementalGlyph
                       ariaLabel={mode.article.name}
                       interactive={false}
                       externalPlaying={playing}
@@ -149,16 +142,6 @@
                     />
                   </span>
                 </button>
-                <div class="article-action">
-                  <PanelButton
-                    href={mode.href}
-                    ariaLabel={`Read ${mode.article.name}`}
-                    accentColor={mode.motion.element.accentColor}
-                  >
-                    <i class="fa-solid fa-book-open" aria-hidden="true"></i>
-                    <span>Article</span>
-                  </PanelButton>
-                </div>
               </article>
             {/each}
           </div>
@@ -173,25 +156,15 @@
       style:--mode-accent={selected.motion.element.accentColor}
     >
       <header class="detail-heading" aria-live="polite" aria-atomic="true">
-        <img
-          src={selected.motion.element.iconPath}
-          alt=""
-          width="32"
-          height="32"
-        />
-        <div>
-          <h2 bind:this={detailHeading} tabindex="-1">
-            {selected.article.timing} time
-          </h2>
-          <p>
-            {selected.article.direction} direction
-            <span>· {selected.article.code}</span>
-          </p>
-        </div>
+        <h2 bind:this={detailHeading} tabindex="-1">
+          <span>Timing: {selected.article.timing}</span>
+          <span>Direction: {selected.article.direction}</span>
+        </h2>
       </header>
       <div class="detail-animation">
         <HandMotionPlayer
           sequence={selected.motion.sequence}
+          showElementalGlyph
           ariaLabel={`${selected.article.name}. Drag the playback bar to scrub.`}
           externalPlaying={playing}
           externalStep={currentStep}
@@ -204,10 +177,11 @@
         <p>Drag the bar to scrub.</p>
         <PanelButton
           href={selected.href}
+          ariaLabel={`Read ${selected.article.name} article`}
           accentColor={selected.motion.element.accentColor}
         >
           <i class="fa-solid fa-book-open" aria-hidden="true"></i>
-          Read {selected.article.code} article
+          Read article
         </PanelButton>
       </div>
       <div class="compare-action">
@@ -222,6 +196,7 @@
 
 <style>
   .atlas {
+    --sequence-seek-target-size: 48px;
     display: grid;
     gap: 1rem;
     min-width: 0;
@@ -230,7 +205,7 @@
   .atlas-toolbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 1rem;
   }
 
@@ -289,6 +264,7 @@
     font-size: 0.875rem;
     font-weight: 650;
     line-height: 1.25;
+    text-align: center;
   }
 
   .mode,
@@ -342,24 +318,27 @@
   }
 
   .preview-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.65rem 0.65rem 0;
-    font-size: 0.875rem;
+    position: relative;
+    display: block;
+    text-align: center;
+    padding: 0.75rem 1.5rem 0;
+    font-size: 1rem;
     line-height: 1.25;
   }
 
   .preview-label i {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.5rem;
     visibility: hidden;
-    color: var(--mode-accent);
+    color: var(--theme-text);
   }
 
   .preview-label strong {
-    color: var(--mode-accent);
-    display: inline-flex;
-    gap: 0.35rem;
-    align-items: center;
+    color: var(--theme-text);
+    display: grid;
+    gap: 0.125rem;
+    font-weight: 650;
   }
 
   .preview-label i.shown {
@@ -372,17 +351,6 @@
     aspect-ratio: 1.15;
     overflow: hidden;
     border-radius: inherit;
-  }
-
-  .article-action {
-    display: flex;
-    justify-content: center;
-    padding: 0 0.5rem 0.5rem;
-  }
-
-  .article-action :global(.panel-btn) {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
   }
 
   .preview:focus-visible {
@@ -405,22 +373,18 @@
   }
 
   .detail-heading {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
+    text-align: center;
     padding: 1rem;
-    min-height: 5.25rem;
-  }
-
-  .detail-heading img {
-    flex: 0 0 auto;
   }
 
   .detail-heading h2 {
+    display: grid;
+    gap: 0.125rem;
     margin: 0;
     color: var(--theme-text);
     font-size: clamp(1.25rem, 1rem + 0.4vw, 1.65rem);
     line-height: 1.25;
+    font-weight: 700;
     scroll-margin-top: 7rem;
   }
 
@@ -429,19 +393,9 @@
     outline-offset: 4px;
   }
 
-  .detail-heading p {
-    margin: 0.25rem 0 0;
-    color: var(--theme-text);
-    font-size: 1rem;
-    line-height: 1.3;
-  }
-
-  .detail-heading p span {
-    color: var(--theme-text-dim);
-  }
-
   .detail-animation {
-    width: 100%;
+    width: min(100%, 26rem);
+    margin-inline: auto;
     aspect-ratio: 1.08;
   }
 
@@ -493,11 +447,12 @@
     }
 
     .preview-label {
-      padding: 0.4rem 0.4rem 0;
+      padding: 0.65rem 0.2rem 0;
     }
-
-    .article-action i {
-      display: none;
+    .preview-label i {
+      top: 0.15rem;
+      right: 0.2rem;
+      font-size: 0.75rem;
     }
   }
 

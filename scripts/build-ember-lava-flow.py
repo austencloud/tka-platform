@@ -18,9 +18,9 @@ from mathutils.kdtree import KDTree
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "blender/ember-midflank-production-r5.blend"
-OUT = ROOT / "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-lava-flow-r1"
-BLEND = ROOT / "blender/ember-midflank-lava-flow-r1.blend"
-RAW = ROOT / "static/models/ember/ember-midflank-lava-flow-r1_raw.glb"
+OUT = ROOT / "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-lava-flow-r2"
+BLEND = ROOT / "blender/ember-midflank-lava-flow-r2.blend"
+RAW = ROOT / "static/models/ember/ember-midflank-lava-flow-r2_raw.glb"
 SPEC = ROOT / "docs/superpowers/specs/ember-spatial-directions"
 contract = json.loads((SPEC / "evidence/gate-2-geology-graybox-r5/ember-midflank-fire-pilgrimage-r5-coordinate-manifest.json").read_text())
 heights = np.fromfile(ROOT / contract["terrain"]["dataPath"], dtype="<f4").reshape(336,381)
@@ -69,6 +69,28 @@ mesh.materials.append(mat)
 mesh.update()
 bm=bmesh.new()
 bm.from_mesh(mesh)
+# Relax the coarse footprint before subdivision; rounding each original grid
+# corner alone leaves the rectangular bays recognizable from the performer.
+bm.verts.ensure_lookup_table()
+neighbours=[]
+for v in bm.verts:
+    edges=[e for e in v.link_edges if e.is_boundary] if v.is_boundary else list(v.link_edges)
+    neighbours.append([e.other_vert(v).index for e in edges])
+original=np.array([(v.co.x,v.co.z) for v in bm.verts])
+plan=original.copy()
+for iteration in range(48):
+    averaged=np.array([plan[links].mean(axis=0) if links else plan[i] for i,links in enumerate(neighbours)])
+    plan+=.45*(averaged-plan)
+# Modest non-periodic-looking variations break the long ruler-straight runs.
+# Apply the same continuous deformation to interior vertices to avoid folds.
+for i,(x,z) in enumerate(plan.copy()):
+    plan[i,0]+=.32*math.sin(z*.73+x*.17)+.14*math.sin(z*1.91-x*.39)
+    plan[i,1]+=.22*math.sin(x*.87-z*.23)+.09*math.sin(x*2.13+z*.41)
+for v in bm.verts:
+    x,z=plan[v.index]
+    v.co.y+=height(x,z)-height(v.co.x,v.co.z)
+    v.co.x,v.co.z=x,z
+bank_max_shift=float(np.linalg.norm(plan-original,axis=1).max())
 for v in bm.verts:
     if v.is_boundary:
         v.co.y=height(v.co.x,v.co.z)+.025
@@ -112,8 +134,8 @@ def intervals(z):
     return [(float(g[0]-190-.5),float(g[-1]-190+.5)) for g in groups if len(g)>1]
 
 
-# Across-channel coordinates bend with the measured deposit; longitudinal UV is
-# metres downhill. This is also the domain used by the moving thermal pattern.
+# glTF flips Blender's V. Author +Z here so exported V = 1-Z increases downhill;
+# both shader advection terms then travel in the same direction as the rafts.
 uv=surface.data.uv_layers.new(name='FlowMetres')
 for loop in surface.data.loops:
     p=surface.data.vertices[loop.vertex_index].co
@@ -125,7 +147,7 @@ for loop in surface.data.loops:
         if neighbours:
             span=min(neighbours,key=lambda s:abs((s[0]+s[1])*.5-p.x))
             centers.append((span[0]+span[1])*.5)
-    uv.data[loop.index].uv=(p.x-sum(centers)/len(centers) if centers else p.x,-p.z)
+    uv.data[loop.index].uv=(p.x-sum(centers)/len(centers) if centers else p.x,p.z)
 bank_tree=KDTree(len(bank_points))
 for index,p in enumerate(bank_points):
     bank_tree.insert(p,index)
@@ -207,5 +229,6 @@ OUT.mkdir(parents=True,exist_ok=True)
 bpy.ops.wm.save_as_mainfile(filepath=str(BLEND))
 bpy.ops.export_scene.gltf(filepath=str(RAW),export_format='GLB',use_selection=True,export_extras=True,export_yup=True,export_cameras=False,export_lights=False)
 report={'source':str(SOURCE.relative_to(ROOT)),'preservedMeshes':locked,'sourceTopCells':count,'flowVertices':len(surface.data.vertices),'flowFaces':len(surface.data.polygons),'roundedBoundaryVertices':boundary_count,'paths':len(paths),'pathSamples':sum(len(p) for p in paths),'fixedChannelClinkerRemoved':True,'terrainAndBenchUnchanged':True,'surfaceTreatment':'Welded top-only Catmull-Clark skin, two subdivisions; bank vertices meet original terrain. Original scientific reference is retained, not rendered.','nativeBlendSha256':hashlib.sha256(BLEND.read_bytes()).hexdigest()}
+report.update({'coarseBankRelaxationSteps':48,'maximumFootprintShiftMeters':bank_max_shift,'exportedFlowV':'1 - world Z; increasing V travels downhill','surfaceTreatment':'Coarse bank relaxation followed by restrained irregular plan deformation and two subdivisions. Final banks meet unchanged terrain; scientific reference remains hidden.'})
 (OUT/'build-report.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf8')
 print(json.dumps(report,indent=2))
