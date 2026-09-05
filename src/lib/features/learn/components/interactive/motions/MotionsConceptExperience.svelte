@@ -5,11 +5,14 @@
   never sends the learner backward through the lesson carousel.
 -->
 <script lang="ts">
+  import { onDestroy, tick } from "svelte";
   import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
+  import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
+  import { motionDuration } from "$lib/shared/transitions/motion";
   import { getConceptPlacesByLevel } from "../../../domain/concept-place-registry";
   import type { ExperienceViewMode } from "../../../domain/types";
   import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
@@ -98,6 +101,20 @@
   let comparisonPresented = $state(false);
   let comparisonBoard: TimingDirectionBoard | null = $state(null);
   let comparisonFocused = $state(false);
+  let experienceElement: HTMLDivElement;
+  let layoutRevision = 0;
+  const stageMotion = createLayoutMotion({
+    getRoot: () => experienceElement,
+    groups: [
+      { selector: ".stage-artifact", datasetKey: "stageArtifact" },
+      { selector: ".stage-controls", datasetKey: "stageControls" },
+    ],
+    getDuration: () => motionDuration(DURATION.emphasis),
+  });
+  onDestroy(() => {
+    ++layoutRevision;
+    stageMotion.cancel();
+  });
 
   if (viewMode !== "scroll" && savedStep !== (saved.step || 1)) {
     persistence.saveStep(savedStep);
@@ -127,8 +144,15 @@
       return;
     }
     if (clamped === stepIndex) return;
+    const revision = ++layoutRevision;
+    const captured = stageMotion.capture();
     comparisonPresented = false;
     stepIndex = clamped;
+    if (captured) {
+      void tick().then(() => {
+        if (revision === layoutRevision) stageMotion.play();
+      });
+    }
     persistence.saveStep(stepIndex + 1);
     persistence.savePhaseData(
       "stageSchemaVersion",
@@ -186,7 +210,9 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 <div
+  bind:this={experienceElement}
   class="motions-experience"
+  class:is-intro={!activeMotion && !isComparison}
   class:has-focused-comparison={comparisonFocused}
   onkeydown={handleKeydown}
   tabindex="0"
@@ -204,8 +230,10 @@
           {#if activeMotion}
             {activeMotion.guideCaption}
           {:else}
-            <span class="description-phrase">Compare when your hands move</span>
-            <span class="description-phrase">and which way they travel.</span>
+            <span class="description-phrase"
+              >When the hands reach the downbeat.</span
+            >
+            <span class="description-phrase">Which way they rotate.</span>
           {/if}
         </p>
       </LessonStageHeading>
@@ -292,6 +320,17 @@
 
   .motions-experience :global(.lesson-stage-frame) {
     --lesson-artifact-wide-max: var(--shell-w, 96rem);
+  }
+
+  .motions-experience.is-intro {
+    height: clamp(40rem, 80dvh, 50rem);
+    overflow: visible;
+  }
+
+  @media (max-width: 640px) {
+    .motions-experience.is-intro {
+      height: 46rem;
+    }
   }
 
   .motion-description {
