@@ -502,6 +502,7 @@ Uses organizer and sizer services for section grouping and sizing.
 
 {#snippet compactControls()}
   <OptionPickerHeader
+    {optionAvailability}
     layout="compact"
     showFilter={shouldShowFilterControl()}
     showTurnControls={turnControlsEditable}
@@ -522,6 +523,7 @@ Uses organizer and sizer services for section grouping and sizing.
 
 {#snippet inlineControls()}
   <OptionPickerHeader
+    {optionAvailability}
     showFilter={shouldShowFilterControl()}
     showTurnControls={turnControlsEditable}
     {isContinuousOnly}
@@ -563,6 +565,7 @@ Uses organizer and sizer services for section grouping and sizing.
       {#if useDisclosedCompactControls && !shouldUseSwipeLayout()}
         <div class="controls-corner">
           <OptionPickerControlsPopover
+            {optionAvailability}
             showFilter={shouldShowFilterControl()}
             showTurnControls={turnControlsEditable}
             {isContinuousOnly}

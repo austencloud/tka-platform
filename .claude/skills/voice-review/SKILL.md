@@ -37,7 +37,7 @@ Reviews voice command sessions recorded by the Voice Session Analysis System. Id
 
 2. **Review the output and identify actionable items:**
 
-   **T2 promotion candidates (3+ consistent LLM hits):** Suggest regex pattern + target sub-interpreter file in `src/lib/shared/voice-control/services/implementations/interpreters/`.
+   **T2 promotion candidates (3+ consistent LLM hits):** Suggest regex pattern + target sub-interpreter file in `src/lib/shared/voice-control/services/interpreters/`.
 
    **Recurring failures:** Missing command (suggest implementation) vs recognition issue (note only).
 

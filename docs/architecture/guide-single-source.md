@@ -18,7 +18,7 @@ Two parallel guide systems had diverged:
 | Coverage | 7 of ~34 pages (rest = placeholders) | Full, but thinner (e.g. Type 3 = 1 paragraph + a video vs the print page's breakdown + 2 sequences) |
 | Indexable | `noindex` | Indexable (canonical) |
 
-The rebuild tracker (`docs/superpowers/specs/2026-06-21-guide-rebuild-tracker.md`)
+The rebuild tracker (`docs/superpowers/specs/audits/2026-06-21-guide-rebuild-tracker.md`)
 scoped only the *printable* rebuild and never decided B's fate, so they drifted.
 The 2026-07-07 SEO pass then pointed Google at B (the thinner animated version) —
 not the faithful work being perfected in A. This ADR resolves it: **A is
@@ -42,7 +42,7 @@ onto `GuideReader` in Phase 2). The reader shell — nav, companion, click-to-
 animate — is the durable end-state UI; only the center *frame* swaps in Phase 2
 (sheet → reflow). The center is already a swappable snippet, and new pages should
 separate content from pt-position so a flow frame can consume them. Spec:
-`docs/superpowers/specs/2026-07-07-guide-reader-design.md`.
+`docs/superpowers/specs/shipped/2026-07-07-guide-reader-design.md`.
 
 **Phase 2 — at parity (faithful pages cover the whole guide):**
 1. Build the online **reflowable** view driven by the page **content**, not its
@@ -73,6 +73,6 @@ the interim indexable surface.
 
 ## Related
 
-- Tracker: `docs/superpowers/specs/2026-06-21-guide-rebuild-tracker.md`
+- Tracker: `docs/superpowers/specs/audits/2026-06-21-guide-rebuild-tracker.md`
 - SEO: `_components/GuideSeo.svelte`, `sitemap.xml/+server.ts`
 - `.claude/rules/sequence-viewer-shell.md` (same "one source, render twice" playbook)
