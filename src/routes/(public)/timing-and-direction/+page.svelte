@@ -2,6 +2,7 @@
   import Seo from "$lib/shared/components/Seo.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import TimingDirectionAtlas from "./_components/TimingDirectionAtlas.svelte";
+  import TimingDirectionModeCard from "./_components/TimingDirectionModeCard.svelte";
   import { TIMING_DIRECTION_ARTICLES } from "./_data/timing-direction-articles";
 
   const TITLE = "Timing and Direction in Flow Arts: All 6 Modes";
@@ -80,8 +81,8 @@
   };
 </script>
 
-<Seo title={TITLE} description={DESCRIPTION} canonical={URL} ogType="article">
-  {@html `<script type="application/ld+json">${JSON.stringify(jsonLd)}<\/script>`}
+<Seo title={TITLE} description={DESCRIPTION} canonical={URL}>
+  {@html `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}<\/script>`}
 </Seo>
 
 <div class="timing-page">
@@ -93,6 +94,15 @@
   </header>
 
   <TimingDirectionAtlas />
+
+  <nav class="mode-guides" aria-labelledby="mode-guides-title">
+    <h2 id="mode-guides-title">Mode guides</h2>
+    <div class="guide-links">
+      {#each TIMING_DIRECTION_ARTICLES as article (article.code)}
+        <TimingDirectionModeCard {article} />
+      {/each}
+    </div>
+  </nav>
 
   <section class="history-sources" aria-labelledby="history-title">
     <h2 id="history-title">History & sources</h2>
@@ -179,7 +189,8 @@
     text-align: center;
   }
 
-  .history-sources h2 {
+  .history-sources h2,
+  .mode-guides h2 {
     margin: 0 0 0.5rem;
     color: var(--theme-text);
     font-size: 1.25rem;
@@ -191,6 +202,28 @@
     color: var(--theme-text-dim);
     font-size: 1rem;
     line-height: 1.5;
+  }
+
+  .mode-guides {
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+
+  .guide-links {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .guide-links :global(.panel-btn) {
+    min-width: 0;
+    white-space: normal;
+  }
+
+  @media (min-width: 1100px) {
+    .guide-links {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
   }
 
   .source-cards {
@@ -275,6 +308,10 @@
   }
 
   @media (max-width: 600px) {
+    .guide-links {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .timing-page {
       max-width: 100%;
       padding: 76px 1rem 2rem;

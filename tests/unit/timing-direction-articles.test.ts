@@ -64,4 +64,25 @@ describe("timing and direction article cluster", () => {
       ).toEqual(article);
     }
   });
+
+  it("links each original mode to the matching FAI lesson, without inventing quarter pages", () => {
+    for (const article of TIMING_DIRECTION_ARTICLES) {
+      const fai = article.learningResources.find(({ url }) =>
+        url.startsWith("https://flowartsinstitute.com/")
+      );
+      if (article.timing === "Quarter") {
+        expect(fai).toBeUndefined();
+      } else {
+        expect(fai?.url).toBe(
+          `https://flowartsinstitute.com/portfolio-item/${article.slug}/`
+        );
+      }
+      expect(
+        new Set(article.learningResources.map(({ url }) => url)).size
+      ).toBe(article.learningResources.length);
+      for (const resource of article.learningResources) {
+        expect(new URL(resource.url).protocol).toBe("https:");
+      }
+    }
+  });
 });

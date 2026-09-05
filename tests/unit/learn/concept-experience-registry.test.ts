@@ -71,4 +71,14 @@ describe("concept experience registry", () => {
       "hand-motions-intro"
     );
   });
+
+  it("opens the dedicated timing reference while retaining the Guide association", () => {
+    expect(getConceptExperience("timing-and-direction")?.reference).toEqual({
+      href: "/timing-and-direction",
+      label: "Timing and Direction",
+    });
+    expect(
+      getConceptExperience("hand-motions-intro")?.reference
+    ).toBeUndefined();
+  });
 });

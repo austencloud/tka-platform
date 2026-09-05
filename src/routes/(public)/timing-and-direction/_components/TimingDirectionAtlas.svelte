@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import TimingDirectionIntro from "$lib/features/learn/components/interactive/motions/TimingDirectionIntro.svelte";
@@ -42,10 +43,12 @@
       role="group"
       aria-label="Playback for all six modes"
     >
-      <TransportControls
-        isPlaying={playback.playing}
-        onPlaybackToggle={() => (playback.playing = !playback.playing)}
-      />
+      {#if browser}
+        <TransportControls
+          isPlaying={playback.playing}
+          onPlaybackToggle={() => (playback.playing = !playback.playing)}
+        />
+      {/if}
       <span>All animations</span>
     </div>
   </div>
@@ -95,15 +98,17 @@
                       ></i>
                     </span>
                     <span class="preview-animation">
-                      <HandMotionPlayer
-                        sequence={mode.motion.sequence}
-                        showElementalGlyph
-                        ariaLabel={mode.article.name}
-                        interactive={false}
-                        externalPlaying={playback.playing}
-                        externalStep={playback.step}
-                        framed={false}
-                      />
+                      {#if browser}
+                        <HandMotionPlayer
+                          sequence={mode.motion.sequence}
+                          showElementalGlyph
+                          ariaLabel={mode.article.name}
+                          interactive={false}
+                          externalPlaying={playback.playing}
+                          externalStep={playback.step}
+                          framed={false}
+                        />
+                      {/if}
                     </span>
                   </button>
                 </article>
@@ -150,7 +155,9 @@
     class="intro"
     aria-label="Timing and direction lesson"
   >
-    <TimingDirectionIntro />
+    {#if browser}
+      <TimingDirectionIntro />
+    {/if}
     <div class="lesson-link">
       <PanelButton href="/learn/concepts/timing-and-direction">
         <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
