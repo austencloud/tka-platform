@@ -69,7 +69,7 @@
       aria-label={`Rows: ${rowsSpoken}`}
       in:flyFade={{ y: -4, duration: beat.rows.duration }}
     >
-      <span class="mark" aria-hidden="true">↓</span>
+      <i class="mark fas fa-arrow-down" aria-hidden="true"></i>
       {rows}
     </output>
   {/key}
@@ -84,7 +84,7 @@
         duration: beat.columns.duration,
       }}
     >
-      <span class="mark" aria-hidden="true">→</span>
+      <i class="mark fas fa-arrow-right" aria-hidden="true"></i>
       {columns}
     </output>
   {/key}
@@ -153,7 +153,7 @@
   }
 
   .mark {
-    font-weight: 800;
+    font-size: 0.9em;
   }
 
   .cross {

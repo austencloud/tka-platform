@@ -1,8 +1,9 @@
 <!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixGridCorner.svelte
   The grid's top-left corner is where rows and columns meet, so it holds the
-  controls that set them: Surprise on top, then the Rows ↓ value (blue, left
-  hand) aligned with the row headers below it, then the Columns → value (red,
-  right hand) aligned with the column headers beside it. Each value reads in
+  controls that set them: Surprise on top, then the Columns → value (red,
+  right hand) on the same band as the column headers beside it, then the
+  Rows ↓ value (blue, left hand) above the row headers below it. The reveal
+  still lands rows before columns, matching the grid. Each value reads in
   the chosen notation only. The relationship is not repeated here; the
   detail pane names it. Compact hosts get a bare legend and edit from the
   header, so this only becomes a control surface on wide layouts. -->
@@ -93,8 +94,8 @@
     <div class="corner-guide">
       <strong>Pick a crossing</strong>
       <span class="compact-axis" aria-hidden="true">
-        <span class="row-arrow">↓</span>
-        <span class="column-arrow">→</span>
+        <i class="column-arrow fas fa-arrow-right"></i>
+        <i class="row-arrow fas fa-arrow-down"></i>
       </span>
     </div>
   {:else}
@@ -113,24 +114,6 @@
 
       {#key appState.revealToken}
         <div
-          class="axis rows"
-          in:flyFade={{ y: -4, duration: beat.rows.duration }}
-        >
-          <span class="axis-mark" aria-hidden="true">↓</span>
-          {#if theory}
-            <ShapeMatrixRatioEntry
-              hand="left"
-              layout="corner"
-              onfocuschange={onratiofocuschange}
-            />
-          {:else}
-            <ShapeMatrixAxisStepper hand="left" layout="corner" />
-          {/if}
-        </div>
-      {/key}
-
-      {#key appState.revealToken}
-        <div
           class="axis columns"
           in:flyFade={{
             y: -4,
@@ -138,7 +121,7 @@
             duration: beat.columns.duration,
           }}
         >
-          <span class="axis-mark" aria-hidden="true">→</span>
+          <i class="axis-mark fas fa-arrow-right" aria-hidden="true"></i>
           {#if theory}
             <ShapeMatrixRatioEntry
               hand="right"
@@ -147,6 +130,24 @@
             />
           {:else}
             <ShapeMatrixAxisStepper hand="right" layout="corner" />
+          {/if}
+        </div>
+      {/key}
+
+      {#key appState.revealToken}
+        <div
+          class="axis rows"
+          in:flyFade={{ y: -4, duration: beat.rows.duration }}
+        >
+          <i class="axis-mark fas fa-arrow-down" aria-hidden="true"></i>
+          {#if theory}
+            <ShapeMatrixRatioEntry
+              hand="left"
+              layout="corner"
+              onfocuschange={onratiofocuschange}
+            />
+          {:else}
+            <ShapeMatrixAxisStepper hand="left" layout="corner" />
           {/if}
         </div>
       {/key}
@@ -282,12 +283,12 @@
     --axis-color: var(--prop-red-text, #f87171);
   }
 
+  /* Icon arrows: the text glyphs were too thin to read as arrows. */
   .axis-mark {
     flex: 0 0 auto;
-    width: 1em;
+    width: 1.1em;
     color: var(--axis-color);
-    font-size: clamp(0.85rem, 10cqi, 1.2rem);
-    font-weight: 800;
+    font-size: clamp(0.9rem, 11cqi, 1.3rem);
     text-align: center;
     line-height: 1;
   }
@@ -373,9 +374,8 @@
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    gap: 0.3rem;
-    font-size: clamp(0.85rem, 18cqi, 1.2rem);
-    font-weight: 800;
+    gap: 0.35rem;
+    font-size: clamp(0.9rem, 18cqi, 1.25rem);
   }
 
   .row-arrow {
