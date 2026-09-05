@@ -334,10 +334,57 @@
   }
 
   .motions-experience.has-focused-comparison {
-    height: min(100%, calc(min(100vw, 170rem) * 0.45 + 17rem));
+    container-type: size;
     min-height: 40rem;
     flex-shrink: 0;
     overflow: visible;
+  }
+
+  @media (min-width: 901px) {
+    .has-focused-comparison :global(.lesson-stage-frame) {
+      width: min(
+        100%,
+        var(--shell-w, 96rem),
+        calc((100cqh - 31rem) * 1.7142857 + clamp(17rem, 24cqw, 24rem) + 8rem)
+      );
+      min-width: min(100%, 52rem);
+      margin-inline: auto;
+      grid-template-rows: auto auto auto;
+      align-content: center;
+      gap: clamp(1.25rem, 2.5vh, 3rem);
+      padding-block: 4.5rem 2rem;
+    }
+
+    .has-focused-comparison :global(.stage-artifact) {
+      height: min(
+        calc(100cqh - var(--focused-reserve, 23rem)),
+        calc(
+          (
+              min(100cqw, var(--shell-w, 96rem)) - clamp(17rem, 24cqw, 24rem) -
+                8rem
+            ) /
+            1.7142857 + 6rem
+        )
+      );
+      min-height: 26rem;
+    }
+  }
+
+  @media (min-width: 2400px) {
+    .has-focused-comparison {
+      --focused-reserve: 26rem;
+    }
+  }
+
+  .has-focused-comparison :global(.stage-controls) {
+    width: 100%;
+    min-height: 0;
+    padding-block: 1.25rem;
+    border-top: 1px solid var(--theme-stroke);
+  }
+
+  .has-focused-comparison :global(.lesson-stage-controls) {
+    gap: clamp(1rem, 3vw, 3rem);
   }
 
   .motions-experience.is-intro {
@@ -443,7 +490,7 @@
   @media (max-width: 480px) {
     .motions-experience.has-focused-comparison,
     .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
-      min-height: 78rem;
+      min-height: 82rem;
     }
   }
 
