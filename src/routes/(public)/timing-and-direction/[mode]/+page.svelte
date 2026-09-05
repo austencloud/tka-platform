@@ -2,10 +2,9 @@
   import type { PageData } from "./$types";
   import { TIMING_DIRECTION_MODES } from "$lib/features/learn/components/interactive/foundations/pictograph-foundation-content";
   import Seo from "$lib/shared/components/Seo.svelte";
-  import HandMotionPlayer from "$lib/features/learn/components/interactive/foundations/HandMotionPlayer.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import { onMount } from "svelte";
-  import { reducedMotion } from "$lib/shared/transitions/motion";
+  import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
+  import { getTimingDirectionState } from "../_state/timing-direction-state.svelte";
   import TimingDirectionModeCard from "../_components/TimingDirectionModeCard.svelte";
   import {
     getTimingDirectionArticle,
@@ -14,10 +13,7 @@
 
   let { data }: { data: PageData } = $props();
 
-  let playing = $state(true);
-  onMount(() => {
-    if (reducedMotion()) playing = false;
-  });
+  const playback = getTimingDirectionState();
 
   const article = $derived(getTimingDirectionArticle(data.mode)!);
   const mode = $derived(
@@ -151,26 +147,12 @@
     <figure class="demonstration">
       <div class="demo-toolbar">
         <span>Hand paths</span>
-        <PanelButton
-          onclick={() => (playing = !playing)}
-          ariaLabel={playing ? "Pause animation" : "Play animation"}
-        >
-          <i
-            class="fa-solid {playing ? 'fa-pause' : 'fa-play'}"
-            aria-hidden="true"
-          ></i>
-          <span class="play-label">{playing ? "Pause" : "Play"}</span>
-        </PanelButton>
-      </div>
-      <div class="demo-canvas">
-        <HandMotionPlayer
-          sequence={mode.sequence}
-          ariaLabel={article.name}
-          externalPlaying={playing}
-          onExternalPlayingChange={(nextPlaying) => (playing = nextPlaying)}
-          framed={false}
+        <TransportControls
+          isPlaying={playback.playing}
+          onPlaybackToggle={() => (playback.playing = !playback.playing)}
         />
       </div>
+      <div class="demo-canvas" use:playback.registerTarget></div>
       <figcaption>
         Drag the bar to scrub. The blue and red hands show the relationship.
       </figcaption>
@@ -217,7 +199,7 @@
     margin: 0 auto;
     padding: 88px 1.5rem 3rem;
     color: var(--theme-text);
-    background: rgb(from var(--theme-panel-bg) r g b / 1);
+    background: var(--theme-panel-bg);
   }
   .page-nav {
     margin-bottom: 1.5rem;
@@ -285,32 +267,22 @@
     grid-row: 1 / span 2;
     min-width: 0;
     margin: 0;
-    overflow: hidden;
-    border-radius: var(--radius-lg, 0.75rem);
-    border: 1px solid
-      color-mix(in srgb, var(--mode-accent) 50%, var(--theme-stroke));
-    background: color-mix(
-      in srgb,
-      var(--mode-accent) 10%,
-      rgb(from var(--theme-panel-bg) r g b / 1)
-    );
   }
   .demo-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    padding: 0.75rem 1rem 0;
+    padding: 0 0 0.75rem;
     font-size: 1rem;
     font-weight: 600;
-  }
-  .play-label {
-    display: inline-block;
-    min-width: 2.75rem;
   }
   .demo-canvas {
     width: 100%;
     aspect-ratio: 1;
+  }
+  .demo-toolbar :global(.transport-controls) {
+    margin: 0;
   }
   figcaption {
     padding: 0.75rem 1rem 1rem;

@@ -12,6 +12,7 @@
     playbackAllowed = true,
     externalPlaying = null,
     externalStep = null,
+    initialStep = null,
     onExternalSeek = undefined,
     playbackGate = undefined,
     onExternalPlayingChange = undefined,
@@ -28,6 +29,7 @@
     playbackAllowed?: boolean;
     externalPlaying?: boolean | null;
     externalStep?: number | null;
+    initialStep?: number | null;
     onExternalSeek?: (step: number) => void;
     playbackGate?: RenderActivityGate;
     onExternalPlayingChange?: (playing: boolean) => void;
@@ -79,6 +81,7 @@
     resumeWhenPlaybackAllowed
     {externalPlaying}
     {externalStep}
+    {initialStep}
     {onExternalSeek}
     {playbackGate}
     {onExternalPlayingChange}
