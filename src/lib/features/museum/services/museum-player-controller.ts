@@ -56,13 +56,19 @@ export class MuseumPlayerController {
   /**
    * Convert a yaw angle (radians) to a compass facing string.
    * Quantizes to 8 directions.
+   *
+   * The look direction for a yaw is (sin yaw, cos yaw) on the XZ plane — the
+   * same convention the camera controller and the top-down mover use — so
+   * yaw 0 faces south (+Z), π/2 faces east (+X), π faces north (−Z). A visitor
+   * looking at an east-wall plaque must be told they face east, or the E key
+   * examines the empty air behind them.
    */
   yawToFacing(yaw: number): string {
     const a = ((yaw % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
     const idx = Math.round(a / (Math.PI / 4)) % 8;
     return [
-      "south", "southwest", "west", "northwest",
-      "north", "northeast", "east", "southeast",
+      "south", "southeast", "east", "northeast",
+      "north", "northwest", "west", "southwest",
     ][idx]!;
   }
 
