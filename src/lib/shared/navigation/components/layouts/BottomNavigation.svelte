@@ -84,6 +84,14 @@
       (availableWidth > 0 && availableWidth < requiredWidth)
   );
 
+  // The compact selector replaces the per-tab row, so the module's own name
+  // disappears from the bar. Hand it to the popover as its heading.
+  const currentModuleLabel = $derived(
+    MODULE_DEFINITIONS.find(
+      (module) => module.id === navigationState.currentModule
+    )?.label ?? ""
+  );
+
   // Handle tap on peek indicator to reveal navigation
   function handlePeekTap() {
     onRevealNav();
@@ -209,6 +217,7 @@
         {sectionHome}
         {onSectionHomeSelect}
         selectorLabel={sectionHome ? "Choose creation method" : "Select tab"}
+        moduleLabel={currentModuleLabel}
       />
     </div>
   {:else}
