@@ -2,6 +2,14 @@
 
 Scope: the shipped hand-positions experience, not a repository-wide code-quality grade.
 
+## Automatic confirmation follow-up
+
+Austen reported that a correctly built Gamma still required an unnecessary Check position click. Practice now evaluates each completed, committed placement through the existing workshop state owner. Correct answers immediately show the existing “Yes, {name}.” confirmation, checkmark, and updated built count. Next remains deliberate so the learner can inspect the result. The Check position action and its obsolete instruction are removed; existing approved placement and editing prompts are reused.
+
+Selecting a hand to edit invalidates confirmation until its placement is committed again, including when recommitting the same point. Incorrect answers retain the existing identification and one-hand correction. Incomplete placements and free exploration are not graded. Automatic confirmation preserves grid focus; Next still focuses the grid for the following round. No timer, shared-grid changes, or layout redesign.
+
+Verification: 30 focused tests passed; Svelte check reported zero errors and warnings. Browser checks covered all six builds through deliberate completion, Gamma correction and same-point recommit, and immediate progress updates. Inspected wide, 375×667 phone, and 1660×1540 tall-pane layouts with no horizontal overflow. The new behavior remains BUILT pending hands-on review.
+
 ## Proportion correction after hands-on rejection
 
 Austen rejected the September 5 alignment pass: the oversized grid still left a largely empty right rail. The earlier measurements below established fit, not appropriate proportions, and do not constitute approval of that composition.
