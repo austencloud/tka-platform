@@ -826,8 +826,8 @@ instead of showing an empty shell.
   {/if}
 {/snippet}
 
-{#if !signedIn && isYouSequences}
-  <AllLibraryView />
+{#if isYouSequences && (!isSideBySide || !signedIn)}
+  <AllLibraryView onBack={signedIn ? backToList : undefined} />
 {:else if isSideBySide && signedIn}
   <div class="library-split">
     <aside class="rail" aria-label="Your collections">
