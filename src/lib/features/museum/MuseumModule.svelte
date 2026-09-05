@@ -425,7 +425,8 @@
   {/if}
 
   <!-- The walk is the Museum. It renders behind the opaque loading gate and is
-       deferred long enough for that gate to reach the screen first. -->
+       deferred long enough for that gate to reach the screen first. The visitor
+       is on foot from the first frame; the 2D map is parked for now. -->
   {#if deferredReady}
     <div class="mode-content">
       {#key selectedRoom}
@@ -437,7 +438,7 @@
             onAllLoaded={handleAllLoaded}
             onLoadProgress={handleLoadProgress}
             onBuildStage={handleBuildStage}
-            startInFps={selectedRoom !== null}
+            startInFps={true}
             onWingChange={(id) => soundscapePlayer.setCurrentWing(id)}
             {performanceRecordingEnabled}
           />
