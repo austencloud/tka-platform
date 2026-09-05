@@ -1,6 +1,6 @@
 # Ember Broken Rift production contract
 
-**Status:** Mid-Flank Fire Pilgrimage Gate 2 R5 approved; Gate 3 authorized and pending; R4 and prior Gate 1/2 production is historical
+**Status:** Mid-Flank Fire Pilgrimage Gate 2 R5 approved; Gate 3 R5 material target ready for review; R4 and prior Gate 1/2 production is historical
 
 **Scene ID:** `ember-broken-rift`
 
@@ -23,7 +23,7 @@
 `lXhTllDFV2Ne1E7foCkS`, `Vwm6XTLdDbDfxuoVE7z9`,
 `5P5KVEq04dpHxu9F0ViI`, `Iur86OmZX40nTqdwgxDq`,
 `Szxybxm6NlLkPyPL6dQt`, `1hlrU13Dg8VqdQaLJPib`, and
-`3XyhXLyzv8ASNl2fLoCo`.
+`3XyhXLyzv8ASNl2fLoCo`; Gate 3 proposal `n37Lcgy1czQrqITMnB8f`.
 
 ## R5 regression notice
 
@@ -31,8 +31,8 @@ Mid-Flank Fire Pilgrimage R5 is the only active spatial candidate. Austen
 retained R4's colossal mid-flank direction but rejected its broad flat ledge in
 `Vwm6XTLdDbDfxuoVE7z9`. Gate 1.1 R5 is approved in
 `Szxybxm6NlLkPyPL6dQt`; Gate 2 R5 was approved in
-`3XyhXLyzv8ASNl2fLoCo` after review under `1hlrU13Dg8VqdQaLJPib`. Gate 3 is
-authorized and pending, and every later gate remains pending. The R5 Gate 1 sources are
+`3XyhXLyzv8ASNl2fLoCo` after review under `1hlrU13Dg8VqdQaLJPib`. Gate 3 R5 is
+ready for material-target review, and every later gate remains pending. The R5 Gate 1 sources are
 `scripts/build-ember-geology-study.py`,
 `scripts/prepare-ember-lava-simulator-benchmark.py`,
 and `scripts/build-ember-geology-amendment.py`. Current evidence lives in
@@ -41,7 +41,8 @@ and `scripts/build-ember-geology-amendment.py`. Current evidence lives in
 `evidence/gate-2-geology-graybox-r5/`. R4 and earlier Blender sources, GLBs,
 and Gate 2 evidence are historical only.
 
-Every later-gate section below is retained as historical production evidence,
+Except for the explicitly marked Gate 3 R5 material study, later-gate sections
+below are retained as historical production evidence,
 not as an active direction, approval, or implementation plan. The shipping
 Ember runtime, final materials, atmosphere, Meshy assets, and Meshy credits are
 unchanged by R5.
@@ -84,7 +85,7 @@ atmospheric systems, and unspent Meshy credits. It replaces the macro terrain,
 inboard basin, same-level source, lava footprint, and composition with a
 true-scale upper edifice, compound slanted mid-flank, small stable widening,
 gradually steepening lower country, and explicit off-world continuation. Gate
-1.1 R5 and Gate 2 R5 are approved; Gate 3 is authorized and pending, and all
+1.1 R5 and Gate 2 R5 are approved; Gate 3 R5 is ready for review, and all
 later gates are pending.
 
 ## Authority ledger
@@ -185,7 +186,26 @@ GLB. The muted old-flow material marks the whole geological contact, not a
 performer-centred stage. Final surface materials, ember response, runtime
 integration, and Meshy assets remain outside Gate 2. Austen approved this exact
 artifact in `3XyhXLyzv8ASNl2fLoCo`. R4 Gate 2 evidence remains historical under
-tracker `lXhTllDFV2Ne1E7foCkS`; Gate 3 is authorized and pending.
+tracker `lXhTllDFV2Ne1E7foCkS`; Gate 3 R5 is ready for material-target review.
+
+## Gate 3 R5: Cooled flank and crusted flow
+
+Proposal `n37Lcgy1czQrqITMnB8f` carries the approved source meshes and eleven
+cameras unchanged into an editable material/lighting study. The close AI
+paintover supplies the intended surface finish; exact Blender views provide
+registration evidence. The native study still contains coarse lava cells and
+graybox rock faces. Those are explicit production gaps, not accepted finish.
+
+- [Material brief and limitations](evidence/gate-3-midflank-r5/material-lighting-brief.md)
+- [Target board](evidence/gate-3-midflank-r5/ember-r5-material-target-board.png)
+- [Native orbit](evidence/gate-3-midflank-r5/ember-r5-orbit-board.png)
+- [Cold bench / optional ember peak](evidence/gate-3-midflank-r5/ember-r5-ember-comparison.png)
+- [Exact camera/geometry checks](evidence/gate-3-midflank-r5/registered-target-report.json)
+- [Image-generation prompts and rejected drift](evidence/gate-3-midflank-r5/imagegen-provenance.json)
+
+The cold bench is recommended. The ember alternate is a static visual trial,
+not an implemented pulse. Gate 3 awaits human judgment; Gate 4 remains pending.
+Runtime assets and Meshy credits are unchanged.
 
 ### Historical R3 Gate 2 evidence
 
