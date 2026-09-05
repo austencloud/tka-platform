@@ -89,7 +89,7 @@
   <header class="page-header">
     <h1>Timing and Direction</h1>
     <p class="page-subtitle">
-      Compare the timing and direction of the blue and red hands.
+      These relationships apply to hands, props, and prop ends.
     </p>
   </header>
 

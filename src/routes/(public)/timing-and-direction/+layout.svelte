@@ -42,6 +42,7 @@
            (see SSR_STUBBED_SHARED_RENDER_PATHS), so the canvas mounts client-only. -->
       {#if browser}
         <HandMotionPlayer
+          neutralMarkers
           sequence={playback.selected.motion.sequence}
           initialStep={playback.step}
           ariaLabel={playback.selected.article.name}

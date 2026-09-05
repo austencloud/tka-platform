@@ -231,9 +231,8 @@
             {activeMotion.guideCaption}
           {:else}
             <span class="description-phrase"
-              >When the hands reach the downbeat.</span
+              >These relationships apply to hands, props, and prop ends.</span
             >
-            <span class="description-phrase">Which way they rotate.</span>
           {/if}
         </p>
       </LessonStageHeading>

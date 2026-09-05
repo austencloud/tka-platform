@@ -17,21 +17,20 @@
     together: {
       x: 0,
       y: 54,
-      description: "Both hands reach the downbeat together.",
+      description: "Both reach the downbeat together.",
       offset: "",
     },
     split: {
       x: 0,
       y: -54,
-      description: "The hands are on opposite sides of their circles.",
+      description: "Their downbeats alternate evenly.",
       offset: "Half a cycle apart.",
     },
     quarter: {
       x: -54,
       y: 0,
-      description:
-        "When either hand reaches the downbeat, the other is at the side.",
-      offset: "A quarter cycle apart.",
+      description: "Their downbeats are a quarter cycle apart.",
+      offset: "",
     },
   };
   let timingMode = $state<TimingMode>("together");
@@ -47,8 +46,7 @@
   <section class="concept-panel timing-panel" aria-labelledby="timing-heading">
     <h3 id="timing-heading">Timing</h3>
     <p class="concept-prose">
-      Timing compares when each hand reaches the bottom of its circle: the
-      downbeat.
+      Timing compares when the two motions reach their downbeats.
     </p>
     <div
       class="instrument"
@@ -58,15 +56,15 @@
     >
       <Crossfade key={timingMode} fill>
         <svg viewBox="0 0 320 160" aria-hidden="true">
-          <!-- A still moment at the left hand's downbeat: no direction implied. -->
+          <!-- A downbeat snapshot isolates timing without implying rotation. -->
           <g class="blue" transform="translate(80 80)">
             <circle class="cycle-reference" r="54" />
-            <circle class="hand-marker" cx="0" cy="54" r="10" />
+            <circle class="motion-marker" cx="0" cy="54" r="10" />
           </g>
           <g class="red" transform="translate(240 80)">
             <circle class="cycle-reference" r="54" />
             <circle
-              class="hand-marker"
+              class="motion-marker"
               cx={timingDetail.x}
               cy={timingDetail.y}
               r="10"
@@ -102,20 +100,19 @@
   >
     <h3 id="direction-heading">Direction</h3>
     <p class="concept-prose">
-      Direction compares the hands’ rotation: circling the same way or opposite
-      ways.
+      Direction compares rotation: circling the same way or opposite ways.
     </p>
     <div
       class="instrument"
       data-direction={directionMode}
       role="img"
       aria-label={directionMode === "same"
-        ? "Same rotation: both hands circle clockwise."
-        : "Opposite rotation: the left hand circles clockwise and the right hand circles counterclockwise."}
+        ? "Same rotation: both circle clockwise."
+        : "Opposite rotation: one circles clockwise and the other counterclockwise."}
     >
       <Crossfade key={directionMode} fill>
         <svg viewBox="0 0 320 160" aria-hidden="true">
-          <!-- Static rotation symbols have no hand positions or rhythm. -->
+          <!-- Static rotation symbols have no positions or rhythm. -->
           <g class="blue" transform="translate(80 80)">
             <path class="rotation-arc" d="M-38.184 38.184A54 54 0 1 1 54 0" />
             <path
@@ -228,7 +225,7 @@
   .red {
     color: var(--prop-red, #ed1c24);
   }
-  .hand-marker,
+  .motion-marker,
   .arrowhead {
     fill: currentColor;
   }
