@@ -7,8 +7,14 @@ import { fileURLToPath } from "node:url";
 const require = createRequire(import.meta.url);
 const cliModule = require.resolve("@gltf-transform/cli");
 const cliEntry = resolve(dirname(cliModule), "../bin/cli.js");
-const alphaModeStep = fileURLToPath(
-  new URL("./character-alpha-modes.mjs", import.meta.url)
+// Resolved from this module's own directory rather than through
+// `new URL("./...", import.meta.url)`. That literal pattern is Vite's
+// asset-URL syntax, so under the Vitest transform it rewrites to an http URL
+// that `fileURLToPath` rejects, which made every importer of this module fail
+// to load in tests. Node resolves the same absolute path either way.
+const alphaModeStep = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "character-alpha-modes.mjs"
 );
 
 export function buildCharacterOptimizationSteps(
