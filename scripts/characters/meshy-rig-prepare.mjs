@@ -33,14 +33,6 @@ const MESHY_MATERIAL_EXTENSIONS = [
   "KHR_materials_ior",
 ];
 
-function nodeParents(nodes) {
-  const parents = new Map();
-  nodes.forEach((node, index) => {
-    for (const child of node.children ?? []) parents.set(child, index);
-  });
-  return parents;
-}
-
 /**
  * Rename the spine bones between Hips and the neck by hierarchy order.
  * Returns the list of changes; an already canonical rig returns none.

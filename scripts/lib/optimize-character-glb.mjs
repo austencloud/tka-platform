@@ -10,6 +10,9 @@ const cliEntry = resolve(dirname(cliModule), "../bin/cli.js");
 const alphaModeStep = fileURLToPath(
   new URL("./character-alpha-modes.mjs", import.meta.url)
 );
+const glossWorkflowStep = fileURLToPath(
+  new URL("./character-gloss-workflow.mjs", import.meta.url)
+);
 
 /**
  * Texture ceilings the catalog can carry. 1024 is the deployed default: every
@@ -61,9 +64,11 @@ export function buildCharacterOptimizationSteps(
  * three can alter a skinned character and the latter two need decoders that the
  * character loader does not install.
  *
- * A final pass corrects materials the source export mislabelled as blends. It
- * runs last, after dedup has settled which texture each material samples, and
- * in its own process so this function stays synchronous.
+ * Two final passes correct what the source export got wrong: materials
+ * mislabelled as blends, and specular/glossiness sheets Blender handed over as
+ * metallic-roughness. They run last, after dedup has settled which texture
+ * each material samples, and in their own process so this function stays
+ * synchronous.
  */
 export function optimizeCharacterGlb({
   input,
@@ -111,6 +116,10 @@ export function optimizeCharacterGlb({
 
   onStep("alpha-modes");
   execFileSync(process.execPath, [alphaModeStep, destination], {
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  onStep("gloss-workflow");
+  execFileSync(process.execPath, [glossWorkflowStep, destination], {
     stdio: ["ignore", "pipe", "pipe"],
   });
 

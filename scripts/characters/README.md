@@ -35,6 +35,14 @@ Use `--replace` to rebuild an existing intake directory. `--skip-optimize` and
 `--skip-thumbnail` exist for diagnostics and tests; their warnings prevent the
 output from looking like a completed production build.
 
+The optimizer ends with two material passes. The first re-measures alpha modes
+so a body mislabelled `BLEND` does not draw see-through. The second recognises
+a Mixamo non-PBR export by its `*_Glossiness` sheet: Blender hands that sheet
+over as metallic-roughness without inverting it and leaves a 0.5 metallic
+factor, so cotton renders as half-metal latex. The pass turns glossiness into
+roughness, clears the metallic channel and factor, and leaves any file without
+a glossiness sheet untouched.
+
 ## Batch: a folder of downloads at once
 
 Stamp a sidecar beside each download instead of editing JSON by hand. The two
