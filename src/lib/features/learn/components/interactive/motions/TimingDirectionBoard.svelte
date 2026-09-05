@@ -267,6 +267,7 @@
         <div class="study-surfaces" inert={!!focusedMode && !isFocused}>
           <div class="mode-player">
             <HandMotionPlayer
+              neutralMarkers
               sequence={mode.sequence}
               ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
               showElementalGlyph={false}
