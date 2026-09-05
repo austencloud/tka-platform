@@ -141,7 +141,6 @@ describe("TIKA Stage direction interpreter", () => {
     "Give every performer a different prop?",
     "Make all of the avatars female and give them different props",
     "Make every avatar different and leave gender unconstrained",
-    "Transition to a circle",
     "Make the lighting feel haunted",
     "Move to a circle over 0 beats",
     "Move to a circle over 65 beats",
@@ -153,5 +152,94 @@ describe("TIKA Stage direction interpreter", () => {
     "Move to a circle over 4 beats; do not change anything yet",
   ])("defers the entire request without mutation: %s", (prompt) => {
     expect(interpretStageDirectionLocally(prompt)).toBeNull();
+  });
+
+  it.each([
+    ["Could you put them in a line", "line"],
+    ["Could you put them in a line?", "line"],
+    ["line", "line"],
+    ["circle please", "circle"],
+    ["Put them in a V", "v-shape"],
+    ["make a circle", "circle"],
+    ["arrange them in a line", "line"],
+    ["move to a line", "line"],
+    ["go to a circle", "circle"],
+    ["Transition to a circle", "circle"],
+    ["snap them into a circle right now", "circle"],
+    ["circle formation", "circle"],
+    ["form a ring", "circle"],
+    ["hey tika, put them in a row", "line"],
+    ["2x2 grid", "grid-2x2"],
+  ])("arranges the cast now for a bare shape: %s", (prompt, shape) => {
+    expect(
+      interpretStageDirectionLocally(prompt, { currentBeat: 0 })
+    ).toMatchObject({
+      kind: "apply",
+      summary: expect.stringMatching(/at count 0\. Say "over 8 counts"/),
+      actions: [{ type: "arrange-formation", shape }],
+    });
+  });
+
+  it.each([
+    ["wider", { spacing: "wider" }],
+    ["a bit wider", { spacing: "wider" }],
+    ["tighter", { spacing: "tighter" }],
+    ["closer together", { spacing: "tighter" }],
+    ["spread them out", { spacing: "wider" }],
+    ["make it tighter", { spacing: "tighter" }],
+    ["shift them left", { shift: "left" }],
+    ["move them forward", { shift: "forward" }],
+    ["back", { shift: "back" }],
+    ["everyone to the right", { shift: "right" }],
+    ["nudge them toward the audience", { shift: "forward" }],
+    ["upstage", { shift: "back" }],
+  ])("tweaks the current set locally: %s", (prompt, fields) => {
+    const result = interpretStageDirectionLocally(prompt, { currentBeat: 8 });
+    expect(result).toMatchObject({
+      kind: "apply",
+      summary: expect.stringMatching(/at count 8\./),
+      actions: [{ type: "arrange-formation", ...fields }],
+    });
+    if (result?.kind === "apply") {
+      expect(Object.keys(result.actions[0]!)).toHaveLength(2);
+    }
+  });
+
+  it.each([
+    "more",
+    "a wider circle",
+    "put A in front",
+    "wider on the left side",
+    "circle over 8 counts then wider",
+    "put them in a heart",
+    "line in 4",
+  ])(
+    "defers relative, scoped, or counted arrangement to the model: %s",
+    (prompt) => {
+      const result = interpretStageDirectionLocally(prompt, { currentBeat: 0 });
+      if (result?.kind === "apply") {
+        expect(result.actions[0]!.type).not.toBe("arrange-formation");
+      } else {
+        expect(result).toBeNull();
+      }
+    }
+  );
+
+  it("keeps a counted shape a move, not an arrangement", () => {
+    expect(
+      interpretStageDirectionLocally("Move to a line over 8 counts", {
+        currentBeat: 4,
+      })
+    ).toMatchObject({
+      kind: "apply",
+      summary: expect.stringMatching(/over 8 counts, starting at count 4/),
+      actions: [
+        {
+          type: "formation-transition",
+          endFormation: "line",
+          durationBeats: 8,
+        },
+      ],
+    });
   });
 });
