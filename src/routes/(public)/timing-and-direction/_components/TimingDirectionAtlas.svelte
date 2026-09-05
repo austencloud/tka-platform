@@ -114,9 +114,7 @@
                   onclick={() => selectMode(mode.article.code)}
                 >
                   <span class="preview-label">
-                    <strong>
-                      {mode.article.timing} <span>{mode.article.direction}</span>
-                    </strong>
+                    <strong>{mode.article.code}</strong>
                     <i
                       class="fa-solid fa-check"
                       class:shown={selectedCode === mode.article.code}
