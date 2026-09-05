@@ -116,11 +116,6 @@ export class TrainingDataPersister {
     });
   }
 
-  async listByPhase(phase: number): Promise<TrainingPair[]> {
-    const all = await this.list();
-    return all.filter((p) => p.input.phase === phase);
-  }
-
   async delete(id: string): Promise<void> {
     const db = this.getDb();
     const tx = db.transaction(STORES.PAIRS, "readwrite");
@@ -159,21 +154,6 @@ export class TrainingDataPersister {
     }
 
     return stats;
-  }
-
-  async syncToFirebase(): Promise<number> {
-    // Firebase sync is a planned feature.
-    // For now, return 0 to indicate no pairs synced.
-    // Implementation will follow the R2VideoUploader pattern
-    // when Firebase storage for training data is set up.
-    console.warn(
-      "[TrainingDataPersister] Firebase sync not yet implemented"
-    );
-    return 0;
-  }
-
-  async exportAll(): Promise<TrainingPair[]> {
-    return this.list();
   }
 
   close(): void {
