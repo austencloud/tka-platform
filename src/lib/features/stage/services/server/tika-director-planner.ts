@@ -68,6 +68,8 @@ export async function planStageDirection(
       providerOptions: { anthropic: { structuredOutputMode: "jsonTool" } },
       maxOutputTokens: 1_024,
       maxRetries: 0,
+      // Same words, same plan, as far as a hosted model allows.
+      temperature: 0,
       abortSignal: signal,
       system:
         TIKA_DIRECTOR_SYSTEM_PROMPT +

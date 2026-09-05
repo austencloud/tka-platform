@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { interpretStageDirectionLocally } from "$lib/features/stage/domain/tika-director-interpreter";
+import {
+  interpretConversationLocally,
+  interpretStageDirectionLocally,
+} from "$lib/features/stage/domain/tika-director-interpreter";
 import { TIKA_DIRECTOR_FORMATIONS } from "$lib/features/stage/domain/tika-director";
 
 describe("TIKA Stage direction interpreter", () => {
@@ -241,5 +244,86 @@ describe("TIKA Stage direction interpreter", () => {
         },
       ],
     });
+  });
+});
+
+describe("TIKA conversation-aware local interpretation", () => {
+  const beat = { currentBeat: 4 };
+  const user = (content: string) => ({ role: "user" as const, content });
+  const tika = (content: string) => ({ role: "assistant" as const, content });
+
+  it("reads a complete command with no history exactly like the bare interpreter", () => {
+    expect(
+      interpretConversationLocally("put them in a line", [], beat)
+    ).toEqual(interpretStageDirectionLocally("put them in a line", beat));
+  });
+
+  it("keeps reading locally while every earlier turn was local too", () => {
+    const history = [
+      user("put them in a line"),
+      tika("Arranged the cast in a line at count 0."),
+    ];
+    expect(interpretConversationLocally("wider", history, beat)).toMatchObject({
+      kind: "apply",
+      actions: [{ type: "arrange-formation", spacing: "wider" }],
+    });
+  });
+
+  it("defers to the model once any earlier turn needed the model", () => {
+    const history = [
+      user("never use fans"),
+      tika("Understood. I will keep fans out of every assignment."),
+    ];
+    expect(
+      interpretConversationLocally(
+        "give every performer a different prop",
+        history,
+        beat
+      )
+    ).toBeNull();
+  });
+
+  it("defers to the model while a question is pending", () => {
+    const history = [
+      user("put them in a line"),
+      tika("Arrange them in a line now, or move over how many counts?"),
+    ];
+    expect(interpretConversationLocally("wider", history, beat)).toBeNull();
+  });
+
+  it.each(["more", "again", "a bit more", "even more", "More!"])(
+    "repeats the last tweak for: %s",
+    (prompt) => {
+      const history = [
+        user("a bit wider"),
+        tika("Spread the cast wider at count 0."),
+      ];
+      expect(interpretConversationLocally(prompt, history, beat)).toMatchObject(
+        {
+          kind: "apply",
+          summary: "Spread the cast wider at count 4.",
+          actions: [{ type: "arrange-formation", spacing: "wider" }],
+        }
+      );
+    }
+  );
+
+  it("repeats a shift the same way", () => {
+    const history = [
+      user("shift them left"),
+      tika("Shifted the cast left at count 0."),
+    ];
+    expect(interpretConversationLocally("more", history, beat)).toMatchObject({
+      actions: [{ type: "arrange-formation", shift: "left" }],
+    });
+  });
+
+  it("has nothing to repeat after a shape or with no history", () => {
+    const history = [
+      user("put them in a line"),
+      tika("Arranged the cast in a line at count 0."),
+    ];
+    expect(interpretConversationLocally("more", history, beat)).toBeNull();
+    expect(interpretConversationLocally("more", [], beat)).toBeNull();
   });
 });
