@@ -212,20 +212,31 @@ describe("shape matrix mandala continuity", () => {
     expect(popover).toMatch(/\.turn-popover \{[^}]*width: max-content/);
     expect(popover).not.toMatch(/Drawer/);
     const shell = read("app/components/ShapeMatrixAppShell.svelte");
-    expect(shell).toContain(
-      "<ShapeMatrixTurnControls onturn={appState.setTurn} />"
+    // The axis values are edited from the recipe bar the grid owns, on both
+    // surfaces; the header keeps no turn ribbon of its own. Each axis has its
+    // own control, so no Apply-to target and no "Mixed" placeholder exist.
+    expect(shell).not.toContain("ShapeMatrixTurnControls");
+    expect(shell).not.toContain("ShapeMatrixAxisControl");
+    expect(shell).toContain("<ShapeMatrixTurnPopover");
+    const matrixPane = read("app/components/ShapeMatrixMatrixPane.svelte");
+    const theoryPane = read("app/components/ShapeMatrixTheoryPane.svelte");
+    expect(matrixPane).toContain("<ShapeMatrixRecipeBar");
+    expect(theoryPane).toContain("<ShapeMatrixRecipeBar");
+    const recipeBar = read("app/components/ShapeMatrixRecipeBar.svelte");
+    expect(recipeBar).toContain("<ShapeMatrixAxisStepper hand=\"left\"");
+    expect(recipeBar).toContain("<ShapeMatrixAxisStepper hand=\"right\"");
+    expect(recipeBar).toContain("Surprise me");
+    expect(recipeBar).not.toContain("Mixed");
+    const controls = read("app/components/ShapeMatrixTurnControls.svelte");
+    expect(controls).not.toContain("Apply to");
+    expect(controls).not.toContain("mixed");
+    // The tray edits a named axis and stays on the detail pane.
+    expect(popover).toContain("appState.setTurnFor(hand, turn, { stayOnDetail: true })");
+    // Surprise lives with the grid; the header shows a dice only while a
+    // compact detail view has hidden the bar.
+    expect(shell).toMatch(
+      /activeView === "detail"\}\s*\{@render compactSurpriseAction\(\)\}/
     );
-    expect(shell).toContain("<ShapeMatrixTurnPopover />");
-    // The chip serves both compact panes; the four-group ribbon is wide-only,
-    // so a phone matrix view keeps the grid as the hero. Checked by nesting
-    // rather than adjacency: the surface tab put a header-meta row and a
-    // surface guard between the two, and neither of those weakens the rule.
-    const compactGuard = shell.indexOf("{#if !appState.compact}");
-    const ribbon = shell.indexOf('<div class="matrix-controls"');
-    expect(compactGuard).toBeGreaterThan(-1);
-    expect(ribbon).toBeGreaterThan(compactGuard);
-    expect(shell.split('<div class="matrix-controls"')).toHaveLength(2);
-    expect(shell).not.toMatch(/activeView === "matrix"\}\s*<div class="matrix-controls">/);
     expect(shell).toContain("runMandalaMorph");
   });
 

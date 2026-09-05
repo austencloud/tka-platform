@@ -173,3 +173,13 @@ describe("One Stage ownership", () => {
     ).toThrow();
   });
 });
+
+describe("TIKA distinct sequences wiring", () => {
+  it("applies assign-distinct-sequences through the stage document, not the viewer", () => {
+    const stage = read(STAGE);
+    expect(stage).toContain("resolveDirectorSequenceAssignments");
+    expect(stage).toContain("stageState.assignPerformerSequences(");
+    expect(stage).toContain("listLibrarySequences");
+    expect(stage).not.toContain("loadSequenceScoped(");
+  });
+});

@@ -75,4 +75,45 @@ describe("TIKA Director independent review", () => {
     expect(result.response).toBe(response);
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  it("tells the reviewer what assign-distinct-sequences can and cannot do", async () => {
+    let system = "";
+    const fetch = vi.fn(async (_url, init) => {
+      const body = JSON.parse(init!.body as string);
+      system = Array.isArray(body.system)
+        ? body.system.map((part: { text: string }) => part.text).join("\n")
+        : body.system;
+      return Response.json({
+        id: "msg_review",
+        type: "message",
+        role: "assistant",
+        model: "claude-sonnet-5",
+        content: [
+          {
+            type: "tool_use",
+            id: "tool_review",
+            name: "json",
+            input: { verdict: "accept", message: "ok" },
+          },
+        ],
+        stop_reason: "tool_use",
+        stop_sequence: null,
+        usage: { input_tokens: 50, output_tokens: 10 },
+      });
+    });
+    const provider = createAnthropic({ apiKey: "test-only", fetch });
+    const sequences: TikaDirectorResponse = {
+      kind: "apply",
+      summary: "Assign a different library sequence to every performer.",
+      actions: [{ type: "assign-distinct-sequences" }],
+    };
+    const result = await reviewStageDirection(
+      provider("claude-sonnet-5"),
+      { ...request, scene: { ...request.scene, librarySequenceCount: 5 } },
+      sequences
+    );
+    expect(result.response).toBe(sequences);
+    expect(system).toContain("assign-distinct-sequences");
+    expect(system).toMatch(/librarySequenceCount/);
+  });
 });
