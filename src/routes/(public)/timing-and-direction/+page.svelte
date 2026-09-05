@@ -1,6 +1,6 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
-  import "$lib/shared/landing/styles/public-editorial.css";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import TimingDirectionAtlas from "./_components/TimingDirectionAtlas.svelte";
   import { TIMING_DIRECTION_ARTICLES } from "./_data/timing-direction-articles";
 
@@ -60,9 +60,9 @@
   {@html `<script type="application/ld+json">${JSON.stringify(jsonLd)}<\/script>`}
 </Seo>
 
-<div class="editorial timing-page">
-  <header class="editorial-header">
-    <h1 class="page-title">Timing and Direction</h1>
+<div class="timing-page">
+  <header class="page-header">
+    <h1>Timing and Direction</h1>
     <p class="page-subtitle">
       Compare the timing and direction of the blue and red hands.
     </p>
@@ -79,54 +79,78 @@
     </p>
     <ul>
       <li>
-        <span>2002</span>
-        <a
+        <PanelButton
           href="https://www.homeofpoi.com/en/community/forums/topics/120838/How-do-you-define-a-weave"
         >
-          Weave timing and direction discussions
-        </a>
+          <span class="source-year">2002</span>
+          <span>Weave timing and direction discussions</span>
+          <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"
+          ></i>
+        </PanelButton>
       </li>
       <li>
-        <span>2002</span>
-        <a
+        <PanelButton
           href="https://www.homeofpoi.com/en/community/forums/topics/122222/Concept-moves-and-why-make-lists"
         >
-          Jez describes quarter-time butterflies
-        </a>
+          <span class="source-year">2002</span>
+          <span>Jez describes quarter-time butterflies</span>
+          <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"
+          ></i>
+        </PanelButton>
       </li>
       <li>
-        <span>2009</span>
-        <a
+        <PanelButton
           href="https://www.homeofpoi.com/fr/community/forums/topics/887635/X-Post-Prop-Transitioning-Article"
         >
-          Noel Yee’s prop-transition article
-        </a>
+          <span class="source-year">2009</span>
+          <span>Noel Yee’s prop-transition article</span>
+          <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"
+          ></i>
+        </PanelButton>
       </li>
     </ul>
     <nav aria-label="More about timing and direction">
-      <a href="/history">Explore the history</a>
-      <a href="/history#archive-record-vtg">VTG history record</a>
-      <a href="/learn/concepts">Interactive lessons</a>
+      <PanelButton href="/history"
+        ><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>Explore
+        the history</PanelButton
+      >
+      <PanelButton href="/history#archive-record-vtg"
+        ><i class="fa-solid fa-box-archive" aria-hidden="true"></i>VTG history
+        record</PanelButton
+      >
+      <PanelButton href="/learn/concepts"
+        ><i class="fa-solid fa-graduation-cap" aria-hidden="true"
+        ></i>Interactive lessons</PanelButton
+      >
     </nav>
   </section>
 </div>
 
 <style>
   .timing-page {
+    position: relative;
+    margin: 0 auto;
+    font-family: inherit;
     max-width: min(var(--shell-w), 100rem);
     padding: 88px 1.5rem 3rem;
   }
 
-  .editorial-header {
+  .page-header {
     margin: 0.5rem 0 1.5rem;
     text-align: left;
   }
 
-  .page-title {
-    font-size: clamp(2rem, 1.5rem + 2vw, 3.5rem);
+  h1 {
+    margin: 0 0 0.6rem;
+    color: var(--theme-text);
+    font-size: clamp(1.875rem, 1.5rem + 1vw, 2.5rem);
+    font-weight: 720;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
   }
 
   .page-subtitle {
+    margin: 0;
     max-width: 46rem;
     color: var(--theme-text-dim);
     font-size: 1rem;
@@ -154,45 +178,37 @@
   }
 
   .history-sources ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
     padding: 0;
     margin: 0.75rem 0;
     list-style: none;
   }
 
   .history-sources li {
-    display: flex;
-    align-items: baseline;
-    gap: 1rem;
     font-size: 0.875rem;
   }
 
-  .history-sources li span {
+  .source-year {
     color: var(--theme-text-dim);
     font-variant-numeric: tabular-nums;
   }
 
-  .history-sources a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    color: var(--theme-text);
-    text-underline-offset: 0.2em;
+  .history-sources :global(.panel-btn) {
+    text-align: left;
+    font-size: 0.875rem;
     line-height: 1.4;
   }
 
-  .history-sources a:hover {
-    color: var(--theme-accent);
-  }
-
-  .history-sources a:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: 3px;
+  .history-sources i {
+    font-size: 0.875rem;
   }
 
   .history-sources nav {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem 1.5rem;
+    gap: 0.5rem;
     font-size: 0.875rem;
   }
 
@@ -202,7 +218,7 @@
       padding: 76px 1rem 2rem;
     }
 
-    .editorial-header {
+    .page-header {
       margin: 0 0 1rem;
     }
 
