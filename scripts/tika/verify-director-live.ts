@@ -762,10 +762,10 @@ function arrangeCases(): LiveCase[] {
       check: formationExactly("line", 8),
     },
     {
-      // Chains are a later batch; arranging and moving one set is refused.
+      // A shape named before a counted move is that move's start, not a chain.
       name: "arrange then move",
       prompt: "put them in a line, then move to a circle over 8 counts",
-      check: noApply,
+      check: formationExactly("circle", 8, "line"),
     },
     {
       name: "arrange unsupported shape",
@@ -1044,6 +1044,12 @@ for (const testCase of cases) {
         case: testCase.name,
         pass: false,
         error: cause instanceof Error ? cause.name : "UnknownError",
+        // An HTTP status distinguishes rate limiting from a wrong plan; it
+        // carries no request data.
+        status:
+          cause && typeof cause === "object" && "statusCode" in cause
+            ? cause.statusCode
+            : undefined,
         // Assertion text only; provider errors keep their message private.
         detail:
           cause instanceof Error && cause.name === "AssertionError"
