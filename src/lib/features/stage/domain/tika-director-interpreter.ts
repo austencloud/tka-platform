@@ -38,9 +38,9 @@ const FORMATION_ALIASES: ReadonlyMap<string, TikaDirectorFormation> = new Map([
 ]);
 
 const TRANSITION_COMMANDS = [
-  /^(?:transition|move|travel|go) from (?:a |the )?(?<start>.+?) to (?:a |the )?(?<end>.+?) (?:over|in) (?<beats>\d+) beats?$/,
-  /^(?:transition|move|travel|go) to (?:a |the )?(?<end>.+?) (?:over|in) (?<beats>\d+) beats?$/,
-  /^put them(?: all)? in (?:a |the )?(?<start>.+?)(?:,? then | and (?:have them )?)transition to (?:a |the )?(?<end>.+?) over (?<beats>\d+) beats?$/,
+  /^(?:transition|move|travel|go) from (?:a |the )?(?<start>.+?) to (?:a |the )?(?<end>.+?) (?:over|in) (?<beats>\d+) (?:beats?|counts?)$/,
+  /^(?:transition|move|travel|go) to (?:a |the )?(?<end>.+?) (?:over|in) (?<beats>\d+) (?:beats?|counts?)$/,
+  /^put them(?: all)? in (?:a |the )?(?<start>.+?)(?:,? then | and (?:have them )?)transition to (?:a |the )?(?<end>.+?) over (?<beats>\d+) (?:beats?|counts?)$/,
 ] as const;
 
 function transitionAction(prompt: string): TikaDirectorAction | null {
@@ -78,11 +78,14 @@ function transitionAction(prompt: string): TikaDirectorAction | null {
 export function interpretStageDirectionLocally(
   prompt: string
 ): TikaDirectorResponse | null {
+  // Politeness and terminal punctuation never change what a command means.
   const command = prompt
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ")
-    .replace(/\.$/, "");
+    .replace(/[.!]+$/, "")
+    .replace(/^please\s+/, "")
+    .replace(/,?\s+please$/, "");
   let action: TikaDirectorAction | null = null;
   if (
     /^give every performer(?: in this scene)? a (?:different|distinct|unique) prop$/.test(

@@ -35,9 +35,17 @@ for (let value = 1; value <= 64; value++) {
   NUMBER_WORDS.set(word, value);
 }
 const NUMBER_PATTERN = `(?:\\d+|${[...NUMBER_WORDS.keys()].sort((a, b) => b.length - a.length).join("|")})`;
-const DURATION_PATTERN = `\\b(?:over|in|for) (${NUMBER_PATTERN}) beats?\\b`;
+// The Stage timeline labels beats as counts, so both words name the unit. A
+// number with no unit after over/in/for is beats too, unless a fraction or a
+// foreign unit (seconds, bars, measures) follows. A leading "4 beats" with no
+// preposition also counts, but only with the unit spelled out.
+const UNIT_PATTERN = "(?:beats?|counts?)";
+const FOREIGN_UNIT_PATTERN =
+  "(?:seconds?|secs?|minutes?|mins?|bars?|measures?|ms)";
+const DURATION_PATTERN = `(?:\\b(?<prep>over|in|for) |^)(?<count>${NUMBER_PATTERN})(?<unit> ${UNIT_PATTERN})?(?![.,]\\d)(?!\\s*${FOREIGN_UNIT_PATTERN}\\b)\\b`;
 const TRANSITION_PATTERN =
-  /\b(?:transition|move|travel|go|reach|change(?=\s+(?:from|to)\b))\b/g;
+  /\b(?:transition|move|travel|go|reach|form|snap|arrange|shift|change(?=\s+(?:from|to)\b))\b/g;
+const CLAUSE_SPLIT_PATTERN = /[;.!?]|\b(?:and|then|but)\b/;
 
 function normalize(text: string): string {
   return text
@@ -57,25 +65,35 @@ function beatCount(text: string): number | undefined {
 function hasDelayedStart(text: string): boolean {
   return (
     new RegExp(`\\bat beat\\s*${NUMBER_PATTERN}\\b`).test(text) ||
-    new RegExp(`\\b(?:wait|after) ${NUMBER_PATTERN} beats?\\b`).test(text) ||
+    new RegExp(`\\b(?:wait|after) ${NUMBER_PATTERN} ${UNIT_PATTERN}\\b`).test(
+      text
+    ) ||
     new RegExp(
-      `\\bin ${NUMBER_PATTERN} beats?\\s*,?\\s*(?:then |please )?(?:transition|move|travel|go|change|reach)\\b`
+      `\\bin ${NUMBER_PATTERN} ${UNIT_PATTERN}\\s*,?\\s*(?:then |please )?(?:transition|move|travel|go|change|reach)\\b`
     ).test(text)
   );
 }
 
 function currentDuration(text: string): number | undefined {
-  const durations = [...text.matchAll(new RegExp(DURATION_PATTERN, "g"))];
+  const durations = [
+    ...text.matchAll(new RegExp(DURATION_PATTERN, "g")),
+  ].filter((match) => match.groups?.prep || match.groups?.unit);
   if (durations.length !== 1) return undefined;
   const duration = durations[0]!;
   const transitions = [...text.matchAll(TRANSITION_PATTERN)];
   const transition = transitions.at(-1);
-  if (!transition) return undefined;
+  // A single clause with one duration and no verb ("from a row to a ring over
+  // 4 beats", "4 beats circle") can only be timing the move itself.
+  if (!transition) {
+    return CLAUSE_SPLIT_PATTERN.test(text)
+      ? undefined
+      : beatCount(duration.groups!.count!);
+  }
 
   if (transition.index < duration.index) {
     const between = text.slice(transition.index, duration.index);
     // Timing on a separate clause can describe props or an earlier instruction.
-    if (/[;.!?]|\b(?:and|then|but)\b/.test(between)) return undefined;
+    if (CLAUSE_SPLIT_PATTERN.test(between)) return undefined;
   } else {
     const prefix = text.slice(0, duration.index);
     const between = text.slice(
@@ -84,7 +102,7 @@ function currentDuration(text: string): number | undefined {
     );
     if (prefix || !/^,?\s*(?:please\s+)?$/.test(between)) return undefined;
   }
-  return beatCount(duration[1]!);
+  return beatCount(duration.groups!.count!);
 }
 
 function clarificationDuration(
@@ -110,7 +128,7 @@ function clarificationDuration(
     return undefined;
 
   const answer = new RegExp(
-    `^(?:over |in |for )?(${NUMBER_PATTERN})(?: beats?)?[.!]?$`
+    `^(?:over |in |for )?(${NUMBER_PATTERN})(?: ${UNIT_PATTERN})?[.!]?$`
   ).exec(normalize(request.prompt));
   return answer ? beatCount(answer[1]!) : undefined;
 }

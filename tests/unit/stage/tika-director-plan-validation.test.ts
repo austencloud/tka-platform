@@ -54,6 +54,40 @@ describe("TIKA plan timing admission", () => {
     ).toBe(response);
   });
 
+  it.each([
+    // The Stage timeline labels beats as counts.
+    ["Transition to a circle over 8 counts", 8],
+    ["Go to a V in 16 counts", 16],
+    // A bare number after over/in is beats on a Stage; only a foreign unit is not.
+    ["keep the props, keep the avatars, circle over 4", 4],
+    // Verbless single-clause phrasings still pin their one duration to the move.
+    ["from a row to a ring over 4 beats", 4],
+    ["4 beats circle", 4],
+    ["snap them into a circle over 1 beat", 1],
+    ["form a chevron over 4 beats", 4],
+    [
+      "ok so put them in a line then have them go to a circle over 8 counts and also give everyone different props",
+      8,
+    ],
+  ])(
+    "admits counts, bare numbers, and verbless clauses: %s",
+    (prompt, duration) => {
+      const response = plan(duration);
+      expect(
+        validateTikaDirectorPlanTiming({ prompt, conversation: [] }, response)
+      ).toBe(response);
+    }
+  );
+
+  it.each([
+    "move to a circle over 4 seconds",
+    "transition to a circle over two bars",
+    "transition to a circle over 4 measures",
+    "circle over 4.5 beats",
+  ])("still rejects foreign or fractional units: %s", (prompt) => {
+    expect(validate(prompt, 4).kind).toBe("clarify");
+  });
+
   it("keeps timing attached to the transition when a later clause preserves props", () => {
     const response: TikaDirectorResponse = {
       kind: "apply",
