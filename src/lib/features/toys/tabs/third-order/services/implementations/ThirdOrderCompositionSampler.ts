@@ -129,6 +129,8 @@ export class ThirdOrderCompositionSampler implements IThirdOrderCompositionSampl
     sampler: SequenceSampler,
     step: number
   ): { left: PropState; right: PropState } {
-    return sampler.orchestrator.samplePropStateAt(step);
+    // The Toy clock starts at zero. The animator reserves position zero for
+    // its opening hold, and starts the first motion at position one.
+    return sampler.orchestrator.samplePropStateAt(step + 1);
   }
 }

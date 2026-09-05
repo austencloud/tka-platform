@@ -220,13 +220,33 @@ describe("shape matrix mandala continuity", () => {
     expect(shell).toContain("<ShapeMatrixTurnPopover");
     const matrixPane = read("app/components/ShapeMatrixMatrixPane.svelte");
     const theoryPane = read("app/components/ShapeMatrixTheoryPane.svelte");
-    expect(matrixPane).toContain("<ShapeMatrixRecipeBar");
-    expect(theoryPane).toContain("<ShapeMatrixRecipeBar");
-    const recipeBar = read("app/components/ShapeMatrixRecipeBar.svelte");
-    expect(recipeBar).toContain("<ShapeMatrixAxisStepper hand=\"left\"");
-    expect(recipeBar).toContain("<ShapeMatrixAxisStepper hand=\"right\"");
-    expect(recipeBar).toContain("Surprise me");
-    expect(recipeBar).not.toContain("Mixed");
+    // Wide hosts: the grid's corner cell owns Surprise and both axis values;
+    // the strip above the grid takes over only on compact hosts.
+    expect(matrixPane).toContain("<ShapeMatrixGridCorner surface=\"level\"");
+    expect(theoryPane).toContain("<ShapeMatrixGridCorner");
+    expect(matrixPane).toMatch(
+      /\{#if state\.compact\}\s*<ShapeMatrixRecipeStrip/
+    );
+    const corner = read("app/components/ShapeMatrixGridCorner.svelte");
+    expect(corner).toContain("<ShapeMatrixAxisStepper hand=\"left\"");
+    expect(corner).toContain("<ShapeMatrixAxisStepper hand=\"right\"");
+    // Columns (red) sit on the column-header band above Rows (blue), and
+    // both axes point with icon arrows rather than thin text glyphs.
+    expect(corner.indexOf('class="axis columns"')).toBeLessThan(
+      corner.indexOf('class="axis rows"')
+    );
+    expect(corner).toContain("fa-arrow-right");
+    expect(corner).toContain("fa-arrow-down");
+    expect(corner).not.toMatch(/>\s*[↓→]\s*</);
+    expect(corner).toContain("Surprise me");
+    expect(corner).not.toContain("Mixed");
+    // The relationship is named by the detail pane, not repeated up here.
+    expect(corner).not.toContain("relationship-dot");
+    const strip = read("app/components/ShapeMatrixRecipeStrip.svelte");
+    expect(strip).not.toContain("relationship-dot");
+    // One notation at a time: the stepper shows no secondary label.
+    const stepper = read("app/components/ShapeMatrixAxisStepper.svelte");
+    expect(stepper).not.toContain("secondary");
     const controls = read("app/components/ShapeMatrixTurnControls.svelte");
     expect(controls).not.toContain("Apply to");
     expect(controls).not.toContain("mixed");

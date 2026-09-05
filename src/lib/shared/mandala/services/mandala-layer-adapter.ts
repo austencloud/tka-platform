@@ -27,7 +27,7 @@ function projectedPath(
   if (layer.points.length === 0) return [];
   const d = layer.points
     .map((point, index) => {
-      const command = index === 0 ? "M" : "L";
+      const command = index === 0 || point.breakBefore ? "M" : "L";
       return `${command} ${coordinate(point.x)} ${coordinate(point.y)}`;
     })
     .join(" ");

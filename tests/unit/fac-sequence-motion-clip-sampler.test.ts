@@ -62,6 +62,16 @@ function fixture(): { clip: MotionClip; stream: PropStream } {
 }
 
 describe("FacSequenceMotionClipSampler", () => {
+  it("moves during the first count and reaches the final pose at clip duration", () => {
+    const sampler = new FacSequenceMotionClipSampler();
+    const { clip, stream } = fixture();
+    const middle = sampler.sample(clip, stream, 0.5)!;
+    const end = sampler.sample(clip, stream, 1)!;
+    expect(middle.transform.translation[0]).toBeCloseTo(150 / Math.sqrt(2), 6);
+    expect(middle.transform.translation[1]).toBeCloseTo(150 / Math.sqrt(2), 6);
+    expect(end.transform.translation[0]).toBeCloseTo(150, 6);
+    expect(end.transform.translation[1]).toBeCloseTo(0, 6);
+  });
   it("samples the real opening pose instead of a zero placeholder", () => {
     const sampler = new FacSequenceMotionClipSampler();
     const { clip, stream } = fixture();

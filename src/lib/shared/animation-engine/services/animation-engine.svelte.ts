@@ -260,6 +260,10 @@ export class AnimationEngine {
     if (size > 0) this._canvasSize = size;
   }
 
+  get canvasResizeCount(): number {
+    return this.lifecycleManager.resizer?.state.resizeCount ?? 0;
+  }
+
   /**
    * Wire the shared EffectsConfigState so the engine reads live per-effect
    * intents (zap, etc.) from the same source the Customize panels write to.
