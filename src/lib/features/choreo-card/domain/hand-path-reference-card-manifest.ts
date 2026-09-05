@@ -12,6 +12,19 @@ export interface HandPathReferenceCardDefinition {
 /** The manifest revision for the first six-card physical reference deck. */
 export const HAND_PATH_REFERENCE_CARD_VERSION = 1;
 
+// Published scan identities from Deck #010, verified against its release manifest.
+// Reuse these for public teaching cards; opening a lesson must never mint a code.
+export const HAND_PATH_REFERENCE_SCAN_URLS: Readonly<
+  Record<HandPathReferenceCardId, string>
+> = {
+  ss: "https://tka.run/DACF4E",
+  ts: "https://tka.run/4C1913",
+  so: "https://tka.run/E29D72",
+  to: "https://tka.run/D14B4D",
+  qo: "https://tka.run/63243F",
+  qs: "https://tka.run/89E048",
+};
+
 export const HAND_PATH_REFERENCE_CARD_DEFINITIONS = [
   {
     id: "ss",
