@@ -230,6 +230,14 @@ describe("shape matrix mandala continuity", () => {
     const corner = read("app/components/ShapeMatrixGridCorner.svelte");
     expect(corner).toContain("<ShapeMatrixAxisStepper hand=\"left\"");
     expect(corner).toContain("<ShapeMatrixAxisStepper hand=\"right\"");
+    // Columns (red) sit on the column-header band above Rows (blue), and
+    // both axes point with icon arrows rather than thin text glyphs.
+    expect(corner.indexOf('class="axis columns"')).toBeLessThan(
+      corner.indexOf('class="axis rows"')
+    );
+    expect(corner).toContain("fa-arrow-right");
+    expect(corner).toContain("fa-arrow-down");
+    expect(corner).not.toMatch(/>\s*[↓→]\s*</);
     expect(corner).toContain("Surprise me");
     expect(corner).not.toContain("Mixed");
     // The relationship is named by the detail pane, not repeated up here.

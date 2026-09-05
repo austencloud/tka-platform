@@ -432,6 +432,9 @@ captureEffectDiagnostics to the context menu.
 
   // Single effect to pass all props to engine
   $effect(() => {
+    // Resizing clears the canvas even while paused. Read the completed-resize
+    // signal here so the current pose is repainted without advancing playback.
+    if (isInitialized) void engineInstance.canvasResizeCount;
     const currentFireConfig = fireConfig;
     const currentLedConfig = ledConfig;
     const currentCellTipEffectMap = cellTipEffectMap;

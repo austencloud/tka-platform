@@ -1,9 +1,11 @@
 <script lang="ts">
-  import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import AnimatorCanvas from "../../../../../shared/animation-engine/components/AnimatorCanvas.svelte";
   import { getThirdOrderContext } from "../context/third-order-context";
   import { THIRD_ORDER_VIEWBOX_SIZE } from "../domain/third-order-math";
   import ThirdOrderFlowerOverlay from "./ThirdOrderFlowerOverlay.svelte";
   import { thirdOrderFlowerPetals } from "../domain/third-order-flower-path";
+  import TrajectoryMandala from "../../../../../shared/mandala/components/TrajectoryMandala.svelte";
+  import ThirdOrderMandalaControls from "./ThirdOrderMandalaControls.svelte";
 
   let { compact = false }: { compact?: boolean } = $props();
   const state = getThirdOrderContext();
@@ -38,14 +40,28 @@
     {/if}
   </header>
 
+  <ThirdOrderMandalaControls />
+
   <div class="canvas-well">
     <div class="stage-canvas">
-      <div class="carrier-canvas" aria-hidden="true">
+      {#if state.mandalaMode !== "off"}
+        <TrajectoryMandala
+          trajectories={state.trajectories}
+          throughBeat={state.mandalaMode === "full" || state.traceComplete
+            ? state.trajectories.durationBeats
+            : state.masterBeat}
+        />
+      {/if}
+      <div
+        class="carrier-canvas"
+        class:motion-hidden={!state.showMotion}
+        aria-hidden="true"
+      >
         <AnimatorCanvas
           leftProp={null}
           rightProp={null}
           sequenceData={state.composition.carrier}
-          currentStep={state.frame.masterBeat}
+          currentStep={state.frame.masterBeat + 1}
           isPlaying={state.isPlaying}
           gridMode={state.composition.carrier.gridMode}
           backgroundAlpha={0}
@@ -62,7 +78,7 @@
         />
       </div>
 
-      {#if state.composition.carrierPath.mode === "flower"}
+      {#if state.showMotion && state.composition.carrierPath.mode === "flower"}
         <ThirdOrderFlowerOverlay
           path={state.composition.carrierPath}
           children={state.frame.children}
@@ -70,7 +86,7 @@
       {/if}
 
       {#each state.frame.children as child (child.id)}
-        {#if child.visible}
+        {#if child.visible && state.showMotion}
           <div
             class="child-grid {child.id}"
             style:left={percent(child.pose.centerX)}
@@ -82,7 +98,9 @@
               leftProp={child.props.left}
               rightProp={child.props.right}
               sequenceData={child.sequence}
-              currentStep={child.step}
+              currentStep={child.step + 1}
+              leftPropType={state.propTypes.left}
+              rightPropType={state.propTypes.right}
               isPlaying={state.isPlaying}
               gridMode={child.sequence.gridMode}
               backgroundAlpha={0}
@@ -91,7 +109,7 @@
               hideStepNumbers
               hideProgressBar
               hideHeader
-              hidePathLines={false}
+              hidePathLines={state.mandalaMode !== "off"}
               beatIndicators={false}
               disableContextMenu
               suppress2DOverlays
@@ -113,7 +131,11 @@
         {/if}
       {/each}
 
-      <div class="center-caption" aria-hidden="true">
+      <div
+        class="center-caption"
+        class:motion-hidden={!state.showMotion}
+        aria-hidden="true"
+      >
         <span>Parent center</span>
       </div>
     </div>
@@ -138,7 +160,7 @@
 <style>
   .stage-shell {
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
     gap: 12px;
     min-width: 0;
     min-height: 0;
@@ -218,6 +240,9 @@
   .carrier-canvas {
     z-index: 1;
     opacity: 0.34;
+  }
+  .motion-hidden {
+    visibility: hidden;
   }
   .child-grid {
     z-index: 3;
