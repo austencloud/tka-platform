@@ -42,11 +42,18 @@
     "@graph": [
       {
         "@type": "Article",
+        "@id": `${canonical}#article`,
+        mainEntityOfPage: canonical,
         headline: article.name,
         name: article.name,
         description: article.metaDescription,
         url: canonical,
         inLanguage: "en-US",
+        citation: article.sources.map((source) => ({
+          "@type": "CreativeWork",
+          name: source.label,
+          url: source.url,
+        })),
         author: {
           "@type": "Person",
           name: "Austen Cloud",
@@ -97,7 +104,7 @@
   {canonical}
   ogType="article"
 >
-  {@html `<script type="application/ld+json">${JSON.stringify(jsonLd)}<\/script>`}
+  {@html `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}<\/script>`}
 </Seo>
 
 <article class="mode-page" style:--mode-accent={mode.element.accentColor}>
@@ -121,6 +128,13 @@
         <p class="definition">{article.definition}</p>
       </header>
       <p>{article.watchFor}</p>
+      <PanelButton
+        href="/learn/concepts/timing-and-direction"
+        accentColor={mode.element.accentColor}
+      >
+        <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+        Try timing and direction
+      </PanelButton>
     </div>
     <div class="mode-notes">
       <section class="practice" aria-labelledby="practice-title">
@@ -140,7 +154,7 @@
         <p>{article.tkaConnection}</p>
         <PanelButton href={lessonHref} accentColor={mode.element.accentColor}>
           <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
-          Try the lesson
+          Explore this in TKA
         </PanelButton>
       </section>
     </div>
@@ -161,6 +175,24 @@
       </figcaption>
     </figure>
   </div>
+
+  <section class="history" aria-labelledby="learning-title">
+    <h2 id="learning-title">Learn from other spinners</h2>
+    <ul class="sources">
+      {#each article.learningResources as resource (resource.url)}
+        <li>
+          <PanelButton href={resource.url} fullWidth>
+            <span class="source-copy">
+              <strong>{resource.label}</strong>
+              <span>{resource.detail}</span>
+            </span>
+            <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"
+            ></i>
+          </PanelButton>
+        </li>
+      {/each}
+    </ul>
+  </section>
 
   <section class="history" aria-labelledby="history-title">
     <h2 id="history-title">History & sources</h2>
@@ -332,6 +364,7 @@
   }
   .source-copy > span {
     font-size: 1rem;
+    font-weight: 400;
     color: var(--theme-text);
     line-height: 1.5;
   }
