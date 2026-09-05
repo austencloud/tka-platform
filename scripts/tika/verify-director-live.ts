@@ -726,6 +726,24 @@ function presentationCases(): LiveCase[] {
       },
     },
     {
+      // Refusing the cast change is right; promising a feminine cast the
+      // 6-avatar pool cannot cover is not, so any feminine talk must carry 6.
+      name: "pres promise beyond pool",
+      prompt:
+        "add five more performers and give them all different female avatars and different props",
+      check: (r) => {
+        noApply(r);
+        const text =
+          r.kind === "clarify"
+            ? r.question
+            : r.kind === "unsupported"
+              ? r.message
+              : "";
+        if (/feminine|female|women/i.test(text))
+          assert.match(text, /(?:^|[^0-9])(?:6|six)(?:[^0-9]|$)/i, text);
+      },
+    },
+    {
       name: "pres age filter",
       prompt: "make every avatar an old woman",
       check: noApply,
@@ -882,6 +900,11 @@ for (const testCase of cases) {
         case: testCase.name,
         pass: false,
         error: cause instanceof Error ? cause.name : "UnknownError",
+        // Assertion text only; provider errors keep their message private.
+        detail:
+          cause instanceof Error && cause.name === "AssertionError"
+            ? cause.message.slice(0, 400)
+            : undefined,
         planned,
         response: observed,
         generatedText,
