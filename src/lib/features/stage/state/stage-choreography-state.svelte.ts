@@ -128,6 +128,14 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
     startBeat?: number
   ): StageSequenceClip | null;
   removeSequenceClip(clipId: string): void;
+  /**
+   * Give every performer their own sequence in one undo step. Only lanes that
+   * still play the shared sequence are replaced; a lane holding authored clips
+   * throws before anything changes, naming the performer.
+   */
+  assignPerformerSequences(
+    assignments: readonly PerformerSequenceAssignment[]
+  ): boolean;
   moveSequenceClip(clipId: string, startBeat: number): void;
   resizeSequenceClip(clipId: string, durationBeats: number): void;
   toggleSequenceClipLoop(clipId: string): void;
@@ -187,6 +195,11 @@ function createSequenceClip(
   input: Omit<StageSequenceClip, "id">
 ): StageSequenceClip {
   return { id: crypto.randomUUID(), ...input };
+}
+
+export interface PerformerSequenceAssignment {
+  performerId: string;
+  sequence: SequenceData;
 }
 
 export interface StageChoreographyStateOptions {
@@ -1018,6 +1031,52 @@ export function createStageChoreographyState(
     return clip;
   }
 
+  function assignPerformerSequences(
+    assignments: readonly PerformerSequenceAssignment[]
+  ): boolean {
+    if (choreography.performers.length === 0) return false;
+    const byPerformer = new Map(
+      assignments.map((assignment) => [assignment.performerId, assignment])
+    );
+    const coversCast =
+      byPerformer.size === choreography.performers.length &&
+      choreography.performers.every((performer) =>
+        byPerformer.has(performer.id)
+      );
+    if (!coversCast) {
+      throw new Error(
+        "Distinct sequences need exactly one sequence for every performer in the cast."
+      );
+    }
+
+    const sharedId = choreography.sharedSequenceId ?? DEFAULT_STAGE_SEQUENCE_ID;
+    const authored = choreography.performers.find((performer) =>
+      performer.sequenceClips.some((clip) => clip.sequenceId !== sharedId)
+    );
+    if (authored) {
+      throw new Error(
+        `${authored.label} already has their own clips on the timeline. Clear that lane first, or ask for the other performers by name.`
+      );
+    }
+
+    pushUndo();
+    for (const performer of choreography.performers) {
+      const { sequence } = byPerformer.get(performer.id)!;
+      const sourceBeatCount = Math.max(1, sequence.steps.length);
+      performer.sequenceClips = performer.sequenceClips.map((clip) => {
+        const wasUnscaled = clip.durationBeats === clip.sourceBeatCount;
+        return {
+          ...clip,
+          sequenceId: sequence.id,
+          sourceBeatCount,
+          durationBeats: wasUnscaled ? sourceBeatCount : clip.durationBeats,
+        };
+      });
+    }
+    normalizeFormationTrack();
+    return true;
+  }
+
   function findSequenceClip(
     clipId: string
   ): { performer: Performer; clip: StageSequenceClip } | null {
@@ -1241,6 +1300,7 @@ export function createStageChoreographyState(
     beginDrag,
     addSequenceClip,
     removeSequenceClip,
+    assignPerformerSequences,
     moveSequenceClip,
     resizeSequenceClip,
     toggleSequenceClipLoop,

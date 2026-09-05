@@ -38,6 +38,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { FormationPresetId } from "./domain/stage-types";
   import type { TikaDirectorConversationMessage } from "./domain/tika-director";
+  import { describeCastForDirectorRevision } from "./domain/tika-director-revision";
   import {
     createTikaDirectorSession,
     type TikaDirectorSubmitResult,
@@ -73,6 +74,12 @@
     resolveDirectorAppearanceAssignments,
     resolveStageDirection,
   } from "./services/tika-director-service";
+  import {
+    resolveDirectorSequenceAssignments,
+    type DirectorSequenceAssignment,
+  } from "./domain/tika-director-sequences";
+  import { listLibrarySequences } from "$lib/shared/browse/services/library-sequence-list";
+  import { hydrateSequence } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
 
   type SequenceLoadState = "loading" | "ready" | "error";
   type TimelineDisclosure = "hidden" | "dock" | "editor";
@@ -186,6 +193,8 @@
 
   let chartRaised = $state(false);
   let tikaDirectorOpen = $state(false);
+  let tikaPrompt = $state("");
+  let tikaMessages = $state<TikaDirectorConversationMessage[]>([]);
   let starterVisible = $state(!handoff);
   let starterSceneBlank = $state(false);
   let starterCurtainVisible = $state(false);
@@ -298,13 +307,23 @@
           stageHistory: stageState.historyRevision,
           viewerHistory: tikaViewerHistoryRevision,
           choreography,
-          cast: viewer.performerManager.performers.map((performer) =>
-            performer.captureEditingSnapshot()
+          cast: describeCastForDirectorRevision(
+            viewer.performerManager.performers.map((performer) =>
+              performer.captureEditingSnapshot()
+            )
           ),
         },
         (_key, value) => (value instanceof Map ? [...value] : value)
       ),
   });
+
+  async function readLibraryForDirector(): Promise<SequenceData[] | null> {
+    try {
+      return await listLibrarySequences();
+    } catch {
+      return null;
+    }
+  }
 
   async function directStageWithTika(
     prompt: string,
@@ -312,17 +331,49 @@
     signal: AbortSignal
   ): Promise<TikaDirectorSubmitResult> {
     const requestBeat = stageState.currentBeat;
+    // Picked and hydrated while the plan resolves, so apply stays synchronous
+    // under the session's revision check and never plays a metadata-only record.
+    let sequencePicks: DirectorSequenceAssignment[] = [];
     try {
       return await tikaSession.execute(
-        () =>
-          resolveStageDirection({
+        async () => {
+          const library = await readLibraryForDirector();
+          const response = await resolveStageDirection({
             prompt,
             conversation,
             choreography,
             currentBeat: requestBeat,
             viewer,
+            ...(library ? { librarySequenceCount: library.length } : {}),
             signal,
-          }),
+          });
+          if (
+            response.kind === "apply" &&
+            response.actions.some(
+              (action) => action.type === "assign-distinct-sequences"
+            )
+          ) {
+            if (!library) {
+              throw new Error(
+                "TIKA could not read your library, so no sequences were assigned."
+              );
+            }
+            const picks = resolveDirectorSequenceAssignments({
+              actions: response.actions,
+              performerIds: choreography.performers.map((p) => p.id),
+              seedKey: `${choreography.id}:${prompt}`,
+              library,
+            });
+            sequencePicks = await Promise.all(
+              picks.map(async (pick) => ({
+                performerId: pick.performerId,
+                sequence: await hydrateSequence(pick.sequence),
+              }))
+            );
+            signal.throwIfAborted();
+          }
+          return response;
+        },
         (response) => {
           const formationActions = response.actions.filter(
             (action) => action.type === "formation-transition"
@@ -351,14 +402,21 @@
           const viewerChanged =
             assignments.length > 0 &&
             viewer.applyPerformerAppearanceAssignments(assignments);
-          const stageChanged = formation
-            ? stageState.applyFormationTransition(
-                formation.endFormation,
-                formation.durationBeats,
-                formation.startFormation,
-                requestBeat
-              )
-            : false;
+          for (const pick of sequencePicks) {
+            preloadedSequences.set(pick.sequence.id, pick.sequence);
+          }
+          const sequencesChanged =
+            sequencePicks.length > 0 &&
+            stageState.assignPerformerSequences(sequencePicks);
+          const stageChanged =
+            (formation
+              ? stageState.applyFormationTransition(
+                  formation.endFormation,
+                  formation.durationBeats,
+                  formation.startFormation,
+                  requestBeat
+                )
+              : false) || sequencesChanged;
 
           return viewerChanged || stageChanged
             ? () => {
@@ -865,7 +923,7 @@
       active={tikaDirectorOpen}
       onclick={(event: MouseEvent) => {
         event.stopPropagation();
-        tikaDirectorOpen = true;
+        tikaDirectorOpen = !tikaDirectorOpen;
       }}
     />
   {/if}
@@ -883,6 +941,20 @@
 
 {#snippet floorPaths()}
   <StageFloorPaths />
+{/snippet}
+
+{#snippet tikaPanel(close: () => void, compact: boolean)}
+  <TikaDirectorPanel
+    onClose={close}
+    active={tikaDirectorOpen}
+    {compact}
+    bind:prompt={tikaPrompt}
+    bind:messages={tikaMessages}
+    sceneName={choreography.name}
+    performerCount={choreography.performers.length}
+    currentBeat={stageState.currentBeat}
+    onSubmit={directStageWithTika}
+  />
 {/snippet}
 
 {#snippet stageOverlay()}
@@ -991,6 +1063,9 @@
         {performerSteps}
         worldChildren={starterSceneBlank ? undefined : floorPaths}
         hudActions={stageHudActions}
+        hostPanel={tikaPanel}
+        hostPanelTitle="Direct with TIKA"
+        bind:hostPanelOpen={tikaDirectorOpen}
         overlayChildren={stageOverlay}
         hideCanvasOverlays
         sceneControlsBottomOffset="0.75rem"
@@ -1042,14 +1117,6 @@
     bind:sizes={workspaceSizes}
   />
 </div>
-
-<TikaDirectorPanel
-  bind:open={tikaDirectorOpen}
-  sceneName={choreography.name}
-  performerCount={choreography.performers.length}
-  currentBeat={stageState.currentBeat}
-  onSubmit={directStageWithTika}
-/>
 
 <SequencePickerModal
   bind:open={pickerOpen}

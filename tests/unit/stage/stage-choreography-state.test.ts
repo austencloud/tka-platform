@@ -501,8 +501,9 @@ describe("stage choreography state", () => {
     const beforeRevision = state.historyRevision;
     const beforeFrames = sampleStageFormations(state.choreography, 20);
 
-    expect(() => state.applyFormationTransition("circle", 4, undefined, 24))
-      .toThrow("would change movement before beat 24");
+    expect(() =>
+      state.applyFormationTransition("circle", 4, undefined, 24)
+    ).toThrow("would change movement before beat 24");
     expect(JSON.stringify(state.choreography)).toBe(before);
     expect(state.historyRevision).toBe(beforeRevision);
     expect(sampleStageFormations(state.choreography, 20)).toEqual(beforeFrames);
@@ -528,30 +529,43 @@ describe("stage choreography state", () => {
       };
     }
     const before = JSON.stringify(state.choreography);
-    const beforeFacing = sampleStageFormations(state.choreography, 20).map((frame) => frame.bodyFacing);
+    const beforeFacing = sampleStageFormations(state.choreography, 20).map(
+      (frame) => frame.bodyFacing
+    );
     expect(beforeFacing.every((facing) => facing === Math.PI / 2)).toBe(true);
-    expect(() => state.applyFormationTransition("circle", 4, undefined, 24))
-      .toThrow("would change movement before beat 24");
+    expect(() =>
+      state.applyFormationTransition("circle", 4, undefined, 24)
+    ).toThrow("would change movement before beat 24");
     expect(JSON.stringify(state.choreography)).toBe(before);
-    expect(sampleStageFormations(state.choreography, 20).map((frame) => frame.bodyFacing)).toEqual(beforeFacing);
+    expect(
+      sampleStageFormations(state.choreography, 20).map(
+        (frame) => frame.bodyFacing
+      )
+    ).toEqual(beforeFacing);
     state.destroy();
   });
 
   it("captures actual body facing when creating a permitted held anchor", () => {
     const state = createStageChoreographyState();
     const performer = state.choreography.performers[0]!;
-    state.choreography.formations[0]!.spots[performer.id]!.facingAngle = Math.PI / 3;
+    state.choreography.formations[0]!.spots[performer.id]!.facingAngle =
+      Math.PI / 3;
     const facing = sampleStageFormations(state.choreography, 8)[0]!.bodyFacing;
     state.applyFormationTransition("circle", 4, undefined, 8);
-    expect(state.choreography.formations.find((set) => set.atBeat === 8)!.spots[performer.id]!.facingAngle).toBe(facing);
+    expect(
+      state.choreography.formations.find((set) => set.atBeat === 8)!.spots[
+        performer.id
+      ]!.facingAngle
+    ).toBe(facing);
     state.destroy();
   });
 
   it("refuses a new start shape that would rewrite arrival at an existing set", () => {
     const state = createStageChoreographyState();
     const before = JSON.stringify(state.choreography);
-    expect(() => state.applyFormationTransition("circle", 4, "v-shape", 32))
-      .toThrow("would change movement before beat 32");
+    expect(() =>
+      state.applyFormationTransition("circle", 4, "v-shape", 32)
+    ).toThrow("would change movement before beat 32");
     expect(JSON.stringify(state.choreography)).toBe(before);
     state.destroy();
   });
@@ -563,15 +577,20 @@ describe("stage choreography state", () => {
     state.updatePerformerTravelTiming(destination.id, performer.id, 1, 2);
 
     state.applyFormationTransition("circle", 4, "v-shape", 0);
-    const index = state.choreography.formations.findIndex((set) => set.atBeat === 4);
-    expect(resolveStageTravel(state.choreography, performer.id, index)).toMatchObject({
+    const index = state.choreography.formations.findIndex(
+      (set) => set.atBeat === 4
+    );
+    expect(
+      resolveStageTravel(state.choreography, performer.id, index)
+    ).toMatchObject({
       departureBeat: 0,
       arrivalBeat: 4,
       durationBeats: 4,
     });
     state.undo();
-    expect(state.choreography.formations[index]!.spots[performer.id]!.travel)
-      .toMatchObject({ departureBeat: 1, arrivalBeat: 2 });
+    expect(
+      state.choreography.formations[index]!.spots[performer.id]!.travel
+    ).toMatchObject({ departureBeat: 1, arrivalBeat: 2 });
     state.destroy();
   });
 
@@ -682,5 +701,103 @@ describe("stage choreography state", () => {
       )
     ).toBe(true);
     state.destroy();
+  });
+});
+
+function seedCast(
+  state: ReturnType<typeof createStageChoreographyState>,
+  performerCount: 1 | 2 | 3
+) {
+  state.applyStudioStarter({
+    startingMaterial: "choose-sequence",
+    performerCount,
+    formation: "line",
+    environmentId: SceneEnvironmentId.FOREST,
+    prop: PropType.STAFF,
+  });
+  state.setSharedSequence(sequence("shared", "SHARED", 8));
+}
+
+describe("assignPerformerSequences", () => {
+  it("replaces every untouched lane with its own sequence in one undo step", () => {
+    const state = createStageChoreographyState();
+    seedCast(state, 3);
+    const [a, b, c] = state.choreography.performers;
+    const revisionBefore = state.historyRevision;
+
+    const changed = state.assignPerformerSequences([
+      { performerId: a!.id, sequence: sequence("s1", "ONE", 4) },
+      { performerId: b!.id, sequence: sequence("s2", "TWO", 16) },
+      { performerId: c!.id, sequence: sequence("s3", "THREE", 8) },
+    ]);
+
+    expect(changed).toBe(true);
+    expect(
+      state.choreography.performers.map((p) =>
+        p.sequenceClips.map((clip) => [clip.sequenceId, clip.sourceBeatCount])
+      )
+    ).toEqual([[["s1", 4]], [["s2", 16]], [["s3", 8]]]);
+    expect(state.historyRevision).toBe(revisionBefore + 1);
+    expect(state.canUndo).toBe(true);
+
+    state.undo();
+    expect(
+      state.choreography.performers.map((p) =>
+        p.sequenceClips.map((clip) => clip.sequenceId)
+      )
+    ).toEqual([["shared"], ["shared"], ["shared"]]);
+  });
+
+  it("keeps a lane's authored span when the shared clip was stretched", () => {
+    const state = createStageChoreographyState();
+    seedCast(state, 1);
+    const performer = state.choreography.performers[0]!;
+    const clip = performer.sequenceClips[0]!;
+    state.resizeSequenceClip(clip.id, 32);
+
+    state.assignPerformerSequences([
+      { performerId: performer.id, sequence: sequence("s1", "ONE", 4) },
+    ]);
+
+    expect(performer.sequenceClips[0]).toMatchObject({
+      sequenceId: "s1",
+      sourceBeatCount: 4,
+      durationBeats: 32,
+    });
+  });
+
+  it("refuses to overwrite a lane that already holds authored clips", () => {
+    const state = createStageChoreographyState();
+    seedCast(state, 2);
+    const [a, b] = state.choreography.performers;
+    state.addSequenceClip(b!.id, sequence("custom", "CUSTOM", 8), 64);
+    const before = JSON.stringify(state.choreography.performers);
+    const revisionBefore = state.historyRevision;
+
+    expect(() =>
+      state.assignPerformerSequences([
+        { performerId: a!.id, sequence: sequence("s1", "ONE", 4) },
+        { performerId: b!.id, sequence: sequence("s2", "TWO", 4) },
+      ])
+    ).toThrow(/B/);
+    expect(JSON.stringify(state.choreography.performers)).toBe(before);
+    expect(state.historyRevision).toBe(revisionBefore);
+  });
+
+  it("rejects an assignment that misses a performer or names an unknown one", () => {
+    const state = createStageChoreographyState();
+    seedCast(state, 2);
+    const [a] = state.choreography.performers;
+    expect(() =>
+      state.assignPerformerSequences([
+        { performerId: a!.id, sequence: sequence("s1", "ONE", 4) },
+      ])
+    ).toThrow(/every performer/i);
+    expect(() =>
+      state.assignPerformerSequences([
+        { performerId: a!.id, sequence: sequence("s1", "ONE", 4) },
+        { performerId: "ghost", sequence: sequence("s2", "TWO", 4) },
+      ])
+    ).toThrow(/every performer/i);
   });
 });

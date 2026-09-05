@@ -41,6 +41,7 @@ const cases: Array<{
   name: string;
   prompt: string;
   conversation?: TikaDirectorRequest["conversation"];
+  scene?: Partial<TikaDirectorRequest["scene"]>;
   check: (response: TikaDirectorResponse) => void;
 }> = [
   {
@@ -196,6 +197,84 @@ const cases: Array<{
     ],
     check: (r) => assert.notEqual(r.kind, "apply"),
   },
+  {
+    name: "distinct sequences from library",
+    prompt: "Give each performer their own sequence from my library.",
+    scene: { librarySequenceCount: 12 },
+    check: (r) => {
+      assert.equal(r.kind, "apply");
+      if (r.kind === "apply")
+        assert.deepEqual(r.actions, [{ type: "assign-distinct-sequences" }]);
+    },
+  },
+  {
+    name: "distinct sequences after clarification (Austen transcript)",
+    prompt:
+      "I was hoping they could each perform a different actual flow sequence, like a different word loaded from my library. Are you capable of that?",
+    conversation: [
+      { role: "user", content: "Can you give each one a different sequence" },
+      {
+        role: "assistant",
+        content:
+          "Could you clarify what you mean by 'different sequence'? Do you want each performer assigned a different prop, a different avatar, or a different saved sequence?",
+      },
+    ],
+    scene: { librarySequenceCount: 40 },
+    check: (r) => {
+      assert.equal(r.kind, "apply");
+      if (r.kind === "apply")
+        assert.deepEqual(r.actions, [{ type: "assign-distinct-sequences" }]);
+    },
+  },
+  {
+    name: "named sequence is unsupported",
+    prompt: "Give performer B the sequence ABC from my library.",
+    scene: { librarySequenceCount: 12 },
+    check: (r) => assert.notEqual(r.kind, "apply"),
+  },
+  {
+    name: "empty library refuses sequences",
+    prompt: "Give everyone a different sequence from my library.",
+    scene: { librarySequenceCount: 0 },
+    check: (r) => assert.notEqual(r.kind, "apply"),
+  },
+  {
+    name: "library smaller than cast",
+    prompt: "Give each of them a different word.",
+    scene: { librarySequenceCount: 2 },
+    check: (r) => assert.notEqual(r.kind, "apply"),
+  },
+  {
+    name: "sequences plus props compound",
+    prompt: "Give everyone a different sequence and a different prop.",
+    scene: { librarySequenceCount: 12 },
+    check: (r) => {
+      assert.equal(r.kind, "apply");
+      if (r.kind === "apply")
+        assert.deepEqual([...r.actions.map((a) => a.type)].sort(), [
+          "assign-distinct-props",
+          "assign-distinct-sequences",
+        ]);
+    },
+  },
+  {
+    name: "holdout sequences by length filter",
+    prompt: "Give each performer a different 8-count sequence from my library.",
+    scene: { librarySequenceCount: 30 },
+    check: (r) => assert.notEqual(r.kind, "apply"),
+  },
+  {
+    name: "holdout sequence question only",
+    prompt:
+      "Could you give them each a different sequence, or is that not something you can do?",
+    scene: { librarySequenceCount: 30 },
+    check: (r) => {
+      // A question about capability may be answered or applied; it must never
+      // apply anything other than the single sequence action.
+      if (r.kind === "apply")
+        assert.deepEqual(r.actions, [{ type: "assign-distinct-sequences" }]);
+    },
+  },
 ];
 
 let failed = 0;
@@ -212,6 +291,9 @@ for (const testCase of cases) {
     .find((arg) => arg.startsWith("--case="))
     ?.slice(7);
   if (selectedCase && testCase.name !== selectedCase) continue;
+  const grep = process.argv.find((arg) => arg.startsWith("--grep="))?.slice(7);
+  if (grep && !testCase.name.includes(grep)) continue;
+  const caseScene = { ...scene, ...testCase.scene };
   attempted++;
   const started = Date.now();
   let observed: TikaDirectorResponse | undefined;
@@ -219,7 +301,7 @@ for (const testCase of cases) {
     const result = await planStageDirection(
       model,
       {
-        scene,
+        scene: caseScene,
         prompt: testCase.prompt,
         conversation: testCase.conversation ?? [],
       },
@@ -230,7 +312,7 @@ for (const testCase of cases) {
     const reviewed = await reviewStageDirection(
       reviewer,
       {
-        scene,
+        scene: caseScene,
         prompt: testCase.prompt,
         conversation: testCase.conversation ?? [],
       },

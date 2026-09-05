@@ -202,6 +202,38 @@
         class:active={environment === "ocean"}
         onclick={() => select("ocean")}>Ocean</button
       >
+      <button
+        class:active={environment === "void"}
+        onclick={() => select("void")}>Void</button
+      >
+      <button
+        class:active={environment === "winter"}
+        onclick={() => select("winter")}>Winter</button
+      >
+      <button
+        class:active={environment === "celestial"}
+        onclick={() => select("celestial")}>Celestial</button
+      >
+      <button
+        class:active={environment === "cosmic"}
+        onclick={() => select("cosmic")}>Cosmic</button
+      >
+      <button
+        class:active={environment === "forest"}
+        onclick={() => select("forest")}>Forest</button
+      >
+      <button
+        class:active={environment === "blossom"}
+        onclick={() => select("blossom")}>Blossom</button
+      >
+      <button
+        class:active={environment === "autumn"}
+        onclick={() => select("autumn")}>Autumn</button
+      >
+      <button
+        class:active={environment === "ember"}
+        onclick={() => select("ember")}>Ember</button
+      >
     </div>
 
     <div class="status-card" aria-live="polite">
