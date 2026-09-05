@@ -66,6 +66,13 @@
   import { REACH_ROUTES, SHORT_SWEEP_ROUTE } from "./reach-routes";
   import { ReachLabState } from "./reach-state.svelte";
   import {
+    formatSettleLabel,
+    observeFrameSettle,
+    PaneSettleTracker,
+    SETTLE_LABEL_SIZER_TEXT,
+    type SettleReading,
+  } from "./reach-settle";
+  import {
     EMPTY_REACH_FRAME,
     measureReachFrame,
     type ReachFrame,
@@ -90,6 +97,15 @@
   let poses = $state<Record<string, AvatarPoseDiagnostics | null>>({});
   let grips = $state<Record<string, AvatarGripDiagnostics | null>>({});
   let shoulders = $state<Record<string, Vec3 | null>>({});
+
+  /**
+   * One tracker per pane, keyed the same way as `poses`/`grips` above. Plain
+   * (non-reactive) bookkeeping — `settleReadings` below is what the template
+   * reads, so a tracker mutating in place does not need to be a `$state`
+   * itself.
+   */
+  const settleTrackers = new Map<string, PaneSettleTracker>();
+  let settleReadings = $state<Record<string, SettleReading>>({});
 
   interface MeasuredFrame {
     percent: number;
@@ -120,9 +136,13 @@
    * Every measured value, in world units, on the console.
    *
    * Live-scrub readouts on this page were unreliable — values could sign-flip
-   * mid-motion. Each entry here is a settled, frozen pose, which is what
-   * makes this reading trustworthy where the old scrubbing readout was not.
-   * Read-only, and only in dev.
+   * mid-motion. Each entry here is a frozen phase rather than a moving clock,
+   * which is what makes this reading trustworthy where the old scrubbing
+   * readout was not. `settle` says whether THIS particular reading has
+   * actually finished arriving yet — see `reach-settle.ts`; a frozen phase and
+   * a settled one are not the same thing; a pane can sit at a fixed phase for
+   * seconds while its own rig is still converging on it. Read-only, and only
+   * in dev.
    */
   $effect(() => {
     if (!import.meta.env.DEV || typeof window === "undefined") return;
@@ -130,10 +150,11 @@
       route: route.id,
       shoulderHeight: shoulderHeight(),
       gridCenter: reachGridCenter(),
-      frames: measured.map(({ percent, frame }) => ({
+      frames: measured.map(({ percent, key, frame }) => ({
         percent,
         phase: percentToPhase(percent),
         frame,
+        settle: settleReadings[key] ?? { settled: false, ticks: 0, ms: 0 },
       })),
     };
   });
@@ -146,6 +167,25 @@
     ) => {
       poses[key] = diagnostics;
       grips[key] = gripDiagnostics;
+
+      // This callback fires once per rendered frame for THIS pane (Threlte's
+      // own per-frame task), which is exactly what "ticks" needs to count —
+      // unlike the shared `measured` derived below, which can recompute for
+      // reasons that have nothing to do with this pane's own next tick.
+      let tracker = settleTrackers.get(key);
+      if (!tracker) {
+        tracker = new PaneSettleTracker();
+        tracker.reset(performance.now());
+        settleTrackers.set(key, tracker);
+      }
+      const frame = measureReachFrame({
+        diagnostics,
+        gripDiagnostics,
+        shoulderWorld: shoulders[key] ?? null,
+        shoulderHeight: shoulderHeight(),
+        gridCenter: reachGridCenter(),
+      });
+      settleReadings[key] = observeFrameSettle(tracker, frame, performance.now());
     };
   }
 
@@ -310,6 +350,8 @@
     poses = {};
     grips = {};
     shoulders = {};
+    settleTrackers.clear();
+    settleReadings = {};
   });
 </script>
 
@@ -427,6 +469,12 @@
         aria-label={`Frame at ${formatFilmstripPercent(percent)} percent through the reach`}
       >
         <p class="phase-label">{formatFilmstripPercent(percent)}%</p>
+        <p class="settle-label" class:settled={settleReadings[key]?.settled}>
+          <span class="settle-label-sizer" aria-hidden="true"
+            >{SETTLE_LABEL_SIZER_TEXT}</span
+          >
+          <span class="settle-label-live">{formatSettleLabel(settleReadings[key])}</span>
+        </p>
 
         <div
           class="viewport"
@@ -469,7 +517,12 @@
           </Canvas>
         </div>
 
-        <ReachReadouts {frame} routeLabel={route.label} compact />
+        <ReachReadouts
+          {frame}
+          routeLabel={route.label}
+          compact
+          provisional={!(settleReadings[key]?.settled ?? false)}
+        />
       </section>
     {/each}
   </div>
@@ -598,6 +651,45 @@
     letter-spacing: 0.04em;
     font-variant-numeric: tabular-nums;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+  }
+
+  /*
+    Ghost-sizer (no-layout-shift.md, technique 1): the hidden sizer holds the
+    widest realistic label ("settled · 9999 ticks · 99.9 s") in the same grid
+    cell as the live text, so the row's reserved height already accounts for
+    the longer "settled" text while "settling…" is still showing. Neither
+    span is forced to one line — a narrow pane may wrap both, but since the
+    sizer is always the longer string, its own wrapped height already covers
+    whatever the live text needs, so switching between the two never moves
+    the viewport below it.
+  */
+  .settle-label {
+    display: grid;
+    /* Matches `.pane`'s own `min-width: 0` above: a grid item's default
+       `min-width: auto` sizes to its unwrapped content, which would let a
+       long label push this pane wider than its track instead of wrapping. */
+    min-width: 0;
+    margin: 0;
+    font-size: var(--font-size-xs, 0.75rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+  }
+
+  .settle-label-sizer,
+  .settle-label-live {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+
+  .settle-label-sizer {
+    visibility: hidden;
+  }
+
+  .settle-label-live {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .settle-label.settled .settle-label-live {
+    color: var(--theme-text, #fff);
   }
 
   .viewport {
