@@ -1,7 +1,11 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { reducedMotion } from "$lib/shared/transitions/motion";
+  import {
+    createRenderActivityGate,
+    renderGateTarget,
+  } from "$lib/shared/render-gating/render-activity-gate";
   import HandMotionPlayer from "$lib/features/learn/components/interactive/foundations/HandMotionPlayer.svelte";
   import { TIMING_DIRECTION_MODES } from "$lib/features/learn/components/interactive/foundations/pictograph-foundation-content";
   import {
@@ -20,6 +24,22 @@
   const directions: readonly DirectionValue[] = ["Same", "Opposite"];
   let selectedCode = $state("TS");
   let playing = $state(true);
+  let currentStep = $state(0);
+  let seekClock: ((step: number) => void) | null = null;
+  const clockMode = modes[0]!;
+  const playbackGate = createRenderActivityGate({
+    name: "timing-direction-atlas",
+  });
+
+  function followClock(step: number, sequenceId: string | null): void {
+    if (sequenceId === clockMode.motion.sequence.id) currentStep = step;
+  }
+
+  function registerClockSeek(seek: ((step: number) => void) | null): void {
+    seekClock = seek;
+  }
+
+  onDestroy(() => playbackGate.dispose());
   let detailHeading: HTMLHeadingElement | null = $state(null);
   const selected = $derived(
     modes.find((mode) => mode.article.code === selectedCode)!
@@ -42,7 +62,11 @@
   }
 </script>
 
-<section class="atlas" aria-label="Six timing and direction modes">
+<section
+  class="atlas"
+  aria-label="Six timing and direction modes"
+  use:renderGateTarget={playbackGate}
+>
   <div class="atlas-toolbar">
     <p>Select a preview to see it larger.</p>
     <PanelButton
@@ -111,18 +135,30 @@
                       ariaLabel={mode.article.name}
                       interactive={false}
                       externalPlaying={playing}
+                      externalStep={mode === clockMode ? null : currentStep}
+                      onStepChange={mode === clockMode
+                        ? followClock
+                        : undefined}
+                      onSeekRef={mode === clockMode
+                        ? registerClockSeek
+                        : undefined}
+                      playbackGate={mode === clockMode
+                        ? playbackGate
+                        : undefined}
                       framed={false}
                     />
                   </span>
                 </button>
-                <a
-                  class="article-link"
-                  href={mode.href}
-                  aria-label={`Read ${mode.article.name}`}
-                >
-                  Read article
-                  <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                </a>
+                <div class="article-action">
+                  <PanelButton
+                    href={mode.href}
+                    ariaLabel={`Read ${mode.article.name}`}
+                    accentColor={mode.motion.element.accentColor}
+                  >
+                    <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+                    <span>Article</span>
+                  </PanelButton>
+                </div>
               </article>
             {/each}
           </div>
@@ -158,19 +194,28 @@
           sequence={selected.motion.sequence}
           ariaLabel={`${selected.article.name}. Drag the playback bar to scrub.`}
           externalPlaying={playing}
+          externalStep={currentStep}
+          onExternalSeek={(step) => seekClock?.(step)}
           onExternalPlayingChange={(nextPlaying) => (playing = nextPlaying)}
           framed={false}
         />
       </div>
       <div class="detail-footer">
         <p>Drag the bar to scrub.</p>
-        <a class="article-link detail-link" href={selected.href}>
+        <PanelButton
+          href={selected.href}
+          accentColor={selected.motion.element.accentColor}
+        >
+          <i class="fa-solid fa-book-open" aria-hidden="true"></i>
           Read {selected.article.code} article
-          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-        </a>
+        </PanelButton>
       </div>
-      <a class="compare-link" href="#mode-comparison">Back to all six modes ↑</a
-      >
+      <div class="compare-action">
+        <PanelButton href="#mode-comparison">
+          <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
+          All six modes
+        </PanelButton>
+      </div>
     </section>
   </div>
 </section>
@@ -256,15 +301,27 @@
   }
 
   .mode {
+    background: color-mix(
+      in srgb,
+      var(--mode-accent) 9%,
+      rgb(from var(--theme-panel-bg) r g b / 1)
+    );
     border-color: color-mix(
       in srgb,
       var(--mode-accent) 45%,
       var(--theme-stroke-strong)
     );
-    transition: border-color var(--duration-fast) var(--ease-out);
+    transition:
+      border-color var(--transition-normal),
+      background-color var(--transition-normal);
   }
 
   .mode.selected {
+    background: color-mix(
+      in srgb,
+      var(--mode-accent) 17%,
+      rgb(from var(--theme-panel-bg) r g b / 1)
+    );
     border-color: var(--mode-accent);
     box-shadow: 0 0 0 1px var(--mode-accent);
   }
@@ -288,7 +345,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem 0.65rem 0;
+    padding: 0.65rem 0.65rem 0;
     font-size: 0.875rem;
     line-height: 1.25;
   }
@@ -299,6 +356,7 @@
   }
 
   .preview-label strong {
+    color: var(--mode-accent);
     display: inline-flex;
     gap: 0.35rem;
     align-items: center;
@@ -316,27 +374,17 @@
     border-radius: inherit;
   }
 
-  .article-link {
+  .article-action {
     display: flex;
-    align-items: center;
     justify-content: center;
-    gap: 0.4rem;
-    min-height: 44px;
-    padding: 0.45rem;
-    border-radius: var(--radius-md, 0.5rem);
-    color: var(--theme-text);
+    padding: 0 0.5rem 0.5rem;
+  }
+
+  .article-action :global(.panel-btn) {
+    padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
   }
 
-  .article-link:hover {
-    background: var(--theme-card-bg);
-    color: var(--mode-accent);
-  }
-
-  .article-link:focus-visible,
   .preview:focus-visible {
     outline: 3px solid var(--theme-accent);
     outline-offset: 3px;
@@ -344,6 +392,16 @@
 
   .detail {
     overflow: hidden;
+    border-color: color-mix(
+      in srgb,
+      var(--mode-accent) 55%,
+      var(--theme-stroke)
+    );
+    background: color-mix(
+      in srgb,
+      var(--mode-accent) 7%,
+      rgb(from var(--theme-panel-bg) r g b / 1)
+    );
   }
 
   .detail-heading {
@@ -396,24 +454,10 @@
     padding: 0.35rem 1rem 0.75rem;
   }
 
-  .detail-link {
-    width: fit-content;
-  }
-
-  .compare-link {
+  .compare-action {
     display: none;
-    min-height: 44px;
-    align-items: center;
     justify-content: center;
-    padding: 0.5rem 1rem;
-    color: var(--theme-text);
-    font-size: 0.875rem;
-    text-underline-offset: 0.2em;
-  }
-
-  .compare-link:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: -3px;
+    padding: 0 1rem 0.75rem;
   }
 
   @media (max-width: 900px) {
@@ -426,7 +470,7 @@
       justify-self: center;
     }
 
-    .compare-link {
+    .compare-action {
       display: flex;
     }
   }
@@ -452,7 +496,7 @@
       padding: 0.4rem 0.4rem 0;
     }
 
-    .mode .article-link i {
+    .article-action i {
       display: none;
     }
   }
