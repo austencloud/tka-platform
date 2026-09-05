@@ -96,6 +96,12 @@ export function interpretStageDirectionLocally(
     )
   ) {
     action = { type: "assign-distinct-characters" };
+  } else if (
+    /^give (?:every|each) performer(?: in this scene)? a (?:different|distinct|unique) (?:sequence|word)(?: (?:from|out of) (?:my|the|their) library)?$/.test(
+      command
+    )
+  ) {
+    action = { type: "assign-distinct-sequences" };
   } else {
     action = transitionAction(command);
   }
@@ -106,7 +112,9 @@ export function interpretStageDirectionLocally(
       ? "distinct props"
       : action.type === "assign-distinct-characters"
         ? "distinct avatars"
-        : `${action.startFormation ? `${action.startFormation} to ` : ""}${action.endFormation} over ${action.durationBeats} beats`;
+        : action.type === "assign-distinct-sequences"
+          ? "a different library sequence to every performer"
+          : `${action.startFormation ? `${action.startFormation} to ` : ""}${action.endFormation} over ${action.durationBeats} beats`;
   return {
     kind: "apply",
     summary: `Applied ${description}.`,

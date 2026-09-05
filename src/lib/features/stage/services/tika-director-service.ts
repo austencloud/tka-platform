@@ -29,6 +29,8 @@ export async function resolveStageDirection(input: {
   choreography: StageChoreography;
   currentBeat: number;
   viewer: Viewer3DState;
+  /** Saved sequences the cast can borrow; omitted when the library is unreadable. */
+  librarySequenceCount?: number;
   signal?: AbortSignal;
 }): Promise<TikaDirectorResponse> {
   if (input.conversation.length > TIKA_DIRECTOR_MAX_HISTORY) {
@@ -73,6 +75,9 @@ export async function resolveStageDirection(input: {
         atBeat: formation.atBeat,
         ...(formation.presetId ? { presetId: formation.presetId } : {}),
       })),
+      ...(input.librarySequenceCount !== undefined
+        ? { librarySequenceCount: input.librarySequenceCount }
+        : {}),
     },
   };
 

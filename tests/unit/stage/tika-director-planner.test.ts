@@ -4,7 +4,10 @@ import {
   TikaDirectorRequestSchema,
   type TikaDirectorResponse,
 } from "$lib/features/stage/domain/tika-director";
-import { planStageDirection } from "$lib/features/stage/services/server/tika-director-planner";
+import {
+  planStageDirection,
+  TIKA_DIRECTOR_SYSTEM_PROMPT,
+} from "$lib/features/stage/services/server/tika-director-planner";
 
 const request = {
   prompt: "Give everyone different props",
@@ -25,6 +28,11 @@ describe("TIKA Director provider boundary", () => {
       kind: "apply",
       summary: "Assign distinct props.",
       actions: [{ type: "assign-distinct-props" }],
+    },
+    {
+      kind: "apply",
+      summary: "Assign a different library sequence to every performer.",
+      actions: [{ type: "assign-distinct-sequences" }],
     },
     { kind: "clarify", question: "Over how many beats?" },
     { kind: "unsupported", message: "I cannot change the lighting yet." },
@@ -129,5 +137,13 @@ describe("TIKA Director provider boundary", () => {
     );
     expect(result.response).toEqual(response);
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("teaches the planner that distinct sequences draw from the library and cannot be named", () => {
+    expect(TIKA_DIRECTOR_SYSTEM_PROMPT).toContain("assign-distinct-sequences");
+    expect(TIKA_DIRECTOR_SYSTEM_PROMPT).toMatch(/librarySequenceCount/);
+    expect(TIKA_DIRECTOR_SYSTEM_PROMPT).toMatch(
+      /cannot (?:choose|select|pick) (?:a )?(?:named|specific)/i
+    );
   });
 });
