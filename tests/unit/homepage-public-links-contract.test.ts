@@ -213,7 +213,11 @@ describe("homepage public-links contract", () => {
   });
 
   it("keeps the homepage and Composer compact and hands About directly to the sitemap", () => {
-    expect(marketingChrome).toContain('path === "/" || path === "/composer"');
+    // The compact list is a multi-line `||` chain that Prettier reflows as
+    // routes join it, so match the two anchors across whitespace.
+    expect(marketingChrome).toMatch(
+      /path === "\/" \|\|\s+path === "\/composer" \|\|/
+    );
     expect(marketingChrome).toContain('path === "/about"');
     expect(marketingChrome).toContain('"sitemap"');
     expect(marketingChrome).toContain('"full"');
