@@ -77,6 +77,7 @@ export const CURATED_WING_SOUNDSCAPES: WingSoundscape[] = [
 	{ wingId: "victorian", wingName: "Victorian Wing", candidates: [] },
 	{ wingId: "digital", wingName: "Digital Wing", candidates: [] },
 	{ wingId: "suppression", wingName: "The Suppression", candidates: [] },
+	{ wingId: "cross-reference", wingName: "Cross-Reference Room", candidates: [] },
 	{ wingId: "crumble", wingName: "The Crumble", candidates: [] },
 	{
 		wingId: "gallery",

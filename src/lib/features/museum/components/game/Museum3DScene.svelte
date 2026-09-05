@@ -67,6 +67,10 @@
   } from "../../services/torch-material-cache";
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
+  import MuseumStickyNote3D from "./MuseumStickyNote3D.svelte";
+  import MuseumCaseScreen3D from "./MuseumCaseScreen3D.svelte";
+  import { placeFreeNotes } from "../../services/museum-free-notes";
+  import { caveCaseCard } from "../../data/museum-narration";
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
   import PlacementGhost from "../editor/PlacementGhost.svelte";
   import {
@@ -1576,6 +1580,21 @@
   });
   const villageEmbedMounted = $derived(geometryReady && !!collabWing);
 
+  // K's posted notes: only the current room's, like the performers.
+  const placedNotes = placeFreeNotes(grid, TILE_SIZE);
+  const visibleNotes = $derived(
+    currentPlayerRoomId
+      ? placedNotes.filter((n) => n.roomId === currentPlayerRoomId)
+      : []
+  );
+  // The case triptych behind each cave performer: screen + card sign.
+  const caseScreens = $derived(
+    visiblePerformers.flatMap((performer) => {
+      const card = caveCaseCard(performer.id);
+      return card ? [{ performer, card }] : [];
+    })
+  );
+
   /** Set mesh.visible on every mesh in a room chunk */
   function setChunkVisible(chunk: RoomChunk, visible: boolean): void {
     for (const { mesh } of chunk.floorMeshes) mesh.visible = visible;
@@ -2125,6 +2144,31 @@
       userSequenceDataMap={props.userSequenceData}
     />
   {/if}
+{/each}
+
+<!-- Cave case triptychs: the Order's screen and card behind each performer -->
+{#each caseScreens as entry (entry.performer.id)}
+  <MuseumCaseScreen3D
+    performerId={entry.performer.id}
+    worldX={entry.performer.tileX * TILE_SIZE}
+    worldZ={entry.performer.tileY * TILE_SIZE}
+    worldY={entry.performer.elevation ?? 0}
+    yaw={FACING_TO_YAW[entry.performer.facing] ?? 0}
+    card={entry.card}
+    active={activePerformerIds.has(entry.performer.id)}
+  />
+{/each}
+
+<!-- K's posted notes in rooms with nothing to stick them to -->
+{#each visibleNotes as placed (placed.note.id)}
+  <MuseumStickyNote3D
+    id={placed.note.id}
+    worldX={placed.worldX}
+    worldY={placed.worldY}
+    worldZ={placed.worldZ}
+    yaw={placed.yaw}
+    text={placed.note.text}
+  />
 {/each}
 
 <!-- Live Village simulation in the Room of Collaboration.

@@ -21,6 +21,15 @@
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
   import PlaqueView from "../panel/PlaqueView.svelte";
   import SequenceView from "../panel/SequenceView.svelte";
+  import DocumentView from "../panel/DocumentView.svelte";
+  import DecodeConsole from "../panel/DecodeConsole.svelte";
+  import StickyNote from "../panel/StickyNote.svelte";
+  import MuseumCaptionBar from "./MuseumCaptionBar.svelte";
+  import { MuseumNarrationPlayer } from "../../services/museum-narration-player.svelte";
+  import { roomStamp } from "../../data/museum-narration";
+  import { placeFreeNotes, type PlacedNote } from "../../services/museum-free-notes";
+  import { openInComposer } from "../../services/museum-composer-handoff";
+  import { goto } from "$app/navigation";
   import SequenceBrowserOverlay from "$lib/features/museum/scenes/procedural/overlay/SequenceBrowserOverlay.svelte";
   import { getMuseumDocent } from "$lib/features/museum/services/museum-docent.svelte";
   import PerfMonitor from "$lib/shared/3d/components/PerfMonitor.svelte";
@@ -386,6 +395,41 @@
   let focusedPerformer = $state<PerformerDefinition | null>(null);
   let showPanel = $state(false);
   let showSequencePicker = $state(false);
+  let focusedNote = $state<PlacedNote | null>(null);
+
+  // ── The audio guide ──
+  const narration = new MuseumNarrationPlayer();
+  $effect(() => () => narration.dispose());
+
+  // Exhibit cues fire on proximity, not on facing: walking up to the case is
+  // enough. Positions resolved once from the grid.
+  const exhibitCueTargets = narration
+    .exhibitTriggers()
+    .flatMap(({ refId, radiusTiles }) => {
+      const exhibit = props.grid.exhibits.find((e) => e.id === refId);
+      return exhibit
+        ? [{ refId, tileX: exhibit.tileX, tileY: exhibit.tileY, radiusTiles }]
+        : [];
+    });
+  const firedExhibitCues = new Set<string>();
+
+  // ── K's posted notes: readable when the visitor is beside the post ──
+  const placedNotes = placeFreeNotes(props.grid, TILE_SIZE);
+  const NOTE_READ_RADIUS = 1.1; // metres
+  let nearNote = $derived.by<PlacedNote | null>(() => {
+    let best: PlacedNote | null = null;
+    let bestDist = NOTE_READ_RADIUS;
+    for (const placed of placedNotes) {
+      const dx = placed.worldX - playerWorldX;
+      const dz = placed.worldZ - playerWorldZ;
+      const dist = Math.hypot(dx, dz);
+      if (dist < bestDist) {
+        best = placed;
+        bestDist = dist;
+      }
+    }
+    return best;
+  });
 
   // ── Wing detection ──
   let currentWing = $derived.by<WingRegion | null>(() => {
@@ -411,8 +455,10 @@
     if (id !== lastNotifiedWingId) {
       lastNotifiedWingId = id;
       props.onWingChange?.(id);
+      narration.enterRoom(id);
     }
   });
+  let wingStamp = $derived(currentWing ? roomStamp(currentWing.id) : null);
 
   // ── Interaction detection: is the player facing an interactable tile? ──
   const FACING_OFFSETS: Record<string, { dx: number; dy: number }> = {
@@ -452,8 +498,24 @@
   });
 
   let hasInteractable = $derived(
-    facingExhibit !== null || facingPerformer !== null
+    facingExhibit !== null || facingPerformer !== null || nearNote !== null
   );
+  let interactVerb = $derived.by(() => {
+    if (facingExhibit?.document) return "Read";
+    if (facingExhibit?.interaction?.kind === "decode") return "Use console";
+    if (facingExhibit?.interaction?.kind === "terminal") return "Use terminal";
+    if (facingExhibit || facingPerformer) return "Examine";
+    if (nearNote) return "Read note";
+    return "Examine";
+  });
+
+  function closePanel(): void {
+    showPanel = false;
+    focusedExhibit = null;
+    focusedPerformer = null;
+    focusedNote = null;
+    props.onExhibitFocus?.(null);
+  }
 
   // ── Keyboard handling ──
   function handleKeyDown(e: KeyboardEvent) {
@@ -498,10 +560,21 @@
     if (e.key === "e" || e.key === "E") {
       e.preventDefault();
       if (showPanel) {
-        showPanel = false;
-        focusedExhibit = null;
-        focusedPerformer = null;
-        props.onExhibitFocus?.(null);
+        // The Order's consoles promise "PRESS E" in their own copy, so E on an
+        // open panel does what the plaque says before it does what the HUD
+        // says. The decode console handles its own E (see DecodeConsole).
+        const kind = focusedExhibit?.interaction?.kind;
+        if (kind === "exit" && focusedExhibit?.interaction?.kind === "exit") {
+          void openInComposer(focusedExhibit.interaction.sequenceId, "From the Archive");
+          return;
+        }
+        if (kind === "terminal" && focusedExhibit?.interaction?.kind === "terminal") {
+          if (document.pointerLockElement) document.exitPointerLock();
+          void goto(focusedExhibit.interaction.route);
+          return;
+        }
+        if (kind === "decode") return;
+        closePanel();
         // Re-acquire pointer lock if in FPS mode
         if (isInFPS) {
           const canvas = document.querySelector<HTMLCanvasElement>("canvas");
@@ -520,6 +593,22 @@
         showPanel = true;
         props.onExhibitFocus?.(null);
         if (document.pointerLockElement) document.exitPointerLock();
+      } else if (nearNote) {
+        focusedNote = nearNote;
+        focusedExhibit = null;
+        focusedPerformer = null;
+        showPanel = true;
+        props.onExhibitFocus?.(null);
+        if (document.pointerLockElement) document.exitPointerLock();
+      }
+      return;
+    }
+
+    // N: skip the audio guide's current cue
+    if (e.key === "n" || e.key === "N") {
+      if (narration.current) {
+        e.preventDefault();
+        narration.skip();
       }
       return;
     }
@@ -531,10 +620,7 @@
         return;
       }
       if (showPanel) {
-        showPanel = false;
-        focusedExhibit = null;
-        focusedPerformer = null;
-        props.onExhibitFocus?.(null);
+        closePanel();
         // Re-acquire pointer lock if in FPS mode
         if (isInFPS) {
           const canvas = document.querySelector<HTMLCanvasElement>("canvas");
@@ -621,6 +707,17 @@
     playerTileY = tileY;
     playerFacing = facing;
     lastKnownYaw = yaw;
+
+    // Walk up to a case with a cue and the tape starts. Once per visit.
+    for (const target of exhibitCueTargets) {
+      if (firedExhibitCues.has(target.refId)) continue;
+      const dx = target.tileX - tileX;
+      const dy = target.tileY - tileY;
+      if (dx * dx + dy * dy <= target.radiusTiles * target.radiusTiles) {
+        firedExhibitCues.add(target.refId);
+        narration.nearExhibit(target.refId);
+      }
+    }
 
     // Detect mode change - flush immediately so HMR captures the transition
     const wasInFPS = viewMode !== "top-down";
@@ -817,17 +914,27 @@
 
   <!-- Wing label (top-left, offset when back button visible) - hidden in editor mode -->
   {#if currentWing && !showPanel && !museum3dEditorState.editorActive}
-    <div class="wing-label" class:fps={isInFPS}>
+    <div class="wing-label" class:fps={isInFPS} class:stamped={!!wingStamp}>
       <i class="fas fa-location-dot" aria-hidden="true"></i>
-      <span>{currentWing.name}</span>
+      <span class="wing-name">
+        <span>{currentWing.name}</span>
+        {#if wingStamp}
+          <span class="wing-stamp">{wingStamp}</span>
+        {/if}
+      </span>
     </div>
+  {/if}
+
+  <!-- The audio guide's captions (above the interaction prompt) -->
+  {#if !showPanel && !museum3dEditorState.editorActive}
+    <MuseumCaptionBar caption={narration.current} />
   {/if}
 
   <!-- Interaction prompt (bottom-center) -->
   {#if hasInteractable && !showPanel}
     <div class="interaction-prompt" role="status" aria-live="polite">
       <kbd>E</kbd>
-      <span>Examine</span>
+      <span>{interactVerb}</span>
     </div>
   {/if}
 
@@ -852,28 +959,86 @@
       <button
         class="panel-close"
         aria-label="Close exhibit panel"
-        onclick={() => {
-          showPanel = false;
-          focusedExhibit = null;
-          props.onExhibitFocus?.(null);
-        }}
+        onclick={closePanel}
       >
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
 
-      {#if focusedExhibit.plaque}
+      {#if focusedExhibit.document}
+        <!-- A document under glass: the wall label is its cover; the pages follow. -->
+        {#if focusedExhibit.plaque}
+          <PlaqueView
+            title={focusedExhibit.plaque.title}
+            subtitle={focusedExhibit.plaque.subtitle}
+            body={focusedExhibit.plaque.body}
+            footer={focusedExhibit.plaque.barter}
+            style={focusedExhibit.plaque.style}
+            annotations={focusedExhibit.plaque.annotations}
+            draft={focusedExhibit.plaque.draft}
+          />
+        {/if}
+        <DocumentView document={focusedExhibit.document} />
+      {:else if focusedExhibit.plaque}
         <PlaqueView
           title={focusedExhibit.plaque.title}
           subtitle={focusedExhibit.plaque.subtitle}
           body={focusedExhibit.plaque.body}
+          footer={focusedExhibit.plaque.barter}
+          style={focusedExhibit.plaque.style}
+          annotations={focusedExhibit.plaque.annotations}
+          draft={focusedExhibit.plaque.draft}
         />
       {/if}
 
-      {#if exhibitSequenceId}
+      {#if focusedExhibit.interaction?.kind === "decode"}
+        <div class="panel-section">
+          <DecodeConsole
+            sequenceId={focusedExhibit.interaction.sequenceId}
+            reveal={focusedExhibit.interaction.reveal}
+            annotation={focusedExhibit.interaction.annotation}
+          />
+        </div>
+      {:else if exhibitSequenceId}
         <div class="panel-section">
           <SequenceView sequenceId={exhibitSequenceId} />
         </div>
       {/if}
+
+      {#if focusedExhibit.interaction?.kind === "terminal"}
+        {@const route = focusedExhibit.interaction.route}
+        <button
+          class="action-btn console-action"
+          onclick={() => {
+            if (document.pointerLockElement) document.exitPointerLock();
+            void goto(route);
+          }}
+        >
+          <i class="fas fa-power-off" aria-hidden="true"></i>
+          {focusedExhibit.interaction.label}
+        </button>
+      {:else if focusedExhibit.interaction?.kind === "exit"}
+        {@const exitSeq = focusedExhibit.interaction.sequenceId}
+        <button
+          class="action-btn exit-action"
+          onclick={() => void openInComposer(exitSeq, "From the Archive")}
+        >
+          <i class="fas fa-door-open" aria-hidden="true"></i>
+          {focusedExhibit.interaction.label}
+        </button>
+      {/if}
+    </div>
+  {/if}
+
+  <!-- Note panel: one of K's posted notes, up close -->
+  {#if showPanel && focusedNote}
+    <div class="overlay-panel note-panel">
+      <button class="panel-close" aria-label="Close note" onclick={closePanel}>
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+      <div class="note-stage">
+        <StickyNote text={focusedNote.note.text} era={focusedNote.note.era} lean={-2} />
+      </div>
+      <p class="note-caption">Posted by K. The building did not remove it.</p>
     </div>
   {/if}
 
@@ -883,20 +1048,24 @@
       <button
         class="panel-close"
         aria-label="Close performer panel"
-        onclick={() => {
-          showPanel = false;
-          focusedPerformer = null;
-        }}
+        onclick={closePanel}
       >
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
 
       <div class="performer-info">
         <div class="performer-header">
-          <i class="fas fa-person" aria-hidden="true"></i>
-          <h3>Performer Station</h3>
+          <i class="fas {focusedPerformer.handout ? 'fa-user-tie' : 'fa-person'}" aria-hidden="true"></i>
+          <h3>{focusedPerformer.label ?? "Performer Station"}</h3>
         </div>
+        {#if focusedPerformer.description}
+          <p class="performer-desc">{focusedPerformer.description}</p>
+        {/if}
       </div>
+
+      {#if focusedPerformer.handout}
+        <DocumentView document={focusedPerformer.handout} />
+      {/if}
 
       {#if focusedPerformer.sequenceId}
         <div class="panel-section">
@@ -904,13 +1073,15 @@
         </div>
       {/if}
 
-      <button
-        class="change-sequence-btn"
-        onclick={() => (showSequencePicker = true)}
-      >
-        <i class="fas fa-exchange-alt" aria-hidden="true"></i>
-        Change Sequence
-      </button>
+      {#if !focusedPerformer.handout}
+        <button
+          class="change-sequence-btn"
+          onclick={() => (showSequencePicker = true)}
+        >
+          <i class="fas fa-exchange-alt" aria-hidden="true"></i>
+          Change Sequence
+        </button>
+      {/if}
     </div>
   {/if}
 
@@ -1216,6 +1387,99 @@
     background: rgba(140, 200, 140, 0.14);
     border-color: rgba(140, 200, 140, 0.35);
     color: rgba(140, 200, 140, 0.9);
+  }
+
+  .performer-desc {
+    margin: 10px 0 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.6;
+    color: var(--museum-gold-60);
+  }
+
+  /* The wing label's threshold stamp: the Order's clinical line under the name */
+  .wing-name {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .wing-stamp {
+    font-family: monospace;
+    font-size: 0.62em;
+    letter-spacing: 0.12em;
+    color: var(--museum-gold-45);
+  }
+
+  .wing-label.stamped {
+    align-items: flex-start;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+
+  .wing-label.stamped i {
+    margin-top: 0.35em;
+  }
+
+  /* Exhibit actions: boot the terminal, leave through the shop */
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: var(--font-size-min, 14px);
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
+  }
+
+  .console-action {
+    background: rgba(125, 255, 154, 0.08);
+    border: 1px solid #1f3a2a;
+    color: #7dff9a;
+    font-family: Consolas, "Courier New", monospace;
+    text-transform: uppercase;
+  }
+
+  .console-action:hover {
+    background: rgba(125, 255, 154, 0.16);
+    border-color: #4fd37a;
+  }
+
+  .exit-action {
+    background: var(--museum-gold-12);
+    border: 1px solid var(--museum-gold-40);
+    color: var(--museum-gold-90);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.05rem;
+  }
+
+  .exit-action:hover {
+    background: var(--museum-gold-20);
+    border-color: var(--museum-gold-60);
+  }
+
+  /* One of K's posted notes, read up close */
+  .note-panel {
+    justify-content: center;
+  }
+
+  .note-stage {
+    padding: 24px 18px;
+  }
+
+  .note-caption {
+    margin: 0;
+    text-align: center;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: var(--font-size-compact, 12px);
+    font-style: italic;
+    color: var(--museum-gold-40);
   }
 
   @media (max-width: 40rem) {
