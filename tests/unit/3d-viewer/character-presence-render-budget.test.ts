@@ -18,6 +18,12 @@ const staffSource = readFileSync(
   ),
   "utf8"
 );
+const staffObjectSource = readFileSync(
+  resolve(
+    "node_modules/@austencloud/scene-3d/src/lib/rendering/create-staff-object.ts"
+  ),
+  "utf8"
+);
 
 describe("performer add render budget", () => {
   it("takes the complete rig to a point instead of popping opaque props away", () => {
@@ -45,11 +51,32 @@ describe("performer add render budget", () => {
   });
 
   it("reuses procedural staff geometries and materials across performers", () => {
-    expect(staffSource).toContain("const geometrySets = new Map");
-    expect(staffSource).toContain("const materialSets = new Map");
-    expect(staffSource).toContain("geometry={geometry.shaft}");
-    expect(staffSource).toContain("material={materials.main}");
-    expect(staffSource.match(/dispose=\{false\}/g)).toHaveLength(7);
+    // Staff3D.svelte handed its seven meshes to create-staff-object.ts so the
+    // worker renderers mount the same object. The module-level caches moved
+    // with them, and they are what keeps a second performer from allocating a
+    // second set of staff geometries and materials.
+    expect(staffObjectSource).toContain("const geometrySets = new Map");
+    expect(staffObjectSource).toContain("const materialSets = new Map");
+    expect(
+      staffObjectSource.match(
+        /mesh\((?:geometry\.\w+|trailGeometry), materials\.\w+, layer\)/g
+      )
+    ).toHaveLength(7);
+    expect(staffObjectSource).toContain(
+      "mesh(geometry.shaft, materials.main, layer)"
+    );
+
+    // An instance teardown detaches its own graph. Disposing a cached geometry
+    // or material here would blank every other performer's staff, which is
+    // what the component's per-mesh `dispose={false}` used to prevent.
+    const disposeBody = staffObjectSource.slice(
+      staffObjectSource.indexOf("dispose() {")
+    );
+    expect(disposeBody).toContain("root.removeFromParent()");
+    expect(disposeBody).not.toMatch(/\.dispose\(\)/);
+
+    expect(staffSource).toContain("createStaffObject({");
+    expect(staffSource).toContain("<T is={staff.root} dispose={false} />");
     expect(staffSource).not.toContain("<T.CylinderGeometry");
   });
 });
