@@ -25,7 +25,7 @@ import {
   type TikaDirectorRequest,
   type TikaDirectorResponse,
 } from "../domain/tika-director";
-import { interpretStageDirectionLocally } from "../domain/tika-director-interpreter";
+import { interpretConversationLocally } from "../domain/tika-director-interpreter";
 
 export async function resolveStageDirection(input: {
   prompt: string;
@@ -42,14 +42,12 @@ export async function resolveStageDirection(input: {
       "This direction conversation is full. Reload the Stage to start a new one, and restate any constraints you want to keep."
     );
   }
-  // Follow-up answers need the previous questions and constraints even when
-  // the latest sentence looks like a complete command on its own.
-  const local =
-    input.conversation.length === 0
-      ? interpretStageDirectionLocally(input.prompt, {
-          currentBeat: input.currentBeat,
-        })
-      : null;
+  // Deterministic first: the patterns read every turn of a conversation they
+  // have owned from the start. One unparsed sentence or a pending question
+  // hands the rest of the conversation to the model, which sees the history.
+  const local = interpretConversationLocally(input.prompt, input.conversation, {
+    currentBeat: input.currentBeat,
+  });
   if (local) return local;
 
   const user = authState.user;

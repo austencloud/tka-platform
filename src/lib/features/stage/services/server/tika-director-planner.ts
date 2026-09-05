@@ -68,6 +68,8 @@ export async function planStageDirection(
       providerOptions: { anthropic: { structuredOutputMode: "jsonTool" } },
       maxOutputTokens: 1_024,
       maxRetries: 0,
+      // No temperature: Sonnet 5 rejects the parameter as deprecated. The
+      // local interpreter in tika-director-interpreter.ts is the deterministic path.
       abortSignal: signal,
       system:
         TIKA_DIRECTOR_SYSTEM_PROMPT +

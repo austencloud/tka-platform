@@ -119,6 +119,21 @@ const performer = (label: string) => ({
   prop: "staff",
 });
 
+function providerErrorMessage(cause: unknown): string | undefined {
+  if (!cause || typeof cause !== "object" || !("responseBody" in cause))
+    return undefined;
+  const body = (cause as { responseBody?: unknown }).responseBody;
+  if (typeof body !== "string") return undefined;
+  try {
+    const parsed = JSON.parse(body) as { error?: { message?: unknown } };
+    return typeof parsed.error?.message === "string"
+      ? parsed.error.message.slice(0, 300)
+      : undefined;
+  } catch {
+    return body.slice(0, 300);
+  }
+}
+
 function adversarialCases(): LiveCase[] {
   const lib = (n: number) => ({ librarySequenceCount: n });
   return [
@@ -1050,6 +1065,10 @@ for (const testCase of cases) {
           cause && typeof cause === "object" && "statusCode" in cause
             ? cause.statusCode
             : undefined,
+        // The provider's own error text: a rejected request parameter looks
+        // identical to a wrong plan without it. Anthropic error bodies carry
+        // no request data or credentials.
+        providerMessage: providerErrorMessage(cause),
         // Assertion text only; provider errors keep their message private.
         detail:
           cause instanceof Error && cause.name === "AssertionError"
