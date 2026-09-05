@@ -8,6 +8,7 @@ import type {
   TikaDirectorRequest,
   TikaDirectorResponse,
 } from "../../src/lib/features/stage/domain/tika-director";
+import { TIKA_CAPABILITIES } from "../../src/lib/features/stage/domain/tika-capabilities";
 
 if (!process.argv.includes("--live")) {
   throw new Error(
@@ -82,6 +83,19 @@ const formationExactly =
   (end: string, beats: number, start?: string) => (r: TikaDirectorResponse) => {
     assert.equal(r.kind, "apply", JSON.stringify(r));
     formationOrAsk(end, beats, start)(r);
+  };
+type Arrange = Extract<TikaDirectorAction, { type: "arrange-formation" }>;
+/** Applies exactly these arrangements, in this order, and nothing else. */
+const arrangeExactly =
+  (...fields: Omit<Arrange, "type">[]) =>
+  (r: TikaDirectorResponse) => {
+    assert.equal(r.kind, "apply", JSON.stringify(r));
+    if (r.kind !== "apply") return;
+    assert.deepEqual(
+      r.actions,
+      fields.map((f) => ({ type: "arrange-formation", ...f })),
+      JSON.stringify(r)
+    );
   };
 /** Exactly one distinct-characters action carrying the given presentation. */
 const charactersWith =
@@ -188,7 +202,7 @@ function adversarialCases(): LiveCase[] {
     {
       name: "adv instantly",
       prompt: "snap them into a circle right now",
-      check: formationOrAsk("circle", 1),
+      check: arrangeExactly({ shape: "circle" }),
     },
     {
       name: "adv fractional beats",
@@ -319,7 +333,7 @@ function adversarialCases(): LiveCase[] {
     {
       name: "adv missing duration",
       prompt: "circle formation",
-      check: noApply,
+      check: arrangeExactly({ shape: "circle" }),
     },
     {
       name: "adv repeated ask",
@@ -464,7 +478,15 @@ const cases: Array<{
   {
     name: "missing timing compound",
     prompt: "Give everyone different props and transition to a circle.",
-    check: (r) => assert.equal(r.kind, "clarify"),
+    check: (r) => {
+      exactly(["arrange-formation", "assign-distinct-props"])(r);
+      if (r.kind !== "apply") return;
+      assert.deepEqual(
+        r.actions.filter((a) => a.type === "arrange-formation"),
+        [{ type: "arrange-formation", shape: "circle" }],
+        JSON.stringify(r)
+      );
+    },
   },
   {
     name: "excluded catalog",
@@ -649,7 +671,129 @@ const cases: Array<{
   // never accepts a wrong action.
   ...adversarialCases(),
   ...presentationCases(),
+  // Arrange versus move: a shape with no count reshapes the current set now.
+  // Run with --grep=arrange.
+  ...arrangeCases(),
+  // Every registry example is a baseline: the planner is taught it verbatim, so
+  // the live model must reproduce it. Run with --grep=example.
+  ...exampleCases(),
 ];
+
+function arrangeCases(): LiveCase[] {
+  const arrangeQuestion: TikaDirectorRequest["conversation"] = [
+    { role: "user", content: "transition to a circle" },
+    {
+      role: "assistant",
+      content: "Arrange them in a circle now, or move over how many counts?",
+    },
+  ];
+  return [
+    {
+      name: "arrange put them in a line",
+      prompt: "Could you put them in a line",
+      check: arrangeExactly({ shape: "line" }),
+    },
+    {
+      name: "arrange line them up",
+      prompt: "line them up",
+      check: arrangeExactly({ shape: "line" }),
+    },
+    {
+      name: "arrange motion verb no count",
+      prompt: "move to a circle",
+      check: arrangeExactly({ shape: "circle" }),
+    },
+    {
+      name: "arrange alias ring",
+      prompt: "put everyone in a ring",
+      check: arrangeExactly({ shape: "circle" }),
+    },
+    {
+      name: "arrange wider",
+      prompt: "a bit wider",
+      check: arrangeExactly({ spacing: "wider" }),
+    },
+    {
+      name: "arrange tighter",
+      prompt: "bring them closer together",
+      check: arrangeExactly({ spacing: "tighter" }),
+    },
+    {
+      name: "arrange shift left",
+      prompt: "shift everyone a little to the left",
+      check: arrangeExactly({ shift: "left" }),
+    },
+    {
+      name: "arrange shift downstage",
+      prompt: "bring them toward the audience",
+      check: arrangeExactly({ shift: "forward" }),
+    },
+    {
+      name: "arrange wider circle",
+      prompt: "a wider circle",
+      check: arrangeExactly({ shape: "circle" }, { spacing: "wider" }),
+    },
+    {
+      name: "arrange more after wider",
+      prompt: "more",
+      conversation: [
+        { role: "user", content: "a bit wider" },
+        { role: "assistant", content: "Spread the cast wider at count 8." },
+      ],
+      check: arrangeExactly({ spacing: "wider" }),
+    },
+    {
+      // Answering the arrange-or-move question with "now" arranges.
+      name: "arrange now answer",
+      prompt: "now",
+      conversation: arrangeQuestion,
+      check: arrangeExactly({ shape: "circle" }),
+    },
+    {
+      // Answering the same question with a count is the move.
+      name: "arrange count answer stays move",
+      prompt: "8",
+      conversation: arrangeQuestion,
+      check: formationExactly("circle", 8),
+    },
+    {
+      name: "arrange line with count stays move",
+      prompt: "put them in a line over 8 counts",
+      check: formationExactly("line", 8),
+    },
+    {
+      // Chains are a later batch; arranging and moving one set is refused.
+      name: "arrange then move",
+      prompt: "put them in a line, then move to a circle over 8 counts",
+      check: noApply,
+    },
+    {
+      name: "arrange unsupported shape",
+      prompt: "arrange them in a heart",
+      check: noApply,
+    },
+  ];
+}
+
+function exampleCases(): LiveCase[] {
+  return TIKA_CAPABILITIES.flatMap((capability) =>
+    capability.examples.map((example, index): LiveCase => {
+      const expected = example.response;
+      return {
+        name: `example ${capability.type} ${index + 1}`,
+        prompt: example.user,
+        ...(example.conversation ? { conversation: example.conversation } : {}),
+        ...(example.scene ? { scene: example.scene } : {}),
+        check: (r) => {
+          assert.equal(r.kind, expected.kind, JSON.stringify(r));
+          if (r.kind === "apply" && expected.kind === "apply") {
+            assert.deepEqual(r.actions, expected.actions, JSON.stringify(r));
+          }
+        },
+      };
+    })
+  );
+}
 
 function presentationCases(): LiveCase[] {
   const eight = {
