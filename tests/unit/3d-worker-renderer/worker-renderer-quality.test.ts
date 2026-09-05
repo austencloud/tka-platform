@@ -155,6 +155,9 @@ describe("worker renderer adaptive quality", () => {
         type: "switch-environment",
         requestId: 2,
         environment: "rainbow",
+        // Every environment start carries the motion preference now, not just
+        // the first slot boot (5cb43b1e80). jsdom reports no reduce request.
+        reducedMotion: false,
       },
       []
     );
