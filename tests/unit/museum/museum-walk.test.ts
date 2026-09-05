@@ -98,6 +98,7 @@ describe("the museum as one walk", () => {
       "victorian",
       "digital",
       "suppression",
+      "cross-reference",
       "crumble",
       "gallery",
       "fear",
