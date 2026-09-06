@@ -475,7 +475,11 @@
       {/await}
     {:else if config.scene === "rainbow"}
       {#await import("../scenes/RainbowScene.svelte") then { default: RainbowScene }}
-        <RainbowScene {stageRadius} {stageRadiusGrowth} />
+        <RainbowScene
+          {stageRadius}
+          {stageRadiusGrowth}
+          worldYOffset={environmentYOffset}
+        />
       {/await}
     {:else if config.scene === "celestial"}
       {#await import("../scenes/CelestialScene.svelte") then { default: CelestialScene }}
