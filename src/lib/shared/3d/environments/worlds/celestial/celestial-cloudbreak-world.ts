@@ -5,6 +5,7 @@ import {
   Group,
   Mesh,
   MeshBasicMaterial,
+  MeshStandardMaterial,
   PlaneGeometry,
   Shape,
   ShapeGeometry,
@@ -29,6 +30,7 @@ import {
   CLOUDBREAK_SKY_SUN,
 } from "../../scenes/celestial/cloudbreak-layout";
 import { disposeCelestialObjectTree } from "./celestial-disposal";
+import { prepareCoveragePreservingAlphaMipmaps } from "../../../rendering/alpha-coverage-mipmaps";
 
 export interface CelestialCloudbreakAssets {
   shell: Object3D;
@@ -72,7 +74,18 @@ function prepareShell(
       child.userData.sunwardRole
     );
     child.receiveShadow = true;
-    const cloneMaterial = (material: Material) => material.clone();
+    const cloneMaterial = (material: Material) => {
+      const copy = material.clone();
+      if (
+        copy instanceof MeshStandardMaterial &&
+        copy.name.startsWith("EZ-Tree") &&
+        copy.alphaTest > 0 &&
+        copy.map
+      ) {
+        prepareCoveragePreservingAlphaMipmaps(copy.map, copy.alphaTest);
+      }
+      return copy;
+    };
     child.material = Array.isArray(child.material)
       ? child.material.map(cloneMaterial)
       : cloneMaterial(child.material);
