@@ -212,7 +212,8 @@ export function buildCoveragePreservingMipChain(
 const preparedTextures = new WeakSet<Texture>();
 
 function readLevel0(image: unknown): RgbaLevel | null {
-  if (typeof document === "undefined") return null;
+  if (typeof document === "undefined" && typeof OffscreenCanvas === "undefined")
+    return null;
   const source = image as
     | HTMLImageElement
     | HTMLCanvasElement
