@@ -49,10 +49,10 @@ export function createBlossomLightingRig(
   key.shadow.intensity = 0.56;
   root.add(key);
 
-  const warmFill = new DirectionalLight("#ff7f91", 0.88);
+  const warmFill = new DirectionalLight("#f4b8b0", 0.65);
   warmFill.name = "blossom-warm-fill";
   root.add(warmFill);
-  const coolFill = new DirectionalLight("#7f73b7", 0.36);
+  const coolFill = new DirectionalLight("#bcc6e1", 0.55);
   coolFill.name = "blossom-cool-fill";
   root.add(coolFill);
   const hemisphere = new HemisphereLight(
@@ -67,9 +67,9 @@ export function createBlossomLightingRig(
   root.add(ambient);
 
   const practicals = [
-    { color: "#ff9b52", intensity: 6.5, distance: 10, x: 7, y: 2.15, z: 4.6 },
-    { color: "#ff9b52", intensity: 6.5, distance: 10, x: -7, y: 2.15, z: 4.6 },
-    { color: "#ff7565", intensity: 4.6, distance: 9, x: 0, y: 2.6, z: 14.2 },
+    { color: "#ffc080", intensity: 12, distance: 11, x: 18, y: 3.8, z: -6.5 },
+    { color: "#ffc080", intensity: 12, distance: 11, x: -19, y: 3.8, z: -5.5 },
+    { color: "#ffb07c", intensity: 5, distance: 9, x: -8, y: 2.6, z: 36 },
   ];
   const practicalLights = practicals
     .slice(0, runtime.effects.lanternLights)

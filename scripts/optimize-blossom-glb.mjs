@@ -2,7 +2,7 @@
 /**
  * Optimize the authored Blossom garden for mobile WebGL delivery.
  *
- * The source uses the two approved PlantFactory crowns plus shared Blender mesh
+ * The source uses six PlantFactory silhouettes plus shared Blender mesh
  * data for ecology islands and carved lanterns. `instance` converts repeated
  * nodes to EXT_mesh_gpu_instancing while preserving named stage and hero-prop
  * nodes. PBR atlases are resized and WebP-compressed before the final meshopt

@@ -66,7 +66,7 @@ export function createBlossomRiver(
     clipBias: 0.003,
     textureWidth: 1024,
     textureHeight: 512,
-    color: 0x5b7086,
+    color: 0xa7afc4,
     shader: ReflectivePoolShader,
   });
   reflector.name = "blossom-reflective-river";
@@ -82,8 +82,8 @@ export function createBlossomRiver(
     return new Vector2(point[0], point[1]);
   });
   const values: Record<string, unknown> = {
-    uDeepColor: new Color("#06121c"),
-    uShallowColor: new Color("#15343c"),
+    uDeepColor: new Color("#293c50"),
+    uShallowColor: new Color("#697b80"),
     uSize: new Vector2(width, depth),
     uSunDirection: new Vector3(-0.42, 0.58, -0.7).normalize(),
     uSunColor: new Color("#5d738f"),

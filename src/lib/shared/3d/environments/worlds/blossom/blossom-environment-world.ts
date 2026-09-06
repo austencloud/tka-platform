@@ -3,15 +3,16 @@ import {
   FogExp2,
   Group,
   ImageBitmapLoader,
+  MeshStandardMaterial,
   NoColorSpace,
   RepeatWrapping,
-  Scene,
   SRGBColorSpace,
   Texture,
   type Camera,
   type Material,
   type Mesh,
   type Object3D,
+  type Scene,
   type WebGLRenderer,
 } from "three";
 import {
@@ -31,6 +32,7 @@ import {
   type BlossomQualityTier,
 } from "../../scenes/cherry-blossom/blossom-runtime";
 import { getBlossomActiveProductionPhase } from "../../scenes/cherry-blossom/blossom-site";
+import { getBlossomStageFootprint } from "../../scenes/cherry-blossom/blossom-stage-operations";
 import {
   createBlossomAtmosphere,
   type BlossomAtmosphere,
@@ -266,8 +268,25 @@ function configureAuthoredEnvironment(
       child.visible = !reflectiveWater;
     }
     if (!mesh.isMesh) return;
+    const materials = Array.isArray(mesh.material)
+      ? mesh.material
+      : [mesh.material];
+    for (const material of materials) {
+      if (
+        !(material instanceof MeshStandardMaterial) ||
+        !material.name.startsWith("Blossom Cherry")
+      )
+        continue;
+      if (material.alphaTest > 0) {
+        // A small transmission approximation keeps unlit petal faces pink.
+        material.emissive.set("#e8b4c3");
+        material.emissiveIntensity = 0.1;
+      } else {
+        material.color.set("#92766c");
+      }
+    }
     mesh.receiveShadow =
-      identity.includes("Garden Ground") ||
+      /Garden(?:_| )Ground/.test(identity) ||
       identity.includes("Gravel") ||
       identity.includes("GardenEcology") ||
       identity.includes("Audience_") ||
@@ -279,6 +298,8 @@ function configureAuthoredEnvironment(
     mesh.castShadow =
       shadows &&
       (identity.includes("Sakura") ||
+        /Blossom(?:_| )open-crown/.test(identity) ||
+        identity.includes("PlantFactory_") ||
         identity.includes("GardenEcology") ||
         identity.includes("Torii") ||
         identity.includes("Bridge") ||
@@ -294,8 +315,9 @@ export function createBlossomEnvironmentWorld(
   assets: BlossomEnvironmentAssets
 ): BlossomEnvironmentWorld {
   const config = options.config ?? createDefaultBlossomConfig();
-  const stageWidth = options.stageWidth ?? 6;
-  const stageDepth = options.stageDepth ?? 6;
+  const footprint = getBlossomStageFootprint();
+  const stageWidth = Math.max(options.stageWidth ?? 0, footprint.width);
+  const stageDepth = Math.max(options.stageDepth ?? 0, footprint.depth);
   const stageZOffset = options.stageZOffset ?? 0;
   const reducedMotion = options.reducedMotion ?? false;
   const motionScale = reducedMotion ? 0 : 1;
