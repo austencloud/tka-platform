@@ -30,7 +30,6 @@
   import type { PropChiralitySeam } from "./prop-chirality-seam";
   import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { isPropUnlocked } from "$lib/shared/gamification/state/prop-collection-state.svelte";
-  import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
   import PremiumBadge from "$lib/shared/subscription/components/PremiumBadge.svelte";
   import PremiumNudge from "$lib/shared/subscription/components/PremiumNudge.svelte";
   import {
@@ -39,12 +38,6 @@
     routePropTileClick,
     PREMIUM_COSMETIC_NUDGE,
   } from "$lib/shared/subscription/domain/premium-prop-access";
-
-  // Poi is deactivated for the public picker but re-enabled for dev/admin so the
-  // poi-legal composer filter can be exercised — same gate as the filter itself
-  // (isPoiComposerFilterEnabled in apply-poi-legal-filter.ts). Kept inline to
-  // avoid a shared→feature import.
-  const poiPickerEnabled = $derived(import.meta.env.DEV || isAdmin());
 
   // Paid cosmetics. While the Scribe tier is shelved these are a dev/admin
   // preview and everyone else never sees the tile — showing a "Go Premium"
@@ -115,8 +108,6 @@
   function canShowProp(prop: PropType): boolean {
     if (prop === PropType.HAND && includeBareHands) return true;
     if (allowedPropSet && !allowedPropSet.has(prop)) return false;
-    if (prop === PropType.POI)
-      return accessMode === "educational" || poiPickerEnabled;
     if (isPremiumCosmeticProp(prop)) return premiumPickerEnabled;
     return isPropActive(prop);
   }
