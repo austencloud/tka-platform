@@ -58,7 +58,8 @@
         <div class="artifact-label">{artifact.label}</div>
         <div
           class="artifact-stage"
-          class:portrait={entry.id === "lorq" || artifact.kind === "document"}
+          class:portrait={entry.id === "lorq"}
+          class:document={artifact.kind === "document"}
         >
           <ArchiveRecordVisual {entry} active />
         </div>
@@ -292,6 +293,10 @@
     aspect-ratio: 1;
     container-type: size;
     min-width: 0;
+  }
+  .artifact-stage.document {
+    aspect-ratio: auto;
+    container-type: inline-size;
   }
   .artifact-stage.portrait {
     aspect-ratio: 3 / 4;

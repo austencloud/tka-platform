@@ -17,6 +17,7 @@
   let activeEntry = $state(defaultEntry);
   let indexOpen = $state(false);
   let reader: HTMLElement;
+  let indexRegion: HTMLElement;
   let indexScroll = $state<HTMLElement>();
   const compact = new MediaQuery("(max-width: 1099px)");
   const activeIndex = $derived(
@@ -43,6 +44,11 @@
     });
   });
 
+  function scrollToEntry() {
+    const target = compact.current ? indexRegion : reader;
+    target?.scrollIntoView({ block: "start", behavior: "instant" });
+  }
+
   async function selectEntry(entry: ArchiveEntry) {
     activeEntry = entry;
     indexOpen = false;
@@ -50,7 +56,7 @@
     if (window.location.hash !== nextHash) pushState(nextHash, {});
     await tick();
     reader?.focus({ preventScroll: true });
-    reader?.scrollIntoView({ block: "start", behavior: "instant" });
+    scrollToEntry();
   }
 
   onMount(() => {
@@ -64,6 +70,9 @@
       indexOpen = false;
     };
     restore();
+    if (entryFromArchiveHash(window.location.hash, ARCHIVE_ENTRIES)) {
+      void tick().then(scrollToEntry);
+    }
     window.addEventListener("popstate", restore);
     window.addEventListener("hashchange", restore);
     return () => {
@@ -89,7 +98,11 @@
   </header>
 
   <div class="archive-layout">
-    <aside class="entry-index" aria-label="Browse the archive">
+    <aside
+      class="entry-index"
+      bind:this={indexRegion}
+      aria-label="Browse the archive"
+    >
       {#if compact.current}
         <details bind:open={indexOpen}>
           <summary
@@ -116,6 +129,7 @@
     </aside>
 
     <div
+      id={`archive-record-${activeEntry.id}`}
       class="selected-reader"
       bind:this={reader}
       tabindex="-1"
@@ -350,6 +364,7 @@
       margin-bottom: 1.5rem;
     }
     .entry-index {
+      scroll-margin-top: calc(var(--marketing-header-h, 64px) + 1rem);
       position: static;
     }
     details {

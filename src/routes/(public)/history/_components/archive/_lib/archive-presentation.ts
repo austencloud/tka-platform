@@ -56,7 +56,7 @@ export function archiveArtifact(
     return {
       kind: "document",
       label: "Preserved documents",
-      note: "Read the original diagrams here, or open a complete PDF below.",
+      note: "Browse the original diagrams, or open a complete PDF.",
     };
   return ARTIFACTS[entry.id] ?? null;
 }
