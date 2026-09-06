@@ -385,17 +385,28 @@
   }
 
   /* Chevrons, the nudge glyphs the level stepper and the value scroller
-     already use, at the same share of the value size. */
+     already use, at the same share of the value size. Font Awesome gives
+     the icon a fixed 1.25em box; with the browser's 6px button padding
+     that box started 6px in and ran past a corner-sized button, so the
+     right chevron sat on the stepper's border and was clipped. No padding,
+     as on the level stepper, keeps the box inside and the glyph centred. */
   .part-stepper button {
     display: grid;
     place-items: center;
     min-width: var(--min-touch-target, 44px);
+    padding: 0;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
     cursor: pointer;
     font-size: calc(var(--value-size) * 0.7);
     transition:
       color var(--duration-fast, 150ms) ease,
       background var(--duration-fast, 150ms) ease;
+  }
+
+  /* The glyph is narrower than the icon box; sizing the box to the glyph
+     keeps it inside a button that is only as wide as the box would be. */
+  .part-stepper button > i {
+    width: auto;
   }
 
   .part-stepper button:hover:not(:disabled) {
