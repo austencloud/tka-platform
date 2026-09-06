@@ -10,6 +10,7 @@
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { PrintSide } from "./print-side";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
 
   interface Props {
     cardCount: number;
@@ -336,6 +337,24 @@
     the backs.
   </p>
 </div>
+
+<!-- Deck render / PDF / ZIP all run off a single awaited exporter call that takes
+     no abort token, so Cancel is shown disabled with the reason. Wiring a real
+     abort means threading `shouldCancel` through exportDeckPDF / exportDeckZIP /
+     exportFixedSheetBatchPDF. -->
+<ExportTakeover
+  phase={busy ? "capturing" : "idle"}
+  progress={exportTotal > 0 ? exportProgress / exportTotal : 0}
+  phaseLabel={isPrinting
+    ? "Preparing print sheets..."
+    : isRendering
+      ? "Rendering cards..."
+      : "Building download..."}
+  detail={exportTotal > 0 ? `Card ${exportProgress} / ${exportTotal}` : null}
+  onCancel={() => {}}
+  cancelDisabledReason="Deck rendering runs in one pass and can't be stopped part-way."
+  label="Preparing the deck"
+/>
 
 <style>
   .print-panel {
