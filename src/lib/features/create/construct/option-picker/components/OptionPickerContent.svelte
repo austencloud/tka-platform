@@ -50,6 +50,11 @@ Uses organizer and sizer services for section grouping and sizing.
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { selectOptionInteractionHintPresentation } from "../services/option-interaction-hint-presentation";
   import { selectOptionControlsPresentation } from "../services/option-controls-presentation";
+  import {
+    hasPendingAncestorLayoutTransition,
+    shouldCommitContainerSize,
+    type TransitionLike,
+  } from "../services/container-settle";
 
   interface Props {
     options: PreparedPictographData[];
@@ -445,15 +450,19 @@ Uses organizer and sizer services for section grouping and sizing.
     const observer = new ResizeObserver((entries) => {
       clearTimeout(timeoutId);
       timeoutId = window.setTimeout(() => {
+        // observe() delivers the current size straight away, so before the
+        // first commit this debounce would fire ~100ms in — mid workspace
+        // expansion, with exactly the transient width the probe below exists
+        // to skip. The probe owns the opening measurement; the observer only
+        // tracks changes after it.
+        if (!sizingStable) return;
         const entry = entries[0];
         if (entry) {
           const w = entry.contentRect.width;
           const h = entry.contentRect.height;
           if (w > 100 && h > 100) {
-            cancelSettleProbe();
             containerWidth = w;
             containerHeight = h;
-            sizingStable = true;
           }
         }
       }, 100); // Debounce 100ms
@@ -469,43 +478,54 @@ Uses organizer and sizer services for section grouping and sizing.
 
     // Initial measurement — taken once the box has stopped moving.
     //
-    // Selecting a start position expands the workspace, and
+    // Choosing a start position expands the workspace, and
     // StandardWorkspaceLayout eases its grid columns over 450ms to do it. The
-    // picker mounts on the first frame of that ease, so measuring immediately
+    // picker mounts before that ease has run a frame, so measuring immediately
     // reports the panel at its PRE-expansion width: wide enough to commit to
     // the 8-column desktop grid inside a panel that is about to be half that.
-    // The debounced observer below then delivers the settled width ~half a
-    // second later and swaps in the swipe layout — right as the user is
-    // reaching for an option, which moves the target under their cursor.
-    // Waiting for two consecutive frames to agree picks the destination layout
-    // the first time. A picker that mounts at rest settles on the next frame.
-    const SETTLE_TIMEOUT_MS = 1000;
+    // The debounced observer above then delivers the settled width ~900ms
+    // later and swaps in the swipe layout — right as the user is reaching for
+    // an option, which moves the target out from under their cursor.
+    //
+    // "Have two frames agreed?" cannot tell arrived from not-started-yet:
+    // preparing the first options janks the main thread, and a transition does
+    // not advance until a frame is produced, so the opening frames all report
+    // the same pre-expansion width. Ask the transition itself instead — a
+    // pending one is already registered by the time the probe forces layout —
+    // and commit only when nothing above us is still resizing.
+    const SETTLE_TIMEOUT_MS = 1500;
     const settleStartedAt = performance.now();
     let previous: { width: number; height: number } | null = null;
+
+    function ancestorIsResizing(): boolean {
+      if (typeof document.getAnimations !== "function") return false;
+      return hasPendingAncestorLayoutTransition(
+        element,
+        document.getAnimations() as unknown as TransitionLike[]
+      );
+    }
 
     function probeUntilSettled() {
       settleFrame = requestAnimationFrame(() => {
         settleFrame = null;
+        // Reading the box first flushes style, so a transition queued by a
+        // class change that has not painted yet is registered before we ask.
         const rect = element.getBoundingClientRect();
-        if (rect.width <= 100 || rect.height <= 100) {
-          probeUntilSettled();
-          return;
-        }
-        const steady =
-          previous !== null &&
-          Math.abs(previous.width - rect.width) < 0.5 &&
-          Math.abs(previous.height - rect.height) < 0.5;
-        // The cap keeps a box that never settles — a looping ancestor
-        // animation, a drag-resize the user is still holding — from leaving
-        // the panel blank. The observer corrects whatever it commits.
-        const expired = performance.now() - settleStartedAt > SETTLE_TIMEOUT_MS;
-        if (steady || expired) {
+        const commit = shouldCommitContainerSize({
+          width: rect.width,
+          height: rect.height,
+          previous,
+          ancestorTransitionPending: ancestorIsResizing(),
+          elapsedMs: performance.now() - settleStartedAt,
+          timeoutMs: SETTLE_TIMEOUT_MS,
+        });
+        previous = { width: rect.width, height: rect.height };
+        if (commit) {
           containerWidth = rect.width;
           containerHeight = rect.height;
           sizingStable = true;
           return;
         }
-        previous = { width: rect.width, height: rect.height };
         probeUntilSettled();
       });
     }
