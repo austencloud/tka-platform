@@ -1,0 +1,121 @@
+{
+  "sourceDigest": "11f497bfa143098289adacac8a438fb7cb546cb5a510c2e48251c3faeefbd86c",
+  "blenderVersion": "5.0.1",
+  "computeDevice": "OPTIX",
+  "fast": false,
+  "removedGrayboxObjects": {
+    "routeRibbons": 120,
+    "steamThreshold": 1,
+    "performerPads": 3,
+    "qaLights": 5
+  },
+  "torches": {
+    "wallMounted": 45,
+    "floorStanding": 15,
+    "unmoved": 0
+  },
+  "rockTriangles": {
+    "fl": 20816,
+    "lane": 43756,
+    "ek": 19346,
+    "dj": 21114
+  },
+  "courtStoneTriangles": {
+    "dj": 284,
+    "ek": 284,
+    "fl": 284
+  },
+  "lightmaps": {
+    "rock-fl": {
+      "px": 2048,
+      "samples": 256
+    },
+    "rock-lane": {
+      "px": 4096,
+      "samples": 256
+    },
+    "rock-ek": {
+      "px": 2048,
+      "samples": 256
+    },
+    "rock-dj": {
+      "px": 2048,
+      "samples": 256
+    },
+    "stone-dj": {
+      "px": 1024,
+      "samples": 128
+    },
+    "stone-ek": {
+      "px": 1024,
+      "samples": 128
+    },
+    "stone-fl": {
+      "px": 1024,
+      "samples": 128
+    }
+  },
+  "textureSets": {
+    "basalt": "dark_rock_02",
+    "shale": "dark_rock",
+    "cinder": "burned_ground_01"
+  },
+  "uvMetresPerUnit": {
+    "rock-fl": 34.90592844435333,
+    "rock-lane": 56.04533144052375,
+    "rock-ek": 33.100857304851075,
+    "rock-dj": 33.87869272491319,
+    "stone-dj": 27.519086491244263,
+    "stone-ek": 27.519088035938836,
+    "stone-fl": 27.51909796223196
+  },
+  "exportObjects": [
+    "FF_CourtStone_DJ",
+    "FF_CourtStone_EK",
+    "FF_CourtStone_FL",
+    "FF_FlameGuide_dj",
+    "FF_FlameGuide_ek",
+    "FF_FlameGuide_field",
+    "FF_FlameGuide_fl",
+    "FF_Growth_Route_earth-growth-path_01",
+    "FF_Growth_Route_earth-growth-path_02",
+    "FF_Growth_Route_earth-growth-path_03",
+    "FF_Growth_Route_earth-growth-path_04",
+    "FF_Growth_earth-growth_01",
+    "FF_Growth_earth-growth_02",
+    "FF_Growth_earth-growth_03",
+    "FF_Growth_earth-growth_04",
+    "FF_Guide_walked-route-coals_01",
+    "FF_Guide_walked-route-coals_02",
+    "FF_Guide_walked-route-coals_03",
+    "FF_Guide_walked-route-coals_04",
+    "FF_Guide_walked-route-coals_05",
+    "FF_Guide_walked-route-coals_06",
+    "FF_Rock_DJ",
+    "FF_Rock_EK",
+    "FF_Rock_FL",
+    "FF_Rock_Lane",
+    "FF_TorchStem_dj",
+    "FF_TorchStem_ek",
+    "FF_TorchStem_field",
+    "FF_TorchStem_fl",
+    "FF_Trench_dj",
+    "FF_Trench_ek",
+    "FF_Trench_fl",
+    "FF_Water_Threshold"
+  ],
+  "exportObjectCount": 145,
+  "rawGlbBytes": 39665868,
+  "finalGlbBytes": 2850208,
+  "finalGlbPath": "static/models/museum/cave/first-fire-cinder-court.glb",
+  "renders": {
+    "water-entry": "E:\\worktrees\\tka-platform\\first-fire-production\\blender\\qa\\first-fire-production\\first-fire-water-entry.png",
+    "ember-bridge": "E:\\worktrees\\tka-platform\\first-fire-production\\blender\\qa\\first-fire-production\\first-fire-ember-bridge.png",
+    "dj-threshold": "E:\\worktrees\\tka-platform\\first-fire-production\\blender\\qa\\first-fire-production\\first-fire-dj-threshold.png",
+    "ek-threshold": "E:\\worktrees\\tka-platform\\first-fire-production\\blender\\qa\\first-fire-production\\first-fire-ek-threshold.png",
+    "fl-threshold": "E:\\worktrees\\tka-platform\\first-fire-production\\blender\\qa\\first-fire-production\\first-fire-fl-threshold.png",
+    "earth-reveal": "E:\\worktrees\\tka-platform\\first-fire-production\\blender\\qa\\first-fire-production\\first-fire-earth-reveal.png",
+    "overview": "E:\\worktrees\\tka-platform\\first-fire-production\\blender\\qa\\first-fire-production\\first-fire-overview.png",
+    "plan": "E:\\worktrees\\tka-platform\\first-fire-production\\blender\\qa\\first-fire-production\\first-fire-plan.png"
+  }
+}

@@ -201,7 +201,7 @@ describe("museum rendering performance contract", () => {
     );
     const pointLightSources = [
       "DrownedGalleryAuthored.svelte",
-      "FirstFireGraybox.svelte",
+      "FirstFireAuthored.svelte",
       "EarthCanyonGraybox.svelte",
       "AirChimneyGraybox.svelte",
       "VulcanCaveScenicLayer.svelte",

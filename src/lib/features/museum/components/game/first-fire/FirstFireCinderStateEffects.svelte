@@ -3,7 +3,7 @@
   import { Color } from "three";
   import type { FirstFireBlenderContract } from "$lib/features/museum/data/first-fire-blender-contract";
   import { completedFirstFireShrines } from "$lib/features/museum/data/first-fire-procession-state";
-  import type { FirstFireGrayboxReviewState } from "./first-fire-graybox-review";
+  import type { FirstFireGrayboxReviewState } from "$lib/features/museum/data/first-fire-procession-review";
 
   interface Props {
     contract: FirstFireBlenderContract;

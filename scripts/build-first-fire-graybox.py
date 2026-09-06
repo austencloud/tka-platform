@@ -63,7 +63,7 @@ def load_contract() -> tuple[dict, dict, str]:
         )
     if contract["schemaVersion"] != 2:
         raise RuntimeError("The Cinder Court builder requires contract schema v2")
-    if contract["room"]["width"] != 58 or contract["room"]["depth"] != 44:
+    if contract["room"]["width"] != 58 or contract["room"]["depth"] < 44:
         raise RuntimeError("Refusing to build a stale non-58-by-44 First Fire plan")
     return manifest, contract, digest
 
@@ -1010,8 +1010,9 @@ for _court in [v for v in VOLUME_PLAN if v["kind"] == "court"]:
                                 * _needle["far"] / NEEDLE_STEPS, 2),
             })
 
-# Doorways punch clean through the mass at the contract's clear width, so the
-# seam to Water and to Earth is an opening in rock rather than a missing wall.
+# Doorways punch clean through the mass at the museum's stamped doorway width
+# (the route's 4 m mouth funnels into it inside the room), so the seam to Water
+# and to Earth is an opening in rock the colliders agree with.
 for side, door in CONTRACT["doors"].items():
     outward = -1 if door["side"] == "west" else 1
     carve(swept_void(
@@ -1020,7 +1021,7 @@ for side, door in CONTRACT["doors"].items():
             (door["blender"]["x"] - outward * 1.2, door["blender"]["y"]),
             (door["blender"]["x"] + outward * (SHELL_MARGIN + 0.8), door["blender"]["y"]),
         ],
-        door["clearWidth"],
+        door.get("tileClearWidth", door["clearWidth"]),
         DOOR_CLEARANCE,
         extend=0,
     ))
