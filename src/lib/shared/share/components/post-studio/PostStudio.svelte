@@ -67,6 +67,8 @@
   type FocusedPanel = "canvas" | "edit" | "timing";
 
   interface Props {
+    /** Retain the draft while its host is hidden, without running playback. */
+    active?: boolean;
     sequence: SequenceData;
     cardPreviewUrl: string | null;
     animationPreviewUrl: string | null;
@@ -87,6 +89,7 @@
   }
 
   let {
+    active = true,
     sequence,
     cardPreviewUrl,
     animationPreviewUrl,
@@ -446,7 +449,8 @@
   const artControllers = new PostStudioArtControllers({
     getSequence: () => displaySequence,
     getLeftPropType: () => synchronizedCardRenderOptions?.leftPropTypeOverride,
-    getRightPropType: () => synchronizedCardRenderOptions?.rightPropTypeOverride,
+    getRightPropType: () =>
+      synchronizedCardRenderOptions?.rightPropTypeOverride,
     pathPolicy: animationVisibility,
   });
   setPostStudioArtContext(artControllers);
@@ -455,7 +459,9 @@
   // Seeded as touched when the URL carried an explicit choice: the untouched
   // `$effect` below (line ~486) would otherwise overwrite it the instant
   // `canKeepOriginalAudio` resolves. See `ps-slice.ts`, "Touched-flag diffing".
-  let audioMode = $state<"original" | "instagram">(psSeed?.audioMode ?? "original");
+  let audioMode = $state<"original" | "instagram">(
+    psSeed?.audioMode ?? "original"
+  );
   let audioModeTouched = $state(psSeed?.audioMode !== undefined);
   let exportProgress = $state<PostStudioExportProgress | null>(null);
   let exportError = $state("");
@@ -512,7 +518,7 @@
    */
   let autoPlayStarted = $state(false);
   $effect(() => {
-    if (autoPlayStarted) return;
+    if (autoPlayStarted || !active) return;
     if (!composition.isReady || composition.isPlaying) return;
     autoPlayStarted = true;
     composition.togglePlayback();
@@ -547,7 +553,8 @@
     capturePsSlice(
       {
         propType: selectedPropType,
-        defaultPropType: settingsService.settings.leftPropType ?? PropType.STAFF,
+        defaultPropType:
+          settingsService.settings.leftPropType ?? PropType.STAFF,
         audioMode,
         audioModeTouched,
         notationMirrored,
@@ -688,6 +695,10 @@
   let frameRequest: number | null = null;
   let previousFrameTime: number | null = null;
 
+  $effect(() => {
+    if (!active) composition.pause();
+  });
+
   function tick(now: number): void {
     if (previousFrameTime !== null) {
       composition.advance((now - previousFrameTime) / 1000);
@@ -715,7 +726,6 @@
   onDestroy(() => {
     if (frameRequest !== null) cancelAnimationFrame(frameRequest);
   });
-
 </script>
 
 <svelte:window bind:innerHeight={viewportHeight} />

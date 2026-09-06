@@ -55,11 +55,13 @@ export interface CatalogEntry {
   subWorks?: CatalogSubWork[];
   sources: CatalogSource[];
   videos?: CatalogVideo[];
-  /**
-   * A useful page on this site where the system can be explored or run.
-   * Distinct from `sources`, which points outward at the historical record.
-   */
-  explore?: CatalogSource;
+  /** A destination must say whether it is an original work or our explanation. */
+  explore?: CatalogSource & { kind: "original" | "explanation" | "tool" };
+  /** Present-day applications are separate from the historical work. */
+  applications?: (CatalogSource & {
+    role: "product" | "tool";
+    description: string;
+  })[];
 }
 
 const HOP_CAPS =
@@ -81,6 +83,7 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     records:
       "Fractions of separate moves assembled into one pattern that repeats without a seam. Alien Jon, who took up the term in the same thread, is careful that it names a way of thinking about movement rather than a move.",
     explore: {
+      kind: "explanation",
       label: "See CAPs explained",
       href: "/notation/caps#what-is",
     },
@@ -98,6 +101,7 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     records:
       "A pattern written as two numbers of turns and two radii: Theta1 Theta2 ; Rho1 Rho2. A division term takes a fraction of the cycle instead of all of it. It carries a wrap table and a cycloid condition, plus rules for which patterns are physically possible.",
     explore: {
+      kind: "explanation",
       label: "See the model explained",
       href: "/notation/caps#math",
     },
@@ -222,7 +226,11 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
         href: "https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation",
       },
     ],
-    explore: { label: "Run the notation", href: "/notation/qft" },
+    explore: {
+      kind: "tool",
+      label: "Explore QFT in the interactive viewer",
+      href: "/notation/qft",
+    },
   },
   {
     id: "lorq",
@@ -255,13 +263,7 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
         note: "2013, with Brian Thompson and David Cantor: the 1:1 club flowers and every transition between them",
       },
     ],
-    // Nichols' live site, spinscience.xyz, is deliberately NOT in this list.
-    // Its HTTPS certificate is expired, so an https:// link fails outright and
-    // an http:// one breaks the catalog's https-only contract (enforced by
-    // tests/unit/notation-roots-remediation-contract.test.ts). Both of his
-    // domains that still serve over https are below, and the live site is
-    // linked in full from /notation/shape-matrix, where the http exception is
-    // made once and explained.
+    // The original publication uses HTTP: its HTTPS certificate is expired.
     sources: [
       {
         label: "Book of P.H.A.T.",
@@ -272,8 +274,13 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
         href: "https://sirlorq.wordpress.com/324-patterns/",
       },
       { label: "LORQ:TECH", href: "https://www.youtube.com/user/SirLorq" },
+      {
+        label: "144 Shape Matrix, 2014 rework",
+        href: ORIGINAL_SHAPE_MATRIX_URL,
+      },
     ],
     explore: {
+      kind: "original",
       label: "View Lorq’s original 144 Shape Matrix",
       href: ORIGINAL_SHAPE_MATRIX_URL,
     },
@@ -299,11 +306,28 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     system: "The Kinetic Alphabet",
     people: "Austen Cloud",
     records:
-      "Each pair of positions given a letter, so a sequence can be read back and searched as a word. Austen Cloud also built Kinetic Shape Engine, extending the row-and-column pairing approach of Lorq Nichols’ 144 Shape Matrix with TKA Levels 1–4, whole-number ratio exploration, live animation, and pictograph readouts.",
-    sources: [{ label: "The guide", href: "/guide" }],
+      "A visual notation for flow arts. Letters and pictographs record movement, allowing sequences to be read, shared, and composed as words.",
+    sources: [{ label: "The Kinetic Alphabet guide", href: "/guide" }],
     explore: {
-      label: "Open Kinetic Shape Engine",
-      href: "/notation/shape-matrix",
+      kind: "explanation",
+      label: "Read the notation guide",
+      href: "/guide",
     },
+    applications: [
+      {
+        role: "product",
+        label: "Flow Arts Composer",
+        href: "/create",
+        description:
+          "Austen Cloud’s main application for building, animating, saving, and sharing sequences in The Kinetic Alphabet.",
+      },
+      {
+        role: "tool",
+        label: "Shape Engine",
+        href: "/notation/shape-matrix",
+        description:
+          "An exploration tool within Flow Arts Composer that can also be opened on its own. It brings together VTG, TKA, timing, and direction. Its matrix extends Lorq Nichols’ pairing approach; it is Austen Cloud’s work.",
+      },
+    ],
   },
 ];

@@ -274,12 +274,20 @@
         <dd>{meters(diagnostics.normalizedHeightMeters)}</dd>
       </div>
       <div>
-        <dt>Left reach error</dt>
-        <dd>{meters(diagnostics.leftHandErrorMeters)}</dd>
+        <dt>Left palm target error</dt>
+        <dd>
+          {diagnostics.status === "ready" && !diagnostics.fingerChains
+            ? "No finger rig"
+            : meters(diagnostics.leftHandErrorMeters)}
+        </dd>
       </div>
       <div>
-        <dt>Right reach error</dt>
-        <dd>{meters(diagnostics.rightHandErrorMeters)}</dd>
+        <dt>Right palm target error</dt>
+        <dd>
+          {diagnostics.status === "ready" && !diagnostics.fingerChains
+            ? "No finger rig"
+            : meters(diagnostics.rightHandErrorMeters)}
+        </dd>
       </div>
       <div>
         <dt>Cold load</dt>

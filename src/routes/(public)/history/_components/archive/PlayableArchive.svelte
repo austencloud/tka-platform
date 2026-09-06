@@ -1,854 +1,389 @@
-<!--
-  The archive uses overview + detail, not a carousel. Calendar position owns
-  the horizontal axis, all four evidence lanes remain visible, and the dense
-  2009–2010 period expands inside the lane that owns it. Compact screens receive
-  the same records as a vertical chronology. Viewports without room for the
-  persistent detail panel open one record in the shared Drawer primitive.
-
-  Spec: docs/superpowers/specs/shipped/2026-07-27-notation-playable-archive-design.md
--->
 <script lang="ts">
-	import { onMount } from "svelte";
-	import { MediaQuery } from "svelte/reactivity";
-	import { pushState } from "$app/navigation";
-	import { tilt } from "$lib/actions/tilt";
-	import { cursorGlow } from "$lib/actions/cursor-glow";
-	import { pressSpring } from "$lib/actions/press-spring";
-	import { magnetic } from "$lib/actions/magnetic";
-	import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-	import Crossfade from "$lib/shared/components/Crossfade.svelte";
-	import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-	import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-	import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-	import { DURATION } from "$lib/shared/transitions/transitions";
-	import {
-		ARCHIVE_END_YEAR,
-		ARCHIVE_ENTRIES,
-		ARCHIVE_START_YEAR,
-		archiveEntry,
-		archiveLane,
-		type ArchiveEntry,
-	} from "./_lib/archive-ledger";
-	import { archiveAccent } from "./_lib/archive-appearance";
-	import ArchiveTimeMap from "./ArchiveTimeMap.svelte";
-	import ArchiveChronologicalIndex from "./ArchiveChronologicalIndex.svelte";
-	import ArchiveRecordVisual from "./ArchiveRecordVisual.svelte";
-	import ArchiveEntryDetail, { type InspectorScreen } from "./ArchiveEntryDetail.svelte";
-	import ResearchSubmissionGuide from "./ResearchSubmissionGuide.svelte";
+  import { onMount, tick } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
+  import { pushState } from "$app/navigation";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import {
+    ARCHIVE_ENTRIES,
+    ARCHIVE_START_YEAR,
+    ARCHIVE_END_YEAR,
+    type ArchiveEntry,
+  } from "./_lib/archive-ledger";
+  import { entryFromArchiveHash } from "./_lib/archive-presentation";
+  import ArchiveChronologicalIndex from "./ArchiveChronologicalIndex.svelte";
+  import ArchiveEntryDetail from "./ArchiveEntryDetail.svelte";
 
-	const HASH_PREFIX = "#archive-record-";
-	const DEFAULT_ENTRY_ID = "home-of-poi";
+  const defaultEntry = ARCHIVE_ENTRIES[0]!;
+  let activeEntry = $state(defaultEntry);
+  let indexOpen = $state(false);
+  let reader: HTMLElement;
+  let indexRegion: HTMLElement;
+  let indexScroll = $state<HTMLElement>();
+  const compact = new MediaQuery("(max-width: 1099px)");
+  const activeIndex = $derived(
+    ARCHIVE_ENTRIES.findIndex((entry) => entry.id === activeEntry.id)
+  );
+  const previous = $derived(ARCHIVE_ENTRIES[activeIndex - 1]);
+  const next = $derived(ARCHIVE_ENTRIES[activeIndex + 1]);
 
-	let activeEntry = $state<ArchiveEntry>(archiveEntry(DEFAULT_ENTRY_ID));
-	let recordDrawerOpen = $state(false);
-	let drawerInspectorScreen = $state<InspectorScreen>("overview");
-	let submissionOpen = $state(false);
-	let announcement = $state("");
+  $effect(() => {
+    const selectedId = activeEntry.id;
+    const viewport = indexScroll;
+    if (!viewport) return;
+    void tick().then(() => {
+      const selected = viewport.querySelector<HTMLElement>(
+        `a[href="#archive-record-${selectedId}"]`
+      );
+      if (!selected) return;
+      const row = selected.getBoundingClientRect();
+      const bounds = viewport.getBoundingClientRect();
+      if (row.top < bounds.top || row.bottom > bounds.bottom) {
+        viewport.scrollTop +=
+          row.top - bounds.top - (bounds.height - row.height) / 2;
+      }
+    });
+  });
 
-	const isCompact = new MediaQuery(
-		"(max-width: 760px), (max-height: 560px)"
-	);
-	const isShortWide = new MediaQuery(
-		"(min-width: 700px) and (max-height: 560px)"
-	);
-	const usesRecordDrawer = new MediaQuery(
-		"(max-width: 980px), (max-height: 560px)"
-	);
-	const usesSideDrawer = new MediaQuery("(min-width: 700px)");
-	const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
+  function scrollToEntry() {
+    const target = compact.current ? indexRegion : reader;
+    target?.scrollIntoView({ block: "start", behavior: "instant" });
+  }
 
-	const activeIndex = $derived(
-		ARCHIVE_ENTRIES.findIndex((entry) => entry.id === activeEntry.id)
-	);
-	const lane = $derived(archiveLane(activeEntry.lane));
-	const accent = $derived(archiveAccent(activeEntry.id));
-	const previousEntry = $derived(
-		activeIndex > 0 ? ARCHIVE_ENTRIES[activeIndex - 1] : undefined
-	);
-	const nextEntry = $derived(
-		activeIndex < ARCHIVE_ENTRIES.length - 1
-			? ARCHIVE_ENTRIES[activeIndex + 1]
-			: undefined
-	);
+  async function selectEntry(entry: ArchiveEntry) {
+    activeEntry = entry;
+    indexOpen = false;
+    const nextHash = `#archive-record-${entry.id}`;
+    if (window.location.hash !== nextHash) pushState(nextHash, {});
+    await tick();
+    reader?.focus({ preventScroll: true });
+    scrollToEntry();
+  }
 
-	$effect(() => {
-		if (!usesRecordDrawer.current) {
-			recordDrawerOpen = false;
-			drawerInspectorScreen = "overview";
-		}
-	});
-
-	function entryFromHash(hash: string): ArchiveEntry | undefined {
-		if (!hash.startsWith(HASH_PREFIX)) return undefined;
-		const entryId = decodeURIComponent(hash.slice(HASH_PREFIX.length));
-		return ARCHIVE_ENTRIES.find((entry) => entry.id === entryId);
-	}
-
-	function writeEntryHistory(entry: ArchiveEntry) {
-		if (typeof window === "undefined") return;
-		const nextHash = `${HASH_PREFIX}${encodeURIComponent(entry.id)}`;
-		if (window.location.hash === nextHash) return;
-		pushState(nextHash, { archiveRecord: entry.id });
-	}
-
-	function applyEntry(entry: ArchiveEntry, openSelectedRecord: boolean) {
-		activeEntry = entry;
-		drawerInspectorScreen = "overview";
-		if (openSelectedRecord && usesRecordDrawer.current) recordDrawerOpen = true;
-		announcement = `${entry.dateLabel}, ${entry.title}. ${archiveLane(entry.lane).label}. Record ${ARCHIVE_ENTRIES.findIndex((candidate) => candidate.id === entry.id) + 1} of ${ARCHIVE_ENTRIES.length}.`;
-		getHapticFeedback().trigger("selection");
-	}
-
-	function selectEntry(entry: ArchiveEntry) {
-		if (entry.id !== activeEntry.id) {
-			applyEntry(entry, true);
-		} else if (usesRecordDrawer.current) {
-			drawerInspectorScreen = "overview";
-			recordDrawerOpen = true;
-		}
-		writeEntryHistory(entry);
-	}
-
-	function selectNeighbor(entry: ArchiveEntry | undefined) {
-		if (!entry) return;
-		selectEntry(entry);
-	}
-
-	onMount(() => {
-		const linkedEntry = entryFromHash(window.location.hash);
-		if (linkedEntry) {
-			activeEntry = linkedEntry;
-			drawerInspectorScreen = "overview";
-			if (usesRecordDrawer.current) recordDrawerOpen = true;
-		}
-
-		const restoreFromHistory = () => {
-			const restoredEntry = entryFromHash(window.location.hash);
-			if (restoredEntry) {
-				activeEntry = restoredEntry;
-				drawerInspectorScreen = "overview";
-				if (usesRecordDrawer.current) recordDrawerOpen = true;
-				return;
-			}
-			activeEntry = archiveEntry(DEFAULT_ENTRY_ID);
-			drawerInspectorScreen = "overview";
-			recordDrawerOpen = false;
-		};
-
-		window.addEventListener("popstate", restoreFromHistory);
-		return () => window.removeEventListener("popstate", restoreFromHistory);
-	});
+  onMount(() => {
+    const restore = () => {
+      const restored = entryFromArchiveHash(
+        window.location.hash,
+        ARCHIVE_ENTRIES
+      );
+      if (restored) activeEntry = restored;
+      else if (!window.location.hash) activeEntry = defaultEntry;
+      indexOpen = false;
+    };
+    restore();
+    if (entryFromArchiveHash(window.location.hash, ARCHIVE_ENTRIES)) {
+      void tick().then(scrollToEntry);
+    }
+    window.addEventListener("popstate", restore);
+    window.addEventListener("hashchange", restore);
+    return () => {
+      window.removeEventListener("popstate", restore);
+      window.removeEventListener("hashchange", restore);
+    };
+  });
 </script>
 
-<section
-	class="archive-room"
-	style:--artifact-accent={accent}
-	aria-label={`Flow arts knowledge archive, ${ARCHIVE_START_YEAR} to ${ARCHIVE_END_YEAR}`}
->
-	<header class="archive-header">
-		<div>
-			<p>{ARCHIVE_START_YEAR}–{ARCHIVE_END_YEAR}</p>
-			<h1>Flow arts history</h1>
-			<p class="premise">
-				{ARCHIVE_ENTRIES.length} sourced records of how people documented flow arts and passed the knowledge on.
-			</p>
-		</div>
-		<PanelButton
-			variant="secondary"
-			ariaLabel="Contribute or correct an archive record"
-			onclick={() => (submissionOpen = true)}
-		>
-			Contribute
-		</PanelButton>
-	</header>
+<section class="archive-room" aria-label="Flow arts history archive">
+  <header class="archive-header">
+    <h1 class="room-title">Flow arts history</h1>
+    <p>
+      How people have recorded movement, shared techniques, and built a language
+      for flow.
+    </p>
+    <div class="archive-context">
+      <span
+        >{ARCHIVE_ENTRIES.length} selected records, {ARCHIVE_START_YEAR}–{ARCHIVE_END_YEAR}</span
+      >
+      <a href="#about-this-archive">About this archive</a>
+    </div>
+  </header>
 
-	{#if isCompact.current}
-		<div class="compact-archive">
-			<ArchiveChronologicalIndex
-				activeEntryId={activeEntry.id}
-				onselect={selectEntry}
-			/>
-		</div>
-	{:else}
-		<div class="large-archive">
-			<ArchiveTimeMap
-				activeEntryId={activeEntry.id}
-				onselect={selectEntry}
-			/>
+  <div class="archive-layout">
+    <aside
+      class="entry-index"
+      bind:this={indexRegion}
+      aria-label="Browse the archive"
+    >
+      {#if compact.current}
+        <details bind:open={indexOpen}>
+          <summary
+            >Browse all {ARCHIVE_ENTRIES.length} entries
+            <span aria-hidden="true">⌄</span></summary
+          >
+          <ArchiveChronologicalIndex
+            activeEntryId={activeEntry.id}
+            onselect={selectEntry}
+          />
+        </details>
+      {:else}
+        <h2>Browse the archive</h2>
+        <p class="index-note">
+          Dates refer to the evidence described in each entry.
+        </p>
+        <div class="index-scroll" bind:this={indexScroll}>
+          <ArchiveChronologicalIndex
+            activeEntryId={activeEntry.id}
+            onselect={selectEntry}
+          />
+        </div>
+      {/if}
+    </aside>
 
-			<!-- No id anchor here: selection is applied from the hash in onMount.
-			     A native anchor jump would scroll the overflow-hidden room and
-			     strand the layout partly off-screen on deep-link loads. -->
-			{#if !usesRecordDrawer.current}
-				<section
-					class="selected-record"
-					aria-label={`Selected record: ${activeEntry.title}`}
-				>
-				<header class="record-toolbar">
-					<p aria-live="polite">
-						<span>Selected record</span>
-						<strong>{activeEntry.dateLabel} · {lane.label} · {activeIndex + 1} of {ARCHIVE_ENTRIES.length}</strong>
-					</p>
-					<nav aria-label="Previous and next archive records">
-						<PanelButton
-							variant="secondary"
-							disabled={!previousEntry}
-							ariaLabel={previousEntry ? `Previous record: ${previousEntry.title}` : "No previous record"}
-							onclick={() => selectNeighbor(previousEntry)}
-						>
-							<span aria-hidden="true">←</span>
-							<span class="neighbor-label">{previousEntry?.shortTitle ?? "Previous"}</span>
-						</PanelButton>
-						<PanelButton
-							variant="secondary"
-							disabled={!nextEntry}
-							ariaLabel={nextEntry ? `Next record: ${nextEntry.title}` : "No next record"}
-							onclick={() => selectNeighbor(nextEntry)}
-						>
-							<span class="neighbor-label">{nextEntry?.shortTitle ?? "Next"}</span>
-							<span aria-hidden="true">→</span>
-						</PanelButton>
-					</nav>
-				</header>
+    <div
+      id={`archive-record-${activeEntry.id}`}
+      class="selected-reader"
+      bind:this={reader}
+      tabindex="-1"
+      role="region"
+      aria-labelledby={`entry-title-${activeEntry.id}`}
+    >
+      <Crossfade key={activeEntry.id} animateHeight mode="swap">
+        <ArchiveEntryDetail entry={activeEntry} />
+      </Crossfade>
+      <nav
+        class="entry-neighbors"
+        aria-label="Previous and next entries by date"
+      >
+        {#if previous}
+          <a
+            href={`#archive-record-${previous.id}`}
+            onclick={(event) => {
+              if (
+                event.ctrlKey ||
+                event.metaKey ||
+                event.shiftKey ||
+                event.altKey
+              )
+                return;
+              event.preventDefault();
+              void selectEntry(previous);
+            }}
+            ><span>Earlier entry</span><strong>← {previous.shortTitle}</strong
+            ></a
+          >
+        {:else}<span></span>{/if}
+        {#if next}
+          <a
+            class="next-entry"
+            href={`#archive-record-${next.id}`}
+            onclick={(event) => {
+              if (
+                event.ctrlKey ||
+                event.metaKey ||
+                event.shiftKey ||
+                event.altKey
+              )
+                return;
+              event.preventDefault();
+              void selectEntry(next);
+            }}><span>Later entry</span><strong>{next.shortTitle} →</strong></a
+          >
+        {/if}
+      </nav>
+    </div>
+  </div>
 
-				<div class="record-body">
-					<section
-						class="artifact-stage"
-						aria-label={`${activeEntry.title} artifact`}
-						use:tilt={{ maxDegrees: 1.6 }}
-						use:cursorGlow
-					>
-						<div class="artifact-viewport">
-							<ArchiveRecordVisual entry={activeEntry} active />
-						</div>
-						<div class="artifact-actions">
-							{#if activeEntry.catalogEntry?.explore}
-								<a
-									class="artifact-action primary"
-									href={activeEntry.catalogEntry.explore.href}
-									target={activeEntry.catalogEntry.explore.href.startsWith("/") ? undefined : "_blank"}
-									rel={activeEntry.catalogEntry.explore.href.startsWith("/") ? undefined : "noopener noreferrer"}
-									use:magnetic={!reduceMotion.current}
-									use:pressSpring
-								>
-									{activeEntry.catalogEntry.explore.label}
-									<span aria-hidden="true">→</span>
-								</a>
-							{:else if !activeEntry.documents?.length && activeEntry.citations[0]}
-								<a
-									class="artifact-action"
-									href={activeEntry.citations[0].href}
-									target={activeEntry.citations[0].href.startsWith("/") ? undefined : "_blank"}
-									rel={activeEntry.citations[0].href.startsWith("/") ? undefined : "noopener"}
-									use:pressSpring
-								>
-									Open primary source <span aria-hidden="true">↗</span>
-								</a>
-							{/if}
-						</div>
-					</section>
-
-					<div class="record-inspector-host" aria-label={`${activeEntry.title} record details`}>
-						{#key activeEntry.id}
-							<ArchiveEntryDetail entry={activeEntry} contained />
-						{/key}
-					</div>
-				</div>
-				</section>
-			{/if}
-		</div>
-	{/if}
-
-	<p class="sr-only" aria-live="polite">{announcement}</p>
+  <footer class="archive-about" id="about-this-archive">
+    <h2>About this archive</h2>
+    <div>
+      <p>
+        This collection follows notation systems, teaching projects, and
+        published research. The categories help you browse; they are not a
+        ranking or a claim that one system replaced another.
+      </p>
+      <p>
+        Each entry credits its contributors and links to the evidence behind its
+        account. A date may mark a publication, a surviving source, or work
+        recalled by its creator. The entry explains which.
+      </p>
+      <p>
+        Curated by Austen Cloud, creator of The Kinetic Alphabet and Flow Arts
+        Composer.
+      </p>
+      <a
+        href="mailto:support@tkaflowarts.com?subject=Flow%20arts%20history%20correction"
+        >Suggest an addition or correction</a
+      >
+      <small
+        >Include the entry name, your correction or addition, and a source we
+        can read.</small
+      >
+    </div>
+  </footer>
 </section>
 
-<Drawer
-	bind:isOpen={recordDrawerOpen}
-	placement={usesSideDrawer.current ? "right" : "bottom"}
-	ariaLabel={`${activeEntry.title}, artifact, record, and sources`}
-	showHandle={!usesSideDrawer.current}
->
-	<div
-		class="record-drawer"
-		class:is-drilled={drawerInspectorScreen !== "overview"}
-		style:--artifact-accent={accent}
-	>
-		<header>
-			<p><span>{activeEntry.dateLabel}</span>{lane.label}</p>
-			<PanelButton
-				variant="secondary"
-				onclick={() => {
-					recordDrawerOpen = false;
-					drawerInspectorScreen = "overview";
-				}}
-			>
-				Close
-			</PanelButton>
-		</header>
-		<div class="drawer-context">
-			<Crossfade
-				key={drawerInspectorScreen === "overview"}
-				animateHeight
-				mode="swap"
-				motion="step"
-				direction={drawerInspectorScreen === "overview" ? -1 : 1}
-				duration={DURATION.normal}
-			>
-				{#if drawerInspectorScreen === "overview"}
-					<div class="drawer-context-content">
-						<section class="drawer-artifact" class:original-sheet={activeEntry.id === "lorq"} aria-label={`${activeEntry.title} artifact`}>
-							<ArchiveRecordVisual entry={activeEntry} active />
-						</section>
-						{#if activeEntry.catalogEntry?.explore}
-							<div class="artifact-actions">
-								<a
-									class="artifact-action primary"
-									href={activeEntry.catalogEntry.explore.href}
-									target={activeEntry.catalogEntry.explore.href.startsWith("/") ? undefined : "_blank"}
-									rel={activeEntry.catalogEntry.explore.href.startsWith("/") ? undefined : "noopener noreferrer"}
-									use:pressSpring
-								>
-									{activeEntry.catalogEntry.explore.label} <span aria-hidden="true">→</span>
-								</a>
-							</div>
-						{/if}
-						<nav class="drawer-neighbors" aria-label="Previous and next archive records">
-							<PanelButton
-								variant="secondary"
-								disabled={!previousEntry}
-								ariaLabel={previousEntry ? `Previous record: ${previousEntry.title}` : "No previous record"}
-								onclick={() => selectNeighbor(previousEntry)}
-							>
-								<span aria-hidden="true">←</span> {previousEntry?.shortTitle ?? "Previous"}
-							</PanelButton>
-							<PanelButton
-								variant="secondary"
-								disabled={!nextEntry}
-								ariaLabel={nextEntry ? `Next record: ${nextEntry.title}` : "No next record"}
-								onclick={() => selectNeighbor(nextEntry)}
-							>
-								{nextEntry?.shortTitle ?? "Next"} <span aria-hidden="true">→</span>
-							</PanelButton>
-						</nav>
-					</div>
-				{:else}
-					<div class="drawer-context-empty" aria-hidden="true"></div>
-				{/if}
-			</Crossfade>
-		</div>
-		<div class="drawer-detail">
-			{#key activeEntry.id}
-				<ArchiveEntryDetail entry={activeEntry} bind:screen={drawerInspectorScreen} />
-			{/key}
-		</div>
-	</div>
-</Drawer>
-
-{#if !isCompact.current}
-	<BaseModal
-		bind:open={submissionOpen}
-		size="lg"
-		labelledBy="archive-contribute-title"
-	>
-		{#snippet header()}
-			<div class="submission-header">
-				<h2 id="archive-contribute-title">Add to the research</h2>
-				<PanelButton variant="secondary" onclick={() => (submissionOpen = false)}>
-					Close
-				</PanelButton>
-			</div>
-		{/snippet}
-		<div class="submission-body"><ResearchSubmissionGuide /></div>
-	</BaseModal>
-{:else}
-	<Drawer
-		bind:isOpen={submissionOpen}
-		placement={isShortWide.current ? "right" : "bottom"}
-		ariaLabel="Contribute an archive record"
-		showHandle={!isShortWide.current}
-	>
-		<div class="submission-drawer"><ResearchSubmissionGuide /></div>
-	</Drawer>
-{/if}
-
 <style>
-	.archive-room {
-		display: grid;
-		grid-template-rows: auto minmax(0, 1fr);
-		gap: clamp(0.65rem, 1.2vh, 1rem);
-		height: 100%;
-		max-width: var(--shell-w, min(1720px, 92vw));
-		margin-inline: auto;
-		padding: clamp(0.65rem, 1.4vh, 1.2rem) clamp(0.8rem, 2vw, 2rem);
-		box-sizing: border-box;
-		overflow: hidden;
-	}
-
-	.archive-header {
-		display: flex;
-		align-items: end;
-		justify-content: space-between;
-		gap: 1rem;
-	}
-
-	.archive-header p,
-	.archive-header h1,
-	.record-toolbar p {
-		margin: 0;
-	}
-
-	.archive-header p {
-		color: var(--theme-accent, oklch(0.76 0.13 290));
-		font-size: var(--font-size-min, 0.875rem);
-		font-weight: 750;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-	}
-
-	.archive-header .premise {
-		margin-top: 0.35rem;
-		color: var(--theme-text-dim, oklch(0.74 0.02 270));
-		font-size: var(--font-size-min, 0.875rem);
-		font-weight: 400;
-		letter-spacing: normal;
-		line-height: 1.45;
-		text-transform: none;
-	}
-
-	.archive-header h1 {
-		margin-top: 0.15rem;
-		font: italic 700 clamp(1.75rem, 2.4vw, 3rem) / 1 "Fraunces", Georgia, serif;
-		letter-spacing: -0.025em;
-		color: var(--theme-text, oklch(0.96 0.01 270));
-	}
-
-	.archive-header :global(.panel-btn) {
-		border-radius: 999px;
-		white-space: nowrap;
-	}
-
-	.large-archive {
-		display: grid;
-		grid-template-columns: minmax(0, 1.35fr) minmax(26rem, 0.65fr);
-		grid-template-rows: minmax(0, 1fr);
-		column-gap: clamp(1.25rem, 1.5vw, 2rem);
-		min-width: 0;
-		min-height: 0;
-	}
-
-	.selected-record {
-		display: grid;
-		grid-template-rows: auto minmax(0, 1fr);
-		min-width: 0;
-		min-height: 0;
-		overflow: hidden;
-		border: 1px solid color-mix(in oklch, var(--artifact-accent) 35%, var(--theme-stroke, oklch(1 0 0 / 0.12)));
-		border-radius: var(--radius-2026-xl, 24px);
-		background: var(--theme-card-bg, oklch(0.145 0.012 270));
-		box-shadow: 0 1.5rem 4rem oklch(0 0 0 / 0.22);
-		container: selected-record / inline-size;
-	}
-
-	.record-toolbar {
-		display: flex;
-		min-height: 3.4rem;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-		padding: 0.45rem 0.6rem 0.45rem 1rem;
-		border-bottom: 1px solid var(--theme-stroke, oklch(1 0 0 / 0.12));
-	}
-
-	.record-toolbar p {
-		display: grid;
-		min-width: 0;
-		gap: 0.08rem;
-	}
-
-	.record-toolbar p span {
-		color: var(--artifact-accent);
-		font-size: var(--font-size-compact, 0.75rem);
-		font-weight: 750;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-	}
-
-	.record-toolbar p strong {
-		overflow: hidden;
-		color: var(--theme-text, oklch(0.95 0.01 270));
-		font-size: var(--font-size-min, 0.875rem);
-		font-variant-numeric: tabular-nums;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.record-toolbar nav,
-	.drawer-artifact.original-sheet {
-		min-height: 14rem;
-	}
-
-	.drawer-neighbors {
-		display: flex;
-		gap: 0.45rem;
-	}
-
-	.record-toolbar :global(.panel-btn) {
-		max-width: 12rem;
-		border-radius: 999px;
-	}
-
-	.neighbor-label {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.record-body {
-		display: grid;
-		grid-template-rows: minmax(16rem, 0.8fr) minmax(0, 1.2fr);
-		min-width: 0;
-		min-height: 0;
-	}
-
-	.artifact-stage {
-		display: grid;
-		grid-template-rows: minmax(0, 1fr) auto;
-		min-width: 0;
-		min-height: 0;
-		padding: clamp(0.7rem, 1.4vw, 1.2rem);
-		border-bottom: 1px solid var(--theme-stroke, oklch(1 0 0 / 0.12));
-		box-sizing: border-box;
-		background: color-mix(in oklch, var(--artifact-accent) 4%, var(--theme-card-bg, oklch(0.145 0.012 270)));
-	}
-
-	.artifact-viewport {
-		display: grid;
-		min-width: 0;
-		min-height: 0;
-		place-items: center;
-		container-type: size;
-		overflow: hidden;
-	}
-
-	.artifact-actions {
-		display: flex;
-		justify-content: center;
-		padding-top: 0.45rem;
-	}
-
-	.artifact-action {
-		display: inline-flex;
-		min-height: 2.75rem;
-		align-items: center;
-		gap: 0.45rem;
-		padding-inline: 1rem;
-		border: 1px solid color-mix(in oklch, var(--artifact-accent) 62%, transparent);
-		border-radius: 999px;
-		color: var(--theme-text, oklch(0.95 0.01 270));
-		font-size: var(--font-size-min, 0.875rem);
-		font-weight: 700;
-		text-decoration: none;
-		translate: var(--mag-x, 0px) var(--mag-y, 0px);
-	}
-
-	.artifact-action:hover,
-	.artifact-action:focus-visible {
-		border-color: var(--artifact-accent);
-		background: color-mix(in oklch, var(--artifact-accent) 15%, transparent);
-		outline: none;
-	}
-
-	.artifact-action.primary {
-		background: var(--artifact-accent);
-		color: oklch(0.13 0.01 270);
-	}
-
-	.record-inspector-host {
-		min-width: 0;
-		min-height: 0;
-		overflow: hidden;
-		padding: clamp(0.9rem, 1.6vw, 1.4rem);
-	}
-
-	.compact-archive {
-		min-width: 0;
-	}
-
-	.record-drawer {
-		display: grid;
-		gap: 1rem;
-		padding: 0.5rem clamp(1rem, 4vw, 1.5rem) 2rem;
-	}
-
-	.drawer-context {
-		min-width: 0;
-	}
-
-	.drawer-context-content {
-		display: grid;
-		gap: 1rem;
-	}
-
-	.drawer-context-empty {
-		/* ResizeObserver does not deliver a box that disappears to exactly zero in
-		   every engine. One device pixel keeps Crossfade's height measurement alive
-		   while remaining visually empty. */
-		height: 1px;
-	}
-
-	.record-drawer > header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-		position: sticky;
-		top: 0;
-		z-index: 2;
-		padding-block: 0.5rem;
-		background: var(--sheet-bg, rgb(15, 15, 20));
-	}
-
-	.record-drawer > header p {
-		display: grid;
-		margin: 0;
-		color: var(--theme-text, oklch(0.95 0.01 270));
-		font-size: var(--font-size-min, 0.875rem);
-		font-weight: 700;
-	}
-
-	.record-drawer > header p span {
-		color: var(--artifact-accent);
-		font-variant-numeric: tabular-nums;
-	}
-
-	.record-drawer :global(.panel-btn) {
-		border-radius: 999px;
-	}
-
-	.drawer-artifact {
-		display: grid;
-		height: clamp(17rem, 46vh, 34rem);
-		min-height: 0;
-		place-items: center;
-		padding: 0.8rem;
-		border: 1px solid color-mix(in oklch, var(--artifact-accent) 35%, var(--theme-stroke, oklch(1 0 0 / 0.12)));
-		border-radius: var(--radius-2026-xl, 24px);
-		background: color-mix(in oklch, var(--artifact-accent) 5%, var(--theme-card-bg, oklch(0.145 0.012 270)));
-		container-type: size;
-		overflow: hidden;
-	}
-
-	.drawer-neighbors {
-		justify-content: space-between;
-	}
-
-	.drawer-detail {
-		padding-top: 0.5rem;
-	}
-
-	.submission-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-		padding: 0.8rem 1rem;
-		border-bottom: 1px solid var(--theme-stroke, oklch(1 0 0 / 0.13));
-	}
-
-	.submission-header h2 {
-		margin: 0;
-		font: italic 650 clamp(1.25rem, 2vw, 1.8rem) / 1.1 "Fraunces", Georgia, serif;
-	}
-
-	.submission-body,
-	.submission-drawer {
-		padding: clamp(1rem, 2vw, 1.5rem);
-	}
-
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		margin: -1px;
-		overflow: hidden;
-		clip-path: inset(50%);
-		white-space: nowrap;
-	}
-
-	@media (max-width: 980px) and (min-height: 561px) {
-		.large-archive {
-			grid-template-columns: minmax(0, 1fr);
-			grid-template-rows: minmax(0, 1fr);
-		}
-
-		/* The map owns this tier. Selecting a trace opens its record in a right
-		   drawer, so the answer appears immediately instead of being stacked below
-		   the viewport. Keep this CSS guard for the server-rendered first frame;
-		   the media query then removes the panel from the hydrated DOM. */
-		.selected-record {
-			display: none;
-		}
-	}
-
-	@media (max-width: 760px), (max-height: 560px) {
-		.archive-room {
-			display: block;
-			height: auto;
-			min-height: 100%;
-			overflow: visible;
-			padding: 0.8rem;
-		}
-
-		.archive-header {
-			align-items: center;
-			margin-bottom: 1rem;
-		}
-
-		.archive-header h1 {
-			font-size: clamp(1.55rem, 7vw, 2.25rem);
-		}
-
-		.archive-header p {
-			font-size: var(--font-size-compact, 0.75rem);
-			letter-spacing: 0.09em;
-		}
-
-		.archive-header :global(.panel-btn) {
-			padding-inline: 0.75rem;
-		}
-	}
-
-	@media (max-width: 520px) {
-		.archive-header {
-			flex-direction: column;
-			align-items: start;
-			gap: 0.55rem;
-		}
-
-		.archive-header :global(.panel-btn) {
-			max-width: 8.5rem;
-			white-space: normal;
-		}
-
-		.record-drawer {
-			gap: 0.75rem;
-			padding-bottom: 1rem;
-		}
-
-		.drawer-context-content {
-			gap: 0.75rem;
-		}
-
-		/* The bottom sheet opens to the record's decisions, not a nearly
-		   full-screen repeat of the artifact the user just selected. */
-		.drawer-artifact {
-			height: clamp(10.5rem, 27vh, 12rem);
-		}
-	}
-
-	@media (min-width: 700px) and (max-height: 560px) {
-		.archive-room {
-			display: grid;
-			grid-template-columns: minmax(14rem, 0.34fr) minmax(0, 1.66fr);
-			grid-template-rows: minmax(0, 1fr);
-			gap: clamp(1rem, 3vw, 2rem);
-			height: 100%;
-			padding: 0.8rem 1rem;
-			overflow: hidden;
-		}
-
-		.archive-header {
-			flex-direction: column;
-			align-items: flex-start;
-			justify-content: flex-start;
-			gap: 0.75rem;
-			margin: 0;
-		}
-
-		.archive-header h1 {
-			font-size: clamp(1.8rem, 4vw, 2.6rem);
-		}
-
-		.compact-archive {
-			min-height: 0;
-			overflow: hidden;
-		}
-
-		.record-drawer {
-			gap: 0.5rem;
-			padding-bottom: 0.5rem;
-		}
-
-		.drawer-context-content {
-			gap: 0.5rem;
-		}
-
-		/* In a short landscape window the artifact is a label-sized preview;
-		   the overview and its drill-downs are the reason the drawer opened. */
-		.drawer-artifact {
-			height: 7rem;
-		}
-	}
-
-	@media (min-width: 2600px) {
-		.archive-room {
-			padding-inline: 2.5rem;
-		}
-
-		.archive-header p {
-			font-size: 1rem;
-		}
-
-		.archive-header .premise {
-			font-size: 1.05rem;
-		}
-
-		.archive-header h1 {
-			font-size: 3.8rem;
-		}
-
-		.record-toolbar p span {
-			font-size: 0.9rem;
-		}
-
-		.record-toolbar p strong,
-		.artifact-action {
-			font-size: 1rem;
-		}
-
-		.archive-header :global(.panel-btn),
-		.record-toolbar :global(.panel-btn) {
-			min-height: 3.25rem;
-			font-size: 1rem;
-		}
-	}
-
-	/* On tall canvases the artifact earns the extra room. Reversing the normal
-	   40/60 split keeps the inspector at a generous, stable reading height
-	   instead of turning sparse record metadata into a full-height empty rail.
-	   The row stays fixed across overview and drill-down screens, so opening
-	   Sources never makes the artifact jump. */
-	@media (min-width: 981px) and (min-height: 1200px) {
-		.record-body {
-			grid-template-rows: minmax(24rem, 1.2fr) minmax(28rem, 0.8fr);
-		}
-	}
-
-	@container selected-record (min-width: 70rem) {
-		.record-body {
-			grid-template-columns: minmax(0, 1.1fr) minmax(28rem, 0.9fr);
-			grid-template-rows: minmax(0, 1fr);
-		}
-
-		.artifact-stage {
-			border-right: 1px solid var(--theme-stroke, oklch(1 0 0 / 0.12));
-			border-bottom: 0;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.artifact-action {
-			transition: none;
-		}
-	}
+  .archive-room {
+    max-width: 100rem;
+    margin-inline: auto;
+    padding: clamp(1.25rem, 3vw, 3.5rem);
+    color: var(--theme-text);
+  }
+  .archive-header {
+    max-width: 56rem;
+    margin-bottom: clamp(2rem, 4vw, 4rem);
+  }
+  h1 {
+    font:
+      600 clamp(2.5rem, 4.2vw, 4.6rem) / 1.05 "Fraunces",
+      Georgia,
+      serif;
+    margin: 0 0 1rem;
+    letter-spacing: -0.035em;
+  }
+  .archive-header > p {
+    max-width: 43rem;
+    font-size: clamp(1rem, 1.25vw, 1.25rem);
+    line-height: 1.6;
+    color: var(--theme-text-dim);
+    margin: 0;
+  }
+  .archive-context {
+    display: flex;
+    gap: 0.5rem 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    font-size: var(--font-size-min, 0.875rem);
+    color: var(--theme-text-dim);
+  }
+  a {
+    color: var(--theme-text);
+    text-underline-offset: 0.25em;
+  }
+  a:hover {
+    color: var(--theme-accent);
+  }
+  a:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+  .archive-layout {
+    display: grid;
+    grid-template-columns: 17rem minmax(0, 1fr);
+    gap: clamp(2rem, 4vw, 5rem);
+    align-items: start;
+  }
+  .entry-index {
+    position: sticky;
+    top: calc(var(--marketing-header-h, 64px) + 1rem);
+    min-width: 0;
+  }
+  .entry-index h2 {
+    margin: 0 0 0.5rem 0.85rem;
+    font-size: 1rem;
+    font-weight: 650;
+  }
+  .index-note {
+    margin: 0 0.85rem 1rem;
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.5;
+    color: var(--theme-text-dim);
+  }
+  .index-scroll {
+    max-height: calc(100dvh - var(--marketing-header-h, 64px) - 8rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    overscroll-behavior: contain;
+    padding: 3px;
+  }
+  .selected-reader {
+    min-width: 0;
+    scroll-margin-top: calc(var(--marketing-header-h, 64px) + 1rem);
+  }
+  .selected-reader:focus {
+    outline: none;
+  }
+  .entry-neighbors {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1rem;
+    border-top: 1px solid var(--theme-stroke);
+    padding-top: 1.25rem;
+    margin-top: 2.5rem;
+  }
+  .entry-neighbors a {
+    display: grid;
+    gap: 0.3rem;
+    padding-block: 0.5rem;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+  .entry-neighbors span {
+    font-size: var(--font-size-compact, 0.75rem);
+    color: var(--theme-text-dim);
+  }
+  .entry-neighbors strong {
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 600;
+  }
+  .next-entry {
+    text-align: right;
+  }
+  .archive-about {
+    display: grid;
+    grid-template-columns: 17rem minmax(0, 1fr);
+    gap: clamp(2rem, 4vw, 5rem);
+    border-top: 1px solid var(--theme-stroke);
+    padding-top: 2rem;
+    margin-top: clamp(3rem, 6vw, 6rem);
+    scroll-margin-top: calc(var(--marketing-header-h, 64px) + 1rem);
+  }
+  .archive-about h2 {
+    font:
+      550 1.5rem / 1.2 "Fraunces",
+      Georgia,
+      serif;
+    margin: 0;
+  }
+  .archive-about p {
+    max-width: 68ch;
+    font-size: var(--font-size-min, 0.875rem);
+    line-height: 1.65;
+    color: var(--theme-text-dim);
+    margin: 0 0 0.9rem;
+  }
+  .archive-about a {
+    display: inline-block;
+    padding-block: 0.6rem;
+    font-size: var(--font-size-min, 0.875rem);
+  }
+  .archive-about small {
+    display: block;
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.5;
+    color: var(--theme-text-dim);
+  }
+  @media (max-width: 1099px) {
+    .archive-layout,
+    .archive-about {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.5rem;
+    }
+    .archive-header {
+      margin-bottom: 1.5rem;
+    }
+    .entry-index {
+      scroll-margin-top: calc(var(--marketing-header-h, 64px) + 1rem);
+      position: static;
+    }
+    details {
+      border: 1px solid var(--theme-stroke);
+      border-radius: var(--radius-2026-md, 14px);
+      padding: 0.25rem;
+    }
+    summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 44px;
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      font-size: var(--font-size-min, 0.875rem);
+      list-style: none;
+    }
+    summary::-webkit-details-marker {
+      display: none;
+    }
+  }
 </style>
