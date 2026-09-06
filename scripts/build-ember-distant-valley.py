@@ -15,7 +15,7 @@ from mathutils.bvhtree import BVHTree
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'blender/ember-geology-stage-r1.blend'
-OUT = ROOT / 'docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r3'
+OUT = ROOT / 'docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r4'
 OUT.mkdir(parents=True, exist_ok=True)
 bpy.ops.wm.open_mainfile(filepath=str(SOURCE))
 world = bpy.data.objects['EMBER_WorldRoot']
@@ -259,7 +259,6 @@ for j,z in enumerate(stations):
     width *= (.90+.1*math.sin(z*.073)**2)*(1-.96*smooth(1120,1230,-z))
     row = len(vertices)
     center_height = None
-    ground_colors = terrain_color(center+crossings*width,np.full(len(crossings),z))
     for k,side in enumerate(crossings):
         vx = center + side*width
         # Join the unchanged source terrain before the new annulus begins.
@@ -269,27 +268,24 @@ for j,z in enumerate(stations):
         if k == len(crossings)//2:
             center_height = y+.20
         bank = 1-smooth(.79,1,abs(side))
-        # Broad middle deposit is predominantly cool plates. Narrow moving-looking
-        # seams wind around them; the main thread remains visibly connected.
-        thread = .30*math.sin(z*.022) + .14*math.sin(z*.049)
-        core = math.exp(-((side-thread)/(.30-.11*field))**2)
-        broken = noise2(np.asarray(vx),np.asarray(z),19,52)
-        seams = (1-smooth(.02,.105,abs(broken)))*field*.62
-        rafts = float(smooth(.06,.44,noise2(np.asarray(vx),np.asarray(z),11,56)))
-        heat = float(max(core*(1-.82*rafts),seams)*bank)
-        color = np.array([.019,.013,.010])*(1-heat)
-        color += np.array([1.8,.40,.012])*heat**1.5
-        color += np.array([.45,.27,.025])*smooth(.73,1,heat)
-        haze = float(smooth(380,1380,-z))*.78
-        color = color*(1-haze)+np.array([.075,.087,.094])*haze
-        edge = float(smooth(.68,1,abs(side)))
-        color = color*(1-edge)+ground_colors[k]*edge
-        colors.append(tuple(color))
+        # These are the SAME shader masks as the near river, not baked RGB
+        # artwork: bank coverage, thermal strength, and reflected-light strength.
+        heat = 1-.30*float(smooth(175,600,-z))
+        reflection = 1-.94*float(smooth(145,230,-z))
+        colors.append((bank,bank*heat,bank*reflection))
         if j and k:
             a = row+k
             faces.append((a-len(crossings)-1,a-len(crossings),a,a-1))
     profile.append([float(center),center_height,float(z)])
 traces = mesh('EMBER_DistantValleyHeat', vertices, faces, colors, material('Ember_DistantValley_BakedHeat'), 'distant-valley')
+flow_uv = traces.data.uv_layers.new(name='FlowMetres')
+for loop in traces.data.loops:
+    p = traces.data.vertices[loop.vertex_index].co
+    center, _, _, _ = drainage(p.z)
+    # Preserve one metre of surface per UV unit even where the field widens.
+    # glTF flips V; +Z in Blender becomes 1-Z, matching the upstream shader.
+    flow_uv.data[loop.index].uv = (p.x-center-.5*(1-smooth(0,35,-p.z-143)),p.z)
+traces['ember_distant_flow_surface'] = True
 traces['ember_drainage_profile'] = profile
 traces['ember_drainage_kind'] = 'connected-descending-crusted-flow-field'
 
@@ -301,8 +297,8 @@ assert locked == {name: digest(bpy.data.objects[name]) for name in locked}
 assert sum(len(p.vertices)-2 for o in (terrain,traces) for p in o.data.polygons) < 140000
 for obj in bpy.context.scene.objects:
     obj.select_set(obj == world or (obj.type == 'MESH' and not obj.hide_render))
-blend = ROOT / 'blender/ember-distant-valley-r3.blend'
-raw = ROOT / 'static/models/ember/ember-distant-valley-r3_raw.glb'
+blend = ROOT / 'blender/ember-distant-valley-r4.blend'
+raw = ROOT / 'static/models/ember/ember-distant-valley-r4_raw.glb'
 bpy.ops.wm.save_as_mainfile(filepath=str(blend))
 bpy.ops.export_scene.gltf(filepath=str(raw), export_format='GLB', use_selection=True, export_extras=True, export_yup=True, export_cameras=False, export_lights=False)
 OUT.mkdir(parents=True, exist_ok=True)
