@@ -7,6 +7,7 @@ import {
   MeshStandardMaterial,
   PerspectiveCamera,
   Texture,
+  Vector3,
   type WebGLRenderer,
 } from "three";
 
@@ -48,6 +49,44 @@ function assets(): BlossomEnvironmentAssets {
 const renderer = {} as WebGLRenderer;
 
 describe("Blossom renderer-neutral world", () => {
+  it("borrows packed court maps through glTF wrapper groups and disposes them once", () => {
+    const bundle = assets();
+    const proxy = new Group();
+    proxy.name = "Stage_Planks";
+    const slab = mesh("slate primitive", "Blossom court slate");
+    const source = slab.material as MeshStandardMaterial;
+    source.map = new Texture();
+    const dispose = vi.spyOn(source.map, "dispose");
+    proxy.add(slab);
+    bundle.environmentRoot.add(proxy);
+    const world = createBlossomEnvironmentWorld(
+      { renderer, groundY: 0, qualityTier: "medium" },
+      bundle
+    );
+    const court = world.root.getObjectByName("blossom-stage-slate") as Mesh;
+    const material = court.material as MeshStandardMaterial;
+    expect(material).not.toBe(source);
+    expect(material.map).toBe(source.map);
+    expect(material.vertexColors).toBe(false);
+    const inlay = world.root.getObjectByName(
+      "blossom-stage-bronze-inlay"
+    ) as Mesh;
+    const positions = inlay.geometry.getAttribute("position");
+    let horizontalArea = 0;
+    for (let i = 0; i < positions.count; i += 3) {
+      const a = new Vector3().fromBufferAttribute(positions, i);
+      const b = new Vector3().fromBufferAttribute(positions, i + 1);
+      const c = new Vector3().fromBufferAttribute(positions, i + 2);
+      horizontalArea += Math.abs(b.sub(a).cross(c.sub(a)).z) / 4;
+    }
+    expect(horizontalArea).toBeLessThan(2);
+    expect(horizontalArea).toBeGreaterThan(0.3);
+    expect(proxy.visible).toBe(false);
+    world.dispose();
+    world.dispose();
+    expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
   it("loads the packed venue and moon without obsolete habitat textures", () => {
     expect(BLOSSOM_AUTHORED_RESOURCE_URLS).toEqual([
       "/models/blossom/blossom_environment.glb",
@@ -77,7 +116,7 @@ describe("Blossom renderer-neutral world", () => {
     expect(names).toContain("blossom-starfield");
     expect(names).toContain("blossom-performance-stage");
     expect(names).toContain("blossom-stage-downstage-marker");
-    expect(names).toContain("blossom-stage-torch-light-0");
+    expect(names).toContain("blossom-stage-bronze-inlay");
     expect(names).toContain("blossom-lighting");
     expect(names).toContain("blossom-moon-key");
     expect(names).toContain("blossom-lantern-light-2");
@@ -92,7 +131,7 @@ describe("Blossom renderer-neutral world", () => {
     expect(stageBounds.max.x - stageBounds.min.x).toBeGreaterThanOrEqual(12);
     expect(stageBounds.max.z - stageBounds.min.z).toBeGreaterThanOrEqual(8);
     const deckBounds = new Box3().setFromObject(
-      world.root.getObjectByName("blossom-stage-planks")!
+      world.root.getObjectByName("blossom-stage-slate")!
     );
     expect(deckBounds.max.y).toBeCloseTo(
       -1.5 + CANONICAL_PERFORMER_ANCHOR_Y,

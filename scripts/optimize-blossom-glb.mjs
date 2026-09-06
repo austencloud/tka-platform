@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Optimize the authored Blossom amphitheatre for WebGL delivery.
+ * Optimize the authored Blossom lantern garden for WebGL delivery.
  *
- * The source uses sculpted cherry trees, custom petals and shared grove mesh
- * data. `instance` converts repeated
+ * The source combines licensed botanical branching, flower cards and shared
+ * grove mesh data. `instance` converts repeated
  * nodes to EXT_mesh_gpu_instancing while preserving named stage and hero-prop
  * nodes. PBR atlases are resized and WebP-compressed before the final meshopt
  * pass so close-range material detail survives without shipping raw sources.
@@ -160,7 +160,7 @@ function verifyStageBounds(path) {
 
 if (!existsSync(INPUT)) {
   console.error(`Input not found: ${INPUT}`);
-  console.error("Run build-blossom-amphitheatre.py first.");
+  console.error("Run build-blossom-lantern-garden.py first.");
   process.exit(1);
 }
 

@@ -1,14 +1,18 @@
 <script lang="ts">
-  import { T } from "@threlte/core";
+  import { T, useTask } from "@threlte/core";
   import { useDraco, useGltf, useMeshopt } from "@threlte/extras";
   import { onDestroy, untrack } from "svelte";
-  import type { Object3D } from "three";
+  import type { Group, Object3D } from "three";
   import type { FlowFestCarDynamics } from "$lib/features/flow-fest-sim/domain/flow-fest-car";
+  import {
+    FLOW_FEST_DRIVEN_CAR_POSE_TASK,
+    FLOW_FEST_WORLD_STEP_TASK,
+  } from "./flow-fest-frame-tasks";
   import {
     buildFlowFestCarBody,
     disposeFlowFestCarBody,
+    flowFestDrivenCarPose,
     flowFestParkedCarModel,
-    settleFlowFestParkedCarOnGround,
     type FlowFestCarBody,
   } from "./flow-fest-parked-cars";
 
@@ -77,37 +81,54 @@
     if (body) disposeFlowFestCarBody(body);
   });
 
-  // Placement yaw: the body's nose is local +X while the drive's heading is
-  // the direction (sin h, cos h), a quarter turn apart.
-  const yaw = $derived(props.dynamics.headingRadians - Math.PI / 2);
-  // Four tyres on the terrain every frame, exactly as a parked body settles,
-  // with the weight-transfer attitude from the drive added on top.
-  const settled = $derived(
-    settleFlowFestParkedCarOnGround(
-      model,
-      { x: props.position.x, z: props.position.z, rotation: yaw },
-      props.sampleGroundY
-    )
+  /**
+   * The body's transform is written here, inside the frame, never through
+   * `position`/`rotation` props on the group. Threlte applies plain props in
+   * a Svelte effect, and Svelte flushes effects on a microtask that cannot
+   * run until the whole animation frame, render stage included, is over. A
+   * prop-driven body therefore painted one physics step behind the chase
+   * camera, which writes its own transform imperatively inside its task from
+   * the body position read that same frame. At driving speed that one step
+   * is a third of a metre, and projected through a camera that had already
+   * moved on it read as the car teleporting back and forth. Ordering this
+   * task after the scene's world step means the pose read here is the one
+   * physics just produced, and it reaches the screen in the same frame.
+   */
+  let bodyGroup = $state<Group>();
+  useTask(
+    FLOW_FEST_DRIVEN_CAR_POSE_TASK,
+    () => {
+      const group = bodyGroup;
+      if (!group) return;
+      const pose = flowFestDrivenCarPose(
+        model,
+        props.position,
+        props.dynamics,
+        props.sampleGroundY
+      );
+      group.position.set(pose.x, pose.y, pose.z);
+      // YZX reproduces the parked placement matrix (yaw, then pitch about the
+      // body's Z, then roll about its X); tests/unit/flow-fest-parked-cars.test.ts
+      // pins the order against flowFestParkedCarPlacementMatrix.
+      group.rotation.set(pose.roll, pose.yaw, pose.pitch, "YZX");
+    },
+    { after: FLOW_FEST_WORLD_STEP_TASK }
   );
-  const pitch = $derived(settled.pitch + props.dynamics.bodyPitchRadians);
-  const roll = $derived(settled.roll + props.dynamics.bodyRollRadians);
 </script>
 
 {#if body}
-  <!--
-    YZX reproduces the parked placement matrix (yaw, then pitch about the
-    body's Z, then roll about its X); tests/unit/flow-fest-parked-cars.test.ts
-    pins the order against flowFestParkedCarPlacementMatrix.
-  -->
   <T.Group
     name={`FFS_DrivenCar_${model.id}`}
-    position={[props.position.x, settled.y, props.position.z]}
-    rotation={[roll, yaw, pitch, "YZX"]}
+    bind:ref={bodyGroup}
     visible={props.visible ?? true}
   >
     <T is={body.root} />
     {#each body.wheels as wheel (wheel.corner)}
-      <!-- Front wheels yaw with the steering; every wheel spins on its axle. -->
+      <!--
+        Front wheels yaw with the steering; every wheel spins on its axle.
+        These stay as props: a wheel's spin and steer are local and
+        continuous, so landing one flush late is a phase offset nobody sees.
+      -->
       <T.Group
         name={`FFS_DrivenCar_Wheel_${wheel.corner}`}
         position={[wheel.center.x, wheel.center.y, wheel.center.z]}

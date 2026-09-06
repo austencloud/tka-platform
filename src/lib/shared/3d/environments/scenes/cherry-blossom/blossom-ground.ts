@@ -1,4 +1,4 @@
-import masterplanJson from "../../../../../../../static/models/blossom/amphitheatre-plan.json";
+import masterplanJson from "./blossom-plan.json";
 
 export type BlossomGroundLifeTier = "base" | "medium" | "high";
 

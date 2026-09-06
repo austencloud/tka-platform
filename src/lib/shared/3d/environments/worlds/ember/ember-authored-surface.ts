@@ -103,6 +103,13 @@ function configureProductionSlice(
       const mesh = child as Mesh;
       if (!mesh.isMesh) return;
       if (child.userData.ember_backdrop === true) {
+        if (child.userData.ember_distant_flow_surface === true) {
+          // Keep its standard material until the shared lava owner attaches
+          // the same thermal crust used upstream. Only rock uses baked colour.
+          mesh.castShadow = false;
+          mesh.receiveShadow = false;
+          return;
+        }
         const source = mesh.material as MeshStandardMaterial;
         // Distant ridges carry baked light and haze. The near-field fog would
         // erase them, and dynamic lights/shadows buy no useful detail here.

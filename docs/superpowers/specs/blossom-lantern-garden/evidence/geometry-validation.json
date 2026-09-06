@@ -1,0 +1,14 @@
+{
+  "valid": true,
+  "failures": [],
+  "testedMeshes": 56,
+  "deckTop": 0.550000011920929,
+  "rootWaterIntersections": [],
+  "maximumRouteGradePercent": {
+    "arrival": 3.4999480510343246,
+    "service": 3.4488410288956453
+  },
+  "pathHeadroomMetres": 2.4,
+  "samplingAllowanceMetres": 0.05,
+  "scope": "Actual mesh vertices; path checks exclude objects below 0.25m above walking grade. Root-water checks cover the first 1.4m above each tree base."
+}
