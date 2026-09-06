@@ -284,6 +284,10 @@ const CATALOG_SOURCE_SUPPORTS: Record<
 			supports: "Nichols' public video archive and LORQ:TECH authorship.",
 			basis: "directly-observed",
 		},
+		{
+			supports: "Nichols’ original 144 Shape Matrix sheet and his description of its 2014 rework.",
+			basis: "directly-observed",
+		},
 	],
 	poinotation: [
 		{
@@ -295,7 +299,7 @@ const CATALOG_SOURCE_SUPPORTS: Record<
 	tka: [
 		{
 			supports:
-				"The current Kinetic Alphabet guide and its letter-based way of recording position pairs.",
+				"The current Kinetic Alphabet guide, including its letters, pictographs, and sequence notation.",
 			basis: "directly-observed",
 		},
 	],
