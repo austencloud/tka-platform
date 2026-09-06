@@ -251,6 +251,7 @@
   }
   .instrument {
     position: relative;
+    container-type: size;
     width: 100%;
     min-width: 0;
     min-height: 0;
@@ -261,9 +262,11 @@
   .circle-control,
   .arrow-control {
     position: relative;
-    width: 100%;
+    width: min(100%, 100cqh);
     aspect-ratio: 1;
+    justify-self: center;
     min-width: 0;
+    min-height: 0;
   }
   .timing-point,
   .arrow-control {
