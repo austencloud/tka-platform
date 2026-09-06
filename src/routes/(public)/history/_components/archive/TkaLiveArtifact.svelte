@@ -1,31 +1,45 @@
-<!--
-  Kinetic Alphabet artifact: the real demo sequence playing in the shared
-  SequenceHeroDemo (the site's one live-sequence embed), with its pictograph
-  word strip. Inactive, a poster of the alphabet's own letter cards holds the
-  silhouette so only one heavy renderer is ever mounted across the rail.
--->
 <script lang="ts">
 	import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
 	import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
-	import demoJson from "$lib/shared/landing/data/demo-sequence.json";
-	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+	import { createHeroAct } from "$lib/shared/landing/data/hero-act.svelte";
+	import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo";
+	import { HERO_TRAIL_PRESET, HERO_TIP_EFFECT_MAP } from "$lib/shared/landing/data/hero-trail-preset";
 
 	import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
 	let { active = false }: { active?: boolean } = $props();
 
-	const demoSequence = demoJson as unknown as SequenceData;
+	// Reuse the homepage's sequence selection and prop cycle. Start only when
+	// this record is selected; playback boundaries drive subsequent draws.
+	const heroAct = createHeroAct();
+	$effect(() => {
+		if (active) heroAct.start();
+	});
+	const posterSequence = $derived(heroAct.sequence ?? FALLBACK_DEMO);
 
 	// The resting poster is the sequence's own mandala — the path both props
 	// actually trace. A single letter said nothing about what the alphabet
 	// writes; the mandala is the shape of the writing.
-	const posterWord = simplifyRepeatedWord(demoSequence.word);
+	const posterWord = $derived(simplifyRepeatedWord(posterSequence.word));
 </script>
 
 <div class="tka-artifact">
 	{#if active}
 		<div class="live">
-			<SequenceHeroDemo sequence={demoSequence} note="the demo sequence" />
+			<SequenceHeroDemo
+				sequence={heroAct.sequence}
+				element={heroAct.element}
+				note="a sequence in TKA notation"
+				leftPropType={heroAct.propType}
+				rightPropType={heroAct.propType}
+				onSequenceBoundary={heroAct.offerSequenceBoundary}
+				trailSettingsOverride={HERO_TRAIL_PRESET}
+				tipEffectMap={HERO_TIP_EFFECT_MAP}
+				externalBpm={60}
+				showWordHeader
+				showCaption={false}
+				cornerToggle
+			/>
 		</div>
 	{:else}
 		<div
@@ -35,7 +49,7 @@
 		>
 			<div class="mandala-frame">
 				<SequenceMandala
-					sequence={demoSequence}
+					sequence={posterSequence}
 					size={520}
 					darkMode={true}
 					show="both"
@@ -63,7 +77,8 @@
 		display: grid;
 		place-items: center;
 		/* SequenceHeroDemo caps itself at 26rem; give it the stage. */
-		--hero-demo-max-width: min(30rem, 78cqh);
+		--hero-demo-max-width: min(30rem, 78cqh, 100cqw);
+		--hero-demo-wide-max-width: var(--hero-demo-max-width);
 	}
 
 	.live :global(.hero-demo) {
