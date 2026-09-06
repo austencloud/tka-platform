@@ -11,6 +11,17 @@ import {
 } from "../fan-appearance";
 
 describe("fan appearance", () => {
+  it("defaults to the bare DoodleGrip Fire build", () => {
+    expect(normalizeFanAppearance(undefined)).toEqual({
+      build: "fire",
+      frameColor: "black",
+      cover: "bare",
+    });
+    expect(resolveFanRenderKey("fan", normalizeFanAppearance(null))).toBe(
+      "fan__fire_bare"
+    );
+  });
+
   it("normalizes stale persisted values without changing the default", () => {
     expect(
       normalizeFanAppearance({
