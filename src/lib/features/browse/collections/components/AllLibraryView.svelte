@@ -205,7 +205,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
   const emptyAction = {
     label: "Browse Gallery",
     onClick: () => {
-      browseNavigation.navigateTo({ primary: "gallery", view: "list" });
+      browseNavigation.viewExploreSequences();
     },
   };
   const emptyState = $derived({
