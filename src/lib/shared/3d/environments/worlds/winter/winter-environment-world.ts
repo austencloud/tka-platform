@@ -4,6 +4,8 @@ import {
   FogExp2,
   Group,
   HemisphereLight,
+  Mesh,
+  MeshStandardMaterial,
   PointLight,
   SRGBColorSpace,
   TextureLoader,
@@ -60,6 +62,13 @@ export interface WinterEnvironmentWorld {
   tier: WinterDetailTier;
   update(deltaSeconds: number, camera: Camera): void;
   setGroundY(groundY: number): void;
+  setMotionScale(scale: number): void;
+  setLayout(
+    groundY: number,
+    radius: number,
+    growth: number,
+    worldYOffset?: number
+  ): void;
   dispose(): void;
 }
 
@@ -74,12 +83,34 @@ function configureFire(fire: VolumetricFireMesh): void {
   fire.setFlameRadius(0.74);
 }
 
-/** Exact renderer-neutral owner of the production Moonlit Winter Hollow. */
+export const WINTER_ENVIRONMENT_URL = "/models/winter/blue-hour-lodge.glb";
+export const WINTER_COURT_RADIUS = 7.7;
+
+/** Shared by both renderers so the lodge and pond remain outside a larger cast. */
+export function getWinterVenueScale(
+  radius: number,
+  growth = 0,
+  minimumRadius = WINTER_COURT_RADIUS
+): number {
+  return (
+    resolveCircularStageRadius(
+      radius,
+      Math.max(WINTER_COURT_RADIUS, minimumRadius),
+      undefined,
+      growth
+    ) / WINTER_COURT_RADIUS
+  );
+}
+
+/** Renderer-neutral owner of Blue Hour Lodge and Winter's living atmosphere. */
 export function createWinterEnvironmentWorld(
   options: WinterEnvironmentWorldOptions
 ): WinterEnvironmentWorld {
   const root = new Group();
   root.name = "winter-environment-world";
+  const land = new Group();
+  land.name = "winter-cast-layout";
+  root.add(land);
   const config = options.config ?? createDefaultWinterConfig();
   const tier = capWinterDetailTier(
     winterDetailTierFromAmount(config.forestDetail ?? 1),
@@ -92,6 +123,7 @@ export function createWinterEnvironmentWorld(
   const particles: RainbowParticleField[] = [];
   let groundY = options.groundY;
   let fireElapsed = 0;
+  let motionScale = options.motionScale ?? 1;
   let disposed = false;
 
   function loadTexture(path: string, colorSpace?: ColorSpace): Texture {
@@ -114,11 +146,7 @@ export function createWinterEnvironmentWorld(
   const sky = createWinterSky(config.sky, config.moon, moonTexture);
   root.add(sky.object);
 
-  const starfield = createWinterStarfield(
-    config.starfield,
-    options.motionScale,
-    options.random
-  );
+  const starfield = createWinterStarfield(config.starfield, 1, options.random);
   if (config.starfield.enabled) root.add(starfield.object);
 
   const environment = options.environmentRoot;
@@ -134,13 +162,29 @@ export function createWinterEnvironmentWorld(
       instance.userData.winterMaximumCount = maximumCount;
       instance.count = Math.max(
         1,
-        Math.ceil(maximumCount * quality.sceneryMultiplier)
+        Math.ceil(
+          maximumCount *
+            (instance.userData.bluehourRole ? 1 : quality.sceneryMultiplier)
+        )
       );
       child.visible = instance.count > 0;
     } else {
       child.visible = winterObjectIsVisible(child.name, tier);
     }
     if (!("isMesh" in child) || !child.isMesh) return;
+    if (child instanceof Mesh && child.userData.bluehourRole === "court") {
+      child.visible =
+        options.platformVisible !== false && config.platform.enabled;
+      const materials = Array.isArray(child.material)
+        ? child.material
+        : [child.material];
+      for (const material of materials) {
+        if (material instanceof MeshStandardMaterial) {
+          material.emissive.set(config.platform.primaryColor);
+          material.emissiveIntensity = config.platform.glowIntensity * 0.025;
+        }
+      }
+    }
     const mesh = child as Object3D & {
       castShadow: boolean;
       receiveShadow: boolean;
@@ -148,23 +192,23 @@ export function createWinterEnvironmentWorld(
     mesh.castShadow = quality.shadows;
     mesh.receiveShadow = true;
   });
-  root.add(environment);
+  land.add(environment);
 
   const pond = config.pond?.enabled
     ? createWinterPond(config.pond, groundY, quality.pondSurfaceDetail, {
         colorMap: loadTexture("/textures/winter/ice-surface.webp"),
         roughnessMap: loadTexture("/textures/winter/ice-roughness.webp"),
-        bodyNormal: loadTexture("/textures/water/Water_1_M_Normal.jpg"),
-        coatNormal: loadTexture("/textures/water/Water_2_M_Normal.jpg"),
+        bodyNormal: null,
+        coatNormal: null,
       })
     : null;
-  if (pond) root.add(pond.object);
+  if (pond) land.add(pond.object);
 
   const snow = createRainbowParticleField({
     ...config.snow,
     count: Math.round(config.snow.count * quality.snowMultiplier),
     spin: config.snow.spin ?? true,
-    motionScale: options.motionScale,
+    motionScale: 1,
     random: options.random,
   });
   snow.points.name = "winter-snow";
@@ -190,7 +234,7 @@ export function createWinterEnvironmentWorld(
       campfire.fireHeight * campfire.fireScale,
       campfire.fireScale
     );
-    root.add(fire);
+    land.add(fire);
   }
 
   const fireSteam = campfire
@@ -203,7 +247,7 @@ export function createWinterEnvironmentWorld(
         sizeRange: [0.18, 0.42],
         spin: false,
         opacity: 0.22,
-        motionScale: options.motionScale,
+        motionScale: 1,
         random: options.random,
       })
     : null;
@@ -213,7 +257,7 @@ export function createWinterEnvironmentWorld(
     fireSteamGroup.name = "winter-campfire-steam-group";
     fireSteamGroup.add(fireSteam.points);
     particles.push(fireSteam);
-    root.add(fireSteamGroup);
+    land.add(fireSteamGroup);
   }
 
   const primaryFireLight = campfire
@@ -234,11 +278,11 @@ export function createWinterEnvironmentWorld(
     : null;
   if (primaryFireLight) {
     primaryFireLight.name = "winter-campfire-primary-light";
-    root.add(primaryFireLight);
+    land.add(primaryFireLight);
   }
   if (fillFireLight) {
     fillFireLight.name = "winter-campfire-fill-light";
-    root.add(fillFireLight);
+    land.add(fillFireLight);
   }
 
   const cabinSmoke =
@@ -253,7 +297,7 @@ export function createWinterEnvironmentWorld(
           spin: false,
           opacity: config.cabin.smoke.opacity,
           emissionShape: "ellipse",
-          motionScale: options.motionScale,
+          motionScale: 1,
           random: options.random,
         })
       : null;
@@ -263,7 +307,7 @@ export function createWinterEnvironmentWorld(
     cabinSmokeGroup.name = "winter-cabin-smoke-group";
     cabinSmokeGroup.add(cabinSmoke.points);
     particles.push(cabinSmoke);
-    root.add(cabinSmokeGroup);
+    land.add(cabinSmokeGroup);
   }
 
   const cabinWindowLight =
@@ -277,7 +321,7 @@ export function createWinterEnvironmentWorld(
       : null;
   if (cabinWindowLight) {
     cabinWindowLight.name = "winter-cabin-window-light";
-    root.add(cabinWindowLight);
+    land.add(cabinWindowLight);
   }
 
   const hemisphere = new HemisphereLight(
@@ -287,6 +331,12 @@ export function createWinterEnvironmentWorld(
   );
   hemisphere.name = "winter-hemisphere-light";
   root.add(hemisphere);
+  for (const x of [-14, -6, 2]) {
+    const light = new PointLight("#ffbb78", 42, 18, 2);
+    light.position.set(x, groundY + 3.3, -12.7);
+    light.name = "winter-lodge-promenade-light";
+    land.add(light);
+  }
   const moonLight = config.moonLight?.enabled
     ? new DirectionalLight(config.moonLight.color, config.moonLight.intensity)
     : null;
@@ -294,6 +344,16 @@ export function createWinterEnvironmentWorld(
     moonLight.name = "winter-moon-light";
     moonLight.position.set(...config.moonLight.position);
     moonLight.castShadow = quality.shadows;
+    moonLight.shadow.mapSize.set(1024, 1024);
+    moonLight.shadow.camera.left = -35;
+    moonLight.shadow.camera.right = 35;
+    moonLight.shadow.camera.top = 35;
+    moonLight.shadow.camera.bottom = -35;
+    moonLight.shadow.camera.near = 0.5;
+    moonLight.shadow.camera.far = 100;
+    moonLight.shadow.normalBias = 0.08;
+    moonLight.shadow.bias = -0.00015;
+    moonLight.shadow.camera.updateProjectionMatrix();
     root.add(moonLight);
   }
 
@@ -307,15 +367,21 @@ export function createWinterEnvironmentWorld(
     stageRadius === config.platform.radius
       ? config.platform
       : { ...config.platform, radius: stageRadius };
+  let authoredCourt = false;
+  environment.traverse((object) => {
+    if (object.userData.bluehourRole === "court") authoredCourt = true;
+  });
   const platform =
-    options.platformVisible !== false && platformConfig.enabled
+    !authoredCourt &&
+    options.platformVisible !== false &&
+    platformConfig.enabled
       ? createWinterIcePlatform(
           platformConfig,
           groundY,
           options.stageZOffset ?? 0
         )
       : null;
-  if (platform) root.add(platform.object);
+  if (platform) land.add(platform.object);
 
   const fog = new FogExp2(config.fog.color, config.fog.density);
   const background = new Color(config.fog.color);
@@ -377,6 +443,22 @@ export function createWinterEnvironmentWorld(
     }
   }
   setGroundY(groundY);
+  function setLayout(
+    nextGroundY: number,
+    radius: number,
+    growth: number,
+    worldYOffset = 0
+  ): void {
+    setGroundY(nextGroundY);
+    const scale = getWinterVenueScale(radius, growth, config.platform.radius);
+    land.scale.set(scale, 1, scale);
+    land.position.y = worldYOffset;
+    for (const child of land.children) {
+      if (child.name === "winter-lodge-promenade-light")
+        child.position.y = nextGroundY + 3.3;
+    }
+  }
+  setLayout(groundY, options.stageRadius ?? 3, options.stageRadiusGrowth ?? 0);
 
   return {
     root,
@@ -385,16 +467,22 @@ export function createWinterEnvironmentWorld(
     tier,
     update(deltaSeconds, camera) {
       if (disposed) return;
+      const motionDelta = deltaSeconds * motionScale;
       sky.update(camera);
-      starfield.update(deltaSeconds);
-      for (const field of particles) field.update(deltaSeconds);
-      platform?.update(deltaSeconds);
+      starfield.update(motionDelta);
+      for (const field of particles) field.update(motionDelta);
+      platform?.update(motionDelta);
       if (fire) {
-        fireElapsed += Math.min(Math.max(deltaSeconds, 0), 1 / 15);
+        fireElapsed +=
+          Math.min(Math.max(deltaSeconds, 0), 1 / 15) * motionScale;
         fire.setTime(fireElapsed);
       }
     },
     setGroundY,
+    setMotionScale(scale) {
+      motionScale = Number.isFinite(scale) ? Math.max(0, scale) : 1;
+    },
+    setLayout,
     dispose() {
       if (disposed) return;
       disposed = true;

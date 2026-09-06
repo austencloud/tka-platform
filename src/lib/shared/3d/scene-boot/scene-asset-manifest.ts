@@ -59,7 +59,7 @@ export const SCENE_ASSET_MANIFEST: Readonly<
   [BackgroundType.OCEAN]: ["/models/ocean/ocean-environment.glb"],
   [BackgroundType.PRIDE]: [],
   [BackgroundType.VOID]: [],
-  [BackgroundType.WINTER]: ["/models/winter/winter-environment.glb"],
+  [BackgroundType.WINTER]: ["/models/winter/blue-hour-lodge.glb"],
 };
 
 /**
