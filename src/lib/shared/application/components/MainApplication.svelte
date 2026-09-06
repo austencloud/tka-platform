@@ -650,6 +650,7 @@
           open={authDrawerState.open}
           initialMode={authDrawerState.initialMode}
           reason={authDrawerState.reason}
+          attempt={authDrawerState.stepCapAttempts}
           onClose={() => authDrawerState.hide()}
         />
       {/await}

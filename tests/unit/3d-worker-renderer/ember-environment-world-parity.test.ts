@@ -250,6 +250,17 @@ describe("Ember renderer-neutral production world", () => {
       const mesh = node as Mesh;
       expect(mesh.castShadow).toBe(false);
       expect(mesh.receiveShadow).toBe(false);
+      if (node.userData.ember_distant_flow_surface === true) {
+        const near = world.root.getObjectByName(
+          "EMBER_LavaSimulatorDeposit"
+        ) as Mesh;
+        expect(mesh.material).toBeInstanceOf(MeshStandardMaterial);
+        expect((mesh.material as MeshStandardMaterial).onBeforeCompile).toBe(
+          (near.material as MeshStandardMaterial).onBeforeCompile
+        );
+        expect((mesh.material as MeshStandardMaterial).fog).toBe(true);
+        return;
+      }
       expect((mesh.material as MeshStandardMaterial).fog).toBe(false);
       expect(Array.isArray(mesh.material)).toBe(false);
       expect((mesh.material as MeshStandardMaterial).type).toBe(
