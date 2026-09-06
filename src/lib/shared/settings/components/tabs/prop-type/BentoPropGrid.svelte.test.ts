@@ -1,8 +1,7 @@
 import { render } from "vitest-browser-svelte";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
 import BentoPropGrid from "./BentoPropGrid.svelte";
 
 const CLUB_PICKER_PROPS = [
@@ -16,69 +15,13 @@ const CLUB_PICKER_PROPS = [
   PropType.MINIHOOP,
 ] as const;
 
-describe("BentoPropGrid style chooser", () => {
+describe("BentoPropGrid style drill-down", () => {
   beforeEach(async () => {
     await page.viewport(760, 800);
     document.body.style.margin = "0";
   });
 
-  it("shields prop cards behind the popover and selects only the chosen style", async () => {
-    const onSelect = vi.fn();
-    const drawer = document.createElement("div");
-    document.body.append(drawer);
-
-    render(BentoPropGrid, {
-      target: drawer,
-      props: {
-        selectedPropType: PropType.CLUB,
-        onSelect,
-        allowedProps: CLUB_PICKER_PROPS,
-      },
-    });
-    const focusTrap = new FocusTrap({ returnFocusOnDeactivate: false });
-    focusTrap.activate(drawer);
-
-    try {
-      const trigger = page.getByRole("button", { name: "Choose Club style" });
-      await trigger.click();
-
-      const overlay = page.getByTestId("prop-style-overlay");
-      await expect.element(overlay).toBeVisible();
-      const overlayBounds = overlay.element().getBoundingClientRect();
-      expect(overlayBounds.left).toBe(0);
-      expect(overlayBounds.top).toBe(0);
-      expect(overlayBounds.width).toBe(window.innerWidth);
-      expect(overlayBounds.height).toBe(window.innerHeight);
-      expect(getComputedStyle(overlay.element()).pointerEvents).toBe("auto");
-
-      const torchOption = page.getByRole("button", {
-        name: "Select Torch prop type",
-      });
-      const torchBounds = torchOption.element().getBoundingClientRect();
-      const hitTarget = document.elementFromPoint(
-        torchBounds.left + torchBounds.width / 2,
-        torchBounds.top + torchBounds.height / 2
-      );
-      const positioner = torchOption
-        .element()
-        .closest<HTMLElement>("[data-bits-floating-content-wrapper]");
-      expect(positioner?.inert).toBe(false);
-      expect(getComputedStyle(positioner!).zIndex).toBe("300");
-      expect(getComputedStyle(overlay.element()).zIndex).toBe("299");
-      expect(torchOption.element().contains(hitTarget)).toBe(true);
-
-      await torchOption.click();
-
-      expect(onSelect).toHaveBeenCalledTimes(1);
-      expect(onSelect).toHaveBeenCalledWith(PropType.TORCH);
-      await expect.element(trigger).toHaveAttribute("aria-expanded", "false");
-    } finally {
-      focusTrap.deactivate();
-      drawer.remove();
-    }
-  });
-
-  it("dismisses on the shield without activating the prop underneath", async () => {
+  it("replaces the grid with the family's styles and selects only the chosen one", async () => {
     const onSelect = vi.fn();
 
     render(BentoPropGrid, {
@@ -90,10 +33,51 @@ describe("BentoPropGrid style chooser", () => {
     const trigger = page.getByRole("button", { name: "Choose Club style" });
     await trigger.click();
 
-    const overlay = page.getByTestId("prop-style-overlay");
-    await overlay.click({ position: { x: 6, y: window.innerHeight - 6 } });
+    const back = page.getByRole("button", { name: "Back to all props" });
+    await expect.element(back).toBeVisible();
+    // The styles replace the grid rather than floating over it, so a tap on
+    // a style can never land on a prop card behind it.
+    await expect
+      .element(page.getByRole("button", { name: "Select Fan prop type" }))
+      .not.toBeInTheDocument();
+
+    const torchOption = page.getByRole("button", {
+      name: "Select Torch prop type",
+    });
+    await torchOption.click();
+
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith(PropType.TORCH);
+
+    // Picking stays one level down so styles can be compared; Back returns
+    // to the full grid with the family tile closed.
+    await expect.element(back).toBeVisible();
+    await back.click();
+    await expect
+      .element(page.getByRole("button", { name: "Select Fan prop type" }))
+      .toBeVisible();
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("steps back on Escape without selecting anything", async () => {
+    const onSelect = vi.fn();
+
+    render(BentoPropGrid, {
+      selectedPropType: PropType.CLUB,
+      onSelect,
+      allowedProps: CLUB_PICKER_PROPS,
+    });
+
+    const trigger = page.getByRole("button", { name: "Choose Club style" });
+    await trigger.click();
+    await expect
+      .element(page.getByRole("button", { name: "Back to all props" }))
+      .toBeVisible();
+
+    await userEvent.keyboard("{Escape}");
 
     expect(onSelect).not.toHaveBeenCalled();
+    await expect.element(trigger).toBeVisible();
     await expect.element(trigger).toHaveAttribute("aria-expanded", "false");
   });
 });
