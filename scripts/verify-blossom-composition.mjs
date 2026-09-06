@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Verify the active amphitheatre export; visual acceptance belongs to Austen. */
+/** Verify the active garden export; visual acceptance belongs to Austen. */
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 const root = resolve(import.meta.dirname, "..");
 const evidence = resolve(
   root,
-  "docs/superpowers/specs/blossom-amphitheatre/evidence"
+  "docs/superpowers/specs/blossom-lantern-garden/evidence"
 );
 const [buffer, plan, manifest, geometry] = await Promise.all([
   readFile(resolve(root, "static/models/blossom/blossom_environment.glb")),
@@ -37,7 +37,6 @@ const nodes = new Map(doc.nodes.map((node) => [node.name, node]));
 for (const name of [
   "Amphitheatre_Terrain",
   "River_Water",
-  "Amphitheatre_Terraces",
   "Amphitheatre_Arrival",
   "Stage_Planks",
   "Amphitheatre_Stage_Foundation",
@@ -46,7 +45,6 @@ for (const name of [
   "Amphitheatre_Lantern_Washi",
   "Amphitheatre_Understory",
   "Amphitheatre_Fallen_Petals",
-  "Amphitheatre_Entry_Portal",
 ])
   invariant(nodes.has(name), `Missing authored geometry: ${name}`);
 for (const role of ["bark", "petals"])
@@ -56,14 +54,14 @@ for (const role of ["bark", "petals"])
   );
 // glTF-Transform removes extras on GPU instance nodes. Their shared mesh names
 // remain stable; these meshes intentionally do not cast the near shadow map.
-for (const part of ["Wood", "Blossoms"])
+for (const part of ["Wood", "Flowers"])
   invariant(
     doc.nodes.filter(
       (node) =>
         node.extensions?.EXT_mesh_gpu_instancing &&
-        doc.meshes[node.mesh].name.startsWith(`Companion_Cherry_${part}_30`)
-    ).length === 3,
-    `Expected three instanced grove ${part} templates`
+        doc.meshes[node.mesh].name.startsWith(`Botanical_${part}_`)
+    ).length === 2,
+    `Expected two instanced botanical ${part} templates`
   );
 for (const extension of [
   "EXT_mesh_gpu_instancing",
@@ -77,6 +75,10 @@ for (const extension of [
 invariant(
   geometry.valid && geometry.failures.length === 0,
   "Blender clearance audit failed"
+);
+invariant(
+  geometry.rootWaterIntersections?.length === 0,
+  "Roots intersect the pond"
 );
 invariant(
   Math.abs(geometry.deckTop - plan.stage.deckTop) < 0.001,
@@ -130,6 +132,7 @@ const report = {
   renderedTriangles: triangles,
   trees: plan.trees.length,
   lanterns: plan.lanterns.length,
+  hangingLanterns: plan.hangingLanterns?.length ?? 0,
   geometry,
   extensions: doc.extensionsUsed,
   limitations: [

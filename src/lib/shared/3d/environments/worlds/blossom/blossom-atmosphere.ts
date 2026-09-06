@@ -60,6 +60,25 @@ const SKY_FRAGMENT_SHADER = /* glsl */ `
   uniform float uMoonHorizonWarmth;
   varying vec3 vSkyDirection;
 
+  float cloudHash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  float cloudNoise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(cloudHash(i), cloudHash(i + vec2(1, 0)), f.x),
+      mix(cloudHash(i + vec2(0, 1)), cloudHash(i + vec2(1, 1)), f.x), f.y);
+  }
+  float cloudField(vec2 p) {
+    float n = 0.0, weight = 0.5;
+    for (int i = 0; i < 5; i++) {
+      n += cloudNoise(p) * weight;
+      p = mat2(1.6, -1.2, 1.2, 1.6) * p + 7.4;
+      weight *= 0.5;
+    }
+    return n;
+  }
+
   void main() {
     vec3 skyDirection = normalize(vSkyDirection);
     float rawHeight = skyDirection.y * 0.5 + 0.5;
@@ -79,6 +98,11 @@ const SKY_FRAGMENT_SHADER = /* glsl */ `
     } else {
       color = mix(uBottomColor, uTopColor, h);
     }
+
+    vec2 cloudPlane = skyDirection.xz / max(0.18, skyDirection.y + 0.24);
+    float clouds = smoothstep(0.44, 0.73, cloudField(cloudPlane * vec2(2.1, 3.2)));
+    clouds *= smoothstep(0.01, 0.18, skyDirection.y);
+    color = mix(color, vec3(0.10, 0.16, 0.24), clouds * 0.42);
 
     vec3 moonDirection = normalize(uMoonDirection);
     float moonFrontHemisphere = step(0.0, dot(skyDirection, moonDirection));
@@ -137,7 +161,7 @@ function createBlossomSky(
   dispose(): void;
 } {
   const moon = {
-    direction: [0.28, 0.36, 0.88] as const,
+    direction: [0.18, 0.22, 0.96] as const,
     angularDiameterDegrees: 4.8,
     opacity: 0.98,
     glowScale: 2.2,

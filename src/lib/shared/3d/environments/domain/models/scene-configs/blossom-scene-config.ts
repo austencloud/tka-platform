@@ -118,10 +118,10 @@ export function createDefaultBlossomConfig(): BlossomSceneConfig {
   return {
     sky: {
       topColor: "#091421",
-      midColor: "#243849",
-      bottomColor: "#526277",
+      midColor: "#1c344e",
+      bottomColor: "#354b63",
     },
-    fog: { color: "#283d50", density: 0.014 },
+    fog: { color: "#142738", density: 0.0175 },
     ground: {
       color: "#201518",
       size: 50,
@@ -207,13 +207,13 @@ export function createDefaultBlossomConfig(): BlossomSceneConfig {
     hemisphereLight: {
       skyColor: "#cadbea",
       groundColor: "#25312d",
-      intensity: 0.85,
+      intensity: 0.58,
     },
     moonLight: {
       enabled: true,
       color: "#d3e4ff",
-      intensity: 4.1,
-      position: [-14, 28, 8],
+      intensity: 3.4,
+      position: [14, 21, 72],
     },
     platform: {
       enabled: true,
