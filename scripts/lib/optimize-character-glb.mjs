@@ -16,8 +16,9 @@ const alphaModeStep = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "character-alpha-modes.mjs"
 );
-const glossWorkflowStep = fileURLToPath(
-  new URL("./character-gloss-workflow.mjs", import.meta.url)
+const glossWorkflowStep = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "character-gloss-workflow.mjs"
 );
 
 /**
