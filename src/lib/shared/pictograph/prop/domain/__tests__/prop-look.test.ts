@@ -12,11 +12,11 @@ import {
 import { PROP_MODEL_SPRITES } from "../prop-model-sprites.generated";
 
 describe("prop look", () => {
-  it("defaults to the 3D model look", () => {
-    expect(DEFAULT_PROP_LOOK).toBe("model");
-    expect(normalizePropLook(undefined)).toBe("model");
-    expect(normalizePropLook("garbage")).toBe("model");
-    expect(normalizePropLook("pictograph")).toBe("pictograph");
+  it("defaults to the canonical pictograph look", () => {
+    expect(DEFAULT_PROP_LOOK).toBe("pictograph");
+    expect(normalizePropLook(undefined)).toBe("pictograph");
+    expect(normalizePropLook("garbage")).toBe("pictograph");
+    expect(normalizePropLook("model")).toBe("model");
   });
 
   it("has a captured sprite pair for every physical 3D prop", () => {
@@ -30,7 +30,7 @@ describe("prop look", () => {
   });
 
   it("resolves model render keys only for sprites that exist", () => {
-    expect(resolvePropRenderKey("staff", {})).toBe("staff__model");
+    expect(resolvePropRenderKey("staff", {})).toBe("staff");
     expect(resolvePropRenderKey("Staff", { propLook: "model" })).toBe(
       "staff__model"
     );

@@ -20,12 +20,16 @@ import { PROP_MODEL_SPRITES } from "./prop-model-sprites.generated";
 export const PROP_LOOKS = ["model", "pictograph"] as const;
 export type PropLook = (typeof PROP_LOOKS)[number];
 
-export const DEFAULT_PROP_LOOK: PropLook = "model";
+/**
+ * The notation artwork stays the default: its proportions are canonical and
+ * the 3D captures (a much thinner staff, for one) are an opt-in look.
+ */
+export const DEFAULT_PROP_LOOK: PropLook = "pictograph";
 
 export type PropSpriteSide = "left" | "right";
 
 export function normalizePropLook(value: unknown): PropLook {
-  return value === "pictograph" ? "pictograph" : DEFAULT_PROP_LOOK;
+  return value === "model" ? "model" : DEFAULT_PROP_LOOK;
 }
 
 /** Props with a captured model sprite pair on disk. */
