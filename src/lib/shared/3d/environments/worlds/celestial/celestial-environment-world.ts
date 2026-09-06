@@ -36,7 +36,7 @@ import {
 export const CELESTIAL_PANORAMA_URL =
   "/textures/celestial/olive-cloudbreak-panorama-r1.webp?v=gate4-cloudbreak-r1";
 export const CELESTIAL_SHELL_URL =
-  "/models/celestial/sunward-gardens.glb?v=sunward-r1";
+  "/models/celestial/dawn-observatory.glb?v=dawn-r1";
 export const CELESTIAL_AUTHORED_RESOURCE_URLS = [
   CELESTIAL_PANORAMA_URL,
   CELESTIAL_SHELL_URL,
@@ -108,7 +108,7 @@ function loadPanorama(url: string): Promise<Texture> {
   });
 }
 
-/** Load the panorama and the complete Blender-authored garden. */
+/** Load the panorama and the complete Blender-authored observatory. */
 export async function loadCelestialEnvironmentAssets(
   options: LoadCelestialAssetsOptions
 ): Promise<CelestialEnvironmentAssets> {
@@ -162,7 +162,7 @@ function createLighting(config: CelestialSceneConfig): Group {
     light.name = "celestial-sun-light";
     light.position.set(...config.sunLight.position);
     light.castShadow = true;
-    light.shadow.mapSize.set(1024, 1024);
+    light.shadow.mapSize.set(2048, 2048);
     light.shadow.camera.near = 1;
     light.shadow.camera.far = 180;
     light.shadow.camera.left = -32;
@@ -172,7 +172,7 @@ function createLighting(config: CelestialSceneConfig): Group {
     light.shadow.bias = -0.0007;
     light.shadow.normalBias = 0.05;
     light.shadow.radius = 3;
-    light.shadow.intensity = 0.64;
+    light.shadow.intensity = 0.85;
     root.add(light);
   }
   const fill = new DirectionalLight("#bfd3e8", 0.42);

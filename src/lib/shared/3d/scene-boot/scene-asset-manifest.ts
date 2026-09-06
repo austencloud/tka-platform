@@ -32,7 +32,7 @@ export const SCENE_ASSET_MANIFEST: Readonly<
 > = {
   [BackgroundType.AUTUMN]: ["/models/autumn/autumn-environment.glb"],
   [BackgroundType.BLOSSOM]: ["/models/blossom/blossom_environment.glb"],
-  [BackgroundType.CELESTIAL]: ["/models/celestial/sunward-gardens.glb"],
+  [BackgroundType.CELESTIAL]: ["/models/celestial/dawn-observatory.glb"],
   [BackgroundType.COSMIC]: [
     "/models/cosmic/cosmic-reliquary.glb",
     "/models/cosmic/cosmic-stage.glb",

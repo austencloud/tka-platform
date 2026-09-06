@@ -100,7 +100,7 @@ export function createDefaultCelestialConfig(): CelestialSceneConfig {
       midColor: "#a9c9e7",
       bottomColor: "#f4d6ab",
     },
-    fog: { color: "#b7c9d7", density: 0.009 },
+    fog: { color: "#b7c9d7", density: 0.0035 },
     ground: {
       color: "#8d9caf",
       size: 50,
@@ -164,12 +164,12 @@ export function createDefaultCelestialConfig(): CelestialSceneConfig {
     hemisphereLight: {
       skyColor: "#f2f7ff",
       groundColor: "#725f4d",
-      intensity: 1.22,
+      intensity: 0.8,
     },
     sunLight: {
       enabled: true,
       color: "#ffe1ad",
-      intensity: 4.6,
+      intensity: 3.8,
       position: [-12, 30, -115],
     },
   };
