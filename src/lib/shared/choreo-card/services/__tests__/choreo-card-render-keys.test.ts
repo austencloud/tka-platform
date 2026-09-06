@@ -34,6 +34,8 @@ function baseInputs(): ChoreoCardRenderKeyInputs {
     sequence: SEQ,
     leftPropType: PropType.STAFF,
     rightPropType: PropType.STAFF,
+    leftBuugengFlipped: false,
+    rightBuugengFlipped: false,
     catDogModeEnabled: false,
     showStepNumbers: true,
     showNonRadial: false,

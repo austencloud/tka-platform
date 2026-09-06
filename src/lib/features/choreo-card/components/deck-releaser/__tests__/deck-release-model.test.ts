@@ -54,12 +54,12 @@ describe("deck release model", () => {
   });
 
   it("keeps reference-only hand-path releases out of the TnD sequence list", () => {
-    const handPaths = {
+    const handPaths: DeckRelease = {
       ...release(3),
       cardCount: 6,
       handPathCards: {
         version: 1,
-        cardIds: ["ss", "ts", "so", "to", "qo", "qs"] as const,
+        cardIds: ["ss", "ts", "so", "to", "qo", "qs"],
       },
     };
 

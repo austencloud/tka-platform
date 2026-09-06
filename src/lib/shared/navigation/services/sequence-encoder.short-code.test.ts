@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { generateViewerURL } from "./sequence-encoder";
-import type { SequenceData } from "$lib/shared/foundation/types/sequence";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-const sequence = { word: "EHWE", steps: [] } as unknown as SequenceData;
+const sequence = createSequenceData({ word: "EHWE" });
 
 describe("generateViewerURL short-code path", () => {
   it("uses the short code as the path instead of the inline-encoded sequence", () => {
