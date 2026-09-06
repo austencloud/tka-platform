@@ -163,12 +163,14 @@ describe("scene prop picker contract", () => {
     );
   });
 
-  it("keeps family popovers in the viewport and gives Escape to the local layer", () => {
+  it("drills into families inside the picker and gives Escape to the local layer", () => {
     const canonicalGrid = read(BENTO_GRID_PATH);
 
-    expect(canonicalGrid).toContain("<Popover.Portal>");
+    // A family's styles replace the grid at full tile size behind a back bar;
+    // nothing floats in a popover that could clip or shrink its tiles.
+    expect(canonicalGrid).not.toContain("<Popover.");
+    expect(canonicalGrid).toContain('aria-label="Back to all props"');
     expect(canonicalGrid).toContain("data-escape-shortcut-local");
-    expect(canonicalGrid).toContain("--bits-popover-content-available-height");
   });
 
   it("carries Buugeng chirality into the existing 3D rig owner", () => {

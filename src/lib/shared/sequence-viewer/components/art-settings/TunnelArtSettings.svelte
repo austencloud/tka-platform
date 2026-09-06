@@ -7,11 +7,7 @@
   import { createGlobalChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
-  import PropLookPicker from "$lib/shared/pictograph/prop/components/PropLookPicker.svelte";
-  import {
-    isFanPropType,
-    type FanAppearance,
-  } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
@@ -351,16 +347,9 @@
           {selectedPropType}
           onSelect={onPropChange}
           variant="inline"
-          flat={dense}
+          flat
           chirality={propChirality}
         />
-        <!-- The fan build lives in the grid's Fan styles popover; only the
-             model / pictograph switch for other props docks below. -->
-        {#if !isFanPropType(selectedPropType)}
-          <div class="fan-appearance-section">
-            <PropLookPicker propType={selectedPropType} compact={dense} />
-          </div>
-        {/if}
       {/if}
     </div>
   {:else if id === "speed"}
@@ -476,19 +465,11 @@
     padding: 8px 16px 20px;
   }
 
-  .fan-appearance-section {
-    padding-top: 14px;
-    border-top: 1px solid var(--theme-stroke);
-  }
   /* Mobile dock tray: tighten the shared section bodies. Buttons/inputs keep
      their var(--min-touch-target) floor — only gaps and outer paddings collapse
      so the tray stays compact floating over the art. */
   .dock-dense .section-pad {
     gap: 8px;
     padding: 2px 2px 6px;
-  }
-
-  .dock-dense .fan-appearance-section {
-    padding-top: 10px;
   }
 </style>

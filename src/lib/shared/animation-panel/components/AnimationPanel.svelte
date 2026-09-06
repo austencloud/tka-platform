@@ -38,11 +38,7 @@
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
-  import PropLookPicker from "$lib/shared/pictograph/prop/components/PropLookPicker.svelte";
-  import {
-    isFanPropType,
-    type FanAppearance,
-  } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import type { PropChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import AnimatorInspectorShell from "./AnimatorInspectorShell.svelte";
   import AnimatorInspectorFooter from "./AnimatorInspectorFooter.svelte";
@@ -720,18 +716,8 @@
         onSelect={onPropChange}
         chirality={propChirality}
         variant="inline"
-        flat={layout === "bottom"}
+        flat
       />
-      <!-- The fan build lives in the prop grid's Fan styles popover; only
-           the model / pictograph switch for other props docks below. -->
-      {#if selectedPropType && !isFanPropType(selectedPropType)}
-        <div class="fan-appearance-section">
-          <PropLookPicker
-            propType={selectedPropType}
-            compact={layout === "bottom"}
-          />
-        </div>
-      {/if}
     {/await}
   {:else if resolvedPill === "effects"}
     <EffectsPanel
@@ -1297,17 +1283,6 @@
     align-items: center;
     justify-content: center;
     min-height: 140px;
-  }
-
-  .fan-appearance-section {
-    margin-top: 14px;
-    padding: 14px 16px 18px;
-    border-top: 1px solid var(--theme-stroke);
-  }
-
-  .dock-dense .fan-appearance-section {
-    margin-top: 10px;
-    padding: 10px 12px 12px;
   }
 
   /* Compact Export body: label-left rows instead of stacked sections. */
