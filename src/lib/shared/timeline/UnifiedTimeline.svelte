@@ -42,7 +42,10 @@
   function seekFromPointer(e: PointerEvent) {
     if (!scrubberEl) return;
     const rect = scrubberEl.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const ratio = Math.max(
+      0,
+      Math.min(1, (e.clientX - rect.left) / rect.width)
+    );
     playback.seek(ratio);
   }
 
@@ -91,8 +94,13 @@
     }
   }
 
-  const hasTempo = $derived(playback.bpm !== undefined && playback.onBpmChange !== undefined);
-  const hasMode = $derived(playback.playbackMode !== undefined && playback.onPlaybackModeChange !== undefined);
+  const hasTempo = $derived(
+    playback.bpm !== undefined && playback.onBpmChange !== undefined
+  );
+  const hasMode = $derived(
+    playback.playbackMode !== undefined &&
+      playback.onPlaybackModeChange !== undefined
+  );
   const hasAdvancedControls = $derived(
     hasTempo || hasMode || playback.isLooping !== undefined
   );
@@ -117,7 +125,8 @@
     showBpmPopover = !showBpmPopover;
     if (showBpmPopover) {
       requestAnimationFrame(() => {
-        const first = popoverEl?.querySelector<HTMLButtonElement>(".bpm-preset");
+        const first =
+          popoverEl?.querySelector<HTMLButtonElement>(".bpm-preset");
         first?.focus();
       });
     }
@@ -135,7 +144,12 @@
     if (!showBpmPopover) return;
     const target = event.target as HTMLElement;
     const popover = document.querySelector(".bpm-popover");
-    if (popover && bpmBtnEl && !popover.contains(target) && !bpmBtnEl.contains(target)) {
+    if (
+      popover &&
+      bpmBtnEl &&
+      !popover.contains(target) &&
+      !bpmBtnEl.contains(target)
+    ) {
       showBpmPopover = false;
     }
   }
@@ -165,12 +179,20 @@
 {#if visible && playback.totalSteps > 0}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div class="unified-timeline" role="group" aria-label="Playback transport" onkeydown={onKeydown}>
+  <div
+    class="unified-timeline"
+    role="group"
+    aria-label="Playback transport"
+    onkeydown={onKeydown}
+  >
     <div class="transport-pill">
       {#if !hidePlay}
         <button
           class="pill-play"
-          onclick={(e) => { e.stopPropagation(); playback.togglePlay(); }}
+          onclick={(e) => {
+            e.stopPropagation();
+            playback.togglePlay();
+          }}
           aria-label={playback.isPlaying ? "Pause" : "Play"}
         >
           <i class="fas {playback.isPlaying ? 'fa-pause' : 'fa-play'}"></i>
@@ -181,7 +203,10 @@
         <div class="tempo-group">
           <button
             class="tempo-adjust"
-            onclick={(e) => { e.stopPropagation(); adjustBpm(-5); }}
+            onclick={(e) => {
+              e.stopPropagation();
+              adjustBpm(-5);
+            }}
             aria-label="Decrease BPM"
           >
             <i class="fas fa-minus"></i>
@@ -197,7 +222,10 @@
           </button>
           <button
             class="tempo-adjust"
-            onclick={(e) => { e.stopPropagation(); adjustBpm(5); }}
+            onclick={(e) => {
+              e.stopPropagation();
+              adjustBpm(5);
+            }}
             aria-label="Increase BPM"
           >
             <i class="fas fa-plus"></i>
@@ -220,11 +248,17 @@
         aria-valuenow={Math.round(playback.overallProgress * 100)}
         aria-valuetext="{currentTimeLabel} of {totalTimeLabel}"
       >
-        <div class="pill-fill" style:width="{playback.overallProgress * 100}%"></div>
+        <div
+          class="pill-fill"
+          style:width="{playback.overallProgress * 100}%"
+        ></div>
         {#each beatMarkers as pct (pct)}
           <div class="pill-beat-marker" style:left="{pct * 100}%"></div>
         {/each}
-        <div class="pill-knob" style:left="{playback.overallProgress * 100}%"></div>
+        <div
+          class="pill-knob"
+          style:left="{playback.overallProgress * 100}%"
+        ></div>
       </div>
 
       {#if hasMode}
@@ -236,7 +270,8 @@
             layout="inline"
             playbackMode={playback.playbackMode}
             isPlaying={playback.isPlaying}
-            onPlaybackModeChange={(mode) => playback.onPlaybackModeChange?.(mode)}
+            onPlaybackModeChange={(mode) =>
+              playback.onPlaybackModeChange?.(mode)}
             onPlaybackToggle={() => playback.togglePlay()}
           />
         </div>
@@ -247,7 +282,10 @@
           class="pill-loop"
           aria-pressed={playback.isLooping}
           aria-label="Loop {playback.isLooping ? 'on' : 'off'}"
-          onclick={(e) => { e.stopPropagation(); playback.toggleLoop(); }}
+          onclick={(e) => {
+            e.stopPropagation();
+            playback.toggleLoop();
+          }}
         >
           <i class="fas fa-sync"></i>
         </button>
@@ -337,6 +375,11 @@
                     </span>
                   </button>
                 {/if}
+                {#if trailing}
+                  <!-- Host actions hidden from the compact row must remain
+                       reachable here (for example Studio's timing editor). -->
+                  <div class="compact-section">{@render trailing()}</div>
+                {/if}
               </div>
             </Popover.Content>
           </Popover.Portal>
@@ -360,7 +403,10 @@
               class="bpm-preset"
               class:active={playback.bpm === preset}
               aria-pressed={playback.bpm === preset}
-              onclick={(e) => { e.stopPropagation(); selectPreset(preset); }}
+              onclick={(e) => {
+                e.stopPropagation();
+                selectPreset(preset);
+              }}
             >
               {preset}
             </button>
@@ -423,7 +469,9 @@
     flex-shrink: 0;
     padding: 0;
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
-    transition: transform 120ms ease, background 150ms ease;
+    transition:
+      transform 120ms ease,
+      background 150ms ease;
   }
 
   .pill-play:hover {
@@ -525,7 +573,10 @@
     font-size: 12px;
     flex-shrink: 0;
     padding: 0;
-    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+    transition:
+      background 150ms ease,
+      color 150ms ease,
+      border-color 150ms ease;
   }
 
   .tempo-adjust:hover {
@@ -552,7 +603,9 @@
     border-radius: 10px;
     cursor: pointer;
     flex-shrink: 0;
-    transition: background 150ms ease, border-color 150ms ease;
+    transition:
+      background 150ms ease,
+      border-color 150ms ease;
     box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
   }
 
@@ -583,14 +636,12 @@
     line-height: 1;
   }
 
-
   /* The control itself is PlaybackModeToggle (layout="inline"); this slot only
      keeps it from being stretched by the bar's flex. */
   .pill-mode-slot {
     display: flex;
     flex: 0 0 auto;
   }
-
 
   .pill-trailing {
     display: flex;
@@ -602,7 +653,6 @@
        an auto margin would only take effect once the bar wraps, where it
        right-aligns the last chip alone on its line and reads as an orphan. */
   }
-
 
   .pill-loop {
     width: var(--min-touch-target, 44px);
@@ -620,7 +670,9 @@
     font-size: 13px;
     flex-shrink: 0;
     padding: 0;
-    transition: background 150ms ease, border-color 150ms ease;
+    transition:
+      background 150ms ease,
+      border-color 150ms ease;
   }
 
   .pill-loop[aria-pressed="false"] {
@@ -873,7 +925,6 @@
     color: white;
     box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
   }
-
 
   .pill-play:focus-visible,
   .tempo-adjust:focus-visible,

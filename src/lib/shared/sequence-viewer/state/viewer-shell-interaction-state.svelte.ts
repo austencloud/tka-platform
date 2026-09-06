@@ -281,7 +281,7 @@ export function createViewerShellInteractionState(
 
   function handleSystemPlaybackChange(
     playing: boolean,
-    source: "system_3d_loading"
+    source: "system_3d_loading" | "system_studio_handoff"
   ): void {
     const ctx = inputs.getContext();
     const previous = ctx.isPlayingLocal;
