@@ -3,7 +3,8 @@
      prevents state changes from moving the sheet. -->
 <script lang="ts">
   import { onDestroy, untrack } from "svelte";
-  import { slide } from "svelte/transition";
+  import { growFade } from "$lib/shared/transitions/motion";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import ShareSheetFrame from "./ShareSheetFrame.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import ExportPopover from "$lib/shared/sequence-viewer/components/ExportPopover.svelte";
@@ -165,7 +166,7 @@
   const captions = getCaptionPresetManager();
   const exportOptions = getExportOptionsState();
 
-  let glyphHeight = $state(0);
+  const glyphHeight = 22;
 
   const shareDraft = createPostShareDraftState();
   const artifact = $derived(shareDraft.artifact);
@@ -180,6 +181,10 @@
   );
   /** Sharing starts actionable; customization unfolds only on request. */
   let customizeOpen = $state(false);
+  let footerOpen = $state(false);
+  let presetsOpen = $state(false);
+  let failedPreviewUrl = $state<string | null>(null);
+  let cardRenderFailed = $state(false);
 
   /** Reveal after the slide finishes so short viewports reach the full panel. */
   function revealCustomize(event: Event): void {
@@ -215,6 +220,7 @@
     getResolvedAutoLayout: () => resolvedCardAutoLayout,
     getCardPresentation: () => shareDraft.cardPresentation,
     onError: () => {
+      cardRenderFailed = true;
       statusMessage = "Couldn't render the card";
     },
   });
@@ -444,6 +450,7 @@
     return destinations.filter(
       (destination) =>
         destination.id !== "native-share" &&
+        (nativeShare !== null || destination.id !== "download") &&
         !claimed.has(destination.id) &&
         !(destination.brand && branded.has(destination.brand))
     );
@@ -523,6 +530,10 @@
         ),
     });
     customizeOpen = false;
+    footerOpen = false;
+    presetsOpen = false;
+    failedPreviewUrl = null;
+    cardRenderFailed = false;
     statusMessage = "";
     busyDestination = null;
     videoRefused = false;
@@ -1191,15 +1202,12 @@
         autofocus
       >
         <header class="panel-header">
-          <h2 class="panel-title">
-            <!-- A zero-width CSS sizer bridges the glyph's pixel API. -->
-            <span class="glyph-sizer" bind:clientHeight={glyphHeight}></span>
-            <TKAWordGlyph
-              word={glyphWord}
-              height={glyphHeight || 26}
-              darkMode
-            />
-          </h2>
+          <div class="title-group">
+            <h2 class="panel-title">Share sequence</h2>
+            <div class="sequence-identity">
+              <TKAWordGlyph word={glyphWord} height={glyphHeight} darkMode />
+            </div>
+          </div>
           <button
             type="button"
             class="header-close"
@@ -1210,417 +1218,429 @@
           </button>
         </header>
 
-        {#if !qrDataUrl}
-          {#if artifactOptions.length > 1 || onOpenPostStudio}
-            <div
-              class="artifact-picker"
-              class:single-artifact={artifactOptions.length === 1}
-            >
-              {#if artifactOptions.length > 1}
-                <SegmentedControl
-                  options={artifactOptions}
-                  value={artifact}
-                  onchange={handleArtifactChange}
-                  ariaLabel="What to share"
-                  semantics="radiogroup"
-                  size="sm"
-                  color="accent"
-                />
-              {/if}
-              {#if onOpenPostStudio}
-                <button
-                  type="button"
-                  class="studio-launch"
-                  onclick={openPostStudio}
-                >
-                  <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"
-                  ></i>
-                  Post Studio
-                </button>
-              {/if}
-            </div>
-          {/if}
-        {/if}
-
-        <div class="stage" class:showing-media={!!previewReady}>
-          {#if qrDataUrl}
-            <div class="qr-view">
-              <img src={qrDataUrl} alt="QR code linking to the uploaded file" />
-              <p>Scan with your phone, save it, then post from Instagram.</p>
-              <button type="button" class="secondary" onclick={closeQrView}>
-                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-                Back
-              </button>
-            </div>
-          {:else if artifact === "card" && cardPreview.url}
-            <img
-              class="preview"
-              src={cardPreview.url}
-              alt="Sequence card preview"
-            />
-          {:else if artifact === "video" && activeVideoUrl}
-            <!-- svelte-ignore a11y_media_has_caption -->
-            <video
-              class="preview"
-              src={activeVideoUrl}
-              autoplay
-              loop
-              muted
-              playsinline
-            ></video>
-          {:else if artifact === "video" && videoRefused}
-            <div class="stage-pending stage-refused" role="status">
-              <span>The render didn't start.</span>
-              <button class="retry" type="button" onclick={requestVideo}>
-                Try again
-              </button>
-            </div>
-          {:else}
-            <div class="stage-pending" role="status">
-              <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"
-              ></i>
-              <span>{progressLabel || "Preparing…"}</span>
-            </div>
-          {/if}
-        </div>
-
-        <!-- Final content confirmation sits next to the preview it changes. -->
-        {#if !qrDataUrl && sequence}
-          {#if artifact === "card"}
-            <div class="card-footer-confirmation">
-              <CardFooterEditor
-                value={shareDraft.cardPresentation}
-                onchange={changeShareCardPresentation}
-                onSave={onSaveCardPresentation
-                  ? saveCardPresentation
-                  : undefined}
-                dirty={shareDraft.cardPresentationDirty}
-                saving={savingCardPresentation}
-                description="Appears inside this shared card image."
-                idBase="share-card-footer"
-              />
-            </div>
-          {:else}
-            <div class="customize">
-              <button
-                type="button"
-                class="customize-toggle"
-                aria-expanded={customizeOpen}
-                aria-controls="post-share-customize"
-                onclick={() => (customizeOpen = !customizeOpen)}
-              >
-                <i class="fa-solid fa-sliders" aria-hidden="true"></i>
-                <span class="customize-label">{videoLabel} settings</span>
-                <i
-                  class="fa-solid fa-chevron-down chevron"
-                  class:open={customizeOpen}
-                  aria-hidden="true"
-                ></i>
-              </button>
-
-              {#if customizeOpen}
+        <div class="sheet-scroll">
+          <div class="preview-column">
+            {#if !qrDataUrl}
+              {#if artifactOptions.length > 1 || onOpenPostStudio}
                 <div
-                  class="customize-body"
-                  id="post-share-customize"
-                  transition:slide={{ duration: 200 }}
-                  onintroend={revealCustomize}
+                  class="artifact-picker"
+                  class:single-artifact={artifactOptions.length === 1}
                 >
-                  <ExportPopover />
-                  {#if videoSettingsStale}
+                  {#if artifactOptions.length > 1}
+                    <SegmentedControl
+                      options={artifactOptions}
+                      value={artifact}
+                      onchange={handleArtifactChange}
+                      ariaLabel="What to share"
+                      semantics="radiogroup"
+                      size="sm"
+                      color="accent"
+                    />
+                  {/if}
+                  {#if onOpenPostStudio}
                     <button
                       type="button"
-                      class="rerender"
-                      onclick={requestVideo}
-                      transition:slide={{ duration: 160 }}
+                      class="studio-launch"
+                      onclick={openPostStudio}
                     >
-                      <i class="fa-solid fa-rotate" aria-hidden="true"></i>
-                      Re-render with these settings
+                      <i
+                        class="fa-solid fa-wand-magic-sparkles"
+                        aria-hidden="true"
+                      ></i>
+                      Post Studio
                     </button>
                   {/if}
                 </div>
               {/if}
-            </div>
-          {/if}
-        {/if}
-
-        {#if !qrDataUrl}
-          <div class="caption-block">
-            <div class="content-heading">
-              <label for="post-share-caption">Post caption</label>
-              <p>Travels with the post, not inside the card image.</p>
-            </div>
-
-            <div class="presets">
-              {#each presets as preset (preset.id)}
-                <!-- Custom text is the implicit none-selected state. -->
-                <FilterChipBase
-                  label={preset.label}
-                  mode="toggle"
-                  active={caption === preset.text}
-                  size="sm"
-                  onclick={() => applyPreset(preset.text)}
-                  onremove={preset.template
-                    ? () => removePreset(preset)
-                    : undefined}
-                  removeAriaLabel={`Delete the preset ${preset.label}`}
-                />
-              {/each}
-              <FilterChipBase
-                label="Save current"
-                icon="fa-solid fa-plus"
-                mode="action"
-                size="sm"
-                disabled={!caption.trim()}
-                onclick={saveCurrentAsPreset}
-              />
-            </div>
-
-            <textarea
-              id="post-share-caption"
-              value={caption}
-              oninput={(event) => {
-                shareDraft.caption = (
-                  event.currentTarget as HTMLTextAreaElement
-                ).value;
-                shareDraft.captionTouched = true;
-              }}
-              rows="3"
-              placeholder="Write a caption…"
-            ></textarea>
-          </div>
-
-          <div class="actions">
-            {#if nativeShare}
-              <button
-                type="button"
-                class="cta"
-                disabled={!activeBlob || busyDestination !== null || qrPending}
-                onclick={() => runDestination(nativeShare.id)}
-              >
-                <i
-                  class={busyDestination === nativeShare.id
-                    ? "fa-solid fa-circle-notch fa-spin"
-                    : nativeShare.icon}
-                  aria-hidden="true"
-                ></i>
-                <span class="cta-text">
-                  <span class="cta-label">{nativeShare.label}</span>
-                  {#if nativeShare.hint}
-                    <span class="cta-hint">{nativeShare.hint}</span>
-                  {/if}
-                </span>
-              </button>
             {/if}
 
-            {#each networks as plan (plan.key)}
-              {@render networkButton(plan)}
-            {/each}
-          </div>
-
-          {#if tileDestinations.length || localTiles.length}
-            <div class="tiles">
-              {#each localTiles as tile (tile.id)}
-                <button
-                  type="button"
-                  class="tile"
-                  aria-label={tile.label}
-                  title={tile.label}
-                  disabled={!tile.ready || busyLocalTile !== null}
-                  onclick={tile.run}
-                >
-                  <span class="tile-icon">
-                    {#if busyLocalTile === tile.id}
-                      <i
-                        class="fa-solid fa-circle-notch fa-spin"
-                        aria-hidden="true"
-                      ></i>
-                    {:else}
-                      <i class={tile.icon} aria-hidden="true"></i>
-                    {/if}
-                  </span>
-                  <span class="tile-label">{tile.short}</span>
-                </button>
-              {/each}
-              {#each tileDestinations as destination (destination.id)}
-                <button
-                  type="button"
-                  class="tile"
-                  aria-label={destination.label}
-                  title={destination.hint
-                    ? `${destination.label} · ${destination.hint}`
-                    : destination.label}
-                  disabled={(destination.id !== "copy-caption" &&
-                    !activeBlob) ||
-                    busyDestination !== null ||
-                    qrPending}
-                  onclick={() => runDestination(destination.id)}
-                >
-                  <span class="tile-icon">
-                    {#if busyDestination === destination.id}
-                      <i
-                        class="fa-solid fa-circle-notch fa-spin"
-                        aria-hidden="true"
-                      ></i>
-                    {:else if destination.brand}
-                      {@render brandMark(destination.brand)}
-                    {:else}
-                      <i class={destination.icon} aria-hidden="true"></i>
-                    {/if}
-                  </span>
-                  <span class="tile-label">{destination.short}</span>
-                </button>
-              {/each}
+            <div class="stage" class:showing-media={!!previewReady}>
+              {#if qrDataUrl}
+                <div class="qr-view">
+                  <img
+                    src={qrDataUrl}
+                    alt="QR code linking to the uploaded file"
+                  />
+                  <p>
+                    Scan with your phone, save it, then post from Instagram.
+                  </p>
+                  <button type="button" class="secondary" onclick={closeQrView}>
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                    Back
+                  </button>
+                </div>
+              {:else if artifact === "card" && ((cardRenderFailed && !cardPreview.url) || (cardPreview.url && failedPreviewUrl === cardPreview.url))}
+                <div class="stage-pending stage-refused" role="status">
+                  <i class="fa-regular fa-image" aria-hidden="true"></i>
+                  <strong>Preview unavailable</strong>
+                  <span>Close sharing and try opening it again.</span>
+                </div>
+              {:else if artifact === "card" && cardPreview.url}
+                <img
+                  class="preview"
+                  src={cardPreview.url}
+                  alt="Sequence card preview"
+                  onerror={() => (failedPreviewUrl = cardPreview.url)}
+                />
+              {:else if artifact === "video" && activeVideoUrl}
+                <!-- svelte-ignore a11y_media_has_caption -->
+                <video
+                  class="preview"
+                  src={activeVideoUrl}
+                  autoplay
+                  loop
+                  muted
+                  playsinline
+                ></video>
+              {:else if artifact === "video" && videoRefused}
+                <div class="stage-pending stage-refused" role="status">
+                  <span>The render didn't start.</span>
+                  <button class="retry" type="button" onclick={requestVideo}>
+                    Try again
+                  </button>
+                </div>
+              {:else}
+                <div class="stage-pending" role="status">
+                  <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"
+                  ></i>
+                  <span>{progressLabel || "Preparing…"}</span>
+                </div>
+              {/if}
             </div>
-          {/if}
 
-          {#if metaStatus.facebookPage || autoPostTargets.length}
-            <div class="connections">
-              {#if metaStatus.facebookPage}
-                {@const selected = metaStatus.facebookPage}
-                <!-- Page names are unbounded, so they belong in a dropdown. -->
-                <div class="page-chip">
-                  <FilterChipBase
-                    label={selected.selectedPageName || "Choose a Page"}
-                    ariaLabel="Which Page to post to"
-                    mode="dropdown"
-                    size="sm"
-                    active={pageChoicePending}
-                    emphasis={pageChoicePending ? "solid" : "soft"}
-                    expanded={pageMenuOpen}
-                    disabled={metaBusy}
-                    onclick={() => (pageMenuOpen = !pageMenuOpen)}
+            <!-- Final content confirmation sits next to the preview it changes. -->
+            {#if !qrDataUrl && sequence}
+              {#if artifact === "card"}
+                <div class="card-footer-confirmation">
+                  <PanelButton
+                    fullWidth
+                    ariaExpanded={footerOpen}
+                    onclick={() => (footerOpen = !footerOpen)}
                   >
-                    {#snippet iconSnippet()}
-                      {@render brandMark("facebook")}
-                    {/snippet}
-                    {#snippet children()}
-                      {#each facebookPages as page (page.id)}
+                    <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                    Card footer
+                    <span class="setting-value"
+                      >{shareDraft.cardPresentation.footer.mode === "off"
+                        ? "Off"
+                        : shareDraft.cardPresentation.footer.mode === "credit"
+                          ? "Credit"
+                          : "Custom"}</span
+                    >
+                    <i
+                      class={footerOpen
+                        ? "fa-solid fa-chevron-up"
+                        : "fa-solid fa-chevron-down"}
+                      aria-hidden="true"
+                    ></i>
+                  </PanelButton>
+                  {#if footerOpen}
+                    <div
+                      class="disclosure-body"
+                      transition:growFade={{ axis: "y" }}
+                    >
+                      <CardFooterEditor
+                        value={shareDraft.cardPresentation}
+                        onchange={changeShareCardPresentation}
+                        onSave={onSaveCardPresentation
+                          ? saveCardPresentation
+                          : undefined}
+                        dirty={shareDraft.cardPresentationDirty}
+                        saving={savingCardPresentation}
+                        description="Appears inside this shared card image."
+                        idBase="share-card-footer"
+                      />
+                    </div>
+                  {/if}
+                </div>
+              {:else}
+                <div class="customize">
+                  <button
+                    type="button"
+                    class="customize-toggle"
+                    aria-expanded={customizeOpen}
+                    aria-controls="post-share-customize"
+                    onclick={() => (customizeOpen = !customizeOpen)}
+                  >
+                    <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                    <span class="customize-label">{videoLabel} settings</span>
+                    <i
+                      class="fa-solid fa-chevron-down chevron"
+                      class:open={customizeOpen}
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+
+                  {#if customizeOpen}
+                    <div
+                      class="customize-body"
+                      id="post-share-customize"
+                      transition:growFade={{ axis: "y" }}
+                      onintroend={revealCustomize}
+                    >
+                      <ExportPopover />
+                      {#if videoSettingsStale}
                         <button
-                          class="page-option"
-                          class:selected={page.id === selected.selectedPageId}
                           type="button"
-                          role="option"
-                          aria-selected={page.id === selected.selectedPageId}
-                          onclick={() => handlePageChange(page.id)}
+                          class="rerender"
+                          onclick={requestVideo}
+                          transition:growFade={{ axis: "y" }}
                         >
-                          <span>{page.name}</span>
-                          {#if page.id === selected.selectedPageId}
-                            <i class="fa-solid fa-check" aria-hidden="true"></i>
-                          {/if}
+                          <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                          Re-render with these settings
                         </button>
+                      {/if}
+                    </div>
+                  {/if}
+                </div>
+              {/if}
+            {/if}
+          </div>
+          <div class="editing-column">
+            {#if !qrDataUrl}
+              <div class="caption-block">
+                <div class="content-heading">
+                  <label for="post-share-caption">Caption</label>
+                  <span class="optional-label">Optional</span>
+                </div>
+
+                <textarea
+                  id="post-share-caption"
+                  value={caption}
+                  oninput={(event) => {
+                    shareDraft.caption = (
+                      event.currentTarget as HTMLTextAreaElement
+                    ).value;
+                    shareDraft.captionTouched = true;
+                  }}
+                  rows="3"
+                  placeholder="Write a caption…"
+                ></textarea>
+                <div class="preset-toggle">
+                  <PanelButton
+                    ariaExpanded={presetsOpen}
+                    onclick={() => (presetsOpen = !presetsOpen)}
+                  >
+                    <i class="fa-solid fa-align-left" aria-hidden="true"></i>
+                    Caption presets
+                    <i
+                      class={presetsOpen
+                        ? "fa-solid fa-chevron-up"
+                        : "fa-solid fa-chevron-down"}
+                      aria-hidden="true"
+                    ></i>
+                  </PanelButton>
+                </div>
+                {#if presetsOpen}
+                  <div transition:growFade={{ axis: "y" }}>
+                    <div class="presets">
+                      {#each presets as preset (preset.id)}
+                        <!-- Custom text is the implicit none-selected state. -->
+                        <FilterChipBase
+                          label={preset.label}
+                          mode="toggle"
+                          active={caption === preset.text}
+                          size="sm"
+                          onclick={() => applyPreset(preset.text)}
+                          onremove={preset.template
+                            ? () => removePreset(preset)
+                            : undefined}
+                          removeAriaLabel={`Delete the preset ${preset.label}`}
+                        />
                       {/each}
-                      <button
-                        class="page-option page-option--add"
-                        type="button"
-                        role="option"
-                        aria-selected="false"
-                        disabled={metaBusy}
-                        onclick={changeSharedPages}
-                      >
-                        <span>Add a Page…</span>
-                        {#if connectingTarget === "facebook-page"}
+                      <FilterChipBase
+                        label="Save current"
+                        icon="fa-solid fa-plus"
+                        mode="action"
+                        size="sm"
+                        disabled={!caption.trim()}
+                        onclick={saveCurrentAsPreset}
+                      />
+                    </div>
+                  </div>
+                {/if}
+              </div>
+
+              <div class="actions">
+                {#each networks as plan (plan.key)}
+                  {@render networkButton(plan)}
+                {/each}
+              </div>
+
+              {#if tileDestinations.length || localTiles.length}
+                <div class="destination-heading">More ways to share</div>
+                <div class="tiles">
+                  {#each localTiles as tile (tile.id)}
+                    <button
+                      type="button"
+                      class="tile"
+                      aria-label={tile.label}
+                      title={tile.label}
+                      disabled={!tile.ready || busyLocalTile !== null}
+                      onclick={tile.run}
+                    >
+                      <span class="tile-icon">
+                        {#if busyLocalTile === tile.id}
                           <i
                             class="fa-solid fa-circle-notch fa-spin"
                             aria-hidden="true"
                           ></i>
                         {:else}
-                          <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                          <i class={tile.icon} aria-hidden="true"></i>
                         {/if}
-                      </button>
-                    {/snippet}
-                  </FilterChipBase>
+                      </span>
+                      <span class="tile-label">{tile.short}</span>
+                    </button>
+                  {/each}
+                  {#each tileDestinations as destination (destination.id)}
+                    <button
+                      type="button"
+                      class="tile"
+                      aria-label={destination.label}
+                      title={destination.hint
+                        ? `${destination.label} · ${destination.hint}`
+                        : destination.label}
+                      disabled={(destination.id !== "copy-caption" &&
+                        !activeBlob) ||
+                        busyDestination !== null ||
+                        qrPending}
+                      onclick={() => runDestination(destination.id)}
+                    >
+                      <span class="tile-icon">
+                        {#if busyDestination === destination.id}
+                          <i
+                            class="fa-solid fa-circle-notch fa-spin"
+                            aria-hidden="true"
+                          ></i>
+                        {:else if destination.brand}
+                          {@render brandMark(destination.brand)}
+                        {:else}
+                          <i class={destination.icon} aria-hidden="true"></i>
+                        {/if}
+                      </span>
+                      <span class="tile-label">{destination.short}</span>
+                    </button>
+                  {/each}
                 </div>
               {/if}
 
-              {#each autoPostTargets as target (target.id)}
-                <FilterChipBase
-                  label={`Disconnect ${target.network}`}
-                  ariaLabel={`Disconnect ${target.account} from ${target.network}`}
-                  icon={connectingTarget === target.id
-                    ? "fa-solid fa-circle-notch fa-spin"
-                    : "fa-solid fa-link-slash"}
-                  mode="action"
-                  size="sm"
-                  disabled={metaBusy}
-                  onclick={() => forgetTarget(target.id)}
-                />
-              {/each}
-            </div>
-          {/if}
-        {/if}
+              {#if metaStatus.facebookPage || autoPostTargets.length}
+                <div class="connections">
+                  {#if metaStatus.facebookPage}
+                    {@const selected = metaStatus.facebookPage}
+                    <!-- Page names are unbounded, so they belong in a dropdown. -->
+                    <div class="page-chip">
+                      <FilterChipBase
+                        label={selected.selectedPageName || "Choose a Page"}
+                        ariaLabel="Which Page to post to"
+                        mode="dropdown"
+                        size="sm"
+                        active={pageChoicePending}
+                        emphasis={pageChoicePending ? "solid" : "soft"}
+                        expanded={pageMenuOpen}
+                        disabled={metaBusy}
+                        onclick={() => (pageMenuOpen = !pageMenuOpen)}
+                      >
+                        {#snippet iconSnippet()}
+                          {@render brandMark("facebook")}
+                        {/snippet}
+                        {#snippet children()}
+                          {#each facebookPages as page (page.id)}
+                            <button
+                              class="page-option"
+                              class:selected={page.id ===
+                                selected.selectedPageId}
+                              type="button"
+                              role="option"
+                              aria-selected={page.id ===
+                                selected.selectedPageId}
+                              onclick={() => handlePageChange(page.id)}
+                            >
+                              <span>{page.name}</span>
+                              {#if page.id === selected.selectedPageId}
+                                <i class="fa-solid fa-check" aria-hidden="true"
+                                ></i>
+                              {/if}
+                            </button>
+                          {/each}
+                          <button
+                            class="page-option page-option--add"
+                            type="button"
+                            role="option"
+                            aria-selected="false"
+                            disabled={metaBusy}
+                            onclick={changeSharedPages}
+                          >
+                            <span>Add a Page…</span>
+                            {#if connectingTarget === "facebook-page"}
+                              <i
+                                class="fa-solid fa-circle-notch fa-spin"
+                                aria-hidden="true"
+                              ></i>
+                            {:else}
+                              <i class="fa-solid fa-plus" aria-hidden="true"
+                              ></i>
+                            {/if}
+                          </button>
+                        {/snippet}
+                      </FilterChipBase>
+                    </div>
+                  {/if}
 
-        <!-- Reserve status height so messages cannot move the sheet. -->
-        <p
-          class="status"
-          role="status"
-          class:visible={!!(statusMessage || qrError)}
-        >
-          {qrError || statusMessage || " "}
-        </p>
+                  {#each autoPostTargets as target (target.id)}
+                    <FilterChipBase
+                      label={`Disconnect ${target.network}`}
+                      ariaLabel={`Disconnect ${target.account} from ${target.network}`}
+                      icon={connectingTarget === target.id
+                        ? "fa-solid fa-circle-notch fa-spin"
+                        : "fa-solid fa-link-slash"}
+                      mode="action"
+                      size="sm"
+                      disabled={metaBusy}
+                      onclick={() => forgetTarget(target.id)}
+                    />
+                  {/each}
+                </div>
+              {/if}
+            {/if}
+          </div>
+        </div>
+        <footer class="share-dock">
+          {#if !qrDataUrl}
+            <PanelButton
+              variant="primary"
+              fullWidth
+              disabled={!activeBlob || busyDestination !== null || qrPending}
+              ariaBusy={busyDestination !== null}
+              onclick={() => runDestination(nativeShare?.id ?? "download")}
+            >
+              <i
+                class={busyDestination
+                  ? "fa-solid fa-circle-notch fa-spin"
+                  : (nativeShare?.icon ?? "fa-solid fa-download")}
+                aria-hidden="true"
+              ></i>
+              {nativeShare
+                ? "Share"
+                : artifact === "card"
+                  ? "Download card"
+                  : "Download video"}
+            </PanelButton>
+          {/if}
+          <!-- Reserve status height so messages cannot move the sheet. -->
+          <p
+            class="status"
+            role="status"
+            class:visible={!!(statusMessage || qrError)}
+          >
+            {qrError || statusMessage || " "}
+          </p>
+        </footer>
       </div>
     {/if}
   {/snippet}
 </ShareSheetFrame>
 
 <style>
-  /* Phone portrait is the base; `ShareSheetFrame` owns drawer/dialog behavior. */
-  .sheet {
-    display: flex;
-    flex-direction: column;
-    gap: 0.625rem;
-    padding: 1rem;
-    width: min(34rem, 100%);
-    margin: 0 auto;
-  }
-
-  .panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .panel-title {
-    display: flex;
-    align-items: center;
-    margin: 0;
-    min-width: 0;
-    font-size: var(--font-size-lg, 18px);
-    color: var(--theme-text, #fff);
-  }
-
-  .glyph-sizer {
-    width: 0;
-    height: 1.625rem;
-  }
-
-  .header-close {
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    width: var(--min-touch-target, 44px);
-    height: var(--min-touch-target, 44px);
-    margin-right: -0.5rem;
-    border: none;
-    border-radius: 12px;
-    background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: 1.0625rem;
-    cursor: pointer;
-    transition:
-      background var(--duration-fast, 150ms) ease,
-      color var(--duration-fast, 150ms) ease;
-  }
-
-  @media (hover: hover) {
-    .header-close:hover {
-      background: var(--theme-surface-2, rgba(255, 255, 255, 0.06));
-      color: var(--theme-text, #fff);
-    }
-  }
-
   .brand-mark {
     display: inline-flex;
     flex: 0 0 auto;
@@ -1631,49 +1651,11 @@
     height: 1.15em;
   }
 
-  /* All preview states share fixed geometry. */
-  .stage {
-    position: relative;
-    display: grid;
-    place-items: center;
-    min-height: min(var(--stage-h, 12rem), 24vh);
-    padding: 0.75rem;
-    border-radius: 1.125rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    background:
-      radial-gradient(
-        120% 100% at 50% 0%,
-        rgba(255, 255, 255, 0.05) 0%,
-        transparent 70%
-      ),
-      var(--theme-surface-2, rgba(255, 255, 255, 0.04));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    overflow: hidden;
-  }
-
-  /* Rendered media supplies its own frame; pending and QR states use the stage. */
-  .stage.showing-media {
-    padding: 0;
-    border-color: transparent;
-    background: none;
-    box-shadow: none;
-  }
-
-  /* A real rem/vh ceiling works inside the content-sized stage; percentages do not. */
-  .preview {
-    max-width: 100%;
-    max-height: min(var(--preview-h, 10.5rem), 30vh);
-    object-fit: contain;
-    border-radius: 0.75rem;
-    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.45);
-  }
-
   .stage-pending {
     display: flex;
     align-items: center;
     gap: 0.625rem;
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
-    font-size: 0.9375rem;
   }
 
   .stage-refused {
@@ -1702,9 +1684,7 @@
   .artifact-picker {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 0.5rem;
-    align-self: center;
     max-width: 100%;
   }
 
@@ -1841,10 +1821,7 @@
   }
 
   .card-footer-confirmation {
-    padding: 0.875rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 0.875rem;
-    background: var(--theme-surface-2, rgba(255, 255, 255, 0.04));
   }
 
   /* Keep the panel's short segmented control from stretching like a progress bar. */
@@ -1897,15 +1874,6 @@
   .content-heading label {
     display: block;
     color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 650;
-  }
-
-  .content-heading p {
-    margin: 0.1875rem 0 0;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.62));
-    font-size: var(--font-size-compact, 12px);
-    line-height: 1.35;
   }
 
   .visually-hidden {
@@ -1922,7 +1890,6 @@
   /* Scroll instead of adding a layout-shifting chip row. */
   .presets {
     display: flex;
-    gap: 0.375rem;
     overflow-x: auto;
     scrollbar-width: none;
     padding-bottom: 0.125rem;
@@ -1942,16 +1909,10 @@
     width: 100%;
     /* Prevent user resizing from pushing actions below the drawer. */
     resize: none;
-    padding: 0.75rem 0.875rem;
-    border-radius: 0.875rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-surface-2, rgba(255, 255, 255, 0.05));
     color: var(--theme-text, #fff);
     font: inherit;
-    font-size: 0.9375rem;
     line-height: 1.45;
-    height: 4rem;
-    min-height: 4rem;
     transition:
       border-color 0.15s ease,
       box-shadow 0.15s ease;
@@ -1968,98 +1929,7 @@
       color-mix(in srgb, var(--theme-accent, #6366f1) 28%, transparent);
   }
 
-  .actions {
-    display: contents;
-  }
-
-  .cta {
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-    width: 100%;
-    min-height: 3rem;
-    padding: 0.75rem 1.125rem;
-    border: none;
-    border-radius: 1rem;
-    background: linear-gradient(
-      135deg,
-      var(--theme-accent, #6366f1) 0%,
-      var(--theme-accent-strong, #8b5cf6) 100%
-    );
-    color: var(--theme-on-accent, #fff);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    box-shadow: 0 0.625rem 1.5rem
-      color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
-    transition:
-      transform 0.12s ease,
-      box-shadow 0.15s ease,
-      filter 0.15s ease;
-  }
-
-  .cta i {
-    font-size: 1.125rem;
-    width: 1.5rem;
-    text-align: center;
-  }
-
-  .cta.secondary-cta {
-    background: var(--theme-surface-2, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
-    color: var(--theme-text, #fff);
-    box-shadow: none;
-  }
-
-  .cta.secondary-cta:hover:not(:disabled) {
-    background: var(--theme-surface-3, rgba(255, 255, 255, 0.12));
-    box-shadow: none;
-    filter: none;
-  }
-
-  a.cta {
-    text-decoration: none;
-  }
-
-  .cta-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-
   /* Unbounded account names truncate instead of changing button height. */
-  .cta-label,
-  .cta-hint {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .cta-label {
-    font-size: 1rem;
-    font-weight: 600;
-  }
-
-  .cta-hint {
-    font-size: 0.8125rem;
-    opacity: 0.8;
-  }
-
-  .cta:hover:not(:disabled) {
-    filter: brightness(1.06);
-    box-shadow: 0 0.75rem 2rem
-      color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
-  }
-
-  .cta:active:not(:disabled) {
-    transform: scale(0.985);
-  }
-
-  .cta:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-    box-shadow: none;
-  }
 
   .network {
     display: flex;
@@ -2068,15 +1938,13 @@
     width: 100%;
     min-height: 3.25rem;
     padding: 0.625rem 1rem;
-    border: 1px solid var(--network-edge);
-    border-radius: 1rem;
-    background: var(--network-fill);
+    border: 1px solid var(--theme-stroke-strong);
+    background: var(--theme-card-bg);
     color: #fff;
     font: inherit;
     text-align: left;
     text-decoration: none;
     cursor: pointer;
-    box-shadow: 0 0.625rem 1.5rem var(--network-glow);
     transition:
       transform 0.12s ease,
       box-shadow 0.18s ease,
@@ -2090,14 +1958,10 @@
       #ee2a7b 48%,
       #6228d7 100%
     );
-    --network-edge: rgba(255, 255, 255, 0.2);
-    --network-glow: color-mix(in srgb, #ee2a7b 34%, transparent);
   }
 
   .network--facebook {
     --network-fill: linear-gradient(135deg, #1877f2 0%, #0b53c0 100%);
-    --network-edge: rgba(255, 255, 255, 0.18);
-    --network-glow: color-mix(in srgb, #1877f2 34%, transparent);
   }
 
   /* Preserve white-mark contrast across the Instagram gradient. */
@@ -2108,7 +1972,7 @@
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 999px;
-    background: rgba(0, 0, 0, 0.22);
+    background: var(--network-fill);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
     font-size: 1.0625rem;
   }
@@ -2147,7 +2011,7 @@
 
   .network:hover:not(:disabled) {
     filter: brightness(1.08) saturate(1.05);
-    box-shadow: 0 0.875rem 2rem var(--network-glow);
+    box-shadow: none;
   }
 
   .network:active:not(:disabled) {
@@ -2166,23 +2030,15 @@
 
   /* Equal columns keep destination changes from reflowing the row. */
   .tiles {
-    display: grid;
-    grid-auto-flow: column;
     grid-auto-columns: 1fr;
-    gap: 0.5rem;
   }
 
   .tile {
     display: flex;
-    flex-direction: row;
     justify-content: center;
     align-items: center;
-    gap: 0.4375rem;
     min-height: 2.75rem;
-    padding: 0.5rem 0.375rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: 1rem;
-    background: var(--theme-surface-2, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, #fff);
     font: inherit;
     cursor: pointer;
@@ -2197,14 +2053,10 @@
     place-items: center;
     width: 1.75rem;
     height: 1.75rem;
-    border-radius: 999px;
-    background: var(--theme-surface-3, rgba(255, 255, 255, 0.09));
     color: var(--theme-text, #fff);
-    font-size: 0.9375rem;
   }
 
   .tile-label {
-    font-size: 0.75rem;
     font-weight: 500;
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.72));
     white-space: nowrap;
@@ -2314,9 +2166,7 @@
   /* Reserve the row even when no message is visible. */
   .status {
     margin: 0;
-    min-height: 1.25rem;
     text-align: center;
-    font-size: 0.8125rem;
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
     visibility: hidden;
   }
@@ -2325,534 +2175,292 @@
     visibility: visible;
   }
 
-  /* Expand only when connected-account controls still fit above the fold. */
-  @media (min-height: 940px) {
-    .sheet {
-      --stage-h: 22rem;
-      --preview-h: 24rem;
-      gap: 1rem;
-      padding: 1.25rem;
-    }
-
-    .glyph-sizer {
-      height: 1.75rem;
-    }
-
-    textarea {
-      height: 5.5rem;
-      min-height: 5.5rem;
-    }
-
-    .cta,
-    .network {
-      min-height: 3.5rem;
-    }
-
-    .tile {
-      flex-direction: column;
-      gap: 0.4375rem;
-      padding: 0.75rem 0.375rem;
-    }
-
-    .tile-icon {
-      width: 2.75rem;
-      height: 2.75rem;
-      font-size: 1.0625rem;
-    }
+  .sheet {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    color: var(--theme-text);
+    background: var(--theme-panel-bg, #17171f);
   }
-
-  /* Three phone columns leave labels readable and avoid an orphaned fifth tile. */
-  @media (max-width: 480px) {
-    .tiles {
-      grid-auto-flow: row;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .tile {
-      flex-direction: column;
-      gap: 0.375rem;
-      padding: 0.625rem 0.375rem;
-    }
-
-    .tile-icon {
-      width: 2.25rem;
-      height: 2.25rem;
-      font-size: 1rem;
-    }
+  .sheet:focus {
+    outline: none;
   }
-
-  /* Wide layouts put artwork beside controls so the preview can use their height. */
-  @media (min-width: 900px) {
-    .sheet {
-      display: grid;
-      width: min(58rem, 100%);
-      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
-      grid-template-areas:
-        "stage header"
-        "stage picker"
-        "stage footer"
-        "stage caption"
-        "stage cta"
-        "stage tiles"
-        "stage connections"
-        "stage status"
-        "stage customize";
-      /* Let the useful caption field absorb the card column's extra height. */
-      grid-template-rows: auto auto auto minmax(
-          5rem,
-          1fr
-        ) auto auto auto auto auto;
-      align-content: start;
-      column-gap: 1.5rem;
-      row-gap: 0.625rem;
-    }
-
-    .panel-header {
-      grid-area: header;
-    }
-    .stage {
-      grid-area: stage;
-      min-height: 0;
-      align-self: start;
-    }
-
-    /* Pending states fill the stage column; media remains top-aligned. */
-    .stage:not(.showing-media) {
-      align-self: stretch;
-    }
-    .artifact-picker {
-      grid-area: picker;
-      justify-self: start;
-    }
-    .caption-block {
-      grid-area: caption;
-      min-height: 0;
-    }
-    .actions {
-      display: flex;
-      flex-direction: column;
-      gap: 0.625rem;
-      grid-area: cta;
-    }
-    .tiles {
-      grid-area: tiles;
-      align-self: start;
-    }
-    .status {
-      grid-area: status;
-    }
-
-    /* Explicit placement prevents later spacer rows from capturing customization. */
-    .card-footer-confirmation {
-      grid-area: footer;
-    }
-    .customize {
-      grid-area: customize;
-    }
-
-    /* The content-sized stage requires a viewport-based media ceiling. */
-    .preview {
-      max-width: 100%;
-      max-height: 58vh;
-    }
-
-    textarea {
-      flex: 1 1 auto;
-      height: auto;
-      min-height: 5rem;
-      max-height: 9rem;
-    }
-
-    /* Cancel phone edge bleed once these rows begin mid-sheet. */
-    .presets,
-    .connections {
-      margin-inline: 0;
-      padding-inline: 0;
-    }
-    .connections {
-      grid-area: connections;
-    }
-
-    /* Desktop QR grows for arm's-length scanning but still clears short windows. */
-    .qr-view img {
-      width: min(13rem, 34vh);
-      height: min(13rem, 34vh);
-    }
+  .panel-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    gap: 1rem;
+    border-bottom: 1px solid var(--theme-stroke);
   }
-
-  /* Tighten wide, short viewports so account setup remains above the fold. */
-  @media (min-width: 900px) and (max-height: 620px) {
-    .sheet {
-      width: min(52rem, 100%);
-      /* Expanded customization needs both columns at this height. */
-      grid-template-areas:
-        "stage header"
-        "stage picker"
-        "stage footer"
-        "stage caption"
-        "stage cta"
-        "stage tiles"
-        "connections status"
-        "customize customize";
-      grid-template-rows: auto auto auto minmax(
-          3.25rem,
-          1fr
-        ) auto auto auto auto;
-      row-gap: 0.25rem;
-      padding: 0.25rem 1rem 0.375rem;
-    }
-
-    .glyph-sizer {
-      height: 1.375rem;
-    }
-
-    .panel-header {
-      padding-bottom: 0.375rem;
-    }
-
-    .cta {
-      min-height: 2.75rem;
-      padding: 0.5rem 1rem;
-    }
-
-    /* Spend spare width to keep both network actions on one row. */
-    .actions {
-      flex-direction: row;
-      flex-wrap: wrap;
-    }
-
-    .actions > :global(*) {
-      flex: 1 1 12rem;
-      min-width: 0;
-    }
-
-    .network {
-      min-height: 2.75rem;
-      padding: 0.375rem 0.875rem;
-      gap: 0.625rem;
-      border-radius: 0.75rem;
-    }
-
-    .network-mark {
-      width: 1.75rem;
-      height: 1.75rem;
-      font-size: 0.875rem;
-    }
-
-    /* Brand-colored compact buttons do not need chevrons consuming label width. */
-    .network-chevron {
-      display: none;
-    }
-
-    .status {
-      min-height: 0.875rem;
-      font-size: 0.75rem;
-      align-self: center;
-      text-align: right;
-    }
-
-    /* Override textarea rows where vertical space is fixed. */
-    textarea {
-      flex: 1 1 3.25rem;
-      height: 3.25rem;
-      min-height: 3.25rem;
-    }
+  .title-group {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
   }
-
-  /* Grow the sheet with large canvases instead of leaving a phone-width strip. */
-  @media (min-width: 1680px) {
-    .sheet {
-      width: min(74rem, 100%);
-      column-gap: 2rem;
-      row-gap: 0.875rem;
-      padding: 1.5rem;
-    }
-
-    .glyph-sizer {
-      height: 2rem;
-    }
-
-    .cta-label,
-    .network-label,
-    textarea {
-      font-size: 1.0625rem;
-    }
-
-    .cta-hint,
-    .network-hint,
-    .tile-label,
-    .status {
-      font-size: 0.9375rem;
-    }
-
-    .network {
-      min-height: 4rem;
-      padding-inline: 1.25rem;
-    }
-
-    .network-mark {
-      width: 2.5rem;
-      height: 2.5rem;
-      font-size: 1.1875rem;
-    }
-
-    .artifact-picker :global(.segment),
-    .presets :global(.chip-label),
-    .connections :global(.chip-label) {
-      font-size: 0.9375rem;
-    }
+  .panel-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 650;
+    letter-spacing: -0.025em;
   }
-
-  /* Includes 4K at 150% display scaling. */
-  @media (min-width: 2350px) {
-    .sheet {
-      width: min(100rem, 100%);
-      /* A fixed track matches the card raster and cannot shift when media lands. */
-      grid-template-columns: 44rem minmax(0, 1fr);
-      column-gap: 2.5rem;
-      row-gap: 1rem;
-      padding: 2rem;
-    }
-
-    .preview {
-      max-height: 66vh;
-    }
-
-    .sheet {
-      /* Flexible bookend rows center controls beside the spanning stage. */
-      grid-template-areas:
-        "stage ."
-        "stage header"
-        "stage picker"
-        "stage footer"
-        "stage caption"
-        "stage cta"
-        "stage tiles"
-        "stage connections"
-        "stage status"
-        "stage customize"
-        "stage .";
-      grid-template-rows: 1fr auto auto auto auto auto auto auto auto auto 1fr;
-    }
-
-    textarea {
-      max-height: 13rem;
-    }
-
-    .glyph-sizer {
-      height: 2.375rem;
-    }
-
-    .qr-view img {
-      width: min(15rem, 34vh);
-      height: min(15rem, 34vh);
-    }
-
-    .cta {
-      min-height: 4.5rem;
-      border-radius: 1.25rem;
-    }
-
-    .cta i {
-      font-size: 1.5rem;
-      width: 2rem;
-    }
-
-    .network {
-      min-height: 5rem;
-      padding-inline: 1.5rem;
-      border-radius: 1.25rem;
-      gap: 1.125rem;
-    }
-
-    .network-mark {
-      width: 3.25rem;
-      height: 3.25rem;
-      font-size: 1.5rem;
-    }
-
-    .network-chevron {
-      font-size: 1rem;
-    }
-
-    .cta-label,
-    .network-label,
-    textarea {
-      font-size: 1.3125rem;
-    }
-
-    .cta-hint,
-    .network-hint,
-    .tile-label,
-    .customize-label,
-    .status {
-      font-size: 1.0625rem;
-    }
-
-    .tile-icon {
-      width: 3rem;
-      height: 3rem;
-      font-size: 1.25rem;
-    }
-
-    /* Scale the embedded panel locally without changing its other consumers. */
-    .customize-body {
-      --font-size-compact: 1rem;
-      --font-size-min: 1.125rem;
-    }
-
-    .customize-body :global(.chip) {
-      min-height: 3rem;
-      border-radius: 0.875rem;
-    }
-
-    .artifact-picker :global(.segment),
-    .presets :global(.chip-label),
-    .connections :global(.chip-label) {
-      font-size: 1.125rem;
-    }
+  .sequence-identity {
+    height: 22px;
+    opacity: 0.7;
+    overflow: hidden;
   }
-
-  /* Native 4K needs another type and control step for viewing distance. */
-  @media (min-width: 3200px) {
-    .sheet {
-      /* The 60rem track displays the 960px card raster at 1:1. */
-      width: min(118rem, 100%);
-      grid-template-columns: 60rem minmax(0, 1fr);
-      column-gap: 3rem;
-      row-gap: 1.25rem;
-      padding: 2.5rem;
-    }
-
-    .preview {
-      max-height: 72vh;
-    }
-
-    textarea {
-      max-height: 17rem;
-    }
-
-    .glyph-sizer {
-      height: 2.875rem;
-    }
-
-    .qr-view img {
-      width: min(19rem, 34vh);
-      height: min(19rem, 34vh);
-    }
-
-    .cta {
-      min-height: 5.5rem;
-      border-radius: 1.5rem;
-    }
-
-    .cta i {
-      font-size: 1.875rem;
-      width: 2.5rem;
-    }
-
-    .network {
-      min-height: 6.25rem;
-      padding-inline: 1.875rem;
-      border-radius: 1.5rem;
-      gap: 1.375rem;
-    }
-
-    .network-mark {
-      width: 4rem;
-      height: 4rem;
-      font-size: 1.875rem;
-    }
-
-    .network-chevron {
-      font-size: 1.25rem;
-    }
-
-    .cta-label,
-    .network-label,
-    textarea {
-      font-size: 1.625rem;
-    }
-
-    .cta-hint,
-    .network-hint,
-    .tile-label,
-    .customize-label,
-    .status {
-      font-size: 1.3125rem;
-    }
-
-    .tile-icon {
-      width: 3.75rem;
-      height: 3.75rem;
-      font-size: 1.5rem;
-    }
-
-    .artifact-picker :global(.segment),
-    .presets :global(.chip-label),
-    .connections :global(.chip-label) {
-      font-size: 1.375rem;
-    }
-
-    .customize-body {
-      --font-size-compact: 1.125rem;
-      --font-size-min: 1.3125rem;
-    }
-
-    .customize-body :global(.chip) {
-      min-height: 3.5rem;
-      padding-inline: 1.25rem;
-    }
+  .header-close {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 50%;
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font-size: 1rem;
+    cursor: pointer;
   }
-
-  /* QR mode collapses every wide two-column tier back to one focused column. */
-  .sheet.qr-step {
+  .sheet-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    padding: 1rem 1.25rem;
+  }
+  .preview-column,
+  .editing-column {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .editing-column {
+    margin-top: 1.25rem;
+  }
+  .stage,
+  .stage.showing-media {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    grid-template-rows: minmax(0, 1fr);
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "header"
-      "stage";
-    grid-template-rows: auto auto;
-    width: min(34rem, 100%);
-    row-gap: 1.25rem;
+    height: clamp(15rem, 38dvh, 26rem);
+    min-height: 0;
+    padding: 0.75rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.75rem;
+    background: var(--theme-card-bg);
+    box-shadow: none;
+    overflow: hidden;
   }
-
-  .sheet.qr-step .stage {
-    justify-self: center;
-    align-self: center;
-  }
-
-  /* Track the QR size instead of inheriting the setup sheet's width. */
-  @media (min-width: 2350px) {
-    .sheet.qr-step {
-      width: min(38rem, 100%);
-    }
-  }
-
-  @media (min-width: 3200px) {
-    .sheet.qr-step {
-      width: min(44rem, 100%);
-    }
-  }
-
-  /* The modal frame owns width; an inner rem cap would recreate dead rails. */
-  .sheet[data-surface="modal"] {
+  .preview {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
     width: 100%;
-    max-width: none;
+    height: 100%;
+    min-height: 0;
+    object-fit: contain;
+    border-radius: 0.25rem;
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cta,
-    .network,
-    .tile,
-    .header-close,
-    textarea {
-      transition: none;
+  .stage-pending {
+    text-align: center;
+    font-size: 0.875rem;
+    padding: 1rem;
+  }
+  .stage-refused {
+    gap: 0.75rem;
+  }
+  .artifact-picker {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+  .card-footer-confirmation {
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .setting-value {
+    margin-left: auto;
+    color: var(--theme-text-dim);
+    font-size: 0.875rem;
+  }
+  .disclosure-body {
+    padding: 1rem 0.25rem 0.25rem;
+  }
+  .content-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .content-heading label {
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+  .optional-label {
+    font-size: 0.75rem;
+    color: var(--theme-text-dim);
+  }
+  textarea {
+    height: 5.5rem;
+    min-height: 5.5rem;
+    padding: 0.75rem;
+    font-size: 1rem;
+    border-radius: 0.625rem;
+    background: var(--theme-card-bg);
+  }
+  .preset-toggle {
+    align-self: start;
+  }
+  .presets {
+    flex-wrap: wrap;
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+    gap: 0.5rem;
+  }
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+  .actions:empty {
+    display: none;
+  }
+  .destination-heading {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--theme-text-dim);
+  }
+  .tiles {
+    display: grid;
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .tile {
+    flex-direction: column;
+    padding: 0.75rem 0.25rem;
+    gap: 0.5rem;
+    border-radius: 0.625rem;
+    background: var(--theme-card-bg);
+  }
+  .tile-icon {
+    background: none;
+    border-radius: 0;
+    font-size: 1.125rem;
+  }
+  .tile-label {
+    font-size: 0.875rem;
+  }
+  .connections {
+    flex-wrap: wrap;
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+  }
+  .network {
+    box-shadow: none;
+    border-radius: 0.625rem;
+  }
+  .share-dock {
+    flex: 0 0 auto;
+    padding: 0.75rem 1.25rem max(0.375rem, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--theme-stroke);
+  }
+  .share-dock :global(.panel-btn) {
+    min-height: 48px;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .status {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    min-height: 1.25rem;
+    padding-top: 0.25rem;
+  }
+  .header-close:focus-visible,
+  .tile:focus-visible,
+  .network:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+  .qr-step .editing-column {
+    display: none;
+  }
+  .qr-step .stage {
+    height: 100%;
+    min-height: 20rem;
+  }
+  @media (min-width: 900px) {
+    .panel-header {
+      padding: 1.25rem 1.75rem;
     }
-
-    .cta:active:not(:disabled),
-    .network:active:not(:disabled),
-    .tile:active:not(:disabled) {
-      transform: none;
+    .title-group {
+      flex-direction: row;
+      align-items: center;
+      gap: 1rem;
+    }
+    .panel-title {
+      font-size: 1.25rem;
+    }
+    .sheet-scroll {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 1fr);
+      align-items: start;
+      gap: 2rem;
+      padding: 1.5rem 1.75rem;
+    }
+    .editing-column {
+      margin-top: 0;
+      gap: 1.25rem;
+    }
+    .stage,
+    .stage.showing-media {
+      height: clamp(12rem, 43dvh, 30rem);
+    }
+    .share-dock {
+      display: grid;
+      grid-template-columns: 1fr minmax(18rem, 0.74fr);
+      column-gap: 2rem;
+      padding: 1rem 1.75rem;
+      align-items: center;
+    }
+    .share-dock :global(.panel-btn) {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    .status {
+      grid-column: 1;
+      grid-row: 1;
+      text-align: left;
+    }
+    .qr-step .sheet-scroll {
+      display: block;
+    }
+  }
+  @media (max-height: 500px) {
+    .panel-header {
+      padding-block: 0.5rem;
+    }
+    .sheet-scroll {
+      padding-block: 0.75rem;
+    }
+    .share-dock {
+      padding-block: 0.5rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
     }
   }
 </style>

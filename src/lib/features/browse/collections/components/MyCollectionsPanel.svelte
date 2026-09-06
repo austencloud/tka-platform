@@ -193,7 +193,7 @@ instead of showing an empty shell.
 
   const allShelf = $derived<LibraryCollection>({
     id: "all",
-    name: "All",
+    name: "Saved sequences",
     ownerId: authState.effectiveUserId ?? "",
     sequenceIds: [],
     sequenceCount: libraryCount,
@@ -383,7 +383,9 @@ instead of showing an empty shell.
     art_scenes: {
       label: "3D Scenes",
       load: () =>
-        import("$lib/features/scene-3d-collection/Scene3DCollectionModule.svelte"),
+        import(
+          "$lib/features/scene-3d-collection/Scene3DCollectionModule.svelte"
+        ),
     },
     art_mandala: {
       label: "Mandalas",
@@ -607,7 +609,7 @@ instead of showing an empty shell.
     collection={allShelf}
     readonly
     selected={!!sel && sel.id === "all" && !sel.ownerId}
-    onOpen={() => openCollection("all", "All")}
+    onOpen={() => openCollection("all", "Saved sequences")}
   />
 
   {#each collections as c (c.id)}

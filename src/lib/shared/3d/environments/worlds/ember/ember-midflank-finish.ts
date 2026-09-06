@@ -99,7 +99,16 @@ float mfNoise(vec2 p) {
              mix(mfHash(i+vec2(0,1)),mfHash(i+vec2(1,1)),f.x),f.y);
 }
 float mfFbm(vec2 p) {
-  return .55*mfNoise(p)+.28*mfNoise(p*2.07+3.2)+.17*mfNoise(p*4.31-5.8);
+  // Filter each octave before it becomes a crack. Filtering the finished
+  // colour alone leaves moving subpixel islands flashing black and orange.
+  float footprint=max(length(dFdx(p)),length(dFdy(p)));
+  vec3 resolved=1.-smoothstep(vec3(.12),vec3(.48),footprint*vec3(1.,2.07,4.31));
+  return .5+dot(vec3(.55,.28,.17)*resolved,
+    vec3(mfNoise(p),mfNoise(p*2.07+3.2),mfNoise(p*4.31-5.8))-.5);
+}
+float mfOpening(float value,float threshold,float softness) {
+  float width=max(softness,fwidth(value)*.85);
+  return smoothstep(threshold-width,threshold+width,value);
 }
 `;
 
@@ -121,7 +130,7 @@ export function createMidflankLava(
     vertexColors: true,
   });
   material.name = "Ember_Midflank_R5_thermal-crust";
-  material.customProgramCacheKey = () => "ember-midflank-flowing-network-v5";
+  material.customProgramCacheKey = () => "ember-midflank-flowing-network-v6";
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uMidflankTime = time;
     shader.vertexShader =
@@ -137,6 +146,11 @@ export function createMidflankLava(
       float along = uv.y - uMidflankTime * .72;
       float surge = .028 * sin(along * 2.1 + sin(uv.x * 1.8))
                   + .012 * sin(along * 5.3 + uv.x * .9);
+      #ifdef MIDFLANK_REMOTE
+        // Centimetre ripples cannot be resolved in the basin. Keep its surface
+        // contact stable while the larger thermal crust continues drifting.
+        surge *= .15;
+      #endif
       vec3 lavaUp = vec3(modelMatrix[0].y, modelMatrix[1].y, modelMatrix[2].y)
         / vec3(dot(modelMatrix[0].xyz,modelMatrix[0].xyz),
                dot(modelMatrix[1].xyz,modelMatrix[1].xyz),
@@ -162,20 +176,29 @@ export function createMidflankLava(
       /* glsl */ `
       #include <emissivemap_fragment>
       vec2 p = vec2(vMidflankFlow.x, vMidflankFlow.y - uMidflankTime*.72);
-      vec2 warp = vec2(mfFbm(p*.44),mfFbm(p*.39+9.2));
-      float crust = mfFbm(p*vec2(1.5,.68)+warp*1.8);
-      float opening = smoothstep(.53,.72,crust);
-      float fissure = 1.-smoothstep(.015,.07,abs(mfFbm(p*vec2(1.1,.54)+warp)-.49));
-      float heat = max(opening,fissure*.32) * smoothstep(.05,.85,vMidflankBank);
-      vec3 mfRadiance = mix(vec3(1.1,.035,.001),vec3(2.8,.32,.008),opening);
-      // Subpixel fissures fade to their average coverage instead of sparkling
-      // or becoming a giant painted stripe when the camera moves away.
-      float footprint = max(length(dFdx(p)),length(dFdy(p)));
-      float unresolved = smoothstep(.6,2.8,footprint);
-      heat = mix(heat,.16*smoothstep(.05,.85,vMidflankBank),unresolved);
-      mfRadiance = mix(mfRadiance,vec3(1.8,.14,.003),unresolved);
-      totalEmissiveRadiance = mfRadiance * heat * vMidflankHeat;
-      diffuseColor.rgb = mix(vec3(.026,.022,.020),vec3(.035,.008,.002),heat);
+      // The widening lower reach carries larger crust rafts. This is a gradual
+      // change along the river, never a camera-distance material switch.
+      float basin = smoothstep(130.,220.,-vMidflankWorld.z);
+      vec2 warp = vec2(mfFbm(p*.19),mfFbm(p*.17+9.2));
+      float broken = mfFbm(p*vec2(.62,.34)+warp*1.4);
+      float plates = mfFbm(p*vec2(.14,.095)+warp*.6);
+      float crust = mix(broken,plates,basin);
+      float bank = smoothstep(.05,.85,vMidflankBank);
+      float opening = mfOpening(crust,mix(.54,.55,basin),.038);
+      float core = mfOpening(crust,.63,.065);
+      // Cooler red margins surround orange exposed melt. Broad heat variation
+      // survives distance; the thin surface wrinkles fade before they sparkle.
+      float wrinkle = mfFbm(p*vec2(2.8,1.1)+warp);
+      float hot = opening*(.9+.1*wrinkle);
+      vec3 melt = mix(vec3(.95,.018,.001),vec3(2.7,.20,.004),core);
+      float warmth = mfOpening(crust,.43,.06)*.045;
+      vec3 mfRadiance = melt*hot+vec3(.7,.008,.001)*warmth;
+      // Conserve mean radiance once even the major plates are unresolved.
+      vec2 plateCoords=p*mix(vec2(.62,.34),vec2(.14,.095),basin);
+      float footprint=max(length(dFdx(plateCoords)),length(dFdy(plateCoords)));
+      mfRadiance=mix(mfRadiance,vec3(.28,.012,.001),smoothstep(.16,.65,footprint));
+      totalEmissiveRadiance = mfRadiance*bank*vMidflankHeat;
+      diffuseColor.rgb = mix(vec3(.023,.020,.018),vec3(.035,.008,.002),opening*bank);
     `
     );
     shader.fragmentShader = shader.fragmentShader.replace(
@@ -200,7 +223,7 @@ export function createMidflankLava(
   distantMaterial.defines = { MIDFLANK_REMOTE: 1 };
   distantMaterial.onBeforeCompile = material.onBeforeCompile;
   distantMaterial.customProgramCacheKey = () =>
-    "ember-midflank-flowing-network-v5-remote";
+    "ember-midflank-flowing-network-v6-remote";
   terrain.traverse((child) => {
     const mesh = child as Mesh;
     if (
