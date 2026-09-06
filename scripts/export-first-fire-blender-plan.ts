@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildFirstFireBlenderContract } from "../src/lib/features/museum/data/first-fire-blender-contract";
+import { buildCompiledFirstFireBlenderContract } from "../src/lib/features/museum/data/first-fire-blender-contract";
 import { MUSEUM_EXHIBIT_SEQUENCES } from "../src/lib/features/museum/data/museum-exhibit-sequences";
 import { canonicalJSON } from "../src/lib/shared/foundation/utils/canonical-json";
 
@@ -27,7 +27,7 @@ function sha256(value: string): string {
 }
 
 export function createFirstFireBlenderManifest() {
-  const contract = buildFirstFireBlenderContract();
+  const contract = buildCompiledFirstFireBlenderContract();
   const catalogSource = readFileSync(CATALOG_PATH, "utf8");
   const liveSequenceSource = readFileSync(LIVE_SEQUENCE_PATH, "utf8");
   const catalog = JSON.parse(catalogSource) as CatalogEntry[];
