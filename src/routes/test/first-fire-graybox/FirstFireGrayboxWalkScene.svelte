@@ -24,7 +24,7 @@
   import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
   import { buildFirstFireBlenderContract } from "$lib/features/museum/data/first-fire-blender-contract";
   import { findFirstFireLockedCameraView } from "$lib/features/museum/data/first-fire-locked-cameras";
-  import { firstFireCourtEffectId } from "./first-fire-court-vocabulary";
+  import { firstFireCourtEffectId } from "$lib/features/museum/data/first-fire-court-vocabulary";
   import type { FirstFireShrineId } from "$lib/features/museum/data/first-fire-procession-plan";
   import {
     buildFirstFireGrayboxColliders,
@@ -45,9 +45,9 @@
     registerViewSource,
     type ViewPose,
   } from "$lib/shared/review/view-capture";
-  import FirstFireCinderStateEffects from "./FirstFireCinderStateEffects.svelte";
-  import FirstFireProcessionFlames from "./FirstFireProcessionFlames.svelte";
-  import FirstFireShrineVolumes from "./FirstFireShrineVolumes.svelte";
+  import FirstFireCinderStateEffects from "$lib/features/museum/components/game/first-fire/FirstFireCinderStateEffects.svelte";
+  import FirstFireProcessionFlames from "$lib/features/museum/components/game/first-fire/FirstFireProcessionFlames.svelte";
+  import FirstFireShrineVolumes from "$lib/features/museum/components/game/first-fire/FirstFireShrineVolumes.svelte";
   import FirstFireEmberDressing from "./FirstFireEmberDressing.svelte";
   import FirstFireCoalDressing from "./FirstFireCoalDressing.svelte";
   import {
@@ -58,7 +58,7 @@
     extractFirstFireFlameAnchors,
     FIRST_FIRE_EXPECTED_FLAME_COUNT,
     type FirstFireFlameAnchor,
-  } from "./first-fire-flame-field";
+  } from "$lib/features/museum/services/first-fire-flame-field";
   import {
     activeFirstFireShrine,
     advanceFirstFireGrayboxProof,
@@ -68,7 +68,7 @@
     litFirstFireShrine,
     updateFirstFireGrayboxReview,
     visibleFirstFireFlameGroups,
-  } from "./first-fire-graybox-review";
+  } from "$lib/features/museum/data/first-fire-procession-review";
 
   interface FirstFireGrayboxReviewDetails {
     phase: string;

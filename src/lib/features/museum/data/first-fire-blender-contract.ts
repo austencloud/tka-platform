@@ -6,6 +6,8 @@
  * information an artist or deterministic graybox builder needs.
  */
 import type { Point2, WorldRect } from "./drowned-gallery-terrain";
+import { buildVulcanCaveFloorPlan } from "./vulcan-cave-floor-plan";
+import { buildFirstFireProcessionBay } from "./first-fire-procession-terrain";
 import {
   buildNominalFirstFireProcessionPlan,
   type FirstFireProcessionPlan,
@@ -80,8 +82,8 @@ export interface FirstFireBlenderContract {
       groundAxes: "X/Z";
       upAxis: "+Y";
       exporterTransform: "(Blender X, Y, Z) -> (runtime X, Z, -Y)";
-      mount: "isolated 58 x 44 metre Gate 2 review shell";
-      integrationStatus: "not-the-compiled-cave-fire-room";
+      mount: string;
+      integrationStatus: "compiled-cave-fire-room" | "not-the-compiled-cave-fire-room";
       rotationRadians: readonly [0, 0, 0];
       scale: 1;
     };
@@ -104,15 +106,30 @@ export interface FirstFireBlenderContract {
       side: "west";
       plan: Point2;
       blender: BlenderPoint;
+      /** The route's mouth at the doorway (4 m). */
       clearWidth: number;
+      /** The museum's stamped doorway inside that mouth; the shell is cut to THIS. */
+      tileClearWidth: number;
     };
     earth: {
       side: "east";
       plan: Point2;
       blender: BlenderPoint;
       clearWidth: number;
+      tileClearWidth: number;
     };
   };
+  /**
+   * The museum corridor from the grotto's east door to this room's west door.
+   * Both rooms suppress their tile geometry, so this shell must carry it: a
+   * low passage at the corridor's real tile extent, in Blender metres.
+   * Null for the isolated nominal plan.
+   */
+  approachCorridor: {
+    clearance: number;
+    planRects: WorldRect[];
+    blenderRects: BlenderFootprint[];
+  } | null;
   threshold: {
     planRect: WorldRect;
     blenderFootprint: BlenderFootprint;
@@ -257,9 +274,14 @@ function camera(
   };
 }
 
+/** Headroom of the grotto→fire passage: a squeeze before the court opens. */
+export const FIRST_FIRE_APPROACH_CORRIDOR_CLEARANCE = 2.6;
+
 export function buildFirstFireBlenderContract(
-  plan = buildNominalFirstFireProcessionPlan()
+  plan = buildNominalFirstFireProcessionPlan(),
+  approachCorridor: WorldRect[] = []
 ): FirstFireBlenderContract {
+  const compiled = plan.doorTileSpans !== undefined;
   const width = plan.room.maxX - plan.room.minX;
   const depth = plan.room.maxZ - plan.room.minZ;
   const planCentre = {
@@ -318,8 +340,12 @@ export function buildFirstFireBlenderContract(
         groundAxes: "X/Z",
         upAxis: "+Y",
         exporterTransform: "(Blender X, Y, Z) -> (runtime X, Z, -Y)",
-        mount: "isolated 58 x 44 metre Gate 2 review shell",
-        integrationStatus: "not-the-compiled-cave-fire-room",
+        mount: compiled
+          ? "compiled cave-fire room; GLB origin at the plan centre, museum datum floor"
+          : "isolated 58 x 44 metre Gate 2 review shell",
+        integrationStatus: compiled
+          ? "compiled-cave-fire-room"
+          : "not-the-compiled-cave-fire-room",
         rotationRadians: [0, 0, 0],
         scale: 1,
       },
@@ -343,14 +369,32 @@ export function buildFirstFireBlenderContract(
         plan: waterDoor,
         blender: toBlender(waterDoor),
         clearWidth: clean(plan.westDoor.max - plan.westDoor.min),
+        tileClearWidth: clean(
+          (plan.doorTileSpans?.west ?? plan.westDoor).max -
+            (plan.doorTileSpans?.west ?? plan.westDoor).min
+        ),
       },
       earth: {
         side: "east",
         plan: earthDoor,
         blender: toBlender(earthDoor),
         clearWidth: clean(plan.eastDoor.max - plan.eastDoor.min),
+        tileClearWidth: clean(
+          (plan.doorTileSpans?.east ?? plan.eastDoor).max -
+            (plan.doorTileSpans?.east ?? plan.eastDoor).min
+        ),
       },
     },
+    approachCorridor:
+      approachCorridor.length > 0
+        ? {
+            clearance: FIRST_FIRE_APPROACH_CORRIDOR_CLEARANCE,
+            planRects: approachCorridor,
+            blenderRects: approachCorridor.map((rect) =>
+              firstFirePlanRectToBlenderFootprint(rect, planCentre)
+            ),
+          }
+        : null,
     threshold: {
       planRect: plan.threshold,
       blenderFootprint: firstFirePlanRectToBlenderFootprint(
@@ -464,4 +508,15 @@ export function buildFirstFireBlenderContract(
       },
     ],
   };
+}
+
+/**
+ * The contract for the room the museum actually compiles: the procession laid
+ * on the live cave-fire wing, with its stamped doors and the corridor from the
+ * grotto. This is what the production shell is built from.
+ */
+export function buildCompiledFirstFireBlenderContract(): FirstFireBlenderContract {
+  const bay = buildFirstFireProcessionBay(buildVulcanCaveFloorPlan().grid);
+  if (!bay) throw new Error("First Fire Blender contract: cave-fire is not in the museum plan");
+  return buildFirstFireBlenderContract(bay.plan, bay.corridor);
 }

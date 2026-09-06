@@ -370,9 +370,11 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.TORCH]: PropType.CLUB,
   [PropType.BIGCLUB]: PropType.CLUB,
   [PropType.BIGTORCH]: PropType.CLUB,
-  // Fans have no family: Fan and Big Fan are two plain tiles, and the fan
-  // build (DoodleGrip Fire, Lotus, Day, Moon LED, Pictograph) is a look
-  // setting on top of either size rather than a variant of its own.
+  // Fan variations. The fan build (DoodleGrip Fire, Lotus, Day, Moon LED,
+  // Pictograph) stays a look setting on top of whichever size is current --
+  // it is not a variant. Big Fan maps here so the grid folds it into the Fan
+  // tile; the size dock, not the family drill-down, is what reaches it.
+  [PropType.BIGFAN]: PropType.FAN,
   // Triad variations
   [PropType.TRIGENG]: PropType.TRIAD,
   [PropType.BIGTRIAD]: PropType.TRIAD,
@@ -414,6 +416,7 @@ const BASE_TO_VARIANTS: Partial<Record<PropType, PropType[]>> = {
     PropType.BIGCLUB,
     PropType.BIGTORCH,
   ],
+  [PropType.FAN]: [PropType.BIGFAN],
   [PropType.TRIAD]: [PropType.TRIGENG, PropType.BIGTRIAD],
   [PropType.MINIHOOP]: [PropType.BIGHOOP],
   [PropType.BUUGENG]: [PropType.BIGBUUGENG],
@@ -587,6 +590,8 @@ const STANDARD_TO_BIG: Partial<Record<PropType, PropType>> = {
   [PropType.TORCH]: PropType.BIGTORCH,
   [PropType.CHICKEN]: PropType.BIGCHICKEN,
   [PropType.DOUBLESTAR]: PropType.BIGDOUBLESTAR,
+  [PropType.CONTACTBALL]: PropType.BIGCONTACTBALL,
+  [PropType.DOUBLECONTACTBALL]: PropType.BIGDOUBLECONTACTBALL,
 };
 
 const BIG_TO_STANDARD: Partial<Record<PropType, PropType>> = Object.fromEntries(
@@ -643,7 +648,6 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       PropType.CLUB,
       PropType.CLASSIC_CLUB,
       PropType.FAN,
-      PropType.BIGFAN,
       PropType.TRIAD,
       PropType.MINIHOOP,
       PropType.BUUGENG,
@@ -660,6 +664,7 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
     props: [
       PropType.BIGSTAFF,
       PropType.BIGCLUB,
+      PropType.BIGFAN,
       PropType.BIGTRIAD,
       PropType.BIGHOOP,
       PropType.BIGBUUGENG,

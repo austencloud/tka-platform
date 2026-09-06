@@ -19,7 +19,7 @@ import {
   type Object3D,
 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import type { FirstFireFlameGroup } from "./first-fire-graybox-review";
+import type { FirstFireFlameGroup } from "../data/first-fire-procession-review";
 
 export const FIRST_FIRE_EXPECTED_FLAME_COUNT = 60;
 
@@ -208,7 +208,16 @@ const FLAME_FRAGMENT_SHADER = /* glsl */ `
 `;
 
 const paletteLightColors = ["#ff4d17", "#ff7424", "#ff3219"] as const;
-const pooledLightCount = 6;
+const DEFAULT_POOLED_LIGHT_COUNT = 6;
+
+export interface FirstFireFlameFieldOptions {
+  /**
+   * Shadow-casting point lights spread along the procession. The museum
+   * passes 0: its light pool is fixed, and every live light there is owned by
+   * the room light plan.
+   */
+  pooledLights?: number;
+}
 
 function materialNames(material: Material | Material[]): string {
   const materials = Array.isArray(material) ? material : [material];
@@ -380,8 +389,10 @@ export function extractFirstFireFlameAnchors(
 }
 
 function selectPooledLightAnchors(
-  anchors: readonly FirstFireFlameAnchor[]
+  anchors: readonly FirstFireFlameAnchor[],
+  pooledLightCount: number
 ): FirstFireFlameAnchor[] {
+  if (pooledLightCount <= 0) return [];
   if (anchors.length <= pooledLightCount) return [...anchors];
   const ordered = [...anchors].sort(
     (left, right) => left.position[0] - right.position[0]
@@ -411,7 +422,10 @@ export class FirstFireFlameFieldRenderer {
   ]);
   private elapsed = 0;
 
-  constructor(anchors: readonly FirstFireFlameAnchor[]) {
+  constructor(
+    anchors: readonly FirstFireFlameAnchor[],
+    options: FirstFireFlameFieldOptions = {}
+  ) {
     this.object3D.name = "FirstFireCinderCourtFlames";
     this.anchors = anchors;
 
@@ -462,7 +476,10 @@ export class FirstFireFlameFieldRenderer {
     this.geometry.setAttribute("aVisibility", this.visibility);
     this.object3D.add(this.mesh);
 
-    this.lightAnchors = selectPooledLightAnchors(anchors);
+    this.lightAnchors = selectPooledLightAnchors(
+      anchors,
+      options.pooledLights ?? DEFAULT_POOLED_LIGHT_COUNT
+    );
     this.lights = this.lightAnchors.map((anchor) => {
       const light = new PointLight(
         new Color(paletteLightColors[anchor.palette]),

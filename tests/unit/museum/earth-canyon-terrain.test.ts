@@ -27,7 +27,7 @@ import {
   SLAB_Y,
   VOID_RADIUS,
 } from "$lib/features/museum/data/earth-canyon-layout";
-import { buildFirstFireLayout } from "$lib/features/museum/data/first-fire-layout";
+import { buildFirstFireProcessionBay } from "$lib/features/museum/data/first-fire-procession-terrain";
 import {
   buildDrownedGalleryLayout,
   inRectClosed,
@@ -64,7 +64,9 @@ function bayTiles(): { tx: number; ty: number; x: number; z: number }[] {
     const [tx, ty] = key.split(",").map(Number);
     const x = tx! * TILE;
     const z = ty! * TILE;
-    if (!inRectClosed(layout.bayBounds, x, z)) continue;
+    // Ownership, not the bounding box: the Fire corridor now runs 20 m south
+    // of the room and a bbox grown to hold it swallows the neighbours.
+    if (!layout.bayFootprint.some((rect) => inRectClosed(rect, x, z))) continue;
     out.push({ tx: tx!, ty: ty!, x, z });
   }
   return out;
@@ -525,7 +527,7 @@ describe("earth canyon terrain", () => {
 
     const authored = [
       ...buildDrownedGalleryLayout(grid)!.floorRects,
-      ...buildFirstFireLayout(grid)!.floorRects,
+      ...buildFirstFireProcessionBay(grid)!.floorRects,
       ...layout.floorRects,
     ];
     const insideSuppressedWing = (tx: number, ty: number) =>

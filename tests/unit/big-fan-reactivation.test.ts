@@ -15,21 +15,28 @@ import {
 } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
 describe("Big Fan reactivation", () => {
-  it("is its own plain picker tile right after Fan", () => {
+  it("is a size of Fan, reached from the dial rather than its own tile", () => {
     const standard = PROP_PICKER_SECTIONS.find(
       (section) => section.label === "Standard"
     );
     const big = PROP_PICKER_SECTIONS.find((section) => section.label === "Big");
 
     expect(isPropActive(PropType.BIGFAN)).toBe(true);
-    expect(standard?.props.indexOf(PropType.BIGFAN)).toBe(
-      (standard?.props.indexOf(PropType.FAN) ?? -2) + 1
-    );
-    expect(big?.props).not.toContain(PropType.BIGFAN);
-    // Not a Fan family member: the picker never folds it behind a chooser.
-    expect(getBasePropType(PropType.BIGFAN)).toBe(PropType.BIGFAN);
-    expect(getAllVariations(PropType.FAN)).toEqual([PropType.FAN]);
-    expect(getAllVariations(PropType.BIGFAN)).toEqual([PropType.BIGFAN]);
+    // Size is a dial, not a prop. Big Fan is authored with the other bigs and
+    // never stands beside Fan as a peer tile.
+    expect(standard?.props).not.toContain(PropType.BIGFAN);
+    expect(big?.props).toContain(PropType.BIGFAN);
+    // It folds into the Fan tile the way every other big folds into its
+    // standard counterpart, so the grid can hide it behind the size dock.
+    expect(getBasePropType(PropType.BIGFAN)).toBe(PropType.FAN);
+    expect(getAllVariations(PropType.FAN)).toEqual([
+      PropType.FAN,
+      PropType.BIGFAN,
+    ]);
+    expect(getAllVariations(PropType.BIGFAN)).toEqual([
+      PropType.FAN,
+      PropType.BIGFAN,
+    ]);
   });
 
   it("toggles through the shared Fan size controls", () => {
