@@ -42,7 +42,6 @@ export const PROP_MODEL_SPRITES: Readonly<
   "minihoop": { width: 257.9, height: 138.2, fit: 279.135, capturedAt: "2026-09-06T06:25:26.873Z" },
   "poi": { width: 291.67, height: 38, fit: 297.357, capturedAt: "2026-09-06T06:25:52.543Z" },
   "quiad": { width: 250, height: 250, fit: 303.476, capturedAt: "2026-09-06T06:25:49.486Z" },
-  "sickles": { width: 440, height: 260, fit: 613.91, capturedAt: "2026-09-06T06:25:35.402Z" },
   "simple_staff": { width: 252.8, height: 77.8, fit: 284.492, capturedAt: "2026-09-06T06:25:17.723Z" },
   "staff": { width: 252.8, height: 77.8, fit: 284.492, capturedAt: "2026-09-06T06:25:16.755Z" },
   "staff_v2": { width: 250, height: 40.5, fit: 182.514, capturedAt: "2026-09-06T06:25:19.598Z" },

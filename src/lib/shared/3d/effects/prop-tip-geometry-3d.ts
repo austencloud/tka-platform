@@ -66,12 +66,6 @@ const TORCH_REACH_RATIO = 0.59335;
 const SWORD_REACH_RATIO = 0.61706;
 
 /**
- * Lower-handle grip to the aligned blade apex in sickles.glb. The physical kama
- * is 36 x 19 cm; its internal kinetic-axis node rotates that reference onto +Y.
- */
-const SICKLES_REACH_M = 0.274416;
-
-/**
  * Hand to the far rim, as a fraction of staff length. `Hoop3D.svelte` grips the
  * BOTTOM of the ring and offsets the torus centre up by one ring radius
  * (0.35 x staffLength), so the far rim sits at two radii.
@@ -99,7 +93,6 @@ const SINGLE_ENDED_REACH_3D: Partial<
     staffLength * TORCH_REACH_RATIO * BIG_SCALE,
 
   [PropType.SWORD]: (staffLength) => staffLength * SWORD_REACH_RATIO,
-  [PropType.SICKLES]: () => SICKLES_REACH_M,
 
   [PropType.MINIHOOP]: (staffLength) => staffLength * HOOP_REACH_RATIO,
   [PropType.BIGHOOP]: (staffLength) =>

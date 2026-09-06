@@ -23,10 +23,6 @@ const PROP_ALIASES: Record<string, string> = {
   triads: "triad",
   sword: "sword",
   swords: "sword",
-  sickle: "sickles",
-  sickles: "sickles",
-  kama: "sickles",
-  kamas: "sickles",
   // Energy Saber and Energy Staff are the product names, but nobody says that
   // out loud. Recognising what people actually say is separate from being
   // allowed to use the prop — PropCommandHandler makes that call.
