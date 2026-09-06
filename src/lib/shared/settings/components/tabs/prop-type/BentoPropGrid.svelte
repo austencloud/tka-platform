@@ -363,6 +363,7 @@
                   <section
                     {...props}
                     class="variant-popover"
+                    class:wide-styles={isFanPropType(base)}
                     aria-label={`${getPropTypeDisplayInfo(base).label} styles`}
                     data-escape-shortcut-local
                     transition:flyFade={{ y: 6 }}
@@ -649,6 +650,39 @@
     .variant-popover-buttons .tile-wrapper {
       flex: 0 1 calc((100% - 16px) / 3);
       min-width: 0;
+    }
+  }
+
+  /* A family that also carries build options (fans) lays its builds out in
+     one row instead of asking the user to scroll inside the popover. */
+  .variant-popover.wide-styles {
+    width: min(880px, 100vw - 24px);
+  }
+
+  /* Size tiles on the left, builds and their details on the right, so the
+     whole chooser is visible at once on any desktop-class viewport. */
+  @media (min-width: 720px) {
+    .variant-popover.wide-styles {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: start;
+      column-gap: 16px;
+    }
+
+    .variant-popover.wide-styles .variant-popover-label {
+      grid-column: 1 / -1;
+    }
+
+    .variant-popover.wide-styles .variant-popover-buttons {
+      grid-template-columns: repeat(2, 96px);
+      align-content: start;
+    }
+
+    .variant-popover.wide-styles :global(.fan-style-options) {
+      padding-top: 0;
+      padding-left: 16px;
+      border-top: 0;
+      border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }
   }
 
