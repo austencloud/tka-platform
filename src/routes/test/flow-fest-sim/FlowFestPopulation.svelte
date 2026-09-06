@@ -14,6 +14,7 @@
     type FlowFestPopulationSite,
   } from "$lib/features/flow-fest-sim/domain/flow-fest-population";
   import { flowFestHomeAnchorIds } from "./flow-fest-population-site";
+  import { assignFlowFestPopulationSlots } from "./flow-fest-population-slots";
   import { sweepFlowFestAvatarMaterials } from "$lib/features/flow-fest-sim/services/flow-fest-avatar-material-repair";
 
   interface Props {
@@ -28,12 +29,20 @@
   const props: Props = $props();
   const { camera, scene } = useThrelte();
 
-  /** Fixed render slots, so a walker never remounts its GLTF mid-stride. */
+  /**
+   * Fixed render slots, so a walker never remounts its GLTF mid-stride. A slot
+   * changing hands is the one deliberate remount: the each block below is
+   * keyed on the slot's generation, so the person leaving is unmounted and the
+   * person arriving is mounted fresh where they stand, instead of one body
+   * being morphed into another across the field.
+   */
   const SLOT_COUNT = 18;
   const REASSIGN_INTERVAL_SECONDS = 1;
 
   interface RenderSlot {
     key: number;
+    /** Bumped every time the slot takes a new person. */
+    generation: number;
     agentId: string | null;
     /** Index into the simulation's stable agent array. */
     agentIndex: number;
@@ -53,6 +62,7 @@
   let slots = $state<RenderSlot[]>(
     Array.from({ length: SLOT_COUNT }, (_, key) => ({
       key,
+      generation: 0,
       agentId: null,
       agentIndex: -1,
       avatarId: "ch01",
@@ -76,7 +86,8 @@
   let builtSiteSeed: string | null = null;
   let warmedMoment: FlowFestMoment | null = null;
 
-  const candidateOrder: number[] = [];
+  /** Metres from the eye per agent; Infinity for people the circle renders. */
+  let distances: number[] = [];
 
   function ensureSimulation(site: FlowFestPopulationSite): void {
     if (builtSiteSeed === site.seed && simulation) return;
@@ -118,48 +129,39 @@
     const eyeX = view?.position.x ?? 0;
     const eyeZ = view?.position.z ?? 0;
 
-    candidateOrder.length = 0;
+    if (distances.length !== frame.agents.length) {
+      distances = new Array<number>(frame.agents.length).fill(
+        Number.POSITIVE_INFINITY
+      );
+    }
     for (let index = 0; index < frame.agents.length; index += 1) {
       const agent = frame.agents[index]!;
       // The fire circle renders its own attendees; the walking layer would
       // otherwise double them.
-      if (agent.atFireJam) continue;
-      const distance = Math.hypot(agent.x - eyeX, agent.z - eyeZ);
-      if (distance > budget.cullMeters) continue;
-      candidateOrder.push(index);
+      distances[index] = agent.atFireJam
+        ? Number.POSITIVE_INFINITY
+        : Math.hypot(agent.x - eyeX, agent.z - eyeZ);
     }
-    candidateOrder.sort((first, second) => {
-      const a = frame.agents[first]!;
-      const b = frame.agents[second]!;
-      return (
-        Math.hypot(a.x - eyeX, a.z - eyeZ) - Math.hypot(b.x - eyeX, b.z - eyeZ)
-      );
-    });
-    candidateOrder.length = Math.min(
-      candidateOrder.length,
-      Math.min(budget.maxVisible, SLOT_COUNT)
+
+    const next = assignFlowFestPopulationSlots(
+      slots.map((slot) => slot.agentIndex),
+      distances,
+      Math.min(budget.maxVisible, SLOT_COUNT),
+      budget.cullMeters
     );
 
-    const wanted = new Set(candidateOrder);
-    const held = new Set<number>();
-    for (const slot of slots) {
-      if (slot.agentIndex >= 0 && wanted.has(slot.agentIndex)) {
-        held.add(slot.agentIndex);
+    for (let key = 0; key < slots.length; key += 1) {
+      const slot = slots[key]!;
+      const agentIndex = next[key]!;
+      if (agentIndex === slot.agentIndex) continue;
+      if (agentIndex < 0) {
+        slot.agentId = null;
+        slot.agentIndex = -1;
+        slot.visible = false;
         continue;
       }
-      slot.agentId = null;
-      slot.agentIndex = -1;
-      slot.visible = false;
-    }
-
-    const incoming = candidateOrder.filter((index) => !held.has(index));
-    let cursor = 0;
-    for (const slot of slots) {
-      if (slot.agentIndex >= 0) continue;
-      const agentIndex = incoming[cursor];
-      if (agentIndex === undefined) break;
-      cursor += 1;
       const agent = frame.agents[agentIndex]!;
+      slot.generation += 1;
       slot.agentIndex = agentIndex;
       slot.agentId = agent.id;
       slot.avatarId = agent.avatarId;
@@ -167,6 +169,10 @@
       slot.y = agent.y;
       slot.z = agent.z;
       slot.facingAngle = agent.facingAngle;
+      slot.isMoving = agent.isMoving;
+      slot.moveSpeed = agent.isMoving ? agent.speedMetersPerSecond : 0;
+      slot.directionX = Math.sin(agent.facingAngle);
+      slot.directionZ = Math.cos(agent.facingAngle);
       slot.visible = true;
     }
   }
@@ -225,10 +231,10 @@
   });
 </script>
 
-{#each slots as slot (slot.key)}
+{#each slots as slot (`${slot.key}:${slot.generation}`)}
   {#if slot.agentId}
     <Avatar3D
-      id={`flow-fest-population-slot-${slot.key}`}
+      id={`flow-fest-population-${slot.agentId}`}
       avatarId={slot.avatarId}
       leftPropState={null}
       rightPropState={null}

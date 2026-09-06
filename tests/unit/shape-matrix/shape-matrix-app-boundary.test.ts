@@ -264,17 +264,52 @@ describe("Shape Matrix app boundary", () => {
       "id: `shape-matrix:${surface}-customize`"
     );
 
-    // The Props pill is a page of the workspace on wide hosts. Compact hosts
-    // keep routing it to the canonical prop sheet, since the grid pane is off
-    // screen behind the detail view there.
+    // A wide host shows every ability in the workspace, so its dock is one
+    // Customize button and the transport; five pills under the animation
+    // listed the rail a second time. Compact hosts keep the pill dock, since
+    // the grid pane is off screen there: each pill opens a sheet, and Props
+    // routes to the canonical prop sheet.
+    const customizeDockSource = read(
+      "src/lib/shared/shape-matrix/components/ShapeMatrixCustomizeDock.svelte"
+    );
+    const animationStateSource = read(
+      "src/lib/shared/shape-matrix/app/state/shape-matrix-animation-state.svelte.ts"
+    );
     expect(drillSource).toMatch(
-      /onPropPickerRequest=\{!appState \|\| appState\.compact\s*\? onproppickertoggle\s*: undefined\}/
+      /\{#if appState && !appState\.compact\}\s*<ShapeMatrixCustomizeDock \/>\s*\{:else\}\s*<AnimationPanel/
+    );
+    expect(drillSource).toContain("onPropPickerRequest={onproppickertoggle}");
+    expect(theoryDetailSource).toMatch(
+      /\{#if app\.compact\}\s*<AnimationPanel[\s\S]*?\{:else\}\s*<ShapeMatrixCustomizeDock \/>\s*\{\/if\}/
     );
     expect(theoryDetailSource).toContain(
-      "onPropPickerRequest={app.compact ? app.togglePropPicker : undefined}"
+      "onPropPickerRequest={app.togglePropPicker}"
     );
     expect(shellSource).toMatch(
       /\{#if appState\.compact\}\s*<PropSelectionSheet/
+    );
+    expect(customizeDockSource).toContain("<span>Customize</span>");
+    expect(customizeDockSource).toContain("ariaPressed={open}");
+    expect(customizeDockSource).toContain("animationState.openCustomize()");
+    expect(customizeDockSource).not.toContain("ControlDock");
+    // Opening resumes on the page the rail last showed, never on a page this
+    // host does not have.
+    expect(animationStateSource).toContain("function openCustomize");
+    expect(animationStateSource).toContain(
+      "CUSTOMIZE_SECTIONS.includes(remembered)"
+    );
+
+    // Customizing rebalances the split toward the animation: the workspace
+    // pane takes what its pages use and never more than 45% of the room, and
+    // the split the user had comes back on the way out.
+    expect(shellSource).toContain("function customizeSplit");
+    expect(shellSource).toContain(
+      "Math.min(need, width * 0.45, width - STAGE_MIN)"
+    );
+    expect(shellSource).toContain("restingSizes = [...sizes]");
+    expect(shellSource).toContain("restingTheorySizes = [...theorySizes]");
+    expect(shellSource).toMatch(
+      /if \(customizeSurface === "matrix" && restingSizes\) sizes = restingSizes;/
     );
 
     // The Props pill shows pressed while the sheet is open, without a tray

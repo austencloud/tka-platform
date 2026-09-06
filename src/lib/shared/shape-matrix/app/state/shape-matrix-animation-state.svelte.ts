@@ -1,6 +1,7 @@
 import { createAnimationScope } from "$lib/shared/animation-engine/state/animation-scope.svelte";
 import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { PillId } from "$lib/shared/animation-panel/pill-nav/pill-types";
+import { loadActivePill } from "$lib/shared/animation-panel/state/active-pill-persistence";
 import {
   HERO_TIP_EFFECT_MAP,
   HERO_TRAIL_PRESET,
@@ -12,6 +13,20 @@ import {
  * sequence, while playback, display, effects, and disassembly remain stage
  * choices.
  */
+/**
+ * The pages of the wide host's customize workspace. The rail's saved choice
+ * is shared with every sidebar in the app, so a page this host does not have
+ * (Export, Grid) falls back to Effects instead of opening on nothing.
+ */
+const CUSTOMIZE_SECTIONS: readonly PillId[] = [
+  "effects",
+  "props",
+  "motion",
+  "effort",
+  "playback",
+  "display",
+];
+
 export function createShapeMatrixAnimationState() {
   const scope = createAnimationScope({ persistence: "ephemeral" });
   scope.settings.setBpm(60);
@@ -64,6 +79,19 @@ export function createShapeMatrixAnimationState() {
     disassembled = next;
   }
 
+  /**
+   * A wide host opens every ability at once, on the page the rail last
+   * showed, so the workspace resumes where it was left rather than always on
+   * Effects. Compact hosts open one section from its own pill instead.
+   */
+  function openCustomize(): void {
+    if (activeSection !== null) return;
+    const remembered = loadActivePill("effects");
+    activeSection = CUSTOMIZE_SECTIONS.includes(remembered)
+      ? remembered
+      : "effects";
+  }
+
   function showRelationships(): void {
     if (activeSection === null) return;
     activeSection = null;
@@ -95,6 +123,7 @@ export function createShapeMatrixAnimationState() {
     setBpm,
     setPlaybackMode,
     setActiveSection,
+    openCustomize,
     requestDisassembled,
     showRelationships,
   };

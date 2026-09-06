@@ -31,6 +31,7 @@
   import {
     EFFECT_COLORS,
     EFFECT_LABELS,
+    effectNavIcon,
   } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import DisplayPanel from "$lib/shared/animation-engine/components/settings-panels/DisplayPanel.svelte";
@@ -447,6 +448,10 @@
   const effectsAccent = $derived(
     EFFECT_COLORS[activeEffectId] ?? RAIL_CATEGORY_ACCENTS.effects
   );
+  // A chosen effect wears its own glyph, the way the Props pill shows the
+  // chosen prop rather than a generic props icon. The wand only stands in
+  // while nothing is selected.
+  const effectsIcon = $derived(effectNavIcon(activeEffectId));
 
   const effortSummary = $derived(activeEffort.label);
   const effortAccent = $derived(activeEffort.color);
@@ -577,7 +582,7 @@
             }
           : {}),
         effects: {
-          icon: "fa-wand-magic-sparkles",
+          icon: effectsIcon,
           label: "Effects",
           summary: effectsSummary,
           accentColor: effectsAccent,

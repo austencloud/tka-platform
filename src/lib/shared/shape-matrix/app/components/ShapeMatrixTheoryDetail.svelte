@@ -41,6 +41,7 @@
   } from "$lib/shared/shape-matrix/components/PropRelationshipChipRow.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import AnimationPanel from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
+  import ShapeMatrixCustomizeDock from "$lib/shared/shape-matrix/components/ShapeMatrixCustomizeDock.svelte";
   import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { growFade } from "$lib/shared/transitions/motion";
   import { tick } from "svelte";
@@ -447,36 +448,41 @@
     {/if}
 
     <div class="animation-controls" data-shape-matrix-dock>
-      <!-- The drill's dock, unchanged, on the drill's own scope. `sequence` is
+      <!-- The drill's dock, unchanged, on the drill's own scope: one Customize
+           button on a wide host, the pill dock on a compact one. `sequence` is
            null because a spin ratio is not one: it has no letter, no steps and
            no word, and the panel's sequence-shaped affordances are turned off
            rather than pointed at nothing. -->
-      <AnimationPanel
-        isExporting={false}
-        layout="bottom"
-        presentation="navigation"
-        controlledSection={animationState.activeSection}
-        isPlaying={animationState.playing}
-        bpm={animationState.bpm}
-        playbackMode={animationState.playbackMode}
-        onPlaybackToggle={animationState.togglePlaying}
-        onPlaybackModeChange={animationState.setPlaybackMode}
-        onBpmChange={animationState.setBpm}
-        showEffectsPlayback={false}
-        selectedPropType={app.propType}
-        onPropChange={(next: PropType) => void app.setPropType(next)}
-        onPropPickerRequest={app.compact ? app.togglePropPicker : undefined}
-        propPickerActive={app.propPickerOpen}
-        sequence={null}
-        dockTrailingAction={playbackAction}
-        showPathShape={false}
-        showMotionVisibility={true}
-        showSequenceMarks={false}
-        availableEffects={THEORY_EFFECTS}
-        onActiveSectionChange={animationState.setActiveSection}
-        closeRequest={animationState.closeRequest}
-        regionLabel="Shape animation controls"
-      />
+      {#if app.compact}
+        <AnimationPanel
+          isExporting={false}
+          layout="bottom"
+          presentation="navigation"
+          controlledSection={animationState.activeSection}
+          isPlaying={animationState.playing}
+          bpm={animationState.bpm}
+          playbackMode={animationState.playbackMode}
+          onPlaybackToggle={animationState.togglePlaying}
+          onPlaybackModeChange={animationState.setPlaybackMode}
+          onBpmChange={animationState.setBpm}
+          showEffectsPlayback={false}
+          selectedPropType={app.propType}
+          onPropChange={(next: PropType) => void app.setPropType(next)}
+          onPropPickerRequest={app.togglePropPicker}
+          propPickerActive={app.propPickerOpen}
+          sequence={null}
+          dockTrailingAction={playbackAction}
+          showPathShape={false}
+          showMotionVisibility={true}
+          showSequenceMarks={false}
+          availableEffects={THEORY_EFFECTS}
+          onActiveSectionChange={animationState.setActiveSection}
+          closeRequest={animationState.closeRequest}
+          regionLabel="Shape animation controls"
+        />
+      {:else}
+        <ShapeMatrixCustomizeDock />
+      {/if}
     </div>
   </div>
 </aside>

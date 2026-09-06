@@ -11,10 +11,12 @@
   earlier overlay poured the dock tray's strips across a pane built for a
   grid, and every section read as a few controls adrift in an empty room.
 
-  The dock under the animation and the rail here are two views of one
-  section. A dock pill opens the workspace on its page, the rail moves the
-  dock's highlight, and the highlighted pill closes it again. The way back to
-  the grid is the same labelled button every time, plus Escape.
+  One Customize button under the animation opens the workspace on the page
+  the rail last showed, and the rail picks the page from there; nothing under
+  the animation lists the pages a second time. The way back to the grid is
+  the same labelled button every time, the Customize button again, or Escape.
+  Opening also rebalances the two panes toward the animation (the shell owns
+  that), since the pages here need one sidebar-width column, not a grid's.
 
   Wide hosts only. Compact hosts show one pane at a time, so this pane is off
   screen while the dock is; the compact settings sheet and the canonical prop
@@ -42,7 +44,7 @@
   const appState = getShapeMatrixAppContext();
   const animationState = getShapeMatrixAnimationContext();
 
-  /* The dock's section is the workspace's page. A prop sheet left open on a
+  /* The open section is the workspace's page. A prop sheet left open on a
      compact host arrives here as the Props page when the host widens, so the
      request is honoured rather than stranded. */
   const section = $derived<PillId | null>(
@@ -60,7 +62,8 @@
     animationState.showRelationships();
   }
 
-  /* The rail's choice becomes the dock's, so the two never disagree. */
+  /* The rail's choice is the one open section, so the compact dock would
+     agree with it if the host narrowed. */
   function selectSection(next: PillId | null): void {
     if (next === null) {
       close();
