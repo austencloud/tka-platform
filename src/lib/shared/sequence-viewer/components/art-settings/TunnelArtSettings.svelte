@@ -7,7 +7,6 @@
   import { createGlobalChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
-  import FanAppearancePicker from "$lib/shared/pictograph/prop/components/FanAppearancePicker.svelte";
   import PropLookPicker from "$lib/shared/pictograph/prop/components/PropLookPicker.svelte";
   import {
     isFanPropType,
@@ -104,7 +103,6 @@
     leftPropType,
     onPropChange,
     fanAppearance,
-    onFanAppearanceChange,
     propChirality = createGlobalChiralitySeam(),
     animationSettingsState = animationSettings,
     onArtSettingChange,
@@ -356,15 +354,9 @@
           flat={dense}
           chirality={propChirality}
         />
-        {#if fanAppearance && onFanAppearanceChange && isFanPropType(selectedPropType)}
-          <div class="fan-appearance-section">
-            <FanAppearancePicker
-              value={fanAppearance}
-              onchange={onFanAppearanceChange}
-              compact={dense}
-            />
-          </div>
-        {:else}
+        <!-- The fan build lives in the grid's Fan styles popover; only the
+             model / pictograph switch for other props docks below. -->
+        {#if !isFanPropType(selectedPropType)}
           <div class="fan-appearance-section">
             <PropLookPicker propType={selectedPropType} compact={dense} />
           </div>
