@@ -1,6 +1,6 @@
 import type { SkySunConfig } from "../../domain/models/environment-models";
 
-import layoutSource from "../../../../../../../scripts/seraphic-vault-cloudbreak-layout.json";
+import layoutSource from "../../../../../../../scripts/celestial-dawn-layout.json";
 
 interface CloudbreakLayout {
   revision: string;
@@ -56,19 +56,7 @@ export type CloudbreakAssemblyView =
   | "trees"
   | "stone";
 
-const authoredLayout = layoutSource as unknown as CloudbreakLayout;
-// The enlarged dry performer lane moves the single lagoon four metres east.
-export const CLOUDBREAK_LAYOUT: CloudbreakLayout = {
-  ...authoredLayout,
-  lagoon: {
-    ...authoredLayout.lagoon,
-    outlineXZ: authoredLayout.lagoon.outlineXZ.map(([x, z]) => [x + 4, z]),
-    overflowXZ: [
-      authoredLayout.lagoon.overflowXZ[0] + 4,
-      authoredLayout.lagoon.overflowXZ[1],
-    ],
-  },
-};
+export const CLOUDBREAK_LAYOUT = layoutSource as unknown as CloudbreakLayout;
 
 function normalizeDirection(
   position: [number, number, number]
