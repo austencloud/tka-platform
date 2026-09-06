@@ -111,6 +111,7 @@
         selectedPropType={appState.propType}
         variant="inline"
         scrollMode="host"
+        fluidSections={true}
         onSelect={(next: PropType) => void appState.setPropType(next)}
       />
     </div>
@@ -127,13 +128,14 @@
     grid-template-rows: auto minmax(0, 1fr);
     min-width: 0;
     min-height: 0;
-    /* The panel token is a matte with a little transparency, meant to sit on
-       the page background. Stacked three deep it is opaque to the grid under
-       it while still taking the theme's colour. */
+    /* The theme panel color may be translucent. The semantic floor guarantees
+       that grid labels cannot show through the picker. */
     background:
-      linear-gradient(var(--theme-panel-bg, #101721), var(--theme-panel-bg, #101721)),
-      linear-gradient(var(--theme-panel-bg, #101721), var(--theme-panel-bg, #101721)),
-      var(--theme-panel-bg, #101721);
+      linear-gradient(
+        var(--theme-panel-bg, rgb(16 23 33 / 0.96)),
+        var(--theme-panel-bg, rgb(16 23 33 / 0.96))
+      ),
+      var(--theme-bg-deep, #0a0f14);
     color: var(--theme-text, #fff);
   }
 

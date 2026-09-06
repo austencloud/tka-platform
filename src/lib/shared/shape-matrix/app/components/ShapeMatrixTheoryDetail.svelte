@@ -43,6 +43,8 @@
   import AnimationPanel from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
   import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { growFade } from "$lib/shared/transitions/motion";
+  import { tick } from "svelte";
+  import { getEscapeLayerManager } from "$lib/shared/keyboard/get-escape-layer-manager";
   import { CANVAS2D_HOSTED_EFFECTS } from "$lib/shared/effects/services/canvas2d-effect-host";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
@@ -58,6 +60,45 @@
    * playing on the other.
    */
   const animationState = getShapeMatrixAnimationContext();
+  let compactSettingsElement = $state<HTMLElement | null>(null);
+  const compactSettingsOpen = $derived(
+    app.compact &&
+      app.surface === "theory" &&
+      app.activeView === "detail" &&
+      animationState.activeSection !== null
+  );
+
+  function closeCompactSettings(): void {
+    animationState.showRelationships();
+  }
+
+  function onCompactSettingsKeydown(event: KeyboardEvent): void {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeCompactSettings();
+  }
+
+  $effect(() => {
+    if (!compactSettingsOpen) return;
+    const restoreTo = document.activeElement;
+    const unregister = getEscapeLayerManager().register({
+      id: "shape-matrix:theory-compact-settings",
+      canDismiss: () => true,
+      dismiss: closeCompactSettings,
+    });
+    void tick().then(() =>
+      compactSettingsElement
+        ?.querySelector<HTMLButtonElement>("header button")
+        ?.focus({ preventScroll: true })
+    );
+    return () => {
+      unregister();
+      if (restoreTo instanceof HTMLElement && restoreTo.isConnected) {
+        restoreTo.focus({ preventScroll: true });
+      }
+    };
+  });
 
   const BLUE = "var(--dm-motion-blue, #3575e2)";
   const RED = "var(--dm-motion-red, #ed1c24)";
@@ -253,32 +294,34 @@
          also repaints nothing in the grid: a tile is the two hands' shapes, and
          the pairing is what those two hands do to each other, which is a thing
          you watch rather than a thing you look at. -->
-    {#if !controlsOpen}
-      <div class="mode-picker" transition:growFade={{ axis: "y" }}>
-        <ElementChipRow
-          selected={app.theoryMode}
-          onpick={(mode: VtgMode | null) => {
-            // The row clears on a second click, which the Matrix wants and
-            // Theory cannot use: the two hands are always in some pairing.
-            // Re-picking the chosen element keeps it.
-            if (mode) app.setTheoryMode(mode);
-          }}
-        />
-        <PropRelationshipChipRow
-          realizations={bridgeEntries}
-          selectedMode={app.theoryMode}
-          selectedPropMode={null}
-          activePropMode={null}
-          disabled={!pair}
-          ontarget={() => {
-            /* One entry per pairing, so the branching chips never render and
+    <div class="mode-picker" transition:growFade={{ axis: "y" }}>
+      <ElementChipRow
+        selected={app.theoryMode}
+        onpick={(mode: VtgMode | null) => {
+          // The row clears on a second click, which the Matrix wants and
+          // Theory cannot use: the two hands are always in some pairing.
+          // Re-picking the chosen element keeps it.
+          if (mode) app.setTheoryMode(mode);
+        }}
+      />
+      <PropRelationshipChipRow
+        realizations={bridgeEntries}
+        selectedMode={app.theoryMode}
+        selectedPropMode={null}
+        activePropMode={null}
+        disabled={!pair}
+        ontarget={() => {
+          /* One entry per pairing, so the branching chips never render and
                there is no second phase to target. */
-          }}
-        />
-      </div>
-    {/if}
+        }}
+      />
+    </div>
 
-    <div class="media-stage">
+    <div
+      class="media-stage"
+      inert={compactSettingsOpen}
+      aria-hidden={compactSettingsOpen}
+    >
       <div class="detail-flow">
         {#if !pair}
           <div class="empty">
@@ -298,7 +341,14 @@
             </div>
           </header>
 
-          <div class="stage-window">
+          <button
+            type="button"
+            class="stage-window"
+            aria-label={animationState.playing
+              ? "Pause theory animation"
+              : "Play theory animation"}
+            onclick={animationState.togglePlaying}
+          >
             <!-- The elemental backdrop from the drill, lit by the two elements
                  the bridge above names. It is what tied the animation to the
                  relationship being read instead of leaving it a canvas that
@@ -315,43 +365,86 @@
               {propReach}
               {tipAngle}
               paused={!animationState.playing}
+              playbackMode={animationState.playbackMode}
               propType={app.propType}
             />
-          </div>
+          </button>
         {/if}
 
         <!-- Outside the branch on purpose: it is true of the whole surface.
              The short question stays visible; the explanation waits until
              someone asks for it so this pane still feels like a toy. -->
-        {#if !controlsOpen}
-          <div class="boundary-disclosure" transition:growFade={{ axis: "y" }}>
-            <PanelButton
-              fullWidth
-              ariaExpanded={boundaryOpen}
-              onclick={() => (boundaryOpen = !boundaryOpen)}
-            >
-              <span>
-                <i class="fas fa-circle-question" aria-hidden="true"></i>
-                Why no letter or level?
-              </span>
-              <i
-                class="fas fa-chevron-down boundary-toggle-icon"
-                class:open={boundaryOpen}
-                aria-hidden="true"
-              ></i>
-            </PanelButton>
-            {#if boundaryOpen}
-              <p class="boundary-note" transition:growFade={{ axis: "y" }}>
-                Levels only name turn values down to a quarter turn. A ratio
-                like 3:7 falls outside that ladder, while VTG still tells you
-                its timing and direction. The path shown here is exact.
-              </p>
-            {/if}
-          </div>
-        {/if}
+        <div class="boundary-disclosure" transition:growFade={{ axis: "y" }}>
+          <PanelButton
+            fullWidth
+            ariaExpanded={boundaryOpen}
+            onclick={() => (boundaryOpen = !boundaryOpen)}
+          >
+            <span>
+              <i class="fas fa-circle-question" aria-hidden="true"></i>
+              Why no letter or level?
+            </span>
+            <i
+              class="fas fa-chevron-down boundary-toggle-icon"
+              class:open={boundaryOpen}
+              aria-hidden="true"
+            ></i>
+          </PanelButton>
+          {#if boundaryOpen}
+            <p class="boundary-note" transition:growFade={{ axis: "y" }}>
+              Levels only name turn values down to a quarter turn. A ratio like
+              3:7 falls outside that ladder. The selected VTG mode still
+              identifies its timing and direction, while the path retains the
+              exact 3:7 ratio.
+            </p>
+          {/if}
+        </div>
       </div>
-
     </div>
+
+    {#if compactSettingsOpen}
+      <div
+        class="compact-settings"
+        role="dialog"
+        aria-label="Animation settings"
+        tabindex="-1"
+        bind:this={compactSettingsElement}
+        onkeydown={onCompactSettingsKeydown}
+      >
+        <header class="compact-settings-header">
+          <strong>Animation settings</strong>
+          <button
+            type="button"
+            onclick={closeCompactSettings}
+            aria-label="Close settings"
+          >
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
+        <div class="compact-settings-body">
+          <AnimationPanel
+            isExporting={false}
+            layout="bottom"
+            presentation="content"
+            controlledSection={animationState.activeSection}
+            isPlaying={animationState.playing}
+            bpm={animationState.bpm}
+            playbackMode={animationState.playbackMode}
+            onPlaybackToggle={animationState.togglePlaying}
+            onPlaybackModeChange={animationState.setPlaybackMode}
+            onBpmChange={animationState.setBpm}
+            showEffectsPlayback={false}
+            selectedPropType={app.propType}
+            onPropChange={(next: PropType) => void app.setPropType(next)}
+            showPathShape={false}
+            showMotionVisibility={true}
+            showSequenceMarks={false}
+            availableEffects={THEORY_EFFECTS}
+            regionLabel="Shape animation settings"
+          />
+        </div>
+      </div>
+    {/if}
 
     <div class="animation-controls" data-shape-matrix-dock>
       <!-- The drill's dock, unchanged, on the drill's own scope. `sequence` is
@@ -361,6 +454,8 @@
       <AnimationPanel
         isExporting={false}
         layout="bottom"
+        presentation="navigation"
+        controlledSection={animationState.activeSection}
         isPlaying={animationState.playing}
         bpm={animationState.bpm}
         playbackMode={animationState.playbackMode}
@@ -405,6 +500,7 @@
 
   /* The drill's composition: modes, then the animation, then the dock. */
   .detail-body {
+    position: relative;
     display: grid;
     height: 100%;
     min-height: 0;
@@ -508,10 +604,18 @@
     /* Set this floor too high on a short pane and the box cannot shrink to the
        room it was given, and the note below it is pushed out of the flow. */
     min-height: 9rem;
+    padding: 0;
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.09));
     border-radius: 14px;
     background: color-mix(in srgb, #000 34%, var(--theme-panel-bg, #0a0f14));
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .stage-window:focus-visible {
+    outline: 2px solid var(--theme-accent, #f4b54c);
+    outline-offset: 2px;
   }
 
   /* Under the drawing, over the window's own ground. The stage clears its
@@ -586,6 +690,50 @@
     min-height: 0;
   }
 
+  .compact-settings {
+    position: absolute;
+    z-index: 8;
+    inset-inline: 0;
+    bottom: 3.65rem;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: min(52%, 20rem);
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    border-radius: 14px 14px 0 0;
+    background:
+      linear-gradient(
+        var(--theme-panel-bg, rgb(16 23 33 / 0.96)),
+        var(--theme-panel-bg, rgb(16 23 33 / 0.96))
+      ),
+      var(--theme-bg-deep, #0a0f14);
+    box-shadow: 0 -0.75rem 2rem var(--theme-shadow, rgb(0 0 0 / 0.4));
+  }
+
+  .compact-settings-header {
+    display: flex;
+    min-height: var(--min-touch-target, 44px);
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 0.85rem 0.35rem;
+    border-bottom: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .compact-settings-header button {
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    border: 0;
+    background: transparent;
+    color: var(--theme-text, #fff);
+    cursor: pointer;
+  }
+
+  .compact-settings-body {
+    min-height: 0;
+    overflow: hidden;
+  }
+
   @container shape-matrix-app (max-width: 74.99rem) or (max-height: 41.99rem) {
     .theory-detail {
       border: 0;
@@ -605,6 +753,10 @@
      is already two columns wide here on its own, which is what the rail was
      sized for. */
   @container shape-matrix-drill (min-width: 42rem) and (max-height: 24rem) {
+    .compact-settings {
+      inset-inline-start: calc(clamp(13rem, 30%, 17rem) + 0.8rem);
+    }
+
     .detail-body {
       grid-template-columns: clamp(13rem, 30%, 17rem) minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr) auto;

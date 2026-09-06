@@ -28,20 +28,18 @@ describe("Shape Matrix animation state", () => {
     expect(state.bpm).toBe(84);
     expect(state.scope.visibility.getBpm()).toBe(84);
     expect(state.playbackMode).toBe("step");
+    expect(state.scope.visibility.getPlaybackMode()).toBe("step");
   });
 
-  it("closes an open tray before committing disassembly", () => {
+  it("keeps settings open while applying disassembly", () => {
     const state = createShapeMatrixAnimationState();
 
     state.setActiveSection("effects");
     state.requestDisassembled(true);
 
-    expect(state.closeRequest).toBe(1);
-    expect(state.disassembled).toBe(false);
-
-    state.setActiveSection(null);
-
+    expect(state.closeRequest).toBe(0);
     expect(state.disassembled).toBe(true);
+    expect(state.activeSection).toBe("effects");
   });
 
   it("changes disassembly directly when no tray is open", () => {
@@ -61,9 +59,6 @@ describe("Shape Matrix animation state", () => {
     state.showRelationships();
 
     expect(state.closeRequest).toBe(1);
-    expect(state.activeSection).toBe("playback");
-
-    state.setActiveSection(null);
     expect(state.activeSection).toBeNull();
   });
 });

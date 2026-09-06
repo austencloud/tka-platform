@@ -17,7 +17,7 @@
   <ModalHeader
     id="shape-matrix-about-title"
     title={`About ${KINETIC_SHAPE_ENGINE_NAME}`}
-    subtitle="Lorq’s VTG foundation and what this engine adds"
+    subtitle="Vulcan Tech Gospel, Lorq’s matrix, and Austen’s Shape Engine"
     icon="fa-table-cells-large"
     iconColor="#d9901a"
     onClose={state.closeAbout}
@@ -33,54 +33,46 @@
 >
   <div class="about-copy">
     <p>
-      {KINETIC_SHAPE_ENGINE_NAME} is an exploration tool within
+      {KINETIC_SHAPE_ENGINE_NAME} is an independent exploration tool by
+      {KINETIC_SHAPE_ENGINE_AUTHOR}. It is part of
       <a href="/composer">Flow Arts Composer</a>, also available as a standalone
-      app. It brings together VTG, The Kinetic Alphabet, timing, and direction.
-      Flow Arts Composer is the main application for composing, animating,
-      saving, and sharing sequences.
+      app.
     </p>
     <div class="about-columns">
       <section>
-        <span class="section-kicker">The foundation</span>
+        <span class="section-kicker">Notation in this app</span>
+        <h2>VTG ratios and TKA turns</h2>
+        <p>
+          Vulcan Tech Gospel (VTG) was developed by Noel Yee and spinners at the
+          Vulcan Lofts in Oakland. The Level Matrix uses TKA turn values. The
+          Ratio Playground uses exact whole-number spin ratios, including the
+          VTG families {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}. Levels add finer turn
+          increments and more possible paths as they progress. A higher level
+          does not make every pattern harder.
+        </p>
+      </section>
+
+      <section>
+        <span class="section-kicker">Source inspiration</span>
         <h2>Lorq Nichols’ 144 Shape Matrix</h2>
         <p>
           Lorq Nichols, publishing as
           <a href={SPIN_SCIENCE_URL} target="_blank" rel="noopener noreferrer"
             >Spin Science</a
-          >, created the original matrix. Its VTG families were labeled
-          {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}. Each supplied four even-petaled
-          driving styles, giving twelve choices per hand and 144 left/right
-          combinations.
-        </p>
-      </section>
-
-      <section>
-        <span class="section-kicker">The independent work</span>
-        <h2>What Austen Cloud built</h2>
-        <p>
-          {KINETIC_SHAPE_ENGINE_NAME} keeps Lorq’s row-and-column pairing as a starting
-          point, then extends it through TKA Levels 1–4 and a Theory Matrix of exact
-          whole-number ratios. Prop selection, relationship solving, live animation,
-          and pictograph readouts are additions made here.
+          >, created the original matrix. It pairs twelve driving styles for
+          each hand into 144 combinations. Shape Engine takes inspiration from
+          that row-and-column format.
         </p>
         <p>
-          This app was built independently by {KINETIC_SHAPE_ENGINE_AUTHOR}. It
-          does not reproduce Nichols’ original diagram and is not an official
-          Spin Science release.
+          Austen built this app independently, including its prop selection,
+          relationship solving, live animation, and pictograph readouts. It is
+          not an official Spin Science release.
         </p>
       </section>
     </div>
     <div class="source-links">
       <a href="/guide/ratios">
         Read ratios in TKA
-        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-      </a>
-      <a href="/history#archive-record-vtg">
-        VTG in the history archive
-        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-      </a>
-      <a href="/history#archive-record-lorq">
-        Lorq’s work in the history archive
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </a>
       <a
@@ -148,7 +140,7 @@
 
   .source-links {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.65rem;
     margin-top: 0.25rem;
   }
@@ -177,12 +169,6 @@
   .source-links a:focus-visible {
     outline: 2px solid #f59e0b;
     outline-offset: 2px;
-  }
-
-  @media (max-width: 72rem) {
-    .source-links {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
   }
 
   @media (max-width: 52rem) {

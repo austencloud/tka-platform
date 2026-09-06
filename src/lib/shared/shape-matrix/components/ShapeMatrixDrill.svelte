@@ -38,7 +38,7 @@
   owns the hands-to-props explanation, so the animation area does not repeat it.
 -->
 <script lang="ts">
-  import { onDestroy, untrack } from "svelte";
+  import { onDestroy, tick, untrack } from "svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import MandalaHeroLayer from "./MandalaHeroLayer.svelte";
@@ -79,7 +79,9 @@
   import AnimationPanel from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
   import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { getShapeMatrixAnimationContext } from "../app/context/shape-matrix-animation-context";
+  import { getOptionalShapeMatrixAppContext } from "../app/context/shape-matrix-app-context";
   import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
+  import { getEscapeLayerManager } from "$lib/shared/keyboard/get-escape-layer-manager";
 
   interface Props {
     /** Nullable: the drill renders its own "Pick a cell" state before any click. */
@@ -129,6 +131,47 @@
   }: Props = $props();
 
   const animationState = getShapeMatrixAnimationContext();
+  const appState = getOptionalShapeMatrixAppContext();
+  let compactSettingsElement = $state<HTMLElement | null>(null);
+  const compactSettingsOpen = $derived(
+    !!appState &&
+      appState.compact &&
+      appState.surface === "matrix" &&
+      appState.activeView === "detail" &&
+      animationState.activeSection !== null
+  );
+
+  function closeCompactSettings(): void {
+    animationState.showRelationships();
+  }
+
+  function onCompactSettingsKeydown(event: KeyboardEvent): void {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeCompactSettings();
+  }
+
+  $effect(() => {
+    if (!compactSettingsOpen) return;
+    const restoreTo = document.activeElement;
+    const unregister = getEscapeLayerManager().register({
+      id: "shape-matrix:compact-settings",
+      canDismiss: () => true,
+      dismiss: closeCompactSettings,
+    });
+    void tick().then(() =>
+      compactSettingsElement
+        ?.querySelector<HTMLButtonElement>("header button")
+        ?.focus({ preventScroll: true })
+    );
+    return () => {
+      unregister();
+      if (restoreTo instanceof HTMLElement && restoreTo.isConnected) {
+        restoreTo.focus({ preventScroll: true });
+      }
+    };
+  });
 
   let animationPlayerModule: ReturnType<typeof importAnimationPlayer> | null =
     null;
@@ -1102,9 +1145,10 @@
             visibilityManagerOverride: animationState.scope.visibility,
             externalBpm: animationState.bpm,
             externalPlaying: animationState.playing,
+            externalPlaybackMode: animationState.playbackMode,
             onExternalPlayingChange: animationState.setPlaying,
             backgroundAlpha: 0,
-            interactive: false,
+            interactive: true,
             hoverHint: "none",
             // This is a full TKA animation surface. Its canonical canvas menu
             // supplies Disassemble/Reassemble and the shared display controls.
@@ -1138,42 +1182,43 @@
 
 <section
   class="drill"
-  class:controls-open={animationState.activeSection !== null}
   aria-label="Shape matrix realizations"
   style={captionRealization
     ? `--hand-el: ${captionRealization.element.accentColor}; --hand-dark: ${captionRealization.element.darkComplement}; --prop-el: ${captionRealization.propRelationship.element?.accentColor ?? captionRealization.element.accentColor}`
     : undefined}
 >
-  {#if animationState.activeSection === null}
-    <div
-      class="mode-picker"
-      data-drill-region="modes"
-      use:claimedViewTransitionName={{
-        name: SHAPE_MATRIX_MODES_NAME,
-        enabled: morphingFrames,
-      }}
-      transition:growFade={{ axis: "y" }}
-    >
-      <ElementChipRow
-        selected={selectedMode}
-        available={availableHandModes}
-        availabilityReady={!building}
-        disabled={!pair}
-        onpick={selectHandMode}
-      />
-      <PropRelationshipChipRow
-        {realizations}
-        {selectedMode}
-        {selectedPropMode}
-        activePropMode={activeReal?.propMode ?? null}
-        disabled={!pair}
-        {building}
-        ontarget={selectPropMode}
-      />
-    </div>
-  {/if}
+  <div
+    class="mode-picker"
+    data-drill-region="modes"
+    use:claimedViewTransitionName={{
+      name: SHAPE_MATRIX_MODES_NAME,
+      enabled: morphingFrames,
+    }}
+    transition:growFade={{ axis: "y" }}
+  >
+    <ElementChipRow
+      selected={selectedMode}
+      available={availableHandModes}
+      availabilityReady={!building}
+      disabled={!pair}
+      onpick={selectHandMode}
+    />
+    <PropRelationshipChipRow
+      {realizations}
+      {selectedMode}
+      {selectedPropMode}
+      activePropMode={activeReal?.propMode ?? null}
+      disabled={!pair}
+      {building}
+      ontarget={selectPropMode}
+    />
+  </div>
 
-  <div class="media-stage">
+  <div
+    class="media-stage"
+    inert={compactSettingsOpen}
+    aria-hidden={compactSettingsOpen}
+  >
     <!-- The stage rectangle is the selected matrix tile's box, arrived. It
          carries the shared stage name so the whole stage flies between the
          tile and the detail view; the mandala inside carries its own. -->
@@ -1249,55 +1294,95 @@
       </div>
     </div>
 
-    {#if animationState.activeSection === null}
-      <!-- The carousel is its own card below the canvas box, never part of
+    <!-- The carousel is its own card below the canvas box, never part of
            the rectangle that flies. During the morph it carries its own
            name and rises in once the stage has landed. -->
-      <div
-        class="strip-zone"
-        data-drill-region="strip"
-        role="group"
-        aria-label="Pictograph timeline"
-        use:claimedViewTransitionName={{
-          name: SHAPE_MATRIX_STRIP_NAME,
-          enabled: morphingFrames,
-        }}
-        transition:growFade={{ axis: "y" }}
-      >
-        {#if railRealization && pictographRailReady}
-          <LazyMount
-            loader={() => import("$lib/shared/timeline/StepStrip.svelte")}
-            active={true}
-            keepAlive={false}
-            debugName="shape matrix pictograph carousel"
-            placeholder={railPlaceholder}
-            error={railLoadError}
-            props={{
-              sequence: railRealization.seq,
-              includeStartPosition: false,
-              currentStep: visibleStep,
-              bpm: animationState.bpm,
-              density: "compact",
-              fillHeight: true,
-              anchor: "center",
-              orientation: "horizontal",
-              loop: true,
-              leftPropType: propType,
-              rightPropType: propType,
-              propElementalType: railPropElementalType,
-              stepPulse: false,
-              staggerCellUpdates: true,
-            }}
-          />
-        {:else if railRealization}
-          <p class="quarter-status">
-            Level 4 pictograph are in visual calibration.
-          </p>
-        {/if}
-      </div>
-    {/if}
-
+    <div
+      class="strip-zone"
+      data-drill-region="strip"
+      role="group"
+      aria-label="Pictograph timeline"
+      use:claimedViewTransitionName={{
+        name: SHAPE_MATRIX_STRIP_NAME,
+        enabled: morphingFrames,
+      }}
+      transition:growFade={{ axis: "y" }}
+    >
+      {#if railRealization && pictographRailReady}
+        <LazyMount
+          loader={() => import("$lib/shared/timeline/StepStrip.svelte")}
+          active={true}
+          keepAlive={false}
+          debugName="shape matrix pictograph carousel"
+          placeholder={railPlaceholder}
+          error={railLoadError}
+          props={{
+            sequence: railRealization.seq,
+            includeStartPosition: false,
+            currentStep: visibleStep,
+            bpm: animationState.bpm,
+            density: "compact",
+            fillHeight: true,
+            anchor: "center",
+            orientation: "horizontal",
+            loop: true,
+            leftPropType: propType,
+            rightPropType: propType,
+            propElementalType: railPropElementalType,
+            stepPulse: false,
+            staggerCellUpdates: true,
+          }}
+        />
+      {:else if railRealization}
+        <p class="quarter-status">
+          Level 4 pictograph are in visual calibration.
+        </p>
+      {/if}
+    </div>
   </div>
+
+  {#if compactSettingsOpen}
+    <div
+      class="compact-settings"
+      role="dialog"
+      aria-label="Animation settings"
+      tabindex="-1"
+      bind:this={compactSettingsElement}
+      onkeydown={onCompactSettingsKeydown}
+    >
+      <header class="compact-settings-header">
+        <strong>Animation settings</strong>
+        <button
+          type="button"
+          onclick={closeCompactSettings}
+          aria-label="Close settings"
+        >
+          <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
+      </header>
+      <div class="compact-settings-body">
+        <AnimationPanel
+          isExporting={false}
+          layout="bottom"
+          presentation="content"
+          controlledSection={animationState.activeSection}
+          isPlaying={animationState.playing}
+          bpm={animationState.bpm}
+          playbackMode={animationState.playbackMode}
+          onPlaybackToggle={animationState.togglePlaying}
+          onPlaybackModeChange={animationState.setPlaybackMode}
+          onBpmChange={animationState.setBpm}
+          showEffectsPlayback={false}
+          selectedPropType={propType}
+          onPropChange={onproptypechange}
+          sequence={captionRealization?.seq ?? null}
+          showPathShape={false}
+          showMotionVisibility={true}
+          regionLabel="Shape animation settings"
+        />
+      </div>
+    </div>
+  {/if}
 
   <!-- The control bar is below the stage, not inside it. It settles in as the
        last frame of the wave rather than arriving complete under the flight. -->
@@ -1313,6 +1398,8 @@
     <AnimationPanel
       isExporting={false}
       layout="bottom"
+      presentation={appState ? "navigation" : "full"}
+      controlledSection={appState ? animationState.activeSection : undefined}
       isPlaying={animationState.playing}
       bpm={animationState.bpm}
       playbackMode={animationState.playbackMode}
@@ -1353,6 +1440,7 @@
   /* Fills whatever height its host gives it: the route's .drill-pane is a
      fixed-height flex box (matched to the matrix stage on wide screens). */
   .drill {
+    position: relative;
     height: 100%;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto auto;
@@ -1609,6 +1697,46 @@
     min-width: 0;
     min-height: 0;
   }
+  .compact-settings {
+    position: absolute;
+    z-index: 8;
+    inset-inline: 0;
+    bottom: 3.65rem;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: min(52%, 20rem);
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    border-radius: 14px 14px 0 0;
+    background:
+      linear-gradient(
+        var(--theme-panel-bg, rgb(16 23 33 / 0.96)),
+        var(--theme-panel-bg, rgb(16 23 33 / 0.96))
+      ),
+      var(--theme-bg-deep, #0a0f14);
+    box-shadow: 0 -0.75rem 2rem var(--theme-shadow, rgb(0 0 0 / 0.4));
+  }
+  .compact-settings-header {
+    display: flex;
+    min-height: var(--min-touch-target, 44px);
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 0.85rem 0.35rem;
+    border-bottom: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    font-size: var(--font-size-min, 0.875rem);
+  }
+  .compact-settings-header button {
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    border: 0;
+    background: transparent;
+    color: var(--theme-text, #fff);
+    cursor: pointer;
+  }
+  .compact-settings-body {
+    min-height: 0;
+    overflow: hidden;
+  }
   .select-action {
     grid-area: action;
     min-height: var(--min-touch-target, 44px);
@@ -1667,11 +1795,8 @@
       grid-area: action;
     }
 
-    .drill.controls-open {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas:
-        "media"
-        "controls";
+    .compact-settings {
+      inset-inline-start: calc(18rem + 0.8rem);
     }
   }
 </style>

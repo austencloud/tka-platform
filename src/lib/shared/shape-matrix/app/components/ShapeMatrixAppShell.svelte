@@ -7,10 +7,7 @@
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
-  import {
-    KINETIC_SHAPE_ENGINE_NAME,
-    ORIGINAL_SHAPE_MATRIX_URL,
-  } from "../shape-engine-identity";
+  import { KINETIC_SHAPE_ENGINE_NAME } from "../shape-engine-identity";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import { createShapeMatrixAnimationState } from "../state/shape-matrix-animation-state.svelte";
@@ -20,7 +17,6 @@
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import ShapeMatrixDetailPane from "./ShapeMatrixDetailPane.svelte";
   import ShapeMatrixMatrixPane from "./ShapeMatrixMatrixPane.svelte";
-  import ShapeMatrixOverflowMenu from "./ShapeMatrixOverflowMenu.svelte";
   import ShapeMatrixTurnPopover from "./ShapeMatrixTurnPopover.svelte";
   import ShapeMatrixSurfaceControl from "./ShapeMatrixSurfaceControl.svelte";
   import ShapeMatrixTheoryDetail from "./ShapeMatrixTheoryDetail.svelte";
@@ -39,8 +35,8 @@
 
   const { variant = "standalone" }: Props = $props();
   const appState = getShapeMatrixAppContext();
-  // The hero's animation state lives here, above both panes, so the compact
-  // topbar can host the relationships toggle the wide detail heading shows.
+  // The hero's animation state lives here, above both panes, so both surfaces
+  // share one animation scope while their workspaces crossfade.
   const animationState = setShapeMatrixAnimationContext(
     createShapeMatrixAnimationState()
   );
@@ -353,10 +349,6 @@
     {:else if variant === "standalone"}
       <div class="identity">
         <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
-        {#if !theory}
-          <span class="identity-note">Explore hand paths across Levels 1–4</span
-          >
-        {/if}
       </div>
     {/if}
 
@@ -427,48 +419,16 @@
             <i class="fas fa-arrow-right" aria-hidden="true"></i>
           </button>
         {/if}
-        <!-- Only while a control section covers the relationships: the button
-             is the way back to them, so it has nothing to do when they are
-             already showing, and it never competes with Matrix for the tap.
-             Both surfaces mount the element row above the same dock, so both
-             lose it to an open panel and both need the way back. -->
-        {#if appState.activeView === "detail" && animationState.activeSection !== null}
-          <button
-            type="button"
-            class="top-action relationships-action"
-            aria-label="Back to element relationships"
-            onclick={animationState.showRelationships}
-            transition:growFade={{ axis: "x", x: 4 }}
-          >
-            <i class="fas fa-shapes" aria-hidden="true"></i>
-            <span>Relationships</span>
-          </button>
-        {/if}
-        <ShapeMatrixOverflowMenu />
-      {:else}
-        <a
-          class="top-action source-action"
-          href={ORIGINAL_SHAPE_MATRIX_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Open Lorq Nichols’ original 144 Shape Matrix"
-        >
-          <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-          <!-- The fuller identity line yields below 1600px to protect the
-               control ribbon. Keep the visible action itself attributable so
-               that breakpoint never reduces Lorq's work to a generic source. -->
-          <span>Lorq Nichols’ original</span>
-        </a>
-        <button
-          class="top-action"
-          type="button"
-          aria-label={`About ${KINETIC_SHAPE_ENGINE_NAME}`}
-          onclick={appState.openAbout}
-        >
-          <i class="fas fa-circle-info" aria-hidden="true"></i>
-          <span>About</span>
-        </button>
       {/if}
+      <button
+        class="top-action"
+        type="button"
+        aria-label={`About ${KINETIC_SHAPE_ENGINE_NAME}`}
+        onclick={appState.openAbout}
+      >
+        <i class="fas fa-circle-info" aria-hidden="true"></i>
+        {#if !appState.compact}<span>About</span>{/if}
+      </button>
     </div>
   </header>
 
@@ -577,15 +537,6 @@
     text-overflow: ellipsis;
   }
 
-  /* Preserve the existing action footprint while giving the attributed source
-     label enough text width to render Lorq's name without an ellipsis. */
-  .source-action {
-    /* Lorq's name and "original" run past the shared 11rem cap at this
-       font, so the button ellipsized at every width. */
-    max-width: 12.5rem;
-    padding-inline: 0.6rem;
-  }
-
   .top-action:hover {
     color: var(--theme-text, #fff);
     border-color: color-mix(
@@ -640,24 +591,13 @@
 
   .identity {
     grid-area: identity;
-    display: flex;
-    align-items: baseline;
-    gap: 0.65rem;
     min-width: 0;
   }
 
   .identity strong {
-    font-size: 1.05rem;
-    font-weight: 700;
+    font-size: 1.2rem;
+    font-weight: 750;
     letter-spacing: 0.005em;
-    white-space: nowrap;
-  }
-
-  .identity-note {
-    display: grid;
-    overflow: hidden;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.68));
-    font-size: var(--font-size-min, 0.875rem);
     white-space: nowrap;
   }
 
@@ -835,12 +775,10 @@
   }
 
   /* The narrowest wide hosts (small laptops, just above the compact seam):
-     the title, the Explore-and-Difficulty pair, and two labelled actions add
-     up to more than the row. The actions keep their glyph and aria-label and
-     drop the word until the row can hold it; the seam is where the title
-     floor, the widest control pair (level 4), and both worded
-     actions fit together. The height clause keeps this out of the compact
-     tier, whose Detail and Relationships pills need their words. */
+     the title, the Explore-and-Difficulty pair, and About add up to more than
+     the row. About keeps its glyph and aria-label and drops the word until the
+     row can hold it. The height clause keeps this out of the compact tier,
+     whose Detail pill needs its word. */
   @container shape-matrix-app (75rem <= width < 84.5rem) and (height >= 42rem) {
     .top-actions .top-action {
       max-width: none;
@@ -850,20 +788,6 @@
     .top-actions .top-action span {
       display: none;
     }
-  }
-
-  /* The identity line can afford its note once the header no longer shares
-     its row with a ratio instrument; the recipe bar carries that now. */
-  @container shape-matrix-app (min-width: 112rem) and (min-height: 42rem) {
-    .shape-app.theory .identity {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.15rem;
-    }
-  }
-
-  .relationships-action i {
-    color: var(--theme-accent, #f59e0b);
   }
 
   .compact-detail-action {
@@ -958,27 +882,10 @@
       gap: 0.3rem;
     }
   }
-  @container shape-matrix-app (max-width: 99.99rem) {
-    .identity > .identity-note {
-      display: none;
-    }
-  }
-
-
-  /* Phone widths: the relationships pill keeps its glyph and aria-label and
-     drops the word so the turn chip beside it never clips. */
   @container shape-matrix-app (max-width: 30rem) {
     /* The chip already names the surface; a title that truncates to
        "Sha..." beside it is noise. */
     .compact-context > strong {
-      display: none;
-    }
-
-    .relationships-action {
-      padding-inline: 0;
-    }
-
-    .relationships-action span {
       display: none;
     }
 

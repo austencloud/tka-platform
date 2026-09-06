@@ -86,12 +86,15 @@
     isCanvas2DHostedEffect,
   } from "$lib/shared/effects/services/canvas2d-effect-host";
   import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
+  import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+  import { resolveTheoryPlaybackTick } from "$lib/shared/shape-matrix/services/theory-playback-clock";
 
   interface Props {
     hands: LiveHand[];
     /** Milliseconds for one hand circle. */
     handPeriod?: number;
     paused?: boolean;
+    playbackMode?: PlaybackMode;
     /** Bumping this returns every phase to its start and clears the trails. */
     alignToken?: number;
     /** Prop reach in hand-orbit radii, so the stick matches the real prop. */
@@ -110,6 +113,7 @@
     hands,
     handPeriod = 4000,
     paused = false,
+    playbackMode = "continuous",
     alignToken = 0,
     propReach = PROP_LENGTH,
     tipAngle = 0,
@@ -169,6 +173,9 @@
   let canvas = $state<HTMLCanvasElement | null>(null);
   const runtimes = new Map<string, HandRuntime>();
   const effectHost = createCanvas2DEffectHost();
+  const STEP_PAUSE_MS = 300;
+  let stepClockMs = 0;
+  let previousPlaybackMode: PlaybackMode = playbackMode;
 
   function runtimeFor(hand: LiveHand): HandRuntime {
     let runtime = runtimes.get(hand.id);
@@ -223,10 +230,12 @@
     width: number;
     height: number;
   }
-  const sprites = $state<{ left: PropSprite | null; right: PropSprite | null }>({
-    left: null,
-    right: null,
-  });
+  const sprites = $state<{ left: PropSprite | null; right: PropSprite | null }>(
+    {
+      left: null,
+      right: null,
+    }
+  );
 
   function decodeSvg(
     svg: string,
@@ -298,7 +307,9 @@
       colorCache.set(color, color);
       return color;
     }
-    const declared = getComputedStyle(element).getPropertyValue(match[1]).trim();
+    const declared = getComputedStyle(element)
+      .getPropertyValue(match[1])
+      .trim();
     const resolved = declared || match[2]?.trim() || "#ffffff";
     colorCache.set(color, resolved);
     return resolved;
@@ -331,7 +342,8 @@
     let kept = 0;
     while (kept < runtime.length) {
       const at = (runtime.head - 1 - kept + TRAIL_CAPACITY) % TRAIL_CAPACITY;
-      if (runtime.cycles - runtime.trail[at * TRAIL_STRIDE + 4] > closure) break;
+      if (runtime.cycles - runtime.trail[at * TRAIL_STRIDE + 4] > closure)
+        break;
       kept += 1;
     }
     return kept;
@@ -353,6 +365,11 @@
       const dt = Math.min(now - last, 64);
       last = now;
 
+      if (playbackMode !== previousPlaybackMode) {
+        previousPlaybackMode = playbackMode;
+        stepClockMs = 0;
+      }
+
       if (now - colorsResolvedAt > 1000) {
         colorsResolvedAt = now;
         colorCache.clear();
@@ -367,7 +384,19 @@
        * Reduced motion holds the shape still rather than skipping the draw, so
        * whatever is already on screen stays readable.
        */
-      const advance = paused || media.matches ? 0 : dt;
+      let advance = paused || media.matches ? 0 : dt;
+      if (advance > 0 && playbackMode === "step") {
+        const beatDuration = handPeriod / BEATS_PER_CYCLE;
+        const tick = resolveTheoryPlaybackTick(
+          stepClockMs,
+          dt,
+          beatDuration,
+          STEP_PAUSE_MS,
+          playbackMode
+        );
+        advance = tick.advanceMs;
+        stepClockMs = tick.clockMs;
+      }
       const handTurns = advance / handPeriod;
 
       const vm = scope?.visibility;
