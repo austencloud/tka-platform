@@ -51,6 +51,7 @@
     showCenter?: boolean;
     hitTargetRadius?: number;
     editAfterCompletion?: boolean;
+    dragLocations?: boolean;
     disabled?: boolean;
     leftNoun?: string;
     rightNoun?: string;
@@ -85,6 +86,7 @@
     showCenter = false,
     hitTargetRadius = 75,
     editAfterCompletion = false,
+    dragLocations = false,
     disabled = false,
     leftNoun = "left prop",
     rightNoun = "right prop",
@@ -145,6 +147,7 @@
       getGridMode: () => gridMode,
       getActivePoints: () => activePoints,
       getCanAim: () => canAim,
+      getCanDragLocations: () => dragLocations && !disabled,
       getEditAfterCompletion: () => editAfterCompletion,
       getLeftOrientation: () => leftOrientation,
       getRightOrientation: () => rightOrientation,
@@ -217,6 +220,11 @@
   });
 
   $effect(() => {
+    [resetEpoch, gridMode, disabled];
+    untrack(() => aim.cancelLocationDrag());
+  });
+
+  $effect(() => {
     motion.synchronize();
   });
 
@@ -240,10 +248,12 @@
   }
 
   export function undoPlacement() {
+    aim.cancelLocationDrag();
     placement.undo();
   }
 
   export function resetPlacement() {
+    aim.cancelLocationDrag();
     placement.reset();
   }
 </script>
@@ -280,6 +290,17 @@
     <div
       class="grid-wrapper"
       class:animating={motion.active}
+      class:can-drag-locations={dragLocations}
+      class:grabbed-left={aim.grabbedLocationColor === HandSide.LEFT}
+      class:grabbed-right={aim.grabbedLocationColor === HandSide.RIGHT}
+      class:drop-outside={aim.locationDragColor !== null && !aim.locationTarget}
+      style:--placement-grab-color={aim.grabbedLocationColor === HandSide.RIGHT
+        ? "var(--prop-red)"
+        : "var(--prop-blue)"}
+      class:dragging-left={aim.locationDragColor === HandSide.LEFT}
+      class:dragging-right={aim.locationDragColor === HandSide.RIGHT}
+      style:--placement-drag-x={`${aim.locationDragDelta.x}px`}
+      style:--placement-drag-y={`${aim.locationDragDelta.y}px`}
       bind:this={aim.gridWrapper}
     >
       <div class="pictograph-layer">
@@ -417,6 +438,31 @@
   .pictograph-layer {
     width: 100%;
     height: 100%;
+  }
+
+  .dragging-left :global(.left-prop-svg),
+  .dragging-right :global(.right-prop-svg) {
+    translate: var(--placement-drag-x) var(--placement-drag-y);
+    transition: none;
+  }
+  .dragging-left,
+  .dragging-right {
+    cursor: grabbing;
+  }
+  .grabbed-left :global(.left-prop-svg),
+  .grabbed-right :global(.right-prop-svg) {
+    filter: drop-shadow(0 5px 5px var(--theme-shadow))
+      drop-shadow(0 0 5px var(--placement-grab-color));
+  }
+  .can-drag-locations.grabbed-left :global(.click-target),
+  .can-drag-locations.grabbed-right :global(.click-target) {
+    cursor: grabbing;
+  }
+  .can-drag-locations.drop-outside :global(.click-target) {
+    cursor: not-allowed;
+  }
+  .can-drag-locations :global(.click-target.occupied) {
+    cursor: grab;
   }
 
   /* Props are mid-flight: drag aiming reads live DOM transforms and would

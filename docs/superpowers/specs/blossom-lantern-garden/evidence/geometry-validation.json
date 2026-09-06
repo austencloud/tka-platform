@@ -4,6 +4,12 @@
   "testedMeshes": 56,
   "deckTop": 0.550000011920929,
   "rootWaterIntersections": [],
+  "groundCoverBounds": {
+    "minX": -71.0479965209961,
+    "maxX": 71.11235046386719,
+    "minY": -71.0862808227539,
+    "maxY": 71.06462860107422
+  },
   "maximumRouteGradePercent": {
     "arrival": 3.4999480510343246,
     "service": 3.4488410288956453

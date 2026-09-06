@@ -26,7 +26,7 @@ const entries = Object.entries(AUTH_NUDGE_TEXTS) as [
 ][];
 
 describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
-  it("has exactly the 20 live triggers, including patterns, collections, and sharing", () => {
+  it("includes the live triggers, including the save limit", () => {
     expect(Object.keys(AUTH_NUDGE_TEXTS).sort()).toEqual(
       [
         "step-cap-guest",
@@ -41,6 +41,7 @@ describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
         "patterns-guest",
         "prop-collection",
         "save",
+        "save-limit",
         "saved-setups",
         "share-collection",
         "share-image-signin",
@@ -121,8 +122,8 @@ describe("contextual auth prompt copy", () => {
       body: "A free account keeps it in your library and opens it on any device.",
     });
     expect(getAuthPromptContent("step-cap-guest", "signup")).toMatchObject({
-      title: "Keep adding steps",
-      body: "A free account raises the limit from 8 steps to 64.",
+      title: "Got more moves?",
+      body: "Free account. Up to 64 steps.",
     });
   });
 

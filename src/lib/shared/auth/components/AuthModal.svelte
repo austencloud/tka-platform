@@ -26,15 +26,17 @@
   } from "$lib/shared/auth/services/auth-analytics-bridge";
   import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { authDrawerState } from "../state/auth-drawer-state.svelte";
   import ContextualAuthPrompt from "./ContextualAuthPrompt.svelte";
-  import GoogleOneTap from "./GoogleOneTap.svelte";
+  import type { GuestEncorePrompt } from "../domain/auth-nudge-trigger";
 
   interface Props {
     open: boolean;
     initialMode?: AuthMode;
     reason?: AuthNudgeTrigger | null;
     attempt?: number;
+    encore?: GuestEncorePrompt;
+    onAcceptEncore?: () => void;
     onClose: () => void;
   }
 
@@ -43,6 +45,8 @@
     initialMode = "signup",
     reason = null,
     attempt = 1,
+    encore = null,
+    onAcceptEncore,
     onClose,
   }: Props = $props();
 
@@ -50,7 +54,7 @@
   let facebookError = $state<string | null>(null);
 
   const promptContent = $derived(
-    getAuthPromptContent(reason, authMode, attempt)
+    getAuthPromptContent(reason, authMode, attempt, encore)
   );
   const inAppBrowser = $derived(
     getInAppBrowserDetector().isInAppBrowserOrForced(page.url.searchParams)
@@ -60,6 +64,7 @@
   // that launched it. Provider errors belong only to that encounter.
   $effect(() => {
     if (!open) return;
+    authDrawerState.dismissGuestSaveNudge();
     authMode = initialMode;
     facebookError = null;
   });
@@ -78,12 +83,6 @@
       route: page.url.pathname,
     });
   });
-
-  function handleGoogleOneTapError(error: Error) {
-    trackAuthProviderResult("google_one_tap", "failed", "one_tap_error");
-    console.error("[AuthModal] Google One Tap sign-in failed", error);
-    toast.error("Google sign-in failed. Please try again.");
-  }
 
   async function handleFacebookAuth() {
     facebookError = null;
@@ -105,9 +104,7 @@
 
       if (errorCode === "auth/popup-blocked") {
         facebookError = "Popup was blocked. Please allow popups for this site.";
-      } else if (errorCode === "auth/popup-closed-by-user") {
-        facebookError = "Sign-in cancelled. Please try again.";
-      } else if (errorCode === "auth/cancelled-popup-request") {
+      } else if (interrupted) {
         facebookError = null;
       } else if (
         errorCode === "auth/account-exists-with-different-credential"
@@ -149,17 +146,10 @@
   allowExternalOverlays
   onclose={handleModalDismiss}
 >
-  <GoogleOneTap
-    autoPrompt={open}
-    onSuccess={() => {
-      recordAuthSubmission("google_one_tap", authMode);
-      trackAuthProviderResult("google_one_tap", "completed");
-    }}
-    onError={handleGoogleOneTapError}
-  />
-
   <ContextualAuthPrompt
     content={promptContent}
+    encoreOffer={encore === "offer"}
+    {onAcceptEncore}
     bind:mode={authMode}
     active={open}
     idPrefix="auth-modal"

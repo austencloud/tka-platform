@@ -21,7 +21,7 @@ import type {
 import * as keyDeriverModule from "./thumbnail-key-deriver";
 import {
   ThumbnailRenderTimeoutError,
-  type ThumbnailRenderQueue,
+  ThumbnailRenderQueue,
 } from "./thumbnail-render-queue";
 import type { ThumbnailRenderer } from "$lib/shared/browse/services/thumbnail-renderer";
 import * as cloudCacheModule from "$lib/shared/browse/services/cloud-thumbnail-cache";
@@ -61,6 +61,12 @@ export interface ThumbnailRequest {
 
   /** Cancels only this caller; shared same-key rendering continues for others. */
   signal?: AbortSignal;
+
+  /** Gallery previews may reuse a QR image, but must not prepare scan assets. */
+  qrPolicy?: "generate" | "cache-only" | "background";
+
+  /** Paint a separately cached preview while its QR version is prepared. */
+  onPreview?: (preview: ThumbnailResult) => void;
 }
 export interface ThumbnailResult {
   /** URL to display (either cloud URL or blob URL), null if render failed */
@@ -272,6 +278,7 @@ function uploadToCloud(
 export class ThumbnailRenderOrchestrator {
   private completedCount = 0;
   private memoryCache = new MemoryUrlCache();
+  private backgroundQueue = new ThumbnailRenderQueue();
 
   // Generation counter: bumped when all caches are nuked.
   // Any thumbnail rendered before this generation is stale.
@@ -288,7 +295,9 @@ export class ThumbnailRenderOrchestrator {
     private renderer: ThumbnailRenderer,
     private localCache: ThumbnailLocalCache,
     private metrics?: ThumbnailMetricsCollector
-  ) {}
+  ) {
+    this.backgroundQueue.setMaxConcurrent(1);
+  }
 
   /**
    * Register an in-flight cloud upload. Called by the module-level upload
@@ -340,6 +349,44 @@ export class ThumbnailRenderOrchestrator {
   }
 
   async getThumbnail(request: ThumbnailRequest): Promise<ThumbnailResult> {
+    if (request.qrPolicy !== "background") return this.loadThumbnail(request);
+
+    const preview = await this.loadThumbnail({
+      ...request,
+      qrPolicy: "cache-only",
+    });
+    if (
+      !preview.url ||
+      preview.key.inputs.visibility?.showQRCode ||
+      !request.input.visibility?.showQRCode
+    ) {
+      return preview;
+    }
+    if (request.signal?.aborted) throw cancellationError(request.signal);
+    request.onPreview?.(preview);
+
+    // The preview stays visible, without a loading overlay. Only one QR warm
+    // runs at a time, on a separate queue that cannot block new preview jobs.
+    const final = await this.loadThumbnail(
+      {
+        ...request,
+        qrPolicy: "generate",
+        onStatusChange: undefined,
+      },
+      undefined,
+      this.backgroundQueue
+    );
+    if (final.cacheWriteSkippedReason && final.url?.startsWith("blob:")) {
+      URL.revokeObjectURL(final.url);
+    }
+    return final.url && !final.cacheWriteSkippedReason ? final : preview;
+  }
+
+  private async loadThumbnail(
+    request: ThumbnailRequest,
+    continuedRequestId?: string,
+    renderQueue: ThumbnailRenderQueue = this.queue
+  ): Promise<ThumbnailResult> {
     const key = keyDeriverModule.deriveKey(request.input);
     const cloudKey = this.buildCloudKey(key);
 
@@ -356,6 +403,7 @@ export class ThumbnailRenderOrchestrator {
 
     // Start metrics tracking
     const requestId =
+      continuedRequestId ??
       this.metrics?.startRequest(true, {
         cacheKeyHash: key.hash,
         sequenceId: request.sequence.id || key.inputs.sequenceId || null,
@@ -371,7 +419,8 @@ export class ThumbnailRenderOrchestrator {
         queueDepthAtEnqueue: null,
         activeAtEnqueue: null,
         workerEligible: null,
-      }) ?? "";
+      }) ??
+      "";
     const assertRequestActive = () => {
       if (!request.signal?.aborted) return;
       this.metrics?.cancelRequest(requestId);
@@ -474,13 +523,38 @@ export class ThumbnailRenderOrchestrator {
       }
     }
 
+    if (
+      request.qrPolicy === "cache-only" &&
+      key.inputs.visibility?.showQRCode
+    ) {
+      // Preparing a new QR verifies every scan cell in both themes. That can
+      // take tens of seconds per card and serialize an entire scrolled gallery.
+      // Load a separately keyed preview instead. Warmers
+      // and full-card callers still use the complete, scannable render path.
+      const previewInput = {
+        ...request.input,
+        visibility: { ...request.input.visibility, showQRCode: false },
+      };
+      this.metrics?.updateRequestContext(requestId, {
+        cacheKeyHash: keyDeriverModule.deriveKey(previewInput).hash,
+        qrRequested: false,
+      });
+      return this.loadThumbnail(
+        {
+          ...request,
+          input: previewInput,
+        },
+        requestId
+      );
+    }
+
     // Step 5: Need to render - queue to throttle concurrent renders
     request.onStatusChange?.({ state: "queued", position: 0 });
     const queueStartTime = performance.now();
     this.metrics?.startStage(requestId, "queue_wait");
 
     // Track queue depth
-    const queueStats = this.queue.getStats();
+    const queueStats = renderQueue.getStats();
     this.metrics?.recordQueueState(requestId, queueStats);
     assertRequestActive();
 
@@ -489,9 +563,12 @@ export class ThumbnailRenderOrchestrator {
     let executedThisRequest = false;
 
     try {
-      const result = await this.queue.enqueue(
+      const result = await renderQueue.enqueue(
         key.hash,
         async (signal, reportActivity) => {
+          if (renderQueue === this.backgroundQueue) {
+            await this.waitForPreviewQueue(signal, reportActivity);
+          }
           executedThisRequest = true;
           reportActivity();
           queueWaitTime = performance.now() - queueStartTime;
@@ -640,10 +717,47 @@ export class ThumbnailRenderOrchestrator {
 
   cancel(key: Pick<ThumbnailCacheKey, "hash">): void {
     this.queue.cancel(key.hash);
+    this.backgroundQueue.cancel(key.hash);
   }
 
   cancelAll(): void {
     this.queue.cancelAll();
+    this.backgroundQueue.cancelAll();
+  }
+
+  getBackgroundQueueStats(): { queued: number; active: number } {
+    const { queued, active } = this.backgroundQueue.getStats();
+    return { queued, active };
+  }
+
+  private waitForPreviewQueue(
+    signal: AbortSignal,
+    reportActivity: () => void
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const cleanup = () => {
+        clearTimeout(timer);
+        signal.removeEventListener("abort", onAbort);
+      };
+      const onAbort = () => {
+        cleanup();
+        reject(cancellationError(signal));
+      };
+      const check = () => {
+        if (signal.aborted) return onAbort();
+        const { active, queued } = this.queue.getStats();
+        if (!active && !queued) {
+          cleanup();
+          resolve();
+        } else {
+          reportActivity();
+          timer = setTimeout(check, 100);
+        }
+      };
+      signal.addEventListener("abort", onAbort, { once: true });
+      check();
+    });
   }
 
   getQueueStats(): { queued: number; active: number; completed: number } {

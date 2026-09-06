@@ -5,6 +5,7 @@
   import type { PropPlacementAimState } from "../state/prop-placement-aim-state.svelte";
   import type { PropPlacementState } from "../state/prop-placement-state.svelte";
   import { HandSide } from "../../shared/domain/enums/pictograph-enums";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   interface Props {
     placement: PropPlacementState;
@@ -47,16 +48,23 @@
   onpointermove={aim.handlePointerMove}
   onpointerup={aim.handlePointerUp}
   onpointercancel={aim.handlePointerCancel}
+  onblur={aim.cancelLocationDrag}
+  onkeydown={aim.handleEscape}
 />
 
 <svg
   viewBox="0 0 950 950"
   class="interaction-overlay"
+  class:location-grabbed={aim.grabbedLocationColor !== null}
+  style:--landing-duration={`${DURATION.dramatic}ms`}
+  role="group"
+  aria-label="Placement points"
+  onpointerdown={aim.handleBoardPointerDown}
   bind:this={aim.overlayElement}
 >
   <g class="touch-indicators">
     {#each activePoints as point (point.location)}
-      {#if placement.canPlace}
+      {#if placement.canPlace && aim.grabbedLocationColor === null}
         <circle
           cx={point.x}
           cy={point.y}
@@ -75,6 +83,74 @@
       {/if}
     {/each}
   </g>
+
+  {#if aim.grabbedLocationColor !== null && aim.locationDragCenter}
+    {@const color =
+      aim.grabbedLocationColor === HandSide.RIGHT
+        ? "var(--prop-red)"
+        : "var(--prop-blue)"}
+    <g class="location-drag-feedback" aria-hidden="true" style:color>
+      {#each activePoints as point (point.location)}
+        <circle cx={point.x} cy={point.y} r="48" class="drop-option" />
+      {/each}
+      {#if aim.locationDragColor !== null && aim.locationDragOrigin}
+        <circle
+          cx={aim.locationDragOrigin.x}
+          cy={aim.locationDragOrigin.y}
+          r="32"
+          class="drag-origin"
+        />
+      {/if}
+      <circle
+        cx={aim.locationDragCenter.x}
+        cy={aim.locationDragCenter.y}
+        r="65"
+        class="grab-ring"
+      />
+      {#if aim.locationTarget}
+        <line
+          x1={aim.locationDragCenter.x}
+          y1={aim.locationDragCenter.y}
+          x2={aim.locationTarget.x}
+          y2={aim.locationTarget.y}
+          class="snap-guide"
+        />
+        <circle
+          cx={aim.locationTarget.x}
+          cy={aim.locationTarget.y}
+          r="48"
+          class="drop-target-contrast"
+        />
+        <circle
+          cx={aim.locationTarget.x}
+          cy={aim.locationTarget.y}
+          r="48"
+          class="drop-target"
+        />
+        <circle
+          cx={aim.locationTarget.x}
+          cy={aim.locationTarget.y}
+          r="10"
+          class="drop-center"
+        />
+      {/if}
+    </g>
+  {/if}
+
+  {#if aim.landing}
+    {#key aim.landing}
+      <circle
+        cx={aim.landing.point.x}
+        cy={aim.landing.point.y}
+        r="54"
+        class="drop-landing"
+        aria-hidden="true"
+        stroke={aim.landing.color === HandSide.RIGHT
+          ? "var(--prop-red)"
+          : "var(--prop-blue)"}
+      />
+    {/key}
+  {/if}
 
   {#if aim.highlightColor && aim.dragHand === null && aim.hoverOutline}
     <polygon
@@ -127,6 +203,7 @@
         fill="transparent"
         class="click-target"
         class:tappable={aim.isPressable(point.location)}
+        class:occupied={isLeftAt(point.location) || isRightAt(point.location)}
         onpointerdown={(event) => aim.handlePointerDown(event, point.location)}
         onpointermove={(event) => aim.updateHover(event, point.location)}
         onpointerleave={aim.clearHover}
@@ -217,6 +294,65 @@
   .point-glow {
     opacity: 0.15;
     animation: pulse-glow 1.5s ease-in-out infinite;
+  }
+
+  .location-drag-feedback {
+    pointer-events: none;
+  }
+  .drop-option {
+    fill: none;
+    stroke: var(--theme-text);
+    stroke-width: 3;
+    opacity: 0.3;
+  }
+  .drag-origin {
+    fill: currentColor;
+    opacity: 0.18;
+  }
+  .grab-ring {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 5;
+    opacity: 0.75;
+  }
+  .snap-guide {
+    stroke: currentColor;
+    stroke-width: 3;
+    opacity: 0.6;
+  }
+  .drop-target-contrast {
+    fill: none;
+    stroke: var(--theme-text);
+    stroke-width: 12;
+  }
+  .drop-target {
+    fill: color-mix(in srgb, currentColor 16%, transparent);
+    stroke: currentColor;
+    stroke-width: 7;
+  }
+  .drop-center {
+    fill: currentColor;
+  }
+  .drop-landing {
+    fill: none;
+    stroke-width: 10;
+    transform-box: fill-box;
+    transform-origin: center;
+    pointer-events: none;
+    animation: landing-ring var(--landing-duration) var(--ease-out) both;
+  }
+  @keyframes landing-ring {
+    from {
+      opacity: 0.9;
+      scale: 0.9;
+    }
+    to {
+      opacity: 0;
+      scale: 1.5;
+    }
+  }
+  .interaction-overlay.location-grabbed .click-target:hover {
+    fill: transparent;
   }
 
   .point-solid {
@@ -318,6 +454,11 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .drop-landing {
+      display: none;
+      animation: none;
+      opacity: 0;
+    }
     .point-glow {
       animation: none;
       opacity: 0.2;
@@ -336,5 +477,10 @@
       animation: none;
       opacity: 0.55;
     }
+  }
+  :global([data-motion-preference="reduce"]) .drop-landing {
+    display: none;
+    animation: none;
+    opacity: 0;
   }
 </style>

@@ -2,6 +2,66 @@
 
 Scope: the shipped hand-positions experience, not a repository-wide code-quality grade.
 
+## Drag feedback and unambiguous completion
+
+Austen's next September 5 review found insufficient visual response during
+dragging and mistook the completed progress line below Beta for selection.
+This revision remains pending hands-on acceptance.
+
+The existing PropPlacementGrid location-drag path now shows a hand-colored
+pickup ring and shadow, legal destinations, an origin marker, and a contrasting
+nearest-target ring linked to the moving hand. The canonical hand stays attached
+to the pointer. Preview and commit share one nearest-point decision; release
+commits once and briefly marks the landing. Escape, pointer cancellation, and
+out-of-board release restore the original construction without adding history.
+Reduced motion retains immediate hand/target feedback and suppresses the landing
+animation. No new gesture owner, renderer, toolbar, or lesson layout is added;
+orientation aiming remains separate. Completed practice no longer renders its
+progress bar beneath the reference choices.
+
+Browser checks on the task preview cover both hand colors, overlapping Beta
+hands, pointer tracking, target preview, landing fade, Undo, Escape/outside
+cancellation, all six rounds, and completion clear/rebuild. Seven CSS viewport
+tiers from 375×667 through 3840×2160 plus the reported 1660×1540 pane show no
+horizontal overflow. Phone and tall-pane held-drag states were inspected.
+Reduced-motion inspection caught a global animation override; the landing
+decoration is now explicitly hidden in that mode while static drag cues remain.
+Native touch injection is unavailable; physical touch remains unverified.
+The 32 focused placement/workshop tests pass using the repository Vitest config,
+including preview/commit agreement, target-change haptics, and cancellation.
+
+## Completion playground and direct dragging
+
+Austen accepted the lower-control-load revision, then found that clearing and
+rebuilding after completion stopped identifying the current position. He asked
+for direct hand dragging and an immediate Box/Diamond choice on that page.
+
+Completion now retains its Continue action and six completed builds while the
+board keeps reporting Alpha, Beta, or Gamma. The existing grid-mode control sits
+above the board; changing mode rotates the actual pair, including an incomplete
+pair, instead of substituting an example. Matching examples share the current
+mode, highlight the current relationship, and can load a new construction.
+The separate Keep exploring gate is removed. This continues the same Teacher
+pilot; the new revision remains pending hands-on acceptance.
+
+Ownership stays with PropPlacementGrid and its placement/aim state. Location
+dragging is opt-in, distinct from orientation aiming, and commits through the
+existing placement/history owner only on release. The canonical rendered hand
+follows the pointer; cancelled and out-of-board drags leave history unchanged.
+Tap and keyboard editing remain available. Position labels use TKAWordGlyph and
+Crossfade, references use PictographContainer, and mode choice uses the existing
+SegmentedControl. No new renderer, persistence owner, or progression timer.
+
+Verification: 31 focused tests pass, including grid-mode round trips, completion
+retention after clearing, single-commit drag history, cancellation/reset/outside
+release, and separation from orientation aiming. Browser checks cover all six
+rounds, completion clear/rebuild, live classification, mouse drag tracking/drop,
+undo, independently selecting both overlapping hands, reload, reduced-motion
+editing, and keyboard editing. The Svelte check reports zero errors and warnings.
+Seven CSS viewport
+tiers from 375×667 to 3840×2160 show no horizontal overflow. Native touch-event
+injection is unavailable in the in-app browser; physical touch remains unverified.
+
 ## Visual correction and lower control load
 
 Austen liked the achievement/progression flow but could not recognize a wrong

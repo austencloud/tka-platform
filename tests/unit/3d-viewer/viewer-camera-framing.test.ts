@@ -97,6 +97,13 @@ describe("viewer camera framing", () => {
 
   it("accepts only finite, controllable persisted poses", () => {
     expect(
+      isValidViewerCameraPose(
+        { x: -1.371, y: 27.44, z: -70.88 },
+        { x: -1.367, y: 27.09, z: -69.943 },
+        50
+      )
+    ).toBe(true);
+    expect(
       isValidViewerCameraPose({ x: 0, y: 2, z: 8 }, { x: 0, y: 0, z: 0.3 }, 50)
     ).toBe(true);
     expect(

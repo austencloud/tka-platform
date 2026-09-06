@@ -124,6 +124,12 @@
     <div class="rail-separator" aria-hidden="true"></div>
 
     <div class="rail-group" role="group" aria-label="Camera and scene">
+      <SceneChromeButton
+        icon="fa-crosshairs"
+        label="Focus avatar"
+        disabled={viewer.performerManager.performers.length === 0}
+        onclick={() => viewer.focusSelectedPerformers()}
+      />
       {#each shotTools as tool}
         <SceneChromeButton
           icon={tool.icon}

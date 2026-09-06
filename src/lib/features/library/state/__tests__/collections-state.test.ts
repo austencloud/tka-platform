@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   toastWarning: vi.fn(),
   showToast: vi.fn(),
   authDrawerShow: vi.fn(),
+  offerGuestSaveNudge: vi.fn(),
   previewReadOnly: false,
   authState: {
     user: { uid: "admin" },
@@ -56,7 +57,10 @@ vi.mock("$lib/shared/debug/state/user-preview-state.svelte", () => ({
   isPreviewReadOnly: () => mocks.previewReadOnly,
 }));
 vi.mock("$lib/shared/auth/state/auth-drawer-state.svelte", () => ({
-  authDrawerState: { show: mocks.authDrawerShow },
+  authDrawerState: {
+    show: mocks.authDrawerShow,
+    offerGuestSaveNudge: mocks.offerGuestSaveNudge,
+  },
 }));
 vi.mock("$lib/shared/auth/firebase", () => ({
   getFirestoreInstance: vi.fn().mockResolvedValue({}),
@@ -179,12 +183,13 @@ describe("collectionsState", () => {
     expect(mocks.addSequenceToCollection).not.toHaveBeenCalled();
   });
 
-  it("lets guests add public sequences and nudges only after the first successful save", async () => {
+  it("lets guests add public sequences and delegates optional prompts only after successful saves", async () => {
     mutableAuth.isAnonymous = true;
     collectionsState.collections = [col("c1", "Practice")];
     mocks.addSequenceToCollection.mockRejectedValueOnce(new Error("offline"));
 
     await collectionsState.toggle("public-sequence", "c1");
+    expect(mocks.offerGuestSaveNudge).not.toHaveBeenCalled();
     expect(mocks.showToast).not.toHaveBeenCalled();
     expect(mocks.authDrawerShow).not.toHaveBeenCalled();
 
@@ -194,10 +199,9 @@ describe("collectionsState", () => {
       "c1",
       "another-public-sequence"
     );
-    expect(mocks.showToast).toHaveBeenCalledOnce();
+    expect(mocks.offerGuestSaveNudge).toHaveBeenCalledTimes(2);
     expect(mocks.authDrawerShow).not.toHaveBeenCalled();
-    const nudge = mocks.showToast.mock.calls[0]![0];
-    expect(nudge.type).toBe("success");
+    const nudge = mocks.offerGuestSaveNudge.mock.calls[0]![0];
     expect(nudge.action.label).toBe("Create account");
     nudge.action.onClick();
     expect(mocks.authDrawerShow).toHaveBeenCalledWith("signup");
@@ -207,6 +211,7 @@ describe("collectionsState", () => {
     collectionsState.collections = [col("c1", "Practice")];
     await collectionsState.toggle("public-sequence", "c1");
     expect(mocks.showToast).not.toHaveBeenCalled();
+    expect(mocks.offerGuestSaveNudge).not.toHaveBeenCalled();
   });
 
   it("toggle blocks an add when the collection is full and toasts", async () => {
@@ -375,7 +380,7 @@ describe("collectionsState", () => {
     const ok = await collectionsState.setPublic("c1", true);
     expect(ok).toBe(false);
     expect(mocks.updateCollection).not.toHaveBeenCalled();
-    expect(mocks.toastInfo).toHaveBeenCalled();
+    expect(mocks.toastInfo).not.toHaveBeenCalled();
     expect(mocks.authDrawerShow).toHaveBeenCalledWith(
       "signup",
       "edit-community"

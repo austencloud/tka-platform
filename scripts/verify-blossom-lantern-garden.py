@@ -56,6 +56,14 @@ for obj in bpy.context.scene.objects:
     if water_hits:
         root_water_hits.append({'object':obj.name,'rootVerticesInWater':water_hits})
 failures.extend(root_water_hits)
+
+# The previous grass batch stopped around 36m, revealing bare outer terrain.
+understory=bpy.data.objects['Amphitheatre_Understory']
+cover_points=[understory.matrix_world @ v.co for v in understory.data.vertices]
+cover_bounds={'minX':min(p.x for p in cover_points),'maxX':max(p.x for p in cover_points),
+              'minY':min(p.y for p in cover_points),'maxY':max(p.y for p in cover_points)}
+if any(cover_bounds[k]>-68 for k in ('minX','minY')) or any(cover_bounds[k]<68 for k in ('maxX','maxY')):
+    failures.append({'groundCoverEndsTooEarly':cover_bounds})
 deck=bpy.data.objects['Stage_Planks']
 deck_top=max((deck.matrix_world @ vertex.co).z for vertex in deck.data.vertices)
 if abs(deck_top-.55)>.0001:failures.append({'stageDeckTop':deck_top})
@@ -65,7 +73,7 @@ for path in plan['circulation']['paths']:
                            for a,b in zip(path['centerline'],path['centerline'][1:]) if math.dist(a[:2],b[:2])>.001)
     if grades[path['id']]>5.01:failures.append({'routeGrade':grades[path['id']]})
 report={'valid':not failures,'failures':failures,'testedMeshes':tested,'deckTop':deck_top,
-        'rootWaterIntersections':root_water_hits,
+        'rootWaterIntersections':root_water_hits,'groundCoverBounds':cover_bounds,
         'maximumRouteGradePercent':grades,'pathHeadroomMetres':2.4,'samplingAllowanceMetres':.05,
         'scope':'Actual mesh vertices; path checks exclude objects below 0.25m above walking grade. Root-water checks cover the first 1.4m above each tree base.'}
 output=ROOT/'docs/superpowers/specs/blossom-lantern-garden/evidence/geometry-validation.json'

@@ -292,11 +292,6 @@ export function createSavePanelState(deps: SavePanelDeps) {
     if (!saveName || !sequence || isMixed) return;
 
     if (isSolo && !authState.isFullAccount) {
-      showToast({
-        message: "Create an account to keep solo choreography in your library.",
-        type: "info",
-        duration: 6000,
-      });
       authDrawerState.show("signup", "save");
       return;
     }
@@ -474,18 +469,18 @@ export function createSavePanelState(deps: SavePanelDeps) {
         postSaveActivation.onGuestSaveSucceeded(result.sequenceId);
       }
     } catch (error) {
+      // The save service already opened the account prompt for this limit.
+      if (error instanceof LibraryError && error.code === "GUEST_CAP") return;
       logger.error("Failed to save sequence:", error);
       saveStep = 0;
       const message =
         error instanceof LibraryError && error.code === "ALREADY_EXISTS"
           ? "This exact sequence is already in your library."
-          : error instanceof LibraryError && error.code === "GUEST_CAP"
-            ? "Guest save limit reached - create a free account to save more."
-            : error instanceof LibraryError && error.code === "PERSIST_FAILED"
-              ? "Couldn't save this sequence - local storage write failed. Try again."
-              : error instanceof Error
-                ? `Couldn't save this sequence: ${error.message}`
-                : "Couldn't save this sequence. Please try again.";
+          : error instanceof LibraryError && error.code === "PERSIST_FAILED"
+            ? "Couldn't save this sequence - local storage write failed. Try again."
+            : error instanceof Error
+              ? `Couldn't save this sequence: ${error.message}`
+              : "Couldn't save this sequence. Please try again.";
       showToast({ message, type: "error", duration: 6000 });
     } finally {
       isSaving = false;

@@ -1,0 +1,35 @@
+{
+  "checkedAt": "2026-09-06T03:53:30.771Z",
+  "assetSha256": "d318b56f5cd430c7e50c2a2a9978b165524217f979efedd062b64ddc7c0e08e3",
+  "scope": "Actual viewer screenshots at 1280x720; close and distant ground-cover endpoints, plus accepted opening composition.",
+  "views": [
+    {
+      "name": "ground-refinement-close",
+      "url": "https://localhost:5173/test/viewer-3d?scene=blossom&perf=1&review=matte-meadow-final&cam=0.000%2C0.500%2C-18.000&look=0.000%2C0.600%2C1.000&fov=50",
+      "viewport": [
+        1280,
+        720
+      ]
+    },
+    {
+      "name": "ground-refinement-distant",
+      "url": "https://localhost:5173/test/viewer-3d?scene=blossom&perf=1&review=ground-refinement-distant&cam=-24.714%2C9.977%2C-77.847&look=0.335%2C0.972%2C0.288&fov=50",
+      "viewport": [
+        1280,
+        720
+      ]
+    },
+    {
+      "name": "ground-refinement-overview",
+      "url": "https://localhost:5173/test/viewer-3d?scene=blossom&perf=1&review=ground-refinement-overview&cam=0.000%2C6.800%2C-24.000&look=0.000%2C2.800%2C7.000&fov=50",
+      "viewport": [
+        1280,
+        720
+      ]
+    }
+  ],
+  "limitations": [
+    "Development browser inspection, not a physical-device performance benchmark.",
+    "Very low camera URLs reset through existing camera validation; the close review uses an above-ground camera."
+  ]
+}

@@ -353,11 +353,7 @@
         <span>{error}</span>
       </span>
     </div>
-  {:else if compact && !loading && !success}
-    <p id="magic-link-status" class="code-hint">
-      We'll email you a code. Enter it here to keep your work.
-    </p>
-  {:else}
+  {:else if !compact || loading || success}
     <div
       id="magic-link-status"
       class="delivery-card"
@@ -390,6 +386,9 @@
           {#if codeCompleted}
             <strong>Signed in</strong>
             <span>You can close this screen and keep working.</span>
+          {:else if compact}
+            <strong>Check your email</strong>
+            <span>Enter the code sent to {submittedEmail} here.</span>
           {:else}
             <strong>Check your email</strong>
             {#if staysInThisApp}
@@ -418,7 +417,7 @@
     </p>
   {/if}
 
-  <div class="form-group">
+  <div class="form-group" class:email-sent={compact && !!success}>
     <label for="email-link">{t("form_email")}</label>
     <input
       id="email-link"
@@ -426,10 +425,12 @@
       autocomplete="email"
       bind:this={emailInput}
       bind:value={email}
-      placeholder={t("form_placeholder_email")}
+      placeholder={compact ? "Email address" : t("form_placeholder_email")}
       required
       disabled={loading || !!success}
-      aria-describedby="magic-link-status"
+      aria-describedby={!compact || loading || success || error
+        ? "magic-link-status"
+        : undefined}
     />
   </div>
 
@@ -476,14 +477,22 @@
       class="submit-button"
       class:submit-button--secondary={!!success}
       aria-busy={loading}
-      aria-describedby="magic-link-status"
+      aria-describedby={!compact || loading || success || error
+        ? "magic-link-status"
+        : undefined}
     >
       {#if loading}
         <ProgressRing percent={-1} size={24} strokeWidth={2} />
         {t("auth_sending")}
       {:else}
-        <i class="fas fa-envelope" aria-hidden="true"></i>
-        {success ? "Send another code" : t("auth_send_magic_link")}
+        {#if !compact}
+          <i class="fas fa-envelope" aria-hidden="true"></i>
+        {/if}
+        {success
+          ? "Send another code"
+          : compact
+            ? "Send a code"
+            : t("auth_send_magic_link")}
       {/if}
     </button>
     {#if success}
@@ -499,15 +508,73 @@
 </form>
 
 <style>
-  .code-hint {
-    margin: 0;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 0.875rem);
-    line-height: 1.45;
-  }
-
   .compact .delivery-card {
     min-block-size: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .compact .delivery-icon,
+  .compact .email-sent {
+    display: none;
+  }
+
+  .compact .code-entry {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .compact .code-submit {
+    background: var(--theme-text);
+    color: var(--theme-panel-bg);
+    border-color: transparent;
+  }
+
+  .compact .submit-button--secondary,
+  .compact .different-email-button {
+    padding: 0.5rem 0.25rem;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--theme-text-dim);
+    font-weight: 400;
+  }
+
+  .compact .form-group label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .compact input {
+    min-height: 48px;
+    border-width: 1px;
+    box-shadow: none;
+    background: var(--theme-card-bg);
+  }
+
+  .compact .submit-button:not(.submit-button--secondary) {
+    min-height: 48px;
+    background: color-mix(
+      in srgb,
+      var(--theme-text) 88%,
+      var(--theme-panel-bg)
+    );
+    color: var(--theme-panel-bg);
+    font-weight: 600;
+    box-shadow: none;
+    transform: none;
+    transition: background var(--duration-fast, 150ms) ease;
+  }
+
+  .compact .submit-button:not(.submit-button--secondary):hover:not(:disabled) {
+    background: var(--theme-text);
   }
 
   .email-link-form {

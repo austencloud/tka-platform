@@ -87,6 +87,8 @@
     canvasReady?: boolean;
     layout?: PanelLayout;
     singlePlayDuration?: number;
+    /** Keep the editor geometry while another workspace owns export. */
+    reserveExportSpace?: boolean;
     isPlaying?: boolean;
     bpm?: number;
     renderMode?: "2d" | "3d";
@@ -168,6 +170,7 @@
     canvasReady = true,
     layout = "bottom",
     singlePlayDuration = 0,
+    reserveExportSpace = false,
     isPlaying = false,
     bpm = 60,
     renderMode = "2d",
@@ -1080,9 +1083,10 @@
   >
     {#snippet body()}{@render pillBody()}{/snippet}
     {#snippet footer()}
-      {#if exportEnabled && onExport}
+      {#if (exportEnabled && onExport) || reserveExportSpace}
         <AnimatorInspectorFooter
-          onAction={onExport}
+          onAction={onExport ?? (() => {})}
+          concealed={reserveExportSpace}
           label={exportButtonLabel}
           icon={renderMode === "3d" ? "fa-circle" : "fa-download"}
           busy={isExporting}

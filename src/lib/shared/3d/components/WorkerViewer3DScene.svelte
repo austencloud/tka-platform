@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { configureViewerOrbitNavigation } from "../camera/camera-controls-runtime";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { BackgroundType } from "@austencloud/backgrounds";
 
@@ -416,6 +417,13 @@
       handleCameraChange(snapshot);
     }}
     onCameraChange={handleCameraChange}
+    onCameraReady={(controller) => {
+      configureViewerOrbitNavigation(controller.controls);
+      return viewer.registerSnapTo((position, target, spherical, animate = true) => {
+        void controller.snapTo(position, target, spherical, animate);
+        if (!animate) handleCameraChange(controller.getSnapshot());
+      });
+    }}
     {onSnapshot}
   />
 {/if}

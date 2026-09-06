@@ -315,6 +315,7 @@ rule here; TKA's founding decks use the surrounding library hierarchy instead.
 			<BrowsePanel
 				{engine}
 				layout="compact"
+				eager={false}
 				showToolbar={false}
 				showFilterBar={false}
 				showSidebar={true}

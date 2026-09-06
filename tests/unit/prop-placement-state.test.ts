@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   GridLocation,
   GridMode,
@@ -25,6 +25,8 @@ function createHarness() {
     allowUndoAfterComplete: true,
     leftOrientation: Orientation.IN,
     rightOrientation: Orientation.IN,
+    dragLocations: false,
+    canAim: false,
   };
   const onChange = vi.fn();
   const onPlacementComplete = vi.fn();
@@ -61,7 +63,8 @@ function createHarness() {
       {
         getGridMode: () => values.gridMode,
         getActivePoints: () => getPlacementGridPoints(values.gridMode),
-        getCanAim: () => false,
+        getCanAim: () => values.canAim,
+        getCanDragLocations: () => values.dragLocations,
         getEditAfterCompletion: () => values.editAfterCompletion,
         getLeftOrientation: () => values.leftOrientation,
         getRightOrientation: () => values.rightOrientation,
@@ -81,6 +84,123 @@ function createHarness() {
 }
 
 describe("prop placement state", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function dragHarness() {
+    vi.stubGlobal(
+      "DOMPoint",
+      class {
+        constructor(
+          public x: number,
+          public y: number
+        ) {}
+        matrixTransform() {
+          return this;
+        }
+      }
+    );
+    const harness = createHarness();
+    harness.values.dragLocations = true;
+    harness.aim.overlayElement = {
+      getScreenCTM: () => ({ inverse: () => ({}) }),
+    } as unknown as SVGSVGElement;
+    harness.state.selectPoint(GridLocation.NORTH);
+    harness.state.selectPoint(GridLocation.SOUTH);
+    return harness;
+  }
+  function pointer(type: string, x: number, y: number) {
+    return Object.assign(
+      new MouseEvent(type, { clientX: x, clientY: y, button: 0 }),
+      { pointerId: 1 }
+    ) as PointerEvent;
+  }
+  it("previews dragging without grading or adding history, and commits exactly one drop", () => {
+    const { state, aim } = dragHarness();
+    const north = getPlacementGridPoints(GridMode.DIAMOND).find(
+      (p) => p.location === GridLocation.NORTH
+    )!;
+    const east = getPlacementGridPoints(GridMode.DIAMOND).find(
+      (p) => p.location === GridLocation.EAST
+    )!;
+    aim.handlePointerDown(
+      pointer("pointerdown", north.x, north.y),
+      GridLocation.NORTH
+    );
+    aim.handlePointerMove(pointer("pointermove", east.x, east.y));
+    expect(aim.locationDragColor).toBe(HandSide.LEFT);
+    expect(aim.locationTarget?.location).toBe(GridLocation.EAST);
+    expect(state.leftLocation).toBe(GridLocation.NORTH);
+    expect(state.historyLength).toBe(2);
+    aim.handlePointerUp(pointer("pointerup", east.x, east.y));
+    aim.handleClick(GridLocation.NORTH); // Browser's post-drag click must not edit again.
+    expect(state.leftLocation).toBe(GridLocation.EAST);
+    expect(state.activeHand).toBeNull();
+    expect(state.historyLength).toBe(3);
+    expect(aim.landing?.point.location).toBe(state.leftLocation);
+    expect(aim.locationTarget).toBeNull();
+    state.undo();
+    expect(state.leftLocation).toBe(GridLocation.NORTH);
+  });
+  it("updates the landing preview without extra commits or repeated target haptics", () => {
+    const { state, aim, triggerHaptic } = dragHarness();
+    aim.handlePointerDown(pointer("pointerdown", 475, 300), GridLocation.NORTH);
+    triggerHaptic.mockClear();
+    aim.handlePointerMove(pointer("pointermove", 600, 475));
+    expect(aim.locationTarget?.location).toBe(GridLocation.EAST);
+    aim.handlePointerMove(pointer("pointermove", 610, 480));
+    expect(triggerHaptic).toHaveBeenCalledTimes(1);
+    aim.handlePointerMove(pointer("pointermove", -10, 475));
+    expect(aim.locationTarget).toBeNull();
+    expect(state.historyLength).toBe(2);
+    aim.handlePointerMove(pointer("pointermove", 475, 650));
+    expect(aim.locationTarget?.location).toBe(GridLocation.SOUTH);
+    aim.handleEscape(new KeyboardEvent("keydown", { key: "Escape" }));
+    aim.handlePointerUp(pointer("pointerup", 475, 650));
+    expect(aim.grabbedLocationColor).toBeNull();
+    expect(aim.locationTarget).toBeNull();
+    expect(aim.landing).toBeNull();
+    expect(state.leftLocation).toBe(GridLocation.NORTH);
+    expect(state.historyLength).toBe(2);
+  });
+  it.each(["cancel", "outside", "reset"])(
+    "does not commit a %s drag",
+    (reason) => {
+      const { state, aim } = dragHarness();
+      aim.handlePointerDown(
+        pointer("pointerdown", 475, 300),
+        GridLocation.NORTH
+      );
+      aim.handlePointerMove(pointer("pointermove", 600, 475));
+      if (reason === "cancel")
+        aim.handlePointerCancel(pointer("pointercancel", 600, 475));
+      if (reason === "reset") {
+        state.reset();
+        aim.cancelLocationDrag();
+      }
+      aim.handlePointerUp(
+        pointer("pointerup", reason === "outside" ? -20 : 600, 475)
+      );
+      expect(state.leftLocation).toBe(
+        reason === "reset" ? null : GridLocation.NORTH
+      );
+      expect(state.historyLength).toBe(reason === "reset" ? 0 : 2);
+    }
+  );
+  it("keeps short taps and orientation aiming separate from location dragging", () => {
+    const { state, aim, values } = dragHarness();
+    aim.handlePointerDown(pointer("pointerdown", 475, 300), GridLocation.NORTH);
+    aim.handlePointerUp(pointer("pointerup", 475, 300));
+    aim.handleClick(GridLocation.NORTH);
+    expect(state.activeHand).toBe(HandSide.LEFT);
+    expect(state.historyLength).toBe(2);
+    values.canAim = true;
+    aim.handlePointerDown(pointer("pointerdown", 475, 300), GridLocation.NORTH);
+    aim.handleBoardPointerDown(pointer("pointerdown", 475, 300));
+    aim.handlePointerUp(pointer("pointerup", 475, 300));
+    aim.handleClick(GridLocation.NORTH);
+    expect(state.historyLength).toBe(3);
+    expect(aim.locationDragColor).toBeNull();
+  });
   it("selects an occupied hand directly without changing placement or undo history", () => {
     const { state, aim } = createHarness();
     state.selectPoint(GridLocation.NORTH);

@@ -616,6 +616,7 @@
   <BrowsePanel
     {engine}
     layout="compact"
+    eager={false}
     showFilterBar={false}
     hideFilterChips
     onSelect={(sequence, variations) =>
