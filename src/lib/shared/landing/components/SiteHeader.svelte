@@ -206,7 +206,7 @@
       items: [
         {
           label: "Shape Engine",
-          href: "/notation/shape-matrix",
+          href: "/shape-engine",
           icon: "fa-diagram-project",
           desc: "Generate exact flowers from level and ratio matrices",
         },

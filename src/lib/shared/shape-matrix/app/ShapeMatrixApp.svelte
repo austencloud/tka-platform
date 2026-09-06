@@ -15,7 +15,7 @@
   interface Props {
     persistence?: ShapeMatrixAppPersistence;
     /**
-     * "standalone" hosts (the public /notation/shape-matrix route) carry the
+     * "standalone" hosts (the public /shape-engine route) carry the
      * app's own identity block in the header. "embedded" hosts (the Toys tab)
      * already name the surface through module chrome, so the header drops the
      * title and leads with the controls.
