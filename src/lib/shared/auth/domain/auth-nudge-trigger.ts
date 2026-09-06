@@ -2,6 +2,7 @@ import { GUEST_SAVE_CAP } from "./guest-access-config";
 
 export type AuthNudgeTrigger =
   | "save"
+  | "save-limit"
   | "step-cap-guest"
   | "patterns-guest"
   | "export"
@@ -36,6 +37,7 @@ export interface AuthPromptContent {
 // Account - free" variants — those drifted into four incompatible phrasings
 // (2026-06-18 finding, closed 2026-07-18).
 export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
+  "save-limit": `Guests can save ${GUEST_SAVE_CAP} sequences on this device. Create a free account to save more.`,
   save: `Guests can save ${GUEST_SAVE_CAP} sequences. Create a free account to save more.`,
   "step-cap-guest":
     "Guests can create sequences up to 8 steps. Create a free account for up to 64 steps.",
@@ -100,6 +102,11 @@ export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
 // nudge explains the gate; after they choose an account action, the modal names
 // the exact thing they were trying to do and gets out of the way.
 const AUTH_PROMPT_CONTENTS: Record<AuthNudgeTrigger, AuthPromptContent> = {
+  "save-limit": {
+    key: "save-limit",
+    title: "Keep saving sequences",
+    body: AUTH_NUDGE_TEXTS["save-limit"],
+  },
   save: {
     key: "save",
     title: "Keep saving sequences",

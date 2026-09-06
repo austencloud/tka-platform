@@ -155,6 +155,11 @@ export class VisualSequenceSaveCoordinator implements IVisualSequenceSaveCoordin
       return { status: "saved", contentHash, sequence, result };
     } catch (error) {
       removeToast(pendingToastId, "programmatic");
+      if (error instanceof LibraryError && error.code === "GUEST_CAP") {
+        // LibrarySaveService owns the account prompt. Keep this attempt
+        // unsuccessful without adding another notification on top of it.
+        return { status: "failed", error };
+      }
       if (error instanceof LibraryError && error.code === "ALREADY_EXISTS") {
         showToast("Already in library", "info");
         return { status: "already-saved", contentHash, sequence };
