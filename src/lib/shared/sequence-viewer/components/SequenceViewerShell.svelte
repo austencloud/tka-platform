@@ -646,6 +646,7 @@
     hidden={ctx.isFullscreen}
     {embedded}
     {navigation}
+    titleOverride={tunnelComposition?.name?.trim() || null}
     {openAppHref}
     onAccountSignIn={!embedded ? onAccountSignIn : undefined}
     onAccountOpenApp={openAppHref && !embedded
