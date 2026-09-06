@@ -217,6 +217,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
   <BrowsePanel
     {engine}
     layout="compact"
+    eager={false}
     showFilterBar={false}
     hideFilterChips
     onSelect={handleSelect}
