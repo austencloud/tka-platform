@@ -175,6 +175,7 @@
       {color}
       {title}
       variant="inline"
+      fill
       onSelect={handlePropSelect}
       {chirality}
     />

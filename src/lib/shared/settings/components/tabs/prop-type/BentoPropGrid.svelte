@@ -64,6 +64,7 @@
     variant = "panel",
     flat = false,
     scrollMode = "internal",
+    fill = false,
     includeBareHands = false,
     chirality,
     allowedProps,
@@ -88,6 +89,14 @@
      * lets that host remain the only vertical scroll owner.
      */
     scrollMode?: "internal" | "host";
+    /**
+     * The host bounds the internal scroller to a definite height (the Change
+     * Prop drawer, the phone sheet). A drilled view then claims that whole
+     * height and sizes its tiles to share it. Only a host with a definite
+     * height may opt in: in an auto-height host the measurement would feed
+     * back into the content it measures.
+     */
+    fill?: boolean;
     /** Adds the scene-only no-prop choice using the same canonical card. */
     includeBareHands?: boolean;
     /**
@@ -218,6 +227,69 @@
     rootEl?.querySelector<HTMLElement>(selector)?.focus();
   }
 
+  // How much room the drilled view may claim in a `fill` host: a zero-width
+  // float with `height: 100%` reports the scroller's inner height, minus
+  // nothing the content contributes, so the drilled view can be exactly
+  // that tall. The probe only exists when the host opted in.
+  let probeEl = $state<HTMLDivElement | null>(null);
+  let tilesEl = $state<HTMLDivElement | null>(null);
+  let fillHeight = $state(0);
+  let tilesBox = $state({ width: 0, height: 0 });
+
+  $effect(() => {
+    if (!probeEl) return;
+    const probe = probeEl;
+    const measure = () => (fillHeight = probe.offsetHeight);
+    const observer = new ResizeObserver(measure);
+    observer.observe(probe);
+    measure();
+    return () => observer.disconnect();
+  });
+
+  $effect(() => {
+    if (!tilesEl) return;
+    const tiles = tilesEl;
+    const measure = () =>
+      (tilesBox = { width: tiles.clientWidth, height: tiles.clientHeight });
+    const observer = new ResizeObserver(measure);
+    observer.observe(tiles);
+    measure();
+    return () => observer.disconnect();
+  });
+
+  const DRILL_GAP = 10;
+  const drillTileCount = $derived(
+    drill?.kind === "family" ? familyChoices(drill.base).length : 0
+  );
+  /**
+   * Tile grid for a drilled family in a bounded host: as many columns as the
+   * family warrants, rows sharing the height so the tiles own the space,
+   * capped so a two-prop family gets two generous cards rather than two
+   * towers. Null means the host is not bounded and the tiles keep their
+   * ordinary size.
+   */
+  const drillLayout = $derived.by(() => {
+    const n = drillTileCount;
+    const { width, height } = tilesBox;
+    if (n === 0 || fillHeight === 0 || width === 0 || height === 0) return null;
+    const phone = width < 440;
+    const cols = n <= 2 ? n : phone || n <= 4 ? 2 : n <= 9 ? 3 : 4;
+    const rows = Math.ceil(n / cols);
+    const colWidth = (width - DRILL_GAP * (cols - 1)) / cols;
+    const rowHeight = Math.floor(
+      Math.min((height - DRILL_GAP * (rows - 1)) / rows, colWidth * 1.25)
+    );
+    // The tiles sit on a doubled track grid (two tracks each) so a short
+    // last row can start one track in and centre itself.
+    const orphans = n % cols;
+    return {
+      cols,
+      rowHeight,
+      orphanIndex: orphans === 0 ? -1 : n - orphans,
+      orphanStart: cols - orphans + 1,
+    };
+  });
+
   function handleDrillKeydown(event: KeyboardEvent): void {
     if (event.key !== "Escape") return;
     event.preventDefault();
@@ -331,7 +403,7 @@
     </header>
   {/if}
 
-  {#snippet tile(prop: PropType)}
+  {#snippet tile(prop: PropType, columnStart?: number)}
     <!--
       Each tile is wrapped in a relative-positioned container so the lock glyph,
       crown and earn-tip can be positioned over / below the button. The click
@@ -346,6 +418,7 @@
     {@const premium = isPremiumCosmeticProp(prop)}
     <div
       class="tile-wrapper"
+      style:grid-column-start={columnStart}
       class:premium
       class:locked={prop !== PropType.HAND && !premium && !isPropUnlocked(prop)}
     >
@@ -389,6 +462,9 @@
   {/snippet}
 
   <div class="grid-scroll themed-scrollbar">
+    {#if fill}
+      <div class="fill-probe" bind:this={probeEl} aria-hidden="true"></div>
+    {/if}
     <!-- The sequential decision-screen swap: the grid steps out, the drilled
          view steps in from the right, and back runs the other way. -->
     <Crossfade
@@ -402,6 +478,8 @@
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <section
           class="drill-view"
+          class:fill={fillHeight > 0}
+          style:height={fillHeight > 0 ? `${fillHeight}px` : undefined}
           aria-label={drillTitle}
           data-escape-shortcut-local
           onkeydown={handleDrillKeydown}
@@ -418,17 +496,26 @@
             <span class="drill-title">{drillTitle}</span>
           </div>
           {#if drill.kind === "fan-look"}
-            <FanStyleOptions />
-          {:else if flat}
-            <div class="flat-grid">
-              {#each familyChoices(drill.base) as prop (prop)}
-                {@render tile(prop)}
-              {/each}
-            </div>
+            <FanStyleOptions fill={fillHeight > 0} />
           {:else}
-            <div class="section-buttons">
-              {#each familyChoices(drill.base) as prop (prop)}
-                {@render tile(prop)}
+            <div
+              class="drill-tiles"
+              class:fill={drillLayout !== null}
+              class:flat-grid={flat && drillLayout === null}
+              class:section-buttons={!flat && drillLayout === null}
+              style:--drill-cols={drillLayout?.cols}
+              style:--drill-row={drillLayout
+                ? `${drillLayout.rowHeight}px`
+                : undefined}
+              bind:this={tilesEl}
+            >
+              {#each familyChoices(drill.base) as prop, index (prop)}
+                {@render tile(
+                  prop,
+                  drillLayout && index === drillLayout.orphanIndex
+                    ? drillLayout.orphanStart
+                    : undefined
+                )}
               {/each}
             </div>
           {/if}
@@ -498,7 +585,12 @@
         onclick={() => void openDrill({ kind: "fan-look" })}
       >
         {#if fanLook}
-          <img class="look-thumb" src={fanLook.image} alt="" draggable="false" />
+          <img
+            class="look-thumb"
+            src={fanLook.image}
+            alt=""
+            draggable="false"
+          />
         {/if}
         <span class="look-name">{fanLook?.label ?? fanAppearance.build}</span>
         <i class="fas fa-chevron-right look-caret" aria-hidden="true"></i>
@@ -691,13 +783,56 @@
     width: 100%;
   }
 
-  /* One level down: a family's styles or the fan look, at the same tile
-     size as the grid they replace, behind a back bar. */
+  /* Reports the scroller's bounded height to script; see fillHeight. */
+  .fill-probe {
+    float: left;
+    width: 0;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  /* One level down: a family's styles or the fan look behind a back bar. In
+     a bounded host the view is exactly the scroller's height and its tiles
+     share that room; elsewhere it hugs tiles at the grid's own size. */
   .drill-view {
     display: flex;
     flex-direction: column;
     gap: 12px;
     min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .drill-tiles {
+    min-width: 0;
+  }
+
+  .drill-tiles.fill {
+    display: grid;
+    flex: 1;
+    min-height: 0;
+    grid-template-columns: repeat(
+      calc(var(--drill-cols, 3) * 2),
+      minmax(0, 1fr)
+    );
+    grid-auto-rows: var(--drill-row, auto);
+    gap: 10px;
+    align-content: center;
+  }
+
+  .drill-tiles.fill .tile-wrapper {
+    /* End-only, so an inline column start on the orphan keeps its span. */
+    grid-column-end: span 2;
+    min-height: 0;
+  }
+
+  .drill-tiles.fill :global(.prop-button) {
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  .drill-view.fill > :global(.fan-style-options) {
+    flex: 1;
+    min-height: 0;
   }
 
   .drill-bar {
