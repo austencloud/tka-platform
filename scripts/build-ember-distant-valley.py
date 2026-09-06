@@ -15,7 +15,7 @@ from mathutils.bvhtree import BVHTree
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'blender/ember-geology-stage-r1.blend'
-OUT = ROOT / 'docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r4'
+OUT = ROOT / 'docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r5'
 OUT.mkdir(parents=True, exist_ok=True)
 bpy.ops.wm.open_mainfile(filepath=str(SOURCE))
 world = bpy.data.objects['EMBER_WorldRoot']
@@ -264,9 +264,12 @@ for j,z in enumerate(stations):
         # Join the unchanged source terrain before the new annulus begins.
         hit = surface.ray_cast(Vector((vx,500,z)),Vector((0,-1,0)))[0]
         y = float(hit.y) if hit is not None else float(old_height(np.asarray(vx),np.asarray(z)))
-        vertices.append((vx,y+.20,z))
+        # Independent surface/terrain triangulation consumes some clearance
+        # between vertices. Leave room for quantization and animated heave.
+        lift = .20+.18*float(smooth(143,180,-z))
+        vertices.append((vx,y+lift,z))
         if k == len(crossings)//2:
-            center_height = y+.20
+            center_height = y+lift
         bank = 1-smooth(.79,1,abs(side))
         # These are the SAME shader masks as the near river, not baked RGB
         # artwork: bank coverage, thermal strength, and reflected-light strength.
@@ -297,8 +300,8 @@ assert locked == {name: digest(bpy.data.objects[name]) for name in locked}
 assert sum(len(p.vertices)-2 for o in (terrain,traces) for p in o.data.polygons) < 140000
 for obj in bpy.context.scene.objects:
     obj.select_set(obj == world or (obj.type == 'MESH' and not obj.hide_render))
-blend = ROOT / 'blender/ember-distant-valley-r4.blend'
-raw = ROOT / 'static/models/ember/ember-distant-valley-r4_raw.glb'
+blend = ROOT / 'blender/ember-distant-valley-r5.blend'
+raw = ROOT / 'static/models/ember/ember-distant-valley-r5_raw.glb'
 bpy.ops.wm.save_as_mainfile(filepath=str(blend))
 bpy.ops.export_scene.gltf(filepath=str(raw), export_format='GLB', use_selection=True, export_extras=True, export_yup=True, export_cameras=False, export_lights=False)
 OUT.mkdir(parents=True, exist_ok=True)

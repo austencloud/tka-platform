@@ -184,6 +184,23 @@ describe("Ember renderer-neutral production world", () => {
       previousY = hit.point.y;
     }
     expect(firstY - previousY).toBeGreaterThan(100);
+    // These exported triangle interiors used to clear the valley by only
+    // 3–4 cm. Animated heave could expose black terrain through the melt.
+    const valley = current.getObjectByName("EMBER_DistantValley") as Mesh;
+    for (const [x, z] of [
+      [18.958, -166.001],
+      [-2.22, -237.988],
+      [-2.452, -237.657],
+      [-2.452, -237.988],
+    ]) {
+      flowRay.ray.origin.set(x, 500, z);
+      const lavaHit = flowRay.intersectObject(outflow)[0];
+      const rockHit = flowRay.intersectObject(valley)[0];
+      expect(lavaHit).toBeDefined();
+      expect(rockHit).toBeDefined();
+      expect(lavaHit.point.y - rockHit.point.y).toBeGreaterThan(0.09);
+      expect(lavaHit.point.y - rockHit.point.y).toBeLessThan(0.5);
+    }
     const stage = current.getObjectByName(
       "EMBER_CooledPerformancePlate"
     ) as Mesh;

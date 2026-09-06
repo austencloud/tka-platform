@@ -65,7 +65,7 @@ function prepareShell(
   options: CelestialCloudbreakOptions
 ): Object3D {
   const root = source.clone(true);
-  root.name = "sunward-authored-gardens";
+  root.name = "dawn-authored-observatory";
   root.traverse((child) => {
     if (!(child instanceof Mesh)) return;
     child.castShadow = !["ground", "mesa", "distant-olive"].includes(
@@ -282,15 +282,15 @@ function createReflector(options: CelestialCloudbreakOptions): Reflector {
   });
   const material = reflector.material as ShaderMaterial;
   const uniforms: Record<string, unknown> = {
-    uDeepColor: new Color("#286572"),
-    uShallowColor: new Color("#6eb0a4"),
+    uDeepColor: new Color("#0b2936"),
+    uShallowColor: new Color("#2d5f63"),
     uSize: new Vector2(CLOUDBREAK_LAGOON.size[0], CLOUDBREAK_LAGOON.size[1]),
     uSunDirection: new Vector3(...CLOUDBREAK_SKY_SUN.direction).normalize(),
     uSunColor: defaults.sunColor.clone(),
     uRippleScale: 0.44,
-    uRippleStrength: 0.075,
+    uRippleStrength: 0.035,
     uFoamWidth: 0.34,
-    uFoamOpacity: 0.32,
+    uFoamOpacity: 0.06,
     uShoreFade: 1.45,
     uWaveAmplitude: new Vector2(
       defaults.waveAmplitudeStart,
@@ -329,38 +329,11 @@ export function createCelestialCloudbreakWorld(
 
   const waterfalls = [
     createWaterfall({
-      position: [
-        CLOUDBREAK_LAYOUT.lagoon.overflowXZ[0],
-        -4.35,
-        CLOUDBREAK_LAYOUT.lagoon.overflowXZ[1],
-      ],
-      width: 3.4,
-      height: 9.2,
-      rotationY: -1.2,
-      crestDepth: 2.1,
-      opacity: 1,
-      speed: 1.08,
-    }),
-    createWaterfall({
-      position: [-27, -0.65, -35.7],
-      width: 3.2,
-      height: 15.2,
-      opacity: 0.68,
-      speed: 0.76,
-    }),
-    createWaterfall({
-      position: [28, 0.25, -43.9],
-      width: 3.9,
-      height: 18.4,
-      opacity: 0.66,
-      speed: 0.68,
-    }),
-    createWaterfall({
-      position: [12, 3.55, -65.9],
-      width: 2.4,
-      height: 19.8,
-      opacity: 0.6,
-      speed: 0.61,
+      position: [16.7, 1.7975, 5],
+      width: 6.4,
+      height: 3.245,
+      opacity: 0.22,
+      speed: 0.65,
     }),
   ];
   object.add(...waterfalls.map(({ object: waterfall }) => waterfall));
@@ -415,5 +388,5 @@ export function createCelestialCloudbreakWorld(
   };
 }
 
-/** The panorama and complete Blender-authored garden. */
+/** The panorama and complete Blender-authored observatory. */
 export const CELESTIAL_AUTHORED_RESOURCE_COUNT = 2;
