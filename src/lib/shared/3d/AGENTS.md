@@ -3,6 +3,9 @@
 This file applies under `src/lib/shared/3d/`. The current user request and
 higher-level `AGENTS.md` files remain higher priority.
 
+- Before environment design, substantial art revisions, or visual scene review,
+  read `docs/architecture/scene-design-brief.md`. Apply its shared composition
+  checks within the current scene's own art direction and camera contract.
 - Search current owners before adding scene boot, renderer, interaction,
   locomotion, animation, effect, or prop behavior. Extend one owner rather than
   creating a feature-local parallel stack.
