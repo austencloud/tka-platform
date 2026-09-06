@@ -65,6 +65,12 @@ export interface VideoExportOrchestratorOptions {
   /** Whether non-radial grid points are shown (matches the live grid). */
   showNonRadialPoints?: boolean;
   /**
+   * Viewer Blue/Red motion toggles, forwarded to the offscreen engine so a hand
+   * hidden on screen is hidden in the file. Omitted → both visible.
+   */
+  leftMotionVisible?: boolean;
+  rightMotionVisible?: boolean;
+  /**
    * Optional per-frame overlay drawn on top of the composited animation frame
    * (after the black flatten + canvas layers + path lines), in the output-square
    * coordinate space. `sizePx` is the square animation area side in output px.

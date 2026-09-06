@@ -419,6 +419,12 @@
   const exportCoord = createExportCoordinator({
     viewer3DState,
     accessibilityHelper,
+    // Read lazily at export time: viewerVisibility is created further down and
+    // the coordinator is first used after it exists.
+    getMotionVisibility: () => ({
+      left: viewerVisibility.leftMotion,
+      right: viewerVisibility.rightMotion,
+    }),
   });
   let resolvedCardAutoLayout = $state<
     | import("$lib/shared/render/services/container-aware-layout").ResolvedAutoLayout

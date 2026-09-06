@@ -37,7 +37,6 @@
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
-  import FanAppearancePicker from "$lib/shared/pictograph/prop/components/FanAppearancePicker.svelte";
   import PropLookPicker from "$lib/shared/pictograph/prop/components/PropLookPicker.svelte";
   import {
     isFanPropType,
@@ -192,7 +191,6 @@
     showEffectsPlayback = true,
     selectedPropType,
     fanAppearance,
-    onFanAppearanceChange,
     sequence = null,
     onPropChange,
     onPropPickerRequest,
@@ -498,6 +496,20 @@
 
   const exportDisabled = $derived(isExporting || !canvasReady);
 
+  // The download button asks before it renders. From any other section the
+  // first press opens the Export page (fps, resolution, timing, loops) and the
+  // same button confirms from there; pressing it while Export is already up
+  // exports at once. The bottom dock's trailing download icon shares this, so
+  // it opens the Export tray first and the tray carries its own confirm.
+  function handleExportTrigger(): void {
+    if (!onExport) return;
+    if (resolvedPill !== "export") {
+      handlePillSelect("export");
+      return;
+    }
+    onExport();
+  }
+
   function formatDuration(seconds: number): string {
     if (seconds <= 0) return "";
     if (seconds < 60) return `${seconds.toFixed(1)}s`;
@@ -672,7 +684,8 @@
       ? {
           icon: renderMode === "3d" ? "fa-circle" : "fa-download",
           label: exportButtonLabel,
-          onClick: onExport,
+          onClick: handleExportTrigger,
+          active: resolvedPill === "export",
           disabled: exportDisabled,
           busy: !canvasReady,
         }
@@ -704,15 +717,9 @@
         variant="inline"
         flat={layout === "bottom"}
       />
-      {#if fanAppearance && onFanAppearanceChange && isFanPropType(selectedPropType)}
-        <div class="fan-appearance-section">
-          <FanAppearancePicker
-            value={fanAppearance}
-            onchange={onFanAppearanceChange}
-            compact={layout === "bottom"}
-          />
-        </div>
-      {:else if selectedPropType}
+      <!-- The fan build lives in the prop grid's Fan styles popover; only
+           the model / pictograph switch for other props docks below. -->
+      {#if selectedPropType && !isFanPropType(selectedPropType)}
         <div class="fan-appearance-section">
           <PropLookPicker
             propType={selectedPropType}
@@ -771,7 +778,7 @@
             {@render pathsBody()}
           {/if}
         {:else if showTempoControls || onPlaybackModeChange}
-          <div class="motion-col">
+          <div class="motion-col motion-col-solo">
             {@render tempoModeBody()}
           </div>
         {/if}
@@ -1021,6 +1028,22 @@
             >{/if}
         </div>
       {/if}
+
+      {#if layout === "bottom" && onExport}
+        <!-- The dock's download icon opened this tray, so the confirm sits on
+             the same surface as the options it applies. The sidebar keeps its
+             footer button instead. -->
+        <div class="export-confirm">
+          <AnimatorInspectorFooter
+            onAction={onExport}
+            label={exportButtonLabel}
+            icon={renderMode === "3d" ? "fa-circle" : "fa-download"}
+            busy={isExporting}
+            disabled={exportDisabled}
+            ready={canvasReady}
+          />
+        </div>
+      {/if}
     </div>
   {/if}
 {/snippet}
@@ -1130,7 +1153,7 @@
     {#snippet footer()}
       {#if (exportEnabled && onExport) || reserveExportSpace}
         <AnimatorInspectorFooter
-          onAction={onExport ?? (() => {})}
+          onAction={handleExportTrigger}
           concealed={reserveExportSpace}
           label={exportButtonLabel}
           icon={renderMode === "3d" ? "fa-circle" : "fa-download"}
@@ -1243,6 +1266,20 @@
   @container motion-stack (min-width: 528px) {
     .motion-stack {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* A host with no Paths page (the shape matrix traces a fixed figure) has
+       nothing for the second column. Tempo and Mode take a column each on
+       the one row instead of stacking beside a hole the width of the page. */
+    .motion-col-solo {
+      grid-column: 1 / -1;
+    }
+
+    .motion-col-solo > :global(.playback-rows) {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--spacing-md, 12px);
+      align-items: start;
     }
   }
 

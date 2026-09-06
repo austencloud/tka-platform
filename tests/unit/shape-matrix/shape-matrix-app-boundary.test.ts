@@ -196,7 +196,7 @@ describe("Shape Matrix app boundary", () => {
     expect(propPickerSource).not.toContain("transition:growFade");
   });
 
-  it("chooses a prop over the grid, never over the animation", () => {
+  it("customizes the animation over the grid, in one workspace", () => {
     const read = (path: string) => readFileSync(resolve(path), "utf8");
     const drillSource = read(
       "src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte"
@@ -210,14 +210,11 @@ describe("Shape Matrix app boundary", () => {
     const theoryPaneSource = read(
       "src/lib/shared/shape-matrix/app/components/ShapeMatrixTheoryPane.svelte"
     );
-    const overlaySource = read(
-      "src/lib/shared/shape-matrix/app/components/ShapeMatrixPropOverlay.svelte"
+    const workspaceSource = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixCustomizeWorkspace.svelte"
     );
     const shellSource = read(
       "src/lib/shared/shape-matrix/app/components/ShapeMatrixAppShell.svelte"
-    );
-    const detailSource = read(
-      "src/lib/shared/shape-matrix/app/components/ShapeMatrixDetailPane.svelte"
     );
     const stateSource = read(
       "src/lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte.ts"
@@ -232,45 +229,68 @@ describe("Shape Matrix app boundary", () => {
     expect(drillSource).not.toContain("prop-catalogue");
     expect(theoryDetailSource).not.toContain("BentoPropGrid");
 
-    // Wide hosts: the grid pane hosts it. You are not changing your shape
-    // while you change your prop, so that is the one region that can be
-    // covered while the hero, the relationships, the carousel and the dock
-    // stay put and the prop is judged against the live shape.
+    // Wide hosts: one workspace over the grid pane carries every ability.
+    // You are not choosing a shape while you tune its animation, so that is
+    // the one region that can be covered while the hero, the relationships,
+    // the carousel and the dock stay put.
     expect(matrixPaneSource).toContain(
-      '<ShapeMatrixPropOverlay surface="matrix" />'
+      '<ShapeMatrixCustomizeWorkspace surface="matrix" />'
     );
     expect(theoryPaneSource).toContain(
-      '<ShapeMatrixPropOverlay surface="theory" />'
+      '<ShapeMatrixCustomizeWorkspace surface="theory" />'
     );
-    expect(matrixPaneSource).toContain("inert={pickingProp}");
-    // The full sectioned bento grid, not the dense compact drawer packing.
-    expect(overlaySource).toContain("<BentoPropGrid");
-    expect(overlaySource).not.toContain("flat={true}");
-    // A titled close, Escape through the shared layer manager, click-away.
-    expect(overlaySource).toContain("<DrawerHeader");
-    expect(overlaySource).toContain('id: "shape-matrix:prop-overlay"');
-    expect(overlaySource).toContain('target.closest("[data-shape-matrix-dock]")');
-    expect(shellSource).toContain("data-shape-matrix-app");
+    expect(matrixPaneSource).toContain("inert={workspaceOpen}");
+    expect(theoryPaneSource).toContain("inert={workspaceOpen}");
+    for (const pane of [matrixPaneSource, theoryPaneSource]) {
+      expect(pane).not.toContain("ShapeMatrixPropOverlay");
+      expect(pane).not.toContain("ShapeMatrixSettingsOverlay");
+    }
 
-    // Compact hosts: the grid pane is off screen behind the detail view, so
-    // the canonical prop sheet takes over.
-    expect(shellSource).toMatch(/\{#if appState\.compact\}\s*<PropSelectionSheet/);
+    // The canonical rail inspector, one sidebar-sized page at a time, not
+    // the dock tray's strips stretched across a pane built for a grid.
+    expect(workspaceSource).toContain('layout="sidebar"');
+    expect(workspaceSource).not.toContain('layout="bottom"');
+    expect(workspaceSource).not.toContain('presentation="content"');
+    // The dock and the rail are two views of one section.
+    expect(workspaceSource).toContain("controlledSection={section}");
+    expect(workspaceSource).toContain("onActiveSectionChange={selectSection}");
+    expect(workspaceSource).toContain(
+      'animationState.activeSection ?? (appState.propPickerOpen ? "props" : null)'
+    );
+    // A labelled way back, and Escape through the shared layer manager.
+    expect(workspaceSource).toContain("Back to grid");
+    expect(workspaceSource).toContain('role="dialog"');
+    expect(workspaceSource).toContain(
+      "id: `shape-matrix:${surface}-customize`"
+    );
 
-    // The Props pill shows pressed while the catalogue is open, without a
-    // tray of its own, so the way back is visible.
+    // The Props pill is a page of the workspace on wide hosts. Compact hosts
+    // keep routing it to the canonical prop sheet, since the grid pane is off
+    // screen behind the detail view there.
+    expect(drillSource).toMatch(
+      /onPropPickerRequest=\{!appState \|\| appState\.compact\s*\? onproppickertoggle\s*: undefined\}/
+    );
+    expect(theoryDetailSource).toContain(
+      "onPropPickerRequest={app.compact ? app.togglePropPicker : undefined}"
+    );
+    expect(shellSource).toMatch(
+      /\{#if appState\.compact\}\s*<PropSelectionSheet/
+    );
+
+    // The Props pill shows pressed while the sheet is open, without a tray
+    // of its own, so the way back is visible.
     expect(drillSource).toContain("propPickerActive={propPickerOpen}");
-    expect(theoryDetailSource).toContain("propPickerActive={app.propPickerOpen}");
+    expect(theoryDetailSource).toContain(
+      "propPickerActive={app.propPickerOpen}"
+    );
     expect(drillSource).toContain("data-shape-matrix-dock");
     expect(theoryDetailSource).toContain("data-shape-matrix-dock");
     expect(dockSource).toContain(
       "aria-pressed={activeTab === t.id || !!t.pressed}"
     );
 
-    // Still not one of the dock's tray sections.
-    expect(detailSource).not.toContain('setActiveSection("props")');
-
-    // Choosing keeps the catalogue open, so the change can be watched: pick a
-    // prop, see the shape traced by it, pick the next one.
+    // Choosing keeps the workspace open, so the change can be watched: pick a
+    // prop, see the pair traced by it, pick the next one.
     expect(stateSource).toContain("async function setPropType");
     expect(stateSource).toContain("The picker stays open.");
   });
