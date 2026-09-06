@@ -568,6 +568,9 @@
                 </div>
               </div>
             {/if}
+            {#if hasInfoCell && canQRCode}
+              <p class="qr-scope-note">QR codes appear on opened cards and exports. Gallery thumbnails stay QR-free.</p>
+            {/if}
             <!-- Start position is its own group: the Show toggle plus (when on) the
                single-select layout. Kept apart from the Info-cell chooser so the
                segmented control never sits next to loose chips (label mirrors the
@@ -878,6 +881,10 @@
               </div>
             </div>
           {/if}
+        {/if}
+
+        {#if hasInfoCell && canQRCode}
+          <p class="qr-scope-note">QR codes appear on opened cards and exports. Gallery thumbnails stay QR-free.</p>
         {/if}
 
         <div class="setting-row">
@@ -1225,6 +1232,13 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 10px;
     background: var(--theme-card-bg);
+  }
+
+  .qr-scope-note {
+    margin: 0;
+    color: var(--theme-text-secondary);
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.5;
   }
 
   .setting-label {
