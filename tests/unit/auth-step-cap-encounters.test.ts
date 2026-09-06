@@ -58,4 +58,26 @@ describe("step cap encounters", () => {
       );
     }
   });
+
+  it("offers an explicit encore without spending it on dismissal", () => {
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      authDrawerState.show("signup", "step-cap-guest", "encore-sequence");
+      if (attempt < 5) expect(authDrawerState.encorePrompt).toBeNull();
+      authDrawerState.hide();
+    }
+    expect(authDrawerState.claimEncore()).toBe(false);
+    authDrawerState.show("signup", "step-cap-guest", "encore-sequence");
+    expect(authDrawerState.encorePrompt).toBe("offer");
+    expect(authDrawerState.claimEncore()).toBe(true);
+    expect(authDrawerState.open).toBe(false);
+    expect(
+      authDrawerState.guestEncore.maxSteps("guest", "encore-sequence")
+    ).toBe(16);
+    authDrawerState.reset();
+    authDrawerState.show("signup", "step-cap-guest", "another-sequence");
+    expect(authDrawerState.encorePrompt).toBe("spent");
+    expect(authDrawerState.claimEncore()).toBe(false);
+    authDrawerState.show("signup", "save");
+    expect(authDrawerState.encorePrompt).toBeNull();
+  });
 });

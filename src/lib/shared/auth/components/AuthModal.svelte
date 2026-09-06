@@ -29,12 +29,15 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import ContextualAuthPrompt from "./ContextualAuthPrompt.svelte";
   import GoogleOneTap from "./GoogleOneTap.svelte";
+  import type { GuestEncorePrompt } from "../domain/auth-nudge-trigger";
 
   interface Props {
     open: boolean;
     initialMode?: AuthMode;
     reason?: AuthNudgeTrigger | null;
     attempt?: number;
+    encore?: GuestEncorePrompt;
+    onAcceptEncore?: () => void;
     onClose: () => void;
   }
 
@@ -43,6 +46,8 @@
     initialMode = "signup",
     reason = null,
     attempt = 1,
+    encore = null,
+    onAcceptEncore,
     onClose,
   }: Props = $props();
 
@@ -50,7 +55,7 @@
   let facebookError = $state<string | null>(null);
 
   const promptContent = $derived(
-    getAuthPromptContent(reason, authMode, attempt)
+    getAuthPromptContent(reason, authMode, attempt, encore)
   );
   const inAppBrowser = $derived(
     getInAppBrowserDetector().isInAppBrowserOrForced(page.url.searchParams)
@@ -150,7 +155,7 @@
   onclose={handleModalDismiss}
 >
   <GoogleOneTap
-    autoPrompt={open}
+    autoPrompt={open && encore !== "offer"}
     onSuccess={() => {
       recordAuthSubmission("google_one_tap", authMode);
       trackAuthProviderResult("google_one_tap", "completed");
@@ -160,6 +165,8 @@
 
   <ContextualAuthPrompt
     content={promptContent}
+    encoreOffer={encore === "offer"}
+    {onAcceptEncore}
     bind:mode={authMode}
     active={open}
     idPrefix="auth-modal"

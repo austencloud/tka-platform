@@ -1,5 +1,10 @@
 import type { AuthNudgeTrigger } from "../domain/auth-nudge-trigger";
 import { trackAuthSurfaceOpened } from "$lib/shared/analytics/auth-events";
+import { createGuestEncoreState } from "./guest-encore-state.svelte";
+
+const guestEncore = createGuestEncoreState(() =>
+  typeof window === "undefined" ? null : window.localStorage
+);
 
 let _open = $state(false);
 let _initialMode = $state<"signin" | "signup">("signup");
@@ -9,8 +14,21 @@ let _initialMode = $state<"signin" | "signup">("signup");
 // bleeds into an unrelated later open.
 let _reason = $state<AuthNudgeTrigger | null>(null);
 let _stepCapAttempts = $state(0);
+let _stepCapSequenceId = $state<string | null>(null);
 
 export const authDrawerState = {
+  guestEncore,
+  get encorePrompt() {
+    return _reason === "step-cap-guest"
+      ? guestEncore.prompt(_stepCapSequenceId, _stepCapAttempts)
+      : null;
+  },
+  claimEncore() {
+    if (!_open || _reason !== "step-cap-guest") return false;
+    if (!guestEncore.claim(_stepCapSequenceId, _stepCapAttempts)) return false;
+    _open = false;
+    return true;
+  },
   get open() {
     return _open;
   },
@@ -23,13 +41,20 @@ export const authDrawerState = {
   get stepCapAttempts() {
     return _stepCapAttempts;
   },
-  show(mode: "signin" | "signup" = "signup", reason?: AuthNudgeTrigger) {
+  show(
+    mode: "signin" | "signup" = "signup",
+    reason?: AuthNudgeTrigger,
+    sequenceId?: string
+  ) {
+    guestEncore.restore();
     // Count encounters, not duplicate calls while the same dialog is open.
     if (reason === "step-cap-guest" && (!_open || _reason !== reason)) {
       _stepCapAttempts += 1;
     }
     _initialMode = mode;
     _reason = reason ?? null;
+    _stepCapSequenceId =
+      reason === "step-cap-guest" ? (sequenceId ?? null) : null;
     _open = true;
     trackAuthSurfaceOpened({
       surface: "guest_nudge_modal",
@@ -51,5 +76,6 @@ export const authDrawerState = {
     _initialMode = "signup";
     _reason = null;
     _stepCapAttempts = 0;
+    _stepCapSequenceId = null;
   },
 };
