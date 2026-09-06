@@ -1,5 +1,8 @@
 import { normalizeLegacyHandPair, normalizeLegacyStep } from "@tka/tka-types";
-import type { UIGenerationConfig } from "../shared/utils/config-mapper";
+import {
+  clampToAvailableLevel,
+  type UIGenerationConfig,
+} from "../shared/utils/config-mapper";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -20,6 +23,14 @@ export function normalizePersistedGenerationConfig(
   const normalized: UnknownRecord = { ...value };
   if (value.turnPattern !== undefined) {
     normalized.turnPattern = normalizeLegacyHandPair(value.turnPattern);
+  }
+  // Level 4 (SKEWED) pictograph data does not exist yet (see
+  // MAX_AVAILABLE_LEVEL in config-mapper.ts). A config saved to localStorage
+  // or Firestore before that gate existed can still carry level 4; clamp it
+  // here so it degrades to the nearest available level instead of silently
+  // asking the generator to build data that isn't there.
+  if (typeof value.level === "number") {
+    normalized.level = clampToAvailableLevel(value.level);
   }
   return normalized as Partial<UIGenerationConfig>;
 }

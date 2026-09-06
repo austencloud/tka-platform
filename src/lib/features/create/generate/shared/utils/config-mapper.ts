@@ -7,6 +7,8 @@ export {
   DIFFICULTY_TO_LEVEL,
   levelToDifficulty,
   difficultyToLevel,
+  MAX_AVAILABLE_LEVEL,
+  clampToAvailableLevel,
   uiConfigToGenerationOptions,
   generationOptionsToUIConfig,
 } from "$lib/shared/create/utils/config-mapper";
