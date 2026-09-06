@@ -5,6 +5,8 @@
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
   import { registerLibraryRepository } from "$lib/shared/composition-root/register-library-repository";
+  import { configureShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
   import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import { createCollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
@@ -77,9 +79,18 @@
     preference: "full" | "reduce";
   }
 
-  type ReviewMessage = ReplayMessage | MotionMessage;
+  type ReviewMessage =
+    | ReplayMessage
+    | MotionMessage
+    | {
+        source: "sequence-viewer-transition-review";
+        action: "status";
+      };
 
   if (browser) {
+    // This standalone frame can render before the root layout's deferred
+    // composition import. Register the same QR dependency before Card mounts.
+    configureShortCodeManager(getBrowseLoader());
     registerLibraryRepository();
     registerLoopDetector(loopDetector);
     registerLoopDisplayResolver(resolveLoopDisplay);
@@ -1232,25 +1243,26 @@
     const message = value as Partial<ReviewMessage>;
     return (
       message.source === "sequence-viewer-transition-review" &&
-      ((message.action === "replay" &&
-        (isWorkspaceReplayCommand(message.command) ||
-          message.command === "2d" ||
-          message.command === "card" ||
-          message.command === "interrupt" ||
-          message.command === "3d-first" ||
-          message.command === "3d-repeat" ||
-          message.command === "3d-interrupt" ||
-          message.command === "tunnel-first" ||
-          message.command === "tunnel-3d" ||
-          message.command === "tunnel-interrupt" ||
-          message.command === "card-2d" ||
-          message.command === "card-3d" ||
-          message.command === "card-tunnel" ||
-          message.command === "card-performances" ||
-          message.command === "card-stage-interrupt" ||
-          message.command === "performances-2d" ||
-          message.command === "performances-3d" ||
-          message.command === "performances-interrupt")) ||
+      (message.action === "status" ||
+        (message.action === "replay" &&
+          (isWorkspaceReplayCommand(message.command) ||
+            message.command === "2d" ||
+            message.command === "card" ||
+            message.command === "interrupt" ||
+            message.command === "3d-first" ||
+            message.command === "3d-repeat" ||
+            message.command === "3d-interrupt" ||
+            message.command === "tunnel-first" ||
+            message.command === "tunnel-3d" ||
+            message.command === "tunnel-interrupt" ||
+            message.command === "card-2d" ||
+            message.command === "card-3d" ||
+            message.command === "card-tunnel" ||
+            message.command === "card-performances" ||
+            message.command === "card-stage-interrupt" ||
+            message.command === "performances-2d" ||
+            message.command === "performances-3d" ||
+            message.command === "performances-interrupt")) ||
         (message.action === "motion" &&
           (message.preference === "full" || message.preference === "reduce")))
     );
@@ -1261,6 +1273,22 @@
     void initializeAppServices();
 
     const updateMobile = () => (isMobile = window.innerWidth < 768);
+    const announceReady = async () => {
+      const version = replayVersion;
+      try {
+        await waitForControl("2D Animation", version);
+        if (version !== replayVersion) return;
+        report(activeTrace ? "running" : "ready");
+        scheduleMetrics();
+      } catch (error) {
+        if (version === replayVersion)
+          report(
+            "error",
+            undefined,
+            error instanceof Error ? error.message : "Viewer could not start."
+          );
+      }
+    };
     const handleMessage = (event: MessageEvent<unknown>) => {
       if (
         event.source !== window.parent ||
@@ -1271,8 +1299,10 @@
       }
       if (event.data.action === "replay") {
         void runReplay(event.data.command);
-      } else {
+      } else if (event.data.action === "motion") {
         applyMotionPreference(event.data.preference);
+      } else {
+        void announceReady();
       }
     };
 
@@ -1282,7 +1312,7 @@
     window.addEventListener("message", handleMessage);
     const resizeObserver = new ResizeObserver(scheduleMetrics);
     resizeObserver.observe(document.documentElement);
-    report("ready");
+    void announceReady();
     scheduleMetrics();
 
     return () => {

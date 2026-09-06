@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { replaceState } from "$app/navigation";
   import { onMount } from "svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { fits3DViewport } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
@@ -324,6 +325,9 @@
 
   function selectGate(gateId: TransitionReviewGateId): void {
     review.selectGate(gateId);
+    const url = new URL(page.url);
+    url.searchParams.set("gate", gateId);
+    replaceState(url, page.state);
     frameMetrics = null;
     lastTrace = null;
     pendingReplay = null;
@@ -337,6 +341,16 @@
         source: "sequence-viewer-transition-review",
         action: "motion",
         preference: motionPreference,
+      },
+      window.location.origin
+    );
+  }
+
+  function requestFrameStatus(): void {
+    frameElement?.contentWindow?.postMessage(
+      {
+        source: "sequence-viewer-transition-review",
+        action: "status",
       },
       window.location.origin
     );
@@ -463,6 +477,7 @@
     };
 
     window.addEventListener("message", handleFrameMessage);
+    requestFrameStatus();
     return () => window.removeEventListener("message", handleFrameMessage);
   });
 </script>
@@ -667,6 +682,7 @@
                 <iframe
                   bind:this={frameElement}
                   src={frameSource}
+                  onload={requestFrameStatus}
                   title={`${review.activeGate.title} production preview`}
                   style:width={`${selectedViewport.width}px`}
                   style:height={`${selectedViewport.height}px`}
