@@ -114,6 +114,9 @@
      * instead of squeezing the catalogue into the bottom dock tray. Sidebar
      * consumers keep the inline catalogue by omitting this callback. */
     onPropPickerRequest?: () => void;
+    /** The host's picker is open: the Props pill shows pressed while it is,
+     * without a tray of its own, so the way back is visible. */
+    propPickerActive?: boolean;
     /**
      * Buugeng chirality seam forwarded to the props pill's picker. Optional
      * because two hosts (ProfilePhotoPicker, PostStudio) keep prop type local
@@ -180,6 +183,7 @@
     sequence = null,
     onPropChange,
     onPropPickerRequest,
+    propPickerActive = false,
     propChirality,
     onExport,
     onCancel,
@@ -629,6 +633,7 @@
       propType: p.propType,
       fanAppearance: p.fanAppearance,
       accentColor: p.accentColor,
+      pressed: p.id === "props" && propPickerActive,
     }))
   );
   const dockTrailing = $derived<ControlDockAction | undefined>(

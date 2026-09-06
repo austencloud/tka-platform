@@ -3,6 +3,7 @@
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
+  import ShapeMatrixPropOverlay from "./ShapeMatrixPropOverlay.svelte";
   import ShapeMatrixRecipeStrip from "./ShapeMatrixRecipeStrip.svelte";
 
   interface Props {
@@ -15,6 +16,9 @@
 
   const state = getShapeMatrixAppContext();
   const surprise = $derived(onsurprise ?? (() => state.surpriseMe()));
+  /* The prop catalogue covers this pane on wide hosts; the grid underneath
+     is not something to tab into while it does. */
+  const pickingProp = $derived(state.propPickerOpen && !state.compact);
 </script>
 
 {#snippet cornerGuide()}
@@ -29,7 +33,7 @@
   {#if state.compact}
     <ShapeMatrixRecipeStrip surface="level" onsurprise={surprise} />
   {/if}
-  <div class="matrix-stage">
+  <div class="matrix-stage" inert={pickingProp}>
     {#if state.loadError}
       <div class="status error" role="alert">
         <p>The matrix could not be built.</p>
@@ -51,10 +55,12 @@
       />
     {/if}
   </div>
+  <ShapeMatrixPropOverlay surface="matrix" />
 </section>
 
 <style>
   .matrix-pane {
+    position: relative;
     height: 100%;
     min-height: 0;
     display: grid;

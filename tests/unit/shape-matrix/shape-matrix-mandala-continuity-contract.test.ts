@@ -359,8 +359,13 @@ describe("shape matrix mandala continuity", () => {
     );
     const detailPane = read("app/components/ShapeMatrixDetailPane.svelte");
     expect(detailPane).toContain("getShapeMatrixAnimationContext()");
+    // The way back is only there while a control section covers the chips;
+    // while they are showing, the stage takes the heading's height.
     expect(detailPane).toMatch(
-      /\{#if !state\.compact\}\s*<header class="pane-heading">/
+      /\{#if headingVisible\}\s*<header class="pane-heading">/
+    );
+    expect(detailPane).toContain(
+      "!state.compact && animationState.activeSection !== null"
     );
     // The toggle never borrows the back arrow the Matrix button owns.
     expect(detailPane).not.toContain("fa-arrow-left");
