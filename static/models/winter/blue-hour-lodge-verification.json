@@ -1,0 +1,187 @@
+{
+  "date": "2026-09-05",
+  "assetSha256": "455142d133ca9b2528d0ab0b09a7e224bd8b081a59e4c36ad2d6c78aa84f5b84",
+  "assetBytes": 6500348,
+  "previousAssetBytes": 16171696,
+  "source": "blender/winter/blue-hour-lodge.blend",
+  "authoring": "Blender 5.0.1; packed editable source; Cycles render; glTF export; WebP and meshopt optimization",
+  "tests": {
+    "focusedTests": 8,
+    "files": 2,
+    "svelteCheck": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "gltfValidator": {
+      "errors": 0,
+      "warnings": 8,
+      "warning": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE: intentionally derive frames in Three.js; validator cannot inspect meshopt and GPU-instancing extensions"
+    }
+  },
+  "browser": {
+    "checks": [
+      {
+        "check": "legacy-one",
+        "backend": "legacy",
+        "state": {
+          "camera": "{\"position\":{\"x\":0,\"y\":3.8000000000000007,\"z\":20.000000000000004},\"rotation\":{\"x\":-0.09495170634275633,\"y\":0,\"z\":0},\"fov\":50,\"target\":{\"x\":0,\"y\":1.8,\"z\":-1},\"timestamp\":1788658206821}",
+          "environment": "winter",
+          "performance": "{\"fps\":60,\"peakFrameMs\":98.59999999403954,\"sampleCount\":962,\"frameP50Ms\":16.69999998807907,\"frameP95Ms\":17,\"frameP99Ms\":18.80000001192093,\"longFrameRate\":0.002079002079002079,\"thermalDrift\":0,\"drawCalls\":110,\"triangles\":1385799,\"geometries\":77,\"textures\":43,\"programs\":99,\"gpuTimingSupported\":true,\"gpuSampleCount\":240,\"gpuP50Ms\":4.6336,\"gpuP95Ms\":6.02112,\"gpuP99Ms\":6.49216}",
+          "performers": "1",
+          "ready": "true",
+          "settled": "true"
+        }
+      },
+      {
+        "check": "legacy-eight",
+        "backend": "legacy",
+        "state": {
+          "camera": "{\"position\":{\"x\":0,\"y\":3.8000000000000007,\"z\":32},\"rotation\":{\"x\":-0.06053201978210716,\"y\":0,\"z\":0},\"fov\":50,\"target\":{\"x\":0,\"y\":1.8,\"z\":-1},\"timestamp\":1788658223307}",
+          "environment": "winter",
+          "performance": "{\"fps\":23,\"peakFrameMs\":168.60000002384186,\"sampleCount\":1302,\"frameP50Ms\":16.700000017881393,\"frameP95Ms\":53.19999998807907,\"frameP99Ms\":62.19999998807907,\"longFrameRate\":0.21121351766513058,\"thermalDrift\":0,\"drawCalls\":273,\"triangles\":2100479,\"geometries\":128,\"textures\":57,\"programs\":103,\"gpuTimingSupported\":true,\"gpuSampleCount\":325,\"gpuP50Ms\":4.673536,\"gpuP95Ms\":7.035904,\"gpuP99Ms\":10.22464}",
+          "performers": "8",
+          "ready": "true",
+          "settled": "true"
+        }
+      },
+      {
+        "check": "legacy-void-eight",
+        "state": {
+          "camera": "{\"position\":{\"x\":0,\"y\":3.8000000000000007,\"z\":32},\"rotation\":{\"x\":-0.06053201978210716,\"y\":0,\"z\":0},\"fov\":50,\"target\":{\"x\":0,\"y\":1.8,\"z\":-1},\"timestamp\":1788658223307}",
+          "environment": "void",
+          "performance": "{\"fps\":17,\"peakFrameMs\":351,\"sampleCount\":1766,\"frameP50Ms\":16.80000001192093,\"frameP95Ms\":58.900000005960464,\"frameP99Ms\":68.09999999403954,\"longFrameRate\":0.41845979614949036,\"thermalDrift\":0,\"drawCalls\":210,\"triangles\":462152,\"geometries\":101,\"textures\":40,\"programs\":143,\"gpuTimingSupported\":true,\"gpuSampleCount\":441,\"gpuP50Ms\":4.304896,\"gpuP95Ms\":7.032832,\"gpuP99Ms\":9.87136}",
+          "performers": "8",
+          "ready": "true",
+          "settled": "true"
+        }
+      },
+      {
+        "check": "legacy-return-winter-eight",
+        "state": {
+          "camera": "{\"position\":{\"x\":0,\"y\":3.8000000000000007,\"z\":32},\"rotation\":{\"x\":-0.06053201978210716,\"y\":0,\"z\":0},\"fov\":50,\"target\":{\"x\":0,\"y\":1.8,\"z\":-1},\"timestamp\":1788658223307}",
+          "environment": "winter",
+          "performance": "{\"fps\":21,\"peakFrameMs\":661.5,\"sampleCount\":2026,\"frameP50Ms\":20,\"frameP95Ms\":61.900000005960464,\"frameP99Ms\":72.60000002384186,\"longFrameRate\":0.4930898321816387,\"thermalDrift\":1.838323355676402,\"drawCalls\":273,\"triangles\":2100479,\"geometries\":129,\"textures\":59,\"programs\":165,\"gpuTimingSupported\":true,\"gpuSampleCount\":506,\"gpuP50Ms\":4.323328,\"gpuP95Ms\":7.13728,\"gpuP99Ms\":10.089472}",
+          "performers": "8",
+          "ready": "true",
+          "settled": "true"
+        }
+      },
+      {
+        "check": "worker-one",
+        "backend": "worker",
+        "state": {
+          "camera": "",
+          "environment": "winter",
+          "performance": "",
+          "performers": "1",
+          "ready": "true",
+          "settled": "true"
+        }
+      },
+      {
+        "check": "worker-eight",
+        "backend": "worker",
+        "state": {
+          "camera": "{\"position\":{\"x\":0.4211045878605134,\"y\":4.798902901951874e-16,\"z\":6.571674882978128},\"rotation\":{\"x\":-6.123233995736767e-17,\"y\":0,\"z\":0},\"fov\":50,\"target\":{\"x\":0.4211045878605134,\"y\":0,\"z\":-1.2655283094738623},\"timestamp\":1788658292302}",
+          "environment": "winter",
+          "performance": "",
+          "performers": "8",
+          "ready": "true",
+          "settled": "true"
+        }
+      },
+      {
+        "check": "reduced-motion-200-percent-equivalent-reflow",
+        "buttons": [
+          {
+            "height": 43.99739456176758,
+            "label": "1 performers",
+            "width": 116.4453125
+          },
+          {
+            "height": 43.99739456176758,
+            "label": "4 performers",
+            "width": 116.4453125
+          },
+          {
+            "height": 43.99739456176758,
+            "label": "8 performers",
+            "width": 116.4453125
+          }
+        ],
+        "reduced": true,
+        "scroll": [987, 562],
+        "state": {
+          "camera": "{\"position\":{\"x\":0,\"y\":3.8000000000000007,\"z\":20.000000000000004},\"rotation\":{\"x\":-0.09495170634275633,\"y\":0,\"z\":0},\"fov\":50,\"target\":{\"x\":0,\"y\":1.8,\"z\":-1},\"timestamp\":1788658655284}",
+          "environment": "winter",
+          "performance": "{\"fps\":57,\"peakFrameMs\":107.2000000178814,\"sampleCount\":2905,\"frameP50Ms\":16.69999998807907,\"frameP95Ms\":16.900000005960464,\"frameP99Ms\":17.5,\"longFrameRate\":0.001376936316695353,\"thermalDrift\":0,\"drawCalls\":110,\"triangles\":1385799,\"geometries\":77,\"textures\":43,\"programs\":117,\"gpuTimingSupported\":true,\"gpuSampleCount\":726,\"gpuP50Ms\":3.970048,\"gpuP95Ms\":5.364736,\"gpuP99Ms\":6.06208}",
+          "performers": "1",
+          "ready": "true",
+          "settled": "true"
+        },
+        "viewport": [1000, 562]
+      }
+    ],
+    "viewports": [
+      {
+        "canvas": [375, 667],
+        "scene": "{\"children\":[\"PerspectiveCamera\",\"Group\",\"winter-environment-world\"],\"calls\":34,\"triangles\":628451,\"camera\":[30.000000000000007,15.999999999999988,52.00000000000001],\"venue\":true}",
+        "scroll": [375, 667],
+        "viewport": [375, 667]
+      },
+      {
+        "canvas": [960, 412],
+        "scene": "{\"children\":[\"PerspectiveCamera\",\"Group\",\"winter-environment-world\"],\"calls\":34,\"triangles\":628451,\"camera\":[22,8.999999999999998,29],\"venue\":true}",
+        "scroll": [960, 412],
+        "viewport": [960, 412]
+      },
+      {
+        "canvas": [820, 1180],
+        "scene": "{\"children\":[\"PerspectiveCamera\",\"Group\",\"winter-environment-world\"],\"calls\":34,\"triangles\":628451,\"camera\":[22.000252638318162,8.99993434256551,29.000384010243607],\"venue\":true}",
+        "scroll": [820, 1180],
+        "viewport": [820, 1180]
+      },
+      {
+        "canvas": [1440, 900],
+        "scene": "{\"children\":[\"PerspectiveCamera\",\"Group\",\"winter-environment-world\"],\"calls\":34,\"triangles\":628451,\"camera\":[22,8.999999999999998,29],\"venue\":true}",
+        "scroll": [1440, 900],
+        "viewport": [1440, 900]
+      },
+      {
+        "canvas": [1920, 1080],
+        "scene": "{\"children\":[\"PerspectiveCamera\",\"Group\",\"winter-environment-world\"],\"calls\":34,\"triangles\":628451,\"camera\":[22,8.999999999999998,29],\"venue\":true}",
+        "scroll": [1920, 1080],
+        "viewport": [1920, 1080]
+      },
+      {
+        "canvas": [2560, 1440],
+        "scene": "{\"children\":[\"PerspectiveCamera\",\"Group\",\"winter-environment-world\"],\"calls\":34,\"triangles\":628451,\"camera\":[22,8.999999999999998,29],\"venue\":true}",
+        "scroll": [2560, 1440],
+        "viewport": [2560, 1440]
+      },
+      {
+        "canvas": [3840, 2160],
+        "scene": "{\"children\":[\"PerspectiveCamera\",\"Group\",\"winter-environment-world\"],\"calls\":34,\"triangles\":628451,\"camera\":[22,8.999999999999998,29],\"venue\":true}",
+        "scroll": [3840, 2160],
+        "viewport": [3840, 2160]
+      }
+    ],
+    "reviewViews": ["hero", "walk", "lodge", "pond", "reverse", "world"],
+    "evidenceDirectory": "C:/Users/Austen/.codex/visualizations/2026/09/05/01a073b8-c8ca-7750-b690-6cc54ac65e92/winter-bluehour",
+    "notes": [
+      "All seven CSS viewport sizes have matching canvas bounds and no page overflow.",
+      "Both production backends reached ready and settled with one and eight performers.",
+      "Legacy Winter -> Void -> Winter was checked with an eight-person cast.",
+      "Reduced motion was emulated with an 800x450 CSS viewport at DPR 2, equivalent to desktop 200% reflow. This was not an OS-window resize.",
+      "Eight-person legacy rendering was CPU-limited on this development run: instantaneous 23 fps, GPU p95 about 7 ms. Single-person rendering sampled 60 fps. These are local observations, not a cross-device performance guarantee.",
+      "The worker keeps its existing performer-focused camera; its eight-person capture includes foreground crops.",
+      "Performer backend checks preceded the final two conifer placement adjustments; final asset composition was inspected afterward."
+    ]
+  },
+  "corrections": [
+    "Seated scanned boulders on the triangulated snow terrain and moved them clear of abrupt pond banks.",
+    "Kept complete conifer canopies outside the longhouse.",
+    "Removed exported tangent attributes after they caused black HDR bloom frames; retained normal maps and verified both renderers.",
+    "Kept authored court height fixed while scaling its X/Z footprint for cast growth."
+  ]
+}

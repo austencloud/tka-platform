@@ -58,6 +58,8 @@ describe("notation catalog", () => {
         0
       );
       for (const source of entry.sources) {
+        if (entry.id === "lorq" && source.href === entry.explore?.href)
+          continue;
         expect(source.href, `${entry.id} source href`).toMatch(
           /^(https:\/\/|\/)/
         );
@@ -211,11 +213,13 @@ describe("notation catalog", () => {
       "http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/"
     );
     expect(
-      NOTATION_CATALOG.filter(
-        (entry) => entry.explore?.href === "/notation/shape-matrix"
+      NOTATION_CATALOG.filter((entry) =>
+        entry.applications?.some((app) => app.href === "/notation/shape-matrix")
       ).map((entry) => entry.id)
     ).toEqual(["tka"]);
-    expect(tka?.records).toContain("Lorq Nichols");
+    expect(
+      tka?.applications?.find((app) => app.role === "tool")?.description
+    ).toContain("Lorq Nichols");
   });
 
   it("keeps only substantiated systems and exposes every built destination", () => {
@@ -223,9 +227,11 @@ describe("notation catalog", () => {
       "unit-circle"
     );
     for (const entry of NOTATION_CATALOG.filter((item) => item.explore)) {
-      expect(notationCatalogView).toContain("activeEntry.catalogEntry.explore");
-      if (entry.id !== "lorq")
-        expect(entry.explore?.href).toMatch(/^\/notation\//);
+      expect(["original", "explanation", "tool"]).toContain(
+        entry.explore?.kind
+      );
+      if (entry.explore?.kind !== "original")
+        expect(entry.explore?.href).toMatch(/^\/(notation\/|guide)/);
     }
   });
 

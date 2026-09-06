@@ -45,6 +45,12 @@ roles are not required dependencies and are not active pilot agents.
   records feedback about hand identity, editing, the next action, and tall-pane
   balance. Reuse the decision's rationale, not its wording in another concept.
   Copy approval there is separate from final visual and learning acceptance.
+  In a later September 5 hands-on correction, Austen liked the new progression
+  but rejected the button clutter, repeated identity/stage labels, and buried
+  prose-only error. Show mistakes beside the artifact, demonstrate the target
+  with canonical pictographs, and make retry immediately actionable. Reuse
+  workspace action glyphs; use visual progress without redundant numeric copy.
+  This requested correction is not final acceptance of its implementation.
 - **Carry the learner forward.** The [Grid copy review](copy-reviews/grid.md)
   records the approved continuation into Hand Positions. Connect through the
   actual prerequisite and route owners instead of inventing a second path.

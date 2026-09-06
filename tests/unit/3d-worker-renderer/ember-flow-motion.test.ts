@@ -2,7 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
-import { Box3, Matrix4, Vector3, type InstancedMesh, type Mesh } from "three";
+import {
+  Box3,
+  Matrix4,
+  Texture,
+  Vector3,
+  type InstancedMesh,
+  type Mesh,
+  type MeshStandardMaterial,
+} from "three";
 import {
   measureFlowPath,
   sampleFlowPath,
@@ -43,6 +51,11 @@ describe("Ember drifting crust", () => {
     data.set(bytes);
     const gltf = await new GLTFLoader()
       .setMeshoptDecoder(MeshoptDecoder)
+      // This test checks flow geometry; browsers verify the embedded atlas.
+      .register(() => ({
+        name: "geometry-test-textures",
+        loadTexture: async () => new Texture(),
+      }))
       .parseAsync(data.buffer, "");
     gltf.scene.position.y = -1.5;
     gltf.scene.updateMatrixWorld(true);
@@ -135,11 +148,35 @@ describe("Ember drifting crust", () => {
       }
     }
     const cold = gltf.scene.getObjectByName("EMBER_AbandonedOverflow") as Mesh;
+    const distant = gltf.scene.getObjectByName(
+      "EMBER_DistantValleyHeat"
+    ) as Mesh;
+    expect(distant.userData.ember_distant_flow_surface).toBe(true);
+    const distantUv = distant.geometry.getAttribute("uv");
+    const distantVertices = distant.geometry.getAttribute("position");
+    const distantMask = distant.geometry.getAttribute("color");
+    for (let index = 0; index < distantVertices.count; index += 137) {
+      sample
+        .fromBufferAttribute(distantVertices, index)
+        .applyMatrix4(distant.matrixWorld);
+      // One V unit is one downhill metre, just like the upstream river.
+      expect(distantUv.getY(index) + sample.z).toBeCloseTo(1, 1);
+      const coverage = distantMask.getX(index);
+      expect(coverage).toBeGreaterThanOrEqual(0);
+      expect(coverage).toBeLessThanOrEqual(1);
+      if (coverage > 0.05) {
+        expect(distantMask.getY(index) / coverage).toBeGreaterThan(0.65);
+        expect(distantMask.getY(index) / coverage).toBeLessThanOrEqual(1.01);
+      }
+    }
     const coldMaterial = cold.material;
     const runtime = createMidflankLava(gltf.scene, -1.5);
     expect(cold.material).toBe(coldMaterial);
     for (const branch of branches)
       expect(branch.material).toBe(deposit.material);
+    expect((distant.material as MeshStandardMaterial).onBeforeCompile).toBe(
+      (deposit.material as MeshStandardMaterial).onBeforeCompile
+    );
     const rafts = runtime.object.getObjectByName(
       "EmberDriftingCrust"
     ) as InstancedMesh;

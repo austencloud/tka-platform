@@ -60,6 +60,25 @@ const SKY_FRAGMENT_SHADER = /* glsl */ `
   uniform float uMoonHorizonWarmth;
   varying vec3 vSkyDirection;
 
+  float cloudHash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  float cloudNoise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(cloudHash(i), cloudHash(i + vec2(1, 0)), f.x),
+      mix(cloudHash(i + vec2(0, 1)), cloudHash(i + vec2(1, 1)), f.x), f.y);
+  }
+  float cloudField(vec2 p) {
+    float n = 0.0, weight = 0.5;
+    for (int i = 0; i < 5; i++) {
+      n += cloudNoise(p) * weight;
+      p = mat2(1.6, -1.2, 1.2, 1.6) * p + 7.4;
+      weight *= 0.5;
+    }
+    return n;
+  }
+
   void main() {
     vec3 skyDirection = normalize(vSkyDirection);
     float rawHeight = skyDirection.y * 0.5 + 0.5;
@@ -80,6 +99,11 @@ const SKY_FRAGMENT_SHADER = /* glsl */ `
       color = mix(uBottomColor, uTopColor, h);
     }
 
+    vec2 cloudPlane = skyDirection.xz / max(0.18, skyDirection.y + 0.24);
+    float clouds = smoothstep(0.44, 0.73, cloudField(cloudPlane * vec2(2.1, 3.2)));
+    clouds *= smoothstep(0.01, 0.18, skyDirection.y);
+    color = mix(color, vec3(0.10, 0.16, 0.24), clouds * 0.42);
+
     vec3 moonDirection = normalize(uMoonDirection);
     float moonFrontHemisphere = step(0.0, dot(skyDirection, moonDirection));
     vec3 referenceUp = abs(moonDirection.y) > 0.98
@@ -95,7 +119,9 @@ const SKY_FRAGMENT_SHADER = /* glsl */ `
     float radialDistance = length(moonPlane);
     vec2 moonUv = moonPlane * vec2(0.5, -0.5) + 0.5;
     vec4 moonSample = texture2D(uMoonTexture, moonUv);
-    float diskEdge = 1.0 - smoothstep(0.965, 1.0, radialDistance);
+    // The packed moon image has a dark photographic rim; crop it into the
+    // atmosphere instead of drawing a hard black outline around the disk.
+    float diskEdge = 1.0 - smoothstep(0.87, 0.93, radialDistance);
     float diskAlpha = moonSample.a
       * diskEdge
       * uMoonOpacity
@@ -135,11 +161,11 @@ function createBlossomSky(
   dispose(): void;
 } {
   const moon = {
-    direction: [-0.42, 0.56, -0.72] as const,
-    angularDiameterDegrees: 3.6,
+    direction: [0.18, 0.22, 0.96] as const,
+    angularDiameterDegrees: 4.8,
     opacity: 0.98,
-    glowScale: 1.72,
-    glowOpacity: 0.1,
+    glowScale: 2.2,
+    glowOpacity: 0.045,
     surfaceLift: 0.3,
     horizonWarmth: 0.18,
   };
@@ -226,11 +252,11 @@ export function createBlossomAtmosphere(
       enabled: true,
       count: options.runtime.effects.stars,
       radius: 90,
-      sizeRange: [0.9, 2.7],
+      sizeRange: [0.45, 1.35],
       twinkleSpeed: 0.28,
-      intensity: 1.72,
+      intensity: 0.7,
       magnitudeFalloff: 1.35,
-      brightnessFloor: 0.52,
+      brightnessFloor: 0.18,
       horizonSpread: 0.5,
       elevationRangeDegrees: [-5, 18],
     },

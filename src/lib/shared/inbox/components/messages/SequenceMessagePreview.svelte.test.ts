@@ -1,7 +1,10 @@
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import {
+  createSequenceData,
+  type SequenceData,
+} from "$lib/shared/foundation/domain/models/sequence-data";
 
 vi.mock("$lib/shared/choreo-card/components/TKAWordGlyph.svelte", async () => ({
   default: (await import("./SequenceMessagePreviewGlyphTestStub.svelte"))
@@ -92,13 +95,11 @@ describe("SequenceMessagePreview activation", () => {
   });
 
   it("replaces the fallback poster with the resolved Choreo Card", async () => {
-    const loadSequence = vi.fn(
-      async () =>
-        ({
-          id: "sequence-1",
-          word: "YR0L",
-          steps: [],
-        }) as SequenceData
+    const loadSequence = vi.fn(async () =>
+      createSequenceData({
+        id: "sequence-1",
+        word: "YR0L",
+      })
     );
 
     render(SequenceMessagePreview, {

@@ -254,6 +254,9 @@ export function createPropPlacementState(
     get canPlace() {
       return !inputs.getDisabled() && activeHand !== null;
     },
+    get canEdit() {
+      return !inputs.getDisabled() && inputs.getEditAfterCompletion();
+    },
     get canUndo() {
       return inputs.getShowUndo() && changeCanUndo();
     },

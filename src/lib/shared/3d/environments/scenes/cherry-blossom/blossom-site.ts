@@ -1,4 +1,4 @@
-import masterplanJson from "../../../../../../../docs/superpowers/specs/blossom-masterplan-r2/blossom-masterplan-r2.json";
+import masterplanJson from "./blossom-plan.json";
 
 export type BlossomPlanPoint2 = readonly [number, number];
 export type BlossomPlanPoint3 = readonly [number, number, number];
@@ -51,6 +51,11 @@ interface BlossomMasterplan {
     paths: BlossomCirculationPath[];
   };
   camera: {
+    portrait?: {
+      position: BlossomPlanPoint3;
+      target: BlossomPlanPoint3;
+      fov: number;
+    };
     default: {
       position: BlossomPlanPoint3;
       target: BlossomPlanPoint3;
@@ -68,13 +73,13 @@ interface BlossomMasterplan {
 
 const masterplan = masterplanJson as unknown as BlossomMasterplan;
 
-// "rejected-visual-review" renders the preserved build for comparison only;
-// new production authoring is blocked at the build script.
+// Authored scenes can be reviewed before the user accepts their visual design.
 if (
+  masterplan.status !== "authored" &&
   masterplan.status !== "approved-for-production" &&
   masterplan.status !== "rejected-visual-review"
 ) {
-  throw new Error("Blossom R2.1 is not at a recognized runtime gate");
+  throw new Error("Blossom plan is not at a recognized runtime gate");
 }
 
 export function getBlossomMasterplanId(): string {
@@ -114,6 +119,20 @@ export function getBlossomCirculationPaths(): readonly BlossomCirculationPath[] 
 
 export function getBlossomCameraContract(): BlossomMasterplan["camera"] {
   return masterplan.camera;
+}
+
+export function getBlossomOpeningCamera(portrait = false): {
+  position: [number, number, number];
+  target: [number, number, number];
+  fov: number;
+} {
+  const camera =
+    (portrait && masterplan.camera.portrait) || masterplan.camera.default;
+  return {
+    position: blossomPlanToViewerPoint(camera.position),
+    target: blossomPlanToViewerPoint(camera.target),
+    fov: camera.fov,
+  };
 }
 
 /** Convert plan-space (X west/east, Y south/north, Z up) to Three.js space. */

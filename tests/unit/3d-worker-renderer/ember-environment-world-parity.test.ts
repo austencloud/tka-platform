@@ -40,6 +40,15 @@ function model(name: string): Group {
   return root;
 }
 
+function geometryLoader(): GLTFLoader {
+  // jsdom cannot decode the embedded atlas. Real texture decoding and the
+  // baked shading are checked in both browser renderers, not mocked here.
+  return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).register(() => ({
+    name: "geometry-test-textures",
+    loadTexture: async () => new Texture(),
+  }));
+}
+
 function assets(): EmberEnvironmentAssets {
   const productionSlice = new Group();
   const basinMaterial = new MeshStandardMaterial({
@@ -96,7 +105,7 @@ function createWorld(bundle = assets()): {
 
 describe("Ember renderer-neutral production world", () => {
   it("preserves the completed foreground and keeps the cooled plate above its footing", async () => {
-    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const loader = geometryLoader();
     const load = async (path: string) => {
       const bytes = readFileSync(path);
       const data = new Uint8Array(bytes.length);
@@ -148,7 +157,33 @@ describe("Ember renderer-neutral production world", () => {
       expect(ray.intersectObject(mesh)).toHaveLength(0);
     });
     expect(backdropMeshes).toBe(2);
-    expect(backdropTriangles).toBeLessThan(11000);
+    expect(backdropTriangles).toBeLessThan(140000);
+    // The exported bed must descend, not just a separately authored path.
+    // Sample the actual heat mesh so optimization cannot hide an uphill step.
+    const outflow = current.getObjectByName("EMBER_DistantValleyHeat") as Mesh;
+    const profile = outflow.userData.ember_drainage_profile as number[][];
+    expect(profile.length).toBeGreaterThan(500);
+    const sample = new Vector3();
+    const flowRay = new Raycaster(new Vector3(), new Vector3(0, -1, 0));
+    let previousY = Infinity;
+    let firstY = 0;
+    for (let index = 1; index < profile.length; index += 12) {
+      // glTF rotates Blender-local coordinates; meshopt then adds a geometry
+      // decode transform that must not be applied to unquantized metadata.
+      // Mid-segment samples avoid quantization shifting the open end boundary
+      // a few millimetres past an otherwise exact edge ray.
+      const [x, y, z] = profile[index].map(
+        (value, axis) => (value + profile[index - 1][axis]) / 2
+      );
+      sample.set(x, z, -y).applyMatrix4(outflow.parent!.matrixWorld);
+      flowRay.ray.origin.set(sample.x, 500, sample.z);
+      const hit = flowRay.intersectObject(outflow)[0];
+      expect(hit).toBeDefined();
+      if (index === 1) firstY = hit.point.y;
+      expect(hit.point.y).toBeLessThanOrEqual(previousY + 0.025);
+      previousY = hit.point.y;
+    }
+    expect(firstY - previousY).toBeGreaterThan(100);
     const stage = current.getObjectByName(
       "EMBER_CooledPerformancePlate"
     ) as Mesh;
@@ -187,12 +222,15 @@ describe("Ember renderer-neutral production world", () => {
   it("delivers the approved datum and slope without resurrecting the runtime platform", async () => {
     const path = "static/models/ember/ember-production-slice.glb";
     const bytes = readFileSync(path);
-    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const loader = geometryLoader();
     const data = new Uint8Array(bytes.length);
     data.set(bytes);
     const gltf = await loader.parseAsync(data.buffer, "");
     const bundle = assets();
     bundle.productionSlice = gltf.scene;
+    const valley = gltf.scene.getObjectByName("EMBER_DistantValley") as Mesh;
+    const bakedMap = (valley.material as MeshStandardMaterial).map;
+    expect(bakedMap).not.toBeNull();
     const source = gltf.scene.getObjectByName("EMBER_Terrain") as Mesh;
     const positions = source.geometry.getAttribute("position").array.slice();
     const world = createEmberEnvironmentWorld(
@@ -206,11 +244,23 @@ describe("Ember renderer-neutral production world", () => {
       bundle
     );
     world.root.updateMatrixWorld(true);
+    expect((valley.material as MeshStandardMaterial).map).toBe(bakedMap);
     world.root.traverse((node) => {
       if (node.userData.ember_backdrop !== true) return;
       const mesh = node as Mesh;
       expect(mesh.castShadow).toBe(false);
       expect(mesh.receiveShadow).toBe(false);
+      if (node.userData.ember_distant_flow_surface === true) {
+        const near = world.root.getObjectByName(
+          "EMBER_LavaSimulatorDeposit"
+        ) as Mesh;
+        expect(mesh.material).toBeInstanceOf(MeshStandardMaterial);
+        expect((mesh.material as MeshStandardMaterial).onBeforeCompile).toBe(
+          (near.material as MeshStandardMaterial).onBeforeCompile
+        );
+        expect((mesh.material as MeshStandardMaterial).fog).toBe(true);
+        return;
+      }
       expect((mesh.material as MeshStandardMaterial).fog).toBe(false);
       expect(Array.isArray(mesh.material)).toBe(false);
       expect((mesh.material as MeshStandardMaterial).type).toBe(

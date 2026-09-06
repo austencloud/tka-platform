@@ -32,14 +32,7 @@ export const SCENE_ASSET_MANIFEST: Readonly<
 > = {
   [BackgroundType.AUTUMN]: ["/models/autumn/autumn-environment.glb"],
   [BackgroundType.BLOSSOM]: ["/models/blossom/blossom_environment.glb"],
-  [BackgroundType.CELESTIAL]: [
-    "/models/celestial/seraphic-vault-integrated-sanctuaries.glb",
-    "/models/celestial/olive-cloudbreak-production-slice.glb",
-    "/models/celestial/cloudbreak/source/olive-west-ancient.glb",
-    "/models/celestial/cloudbreak/source/olive-east-windswept.glb",
-    "/models/celestial/cloudbreak/rocks/coast-rocks-05.glb",
-    "/models/celestial/cloudbreak/rocks/sand-rocks-small-01.glb",
-  ],
+  [BackgroundType.CELESTIAL]: ["/models/celestial/sunward-gardens.glb"],
   [BackgroundType.COSMIC]: [
     "/models/cosmic/cosmic-reliquary.glb",
     "/models/cosmic/cosmic-stage.glb",
@@ -57,9 +50,9 @@ export const SCENE_ASSET_MANIFEST: Readonly<
     "/models/forest/forest-stage.glb",
   ],
   [BackgroundType.OCEAN]: ["/models/ocean/ocean-environment.glb"],
-  [BackgroundType.PRIDE]: [],
+  [BackgroundType.PRIDE]: ["/models/rainbow/spectrum-commons.glb"],
   [BackgroundType.VOID]: [],
-  [BackgroundType.WINTER]: ["/models/winter/winter-environment.glb"],
+  [BackgroundType.WINTER]: ["/models/winter/blue-hour-lodge.glb"],
 };
 
 /**
@@ -70,6 +63,9 @@ export const SCENE_ASSET_MANIFEST: Readonly<
 const SCENE_TEXTURE_PREFETCH: Partial<
   Readonly<Record<BackgroundType, readonly string[]>>
 > = {
+  [BackgroundType.CELESTIAL]: [
+    "/textures/celestial/olive-cloudbreak-panorama-r1.webp?v=gate4-cloudbreak-r1",
+  ],
   [BackgroundType.AUTUMN]: [
     "/textures/autumn-floor/ground-detail-modulation.ktx2",
     "/textures/water/Water_1_M_Normal.jpg",

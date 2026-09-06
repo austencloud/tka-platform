@@ -102,7 +102,7 @@ const tributaryRevision = distant ? "r2" : "r1";
 const flow = tributaries || process.argv.includes("--lava-flow");
 const midflank = flow || process.argv.includes("--midflank-r5");
 const versionedOutput = valley
-  ? "static/models/ember/ember-distant-valley-r1.glb"
+  ? "static/models/ember/ember-distant-valley-r4.glb"
   : geology
     ? "static/models/ember/ember-geology-stage-r1.glb"
     : tributaries
@@ -115,7 +115,7 @@ const versionedOutput = valley
 
 await optimizeGltfKtx2({
   input: valley
-    ? "static/models/ember/ember-distant-valley-r1_raw.glb"
+    ? "static/models/ember/ember-distant-valley-r4_raw.glb"
     : geology
       ? "static/models/ember/ember-geology-stage-r1_raw.glb"
       : tributaries
@@ -130,7 +130,7 @@ await optimizeGltfKtx2({
   label: midflank
     ? "Ember Mid-Flank Fire Pilgrimage R5"
     : "Ember Living Caldera and Fresh Rift surface ecology",
-  textureSize: 1024,
+  textureSize: valley ? 2048 : 1024,
   materialTextureSize: 512,
   simplifyRatio: midflank ? 1 : 0.92,
   simplifyError: 0.001,

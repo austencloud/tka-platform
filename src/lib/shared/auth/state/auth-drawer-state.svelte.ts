@@ -8,6 +8,7 @@ let _initialMode = $state<"signin" | "signup">("signup");
 // Cleared on every show() call that doesn't pass one, so a reason never
 // bleeds into an unrelated later open.
 let _reason = $state<AuthNudgeTrigger | null>(null);
+let _stepCapAttempts = $state(0);
 
 export const authDrawerState = {
   get open() {
@@ -19,7 +20,14 @@ export const authDrawerState = {
   get reason() {
     return _reason;
   },
+  get stepCapAttempts() {
+    return _stepCapAttempts;
+  },
   show(mode: "signin" | "signup" = "signup", reason?: AuthNudgeTrigger) {
+    // Count encounters, not duplicate calls while the same dialog is open.
+    if (reason === "step-cap-guest" && (!_open || _reason !== reason)) {
+      _stepCapAttempts += 1;
+    }
     _initialMode = mode;
     _reason = reason ?? null;
     _open = true;
@@ -42,5 +50,6 @@ export const authDrawerState = {
     _open = false;
     _initialMode = "signup";
     _reason = null;
+    _stepCapAttempts = 0;
   },
 };

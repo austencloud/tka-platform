@@ -18,6 +18,7 @@ import {
   computeFlowFestCarNormalization,
   createFlowFestParkedCarInstances,
   disposeFlowFestCarBody,
+  flowFestDrivenCarPose,
   flowFestParkedCarPlacementMatrix,
   settleFlowFestParkedCarOnGround,
   type FlowFestParkedCarModel,
@@ -352,5 +353,67 @@ describe("Flow Fest driven car body", () => {
     expect(body.ownedGeometries).toEqual([]);
     const normalization = computeFlowFestCarNormalization(buildSource(), model);
     expect(normalization.scale).toBeCloseTo(1, 6);
+  });
+});
+
+describe("Flow Fest driven car pose", () => {
+  const flat = () => 0;
+  const tilted = (x: number, z: number) => 0.08 * x - 0.05 * z + 3;
+  const coasting = {
+    headingRadians: 2.3,
+    bodyPitchRadians: 0,
+    bodyRollRadians: 0,
+  };
+
+  it("points the nose along the drive heading, a quarter turn from the body axis", () => {
+    for (const headingRadians of [0, 0.7, Math.PI / 2, -2.4]) {
+      const pose = flowFestDrivenCarPose(
+        model,
+        { x: 12, z: -3 },
+        { ...coasting, headingRadians },
+        flat
+      );
+      const matrix = flowFestParkedCarPlacementMatrix({
+        x: 0,
+        y: 0,
+        z: 0,
+        rotation: pose.yaw,
+        pitch: pose.pitch,
+        roll: pose.roll,
+      });
+      // The drive moves along (sin h, cos h); the body has to face that way.
+      const nose = new Vector3(1, 0, 0).applyMatrix4(matrix);
+      expect(nose.x).toBeCloseTo(Math.sin(headingRadians), 6);
+      expect(nose.y).toBeCloseTo(0, 6);
+      expect(nose.z).toBeCloseTo(Math.cos(headingRadians), 6);
+    }
+  });
+
+  it("settles the tyres into the field exactly as a parked body does", () => {
+    const position = { x: 4, z: -7 };
+    const pose = flowFestDrivenCarPose(model, position, coasting, tilted);
+    expect(pose.x).toBe(position.x);
+    expect(pose.z).toBe(position.z);
+    for (const wheel of settledWheelWorldPoints(
+      { ...position, rotation: pose.yaw },
+      pose
+    )) {
+      expect(wheel.y - tilted(wheel.x, wheel.z)).toBeCloseTo(-0.03, 3);
+    }
+  });
+
+  it("adds the weight transfer on top of the settled attitude, nothing else", () => {
+    const position = { x: 4, z: -7 };
+    const settled = flowFestDrivenCarPose(model, position, coasting, tilted);
+    const braking = flowFestDrivenCarPose(
+      model,
+      position,
+      { ...coasting, bodyPitchRadians: -0.04, bodyRollRadians: 0.02 },
+      tilted
+    );
+    expect(braking.pitch - settled.pitch).toBeCloseTo(-0.04, 9);
+    expect(braking.roll - settled.roll).toBeCloseTo(0.02, 9);
+    expect(braking.y).toBe(settled.y);
+    expect(braking.yaw).toBe(settled.yaw);
   });
 });

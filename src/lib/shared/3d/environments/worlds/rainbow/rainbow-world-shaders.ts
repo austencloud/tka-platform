@@ -82,6 +82,8 @@ export const SKY_FRAGMENT_SHADER = /* glsl */ `
       ? mix(uBottomColor, uMidColor, h * 2.0)
       : mix(uMidColor, uTopColor, (h - 0.5) * 2.0);
     gl_FragColor = vec4(color, 1.0);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
   }
 `;
 

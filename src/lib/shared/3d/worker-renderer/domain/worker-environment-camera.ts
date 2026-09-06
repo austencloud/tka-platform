@@ -3,6 +3,7 @@ import type {
   WorkerEnvironmentKey,
 } from "./worker-renderer-protocol";
 import { CLOUDBREAK_LAYOUT } from "../../environments/scenes/celestial/cloudbreak-layout";
+import { getBlossomOpeningCamera } from "../../environments/scenes/cherry-blossom/blossom-site";
 
 const CAMERA_BY_ENVIRONMENT: Readonly<
   Record<WorkerEnvironmentKey, WorkerCameraSnapshot>
@@ -13,9 +14,9 @@ const CAMERA_BY_ENVIRONMENT: Readonly<
     fov: 46,
   },
   rainbow: {
-    position: [0, 4.2, 17],
-    target: [0, 1.1, -1],
-    fov: 48,
+    position: [0, 3.8, 19],
+    target: [0, 1.8, -1],
+    fov: 52,
   },
   void: {
     position: [0, 4.2, 17],
@@ -42,11 +43,7 @@ const CAMERA_BY_ENVIRONMENT: Readonly<
     target: [0, 1.3, -1.5],
     fov: 46,
   },
-  blossom: {
-    position: [0, 4.2, 17],
-    target: [0, 1.1, -1],
-    fov: 48,
-  },
+  blossom: getBlossomOpeningCamera(),
   autumn: {
     position: [0, 4.2, 17],
     target: [0, 1.1, -1],

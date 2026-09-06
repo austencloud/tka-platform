@@ -14,6 +14,7 @@ import {
   Vector3,
   type Material,
   type Object3D,
+  type Texture,
 } from "three";
 
 import type { EmberSceneConfig } from "../../domain/models/scene-configs";
@@ -94,21 +95,72 @@ function compoundedBlend(blend: number, applications: number): number {
 function configureProductionSlice(
   asset: Object3D,
   config: EmberSceneConfig,
-  shadows: boolean
+  shadows: boolean,
+  valleyRock: Texture
 ): void {
   if (asset.getObjectByName("EMBER_Terrain")) {
     asset.traverse((child) => {
       const mesh = child as Mesh;
       if (!mesh.isMesh) return;
       if (child.userData.ember_backdrop === true) {
+        if (child.userData.ember_distant_flow_surface === true) {
+          // Keep its standard material until the shared lava owner attaches
+          // the same thermal crust used upstream. Only rock uses baked colour.
+          mesh.castShadow = false;
+          mesh.receiveShadow = false;
+          return;
+        }
         const source = mesh.material as MeshStandardMaterial;
         // Distant ridges carry baked light and haze. The near-field fog would
         // erase them, and dynamic lights/shadows buy no useful detail here.
-        mesh.material = new MeshBasicMaterial({
+        const backdrop = new MeshBasicMaterial({
           name: source.name,
+          map: source.map,
           vertexColors: true,
           fog: false,
         });
+        if (source.map) {
+          // The atlas carries large-scale light. Project the existing basalt
+          // texture onto all three axes so cliff faces don't stretch it.
+          backdrop.onBeforeCompile = (shader) => {
+            shader.uniforms.uValleyRock = { value: valleyRock };
+            shader.vertexShader = shader.vertexShader
+              .replace(
+                "#include <common>",
+                `#include <common>
+varying vec3 vValleyWorld;
+varying vec3 vValleyNormal;`
+              )
+              .replace(
+                "#include <begin_vertex>",
+                `#include <begin_vertex>
+vValleyWorld = (modelMatrix * vec4(position, 1.0)).xyz;
+vValleyNormal = normalize(mat3(modelMatrix) * normal);`
+              );
+            shader.fragmentShader = shader.fragmentShader
+              .replace(
+                "#include <common>",
+                `#include <common>
+uniform sampler2D uValleyRock;
+varying vec3 vValleyWorld;
+varying vec3 vValleyNormal;`
+              )
+              .replace(
+                "#include <map_fragment>",
+                `#include <map_fragment>
+vec3 weights = pow(abs(normalize(vValleyNormal)), vec3(4.0));
+weights /= max(dot(weights, vec3(1.0)), 0.0001);
+vec3 rock = texture2D(uValleyRock, vValleyWorld.yz / 24.0).rgb * weights.x
+          + texture2D(uValleyRock, vValleyWorld.xz / 24.0).rgb * weights.y
+          + texture2D(uValleyRock, vValleyWorld.xy / 24.0).rgb * weights.z;
+float grain = clamp(dot(rock, vec3(0.2126, 0.7152, 0.0722)) * 5.5 + 0.48, 0.52, 1.45);
+float detail = 0.8 * (1.0 - smoothstep(300.0, 1250.0, length(vValleyWorld.xz)));
+diffuseColor.rgb *= mix(1.0, grain, detail);`
+              );
+          };
+          backdrop.customProgramCacheKey = () => "ember-valley-basalt-r2";
+        }
+        mesh.material = backdrop;
         source.dispose();
         mesh.castShadow = false;
         mesh.receiveShadow = false;
@@ -251,7 +303,12 @@ export function createEmberAuthoredSurface(
   object.name ||= "ember-production-slice";
   object.position.y = options.groundY;
   object.updateWorldMatrix(true, true);
-  configureProductionSlice(object, options.config, options.shadows);
+  configureProductionSlice(
+    object,
+    options.config,
+    options.shadows,
+    options.assets.detailMaps.fracturedBasalt
+  );
 
   const patches = new Set<EmberGroundDetailPatch>();
   if (options.groundDetailEnabled !== false) {

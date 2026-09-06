@@ -8,6 +8,7 @@ import {
 
 import type { BlossomSceneConfig } from "../../domain/models/scene-configs";
 import type { BlossomRuntimeConfig } from "../../scenes/cherry-blossom/blossom-runtime";
+import plan from "../../scenes/cherry-blossom/blossom-plan.json";
 
 export interface BlossomLightingRig {
   object: Group;
@@ -49,10 +50,10 @@ export function createBlossomLightingRig(
   key.shadow.intensity = 0.56;
   root.add(key);
 
-  const warmFill = new DirectionalLight("#ff7f91", 0.88);
+  const warmFill = new DirectionalLight("#ffbb9b", 1.1);
   warmFill.name = "blossom-warm-fill";
   root.add(warmFill);
-  const coolFill = new DirectionalLight("#7f73b7", 0.36);
+  const coolFill = new DirectionalLight("#a6c5e4", 0.2);
   coolFill.name = "blossom-cool-fill";
   root.add(coolFill);
   const hemisphere = new HemisphereLight(
@@ -62,15 +63,23 @@ export function createBlossomLightingRig(
   );
   hemisphere.name = "blossom-hemisphere-light";
   root.add(hemisphere);
-  const ambient = new AmbientLight("#c89ab9", 0.18);
+  const ambient = new AmbientLight("#748da3", 0.08);
   ambient.name = "blossom-ambient-light";
   root.add(ambient);
 
-  const practicals = [
-    { color: "#ff9b52", intensity: 6.5, distance: 10, x: 7, y: 2.15, z: 4.6 },
-    { color: "#ff9b52", intensity: 6.5, distance: 10, x: -7, y: 2.15, z: 4.6 },
-    { color: "#ff7565", intensity: 4.6, distance: 9, x: 0, y: 2.6, z: 14.2 },
-  ];
+  const practicals = [0, 1, 5].map((index) => {
+    const [x, depth, height] = plan.lanterns[index]!;
+    const hero = plan.trees[0]!.root;
+    return {
+      color: index === 5 ? "#ffe1cf" : "#ffbd83",
+      intensity: index === 5 ? 12 : 55,
+      decay: index === 5 ? 1 : 2,
+      distance: index === 5 ? 24 : 13,
+      x: index === 5 ? -hero[0]! : -x!,
+      y: index === 5 ? hero[2]! + 6.5 : height!,
+      z: index === 5 ? hero[1]! - 2 : depth!,
+    };
+  });
   const practicalLights = practicals
     .slice(0, runtime.effects.lanternLights)
     .map((definition, index) => {
@@ -78,7 +87,7 @@ export function createBlossomLightingRig(
         definition.color,
         definition.intensity,
         definition.distance,
-        2
+        definition.decay
       );
       light.name = `blossom-lantern-light-${index}`;
       root.add(light);

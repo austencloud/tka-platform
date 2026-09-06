@@ -117,12 +117,9 @@ const WINTER_TREE_RINGS: TreeRingConfig[] = [
 
 const DEFAULT_CAMPFIRE_WINTER: CampfireConfig = {
   enabled: true,
-  // The approved lodge-side hearth is clear of the performance route. The
-  // Blender settlement contract owns the same (-34, -30) runtime coordinate.
-  position: { x: -34, z: -30 },
-  // The hearth pad is 2.45 m above the scene origin. Starting the flame inside
-  // the upper split logs keeps it attached to the authored fire bed.
-  groundOffset: 2.59,
+  // The hearth sits beside the promenade, beyond the clear performance floor.
+  position: { x: -13, z: -4 },
+  groundOffset: 0.4,
   modelScale: 1,
   fireScale: 1.04,
   fireHeight: 1.7,
@@ -148,13 +145,13 @@ const DEFAULT_CAMPFIRE_WINTER: CampfireConfig = {
 export function createDefaultWinterConfig(): WinterSceneConfig {
   return {
     sky: {
-      topColor: "#050b1b",
-      midColor: "#132d4b",
-      bottomColor: "#102238",
+      topColor: "#07152c",
+      midColor: "#344e68",
+      bottomColor: "#617487",
     },
     starfield: {
       enabled: true,
-      count: 1400,
+      count: 650,
       radius: 90,
       sizeRange: [0.5, 1.8],
       twinkleSpeed: 0.45,
@@ -168,7 +165,7 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
       glowScale: 1.12,
       glowOpacity: 0.025,
     },
-    fog: { color: "#172c44", density: 0.014 },
+    fog: { color: "#617487", density: 0.0045 },
     ground: {
       color: "#eaf2fb",
       size: 50,
@@ -177,7 +174,7 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
     },
     snow: {
       type: "snow",
-      count: 520,
+      count: 280,
       area: { width: 48, height: 15, depth: 48 },
       speed: 0.2,
       // Four tints = four shape variants in the shader (classic 6-arm, 8-arm
@@ -195,19 +192,19 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
       enabled: true,
       position: { x: 16, z: -10 },
       radius: 6,
-      color: "#385b72",
+      color: "#b5d5e3",
       roughness: 0.62,
     },
     campfire: DEFAULT_CAMPFIRE_WINTER,
     cabin: {
       enabled: true,
-      position: { x: -24, z: -38 },
+      position: { x: -6, z: -19 },
       scale: 1,
-      rotationY: 3.704908915081761,
+      rotationY: 0,
       smoke: {
         enabled: true,
-        position: { x: -27.57341007046096, z: -37.46363762864812 },
-        heightOffset: 10.1692307692,
+        position: { x: -14, z: -21 },
+        heightOffset: 9.1,
         area: { width: 1.2, height: 4.8, depth: 1.2 },
         count: 18,
         speed: 0.05,
@@ -217,10 +214,10 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
       },
       windowLight: {
         enabled: true,
-        position: { x: -20.892828281361183, z: -33.08031144548853 },
-        heightOffset: 4.9384615385,
+        position: { x: -6, z: -17 },
+        heightOffset: 3.6,
         color: "#ff8a3d",
-        intensity: 28,
+        intensity: 60,
         distance: 12,
         decay: 1.7,
       },
@@ -228,17 +225,17 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
     hemisphereLight: {
       skyColor: "#b9d8ff",
       groundColor: "#32445f",
-      intensity: 0.58,
+      intensity: 0.6,
     },
     moonLight: {
       enabled: true,
       color: "#d8e4f4",
-      intensity: 1,
+      intensity: 0.85,
       position: [-20, 25, 15],
     },
     platform: {
       enabled: true,
-      radius: 5,
+      radius: 7.7,
       height: 0.45,
       primaryColor: "#c8e8ff",
       glowIntensity: 0.6,

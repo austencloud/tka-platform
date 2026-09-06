@@ -1,4 +1,7 @@
+import type { WorkspaceReplayCommand } from "./workspace-review-replays";
+
 export type TransitionTraceCommand =
+  | WorkspaceReplayCommand
   | "2d"
   | "card"
   | "interrupt"
@@ -18,6 +21,9 @@ export type TransitionTraceCommand =
   | "performances-interrupt";
 
 export type TransitionTracePhase =
+  | "workspace-enter"
+  | "workspace-return"
+  | "workspace-interrupt"
   | "focus-2d"
   | "focus-card"
   | "return-split"
@@ -50,6 +56,12 @@ export type TransitionTracePhase =
   | "interrupt-performance-stage";
 
 export interface TransitionGeometrySample {
+  workspace?: {
+    studioOpacity: number;
+    practiceHeight: number;
+    selectedButtons: number;
+    stageIdentity: number;
+  };
   time: number;
   phase: TransitionTracePhase;
   direction: "horizontal" | "vertical";
@@ -61,6 +73,7 @@ export interface TransitionGeometrySample {
     | "card"
     | "tunnel"
     | "videos"
+    | "post-studio"
     | null;
   outerDirection: "horizontal" | "vertical";
   stageSize: number;
@@ -720,7 +733,9 @@ function late2DBackingChanges(samples: TransitionGeometrySample[]): number {
   for (let index = 1; index < settledReturn.length; index += 1) {
     const current = settledReturn[index]!;
     const previous = settledReturn[index - 1]!;
-    if (Math.abs(current.mandalaBackingSize - previous.mandalaBackingSize) > 0.5) {
+    if (
+      Math.abs(current.mandalaBackingSize - previous.mandalaBackingSize) > 0.5
+    ) {
       changes += 1;
     }
   }
@@ -1246,7 +1261,9 @@ function summarizeCardSizePinRelease(
   for (let index = 1; index < measured.length; index += 1) {
     const current = measured[index]!;
     const previous = measured[index - 1]!;
-    const delta = Math.abs(current.cardContentWidth - previous.cardContentWidth);
+    const delta = Math.abs(
+      current.cardContentWidth - previous.cardContentWidth
+    );
     if (delta > stepPx) stepPx = delta;
     if (delta > 0.5) settledIndex = index;
   }
@@ -1292,7 +1309,9 @@ function summarizeDockCollapse(
     // and a snap on the way out is the same defect as a snap on the way in.
     const previousHeld = held[index - 1]!;
     const currentHeld = held[index]!;
-    const delta = Math.abs(previousHeld.inspectorSize - currentHeld.inspectorSize);
+    const delta = Math.abs(
+      previousHeld.inspectorSize - currentHeld.inspectorSize
+    );
     if (delta > stepPx) stepPx = delta;
     if (delta > 0.5) {
       if (firstIndex < 0) firstIndex = index - 1;
@@ -1310,8 +1329,7 @@ function summarizeDockCollapse(
     stepPx: Math.round(stepPx * 10) / 10,
     travelPx: Math.round((Math.max(...moving) - Math.min(...moving)) * 10) / 10,
     frames: lastIndex - firstIndex,
-    ms:
-      Math.round((held[lastIndex]!.time - held[firstIndex]!.time) * 10) / 10,
+    ms: Math.round((held[lastIndex]!.time - held[firstIndex]!.time) * 10) / 10,
   };
 }
 
