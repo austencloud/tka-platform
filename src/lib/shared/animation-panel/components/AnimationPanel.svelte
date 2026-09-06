@@ -69,7 +69,7 @@
     computeExportSummary,
     computePropsSummary,
   } from "../pill-nav/pill-summaries";
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import {
     reportViewerControlChange,
     type ViewerControlSink,
@@ -229,6 +229,22 @@
   let activePill = $state<PillId | null>(
     layout === "sidebar" ? loadActivePill() : null
   );
+  // The viewer shell mounts this panel once and re-lays it out in place
+  // (sidebar while another mode owns the workspace, bottom once the stacked
+  // motion dock opens), so the initial value above only describes the layout
+  // it mounted in. A dock has to open closed: carrying the remembered sidebar
+  // page across put the phone on an open Props tray, which ducks the mode bar
+  // that is the only way back out of 2D.
+  let appliedLayout = layout;
+  $effect(() => {
+    if (layout === appliedLayout) return;
+    appliedLayout = layout;
+    const previous = untrack(() => activePill);
+    const next = layout === "bottom" ? null : loadActivePill();
+    if (previous === next) return;
+    activePill = next;
+    if (layout === "bottom") onActiveSectionChange?.(null);
+  });
   let panelDirection = $state(1);
 
   function handlePillSelect(id: PillId): void {
