@@ -179,6 +179,36 @@ describe("collectionsState", () => {
     expect(mocks.addSequenceToCollection).not.toHaveBeenCalled();
   });
 
+  it("lets guests add public sequences and nudges only after the first successful save", async () => {
+    mutableAuth.isAnonymous = true;
+    collectionsState.collections = [col("c1", "Practice")];
+    mocks.addSequenceToCollection.mockRejectedValueOnce(new Error("offline"));
+
+    await collectionsState.toggle("public-sequence", "c1");
+    expect(mocks.showToast).not.toHaveBeenCalled();
+    expect(mocks.authDrawerShow).not.toHaveBeenCalled();
+
+    await collectionsState.toggle("public-sequence", "c1");
+    await collectionsState.toggle("another-public-sequence", "c1");
+    expect(mocks.addSequenceToCollection).toHaveBeenLastCalledWith(
+      "c1",
+      "another-public-sequence"
+    );
+    expect(mocks.showToast).toHaveBeenCalledOnce();
+    expect(mocks.authDrawerShow).not.toHaveBeenCalled();
+    const nudge = mocks.showToast.mock.calls[0]![0];
+    expect(nudge.type).toBe("success");
+    expect(nudge.action.label).toBe("Create account");
+    nudge.action.onClick();
+    expect(mocks.authDrawerShow).toHaveBeenCalledWith("signup");
+  });
+
+  it("does not offer signup to full accounts after adding a sequence", async () => {
+    collectionsState.collections = [col("c1", "Practice")];
+    await collectionsState.toggle("public-sequence", "c1");
+    expect(mocks.showToast).not.toHaveBeenCalled();
+  });
+
   it("toggle blocks an add when the collection is full and toasts", async () => {
     collectionsState.collections = [col("c1", "A", { sequenceCount: 500 })];
     await collectionsState.toggle("s1", "c1");
