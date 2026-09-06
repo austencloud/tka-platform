@@ -97,7 +97,7 @@
 
 <header class="rail-header">
   <div class="title-row">
-    <h2>Library</h2>
+    <h2>You</h2>
   </div>
   <SegmentedControl
     {options}
@@ -117,10 +117,12 @@
   role="tabpanel"
   aria-labelledby="work-shelf-tab-{value}"
 >
-  <header class="shelf-panel-header">
-    <h3>{shelves[value].label}</h3>
-    <p>{shelves[value].description}</p>
-  </header>
+  {#if value !== "collections"}
+    <header class="shelf-panel-header">
+      <h3>{shelves[value].label}</h3>
+      <p>{shelves[value].description}</p>
+    </header>
+  {/if}
 
   {@render content(value)}
 </div>
