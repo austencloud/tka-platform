@@ -30,6 +30,7 @@ instead of showing an empty shell.
   import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
   import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
   import { getBrowseNavigationContext } from "$lib/shared/browse/context/browse-navigation-context";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import { PLAYGROUND_TABS } from "$lib/shared/navigation/config/tab-definitions";
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
@@ -192,7 +193,7 @@ instead of showing an empty shell.
 
   const allShelf = $derived<LibraryCollection>({
     id: "all",
-    name: "All",
+    name: "Saved sequences",
     ownerId: authState.effectiveUserId ?? "",
     sequenceIds: [],
     sequenceCount: libraryCount,
@@ -382,7 +383,9 @@ instead of showing an empty shell.
     art_scenes: {
       label: "3D Scenes",
       load: () =>
-        import("$lib/features/scene-3d-collection/Scene3DCollectionModule.svelte"),
+        import(
+          "$lib/features/scene-3d-collection/Scene3DCollectionModule.svelte"
+        ),
     },
     art_mandala: {
       label: "Mandalas",
@@ -606,7 +609,7 @@ instead of showing an empty shell.
     collection={allShelf}
     readonly
     selected={!!sel && sel.id === "all" && !sel.ownerId}
-    onOpen={() => openCollection("all", "All")}
+    onOpen={() => openCollection("all", "Saved sequences")}
   />
 
   {#each collections as c (c.id)}
@@ -916,7 +919,7 @@ instead of showing an empty shell.
         <div class="auth-actions">
           <PanelButton
             variant="primary"
-            onclick={() => browseNavigationState.viewExploreSequences()}
+            onclick={() => navigationState.setActiveTab("explore")}
           >
             Browse Gallery
           </PanelButton>
