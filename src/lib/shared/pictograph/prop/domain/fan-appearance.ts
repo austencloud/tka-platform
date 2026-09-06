@@ -32,8 +32,12 @@ export interface PropBuildPreviewOption<T extends string> {
   };
 }
 
+/**
+ * New users see the measured DoodleGrip Fire build so the 2D canvas matches the
+ * realistic 3D fan out of the box; Pictograph stays one tap away in the picker.
+ */
 export const DEFAULT_FAN_APPEARANCE: FanAppearance = {
-  build: "pictograph",
+  build: "fire",
   frameColor: "black",
   cover: "bare",
 };
