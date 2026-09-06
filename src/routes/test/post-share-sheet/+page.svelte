@@ -47,6 +47,7 @@
   let sequence = $state<SequenceData | null>(null);
   let loadError = $state<string | null>(null);
   let studioHarness = $state(false);
+  let cardOnly = $state(false);
   let studioCardUrl = $state<string | null>(null);
   let studioAnimationUrl = $state<string | null>(null);
   let studioAnimationType = $state<"video" | "image">("video");
@@ -54,6 +55,7 @@
   onMount(async () => {
     const params = new URLSearchParams(window.location.search);
     studioHarness = params.has("studio");
+    cardOnly = params.has("card");
     const requestedMeta = params.get("meta");
     if (
       requestedMeta === "none" ||
@@ -62,6 +64,7 @@
       requestedMeta === "both"
     ) {
       metaState = requestedMeta;
+      overrideEnabled = true;
     }
     // Hydration runs the viewer's own path, which asks for a loop detector.
     // The real viewer route registers it exactly like this.
@@ -226,7 +229,7 @@
    * META_POSTING_ENABLED is false: no connect chips, no post buttons, handoff
    * only. It is a fourth shape, and the one shipping today.
    */
-  let overrideEnabled = $state(true);
+  let overrideEnabled = $state(false);
 
   function fakeRender(): void {
     isExportingVideo = true;
@@ -299,6 +302,7 @@
   <PostShareSheet
     isOpen={isOpen && !!sequence}
     {sequence}
+    availableArtifacts={cardOnly ? ["card"] : ["card", "video"]}
     shareUrl=""
     {videoBlobUrl}
     {isExportingVideo}
