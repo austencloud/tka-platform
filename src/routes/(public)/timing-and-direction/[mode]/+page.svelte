@@ -171,7 +171,7 @@
       </div>
       <div class="demo-canvas" use:playback.registerTarget></div>
       <figcaption>
-        Drag the bar to scrub. The blue and red hands show the relationship.
+        Drag the bar to scrub. The two dots show the relationship.
       </figcaption>
     </figure>
   </div>

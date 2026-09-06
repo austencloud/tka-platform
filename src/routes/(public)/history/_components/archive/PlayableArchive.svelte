@@ -226,6 +226,8 @@
 								<a
 									class="artifact-action primary"
 									href={activeEntry.catalogEntry.explore.href}
+									target={activeEntry.catalogEntry.explore.href.startsWith("/") ? undefined : "_blank"}
+									rel={activeEntry.catalogEntry.explore.href.startsWith("/") ? undefined : "noopener noreferrer"}
 									use:magnetic={!reduceMotion.current}
 									use:pressSpring
 								>
@@ -294,9 +296,22 @@
 			>
 				{#if drawerInspectorScreen === "overview"}
 					<div class="drawer-context-content">
-						<section class="drawer-artifact" aria-label={`${activeEntry.title} artifact`}>
+						<section class="drawer-artifact" class:original-sheet={activeEntry.id === "lorq"} aria-label={`${activeEntry.title} artifact`}>
 							<ArchiveRecordVisual entry={activeEntry} active />
 						</section>
+						{#if activeEntry.catalogEntry?.explore}
+							<div class="artifact-actions">
+								<a
+									class="artifact-action primary"
+									href={activeEntry.catalogEntry.explore.href}
+									target={activeEntry.catalogEntry.explore.href.startsWith("/") ? undefined : "_blank"}
+									rel={activeEntry.catalogEntry.explore.href.startsWith("/") ? undefined : "noopener noreferrer"}
+									use:pressSpring
+								>
+									{activeEntry.catalogEntry.explore.label} <span aria-hidden="true">→</span>
+								</a>
+							</div>
+						{/if}
 						<nav class="drawer-neighbors" aria-label="Previous and next archive records">
 							<PanelButton
 								variant="secondary"
@@ -468,6 +483,10 @@
 	}
 
 	.record-toolbar nav,
+	.drawer-artifact.original-sheet {
+		min-height: 14rem;
+	}
+
 	.drawer-neighbors {
 		display: flex;
 		gap: 0.45rem;

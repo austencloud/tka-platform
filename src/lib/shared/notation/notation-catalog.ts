@@ -1,3 +1,5 @@
+import { ORIGINAL_SHAPE_MATRIX_URL } from "$lib/shared/shape-matrix/app/shape-engine-identity";
+
 /**
  * The /notation catalog — a chronological record of systems for writing flow
  * arts down.
@@ -272,8 +274,8 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
       { label: "LORQ:TECH", href: "https://www.youtube.com/user/SirLorq" },
     ],
     explore: {
-      label: "Open Kinetic Shape Engine",
-      href: "/notation/shape-matrix",
+      label: "View Lorq’s original 144 Shape Matrix",
+      href: ORIGINAL_SHAPE_MATRIX_URL,
     },
   },
   {
@@ -297,7 +299,11 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     system: "The Kinetic Alphabet",
     people: "Austen Cloud",
     records:
-      "Each pair of positions given a letter, so a sequence can be read back and searched as a word.",
+      "Each pair of positions given a letter, so a sequence can be read back and searched as a word. Austen Cloud also built Kinetic Shape Engine, extending the row-and-column pairing approach of Lorq Nichols’ 144 Shape Matrix with TKA Levels 1–4, whole-number ratio exploration, live animation, and pictograph readouts.",
     sources: [{ label: "The guide", href: "/guide" }],
+    explore: {
+      label: "Open Kinetic Shape Engine",
+      href: "/notation/shape-matrix",
+    },
   },
 ];

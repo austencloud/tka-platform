@@ -100,6 +100,7 @@
                     <span class="preview-animation">
                       {#if browser}
                         <HandMotionPlayer
+                          neutralMarkers
                           sequence={mode.motion.sequence}
                           showElementalGlyph
                           ariaLabel={mode.article.name}
