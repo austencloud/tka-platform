@@ -1,6 +1,6 @@
 import type { SkySunConfig } from "../../domain/models/environment-models";
 
-import layoutSource from "../../../../../../../scripts/celestial-dawn-layout.json";
+import layoutSource from "../../../../../../../scripts/celestial-citadel-layout.json";
 
 interface CloudbreakLayout {
   revision: string;

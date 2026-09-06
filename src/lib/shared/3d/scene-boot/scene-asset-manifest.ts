@@ -32,7 +32,7 @@ export const SCENE_ASSET_MANIFEST: Readonly<
 > = {
   [BackgroundType.AUTUMN]: ["/models/autumn/autumn-environment.glb"],
   [BackgroundType.BLOSSOM]: ["/models/blossom/blossom_environment.glb"],
-  [BackgroundType.CELESTIAL]: ["/models/celestial/dawn-observatory.glb"],
+  [BackgroundType.CELESTIAL]: ["/models/celestial/sky-citadel.glb"],
   [BackgroundType.COSMIC]: [
     "/models/cosmic/cosmic-reliquary.glb",
     "/models/cosmic/cosmic-stage.glb",
@@ -63,9 +63,6 @@ export const SCENE_ASSET_MANIFEST: Readonly<
 const SCENE_TEXTURE_PREFETCH: Partial<
   Readonly<Record<BackgroundType, readonly string[]>>
 > = {
-  [BackgroundType.CELESTIAL]: [
-    "/textures/celestial/olive-cloudbreak-panorama-r1.webp?v=gate4-cloudbreak-r1",
-  ],
   [BackgroundType.AUTUMN]: [
     "/textures/autumn-floor/ground-detail-modulation.ktx2",
     "/textures/water/Water_1_M_Normal.jpg",

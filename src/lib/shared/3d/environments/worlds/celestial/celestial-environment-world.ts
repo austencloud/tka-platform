@@ -4,9 +4,7 @@ import {
   FogExp2,
   Group,
   HemisphereLight,
-  ImageBitmapLoader,
   Scene,
-  Texture,
   type Camera,
   type Object3D,
   type WebGLRenderer,
@@ -33,18 +31,11 @@ import {
   type CelestialCloudbreakWorld,
 } from "./celestial-cloudbreak-world";
 
-export const CELESTIAL_PANORAMA_URL =
-  "/textures/celestial/olive-cloudbreak-panorama-r1.webp?v=gate4-cloudbreak-r1";
 export const CELESTIAL_SHELL_URL =
-  "/models/celestial/dawn-observatory.glb?v=dawn-r1";
-export const CELESTIAL_AUTHORED_RESOURCE_URLS = [
-  CELESTIAL_PANORAMA_URL,
-  CELESTIAL_SHELL_URL,
-] as const;
+  "/models/celestial/sky-citadel.glb?v=citadel-r1";
+export const CELESTIAL_AUTHORED_RESOURCE_URLS = [CELESTIAL_SHELL_URL] as const;
 
-export interface CelestialEnvironmentAssets extends CelestialCloudbreakAssets {
-  panorama: Texture;
-}
+export type CelestialEnvironmentAssets = CelestialCloudbreakAssets;
 
 export interface CelestialEnvironmentWorldOptions {
   config?: CelestialSceneConfig;
@@ -90,25 +81,7 @@ function loadGltf(loader: GLTFLoader, url: string): Promise<GLTF> {
   });
 }
 
-function loadPanorama(url: string): Promise<Texture> {
-  return new Promise((resolve, reject) => {
-    const loader = new ImageBitmapLoader();
-    loader.setOptions({ imageOrientation: "flipY" });
-    loader.load(
-      url,
-      (bitmap) => {
-        const texture = new Texture(bitmap);
-        texture.flipY = false;
-        texture.needsUpdate = true;
-        resolve(texture);
-      },
-      undefined,
-      reject
-    );
-  });
-}
-
-/** Load the panorama and the complete Blender-authored observatory. */
+/** Load the complete Blender-authored sky citadel. */
 export async function loadCelestialEnvironmentAssets(
   options: LoadCelestialAssetsOptions
 ): Promise<CelestialEnvironmentAssets> {
@@ -127,18 +100,11 @@ export async function loadCelestialEnvironmentAssets(
   };
 
   try {
-    const [panorama, shell] = await Promise.all([
-      loadPanorama(resolveAssetUrl(CELESTIAL_PANORAMA_URL)).then(
-        reportComplete
-      ),
-      loadGltf(loader, resolveAssetUrl(CELESTIAL_SHELL_URL)).then(
-        reportComplete
-      ),
-    ]);
-    return {
-      panorama,
-      shell: shell.scene,
-    };
+    const shell = await loadGltf(
+      loader,
+      resolveAssetUrl(CELESTIAL_SHELL_URL)
+    ).then(reportComplete);
+    return { shell: shell.scene };
   } finally {
     ktx2Loader.dispose();
   }
@@ -169,8 +135,8 @@ function createLighting(config: CelestialSceneConfig): Group {
     light.shadow.camera.right = 32;
     light.shadow.camera.top = 28;
     light.shadow.camera.bottom = -28;
-    light.shadow.bias = -0.0007;
-    light.shadow.normalBias = 0.05;
+    light.shadow.bias = -0.0015;
+    light.shadow.normalBias = 0.08;
     light.shadow.radius = 3;
     light.shadow.intensity = 0.85;
     root.add(light);
@@ -205,7 +171,6 @@ export function createCelestialEnvironmentWorld(
   root.name = "celestial-environment-world";
   const atmosphere: CelestialAtmosphere = createCelestialAtmosphere({
     config,
-    panorama: assets.panorama,
     cloudBankCount,
     stageWidth,
     stageDepth,
