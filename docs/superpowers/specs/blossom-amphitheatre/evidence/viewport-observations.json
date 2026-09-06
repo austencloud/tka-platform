@@ -1,0 +1,82 @@
+{
+  "note": "Desktop viewport emulation. Performance readings during resizing are not settled per-device benchmarks.",
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "canvas": [
+        {
+          "height": 835,
+          "width": 1440
+        }
+      ],
+      "perf": "FPS 44 P95 29.0 ms P99 41.9 ms GPU95 7.6 ms Long 2.14% Drift 0.0% Draw 309 Tris 7951.8k Geo 156 Tex 34 Prog 99"
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "canvas": [
+        {
+          "height": 607,
+          "width": 375
+        }
+      ],
+      "perf": "FPS 42 P95 29.0 ms P99 41.2 ms GPU95 7.5 ms Long 2.17% Drift 0.0% Draw 309 Tris 7951.8k Geo 156 Tex 34 Prog 99"
+    },
+    {
+      "width": 960,
+      "height": 412,
+      "canvas": [
+        {
+          "height": 351,
+          "width": 960
+        }
+      ],
+      "perf": "FPS 42 P95 29.0 ms P99 41.2 ms GPU95 7.5 ms Long 2.17% Drift 0.0% Draw 309 Tris 7951.8k Geo 156 Tex 34 Prog 99"
+    },
+    {
+      "width": 820,
+      "height": 1180,
+      "canvas": [
+        {
+          "height": 1119,
+          "width": 820
+        }
+      ],
+      "perf": "FPS 34 P95 29.1 ms P99 41.9 ms GPU95 7.5 ms Long 2.38% Drift 0.0% Draw 316 Tris 8073.6k Geo 163 Tex 34 Prog 99"
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "canvas": [
+        {
+          "height": 1015,
+          "width": 1920
+        }
+      ],
+      "perf": "FPS 24 P95 29.3 ms P99 51.6 ms GPU95 7.5 ms Long 2.55% Drift 0.0% Draw 260 Tris 6745.1k Geo 163 Tex 34 Prog 99"
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "canvas": [
+        {
+          "height": 1375,
+          "width": 2560
+        }
+      ],
+      "perf": "FPS 14 P95 29.3 ms P99 52.1 ms GPU95 7.6 ms Long 2.63% Drift 0.0% Draw 309 Tris 7951.8k Geo 163 Tex 34 Prog 99"
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "canvas": [
+        {
+          "height": 2095,
+          "width": 3840
+        }
+      ],
+      "perf": "FPS 30 P95 29.5 ms P99 56.7 ms GPU95 7.8 ms Long 2.83% Drift 0.0% Draw 309 Tris 7951.8k Geo 163 Tex 34 Prog 99"
+    }
+  ]
+}

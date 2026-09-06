@@ -20,51 +20,38 @@ import {
   type BlossomEnvironmentAssets,
 } from "$lib/shared/3d/environments/worlds/blossom/blossom-environment-world";
 
-function mesh(name: string, materialName = ""): Mesh {
+function mesh(name: string, materialName = "", role = ""): Mesh {
   const material = new MeshStandardMaterial({ color: "#ffffff" });
   material.name = materialName;
   const value = new Mesh(new BoxGeometry(1, 1, 1), material);
   value.name = name;
+  value.userData.blossomRole = role;
   return value;
 }
 
 function assets(): BlossomEnvironmentAssets {
   const environmentRoot = new Group();
   environmentRoot.add(
-    mesh("Garden_Ground", "Blossom Living Garden Ground"),
+    mesh("Amphitheatre_Terrain", "Amphitheatre moss", "terrain"),
     mesh("Stage_Base"),
     mesh("River_Water"),
-    mesh("Sakura Hero"),
-    mesh("PlantFactory_tree-east-01"),
-    mesh("Blossom_open-crown-s19_Mesh_1"),
-    mesh("Blossom_Grass_Base_Living"),
-    mesh("Blossom_Grass_High_Damp")
+    mesh("Ancient_Cherry_Wood", "", "bark"),
+    mesh("Ancient_Cherry_Blossoms", "", "petals"),
+    mesh("Distant_Grove", "", "grove-petals")
   );
   return {
     environmentRoot,
     moonTexture: new Texture(),
-    detailMaps: {
-      red: new Texture(),
-      green: new Texture(),
-      blue: new Texture(),
-      fourth: new Texture(),
-    },
-    familyMask: new Texture(),
   };
 }
 
 const renderer = {} as WebGLRenderer;
 
 describe("Blossom renderer-neutral world", () => {
-  it("declares the exact authored GLB and six production support textures", () => {
+  it("loads the packed venue and moon without obsolete habitat textures", () => {
     expect(BLOSSOM_AUTHORED_RESOURCE_URLS).toEqual([
       "/models/blossom/blossom_environment.glb",
       "/textures/moon.png",
-      "/textures/forest-floor/forest-ground-detail-neutral.jpg",
-      "/textures/forest-floor/forest-ground-detail-meadow.jpg",
-      "/textures/forest-floor/forest-ground-detail-litter.jpg",
-      "/textures/forest-floor/forest-ground-detail-damp.jpg",
-      "/textures/blossom-floor/blossom-ground-family-mask.png",
     ]);
   });
 
@@ -114,21 +101,18 @@ describe("Blossom renderer-neutral world", () => {
     expect(deckBounds.min.x).toBeCloseTo(-6, 5);
     expect(deckBounds.max.x).toBeCloseTo(6, 5);
     expect(
-      (
-        bundle.environmentRoot.getObjectByName(
-          "PlantFactory_tree-east-01"
-        ) as Mesh
-      ).castShadow
+      (bundle.environmentRoot.getObjectByName("Ancient_Cherry_Wood") as Mesh)
+        .castShadow
     ).toBe(true);
     expect(
       (
         bundle.environmentRoot.getObjectByName(
-          "Blossom_open-crown-s19_Mesh_1"
+          "Ancient_Cherry_Blossoms"
         ) as Mesh
       ).castShadow
     ).toBe(true);
     expect(
-      (bundle.environmentRoot.getObjectByName("Garden_Ground") as Mesh)
+      (bundle.environmentRoot.getObjectByName("Amphitheatre_Terrain") as Mesh)
         .receiveShadow
     ).toBe(true);
     expect(world.maxPixelRatio).toBe(2);
@@ -143,12 +127,13 @@ describe("Blossom renderer-neutral world", () => {
       false
     );
     expect(
-      bundle.environmentRoot.getObjectByName("Blossom_Grass_High_Damp")!.visible
-    ).toBe(true);
+      (bundle.environmentRoot.getObjectByName("Distant_Grove") as Mesh)
+        .castShadow
+    ).toBe(false);
     world.dispose();
   });
 
-  it("tracks the camera and performer ground while animating grass and water", () => {
+  it("tracks the camera and performer ground while animating the water", () => {
     const bundle = assets();
     const world = createBlossomEnvironmentWorld(
       { renderer, groundY: -1.5, qualityTier: "high" },
@@ -175,25 +160,25 @@ describe("Blossom renderer-neutral world", () => {
     expect(
       world.root.getObjectByName("blossom-performance-stage")!.position.y
     ).toBe(-2);
-    expect(world.reflector!.position.y).toBeCloseTo(-2.138, 6);
+    expect(world.reflector!.position.y).toBeCloseTo(-2.148, 6);
     world.setActive(false);
     expect(world.root.visible).toBe(false);
     expect(world.reflector!.visible).toBe(false);
     world.dispose();
   });
 
-  it("maps the low renderer tier to the authored base grass layer", () => {
+  it("uses the baked pond and disables tree shadows at low quality", () => {
     const bundle = assets();
     const world = createBlossomEnvironmentWorld(
       { renderer, groundY: -1.5, qualityTier: "low" },
       bundle
     );
+    expect(bundle.environmentRoot.getObjectByName("River_Water")!.visible).toBe(
+      true
+    );
     expect(
-      bundle.environmentRoot.getObjectByName("Blossom_Grass_Base_Living")!
-        .visible
-    ).toBe(true);
-    expect(
-      bundle.environmentRoot.getObjectByName("Blossom_Grass_High_Damp")!.visible
+      (bundle.environmentRoot.getObjectByName("Ancient_Cherry_Wood") as Mesh)
+        .castShadow
     ).toBe(false);
     world.dispose();
   });
@@ -234,11 +219,9 @@ describe("Blossom renderer-neutral world", () => {
 
   it("disposes owned textures once even when disposal is repeated", () => {
     const bundle = assets();
-    const textureDisposals = [
-      bundle.moonTexture,
-      ...Object.values(bundle.detailMaps),
-      bundle.familyMask,
-    ].map((texture) => vi.spyOn(texture, "dispose"));
+    const textureDisposals = [bundle.moonTexture].map((texture) =>
+      vi.spyOn(texture, "dispose")
+    );
     const world = createBlossomEnvironmentWorld(
       { renderer, groundY: -1.5, qualityTier: "medium" },
       bundle

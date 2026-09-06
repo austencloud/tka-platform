@@ -117,11 +117,11 @@ const BLOSSOM_TREE_RINGS: TreeRingConfig[] = [
 export function createDefaultBlossomConfig(): BlossomSceneConfig {
   return {
     sky: {
-      topColor: "#151c34",
-      midColor: "#63536f",
-      bottomColor: "#c6949a",
+      topColor: "#091421",
+      midColor: "#243849",
+      bottomColor: "#526277",
     },
-    fog: { color: "#77677f", density: 0.0095 },
+    fog: { color: "#283d50", density: 0.014 },
     ground: {
       color: "#201518",
       size: 50,
@@ -205,15 +205,15 @@ export function createDefaultBlossomConfig(): BlossomSceneConfig {
       lanterns: [],
     },
     hemisphereLight: {
-      skyColor: "#e3dcf3",
-      groundColor: "#504348",
-      intensity: 1.55,
+      skyColor: "#cadbea",
+      groundColor: "#25312d",
+      intensity: 0.85,
     },
     moonLight: {
       enabled: true,
-      color: "#fff0e4",
-      intensity: 3.1,
-      position: [-22, 30, -34],
+      color: "#d3e4ff",
+      intensity: 4.1,
+      position: [-14, 28, 8],
     },
     platform: {
       enabled: true,
