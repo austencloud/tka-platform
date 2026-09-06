@@ -64,10 +64,16 @@ export function createPositionWorkshopState(
   }
   function evaluatePlacement(change: PropPlacementChange) {
     if (phase !== "practice") return;
-    feedback = "idle";
-    // Selecting a hand to move is not a submitted answer, even if its old
-    // location still forms the requested position.
-    if (!change.complete || change.activeHand !== null) return;
+    if (!change.complete) {
+      feedback = "idle";
+      return;
+    }
+    // Keep the mistake visible while the learner retries. Selecting a hand
+    // invalidates success, but does not erase an unresolved wrong answer.
+    if (change.activeHand !== null) {
+      if (feedback !== "incorrect") feedback = "idle";
+      return;
+    }
     check(positionKindFor(change.leftLocation, change.rightLocation));
   }
   function next() {

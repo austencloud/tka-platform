@@ -21,6 +21,11 @@
     VIEWER_MODE_DISSOLVE_DURATION,
   } from "$lib/shared/transitions/viewer-mode-dissolve";
   import { TRANSITION_REVIEW_SEQUENCE } from "../transition-review-fixture";
+  import {
+    isWorkspaceReplayCommand,
+    orderedModePairs,
+    type WorkspaceReplayCommand,
+  } from "../workspace-review-replays";
   import type {
     InspectorLayerId,
     InspectorRevealSample,
@@ -49,6 +54,7 @@
     | "3D Animation"
     | "Card"
     | "Tunnel"
+    | "Post Studio"
     | "Performances";
   type ReviewMode =
     | "split"
@@ -56,6 +62,7 @@
     | "animation-3d"
     | "card"
     | "tunnel"
+    | "post-studio"
     | "videos";
 
   interface ReplayMessage {
@@ -308,6 +315,7 @@
       Card: "card",
       Tunnel: "tunnel",
       Performances: "videos",
+      "Post Studio": "post-studio",
     } as const;
     for (const button of document.querySelectorAll<HTMLButtonElement>(
       "button[aria-label]"
@@ -315,6 +323,7 @@
       const label = button.getAttribute("aria-label");
       const selected =
         button.getAttribute("aria-pressed") === "true" ||
+        button.getAttribute("aria-current") === "page" ||
         button.classList.contains("active");
       if (selected && label && label in labels) {
         return labels[label as keyof typeof labels];
@@ -329,6 +338,7 @@
     if (label === "3D Animation") return "animation-3d";
     if (label === "Tunnel") return "tunnel";
     if (label === "Performances") return "videos";
+    if (label === "Post Studio") return "post-studio";
     return "card";
   }
 
@@ -571,6 +581,20 @@
     const motion3DReady = motion3DSurface?.dataset.sceneReady === "true";
     const sample: TransitionGeometrySample = {
       time: Math.round((performance.now() - traceStartedAt) * 10) / 10,
+      workspace: {
+        studioOpacity: elementOpacity(".post-studio-pane"),
+        practiceHeight: elementBounds(".practice-bar-rise").height,
+        selectedButtons: Array.from(
+          document.querySelectorAll<HTMLButtonElement>(
+            '[aria-label="Sequence views"] button[aria-pressed="true"], [aria-label="Sequence views"] button[aria-current="page"]'
+          )
+        ).filter(
+          (button) =>
+            !button.closest('[inert], [aria-hidden="true"]') &&
+            button.getClientRects().length > 0
+        ).length,
+        stageIdentity: elementIdentity(".viewer-stage-container"),
+      },
       phase: tracePhase,
       direction,
       focusedPane: splitView?.dataset.focused || null,
@@ -836,7 +860,127 @@
   function modeButton(label: string): HTMLButtonElement | undefined {
     return Array.from(
       document.querySelectorAll<HTMLButtonElement>("button[aria-label]")
-    ).find((button) => button.getAttribute("aria-label") === label);
+    ).find(
+      (button) =>
+        button.getAttribute("aria-label") === label &&
+        !button.closest('[inert], [aria-hidden="true"]') &&
+        button.getClientRects().length > 0
+    );
+  }
+
+  async function waitForControl(
+    label: string,
+    version: number
+  ): Promise<HTMLButtonElement> {
+    const started = performance.now();
+    while (version === replayVersion) {
+      const button = modeButton(label);
+      if (button && !button.disabled) return button;
+      if (performance.now() - started > 10_000) break;
+      await wait(32);
+    }
+    throw new Error(
+      `${label} is unavailable. This replay requires its production control at this viewport.`
+    );
+  }
+
+  async function workspaceReplay(
+    command: WorkspaceReplayCommand,
+    version: number
+  ): Promise<void> {
+    const interrupted = command.endsWith("interrupt");
+    const dwell = interrupted ? 90 : motionDuration(DURATION.emphasis) + 220;
+    const source: ReviewModeLabel =
+      command === "studio-3d"
+        ? "3D Animation"
+        : command === "practice-card"
+          ? "Card"
+          : "2D Animation";
+    if (!(await chooseMode(source, version))) return;
+    if (source === "3D Animation" && !(await waitFor3DReady(version))) return;
+
+    beginGeometryTrace(
+      command,
+      interrupted ? "workspace-interrupt" : "workspace-enter"
+    );
+    if (command.startsWith("studio-")) {
+      for (let index = 0; index < (interrupted ? 3 : 1); index++) {
+        if (!(await chooseMode("Post Studio", version, !interrupted))) return;
+        await wait(dwell);
+        setTracePhase("workspace-return");
+        if (!(await chooseMode(source, version, !interrupted))) return;
+      }
+      if (source === "3D Animation") await waitFor3DReady(version);
+    } else if (command.startsWith("inspector-")) {
+      if (
+        !modeButton("Hide export settings") &&
+        !modeButton("Show export settings")
+      ) {
+        throw new Error(
+          "This viewport uses the compact control dock. Select a desktop viewport to review the export inspector."
+        );
+      }
+      // Normalize to open without changing any export options or starting an export.
+      modeButton("Show export settings")?.click();
+      await wait(dwell);
+      for (let index = 0; index < (interrupted ? 3 : 1); index++) {
+        (await waitForControl("Hide export settings", version)).click();
+        await wait(dwell);
+        setTracePhase("workspace-return");
+        (await waitForControl("Show export settings", version)).click();
+        await wait(dwell);
+      }
+    } else if (command.startsWith("practice-")) {
+      for (let index = 0; index < (interrupted ? 3 : 1); index++) {
+        (await waitForControl("Practice", version)).click();
+        await wait(dwell);
+        setTracePhase("workspace-return");
+        (await waitForControl("Exit practice mode", version)).click();
+        await wait(dwell);
+      }
+    } else {
+      const labels: ReviewModeLabel[] = [
+        "Side by Side",
+        "2D Animation",
+        "3D Animation",
+        "Card",
+        "Tunnel",
+        "Performances",
+        "Post Studio",
+      ];
+      const available = labels.filter((label) => modeButton(label));
+      const pairs = interrupted
+        ? ([
+            ["Tunnel", "Card"],
+            ["Performances", "2D Animation"],
+            ["Card", "2D Animation"],
+          ] as [ReviewModeLabel, ReviewModeLabel][])
+        : orderedModePairs(available);
+      for (const [from, to] of pairs) {
+        for (const label of [from, to]) {
+          if (!(await chooseMode(label, version, !interrupted))) return;
+          if (
+            !interrupted &&
+            label === "3D Animation" &&
+            !(await waitFor3DReady(version))
+          )
+            return;
+          if (
+            !interrupted &&
+            label === "Tunnel" &&
+            !(await waitForTunnelPresentation(version))
+          )
+            return;
+          if (
+            !interrupted &&
+            label === "Performances" &&
+            !(await waitForPerformanceGallery(version))
+          )
+            return;
+        }
+      }
+      await chooseMode("2D Animation", version);
+    }
   }
 
   async function chooseMode(
@@ -872,185 +1016,194 @@
     report("running", command);
 
     try {
-      if (command.startsWith("performances-")) {
-        const openingMode =
-          command === "performances-3d" ? "3D Animation" : "2D Animation";
-        if (
-          !(await chooseMode(
-            openingMode,
-            version,
-            command !== "performances-3d"
-          ))
-        )
+      // Wait for the real viewer, not just the iframe's onMount handshake.
+      if (modeButton("Exit practice mode")) {
+        modeButton("Exit practice mode")?.click();
+        await wait(motionDuration(DURATION.emphasis) + 220);
+      }
+      await waitForControl("2D Animation", version);
+      if (isWorkspaceReplayCommand(command)) {
+        await workspaceReplay(command, version);
+      } else {
+        if (command.startsWith("performances-")) {
+          const openingMode =
+            command === "performances-3d" ? "3D Animation" : "2D Animation";
+          if (
+            !(await chooseMode(
+              openingMode,
+              version,
+              command !== "performances-3d"
+            ))
+          )
+            return;
+          if (command === "performances-3d") {
+            if (!(await waitForMotionPresentation("3d", version))) return;
+            if (!(await waitFor3DReady(version))) return;
+            await wait(motionDuration(DURATION.emphasis) + 90);
+          }
+        } else if (command.startsWith("card-")) {
+          if (!(await chooseMode("Card", version))) return;
+        } else if (
+          command === "2d" ||
+          command === "card" ||
+          command === "interrupt"
+        ) {
+          if (!(await chooseMode("Side by Side", version))) return;
+        } else if (!(await chooseMode("2D Animation", version))) {
           return;
-        if (command === "performances-3d") {
+        }
+
+        if (command === "2d") {
+          beginGeometryTrace(command, "focus-2d");
+          if (!(await chooseMode("2D Animation", version))) return;
+          setTracePhase("return-split");
+          if (!(await chooseMode("Side by Side", version))) return;
+        } else if (command === "card") {
+          beginGeometryTrace(command, "focus-card");
+          if (!(await chooseMode("Card", version))) return;
+          setTracePhase("return-split");
+          if (!(await chooseMode("Side by Side", version))) return;
+        } else if (command === "interrupt") {
+          beginGeometryTrace(command, "interrupt-2d");
+          if (!(await chooseMode("2D Animation", version, false))) return;
+          setTracePhase("interrupt-split");
+          if (!(await chooseMode("Side by Side", version, false))) return;
+          setTracePhase("interrupt-card");
+          if (!(await chooseMode("Card", version, false))) return;
+          setTracePhase("interrupt-return");
+          if (!(await chooseMode("Side by Side", version))) return;
+        } else if (command === "3d-first") {
+          beginGeometryTrace(command, "prepare-3d");
+          if (!(await chooseMode("3D Animation", version, false))) return;
+          if (!(await waitForMotionPresentation("3d", version))) return;
+          if (!(await waitFor3DReady(version))) return;
+          setTracePhase("show-3d");
+          await wait(DURATION.emphasis + 90);
+          setTracePhase("return-2d");
+          if (!(await chooseMode("2D Animation", version))) return;
+        } else if (command === "3d-repeat") {
+          if (!(await chooseMode("3D Animation", version, false))) return;
+          if (!(await waitForMotionPresentation("3d", version))) return;
+          if (!(await waitFor3DReady(version))) return;
+          await wait(DURATION.emphasis + 90);
+          if (!(await chooseMode("2D Animation", version))) return;
+
+          beginGeometryTrace(command, "repeat-3d");
+          if (!(await chooseMode("3D Animation", version, false))) return;
+          if (!(await waitForMotionPresentation("3d", version))) return;
+          if (!(await waitFor3DReady(version))) return;
+          await wait(DURATION.emphasis + 90);
+          setTracePhase("return-2d");
+          if (!(await chooseMode("2D Animation", version))) return;
+        } else if (command === "3d-interrupt") {
+          beginGeometryTrace(command, "interrupt-3d");
+          if (!(await chooseMode("3D Animation", version, false))) return;
+          await wait(motionDuration(DURATION.instant));
+          setTracePhase("interrupt-2d-return");
+          if (!(await chooseMode("2D Animation", version, false))) return;
+          setTracePhase("interrupt-3d");
+          if (!(await chooseMode("3D Animation", version, false))) return;
+          await wait(motionDuration(DURATION.instant));
+          setTracePhase("interrupt-2d-return");
+          if (!(await chooseMode("2D Animation", version))) return;
+        } else if (command === "tunnel-first") {
+          beginGeometryTrace(command, "prepare-tunnel");
+          if (!(await chooseMode("Tunnel", version, false))) return;
+          if (!(await waitForTunnelPresentation(version))) return;
+          setTracePhase("show-tunnel");
+          await wait(motionDuration(DURATION.emphasis) + 90);
+          setTracePhase("return-stage");
+          if (!(await chooseMode("2D Animation", version))) return;
+        } else if (command === "tunnel-3d") {
+          if (!(await chooseMode("3D Animation", version, false))) return;
           if (!(await waitForMotionPresentation("3d", version))) return;
           if (!(await waitFor3DReady(version))) return;
           await wait(motionDuration(DURATION.emphasis) + 90);
+
+          beginGeometryTrace(command, "prepare-tunnel-from-3d");
+          if (!(await chooseMode("Tunnel", version, false))) return;
+          if (!(await waitForTunnelPresentation(version))) return;
+          setTracePhase("show-tunnel");
+          await wait(motionDuration(DURATION.emphasis) + 90);
+          setTracePhase("return-3d");
+          if (!(await chooseMode("3D Animation", version, false))) return;
+          if (!(await waitForMotionPresentation("3d", version))) return;
+          if (!(await waitFor3DReady(version))) return;
+          await wait(motionDuration(DURATION.emphasis) + 90);
+        } else if (command === "card-2d") {
+          beginGeometryTrace(command, "card-to-stage");
+          if (!(await chooseMode("2D Animation", version))) return;
+          setTracePhase("stage-to-card");
+          if (!(await chooseMode("Card", version))) return;
+        } else if (command === "card-3d") {
+          beginGeometryTrace(command, "card-to-stage");
+          if (!(await chooseMode("3D Animation", version, false))) return;
+          if (!(await waitForMotionPresentation("3d", version))) return;
+          if (!(await waitFor3DReady(version))) return;
+          await wait(motionDuration(DURATION.emphasis) + 90);
+          setTracePhase("stage-to-card");
+          if (!(await chooseMode("Card", version))) return;
+        } else if (command === "card-tunnel") {
+          beginGeometryTrace(command, "card-to-stage");
+          if (!(await chooseMode("Tunnel", version, false))) return;
+          if (!(await waitForTunnelPresentation(version))) return;
+          await wait(motionDuration(DURATION.emphasis) + 90);
+          setTracePhase("stage-to-card");
+          if (!(await chooseMode("Card", version))) return;
+        } else if (command === "card-performances") {
+          beginGeometryTrace(command, "card-to-performances");
+          if (!(await chooseMode("Performances", version))) return;
+          setTracePhase("performances-to-card");
+          if (!(await chooseMode("Card", version))) return;
+        } else if (command === "card-stage-interrupt") {
+          beginGeometryTrace(command, "card-stage-interrupt");
+          if (!(await chooseMode("2D Animation", version, false))) return;
+          await wait(motionDuration(DURATION.instant));
+          if (!(await chooseMode("Card", version, false))) return;
+          if (!(await chooseMode("Tunnel", version, false))) return;
+          await wait(motionDuration(DURATION.instant));
+          if (!(await chooseMode("Card", version))) return;
+        } else if (command === "performances-2d") {
+          beginGeometryTrace(command, "stage-to-performances");
+          if (!(await chooseMode("Performances", version, false))) return;
+          if (!(await waitForPerformanceGallery(version))) return;
+          await wait(motionDuration(DURATION.emphasis) + 90);
+          setTracePhase("performances-to-stage");
+          if (!(await chooseMode("2D Animation", version))) return;
+        } else if (command === "performances-3d") {
+          beginGeometryTrace(command, "stage-to-performances");
+          if (!(await chooseMode("Performances", version, false))) return;
+          if (!(await waitForPerformanceGallery(version))) return;
+          await wait(motionDuration(DURATION.emphasis) + 90);
+          setTracePhase("performances-to-stage");
+          if (!(await chooseMode("3D Animation", version, false))) return;
+          if (!(await waitForMotionPresentation("3d", version))) return;
+          if (!(await waitFor3DReady(version))) return;
+          await wait(motionDuration(DURATION.emphasis) + 90);
+        } else if (command === "performances-interrupt") {
+          beginGeometryTrace(command, "interrupt-performances");
+          if (!(await chooseMode("Performances", version, false))) return;
+          await wait(motionDuration(DURATION.instant));
+          setTracePhase("interrupt-performance-stage");
+          if (!(await chooseMode("2D Animation", version, false))) return;
+          setTracePhase("interrupt-performances");
+          if (!(await chooseMode("Performances", version, false))) return;
+          await wait(motionDuration(DURATION.instant));
+          setTracePhase("interrupt-performance-stage");
+          if (!(await chooseMode("2D Animation", version))) return;
+        } else {
+          beginGeometryTrace(command, "interrupt-tunnel");
+          if (!(await chooseMode("Tunnel", version, false))) return;
+          await wait(motionDuration(DURATION.instant));
+          setTracePhase("interrupt-stage");
+          if (!(await chooseMode("2D Animation", version, false))) return;
+          setTracePhase("interrupt-tunnel");
+          if (!(await chooseMode("Tunnel", version, false))) return;
+          await wait(motionDuration(DURATION.instant));
+          setTracePhase("interrupt-stage");
+          if (!(await chooseMode("2D Animation", version))) return;
         }
-      } else if (command.startsWith("card-")) {
-        if (!(await chooseMode("Card", version))) return;
-      } else if (
-        command === "2d" ||
-        command === "card" ||
-        command === "interrupt"
-      ) {
-        if (!(await chooseMode("Side by Side", version))) return;
-      } else if (!(await chooseMode("2D Animation", version))) {
-        return;
       }
-
-      if (command === "2d") {
-        beginGeometryTrace(command, "focus-2d");
-        if (!(await chooseMode("2D Animation", version))) return;
-        setTracePhase("return-split");
-        if (!(await chooseMode("Side by Side", version))) return;
-      } else if (command === "card") {
-        beginGeometryTrace(command, "focus-card");
-        if (!(await chooseMode("Card", version))) return;
-        setTracePhase("return-split");
-        if (!(await chooseMode("Side by Side", version))) return;
-      } else if (command === "interrupt") {
-        beginGeometryTrace(command, "interrupt-2d");
-        if (!(await chooseMode("2D Animation", version, false))) return;
-        setTracePhase("interrupt-split");
-        if (!(await chooseMode("Side by Side", version, false))) return;
-        setTracePhase("interrupt-card");
-        if (!(await chooseMode("Card", version, false))) return;
-        setTracePhase("interrupt-return");
-        if (!(await chooseMode("Side by Side", version))) return;
-      } else if (command === "3d-first") {
-        beginGeometryTrace(command, "prepare-3d");
-        if (!(await chooseMode("3D Animation", version, false))) return;
-        if (!(await waitForMotionPresentation("3d", version))) return;
-        if (!(await waitFor3DReady(version))) return;
-        setTracePhase("show-3d");
-        await wait(DURATION.emphasis + 90);
-        setTracePhase("return-2d");
-        if (!(await chooseMode("2D Animation", version))) return;
-      } else if (command === "3d-repeat") {
-        if (!(await chooseMode("3D Animation", version, false))) return;
-        if (!(await waitForMotionPresentation("3d", version))) return;
-        if (!(await waitFor3DReady(version))) return;
-        await wait(DURATION.emphasis + 90);
-        if (!(await chooseMode("2D Animation", version))) return;
-
-        beginGeometryTrace(command, "repeat-3d");
-        if (!(await chooseMode("3D Animation", version, false))) return;
-        if (!(await waitForMotionPresentation("3d", version))) return;
-        if (!(await waitFor3DReady(version))) return;
-        await wait(DURATION.emphasis + 90);
-        setTracePhase("return-2d");
-        if (!(await chooseMode("2D Animation", version))) return;
-      } else if (command === "3d-interrupt") {
-        beginGeometryTrace(command, "interrupt-3d");
-        if (!(await chooseMode("3D Animation", version, false))) return;
-        await wait(motionDuration(DURATION.instant));
-        setTracePhase("interrupt-2d-return");
-        if (!(await chooseMode("2D Animation", version, false))) return;
-        setTracePhase("interrupt-3d");
-        if (!(await chooseMode("3D Animation", version, false))) return;
-        await wait(motionDuration(DURATION.instant));
-        setTracePhase("interrupt-2d-return");
-        if (!(await chooseMode("2D Animation", version))) return;
-      } else if (command === "tunnel-first") {
-        beginGeometryTrace(command, "prepare-tunnel");
-        if (!(await chooseMode("Tunnel", version, false))) return;
-        if (!(await waitForTunnelPresentation(version))) return;
-        setTracePhase("show-tunnel");
-        await wait(motionDuration(DURATION.emphasis) + 90);
-        setTracePhase("return-stage");
-        if (!(await chooseMode("2D Animation", version))) return;
-      } else if (command === "tunnel-3d") {
-        if (!(await chooseMode("3D Animation", version, false))) return;
-        if (!(await waitForMotionPresentation("3d", version))) return;
-        if (!(await waitFor3DReady(version))) return;
-        await wait(motionDuration(DURATION.emphasis) + 90);
-
-        beginGeometryTrace(command, "prepare-tunnel-from-3d");
-        if (!(await chooseMode("Tunnel", version, false))) return;
-        if (!(await waitForTunnelPresentation(version))) return;
-        setTracePhase("show-tunnel");
-        await wait(motionDuration(DURATION.emphasis) + 90);
-        setTracePhase("return-3d");
-        if (!(await chooseMode("3D Animation", version, false))) return;
-        if (!(await waitForMotionPresentation("3d", version))) return;
-        if (!(await waitFor3DReady(version))) return;
-        await wait(motionDuration(DURATION.emphasis) + 90);
-      } else if (command === "card-2d") {
-        beginGeometryTrace(command, "card-to-stage");
-        if (!(await chooseMode("2D Animation", version))) return;
-        setTracePhase("stage-to-card");
-        if (!(await chooseMode("Card", version))) return;
-      } else if (command === "card-3d") {
-        beginGeometryTrace(command, "card-to-stage");
-        if (!(await chooseMode("3D Animation", version, false))) return;
-        if (!(await waitForMotionPresentation("3d", version))) return;
-        if (!(await waitFor3DReady(version))) return;
-        await wait(motionDuration(DURATION.emphasis) + 90);
-        setTracePhase("stage-to-card");
-        if (!(await chooseMode("Card", version))) return;
-      } else if (command === "card-tunnel") {
-        beginGeometryTrace(command, "card-to-stage");
-        if (!(await chooseMode("Tunnel", version, false))) return;
-        if (!(await waitForTunnelPresentation(version))) return;
-        await wait(motionDuration(DURATION.emphasis) + 90);
-        setTracePhase("stage-to-card");
-        if (!(await chooseMode("Card", version))) return;
-      } else if (command === "card-performances") {
-        beginGeometryTrace(command, "card-to-performances");
-        if (!(await chooseMode("Performances", version))) return;
-        setTracePhase("performances-to-card");
-        if (!(await chooseMode("Card", version))) return;
-      } else if (command === "card-stage-interrupt") {
-        beginGeometryTrace(command, "card-stage-interrupt");
-        if (!(await chooseMode("2D Animation", version, false))) return;
-        await wait(motionDuration(DURATION.instant));
-        if (!(await chooseMode("Card", version, false))) return;
-        if (!(await chooseMode("Tunnel", version, false))) return;
-        await wait(motionDuration(DURATION.instant));
-        if (!(await chooseMode("Card", version))) return;
-      } else if (command === "performances-2d") {
-        beginGeometryTrace(command, "stage-to-performances");
-        if (!(await chooseMode("Performances", version, false))) return;
-        if (!(await waitForPerformanceGallery(version))) return;
-        await wait(motionDuration(DURATION.emphasis) + 90);
-        setTracePhase("performances-to-stage");
-        if (!(await chooseMode("2D Animation", version))) return;
-      } else if (command === "performances-3d") {
-        beginGeometryTrace(command, "stage-to-performances");
-        if (!(await chooseMode("Performances", version, false))) return;
-        if (!(await waitForPerformanceGallery(version))) return;
-        await wait(motionDuration(DURATION.emphasis) + 90);
-        setTracePhase("performances-to-stage");
-        if (!(await chooseMode("3D Animation", version, false))) return;
-        if (!(await waitForMotionPresentation("3d", version))) return;
-        if (!(await waitFor3DReady(version))) return;
-        await wait(motionDuration(DURATION.emphasis) + 90);
-      } else if (command === "performances-interrupt") {
-        beginGeometryTrace(command, "interrupt-performances");
-        if (!(await chooseMode("Performances", version, false))) return;
-        await wait(motionDuration(DURATION.instant));
-        setTracePhase("interrupt-performance-stage");
-        if (!(await chooseMode("2D Animation", version, false))) return;
-        setTracePhase("interrupt-performances");
-        if (!(await chooseMode("Performances", version, false))) return;
-        await wait(motionDuration(DURATION.instant));
-        setTracePhase("interrupt-performance-stage");
-        if (!(await chooseMode("2D Animation", version))) return;
-      } else {
-        beginGeometryTrace(command, "interrupt-tunnel");
-        if (!(await chooseMode("Tunnel", version, false))) return;
-        await wait(motionDuration(DURATION.instant));
-        setTracePhase("interrupt-stage");
-        if (!(await chooseMode("2D Animation", version, false))) return;
-        setTracePhase("interrupt-tunnel");
-        if (!(await chooseMode("Tunnel", version, false))) return;
-        await wait(motionDuration(DURATION.instant));
-        setTracePhase("interrupt-stage");
-        if (!(await chooseMode("2D Animation", version))) return;
-      }
-
       if (activeTrace && version === replayVersion) {
         setTracePhase("settle");
         await wait(SETTLE_TAIL_MS);
@@ -1080,7 +1233,8 @@
     return (
       message.source === "sequence-viewer-transition-review" &&
       ((message.action === "replay" &&
-        (message.command === "2d" ||
+        (isWorkspaceReplayCommand(message.command) ||
+          message.command === "2d" ||
           message.command === "card" ||
           message.command === "interrupt" ||
           message.command === "3d-first" ||

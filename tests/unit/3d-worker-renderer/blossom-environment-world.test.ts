@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   BoxGeometry,
+  Box3,
   Group,
   Mesh,
   MeshStandardMaterial,
@@ -10,6 +11,7 @@ import {
 } from "three";
 
 import { createDefaultBlossomConfig } from "$lib/shared/3d/environments/domain/models/scene-configs";
+import { CANONICAL_PERFORMER_ANCHOR_Y } from "$lib/shared/3d/environments/domain/stage-coordinate-frame";
 import { createBlossomRuntimeConfig } from "$lib/shared/3d/environments/scenes/cherry-blossom/blossom-runtime";
 import { createBlossomAtmosphere } from "$lib/shared/3d/environments/worlds/blossom/blossom-atmosphere";
 import {
@@ -29,10 +31,12 @@ function mesh(name: string, materialName = ""): Mesh {
 function assets(): BlossomEnvironmentAssets {
   const environmentRoot = new Group();
   environmentRoot.add(
-    mesh("Garden Ground", "Blossom Living Garden Ground"),
+    mesh("Garden_Ground", "Blossom Living Garden Ground"),
     mesh("Stage_Base"),
     mesh("River_Water"),
     mesh("Sakura Hero"),
+    mesh("PlantFactory_tree-east-01"),
+    mesh("Blossom_open-crown-s19_Mesh_1"),
     mesh("Blossom_Grass_Base_Living"),
     mesh("Blossom_Grass_High_Damp")
   );
@@ -91,9 +95,42 @@ describe("Blossom renderer-neutral world", () => {
     expect(names).toContain("blossom-moon-key");
     expect(names).toContain("blossom-lantern-light-2");
     expect(world.reflector?.name).toBe("blossom-reflective-river");
-    expect(world.fog.color.getHexString()).toBe("2d172d");
-    expect(world.fog.density).toBe(0.01);
-    expect(world.background.getHexString()).toBe("07081d");
+    const config = createDefaultBlossomConfig();
+    expect(world.fog.color.getHexString()).toBe(config.fog.color.slice(1));
+    expect(world.fog.density).toBe(config.fog.density);
+    expect(world.background.getHexString()).toBe(config.sky.topColor.slice(1));
+    const stageBounds = new Box3().setFromObject(
+      world.root.getObjectByName("blossom-performance-stage")!
+    );
+    expect(stageBounds.max.x - stageBounds.min.x).toBeGreaterThanOrEqual(12);
+    expect(stageBounds.max.z - stageBounds.min.z).toBeGreaterThanOrEqual(8);
+    const deckBounds = new Box3().setFromObject(
+      world.root.getObjectByName("blossom-stage-planks")!
+    );
+    expect(deckBounds.max.y).toBeCloseTo(
+      -1.5 + CANONICAL_PERFORMER_ANCHOR_Y,
+      5
+    );
+    expect(deckBounds.min.x).toBeCloseTo(-6, 5);
+    expect(deckBounds.max.x).toBeCloseTo(6, 5);
+    expect(
+      (
+        bundle.environmentRoot.getObjectByName(
+          "PlantFactory_tree-east-01"
+        ) as Mesh
+      ).castShadow
+    ).toBe(true);
+    expect(
+      (
+        bundle.environmentRoot.getObjectByName(
+          "Blossom_open-crown-s19_Mesh_1"
+        ) as Mesh
+      ).castShadow
+    ).toBe(true);
+    expect(
+      (bundle.environmentRoot.getObjectByName("Garden_Ground") as Mesh)
+        .receiveShadow
+    ).toBe(true);
     expect(world.maxPixelRatio).toBe(2);
 
     const authored = world.root.getObjectByName("BlossomEnvironment")!;

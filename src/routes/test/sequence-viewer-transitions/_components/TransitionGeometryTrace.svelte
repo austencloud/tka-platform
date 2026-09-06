@@ -1,5 +1,6 @@
 <script lang="ts">
   import { DURATION } from "$lib/shared/transitions/transitions";
+  import { isWorkspaceReplayCommand } from "../workspace-review-replays";
   import {
     READABLE_PANE_SIZE,
     VISIBLE_PANE_OPACITY,
@@ -33,6 +34,11 @@
     trace.command.startsWith("performances-")
   );
   const summary = $derived(summarizeTransitionGeometry(trace));
+  const workspaceSamples = $derived(
+    trace.samples.flatMap((sample) =>
+      sample.workspace ? [sample.workspace] : []
+    )
+  );
   const maximumSize = $derived(
     Math.max(
       READABLE_PANE_SIZE,
@@ -319,7 +325,44 @@
   </header>
 
   <div class="trace-summary">
-    {#if isPerformanceTrace}
+    {#if isWorkspaceReplayCommand(trace.command)}
+      <span>Mode path: {summary.modePath.join(" → ") || "n/a"}</span>
+      <span>Mode commit: {modeCommitSummary || "n/a"}</span>
+      <span data-problem={workspaceSamples.length < 2}
+        >Measured frames: {workspaceSamples.length}</span
+      >
+      <span
+        data-problem={new Set(
+          workspaceSamples.map((sample) => sample.stageIdentity)
+        ).size > 1}
+      >
+        Viewer stage identities: {new Set(
+          workspaceSamples.map((sample) => sample.stageIdentity)
+        ).size}
+      </span>
+      <span
+        >Studio dissolve frames: {workspaceSamples.filter(
+          (sample) => sample.studioOpacity > 0.02 && sample.studioOpacity < 0.98
+        ).length}</span
+      >
+      <span
+        >Practice height: {Math.round(
+          Math.max(
+            0,
+            ...workspaceSamples.map((sample) => sample.practiceHeight)
+          )
+        )} px maximum</span
+      >
+      <span
+        data-problem={workspaceSamples.some(
+          (sample) => sample.selectedButtons > 1
+        )}
+      >
+        Duplicate selected buttons: {workspaceSamples.filter(
+          (sample) => sample.selectedButtons > 1
+        ).length} frames
+      </span>
+    {:else if isPerformanceTrace}
       <span data-problem={summary.performanceStageIdentityChanges > 0}
         >Viewer stage remounts: {summary.performanceStageIdentityChanges}</span
       >

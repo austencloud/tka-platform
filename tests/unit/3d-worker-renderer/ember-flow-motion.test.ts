@@ -2,7 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
-import { Box3, Matrix4, Vector3, type InstancedMesh, type Mesh } from "three";
+import {
+  Box3,
+  Matrix4,
+  Texture,
+  Vector3,
+  type InstancedMesh,
+  type Mesh,
+} from "three";
 import {
   measureFlowPath,
   sampleFlowPath,
@@ -43,6 +50,11 @@ describe("Ember drifting crust", () => {
     data.set(bytes);
     const gltf = await new GLTFLoader()
       .setMeshoptDecoder(MeshoptDecoder)
+      // This test checks flow geometry; browsers verify the embedded atlas.
+      .register(() => ({
+        name: "geometry-test-textures",
+        loadTexture: async () => new Texture(),
+      }))
       .parseAsync(data.buffer, "");
     gltf.scene.position.y = -1.5;
     gltf.scene.updateMatrixWorld(true);
