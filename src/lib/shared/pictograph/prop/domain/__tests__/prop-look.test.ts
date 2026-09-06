@@ -1,0 +1,74 @@
+import { describe, expect, it } from "vitest";
+import {
+  DEFAULT_PROP_LOOK,
+  basePropTypeOfRenderKey,
+  hasModelSprite,
+  modelSpriteArtwork,
+  normalizePropLook,
+  parseModelRenderKey,
+  propLookOptions,
+  resolvePropRenderKey,
+} from "../prop-look";
+import { PROP_MODEL_SPRITES } from "../prop-model-sprites.generated";
+
+describe("prop look", () => {
+  it("defaults to the 3D model look", () => {
+    expect(DEFAULT_PROP_LOOK).toBe("model");
+    expect(normalizePropLook(undefined)).toBe("model");
+    expect(normalizePropLook("garbage")).toBe("model");
+    expect(normalizePropLook("pictograph")).toBe("pictograph");
+  });
+
+  it("has a captured sprite pair for every physical 3D prop", () => {
+    for (const prop of ["staff", "club", "sword", "buugeng", "poi", "torch"]) {
+      expect(hasModelSprite(prop), prop).toBe(true);
+    }
+    expect(hasModelSprite("fan")).toBe(false);
+    expect(hasModelSprite("hand")).toBe(false);
+    expect(hasModelSprite("energy_saber")).toBe(false);
+    expect(Object.keys(PROP_MODEL_SPRITES).length).toBeGreaterThanOrEqual(30);
+  });
+
+  it("resolves model render keys only for sprites that exist", () => {
+    expect(resolvePropRenderKey("staff", {})).toBe("staff__model");
+    expect(resolvePropRenderKey("Staff", { propLook: "model" })).toBe(
+      "staff__model"
+    );
+    expect(resolvePropRenderKey("staff", { propLook: "pictograph" })).toBe(
+      "staff"
+    );
+    expect(resolvePropRenderKey("energy_saber", {})).toBe("energy_saber");
+    expect(resolvePropRenderKey("hand", {})).toBe("hand");
+  });
+
+  it("lets the fan appearance contract win for fans", () => {
+    expect(resolvePropRenderKey("fan", {})).toBe("fan__fire_bare");
+    expect(
+      resolvePropRenderKey("bigfan", {
+        fanAppearance: { build: "pictograph", frameColor: "black", cover: "bare" },
+      })
+    ).toBe("bigfan");
+  });
+
+  it("parses and strips render keys", () => {
+    expect(parseModelRenderKey("club__model")).toEqual({ propType: "club" });
+    expect(parseModelRenderKey("club")).toBeNull();
+    expect(parseModelRenderKey("fan__fire_bare")).toBeNull();
+    expect(basePropTypeOfRenderKey("club__model")).toBe("club");
+    expect(basePropTypeOfRenderKey("fan__fire_bare")).toBe("fan");
+    expect(basePropTypeOfRenderKey("staff")).toBe("staff");
+  });
+
+  it("points each hand at its own pre-lit sprite", () => {
+    expect(modelSpriteArtwork("staff", "left")).toMatch(
+      /^\/images\/props\/appearances\/model\/staff-blue\.svg\?v=/
+    );
+    expect(modelSpriteArtwork("staff", "right")).toMatch(
+      /^\/images\/props\/appearances\/model\/staff-red\.svg\?v=/
+    );
+    expect(propLookOptions("club").map((o) => o.id)).toEqual([
+      "model",
+      "pictograph",
+    ]);
+  });
+});

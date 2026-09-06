@@ -5,6 +5,7 @@
  */
 
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { PropSpriteSide } from "$lib/shared/pictograph/prop/domain/prop-look";
 import type { PropSvgData } from "$lib/shared/animation-engine/domain/types/svg-types";
 import type { ThemeMode } from "$lib/shared/utils/svg-color-utils";
 
@@ -26,7 +27,8 @@ export interface ISVGGenerator {
   generatePropSvg(
     propType: string,
     color: string,
-    themeMode?: ThemeMode
+    themeMode?: ThemeMode,
+    side?: PropSpriteSide
   ): Promise<PropSvgData>;
 
   /**
