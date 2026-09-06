@@ -244,7 +244,7 @@ export function getAuthPromptContent(
           : titles[index % titles.length]!,
       body:
         encore === "offer"
-          ? "One sequence. Eight extra steps. By very special decree."
+          ? "Just this once. Don't take it for granted!"
           : encore === "limit"
             ? "That's the encore limit. Free accounts get 64 steps."
             : "The encore was one sequence. A free account gets you 64 steps.",
@@ -268,15 +268,15 @@ const STEP_CAP_REPEAT_TITLES = [
   "Step nine wants in.",
   "You've got more in you.",
   "You're wearing me down.",
-  "A very persistent spinner.",
+  "You really want this.",
   "Oh, you again.",
   "The props are getting restless.",
   "Still negotiating, I see.",
-  "Your move, spinner.",
+  "Your move.",
 ];
 
 const ENCORE_SPENT_TITLES = [
-  "We had a deal, spinner.",
+  "We had a deal.",
   "I bent the rules and everything.",
   "My generosity has witnesses.",
   "The tiny committee says no.",
