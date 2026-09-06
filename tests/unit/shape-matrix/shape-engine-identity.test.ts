@@ -23,7 +23,7 @@ describe("Shape Engine identity", () => {
     expect(SHAPE_ENGINE_SHORT_NAME).toBe("Shape Engine");
     expect(SHAPE_MATRIX_EXPLORER_LEGACY_NAME).toBe("Shape Matrix Explorer");
 
-    const page = read("src/routes/(public)/notation/shape-matrix/+page.svelte");
+    const page = read("src/routes/(public)/shape-engine/+page.svelte");
     const shell = read(
       "src/lib/shared/shape-matrix/app/components/ShapeMatrixAppShell.svelte"
     );
@@ -46,7 +46,7 @@ describe("Shape Engine identity", () => {
     expect(ORIGINAL_SHAPE_MATRIX_URL).toContain("spinscience.xyz");
     expect(ORIGINAL_SHAPE_MATRIX_VTG_RATIOS).toBe("1:1, 1:3, and 1:5");
 
-    const page = read("src/routes/(public)/notation/shape-matrix/+page.svelte");
+    const page = read("src/routes/(public)/shape-engine/+page.svelte");
     const shell = read(
       "src/lib/shared/shape-matrix/app/components/ShapeMatrixAppShell.svelte"
     );

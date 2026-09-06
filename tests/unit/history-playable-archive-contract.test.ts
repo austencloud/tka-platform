@@ -53,7 +53,7 @@ describe("history attribution", () => {
     ).toMatchObject({ label: "Flow Arts Composer", href: "/create" });
     expect(tka.applications?.find((app) => app.role === "tool")).toMatchObject({
       label: "Shape Engine",
-      href: "/notation/shape-matrix",
+      href: "/shape-engine",
     });
     expect(entry("lorq").catalogEntry?.explore?.kind).toBe("original");
     expect(entry("lorq").catalogEntry?.applications).toBeUndefined();

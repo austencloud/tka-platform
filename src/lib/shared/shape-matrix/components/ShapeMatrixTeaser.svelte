@@ -48,7 +48,7 @@
       {colAxis}
       maxCellPx={72}
       onselect={() => {
-        goto("/notation/shape-matrix");
+        goto("/shape-engine");
       }}
     />
   {/if}

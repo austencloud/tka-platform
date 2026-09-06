@@ -7,7 +7,7 @@ import {
 import {
   readShapeMatrixRouteState,
   writeShapeMatrixRouteState,
-} from "../../../src/routes/(public)/notation/shape-matrix/_state/shape-matrix-url";
+} from "../../../src/routes/(public)/shape-engine/_state/shape-matrix-url";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const COMMON = {
@@ -26,7 +26,7 @@ describe("shape matrix URL state", () => {
     const [left, right] = buildFlowerAxis();
     if (!left || !right) throw new Error("Shape Matrix axis is empty");
     const url = new URL(
-      "https://tkaflowarts.com/notation/shape-matrix?ref=promo"
+      "https://tkaflowarts.com/shape-engine?ref=promo"
     );
 
     writeShapeMatrixRouteState(url, {
@@ -71,7 +71,7 @@ describe("shape matrix URL state", () => {
 
   it("removes cell parameters when the selection is cleared", () => {
     const url = new URL(
-      "https://tkaflowarts.com/notation/shape-matrix?size=medium&blue=x&red=y&mode=SS"
+      "https://tkaflowarts.com/shape-engine?size=medium&blue=x&red=y&mode=SS"
     );
 
     writeShapeMatrixRouteState(url, {
@@ -132,7 +132,7 @@ describe("shape matrix URL state", () => {
     const left = flowers[0];
     const right = flowers[1];
     if (!left || !right) throw new Error("Expected negative quarter flowers");
-    const url = new URL("https://tkaflowarts.com/notation/shape-matrix");
+    const url = new URL("https://tkaflowarts.com/shape-engine");
 
     writeShapeMatrixRouteState(url, {
       level: 4,
@@ -172,7 +172,7 @@ describe("shape matrix URL state", () => {
     const left = flowers[0];
     const right = flowers[1];
     if (!left || !right) throw new Error("Expected quarter-turn flowers");
-    const url = new URL("https://tkaflowarts.com/notation/shape-matrix");
+    const url = new URL("https://tkaflowarts.com/shape-engine");
 
     writeShapeMatrixRouteState(url, {
       level: 4,
@@ -217,7 +217,7 @@ describe("shape matrix URL state", () => {
 
   it("round-trips both theory axes, the pairing, and the selected cell", () => {
     const url = new URL(
-      "https://tkaflowarts.com/notation/shape-matrix?ref=theory"
+      "https://tkaflowarts.com/shape-engine?ref=theory"
     );
     const state = readShapeMatrixRouteState(
       "?theory=1&leftRatio=2:9&rightRatio=1:2&pairing=QO" +
@@ -259,7 +259,7 @@ describe("shape matrix URL state", () => {
     );
     expect(linked.theoryRatiosLinked).toBe(true);
 
-    const url = new URL("https://tkaflowarts.com/notation/shape-matrix");
+    const url = new URL("https://tkaflowarts.com/shape-engine");
     writeShapeMatrixRouteState(url, linked);
     expect(url.searchParams.get("linkRatios")).toBe("1");
 
@@ -277,7 +277,7 @@ describe("shape matrix URL state", () => {
 
   it("drops the retired timing and hands pair from an older theory link", () => {
     const url = new URL(
-      "https://tkaflowarts.com/notation/shape-matrix?theory=1&timing=quarter&hands=opp"
+      "https://tkaflowarts.com/shape-engine?theory=1&timing=quarter&hands=opp"
     );
     const state = readShapeMatrixRouteState(url.search);
     // The old two-parameter pairing has no reading; the surface opens on the
@@ -301,7 +301,7 @@ describe("shape matrix URL state", () => {
     expect(full.theoryRightRatio).toEqual({ propRotations: 4, handCycles: 15 });
 
     const url = new URL(
-      "https://tkaflowarts.com/notation/shape-matrix?theory=1&band=1"
+      "https://tkaflowarts.com/shape-engine?theory=1&band=1"
     );
     writeShapeMatrixRouteState(url, full);
     expect(url.searchParams.get("band")).toBeNull();
