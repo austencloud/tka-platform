@@ -54,6 +54,7 @@ import { withLibraryBrowseDate } from "$lib/shared/browse/services/browse-date";
 import { organizeSections as organizeBrowseSections } from "$lib/shared/browse/services/browse-section-manager";
 import { toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+import { getSavedSequenceIds } from "$lib/shared/library/services/saved-sequence-ledger";
 
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { isPreviewReadOnly } from "$lib/shared/debug/state/user-preview-state.svelte";
@@ -265,6 +266,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
   let libraryLoadRevision = 0;
   let initialized = false;
   let lastEffectiveUserId = authState.effectiveUserId;
+  let lastFullAccount = authState.isFullAccount;
 
   // --- Derived: filtering + sorting pipeline ---
 
@@ -496,12 +498,18 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
     $effect(() => {
       const currentEffectiveUserId = authState.effectiveUserId;
-      if (currentEffectiveUserId === lastEffectiveUserId) return;
+      const currentFullAccount = authState.isFullAccount;
+      if (
+        currentEffectiveUserId === lastEffectiveUserId &&
+        currentFullAccount === lastFullAccount
+      )
+        return;
 
       // A preview switch can happen while this engine stays mounted. Empty the
       // previous account immediately, cancel its in-flight request, and load the
       // new account through the same path a fresh Library visit uses.
       lastEffectiveUserId = currentEffectiveUserId;
+      lastFullAccount = currentFullAccount;
       libraryLoadRevision += 1;
       libraryCache = null;
       libraryCacheUserId = null;
@@ -555,12 +563,24 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
   async function loadLibrarySequences(): Promise<void> {
     const requestRevision = ++libraryLoadRevision;
     const requestedUserId = authState.effectiveUserId;
+    const requestedFullAccount = authState.isFullAccount;
     const requestedViewMode = { ..._viewMode };
     const isCurrentRequest = (): boolean =>
       requestRevision === libraryLoadRevision &&
       requestedUserId === authState.effectiveUserId &&
+      requestedFullAccount === authState.isFullAccount &&
       source === "my-library" &&
       sameViewMode(_viewMode, requestedViewMode);
+
+    if (!requestedUserId) {
+      allSequences = [];
+      libraryCache = null;
+      libraryCacheUserId = null;
+      error = null;
+      sectionsReady = true;
+      isLoading = false;
+      return;
+    }
 
     const soloLoader = config.loadSoloLibrarySequences;
     if (requestedViewMode.granularity === "solo" && soloLoader) {
@@ -602,24 +622,24 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       return;
     }
 
-    // Guests keep their library LOCALLY (Dexie). The Firestore sync on save is
-    // best-effort (anon session may be absent, offline, or still in flight), so
-    // reading Firestore would show an empty library even though the guest just
-    // saved. Read the local mirror directly instead. Full accounts read
-    // Firestore below — authoritative and cross-device — and must NOT read Dexie,
-    // which isn't uid-scoped and could surface another account's local cache on a
-    // shared device.
+    // The device cache survives sign-out and includes other sessions' work.
+    // Only ids recorded for this guest are their saves; an empty ledger must
+    // never fall back to showing the whole device cache.
     if (!authState.isFullAccount) {
       try {
         isLoading = true;
         sectionsReady = false;
         error = null;
-        const { getAllSequences } =
-          await import("$lib/shared/persistence/services/dexie-persistence-service");
+        const savedIds = new Set(getSavedSequenceIds(requestedUserId));
+        const rows = savedIds.size
+          ? await (
+              await import("$lib/shared/persistence/services/dexie-persistence-service")
+            ).getAllSequences()
+          : [];
         const local = deduplicateById(
-          ((await getAllSequences()) as SequenceData[]).map(
-            withLibraryBrowseDate
-          )
+          rows
+            .filter((sequence) => savedIds.has(sequence.id))
+            .map(withLibraryBrowseDate)
         );
         if (!isCurrentRequest()) return;
         allSequences = local;
