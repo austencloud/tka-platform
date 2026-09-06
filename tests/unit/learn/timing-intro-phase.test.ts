@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   cycle,
   downbeatEvents,
+  downbeatPulse,
   nextDownbeat,
   placementFromPositions,
   spatialPhase,
@@ -11,6 +12,19 @@ import {
 } from "../../../src/lib/features/learn/components/interactive/motions/timing-intro-phase";
 
 describe("placement is not timing", () => {
+  it("pulses only at the scheduled downbeats, including across the loop seam", () => {
+    for (const offset of [0, 0.25, 0.5]) {
+      for (const cycleStart of [0, 1, 2]) {
+        expect(downbeatPulse(cycleStart + offset, offset)).toBeCloseTo(1);
+        expect(downbeatPulse(cycleStart + offset + 0.2, offset)).toBe(0);
+        expect(downbeatPulse(cycleStart + offset - 0.01, offset)).toBe(0);
+      }
+    }
+    expect(downbeatPulse(0, 0.5)).toBe(0);
+    expect(downbeatPulse(0.5, 0)).toBe(0);
+    expect(downbeatPulse(0.25, 0.25)).toBe(1);
+    expect(downbeatPulse(0.25, 0)).toBe(0);
+  });
   it("keeps east/west alpha while rotation determines its downbeat timing", () => {
     expect(placementFromPositions(0.25, 0.75)).toBe("alpha");
     expect(timingFromPhases(timePhase(0.25, 1), timePhase(0.75, 1))).toBe(

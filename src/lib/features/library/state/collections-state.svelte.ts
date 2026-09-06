@@ -4,7 +4,6 @@ import {
 } from "$lib/shared/auth/state/auth-state.svelte";
 import { isPreviewReadOnly } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
-import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { isFullAccountUser } from "$lib/shared/auth/domain/access-tier";
 import { toast, showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { LIBRARY_LIMITS } from "$lib/shared/library/data/firestore-paths";
@@ -54,7 +53,6 @@ class CollectionsState {
 
   private unsubscribe: (() => void) | null = null;
   private startedFor: string | null = null;
-  private guestSaveNudged = false;
 
   /**
    * Idempotently begin (or restart for a new user) the live subscription.
@@ -102,7 +100,6 @@ class CollectionsState {
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.startedFor = null;
-    this.guestSaveNudged = false;
     this.collections = [];
     this.loading = false;
   }
@@ -170,17 +167,10 @@ class CollectionsState {
       } else {
         await addSequenceToCollection(collectionId, sequenceId);
         if (
-          !isFullAccountUser(
-            authState.isAuthenticated,
-            authState.isAnonymous
-          ) &&
-          !this.guestSaveNudged
+          !isFullAccountUser(authState.isAuthenticated, authState.isAnonymous)
         ) {
-          this.guestSaveNudged = true;
-          showToast({
+          authDrawerState.offerGuestSaveNudge({
             message: `Added to "${c.name}". Create a free account to open your collections on any device.`,
-            type: "success",
-            duration: 8000,
             action: {
               label: "Create account",
               onClick: () => authDrawerState.show("signup"),
@@ -457,7 +447,6 @@ class CollectionsState {
       isPublic &&
       !isFullAccountUser(authState.isAuthenticated, authState.isAnonymous)
     ) {
-      toast.info(AUTH_NUDGE_TEXTS["edit-community"]);
       authDrawerState.show("signup", "edit-community");
       return false;
     }

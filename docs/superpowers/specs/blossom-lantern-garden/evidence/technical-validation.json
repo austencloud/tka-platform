@@ -2,11 +2,11 @@
   "planId": "blossom-lantern-garden",
   "status": "technical-checks-passed",
   "visualAcceptance": "pending-user-review",
-  "checkedAt": "2026-09-06T03:18:25.719Z",
+  "checkedAt": "2026-09-06T03:48:51.989Z",
   "asset": "static/models/blossom/blossom_environment.glb",
-  "assetSha256": "2a0ea3905858de79450e86dea220de4cc5ee8fd90d5f014ec2fe67cadd0c5476",
-  "assetSizeMiB": 12.82,
-  "renderedTriangles": 3367696,
+  "assetSha256": "d318b56f5cd430c7e50c2a2a9978b165524217f979efedd062b64ddc7c0e08e3",
+  "assetSizeMiB": 11.69,
+  "renderedTriangles": 3299708,
   "trees": 26,
   "lanterns": 8,
   "hangingLanterns": 4,
@@ -16,6 +16,12 @@
     "testedMeshes": 56,
     "deckTop": 0.550000011920929,
     "rootWaterIntersections": [],
+    "groundCoverBounds": {
+      "minX": -71.0479965209961,
+      "maxX": 71.11235046386719,
+      "minY": -71.0862808227539,
+      "maxY": 71.06462860107422
+    },
     "maximumRouteGradePercent": {
       "arrival": 3.4999480510343246,
       "service": 3.4488410288956453
@@ -29,6 +35,7 @@
     "EXT_meshopt_compression",
     "EXT_texture_webp",
     "KHR_materials_emissive_strength",
+    "KHR_materials_specular",
     "KHR_mesh_quantization"
   ],
   "limitations": [
