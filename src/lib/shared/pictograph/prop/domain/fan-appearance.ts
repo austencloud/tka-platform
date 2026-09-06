@@ -168,7 +168,7 @@ export function fanAppearanceArtwork(
     // cut-sheet contours as the 3D plate; the frame color and cover are part
     // of the file rather than overlays.
     const suffix = cover === "covered" ? "-covered" : "";
-    return `/images/props/appearances/fan-day-${frameColor}${suffix}.svg?v=1`;
+    return `/images/props/appearances/fan-day-${frameColor}${suffix}.svg?v=2`;
   }
   return "/images/props/appearances/fan-lotus.svg?v=7";
 }

@@ -26,7 +26,7 @@ function plateLoops(svg: string): string[] {
 describe("DoodleGrip Day fan artwork", () => {
   it("draws the traced cut sheet as one even-odd plate on the hand pivot", () => {
     const svg = readArtwork("bare", "black");
-    expect(svg).toContain('data-fan-frame="" fill="#2E3192" fill-rule="evenodd"');
+    expect(svg).toContain('data-fan-plate="black" fill="#11141a" fill-rule="evenodd"');
     const loops = plateLoops(svg);
     expect(loops).toHaveLength(1 + contours.holes.length);
     expect(loops[0].split(" L ")).toHaveLength(contours.outline.length);
@@ -55,13 +55,17 @@ describe("DoodleGrip Day fan artwork", () => {
     expect(center[1]).toBeCloseTo(103.5, 0);
   });
 
-  it("keeps frame color and cover in the artwork rather than overlays", () => {
+  it("paints the plate in its frame color and leaves only the rim to the hand", () => {
     expect(readArtwork("bare", "black")).toContain(
-      'data-fan-frame-tint="black" fill="none" stroke="#11141a"'
+      'data-fan-plate="black" fill="#11141a"'
     );
     expect(readArtwork("bare", "white")).toContain(
-      'data-fan-frame-tint="white" fill="none" stroke="#f0f1f4"'
+      'data-fan-plate="white" fill="#f0f1f4"'
     );
+    // Only the rim group is marked for hand recoloring; the plate is not.
+    const white = readArtwork("bare", "white");
+    expect(white.match(/data-fan-frame=""/g)).toHaveLength(1);
+    expect(white).toContain('data-fan-frame="" fill="none" stroke="#2E3192"');
     expect(readArtwork("bare", "white")).not.toContain('data-fan-cover=""');
     expect(readArtwork("covered", "white")).toContain('data-fan-cover=""');
     expect(fs.existsSync(path.join(root, "static/images/props/appearances/fan-day.svg"))).toBe(false);
