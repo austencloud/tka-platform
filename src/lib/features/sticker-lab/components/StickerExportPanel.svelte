@@ -7,6 +7,7 @@
     loadPrimitivePaths,
   } from "../state/mandala-paths-cache.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
 
   const stickerState = getStickerLabContext();
   const exporter = new StickerSheetPdfExporter();
@@ -115,6 +116,17 @@
     </div>
   </details>
 </div>
+
+<!-- `exporter.export()` is a single pdf-lib call with no abort hook, so Cancel
+     is shown disabled with the reason rather than pretending to stop it. -->
+<ExportTakeover
+  phase={isPreparing || isExporting ? "capturing" : "idle"}
+  progress={0}
+  phaseLabel={isPreparing ? "Preparing stickers..." : "Building PDF..."}
+  onCancel={() => {}}
+  cancelDisabledReason="This PDF is built in one pass and can't be stopped part-way."
+  label="Exporting sticker sheet"
+/>
 
 <style>
   .panel {
