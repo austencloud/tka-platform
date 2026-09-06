@@ -52,6 +52,7 @@ import {
   resolveViewerFormationFacingAngle,
 } from "../domain/viewer-formation-facing";
 import { isWebGL2Available } from "../capabilities/webgl-capabilities";
+import { getBlossomOpeningCamera } from "../environments/scenes/cherry-blossom/blossom-site";
 import { fits3DViewportNow } from "../capabilities/viewport-3d-gate.svelte";
 import { userProportionsState } from "@austencloud/scene-3d";
 import { createCameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
@@ -860,6 +861,14 @@ function buildViewer3DState(
     performers: readonly PerformerShotSubject[]
   ) {
     const shot = computeViewerFrontStageShot(performers);
+    if (environmentId === "blossom" && performers.length === 1) {
+      const camera = getBlossomOpeningCamera(currentViewportAspect() < 1);
+      const [x, y, z] = camera.position;
+      const [tx, ty, tz] = camera.target;
+      shot.eye = { x, y, z };
+      shot.target = { x: tx, y: ty, z: tz };
+      return shot;
+    }
     const horizontalDistance = Math.hypot(
       shot.eye.x - shot.target.x,
       shot.eye.z - shot.target.z

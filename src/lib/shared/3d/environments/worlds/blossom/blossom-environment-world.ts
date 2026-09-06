@@ -218,6 +218,32 @@ function configureAuthoredEnvironment(
       : [mesh.material];
     for (const material of materials) {
       if (
+        material instanceof MeshStandardMaterial &&
+        material.name === "Ancient cherry bark"
+      ) {
+        material.color.set("#89706a");
+      }
+      if (
+        material instanceof MeshStandardMaterial &&
+        material.name === "Sakura flower clusters"
+      ) {
+        material.transparent = false;
+        material.alphaTest = 0.38;
+        material.depthWrite = true;
+        material.emissive.set("#e8a2b9");
+        material.emissiveIntensity = 0.12;
+        material.needsUpdate = true;
+      }
+      if (
+        material instanceof MeshStandardMaterial &&
+        material.map &&
+        /slate|stone|basalt|bark/i.test(material.name)
+      ) {
+        material.bumpMap = material.map;
+        material.bumpScale = /slate/i.test(material.name) ? 0.025 : 0.06;
+        material.needsUpdate = true;
+      }
+      if (
         !(material instanceof MeshStandardMaterial) ||
         !material.name.startsWith("Blossom Cherry")
       )
@@ -232,6 +258,7 @@ function configureAuthoredEnvironment(
     }
     mesh.receiveShadow =
       child.userData.blossomRole === "terrain" ||
+      child.userData.blossomRole === "architecture" ||
       child.userData.blossomRole === "stone" ||
       child.userData.blossomRole === "path" ||
       child.userData.blossomRole === "bark" ||
@@ -246,7 +273,7 @@ function configureAuthoredEnvironment(
       identity.includes("Boulder");
     mesh.castShadow =
       shadows &&
-      (["bark", "petals", "stone", "lantern"].includes(
+      (["bark", "petals", "stone", "lantern", "architecture"].includes(
         child.userData.blossomRole
       ) ||
         identity.includes("Sakura") ||
@@ -259,6 +286,23 @@ function configureAuthoredEnvironment(
         identity.includes("Stone") ||
         identity.includes("Boulder"));
   });
+}
+
+function findCourtMaterial(root: Object3D): MeshStandardMaterial | undefined {
+  let result: MeshStandardMaterial | undefined;
+  root.traverse((object) => {
+    const mesh = object as Mesh;
+    if (!mesh.isMesh) return;
+    const materials = Array.isArray(mesh.material)
+      ? mesh.material
+      : [mesh.material];
+    result ??= materials.find(
+      (material): material is MeshStandardMaterial =>
+        material instanceof MeshStandardMaterial &&
+        material.name === "Blossom court slate"
+    );
+  });
+  return result;
 }
 
 /** Build the exact production Blossom graph from already-loaded assets. */
@@ -319,6 +363,7 @@ export function createBlossomEnvironmentWorld(
     depth: stageDepth,
     groundY: options.groundY,
     showDirectionCues: options.showDirectionCues ?? true,
+    surfaceMaterial: findCourtMaterial(assets.environmentRoot),
   });
   const river = runtime.effects.reflectiveWater
     ? createBlossomRiver(options.groundY, stageZOffset)

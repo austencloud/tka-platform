@@ -72,6 +72,11 @@ compensation), so the detail view behind this sheet updates on its own.
     initialSource: authState.isFullAccount ? "my-library" : "community",
     minColumns: 2,
   });
+  const sourceTitle = $derived(
+    engine.source === "community"
+      ? "Add from Gallery"
+      : "Add from your saved sequences"
+  );
 
   // The parent mounts this component on demand, so the Drawer starts closed
   // and opens a frame later — that's what makes the slide-in animate.
@@ -229,7 +234,7 @@ compensation), so the detail view behind this sheet updates on its own.
   closeOnEscape={true}
   dismissible={true}
   showHandle={placement === "bottom"}
-  ariaLabel="Add sequences"
+  ariaLabel={sourceTitle}
   class="add-sequences-drawer"
   onOpenChange={(open) => {
     if (!open) requestClose();
@@ -239,9 +244,13 @@ compensation), so the detail view behind this sheet updates on its own.
     <header class="panel-header">
       <div class="header-text">
         <h2 class="panel-title">
-          Add to {target?.name ?? collectionName ?? "collection"}
+          {sourceTitle}
         </h2>
-        <span class="panel-count">{countLabel(memberIds.size)} inside</span>
+        <span class="panel-count">
+          {target?.name ?? collectionName ?? "Collection"} · {countLabel(
+            memberIds.size
+          )} inside
+        </span>
       </div>
       <button
         type="button"
