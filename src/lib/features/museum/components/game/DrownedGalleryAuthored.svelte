@@ -169,10 +169,16 @@
 
   // The lightmaps are baked at Cycles exposure and read dark under the
   // museum's ACES at 1.1, so they take a flat lift. The emissive-ONLY
-  // materials — glowworms, the three apse lamps, the gilded jambs — must not
-  // take it: lifted 2.6x every one of them clipped to a white block and the
-  // colour the asset carries was lost. They are tuned here by name instead,
-  // which also means a colour change is a reload, not a four-minute rebake.
+  // materials — the glowworms and the three apse lamps — must not take it:
+  // lifted 2.6x every one of them clipped to a white block and the colour the
+  // asset carries was lost. They are tuned here by name instead, which also
+  // means a colour change is a reload, not a four-minute rebake.
+  //
+  // The gilded threshold used to be on that list. It was a metal at 0.7 with
+  // nothing but a flat emissive to draw, because the museum sets no
+  // scene.environment and a metal without one has neither diffuse nor
+  // reflection — it read as a cream cardboard cutout. It carries a baked
+  // lightmap of its own now and takes the ordinary lift with the rock.
   const LIGHTMAP_BOOST = 2.6;
   // `base` darkens the albedo so the pooled point lights cannot wash the body
   // of a lamp back to a lit white box; what the visitor sees is the glow.
@@ -182,7 +188,6 @@
   > = {
     "DG Glowworm": { color: "#7fe4ff", base: "#061418", intensity: 1.0 },
     "DG Alcove Firelight": { color: "#ff9a3a", base: "#2a1a10", intensity: 0.75 },
-    "DG Gilded Threshold": { intensity: 1.2 },
   };
   function tuneShellMaterials(shell: Object3D): void {
     const seen = new Set<MeshStandardMaterial>();

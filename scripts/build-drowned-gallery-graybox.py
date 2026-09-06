@@ -147,9 +147,14 @@ ROCK = material("DG Cave Rock", (0.088, 0.078, 0.064, 1.0), roughness=0.97)
 ROCK_WET = material("DG Wet Rock", (0.115, 0.10, 0.082, 1.0), roughness=0.9)
 STONE_WALK = material("DG Walkway Stone", (0.30, 0.24, 0.165, 1.0), roughness=0.92)
 STONE_DEEP = material("DG Drowned Stone", (0.14, 0.13, 0.105, 1.0), roughness=0.95)
+# Gilt over cut stone, not a mirror. At metallic 0.7 this material has no
+# diffuse and no image-based reflection to stand in for one, so in three.js
+# (scene.environment is null in the museum) the only term that survived was the
+# flat emissive: a cream cardboard cutout. The production pass box-projects
+# stone into it and bakes the room's own light in.
 GOLD = material(
-    "DG Gilded Threshold", (0.72, 0.52, 0.18, 1.0), roughness=0.35, metallic=0.7,
-    emission=(0.72, 0.45, 0.12, 1.0), emission_strength=0.5,
+    "DG Gilded Threshold", (0.62, 0.44, 0.17, 1.0), roughness=0.42, metallic=0.25,
+    emission=(0.72, 0.45, 0.12, 1.0), emission_strength=0.35,
 )
 WATER_SURFACE = material(
     "DG Water Surface", (0.05, 0.26, 0.36, 0.62), roughness=0.08,
@@ -563,16 +568,111 @@ for index, rect in enumerate(LAYOUT["balustrades"]):
         COLLECTIONS["FEATURES"],
     )
 
-for index, rect in enumerate(LAYOUT["thresholdJambs"]):
-    rect_box(
-        f"DG_Threshold_Jamb_{index}", rect, CAUSEWAY, CAUSEWAY + 3.4, GOLD,
+# ── The gilded threshold ────────────────────────────────────────────────────
+# Austen, walking the finished slice (2026-09-05): "there's some arts that still
+# feel very much like a Gray box, especially this archway." It was three
+# axis-aligned prisms — two posts and a flat lid — with not one bevel between
+# them. It is an ARCH now: plinth, fasciated pier, projecting impost, a
+# segmental opening cut through the spandrel wall, a voussoir archivolt proud of
+# both faces, and a keystone that breaks the cornice. The footprint and the
+# 3.4 m head are the layout's, unchanged, so nothing measured has moved; the
+# walk gains 2.28 m of clear height at the jambs instead of 3.0 m of nothing.
+threshold_rect = LAYOUT["threshold"]
+opening = LAYOUT["thresholdOpening"]
+_th_cx, _th_cz = rect_centre(threshold_rect)
+TH_X = bx(_th_cx)
+TH_Y = by(_th_cz)
+TH_W = threshold_rect["maxX"] - threshold_rect["minX"]
+TH_D = threshold_rect["maxZ"] - threshold_rect["minZ"]
+OPEN_HALF = (opening["maxX"] - opening["minX"]) / 2
+PIER_W = (TH_W - 2 * OPEN_HALF) / 2
+PIER_X = OPEN_HALF + PIER_W / 2
+
+# Elevations above the causeway deck.
+PLINTH_TOP = 0.30
+SHAFT_TOP = 2.10
+IMPOST_TOP = 2.28   # the arch springs here
+CROWN = 2.92        # intrados at the centre of the opening
+CORNICE_BASE = 3.16
+TH_TOP = 3.40
+RING = 0.24         # radial thickness of the archivolt
+
+RISE = CROWN - IMPOST_TOP
+ARCH_R = (OPEN_HALF**2 + RISE**2) / (2 * RISE)
+ARCH_CZ = CROWN - ARCH_R
+ARCH_HALF_ANGLE = math.asin(min(1.0, OPEN_HALF / ARCH_R))
+
+
+def th_box(name, dx, base, top, width, depth):
+    """A box in threshold-local coordinates: dx across the opening from its
+    centre line, base/top measured up from the causeway deck."""
+    return add_box(
+        name,
+        (TH_X + dx, TH_Y, CAUSEWAY + (base + top) / 2),
+        (width, depth, top - base),
+        GOLD,
         COLLECTIONS["FEATURES"],
     )
-opening = LAYOUT["thresholdOpening"]
-rect_box(
-    "DG_Threshold_Lintel", opening, CAUSEWAY + 3.0, CAUSEWAY + 3.4, GOLD,
-    COLLECTIONS["FEATURES"],
+
+
+for side, sign in (("L", -1.0), ("R", 1.0)):
+    px = sign * PIER_X
+    # Plinth and impost oversail the shaft on all four faces; the fascia is the
+    # proud centre band that keeps a bare pier from reading as a post.
+    th_box(f"DG_Threshold_Plinth_{side}", px, 0.0, PLINTH_TOP, PIER_W + 0.16, TH_D + 0.20)
+    th_box(f"DG_Threshold_Shaft_{side}", px, PLINTH_TOP, SHAFT_TOP, PIER_W, TH_D)
+    th_box(
+        f"DG_Threshold_Fascia_{side}", px, PLINTH_TOP + 0.07, SHAFT_TOP - 0.07,
+        PIER_W - 0.16, TH_D + 0.12,
+    )
+    th_box(f"DG_Threshold_Impost_{side}", px, SHAFT_TOP, IMPOST_TOP, PIER_W + 0.16, TH_D + 0.20)
+
+# The spandrel wall, with the opening cut out of it. Its base overlaps the
+# imposts by 20 mm so the boolean is a transversal cut and not a tangency.
+spandrel = th_box(
+    "DG_Threshold_Spandrel", 0.0, IMPOST_TOP - 0.02, CORNICE_BASE, TH_W, TH_D
 )
+bpy.ops.mesh.primitive_cylinder_add(
+    vertices=64,
+    radius=ARCH_R,
+    depth=TH_D + 0.8,
+    location=(TH_X, TH_Y, CAUSEWAY + ARCH_CZ),
+    rotation=(math.pi / 2, 0.0, 0.0),
+)
+arch_cutter = bpy.context.active_object
+bpy.context.view_layer.objects.active = spandrel
+cut = spandrel.modifiers.new("Arch", "BOOLEAN")
+cut.operation = "DIFFERENCE"
+cut.solver = "EXACT"
+cut.object = arch_cutter
+bpy.ops.object.modifier_apply(modifier="Arch")
+bpy.data.objects.remove(arch_cutter, do_unlink=True)
+
+# The archivolt: wedge voussoirs standing proud of both faces, keystone at the
+# crown breaking up through the cornice.
+VOUSSOIRS = 13
+step = 2 * ARCH_HALF_ANGLE / VOUSSOIRS
+for index in range(VOUSSOIRS):
+    theta = -ARCH_HALF_ANGLE + step * (index + 0.5)
+    keystone = index == VOUSSOIRS // 2
+    outer = ARCH_R + (0.72 if keystone else RING)
+    r_mid = (ARCH_R + outer) / 2
+    width = 2 * ((ARCH_R + RING / 2) * math.tan(step / 2)) * (1.5 if keystone else 1.0)
+    add_box(
+        f"DG_Threshold_Voussoir_{index:02d}",
+        (
+            TH_X + r_mid * math.sin(theta),
+            TH_Y,
+            CAUSEWAY + ARCH_CZ + r_mid * math.cos(theta),
+        ),
+        (width, TH_D + (0.30 if keystone else 0.14), outer - ARCH_R + 0.04),
+        GOLD,
+        COLLECTIONS["FEATURES"],
+        rotation=(0.0, theta, 0.0),
+    )
+
+th_box("DG_Threshold_Cornice", 0.0, CORNICE_BASE, TH_TOP - 0.09, TH_W + 0.14, TH_D + 0.26)
+th_box("DG_Threshold_Crest", 0.0, TH_TOP - 0.09, TH_TOP, TH_W + 0.02, TH_D + 0.10)
 
 # Alcove stages, firelight niches and performer locators (A, B, C west→east).
 grotto = LAYOUT["grotto"]
@@ -586,16 +686,36 @@ for letter, anchor in zip("ABC", LAYOUT["alcoves"]):
     assign(stage, STAGE)
     move_to_collection(stage, COLLECTIONS["FEATURES"])
 
-    # Set against the back of the carved apse, not against the old flat wall.
-    # A 2.6 m panel at the plane the wall used to occupy now floats in mid-air
-    # inside the recess; this one is sized and placed to sit into the curve.
+    # A hooded wall sconce on the back of the carved apse, above the
+    # performer, so the bake rims each of them from behind. It used to be one
+    # flat emissive slab and read from across the grotto as exactly that: an
+    # amber card taped to the rock, with no body and no fitting. The glowing
+    # core is small now and a gilt hood, backplate, corbel and drop are built
+    # around it, matching the threshold. The apse recess opens toward the room,
+    # which is -Y in Blender, so the hood and corbel project that way.
+    lamp_x = bx(anchor["x"])
+    lamp_y = by(APSE_BACK_Z + 0.45)
+    lamp_z = SHELF + 2.35
     add_box(
-        f"DG_Niche_Fire_{letter}",
-        (bx(anchor["x"]), by(APSE_BACK_Z + 0.45), SHELF + 1.0),
-        (1.8, 0.5, 1.6),
+        f"DG_Apse_Lamp_{letter}",
+        (lamp_x, lamp_y, lamp_z),
+        (0.42, 0.14, 0.72),
         FIRELIGHT,
         COLLECTIONS["FEATURES"],
     )
+    for part, offset, dims in (
+        ("Back", (0.0, 0.11, 0.0), (0.66, 0.10, 1.06)),
+        ("Hood", (0.0, -0.11, 0.53), (0.80, 0.40, 0.09)),
+        ("Corbel", (0.0, -0.07, -0.50), (0.56, 0.32, 0.12)),
+        ("Drop", (0.0, -0.02, -0.72), (0.16, 0.16, 0.34)),
+    ):
+        add_box(
+            f"DG_Sconce_{letter}_{part}",
+            (lamp_x + offset[0], lamp_y + offset[1], lamp_z + offset[2]),
+            dims,
+            GOLD,
+            COLLECTIONS["FEATURES"],
+        )
 
     body_loc = plan_to_blender(anchor["x"], anchor["z"], SHELF + 0.62 + 0.9)
     bpy.ops.mesh.primitive_cylinder_add(
@@ -673,6 +793,22 @@ for letter, anchor in zip("ABC", LAYOUT["alcoves"]):
         (1.0, 0.62, 0.28), 950,
     )
 add_light("QA_Point_Dome", (gcx, gcz, DOME_APEX - 1.2), (0.45, 0.95, 0.8), 1800, 12)
+# The gilded threshold stands in the east walkway, twelve metres from the
+# nearest apse and outside the throw of every other lamp in the room, so it
+# baked to a silhouette: a gate nobody lit. Two warm grazing lights, one on each
+# face, so the archivolt and the keystone read as worked gold from the
+# procession and again from the exit ramp.
+# They sit BELOW the springline and close in, so they rake the piers and throw
+# up into the soffit; from head height and further out the intrados baked black.
+_th_cx, _th_cz = rect_centre(LAYOUT["threshold"])
+add_light(
+    "QA_Point_ThresholdSouth", (_th_cx - 0.25, _th_cz - 1.5, CAUSEWAY + 1.5),
+    (1.0, 0.86, 0.62), 210, 3,
+)
+add_light(
+    "QA_Point_ThresholdNorth", (_th_cx + 0.2, _th_cz + 1.6, CAUSEWAY + 1.5),
+    (1.0, 0.84, 0.58), 165, 3,
+)
 # Soft fill well ABOVE the brimming surface. At WATERLINE + 1.4 this sat 0.35 m
 # off the raised water and blew it out to flat cyan, which is not what a mirror
 # does. Height is measured from the grotto's own datum now.
@@ -771,8 +907,8 @@ cameras = {
         (13.75, 4.5, SHELF + 1.4), 26,
     ),
     "threshold": camera_from_plan(
-        "QA_Camera_Threshold", (24.5, 20.6, CAUSEWAY + 1.6),
-        (24.5, 16.8, CAUSEWAY + 1.6), 27,
+        "QA_Camera_Threshold", (24.6, 23.6, CAUSEWAY + 1.65),
+        (24.4, 16.9, CAUSEWAY + 1.05), 24,
     ),
 }
 
