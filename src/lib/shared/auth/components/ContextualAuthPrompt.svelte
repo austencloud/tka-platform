@@ -66,12 +66,14 @@
   aria-describedby={descriptionId}
 >
   <header class="prompt-header">
-    <div class="brand-lockup">
-      <span class="brand-mark">
-        <img src="/branding/logo.jpg" alt="" width="56" height="56" />
-      </span>
-      <span class="brand-name">Flow Arts Composer</span>
-    </div>
+    {#if !compact}
+      <div class="brand-lockup">
+        <span class="brand-mark">
+          <img src="/branding/logo.jpg" alt="" width="56" height="56" />
+        </span>
+        <span class="brand-name">Flow Arts Composer</span>
+      </div>
+    {/if}
 
     {#if showClose}
       <button
@@ -91,34 +93,31 @@
   </div>
 
   <div class="auth-methods">
-    {#if inAppBrowser}
-      <div class="email-flow">
-        {#if !compact}
-          <div class="email-divider"><span>Continue by email</span></div>
-        {/if}
-        <EmailAuthTabs bind:mode {compact} />
-      </div>
-
-      {#if compact}
-        <button
-          class="email-back"
-          type="button"
-          aria-expanded={showOtherProviders}
-          onclick={() => (showOtherProviders = !showOtherProviders)}
-        >
-          {showOtherProviders
-            ? "Fewer sign-in options"
-            : "Other sign-in options"}
-        </button>
-      {/if}
-      {#if !compact || showOtherProviders}
+    {#if compact}
+      <EmailAuthTabs bind:mode compact showMethods={showOtherProviders} />
+      <button
+        class="more-methods"
+        type="button"
+        aria-expanded={showOtherProviders}
+        onclick={() => (showOtherProviders = !showOtherProviders)}
+      >
+        {showOtherProviders ? "Fewer options" : "More sign-in options"}
+      </button>
+      {#if showOtherProviders}
         <div transition:growFade>
-          <p class="provider-warning">
-            Social sign-in is blocked inside this browser.
-          </p>
           <SocialAuthCompact {mode} {onFacebookAuth} />
         </div>
       {/if}
+    {:else if inAppBrowser}
+      <div class="email-flow">
+        <div class="email-divider"><span>Continue by email</span></div>
+        <EmailAuthTabs bind:mode {compact} />
+      </div>
+
+      <p class="provider-warning">
+        Social sign-in is blocked inside this browser.
+      </p>
+      <SocialAuthCompact {mode} {onFacebookAuth} />
     {:else if showEmailAuth}
       <div class="email-flow">
         <button
@@ -161,15 +160,17 @@
     {/if}
   </div>
 
-  <button class="mode-toggle" type="button" onclick={toggleMode}>
-    {#if mode === "signup"}
-      <span>Already have an account?</span>
-      <strong>Sign in</strong>
-    {:else}
-      <span>New here?</span>
-      <strong>Create an account</strong>
-    {/if}
-  </button>
+  {#if !compact || showOtherProviders}
+    <button class="mode-toggle" type="button" onclick={toggleMode}>
+      {#if mode === "signup"}
+        <span>Already have an account?</span>
+        <strong>Sign in</strong>
+      {:else}
+        <span>New here?</span>
+        <strong>Create an account</strong>
+      {/if}
+    </button>
+  {/if}
 </section>
 
 <style>
@@ -541,72 +542,70 @@
   .compact {
     --min-touch-target: 44px;
     --font-size-min: 0.875rem;
-    width: min(calc(100vw - 2rem), 28rem);
-    padding: 1.25rem;
+    width: min(calc(100vw - 2rem), 24rem);
+    padding: 2rem 1.5rem 1rem;
+    border-color: var(--theme-stroke);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.25);
   }
 
-  .compact .brand-mark {
-    width: 2rem;
-  }
-
-  .compact .brand-lockup {
-    gap: 0.625rem;
-  }
-
-  .compact .brand-name {
-    font-size: 0.9375rem;
+  .compact .close-button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: transparent;
+    border: 0;
+    color: var(--theme-text-dim);
   }
 
   .compact .prompt-copy {
     min-height: 0;
-    padding-block: 1rem;
+    padding: 0 0 1.5rem;
   }
 
   .compact h2 {
+    padding-right: 1.75rem;
     font-size: 1.5rem;
-    line-height: 1.15;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
     text-wrap: pretty;
   }
 
   .compact .prompt-copy p {
     min-height: 0;
-    margin-top: 0.5rem;
+    margin-top: 0.625rem;
     font-size: 0.9375rem;
     line-height: 1.4;
   }
 
-  .compact .email-flow {
-    gap: 0.75rem;
-    padding: 0;
-    background: none;
+  .more-methods {
+    display: block;
+    margin: 0.5rem auto 0;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
     border: 0;
+    border-radius: var(--radius-sm, 0.5rem);
+    background: transparent;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min);
+    cursor: pointer;
+  }
+
+  .more-methods:hover {
+    color: var(--theme-text);
+    background: var(--theme-card-bg);
+  }
+
+  .more-methods:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 
   .compact .mode-toggle {
-    margin-top: 0.75rem;
+    margin-top: 0.5rem;
     padding-inline: 0.5rem;
     flex-wrap: wrap;
-  }
-
-  @media (max-height: 35rem) and (min-width: 48rem) {
-    .compact {
-      display: grid;
-      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-      grid-template-rows: auto 1fr auto;
-      column-gap: 1.5rem;
-      width: min(calc(100vw - 2rem), 46rem);
-      padding: 1rem;
-    }
-
-    .compact .prompt-header,
-    .compact .prompt-copy,
-    .compact .mode-toggle {
-      grid-column: 1;
-    }
-
-    .compact .auth-methods {
-      grid-column: 2;
-      grid-row: 1 / span 3;
-    }
+    background: transparent;
+    border: 0;
   }
 </style>

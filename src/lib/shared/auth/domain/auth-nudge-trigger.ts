@@ -107,8 +107,8 @@ const AUTH_PROMPT_CONTENTS: Record<AuthNudgeTrigger, AuthPromptContent> = {
   },
   "step-cap-guest": {
     key: "step-cap-guest",
-    title: "Keep adding steps",
-    body: "Create a free account for up to 64 steps.",
+    title: "Keep going",
+    body: "Free account. Up to 64 steps.",
   },
   "patterns-guest": {
     key: "patterns-guest",
@@ -235,12 +235,12 @@ export function getAuthPromptContent(
 }
 
 const STEP_CAP_REPEAT_TITLES = [
-  "You found step nine's bouncer.",
-  "I know. Eight was just the warm-up.",
-  "The button works. It's just stubborn.",
-  "I see the vision. It has more than eight steps.",
-  "Yes, I wrote another message for this.",
-  "At this point, we're rehearsing the signup.",
-  "Plot twist: the account is still free.",
-  "Your next step is an email address.",
+  "Step nine says hello.",
+  "Eight was the warm-up.",
+  "Still got more moves?",
+  "Room for an encore?",
+  "Oh, hello again.",
+  "One tiny detour.",
+  "Your ninth step misses you.",
+  "Ready when you are.",
 ];

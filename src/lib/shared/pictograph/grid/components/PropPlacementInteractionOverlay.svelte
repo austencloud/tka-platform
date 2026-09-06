@@ -47,11 +47,15 @@
   onpointermove={aim.handlePointerMove}
   onpointerup={aim.handlePointerUp}
   onpointercancel={aim.handlePointerCancel}
+  onblur={aim.cancelLocationDrag}
 />
 
 <svg
   viewBox="0 0 950 950"
   class="interaction-overlay"
+  role="group"
+  aria-label="Placement points"
+  onpointerdown={aim.handleBoardPointerDown}
   bind:this={aim.overlayElement}
 >
   <g class="touch-indicators">
@@ -127,6 +131,7 @@
         fill="transparent"
         class="click-target"
         class:tappable={aim.isPressable(point.location)}
+        class:occupied={isLeftAt(point.location) || isRightAt(point.location)}
         onpointerdown={(event) => aim.handlePointerDown(event, point.location)}
         onpointermove={(event) => aim.updateHover(event, point.location)}
         onpointerleave={aim.clearHover}

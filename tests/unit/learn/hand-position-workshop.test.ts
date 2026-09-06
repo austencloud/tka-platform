@@ -11,6 +11,7 @@ import {
   positionExample,
   positionCorrection,
   positionCorrectionPair,
+  changePositionGrid,
   restorePositionWorkshop,
   transformPosition,
 } from "../../../src/lib/features/learn/components/interactive/positions/hand-position-lesson";
@@ -32,6 +33,37 @@ function memory(saved?: unknown) {
 }
 
 describe("hand position workshop domain", () => {
+  it("switches grids without changing the constructed family or losing a partial hand", () => {
+    for (const left of getPlacementGridPoints(GridMode.DIAMOND)) {
+      for (const right of getPlacementGridPoints(GridMode.DIAMOND)) {
+        const box = changePositionGrid(
+          left.location,
+          right.location,
+          GridMode.DIAMOND,
+          GridMode.BOX
+        );
+        expect(positionKindFor(box.left, box.right)).toBe(
+          positionKindFor(left.location, right.location)
+        );
+        expect(
+          changePositionGrid(
+            box.left,
+            box.right,
+            GridMode.BOX,
+            GridMode.DIAMOND
+          )
+        ).toEqual({ left: left.location, right: right.location });
+      }
+    }
+    expect(
+      changePositionGrid(
+        GridLocation.NORTH,
+        null,
+        GridMode.DIAMOND,
+        GridMode.BOX
+      )
+    ).toEqual({ left: GridLocation.NORTHEAST, right: null });
+  });
   for (const mode of [GridMode.DIAMOND, GridMode.BOX]) {
     it(`classifies all 16 ${mode} pairs and preserves families under transforms`, () => {
       const counts = { alpha: 0, beta: 0, gamma: 0 };
@@ -125,6 +157,22 @@ describe("hand position workshop domain", () => {
 });
 
 describe("self-paced practice progress", () => {
+  it("keeps completion available after free-play edits and clearing", () => {
+    const state = createPositionWorkshopState(
+      memory({ version: 1, phase: "complete", round: 6, explored: [] })
+    );
+    state.edited();
+    state.evaluatePlacement({
+      leftLocation: null,
+      rightLocation: null,
+      complete: false,
+      activeHand: HandSide.LEFT,
+      canUndo: false,
+    });
+    expect(state.canFinish).toBe(true);
+    expect(state.builtCount).toBe(6);
+    expect(state.feedback).toBe("idle");
+  });
   const alphaPlacement: PropPlacementChange = {
     leftLocation: GridLocation.NORTH,
     rightLocation: GridLocation.SOUTH,
