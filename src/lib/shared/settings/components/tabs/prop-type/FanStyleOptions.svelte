@@ -1,10 +1,10 @@
 <!--
   FanStyleOptions.svelte
-  The fan builds (Pictograph, DoodleGrip Fire, Lotus Fire, DoodleGrip Day,
-  Moon LED) and their details, rendered inside the Fan family chooser so the
-  style is picked in the same place as the prop. Bound to the shared
-  fanAppearance setting, which the 2D canvas, the 3D scene, and the sidebar
-  picker all read.
+  The fan look (Pictograph, DoodleGrip Fire, Lotus Fire, DoodleGrip Day,
+  Moon LED, plus the cover where a build has one), opened from the prop
+  grid's look chip once a fan is selected. Bound to the shared fanAppearance
+  setting, which the 2D canvas and the 3D scene both read. The frame color
+  is a 3D-only detail and stays out of this 2D control.
 -->
 <script lang="ts">
   import {
@@ -17,27 +17,20 @@
     type FanAppearance,
   } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
-  let {
-    compact = false,
-    onPick,
-  }: {
-    compact?: boolean;
-    /** Fires after a build is chosen, so the host can make a fan current. */
-    onPick?: (appearance: FanAppearance) => void;
-  } = $props();
-
   const settings = $derived(getSettings());
   const appearance = $derived(normalizeFanAppearance(settings.fanAppearance));
 
   function change(next: FanAppearance): void {
-    const normalized = normalizeFanAppearance(next);
-    void updateSettings({ fanAppearance: normalized });
-    onPick?.(normalized);
+    void updateSettings({ fanAppearance: normalizeFanAppearance(next) });
   }
 </script>
 
 <div class="fan-style-options" data-testid="fan-style-options">
-  <FanAppearancePicker value={appearance} onchange={change} {compact} />
+  <FanAppearancePicker
+    value={appearance}
+    onchange={change}
+    frameColor={false}
+  />
 </div>
 
 <style>
@@ -46,15 +39,22 @@
     flex: 0 0 auto;
     min-width: 0;
     width: 100%;
-    padding-top: 6px;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  /* The builds should read as one row wherever the chooser is wide enough;
-     the two-column compact default belongs to narrow drawers only. */
-  @container (min-width: 400px) {
-    .fan-style-options :global(.fan-appearance-picker) {
-      --build-option-count: 3;
+  /* Three builds per row even on a phone, so the five builds and the cover
+     fit inside the chooser without an inner scrollbar; one row of five once
+     the chooser is wide enough. */
+  .fan-style-options :global(.fan-appearance-picker) {
+    --build-option-count: 3;
+  }
+
+  @container (max-width: 539px) {
+    .fan-style-options :global(.option-label) {
+      min-height: 0;
+      padding: 6px 8px;
+      font-size: 11.5px;
+      line-height: 1.15;
+      white-space: normal;
     }
   }
 

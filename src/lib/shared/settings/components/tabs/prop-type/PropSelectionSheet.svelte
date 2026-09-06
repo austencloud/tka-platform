@@ -18,7 +18,6 @@
   import BentoPropGrid from "./BentoPropGrid.svelte";
   import type { PropChiralitySeam } from "./prop-chirality-seam";
   import CatDogToggle from "./CatDogToggle.svelte";
-  import PropStyleDock from "./PropStyleDock.svelte";
 
   let {
     isOpen = $bindable(false),
@@ -179,8 +178,6 @@
       onSelect={handlePropSelect}
       {chirality}
     />
-
-    <PropStyleDock propType={selectedPropType} compact={!isSideBySide} />
   </div>
 </Drawer>
 
@@ -206,11 +203,11 @@
   }
 
   /* Desktop side drawer: full-height right panel (matches the inbox/messages
-     drawer). Width tracks the bottom sheet's content width so the grid layout
-     stays consistent across placements. Height comes from Drawer's right-
-     placement rules (top:0/bottom:0). */
+     drawer). Wide enough for the grid's six-column layout, so every prop is
+     on screen at laptop height instead of behind a scrollbar. Height comes
+     from Drawer's right-placement rules (top:0/bottom:0). */
   :global(.prop-selection-drawer[data-placement="right"]) {
-    --sheet-width: min(480px, 92vw);
+    --sheet-width: min(800px, 92vw);
   }
 
   :global(.prop-selection-drawer) {
