@@ -117,6 +117,49 @@ export function flowFestParkedCarPlacementMatrix(
   return target;
 }
 
+export interface FlowFestDrivenCarPose {
+  x: number;
+  y: number;
+  z: number;
+  /** Placement yaw; the nose is local +X, a quarter turn from the heading. */
+  yaw: number;
+  pitch: number;
+  roll: number;
+}
+
+/**
+ * Where the player's car sits this frame: the four-tyre settle every parked
+ * body gets, with the drive's weight-transfer attitude added on top. The
+ * drive heads along (sin h, cos h) while the body's nose is local +X, which
+ * the placement maps to (cos yaw, -sin yaw), so the yaw trails the heading
+ * by a quarter turn.
+ */
+export function flowFestDrivenCarPose(
+  model: Pick<FlowFestParkedCarModel, "wheels">,
+  position: { x: number; z: number },
+  dynamics: {
+    headingRadians: number;
+    bodyPitchRadians: number;
+    bodyRollRadians: number;
+  },
+  sampleGroundY: (x: number, z: number) => number
+): FlowFestDrivenCarPose {
+  const yaw = dynamics.headingRadians - Math.PI / 2;
+  const settled = settleFlowFestParkedCarOnGround(
+    model,
+    { x: position.x, z: position.z, rotation: yaw },
+    sampleGroundY
+  );
+  return {
+    x: position.x,
+    y: settled.y,
+    z: position.z,
+    yaw,
+    pitch: settled.pitch + dynamics.bodyPitchRadians,
+    roll: settled.roll + dynamics.bodyRollRadians,
+  };
+}
+
 function isPaintMaterial(
   material: Material | Material[],
   paint: FlowFestParkedCarPaint | undefined

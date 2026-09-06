@@ -117,6 +117,7 @@
   import type { FlowFestGrayboxReadyDetails } from "./flow-fest-graybox-types";
   import FlowFestElectricUnicycle from "../flow-fest-sim/FlowFestElectricUnicycle.svelte";
   import FlowFestDrivenCar from "../flow-fest-sim/FlowFestDrivenCar.svelte";
+  import { FLOW_FEST_WORLD_STEP_TASK } from "../flow-fest-sim/flow-fest-frame-tasks";
   import FlowFestOnFootPlayer from "./FlowFestOnFootPlayer.svelte";
   import { type CharacterId } from "$lib/shared/3d/domain/character-model";
 
@@ -2158,7 +2159,9 @@
     disposeOverlay(previous);
   });
 
-  useTask((delta) => {
+  // Keyed so the driven car can order its pose write after this step and
+  // paint the body where physics just put it; see flow-fest-frame-tasks.ts.
+  useTask(FLOW_FEST_WORLD_STEP_TASK, (delta) => {
     if (!initialized || !physicsState?.world || disposed) return;
     if (props.electricUnicycleEnabled) pollElectricUnicycleGamepad();
     const liveProof = (globalThis as Record<string, unknown>)
