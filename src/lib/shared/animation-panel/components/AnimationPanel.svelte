@@ -38,6 +38,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import FanAppearancePicker from "$lib/shared/pictograph/prop/components/FanAppearancePicker.svelte";
+  import PropLookPicker from "$lib/shared/pictograph/prop/components/PropLookPicker.svelte";
   import {
     isFanPropType,
     type FanAppearance,
@@ -681,6 +682,13 @@
           <FanAppearancePicker
             value={fanAppearance}
             onchange={onFanAppearanceChange}
+            compact={layout === "bottom"}
+          />
+        </div>
+      {:else if selectedPropType}
+        <div class="fan-appearance-section">
+          <PropLookPicker
+            propType={selectedPropType}
             compact={layout === "bottom"}
           />
         </div>

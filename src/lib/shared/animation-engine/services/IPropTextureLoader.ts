@@ -10,6 +10,7 @@ import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tun
 import type { ISVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
 import type { ITrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
 import { parseFanRenderKey } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+import { parseModelRenderKey } from "$lib/shared/pictograph/prop/domain/prop-look";
 
 /**
  * Prop dimensions
@@ -170,7 +171,10 @@ export function getPropDimensions(propType: string): PropDimensions {
       ? { width: 600, height: 566.9 }
       : { width: 260, height: 207 };
   }
-  return PROP_DIMENSIONS[normalized] ?? { ...DEFAULT_PROP_DIMENSIONS };
+  // A model sprite is captured into the same box as its pictograph artwork.
+  const modelRenderKey = parseModelRenderKey(normalized);
+  const baseType = modelRenderKey?.propType ?? normalized;
+  return PROP_DIMENSIONS[baseType] ?? { ...DEFAULT_PROP_DIMENSIONS };
 }
 
 /**
