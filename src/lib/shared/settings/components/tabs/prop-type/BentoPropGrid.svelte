@@ -27,6 +27,8 @@
   import { flyFade, growFade } from "$lib/shared/transitions/motion";
   import PropTypeButton from "./PropTypeButton.svelte";
   import PropChiralityRow from "./PropChiralityRow.svelte";
+  import FanStyleOptions from "./FanStyleOptions.svelte";
+  import { isFanPropType } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import type { PropChiralitySeam } from "./prop-chirality-seam";
   import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { isPropUnlocked } from "$lib/shared/gamification/state/prop-collection-state.svelte";
@@ -169,6 +171,18 @@
     openFamily = openFamily === base ? null : base;
   }
 
+  /**
+   * Choosing a fan build inside the Fan chooser should show that build on the
+   * canvas right away, so a non-fan selection becomes the family's current
+   * size (Fan unless Big Fan was the last fan used). An existing fan keeps
+   * its size and the chooser stays open for the build details.
+   */
+  function handleFanStylePick(base: PropType): void {
+    if (selectedPropType !== null && isFanPropType(selectedPropType)) return;
+    const target = familyChoices(base)[0] ?? base;
+    onSelect(target);
+  }
+
   // Track which locked prop (if any) is showing its inline earn tip.
   let lockedTipFor = $state<PropType | null>(null);
   // Track which paid prop (if any) is showing its upgrade nudge.
@@ -302,6 +316,12 @@
               {@render tile(prop)}
             {/each}
           </div>
+          {#if isFanPropType(base)}
+            <FanStyleOptions
+              compact
+              onPick={() => handleFanStylePick(base)}
+            />
+          {/if}
         </section>
       {/if}
     {:else}
@@ -355,6 +375,12 @@
                         {@render tile(prop)}
                       {/each}
                     </div>
+                    {#if isFanPropType(base)}
+                      <FanStyleOptions
+                        compact
+                        onPick={() => handleFanStylePick(base)}
+                      />
+                    {/if}
                   </section>
                 {/if}
               </div>
