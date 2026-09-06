@@ -8,11 +8,26 @@ import type {
   TikaCapabilityExample,
   TikaLocalContext,
 } from "./capability";
-import { assignDistinctPropsCapability } from "./assign-distinct-props";
-import { assignDistinctCharactersCapability } from "./assign-distinct-characters";
-import { assignDistinctSequencesCapability } from "./assign-distinct-sequences";
-import { formationTransitionCapability } from "./formation-transition";
-import { arrangeFormationCapability } from "./arrange-formation";
+import {
+  assignDistinctPropsCapability,
+  AssignDistinctPropsSchema,
+} from "./assign-distinct-props";
+import {
+  assignDistinctCharactersCapability,
+  AssignDistinctCharactersSchema,
+} from "./assign-distinct-characters";
+import {
+  assignDistinctSequencesCapability,
+  AssignDistinctSequencesSchema,
+} from "./assign-distinct-sequences";
+import {
+  formationTransitionCapability,
+  FormationTransitionSchema,
+} from "./formation-transition";
+import {
+  arrangeFormationCapability,
+  ArrangeFormationSchema,
+} from "./arrange-formation";
 
 export type {
   TikaCapability,
@@ -37,12 +52,15 @@ export const TIKA_CAPABILITIES: readonly TikaCapability<any>[] = [
   formationTransitionCapability,
 ];
 
+// Built from each capability's own exported schema (not the `TikaCapability`
+// interface's widened `schema: z.ZodType<A>` field) so the concrete Zod
+// object types keep the discriminant metadata `discriminatedUnion` requires.
 export const TikaDirectorActionSchema = z.discriminatedUnion("type", [
-  assignDistinctPropsCapability.schema,
-  assignDistinctCharactersCapability.schema,
-  assignDistinctSequencesCapability.schema,
-  formationTransitionCapability.schema,
-  arrangeFormationCapability.schema,
+  AssignDistinctPropsSchema,
+  AssignDistinctCharactersSchema,
+  AssignDistinctSequencesSchema,
+  FormationTransitionSchema,
+  ArrangeFormationSchema,
 ]);
 export type TikaDirectorAction = z.infer<typeof TikaDirectorActionSchema>;
 

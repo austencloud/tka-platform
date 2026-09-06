@@ -54,7 +54,7 @@ export function getPreviewCacheKey(
   const durationFingerprint =
     seq.steps?.map((s) => s.duration ?? 1).join(",") ?? "";
   const vm = opts.browseViewMode;
-  const vmKey = vm ? `${vm.subject}-${vm.granularity}-${vm.color}` : "default";
+  const vmKey = vm ? `${vm.subject}-${vm.granularity}-${vm.hand}` : "default";
   // Resolve prop types to actual values (fall back to global settings) so the
   // in-memory cache differentiates between e.g. staff and fan when the caller
   // doesn't explicitly pass a prop type override.

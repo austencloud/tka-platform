@@ -635,7 +635,9 @@ export function createStageChoreographyState(
         x: position.x,
         z: position.z,
         facingAngle:
-          "facingAngle" in position ? position.facingAngle : undefined,
+          "facingAngle" in position && typeof position.facingAngle === "number"
+            ? position.facingAngle
+            : undefined,
         walkStyle: "direct",
         easing: "linear",
       };

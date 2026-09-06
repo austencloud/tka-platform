@@ -323,9 +323,9 @@ export function createTunnelCreatorState(
     const target = slots.find((slot) => slot.id === targetId);
     if (!target?.performer || target.performer.source.kind !== "derived")
       return;
-    const source = slots.find(
-      (slot) => slot.id === target.performer?.source.performerId
-    )?.performer;
+    const sourcePerformerId = target.performer.source.performerId;
+    const source = slots.find((slot) => slot.id === sourcePerformerId)
+      ?.performer;
     const performer = source ? derivedPerformer(source, target) : null;
     slots = slots.map((slot) =>
       slot.id === targetId ? { ...slot, performer } : slot

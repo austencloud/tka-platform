@@ -136,29 +136,6 @@ export interface RecentActivityEvent {
 }
 
 
-export interface PostHogSummaryMetrics {
-  totalUsers: number;
-  activeUsers7d: number;
-  totalSessions7d: number;
-  avgSessionDurationSeconds: number;
-}
-
-export interface UserSegments {
-  creators: number; // Created 5+ sequences
-  consumers: number; // Viewed 10+ but created 0
-  learners: number; // Completed 3+ lessons
-  lurkers: number; // <5 sessions and no content
-}
-
-export interface PostHogDashboardLinks {
-  retention: string;
-  insights: string;
-  persons: string;
-  replay: string;
-  events: string;
-}
-
-
 export interface UserEngagementSummary {
   /** Evidence source used for this window */
   source: "posthog" | "composer";

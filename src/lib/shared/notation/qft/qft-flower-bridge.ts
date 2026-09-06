@@ -15,7 +15,7 @@
  * actually call out to someone across a jam.
  */
 
-import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
+import type { RotatingFlower } from "$lib/shared/shape-matrix/domain/flower-signature";
 import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
 import type { QftKnobs } from "./qft-model";
 import {
@@ -48,7 +48,7 @@ export const FLOWER_RADIUS = 1;
  * is 2t + 1 prop rotations per hand rotation. That is QfT's `downbeats` and
  * the prop-rotation side of the VTG label returned by `ratioLabel`.
  */
-export function flowerToKnobs(flower: Flower): QftKnobs {
+export function flowerToKnobs(flower: RotatingFlower): QftKnobs {
   return {
     radius: FLOWER_RADIUS,
     downbeats: 2 * flower.turns + 1,
@@ -62,7 +62,7 @@ export function flowerToKnobs(flower: Flower): QftKnobs {
 }
 
 export function flowerToTrajectory(
-  flower: Flower,
+  flower: RotatingFlower,
   radius = FLOWER_RADIUS
 ): QftTrajectory {
   return trajectoryFromKnobs({ ...flowerToKnobs(flower), radius });
@@ -96,8 +96,8 @@ export function relateTrajectories(
 }
 
 export function realizationToTrajectories(
-  left: Flower,
-  right: Flower,
+  left: RotatingFlower,
+  right: RotatingFlower,
   mode: VtgMode,
   radii: { left?: number; right?: number } = {}
 ): { left: QftTrajectory; right: QftTrajectory } {
@@ -123,8 +123,8 @@ export function realizationToTrajectories(
  * comparable at a glance.
  */
 export function realizationToHands(
-  left: Flower,
-  right: Flower,
+  left: RotatingFlower,
+  right: RotatingFlower,
   mode: VtgMode
 ): { left: QftKnobs; right: QftKnobs } {
   const timing = mode[0] as keyof typeof TIMING_OFFSET;

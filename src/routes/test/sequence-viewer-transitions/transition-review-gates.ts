@@ -100,7 +100,9 @@ export type TransitionReviewDecisions = Record<
 export const TRANSITION_REVIEW_STORAGE_KEY =
   "tka_sequence_viewer_transition_review_v1";
 
-const REVIEW_GATE_IDS = new Set(TRANSITION_REVIEW_GATES.map((gate) => gate.id));
+const REVIEW_GATE_IDS: Set<string> = new Set(
+  TRANSITION_REVIEW_GATES.map((gate) => gate.id)
+);
 
 export function createEmptyTransitionReviewDecisions(): TransitionReviewDecisions {
   return Object.fromEntries(

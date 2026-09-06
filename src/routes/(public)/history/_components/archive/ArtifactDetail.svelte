@@ -67,7 +67,9 @@
 
 		<div class="detail-sources">
 			{#if entry.explore}
-				<a class="source-btn explore-btn" href={entry.explore.href}>
+				<a class="source-btn explore-btn" href={entry.explore.href}
+					target={entry.explore.href.startsWith("/") ? undefined : "_blank"}
+					rel={entry.explore.href.startsWith("/") ? undefined : "noopener noreferrer"}>
 					<span>{entry.explore.label}</span>
 					<span class="source-arrow" aria-hidden="true">&rarr;</span>
 				</a>

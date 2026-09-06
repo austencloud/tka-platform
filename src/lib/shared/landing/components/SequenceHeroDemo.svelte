@@ -58,6 +58,7 @@
     externalBpm,
     showNotationStrip = false,
     showWordHeader = false,
+    showCaption = true,
     autoPlay = true,
     cornerToggle = false,
     loadPriority = "idle",
@@ -112,6 +113,8 @@
     /** Shows the shared animated word header while preserving the square
         canvas beneath it. The header is isolated from persisted app settings. */
     showWordHeader?: boolean;
+    /** Keep the accessible caption while compact hosts show the word in the header. */
+    showCaption?: boolean;
     /** Forwarded to the inline player so a host can start with a still frame. */
     autoPlay?: boolean;
     /** Exposes the inline player's keyboard-accessible play/pause button. */
@@ -406,7 +409,7 @@
          competing for visual space. -->
     <figcaption
       class:pending={!sequence}
-      class:notation-caption={showNotationStrip}
+      class:notation-caption={showNotationStrip || !showCaption}
     >
       <Crossfade key={word}>
         <span class="tka-font demo-word">{word}</span>

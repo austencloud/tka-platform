@@ -773,6 +773,9 @@ export function flowerMatchesRecipe(
   recipe: SoloLoopGenerationRecipe
 ): boolean {
   if (recipe.level === 1) return flower.turns === 0;
+  // FloatFlower.turns is the literal "fl", not a number — a float path has no
+  // turn intensity to compare against a level 2/3 recipe's numeric cap.
+  if (typeof flower.turns !== "number") return false;
   if (flower.turns > recipe.maxTurnIntensity) return false;
   return recipe.level === 3 || Number.isInteger(flower.turns);
 }

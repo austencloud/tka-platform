@@ -42,10 +42,10 @@ plan, so a terrain edit cannot ship a mismatched shell.
 - The lightmap rides the emissive channel. Baked for AgX at exposure 0.4, it
   needs a 2.6x lift under the museum's ACES 1.1, and the lift belongs on the
   lightmapped materials only. `DrownedGalleryAuthored.svelte` tunes each
-  material in `GltfAsset`'s `onReady`: DG Rock/Slab/Rail take the lift,
-  DG Glowworm gets its own teal colour and intensity, DG Alcove Firelight its
-  amber, DG Gilded Threshold a 1.2 lift. A single shader uniform across all
-  six materials clipped the glowworms and lamps to white blocks.
+  material in `GltfAsset`'s `onReady`: DG Rock/Slab/Rail/Gilded Threshold take
+  the lift, DG Glowworm gets its own teal colour and intensity, and
+  DG Alcove Firelight its amber. A single shader uniform across all of them
+  clipped the glowworms and lamps to white blocks.
 - The museum's authored point-light pool is three lights, nearest to the
   visitor. Author the plan so the three nearest are the three that matter
   (the apse lamps at the shelf, the fills at the apron).
@@ -79,6 +79,57 @@ Water (mirror slab exports black), stages (pedestal standard renders the real
 pedestal), locators. The review harness at `/test/drowned-gallery-graybox`
 keeps the same split.
 
+## A metal with no environment map draws nothing (2026-09-05)
+
+Austen, walking the finished slice: "there's some arts that still feel very
+much like a Gray box, especially this archway." Two causes, and the second is
+the one worth remembering.
+
+The geometry was three axis-aligned prisms with no bevel between them: two
+posts and a flat lid, called an archway. It is a real arch now, cut from the
+same measured footprint and the same 3.4 m head so nothing the layout or the
+colliders measured has moved: plinth, fasciated pier, projecting impost, a
+segmental opening booleaned through the spandrel wall, a thirteen-piece
+voussoir archivolt standing proud of both faces, and a keystone that breaks
+the cornice.
+
+The material was `metallic 0.7`. The museum never sets `scene.environment`, and
+in three.js a metal without one has no diffuse term AND no image-based
+reflection, so the only thing left to draw was its flat emissive: a cream
+cardboard cutout, which is exactly what it looked like. Nothing about the
+number was wrong in Blender, where Cycles had the whole grotto to reflect. The
+fix is to bake that reflection: the threshold is now a fourth baked object
+(`DG_Metalwork`, 1024 px lightmap) whose bake material keeps the honest
+metal and runs `use_pass_glossy = True`, so the burnished highlight is written
+into the lightmap and the exported material can be an ordinary lit surface.
+It is a rule, not an incident: **never ship a metallic PBR material into this
+museum.** Bake the specular or use a dielectric. It is enforced against the
+built asset in `tests/unit/museum/drowned-gallery-shell-materials.test.ts`,
+which parses the glTF chunk out of the shipped GLB and fails on any material
+whose `metallicFactor` is not zero. glTF defaults that factor to 1 when the key
+is absent, so an omitted factor fails too.
+
+That test caught a second, quieter drift on its first run. Blender does not
+replace a material name, it appends `.001`, and the exported gilt material
+collided with the graybox's own `DG Gilded Threshold` -- so the shell had been
+shipping it as `DG Gilded Threshold.001`. Nothing looked wrong, because the
+threshold no longer wants a name-based tune. It would have looked very wrong the
+day someone gave a lightmapped material a runtime tune and the lookup silently
+missed. `new_material` now renames the authoring material out of the way, and
+the test asserts every exported name and rejects any `.001` suffix.
+
+It also had no light. The threshold stands in the east walkway, twelve metres
+from the nearest apse and outside the throw of every other lamp in the room,
+so the first bake came back a silhouette. Two warm grazing lights below the
+springline and close in now rake the piers and throw up into the soffit; from
+head height and further out the intrados baked black.
+
+The three apse lamps were one flat emissive slab each and read from across the
+grotto as an amber card taped to the rock. The glowing core is small now, with
+a gilt hood, backplate, corbel and drop built around it, sharing the
+threshold's material, object and lightmap so all of the Order's metalwork is
+one draw call.
+
 ## Open
 
 - Cycles bake balance: the first full pass let 106 glowworms paint a cyan
@@ -86,12 +137,13 @@ keeps the same split.
   the apse lamps. Judge in the walk, not in the QA renders.
 - Fire, Earth, Air, Sun, Moon still use their grayboxes. Same pipeline applies
   once each plan is exported; Water is the vertical slice.
-- The waterfall veil at the gallery reads as a floating translucent pane from
-  the shelf; it needs either a rock lip to hang from or a shader with fall.
-- Alcove firelight reads as a flat amber card from across the grotto. Either
-  a warmer point light in the pool or a gobo on the niche wall.
+- The waterfall veil at the gallery still reads as a floating translucent
+  pane from the shelf. It is runtime-owned (`waterfallSheet` in
+  `DrownedGalleryAuthored.svelte`), and its top ends in mid-air at
+  `CAUSEWAY_Y + 2.4` with no rock to pour from. The cheapest fix is a lip in
+  the GLB: subtract a second solid from the void before the remesh, so the
+  ledge is real rock and inherits the shell's displacement, UVs and lightmap.
 - Approach mouth from the lobby side shows an unlit black wall left of the
   arch (tile corridor, not the GLB). Needs a light or a jamb.
-- Not re-checked in this pass: the gilded threshold jambs and a console
-  button press in the walk (the E hint appears only under the raycast, which
-  the hidden Browser pane cannot aim).
+- Still not checked in the walk: a console button press (the E hint appears
+  only under the raycast, which the hidden Browser pane cannot aim).

@@ -7,6 +7,10 @@ paths:
 
 # Blender-First 3D Scene Contract
 
+For environment composition and art revisions, first read
+`docs/architecture/scene-design-brief.md`. It owns the shared visual checks;
+this contract owns the asset pipeline.
+
 Static environment geometry and set dressing are authored in Blender, exported
 to an optimized GLB, stored under `static/models/<scene>/`, and loaded through
 the existing Threlte scene infrastructure.

@@ -9,9 +9,10 @@ export interface EmberFlowPath {
 export function measureFlowPath(points: Vector3[]): EmberFlowPath {
   const distances = [0];
   for (let index = 1; index < points.length; index++) {
-    distances.push(
-      distances[index - 1] + points[index].distanceTo(points[index - 1])
-    );
+    const previous = points[index - 1]!;
+    const current = points[index]!;
+    const previousDistance = distances[index - 1]!;
+    distances.push(previousDistance + current.distanceTo(previous));
   }
   return { points, distances, length: distances.at(-1) ?? 0 };
 }
@@ -33,14 +34,18 @@ export function sampleFlowPath(
   let high = path.distances.length - 1;
   while (high - low > 1) {
     const middle = (low + high) >>> 1;
-    if (path.distances[middle] <= travel) low = middle;
+    if (path.distances[middle]! <= travel) low = middle;
     else high = middle;
   }
-  const span = path.distances[high] - path.distances[low];
+  const lowPoint = path.points[low]!;
+  const highPoint = path.points[high]!;
+  const lowDistance = path.distances[low]!;
+  const highDistance = path.distances[high]!;
+  const span = highDistance - lowDistance;
   position.lerpVectors(
-    path.points[low],
-    path.points[high],
-    span > 0 ? (travel - path.distances[low]) / span : 0
+    lowPoint,
+    highPoint,
+    span > 0 ? (travel - lowDistance) / span : 0
   );
-  tangent.subVectors(path.points[high], path.points[low]).normalize();
+  tangent.subVectors(highPoint, lowPoint).normalize();
 }

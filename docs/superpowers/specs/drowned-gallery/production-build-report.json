@@ -4,6 +4,7 @@
   "computeDevice": "OPTIX",
   "fast": false,
   "shellTriangles": 75894,
+  "metalworkTriangles": 4172,
   "floorTriangles": 2484,
   "lightmaps": {
     "shell": {
@@ -13,6 +14,10 @@
     "floors": {
       "px": 2048,
       "samples": 256
+    },
+    "threshold": {
+      "px": 1024,
+      "samples": 128
     }
   },
   "textureSets": {
@@ -22,30 +27,29 @@
   },
   "uvMetresPerUnit": {
     "shell": 70.62284947342968,
-    "floors": 45.99038382027869
+    "floors": 45.99038382027869,
+    "threshold": 11.745794781600816
   },
   "exportObjects": [
     "DG_Shell_Rock",
     "DG_Floors",
     "DG_Rails",
-    "DG_Threshold_Jamb_0",
-    "DG_Threshold_Jamb_1",
-    "DG_Threshold_Lintel",
+    "DG_Metalwork",
     "DG_Apse_Lamp_A",
     "DG_Apse_Lamp_B",
     "DG_Apse_Lamp_C",
     "glowworms x106"
   ],
-  "rawGlbBytes": 31614748,
-  "finalGlbBytes": 3913268,
+  "rawGlbBytes": 32831568,
+  "finalGlbBytes": 3996824,
   "finalGlbPath": "static/models/museum/cave/drowned-gallery.glb",
   "renders": {
-    "approach": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-approach.png",
-    "descent": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-descent.png",
-    "bloom": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-bloom.png",
-    "reveal": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-reveal.png",
-    "procession": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-procession.png",
-    "threshold": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-threshold.png",
-    "overview": "E:\\worktrees\\tka-platform\\water-production\\blender\\qa\\drowned-gallery-production\\drowned-gallery-overview.png"
+    "approach": "E:\\worktrees\\tka-platform\\water-threshold\\blender\\qa\\drowned-gallery-production\\drowned-gallery-approach.png",
+    "descent": "E:\\worktrees\\tka-platform\\water-threshold\\blender\\qa\\drowned-gallery-production\\drowned-gallery-descent.png",
+    "bloom": "E:\\worktrees\\tka-platform\\water-threshold\\blender\\qa\\drowned-gallery-production\\drowned-gallery-bloom.png",
+    "reveal": "E:\\worktrees\\tka-platform\\water-threshold\\blender\\qa\\drowned-gallery-production\\drowned-gallery-reveal.png",
+    "procession": "E:\\worktrees\\tka-platform\\water-threshold\\blender\\qa\\drowned-gallery-production\\drowned-gallery-procession.png",
+    "threshold": "E:\\worktrees\\tka-platform\\water-threshold\\blender\\qa\\drowned-gallery-production\\drowned-gallery-threshold.png",
+    "overview": "E:\\worktrees\\tka-platform\\water-threshold\\blender\\qa\\drowned-gallery-production\\drowned-gallery-overview.png"
   }
 }

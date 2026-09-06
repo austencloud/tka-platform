@@ -6,6 +6,7 @@
  * source recovery directly testable.
  */
 import type { SavedGeneratorSetup } from "./models/favorite-config";
+import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
 import {
   normalizePersistedGenerationConfig,
   normalizePersistedStartEndOptions,
@@ -61,7 +62,7 @@ export function planPersonalMigration(
       favorite.config
     ) as SavedGeneratorSetup["config"],
     startEndOptions: normalizePersistedStartEndOptions(
-      favorite.startEndOptions
+      (favorite.startEndOptions ?? null) as StartEndOptions | null
     ),
     createdAt: favorite.setAt ?? now,
     updatedAt: now,

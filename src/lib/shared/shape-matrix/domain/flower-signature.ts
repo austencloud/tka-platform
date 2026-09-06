@@ -81,7 +81,7 @@ export function flowerStartOrientation(
     };
     return orientationByName[f.ori];
   }
-  if (f.turns !== "fl" && reducedSpinRatio(f.turns).denominator === 2) {
+  if (reducedSpinRatio(f.turns).denominator === 2) {
     return f.ori === "in" ? Orientation.IN : Orientation.CLOCK;
   }
   return f.ori === "in" ? Orientation.IN : Orientation.OUT;

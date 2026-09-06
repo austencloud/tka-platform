@@ -1,28 +1,13 @@
-import {
-  Color,
-  FogExp2,
-  PMREMGenerator,
-  type Scene,
-  type Texture,
-  type WebGLRenderer,
-} from "three";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { Color, FogExp2, type Scene, type WebGLRenderer } from "three";
+
+import { getRoomEnvironmentTexture } from "../../../rendering/room-environment";
 
 export const OCEAN_ENVIRONMENT_INTENSITY = 0.05;
 export const OCEAN_FOG_DENSITY = 0.026;
 export const OCEAN_BACKGROUND_COLOR = "#0a2438";
 
-const oceanEnvironmentTextures = new WeakMap<WebGLRenderer, Texture>();
-
-export function getOceanEnvironmentTexture(renderer: WebGLRenderer): Texture {
-  const existing = oceanEnvironmentTextures.get(renderer);
-  if (existing) return existing;
-  const pmrem = new PMREMGenerator(renderer);
-  const texture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  pmrem.dispose();
-  oceanEnvironmentTextures.set(renderer, texture);
-  return texture;
-}
+/** Ocean reflects the shared prefiltered room; the cache lives with that owner. */
+export const getOceanEnvironmentTexture = getRoomEnvironmentTexture;
 
 export interface OceanSceneAppearance {
   dispose(): void;
@@ -59,7 +44,8 @@ export function applyOceanSceneAppearance(options: {
 
   return {
     dispose() {
-      if (scene.background === background) scene.background = previous.background;
+      if (scene.background === background)
+        scene.background = previous.background;
       if (scene.fog === fog) scene.fog = previous.fog;
       if (scene.environment === environment) {
         scene.environment = previous.environment;

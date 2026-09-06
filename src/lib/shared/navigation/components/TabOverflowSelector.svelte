@@ -15,6 +15,7 @@
     sectionHome = null,
     onSectionHomeSelect = () => {},
     selectorLabel = "Select tab",
+    moduleLabel = "",
   } = $props<{
     sections: Section[];
     currentSection: string;
@@ -22,6 +23,12 @@
     sectionHome?: SectionHomeDestination | null;
     onSectionHomeSelect?: () => void;
     selectorLabel?: string;
+    /**
+     * The module these tabs belong to (e.g. "Create"). Shown as the popover's
+     * heading so a compact layout still says WHERE the tab list came from —
+     * on mobile the module name is otherwise nowhere on screen.
+     */
+    moduleLabel?: string;
   }>();
 
   let popoverElement: HTMLElement | null = null;
@@ -111,7 +118,14 @@
   id="tab-overflow-popover"
   popover="auto"
   class="tab-overflow-popover"
+  aria-labelledby={moduleLabel ? "tab-overflow-popover-heading" : undefined}
 >
+  {#if moduleLabel}
+    <h2 class="popover-heading" id="tab-overflow-popover-heading">
+      {moduleLabel}
+    </h2>
+  {/if}
+
   <div class="tab-grid">
     {#if sectionHome}
       <button
@@ -311,6 +325,17 @@
   :global(#tab-overflow-popover:not(:popover-open)) {
     opacity: 0;
     scale: 0.95;
+  }
+
+  .popover-heading {
+    margin: 0 0 12px;
+    padding: 0 4px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--theme-text-muted, var(--theme-text));
+    opacity: 0.75;
   }
 
   .tab-grid {

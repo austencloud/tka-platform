@@ -123,10 +123,11 @@ export function createCorpusSession(options: CorpusSessionOptions) {
     return true;
   }
 
-  function syncQueue(): void {
+  function syncQueue(): SessionStatus {
     currentKey = queue.current;
     nextKey = queue.next;
     if (queue.current === null && status === "running") status = "finished";
+    return status;
   }
 
   async function persist(): Promise<void> {
@@ -187,8 +188,8 @@ export function createCorpusSession(options: CorpusSessionOptions) {
       return;
     }
 
-    syncQueue();
-    if (status === "finished") await stop();
+    const syncedStatus = syncQueue();
+    if (syncedStatus === "finished") await stop();
   }
 
   async function start(deviceId?: string): Promise<void> {

@@ -352,13 +352,20 @@ export function migrateTunnelSnapshot(
     ...tunnel
   } = snapshot.tunnel as LegacyTunnelSnapshot["tunnel"];
   const resolvedColors = resolveTunnelPropColorState(colors, legacySpectrum);
+  const storedColors =
+    colors && typeof colors === "object"
+      ? (colors as {
+          mode?: unknown;
+          custom?: { left?: unknown; right?: unknown } | null;
+        })
+      : null;
   if (
     snapshot.version >= SNAPSHOT_VERSION &&
     !("spectrum" in snapshot.tunnel) &&
     "presetRecipe" in snapshot.tunnel &&
-    snapshot.tunnel.colors.mode === resolvedColors.mode &&
-    snapshot.tunnel.colors.custom.left === resolvedColors.custom.left &&
-    snapshot.tunnel.colors.custom.right === resolvedColors.custom.right
+    storedColors?.mode === resolvedColors.mode &&
+    storedColors.custom?.left === resolvedColors.custom.left &&
+    storedColors.custom?.right === resolvedColors.custom.right
   ) {
     return snapshot as TunnelSnapshot;
   }

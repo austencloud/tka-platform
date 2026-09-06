@@ -114,8 +114,8 @@ export function createEmberTerrainHeightField(
     );
     if (column < 0 || column >= columns || row < 0 || row >= rows) continue;
     const cell = row * columns + column;
-    sums[cell] += points[index + 1]! - groundY;
-    counts[cell] += 1;
+    sums[cell]! += points[index + 1]! - groundY;
+    counts[cell]! += 1;
   }
 
   const heights = new Float32Array(cells);
@@ -358,9 +358,9 @@ export function createEmberHorizonApron(
     const ny = abz * acx - abx * acz;
     const nz = abx * acy - aby * acx;
     for (const vertex of [a, b, c]) {
-      normals[vertex] += nx;
-      normals[vertex + 1] += ny;
-      normals[vertex + 2] += nz;
+      normals[vertex]! += nx;
+      normals[vertex + 1]! += ny;
+      normals[vertex + 2]! += nz;
     }
   }
 
@@ -368,9 +368,9 @@ export function createEmberHorizonApron(
     const length =
       Math.hypot(normals[vertex]!, normals[vertex + 1]!, normals[vertex + 2]!) ||
       1;
-    normals[vertex] /= length;
-    normals[vertex + 1] /= length;
-    normals[vertex + 2] /= length;
+    normals[vertex]! /= length;
+    normals[vertex + 1]! /= length;
+    normals[vertex + 2]! /= length;
   }
 
   return { positions, normals, uvs, indices };

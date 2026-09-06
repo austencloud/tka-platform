@@ -732,7 +732,7 @@ export class RandomSequenceGenerator {
       timing: "", // PictographData doesn't have timing - only available on compound letters
       direction: "", // PictographData doesn't have direction - only available on compound letters
       leftMotion: {
-        hand: "left",
+        color: "left",
         startLocation: leftMotion?.startLocation ?? "",
         endLocation: leftMotion?.endLocation ?? "",
         motionType: leftMotion?.motionType ?? "static",
@@ -741,7 +741,7 @@ export class RandomSequenceGenerator {
         endOrientation: leftMotion?.endOrientation ?? "",
       },
       rightMotion: {
-        hand: "right",
+        color: "right",
         startLocation: rightMotion?.startLocation ?? "",
         endLocation: rightMotion?.endLocation ?? "",
         motionType: rightMotion?.motionType ?? "static",
@@ -765,7 +765,7 @@ export class RandomSequenceGenerator {
       timing: "",
       direction: "",
       leftMotion: {
-        hand: "left",
+        color: "left",
         startLocation: step.leftStartLocation ?? "",
         endLocation: step.leftEndLocation ?? "",
         motionType: step.leftMotionType,
@@ -774,7 +774,7 @@ export class RandomSequenceGenerator {
         endOrientation: "",
       },
       rightMotion: {
-        hand: "right",
+        color: "right",
         startLocation: step.rightStartLocation ?? "",
         endLocation: step.rightEndLocation ?? "",
         motionType: step.rightMotionType,

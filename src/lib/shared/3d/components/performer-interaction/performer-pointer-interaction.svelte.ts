@@ -351,7 +351,7 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       selected.length === 0
         ? "Performer selection cleared"
         : selected.length === 1
-          ? `Performer ${selected[0] + 1} selected`
+          ? `Performer ${(selected[0] ?? 0) + 1} selected`
           : `${selected.length} performers selected`;
     window.dispatchEvent(
       new CustomEvent("tka-performer-interaction-announcement", {
@@ -390,7 +390,10 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
     if (!camera) return null;
     const rect = options.canvas.getBoundingClientRect();
     let nearest: { index: number; distance: number } | null = null;
-    options.viewer.performerManager.performers.forEach((performer, index) => {
+    const performers = options.viewer.performerManager.performers;
+    for (let index = 0; index < performers.length; index++) {
+      const performer = performers[index];
+      if (!performer) continue;
       const projected = new Vector3(
         performer.position.x,
         options.groundY() + TOUCH_FALLBACK_PICK_HEIGHT_METRES,
@@ -407,7 +410,7 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
         (!nearest || distance < nearest.distance)
       )
         nearest = { index, distance };
-    });
+    }
     return nearest?.index ?? null;
   }
 
@@ -970,7 +973,7 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
     options.viewer.endSpatialEdit();
     announcement =
       selected.length === 1 && finalPosition
-        ? `Performer ${selected[0] + 1} moved to ${finalPosition.x.toFixed(2)}, ${finalPosition.z.toFixed(2)}`
+        ? `Performer ${(selected[0] ?? 0) + 1} moved to ${finalPosition.x.toFixed(2)}, ${finalPosition.z.toFixed(2)}`
         : `${selected.length} performers moved`;
     window.dispatchEvent(
       new CustomEvent("tka-performer-interaction-announcement", {

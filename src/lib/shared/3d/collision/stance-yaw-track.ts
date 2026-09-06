@@ -703,15 +703,20 @@ export function describeStanceYawTrack(
 
   let peakSpineStaggerRad = 0;
   for (let i = 0; i < chest.length; i += 1) {
+    const chestVal = chest[i];
+    const spine1Val = spine1[i];
+    if (chestVal === undefined || spine1Val === undefined) continue;
     peakSpineStaggerRad = Math.max(
       peakSpineStaggerRad,
-      Math.abs(spine1[i] - SPINE1_SHARE * chest[i])
+      Math.abs(spine1Val - SPINE1_SHARE * chestVal)
     );
   }
 
   const firstCrossing = (values: number[], threshold: number): number | null => {
     for (let i = 0; i < values.length; i += 1) {
-      if (Math.abs(values[i]) >= threshold) return times[i];
+      const value = values[i];
+      if (value === undefined) continue;
+      if (Math.abs(value) >= threshold) return times[i] ?? null;
     }
     return null;
   };
@@ -735,23 +740,38 @@ export function describeStanceYawTrack(
   // its extreme, to where it settles again.
   let peakIndex = 0;
   for (let i = 1; i < chest.length; i += 1) {
-    if (Math.abs(chest[i]) > Math.abs(chest[peakIndex])) peakIndex = i;
+    const value = chest[i];
+    const peakValue = chest[peakIndex];
+    if (value === undefined || peakValue === undefined) continue;
+    if (Math.abs(value) > Math.abs(peakValue)) peakIndex = i;
   }
   const floorRad = ONSET_FRACTION * peakChestRad;
   let start = peakIndex;
-  while (start > 0 && Math.abs(chest[start - 1]) >= floorRad) start -= 1;
+  while (start > 0) {
+    const value = chest[start - 1];
+    if (value === undefined || Math.abs(value) < floorRad) break;
+    start -= 1;
+  }
   let end = peakIndex;
-  while (end < chest.length - 1 && Math.abs(chest[end + 1]) >= floorRad) end += 1;
+  while (end < chest.length - 1) {
+    const value = chest[end + 1];
+    if (value === undefined || Math.abs(value) < floorRad) break;
+    end += 1;
+  }
 
   const arrivalIn = (values: number[]): number | null => {
     let peak = 0;
     for (let i = start; i <= peakIndex; i += 1) {
-      peak = Math.max(peak, Math.abs(values[i]));
+      const value = values[i];
+      if (value === undefined) continue;
+      peak = Math.max(peak, Math.abs(value));
     }
     if (peak < 1e-4) return null;
     const threshold = ARRIVAL_FRACTION * peak;
     for (let i = start; i <= peakIndex; i += 1) {
-      if (Math.abs(values[i]) >= threshold) return times[i];
+      const value = values[i];
+      if (value === undefined) continue;
+      if (Math.abs(value) >= threshold) return times[i] ?? null;
     }
     return null;
   };
@@ -762,7 +782,7 @@ export function describeStanceYawTrack(
     peakChestRad,
     peakHeadLagRad: peakOf(headLag),
     peakSpineStaggerRad,
-    turnWindow: { start: times[start], end: times[end] },
+    turnWindow: { start: times[start]!, end: times[end]! },
     arrivals: {
       hips: null,
       spine1: arrivalIn(spine1),

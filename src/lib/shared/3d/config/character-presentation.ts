@@ -51,7 +51,11 @@ export function countCharacterPresentations(): Record<
     feminine: 0,
     androgynous: 0,
   };
-  for (const id of DEPLOYED_CHARACTER_IDS) counts[CHARACTER_PRESENTATION[id]]++;
+  for (const id of DEPLOYED_CHARACTER_IDS) {
+    const presentation = CHARACTER_PRESENTATION[id];
+    if (!presentation) continue;
+    counts[presentation]++;
+  }
   return counts;
 }
 
