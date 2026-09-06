@@ -183,7 +183,17 @@ describe("canonical concept lesson composition", () => {
     expect(positions).not.toContain("focusPhase");
     expect(positions).not.toContain("Try it");
     expect(handPlayer).toContain("InlineAnimationPlayer");
-    expect(handPlayer).toContain('leftPropType="hand"');
+    // The player took a `neutralMarkers` prop in b7c50b7ea1 so the timing and
+    // direction lessons can show unlabeled motion points. Hands stay the
+    // default; assert the fallback rather than a literal that now only holds
+    // for one branch.
+    expect(handPlayer).toContain("neutralMarkers");
+    expect(handPlayer).toMatch(
+      /leftPropType=\{neutralMarkers \? "[^"]+" : "hand"\}/
+    );
+    expect(handPlayer).toMatch(
+      /rightPropType=\{neutralMarkers \? "[^"]+" : "hand"\}/
+    );
     expect(handPlayer).toContain("hideTkaGlyph");
     expect(handPlayer).toContain("elementalGlyph: showElementalGlyph");
     expect(handPlayer).toContain("{onStepChange}");

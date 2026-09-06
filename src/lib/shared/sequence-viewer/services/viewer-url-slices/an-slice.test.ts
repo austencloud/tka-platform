@@ -112,24 +112,24 @@ describe("an slice", () => {
     const stores = defaultStores();
     // Diverged pair: the wildcard map is what the renderer keys off, so it wins
     // and both fields travel together.
-    stores.visibility.setTipEffortMap({ "*": { effort: "snappy" } });
+    stores.visibility.setTipEffortMap({ "*": { effort: "bounce" } });
 
     const slice = captureAnSlice(stores);
-    expect(slice?.visibility?.effortPreset).toBe("snappy");
-    expect(slice?.visibility?.tipEffortMap).toEqual({ "*": { effort: "snappy" } });
+    expect(slice?.visibility?.effortPreset).toBe("bounce");
+    expect(slice?.visibility?.tipEffortMap).toEqual({ "*": { effort: "bounce" } });
 
     const seeded = seedFromAnSlice(slice!);
-    expect(seeded.visibility.effortPreset).toBe("snappy");
-    expect(seeded.visibility.tipEffortMap).toEqual({ "*": { effort: "snappy" } });
+    expect(seeded.visibility.effortPreset).toBe("bounce");
+    expect(seeded.visibility.tipEffortMap).toEqual({ "*": { effort: "bounce" } });
   });
 
   it("keeps an exotic per-tip effort map verbatim", () => {
     const stores = defaultStores();
-    stores.visibility.setTipEffortMap({ "3": { effort: "snappy" } });
+    stores.visibility.setTipEffortMap({ "3": { effort: "bounce" } });
 
     const slice = captureAnSlice(stores);
     expect(slice?.visibility?.effortPreset).toBe("linear");
-    expect(slice?.visibility?.tipEffortMap).toEqual({ "3": { effort: "snappy" } });
+    expect(slice?.visibility?.tipEffortMap).toEqual({ "3": { effort: "bounce" } });
 
     const b = defaultStores();
     const seeded = seedFromAnSlice(slice!);
@@ -147,7 +147,7 @@ describe("an slice", () => {
     a.visibility.setGridMode("none");
     a.visibility.setDarkMode(false);
     a.visibility.setSpeed(1.75);
-    a.visibility.setEffortPreset("snappy");
+    a.visibility.setEffortPreset("bounce");
     const slice = captureAnSlice(a);
 
     const b = defaultStores();

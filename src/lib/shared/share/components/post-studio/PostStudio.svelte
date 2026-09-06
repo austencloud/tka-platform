@@ -62,6 +62,7 @@
     PostStudioArtControllers,
     setPostStudioArtContext,
   } from "./post-studio-art-context.svelte";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
 
   type FocusedPanel = "canvas" | "edit" | "timing";
 
@@ -904,6 +905,19 @@
     onChooseFile={choosePerformanceFile}
   />
 </section>
+
+<!-- The render reads the live preview DOM frame by frame. Any edit made while
+     it runs lands in the middle of the output, so the whole app is locked until
+     it finishes or the person cancels. -->
+<ExportTakeover
+  phase={exporting ? "capturing" : "idle"}
+  progress={exportPercent / 100}
+  phaseLabel={exportProgress
+    ? `Rendering frame ${exportProgress.completedFrames} of ${exportProgress.totalFrames}`
+    : "Rendering"}
+  onCancel={cancelExport}
+  label="Rendering your post"
+/>
 
 <style>
   .post-studio {

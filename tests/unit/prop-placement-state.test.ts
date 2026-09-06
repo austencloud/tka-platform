@@ -5,6 +5,8 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getPlacementGridPoints } from "$lib/shared/pictograph/grid/services/placement-grid-points";
 import { createPropPlacementState } from "$lib/shared/pictograph/grid/state/prop-placement-state.svelte";
+import { createPropPlacementAimState } from "$lib/shared/pictograph/grid/state/prop-placement-aim-state.svelte";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   HandSide,
   Orientation,
@@ -54,6 +56,21 @@ function createHarness() {
     }
   );
   return {
+    aim: createPropPlacementAimState(
+      state,
+      {
+        getGridMode: () => values.gridMode,
+        getActivePoints: () => getPlacementGridPoints(values.gridMode),
+        getCanAim: () => false,
+        getEditAfterCompletion: () => values.editAfterCompletion,
+        getLeftOrientation: () => values.leftOrientation,
+        getRightOrientation: () => values.rightOrientation,
+        getLeftPropType: () => PropType.HAND,
+        getRightPropType: () => PropType.HAND,
+        getBetaSwapped: () => false,
+      },
+      { triggerHaptic, onOrientationChange }
+    ),
     values,
     state,
     onChange,
@@ -64,6 +81,37 @@ function createHarness() {
 }
 
 describe("prop placement state", () => {
+  it("selects an occupied hand directly without changing placement or undo history", () => {
+    const { state, aim } = createHarness();
+    state.selectPoint(GridLocation.NORTH);
+    state.selectPoint(GridLocation.SOUTH);
+    expect(aim.isPressable(GridLocation.NORTH)).toBe(true);
+    expect(aim.isPressable(GridLocation.EAST)).toBe(false);
+    aim.handleClick(GridLocation.NORTH);
+    expect(state.activeHand).toBe(HandSide.LEFT);
+    expect(state.historyLength).toBe(2);
+    aim.handleClick(GridLocation.EAST);
+    expect(state.leftLocation).toBe(GridLocation.EAST);
+    expect(state.rightLocation).toBe(GridLocation.SOUTH);
+    state.undo();
+    expect(state.leftLocation).toBe(GridLocation.NORTH);
+  });
+
+  it("supports keyboard hand selection and respects disabled editing", () => {
+    const { state, aim, values } = createHarness();
+    state.selectPoint(GridLocation.NORTH);
+    state.selectPoint(GridLocation.SOUTH);
+    values.disabled = true;
+    expect(aim.isPressable(GridLocation.SOUTH)).toBe(false);
+    aim.handleClick(GridLocation.SOUTH);
+    expect(state.activeHand).toBeNull();
+    values.disabled = false;
+    aim.handleKeydown(
+      new KeyboardEvent("keydown", { key: "Enter" }),
+      GridLocation.SOUTH
+    );
+    expect(state.activeHand).toBe(HandSide.RIGHT);
+  });
   it("places blue then red and publishes a complete position", () => {
     const harness = createHarness();
 

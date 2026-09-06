@@ -5,6 +5,8 @@ import {
   type CollectedTunnel,
 } from "../tunnel-collection-types";
 import { SNAPSHOT_VERSION } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import { DEFAULT_TRAIL_SETTINGS } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -27,7 +29,7 @@ import {
   needsTunnelPosterRefresh,
 } from "../tunnel-artifact-migration";
 
-const snapshot = {
+const snapshot: CollectedTunnel["snapshot"] = {
   version: SNAPSHOT_VERSION,
   tunnel: {
     config: DEFAULT_CONFIG,
@@ -37,8 +39,9 @@ const snapshot = {
       custom: { left: "#123456", right: "#abcdef" },
     },
     section: "tunnel",
+    presetRecipe: null,
   },
-  effects: { activeEffect: "none" },
+  effects: DEFAULT_EFFECTS_CONFIG,
   effort: "linear",
   paths: {
     pathShape: "arc",
@@ -48,7 +51,7 @@ const snapshot = {
   },
   playback: { bpm: 60, playbackMode: "continuous" },
   props: { leftPropType: "staff", rightPropType: "staff" },
-  trailRender: { mode: "none" },
+  trailRender: DEFAULT_TRAIL_SETTINGS,
 };
 
 const valid = {

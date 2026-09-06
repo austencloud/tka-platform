@@ -10,6 +10,7 @@ import {
   positionKindFor,
   positionExample,
   positionCorrection,
+  positionCorrectionPair,
   restorePositionWorkshop,
   transformPosition,
 } from "../../../src/lib/features/learn/components/interactive/positions/hand-position-lesson";
@@ -83,6 +84,15 @@ describe("hand position workshop domain", () => {
         expect(positionKindFor(example.left, example.right)).toBe(kind);
         expect(points.some((p) => p.location === example.left)).toBe(true);
         expect(points.some((p) => p.location === example.right)).toBe(true);
+      }
+    });
+    it(`keeps the first hand fixed in every ${mode} visual correction`, () => {
+      for (const point of getPlacementGridPoints(mode)) {
+        for (const target of POSITION_KINDS) {
+          const pair = positionCorrectionPair(point.location, target, mode);
+          expect(pair.left).toBe(point.location);
+          expect(positionKindFor(pair.left, pair.right)).toBe(target);
+        }
       }
     });
   }
@@ -173,6 +183,21 @@ describe("self-paced practice progress", () => {
     state.explore();
     state.evaluatePlacement(alphaPlacement);
     expect(state.feedback).toBe("idle");
+  });
+  it("keeps wrong feedback through retry selection and only credits the correction", () => {
+    const state = createPositionWorkshopState(memory());
+    state.practice();
+    const wrong = { ...alphaPlacement, rightLocation: GridLocation.NORTH };
+    state.evaluatePlacement(wrong);
+    state.evaluatePlacement({ ...wrong, activeHand: HandSide.RIGHT });
+    expect(state.feedback).toBe("incorrect");
+    expect(state.builtCount).toBe(0);
+    expect(state.next()).toBe(false);
+    state.evaluatePlacement(wrong);
+    expect(state.feedback).toBe("incorrect");
+    state.evaluatePlacement(alphaPlacement);
+    expect(state.feedback).toBe("correct");
+    expect(state.builtCount).toBe(1);
   });
 
   it("requires each correct construction, invalidates edited answers, and never double-advances", () => {

@@ -65,8 +65,14 @@ export function positionExample(kind: PositionType, gridMode: GridMode) {
   };
 }
 
-export function positionPreview(kind: PositionType, gridMode: GridMode) {
-  const example = positionExample(kind, gridMode);
+export function positionPreview(
+  kind: PositionType,
+  gridMode: GridMode,
+  fixedLeft?: GridLocation
+) {
+  const example = fixedLeft
+    ? positionCorrectionPair(fixedLeft, kind, gridMode)
+    : positionExample(kind, gridMode);
   return buildPlacementPictographData({
     gridMode,
     leftLocation: example.left,
@@ -78,6 +84,18 @@ export function positionPreview(kind: PositionType, gridMode: GridMode) {
     betaSwapped: false,
     previewPictographData: null,
   });
+}
+
+/** Keep the learner's first hand in place so the visual target shows a single edit. */
+export function positionCorrectionPair(
+  left: GridLocation,
+  target: PositionType,
+  gridMode: GridMode
+) {
+  const point = getPlacementGridPoints(gridMode).find(
+    (point) => positionKindFor(left, point.location) === target
+  );
+  return { left, right: point?.location ?? left };
 }
 
 export function transformPosition(
@@ -101,8 +119,9 @@ export function positionCorrection(
 ) {
   const built = positionKindFor(left, right);
   if (!built || built === target) return "";
+  const correction = positionCorrectionPair(left, target, gridMode);
   const point = getPlacementGridPoints(gridMode).find(
-    (point) => positionKindFor(left, point.location) === target
+    (point) => point.location === correction.right
   );
   return `You built ${POSITION_TYPE_INFO[built].label}. ${POSITION_DEFINITIONS[built]}${point ? ` Keep the left hand where it is. Move the right hand to ${point.label}.` : ""}`;
 }

@@ -13,7 +13,11 @@
   import { createSheetSequenceResolver } from "../../services/sheet-sequence-resolver";
   import { awaitAuthSettled } from "$lib/shared/auth/state/auth-state.svelte";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
-  import { downloadChoreoSheetPDF } from "../../services/sheet-pdf-exporter";
+  import {
+    downloadChoreoSheetPDF,
+    CHOREO_SHEET_EXPORT_CANCELLED,
+  } from "../../services/sheet-pdf-exporter";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
   import { trackChoreoSheetExported } from "../../analytics/choreo-events";
   import type {
     ChoreoSheet,
@@ -257,10 +261,12 @@
 
   let exporting = $state(false);
   let exportPct = $state(0);
+  let exportCancelled = $state(false);
   async function exportPdf() {
     if (!builder.rosterComplete || builder.roster.length === 0 || exporting)
       return;
     exporting = true;
+    exportCancelled = false;
     exportPct = 0;
     try {
       const filename = `${(builder.sheet.name || "choreo-sheet").trim().replace(/\s+/g, "-").toLowerCase()}.pdf`;
@@ -271,14 +277,23 @@
         (done, total) => {
           exportPct = total > 0 ? Math.round((done / total) * 100) : 0;
         },
-        builder.breakSequenceIds
+        builder.breakSequenceIds,
+        () => exportCancelled
       );
+      if (exportCancelled) return;
       trackChoreoSheetExported({
         sheetId: builder.sheet.id,
         pageCount: builder.pages.length,
         sequenceCount: builder.sequenceIds.length,
       });
     } catch (error) {
+      if (
+        exportCancelled ||
+        (error instanceof Error &&
+          error.message === CHOREO_SHEET_EXPORT_CANCELLED)
+      ) {
+        return;
+      }
       // Non-blocking toast rather than an inline strip: the toolbar must never
       // reflow because something failed.
       getErrorHandler().showUserError({
@@ -290,7 +305,12 @@
       });
     } finally {
       exporting = false;
+      exportCancelled = false;
     }
+  }
+
+  function cancelPdfExport() {
+    exportCancelled = true;
   }
 
   let saving = $state(false);
@@ -784,6 +804,14 @@
     {/if}
   </div>
 </div>
+
+<ExportTakeover
+  phase={exporting ? "capturing" : "idle"}
+  progress={exportPct / 100}
+  phaseLabel="Rendering PDF pages..."
+  onCancel={cancelPdfExport}
+  label="Exporting choreo sheet PDF"
+/>
 
 <style>
   .choreo-sheet-view {
