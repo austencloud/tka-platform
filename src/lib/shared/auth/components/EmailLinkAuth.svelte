@@ -34,6 +34,8 @@
   import { firstRunState } from "$lib/shared/onboarding/state/first-run-state.svelte";
   import { isRunningAsStandalone } from "$lib/shared/mobile/services/platform-detector";
 
+  let { compact = false }: { compact?: boolean } = $props();
+
   let email = $state("");
   let loading = $state(false);
   let error = $state<string | null>(null);
@@ -335,6 +337,7 @@
     handleSubmit();
   }}
   class="email-link-form"
+  class:compact
 >
   {#if error}
     <div
@@ -350,6 +353,10 @@
         <span>{error}</span>
       </span>
     </div>
+  {:else if compact && !loading && !success}
+    <p id="magic-link-status" class="code-hint">
+      We'll email you a code. Enter it here to keep your work.
+    </p>
   {:else}
     <div
       id="magic-link-status"
@@ -405,7 +412,7 @@
     </div>
   {/if}
 
-  {#if pendingGuestDrafts}
+  {#if pendingGuestDrafts && !compact}
     <p class="drift-warning" role="status">
       Your work stays in this app. Check your email, then enter the code here.
     </p>
@@ -416,6 +423,7 @@
     <input
       id="email-link"
       type="email"
+      autocomplete="email"
       bind:this={emailInput}
       bind:value={email}
       placeholder={t("form_placeholder_email")}
@@ -491,6 +499,17 @@
 </form>
 
 <style>
+  .code-hint {
+    margin: 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 0.875rem);
+    line-height: 1.45;
+  }
+
+  .compact .delivery-card {
+    min-block-size: 0;
+  }
+
   .email-link-form {
     display: flex;
     flex-direction: column;
