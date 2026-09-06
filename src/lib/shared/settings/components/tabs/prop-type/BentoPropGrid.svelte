@@ -19,6 +19,9 @@
     PROP_PICKER_SECTIONS,
     getAllVariations,
     getBasePropType,
+    hasBigVariant,
+    isBigVariant,
+    toggleBigVariant,
     getFamilyTileDisplayProp,
     getPropTypeDisplayInfo,
     isPropActive,
@@ -160,7 +163,9 @@
   );
 
   function familyChoices(base: PropType): PropType[] {
-    return getAllVariations(base).filter((prop) => selectablePropSet.has(prop));
+    return getAllVariations(base).filter(
+      (prop) => selectablePropSet.has(prop) && !isBigVariant(prop)
+    );
   }
 
   function familyCount(base: PropType): number | undefined {
@@ -235,6 +240,21 @@
   const showFanLook = $derived(
     selectedPropType !== null && isFanPropType(selectedPropType)
   );
+
+  // Size is a property of the current prop, not a prop of its own. Every big
+  // prop is reached from here, which is why the grid can fold them away.
+  const showSize = $derived(
+    selectedPropType !== null &&
+      selectablePropSet.has(selectedPropType) &&
+      hasBigVariant(selectedPropType)
+  );
+  const sizeIsBig = $derived(
+    selectedPropType !== null && isBigVariant(selectedPropType)
+  );
+  function chooseSize(big: boolean) {
+    if (selectedPropType === null || sizeIsBig === big) return;
+    onSelect(toggleBigVariant(selectedPropType));
+  }
   const fanAppearance = $derived(
     normalizeFanAppearance(getSettings().fanAppearance)
   );
@@ -440,6 +460,32 @@
       {/if}
     </Crossfade>
   </div>
+
+  {#if showSize && drill === null}
+    <div class="look-dock size-dock" transition:growFade={{ axis: "y" }}>
+      <span class="look-label">Size</span>
+      <div class="size-toggle" role="group" aria-label="Prop size">
+        <button
+          type="button"
+          class="size-option"
+          class:active={!sizeIsBig}
+          aria-pressed={!sizeIsBig}
+          onclick={() => chooseSize(false)}
+        >
+          Standard
+        </button>
+        <button
+          type="button"
+          class="size-option"
+          class:active={sizeIsBig}
+          aria-pressed={sizeIsBig}
+          onclick={() => chooseSize(true)}
+        >
+          Big
+        </button>
+      </div>
+    </div>
+  {/if}
 
   {#if showFanLook && drill === null}
     <div class="look-dock" transition:growFade={{ axis: "y" }}>
@@ -726,6 +772,31 @@
       var(--theme-accent, #8b6cff) 8%,
       var(--theme-card-bg, rgba(0, 0, 0, 0.75))
     );
+  }
+
+  .size-toggle {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 12px;
+    background: var(--theme-card-bg, rgba(0, 0, 0, 0.55));
+  }
+
+  .size-option {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.65));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .size-option.active {
+    background: var(--theme-accent, #8b6cff);
+    color: #fff;
   }
 
   .look-label {
