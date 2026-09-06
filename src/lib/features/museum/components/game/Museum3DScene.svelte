@@ -24,7 +24,7 @@
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
   import VulcanCaveScenicLayer from "./VulcanCaveScenicLayer.svelte";
   import DrownedGalleryAuthored from "./DrownedGalleryAuthored.svelte";
-  import FirstFireGraybox from "./FirstFireGraybox.svelte";
+  import FirstFireAuthored from "./FirstFireAuthored.svelte";
   import EarthCanyonGraybox from "./EarthCanyonGraybox.svelte";
   import AirChimneyGraybox from "./AirChimneyGraybox.svelte";
   import SundialGraybox from "./SundialGraybox.svelte";
@@ -1138,10 +1138,20 @@
               getPlayerVelocity: () =>
                 physicsProvider?.getVelocity() ?? { x: 0, y: 0, z: 0 },
               isGrounded: () => physicsProvider?.isGrounded() ?? false,
-              movePlayer: (movement, deltaTime) =>
-                physicsProvider?.movePlayer(movement, deltaTime),
-              teleportPlayer: (position) =>
-                physicsProvider?.teleport?.(position),
+              // The bridge drives the physics body directly. The reactive
+              // playerPosition normally follows the body inside the UCC's
+              // movement step, which a bridge move or teleport never enters,
+              // so the avatar, proximity culling and the caves' position-driven
+              // state would stay at the previous spot until the next keypress.
+              // Sync the way the portal and Moon arrivals already do.
+              movePlayer: (movement, deltaTime) => {
+                physicsProvider?.movePlayer(movement, deltaTime);
+                syncPositionFromPhysics();
+              },
+              teleportPlayer: (position) => {
+                physicsProvider?.teleport?.(position);
+                syncPositionFromPhysics();
+              },
               raycast: (origin, direction, maxDistance) =>
                 bridgeRaycast(origin, direction, maxDistance),
             },
@@ -2137,6 +2147,9 @@
   {:else if hasDrownedGallery && performer.id.startsWith("cave-water-")}
     <!-- Skip: the Water wing stands its three cases on pedestals and drives
          them from its consoles (DrownedGalleryAuthored) -->
+  {:else if hasFirstFire && performer.id.startsWith("cave-fire-")}
+    <!-- Skip: the Fire wing stands one automaton per court and lights it by
+         the procession (FirstFireAuthored) -->
   {:else if performer.id.includes("telekinetic-formation")}
     {@const posOverride =
       overrideVersion >= 0
@@ -2266,9 +2279,10 @@
 {/if}
 
 {#if hasFirstFire}
-  <FirstFireGraybox
+  <FirstFireAuthored
     {grid}
     currentRoomId={currentPlayerRoomId}
+    {playerPosition}
     onLightPlanChange={handleAuthoredPointLightPlanChange}
     visible={props.visible !== false}
   />

@@ -10,7 +10,7 @@ import {
   litFirstFireShrine,
   updateFirstFireGrayboxReview,
   visibleFirstFireFlameGroups,
-} from "../../../src/routes/test/first-fire-graybox/first-fire-graybox-review";
+} from "../../../src/lib/features/museum/data/first-fire-procession-review";
 
 const contract = buildFirstFireBlenderContract();
 

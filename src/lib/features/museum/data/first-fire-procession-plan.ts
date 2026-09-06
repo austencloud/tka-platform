@@ -24,6 +24,7 @@
 import type { MuseumGrid } from "../domain/museum-grid-types";
 import {
   doorSpan,
+  widenSpan,
   interiorWorldRect,
   type Point2,
   type Span,
@@ -150,6 +151,13 @@ export interface FirstFireProcessionPlan {
   centre: Point2;
   westDoor: Span;
   eastDoor: Span;
+  /**
+   * The stamped door tiles' real extent when the plan was built from a grid.
+   * The route treats each doorway as a 4 m mouth centred on the door; the
+   * museum's own doorway inside it is narrower, and the shell carve and the
+   * colliders both use THIS span so rock fills the difference.
+   */
+  doorTileSpans?: { west: Span; east: Span };
   /** The ember-bridge clearing just inside Water. The room's only open plaza. */
   threshold: WorldRect;
   /** The carved walkable floor (corridors + court floors); everything else is rock. */
@@ -889,20 +897,35 @@ export function buildNominalFirstFireProcessionPlan(): FirstFireProcessionPlan {
   });
 }
 
+/** The route meets each museum doorway through a mouth this wide. */
+export const FIRST_FIRE_DOOR_MOUTH_METRES = 4;
+
 /**
- * The current live 46.5 by 20.5 m Fire shell must reject this isolated Gate 2
- * proposal. World placement and adjacent-room integration belong to Gate 5.
+ * The plan laid on the compiled cave-fire room. The room is sized by
+ * FIRST_FIRE_PROCESSION_AUTHORING_MINIMUM so the fit check always passes; the
+ * doors are read from the stamped tiles, and each is widened to the route's
+ * 4 m mouth around its real centre (the museum stamps 2 m doorways).
  */
 export function buildFirstFireProcessionPlanForGrid(
   grid: MuseumGrid
 ): FirstFireProcessionPlan | null {
   const wing = grid.wings.find((candidate) => candidate.id === FIRST_FIRE_PROCESSION_ROOM_ID);
   if (!wing) return null;
-  const westDoor = doorSpan(grid, FIRST_FIRE_PROCESSION_ROOM_ID, "west");
-  const eastDoor = doorSpan(grid, FIRST_FIRE_PROCESSION_ROOM_ID, "east");
-  if (!westDoor || !eastDoor)
+  const westTiles = doorSpan(grid, FIRST_FIRE_PROCESSION_ROOM_ID, "west");
+  const eastTiles = doorSpan(grid, FIRST_FIRE_PROCESSION_ROOM_ID, "east");
+  if (!westTiles || !eastTiles)
     throw new Error("First Fire Torch Procession requires west and east doors");
-  return buildFirstFireProcessionPlan({ room: interiorWorldRect(wing.bounds), westDoor, eastDoor });
+  const room = interiorWorldRect(wing.bounds);
+  const mouth = (span: Span) =>
+    widenSpan(span, FIRST_FIRE_DOOR_MOUTH_METRES, room.minZ, room.maxZ);
+  return {
+    ...buildFirstFireProcessionPlan({
+      room,
+      westDoor: mouth(westTiles),
+      eastDoor: mouth(eastTiles),
+    }),
+    doorTileSpans: { west: westTiles, east: eastTiles },
+  };
 }
 
 export function pointInProcessionPolygon(

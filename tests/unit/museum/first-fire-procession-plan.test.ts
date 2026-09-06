@@ -76,10 +76,24 @@ describe("First Fire Torch Procession measured plan", () => {
     })).not.toThrow();
   });
 
-  it("keeps the current live 46.5 by 20.5 Fire room out of this isolated Gate 2", () => {
-    expect(() => buildFirstFireProcessionPlanForGrid(buildVulcanCaveFloorPlan().grid)).toThrow(
-      /requires a 58 m by 44 m interior; compiled cave-fire is 46\.5 m by 20\.5 m/
-    );
+  it("lays the procession on the compiled cave-fire room with 4 m mouths on the stamped doors", () => {
+    const live = buildFirstFireProcessionPlanForGrid(buildVulcanCaveFloorPlan().grid)!;
+    expect(live.room.maxX - live.room.minX).toBe(58);
+    expect(live.room.maxZ - live.room.minZ).toBe(44.5);
+    expect(live.doorTileSpans).toBeDefined();
+    for (const side of ["west", "east"] as const) {
+      const mouth = live[`${side}Door`];
+      const tiles = live.doorTileSpans![side];
+      expect(mouth.max - mouth.min).toBe(4);
+      expect(tiles.max - tiles.min).toBe(2);
+      // The mouth is centred on the doorway unless the room edge is in the way
+      // (the Earth door sits at the south end of the east wall).
+      expect(tiles.min).toBeGreaterThanOrEqual(mouth.min);
+      expect(tiles.max).toBeLessThanOrEqual(mouth.max);
+      expect(mouth.min).toBeGreaterThanOrEqual(live.room.minZ);
+      expect(mouth.max).toBeLessThanOrEqual(live.room.maxZ);
+    }
+    expect(live.walkPath[0]).toEqual({ x: live.room.minX, z: (live.westDoor.min + live.westDoor.max) / 2 });
   });
 
   it("preserves the DJ, EK and FL roster with three distinct fire grammars", () => {
