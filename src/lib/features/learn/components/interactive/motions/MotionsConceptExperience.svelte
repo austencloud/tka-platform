@@ -227,7 +227,13 @@
   role="application"
   aria-label={`${timingDirectionOnly ? "Timing and direction" : "Hand motions"} lesson, use arrow keys to navigate`}
 >
-  <LessonStageFrame artifactLayout={activeMotion ? "square" : "wide"}>
+  <LessonStageFrame
+    artifactLayout={activeMotion
+      ? "square"
+      : isComparison
+        ? "wide"
+        : "workshop"}
+  >
     {#snippet heading()}
       <LessonStageHeading
         key={headingTitle}
@@ -256,7 +262,10 @@
         }}
       >
         {#snippet first()}
-          <Crossfade key={activeMotion?.name ?? "timing-intro"} fill>
+          <Crossfade
+            key={activeMotion?.name ?? "timing-intro"}
+            fill={!!activeMotion}
+          >
             {#if activeMotion}
               <div class="artifact-state motion-state">
                 <div class="player-frame">
@@ -272,7 +281,7 @@
               </div>
             {:else}
               <div class="artifact-state timing-direction-state">
-                <TimingDirectionIntro />
+                <TimingDirectionIntro active={!isComparison && !activeMotion} />
               </div>
             {/if}
           </Crossfade>
@@ -397,20 +406,20 @@
   }
 
   .motions-experience.is-intro {
+    display: flex;
+    flex-direction: column;
     flex-shrink: 0;
-    height: 100%;
-    min-height: 44rem;
+    height: auto;
+    min-height: calc(100svh - 5rem);
     overflow: visible;
   }
 
   .motions-experience.is-intro :global(.lesson-stage-frame) {
-    --lesson-artifact-wide-max: 100cqw;
+    --lesson-workshop-max: clamp(96rem, 80vw, 160rem);
+    --lesson-artifact-wide-max: clamp(96rem, 80vw, 160rem);
   }
-
-  @media (max-width: 640px) {
-    .motions-experience.is-intro {
-      min-height: 76rem;
-    }
+  .motions-experience.is-intro :global(.dual-source > .source:first-child) {
+    position: relative;
   }
 
   .motion-description {
@@ -476,6 +485,7 @@
   .timing-direction-state {
     display: grid;
     place-items: center;
+    height: auto;
   }
 
   @media (max-width: 800px), (max-height: 540px) {
