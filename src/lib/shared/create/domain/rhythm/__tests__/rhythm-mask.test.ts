@@ -47,7 +47,13 @@ describe("rhythm-mask", () => {
     expect(singleLaneRhythmMatches("P", [2, 1, 1, 1], 1)).toBe(false);
   });
   it("stampPerHand renders the Solo 1 (RBBRBRRB) pattern at period 8", () => {
-    const solo = { id: "solo-1", label: "Solo 1", sym: "RBBRBRRB", period: 8 };
+    const solo = {
+      id: "solo-1",
+      label: "Solo 1",
+      plainLabel: "Solo 1",
+      sym: "RBBRBRRB",
+      period: 8,
+    };
     const { left, right } = stampPerHand(solo, 8, 1, 1, 0);
     // R=right(red), B=left(blue); one hand per beat, never both, never neither.
     expect(right).toEqual([1, 0, 0, 1, 0, 1, 1, 0]);
@@ -56,7 +62,13 @@ describe("rhythm-mask", () => {
   });
   it("perHandRhythmMatches recognises a stamped Solo 1 strip at length 8", () => {
     const { left, right } = stampPerHand(
-      { id: "solo-1", label: "Solo 1", sym: "RBBRBRRB", period: 8 }, 8, 1, 1, 0
+      {
+        id: "solo-1",
+        label: "Solo 1",
+        plainLabel: "Solo 1",
+        sym: "RBBRBRRB",
+        period: 8,
+      }, 8, 1, 1, 0
     );
     expect(perHandRhythmMatches("RBBRBRRB", left, right, 0)).toBe(true);
   });

@@ -176,11 +176,15 @@ describe("trail source world-space calculation", () => {
       "buugeng"
     );
 
-    expect(first?.x).toBeCloseTo(475 - BUUGENG_TIP_POINTS.points[0].dy, 10);
-    expect(first?.y).toBeCloseTo(475 + BUUGENG_TIP_POINTS.points[0].dx, 10);
+    const [firstTip, secondTip] = BUUGENG_TIP_POINTS.points;
+    if (!firstTip || !secondTip) {
+      throw new Error("buugeng should declare at least two tip points");
+    }
+    expect(first?.x).toBeCloseTo(475 - firstTip.dy, 10);
+    expect(first?.y).toBeCloseTo(475 + firstTip.dx, 10);
     expect(first?.tipIndex).toBe(0);
-    expect(second?.x).toBeCloseTo(475 - BUUGENG_TIP_POINTS.points[1].dy, 10);
-    expect(second?.y).toBeCloseTo(475 + BUUGENG_TIP_POINTS.points[1].dx, 10);
+    expect(second?.x).toBeCloseTo(475 - secondTip.dy, 10);
+    expect(second?.y).toBeCloseTo(475 + secondTip.dx, 10);
     expect(second?.tipIndex).toBe(1);
   });
 

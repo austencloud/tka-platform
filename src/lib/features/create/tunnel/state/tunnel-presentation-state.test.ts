@@ -6,7 +6,9 @@ import {
 import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import type { TunnelConfig } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
+import type { TunnelPresetRecipe } from "$lib/shared/sequence-viewer/tunnel/tunnel-preset-recipe";
 import type { TunnelSnapshot } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
 import type { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte";
 import { createTunnelPresentationState } from "./tunnel-presentation-state.svelte";
@@ -92,7 +94,10 @@ function controllerFor(): TunnelViewController {
     set presetRecipe(value) {
       state.presetRecipe = value;
     },
-    applyConfig(config, recipe) {
+    applyConfig(
+      config: TunnelConfig,
+      recipe: TunnelPresetRecipe | null | undefined = undefined
+    ) {
       state.config = JSON.parse(JSON.stringify(config));
       if (recipe !== undefined) state.presetRecipe = recipe;
     },
@@ -146,7 +151,7 @@ describe("tunnel presentation state", () => {
     state.setBpm(144);
     state.setPlaybackMode("step");
     state.setPropType("fan");
-    state.chirality.onChange("red", true);
+    state.chirality.onChange("right", true);
     visibility.setEffortPreset("glide");
     visibility.setPathPolicy({ pathShape: "linear", motionAwarePaths: true });
     controller.gridVisible = true;

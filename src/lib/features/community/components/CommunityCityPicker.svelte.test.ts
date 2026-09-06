@@ -89,7 +89,9 @@ describe("CommunityCityPicker", () => {
     key("Enter");
 
     expect(onPick).toHaveBeenCalledTimes(1);
-    expect(onPick.mock.calls[0][0].id).toBe("chi");
+    const [firstPick] = onPick.mock.calls;
+    if (!firstPick) throw new Error("the picker never reported a selection");
+    expect(firstPick[0].id).toBe("chi");
     // Resolution belongs to the state machine that owns the write. A picker
     // that canonicalized here would spend the billing session on a selection
     // its caller may still discard.
