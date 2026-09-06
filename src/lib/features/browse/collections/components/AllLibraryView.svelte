@@ -28,7 +28,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
   import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { getBrowseNavigationContext } from "$lib/shared/browse/context/browse-navigation-context";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { loadSoloLibrarySequences } from "$lib/features/browse/shared/services/solo-library-sequence-loader";
@@ -44,7 +44,6 @@ the gallery's, and the source is pinned to my-library with no toggle.
   // onBack — BrowsePanel then omits the back pill entirely.
   let { onBack }: { onBack?: () => void } = $props();
   const previewReadOnly = $derived(userPreviewState.isActive);
-  const browseNavigation = getBrowseNavigationContext();
 
   const engine = createBrowseEngine({
     persistKey: "tka-browse-library-all",
@@ -205,7 +204,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
   const emptyAction = {
     label: "Browse Gallery",
     onClick: () => {
-      browseNavigation.viewExploreSequences();
+      navigationState.setActiveTab("explore");
     },
   };
   const emptyState = $derived({
