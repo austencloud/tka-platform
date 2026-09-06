@@ -72,7 +72,7 @@
     {#if activeTab === "magic"}
       <EmailLinkAuth {compact} />
     {:else}
-      <EmailPasswordAuth bind:mode />
+      <EmailPasswordAuth bind:mode showModeSwitch={!compact} />
     {/if}
   </div>
 </div>
