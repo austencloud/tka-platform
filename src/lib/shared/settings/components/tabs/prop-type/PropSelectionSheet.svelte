@@ -18,6 +18,7 @@
   import BentoPropGrid from "./BentoPropGrid.svelte";
   import type { PropChiralitySeam } from "./prop-chirality-seam";
   import CatDogToggle from "./CatDogToggle.svelte";
+  import PropStyleDock from "./PropStyleDock.svelte";
 
   let {
     isOpen = $bindable(false),
@@ -178,6 +179,8 @@
       onSelect={handlePropSelect}
       {chirality}
     />
+
+    <PropStyleDock propType={selectedPropType} compact={!isSideBySide} />
   </div>
 </Drawer>
 

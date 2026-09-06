@@ -172,7 +172,8 @@ function previewImage(file: string): string {
   return `${PREVIEW_ROOT}/${file}`;
 }
 
-function fanPreviewImage(appearance: FanAppearance): string {
+/** Rendered preview of a complete fan build, for tiles and pickers. */
+export function fanPreviewImage(appearance: FanAppearance): string {
   if (appearance.build === "pictograph") {
     return previewImage("fan-pictograph-front.webp");
   }

@@ -241,14 +241,8 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
  * Remove from this set to reactivate.
  */
 export const DEACTIVATED_PROP_TYPES: ReadonlySet<PropType> = new Set([
-  PropType.UKULELE,
-  PropType.CONTACTBALL,
-  PropType.BIGCONTACTBALL,
-  PropType.BIGDOUBLECONTACTBALL,
-  // Poi stays deactivated for the category pickers. BentoPropGrid re-includes it
-  // for dev/admin only, to exercise the poi-legal composer filter.
-  // (Fractalgeng removed 2026-06-30.)
-  PropType.POI,
+  // Empty since 2026-09-06: every prop with artwork is selectable, including
+  // Ukulele, the contact-ball family, and Poi. (Fractalgeng removed 2026-06-30.)
 ]);
 
 /**
@@ -655,6 +649,8 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       PropType.STAFF,
       PropType.CAPSULE_BATON,
       PropType.FIRE_DOUBLE_STAFF,
+      PropType.SIMPLESTAFF,
+      PropType.STAFF2,
       PropType.CLUB,
       PropType.CLASSIC_CLUB,
       PropType.FAN,
@@ -663,6 +659,7 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       PropType.BUUGENG,
       PropType.TRIGENG,
       PropType.EIGHTRINGS,
+      PropType.CONTACTBALL,
       PropType.DOUBLECONTACTBALL,
       PropType.TORCH,
       PropType.SWORD,
@@ -679,6 +676,8 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       PropType.BIGHOOP,
       PropType.BIGBUUGENG,
       PropType.BIGEIGHTRINGS,
+      PropType.BIGCONTACTBALL,
+      PropType.BIGDOUBLECONTACTBALL,
       PropType.BIGTORCH,
       PropType.BIGCHICKEN,
       PropType.BIGDOUBLESTAR,
@@ -689,11 +688,11 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
     props: [
       PropType.CHICKEN,
       PropType.GUITAR,
+      PropType.UKULELE,
       PropType.DOUBLESTAR,
       PropType.QUIAD,
       PropType.TRIQUETRA,
       PropType.TRIQUETRA2,
-      // Dark-gated to dev/admin in BentoPropGrid — see the docstring above.
       PropType.POI,
     ],
   },

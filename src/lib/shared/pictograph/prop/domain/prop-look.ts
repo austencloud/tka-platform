@@ -1,4 +1,5 @@
 import {
+  fanPreviewImage,
   isFanPropType,
   normalizeFanAppearance,
   resolveFanRenderKey,
@@ -93,6 +94,81 @@ export function modelSpriteArtwork(
   const entry = PROP_MODEL_SPRITES[propType.toLowerCase()];
   const revision = entry ? `?v=${encodeURIComponent(entry.capturedAt)}` : "";
   return `${MODEL_SPRITE_ROOT}/${propType.toLowerCase()}-${color}.svg${revision}`;
+}
+
+export interface PropTileArtwork {
+  href: string;
+  /**
+   * The artwork is a chosen look (a fan build or a model capture) rather than
+   * the plain notation glyph, so previews show it in color instead of as a
+   * white silhouette.
+   */
+  styled: boolean;
+  /** Already lit in its hand's color; never recolor it. */
+  prelit: boolean;
+  /**
+   * A rendered photo of the whole prop rather than a glyph on the pictograph
+   * box: draw it once, filling the tile, instead of through the pair recipe.
+   * `crop` is the source-pixel window that holds the prop.
+   */
+  fill?: PropTileCrop;
+}
+
+export interface PropTileCrop {
+  imageWidth: number;
+  imageHeight: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** The fan build previews are 640x240 renders with the fan in the middle. */
+export const FAN_PREVIEW_CROP: PropTileCrop = {
+  imageWidth: 640,
+  imageHeight: 240,
+  x: 170,
+  y: 15,
+  width: 300,
+  height: 220,
+};
+
+/**
+ * The image a picker tile or preview should draw for a prop under the user's
+ * current look: the fan build's artwork for fans, the pre-lit model capture
+ * for props that have one, otherwise the notation artwork in `fallback`.
+ */
+export function propTileArtwork(
+  propType: string,
+  side: PropSpriteSide,
+  appearance: PropRenderAppearance,
+  fallback: string
+): PropTileArtwork {
+  const normalized = propType.toLowerCase();
+  if (isFanPropType(normalized)) {
+    // The rendered build preview reads at tile size; the recolorable line
+    // artwork the animator uses is too thin to survive a 64px glyph.
+    const fan = normalizeFanAppearance(appearance.fanAppearance);
+    return fan.build === "pictograph"
+      ? { href: fallback, styled: false, prelit: false }
+      : {
+          href: fanPreviewImage(fan),
+          styled: true,
+          prelit: true,
+          fill: FAN_PREVIEW_CROP,
+        };
+  }
+  if (
+    normalizePropLook(appearance.propLook) === "model" &&
+    hasModelSprite(normalized)
+  ) {
+    return {
+      href: modelSpriteArtwork(normalized, side),
+      styled: true,
+      prelit: true,
+    };
+  }
+  return { href: fallback, styled: false, prelit: false };
 }
 
 export interface PropLookOption {
