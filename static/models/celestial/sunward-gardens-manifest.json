@@ -1,0 +1,15 @@
+{
+  "source": "blender/celestial/sunward-gardens.blend",
+  "courtRadius": 6.08,
+  "courtSurfaceY": 0.225,
+  "clearRadius": 10.2,
+  "meshesBeforeInstancing": 104,
+  "trianglesBeforeInstancing": 742730,
+  "oliveCount": 16,
+  "provenance": "Original Blender geology and planting; reused shipped Meshy olive-west-ancient and olive-east-windswept assets, Poly Haven coast_rocks_05 / sand_rocks_small_01 (CC0). No new external assets.",
+  "bytes": 12649036,
+  "compression": "EXT_meshopt_compression; float positions preserved",
+  "textureFormat": "WebP, maximum 1024 square",
+  "sha256": "4d63913fe38d0342657dce287acfc6170fa9423673bd0fad7bbacf99fb5b4feb",
+  "meshes": 16
+}
