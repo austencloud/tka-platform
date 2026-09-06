@@ -130,6 +130,7 @@
     ".codex/agents/module-auditor.toml",
     ".codex/agents/prop-positioning-expert.toml",
     ".codex/agents/release-notes-writer.toml",
+    ".codex/agents/teacher.toml",
     ".codex/agents/tka-domain-expert.toml",
     ".codex/agents/verification-runner.toml"
   ]
