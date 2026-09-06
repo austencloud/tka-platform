@@ -2,6 +2,40 @@
 
 Scope: the shipped hand-positions experience, not a repository-wide code-quality grade.
 
+## Visual correction and lower control load
+
+Austen liked the achievement/progression flow but could not recognize a wrong
+answer quickly or retry without choosing another tool. He rejected repeated hand
+identity and stage/count labels, the verbose correction, and noncanonical action
+presentation. This supersedes those portions of the historical revisions below.
+
+Practice retains the wrong construction, presents an explicit Try again cue at
+the board, and renders a target pictograph with the learner's left hand held in
+place. The right hand is already selected for correction; another point tap
+rechecks the answer. Selecting a hand directly replaces the two Move buttons.
+Undo reuses UndoGlyph, Clear reuses the workspace eraser icon, and progress is a
+small native accessible bar. Next and the existing coordinated success response
+remain directly below the board. Practice no longer repeats classification prose
+or an Explore control (the lesson Back action still returns to exploration).
+
+Ownership: the existing placement/aim state gains non-aiming direct selection;
+orientation-aiming interactions retain their path. Workshop validation retains
+wrong feedback during retry selection. Canonical grid derivation selects the
+target pair and PictographContainer renders it. No new gesture/history/renderer
+owner or timer. This is a continuation of the same Teacher pilot task, not a new
+comparison trial. Hands-on acceptance remains pending.
+
+Verification: 24 focused tests pass, including fixed-left targets on both grids,
+wrong-feedback retention during retry, direct pointer/keyboard selection, and
+undo history. All six browser rounds complete; wrong answers cannot advance,
+same-point correction succeeds, and Clear returns to first-hand placement.
+Seven CSS viewport tiers (375×667 through 3840×2160) plus 1660×1540 were visually
+inspected with no horizontal overflow. Editing controls retain 44px targets;
+short screens scroll. Reduced-motion correction and completion remain operable.
+The broader concept composition suite has one pre-existing stale expectation
+for literal hand-motion player props; the same failure was reproduced on main
+and is outside this change. Initial Svelte check: zero errors and warnings.
+
 ## Achievement and progression revision
 
 Austen rejected the automatic-confirmation presentation below: the centered heading, narrow grid, and wider left-aligned feedback did not form one composition, and success was repeated above and below the board. He approved a single activity column and asked for the Grid lesson's prominent Next and coordinated spatial response. A static checkmark plus a distant action is not an acceptable achievement state. This requirement was relayed to Agent Domain Architecture and incorporated in the Teacher briefing and achievement gate; it is not a claim about measured dopamine.
