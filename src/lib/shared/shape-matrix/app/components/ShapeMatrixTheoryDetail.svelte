@@ -465,7 +465,7 @@
         showEffectsPlayback={false}
         selectedPropType={app.propType}
         onPropChange={(next: PropType) => void app.setPropType(next)}
-        onPropPickerRequest={app.togglePropPicker}
+        onPropPickerRequest={app.compact ? app.togglePropPicker : undefined}
         propPickerActive={app.propPickerOpen}
         sequence={null}
         dockTrailingAction={playbackAction}

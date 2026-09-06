@@ -12,10 +12,9 @@
   } from "$lib/shared/shape-matrix/services/theory-matrix-artwork";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import { getShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
+  import ShapeMatrixCustomizeWorkspace from "./ShapeMatrixCustomizeWorkspace.svelte";
   import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
-  import ShapeMatrixPropOverlay from "./ShapeMatrixPropOverlay.svelte";
   import ShapeMatrixRecipeStrip from "./ShapeMatrixRecipeStrip.svelte";
-  import ShapeMatrixSettingsOverlay from "./ShapeMatrixSettingsOverlay.svelte";
 
   interface Props {
     /** The shell owns navigation, the same way it does for the Matrix. */
@@ -30,7 +29,8 @@
   const animationState = getShapeMatrixAnimationContext();
 
   const surprise = $derived(onsurprise ?? (() => appState.surpriseMe()));
-  /* The prop catalogue covers this pane on wide hosts, as on the Matrix. */
+  /* The customize workspace covers this pane on wide hosts, as on the
+     Matrix. */
   const workspaceOpen = $derived(
     !appState.compact &&
       (appState.propPickerOpen || animationState.activeSection !== null)
@@ -82,8 +82,7 @@
       onselect={onselect ?? appState.selectTheoryPair}
     />
   </div>
-  <ShapeMatrixSettingsOverlay surface="theory" />
-  <ShapeMatrixPropOverlay surface="theory" />
+  <ShapeMatrixCustomizeWorkspace surface="theory" />
 </section>
 
 <style>

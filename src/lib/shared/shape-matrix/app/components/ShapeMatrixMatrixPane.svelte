@@ -3,10 +3,9 @@
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import { getShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
+  import ShapeMatrixCustomizeWorkspace from "./ShapeMatrixCustomizeWorkspace.svelte";
   import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
-  import ShapeMatrixPropOverlay from "./ShapeMatrixPropOverlay.svelte";
   import ShapeMatrixRecipeStrip from "./ShapeMatrixRecipeStrip.svelte";
-  import ShapeMatrixSettingsOverlay from "./ShapeMatrixSettingsOverlay.svelte";
 
   interface Props {
     /** The shell owns navigation (and the compact tile-to-hero morph). */
@@ -19,8 +18,8 @@
   const state = getShapeMatrixAppContext();
   const animationState = getShapeMatrixAnimationContext();
   const surprise = $derived(onsurprise ?? (() => state.surpriseMe()));
-  /* The prop catalogue covers this pane on wide hosts; the grid underneath
-     is not something to tab into while it does. */
+  /* The customize workspace covers this pane on wide hosts; the grid
+     underneath is not something to tab into while it does. */
   const workspaceOpen = $derived(
     !state.compact &&
       (state.propPickerOpen || animationState.activeSection !== null)
@@ -61,8 +60,7 @@
       />
     {/if}
   </div>
-  <ShapeMatrixSettingsOverlay surface="matrix" />
-  <ShapeMatrixPropOverlay surface="matrix" />
+  <ShapeMatrixCustomizeWorkspace surface="matrix" />
 </section>
 
 <style>
