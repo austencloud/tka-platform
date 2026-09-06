@@ -65,7 +65,7 @@
   inert={exporting || undefined}
 >
   <div class="sidebar-rail-layout">
-    <IconRailNav {pills} {activeId} {onSelect} {onNavMount} alignment="start" />
+    <IconRailNav {pills} {activeId} {onSelect} {onNavMount} reservedSlots={6} />
 
     <div class="sidebar-main">
       <div class="panel-scroll" bind:this={panelScrollElement}>
