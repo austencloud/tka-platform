@@ -55,7 +55,7 @@
 
 <svelte:window bind:innerWidth={width} bind:innerHeight={height} />
 <section
-  aria-label="Sunward Gardens production viewer"
+  aria-label="Dawn Observatory production viewer"
   data-ready={ready}
   data-performers={count}
   data-performance={performance}

@@ -1,0 +1,22 @@
+{
+  "source": "blender/celestial/dawn-observatory.blend",
+  "courtRadius": 6.08,
+  "courtSurfaceY": 0.225,
+  "clearRadius": 10.2,
+  "solarInstrument": {
+    "center": [
+      0,
+      18,
+      -31
+    ],
+    "outerRadius": 18.22
+  },
+  "meshesBeforeInstancing": 20,
+  "trianglesBeforeInstancing": 66829,
+  "provenance": "Original Blender architecture and aggregate textures. One reused shipped Meshy olive from Sunward Gardens. No new external assets.",
+  "bytes": 2580992,
+  "compression": "EXT_meshopt_compression; float positions preserved",
+  "textureFormat": "WebP, maximum 1024 square",
+  "sha256": "1299d99d2bb6e5f9b3cc3f0aa75a268b0a009c24271c8df9afdd78f4fb34d748",
+  "meshes": 20
+}
