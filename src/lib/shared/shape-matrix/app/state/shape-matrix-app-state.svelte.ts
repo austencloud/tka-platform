@@ -783,13 +783,15 @@ export function createShapeMatrixAppState(
     aboutOpen = false;
   }
   /**
-   * One entry point. The Props control under the animation is a disclosure:
-   * pressing it again puts the stage back the way it was.
+   * One entry point. The Props pill under the animation opens the catalogue
+   * over the grid pane (a sheet on compact hosts) and shows pressed until it
+   * closes. The pill, the catalogue's close button, Escape and a click
+   * elsewhere in the app all put it away.
    */
   function togglePropPicker(): void {
     propPickerOpen = !propPickerOpen;
   }
-  /** For the drill, when another dock section claims the space. */
+  /** The catalogue's own exits: close button, Escape, click-away, sheet. */
   function closePropPicker(): void {
     propPickerOpen = false;
   }

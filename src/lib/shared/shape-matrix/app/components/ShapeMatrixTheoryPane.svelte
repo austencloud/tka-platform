@@ -12,6 +12,7 @@
   } from "$lib/shared/shape-matrix/services/theory-matrix-artwork";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
+  import ShapeMatrixPropOverlay from "./ShapeMatrixPropOverlay.svelte";
   import ShapeMatrixRecipeStrip from "./ShapeMatrixRecipeStrip.svelte";
 
   interface Props {
@@ -26,6 +27,8 @@
   const appState = getShapeMatrixAppContext();
 
   const surprise = $derived(onsurprise ?? (() => appState.surpriseMe()));
+  /* The prop catalogue covers this pane on wide hosts, as on the Matrix. */
+  const pickingProp = $derived(appState.propPickerOpen && !appState.compact);
 
   /* The corner's ratio editors point back at the grid axis they change.
      Both live in this pane, so the pane owns that pointer. */
@@ -54,7 +57,7 @@
   {#if appState.compact}
     <ShapeMatrixRecipeStrip surface="theory" onsurprise={surprise} />
   {/if}
-  <div class="theory-stage">
+  <div class="theory-stage" inert={pickingProp}>
     <ShapeMatrixGrid
       rowAxis={appState.theoryRowAxis}
       colAxis={appState.theoryColAxis}
@@ -73,10 +76,12 @@
       onselect={onselect ?? appState.selectTheoryPair}
     />
   </div>
+  <ShapeMatrixPropOverlay surface="theory" />
 </section>
 
 <style>
   .theory-pane {
+    position: relative;
     height: 100%;
     min-height: 0;
     display: grid;

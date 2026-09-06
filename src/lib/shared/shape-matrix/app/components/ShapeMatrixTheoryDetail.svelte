@@ -39,11 +39,10 @@
   import PropRelationshipChipRow, {
     type RelationshipBridgeEntry,
   } from "$lib/shared/shape-matrix/components/PropRelationshipChipRow.svelte";
-  import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import AnimationPanel from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
   import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
-  import { flyFade, growFade } from "$lib/shared/transitions/motion";
+  import { growFade } from "$lib/shared/transitions/motion";
   import { CANVAS2D_HOSTED_EFFECTS } from "$lib/shared/effects/services/canvas2d-effect-host";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
@@ -249,7 +248,7 @@
   <!-- The pane owns the container; this body owns the composition, the same
        split the Matrix drill uses between its stage and its dock. A size
        container cannot answer its own query. -->
-  <div class="detail-body" class:picking-props={app.propPickerOpen}>
+  <div class="detail-body">
     <!-- The same row, in the same place, as the Matrix drill's. On Theory it
          also repaints nothing in the grid: a tile is the two hands' shapes, and
          the pairing is what those two hands do to each other, which is a thing
@@ -352,34 +351,9 @@
         {/if}
       </div>
 
-      {#if app.propPickerOpen}
-        <!-- A region of the stage, never a sheet over it, exactly as in the
-             drill. The animation keeps running alongside, so a prop is judged
-             against the shape it traces. -->
-        <div
-          class="prop-catalogue"
-          role="group"
-          aria-label="Prop"
-          in:flyFade={{ y: 10 }}
-          out:flyFade={{ y: 10 }}
-        >
-          <div class="catalogue-head">
-            <h3 class="catalogue-title">Prop</h3>
-            <PanelButton onclick={app.togglePropPicker}>Done</PanelButton>
-          </div>
-          <div class="catalogue-body">
-            <BentoPropGrid
-              selectedPropType={app.propType}
-              variant="inline"
-              flat={true}
-              onSelect={(next: PropType) => void app.setPropType(next)}
-            />
-          </div>
-        </div>
-      {/if}
     </div>
 
-    <div class="animation-controls">
+    <div class="animation-controls" data-shape-matrix-dock>
       <!-- The drill's dock, unchanged, on the drill's own scope. `sequence` is
            null because a spin ratio is not one: it has no letter, no steps and
            no word, and the panel's sequence-shaped affordances are turned off
@@ -397,6 +371,7 @@
         selectedPropType={app.propType}
         onPropChange={(next: PropType) => void app.setPropType(next)}
         onPropPickerRequest={app.togglePropPicker}
+        propPickerActive={app.propPickerOpen}
         sequence={null}
         dockTrailingAction={playbackAction}
         showPathShape={false}
@@ -448,22 +423,15 @@
     min-width: 0;
   }
 
-  /* The catalogue is a second row of the stage rather than an overlay, so the
-     animation shrinks to make room and nothing is hidden behind anything. */
+  /* The prop catalogue opens over the grid pane, never here, so the stage is
+     the animation and nothing else. */
   .media-stage {
     grid-area: media;
     display: grid;
     min-width: 0;
     min-height: 0;
-    grid-template-rows: minmax(0, 1fr) minmax(0, 0fr);
-    grid-template-areas:
-      "flow"
-      "props";
-    gap: 0.6rem;
-  }
-
-  .detail-body.picking-props .media-stage {
-    grid-template-rows: minmax(0, 1fr) minmax(0, 0.85fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "flow";
   }
 
   .detail-flow {
@@ -610,44 +578,6 @@
     color: var(--theme-text-dim, rgb(255 255 255 / 0.68));
     font-size: var(--font-size-min, 0.875rem);
     line-height: 1.55;
-  }
-
-  .prop-catalogue {
-    grid-area: props;
-    display: grid;
-    min-width: 0;
-    min-height: 0;
-    grid-template-rows: auto minmax(0, 1fr);
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
-    border-radius: 12px;
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, #101721) 74%,
-      var(--theme-card-bg, #0a0f14)
-    );
-  }
-
-  .catalogue-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.4rem 0.55rem 0.3rem;
-  }
-
-  .catalogue-title {
-    margin: 0;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-
-  .catalogue-body {
-    min-width: 0;
-    min-height: 0;
   }
 
   .animation-controls {

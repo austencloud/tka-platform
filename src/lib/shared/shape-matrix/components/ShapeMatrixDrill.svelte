@@ -38,7 +38,7 @@
   owns the hands-to-props explanation, so the animation area does not repeat it.
 -->
 <script lang="ts">
-  import { onDestroy, tick, untrack } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import MandalaHeroLayer from "./MandalaHeroLayer.svelte";
@@ -62,9 +62,7 @@
   import { HERO_TRAIL_PRESET } from "$lib/shared/landing/data/hero-trail-preset";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
-  import { flyFade, growFade, motionDuration } from "$lib/shared/transitions/motion";
-  import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
-  import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
+  import { growFade } from "$lib/shared/transitions/motion";
   import { claimedViewTransitionName } from "$lib/shared/transitions/claimed-view-transition-name";
   import {
     SHAPE_MATRIX_ACTIVE_STAGE_NAME,
@@ -99,13 +97,13 @@
     propType?: PropType;
     onproptypechange?: (propType: PropType) => void;
     /**
-     * The prop catalogue is a region of this drill, not an overlay: while it is
-     * open the animation, the element relationships and the carousel all stay
-     * on screen, so a prop is chosen against the shape it will trace.
+     * The prop catalogue lives over the grid pane (a sheet on compact hosts),
+     * never on this stage: the animation, the element relationships and the
+     * carousel all stay put while a prop is chosen against the shape it
+     * traces. The drill only shows the open state on its Props pill.
      */
     propPickerOpen?: boolean;
     onproppickertoggle?: () => void;
-    onproppickerclose?: () => void;
     /**
      * Shared tile-to-hero transition seam. `claim` makes the cold floor the
      * owner of the shared view-transition name (the host's compact layout is
@@ -127,46 +125,10 @@
     onproptypechange,
     propPickerOpen = false,
     onproppickertoggle,
-    onproppickerclose,
     mandalaTransition = { claim: false, handoff: false },
   }: Props = $props();
 
   const animationState = getShapeMatrixAnimationContext();
-
-  // Opening the catalogue re-slots the hero, the carousel and the dock. FLIP
-  // carries the survivors from their old boxes to their new ones so the change
-  // reads as the stage making room, not as a new screen.
-  let drillElement = $state<HTMLElement | null>(null);
-  let previousPickingProps = propPickerOpen;
-  let propStageMotionToken = 0;
-
-  const propStageMotion = createLayoutMotion({
-    getRoot: () => drillElement,
-    groups: [{ selector: "[data-drill-region]", datasetKey: "drillRegion" }],
-    getDuration: () => motionDuration(DURATION.emphasis),
-  });
-
-  // A dock tray section takes the room the catalogue was using, so opening one
-  // puts the catalogue away rather than stacking two pickers on one stage.
-  $effect(() => {
-    if (animationState.activeSection !== null && propPickerOpen) {
-      onproppickerclose?.();
-    }
-  });
-
-  $effect.pre(() => {
-    const picking = propPickerOpen;
-    const changed = previousPickingProps !== picking;
-    previousPickingProps = picking;
-    if (!changed || !drillElement) return;
-
-    const captured = propStageMotion.capture();
-    const token = ++propStageMotionToken;
-    void tick().then(() => {
-      if (token !== propStageMotionToken) return;
-      if (captured) propStageMotion.play();
-    });
-  });
 
   let animationPlayerModule: ReturnType<typeof importAnimationPlayer> | null =
     null;
@@ -1175,10 +1137,8 @@
 {/snippet}
 
 <section
-  bind:this={drillElement}
   class="drill"
   class:controls-open={animationState.activeSection !== null}
-  class:picking-props={propPickerOpen}
   aria-label="Shape matrix realizations"
   style={captionRealization
     ? `--hand-el: ${captionRealization.element.accentColor}; --hand-dark: ${captionRealization.element.darkComplement}; --prop-el: ${captionRealization.propRelationship.element?.accentColor ?? captionRealization.element.accentColor}`
@@ -1337,35 +1297,6 @@
       </div>
     {/if}
 
-    {#if propPickerOpen}
-      <!-- A region of the stage, never a sheet over it. The animation keeps
-           running alongside, so a prop is judged against the shape it traces
-           and the choice can be changed without reopening anything. -->
-      <!-- Deliberately NOT a layout-motion member: FLIP carries the survivors
-           from their old boxes to their new ones, and capture cancels every
-           animation on the elements it tracks. Tracking an element that is
-           entering or leaving cancels the very transition that removes it. -->
-      <div
-        class="prop-catalogue"
-        role="group"
-        aria-label="Prop"
-        in:flyFade={{ y: 10 }}
-        out:flyFade={{ y: 10 }}
-      >
-        <div class="catalogue-head">
-          <h3 class="catalogue-title">Prop</h3>
-          <PanelButton onclick={() => onproppickertoggle?.()}>Done</PanelButton>
-        </div>
-        <div class="catalogue-body">
-          <BentoPropGrid
-            selectedPropType={propType}
-            variant="inline"
-            flat={true}
-            onSelect={(next: PropType) => onproptypechange?.(next)}
-          />
-        </div>
-      </div>
-    {/if}
   </div>
 
   <!-- The control bar is below the stage, not inside it. It settles in as the
@@ -1373,6 +1304,7 @@
   <div
     class="animation-controls"
     data-drill-region="controls"
+    data-shape-matrix-dock
     use:claimedViewTransitionName={{
       name: SHAPE_MATRIX_CONTROLS_NAME,
       enabled: morphingFrames,
@@ -1391,6 +1323,7 @@
       selectedPropType={propType}
       onPropChange={onproptypechange}
       onPropPickerRequest={onproppickertoggle}
+      propPickerActive={propPickerOpen}
       sequence={captionRealization?.seq ?? null}
       dockTrailingAction={playbackAction}
       showPathShape={false}
@@ -1460,24 +1393,10 @@
     min-height: 0;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    /* The catalogue's track is declared even when closed, collapsed with an
-       explicit 0 minimum so its min-content does not reopen it. Declaring it
-       keeps the outgoing panel in a real track while it fades, instead of
-       inventing an implicit row that would push the stage as it leaves. */
-    grid-template-rows: minmax(0, 1fr) auto minmax(0, 0fr);
+    grid-template-rows: minmax(0, 1fr) auto;
     grid-template-areas:
       "hero"
-      "strip"
-      "props";
-  }
-
-  /* Picking a prop splits the stage rather than covering it. */
-  .drill.picking-props .media-stage {
-    grid-template-rows: minmax(0, 1fr) auto minmax(0, 0.85fr);
-  }
-
-  .drill.picking-props .prop-catalogue {
-    margin-top: 0.5rem;
+      "strip";
   }
 
   /* container-type: size makes cqw/cqh resolve against the animation region,
@@ -1685,44 +1604,6 @@
     color: var(--theme-text-dim, oklch(0.68 0.02 270));
   }
 
-  .prop-catalogue {
-    grid-area: props;
-    min-width: 0;
-    min-height: 0;
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
-    border-radius: 12px;
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, #101721) 74%,
-      var(--theme-card-bg, #0a0f14)
-    );
-  }
-
-  .catalogue-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.4rem 0.55rem 0.3rem;
-  }
-
-  .catalogue-title {
-    margin: 0;
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    color: var(--theme-text-dim, oklch(0.68 0.02 270));
-  }
-
-  .catalogue-body {
-    min-width: 0;
-    min-height: 0;
-  }
-
   .animation-controls {
     grid-area: controls;
     min-width: 0;
@@ -1739,45 +1620,6 @@
   .select-action :global(.panel-btn) {
     width: 100%;
   }
-  /* With room to spare, the catalogue takes a column beside the animation
-     instead of a row beneath it, so neither one has to shrink much. */
-  @container shape-matrix-drill (min-width: 30rem) {
-    .media-stage {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 0fr);
-      grid-template-rows: minmax(0, 1fr) auto;
-      grid-template-areas:
-        "hero props"
-        "strip props";
-    }
-
-    .drill.picking-props .media-stage {
-      grid-template-columns: minmax(0, 1fr) minmax(10rem, 13rem);
-      /* Restated because the stacked picking tier owns a third row at lower
-         specificity than this selector: without it that row survives here and
-         steals the height the catalogue column is supposed to span. */
-      grid-template-rows: minmax(0, 1fr) auto;
-      column-gap: 0.6rem;
-    }
-
-    .drill.picking-props .prop-catalogue {
-      /* Hug the catalogue rather than stretch it: the column spans the whole
-         animation, and on a tall screen a stretched panel is mostly empty
-         board under the last prop. It still scrolls when the props need more
-         room than the column has. */
-      align-self: start;
-      max-height: 100%;
-      margin-top: 0;
-    }
-  }
-
-  /* Wide enough to give the catalogue its full four-across grid, which shows
-     every prop at once, without taking the animation under a square. */
-  @container shape-matrix-drill (min-width: 40rem) {
-    .drill.picking-props .media-stage {
-      grid-template-columns: minmax(0, 1fr) minmax(16rem, 21rem);
-    }
-  }
-
   /* Phone-height realizations keep the live animation legible. The dedicated
      rail returns as soon as the host has enough width to show it without
      reducing the hero to a thumbnail. */
