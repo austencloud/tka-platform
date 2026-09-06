@@ -67,6 +67,9 @@ const PUBLIC_PATH_PREFIXES = [
   // The archive lives at /history; /notation 301s to it and still serves
   // the per-prop and per-system notation pages.
   "/history",
+  // Shape Engine graduated out of /notation/shape-matrix (which 301s here)
+  // into its own standalone public destination.
+  "/shape-engine",
   "/composer",
   "/atlas",
   "/faq",

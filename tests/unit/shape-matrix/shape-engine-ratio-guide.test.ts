@@ -77,7 +77,7 @@ describe("Shape Engine ratio guide", () => {
     expect(page).toContain('path="/guide/ratios"');
     expect(page).toContain("/history#archive-record-vtg");
     expect(page).toContain("/history#archive-record-lorq");
-    expect(page).toContain("/notation/shape-matrix?");
+    expect(page).toContain("/shape-engine?");
     expect(about).toContain('size="xl"');
     expect(about).toContain('href="/guide/ratios"');
     expect(about).toContain("/history#archive-record-vtg");

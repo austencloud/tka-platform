@@ -19,7 +19,7 @@
 
   const TITLE = `${KINETIC_SHAPE_ENGINE_NAME} | Flow Arts Composer`;
   const DESCRIPTION = KINETIC_SHAPE_ENGINE_DESCRIPTION;
-  const URL = "https://tkaflowarts.com/notation/shape-matrix";
+  const URL = "https://tkaflowarts.com/shape-engine";
   const ROUTE_STATE_PARAMS = [
     "level",
     "turn",

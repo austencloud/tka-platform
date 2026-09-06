@@ -3,7 +3,7 @@
 Shared implementation for Shape Engine: the flower axis, level and
 ratio matrices, exact-realization drill, and cell rendering. Internal
 `ShapeMatrix*` names remain because the matrix is still the behavior they own.
-The implementation is consumed by the `/notation/shape-matrix` public
+The implementation is consumed by the `/shape-engine` public
 destination, the history archive, and the lab dev harness
 (`src/routes/test/shape-matrix/+page.svelte`,
 `src/lib/features/lab/vtg-lab/`).

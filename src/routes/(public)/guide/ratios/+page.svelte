@@ -84,7 +84,7 @@
 
   function bandHref(turns: number): string {
     const key = turnValueToKey(turns);
-    return `/notation/shape-matrix?level=2&leftTurn=${key}&rightTurn=${key}&axis=both&labels=ratios&prop=staff`;
+    return `/shape-engine?level=2&leftTurn=${key}&rightTurn=${key}&axis=both&labels=ratios&prop=staff`;
   }
 
   function pairHref(left: Flower, right: Flower): string {
@@ -98,7 +98,7 @@
       labels: "ratios",
       prop: "staff",
     });
-    return `/notation/shape-matrix?${params}`;
+    return `/shape-engine?${params}`;
   }
 
   let data = $state<ShapeMatrixData | null>(null);
@@ -426,7 +426,7 @@
         <li>
           <a href="/history#archive-record-lorq">The Lorq Nichols record</a>
         </li>
-        <li><a href="/notation/shape-matrix">{SHAPE_ENGINE_SHORT_NAME}</a></li>
+        <li><a href="/shape-engine">{SHAPE_ENGINE_SHORT_NAME}</a></li>
       </ul>
       <p class="attribution">
         The {SHAPE_ENGINE_SHORT_NAME} was built independently by {KINETIC_SHAPE_ENGINE_AUTHOR}.

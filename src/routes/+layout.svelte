@@ -201,11 +201,10 @@
   // Carve-outs inside those subtrees. The QfT app is an instrument, not a page
   // about one: it wants the whole viewport, owns its own bottom chrome, and
   // carries its own way back out to /history. The persistent site header on
-  // top of that reads as a page wrapped around an app.
-  const MARKETING_EXCLUDE = new Set([
-    "/notation/qft",
-    "/notation/shape-matrix",
-  ]);
+  // top of that reads as a page wrapped around an app. Shape Engine used to
+  // sit here as /notation/shape-matrix; it now owns /shape-engine, outside
+  // every marketing subtree, so it needs no carve-out.
+  const MARKETING_EXCLUDE = new Set(["/notation/qft"]);
   const isMarketing = $derived.by(() => {
     const p = page.url.pathname;
     if (MARKETING_EXCLUDE.has(p)) return false;
