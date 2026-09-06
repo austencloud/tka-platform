@@ -414,7 +414,7 @@ instead of showing an empty shell.
     if (visualType) trackBrowseVisualTypeOpened(visualType);
     browseNavigationState.viewCollectionDetail(
       id,
-      ART_DETAIL[id]?.label ?? "Art"
+      ART_DETAIL[id]?.label ?? "Visuals"
     );
   }
 
@@ -940,7 +940,7 @@ instead of showing an empty shell.
         {@render performancesShelfCard(null)}
       </div>
 
-      <h3 class="shelf-heading">Art</h3>
+      <h3 class="shelf-heading">Visuals</h3>
       <div class="card-grid">
         {@render artShelf(null)}
       </div>

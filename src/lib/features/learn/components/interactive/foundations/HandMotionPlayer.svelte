@@ -7,6 +7,7 @@
   let {
     sequence,
     ariaLabel,
+    neutralMarkers = false,
     showElementalGlyph = false,
     interactive = true,
     playbackAllowed = true,
@@ -24,6 +25,8 @@
   }: {
     sequence: SequenceData;
     ariaLabel: string;
+    /** Timing/direction examples compare motions, not a particular body part. */
+    neutralMarkers?: boolean;
     showElementalGlyph?: boolean;
     interactive?: boolean;
     playbackAllowed?: boolean;
@@ -70,8 +73,8 @@
     beatIndicators={false}
     hideTkaGlyph
     hideStepNumbers
-    leftPropType="hand"
-    rightPropType="hand"
+    leftPropType={neutralMarkers ? "motion_point" : "hand"}
+    rightPropType={neutralMarkers ? "motion_point_inner" : "hand"}
     visibilityManagerOverride={visibility}
     hoverHint={interactive ? "badge" : "none"}
     glyphFrame="stage"

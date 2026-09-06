@@ -1,8 +1,13 @@
 <script lang="ts">
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import {
+    nearestQuarterTurn,
+    quarterPhase,
+    timingFromPhases,
+    type TimingMode,
+  } from "./timing-intro-phase";
 
-  type TimingMode = "together" | "split" | "quarter";
   type DirectionMode = "same" | "opposite";
   const timingOptions: Array<{ value: TimingMode; label: string }> = [
     { value: "together", label: "Together" },
@@ -15,28 +20,46 @@
   ];
   const timingDetails = {
     together: {
-      x: 0,
-      y: 54,
-      description: "Both hands reach the downbeat together.",
+      description: "Both reach the downbeat together.",
       offset: "",
     },
     split: {
-      x: 0,
-      y: -54,
-      description: "The hands are on opposite sides of their circles.",
+      description: "Their downbeats alternate evenly.",
       offset: "Half a cycle apart.",
     },
     quarter: {
-      x: -54,
-      y: 0,
-      description:
-        "When either hand reaches the downbeat, the other is at the side.",
-      offset: "A quarter cycle apart.",
+      description: "Their downbeats are a quarter cycle apart.",
+      offset: "",
     },
   };
-  let timingMode = $state<TimingMode>("together");
-  let directionMode = $state<DirectionMode>("same");
+  const points = [
+    { phase: 0, x: 50, y: 83.75, name: "bottom" },
+    { phase: 1, x: 16.25, y: 50, name: "left side" },
+    { phase: 2, x: 50, y: 16.25, name: "top" },
+    { phase: 3, x: 83.75, y: 50, name: "right side" },
+  ];
+  let phases = $state([0, 0]);
+  let clockwise = $state([true, true]);
+  const timingMode = $derived(timingFromPhases(phases[0]!, phases[1]!));
+  const directionMode = $derived<DirectionMode>(
+    clockwise[0] === clockwise[1] ? "same" : "opposite"
+  );
   const timingDetail = $derived(timingDetails[timingMode]);
+
+  function movePoint(index: number, phase: number): void {
+    phases[index] = nearestQuarterTurn(phases[index]!, phase);
+  }
+
+  function setTiming(mode: TimingMode): void {
+    movePoint(
+      1,
+      phases[0]! + (mode === "together" ? 0 : mode === "split" ? 2 : 1)
+    );
+  }
+
+  function setDirection(mode: DirectionMode): void {
+    clockwise[1] = mode === "same" ? clockwise[0]! : !clockwise[0];
+  }
 </script>
 
 <div
@@ -47,33 +70,45 @@
   <section class="concept-panel timing-panel" aria-labelledby="timing-heading">
     <h3 id="timing-heading">Timing</h3>
     <p class="concept-prose">
-      Timing compares when each hand reaches the bottom of its circle: the
-      downbeat.
+      Timing compares when the two motions reach their downbeats.
     </p>
     <div
-      class="instrument"
+      class="instrument timing-instrument"
       data-timing={timingMode}
-      role="img"
-      aria-label={`${timingDetail.description} ${timingDetail.offset}`.trim()}
+      role="group"
+      aria-label="Choose a point on either timing circle"
     >
-      <Crossfade key={timingMode} fill>
-        <svg viewBox="0 0 320 160" aria-hidden="true">
-          <!-- A still moment at the left hand's downbeat: no direction implied. -->
-          <g class="blue" transform="translate(80 80)">
-            <circle class="cycle-reference" r="54" />
-            <circle class="hand-marker" cx="0" cy="54" r="10" />
-          </g>
-          <g class="red" transform="translate(240 80)">
-            <circle class="cycle-reference" r="54" />
-            <circle
-              class="hand-marker"
-              cx={timingDetail.x}
-              cy={timingDetail.y}
-              r="10"
-            />
-          </g>
-        </svg>
-      </Crossfade>
+      {#each phases as phase, index}
+        <div
+          class="circle-control"
+          class:blue={index === 0}
+          class:red={index === 1}
+        >
+          <svg viewBox="0 0 160 160" aria-hidden="true">
+            <g transform="translate(80 80)">
+              <circle class="cycle-reference" r="54" />
+              <g
+                class="phase-rotation"
+                style:transform={`rotate(${phase * 90}deg)`}
+              >
+                <circle class="motion-marker" cx="0" cy="54" r="10" />
+              </g>
+            </g>
+          </svg>
+          {#each points as point}
+            <button
+              type="button"
+              class="timing-point"
+              style:left={`${point.x}%`}
+              style:top={`${point.y}%`}
+              aria-label={`${index === 0 ? "Left" : "Right"} timing circle: ${point.name}`}
+              aria-pressed={quarterPhase(phase) === point.phase}
+              onclick={() => movePoint(index, point.phase)}
+              ><span class="point-hint"></span></button
+            >
+          {/each}
+        </div>
+      {/each}
     </div>
     <div class="relationship-caption" aria-live="polite" aria-atomic="true">
       <Crossfade key={timingMode}>
@@ -87,7 +122,7 @@
       <SegmentedControl
         options={timingOptions}
         value={timingMode}
-        onchange={(value) => (timingMode = value)}
+        onchange={setTiming}
         color="accent"
         density="tight"
         semantics="radiogroup"
@@ -102,46 +137,49 @@
   >
     <h3 id="direction-heading">Direction</h3>
     <p class="concept-prose">
-      Direction compares the hands’ rotation: circling the same way or opposite
-      ways.
+      Direction compares rotation: circling the same way or opposite ways.
     </p>
     <div
-      class="instrument"
+      class="instrument direction-instrument"
       data-direction={directionMode}
-      role="img"
-      aria-label={directionMode === "same"
-        ? "Same rotation: both hands circle clockwise."
-        : "Opposite rotation: the left hand circles clockwise and the right hand circles counterclockwise."}
+      role="group"
+      aria-label="Click either arrow to flip its rotation"
     >
-      <Crossfade key={directionMode} fill>
-        <svg viewBox="0 0 320 160" aria-hidden="true">
-          <!-- Static rotation symbols have no hand positions or rhythm. -->
-          <g class="blue" transform="translate(80 80)">
-            <path class="rotation-arc" d="M-38.184 38.184A54 54 0 1 1 54 0" />
-            <path
-              class="arrowhead"
-              d="M40-7 Q37-7 39-4 L52 17 Q54 20 56 17 L69-4 Q71-7 68-7 Z"
-            />
-          </g>
-          <g
-            class="red"
-            transform={`translate(240 80) scale(${directionMode === "same" ? 1 : -1} 1)`}
-          >
-            <path class="rotation-arc" d="M-38.184 38.184A54 54 0 1 1 54 0" />
-            <path
-              class="arrowhead"
-              d="M40-7 Q37-7 39-4 L52 17 Q54 20 56 17 L69-4 Q71-7 68-7 Z"
-            />
-          </g>
-        </svg>
-      </Crossfade>
+      {#each clockwise as isClockwise, index}
+        <button
+          type="button"
+          class="arrow-control"
+          class:blue={index === 0}
+          class:red={index === 1}
+          aria-label={`${index === 0 ? "Left" : "Right"} rotation: ${isClockwise ? "clockwise" : "counterclockwise"}. Click to flip.`}
+          onclick={() => (clockwise[index] = !isClockwise)}
+        >
+          <svg viewBox="0 0 160 160" aria-hidden="true">
+            <g transform="translate(80 80)">
+              <g
+                class="arrow-flip"
+                style:transform={`scaleX(${isClockwise ? 1 : -1})`}
+              >
+                <path
+                  class="rotation-arc"
+                  d="M-38.184 38.184A54 54 0 1 1 54 0"
+                />
+                <path
+                  class="arrowhead"
+                  d="M40-7 Q37-7 39-4 L52 17 Q54 20 56 17 L69-4 Q71-7 68-7 Z"
+                />
+              </g>
+            </g>
+          </svg>
+        </button>
+      {/each}
     </div>
     <div class="relationship-caption" aria-live="polite" aria-atomic="true">
       <Crossfade key={directionMode}
         ><p>
           {directionMode === "same"
-            ? "Both clockwise, or both counterclockwise."
-            : "One clockwise. One counterclockwise."}
+            ? "Both rotate the same way."
+            : "They rotate opposite ways."}
         </p></Crossfade
       >
     </div>
@@ -149,7 +187,7 @@
       <SegmentedControl
         options={directionOptions}
         value={directionMode}
-        onchange={(value) => (directionMode = value)}
+        onchange={setDirection}
         color="accent"
         density="tight"
         semantics="radiogroup"
@@ -213,9 +251,84 @@
   }
   .instrument {
     position: relative;
+    container-type: size;
     width: 100%;
     min-width: 0;
     min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+  }
+  .circle-control,
+  .arrow-control {
+    position: relative;
+    width: min(100%, 100cqh);
+    aspect-ratio: 1;
+    justify-self: center;
+    min-width: 0;
+    min-height: 0;
+  }
+  .timing-point,
+  .arrow-control {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .timing-point {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: inherit;
+  }
+  .point-hint {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.8;
+  }
+  .timing-point[aria-pressed="true"] .point-hint {
+    opacity: 0;
+  }
+  .timing-point:hover .point-hint {
+    opacity: 1;
+  }
+  .timing-point:focus-visible,
+  .arrow-control:focus-visible {
+    outline: 2px solid var(--theme-text);
+    outline-offset: 2px;
+  }
+  .arrow-control {
+    border-radius: var(--radius-lg, 0.75rem);
+  }
+  .arrow-control:hover {
+    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.04));
+  }
+  .phase-rotation {
+    transition: transform var(--transition-dramatic);
+  }
+  .arrow-flip {
+    transition: transform var(--transition-emphasis);
+  }
+  .phase-rotation,
+  .arrow-flip {
+    transform-origin: 0 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .phase-rotation,
+    .arrow-flip {
+      transition: none;
+    }
+  }
+  :global([data-motion-preference="reduce"]) .phase-rotation,
+  :global([data-motion-preference="reduce"]) .arrow-flip {
+    transition: none;
   }
   svg {
     display: block;
@@ -228,7 +341,7 @@
   .red {
     color: var(--prop-red, #ed1c24);
   }
-  .hand-marker,
+  .motion-marker,
   .arrowhead {
     fill: currentColor;
   }
@@ -254,13 +367,18 @@
   }
   @media (max-width: 640px) {
     .concept-model {
-      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      grid-template-columns: minmax(0, 1fr);
+      min-height: 56rem;
+    }
+    .direction-panel {
+      border-inline-start: 0;
+      border-block-start: 1px solid var(--theme-stroke);
     }
     .concept-panel {
       padding: 1rem 0.35rem;
       gap: 0.65rem;
       font-size: 0.875rem;
-      grid-template-rows: auto 9em minmax(5rem, 1fr) 7.5em auto;
+      grid-template-rows: auto auto minmax(8rem, 1fr) auto auto;
     }
     .concept-prose,
     .relationship-caption {
