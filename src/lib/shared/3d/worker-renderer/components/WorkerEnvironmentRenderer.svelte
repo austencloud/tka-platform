@@ -62,6 +62,7 @@
       snapshot: ApplicationThreadCameraSnapshot
     ) => void;
     onCameraChange?: (snapshot: ApplicationThreadCameraSnapshot) => void;
+    onCameraReady?: (controller: ApplicationThreadCameraController) => (() => void);
     onSnapshot?: (snapshot: WorkerSceneSwitchSnapshot) => void;
   }
 
@@ -85,6 +86,7 @@
     onCameraInteractionStart,
     onCameraInteractionEnd,
     onCameraChange,
+    onCameraReady,
     onSnapshot,
   }: Props = $props();
 
@@ -210,6 +212,12 @@
     );
     applyPixelRatio(pixelRatio);
     applyCameraSnapshot(cameraController.getSnapshot());
+    const releaseCamera = onCameraReady?.(cameraController);
+    // Wheel gestures have no control-end event; save their settled target too.
+    const publishSettledCamera = () => {
+      if (cameraController) onCameraChange?.(cameraController.getSnapshot());
+    };
+    cameraController.controls.addEventListener("rest", publishSettledCamera);
     cameraResizeObserver = new ResizeObserver(() => {
       if (
         !cameraController ||
@@ -230,6 +238,8 @@
     renderer.switchTo(environment);
 
     return () => {
+      releaseCamera?.();
+      cameraController?.controls.removeEventListener("rest", publishSettledCamera);
       if (cameraInteractionActive && cameraController) {
         onCameraInteractionEnd?.(cameraController.getSnapshot());
         cameraInteractionActive = false;

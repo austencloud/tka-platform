@@ -56,3 +56,10 @@ export function applyCameraControlsInputActions(
 }
 
 export { CameraControls };
+
+export function configureViewerOrbitNavigation(controls: CameraControls): void {
+  // Exploring a scene must not strand the camera at an empty, panned target.
+  // Continue travelling past the orbit limits, toward the pointer/pinch centre.
+  controls.infinityDolly = true;
+  controls.dollyToCursor = true;
+}
