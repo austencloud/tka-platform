@@ -30,7 +30,7 @@ import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 // ── Raw MCP format ──
 
 export interface RawMotion {
-  color: string;
+  hand: string;
   startLocation: string;
   endLocation: string;
   motionType: string;
@@ -65,7 +65,7 @@ function toMotionData(raw: RawMotion, gridMode: GridMode): MotionData {
     isVisible: true,
     propType: "staff" as PropType,
     arrowLocation: raw.endLocation as GridLocation,
-    color: raw.color as HandSide,
+    color: raw.hand as HandSide,
     gridMode,
     arrowPlacementData: { x: 0, y: 0, rotation: 0 },
     propPlacementData: { x: 0, y: 0, rotation: 0 },

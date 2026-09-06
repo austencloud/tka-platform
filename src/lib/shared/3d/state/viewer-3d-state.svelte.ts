@@ -890,7 +890,7 @@ function buildViewer3DState(
 
     const shot = computeViewerFrontStageShot(performers, viewportAspect);
     const target = shot.target;
-    let position = shot.eye;
+    let position: { x: number; y: number; z: number } = shot.eye;
 
     const liveCamera = cameraSnapshot ?? _persistedCamera;
     if (preserveViewingDirection && liveCamera) {

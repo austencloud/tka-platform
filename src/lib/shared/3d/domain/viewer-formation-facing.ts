@@ -1,9 +1,11 @@
-import {
-  calculateFacingAngle,
-  type Formation,
-  type FormationSlot,
-} from "@austencloud/scene-3d";
+import { calculateFacingAngle } from "@austencloud/scene-3d";
 import { SceneEnvironmentId } from "../environments/domain/scene-environment";
+
+// The package exports `calculateFacingAngle` but not the `Formation`/
+// `FormationSlot` types its signature is built from, so derive them from the
+// function itself rather than re-declaring the shapes by hand.
+type FormationSlot = Parameters<typeof calculateFacingAngle>[0];
+type Formation = Parameters<typeof calculateFacingAngle>[1];
 
 /**
  * Most hero scenes were authored around the performer's original zero heading,

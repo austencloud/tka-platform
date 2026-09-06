@@ -157,8 +157,9 @@ export function parseSpecialOverrideKey(key: string): {
 export function extractOriFolderFromPath(filePath: string): string {
   const parts = filePath.split("/");
   const specialIndex = parts.indexOf("special");
-  if (specialIndex >= 0 && parts[specialIndex + 1]) {
-    return parts[specialIndex + 1];
+  const oriFolder = specialIndex >= 0 ? parts[specialIndex + 1] : undefined;
+  if (oriFolder) {
+    return oriFolder;
   }
   return "from_layer1";
 }

@@ -82,8 +82,8 @@ export async function createOceanPrototypeWorld(
     .detectSupport(context.renderer);
   loader.setKTX2Loader(ktx2Loader);
 
-  const loaded = [0, 0];
-  const totals = [0, 0];
+  const loaded: [number, number] = [0, 0];
+  const totals: [number, number] = [0, 0];
   const report = (index: number, value: number, total: number) => {
     loaded[index] = value;
     totals[index] = total;

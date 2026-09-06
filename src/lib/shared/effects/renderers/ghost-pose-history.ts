@@ -35,11 +35,14 @@ export function selectGhostAgeStratifiedSamples<TSnapshot>(
   const count = Math.max(0, Math.floor(maximumSamples));
   if (count === 0 || samples.length === 0) return [];
   if (samples.length <= count) return samples.slice();
-  if (count === 1) return [samples[samples.length - 1]];
+  const oldestSample = samples[0];
+  const newestSample = samples[samples.length - 1];
+  if (!oldestSample || !newestSample) return [];
+  if (count === 1) return [newestSample];
 
   const selected: GhostPoseSample<TSnapshot>[] = [];
-  const oldestAge = samples[0].ageSeconds;
-  const newestAge = samples[samples.length - 1].ageSeconds;
+  const oldestAge = oldestSample.ageSeconds;
+  const newestAge = newestSample.ageSeconds;
   let firstAvailableIndex = 0;
 
   for (let slotIndex = 0; slotIndex < count; slotIndex += 1) {
@@ -47,21 +50,27 @@ export function selectGhostAgeStratifiedSamples<TSnapshot>(
     const targetAge = oldestAge + (newestAge - oldestAge) * targetProgress;
     const remainingSlots = count - slotIndex;
     const lastAvailableIndex = samples.length - remainingSlots;
+    const firstAvailableSample = samples[firstAvailableIndex];
+    if (!firstAvailableSample) break;
     let bestIndex = firstAvailableIndex;
-    let bestDistance = Math.abs(samples[bestIndex].ageSeconds - targetAge);
+    let bestSample = firstAvailableSample;
+    let bestDistance = Math.abs(firstAvailableSample.ageSeconds - targetAge);
 
     for (
       let sampleIndex = firstAvailableIndex + 1;
       sampleIndex <= lastAvailableIndex;
       sampleIndex += 1
     ) {
-      const distance = Math.abs(samples[sampleIndex].ageSeconds - targetAge);
+      const candidate = samples[sampleIndex];
+      if (!candidate) continue;
+      const distance = Math.abs(candidate.ageSeconds - targetAge);
       if (distance >= bestDistance) continue;
       bestIndex = sampleIndex;
+      bestSample = candidate;
       bestDistance = distance;
     }
 
-    selected.push(samples[bestIndex]);
+    selected.push(bestSample);
     firstAvailableIndex = bestIndex + 1;
   }
 

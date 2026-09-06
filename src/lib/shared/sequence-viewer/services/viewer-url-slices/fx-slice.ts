@@ -91,7 +91,7 @@ export function seedFromFxSlice(payload: FxSlicePayload): EffectsConfig {
   if (payload.tuning) {
     for (const key of Object.keys(DEFAULT_EFFECTS_CONFIG)) {
       if (key in payload.tuning) {
-        (seed as Record<string, unknown>)[key] = payload.tuning[key];
+        (seed as unknown as Record<string, unknown>)[key] = payload.tuning[key];
       }
     }
   }

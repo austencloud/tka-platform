@@ -254,7 +254,12 @@ export function prepareCoveragePreservingAlphaMipmaps(
   preparedTextures.add(texture);
   const chain = buildCoveragePreservingMipChain(level0, alphaTest, options);
   texture.mipmaps = chain.map(
-    (level) => new ImageData(level.data, level.width, level.height)
+    (level) =>
+      new ImageData(
+        Uint8ClampedArray.from(level.data),
+        level.width,
+        level.height
+      )
   );
   texture.generateMipmaps = false;
   texture.minFilter = LinearMipmapLinearFilter;

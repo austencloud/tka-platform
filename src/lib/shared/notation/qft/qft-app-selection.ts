@@ -1,6 +1,6 @@
 import {
   buildFlowerAxis,
-  type Flower,
+  type RotatingFlower,
 } from "$lib/shared/shape-matrix/domain/flower-signature";
 import {
   MODE_ORDER,
@@ -15,7 +15,7 @@ import {
   type QftTrajectory,
 } from "./qft-trajectory";
 
-export const QFT_FLOWERS: Flower[] = buildFlowerAxis().filter(
+export const QFT_FLOWERS: RotatingFlower[] = buildFlowerAxis().filter(
   (flower) => flower.grid === "diamond" && [0, 1, 2].includes(flower.turns)
 );
 
