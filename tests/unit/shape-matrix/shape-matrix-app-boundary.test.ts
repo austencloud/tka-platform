@@ -196,43 +196,77 @@ describe("Shape Matrix app boundary", () => {
     expect(propPickerSource).not.toContain("transition:growFade");
   });
 
-  it("chooses a prop beside the animation, never over it", () => {
-    const drillSource = readFileSync(
-      resolve("src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte"),
-      "utf8"
+  it("chooses a prop over the grid, never over the animation", () => {
+    const read = (path: string) => readFileSync(resolve(path), "utf8");
+    const drillSource = read(
+      "src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte"
     );
-    const detailSource = readFileSync(
-      resolve(
-        "src/lib/shared/shape-matrix/app/components/ShapeMatrixDetailPane.svelte"
-      ),
-      "utf8"
+    const theoryDetailSource = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixTheoryDetail.svelte"
     );
-    const appSource = readFileSync(
-      resolve("src/lib/shared/shape-matrix/app/ShapeMatrixApp.svelte"),
-      "utf8"
+    const matrixPaneSource = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixMatrixPane.svelte"
     );
-    const stateSource = readFileSync(
-      resolve(
-        "src/lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte.ts"
-      ),
-      "utf8"
+    const theoryPaneSource = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixTheoryPane.svelte"
+    );
+    const overlaySource = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixPropOverlay.svelte"
+    );
+    const shellSource = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixAppShell.svelte"
+    );
+    const detailSource = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixDetailPane.svelte"
+    );
+    const stateSource = read(
+      "src/lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte.ts"
+    );
+    const dockSource = read(
+      "src/lib/shared/sequence-viewer/components/ControlDock.svelte"
     );
 
-    // The catalogue is a region of the drill, so the element relationships and
-    // the pictograph carousel stay on screen while a prop is chosen.
-    expect(drillSource).toContain("BentoPropGrid");
-    expect(drillSource).toContain('class="prop-catalogue"');
-    expect(drillSource).toContain("class:picking-props={propPickerOpen}");
-    // Survivors travel to their new boxes through the canonical owner.
-    expect(drillSource).toContain("createLayoutMotion");
-    expect(drillSource).toContain('data-drill-region="hero"');
-    // FLIP membership is for survivors only. capture() cancels every animation
-    // on the elements it tracks, so tracking the catalogue would cancel the
-    // very outro that removes it and strand a sliver of it on the stage.
-    expect(drillSource).not.toContain('data-drill-region="props"');
+    // The catalogue left the animation stage. Nothing on the drill or the
+    // theory detail shrinks to make room for it any more.
+    expect(drillSource).not.toContain("BentoPropGrid");
+    expect(drillSource).not.toContain("prop-catalogue");
+    expect(theoryDetailSource).not.toContain("BentoPropGrid");
 
-    // No drawer, and prop choosing is not one of the dock's tray sections.
-    expect(appSource).not.toContain("PropPickerModal");
+    // Wide hosts: the grid pane hosts it. You are not changing your shape
+    // while you change your prop, so that is the one region that can be
+    // covered while the hero, the relationships, the carousel and the dock
+    // stay put and the prop is judged against the live shape.
+    expect(matrixPaneSource).toContain(
+      '<ShapeMatrixPropOverlay surface="matrix" />'
+    );
+    expect(theoryPaneSource).toContain(
+      '<ShapeMatrixPropOverlay surface="theory" />'
+    );
+    expect(matrixPaneSource).toContain("inert={pickingProp}");
+    // The full sectioned bento grid, not the dense compact drawer packing.
+    expect(overlaySource).toContain("<BentoPropGrid");
+    expect(overlaySource).not.toContain("flat={true}");
+    // A titled close, Escape through the shared layer manager, click-away.
+    expect(overlaySource).toContain("<DrawerHeader");
+    expect(overlaySource).toContain('id: "shape-matrix:prop-overlay"');
+    expect(overlaySource).toContain('target.closest("[data-shape-matrix-dock]")');
+    expect(shellSource).toContain("data-shape-matrix-app");
+
+    // Compact hosts: the grid pane is off screen behind the detail view, so
+    // the canonical prop sheet takes over.
+    expect(shellSource).toMatch(/\{#if appState\.compact\}\s*<PropSelectionSheet/);
+
+    // The Props pill shows pressed while the catalogue is open, without a
+    // tray of its own, so the way back is visible.
+    expect(drillSource).toContain("propPickerActive={propPickerOpen}");
+    expect(theoryDetailSource).toContain("propPickerActive={app.propPickerOpen}");
+    expect(drillSource).toContain("data-shape-matrix-dock");
+    expect(theoryDetailSource).toContain("data-shape-matrix-dock");
+    expect(dockSource).toContain(
+      "aria-pressed={activeTab === t.id || !!t.pressed}"
+    );
+
+    // Still not one of the dock's tray sections.
     expect(detailSource).not.toContain('setActiveSection("props")');
 
     // Choosing keeps the catalogue open, so the change can be watched: pick a

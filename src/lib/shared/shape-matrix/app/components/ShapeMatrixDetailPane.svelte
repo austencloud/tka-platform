@@ -26,27 +26,32 @@
       : null
   );
 
-  // Prop choosing is NOT one of the dock's tray sections. It recomposes the
-  // drill instead, so the element relationships and the dock stay where they
-  // are while the catalogue opens beside the animation.
+  // Prop choosing is NOT one of the dock's tray sections, and it never takes
+  // room on this pane: the catalogue opens over the grid pane (a sheet on
+  // compact hosts), so the animation, the relationships and the dock all stay
+  // put while a prop is chosen. The drill only shows its Props pill pressed.
+
+  // The heading is the way back to the element chips once a dock section has
+  // covered them. While the chips are showing it has nothing to do, so it is
+  // not there; the stage takes its height.
+  const headingVisible = $derived(
+    !state.compact && animationState.activeSection !== null
+  );
 </script>
 
 <aside
   class="detail-pane"
-  class:compact={state.compact}
+  class:with-heading={headingVisible}
   aria-label="Shape animation and element relationships"
 >
-  <!-- Wide layouts carry the relationships toggle here. Compact detail keeps
-       the topbar as the only chrome row, so the shell hosts the toggle. -->
-  {#if !state.compact}
+  <!-- Wide layouts carry the way back to the relationships here, only while
+       a control section covers them. Compact detail keeps the topbar as the
+       only chrome row, so the shell hosts that button. -->
+  {#if headingVisible}
   <header class="pane-heading">
-    <div
-      class="relationship-entry"
-      class:current={animationState.activeSection === null}
-    >
+    <div class="relationship-entry">
       <PanelButton
-        ariaLabel="Show element relationships"
-        ariaExpanded={animationState.activeSection === null}
+        ariaLabel="Back to element relationships"
         onclick={animationState.showRelationships}
       >
         <i class="fas fa-shapes" aria-hidden="true"></i>
@@ -75,7 +80,6 @@
         onproptypechange={(propType) => void state.setPropType(propType)}
         propPickerOpen={state.propPickerOpen}
         onproppickertoggle={state.togglePropPicker}
-        onproppickerclose={state.closePropPicker}
         mandalaTransition={{
           claim: state.compact && state.activeView === "detail",
           handoff: state.mandalaHandoff,
@@ -92,15 +96,15 @@
     height: 100%;
     min-height: 0;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
     border-radius: 16px;
     background: var(--theme-panel-bg, rgb(16 23 33 / 0.82));
   }
 
-  .detail-pane.compact {
-    grid-template-rows: minmax(0, 1fr);
+  .detail-pane.with-heading {
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .pane-heading {
@@ -123,20 +127,6 @@
     justify-content: flex-start;
     padding: 0.45rem 0.7rem;
     white-space: nowrap;
-  }
-
-  .relationship-entry.current :global(.panel-btn) {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #f4b54c) 52%,
-      transparent
-    );
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #f4b54c) 14%,
-      var(--theme-card-bg, transparent)
-    );
-    color: var(--theme-accent, #f4b54c);
   }
 
   .active-workspace {

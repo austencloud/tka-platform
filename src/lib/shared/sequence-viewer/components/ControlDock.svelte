@@ -31,6 +31,11 @@
     accentColor?: string;
     /** Two-color dot pair instead of an icon (mandala "Colors" tab). */
     dots?: [string, string];
+    /**
+     * The tab's destination is open somewhere other than the tray (a host
+     * picker, an overlay). The pill shows pressed without opening a tray.
+     */
+    pressed?: boolean;
   }
 
   export interface ControlDockAction {
@@ -342,12 +347,12 @@
       {#each tabs as t, i (t.id)}
         <button
           class="dock-btn cat"
-          class:active={activeTab === t.id}
+          class:active={activeTab === t.id || !!t.pressed}
           class:open={activeTab === t.id && trayOpen}
           style:--cat-accent={t.accentColor ?? null}
           style:--btn-i={i}
           onclick={() => onTabSelect(t.id)}
-          aria-pressed={activeTab === t.id}
+          aria-pressed={activeTab === t.id || !!t.pressed}
           aria-expanded={activeTab === t.id && trayOpen}
           aria-label={activeTab === t.id && trayOpen
             ? `Close ${t.label}`
