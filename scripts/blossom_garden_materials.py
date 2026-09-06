@@ -19,7 +19,7 @@ def apply_garden_materials(root):
         obj['blossomShadowTint']=True
     bark=root/'blender/blossom-plantfactory-family-r1/raw/open-crown-s19/maps'
     definitions=[
-        ('Amphitheatre moss',root/'static/textures/autumn-floor/moss-albedo.jpg',root/'static/textures/terrain/dirt/normal.jpg',.45),
+        ('Amphitheatre moss',root/'static/textures/autumn-floor/moss-albedo.jpg',root/'static/textures/terrain/dirt/normal.jpg',.12),
         ('Weathered blue basalt',root/'static/textures/terrain/rock/diffuse.jpg',root/'static/textures/terrain/rock/normal.jpg',.7),
         ('Ancient cherry bark',next(bark.glob('*Bark*Color.png')),next(bark.glob('*Bark*Normal.png')),.8),
     ]
@@ -29,7 +29,7 @@ def apply_garden_materials(root):
         nodes=mat.node_tree.nodes;links=mat.node_tree.links
         shader=nodes.get('Principled BSDF')
         for node in list(nodes):
-            if node.type in ('TEX_IMAGE','NORMAL_MAP'):nodes.remove(node)
+            if node.type in ('TEX_IMAGE','NORMAL_MAP','MIX_RGB'):nodes.remove(node)
         for path,socket in [(color,'Base Color'),(normal,'Normal')]:
             image=bpy.data.images.load(str(path),check_existing=True)
             if socket=='Normal':image.colorspace_settings.name='Non-Color'
@@ -40,4 +40,13 @@ def apply_garden_materials(root):
                 converter.inputs['Strength'].default_value=strength
                 links.new(tex.outputs['Color'],converter.inputs['Color'])
                 links.new(converter.outputs['Normal'],shader.inputs[socket])
+            elif name=='Amphitheatre moss':
+                # Blender preview counterpart of the runtime meadow tint.
+                tint=nodes.new('ShaderNodeMixRGB');tint.blend_type='MULTIPLY'
+                tint.inputs[0].default_value=1
+                tint.inputs[2].default_value=(.30,.54,.23,1)
+                links.new(tex.outputs['Color'],tint.inputs[1])
+                links.new(tint.outputs[0],shader.inputs[socket])
+                shader.inputs['Roughness'].default_value=.99
+                shader.inputs['Specular IOR Level'].default_value=.025
             else:links.new(tex.outputs['Color'],shader.inputs[socket])
