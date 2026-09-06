@@ -77,6 +77,7 @@
   import { getOptionalViewerAnimatorInspectorContext } from "$lib/shared/sequence-viewer/context/viewer-animator-inspector-context";
 
   type PanelLayout = "sidebar" | "bottom";
+  type PanelPresentation = "full" | "navigation" | "content";
 
   interface Props {
     /** Export state. Omit (with onExport) for hosts without an export pipeline
@@ -86,6 +87,12 @@
     exportProgress?: VideoExportProgress | null;
     canvasReady?: boolean;
     layout?: PanelLayout;
+    /** Split hosts can keep the canonical navigation beside their stage while
+     *  rendering the same canonical section body in a neighboring workspace. */
+    presentation?: PanelPresentation;
+    /** Host-owned section used by split presentations. Omit for the panel's
+     *  usual self-owned navigation state. */
+    controlledSection?: PillId | null;
     singlePlayDuration?: number;
     isPlaying?: boolean;
     bpm?: number;
@@ -167,6 +174,8 @@
     exportProgress = null,
     canvasReady = true,
     layout = "bottom",
+    presentation = "full",
+    controlledSection,
     singlePlayDuration = 0,
     isPlaying = false,
     bpm = 60,
@@ -598,9 +607,11 @@
   // during the crossfade, and left the mobile dock holding a tray with no tab.
   const availableIds = $derived(pillSpecs.map((p) => p.id));
   const requestedPill = $derived(
-    layout === "sidebar" && viewerAnimatorInspector
-      ? (viewerAnimatorInspector.resolve(availableIds) as PillId | null)
-      : activePill
+    controlledSection !== undefined
+      ? controlledSection
+      : layout === "sidebar" && viewerAnimatorInspector
+        ? (viewerAnimatorInspector.resolve(availableIds) as PillId | null)
+        : activePill
   );
   const resolvedPill = $derived(resolveActivePill(requestedPill, availableIds));
 
@@ -992,7 +1003,22 @@
   {lastAnnouncement}
 </span>
 
-{#if layout === "bottom"}
+{#snippet dockTray()}
+  <div class="dock-dense">
+    {@render pillBody()}
+  </div>
+{/snippet}
+
+{#if presentation === "content"}
+  <div
+    class="external-section-body"
+    class:dock-dense={layout === "bottom"}
+    role="region"
+    aria-label={activePillLabel || regionLabel}
+  >
+    {@render pillBody()}
+  </div>
+{:else if layout === "bottom"}
   <!-- ============================================================
        MOBILE: pill bar + download button at bottom;
        tapping a pill opens a sheet with that section's body.
@@ -1052,13 +1078,8 @@
         trayMaxHeight={resolvedPill === "effects"
           ? "min(54vh, 360px)"
           : "min(35vh, 250px)"}
-      >
-        {#snippet tray()}
-          <div class="dock-dense">
-            {@render pillBody()}
-          </div>
-        {/snippet}
-      </ControlDock>
+        tray={presentation === "full" ? dockTray : undefined}
+      />
     {/if}
   </div>
 {:else}
@@ -1099,6 +1120,12 @@
 {/if}
 
 <style>
+  .external-section-body {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden auto;
+  }
   .section-pad {
     display: flex;
     flex-direction: column;

@@ -25,7 +25,10 @@
     TipEffectMap,
     TipEffortMap,
   } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
-  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+  import {
+    createAnimationPanelState,
+    type PlaybackMode,
+  } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -114,6 +117,7 @@
     rightPropType = null,
     externalBpm = null,
     externalPlaying = null,
+    externalPlaybackMode = null,
     externalStep = null,
     onExternalSeek = undefined,
     playbackGate = undefined,
@@ -171,6 +175,8 @@
     /** Shared host playback intent. When present, hidden retained players pause
      *  without changing this value and resume to match it when visible again. */
     externalPlaying?: boolean | null;
+    /** Host-owned continuous/step intent for embedded canonical players. */
+    externalPlaybackMode?: PlaybackMode | null;
     /** A shared clock drives this player; its own playback loop stays stopped. */
     externalStep?: number | null;
     onExternalSeek?: (step: number) => void;
@@ -368,6 +374,7 @@
 
   // Animation state - each player gets its own
   const animationState = createAnimationPanelState();
+  let appliedExternalPlaybackMode: PlaybackMode | null = null;
 
   // Track last loaded sequence to prevent re-loading same sequence
   // Also prevents remounts during prop type changes (hot-swap handles those)
@@ -392,6 +399,26 @@
     checkPlaying();
     const interval = setInterval(checkPlaying, 50);
     return () => clearInterval(interval);
+  });
+
+  $effect(() => {
+    const mode = externalPlaybackMode;
+    if (
+      mode === null ||
+      mode === appliedExternalPlaybackMode ||
+      !servicesReady ||
+      !playbackController
+    )
+      return;
+
+    appliedExternalPlaybackMode = mode;
+    const controller = playbackController;
+    const wasPlaying = animationState.isPlaying;
+    untrack(() => {
+      if (wasPlaying) controller.togglePlayback();
+      animationState.setPlaybackMode(mode);
+      if (wasPlaying) controller.togglePlayback();
+    });
   });
 
   let pausedByPlaybackGate = false;
@@ -705,6 +732,11 @@
       if (externalBpm !== null) {
         playbackController.setSpeed(externalBpm / DEFAULT_BPM);
         bpm = externalBpm;
+      }
+
+      if (externalPlaybackMode !== null) {
+        animationState.setPlaybackMode(externalPlaybackMode);
+        appliedExternalPlaybackMode = externalPlaybackMode;
       }
 
       if (externalStep !== null) {

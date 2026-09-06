@@ -1,72 +1,18 @@
 <script lang="ts">
   import ShapeMatrixDrill from "$lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte";
-  import { getShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
-  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
 
   const state = getShapeMatrixAppContext();
-  // The shell owns the animation state so its compact topbar can host the
-  // relationships toggle; this pane only presents it.
-  const animationState = getShapeMatrixAnimationContext();
-
-  const controlLabels = {
-    grid: "Grid",
-    layers: "Layers",
-    effects: "Effects",
-    props: "Props",
-    effort: "Effort",
-    playback: "Playback",
-    display: "Display",
-    motion: "Motion",
-    export: "Export",
-  } as const;
-  const activeControlLabel = $derived(
-    animationState.activeSection
-      ? controlLabels[animationState.activeSection]
-      : null
-  );
-
   // Prop choosing is NOT one of the dock's tray sections, and it never takes
   // room on this pane: the catalogue opens over the grid pane (a sheet on
   // compact hosts), so the animation, the relationships and the dock all stay
   // put while a prop is chosen. The drill only shows its Props pill pressed.
-
-  // The heading is the way back to the element chips once a dock section has
-  // covered them. While the chips are showing it has nothing to do, so it is
-  // not there; the stage takes its height.
-  const headingVisible = $derived(
-    !state.compact && animationState.activeSection !== null
-  );
 </script>
 
 <aside
   class="detail-pane"
-  class:with-heading={headingVisible}
   aria-label="Shape animation and element relationships"
 >
-  <!-- Wide layouts carry the way back to the relationships here, only while
-       a control section covers them. Compact detail keeps the topbar as the
-       only chrome row, so the shell hosts that button. -->
-  {#if headingVisible}
-  <header class="pane-heading">
-    <div class="relationship-entry">
-      <PanelButton
-        ariaLabel="Back to element relationships"
-        onclick={animationState.showRelationships}
-      >
-        <i class="fas fa-shapes" aria-hidden="true"></i>
-        <span>Element relationships</span>
-      </PanelButton>
-    </div>
-    {#if activeControlLabel}
-      <span class="active-workspace" aria-live="polite">
-        <i class="fas fa-sliders" aria-hidden="true"></i>
-        {activeControlLabel}
-      </span>
-    {/if}
-  </header>
-  {/if}
-
   <div class="drill-stage">
     {#if state.data}
       <ShapeMatrixDrill
@@ -103,49 +49,6 @@
     background: var(--theme-panel-bg, rgb(16 23 33 / 0.82));
   }
 
-  .detail-pane.with-heading {
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-
-  .pane-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.65rem;
-    min-height: 3.5rem;
-    padding: 0.35rem 0.75rem;
-    border-bottom: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
-    container: shape-matrix-detail-heading / inline-size;
-  }
-
-  .relationship-entry {
-    min-width: 0;
-  }
-
-  .relationship-entry :global(.panel-btn) {
-    min-height: var(--min-touch-target, 44px);
-    justify-content: flex-start;
-    padding: 0.45rem 0.7rem;
-    white-space: nowrap;
-  }
-
-  .active-workspace {
-    display: inline-flex;
-    min-width: 0;
-    align-items: center;
-    gap: 0.4rem;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 650;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-  }
-
-  .active-workspace i {
-    color: var(--theme-accent, #f4b54c);
-  }
-
   .drill-stage {
     min-width: 0;
     min-height: 0;
@@ -170,20 +73,8 @@
       border-radius: 0;
     }
 
-    .pane-heading {
-      min-height: 3.4rem;
-      padding-block: 0.3rem;
-    }
-
     .drill-stage {
       padding: 0.65rem;
-    }
-  }
-
-  @container shape-matrix-app (max-width: 30rem) {
-    .pane-heading {
-      gap: 0.4rem;
-      padding-inline: 0.45rem;
     }
   }
 </style>

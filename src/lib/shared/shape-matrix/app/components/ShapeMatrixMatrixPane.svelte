@@ -2,9 +2,11 @@
   import ShapeMatrixGrid from "$lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte";
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  import { getShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
   import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
   import ShapeMatrixPropOverlay from "./ShapeMatrixPropOverlay.svelte";
   import ShapeMatrixRecipeStrip from "./ShapeMatrixRecipeStrip.svelte";
+  import ShapeMatrixSettingsOverlay from "./ShapeMatrixSettingsOverlay.svelte";
 
   interface Props {
     /** The shell owns navigation (and the compact tile-to-hero morph). */
@@ -15,10 +17,14 @@
   let { onselect, onsurprise }: Props = $props();
 
   const state = getShapeMatrixAppContext();
+  const animationState = getShapeMatrixAnimationContext();
   const surprise = $derived(onsurprise ?? (() => state.surpriseMe()));
   /* The prop catalogue covers this pane on wide hosts; the grid underneath
      is not something to tab into while it does. */
-  const pickingProp = $derived(state.propPickerOpen && !state.compact);
+  const workspaceOpen = $derived(
+    !state.compact &&
+      (state.propPickerOpen || animationState.activeSection !== null)
+  );
 </script>
 
 {#snippet cornerGuide()}
@@ -33,7 +39,7 @@
   {#if state.compact}
     <ShapeMatrixRecipeStrip surface="level" onsurprise={surprise} />
   {/if}
-  <div class="matrix-stage" inert={pickingProp}>
+  <div class="matrix-stage" inert={workspaceOpen} aria-hidden={workspaceOpen}>
     {#if state.loadError}
       <div class="status error" role="alert">
         <p>The matrix could not be built.</p>
@@ -55,6 +61,7 @@
       />
     {/if}
   </div>
+  <ShapeMatrixSettingsOverlay surface="matrix" />
   <ShapeMatrixPropOverlay surface="matrix" />
 </section>
 

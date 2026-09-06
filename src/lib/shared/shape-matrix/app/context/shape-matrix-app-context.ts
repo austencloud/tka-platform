@@ -9,9 +9,14 @@ export function setShapeMatrixAppContext(state: ShapeMatrixAppState): void {
 }
 
 export function getShapeMatrixAppContext(): ShapeMatrixAppState {
-  const state = getContext<ShapeMatrixAppState | undefined>(
-    SHAPE_MATRIX_APP_CONTEXT
-  );
+  const state = getOptionalShapeMatrixAppContext();
   if (!state) throw new Error("Shape Matrix app context is unavailable");
   return state;
+}
+
+export function getOptionalShapeMatrixAppContext(): ShapeMatrixAppState | null {
+  return (
+    getContext<ShapeMatrixAppState | undefined>(SHAPE_MATRIX_APP_CONTEXT) ??
+    null
+  );
 }

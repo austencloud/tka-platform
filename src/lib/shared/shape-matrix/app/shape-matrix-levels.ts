@@ -8,8 +8,8 @@ export const SHAPE_MATRIX_LEVEL_DESCRIPTIONS: Record<
   TurnLevel,
   { name: string; blurb: string }
 > = {
-  1: { name: "Base Motions", blurb: "Zero turns" },
-  2: { name: "Whole Turns", blurb: "Adds whole turns" },
+  1: { name: "Base Motions", blurb: "Base paths with zero turns" },
+  2: { name: "Whole Turns", blurb: "Adds whole-turn possibilities" },
   3: { name: "Half Turns + Float", blurb: "Adds half turns and Float" },
-  4: { name: "Quarter Turns", blurb: "Adds quarter turns" },
+  4: { name: "Quarter Turns", blurb: "Adds finer quarter-turn increments" },
 };

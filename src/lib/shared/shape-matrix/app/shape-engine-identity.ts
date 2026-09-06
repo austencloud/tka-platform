@@ -5,7 +5,7 @@ export const SHAPE_MATRIX_EXPLORER_LEGACY_NAME = "Shape Matrix Explorer";
 export const KINETIC_SHAPE_ENGINE_AUTHOR = "Austen Cloud";
 
 export const KINETIC_SHAPE_ENGINE_DESCRIPTION =
-  "Explore VTG, The Kinetic Alphabet, timing, and direction in Shape Engine, a tool within Flow Arts Composer.";
+  "Compare Vulcan Tech Gospel (VTG) spin ratios with TKA turn values in Shape Engine, an independent tool by Austen Cloud.";
 
 export const ORIGINAL_SHAPE_MATRIX_NAME = "144 Shape Matrix";
 export const ORIGINAL_SHAPE_MATRIX_VTG_RATIOS = "1:1, 1:3, and 1:5";

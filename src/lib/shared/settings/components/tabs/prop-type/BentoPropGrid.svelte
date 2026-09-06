@@ -63,6 +63,7 @@
     chirality,
     allowedProps,
     accessMode = "standard",
+    fluidSections = false,
   } = $props<{
     selectedPropType: PropType | null;
     color?: "blue" | "red" | (string & {});
@@ -98,6 +99,8 @@
     /** Educational instruments may select ordinary play-earned props directly
      *  and include Poi. Premium cosmetics retain their subscription gate. */
     accessMode?: "standard" | "educational";
+    /** Let a roomy host use all available width for each family row. */
+    fluidSections?: boolean;
   }>();
 
   const allowedPropSet = $derived(
@@ -235,6 +238,7 @@
   class:inline={variant === "inline"}
   class:flat
   class:host-scroll={scrollMode === "host"}
+  class:fluid-sections={fluidSections}
 >
   {#if variant === "panel"}
     <header class="grid-header">
@@ -380,14 +384,18 @@
     {:else}
       <div class="grid-content">
         {#each sections as section, i}
-          <div class="section-label" class:first={i === 0}>{section.label}</div>
-          <div
-            class="section-buttons"
-            class:single={section.bases.length === 1}
-          >
-            {#each section.bases as base (base)}
-              {@render familyTile(base)}
-            {/each}
+          <div class="prop-section" class:primary={i === 0}>
+            <div class="section-label" class:first={i === 0}>
+              {section.label}
+            </div>
+            <div
+              class="section-buttons"
+              class:single={section.bases.length === 1}
+            >
+              {#each section.bases as base (base)}
+                {@render familyTile(base)}
+              {/each}
+            </div>
           </div>
         {/each}
       </div>
@@ -482,6 +490,12 @@
     gap: 8px;
   }
 
+  /* The wrapper is inert for existing pickers. Roomy hosts opt into an
+     authored section layout below without changing the registry or tiles. */
+  .prop-section {
+    display: contents;
+  }
+
   /* Flat mode: one dense grid, no sections — maximize visible prop count. */
   .flat-grid {
     display: grid;
@@ -526,6 +540,21 @@
     gap: 10px;
     justify-content: center;
     padding: 0 2px;
+  }
+  .prop-grid-root.fluid-sections .section-buttons {
+    grid-template-columns: repeat(auto-fit, minmax(8.75rem, 10.5rem));
+    justify-content: center;
+  }
+
+  .prop-grid-root.fluid-sections .grid-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px 20px;
+  }
+
+  .prop-grid-root.fluid-sections .prop-section {
+    display: block;
+    min-width: 0;
   }
 
   .section-buttons.single {
@@ -641,6 +670,14 @@
   @container prop-grid (min-width: 700px) {
     .section-buttons:not(.single) {
       grid-template-columns: repeat(6, minmax(0, 112px));
+    }
+
+    .prop-grid-root.fluid-sections .grid-content {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .prop-grid-root.fluid-sections .prop-section.primary {
+      grid-column: 1 / -1;
     }
   }
 

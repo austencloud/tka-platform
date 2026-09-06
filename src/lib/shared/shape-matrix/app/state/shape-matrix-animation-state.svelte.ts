@@ -33,10 +33,10 @@ export function createShapeMatrixAnimationState() {
   });
 
   let playing = $state(true);
+  let playbackMode = $state<PlaybackMode>("continuous");
   let activeSection = $state<PillId | null>(null);
   let closeRequest = $state(0);
   let disassembled = $state(false);
-  let pendingDisassembly = $state<boolean | null>(null);
 
   function setPlaying(next: boolean): void {
     playing = next;
@@ -52,29 +52,21 @@ export function createShapeMatrixAnimationState() {
   }
 
   function setPlaybackMode(next: PlaybackMode): void {
+    playbackMode = next;
     scope.visibility.setPlaybackMode(next);
   }
 
   function setActiveSection(next: PillId | null): void {
     activeSection = next;
-    if (next !== null || pendingDisassembly === null) return;
-
-    disassembled = pendingDisassembly;
-    pendingDisassembly = null;
   }
 
   function requestDisassembled(next: boolean): void {
-    if (activeSection !== null) {
-      pendingDisassembly = next;
-      closeRequest += 1;
-      return;
-    }
-
     disassembled = next;
   }
 
   function showRelationships(): void {
     if (activeSection === null) return;
+    activeSection = null;
     closeRequest += 1;
   }
 
@@ -87,7 +79,7 @@ export function createShapeMatrixAnimationState() {
       return scope.settings.bpm;
     },
     get playbackMode() {
-      return scope.visibility.getPlaybackMode();
+      return playbackMode;
     },
     get activeSection() {
       return activeSection;

@@ -11,9 +11,11 @@
     theoryHeaderArtworkSrc,
   } from "$lib/shared/shape-matrix/services/theory-matrix-artwork";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  import { getShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
   import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
   import ShapeMatrixPropOverlay from "./ShapeMatrixPropOverlay.svelte";
   import ShapeMatrixRecipeStrip from "./ShapeMatrixRecipeStrip.svelte";
+  import ShapeMatrixSettingsOverlay from "./ShapeMatrixSettingsOverlay.svelte";
 
   interface Props {
     /** The shell owns navigation, the same way it does for the Matrix. */
@@ -25,10 +27,14 @@
   let { onselect, onsurprise, emphasizedAxis = null }: Props = $props();
 
   const appState = getShapeMatrixAppContext();
+  const animationState = getShapeMatrixAnimationContext();
 
   const surprise = $derived(onsurprise ?? (() => appState.surpriseMe()));
   /* The prop catalogue covers this pane on wide hosts, as on the Matrix. */
-  const pickingProp = $derived(appState.propPickerOpen && !appState.compact);
+  const workspaceOpen = $derived(
+    !appState.compact &&
+      (appState.propPickerOpen || animationState.activeSection !== null)
+  );
 
   /* The corner's ratio editors point back at the grid axis they change.
      Both live in this pane, so the pane owns that pointer. */
@@ -57,7 +63,7 @@
   {#if appState.compact}
     <ShapeMatrixRecipeStrip surface="theory" onsurprise={surprise} />
   {/if}
-  <div class="theory-stage" inert={pickingProp}>
+  <div class="theory-stage" inert={workspaceOpen} aria-hidden={workspaceOpen}>
     <ShapeMatrixGrid
       rowAxis={appState.theoryRowAxis}
       colAxis={appState.theoryColAxis}
@@ -76,6 +82,7 @@
       onselect={onselect ?? appState.selectTheoryPair}
     />
   </div>
+  <ShapeMatrixSettingsOverlay surface="theory" />
   <ShapeMatrixPropOverlay surface="theory" />
 </section>
 
