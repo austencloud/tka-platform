@@ -63,8 +63,8 @@ describe("viewer-3d empty workspace", () => {
       const move = vi.fn();
       state.registerSnapTo(move);
       expect(move).toHaveBeenCalledWith(
-        { x: -3, y: 8.6, z: -38 },
-        { x: -3, y: 2.8, z: 7 },
+        { x: 10, y: 9, z: -28 },
+        { x: -3, y: 4, z: 6 },
         undefined,
         true,
         undefined

@@ -356,7 +356,7 @@ plan['site']['terrainBounds']={'minX':-72,'maxX':72,'minY':-72,'maxY':72}
 plan['water']={'outline':outline,'centerline':[[x,sum(pond_edges(x))/2] for x in xs],'surfaceElevation':-.16,'bedDepth':.79,'shoreFadeMetres':.6}
 plan['circulation']['paths']=[{'id':name,'label':name,'kind':kind,'width':width,'from':name+'-entry','to':'stage','crossSlopePercent':0,'centerline':[[x,y,grade(x,y)] for x,y in points]} for name,kind,width,points in [('arrival','primary-accessible',3.1,ARRIVAL),('service','restricted-service',2.7,SERVICE)]]
 plan['camera']['default']={'position':[0,-24,6.8],'target':[0,7,2.8],'fov':48}
-plan['camera']['portrait']={'position':[3,-38,8.6],'target':[3,7,2.8],'fov':48}
+plan['camera']['portrait']={'position':[-10,-28,9],'target':[3,6,4],'fov':48}
 plan['approvalGate']['visualAcceptance']='pending-user-review'
 plan['stage']['operations']={'minimumAudienceSetbackFromDeck':2,'backstageAccessSide':'east','backstageServicePathId':'service',
     'backstageStagingArea':{'minX':10,'maxX':16,'minY':-1,'maxY':4},
