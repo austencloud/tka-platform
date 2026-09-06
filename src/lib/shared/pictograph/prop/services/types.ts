@@ -20,6 +20,7 @@ export interface PropPlacementVisibility {
  */
 
 import type { ThemeMode } from "../../../utils/svg-color-utils";
+import type { FanAppearance } from "../domain/fan-appearance";
 
 /**
  * Options for prop SVG loading
@@ -27,5 +28,10 @@ import type { ThemeMode } from "../../../utils/svg-color-utils";
 export interface PropSvgLoadOptions {
   /** Theme mode for color selection ("dark" or "light"). If not provided, uses global state. */
   themeMode?: ThemeMode;
+  /**
+   * Which physical fan build to draw for fan-family props. Omitted or the
+   * Pictograph build keeps the notation artwork. Ignored for other props.
+   */
+  fanAppearance?: FanAppearance;
 }
 

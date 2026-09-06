@@ -80,6 +80,7 @@
   import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { getShapeMatrixAnimationContext } from "../app/context/shape-matrix-animation-context";
   import { getOptionalShapeMatrixAppContext } from "../app/context/shape-matrix-app-context";
+  import ShapeMatrixCustomizeDock from "./ShapeMatrixCustomizeDock.svelte";
   import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
   import { getEscapeLayerManager } from "$lib/shared/keyboard/get-escape-layer-manager";
 
@@ -1385,7 +1386,11 @@
   {/if}
 
   <!-- The control bar is below the stage, not inside it. It settles in as the
-       last frame of the wave rather than arriving complete under the flight. -->
+       last frame of the wave rather than arriving complete under the flight.
+       A wide host keeps every ability in the customize workspace over the
+       grid, so its bar is one Customize button and the transport. Compact
+       hosts keep the pill dock: each pill opens its sheet there, and Props
+       routes to the canonical prop sheet. -->
   <div
     class="animation-controls"
     data-drill-region="controls"
@@ -1395,30 +1400,34 @@
       enabled: morphingFrames,
     }}
   >
-    <AnimationPanel
-      isExporting={false}
-      layout="bottom"
-      presentation={appState ? "navigation" : "full"}
-      controlledSection={appState ? animationState.activeSection : undefined}
-      isPlaying={animationState.playing}
-      bpm={animationState.bpm}
-      playbackMode={animationState.playbackMode}
-      onPlaybackToggle={animationState.togglePlaying}
-      onPlaybackModeChange={animationState.setPlaybackMode}
-      onBpmChange={animationState.setBpm}
-      showEffectsPlayback={false}
-      selectedPropType={propType}
-      onPropChange={onproptypechange}
-      onPropPickerRequest={onproppickertoggle}
-      propPickerActive={propPickerOpen}
-      sequence={captionRealization?.seq ?? null}
-      dockTrailingAction={playbackAction}
-      showPathShape={false}
-      showMotionVisibility={true}
-      onActiveSectionChange={animationState.setActiveSection}
-      closeRequest={animationState.closeRequest}
-      regionLabel="Shape animation controls"
-    />
+    {#if appState && !appState.compact}
+      <ShapeMatrixCustomizeDock />
+    {:else}
+      <AnimationPanel
+        isExporting={false}
+        layout="bottom"
+        presentation={appState ? "navigation" : "full"}
+        controlledSection={appState ? animationState.activeSection : undefined}
+        isPlaying={animationState.playing}
+        bpm={animationState.bpm}
+        playbackMode={animationState.playbackMode}
+        onPlaybackToggle={animationState.togglePlaying}
+        onPlaybackModeChange={animationState.setPlaybackMode}
+        onBpmChange={animationState.setBpm}
+        showEffectsPlayback={false}
+        selectedPropType={propType}
+        onPropChange={onproptypechange}
+        onPropPickerRequest={onproppickertoggle}
+        propPickerActive={propPickerOpen}
+        sequence={captionRealization?.seq ?? null}
+        dockTrailingAction={playbackAction}
+        showPathShape={false}
+        showMotionVisibility={true}
+        onActiveSectionChange={animationState.setActiveSection}
+        closeRequest={animationState.closeRequest}
+        regionLabel="Shape animation controls"
+      />
+    {/if}
   </div>
 
   {#if onselectRealization}

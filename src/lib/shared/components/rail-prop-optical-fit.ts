@@ -51,7 +51,6 @@ const PRESENTATIONS: Partial<
   [PropType.TRIQUETRA]: { scale: 1.34 },
   [PropType.TRIQUETRA2]: { scale: 1.34 },
   [PropType.SWORD]: { scale: 1.54, rotation: -45 },
-  [PropType.SICKLES]: { scale: 1.52, rotation: -24 },
   [PropType.ENERGY_SABER]: { scale: 1.48, rotation: -45 },
   [PropType.ENERGY_STAFF]: { scale: 1.44 },
   [PropType.CHICKEN]: { scale: 1.9, rotation: -12 },

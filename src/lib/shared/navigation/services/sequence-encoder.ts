@@ -119,9 +119,6 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.TRIQUETRA]: "Q",
   [PropType.TRIQUETRA2]: "q",
   [PropType.SWORD]: "W",
-  // A new code is permanent once it reaches a printed card. Y was the last
-  // unclaimed uppercase letter and keeps existing prop bytes unchanged.
-  [PropType.SICKLES]: "Y",
   // Energy pair. Digits, because every letter that reads as "energy", "saber",
   // or "staff" is already spoken for and a short code has one character to give.
   [PropType.ENERGY_SABER]: "3",
@@ -152,6 +149,12 @@ const PROP_TYPE_DECODE: Record<string, PropType> = Object.fromEntries(
 // "R". Decode old short codes / URLs to its base prop, buugeng, so existing
 // links still resolve instead of falling through to a missing prop.
 PROP_TYPE_DECODE["R"] = PropType.BUUGENG;
+
+// Legacy alias: sickles (removed from the codebase 2026-09-06) was encoded "Y".
+// A code is permanent once it reaches a printed card, so decode it to its base
+// prop, sword, instead of letting an existing link fall through to a missing
+// prop.
+PROP_TYPE_DECODE["Y"] = PropType.SWORD;
 
 const INLINE_PREFIX = "s~";
 

@@ -31,18 +31,14 @@
   import {
     EFFECT_COLORS,
     EFFECT_LABELS,
+    effectNavIcon,
   } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import DisplayPanel from "$lib/shared/animation-engine/components/settings-panels/DisplayPanel.svelte";
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
-  import FanAppearancePicker from "$lib/shared/pictograph/prop/components/FanAppearancePicker.svelte";
-  import PropLookPicker from "$lib/shared/pictograph/prop/components/PropLookPicker.svelte";
-  import {
-    isFanPropType,
-    type FanAppearance,
-  } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import type { PropChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import AnimatorInspectorShell from "./AnimatorInspectorShell.svelte";
   import AnimatorInspectorFooter from "./AnimatorInspectorFooter.svelte";
@@ -192,7 +188,6 @@
     showEffectsPlayback = true,
     selectedPropType,
     fanAppearance,
-    onFanAppearanceChange,
     sequence = null,
     onPropChange,
     onPropPickerRequest,
@@ -453,6 +448,10 @@
   const effectsAccent = $derived(
     EFFECT_COLORS[activeEffectId] ?? RAIL_CATEGORY_ACCENTS.effects
   );
+  // A chosen effect wears its own glyph, the way the Props pill shows the
+  // chosen prop rather than a generic props icon. The wand only stands in
+  // while nothing is selected.
+  const effectsIcon = $derived(effectNavIcon(activeEffectId));
 
   const effortSummary = $derived(activeEffort.label);
   const effortAccent = $derived(activeEffort.color);
@@ -497,6 +496,20 @@
   );
 
   const exportDisabled = $derived(isExporting || !canvasReady);
+
+  // The download button asks before it renders. From any other section the
+  // first press opens the Export page (fps, resolution, timing, loops) and the
+  // same button confirms from there; pressing it while Export is already up
+  // exports at once. The bottom dock's trailing download icon shares this, so
+  // it opens the Export tray first and the tray carries its own confirm.
+  function handleExportTrigger(): void {
+    if (!onExport) return;
+    if (resolvedPill !== "export") {
+      handlePillSelect("export");
+      return;
+    }
+    onExport();
+  }
 
   function formatDuration(seconds: number): string {
     if (seconds <= 0) return "";
@@ -569,7 +582,7 @@
             }
           : {}),
         effects: {
-          icon: "fa-wand-magic-sparkles",
+          icon: effectsIcon,
           label: "Effects",
           summary: effectsSummary,
           accentColor: effectsAccent,
@@ -672,7 +685,8 @@
       ? {
           icon: renderMode === "3d" ? "fa-circle" : "fa-download",
           label: exportButtonLabel,
-          onClick: onExport,
+          onClick: handleExportTrigger,
+          active: resolvedPill === "export",
           disabled: exportDisabled,
           busy: !canvasReady,
         }
@@ -702,24 +716,8 @@
         onSelect={onPropChange}
         chirality={propChirality}
         variant="inline"
-        flat={layout === "bottom"}
+        flat
       />
-      {#if fanAppearance && onFanAppearanceChange && isFanPropType(selectedPropType)}
-        <div class="fan-appearance-section">
-          <FanAppearancePicker
-            value={fanAppearance}
-            onchange={onFanAppearanceChange}
-            compact={layout === "bottom"}
-          />
-        </div>
-      {:else if selectedPropType}
-        <div class="fan-appearance-section">
-          <PropLookPicker
-            propType={selectedPropType}
-            compact={layout === "bottom"}
-          />
-        </div>
-      {/if}
     {/await}
   {:else if resolvedPill === "effects"}
     <EffectsPanel
@@ -771,7 +769,7 @@
             {@render pathsBody()}
           {/if}
         {:else if showTempoControls || onPlaybackModeChange}
-          <div class="motion-col">
+          <div class="motion-col motion-col-solo">
             {@render tempoModeBody()}
           </div>
         {/if}
@@ -1021,6 +1019,22 @@
             >{/if}
         </div>
       {/if}
+
+      {#if layout === "bottom" && onExport}
+        <!-- The dock's download icon opened this tray, so the confirm sits on
+             the same surface as the options it applies. The sidebar keeps its
+             footer button instead. -->
+        <div class="export-confirm">
+          <AnimatorInspectorFooter
+            onAction={onExport}
+            label={exportButtonLabel}
+            icon={renderMode === "3d" ? "fa-circle" : "fa-download"}
+            busy={isExporting}
+            disabled={exportDisabled}
+            ready={canvasReady}
+          />
+        </div>
+      {/if}
     </div>
   {/if}
 {/snippet}
@@ -1130,7 +1144,7 @@
     {#snippet footer()}
       {#if (exportEnabled && onExport) || reserveExportSpace}
         <AnimatorInspectorFooter
-          onAction={onExport ?? (() => {})}
+          onAction={handleExportTrigger}
           concealed={reserveExportSpace}
           label={exportButtonLabel}
           icon={renderMode === "3d" ? "fa-circle" : "fa-download"}
@@ -1244,6 +1258,20 @@
     .motion-stack {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    /* A host with no Paths page (the shape matrix traces a fixed figure) has
+       nothing for the second column. Tempo and Mode take a column each on
+       the one row instead of stacking beside a hole the width of the page. */
+    .motion-col-solo {
+      grid-column: 1 / -1;
+    }
+
+    .motion-col-solo > :global(.playback-rows) {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--spacing-md, 12px);
+      align-items: start;
+    }
   }
 
   /* Pending state for the lazy-loaded BentoPropGrid chunk. Fills the
@@ -1255,17 +1283,6 @@
     align-items: center;
     justify-content: center;
     min-height: 140px;
-  }
-
-  .fan-appearance-section {
-    margin-top: 14px;
-    padding: 14px 16px 18px;
-    border-top: 1px solid var(--theme-stroke);
-  }
-
-  .dock-dense .fan-appearance-section {
-    margin-top: 10px;
-    padding: 10px 12px 12px;
   }
 
   /* Compact Export body: label-left rows instead of stacked sections. */

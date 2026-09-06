@@ -83,6 +83,23 @@ export const EFFECT_LABELS: Record<string, string> = Object.fromEntries(
   EFFECTS.map((e) => [e.id, e.label]),
 );
 
+export const EFFECT_ICONS: Record<string, string> = Object.fromEntries(
+  EFFECTS.map((e) => [e.id, e.icon]),
+);
+
+/** Generic Effects glyph, used only while nothing is chosen. */
+export const EFFECTS_FALLBACK_ICON = "fa-wand-magic-sparkles";
+
+/**
+ * The glyph a nav pill should wear for the currently chosen effect. A selected
+ * effect names itself the way the Props pill shows the chosen prop; the wand is
+ * for "none", where there is no effect to show.
+ */
+export function effectNavIcon(effectId: string | null | undefined): string {
+  if (!effectId || effectId === "none") return EFFECTS_FALLBACK_ICON;
+  return EFFECT_ICONS[effectId] ?? EFFECTS_FALLBACK_ICON;
+}
+
 /** Effect ids whose covens should appear in the hub (ready3d !== false). */
 export function readyEffectIds(): string[] {
   return EFFECTS.filter((e) => e.ready3d !== false).map((e) => e.id);

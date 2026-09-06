@@ -28,7 +28,6 @@ export class SvgPreloader {
     "buugeng",
     "triquetra",
     "sword",
-    "sickles",
     "hand",
     "guitar",
     "ukulele",

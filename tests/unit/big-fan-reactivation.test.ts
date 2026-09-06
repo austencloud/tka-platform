@@ -3,9 +3,11 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { UNLOCKABLE_POOL } from "$lib/shared/gamification/domain/prop-pool";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { getCompositionRecipe } from "$lib/shared/pictograph/prop/domain/prop-composition-recipes";
 import {
   PROP_PICKER_SECTIONS,
   getAllVariations,
+  getBasePropType,
   hasBigVariant,
   isBigVariant,
   isPropActive,
@@ -13,13 +15,21 @@ import {
 } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
 describe("Big Fan reactivation", () => {
-  it("is active and reachable from the flat prop picker", () => {
-    const bigSection = PROP_PICKER_SECTIONS.find(
-      (section) => section.label === "Big"
+  it("is its own plain picker tile right after Fan", () => {
+    const standard = PROP_PICKER_SECTIONS.find(
+      (section) => section.label === "Standard"
     );
+    const big = PROP_PICKER_SECTIONS.find((section) => section.label === "Big");
 
     expect(isPropActive(PropType.BIGFAN)).toBe(true);
-    expect(bigSection?.props).toContain(PropType.BIGFAN);
+    expect(standard?.props.indexOf(PropType.BIGFAN)).toBe(
+      (standard?.props.indexOf(PropType.FAN) ?? -2) + 1
+    );
+    expect(big?.props).not.toContain(PropType.BIGFAN);
+    // Not a Fan family member: the picker never folds it behind a chooser.
+    expect(getBasePropType(PropType.BIGFAN)).toBe(PropType.BIGFAN);
+    expect(getAllVariations(PropType.FAN)).toEqual([PropType.FAN]);
+    expect(getAllVariations(PropType.BIGFAN)).toEqual([PropType.BIGFAN]);
   });
 
   it("toggles through the shared Fan size controls", () => {
@@ -27,10 +37,12 @@ describe("Big Fan reactivation", () => {
     expect(isBigVariant(PropType.BIGFAN)).toBe(true);
     expect(toggleBigVariant(PropType.FAN)).toBe(PropType.BIGFAN);
     expect(toggleBigVariant(PropType.BIGFAN)).toBe(PropType.FAN);
-    expect(getAllVariations(PropType.FAN)).toEqual([
-      PropType.FAN,
-      PropType.BIGFAN,
-    ]);
+  });
+
+  it("shares the Fan tile composition", () => {
+    expect(getCompositionRecipe(PropType.BIGFAN)).toEqual(
+      getCompositionRecipe(PropType.FAN)
+    );
   });
 
   it("remains claimable if prop locking is restored", () => {

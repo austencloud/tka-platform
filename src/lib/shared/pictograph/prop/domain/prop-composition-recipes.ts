@@ -34,6 +34,14 @@ export interface CompositionRecipe {
  * Each recipe assumes a viewBox of "0 0 100 100".
  * x/y are the center point of each prop image within that viewBox.
  */
+// Fans: facing each other (beta-like). Big Fan is its own picker tile rather
+// than a Fan variant, so it names the same recipe explicitly.
+const FAN_RECIPE: CompositionRecipe = {
+  left: { x: 35, y: 50, rotation: 0, scale: 0.45 },
+  right: { x: 65, y: 50, rotation: 180, scale: 0.45 },
+  pairScale: 1,
+};
+
 const FAMILY_RECIPES: Partial<Record<PropType, CompositionRecipe>> = {
   // Staves: crossed in an X
   [PropType.STAFF]: {
@@ -41,12 +49,8 @@ const FAMILY_RECIPES: Partial<Record<PropType, CompositionRecipe>> = {
     right: { x: 50, y: 50, rotation: 45, scale: 0.55 },
     pairScale: 1,
   },
-  // Fans: facing each other (beta-like)
-  [PropType.FAN]: {
-    left: { x: 35, y: 50, rotation: 0, scale: 0.45 },
-    right: { x: 65, y: 50, rotation: 180, scale: 0.45 },
-    pairScale: 1,
-  },
+  [PropType.FAN]: FAN_RECIPE,
+  [PropType.BIGFAN]: FAN_RECIPE,
   // Clubs: angled V, handles meeting
   [PropType.CLUB]: {
     left: { x: 35, y: 50, rotation: -20, scale: 0.5 },
@@ -123,12 +127,6 @@ const FAMILY_RECIPES: Partial<Record<PropType, CompositionRecipe>> = {
   [PropType.SWORD]: {
     left: { x: 50, y: 50, rotation: -40, scale: 0.55 },
     right: { x: 50, y: 50, rotation: 40, scale: 0.55 },
-    pairScale: 1,
-  },
-  // Sickles: mirrored fighting pair, blades opening away from each other
-  [PropType.SICKLES]: {
-    left: { x: 45, y: 51, rotation: -28, scale: 0.48 },
-    right: { x: 55, y: 49, rotation: 152, scale: 0.48 },
     pairScale: 1,
   },
   // Energy Saber: crossed, matching its sword parent

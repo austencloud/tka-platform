@@ -2,8 +2,9 @@
   BentoPropGrid.svelte - Family-first prop selection grid
 
   Base props render under the picker section headers. Families with several
-  builds open a style chooser, so Club owns Club / Classic Club / Torch rather
-  than scattering those choices across unrelated sections.
+  builds drill one level down: tapping Club replaces the grid with Club /
+  Classic Club / Torch at full tile size behind a back bar, so those choices
+  never scatter across sections and never shrink into a popover.
 
   Variants:
   - "panel" (default): has border/background for standalone use (e.g. Settings tab)
@@ -23,12 +24,18 @@
     isPropActive,
     isPremiumCosmeticProp,
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
-  import { Popover } from "bits-ui";
-  import { flyFade, growFade } from "$lib/shared/transitions/motion";
+  import { tick } from "svelte";
+  import { growFade } from "$lib/shared/transitions/motion";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import PropTypeButton from "./PropTypeButton.svelte";
   import PropChiralityRow from "./PropChiralityRow.svelte";
   import FanStyleOptions from "./FanStyleOptions.svelte";
-  import { isFanPropType } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+  import {
+    fanBuildPreviewOptions,
+    isFanPropType,
+    normalizeFanAppearance,
+  } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { PropChiralitySeam } from "./prop-chirality-seam";
   import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { isPropUnlocked } from "$lib/shared/gamification/state/prop-collection-state.svelte";
@@ -67,8 +74,9 @@
     variant?: "panel" | "inline";
     /**
      * Flat mode: drop the section labels and pack every prop into one dense
-     * auto-fill grid. For tight contexts (the mobile dock) where maximizing
-     * visible count beats grouping.
+     * auto-fill grid. For tight contexts (the viewer's props pill on any
+     * screen, the mobile dock) where every prop on screen without a
+     * scrollbar beats grouping.
      */
     flat?: boolean;
     /**
@@ -165,23 +173,76 @@
     return getFamilyTileDisplayProp(base, selectedPropType);
   }
 
-  let openFamily = $state<PropType | null>(null);
+  // One picker, one level down. A family tile or the fan look chip swaps the
+  // grid for that choice's tiles at the grid's own tile size behind a back
+  // bar. `null` is the all-props grid. Picking stays one level down so the
+  // styles can be compared against the live preview; Back or Escape returns.
+  type Drill = { kind: "family"; base: PropType } | { kind: "fan-look" };
+  let drill = $state<Drill | null>(null);
+  let rootEl = $state<HTMLDivElement | null>(null);
 
-  function toggleFamily(base: PropType): void {
-    openFamily = openFamily === base ? null : base;
+  const drillKey = $derived(
+    drill === null
+      ? "all"
+      : drill.kind === "family"
+        ? `family:${drill.base}`
+        : "fan-look"
+  );
+  const drillTitle = $derived(
+    drill === null
+      ? ""
+      : drill.kind === "family"
+        ? `${getPropTypeDisplayInfo(drill.base).label} styles`
+        : "Fan look"
+  );
+
+  async function openDrill(next: Drill): Promise<void> {
+    drill = next;
+    await tick();
+    rootEl?.querySelector<HTMLElement>(".drill-back")?.focus();
   }
 
-  /**
-   * Choosing a fan build inside the Fan chooser should show that build on the
-   * canvas right away, so a non-fan selection becomes the family's current
-   * size (Fan unless Big Fan was the last fan used). An existing fan keeps
-   * its size and the chooser stays open for the build details.
-   */
-  function handleFanStylePick(base: PropType): void {
-    if (selectedPropType !== null && isFanPropType(selectedPropType)) return;
-    const target = familyChoices(base)[0] ?? base;
-    onSelect(target);
+  async function closeDrill(): Promise<void> {
+    const previous = drill;
+    drill = null;
+    await tick();
+    const selector =
+      previous?.kind === "family"
+        ? `[data-family-tile="${previous.base}"]`
+        : '[data-testid="fan-look-chip"]';
+    rootEl?.querySelector<HTMLElement>(selector)?.focus();
   }
+
+  function handleDrillKeydown(event: KeyboardEvent): void {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopPropagation();
+    void closeDrill();
+  }
+
+  // A drilled view whose subject leaves (the host filters props, or the
+  // current prop stops being a fan) returns to the grid on its own.
+  $effect(() => {
+    if (drill?.kind === "fan-look" && !showFanLook) drill = null;
+    if (drill?.kind === "family" && !allBases.includes(drill.base)) {
+      drill = null;
+    }
+  });
+
+  // The fan look (build + cover) is a setting on top of the Fan / Big Fan
+  // tile, not a family of tiles. It docks as one chip once a fan is current,
+  // the same way Buugeng chirality docks, and drills into the full chooser.
+  const showFanLook = $derived(
+    selectedPropType !== null && isFanPropType(selectedPropType)
+  );
+  const fanAppearance = $derived(
+    normalizeFanAppearance(getSettings().fanAppearance)
+  );
+  const fanLook = $derived(
+    fanBuildPreviewOptions(fanAppearance).find(
+      (option) => option.id === fanAppearance.build
+    )
+  );
 
   // Track which locked prop (if any) is showing its inline earn tip.
   let lockedTipFor = $state<PropType | null>(null);
@@ -200,7 +261,6 @@
     if (prop === PropType.HAND && includeBareHands) {
       lockedTipFor = null;
       premiumNudgeFor = null;
-      openFamily = null;
       onSelect(prop);
       return;
     }
@@ -221,7 +281,6 @@
     if (route === "select") {
       lockedTipFor = null;
       premiumNudgeFor = null;
-      openFamily = null;
       onSelect(prop);
       return;
     }
@@ -238,6 +297,7 @@
 </script>
 
 <div
+  bind:this={rootEl}
   class="prop-grid-root"
   class:panel={variant === "panel"}
   class:inline={variant === "inline"}
@@ -292,133 +352,113 @@
     {@const choices = familyChoices(base)}
     {#if choices.length <= 1}
       {@render tile(choices[0] ?? base)}
-    {:else if flat}
+    {:else}
       <PropTypeButton
         propType={familyDisplayProp(base)}
         selected={selectedBase === base}
         badge={familyCount(base)}
         actionLabel={`Choose ${getPropTypeDisplayInfo(base).label} style`}
-        buttonProps={{ "aria-expanded": openFamily === base }}
-        onSelect={() => toggleFamily(base)}
+        buttonProps={{
+          "aria-expanded": drill?.kind === "family" && drill.base === base,
+          "data-family-tile": base,
+        }}
+        onSelect={() => void openDrill({ kind: "family", base })}
         {color}
       />
-      {#if openFamily === base}
-        <section
-          class="variant-popover flat-variant-drawer"
-          aria-label={`${getPropTypeDisplayInfo(base).label} styles`}
-          transition:flyFade={{ y: 6 }}
-        >
-          <span class="variant-popover-label">
-            {getPropTypeDisplayInfo(base).label} styles
-          </span>
-          <div class="variant-popover-buttons">
-            {#each choices as prop (prop)}
-              {@render tile(prop)}
-            {/each}
-          </div>
-          {#if isFanPropType(base)}
-            <FanStyleOptions
-              compact
-              onPick={() => handleFanStylePick(base)}
-            />
-          {/if}
-        </section>
-      {/if}
-    {:else}
-      <Popover.Root
-        open={openFamily === base}
-        onOpenChange={(open) => (openFamily = open ? base : null)}
-      >
-        <Popover.Trigger>
-          {#snippet child({ props })}
-            <PropTypeButton
-              propType={familyDisplayProp(base)}
-              selected={selectedBase === base}
-              badge={familyCount(base)}
-              actionLabel={`Choose ${getPropTypeDisplayInfo(base).label} style`}
-              buttonProps={props}
-              {color}
-            />
-          {/snippet}
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Overlay
-            class="variant-popover-overlay"
-            data-testid="prop-style-overlay"
-          />
-          <Popover.Content
-            side="bottom"
-            sideOffset={8}
-            avoidCollisions={true}
-            collisionPadding={12}
-            forceMount
-          >
-            {#snippet child({ open, wrapperProps, props })}
-              <div
-                {...wrapperProps}
-                class="drawer-interactive-portal"
-                style:z-index="var(--z-dropdown, 300)"
-              >
-                {#if open}
-                  <section
-                    {...props}
-                    class="variant-popover"
-                    class:wide-styles={isFanPropType(base)}
-                    aria-label={`${getPropTypeDisplayInfo(base).label} styles`}
-                    data-escape-shortcut-local
-                    transition:flyFade={{ y: 6 }}
-                  >
-                    <span class="variant-popover-label">
-                      {getPropTypeDisplayInfo(base).label} styles
-                    </span>
-                    <div class="variant-popover-buttons">
-                      {#each choices as prop (prop)}
-                        {@render tile(prop)}
-                      {/each}
-                    </div>
-                    {#if isFanPropType(base)}
-                      <FanStyleOptions
-                        compact
-                        onPick={() => handleFanStylePick(base)}
-                      />
-                    {/if}
-                  </section>
-                {/if}
-              </div>
-            {/snippet}
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
     {/if}
   {/snippet}
 
   <div class="grid-scroll themed-scrollbar">
-    {#if flat}
-      <div class="flat-grid">
-        {#each allBases as base (base)}
-          {@render familyTile(base)}
-        {/each}
-      </div>
-    {:else}
-      <div class="grid-content">
-        {#each sections as section, i}
-          <div class="prop-section" class:primary={i === 0}>
-            <div class="section-label" class:first={i === 0}>
-              {section.label}
-            </div>
-            <div
-              class="section-buttons"
-              class:single={section.bases.length === 1}
+    <!-- The sequential decision-screen swap: the grid steps out, the drilled
+         view steps in from the right, and back runs the other way. -->
+    <Crossfade
+      key={drillKey}
+      mode="swap"
+      motion="step"
+      direction={drill === null ? -1 : 1}
+      animateHeight
+    >
+      {#if drill !== null}
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <section
+          class="drill-view"
+          aria-label={drillTitle}
+          data-escape-shortcut-local
+          onkeydown={handleDrillKeydown}
+        >
+          <div class="drill-bar">
+            <button
+              type="button"
+              class="drill-back"
+              aria-label="Back to all props"
+              onclick={() => void closeDrill()}
             >
-              {#each section.bases as base (base)}
-                {@render familyTile(base)}
+              <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            </button>
+            <span class="drill-title">{drillTitle}</span>
+          </div>
+          {#if drill.kind === "fan-look"}
+            <FanStyleOptions />
+          {:else if flat}
+            <div class="flat-grid">
+              {#each familyChoices(drill.base) as prop (prop)}
+                {@render tile(prop)}
               {/each}
             </div>
-          </div>
-        {/each}
-      </div>
-    {/if}
+          {:else}
+            <div class="section-buttons">
+              {#each familyChoices(drill.base) as prop (prop)}
+                {@render tile(prop)}
+              {/each}
+            </div>
+          {/if}
+        </section>
+      {:else if flat}
+        <div class="flat-grid">
+          {#each allBases as base (base)}
+            {@render familyTile(base)}
+          {/each}
+        </div>
+      {:else}
+        <div class="grid-content">
+          {#each sections as section, i}
+            <div class="prop-section" class:primary={i === 0}>
+              <div class="section-label" class:first={i === 0}>
+                {section.label}
+              </div>
+              <div
+                class="section-buttons"
+                class:single={section.bases.length === 1}
+              >
+                {#each section.bases as base (base)}
+                  {@render familyTile(base)}
+                {/each}
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </Crossfade>
   </div>
+
+  {#if showFanLook && drill === null}
+    <div class="look-dock" transition:growFade={{ axis: "y" }}>
+      <span class="look-label">Fan look</span>
+      <button
+        type="button"
+        class="look-chip"
+        data-testid="fan-look-chip"
+        aria-label={`Fan look: ${fanLook?.label ?? fanAppearance.build}. Change`}
+        onclick={() => void openDrill({ kind: "fan-look" })}
+      >
+        {#if fanLook}
+          <img class="look-thumb" src={fanLook.image} alt="" draggable="false" />
+        {/if}
+        <span class="look-name">{fanLook?.label ?? fanAppearance.build}</span>
+        <i class="fas fa-chevron-right look-caret" aria-hidden="true"></i>
+      </button>
+    </div>
+  {/if}
 
   {#if chirality && selectedPropType !== null && isBuugengFamilyProp(selectedPropType)}
     <div class="chirality-dock" transition:growFade={{ axis: "y" }}>
@@ -502,6 +542,12 @@
     scrollbar-width: thin;
   }
 
+  /* The flat picker is a dense dock; it does not need the drawer's
+     roomy bottom padding. */
+  .prop-grid-root.flat .grid-scroll {
+    padding-bottom: 10px;
+  }
+
   .grid-content {
     display: flex;
     flex-direction: column;
@@ -534,6 +580,22 @@
   .flat-grid :global(.prop-image-container .prop-composition-preview) {
     width: 75%;
     max-height: 75%;
+  }
+
+  /* A desktop sidebar has room for readable tiles: five per row at ~85px
+     keeps every prop in view in a 750px-tall panel with no scrollbar. */
+  @container prop-grid (min-width: 440px) {
+    .flat-grid {
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+    }
+  }
+
+  /* One level down there are only a handful of tiles, so even the phone
+     dock can afford the readable size: three per row with whole names. */
+  .drill-view .flat-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
   }
 
   .section-label {
@@ -583,115 +645,159 @@
     width: 100%;
   }
 
-  .variant-popover {
-    z-index: var(--z-dropdown, 300);
-    container-type: inline-size;
+  /* One level down: a family's styles or the fan look, at the same tile
+     size as the grid they replace, behind a back bar. */
+  .drill-view {
     display: flex;
-    width: min(420px, calc(100vw - 24px));
-    max-height: min(
-      440px,
-      calc(100vh - 24px),
-      var(--bits-popover-content-available-height, calc(100vh - 24px))
-    );
-    box-sizing: border-box;
     flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .drill-bar {
+    display: flex;
+    align-items: center;
     gap: 10px;
-    padding: 12px;
-    overflow-y: auto;
+    min-width: 0;
+  }
+
+  .drill-back {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    padding: 0;
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
-    border-radius: 14px;
-    /* Theme cards are translucent over the animated app background. This
-       chooser needs an opaque floor so the prop grid beneath cannot compete
-       with its five style choices; the theme card still supplies the tint. */
-    background-color: #0c0e16;
-    background-image: linear-gradient(
-      var(--theme-card-bg, transparent),
-      var(--theme-card-bg, transparent)
+    border-radius: 999px;
+    background: var(--theme-card-bg, rgba(0, 0, 0, 0.5));
+    color: var(--theme-text);
+    font-size: 14px;
+    cursor: pointer;
+    transition:
+      border-color var(--transition-fast, 150ms ease),
+      background-color var(--transition-fast, 150ms ease);
+  }
+
+  .drill-back .fas {
+    width: auto;
+  }
+
+  .drill-back:hover {
+    border-color: color-mix(in srgb, var(--theme-accent, #8b6cff) 70%, white);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b6cff) 14%,
+      var(--theme-card-bg, rgba(0, 0, 0, 0.5))
     );
-    box-shadow: 0 16px 52px var(--theme-shadow, rgba(0, 0, 0, 0.62));
   }
 
-  /* The chooser is visually small, but it temporarily owns the pointer. A
-     transparent portaled shield keeps mobile hit-testing from handing the same
-     tap to whichever prop card happens to sit behind the animated popover. */
-  :global(.variant-popover-overlay) {
-    position: fixed;
-    inset: 0;
-    z-index: calc(var(--z-dropdown, 300) - 1);
-    background: transparent;
+  .drill-back:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b6cff);
+    outline-offset: 2px;
   }
 
-  .variant-popover-label {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 12px);
+  .drill-title {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--theme-text);
+    font-size: var(--font-size-min, 14px);
     font-weight: 700;
-    letter-spacing: 0.05em;
-    text-align: center;
-    text-transform: uppercase;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .variant-popover-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
-    gap: 8px;
+  /* One chip for the selected fan's look. It sits where Buugeng chirality
+     sits: below the grid in the drawer, above it in the flat mobile dock. */
+  .look-dock {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    margin: 0 12px 12px;
+    padding: 8px 8px 8px 14px;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.14));
+    border-radius: 16px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b6cff) 8%,
+      var(--theme-card-bg, rgba(0, 0, 0, 0.75))
+    );
   }
 
-  .variant-popover-buttons .tile-wrapper :global(.prop-button) {
-    width: 100%;
+  .look-label {
+    flex: 0 0 auto;
+    color: var(--theme-text);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
   }
 
-  @container (max-width: 359px) {
-    .variant-popover-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .variant-popover-buttons .tile-wrapper {
-      flex: 0 1 calc((100% - 16px) / 3);
-      min-width: 0;
-    }
+  .look-chip {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: var(--min-touch-target, 44px);
+    padding: 4px 12px 4px 4px;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
+    border-radius: 999px;
+    background: var(--theme-card-bg, rgba(0, 0, 0, 0.5));
+    color: var(--theme-text);
+    font: inherit;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      border-color var(--transition-fast, 150ms ease),
+      background-color var(--transition-fast, 150ms ease);
   }
 
-  /* A family that also carries build options (fans) lays its builds out in
-     one row instead of asking the user to scroll inside the popover. */
-  .variant-popover.wide-styles {
-    width: min(880px, 100vw - 24px);
+  .look-chip:hover {
+    border-color: color-mix(in srgb, var(--theme-accent, #8b6cff) 70%, white);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b6cff) 14%,
+      var(--theme-card-bg, rgba(0, 0, 0, 0.5))
+    );
   }
 
-  /* Size tiles on the left, builds and their details on the right, so the
-     whole chooser is visible at once on any desktop-class viewport. */
-  @media (min-width: 720px) {
-    .variant-popover.wide-styles {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      align-items: start;
-      column-gap: 16px;
-    }
-
-    .variant-popover.wide-styles .variant-popover-label {
-      grid-column: 1 / -1;
-    }
-
-    .variant-popover.wide-styles .variant-popover-buttons {
-      grid-template-columns: repeat(2, 96px);
-      align-content: start;
-    }
-
-    .variant-popover.wide-styles :global(.fan-style-options) {
-      padding-top: 0;
-      padding-left: 16px;
-      border-top: 0;
-      border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    }
+  .look-chip:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b6cff);
+    outline-offset: 2px;
   }
 
-  .flat-variant-drawer {
-    z-index: auto;
-    grid-column: 1 / -1;
-    width: 100%;
-    max-height: none;
-    box-shadow: 0 8px 24px var(--theme-shadow, rgba(0, 0, 0, 0.42));
+  .look-thumb {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 32px;
+    border-radius: 999px;
+    object-fit: cover;
+    background: #070911;
+  }
+
+  .look-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .look-caret {
+    flex: 0 0 auto;
+    width: auto;
+    color: var(--theme-text-dim);
+    font-size: 11px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .look-chip,
+    .drill-back {
+      transition: none;
+    }
   }
 
   .chirality-dock {
@@ -703,6 +809,10 @@
      choosing Buugeng, so surface it before the prop catalogue instead of
      making the user scroll through every prop to find the A/B controls. */
   .prop-grid-root.flat .chirality-dock {
+    order: -1;
+  }
+
+  .prop-grid-root.flat .look-dock {
     order: -1;
   }
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from "svelte";
+  import { tick, untrack } from "svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
@@ -79,9 +79,87 @@
   let theoryPaneElement: HTMLDivElement;
   let theoryDetailElement: HTMLDivElement;
   let theoryEditingAxis = $state<"left" | "right" | "both" | null>(null);
+  let workspaceElement: HTMLDivElement;
 
   $effect(() => {
     if (!theory) theoryEditingAxis = null;
+  });
+
+  /* Customizing rebalances the split toward the animation. The grid pane
+     leads while a pair is being chosen; once the workspace covers it, the
+     pages inside need only a rail and one sidebar-width column, and the
+     animation is what every change is judged against. So the workspace pane
+     takes what its pages use and never more than 45% of the room, the stage
+     takes the rest, and the split the user had comes back on the way out.
+     The panel group already eases flex shares, so both moves are animated. */
+  const PANE_GAP = 8;
+  const STAGE_MIN = 380;
+  const CUSTOMIZE_MIN = 440;
+  const customizeOpen = $derived(
+    !appState.compact &&
+      (animationState.activeSection !== null || appState.propPickerOpen)
+  );
+  let restingSizes: number[] | null = null;
+  let restingTheorySizes: number[] | null = null;
+  let customizeSurface: "matrix" | "theory" | null = null;
+
+  function customizeSplit(): number[] | null {
+    if (!workspaceElement) return null;
+    const styles = getComputedStyle(workspaceElement);
+    const width =
+      workspaceElement.clientWidth -
+      parseFloat(styles.paddingLeft) -
+      parseFloat(styles.paddingRight) -
+      PANE_GAP;
+    if (!(width > CUSTOMIZE_MIN + STAGE_MIN)) return null;
+
+    // The workspace has mounted by the time this runs, so its rail and page
+    // are measured rather than guessed from the inspector's breakpoints.
+    const rail = workspaceElement.querySelector<HTMLElement>(
+      ".customize-workspace .icon-rail"
+    );
+    const scroll = workspaceElement.querySelector<HTMLElement>(
+      ".customize-workspace .panel-scroll"
+    );
+    const page = workspaceElement.querySelector<HTMLElement>(
+      ".customize-workspace .panel-center-inner"
+    );
+    const railWidth = rail?.offsetWidth ?? 136;
+    const pageWidth =
+      (page ? parseFloat(getComputedStyle(page).maxWidth) : 0) || 560;
+    const scrollStyles = scroll ? getComputedStyle(scroll) : null;
+    const gutters = scrollStyles
+      ? parseFloat(scrollStyles.paddingLeft) +
+        parseFloat(scrollStyles.paddingRight)
+      : 32;
+    const need = railWidth + pageWidth + gutters;
+
+    const customize = Math.max(
+      CUSTOMIZE_MIN,
+      Math.min(need, width * 0.45, width - STAGE_MIN)
+    );
+    return [customize, width - customize];
+  }
+
+  $effect(() => {
+    const target = customizeOpen ? (theory ? "theory" : "matrix") : null;
+    if (target === customizeSurface) return;
+    untrack(() => {
+      if (customizeSurface === "matrix" && restingSizes) sizes = restingSizes;
+      if (customizeSurface === "theory" && restingTheorySizes) {
+        theorySizes = restingTheorySizes;
+      }
+      if (target === "matrix") {
+        restingSizes = [...sizes];
+        const split = customizeSplit();
+        if (split) sizes = split;
+      } else if (target === "theory") {
+        restingTheorySizes = [...theorySizes];
+        const split = customizeSplit();
+        if (split) theorySizes = split;
+      }
+      customizeSurface = target;
+    });
   });
 
   // Compact navigation runs as a shared-element morph between the selected
@@ -432,7 +510,7 @@
     </div>
   </header>
 
-  <div class="workspace">
+  <div class="workspace" bind:this={workspaceElement}>
     <DualSourceCrossfade
       active={appState.surface === "matrix" ? "first" : "second"}
       duration={booted ? DURATION.normal : 0}
