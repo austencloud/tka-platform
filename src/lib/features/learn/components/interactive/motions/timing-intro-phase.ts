@@ -6,6 +6,10 @@ export type Placement = "alpha" | "beta" | "gamma" | "between";
 export function cycle(value: number): number {
   return ((value % 1) + 1) % 1;
 }
+/** A downbeat briefly lights its stationary dot; no position implies timing. */
+export function downbeatPulse(elapsed: number, offset: number): number {
+  return Math.max(0, 1 - cycle(elapsed - offset) / 0.15);
+}
 export function spatialPhase(phase: number, rotation: Rotation): number {
   return cycle(phase * rotation);
 }

@@ -34,6 +34,14 @@ const doc = JSON.parse(
   buffer.subarray(20, 20 + buffer.readUInt32LE(12)).toString("utf8")
 );
 const nodes = new Map(doc.nodes.map((node) => [node.name, node]));
+const moss = doc.materials.find(
+  (material) => material.name === "Amphitheatre moss"
+);
+invariant(
+  moss?.extensions?.KHR_materials_specular?.specularFactor <= 0.1 &&
+    moss?.pbrMetallicRoughness?.roughnessFactor >= 0.98,
+  "Meadow soil lost its matte surface treatment"
+);
 const sourcePlan = JSON.parse(
   await readFile(
     resolve(

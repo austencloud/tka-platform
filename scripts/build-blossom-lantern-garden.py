@@ -17,7 +17,7 @@ rng=random.Random(905730)
 SLATE=material('Blossom court slate',(.085,.11,.13),.84)
 surface_texture(SLATE,(.36,.42,.44))
 DARK_MOSS=material('Deep bank moss',(.022,.045,.027),.98)
-GRASS=material('Garden sedge',(.085,.18,.045),.93)
+GRASS=material('Garden sedge',(.045,.105,.028),.99)
 
 
 def clamp(v,a=0,b=1):return max(a,min(b,v))
@@ -299,23 +299,31 @@ for target in [(8,10,10),(12,8,11),(18,10,12),(20,15,10)]:
     hanging.append({'anchor':list(anchor),'center':[x,y,z]})
 frames.finish();washi.finish()
 
-# Layered sedge and small flowering shrubs replace the exposed flat lawn.
+# Fine meadow blades continue across the terrain, thinning gradually into fog.
 plants=Batch('Amphitheatre_Understory',[GRASS,DARK_MOSS],'understory')
-for i in range(64000):
-    x,y=rng.uniform(-36,36),rng.uniform(-30,36)
+grass_rng=random.Random(905731)
+for i in range(110000):
+    x,y=grass_rng.uniform(-71,71),grass_rng.uniform(-71,71)
     if abs(x)<9.4 and abs(y)<7.5:continue
     if route_distance(x,y)<2.8 or pond_distance(x,y)<.9:continue
     near_bank=pond_distance(x,y)<4.8
     near_tree=min(math.hypot(x-t['root'][0],y-t['root'][1]) for t in tree_bounds)<5
-    if not near_bank and not near_tree and rng.random()>.14:continue
+    radius=math.hypot(x,y)
+    meadow=.36*(1-smooth((radius-28)/65))+.065
+    density=.86 if near_bank or near_tree else meadow
+    if grass_rng.random()>density:continue
     z=height(x,y)
-    for blade in range(5):
-        a=rng.uniform(0,math.tau);h=rng.uniform(.12,.38);w=rng.uniform(.045,.10)
+    for blade in range(3):
+        a=grass_rng.uniform(0,math.tau)
+        h=grass_rng.uniform(.085,.23) if near_bank else grass_rng.uniform(.065,.16)
+        w=grass_rng.uniform(.006,.017)
         side=Vector((-math.sin(a)*w,math.cos(a)*w,0))
-        base=Vector((x,y,z));mid=base+Vector((math.cos(a)*h*.23,math.sin(a)*h*.23,h*.62))
+        dx,dy=grass_rng.uniform(-.08,.08),grass_rng.uniform(-.08,.08)
+        base=Vector((x+dx,y+dy,z-.025));mid=base+Vector((math.cos(a)*h*.23,math.sin(a)*h*.23,h*.62))
         tip=base+Vector((math.cos(a)*h*.64,math.sin(a)*h*.64,h))
-        plants.face([base-side,base+side,mid+side*.45,mid-side*.45],tint=rng.uniform(.65,1.1))
-        plants.face([mid-side*.45,mid+side*.45,tip],tint=rng.uniform(.75,1.2))
+        shade=grass_rng.uniform(.70,1.12)
+        plants.face([base-side,base+side,mid+side*.45,mid-side*.45],tint=shade*.78)
+        plants.face([mid-side*.45,mid+side*.45,tip],tint=shade)
 # Ferns give the nearby banks broad, readable leaves among the finer sedge.
 for i in range(2200):
     x,y=rng.uniform(-27,27),rng.uniform(-23,27)
