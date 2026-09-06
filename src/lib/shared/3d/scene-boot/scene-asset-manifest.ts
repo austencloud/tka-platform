@@ -50,7 +50,7 @@ export const SCENE_ASSET_MANIFEST: Readonly<
     "/models/forest/forest-stage.glb",
   ],
   [BackgroundType.OCEAN]: ["/models/ocean/ocean-environment.glb"],
-  [BackgroundType.PRIDE]: [],
+  [BackgroundType.PRIDE]: ["/models/rainbow/spectrum-commons.glb"],
   [BackgroundType.VOID]: [],
   [BackgroundType.WINTER]: ["/models/winter/blue-hour-lodge.glb"],
 };
