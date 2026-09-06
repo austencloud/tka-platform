@@ -157,7 +157,33 @@ describe("Ember renderer-neutral production world", () => {
       expect(ray.intersectObject(mesh)).toHaveLength(0);
     });
     expect(backdropMeshes).toBe(2);
-    expect(backdropTriangles).toBeLessThan(110000);
+    expect(backdropTriangles).toBeLessThan(140000);
+    // The exported bed must descend, not just a separately authored path.
+    // Sample the actual heat mesh so optimization cannot hide an uphill step.
+    const outflow = current.getObjectByName("EMBER_DistantValleyHeat") as Mesh;
+    const profile = outflow.userData.ember_drainage_profile as number[][];
+    expect(profile.length).toBeGreaterThan(500);
+    const sample = new Vector3();
+    const flowRay = new Raycaster(new Vector3(), new Vector3(0, -1, 0));
+    let previousY = Infinity;
+    let firstY = 0;
+    for (let index = 1; index < profile.length; index += 12) {
+      // glTF rotates Blender-local coordinates; meshopt then adds a geometry
+      // decode transform that must not be applied to unquantized metadata.
+      // Mid-segment samples avoid quantization shifting the open end boundary
+      // a few millimetres past an otherwise exact edge ray.
+      const [x, y, z] = profile[index].map(
+        (value, axis) => (value + profile[index - 1][axis]) / 2
+      );
+      sample.set(x, z, -y).applyMatrix4(outflow.parent!.matrixWorld);
+      flowRay.ray.origin.set(sample.x, 500, sample.z);
+      const hit = flowRay.intersectObject(outflow)[0];
+      expect(hit).toBeDefined();
+      if (index === 1) firstY = hit.point.y;
+      expect(hit.point.y).toBeLessThanOrEqual(previousY + 0.025);
+      previousY = hit.point.y;
+    }
+    expect(firstY - previousY).toBeGreaterThan(100);
     const stage = current.getObjectByName(
       "EMBER_CooledPerformancePlate"
     ) as Mesh;

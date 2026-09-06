@@ -15,7 +15,8 @@ from mathutils.bvhtree import BVHTree
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'blender/ember-geology-stage-r1.blend'
-OUT = ROOT / 'docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r2'
+OUT = ROOT / 'docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r3'
+OUT.mkdir(parents=True, exist_ok=True)
 bpy.ops.wm.open_mainfile(filepath=str(SOURCE))
 world = bpy.data.objects['EMBER_WorldRoot']
 heights = np.fromfile(ROOT / 'static/data/ember/review/ember-midflank-fire-pilgrimage-r5-height.f32', dtype='<f4').reshape(336,381)
@@ -70,6 +71,24 @@ def ridge(value, width):
     return np.exp(-(value/width)**2)
 
 
+def drainage(z):
+    """One connected route, in metres, from the existing river to the horizon.
+
+    The floor loses height everywhere; the broad middle reach is a crusted
+    flow field, not a level lake or a second uphill river. Every visual layer
+    uses this same route: terrain, cooled deposit, hot channel and breach.
+    """
+    t = np.maximum(0, -np.asarray(z)-143)
+    center = 18 - 62*smooth(0,210,t) + 180*smooth(240,560,t)
+    center += 210*smooth(650,1110,t)
+    # Integrate a positive slope, easing from the mountain into the lowland.
+    floor = float(old_height(np.asarray(18.),np.asarray(-143.)))
+    floor -= .065*t + .65*240*(1-np.exp(-t/140))
+    field = smooth(130,290,t)*(1-smooth(470,680,t))
+    half_width = 2.5 + 4.5*smooth(0,55,t) + 47*field + 9*smooth(350,900,t)
+    return center, floor, half_width, field
+
+
 def valley_height(x, z):
     x, z = np.asarray(x), np.asarray(z)
     edge_x, edge_z = np.clip(x, -190, 190), np.clip(z, -145, 190)
@@ -80,6 +99,11 @@ def valley_height(x, z):
     warp = noise2(x,z,190,4)*48 + noise2(x,z,75,5)*15
     near = ridge(z+690+warp+65*np.sin(x*.004), 140)
     far = ridge(z+1090+warp+80*np.sin(x*.003+2), 175)
+    route_center, _, _, _ = drainage(z)
+    # The outflow occupies a broad saddle already present in the large forms,
+    # not a narrow slot gouged through a finished mountain wall.
+    near *= smooth(150,430,np.abs(x-route_center))
+    far *= smooth(210,510,np.abs(x-route_center))
     west = ridge(x+780+warp, 180)
     east = ridge(x-870+warp, 210)
     basin = -192 + noise2(x,z,150,8)*15
@@ -95,7 +119,19 @@ def valley_height(x, z):
     basin += smooth(80, 530, z)*355
     continuation = edge_y - distance*np.where(z < 190, .27, -.12)
     blend = smooth(20, 240, distance)
-    return continuation*(1-blend)+basin*blend
+    natural = continuation*(1-blend)+basin*blend
+    center, floor, width, field = drainage(z)
+    offset = np.abs(x-center)
+    # A broad asymmetric opening through BOTH ranges. Leave enclosing massifs
+    # to either side, but never put a mountain wall across the outflow.
+    flat = width + 24
+    shoulder = flat + 95 + 65*field
+    channel_floor = floor + 3*smooth(width,flat,offset)
+    # Grade the whole bed, including depressions in the former backdrop. A
+    # min(natural, floor) cut leaves pits that force the visible stream uphill.
+    carved = channel_floor
+    cut = (1-smooth(flat,shoulder,offset))*smooth(0,32,-z-145)
+    return natural*(1-cut)+carved*cut
 
 
 def material(name):
@@ -147,13 +183,17 @@ def terrain_color(x, z):
     talus = (1-smooth(.35,1.15,np.hypot(dx,dz)))*smooth(-.1,.5,noise2(x,z,26,34))
     rock += talus[...,None]*np.array([.032,.022,.012])
     color = rock*(light*grain*strata)[...,None]
-    for route in range(2):
-        center = (-25 if route == 0 else -175)+24*np.sin(z*.012+route)+.09*(z+210)
-        channel = np.exp(-((x-center)/(5 if route == 0 else 3.5))**2)
-        envelope = smooth(225,250,-z)*(1-smooth(465,500,-z))
-        color *= (1-.5*channel*envelope)[...,None]
-        glow = np.exp(-((x-center)/9)**2)*envelope*.018
-        color += glow[...,None]*np.array([1,.13,.008])
+    center, floor, width, field = drainage(z)
+    distance = np.abs(x-center)
+    envelope = smooth(145,190,-z)*(1-smooth(1280,1380,-z))
+    # A coherent black flow field with irregular cooled margins and overlapping
+    # lobes. It stays much larger than its exposed incandescent channels.
+    margin = width + 15 + noise2(x,z,19,47)*9
+    deposit = (1-smooth(margin,margin+23,distance))*envelope
+    crust = np.array([.019,.017,.016])*(.9+.2*noise2(x,z,8,48))[...,None]
+    color = color*(1-deposit[...,None]*.88)+crust*deposit[...,None]*.88
+    glow = np.exp(-(distance/(width+12))**2)*envelope*.018
+    color += glow[...,None]*np.array([1,.115,.006])
     # Do not let horizon haze wash out the near basin. The low basin retains
     # warm ash while far peaks gradually approach the storm-sky color.
     haze = smooth(230,1500,np.hypot(x,z))*.7
@@ -208,48 +248,68 @@ texture = nodes.new('ShaderNodeTexImage')
 texture.image = atlas
 terrain.data.materials[0].node_tree.links.new(texture.outputs['Color'],nodes['Principled BSDF'].inputs['Base Color'])
 
-# Small isolated glimpses of two channels down in the basin. Their dark
-# intervals are real gaps, so the valley never becomes a striped orange field.
+# Connected lowland flow. Cool rafts interrupt the exposed surface, not the
+# underlying drainage. No arbitrary disconnected stripes across mountains.
 vertices, faces, colors = [], [], []
-for route in range(2):
-    for j in range(75):
-        z = -245-j*3
-        if -378 < z < -332 or -526 < z < -486:
-            continue
-        def center(v):
-            return (-25 if route == 0 else -175) + 24*math.sin(v*.012+route)+.09*(v+210)
-        x = center(z)
-        opening = smooth(245,259,-z) if z >= -332 else smooth(378,389,-z)
-        closing = 1-smooth(320,332,-z) if z >= -332 else 1-smooth(451,470,-z)
-        width = (2.1 if route == 0 else 1.2)*(.66+.34*math.sin(z*.29+route)**2)*opening*closing
-        if width < .03:
-            continue
-        base = len(vertices)
-        for vz in (z,z-3):
-            for side in (-1,-.62,-.17,.17,.62,1):
-                vx = center(vz)+side*width
-                hit = surface.ray_cast(Vector((vx,500,vz)),Vector((0,-1,0)))[0]
-                assert hit is not None
-                vertices.append((vx,hit.y+.18,vz))
-                heat = (.75+.25*math.sin(vz*.36+route)**2)*(1-smooth(430,500,-vz))
-                tint = (.032,.019,.015) if abs(side)==1 else ((.66,.092,.006) if abs(side)>.2 else (1.7,.55,.028))
-                colors.append(tuple(c*heat for c in tint))
-        for strip in range(5):
-            faces.append((base+strip,base+strip+1,base+strip+7,base+strip+6))
+stations = np.arange(-143.,-1230.,-2.)
+crossings = np.linspace(-1,1,33)
+profile = []
+for j,z in enumerate(stations):
+    center, floor, width, field = drainage(z)
+    width *= (.90+.1*math.sin(z*.073)**2)*(1-.96*smooth(1120,1230,-z))
+    row = len(vertices)
+    center_height = None
+    ground_colors = terrain_color(center+crossings*width,np.full(len(crossings),z))
+    for k,side in enumerate(crossings):
+        vx = center + side*width
+        # Join the unchanged source terrain before the new annulus begins.
+        hit = surface.ray_cast(Vector((vx,500,z)),Vector((0,-1,0)))[0]
+        y = float(hit.y) if hit is not None else float(old_height(np.asarray(vx),np.asarray(z)))
+        vertices.append((vx,y+.20,z))
+        if k == len(crossings)//2:
+            center_height = y+.20
+        bank = 1-smooth(.79,1,abs(side))
+        # Broad middle deposit is predominantly cool plates. Narrow moving-looking
+        # seams wind around them; the main thread remains visibly connected.
+        thread = .30*math.sin(z*.022) + .14*math.sin(z*.049)
+        core = math.exp(-((side-thread)/(.30-.11*field))**2)
+        broken = noise2(np.asarray(vx),np.asarray(z),19,52)
+        seams = (1-smooth(.02,.105,abs(broken)))*field*.62
+        rafts = float(smooth(.06,.44,noise2(np.asarray(vx),np.asarray(z),11,56)))
+        heat = float(max(core*(1-.82*rafts),seams)*bank)
+        color = np.array([.019,.013,.010])*(1-heat)
+        color += np.array([1.8,.40,.012])*heat**1.5
+        color += np.array([.45,.27,.025])*smooth(.73,1,heat)
+        haze = float(smooth(380,1380,-z))*.78
+        color = color*(1-haze)+np.array([.075,.087,.094])*haze
+        edge = float(smooth(.68,1,abs(side)))
+        color = color*(1-edge)+ground_colors[k]*edge
+        colors.append(tuple(color))
+        if j and k:
+            a = row+k
+            faces.append((a-len(crossings)-1,a-len(crossings),a,a-1))
+    profile.append([float(center),center_height,float(z)])
 traces = mesh('EMBER_DistantValleyHeat', vertices, faces, colors, material('Ember_DistantValley_BakedHeat'), 'distant-valley')
+traces['ember_drainage_profile'] = profile
+traces['ember_drainage_kind'] = 'connected-descending-crusted-flow-field'
+
+# Test the actual triangulated support, not just the desired analytic profile.
+uphill = [(i,profile[i][1]-profile[i-1][1]) for i in range(1,len(profile)) if profile[i][1]>profile[i-1][1]+.025]
+assert not uphill, f'Drainage climbs delivered terrain: {uphill[:8]}'
 
 assert locked == {name: digest(bpy.data.objects[name]) for name in locked}
-assert sum(len(p.vertices)-2 for o in (terrain,traces) for p in o.data.polygons) < 110000
+assert sum(len(p.vertices)-2 for o in (terrain,traces) for p in o.data.polygons) < 140000
 for obj in bpy.context.scene.objects:
     obj.select_set(obj == world or (obj.type == 'MESH' and not obj.hide_render))
-blend = ROOT / 'blender/ember-distant-valley-r2.blend'
-raw = ROOT / 'static/models/ember/ember-distant-valley-r2_raw.glb'
+blend = ROOT / 'blender/ember-distant-valley-r3.blend'
+raw = ROOT / 'static/models/ember/ember-distant-valley-r3_raw.glb'
 bpy.ops.wm.save_as_mainfile(filepath=str(blend))
 bpy.ops.export_scene.gltf(filepath=str(raw), export_format='GLB', use_selection=True, export_extras=True, export_yup=True, export_cameras=False, export_lights=False)
 OUT.mkdir(parents=True, exist_ok=True)
 report = {'source':SOURCE.relative_to(ROOT).as_posix(),'lockedMeshDigests':locked,
           'backdropMeshes':2,'backdropFaces':len(terrain.data.polygons)+len(traces.data.polygons),
+          'drainageProfile':profile,'uphillSegments':uphill,
           'outerRadiusMeters':max(math.hypot(v.co.x,v.co.z) for v in terrain.data.vertices),
           'nativeBlendSha256':hashlib.sha256(blend.read_bytes()).hexdigest()}
 (OUT/'build-report.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf8')
-print(json.dumps({k:v for k,v in report.items() if k!='lockedMeshDigests'},indent=2))
+print(json.dumps({k:v for k,v in report.items() if k not in ('lockedMeshDigests','drainageProfile')},indent=2))

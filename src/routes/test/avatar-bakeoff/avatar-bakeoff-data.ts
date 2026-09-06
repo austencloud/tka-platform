@@ -1,14 +1,4 @@
-export const CANDIDATE_IDS = [
-  "current-raw",
-  "current-optimized",
-  "human-generator-trial",
-  "human-generator-parity",
-  "personal-metaperson",
-  "intake-current",
-  "avatar-sdk",
-  "avaturn",
-  "ready-player-me-archived",
-] as const;
+export const CANDIDATE_IDS = ["personal-metaperson"] as const;
 
 export const STRESS_POSE_IDS = [
   "neutral",
@@ -32,47 +22,11 @@ export interface BakeoffCandidate {
   source: string;
   modelUrl: string;
   bytes: number | null;
-  continuity: "current" | "control" | "disqualified";
+  continuity: "current";
   note: string;
 }
 
 export const BAKEOFF_CANDIDATES: Record<FixedCandidateId, BakeoffCandidate> = {
-  "current-raw": {
-    id: "current-raw",
-    label: "Current avatar · raw",
-    source: "TKA ch01 source asset",
-    modelUrl: "/models/avatars/bakeoff/current-raw-ch01.glb",
-    bytes: 61_515_856,
-    continuity: "control",
-    note: "Control for separating source-model quality from the current optimizer.",
-  },
-  "current-optimized": {
-    id: "current-optimized",
-    label: "Current avatar · optimized",
-    source: "TKA ch01 production optimization",
-    modelUrl: "/models/avatars/bakeoff/current-optimized-ch01.glb",
-    bytes: 2_431_624,
-    continuity: "control",
-    note: "The model class currently shipped by TKA.",
-  },
-  "human-generator-trial": {
-    id: "human-generator-trial",
-    label: "Human Generator · trial",
-    source: "Locally generated Human Generator trial",
-    modelUrl: "/models/avatars/bakeoff/human-generator-trial.glb",
-    bytes: 19_853_800,
-    continuity: "current",
-    note: "Trial-watermarked LOD1 export with 1K baked textures and trial-compatible mesh hair.",
-  },
-  "human-generator-parity": {
-    id: "human-generator-parity",
-    label: "Human Generator · parity",
-    source: "Full-fidelity Human Generator control export",
-    modelUrl: "/models/avatars/bakeoff/human-generator-parity.glb",
-    bytes: 238_315_964,
-    continuity: "current",
-    note: "Full meshes, 4K baked textures, transmissive corneas, and dense mesh hair. Deliberately unoptimized.",
-  },
   "personal-metaperson": {
     id: "personal-metaperson",
     label: "Personal MetaPerson",
@@ -81,42 +35,6 @@ export const BAKEOFF_CANDIDATES: Record<FixedCandidateId, BakeoffCandidate> = {
     bytes: 12_150_852,
     continuity: "current",
     note: "Evaluation-only LOD1 GLB with the standard 73-joint MetaPerson skeleton and 1K PBR textures.",
-  },
-  "intake-current": {
-    id: "intake-current",
-    label: "Current intake slot",
-    source: "Local character intake pipeline",
-    modelUrl: "/models/avatars/bakeoff/intake-current.glb",
-    bytes: null,
-    continuity: "current",
-    note: "The most recent locally staged intake. Every staged character also appears by name under Staged intakes.",
-  },
-  "avatar-sdk": {
-    id: "avatar-sdk",
-    label: "Avatar SDK MetaPerson",
-    source: "Official BSD-3-Clause rendering sample",
-    modelUrl: "/models/avatars/bakeoff/avatar-sdk-metaperson.glb",
-    bytes: 14_360_216,
-    continuity: "current",
-    note: "Current vendor sample with 1K skin, clothing, eye, and normal textures.",
-  },
-  avaturn: {
-    id: "avaturn",
-    label: "Avaturn",
-    source: "Official Mixamo compatibility sample",
-    modelUrl: "/models/avatars/bakeoff/avaturn.glb",
-    bytes: 650_932,
-    continuity: "current",
-    note: "Rig-compatibility sample only; the public FBX does not include textures.",
-  },
-  "ready-player-me-archived": {
-    id: "ready-player-me-archived",
-    label: "Ready Player Me · archived",
-    source: "Archived official SDK sample",
-    modelUrl: "/models/avatars/bakeoff/ready-player-me-archived.glb",
-    bytes: 3_788_500,
-    continuity: "disqualified",
-    note: "Visual reference only. Ready Player Me services ended January 31, 2026.",
   },
 };
 
@@ -169,6 +87,8 @@ export function parseIntakeManifest(value: unknown): StagedIntakeEntry[] {
   for (const raw of candidates) {
     if (raw === null || typeof raw !== "object") continue;
     const record = raw as Record<string, unknown>;
+    const rig = record.rig as { fingerChains?: unknown } | undefined;
+    if (rig?.fingerChains !== true) continue;
     const id = stringField(record.id);
     const file = stringField(record.file);
     if (!STAGED_ID_PATTERN.test(id) || !STAGED_FILE_PATTERN.test(file))
@@ -220,30 +140,44 @@ export async function loadStagedIntakeCandidates(
   }
 }
 
-function isFixedCandidateId(value: string): value is FixedCandidateId {
-  return (CANDIDATE_IDS as readonly string[]).includes(value);
-}
-
-export function parseCandidateId(
-  value: string | null,
-  staged: readonly BakeoffCandidate[] = []
-): CandidateId {
-  if (value === null) return "current-optimized";
-  if (isFixedCandidateId(value)) return value;
-  if (staged.some((candidate) => candidate.id === value)) {
-    return value as StagedCandidateId;
-  }
-  return "current-optimized";
+// Local evaluation files can disappear independently of the manifest. Check
+// them before offering a button; the dev server may return HTML for a bad URL.
+export async function loadAvailableCandidates(
+  fetchImpl: typeof fetch = fetch
+): Promise<BakeoffCandidate[]> {
+  const staged = await loadStagedIntakeCandidates(fetchImpl);
+  const candidates = [...Object.values(BAKEOFF_CANDIDATES), ...staged];
+  const available = await Promise.all(
+    candidates.map(async (candidate) => {
+      try {
+        const response = await fetchImpl(candidate.modelUrl, {
+          method: "HEAD",
+          cache: "no-store",
+        });
+        const type = response.headers
+          .get("content-type")
+          ?.split(";")[0]
+          ?.trim();
+        return response.ok &&
+          (type === "model/gltf-binary" || type === "application/octet-stream")
+          ? candidate
+          : null;
+      } catch {
+        return null;
+      }
+    })
+  );
+  return available.filter(
+    (candidate): candidate is BakeoffCandidate => candidate !== null
+  );
 }
 
 export function resolveCandidate(
-  id: CandidateId,
-  staged: readonly BakeoffCandidate[] = []
-): BakeoffCandidate {
-  if (isFixedCandidateId(id)) return BAKEOFF_CANDIDATES[id];
+  id: string | null,
+  available: readonly BakeoffCandidate[]
+): BakeoffCandidate | null {
   return (
-    staged.find((candidate) => candidate.id === id) ??
-    BAKEOFF_CANDIDATES["current-optimized"]
+    available.find((candidate) => candidate.id === id) ?? available[0] ?? null
   );
 }
 
