@@ -49,8 +49,8 @@ The focused shared-world and adapter suite covers loading declarations, stage
 growth without source mutation, world assembly, grounding, visibility,
 disposal, animated water, and reduced motion. Svelte diagnostics pass.
 Direct browser evidence is stored in the task's `celestial-sunward` visualization
-directory. The broad prefetch scan also reports an existing unrelated missing
-Rainbow `spectrum-commons.glb` entry; Celestial's entries match its new owner.
+directory. After updating with current main, all eighteen focused and prefetch
+contract tests pass, including the full asset-manifest scan.
 
 Worker verification also corrected the legacy adapter to apply the canonical
 stage-height offset, respond to changing performer bounds, and honor reduced
