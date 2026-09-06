@@ -62,12 +62,46 @@ export function createPropPlacementAimState(
     pointerId: number;
     color: HandSide;
     start: { x: number; y: number };
+    origin: { x: number; y: number };
     clientStart: { x: number; y: number };
     delta: { x: number; y: number };
     moved: boolean;
     initialLeft: GridLocation | null;
     initialRight: GridLocation | null;
   } | null>(null);
+  let landing = $state<{ point: PlacementGridPoint; color: HandSide } | null>(
+    null
+  );
+  const locationTarget = $derived.by(() => {
+    if (!locationDrag?.moved) return null;
+    return nearestDropPoint({
+      x: locationDrag.start.x + locationDrag.delta.x,
+      y: locationDrag.start.y + locationDrag.delta.y,
+    });
+  });
+
+  // The visible target and the committed drop must use the same decision.
+  function nearestDropPoint(pointer: { x: number; y: number } | null) {
+    if (
+      !pointer ||
+      pointer.x < 0 ||
+      pointer.x > 950 ||
+      pointer.y < 0 ||
+      pointer.y > 950
+    )
+      return null;
+    return inputs
+      .getActivePoints()
+      .reduce<PlacementGridPoint | null>(
+        (best, point) =>
+          !best ||
+          Math.hypot(point.x - pointer.x, point.y - pointer.y) <
+            Math.hypot(best.x - pointer.x, best.y - pointer.y)
+            ? point
+            : best,
+        null
+      );
+  }
 
   function committedOrientationFor(color: HandSide): Orientation {
     return color === HandSide.LEFT
@@ -271,6 +305,7 @@ export function createPropPlacementAimState(
     event: PointerEvent,
     location: GridLocation
   ): void {
+    landing = null;
     pointerHandledPress = false;
     if (startLocationDrag(event, occupiedColor(location, event))) return;
     if (!inputs.getCanAim() || dragPointerId !== null) return;
@@ -302,6 +337,7 @@ export function createPropPlacementAimState(
           event.clientX - locationDrag.clientStart.x,
           event.clientY - locationDrag.clientStart.y
         ) >= 6;
+      const previousTarget = locationTarget?.location;
       locationDrag = {
         ...locationDrag,
         moved,
@@ -310,6 +346,8 @@ export function createPropPlacementAimState(
           y: pointer.y - locationDrag.start.y,
         },
       };
+      if (moved && locationTarget && locationTarget.location !== previousTarget)
+        dependencies.triggerHaptic();
       if (moved) event.preventDefault();
       return;
     }
@@ -343,27 +381,11 @@ export function createPropPlacementAimState(
       locationDrag = null;
       if (!drag.moved) return; // A tap retains the existing select/place behavior.
       pointerHandledPress = true;
-      if (
-        !valid ||
-        !pointer ||
-        pointer.x < 0 ||
-        pointer.x > 950 ||
-        pointer.y < 0 ||
-        pointer.y > 950
-      )
-        return;
-      const nearest = inputs
-        .getActivePoints()
-        .reduce<PlacementGridPoint | null>(
-          (best, point) =>
-            !best ||
-            Math.hypot(point.x - pointer.x, point.y - pointer.y) <
-              Math.hypot(best.x - pointer.x, best.y - pointer.y)
-              ? point
-              : best,
-          null
-        );
-      if (nearest) placement.selectPoint(nearest.location, drag.color);
+      const nearest = valid ? nearestDropPoint(pointer) : null;
+      if (nearest) {
+        placement.selectPoint(nearest.location, drag.color);
+        landing = { point: nearest, color: drag.color };
+      }
       return;
     }
     if (event.pointerId !== dragPointerId) return;
@@ -397,10 +419,10 @@ export function createPropPlacementAimState(
   function locationDragValid(): boolean {
     return Boolean(
       locationDrag &&
-        placement.canEdit &&
-        inputs.getCanDragLocations?.() &&
-        placement.leftLocation === locationDrag.initialLeft &&
-        placement.rightLocation === locationDrag.initialRight
+      placement.canEdit &&
+      inputs.getCanDragLocations?.() &&
+      placement.leftLocation === locationDrag.initialLeft &&
+      placement.rightLocation === locationDrag.initialRight
     );
   }
 
@@ -423,12 +445,16 @@ export function createPropPlacementAimState(
       pointerId: event.pointerId,
       color,
       start: pointer,
+      origin: propCenter(color) ?? pointer,
       clientStart: { x: event.clientX, y: event.clientY },
       delta: { x: 0, y: 0 },
       moved: false,
       initialLeft: placement.leftLocation,
       initialRight: placement.rightLocation,
     };
+    landing = null;
+    clearHover();
+    dependencies.triggerHaptic();
     (event.currentTarget as Element | null)?.setPointerCapture?.(
       event.pointerId
     );
@@ -445,6 +471,13 @@ export function createPropPlacementAimState(
   function cancelLocationDrag(): void {
     if (locationDrag?.moved) pointerHandledPress = true;
     locationDrag = null;
+    landing = null;
+  }
+
+  function handleEscape(event: KeyboardEvent): void {
+    if (event.key !== "Escape" || !locationDrag) return;
+    event.preventDefault();
+    cancelLocationDrag();
   }
 
   function selectOrEdit(
@@ -468,12 +501,14 @@ export function createPropPlacementAimState(
       pointerHandledPress = false;
       return;
     }
+    landing = null;
     selectOrEdit(location, event);
   }
 
   function handleKeydown(event: KeyboardEvent, location: GridLocation): void {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
+    landing = null;
     selectOrEdit(location);
   }
 
@@ -485,6 +520,30 @@ export function createPropPlacementAimState(
   }
 
   return {
+    get grabbedLocationColor() {
+      return locationDrag?.color ?? null;
+    },
+    get locationDragOrigin() {
+      return locationDrag?.origin ?? null;
+    },
+    get locationDragCenter() {
+      if (!locationDrag) return null;
+      return {
+        x:
+          locationDrag.origin.x +
+          (locationDrag.moved ? locationDrag.delta.x : 0),
+        y:
+          locationDrag.origin.y +
+          (locationDrag.moved ? locationDrag.delta.y : 0),
+      };
+    },
+    get locationTarget() {
+      return locationTarget;
+    },
+    get landing() {
+      return landing;
+    },
+    handleEscape,
     get locationDragColor() {
       return locationDrag?.moved ? locationDrag.color : null;
     },

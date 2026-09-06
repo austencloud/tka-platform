@@ -128,6 +128,7 @@ describe("prop placement state", () => {
     );
     aim.handlePointerMove(pointer("pointermove", east.x, east.y));
     expect(aim.locationDragColor).toBe(HandSide.LEFT);
+    expect(aim.locationTarget?.location).toBe(GridLocation.EAST);
     expect(state.leftLocation).toBe(GridLocation.NORTH);
     expect(state.historyLength).toBe(2);
     aim.handlePointerUp(pointer("pointerup", east.x, east.y));
@@ -135,8 +136,31 @@ describe("prop placement state", () => {
     expect(state.leftLocation).toBe(GridLocation.EAST);
     expect(state.activeHand).toBeNull();
     expect(state.historyLength).toBe(3);
+    expect(aim.landing?.point.location).toBe(state.leftLocation);
+    expect(aim.locationTarget).toBeNull();
     state.undo();
     expect(state.leftLocation).toBe(GridLocation.NORTH);
+  });
+  it("updates the landing preview without extra commits or repeated target haptics", () => {
+    const { state, aim, triggerHaptic } = dragHarness();
+    aim.handlePointerDown(pointer("pointerdown", 475, 300), GridLocation.NORTH);
+    triggerHaptic.mockClear();
+    aim.handlePointerMove(pointer("pointermove", 600, 475));
+    expect(aim.locationTarget?.location).toBe(GridLocation.EAST);
+    aim.handlePointerMove(pointer("pointermove", 610, 480));
+    expect(triggerHaptic).toHaveBeenCalledTimes(1);
+    aim.handlePointerMove(pointer("pointermove", -10, 475));
+    expect(aim.locationTarget).toBeNull();
+    expect(state.historyLength).toBe(2);
+    aim.handlePointerMove(pointer("pointermove", 475, 650));
+    expect(aim.locationTarget?.location).toBe(GridLocation.SOUTH);
+    aim.handleEscape(new KeyboardEvent("keydown", { key: "Escape" }));
+    aim.handlePointerUp(pointer("pointerup", 475, 650));
+    expect(aim.grabbedLocationColor).toBeNull();
+    expect(aim.locationTarget).toBeNull();
+    expect(aim.landing).toBeNull();
+    expect(state.leftLocation).toBe(GridLocation.NORTH);
+    expect(state.historyLength).toBe(2);
   });
   it.each(["cancel", "outside", "reset"])(
     "does not commit a %s drag",
