@@ -218,7 +218,7 @@
   class="module-switcher-drawer"
   backdropClass="module-switcher-backdrop"
   placement={drawerPlacement}
-  showHandle={true}
+  showHandle={drawerPlacement === "bottom"}
   closeOnBackdrop={true}
 >
   <div class="module-switcher-container">
@@ -376,11 +376,12 @@
     height: 100dvh;
   }
 
-  /* Widescreen devices (Z-Fold unfolded, tablets): content-sized drawer */
+  /* The animated list has no intrinsic height. Keep a definite sheet height
+     on unfolded phones too, or the footer squeezes the modules out of view. */
   @media (min-width: 700px) and (min-height: 500px) {
     :global(.module-switcher-drawer[data-placement="bottom"]) {
       --sheet-max-height: 85dvh;
-      height: auto;
+      height: 85dvh;
       border-radius: var(--sheet-radius-large, 20px)
         var(--sheet-radius-large, 20px) 0 0;
     }
@@ -402,7 +403,7 @@
 
   /* Drawer inner fills available height */
   :global(.drawer-content.module-switcher-drawer .drawer-inner) {
-    overflow-y: auto;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -561,9 +562,7 @@
     min-height: 0;
   }
 
-  /* Bottom drawers are content-sized, so a percentage-height fill child has
-     no definite block size to resolve against. Pin the canonical Crossfade to
-     this flex item; the parent still owns the stable geometry. */
+  /* Keep both animation layers inside the space between header and footer. */
   .module-switcher-content :global(.crossfade.fill) {
     position: absolute;
     inset: 0;
@@ -578,6 +577,8 @@
     padding: 20px 20px 40px;
     overflow-y: auto;
     overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    container-type: inline-size;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
   }
@@ -704,6 +705,8 @@
     display: grid;
     place-items: center;
     text-align: center;
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
 
   .drawer-action:hover {
@@ -782,7 +785,8 @@
   }
 
   .account-footer-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 3rem), 1fr));
     align-items: stretch;
     gap: 8px;
   }
