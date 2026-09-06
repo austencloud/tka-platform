@@ -23,6 +23,7 @@
     ThumbnailVariant,
     ThumbnailRenderInput,
     ThumbnailVisibilitySettings,
+    ThumbnailCacheKey,
   } from "$lib/shared/browse/services/thumbnail-key-deriver";
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/get-thumbnail-render-orchestrator";
   import { getThumbnailLocalCache } from "$lib/shared/browse/get-thumbnail-local-cache";
@@ -111,6 +112,7 @@
   let status = $state<ThumbnailLoadStatus>({ state: "idle" });
   let isVisible = $state(false);
   let currentKeyHash = $state<string | null>(null);
+  let displayedKey = $state<ThumbnailCacheKey | null>(null);
   let currentRequestController: AbortController | null = null;
 
   // Non-reactive flag to skip cache after 404 (avoids $effect dependency loop)
@@ -217,8 +219,12 @@
     if (containerRef) {
       observer = new IntersectionObserver(
         ([entry]) => {
-          if (entry?.isIntersecting && !isVisible) {
-            isVisible = true;
+          isVisible = entry?.isIntersecting ?? false;
+          if (!isVisible && currentRequestController) {
+            currentRequestController.abort();
+            currentRequestController = null;
+            currentKeyHash = null;
+            status = { state: "idle" };
           }
         },
         { rootMargin: "50px", threshold: 0.01 }
@@ -233,9 +239,7 @@
     currentRequestController?.abort();
     currentRequestController = null;
     // Revoke old blob URL to prevent memory leak
-    if (thumbnailUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(thumbnailUrl);
-    }
+    releaseUncachedThumbnail();
     // Skip all cache tiers on re-render - the whole point of clearing is to
     // get a fresh render. Without this, stale static/local thumbnails (e.g.
     // ones rendered before LOOP detection existed) would be served again.
@@ -266,14 +270,17 @@
 
     // Don't revoke blob URLs that are in the memory cache - other components may reuse them.
     // The memory cache handles revocation on LRU eviction.
+    releaseUncachedThumbnail();
+  });
+
+  function releaseUncachedThumbnail(): void {
     if (
       thumbnailUrl?.startsWith("blob:") &&
-      orchestrator &&
-      !orchestrator.getCached(currentKeyHash ?? "")
+      orchestrator?.getCached(displayedKey?.hash ?? "") !== thumbnailUrl
     ) {
       URL.revokeObjectURL(thumbnailUrl);
     }
-  });
+  }
 
   function handleImageLoad() {
     // Image loaded successfully
@@ -295,7 +302,7 @@
 
     if (!orchestrator) return;
 
-    const key = deriveKey(renderInput);
+    const key = displayedKey ?? deriveKey(renderInput);
 
     // Purge the tiers this failure actually condemns. A cloud URL that fails to
     // decode is a confirmed dead object — it outranks the manifest and the
@@ -315,9 +322,7 @@
     errorDebounceTimer = setTimeout(() => {
       errorDebounceTimer = null;
       // Revoke blob URL before clearing to prevent memory leak
-      if (thumbnailUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(thumbnailUrl);
-      }
+      releaseUncachedThumbnail();
       // Clear current state to force re-fetch
       thumbnailUrl = null;
       currentKeyHash = null; // This will trigger the $effect to re-run
@@ -350,9 +355,8 @@
     if (!skipCacheOnNextRequest) {
       const cached = orchestrator.getCached(key.hash);
       if (cached) {
-        if (thumbnailUrl?.startsWith("blob:") && thumbnailUrl !== cached) {
-          URL.revokeObjectURL(thumbnailUrl);
-        }
+        if (thumbnailUrl !== cached) releaseUncachedThumbnail();
+        displayedKey = key;
         thumbnailUrl = cached;
         status = { state: "complete", url: cached };
         return;
@@ -360,9 +364,8 @@
     }
 
     // Clear old thumbnail - show loading placeholder while fetching
-    if (thumbnailUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(thumbnailUrl);
-    }
+    releaseUncachedThumbnail();
+    displayedKey = null;
     thumbnailUrl = null;
 
     // Capture and reset the skipCache flag
@@ -385,6 +388,14 @@
         skipCache: shouldSkipCache,
         priority,
         signal: requestController.signal,
+        qrPolicy: variant === "gallery" && !cardMode ? "background" : "generate",
+        onPreview: (preview) => {
+          if (requestIsCurrent() && preview.url) {
+            displayedKey = preview.key;
+            thumbnailUrl = preview.url;
+            status = { state: "complete", url: preview.url };
+          }
+        },
         onStatusChange: (s) => {
           if (requestIsCurrent()) {
             status = s;
@@ -395,6 +406,7 @@
         // Only apply if still current
         if (requestIsCurrent()) {
           if (result.url) {
+            displayedKey = result.key;
             thumbnailUrl = result.url;
             // Ensure loading overlay clears - prevents race where a re-queued
             // render sets status back to "queued" while thumbnailUrl persists
@@ -498,7 +510,7 @@
   export function forceRerender(): void {
     if (!orchestrator) return;
 
-    const key = deriveKey(renderInput);
+    const key = displayedKey ?? deriveKey(renderInput);
 
     // 1+2. Purge the local tiers through the shared repair path so the manual
     // force and the image-error path can't drift again. A manual force is NOT a
@@ -516,9 +528,7 @@
     skipCacheOnNextRequest = true;
 
     // 4. Revoke old blob URL
-    if (thumbnailUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(thumbnailUrl);
-    }
+    releaseUncachedThumbnail();
 
     // 5. Reset state to trigger the $effect to re-fetch
     thumbnailUrl = null;

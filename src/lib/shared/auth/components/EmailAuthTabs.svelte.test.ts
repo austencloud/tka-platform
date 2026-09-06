@@ -55,4 +55,16 @@ describe("EmailAuthTabs", () => {
       .element(page.getByRole("tab", { name: /Password, last used/ }))
       .toHaveAttribute("aria-selected", "true");
   });
+
+  it("keeps the compact invitation on email code even after a password sign-in", async () => {
+    mocks.lastMethod = "password";
+    render(EmailAuthTabs, { compact: true, showMethods: true });
+
+    await expect
+      .element(page.getByRole("tab", { name: "Email code" }))
+      .toHaveAttribute("aria-selected", "true");
+    await expect
+      .element(page.getByRole("tab", { name: /Password, last used/ }))
+      .toHaveAttribute("aria-selected", "false");
+  });
 });

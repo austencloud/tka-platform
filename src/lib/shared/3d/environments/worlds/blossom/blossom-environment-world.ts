@@ -217,6 +217,14 @@ function configureAuthoredEnvironment(
       ? mesh.material
       : [mesh.material];
     for (const material of materials) {
+      const groundMaterial = material as MeshStandardMaterial;
+      if (
+        groundMaterial.isMeshStandardMaterial &&
+        material.name === "Amphitheatre moss"
+      ) {
+        // Match the meadow blades after the cool moon lighting desaturates the atlas.
+        groundMaterial.color.setRGB(0.3, 0.54, 0.23);
+      }
       if (
         material instanceof MeshStandardMaterial &&
         material.name === "Ancient cherry bark"

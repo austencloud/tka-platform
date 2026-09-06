@@ -1,6 +1,6 @@
 # Blossom lantern garden
 
-Replacement for the rejected moonlit amphitheatre. Austen authorized a complete redesign and direct work in the primary checkout in the September 5 handoff. Visual acceptance remains pending; passing the technical checks does not establish a design score.
+Replacement for the rejected moonlit amphitheatre. Austen authorized a complete redesign and direct work in the primary checkout in the September 5 handoff. He subsequently gave the lantern-garden composition a visual pass, with two remaining ground-cover concerns: the outer vegetation boundary and the mismatch between grass and soil.
 
 The garden uses a rounded 12 × 8 m slate court, a continuous stone apron and approaches, broad front steps, a crescent pond, eight low washi lanterns, four lanterns hung from sampled branch positions, planted rock banks and 26 botanical cherry trees. A 17 m main tree anchors the pond. The protected performance volume and two circulation routes remain part of the authored plan.
 
@@ -44,8 +44,14 @@ Fresh startup exposed an invalid import from Vite's public directory; the bundle
 
 Recorded frame-rate snapshots range from 22 to 60 FPS on the shared development machine. These samples include startup and concurrent work; they do not establish production or physical-phone performance. Existing Svelte state-proxy equality warnings remain. Raw measurements and scope limitations are in `evidence/viewport-observations.json`.
 
-The scene is ready for visual review, not certified as a 10/10. In particular, distant ground cover and foliage still read as real-time geometry, and mobile performance needs a controlled physical-device benchmark. `rejected-early-blender-study.png` is retained as a rejected study, not final evidence.
+This initial review preceded Austen's visual pass and the ground-cover refinement below. Mobile performance still needs a controlled physical-device benchmark. `rejected-early-blender-study.png` is retained as a rejected study, not final evidence.
 
-The temporary server on port 5491 was stopped. Git removed the detached review worktree registration, but its folder could not be completely removed because it contained a dependency junction. Automatic approval review blocked the subsequent checked cleanup command with “blocked by policy.” The remaining folder is `E:/worktrees/tka-platform/blossom-final-review-905`; primary dependencies and certificates remain intact.
+The temporary server on port 5491 was stopped. Git removed the detached review worktree registration, but its folder could not be completely removed because it contained a dependency junction. Automatic approval review blocked the subsequent checked cleanup command with “blocked by policy.” The remaining folder is `E:/worktrees/tka-platform/blossom-final-review-905`. During the ground follow-up, missing dependency launchers and metadata were discovered, likely affected by that removal. `pnpm install --offline --frozen-lockfile --ignore-scripts` restored them without changing the lockfile. No further folder cleanup was attempted.
+
+## Ground-cover refinement
+
+The authored vegetation previously ended inside a 72×66 m rectangle on a 144×144 m terrain. Fine meadow blades now extend to roughly ±71 m, with density decreasing gradually across the outer ground. Blades are roughly 1–3 cm wide instead of 9–20 cm, with shorter heights and darker roots. Moss receives a matching olive tint, reduced normal strength and a low specular factor; this prevents the grazing-angle moonlight from washing the ground grey.
+
+The refined asset is 11.69 MiB with 3,299,708 visible authored triangles, both slightly below the accepted version. Geometry clearance checks still pass and now verify the outer ground-cover bounds. The asset verifier also checks that the matte moss treatment survives export. Ten focused runtime and composition tests pass, along with the scene module's ESLint check. Browser evidence for this follow-up is prefixed `ground-refinement-`; the earlier `runtime-` captures document the accepted composition before this refinement. This follow-up reused port 5173 and started no additional server.
 
 The shared opening-camera owner now uses the authored Blossom view when no neighboring 2D card needs alignment. The single-performer welcome transition preserves this composition; larger casts retain their group framing. Portrait screens use a wider, offset composition. Blossom's performer heading follows its reversed stage axis, and the worker renderer receives the same authored opening pose. Saved user camera poses continue to take precedence.

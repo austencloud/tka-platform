@@ -855,6 +855,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
       <BrowsePanel
         {engine}
         layout="compact"
+        eager={false}
         curatedSortLabel="Collection order"
         toolbarVariant="embedded"
         resultTotal={visibleCount ?? members.length}
