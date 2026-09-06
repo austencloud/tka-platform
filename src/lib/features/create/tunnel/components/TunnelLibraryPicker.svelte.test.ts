@@ -92,7 +92,9 @@ describe("TunnelLibraryPicker", () => {
   beforeEach(() => {
     services.refreshTunnelPoster.mockReset().mockResolvedValue("refreshed");
     services.listPublicTunnelDiscovery.mockReset().mockResolvedValue([]);
-    services.hydratePublicTunnelDiscovery.mockReset().mockResolvedValue();
+    services.hydratePublicTunnelDiscovery
+      .mockReset()
+      .mockResolvedValue(undefined);
   });
 
   it("shows recent tunnels first with truthful authored and rendered counts", () => {

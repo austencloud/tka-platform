@@ -1,4 +1,4 @@
-import masterplanJson from "../../../../../../../docs/superpowers/specs/blossom-masterplan-r2/blossom-masterplan-r2.json";
+import masterplanJson from "../../../../../../../static/models/blossom/amphitheatre-plan.json";
 
 export type BlossomPlanPoint2 = readonly [number, number];
 export type BlossomPlanPoint3 = readonly [number, number, number];
@@ -68,13 +68,13 @@ interface BlossomMasterplan {
 
 const masterplan = masterplanJson as unknown as BlossomMasterplan;
 
-// "rejected-visual-review" renders the preserved build for comparison only;
-// new production authoring is blocked at the build script.
+// Authored scenes can be reviewed before the user accepts their visual design.
 if (
+  masterplan.status !== "authored" &&
   masterplan.status !== "approved-for-production" &&
   masterplan.status !== "rejected-visual-review"
 ) {
-  throw new Error("Blossom R2.1 is not at a recognized runtime gate");
+  throw new Error("Blossom plan is not at a recognized runtime gate");
 }
 
 export function getBlossomMasterplanId(): string {

@@ -8,9 +8,12 @@ import {
   PerspectiveCamera,
   ShaderMaterial,
   Texture,
+  Vector3,
 } from "three";
 import { createDefaultWinterConfig } from "$lib/shared/3d/environments/domain/models/scene-configs";
 import { createWinterEnvironmentWorld } from "$lib/shared/3d/environments/worlds/winter/winter-environment-world";
+import { getStageCoordinateFrame } from "$lib/shared/3d/environments/domain/stage-coordinate-frame";
+import { BackgroundType } from "@austencloud/backgrounds";
 
 function authoredEnvironment() {
   const root = new Group();
@@ -80,11 +83,13 @@ describe("createWinterEnvironmentWorld", () => {
         "winter-ice-platform-surface",
       ])
     );
-    expect(
-      world.root.children.filter((child) => child.type.endsWith("Light"))
-    ).toHaveLength(5);
-    expect(world.fog.density).toBe(0.014);
-    expect(world.background.getHexString()).toBe("172c44");
+    const lights: string[] = [];
+    world.root.traverse((child) => {
+      if (child.type.endsWith("Light")) lights.push(child.name);
+    });
+    expect(lights).toHaveLength(8);
+    expect(world.fog.density).toBe(0.0045);
+    expect(world.background.getHexString()).toBe("617487");
     world.dispose();
   });
 
@@ -125,7 +130,7 @@ describe("createWinterEnvironmentWorld", () => {
     world.setGroundY(-2.25);
     expect(environment.root.position.y).toBe(-2.25);
     expect(pond.position.y).toBeCloseTo(-2.1);
-    expect(fire.position.y).toBeCloseTo(-2.25 + 2.59 + 0.884);
+    expect(fire.position.y).toBeCloseTo(-2.25 + 0.4 + 0.884);
     world.dispose();
   });
 
@@ -148,8 +153,70 @@ describe("createWinterEnvironmentWorld", () => {
     for (const dispose of textureDisposals) {
       expect(dispose).toHaveBeenCalledTimes(1);
     }
-    // The Svelte loader cache owns authored GLB resources; the worker adapter
-    // disposes its private GLB tree after the shared world releases it.
+    // Both loader adapters dispose their private GLB tree after the shared
+    // world releases it; the world only disposes the effects it creates.
     expect(geometryDispose).not.toHaveBeenCalled();
+  });
+
+  it("keeps the Blender floor on the foot plane while clearing a larger cast", () => {
+    const asset = new Group();
+    const floor = new Mesh(
+      new BoxGeometry(15.4, 0.45, 15.4),
+      new MeshBasicMaterial()
+    );
+    floor.position.y = 0.225;
+    floor.userData.bluehourRole = "court";
+    asset.add(floor);
+    const { world } = testWorld({ environmentRoot: asset });
+    expect(world.root.getObjectByName("winter-ice-platform")).toBeUndefined();
+    const frame = getStageCoordinateFrame(BackgroundType.WINTER, true);
+    for (const [ground, radius, growth] of [
+      [-1.5, 3, 0],
+      [-2, 12, 3.5],
+      [-1, 4, 1.5],
+    ]) {
+      world.setLayout(ground!, radius!, growth!, frame.environmentYOffset);
+      world.root.updateMatrixWorld(true);
+      expect(floor.localToWorld(new Vector3(0, 0.225, 0)).y).toBeCloseTo(
+        ground! + frame.performerAnchorY
+      );
+      expect(asset.parent!.scale.x * 7.7).toBeGreaterThanOrEqual(radius!);
+      expect(asset.parent!.scale.y).toBe(1);
+    }
+    world.dispose();
+  });
+
+  it("freezes snow, stars, and fire when reduced motion is requested", () => {
+    const { world } = testWorld({ motionScale: 0 });
+    const fire = world.root.getObjectByName("SharedVolumetricFire") as Mesh<
+      BoxGeometry,
+      ShaderMaterial
+    >;
+    const before = fire.material.uniforms.uTime!.value;
+    const particles = world.root.getObjectByName("winter-snow") as Mesh<
+      BoxGeometry,
+      ShaderMaterial
+    >;
+    const snowBefore = Array.from(
+      particles.geometry.getAttribute("position").array
+    );
+    const stars = world.root.getObjectByName("winter-starfield") as Mesh<
+      BoxGeometry,
+      ShaderMaterial
+    >;
+    const starTime = stars.material.uniforms.uTime!.value;
+    world.update(1, new PerspectiveCamera());
+    expect(fire.material.uniforms.uTime!.value).toBe(before);
+    expect(
+      Array.from(particles.geometry.getAttribute("position").array)
+    ).toEqual(snowBefore);
+    expect(stars.material.uniforms.uTime!.value).toBe(starTime);
+    world.setMotionScale(1);
+    world.update(0.1, new PerspectiveCamera());
+    expect(fire.material.uniforms.uTime!.value).toBeGreaterThan(before);
+    expect(
+      Array.from(particles.geometry.getAttribute("position").array)
+    ).not.toEqual(snowBefore);
+    world.dispose();
   });
 });

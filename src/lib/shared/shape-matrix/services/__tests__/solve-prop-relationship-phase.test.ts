@@ -24,6 +24,7 @@ import {
   flowerPetals,
   type Flower,
   type FlowerStyle,
+  type RotatingFlower,
 } from "../../domain/flower-signature";
 import type { RotationStyle } from "../../domain/rotation-style";
 import {
@@ -52,7 +53,14 @@ let edges: CsvEdge[];
 let matrices: RotationStyleArchetype[];
 let staffTip: { dx: number; dy: number };
 
-function flower(style: FlowerStyle, turns: number, ori: "in" | "out"): Flower {
+// Every fixture here is a rotating flower: a float has no style to resolve an
+// archetype from, so naming the narrower type keeps `pair.left.style` a
+// FlowerStyle instead of widening to include "float".
+function flower(
+  style: FlowerStyle,
+  turns: number,
+  ori: "in" | "out"
+): RotatingFlower {
   return {
     style,
     turns,
@@ -62,7 +70,10 @@ function flower(style: FlowerStyle, turns: number, ori: "in" | "out"): Flower {
   };
 }
 
-function overlayFor(pair: { left: Flower; right: Flower }): FlowerParityTarget {
+function overlayFor(pair: {
+  left: RotatingFlower;
+  right: RotatingFlower;
+}): FlowerParityTarget {
   const leftArchetype = resolveFlowerArchetype(matrices, pair.left.style);
   const rightArchetype = resolveFlowerArchetype(matrices, pair.right.style);
   const leftSequence = buildFlowerSequence(

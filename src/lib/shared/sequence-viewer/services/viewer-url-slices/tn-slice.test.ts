@@ -140,7 +140,7 @@ describe("tn slice", () => {
     const slice = captureTnSlice({
       config: { ...DEFAULT_CONFIG, fold: 4, mirror: true, staggerSteps: 2 },
       gridVisible: true,
-      colors: { mode: "custom", custom: { blue: "#123456", red: "#abcdef" } },
+      colors: { mode: "custom", custom: { left: "#123456", right: "#abcdef" } },
       section: "speed",
       presetRecipe: recipe,
     });

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Optimize the authored Blossom garden for mobile WebGL delivery.
+ * Optimize the authored Blossom amphitheatre for WebGL delivery.
  *
- * The source uses the two approved PlantFactory crowns plus shared Blender mesh
- * data for ecology islands and carved lanterns. `instance` converts repeated
+ * The source uses sculpted cherry trees, custom petals and shared grove mesh
+ * data. `instance` converts repeated
  * nodes to EXT_mesh_gpu_instancing while preserving named stage and hero-prop
  * nodes. PBR atlases are resized and WebP-compressed before the final meshopt
  * pass so close-range material detail survives without shipping raw sources.
@@ -22,7 +22,7 @@ const TMP = resolve("static/models/blossom/_tmp_optimized.glb");
 const TMP_INSTANCED = resolve("static/models/blossom/_tmp_instanced.glb");
 const TMP_PRUNED = resolve("static/models/blossom/_tmp_pruned.glb");
 const TEMPORARIES = [TMP, TMP_INSTANCED, TMP_PRUNED];
-const STAGE_DECK_TOP = 0.35;
+const STAGE_DECK_TOP = 0.55;
 const STAGE_HEIGHT_TOLERANCE = 0.001;
 
 function size(path) {
@@ -135,7 +135,7 @@ function verifyStageBounds(path) {
   const deckNode = gltf.nodes.find((node) => node.name === "Stage_Planks");
   const deckMaximum = stageBounds.get("Stage_Planks");
   if (deckNode?.extras?.tka_stage_deck_top !== STAGE_DECK_TOP) {
-    throw new Error("Stage_Planks is missing its 0.35 deck-height metadata");
+    throw new Error("Stage_Planks is missing its 0.55 deck-height metadata");
   }
   if (Math.abs(deckMaximum - STAGE_DECK_TOP) > STAGE_HEIGHT_TOLERANCE) {
     throw new Error(
@@ -160,9 +160,7 @@ function verifyStageBounds(path) {
 
 if (!existsSync(INPUT)) {
   console.error(`Input not found: ${INPUT}`);
-  console.error(
-    "Run build-blossom-environment.py and blender-export-blossom-full.py first."
-  );
+  console.error("Run build-blossom-amphitheatre.py first.");
   process.exit(1);
 }
 

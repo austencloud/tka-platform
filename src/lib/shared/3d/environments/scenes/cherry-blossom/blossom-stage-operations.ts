@@ -1,4 +1,4 @@
-import masterplanJson from "../../../../../../../docs/superpowers/specs/blossom-masterplan-r2/blossom-masterplan-r2.json";
+import masterplanJson from "../../../../../../../static/models/blossom/amphitheatre-plan.json";
 
 interface BlossomStageOperationsPlan {
   status: string;
@@ -45,10 +45,13 @@ const plan = masterplanJson as unknown as BlossomStageOperationsPlan;
 
 // "rejected-visual-review" renders the preserved build for comparison only.
 if (
+  plan.status !== "authored" &&
   plan.status !== "approved-for-production" &&
   plan.status !== "rejected-visual-review"
 ) {
-  throw new Error("Blossom stage operations are not at a recognized runtime gate");
+  throw new Error(
+    "Blossom stage operations are not at a recognized runtime gate"
+  );
 }
 
 export function getBlossomStageFootprint(): {

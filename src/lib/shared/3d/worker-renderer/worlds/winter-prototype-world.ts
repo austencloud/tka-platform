@@ -6,16 +6,23 @@ import {
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { detectWinterQuality } from "../../environments/scenes/winter/quality/winter-quality";
-import { createWinterEnvironmentWorld } from "../../environments/worlds/winter/winter-environment-world";
+import {
+  createWinterEnvironmentWorld,
+  WINTER_ENVIRONMENT_URL,
+} from "../../environments/worlds/winter/winter-environment-world";
+import {
+  getCanonicalPerformerStageBounds,
+  getPerformerStageBounds,
+  getAddedPerformerStageGrowth,
+} from "../../environments/domain/performer-stage-bounds";
+import { getStageCoordinateFrame } from "../../environments/domain/stage-coordinate-frame";
+import { BackgroundType } from "@austencloud/backgrounds";
 import type {
   WorkerEnvironmentWorld,
   WorkerWorldContext,
 } from "./worker-environment-world";
 import { disposeWorkerWorldTree } from "./worker-environment-world";
-import {
-  createWorkerFlatNormalTexture,
-  loadWorkerTexture,
-} from "./worker-texture-loader";
+import { loadWorkerTexture } from "./worker-texture-loader";
 
 export type WinterPrototypeWorld = Omit<
   WorkerEnvironmentWorld,
@@ -34,7 +41,7 @@ function loadWinterGltf(
 ): Promise<GLTF> {
   return new Promise((resolve, reject) => {
     loader.load(
-      absoluteAssetUrl("/models/winter/winter-environment.glb"),
+      absoluteAssetUrl(WINTER_ENVIRONMENT_URL),
       resolve,
       (event) => reportProgress(event.loaded, event.total),
       reject
@@ -87,23 +94,12 @@ export async function createWinterPrototypeWorld(
   context.reportProgress("assets", 1);
 
   const textures = new Map(textureEntries);
-  // These two legacy pond URLs have never shipped in static/. TextureLoader
-  // merely logged their failed HTML-image decodes on the main-thread scene;
-  // a worker surfaces that as a fatal exception. Neutral normals preserve the
-  // material contract without inventing detail or reaching for a missing file.
-  textures.set(
-    absoluteAssetUrl("/textures/water/Water_1_M_Normal.jpg"),
-    createWorkerFlatNormalTexture()
-  );
-  textures.set(
-    absoluteAssetUrl("/textures/water/Water_2_M_Normal.jpg"),
-    createWorkerFlatNormalTexture()
-  );
 
   const environment = createWinterEnvironmentWorld({
     environmentRoot: gltf.scene,
     groundY: context.performers[0]?.groundY ?? -1.5,
     stageRadius: 3,
+    motionScale: context.reducedMotion ? 0 : 1,
     deviceTier: detectWinterQuality(context.renderer),
     outputColorSpace: context.renderer.outputColorSpace as ColorSpace,
     assetUrl: absoluteAssetUrl,
@@ -115,6 +111,19 @@ export async function createWinterPrototypeWorld(
       return texture;
     },
   });
+  function setPerformers(performers: WorkerWorldContext["performers"]) {
+    const bounds = getPerformerStageBounds(
+      performers.map(({ position }) => ({ x: position[0], z: position[2] }))
+    );
+    const canonical = getCanonicalPerformerStageBounds(performers.length);
+    environment.setLayout(
+      performers[0]?.groundY ?? -1.5,
+      Math.max(bounds.radius, canonical.radius),
+      getAddedPerformerStageGrowth(performers.length),
+      getStageCoordinateFrame(BackgroundType.WINTER, true).environmentYOffset
+    );
+  }
+  setPerformers(context.performers);
   scene.add(environment.root);
   scene.fog = environment.fog;
   scene.background = environment.background;
@@ -124,13 +133,10 @@ export async function createWinterPrototypeWorld(
   return {
     environment: "winter",
     scene,
-    useViewerBaseLighting: false,
     update(deltaSeconds) {
       environment.update(deltaSeconds, context.camera);
     },
-    setPerformers(performers) {
-      environment.setGroundY(performers[0]?.groundY ?? -1.5);
-    },
+    setPerformers,
     dispose() {
       scene.remove(environment.root);
       scene.fog = null;

@@ -32,6 +32,13 @@
   {header}
 >
   <div class="about-copy">
+    <p>
+      {KINETIC_SHAPE_ENGINE_NAME} is an exploration tool within
+      <a href="/composer">Flow Arts Composer</a>, also available as a standalone
+      app. It brings together VTG, The Kinetic Alphabet, timing, and direction.
+      Flow Arts Composer is the main application for composing, animating,
+      saving, and sharing sequences.
+    </p>
     <div class="about-columns">
       <section>
         <span class="section-kicker">The foundation</span>

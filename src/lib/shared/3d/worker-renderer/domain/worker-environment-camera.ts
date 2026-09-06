@@ -13,9 +13,9 @@ const CAMERA_BY_ENVIRONMENT: Readonly<
     fov: 46,
   },
   rainbow: {
-    position: [0, 4.2, 17],
-    target: [0, 1.1, -1],
-    fov: 48,
+    position: [0, 3.8, 19],
+    target: [0, 1.8, -1],
+    fov: 52,
   },
   void: {
     position: [0, 4.2, 17],

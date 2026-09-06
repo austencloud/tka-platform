@@ -10,8 +10,8 @@ import {
 describe("Blossom ground contract", () => {
   it("maps the authored habitat mask across the entire garden", () => {
     expect(getBlossomGroundMaskBounds()).toEqual({
-      min: [-128, -122],
-      size: [256, 264],
+      min: [-80, -80],
+      size: [160, 160],
     });
   });
 
@@ -24,7 +24,7 @@ describe("Blossom ground contract", () => {
     });
   });
 
-  it("keeps decorative grass out of the rejected spatial graybox", () => {
+  it("does not add procedural clumps to the baked garden", () => {
     expect(getBlossomPlannedGrassClumps()).toBe(0);
   });
 

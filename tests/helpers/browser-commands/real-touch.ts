@@ -1,7 +1,25 @@
-import type { BrowserCommand } from "vitest/node";
-// Type-only: applies the playwright provider's BrowserCommandContext
-// augmentation (`ctx.page`, `ctx.frame`, `ctx.iframe`).
-import type {} from "@vitest/browser-playwright";
+import type { BrowserCommand, BrowserCommandContext } from "vitest/node";
+import type { Frame, Page } from "playwright";
+
+/**
+ * What the playwright provider actually hangs on the command context.
+ *
+ * `@vitest/browser-playwright` ships this as a `declare module "vitest/node"`
+ * augmentation, but vitest re-exports `BrowserCommandContext` from an internal
+ * chunk rather than declaring it in `vitest/node` itself, so the augmentation
+ * never merges and the fields stay invisible to `tsc`. Naming the same surface
+ * here keeps the command typed without weakening it.
+ */
+interface PlaywrightCommandContext extends BrowserCommandContext {
+  page: Page;
+  frame(): Promise<Frame>;
+}
+
+function isPlaywrightContext(
+  ctx: BrowserCommandContext
+): ctx is PlaywrightCommandContext {
+  return ctx.provider.name === "playwright";
+}
 
 /**
  * Drives a touch drag through Chromium's REAL input pipeline via CDP
@@ -25,7 +43,7 @@ export const dispatchRealTouchDrag: BrowserCommand<
     options?: { steps?: number; stepDelayMs?: number },
   ]
 > = async (ctx, from, to, options = {}) => {
-  if (ctx.provider.name !== "playwright") {
+  if (!isPlaywrightContext(ctx)) {
     throw new Error(
       `dispatchRealTouchDrag requires the playwright provider, got ${ctx.provider.name}`
     );

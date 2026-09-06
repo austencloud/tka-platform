@@ -130,7 +130,7 @@
         onpointerdown={(event) => aim.handlePointerDown(event, point.location)}
         onpointermove={(event) => aim.updateHover(event, point.location)}
         onpointerleave={aim.clearHover}
-        onclick={() => aim.handleClick(point.location)}
+        onclick={(event) => aim.handleClick(point.location, event)}
         onkeydown={(event) => aim.handleKeydown(event, point.location)}
         role="button"
         tabindex={aim.isPressable(point.location) ? 0 : -1}

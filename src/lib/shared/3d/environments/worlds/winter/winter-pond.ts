@@ -17,8 +17,8 @@ import { WINTER_POND_LAYOUT } from "../../scenes/winter/authored/winter-layout";
 export interface WinterPondTextures {
   colorMap: Texture;
   roughnessMap: Texture;
-  bodyNormal: Texture;
-  coatNormal: Texture;
+  bodyNormal: Texture | null;
+  coatNormal: Texture | null;
 }
 
 export interface WinterPond {
@@ -36,20 +36,23 @@ export function createWinterPond(
   const { colorMap, roughnessMap, bodyNormal, coatNormal } = textures;
   colorMap.colorSpace = SRGBColorSpace;
   roughnessMap.colorSpace = NoColorSpace;
-  bodyNormal.colorSpace = NoColorSpace;
-  coatNormal.colorSpace = NoColorSpace;
+  if (bodyNormal) bodyNormal.colorSpace = NoColorSpace;
+  if (coatNormal) coatNormal.colorSpace = NoColorSpace;
 
   for (const texture of [colorMap, roughnessMap, bodyNormal, coatNormal]) {
+    if (!texture) continue;
     texture.wrapS = RepeatWrapping;
     texture.wrapT = RepeatWrapping;
     texture.anisotropy = surfaceDetail === "full" ? 8 : 4;
   }
   colorMap.repeat.set(0.12, 0.12);
   roughnessMap.repeat.copy(colorMap.repeat);
-  bodyNormal.repeat.set(0.42, 0.38);
-  coatNormal.repeat.set(0.68, 0.62);
-  coatNormal.rotation = 0.38;
-  coatNormal.center.set(0.5, 0.5);
+  bodyNormal?.repeat.set(0.42, 0.38);
+  coatNormal?.repeat.set(0.68, 0.62);
+  if (coatNormal) {
+    coatNormal.rotation = 0.38;
+    coatNormal.center.set(0.5, 0.5);
+  }
 
   const geometry = new ShapeGeometry(
     createOrganicPondShape({
