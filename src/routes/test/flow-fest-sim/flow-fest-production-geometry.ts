@@ -956,17 +956,20 @@ function buildCampClusters(
   if (!playerTentPlacement) {
     throw new Error(`Missing authored player tent for ${selectedBranch}`);
   }
+  const resolvedPlayerTentPlacement: Placement = playerTentPlacement;
   const playerTentMaterial = tentMaterial();
-  playerTentMaterial.color.set(TENT_COLORS[playerTentPlacement.colorIndex]!);
+  playerTentMaterial.color.set(
+    TENT_COLORS[resolvedPlayerTentPlacement.colorIndex]!
+  );
   const playerTent = new Mesh(
-    isDomeTent(playerTentPlacement) ? domeTentGeometry : ridgeTentGeometry,
+    isDomeTent(resolvedPlayerTentPlacement) ? domeTentGeometry : ridgeTentGeometry,
     playerTentMaterial
   );
-  applyPlacement(playerTentPlacement, playerTent);
+  applyPlacement(resolvedPlayerTentPlacement, playerTent);
   appendPlacementCollisionParts(
     campEstablishedCollisionParts,
     tentCollisionProxy,
-    [playerTentPlacement],
+    [resolvedPlayerTentPlacement],
     applyPlacement
   );
   playerTent.name = `FFS_PlayerTent_${selectedBranch}_Authored`;
@@ -1259,7 +1262,7 @@ function shadeCampPart(geometry: BufferGeometry, shade: number): BufferGeometry 
   // lets a hand-authored fly panel share a batch with a BoxGeometry sill.
   geometry.deleteAttribute("uv");
   geometry.deleteAttribute("uv1");
-  const vertexCount = geometry.attributes.position.count;
+  const vertexCount = geometry.attributes.position!.count;
   const colors = new Float32Array(vertexCount * 3);
   colors.fill(shade);
   geometry.setAttribute("color", new BufferAttribute(colors, 3));
@@ -1564,7 +1567,7 @@ const FIRE_PIT_STONE_COUNT = 18;
 function buildFireAshBedGeometry(): BufferGeometry {
   const geometry = new CircleGeometry(FIRE_PIT_INNER_RADIUS_METERS, 30);
   geometry.rotateX(-Math.PI / 2);
-  const positions = geometry.attributes.position;
+  const positions = geometry.attributes.position!;
   // Vertex 0 is the centre; it drops so the bed dishes toward the coals.
   positions.setY(0, -0.05);
   for (let index = 1; index < positions.count; index += 1) {
@@ -1617,7 +1620,7 @@ function buildFireStoneRingGeometry(): BufferGeometry {
   // index keeps the flat-shaded vertex layout and lets the pit join the camera
   // collider merge.
   if (!merged.getIndex()) {
-    const vertexCount = merged.attributes.position.count;
+    const vertexCount = merged.attributes.position!.count;
     const indices = new Uint16Array(vertexCount);
     for (let index = 0; index < vertexCount; index += 1) indices[index] = index;
     merged.setIndex(new BufferAttribute(indices, 1));
@@ -1664,7 +1667,7 @@ function buildFestivalHeart(
     64
   );
   performanceFloorGeometry.rotateX(-Math.PI / 2);
-  const floorPositions = performanceFloorGeometry.attributes.position;
+  const floorPositions = performanceFloorGeometry.attributes.position!;
   for (let index = 0; index < floorPositions.count; index += 1) {
     const worldX = fireCenter.x + floorPositions.getX(index);
     const worldZ = fireCenter.z + floorPositions.getZ(index);
@@ -1729,12 +1732,13 @@ function buildFestivalHeart(
     roughness: 0.4,
     metalness: 0.68,
   });
-  for (const [index, [offsetX, offsetZ]] of [
+  const canopyPostOffsets: Array<[number, number]> = [
     [-3.25, -2.6],
     [3.25, -2.6],
     [3.25, 2.6],
     [-3.25, 2.6],
-  ].entries()) {
+  ];
+  for (const [index, [offsetX, offsetZ]] of canopyPostOffsets.entries()) {
     const x = ledCircleCenter.x + offsetX;
     const z = ledCircleCenter.z + offsetZ;
     const y = sampleFlowFestTerrainWorldY(terrain, x, z);
@@ -2199,8 +2203,8 @@ function pointNearRoutes(
 function distanceToSegment(
   x: number,
   z: number,
-  start: FlowFestRuntimePoint,
-  end: FlowFestRuntimePoint
+  start: Pick<FlowFestRuntimePoint, "x" | "z">,
+  end: Pick<FlowFestRuntimePoint, "x" | "z">
 ): number {
   const dx = end.x - start.x;
   const dz = end.z - start.z;

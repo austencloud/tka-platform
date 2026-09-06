@@ -32,7 +32,7 @@ export interface PublicTunnelSequenceSource {
   readonly id: string;
   readonly name: string;
   readonly word: string;
-  readonly steps: unknown[];
+  readonly steps: readonly unknown[];
 }
 
 export interface PublicTunnelIndependentSource {

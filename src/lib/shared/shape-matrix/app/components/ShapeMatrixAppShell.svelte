@@ -28,6 +28,8 @@
   import { runMandalaMorph } from "../services/shape-matrix-mandala-morph";
   import { runShapeMatrixDetailReveal } from "../services/shape-matrix-reveal";
   import { growFade } from "$lib/shared/transitions/motion";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
 
   interface Props {
     /** Embedded hosts (the Toys tab) get their name from module chrome, so
@@ -318,6 +320,7 @@
 
 <main
   class="shape-app"
+  data-shape-matrix-app
   class:compact-detail={appState.compact && appState.activeView === "detail"}
   class:theory
 >
@@ -477,6 +480,22 @@
       second={theoryWorkspace}
     />
   </div>
+
+  <!-- Compact hosts show one pane at a time, so the grid pane that carries
+       the wide prop overlay is off screen whenever the dock is. The canonical
+       prop sheet takes over there; it keeps the picker open across choices
+       the same way, and closes on its handle, backdrop, X or Escape. -->
+  {#if appState.compact}
+    <PropSelectionSheet
+      isOpen={appState.propPickerOpen}
+      selectedPropType={appState.propType}
+      title="Prop"
+      onSelect={(next: PropType) => void appState.setPropType(next)}
+      onOpenChange={(open) => {
+        if (!open) appState.closePropPicker();
+      }}
+    />
+  {/if}
 </main>
 
 <style>

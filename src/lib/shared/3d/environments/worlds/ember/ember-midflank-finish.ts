@@ -17,6 +17,10 @@ import midflank from "../../domain/models/scene-configs/ember-midflank-r5.json";
 export function withMidflankAtmosphere(
   base: EmberSceneConfig
 ): EmberSceneConfig {
+  const [sourceX, sourceY, sourceZ] = midflank.sourceWorldXYZ;
+  if (sourceX === undefined || sourceY === undefined || sourceZ === undefined) {
+    throw new Error("Ember midflank source position is missing coordinates");
+  }
   return {
     ...base,
     fog: { color: "#42494a", density: 0.0038 },
@@ -51,11 +55,7 @@ export function withMidflankAtmosphere(
       ],
       points: [],
       calderaLight: {
-        position: [
-          midflank.sourceWorldXYZ[0],
-          midflank.sourceWorldXYZ[1] + 3,
-          midflank.sourceWorldXYZ[2],
-        ],
+        position: [sourceX, sourceY + 3, sourceZ],
         color: "#ff6818",
         intensity: 60,
         distance: 48,
@@ -64,20 +64,22 @@ export function withMidflankAtmosphere(
       heatFields: [],
       plumes: [],
     },
-    volcanicHaze: {
-      ...base.volcanicHaze,
-      color1: "#4e5355",
-      color2: "#242b31",
-      opacity: 0.32,
-      lightningIntensity: 0,
-      innerGlowColor: "#7b3c20",
-      underglowColor: "#925330",
-      underglowStrength: 0.12,
-      underglowDirection: [-34, 0, 132],
-    },
+    volcanicHaze: base.volcanicHaze
+      ? {
+          ...base.volcanicHaze,
+          color1: "#4e5355",
+          color2: "#242b31",
+          opacity: 0.32,
+          lightningIntensity: 0,
+          innerGlowColor: "#7b3c20",
+          underglowColor: "#925330",
+          underglowStrength: 0.12,
+          underglowDirection: [-34, 0, 132],
+        }
+      : null,
     embers: { ...base.embers, count: 28 },
-    ash: { ...base.ash, count: 55 },
-    smoke: { ...base.smoke, count: 0 },
+    ash: base.ash ? { ...base.ash, count: 55 } : null,
+    smoke: base.smoke ? { ...base.smoke, count: 0 } : null,
     // A larger cast must not silently resurrect the superseded circular stage.
     platform: { ...base.platform, enabled: false },
   };
@@ -253,7 +255,7 @@ export function createMidflankLava(
   const updateRafts = () => {
     if (!rafts) return;
     for (let index = 0; index < rafts.count; index++) {
-      const path = raftPaths[index];
+      const path = raftPaths[index]!;
       const phase = (index * 0.61803398875) % 1;
       const distance =
         phase * path.length + time.value * (0.62 + (index % 7) * 0.025);

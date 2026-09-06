@@ -387,11 +387,16 @@ export class TunnelViewController {
   propCount = $derived(this.performerCount * 2);
 
   /** Exact number of occupied stage positions. Classic Viewer tunnels retain
-   * their historical behavior and occupy every generated formation arm. */
-  performerCount = $derived(
-    this.#sources.getComposition?.()?.stage.instances.length ??
+   * their historical behavior and occupy every generated formation arm.
+   * A getter (not a `$derived` field) so it doesn't touch `#sources` during
+   * field initialization; still reactive when read in a template/derived
+   * because it reads the reactive composition and config. */
+  get performerCount(): number {
+    return (
+      this.#sources.getComposition?.()?.stage.instances.length ??
       imageCount(this.config)
-  );
+    );
+  }
 
   /** Number of positions the current formation recipe makes available. */
   formationSlotCount = $derived(imageCount(this.config));

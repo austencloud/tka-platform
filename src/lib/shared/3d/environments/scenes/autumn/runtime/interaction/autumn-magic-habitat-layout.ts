@@ -15,11 +15,28 @@ export interface AutumnMagicHabitat {
   color: string;
 }
 
-const authoredHabitats: AuthoredMushroomHabitat[] = [
+function toHabitatCenter(center: number[]): [number, number] {
+  const [x, z] = center;
+  if (x === undefined || z === undefined) {
+    throw new Error(
+      `Autumn mushroom habitat has a center missing coordinates: ${JSON.stringify(center)}`
+    );
+  }
+  return [x, z];
+}
+
+const rawHabitats = [
   mushroomLayout.fairyChampignonArc,
   ...mushroomLayout.amethystDeceiverDrifts,
   ...mushroomLayout.honeyFungusColonies,
 ];
+
+const authoredHabitats: AuthoredMushroomHabitat[] = rawHabitats.map((habitat) => ({
+  id: habitat.id,
+  center: toHabitatCenter(habitat.center),
+  auraRadius: habitat.auraRadius,
+  auraColor: habitat.auraColor,
+}));
 
 export const AUTUMN_MAGIC_HABITATS: readonly AutumnMagicHabitat[] =
   authoredHabitats.map((habitat) => ({

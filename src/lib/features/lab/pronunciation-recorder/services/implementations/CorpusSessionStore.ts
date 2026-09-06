@@ -7,6 +7,17 @@ import type {
   WordEntry,
 } from "../contracts/ICorpusSessionStore";
 
+// The File System Access API's entry points (as opposed to the handle
+// interfaces themselves, which lib.dom.d.ts does define) aren't in
+// TypeScript's bundled DOM lib yet. Declare the one method this module calls.
+declare global {
+  interface Window {
+    showDirectoryPicker(options?: {
+      mode?: "read" | "readwrite";
+    }): Promise<FileSystemDirectoryHandle>;
+  }
+}
+
 export interface WordFiles {
   wavName: string;
   labName: string;

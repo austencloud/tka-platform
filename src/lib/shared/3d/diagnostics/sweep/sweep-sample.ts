@@ -13,11 +13,12 @@
  * measured body can hold. Nothing here re-derives arm geometry.
  */
 
-import type {
-  CollisionEvent,
-  CollisionSeverity,
-  CollisionZone,
-} from "@austencloud/scene-3d";
+import type { CollisionEvent } from "@austencloud/scene-3d";
+
+// The package exports `CollisionEvent` but not the field types it's built
+// from, so derive them here rather than re-declaring the union by hand.
+export type CollisionSeverity = CollisionEvent["severity"];
+export type CollisionZone = CollisionEvent["zone"];
 import {
   fitStaffLengthForHug,
   measurePerformerReach,
