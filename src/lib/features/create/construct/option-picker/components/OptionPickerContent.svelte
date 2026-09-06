@@ -141,7 +141,9 @@ Uses organizer and sizer services for section grouping and sizing.
   });
   // Track container dimensions with simple resize observer
   let containerElement: HTMLDivElement | null = $state(null);
-  let containerWidth = $state(800); // Default to desktop-size to avoid mobile flash
+  // Placeholder only: `sizingStable` gates every layout branch, so nothing
+  // renders from these until the settle probe below commits a real measurement.
+  let containerWidth = $state(800);
   let containerHeight = $state(600);
   let sizingStable = $state(false);
 
@@ -436,8 +438,10 @@ Uses organizer and sizer services for section grouping and sizing.
   // Simple resize observer - only update after stable
   $effect(() => {
     if (!containerElement) return;
+    const element = containerElement;
 
     let timeoutId: number;
+    let settleFrame: number | null = null;
     const observer = new ResizeObserver((entries) => {
       clearTimeout(timeoutId);
       timeoutId = window.setTimeout(() => {
@@ -446,6 +450,7 @@ Uses organizer and sizer services for section grouping and sizing.
           const w = entry.contentRect.width;
           const h = entry.contentRect.height;
           if (w > 100 && h > 100) {
+            cancelSettleProbe();
             containerWidth = w;
             containerHeight = h;
             sizingStable = true;
@@ -454,18 +459,62 @@ Uses organizer and sizer services for section grouping and sizing.
       }, 100); // Debounce 100ms
     });
 
-    observer.observe(containerElement);
+    observer.observe(element);
 
-    // Initial measurement
-    const rect = containerElement.getBoundingClientRect();
-    if (rect.width > 100 && rect.height > 100) {
-      containerWidth = rect.width;
-      containerHeight = rect.height;
-      sizingStable = true;
+    function cancelSettleProbe() {
+      if (settleFrame === null) return;
+      cancelAnimationFrame(settleFrame);
+      settleFrame = null;
     }
+
+    // Initial measurement — taken once the box has stopped moving.
+    //
+    // Selecting a start position expands the workspace, and
+    // StandardWorkspaceLayout eases its grid columns over 450ms to do it. The
+    // picker mounts on the first frame of that ease, so measuring immediately
+    // reports the panel at its PRE-expansion width: wide enough to commit to
+    // the 8-column desktop grid inside a panel that is about to be half that.
+    // The debounced observer below then delivers the settled width ~half a
+    // second later and swaps in the swipe layout — right as the user is
+    // reaching for an option, which moves the target under their cursor.
+    // Waiting for two consecutive frames to agree picks the destination layout
+    // the first time. A picker that mounts at rest settles on the next frame.
+    const SETTLE_TIMEOUT_MS = 1000;
+    const settleStartedAt = performance.now();
+    let previous: { width: number; height: number } | null = null;
+
+    function probeUntilSettled() {
+      settleFrame = requestAnimationFrame(() => {
+        settleFrame = null;
+        const rect = element.getBoundingClientRect();
+        if (rect.width <= 100 || rect.height <= 100) {
+          probeUntilSettled();
+          return;
+        }
+        const steady =
+          previous !== null &&
+          Math.abs(previous.width - rect.width) < 0.5 &&
+          Math.abs(previous.height - rect.height) < 0.5;
+        // The cap keeps a box that never settles — a looping ancestor
+        // animation, a drag-resize the user is still holding — from leaving
+        // the panel blank. The observer corrects whatever it commits.
+        const expired = performance.now() - settleStartedAt > SETTLE_TIMEOUT_MS;
+        if (steady || expired) {
+          containerWidth = rect.width;
+          containerHeight = rect.height;
+          sizingStable = true;
+          return;
+        }
+        previous = { width: rect.width, height: rect.height };
+        probeUntilSettled();
+      });
+    }
+
+    probeUntilSettled();
 
     return () => {
       clearTimeout(timeoutId);
+      cancelSettleProbe();
       observer.disconnect();
     };
   });
