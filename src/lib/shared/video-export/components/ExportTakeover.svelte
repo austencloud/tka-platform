@@ -1,8 +1,24 @@
+<!--
+  ExportTakeover.svelte — the ONE blocking overlay for every export/recording.
+
+  Owner of the "an export is running, the app is unavailable" capability.
+  Composed on top of `BaseModal` (native <dialog>.showModal()), which supplies
+  the modality guarantees this overlay used to lack:
+
+  - top-layer rendering, so pointer events cannot reach the app underneath
+    (previously `position: absolute; inset: 0` only covered the host pane)
+  - native focus containment plus BaseModal's FocusRestore on close
+  - `data-keyboard-shortcuts-ignore` on the dialog root, which the app's
+    keyboard registry honours — so app shortcuts stop firing during an export
+  - modal-stack registration and reduced-motion handling from modal-tokens.css
+
+  The dialog itself is styled transparent + full-viewport here so the existing
+  scrim / centerpiece / panel composition is preserved exactly.
+-->
 <script lang="ts">
-  import { fade, fly } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
   import type { ExportPhase } from "$lib/shared/compose/domain/video-export-types";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
 
   interface Props {
     phase: ExportPhase;
@@ -12,6 +28,15 @@
     error?: string | null;
     onCancel?: () => void;
     onRetry?: () => void;
+    /**
+     * Some surfaces genuinely cannot abort mid-flight (a single synchronous
+     * canvas encode, a browser-owned save dialog). Pass the reason and the
+     * Cancel affordance renders disabled with an explanation instead of a
+     * button that lies about what it will do.
+     */
+    cancelDisabledReason?: string | null;
+    /** Accessible name for the modal. Defaults to a generic export label. */
+    label?: string;
     /** Opaque background (Mandala) vs dim scrim over the live canvas (animation). */
     opaque?: boolean;
     /** Optional hero behind the panel (Mandala passes its SequenceMandala). */
@@ -29,26 +54,21 @@
     error = null,
     onCancel,
     onRetry,
+    cancelDisabledReason = null,
+    label,
     opaque = false,
     centerpiece,
     title,
   }: Props = $props();
 
-  let reduceMotion = $state(
-    typeof window !== "undefined"
-      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      : false,
-  );
-  $effect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    reduceMotion = mq.matches;
-    const onChange = () => (reduceMotion = mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  });
-  const dur = (ms: number) => (reduceMotion ? 0 : ms);
-
   const pct = $derived(Math.round(Math.max(0, Math.min(1, progress)) * 100));
+
+  const isOpen = $derived(phase !== "idle");
+
+  /** Cancel is offered only while work is actually in flight AND abortable. */
+  const canCancel = $derived(
+    !!onCancel && phase !== "complete" && phase !== "error" && !cancelDisabledReason,
+  );
 
   // beforeunload guard — block accidental navigation while exporting.
   $effect(() => {
@@ -61,48 +81,49 @@
     return () => window.removeEventListener("beforeunload", handler);
   });
 
-  // Brand prop-trail colors for the conic sweep (blue → red motion colors).
-  const RING_FROM = "#3575E2";
-  const RING_TO = "#ED1C24";
-  const ringStyle = $derived(
-    `background: conic-gradient(from -90deg, ${RING_FROM} 0%, ${RING_TO} ${pct}%, var(--theme-stroke, rgba(255,255,255,0.12)) ${pct}%);`,
+  // Escape maps to Cancel when the surface can actually abort. BaseModal is told
+  // `closeOnEscape={false}` so it never self-closes behind the export's back —
+  // the export state owns `phase`, and only a real cancel may change it.
+  function handleKeydown(event: KeyboardEvent) {
+    if (!isOpen || event.key !== "Escape" || event.defaultPrevented) return;
+    if (!canCancel) return;
+    event.preventDefault();
+    onCancel?.();
+  }
+
+  const headingId = `export-takeover-title-${Math.random().toString(36).slice(2, 9)}`;
+  const dialogLabel = $derived(
+    label ?? (phase === "error" ? "Export failed" : "Exporting — the app is locked"),
   );
-
-  const dialogLabel = $derived(phase === "error" ? "Export failed" : "Exporting video");
-
-  let panelEl = $state<HTMLDivElement | null>(null);
-  let returnFocusEl: HTMLElement | null = null;
-  $effect(() => {
-    if (phase !== "idle") {
-      if (!returnFocusEl) returnFocusEl = document.activeElement as HTMLElement | null;
-      panelEl?.focus();
-    } else if (returnFocusEl) {
-      returnFocusEl.focus();
-      returnFocusEl = null;
-    }
-  });
 </script>
 
-{#if phase !== "idle"}
-  <div class="export-takeover" class:opaque transition:fade={{ duration: dur(280) }}>
+<svelte:window onkeydown={handleKeydown} />
+
+<BaseModal
+  open={isOpen}
+  closeOnBackdrop={false}
+  closeOnEscape={false}
+  restoreFocus={true}
+  animation="none"
+  size="full"
+  class="export-takeover-modal"
+  labelledBy={headingId}
+>
+  <div class="export-takeover" class:opaque>
+    <h2 id={headingId} class="sr-only">{dialogLabel}</h2>
+
     {#if centerpiece}
       <div class="takeover-stage">{@render centerpiece()}</div>
     {/if}
 
-    <div
-      class="takeover-panel"
-      bind:this={panelEl}
-      role="dialog"
-      aria-modal="true"
-      aria-label={dialogLabel}
-      tabindex="-1"
-      transition:fly={{ y: 28, duration: dur(340), easing: cubicOut }}
-    >
+    <div class="takeover-panel">
       {#if title}
         <div class="takeover-title">{@render title()}</div>
       {/if}
       {#if phase === "error"}
-        <p class="takeover-msg error" role="alert"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Export failed</p>
+        <p class="takeover-msg error" role="alert">
+          <i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Export failed
+        </p>
         <p class="takeover-sub">{error}</p>
         <div class="takeover-actions">
           {#if onCancel}<button class="takeover-btn ghost" onclick={onCancel}>Close</button>{/if}
@@ -111,7 +132,7 @@
       {:else}
         <div
           class="ring"
-          style={ringStyle}
+          style={`background: conic-gradient(from -90deg, #3575E2 0%, #ED1C24 ${pct}%, var(--theme-stroke, rgba(255,255,255,0.12)) ${pct}%);`}
           role="progressbar"
           aria-valuenow={pct}
           aria-valuemin={0}
@@ -125,15 +146,64 @@
         <p class="takeover-phase" aria-live="polite" aria-atomic="true">{phaseLabel}</p>
         <p class="takeover-msg">Please don't navigate away.</p>
         {#if phase !== "complete" && onCancel}
-          <button class="takeover-btn ghost" onclick={onCancel}>Cancel</button>
+          <button
+            class="takeover-btn ghost"
+            data-testid="export-takeover-cancel"
+            disabled={!canCancel}
+            aria-describedby={cancelDisabledReason ? `${headingId}-cancel-note` : undefined}
+            onclick={onCancel}>Cancel</button
+          >
+          {#if cancelDisabledReason}
+            <p class="takeover-sub" id={`${headingId}-cancel-note`}>{cancelDisabledReason}</p>
+          {/if}
         {/if}
       {/if}
     </div>
   </div>
-{/if}
+</BaseModal>
 
 <style>
+  /* The dialog is only a modality shell here — the scrim below is the visual. */
+  :global(dialog.base-modal.export-takeover-modal) {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  :global(dialog.base-modal.export-takeover-modal::backdrop) {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  :global(dialog.base-modal.export-takeover-modal .modal-body) {
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .export-takeover {
+    /* The dialog is already modal the instant it opens — blocking never waits
+       on a transition. Only the scrim's paint eases in, and only when the
+       viewer has not asked for reduced motion. */
+    opacity: 0;
+    transition: opacity 200ms ease;
     position: absolute;
     inset: 0;
     z-index: var(--z-overlay, 500);
@@ -148,6 +218,10 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
   }
+  :global(dialog.base-modal.export-takeover-modal[data-entered="true"]) .export-takeover {
+    opacity: 1;
+  }
+
   .export-takeover.opaque {
     background: #07070f;
     backdrop-filter: none;
@@ -250,6 +324,11 @@
     transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), background 200ms ease, border-color 200ms ease;
   }
   .takeover-btn:active { transform: scale(0.95); }
+  .takeover-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+  .takeover-btn:disabled:active { transform: none; }
   .takeover-btn.ghost {
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.18));
     background: transparent;
@@ -262,9 +341,10 @@
   }
   @media (hover: hover) {
     .takeover-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 18px color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent); }
-    .takeover-btn.ghost:hover { border-color: var(--theme-text-dim, rgba(255, 255, 255, 0.4)); color: var(--theme-text, #fff); }
+    .takeover-btn.ghost:not(:disabled):hover { border-color: var(--theme-text-dim, rgba(255, 255, 255, 0.4)); color: var(--theme-text, #fff); }
   }
   @media (prefers-reduced-motion: reduce) {
+    .export-takeover { transition: none; }
     .ring { transition: none; }
     .takeover-btn:active { transform: none; }
   }
