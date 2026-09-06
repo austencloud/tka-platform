@@ -31,12 +31,24 @@ function readManifest(): Record<string, ManifestEntry> {
   }
 }
 
-function writeManifest(manifest: Record<string, ManifestEntry>): void {
-  const sorted = Object.fromEntries(
+function sortedManifest(
+  manifest: Record<string, ManifestEntry>
+): Record<string, ManifestEntry> {
+  return Object.fromEntries(
     Object.entries(manifest).sort(([a], [b]) => a.localeCompare(b))
   );
-  writeFileSync(MANIFEST_JSON, JSON.stringify(sorted, null, 2) + "\n", "utf8");
+}
 
+function writeManifest(manifest: Record<string, ManifestEntry>): void {
+  const sorted = sortedManifest(manifest);
+  writeFileSync(MANIFEST_JSON, JSON.stringify(sorted, null, 2) + "\n", "utf8");
+}
+
+// The generated module is imported (transitively) by the capture page, so
+// writing it mid-run makes Vite hot-reload the page and restart the capture.
+// It is written once, when the driver posts { finalize: true }.
+function writeGeneratedModule(manifest: Record<string, ManifestEntry>): void {
+  const sorted = sortedManifest(manifest);
   // Only complete pairs reach the app; a half-captured prop keeps its
   // pictograph look instead of drawing one hand blank.
   const complete = Object.entries(sorted).filter(
@@ -84,6 +96,18 @@ export const POST: RequestHandler = async ({ request }) => {
   } catch {
     return json({ ok: false, error: "bad JSON body" }, { status: 400 });
   }
+  if (body.finalize === true) {
+    try {
+      writeGeneratedModule(readManifest());
+    } catch (err) {
+      return json(
+        { ok: false, error: err instanceof Error ? err.message : "write failed" },
+        { status: 500 }
+      );
+    }
+    return json({ ok: true });
+  }
+
   const { prop, color, width, height, fit, dataUrl, extent, gripOffset } = body;
   if (
     typeof prop !== "string" ||

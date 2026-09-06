@@ -4,9 +4,12 @@
   One prop, one motion color, rendered through the real Prop3D dispatcher with
   an orthographic camera looking straight at the flat face of the prop. The 3D
   grip (the prop group origin) lands on the box center, because the 2D canvas
-  rotates every sprite about its box center. The model is uniformly scaled to
-  fit the existing pictograph box of the prop, so tip points, trails, and
-  mandala reach stay exactly what the pictograph artwork already produces.
+  places every sprite's box center on the hand point and rotates about it.
+  That is the legacy pictograph convention: the artwork is authored with a
+  copy on each side of the hand (one drawn invisible) so the grip is the box
+  center and the prop's reach is automatically right. The frame is therefore
+  symmetric about the origin and uniformly scaled to fit the existing
+  pictograph box, so tip points, trails, and mandala reach stay put.
 -->
 <script lang="ts">
   import { T, useTask, useThrelte } from "@threlte/core";
@@ -121,14 +124,19 @@
       }
       return;
     }
-    // Match the pictograph convention: the artwork is centered in its box and
-    // scaled to fill it. The 2D canvas pivots every sprite about the box
-    // center, exactly as it does the pictograph artwork, so trails and tip
-    // points keep the geometry they already have.
-    const extentX = Math.max(bounds.max.x - bounds.min.x, 1e-6);
-    const extentY = Math.max(bounds.max.y - bounds.min.y, 1e-6);
-    const centerX = (bounds.min.x + bounds.max.x) / 2;
-    const centerY = (bounds.min.y + bounds.max.y) / 2;
+    // Legacy pictograph convention: the grip (model origin) is the box center
+    // and the frame is mirrored about it, so a one-sided prop like a club or
+    // a triad's hub-at-the-hand keeps its true reach from the hand point.
+    const extentX = Math.max(
+      2 * Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x)),
+      1e-6
+    );
+    const extentY = Math.max(
+      2 * Math.max(Math.abs(bounds.min.y), Math.abs(bounds.max.y)),
+      1e-6
+    );
+    const centerX = 0;
+    const centerY = 0;
     const maxAbsZ = Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z));
     const fit = Math.min(box.width / extentX, box.height / extentY);
     const halfW = box.width / 2 / fit;
