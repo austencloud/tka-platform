@@ -64,6 +64,31 @@ export function difficultyToLevel(difficulty: DifficultyLevel): number {
 }
 
 /**
+ * Highest generate-UI level currently backed by real pictograph data.
+ *
+ * Level 4 (SKEWED) is a real difficulty already wired through
+ * LEVEL_TO_DIFFICULTY / DIFFICULTY_TO_LEVEL and the generation engine, but
+ * Level 4 pictograph data does not exist yet — nothing may offer it as a
+ * selectable option or build against it. This is the one place that gate
+ * lives: bump it to 4 when the data ships and every UI stepper/selector that
+ * reads it unlocks automatically.
+ */
+export const MAX_AVAILABLE_LEVEL = 3;
+
+/**
+ * Clamp a level number (fresh input, persisted localStorage/Firestore state,
+ * or anything in between) into the range the UI can currently offer. Use
+ * this anywhere a level value re-enters the app from outside the current
+ * session so a value saved before the Level 4 gate existed degrades to the
+ * nearest available level instead of round-tripping into a build request the
+ * generator can't fulfill.
+ */
+export function clampToAvailableLevel(level: number): number {
+  if (!Number.isFinite(level)) return MAX_AVAILABLE_LEVEL;
+  return Math.min(MAX_AVAILABLE_LEVEL, Math.max(1, Math.round(level)));
+}
+
+/**
  * UI Configuration interface for state management
  * This is what the UI components work with directly
  */

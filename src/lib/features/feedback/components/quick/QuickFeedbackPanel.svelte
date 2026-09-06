@@ -25,6 +25,7 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
+  import { computeQuickFeedbackInputMode } from "./quick-feedback-input-mode";
 
   const debug = createComponentLogger("QuickFeedbackPanel");
 
@@ -48,11 +49,23 @@
   // Note: No snap points - we always want 100% height, and removing snap points
   // eliminates animation timing issues observed on Z Fold devices
 
-  // Input mode triggers on ANY touch device when focused, not just bottom sheet
-  // This handles Z Fold landscape (side drawer + touch keyboard) correctly
+  // Input mode gates on the on-screen keyboard actually being present
+  // (keyboardHeight > 0), not just touch capability - see
+  // quick-feedback-input-mode.ts for why (fixes feedback item AmvXbY8i:
+  // dismissing the keyboard on a Z Fold while focus stayed on the textarea
+  // used to strand the panel in full-screen input mode with no submit
+  // button). iOS keeps the capability gate there since it has no
+  // keyboardHeight signal; that also preserves the Z Fold landscape
+  // side-drawer + touch keyboard case for Android.
   // Stay in input mode while submitting to avoid UI flash before panel closes
   const isInputMode = $derived(
-    (isInputFocused || formState.isSubmitting) && isTouchDevice
+    computeQuickFeedbackInputMode({
+      isInputFocused,
+      isSubmitting: formState.isSubmitting,
+      isIOSPlatform,
+      isTouchDevice,
+      keyboardHeight,
+    })
   );
 
   // Show keyboard hints only on non-touch devices (true desktop with physical keyboard)

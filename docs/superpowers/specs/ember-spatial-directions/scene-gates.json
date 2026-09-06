@@ -688,11 +688,11 @@
       "evidence": [
         {
           "kind": "vertical-slice-build",
-          "path": "static/models/ember/ember-distant-valley-r1.glb"
+          "path": "static/models/ember/ember-distant-valley-r5.glb"
         },
         {
           "kind": "blender-source",
-          "path": "blender/ember-distant-valley-r1.blend"
+          "path": "blender/ember-distant-valley-r5.blend"
         },
         {
           "kind": "lava-motion-correction",
@@ -713,6 +713,22 @@
         {
           "kind": "distant-valley-amendment",
           "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r1/verification.md"
+        },
+        {
+          "kind": "distant-valley-relief-revision",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r2/verification.md"
+        },
+        {
+          "kind": "connected-downhill-drainage-revision",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r3/verification.md"
+        },
+        {
+          "kind": "near-far-lava-material-parity",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r4/verification.md"
+        },
+        {
+          "kind": "molten-crust-and-temporal-stability",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r5/verification.md"
         },
         {
           "kind": "interaction-capture",

@@ -30,6 +30,7 @@ instead of showing an empty shell.
   import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
   import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
   import { getBrowseNavigationContext } from "$lib/shared/browse/context/browse-navigation-context";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import { PLAYGROUND_TABS } from "$lib/shared/navigation/config/tab-definitions";
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
@@ -61,7 +62,8 @@ instead of showing an empty shell.
     type BrowseVisualType,
   } from "$lib/shared/analytics/browse-events";
 
-  const signedIn = $derived(!!authState.user);
+  const signedIn = $derived(authState.isFullAccount);
+  const hasLibrarySession = $derived(!!authState.effectiveUserId);
   const previewReadOnly = $derived(userPreviewState.isActive);
 
   /**
@@ -81,8 +83,10 @@ instead of showing an empty shell.
   const sharedCollections = $derived(sharedCollectionsState.items);
 
   $effect(() => {
-    if (signedIn) {
+    if (hasLibrarySession) {
       collectionsState.ensureStarted();
+    }
+    if (signedIn) {
       followedCollectionsState.ensureStarted();
     }
     const signedInUserId = authState.user?.uid;
@@ -189,7 +193,7 @@ instead of showing an empty shell.
 
   const allShelf = $derived<LibraryCollection>({
     id: "all",
-    name: "All",
+    name: "Saved sequences",
     ownerId: authState.effectiveUserId ?? "",
     sequenceIds: [],
     sequenceCount: libraryCount,
@@ -275,9 +279,9 @@ instead of showing an empty shell.
     if (isArtId(loc.contextId)) {
       return { id: loc.contextId, ownerId: null, ownerName: undefined };
     }
-    // Your own collection needs you signed in; a stale restore while signed
-    // out falls through to the list (which shows the sign-in prompt).
-    if (!signedIn) return null;
+    // Anonymous sessions own collections too. Only a missing session prevents
+    // resolving a collection; the local sequence shelf remains available.
+    if (loc.contextId !== "all" && !hasLibrarySession) return null;
     return { id: loc.contextId, ownerId: null, ownerName: undefined };
   });
 
@@ -379,7 +383,9 @@ instead of showing an empty shell.
     art_scenes: {
       label: "3D Scenes",
       load: () =>
-        import("$lib/features/scene-3d-collection/Scene3DCollectionModule.svelte"),
+        import(
+          "$lib/features/scene-3d-collection/Scene3DCollectionModule.svelte"
+        ),
     },
     art_mandala: {
       label: "Mandalas",
@@ -603,7 +609,7 @@ instead of showing an empty shell.
     collection={allShelf}
     readonly
     selected={!!sel && sel.id === "all" && !sel.ownerId}
-    onOpen={() => openCollection("all", "All")}
+    onOpen={() => openCollection("all", "Saved sequences")}
   />
 
   {#each collections as c (c.id)}
@@ -826,9 +832,9 @@ instead of showing an empty shell.
   {/if}
 {/snippet}
 
-{#if isYouSequences && (!isSideBySide || !signedIn)}
-  <AllLibraryView onBack={signedIn ? backToList : undefined} />
-{:else if isSideBySide && signedIn}
+{#if isYouSequences && (!isSideBySide || !hasLibrarySession)}
+  <AllLibraryView onBack={backToList} />
+{:else if isSideBySide && hasLibrarySession}
   <div class="library-split">
     <aside class="rail" aria-label="Your collections">
       <WorkShelfRail
@@ -898,28 +904,30 @@ instead of showing an empty shell.
       <h2 class="list-title">Your work</h2>
     </header>
 
-    {#if !signedIn}
+    {#if !hasLibrarySession}
       <div class="signed-out">
         <span class="signed-out-icon">
           <i class="fas fa-folder-open" aria-hidden="true"></i>
         </span>
-        <p class="signed-out-title">Your work lives in your account</p>
+        <p class="signed-out-title">
+          Your saved sequences and collections appear here.
+        </p>
         <p class="signed-out-hint">
-          Log in or create a free account to keep saved sequences together,
-          build Smart Collections, and follow collections other people share.
+          Browse the Gallery to find something to save. Create a free account to
+          access your collections on other devices.
         </p>
         <div class="auth-actions">
           <PanelButton
             variant="primary"
-            onclick={() => authDrawerState.show("signup", "module:library")}
+            onclick={() => navigationState.setActiveTab("explore")}
           >
-            Create account
+            Browse Gallery
           </PanelButton>
           <PanelButton
             variant="secondary"
-            onclick={() => authDrawerState.show("signin", "module:library")}
+            onclick={() => authDrawerState.show("signup", "module:library")}
           >
-            Log in
+            Create account
           </PanelButton>
         </div>
       </div>
@@ -1088,7 +1096,6 @@ instead of showing an empty shell.
   .art-detail-loading i {
     font-size: 24px;
   }
-
 
   .collections-list {
     display: flex;

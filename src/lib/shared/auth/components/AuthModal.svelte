@@ -34,6 +34,7 @@
     open: boolean;
     initialMode?: AuthMode;
     reason?: AuthNudgeTrigger | null;
+    attempt?: number;
     onClose: () => void;
   }
 
@@ -41,13 +42,16 @@
     open,
     initialMode = "signup",
     reason = null,
+    attempt = 1,
     onClose,
   }: Props = $props();
 
   let authMode = $state<AuthMode>("signup");
   let facebookError = $state<string | null>(null);
 
-  const promptContent = $derived(getAuthPromptContent(reason, authMode));
+  const promptContent = $derived(
+    getAuthPromptContent(reason, authMode, attempt)
+  );
   const inAppBrowser = $derived(
     getInAppBrowserDetector().isInAppBrowserOrForced(page.url.searchParams)
   );

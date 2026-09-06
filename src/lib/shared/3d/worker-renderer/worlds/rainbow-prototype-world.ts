@@ -1,40 +1,54 @@
 import { Scene } from "three";
-import { createRainbowEnvironmentWorld } from "../../environments/worlds/rainbow/rainbow-environment-world";
+import { createLoadedRainbowEnvironmentWorld } from "../../environments/worlds/rainbow/rainbow-environment-world";
+import {
+  getCanonicalPerformerStageBounds,
+  getPerformerStageBounds,
+  getAddedPerformerStageGrowth,
+} from "../../environments/domain/performer-stage-bounds";
+import { getStageCoordinateFrame } from "../../environments/domain/stage-coordinate-frame";
+import { BackgroundType } from "@austencloud/backgrounds";
 import type {
   WorkerEnvironmentWorld,
   WorkerWorldContext,
 } from "./worker-environment-world";
 
-/**
- * Worker adapter for the production Rainbow world.
- *
- * The scene graph, shaders, particle behavior, lighting, fog, and disposal all
- * come from the same factory used by RainbowScene.svelte. This adapter owns only
- * worker-specific camera and lifecycle wiring.
- */
 export async function createRainbowPrototypeWorld(
   context: WorkerWorldContext
 ): Promise<WorkerEnvironmentWorld> {
-  context.reportProgress("construct", 0.05);
   const scene = new Scene();
-  const environment = createRainbowEnvironmentWorld({
-    groundY: -1.5,
-    stageRadius: 3,
+  const environment = await createLoadedRainbowEnvironmentWorld({
+    groundY: context.performers[0]?.groundY ?? -1.5,
+    motionScale: context.reducedMotion ? 0 : 1,
+    onProgress: (fraction) => context.reportProgress("assets", fraction),
   });
+  function setPerformers(performers: WorkerWorldContext["performers"]) {
+    const bounds = getPerformerStageBounds(
+      performers.map(({ position }) => ({ x: position[0], z: position[2] }))
+    );
+    const canonical = getCanonicalPerformerStageBounds(performers.length);
+    environment.setLayout(
+      performers[0]?.groundY ?? -1.5,
+      Math.max(bounds.radius, canonical.radius),
+      getAddedPerformerStageGrowth(performers.length),
+      getStageCoordinateFrame(BackgroundType.PRIDE, true).environmentYOffset
+    );
+  }
+  setPerformers(context.performers);
   scene.add(environment.root);
   scene.fog = environment.fog;
+  scene.background = environment.background;
   context.reportProgress("construct", 1);
-  await Promise.resolve();
-
   return {
     environment: "rainbow",
     scene,
+    setPerformers,
     update(deltaSeconds, elapsedSeconds) {
       environment.update(deltaSeconds, elapsedSeconds, context.camera);
     },
     dispose() {
       scene.remove(environment.root);
       scene.fog = null;
+      scene.background = null;
       environment.dispose();
       scene.clear();
     },
@@ -42,7 +56,7 @@ export async function createRainbowPrototypeWorld(
 }
 
 export const RAINBOW_PROTOTYPE_CAMERA = {
-  position: [0, 4.2, 17] as const,
-  target: [0, 1.1, -1] as const,
-  fov: 48,
+  position: [0, 3.8, 19] as const,
+  target: [0, 1.8, -1] as const,
+  fov: 52,
 };

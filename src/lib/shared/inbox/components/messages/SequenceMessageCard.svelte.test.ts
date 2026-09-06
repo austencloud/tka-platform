@@ -1,7 +1,10 @@
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import {
+  createSequenceData,
+  type SequenceData,
+} from "$lib/shared/foundation/domain/models/sequence-data";
 import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
 
 const mocks = vi.hoisted(() => ({
@@ -54,11 +57,10 @@ describe("SequenceMessageCard", () => {
   });
 
   it("opens a message sequence in the in-app viewer drawer", async () => {
-    const resolved = {
+    const resolved = createSequenceData({
       id: "shared-sequence",
       word: "ABCD",
-      steps: [],
-    } as SequenceData;
+    });
     const hydrated = {
       ...resolved,
       metadata: { _hydratedAt: Date.now() },

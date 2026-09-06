@@ -116,21 +116,47 @@
     parseFlowFestGate3ReviewRequest,
     type FlowFestGate3ReviewRequest,
   } from "./flow-fest-visual-system";
+  import {
+    FLOW_FEST_GATE4_MOBILITY_SESSION_KEY as GATE4_MOBILITY_SESSION_KEY,
+    FLOW_FEST_GATE4_SESSION_KEY as GATE4_SESSION_KEY,
+    FLOW_FEST_GATE5_JOURNEY_SESSION_KEY as GATE5_JOURNEY_SESSION_KEY,
+    FLOW_FEST_GATE5_MOBILITY_SESSION_KEY as GATE5_MOBILITY_SESSION_KEY,
+    FLOW_FEST_GATE5_SESSION_KEY as GATE5_SESSION_KEY,
+    FLOW_FEST_RESTART_PARAMETER,
+    FLOW_FEST_SESSION_KEY as SESSION_KEY,
+    clearFlowFestSessionStorage,
+    flowFestUrlWithoutRestart,
+    parseFlowFestRestartRequest,
+  } from "./flow-fest-restart-link";
 
-  const SESSION_KEY = "flow-fest-sim:thursday-session:v1";
   const adaptiveQuality = createAdaptiveQualityState(getQualityTierDetector(), {
     devicePixelRatio: 1,
   });
   setAdaptiveQualityContext(adaptiveQuality);
-  const GATE4_SESSION_KEY = "flow-fest-sim:gate4-fire-jam:v3";
-  const GATE4_MOBILITY_SESSION_KEY = "flow-fest-sim:gate4-euc:v3";
-  const GATE5_SESSION_KEY = "flow-fest-sim:gate5-integrated-world:v1";
-  const GATE5_MOBILITY_SESSION_KEY = "flow-fest-sim:gate5-euc:v1";
-  const GATE5_JOURNEY_SESSION_KEY = "flow-fest-sim:gate5-journey:v1";
   const TERRAIN_MANIFEST_PATH = "/data/flow-fest-sim/terrain.manifest.json";
   const initialSearch = browser
     ? new URLSearchParams(window.location.search)
     : new URLSearchParams();
+
+  /**
+   * `?restart=1` opens on the loadout instead of resuming a parked session.
+   *
+   * This runs during component init, before `onMount` and before anything
+   * reads a session key, so the restore path below finds nothing and builds a
+   * fresh Thursday. The flag is then taken straight back out of the address
+   * bar — raw `replaceState` for the same reason `publishViewpoint` uses it —
+   * because a restart link that survived in the URL would wipe the session
+   * again on every refresh.
+   */
+  if (browser && parseFlowFestRestartRequest(initialSearch)) {
+    clearFlowFestSessionStorage(window.localStorage);
+    initialSearch.delete(FLOW_FEST_RESTART_PARAMETER);
+    window.history.replaceState(
+      window.history.state,
+      "",
+      flowFestUrlWithoutRestart(new URL(window.location.href))
+    );
+  }
   const initialEntranceReference =
     parseFlowFestEntranceReferenceRequest(initialSearch);
   const BRANCHES: Array<{

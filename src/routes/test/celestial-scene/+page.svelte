@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** Live verification harness for the Seraphic Vault. */
+  /** Live verification harness for the Dawn Observatory. */
   import { Canvas } from "@threlte/core";
   import { page } from "$app/state";
   import { WebGLRenderer } from "three";
@@ -15,6 +15,9 @@
   import SceneShaderWarmup from "$lib/shared/3d/components/SceneShaderWarmup.svelte";
   import EnvironmentTransitionRenderPass from "$lib/shared/3d/environments/components/EnvironmentTransitionRenderPass.svelte";
 
+  import SceneProbe from "../rainbow-scene/SceneProbe.svelte";
+  let sceneSample = $state("");
+
   const sceneFeatureState = createSceneFeatureState();
   setSceneFeatureContext(sceneFeatureState);
   const transitionVisual = createEnvironmentTransitionVisualState();
@@ -23,14 +26,14 @@
 
   const VIEW_PRESETS = {
     hero: {
-      position: [0, 7.8, 30],
-      target: [0, 0.8, -5],
-      fov: 48,
+      position: [23, 16, 38],
+      target: [0, 11, -14],
+      fov: 54,
     },
     aisle: {
-      position: [0, 2.4, 12],
-      target: [0, 2.8, -8],
-      fov: 54,
+      position: [0, 1.65, 12],
+      target: [0, 1.65, -20],
+      fov: 70,
     },
     stage: {
       position: [13, 4.5, 18],
@@ -48,19 +51,19 @@
       fov: 50,
     },
     world: {
-      position: [0, 42, 38],
-      target: [0, 1, -2],
-      fov: 52,
+      position: [0, 75, 48],
+      target: [0, 2, -7],
+      fov: 60,
     },
   } as const;
   const PORTRAIT_PHONE_PRESET = {
-    position: [0, 9.5, 45],
-    target: [0, 1, -5],
-    fov: 64,
+    position: [0, 16, 50],
+    target: [0, 11, -10],
+    fov: 68,
   } as const;
   const LANDSCAPE_PHONE_PRESET = {
-    position: [0, 7.2, 29],
-    target: [0, 0.7, -5],
+    position: [6, 13, 42],
+    target: [0, 10, -10],
     fov: 46,
   } as const;
 
@@ -92,90 +95,100 @@
 />
 
 <svelte:head>
-  <title>Olive Cloudbreak verification</title>
+  <title>Dawn Observatory — Celestial scene</title>
 </svelte:head>
 
-<div class="page">
-  <Canvas
-    createRenderer={(canvas) =>
-      new WebGLRenderer({
-        canvas,
-        antialias: true,
-        preserveDrawingBuffer: true,
-        powerPreference: "high-performance",
-      })}
-  >
-    <HarnessToneMapping />
-    <SceneShaderWarmup
-      onReadyChange={(ready) => transitionVisual.setRendererReady(ready)}
-    />
-    <EnvironmentTransitionRenderPass />
-    {#key cameraPreset}
-      <EnvironmentReviewCamera
-        destinationId="celestial-scene-review"
-        preset={cameraPreset}
+{#if page.url.searchParams.has("performers")}
+  {#await import("./PerformerReview.svelte") then { default: PerformerReview }}
+    <PerformerReview worker={page.url.searchParams.has("worker")} />
+  {/await}
+{:else}
+  <div class="page" data-scene={sceneSample}>
+    <Canvas
+      createRenderer={(canvas) =>
+        new WebGLRenderer({
+          canvas,
+          antialias: true,
+          preserveDrawingBuffer: true,
+          powerPreference: "high-performance",
+        })}
+    >
+      <HarnessToneMapping />
+      <SceneProbe
+        worldName="celestial-environment-world"
+        onSample={(value) => (sceneSample = value)}
       />
-    {/key}
-    <Environment3D
-      backgroundType={selectedBackground}
-      performerCount={1}
-      stageWidth={6}
-      stageDepth={6}
-      stageZOffset={0}
-    />
-  </Canvas>
-  <SceneAudioPlayer backgroundType={selectedBackground} />
-  {#if showTransitionControls}
-    <div class="review-controls">
-      <div class="control-group" role="group" aria-label="Camera review">
-        <button
-          type="button"
-          class:active={view === "hero"}
-          onclick={() => (view = "hero")}>Hero</button
+      <SceneShaderWarmup
+        onReadyChange={(ready) => transitionVisual.setRendererReady(ready)}
+      />
+      <EnvironmentTransitionRenderPass />
+      {#key cameraPreset}
+        <EnvironmentReviewCamera
+          destinationId="celestial-scene-review"
+          preset={cameraPreset}
+        />
+      {/key}
+      <Environment3D
+        backgroundType={selectedBackground}
+        performerCount={1}
+        stageWidth={6}
+        stageDepth={6}
+        stageZOffset={0}
+      />
+    </Canvas>
+    <SceneAudioPlayer backgroundType={selectedBackground} />
+    {#if showTransitionControls}
+      <div class="review-controls">
+        <div class="control-group" role="group" aria-label="Camera review">
+          <button
+            type="button"
+            class:active={view === "hero"}
+            onclick={() => (view = "hero")}>Hero</button
+          >
+          <button
+            type="button"
+            class:active={view === "aisle"}
+            onclick={() => (view = "aisle")}>Aisle</button
+          >
+          <button
+            type="button"
+            class:active={view === "stage"}
+            onclick={() => (view = "stage")}>Stage</button
+          >
+          <button
+            type="button"
+            class:active={view === "profile"}
+            onclick={() => (view = "profile")}>Profile</button
+          >
+        </div>
+        <div
+          class="control-group"
+          role="group"
+          aria-label="Environment transition review"
         >
-        <button
-          type="button"
-          class:active={view === "aisle"}
-          onclick={() => (view = "aisle")}>Aisle</button
-        >
-        <button
-          type="button"
-          class:active={view === "stage"}
-          onclick={() => (view = "stage")}>Stage</button
-        >
-        <button
-          type="button"
-          class:active={view === "profile"}
-          onclick={() => (view = "profile")}>Profile</button
-        >
+          <button
+            type="button"
+            class:active={selectedBackground === BackgroundType.COSMIC}
+            onclick={() => (selectedBackground = BackgroundType.COSMIC)}
+            >Cosmic</button
+          >
+          <button
+            type="button"
+            class:active={selectedBackground === BackgroundType.CELESTIAL}
+            onclick={() => (selectedBackground = BackgroundType.CELESTIAL)}
+            >Observatory</button
+          >
+          <button
+            type="button"
+            class:active={selectedBackground === BackgroundType.OCEAN}
+            onclick={() => (selectedBackground = BackgroundType.OCEAN)}
+            >Ocean</button
+          >
+        </div>
       </div>
-      <div
-        class="control-group"
-        role="group"
-        aria-label="Environment transition review"
-      >
-        <button
-          type="button"
-          class:active={selectedBackground === BackgroundType.COSMIC}
-          onclick={() => (selectedBackground = BackgroundType.COSMIC)}
-          >Cosmic</button
-        >
-        <button
-          type="button"
-          class:active={selectedBackground === BackgroundType.CELESTIAL}
-          onclick={() => (selectedBackground = BackgroundType.CELESTIAL)}
-          >Cloudbreak</button
-        >
-        <button
-          type="button"
-          class:active={selectedBackground === BackgroundType.OCEAN}
-          onclick={() => (selectedBackground = BackgroundType.OCEAN)}
-          >Ocean</button
-        >
-      </div>
-    </div>
-  {/if}
-</div>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .page {

@@ -37,8 +37,10 @@ function expectSilhouette(
   const scale = reach / maxRadius(config);
   expect(anchors).toHaveLength(config.points.length);
   anchors.forEach((anchor, index) => {
-    expect(anchor.offset.x).toBeCloseTo(config.points[index].dy * scale);
-    expect(anchor.offset.y).toBeCloseTo(config.points[index].dx * scale);
+    const point = config.points[index];
+    if (!point) throw new Error(`config has no point at index ${index}`);
+    expect(anchor.offset.x).toBeCloseTo(point.dy * scale);
+    expect(anchor.offset.y).toBeCloseTo(point.dx * scale);
     expect(anchor.offset.z).toBe(0);
   });
 }
@@ -81,8 +83,11 @@ describe("resolvePropTipAnchors3D", () => {
   });
 
   it("reaches further on a day fan than on the smaller fire fan", () => {
-    const [, , dayCentre] = resolvePropTipAnchors3D(PropType.FAN, 0.5, DAY);
-    const [, , fireCentre] = resolvePropTipAnchors3D(PropType.FAN, 0.5, FIRE);
+    const dayCentre = resolvePropTipAnchors3D(PropType.FAN, 0.5, DAY)[2];
+    const fireCentre = resolvePropTipAnchors3D(PropType.FAN, 0.5, FIRE)[2];
+    if (!dayCentre || !fireCentre) {
+      throw new Error("a fan should expose at least three tip anchors");
+    }
     expect(dayCentre.offset.y).toBeGreaterThan(fireCentre.offset.y);
   });
 
@@ -116,12 +121,12 @@ describe("resolvePropTipAnchors3D", () => {
     const baseAnchors = resolvePropTipAnchors3D(base, 0.5, FIRE);
     expect(bigAnchors).toHaveLength(baseAnchors.length);
     bigAnchors.forEach((anchor, index) => {
-      expect(anchor.offset.x).toBeCloseTo(
-        baseAnchors[index].offset.x * BIG_SCALE
-      );
-      expect(anchor.offset.y).toBeCloseTo(
-        baseAnchors[index].offset.y * BIG_SCALE
-      );
+      const baseAnchor = baseAnchors[index];
+      if (!baseAnchor) {
+        throw new Error(`base prop has no tip anchor at index ${index}`);
+      }
+      expect(anchor.offset.x).toBeCloseTo(baseAnchor.offset.x * BIG_SCALE);
+      expect(anchor.offset.y).toBeCloseTo(baseAnchor.offset.y * BIG_SCALE);
     });
   });
 

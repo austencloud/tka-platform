@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { TunnelComposition } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
+import { createLegacyTunnelStage } from "$lib/shared/sequence-viewer/tunnel/tunnel-stage";
 import {
   TUNNEL_CREATOR_DRAFT_VERSION,
   type TunnelCreatorDraft,
@@ -65,6 +66,7 @@ function createState(
 }
 
 function composition(): TunnelComposition {
+  const formation = { ...DEFAULT_CONFIG, fold: 3, speedOverrides: {} };
   return {
     version: 1,
     id: "composition-1",
@@ -97,10 +99,28 @@ function composition(): TunnelComposition {
         timing: { stepOffset: 0, speed: 1 },
       },
     ],
-    formation: { ...DEFAULT_CONFIG, fold: 3, speedOverrides: {} },
+    // A v1 composition predates authored stages, so the stage this fixture
+    // carries is the generated one the loader reconstructs for it — one
+    // instance per rendered arm, performers cycling. An explicit three-slot
+    // stage would be a different (and newer) kind of composition.
+    stage: createLegacyTunnelStage(["lead", "partner", "third"], formation),
+    formation,
     createdAt: 100,
     updatedAt: 200,
   };
+}
+
+/**
+ * Re-derive the generated stage after a test rewrites the fixture's cast or
+ * formation. For a v1 composition the stage is a pure function of those two,
+ * which is exactly what the loader reconstructs when it meets one.
+ */
+function restage(value: TunnelComposition): TunnelComposition {
+  value.stage = createLegacyTunnelStage(
+    value.performers.map((performer) => performer.id),
+    value.formation
+  );
+  return value;
 }
 
 describe("tunnel creator edit state", () => {
@@ -151,6 +171,7 @@ describe("tunnel creator edit state", () => {
       timing: { stepOffset: 0, speed: 1 },
     });
     initial.formation = { ...DEFAULT_CONFIG, fold: 8, speedOverrides: {} };
+    restage(initial);
 
     const state = createState({
       openComposition: vi.fn(),
@@ -179,6 +200,7 @@ describe("tunnel creator edit state", () => {
   it("turns a legacy duplicate into a newly authored performer before growing the stage", () => {
     const initial = composition();
     initial.formation = { ...DEFAULT_CONFIG, fold: 4, speedOverrides: {} };
+    restage(initial);
     const state = createState({
       openComposition: vi.fn(),
       initialComposition: initial,
@@ -243,6 +265,7 @@ describe("tunnel creator edit state", () => {
       });
     }
     initial.formation = { ...DEFAULT_CONFIG, fold: 8, speedOverrides: {} };
+    restage(initial);
 
     const state = createState({
       openComposition: vi.fn(),

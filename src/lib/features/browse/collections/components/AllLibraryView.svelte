@@ -17,6 +17,8 @@ the gallery's, and the source is pinned to my-library with no toggle.
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
+  import LibraryEmptyState from "./LibraryEmptyState.svelte";
+  import { flyFade } from "$lib/shared/transitions/motion";
   import SmartCollectionSaveDialog from "$lib/features/library/components/SmartCollectionSaveDialog.svelte";
   import FilterWorkspace from "$lib/features/browse/gallery-home/FilterWorkspace.svelte";
   import { getCollectionOptions } from "$lib/features/browse/gallery-home/collection-options.svelte";
@@ -29,6 +31,8 @@ the gallery's, and the source is pinned to my-library with no toggle.
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { loadSoloLibrarySequences } from "$lib/features/browse/shared/services/solo-library-sequence-loader";
   import { createMultiSelectionState } from "$lib/shared/selection/state/create-multi-selection-state.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -199,15 +203,34 @@ the gallery's, and the source is pinned to my-library with no toggle.
     engine.sections.map((s) => s.title)
   );
 
-  // Empty-library CTA: a plain door into Construct. The one-tap starter it
-  // used to re-arm was removed 2026-07-29 — building the sequence yourself IS
-  // the flow now.
   const emptyAction = {
-    label: "Make your first sequence",
+    label: "Browse Gallery",
     onClick: () => {
-      navigationState.setCurrentModule("create", "construct");
+      navigationState.setActiveTab("explore");
     },
   };
+  const showEmptyLibrary = $derived(
+    !previewReadOnly &&
+      engine.sectionsReady &&
+      !engine.isLoading &&
+      !engine.error &&
+      engine.allSequences.length === 0 &&
+      !engine.hasActiveFilters &&
+      !engine.searchQuery
+  );
+  const emptyState = $derived({
+    message: "Your saved sequences and collections appear here.",
+    description: "Browse the Gallery to find something to save.",
+    secondaryAction:
+      !authState.isFullAccount && !previewReadOnly
+        ? {
+            label: "Create account",
+            description:
+              "Create a free account to access your collections on other devices.",
+            onClick: () => authDrawerState.show("signup"),
+          }
+        : undefined,
+  });
 </script>
 
 <!-- The workspace's results column. Its own BrowsePanel, so selection mode,
@@ -222,12 +245,23 @@ the gallery's, and the source is pinned to my-library with no toggle.
     hideFilterChips
     onSelect={handleSelect}
     emptyAction={previewReadOnly ? undefined : emptyAction}
+    emptyState={previewReadOnly ? undefined : emptyState}
     selection={previewReadOnly ? undefined : selection}
   />
 {/snippet}
 
 <div class="all-library" class:workspace={libraryView === "workspace"}>
-  {#if libraryView === "workspace"}
+  {#if showEmptyLibrary}
+    <div class="empty-library-frame" transition:flyFade>
+      <LibraryEmptyState
+        {onBack}
+        onBrowse={emptyAction.onClick}
+        onCreateAccount={!authState.isFullAccount
+          ? () => authDrawerState.show("signup")
+          : undefined}
+      />
+    </div>
+  {:else if libraryView === "workspace"}
     <FilterWorkspace
       {engine}
       collections={collectionOptions}
@@ -242,12 +276,15 @@ the gallery's, and the source is pinned to my-library with no toggle.
       layout="fullpage"
       onSelect={handleSelect}
       {onBack}
-      backLabel="Library"
+      backLabel="Collections"
       hideToolbarSearch
-      warming={gridWarming}
+      warming={gridWarming || (!engine.sectionsReady && !engine.error)}
+      showToolbar={engine.sectionsReady || !!engine.error}
+      showFilterBar={engine.sectionsReady || !!engine.error}
       onOpenFilters={() => (libraryView = "workspace")}
       onSaveSmart={() => (smartSaveOpen = true)}
       {emptyAction}
+      emptyState={previewReadOnly ? undefined : emptyState}
       {selection}
     />
   {/if}
@@ -294,11 +331,18 @@ the gallery's, and the source is pinned to my-library with no toggle.
 
 <style>
   .all-library {
+    position: relative;
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     min-width: 0;
     height: 100%;
+  }
+
+  .empty-library-frame {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
   }
 
   /* The workspace owns its own scrolling panes (catalog, editor, results), so

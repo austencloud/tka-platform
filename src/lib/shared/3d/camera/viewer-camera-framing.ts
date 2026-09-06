@@ -2,6 +2,7 @@ import type { CameraStateSnapshot } from "@austencloud/scene-3d";
 import type { SceneEnvironmentId } from "../environments/domain/scene-environment";
 
 import { getViewerFrontStageCameraZ } from "../domain/viewer-formation-facing";
+import { getBlossomOpeningCamera } from "../environments/scenes/cherry-blossom/blossom-site";
 
 const GRID_CENTER_Y = 0;
 const GRID_CENTER_Z = 0.3;
@@ -23,9 +24,9 @@ function isFinitePoint(
 ): point is { x: number; y: number; z: number } {
   return Boolean(
     point &&
-      Number.isFinite(point.x) &&
-      Number.isFinite(point.y) &&
-      Number.isFinite(point.z)
+    Number.isFinite(point.x) &&
+    Number.isFinite(point.y) &&
+    Number.isFinite(point.z)
   );
 }
 
@@ -78,15 +79,11 @@ export function computeViewerAlignedCamera(
   options: ViewerCameraFramingOptions
 ): ViewerCameraFraming {
   const target = { x: 0, y: GRID_CENTER_Y, z: GRID_CENTER_Z };
-  const fallback = {
+  let fallback = {
     position: {
       x: 0,
       y: 0,
-      z: getViewerFrontStageCameraZ(
-        GRID_CENTER_Z,
-        2.8,
-        options.environmentId
-      ),
+      z: getViewerFrontStageCameraZ(GRID_CENTER_Z, 2.8, options.environmentId),
     },
     target,
   };
@@ -96,6 +93,15 @@ export function computeViewerAlignedCamera(
         ? null
         : document
       : options.document;
+  if (options.environmentId === "blossom") {
+    const view = ownerDocument?.defaultView;
+    const camera = getBlossomOpeningCamera(
+      Boolean(view && view.innerWidth < view.innerHeight)
+    );
+    const [x, y, z] = camera.position;
+    const [tx, ty, tz] = camera.target;
+    fallback = { position: { x, y, z }, target: { x: tx, y: ty, z: tz } };
+  }
   if (!ownerDocument) return fallback;
 
   let canvas2D: HTMLCanvasElement | null = null;
@@ -132,11 +138,9 @@ export function computeViewerAlignedCamera(
   const horizontalHalfFov = Math.atan(Math.tan(verticalHalfFov) * aspect);
   const visibleWidthAtUnitDistance = 2 * Math.tan(horizontalHalfFov);
   const distance =
-    (GRID_RADIUS_3D * 2) /
-    (diameterFraction * visibleWidthAtUnitDistance);
+    (GRID_RADIUS_3D * 2) / (diameterFraction * visibleWidthAtUnitDistance);
   const cameraYOffset =
-    (0.5 - centerYFraction) *
-    (2 * distance * Math.tan(verticalHalfFov));
+    (0.5 - centerYFraction) * (2 * distance * Math.tan(verticalHalfFov));
 
   return {
     position: {

@@ -15,6 +15,7 @@
    * reason this stopped being a full-screen modal inside the share sheet.
    */
   interface Props {
+    active?: boolean;
     sequence: SequenceData;
     resolvedCardAutoLayout: ResolvedAutoLayout | null;
     /** Hands the rendered post to the shell's share-video seam. */
@@ -23,8 +24,13 @@
     onSharePost: () => void;
   }
 
-  let { sequence, resolvedCardAutoLayout, onExported, onSharePost }: Props =
-    $props();
+  let {
+    active = true,
+    sequence,
+    resolvedCardAutoLayout,
+    onExported,
+    onSharePost,
+  }: Props = $props();
 
   const exportOptions = getExportOptionsState();
 
@@ -40,6 +46,7 @@
 
 <div class="post-studio-pane">
   <PostStudio
+    {active}
     {sequence}
     cardPreviewUrl={cardPreview.url}
     cardRenderOptions={cardPreview.renderOptions}
@@ -55,6 +62,7 @@
 
 <style>
   .post-studio-pane {
+    height: 100%;
     display: flex;
     flex: 1;
     min-width: 0;

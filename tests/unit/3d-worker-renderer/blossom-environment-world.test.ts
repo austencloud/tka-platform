@@ -1,15 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   BoxGeometry,
+  Box3,
   Group,
   Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
   Texture,
+  Vector3,
   type WebGLRenderer,
 } from "three";
 
 import { createDefaultBlossomConfig } from "$lib/shared/3d/environments/domain/models/scene-configs";
+import { CANONICAL_PERFORMER_ANCHOR_Y } from "$lib/shared/3d/environments/domain/stage-coordinate-frame";
 import { createBlossomRuntimeConfig } from "$lib/shared/3d/environments/scenes/cherry-blossom/blossom-runtime";
 import { createBlossomAtmosphere } from "$lib/shared/3d/environments/worlds/blossom/blossom-atmosphere";
 import {
@@ -18,49 +21,76 @@ import {
   type BlossomEnvironmentAssets,
 } from "$lib/shared/3d/environments/worlds/blossom/blossom-environment-world";
 
-function mesh(name: string, materialName = ""): Mesh {
+function mesh(name: string, materialName = "", role = ""): Mesh {
   const material = new MeshStandardMaterial({ color: "#ffffff" });
   material.name = materialName;
   const value = new Mesh(new BoxGeometry(1, 1, 1), material);
   value.name = name;
+  value.userData.blossomRole = role;
   return value;
 }
 
 function assets(): BlossomEnvironmentAssets {
   const environmentRoot = new Group();
   environmentRoot.add(
-    mesh("Garden Ground", "Blossom Living Garden Ground"),
+    mesh("Amphitheatre_Terrain", "Amphitheatre moss", "terrain"),
     mesh("Stage_Base"),
     mesh("River_Water"),
-    mesh("Sakura Hero"),
-    mesh("Blossom_Grass_Base_Living"),
-    mesh("Blossom_Grass_High_Damp")
+    mesh("Ancient_Cherry_Wood", "", "bark"),
+    mesh("Ancient_Cherry_Blossoms", "", "petals"),
+    mesh("Distant_Grove", "", "grove-petals")
   );
   return {
     environmentRoot,
     moonTexture: new Texture(),
-    detailMaps: {
-      red: new Texture(),
-      green: new Texture(),
-      blue: new Texture(),
-      fourth: new Texture(),
-    },
-    familyMask: new Texture(),
   };
 }
 
 const renderer = {} as WebGLRenderer;
 
 describe("Blossom renderer-neutral world", () => {
-  it("declares the exact authored GLB and six production support textures", () => {
+  it("borrows packed court maps through glTF wrapper groups and disposes them once", () => {
+    const bundle = assets();
+    const proxy = new Group();
+    proxy.name = "Stage_Planks";
+    const slab = mesh("slate primitive", "Blossom court slate");
+    const source = slab.material as MeshStandardMaterial;
+    source.map = new Texture();
+    const dispose = vi.spyOn(source.map, "dispose");
+    proxy.add(slab);
+    bundle.environmentRoot.add(proxy);
+    const world = createBlossomEnvironmentWorld(
+      { renderer, groundY: 0, qualityTier: "medium" },
+      bundle
+    );
+    const court = world.root.getObjectByName("blossom-stage-slate") as Mesh;
+    const material = court.material as MeshStandardMaterial;
+    expect(material).not.toBe(source);
+    expect(material.map).toBe(source.map);
+    expect(material.vertexColors).toBe(false);
+    const inlay = world.root.getObjectByName(
+      "blossom-stage-bronze-inlay"
+    ) as Mesh;
+    const positions = inlay.geometry.getAttribute("position");
+    let horizontalArea = 0;
+    for (let i = 0; i < positions.count; i += 3) {
+      const a = new Vector3().fromBufferAttribute(positions, i);
+      const b = new Vector3().fromBufferAttribute(positions, i + 1);
+      const c = new Vector3().fromBufferAttribute(positions, i + 2);
+      horizontalArea += Math.abs(b.sub(a).cross(c.sub(a)).z) / 4;
+    }
+    expect(horizontalArea).toBeLessThan(2);
+    expect(horizontalArea).toBeGreaterThan(0.3);
+    expect(proxy.visible).toBe(false);
+    world.dispose();
+    world.dispose();
+    expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("loads the packed venue and moon without obsolete habitat textures", () => {
     expect(BLOSSOM_AUTHORED_RESOURCE_URLS).toEqual([
       "/models/blossom/blossom_environment.glb",
       "/textures/moon.png",
-      "/textures/forest-floor/forest-ground-detail-neutral.jpg",
-      "/textures/forest-floor/forest-ground-detail-meadow.jpg",
-      "/textures/forest-floor/forest-ground-detail-litter.jpg",
-      "/textures/forest-floor/forest-ground-detail-damp.jpg",
-      "/textures/blossom-floor/blossom-ground-family-mask.png",
     ]);
   });
 
@@ -86,14 +116,44 @@ describe("Blossom renderer-neutral world", () => {
     expect(names).toContain("blossom-starfield");
     expect(names).toContain("blossom-performance-stage");
     expect(names).toContain("blossom-stage-downstage-marker");
-    expect(names).toContain("blossom-stage-torch-light-0");
+    expect(names).toContain("blossom-stage-bronze-inlay");
     expect(names).toContain("blossom-lighting");
     expect(names).toContain("blossom-moon-key");
     expect(names).toContain("blossom-lantern-light-2");
     expect(world.reflector?.name).toBe("blossom-reflective-river");
-    expect(world.fog.color.getHexString()).toBe("2d172d");
-    expect(world.fog.density).toBe(0.01);
-    expect(world.background.getHexString()).toBe("07081d");
+    const config = createDefaultBlossomConfig();
+    expect(world.fog.color.getHexString()).toBe(config.fog.color.slice(1));
+    expect(world.fog.density).toBe(config.fog.density);
+    expect(world.background.getHexString()).toBe(config.sky.topColor.slice(1));
+    const stageBounds = new Box3().setFromObject(
+      world.root.getObjectByName("blossom-performance-stage")!
+    );
+    expect(stageBounds.max.x - stageBounds.min.x).toBeGreaterThanOrEqual(12);
+    expect(stageBounds.max.z - stageBounds.min.z).toBeGreaterThanOrEqual(8);
+    const deckBounds = new Box3().setFromObject(
+      world.root.getObjectByName("blossom-stage-slate")!
+    );
+    expect(deckBounds.max.y).toBeCloseTo(
+      -1.5 + CANONICAL_PERFORMER_ANCHOR_Y,
+      5
+    );
+    expect(deckBounds.min.x).toBeCloseTo(-6, 5);
+    expect(deckBounds.max.x).toBeCloseTo(6, 5);
+    expect(
+      (bundle.environmentRoot.getObjectByName("Ancient_Cherry_Wood") as Mesh)
+        .castShadow
+    ).toBe(true);
+    expect(
+      (
+        bundle.environmentRoot.getObjectByName(
+          "Ancient_Cherry_Blossoms"
+        ) as Mesh
+      ).castShadow
+    ).toBe(true);
+    expect(
+      (bundle.environmentRoot.getObjectByName("Amphitheatre_Terrain") as Mesh)
+        .receiveShadow
+    ).toBe(true);
     expect(world.maxPixelRatio).toBe(2);
 
     const authored = world.root.getObjectByName("BlossomEnvironment")!;
@@ -106,12 +166,13 @@ describe("Blossom renderer-neutral world", () => {
       false
     );
     expect(
-      bundle.environmentRoot.getObjectByName("Blossom_Grass_High_Damp")!.visible
-    ).toBe(true);
+      (bundle.environmentRoot.getObjectByName("Distant_Grove") as Mesh)
+        .castShadow
+    ).toBe(false);
     world.dispose();
   });
 
-  it("tracks the camera and performer ground while animating grass and water", () => {
+  it("tracks the camera and performer ground while animating the water", () => {
     const bundle = assets();
     const world = createBlossomEnvironmentWorld(
       { renderer, groundY: -1.5, qualityTier: "high" },
@@ -138,25 +199,25 @@ describe("Blossom renderer-neutral world", () => {
     expect(
       world.root.getObjectByName("blossom-performance-stage")!.position.y
     ).toBe(-2);
-    expect(world.reflector!.position.y).toBeCloseTo(-2.138, 6);
+    expect(world.reflector!.position.y).toBeCloseTo(-2.148, 6);
     world.setActive(false);
     expect(world.root.visible).toBe(false);
     expect(world.reflector!.visible).toBe(false);
     world.dispose();
   });
 
-  it("maps the low renderer tier to the authored base grass layer", () => {
+  it("uses the baked pond and disables tree shadows at low quality", () => {
     const bundle = assets();
     const world = createBlossomEnvironmentWorld(
       { renderer, groundY: -1.5, qualityTier: "low" },
       bundle
     );
+    expect(bundle.environmentRoot.getObjectByName("River_Water")!.visible).toBe(
+      true
+    );
     expect(
-      bundle.environmentRoot.getObjectByName("Blossom_Grass_Base_Living")!
-        .visible
-    ).toBe(true);
-    expect(
-      bundle.environmentRoot.getObjectByName("Blossom_Grass_High_Damp")!.visible
+      (bundle.environmentRoot.getObjectByName("Ancient_Cherry_Wood") as Mesh)
+        .castShadow
     ).toBe(false);
     world.dispose();
   });
@@ -197,11 +258,9 @@ describe("Blossom renderer-neutral world", () => {
 
   it("disposes owned textures once even when disposal is repeated", () => {
     const bundle = assets();
-    const textureDisposals = [
-      bundle.moonTexture,
-      ...Object.values(bundle.detailMaps),
-      bundle.familyMask,
-    ].map((texture) => vi.spyOn(texture, "dispose"));
+    const textureDisposals = [bundle.moonTexture].map((texture) =>
+      vi.spyOn(texture, "dispose")
+    );
     const world = createBlossomEnvironmentWorld(
       { renderer, groundY: -1.5, qualityTier: "medium" },
       bundle

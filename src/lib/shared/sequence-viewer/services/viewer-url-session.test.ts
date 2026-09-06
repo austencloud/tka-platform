@@ -56,7 +56,9 @@ describe("ViewerUrlSession", () => {
     expect(writeParams).not.toHaveBeenCalled();
     vi.advanceTimersByTime(400);
     expect(writeParams).toHaveBeenCalledTimes(1);
-    expect(writeParams.mock.calls[0][0].set.pane).toBe("card");
+    const [firstWrite] = writeParams.mock.calls;
+    if (!firstWrite) throw new Error("the debounced write never landed");
+    expect(firstWrite[0].set.pane).toBe("card");
   });
 
   it("unregister removes the live hook; seed pass-through resumes", () => {

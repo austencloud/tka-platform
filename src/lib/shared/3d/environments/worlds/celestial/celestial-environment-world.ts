@@ -22,7 +22,6 @@ import {
   createDefaultCelestialConfig,
   type CelestialSceneConfig,
 } from "../../domain/models/scene-configs";
-import { CLOUDBREAK_RUNTIME_ASSETS } from "../../scenes/celestial/cloudbreak-assets";
 import {
   createCelestialAtmosphere,
   type CelestialAtmosphere,
@@ -37,11 +36,10 @@ import {
 export const CELESTIAL_PANORAMA_URL =
   "/textures/celestial/olive-cloudbreak-panorama-r1.webp?v=gate4-cloudbreak-r1";
 export const CELESTIAL_SHELL_URL =
-  "/models/celestial/olive-cloudbreak-production-slice.glb?v=cloudbreak-r6-runtime";
+  "/models/celestial/dawn-observatory.glb?v=dawn-r1";
 export const CELESTIAL_AUTHORED_RESOURCE_URLS = [
   CELESTIAL_PANORAMA_URL,
   CELESTIAL_SHELL_URL,
-  ...CLOUDBREAK_RUNTIME_ASSETS.map(({ path }) => path),
 ] as const;
 
 export interface CelestialEnvironmentAssets extends CelestialCloudbreakAssets {
@@ -76,6 +74,7 @@ export interface CelestialEnvironmentWorld {
   update(deltaSeconds: number, elapsedSeconds: number, camera: Camera): void;
   pulse(): void;
   setGroundY(groundY: number): void;
+  setStageBounds(radius: number, growth: number): void;
   setActive(active: boolean): void;
   dispose(): void;
 }
@@ -109,11 +108,7 @@ function loadPanorama(url: string): Promise<Texture> {
   });
 }
 
-/**
- * Load the exact six authored resources shared by the Svelte and worker worlds.
- * The legacy integrated-sanctuaries GLB is intentionally absent: Revision 6
- * replaced it with the rear threshold authored into the Cloudbreak assembly.
- */
+/** Load the panorama and the complete Blender-authored observatory. */
 export async function loadCelestialEnvironmentAssets(
   options: LoadCelestialAssetsOptions
 ): Promise<CelestialEnvironmentAssets> {
@@ -132,26 +127,17 @@ export async function loadCelestialEnvironmentAssets(
   };
 
   try {
-    const [panorama, shell, ...placements] = await Promise.all([
+    const [panorama, shell] = await Promise.all([
       loadPanorama(resolveAssetUrl(CELESTIAL_PANORAMA_URL)).then(
         reportComplete
       ),
       loadGltf(loader, resolveAssetUrl(CELESTIAL_SHELL_URL)).then(
         reportComplete
       ),
-      ...CLOUDBREAK_RUNTIME_ASSETS.map(({ path }) =>
-        loadGltf(loader, resolveAssetUrl(path)).then(reportComplete)
-      ),
     ]);
-    const byId = new Map<string, Object3D>();
-    CLOUDBREAK_RUNTIME_ASSETS.forEach((asset, index) => {
-      const gltf = placements[index];
-      if (gltf) byId.set(asset.id, gltf.scene);
-    });
     return {
       panorama,
       shell: shell.scene,
-      placements: byId,
     };
   } finally {
     ktx2Loader.dispose();
@@ -176,7 +162,7 @@ function createLighting(config: CelestialSceneConfig): Group {
     light.name = "celestial-sun-light";
     light.position.set(...config.sunLight.position);
     light.castShadow = true;
-    light.shadow.mapSize.set(1024, 1024);
+    light.shadow.mapSize.set(2048, 2048);
     light.shadow.camera.near = 1;
     light.shadow.camera.far = 180;
     light.shadow.camera.left = -32;
@@ -186,7 +172,7 @@ function createLighting(config: CelestialSceneConfig): Group {
     light.shadow.bias = -0.0007;
     light.shadow.normalBias = 0.05;
     light.shadow.radius = 3;
-    light.shadow.intensity = 0.64;
+    light.shadow.intensity = 0.85;
     root.add(light);
   }
   const fill = new DirectionalLight("#bfd3e8", 0.42);
@@ -234,6 +220,7 @@ export function createCelestialEnvironmentWorld(
       stageRadiusGrowth,
       worldYOffset,
       reflectionResolution,
+      motionScale: options.motionScale ?? 1,
     },
     assets
   );
@@ -264,6 +251,9 @@ export function createCelestialEnvironmentWorld(
     setGroundY(groundY) {
       if (disposed) return;
       cloudbreak.setGroundY(groundY);
+    },
+    setStageBounds(radius, growth) {
+      if (!disposed) cloudbreak.setStageBounds(radius, growth);
     },
     setActive(active) {
       root.visible = active;

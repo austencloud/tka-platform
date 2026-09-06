@@ -72,7 +72,7 @@
 </script>
 
 <section class="front-door" aria-labelledby="create-front-door-title">
-  <div class="front-door-inner">
+  <div class="front-door-inner" class:two-methods={orderedMethods.length === 2}>
     <header class="front-door-header">
       <h1 id="create-front-door-title">How do you want to create?</h1>
     </header>
@@ -141,6 +141,10 @@
 
   .front-door-header {
     width: 100%;
+  }
+
+  .front-door-inner.two-methods {
+    align-content: center;
   }
 
   h1 {
@@ -295,6 +299,27 @@
       width: 44px;
       height: 44px;
       font-size: var(--font-size-lg, 1.125rem);
+    }
+  }
+
+  @container create-entry (max-width: 619px) {
+    .two-methods .method-index {
+      grid-template-columns: minmax(0, 1fr);
+      grid-auto-rows: 1fr;
+    }
+
+    .two-methods .method-item {
+      grid-column: 1 / -1;
+    }
+
+    .two-methods .method-card,
+    .two-methods .method-item.default-method .method-card {
+      min-height: 112px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 16px;
+      padding: 18px;
     }
   }
 
