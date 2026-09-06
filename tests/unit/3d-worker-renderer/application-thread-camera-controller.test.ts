@@ -3,6 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   CameraControls,
+  configureViewerOrbitNavigation,
   resolveCameraControlsRightAction,
 } from "$lib/shared/3d/camera/camera-controls-runtime";
 import type { ApplicationThreadCameraFrameScheduler } from "$lib/shared/3d/worker-renderer/domain/application-thread-camera";
@@ -34,7 +35,11 @@ class ManualFrameScheduler implements ApplicationThreadCameraFrameScheduler {
 }
 
 function createElement(): HTMLElement {
-  const element = document.createElement("div");
+  // The shared setup stubs createElement; wheel regression checks need real DOM events.
+  const element = document.createElementNS(
+    "http://www.w3.org/1999/xhtml",
+    "div"
+  );
   Object.defineProperties(element, {
     clientWidth: { value: 800 },
     clientHeight: { value: 400 },
@@ -57,6 +62,38 @@ function createElement(): HTMLElement {
 }
 
 describe("ApplicationThreadCameraController", () => {
+  it("keeps wheel travel moving past a panned target without collapsing the orbit", () => {
+    const element = createElement();
+    const scheduler = new ManualFrameScheduler();
+    const controller = new ApplicationThreadCameraController(element, {
+      initialPosition: [-1.367, 27.09, -70.943],
+      initialTarget: [-1.367, 27.09, -69.943],
+      frameScheduler: scheduler,
+    });
+    configureViewerOrbitNavigation(controller.controls);
+    scheduler.step(0);
+    const before = controller.getSnapshot();
+    const wheel = new WheelEvent("wheel", {
+      deltaY: -120,
+      clientX: 400,
+      clientY: 200,
+      cancelable: true,
+    });
+    element.dispatchEvent(wheel);
+    expect(wheel.defaultPrevented).toBe(true);
+    expect(controller.controls.mouseButtons.wheel).toBe(
+      CameraControls.ACTION.DOLLY
+    );
+    for (let frame = 1; frame < 90; frame++) scheduler.step(frame * 16);
+    const after = controller.getSnapshot();
+    expect(after.position[2]).toBeGreaterThan(before.position[2] + 0.01);
+    expect(after.target[2]).toBeGreaterThan(before.target[2] + 0.01);
+    expect(
+      Math.hypot(...after.position.map((value, i) => value - after.target[i]!))
+    ).toBeCloseTo(1, 4);
+    controller.dispose();
+  });
+
   it("owns the current camera pose and emits a worker-safe rolled snapshot", () => {
     const scheduler = new ManualFrameScheduler();
     const roll = Math.PI / 6;

@@ -10,6 +10,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { reducedMotion } from "$lib/shared/transitions/motion";
 // propInterpolator / sequenceConverter are now module-level functions; no type imports needed
 import type { CameraStateSnapshot } from "@austencloud/scene-3d";
 import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
@@ -894,7 +895,27 @@ function buildViewer3DState(
     viewportAspect = currentViewportAspect(),
     preserveViewingDirection = true
   ): void {
-    const performers = performerManager.performers;
+    framePerformers(
+      performerManager.performers,
+      viewportAspect,
+      preserveViewingDirection
+    );
+  }
+
+  function focusSelectedPerformers(): void {
+    const selected = scopedPerformers();
+    framePerformers(
+      selected.length > 0 ? selected : performerManager.performers,
+      currentViewportAspect(),
+      true
+    );
+  }
+
+  function framePerformers(
+    performers: readonly PerformerShotSubject[],
+    viewportAspect: number,
+    preserveViewingDirection: boolean
+  ): void {
     if (renderMode !== "3d" || !_snapToFn || performers.length === 0) return;
 
     const shot = computeViewerFrontStageShot(performers, viewportAspect);
@@ -928,7 +949,9 @@ function buildViewer3DState(
 
     snapCameraTo(
       { x: position.x, y: position.y, z: position.z },
-      { x: target.x, y: target.y, z: target.z }
+      { x: target.x, y: target.y, z: target.z },
+      undefined,
+      !reducedMotion()
     );
   }
 
@@ -2220,6 +2243,10 @@ function buildViewer3DState(
     if (_welcomeAnimationPending) {
       requestAnimationFrame(() => _fireWelcome());
     }
+    // An old renderer can unmount after its replacement has registered.
+    return () => {
+      if (_snapToFn === fn) _snapToFn = null;
+    };
   }
 
   /**
@@ -2349,6 +2376,7 @@ function buildViewer3DState(
     clearPerformerSelection,
     selectAllPerformers,
     frameAllPerformers,
+    focusSelectedPerformers,
     get propSizeLinked() {
       return propSizeLinked;
     },
