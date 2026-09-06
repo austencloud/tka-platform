@@ -37,7 +37,6 @@
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
-  import FanAppearancePicker from "$lib/shared/pictograph/prop/components/FanAppearancePicker.svelte";
   import PropLookPicker from "$lib/shared/pictograph/prop/components/PropLookPicker.svelte";
   import {
     isFanPropType,
@@ -192,7 +191,6 @@
     showEffectsPlayback = true,
     selectedPropType,
     fanAppearance,
-    onFanAppearanceChange,
     sequence = null,
     onPropChange,
     onPropPickerRequest,
@@ -719,15 +717,9 @@
         variant="inline"
         flat={layout === "bottom"}
       />
-      {#if fanAppearance && onFanAppearanceChange && isFanPropType(selectedPropType)}
-        <div class="fan-appearance-section">
-          <FanAppearancePicker
-            value={fanAppearance}
-            onchange={onFanAppearanceChange}
-            compact={layout === "bottom"}
-          />
-        </div>
-      {:else if selectedPropType}
+      <!-- The fan build lives in the prop grid's Fan styles popover; only
+           the model / pictograph switch for other props docks below. -->
+      {#if selectedPropType && !isFanPropType(selectedPropType)}
         <div class="fan-appearance-section">
           <PropLookPicker
             propType={selectedPropType}
