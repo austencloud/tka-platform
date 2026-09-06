@@ -1,4 +1,11 @@
 import { Scene } from "three";
+import { BackgroundType } from "@austencloud/backgrounds";
+import { getStageCoordinateFrame } from "../../environments/domain/stage-coordinate-frame";
+import {
+  getPerformerStageBounds,
+  getCanonicalPerformerStageBounds,
+  getAddedPerformerStageGrowth,
+} from "../../environments/domain/performer-stage-bounds";
 
 import {
   attachCelestialEnvironmentWorld,
@@ -19,11 +26,24 @@ export async function createCelestialPrototypeWorld(
     groundY: context.performers[0]?.groundY ?? -1.5,
     stageRadius: 3,
     stageRadiusGrowth: 0,
-    worldYOffset: 0,
+    worldYOffset: getStageCoordinateFrame(BackgroundType.CELESTIAL, true)
+      .environmentYOffset,
     contentTier: "standard",
-    motionScale: 1,
+    motionScale: context.reducedMotion ? 0 : 1,
     onProgress: (fraction) => context.reportProgress("assets", fraction),
   });
+  function setPerformers(performers: WorkerWorldContext["performers"]) {
+    const bounds = getPerformerStageBounds(
+      performers.map(({ position }) => ({ x: position[0], z: position[2] }))
+    );
+    const canonical = getCanonicalPerformerStageBounds(performers.length);
+    world.setGroundY(performers[0]?.groundY ?? -1.5);
+    world.setStageBounds(
+      Math.max(bounds.radius, canonical.radius),
+      getAddedPerformerStageGrowth(performers.length)
+    );
+  }
+  setPerformers(context.performers);
   const detach = attachCelestialEnvironmentWorld(scene, world);
   scene.fog = world.fog;
   scene.background = world.background;
@@ -38,9 +58,7 @@ export async function createCelestialPrototypeWorld(
     update(deltaSeconds, elapsedSeconds) {
       world.update(deltaSeconds, elapsedSeconds, context.camera);
     },
-    setPerformers(performers) {
-      world.setGroundY(performers[0]?.groundY ?? -1.5);
-    },
+    setPerformers,
     pointerDown() {
       world.pulse();
       return null;

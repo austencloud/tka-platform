@@ -56,7 +56,19 @@ export type CloudbreakAssemblyView =
   | "trees"
   | "stone";
 
-export const CLOUDBREAK_LAYOUT = layoutSource as unknown as CloudbreakLayout;
+const authoredLayout = layoutSource as unknown as CloudbreakLayout;
+// The enlarged dry performer lane moves the single lagoon four metres east.
+export const CLOUDBREAK_LAYOUT: CloudbreakLayout = {
+  ...authoredLayout,
+  lagoon: {
+    ...authoredLayout.lagoon,
+    outlineXZ: authoredLayout.lagoon.outlineXZ.map(([x, z]) => [x + 4, z]),
+    overflowXZ: [
+      authoredLayout.lagoon.overflowXZ[0] + 4,
+      authoredLayout.lagoon.overflowXZ[1],
+    ],
+  },
+};
 
 function normalizeDirection(
   position: [number, number, number]

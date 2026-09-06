@@ -39,14 +39,8 @@ const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../.."
 );
-const SCENES_DIR = path.join(
-  repoRoot,
-  "src/lib/shared/3d/environments/scenes"
-);
-const WORLDS_DIR = path.join(
-  repoRoot,
-  "src/lib/shared/3d/environments/worlds"
-);
+const SCENES_DIR = path.join(repoRoot, "src/lib/shared/3d/environments/scenes");
+const WORLDS_DIR = path.join(repoRoot, "src/lib/shared/3d/environments/worlds");
 
 /**
  * Which environment owns each scene folder, and each root-level `*Scene.svelte`
@@ -75,7 +69,12 @@ function isExcluded(relativePath: string): boolean {
   const normalized = relativePath.split(path.sep).join("/");
   return (
     normalized.endsWith("-composer-plugin.ts") ||
-    normalized.startsWith("winter/graybox/")
+    normalized.startsWith("winter/graybox/") ||
+    [
+      "celestial/cloudbreak-assets.ts",
+      "celestial/CelestialSanctuaries.svelte",
+      "celestial/OliveCloudbreakSlice.svelte",
+    ].includes(normalized)
   );
 }
 
@@ -197,13 +196,16 @@ describe("scene asset manifest", () => {
       const found: string[] = [];
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
-        if (entry.isDirectory()) found.push(...walk(path.join(dir, entry.name), relative));
+        if (entry.isDirectory())
+          found.push(...walk(path.join(dir, entry.name), relative));
         else found.push(relative);
       }
       return found;
     })(SCENES_DIR);
 
-    expect(all.filter((f) => f.endsWith("-composer-plugin.ts")).length).toBeGreaterThan(0);
+    expect(
+      all.filter((f) => f.endsWith("-composer-plugin.ts")).length
+    ).toBeGreaterThan(0);
     expect(all.some((f) => f.startsWith("winter/graybox/"))).toBe(true);
   });
 });

@@ -17,60 +17,31 @@ import {
 } from "$lib/shared/3d/environments/worlds/celestial/celestial-environment-world";
 import { CELESTIAL_AUTHORED_RESOURCE_COUNT } from "$lib/shared/3d/environments/worlds/celestial/celestial-cloudbreak-world";
 
-function assetScene(name: string): Group {
-  const root = new Group();
-  root.name = name;
-  const mesh = new Mesh(
-    new BoxGeometry(1, 2, 1),
-    new MeshStandardMaterial({ color: "#ffffff" })
-  );
-  root.add(mesh);
-  return root;
-}
-
 function assets(): CelestialEnvironmentAssets {
   const shell = new Group();
-  const landmass = new Mesh(
-    new BoxGeometry(4, 1, 6),
-    new MeshStandardMaterial({ color: "#ffffff" })
+  const ground = new Mesh(
+    new BoxGeometry(40, 0.2, 50),
+    new MeshStandardMaterial()
   );
-  landmass.userData.tka_role = "cloudbreak-landmass";
-  shell.add(landmass);
-  const placeholder = new Mesh(
-    new BoxGeometry(1, 1, 1),
-    new MeshStandardMaterial({ color: "#ffffff" })
+  ground.userData.sunwardRole = "ground";
+  const court = new Mesh(
+    new BoxGeometry(12.16, 0.045, 12.16),
+    new MeshStandardMaterial()
   );
-  placeholder.userData.tka_role = "cloudbreak-olive-trunk";
-  shell.add(placeholder);
-  return {
-    panorama: new Texture(),
-    shell,
-    placements: new Map([
-      ["olive-west-ancient", assetScene("west-olive")],
-      ["olive-east-windswept", assetScene("east-olive")],
-      ["coast-rocks-05", assetScene("coast-rocks")],
-      ["sand-rocks-small-01", assetScene("sand-rocks")],
-    ]),
-  };
+  court.name = "authored-court";
+  court.userData.sunwardRole = "court";
+  court.position.set(0, 0.2025, -1);
+  shell.add(ground, court);
+  return { panorama: new Texture(), shell };
 }
 
 describe("Celestial renderer-neutral world", () => {
-  it("declares the exact six Revision 6 authored resources", () => {
-    expect(CELESTIAL_AUTHORED_RESOURCE_COUNT).toBe(6);
-    expect(CELESTIAL_AUTHORED_RESOURCE_URLS).toHaveLength(6);
+  it("loads only the complete garden and its panorama", () => {
+    expect(CELESTIAL_AUTHORED_RESOURCE_COUNT).toBe(2);
     expect(CELESTIAL_AUTHORED_RESOURCE_URLS).toEqual([
       expect.stringContaining("olive-cloudbreak-panorama-r1.webp"),
-      expect.stringContaining("olive-cloudbreak-production-slice.glb"),
-      "/models/celestial/cloudbreak/source/olive-west-ancient.glb",
-      "/models/celestial/cloudbreak/source/olive-east-windswept.glb",
-      "/models/celestial/cloudbreak/rocks/coast-rocks-05.glb",
-      "/models/celestial/cloudbreak/rocks/sand-rocks-small-01.glb",
+      expect.stringContaining("sunward-gardens.glb"),
     ]);
-    expect(
-      CELESTIAL_AUTHORED_RESOURCE_URLS.some((url) =>
-        url.includes("integrated-sanctuaries")
-      )
-    ).toBe(false);
   });
 
   it("builds the complete production graph, stage, lighting, and globals", () => {
@@ -90,14 +61,9 @@ describe("Celestial renderer-neutral world", () => {
     expect(names).toContain("celestial-cloud-panorama");
     expect(names).toContain("celestial-sun");
     expect(names).toContain("celestial-cloudbreak-world");
-    expect(names).toContain("cloudbreak-shell-mirror");
-    expect(names).toContain("cloudbreak-spatial-study");
-    expect(names).toContain("cloudbreak-lagoon-edge");
+    expect(names).toContain("sunward-authored-gardens");
     expect(
       names.filter((name) => name === "cloudbreak-waterfall")
-    ).toHaveLength(4);
-    expect(
-      names.filter((name) => name.startsWith("cloudbreak-placement:"))
     ).toHaveLength(4);
     expect(names).toContain("celestial-lighting");
     expect(names).toContain("celestial-sun-light");
@@ -109,10 +75,25 @@ describe("Celestial renderer-neutral world", () => {
     expect(world.reflector.position.y).toBeCloseTo(-0.05, 6);
     expect(world.reflector.rotation.x).toBeCloseTo(-Math.PI / 2, 6);
 
-    const mirror = world.root.getObjectByName("cloudbreak-shell-mirror")!;
-    expect(mirror.scale.toArray()).toEqual([-1, 1, -1]);
-    const hiddenPlaceholder = mirror.children[0]!.children[1]!;
-    expect(hiddenPlaceholder.visible).toBe(false);
+    world.dispose();
+  });
+
+  it("expands only the authored court while retaining its height and center", () => {
+    const bundle = assets();
+    const world = createCelestialEnvironmentWorld(
+      { groundY: 0, stageRadius: 7, stageRadiusGrowth: 3.5 },
+      bundle
+    );
+    const court = world.root.getObjectByName("authored-court")!;
+    expect(court.scale.x).toBeCloseTo(9.58 / 6.08);
+    expect(court.scale.z).toBeCloseTo(9.58 / 6.08);
+    expect(court.scale.y).toBe(1);
+    expect(court.position.toArray()).toEqual([0, 0.2025, -1]);
+    expect(bundle.shell.children[1]!.scale.toArray()).toEqual([1, 1, 1]);
+    world.setStageBounds(3, 0);
+    expect(court.scale.toArray()).toEqual([1, 1, 1]);
+    world.setStageBounds(7, 3.5);
+    expect(court.scale.x).toBeCloseTo(9.58 / 6.08);
     world.dispose();
   });
 
@@ -140,6 +121,22 @@ describe("Celestial renderer-neutral world", () => {
     const afterOpacity = (halo as unknown as { material: { opacity: number } })
       .material.opacity;
     expect(afterOpacity).toBeGreaterThan(beforeOpacity);
+    world.dispose();
+  });
+
+  it("freezes lagoon and waterfalls when reduced motion is requested", () => {
+    const world = createCelestialEnvironmentWorld(
+      { groundY: 0, motionScale: 0 },
+      assets()
+    );
+    const water = world.reflector.material as import("three").ShaderMaterial;
+    world.update(1, 1, new PerspectiveCamera());
+    expect(water.uniforms.uTime!.value).toBe(0);
+    const fall = world.root.getObjectByName("cloudbreak-waterfall")!
+      .children[0] as Mesh;
+    expect(
+      (fall.material as import("three").ShaderMaterial).uniforms.uTime!.value
+    ).toBe(0);
     world.dispose();
   });
 
