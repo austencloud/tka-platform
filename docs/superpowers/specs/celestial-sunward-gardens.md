@@ -58,3 +58,10 @@ motion. A mocked-loader regression test covers that boundary. The final focused
 suite contains ten passing tests; Svelte reports zero errors and warnings.
 The GLB validator reports zero errors and four expected derivative-tangent
 warnings for the olive meshes.
+
+Performance observation: the main-thread production harness reported 60 fps with
+one performer and about 14 fps with eight performers (500 draw calls, 3.53 million
+rendered triangles including extra passes). These are local dev observations, not
+a device benchmark. Worker output was checked visually with one and eight
+performers; its frame rate was not measured. Large casts in the legacy renderer
+remain a limitation.
