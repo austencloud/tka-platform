@@ -125,7 +125,11 @@ describe.each([false, true])(
 
       const email = page.getByRole("textbox", { name: "Email" });
       await email.fill("spinner@example.com");
-      await page.getByRole("button", { name: "Email me a code" }).click();
+      await page
+        .getByRole("button", {
+          name: compact ? "Send a code" : "Email me a code",
+        })
+        .click();
 
       const pendingStatus = page.getByRole("status");
       await expect
@@ -178,12 +182,18 @@ describe.each([false, true])(
       await page
         .getByRole("textbox", { name: "Email" })
         .fill("spinner@example.com");
-      await page.getByRole("button", { name: "Email me a code" }).click();
+      await page
+        .getByRole("button", {
+          name: compact ? "Send a code" : "Email me a code",
+        })
+        .click();
 
       await expect
         .element(page.getByRole("status"))
         .toHaveTextContent(
-          "Check your email, then come back here and enter it below"
+          compact
+            ? "Enter the code sent to spinner@example.com here."
+            : "Check your email, then come back here and enter it below"
         );
     });
 
@@ -202,9 +212,15 @@ describe.each([false, true])(
       await expect
         .element(page.getByRole("textbox", { name: "Six-digit code" }))
         .toBeVisible();
-      await expect
-        .element(page.getByRole("textbox", { name: "Email" }))
-        .toHaveValue("spinner@example.com");
+      if (compact) {
+        await expect
+          .element(page.getByRole("status"))
+          .toHaveTextContent("spinner@example.com");
+      } else {
+        await expect
+          .element(page.getByRole("textbox", { name: "Email" }))
+          .toHaveValue("spinner@example.com");
+      }
       expect(mocks.sendMagicLink).not.toHaveBeenCalled();
     });
 
@@ -229,7 +245,11 @@ describe.each([false, true])(
       await page
         .getByRole("textbox", { name: "Email" })
         .fill("spinner@example.com");
-      await page.getByRole("button", { name: "Email me a code" }).click();
+      await page
+        .getByRole("button", {
+          name: compact ? "Send a code" : "Email me a code",
+        })
+        .click();
 
       const code = page.getByRole("textbox", { name: "Six-digit code" });
       await code.fill("123456");

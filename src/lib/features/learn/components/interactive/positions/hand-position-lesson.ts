@@ -111,6 +111,19 @@ export function transformPosition(
   return { left: transform(left), right: transform(right) };
 }
 
+export function changePositionGrid(
+  left: GridLocation | null,
+  right: GridLocation | null,
+  from: GridMode,
+  to: GridMode
+) {
+  const turn = from === to ? 0 : to === GridMode.BOX ? 1 : -1;
+  return {
+    left: left ? (rotateLocation(left, turn) as GridLocation) : null,
+    right: right ? (rotateLocation(right, turn) as GridLocation) : null,
+  };
+}
+
 export function positionCorrection(
   left: GridLocation,
   right: GridLocation,

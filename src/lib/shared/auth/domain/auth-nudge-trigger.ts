@@ -2,6 +2,7 @@ import { GUEST_SAVE_CAP } from "./guest-access-config";
 
 export type AuthNudgeTrigger =
   | "save"
+  | "save-limit"
   | "step-cap-guest"
   | "patterns-guest"
   | "export"
@@ -36,6 +37,7 @@ export interface AuthPromptContent {
 // Account - free" variants — those drifted into four incompatible phrasings
 // (2026-06-18 finding, closed 2026-07-18).
 export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
+  "save-limit": `Guests can save ${GUEST_SAVE_CAP} sequences on this device. Create a free account to save more.`,
   save: `Guests can save ${GUEST_SAVE_CAP} sequences. Create a free account to save more.`,
   "step-cap-guest":
     "Guests can create sequences up to 8 steps. Create a free account for up to 64 steps.",
@@ -100,6 +102,11 @@ export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
 // nudge explains the gate; after they choose an account action, the modal names
 // the exact thing they were trying to do and gets out of the way.
 const AUTH_PROMPT_CONTENTS: Record<AuthNudgeTrigger, AuthPromptContent> = {
+  "save-limit": {
+    key: "save-limit",
+    title: "Keep saving sequences",
+    body: AUTH_NUDGE_TEXTS["save-limit"],
+  },
   save: {
     key: "save",
     title: "Keep saving sequences",
@@ -107,8 +114,8 @@ const AUTH_PROMPT_CONTENTS: Record<AuthNudgeTrigger, AuthPromptContent> = {
   },
   "step-cap-guest": {
     key: "step-cap-guest",
-    title: "Keep adding steps",
-    body: "Create a free account for up to 64 steps.",
+    title: "Keep going",
+    body: "Free account. Up to 64 steps.",
   },
   "patterns-guest": {
     key: "patterns-guest",
@@ -235,12 +242,12 @@ export function getAuthPromptContent(
 }
 
 const STEP_CAP_REPEAT_TITLES = [
-  "You found step nine's bouncer.",
-  "I know. Eight was just the warm-up.",
-  "The button works. It's just stubborn.",
-  "I see the vision. It has more than eight steps.",
-  "Yes, I wrote another message for this.",
-  "At this point, we're rehearsing the signup.",
-  "Plot twist: the account is still free.",
-  "Your next step is an email address.",
+  "Step nine says hello.",
+  "Eight was the warm-up.",
+  "Still got more moves?",
+  "Room for an encore?",
+  "Oh, hello again.",
+  "One tiny detour.",
+  "Your ninth step misses you.",
+  "Ready when you are.",
 ];

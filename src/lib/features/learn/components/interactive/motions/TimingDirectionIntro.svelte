@@ -1,339 +1,329 @@
 <script lang="ts">
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { onMount, onDestroy } from "svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
   import {
-    nearestQuarterTurn,
-    quarterPhase,
-    timingFromPhases,
-    type TimingMode,
-  } from "./timing-intro-phase";
+    createRenderActivityGate,
+    renderGateTarget,
+  } from "$lib/shared/render-gating/render-activity-gate";
+  import { reducedMotion } from "$lib/shared/transitions/motion";
+  import { downbeatPulse, type TimingMode } from "./timing-intro-phase";
 
-  type DirectionMode = "same" | "opposite";
-  const timingOptions: Array<{ value: TimingMode; label: string }> = [
-    { value: "together", label: "Together" },
-    { value: "split", label: "Split" },
-    { value: "quarter", label: "Quarter" },
+  let { active = true } = $props<{ active?: boolean }>();
+  // These are separate examples, not controls for one combined motion.
+  let placement = $state("alpha");
+  let timing = $state<TimingMode>("together");
+  let direction = $state("same");
+  let elapsed = $state(-0.15);
+  let playing = $state(false);
+  const loop = new AnimationLoop();
+  const gate = createRenderActivityGate({
+    name: "intro-downbeats",
+    rootMargin: "0px",
+  });
+  const offset = $derived(
+    timing === "split" ? 0.5 : timing === "quarter" ? 0.25 : 0
+  );
+  const pulses = $derived([
+    downbeatPulse(elapsed, 0),
+    downbeatPulse(elapsed, offset),
+  ]);
+  const placementAngle = $derived(
+    placement === "alpha" ? 180 : placement === "gamma" ? 90 : 0
+  );
+  const placementCopy = $derived(
+    placement === "alpha"
+      ? "Opposite points."
+      : placement === "beta"
+        ? "The same point."
+        : "A right angle apart."
+  );
+  const timingCopy = $derived(
+    timing === "together"
+      ? "At the same time."
+      : timing === "split"
+        ? "Taking turns, evenly spaced."
+        : "A short gap, then a long gap."
+  );
+  const timingDescription = $derived(
+    timing === "together"
+      ? "Both downbeats happen together."
+      : timing === "split"
+        ? "Downbeats alternate, half a cycle apart."
+        : "Downbeats happen a quarter cycle apart."
+  );
+  const placementOptions = [
+    { value: "alpha", label: "Alpha" },
+    { value: "beta", label: "Beta" },
+    { value: "gamma", label: "Gamma" },
   ];
-  const directionOptions: Array<{ value: DirectionMode; label: string }> = [
+  const timingOptions = [
+    { value: "together" as const, label: "Together" },
+    { value: "split" as const, label: "Split" },
+    { value: "quarter" as const, label: "Quarter" },
+  ];
+  const directionOptions = [
     { value: "same", label: "Same" },
     { value: "opposite", label: "Opposite" },
   ];
-  const timingDetails = {
-    together: {
-      description: "Both reach the downbeat together.",
-      offset: "",
-    },
-    split: {
-      description: "Their downbeats alternate evenly.",
-      offset: "Half a cycle apart.",
-    },
-    quarter: {
-      description: "Their downbeats are a quarter cycle apart.",
-      offset: "",
-    },
-  };
-  const points = [
-    { phase: 0, x: 50, y: 83.75, name: "bottom" },
-    { phase: 1, x: 16.25, y: 50, name: "left side" },
-    { phase: 2, x: 50, y: 16.25, name: "top" },
-    { phase: 3, x: 83.75, y: 50, name: "right side" },
-  ];
-  let phases = $state([0, 0]);
-  let clockwise = $state([true, true]);
-  const timingMode = $derived(timingFromPhases(phases[0]!, phases[1]!));
-  const directionMode = $derived<DirectionMode>(
-    clockwise[0] === clockwise[1] ? "same" : "opposite"
-  );
-  const timingDetail = $derived(timingDetails[timingMode]);
 
-  function movePoint(index: number, phase: number): void {
-    phases[index] = nearestQuarterTurn(phases[index]!, phase);
-  }
-
-  function setTiming(mode: TimingMode): void {
-    movePoint(
-      1,
-      phases[0]! + (mode === "together" ? 0 : mode === "split" ? 2 : 1)
-    );
-  }
-
-  function setDirection(mode: DirectionMode): void {
-    clockwise[1] = mode === "same" ? clockwise[0]! : !clockwise[0];
+  onMount(() => {
+    loop.setActivityGate(gate);
+    playing = !reducedMotion();
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const stopForPreference = () => {
+      if (reducedMotion()) playing = false;
+    };
+    media.addEventListener("change", stopForPreference);
+    const observer = new MutationObserver(stopForPreference);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-motion-preference"],
+    });
+    return () => {
+      media.removeEventListener("change", stopForPreference);
+      observer.disconnect();
+    };
+  });
+  onDestroy(() => {
+    loop.dispose();
+    gate.dispose();
+  });
+  $effect(() => {
+    if (playing && active)
+      loop.start((delta) => {
+        elapsed += delta / 2400;
+      }, 1);
+    else loop.stop();
+    return () => loop.stop();
+  });
+  function setTiming(value: TimingMode): void {
+    timing = value;
+    elapsed = -0.15;
   }
 </script>
 
 <div
-  class="concept-model"
+  class="concepts"
   role="group"
-  aria-label="Interactive timing and direction examples"
+  aria-label="Placement, timing, and direction"
 >
-  <section class="concept-panel timing-panel" aria-labelledby="timing-heading">
-    <h3 id="timing-heading">Timing</h3>
-    <p class="concept-prose">
-      Timing compares when the two motions reach their downbeats.
-    </p>
-    <div
-      class="instrument timing-instrument"
-      data-timing={timingMode}
-      role="group"
-      aria-label="Choose a point on either timing circle"
-    >
-      {#each phases as phase, index}
-        <div
-          class="circle-control"
-          class:blue={index === 0}
-          class:red={index === 1}
-        >
-          <svg viewBox="0 0 160 160" aria-hidden="true">
-            <g transform="translate(80 80)">
-              <circle class="cycle-reference" r="54" />
-              <g
-                class="phase-rotation"
-                style:transform={`rotate(${phase * 90}deg)`}
-              >
-                <circle class="motion-marker" cx="0" cy="54" r="10" />
-              </g>
-            </g>
-          </svg>
-          {#each points as point}
-            <button
-              type="button"
-              class="timing-point"
-              style:left={`${point.x}%`}
-              style:top={`${point.y}%`}
-              aria-label={`${index === 0 ? "Left" : "Right"} timing circle: ${point.name}`}
-              aria-pressed={quarterPhase(phase) === point.phase}
-              onclick={() => movePoint(index, point.phase)}
-              ><span class="point-hint"></span></button
-            >
-          {/each}
-        </div>
-      {/each}
+  <section class="concept" aria-label="Placement">
+    <header>
+      <h3>Placement</h3>
+      <p>Where things are right now.</p>
+    </header>
+    <div class="picture" role="img" aria-label={placementCopy}>
+      <svg viewBox="0 0 320 300" aria-hidden="true">
+        <circle class="placement-ring" cx="160" cy="150" r="88" />
+        <circle class="center" cx="160" cy="150" r="3" />
+        <g transform="translate(160 150)">
+          <circle class="blue-dot" cx="-88" cy="0" r="19" />
+          <g
+            class="placement-turn"
+            style:transform={`rotate(${placementAngle}deg)`}
+          >
+            <circle class="red-dot" cx="-88" cy="0" r="13" />
+          </g>
+        </g>
+      </svg>
     </div>
-    <div class="relationship-caption" aria-live="polite" aria-atomic="true">
-      <Crossfade key={timingMode}>
-        <p>{timingDetail.description}</p>
-        {#if timingDetail.offset}<p class="offset">
-            {timingDetail.offset}
-          </p>{/if}
-      </Crossfade>
+    <div class="caption" aria-live="polite">
+      <Crossfade key={placement}><p>{placementCopy}</p></Crossfade>
     </div>
-    <div class="selector timing-selector">
+    <div class="choices">
       <SegmentedControl
-        options={timingOptions}
-        value={timingMode}
-        onchange={setTiming}
+        options={placementOptions}
+        value={placement}
+        onchange={(value) => (placement = value)}
+        semantics="radiogroup"
+        ariaLabel="Placement example"
         color="accent"
         density="tight"
-        semantics="radiogroup"
-        ariaLabel="Timing relationship"
       />
     </div>
   </section>
 
-  <section
-    class="concept-panel direction-panel"
-    aria-labelledby="direction-heading"
-  >
-    <h3 id="direction-heading">Direction</h3>
-    <p class="concept-prose">
-      Direction compares rotation: circling the same way or opposite ways.
-    </p>
-    <div
-      class="instrument direction-instrument"
-      data-direction={directionMode}
-      role="group"
-      aria-label="Click either arrow to flip its rotation"
-    >
-      {#each clockwise as isClockwise, index}
-        <button
-          type="button"
-          class="arrow-control"
-          class:blue={index === 0}
-          class:red={index === 1}
-          aria-label={`${index === 0 ? "Left" : "Right"} rotation: ${isClockwise ? "clockwise" : "counterclockwise"}. Click to flip.`}
-          onclick={() => (clockwise[index] = !isClockwise)}
+  <section class="concept" aria-label="Timing" use:renderGateTarget={gate}>
+    <header>
+      <h3>Timing</h3>
+      <p>A pulse marks each downbeat.</p>
+    </header>
+    <div class="picture pulse-picture">
+      <svg viewBox="0 0 320 300" role="img" aria-label={timingDescription}>
+        {#each pulses as strength, index}
+          <g class:blue={index === 0} class:red={index === 1}>
+            <circle
+              class="pulse-halo"
+              cx={index === 0 ? 92 : 228}
+              cy="150"
+              r={29 + 15 * (1 - strength)}
+              opacity={strength * 0.75}
+            />
+            <circle
+              class="pulse-dot"
+              cx={index === 0 ? 92 : 228}
+              cy="150"
+              r={20 + 4 * strength}
+              opacity={0.55 + 0.45 * strength}
+            />
+          </g>
+        {/each}
+      </svg>
+      <div class="pulse-transport">
+        <PanelButton
+          onclick={() => (playing = !playing)}
+          ariaLabel={playing ? "Pause downbeats" : "Play downbeats"}
         >
-          <svg viewBox="0 0 160 160" aria-hidden="true">
-            <g transform="translate(80 80)">
-              <g
-                class="arrow-flip"
-                style:transform={`scaleX(${isClockwise ? 1 : -1})`}
-              >
-                <path
-                  class="rotation-arc"
-                  d="M-38.184 38.184A54 54 0 1 1 54 0"
-                />
-                <path
-                  class="arrowhead"
-                  d="M40-7 Q37-7 39-4 L52 17 Q54 20 56 17 L69-4 Q71-7 68-7 Z"
-                />
-              </g>
-            </g>
-          </svg>
-        </button>
-      {/each}
+          <svg class="transport-icon" viewBox="0 0 20 20" aria-hidden="true"
+            >{#if playing}<path
+                d="M6 4v12M14 4v12"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+              />{:else}<path
+                d="M6 3L17 10L6 17Z"
+                fill="currentColor"
+              />{/if}</svg
+          >
+        </PanelButton>
+      </div>
     </div>
-    <div class="relationship-caption" aria-live="polite" aria-atomic="true">
-      <Crossfade key={directionMode}
+    <div class="caption" aria-live="polite">
+      <Crossfade key={timing}><p>{timingCopy}</p></Crossfade>
+    </div>
+    <div class="choices">
+      <SegmentedControl
+        options={timingOptions}
+        value={timing}
+        onchange={setTiming}
+        semantics="radiogroup"
+        ariaLabel="Timing example"
+        color="accent"
+        density="tight"
+      />
+    </div>
+  </section>
+
+  <section class="concept" aria-label="Direction">
+    <header>
+      <h3>Direction</h3>
+      <p>Which way things rotate.</p>
+    </header>
+    <div
+      class="picture"
+      role="img"
+      aria-label={direction === "same"
+        ? "Both rotate clockwise."
+        : "One rotates clockwise, the other counterclockwise."}
+    >
+      <svg viewBox="0 0 320 300" aria-hidden="true">
+        {#each [1, direction === "same" ? 1 : -1] as rotation, index}
+          <g
+            class:blue={index === 0}
+            class:red={index === 1}
+            transform={`translate(${index === 0 ? 83 : 237} 150)`}
+          >
+            <g class="arrow-flip" style:transform={`scaleX(${rotation})`}>
+              <path class="rotation-arc" d="M-35.35 35.35A50 50 0 1 1 50 0" />
+              <path
+                class="arrowhead"
+                d="M35-8 Q31-8 34-4 L47 17 Q50 22 53 17 L66-4 Q69-8 65-8Z"
+              />
+            </g>
+          </g>
+        {/each}
+      </svg>
+    </div>
+    <div class="caption" aria-live="polite">
+      <Crossfade key={direction}
         ><p>
-          {directionMode === "same"
-            ? "Both rotate the same way."
-            : "They rotate opposite ways."}
+          {direction === "same"
+            ? "Circling the same way."
+            : "Circling opposite ways."}
         </p></Crossfade
       >
     </div>
-    <div class="selector direction-selector">
+    <div class="choices">
       <SegmentedControl
         options={directionOptions}
-        value={directionMode}
-        onchange={setDirection}
+        value={direction}
+        onchange={(value) => (direction = value)}
+        semantics="radiogroup"
+        ariaLabel="Direction example"
         color="accent"
         density="tight"
-        semantics="radiogroup"
-        ariaLabel="Direction relationship"
       />
     </div>
   </section>
 </div>
 
 <style>
-  .concept-model {
+  .concepts {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
-    height: 100%;
-    min-height: 0;
-    margin-inline: auto;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-xl, 1rem);
     background: var(--theme-card-bg);
+    color: var(--theme-text);
+    overflow: hidden;
   }
-  .concept-panel {
-    display: grid;
-    grid-template-rows: auto 3em minmax(6rem, 1fr) 4.75em auto;
-    justify-items: center;
-    align-content: start;
-    gap: 0.75rem;
+  .concept {
     min-width: 0;
-    min-height: 0;
-    padding: clamp(1rem, 2cqw, 2rem);
-    font-size: clamp(1rem, 1.35cqw, 2rem);
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    justify-items: center;
+    padding: clamp(1.25rem, 2cqw, 3rem);
+    text-align: center;
   }
-  .direction-panel {
+  .concept + .concept {
     border-inline-start: 1px solid var(--theme-stroke);
+  }
+  header {
+    width: 100%;
   }
   h3 {
     margin: 0;
-    color: var(--theme-text);
-    font-size: clamp(1.35rem, 2.4cqw, 3.5rem);
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    font-size: clamp(1.5rem, 1.7cqw, 2.25rem);
     line-height: 1.2;
+    letter-spacing: -0.025em;
   }
   p {
     margin: 0;
-  }
-  .concept-prose,
-  .relationship-caption {
-    max-width: 35ch;
-    color: var(--theme-text-dim);
     line-height: 1.5;
-    text-align: center;
     text-wrap: balance;
   }
-  .relationship-caption {
+  header p {
+    margin-top: 0.65rem;
+    color: var(--theme-text-dim);
+    font-size: clamp(1rem, 0.9cqw, 1.25rem);
+  }
+  .picture {
+    width: min(100%, 30rem);
+    aspect-ratio: 320 / 300;
     align-self: center;
-  }
-  .offset {
-    margin-top: 0.25em;
-    white-space: nowrap;
-  }
-  .instrument {
     position: relative;
-    container-type: size;
-    width: 100%;
-    min-width: 0;
-    min-height: 0;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: center;
+    margin-block: clamp(0.75rem, 1.5cqw, 2rem);
   }
-  .circle-control,
-  .arrow-control {
-    position: relative;
-    width: min(100%, 100cqh);
-    aspect-ratio: 1;
-    justify-self: center;
-    min-width: 0;
-    min-height: 0;
-  }
-  .timing-point,
-  .arrow-control {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .timing-point {
-    position: absolute;
-    width: 44px;
-    height: 44px;
-    transform: translate(-50%, -50%);
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-    color: inherit;
-  }
-  .point-hint {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: currentColor;
-    opacity: 0.8;
-  }
-  .timing-point[aria-pressed="true"] .point-hint {
-    opacity: 0;
-  }
-  .timing-point:hover .point-hint {
-    opacity: 1;
-  }
-  .timing-point:focus-visible,
-  .arrow-control:focus-visible {
-    outline: 2px solid var(--theme-text);
-    outline-offset: 2px;
-  }
-  .arrow-control {
-    border-radius: var(--radius-lg, 0.75rem);
-  }
-  .arrow-control:hover {
-    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.04));
-  }
-  .phase-rotation {
-    transition: transform var(--transition-dramatic);
-  }
-  .arrow-flip {
-    transition: transform var(--transition-emphasis);
-  }
-  .phase-rotation,
-  .arrow-flip {
-    transform-origin: 0 0;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .phase-rotation,
-    .arrow-flip {
-      transition: none;
-    }
-  }
-  :global([data-motion-preference="reduce"]) .phase-rotation,
-  :global([data-motion-preference="reduce"]) .arrow-flip {
-    transition: none;
-  }
-  svg {
+  .picture > svg {
     display: block;
     width: 100%;
     height: 100%;
+    overflow: visible;
+  }
+  .placement-ring {
+    fill: none;
+    stroke: var(--theme-text-dim);
+    stroke-width: 1.5;
+    opacity: 0.45;
+  }
+  .center {
+    fill: var(--theme-text-dim);
+    opacity: 0.5;
   }
   .blue {
     color: var(--prop-blue, #3d44b8);
@@ -341,48 +331,123 @@
   .red {
     color: var(--prop-red, #ed1c24);
   }
-  .motion-marker,
+  .blue-dot {
+    fill: var(--prop-blue, #3d44b8);
+  }
+  .red-dot {
+    fill: var(--prop-red, #ed1c24);
+  }
+  .placement-turn,
+  .arrow-flip {
+    transform-origin: 0 0;
+    transition: transform var(--transition-emphasis);
+  }
+  .pulse-dot,
   .arrowhead {
     fill: currentColor;
   }
-  .cycle-reference {
+  .pulse-halo {
     fill: none;
     stroke: currentColor;
     stroke-width: 2;
-    opacity: 0.6;
   }
   .rotation-arc {
     fill: none;
     stroke: currentColor;
-    stroke-width: 7.5;
+    stroke-width: 8;
     stroke-linecap: round;
   }
-  .selector {
+  .pulse-transport {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .pulse-transport :global(.panel-btn) {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border-radius: 50%;
+  }
+  .transport-icon {
+    width: 16px;
+    height: 16px;
+  }
+  .caption {
     width: 100%;
-    max-width: 19.5rem;
-    min-width: 0;
+    min-height: 3em;
+    display: grid;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: clamp(1rem, 1cqw, 1.35rem);
   }
-  .direction-selector {
-    max-width: 13rem;
+  .choices {
+    width: min(100%, 22rem);
   }
-  @media (max-width: 640px) {
-    .concept-model {
-      grid-template-columns: minmax(0, 1fr);
-      min-height: 56rem;
+  .concept:last-child .choices {
+    width: min(100%, 16rem);
+  }
+  @container (max-width: 850px) and (min-width: 501px) {
+    .concepts {
+      grid-template-columns: 1fr;
     }
-    .direction-panel {
+    .concept {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: auto auto auto;
+      column-gap: 1rem;
+      padding: 1.5rem;
+    }
+    .concept + .concept {
       border-inline-start: 0;
-      border-block-start: 1px solid var(--theme-stroke);
+      border-top: 1px solid var(--theme-stroke);
     }
-    .concept-panel {
-      padding: 1rem 0.35rem;
-      gap: 0.65rem;
-      font-size: 0.875rem;
-      grid-template-rows: auto auto minmax(8rem, 1fr) auto auto;
+    header {
+      grid-column: 1;
+      align-self: end;
     }
-    .concept-prose,
-    .relationship-caption {
-      padding-inline: 0.2rem;
+    .picture {
+      grid-column: 2;
+      grid-row: 1 / 4;
+      width: min(100%, 15rem);
+      margin-block: 0;
     }
+    .caption {
+      grid-column: 1;
+      margin: 0.5rem 0;
+    }
+    .choices {
+      grid-column: 1;
+      align-self: start;
+    }
+  }
+  @container (max-width: 500px) {
+    .concepts {
+      grid-template-columns: 1fr;
+    }
+    .concept {
+      padding: 1.5rem 1rem;
+    }
+    .concept + .concept {
+      border-inline-start: 0;
+      border-top: 1px solid var(--theme-stroke);
+    }
+    .picture {
+      width: 13rem;
+      margin-block: 0.25rem;
+    }
+    .caption {
+      min-height: 2em;
+      margin-bottom: 0.75rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .placement-turn,
+    .arrow-flip {
+      transition: none;
+    }
+  }
+  :global([data-motion-preference="reduce"]) .placement-turn,
+  :global([data-motion-preference="reduce"]) .arrow-flip {
+    transition: none;
   }
 </style>

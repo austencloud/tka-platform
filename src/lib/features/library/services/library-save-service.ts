@@ -35,7 +35,6 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { isFullAccountUser } from "$lib/shared/auth/domain/access-tier";
 import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import { GUEST_SAVE_CAP } from "$lib/shared/auth/domain/guest-access-config";
-import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 import type { Sharer } from "../../../shared/share/services/sharer";
 import type { R2VideoUploader } from "../../../shared/share/services/r2-video-uploader";
@@ -53,9 +52,6 @@ import { settingsService } from "$lib/shared/settings/state/settings-state.svelt
 
 /** How long the "Saved!" success state lingers before the overlay dismisses. */
 const SUCCESS_STATE_LINGER_MS = 800;
-
-/** localStorage flag so the guest "save → create an account" nudge fires once. */
-const GUEST_SAVE_NUDGE_SEEN_KEY = "tka-guest-save-nudge-seen";
 
 // NOTE: The 'Service' suffix violates the service-naming rule (should be e.g.
 // LibrarySaveCoordinator). Rename deferred: this class is imported as a type by
@@ -150,13 +146,8 @@ export class LibrarySaveService {
       if (!alreadySavedLocally) {
         const guestCount = await db.sequences.count();
         if (guestCount >= GUEST_SAVE_CAP) {
-          // Centralized copy (auth-nudge-trigger.ts) instead of a local
-          // duplicate - one source for the "guest hit the save cap" wording.
-          toast.info(AUTH_NUDGE_TEXTS.save, 6000);
-          // The real signup modal is driven by authDrawerState (AuthModal reads
-          // authDrawerState.open); the old openAuthDialog() from auth-ui-state
-          // had zero consumers, so the nudge toast fired but no modal opened.
-          authDrawerState.show("signup", "save");
+          // The modal explains the limit. A second toast repeats the same ask.
+          authDrawerState.show("signup", "save-limit");
           throw new LibraryError(
             `Guest save limit reached (${GUEST_SAVE_CAP}).`,
             "GUEST_CAP",
@@ -405,16 +396,10 @@ export class LibrarySaveService {
       authState.isAnonymous
     );
     if (isFullAccount) return;
-    try {
-      if (localStorage.getItem(GUEST_SAVE_NUDGE_SEEN_KEY) === "true") return;
-      localStorage.setItem(GUEST_SAVE_NUDGE_SEEN_KEY, "true");
-    } catch {
-      return; // Private browsing — skip rather than nag every save.
-    }
-    toast.info(
-      "Saved on this device. Create a free account to keep it anywhere.",
-      6000
-    );
+    authDrawerState.offerGuestSaveNudge({
+      message:
+        "Saved on this device. Create a free account to open it on other devices.",
+    });
   }
 
   getStepLabel(step: number): string {

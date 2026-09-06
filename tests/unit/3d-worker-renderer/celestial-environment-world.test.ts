@@ -36,11 +36,11 @@ function assets(): CelestialEnvironmentAssets {
 }
 
 describe("Celestial renderer-neutral world", () => {
-  it("loads only the complete garden and its panorama", () => {
+  it("loads only the complete observatory and its panorama", () => {
     expect(CELESTIAL_AUTHORED_RESOURCE_COUNT).toBe(2);
     expect(CELESTIAL_AUTHORED_RESOURCE_URLS).toEqual([
       expect.stringContaining("olive-cloudbreak-panorama-r1.webp"),
-      expect.stringContaining("sunward-gardens.glb"),
+      expect.stringContaining("dawn-observatory.glb"),
     ]);
   });
 
@@ -61,15 +61,15 @@ describe("Celestial renderer-neutral world", () => {
     expect(names).toContain("celestial-cloud-panorama");
     expect(names).toContain("celestial-sun");
     expect(names).toContain("celestial-cloudbreak-world");
-    expect(names).toContain("sunward-authored-gardens");
+    expect(names).toContain("dawn-authored-observatory");
     expect(
       names.filter((name) => name === "cloudbreak-waterfall")
-    ).toHaveLength(4);
+    ).toHaveLength(1);
     expect(names).toContain("celestial-lighting");
     expect(names).toContain("celestial-sun-light");
     expect(names).toContain("celestial-cold-fill");
     expect(world.fog.color.getHexString()).toBe("b7c9d7");
-    expect(world.fog.density).toBe(0.009);
+    expect(world.fog.density).toBe(0.0035);
     expect(world.background.getHexString()).toBe("6797cf");
     expect(world.reflector.name).toBe("cloudbreak-reflective-lagoon");
     expect(world.reflector.position.y).toBeCloseTo(-0.05, 6);

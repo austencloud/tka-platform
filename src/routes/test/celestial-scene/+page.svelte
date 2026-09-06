@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** Live verification harness for the Sunward Gardens. */
+  /** Live verification harness for the Dawn Observatory. */
   import { Canvas } from "@threlte/core";
   import { page } from "$app/state";
   import { WebGLRenderer } from "three";
@@ -26,14 +26,14 @@
 
   const VIEW_PRESETS = {
     hero: {
-      position: [10, 10, 28],
-      target: [0, 1.5, -8],
-      fov: 48,
+      position: [23, 16, 38],
+      target: [0, 11, -14],
+      fov: 54,
     },
     aisle: {
-      position: [0, 2.4, 12],
-      target: [0, 2.8, -8],
-      fov: 54,
+      position: [0, 1.65, 12],
+      target: [0, 1.65, -20],
+      fov: 70,
     },
     stage: {
       position: [13, 4.5, 18],
@@ -51,19 +51,19 @@
       fov: 50,
     },
     world: {
-      position: [0, 42, 38],
-      target: [0, 1, -2],
-      fov: 52,
+      position: [0, 75, 48],
+      target: [0, 2, -7],
+      fov: 60,
     },
   } as const;
   const PORTRAIT_PHONE_PRESET = {
-    position: [0, 9.5, 45],
-    target: [0, 1, -5],
-    fov: 64,
+    position: [0, 16, 50],
+    target: [0, 11, -10],
+    fov: 68,
   } as const;
   const LANDSCAPE_PHONE_PRESET = {
-    position: [0, 7.2, 29],
-    target: [0, 0.7, -5],
+    position: [6, 13, 42],
+    target: [0, 10, -10],
     fov: 46,
   } as const;
 
@@ -95,7 +95,7 @@
 />
 
 <svelte:head>
-  <title>Sunward Gardens — Celestial scene</title>
+  <title>Dawn Observatory — Celestial scene</title>
 </svelte:head>
 
 {#if page.url.searchParams.has("performers")}
@@ -176,7 +176,7 @@
             type="button"
             class:active={selectedBackground === BackgroundType.CELESTIAL}
             onclick={() => (selectedBackground = BackgroundType.CELESTIAL)}
-            >Cloudbreak</button
+            >Observatory</button
           >
           <button
             type="button"

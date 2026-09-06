@@ -102,7 +102,7 @@ const tributaryRevision = distant ? "r2" : "r1";
 const flow = tributaries || process.argv.includes("--lava-flow");
 const midflank = flow || process.argv.includes("--midflank-r5");
 const versionedOutput = valley
-  ? "static/models/ember/ember-distant-valley-r4.glb"
+  ? "static/models/ember/ember-distant-valley-r5.glb"
   : geology
     ? "static/models/ember/ember-geology-stage-r1.glb"
     : tributaries
@@ -115,7 +115,7 @@ const versionedOutput = valley
 
 await optimizeGltfKtx2({
   input: valley
-    ? "static/models/ember/ember-distant-valley-r4_raw.glb"
+    ? "static/models/ember/ember-distant-valley-r5_raw.glb"
     : geology
       ? "static/models/ember/ember-geology-stage-r1_raw.glb"
       : tributaries
