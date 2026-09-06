@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import { getViewer3DContext } from "../context/viewer-3d-context";
   import BottomSheet from "./controls/BottomSheet.svelte";
   import MobileScenePerformerSheet from "./MobileScenePerformerSheet.svelte";
   import MobileSceneEverythingSheet from "./MobileSceneEverythingSheet.svelte";
@@ -40,6 +41,7 @@
   }: Props = $props();
 
   type Sheet = "performer" | "everything" | null;
+  const viewer = getViewer3DContext();
   let openSheet = $state<Sheet>(null);
   let lastOpenPerformerRequest = $state(openPerformerRequest);
   let lastClosePerformerRequest = $state(closePerformerRequest);
@@ -119,6 +121,15 @@
   {/if}
 
   <div class="scene-action-row" aria-label="Scene editing">
+    <button
+      class="scene-action"
+      aria-label="Focus avatar"
+      disabled={viewer.performerManager.performers.length === 0}
+      onclick={() => viewer.focusSelectedPerformers()}
+    >
+      <i class="fas fa-crosshairs" aria-hidden="true"></i>
+      <span>Focus</span>
+    </button>
     <button
       class="scene-action"
       class:active={openSheet === "performer"}
