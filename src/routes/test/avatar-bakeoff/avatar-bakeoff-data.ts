@@ -58,6 +58,8 @@ export const INTAKE_MANIFEST_URL =
 const STAGE_DIRECTORY_URL = "/models/avatars/bakeoff";
 const STAGED_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const STAGED_FILE_PATTERN = /^[A-Za-z0-9._-]+\.glb$/;
+// Austen rejected Marcus on visual quality; a complete rig does not qualify him.
+const REJECTED_INTAKE_IDS = new Set(["marcus"]);
 
 export interface StagedIntakeEntry {
   id: string;
@@ -90,6 +92,7 @@ export function parseIntakeManifest(value: unknown): StagedIntakeEntry[] {
     const rig = record.rig as { fingerChains?: unknown } | undefined;
     if (rig?.fingerChains !== true) continue;
     const id = stringField(record.id);
+    if (REJECTED_INTAKE_IDS.has(id)) continue;
     const file = stringField(record.file);
     if (!STAGED_ID_PATTERN.test(id) || !STAGED_FILE_PATTERN.test(file))
       continue;
