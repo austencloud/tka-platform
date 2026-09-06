@@ -1330,6 +1330,14 @@
   .dock-dense .display-rows .rt-section {
     gap: 4px;
   }
+  /* The sidebar hands these rows a height to divide, so they fill it. The dock
+     tray is the other way round — it takes its height FROM the content — and a
+     `flex: 1 1 0` child reports zero, which collapsed the whole Display tab to
+     its own padding. Here the rows measure themselves. */
+  .dock-dense .display-rows,
+  .dock-dense .display-rows .rt-section {
+    flex: 0 0 auto;
+  }
   /* Playback: 5 controls don't need four stacked bands. Label-left rows, and
      the two mode buttons sit side-by-side. Dock only — the sidebar keeps the
      descriptive vertical stack. */

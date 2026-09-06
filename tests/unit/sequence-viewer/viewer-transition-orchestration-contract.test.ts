@@ -129,6 +129,16 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(tunnelArtSettings).toContain("<TunnelEffectsSettings");
   });
 
+  it("lets the dock tray size itself around the Display rows", () => {
+    // The sidebar hands these rows a height to divide, so they fill it. The
+    // dock tray is the other way round: it takes its height FROM the content.
+    // Left filling there, the rows report zero, and the Display tab collapses
+    // to its own padding behind the dock bar with nothing visible.
+    expect(animationPanel, "dock tray Display rows still fill").toMatch(
+      /\.dock-dense \.display-rows,\s*\.dock-dense \.display-rows \.rt-section \{\s*flex: 0 0 auto;/
+    );
+  });
+
   it("names both responsive switchers as Sequence views", () => {
     expect(contentRail).toContain('aria-label="Sequence views"');
     expect(modeBottomBar).toContain('aria-label="Sequence views"');
