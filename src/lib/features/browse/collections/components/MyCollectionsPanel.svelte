@@ -916,11 +916,7 @@ instead of showing an empty shell.
         <div class="auth-actions">
           <PanelButton
             variant="primary"
-            onclick={() =>
-              browseNavigationState.navigateTo({
-                primary: "gallery",
-                view: "list",
-              })}
+            onclick={() => browseNavigationState.viewExploreSequences()}
           >
             Browse Gallery
           </PanelButton>
