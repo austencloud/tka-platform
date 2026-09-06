@@ -1,6 +1,9 @@
 <script lang="ts">
   import { useTask, useThrelte } from "@threlte/core";
-  let { onSample } = $props<{ onSample: (value: string) => void }>();
+  let { onSample, worldName = "rainbow-environment-world" } = $props<{
+    onSample: (value: string) => void;
+    worldName?: string;
+  }>();
   const { scene, renderer, camera } = useThrelte();
   let elapsed = 0;
   useTask((delta) => {
@@ -13,7 +16,7 @@
         calls: renderer.info.render.calls,
         triangles: renderer.info.render.triangles,
         camera: camera.current.position.toArray(),
-        venue: !!scene.getObjectByName("rainbow-environment-world"),
+        venue: !!scene.getObjectByName(worldName),
       })
     );
   });

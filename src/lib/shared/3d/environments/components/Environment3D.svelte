@@ -448,6 +448,7 @@
           {stageRadiusGrowth}
           {stageZOffset}
           platformVisible={winterPlatformVisible}
+          worldYOffset={environmentYOffset}
         />
       {/await}
     {:else if config.scene === "ocean"}
