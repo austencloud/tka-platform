@@ -2,6 +2,17 @@
 
 State: APPROVED for the September 5 clarity revision below. The earlier domain definitions remain verbatim Guide text.
 
+## Later September 5 correction request
+
+Austen subsequently rejected the repeated hand-color key, stage/count text, and
+prose correction in practice. Those earlier approvals do not require retaining
+the rejected presentation. The revision reuses Try again, Build {name}, and the
+existing control names; Clear uses the workspace's visible label with Clear both
+hands as its accessible name. The approved hand-selection instruction now refers
+to selecting the hand on the artifact instead of a separate Move button.
+Target locations are produced by canonical grid derivation and rendered with
+the production pictograph component. No new domain explanation is introduced.
+
 ## Approved clarity revision (2026-09-05)
 
 Austen approved the proposed layout and exact wording: “I'll take all of your recommendations for the layout and wording and fixes”. This followed hands-on feedback about hand identity, editing after Gamma, the next-step button, and tall split-screen balance.

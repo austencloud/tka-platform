@@ -5,6 +5,8 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import UndoGlyph from "$lib/features/create/shared/workspace-panel/shared/components/buttons/UndoGlyph.svelte";
+  import { WORKSPACE_BUTTON_ICON } from "$lib/features/create/shared/workspace-panel/shared/workspace-button-layout";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import PropPlacementGrid from "$lib/shared/pictograph/grid/components/PropPlacementGrid.svelte";
@@ -83,6 +85,16 @@
   let boardHeight = $state(320);
   let experienceElement: HTMLDivElement;
   const correct = $derived(workshop.feedback === "correct");
+  const incorrect = $derived(workshop.feedback === "incorrect");
+  const correctionPreview = $derived(
+    incorrect && workshop.challenge && placement.leftLocation
+      ? positionPreview(
+          workshop.challenge.kind,
+          gridMode,
+          placement.leftLocation
+        )
+      : null
+  );
   const built = $derived(
     positionKindFor(placement.leftLocation, placement.rightLocation)
   );
@@ -117,18 +129,21 @@
   const instruction = $derived(
     correct
       ? ""
-      : placement.activeHand === HandSide.LEFT
-        ? "Tap a point for your left hand."
-        : placement.activeHand === HandSide.RIGHT
-          ? "Now place your right hand."
-          : "Choose a hand to move, then tap another point."
+      : incorrect
+        ? "Try again"
+        : placement.activeHand === HandSide.LEFT
+          ? "Tap a point for your left hand."
+          : placement.activeHand === HandSide.RIGHT
+            ? "Now place your right hand."
+            : "Choose a hand to move, then tap another point."
   );
 
   const exploring = $derived(workshop.phase === "explore");
   const referencesVisible = $derived(
     exploring ||
       workshop.canFinish ||
-      (showReference ?? (workshop.challenge?.guided && !correct))
+      (!incorrect &&
+        (showReference ?? (workshop.challenge?.guided && !correct)))
   );
   const examples = $derived(
     POSITION_KINDS.map((kind) => ({
@@ -149,19 +164,6 @@
     if (actionNote) return actionNote;
     if (workshop.canFinish && !exploring)
       return "Alpha, Beta, and Gamma on both grids.";
-    if (
-      workshop.feedback === "incorrect" &&
-      placement.leftLocation &&
-      placement.rightLocation &&
-      workshop.challenge
-    ) {
-      return positionCorrection(
-        placement.leftLocation,
-        placement.rightLocation,
-        workshop.challenge.kind,
-        gridMode
-      );
-    }
     if (exploring && built) return POSITION_DEFINITIONS[built];
     if (!exploring && workshop.challenge?.guided)
       return POSITION_DEFINITIONS[workshop.challenge.kind];
@@ -174,6 +176,22 @@
       change.rightLocation !== placement.rightLocation;
     placement = change;
     workshop.evaluatePlacement(change);
+    if (incorrect && change.complete && change.activeHand === null) {
+      const retryEpoch = epoch;
+      const retryRound = workshop.round;
+      void tick().then(() => {
+        if (
+          workshop.phase === "practice" &&
+          incorrect &&
+          epoch === retryEpoch &&
+          workshop.round === retryRound &&
+          placement.activeHand === null &&
+          placement.leftLocation === change.leftLocation &&
+          placement.rightLocation === change.rightLocation
+        )
+          grid?.moveProp(HandSide.RIGHT);
+      });
+    }
     if (!moved) return;
     actionNote = "";
     const kind = positionKindFor(change.leftLocation, change.rightLocation);
@@ -286,15 +304,7 @@
   <LessonStageFrame artifactLayout="workshop">
     {#snippet heading()}
       <div data-position-stage="heading" aria-live="polite" aria-atomic="true">
-        <LessonStageHeading
-          key={title}
-          {title}
-          eyebrow={exploring
-            ? "Explore"
-            : workshop.canFinish
-              ? "Practice complete"
-              : `${workshop.challenge?.guided ? "With a reference" : "On your own"} · ${workshop.round + 1} of ${POSITION_CHALLENGES.length}`}
-        >
+        <LessonStageHeading key={title} {title}>
           <p>
             {exploring
               ? "Place both hands and see the position’s name. Next, try six practice challenges."
@@ -309,15 +319,40 @@
     {/snippet}
 
     {#snippet artifact()}
-      <div class="placement-instructions" data-position-stage="instructions">
-        <div class="current-task" aria-live="polite">
+      <div
+        class="placement-instructions"
+        class:incorrect
+        data-position-stage="instructions"
+      >
+        <div class="current-task" class:incorrect aria-live="polite">
+          {#if incorrect}<i class="fa-solid fa-circle-xmark" aria-hidden="true"
+            ></i>{/if}
           <Crossfade key={instruction}>{instruction}</Crossfade>
         </div>
-        <p class="hand-key">
-          <span class="left-hand">Left = blue</span><span aria-hidden="true">
-            ·
-          </span><span class="right-hand">Right = red</span>
-        </p>
+        {#if correctionPreview && workshop.challenge}
+          <figure class="correction-guide">
+            <div class="correction-art" aria-hidden="true">
+              <PictographContainer
+                pictographData={correctionPreview}
+                showTKA={false}
+                showPositions={false}
+                showReversals={false}
+                showTnD={false}
+                showElemental={false}
+                leftPropTypeOverride={PropType.HAND}
+                rightPropTypeOverride={PropType.HAND}
+              />
+            </div>
+            <figcaption class="sr-only">
+              {positionCorrection(
+                placement.leftLocation!,
+                placement.rightLocation!,
+                workshop.challenge.kind,
+                gridMode
+              )}
+            </figcaption>
+          </figure>
+        {/if}
       </div>
       <div class="workshop" class:exploring>
         <div class="board-column">
@@ -366,9 +401,6 @@
                 bind:actionRef={forwardButton}
                 onAction={next}
               />
-              <span class="built-count"
-                >{workshop.builtCount} of {POSITION_CHALLENGES.length} built</span
-              >
             {:else}
               {@render lessonActions()}
             {/if}
@@ -380,26 +412,18 @@
             aria-label="Move the hands"
           >
             <PanelButton
-              disabled={!placement.complete}
-              accentColor="var(--prop-blue)"
-              ariaPressed={placement.activeHand === HandSide.LEFT}
-              onclick={() => grid?.moveProp(HandSide.LEFT)}
-              >Move left hand</PanelButton
-            >
-            <PanelButton
-              disabled={!placement.complete}
-              accentColor="var(--prop-red)"
-              ariaPressed={placement.activeHand === HandSide.RIGHT}
-              onclick={() => grid?.moveProp(HandSide.RIGHT)}
-              >Move right hand</PanelButton
-            >
-            <PanelButton
               disabled={!placement.canUndo}
-              onclick={() => grid?.undoPlacement()}>Undo</PanelButton
+              onclick={() => grid?.undoPlacement()}
+              ><UndoGlyph />Undo</PanelButton
             >
             <PanelButton
               disabled={!placement.leftLocation && !placement.rightLocation}
-              onclick={() => loadPair(null, null)}>Clear both hands</PanelButton
+              ariaLabel="Clear both hands"
+              onclick={() => loadPair(null, null)}
+              ><i
+                class="fa-solid {WORKSPACE_BUTTON_ICON.clear.icon}"
+                aria-hidden="true"
+              ></i>Clear</PanelButton
             >
           </div>
         </div>
@@ -413,7 +437,7 @@
             aria-live="polite"
             aria-atomic="true"
           >
-            {#if exploring || workshop.feedback === "incorrect"}
+            {#if exploring}
               <Crossfade
                 key={`${built}-${workshop.feedback}-${actionNote}-${referencesVisible}`}
               >
@@ -449,10 +473,7 @@
 
           <div class="reference-area" data-position-stage="reference">
             <div class="support-actions">
-              {#if !exploring && !workshop.canFinish}
-                <PanelButton onclick={explore}>Explore</PanelButton>
-              {/if}
-              {#if !exploring && !workshop.canFinish}<PanelButton
+              {#if !exploring && !workshop.canFinish && !incorrect && !correct}<PanelButton
                   ariaPressed={referencesVisible}
                   onclick={() => (showReference = !referencesVisible)}
                   >{referencesVisible
@@ -539,6 +560,14 @@
               </div>
             </div>
           {/if}
+          {#if !exploring}
+            <progress
+              class="practice-progress"
+              aria-label="Positions built"
+              max={POSITION_CHALLENGES.length}
+              value={workshop.builtCount}
+            ></progress>
+          {/if}
         </div>
       </div>
     {/snippet}
@@ -576,35 +605,31 @@
     text-align: center;
   }
   .current-task {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     min-height: 1.5rem;
     font-size: 1rem;
     font-weight: 650;
   }
-  .hand-key {
-    display: flex;
+  .current-task.incorrect {
+    color: var(--semantic-error);
+  }
+  .placement-instructions.incorrect {
+    grid-template-columns: auto auto;
     justify-content: center;
     align-items: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text);
+    gap: 1rem;
   }
-  .left-hand,
-  .right-hand {
-    display: inline-flex;
+  .correction-guide {
+    margin: 0;
+    display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.75rem;
   }
-  .left-hand::before,
-  .right-hand::before {
-    content: "";
-    width: 0.65rem;
+  .correction-art {
+    width: 7rem;
     aspect-ratio: 1;
-    border-radius: 50%;
-    background: var(--prop-blue);
-  }
-  .right-hand::before {
-    background: var(--prop-red);
   }
   .advance {
     display: grid;
@@ -615,10 +640,12 @@
   .advance :global(.lesson-stage-controls) {
     width: 100%;
   }
-  .built-count {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 12px);
-    font-variant-numeric: tabular-nums;
+  .practice-progress {
+    display: block;
+    width: 8rem;
+    height: 0.375rem;
+    margin: 1rem auto 0;
+    accent-color: var(--theme-accent);
   }
   .lesson-navigation {
     display: flex;
