@@ -18,7 +18,10 @@
   Do NOT rebuild scan-specific header/body variants — extend this shell.
 -->
 <script lang="ts">
-  import { onDestroy, onMount, type Snippet } from "svelte";
+  import { onDestroy, onMount, untrack, type Snippet } from "svelte";
+  import { createViewerStudioSurfaces } from "../state/viewer-studio-surfaces.svelte";
+  import { setViewerStudioSurfaces } from "../context/viewer-studio-surfaces-context";
+  import { reparentToInspector } from "./reparent-to-inspector";
   import { slide, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import { goto } from "$app/navigation";
@@ -124,6 +127,8 @@
   /** Host-owned export pipeline (such as the scan-origin account gate).
       Absent → the orchestrator's own ctx.handleExport pipeline (the app). */
   interface Props {
+    /** Development review fixture; never changes production rollout access. */
+    reviewPostStudio?: boolean;
     ctx: OrchestratorContext;
     sequence: SequenceData;
     analyticsSource: SequenceViewerSource;
@@ -200,6 +205,7 @@
     openAppHref,
     onAccountSignIn,
     startInSplit = false,
+    reviewPostStudio = false,
     startInCardThenSplit = false,
     exportOverrides,
     guideAction = null,
@@ -633,7 +639,111 @@
   }
   // Prepare the editor once; keep the viewer and the draft alive on reversals.
   const studio = createPaneKeepAlive(() => layout.showPostStudio);
+  const studioSurfaces = createViewerStudioSurfaces();
+  setViewerStudioSurfaces(studioSurfaces);
+  let animatorInspectorOrigin = $state<HTMLElement | null>(null);
+  let studioInspectorOrigin = $state<HTMLElement | null>(null);
+  // Match Studio's 70rem compact boundary. Tablet shell orientation alone
+  // does not guarantee room for a phone beside the full motion inspector.
+  const studioCanShareSideInspector = $derived(
+    !layout.effectiveMobile && layout.bodyWidth > 1120
+  );
+  const studioUsesSideInspector = $derived(
+    layout.showPostStudio && studioCanShareSideInspector
+  );
+  $effect(() => {
+    studioSurfaces.setExternalInspectorTarget(
+      studioCanShareSideInspector ? studioInspectorOrigin : null
+    );
+  });
+  function ownInspector(node: HTMLElement) {
+    return { destroy: studioSurfaces.registerInspector(node) };
+  }
+  $effect(() => {
+    const active = layout.showPostStudio;
+    untrack(() => {
+      if (active && !studioSurfaces.active) {
+        studioSurfaces.enter(
+          ctx.currentStepLocal,
+          ctx.isPlayingLocal,
+          ctx.bpmLocal
+        );
+        interactions.handleSystemPlaybackChange(false, "system_studio_handoff");
+      } else if (!active && studioSurfaces.active) {
+        const frame = studioSurfaces.frame;
+        if (frame) {
+          ctx.handleProgressBarSeek(frame.position);
+          interactions.handleSystemPlaybackChange(
+            frame.playing,
+            "system_studio_handoff"
+          );
+        }
+        studioSurfaces.leave();
+      }
+    });
+  });
 </script>
+
+<div class="shared-inspector-parking">
+  <div
+    class="shared-animator-inspector"
+    use:ownInspector
+    use:reparentToInspector={{
+      target: studioSurfaces.inspectorTarget ?? animatorInspectorOrigin,
+      animate: true,
+      onMoving: (moving) =>
+        studioSurfaces.setSurfaceMoving("inspector", moving),
+    }}
+    data-shared-studio-inspector
+  >
+    <ExportVideoDrawer
+      exportOptions={studioSurfaces.active ? undefined : ctx.exportOptions}
+      reserveExportSpace={studioSurfaces.active}
+      isExporting={interactions.videoBusy}
+      exportProgress={interactions.videoProgress}
+      canvasReady={ctx.canvasReady}
+      layout={studioSurfaces.active || !layout.isVideoExportActive
+        ? "sidebar"
+        : layout.effectiveMobile
+          ? "bottom"
+          : "sidebar"}
+      singlePlayDuration={ctx.singlePlayDuration}
+      isPlaying={studioSurfaces.controls?.playing ?? ctx.isPlayingLocal}
+      bpm={studioSurfaces.controls?.bpm ?? ctx.bpmLocal}
+      renderMode={studioSurfaces.active ? "2d" : ctx.renderMode}
+      playbackMode={ctx.playbackMode}
+      selectedPropType={studioSurfaces.controls?.propType ?? ctx.leftPropType}
+      fanAppearance={ctx.fanAppearance}
+      onFanAppearanceChange={ctx.handleFanAppearanceChange}
+      propChirality={createGlobalChiralitySeam()}
+      sequence={ctx.effectiveSequence}
+      showInlineExportProgress={false}
+      showTempoControls={false}
+      showPathShape={false}
+      onPropChange={ctx.effectiveSequence?.sequenceKind === "hand-path"
+        ? undefined
+        : (prop) => {
+            studioSurfaces.controls?.setProp(prop);
+            interactions.handlePropChange(prop, "video_export");
+          }}
+      onPlaybackToggle={() => {
+        if (studioSurfaces.controls) studioSurfaces.controls.toggle();
+        else interactions.handlePlaybackToggle("video_export");
+      }}
+      onBpmChange={(bpm) => {
+        studioSurfaces.controls?.setBpm(bpm);
+        interactions.handleBpmChange(bpm, "video_export");
+      }}
+      onExport={studioSurfaces.active
+        ? undefined
+        : () => interactions.handleVideoExport()}
+      onCancel={interactions.handleCancelVideoExport}
+      onSettingChange={scanInstrumentationEnabled
+        ? interactions.handleViewerControlSetting
+        : undefined}
+    />
+  </div>
+</div>
 
 <div
   class="drawer-viewer-container"
@@ -763,7 +873,8 @@
         <div
           bind:this={viewerWorkspaceElement}
           class="viewer-and-export"
-          class:export-active={layout.isWorkspaceInspectorActive}
+          class:export-active={layout.isWorkspaceInspectorActive ||
+            studioUsesSideInspector}
           class:record-scene-active={layout.isRecordSceneActive}
           class:card-inspector={layout.inspectorProfile === "card"}
           class:performance-inspector={layout.inspectorProfile ===
@@ -782,6 +893,7 @@
               aria-hidden={ctx.practiceActive}
             >
               <ViewerContentRail
+                reviewPostStudio={import.meta.env.DEV && reviewPostStudio}
                 activeMode={ctx.viewerState.viewerMode}
                 webgl2Available={ctx.viewer3DState.webgl2Available}
                 compact={layout.compactChrome && !isMobile}
@@ -815,10 +927,14 @@
 
           <ViewerWorkspacePanels
             direction={layout.effectiveMobile ? "vertical" : "horizontal"}
-            inspectorActive={layout.isWorkspaceInspectorActive}
-            inspectorCollapsed={layout.exportSidebarCollapsed &&
+            inspectorActive={layout.isWorkspaceInspectorActive ||
+              studioUsesSideInspector}
+            inspectorCollapsed={!studioUsesSideInspector &&
+              layout.exportSidebarCollapsed &&
               !layout.isImageExportActive}
-            inspectorProfile={layout.inspectorProfile}
+            inspectorProfile={studioUsesSideInspector
+              ? "motion"
+              : layout.inspectorProfile}
             stackedInspectorSize={layout.showVideoGallery
               ? "var(--performance-inspector-height)"
               : "auto"}
@@ -1083,6 +1199,13 @@
                      crossfade in the same frame that PanelGroup moves the
                      Card/inspector seam; there is no second mount-intro. -->
                 <div
+                  class="inspector-content-layer studio-settings-layer"
+                  data-active={studioUsesSideInspector}
+                  inert={!studioUsesSideInspector}
+                  aria-hidden={!studioUsesSideInspector}
+                  bind:this={studioInspectorOrigin}
+                ></div>
+                <div
                   class="inspector-content-layer motion-settings-layer"
                   data-active={layout.isVideoExportActive}
                   inert={!layout.isVideoExportActive || undefined}
@@ -1107,40 +1230,10 @@
                          one setting on screen twice in two different controls.
                          `bpm` and `playbackMode` still come in — the export page
                          reads them for its duration estimate. -->
-                    <ExportVideoDrawer
-                      exportOptions={ctx.exportOptions}
-                      isExporting={interactions.videoBusy}
-                      exportProgress={interactions.videoProgress}
-                      canvasReady={ctx.canvasReady}
-                      layout={layout.effectiveMobile ? "bottom" : "sidebar"}
-                      singlePlayDuration={ctx.singlePlayDuration}
-                      isPlaying={ctx.isPlayingLocal}
-                      bpm={ctx.bpmLocal}
-                      renderMode={ctx.renderMode}
-                      playbackMode={ctx.playbackMode}
-                      selectedPropType={ctx.leftPropType}
-                      fanAppearance={ctx.fanAppearance}
-                      onFanAppearanceChange={ctx.handleFanAppearanceChange}
-                      propChirality={createGlobalChiralitySeam()}
-                      sequence={ctx.effectiveSequence}
-                      showInlineExportProgress={false}
-                      showTempoControls={false}
-                      showPathShape={false}
-                      onPropChange={ctx.effectiveSequence?.sequenceKind ===
-                      "hand-path"
-                        ? undefined
-                        : (prop) =>
-                            interactions.handlePropChange(prop, "video_export")}
-                      onPlaybackToggle={() =>
-                        interactions.handlePlaybackToggle("video_export")}
-                      onBpmChange={(bpm) =>
-                        interactions.handleBpmChange(bpm, "video_export")}
-                      onExport={() => interactions.handleVideoExport()}
-                      onCancel={interactions.handleCancelVideoExport}
-                      onSettingChange={scanInstrumentationEnabled
-                        ? interactions.handleViewerControlSetting
-                        : undefined}
-                    />
+                    <div
+                      class="animator-inspector-origin"
+                      bind:this={animatorInspectorOrigin}
+                    ></div>
                   {/if}
                 </div>
                 <div
@@ -1248,6 +1341,7 @@
           }}
         >
           <ViewerModeBottomBar
+            reviewPostStudio={import.meta.env.DEV && reviewPostStudio}
             activeMode={ctx.viewerState.viewerMode}
             webgl2Available={ctx.viewer3DState.webgl2Available}
             onSelectSplit={() => layout.selectSplitMode()}
@@ -1354,6 +1448,16 @@
 </div>
 
 <style>
+  .shared-inspector-parking {
+    display: none;
+  }
+  .shared-animator-inspector,
+  .animator-inspector-origin {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+  }
   .drawer-viewer-container {
     /* One shared clock so the rail-out and bar-up choreograph in lockstep. */
     --ws-dur: 300ms;

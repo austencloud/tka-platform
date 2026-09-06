@@ -85,10 +85,7 @@
   } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte";
-  import {
-    resolveAccessTier,
-    getMaxSteps,
-  } from "$lib/shared/auth/domain/access-tier";
+  import { resolveAccessTier } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import { isTabAccessible } from "$lib/shared/auth/domain/guest-access-config";
   import { createPanelHeightTracker } from "../state/managers/panel-height-tracker.svelte";
@@ -181,7 +178,11 @@
   // cap applies silently. (The paid Scribe tier is shelved until there's a plan.)
   function showStepCapGate() {
     if (accessTier === "guest") {
-      authDrawerState.show("signup", "step-cap-guest");
+      authDrawerState.show(
+        "signup",
+        "step-cap-guest",
+        CreateModuleState?.sequenceState.currentSequence?.id
+      );
     }
   }
 
@@ -664,7 +665,10 @@
     // Enforce tier step cap before adding a new step to the sequence
     const currentSteps =
       CreateModuleState?.sequenceState.getCurrentSteps().length ?? 0;
-    const maxSteps = getMaxSteps(accessTier);
+    const maxSteps = authDrawerState.guestEncore.maxSteps(
+      accessTier,
+      CreateModuleState?.sequenceState.currentSequence?.id
+    );
     if (currentSteps >= maxSteps) {
       showStepCapGate();
       return;

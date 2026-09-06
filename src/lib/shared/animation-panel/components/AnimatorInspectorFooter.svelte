@@ -14,6 +14,7 @@
     progress = null,
     onCancel,
     testId,
+    concealed = false,
   }: {
     onAction: () => void;
     label: string;
@@ -27,10 +28,16 @@
     progress?: VideoExportProgress | null;
     onCancel?: () => void;
     testId?: string;
+    concealed?: boolean;
   } = $props();
 </script>
 
-<div class="panel-footer">
+<div
+  class="panel-footer"
+  class:concealed
+  inert={concealed}
+  aria-hidden={concealed}
+>
   {#if busy && showProgress}
     <div class="export-progress-row" role="status" aria-live="polite">
       <div class="progress-info">
@@ -99,6 +106,9 @@
 </div>
 
 <style>
+  .concealed {
+    visibility: hidden;
+  }
   .panel-footer {
     padding: 12px 16px 16px;
     flex-shrink: 0;

@@ -1,5 +1,6 @@
 <script lang="ts">
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
   import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import { getViewerAnimationPropConfig } from "$lib/shared/animation-engine/get-viewer-animation-prop-config";
@@ -27,6 +28,22 @@
   } = $props();
 
   const stateManager = new AnimationStateManager();
+  const shared = getViewerStudioSurfaces();
+  const owner = {};
+  function destination(node: HTMLElement) {
+    return {
+      destroy: shared?.requestCanvas(owner, node, () => ({
+        sequence,
+        position: sequencePosition,
+        playing,
+        left: leftProp,
+        right: rightProp,
+        step: stepData,
+        leftPropType,
+        rightPropType,
+      })),
+    };
+  }
   const orchestrator = new SequenceAnimationOrchestrator(
     stateManager,
     getViewerAnimationPropConfig
@@ -78,25 +95,32 @@
   });
 </script>
 
-<div class="animation-layer">
-  <AnimatorCanvas
-    {leftProp}
-    {rightProp}
-    gridVisible
-    gridMode={sequence.gridMode ?? null}
-    letter={stepData?.letter ?? null}
-    {stepData}
-    sequenceData={sequence}
-    currentStep={sequencePosition}
-    isPlaying={playing}
-    {leftPropType}
-    {rightPropType}
-    word={null}
-    previewDarkMode
-    hideProgressBar
-    hideHeader
-    fillContainer
-  />
+<div
+  class="animation-layer"
+  use:destination
+  data-studio-animation-destination
+  data-sequence-position={sequencePosition}
+>
+  {#if !shared?.ownsCanvas(owner)}
+    <AnimatorCanvas
+      {leftProp}
+      {rightProp}
+      gridVisible
+      gridMode={sequence.gridMode ?? null}
+      letter={stepData?.letter ?? null}
+      {stepData}
+      sequenceData={sequence}
+      currentStep={sequencePosition}
+      isPlaying={playing}
+      {leftPropType}
+      {rightPropType}
+      word={null}
+      previewDarkMode
+      hideProgressBar
+      hideHeader
+      fillContainer
+    />
+  {/if}
 </div>
 
 <style>

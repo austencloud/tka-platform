@@ -19,6 +19,8 @@
     facebookError?: string | null;
     onClose?: () => void;
     onFacebookAuth?: () => void;
+    encoreOffer?: boolean;
+    onAcceptEncore?: () => void;
   }
 
   let {
@@ -31,6 +33,8 @@
     facebookError = null,
     onClose,
     onFacebookAuth,
+    encoreOffer = false,
+    onAcceptEncore,
   }: Props = $props();
 
   let showEmailAuth = $state(false);
@@ -62,6 +66,7 @@
 <section
   class="contextual-auth-prompt"
   class:compact
+  class:encore-offer={encoreOffer}
   aria-labelledby={titleId}
   aria-describedby={descriptionId}
 >
@@ -88,12 +93,23 @@
   </header>
 
   <div class="prompt-copy">
+    {#if compact}
+      <div class="fac-signature">
+        <img src="/branding/logo.jpg" alt="" width="28" height="28" />
+        {#if encoreOffer}<span>One-time encore</span>{/if}
+      </div>
+    {/if}
     <h2 id={titleId}>{content.title}</h2>
     <p id={descriptionId}>{content.body}</p>
   </div>
 
   <div class="auth-methods">
-    {#if compact}
+    {#if compact && encoreOffer}
+      <button class="encore-button" type="button" onclick={onAcceptEncore}>
+        I'll make it count
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </button>
+    {:else if compact}
       <EmailAuthTabs bind:mode compact showMethods={showOtherProviders} />
       <button
         class="more-methods"
@@ -160,7 +176,7 @@
     {/if}
   </div>
 
-  {#if !compact || showOtherProviders}
+  {#if !encoreOffer && (!compact || showOtherProviders)}
     <button class="mode-toggle" type="button" onclick={toggleMode}>
       {#if mode === "signup"}
         <span>Already have an account?</span>
@@ -546,6 +562,56 @@
     padding: 2rem 1.5rem 1rem;
     border-color: var(--theme-stroke);
     box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.25);
+  }
+
+  .fac-signature {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-height: 28px;
+    margin-bottom: 0.875rem;
+  }
+
+  .fac-signature img {
+    border-radius: 50%;
+  }
+
+  .fac-signature span {
+    color: var(--theme-text-dim);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .encore-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.75rem 1rem;
+    color: var(--theme-panel-bg);
+    background: var(--theme-text);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm, 0.5rem);
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .encore-button:hover {
+    background: color-mix(
+      in srgb,
+      var(--theme-text) 88%,
+      var(--theme-panel-bg)
+    );
+  }
+
+  .encore-button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 3px;
   }
 
   .compact .close-button {

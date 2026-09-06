@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
+  import { reparentToInspector } from "$lib/shared/sequence-viewer/components/reparent-to-inspector";
+  import { sequencePositionToMediaTime } from "$lib/shared/media-composition/domain/sequence-time-map";
   import { onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
@@ -106,6 +110,10 @@
   }: Props = $props();
 
   const exportOptions = getExportOptionsState();
+  const sharedSurfaces = getViewerStudioSurfaces();
+  const externalInspector = $derived(
+    sharedSurfaces?.externalInspectorTarget ?? null
+  );
   const effectsConfig =
     getEffectsConfigContext() ??
     createEffectsConfigState(undefined, { persist: false });
@@ -161,9 +169,10 @@
    * element's height said "compact" while the CSS still had both columns up.
    */
   const compactWorkspace = $derived(
-    workspaceWidth === 0 ||
-      workspaceWidth <= 1120 ||
-      (viewportHeight > 0 && viewportHeight <= 640)
+    !externalInspector &&
+      (workspaceWidth === 0 ||
+        workspaceWidth <= 1120 ||
+        (viewportHeight > 0 && viewportHeight <= 640))
   );
 
   const sequenceRef = $derived(createPostStudioSequenceRef(sequence));
@@ -504,7 +513,10 @@
     composition.missingRequiredRoles[0] ?? null
   );
   const canRender = $derived(
-    composition.isReady && previewRoot !== null && !exporting
+    composition.isReady &&
+      previewRoot !== null &&
+      !exporting &&
+      !sharedSurfaces?.moving
   );
 
   /**
@@ -517,8 +529,32 @@
    * stays paused.
    */
   let autoPlayStarted = $state(false);
+  let sharedEntryRevision = 0;
   $effect(() => {
-    if (autoPlayStarted || !active) return;
+    if (!active || !sharedSurfaces?.active || !composition.isReady) return;
+    const entry = sharedSurfaces.entry;
+    if (entry.revision === sharedEntryRevision) return;
+    sharedEntryRevision = entry.revision;
+    untrack(() => {
+      if (composition.tempoBpm !== null) composition.setTempoBpm(entry.bpm);
+      const map = composition.sequenceTimeMap;
+      if (map)
+        composition.seek(sequencePositionToMediaTime(map, entry.position));
+      if (composition.isPlaying !== entry.playing) composition.togglePlayback();
+    });
+  });
+  $effect(() =>
+    sharedSurfaces?.setControls(() => ({
+      playing: composition.isPlaying,
+      bpm: composition.tempoBpm ?? 60,
+      propType: selectedPropType,
+      toggle: composition.togglePlayback,
+      setBpm: composition.setTempoBpm,
+      setProp: setPropType,
+    }))
+  );
+  $effect(() => {
+    if (sharedSurfaces || autoPlayStarted || !active) return;
     if (!composition.isReady || composition.isPlaying) return;
     autoPlayStarted = true;
     composition.togglePlayback();
@@ -696,7 +732,9 @@
   let previousFrameTime: number | null = null;
 
   $effect(() => {
-    if (!active) composition.pause();
+    // The shell reads the outgoing play intent before releasing its loan.
+    // Pausing earlier makes effect ordering turn a playing return into a pause.
+    if (!active && !sharedSurfaces?.active) composition.pause();
   });
 
   function tick(now: number): void {
@@ -733,6 +771,7 @@
 <section
   class="post-studio"
   data-mobile-panel={focusedPanel}
+  data-external-inspector={!!externalInspector}
   aria-label={`Post Studio, ${sequenceName}`}
 >
   <PostStudioActionBar
@@ -757,11 +796,12 @@
     {onSharePost}
   />
 
-  {#snippet transport(showAdvancedToggle: boolean)}
+  {#snippet transport(showAdvancedToggle: boolean, selected = true)}
     <PostStudioTransport
       advanced={timingAdvanced}
       {performanceAlignmentDetail}
       {showAdvancedToggle}
+      {selected}
       onMapPerformance={() => (performancePickerOpen = true)}
       onToggleAdvanced={toggleTimingAdvanced}
     />
@@ -775,13 +815,18 @@
           cardRenderOptions={synchronizedCardRenderOptions}
           durationLabel={`${composition.durationSeconds.toFixed(1)}s`}
           onRootReady={setPreviewRoot}
-          onEditRegion={() => (focusedPanel = "edit")}
+          onEditRegion={() => {
+            if (!externalInspector) focusedPanel = "edit";
+          }}
         />
       </div>
       <!-- Docked under the frame it drives, exactly as the 2D animation canvas
            and the 3D viewer dock the same bar under theirs. It is the same
            component; the studio no longer keeps a transport of its own. -->
-      {@render transport(!compactWorkspace)}
+      {@render transport(
+        !compactWorkspace,
+        !compactWorkspace || focusedPanel !== "timing"
+      )}
     </main>
   {/snippet}
 
@@ -791,7 +836,12 @@
          made, not of the layer, and as a card down here they took ~370px of the
          rail's height — enough that a source with real controls (the mandala
          has six categories) had to scroll inside a porthole. -->
-    <aside class="inspector-rail" aria-label="Selected layer settings">
+    <aside
+      class="inspector-rail"
+      class:external={!!externalInspector}
+      use:reparentToInspector={externalInspector}
+      aria-label="Selected layer settings"
+    >
       <PostStudioInspector
         sequence={displaySequence}
         {exportOptions}
@@ -804,10 +854,10 @@
 
   {#snippet timelinePanel()}
     <div class="timeline-dock">
-      <!-- On the compact layout the canvas column (and with it the transport)
-           is hidden while this panel is showing, so it carries its own. -->
+      <!-- Compact Timing is another destination for the same transport; it
+           does not mount a second player while the canvas column is hidden. -->
       {#if compactWorkspace}
-        {@render transport(false)}
+        {@render transport(false, focusedPanel === "timing")}
       {/if}
       <PostStudioTimeline />
     </div>
@@ -830,21 +880,23 @@
     >
       <PanelGroup
         direction="horizontal"
-        panels={[
-          {
-            id: "canvas",
-            content: canvasPanel,
-            defaultSize: workspaceSizes[0],
-            minSize: workspaceWidth >= 1680 ? 640 : 480,
-          },
-          {
-            id: "inspector",
-            content: inspectorPanel,
-            defaultSize: workspaceSizes[1],
-            minSize: workspaceWidth >= 1680 ? 720 : 320,
-            maxSize: workspaceWidth >= 2600 ? 1600 : 1280,
-          },
-        ]}
+        panels={externalInspector
+          ? [{ id: "canvas", content: canvasPanel, defaultSize: 1 }]
+          : [
+              {
+                id: "canvas",
+                content: canvasPanel,
+                defaultSize: workspaceSizes[0],
+                minSize: workspaceWidth >= 1680 ? 640 : 480,
+              },
+              {
+                id: "inspector",
+                content: inspectorPanel,
+                defaultSize: workspaceSizes[1],
+                minSize: workspaceWidth >= 1680 ? 720 : 320,
+                maxSize: workspaceWidth >= 2600 ? 1600 : 1280,
+              },
+            ]}
         bind:sizes={workspaceSizes}
         onSizesChange={() => (workspaceWasAdjusted = true)}
         gap={8}
@@ -861,7 +913,15 @@
     {/if}
   </div>
 
-  <nav class="focused-nav" aria-label="Post Studio tools">
+  {#if externalInspector}
+    {@render inspectorPanel()}
+  {/if}
+
+  <nav
+    class="focused-nav"
+    class:external={!!externalInspector}
+    aria-label="Post Studio tools"
+  >
     <button
       type="button"
       class:active={focusedPanel === "canvas"}
@@ -1004,6 +1064,28 @@
     border-left: 1px solid var(--theme-stroke);
     background: var(--theme-panel-bg);
     scrollbar-width: none;
+  }
+
+  .inspector-rail.external {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+  }
+
+  .post-studio[data-external-inspector="true"] .focused-nav {
+    display: none;
+  }
+  .post-studio[data-external-inspector="true"] .canvas-panel {
+    display: grid;
+  }
+  .post-studio[data-external-inspector="true"] .studio-body {
+    display: grid;
+  }
+  .post-studio[data-external-inspector="true"] .workspace {
+    display: flex;
+    height: auto;
   }
 
   .inspector-rail::-webkit-scrollbar,
