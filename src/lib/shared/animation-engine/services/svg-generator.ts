@@ -252,11 +252,7 @@ export function resolvePropSvgPath(
 ): string {
   const fanRenderKey = parseFanRenderKey(propTypeLower);
   if (fanRenderKey) {
-    return fanAppearanceArtwork(
-      fanRenderKey.build,
-      fanRenderKey.cover,
-      fanRenderKey.frameColor
-    )!;
+    return fanAppearanceArtwork(fanRenderKey.build, fanRenderKey.cover)!;
   }
   const modelRenderKey = parseModelRenderKey(propTypeLower);
   if (modelRenderKey) {
@@ -274,9 +270,9 @@ function scaleFanAppearanceForBigFan(svg: string): string {
 
 /**
  * Physical fan artwork owns its material colors. Only the marked frame group
- * follows the motion color: the rods of the fire and lotus fans, and the rim
- * around the DoodleGrip Day plate, whose black or white sheet stays its real
- * color. Kevlar wicks, plates, and fitted covers stay physical.
+ * follows the motion color: its stroke for the rod-built fire and lotus fans,
+ * and its fill for the solid DoodleGrip Day plate. Kevlar wicks and fitted
+ * covers stay physical.
  */
 export function applyFanFrameColor(svg: string, color: string): string {
   return svg.replace(

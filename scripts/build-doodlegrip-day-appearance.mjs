@@ -34,13 +34,10 @@ const OUTPUT_DIR = resolve(ROOT, "static/images/props/appearances");
 
 const DAY_FIT = 0.97;
 const VIEW_BOX = [260, 207];
-// The same two plate colors the 3D worker paints on TKA_Fan_Day_Frame. The
-// plate keeps its real material color on the canvas; only the rim follows the
-// hand color, so red and blue stay tellable apart and a black plate still
-// reads against the dark stage.
-const FRAME_TINTS = { black: "#11141a", white: "#f0f1f4" };
-const RIM_PLACEHOLDER = "#2E3192";
-const RIM_WIDTH = 2;
+// Placeholder plate fill; the canvas recolors the marked frame group to the
+// hand color, the same way the pictograph fan is drawn. The black or white
+// sheet color only exists in the 3D model.
+const PLATE_COLOR = "#2E3192";
 const EXPECTED_HOLES = 17;
 const EXPECTED_WIDTH_M = 0.51;
 const EXPECTED_HEIGHT_M = 0.35;
@@ -98,19 +95,15 @@ function validate(trace) {
   }
 }
 
-function buildSvg(trace, reference, frameColor, covered) {
+function buildSvg(trace, reference, covered) {
   const plate = [trace.outline, ...trace.holes]
     .map((loop) => loopPath(loop.map(displayPoint)))
     .join(" ");
-  const tint = FRAME_TINTS[frameColor];
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VIEW_BOX[0]} ${VIEW_BOX[1]}" data-generated-from="scripts/assets/doodlegrip-day-contours.json" data-fan-frame-color="${frameColor}" data-fan-cover-state="${covered ? "covered" : "bare"}">
-  <title>DoodleGrip practice fan, ${frameColor} frame${covered ? " with fitted cover" : ""}</title>
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VIEW_BOX[0]} ${VIEW_BOX[1]}" data-generated-from="scripts/assets/doodlegrip-day-contours.json" data-fan-cover-state="${covered ? "covered" : "bare"}">
+  <title>DoodleGrip practice fan${covered ? " with fitted cover" : ""}</title>
   <desc>Traced from the same cut-sheet contours as the 3D fan model: one outside boundary and seventeen cut-through openings, drawn at ${DAY_FIT} of the fire fan's display scale so the larger plate stays inside the shared prop box.</desc>
-  <g data-fan-plate="${frameColor}" fill="${tint}" fill-rule="evenodd" stroke="none">
+  <g data-fan-frame="" fill="${PLATE_COLOR}" fill-rule="evenodd" stroke="none">
     <path data-day-plate="" d="${plate}"/>
-  </g>
-  <g data-fan-frame="" fill="none" stroke="${RIM_PLACEHOLDER}" stroke-width="${RIM_WIDTH}" stroke-linejoin="round">
-    <path d="${plate}"/>
   </g>
 ${covered ? coverSvg(reference.geometry_m, DAY_FIT) : ""}
 </svg>
@@ -122,15 +115,10 @@ export async function buildDoodlegripDayAppearance() {
   const reference = JSON.parse(await readFile(FIRE_REFERENCE, "utf8"));
   validate(trace);
   const outputs = [];
-  for (const frameColor of Object.keys(FRAME_TINTS)) {
-    for (const covered of [false, true]) {
-      const file = resolve(
-        OUTPUT_DIR,
-        `fan-day-${frameColor}${covered ? "-covered" : ""}.svg`
-      );
-      await writeFile(file, buildSvg(trace, reference, frameColor, covered), "utf8");
-      outputs.push(file);
-    }
+  for (const covered of [false, true]) {
+    const file = resolve(OUTPUT_DIR, `fan-day${covered ? "-covered" : ""}.svg`);
+    await writeFile(file, buildSvg(trace, reference, covered), "utf8");
+    outputs.push(file);
   }
   return outputs;
 }

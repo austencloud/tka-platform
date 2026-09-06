@@ -12,8 +12,8 @@ const contours = JSON.parse(
   )
 ) as { outline: number[][]; holes: number[][][] };
 
-function readArtwork(cover: "bare" | "covered", frameColor: "black" | "white") {
-  const href = fanAppearanceArtwork("day", cover, frameColor)!;
+function readArtwork(cover: "bare" | "covered") {
+  const href = fanAppearanceArtwork("day", cover)!;
   const file = href.replace(/\?.*$/, "");
   return fs.readFileSync(path.join(root, "static", file), "utf8");
 }
@@ -25,8 +25,8 @@ function plateLoops(svg: string): string[] {
 
 describe("DoodleGrip Day fan artwork", () => {
   it("draws the traced cut sheet as one even-odd plate on the hand pivot", () => {
-    const svg = readArtwork("bare", "black");
-    expect(svg).toContain('data-fan-plate="black" fill="#11141a" fill-rule="evenodd"');
+    const svg = readArtwork("bare");
+    expect(svg).toContain('data-fan-frame="" fill="#2E3192" fill-rule="evenodd"');
     const loops = plateLoops(svg);
     expect(loops).toHaveLength(1 + contours.holes.length);
     expect(loops[0].split(" L ")).toHaveLength(contours.outline.length);
@@ -55,19 +55,17 @@ describe("DoodleGrip Day fan artwork", () => {
     expect(center[1]).toBeCloseTo(103.5, 0);
   });
 
-  it("paints the plate in its frame color and leaves only the rim to the hand", () => {
-    expect(readArtwork("bare", "black")).toContain(
-      'data-fan-plate="black" fill="#11141a"'
-    );
-    expect(readArtwork("bare", "white")).toContain(
-      'data-fan-plate="white" fill="#f0f1f4"'
-    );
-    // Only the rim group is marked for hand recoloring; the plate is not.
-    const white = readArtwork("bare", "white");
-    expect(white.match(/data-fan-frame=""/g)).toHaveLength(1);
-    expect(white).toContain('data-fan-frame="" fill="none" stroke="#2E3192"');
-    expect(readArtwork("bare", "white")).not.toContain('data-fan-cover=""');
-    expect(readArtwork("covered", "white")).toContain('data-fan-cover=""');
-    expect(fs.existsSync(path.join(root, "static/images/props/appearances/fan-day.svg"))).toBe(false);
+  it("leaves the whole plate to the hand color, with no rim or frame tint", () => {
+    const bare = readArtwork("bare");
+    expect(bare.match(/data-fan-frame=""/g)).toHaveLength(1);
+    expect(bare).not.toContain("stroke-width");
+    expect(bare).not.toContain("data-fan-frame-tint");
+    expect(bare).not.toContain('data-fan-cover=""');
+    expect(readArtwork("covered")).toContain('data-fan-cover=""');
+    for (const stale of ["black", "white", "black-covered", "white-covered"]) {
+      expect(
+        fs.existsSync(path.join(root, `static/images/props/appearances/fan-day-${stale}.svg`))
+      ).toBe(false);
+    }
   });
 });
