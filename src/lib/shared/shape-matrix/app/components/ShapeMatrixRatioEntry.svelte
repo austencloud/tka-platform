@@ -446,11 +446,14 @@
     padding-inline: 0;
   }
 
-  /* The corner cell already carries the axis mark and colour, and has no
-     room for four nudge buttons, so the entry keeps only its two typed
-     numbers. Arrow keys still nudge them. Feedback is spoken through the
-     live region; the invalid outline is the visible cue. */
+  /* The corner cell already carries the axis mark and colour, so the entry
+     is its two numbers with their nudge buttons, sized in the cell's
+     container units like the level stepper that shares this corner.
+     Feedback is spoken through the live region; the invalid outline is the
+     visible cue. */
   .ratio-side.corner {
+    --nudge: clamp(1.1rem, 9.5cqi, 2.4rem);
+    --field-height: clamp(1.5rem, 18cqi, 2.75rem);
     position: relative;
     width: auto;
     grid-template-rows: auto;
@@ -460,7 +463,6 @@
 
   .ratio-side.corner .side-head,
   .ratio-side.corner .part-field > span:first-child,
-  .ratio-side.corner .part-stepper button,
   .ratio-side.corner .feedback {
     position: absolute;
     width: 1px;
@@ -476,19 +478,55 @@
   }
 
   .ratio-side.corner .part-stepper {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: var(--nudge) minmax(0, 1fr) var(--nudge);
     border-radius: 8px;
   }
 
   .ratio-side.corner .part-stepper input,
+  .ratio-side.corner .part-stepper button,
   .ratio-side.corner .colon {
-    height: clamp(1.5rem, 18cqi, 2.75rem);
+    height: var(--field-height);
+  }
+
+  .ratio-side.corner .part-stepper input,
+  .ratio-side.corner .colon {
     font-size: clamp(0.9rem, 11cqi, 1.4rem);
   }
 
   .ratio-side.corner .part-stepper input {
-    padding-inline: 0.15rem;
+    padding-inline: 0;
     text-align: center;
+  }
+
+  /* The global 44px floor belongs to touch hosts, which edit from the
+     header; here the buttons take the cell's own scale. */
+  .ratio-side.corner .part-stepper button {
+    width: var(--nudge);
+    min-width: 0;
+    min-height: 0;
+    font-size: clamp(0.8rem, 9cqi, 1.15rem);
+  }
+
+  /* Below 10.5rem two nudge buttons per number leave no room for the
+     numbers, so the corner keeps only the typed fields; arrow keys still
+     nudge them. */
+  @container (max-width: 10.499rem) {
+    .ratio-side.corner .part-stepper {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ratio-side.corner .part-stepper button {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .ratio-side.corner .part-stepper input {
+      padding-inline: 0.15rem;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
