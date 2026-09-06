@@ -778,7 +778,7 @@
             {@render pathsBody()}
           {/if}
         {:else if showTempoControls || onPlaybackModeChange}
-          <div class="motion-col">
+          <div class="motion-col motion-col-solo">
             {@render tempoModeBody()}
           </div>
         {/if}
@@ -1266,6 +1266,20 @@
   @container motion-stack (min-width: 528px) {
     .motion-stack {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* A host with no Paths page (the shape matrix traces a fixed figure) has
+       nothing for the second column. Tempo and Mode take a column each on
+       the one row instead of stacking beside a hole the width of the page. */
+    .motion-col-solo {
+      grid-column: 1 / -1;
+    }
+
+    .motion-col-solo > :global(.playback-rows) {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--spacing-md, 12px);
+      align-items: start;
     }
   }
 

@@ -1385,7 +1385,10 @@
   {/if}
 
   <!-- The control bar is below the stage, not inside it. It settles in as the
-       last frame of the wave rather than arriving complete under the flight. -->
+       last frame of the wave rather than arriving complete under the flight.
+       Props routes to the canonical prop sheet only where the grid pane is
+       off screen; on a wide host it is a page of the customize workspace
+       over the grid, like every other pill. -->
   <div
     class="animation-controls"
     data-drill-region="controls"
@@ -1409,7 +1412,9 @@
       showEffectsPlayback={false}
       selectedPropType={propType}
       onPropChange={onproptypechange}
-      onPropPickerRequest={onproppickertoggle}
+      onPropPickerRequest={!appState || appState.compact
+        ? onproppickertoggle
+        : undefined}
       propPickerActive={propPickerOpen}
       sequence={captionRealization?.seq ?? null}
       dockTrailingAction={playbackAction}
