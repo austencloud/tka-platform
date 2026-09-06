@@ -73,6 +73,7 @@ OPTIMIZE = "--skip-optimize" not in ARGS
 
 SHELL_LIGHTMAP_PX = 1024 if FAST else 4096
 FLOOR_LIGHTMAP_PX = 512 if FAST else 2048
+THRESHOLD_LIGHTMAP_PX = 256 if FAST else 1024
 BAKE_SAMPLES = 32 if FAST else 256
 VIEW_SAMPLES = 32 if FAST else 128
 
@@ -188,7 +189,10 @@ def objects_with_prefix(prefix: str) -> list[bpy.types.Object]:
 shell = bpy.data.objects["DG_Shell_Rock"]
 floors = objects_with_prefix("DG_Floor_")
 rails = objects_with_prefix("DG_Rail_")
-jambs = objects_with_prefix("DG_Threshold_Jamb_") + [bpy.data.objects["DG_Threshold_Lintel"]]
+# Every piece of the Order's gilt metalwork: the threshold arch and the three
+# apse sconces. They share one material, so they share one object and one
+# lightmap, and the walk pays for a single draw call.
+metalwork_parts = objects_with_prefix("DG_Threshold_") + objects_with_prefix("DG_Sconce_")
 glowworms = objects_with_prefix("DG_Glowworm_")
 water_meshes = (
     objects_with_prefix("DG_WaterSurface_")
@@ -200,19 +204,10 @@ water_meshes = (
 for obj in objects_with_prefix("DG_Stage_"):
     bpy.data.objects.remove(obj, do_unlink=True)
 
-# The niche panels become wall lamps: a narrow warm slab high on the apse's
-# back wall, above the performer's head, so the bake rims each performer from
-# behind and the runtime key light can own the front.
-lamps = []
-for obj in objects_with_prefix("DG_Niche_Fire_"):
-    obj.name = obj.name.replace("DG_Niche_Fire_", "DG_Apse_Lamp_")
-    obj.dimensions = (0.55, 0.18, 0.9)
-    obj.location.z = SHELF + 2.35
-    bpy.context.view_layer.objects.active = obj
-    obj.select_set(True)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    obj.select_set(False)
-    lamps.append(obj)
+# The lamps arrive finished from the graybox: a small warm core inside a gilt
+# sconce, high on the apse's back wall above the performer's head, so the bake
+# rims each performer from behind and the runtime key light owns the front.
+lamps = objects_with_prefix("DG_Apse_Lamp_")
 
 
 def select_only(objs):
@@ -418,6 +413,21 @@ bpy.ops.object.join()
 rails_obj = bpy.context.view_layer.objects.active
 rails_obj.name = "DG_Rails"
 
+# One mesh, and every arris beveled: a boolean arch with unbeveled arrises is
+# still a boolean arch to look at. 12 mm puts a highlight on every edge.
+select_only(metalwork_parts)
+bpy.ops.object.join()
+threshold_obj = bpy.context.view_layer.objects.active
+threshold_obj.name = "DG_Metalwork"
+th_bevel = threshold_obj.modifiers.new("Bevel", "BEVEL")
+th_bevel.width = 0.012
+th_bevel.segments = 2
+th_bevel.limit_method = "ANGLE"
+th_bevel.angle_limit = math.radians(35)
+bpy.ops.object.modifier_apply(modifier="Bevel")
+bpy.ops.object.shade_smooth_by_angle(angle=math.radians(30))
+log(f"metalwork: {triangle_count(threshold_obj)} tris")
+
 
 # ── UVs ─────────────────────────────────────────────────────────────────────
 def unwrap(obj, margin=0.002) -> float:
@@ -457,11 +467,20 @@ def unwrap(obj, margin=0.002) -> float:
 shell_m_per_uv = unwrap(shell, margin=0.0015)
 floors_m_per_uv = unwrap(floors_obj, margin=0.004)
 unwrap(rails_obj, margin=0.01)
+threshold_m_per_uv = unwrap(threshold_obj, margin=0.004)
 log(f"UV density shell {shell_m_per_uv:.1f} m/uv, floors {floors_m_per_uv:.1f} m/uv")
 
 
 # ── Materials ───────────────────────────────────────────────────────────────
 def new_material(name: str):
+    # Blender does not replace a name, it appends ".001". The graybox already
+    # owns "DG Gilded Threshold", so the exported gilt material silently shipped
+    # as "DG Gilded Threshold.001" -- and the runtime looks its materials up by
+    # exact name. Move the authoring material out of the way so every name in
+    # the exported glTF is the one this script asked for.
+    existing = bpy.data.materials.get(name)
+    if existing is not None:
+        existing.name = f"{name} (authoring)"
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     tree = mat.node_tree
@@ -597,6 +616,51 @@ def bake_material(name, wall_set, floor_set, wet_below, lightmap_image, wall_tin
     return mat
 
 
+def gilt_bake_material(name, lightmap_image):
+    """Gold leaf over cut stone, for the bake only.
+
+    Metallic is honest here because Cycles has the whole grotto to reflect, and
+    the bake runs with the glossy pass ON, so the highlight the apse lamps put
+    on the arch is written into the lightmap. That is what lets the exported
+    material be an ordinary lit surface: three.js gets no environment map in
+    the museum, and a metal without one has neither diffuse nor reflection --
+    which is exactly how this threshold came to render as a cream cardboard
+    cutout in the first place."""
+    mat, tree, bsdf = new_material(name)
+    links = tree.links
+    scale = 1.0 / TEXTURE_PERIOD_M["slab"]
+    diff = box_texture(tree, "slab", "diff", scale)
+    rough = box_texture(tree, "slab", "rough", scale)
+    nor = box_texture(tree, "slab", "nor_gl", scale)
+
+    tint = rgb_mix(tree, "MULTIPLY")
+    tint.inputs["Factor"].default_value = 1.0
+    links.new(diff.outputs["Color"], tint.inputs[6])
+    tint.inputs[7].default_value = (1.26, 1.0, 0.60, 1.0)
+    links.new(tint.outputs[2], bsdf.inputs["Base Color"])
+
+    # Leaf is thin. The stone roughness still reads through it, pulled most of
+    # the way down so the gold is burnished rather than mirrored.
+    soften = rgb_mix(tree)
+    soften.inputs["Factor"].default_value = 0.7
+    links.new(rough.outputs["Color"], soften.inputs[6])
+    soften.inputs[7].default_value = (0.2, 0.2, 0.2, 1.0)
+    links.new(soften.outputs[2], bsdf.inputs["Roughness"])
+
+    normal_map = tree.nodes.new("ShaderNodeNormalMap")
+    normal_map.space = "OBJECT"
+    normal_map.inputs["Strength"].default_value = 0.5
+    links.new(nor.outputs["Color"], normal_map.inputs["Color"])
+    links.new(normal_map.outputs["Normal"], bsdf.inputs["Normal"])
+    bsdf.inputs["Metallic"].default_value = 0.75
+
+    target = tree.nodes.new("ShaderNodeTexImage")
+    target.image = lightmap_image
+    target.select = True
+    tree.nodes.active = target
+    return mat
+
+
 def export_material(name, set_key, lightmap_image, m_per_uv, albedo=(0.55, 0.55, 0.55)):
     """What the GLB carries: tiled albedo + normal + roughness on UVMap with a
     KHR_texture_transform repeat, and the lightmap on Emission at 1.0."""
@@ -653,6 +717,7 @@ def new_lightmap(name, size):
 shell_lightmap = new_lightmap("DG_Shell_Lightmap", SHELL_LIGHTMAP_PX)
 floors_lightmap = new_lightmap("DG_Floors_Lightmap", FLOOR_LIGHTMAP_PX)
 rails_lightmap = new_lightmap("DG_Rails_Lightmap", 256)
+threshold_lightmap = new_lightmap("DG_Threshold_Lightmap", THRESHOLD_LIGHTMAP_PX)
 
 shell_bake = bake_material("DG Rock (bake)", "rock", "cavefloor", GROTTO_WATERLINE, shell_lightmap)
 floors_bake = bake_material(
@@ -662,7 +727,14 @@ rails_bake = bake_material(
     "DG Rail (bake)", "rock", "rock", GROTTO_WATERLINE, rails_lightmap, wall_tint=(0.55, 0.5, 0.46)
 )
 
-for obj, mat in ((shell, shell_bake), (floors_obj, floors_bake), (rails_obj, rails_bake)):
+threshold_bake = gilt_bake_material("DG Gilt (bake)", threshold_lightmap)
+
+for obj, mat in (
+    (shell, shell_bake),
+    (floors_obj, floors_bake),
+    (rails_obj, rails_bake),
+    (threshold_obj, threshold_bake),
+):
     obj.data.materials.clear()
     obj.data.materials.append(mat)
 
@@ -690,7 +762,7 @@ lamp_bsdf = lamp_mat.node_tree.nodes["Principled BSDF"]
 # see and drowned the apses. The dome should glimmer; the shelf should be lit by
 # the lamps in the apses, warm, so the three cases read as the room's altar.
 glow_bsdf.inputs["Emission Strength"].default_value = 5.0
-lamp_bsdf.inputs["Emission Strength"].default_value = 26.0
+lamp_bsdf.inputs["Emission Strength"].default_value = 30.0
 
 # The waterline surface is a light SOURCE for the submerged gallery (nothing
 # else reaches the bend), but at the graybox's 0.9 it renders as a flat cyan
@@ -704,7 +776,7 @@ for mat_name, strength in (("DG Water Surface", 0.3), ("DG Water Body", 0.1), ("
             node.inputs["Emission Strength"].default_value = strength
 
 
-def bake(obj, image, samples):
+def bake(obj, image, samples, glossy=False):
     select_only([obj])
     scene.cycles.samples = samples
     settings = scene.render.bake
@@ -714,7 +786,7 @@ def bake(obj, image, samples):
     settings.use_pass_color = True
     settings.use_pass_emit = True
     settings.use_pass_diffuse = True
-    settings.use_pass_glossy = False
+    settings.use_pass_glossy = glossy
     settings.use_pass_transmission = False
     settings.margin = 6 if image.size[0] <= 1024 else 12
     settings.margin_type = "ADJACENT_FACES"
@@ -777,27 +849,46 @@ def denoise(image, path: Path) -> bpy.types.Image:
 bake(shell, shell_lightmap, BAKE_SAMPLES)
 bake(floors_obj, floors_lightmap, BAKE_SAMPLES)
 bake(rails_obj, rails_lightmap, max(32, BAKE_SAMPLES // 4))
+# Glossy ON for this one object: the burnished highlight IS the gilding.
+bake(threshold_obj, threshold_lightmap, max(64, BAKE_SAMPLES // 2), glossy=True)
 shell_lightmap_final = denoise(shell_lightmap, QA_DIR / "DG_Shell_Lightmap_dn.png")
 floors_lightmap_final = denoise(floors_lightmap, QA_DIR / "DG_Floors_Lightmap_dn.png")
 rails_lightmap_final = rails_lightmap
-for image in (shell_lightmap_final, floors_lightmap_final, rails_lightmap_final):
+threshold_lightmap_final = denoise(
+    threshold_lightmap, QA_DIR / "DG_Threshold_Lightmap_dn.png"
+)
+for image in (
+    shell_lightmap_final,
+    floors_lightmap_final,
+    rails_lightmap_final,
+    threshold_lightmap_final,
+):
     image.pack()
 
 # ── Swap to export materials ────────────────────────────────────────────────
 shell_export = export_material("DG Rock", "rock", shell_lightmap_final, shell_m_per_uv, albedo=(0.5, 0.5, 0.5))
 floors_export = export_material("DG Slab", "slab", floors_lightmap_final, floors_m_per_uv, albedo=(0.6, 0.58, 0.55))
 rails_export = export_material("DG Rail", "rock", rails_lightmap_final, shell_m_per_uv, albedo=(0.3, 0.29, 0.28))
-for obj, mat in ((shell, shell_export), (floors_obj, floors_export), (rails_obj, rails_export)):
+threshold_export = export_material(
+    "DG Gilded Threshold", "slab", threshold_lightmap_final, threshold_m_per_uv,
+    albedo=(0.38, 0.31, 0.19),
+)
+for obj, mat in (
+    (shell, shell_export),
+    (floors_obj, floors_export),
+    (rails_obj, rails_export),
+    (threshold_obj, threshold_export),
+):
     obj.data.materials.clear()
     obj.data.materials.append(mat)
 
 # Export strengths are read under the museum's ACES at exposure 1.1 with a
-# 2.6x lift on the lightmapped materials only; glowworm, firelight and gilded threshold get per-material colour and intensity at runtime (DrownedGalleryAuthored.svelte), so
-# anything above ~2 here clips to a white block. Keep the colour.
+# 2.6x lift on the lightmapped materials only. The glowworms and the apse
+# lamps are emissive with no lightmap, so they are tuned by name at runtime
+# (DrownedGalleryAuthored.svelte) and anything above ~2 here clips to a white
+# block. The threshold left that list when it gained a lightmap of its own.
 glow_bsdf.inputs["Emission Strength"].default_value = 1.6
 lamp_bsdf.inputs["Emission Strength"].default_value = 0.9
-gold = bpy.data.materials["DG Gilded Threshold"]
-gold.node_tree.nodes["Principled BSDF"].inputs["Emission Strength"].default_value = 0.45
 
 # ── QA views ────────────────────────────────────────────────────────────────
 scene.render.resolution_x = 1280
@@ -817,7 +908,7 @@ except TypeError:
 
 render_paths = {}
 VIEWS = (
-    ["procession", "reveal"]
+    ["procession", "threshold"]
     if FAST
     else ["approach", "descent", "bloom", "reveal", "procession", "threshold", "overview"]
 )
@@ -837,7 +928,7 @@ if RENDER:
     shell.hide_render = False
 
 # ── Export ──────────────────────────────────────────────────────────────────
-export_objects = [shell, floors_obj, rails_obj, *jambs, *glowworms, *lamps]
+export_objects = [shell, floors_obj, rails_obj, threshold_obj, *glowworms, *lamps]
 for obj in water_meshes:
     obj.hide_render = True
     obj.hide_viewport = True
@@ -894,13 +985,22 @@ report = {
     "computeDevice": COMPUTE,
     "fast": FAST,
     "shellTriangles": triangle_count(shell),
+    "metalworkTriangles": triangle_count(threshold_obj),
     "floorTriangles": triangle_count(floors_obj),
     "lightmaps": {
         "shell": {"px": SHELL_LIGHTMAP_PX, "samples": BAKE_SAMPLES},
         "floors": {"px": FLOOR_LIGHTMAP_PX, "samples": BAKE_SAMPLES},
+        "threshold": {
+            "px": THRESHOLD_LIGHTMAP_PX,
+            "samples": max(64, BAKE_SAMPLES // 2),
+        },
     },
     "textureSets": TEXTURE_SETS,
-    "uvMetresPerUnit": {"shell": shell_m_per_uv, "floors": floors_m_per_uv},
+    "uvMetresPerUnit": {
+        "shell": shell_m_per_uv,
+        "floors": floors_m_per_uv,
+        "threshold": threshold_m_per_uv,
+    },
     "exportObjects": [o.name for o in export_objects if not o.name.startswith("DG_Glowworm_")]
     + [f"glowworms x{len(glowworms)}"],
     "rawGlbBytes": raw_size,
