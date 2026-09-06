@@ -108,7 +108,7 @@ const AUTH_PROMPT_CONTENTS: Record<AuthNudgeTrigger, AuthPromptContent> = {
   "step-cap-guest": {
     key: "step-cap-guest",
     title: "Keep adding steps",
-    body: "A free account raises the limit from 8 steps to 64.",
+    body: "Create a free account for up to 64 steps.",
   },
   "patterns-guest": {
     key: "patterns-guest",
@@ -217,7 +217,30 @@ const GENERIC_AUTH_PROMPTS: Record<AuthMode, AuthPromptContent> = {
 
 export function getAuthPromptContent(
   trigger: AuthNudgeTrigger | null | undefined,
-  mode: AuthMode
+  mode: AuthMode,
+  attempt = 1
 ): AuthPromptContent {
+  if (
+    trigger === "step-cap-guest" &&
+    Number.isFinite(attempt) &&
+    attempt >= 2
+  ) {
+    const index = (Math.floor(attempt) - 2) % STEP_CAP_REPEAT_TITLES.length;
+    return {
+      ...AUTH_PROMPT_CONTENTS[trigger],
+      title: STEP_CAP_REPEAT_TITLES[index]!,
+    };
+  }
   return trigger ? AUTH_PROMPT_CONTENTS[trigger] : GENERIC_AUTH_PROMPTS[mode];
 }
+
+const STEP_CAP_REPEAT_TITLES = [
+  "You found step nine's bouncer.",
+  "I know. Eight was just the warm-up.",
+  "The button works. It's just stubborn.",
+  "I see the vision. It has more than eight steps.",
+  "Yes, I wrote another message for this.",
+  "At this point, we're rehearsing the signup.",
+  "Plot twist: the account is still free.",
+  "Your next step is an email address.",
+];
