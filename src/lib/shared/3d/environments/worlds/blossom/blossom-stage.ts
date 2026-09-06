@@ -1,8 +1,11 @@
 import {
   BoxGeometry,
   CircleGeometry,
+  Color,
   CylinderGeometry,
   Group,
+  InstancedMesh,
+  Matrix4,
   Mesh,
   MeshStandardMaterial,
   PointLight,
@@ -153,21 +156,39 @@ export function createBlossomStage(options: BlossomStageOptions): BlossomStage {
   const plankCount = Math.max(1, Math.round(options.depth / stride));
   const totalSpan = plankCount * PLANK_WIDTH + (plankCount - 1) * PLANK_GAP;
   const plankStart = -totalSpan / 2 + PLANK_WIDTH / 2;
+  const plankGeometry = new BoxGeometry(
+    options.width,
+    PLANK_THICKNESS,
+    PLANK_WIDTH
+  );
+  const plankMaterial = new MeshStandardMaterial({
+    roughness: 0.88,
+    metalness: 0.03,
+  });
+  const planks = new InstancedMesh(plankGeometry, plankMaterial, plankCount);
+  planks.name = "blossom-stage-planks";
+  planks.castShadow = true;
+  planks.receiveShadow = true;
+  const plankMatrix = new Matrix4();
+  const plankColor = new Color();
   for (let index = 0; index < plankCount; index += 1) {
-    addMesh(
-      `blossom-stage-plank-${index}`,
-      new BoxGeometry(options.width, PLANK_THICKNESS, PLANK_WIDTH),
-      {
-        color: PLANK_COLORS[index % PLANK_COLORS.length],
-        roughness: 0.88,
-        metalness: 0.03,
-      },
-      [0, deckTop - PLANK_THICKNESS / 2, plankStart + index * stride],
-      0,
-      true,
-      true
+    planks.setMatrixAt(
+      index,
+      plankMatrix.makeTranslation(
+        0,
+        deckTop - PLANK_THICKNESS / 2,
+        plankStart + index * stride
+      )
+    );
+    planks.setColorAt(
+      index,
+      plankColor.set(PLANK_COLORS[index % PLANK_COLORS.length])
     );
   }
+  planks.computeBoundingSphere();
+  geometries.add(plankGeometry);
+  materials.add(plankMaterial);
+  root.add(planks);
 
   if (options.showDirectionCues) {
     const cueY = deckTop + STRIP_HEIGHT / 2;
@@ -312,6 +333,7 @@ export function createBlossomStage(options: BlossomStageOptions): BlossomStage {
       root.position.y = groundY;
     },
     dispose() {
+      planks.dispose();
       for (const geometry of geometries) geometry.dispose();
       for (const material of materials) material.dispose();
       root.clear();
