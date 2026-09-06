@@ -65,12 +65,11 @@ compensation), so the detail view behind this sheet updates on its own.
   const memberIds = $derived(new Set(target?.sequenceIds ?? initialMemberIds));
   let pendingSequenceIds = $state<Set<string>>(new Set());
 
-  // Ephemeral engine (no persistKey): the hunt starts fresh every time the
-  // sheet opens. My Library first — filing your own work is the common case —
-  // with the Community source a toggle away.
+  // Guests need the public catalog before they have saved any work of their
+  // own. Full accounts start in their library; either source stays available.
   const engine = createBrowseEngine({
     persistKey: null,
-    initialSource: "my-library",
+    initialSource: authState.isFullAccount ? "my-library" : "community",
     minColumns: 2,
   });
 
