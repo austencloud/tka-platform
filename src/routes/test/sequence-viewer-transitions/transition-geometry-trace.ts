@@ -63,6 +63,12 @@ export interface TransitionGeometrySample {
     stageIdentity: number;
     sharedCanvasIdentity?: number;
     sharedInspectorIdentity?: number;
+    sharedCardIdentity?: number;
+    sharedTransportIdentity?: number;
+    sharedSurfaces?: Record<
+      string,
+      { left: number; top: number; width: number; height: number }
+    >;
     sharedCanvasInStudio?: boolean;
     sharedInspectorInStudio?: boolean;
   };

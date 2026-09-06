@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { summarizeStudioSurfaceMotion } from "../studio-surface-motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { isWorkspaceReplayCommand } from "../workspace-review-replays";
   import {
@@ -329,13 +330,26 @@
       <span>Mode path: {summary.modePath.join(" → ") || "n/a"}</span>
       <span>Mode commit: {modeCommitSummary || "n/a"}</span>
       {#if trace.command.includes("studio")}
-        {#each ["sharedCanvasIdentity", "sharedInspectorIdentity"] as key}
+        {#each Object.entries(summarizeStudioSurfaceMotion(trace.samples)) as [name, motion]}
+          <span
+            data-problem={motion.backtrackPx > 2 || motion.sizeBacktrackPx > 2}
+          >
+            {name}: {motion.backtrackPx} px backtracking · {motion.sizeBacktrackPx}
+            px size reversal · {motion.maxStepPx} px largest step · {motion.frames}
+            frames
+          </span>
+        {/each}
+        {#each ["sharedCanvasIdentity", "sharedInspectorIdentity", "sharedCardIdentity", "sharedTransportIdentity"] as key}
           {@const identities = new Set(
             workspaceSamples
               .map(
                 (sample) =>
                   sample[
-                    key as "sharedCanvasIdentity" | "sharedInspectorIdentity"
+                    key as
+                      | "sharedCanvasIdentity"
+                      | "sharedInspectorIdentity"
+                      | "sharedCardIdentity"
+                      | "sharedTransportIdentity"
                   ]
               )
               .filter(Boolean)
@@ -343,7 +357,11 @@
           <span data-problem={identities.size !== 1}>
             {key === "sharedCanvasIdentity"
               ? "Live canvas"
-              : "Shared inspector"} identities: {identities.size}
+              : key === "sharedInspectorIdentity"
+                ? "Shared inspector"
+                : key === "sharedCardIdentity"
+                  ? "Shared Card"
+                  : "Shared transport"} identities: {identities.size}
           </span>
         {/each}
         <span

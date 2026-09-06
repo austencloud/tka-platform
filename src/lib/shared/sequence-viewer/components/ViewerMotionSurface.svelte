@@ -1,7 +1,10 @@
 <script lang="ts">
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { getViewerStudioSurfaces } from "../context/viewer-studio-surfaces-context";
-  import { reparentToInspector } from "./reparent-to-inspector";
+  import {
+    reparentToInspector,
+    type ReparentOptions,
+  } from "./reparent-to-inspector";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
@@ -70,10 +73,25 @@
   const studioSurfaces = getViewerStudioSurfaces();
   const studioFrame = $derived(side === "left" ? studioSurfaces?.frame : null);
   const inStudio = $derived(side === "left" && !!studioSurfaces?.canvasTarget);
-  function ownCanvas(node: HTMLElement) {
+  let canvasHandoff: ReturnType<typeof reparentToInspector> | undefined;
+  $effect.pre(() => {
+    // The transport may move before the phone destination mounts. Capture the
+    // visual canvas before either sibling changes the layout, not at docking.
+    void studioSurfaces?.active;
+    canvasHandoff?.capture();
+  });
+  function ownCanvas(node: HTMLElement, options: ReparentOptions) {
+    const unregister =
+      side === "left" ? studioSurfaces?.registerCanvas(node) : undefined;
+    const handoff = reparentToInspector(node, options);
+    canvasHandoff = handoff;
     return {
-      destroy:
-        side === "left" ? studioSurfaces?.registerCanvas(node) : undefined,
+      update: handoff.update,
+      destroy: () => {
+        handoff.destroy();
+        unregister?.();
+        if (canvasHandoff === handoff) canvasHandoff = undefined;
+      },
     };
   }
   const is2DActive = $derived(selectedPane === "animation");
@@ -637,11 +655,11 @@
       {/if}
       <div
         class="canvas-layer canvas-2d-layer"
-        use:ownCanvas
-        use:reparentToInspector={{
+        use:ownCanvas={{
           target:
             side === "left" ? (studioSurfaces?.canvasTarget ?? null) : null,
           animate: true,
+          visualSelector: ".content-wrapper > .canvas-wrapper",
           onMoving: side === "left" ? studioSurfaces?.setMoving : undefined,
         }}
         class:canvas-2d-preparation-held={!inStudio &&
@@ -660,6 +678,7 @@
              returns to the stage. Practice keeps the transport because its
              read-ahead lane is not a card navigator. -->
         <AnimatorCanvas
+          shareStudioTransport={side === "left"}
           sequenceData={studioFrame?.sequence ??
             playback.animationState.sequenceData}
           currentStep={studioFrame?.position ?? playback.currentStep}

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import type { Snippet } from "svelte";
+import type { UnifiedPlaybackContext } from "$lib/shared/timeline/unified-playback-context";
 import {
   createViewerStudioSurfaces,
   type StudioAnimationFrame,
@@ -70,5 +72,52 @@ describe("shared Studio surfaces", () => {
     state.enter(5, true, 120);
     expect(state.entry.revision).toBe(2);
     expect(other.entry.revision).toBe(0);
+  });
+
+  it("loans the existing Card and transport and waits for every moving surface", () => {
+    const state = createViewerStudioSurfaces();
+    const node = document.createElement("div"),
+      target = document.createElement("div");
+    const owner = {},
+      extra = {};
+    state.registerCard(node);
+    state.registerTransport(node);
+    let step = 1;
+    const releaseCard = state.requestCard(owner, target, () => ({
+      sequence: frame(0).sequence,
+      highlightedStepIndex: step,
+      options: null,
+      automatic: true,
+    }));
+    state.requestCard(extra, node, () => ({
+      sequence: frame(0).sequence,
+      highlightedStepIndex: 7,
+      options: null,
+      automatic: true,
+    }));
+    const playback = {} as UnifiedPlaybackContext;
+    const trailing = (() => {}) as unknown as Snippet;
+    const releaseTransport = state.requestTransport(node, playback, trailing);
+    state.requestTransport(target, playback, trailing);
+    releaseTransport();
+    state.enter(0, true, 60);
+    expect(state.transportTarget).toBe(target);
+    expect(state.transportPlayback).toBe(playback);
+    expect(state.ownsCard(owner)).toBe(true);
+    expect(state.ownsCard(extra)).toBe(false);
+    step = 4;
+    expect(state.cardFrame?.highlightedStepIndex).toBe(4);
+    state.setMoving(true);
+    state.setSurfaceMoving("card", true);
+    state.setMoving(false);
+    expect(state.moving).toBe(true);
+    state.setSurfaceMoving("card", false);
+    expect(state.moving).toBe(false);
+    releaseCard();
+    expect(state.ownsCard(extra)).toBe(true);
+    state.leave();
+    expect(state.cardTarget).toBeNull();
+    expect(state.transportTarget).toBeNull();
+    expect(state.transportAvailable).toBe(true);
   });
 });

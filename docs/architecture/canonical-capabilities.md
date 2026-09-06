@@ -14,10 +14,13 @@ remounting it. `MarketingChrome` keeps one content key for this subtree only.
 
 Sequence Viewer ↔ Post Studio surface continuity uses the same
 `reparentToInspector` action with `createLayoutMotion`. Viewer-local
-`createViewerStudioSurfaces` owns the canvas/inspector loan and composition-clock
+`createViewerStudioSurfaces` owns the canvas/inspector/Card/transport loan and composition-clock
 handoff; Studio slots request the mounted surfaces through its optional context.
 Standalone Studio and additional simultaneous animation slots retain their own
-renderers. Searches: Post Studio, persistent canvas, shared inspector, live handoff.
+renderers. The desktop inspector keeps its original outer track; compact Studio
+uses destinations for the same surfaces. The canvas flight captures its visual
+child before the transport changes allocation. Searches: Post Studio, persistent
+canvas, shared inspector, shared Choreo Card, shared playback bar, live handoff.
 
 | Search vocabulary                                                                                                                   | Canonical owner                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

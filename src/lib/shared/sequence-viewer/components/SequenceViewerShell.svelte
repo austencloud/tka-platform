@@ -642,6 +642,20 @@
   const studioSurfaces = createViewerStudioSurfaces();
   setViewerStudioSurfaces(studioSurfaces);
   let animatorInspectorOrigin = $state<HTMLElement | null>(null);
+  let studioInspectorOrigin = $state<HTMLElement | null>(null);
+  // Match Studio's 70rem compact boundary. Tablet shell orientation alone
+  // does not guarantee room for a phone beside the full motion inspector.
+  const studioCanShareSideInspector = $derived(
+    !layout.effectiveMobile && layout.bodyWidth > 1120
+  );
+  const studioUsesSideInspector = $derived(
+    layout.showPostStudio && studioCanShareSideInspector
+  );
+  $effect(() => {
+    studioSurfaces.setExternalInspectorTarget(
+      studioCanShareSideInspector ? studioInspectorOrigin : null
+    );
+  });
   function ownInspector(node: HTMLElement) {
     return { destroy: studioSurfaces.registerInspector(node) };
   }
@@ -677,11 +691,14 @@
     use:reparentToInspector={{
       target: studioSurfaces.inspectorTarget ?? animatorInspectorOrigin,
       animate: true,
+      onMoving: (moving) =>
+        studioSurfaces.setSurfaceMoving("inspector", moving),
     }}
     data-shared-studio-inspector
   >
     <ExportVideoDrawer
       exportOptions={studioSurfaces.active ? undefined : ctx.exportOptions}
+      reserveExportSpace={studioSurfaces.active}
       isExporting={interactions.videoBusy}
       exportProgress={interactions.videoProgress}
       canvasReady={ctx.canvasReady}
@@ -856,7 +873,8 @@
         <div
           bind:this={viewerWorkspaceElement}
           class="viewer-and-export"
-          class:export-active={layout.isWorkspaceInspectorActive}
+          class:export-active={layout.isWorkspaceInspectorActive ||
+            studioUsesSideInspector}
           class:record-scene-active={layout.isRecordSceneActive}
           class:card-inspector={layout.inspectorProfile === "card"}
           class:performance-inspector={layout.inspectorProfile ===
@@ -909,10 +927,14 @@
 
           <ViewerWorkspacePanels
             direction={layout.effectiveMobile ? "vertical" : "horizontal"}
-            inspectorActive={layout.isWorkspaceInspectorActive}
-            inspectorCollapsed={layout.exportSidebarCollapsed &&
+            inspectorActive={layout.isWorkspaceInspectorActive ||
+              studioUsesSideInspector}
+            inspectorCollapsed={!studioUsesSideInspector &&
+              layout.exportSidebarCollapsed &&
               !layout.isImageExportActive}
-            inspectorProfile={layout.inspectorProfile}
+            inspectorProfile={studioUsesSideInspector
+              ? "motion"
+              : layout.inspectorProfile}
             stackedInspectorSize={layout.showVideoGallery
               ? "var(--performance-inspector-height)"
               : "auto"}
@@ -1176,6 +1198,13 @@
                      lifetime. Changing data-active now starts the content
                      crossfade in the same frame that PanelGroup moves the
                      Card/inspector seam; there is no second mount-intro. -->
+                <div
+                  class="inspector-content-layer studio-settings-layer"
+                  data-active={studioUsesSideInspector}
+                  inert={!studioUsesSideInspector}
+                  aria-hidden={!studioUsesSideInspector}
+                  bind:this={studioInspectorOrigin}
+                ></div>
                 <div
                   class="inspector-content-layer motion-settings-layer"
                   data-active={layout.isVideoExportActive}

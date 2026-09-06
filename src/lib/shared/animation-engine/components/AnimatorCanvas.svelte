@@ -34,6 +34,8 @@ Last audit: 2025-12-27
   import CanvasSurface from "./CanvasSurface.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
+  import { reparentToInspector } from "$lib/shared/sequence-viewer/components/reparent-to-inspector";
   import SequenceProgressBar from "$lib/shared/animation-engine/components/layers/SequenceProgressBar.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
@@ -104,6 +106,7 @@ Last audit: 2025-12-27
     glyphFrame = "pictograph",
     hidePathLines = false,
     hideProgressBar = false,
+    shareStudioTransport = false,
     hideHeader = false,
     isSeamlesslyLoopable = undefined,
     progressBarVariant = "gradient",
@@ -190,6 +193,7 @@ Last audit: 2025-12-27
      *  manager (e.g. the Tunnel art view, which never wants path overlays). */
     hidePathLines?: boolean;
     hideProgressBar?: boolean;
+    shareStudioTransport?: boolean;
     /** Hide the WordHeader slot (portrait-mobile reclaims this vertical space). */
     hideHeader?: boolean;
     isSeamlesslyLoopable?: boolean;
@@ -309,6 +313,13 @@ Last audit: 2025-12-27
   const resolvedContextId =
     contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
 
+  const studioSurfaces = getViewerStudioSurfaces();
+  const sharedTransport = $derived(
+    shareStudioTransport ? studioSurfaces : null
+  );
+  function ownTransport(node: HTMLElement) {
+    return { destroy: sharedTransport?.registerTransport(node) };
+  }
   const playbackAdapter = createAnimatorPlaybackAdapter({
     getCurrentStep: () => currentStep,
     getSteps: () => sequenceData?.steps ?? [],
@@ -858,11 +869,26 @@ Last audit: 2025-12-27
              on the page. Hosts can still opt out wholesale with
              `hideProgressBar` (embedded previews, showcase players); the user
              cannot switch away their own scrubber. -->
-        <UnifiedTimeline
-          playback={playbackAdapter}
-          visible={!hideProgressBar}
-          hidePlay={hidePlay ?? tapToToggle}
-        />
+        <div
+          class="shared-transport"
+          use:ownTransport
+          data-shared-studio-transport={shareStudioTransport || undefined}
+          use:reparentToInspector={{
+            target: sharedTransport?.transportTarget ?? null,
+            animate: true,
+            onMoving: (moving) =>
+              sharedTransport?.setSurfaceMoving("transport", moving),
+          }}
+        >
+          <UnifiedTimeline
+            playback={sharedTransport?.transportPlayback ?? playbackAdapter}
+            visible={!!sharedTransport?.active || !hideProgressBar}
+            hidePlay={sharedTransport?.transportTarget
+              ? false
+              : (hidePlay ?? tapToToggle)}
+            trailing={sharedTransport?.transportTrailing}
+          />
+        </div>
       {/if}
     </div>
   </div>
@@ -1339,6 +1365,17 @@ Last audit: 2025-12-27
     transition:
       max-height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
       opacity 0.2s ease-out;
+  }
+  .shared-transport {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* The live canvas has its own flight while its transport takes another slot.
+     Ancestor clips resume at docking, not midway through that shared flight. */
+  :global([data-surface-flight]) .animation-container,
+  :global([data-surface-flight]) .content-wrapper {
+    overflow: visible;
   }
 
   /* ===========================================

@@ -7,6 +7,60 @@ describe("reparentToInspector", () => {
       "http://www.w3.org/1999/xhtml",
       tag
     ) as HTMLElement;
+  it("uses pre-layout visual bounds when sibling chrome leaves the host", () => {
+    const origin = element("div"),
+      target = element("div"),
+      surface = element("section"),
+      visual = element("div");
+    visual.className = "visual";
+    surface.append(visual);
+    origin.append(surface);
+    document.body.append(origin, target);
+    let visualHeight = 740;
+    const rect = (height: number) => ({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 400,
+      bottom: height,
+      width: 400,
+      height,
+      toJSON: () => ({}),
+    });
+    surface.getBoundingClientRect = () => rect(800);
+    visual.getBoundingClientRect = () =>
+      rect(surface.parentNode === origin ? visualHeight : 300);
+    visual.getAnimations = () => [];
+    visual.animate = vi.fn(
+      () =>
+        ({
+          finished: new Promise(() => {}),
+          cancel: vi.fn(),
+        }) as unknown as Animation
+    );
+    const action = reparentToInspector(surface, {
+      target: null,
+      animate: true,
+      visualSelector: ".visual",
+    });
+    action.capture();
+    visualHeight = 800;
+    action.update({ target, animate: true, visualSelector: ".visual" });
+    expect(visual.animate).toHaveBeenCalledWith(
+      [
+        {
+          transformOrigin: "top left",
+          transform: `translate(0px, 0px) scale(1, ${740 / 300})`,
+        },
+        { transformOrigin: "top left", transform: "none" },
+      ],
+      expect.any(Object)
+    );
+    action.destroy();
+    origin.remove();
+    target.remove();
+  });
   it("keeps the newest destination when an in-flight handoff reverses", async () => {
     const origin = element("div");
     const target = element("div");

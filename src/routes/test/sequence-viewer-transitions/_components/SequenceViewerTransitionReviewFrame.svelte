@@ -611,6 +611,24 @@
         sharedInspectorIdentity: elementIdentity(
           "[data-shared-studio-inspector]"
         ),
+        sharedCardIdentity: elementIdentity(
+          "[data-shared-studio-card] .choreo-card-root"
+        ),
+        sharedTransportIdentity: elementIdentity(
+          "[data-shared-studio-transport] [aria-label='Playback transport']"
+        ),
+        sharedSurfaces: Object.fromEntries(
+          Object.entries({
+            canvas:
+              "[data-shared-animation-surface] .content-wrapper > .canvas-wrapper",
+            inspector: "[data-shared-studio-inspector]",
+            rail: "[data-shared-studio-inspector] [role='tablist']",
+            editor: "[data-shared-studio-inspector] .panel-scroll",
+            card: "[data-shared-studio-card]",
+            transport: "[data-shared-studio-transport]",
+            phone: ".output-frame",
+          }).map(([key, selector]) => [key, elementBounds(selector)])
+        ),
         sharedCanvasInStudio: Boolean(
           document.querySelector(
             "[data-studio-animation-destination] [data-shared-animation-surface] canvas"

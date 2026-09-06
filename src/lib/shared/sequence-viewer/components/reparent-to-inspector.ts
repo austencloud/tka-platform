@@ -2,14 +2,18 @@ import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
 import { motionDuration } from "$lib/shared/transitions/motion";
 import { DURATION } from "$lib/shared/transitions/transitions";
 
-interface ReparentOptions {
+export interface ReparentOptions {
   target: HTMLElement | null;
   animate?: boolean;
+  /** Move the mounted host, but measure/animate its visual surface independently
+   * when sibling chrome (such as a loaned transport) changes its allocation. */
+  visualSelector?: string;
   onMoving?: (moving: boolean) => void;
 }
 type ReparentTarget = HTMLElement | null | ReparentOptions;
 
 interface ReparentAction {
+  capture(): void;
   update(target: ReparentTarget): void;
   destroy(): void;
 }
@@ -27,11 +31,14 @@ export function reparentToInspector(
   const originNextSibling = node.nextSibling;
   const key = `handoff-${crypto.randomUUID()}`;
   node.dataset.surfaceHandoff = key;
+  const initialOptions =
+    target && !(target instanceof HTMLElement) ? target : null;
+  const visualSelector = initialOptions?.visualSelector;
   const motion = createLayoutMotion({
     getRoot: () => node.ownerDocument.body,
     groups: [
       {
-        selector: `[data-surface-handoff="${key}"]`,
+        selector: `[data-surface-handoff="${key}"]${visualSelector ? ` ${visualSelector}` : ""}`,
         datasetKey: "surfaceHandoff",
       },
     ],
@@ -44,6 +51,7 @@ export function reparentToInspector(
   let trackingFrame = 0;
 
   function restoreStyle(): void {
+    delete node.dataset.surfaceFlight;
     if (savedStyle === undefined) return;
     if (savedStyle === null) node.removeAttribute("style");
     else node.setAttribute("style", savedStyle);
@@ -82,7 +90,7 @@ export function reparentToInspector(
       before.width > 0 &&
       before.height > 0 &&
       motionDuration(DURATION.emphasis) > 0;
-    const captured = animate && motion.capture();
+    const captured = animate && (motion.hasCapture || motion.capture());
     if (!captured) motion.cancel();
     restoreStyle();
     move(next);
@@ -98,6 +106,7 @@ export function reparentToInspector(
     const host = next ?? (origin instanceof HTMLElement ? origin : null);
     const hostRect = host?.getBoundingClientRect();
     node.ownerDocument.body.appendChild(node);
+    node.dataset.surfaceFlight = "true";
     Object.assign(node.style, {
       position: "fixed",
       inset: "auto",
@@ -143,6 +152,9 @@ export function reparentToInspector(
 
   update(target);
   return {
+    capture: () => {
+      motion.capture();
+    },
     update,
     destroy: () => {
       ++version;
