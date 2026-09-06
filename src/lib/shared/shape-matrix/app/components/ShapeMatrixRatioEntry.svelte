@@ -169,8 +169,10 @@
           type="button"
           aria-label={`Decrease ${axisLabel} hand cycles`}
           disabled={(handValue ?? 0) <= 0}
-          onclick={() => nudge("hand", -1)}>−</button
+          onclick={() => nudge("hand", -1)}
         >
+          <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        </button>
         <input
           type="text"
           role="spinbutton"
@@ -189,8 +191,10 @@
           type="button"
           aria-label={`Increase ${axisLabel} hand cycles`}
           disabled={(handValue ?? 0) >= THEORY_RATIO_MAX_PART}
-          onclick={() => nudge("hand", 1)}>+</button
+          onclick={() => nudge("hand", 1)}
         >
+          <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </button>
       </span>
     </div>
 
@@ -203,8 +207,10 @@
           type="button"
           aria-label={`Decrease ${axisLabel} prop rotations`}
           disabled={(propValue ?? 0) <= 0}
-          onclick={() => nudge("prop", -1)}>−</button
+          onclick={() => nudge("prop", -1)}
         >
+          <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        </button>
         <input
           type="text"
           role="spinbutton"
@@ -223,8 +229,10 @@
           type="button"
           aria-label={`Increase ${axisLabel} prop rotations`}
           disabled={(propValue ?? 0) >= THEORY_RATIO_MAX_PART}
-          onclick={() => nudge("prop", 1)}>+</button
+          onclick={() => nudge("prop", 1)}
         >
+          <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </button>
       </span>
     </div>
   </div>
@@ -250,6 +258,7 @@
   .ratio-side {
     --axis-color: var(--theme-accent, #f59e0b);
     --axis-base: var(--theme-accent, #f59e0b);
+    --value-size: 1.125rem;
     display: grid;
     grid-template-rows: auto auto;
     width: 20rem;
@@ -357,13 +366,15 @@
     font: inherit;
   }
 
+  /* The number reads in its axis colour, as the level stepper value does. */
   .part-stepper input {
     width: 100%;
     min-width: 0;
     padding: 0 0.35rem;
     border-right: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
     border-left: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
-    font-size: 1.125rem;
+    color: var(--axis-color);
+    font-size: var(--value-size);
     font-weight: 750;
     font-variant-numeric: tabular-nums;
     text-align: center;
@@ -373,14 +384,15 @@
     outline: 0;
   }
 
+  /* Chevrons, the nudge glyphs the level stepper and the value scroller
+     already use, at the same share of the value size. */
   .part-stepper button {
     display: grid;
     place-items: center;
     min-width: var(--min-touch-target, 44px);
     color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
     cursor: pointer;
-    font-size: 1.15rem;
-    font-weight: 700;
+    font-size: calc(var(--value-size) * 0.7);
     transition:
       color var(--duration-fast, 150ms) ease,
       background var(--duration-fast, 150ms) ease;
@@ -416,7 +428,7 @@
     height: var(--min-touch-target, 44px);
     place-items: center;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.55));
-    font-size: 1.125rem;
+    font-size: var(--value-size);
     font-weight: 750;
   }
 
@@ -454,6 +466,7 @@
   .ratio-side.corner {
     --nudge: clamp(1.1rem, 9.5cqi, 2.4rem);
     --field-height: clamp(1.5rem, 18cqi, 2.75rem);
+    --value-size: clamp(0.9rem, 11cqi, 1.4rem);
     position: relative;
     width: auto;
     grid-template-rows: auto;
@@ -488,11 +501,6 @@
     height: var(--field-height);
   }
 
-  .ratio-side.corner .part-stepper input,
-  .ratio-side.corner .colon {
-    font-size: clamp(0.9rem, 11cqi, 1.4rem);
-  }
-
   .ratio-side.corner .part-stepper input {
     padding-inline: 0;
     text-align: center;
@@ -504,7 +512,6 @@
     width: var(--nudge);
     min-width: 0;
     min-height: 0;
-    font-size: clamp(0.8rem, 9cqi, 1.15rem);
   }
 
   /* Below 10.5rem two nudge buttons per number leave no room for the
