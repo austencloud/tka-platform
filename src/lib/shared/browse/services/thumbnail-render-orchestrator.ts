@@ -61,6 +61,9 @@ export interface ThumbnailRequest {
 
   /** Cancels only this caller; shared same-key rendering continues for others. */
   signal?: AbortSignal;
+
+  /** Gallery previews may reuse a QR image, but must not prepare scan assets. */
+  qrPolicy?: "generate" | "cache-only";
 }
 export interface ThumbnailResult {
   /** URL to display (either cloud URL or blob URL), null if render failed */
@@ -340,6 +343,13 @@ export class ThumbnailRenderOrchestrator {
   }
 
   async getThumbnail(request: ThumbnailRequest): Promise<ThumbnailResult> {
+    return this.loadThumbnail(request);
+  }
+
+  private async loadThumbnail(
+    request: ThumbnailRequest,
+    continuedRequestId?: string
+  ): Promise<ThumbnailResult> {
     const key = keyDeriverModule.deriveKey(request.input);
     const cloudKey = this.buildCloudKey(key);
 
@@ -356,6 +366,7 @@ export class ThumbnailRenderOrchestrator {
 
     // Start metrics tracking
     const requestId =
+      continuedRequestId ??
       this.metrics?.startRequest(true, {
         cacheKeyHash: key.hash,
         sequenceId: request.sequence.id || key.inputs.sequenceId || null,
@@ -371,7 +382,8 @@ export class ThumbnailRenderOrchestrator {
         queueDepthAtEnqueue: null,
         activeAtEnqueue: null,
         workerEligible: null,
-      }) ?? "";
+      }) ??
+      "";
     const assertRequestActive = () => {
       if (!request.signal?.aborted) return;
       this.metrics?.cancelRequest(requestId);
@@ -472,6 +484,31 @@ export class ThumbnailRenderOrchestrator {
           return { url: cloudUrl, fromCache: true, key };
         }
       }
+    }
+
+    if (
+      request.qrPolicy === "cache-only" &&
+      key.inputs.visibility?.showQRCode
+    ) {
+      // Preparing a new QR verifies every scan cell in both themes. That can
+      // take tens of seconds per card and serialize an entire scrolled gallery.
+      // Load a separately keyed preview instead. Warmers
+      // and full-card callers still use the complete, scannable render path.
+      const previewInput = {
+        ...request.input,
+        visibility: { ...request.input.visibility, showQRCode: false },
+      };
+      this.metrics?.updateRequestContext(requestId, {
+        cacheKeyHash: keyDeriverModule.deriveKey(previewInput).hash,
+        qrRequested: false,
+      });
+      return this.loadThumbnail(
+        {
+          ...request,
+          input: previewInput,
+        },
+        requestId
+      );
     }
 
     // Step 5: Need to render - queue to throttle concurrent renders
