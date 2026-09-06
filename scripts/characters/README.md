@@ -95,6 +95,35 @@ reference. Meshy needs `MESHY_API_KEY` in the environment or in `.env`.
 The sidecar records paid-plan ownership from Meshy's help center. Never publish
 one of these models to the Meshy Community: that releases it under CC0.
 
+## Give a Meshy performer finger bones
+
+Meshy's rigger emits 24 bones and no fingers, so a Meshy performer cannot drive
+the runtime finger grip and holds a prop with a floating hand. Mixamo's
+auto-rigger does emit finger chains, so the route is Meshy for the mesh and
+Mixamo for the skeleton.
+
+Mixamo rejects the A-pose Meshy ships. Every attempt on the raw mesh — welded
+or not, FBX or OBJ, at all four skeleton LODs — returns `ERROR occured on rig:
+Unknown error while generating motion`. Bake a real T-pose first:
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background `
+  --python scripts\characters\meshy-tpose-bake.py -- `
+  D:\Downloads\meshy-performers\marcus.glb D:\Downloads\meshy-tpose marcus
+```
+
+The script poses the arms with the Meshy rig itself, bakes the pose into the
+mesh, drops the 24-bone skeleton, welds the ~2100 loose parts Meshy leaves into
+one shell, removes the stray icosphere, and writes an unrigged FBX and OBJ.
+
+Upload the FBX at https://www.mixamo.com, keep **Standard Skeleton (65)** so
+the fingers come through, place the chin, wrist, elbow, knee and groin markers,
+and download **FBX Binary**, **T-pose**. Write a provenance sidecar that cites
+both licences — Meshy paid-plan ownership for the mesh, Adobe Mixamo terms for
+the rig, with `rawSourceRedistribution` set to `forbidden` because of the
+Mixamo half — then run `characters:intake` on the download. The report should
+read `Fingers: complete 30-bone chains`.
+
 ## Texture size: how clear it stays when the camera moves in
 
 The optimizer caps every texture at 1024 px. That ceiling was measured at the
