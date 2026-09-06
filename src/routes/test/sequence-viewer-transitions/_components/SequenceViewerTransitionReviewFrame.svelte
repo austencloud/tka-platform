@@ -605,6 +605,22 @@
             button.getClientRects().length > 0
         ).length,
         stageIdentity: elementIdentity(".viewer-stage-container"),
+        sharedCanvasIdentity: elementIdentity(
+          "[data-shared-animation-surface][data-surface-handoff] canvas"
+        ),
+        sharedInspectorIdentity: elementIdentity(
+          "[data-shared-studio-inspector]"
+        ),
+        sharedCanvasInStudio: Boolean(
+          document.querySelector(
+            "[data-studio-animation-destination] [data-shared-animation-surface] canvas"
+          )
+        ),
+        sharedInspectorInStudio: Boolean(
+          document.querySelector(
+            "[data-studio-inspector-destination] [data-shared-studio-inspector]"
+          )
+        ),
       },
       phase: tracePhase,
       direction,
@@ -1339,6 +1355,7 @@
   >
     {#snippet children(ctx)}
       <SequenceViewerShell
+        reviewPostStudio
         {ctx}
         sequence={TRANSITION_REVIEW_SEQUENCE}
         analyticsSource="external_link"

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
+  import { sequencePositionToMediaTime } from "$lib/shared/media-composition/domain/sequence-time-map";
   import { onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
@@ -106,6 +109,7 @@
   }: Props = $props();
 
   const exportOptions = getExportOptionsState();
+  const sharedSurfaces = getViewerStudioSurfaces();
   const effectsConfig =
     getEffectsConfigContext() ??
     createEffectsConfigState(undefined, { persist: false });
@@ -504,7 +508,10 @@
     composition.missingRequiredRoles[0] ?? null
   );
   const canRender = $derived(
-    composition.isReady && previewRoot !== null && !exporting
+    composition.isReady &&
+      previewRoot !== null &&
+      !exporting &&
+      !sharedSurfaces?.moving
   );
 
   /**
@@ -517,8 +524,32 @@
    * stays paused.
    */
   let autoPlayStarted = $state(false);
+  let sharedEntryRevision = 0;
   $effect(() => {
-    if (autoPlayStarted || !active) return;
+    if (!active || !sharedSurfaces?.active || !composition.isReady) return;
+    const entry = sharedSurfaces.entry;
+    if (entry.revision === sharedEntryRevision) return;
+    sharedEntryRevision = entry.revision;
+    untrack(() => {
+      if (composition.tempoBpm !== null) composition.setTempoBpm(entry.bpm);
+      const map = composition.sequenceTimeMap;
+      if (map)
+        composition.seek(sequencePositionToMediaTime(map, entry.position));
+      if (composition.isPlaying !== entry.playing) composition.togglePlayback();
+    });
+  });
+  $effect(() =>
+    sharedSurfaces?.setControls(() => ({
+      playing: composition.isPlaying,
+      bpm: composition.tempoBpm ?? 60,
+      propType: selectedPropType,
+      toggle: composition.togglePlayback,
+      setBpm: composition.setTempoBpm,
+      setProp: setPropType,
+    }))
+  );
+  $effect(() => {
+    if (sharedSurfaces || autoPlayStarted || !active) return;
     if (!composition.isReady || composition.isPlaying) return;
     autoPlayStarted = true;
     composition.togglePlayback();
@@ -696,7 +727,9 @@
   let previousFrameTime: number | null = null;
 
   $effect(() => {
-    if (!active) composition.pause();
+    // The shell reads the outgoing play intent before releasing its loan.
+    // Pausing earlier makes effect ordering turn a playing return into a pause.
+    if (!active && !sharedSurfaces?.active) composition.pause();
   });
 
   function tick(now: number): void {

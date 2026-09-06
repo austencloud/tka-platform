@@ -1,5 +1,6 @@
 <script lang="ts">
   import AnimationPanel from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
   import type { ExportOptionsStateManager } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -24,6 +25,10 @@
   } = $props();
 
   const composition = getMediaCompositionContext();
+  const shared = getViewerStudioSurfaces();
+  function inspectorDestination(node: HTMLElement) {
+    return { destroy: shared?.requestInspector(node) };
+  }
   const selectedBinding = $derived(composition.selectedBinding);
 
   // The tunnel and mandala controls are the sequence viewer's, unchanged — the
@@ -41,22 +46,28 @@
        the clock they belong to and visible from every inspector page. Showing
        either here as well put one setting in two places. `playbackMode` still
        comes in so the panel's own copy reads the live value. -->
-  <div class="animation-settings">
-    <AnimationPanel
-      layout="sidebar"
-      isExporting={false}
-      isPlaying={composition.isPlaying}
-      bpm={composition.tempoBpm ?? 60}
-      onPlaybackToggle={composition.togglePlayback}
-      onBpmChange={composition.tempoBpm === null
-        ? undefined
-        : composition.setTempoBpm}
-      showTempoControls={false}
-      playbackMode={composition.animationPlaybackMode}
-      showEffectsPlayback={false}
-      {selectedPropType}
-      {onPropChange}
-    />
+  <div
+    class="animation-settings"
+    use:inspectorDestination
+    data-studio-inspector-destination
+  >
+    {#if !shared?.inspectorAvailable}
+      <AnimationPanel
+        layout="sidebar"
+        isExporting={false}
+        isPlaying={composition.isPlaying}
+        bpm={composition.tempoBpm ?? 60}
+        onPlaybackToggle={composition.togglePlayback}
+        onBpmChange={composition.tempoBpm === null
+          ? undefined
+          : composition.setTempoBpm}
+        showTempoControls={false}
+        playbackMode={composition.animationPlaybackMode}
+        showEffectsPlayback={false}
+        {selectedPropType}
+        {onPropChange}
+      />
+    {/if}
   </div>
 {:else if selectedBinding?.renderMode === "choreo-card"}
   <div class="card-settings">

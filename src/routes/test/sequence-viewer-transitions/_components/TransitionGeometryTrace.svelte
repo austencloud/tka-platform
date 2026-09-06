@@ -328,6 +328,35 @@
     {#if isWorkspaceReplayCommand(trace.command)}
       <span>Mode path: {summary.modePath.join(" → ") || "n/a"}</span>
       <span>Mode commit: {modeCommitSummary || "n/a"}</span>
+      {#if trace.command.includes("studio")}
+        {#each ["sharedCanvasIdentity", "sharedInspectorIdentity"] as key}
+          {@const identities = new Set(
+            workspaceSamples
+              .map(
+                (sample) =>
+                  sample[
+                    key as "sharedCanvasIdentity" | "sharedInspectorIdentity"
+                  ]
+              )
+              .filter(Boolean)
+          )}
+          <span data-problem={identities.size !== 1}>
+            {key === "sharedCanvasIdentity"
+              ? "Live canvas"
+              : "Shared inspector"} identities: {identities.size}
+          </span>
+        {/each}
+        <span
+          >Canvas docked in phone: {workspaceSamples.filter(
+            (sample) => sample.sharedCanvasInStudio
+          ).length} frames</span
+        >
+        <span
+          >Inspector docked in Studio: {workspaceSamples.filter(
+            (sample) => sample.sharedInspectorInStudio
+          ).length} frames</span
+        >
+      {/if}
       <span data-problem={workspaceSamples.length < 2}
         >Measured frames: {workspaceSamples.length}</span
       >

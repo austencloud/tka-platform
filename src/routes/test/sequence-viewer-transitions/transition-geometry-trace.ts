@@ -61,6 +61,10 @@ export interface TransitionGeometrySample {
     practiceHeight: number;
     selectedButtons: number;
     stageIdentity: number;
+    sharedCanvasIdentity?: number;
+    sharedInspectorIdentity?: number;
+    sharedCanvasInStudio?: boolean;
+    sharedInspectorInStudio?: boolean;
   };
   time: number;
   phase: TransitionTracePhase;

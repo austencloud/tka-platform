@@ -88,9 +88,9 @@
    */
   const slotEntries = $derived(
     SLOTS.map((slot) => {
-      const roleKey = composition.roleForRegion(slot.id) as
-        | PostStudioRoleKey
-        | null;
+      const roleKey = composition.roleForRegion(
+        slot.id
+      ) as PostStudioRoleKey | null;
       const binding = roleKey ? composition.bindingForRole(roleKey) : null;
       return {
         ...slot,
@@ -128,7 +128,7 @@
       value: "instagram",
       label: "Add music later",
       short: "Silent",
-      icon: "fa-brands fa-instagram",
+      icon: "fas fa-volume-xmark",
       hint: "Exports silently for Instagram's music picker.",
     },
   ];
@@ -171,6 +171,7 @@
           placement="bottom"
           align="left"
           triggerClass="slot-trigger"
+          triggerPresentation="labelled"
           ariaLabel={`${slot.position} slot: ${slot.label}. Change or remove.`}
         >
           {#snippet trigger()}
@@ -252,6 +253,7 @@
       placement="bottom"
       align="right"
       triggerClass="slot-trigger"
+      triggerPresentation="labelled"
       ariaLabel={`Post sound: ${sound.label}. Change.`}
     >
       {#snippet trigger()}
@@ -328,7 +330,7 @@
   }
 
   .slot-picker :global(.slot-trigger),
-    .sound-picker :global(.slot-trigger) {
+  .sound-picker :global(.slot-trigger) {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -349,7 +351,11 @@
 
   .slot-picker.selected :global(.slot-trigger) {
     border-color: var(--theme-accent);
-    background: color-mix(in srgb, var(--theme-accent) 20%, var(--theme-card-bg));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 20%,
+      var(--theme-card-bg)
+    );
   }
 
   .slot-glyph {
@@ -413,7 +419,11 @@
      otherwise win on source order and paint this amber. */
   .guide-toggle.mirror-toggle.active {
     border-color: var(--theme-accent);
-    background: color-mix(in srgb, var(--theme-accent) 20%, var(--theme-card-bg));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 20%,
+      var(--theme-card-bg)
+    );
     color: var(--theme-text);
   }
 
@@ -672,6 +682,22 @@
   }
 
   @container post-studio (max-width: 70rem) {
+    .slot-position {
+      display: none;
+    }
+
+    .slot-label {
+      min-width: 0;
+    }
+
+    .slot-picker {
+      min-width: 0;
+    }
+
+    .render-button {
+      white-space: nowrap;
+    }
+
     .actionbar {
       gap: var(--spacing-sm);
     }
