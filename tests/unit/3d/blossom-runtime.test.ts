@@ -19,7 +19,7 @@ describe("Blossom authored environment runtime", () => {
       expect(transform.position).toEqual([0, -1.2, 0]);
       expect(transform.scale).toEqual([1, 1, 1]);
       expect(transform.atmosphereScale).toBe(1);
-      expect(transform.stageTopY).toBeCloseTo(-0.85, 10);
+      expect(transform.stageTopY).toBeCloseTo(-0.65, 10);
     });
 
     it("widens only the atmosphere for an asymmetric formation", () => {
@@ -45,7 +45,7 @@ describe("Blossom authored environment runtime", () => {
 
       expect(transform.position).toEqual([0, -0.4, -3.75]);
       expect(transform.atmosphereScale).toBe(1);
-      expect(transform.stageTopY).toBeCloseTo(-0.05, 10);
+      expect(transform.stageTopY).toBeCloseTo(0.15, 10);
     });
 
     it("is deterministic for identical stage inputs", () => {

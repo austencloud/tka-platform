@@ -411,7 +411,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
               <div class="ori-row">
                 <span class="ori-color-label ori-blue">Left</span>
                 <PropOrientationControl
-                  color="blue"
+                  hand="left"
                   orientation={localLeftOri}
                   allowedOrientations={availableStartOrientations}
                   onOrientationChange={handleLeftOriChange}
@@ -420,7 +420,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
               <div class="ori-row">
                 <span class="ori-color-label ori-red">Right</span>
                 <PropOrientationControl
-                  color="red"
+                  hand="right"
                   orientation={localRightOri}
                   allowedOrientations={availableStartOrientations}
                   onOrientationChange={handleRightOriChange}

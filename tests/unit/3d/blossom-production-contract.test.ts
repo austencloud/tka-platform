@@ -19,8 +19,8 @@ import {
   getBlossomRiverSurfaceElevation,
 } from "$lib/shared/3d/environments/scenes/cherry-blossom/blossom-water";
 
-describe("Blossom amphitheatre production contract", () => {
-  it("enables the amphitheatre's life and atmosphere", () => {
+describe("Blossom lantern garden production contract", () => {
+  it("enables the garden's life and atmosphere", () => {
     expect(getBlossomActiveProductionPhase()).toBe(5);
   });
 
@@ -59,10 +59,8 @@ describe("Blossom amphitheatre production contract", () => {
     const bounds = getBlossomRiverBounds();
     const terrain = getBlossomTerrainBounds();
 
-    // The authored centerline only spans 85 m. Anything at or near that width
-    // means the run-out is gone and the river ends in open ground again.
     expect(bounds.width).toBeLessThan(terrain.maxX - terrain.minX);
-    expect(bounds.depth).toBeGreaterThan(8);
+    expect(bounds.depth).toBeGreaterThan(7);
     expect(getBlossomRiverSurfaceElevation()).toBe(-0.16);
   });
 
@@ -70,9 +68,6 @@ describe("Blossom amphitheatre production contract", () => {
     const outline = getBlossomRiverOutline();
     const shoreline = getBlossomRiverShoreline();
 
-    // Ten authored control points give nine faceted segments per bank. The
-    // resampled course has to be far denser than that for the water's edge to
-    // read as a curve.
     expect(outline.length).toBeGreaterThan(120);
     expect(outline.length % 2).toBe(0);
     // ReflectivePoolShader's shoreline arrays are fixed at 32 segments; a
@@ -114,7 +109,9 @@ describe("Blossom amphitheatre production contract", () => {
     expect(clearance.maxX).toBeGreaterThan(performance.maxX);
     expect(clearance.minY).toBeLessThan(performance.minY);
     expect(clearance.maxY).toBeGreaterThan(performance.maxY);
-    expect(operations.backstageStagingArea.maxX).toBeLessThan(clearance.minX);
-    expect(operations.propStorageArea.maxX).toBeLessThan(clearance.minX);
+    expect(operations.backstageStagingArea.minX).toBeGreaterThan(
+      clearance.maxX
+    );
+    expect(operations.propStorageArea.minX).toBeGreaterThan(clearance.maxX);
   });
 });

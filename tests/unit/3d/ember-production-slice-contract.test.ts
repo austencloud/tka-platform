@@ -53,7 +53,9 @@ interface EmberSliceGltf {
 }
 
 // Keep the historical rollback asset's contracts distinct from the R5 world.
-const optimizedPath = resolve("static/models/ember/ember-production-slice-r10.glb");
+const optimizedPath = resolve(
+  "static/models/ember/ember-production-slice-r10.glb"
+);
 const integratedPath = resolve("static/models/ember/ember-integrated-room.glb");
 const reportPath = resolve(
   "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-report.json"
@@ -439,7 +441,7 @@ describe("Ember integrated-room contracts", () => {
     expect(report).toContain('"generatedButtressRemoved": true');
   });
 
-  it("keeps Ember's reversed heading scoped away from every other hero scene", () => {
+  it("keeps reversed headings scoped to Ember and the Blossom garden", () => {
     const workbenchSource = readFileSync(
       resolve("src/routes/test/viewer-3d/Viewer3DWorkbench.svelte"),
       "utf8"
@@ -456,7 +458,11 @@ describe("Ember integrated-room contracts", () => {
       -2.5
     );
     for (const environment of SCENE_ENVIRONMENTS) {
-      if (environment.id === SceneEnvironmentId.EMBER) continue;
+      if (
+        environment.id === SceneEnvironmentId.EMBER ||
+        environment.id === SceneEnvironmentId.BLOSSOM
+      )
+        continue;
       expect(getViewerFrontStageFacingAngle(environment.id)).toBe(
         DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE
       );
@@ -533,9 +539,9 @@ describe("Ember integrated-room contracts", () => {
         }
         // Anything else that ships in the slice must be textured. The pale
         // upcountry masses were failing exactly here.
-        expect(
-          `${role} -> ${isEmberGroundDetailSurface(role, material)}`
-        ).toBe(`${role} -> true`);
+        expect(`${role} -> ${isEmberGroundDetailSurface(role, material)}`).toBe(
+          `${role} -> true`
+        );
       }
     }
 
