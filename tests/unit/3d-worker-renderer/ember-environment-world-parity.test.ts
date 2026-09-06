@@ -95,7 +95,7 @@ function createWorld(bundle = assets()): {
 }
 
 describe("Ember renderer-neutral production world", () => {
-  it("preserves the completed lava revision and keeps the cooled plate above its footing", async () => {
+  it("preserves the completed foreground and keeps the cooled plate above its footing", async () => {
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     const load = async (path: string) => {
       const bytes = readFileSync(path);
@@ -106,23 +106,20 @@ describe("Ember renderer-neutral production world", () => {
       return gltf.scene;
     };
     const [baseline, current] = await Promise.all([
-      load("static/models/ember/ember-mountain-tributaries-r2.glb"),
+      load("static/models/ember/ember-geology-stage-r1.glb"),
       load("static/models/ember/ember-production-slice.glb"),
     ]);
     let channels = 0;
     baseline.traverse((node) => {
       const before = node as Mesh;
+      if (!before.isMesh) return;
       if (
-        !before.isMesh ||
-        !(
-          before.name === "EMBER_LavaSimulatorDeposit" ||
-          before.userData.ember_flow_surface
-        )
+        before.name === "EMBER_LavaSimulatorDeposit" ||
+        before.userData.ember_flow_surface
       )
-        return;
-      channels++;
+        channels++;
       const after = current.getObjectByName(before.name) as Mesh;
-      for (const attribute of ["position", "uv", "color"]) {
+      for (const attribute of Object.keys(before.geometry.attributes)) {
         const a = after.geometry.getAttribute(attribute).array;
         const b = before.geometry.getAttribute(attribute).array;
         expect(
@@ -137,6 +134,21 @@ describe("Ember renderer-neutral production world", () => {
       );
     });
     expect(channels).toBe(6);
+    let backdropTriangles = 0;
+    let backdropMeshes = 0;
+    current.traverse((node) => {
+      if (node.userData.ember_backdrop !== true) return;
+      const mesh = node as Mesh;
+      backdropMeshes++;
+      backdropTriangles +=
+        (mesh.geometry.index?.count ??
+          mesh.geometry.getAttribute("position").count) / 3;
+      expect(node.userData.tka_camera_collision).toBe(false);
+      const ray = new Raycaster(new Vector3(0, 500, 0), new Vector3(0, -1, 0));
+      expect(ray.intersectObject(mesh)).toHaveLength(0);
+    });
+    expect(backdropMeshes).toBe(2);
+    expect(backdropTriangles).toBeLessThan(11000);
     const stage = current.getObjectByName(
       "EMBER_CooledPerformancePlate"
     ) as Mesh;
@@ -194,6 +206,17 @@ describe("Ember renderer-neutral production world", () => {
       bundle
     );
     world.root.updateMatrixWorld(true);
+    world.root.traverse((node) => {
+      if (node.userData.ember_backdrop !== true) return;
+      const mesh = node as Mesh;
+      expect(mesh.castShadow).toBe(false);
+      expect(mesh.receiveShadow).toBe(false);
+      expect((mesh.material as MeshStandardMaterial).fog).toBe(false);
+      expect(Array.isArray(mesh.material)).toBe(false);
+      expect((mesh.material as MeshStandardMaterial).type).toBe(
+        "MeshBasicMaterial"
+      );
+    });
     expect(
       (world.root.getObjectByName("EMBER_CooledPerformancePlate") as Mesh)
         .castShadow

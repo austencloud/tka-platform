@@ -555,7 +555,7 @@ itself is pinned by an assertion so the claim cannot go stale silently.
    (`TerminalKey`, armed/braking/landed/settled, `terminalEntryBlend`, contact
    curves), but the only shipped assets are `walk-stop-left` and
    `walk-stop-right`, so **stopping from a run plays a walk stop**. Author a run
-   stop through `scripts/build-terminal-stops.py`; this is an asset gap, not a
+   stop through `static/animations/terminal-stops/build-terminal-stops.py`; this is an asset gap, not a
    code gap. Also still open: distance-matched profiles for terminal foot,
    approach speed, remaining distance, and desired facing, and proof that
    `targetFacing` executes.

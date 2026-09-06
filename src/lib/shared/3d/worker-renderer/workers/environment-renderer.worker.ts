@@ -374,6 +374,10 @@ async function prepareScene(sceneRequest: SceneRequest): Promise<boolean> {
   if (!renderer || !camera) return false;
   requestId = sceneRequest.requestId;
   environment = sceneRequest.environment;
+  // Ember's simple valley extends beyond the close performer environment.
+  // Reset on every transition so other scenes keep their existing depth range.
+  camera.far = environment === "ember" ? 2000 : 500;
+  camera.updateProjectionMatrix();
   resetProgressReporter(sceneRequest.requestId);
   applyQualityTier(qualityTier);
 

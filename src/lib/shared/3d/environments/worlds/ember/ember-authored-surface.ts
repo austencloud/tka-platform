@@ -8,6 +8,7 @@ import {
   InstancedMesh,
   Matrix4,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   Quaternion,
   Vector3,
@@ -99,6 +100,20 @@ function configureProductionSlice(
     asset.traverse((child) => {
       const mesh = child as Mesh;
       if (!mesh.isMesh) return;
+      if (child.userData.ember_backdrop === true) {
+        const source = mesh.material as MeshStandardMaterial;
+        // Distant ridges carry baked light and haze. The near-field fog would
+        // erase them, and dynamic lights/shadows buy no useful detail here.
+        mesh.material = new MeshBasicMaterial({
+          name: source.name,
+          vertexColors: true,
+          fog: false,
+        });
+        source.dispose();
+        mesh.castShadow = false;
+        mesh.receiveShadow = false;
+        return;
+      }
       mesh.receiveShadow = true;
       // Thin surface skins receive the mountain's shadows; casting their own
       // makes the cooled plate look like a floating ledge at grazing angles.
