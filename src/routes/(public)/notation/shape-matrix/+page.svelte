@@ -13,7 +13,7 @@
     ORIGINAL_SHAPE_MATRIX_NAME,
     ORIGINAL_SHAPE_MATRIX_URL,
     ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
-    SHAPE_ENGINE_SHORT_NAME,
+    KINETIC_SHAPE_ENGINE_LEGACY_NAME,
     SHAPE_MATRIX_EXPLORER_LEGACY_NAME,
   } from "$lib/shared/shape-matrix/app/shape-engine-identity";
 
@@ -57,7 +57,7 @@
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "${KINETIC_SHAPE_ENGINE_NAME}",
-    "alternateName": ["${SHAPE_ENGINE_SHORT_NAME}", "${SHAPE_MATRIX_EXPLORER_LEGACY_NAME}"],
+    "alternateName": ["${KINETIC_SHAPE_ENGINE_LEGACY_NAME}", "${SHAPE_MATRIX_EXPLORER_LEGACY_NAME}"],
     "url": "${URL}",
     "description": "${DESCRIPTION}",
     "applicationCategory": "EducationalApplication",

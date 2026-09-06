@@ -1,6 +1,6 @@
-# Kinetic Shape Engine
+# Shape Engine
 
-Shared implementation for Kinetic Shape Engine: the flower axis, level and
+Shared implementation for Shape Engine: the flower axis, level and
 ratio matrices, exact-realization drill, and cell rendering. Internal
 `ShapeMatrix*` names remain because the matrix is still the behavior they own.
 The implementation is consumed by the `/notation/shape-matrix` public
