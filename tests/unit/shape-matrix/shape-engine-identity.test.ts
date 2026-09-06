@@ -16,9 +16,9 @@ function read(path: string): string {
   return readFileSync(resolve(path), "utf8");
 }
 
-describe("Kinetic Shape Engine identity", () => {
+describe("Shape Engine identity", () => {
   it("keeps the product name distinct from its matrix surfaces and legacy name", () => {
-    expect(KINETIC_SHAPE_ENGINE_NAME).toBe("Kinetic Shape Engine");
+    expect(KINETIC_SHAPE_ENGINE_NAME).toBe("Shape Engine");
     expect(KINETIC_SHAPE_ENGINE_AUTHOR).toBe("Austen Cloud");
     expect(SHAPE_ENGINE_SHORT_NAME).toBe("Shape Engine");
     expect(SHAPE_MATRIX_EXPLORER_LEGACY_NAME).toBe("Shape Matrix Explorer");
@@ -81,7 +81,7 @@ describe("Kinetic Shape Engine identity", () => {
     const catalog = read("src/lib/shared/notation/notation-catalog.ts");
 
     expect(header).toContain('label: "Shape Engine"');
-    expect(catalog).toContain('label: "Open Kinetic Shape Engine"');
+    expect(catalog).toContain('label: "Shape Engine"');
     expect(catalog).toContain('name: "144 Shape Matrix"');
   });
 });
