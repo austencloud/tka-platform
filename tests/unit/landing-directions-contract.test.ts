@@ -41,7 +41,7 @@ describe("landing direction mockups", () => {
       "/atlas",
       "/about",
       "/shop",
-      "/notation/shape-matrix",
+      "/shape-engine",
     ]) {
       expect(hasHref(href)).toBe(true);
     }
@@ -53,7 +53,7 @@ describe("landing direction mockups", () => {
     for (const source of [frontPage, readingIndex]) {
       expect(source).toContain('label: "Read"');
       expect(source).toContain('label: "Explore"');
-      expect(source).toContain('href: "/notation/shape-matrix"');
+      expect(source).toContain('href: "/shape-engine"');
     }
   });
 });

@@ -29,7 +29,7 @@ describe("Shape Matrix app boundary", () => {
 
   it("keeps URL persistence in the public route host", () => {
     const pageSource = readFileSync(
-      resolve("src/routes/(public)/notation/shape-matrix/+page.svelte"),
+      resolve("src/routes/(public)/shape-engine/+page.svelte"),
       "utf8"
     );
 

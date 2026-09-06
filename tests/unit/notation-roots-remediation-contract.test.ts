@@ -32,7 +32,7 @@ const screenshotOrchestrator = readSource(
 );
 const screenshotDevices = readSource("tests/screenshots/devices.ts");
 const shapeMatrixDestination = readSource(
-  "src/routes/(public)/notation/shape-matrix/+page.svelte"
+  "src/routes/(public)/shape-engine/+page.svelte"
 );
 const shapeMatrixApp = readSource(
   "src/lib/shared/shape-matrix/app/ShapeMatrixApp.svelte"
@@ -122,7 +122,7 @@ describe("notation catalog", () => {
     expect(markup).not.toContain("—");
   });
 
-  it("keeps the interactive Shape Matrix at the /notation/shape-matrix destination", () => {
+  it("keeps the interactive Shape Engine at the /shape-engine destination", () => {
     expect(shapeMatrixDestination).toContain(
       "$lib/shared/shape-matrix/app/ShapeMatrixApp.svelte"
     );
@@ -214,7 +214,7 @@ describe("notation catalog", () => {
     );
     expect(
       NOTATION_CATALOG.filter((entry) =>
-        entry.applications?.some((app) => app.href === "/notation/shape-matrix")
+        entry.applications?.some((app) => app.href === "/shape-engine")
       ).map((entry) => entry.id)
     ).toEqual(["tka"]);
     expect(

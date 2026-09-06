@@ -324,7 +324,7 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
       {
         role: "tool",
         label: "Shape Engine",
-        href: "/notation/shape-matrix",
+        href: "/shape-engine",
         description:
           "An exploration tool within Flow Arts Composer that can also be opened on its own. It brings together VTG, TKA, timing, and direction. Its matrix extends Lorq Nichols’ pairing approach; it is Austen Cloud’s work.",
       },
