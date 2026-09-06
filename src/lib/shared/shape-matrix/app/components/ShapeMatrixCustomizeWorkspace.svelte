@@ -211,4 +211,11 @@
     border-left: 0;
     background: transparent;
   }
+
+  /* The sidebar floats a short page mid-column. On a pane this tall that
+     strands the page far below its rail item and the header; the screen
+     reads top-down, so every page starts under the header. */
+  .workspace-body :global(.panel-center-inner) {
+    margin-block: 0 auto;
+  }
 </style>
