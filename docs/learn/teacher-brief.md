@@ -42,15 +42,13 @@ roles are not required dependencies and are not active pilot agents.
   current simultaneous notation-and-motion contract when both are informative.
 - **Keep editing and progression distinguishable.** The [September 5 Hand
   Positions approval](copy-reviews/hand-positions.md#approved-clarity-revision-2026-09-05)
-  records feedback about hand identity, editing, the next action, and tall-pane
-  balance. Reuse the decision's rationale, not its wording in another concept.
-  Copy approval there is separate from final visual and learning acceptance.
-  In a later September 5 hands-on correction, Austen liked the new progression
-  but rejected the button clutter, repeated identity/stage labels, and buried
-  prose-only error. Show mistakes beside the artifact, demonstrate the target
-  with canonical pictographs, and make retry immediately actionable. Reuse
-  workspace action glyphs; use visual progress without redundant numeric copy.
-  This requested correction is not final acceptance of its implementation.
+  records hand identity, editing, next-action, and tall-pane feedback. Later
+  September 5 corrections reject button clutter and buried prose-only errors:
+  demonstrate the target beside the artifact and make retry actionable. Use
+  canonical action glyphs. Progress must not resemble reference selection.
+  Dragging must visibly acknowledge pickup, show destinations and the landing
+  target, and confirm release or cancellation. See the [UX audit](hand-positions-ux-audit.md#drag-feedback-and-unambiguous-completion)
+  for scope and evidence. These are requested gates, not final acceptance.
 - **Carry the learner forward.** The [Grid copy review](copy-reviews/grid.md)
   records the approved continuation into Hand Positions. Connect through the
   actual prerequisite and route owners instead of inventing a second path.

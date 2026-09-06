@@ -530,7 +530,7 @@
               </div>
             </div>
           {/if}
-          {#if !exploring}
+          {#if !exploring && !workshop.canFinish}
             <progress
               class="practice-progress"
               aria-label="Positions built"

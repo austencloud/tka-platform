@@ -2,6 +2,34 @@
 
 Scope: the shipped hand-positions experience, not a repository-wide code-quality grade.
 
+## Drag feedback and unambiguous completion
+
+Austen's next September 5 review found insufficient visual response during
+dragging and mistook the completed progress line below Beta for selection.
+This revision remains pending hands-on acceptance.
+
+The existing PropPlacementGrid location-drag path now shows a hand-colored
+pickup ring and shadow, legal destinations, an origin marker, and a contrasting
+nearest-target ring linked to the moving hand. The canonical hand stays attached
+to the pointer. Preview and commit share one nearest-point decision; release
+commits once and briefly marks the landing. Escape, pointer cancellation, and
+out-of-board release restore the original construction without adding history.
+Reduced motion retains immediate hand/target feedback and suppresses the landing
+animation. No new gesture owner, renderer, toolbar, or lesson layout is added;
+orientation aiming remains separate. Completed practice no longer renders its
+progress bar beneath the reference choices.
+
+Browser checks on the task preview cover both hand colors, overlapping Beta
+hands, pointer tracking, target preview, landing fade, Undo, Escape/outside
+cancellation, all six rounds, and completion clear/rebuild. Seven CSS viewport
+tiers from 375×667 through 3840×2160 plus the reported 1660×1540 pane show no
+horizontal overflow. Phone and tall-pane held-drag states were inspected.
+Reduced-motion inspection caught a global animation override; the landing
+decoration is now explicitly hidden in that mode while static drag cues remain.
+Native touch injection is unavailable; physical touch remains unverified.
+The 32 focused placement/workshop tests pass using the repository Vitest config,
+including preview/commit agreement, target-change haptics, and cancellation.
+
 ## Completion playground and direct dragging
 
 Austen accepted the lower-control-load revision, then found that clearing and
