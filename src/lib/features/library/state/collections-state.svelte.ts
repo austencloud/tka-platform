@@ -1,4 +1,7 @@
-import { authState, getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
+import {
+  authState,
+  getEffectiveUserId,
+} from "$lib/shared/auth/state/auth-state.svelte";
 import { isPreviewReadOnly } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
@@ -51,6 +54,7 @@ class CollectionsState {
 
   private unsubscribe: (() => void) | null = null;
   private startedFor: string | null = null;
+  private guestSaveNudged = false;
 
   /**
    * Idempotently begin (or restart for a new user) the live subscription.
@@ -79,7 +83,10 @@ class CollectionsState {
     // subscription reports it the moment it's created. Fire-and-forget.
     if (!isPreviewReadOnly() && uid === authState.user?.uid) {
       ensureSystemCollections().catch((err) =>
-        console.error("[collections-state] ensureSystemCollections failed:", err)
+        console.error(
+          "[collections-state] ensureSystemCollections failed:",
+          err
+        )
       );
     }
 
@@ -95,6 +102,7 @@ class CollectionsState {
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.startedFor = null;
+    this.guestSaveNudged = false;
     this.collections = [];
     this.loading = false;
   }
@@ -161,6 +169,24 @@ class CollectionsState {
         });
       } else {
         await addSequenceToCollection(collectionId, sequenceId);
+        if (
+          !isFullAccountUser(
+            authState.isAuthenticated,
+            authState.isAnonymous
+          ) &&
+          !this.guestSaveNudged
+        ) {
+          this.guestSaveNudged = true;
+          showToast({
+            message: `Added to "${c.name}". Create a free account to open your collections on any device.`,
+            type: "success",
+            duration: 8000,
+            action: {
+              label: "Create account",
+              onClick: () => authDrawerState.show("signup"),
+            },
+          });
+        }
       }
     } catch {
       // manager already toasted; the subscription stays authoritative.
@@ -545,5 +571,7 @@ function membersOf(
     spec.source === "my-library" && uid
       ? candidates.filter((seq) => seq.ownerId === uid)
       : candidates;
-  return new Set(deriveSpecMembers(pool as SequenceData[], spec).map((seq) => seq.id));
+  return new Set(
+    deriveSpecMembers(pool as SequenceData[], spec).map((seq) => seq.id)
+  );
 }
