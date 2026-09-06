@@ -30,13 +30,13 @@
   import { createPositionWorkshopState } from "./positions-experience-state.svelte";
   import {
     POSITION_CHALLENGES,
-    POSITION_DEFINITIONS,
     POSITION_KINDS,
     positionKindFor,
     positionExample,
     positionPreview,
     positionCorrection,
     transformPosition,
+    changePositionGrid,
   } from "./hand-position-lesson";
 
   let {
@@ -71,16 +71,21 @@
       ? positionExample("beta", GridMode.BOX)
       : { left: null, right: null }
   );
-  let placement = $state<PropPlacementChange>({
-    leftLocation: null,
-    rightLocation: null,
-    activeHand: HandSide.LEFT,
-    complete: false,
-    canUndo: false,
-  });
+  let placement = $state<PropPlacementChange>(
+    untrack(() => ({
+      leftLocation: preset.left,
+      rightLocation: preset.right,
+      activeHand: preset.left
+        ? preset.right
+          ? null
+          : HandSide.RIGHT
+        : HandSide.LEFT,
+      complete: preset.left !== null && preset.right !== null,
+      canUndo: false,
+    }))
+  );
   let epoch = $state(0);
   let showReference = $state<boolean | null>(null);
-  let actionNote = $state("");
   let boardWidth = $state(300);
   let boardHeight = $state(320);
   let experienceElement: HTMLDivElement;
@@ -116,7 +121,6 @@
       workshop.phase,
       showReference,
       built,
-      actionNote,
     ];
     if (hasRendered) {
       untrack(() => stageMotion.capture());
@@ -135,10 +139,11 @@
           ? "Tap a point for your left hand."
           : placement.activeHand === HandSide.RIGHT
             ? "Now place your right hand."
-            : "Choose a hand to move, then tap another point."
+            : "Drag a hand, or tap it and choose a point."
   );
 
   const exploring = $derived(workshop.phase === "explore");
+  const freePlay = $derived(exploring || workshop.canFinish);
   const referencesVisible = $derived(
     exploring ||
       workshop.canFinish ||
@@ -160,15 +165,6 @@
           ? `${POSITION_TYPE_INFO[workshop.challenge!.kind].label} ✓`
           : `Build ${POSITION_TYPE_INFO[workshop.challenge!.kind].label}`
   );
-  const feedback = $derived.by(() => {
-    if (actionNote) return actionNote;
-    if (workshop.canFinish && !exploring)
-      return "Alpha, Beta, and Gamma on both grids.";
-    if (exploring && built) return POSITION_DEFINITIONS[built];
-    if (!exploring && workshop.challenge?.guided)
-      return POSITION_DEFINITIONS[workshop.challenge.kind];
-    return "Tap two grid points. You can use the same point twice.";
-  });
 
   function changed(change: PropPlacementChange) {
     const moved =
@@ -193,7 +189,6 @@
       });
     }
     if (!moved) return;
-    actionNote = "";
     const kind = positionKindFor(change.leftLocation, change.rightLocation);
     if (exploring && kind) workshop.discover(kind);
   }
@@ -209,37 +204,33 @@
     };
     epoch++;
     workshop.edited();
-    actionNote = "";
   }
 
   function study(kind: PositionType) {
     const example = positionExample(kind, gridMode);
     loadPair(example.left, example.right);
-    actionNote = POSITION_DEFINITIONS[kind];
   }
 
   function transform(action: "rotate" | "mirror" | "swap") {
     if (!placement.leftLocation || !placement.rightLocation || !built) return;
-    const before = built;
     const result = transformPosition(
       placement.leftLocation,
       placement.rightLocation,
       action
     );
-    const unchanged =
-      result.left === placement.leftLocation &&
-      result.right === placement.rightLocation;
     loadPair(result.left, result.right);
-    actionNote = unchanged
-      ? `The hands are already in those locations. Still ${POSITION_TYPE_INFO[before].label}.`
-      : `Still ${POSITION_TYPE_INFO[before].label}. ${POSITION_DEFINITIONS[before]}`;
   }
 
   function changeGrid(mode: GridMode) {
     if (mode === gridMode) return;
+    const pair = changePositionGrid(
+      placement.leftLocation,
+      placement.rightLocation,
+      gridMode,
+      mode
+    );
     gridMode = mode;
-    if (built) study(built);
-    else loadPair(null, null);
+    loadPair(pair.left, pair.right);
   }
 
   async function practice() {
@@ -253,7 +244,6 @@
 
   function explore() {
     workshop.explore();
-    actionNote = "";
   }
 
   async function next() {
@@ -293,9 +283,7 @@
       onAction={workshop.canFinish ? finish : practice}
     />
     {#if workshop.canFinish}
-      <PanelButton onclick={exploring ? practice : explore}
-        >{exploring ? "Practice again" : "Keep exploring"}</PanelButton
-      >
+      <PanelButton onclick={practice}>Practice again</PanelButton>
     {/if}
   </nav>
 {/snippet}
@@ -319,6 +307,37 @@
     {/snippet}
 
     {#snippet artifact()}
+      {#if freePlay}
+        <div class="board-toolbar" data-position-stage="board-tools">
+          <div class="live-position" aria-live="polite" aria-atomic="true">
+            <Crossfade key={built}>
+              <div class="position-name">
+                {#if built}
+                  <span aria-hidden="true"
+                    ><TKAWordGlyph
+                      word={POSITION_TYPE_INFO[built].symbol}
+                      height={28}
+                      darkMode
+                    /></span
+                  >
+                  <strong>{POSITION_TYPE_INFO[built].label}</strong>
+                {:else}<strong>Your position</strong>{/if}
+              </div>
+            </Crossfade>
+          </div>
+          <SegmentedControl
+            options={[
+              { value: GridMode.DIAMOND, label: "Diamond" },
+              { value: GridMode.BOX, label: "Box" },
+            ]}
+            value={gridMode}
+            onchange={changeGrid}
+            semantics="radiogroup"
+            ariaLabel="Grid mode"
+            color="accent"
+          />
+        </div>
+      {/if}
       <div
         class="placement-instructions"
         class:incorrect
@@ -384,6 +403,7 @@
                   2
               )}
               editAfterCompletion
+              dragLocations
               renderTray={false}
               onChange={changed}
             />
@@ -429,48 +449,6 @@
         </div>
 
         <div class="lesson-side">
-          <div
-            class="result"
-            class:quiet={!exploring && workshop.feedback !== "incorrect"}
-            data-position-stage="result"
-            class:correct={workshop.feedback === "correct"}
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            {#if exploring}
-              <Crossfade
-                key={`${built}-${workshop.feedback}-${actionNote}-${referencesVisible}`}
-              >
-                <div class="result-copy">
-                  <div class="position-name">
-                    {#if built && (exploring || workshop.feedback !== "idle" || workshop.canFinish)}
-                      <span aria-hidden="true"
-                        ><TKAWordGlyph
-                          word={POSITION_TYPE_INFO[built].symbol}
-                          height={32}
-                          darkMode
-                        /></span
-                      >
-                      <h2>{POSITION_TYPE_INFO[built].label}</h2>
-                      {#if workshop.feedback === "correct"}<span
-                          aria-label="Correct">✓</span
-                        >{/if}
-                    {:else}
-                      <h2>
-                        {exploring
-                          ? "Your position"
-                          : workshop.canFinish
-                            ? "Practice complete"
-                            : "Your turn"}
-                      </h2>
-                    {/if}
-                  </div>
-                  <p>{feedback}</p>
-                </div>
-              </Crossfade>
-            {/if}
-          </div>
-
           <div class="reference-area" data-position-stage="reference">
             <div class="support-actions">
               {#if !exploring && !workshop.canFinish && !incorrect && !correct}<PanelButton
@@ -489,7 +467,7 @@
             >
               {#if referencesVisible}
                 <div class="reference-heading">
-                  <h3>{exploring ? "Try an example" : "Reference"}</h3>
+                  <h3>{freePlay ? "Try an example" : "Reference"}</h3>
                 </div>
                 <div
                   class="examples"
@@ -497,7 +475,10 @@
                   aria-label="Position examples"
                 >
                   {#each examples as example (example.kind)}
-                    <div class="example">
+                    <div
+                      class="example"
+                      class:selected={freePlay && built === example.kind}
+                    >
                       <div class="example-art" aria-hidden="true">
                         <PictographContainer
                           pictographData={example.data}
@@ -510,7 +491,7 @@
                           rightPropTypeOverride={PropType.HAND}
                         />
                       </div>
-                      {#if exploring}
+                      {#if freePlay}
                         <PanelButton
                           ariaLabel={`Study ${POSITION_TYPE_INFO[example.kind].label} example`}
                           ariaPressed={built === example.kind}
@@ -530,17 +511,6 @@
 
           {#if exploring}
             <div class="explore-tools" data-position-stage="tools">
-              <SegmentedControl
-                options={[
-                  { value: GridMode.DIAMOND, label: "Diamond" },
-                  { value: GridMode.BOX, label: "Box" },
-                ]}
-                value={gridMode}
-                onchange={changeGrid}
-                semantics="radiogroup"
-                ariaLabel="Grid mode"
-                color="accent"
-              />
               <div
                 class="transform-controls"
                 role="group"
@@ -667,27 +637,26 @@
   .support-actions {
     margin-block: 0.75rem;
   }
-  .result {
-    text-align: center;
-    margin-top: 1rem;
-  }
-  .result.quiet {
-    margin: 0;
-  }
-  .result-copy {
-    display: grid;
-    justify-items: center;
-    gap: 0.5rem;
-  }
   .position-name {
     display: flex;
     align-items: center;
     gap: 0.75rem;
   }
-  h2 {
-    margin: 0;
-    font-size: 1.75rem;
-    line-height: 1.2;
+  .board-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .live-position {
+    min-width: 9rem;
+    font-size: 1.25rem;
+  }
+  .example.selected {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 3px;
   }
   h3 {
     margin: 0;
@@ -733,10 +702,6 @@
   }
   .example :global(.panel-btn) {
     padding-inline: 0.75rem;
-  }
-  .example :global(.panel-btn[aria-pressed="true"]) {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
   }
   .explore-tools {
     display: grid;
