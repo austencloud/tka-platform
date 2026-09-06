@@ -122,7 +122,7 @@ describe("contextual auth prompt copy", () => {
       body: "A free account keeps it in your library and opens it on any device.",
     });
     expect(getAuthPromptContent("step-cap-guest", "signup")).toMatchObject({
-      title: "Keep going",
+      title: "Got more moves?",
       body: "Free account. Up to 64 steps.",
     });
   });

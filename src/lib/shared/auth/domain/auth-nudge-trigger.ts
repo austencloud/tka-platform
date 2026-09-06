@@ -114,7 +114,7 @@ const AUTH_PROMPT_CONTENTS: Record<AuthNudgeTrigger, AuthPromptContent> = {
   },
   "step-cap-guest": {
     key: "step-cap-guest",
-    title: "Keep going",
+    title: "Got more moves?",
     body: "Free account. Up to 64 steps.",
   },
   "patterns-guest": {
@@ -222,11 +222,34 @@ const GENERIC_AUTH_PROMPTS: Record<AuthMode, AuthPromptContent> = {
   },
 };
 
+export type GuestEncorePrompt = "offer" | "spent" | "limit" | null;
+
 export function getAuthPromptContent(
   trigger: AuthNudgeTrigger | null | undefined,
   mode: AuthMode,
-  attempt = 1
+  attempt = 1,
+  encore: GuestEncorePrompt = null
 ): AuthPromptContent {
+  if (trigger === "step-cap-guest" && encore) {
+    const index = Number.isFinite(attempt)
+      ? Math.max(0, Math.floor(attempt) - 1)
+      : 0;
+    const titles =
+      encore === "limit" ? ENCORE_LIMIT_TITLES : ENCORE_SPENT_TITLES;
+    return {
+      key: trigger,
+      title:
+        encore === "offer"
+          ? "Fine. Sixteen steps."
+          : titles[index % titles.length]!,
+      body:
+        encore === "offer"
+          ? "One sequence. Eight extra steps. By very special decree."
+          : encore === "limit"
+            ? "That's the encore limit. Free accounts get 64 steps."
+            : "The encore was one sequence. A free account gets you 64 steps.",
+    };
+  }
   if (
     trigger === "step-cap-guest" &&
     Number.isFinite(attempt) &&
@@ -242,12 +265,27 @@ export function getAuthPromptContent(
 }
 
 const STEP_CAP_REPEAT_TITLES = [
-  "Step nine says hello.",
-  "Eight was the warm-up.",
-  "Still got more moves?",
-  "Room for an encore?",
-  "Oh, hello again.",
-  "One tiny detour.",
-  "Your ninth step misses you.",
-  "Ready when you are.",
+  "Step nine wants in.",
+  "You've got more in you.",
+  "You're wearing me down.",
+  "A very persistent spinner.",
+  "Oh, you again.",
+  "The props are getting restless.",
+  "Still negotiating, I see.",
+  "Your move, spinner.",
+];
+
+const ENCORE_SPENT_TITLES = [
+  "We had a deal, spinner.",
+  "I bent the rules and everything.",
+  "My generosity has witnesses.",
+  "The tiny committee says no.",
+  "An encore of the encore?",
+  "I'm keeping the ceremonial hat.",
+];
+
+const ENCORE_LIMIT_TITLES = [
+  "Sixteen. We shook on sixteen.",
+  "The encore has an ending.",
+  "Step seventeen needs a name tag.",
 ];
