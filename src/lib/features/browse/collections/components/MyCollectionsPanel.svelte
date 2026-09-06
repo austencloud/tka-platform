@@ -61,7 +61,7 @@ instead of showing an empty shell.
     type BrowseVisualType,
   } from "$lib/shared/analytics/browse-events";
 
-  const signedIn = $derived(!!authState.user);
+  const signedIn = $derived(authState.isFullAccount);
   const previewReadOnly = $derived(userPreviewState.isActive);
 
   /**
@@ -826,8 +826,8 @@ instead of showing an empty shell.
   {/if}
 {/snippet}
 
-{#if isYouSequences && (!isSideBySide || !signedIn)}
-  <AllLibraryView onBack={signedIn ? backToList : undefined} />
+{#if isYouSequences && signedIn && !isSideBySide}
+  <AllLibraryView onBack={backToList} />
 {:else if isSideBySide && signedIn}
   <div class="library-split">
     <aside class="rail" aria-label="Your collections">
