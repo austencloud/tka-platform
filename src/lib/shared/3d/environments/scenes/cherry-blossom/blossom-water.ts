@@ -1,4 +1,4 @@
-import plan from "../../../../../../../static/models/blossom/amphitheatre-plan.json";
+import plan from "./blossom-plan.json";
 
 type PlanPoint = [number, number];
 

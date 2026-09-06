@@ -13,9 +13,9 @@ describe("Blossom crescent pond coordinates", () => {
       x + bounds.centerX,
       -y + bounds.centerZ,
     ]);
-    expect(Math.min(...world.map(([, depth]) => depth!))).toBeCloseTo(5.6, 5);
-    expect(Math.max(...world.map(([x]) => x!))).toBeCloseTo(27, 5);
-    expect(Math.min(...world.map(([x]) => x!))).toBeCloseTo(-27, 5);
+    expect(Math.min(...world.map(([, depth]) => depth!))).toBeCloseTo(6.5, 5);
+    expect(Math.max(...world.map(([x]) => x!))).toBeCloseTo(25, 5);
+    expect(Math.min(...world.map(([x]) => x!))).toBeCloseTo(-11, 5);
     expect(
       Math.min(...getBlossomRiverCenterline().map(([, y]) => -y))
     ).toBeGreaterThan(5.6);

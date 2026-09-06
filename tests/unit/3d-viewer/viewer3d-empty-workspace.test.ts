@@ -48,6 +48,33 @@ afterAll(() => {
 });
 
 describe("viewer-3d empty workspace", () => {
+  it("preserves Blossom's authored composition through the welcome camera handoff", () => {
+    const { state, dispose } = createViewer3DStateForTest({
+      environmentId: "blossom",
+    });
+    vi.stubGlobal("innerWidth", 375);
+    vi.stubGlobal("innerHeight", 667);
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      callback(0);
+      return 1;
+    });
+    try {
+      state.enter3D();
+      const move = vi.fn();
+      state.registerSnapTo(move);
+      expect(move).toHaveBeenCalledWith(
+        { x: 10, y: 9, z: -28 },
+        { x: -3, y: 4, z: 6 },
+        undefined,
+        true,
+        undefined
+      );
+    } finally {
+      dispose();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("keeps 3D active while choreography is cleared", () => {
     const { state, dispose } = createViewer3DStateForTest({});
 

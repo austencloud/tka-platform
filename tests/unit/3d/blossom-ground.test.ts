@@ -10,8 +10,8 @@ import {
 describe("Blossom ground contract", () => {
   it("maps the authored habitat mask across the entire garden", () => {
     expect(getBlossomGroundMaskBounds()).toEqual({
-      min: [-80, -80],
-      size: [160, 160],
+      min: [-72, -72],
+      size: [144, 144],
     });
   });
 

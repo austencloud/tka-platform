@@ -15,9 +15,10 @@
 
   interface Props {
     mode?: "signin" | "signup";
+    compact?: boolean;
   }
 
-  let { mode = $bindable("signin") }: Props = $props();
+  let { mode = $bindable("signin"), compact = false }: Props = $props();
 
   const lastMethod = getLastAuthMethod();
 
@@ -69,9 +70,9 @@
 
   <div class="tab-content" role="tabpanel">
     {#if activeTab === "magic"}
-      <EmailLinkAuth />
+      <EmailLinkAuth {compact} />
     {:else}
-      <EmailPasswordAuth bind:mode />
+      <EmailPasswordAuth bind:mode showModeSwitch={!compact} />
     {/if}
   </div>
 </div>
