@@ -28,7 +28,9 @@ the gallery's, and the source is pinned to my-library with no toggle.
   import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { getBrowseNavigationContext } from "$lib/shared/browse/context/browse-navigation-context";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { loadSoloLibrarySequences } from "$lib/features/browse/shared/services/solo-library-sequence-loader";
   import { createMultiSelectionState } from "$lib/shared/selection/state/create-multi-selection-state.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -42,6 +44,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
   // onBack — BrowsePanel then omits the back pill entirely.
   let { onBack }: { onBack?: () => void } = $props();
   const previewReadOnly = $derived(userPreviewState.isActive);
+  const browseNavigation = getBrowseNavigationContext();
 
   const engine = createBrowseEngine({
     persistKey: "tka-browse-library-all",
@@ -199,15 +202,25 @@ the gallery's, and the source is pinned to my-library with no toggle.
     engine.sections.map((s) => s.title)
   );
 
-  // Empty-library CTA: a plain door into Construct. The one-tap starter it
-  // used to re-arm was removed 2026-07-29 — building the sequence yourself IS
-  // the flow now.
   const emptyAction = {
-    label: "Make your first sequence",
+    label: "Browse Gallery",
     onClick: () => {
-      navigationState.setCurrentModule("create", "construct");
+      browseNavigation.navigateTo({ primary: "gallery", view: "list" });
     },
   };
+  const emptyState = $derived({
+    message: "Your saved sequences and collections appear here.",
+    description: "Browse the Gallery to find something to save.",
+    secondaryAction:
+      !authState.isFullAccount && !previewReadOnly
+        ? {
+            label: "Create account",
+            description:
+              "Create a free account to access your collections on other devices.",
+            onClick: () => authDrawerState.show("signup"),
+          }
+        : undefined,
+  });
 </script>
 
 <!-- The workspace's results column. Its own BrowsePanel, so selection mode,
@@ -221,6 +234,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
     hideFilterChips
     onSelect={handleSelect}
     emptyAction={previewReadOnly ? undefined : emptyAction}
+    emptyState={previewReadOnly ? undefined : emptyState}
     selection={previewReadOnly ? undefined : selection}
   />
 {/snippet}
@@ -247,6 +261,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
       onOpenFilters={() => (libraryView = "workspace")}
       onSaveSmart={() => (smartSaveOpen = true)}
       {emptyAction}
+      emptyState={previewReadOnly ? undefined : emptyState}
       {selection}
     />
   {/if}
