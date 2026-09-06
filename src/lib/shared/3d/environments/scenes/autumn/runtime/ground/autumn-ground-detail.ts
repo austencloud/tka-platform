@@ -13,9 +13,22 @@ interface GroundPathDefinition {
   points: [number, number, number][];
 }
 
-const cabinLane = (groundLayout.paths as GroundPathDefinition[]).find(
-  (path) => path.id === "cabin_lane"
-);
+function toGroundPathPoint(point: number[]): [number, number, number] {
+  const [x, y, z] = point;
+  if (x === undefined || y === undefined || z === undefined) {
+    throw new Error(
+      `Autumn ground layout has a path point missing coordinates: ${JSON.stringify(point)}`
+    );
+  }
+  return [x, y, z];
+}
+
+const groundPaths: GroundPathDefinition[] = groundLayout.paths.map((path) => ({
+  id: path.id,
+  points: path.points.map(toGroundPathPoint),
+}));
+
+const cabinLane = groundPaths.find((path) => path.id === "cabin_lane");
 
 if (!cabinLane) {
   throw new Error("Autumn ground layout is missing the cabin_lane path");

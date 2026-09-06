@@ -171,9 +171,10 @@ function distinctStarts(ratio: SpinRatio, limit: number): TheoryOri[] {
  */
 function gridStarts(ratio: SpinRatio): [TheoryOri, TheoryOri] {
   const starts = distinctStarts(ratio, 2);
-  if (starts.length === 2) return [starts[0], starts[1]];
+  const [firstStart, secondStart] = starts;
+  if (firstStart && secondStart) return [firstStart, secondStart];
 
-  const first = starts[0] ?? "in";
+  const first = firstStart ?? "in";
   const second = START_PREFERENCE.find((ori) => ori !== first) ?? "out";
   return [first, second];
 }

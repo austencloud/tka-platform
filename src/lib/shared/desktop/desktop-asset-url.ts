@@ -68,7 +68,7 @@ export function toBundlePath(
     }
   }
 
-  const [cleanPath] = pathname.split(/[?#]/);
+  const cleanPath = pathname.split(/[?#]/)[0] ?? pathname;
   if (!fromR2 && !BUNDLED_STATIC_ROOTS.test(cleanPath)) return null;
   if (cleanPath.endsWith("/")) return null;
 

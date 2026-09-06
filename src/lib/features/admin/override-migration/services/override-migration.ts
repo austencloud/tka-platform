@@ -57,7 +57,7 @@ function buildInput(row: MigrationRow): SpecialArrowPlacementInput | null {
   const fields = parseSpecialOverrideKey(row.key);
   if (!fields) return null;
   return {
-    gridMode: fields.gridMode,
+    placementFrame: fields.placementFrame,
     oriFolder: fields.oriFolder,
     letter: fields.letter,
     turnsTuple: fields.turnsTuple,

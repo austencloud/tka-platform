@@ -334,8 +334,8 @@ export function buildWaterGrottoLayout(): WaterGrottoLayout {
   // Sample the waypoint polyline at 0.5 m so probes get a real walk.
   const route: { x: number; z: number; y: number }[] = [];
   for (let i = 0; i < ROUTE_WAYPOINTS.length - 1; i++) {
-    const a = ROUTE_WAYPOINTS[i];
-    const b = ROUTE_WAYPOINTS[i + 1];
+    const a = ROUTE_WAYPOINTS[i]!;
+    const b = ROUTE_WAYPOINTS[i + 1]!;
     const span = Math.hypot(b.x - a.x, b.z - a.z);
     const steps = Math.max(1, Math.round(span / 0.5));
     for (let s = 0; s < steps; s++) {
@@ -345,7 +345,7 @@ export function buildWaterGrottoLayout(): WaterGrottoLayout {
       route.push({ x, z, y: floorAt(x, z) });
     }
   }
-  const last = ROUTE_WAYPOINTS[ROUTE_WAYPOINTS.length - 1];
+  const last = ROUTE_WAYPOINTS[ROUTE_WAYPOINTS.length - 1]!;
   route.push({ x: last.x, z: last.z, y: floorAt(last.x, last.z) });
 
   // Where the eye clears the surface on the way in.

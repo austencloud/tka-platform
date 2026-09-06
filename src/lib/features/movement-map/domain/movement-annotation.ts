@@ -91,7 +91,7 @@ export const PHASE_ANCHORS = [
 export type PhaseAnchorId = (typeof PHASE_ANCHORS)[number]["id"];
 
 export function nearestPhaseAnchor(phase: number): PhaseAnchorId {
-  let best = PHASE_ANCHORS[0];
+  let best: (typeof PHASE_ANCHORS)[number] = PHASE_ANCHORS[0];
   for (const anchor of PHASE_ANCHORS) {
     if (Math.abs(anchor.phase - phase) < Math.abs(best.phase - phase)) {
       best = anchor;

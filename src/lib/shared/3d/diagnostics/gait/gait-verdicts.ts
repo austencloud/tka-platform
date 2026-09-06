@@ -187,7 +187,7 @@ export function verdictRows(
   if (!r) return [];
   const anatomyMeasured =
     r.anatomy.minConditionedFraction >= MIN_ANATOMY_COVERAGE;
-  const rows = [
+  const rows: VerdictRow[] = [
     {
       name: "Foot slip per step",
       value: cm(r.meanSlip),
@@ -429,8 +429,7 @@ export function verdictRows(
       "Weight alternates",
       ...ANATOMY_METRICS,
     ]);
-    return [
-      ...rows.filter((row) => crossoverMetrics.has(row.name)),
+    const crossoverRows: VerdictRow[] = [
       {
         name: "Crossing order",
         value: r.legOrderAlternates ? "yes" : "no",
@@ -463,6 +462,10 @@ export function verdictRows(
         ),
         tell: "closest 3D thigh or shin centre-line separation",
       },
+    ];
+    return [
+      ...rows.filter((row) => crossoverMetrics.has(row.name)),
+      ...crossoverRows,
     ];
   }
   if (maneuver === "lateral") {

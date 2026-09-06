@@ -43,6 +43,7 @@ import {
   dimHex,
   spotlightFactor,
   tunnelPropColor,
+  type TunnelLayerSelection,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import type { FireTipUpdateResult } from "./fire-tip-tracker";
@@ -648,7 +649,7 @@ export class AnimationRenderLoop {
     spectrum: boolean,
     baseLeft: string,
     baseRight: string,
-    selectedLayer: number | null = null
+    selectedLayer: TunnelLayerSelection = null
   ): string {
     const isLeft = propIndex % 2 === 0;
     const raw =

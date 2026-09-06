@@ -401,9 +401,9 @@ export class SilkRibbonGeometry3D {
         dynamicVelocities[i3] = velocityX;
         dynamicVelocities[i3 + 1] = velocityY;
         dynamicVelocities[i3 + 2] = velocityZ;
-        dynamicPositions[i3] += velocityX * dt;
-        dynamicPositions[i3 + 1] += velocityY * dt;
-        dynamicPositions[i3 + 2] += velocityZ * dt;
+        dynamicPositions[i3] = dynamicPositions[i3]! + velocityX * dt;
+        dynamicPositions[i3 + 1] = dynamicPositions[i3 + 1]! + velocityY * dt;
+        dynamicPositions[i3 + 2] = dynamicPositions[i3 + 2]! + velocityZ * dt;
       }
 
       // The head is pinned. Every following point keeps the path's travelled
@@ -431,9 +431,9 @@ export class SilkRibbonGeometry3D {
             dynamicPositions[i3 + 2]! - dynamicPositions[previous + 2]!;
           const distance = Math.hypot(dx, dy, dz) || targetDistance;
           const correction = ((distance - targetDistance) / distance) * 0.9;
-          dynamicPositions[i3] -= dx * correction;
-          dynamicPositions[i3 + 1] -= dy * correction;
-          dynamicPositions[i3 + 2] -= dz * correction;
+          dynamicPositions[i3] = dynamicPositions[i3]! - dx * correction;
+          dynamicPositions[i3 + 1] = dynamicPositions[i3 + 1]! - dy * correction;
+          dynamicPositions[i3 + 2] = dynamicPositions[i3 + 2]! - dz * correction;
         }
       }
 

@@ -11,8 +11,12 @@ export function buildLetterDraftSequence(
   pictograph: PictographData
 ): SequenceData {
   const letter = pictograph.letter ?? "";
+  const stepSource: PictographData & { stepNumber: number } = {
+    ...pictograph,
+    stepNumber: 1,
+  };
   const step = pictographDataToStepData(
-    { ...pictograph, stepNumber: 1 },
+    stepSource,
     `letter-explorer-${pictograph.id}`
   );
   const startPosition = startPositionDeriver.deriveFromFirstStep(step);

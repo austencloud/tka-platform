@@ -70,6 +70,11 @@ export function saveScene3DState(state: Partial<Scene3DPersistedState>): void {
   }
 }
 
+/** Narrows a JSON-parsed value read back from storage into a plain number array. */
+function isNumberArray(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === "number");
+}
+
 /** Load state from localStorage */
 export function loadScene3DState(): Partial<Scene3DPersistedState> {
   try {
@@ -103,7 +108,7 @@ export function loadScene3DState(): Partial<Scene3DPersistedState> {
     }
 
     // Migration: Clear legacy camera positions (pre-meter scale).
-    if (state.cameraPosition) {
+    if (isNumberArray(state.cameraPosition)) {
       const maxCoord = Math.max(...state.cameraPosition.map(Math.abs));
       if (maxCoord > 20) {
         delete state.cameraPosition;

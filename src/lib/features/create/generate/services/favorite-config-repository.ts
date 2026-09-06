@@ -31,6 +31,7 @@ import {
   type MigrationWrite,
 } from "../domain/setup-migration";
 import type { UIGenerationConfig } from "../state/generate-config.svelte";
+import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
 import {
   normalizePersistedGenerationConfig,
   normalizePersistedStartEndOptions,
@@ -148,7 +149,9 @@ export async function loadPersonal(
     config: normalizePersistedGenerationConfig(
       setup.config
     ) as UIGenerationConfig,
-    startEndOptions: normalizePersistedStartEndOptions(setup.startEndOptions),
+    startEndOptions: normalizePersistedStartEndOptions(
+      (setup.startEndOptions ?? null) as StartEndOptions | null
+    ),
     createdAt: setup.createdAt ?? new Date(),
     updatedAt: setup.updatedAt ?? new Date(),
   }));
@@ -201,7 +204,7 @@ export async function loadCommunity(
         favorite.config
       ) as UIGenerationConfig,
       startEndOptions: normalizePersistedStartEndOptions(
-        favorite.startEndOptions
+        (favorite.startEndOptions ?? null) as StartEndOptions | null
       ),
       setAt: favorite.setAt ?? new Date(),
     });

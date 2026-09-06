@@ -387,10 +387,10 @@ export function createLavaRiverStripGeometry({
     const previous = Float64Array.from(smoothed);
     for (let row = 1; row < rowCount - 1; row += 1) {
       smoothed[row] =
-        previous[row - 1] * 0.25 + previous[row] * 0.5 + previous[row + 1] * 0.25;
+        previous[row - 1]! * 0.25 + previous[row]! * 0.5 + previous[row + 1]! * 0.25;
     }
   }
-  for (let row = 0; row < rowCount; row += 1) centers[row].y = smoothed[row];
+  for (let row = 0; row < rowCount; row += 1) centers[row]!.y = smoothed[row]!;
 
   // Pass two: arc length, grade, and width on the draped centreline.
   const rows: CentrelineRow[] = [];
@@ -398,13 +398,13 @@ export function createLavaRiverStripGeometry({
   let peakGrade = 0;
 
   for (let row = 0; row < rowCount; row += 1) {
-    const center = centers[row];
-    const tangent = tangents[row];
+    const center = centers[row]!;
+    const tangent = tangents[row]!;
     const side = new Vector3(-tangent.z, 0, tangent.x).normalize();
-    if (row > 0) arcLength += centers[row - 1].distanceTo(center);
+    if (row > 0) arcLength += centers[row - 1]!.distanceTo(center);
 
-    const previous = centers[Math.max(0, row - 1)];
-    const next = centers[Math.min(rowCount - 1, row + 1)];
+    const previous = centers[Math.max(0, row - 1)]!;
+    const next = centers[Math.min(rowCount - 1, row + 1)]!;
     const horizontal = Math.hypot(next.x - previous.x, next.z - previous.z);
     const rawGrade = horizontal > 1e-4 ? (previous.y - next.y) / horizontal : 0;
     if (rawGrade > peakGrade) peakGrade = rawGrade;
@@ -425,7 +425,7 @@ export function createLavaRiverStripGeometry({
   const channelLength = arcLength || 1;
 
   for (let row = 0; row < rowCount; row += 1) {
-    const entry = rows[row];
+    const entry = rows[row]!;
     const t = row / rowSegments;
     entry.run = entry.arcLength / channelLength;
 
@@ -538,7 +538,7 @@ export function createLavaRiverStripGeometry({
 
   const ventGeometry = sourceSpec.enabled
     ? createVentMouthGeometry({
-        head: rows[0],
+        head: rows[0]!,
         width: width * widthScale,
         terrain,
         surfaceOffset,
@@ -566,7 +566,7 @@ export function createLavaRiverStripGeometry({
       resolvedLightCount === 1
         ? 0.5
         : 0.12 + (index / (resolvedLightCount - 1)) * 0.78;
-    return rows[Math.round(fraction * rowSegments)].center.clone();
+    return rows[Math.round(fraction * rowSegments)]!.center.clone();
   });
 
   return {
@@ -576,7 +576,7 @@ export function createLavaRiverStripGeometry({
     lightPositions,
     channelLength,
     centreline: rows.map((row) => row.center.clone()),
-    descent: rows[0].center.y - rows[rowCount - 1].center.y,
+    descent: rows[0]!.center.y - rows[rowCount - 1]!.center.y,
     peakGrade,
     draped,
   };

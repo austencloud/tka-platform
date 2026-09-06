@@ -74,7 +74,14 @@ export async function buildFuseFlowerPath(
   variation: FuseFlowerPathVariation = {}
 ): Promise<SequenceData> {
   const { matrices, edges } = await loadBuildContext();
-  const archetype = resolveFlowerArchetype(matrices, flower.style);
+  // `Flower.style` also includes "float" (see FloatFlower), which
+  // `resolveFlowerArchetype` doesn't take a matrix for; it already treats
+  // anything that isn't "pro" as the anti/antispin matrix internally, so this
+  // reproduces that exact fallback instead of widening the parameter type.
+  const archetype = resolveFlowerArchetype(
+    matrices,
+    flower.style === "pro" ? "pro" : "anti"
+  );
   const flowerSequence = buildFlowerSequence(archetype, flower, side, edges);
   const color = side === "left" ? HandSide.LEFT : HandSide.RIGHT;
   const locationBeat = variation.startLocation
