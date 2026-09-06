@@ -1920,6 +1920,20 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
+  /* The stacked dock is content-sized: ViewerWorkspacePanels hands the track
+     `preferredSize: auto` and PanelGroup measures whatever is in flow. Every
+     inspector layer is absolute for the desktop crossfade, so nothing was in
+     flow, the container measured 0px, and the motion dock sat one pixel below
+     the viewport with no pill reachable. While stacked, the ACTIVE layer
+     returns to flow and gives the track its height; the inactive layers keep
+     stacking behind it at the same size. */
+  .viewer-and-export:not(.desktop)
+    .export-panel-container
+    > .inspector-content-layer[data-active="true"] {
+    position: relative;
+    inset: auto;
+  }
+
   .viewer-and-export:not(.desktop)
     .performance-inspector-layer
     > :global(.performance-inspector) {
