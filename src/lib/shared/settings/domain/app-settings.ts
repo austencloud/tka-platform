@@ -41,7 +41,13 @@ export interface AppSettings {
   /** Shared visual build for fan/bigfan across 2D, Tunnel, 3D, and rails. */
   fanAppearance?: FanAppearance;
   /** How the 2D canvas draws every non-fan prop: flat 3D-model sprite or pictograph. */
-  propLook?: PropLook;
+  /**
+   * How the 2D canvas draws props. Named propArtwork (not propLook) on
+   * purpose: an earlier build persisted a "model" default under propLook
+   * into saved settings, and that stale key must not keep overriding the
+   * canonical pictograph artwork.
+   */
+  propArtwork?: PropLook;
   catDogMode?: boolean; // Whether CatDog Mode is enabled in prop type settings
   leftBuugengFlipped?: boolean; // Flip buugeng for blue hand (asymmetric prop)
   rightBuugengFlipped?: boolean; // Flip buugeng for red hand (asymmetric prop)

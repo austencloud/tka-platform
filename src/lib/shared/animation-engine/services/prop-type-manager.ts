@@ -167,7 +167,7 @@ export class PropTypeManager {
         this.settingsService?.currentSettings?.fanAppearance
     );
     const nextLook = normalizePropLook(
-      this.settingsService?.currentSettings?.propLook
+      this.settingsService?.currentSettings?.propArtwork
     );
     const nextBaseColors = props.tunnelPropColors ?? null;
     const newLeftRender = this.baseRenderKey(
@@ -293,7 +293,7 @@ export class PropTypeManager {
       this.propTypeChangeService?.state.rightPropType ??
       state.currentRightPropType;
     const settingsLook = normalizePropLook(
-      this.settingsService?.currentSettings?.propLook
+      this.settingsService?.currentSettings?.propArtwork
     );
     const settingsLeftRender = this.baseRenderKey(
       settingsLeft,
@@ -626,7 +626,7 @@ export class PropTypeManager {
       leftPropType = settings.leftPropType || settings.propType || "staff";
       rightPropType = settings.rightPropType || settings.propType || "staff";
       appearance = normalizeFanAppearance(settings.fanAppearance);
-      look = normalizePropLook(settings.propLook);
+      look = normalizePropLook(settings.propArtwork);
 
       // Also update engine state to keep it in sync
       state.setLeftPropType(leftPropType);

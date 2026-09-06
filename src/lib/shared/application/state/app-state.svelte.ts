@@ -66,7 +66,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   leftPropType: PropType.STAFF,
   rightPropType: PropType.STAFF,
   fanAppearance: DEFAULT_FAN_APPEARANCE,
-  propLook: DEFAULT_PROP_LOOK,
+  propArtwork: DEFAULT_PROP_LOOK,
   selectedPresetIndex: 0,
 };
 

@@ -62,17 +62,28 @@
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
 
   // The tile shows the prop the way the user has chosen to see it: the fan
-  // build, the 3D model capture, or the notation glyph. Settings load lazily,
-  // so until they arrive the default look (model) applies.
+  // build, the 3D model capture, or the notation glyph. Settings load lazily;
+  // until they arrive the tile draws the plain glyph rather than guessing a
+  // look and flashing to another one a moment later.
+  const settingsReady = $derived(!useSavedOverrides || getSettings !== null);
   const lookAppearance = $derived({
-    propLook: getSettings?.().propLook ?? null,
+    propLook: getSettings?.().propArtwork ?? null,
     fanAppearance: getSettings?.().fanAppearance ?? null,
   });
+  const plainArt = $derived({
+    href: displayInfo.image,
+    styled: false,
+    prelit: false,
+  });
   const leftArt = $derived(
-    propTileArtwork(propType, "left", lookAppearance, displayInfo.image)
+    settingsReady
+      ? propTileArtwork(propType, "left", lookAppearance, displayInfo.image)
+      : plainArt
   );
   const rightArt = $derived(
-    propTileArtwork(propType, "right", lookAppearance, displayInfo.image)
+    settingsReady
+      ? propTileArtwork(propType, "right", lookAppearance, displayInfo.image)
+      : plainArt
   );
 
   // Check for persisted overrides from the Prop Button Lab

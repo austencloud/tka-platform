@@ -71,12 +71,30 @@
     box ? Math.round(box.height * pixelsPerUnit) : 1
   );
 
+  async function finalize(): Promise<void> {
+    try {
+      const response = await fetch("/test/prop-3d-studio/sprites/save", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ finalize: true }),
+      });
+      const payload = (await response.json()) as { ok: boolean; error?: string };
+      log = [
+        ...log,
+        payload.ok
+          ? "manifest module regenerated"
+          : `MANIFEST FAILED ${payload.error ?? ""}`,
+      ];
+    } catch (error) {
+      log = [...log, `MANIFEST FAILED ${String(error)}`];
+    }
+    document.body.dataset.spriteCaptureDone = "1";
+  }
+
   function advance(message: string): void {
     log = [...log, message];
     index += 1;
-    if (index >= jobs.length) {
-      document.body.dataset.spriteCaptureDone = "1";
-    }
+    if (index >= jobs.length) void finalize();
   }
 
   async function handleCaptured(job: Job, result: SpriteCaptureResult) {

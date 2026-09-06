@@ -1,7 +1,7 @@
 <!--
   One switch for how the 2D canvas draws every non-fan prop: the flat capture
   of the viewer's 3D model, or the pictograph artwork. Reads and writes the
-  shared propLook setting directly, so the sidebar, the Tunnel art pane, and
+  shared propArtwork setting directly, so the sidebar, the Tunnel art pane, and
   the engine all follow one value. Fan keeps FanAppearancePicker.
 -->
 <script lang="ts">
@@ -26,13 +26,13 @@
   } = $props();
 
   const settings = $derived(getSettings());
-  const look = $derived(normalizePropLook(settings.propLook));
+  const look = $derived(normalizePropLook(settings.propArtwork));
   const available = $derived(hasModelSprite(propType));
   const options = $derived(propLookOptions(propType));
 
   function choose(next: PropLook): void {
     if (next === look) return;
-    void updateSettings({ propLook: next });
+    void updateSettings({ propArtwork: next });
   }
 </script>
 
