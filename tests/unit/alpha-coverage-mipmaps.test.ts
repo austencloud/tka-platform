@@ -1,9 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { Texture } from "three";
 import {
   alphaCoverage,
   buildCoveragePreservingMipChain,
   rampedCoverageTarget,
   solveAlphaScale,
+  prepareCoveragePreservingAlphaMipmaps,
   type RgbaLevel,
 } from "$lib/shared/3d/rendering/alpha-coverage-mipmaps";
 
@@ -36,6 +38,42 @@ function leafTexture(size: number, discs: number, radius: number): RgbaLevel {
 }
 
 describe("coverage-preserving alpha mipmaps", () => {
+  it("prepares and reuses foliage mipmaps in a worker without document", () => {
+    const level = leafTexture(16, 8, 2);
+    const drawImage = vi.fn();
+    vi.stubGlobal("document", undefined);
+    vi.stubGlobal(
+      "OffscreenCanvas",
+      class {
+        getContext() {
+          return { drawImage, getImageData: () => level };
+        }
+      }
+    );
+    vi.stubGlobal(
+      "ImageData",
+      class {
+        constructor(
+          public data: Uint8ClampedArray,
+          public width: number,
+          public height: number
+        ) {}
+      }
+    );
+    try {
+      const texture = new Texture({
+        width: 16,
+        height: 16,
+      } as HTMLImageElement);
+      expect(prepareCoveragePreservingAlphaMipmaps(texture, 0.45)).toBe(true);
+      expect(texture.mipmaps).toHaveLength(5);
+      expect(texture.generateMipmaps).toBe(false);
+      expect(prepareCoveragePreservingAlphaMipmaps(texture, 0.45)).toBe(false);
+      expect(drawImage).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   const alphaTest = 0.48;
   const cutoff = Math.round(alphaTest * 255);
 
@@ -77,7 +115,9 @@ describe("coverage-preserving alpha mipmaps", () => {
     expect(coverages[7]!).toBeGreaterThanOrEqual(0.75);
     // Monotonic across the ramp: no level thins out again.
     for (let index = 3; index <= 6; index += 1) {
-      expect(coverages[index]!).toBeGreaterThanOrEqual(coverages[index - 1]! - 0.02);
+      expect(coverages[index]!).toBeGreaterThanOrEqual(
+        coverages[index - 1]! - 0.02
+      );
     }
   });
 
@@ -103,7 +143,9 @@ describe("coverage-preserving alpha mipmaps", () => {
 
   it("scales alpha up to recover a target the raw level misses", () => {
     const faint: RgbaLevel = {
-      data: new Uint8ClampedArray([0, 0, 0, 60, 0, 0, 0, 60, 0, 0, 0, 0, 0, 0, 0, 0]),
+      data: new Uint8ClampedArray([
+        0, 0, 0, 60, 0, 0, 0, 60, 0, 0, 0, 0, 0, 0, 0, 0,
+      ]),
       width: 4,
       height: 1,
     };

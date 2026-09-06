@@ -23,12 +23,12 @@
     ],
     "depth": 64
   },
-  "meshesBeforeInstancing": 40,
-  "trianglesBeforeInstancing": 497784,
-  "provenance": "Original Blender architecture and aggregate textures. One reused shipped Meshy olive from Sunward Gardens. No new external assets.",
-  "bytes": 9352796,
+  "meshesBeforeInstancing": 64,
+  "trianglesBeforeInstancing": 1817952,
+  "provenance": "Original Blender architecture and mineral textures. Trees generated with @dgreenheck/ez-tree 1.1.0 (MIT), bundled ash leaves and Poly Haven oak bark maps. See EZ-TREE-LICENSE.txt and ez-tree-manifest.json.",
+  "bytes": 12715180,
   "compression": "EXT_meshopt_compression; float positions preserved",
   "textureFormat": "WebP, maximum 1024 square",
-  "sha256": "5a846f31bdee80ae523b8e224efc56a9e967dfa580c6317cf2951b9d316d4448",
-  "meshes": 17
+  "sha256": "9482c31ccb31adcb75049bcb79e8d163c62365c9a461745a260bc0bac848bc10",
+  "meshes": 22
 }

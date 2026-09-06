@@ -288,6 +288,13 @@ bridge('Rear arrival viaduct',(0,-39),(58,-119),10,-.1)
 for x in [-12,12]:tower('Arrival gate',x,-38,.2,3.0,14)
 arch('Arrival portal',0,-39,.2,18,13,2.0)
 
+# Replace the provisional tree anchors with the authored EZ-Tree family.
+import sys
+sys.path.insert(0,str(ROOT/'scripts'))
+from celestial_eztree import replace_citadel_trees
+bpy.context.view_layer.update()
+replace_citadel_trees(ROOT,scene)
+
 # Project real face coordinates to packed mineral textures before saving source.
 bpy.context.view_layer.update()
 for ob in scene.objects:
