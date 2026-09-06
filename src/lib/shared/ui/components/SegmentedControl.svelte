@@ -116,6 +116,11 @@
 
   // Find selected index for indicator position
   const selectedIndex = $derived(options.findIndex((o) => o.value === value));
+  const focusIndex = $derived(
+    selectedIndex >= 0
+      ? selectedIndex
+      : options.findIndex((option) => !option.disabled)
+  );
   const selectedTone = $derived(options[selectedIndex]?.tone ?? color);
 
   // A column count that would leave one row is the same as no wrap at all.
@@ -242,6 +247,7 @@
 >
   <div
     class="indicator"
+    style:visibility={selectedIndex < 0 ? "hidden" : "visible"}
     data-tone={selectedTone}
     style="--index: {selectedIndex}; --col: {selectedColumn}; --row: {selectedRow}"
   ></div>
@@ -273,7 +279,7 @@
         ? value === option.value
         : undefined}
       tabindex={semantics !== "button-group"
-        ? value === option.value
+        ? options.indexOf(option) === focusIndex
           ? 0
           : -1
         : 0}

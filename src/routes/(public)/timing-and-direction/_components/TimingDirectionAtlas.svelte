@@ -195,7 +195,7 @@
 
   .intro {
     container-type: inline-size;
-    width: min(100%, 60rem);
+    width: min(100%, 96rem);
     margin-inline: auto;
     margin-top: 2rem;
     scroll-margin-top: 6rem;
@@ -205,29 +205,6 @@
     display: flex;
     justify-content: center;
     margin-top: 1rem;
-  }
-
-  .intro :global(.concept-model) {
-    height: auto;
-  }
-
-  .intro :global(.concept-panel) {
-    grid-template-rows: auto auto 9rem minmax(5rem, auto) auto;
-    font-size: 1rem;
-  }
-
-  .intro :global(h3) {
-    font-size: 1.35rem;
-  }
-
-  @container (max-width: 600px) {
-    .intro :global(.concept-model) {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .intro :global(.direction-panel) {
-      border-inline-start: 0;
-      border-top: 1px solid var(--theme-stroke);
-    }
   }
 
   .atlas-toolbar :global(.panel-btn) {
