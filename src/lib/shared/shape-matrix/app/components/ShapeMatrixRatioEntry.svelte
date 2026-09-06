@@ -403,6 +403,12 @@
       background var(--duration-fast, 150ms) ease;
   }
 
+  /* The glyph is narrower than the icon box; sizing the box to the glyph
+     keeps it inside a button that is only as wide as the box would be. */
+  .part-stepper button > i {
+    width: auto;
+  }
+
   .part-stepper button:hover:not(:disabled) {
     background: color-mix(in srgb, var(--axis-color) 13%, transparent);
     color: var(--theme-text, #fff);
