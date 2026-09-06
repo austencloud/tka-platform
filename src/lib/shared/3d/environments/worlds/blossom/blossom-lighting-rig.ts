@@ -8,7 +8,7 @@ import {
 
 import type { BlossomSceneConfig } from "../../domain/models/scene-configs";
 import type { BlossomRuntimeConfig } from "../../scenes/cherry-blossom/blossom-runtime";
-import plan from "../../../../../../../static/models/blossom/amphitheatre-plan.json";
+import plan from "../../scenes/cherry-blossom/blossom-plan.json";
 
 export interface BlossomLightingRig {
   object: Group;

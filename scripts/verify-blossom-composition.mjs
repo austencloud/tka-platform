@@ -34,6 +34,19 @@ const doc = JSON.parse(
   buffer.subarray(20, 20 + buffer.readUInt32LE(12)).toString("utf8")
 );
 const nodes = new Map(doc.nodes.map((node) => [node.name, node]));
+const sourcePlan = JSON.parse(
+  await readFile(
+    resolve(
+      root,
+      "src/lib/shared/3d/environments/scenes/cherry-blossom/blossom-plan.json"
+    ),
+    "utf8"
+  )
+);
+invariant(
+  JSON.stringify(sourcePlan) === JSON.stringify(plan),
+  "Runtime and exported plan diverged"
+);
 for (const name of [
   "Amphitheatre_Terrain",
   "River_Water",

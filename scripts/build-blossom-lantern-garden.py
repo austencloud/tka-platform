@@ -9,6 +9,7 @@ bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
 from blossom_garden_mesh import Batch, material, surface_texture, MOSS, STONE, STONE_TOP, BARK, WOOD, GOLD, PAPER, WATER
 OUT=ROOT/'static/models/blossom'
+PLAN=ROOT/'src/lib/shared/3d/environments/scenes/cherry-blossom/blossom-plan.json'
 EVIDENCE=ROOT/'docs/superpowers/specs/blossom-lantern-garden/evidence'
 BLEND=ROOT/'blender/blossom/lantern-garden.blend'
 EVIDENCE.mkdir(parents=True,exist_ok=True)
@@ -348,7 +349,7 @@ for i in range(4600):
 petals.finish()
 
 # Reuse the public runtime contract while recording the new authored composition.
-plan=json.loads((OUT/'amphitheatre-plan.json').read_text())
+plan=json.loads(PLAN.read_text())
 plan.update(planId='blossom-lantern-garden',status='authored',trees=tree_bounds,lanterns=[[x,y,height(x,y)+.65] for x,y in lantern_positions])
 plan['hangingLanterns']=hanging
 plan['site']['terrainBounds']={'minX':-72,'maxX':72,'minY':-72,'maxY':72}
@@ -363,6 +364,7 @@ plan['stage']['operations']={'minimumAudienceSetbackFromDeck':2,'backstageAccess
     'technicalPosition':{'minX':9,'maxX':11,'minY':-6,'maxY':-4,'accessPathId':'service'},
     'emergencyCorridors':[{'id':'east','minX':7,'maxX':10,'minY':-8,'maxY':1}]}
 (OUT/'amphitheatre-plan.json').write_text(json.dumps(plan,indent=2)+'\n')
+PLAN.write_text(json.dumps(plan,indent=2)+'\n')
 scene=bpy.context.scene
 scene.render.engine='CYCLES';scene.cycles.samples=24;scene.cycles.use_denoising=True
 scene.world.use_nodes=True

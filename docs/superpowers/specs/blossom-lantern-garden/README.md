@@ -16,7 +16,7 @@ node scripts/optimize-blossom-glb.mjs
 node scripts/verify-blossom-composition.mjs
 ```
 
-The builder saves `blender/blossom/lantern-garden.blend`, an ignored editable source. `scripts/blender-export-blossom-full.py` exports subsequent Blender edits. The existing `amphitheatre-plan.json` and `amphitheatre-manifest.json` filenames remain the active runtime contract; their contents identify the lantern garden.
+The builder saves `blender/blossom/lantern-garden.blend`, an ignored editable source. `scripts/blender-export-blossom-full.py` exports subsequent Blender edits. Runtime code imports `src/lib/shared/3d/environments/scenes/cherry-blossom/blossom-plan.json`; the builder mirrors it to the public `amphitheatre-plan.json`. The verifier checks that both copies match. Public plan and manifest filenames retain their historical names, but their contents identify the lantern garden.
 
 ## Source assets
 
@@ -27,6 +27,7 @@ Botanical branches and the cherry flower atlas come from the existing `blossom-p
 ## Verification
 
 - 75 focused tests pass across ten suites, including court bounds, material borrowing and disposal, quality tiers, water coordinates, production contracts, opening cameras, welcome transitions, selection scope and performer facing. One pre-existing Ember test remains a TODO.
+- Focused ESLint checks pass for the changed scene modules. The shared viewer state file retains three pre-existing lint errors outside this change.
 - Actual Blender vertex checks pass for 56 relevant meshes: no roots in the pond, no objects in the performance volume, and clear approaches between 0.25 m and 2.4 m above walking grade. Both approach grades remain below 3.51%.
 - The optimized export is 12.82 MiB, with 3,367,696 authored visible triangles. Four near trees preserve individual shadow ownership; the remaining grove uses shared GPU instances.
 - These are sampled geometry checks, not collision certification. The legacy audience target of 48 remains unvalidated.
