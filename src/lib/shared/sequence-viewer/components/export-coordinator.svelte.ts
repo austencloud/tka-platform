@@ -55,10 +55,16 @@ type AccessibilityHelper = ReturnType<typeof createModalAccessibilityHelper>;
 export interface ExportCoordinatorDeps {
   viewer3DState: Viewer3DState;
   accessibilityHelper: AccessibilityHelper;
+  /**
+   * Viewer Blue/Red motion toggles, read at export time. The offscreen export
+   * engine is a fresh instance, so the 2D export forwards these explicitly;
+   * without them a hand hidden on screen still renders in the file.
+   */
+  getMotionVisibility?: () => { left: boolean; right: boolean };
 }
 
 export function createExportCoordinator(deps: ExportCoordinatorDeps) {
-  const { viewer3DState, accessibilityHelper } = deps;
+  const { viewer3DState, accessibilityHelper, getMotionVisibility } = deps;
   const measuredVideoUrls = new Set<string>();
 
   const exportOptions = getExportOptionsState();
@@ -634,6 +640,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     // 2D mode: frame-by-frame capture from PixiJS canvas
     if (exportType === "animation" && playbackController && animationCanvas) {
       const opts = exportOptions.getVideoOptions();
+      const motion = getMotionVisibility?.();
       await sequenceModalExporter.exportAnimation(
         {
           fps: opts.fps,
@@ -641,6 +648,8 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
           resolution: opts.resolution,
           includeStartPosition: opts.includeStartPosition,
           includeEndHold: opts.includeEndHold,
+          leftMotionVisible: motion?.left,
+          rightMotionVisible: motion?.right,
         },
         { canvas: animationCanvas, playbackController, panelState: modalAnimationState },
         videoCallbacks

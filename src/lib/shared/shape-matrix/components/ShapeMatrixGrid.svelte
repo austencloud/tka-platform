@@ -258,6 +258,13 @@
                       />
                     </span>
                   {/if}
+                  <!-- Colour alone did not name the chosen crossing among
+                       sixteen red and blue mandalas. As on the relationship
+                       chips, the mark sits on the corner of every tile and
+                       shows on the chosen one, so choosing moves nothing. -->
+                  <span class="sel-mark" aria-hidden="true">
+                    <i class="fas fa-check"></i>
+                  </span>
                 </button>
               </td>
             {/each}
@@ -435,27 +442,69 @@
       transform: scale(1.08);
     }
   }
+  /* The chosen crossing advances on four axes at once, as the chosen
+     relationship chip does: ring, wash, glow, mark. A hairline ring alone
+     was lost among sixteen red and blue mandalas. */
   .cell.sel {
     outline: none;
     z-index: 2;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 16%,
+      transparent
+    );
   }
   .cell.sel::after {
     content: "";
     position: absolute;
-    inset: 2px;
+    inset: 1px;
     z-index: 2;
-    border: 1px solid var(--theme-accent, #f59e0b);
-    border-radius: 2px;
-    box-shadow: inset 0 0 0.8rem
-      color-mix(in srgb, var(--theme-accent, #f59e0b) 16%, transparent);
+    border: 2px solid var(--theme-accent, #f59e0b);
+    border-radius: 3px;
+    box-shadow:
+      inset 0 0 1rem
+        color-mix(in srgb, var(--theme-accent, #f59e0b) 30%, transparent),
+      0 0 0.75rem
+        color-mix(in srgb, var(--theme-accent, #f59e0b) 45%, transparent);
     pointer-events: none;
     transition: opacity var(--duration-fast, 150ms)
       var(--transition-easing, ease);
+  }
+  .sel-mark {
+    position: absolute;
+    top: 0.3rem;
+    inset-inline-end: 0.3rem;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: clamp(0.85rem, calc(var(--cell) * 0.13), 1.5rem);
+    height: clamp(0.85rem, calc(var(--cell) * 0.13), 1.5rem);
+    border-radius: 999px;
+    /* A light tint of the accent, as on the chips: the accent at full
+       strength is mid-dark in several themes and a small mark on it read
+       as a coloured dot rather than a check. */
+    background: color-mix(in srgb, var(--theme-accent, #f59e0b) 32%, white);
+    box-shadow: 0 0 0 2px var(--theme-panel-bg, #101721);
+    color: #06090d;
+    font-size: clamp(0.5rem, calc(var(--cell) * 0.065), 0.8rem);
+    opacity: 0;
+    transform: scale(0.5);
+    pointer-events: none;
+    transition:
+      opacity var(--duration-fast, 150ms) var(--transition-easing, ease),
+      transform var(--duration-fast, 150ms) var(--transition-easing, ease);
+  }
+  .cell.sel .sel-mark {
+    opacity: 1;
+    transform: scale(1);
   }
   /* The selected tile's box is the rectangle that flies to the detail stage.
      Its hairline rings would scale into thick bands mid-flight; the flat
      wash scales cleanly, so only the rings step aside for the morph. */
   :global(html.shape-matrix-morph) .cell.sel::after {
+    opacity: 0;
+  }
+  :global(html.shape-matrix-morph) .cell.sel .sel-mark {
     opacity: 0;
   }
   :global(html.shape-matrix-morph) .cell:hover,
@@ -533,6 +582,7 @@
   @media (prefers-reduced-motion: reduce) {
     .cell,
     .artwork,
+    .sel-mark,
     .colhead,
     .rowhead {
       transition: none;

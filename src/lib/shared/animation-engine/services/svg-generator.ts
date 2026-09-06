@@ -18,6 +18,8 @@ import {
   type AnimationVisibilityStateManager,
 } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import {
+  applyFanFrameColor,
+  scaleFanAppearanceForBigFan,
   fanAppearanceArtwork,
   parseFanRenderKey,
 } from "$lib/shared/pictograph/prop/domain/fan-appearance";
@@ -262,48 +264,10 @@ export function resolvePropSvgPath(
   return `/images/props/${family}/${propTypeLower}.svg`;
 }
 
-/** Scale the regular measured build around its hand pivot into Big Fan's box. */
-function scaleFanAppearanceForBigFan(svg: string): string {
-  const body = svg.replace(/^\s*<svg\b[^>]*>/i, "").replace(/<\/svg>\s*$/i, "");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 566.9"><g transform="translate(60 92.3731) scale(1.8461538)">${body}</g></svg>`;
-}
-
-function appendFanAppearanceDetails(
-  svg: string,
-  fanRenderKey: NonNullable<ReturnType<typeof parseFanRenderKey>>
-): string {
-  const frameColor =
-    fanRenderKey.frameColor === "white" ? "#f5f7ff" : "#171923";
-  const frameOverlay =
-    fanRenderKey.build === "day"
-      ? `<g data-fan-frame-color="${fanRenderKey.frameColor}" fill="none" stroke="${frameColor}" stroke-width="2.5" stroke-linecap="round" opacity="0.92"><path d="M139 91 L202 3 M143 96 L229 46 M145 103.5 H258 M143 111 L229 161 M139 116 L202 204"/></g>`
-      : "";
-  const coverOverlay =
-    fanRenderKey.cover === "covered" && fanRenderKey.build === "day"
-      ? `<g data-fan-wick-cover="covered" fill="#f5aec9" stroke="#7b3653" stroke-width="2"><circle cx="202" cy="5" r="8"/><circle cx="230" cy="46" r="9"/><circle cx="255" cy="103.5" r="8"/><circle cx="230" cy="161" r="9"/><circle cx="202" cy="202" r="8"/></g>`
-      : "";
-
-  return svg.replace(/<\/svg>\s*$/i, `${frameOverlay}${coverOverlay}</svg>`);
-}
-
-/**
- * Physical fire-fan artwork owns its material colors. Only the marked metal
- * frame follows the motion color; Kevlar wicks and fitted covers stay physical.
- */
-export function applyFanFrameColor(svg: string, color: string): string {
-  return svg.replace(
-    /<g\b(?=[^>]*\bdata-fan-frame=(?:""|''))[^>]*>/i,
-    (tag) => {
-      if (/\bstroke=(?:"[^"]*"|'[^']*')/i.test(tag)) {
-        return tag.replace(
-          /\bstroke=(?:"[^"]*"|'[^']*')/i,
-          `stroke="${color}"`
-        );
-      }
-      return tag.replace(/>$/, ` stroke="${color}">`);
-    }
-  );
-}
+// The fan build helpers live with the fan appearance domain so the static
+// pictograph loader and this animator recolor and size the same artwork the
+// same way.
+export { applyFanFrameColor };
 
 /**
  * Model sprites are pre-lit in the blue and red motion colors, so the hand
@@ -351,19 +315,14 @@ export async function generatePropSvg(
   const fetchedSvg = await fetchPropSvg(path);
   const semanticPropType = fanRenderKey?.propType ?? propTypeLower;
   const isMaterialColoredFan =
-    fanRenderKey?.build === "fire" ||
-    fanRenderKey?.build === "lotus" ||
-    fanRenderKey?.build === "moon";
+    fanRenderKey !== null && fanRenderKey.build !== "pictograph";
   const coloredSvg = isMaterialColoredFan
     ? applyFanFrameColor(fetchedSvg, color)
     : applyColorToPropSvg(fetchedSvg, color, semanticPropType);
-  const detailedSvg = fanRenderKey
-    ? appendFanAppearanceDetails(coloredSvg, fanRenderKey)
-    : coloredSvg;
   const sizedSvg =
     fanRenderKey?.propType === "bigfan"
-      ? scaleFanAppearanceForBigFan(detailedSvg)
-      : detailedSvg;
+      ? scaleFanAppearanceForBigFan(coloredSvg)
+      : coloredSvg;
   const contrastAdjustedSvg =
     semanticPropType === "torch" || semanticPropType === "bigtorch"
       ? recolorMarkedPart(
