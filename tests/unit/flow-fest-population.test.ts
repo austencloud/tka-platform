@@ -16,6 +16,7 @@ import {
 import {
   FLOW_FEST_DAY_PHASE_ORDER,
   FLOW_FEST_DAY_PHASE_WINDOWS,
+  FLOW_FEST_PHASE_WARM_START_SECONDS,
   FlowFestPopulationSimulation,
   composeFlowFestFireJamLayout,
   createFlowFestPopulation,
@@ -40,16 +41,16 @@ import {
   type FlowFestFestivalPersonPlacement,
 } from "$lib/features/flow-fest-sim/domain/flow-fest-living-fire-jam";
 import { isEffectPreviewLoop } from "$lib/shared/effects/domain/effect-preview-loop-policy";
-import {
-  GHGH,
-  makeLoop,
-} from "$lib/shared/combination/domain/demo-fixtures";
+import { GHGH, makeLoop } from "$lib/shared/combination/domain/demo-fixtures";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { FlowFestMoment } from "$lib/features/flow-fest-sim/state/flow-fest-progress";
 
 const contract = parseFlowFestRuntimeContract(
   JSON.parse(
-    readFileSync("static/data/flow-fest-sim/gate2-runtime-contract.json", "utf8")
+    readFileSync(
+      "static/data/flow-fest-sim/gate2-runtime-contract.json",
+      "utf8"
+    )
   )
 );
 const plan = createFlowFestCampPlan(contract, "lower-tent");
@@ -57,7 +58,9 @@ const plan = createFlowFestCampPlan(contract, "lower-tent");
 // The derived fire and LED centres, taken from the production geometry rather
 // than re-authored here: night-heart centre offset by (-11, +1.5) and
 // (+20, +12).
-const nightHeart = contract.zones.find((zone) => zone.id === "night-heart-zone")!;
+const nightHeart = contract.zones.find(
+  (zone) => zone.id === "night-heart-zone"
+)!;
 const FIRE_CENTER = {
   x: nightHeart.center.x - 11,
   z: nightHeart.center.z + 1.5,
@@ -264,9 +267,9 @@ describe("Flow Fest corridor routing", () => {
       const steps = route!;
       expect(flowFestCorridorPathLength(steps)).toBeGreaterThan(1);
       const last = steps[steps.length - 1]!;
-      expect(Math.hypot(last.x - FIRE_CENTER.x, last.z - FIRE_CENTER.z)).toBeLessThan(
-        0.6
-      );
+      expect(
+        Math.hypot(last.x - FIRE_CENTER.x, last.z - FIRE_CENTER.z)
+      ).toBeLessThan(0.6);
 
       for (let index = 1; index < steps.length; index += 1) {
         const from = steps[index - 1]!;
@@ -364,9 +367,9 @@ describe("Flow Fest corridor routing", () => {
     // must not also be rendering them.
     for (const agent of frame.agents) {
       if (!agent.atFireJam) continue;
-      expect(agent.activity === "watch-fire" || agent.activity === "join-fire").toBe(
-        true
-      );
+      expect(
+        agent.activity === "watch-fire" || agent.activity === "join-fire"
+      ).toBe(true);
     }
   });
 
@@ -640,4 +643,219 @@ describe("Flow Fest performer sequences", () => {
       expect(["fire", "led"]).toContain(profile.effectId);
     }
   });
+});
+
+describe("Flow Fest crowd behaviour", () => {
+  // Thresholds come from a 240 s, 60 Hz headless run of every moment on this
+  // site (38 people), measured after the crowd rewrite. This test runs 90 s per
+  // moment; the ceilings below are what the 240 s run showed with room for the
+  // seeded draws to land differently on a shorter window.
+  //
+  //   moment      pairs<0.4 m  pairs<0.6 m  max step  longest <0.4 m run
+  //   afternoon   0.00/frame   0.05/frame   0.022 m   0.0 s
+  //   golden-hour 0.01/frame   0.07/frame   0.026 m   0.7 s
+  //   night       0.00/frame   0.02/frame   0.026 m   0.2 s
+  //   dawn        0.02/frame   0.14/frame   0.028 m   0.7 s
+  //
+  // Standing pairs under 0.3 m, single-frame jumps over 0.12 m, slow-walk
+  // circling and stalls between walks all measured zero. Before the rewrite
+  // the same run showed 12 to 36 pairs under 0.4 m every frame, 78 to 493
+  // jumps a second and open-field walkers turning ten circles.
+  const site = buildSite();
+  const FRAME_SECONDS = 1 / 60;
+  const RUN_SECONDS = 90;
+
+  interface CrowdMeasure {
+    frames: number;
+    pairsUnder04: number;
+    pairsUnder06: number;
+    standingPairsUnder03: number;
+    maxStep: number;
+    longestCloseRunFrames: number;
+    maxSlowTurnRadians: number;
+    shortStops: number;
+    movingFractionWhileSettled: number;
+  }
+
+  function measureCrowd(moment: FlowFestMoment): CrowdMeasure {
+    const npcs = createFlowFestPopulation(site, {
+      count: 38,
+      homeAnchorIds: flowFestHomeAnchorIds(site),
+    });
+    const simulation = new FlowFestPopulationSimulation(site, npcs);
+    const phase = flowFestDayPhaseForMoment(moment);
+    const warm = FLOW_FEST_PHASE_WARM_START_SECONDS[phase];
+    if (warm > 0) simulation.warmStart(moment, 0, warm);
+
+    const measure: CrowdMeasure = {
+      frames: 0,
+      pairsUnder04: 0,
+      pairsUnder06: 0,
+      standingPairsUnder03: 0,
+      maxStep: 0,
+      longestCloseRunFrames: 0,
+      maxSlowTurnRadians: 0,
+      shortStops: 0,
+      movingFractionWhileSettled: 0,
+    };
+    const closeRuns = new Map<string, number>();
+    const last = npcs.map(() => ({
+      x: Number.NaN,
+      z: Number.NaN,
+      facing: Number.NaN,
+      slowTurn: 0,
+      stopFrames: 0,
+      stopInterrupted: false,
+      stopAnchor: "",
+      everMoved: false,
+      settledFrames: 0,
+      settledMovingFrames: 0,
+      arrivedAnchor: "",
+    }));
+    const measuredOpen = new Set(
+      site.anchors
+        .filter(
+          (anchor) =>
+            site.graph.clearings[anchor.clearingIndex]?.wanderPolicy ===
+            "measured-open"
+        )
+        .map((anchor) => anchor.id)
+    );
+
+    const steps = Math.round(RUN_SECONDS / FRAME_SECONDS);
+    let elapsed = warm;
+    for (let step = 0; step < steps; step += 1) {
+      elapsed += FRAME_SECONDS;
+      const frame = simulation.advance(
+        flowFestSimClock(moment, elapsed),
+        FRAME_SECONDS
+      );
+      measure.frames += 1;
+      const walkers = frame.agents.filter((agent) => !agent.atFireJam);
+      for (let i = 0; i < walkers.length; i += 1) {
+        for (let j = i + 1; j < walkers.length; j += 1) {
+          const a = walkers[i]!;
+          const b = walkers[j]!;
+          const distance = Math.hypot(a.x - b.x, a.z - b.z);
+          if (distance < 0.4) measure.pairsUnder04 += 1;
+          if (distance < 0.6) measure.pairsUnder06 += 1;
+          if (distance < 0.3 && !a.isMoving && !b.isMoving)
+            measure.standingPairsUnder03 += 1;
+          const key = `${a.id}|${b.id}`;
+          const run = closeRuns.get(key) ?? 0;
+          if (distance < 0.4) {
+            closeRuns.set(key, run + 1);
+            measure.longestCloseRunFrames = Math.max(
+              measure.longestCloseRunFrames,
+              run + 1
+            );
+          } else if (run > 0) {
+            closeRuns.set(key, 0);
+          }
+        }
+      }
+      frame.agents.forEach((agent, index) => {
+        const memo = last[index]!;
+        if (!Number.isNaN(memo.x) && !agent.atFireJam) {
+          measure.maxStep = Math.max(
+            measure.maxStep,
+            Math.hypot(agent.x - memo.x, agent.z - memo.z)
+          );
+          if (agent.isMoving && agent.speedMetersPerSecond < 0.5) {
+            const turn = Math.atan2(
+              Math.sin(agent.facingAngle - memo.facing),
+              Math.cos(agent.facingAngle - memo.facing)
+            );
+            memo.slowTurn += turn;
+            measure.maxSlowTurnRadians = Math.max(
+              measure.maxSlowTurnRadians,
+              Math.abs(memo.slowTurn)
+            );
+          } else {
+            memo.slowTurn = 0;
+          }
+        }
+        memo.x = agent.x;
+        memo.z = agent.z;
+        memo.facing = agent.facingAngle;
+        if (agent.isMoving) {
+          if (
+            memo.everMoved &&
+            memo.stopFrames >= 2 &&
+            memo.stopFrames < 15 * 60 &&
+            !memo.stopInterrupted &&
+            memo.stopAnchor === agent.anchorId
+          ) {
+            measure.shortStops += 1;
+          }
+          memo.stopFrames = 0;
+          memo.stopInterrupted = false;
+          memo.everMoved = true;
+        } else {
+          if (memo.stopFrames === 0) memo.stopAnchor = agent.anchorId;
+          memo.stopFrames += 1;
+          if (agent.interrupted) memo.stopInterrupted = true;
+        }
+        // People who have reached a measured-open clearing stroll now and
+        // then; the rest of the time they stand. Count from the first frame
+        // they stand there until their plan sends them somewhere else.
+        if (memo.arrivedAnchor !== agent.anchorId) memo.arrivedAnchor = "";
+        if (
+          memo.arrivedAnchor === "" &&
+          !agent.atFireJam &&
+          !agent.isMoving &&
+          measuredOpen.has(agent.anchorId)
+        ) {
+          memo.arrivedAnchor = agent.anchorId;
+        }
+        if (memo.arrivedAnchor !== "" && !agent.atFireJam) {
+          memo.settledFrames += 1;
+          if (agent.isMoving) memo.settledMovingFrames += 1;
+        }
+      });
+    }
+    const settledFrames = last.reduce(
+      (sum, memo) => sum + memo.settledFrames,
+      0
+    );
+    const settledMoving = last.reduce(
+      (sum, memo) => sum + memo.settledMovingFrames,
+      0
+    );
+    measure.movingFractionWhileSettled =
+      settledFrames > 0 ? settledMoving / settledFrames : 0;
+    return measure;
+  }
+
+  for (const phase of FLOW_FEST_DAY_PHASE_ORDER) {
+    const moment = MOMENT_BY_PHASE[phase];
+    it(`keeps the ${phase} crowd apart, steady and unhurried`, () => {
+      const measure = measureCrowd(moment);
+      const frames = measure.frames;
+      expect(frames).toBe(RUN_SECONDS * 60);
+
+      // Clipping: brushing past on a 0.8 m trail happens; standing inside
+      // someone or walking through them does not.
+      expect(measure.pairsUnder04 / frames).toBeLessThan(0.25);
+      expect(measure.pairsUnder06 / frames).toBeLessThan(0.6);
+      expect(measure.standingPairsUnder03).toBe(0);
+      expect(measure.longestCloseRunFrames / 60).toBeLessThan(2);
+
+      // Teleporting: the fastest walker covers 0.025 m a frame and the
+      // separation lean adds at most 0.0075 m. Anything over 0.05 m is a jump.
+      expect(measure.maxStep).toBeLessThan(0.05);
+
+      // Circling: the old open-field orbit turned ten full circles at a
+      // creep. A slow stretch may hold a U-turn (from the anchor node onto
+      // the spot beside it) but never a full circle.
+      expect(measure.maxSlowTurnRadians).toBeLessThan(1.5 * Math.PI);
+
+      // Stalls: a walk never pauses for under 15 s unless somebody stopped
+      // them to chat or the schedule sent them somewhere new.
+      expect(measure.shortStops).toBeLessThanOrEqual(1);
+
+      // Congregating: people at a gathering stand far more than they stroll.
+      expect(measure.movingFractionWhileSettled).toBeLessThan(0.35);
+    });
+  }
 });
