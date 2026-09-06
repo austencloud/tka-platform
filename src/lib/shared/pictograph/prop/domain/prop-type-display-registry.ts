@@ -133,12 +133,6 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
       category: "singles",
     },
 
-    [PropType.SICKLES]: {
-      label: "Sickles",
-      image: "/images/props/buttons/sickles.svg",
-      category: "singles",
-    },
-
     // === ENERGY FAMILY (premium cosmetics) ===
     // No `category` on purpose. The category taxonomy feeds getBasePropsByCategory(),
     // which the 3D prop controls expand without an access check. Leaving these two
@@ -356,8 +350,6 @@ export const VARIANT_PROP_TYPES: PropType[] = [
   PropType.BIGDOUBLESTAR,
   // Eightrings family
   PropType.BIGEIGHTRINGS,
-  // Sword family
-  PropType.SICKLES,
   // Contact ball family (DOUBLECONTACTBALL is now standalone)
   PropType.BIGCONTACTBALL,
   PropType.BIGDOUBLECONTACTBALL,
@@ -398,8 +390,6 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.BIGDOUBLESTAR]: PropType.DOUBLESTAR,
   // Eightrings variations
   [PropType.BIGEIGHTRINGS]: PropType.EIGHTRINGS,
-  // Weapon variations
-  [PropType.SICKLES]: PropType.SWORD,
   // Contact ball variations (CONTACTBALL, BIGCONTACTBALL, BIGDOUBLECONTACTBALL deactivated)
   [PropType.BIGCONTACTBALL]: PropType.CONTACTBALL,
   [PropType.BIGDOUBLECONTACTBALL]: PropType.CONTACTBALL,
@@ -432,7 +422,6 @@ const BASE_TO_VARIANTS: Partial<Record<PropType, PropType[]>> = {
   [PropType.GUITAR]: [PropType.UKULELE],
   [PropType.DOUBLESTAR]: [PropType.BIGDOUBLESTAR],
   [PropType.EIGHTRINGS]: [PropType.BIGEIGHTRINGS],
-  [PropType.SWORD]: [PropType.SICKLES],
   [PropType.CONTACTBALL]: [
     PropType.BIGCONTACTBALL,
     PropType.BIGDOUBLECONTACTBALL,
@@ -664,7 +653,6 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       PropType.DOUBLECONTACTBALL,
       PropType.TORCH,
       PropType.SWORD,
-      PropType.SICKLES,
     ],
   },
   {

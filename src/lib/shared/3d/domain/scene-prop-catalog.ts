@@ -28,13 +28,10 @@ export interface ScenePropFamily {
  */
 export const SCENE_PROP_FAMILIES: readonly ScenePropFamily[] = [
   {
-    tileLabel: "Sword / Sickles",
+    tileLabel: "Sword",
     controlLabel: "Weapon",
     representative: PropType.SWORD,
-    variants: [
-      { id: PropType.SWORD, label: "Sword" },
-      { id: PropType.SICKLES, label: "Sickles" },
-    ],
+    variants: [{ id: PropType.SWORD, label: "Sword" }],
   },
   {
     tileLabel: "Double Staff",
@@ -218,7 +215,6 @@ const PROP_PREVIEW_IMAGES: Partial<Record<PropType, string>> = {
   [PropType.TRIAD]: "triad-fire.webp",
   [PropType.TRIGENG]: "trigeng.webp",
   [PropType.SWORD]: "sword.webp",
-  [PropType.SICKLES]: "sickles.webp",
 };
 
 function previewImage(file: string): string {

@@ -91,6 +91,12 @@ describe("energy prop short codes", () => {
     // Old links in circulation encode R. Adding props must not disturb it.
     expect(parsePropTypeFromURLValue("R")).toBe(PropType.BUUGENG);
   });
+
+  it("the retired sickles alias still resolves to sword", () => {
+    // Y reached printed cards before sickles was removed 2026-09-06. Those
+    // scans must land on its base prop instead of a missing one.
+    expect(parsePropTypeFromURLValue("Y")).toBe(PropType.SWORD);
+  });
 });
 
 describe("current codec round trip", () => {

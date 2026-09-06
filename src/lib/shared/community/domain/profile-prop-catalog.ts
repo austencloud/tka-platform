@@ -150,9 +150,11 @@ const CANONICAL_PROFILE_SKILLS = new Set(
   )
 );
 
-// Sickles were previously inherited from the Sword render family. They are not
-// a setup skill and should not survive the next profile-selection save.
-const REMOVED_PROFILE_PROPS = new Set<PropType>([PropType.SICKLES]);
+// Props that no longer exist in the enum but may still sit in a saved profile.
+// Sickles was inherited from the Sword render family and removed 2026-09-06; a
+// profile carrying it should drop it on the next selection save rather than
+// keep it as a legacy value.
+const REMOVED_PROFILE_PROPS: ReadonlySet<string> = new Set(["sickles"]);
 
 export function getProfilePropFamily(
   prop: PropType
