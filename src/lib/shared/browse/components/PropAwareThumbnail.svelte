@@ -388,7 +388,14 @@
         skipCache: shouldSkipCache,
         priority,
         signal: requestController.signal,
-        qrPolicy: variant === "gallery" && !cardMode ? "cache-only" : "generate",
+        qrPolicy: variant === "gallery" && !cardMode ? "background" : "generate",
+        onPreview: (preview) => {
+          if (requestIsCurrent() && preview.url) {
+            displayedKey = preview.key;
+            thumbnailUrl = preview.url;
+            status = { state: "complete", url: preview.url };
+          }
+        },
         onStatusChange: (s) => {
           if (requestIsCurrent()) {
             status = s;
