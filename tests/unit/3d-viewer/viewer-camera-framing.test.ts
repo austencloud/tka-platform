@@ -2,6 +2,10 @@
 
 import { BackgroundType } from "@austencloud/backgrounds";
 import { describe, expect, it, vi } from "vitest";
+import {
+  getViewerFrontStageFacingAngle,
+  getViewerFrontStageCameraZ,
+} from "$lib/shared/3d/domain/viewer-formation-facing";
 
 import {
   computeViewerAlignedCamera,
@@ -29,6 +33,29 @@ function rect(
 }
 
 describe("viewer camera framing", () => {
+  it("opens Blossom on the garden approach and widens its portrait composition", () => {
+    const desktop = computeViewerAlignedCamera({
+      environmentId: "blossom",
+      fov: 48,
+      document: null,
+    });
+    expect(desktop.position.z).toBe(-24);
+    expect(desktop.target.z).toBe(7);
+    expect(getViewerFrontStageFacingAngle("blossom")).toBe(Math.PI);
+    expect(getViewerFrontStageCameraZ(0, 3, "blossom")).toBe(-3);
+    document.body.innerHTML = "";
+    vi.stubGlobal("innerWidth", 375);
+    vi.stubGlobal("innerHeight", 667);
+    const phone = computeViewerAlignedCamera({
+      environmentId: "blossom",
+      fov: 48,
+      document,
+    });
+    expect(phone.position.z).toBeLessThan(desktop.position.z);
+    expect(phone.target.x).toBe(-3);
+    vi.unstubAllGlobals();
+  });
+
   it("uses the canonical front-stage fallback without a 2D canvas", () => {
     const camera = computeViewerAlignedCamera({
       environmentId: BackgroundType.OCEAN,
@@ -70,18 +97,10 @@ describe("viewer camera framing", () => {
 
   it("accepts only finite, controllable persisted poses", () => {
     expect(
-      isValidViewerCameraPose(
-        { x: 0, y: 2, z: 8 },
-        { x: 0, y: 0, z: 0.3 },
-        50
-      )
+      isValidViewerCameraPose({ x: 0, y: 2, z: 8 }, { x: 0, y: 0, z: 0.3 }, 50)
     ).toBe(true);
     expect(
-      isValidViewerCameraPose(
-        { x: 0, y: 0, z: 0.5 },
-        { x: 0, y: 0, z: 0 },
-        50
-      )
+      isValidViewerCameraPose({ x: 0, y: 0, z: 0.5 }, { x: 0, y: 0, z: 0 }, 50)
     ).toBe(false);
     expect(
       isValidViewerCameraSnapshot({

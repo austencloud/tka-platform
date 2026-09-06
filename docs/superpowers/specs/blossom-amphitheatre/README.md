@@ -1,5 +1,7 @@
 # Moonlit Blossom amphitheatre
 
+**Rejected by Austen on September 5, 2026 (5/10).** Trees appeared planted in the water and the stage looked unrelated to the landscape. This document and its evidence are historical; the replacement is tracked in `../blossom-lantern-garden/`.
+
 Austen authorized a complete redesign on September 5, 2026. The active scene now uses a new Blender composition: one ancient flowering cherry beside a crescent pond, a 12 × 8 m performance deck, three interrupted stone seating terraces, two curving approaches, eight washi lanterns, planted banks and a surrounding cherry grove.
 
 The source is original procedural mesh work: tapered Bezier limbs with flowering side forks, individual five-petal florets, welded bark normals, varied stone meshes and packed procedural surface textures. Distant trees share three GPU-instanced forms. Runtime lighting combines cool moonlight with warm practical lights; existing water, stage and motion-quality infrastructure remains in use.
