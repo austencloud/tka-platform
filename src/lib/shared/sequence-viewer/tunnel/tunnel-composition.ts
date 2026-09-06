@@ -147,7 +147,10 @@ const TunnelSequenceSchema = z
     word: z.string(),
     steps: z.array(z.any()),
   })
-  .passthrough();
+  .passthrough()
+  // Identity at runtime; it only restates the openness above as the type the
+  // rest of the module works with.
+  .transform((value): SequenceData => value as unknown as SequenceData);
 
 const TunnelConfigSchema = z.object({
   fold: z.number(),

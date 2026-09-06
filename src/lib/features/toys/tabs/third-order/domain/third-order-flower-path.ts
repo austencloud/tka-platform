@@ -6,7 +6,6 @@ import {
   propIndexAt,
   type QftKnobs,
 } from "$lib/shared/notation/qft/qft-model";
-import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
 import {
   THIRD_ORDER_CHILD_SCALE,
   THIRD_ORDER_VIEWBOX_SIZE,
@@ -29,7 +28,13 @@ const COMPASS_STEPS = 8;
 const TANGENT_SAMPLE = 0.002;
 const EPSILON = 0.000_001;
 
-const TIMING_OFFSET: Record<VtgMode[0], number> = {
+// `VtgMode` is a 2-character string union ("SS" | "TS" | ...), so `VtgMode[0]`
+// resolves through `String`'s numeric index signature to plain `string`
+// rather than the literal first-character type — this alias names what the
+// timing digit actually is.
+type VtgTiming = "S" | "T" | "Q";
+
+const TIMING_OFFSET: Record<VtgTiming, number> = {
   S: 4,
   T: 0,
   Q: 2,
@@ -39,8 +44,11 @@ function displayRatioParts(ratio: ThirdOrderFlowerRatio): {
   primaryCycles: number;
   orbitCycles: number;
 } {
-  const [primaryCycles, orbitCycles] = ratio.split(":").map(Number);
-  return { primaryCycles, orbitCycles };
+  const [primaryPart, orbitPart] = ratio.split(":");
+  if (primaryPart === undefined || orbitPart === undefined) {
+    throw new Error(`Malformed third-order flower ratio: "${ratio}"`);
+  }
+  return { primaryCycles: Number(primaryPart), orbitCycles: Number(orbitPart) };
 }
 
 /**
@@ -79,7 +87,7 @@ function knobsFor(
   lane: ThirdOrderCarrierLane
 ): QftKnobs {
   const ratio = thirdOrderRatioToSpinRatio(path.ratio);
-  const timing = path.relationship.charAt(0) as VtgMode[0];
+  const timing = path.relationship.charAt(0) as VtgTiming;
   const opposite = path.relationship.charAt(1) === "O";
   return {
     radius: 1,

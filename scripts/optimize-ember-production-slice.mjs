@@ -94,32 +94,37 @@ function applyEmberMaterialProfile(document) {
 }
 
 const runtimeOutput = "static/models/ember/ember-production-slice.glb";
-const geology = process.argv.includes("--geology-stage");
+const valley = process.argv.includes("--distant-valley");
+const geology = valley || process.argv.includes("--geology-stage");
 const distant = geology || process.argv.includes("--distant");
 const tributaries = distant || process.argv.includes("--tributaries");
 const tributaryRevision = distant ? "r2" : "r1";
 const flow = tributaries || process.argv.includes("--lava-flow");
 const midflank = flow || process.argv.includes("--midflank-r5");
-const versionedOutput = geology
-  ? "static/models/ember/ember-geology-stage-r1.glb"
-  : tributaries
-    ? `static/models/ember/ember-mountain-tributaries-${tributaryRevision}.glb`
-    : flow
-      ? "static/models/ember/ember-midflank-lava-flow-r2.glb"
-      : midflank
-        ? "static/models/ember/ember-midflank-production-r5.glb"
-        : "static/models/ember/ember-production-slice-r10.glb";
+const versionedOutput = valley
+  ? "static/models/ember/ember-distant-valley-r1.glb"
+  : geology
+    ? "static/models/ember/ember-geology-stage-r1.glb"
+    : tributaries
+      ? `static/models/ember/ember-mountain-tributaries-${tributaryRevision}.glb`
+      : flow
+        ? "static/models/ember/ember-midflank-lava-flow-r2.glb"
+        : midflank
+          ? "static/models/ember/ember-midflank-production-r5.glb"
+          : "static/models/ember/ember-production-slice-r10.glb";
 
 await optimizeGltfKtx2({
-  input: geology
-    ? "static/models/ember/ember-geology-stage-r1_raw.glb"
-    : tributaries
-      ? `static/models/ember/ember-mountain-tributaries-${tributaryRevision}_raw.glb`
-      : flow
-        ? "static/models/ember/ember-midflank-lava-flow-r2_raw.glb"
-        : midflank
-          ? "static/models/ember/ember-midflank-production-r5_raw.glb"
-          : "static/models/ember/ember-production-slice_raw.glb",
+  input: valley
+    ? "static/models/ember/ember-distant-valley-r1_raw.glb"
+    : geology
+      ? "static/models/ember/ember-geology-stage-r1_raw.glb"
+      : tributaries
+        ? `static/models/ember/ember-mountain-tributaries-${tributaryRevision}_raw.glb`
+        : flow
+          ? "static/models/ember/ember-midflank-lava-flow-r2_raw.glb"
+          : midflank
+            ? "static/models/ember/ember-midflank-production-r5_raw.glb"
+            : "static/models/ember/ember-production-slice_raw.glb",
   output: runtimeOutput,
   temporaryStem: "ember-production-slice",
   label: midflank

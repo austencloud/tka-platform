@@ -43,7 +43,7 @@ export function normalizeLearningLettersProgress(
   const storedSchema = phaseData?.["schemaVersion"];
   const canPreserveStep =
     storedSchema === 3 || storedSchema === LEARNING_LETTERS_SCHEMA_VERSION;
-  if (!canPreserveStep) {
+  if (!canPreserveStep || !phaseData) {
     return {
       progress: {
         schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,

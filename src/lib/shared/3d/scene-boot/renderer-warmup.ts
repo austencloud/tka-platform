@@ -100,7 +100,7 @@ export async function warmupRenderer(
   // GPU sat idle between them. Dispatching them together keeps the synchronous
   // half in the same order and lets the link waits overlap, so the warm-up
   // costs roughly the slowest single program instead of the sum of all of them.
-  const pending: Array<Promise<void> | null> = [];
+  const pending: Array<Promise<unknown> | null> = [];
   let sliceStartedAt = performance.now();
   for (const target of targets) {
     if (signal?.aborted) {

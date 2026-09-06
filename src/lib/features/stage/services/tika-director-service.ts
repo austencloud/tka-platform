@@ -72,7 +72,7 @@ export async function resolveStageDirection(input: {
           label: performer.label,
           characterId: look?.characterId ?? "unknown",
           prop:
-            look?.settings.prop ?? viewerSnapshot.defaultProp ?? PropType.STAFF,
+            look?.settings?.prop ?? viewerSnapshot.defaultProp ?? PropType.STAFF,
         };
       }),
       formations: input.choreography.formations.map((formation) => ({

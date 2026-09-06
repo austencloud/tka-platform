@@ -544,7 +544,7 @@ function endpointUndershoot(
   );
   if (returnSamples.length < 2) return null;
 
-  const start = value(returnSamples[0]);
+  const start = value(returnSamples[0]!);
   const end = value(returnSamples.at(-1)!);
   const minimumSample = returnSamples.reduce((minimum, sample) =>
     value(sample) < value(minimum) ? sample : minimum
@@ -568,7 +568,7 @@ function travelSummary(
     .map(value);
   if (returnValues.length < 2) return null;
 
-  const start = returnValues[0];
+  const start = returnValues[0]!;
   const end = returnValues.at(-1)!;
   const minimum = Math.min(...returnValues);
   const maximum = Math.max(...returnValues);
@@ -597,7 +597,7 @@ function phaseTravelSummary(
     .map(value);
   if (values.length < 2) return null;
 
-  const start = values[0];
+  const start = values[0]!;
   const end = values.at(-1)!;
   const minimum = Math.min(...values);
   const maximum = Math.max(...values);
@@ -634,7 +634,7 @@ function visiblePhaseRange(
   const minimum = Math.min(...values);
   const maximum = Math.max(...values);
   return {
-    start: values[0],
+    start: values[0]!,
     end: values.at(-1)!,
     minimum,
     maximum,
@@ -671,7 +671,7 @@ function valueRange(
   const minimum = Math.min(...values);
   const maximum = Math.max(...values);
   return {
-    start: values[0],
+    start: values[0]!,
     end: values.at(-1)!,
     minimum,
     maximum,
@@ -718,12 +718,9 @@ function late2DBackingChanges(samples: TransitionGeometrySample[]): number {
   );
   let changes = 0;
   for (let index = 1; index < settledReturn.length; index += 1) {
-    if (
-      Math.abs(
-        settledReturn[index].mandalaBackingSize -
-          settledReturn[index - 1].mandalaBackingSize
-      ) > 0.5
-    ) {
+    const current = settledReturn[index]!;
+    const previous = settledReturn[index - 1]!;
+    if (Math.abs(current.mandalaBackingSize - previous.mandalaBackingSize) > 0.5) {
       changes += 1;
     }
   }
@@ -798,8 +795,8 @@ function lateTunnelBackingChanges(samples: TransitionGeometrySample[]): number {
   );
   let changes = 0;
   for (let index = 1; index < settledTunnel.length; index += 1) {
-    const previous = settledTunnel[index - 1];
-    const current = settledTunnel[index];
+    const previous = settledTunnel[index - 1]!;
+    const current = settledTunnel[index]!;
     if (
       Math.abs(current.tunnelBackingWidth - previous.tunnelBackingWidth) >
         0.5 ||
@@ -817,10 +814,9 @@ function maximumSampleStep(
 ): number {
   let maximum = 0;
   for (let index = 1; index < samples.length; index += 1) {
-    maximum = Math.max(
-      maximum,
-      Math.abs(value(samples[index]) - value(samples[index - 1]))
-    );
+    const current = samples[index]!;
+    const previous = samples[index - 1]!;
+    maximum = Math.max(maximum, Math.abs(value(current) - value(previous)));
   }
   return Math.round(maximum * 1000) / 1000;
 }
@@ -828,8 +824,8 @@ function maximumSampleStep(
 function lateTunnelLayerArrivals(samples: TransitionGeometrySample[]): number {
   let arrivals = 0;
   for (let index = 1; index < samples.length; index += 1) {
-    const previous = samples[index - 1];
-    const current = samples[index];
+    const previous = samples[index - 1]!;
+    const current = samples[index]!;
     if (
       !previous.tunnelLayersReady &&
       current.tunnelLayersReady &&
@@ -861,10 +857,9 @@ function firstTunnelReveal(
 ): TransitionGeometrySample[] {
   let start = -1;
   for (let index = 1; index < samples.length; index += 1) {
-    if (
-      samples[index].tunnelOpacity >
-      samples[index - 1].tunnelOpacity + 0.001
-    ) {
+    const current = samples[index]!;
+    const previous = samples[index - 1]!;
+    if (current.tunnelOpacity > previous.tunnelOpacity + 0.001) {
       start = index - 1;
       break;
     }
@@ -872,7 +867,7 @@ function firstTunnelReveal(
   if (start < 0) return [];
   let end = samples.length - 1;
   for (let index = start + 1; index < samples.length; index += 1) {
-    if (samples[index].tunnelOpacity >= 0.99) {
+    if (samples[index]!.tunnelOpacity >= 0.99) {
       end = index;
       break;
     }
@@ -916,8 +911,8 @@ function tunnelPaintedArrival(
     if (sample.progress >= 0.999) break;
   }
   if (reveal.length < 2) return null;
-  const start = reveal[0];
-  const end = reveal[reveal.length - 1];
+  const start = reveal[0]!;
+  const end = reveal[reveal.length - 1]!;
   const peakProps = Math.max(
     0,
     ...reveal.map((sample) => sample.paintedPropCount)
@@ -1029,14 +1024,15 @@ function summarizeInspectorSurfaceStep(
   };
   let measured = false;
   for (let index = 0; index < samples.length; index += 1) {
-    const sample = samples[index];
+    const sample = samples[index]!;
     if (!sample.desktopInspectorExpected || !sample.inspectorReveal) continue;
     const layers = INSPECTOR_LAYER_IDS.map(
       (layer) => sample.inspectorReveal[layer]
     ).filter((reveal) => reveal && reveal.layerWidth > 0);
     if (!layers.length) continue;
-    const trackLeft = layers[0].layerLeft;
-    const trackRight = trackLeft + layers[0].layerWidth;
+    const firstLayer = layers[0]!;
+    const trackLeft = firstLayer.layerLeft;
+    const trackRight = trackLeft + firstLayer.layerWidth;
     if (trackRight - trackLeft <= 0) continue;
     measured = true;
     summary.frames += 1;
@@ -1063,8 +1059,8 @@ function summarizeInspectorSurfaceStep(
 
     const bands: { width: number; alpha: number }[] = [];
     for (let edge = 1; edge < ordered.length; edge += 1) {
-      const from = ordered[edge - 1];
-      const to = ordered[edge];
+      const from = ordered[edge - 1]!;
+      const to = ordered[edge]!;
       if (to <= from) continue;
       const middle = (from + to) / 2;
       let transparency = 1;
@@ -1117,7 +1113,7 @@ function summarizeInspectorReveal(
     uncoveredMs: 0,
   };
   for (let index = 0; index < samples.length; index += 1) {
-    const sample = samples[index];
+    const sample = samples[index]!;
     if (!sample.desktopInspectorExpected) continue;
     const reveal = sample.inspectorReveal?.[layer];
     if (!reveal || reveal.layerWidth <= 0 || reveal.panelWidth <= 0) continue;
@@ -1144,7 +1140,9 @@ function summarizeInspectorReveal(
 function longestSampleGap(samples: TransitionGeometrySample[]): number {
   let longest = 0;
   for (let index = 1; index < samples.length; index += 1) {
-    longest = Math.max(longest, samples[index].time - samples[index - 1].time);
+    const current = samples[index]!;
+    const previous = samples[index - 1]!;
+    longest = Math.max(longest, current.time - previous.time);
   }
   return longest;
 }
@@ -1229,7 +1227,7 @@ function summarizeCardSizePinRelease(
 ): CardSizePinRelease | null {
   let pinEnd = -1;
   for (let index = 0; index < samples.length; index += 1) {
-    if (samples[index].cardContainSizeMotion) pinEnd = index;
+    if (samples[index]!.cardContainSizeMotion) pinEnd = index;
   }
   if (pinEnd < 0 || pinEnd >= samples.length - 1) return null;
 
@@ -1240,20 +1238,20 @@ function summarizeCardSizePinRelease(
     );
   if (measured.length < 2) return null;
 
-  const first = measured[0];
-  const last = measured[measured.length - 1];
+  const first = measured[0]!;
+  const last = measured[measured.length - 1]!;
 
   let stepPx = 0;
   let settledIndex = 0;
   for (let index = 1; index < measured.length; index += 1) {
-    const delta = Math.abs(
-      measured[index].cardContentWidth - measured[index - 1].cardContentWidth
-    );
+    const current = measured[index]!;
+    const previous = measured[index - 1]!;
+    const delta = Math.abs(current.cardContentWidth - previous.cardContentWidth);
     if (delta > stepPx) stepPx = delta;
     if (delta > 0.5) settledIndex = index;
   }
 
-  const settled = measured[settledIndex];
+  const settled = measured[settledIndex]!;
   return {
     stepPx: Math.round(stepPx * 10) / 10,
     travelPx:
@@ -1292,9 +1290,9 @@ function summarizeDockCollapse(
   for (let index = 1; index < held.length; index += 1) {
     // Either direction counts. A round trip opens the dock and closes it again,
     // and a snap on the way out is the same defect as a snap on the way in.
-    const delta = Math.abs(
-      held[index - 1].inspectorSize - held[index].inspectorSize
-    );
+    const previousHeld = held[index - 1]!;
+    const currentHeld = held[index]!;
+    const delta = Math.abs(previousHeld.inspectorSize - currentHeld.inspectorSize);
     if (delta > stepPx) stepPx = delta;
     if (delta > 0.5) {
       if (firstIndex < 0) firstIndex = index - 1;
@@ -1312,7 +1310,8 @@ function summarizeDockCollapse(
     stepPx: Math.round(stepPx * 10) / 10,
     travelPx: Math.round((Math.max(...moving) - Math.min(...moving)) * 10) / 10,
     frames: lastIndex - firstIndex,
-    ms: Math.round((held[lastIndex].time - held[firstIndex].time) * 10) / 10,
+    ms:
+      Math.round((held[lastIndex]!.time - held[firstIndex]!.time) * 10) / 10,
   };
 }
 
@@ -1321,10 +1320,9 @@ function summarizeCardArrival(
 ): CardArrival | null {
   let commit = -1;
   for (let index = 1; index < samples.length; index += 1) {
-    if (
-      samples[index].selectedMode === "card" &&
-      samples[index - 1].selectedMode !== "card"
-    ) {
+    const current = samples[index]!;
+    const previous = samples[index - 1]!;
+    if (current.selectedMode === "card" && previous.selectedMode !== "card") {
       commit = index;
     }
   }
@@ -1338,22 +1336,23 @@ function summarizeCardArrival(
     .filter((sample) => sample.cardContentHeight > 0);
   if (measured.length < 2) return null;
 
-  const first = measured[0];
-  const last = measured[measured.length - 1];
+  const first = measured[0]!;
+  const last = measured[measured.length - 1]!;
 
   let stepPx = 0;
   let settledIndex = 0;
   for (let index = 1; index < measured.length; index += 1) {
+    const current = measured[index]!;
+    const previous = measured[index - 1]!;
     const delta = Math.abs(
-      measured[index].cardContentCenterY -
-        measured[index - 1].cardContentCenterY
+      current.cardContentCenterY - previous.cardContentCenterY
     );
     if (delta > stepPx) stepPx = delta;
     if (delta > 0.5) settledIndex = index;
   }
 
   const columnBottom = first.cardPanelCenterY + first.cardPanelHeight / 2;
-  const settled = measured[settledIndex];
+  const settled = measured[settledIndex]!;
   return {
     stepPx: Math.round(stepPx * 10) / 10,
     travelPx:

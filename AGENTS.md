@@ -57,6 +57,7 @@ Read only the row that matches the task. Do not scan `.claude/rules/` generally.
 | Worktree, commit, integration                          | `.claude/rules/worktree-workflow.md`, `.claude/rules/commit-only-your-own-changes.md`                                              |
 | Tests or verification strategy                         | `.agents/skills/testing/SKILL.md`, `.claude/rules/verification-protocol.md`                                                        |
 | UI layout, CSS, motion, responsive structure           | `src/AGENTS.md`, `docs/architecture/visual-design-canon.md`                                                                        |
+| 3D environment design, art revisions, or scene review  | `src/lib/shared/3d/AGENTS.md`, `docs/architecture/scene-design-brief.md`                                                           |
 | New shared component, service, utility, or behavior    | `.claude/rules/never-hand-roll.md`; search `docs/architecture/canonical-capabilities.md` with `rg` instead of reading it wholesale |
 | TKA facts, pictographs, or sequence generation         | `mcp-server/AGENTS.md`                                                                                                             |
 | Locomotion, gait, feet, retargeting, terrain traversal | `src/lib/shared/3d/AGENTS.md`, `docs/architecture/locomotion-research-canon.md`                                                    |

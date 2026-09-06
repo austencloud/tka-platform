@@ -30,7 +30,7 @@ const MCP_RENDERER_PATH = path.join(
 
 // Types for pictograph data (matches MCP server)
 interface MotionData {
-  color: string;
+  hand: string;
   startLocation: string;
   endLocation: string;
   motionType: string;

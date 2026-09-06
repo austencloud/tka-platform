@@ -169,9 +169,15 @@ function median(values: number[]): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);
   const mid = sorted.length >> 1;
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
+  if (sorted.length % 2 === 0) {
+    // mid - 1 and mid are always in bounds here: sorted.length is even and
+    // > 0, so mid >= 1 and mid < sorted.length.
+    const lower = sorted[mid - 1] ?? 0;
+    const upper = sorted[mid] ?? 0;
+    return (lower + upper) / 2;
+  }
+  // mid < sorted.length always holds for a non-empty array.
+  return sorted[mid] ?? 0;
 }
 
 /** Short-way angle between two unit quaternions, in radians. */
@@ -217,7 +223,10 @@ export function auditPropContinuity(
     // A prop that appears or disappears is a visibility change, not a
     // discontinuity in a pose that exists on both sides of the frame.
     if (!previous || !current) continue;
-    const dPhase = phases[i] - phases[i - 1];
+    const phaseCurrent = phases[i];
+    const phasePrevious = phases[i - 1];
+    if (phaseCurrent === undefined || phasePrevious === undefined) continue;
+    const dPhase = phaseCurrent - phasePrevious;
     if (dPhase <= 0) continue;
     const dx = (current.position.x - previous.position.x) * 100;
     const dy = (current.position.y - previous.position.y) * 100;
@@ -246,7 +255,9 @@ export function auditPropContinuity(
     const to = Math.min(values.length - 1, at + o.trendWindowSamples);
     for (let i = from; i <= to; i++) {
       if (Math.abs(i - at) <= o.trendExclusionSamples) continue;
-      window.push(values[i]);
+      const value = values[i];
+      if (value === undefined) continue;
+      window.push(value);
     }
     // A trace shorter than the exclusion hole has no outside to compare with,
     // so fall back to the whole trace rather than to nothing.
@@ -271,15 +282,15 @@ export function auditPropContinuity(
   const findings: ContinuityFinding[] = [];
   let cursor = 0;
   while (cursor < deltas.length) {
-    if (!flags[cursor].linear && !flags[cursor].angular) {
+    const currentFlag = flags[cursor];
+    if (!currentFlag || (!currentFlag.linear && !currentFlag.angular)) {
       cursor += 1;
       continue;
     }
     let end = cursor;
-    while (
-      end + 1 < deltas.length &&
-      (flags[end + 1].linear || flags[end + 1].angular)
-    ) {
+    while (end + 1 < deltas.length) {
+      const nextFlag = flags[end + 1];
+      if (!nextFlag || !(nextFlag.linear || nextFlag.angular)) break;
       end += 1;
     }
     const coreStart = cursor;
@@ -301,7 +312,9 @@ export function auditPropContinuity(
       // A zero baseline means the trace around the event is static, so every
       // frame reads as elevated and growth would run to its cap for nothing.
       if (reference <= 0) return false;
-      const value = coreLinear ? deltas[i].speed : deltas[i].angularSpeed;
+      const delta = deltas[i];
+      if (!delta) return false;
+      const value = coreLinear ? delta.speed : delta.angularSpeed;
       return value > o.extensionMultiple * reference;
     };
     const maxGrowth = 3 * o.trendWindowSamples;
@@ -325,8 +338,13 @@ export function auditPropContinuity(
     const span = deltas.slice(spanStart, spanEnd + 1);
     const spanFlags = flags.slice(spanStart, spanEnd + 1);
 
-    const firstIndex = span[0].index - 1;
-    const lastIndex = span[span.length - 1].index;
+    const firstDelta = span[0];
+    const lastDelta = span[span.length - 1];
+    const firstFlags = spanFlags[0];
+    if (!firstDelta || !lastDelta || !firstFlags) continue;
+
+    const firstIndex = firstDelta.index - 1;
+    const lastIndex = lastDelta.index;
     const startPose = poses[firstIndex];
     const endPose = poses[lastIndex];
     if (!startPose || !endPose) continue;
@@ -352,15 +370,18 @@ export function auditPropContinuity(
       continue;
     }
 
-    let peak = span[0];
-    let peakFlags = spanFlags[0];
+    let peak = firstDelta;
+    let peakFlags = firstFlags;
     for (let i = 1; i < span.length; i++) {
+      const candidate = span[i];
+      const candidateFlags = spanFlags[i];
+      if (!candidate || !candidateFlags) continue;
       const better = linearFlagged
-        ? span[i].speed > peak.speed
-        : span[i].angularSpeed > peak.angularSpeed;
+        ? candidate.speed > peak.speed
+        : candidate.angularSpeed > peak.angularSpeed;
       if (better) {
-        peak = span[i];
-        peakFlags = spanFlags[i];
+        peak = candidate;
+        peakFlags = candidateFlags;
       }
     }
 
@@ -378,10 +399,14 @@ export function auditPropContinuity(
       if (abs[dominant] / total >= 0.5) axis = dominant;
     }
 
-    const phaseStart = phases[firstIndex];
-    const phaseEnd = phases[lastIndex];
+    const phaseStartRaw = phases[firstIndex];
+    const phaseEndRaw = phases[lastIndex];
+    if (phaseStartRaw === undefined || phaseEndRaw === undefined) continue;
+    const phaseStart = phaseStartRaw;
+    const phaseEnd = phaseEndRaw;
     const crossesSeam = span.some((d) => {
       const p = phases[d.index];
+      if (p === undefined) return false;
       return Math.abs(p - Math.round(p)) <= o.stepSeamEpsilon;
     });
     const depthSignChanged =

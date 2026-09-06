@@ -86,7 +86,7 @@ function sameViewMode(a: BrowseViewMode, b: BrowseViewMode): boolean {
   return (
     a.subject === b.subject &&
     a.granularity === b.granularity &&
-    a.color === b.color
+    a.hand === b.hand
   );
 }
 

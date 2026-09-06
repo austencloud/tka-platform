@@ -15,8 +15,7 @@
  * phases inside a configuration to find its worst moment.
  */
 
-import type { CollisionSeverity } from "@austencloud/scene-3d";
-import type { SweepPhaseSample } from "./sweep-sample";
+import type { SweepPhaseSample, CollisionSeverity } from "./sweep-sample";
 
 export type SweepSeverity = "pass" | "warn" | "fail" | "blocked";
 
