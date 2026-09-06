@@ -179,6 +179,41 @@ function previewImage(file: string): string {
 }
 
 /** Rendered preview of a complete fan build, for tiles and pickers. */
+/**
+ * Scale the regular measured build around its hand pivot into Big Fan's box
+ * (the pictograph bigfan.svg is the 260x207 fan scaled by 600/325 with the
+ * same offset), so a build swap keeps every placement rule intact.
+ */
+export function scaleFanAppearanceForBigFan(svg: string): string {
+  const body = svg.replace(/^\s*<svg\b[^>]*>/i, "").replace(/<\/svg>\s*$/i, "");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 566.9"><g transform="translate(60 92.3731) scale(1.8461538)">${body}</g></svg>`;
+}
+
+/**
+ * Physical fan artwork owns its material colors. Only the marked frame group
+ * follows the motion color: its stroke for the rod-built fire and lotus fans,
+ * and its fill for the solid DoodleGrip Day plate. Kevlar wicks and fitted
+ * covers stay physical. Regex only: the composition worker has no DOM.
+ */
+export function applyFanFrameColor(svg: string, color: string): string {
+  return svg.replace(
+    /<g\b(?=[^>]*\bdata-fan-frame=(?:""|''))[^>]*>/i,
+    (tag) => {
+      const filled = tag.replace(
+        /\bfill=(?:"(?!none")[^"]*"|'(?!none')[^']*')/i,
+        `fill="${color}"`
+      );
+      if (/\bstroke=(?:"[^"]*"|'[^']*')/i.test(filled)) {
+        return filled.replace(
+          /\bstroke=(?:"[^"]*"|'[^']*')/i,
+          `stroke="${color}"`
+        );
+      }
+      return filled.replace(/>$/, ` stroke="${color}">`);
+    }
+  );
+}
+
 export function fanPreviewImage(appearance: FanAppearance): string {
   if (appearance.build === "pictograph") {
     return previewImage("fan-pictograph-front.webp");
