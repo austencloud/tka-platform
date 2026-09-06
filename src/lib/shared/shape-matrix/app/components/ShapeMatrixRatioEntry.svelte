@@ -169,8 +169,10 @@
           type="button"
           aria-label={`Decrease ${axisLabel} hand cycles`}
           disabled={(handValue ?? 0) <= 0}
-          onclick={() => nudge("hand", -1)}>−</button
+          onclick={() => nudge("hand", -1)}
         >
+          <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        </button>
         <input
           type="text"
           role="spinbutton"
@@ -189,8 +191,10 @@
           type="button"
           aria-label={`Increase ${axisLabel} hand cycles`}
           disabled={(handValue ?? 0) >= THEORY_RATIO_MAX_PART}
-          onclick={() => nudge("hand", 1)}>+</button
+          onclick={() => nudge("hand", 1)}
         >
+          <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </button>
       </span>
     </div>
 
@@ -203,8 +207,10 @@
           type="button"
           aria-label={`Decrease ${axisLabel} prop rotations`}
           disabled={(propValue ?? 0) <= 0}
-          onclick={() => nudge("prop", -1)}>−</button
+          onclick={() => nudge("prop", -1)}
         >
+          <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        </button>
         <input
           type="text"
           role="spinbutton"
@@ -223,8 +229,10 @@
           type="button"
           aria-label={`Increase ${axisLabel} prop rotations`}
           disabled={(propValue ?? 0) >= THEORY_RATIO_MAX_PART}
-          onclick={() => nudge("prop", 1)}>+</button
+          onclick={() => nudge("prop", 1)}
         >
+          <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </button>
       </span>
     </div>
   </div>
@@ -250,6 +258,7 @@
   .ratio-side {
     --axis-color: var(--theme-accent, #f59e0b);
     --axis-base: var(--theme-accent, #f59e0b);
+    --value-size: 1.125rem;
     display: grid;
     grid-template-rows: auto auto;
     width: 20rem;
@@ -357,13 +366,15 @@
     font: inherit;
   }
 
+  /* The number reads in its axis colour, as the level stepper value does. */
   .part-stepper input {
     width: 100%;
     min-width: 0;
     padding: 0 0.35rem;
     border-right: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
     border-left: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
-    font-size: 1.125rem;
+    color: var(--axis-color);
+    font-size: var(--value-size);
     font-weight: 750;
     font-variant-numeric: tabular-nums;
     text-align: center;
@@ -373,17 +384,29 @@
     outline: 0;
   }
 
+  /* Chevrons, the nudge glyphs the level stepper and the value scroller
+     already use, at the same share of the value size. Font Awesome gives
+     the icon a fixed 1.25em box; with the browser's 6px button padding
+     that box started 6px in and ran past a corner-sized button, so the
+     right chevron sat on the stepper's border and was clipped. No padding,
+     as on the level stepper, keeps the box inside and the glyph centred. */
   .part-stepper button {
     display: grid;
     place-items: center;
     min-width: var(--min-touch-target, 44px);
+    padding: 0;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
     cursor: pointer;
-    font-size: 1.15rem;
-    font-weight: 700;
+    font-size: calc(var(--value-size) * 0.7);
     transition:
       color var(--duration-fast, 150ms) ease,
       background var(--duration-fast, 150ms) ease;
+  }
+
+  /* The glyph is narrower than the icon box; sizing the box to the glyph
+     keeps it inside a button that is only as wide as the box would be. */
+  .part-stepper button > i {
+    width: auto;
   }
 
   .part-stepper button:hover:not(:disabled) {
@@ -416,7 +439,7 @@
     height: var(--min-touch-target, 44px);
     place-items: center;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.55));
-    font-size: 1.125rem;
+    font-size: var(--value-size);
     font-weight: 750;
   }
 
@@ -446,11 +469,15 @@
     padding-inline: 0;
   }
 
-  /* The corner cell already carries the axis mark and colour, and has no
-     room for four nudge buttons, so the entry keeps only its two typed
-     numbers. Arrow keys still nudge them. Feedback is spoken through the
-     live region; the invalid outline is the visible cue. */
+  /* The corner cell already carries the axis mark and colour, so the entry
+     is its two numbers with their nudge buttons, sized in the cell's
+     container units like the level stepper that shares this corner.
+     Feedback is spoken through the live region; the invalid outline is the
+     visible cue. */
   .ratio-side.corner {
+    --nudge: clamp(1.1rem, 9.5cqi, 2.4rem);
+    --field-height: clamp(1.5rem, 18cqi, 2.75rem);
+    --value-size: clamp(0.9rem, 11cqi, 1.4rem);
     position: relative;
     width: auto;
     grid-template-rows: auto;
@@ -460,7 +487,6 @@
 
   .ratio-side.corner .side-head,
   .ratio-side.corner .part-field > span:first-child,
-  .ratio-side.corner .part-stepper button,
   .ratio-side.corner .feedback {
     position: absolute;
     width: 1px;
@@ -476,19 +502,49 @@
   }
 
   .ratio-side.corner .part-stepper {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: var(--nudge) minmax(0, 1fr) var(--nudge);
     border-radius: 8px;
   }
 
   .ratio-side.corner .part-stepper input,
+  .ratio-side.corner .part-stepper button,
   .ratio-side.corner .colon {
-    height: clamp(1.5rem, 18cqi, 2.75rem);
-    font-size: clamp(0.9rem, 11cqi, 1.4rem);
+    height: var(--field-height);
   }
 
   .ratio-side.corner .part-stepper input {
-    padding-inline: 0.15rem;
+    padding-inline: 0;
     text-align: center;
+  }
+
+  /* The global 44px floor belongs to touch hosts, which edit from the
+     header; here the buttons take the cell's own scale. */
+  .ratio-side.corner .part-stepper button {
+    width: var(--nudge);
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* Below 10.5rem two nudge buttons per number leave no room for the
+     numbers, so the corner keeps only the typed fields; arrow keys still
+     nudge them. */
+  @container (max-width: 10.499rem) {
+    .ratio-side.corner .part-stepper {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ratio-side.corner .part-stepper button {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .ratio-side.corner .part-stepper input {
+      padding-inline: 0.15rem;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
