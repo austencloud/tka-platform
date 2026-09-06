@@ -1,0 +1,34 @@
+{
+  "source": "blender/celestial/sky-citadel.blend",
+  "courtRadius": 6.08,
+  "courtSurfaceY": 0.225,
+  "clearRadius": 10.2,
+  "gardenInstrument": {
+    "center": [
+      -19,
+      4,
+      -17
+    ],
+    "outerRadius": 2.1
+  },
+  "mainIsland": {
+    "center": [
+      0,
+      -1.15,
+      -18
+    ],
+    "radii": [
+      77,
+      105
+    ],
+    "depth": 64
+  },
+  "meshesBeforeInstancing": 40,
+  "trianglesBeforeInstancing": 497784,
+  "provenance": "Original Blender architecture and aggregate textures. One reused shipped Meshy olive from Sunward Gardens. No new external assets.",
+  "bytes": 9352796,
+  "compression": "EXT_meshopt_compression; float positions preserved",
+  "textureFormat": "WebP, maximum 1024 square",
+  "sha256": "5a846f31bdee80ae523b8e224efc56a9e967dfa580c6317cf2951b9d316d4448",
+  "meshes": 17
+}

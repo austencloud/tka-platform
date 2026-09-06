@@ -100,7 +100,7 @@ export function createDefaultCelestialConfig(): CelestialSceneConfig {
       midColor: "#a9c9e7",
       bottomColor: "#f4d6ab",
     },
-    fog: { color: "#b7c9d7", density: 0.0035 },
+    fog: { color: "#b7c9d7", density: 0.002 },
     ground: {
       color: "#8d9caf",
       size: 50,
@@ -108,14 +108,14 @@ export function createDefaultCelestialConfig(): CelestialSceneConfig {
       opacity: 0.3,
     },
     cloudDome: {
-      enabled: false,
+      enabled: true,
       density: 0.58,
       coverage: 0.5,
       driftSpeed: 0.009,
       sunDirection: [0, 0.12, -1],
       litColor: "#fffaf0",
       shadowColor: "#879eb7",
-      opacity: 0.24,
+      opacity: 0.4,
     },
     godRays: {
       enabled: false,
@@ -164,13 +164,13 @@ export function createDefaultCelestialConfig(): CelestialSceneConfig {
     hemisphereLight: {
       skyColor: "#f2f7ff",
       groundColor: "#725f4d",
-      intensity: 0.8,
+      intensity: 1.15,
     },
     sunLight: {
       enabled: true,
-      color: "#ffe1ad",
-      intensity: 3.8,
-      position: [-12, 30, -115],
+      color: "#fff0d4",
+      intensity: 3.2,
+      position: [-70, 85, 10],
     },
   };
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** Live verification harness for the Dawn Observatory. */
+  /** Live verification harness for the Celestial Sky Citadel. */
   import { Canvas } from "@threlte/core";
   import { page } from "$app/state";
   import { WebGLRenderer } from "three";
@@ -26,8 +26,8 @@
 
   const VIEW_PRESETS = {
     hero: {
-      position: [23, 16, 38],
-      target: [0, 11, -14],
+      position: [28, 19, 48],
+      target: [0, 18, -38],
       fov: 54,
     },
     aisle: {
@@ -51,20 +51,20 @@
       fov: 50,
     },
     world: {
-      position: [0, 75, 48],
-      target: [0, 2, -7],
+      position: [105, 90, 170],
+      target: [0, 5, -30],
       fov: 60,
     },
   } as const;
   const PORTRAIT_PHONE_PRESET = {
-    position: [0, 16, 50],
-    target: [0, 11, -10],
+    position: [0, 23, 65],
+    target: [0, 22, -45],
     fov: 68,
   } as const;
   const LANDSCAPE_PHONE_PRESET = {
-    position: [6, 13, 42],
-    target: [0, 10, -10],
-    fov: 46,
+    position: [15, 20, 55],
+    target: [0, 18, -35],
+    fov: 52,
   } as const;
 
   type ViewName = keyof typeof VIEW_PRESETS;
@@ -95,7 +95,7 @@
 />
 
 <svelte:head>
-  <title>Dawn Observatory — Celestial scene</title>
+  <title>Celestial Sky Citadel — Celestial scene</title>
 </svelte:head>
 
 {#if page.url.searchParams.has("performers")}
@@ -126,6 +126,7 @@
         <EnvironmentReviewCamera
           destinationId="celestial-scene-review"
           preset={cameraPreset}
+          maxOrbitDistance={350}
         />
       {/key}
       <Environment3D
@@ -176,7 +177,7 @@
             type="button"
             class:active={selectedBackground === BackgroundType.CELESTIAL}
             onclick={() => (selectedBackground = BackgroundType.CELESTIAL)}
-            >Observatory</button
+            >Citadel</button
           >
           <button
             type="button"

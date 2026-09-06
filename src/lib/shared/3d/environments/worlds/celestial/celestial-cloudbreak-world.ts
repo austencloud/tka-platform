@@ -65,7 +65,7 @@ function prepareShell(
   options: CelestialCloudbreakOptions
 ): Object3D {
   const root = source.clone(true);
-  root.name = "dawn-authored-observatory";
+  root.name = "celestial-authored-citadel";
   root.traverse((child) => {
     if (!(child instanceof Mesh)) return;
     child.castShadow = !["ground", "mesa", "distant-olive"].includes(
@@ -388,5 +388,5 @@ export function createCelestialCloudbreakWorld(
   };
 }
 
-/** The panorama and complete Blender-authored observatory. */
-export const CELESTIAL_AUTHORED_RESOURCE_COUNT = 2;
+/** The complete Blender-authored citadel; clouds are generated at runtime. */
+export const CELESTIAL_AUTHORED_RESOURCE_COUNT = 1;

@@ -55,7 +55,7 @@
 
 <svelte:window bind:innerWidth={width} bind:innerHeight={height} />
 <section
-  aria-label="Dawn Observatory production viewer"
+  aria-label="Celestial Sky Citadel production viewer"
   data-ready={ready}
   data-performers={count}
   data-performance={performance}

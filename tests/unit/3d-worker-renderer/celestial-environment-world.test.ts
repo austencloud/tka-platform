@@ -5,7 +5,7 @@ import {
   Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
-  Texture,
+  ShaderMaterial,
 } from "three";
 
 import { createDefaultCelestialConfig } from "$lib/shared/3d/environments/domain/models/scene-configs";
@@ -32,15 +32,14 @@ function assets(): CelestialEnvironmentAssets {
   court.userData.sunwardRole = "court";
   court.position.set(0, 0.2025, -1);
   shell.add(ground, court);
-  return { panorama: new Texture(), shell };
+  return { shell };
 }
 
 describe("Celestial renderer-neutral world", () => {
-  it("loads only the complete observatory and its panorama", () => {
-    expect(CELESTIAL_AUTHORED_RESOURCE_COUNT).toBe(2);
+  it("loads the citadel without a photographic cloud dependency", () => {
+    expect(CELESTIAL_AUTHORED_RESOURCE_COUNT).toBe(1);
     expect(CELESTIAL_AUTHORED_RESOURCE_URLS).toEqual([
-      expect.stringContaining("olive-cloudbreak-panorama-r1.webp"),
-      expect.stringContaining("dawn-observatory.glb"),
+      expect.stringContaining("sky-citadel.glb"),
     ]);
   });
 
@@ -58,10 +57,10 @@ describe("Celestial renderer-neutral world", () => {
     world.root.traverse((object) => names.push(object.name));
 
     expect(names).toContain("celestial-sky-gradient");
-    expect(names).toContain("celestial-cloud-panorama");
+    expect(names).toContain("celestial-volume-clouds");
     expect(names).toContain("celestial-sun");
     expect(names).toContain("celestial-cloudbreak-world");
-    expect(names).toContain("dawn-authored-observatory");
+    expect(names).toContain("celestial-authored-citadel");
     expect(
       names.filter((name) => name === "cloudbreak-waterfall")
     ).toHaveLength(1);
@@ -69,7 +68,7 @@ describe("Celestial renderer-neutral world", () => {
     expect(names).toContain("celestial-sun-light");
     expect(names).toContain("celestial-cold-fill");
     expect(world.fog.color.getHexString()).toBe("b7c9d7");
-    expect(world.fog.density).toBe(0.0035);
+    expect(world.fog.density).toBe(0.002);
     expect(world.background.getHexString()).toBe("6797cf");
     expect(world.reflector.name).toBe("cloudbreak-reflective-lagoon");
     expect(world.reflector.position.y).toBeCloseTo(-0.05, 6);
@@ -97,21 +96,32 @@ describe("Celestial renderer-neutral world", () => {
     world.dispose();
   });
 
-  it("animates camera-centred sky, sun, water, and interaction pulse", () => {
+  it("keeps volumetric clouds in world space while the distant sky follows the camera", () => {
     const world = createCelestialEnvironmentWorld(
       { groundY: -1.5, motionScale: 1 },
       assets()
     );
     const camera = new PerspectiveCamera();
     camera.position.set(3, 7, 11);
-    const panorama = world.root.getObjectByName("celestial-cloud-panorama")!;
+    const sky = world.root.getObjectByName("celestial-sky-gradient")!;
+    const clouds = world.root.getObjectByName(
+      "celestial-volume-clouds"
+    ) as Mesh;
+    const cloudPosition = clouds.position.clone();
+    const cloudMaterial = clouds.material as ShaderMaterial;
     const sun = world.root.getObjectByName("celestial-sun")!;
     const halo = world.root.getObjectByName("celestial-sun-halo") as Mesh;
     const beforeOpacity = (halo as unknown as { material: { opacity: number } })
       .material.opacity;
 
     world.update(0.25, 0.25, camera);
-    expect(panorama.position.toArray()).toEqual([3, 7, 11]);
+    expect(sky.position.toArray()).toEqual([3, 7, 11]);
+    expect(clouds.position.equals(cloudPosition)).toBe(true);
+    expect(cloudMaterial.uniforms.uTime!.value).toBeCloseTo(0.25);
+    camera.position.set(50, 20, -30);
+    world.update(0.25, 0.5, camera);
+    expect(clouds.position.equals(cloudPosition)).toBe(true);
+    expect(cloudMaterial.uniforms.uTime!.value).toBeCloseTo(0.5);
     expect(sun.children[0]!.position.distanceTo(camera.position)).toBeCloseTo(
       145,
       5
@@ -124,7 +134,7 @@ describe("Celestial renderer-neutral world", () => {
     world.dispose();
   });
 
-  it("freezes lagoon and waterfalls when reduced motion is requested", () => {
+  it("freezes clouds, lagoon, and waterfalls when reduced motion is requested", () => {
     const world = createCelestialEnvironmentWorld(
       { groundY: 0, motionScale: 0 },
       assets()
@@ -132,6 +142,10 @@ describe("Celestial renderer-neutral world", () => {
     const water = world.reflector.material as import("three").ShaderMaterial;
     world.update(1, 1, new PerspectiveCamera());
     expect(water.uniforms.uTime!.value).toBe(0);
+    const clouds = world.root.getObjectByName(
+      "celestial-volume-clouds"
+    ) as Mesh;
+    expect((clouds.material as ShaderMaterial).uniforms.uTime!.value).toBe(0);
     const fall = world.root.getObjectByName("cloudbreak-waterfall")!
       .children[0] as Mesh;
     expect(
@@ -142,11 +156,15 @@ describe("Celestial renderer-neutral world", () => {
 
   it("updates performer grounding, retained visibility, and disposes once", () => {
     const bundle = assets();
-    const panoramaDispose = vi.spyOn(bundle.panorama, "dispose");
     const world = createCelestialEnvironmentWorld(
       { groundY: -1.5, worldYOffset: 0.25 },
       bundle
     );
+    const clouds = world.root.getObjectByName(
+      "celestial-volume-clouds"
+    ) as Mesh;
+    const noise = (clouds.material as ShaderMaterial).uniforms.uNoise!.value;
+    const cloudTextureDispose = vi.spyOn(noise, "dispose");
     world.setGroundY(-2);
     expect(
       world.root.getObjectByName("celestial-cloudbreak-world")!.position.y
@@ -164,7 +182,7 @@ describe("Celestial renderer-neutral world", () => {
 
     world.dispose();
     world.dispose();
-    expect(panoramaDispose).toHaveBeenCalledTimes(1);
+    expect(cloudTextureDispose).toHaveBeenCalledTimes(1);
   });
 
   it("keeps disabled optional atmosphere out of the default graph", () => {
@@ -175,7 +193,7 @@ describe("Celestial renderer-neutral world", () => {
     );
     expect(
       world.root.getObjectByName("celestial-cloud-sky-dome")
-    ).toBeUndefined();
+    ).toBeDefined();
     expect(world.root.getObjectByName("celestial-god-rays")).toBeUndefined();
     world.dispose();
   });
