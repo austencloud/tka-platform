@@ -53,7 +53,8 @@ vertex count and bounds.
 *"Give a Meshy performer finger bones"*, including the exact Mixamo failure
 string and the Standard Skeleton (65) requirement.
 
-Commit SHA for the two files above: see `git log --oneline -3 -- scripts/characters/meshy-tpose-bake.py`.
+Both files, and this handoff, landed on local `main` in commit `c05383d5fa`,
+*"feat(characters): rig Meshy performers through Mixamo for finger grip"*.
 
 **Juniper, Rosa and Sol are T-posed and staged for upload.** Blender output
 for all three in
