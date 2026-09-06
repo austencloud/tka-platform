@@ -48,6 +48,7 @@
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import PracticeBar from "./PracticeBar.svelte";
   import PostStudioPane from "./PostStudioPane.svelte";
+  import { createPaneKeepAlive } from "./pane-keep-alive.svelte";
   import PracticeSetupBar from "./PracticeSetupBar.svelte";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
@@ -630,6 +631,8 @@
       throw error;
     }
   }
+  // Prepare the editor once; keep the viewer and the draft alive on reversals.
+  const studio = createPaneKeepAlive(() => layout.showPostStudio);
 </script>
 
 <div
@@ -772,7 +775,12 @@
           class:has-rail={layout.showRail}
         >
           {#if layout.showRail}
-            <div class="viewer-rail-wrap" class:collapsed={ctx.practiceActive}>
+            <div
+              class="viewer-rail-wrap"
+              class:collapsed={ctx.practiceActive}
+              inert={ctx.practiceActive}
+              aria-hidden={ctx.practiceActive}
+            >
               <ViewerContentRail
                 activeMode={ctx.viewerState.viewerMode}
                 webgl2Available={ctx.viewer3DState.webgl2Available}
@@ -819,14 +827,18 @@
           >
             {#snippet stage()}
               <div class="viewer-stage-container">
-                {#if layout.showPostStudio}
-                  <PostStudioPane
-                    sequence={ctx.effectiveSequence}
-                    resolvedCardAutoLayout={ctx.resolvedCardAutoLayout}
-                    onExported={adoptPostStudioRender}
-                    onSharePost={() => share.sharePost()}
-                  />
-                {:else}
+                {#snippet studioSource()}
+                  {#if studio.mounted}
+                    <PostStudioPane
+                      active={layout.showPostStudio}
+                      sequence={ctx.effectiveSequence}
+                      resolvedCardAutoLayout={ctx.resolvedCardAutoLayout}
+                      onExported={adoptPostStudioRender}
+                      onSharePost={() => share.sharePost()}
+                    />
+                  {/if}
+                {/snippet}
+                {#snippet viewerSource()}
                   {#snippet motionStageSource()}
                     <div
                       class="viewer-motion-stage-content viewer-motion-content-layer"
@@ -853,7 +865,8 @@
                         onPropChange={(prop) =>
                           interactions.handlePropChange(prop, "viewer")}
                         onFanAppearanceChange={ctx.handleFanAppearanceChange}
-                        playback={layout.showVideoGallery
+                        playback={layout.showVideoGallery ||
+                        layout.showPostStudio
                           ? { ...ctx.splitPanePlayback, isPlaying: false }
                           : ctx.splitPanePlayback}
                         imageComposition={layout.isImageExportActive
@@ -984,7 +997,13 @@
                     second={performanceStageSource}
                     duration={DURATION.emphasis}
                   />
-                {/if}
+                {/snippet}
+                <DualSourceCrossfade
+                  active={studio.shown ? "second" : "first"}
+                  first={viewerSource}
+                  second={studioSource}
+                  duration={DURATION.emphasis}
+                />
                 {#if ctx.renderMode === "3d" && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting || ctx.pendingFilmRender)}
                   <Recording3DOverlay
                     countdownValue={ctx.countdownValue}
@@ -1403,7 +1422,7 @@
     flex-shrink: 0;
     overflow: hidden;
     height: 0;
-    transform: translateX(110%);
+    transform: translateY(16px);
     opacity: 0;
     will-change: transform, opacity, height;
     /* Scoped to this element ONLY (it's an inherited property — set on a shared
@@ -1420,11 +1439,11 @@
   .practice-bar-rise.reserved {
     height: auto;
   }
-  /* Practice active: the bar slides in from the right + fades in, carrying the
-     setup config. Composited transform/opacity → 60fps. (Start swaps config→
+  /* Practice active: the bar rises a short distance and fades in, carrying the
+     setup config. (Start swaps config→
      cockpit via the inner conveyor; the bar itself stays put.) */
   .practice-bar-rise.reserved.up {
-    transform: translateX(0);
+    transform: translateY(0);
     opacity: 1;
   }
 

@@ -121,6 +121,12 @@
   });
   viewer.enter3D(sequence);
   viewer.hideAllPlanes();
+  if (
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("perf") === "1"
+  ) {
+    viewer.togglePerf();
+  }
   setViewer3DContext(viewer);
 
   let currentStepBase = $state(0);

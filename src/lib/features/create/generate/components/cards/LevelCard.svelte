@@ -9,6 +9,7 @@ Uses stepper pattern for space-efficient level selection
   import { isBrightBackground } from "../../shared/domain/card-colors";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
+  import { MAX_AVAILABLE_LEVEL } from "$lib/shared/create/utils/config-mapper";
   import StepperCard from "./StepperCard/StepperCard.svelte";
 
   let {
@@ -153,7 +154,9 @@ Uses stepper pattern for space-efficient level selection
   );
 
   function handleIncrement() {
-    const newLevel = Math.min(currentLevelNumber + 1, 3);
+    // Capped at MAX_AVAILABLE_LEVEL: Level 4 (SKEWED) pictograph data does
+    // not exist yet, so it must stay unreachable from this stepper.
+    const newLevel = Math.min(currentLevelNumber + 1, MAX_AVAILABLE_LEVEL);
     onLevelChange(numberToLevel[newLevel]);
   }
 
@@ -196,7 +199,7 @@ Uses stepper pattern for space-efficient level selection
   title={t("generator_level")}
   currentValue={currentLevelNumber}
   minValue={1}
-  maxValue={3}
+  maxValue={MAX_AVAILABLE_LEVEL}
   onIncrement={handleIncrement}
   onDecrement={handleDecrement}
   {formatValue}
