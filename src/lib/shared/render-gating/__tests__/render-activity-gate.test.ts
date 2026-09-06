@@ -148,7 +148,9 @@ describe("createRenderActivityGate — viewport arm", () => {
 
     gate.detach();
     expect(gate.active).toBe(false);
-    expect(observers[0].targets.has(node)).toBe(false);
+    const [observer] = observers;
+    if (!observer) throw new Error("attach should have created an observer");
+    expect(observer.targets.has(node)).toBe(false);
   });
 
   it("fails OPEN when the platform has no IntersectionObserver (SSR, old browsers)", () => {

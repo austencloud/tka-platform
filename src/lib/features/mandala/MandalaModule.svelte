@@ -31,6 +31,7 @@
   import { openLineageSource, hasLineageSource } from "$lib/shared/collections/open-lineage-source";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { onMount } from "svelte";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
 
   type Phase = "gallery" | "detail" | "meditate-config" | "meditate-session";
   let phase = $state<Phase>("gallery");
@@ -636,6 +637,16 @@
     {/if}
   {/snippet}
 </div>
+
+<!-- `cancelVideoExport` already existed but had no user-facing control: it only
+     ran on unmount/navigation. The takeover exposes it. -->
+<ExportTakeover
+  phase={videoExporting ? videoPhase : "idle"}
+  progress={videoProgress}
+  phaseLabel={videoPhase === "encoding" ? "Encoding..." : "Capturing..."}
+  onCancel={cancelVideoExport}
+  label="Exporting mandala video"
+/>
 
 <style>
   .mandala-module {

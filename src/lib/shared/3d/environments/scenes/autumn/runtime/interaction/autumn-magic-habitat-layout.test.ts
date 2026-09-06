@@ -12,12 +12,18 @@ describe("Autumn magic habitat layout", () => {
 
     expect(AUTUMN_MAGIC_HABITATS).toHaveLength(authored.length);
     expect(AUTUMN_MAGIC_HABITATS).toEqual(
-      authored.map((habitat) => ({
-        id: habitat.id,
-        position: [habitat.center[0], -habitat.center[1]],
-        radius: habitat.auraRadius,
-        color: habitat.auraColor,
-      }))
+      authored.map((habitat) => {
+        const [x, z] = habitat.center;
+        if (x === undefined || z === undefined) {
+          throw new Error(`habitat ${habitat.id} has no planar centre`);
+        }
+        return {
+          id: habitat.id,
+          position: [x, -z],
+          radius: habitat.auraRadius,
+          color: habitat.auraColor,
+        };
+      })
     );
   });
 });

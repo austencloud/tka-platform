@@ -117,7 +117,7 @@ export function createPropPlacementAimState(
 
   const SHAPE_TOLERANCE = 26;
 
-  function shapeDepth(color: HandSide, event: PointerEvent): number | null {
+  function shapeDepth(color: HandSide, event: MouseEvent): number | null {
     const element = propElement(color);
     if (!element) return null;
 
@@ -168,7 +168,7 @@ export function createPropPlacementAimState(
     }
   }
 
-  function colorUnderPointer(event: PointerEvent): HandSide | null {
+  function colorUnderPointer(event: MouseEvent): HandSide | null {
     const left = shapeDepth(HandSide.LEFT, event);
     const right = shapeDepth(HandSide.RIGHT, event);
     const leftHit = left !== null && left > 0;
@@ -184,7 +184,7 @@ export function createPropPlacementAimState(
     return null;
   }
 
-  function toSvgPoint(event: PointerEvent): { x: number; y: number } | null {
+  function toSvgPoint(event: MouseEvent): { x: number; y: number } | null {
     const matrix = overlayElement?.getScreenCTM();
     if (!matrix) return null;
     const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(
@@ -195,7 +195,7 @@ export function createPropPlacementAimState(
 
   function resolvePressColor(
     location: GridLocation,
-    event: PointerEvent | null = null
+    event: MouseEvent | null = null
   ): HandSide | null {
     if (placement.activeHand !== null) return placement.activeHand;
     if (!inputs.getEditAfterCompletion()) return null;
@@ -224,7 +224,10 @@ export function createPropPlacementAimState(
 
   function isPressable(location: GridLocation): boolean {
     if (placement.canPlace) return true;
-    return inputs.getCanAim() && resolvePressColor(location) !== null;
+    return (
+      (inputs.getCanAim() || placement.canEdit) &&
+      resolvePressColor(location) !== null
+    );
   }
 
   function clearHover(): void {
@@ -314,18 +317,34 @@ export function createPropPlacementAimState(
     pendingOrientation = null;
   }
 
-  function handleClick(location: GridLocation): void {
-    if (pointerHandledPress) {
-      pointerHandledPress = false;
+  function selectOrEdit(
+    location: GridLocation,
+    event: MouseEvent | null = null
+  ): void {
+    if (
+      !inputs.getCanAim() &&
+      placement.canEdit &&
+      placement.activeHand === null
+    ) {
+      const color = resolvePressColor(location, event);
+      if (color !== null) placement.edit(color);
       return;
     }
     placement.selectPoint(location);
   }
 
+  function handleClick(location: GridLocation, event?: MouseEvent): void {
+    if (pointerHandledPress) {
+      pointerHandledPress = false;
+      return;
+    }
+    selectOrEdit(location, event);
+  }
+
   function handleKeydown(event: KeyboardEvent, location: GridLocation): void {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
-    placement.selectPoint(location);
+    selectOrEdit(location);
   }
 
   function retireCommittedPreview(): void {

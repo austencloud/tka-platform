@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { replaceState } from "$app/navigation";
   import { onMount } from "svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { fits3DViewport } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
@@ -12,6 +13,10 @@
     type TransitionReviewGateId,
   } from "./transition-review-gates";
   import { createTransitionReviewState } from "./transition-review-state.svelte";
+  import {
+    WORKSPACE_GATE_REVIEWS,
+    isWorkspaceReplayCommand,
+  } from "./workspace-review-replays";
   import type {
     TransitionGeometryTrace,
     TransitionTraceCommand,
@@ -96,43 +101,46 @@
       .length
   );
   const acceptanceItems = $derived(
-    review.activeGateId === "2d-3d"
-      ? [
-          "3D owns the viewer stage immediately after selection; 2D never masquerades as the chosen mode",
-          "engine, scene, cast, and warmup phases disclose the real preparation state",
-          "progress only moves forward and the first ready frame replaces the preparation surface cleanly",
-          "repeat switches crossfade on the same clock in both directions",
-          "rapid reversals never expose a blank or unprotected scene",
-        ]
-      : review.activeGateId === "stage-tunnel"
+    WORKSPACE_GATE_REVIEWS[
+      review.activeGateId as keyof typeof WORKSPACE_GATE_REVIEWS
+    ]?.acceptance ??
+      (review.activeGateId === "2d-3d"
         ? [
-            "2D and Tunnel retain the same Animator canvas and backing store",
-            "Tunnel performers and effects bloom into the live 2D base without a surface crossfade",
-            "the outer inspector stays mounted while its 2D and Tunnel controls trade places",
-            "3D, rapid reversals, and reduced motion retain a ready, continuous viewer stage",
+            "3D owns the viewer stage immediately after selection; 2D never masquerades as the chosen mode",
+            "engine, scene, cast, and warmup phases disclose the real preparation state",
+            "progress only moves forward and the first ready frame replaces the preparation surface cleanly",
+            "repeat switches crossfade on the same clock in both directions",
+            "rapid reversals never expose a blank or unprotected scene",
           ]
-        : review.activeGateId === "card-stage"
+        : review.activeGateId === "stage-tunnel"
           ? [
-              "Card, Animator, and desktop inspector keep one DOM identity through every round trip",
-              "Card and motion views exchange the workspace directly, without a Side-by-Side intermediate frame",
-              "both directions travel monotonically on one structural clock without squashed or transformed Card cells",
-              "Card, 2D, and Tunnel controls trade places inside one inspector; 3D releases that track into the viewer stage on the same clock",
-              "rapid reversals and reduced motion never expose a blank workspace",
+              "2D and Tunnel retain the same Animator canvas and backing store",
+              "Tunnel performers and effects bloom into the live 2D base without a surface crossfade",
+              "the outer inspector stays mounted while its 2D and Tunnel controls trade places",
+              "3D, rapid reversals, and reduced motion retain a ready, continuous viewer stage",
             ]
-          : review.activeGateId === "performances"
+          : review.activeGateId === "card-stage"
             ? [
-                "the outer viewer stage and inspector retain one DOM identity for every round trip",
-                "the selected performance replaces the motion source inside the same stage allocation",
-                "Performance details replace Motion settings inside the same prepared inspector width",
-                "one shared state owns selection, one player, upload, mapping, and the sequence playhead",
-                "2D, ready 3D, rapid reversals, mobile layout, and reduced motion all remain stable",
+                "Card, Animator, and desktop inspector keep one DOM identity through every round trip",
+                "Card and motion views exchange the workspace directly, without a Side-by-Side intermediate frame",
+                "both directions travel monotonically on one structural clock without squashed or transformed Card cells",
+                "Card, 2D, and Tunnel controls trade places inside one inspector; 3D releases that track into the viewer stage on the same clock",
+                "rapid reversals and reduced motion never expose a blank workspace",
               ]
-            : [
-                "one continuous edge traveling across the workspace",
-                "no canvas or card remount flash",
-                "clean reversals during interrupted motion",
-                "an opacity-only dissolve with reduced motion",
-              ]
+            : review.activeGateId === "performances"
+              ? [
+                  "the outer viewer stage and inspector retain one DOM identity for every round trip",
+                  "the selected performance replaces the motion source inside the same stage allocation",
+                  "Performance details replace Motion settings inside the same prepared inspector width",
+                  "one shared state owns selection, one player, upload, mapping, and the sequence playhead",
+                  "2D, ready 3D, rapid reversals, mobile layout, and reduced motion all remain stable",
+                ]
+              : [
+                  "one continuous edge traveling across the workspace",
+                  "no canvas or card remount flash",
+                  "clean reversals during interrupted motion",
+                  "an opacity-only dissolve with reduced motion",
+                ])
   );
   const replayOptions = $derived<
     Array<{
@@ -142,71 +150,78 @@
       requires3D?: boolean;
     }>
   >(
-    review.activeGateId === "2d-3d"
-      ? [
-          { command: "3d-first", label: "Replay first 3D" },
-          { command: "3d-repeat", label: "Replay repeat switch" },
-          { command: "3d-interrupt", label: "Stress reversal", primary: true },
-        ]
-      : review.activeGateId === "stage-tunnel"
+    WORKSPACE_GATE_REVIEWS[
+      review.activeGateId as keyof typeof WORKSPACE_GATE_REVIEWS
+    ]?.options ??
+      (review.activeGateId === "2d-3d"
         ? [
-            { command: "tunnel-first", label: "Replay first Tunnel" },
+            { command: "3d-first", label: "Replay first 3D" },
+            { command: "3d-repeat", label: "Replay repeat switch" },
             {
-              command: "tunnel-3d",
-              label: "Replay from 3D",
-              requires3D: true,
-            },
-            {
-              command: "tunnel-interrupt",
+              command: "3d-interrupt",
               label: "Stress reversal",
               primary: true,
             },
           ]
-        : review.activeGateId === "card-stage"
+        : review.activeGateId === "stage-tunnel"
           ? [
-              { command: "card-2d", label: "Replay with 2D" },
+              { command: "tunnel-first", label: "Replay first Tunnel" },
               {
-                command: "card-3d",
-                label: "Replay with 3D",
+                command: "tunnel-3d",
+                label: "Replay from 3D",
                 requires3D: true,
               },
-              { command: "card-tunnel", label: "Replay with Tunnel" },
               {
-                command: "card-performances",
-                label: "Replay with Performances",
-              },
-              {
-                command: "card-stage-interrupt",
+                command: "tunnel-interrupt",
                 label: "Stress reversal",
                 primary: true,
               },
             ]
-          : review.activeGateId === "performances"
+          : review.activeGateId === "card-stage"
             ? [
+                { command: "card-2d", label: "Replay with 2D" },
                 {
-                  command: "performances-2d",
-                  label: "Replay with 2D",
-                },
-                {
-                  command: "performances-3d",
+                  command: "card-3d",
                   label: "Replay with 3D",
                   requires3D: true,
                 },
+                { command: "card-tunnel", label: "Replay with Tunnel" },
                 {
-                  command: "performances-interrupt",
+                  command: "card-performances",
+                  label: "Replay with Performances",
+                },
+                {
+                  command: "card-stage-interrupt",
                   label: "Stress reversal",
                   primary: true,
                 },
               ]
-            : [
-                { command: "2d", label: "Replay 2D" },
-                { command: "card", label: "Replay Card" },
-                {
-                  command: "interrupt",
-                  label: "Stress reversal",
-                  primary: true,
-                },
-              ]
+            : review.activeGateId === "performances"
+              ? [
+                  {
+                    command: "performances-2d",
+                    label: "Replay with 2D",
+                  },
+                  {
+                    command: "performances-3d",
+                    label: "Replay with 3D",
+                    requires3D: true,
+                  },
+                  {
+                    command: "performances-interrupt",
+                    label: "Stress reversal",
+                    primary: true,
+                  },
+                ]
+              : [
+                  { command: "2d", label: "Replay 2D" },
+                  { command: "card", label: "Replay Card" },
+                  {
+                    command: "interrupt",
+                    label: "Stress reversal",
+                    primary: true,
+                  },
+                ])
   );
   const frameSource = $derived(
     `/test/sequence-viewer-transitions?frame=1&gate=${review.activeGateId}`
@@ -310,6 +325,9 @@
 
   function selectGate(gateId: TransitionReviewGateId): void {
     review.selectGate(gateId);
+    const url = new URL(page.url);
+    url.searchParams.set("gate", gateId);
+    replaceState(url, page.state);
     frameMetrics = null;
     lastTrace = null;
     pendingReplay = null;
@@ -323,6 +341,16 @@
         source: "sequence-viewer-transition-review",
         action: "motion",
         preference: motionPreference,
+      },
+      window.location.origin
+    );
+  }
+
+  function requestFrameStatus(): void {
+    frameElement?.contentWindow?.postMessage(
+      {
+        source: "sequence-viewer-transition-review",
+        action: "status",
       },
       window.location.origin
     );
@@ -377,7 +405,8 @@
           | undefined;
         if (
           trace &&
-          (trace.command === "2d" ||
+          (isWorkspaceReplayCommand(trace.command) ||
+            trace.command === "2d" ||
             trace.command === "card" ||
             trace.command === "interrupt" ||
             trace.command === "3d-first" ||
@@ -448,6 +477,7 @@
     };
 
     window.addEventListener("message", handleFrameMessage);
+    requestFrameStatus();
     return () => window.removeEventListener("message", handleFrameMessage);
   });
 </script>
@@ -652,6 +682,7 @@
                 <iframe
                   bind:this={frameElement}
                   src={frameSource}
+                  onload={requestFrameStatus}
                   title={`${review.activeGate.title} production preview`}
                   style:width={`${selectedViewport.width}px`}
                   style:height={`${selectedViewport.height}px`}

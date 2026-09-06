@@ -4,8 +4,6 @@ import {
   Group,
   ImageBitmapLoader,
   MeshStandardMaterial,
-  NoColorSpace,
-  RepeatWrapping,
   SRGBColorSpace,
   Texture,
   type Camera,
@@ -26,7 +24,6 @@ import {
   createDefaultBlossomConfig,
   type BlossomSceneConfig,
 } from "../../domain/models/scene-configs";
-import type { MaskedGroundDetailMaps } from "../../primitives/masked-ground-detail-material";
 import {
   createBlossomRuntimeConfig,
   type BlossomQualityTier,
@@ -38,11 +35,6 @@ import {
   type BlossomAtmosphere,
 } from "./blossom-atmosphere";
 import {
-  createBlossomGroundRuntime,
-  type BlossomGroundAssets,
-  type BlossomGroundRuntime,
-} from "./blossom-ground-runtime";
-import {
   createBlossomLightingRig,
   type BlossomLightingRig,
 } from "./blossom-lighting-rig";
@@ -52,24 +44,12 @@ import { createBlossomStage, type BlossomStage } from "./blossom-stage";
 export const BLOSSOM_ENVIRONMENT_URL =
   "/models/blossom/blossom_environment.glb";
 export const BLOSSOM_MOON_TEXTURE_URL = "/textures/moon.png";
-export const BLOSSOM_GROUND_TEXTURE_URLS = {
-  red: "/textures/forest-floor/forest-ground-detail-neutral.jpg",
-  green: "/textures/forest-floor/forest-ground-detail-meadow.jpg",
-  blue: "/textures/forest-floor/forest-ground-detail-litter.jpg",
-  fourth: "/textures/forest-floor/forest-ground-detail-damp.jpg",
-  mask: "/textures/blossom-floor/blossom-ground-family-mask.png",
-} as const;
 export const BLOSSOM_AUTHORED_RESOURCE_URLS = [
   BLOSSOM_ENVIRONMENT_URL,
   BLOSSOM_MOON_TEXTURE_URL,
-  BLOSSOM_GROUND_TEXTURE_URLS.red,
-  BLOSSOM_GROUND_TEXTURE_URLS.green,
-  BLOSSOM_GROUND_TEXTURE_URLS.blue,
-  BLOSSOM_GROUND_TEXTURE_URLS.fourth,
-  BLOSSOM_GROUND_TEXTURE_URLS.mask,
 ] as const;
 
-export interface BlossomEnvironmentAssets extends BlossomGroundAssets {
+export interface BlossomEnvironmentAssets {
   environmentRoot: Object3D;
   moonTexture: Texture;
 }
@@ -172,7 +152,7 @@ function disposeAuthoredTree(root: Object3D): void {
   root.clear();
 }
 
-/** Load the one authored GLB and six exact support textures used in production. */
+/** Surface textures are packed into the venue; only the moon is separate. */
 export async function loadBlossomEnvironmentAssets(
   options: LoadBlossomAssetsOptions
 ): Promise<BlossomEnvironmentAssets> {
@@ -195,54 +175,19 @@ export async function loadBlossomEnvironmentAssets(
   };
 
   try {
-    const [gltf, moonTexture, red, green, blue, fourth, familyMask] =
-      await Promise.all([
-        loadGltf(gltfLoader, resolveAssetUrl(BLOSSOM_ENVIRONMENT_URL)).then(
-          finish
-        ),
-        loadBitmapTexture(
-          bitmapLoader,
-          resolveAssetUrl(BLOSSOM_MOON_TEXTURE_URL)
-        ).then(finish),
-        loadBitmapTexture(
-          bitmapLoader,
-          resolveAssetUrl(BLOSSOM_GROUND_TEXTURE_URLS.red)
-        ).then(finish),
-        loadBitmapTexture(
-          bitmapLoader,
-          resolveAssetUrl(BLOSSOM_GROUND_TEXTURE_URLS.green)
-        ).then(finish),
-        loadBitmapTexture(
-          bitmapLoader,
-          resolveAssetUrl(BLOSSOM_GROUND_TEXTURE_URLS.blue)
-        ).then(finish),
-        loadBitmapTexture(
-          bitmapLoader,
-          resolveAssetUrl(BLOSSOM_GROUND_TEXTURE_URLS.fourth)
-        ).then(finish),
-        loadBitmapTexture(
-          bitmapLoader,
-          resolveAssetUrl(BLOSSOM_GROUND_TEXTURE_URLS.mask)
-        ).then(finish),
-      ]);
+    const [gltf, moonTexture] = await Promise.all([
+      loadGltf(gltfLoader, resolveAssetUrl(BLOSSOM_ENVIRONMENT_URL)).then(
+        finish
+      ),
+      loadBitmapTexture(
+        bitmapLoader,
+        resolveAssetUrl(BLOSSOM_MOON_TEXTURE_URL)
+      ).then(finish),
+    ]);
     moonTexture.colorSpace = SRGBColorSpace;
-    for (const texture of [red, green, blue, fourth]) {
-      texture.colorSpace = SRGBColorSpace;
-      texture.wrapS = RepeatWrapping;
-      texture.wrapT = RepeatWrapping;
-      texture.anisotropy = Math.min(
-        8,
-        options.renderer.capabilities.getMaxAnisotropy()
-      );
-      texture.needsUpdate = true;
-    }
-    familyMask.colorSpace = NoColorSpace;
-    familyMask.needsUpdate = true;
     return {
       environmentRoot: gltf.scene,
       moonTexture,
-      detailMaps: { red, green, blue, fourth } satisfies MaskedGroundDetailMaps,
-      familyMask,
     };
   } catch (error) {
     for (const texture of loadedTextures) texture.dispose();
@@ -286,6 +231,10 @@ function configureAuthoredEnvironment(
       }
     }
     mesh.receiveShadow =
+      child.userData.blossomRole === "terrain" ||
+      child.userData.blossomRole === "stone" ||
+      child.userData.blossomRole === "path" ||
+      child.userData.blossomRole === "bark" ||
       /Garden(?:_| )Ground/.test(identity) ||
       identity.includes("Gravel") ||
       identity.includes("GardenEcology") ||
@@ -297,7 +246,10 @@ function configureAuthoredEnvironment(
       identity.includes("Boulder");
     mesh.castShadow =
       shadows &&
-      (identity.includes("Sakura") ||
+      (["bark", "petals", "stone", "lantern"].includes(
+        child.userData.blossomRole
+      ) ||
+        identity.includes("Sakura") ||
         /Blossom(?:_| )open-crown/.test(identity) ||
         identity.includes("PlantFactory_") ||
         identity.includes("GardenEcology") ||
@@ -354,15 +306,6 @@ export function createBlossomEnvironmentWorld(
   );
   authored.add(assets.environmentRoot);
 
-  const ground: BlossomGroundRuntime = createBlossomGroundRuntime({
-    environmentRoot: assets.environmentRoot,
-    assets,
-    stageWidth,
-    stageDepth,
-    stageZOffset,
-    qualityTier: options.qualityTier === "low" ? "base" : options.qualityTier,
-    motionScale,
-  });
   const atmosphere: BlossomAtmosphere = createBlossomAtmosphere({
     config,
     runtime,
@@ -390,11 +333,7 @@ export function createBlossomEnvironmentWorld(
 
   const fog = new FogExp2(config.fog.color, config.fog.density);
   const background = new Color(config.sky.topColor);
-  const textures = new Set<Texture>([
-    assets.moonTexture,
-    ...Object.values(assets.detailMaps),
-    assets.familyMask,
-  ]);
+  const textures = new Set<Texture>([assets.moonTexture]);
   let disposed = false;
 
   function setGroundY(groundY: number): void {
@@ -415,7 +354,6 @@ export function createBlossomEnvironmentWorld(
     update(deltaSeconds, camera) {
       if (disposed) return;
       atmosphere.update(deltaSeconds, camera);
-      ground.update(deltaSeconds);
       river?.update(deltaSeconds);
     },
     setGroundY,
@@ -426,7 +364,6 @@ export function createBlossomEnvironmentWorld(
     dispose() {
       if (disposed) return;
       disposed = true;
-      ground.dispose();
       atmosphere.dispose();
       stage.dispose();
       river?.dispose();

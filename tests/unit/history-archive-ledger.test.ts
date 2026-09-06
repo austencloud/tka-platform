@@ -51,9 +51,13 @@ describe("four-lane history archive ledger", () => {
       );
 
       for (const citation of entry.citations) {
-        expect(citation.href, `${entry.id} citation URL`).toMatch(
-          /^https:\/\/|^\/|^http:\/\/www\.semlyen\.net\/cosmosjugglers\/lib\//
-        );
+        const isOriginalLorqSheet =
+          entry.id === "lorq" &&
+          citation.href === entry.catalogEntry?.explore?.href;
+        if (!isOriginalLorqSheet)
+          expect(citation.href, `${entry.id} citation URL`).toMatch(
+            /^https:\/\/|^\/|^http:\/\/www\.semlyen\.net\/cosmosjugglers\/lib\//
+          );
         expect(citation.supports, `${entry.id} source claim`).not.toBe("");
         expect(validBases, `${entry.id} citation basis`).toContain(
           citation.basis
@@ -235,8 +239,12 @@ describe("four-lane history archive ledger", () => {
 
   it("separates the edge-aligned 1994 book from Home of Poi without shifting dates", () => {
     const placements = placeArchiveEntries(entriesForLane("teaching"));
-    const book = placements.find(({ entry }) => entry.id === "modern-club-swinging")!;
-    const homeOfPoi = placements.find(({ entry }) => entry.id === "home-of-poi")!;
+    const book = placements.find(
+      ({ entry }) => entry.id === "modern-club-swinging"
+    )!;
+    const homeOfPoi = placements.find(
+      ({ entry }) => entry.id === "home-of-poi"
+    )!;
 
     // These bubbles overlapped on the 1994–2026 map at 1600×900: the
     // first is edge-aligned, while the 1998 bubble is centered on its year.

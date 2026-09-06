@@ -1,4 +1,4 @@
-import masterplanJson from "../../../../../../../docs/superpowers/specs/blossom-masterplan-r2/blossom-masterplan-r2.json";
+import masterplanJson from "../../../../../../../static/models/blossom/amphitheatre-plan.json";
 
 export type BlossomGroundLifeTier = "base" | "medium" | "high";
 
@@ -17,12 +17,13 @@ interface BlossomGroundPlan {
 
 const plan = masterplanJson as unknown as BlossomGroundPlan;
 
-// "rejected-visual-review" renders the preserved build for comparison only.
+// Authored scenes can be reviewed before the user accepts their visual design.
 if (
+  plan.status !== "authored" &&
   plan.status !== "approved-for-production" &&
   plan.status !== "rejected-visual-review"
 ) {
-  throw new Error("Blossom R2.1 ground is not at a recognized runtime gate");
+  throw new Error("Blossom ground is not at a recognized runtime gate");
 }
 
 export function getBlossomGroundMaskBounds(): {
