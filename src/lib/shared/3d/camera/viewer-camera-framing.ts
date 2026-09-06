@@ -65,7 +65,8 @@ export function isValidViewerCameraPose(
     isFinitePoint(target) &&
     Number.isFinite(fov) &&
     fov > 0 &&
-    distanceSquared(position, target) >= 1 &&
+    // Damped travel and three-decimal camera URLs can land just below one metre.
+    distanceSquared(position, target) >= 0.999 ** 2 &&
     target.y >= -0.5
   );
 }

@@ -315,7 +315,10 @@
   // migration would write the key before any override decision was made.
   const t3Seed =
     t3SeedPayload &&
-    urlSession.isOverride("t3", persistedT3SliceFromStorage(firstUseEnvironment))
+    urlSession.isOverride(
+      "t3",
+      persistedT3SliceFromStorage(firstUseEnvironment)
+    )
       ? seedFromT3Slice(t3SeedPayload)
       : null;
 
@@ -724,7 +727,10 @@
   // stores already hold is not an override, so nothing is borrowed or restored.
   let anRestore: AnSliceSeed | null =
     anSeedPayload && urlSession.isOverride("an", captureAnSlice(anStores))
-      ? { settings: anStores.settings.snapshot(), visibility: anStores.visibility.snapshot() }
+      ? {
+          settings: anStores.settings.snapshot(),
+          visibility: anStores.visibility.snapshot(),
+        }
       : null;
   // Borrow the card store before `an` moves dark mode (see rule 1 above).
   let cdRestore: ImageCompositionSettings | null =
@@ -752,7 +758,9 @@
   const unregisterCdSlice = urlSession.registerSlice("cd", (options) =>
     captureCdSlice(compositionStore, cardStepCount(), options)
   );
-  urlSession.registerSlice("an", (options) => captureAnSlice(anStores, options));
+  urlSession.registerSlice("an", (options) =>
+    captureAnSlice(anStores, options)
+  );
   // The visibility manager is a plain class, not runes, so the live-sync effect
   // below cannot see its changes. Its own observer API closes that gap.
   const anVisibilityObserver = () => urlSession.scheduleUrlWrite();
@@ -767,7 +775,8 @@
   const exportOptionsStore = exportCoord.exportOptions;
   const exSeedPayload = urlSession.getSeed("ex") as ExSlicePayload | null;
   let exRestore: ExportOptionsState | null =
-    exSeedPayload && urlSession.isOverride("ex", captureExSlice(exportOptionsStore))
+    exSeedPayload &&
+    urlSession.isOverride("ex", captureExSlice(exportOptionsStore))
       ? exportOptionsStore.snapshot()
       : null;
   if (exRestore) {
@@ -1155,8 +1164,8 @@
      Facebook, email/password, magic link) and renders its own contextual copy
      from the `viewer-signin-*` trigger keys, so the viewer holds no auth copy
      or provider code of its own. Lazy so the scan landing doesn't pay for the
-     auth bundle until a guest actually hits a gate. AuthModal mounts its own
-     GoogleOneTap, which is why the viewer no longer mounts a second one. -->
+     auth bundle until a guest actually hits a gate. Provider sign-in starts
+     only when the person chooses a provider inside that modal. -->
 {#if authQueue.signInSheetOpen}
   {#await import("$lib/shared/auth/components/AuthModal.svelte") then mod}
     <mod.default

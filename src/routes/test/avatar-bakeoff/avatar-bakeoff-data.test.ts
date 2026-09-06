@@ -54,6 +54,7 @@ describe("bake-off selection", () => {
     "intake-current",
     "ready-player-me-archived",
     "intake-juniper",
+    "intake-marcus",
     null,
   ])("replaces obsolete link %s with an available model", (id) => {
     expect(resolveCandidate(id, available)).toBe(metaPerson);
@@ -73,6 +74,12 @@ describe("bake-off selection", () => {
 });
 
 describe("usable intake entries", () => {
+  it("keeps Marcus rejected even when a staged file has complete fingers", () => {
+    const entries = parseIntakeManifest({
+      candidates: [valid, { ...valid, id: "marcus", file: "intake-marcus.glb" }],
+    });
+    expect(entries.map((entry) => entry.id)).toEqual(["kate"]);
+  });
   it("requires complete fingers and safe unique model paths", () => {
     const entries = parseIntakeManifest({
       candidates: [

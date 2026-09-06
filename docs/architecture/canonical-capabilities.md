@@ -12,6 +12,16 @@ canvas handoff, reparent, shared element. The TnD `+layout.svelte` owns one play
 and context state across the hub and articles; route slots move its host without
 remounting it. `MarketingChrome` keeps one content key for this subtree only.
 
+Sequence Viewer ↔ Post Studio surface continuity uses the same
+`reparentToInspector` action with `createLayoutMotion`. Viewer-local
+`createViewerStudioSurfaces` owns the canvas/inspector/Card/transport loan and composition-clock
+handoff; Studio slots request the mounted surfaces through its optional context.
+Standalone Studio and additional simultaneous animation slots retain their own
+renderers. The desktop inspector keeps its original outer track; compact Studio
+uses destinations for the same surfaces. The canvas flight captures its visual
+child before the transport changes allocation. Searches: Post Studio, persistent
+canvas, shared inspector, shared Choreo Card, shared playback bar, live handoff.
+
 | Search vocabulary                                                                                                                   | Canonical owner                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | scene boot, scene switch, persistent worker renderer, poster handoff, shader warmup, GLB prefetch                                   | `shared/3d/worker-renderer/` owns the persistent production worker for all ten environments; `shared/3d/scene-boot/` owns legacy main-thread boot (Record Scene); `shared/3d/rendering/viewer-lighting-rig.ts` owns viewer lighting; environment worlds under `shared/3d/environments/worlds/` stay renderer-neutral with thin Svelte and worker adapters                                                                                                                                                                                                                                                                  |

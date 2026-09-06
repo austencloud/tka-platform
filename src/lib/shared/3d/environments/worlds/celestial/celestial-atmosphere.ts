@@ -21,7 +21,6 @@ import {
   Vector2,
   Vector3,
   type Camera,
-  type Texture,
 } from "three";
 
 import coordinateManifest from "../../../../../../../docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-coordinate-manifest.json";
@@ -32,11 +31,11 @@ import type {
 } from "../../domain/models/scene-configs";
 import { createRainbowParticleField } from "../rainbow/rainbow-particle-field";
 import { CLOUDBREAK_SKY_SUN } from "../../scenes/celestial/cloudbreak-layout";
+import { createCelestialVolumeClouds } from "./celestial-volume-clouds";
 import { disposeCelestialObjectTree } from "./celestial-disposal";
 
 export interface CelestialAtmosphereOptions {
   config: CelestialSceneConfig;
-  panorama: Texture;
   cloudBankCount: number;
   stageWidth: number;
   stageDepth: number;
@@ -101,6 +100,8 @@ function createSkyGradient(config: CelestialSceneConfig["sky"]): {
           color = mix(uBottomColor, uTopColor, h);
         }
         gl_FragColor = vec4(color, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
       }
     `,
     side: BackSide,
@@ -115,29 +116,6 @@ function createSkyGradient(config: CelestialSceneConfig["sky"]): {
   mesh.renderOrder = -1;
   mesh.frustumCulled = false;
   return { mesh, material };
-}
-
-function createPanorama(panorama: Texture): Mesh {
-  panorama.colorSpace = SRGBColorSpace;
-  panorama.wrapS = RepeatWrapping;
-  panorama.wrapT = ClampToEdgeWrapping;
-  panorama.offset.set(0, -0.1);
-  panorama.needsUpdate = true;
-  const mesh = new Mesh(
-    new SphereGeometry(160, 64, 40),
-    new MeshBasicMaterial({
-      map: panorama,
-      side: BackSide,
-      depthTest: false,
-      depthWrite: false,
-      fog: false,
-      toneMapped: false,
-    })
-  );
-  mesh.name = "celestial-cloud-panorama";
-  mesh.renderOrder = -0.5;
-  mesh.frustumCulled = false;
-  return mesh;
 }
 
 function gridNoise(x: number, y: number, seed: number): number {
@@ -705,8 +683,15 @@ export function createCelestialAtmosphere(
   object.position.y = options.worldYOffset;
   const timed: TimedMaterial[] = [];
   const sky = createSkyGradient(options.config.sky);
-  const panorama = createPanorama(options.panorama);
-  object.add(sky.mesh, panorama);
+  const clouds = createCelestialVolumeClouds(
+    options.worldYOffset,
+    options.cloudBankCount < 20 ? 16 : 28
+  );
+  object.add(sky.mesh, clouds);
+  clouds.traverse((part) => {
+    if (part instanceof Mesh)
+      timed.push({ material: part.material as ShaderMaterial, speed: 1 });
+  });
   const cloudDome = createCloudDome(options.config.cloudDome);
   if (cloudDome) {
     object.add(cloudDome.mesh);
@@ -748,9 +733,9 @@ export function createCelestialAtmosphere(
     object,
     update(deltaSeconds, camera) {
       if (disposed) return;
-      elapsed += deltaSeconds;
+      const motionDelta = deltaSeconds * options.motionScale;
+      elapsed += motionDelta;
       sky.mesh.position.copy(camera.position);
-      panorama.position.copy(camera.position);
       if (cloudDome) cloudDome.mesh.position.copy(camera.position);
       sunPosition.copy(camera.position).addScaledVector(sunDirection, 145);
       sun.core.position.copy(sunPosition);
@@ -760,7 +745,7 @@ export function createCelestialAtmosphere(
         0.26 + Math.sin(elapsed * 0.22) * 0.014 + pulseEnergy * 0.08;
       sun.coreMaterial.opacity = 0.985 + pulseEnergy * 0.015;
       for (const { material, speed } of timed) {
-        material.uniforms.uTime!.value += deltaSeconds * speed;
+        material.uniforms.uTime!.value += motionDelta * speed;
       }
       for (const field of particles) field.update(deltaSeconds);
     },

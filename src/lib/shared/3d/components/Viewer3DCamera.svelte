@@ -13,6 +13,7 @@
   import { T, useTask, useThrelte } from "@threlte/core";
   import { PerspectiveCamera, Vector3, type Object3D } from "three";
   import type CameraControls from "camera-controls";
+  import { configureViewerOrbitNavigation } from "../camera/camera-controls-runtime";
   import OrbitControls from "./OrbitControls.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import type { CameraStateSnapshot } from "@austencloud/scene-3d";
@@ -371,7 +372,7 @@
   }
 
   onMount(() => {
-    viewer3DState.registerSnapTo(snapTo);
+    const unregisterCamera = viewer3DState.registerSnapTo(snapTo);
 
     function onVisibilityChange() {
       if (!controlsInstance) return;
@@ -386,6 +387,7 @@
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("pagehide", onPageHide);
     return () => {
+      unregisterCamera();
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("pagehide", onPageHide);
     };
@@ -466,6 +468,7 @@
     autoRotate={viewer3DState.seededAutoOrbit}
     autoRotateSpeed={viewer3DState.seededAutoOrbitSpeed}
     oncreate={(c) => {
+      configureViewerOrbitNavigation(c);
       controlsInstance = c;
       const live = viewer3DState.persistedCamera;
       const pos = live?.position ?? initialPosition;

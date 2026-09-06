@@ -5,6 +5,8 @@
   import type { ViewerCompanionSurfaceProps } from "./viewer-split-pane-types";
   import SequenceVideos from "./sequence-videos/SequenceVideos.svelte";
   import { getViewerTunnelStageContext } from "../context/viewer-tunnel-stage-context";
+  import { getViewerStudioSurfaces } from "../context/viewer-studio-surfaces-context";
+  import { reparentToInspector } from "./reparent-to-inspector";
 
   let {
     side,
@@ -49,6 +51,13 @@
     side === "left" ? splitConfig.leftPane : splitConfig.rightPane
   );
   const tunnelStage = getViewerTunnelStageContext();
+  const studio = getViewerStudioSurfaces();
+  const studioCard = $derived(side === "right" ? studio?.cardFrame : null);
+  function ownCard(node: HTMLElement) {
+    return {
+      destroy: side === "right" ? studio?.registerCard(node) : undefined,
+    };
+  }
   const card = createPaneKeepAlive(() => selectedPane === "card");
   const videos = createPaneKeepAlive(() => selectedPane === "videos");
   const mandala = createPaneKeepAlive(() => selectedPane === "mandala");
@@ -87,50 +96,92 @@
       </div>
     {/if}
 
-    <ChoreoCard
-      {sequence}
-      customTitleText={sequence.sequenceKind === "hand-path"
-        ? sequence.displayName || sequence.name
-        : undefined}
-      highlightedStepIndex={side === "right" && layout.focusedPane === "image"
-        ? null
-        : playback.highlightedStepIndex}
-      showHighlight={side === "right" && layout.focusedPane === "image"
-        ? false
-        : playback.isPlaying || playback.highlightedStepIndex !== null}
-      onStepClick={cardStepClick}
-      {onQrPlayClick}
-      clickableStart={!!cardStepClick}
-      {onRenderProgress}
-      showWord={imageComposition.showWord}
-      showStepNumbers={imageComposition.showStepNumbers}
-      showDifficultyLevel={imageComposition.showDifficulty}
-      includeStartPosition={imageComposition.showStartPos}
-      showNotes={sequence.sequenceKind === "hand-path" ||
-        imageComposition.showNotes}
-      customNotesText={sequence.sequenceKind === "hand-path"
-        ? sequence.notes
-        : imageComposition.customNotesText}
-      showQRCode={imageComposition.showQRCode}
-      showMandala={imageComposition.showMandala ?? false}
-      showLoopGlyph={imageComposition.showLoopGlyph ?? true}
-      handPathMode={imageComposition.handPathMode}
-      darkMode={imageComposition.darkMode}
-      columnCount={imageComposition.columnCount}
-      forceContain={imageComposition.forceContain}
-      fitWidth={side === "right" &&
-        layout.isMobile &&
-        layout.focusedPane === "image"}
-      leftPropType={propRendering.leftPropType}
-      rightPropType={propRendering.rightPropType}
-      catDogModeEnabled={propRendering.catDogModeEnabled}
-      {rerenderTrigger}
-      onContextMenu={onChoreoCardContextMenu}
-      autoLayoutOverride={cardAutoLayoutOverride}
-      containSizeMotion={cardContainSizeMotion}
-      containMotionBox={cardContainMotionBox}
-      onAutoLayoutResolved={card.shown ? onAutoLayoutResolved : undefined}
-    />
+    <div
+      class="shared-card"
+      use:ownCard
+      data-shared-studio-card={side === "right" || undefined}
+      use:reparentToInspector={{
+        target: side === "right" ? (studio?.cardTarget ?? null) : null,
+        animate: true,
+        onMoving: (moving) => {
+          if (side === "right") studio?.setSurfaceMoving("card", moving);
+        },
+      }}
+    >
+      <ChoreoCard
+        sequence={studioCard?.sequence ?? sequence}
+        customTitleText={sequence.sequenceKind === "hand-path"
+          ? sequence.displayName || sequence.name
+          : undefined}
+        highlightedStepIndex={studioCard
+          ? studioCard.highlightedStepIndex
+          : side === "right" && layout.focusedPane === "image"
+            ? null
+            : playback.highlightedStepIndex}
+        showHighlight={studioCard
+          ? true
+          : side === "right" && layout.focusedPane === "image"
+            ? false
+            : playback.isPlaying || playback.highlightedStepIndex !== null}
+        onStepClick={studioCard ? undefined : cardStepClick}
+        {onQrPlayClick}
+        clickableStart={!!cardStepClick}
+        {onRenderProgress}
+        showWord={studioCard?.options?.addWord ?? imageComposition.showWord}
+        showStepNumbers={studioCard?.options?.addStepNumbers ??
+          imageComposition.showStepNumbers}
+        showDifficultyLevel={studioCard?.options?.addDifficultyLevel ??
+          imageComposition.showDifficulty}
+        includeStartPosition={studioCard?.options?.includeStartPosition ??
+          imageComposition.showStartPos}
+        showNotes={studioCard
+          ? (studioCard.options?.showNotes ?? false)
+          : sequence.sequenceKind === "hand-path" || imageComposition.showNotes}
+        customNotesText={sequence.sequenceKind === "hand-path"
+          ? sequence.notes
+          : imageComposition.customNotesText}
+        showQRCode={studioCard?.options?.visibilityOverrides?.showQRCode ??
+          imageComposition.showQRCode}
+        showMandala={studioCard?.options?.visibilityOverrides?.showMandala ??
+          imageComposition.showMandala ??
+          false}
+        showLoopGlyph={studioCard?.options?.showLoopGlyph ??
+          imageComposition.showLoopGlyph ??
+          true}
+        handPathMode={studioCard?.options?.visibilityOverrides?.handPathMode ??
+          imageComposition.handPathMode}
+        darkMode={studioCard?.options?.visibilityOverrides?.darkMode ??
+          imageComposition.darkMode}
+        columnCount={studioCard
+          ? studioCard.automatic
+            ? null
+            : (studioCard.options?.columnCount ?? null)
+          : imageComposition.columnCount}
+        startPositionLayoutOverride={studioCard && !studioCard.automatic
+          ? studioCard.options?.startPositionLayout
+          : undefined}
+        forceContain={studioCard ? true : imageComposition.forceContain}
+        fitWidth={!!studioCard ||
+          (side === "right" &&
+            layout.isMobile &&
+            layout.focusedPane === "image")}
+        leftPropType={studioCard?.options?.leftPropTypeOverride ??
+          studioCard?.options?.propTypeOverride ??
+          propRendering.leftPropType}
+        rightPropType={studioCard?.options?.rightPropTypeOverride ??
+          studioCard?.options?.propTypeOverride ??
+          propRendering.rightPropType}
+        catDogModeEnabled={propRendering.catDogModeEnabled}
+        {rerenderTrigger}
+        onContextMenu={onChoreoCardContextMenu}
+        autoLayoutOverride={studioCard ? null : cardAutoLayoutOverride}
+        containSizeMotion={studioCard ? null : cardContainSizeMotion}
+        containMotionBox={studioCard ? null : cardContainMotionBox}
+        onAutoLayoutResolved={!studioCard && card.shown
+          ? onAutoLayoutResolved
+          : undefined}
+      />
+    </div>
   </div>
 {/if}
 
@@ -241,3 +292,13 @@
     />
   </div>
 {/if}
+
+<style>
+  .shared-card {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+  }
+</style>

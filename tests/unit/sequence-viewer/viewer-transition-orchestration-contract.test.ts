@@ -326,8 +326,8 @@ describe("Sequence Viewer transition orchestration contract", () => {
       "aria-valuenow={percent ?? undefined}"
     );
     expect(motionSurface).not.toContain("viewer-3d-handoff-status");
-    expect(motionSurface).toContain(
-      "class:canvas-2d-preparation-held={preparationCanvasWidth !== null}"
+    expect(motionSurface).toMatch(
+      /!inStudio\s*&&\s*preparationCanvasWidth !== null/
     );
     expect(motionSurface).toContain(
       "data-3d-preparation-held={preparationCanvasWidth !== null || undefined}"
@@ -400,7 +400,9 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(companionSurface).toContain("controller={tunnelStage.controller}");
     expect(motionSurface).toContain("data-persistent-animator");
     expect(motionSurface).toContain("data-tunnel-blend");
-    expect(motionSurface).toContain("additionalLayers={tunnelLayers}");
+    expect(motionSurface).toContain(
+      "additionalLayers={inStudio ? [] : tunnelLayers}"
+    );
     expect(motionSurface.match(/<AnimatorCanvas/g)).toHaveLength(1);
     expect(motionSurface).toContain("resolveTunnelLayerOpacity(");
     expect(motionSurface).toContain("tunnelLayerPoseDifference(");
@@ -426,7 +428,9 @@ describe("Sequence Viewer transition orchestration contract", () => {
     );
     expect(tunnelLayerReveal).toContain("DURATION.emphasis + DURATION.normal");
     expect(splitPane).toContain("motionDuration(TUNNEL_REVEAL_DURATION)");
-    expect(motionSurface).toContain("gridOpacity={tunnelGridOpacity}");
+    expect(motionSurface).toContain(
+      "gridOpacity={inStudio ? 1 : tunnelGridOpacity}"
+    );
     expect(motionSurface).toContain("data-tunnel-layer-opacity-max");
     expect(motionSurface).toContain("data-tunnel-layer-opacity-mean");
     expect(motionSurface).toContain("data-tunnel-perceptible-layer-count");

@@ -1,0 +1,317 @@
+{
+  "generator": "@dgreenheck/ez-tree@1.1.0",
+  "treeCount": 24,
+  "variants": [
+    {
+      "id": "courtyard",
+      "seed": 36330,
+      "sourceHeight": 83.12473364622527,
+      "woodTriangles": 45456,
+      "leafTriangles": 18900
+    },
+    {
+      "id": "windswept",
+      "seed": 42671,
+      "sourceHeight": 75.28049835818025,
+      "woodTriangles": 45456,
+      "leafTriangles": 18900
+    },
+    {
+      "id": "garden",
+      "seed": 85123,
+      "sourceHeight": 79.04211749244497,
+      "woodTriangles": 45456,
+      "leafTriangles": 18900
+    }
+  ],
+  "contacts": [
+    {
+      "anchor": "Citadel olive anchor",
+      "position": [
+        -16.0,
+        0.0,
+        0.6899999976158142
+      ],
+      "height": 8.199999809265137,
+      "variant": "courtyard",
+      "soilZ": 0.73,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Citadel olive.001 anchor",
+      "position": [
+        23.0,
+        22.0,
+        -1.3206396102905273
+      ],
+      "height": 7.5,
+      "variant": "windswept",
+      "soilZ": -1.2806396484375,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Citadel olive.002 anchor",
+      "position": [
+        -47.0,
+        24.0,
+        -1.1764593124389648
+      ],
+      "height": 9.0,
+      "variant": "garden",
+      "soilZ": -1.1364593505859375,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Citadel olive.003 anchor",
+      "position": [
+        45.0,
+        3.0,
+        -1.5522985458374023
+      ],
+      "height": 8.0,
+      "variant": "courtyard",
+      "soilZ": -1.512298583984375,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Citadel olive.004 anchor",
+      "position": [
+        -38.0,
+        -32.0,
+        -1.1420965194702148
+      ],
+      "height": 7.0,
+      "variant": "windswept",
+      "soilZ": -1.1020965576171875,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Citadel olive.005 anchor",
+      "position": [
+        33.0,
+        -35.0,
+        -0.9791479706764221
+      ],
+      "height": 6.0,
+      "variant": "garden",
+      "soilZ": -0.93914794921875,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "West monastery olive anchor",
+      "position": [
+        -162.64999389648438,
+        48.79999923706055,
+        -2.139472007751465
+      ],
+      "height": 6.0,
+      "variant": "courtyard",
+      "soilZ": -2.0994720458984375,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "West monastery olive.001 anchor",
+      "position": [
+        -149.75,
+        48.79999923706055,
+        -2.03201961517334
+      ],
+      "height": 7.0,
+      "variant": "windswept",
+      "soilZ": -1.9920196533203125,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "West monastery olive.002 anchor",
+      "position": [
+        -136.85000610351562,
+        48.79999923706055,
+        -2.366950035095215
+      ],
+      "height": 8.0,
+      "variant": "garden",
+      "soilZ": -2.3269500732421875,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "West monastery olive.003 anchor",
+      "position": [
+        -123.94999694824219,
+        48.79999923706055,
+        -1.9500799179077148
+      ],
+      "height": 6.0,
+      "variant": "courtyard",
+      "soilZ": -1.9100799560546875,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "East aerie olive anchor",
+      "position": [
+        117.69999694824219,
+        48.400001525878906,
+        -2.124640464782715
+      ],
+      "height": 6.0,
+      "variant": "windswept",
+      "soilZ": -2.0846405029296875,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "East aerie olive.001 anchor",
+      "position": [
+        131.5,
+        48.400001525878906,
+        -2.039557456970215
+      ],
+      "height": 7.0,
+      "variant": "garden",
+      "soilZ": -1.9995574951171875,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "East aerie olive.002 anchor",
+      "position": [
+        145.3000030517578,
+        48.400001525878906,
+        -2.3668737411499023
+      ],
+      "height": 8.0,
+      "variant": "courtyard",
+      "soilZ": -2.326873779296875,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "East aerie olive.003 anchor",
+      "position": [
+        159.10000610351562,
+        48.400001525878906,
+        -1.9307317733764648
+      ],
+      "height": 6.0,
+      "variant": "windswept",
+      "soilZ": -1.8907318115234375,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Far high sanctuary olive anchor",
+      "position": [
+        -130.75,
+        213.0,
+        5.856865882873535
+      ],
+      "height": 6.0,
+      "variant": "garden",
+      "soilZ": 5.8968658447265625,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Far high sanctuary olive.001 anchor",
+      "position": [
+        -111.25,
+        213.0,
+        5.982857704162598
+      ],
+      "height": 7.0,
+      "variant": "courtyard",
+      "soilZ": 6.022857666015625,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Far east ridge olive anchor",
+      "position": [
+        157.6999969482422,
+        215.8000030517578,
+        -8.143561363220215
+      ],
+      "height": 6.0,
+      "variant": "windswept",
+      "soilZ": -8.103561401367188,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Far east ridge olive.001 anchor",
+      "position": [
+        183.5,
+        215.8000030517578,
+        -8.013236045837402
+      ],
+      "height": 7.0,
+      "variant": "garden",
+      "soilZ": -7.973236083984375,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Far west ridge olive anchor",
+      "position": [
+        -309.54998779296875,
+        175.8000030517578,
+        -3.14389705657959
+      ],
+      "height": 6.0,
+      "variant": "courtyard",
+      "soilZ": -3.1038970947265625,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Far west ridge olive.001 anchor",
+      "position": [
+        -285.25,
+        175.8000030517578,
+        -3.008185386657715
+      ],
+      "height": 7.0,
+      "variant": "windswept",
+      "soilZ": -2.9681854248046875,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Rear garden island olive anchor",
+      "position": [
+        54.150001525878906,
+        -154.8000030517578,
+        -9.13120174407959
+      ],
+      "height": 6.0,
+      "variant": "garden",
+      "soilZ": -9.091201782226562,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Rear garden island olive.001 anchor",
+      "position": [
+        68.25,
+        -154.8000030517578,
+        -9.04099178314209
+      ],
+      "height": 7.0,
+      "variant": "courtyard",
+      "soilZ": -9.000991821289062,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Rear garden island olive.002 anchor",
+      "position": [
+        82.3499984741211,
+        -154.8000030517578,
+        -9.367194175720215
+      ],
+      "height": 8.0,
+      "variant": "windswept",
+      "soilZ": -9.327194213867188,
+      "rootBurial": 0.04
+    },
+    {
+      "anchor": "Rear garden island olive.003 anchor",
+      "position": [
+        96.44999694824219,
+        -154.8000030517578,
+        -8.934515953063965
+      ],
+      "height": 6.0,
+      "variant": "garden",
+      "soilZ": -8.894515991210938,
+      "rootBurial": 0.04
+    }
+  ]
+}

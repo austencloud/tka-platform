@@ -12,6 +12,7 @@ import type { PerformanceSnapshot } from "../../foundation/ui/ui-types";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
 import { DEFAULT_FAN_APPEARANCE } from "../../pictograph/prop/domain/fan-appearance";
+import { DEFAULT_PROP_LOOK } from "../../pictograph/prop/domain/prop-look";
 import type {
   AppSettings,
   PropPreset,
@@ -65,6 +66,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   leftPropType: PropType.STAFF,
   rightPropType: PropType.STAFF,
   fanAppearance: DEFAULT_FAN_APPEARANCE,
+  propLook: DEFAULT_PROP_LOOK,
   selectedPresetIndex: 0,
 };
 

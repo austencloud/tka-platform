@@ -605,6 +605,40 @@
             button.getClientRects().length > 0
         ).length,
         stageIdentity: elementIdentity(".viewer-stage-container"),
+        sharedCanvasIdentity: elementIdentity(
+          "[data-shared-animation-surface][data-surface-handoff] canvas"
+        ),
+        sharedInspectorIdentity: elementIdentity(
+          "[data-shared-studio-inspector]"
+        ),
+        sharedCardIdentity: elementIdentity(
+          "[data-shared-studio-card] .choreo-card-root"
+        ),
+        sharedTransportIdentity: elementIdentity(
+          "[data-shared-studio-transport] [aria-label='Playback transport']"
+        ),
+        sharedSurfaces: Object.fromEntries(
+          Object.entries({
+            canvas:
+              "[data-shared-animation-surface] .content-wrapper > .canvas-wrapper",
+            inspector: "[data-shared-studio-inspector]",
+            rail: "[data-shared-studio-inspector] [role='tablist']",
+            editor: "[data-shared-studio-inspector] .panel-scroll",
+            card: "[data-shared-studio-card]",
+            transport: "[data-shared-studio-transport]",
+            phone: ".output-frame",
+          }).map(([key, selector]) => [key, elementBounds(selector)])
+        ),
+        sharedCanvasInStudio: Boolean(
+          document.querySelector(
+            "[data-studio-animation-destination] [data-shared-animation-surface] canvas"
+          )
+        ),
+        sharedInspectorInStudio: Boolean(
+          document.querySelector(
+            "[data-studio-inspector-destination] [data-shared-studio-inspector]"
+          )
+        ),
       },
       phase: tracePhase,
       direction,
@@ -1339,6 +1373,7 @@
   >
     {#snippet children(ctx)}
       <SequenceViewerShell
+        reviewPostStudio
         {ctx}
         sequence={TRANSITION_REVIEW_SEQUENCE}
         analyticsSource="external_link"

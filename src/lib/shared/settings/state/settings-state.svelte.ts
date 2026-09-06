@@ -13,6 +13,7 @@ import {
   type PropPreset,
 } from "../domain/app-settings";
 import { DEFAULT_FAN_APPEARANCE } from "../../pictograph/prop/domain/fan-appearance";
+import { DEFAULT_PROP_LOOK } from "../../pictograph/prop/domain/prop-look";
 // Dynamic import: posthog-activity-logger → posthog → $env/dynamic/public.
 // Static import crashes the composition worker (no globalThis.__sveltekit_dev).
 async function logSettingChange(
@@ -95,6 +96,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   leftPropType: PropType.STAFF,
   rightPropType: PropType.STAFF,
   fanAppearance: DEFAULT_FAN_APPEARANCE,
+  propLook: DEFAULT_PROP_LOOK,
   blockedStartPositions: [],
   blockedStartPositionsByGridMode: {},
   propPresets: DEFAULT_PROP_PRESETS,

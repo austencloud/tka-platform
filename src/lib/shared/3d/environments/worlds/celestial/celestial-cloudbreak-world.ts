@@ -5,6 +5,7 @@ import {
   Group,
   Mesh,
   MeshBasicMaterial,
+  MeshStandardMaterial,
   PlaneGeometry,
   Shape,
   ShapeGeometry,
@@ -29,6 +30,7 @@ import {
   CLOUDBREAK_SKY_SUN,
 } from "../../scenes/celestial/cloudbreak-layout";
 import { disposeCelestialObjectTree } from "./celestial-disposal";
+import { prepareCoveragePreservingAlphaMipmaps } from "../../../rendering/alpha-coverage-mipmaps";
 
 export interface CelestialCloudbreakAssets {
   shell: Object3D;
@@ -65,14 +67,25 @@ function prepareShell(
   options: CelestialCloudbreakOptions
 ): Object3D {
   const root = source.clone(true);
-  root.name = "dawn-authored-observatory";
+  root.name = "celestial-authored-citadel";
   root.traverse((child) => {
     if (!(child instanceof Mesh)) return;
     child.castShadow = !["ground", "mesa", "distant-olive"].includes(
       child.userData.sunwardRole
     );
     child.receiveShadow = true;
-    const cloneMaterial = (material: Material) => material.clone();
+    const cloneMaterial = (material: Material) => {
+      const copy = material.clone();
+      if (
+        copy instanceof MeshStandardMaterial &&
+        copy.name.startsWith("EZ-Tree") &&
+        copy.alphaTest > 0 &&
+        copy.map
+      ) {
+        prepareCoveragePreservingAlphaMipmaps(copy.map, copy.alphaTest);
+      }
+      return copy;
+    };
     child.material = Array.isArray(child.material)
       ? child.material.map(cloneMaterial)
       : cloneMaterial(child.material);
@@ -388,5 +401,5 @@ export function createCelestialCloudbreakWorld(
   };
 }
 
-/** The panorama and complete Blender-authored observatory. */
-export const CELESTIAL_AUTHORED_RESOURCE_COUNT = 2;
+/** The complete Blender-authored citadel; clouds are generated at runtime. */
+export const CELESTIAL_AUTHORED_RESOURCE_COUNT = 1;

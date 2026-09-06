@@ -38,6 +38,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import FanAppearancePicker from "$lib/shared/pictograph/prop/components/FanAppearancePicker.svelte";
+  import PropLookPicker from "$lib/shared/pictograph/prop/components/PropLookPicker.svelte";
   import {
     isFanPropType,
     type FanAppearance,
@@ -94,6 +95,8 @@
      *  usual self-owned navigation state. */
     controlledSection?: PillId | null;
     singlePlayDuration?: number;
+    /** Keep the editor geometry while another workspace owns export. */
+    reserveExportSpace?: boolean;
     isPlaying?: boolean;
     bpm?: number;
     renderMode?: "2d" | "3d";
@@ -177,6 +180,7 @@
     presentation = "full",
     controlledSection,
     singlePlayDuration = 0,
+    reserveExportSpace = false,
     isPlaying = false,
     bpm = 60,
     renderMode = "2d",
@@ -692,6 +696,13 @@
             compact={layout === "bottom"}
           />
         </div>
+      {:else if selectedPropType}
+        <div class="fan-appearance-section">
+          <PropLookPicker
+            propType={selectedPropType}
+            compact={layout === "bottom"}
+          />
+        </div>
       {/if}
     {/await}
   {:else if resolvedPill === "effects"}
@@ -1101,9 +1112,10 @@
   >
     {#snippet body()}{@render pillBody()}{/snippet}
     {#snippet footer()}
-      {#if exportEnabled && onExport}
+      {#if (exportEnabled && onExport) || reserveExportSpace}
         <AnimatorInspectorFooter
-          onAction={onExport}
+          onAction={onExport ?? (() => {})}
+          concealed={reserveExportSpace}
           label={exportButtonLabel}
           icon={renderMode === "3d" ? "fa-circle" : "fa-download"}
           busy={isExporting}
