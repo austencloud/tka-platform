@@ -7,6 +7,7 @@
   import EmailAuthTabs from "./EmailAuthTabs.svelte";
   import LastUsedBadge from "$lib/shared/components/LastUsedBadge.svelte";
   import SocialAuthCompact from "./SocialAuthCompact.svelte";
+  import { growFade } from "$lib/shared/transitions/motion";
 
   interface Props {
     content: AuthPromptContent;
@@ -33,7 +34,9 @@
   }: Props = $props();
 
   let showEmailAuth = $state(false);
+  let showOtherProviders = $state(false);
   const lastMethod = getLastAuthMethod();
+  const compact = $derived(content.key === "step-cap-guest");
   const lastUsedEmail = $derived(
     lastMethod === "magic-link" || lastMethod === "password"
   );
@@ -44,6 +47,7 @@
     if (!active) return;
     content.key;
     showEmailAuth = false;
+    showOtherProviders = false;
   });
 
   const titleId = $derived(`${idPrefix}-title`);
@@ -57,6 +61,7 @@
 
 <section
   class="contextual-auth-prompt"
+  class:compact
   aria-labelledby={titleId}
   aria-describedby={descriptionId}
 >
@@ -88,14 +93,32 @@
   <div class="auth-methods">
     {#if inAppBrowser}
       <div class="email-flow">
-        <div class="email-divider"><span>Continue by email</span></div>
-        <EmailAuthTabs bind:mode />
+        {#if !compact}
+          <div class="email-divider"><span>Continue by email</span></div>
+        {/if}
+        <EmailAuthTabs bind:mode {compact} />
       </div>
 
-      <p class="provider-warning">
-        Social sign-in is blocked inside this browser.
-      </p>
-      <SocialAuthCompact {mode} {onFacebookAuth} />
+      {#if compact}
+        <button
+          class="email-back"
+          type="button"
+          aria-expanded={showOtherProviders}
+          onclick={() => (showOtherProviders = !showOtherProviders)}
+        >
+          {showOtherProviders
+            ? "Fewer sign-in options"
+            : "Other sign-in options"}
+        </button>
+      {/if}
+      {#if !compact || showOtherProviders}
+        <div transition:growFade>
+          <p class="provider-warning">
+            Social sign-in is blocked inside this browser.
+          </p>
+          <SocialAuthCompact {mode} {onFacebookAuth} />
+        </div>
+      {/if}
     {:else if showEmailAuth}
       <div class="email-flow">
         <button
@@ -106,7 +129,7 @@
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
           Other sign-in options
         </button>
-        <EmailAuthTabs bind:mode />
+        <EmailAuthTabs bind:mode {compact} />
       </div>
     {:else}
       <div class="method-grid">
@@ -512,6 +535,78 @@
     .close-button:hover,
     .email-method:hover {
       transform: none;
+    }
+  }
+
+  .compact {
+    --min-touch-target: 44px;
+    --font-size-min: 0.875rem;
+    width: min(calc(100vw - 2rem), 28rem);
+    padding: 1.25rem;
+  }
+
+  .compact .brand-mark {
+    width: 2rem;
+  }
+
+  .compact .brand-lockup {
+    gap: 0.625rem;
+  }
+
+  .compact .brand-name {
+    font-size: 0.9375rem;
+  }
+
+  .compact .prompt-copy {
+    min-height: 0;
+    padding-block: 1rem;
+  }
+
+  .compact h2 {
+    font-size: 1.5rem;
+    line-height: 1.15;
+    text-wrap: pretty;
+  }
+
+  .compact .prompt-copy p {
+    min-height: 0;
+    margin-top: 0.5rem;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+
+  .compact .email-flow {
+    gap: 0.75rem;
+    padding: 0;
+    background: none;
+    border: 0;
+  }
+
+  .compact .mode-toggle {
+    margin-top: 0.75rem;
+    padding-inline: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-height: 35rem) and (min-width: 48rem) {
+    .compact {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      grid-template-rows: auto 1fr auto;
+      column-gap: 1.5rem;
+      width: min(calc(100vw - 2rem), 46rem);
+      padding: 1rem;
+    }
+
+    .compact .prompt-header,
+    .compact .prompt-copy,
+    .compact .mode-toggle {
+      grid-column: 1;
+    }
+
+    .compact .auth-methods {
+      grid-column: 2;
+      grid-row: 1 / span 3;
     }
   }
 </style>
