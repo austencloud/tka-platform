@@ -2,6 +2,11 @@
 
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { validateBlossomMasterplan } from "./blossom-masterplan-rules.mjs";
+
+// Technical checks never stand in for the user's visual acceptance.
+const technicalOnly = process.argv.includes("--technical");
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const assetPath = resolve(
@@ -14,7 +19,9 @@ const masterplanPath = resolve(
 );
 const evidencePath = resolve(
   projectRoot,
-  "docs/superpowers/specs/blossom-masterplan-r2/evidence/blossom-production-phase2-validation.json"
+  technicalOnly
+    ? "docs/superpowers/specs/blossom-masterplan-r2/evidence/blossom-hanami-technical-validation.json"
+    : "docs/superpowers/specs/blossom-masterplan-r2/evidence/blossom-production-phase2-validation.json"
 );
 const groundMaskPath = resolve(
   projectRoot,
@@ -64,11 +71,14 @@ const namedMeshes = new Map(
   document.meshes.filter((mesh) => mesh.name).map((mesh) => [mesh.name, mesh])
 );
 
-invariant(
-  masterplan.status === "approved-for-production" &&
-    masterplan.approvalGate.productionChangesAllowed,
-  "R2.1 was rejected on visual review (2026-08-23) — this validator must not report a verified composition for it"
-);
+if (!technicalOnly)
+  invariant(
+    masterplan.status === "approved-for-production" &&
+      masterplan.approvalGate.productionChangesAllowed,
+    "R2.1 was rejected on visual review (2026-08-23) — this validator must not report a verified composition for it"
+  );
+const spatial = validateBlossomMasterplan(masterplan);
+invariant(spatial.valid, spatial.failures.join("\n"));
 
 for (const requiredNode of [
   "Garden_Ground",
@@ -133,7 +143,7 @@ const decorativeNodes = document.nodes.filter((node) =>
   )
 );
 invariant(
-  decorativeNodes.length === 0,
+  masterplan.activeProductionPhase > 2 || decorativeNodes.length === 0,
   `Phase 2 contains gated decoration: ${decorativeNodes.map((node) => node.name).join(", ")}`
 );
 
@@ -162,13 +172,63 @@ for (const extension of [
 const assetSizeMiB = assetStats.size / 1024 / 1024;
 invariant(assetSizeMiB < 32, "Optimized Blossom asset exceeds 32 MiB");
 
+const renderedTriangles = document.nodes.reduce((sum, node) => {
+  if (
+    node.mesh === undefined ||
+    /^(Stage_|Twilight_Backdrop|Moon_Disc)/.test(node.name ?? "")
+  )
+    return sum;
+  const instanceAttributes =
+    node.extensions?.EXT_mesh_gpu_instancing?.attributes;
+  const instances = instanceAttributes
+    ? document.accessors[Object.values(instanceAttributes)[0]].count
+    : 1;
+  return (
+    sum +
+    instances *
+      document.meshes[node.mesh].primitives.reduce(
+        (total, primitive) =>
+          total +
+          document.accessors[primitive.indices ?? primitive.attributes.POSITION]
+            .count /
+            3,
+        0
+      )
+  );
+}, 0);
+invariant(
+  renderedTriangles < 4_200_000,
+  `Authored scene exceeds 4.2M triangles: ${renderedTriangles}`
+);
+if (masterplan.authoringRevision === "hanami-garden-r3") {
+  for (const name of [
+    "Hanami_Timber_Seats",
+    "Hanami_Backstage_Screen",
+    "Hanami_Torii_Lacquer_Cap",
+    "Hanami_Canopy_Petal_Drifts",
+    "Hanami_Hanging_Lanterns",
+    "Hanami_Lantern_Cords",
+  ]) {
+    invariant(namedNodes.has(name), `Missing hanami detail: ${name}`);
+  }
+  invariant(
+    namedNodes.get("Hanami_Timber_Seats").extras?.tka_seat_count === 9,
+    "Seat count drifted"
+  );
+}
+
 const validation = {
   planId: masterplan.planId,
-  phase: "site-systems",
-  status: "verified",
+  phase: masterplan.activeProductionPhase,
+  status: technicalOnly ? "technical-checks-passed" : "verified",
+  visualAcceptance:
+    masterplan.authoringAuthorization?.visualAcceptance ?? masterplan.status,
   checkedAt: new Date().toISOString(),
   asset: "static/models/blossom/blossom_environment.glb",
   assetSizeMiB: Number(assetSizeMiB.toFixed(2)),
+  assetSha256: createHash("sha256").update(assetBuffer).digest("hex"),
+  renderedTriangles,
+  spatial: spatial.measurements,
   terrainEnvelope: terrain,
   audience: {
     zones: masterplan.audience.zones.length,
@@ -191,7 +251,7 @@ const validation = {
   },
   bridgeSlopePercent: bridgeNode.extras.tka_bridge_slope_percent,
   lanterns: lanternCount,
-  gatedDecorationNodes: decorativeNodes.length,
+  decorationNodes: decorativeNodes.length,
   extensions: document.extensionsUsed,
 };
 

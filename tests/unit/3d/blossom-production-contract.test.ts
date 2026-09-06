@@ -20,22 +20,23 @@ import {
 } from "$lib/shared/3d/environments/scenes/cherry-blossom/blossom-water";
 
 describe("Blossom R2.1 production contract", () => {
-  it("ships the grove phase without unlocking life and atmosphere", () => {
-    // Phase 4 establishes the perimeter grove. Phase 5 is what turns on petals,
-    // koi, and moonlight, so BlossomScene's decorative atmosphere must stay off.
-    expect(getBlossomActiveProductionPhase()).toBe(4);
-    expect(getBlossomActiveProductionPhase()).toBeLessThan(5);
+  it("enables the hanami garden's life and atmosphere", () => {
+    expect(getBlossomActiveProductionPhase()).toBe(5);
   });
 
   it("keeps the validated camera envelope inside the authored terrain", () => {
     const terrain = getBlossomTerrainBounds();
     const camera = getBlossomCameraContract();
 
-    expect(camera.controls.maximumDistance).toBe(82);
-    expect(terrain.minX).toBeLessThanOrEqual(-128);
-    expect(terrain.maxX).toBeGreaterThanOrEqual(128);
-    expect(terrain.minY).toBeLessThanOrEqual(-122);
-    expect(terrain.maxY).toBeGreaterThanOrEqual(142);
+    const reach =
+      camera.controls.maximumDistance *
+        Math.sin((camera.controls.maximumPolarAngleDegrees * Math.PI) / 180) +
+      12;
+    const pan = camera.controls.panTargetBounds;
+    expect(terrain.minX).toBeLessThanOrEqual(pan.minX - reach);
+    expect(terrain.maxX).toBeGreaterThanOrEqual(pan.maxX + reach);
+    expect(terrain.minY).toBeLessThanOrEqual(pan.minY - reach);
+    expect(terrain.maxY).toBeGreaterThanOrEqual(pan.maxY + reach);
   });
 
   it("authors every public and service route from connected 3D centerlines", () => {
@@ -99,7 +100,9 @@ describe("Blossom R2.1 production contract", () => {
     // ReflectivePool reconstructs shoreline coordinates as (uv - 0.5) * size,
     // which only matches the outline when it is centred on the origin.
     expect(Math.abs(Math.max(...x) + Math.min(...x))).toBeLessThan(0.001);
-    expect(Math.abs(Math.max(...depth) + Math.min(...depth))).toBeLessThan(0.001);
+    expect(Math.abs(Math.max(...depth) + Math.min(...depth))).toBeLessThan(
+      0.001
+    );
   });
 
   it("keeps stage operations outside the performance envelope", () => {
