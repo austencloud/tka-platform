@@ -1,6 +1,9 @@
+import { VIEWER_STATE_PARAM_NAMES } from "$lib/shared/sequence-viewer/services/viewer-url-state-codec";
+
 interface RouteScopedParameter {
   name: string;
-  isValidForPath: (pathname: string) => boolean;
+  /** `url` is the destination being cleaned; read other params from it. */
+  isValidForPath: (pathname: string, url: URL) => boolean;
 }
 
 const startsWith = (prefix: string) => (pathname: string) =>
@@ -8,6 +11,25 @@ const startsWith = (prefix: string) => (pathname: string) =>
 
 const isAtlasPath = (pathname: string) =>
   startsWith("/atlas")(pathname) || startsWith("/glossary")(pathname);
+
+// Routes whose own page mounts a sequence viewer without needing `?v=`.
+const isViewerRoute = (pathname: string) =>
+  startsWith("/sequence")(pathname) || startsWith("/from/spiroanim")(pathname);
+
+/**
+ * Viewer-state params (`pane`, `split`, `fx`, `cols`, `s`) describe an OPEN
+ * sequence viewer. The overlay host rides on top of any app route, so identity
+ * — `?v=` — is what says a viewer belongs here, not the path.
+ *
+ * Without this scope they outlive the viewer: every path change copies the
+ * whole query string onto the destination (`navigation-coordinator`
+ * `pushHistoryState`, `browse-navigation-state` `writeLocation`), so state left
+ * over from a closed viewer rides along forever. A browse URL then LOOKS like a
+ * viewer deep link and opens the plain gallery, because the params it carries
+ * name a pane and an effect but no sequence.
+ */
+const isViewerStateValid = (pathname: string, url: URL) =>
+  isViewerRoute(pathname) || url.searchParams.has("v");
 
 const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
   {
@@ -41,13 +63,17 @@ const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
   { name: "room", isValidForPath: startsWith("/museum") },
   { name: "inspectUser", isValidForPath: startsWith("/admin/users") },
   { name: "inspectSession", isValidForPath: startsWith("/admin/users") },
+  ...VIEWER_STATE_PARAM_NAMES.map((name) => ({
+    name,
+    isValidForPath: isViewerStateValid,
+  })),
 ];
 
 const ONE_REQUEST_PARAMETERS = ["fresh", "from", "code", "section"] as const;
 
 export function pruneRouteScopedParams(url: URL, pathname: string): void {
   for (const parameter of ROUTE_SCOPED_PARAMETERS) {
-    if (!parameter.isValidForPath(pathname)) {
+    if (!parameter.isValidForPath(pathname, url)) {
       url.searchParams.delete(parameter.name);
     }
   }
