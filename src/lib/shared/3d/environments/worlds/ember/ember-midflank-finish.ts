@@ -121,7 +121,7 @@ export function createMidflankLava(
     vertexColors: true,
   });
   material.name = "Ember_Midflank_R5_thermal-crust";
-  material.customProgramCacheKey = () => "ember-midflank-flowing-network-v4";
+  material.customProgramCacheKey = () => "ember-midflank-flowing-network-v5";
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uMidflankTime = time;
     shader.vertexShader =
@@ -168,11 +168,39 @@ export function createMidflankLava(
       float fissure = 1.-smoothstep(.015,.07,abs(mfFbm(p*vec2(1.1,.54)+warp)-.49));
       float heat = max(opening,fissure*.32) * smoothstep(.05,.85,vMidflankBank);
       vec3 mfRadiance = mix(vec3(1.1,.035,.001),vec3(2.8,.32,.008),opening);
+      // Subpixel fissures fade to their average coverage instead of sparkling
+      // or becoming a giant painted stripe when the camera moves away.
+      float footprint = max(length(dFdx(p)),length(dFdy(p)));
+      float unresolved = smoothstep(.6,2.8,footprint);
+      heat = mix(heat,.16*smoothstep(.05,.85,vMidflankBank),unresolved);
+      mfRadiance = mix(mfRadiance,vec3(1.8,.14,.003),unresolved);
       totalEmissiveRadiance = mfRadiance * heat * vMidflankHeat;
       diffuseColor.rgb = mix(vec3(.026,.022,.020),vec3(.035,.008,.002),heat);
     `
     );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <fog_fragment>",
+      /* glsl */ `
+      #if defined(USE_FOG) && defined(MIDFLANK_REMOTE)
+        // The near-field fog would erase a kilometre-long outflow entirely.
+        // Ease into the backdrop's atmospheric depth, retaining upstream fog
+        // at the join. Heat, crust size, and motion are otherwise identical.
+        float remoteDensity = mix(.0038,.0012,
+          smoothstep(140.,450.,length(vMidflankWorld.xz)));
+        float remoteFog = 1.-exp(-remoteDensity*remoteDensity*vFogDepth*vFogDepth);
+        gl_FragColor.rgb = mix(gl_FragColor.rgb,fogColor,remoteFog);
+      #else
+        #include <fog_fragment>
+      #endif
+      `
+    );
   };
+  const distantMaterial = material.clone();
+  distantMaterial.name = "Ember_Midflank_thermal-crust-distant";
+  distantMaterial.defines = { MIDFLANK_REMOTE: 1 };
+  distantMaterial.onBeforeCompile = material.onBeforeCompile;
+  distantMaterial.customProgramCacheKey = () =>
+    "ember-midflank-flowing-network-v5-remote";
   terrain.traverse((child) => {
     const mesh = child as Mesh;
     if (
@@ -180,12 +208,15 @@ export function createMidflankLava(
       !(mesh.material instanceof MeshStandardMaterial) ||
       !(
         mesh.name === "EMBER_LavaSimulatorDeposit" ||
-        mesh.userData.ember_flow_surface
+        mesh.userData.ember_flow_surface ||
+        mesh.userData.ember_distant_flow_surface
       )
     )
       return;
     originals.push({ mesh, material: mesh.material });
-    mesh.material = material;
+    mesh.material = mesh.userData.ember_distant_flow_surface
+      ? distantMaterial
+      : material;
   });
   const deposit = terrain.getObjectByName("EMBER_LavaSimulatorDeposit") as
     | Mesh
@@ -316,6 +347,7 @@ export function createMidflankLava(
     dispose() {
       for (const entry of originals) entry.mesh.material = entry.material;
       material.dispose();
+      distantMaterial.dispose();
       rafts?.dispose();
       raftGeometry?.dispose();
       raftMaterial.dispose();

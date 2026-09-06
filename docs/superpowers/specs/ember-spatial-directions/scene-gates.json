@@ -688,11 +688,11 @@
       "evidence": [
         {
           "kind": "vertical-slice-build",
-          "path": "static/models/ember/ember-distant-valley-r3.glb"
+          "path": "static/models/ember/ember-distant-valley-r4.glb"
         },
         {
           "kind": "blender-source",
-          "path": "blender/ember-distant-valley-r3.blend"
+          "path": "blender/ember-distant-valley-r4.blend"
         },
         {
           "kind": "lava-motion-correction",
@@ -721,6 +721,10 @@
         {
           "kind": "connected-downhill-drainage-revision",
           "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r3/verification.md"
+        },
+        {
+          "kind": "near-far-lava-material-parity",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r4/verification.md"
         },
         {
           "kind": "interaction-capture",
