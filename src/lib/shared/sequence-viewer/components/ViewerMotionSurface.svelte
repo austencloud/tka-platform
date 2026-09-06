@@ -1,5 +1,10 @@
 <script lang="ts">
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import { getViewerStudioSurfaces } from "../context/viewer-studio-surfaces-context";
+  import {
+    reparentToInspector,
+    type ReparentOptions,
+  } from "./reparent-to-inspector";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
@@ -65,6 +70,30 @@
   const selectedPane = $derived(
     side === "left" ? splitConfig.leftPane : splitConfig.rightPane
   );
+  const studioSurfaces = getViewerStudioSurfaces();
+  const studioFrame = $derived(side === "left" ? studioSurfaces?.frame : null);
+  const inStudio = $derived(side === "left" && !!studioSurfaces?.canvasTarget);
+  let canvasHandoff: ReturnType<typeof reparentToInspector> | undefined;
+  $effect.pre(() => {
+    // The transport may move before the phone destination mounts. Capture the
+    // visual canvas before either sibling changes the layout, not at docking.
+    void studioSurfaces?.active;
+    canvasHandoff?.capture();
+  });
+  function ownCanvas(node: HTMLElement, options: ReparentOptions) {
+    const unregister =
+      side === "left" ? studioSurfaces?.registerCanvas(node) : undefined;
+    const handoff = reparentToInspector(node, options);
+    canvasHandoff = handoff;
+    return {
+      update: handoff.update,
+      destroy: () => {
+        handoff.destroy();
+        unregister?.();
+        if (canvasHandoff === handoff) canvasHandoff = undefined;
+      },
+    };
+  }
   const is2DActive = $derived(selectedPane === "animation");
   const is3DActive = $derived(selectedPane === "animation-3d");
   const isTunnelActive = $derived(selectedPane === "tunnel");
@@ -626,8 +655,18 @@
       {/if}
       <div
         class="canvas-layer canvas-2d-layer"
-        class:canvas-2d-preparation-held={preparationCanvasWidth !== null}
+        use:ownCanvas={{
+          target:
+            side === "left" ? (studioSurfaces?.canvasTarget ?? null) : null,
+          animate: true,
+          visualSelector: ".content-wrapper > .canvas-wrapper",
+          onMoving: side === "left" ? studioSurfaces?.setMoving : undefined,
+        }}
+        class:canvas-2d-preparation-held={!inStudio &&
+          preparationCanvasWidth !== null}
         data-3d-preparation-held={preparationCanvasWidth !== null || undefined}
+        data-shared-animation-surface
+        data-animation-position={studioFrame?.position ?? playback.currentStep}
         style:--preparation-canvas-width={preparationCanvasWidth === null
           ? undefined
           : `${preparationCanvasWidth}px`}
@@ -639,13 +678,21 @@
              returns to the stage. Practice keeps the transport because its
              read-ahead lane is not a card navigator. -->
         <AnimatorCanvas
-          sequenceData={playback.animationState.sequenceData}
-          currentStep={playback.currentStep}
-          isPlaying={playback.isPlaying}
-          virtualTime={playback.animationState.virtualTime}
-          leftProp={playback.animationState.leftPropState}
-          rightProp={playback.animationState.rightPropState}
-          additionalLayers={tunnelLayers}
+          shareStudioTransport={side === "left"}
+          sequenceData={studioFrame?.sequence ??
+            playback.animationState.sequenceData}
+          currentStep={studioFrame?.position ?? playback.currentStep}
+          isPlaying={studioFrame?.playing ?? playback.isPlaying}
+          virtualTime={studioFrame
+            ? undefined
+            : playback.animationState.virtualTime}
+          leftProp={studioFrame
+            ? studioFrame.left
+            : playback.animationState.leftPropState}
+          rightProp={studioFrame
+            ? studioFrame.right
+            : playback.animationState.rightPropState}
+          additionalLayers={inStudio ? [] : tunnelLayers}
           preloadAdditionalLayers={preparedTunnelLayers}
           onAdditionalLayerTextureStatusChange={handleTunnelTextureStatus}
           tunnelSpectrum={tunnelController.spectrum}
@@ -655,12 +702,17 @@
             : null}
           gridMode={sequence?.gridMode}
           gridVisible={true}
-          gridOpacity={tunnelGridOpacity}
-          letter={playback.currentLetter}
-          stepData={playback.currentStepData}
-          word={sequence?.word}
-          leftPropType={propRendering.leftPropType}
-          rightPropType={propRendering.rightPropType}
+          gridOpacity={inStudio ? 1 : tunnelGridOpacity}
+          letter={studioFrame
+            ? (studioFrame.step?.letter ?? null)
+            : playback.currentLetter}
+          stepData={studioFrame
+            ? (studioFrame.step ?? null)
+            : playback.currentStepData}
+          word={inStudio ? null : sequence?.word}
+          leftPropType={studioFrame?.leftPropType ?? propRendering.leftPropType}
+          rightPropType={studioFrame?.rightPropType ??
+            propRendering.rightPropType}
           fanAppearance={propRendering.fanAppearance}
           backgroundAlpha={side === "left" &&
           practiceActive &&
@@ -676,17 +728,18 @@
           focused={side === "left" && layout.focusedPane === "animation"}
           suppress2DOverlays={false}
           fillContainer
-          hideProgressBar={side === "left"
-            ? suppressProgress ||
-              (!practiceActive &&
-                layout.isMobile &&
-                layout.focusedPane === null)
-            : true}
+          hideProgressBar={inStudio ||
+            (side === "left"
+              ? suppressProgress ||
+                (!practiceActive &&
+                  layout.isMobile &&
+                  layout.focusedPane === null)
+              : true)}
           hideHeader
           hideTkaGlyph={tunnelVisualActive}
           hideStepNumbers={tunnelVisualActive}
           hidePathLines={tunnelVisualActive}
-          tapToToggle={side === "left"}
+          tapToToggle={side === "left" && !inStudio}
           hoverHint={isTunnelActive ? "badge" : undefined}
           cornerToggle={isTunnelActive}
           hidePlay={false}
@@ -749,3 +802,16 @@
     {/if}
   </div>
 {/if}
+
+<style>
+  /* A relocated surface cannot depend on the split pane's ancestor selectors
+     for its height. Its destination owns the box in either workspace. */
+  .canvas-2d-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+</style>
