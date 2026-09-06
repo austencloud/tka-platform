@@ -475,6 +475,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           // key, so default to true (the prior hardcoded value) for unchanged behavior.
           previewDarkMode: options.previewDarkMode ?? isDarkMode,
           showNonRadialPoints: options.showNonRadialPoints ?? true,
+          leftMotionVisible: options.leftMotionVisible,
+          rightMotionVisible: options.rightMotionVisible,
           additionalLayerCount,
           tunnelSpectrum: options.tunnelSpectrum,
           tunnelPropColors: options.tunnelPropColors,
