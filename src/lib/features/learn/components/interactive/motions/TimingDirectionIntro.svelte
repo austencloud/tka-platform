@@ -13,9 +13,15 @@
 
   let { active = true } = $props<{ active?: boolean }>();
   // These are separate examples, not controls for one combined motion.
-  let placement = $state("alpha");
+  let placementAngle = $state(180);
+  const placement = $derived(
+    placementAngle === 180 ? "alpha" : placementAngle === 0 ? "beta" : "gamma"
+  );
   let timing = $state<TimingMode>("together");
-  let direction = $state("same");
+  let rotations = $state([1, 1]);
+  const direction = $derived(
+    rotations[0] === rotations[1] ? "same" : "opposite"
+  );
   let elapsed = $state(-0.15);
   let playing = $state(false);
   const loop = new AnimationLoop();
@@ -30,9 +36,12 @@
     downbeatPulse(elapsed, 0),
     downbeatPulse(elapsed, offset),
   ]);
-  const placementAngle = $derived(
-    placement === "alpha" ? 180 : placement === "gamma" ? 90 : 0
-  );
+  const placementPoints = [
+    { angle: 0, x: 22.5, y: 50, name: "left" },
+    { angle: 90, x: 50, y: 62 / 3, name: "top" },
+    { angle: 180, x: 77.5, y: 50, name: "right" },
+    { angle: 270, x: 50, y: 238 / 3, name: "bottom" },
+  ];
   const placementCopy = $derived(
     placement === "alpha"
       ? "Opposite points."
@@ -103,6 +112,13 @@
     timing = value;
     elapsed = -0.15;
   }
+  function setPlacement(value: string): void {
+    if (value !== placement)
+      placementAngle = value === "alpha" ? 180 : value === "beta" ? 0 : 90;
+  }
+  function setDirection(value: string): void {
+    rotations[1] = rotations[0]! * (value === "same" ? 1 : -1);
+  }
 </script>
 
 <div
@@ -115,10 +131,22 @@
       <h3>Placement</h3>
       <p>Where things are right now.</p>
     </header>
-    <div class="picture" role="img" aria-label={placementCopy}>
+    <div
+      class="picture"
+      role="group"
+      aria-label="Click a point to change placement"
+    >
       <svg viewBox="0 0 320 300" aria-hidden="true">
         <circle class="placement-ring" cx="160" cy="150" r="88" />
         <circle class="center" cx="160" cy="150" r="3" />
+        {#each placementPoints as point}
+          <circle
+            class="placement-target"
+            cx={point.x * 3.2}
+            cy={point.y * 3}
+            r="3"
+          />
+        {/each}
         <g transform="translate(160 150)">
           <circle class="blue-dot" cx="-88" cy="0" r="19" />
           <g
@@ -129,6 +157,17 @@
           </g>
         </g>
       </svg>
+      {#each placementPoints as point}
+        <button
+          class="point-button"
+          style:left={`${point.x}%`}
+          style:top={`${point.y}%`}
+          onclick={() => (placementAngle = point.angle)}
+          aria-label={`Place the second dot at the ${point.name}`}
+          aria-pressed={placementAngle === point.angle}
+          title={`Place the second dot at the ${point.name}`}
+        ></button>
+      {/each}
     </div>
     <div class="caption" aria-live="polite">
       <Crossfade key={placement}><p>{placementCopy}</p></Crossfade>
@@ -137,7 +176,7 @@
       <SegmentedControl
         options={placementOptions}
         value={placement}
-        onchange={(value) => (placement = value)}
+        onchange={setPlacement}
         semantics="radiogroup"
         ariaLabel="Placement example"
         color="accent"
@@ -215,13 +254,11 @@
     </header>
     <div
       class="picture"
-      role="img"
-      aria-label={direction === "same"
-        ? "Both rotate clockwise."
-        : "One rotates clockwise, the other counterclockwise."}
+      role="group"
+      aria-label="Click either arrow to flip its rotation"
     >
       <svg viewBox="0 0 320 300" aria-hidden="true">
-        {#each [1, direction === "same" ? 1 : -1] as rotation, index}
+        {#each rotations as rotation, index}
           <g
             class:blue={index === 0}
             class:red={index === 1}
@@ -237,6 +274,15 @@
           </g>
         {/each}
       </svg>
+      {#each rotations as rotation, index}
+        <button
+          class="arrow-button"
+          style:left={`${(index === 0 ? 83 : 237) / 3.2}%`}
+          onclick={() => (rotations[index] = -rotation)}
+          aria-label={`Flip ${index === 0 ? "left" : "right"} arrow. Currently ${rotation === 1 ? "clockwise" : "counterclockwise"}.`}
+          title={`Flip ${index === 0 ? "left" : "right"} arrow`}
+        ></button>
+      {/each}
     </div>
     <div class="caption" aria-live="polite">
       <Crossfade key={direction}
@@ -251,7 +297,7 @@
       <SegmentedControl
         options={directionOptions}
         value={direction}
-        onchange={(value) => (direction = value)}
+        onchange={setDirection}
         semantics="radiogroup"
         ariaLabel="Direction example"
         color="accent"
@@ -324,6 +370,41 @@
   .center {
     fill: var(--theme-text-dim);
     opacity: 0.5;
+  }
+  .placement-target {
+    fill: var(--theme-text-dim);
+    opacity: 0.65;
+  }
+  .point-button,
+  .arrow-button {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .point-button {
+    width: 44px;
+    height: 44px;
+  }
+  .arrow-button {
+    top: 50%;
+    width: 46.875%;
+    height: 50%;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .point-button:hover,
+  .arrow-button:hover {
+    outline: 1px solid var(--theme-stroke-strong, var(--theme-text-dim));
+  }
+  .point-button:focus-visible,
+  .arrow-button:focus-visible {
+    outline: 2px solid var(--theme-text);
+    outline-offset: 3px;
   }
   .blue {
     color: var(--prop-blue, #3d44b8);
