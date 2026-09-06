@@ -12,6 +12,9 @@
     previousDisabled = false,
     actionIcon = "arrow",
     curriculumLabel = undefined,
+    actionDisabled = false,
+    actionRef = $bindable(null),
+    showProgress = true,
   }: {
     label: string;
     currentStep: number;
@@ -22,6 +25,9 @@
     previousDisabled?: boolean;
     actionIcon?: "arrow" | "check";
     curriculumLabel?: string;
+    actionDisabled?: boolean;
+    actionRef?: HTMLButtonElement | null;
+    showProgress?: boolean;
   } = $props();
 </script>
 
@@ -41,7 +47,12 @@
         <span class="curriculum-progress">{curriculumLabel}</span>
       {/if}
     </div>
-    <PanelButton variant="primary" onclick={onAction}>
+    <PanelButton
+      variant="primary"
+      onclick={onAction}
+      disabled={actionDisabled}
+      bind:ref={actionRef}
+    >
       <span>{label}</span>
       {#if actionIcon === "check"}
         <i class="fa-solid fa-check" aria-hidden="true"></i>
@@ -50,8 +61,16 @@
       {/if}
     </PanelButton>
   {:else}
-    <button class="primary-action" onclick={onAction}>{label}</button>
-    <ExperienceProgressIndicator {currentStep} {totalSteps} />
+    <button
+      class="primary-action"
+      onclick={onAction}
+      disabled={actionDisabled}
+      bind:this={actionRef}>{label}</button
+    >
+    {#if showProgress}<ExperienceProgressIndicator
+        {currentStep}
+        {totalSteps}
+      />{/if}
   {/if}
 </div>
 
@@ -113,7 +132,7 @@
       transform var(--duration-fast) var(--ease-out);
   }
 
-  .primary-action:hover {
+  .primary-action:hover:not(:disabled) {
     border-color: color-mix(in srgb, var(--theme-accent) 80%, transparent);
     background: color-mix(in srgb, var(--theme-accent) 50%, transparent);
     box-shadow: 0 8px 24px
@@ -127,6 +146,11 @@
   .primary-action:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: 3px;
+  }
+
+  .primary-action:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
 
   @media (prefers-reduced-motion: reduce) {

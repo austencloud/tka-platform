@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { tick, untrack } from "svelte";
+  import { onDestroy, tick, untrack } from "svelte";
+  import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
+  import { motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -21,6 +24,7 @@
   import type { ExperienceViewMode } from "../../../domain/types";
   import LessonStageFrame from "../LessonStageFrame.svelte";
   import LessonStageHeading from "../LessonStageHeading.svelte";
+  import LessonStageControls from "../LessonStageControls.svelte";
   import { createPositionWorkshopState } from "./positions-experience-state.svelte";
   import {
     POSITION_CHALLENGES,
@@ -73,14 +77,46 @@
     canUndo: false,
   });
   let epoch = $state(0);
-  let showReference = $state(false);
+  let showReference = $state<boolean | null>(null);
   let actionNote = $state("");
   let boardWidth = $state(300);
   let boardHeight = $state(320);
+  let experienceElement: HTMLDivElement;
+  const correct = $derived(workshop.feedback === "correct");
+  const built = $derived(
+    positionKindFor(placement.leftLocation, placement.rightLocation)
+  );
+  const stageMotion = createLayoutMotion({
+    getRoot: () => experienceElement,
+    groups: [
+      { selector: "[data-position-stage]", datasetKey: "positionStage" },
+    ],
+    getDuration: () => motionDuration(DURATION.emphasis),
+  });
+  let hasRendered = false;
+  $effect.pre(() => {
+    // Only learning-state changes recompose the stage. Pointer aiming stays
+    // with the grid and must never start a layout animation.
+    [
+      correct,
+      workshop.feedback,
+      workshop.round,
+      workshop.phase,
+      showReference,
+      built,
+      actionNote,
+    ];
+    if (hasRendered) {
+      untrack(() => stageMotion.capture());
+      void tick().then(() => stageMotion.play());
+    }
+    hasRendered = true;
+  });
+  onDestroy(() => stageMotion.cancel());
 
   const instruction = $derived(
-    workshop.feedback === "correct" && workshop.challenge
-      ? `Yes, ${POSITION_TYPE_INFO[workshop.challenge.kind].label}.`
+    correct
+      ? ""
       : placement.activeHand === HandSide.LEFT
         ? "Tap a point for your left hand."
         : placement.activeHand === HandSide.RIGHT
@@ -89,14 +125,10 @@
   );
 
   const exploring = $derived(workshop.phase === "explore");
-  const built = $derived(
-    positionKindFor(placement.leftLocation, placement.rightLocation)
-  );
   const referencesVisible = $derived(
     exploring ||
       workshop.canFinish ||
-      workshop.challenge?.guided ||
-      showReference
+      (showReference ?? (workshop.challenge?.guided && !correct))
   );
   const examples = $derived(
     POSITION_KINDS.map((kind) => ({
@@ -109,7 +141,9 @@
       ? "Hand Positions"
       : workshop.canFinish
         ? "All six built"
-        : `Build ${POSITION_TYPE_INFO[workshop.challenge!.kind].label}`
+        : correct
+          ? `${POSITION_TYPE_INFO[workshop.challenge!.kind].label} ✓`
+          : `Build ${POSITION_TYPE_INFO[workshop.challenge!.kind].label}`
   );
   const feedback = $derived.by(() => {
     if (actionNote) return actionNote;
@@ -128,8 +162,6 @@
         gridMode
       );
     }
-    if (workshop.feedback === "correct" && built)
-      return `Yes, ${POSITION_TYPE_INFO[built].label}. ${POSITION_DEFINITIONS[built]}`;
     if (exploring && built) return POSITION_DEFINITIONS[built];
     if (!exploring && workshop.challenge?.guided)
       return POSITION_DEFINITIONS[workshop.challenge.kind];
@@ -195,10 +227,10 @@
   async function practice() {
     workshop.practice();
     gridMode = workshop.challenge!.gridMode;
-    showReference = false;
+    showReference = null;
     loadPair(null, null);
     await tick();
-    boardElement.focus();
+    boardElement.focus({ preventScroll: true });
   }
 
   function explore() {
@@ -210,12 +242,12 @@
     if (!workshop.next()) return;
     if (workshop.challenge) {
       gridMode = workshop.challenge.gridMode;
-      showReference = false;
+      showReference = null;
       loadPair(null, null);
     }
     await tick();
     if (workshop.canFinish) forwardButton?.focus();
-    else boardElement.focus();
+    else boardElement.focus({ preventScroll: true });
   }
 
   function finish() {
@@ -230,81 +262,54 @@
 
 {#snippet lessonActions()}
   <nav class="lesson-navigation" aria-label="Lesson navigation">
-    <div class="navigation-progress">
-      {#if exploring}
-        <span>Explore</span>
-      {:else}
-        <span>{workshop.builtCount} of {POSITION_CHALLENGES.length} built</span>
-        <progress
-          max={POSITION_CHALLENGES.length}
-          value={workshop.builtCount}
-          aria-label="Positions built"
-        ></progress>
-      {/if}
-    </div>
-    <div class="lesson-actions">
-      {#if exploring}
-        <PanelButton
-          variant={workshop.canFinish ? "secondary" : "primary"}
-          onclick={practice}
-          >{workshop.round > 0 && workshop.round < POSITION_CHALLENGES.length
-            ? "Resume practice"
-            : workshop.canFinish
-              ? "Practice again"
-              : "Next: Practice →"}</PanelButton
-        >
-        {#if workshop.canFinish}
-          <PanelButton variant="primary" onclick={finish}
-            >Continue to Hand Motions</PanelButton
-          >
-        {/if}
-      {:else if workshop.canFinish}
-        <PanelButton onclick={explore}>Keep exploring</PanelButton>
-        <PanelButton variant="primary" bind:ref={forwardButton} onclick={finish}
-          >Continue to Hand Motions</PanelButton
-        >
-      {:else}
-        <PanelButton onclick={explore}>Explore</PanelButton>
-        <PanelButton
-          variant="primary"
-          bind:ref={forwardButton}
-          disabled={workshop.feedback !== "correct"}
-          onclick={next}
-          >{workshop.round === POSITION_CHALLENGES.length - 1
-            ? "Finish practice"
-            : "Next position"}</PanelButton
-        >
-      {/if}
-    </div>
+    <LessonStageControls
+      label={workshop.canFinish
+        ? "Continue to Hand Motions"
+        : workshop.round > 0
+          ? "Resume practice"
+          : "Next: Practice →"}
+      currentStep={Math.min(workshop.round + 1, POSITION_CHALLENGES.length)}
+      totalSteps={POSITION_CHALLENGES.length}
+      showProgress={false}
+      bind:actionRef={forwardButton}
+      onAction={workshop.canFinish ? finish : practice}
+    />
+    {#if workshop.canFinish}
+      <PanelButton onclick={exploring ? practice : explore}
+        >{exploring ? "Practice again" : "Keep exploring"}</PanelButton
+      >
+    {/if}
   </nav>
 {/snippet}
 
-<div class="positions-experience">
+<div class="positions-experience" class:correct bind:this={experienceElement}>
   <LessonStageFrame artifactLayout="workshop">
     {#snippet heading()}
-      <LessonStageHeading
-        key={title}
-        {title}
-        eyebrow={exploring
-          ? "Explore"
-          : workshop.canFinish
-            ? "Practice complete"
-            : `${workshop.challenge?.guided ? "With a reference" : "On your own"} · ${workshop.round + 1} of ${POSITION_CHALLENGES.length}`}
-      >
-        <p>
-          {exploring
-            ? "Place both hands and see the position’s name. Next, try six practice challenges."
+      <div data-position-stage="heading" aria-live="polite" aria-atomic="true">
+        <LessonStageHeading
+          key={title}
+          {title}
+          eyebrow={exploring
+            ? "Explore"
             : workshop.canFinish
-              ? "Keep exploring, or continue to Hand Motions."
-              : gridMode === GridMode.DIAMOND
-                ? "Diamond grid"
-                : "Box grid"}
-        </p>
-      </LessonStageHeading>
+              ? "Practice complete"
+              : `${workshop.challenge?.guided ? "With a reference" : "On your own"} · ${workshop.round + 1} of ${POSITION_CHALLENGES.length}`}
+        >
+          <p>
+            {exploring
+              ? "Place both hands and see the position’s name. Next, try six practice challenges."
+              : workshop.canFinish
+                ? "Keep exploring, or continue to Hand Motions."
+                : gridMode === GridMode.DIAMOND
+                  ? "Diamond grid"
+                  : "Box grid"}
+          </p>
+        </LessonStageHeading>
+      </div>
     {/snippet}
 
     {#snippet artifact()}
-      <div class="placement-instructions">
+      <div class="placement-instructions" data-position-stage="instructions">
         <div class="current-task" aria-live="polite">
           <Crossfade key={instruction}>{instruction}</Crossfade>
         </div>
@@ -318,6 +323,7 @@
         <div class="board-column">
           <div
             class="board"
+            data-position-stage="board"
             bind:this={boardElement}
             tabindex="-1"
             role="group"
@@ -347,7 +353,32 @@
               onChange={changed}
             />
           </div>
-          <div class="hand-controls" role="group" aria-label="Move the hands">
+          <div class="advance" data-position-stage="advance">
+            {#if !exploring && !workshop.canFinish}
+              <LessonStageControls
+                label={workshop.round === POSITION_CHALLENGES.length - 1
+                  ? "Finish practice"
+                  : "Next position"}
+                currentStep={workshop.round + 1}
+                totalSteps={POSITION_CHALLENGES.length}
+                showProgress={false}
+                actionDisabled={!correct}
+                bind:actionRef={forwardButton}
+                onAction={next}
+              />
+              <span class="built-count"
+                >{workshop.builtCount} of {POSITION_CHALLENGES.length} built</span
+              >
+            {:else}
+              {@render lessonActions()}
+            {/if}
+          </div>
+          <div
+            class="hand-controls"
+            data-position-stage="editing"
+            role="group"
+            aria-label="Move the hands"
+          >
             <PanelButton
               disabled={!placement.complete}
               accentColor="var(--prop-blue)"
@@ -376,44 +407,65 @@
         <div class="lesson-side">
           <div
             class="result"
+            class:quiet={!exploring && workshop.feedback !== "incorrect"}
+            data-position-stage="result"
             class:correct={workshop.feedback === "correct"}
             aria-live="polite"
             aria-atomic="true"
           >
-            <Crossfade
-              key={`${built}-${workshop.feedback}-${actionNote}-${referencesVisible}`}
-            >
-              <div class="result-copy">
-                <div class="position-name">
-                  {#if built && (exploring || workshop.feedback !== "idle" || workshop.canFinish)}
-                    <span aria-hidden="true"
-                      ><TKAWordGlyph
-                        word={POSITION_TYPE_INFO[built].symbol}
-                        height={32}
-                        darkMode
-                      /></span
-                    >
-                    <h2>{POSITION_TYPE_INFO[built].label}</h2>
-                    {#if workshop.feedback === "correct"}<span
-                        aria-label="Correct">✓</span
-                      >{/if}
-                  {:else}
-                    <h2>
-                      {exploring
-                        ? "Your position"
-                        : workshop.canFinish
-                          ? "Practice complete"
-                          : "Your turn"}
-                    </h2>
-                  {/if}
+            {#if exploring || workshop.feedback === "incorrect"}
+              <Crossfade
+                key={`${built}-${workshop.feedback}-${actionNote}-${referencesVisible}`}
+              >
+                <div class="result-copy">
+                  <div class="position-name">
+                    {#if built && (exploring || workshop.feedback !== "idle" || workshop.canFinish)}
+                      <span aria-hidden="true"
+                        ><TKAWordGlyph
+                          word={POSITION_TYPE_INFO[built].symbol}
+                          height={32}
+                          darkMode
+                        /></span
+                      >
+                      <h2>{POSITION_TYPE_INFO[built].label}</h2>
+                      {#if workshop.feedback === "correct"}<span
+                          aria-label="Correct">✓</span
+                        >{/if}
+                    {:else}
+                      <h2>
+                        {exploring
+                          ? "Your position"
+                          : workshop.canFinish
+                            ? "Practice complete"
+                            : "Your turn"}
+                      </h2>
+                    {/if}
+                  </div>
+                  <p>{feedback}</p>
                 </div>
-                <p>{feedback}</p>
-              </div>
-            </Crossfade>
+              </Crossfade>
+            {/if}
           </div>
 
-          <div class="reference-area">
-            <Crossfade key={Boolean(referencesVisible)} animateHeight>
+          <div class="reference-area" data-position-stage="reference">
+            <div class="support-actions">
+              {#if !exploring && !workshop.canFinish}
+                <PanelButton onclick={explore}>Explore</PanelButton>
+              {/if}
+              {#if !exploring && !workshop.canFinish}<PanelButton
+                  ariaPressed={referencesVisible}
+                  onclick={() => (showReference = !referencesVisible)}
+                  >{referencesVisible
+                    ? "Hide reference"
+                    : "Show reference"}</PanelButton
+                >
+              {/if}
+            </div>
+            <Crossfade
+              key={Boolean(referencesVisible)}
+              animateHeight
+              duration={DURATION.emphasis}
+            >
               {#if referencesVisible}
                 <div class="reference-heading">
                   <h3>{exploring ? "Try an example" : "Reference"}</h3>
@@ -451,19 +503,12 @@
                     </div>
                   {/each}
                 </div>
-              {:else}
-                <div class="reference-prompt">
-                  <p>Need a reminder?</p>
-                  <PanelButton onclick={() => (showReference = true)}
-                    >Show reference</PanelButton
-                  >
-                </div>
               {/if}
             </Crossfade>
           </div>
 
           {#if exploring}
-            <div class="explore-tools">
+            <div class="explore-tools" data-position-stage="tools">
               <SegmentedControl
                 options={[
                   { value: GridMode.DIAMOND, label: "Diamond" },
@@ -497,7 +542,6 @@
         </div>
       </div>
     {/snippet}
-    {#snippet controls()}{@render lessonActions()}{/snippet}
   </LessonStageFrame>
 </div>
 
@@ -508,55 +552,42 @@
     width: 100%;
     min-height: 100%;
     color: var(--theme-text);
-    --position-board-size: clamp(20rem, calc(100svh - 34rem), 32rem);
-    --lesson-workshop-max: calc(var(--position-board-size) + 30rem);
+    --position-board-size: clamp(18.5rem, calc(100svh - 36rem), 32rem);
+    --lesson-workshop-max: 32rem;
   }
-  .workshop {
-    display: grid;
-    grid-template-columns: minmax(0, var(--position-board-size)) minmax(
-        20rem,
-        1fr
-      );
-    gap: 2rem;
-    align-items: start;
-    min-width: 0;
-  }
-  .board-column {
-    display: grid;
-    grid-template-rows: auto auto;
-    gap: 0.75rem;
-    min-height: 0;
-    container-type: inline-size;
+  .workshop,
+  .board-column,
+  .lesson-side {
+    display: contents;
   }
   .board {
     aspect-ratio: 1;
-    height: auto;
-    width: 100%;
+    width: min(100%, var(--position-board-size));
+    margin-inline: auto;
+  }
+  .correct .board {
+    width: min(86%, calc(var(--position-board-size) * 0.86));
   }
   .placement-instructions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    margin-bottom: 1rem;
+    display: grid;
+    justify-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+    text-align: center;
   }
   .current-task {
-    min-height: 3rem;
-    display: grid;
-    align-items: center;
-    max-width: 40ch;
+    min-height: 1.5rem;
     font-size: 1rem;
     font-weight: 650;
   }
   .hand-key {
     display: flex;
+    justify-content: center;
     align-items: center;
     gap: 0.5rem;
     white-space: nowrap;
     font-size: var(--font-size-min, 14px);
     color: var(--theme-text);
-    font-weight: 650;
   }
   .left-hand,
   .right-hand {
@@ -575,55 +606,56 @@
   .right-hand::before {
     background: var(--prop-red);
   }
-  .lesson-navigation {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    min-height: 3.5rem;
-  }
-  .navigation-progress {
+  .advance {
     display: grid;
+    justify-items: center;
     gap: 0.5rem;
-    min-width: 7rem;
-    font-size: var(--font-size-min, 14px);
-    font-variant-numeric: tabular-nums;
+    margin-block: 1rem;
+  }
+  .advance :global(.lesson-stage-controls) {
+    width: 100%;
+  }
+  .built-count {
     color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+  }
+  .lesson-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
   }
   .hand-controls,
   .transform-controls,
-  .lesson-actions {
+  .support-actions {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     gap: 0.5rem;
   }
-  .hand-controls {
-    justify-content: flex-start;
-  }
-  .lesson-actions {
-    justify-content: flex-end;
-  }
-  .lesson-side {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    gap: 1.25rem;
+  .support-actions {
+    margin-block: 0.75rem;
   }
   .result {
-    min-height: 6.5rem;
+    text-align: center;
+    margin-top: 1rem;
+  }
+  .result.quiet {
+    margin: 0;
   }
   .result-copy {
     display: grid;
+    justify-items: center;
     gap: 0.5rem;
   }
   .position-name {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    min-height: 2.5rem;
   }
   h2 {
     margin: 0;
@@ -642,25 +674,20 @@
     max-width: 38ch;
     color: var(--theme-text-dim);
   }
-  .correct .position-name {
+  .correct [data-position-stage="heading"] :global(h1) {
     color: var(--semantic-success);
   }
   .reference-area {
     min-width: 0;
   }
   .reference-heading {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    text-align: center;
+    margin-block: 0.75rem;
   }
   .examples {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
-    max-width: 28rem;
   }
   .example {
     min-width: 0;
@@ -684,84 +711,15 @@
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
-  .reference-prompt {
-    display: grid;
-    justify-items: start;
-    gap: 0.75rem;
-  }
   .explore-tools {
     display: grid;
-    justify-items: start;
+    justify-items: center;
     gap: 0.75rem;
-  }
-  progress {
-    width: 100%;
-    height: 0.5rem;
-    accent-color: var(--theme-accent);
-  }
-  .lesson-actions {
-    min-height: 3rem;
-  }
-  /* A tall split-screen is a reading column, not a wide desktop with a taller
-     grid. Keep the feedback below the work instead of leaving a vacant rail. */
-  @media (max-width: 760px), (max-aspect-ratio: 6/5) {
-    .positions-experience {
-      --position-board-size: clamp(18.5rem, 28svh, 36rem);
-      --lesson-workshop-max: clamp(28rem, 40svh, 38rem);
-    }
-    .workshop {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas: "board" "hands" "result" "reference";
-      gap: 1rem;
-    }
-    .workshop.exploring {
-      grid-template-areas: "board" "hands" "result" "reference" "tools";
-    }
-    .board-column,
-    .lesson-side {
-      display: contents;
-    }
-    .board {
-      grid-area: board;
-      width: min(100%, var(--position-board-size));
-      justify-self: center;
-    }
-    .hand-controls {
-      grid-area: hands;
-      justify-content: center;
-    }
-    .result {
-      grid-area: result;
-      min-height: 5.5rem;
-      width: 100%;
-    }
-    .reference-area {
-      grid-area: reference;
-      width: 100%;
-    }
-    .examples {
-      max-width: none;
-    }
-    .explore-tools {
-      grid-area: tools;
-      grid-template-columns: 1fr;
-      justify-items: center;
-    }
-    .navigation-progress {
-      min-width: 5rem;
-    }
-    .placement-instructions {
-      width: min(100%, var(--position-board-size));
-      margin-inline: auto;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
+    margin-top: 1rem;
   }
   @media (max-width: 760px) {
     .positions-experience {
       --position-board-size: 18.5rem;
-      --lesson-workshop-max: 28rem;
     }
   }
 </style>
