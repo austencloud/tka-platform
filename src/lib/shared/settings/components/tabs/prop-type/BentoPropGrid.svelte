@@ -91,10 +91,11 @@
     scrollMode?: "internal" | "host";
     /**
      * The host bounds the internal scroller to a definite height (the Change
-     * Prop drawer, the phone sheet). A drilled view then claims that whole
-     * height and sizes its tiles to share it. Only a host with a definite
-     * height may opt in: in an auto-height host the measurement would feed
-     * back into the content it measures.
+     * Prop drawer, the phone sheet, the wide sidebar). A drilled view then
+     * claims that whole height and sizes its tiles to share it, and so does
+     * the flat grid. Only a host with a definite height may opt in: in an
+     * auto-height host the measurement would feed back into the content it
+     * measures.
      */
     fill?: boolean;
     /** Adds the scene-only no-prop choice using the same canonical card. */
@@ -255,6 +256,74 @@
     observer.observe(tiles);
     measure();
     return () => observer.disconnect();
+  });
+
+  // The flat grid's own width in a `fill` host, for the same reason as the
+  // drilled tiles: its height is the scroller's, its width is its own.
+  let flatEl = $state<HTMLDivElement | null>(null);
+  let flatWidth = $state(0);
+
+  $effect(() => {
+    if (!flatEl) return;
+    const grid = flatEl;
+    const measure = () => (flatWidth = grid.clientWidth);
+    const observer = new ResizeObserver(measure);
+    observer.observe(grid);
+    measure();
+    return () => observer.disconnect();
+  });
+
+  const FLAT_GAP = 8;
+  /* A tile never grows past this: a wall-sized pane gets a composed block
+     with margins rather than tiles the size of playing cards. */
+  const FLAT_MAX_TILE = 288;
+  /* Below this the dense grid and its scrollbar read better than tiles
+     squeezed to fit a short host. */
+  const FLAT_MIN_TILE = 52;
+  /**
+   * Tile grid for the flat picker in a bounded host: the column count that
+   * makes the largest tile once the rows must share the height, so the grid
+   * fills its page instead of huddling in the top third of it. Tiles sit on
+   * doubled tracks, as the drilled ones do, so a short last row can start one
+   * track in and centre itself. Null means the host is not bounded, a family
+   * is drilled open, or the host is too short, and the dense grid stands.
+   */
+  const flatLayout = $derived.by(() => {
+    if (!flat || drill !== null) return null;
+    const n = allBases.length;
+    const width = flatWidth;
+    const height = fillHeight;
+    if (n === 0 || width === 0 || height === 0) return null;
+    let best: {
+      cols: number;
+      colWidth: number;
+      rowHeight: number;
+      size: number;
+    } | null = null;
+    for (let cols = 2; cols <= Math.min(n, 10); cols += 1) {
+      const rows = Math.ceil(n / cols);
+      const colWidth = Math.min(
+        (width - FLAT_GAP * (cols - 1)) / cols,
+        FLAT_MAX_TILE
+      );
+      const rowHeight = Math.min(
+        (height - FLAT_GAP * (rows - 1)) / rows,
+        colWidth * 1.15
+      );
+      const size = Math.min(colWidth, rowHeight / 1.15);
+      if (best === null || size > best.size + 0.5) {
+        best = { cols, colWidth, rowHeight, size };
+      }
+    }
+    if (best === null || best.size < FLAT_MIN_TILE) return null;
+    const orphans = n % best.cols;
+    return {
+      cols: best.cols,
+      halfTrack: Math.floor((best.colWidth - FLAT_GAP) / 2),
+      rowHeight: Math.floor(best.rowHeight),
+      orphanIndex: orphans === 0 ? -1 : n - orphans,
+      orphanStart: best.cols - orphans + 1,
+    };
   });
 
   const DRILL_GAP = 10;
@@ -441,10 +510,10 @@
     </div>
   {/snippet}
 
-  {#snippet familyTile(base: PropType)}
+  {#snippet familyTile(base: PropType, columnStart?: number)}
     {@const choices = familyChoices(base)}
     {#if choices.length <= 1}
-      {@render tile(choices[0] ?? base)}
+      {@render tile(choices[0] ?? base, columnStart)}
     {:else}
       <PropTypeButton
         propType={familyDisplayProp(base)}
@@ -454,6 +523,7 @@
         buttonProps={{
           "aria-expanded": drill?.kind === "family" && drill.base === base,
           "data-family-tile": base,
+          style: columnStart ? `grid-column-start: ${columnStart}` : undefined,
         }}
         onSelect={() => void openDrill({ kind: "family", base })}
         {color}
@@ -521,9 +591,22 @@
           {/if}
         </section>
       {:else if flat}
-        <div class="flat-grid">
-          {#each allBases as base (base)}
-            {@render familyTile(base)}
+        <div
+          class="flat-grid"
+          class:fill={flatLayout !== null}
+          style:height={flatLayout ? `${fillHeight}px` : undefined}
+          style:--flat-cols={flatLayout?.cols}
+          style:--flat-half={flatLayout ? `${flatLayout.halfTrack}px` : undefined}
+          style:--flat-row={flatLayout ? `${flatLayout.rowHeight}px` : undefined}
+          bind:this={flatEl}
+        >
+          {#each allBases as base, index (base)}
+            {@render familyTile(
+              base,
+              flatLayout && index === flatLayout.orphanIndex
+                ? flatLayout.orphanStart
+                : undefined
+            )}
           {/each}
         </div>
       {:else}
@@ -727,6 +810,32 @@
       grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
       gap: 8px;
     }
+  }
+
+  /* A bounded host (the wide sidebar) hands the flat grid its whole page and
+     the tiles share it: the column count that makes the largest tile, rows
+     sized to land on the floor, on doubled tracks so a short last row can
+     start one track in and centre itself. See flatLayout. */
+  .flat-grid.fill {
+    grid-template-columns: repeat(
+      calc(var(--flat-cols) * 2),
+      var(--flat-half)
+    );
+    grid-auto-rows: var(--flat-row);
+    gap: 8px;
+    padding: 0;
+    align-content: center;
+    justify-content: center;
+  }
+
+  .flat-grid.fill > :global(*) {
+    grid-column-end: span 2;
+    min-height: 0;
+  }
+
+  .flat-grid.fill :global(.prop-button) {
+    height: 100%;
+    aspect-ratio: auto;
   }
 
   /* One level down there are only a handful of tiles, so even the phone
