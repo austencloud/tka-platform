@@ -43,6 +43,8 @@
     showTransport?: boolean;
     showExportControls?: boolean;
     layout?: "sidebar" | "strip" | "grid";
+    /** Restrict the roster to what the host can draw. Omit for everything. */
+    availableEffects?: readonly string[];
     animationSettingsState?: AnimationSettingsState;
     children?: Snippet;
     onSettingChange?: (
@@ -66,6 +68,7 @@
     showTransport = true,
     showExportControls = false,
     layout = "sidebar",
+    availableEffects,
     animationSettingsState = animationSettings,
     children,
     onSettingChange,
@@ -527,6 +530,7 @@
             onSelect={handleSidebarEffectSelect}
             onPrewarm={handleEffectPrewarm}
             activeAction="tune"
+            {availableEffects}
           />
 
           {@render effectDock(
@@ -700,6 +704,7 @@
             onPrewarm={handleEffectPrewarm}
             layout="tray"
             activeAction="tune"
+            {availableEffects}
           />
         </div>
       {/if}
@@ -751,6 +756,7 @@
         onSelect={handleEffectSelect}
         onPrewarm={handleEffectPrewarm}
         activeAction="tune"
+        {availableEffects}
       />
 
       {@render effectDock(handleCustomizeOpen, "More", "rail")}

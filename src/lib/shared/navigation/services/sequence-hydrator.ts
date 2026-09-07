@@ -43,7 +43,9 @@ export async function hydrateSequence(
   const { loopDetector } = deps;
 
   const [withLetters, withPositions] = await Promise.all([
-    deriveLettersForSequence(sequence),
+    sequence.sequenceKind === "hand-path"
+      ? Promise.resolve({ ...sequence, word: "" })
+      : deriveLettersForSequence(sequence),
     derivePositionsForSequence(sequence),
   ]);
 
@@ -88,7 +90,10 @@ export async function hydrateSequence(
       : withPositions.startingPosition,
   };
 
-  const loopResult = loopDetector ? loopDetector.detectLOOPType(merged) : null;
+  const loopResult =
+    loopDetector && sequence.sequenceKind !== "hand-path"
+      ? loopDetector.detectLOOPType(merged)
+      : null;
 
   const placementHydrated: SequenceData = {
     ...merged,

@@ -45,11 +45,12 @@
         class="adjust-trigger"
         class:compact-trigger={compactTrigger}
         {disabled}
-        aria-label="Adjust {label} path"
+        aria-label="Edit {label} path"
       >
-        <i class="fas fa-sliders" aria-hidden="true"></i>
-        {#if !compactTrigger}
-          Adjust path
+        {#if compactTrigger}
+          <i class="fas fa-sliders" aria-hidden="true"></i>
+        {:else}
+          Edit path
         {/if}
       </button>
     {/snippet}
@@ -66,7 +67,7 @@
       <header class="palette-header">
         <div>
           <span>{label} LOOP</span>
-          <strong>Adjust this path</strong>
+          <strong>Edit this path</strong>
         </div>
         <div class="palette-header-actions">
           <PanelButton
@@ -111,8 +112,8 @@
 
       <p class="palette-note">
         {compactTrigger
-          ? "First Step opens the beat picker."
-          : "First Step turns this source card into a beat picker."}
+          ? "First Step lets you choose where the LOOP begins."
+          : "First Step lets you choose a new step 1 on the source card."}
       </p>
     </Popover.Content>
   </Popover.Portal>
@@ -197,7 +198,7 @@
   }
 
   :global(.fuse-source-action-popover[data-state="open"]) {
-    animation: palette-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    animation: palette-in var(--duration-fast) var(--ease-out);
   }
 
   .palette-header {

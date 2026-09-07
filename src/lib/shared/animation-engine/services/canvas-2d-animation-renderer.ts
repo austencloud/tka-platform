@@ -433,6 +433,7 @@ export class Canvas2DAnimationRenderer {
 
   renderScene(params: RenderSceneParams): void {
     this.lastRenderedPropSprites.length = 0;
+    const paintedTunnelOpacities: number[] = [];
     const ctx = this.appManager.getContext();
     if (!ctx || !this.appManager.isReady()) {
       return;
@@ -451,12 +452,16 @@ export class Canvas2DAnimationRenderer {
     const gridFadeState = this.gridFadeManager.updateProgress(
       params.currentTime
     );
+    const gridAlpha =
+      params.gridOpacity === undefined
+        ? gridFadeState.alpha
+        : Math.max(0, Math.min(1, params.gridOpacity));
     const gridImage = this.imageLoader.getGridImage();
 
     // Draw grid if alpha > 0 (either visible, or fading out)
-    if (gridFadeState.alpha > 0 && gridImage) {
+    if (gridAlpha > 0 && gridImage) {
       ctx.save();
-      ctx.globalAlpha = gridFadeState.alpha;
+      ctx.globalAlpha = gridAlpha;
 
       // In Dark Mode the grid (black ink) must render off-white. ctx.filter is
       // unsupported on iOS Safari, so we draw a pre-tinted offscreen copy
@@ -668,6 +673,7 @@ export class Canvas2DAnimationRenderer {
                 params.leftPropFlipped ?? false,
                 layer.leftPropType ?? params.leftPropType
               );
+              paintedTunnelOpacities.push(ctx.globalAlpha);
             }
           }
         }
@@ -707,7 +713,8 @@ export class Canvas2DAnimationRenderer {
         };
         const loadedRightType = this.imageLoader.getRightPropType();
         const rightTextureMatchesRequest =
-          params.rightPropType?.toLowerCase() === loadedRightType?.toLowerCase();
+          params.rightPropType?.toLowerCase() ===
+          loadedRightType?.toLowerCase();
         const rightCrossfadeActive =
           previousRightProp != null && !rightCrossfade.isComplete;
         const rightSharedTransform =
@@ -772,7 +779,9 @@ export class Canvas2DAnimationRenderer {
             rightPropImage,
             displayedRightDimensions,
             rightSharedTransform,
-            rightTextureMatchesRequest ? rightFlipped : this.previousRightPropFlipped,
+            rightTextureMatchesRequest
+              ? rightFlipped
+              : this.previousRightPropFlipped,
             displayedRightType
           );
           if (displayedRightType) {
@@ -820,6 +829,7 @@ export class Canvas2DAnimationRenderer {
                 params.rightPropFlipped ?? false,
                 layer.rightPropType ?? params.rightPropType
               );
+              paintedTunnelOpacities.push(ctx.globalAlpha);
             }
           }
         }
@@ -830,6 +840,54 @@ export class Canvas2DAnimationRenderer {
 
     // 5. Draw glyph (with fade transition)
     this.renderGlyph(ctx, params.currentTime, canvasSize);
+    this.publishTunnelPaintTelemetry(
+      paintedTunnelOpacities,
+      Math.max(
+        0,
+        ...(params.additionalLayers?.map((layer) => layer.opacity) ?? [])
+      )
+    );
+  }
+
+  /**
+   * Publish completed Tunnel draw calls only while the transition review asks.
+   *
+   * Reading a live canvas buffer races the renderer's clear/draw tasks and can
+   * report a transparent frame that was never presented. These values are
+   * recorded immediately after each additional prop's `drawImage`, so they
+   * describe the paint work that produced the composited frame without adding
+   * a production DOM write on ordinary playback.
+   */
+  private publishTunnelPaintTelemetry(
+    opacities: number[],
+    progress: number
+  ): void {
+    const capture = document.documentElement;
+    if (capture.dataset.captureTunnelPaint !== "true") return;
+    const frame = (Number(capture.dataset.tunnelPaintFrame) || 0) + 1;
+    const mean =
+      opacities.length === 0
+        ? 0
+        : opacities.reduce((total, opacity) => total + opacity, 0) /
+          opacities.length;
+    const perceptible = opacities.filter((opacity) => opacity >= 0.1).length;
+    capture.dataset.tunnelPaintFrame = String(frame);
+    capture.dataset.tunnelPaintedPropCount = String(opacities.length);
+    capture.dataset.tunnelPaintedPerceptiblePropCount = String(perceptible);
+    capture.dataset.tunnelPaintedOpacityMean = mean.toFixed(3);
+
+    const entry = [
+      performance.now().toFixed(1),
+      progress.toFixed(3),
+      opacities.length,
+      perceptible,
+      mean.toFixed(3),
+    ].join(",");
+    const history = capture.dataset.tunnelPaintHistory
+      ? capture.dataset.tunnelPaintHistory.split(";")
+      : [];
+    history.push(entry);
+    capture.dataset.tunnelPaintHistory = history.slice(-240).join(";");
   }
 
   getLastPropTransforms(): {

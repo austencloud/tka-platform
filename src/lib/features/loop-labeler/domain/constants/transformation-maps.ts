@@ -39,17 +39,13 @@ export const ROTATE_90_CW: Record<string, string> = {
   nw: "ne",
 };
 
-/** Mirror across vertical axis (left/right swap) */
-export const MIRROR_VERTICAL: Record<string, string> = {
-  n: "n",
-  s: "s",
-  e: "w",
-  w: "e",
-  ne: "nw",
-  nw: "ne",
-  se: "sw",
-  sw: "se",
-};
+/**
+ * Mirror across vertical axis (left/right swap).
+ *
+ * Owned by the shared geometry module and re-exported here so the existing
+ * loop-labeler callers keep their import path.
+ */
+export { MIRROR_VERTICAL } from "$lib/shared/pictograph/shared/domain/geometry/mirror-vertical";
 
 /** Flip across horizontal axis (top/bottom swap) */
 export const FLIP_HORIZONTAL: Record<string, string> = {

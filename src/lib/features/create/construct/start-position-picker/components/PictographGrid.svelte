@@ -94,7 +94,6 @@
           {pictographData}
           {leftPropTypeOverride}
           {rightPropTypeOverride}
-          propRenderContext="editor"
         />
       </div>
     </div>

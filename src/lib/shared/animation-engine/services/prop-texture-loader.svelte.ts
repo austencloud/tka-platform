@@ -88,14 +88,16 @@ export class PropTextureLoader {
           ? this.svgGenerator.generatePropSvg(
               leftPropType,
               colors.left,
-              darkMode === undefined ? undefined : darkMode ? "dark" : "light"
+              darkMode === undefined ? undefined : darkMode ? "dark" : "light",
+              "left"
             )
           : this.svgGenerator.generateLeftPropSvg(leftPropType, darkMode),
         colors
           ? this.svgGenerator.generatePropSvg(
               rightPropType,
               colors.right,
-              darkMode === undefined ? undefined : darkMode ? "dark" : "light"
+              darkMode === undefined ? undefined : darkMode ? "dark" : "light",
+              "right"
             )
           : this.svgGenerator.generateRightPropSvg(rightPropType, darkMode),
       ]);

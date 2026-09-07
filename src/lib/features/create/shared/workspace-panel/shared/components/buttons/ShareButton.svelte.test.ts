@@ -163,7 +163,9 @@ describe("ShareButton", () => {
       .element(page.getByRole("dialog", { name: "Share this sequence" }))
       .toBeInTheDocument();
     await expect.element(page.getByText("Card footer")).toBeInTheDocument();
-    await expect.element(page.getByText("Post caption")).toBeInTheDocument();
+    await expect
+      .element(page.getByRole("textbox", { name: "Caption", exact: true }))
+      .toBeInTheDocument();
     await expect
       .element(page.getByText("Video", { exact: true }))
       .not.toBeInTheDocument();

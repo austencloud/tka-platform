@@ -12,6 +12,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
+import type { RenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
 import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
 import type {
   PreparedSequenceHandoff,
@@ -65,11 +66,41 @@ export class AnimationPlaybackController {
   // Consumed inside the same animation frame that crosses the loop boundary.
   private sequenceBoundaryProvider: SequenceBoundaryProvider | null = null;
 
+  // The activity gate currently installed on the loop, if any. Tracked so a
+  // stale host's teardown cannot un-gate a newer host (see clearActivityGate).
+  private installedGate: RenderActivityGate | null = null;
+
   constructor(
     private readonly animationEngine: SequenceAnimationOrchestrator,
     private readonly loopService: AnimationLoop,
     private readonly options: AnimationPlaybackControllerOptions = {}
   ) {}
+
+  /**
+   * Route this controller's playhead loop through the canonical off-screen /
+   * hidden-tab gate. While the gate is closed the rAF stops and the playhead
+   * holds where it was; reopening re-seeds the clock, so a player parked off
+   * screen for thirty seconds does not jump thirty seconds forward when it
+   * scrolls back. Pass null to un-gate — a host that shares the module
+   * singleton MUST do this on teardown or it leaves the next host gated to a
+   * detached element. See `shared/render-gating/render-activity-gate.ts`.
+   */
+  setActivityGate(gate: RenderActivityGate | null): void {
+    this.installedGate = gate;
+    this.loopService.setActivityGate(gate);
+  }
+
+  /**
+   * Identity-scoped release, mirroring the owner-scoped `dispose()`. This
+   * controller is a module singleton: a stale host tearing down AFTER a newer
+   * host already installed its own gate must not un-gate the newer host. The
+   * release only applies when the gate handed back is still the installed one.
+   */
+  clearActivityGate(gate: RenderActivityGate): void {
+    if (this.installedGate !== gate) return;
+    this.installedGate = null;
+    this.loopService.setActivityGate(null);
+  }
 
   /**
    * Sync current beat to both internal state and shared state (for workspace beat grid sync)

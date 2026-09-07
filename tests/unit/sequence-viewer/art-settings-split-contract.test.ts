@@ -48,6 +48,7 @@ describe("ArtSettingsPanel split contract", () => {
       "TunnelPrimitiveTuner.svelte",
       "TunnelSpeedSettings.svelte",
       "TunnelEffectsSettings.svelte",
+      "TunnelColorSettings.svelte",
       "TunnelPlaybackSettings.svelte",
     ]) {
       expect(
@@ -63,6 +64,8 @@ describe("ArtSettingsPanel split contract", () => {
       "TunnelLookSettings",
       "TunnelSpeedSettings",
       "TunnelEffectsSettings",
+      "TunnelDisplaySettings",
+      "TunnelMotionSettings",
       "TunnelPlaybackSettings",
     ];
 
@@ -82,11 +85,27 @@ describe("ArtSettingsPanel split contract", () => {
     }
   });
 
+  it("keeps Tunnel Effects identical and moves copy colors to Formation", () => {
+    const effects = settingsFile("TunnelEffectsSettings.svelte");
+    const look = settingsFile("TunnelLookSettings.svelte");
+    const colors = settingsFile("TunnelColorSettings.svelte");
+
+    expect(effects).toContain("<EffectsPanel");
+    expect(effects).not.toContain("<SegmentedControl");
+    expect(effects).not.toContain("Tunnel colors");
+    expect(look).toContain("<TunnelColorSettings");
+    expect(colors).toContain(">Tunnel colors</span>");
+  });
+
   it("keeps the Look coordinator separate from its two product surfaces", () => {
     const look = settingsFile("TunnelLookSettings.svelte");
 
     expect(look.split("\n").length).toBeLessThan(150);
-    for (const owner of ["TunnelPresetBrowser", "TunnelPrimitiveTuner"]) {
+    for (const owner of [
+      "TunnelPresetBrowser",
+      "TunnelPrimitiveTuner",
+      "TunnelColorSettings",
+    ]) {
       expect(look).toContain(`import ${owner}`);
       expect(look).toContain(`<${owner}`);
     }

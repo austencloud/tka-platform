@@ -63,6 +63,7 @@ import {
   normalizeBrowsePrimary,
   resolveBrowsePathname,
 } from "../browse/navigation/browse-route-resolver";
+import { captureEvent } from "../analytics/services/posthog";
 
 // Session storage key for persisting navigation history across HMR
 const PREVIOUS_MODULE_KEY = "tka-previous-module-before-settings";
@@ -264,7 +265,7 @@ function historySectionFor(
   moduleId: ModuleId,
   requestedSection?: string
 ): string | undefined {
-  if (moduleId === "create" && navigationState.isCreateFrontDoorOpen) {
+  if (navigationState.isModuleHomeOpen(moduleId)) {
     return undefined;
   }
   return requestedSection ?? navigationState.activeTab;
@@ -443,7 +444,9 @@ const TAB_ORDERS: Record<string, string[]> = {
     "notifications",
     "props",
     "theme",
-    "visibility",
+    "preferences",
+    "keyboard",
+    "language",
   ],
 };
 
@@ -559,15 +562,51 @@ export function handleSectionChange(
   }
 }
 
+export function handleModuleHome(
+  moduleId: ModuleId,
+  source: "navigation" | "workspace" | "history" = "workspace",
+  options?: { skipHistory?: boolean }
+): void {
+  if (!navigationState.getModuleDefinition(moduleId)?.home) return;
+  const previousSection = navigationState.activeTab;
+  const previousModule = navigationState.currentModule;
+
+  if (previousModule !== moduleId) {
+    captureEvent("module_home_selected", {
+      module_id: moduleId,
+      previous_module: previousModule,
+      previous_section: previousSection,
+      source,
+    });
+    void handleModuleChange(moduleId, undefined, {
+      skipHistory: options?.skipHistory,
+      initiatedByHistory: source === "history",
+    });
+    return;
+  }
+
+  navigationState.openModuleHome(moduleId, source);
+  captureEvent("module_home_selected", {
+    module_id: moduleId,
+    previous_section: previousSection,
+    source,
+  });
+  if (moduleId === "create") {
+    captureEvent("create_front_door_returned", {
+      method: previousSection,
+      source,
+    });
+  }
+  if (options?.skipHistory !== true) {
+    pushHistoryState(moduleId, undefined);
+  }
+}
+
 export function handleCreateFrontDoor(
   source: "navigation" | "workspace" | "history" = "workspace",
   options?: { skipHistory?: boolean }
 ): void {
-  if (navigationState.currentModule !== "create") return;
-  navigationState.openCreateFrontDoor(source);
-  if (options?.skipHistory !== true) {
-    pushHistoryState("create", undefined);
-  }
+  handleModuleHome("create", source, options);
 }
 
 // Export as a getter function that reads feature flags reactively
@@ -985,8 +1024,13 @@ export function initializeNavigationHistory() {
         skipHistory: true,
         initiatedByHistory: true,
       });
-    } else if (!targetSection && targetModule === "create") {
-      handleCreateFrontDoor("history", { skipHistory: true });
+    } else if (
+      !targetSection &&
+      MODULE_DEFINITIONS.some(
+        (definition) => definition.id === targetModule && definition.home
+      )
+    ) {
+      handleModuleHome(targetModule, "history", { skipHistory: true });
     } else if (!targetSection && navigationState.activeTab) {
       // Module with no stored tab; clear any lingering tab state
       navigationState.setActiveTab("");

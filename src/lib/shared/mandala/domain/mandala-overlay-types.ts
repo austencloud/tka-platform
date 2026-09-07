@@ -30,6 +30,13 @@ export const DEFAULT_MANDALA_OVERLAY_CONFIG: MandalaOverlayConfig = {
 	hideProps: false,
 };
 
+/**
+ * Opacity of a mandala shown as a floor beneath live motion: the animator's
+ * guide overlay and the Shape Matrix hero's cold floor both use it, so the
+ * moment the live canvas takes over from the still floor nothing changes.
+ */
+export const MANDALA_GUIDE_FLOOR_OPACITY = 0.55;
+
 /** Parameters passed to MandalaOverlayCanvas.renderFrame() each frame */
 export interface MandalaOverlayRenderParams {
 	/** Pre-computed Path2D objects with lengths and colors */

@@ -13,6 +13,8 @@
   - fanCover: bare | covered
   - rx/ry/rz: presentation rotation in degrees
   - zoom:   camera distance multiplier (default 1)
+  - effect: led mounts the production LED orchestrator and live diffuser
+  - ledPattern: rainbow previews full 78-emitter addressable color routing
 
   document.body.dataset.captureReady flips to "1" once the model has loaded
   and the framing is stable.
@@ -48,6 +50,10 @@
   });
 
   const zoom = $derived(Number(params.get("zoom") ?? 1) || 1);
+  const ledActive = $derived(params.get("effect") === "led");
+  const ledPattern = $derived(
+    params.get("ledPattern") === "rainbow" ? "rainbow-sweep" : "prop-colors"
+  );
   const captureKey = $derived(
     [
       propType,
@@ -55,6 +61,8 @@
       params.get("fanBuild") ?? "",
       params.get("fanFrameColor") ?? "",
       params.get("fanCover") ?? "",
+      params.get("effect") ?? "",
+      params.get("ledPattern") ?? "",
     ].join(":")
   );
 
@@ -92,7 +100,7 @@
 <div class="capture-stage">
   {#key captureKey}
     <Canvas>
-      <CaptureScene {propType} {rotationDeg} {zoom} />
+      <CaptureScene {propType} {rotationDeg} {zoom} {ledActive} {ledPattern} />
     </Canvas>
   {/key}
 </div>

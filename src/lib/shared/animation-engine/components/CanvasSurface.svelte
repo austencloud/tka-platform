@@ -46,7 +46,11 @@ captureEffectDiagnostics to the context menu.
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import PathLinesOverlay from "./layers/PathLinesOverlay.svelte";
   import ProgressOverlay from "./layers/ProgressOverlay.svelte";
-  import { AnimationEngine } from "../services/animation-engine.svelte";
+  import {
+    AnimationEngine,
+    type AdditionalLayerTextureStatus,
+  } from "../services/animation-engine.svelte";
+  import { createRenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
   import {
     getAnimationVisibilityManager,
     type AnimationVisibilityStateManager,
@@ -77,10 +81,12 @@ captureEffectDiagnostics to the context menu.
     leftProp,
     rightProp,
     additionalLayers = [],
+    preloadAdditionalLayers = [],
     tunnelSpectrum = true,
     tunnelPropColors = null,
     tunnelSelectedLayer = null,
     gridVisible = true,
+    gridOpacity = undefined,
     gridMode = GridMode.DIAMOND,
     backgroundAlpha = 1,
     letter = null,
@@ -128,6 +134,7 @@ captureEffectDiagnostics to the context menu.
     onCanvasReady = () => {},
     onInitialized = undefined,
     onEffectError = undefined,
+    onAdditionalLayerTextureStatusChange = undefined,
     // Bound back to the parent so it can drive resize + diagnostics
     engine = $bindable(),
     // Optional overlay pinned inside the square .canvas-wrapper (position:relative),
@@ -138,10 +145,12 @@ captureEffectDiagnostics to the context menu.
     leftProp: PropState | null;
     rightProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
+    preloadAdditionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
     tunnelPropColors?: TunnelPropColorPair | null;
     tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
+    gridOpacity?: number;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;
     letter?: Letter | null;
@@ -192,6 +201,9 @@ captureEffectDiagnostics to the context menu.
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
     onInitialized?: () => void;
     onEffectError?: (effectName: string, error: Error) => void;
+    onAdditionalLayerTextureStatusChange?: (
+      status: AdditionalLayerTextureStatus
+    ) => void;
     /** The engine instance, bound back to the parent for resize + diagnostics control. */
     engine?: AnimationEngine;
     /** Optional overlay pinned inside the square canvas (e.g. a corner toggle). */
@@ -209,6 +221,16 @@ captureEffectDiagnostics to the context menu.
     engineInstance.setInitialQualityTier(initialQualityTier);
   }
   engine = engineInstance;
+
+  // Off-screen / hidden-tab gating. Every on-screen animated canvas goes
+  // through the one owner in `shared/render-gating`: while this surface is
+  // scrolled away or the tab is hidden, its rAF stops entirely and the canvas
+  // holds its last painted frame. Created here (no DOM work, SSR-safe) and
+  // attached once the container element exists. The offscreen export engine is
+  // built by `render-context-factory`, never by this component, so it never
+  // receives a gate and is never paused.
+  const activityGate = createRenderActivityGate({ name: resolvedContextId });
+  engineInstance.setActivityGate(activityGate);
 
   // Sync 2D overlay suppression (for 3D mode)
   $effect.pre(() => {
@@ -346,6 +368,8 @@ captureEffectDiagnostics to the context menu.
     const el = containerElement;
     if (!el) return;
 
+    activityGate.attach(el);
+
     // Register the render context AFTER the (async) engine init resolves.
     // getRenderContext returns null until the awaited lifecycle init has created
     // the renderer/renderLoop/trailCapturer/resizer. The previous queueMicrotask
@@ -399,6 +423,7 @@ captureEffectDiagnostics to the context menu.
       disposed = true;
       untrack(() => {
         disposeDiagnostics?.();
+        activityGate.dispose();
         getRenderContextRegistry().unregister(resolvedContextId);
         engineInstance.dispose();
       });
@@ -407,6 +432,9 @@ captureEffectDiagnostics to the context menu.
 
   // Single effect to pass all props to engine
   $effect(() => {
+    // Resizing clears the canvas even while paused. Read the completed-resize
+    // signal here so the current pose is repainted without advancing playback.
+    if (isInitialized) void engineInstance.canvasResizeCount;
     const currentFireConfig = fireConfig;
     const currentLedConfig = ledConfig;
     const currentCellTipEffectMap = cellTipEffectMap;
@@ -415,10 +443,13 @@ captureEffectDiagnostics to the context menu.
       leftProp,
       rightProp,
       additionalLayers,
+      preloadAdditionalLayers,
+      onAdditionalLayerTextureStatusChange,
       tunnelSpectrum,
       tunnelPropColors,
       tunnelSelectedLayer,
       gridVisible,
+      gridOpacity,
       gridMode,
       backgroundAlpha,
       letter,

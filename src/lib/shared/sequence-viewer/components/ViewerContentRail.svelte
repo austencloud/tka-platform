@@ -19,6 +19,7 @@
     | { label: string; icon: string; onSelect: () => void };
 
   interface Props {
+    reviewPostStudio?: boolean;
     activeMode: RailMode;
     webgl2Available?: boolean;
     /** Use the icon rail without overwriting the user's preferred wide width. */
@@ -32,6 +33,7 @@
   }
 
   let {
+    reviewPostStudio = false,
     activeMode,
     webgl2Available = true,
     compact = false,
@@ -43,7 +45,11 @@
   }: Props = $props();
 
   const railItems = $derived([
-    ...viewerModeOptions(webgl2Available, viewportFits3D(), canAccessPostStudio()).map((m) => ({
+    ...viewerModeOptions(
+      webgl2Available,
+      viewportFits3D(),
+      canAccessPostStudio() || (import.meta.env.DEV && reviewPostStudio)
+    ).map((m) => ({
       id: m.id,
       icon: m.icon,
       label: m.label,

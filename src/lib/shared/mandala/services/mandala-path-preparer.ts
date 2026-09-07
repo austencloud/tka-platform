@@ -137,18 +137,25 @@ export function resolveMandalaTipOffsets(
 
 // ─── SVGPathData → PreparedMandalaPath conversion ──────────────────────────
 
-function preparePaths(
-	svgPaths: SVGPathData[],
+/**
+ * Convert one hand's SVG path data into canvas-ready paths. `measure`
+ * (default true) records each path's length for progressive reveal; a still
+ * guide image never dashes, so it skips the per-path DOM measurement.
+ */
+export function prepareMandalaHandPaths(
+	svgPaths: readonly SVGPathData[],
 	color: string,
-	hand: "left" | "right"
+	hand: "left" | "right",
+	options: { measure?: boolean } = {}
 ): PreparedMandalaPath[] {
+	const measure = options.measure ?? true;
 	const result: PreparedMandalaPath[] = [];
 
 	for (const pathData of svgPaths) {
 		if (!pathData.d) continue;
 
 		const path2d = new Path2D(pathData.d);
-		const totalLength = measurePathLength(pathData.d);
+		const totalLength = measure ? measurePathLength(pathData.d) : 1;
 
 		// Skip degenerate paths with no measurable length
 		if (totalLength <= 0) continue;
@@ -158,6 +165,8 @@ function preparePaths(
 
 	return result;
 }
+
+const preparePaths = prepareMandalaHandPaths;
 
 // ─── Public class ──────────────────────────────────────────────────────────
 

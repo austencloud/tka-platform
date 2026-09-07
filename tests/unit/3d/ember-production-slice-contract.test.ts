@@ -60,7 +60,10 @@ interface EmberSliceGltf {
   }>;
 }
 
-const optimizedPath = resolve("static/models/ember/ember-production-slice.glb");
+// Keep the historical rollback asset's contracts distinct from the R5 world.
+const optimizedPath = resolve(
+  "static/models/ember/ember-production-slice-r10.glb"
+);
 const integratedPath = resolve("static/models/ember/ember-integrated-room.glb");
 const reportPath = resolve(
   "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-report.json"
@@ -81,7 +84,7 @@ function readOptimizedEmberAsset(path: string): EmberSliceGltf {
   ) as EmberSliceGltf;
 }
 
-describe("Ember production-slice contracts", () => {
+describe("Ember historical R10 production-slice contracts", () => {
   const gltf = readOptimizedEmberAsset(optimizedPath);
 
   it("ships GPU-ready KTX2 textures and meshopt geometry under seven megabytes", () => {
@@ -345,14 +348,9 @@ describe("Ember production-slice contracts", () => {
       resolve("src/lib/shared/3d/environments/scenes/EmberScene.svelte"),
       "utf8"
     );
-    expect(sceneSource).toContain(
-      'import GltfAsset from "../primitives/GltfAsset.svelte"'
-    );
+    expect(sceneSource).toContain("createLoadedEmberEnvironmentWorld");
     expect(sceneSource).not.toContain("rock_largeA.glb");
     expect(sceneSource).not.toContain("rock_largeB.glb");
-    expect(sceneSource).toContain(
-      'url="/models/ember/ember-production-slice.glb"'
-    );
     expect(sceneSource).not.toContain("<GroundPlane");
     expect(sceneSource).not.toContain("<CraterGround");
   });
@@ -451,7 +449,7 @@ describe("Ember integrated-room contracts", () => {
     expect(report).toContain('"generatedButtressRemoved": true');
   });
 
-  it("keeps Ember's reversed heading scoped away from every other hero scene", () => {
+  it("keeps reversed headings scoped to Ember and the Blossom garden", () => {
     const workbenchSource = readFileSync(
       resolve("src/routes/test/viewer-3d/Viewer3DWorkbench.svelte"),
       "utf8"
@@ -468,7 +466,11 @@ describe("Ember integrated-room contracts", () => {
       -2.5
     );
     for (const environment of SCENE_ENVIRONMENTS) {
-      if (environment.id === SceneEnvironmentId.EMBER) continue;
+      if (
+        environment.id === SceneEnvironmentId.EMBER ||
+        environment.id === SceneEnvironmentId.BLOSSOM
+      )
+        continue;
       expect(getViewerFrontStageFacingAngle(environment.id)).toBe(
         DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE
       );
@@ -571,9 +573,9 @@ describe("Ember integrated-room contracts", () => {
         }
         // Anything else that ships in the slice must be textured. The pale
         // upcountry masses were failing exactly here.
-        expect(
-          `${role} -> ${isEmberGroundDetailSurface(role, material)}`
-        ).toBe(`${role} -> true`);
+        expect(`${role} -> ${isEmberGroundDetailSurface(role, material)}`).toBe(
+          `${role} -> true`
+        );
       }
     }
 

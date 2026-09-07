@@ -13,12 +13,27 @@ describe("seated audience assets", () => {
     );
 
     for (const [index, modelUrl] of SEATED_AUDIENCE_CHARACTER_URLS.entries()) {
+      const id = SEATED_AUDIENCE_CHARACTER_IDS[index];
+      const registered = DEPLOYED_CHARACTER_DEFINITIONS.find(
+        (character) => character.id === id
+      );
+      expect(registered, `${id} is not a deployed character`).toBeDefined();
+      // The audience writes no URLs of its own: a seat is whatever the
+      // registry publishes for that character, revision included.
+      expect(modelUrl).toBe(registered?.modelPath);
+
       const parsed = new URL(modelUrl);
       expect(parsed.protocol).toBe("https:");
       expect(parsed.hostname).toBe("assets.tkaflowarts.com");
-      expect(parsed.pathname).toBe(
-        `/models/avatars/v2026-07-23-r1/${SEATED_AUDIENCE_CHARACTER_IDS[index]}.glb.bin`
-      );
+      // These GLBs are served immutable, so a corrected export takes its own
+      // revision rather than moving every avatar onto a new prefix. ch12 was
+      // re-exported OPAQUE on 2026-09-04 and sits a revision ahead of its
+      // neighbours, so only the shape of the release path is fixed here.
+      const segments = parsed.pathname.split("/");
+      expect(segments).toHaveLength(5);
+      expect(segments.slice(0, 3)).toEqual(["", "models", "avatars"]);
+      expect(segments[3]).toMatch(/^v\d{4}-\d{2}-\d{2}-r\d+$/);
+      expect(segments[4]).toBe(`${id}.glb.bin`);
     }
   });
 

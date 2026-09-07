@@ -1153,7 +1153,10 @@
               class="performer-select"
               data-stage-performer-id={performer.id}
               onclick={(event) =>
-                editMode.selectPerformer(performer.id, event.shiftKey)}
+                editMode.selectPerformer(
+                  performer.id,
+                  event.shiftKey || event.ctrlKey || event.metaKey
+                )}
               aria-pressed={editMode.multiSelectedPerformerIds.has(
                 performer.id
               )}

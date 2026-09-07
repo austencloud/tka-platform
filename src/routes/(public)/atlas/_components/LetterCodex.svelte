@@ -40,14 +40,16 @@
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     HandSide,
-    MotionType,
     RotationDirection,
     type RotationDirection as RotationDirectionValue,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { TurnValue } from "$lib/shared/create/domain/turn-pattern-data";
-  import { applyTurnsToVariations } from "./codex-boards/letter-explorer-variations";
+  import {
+    applyTurnsToVariations,
+    motionAllowsFloat,
+  } from "./codex-boards/letter-explorer-variations";
   import { loadFoundingCollectionSequences } from "$lib/features/browse/collections/config/founding-collections";
   import { filterSequencesByExactLetter } from "$lib/shared/browse/services/sequence-letter-occurrence";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
@@ -289,19 +291,19 @@
     return value === -0.5 ? "fl" : value;
   }
 
-  function motionAllowsFloat(color: HandSide): boolean {
-    const motion = selectedBase?.motions?.[hand];
-    return (
-      motion?.motionType !== MotionType.DASH &&
-      motion?.motionType !== MotionType.STATIC
-    );
-  }
-
   function changeTurns(color: HandSide, delta: number): void {
     if (color === HandSide.LEFT) {
-      leftTurns = nextTurns(leftTurns, delta, motionAllowsFloat(color));
+      leftTurns = nextTurns(
+        leftTurns,
+        delta,
+        motionAllowsFloat(selectedBase, color)
+      );
     } else {
-      rightTurns = nextTurns(rightTurns, delta, motionAllowsFloat(color));
+      rightTurns = nextTurns(
+        rightTurns,
+        delta,
+        motionAllowsFloat(selectedBase, color)
+      );
     }
     commitRoute();
   }

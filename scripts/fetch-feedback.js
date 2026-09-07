@@ -136,6 +136,12 @@ async function cleanupSession() {
 }
 
 // Legacy alias
+// The feedback collection is ~97% archived. Every query that does not exclude
+// archived docs reads the whole collection, and Firestore bills per document
+// read. Agents run `list`/`next` constantly, so unbounded scans here were the
+// single largest Firestore cost on the project. Keep queue reads filtered.
+const ACTIVE_QUEUE_STATUSES = ["new", "in-progress", "in-review", "completed"];
+
 const STALE_CLAIM_MS = STALE_THRESHOLDS.ACTIVITY_TIMEOUT_MS;
 
 // ============================================================================
@@ -225,7 +231,7 @@ async function resolvePartialId(partialId) {
   // Firestore doesn't support prefix queries on doc IDs, so we fetch all and filter
   // This is acceptable because the feedback collection is small (<1000 docs typically)
   const snapshot = await db.collection("feedback")
-    .where("status", "in", ["new", "in-progress", "in-review", "completed"])
+    .where("status", "in", ACTIVE_QUEUE_STATUSES)
     .get();
 
   const matches = [];
@@ -962,7 +968,7 @@ async function listAllFeedback() {
   try {
     const snapshot = await db
       .collection("feedback")
-      .orderBy("createdAt", "desc")
+      .where("status", "in", ACTIVE_QUEUE_STATUSES)
       .get();
 
     if (snapshot.empty) {
@@ -970,7 +976,15 @@ async function listAllFeedback() {
       return;
     }
 
-    const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const items = snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      // Sorted here rather than with orderBy: combining it with the status
+      // filter would require a composite index for no benefit at this size.
+      .sort(
+        (a, b) =>
+          (b.createdAt?.toDate?.()?.getTime() || 0) -
+          (a.createdAt?.toDate?.()?.getTime() || 0)
+      );
 
     // Helper: Derive effective status from claim state
     // This matches the ClaimStatusDeriver logic in the TypeScript codebase
@@ -1029,7 +1043,7 @@ async function listAllFeedback() {
     });
 
     console.log(
-      `\n  Queue: ${counts.new} new | ${counts["in-progress"]} in progress | ${counts["in-review"]} in review | ${counts.archived} archived\n`
+      `\n  Queue: ${counts.new} new | ${counts["in-progress"]} in progress | ${counts["in-review"]} in review  (archived not fetched)\n`
     );
     if (orphanedCount > 0 || staleCount > 0) {
       console.log(`  ℹ️  (${orphanedCount} orphaned, ${staleCount} stale - shown as available)`);
@@ -1213,6 +1227,7 @@ async function claimNextFeedback(priorityFilter = null) {
         const legacySnapshot = await db
           .collection("feedback")
           .orderBy("createdAt", "asc")
+          .limit(50)
           .get();
 
         const legacyItem = legacySnapshot.docs.find((doc) => {

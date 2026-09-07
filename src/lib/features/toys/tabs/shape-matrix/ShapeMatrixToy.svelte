@@ -1,7 +1,7 @@
 <!--
   ShapeMatrixToy.svelte - The Shape Matrix explorer mounted as a Toys tab.
   The shared app owns everything; this host only supplies persistence.
-  The standalone /notation/shape-matrix route persists to the URL for
+  The standalone /shape-engine route persists to the URL for
   deep-linking; inside the app the toy remembers its state locally instead,
   because module tabs do not own the URL.
 -->

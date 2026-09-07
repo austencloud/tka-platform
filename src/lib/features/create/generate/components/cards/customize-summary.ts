@@ -28,10 +28,15 @@ import {
   getAllowedPositions,
   StartPositionPreset,
 } from "../../shared/domain/start-position-presets";
-import { GENERATE_DEFAULT_CONFIG } from "../../state/generate-config.svelte";
+import {
+  DEFAULT_GENERATION_STYLE,
+  type GenerationMotionTypeFilter,
+  type GenerationStyleAxis,
+  type GenerationStylePolicy,
+} from "$lib/shared/create/domain/generation-style";
 
-export type StyleAxisValue = "smooth" | "mixed" | "choppy";
-export type DashFilter = "no-dash" | "prefer-dash" | null;
+export type StyleAxisValue = GenerationStyleAxis;
+export type DashFilter = GenerationMotionTypeFilter;
 
 /**
  * Compact orientation abbreviations. Exported so the expanded overlay's
@@ -45,7 +50,7 @@ export const ORIENTATION_SHORT: Record<string, string> = {
   [Orientation.COUNTER]: "CCW",
 };
 
-/** Labels mirror StyleExpandPanel's option lists — one vocabulary, two surfaces. */
+/** Labels mirror GenerationStylePanel's option lists — one vocabulary, two surfaces. */
 const STYLE_AXIS_LABELS: Record<StyleAxisValue, string> = {
   smooth: "Smooth",
   mixed: "Mixed",
@@ -59,18 +64,11 @@ const DASH_LABELS: Record<"no-dash" | "mixed" | "prefer-dash", string> = {
 };
 
 /** The three style axes a surface can start from. */
-export interface CustomizeStyleBaseline {
-  constraintPreset: StyleAxisValue;
-  handPathMode: StyleAxisValue;
-  motionTypeFilter: DashFilter;
-}
+export type CustomizeStyleBaseline = GenerationStylePolicy;
 
 /** What a first-run Generate panel starts on. */
-export const PRODUCTION_STYLE_BASELINE: CustomizeStyleBaseline = {
-  constraintPreset: GENERATE_DEFAULT_CONFIG.constraintPreset,
-  handPathMode: GENERATE_DEFAULT_CONFIG.handPathMode,
-  motionTypeFilter: GENERATE_DEFAULT_CONFIG.motionTypeFilter,
-};
+export const PRODUCTION_STYLE_BASELINE: CustomizeStyleBaseline =
+  DEFAULT_GENERATION_STYLE;
 
 export interface CustomizeSummaryInput {
   constraintPreset: StyleAxisValue;
@@ -142,7 +140,11 @@ export function buildCustomizeSummary(
         // A restricted set is a real constraint at every size — reporting only
         // the single-position case is what let "4 of 16 allowed" read as
         // "Custom" with nothing behind it.
-        push(allowed.length === 1 ? `Start: ${allowed[0]}` : `${allowed.length} pos`);
+        push(
+          allowed.length === 1
+            ? `Start: ${allowed[0]}`
+            : `${allowed.length} pos`
+        );
       }
     }
 

@@ -101,6 +101,7 @@ function rehydrateMotion(
     isVisible: true,
     gridMode,
     arrowLocation: step.startLocation,
+    ...(step.plane && { plane: step.plane }),
     ...(step.prefloatMotionType && {
       prefloatMotionType: step.prefloatMotionType,
     }),
@@ -115,11 +116,15 @@ export function deriveSteps(
   viewerPrefs?: ViewerPreferences
 ): StepData[] {
   const leftPropType = viewerPrefs?.leftPropType ?? PropType.STAFF;
-  const rightPropType =
-    viewerPrefs?.catDogMode ? (viewerPrefs.rightPropType ?? PropType.STAFF) : leftPropType;
+  const rightPropType = viewerPrefs?.catDogMode
+    ? (viewerPrefs.rightPropType ?? PropType.STAFF)
+    : leftPropType;
   const count = stepPairings.length;
 
-  if (leftSoloProp.steps.length !== count || rightSoloProp.steps.length !== count) {
+  if (
+    leftSoloProp.steps.length !== count ||
+    rightSoloProp.steps.length !== count
+  ) {
     throw new Error(
       `deriveSteps: step array length mismatch - ` +
         `blue=${leftSoloProp.steps.length}, ` +
@@ -139,8 +144,18 @@ export function deriveSteps(
       rightStep.endLocation
     );
 
-    const leftMotion = rehydrateMotion(leftStep, HandSide.LEFT, gridMode, leftPropType);
-    const rightMotion = rehydrateMotion(rightStep, HandSide.RIGHT, gridMode, rightPropType);
+    const leftMotion = rehydrateMotion(
+      leftStep,
+      HandSide.LEFT,
+      gridMode,
+      leftPropType
+    );
+    const rightMotion = rehydrateMotion(
+      rightStep,
+      HandSide.RIGHT,
+      gridMode,
+      rightPropType
+    );
 
     const stepData: StepData = {
       id: crypto.randomUUID(),

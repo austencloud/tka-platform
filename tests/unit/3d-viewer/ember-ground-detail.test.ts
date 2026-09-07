@@ -60,11 +60,11 @@ describe("Ember Fresh Rift ground detail", () => {
     expect(EMBER_GROUND_DETAIL_TEXTURES).toEqual({
       youngLava: "/textures/ember-surface-r9/young-lava.png",
       ironContact: "/textures/ember-surface-r9/iron-contact.png",
-      fracturedBasalt: "/textures/ember-surface-r9/fractured-basalt.png",
+      fracturedBasalt: "/textures/ember-midflank-r5/rock-ground-color.jpg",
       shelteredAsh: "/textures/ember-surface-r9/sheltered-ash.png",
     });
     expect(EMBER_GROUND_DETAIL_MASK).toBe(
-      "/textures/ember-surface-r9/fresh-rift-family-mask.png"
+      "/textures/ember-midflank-r5/family-mask.png"
     );
     expect(EMBER_GROUND_SURFACE_TEXTURES).toEqual({
       height: "/textures/ember-surface-r11/rock-ground-height.jpg",

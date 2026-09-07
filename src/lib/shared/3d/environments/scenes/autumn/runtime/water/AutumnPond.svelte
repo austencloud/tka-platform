@@ -26,7 +26,6 @@
     RepeatWrapping,
     ShaderMaterial,
     ShapeGeometry,
-    TextureLoader,
     type MeshPhysicalMaterial,
     type Texture,
   } from "three";
@@ -38,8 +37,14 @@
     prefersReducedMotion,
     resolveMotionScale,
   } from "../../../../primitives/motion-preference";
-  import type { AutumnBootStatus } from "../autumn-boot-state";
-  import { createAutumnPondSurfaceMaterial } from "./autumn-pond-surface-material";
+  import {
+    scheduleAutumnBootStatus,
+    type AutumnBootStatus,
+  } from "../autumn-boot-state";
+  import {
+    createAutumnPondNormalMap,
+    createAutumnPondSurfaceMaterial,
+  } from "./autumn-pond-surface-material";
 
   interface Props {
     quality: AutumnQualityConfig;
@@ -67,9 +72,6 @@
     waterLevelOffset = AUTUMN_POND_LAYOUT.waterLevelOffset,
   }: Props = $props();
 
-  const NORMAL_MAP_PATH = "/textures/water/Water_1_M_Normal.jpg";
-  const COAT_NORMAL_MAP_PATH = "/textures/water/Water_2_M_Normal.jpg";
-
   function configureWaterNormal(texture: Texture, repeat: number): void {
     texture.wrapS = RepeatWrapping;
     texture.wrapT = RepeatWrapping;
@@ -93,42 +95,16 @@
   }
 
   $effect(() => {
-    const retry = retryRequest;
+    void retryRequest;
     let cancelled = false;
-    let loadedNormals = 0;
-    let normalLoadFailed = false;
     reportStatus("pending");
-
-    const markNormalReady = () => {
-      if (cancelled || normalLoadFailed) return;
-      loadedNormals += 1;
-      if (loadedNormals === 2) reportStatus("ready");
-    };
-    const markNormalFailed = (error: unknown) => {
-      if (cancelled || normalLoadFailed) return;
-      normalLoadFailed = true;
-      console.warn("[AutumnPond] water normal failed to load", error);
-      reportStatus("failed");
-    };
 
     const geometry = new ShapeGeometry(
       createOrganicPondShape({ radiusX, radiusZ, seed }),
       48
     );
-    const loader = new TextureLoader();
-    const retrySuffix = retry > 0 ? `?retry=${retry}` : "";
-    const normal0 = loader.load(
-      `${NORMAL_MAP_PATH}${retrySuffix}`,
-      markNormalReady,
-      undefined,
-      markNormalFailed
-    );
-    const normal1 = loader.load(
-      `${COAT_NORMAL_MAP_PATH}${retrySuffix}`,
-      markNormalReady,
-      undefined,
-      markNormalFailed
-    );
+    const normal0 = createAutumnPondNormalMap({ seed: seed + 11 });
+    const normal1 = createAutumnPondNormalMap({ seed: seed + 37 });
     configureWaterNormal(normal0, 3.6);
     configureWaterNormal(normal1, 5.2);
     normal1.center.set(0.5, 0.5);
@@ -146,6 +122,10 @@
       bodyNormal = normal0;
       coatNormal = normal1;
     });
+    // The parent resets its boot ledger in its own initial effect. Deferring
+    // this synchronous texture result until the current effect flush ends
+    // prevents that reset from erasing the pond's ready event.
+    scheduleAutumnBootStatus(reportStatus, "ready", () => cancelled);
 
     return () => {
       cancelled = true;

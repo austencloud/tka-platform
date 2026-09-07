@@ -16,7 +16,8 @@ const maximumRenderedTriangles = 2_200_000;
 const expectedFernInstances = 54;
 const expectedGroundTextureSize = 2_048;
 const expectedGroundDetailSize = 1_024;
-const treeGroundingStrategy = "transformed-root-envelope-v1";
+const treeGroundingStrategy = "bounded-central-root-plate-v2";
+const maximumTreeGroundingDepth = 0.76;
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -129,6 +130,12 @@ const terrainNode = meshNodes.find((node) => node.name === "Autumn_Terrain");
 const terrainApronNode = meshNodes.find(
   (node) => node.name === "Autumn_Terrain_Apron"
 );
+const benchNode = meshNodes.find(
+  (node) => node.name === "Autumn_Rough_Bench_Seat"
+);
+const stumpNodes = meshNodes.filter((node) =>
+  /^Autumn_Stump_Seat_\d+$/.test(node.name ?? "")
+);
 const owlTreeNode = meshNodes.find((node) => node.name === "HeroTreeA_03_0");
 const groundMaterial = (gltf.materials ?? []).find(
   (material) => material.name === "Autumn Living Forest Floor"
@@ -189,9 +196,17 @@ invariant(
   "Terrain lost its baked living-floor contract"
 );
 invariant(
+  terrainNode.extras?.tka_camera_collision === true,
+  "Terrain lost its camera-collision contract"
+);
+invariant(
   terrainApronNode.extras?.tka_ground_treatment ===
     "fog-dissolved-rolling-horizon",
   "Terrain apron regressed to a flat or unauthored horizon"
+);
+invariant(
+  terrainApronNode.extras?.tka_camera_collision === true,
+  "Terrain horizon lost its camera-collision contract"
 );
 invariant(
   meshTriangles(gltf, terrainApronNode.mesh) >= 3_500,
@@ -218,15 +233,35 @@ invariant(
 );
 invariant(
   owlTreeNode.extras?.tka_grounding_strategy === treeGroundingStrategy,
-  "Owl tree lost its transformed root-envelope grounding proof"
+  "Owl tree lost its bounded central root-plate grounding proof"
 );
 invariant(
-  Number(owlTreeNode.extras?.tka_root_contact_samples) >= 100,
+  Number(owlTreeNode.extras?.tka_root_contact_samples) >= 4,
   "Owl tree grounding proof has too few root-contact samples"
 );
 invariant(
-  Number(owlTreeNode.extras?.tka_root_max_clearance_after) <= -0.13,
-  "Owl tree root envelope is not safely below terrain"
+  Number(owlTreeNode.extras?.tka_root_contact_fraction) >= 0.5,
+  "Owl tree central root plate has insufficient terrain contact"
+);
+invariant(
+  Number(owlTreeNode.extras?.tka_root_central_clearance_after) <= 0.002,
+  "Owl tree central root plate still clears terrain"
+);
+invariant(
+  Number(owlTreeNode.extras?.tka_grounding_depth) <= maximumTreeGroundingDepth,
+  "Owl tree exceeded the root-visibility burial cap"
+);
+
+invariant(
+  benchNode?.extras?.tka_prop_language === "irregular-split-log",
+  "Bench regressed to a box primitive"
+);
+invariant(
+  stumpNodes.length === 2 &&
+    stumpNodes.every(
+      (node) => node.extras?.tka_prop_language === "root-flared-hewn-stump"
+    ),
+  "Stump seats regressed to cone primitives"
 );
 
 const fernNode = fernNodes[0];
@@ -240,6 +275,46 @@ const renderedTriangles = meshNodes.reduce(
 const uncompressedTextures = (gltf.textures ?? [])
   .map((texture, index) => ({ index, image: textureImage(gltf, texture) }))
   .filter(({ image }) => image.mimeType !== "image/ktx2");
+const farBotanicalExpectations = new Map([
+  ["Autumn Hero A PBR", 16],
+  ["Autumn Willow PBR", 15],
+  ["Autumn Larch PBR", 15],
+  ["Autumn Snag PBR", 7],
+]);
+const farBotanicalNodes = meshNodes.filter((node) => {
+  const triangles = meshTriangles(gltf, node.mesh);
+  if (triangles > 2_800 || !node.extensions?.EXT_mesh_gpu_instancing) {
+    return false;
+  }
+  return gltf.meshes[node.mesh].primitives.some((primitive) =>
+    farBotanicalExpectations.has(gltf.materials[primitive.material]?.name ?? "")
+  );
+});
+const farBotanicalProof = Object.fromEntries(
+  farBotanicalNodes.map((node) => {
+    const materialName =
+      gltf.materials[gltf.meshes[node.mesh].primitives[0].material]?.name;
+    return [
+      materialName,
+      {
+        instances: instanceCount(gltf, node),
+        triangles: meshTriangles(gltf, node.mesh),
+      },
+    ];
+  })
+);
+for (const [materialName, expectedInstances] of farBotanicalExpectations) {
+  invariant(
+    farBotanicalProof[materialName]?.instances === expectedInstances,
+    `Far botanical ${materialName} expected ${expectedInstances} instances`
+  );
+}
+invariant(
+  !(gltf.materials ?? []).some((material) =>
+    String(material.name ?? "").startsWith("Far Autumn")
+  ),
+  "Autumn retained the flat-shaded procedural far-tree material family"
+);
 
 invariant(
   fernTriangles <= maximumFernTriangles,
@@ -286,8 +361,20 @@ console.log(
         strategy: owlTreeNode.extras.tka_grounding_strategy,
         depth: owlTreeNode.extras.tka_grounding_depth,
         samples: owlTreeNode.extras.tka_root_contact_samples,
-        maximumClearanceAfter: owlTreeNode.extras.tka_root_max_clearance_after,
+        contactFraction: owlTreeNode.extras.tka_root_contact_fraction,
+        centralClearanceAfter:
+          owlTreeNode.extras.tka_root_central_clearance_after,
+        maximumAutomaticSink: owlTreeNode.extras.tka_root_max_automatic_sink,
       },
+      cameraCollision: {
+        terrain: terrainNode.extras.tka_camera_collision,
+        horizon: terrainApronNode.extras.tka_camera_collision,
+      },
+      settlementProps: {
+        bench: benchNode.extras.tka_prop_language,
+        stumps: stumpNodes.map((node) => node.extras.tka_prop_language),
+      },
+      farBotanicalProof,
       fern: {
         instances: fernInstances,
         triangles: fernTriangles,

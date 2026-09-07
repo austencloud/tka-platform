@@ -107,6 +107,11 @@ export function prefetch(sequence: SequenceData): void {
 }
 
 export function getCached(sequence: SequenceData): SequenceData | null {
+  // Prefetch fills in metadata-only browse cards. A sequence with motions is
+  // already the caller's document and may contain unsaved workspace edits under
+  // the original collection ID. Never replace those edits with an ID-only hit.
+  if (hasMotionData(sequence)) return null;
+
   const key = deriveCacheKey(sequence);
   if (!key) return null;
   return hydrationResults.get(key) ?? null;

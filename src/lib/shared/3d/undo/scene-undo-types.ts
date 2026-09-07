@@ -10,6 +10,8 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 import type { SceneId } from "$lib/features/lab/tabs/scene-lab/domain/scene-lab-types";
 import type { CosmicVariant } from "$lib/features/lab/tabs/scene-lab/services/scene-lab-persistence";
 import type { PlaneMode } from "@austencloud/scene-3d";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { CharacterId } from "../domain/character-model";
 
 // Operation Types
 
@@ -20,7 +22,9 @@ export type SceneUndoOperationType =
   | "apply-formation"
   | "spatial-edit"
   | "change-character"
+  | "change-sequence"
   | "change-prop"
+  | "change-prop-build"
   | "change-staff-length"
   | "change-effort"
   // Effects
@@ -58,6 +62,8 @@ export type SceneUndoOperationType =
 export interface ViewerDomainSnapshot {
   performers: PerformerPositionSnapshot[];
   selectedPerformerIndex: number | null;
+  /** Ordered edit scope. Optional only for snapshots created before multi-select. */
+  selectedPerformerIndices?: number[];
   activeFormation: FormationPreset | "manual" | "custom";
 }
 
@@ -72,10 +78,14 @@ export interface PerformerPositionSnapshot {
 export interface PerformerDomainSnapshot {
   index: number;
   selectedPerformerIndex: number | null;
+  characterId: CharacterId;
+  displayName: string | null;
+  loadedSequence: SequenceData | null;
   settings: {
     prop: PropType | null;
     effortId: EffortId | null;
     effect: EffectType | null;
+    handEffects: { left: EffectType; right: EffectType } | null;
     staffLengthCm: number | null;
     propBuild: Partial<import("@austencloud/scene-3d").PropBuild> | null;
   };

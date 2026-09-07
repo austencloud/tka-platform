@@ -1,40 +1,20 @@
 <script lang="ts">
-  import { T, useThrelte } from "@threlte/core";
-  import { useGltf } from "@threlte/extras";
-  import { onDestroy, onMount } from "svelte";
-  import { disposeSceneGraph } from "../utils/dispose-scene";
+  import { useTask, useThrelte } from "@threlte/core";
+  import { userProportionsState } from "@austencloud/scene-3d";
+  import { onMount, untrack } from "svelte";
+  import type { WebGLRenderer } from "three";
+  import { tryGetAdaptiveQualityContext } from "../../context/adaptive-quality-context";
+  import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import {
-    Vector3,
-    FogExp2,
-    Color,
-    type MeshStandardMaterial,
-    type Object3D,
-  } from "three";
-  import SkyGradient from "../primitives/SkyGradient.svelte";
-  import FallingParticles from "../primitives/FallingParticles.svelte";
-  import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
-  import LavaPool from "./ember/LavaPool.svelte";
-  import LavaCracks from "./ember/LavaCracks.svelte";
-  import LavaRivers from "./ember/LavaRivers.svelte";
-  import ObsidianPillars from "./ember/ObsidianPillars.svelte";
-  import FireWisps from "./ember/FireWisps.svelte";
-  import EmberFountains from "./ember/EmberFountains.svelte";
-  import VolcanicHaze from "./ember/VolcanicHaze.svelte";
-  import HeatDistortion from "./ember/HeatDistortion.svelte";
-  import EmberGroundDetail from "./ember/EmberGroundDetail.svelte";
-  import EmberPlumes from "./ember/EmberPlumes.svelte";
-  import EmberSurfaceEcology from "./ember/EmberSurfaceEcology.svelte";
-  import {
-    type EmberSceneConfig,
     createDefaultEmberConfig,
     isEmberAtmosphereLookId,
+    type EmberSceneConfig,
   } from "../domain/models/scene-configs";
-  import { userProportionsState } from "@austencloud/scene-3d";
-  import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
-  import ObsidianPlatform from "./ember/ObsidianPlatform.svelte";
-  import { resolveCircularStageRadius } from "../domain/performer-stage-bounds";
-  import GltfAsset from "../primitives/GltfAsset.svelte";
-  import { tryGetAdaptiveQualityContext } from "../../context/adaptive-quality-context";
+  import { prefersReducedMotion } from "../primitives/motion-preference";
+  import {
+    createLoadedEmberEnvironmentWorld,
+    type EmberEnvironmentWorld,
+  } from "../worlds/ember/ember-environment-world";
 
   interface Props {
     config?: EmberSceneConfig;
@@ -57,612 +37,107 @@
     );
     return isEmberAtmosphereLookId(requested) ? requested : undefined;
   })();
-
-  const baseConfig = $derived(
+  const activeConfig = $derived(
     config ?? createDefaultEmberConfig(requestedLook)
   );
-
-  const activeConfig = $derived.by(() => {
-    const r = resolveCircularStageRadius(
-      stageRadius,
-      baseConfig.platform.radius,
-      undefined,
-      stageRadiusGrowth
-    );
-    const enabled = baseConfig.platform.enabled || stageRadiusGrowth > 0;
-    if (
-      r <= baseConfig.platform.radius &&
-      enabled === baseConfig.platform.enabled
-    )
-      return baseConfig;
-    return {
-      ...baseConfig,
-      platform: {
-        ...baseConfig.platform,
-        enabled,
-        radius: r,
-        ...(baseConfig.platform.enabled
-          ? {}
-          : {
-              primaryColor: "#202c3b",
-              glowIntensity: 0.11,
-              crackIntensity: 0.16,
-              lavaSpeed: 0.18,
-            }),
-      },
-    };
-  });
-
-  const embeddedExpansion = $derived(
-    !baseConfig.platform.enabled && stageRadiusGrowth > 0
-  );
-
-  const logModel = useGltf("/models/camping/tree-log.glb");
-  const logSmall = useGltf("/models/camping/tree-log-small.glb");
-  const campfire = useGltf("/models/camping/campfire-pit.glb");
-  let productionSliceProgress = $state(0);
-  let productionSliceAsset = $state<Object3D | null>(null);
-
-  const { scene } = useThrelte();
+  const groundDetailEnabled =
+    !import.meta.env.DEV ||
+    typeof window === "undefined" ||
+    new URLSearchParams(window.location.search).get("emberGroundDetail") !==
+      "off";
+  const { camera, renderer, scene } = useThrelte() as unknown as ReturnType<
+    typeof useThrelte
+  > & { renderer: WebGLRenderer };
   const adaptiveQuality = tryGetAdaptiveQualityContext();
-  const shadowsEnabled = $derived(
-    adaptiveQuality?.config.enableShadows ?? true
-  );
-
-  let sceneFeatures = $state<ReturnType<typeof getSceneFeatureContext> | null>(
-    null
-  );
+  let sceneFeatures: ReturnType<typeof getSceneFeatureContext> | null = null;
   try {
     sceneFeatures = getSceneFeatureContext();
   } catch {
-    // May render outside scene feature system
+    // Ember can render in isolated scene harnesses without the boot curtain.
   }
+  let world: EmberEnvironmentWorld | null = null;
+  let elapsed = 0;
 
-  const groundY = $derived(userProportionsState.groundY);
-
-  function volcanicClone(
-    sourceScene: {
-      clone: () => { traverse: (cb: (obj: unknown) => void) => void };
-    },
-    color: string,
-    blend: number
-  ) {
-    const tintColor = new Color(color);
-    const cloned = sourceScene.clone();
-    cloned.traverse((obj) => {
-      const m = obj as { isMesh?: boolean; material?: unknown };
-      if (!m.isMesh || !m.material) return;
-      const mats = Array.isArray(m.material) ? m.material : [m.material];
-      const clonedMats = mats.map((mat) => {
-        const clone = (mat as MeshStandardMaterial).clone();
-        if (clone.color) clone.color.lerp(tintColor, blend);
-        if (clone.emissive) clone.emissive.lerp(new Color("#220800"), 0.2);
-        return clone;
-      });
-      (m as { material: unknown }).material = Array.isArray(m.material)
-        ? clonedMats
-        : clonedMats[0];
-    });
-    return cloned;
-  }
-
-  const logPlacements: {
-    x: number;
-    z: number;
-    scale: number;
-    rotY: number;
-    large: boolean;
-  }[] = [
-    { x: 7.0, z: -1.5, scale: 1.8, rotY: Math.PI * 0.3, large: true },
-    { x: 3.5, z: -5.0, scale: 1.5, rotY: Math.PI * 0.8, large: false },
-    { x: 8.5, z: -5.5, scale: 1.4, rotY: Math.PI * 1.3, large: true },
-    { x: -8.0, z: -4.0, scale: 1.6, rotY: Math.PI * 0.5, large: false },
-    { x: 10.0, z: 2.5, scale: 1.3, rotY: Math.PI * 1.1, large: true },
-    { x: -9.5, z: 7.0, scale: 1.5, rotY: Math.PI * 0.2, large: false },
-  ];
-
-  const firePosition = $derived.by(() => {
-    const fv = activeConfig.fireVent;
-    if (!fv) return new Vector3(0, groundY, 0);
-    const fireHalfHeight = (fv.fireHeight * fv.fireScale) / 2;
-    return new Vector3(fv.position.x, groundY + fireHalfHeight, fv.position.z);
-  });
-
-  // ── Clone caching — clone + tint once per GLB/config change, not per render
-
-  const logClones = $derived.by(() => {
-    if (!$logModel || !$logSmall || !activeConfig.fireVent?.enabled) return [];
-    return logPlacements.map((log) =>
-      volcanicClone((log.large ? $logModel : $logSmall)!.scene, "#0a0505", 0.6)
-    );
-  });
-
-  const campfireClone = $derived($campfire ? $campfire.scene.clone() : null);
-
-  onDestroy(() => {
-    for (const c of logClones) disposeSceneGraph(c as import("three").Object3D);
-    if (campfireClone)
-      disposeSceneGraph(campfireClone as import("three").Object3D);
-  });
-
-  let fogInstance: FogExp2 | null = null;
-  let fogBackground: Color | null = null;
   $effect(() => {
-    const fog = activeConfig.fog;
-    if (!fogInstance) {
-      fogInstance = new FogExp2(fog.color, fog.density);
-      fogBackground = new Color(fog.color);
-      scene.fog = fogInstance;
-      scene.background = fogBackground;
-    } else {
-      fogInstance.color.set(fog.color);
-      fogBackground?.set(fog.color);
-      fogInstance.density = fog.density;
-    }
+    const nextConfig = activeConfig;
+    const nextGroundY = untrack(() => userProportionsState.groundY);
+    let cancelled = false;
+    let attached: EmberEnvironmentWorld | null = null;
+    const previousFog = scene.fog;
+    const previousBackground = scene.background;
+
+    void createLoadedEmberEnvironmentWorld({
+      renderer,
+      groundY: nextGroundY,
+      config: nextConfig,
+      stageRadius,
+      stageRadiusGrowth,
+      qualityTier: adaptiveQuality?.contentTier,
+      shadows: adaptiveQuality?.config.enableShadows ?? true,
+      reducedMotion: prefersReducedMotion(),
+      groundDetailEnabled,
+      onProgress: (fraction) => {
+        if (!cancelled) {
+          sceneFeatures?.reportProgress("environment", fraction);
+        }
+      },
+    })
+      .then((next) => {
+        if (cancelled) {
+          next.dispose();
+          return;
+        }
+        attached = next;
+        world = next;
+        elapsed = 0;
+        next.setGroundY(userProportionsState.groundY);
+        scene.add(next.root);
+        scene.fog = next.fog;
+        scene.background = next.background;
+        sceneFeatures?.reportProgress("environment", 1);
+        sceneFeatures?.reportReady("environment");
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error("[EmberScene] environment failed to load", error);
+        sceneFeatures?.reportFailed(
+          "environment",
+          "The Ember environment couldn't load."
+        );
+      });
+
     return () => {
-      if (scene.fog === fogInstance) scene.fog = null;
-      if (scene.background === fogBackground) scene.background = null;
-      fogInstance = null;
-      fogBackground = null;
+      cancelled = true;
+      if (!attached) return;
+      if (world === attached) world = null;
+      scene.remove(attached.root);
+      if (scene.fog === attached.fog) scene.fog = previousFog;
+      if (scene.background === attached.background) {
+        scene.background = previousBackground;
+      }
+      attached.dispose();
     };
   });
 
-  function handleProductionSliceProgress(fraction: number): void {
-    productionSliceProgress = fraction;
-  }
-
-  // The fissure decals are flat planes baked at y 0.509 and 0.512, while the
-  // shelf surface that later gained its height detail spans y 0.454 to 0.554.
-  // Each plane is therefore buried under roughly half the surface and surfaces
-  // only along the contour where the two graze, which renders as the thin
-  // kinked bright slivers near the stage rather than as fissures. Re-cutting
-  // them belongs to the asset; until then they contribute only the artifact.
-  // Measured against the slice: these are the only zero-thickness meshes it
-  // ships (h = 0.00 over footprints of 0.9m to 12.6m). Every other flat-looking
-  // form is real geology — the shelf surface is 0.10m over 17.1m, the strata
-  // 0.17-0.19m, the caldera banks 0.46-0.52m — and those descend monotonically
-  // outward, so none of them is a decal to hide.
-  const BURIED_FISSURE_DECAL_ROLES = new Set(["cooled-fissure", "live-fissure"]);
-
-  // Highest priority first. A material shared by several roles takes the
-  // treatment of the strongest claim on it rather than the last one the
-  // traversal happened to reach.
-  const TREATMENT_PRECEDENCE = [
-    "playableSurface",
-    "mineral",
-    "meshyGeology",
-    "world",
-  ] as const;
-  type EmberTreatmentKey = (typeof TREATMENT_PRECEDENCE)[number];
-
-  function resolveTreatmentKey(
-    role: string | undefined,
-    materialName: string
-  ): EmberTreatmentKey {
-    if (
-      role === "playable-surface" ||
-      role === "playable-shelf" ||
-      role === "shelf-stratum" ||
-      role === "stage-crust-transition"
-    )
-      return "playableSurface";
-    if (role?.startsWith("meshy-")) return "meshyGeology";
-    if (
-      materialName.includes("iron-contact") ||
-      materialName.includes("windborne-ash") ||
-      materialName.includes("Mineral") ||
-      materialName.includes("Ash_Deposit")
-    )
-      return "mineral";
-    return "world";
-  }
-
-  // n successive lerps toward the same target land at this blend.
-  function compoundedBlend(blend: number, applications: number): number {
-    return 1 - Math.pow(1 - blend, applications);
-  }
-
-  function handleProductionSliceReady(asset: Object3D): void {
-    productionSliceAsset = asset;
-    const treatments = activeConfig.atmosphere.materials;
-
-    // GLTFLoader hands out one material instance per glTF material index, so a
-    // per-mesh treatment loop lerps the same instance once per mesh that
-    // references it: roped-pahoehoe 20 times, iron-contact-crust 52. Colour and
-    // emissive keep that compounded strength — the blend below is the closed
-    // form of those repeats — but roughness, metalness and
-    // emissiveIntensity were compounding or last-write-wins across an arbitrary
-    // traversal order, which is not a look, it is a mesh count.
-    const routed = new Map<
-      MeshStandardMaterial,
-      Map<EmberTreatmentKey, number>
-    >();
-
-    asset.traverse((child) => {
-      const mesh = child as {
-        isMesh?: boolean;
-        material?: MeshStandardMaterial | MeshStandardMaterial[];
-        castShadow: boolean;
-        receiveShadow: boolean;
-      };
-      if (!mesh.isMesh || !mesh.material) return;
-
-      const role = child.userData.tka_role as string | undefined;
-
-      if (role && BURIED_FISSURE_DECAL_ROLES.has(role)) {
-        child.visible = false;
-        return;
-      }
-
-      mesh.receiveShadow = true;
-      mesh.castShadow =
-        shadowsEnabled &&
-        role !== "playable-surface" &&
-        role !== "playable-shelf" &&
-        role !== "volcanic-basin" &&
-        role !== "lava-channel-levee";
-
-      const materials = Array.isArray(mesh.material)
-        ? mesh.material
-        : [mesh.material];
-      for (const material of materials) {
-        if (!material.isMeshStandardMaterial) continue;
-        const key = resolveTreatmentKey(role, material.name);
-        const counts = routed.get(material) ?? new Map<EmberTreatmentKey, number>();
-        counts.set(key, (counts.get(key) ?? 0) + 1);
-        routed.set(material, counts);
-      }
-    });
-
-    for (const [material, counts] of routed) {
-      for (const key of TREATMENT_PRECEDENCE) {
-        const applications = counts.get(key);
-        if (!applications) continue;
-        const treatment = treatments[key];
-        material.color.lerp(
-          new Color(treatment.tint),
-          compoundedBlend(treatment.tintBlend, applications)
-        );
-        material.emissive.lerp(
-          new Color(treatment.emissive),
-          compoundedBlend(treatment.emissiveBlend, applications)
-        );
-      }
-      const dominant = TREATMENT_PRECEDENCE.find((key) => counts.has(key));
-      if (!dominant) continue;
-      const treatment = treatments[dominant];
-      material.emissiveIntensity = treatment.emissiveIntensity;
-      material.roughness = Math.min(
-        1,
-        material.roughness * treatment.roughnessScale
-      );
-      material.metalness = Math.max(
-        0,
-        Math.min(1, material.metalness + treatment.metalnessAdd)
-      );
-      material.needsUpdate = true;
-    }
-
-    asset.userData.emberAtmosphereLook = activeConfig.atmosphere.id;
-    productionSliceProgress = 1;
-  }
-
   $effect(() => {
-    if (!sceneFeatures) return;
-    const glbs = [$logModel, $logSmall, $campfire];
-    const loaded = glbs.filter(Boolean).length + productionSliceProgress;
-    const total = glbs.length + 1;
-    sceneFeatures.reportProgress("environment", loaded / total);
-    if (loaded === total) {
-      sceneFeatures.reportReady("environment");
-    }
+    world?.setGroundY(userProportionsState.groundY);
+  });
+
+  useTask((delta) => {
+    const activeWorld = world;
+    const activeCamera = camera.current;
+    if (!activeWorld || !activeCamera) return;
+    elapsed += delta;
+    activeWorld.update(delta, elapsed, activeCamera);
   });
 
   onMount(() => {
     const timer = setTimeout(() => {
       if (sceneFeatures && !sceneFeatures.isReady("environment")) {
-        console.warn("[EmberScene] GLB loading timed out — lifting curtain");
+        console.warn("[EmberScene] GLB loading timed out - lifting curtain");
         sceneFeatures.reportReady("environment");
       }
     }, 15_000);
     return () => clearTimeout(timer);
   });
 </script>
-
-<!-- Smoky volcanic sky, lifted along the caldera bearing so the ridgeline
-     reads as a silhouette instead of dissolving into a black upper frame. -->
-<SkyGradient
-  topColor={activeConfig.sky.topColor}
-  midColor={activeConfig.sky.midColor}
-  bottomColor={activeConfig.sky.bottomColor}
-  horizonGlow={activeConfig.sky.horizonGlow}
-/>
-
-<!-- Lava cracks overlay on ground -->
-<LavaCracks
-  config={activeConfig.lavaCracks}
-  groundSize={activeConfig.ground.size}
-/>
-
-<!-- Lava pool with domain-warped shader -->
-<LavaPool config={activeConfig.lavaPool} />
-
-<!-- Gate 4 R7 owns the complete ground surface; a second flat ground plane made the world read as a graybox. -->
-<GltfAsset
-  url="/models/ember/ember-production-slice.glb"
-  position={[0, groundY, 0]}
-  onProgress={handleProductionSliceProgress}
-  onReady={handleProductionSliceReady}
-/>
-
-<EmberGroundDetail scene={productionSliceAsset} />
-
-<!-- Runtime geology breaks the playable shelf into physical clinker, rafted
-     plates, and heat-stained fragments without consuming the clear stage. -->
-<EmberSurfaceEcology stageRadius={activeConfig.platform.radius} />
-
-<!-- Heat distortion shimmer above lava -->
-{#if activeConfig.lavaPool.enabled}
-  <HeatDistortion
-    position={activeConfig.lavaPool.position}
-    radius={activeConfig.lavaPool.radius * 0.7}
-  />
-{/if}
-
-<!-- Lava rivers flowing from pool -->
-{#if activeConfig.lavaRivers?.enabled}
-  <LavaRivers
-    config={activeConfig.lavaRivers}
-    poolPosition={activeConfig.lavaPool.position}
-    terrain={productionSliceAsset}
-  />
-{/if}
-
-{#each activeConfig.atmosphere.heatFields as field}
-  <HeatDistortion
-    position={field.position}
-    radius={field.radius}
-    height={field.height}
-    intensity={field.intensity}
-  />
-{/each}
-
-<!-- Obsidian crystal pillars with animated veins -->
-<ObsidianPillars config={activeConfig.obsidianPillars} />
-
-<!-- Fire vent with volumetric fire -->
-{#if activeConfig.fireVent?.enabled && campfireClone}
-  {@const fv = activeConfig.fireVent}
-  <T
-    is={campfireClone}
-    position.x={fv.position.x}
-    position.y={groundY}
-    position.z={fv.position.z}
-    scale={fv.modelScale}
-  />
-  <VolumetricFireComponent
-    position={firePosition}
-    width={1.0}
-    height={fv.fireHeight}
-    depth={1.0}
-    scale={fv.fireScale}
-    sliceSpacing={0.15}
-  />
-  <T.PointLight
-    position.x={fv.position.x}
-    position.y={groundY + fv.primaryLight.heightOffset}
-    position.z={fv.position.z}
-    color={fv.primaryLight.color}
-    intensity={fv.primaryLight.intensity}
-    distance={fv.primaryLight.distance}
-    decay={fv.primaryLight.decay}
-  />
-  <T.PointLight
-    position.x={fv.position.x}
-    position.y={groundY + fv.fillLight.heightOffset}
-    position.z={fv.position.z}
-    color={fv.fillLight.color}
-    intensity={fv.fillLight.intensity}
-    distance={fv.fillLight.distance}
-    decay={fv.fillLight.decay}
-  />
-  <T.Group
-    position.x={fv.position.x}
-    position.y={groundY + (fv.fireHeight * fv.fireScale) / 2 + 0.5}
-    position.z={fv.position.z}
-  >
-    {#key fv.smokeCount}
-      <FallingParticles
-        type="smoke"
-        count={fv.smokeCount}
-        area={{ width: 1.5, height: 5, depth: 1.5 }}
-        speed={0.04}
-        colors={fv.smokeColors}
-        sizeRange={[0.15, 0.45]}
-        spin={false}
-      />
-    {/key}
-  </T.Group>
-{/if}
-
-<!-- Drifting fire wisps with dynamic lighting -->
-{#if activeConfig.fireWisps?.enabled}
-  <FireWisps config={activeConfig.fireWisps} />
-{/if}
-
-<!-- Volcanic ember fountain eruptions (positioned at pool center) -->
-{#if activeConfig.emberFountains?.enabled}
-  <T.Group
-    position.x={activeConfig.lavaPool.position.x}
-    position.y={-(activeConfig.lavaPool.craterDepth ?? 0)}
-    position.z={activeConfig.lavaPool.position.z}
-  >
-    <EmberFountains config={activeConfig.emberFountains} />
-  </T.Group>
-{/if}
-
-<!-- Charred fallen logs (only with fire vent) -->
-{#each logClones as clone, i}
-  {@const log = logPlacements[i]}
-  {#if log}
-    <T.Group
-      name={`EmberLog_${i}`}
-      userData={{ tka_composer_id: `ember-log-${i}`, tka_role: "deadwood" }}
-      position.x={log.x}
-      position.y={groundY}
-      position.z={log.z}
-      scale={log.scale * 0.5}
-      rotation.y={log.rotY}
-    >
-      <T is={clone} />
-    </T.Group>
-  {/if}
-{/each}
-
-<!-- Rising embers — main field -->
-{#key activeConfig.embers.count}
-  <FallingParticles
-    type={activeConfig.embers.type}
-    count={activeConfig.embers.count}
-    area={activeConfig.embers.area}
-    speed={activeConfig.embers.speed}
-    colors={activeConfig.embers.colors}
-    sizeRange={activeConfig.embers.sizeRange}
-    spin={activeConfig.embers.spin ?? false}
-    buoyant={activeConfig.embers.buoyant ?? false}
-    rangeFalloff={activeConfig.embers.rangeFalloff}
-  />
-{/key}
-
-<!-- Falling ash -->
-{#if activeConfig.ash}
-  {#key activeConfig.ash.count}
-    <FallingParticles
-      type={activeConfig.ash.type}
-      count={activeConfig.ash.count}
-      area={activeConfig.ash.area}
-      speed={activeConfig.ash.speed}
-      colors={activeConfig.ash.colors}
-      sizeRange={activeConfig.ash.sizeRange}
-      spin={activeConfig.ash.spin ?? false}
-      buoyant={activeConfig.ash.buoyant ?? false}
-      rangeFalloff={activeConfig.ash.rangeFalloff}
-    />
-  {/key}
-{/if}
-
-<!-- Ambient smoke layer -->
-{#if activeConfig.smoke}
-  {#key activeConfig.smoke.count}
-    <FallingParticles
-      type={activeConfig.smoke.type}
-      count={activeConfig.smoke.count}
-      area={activeConfig.smoke.area}
-      speed={activeConfig.smoke.speed}
-      colors={activeConfig.smoke.colors}
-      sizeRange={activeConfig.smoke.sizeRange}
-      spin={activeConfig.smoke.spin ?? false}
-      buoyant={activeConfig.smoke.buoyant ?? false}
-      rangeFalloff={activeConfig.smoke.rangeFalloff}
-    />
-  {/key}
-{/if}
-
-<!-- Floating glowing cinders -->
-{#if activeConfig.cinders}
-  {#key activeConfig.cinders.count}
-    <FallingParticles
-      type={activeConfig.cinders.type}
-      count={activeConfig.cinders.count}
-      area={activeConfig.cinders.area}
-      speed={activeConfig.cinders.speed}
-      colors={activeConfig.cinders.colors}
-      sizeRange={activeConfig.cinders.sizeRange}
-      spin={activeConfig.cinders.spin ?? false}
-    />
-  {/key}
-{/if}
-
-<!-- Atmospheric volcanic haze dome -->
-{#if activeConfig.volcanicHaze?.enabled}
-  <VolcanicHaze config={activeConfig.volcanicHaze} />
-{/if}
-
-<!-- Layered fumaroles stitch the playable shelf into the distant active caldera. -->
-{#key activeConfig.atmosphere.id}
-  <EmberPlumes
-    plumes={activeConfig.atmosphere.plumes}
-    {groundY}
-    fogColor={activeConfig.fog.color}
-    fogDensity={activeConfig.fog.density}
-  />
-{/key}
-
-<T.PointLight
-  position={[
-    activeConfig.atmosphere.calderaLight.position[0],
-    groundY + activeConfig.atmosphere.calderaLight.position[1],
-    activeConfig.atmosphere.calderaLight.position[2],
-  ]}
-  color={activeConfig.atmosphere.calderaLight.color}
-  intensity={activeConfig.atmosphere.calderaLight.intensity}
-  distance={activeConfig.atmosphere.calderaLight.distance}
-  decay={activeConfig.atmosphere.calderaLight.decay}
-/>
-
-<!-- Hemisphere ambient -->
-<T.HemisphereLight
-  color={activeConfig.hemisphereLight.skyColor}
-  groundColor={activeConfig.hemisphereLight.groundColor}
-  intensity={activeConfig.hemisphereLight.intensity}
-/>
-
-<!-- Directional volcanic sky light -->
-{#if activeConfig.skyLight?.enabled}
-  {@const sl = activeConfig.skyLight}
-  <T.DirectionalLight
-    color={sl.color}
-    intensity={sl.intensity}
-    position.x={sl.position[0]}
-    position.y={sl.position[1]}
-    position.z={sl.position[2]}
-    castShadow={shadowsEnabled}
-    shadow.mapSize.width={1024}
-    shadow.mapSize.height={1024}
-    shadow.camera.near={1}
-    shadow.camera.far={120}
-    shadow.camera.left={-42}
-    shadow.camera.right={42}
-    shadow.camera.top={42}
-    shadow.camera.bottom={-42}
-    shadow.bias={-0.0007}
-    shadow.normalBias={0.045}
-    shadow.radius={3}
-    shadow.intensity={0.55}
-  />
-{/if}
-
-<!-- The look owns one complementary sky key and a restrained lava-bounce rig. -->
-{#each activeConfig.atmosphere.directionals as light}
-  <T.DirectionalLight
-    position={light.position}
-    color={light.color}
-    intensity={light.intensity}
-  />
-{/each}
-
-{#each activeConfig.atmosphere.points as light}
-  <T.PointLight
-    position={[
-      light.position[0],
-      groundY + light.position[1],
-      light.position[2],
-    ]}
-    color={light.color}
-    intensity={light.intensity}
-    distance={light.distance}
-    decay={light.decay}
-  />
-{/each}
-
-<ObsidianPlatform config={activeConfig.platform} embedded={embeddedExpansion} />

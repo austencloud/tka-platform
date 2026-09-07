@@ -57,10 +57,10 @@
     const duration = motionDuration(240);
     if (duration === 0) return;
     const animation = labelElement.animate(
-      [
-        { opacity: 0.5, filter: "brightness(1.2)" },
-        { opacity: 1, filter: "brightness(1)" },
-      ],
+      // Opacity only. A `brightness()` keyframe put the whole label behind a
+      // filter surface for the length of the transition, which is paint per
+      // frame for a cue that opacity already carries.
+      [{ opacity: 0.5 }, { opacity: 1 }],
       {
         duration,
         easing: "cubic-bezier(0.16, 1, 0.3, 1)",
@@ -626,9 +626,10 @@
     display: inline-flex;
     align-items: center;
     gap: 0.08em;
-    transition:
-      filter 0.3s ease,
-      opacity 0.3s ease;
+    /* Opacity only. The active-state glow is a static drop-shadow that paints
+       once when the class flips; transitioning `filter` re-ran the shadow pass
+       every frame for 300ms on every letter in the word. */
+    transition: opacity 0.3s ease;
   }
 
   .glyph-img {
@@ -692,18 +693,16 @@
       cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
+  /* Transform only: the glow is the static drop-shadow on `.active-intense`. */
   @keyframes letterPopIntense {
     0% {
       transform: scale(1);
-      filter: none;
     }
     50% {
       transform: scale(1.1);
-      filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.8));
     }
     100% {
       transform: scale(1);
-      filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.5));
     }
   }
 
@@ -720,7 +719,6 @@
     100% {
       transform: scale(1.02);
       opacity: 1;
-      filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.5));
     }
   }
 
@@ -729,12 +727,14 @@
     animation: letterGlowOnly var(--duration-fast) ease-out;
   }
 
+  /* The glow itself is static on `.active-glow-only`; this reveals it with an
+     opacity fade instead of tweening the shadow pass. */
   @keyframes letterGlowOnly {
     0% {
-      filter: none;
+      opacity: 0.55;
     }
     100% {
-      filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.6));
+      opacity: 1;
     }
   }
 
@@ -757,18 +757,16 @@
     animation: letterWave var(--duration-dramatic) ease-out;
   }
 
+  /* Transform only: the glow is the static drop-shadow on `.active-wave`. */
   @keyframes letterWave {
     0% {
       transform: scale(0.95);
-      filter: none;
     }
     30% {
       transform: scale(1.08);
-      filter: drop-shadow(0 0 24px rgba(255, 255, 255, 0.8));
     }
     100% {
       transform: scale(1);
-      filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.5));
     }
   }
 

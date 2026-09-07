@@ -28,8 +28,8 @@ vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
 vi.mock("$lib/shared/auth/services/guest-identity", () => ({
   ensureGuestIdentity: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock("$lib/shared/auth/state/auth-ui-state.svelte", () => ({
-  openAuthDialog: vi.fn(),
+vi.mock("$lib/shared/auth/state/auth-drawer-state.svelte", () => ({
+  authDrawerState: { show: vi.fn(), offerGuestSaveNudge: vi.fn() },
 }));
 vi.mock("$lib/shared/toast/state/toast-state.svelte.ts", () => ({
   toast: { info: vi.fn(), warning: vi.fn(), error: vi.fn() },
@@ -71,7 +71,11 @@ vi.mock("$lib/features/library/state/library-state.svelte", () => ({
 }));
 vi.mock("$lib/shared/settings/state/settings-state.svelte", () => ({
   settingsService: {
-    settings: { leftPropType: "club", rightPropType: "club", catDogMode: false },
+    settings: {
+      leftPropType: "club",
+      rightPropType: "club",
+      catDogMode: false,
+    },
   },
 }));
 
@@ -80,6 +84,9 @@ const { LibrarySaveService } =
 const { LibraryError } =
   await import("$lib/shared/library/domain/library-error");
 const { authState } = await import("$lib/shared/auth/state/auth-state.svelte");
+const { authDrawerState } =
+  await import("$lib/shared/auth/state/auth-drawer-state.svelte");
+const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
 
 function makeSequence(o: Record<string, unknown> = {}) {
   return { id: "seq-1", steps: [{ letter: "A" }], thumbnails: [], ...o } as any;
@@ -97,6 +104,20 @@ function makeRepository(o: Record<string, unknown> = {}) {
 }
 
 describe("LibrarySaveService.saveSequence - durable-save contract", () => {
+  it("opens only the account modal at the guest limit and writes nothing", async () => {
+    (authState as any).isAnonymous = true;
+    dbCountMock.mockResolvedValue(3);
+    const service = new LibrarySaveService(null, null, makeRepository(), null);
+    await expect(
+      service.saveSequence(makeSequence(), makeOptions())
+    ).rejects.toMatchObject({ code: "GUEST_CAP" });
+    expect(authDrawerState.show).toHaveBeenCalledExactlyOnceWith(
+      "signup",
+      "save-limit"
+    );
+    expect(toast.info).not.toHaveBeenCalled();
+    expect(dbPutMock).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     dbGetMock.mockResolvedValue(undefined);

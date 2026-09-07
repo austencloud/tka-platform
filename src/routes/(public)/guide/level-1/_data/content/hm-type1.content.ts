@@ -132,7 +132,7 @@ export const hmType1Content: GuideBlock[] = [
     kind: "prose",
     html:
       'When both hands move to adjacent locations, it’s called a <span class="cy">Dual</span><span class="pu">-Shift</span>.<br>' +
-      'Our first <span class="cy">Dual</span><span class="pu">-Shifts</span> correspond to the four modes of timing/direction: SS, TS, SO, TO.<br>' +
+      'Our first <span class="cy">Dual</span><span class="pu">-Shifts</span> correspond to the four modes of time/direction: SS, TS, SO, TO.<br>' +
       "You can determine the start position by looking at the non-pointed end of the arrow.",
   },
   { kind: "heading", level: 2, text: "Split-Same" },

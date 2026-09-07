@@ -65,6 +65,12 @@ jobs:
       - name: Verify desktop sequence bundle
         run: pnpm verify:desktop-sequence-bundle
 
+      - name: Export public gallery index
+        run: pnpm export:gallery-bundle
+
+      - name: Verify public gallery index
+        run: pnpm verify:desktop-gallery-bundle
+
       - name: Remove Firebase credential file
         if: always()
         run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
@@ -74,6 +80,15 @@ jobs:
         with:
           name: desktop-sequence-bundle
           path: data/sequences/
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 9
+
+      - name: Upload public gallery index
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-gallery-bundle
+          path: data/gallery/
           if-no-files-found: error
           retention-days: 1
           compression-level: 9
@@ -118,8 +133,32 @@ jobs:
       - name: Verify downloaded desktop sequence bundle
         run: pnpm verify:desktop-sequence-bundle
 
+      - name: Download public gallery index
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-gallery-bundle
+          path: data/gallery
+
+      - name: Verify downloaded public gallery index
+        run: pnpm verify:desktop-gallery-bundle
+
+      # Copies tracked static assets and mirrors R2 characters/reef into
+      # src-tauri/desktop-assets (~230 MB). tauri-build-frontend.cjs runs the
+      # same step again and finds everything cached.
+      - name: Collect offline desktop assets
+        run: pnpm collect:desktop-assets
+
+      - name: Verify offline desktop assets
+        run: pnpm verify:desktop-assets
+
       - name: Create .env from example
         run: cp .env.example .env
+
+      # Windows ships its own WebView2 engine (fixed runtime) so the installer
+      # never depends on the machine's Evergreen runtime or an install-time download.
+      - name: Fetch WebView2 fixed runtime
+        if: matrix.platform == 'windows-latest'
+        run: pnpm fetch:webview2-runtime
 
       - name: Build unsigned desktop packages
         if: github.ref_type != 'tag'

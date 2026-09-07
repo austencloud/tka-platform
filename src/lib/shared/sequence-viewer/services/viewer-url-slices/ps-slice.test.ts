@@ -216,4 +216,21 @@ describe("ps slice", () => {
     expect(setItem).toHaveBeenCalledWith("ps-slice-anti-vacuity-probe", "1");
     localStorage.removeItem("ps-slice-anti-vacuity-probe");
   });
+
+  describe("full snapshot", () => {
+    it("always emits propType; audioMode stays touched-gated; mirror stays true-only", () => {
+      const full = capturePsSlice(
+        {
+          propType: PropType.FAN,
+          defaultPropType: PropType.FAN,
+          audioMode: "original",
+          audioModeTouched: false,
+          notationMirrored: false,
+        },
+        { full: true }
+      );
+      expect(full).toEqual({ propType: PropType.FAN });
+      expect(seedFromPsSlice(full!)).toEqual({ propType: PropType.FAN });
+    });
+  });
 });

@@ -100,6 +100,7 @@ describe("deriveTunnelName", () => {
             custom: { left: "#2e8bf0", right: "#ed1c24" },
           },
           section: "tunnel",
+          presetRecipe: null,
         },
       }),
     });
@@ -151,6 +152,7 @@ describe("deriveTunnelName", () => {
             custom: { left: "#2e8bf0", right: "#ed1c24" },
           },
           section: "tunnel",
+          presetRecipe: null,
         },
       }),
     });
@@ -169,6 +171,7 @@ describe("deriveTunnelName", () => {
             custom: { left: "#2e8bf0", right: "#ed1c24" },
           },
           section: "tunnel",
+          presetRecipe: null,
         },
         props: { leftPropType: "fan", rightPropType: "fan" },
         effects: { tipEffectMap: { "*": { effect: "fire" } } },

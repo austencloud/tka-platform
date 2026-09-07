@@ -49,6 +49,9 @@ export function createViewerShellLayoutState(
     null
   );
   let cardContainSizeMotionTimer: ReturnType<typeof setTimeout> | undefined;
+  let cardContainSizeMotionFrame = 0;
+  let cardContainSizeMotionSettleFrame = 0;
+  let cardContainSizeMotionVersion = 0;
   let cardLayoutSequenceKey = "";
   let progressivePromotionScheduled = false;
 
@@ -123,7 +126,8 @@ export function createViewerShellLayoutState(
   const performanceInspectorNarrow = $derived(
     showVideoGallery &&
       !isMobile &&
-      bodyWidth < resolveExportSidebarMinWidth(persistedRailWidth, "motion")
+      bodyWidth <
+        resolveExportSidebarMinWidth(persistedRailWidth, "performance")
   );
   const effectiveMobile = $derived(
     isMobile ||
@@ -135,9 +139,11 @@ export function createViewerShellLayoutState(
   const inspectorProfile = $derived<ViewerInspectorProfile>(
     isImageExportActive
       ? "card"
-      : isVideoExportActive || showVideoGallery
+      : isVideoExportActive
         ? "motion"
-        : "art"
+        : showVideoGallery
+          ? "performance"
+          : "art"
   );
   const isWorkspaceInspectorActive = $derived(
     isSidebarExportActive ||
@@ -184,25 +190,57 @@ export function createViewerShellLayoutState(
     }
   }
 
-  function startCardContainSizeMotion(
-    phase: "focus" | "return" | "restore"
-  ): void {
+  function cancelCardContainSizeMotionRelease(): void {
+    cardContainSizeMotionVersion += 1;
     if (cardContainSizeMotionTimer !== undefined) {
       clearTimeout(cardContainSizeMotionTimer);
       cardContainSizeMotionTimer = undefined;
     }
+    if (cardContainSizeMotionFrame) {
+      cancelAnimationFrame(cardContainSizeMotionFrame);
+      cardContainSizeMotionFrame = 0;
+    }
+    if (cardContainSizeMotionSettleFrame) {
+      cancelAnimationFrame(cardContainSizeMotionSettleFrame);
+      cardContainSizeMotionSettleFrame = 0;
+    }
+  }
+
+  function startCardContainSizeMotion(
+    phase: "focus" | "return" | "restore"
+  ): void {
+    cancelCardContainSizeMotionRelease();
+    const releaseVersion = cardContainSizeMotionVersion;
 
     const spatialDuration = motionDuration(DURATION.emphasis + DURATION.normal);
+    // This phase is the only thing that puts a width and height transition on
+    // the Card's contained box, so it has to outlive the workspace allocation
+    // rather than end with the motion clock. A ResizeObserver delivery landing
+    // after it would otherwise cross whatever distance is left in one
+    // untransitioned frame.
+    //
     // Reduced motion replaces the resize with a snapshot dissolve, but the
     // Card's internal cells still need to stay pinned until that dissolve and
     // its final ResizeObserver paints are complete.
     const lifetime =
-      spatialDuration > 0 ? spatialDuration : DURATION.normal + STAGGER.normal;
+      spatialDuration > 0
+        ? spatialDuration + motionDuration(DURATION.emphasis)
+        : DURATION.normal + STAGGER.normal;
     cardContainSizeMotion = phase;
 
     cardContainSizeMotionTimer = setTimeout(() => {
       cardContainSizeMotionTimer = undefined;
-      cardContainSizeMotion = null;
+      if (releaseVersion !== cardContainSizeMotionVersion) return;
+      // Two paints past the clock, so a measurement published on the frame the
+      // clock expired is still carried by the transition it was measured under.
+      cardContainSizeMotionFrame = requestAnimationFrame(() => {
+        cardContainSizeMotionFrame = 0;
+        cardContainSizeMotionSettleFrame = requestAnimationFrame(() => {
+          cardContainSizeMotionSettleFrame = 0;
+          if (releaseVersion !== cardContainSizeMotionVersion) return;
+          cardContainSizeMotion = null;
+        });
+      });
     }, lifetime);
   }
 
@@ -357,9 +395,7 @@ export function createViewerShellLayoutState(
 
     return () => {
       cancelCardAutoLayoutRelease();
-      if (cardContainSizeMotionTimer !== undefined) {
-        clearTimeout(cardContainSizeMotionTimer);
-      }
+      cancelCardContainSizeMotionRelease();
       for (const cleanup of cleanups) cleanup();
     };
   }
@@ -425,9 +461,11 @@ export function createViewerShellLayoutState(
       startCardContainSizeMotion("return");
     }
     if (mode !== "card") ctx.ensureInteractiveServices();
-    if (mode === "card") {
-      leaseCardAutoLayout();
-    } else if (previousMode === "split" && mode === "animation") {
+    // Entering Card does not lease. The Card solves its grid against the box
+    // its pane is heading toward, so there is no sliver for the picker to
+    // choose a wide, shallow grid from -- and a lease here would pin the
+    // Side-by-Side grid onto the focused Card for the whole visit.
+    if (previousMode === "split" && mode === "animation") {
       // The covered Card still owns the last readable Side-by-Side shape.
       // Holding it across the 2D visit prevents an interrupted return from
       // publishing a pencil-thin Auto grid before Card focus takes over.

@@ -27,6 +27,10 @@ const shellLayoutState = read(
   "src/lib/shared/sequence-viewer/state/viewer-shell-layout-state.svelte.ts"
 );
 const panelGroup = read("src/lib/shared/panels/PanelGroup.svelte");
+const panelFlex = read("src/lib/shared/panels/panel-flex.ts");
+const shellModel = read(
+  "src/lib/shared/sequence-viewer/services/viewer-shell-model.ts"
+);
 const viewerModeDissolve = read(
   "src/lib/shared/transitions/viewer-mode-dissolve.ts"
 );
@@ -43,6 +47,18 @@ const geometryTrace = read(
 const motionSurface = read(
   "src/lib/shared/sequence-viewer/components/ViewerMotionSurface.svelte"
 );
+const tunnelController = read(
+  "src/lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte.ts"
+);
+const tunnelLayerReveal = read(
+  "src/lib/shared/sequence-viewer/tunnel/tunnel-layer-reveal.ts"
+);
+const canvasApplicationManager = read(
+  "src/lib/shared/animation-engine/services/canvas2d/canvas-2d-application-manager.ts"
+);
+const canvas2DRenderer = read(
+  "src/lib/shared/animation-engine/services/canvas-2d-animation-renderer.ts"
+);
 const sceneLoadingCurtain = read(
   "src/lib/shared/3d/scene-features/components/SceneLoadingCurtain.svelte"
 );
@@ -54,6 +70,24 @@ const companionSurface = read(
 );
 const choreoCard = read(
   "src/lib/shared/sequence-viewer/components/ChoreoCard.svelte"
+);
+const animationPanel = read(
+  "src/lib/shared/animation-panel/components/AnimationPanel.svelte"
+);
+const tunnelArtSettings = read(
+  "src/lib/shared/sequence-viewer/components/art-settings/TunnelArtSettings.svelte"
+);
+const animatorInspectorShell = read(
+  "src/lib/shared/animation-panel/components/AnimatorInspectorShell.svelte"
+);
+const animatorInspectorFooter = read(
+  "src/lib/shared/animation-panel/components/AnimatorInspectorFooter.svelte"
+);
+const animatorInspectorState = read(
+  "src/lib/shared/sequence-viewer/state/viewer-animator-inspector-state.svelte.ts"
+);
+const cardSizingState = read(
+  "src/lib/shared/choreo-card/state/choreo-card-sizing-state.svelte.ts"
 );
 const artPane = read(
   "src/lib/shared/sequence-viewer/components/ArtPane.svelte"
@@ -69,6 +103,54 @@ const performanceStage = read(
 );
 
 describe("Sequence Viewer transition orchestration contract", () => {
+  it("composes 2D and Tunnel settings from one inspector shell", () => {
+    expect(animationPanel).toContain("<AnimatorInspectorShell");
+    expect(tunnelArtSettings).toContain("<AnimatorInspectorShell");
+    expect(animationPanel).toContain("<AnimatorInspectorFooter");
+    expect(tunnelArtSettings).toContain("<AnimatorInspectorFooter");
+    expect(animationPanel).toContain(
+      'fillBody={resolvedPill === "display" || resolvedPill === "effects"}'
+    );
+    expect(tunnelArtSettings).toContain(
+      'fillBody={tunnelSection === "display" || tunnelSection === "effects"}'
+    );
+    expect(animatorInspectorShell).toContain("<IconRailNav");
+    expect(animatorInspectorShell).toContain('class="panel-transition"');
+    expect(animatorInspectorShell).toContain("scrollbar-gutter: stable");
+    expect(animatorInspectorFooter).toContain("background: var(--theme-accent");
+    expect(animatorInspectorFooter).toContain(
+      "class:empty={!meta || disabled}"
+    );
+    expect(animatorInspectorState).toContain(
+      '"effects",\n  "props",\n  "motion",\n  "display"'
+    );
+    expect(tunnelArtSettings).toContain('id: "display"');
+    expect(tunnelArtSettings).toContain('id: "motion" as const');
+    expect(tunnelArtSettings).toContain("<TunnelEffectsSettings");
+  });
+
+  it("seats Tempo and Mode on one row where a host has no Paths page", () => {
+    expect(animationPanel, "solo column is unmarked").toMatch(
+      /\{:else if showTempoControls \|\| onPlaybackModeChange\}\s*<div class="motion-col motion-col-solo">/
+    );
+    expect(animationPanel, "solo column still shares a two-column row").toMatch(
+      /\.motion-col-solo \{\s*grid-column: 1 \/ -1;/
+    );
+    expect(animationPanel, "Tempo and Mode still stack").toMatch(
+      /\.motion-col-solo > :global\(\.playback-rows\) \{\s*display: grid;\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/
+    );
+  });
+
+  it("lets the dock tray size itself around the Display rows", () => {
+    // The sidebar hands these rows a height to divide, so they fill it. The
+    // dock tray is the other way round: it takes its height FROM the content.
+    // Left filling there, the rows report zero, and the Display tab collapses
+    // to its own padding behind the dock bar with nothing visible.
+    expect(animationPanel, "dock tray Display rows still fill").toMatch(
+      /\.dock-dense \.display-rows,\s*\.dock-dense \.display-rows \.rt-section \{\s*flex: 0 0 auto;/
+    );
+  });
+
   it("names both responsive switchers as Sequence views", () => {
     expect(contentRail).toContain('aria-label="Sequence views"');
     expect(modeBottomBar).toContain('aria-label="Sequence views"');
@@ -142,7 +224,23 @@ describe("Sequence Viewer transition orchestration contract", () => {
     );
     expect(workspacePanels).toContain("direction={workspaceDirection}");
     expect(panelGroup).toContain("style={getFlexStyle(panel, i)}");
-    expect(panelGroup).toContain("const fixedSize = panel.fixedSize;");
+    // Fixed still outranks preferred, and both still hold the panel so its
+    // basis is its size. That decision moved to the panel-flex owner, which is
+    // where the measured-handoff rule can be tested without a layout engine.
+    expect(panelFlex).toContain("if (panel.fixedSize)");
+    expect(panelFlex).toContain(
+      "if (panel.preferredSize && !options.manuallySized)"
+    );
+    expect(panelGroup).toContain("resolvePanelFlex(panel, {");
+    // A held dock that swaps `480px` for `auto` cannot be interpolated by CSS,
+    // so PanelGroup measures both ends rather than letting the group re-lay out
+    // in one frame and teleport everything below the dock.
+    expect(panelFlex).toContain("export function needsMeasuredBasisHandoff(");
+    expect(panelFlex).toContain("isHeldPanel(previous) && isHeldPanel(next)");
+    expect(panelGroup).toContain("needsMeasuredBasisHandoff(previous, next)");
+    expect(panelGroup).toContain("startBasisHandoff");
+    expect(panelGroup).toContain("element.style.flexBasis = `${from}px`");
+    expect(panelGroup).toContain("prefersReducedMotion()");
     expect(panelGroup).toContain("data-manually-sized=");
     expect(panelGroup).toContain("panel.resizeLabel ??");
     expect(shell).toContain("data-effects-inspector");
@@ -240,8 +338,8 @@ describe("Sequence Viewer transition orchestration contract", () => {
       "aria-valuenow={percent ?? undefined}"
     );
     expect(motionSurface).not.toContain("viewer-3d-handoff-status");
-    expect(motionSurface).toContain(
-      "class:canvas-2d-preparation-held={preparationCanvasWidth !== null}"
+    expect(motionSurface).toMatch(
+      /!inStudio\s*&&\s*preparationCanvasWidth !== null/
     );
     expect(motionSurface).toContain(
       "data-3d-preparation-held={preparationCanvasWidth !== null || undefined}"
@@ -314,11 +412,65 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(companionSurface).toContain("controller={tunnelStage.controller}");
     expect(motionSurface).toContain("data-persistent-animator");
     expect(motionSurface).toContain("data-tunnel-blend");
-    expect(motionSurface).toContain("additionalLayers={tunnelLayers}");
-    expect(motionSurface.match(/<AnimatorCanvas/g)).toHaveLength(1);
     expect(motionSurface).toContain(
-      "resolveTunnelLayerOpacity(\n        tunnelReveal.current"
+      "additionalLayers={inStudio ? [] : tunnelLayers}"
     );
+    expect(motionSurface.match(/<AnimatorCanvas/g)).toHaveLength(1);
+    expect(motionSurface).toContain("resolveTunnelLayerOpacity(");
+    expect(motionSurface).toContain("tunnelLayerPoseDifference(");
+    expect(motionSurface).not.toContain("interpolateTunnelLayerProp(");
+    expect(motionSurface).not.toContain("trailCaptureSuppressed:");
+    expect(motionSurface).toContain(
+      'tunnelVisualActive && activeEffect !== "none"'
+    );
+    expect(motionSurface).toContain("tipEffectMap={tunnelTipEffectMap}");
+    expect(splitPane).toContain("prepareWhileInactive: true");
+    expect(tunnelController).toContain("get layersReady(): boolean");
+    expect(tunnelController).toContain("preparedAdditionalLayersAt(");
+    expect(motionSurface).not.toContain("if (!tunnelController.layersReady)");
+    expect(motionSurface).toContain(
+      "preloadAdditionalLayers={preparedTunnelLayers}"
+    );
+    expect(motionSurface).toContain("data-tunnel-textures-ready");
+    expect(motionSurface).toContain(
+      "if (!tunnelController.layersReady || !tunnelTexturesReady) return"
+    );
+    expect(tunnelLayerReveal).toContain(
+      "export function resolveTunnelGridOpacity("
+    );
+    expect(tunnelLayerReveal).toContain("DURATION.emphasis + DURATION.normal");
+    expect(splitPane).toContain("motionDuration(TUNNEL_REVEAL_DURATION)");
+    expect(motionSurface).toContain(
+      "gridOpacity={inStudio ? 1 : tunnelGridOpacity}"
+    );
+    expect(motionSurface).toContain("data-tunnel-layer-opacity-max");
+    expect(motionSurface).toContain("data-tunnel-layer-opacity-mean");
+    expect(motionSurface).toContain("data-tunnel-perceptible-layer-count");
+    expect(motionSurface).toContain("data-tunnel-formation-pose-drift");
+    expect(reviewFrame).toContain("tunnelLayerOpacityMaximum:");
+    expect(canvasApplicationManager).toContain(
+      'this.canvas.dataset.animationLayer = "props"'
+    );
+    expect(reviewFrame).toContain('canvas[data-animation-layer="props"]');
+    expect(canvas2DRenderer).toContain("publishTunnelPaintTelemetry(");
+    expect(canvas2DRenderer).toContain(
+      'capture.dataset.captureTunnelPaint !== "true"'
+    );
+    expect(canvas2DRenderer).toContain(
+      "paintedTunnelOpacities.push(ctx.globalAlpha)"
+    );
+    expect(reviewFrame).toContain("setTunnelPaintCapture(true)");
+    expect(reviewFrame).toContain("readTunnelPaintHistory()");
+    expect(reviewFrame).toContain("tunnelPaintSamples:");
+    expect(reviewFrame).toContain("tunnelPaintedOpacityMean:");
+    expect(geometryTrace).toContain("Reveal-before-layers frames:");
+    expect(geometryTrace).toContain("Largest grid alpha step:");
+    expect(geometryTrace).toContain("Layer timing spread:");
+    expect(geometryTrace).toContain("Ensemble legibility:");
+    expect(geometryTrace).toContain("Painted prop arrival:");
+    expect(geometryTrace).toContain("Formation trail captures:");
+    expect(geometryTrace).toContain("Trail-safe formation:");
+    expect(geometryTrace).toContain("Formation placement:");
     expect(viewerModeDissolve).toContain(
       'GATE_THREE_STAGE_MODES.has(previousMode) && nextMode === "tunnel"'
     );
@@ -338,6 +490,76 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Non-singleton canvas frames:");
   });
 
+  it("lets every inspector panel choose its own anchor and surfaces the track", () => {
+    // An automatic start margin absorbs free space when the panel fits, so a
+    // departing surface stays at the viewport edge and fades without sliding,
+    // and collapses to zero when it does not, so an arriving surface is
+    // revealed from the seam with its overflow past the screen edge. Anchoring
+    // by hand gets one direction right and the other wrong.
+    const autoAnchored = (marker: string) => {
+      const index = shell.indexOf(marker);
+      expect(index, `${marker} has no composed-width rule`).toBeGreaterThan(-1);
+      expect(shell.slice(index, index + 320)).toContain("margin-left: auto");
+    };
+    autoAnchored("> :global(.export-panel.sidebar) {");
+    autoAnchored("> :global(.performance-inspector) {");
+    autoAnchored(":global(.export-panel:not(.inline)) {");
+    autoAnchored("> :global(.art-settings-panel) {");
+
+    // The surface belongs to the layer, which spans the whole track, not to the
+    // panel, which does not. Otherwise the band the panel does not reach shows
+    // the workspace through the container's partly transparent fill.
+    const layerIndex = shell.indexOf(".inspector-content-layer {");
+    expect(layerIndex).toBeGreaterThan(-1);
+    expect(shell.slice(layerIndex, layerIndex + 320)).toContain(
+      "background: var(--theme-panel-bg"
+    );
+    const resetIndex = shell.indexOf(
+      ".inspector-content-layer :global(.export-panel),"
+    );
+    expect(resetIndex, "panels still paint their own surface").toBeGreaterThan(
+      -1
+    );
+    expect(shell.slice(resetIndex, resetIndex + 260)).toContain(
+      "background: transparent"
+    );
+  });
+
+  it("composes every inspector layer at its destination width", () => {
+    // A settings surface that is width-100% of the animating inspector track
+    // re-wraps on every frame of the seam animation, which reads as the panel
+    // sliding and settling rather than being revealed. Each persistent layer
+    // pins its own destination width instead.
+    const composed = (layer: string, token: string) => {
+      const index = shell.indexOf(`.${layer}
+`);
+      expect(index, `${layer} has no composed-width rule`).toBeGreaterThan(-1);
+      const block = shell.slice(index, index + 400);
+      expect(block).toContain(`width: var(--${token})`);
+    };
+    composed("motion-settings-layer", "export-sidebar-width");
+    composed("performance-inspector-layer", "performance-sidebar-width");
+    composed("art-settings-layer", "export-sidebar-width");
+    // The card pin must hang off the persistent layer, not the mode-conditional
+    // container class: Svelte removes that class the instant the mode changes,
+    // so the departing Card panel loses its width mid-transition.
+    composed("card-settings-layer", "card-sidebar-width");
+    // Direct manipulation still wins over the composed width.
+    for (const layer of [
+      "motion-settings-layer",
+      "performance-inspector-layer",
+      "art-settings-layer",
+      "card-settings-layer",
+    ]) {
+      const index = shell.indexOf(`"true"])
+    .${layer}`);
+      expect(index, `${layer} has no manual-resize override`).toBeGreaterThan(
+        -1
+      );
+      expect(shell.slice(index, index + 400)).toContain("width: 100%");
+    }
+  });
+
   it("composes Performances through the persistent stage and inspector tracks", () => {
     expect(workspacePanels).toContain("data-persistent-viewer-stage");
     expect(shell).toContain("data-persistent-performance-stage");
@@ -353,8 +575,13 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(shell).toContain("performance-inspector-layer");
     expect(shell).toContain("takeoverActive={performanceEditorActive}");
     expect(shellLayoutState).toContain("showVideoGallery ||");
-    expect(shellLayoutState).toContain(
-      "isVideoExportActive || showVideoGallery"
+    // Performances owns its own inspector profile. The gap between its width
+    // and the effects inspector width is the seam travel Gate 5 animates.
+    expect(shellLayoutState).toContain('? "performance"');
+    expect(shellModel).toContain("performance: { defaultWidth: 400");
+    expect(shell).toContain("--performance-sidebar-width");
+    expect(shell).toContain(
+      "class:performance-inspector={layout.inspectorProfile ==="
     );
     expect(workspacePanels).toContain("<DualSourceCrossfade");
     expect(shell).toContain("<DualSourceCrossfade");
@@ -382,5 +609,40 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Visible inspector layout changes:");
     expect(geometryTrace).toContain("Maximum performance players:");
     expect(geometryTrace).toContain("Shared-background dip:");
+  });
+
+  it("animates the Card's contained box to its destination instead of freezing it", () => {
+    // The contained box used to be frozen to a size captured on a previous
+    // focus and held for the whole motion, so the distance to the real
+    // destination was crossed in one untransitioned frame when the freeze
+    // expired. Nothing may reintroduce a stale captured size.
+    expect(cardSizingState).not.toContain("splitContainedSize");
+    expect(cardSizingState).toContain("MIN_MEASURABLE_MOTION_SIZE");
+    expect(cardSizingState).toContain(
+      "availableWidth < MIN_MEASURABLE_MOTION_SIZE"
+    );
+    expect(cardSizingState).toContain(
+      "availableHeight < MIN_MEASURABLE_MOTION_SIZE"
+    );
+
+    // Only this phase attribute carries the width and height transition, so it
+    // has to outlive the workspace allocation and release on settled paints
+    // rather than on the motion clock alone.
+    expect(choreoCard).toContain(
+      '.choreo-card-root[data-contain-size-motion="restore"] .preview-stack'
+    );
+    expect(shellLayoutState).toContain(
+      "spatialDuration + motionDuration(DURATION.emphasis)"
+    );
+    expect(shellLayoutState).toContain("cancelCardContainSizeMotionRelease");
+    expect(shellLayoutState).toContain("cardContainSizeMotionSettleFrame");
+
+    // The review harness has to keep sampling past that release, and grade the
+    // frames after it, or the jump is invisible to the trace.
+    expect(reviewFrame).toContain("SETTLE_TAIL_MS");
+    expect(reviewFrame).toContain('setTracePhase("settle")');
+    expect(reviewFrame).toContain('message.command === "card-performances"');
+    expect(reviewFrame).toContain("cardContainSizeMotion: elementDataValue(");
+    expect(geometryTrace).toContain("Card size pin release:");
   });
 });

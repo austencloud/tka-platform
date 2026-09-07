@@ -55,6 +55,7 @@ export class StartPositionDeriver {
       propType: leftMotion.propType,
       arrowLocation: leftStartLocation,
       gridMode,
+      ...(leftMotion.plane && { plane: leftMotion.plane }),
     });
 
     const rightStaticMotion = createMotionData({
@@ -70,6 +71,7 @@ export class StartPositionDeriver {
       propType: rightMotion.propType,
       arrowLocation: rightStartLocation,
       gridMode,
+      ...(rightMotion.plane && { plane: rightMotion.plane }),
     });
 
     const pictographData = createPictographData({

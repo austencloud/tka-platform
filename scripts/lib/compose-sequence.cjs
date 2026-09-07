@@ -98,6 +98,7 @@ function hash128(input) {
 
 function serializeStep(step) {
   let s = `${step.startLocation}:${step.endLocation}:${step.motionType}:${step.rotationDirection}:${step.turns}:${step.startOrientation}:${step.endOrientation}`;
+  if (step.plane != null && step.plane !== "wall") s += `:plane=${step.plane}`;
   if (step.handPath != null) {
     s += `:${step.handPath}`;
     if (step.skewSteps != null) {
@@ -224,6 +225,7 @@ function motionToSoloPropStep(motion, duration) {
     skewSteps: motion.skewSteps ?? null,
     skewDir: motion.skewDir ?? null,
     duration: duration ?? 1,
+    ...(motion.plane && { plane: motion.plane }),
   };
 }
 

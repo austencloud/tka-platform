@@ -196,6 +196,28 @@ beforeEach(() => {
 });
 
 describe("ShortCodeManager allocation", () => {
+  it("mints a titled hand-path snapshot without requiring TKA letters", async () => {
+    const sequence = {
+      ...SEQUENCE,
+      sequenceKind: "hand-path" as const,
+      displayName: "Tog-Opp",
+      word: "",
+      notes: "Together time, opposite direction.",
+      steps: SEQUENCE.steps.map((step) => ({ ...step, letter: null })),
+    };
+    vi.mocked(decodeSequenceFromQR).mockResolvedValue(sequence);
+    const result = await makeManager().createShortCode(sequence, {});
+    expect(store.get(`shortcodes/${result.code}`)).toMatchObject({
+      payloadKind: "hand-path",
+      payloadWord: "",
+      payloadTitle: "Tog-Opp",
+      sequenceData: {
+        sequenceKind: "hand-path",
+        word: "",
+        displayName: "Tog-Opp",
+      },
+    });
+  });
   it("two concurrent calls with different options mint ONE code (the 2026-07-05 dup-mint race)", async () => {
     const manager = makeManager();
     // Exactly the two production call sites: overlay state (embed, no props)

@@ -6,15 +6,24 @@
   import Seo from "$lib/shared/components/Seo.svelte";
   import {
     trackCtaClick,
+    trackDemoInteraction,
     trackSectionView,
   } from "$lib/shared/analytics/landing-events";
   import { analyticsRoute } from "$lib/shared/analytics/analytics-context";
   import { isWebGL2Available } from "$lib/shared/3d/capabilities/webgl-capabilities";
   import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
+  import { createHeroAct } from "$lib/shared/landing/data/hero-act.svelte";
   import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo";
+  import {
+    HERO_TRAIL_PRESET,
+    HERO_TIP_EFFECT_MAP,
+  } from "$lib/shared/landing/data/hero-trail-preset";
+  import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
+  import { runAfterNamedRouteMorphIdle } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
+  import ComposerBackgroundCycle from "./_components/ComposerBackgroundCycle.svelte";
   import "$lib/shared/landing/styles/editorial-measure.css";
 
   const TITLE = "Flow Arts Composer | Free Flow Arts Software for Choreography";
@@ -93,12 +102,45 @@
     });
   }
 
-  let carriedSequence = $state<SequenceData>(FALLBACK_DEMO);
+  // Opens on the baked fixture, exactly as HomeHero does, then rolls live
+  // sequences forever. 5d637dc105 dropped the seed here believing that mirrored
+  // HomeHero; HomeHero has always passed `initialSequence: FALLBACK_DEMO`, so
+  // the unseeded act left this page on "Preparing a live sequence..." for the
+  // whole cold generation — measured at 14.1 s in dev. The objection that
+  // motivated dropping the seed (the fixture was GGGGGGGG over 8 identical
+  // steps) was retired by that same commit, which regenerated it through this
+  // exact preset: it is now a 16-count MYΩN draw that passes the quality gate.
+  // The first live draw takes over at the next loop boundary via the act's
+  // existing prefetch handoff.
+  const heroAct = createHeroAct({ initialSequence: FALLBACK_DEMO });
+
+  // A sequence the visitor composed or generated further down the page takes
+  // over the carry; until then the bands hold the hero's FIRST draw.
+  let visitorSequence = $state<SequenceData | null>(null);
+
+  // The hero keeps auto-advancing every loop pass. The tunnel and the 3D
+  // viewer must NOT follow it: rebuilding a Threlte scene under a reader every
+  // ~16 seconds is churn on its own, and a teardown landing mid-compileAsync
+  // throws inside three's timer where nothing can catch it. So the bands latch
+  // the first live hero draw and hold it until the visitor makes one.
+  //
+  // The baked opening is skipped here on purpose: the hero shows it for one
+  // pass and moves on, but whatever the
+  // bands latch is what they show for the entire visit, so it has to be a live
+  // draw rather than the fixture every visitor sees. Compared by id because
+  // `heroAct.sequence` is a $state proxy and never identity-equal to the import.
+  let latchedHeroSequence = $state<SequenceData | null>(null);
+  $effect(() => {
+    const first = heroAct.sequence;
+    if (first && first.id !== FALLBACK_DEMO.id && !latchedHeroSequence) {
+      latchedHeroSequence = first;
+    }
+  });
+  const carriedSequence = $derived(visitorSequence ?? latchedHeroSequence);
   const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
   let constructActive = $state(false);
   let outputsActive = $state(false);
   let shelfActive = $state(false);
-  let composed = $state(false);
   let webglChecked = $state(false);
   let webglAvailable = $state(false);
 
@@ -109,11 +151,18 @@
   onMount(() => {
     webglAvailable = isWebGL2Available();
     webglChecked = true;
+    if (isConstrainedConnection()) return;
+    return runAfterNamedRouteMorphIdle(heroAct.start);
   });
 
   function carryVisitorSequence(next: SequenceData): void {
-    carriedSequence = next;
-    composed = true;
+    visitorSequence = next;
+  }
+
+  // Same handler HomeHero uses: report the interaction, then roll now.
+  function handleReroll(): void {
+    trackDemoInteraction("try_another");
+    void heroAct.advanceNow();
   }
 
   function activateConstruct(node: HTMLElement) {
@@ -162,9 +211,16 @@
 </Seo>
 
 {#snippet tunnelPlaceholder()}
+  <!-- Same two-column band the tunnel renders into (stage left, controls
+       right; stacked under 60rem), so the LazyMount swap cannot shift layout. -->
   <div class="tunnel-placeholder" aria-hidden="true">
     <div class="placeholder-square"></div>
-    <div class="placeholder-control"></div>
+    <div class="placeholder-band-controls">
+      <div class="placeholder-line placeholder-line-title"></div>
+      <div class="placeholder-line"></div>
+      <div class="placeholder-control"></div>
+      <div class="placeholder-control"></div>
+    </div>
   </div>
 {/snippet}
 
@@ -211,18 +267,20 @@
   </div>
 {/snippet}
 
-{#snippet shelfPlaceholder()}
-  <div class="shelf-placeholder" aria-hidden="true">
-    {#each Array.from({ length: 10 }, (_, i) => i) as i (i)}
+{#snippet galleryPlaceholder()}
+  <!-- Same bounded frame ComposerGalleryDemo owns, so the swap cannot move
+       the footer. Keep the height in step with its .gallery-frame. -->
+  <div class="gallery-placeholder" aria-hidden="true">
+    {#each Array.from({ length: 12 }, (_, i) => i) as i (i)}
       <div class="placeholder-card"></div>
     {/each}
   </div>
 {/snippet}
 
-{#snippet shelfLoadError(_error: unknown, retry: () => void)}
-  <div class="demo-load-error" role="alert">
-    <p>The gallery shelf did not load.</p>
-    <button type="button" onclick={retry}>Try the shelf again</button>
+{#snippet galleryLoadError(_error: unknown, retry: () => void)}
+  <div class="demo-load-error gallery-error" role="alert">
+    <p>The community gallery did not load.</p>
+    <button type="button" onclick={retry}>Try the gallery again</button>
   </div>
 {/snippet}
 
@@ -260,15 +318,33 @@
 
     <div class="opening-player">
       <SequenceHeroDemo
-        sequence={carriedSequence}
+        sequence={heroAct.sequence}
+        element={heroAct.element}
+        onReroll={handleReroll}
+        rerolling={heroAct.rerolling}
+        leftPropType={heroAct.propType}
+        rightPropType={heroAct.propType}
+        onSequenceBoundary={heroAct.offerSequenceBoundary}
         note="a real sequence playing in Composer"
+        trailSettingsOverride={HERO_TRAIL_PRESET}
+        tipEffectMap={HERO_TIP_EFFECT_MAP}
         showNotationStrip={true}
         showWordHeader={true}
         autoPlay={!reduceMotion.current}
         cornerToggle={true}
         loadPriority="immediate"
       />
+      <!-- The page background is the app's own. Cycling it here is the one
+           place the page shows that the whole interface retunes to it. -->
+      <ComposerBackgroundCycle />
     </div>
+
+    <!-- Absolutely positioned, so revealing it cannot move the hero content.
+         It marks where the fold is; the section below starts under it. -->
+    <a class="scroll-cue" href="#making-title" aria-label="Scroll to Build the sequence">
+      <span>Scroll</span>
+      <i class="fas fa-chevron-down" aria-hidden="true"></i>
+    </a>
   </section>
 
   <!-- One heading, then the thing itself. An earlier version explained Build and
@@ -313,39 +389,33 @@
     aria-labelledby="changing-title"
     use:activateOutputs
   >
-    <!-- The tunnel is a square, so it rides beside the heading instead of
-         leaving a rail of empty space there and forcing the 3D viewer to share
-         a row it is too wide for. The viewer then gets the full band below. -->
-    <div class="changing-head">
-      <div class="changing-intro">
-        <h2 id="changing-title">See what you made.</h2>
-        <p>
-          The sequence above carries into the tunnel and the 3D player below.
-          Its notation comes with it.
-        </p>
-      </div>
+    <div class="changing-intro">
+      <h2 id="changing-title">See what you made.</h2>
+      <p>
+        The sequence you build above carries into the tunnel and the 3D player
+        below. Its notation comes with it.
+      </p>
+    </div>
 
-      <figure class="tunnel-output">
-        <div class="product-frame square-frame">
-          {#key carriedSequence.id}
-            <LazyMount
-              loader={() => import("./_components/ComposerTunnelDemo.svelte")}
-              active={outputsActive}
-              props={{ sequence: carriedSequence }}
-              error={tunnelLoadError}
-              debugName="composer tunnel"
-            >
-              {#snippet placeholder()}
-                {@render tunnelPlaceholder()}
-              {/snippet}
-            </LazyMount>
-          {/key}
-        </div>
-        <figcaption>
-          <strong>Tunnel</strong>
-          <span>The same movement, repeated around the ring.</span>
-        </figcaption>
-      </figure>
+    <!-- The tunnel gets its own full-width band: the square stage on the left,
+         the performer count and arrangement controls on the right. The 3D
+         viewer takes the next band. -->
+    <div class="tunnel-band">
+      <div class="product-frame band-frame">
+        <!-- No {#key}: both demos accept a changing `sequence` prop and swap
+             in place, the way SequenceHeroDemo's player deliberately does. -->
+        <LazyMount
+          loader={() => import("./_components/ComposerTunnelDemo.svelte")}
+          active={outputsActive && !!carriedSequence}
+          props={{ sequence: carriedSequence, layout: "band" }}
+          error={tunnelLoadError}
+          debugName="composer tunnel"
+        >
+          {#snippet placeholder()}
+            {@render tunnelPlaceholder()}
+          {/snippet}
+        </LazyMount>
+      </div>
     </div>
 
     <div class="viewer-output">
@@ -356,19 +426,17 @@
             <p>3D is unavailable in this browser.</p>
           </div>
         {:else}
-          {#key carriedSequence.id}
-            <LazyMount
-              loader={() => import("./_components/Composer3DViewerDemo.svelte")}
-              active={outputsActive && canShow3D}
-              props={{ sequence: carriedSequence }}
-              error={viewerLoadError}
-              debugName="composer 3D viewer"
-            >
-              {#snippet placeholder()}
-                {@render viewerPlaceholder()}
-              {/snippet}
-            </LazyMount>
-          {/key}
+          <LazyMount
+            loader={() => import("./_components/Composer3DViewerDemo.svelte")}
+            active={outputsActive && canShow3D && !!carriedSequence}
+            props={{ sequence: carriedSequence }}
+            error={viewerLoadError}
+            debugName="composer 3D viewer"
+          >
+            {#snippet placeholder()}
+              {@render viewerPlaceholder()}
+            {/snippet}
+          </LazyMount>
         {/if}
       </div>
     </div>
@@ -383,7 +451,9 @@
       <h2 id="keeping-title">Keep the sequence you made.</h2>
       <div class="keeping-lede">
         <p>
-          Your sequence stays first. The rest are public sequences to study.
+          Guests keep three sequences on this device. A full account keeps a
+          cloud library and collections. The gallery below is everyone's public
+          work, with the same filters the app uses.
         </p>
         <div class="keeping-actions">
           <a href="/browse" class="primary-action">Browse the Gallery</a>
@@ -393,14 +463,14 @@
 
     <div class="keeping-shelf">
       <LazyMount
-        loader={() => import("./_components/ComposerGalleryShelf.svelte")}
+        loader={() => import("./_components/ComposerGalleryDemo.svelte")}
         active={shelfActive}
-        props={{ sequence: carriedSequence, composed }}
-        error={shelfLoadError}
-        debugName="composer gallery shelf"
+        props={{}}
+        error={galleryLoadError}
+        debugName="composer gallery"
       >
         {#snippet placeholder()}
-          {@render shelfPlaceholder()}
+          {@render galleryPlaceholder()}
         {/snippet}
       </LazyMount>
     </div>
@@ -432,13 +502,61 @@
     font-family: "Inter", system-ui, sans-serif;
   }
 
+  /* The hero owns the first screen: one viewport minus the fixed marketing
+     header and the page's own top padding, so the next section starts below
+     the fold instead of peeking in. min-height, never height — short and
+     narrow viewports below let it grow rather than clip the player. */
   .opening {
-    min-height: min(50rem, calc(100svh - 6.5rem));
+    position: relative;
+    min-height: calc(100dvh - var(--marketing-header-h, 64px) - 1.25rem);
     display: grid;
     grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
     align-items: center;
     gap: clamp(2rem, 4.5vw, 80px);
-    padding: clamp(1rem, 2.5vw, 36px) 0 clamp(3rem, 6vw, 100px);
+    padding: clamp(0.75rem, 2vw, 28px) 0 clamp(3rem, 4vw, 3.5rem);
+  }
+
+  /* Quiet fold marker. Sits in the hero's bottom padding, out of flow. */
+  .scroll-cue {
+    position: absolute;
+    left: 50%;
+    bottom: 0.65rem;
+    transform: translateX(-50%);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--settings-radius-lg, 0.85rem);
+    color: oklch(0.72 0.018 270);
+    font-size: var(--font-size-compact, 0.75rem);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: color 160ms ease;
+  }
+
+  .scroll-cue:hover {
+    color: oklch(0.88 0.02 270);
+  }
+
+  .scroll-cue:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b8cff);
+    outline-offset: 3px;
+  }
+
+  .scroll-cue i {
+    animation: scroll-cue-drift 2.4s ease-in-out infinite;
+  }
+
+  @keyframes scroll-cue-drift {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(0.28rem);
+    }
   }
 
   .opening-copy {
@@ -558,10 +676,18 @@
     font-size: var(--font-size-min, 0.875rem);
   }
 
+  /* The svh term is what keeps the hero inside one screen: the player is a
+     tall stack (square + notation strip + controls), so on a short desktop
+     window its width has to come down or it would push the fold away. */
+  /* The svh terms are what keep the hero inside one screen: the demo is a tall
+     stack (square + notation strip + controls + background row), so on a short
+     desktop window its width has to come down rather than push the fold away.
+     Sizing goes through the demo's own max-width tokens, as HomeHero does. */
   .opening-player {
     position: relative;
     width: min(100%, 45rem);
     margin-inline: auto;
+    --hero-demo-max-width: min(100%, 45rem, 47svh);
   }
 
   .opening-player::before {
@@ -614,6 +740,7 @@
   }
 
   .making-title {
+    scroll-margin-top: calc(var(--marketing-header-h, 64px) + 1rem);
     max-width: 18ch;
   }
 
@@ -699,28 +826,24 @@
     padding: clamp(2.75rem, 4vw, 4rem) 0 clamp(3rem, 5vw, 5rem);
   }
 
-  /* The Tunnel stays a square, so its column sets the row height. Keep that
-     column deliberately narrower than the explanation, then cap both tracks
-     together on ultrawide screens so the pair reads as one composition. */
-  .changing-head {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(22rem, 0.72fr);
-    gap: clamp(1.75rem, 5vw, 5rem);
-    align-items: center;
-    margin-bottom: clamp(2.5rem, 4vw, 4rem);
-  }
-
   .changing-intro {
     min-width: 0;
   }
 
-  .tunnel-output {
-    width: 100%;
+  .tunnel-band {
+    min-width: 0;
+    margin-top: clamp(2rem, 3.5vw, 3.5rem);
   }
 
-  figure {
-    min-width: 0;
-    margin: 0;
+  /* The frame hugs the stage-plus-controls composition instead of spanning a
+     wide shell with dark margins on both sides of it. */
+  .band-frame {
+    max-width: min(100%, 92rem);
+    margin-inline: auto;
+  }
+
+  .viewer-output {
+    margin-top: clamp(2rem, 3.5vw, 3.5rem);
   }
 
   .product-frame {
@@ -730,25 +853,6 @@
     border-radius: clamp(1rem, 1.5vw, 1.5rem);
     background: var(--theme-panel-bg, oklch(0.13 0.025 270 / 0.94));
     box-shadow: 0 1.5rem 4rem oklch(0.04 0.03 270 / 0.3);
-  }
-
-  figcaption {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.95rem 0.35rem 0;
-  }
-
-  figcaption strong {
-    color: oklch(0.9 0.06 278);
-    font-size: var(--font-size-min, 0.875rem);
-  }
-
-  figcaption span {
-    color: oklch(0.74 0.018 270);
-    font-size: var(--font-size-compact, 0.75rem);
-    text-align: right;
   }
 
   .placeholder-square,
@@ -761,10 +865,37 @@
     );
   }
 
+  /* Mirrors ComposerTunnelDemo's band: stage width min(46rem, 62vh), a
+     controls column beside it, stacked under 60rem. */
+  .tunnel-placeholder {
+    display: grid;
+    grid-template-columns: minmax(0, min(46rem, 62vh)) minmax(16rem, 30rem);
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+    justify-content: center;
+  }
+
   .placeholder-square {
-    width: min(100%, 30rem);
+    width: 100%;
     aspect-ratio: 1;
-    margin-inline: auto;
+  }
+
+  .placeholder-band-controls {
+    display: grid;
+    gap: 0.9rem;
+    align-content: center;
+  }
+
+  .placeholder-line {
+    height: 0.9rem;
+    width: min(100%, 22rem);
+    border-radius: 0.45rem;
+    background: var(--theme-card-bg, oklch(0.2 0.025 270 / 0.75));
+  }
+
+  .placeholder-line-title {
+    height: 1.4rem;
+    width: 7rem;
   }
 
   .placeholder-wide {
@@ -775,7 +906,6 @@
   .placeholder-control {
     width: min(100%, 24rem);
     height: 3.25rem;
-    margin: 1rem auto 0;
     border-radius: 0.85rem;
     background: var(--theme-card-bg, oklch(0.2 0.025 270 / 0.75));
   }
@@ -816,55 +946,28 @@
     border-bottom: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
   }
 
-  /* Same tracks the shelf renders into, so the LazyMount swap cannot shift
-     layout. Keep the breakpoints in step with ComposerGalleryShelf. */
-  .shelf-placeholder {
+  /* Same bounded frame ComposerGalleryDemo renders into, so the LazyMount
+     swap cannot shift layout. Keep the height in step with its .gallery-frame. */
+  .gallery-placeholder,
+  .gallery-error {
+    box-sizing: border-box;
+    height: min(80vh, 56rem);
+    padding: clamp(0.75rem, 1.7vw, 1.4rem);
+    border: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
+    border-radius: clamp(1rem, 1.5vw, 1.5rem);
+    background: var(--theme-panel-bg, oklch(0.13 0.025 270 / 0.94));
+    box-shadow: 0 1.5rem 4rem oklch(0.04 0.03 270 / 0.3);
+  }
+
+  .gallery-placeholder {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    grid-auto-rows: minmax(0, 1fr);
     gap: clamp(0.8rem, 1.4vw, 1.4rem);
-  }
-
-  .shelf-placeholder > :nth-child(n + 5) {
-    display: none;
-  }
-
-  @container (min-width: 800px) {
-    .shelf-placeholder {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .shelf-placeholder > :nth-child(n + 5) {
-      display: block;
-    }
-    .shelf-placeholder > :nth-child(n + 7) {
-      display: none;
-    }
-  }
-
-  @container (min-width: 1200px) {
-    .shelf-placeholder {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-    .shelf-placeholder > :nth-child(n + 7) {
-      display: block;
-    }
-    .shelf-placeholder > :nth-child(n + 9) {
-      display: none;
-    }
-  }
-
-  @container (min-width: 1600px) {
-    .shelf-placeholder {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-    .shelf-placeholder > :nth-child(n + 9) {
-      display: block;
-    }
+    overflow: hidden;
   }
 
   .placeholder-card {
-    /* Matches SHELF_CARD_ASPECT_RATIO — the shape a gallery card actually
-       renders at, so the shelf does not resize when the cards arrive. */
-    aspect-ratio: 0.73;
     border-radius: 0.9rem;
     background: radial-gradient(
       circle at 50% 42%,
@@ -885,7 +988,7 @@
     }
 
     .opening {
-      min-height: 0;
+      min-height: calc(100dvh - var(--marketing-header-h, 64px) - 1.25rem);
       gap: 2.5rem;
       padding-top: 1.5rem;
     }
@@ -905,6 +1008,7 @@
 
     .opening-player {
       width: min(100%, 38rem);
+      --hero-demo-max-width: min(100%, 38rem, 31svh);
     }
 
     .construct-placeholder {
@@ -915,16 +1019,41 @@
     .placeholder-pane:last-child {
       display: none;
     }
+  }
 
-    .changing-head {
+  @media (max-width: 60rem) {
+    .tunnel-placeholder {
       grid-template-columns: 1fr;
-      gap: 2.5rem;
+    }
+
+    .placeholder-square {
+      width: min(46rem, 62vh, 100%);
+      margin-inline: auto;
     }
   }
 
   @media (max-width: 50rem) {
     .composer-page {
       padding-inline: 0.9rem;
+    }
+  }
+
+  /* Phones: the player is the whole point of this screen, so it keeps its
+     width and the hero grows past the fold instead of shrinking it. */
+  @media (max-width: 48rem) {
+    .opening {
+      min-height: 0;
+    }
+
+    .opening-player {
+      --hero-demo-max-width: min(100%, 22rem);
+    }
+
+    .scroll-cue {
+      position: static;
+      transform: none;
+      justify-self: center;
+      margin-top: 0.5rem;
     }
   }
 
@@ -944,7 +1073,7 @@
     }
 
     .opening {
-      min-height: calc(100svh - 4.8rem);
+      min-height: calc(100dvh - 4.8rem);
       grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
       gap: 1.8rem;
       padding: 0.25rem 0 1rem;
@@ -976,8 +1105,11 @@
       font-size: var(--font-size-compact, 0.75rem);
     }
 
+    /* Short and wide: the fold is not worth a shrunken player here, so the
+       hero grows past the viewport and the demo keeps a legible size. */
     .opening-player {
       width: min(100%, 18rem);
+      --hero-demo-max-width: min(100%, 18rem);
     }
   }
 
@@ -987,20 +1119,20 @@
     }
 
     .opening {
-      min-height: min(58rem, calc(100svh - 7rem));
+      min-height: calc(100dvh - var(--marketing-header-h, 64px) - 1.25rem);
     }
 
     .opening-player {
       width: min(100%, 52rem);
-    }
-
-    .changing-head {
-      grid-template-columns: minmax(0, 44rem) minmax(22rem, 32rem);
-      justify-content: center;
+      --hero-demo-wide-max-width: min(52rem, 51svh);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .scroll-cue i {
+      animation: none;
+    }
+
     :global(html:has(.composer-page)) {
       scroll-behavior: auto;
     }

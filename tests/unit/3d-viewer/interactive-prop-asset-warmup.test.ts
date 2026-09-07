@@ -31,7 +31,7 @@ describe("interactive prop asset warmup", () => {
   it("holds the gated reveal until the interactive prop is ready", () => {
     expect(canvasSource).toContain("<InteractivePropAssetWarmup");
     expect(canvasSource).toContain(
-      "interactivePropsReady &&\n                effectsRuntimeReady"
+      "interactivePropsReady &&\n                  effectsRuntimeReady"
     );
   });
 });

@@ -64,10 +64,14 @@ export interface ExSlicePayload {
 /** The live global, narrowed to what this slice reads. */
 export type ExSliceStore = Pick<ExportOptionsStateManager, "snapshot">;
 
-function diffAgainstDefaults<T extends object>(live: T, base: T): Partial<T> | null {
+function diffAgainstDefaults<T extends object>(
+  live: T,
+  base: T,
+  full: boolean
+): Partial<T> | null {
   const patch: Partial<T> = {};
   for (const key of Object.keys(base) as (keyof T)[]) {
-    if (!deepEqual(live[key], base[key])) {
+    if (full || !deepEqual(live[key], base[key])) {
       patch[key] = live[key];
     }
   }
@@ -79,13 +83,21 @@ const SPLIT_DEFAULTS: SplitPatchSource = (() => {
   return rest;
 })();
 
-export function captureExSlice(store: ExSliceStore): ExSlicePayload | null {
+/**
+ * `full` emits every key of all three sub-stores (Share/Copy Link); the
+ * default diff form elides what matches the defaults.
+ */
+export function captureExSlice(
+  store: ExSliceStore,
+  options: { full?: boolean } = {}
+): ExSlicePayload | null {
+  const full = options.full === true;
   const snap = store.snapshot();
   const { quality: _splitQuality, ...liveSplit } = snap.split;
 
-  const video = diffAgainstDefaults(snap.video, DEFAULT_VIDEO_OPTIONS);
-  const split = diffAgainstDefaults(liveSplit, SPLIT_DEFAULTS);
-  const image = diffAgainstDefaults(snap.image, DEFAULT_IMAGE_OPTIONS);
+  const video = diffAgainstDefaults(snap.video, DEFAULT_VIDEO_OPTIONS, full);
+  const split = diffAgainstDefaults(liveSplit, SPLIT_DEFAULTS, full);
+  const image = diffAgainstDefaults(snap.image, DEFAULT_IMAGE_OPTIONS, full);
 
   const payload: ExSlicePayload = {};
   if (video) payload.video = video;

@@ -26,6 +26,8 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { type SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { isHandPathSequence } from "$lib/shared/foundation/domain/models/sequence-kind";
+import { buildHandPathShortCodePayload } from "./hand-path-short-code-payload";
 import {
   deriveWordStatusFromSteps,
   IncompleteWordError,
@@ -844,10 +846,11 @@ export class ShortCodeManager {
     // partial fallback word would bake a wrong label into an immutable record.
     const payloadSteps = sequence.steps ?? [];
     const wordStatus = deriveWordStatusFromSteps(payloadSteps);
-    if (!wordStatus.complete || wordStatus.word.length === 0) {
+    const handPath = isHandPathSequence(sequence);
+    if (!handPath && (!wordStatus.complete || wordStatus.word.length === 0)) {
       throw new IncompleteWordError(wordStatus);
     }
-    const payloadWord = wordStatus.word;
+    const payloadWord = handPath ? "" : wordStatus.word;
     const record: Record<string, unknown> = {
       // Compatibility aliases during the reader migration — readers prefer
       // payloadWord, then fall back to these.
@@ -885,7 +888,7 @@ export class ShortCodeManager {
 
     const shouldEmbed = options?.embedSequenceData || !sequence.ownerId;
     let embeddedSequenceData: Record<string, unknown> | null = null;
-    if (sequence.steps && sequence.steps.length > 0) {
+    if (!handPath && sequence.steps && sequence.steps.length > 0) {
       const seqData: Record<string, unknown> = { steps: sequence.steps };
       // The immutable payload word comes from these steps. A stale mutable
       // sequence.word must not survive inside an otherwise-correct embed.
@@ -899,7 +902,7 @@ export class ShortCodeManager {
     }
 
     let faithfulEncodedPayload: string | null = null;
-    if (sequence.steps && sequence.steps.length > 0) {
+    if (!handPath && sequence.steps && sequence.steps.length > 0) {
       const encodedPayload = await encodeSequenceForQR(sequence);
       try {
         const decodedPayload = await decodeSequenceFromQR(encodedPayload);
@@ -948,6 +951,9 @@ export class ShortCodeManager {
     if ((shouldEmbed || !faithfulEncodedPayload) && embeddedSequenceData) {
       record.sequenceData = embeddedSequenceData;
     }
+
+    if (handPath)
+      Object.assign(record, await buildHandPathShortCodePayload(sequence));
 
     if (!record.encoded && !record.sequenceData) {
       throw new Error(

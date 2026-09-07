@@ -10,7 +10,20 @@ import {
   decodeWordShortCodePayload,
   hydrateSelfContainedShortCodePayload,
 } from "$lib/shared/qr/services/short-code-payload-hydrator";
-import { hydrateSequence } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
+import {
+  getCached,
+  hydrateSequence,
+  prefetch,
+} from "$lib/shared/sequence-viewer/services/sequence-data-provider";
+import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
+import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
+
+vi.mock(
+  "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte",
+  () => ({
+    openSequenceOverlay: vi.fn(),
+  })
+);
 
 vi.mock("$lib/shared/create/get-sequence-repository", () => ({
   getSequenceRepository: () => ({ getSequence: vi.fn() }),
@@ -89,6 +102,52 @@ describe("sequence data provider", () => {
     expect(hydrated.isCircular).toBe(true);
     expect(hydrated.gridMode).toBe("diamond");
   });
+
+  it.each(["delete", "append", "turns"] as const)(
+    "plays workspace %s edits even when the collection original is prefetched",
+    async (edit) => {
+      const original = await hydrateSequence({
+        ...(await decodeSequenceFromQR(AR18_ENCODED)),
+        id: `workspace-cache-${edit}`,
+      });
+      const card = { ...original, steps: [] };
+      prefetch(original);
+      await vi.waitFor(() => expect(getCached(card)).not.toBeNull());
+
+      const steps =
+        edit === "delete"
+          ? original.steps.slice(0, 3)
+          : edit === "append"
+            ? [...original.steps, { ...original.steps[0]!, stepNumber: 9 }]
+            : original.steps.map((step, index) =>
+                index === 0
+                  ? {
+                      ...step,
+                      motions: {
+                        ...step.motions,
+                        left: { ...step.motions.left!, turns: 2 },
+                        right: { ...step.motions.right!, turns: 0 },
+                      },
+                    }
+                  : step
+              );
+      const edited = { ...original, steps };
+
+      openSequenceViewer(edited, {
+        source: "create_workspace",
+        returnPath: "/create/construct",
+        playOnOpen: true,
+      });
+      const [opened, options] = vi.mocked(openSequenceOverlay).mock.lastCall!;
+      expect(opened.steps).toEqual(steps);
+      expect(opened).toBe(edited);
+      expect(options.playOnOpen).toBe(true);
+      expect(
+        (await hydrateSequence(opened)).steps.map((step) => step.motions)
+      ).toEqual(steps.map((step) => step.motions));
+      expect(getCached(card)?.steps).toEqual(original.steps);
+    }
+  );
 });
 
 describe("short-code payload selection", () => {

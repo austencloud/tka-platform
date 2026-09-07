@@ -94,6 +94,11 @@ export const CONCEPT_RESOURCE_BINDINGS: Readonly<
         label: "Hand Motions lesson",
         coverage: "focused",
       },
+      {
+        lessonId: "timing-and-direction",
+        label: "Timing and Direction lesson",
+        coverage: "focused",
+      },
     ],
     guideRefs: [
       {
@@ -194,6 +199,15 @@ function toPlace(concept: KnowledgeConcept): LearnConceptPlace {
 export function getConceptPlace(id: string): LearnConceptPlace | undefined {
   const concept = getConceptById(id);
   return concept ? toPlace(concept) : undefined;
+}
+
+export function getConceptPlaceIdForLesson(lessonId: string): string | null {
+  for (const [placeId, binding] of Object.entries(CONCEPT_RESOURCE_BINDINGS)) {
+    if (binding?.lessonIds.some((lesson) => lesson.lessonId === lessonId)) {
+      return placeId;
+    }
+  }
+  return null;
 }
 
 export function getConceptPlacesByLevel(

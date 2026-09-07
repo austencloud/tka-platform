@@ -581,7 +581,7 @@ Delegates all rendering to child components.
     cursor: pointer;
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
-    transition: all var(--duration-normal) ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .error button:hover {

@@ -1,0 +1,16 @@
+{
+  "source": "blender/rainbow/spectrum-commons.blend",
+  "meshes": 22,
+  "triangles": 141552,
+  "bytes": 3449668,
+  "nativeCourtHeight": 0.45,
+  "courtRadius": 6,
+  "roles": {
+    "venue": 9,
+    "sail": 7,
+    "court": 1,
+    "stars": 1,
+    "terraces": 4
+  },
+  "compression": "EXT_meshopt_compression; float positions preserved"
+}

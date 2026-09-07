@@ -5,6 +5,7 @@
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
   import { isCardLayoutAutomatic } from "$lib/shared/share/services/card-render-options";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
 
   let {
     sequence,
@@ -45,32 +46,47 @@
   const startPositionLayoutOverride = $derived(
     automatic ? null : (cardRenderOptions?.startPositionLayout ?? null)
   );
+  const shared = getViewerStudioSurfaces();
+  const owner = {};
+  function cardDestination(node: HTMLElement) {
+    return {
+      destroy: shared?.requestCard(owner, node, () => ({
+        sequence,
+        highlightedStepIndex,
+        options: cardRenderOptions,
+        automatic,
+      })),
+    };
+  }
 </script>
 
-<div class="choreo-layer">
-  <ChoreoCard
-    {sequence}
-    {highlightedStepIndex}
-    showHighlight
-    darkMode={cardRenderOptions?.visibilityOverrides?.darkMode ?? true}
-    showWord={cardRenderOptions?.addWord ?? true}
-    showStepNumbers={cardRenderOptions?.addStepNumbers ?? true}
-    showDifficultyLevel={cardRenderOptions?.addDifficultyLevel ?? true}
-    includeStartPosition={cardRenderOptions?.includeStartPosition ?? true}
-    showNotes={cardRenderOptions?.showNotes ?? false}
-    showLoopGlyph={cardRenderOptions?.showLoopGlyph ?? true}
-    showQRCode={cardRenderOptions?.visibilityOverrides?.showQRCode ?? false}
-    showMandala={cardRenderOptions?.visibilityOverrides?.showMandala ?? false}
-    handPathMode={cardRenderOptions?.visibilityOverrides?.handPathMode ?? false}
-    leftPropType={cardRenderOptions?.leftPropTypeOverride ??
-      cardRenderOptions?.propTypeOverride}
-    rightPropType={cardRenderOptions?.rightPropTypeOverride ??
-      cardRenderOptions?.propTypeOverride}
-    {columnCount}
-    {startPositionLayoutOverride}
-    forceContain
-    fitWidth
-  />
+<div class="choreo-layer" use:cardDestination data-studio-card-destination>
+  {#if !shared?.ownsCard(owner)}
+    <ChoreoCard
+      {sequence}
+      {highlightedStepIndex}
+      showHighlight
+      darkMode={cardRenderOptions?.visibilityOverrides?.darkMode ?? true}
+      showWord={cardRenderOptions?.addWord ?? true}
+      showStepNumbers={cardRenderOptions?.addStepNumbers ?? true}
+      showDifficultyLevel={cardRenderOptions?.addDifficultyLevel ?? true}
+      includeStartPosition={cardRenderOptions?.includeStartPosition ?? true}
+      showNotes={cardRenderOptions?.showNotes ?? false}
+      showLoopGlyph={cardRenderOptions?.showLoopGlyph ?? true}
+      showQRCode={cardRenderOptions?.visibilityOverrides?.showQRCode ?? false}
+      showMandala={cardRenderOptions?.visibilityOverrides?.showMandala ?? false}
+      handPathMode={cardRenderOptions?.visibilityOverrides?.handPathMode ??
+        false}
+      leftPropType={cardRenderOptions?.leftPropTypeOverride ??
+        cardRenderOptions?.propTypeOverride}
+      rightPropType={cardRenderOptions?.rightPropTypeOverride ??
+        cardRenderOptions?.propTypeOverride}
+      {columnCount}
+      {startPositionLayoutOverride}
+      forceContain
+      fitWidth
+    />
+  {/if}
 </div>
 
 <style>

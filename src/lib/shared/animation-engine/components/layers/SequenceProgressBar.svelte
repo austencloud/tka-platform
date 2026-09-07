@@ -227,6 +227,10 @@ Design:
   /* Seekable: bigger, comfortable hit area (≥~24px) while the line stays 3px,
      plus pointer affordances. */
   .progress-bar-container.interactive {
+    /* Reading pages can enlarge the target without thickening the track. */
+    min-height: var(--sequence-seek-target-size, 25px);
+    display: flex;
+    align-items: center;
     padding-top: 10px;
     padding-bottom: 12px;
     cursor: pointer;

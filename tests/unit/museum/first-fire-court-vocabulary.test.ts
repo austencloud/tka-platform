@@ -3,7 +3,7 @@ import {
   FIRST_FIRE_COURT_VOCABULARY,
   firstFireCourtEffectId,
   firstFireCourtLayers,
-} from "../../../src/routes/test/first-fire-graybox/first-fire-court-vocabulary";
+} from "../../../src/lib/features/museum/data/first-fire-court-vocabulary";
 
 describe("First Fire court vocabulary", () => {
   it("adds one voice per court in walk order", () => {

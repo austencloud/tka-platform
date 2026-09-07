@@ -130,6 +130,16 @@ function leftRightRingOf(overlay: TrailOverlayWebGL2): Array<{
     }
   ).leftRightRing;
 }
+
+function layerLeftRingOf(overlay: TrailOverlayWebGL2): unknown[] {
+  return (
+    (
+      overlay as unknown as {
+        layerRings: Array<{ leftLeft: unknown[] }>;
+      }
+    ).layerRings[0]?.leftLeft ?? []
+  );
+}
 function leftLeftTailOf(overlay: TrailOverlayWebGL2): {
   prog: number;
   visibleCount: number;
@@ -465,5 +475,49 @@ describe("TrailOverlayWebGL2 prop-swap suppression", () => {
     expect(leftRing.length).toBe(1);
     // Right: never suppressed, captures every frame.
     expect(rightRing.length).toBe(3);
+  });
+});
+
+describe("TrailOverlayWebGL2 Tunnel formation suppression", () => {
+  const layer = (
+    angle: number,
+    trailCaptureSuppressed: boolean,
+    formationTransitionActive = trailCaptureSuppressed
+  ) => ({
+    leftProp: propAt(angle),
+    rightProp: null,
+    leftTrailPoints: [],
+    rightTrailPoints: [],
+    hasLeft: true,
+    hasRight: false,
+    opacity: 1,
+    leftColor: "#8b5cf6",
+    rightColor: "#f97316",
+    trailCaptureSuppressed,
+    formationTransitionActive,
+  });
+
+  it("keeps formation travel out of the ring and restarts disconnected", () => {
+    const overlay = makeOverlay();
+    overlay.renderFrame(
+      baseParams({ additionalLayers: [layer(0, false)], currentTime: 0 })
+    );
+    overlay.renderFrame(
+      baseParams({ additionalLayers: [layer(0.05, false)], currentTime: 16 })
+    );
+    expect(layerLeftRingOf(overlay)).toHaveLength(2);
+
+    overlay.renderFrame(
+      baseParams({ additionalLayers: [layer(0.2, true)], currentTime: 32 })
+    );
+    overlay.renderFrame(
+      baseParams({ additionalLayers: [layer(0.4, true)], currentTime: 48 })
+    );
+    expect(layerLeftRingOf(overlay)).toHaveLength(0);
+
+    overlay.renderFrame(
+      baseParams({ additionalLayers: [layer(0.4, false)], currentTime: 64 })
+    );
+    expect(layerLeftRingOf(overlay)).toHaveLength(1);
   });
 });

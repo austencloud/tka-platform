@@ -45,10 +45,16 @@
 </script>
 
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onDestroy, onMount, untrack } from "svelte";
   import { flexPresence, growFade } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import ResizeHandle from "./ResizeHandle.svelte";
+  import {
+    needsMeasuredBasisHandoff,
+    panelFlexStyle,
+    resolvePanelFlex,
+    type PanelFlex,
+  } from "./panel-flex";
 
   interface Props {
     /** Layout direction */
@@ -291,24 +297,150 @@
     );
   }
 
+  // A keyed panel keeps its captured definition while its outro runs. Reading
+  // `panels[index]` here used the next array instead, so a departing fixed or
+  // content-sized dock briefly became `flex: 1` and starved its neighbour.
+  function getPanelFlex(panel: PanelDefinition, index: number): PanelFlex {
+    return resolvePanelFlex(panel, {
+      flexShare: sizes[index],
+      manuallySized: manuallySizedPanels.has(panel.id ?? index),
+    });
+  }
+
   // Get flex style for a panel
   function getFlexStyle(panel: PanelDefinition, index: number): string {
-    // A keyed panel keeps its captured definition while its outro runs. Reading
-    // `panels[index]` here used the next array instead, so a departing fixed or
-    // content-sized dock briefly became `flex: 1` and starved its neighbour.
-    const fixedSize = panel.fixedSize;
-    if (fixedSize) {
-      return `flex-grow: 0; flex-shrink: 0; flex-basis: ${fixedSize}`;
-    }
-
-    const panelKey = panel.id ?? index;
-    const preferredSize = panel.preferredSize;
-    if (preferredSize && !manuallySizedPanels.has(panelKey)) {
-      return `flex-grow: 0; flex-shrink: 0; flex-basis: ${preferredSize}`;
-    }
-
-    return `flex-grow: ${sizes[index] ?? panel.defaultSize ?? 1}; flex-shrink: 1; flex-basis: 0px`;
+    return panelFlexStyle(getPanelFlex(panel, index));
   }
+
+  /**
+   * A held dock that swaps one allocation for another is the one layout change
+   * CSS cannot carry on its own. `flex-basis: 480px -> auto` is a discrete
+   * change, so the whole group re-lays out in a single frame: the stage takes
+   * the reclaimed space instantly and every panel below the dock teleports.
+   *
+   * When both endpoints are held -- grow and shrink are both 0 -- the basis
+   * alone decides the size, so both ends can be measured in pixels and handed
+   * back to the transition already declared on `.panel-wrapper`. Anything with
+   * a live flex share keeps today's behaviour, because there the basis is not
+   * the whole story.
+   */
+  const appliedFlex = new Map<string | number, PanelFlex>();
+  const basisHandoffs = new Map<string | number, () => void>();
+  let pendingBasisHandoffs: {
+    key: string | number;
+    element: HTMLElement;
+    from: number;
+    basis: string;
+  }[] = [];
+
+  function panelWrapperFor(key: string | number): HTMLElement | null {
+    if (!containerRef) return null;
+    const wrappers = Array.from(
+      containerRef.querySelectorAll<HTMLElement>(":scope > .panel-wrapper")
+    );
+    return (
+      wrappers.find((wrapper) => (wrapper.dataset.panelId ?? "") === String(key)) ??
+      null
+    );
+  }
+
+  function measurePanel(element: HTMLElement): number {
+    const rect = element.getBoundingClientRect();
+    return direction === "horizontal" ? rect.width : rect.height;
+  }
+
+  function prefersReducedMotion(): boolean {
+    return (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
+    );
+  }
+
+  $effect.pre(() => {
+    void panels;
+    untrack(() => {
+      pendingBasisHandoffs = [];
+      if (!containerRef || prefersReducedMotion()) return;
+
+      panels.forEach((panel, index) => {
+        const key = panel.id ?? index;
+        const previous = appliedFlex.get(key);
+        if (!previous) return;
+
+        const next = getPanelFlex(panel, index);
+        if (!needsMeasuredBasisHandoff(previous, next)) return;
+
+        const element = panelWrapperFor(key);
+        if (!element) return;
+
+        pendingBasisHandoffs.push({
+          key,
+          element,
+          from: measurePanel(element),
+          basis: next.basis,
+        });
+      });
+    });
+  });
+
+  $effect(() => {
+    void panels;
+    void sizes;
+    void manuallySizedPanels;
+
+    untrack(() => {
+      panels.forEach((panel, index) => {
+        appliedFlex.set(panel.id ?? index, getPanelFlex(panel, index));
+      });
+
+      const handoffs = pendingBasisHandoffs;
+      pendingBasisHandoffs = [];
+      for (const handoff of handoffs) startBasisHandoff(handoff);
+    });
+  });
+
+  function startBasisHandoff(handoff: {
+    key: string | number;
+    element: HTMLElement;
+    from: number;
+    basis: string;
+  }): void {
+    basisHandoffs.get(handoff.key)?.();
+
+    const { element, from, basis, key } = handoff;
+    // The declarative endpoint is already on the element, so this reads the
+    // destination geometry. Nothing has painted yet, which is what lets the
+    // pinned start below stand in for the frame the browser would have skipped.
+    const to = measurePanel(element);
+    if (Math.abs(to - from) < 0.5) return;
+
+    element.style.transition = "none";
+    element.style.flexBasis = `${from}px`;
+    void element.offsetWidth;
+    element.style.transition = "";
+    element.style.flexBasis = `${to}px`;
+
+    const settle = () => {
+      element.removeEventListener("transitionend", onTransitionEnd);
+      clearTimeout(safety);
+      basisHandoffs.delete(key);
+      // Hand the basis back so a content-sized dock resumes following its
+      // contents instead of freezing at the size it happened to land on.
+      element.style.flexBasis = basis;
+    };
+    const onTransitionEnd = (event: TransitionEvent) => {
+      if (event.target !== element || event.propertyName !== "flex-basis") return;
+      settle();
+    };
+    const safety = setTimeout(settle, DURATION.emphasis + DURATION.instant);
+
+    element.addEventListener("transitionend", onTransitionEnd);
+    basisHandoffs.set(key, settle);
+  }
+
+  onDestroy(() => {
+    for (const settle of Array.from(basisHandoffs.values())) settle();
+  });
 </script>
 
 <div

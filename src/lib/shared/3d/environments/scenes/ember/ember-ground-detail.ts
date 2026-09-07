@@ -20,12 +20,12 @@ export const EMBER_GROUND_DETAIL_TEXTURES: Record<
 > = {
   youngLava: "/textures/ember-surface-r9/young-lava.png",
   ironContact: "/textures/ember-surface-r9/iron-contact.png",
-  fracturedBasalt: "/textures/ember-surface-r9/fractured-basalt.png",
+  fracturedBasalt: "/textures/ember-midflank-r5/rock-ground-color.jpg",
   shelteredAsh: "/textures/ember-surface-r9/sheltered-ash.png",
 };
 
 export const EMBER_GROUND_DETAIL_MASK =
-  "/textures/ember-surface-r9/fresh-rift-family-mask.png";
+  "/textures/ember-midflank-r5/family-mask.png";
 
 export const EMBER_GROUND_SURFACE_TEXTURES = {
   height: "/textures/ember-surface-r11/rock-ground-height.jpg",
@@ -110,6 +110,9 @@ export function isEmberGroundDetailSurface(
   role: string | undefined,
   material: MeshStandardMaterial
 ): boolean {
+  if (material.name.startsWith("Ember_Midflank_R5_")) {
+    return !material.name.endsWith("live-deposit");
+  }
   return (
     role !== undefined &&
     MASKED_SURFACE_ROLES.has(role) &&
@@ -137,6 +140,7 @@ export function patchEmberGroundDetailMaterial(
   options: EmberGroundDetailOptions = {}
 ): EmberGroundDetailPatch {
   const tier = TIER_PROFILES[emberGroundDetailTier(material)];
+  const midflank = material.name.startsWith("Ember_Midflank_R5_");
   return patchMaskedGroundDetailMaterial(
     material,
     {
@@ -152,15 +156,27 @@ export function patchEmberGroundDetailMaterial(
       // One key for both tiers on purpose: the tier only moves uniform values,
       // so the two profiles share a single compiled program.
       cacheKey: "ember-ground-detail-r13-upcountry-reach-v1",
-      preserveColor: options.preserveColor,
+      // The old GLB has albedo maps; R5 uses its authored material color.
+      // Whitening an untextured material turns the whole mountain into chalk.
+      preserveColor: midflank ? undefined : options.preserveColor,
       normalResponse: options.normalResponse ?? 0.3,
       roughnessFloor: options.roughnessFloor ?? 0.68,
       absoluteColorStrength:
-        options.absoluteColorStrength ?? tier.absoluteColorStrength,
+        options.absoluteColorStrength ??
+        (midflank ? 0.65 : tier.absoluteColorStrength),
       primaryScale: 2.4,
       secondaryScale: 7.6,
+      contactZone: midflank
+        ? {
+            center: new Vector2(0, 0),
+            halfSize: new Vector2(4.2, 3.7),
+            feather: 2.8,
+            noise: 1.2,
+            strength: 0.8,
+          }
+        : undefined,
       familyContrast: tier.familyContrast,
-      heightResponse: 0.34,
+      heightResponse: midflank ? 0.025 : 0.34,
       macroScale: 42,
       macroDetailScale: 12,
       macroDetailStrength: 0.62,
@@ -181,8 +197,8 @@ export function patchEmberGroundDetailMaterial(
       surfaceDetail: {
         maps: surfaceMaps,
         scale: 1.55,
-        albedoStrength: 0.22,
-        normalStrength: 0.72,
+        albedoStrength: midflank ? 0.45 : 0.22,
+        normalStrength: midflank ? 0.14 : 0.72,
         // 2.63 against 1.55 is irrational enough that the two lattices never
         // re-align inside the 380m basin, and 0.94rad keeps the scan's own
         // directional grain from stacking with itself.

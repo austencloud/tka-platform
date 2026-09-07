@@ -120,10 +120,10 @@ describe("legacy sequence script parity boundaries", () => {
       hasStoredSteps: boolean;
     };
 
-    expect(normalized.contentHashVersion).toBe(2);
+    expect(normalized.contentHashVersion).toBe(3);
     expect(normalized.contentHash).toMatch(/^[a-f0-9]{64}$/);
     expect(normalized.storedContentHash).toBe(normalized.contentHash);
-    expect(normalized.storedContentHashVersion).toBe(2);
+    expect(normalized.storedContentHashVersion).toBe(3);
     expect(normalized.sequenceLength).toBe(raw.steps.length);
     expect(normalized.hydratedLength).toBe(raw.steps.length);
     expect(normalized.hasStoredSteps).toBe(false);
@@ -152,6 +152,30 @@ describe("legacy sequence script parity boundaries", () => {
     expect(current.rightSoloProp.steps[0]?.motionType).not.toBe("static");
     expect(fromLegacy.leftSoloHash).toBe(current.leftSoloHash);
     expect(fromLegacy.rightSoloHash).toBe(current.rightSoloHash);
+  });
+
+  it("keeps imported attribution, display names, tags, and authored planes", () => {
+    const qst = JSON.parse(
+      readProjectFile("docs/research/spiroanim/qst-228-sequences.json")
+    )[0] as RawSequence & {
+      displayName: string;
+      tags: string[];
+      metadata: { source: string };
+      steps: Array<{ motions: { left: { plane: string } } }>;
+    };
+    const built = importer.buildFirestoreDoc(qst, localClock, null, {
+      visibility: "private",
+    });
+    const composed = composer.decomposeSequence(qst);
+
+    expect(built.data.displayName).toBe(qst.displayName);
+    expect(built.data.tags).toEqual(qst.tags);
+    expect((built.data.metadata as { source: string }).source).toBe(
+      "spiroanim-quarter-space-tech"
+    );
+    expect((composed.leftSoloProp.steps[0] as { plane?: string }).plane).toBe(
+      qst.steps[0]?.motions.left.plane
+    );
   });
 
   it("keeps owner-only repair scripts away from public sequences", () => {

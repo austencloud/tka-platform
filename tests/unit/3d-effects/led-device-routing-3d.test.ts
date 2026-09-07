@@ -41,10 +41,15 @@ describe("LED 3D routes by device kind", () => {
     expect(capsuleBranch.slice(0, elseIndex)).not.toContain("LedRenderer3D(");
   });
 
-  it("skips the per-tip supersampled ribbon input on a pixel staff", () => {
+  it("skips per-tip ribbon inputs only for performers routed to pixel-staff POV", () => {
     expect(source).toMatch(
-      /if \(!usePixelStaff\) \{\s*const color = ledColorAt/
+      /const leftUsesPov = usePixelStaff && !leftIsMoonFan/
     );
+    expect(source).toMatch(
+      /const rightUsesPov = usePixelStaff && !rightIsMoonFan/
+    );
+    expect(source).toMatch(/if \(!leftUsesPov\) \{/);
+    expect(source).toMatch(/if \(!rightUsesPov\) \{/);
   });
 });
 

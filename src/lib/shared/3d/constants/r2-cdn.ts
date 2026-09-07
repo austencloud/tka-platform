@@ -3,6 +3,8 @@ import {
   type CharacterId,
 } from "$lib/shared/3d/domain/character-model";
 
+import { resolveDesktopAssetUrl } from "$lib/shared/desktop/desktop-asset-runtime";
+
 import { R2_CDN } from "./r2-origin";
 
 export { R2_CDN };
@@ -22,8 +24,10 @@ export function characterThumbnailUrl(characterId: CharacterId): string | null {
     return null;
   }
 
-  return (
+  // An <img> never goes through three's loading manager, so the desktop
+  // bundle rewrite has to be applied here by hand.
+  return resolveDesktopAssetUrl(
     definition?.thumbnailPath ??
-    `${R2_CDN}/models/avatars/thumbnails/${characterId}.webp`
+      `${R2_CDN}/models/avatars/thumbnails/${characterId}.webp`
   );
 }

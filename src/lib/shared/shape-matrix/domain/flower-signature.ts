@@ -59,7 +59,7 @@ export function flowerPetals(
 ): number {
   const ratio = reducedSpinRatio(f.turns);
   return f.style === "pro"
-    ? ratio.numerator - ratio.denominator
+    ? Math.abs(ratio.numerator - ratio.denominator)
     : ratio.numerator + ratio.denominator;
 }
 
@@ -81,7 +81,7 @@ export function flowerStartOrientation(
     };
     return orientationByName[f.ori];
   }
-  if (f.turns !== "fl" && reducedSpinRatio(f.turns).denominator === 2) {
+  if (reducedSpinRatio(f.turns).denominator === 2) {
     return f.ori === "in" ? Orientation.IN : Orientation.CLOCK;
   }
   return f.ori === "in" ? Orientation.IN : Orientation.OUT;
@@ -106,25 +106,24 @@ export function flowerKey(
 }
 
 /**
- * VTG spin ratio for a turn count: (2·turns + 1):1. The numerator is the same
- * for prospin and antispin at a given turn — the style sets the petal count
- * (prospin = P−Q, antispin = P+Q) — so the ratio labels the axis and the
- * left/right style is read from the axis itself. E.g. 0.5t → "2:1" (antispin =
- * 3-petal triquetra). Level 4 quarter turns reduce to an odd-over-two ratio.
+ * VTG spin ratio for a TKA turn value, displayed in SpiroAnim's order:
+ * hand cycles first, prop rotations second. The style sets the petal count,
+ * so the left/right style is still read from the axis itself.
  */
-export function ratioLabel(turns: number): string {
+export function ratioLabel(turns: TurnValue): string {
+  if (turns === "fl") return "1:0";
   const ratio = reducedSpinRatio(turns);
-  return `${ratio.numerator}:${ratio.denominator}`;
+  return `${ratio.denominator}:${ratio.numerator}`;
 }
 
 /**
  * Verified VTG display for a two-axis hybrid. VTG primary sources establish
- * each prop:hand ratio, but not the community-looking `3::1` contraction.
- * Keeping both ratios explicit makes the axes and the convention unambiguous.
+ * each ratio, but not a community-standard double-colon contraction. Keeping
+ * both ratios explicit makes the axes unambiguous.
  */
 export function hybridRatioLabel(
-  leftTurns: number,
-  rightTurns: number
+  leftTurns: TurnValue,
+  rightTurns: TurnValue
 ): string {
   return leftTurns === rightTurns
     ? ratioLabel(leftTurns)
@@ -132,7 +131,8 @@ export function hybridRatioLabel(
 }
 
 export function flowerLabel(f: Flower): string {
-  if (f.style === "float") return `float ${f.ori} diamond`;
+  if (f.style === "float")
+    return `${ratioLabel(f.turns)} ${f.ori} diamond · 0p`;
   return `${ratioLabel(f.turns)} ${f.ori} ${f.grid} · ${f.petals}p`;
 }
 
@@ -185,7 +185,7 @@ export function buildFloatAxis(): FloatFlower[] {
 export function buildShapeMatrixAxis(): Flower[] {
   return [
     ...buildFlowerAxis([
-      0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3,
+      -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3,
     ]),
     ...buildFloatAxis(),
   ];

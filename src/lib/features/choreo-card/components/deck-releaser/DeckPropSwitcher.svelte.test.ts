@@ -45,14 +45,17 @@ describe("DeckPropSwitcher modal", () => {
 
     const dialog = page.getByRole("dialog", { name: "Deck Prop" });
     await expect.element(dialog).toBeVisible();
-    expect(dialog.element<HTMLDialogElement>().open).toBe(true);
+    // `.element()` is untyped generically in vitest 4, so narrow once and reuse.
+    const dialogElement = dialog.element();
+    if (!(dialogElement instanceof HTMLDialogElement)) {
+      throw new Error("the deck prop dialog is not a <dialog> element");
+    }
+    expect(dialogElement.open).toBe(true);
 
     await new Promise((resolve) => setTimeout(resolve, 300));
-    expect(dialog.element<HTMLDialogElement>().open).toBe(true);
+    expect(dialogElement.open).toBe(true);
 
-    dialog
-      .element<HTMLDialogElement>()
-      .dispatchEvent(new Event("cancel", { cancelable: true }));
+    dialogElement.dispatchEvent(new Event("cancel", { cancelable: true }));
     await expect.element(dialog).not.toBeInTheDocument();
     await expect.element(trigger).toHaveFocus();
   });

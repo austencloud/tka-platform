@@ -11,10 +11,17 @@ import {
 import type { CardPair } from "../../../services/types";
 import type { PrintSide } from "../../print-preview/print-side";
 import {
+  buildHandPathDeckPrintMetadata,
   buildDeckPrintMetadata,
   normalizeDeckFooters,
   orderDeckForPrint,
+  usesSerializedCardIdentity,
 } from "../deck-print-model";
+import {
+  getHandPathReferenceCards,
+  getHandPathReferenceNotes,
+} from "../../../domain/hand-path-reference-cards";
+import { isHandPathRelease } from "../deck-release-model";
 import type { DeckReleaserSessionStorage } from "./deck-releaser-session";
 import type { DeckReleaserState } from "./deck-releaser-state.svelte";
 
@@ -103,6 +110,13 @@ export function createDeckPrintState(
     }
   });
 
+  const handPathCards = $derived.by(() => {
+    const manifest = deck.viewingRelease?.handPathCards;
+    return manifest ? getHandPathReferenceCards(manifest.cardIds) : [];
+  });
+  const isHandPathDeck = $derived(
+    Boolean(deck.viewingRelease && isHandPathRelease(deck.viewingRelease))
+  );
   const footers = $derived(normalizeDeckFooters(deck.cards));
   const ordered = $derived.by(() =>
     orderDeckForPrint(deck.sequences, footers, {
@@ -110,15 +124,52 @@ export function createDeckPrintState(
       groupByLetter,
     })
   );
-  const sortedSequences = $derived(ordered.sequences as SequenceData[]);
-  const sortedFooters = $derived(ordered.footers);
-  const tndElements = $derived(ordered.tndElements);
+  const sortedSequences = $derived(
+    isHandPathDeck
+      ? handPathCards.map(
+          (referenceCard) =>
+            deck.sequences.find(
+              (sequence) => sequence.id === referenceCard.sequence.id
+            ) ?? referenceCard.sequence
+        )
+      : (ordered.sequences as SequenceData[])
+  );
+  const sortedFooters = $derived(
+    isHandPathDeck
+      ? handPathCards.map((referenceCard) => ({
+          center: getHandPathReferenceNotes(referenceCard),
+        }))
+      : ordered.footers
+  );
+  const qrUrls = $derived(
+    sortedSequences.map(
+      (sequence) =>
+        deck.cards.find((card) => card.sequenceId === sequence.id)?.qrUrl
+    )
+  );
+  const tndElements = $derived(
+    isHandPathDeck
+      ? handPathCards.map((referenceCard) => referenceCard.element)
+      : ordered.tndElements
+  );
+  const cardTitles = $derived(
+    isHandPathDeck
+      ? handPathCards.map((referenceCard) => referenceCard.cardTitle)
+      : []
+  );
+  const cardProfile = $derived<"sequence" | "hand-path">(
+    isHandPathDeck ? "hand-path" : "sequence"
+  );
+  const effectiveGroupByElement = $derived(
+    isHandPathDeck ? false : groupByElement
+  );
   const renderTotal = $derived(sortedSequences.length);
   const deckRefNumber = $derived(
     deck.viewingRelease?.deckNumber ?? deck.referenceNumber
   );
   const deckRefPadded = $derived(String(deckRefNumber).padStart(3, "0"));
   const groupSizes = $derived.by(() => {
+    if (!effectiveGroupByElement) return [sortedSequences.length];
     const counts = new Map<string, number>();
     for (const element of tndElements) {
       const key = element?.element ?? "__untagged__";
@@ -145,8 +196,17 @@ export function createDeckPrintState(
   }
 
   function buildMetadata() {
+    const deckLabel = deck.name.trim() || `Deck #${deckRefPadded}`;
+    if (isHandPathDeck) {
+      return buildHandPathDeckPrintMetadata({
+        deckLabel,
+        deckRefPadded,
+        cardNames: cardTitles,
+        includeHowToRead,
+      });
+    }
     return buildDeckPrintMetadata({
-      deckLabel: deck.name.trim() || `Deck #${deckRefPadded}`,
+      deckLabel,
       deckRefPadded,
       sequences: sortedSequences,
       loopType: [...deck.selectedLoopTypes][0] ?? "rotated",
@@ -163,6 +223,14 @@ export function createDeckPrintState(
   const metadata = $derived(buildMetadata());
 
   function getAiSummary(): string {
+    if (isHandPathDeck) {
+      return [
+        `# ${deck.name.trim() || `Deck #${deckRefPadded}`}`,
+        "",
+        `${cardTitles.length} Timing & Direction hand-path reference cards.`,
+        ...cardTitles.map((title) => `- ${title}`),
+      ].join("\n");
+    }
     const waste = copyWaste(groupSizes, cardsPerPage, copies);
     return buildDeckAiSummary({
       name: deck.name,
@@ -173,7 +241,7 @@ export function createDeckPrintState(
         cardSize,
         cardsPerPage,
         copies,
-        groupByColor: groupByElement,
+        groupByColor: effectiveGroupByElement,
         groupByLetter,
         includeHowToRead,
         sheets:
@@ -200,6 +268,8 @@ export function createDeckPrintState(
       deck.rightPropType,
       cardSize,
       includeHowToRead,
+      cardProfile,
+      cardTitles.join(","),
       rerenderKey,
       cards,
     ].join("|");
@@ -211,7 +281,7 @@ export function createDeckPrintState(
       mode,
       paperSize,
       copies,
-      groupByElement,
+      effectiveGroupByElement,
       groupByLetter,
       includeHowToRead,
       JSON.stringify(metadata),
@@ -309,7 +379,8 @@ export function createDeckPrintState(
     const printPaperSize = paperSize;
     const printCopies = copies;
     const printElements = [...tndElements];
-    const printGroupByElement = groupByElement;
+    const printGroupByElement = effectiveGroupByElement;
+    const serializePhysicalCards = usesSerializedCardIdentity(cardProfile);
     const printMetadata = metadata;
     const identity = physicalDeckIdentity();
     const insertOptions = includeHowToRead
@@ -330,7 +401,7 @@ export function createDeckPrintState(
         ? await buildInsertPair(insertOptions)
         : undefined;
 
-      if (mode === "backs") {
+      if (mode === "backs" || !serializePhysicalCards) {
         const blob = await deps.exportHomePrintPDF(
           pairs,
           deckName,
@@ -455,12 +526,33 @@ export function createDeckPrintState(
     try {
       const pairs = await requirePreparedPairs(pairPreparer);
       const deckName = `Deck_${deckRefPadded}`;
+      if (!usesSerializedCardIdentity(cardProfile)) {
+        const blob = await deps.exportDeckZIP(
+          pairs,
+          deckName,
+          (current, total) => {
+            exportProgress = current;
+            exportTotal = total;
+          },
+          {
+            insertPair: includeHowToRead
+              ? await buildInsertPair({
+                  theme: deck.theme,
+                  cardSize,
+                  deckNumber: deckRefNumber,
+                })
+              : undefined,
+          }
+        );
+        deps.download(blob, `${deckName}_cards.zip`);
+        return;
+      }
       const run = await deps.prepareSerializedPrintRun({
         pairs,
         ...physicalDeckIdentity(),
         cardSize,
         copies: 1,
-        groupByElement,
+        groupByElement: effectiveGroupByElement,
         outputMode: "zip",
       });
       let blob: Blob;
@@ -539,7 +631,7 @@ export function createDeckPrintState(
       copies = value;
     },
     get groupByElement() {
-      return groupByElement;
+      return effectiveGroupByElement;
     },
     set groupByElement(value) {
       groupByElement = value;
@@ -600,6 +692,18 @@ export function createDeckPrintState(
     },
     get sortedFooters() {
       return sortedFooters;
+    },
+    get cardTitles() {
+      return cardTitles;
+    },
+    get qrUrls() {
+      return qrUrls;
+    },
+    get cardProfile() {
+      return cardProfile;
+    },
+    get isHandPathDeck() {
+      return isHandPathDeck;
     },
     get tndElements() {
       return tndElements;

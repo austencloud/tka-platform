@@ -20,6 +20,10 @@ import { requireFirebaseUser } from "$lib/server/auth/requireFirebaseUser";
 import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
 import { withRateLimit } from "$lib/server/security/withRateLimit";
 import { buildSystemPrompt } from "$lib/features/tika/ai/system-prompts";
+import {
+  DEFAULT_TIKA_MODEL,
+  getTikaModelDefinition,
+} from "$lib/features/tika/domain/tika-model-catalog";
 import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
 import {
   deriveUserOverlay,
@@ -99,7 +103,7 @@ function resolveQuizDifficulty(
   return "medium";
 }
 
-function createTikaTools(userId: string, completedConcepts: string[], masteryCtx?: MasteryContext) {
+export function _createTikaTools(userId: string, completedConcepts: string[], masteryCtx?: MasteryContext) {
   const container = getContainer();
   const { toolExecutor, sequenceValidator, sequenceGenerator, quizGenerator, progressWriter } = container; // eslint-disable-line @typescript-eslint/no-unused-vars
 
@@ -756,24 +760,19 @@ export const POST: RequestHandler = async (event) => {
     const container = getContainer();
     const { modelProvider } = container;
 
-    // Determine which model to use (default to sonnet-4)
-    const selectedModel = body.model || "sonnet-4";
-
-    // Validate API key based on selected model
-    if (selectedModel === "deepseek") {
-      if (!modelProvider.isProviderConfigured("deepseek")) {
-        return new Response(JSON.stringify({ error: "Deepseek API key not configured" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-    } else {
-      if (!modelProvider.isProviderConfigured("anthropic")) {
-        return new Response(JSON.stringify({ error: "Anthropic API key not configured" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
+    const selectedModel = body.model ?? DEFAULT_TIKA_MODEL;
+    const modelDefinition = getTikaModelDefinition(selectedModel);
+    if (!modelDefinition) {
+      return Response.json(
+        { error: "Choose an available TIKA model." },
+        { status: 400 }
+      );
+    }
+    if (!modelProvider.isProviderConfigured(modelDefinition.provider)) {
+      return Response.json(
+        { error: "The selected TIKA provider is not configured." },
+        { status: 503 }
+      );
     }
 
     // Build system prompt based on user progress and mastery data
@@ -795,7 +794,11 @@ export const POST: RequestHandler = async (event) => {
 
     if (body.messages && Array.isArray(body.messages)) {
       messages = body.messages;
-      modelMessages = await convertToModelMessages(messages);
+      // Stopping a streamed answer can leave a tool call without its result.
+      // Sending that unfinished call back makes the next provider request fail.
+      modelMessages = await convertToModelMessages(messages, {
+        ignoreIncompleteToolCalls: true,
+      });
     } else if (body.question) {
       // Legacy format - convert question string directly to model message
       modelMessages = [{ role: "user" as const, content: body.question }];
@@ -814,8 +817,10 @@ export const POST: RequestHandler = async (event) => {
       model: modelProvider.getModel(selectedModel),
       system: systemPrompt,
       messages: modelMessages,
-      tools: createTikaTools(caller.uid, completedConcepts, body.masteryContext),
+      tools: _createTikaTools(caller.uid, completedConcepts, body.masteryContext),
       stopWhen: stepCountIs(6),
+      maxOutputTokens: 4096,
+      abortSignal: event.request.signal,
       experimental_telemetry: {
         isEnabled: false,
       },

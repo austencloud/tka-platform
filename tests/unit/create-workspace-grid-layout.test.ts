@@ -206,6 +206,25 @@ describe("calculateGridLayout workspace column selection", () => {
     expect(fitted.cellSize).toBeGreaterThan(60);
   });
 
+  it("fits sixteen steps in a passive phone preview with its tighter cell floor", () => {
+    // Tunnel's cards are previews, not editing targets. They can spend the
+    // workbench's hover reserve and accept a smaller floor so every count stays
+    // visible instead of putting steps 13-16 behind an internal scrollbar.
+    const layout = calculateGridLayout(16, 321, 212, null, {
+      fitAllSteps: true,
+      minCellSize: 28,
+      maxCellSize: 360,
+      widthPaddingRatio: 1,
+      heightPaddingRatio: 1,
+      narrowMaxColumns: 2,
+      preferWidthSizingOnNarrow: true,
+    });
+
+    expect(layout.cellSize).toBeGreaterThanOrEqual(28);
+    expect(layout.rows * layout.cellSize).toBeLessThanOrEqual(212);
+    expect(layout.totalColumns * layout.cellSize).toBeLessThanOrEqual(321);
+  });
+
   it("leaves every non-preview caller on the existing sizing policy", () => {
     const before = calculateGridLayout(16, 900, 250, null);
     const after = calculateGridLayout(16, 900, 250, null, {

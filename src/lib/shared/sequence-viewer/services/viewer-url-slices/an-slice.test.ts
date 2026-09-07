@@ -112,24 +112,24 @@ describe("an slice", () => {
     const stores = defaultStores();
     // Diverged pair: the wildcard map is what the renderer keys off, so it wins
     // and both fields travel together.
-    stores.visibility.setTipEffortMap({ "*": { effort: "snappy" } });
+    stores.visibility.setTipEffortMap({ "*": { effort: "bounce" } });
 
     const slice = captureAnSlice(stores);
-    expect(slice?.visibility?.effortPreset).toBe("snappy");
-    expect(slice?.visibility?.tipEffortMap).toEqual({ "*": { effort: "snappy" } });
+    expect(slice?.visibility?.effortPreset).toBe("bounce");
+    expect(slice?.visibility?.tipEffortMap).toEqual({ "*": { effort: "bounce" } });
 
     const seeded = seedFromAnSlice(slice!);
-    expect(seeded.visibility.effortPreset).toBe("snappy");
-    expect(seeded.visibility.tipEffortMap).toEqual({ "*": { effort: "snappy" } });
+    expect(seeded.visibility.effortPreset).toBe("bounce");
+    expect(seeded.visibility.tipEffortMap).toEqual({ "*": { effort: "bounce" } });
   });
 
   it("keeps an exotic per-tip effort map verbatim", () => {
     const stores = defaultStores();
-    stores.visibility.setTipEffortMap({ "3": { effort: "snappy" } });
+    stores.visibility.setTipEffortMap({ "3": { effort: "bounce" } });
 
     const slice = captureAnSlice(stores);
     expect(slice?.visibility?.effortPreset).toBe("linear");
-    expect(slice?.visibility?.tipEffortMap).toEqual({ "3": { effort: "snappy" } });
+    expect(slice?.visibility?.tipEffortMap).toEqual({ "3": { effort: "bounce" } });
 
     const b = defaultStores();
     const seeded = seedFromAnSlice(slice!);
@@ -147,7 +147,7 @@ describe("an slice", () => {
     a.visibility.setGridMode("none");
     a.visibility.setDarkMode(false);
     a.visibility.setSpeed(1.75);
-    a.visibility.setEffortPreset("snappy");
+    a.visibility.setEffortPreset("bounce");
     const slice = captureAnSlice(a);
 
     const b = defaultStores();
@@ -272,5 +272,44 @@ describe("an slice", () => {
 
     visibility.replaceAll({ ...seeded.visibility, darkMode: true });
     expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+
+  it("seedFromAnSlice ignores unknown and __proto__ keys from a hand-edited blob", () => {
+    const payload = JSON.parse(
+      '{"settings":{"__proto__":{"polluted":true},"bogus":1,"bpm":77,"trail":{"__proto__":{"polluted":true},"nope":2}},' +
+        '"visibility":{"__proto__":{"polluted":true},"stepNumbers":false,"junk":true}}'
+    );
+    const seeded = seedFromAnSlice(payload);
+    for (const obj of [seeded.settings, seeded.settings.trail, seeded.visibility]) {
+      expect(Object.getPrototypeOf(obj)).toBe(Object.prototype);
+      expect((obj as { polluted?: boolean }).polluted).toBeUndefined();
+    }
+    expect("bogus" in seeded.settings).toBe(false);
+    expect("junk" in seeded.visibility).toBe(false);
+    expect(seeded.settings.bpm).toBe(77);
+    expect(seeded.visibility.stepNumbers).toBe(false);
+  });
+
+  describe("full snapshot", () => {
+    it("emits every settings and visibility key at defaults, and round-trips", () => {
+      const stores = defaultStores();
+      const full = captureAnSlice(stores, { full: true });
+      expect(full).not.toBeNull();
+      expect(full?.settings?.bpm).toBe(stores.settings.snapshot().bpm);
+      expect(full?.settings?.shouldLoop).toBe(stores.settings.snapshot().shouldLoop);
+      expect(Object.keys(full!.settings!.trail!).sort()).toEqual(
+        Object.keys(DEFAULT_TRAIL_SETTINGS).sort()
+      );
+      expect(Object.keys(full!.visibility!).sort()).toEqual(
+        Object.keys(postNormalizeVisibilityDefaults()).sort()
+      );
+
+      const seeded = seedFromAnSlice(full!);
+      const next = defaultStores();
+      next.settings.replaceAll(seeded.settings);
+      next.visibility.replaceAll(seeded.visibility);
+      expect(captureAnSlice(next, { full: true })).toEqual(full);
+      expect(captureAnSlice(next)).toBeNull();
+    });
   });
 });

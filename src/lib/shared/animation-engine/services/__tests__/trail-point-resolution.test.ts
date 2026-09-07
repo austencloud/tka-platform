@@ -45,9 +45,12 @@ describe("canonical trail point resolution", () => {
 
   it("anchors both buugeng trails to the pictograph SVG terminals", () => {
     expect(getTipPoints("buugeng").points).toEqual(BUUGENG_TIP_POINTS.points);
+    // Bigbuugeng's terminals are tapers, not buugeng's rounded caps, and its
+    // S-curve is steep enough that an on-axis pair falls off the artwork
+    // entirely. These sit inside the taper at radius 295, point-symmetric.
     expect(getTipPoints("bigbuugeng").points).toEqual([
-      { dx: 263.44, dy: 0 },
-      { dx: -263.44, dy: 0 },
+      { dx: 294.28, dy: 20.58 },
+      { dx: -294.28, dy: -20.58 },
     ]);
   });
 
@@ -173,11 +176,15 @@ describe("trail source world-space calculation", () => {
       "buugeng"
     );
 
-    expect(first?.x).toBeCloseTo(475 - BUUGENG_TIP_POINTS.points[0].dy, 10);
-    expect(first?.y).toBeCloseTo(475 + BUUGENG_TIP_POINTS.points[0].dx, 10);
+    const [firstTip, secondTip] = BUUGENG_TIP_POINTS.points;
+    if (!firstTip || !secondTip) {
+      throw new Error("buugeng should declare at least two tip points");
+    }
+    expect(first?.x).toBeCloseTo(475 - firstTip.dy, 10);
+    expect(first?.y).toBeCloseTo(475 + firstTip.dx, 10);
     expect(first?.tipIndex).toBe(0);
-    expect(second?.x).toBeCloseTo(475 - BUUGENG_TIP_POINTS.points[1].dy, 10);
-    expect(second?.y).toBeCloseTo(475 + BUUGENG_TIP_POINTS.points[1].dx, 10);
+    expect(second?.x).toBeCloseTo(475 - secondTip.dy, 10);
+    expect(second?.y).toBeCloseTo(475 + secondTip.dx, 10);
     expect(second?.tipIndex).toBe(1);
   });
 
@@ -300,5 +307,57 @@ describe("legacy trail capture endpoint parity", () => {
     expect(points).toHaveLength(1);
     expect(points[0]?.x).toBeCloseTo(expected!.x, 8);
     expect(points[0]?.y).toBeCloseTo(expected!.y, 8);
+  });
+
+  it("does not record Tunnel formation travel and resumes from a fresh path", () => {
+    const capturer = new TrailCapturer();
+    capturer.initialize({
+      canvasSize: 500,
+      leftPropDimensions: { width: 252.8, height: 77.8 },
+      rightPropDimensions: { width: 252.8, height: 77.8 },
+      leftPropType: "staff",
+      trailSettings: {
+        ...DEFAULT_TRAIL_SETTINGS,
+        trackingMode: TrackingMode.BOTH_ENDS,
+      },
+    });
+    const prop = (x: number): PropState => ({
+      x,
+      y: 0,
+      centerPathAngle: 0,
+      staffRotationAngle: 0,
+    });
+    const frame = (x: number, time: number, trailCaptureSuppressed = false) =>
+      capturer.captureFrame(
+        {
+          leftProp: null,
+          rightProp: null,
+          additionalLayers: [
+            {
+              leftProp: prop(x),
+              rightProp: null,
+              trailCaptureSuppressed,
+              formationTransitionActive: trailCaptureSuppressed,
+            },
+          ],
+        },
+        x,
+        time
+      );
+
+    frame(0, 1000);
+    frame(0.1, 1600);
+    expect(capturer.getAllTrailPoints().additionalLayers[0]?.left.length).toBe(
+      2
+    );
+
+    frame(0.3, 1700, true);
+    frame(0.5, 1800, true);
+    expect(capturer.getAllTrailPoints().additionalLayers[0]?.left).toEqual([]);
+
+    frame(0.5, 1900);
+    expect(capturer.getAllTrailPoints().additionalLayers[0]?.left).toHaveLength(
+      2
+    );
   });
 });

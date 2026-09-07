@@ -1,0 +1,36 @@
+{
+  "revision": "gate3-midflank-r5",
+  "generationTool": "Built-in image_gen.imagegen",
+  "purpose": "Illustrative finish study from approved-camera Blender render; not geometry authority",
+  "accepted": [
+    {
+      "output": "paintover-default-audience.png",
+      "sourceGeneration": "exec-4077623b-5d41-4962-98e6-9212ebc2859e.png",
+      "inputs": ["target-default-audience.png"],
+      "prompt": "Use case: sketch-to-render.\nAsset type: Ember Gate 3 material and light target, a photorealistic paintover of an approved Blender camera.\nInput Image 1 is the EDIT TARGET. Preserve the image composition exactly: 16:9 frame, elevated audience camera looking uphill, human scale markers, the small dark cooled-lava bench at the centre, the oblique rock rib immediately to its right, the large mountain rising behind it and cropped above the frame, and the lava corridor entering at x about 66 percent of the top edge and leaving at the lower right edge.\nChange surface finish and lighting into believable volcanic realism. Surface materials: charcoal basalt, dense slightly smoother cooled lava at the bench, dark broken clinker around its irregular margins, rough stratified weathered basalt on the existing rib, fine grey ash in sheltered hollows, a few small naturally deposited fragments outside the cleared footing. Preserve the mostly slanted ground and the small stable patch. Integrate the dark bench gradually into the older flow beyond it; no geometric outline.\nThe current bright regular polygon network on the right is only a proxy for a transporting crusted lava flow. Render a natural black rubbly crust over hot lava, interrupted by uneven narrow orange-red gaps, occasional exposed orange interiors, and small isolated white-orange points inside the hottest breaks. Keep the exact corridor footprint, slope and width. Avoid repeating polygon cells or uniform glowing outlines. Lava glows and casts restrained warm light into adjoining banks. Most visible terrain and most lava crust stay dark and solid.\nLighting: dim ash-filtered daylight, subtle cool-neutral sky fill and warm reflected lava light on facing edges; enough exposure to read the rock detail and slope. Very slight local fumes and distance haze. Epic scale through uphill continuation, not through inventing another mountain.\nRetain all visible scale proxies at the exact same centre positions, heights, shapes, counts and screen sizes (one pale central proxy and two brown foreground proxies, the closest cropped by the bottom edge). They should remain simple neutral scale maquettes; do not turn them into statues, move them or add figures.\nCritical invariants: exact camera angle, crop, perspective, framing, terrain grades, small bench footprint, rock-rib silhouette and lava footprint. No horizon or sky may be added to this uphill shot. No towers, castles, floating discs, ring-shaped stage, new giant rocks, circular platforms, fire jets or lava under the performer. No text, borders, arrows, labels or watermark. Target rich photographic microstructure with restrained natural colours, not concept-art brushwork. Output one landscape image at 16:9.",
+      "review": "Retained for material finish only. Three visible proxies retained, including the bottom-edge crop. Not a pixel-exact camera/geometry proof; native render and Blender file remain authoritative."
+    }
+  ],
+  "rejected": [
+    {
+      "sourceGeneration": "exec-dcbd38cd-4640-403d-8c9b-47e0fc64aceb.png",
+      "inputs": [
+        "target-midflank-oblique.png",
+        "paintover-default-audience.png"
+      ],
+      "prompt": "Use case: sketch-to-render. Asset type: Ember Gate 3 photorealistic material paintover.\nImage 1 is the EDIT TARGET and locks the CAMERA AND GEOMETRY. Image 2 is a MATERIAL FINISH reference of the same approved environment from a different camera; do not borrow its composition.\nMake Image 1 photorealistic using Image 2's charcoal basalt, irregular clinker, dense cooled flow and naturally crusted lava. Preserve Image 1's exact 16:9 camera, silhouette of the giant volcanic flank on the right against the sky, topographic grades, existing small rock outcrop locations, small stable performer bench and ALL FIVE scale maquettes at their exact positions and sizes. Preserve the lava footprint from the upper-left-centre through its long diagonal descent to the lower-right corner. Preserve every curve in its course, width, and elevation. The dark outcrop proxies uphill should gain stratified rocky surfaces while staying the same size, number and shape. Render the surface as variable angular dark rubble with grey ash in low hollows; the central old-flow bench subtly denser and smoother and still cold. Render lava as solid black broken crust with irregular deep incandescent orange-red joints and a few tiny hotter exposed breakout windows. Most of its area is dark crust. Do not reproduce the current even honeycomb glowing lines. Soft warm reflection hugs the banks, ash-filtered daylight makes the overall rocky form readable, slightly cooler distance haze in the sky. Sky stays the same area; no other mountain or distant valley is invented. The sense of being halfway up an enormous mountain must come from the source geometry.\nKeep the five scale maquettes as simple tiny cylinders with pointed caps: one performer above four audience markers following the downhill contour. Do not add people. No redesign, no flat rectangular or circular stage, no steps, no rings or platform border, no lava beneath the performer, no fortress, no smoke wall obscuring the shape. No text, border, diagrams or watermark. Photographic detail rather than brushwork. Output one 16:9 landscape image.",
+      "reason": "Six scale markers instead of the five in the approved wide view. Excluded from delivered targets."
+    },
+    {
+      "sourceGeneration": "exec-c9f3f6e1-35cb-4e31-825c-5447ed215424.png",
+      "inputs": ["exec-dcbd38cd-4640-403d-8c9b-47e0fc64aceb.png"],
+      "prompt": "Use case: precise-object-edit. Input image is the EDIT TARGET. Make one small correction and leave all other pixels, composition, rock texture, lava, light and silhouettes unchanged.\nThere are SIX thin upright scale markers in the lower middle-right of this image, but there must be FIVE. The topmost pale-white marker is the performer. Immediately below-right of that pale marker is an EXTRA light-brown marker, at approximately 57 percent of image width and 74 percent of image height (around pixel 953, 697 in this 1672 by 941 image). Remove only that EXTRA marker and its tiny shadow, filling that small spot with the same surrounding dark rock texture.\nKeep the white performer in place. Keep all FOUR remaining brown audience markers farther downhill in place. Do not move or recolor any retained marker. Do not add anything. Exactly five markers total after edit: one pale performer plus four brown audience. No other changes. Preserve the same dimensions and camera framing.",
+      "reason": "Targeted removal did not correct the six-marker count. Excluded; exact Blender wide view used."
+    }
+  ],
+  "meshyCalls": 0,
+  "limitations": [
+    "Generated surface detail is an art target, not an implemented mesh, PBR texture set or runtime screenshot.",
+    "Only the native Blender views carry exact camera and source-geometry equality checks."
+  ]
+}

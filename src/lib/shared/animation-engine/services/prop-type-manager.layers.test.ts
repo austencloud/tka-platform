@@ -46,7 +46,9 @@ describe("PropTypeManager.preloadAdditionalLayerTextures (tunnel export)", () =>
     expect(renderer.loadAdditionalLayerPropTextures).toHaveBeenCalledTimes(3);
     expect(calls.map((c) => c.i)).toEqual([0, 1, 2]);
     expect(
-      calls.every((c) => c.leftPropType === "club" && c.rightPropType === "club")
+      calls.every(
+        (c) => c.leftPropType === "club" && c.rightPropType === "club"
+      )
     ).toBe(true);
   });
 
@@ -96,5 +98,40 @@ describe("PropTypeManager.preloadAdditionalLayerTextures (tunnel export)", () =>
     const { ptm, renderer } = makeManager();
     await ptm.preloadAdditionalLayerTextures(0, true, "staff");
     expect(renderer.loadAdditionalLayerPropTextures).not.toHaveBeenCalled();
+  });
+});
+
+describe("PropTypeManager hidden layer preparation", () => {
+  it("loads prepared layers before they join the visible frame", async () => {
+    const { ptm, renderer } = makeManager();
+    const statuses: Array<{
+      requested: number;
+      loaded: number;
+      loading: number;
+    }> = [];
+    const layer = {
+      leftProp: { centerPathAngle: 0, staffRotationAngle: 0 },
+      rightProp: { centerPathAngle: 180, staffRotationAngle: 0 },
+    };
+
+    ptm.handleAdditionalLayers(
+      {
+        leftProp: null,
+        rightProp: null,
+        additionalLayers: [],
+        preloadAdditionalLayers: [layer, layer],
+        onAdditionalLayerTextureStatusChange: (status) => statuses.push(status),
+      },
+      {
+        currentLeftPropType: "staff",
+        currentRightPropType: "staff",
+      } as never,
+      () => ({}) as never
+    );
+
+    expect(renderer.loadAdditionalLayerPropTextures).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() =>
+      expect(statuses.at(-1)).toEqual({ requested: 2, loaded: 2, loading: 0 })
+    );
   });
 });

@@ -9,7 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const SCRIPT = join(process.cwd(), "scripts", "worktree-automerge.mjs");
@@ -52,6 +52,7 @@ describe("worktree finish lifecycle", () => {
   });
 
   function commitTaskFile(path: string, contents: string) {
+    mkdirSync(dirname(join(task, path)), { recursive: true });
     writeFileSync(join(task, path), contents);
     git(task, "add", path);
     git(task, "commit", "-m", `change ${path}`);
@@ -178,13 +179,14 @@ describe("worktree finish lifecycle", () => {
   it("runs the check command through the platform launcher before merging", () => {
     commitTaskFile("feature.txt", "checked\n");
     const bin = join(root, "bin");
+    const marker = join(root, "npm-check-ran.txt");
     mkdirSync(bin);
     const npmStub = join(bin, process.platform === "win32" ? "npm.cmd" : "npm");
     writeFileSync(
       npmStub,
       process.platform === "win32"
-        ? "@echo off\r\nexit /b 0\r\n"
-        : "#!/bin/sh\nexit 0\n"
+        ? `@echo off\r\n> "${marker}" echo checked\r\nexit /b 0\r\n`
+        : `#!/bin/sh\nprintf checked > '${marker}'\n`
     );
     if (process.platform !== "win32") chmodSync(npmStub, 0o755);
 
@@ -199,8 +201,41 @@ describe("worktree finish lifecycle", () => {
     );
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(readFileSync(marker, "utf8").trim()).toBe("checked");
     expect(readFileSync(join(repo, "feature.txt"), "utf8")).toBe("checked\n");
     expect(existsSync(task)).toBe(false);
+  });
+
+  it("skips the Svelte check for documentation-only branches", () => {
+    commitTaskFile("docs/agent-contract.md", "documented\n");
+    const bin = join(root, "bin");
+    mkdirSync(bin);
+    const npmStub = join(bin, process.platform === "win32" ? "npm.cmd" : "npm");
+    writeFileSync(
+      npmStub,
+      process.platform === "win32"
+        ? "@echo off\r\nexit /b 23\r\n"
+        : "#!/bin/sh\nexit 23\n"
+    );
+    if (process.platform !== "win32") chmodSync(npmStub, 0o755);
+
+    const result = spawnSync(
+      process.execPath,
+      [SCRIPT, "--finish", BRANCH, "--nonvisual"],
+      {
+        cwd: repo,
+        encoding: "utf8",
+        env: { ...process.env, PATH: `${bin}${delimiter}${process.env.PATH}` },
+      }
+    );
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(result.stdout).toContain(
+      "skipping `npm run check` for documentation-only changes"
+    );
+    expect(readFileSync(join(repo, "docs/agent-contract.md"), "utf8")).toBe(
+      "documented\n"
+    );
   });
 
   it("fails closed when the retired server-side batch apply flag is used", () => {

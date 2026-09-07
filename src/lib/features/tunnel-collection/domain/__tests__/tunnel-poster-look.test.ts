@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SNAPSHOT_VERSION } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import {
   DEFAULT_TRAIL_SETTINGS,
   TAIL_LENGTH_MAX,
@@ -31,9 +32,13 @@ function tunnel(): CollectedTunnel {
           custom: { left: "#2e8bf0", right: "#ed1c24" },
         },
         section: "tunnel",
+        presetRecipe: null,
       },
-      effects: { tipEffectMap: { "*": { effect: "fire" } } },
-      effort: "medium",
+      effects: {
+        ...DEFAULT_EFFECTS_CONFIG,
+        tipEffectMap: { "*": { effect: "fire" } },
+      },
+      effort: "linear",
       paths: {
         pathShape: "arc",
         motionAwarePaths: false,
@@ -53,7 +58,7 @@ function tunnel(): CollectedTunnel {
         previewMode: true,
       },
     },
-  } as CollectedTunnel;
+  };
 }
 
 describe("posterTrailSettings", () => {

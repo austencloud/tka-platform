@@ -11,6 +11,18 @@ When explicitly invoked, treat the text after `$concepts` as `<arguments>`. Expe
 
 Build and track the 28 interactive concept lessons in the Learn tab.
 
+## Teacher continuity pilot
+
+For lesson design, implementation, or experience review, read
+`docs/learn/teacher-brief.md` and `docs/learn/teacher-pilot.md`. Apply the relevant
+prior decisions as the current task lead, or use the `teacher` agent when
+delegation is appropriate. Do not add a second lead or an approval gate.
+Follow the pilot's eligibility and evidence rules when recording an authorized
+modifying task. Read-only work stays read-only. Status-only queries skip this
+briefing. Keep the same concept, copy, visual, and human-confirmation owners.
+For achievement or progression changes, verify the briefing's achievement gate,
+including the next action and reduced-motion equivalent.
+
 ## Philosophy & Patterns
 
 See `interaction-reference.md` in this directory for:

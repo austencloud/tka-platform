@@ -29,7 +29,7 @@ describe("Shape Matrix app boundary", () => {
 
   it("keeps URL persistence in the public route host", () => {
     const pageSource = readFileSync(
-      resolve("src/routes/(public)/notation/shape-matrix/+page.svelte"),
+      resolve("src/routes/(public)/shape-engine/+page.svelte"),
       "utf8"
     );
 
@@ -47,7 +47,8 @@ describe("Shape Matrix app boundary", () => {
     );
 
     expect(drillSource).toContain("disableContextMenu: false");
-    expect(drillSource).toContain('disassemblyLayout: "sidecar"');
+    // The drill lets the animator pick sidecar vs stacked from its host box.
+    expect(drillSource).toContain('disassemblyLayout: "auto"');
     expect(drillSource).toContain(
       'import("$lib/shared/timeline/StepStrip.svelte")'
     );
@@ -64,10 +65,18 @@ describe("Shape Matrix app boundary", () => {
     expect(drillSource).not.toContain("fadeSettlementTimer");
     expect(drillSource).toContain("retryPlayerLoad");
     expect(drillSource).toContain("railLoadError");
-    expect(drillSource).toContain(
-      '<i class="fas fa-arrow-right derivation-arrow" aria-hidden="true"></i>'
+    // The Hands -> Props derivation lives in the shared relationship bridge.
+    const bridgeSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/components/PropRelationshipChipRow.svelte"
+      ),
+      "utf8"
     );
-    expect(drillSource).toContain('<span class="sr-only">produces</span>');
+    expect(drillSource).toContain("PropRelationshipChipRow");
+    expect(bridgeSource).toContain(
+      '<i class="fas fa-arrow-right bridge-arrow" aria-hidden="true"></i>'
+    );
+    expect(bridgeSource).toContain('<span class="sr-only">produces</span>');
   });
 
   it("threads the optional prop element through the canonical animation overlay", () => {
@@ -143,9 +152,9 @@ describe("Shape Matrix app boundary", () => {
 
     expect(inlinePlayerSource).toContain("{disassemblyLayout}");
     expect(animatorSource).toContain(
-      "data-disassembly-layout={disassemblyLayout}"
+      "data-disassembly-layout={resolvedDisassemblyLayout}"
     );
-    expect(animatorSource).toContain("layout={disassemblyLayout}");
+    expect(animatorSource).toContain("layout={resolvedDisassemblyLayout}");
     expect(animatorSource).toContain("{backgroundAlpha}");
     expect(splitSource.match(/\{backgroundAlpha\}/g)).toHaveLength(2);
     expect(splitSource).not.toContain("backgroundAlpha={1}");
@@ -175,11 +184,365 @@ describe("Shape Matrix app boundary", () => {
       "utf8"
     );
 
+    // No reserved hand-path row and no in-flow slot that could reflow the
+    // stage. The result crossfade is content-sized with an eased height: the
+    // branching phase variant is taller than the one-line result, and `fill`
+    // made its absolute layers spill out over the animation below.
     expect(propPickerSource).not.toContain("hand-choice-slot");
     expect(propPickerSource).toContain(
-      "selectedGroup && selectedGroup.candidates.length > 1"
+      "<Crossfade key={resultKey} animateHeight"
     );
-    expect(propPickerSource).toContain('transition:growFade={{ axis: "y" }}');
+    expect(propPickerSource).not.toContain("<Crossfade key={resultKey} fill");
+    expect(propPickerSource).not.toContain("transition:growFade");
+  });
+
+  it("customizes the animation over the grid, in one workspace", () => {
+    const read = (path: string) => readFileSync(resolve(path), "utf8");
+    const drillSource = read(
+      "src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte"
+    );
+    const theoryDetailSource = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixTheoryDetail.svelte"
+    );
+    const matrixPaneSource = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixMatrixPane.svelte"
+    );
+    const theoryPaneSource = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixTheoryPane.svelte"
+    );
+    const workspaceSource = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixCustomizeWorkspace.svelte"
+    );
+    const shellSource = read(
+      "src/lib/shared/shape-matrix/app/components/ShapeMatrixAppShell.svelte"
+    );
+    const stateSource = read(
+      "src/lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte.ts"
+    );
+    const dockSource = read(
+      "src/lib/shared/sequence-viewer/components/ControlDock.svelte"
+    );
+
+    // The catalogue left the animation stage. Nothing on the drill or the
+    // theory detail shrinks to make room for it any more.
+    expect(drillSource).not.toContain("BentoPropGrid");
+    expect(drillSource).not.toContain("prop-catalogue");
+    expect(theoryDetailSource).not.toContain("BentoPropGrid");
+
+    // Wide hosts: one workspace over the grid pane carries every ability.
+    // You are not choosing a shape while you tune its animation, so that is
+    // the one region that can be covered while the hero, the relationships,
+    // the carousel and the dock stay put.
+    // Once, in the shell, beside the crossfading grids: switching surfaces
+    // with it open keeps the same workspace rather than swapping it for a
+    // second instance.
+    expect(shellSource).toContain("<ShapeMatrixCustomizeWorkspace />");
+    expect(matrixPaneSource).not.toContain("ShapeMatrixCustomizeWorkspace");
+    expect(theoryPaneSource).not.toContain("ShapeMatrixCustomizeWorkspace");
+    // One split and one pair of panes for both surfaces; the grids and the
+    // details crossfade inside the panes, not two whole workspaces.
+    expect(shellSource.match(/<PanelGroup/g)).toHaveLength(1);
+    expect(shellSource).toContain("first={matrixGrid}");
+    expect(shellSource).toContain("first={matrixDetail}");
+    expect(shellSource).not.toContain("theorySizes");
+    expect(matrixPaneSource).toContain("inert={workspaceOpen}");
+    expect(theoryPaneSource).toContain("inert={workspaceOpen}");
+    for (const pane of [matrixPaneSource, theoryPaneSource]) {
+      expect(pane).not.toContain("ShapeMatrixPropOverlay");
+      expect(pane).not.toContain("ShapeMatrixSettingsOverlay");
+    }
+
+    // The canonical rail inspector, one sidebar-sized page at a time, not
+    // the dock tray's strips stretched across a pane built for a grid.
+    expect(workspaceSource).toContain('layout="sidebar"');
+    expect(workspaceSource).not.toContain('layout="bottom"');
+    expect(workspaceSource).not.toContain('presentation="content"');
+    // The dock and the rail are two views of one section.
+    expect(workspaceSource).toContain("controlledSection={section}");
+    expect(workspaceSource).toContain("onActiveSectionChange={selectSection}");
+    // Whether it is open is decided once, for the workspace, the panes that
+    // go inert under it and the shell that rebalances the split for it.
+    const customizeSource = read(
+      "src/lib/shared/shape-matrix/app/state/shape-matrix-customize.ts"
+    );
+    expect(customizeSource).toContain(
+      'animation.activeSection ?? (app.propPickerOpen ? "props" : null)'
+    );
+    expect(customizeSource).toContain("if (app.compact || !surfaceHasPair(app)) return null;");
+    // The dock waits for a pair rather than answering Customize with a
+    // workspace that closes at once.
+    const dockGateSource = read(
+      "src/lib/shared/shape-matrix/components/ShapeMatrixCustomizeDock.svelte"
+    );
+    expect(dockGateSource).toContain(
+      "const hasPair = $derived(surfaceHasPair(appState));"
+    );
+    expect(dockGateSource.match(/disabled=\{!hasPair\}/g)).toHaveLength(2);
+    expect(workspaceSource).toContain(
+      "customizeSection(appState, animationState)"
+    );
+    expect(matrixPaneSource).toContain("customizeSection(state, animationState)");
+    expect(theoryPaneSource).toContain(
+      "customizeSection(appState, animationState)"
+    );
+    // A labelled way back, and Escape through the shared layer manager.
+    expect(workspaceSource).toContain("Back to grid");
+    expect(workspaceSource).toContain('role="dialog"');
+    expect(workspaceSource).toContain('id: "shape-matrix:customize"');
+
+    // A wide host shows every ability in the workspace, so its dock is one
+    // Customize button and the transport; five pills under the animation
+    // listed the rail a second time. Compact hosts keep the pill dock, since
+    // the grid pane is off screen there: each pill opens a sheet, and Props
+    // routes to the canonical prop sheet.
+    const customizeDockSource = read(
+      "src/lib/shared/shape-matrix/components/ShapeMatrixCustomizeDock.svelte"
+    );
+    const animationStateSource = read(
+      "src/lib/shared/shape-matrix/app/state/shape-matrix-animation-state.svelte.ts"
+    );
+    expect(drillSource).toMatch(
+      /\{#if appState && !appState\.compact\}\s*<ShapeMatrixCustomizeDock \/>\s*\{:else\}\s*<AnimationPanel/
+    );
+    expect(drillSource).toContain("onPropPickerRequest={onproppickertoggle}");
+    expect(theoryDetailSource).toMatch(
+      /\{#if app\.compact\}\s*<AnimationPanel[\s\S]*?\{:else\}\s*<ShapeMatrixCustomizeDock \/>\s*\{\/if\}/
+    );
+    expect(theoryDetailSource).toContain(
+      "onPropPickerRequest={app.togglePropPicker}"
+    );
+    expect(shellSource).toMatch(
+      /\{#if appState\.compact\}\s*<PropSelectionSheet/
+    );
+    expect(customizeDockSource).toContain("<span>Customize</span>");
+    expect(customizeDockSource).toContain("ariaPressed={open}");
+    expect(customizeDockSource).toContain("animationState.openCustomize()");
+    expect(customizeDockSource).not.toContain("ControlDock");
+    // Opening resumes on the page the rail last showed, never on a page this
+    // host does not have.
+    expect(animationStateSource).toContain("function openCustomize");
+    expect(animationStateSource).toContain(
+      "CUSTOMIZE_SECTIONS.includes(remembered)"
+    );
+
+    // Customizing rebalances the split toward the animation: the workspace
+    // pane takes what its pages use and never more than 45% of the room, and
+    // the split the user had comes back on the way out.
+    expect(shellSource).toContain("function customizeSplit");
+    expect(shellSource).toContain(
+      "Math.min(need, width * 0.45, width - STAGE_MIN)"
+    );
+    expect(shellSource).toContain("restingSizes = [...sizes]");
+    expect(shellSource).toMatch(
+      /if \(customizeApplied && restingSizes\) sizes = restingSizes;/
+    );
+
+    // The Props pill shows pressed while the sheet is open, without a tray
+    // of its own, so the way back is visible.
+    expect(drillSource).toContain("propPickerActive={propPickerOpen}");
+    expect(theoryDetailSource).toContain(
+      "propPickerActive={app.propPickerOpen}"
+    );
+    expect(drillSource).toContain("data-shape-matrix-dock");
+    expect(theoryDetailSource).toContain("data-shape-matrix-dock");
+    expect(dockSource).toContain(
+      "aria-pressed={activeTab === t.id || !!t.pressed}"
+    );
+
+    // Choosing keeps the workspace open, so the change can be watched: pick a
+    // prop, see the pair traced by it, pick the next one.
+    expect(stateSource).toContain("async function setPropType");
+    expect(stateSource).toContain("The picker stays open.");
+  });
+
+  it("offers prop choice once, under the animation", () => {
+    const overflowSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixOverflowMenu.svelte"
+      ),
+      "utf8"
+    );
+
+    // The Props control under the canvas owns the choice; a second entry in
+    // the overflow menu pointed at the same catalogue.
+    expect(overflowSource).not.toContain("Choose prop");
+    expect(overflowSource).not.toContain("getPropTypeDisplayInfo");
+  });
+
+  it("marks the chosen relationship with more than a colour", () => {
+    const chipSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/components/RelationshipChoiceChip.svelte"
+      ),
+      "utf8"
+    );
+
+    // Six element accents, several of them dark: a tint difference alone did
+    // not answer "which one did I pick?" at a glance.
+    expect(chipSource).toContain('class="choice-check"');
+    expect(chipSource).toContain("aria-pressed={active}");
+    expect(chipSource).toContain(".relationship-choice.active .choice-check {");
+    // Whole-surface treatment, never a decorative edge strip.
+    expect(chipSource).toContain("inset 0 0 0 2px var(--choice-accent)");
+    expect(chipSource).not.toMatch(/border-(left|right|top|bottom):\s*\d/);
+  });
+
+  it("wraps a long value palette instead of scrolling it sideways", () => {
+    // The scroller owns the long-band behaviour wherever a surface picks from
+    // an ordered palette. That is the Matrix turn band. Theory types its ratio
+    // instead, so it is checked below for the entry rather than the scroller.
+    const scrollerSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixValueScroller.svelte"
+      ),
+      "utf8"
+    );
+    const turnSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixTurnControls.svelte"
+      ),
+      "utf8"
+    );
+    const theorySource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixTheoryControls.svelte"
+      ),
+      "utf8"
+    );
+    const ratioEntrySource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/app/components/ShapeMatrixRatioEntry.svelte"
+      ),
+      "utf8"
+    );
+    const segmentedSource = readFileSync(
+      resolve("src/lib/shared/ui/components/SegmentedControl.svelte"),
+      "utf8"
+    );
+
+    // Level 4 lists fourteen ratios. The tray splits them over two rows and
+    // spends the saved room on full-size segments.
+    expect(scrollerSource).toContain("columns={trayColumns}");
+    expect(scrollerSource).toContain(
+      ".scroller-host:not(.tray) .value-control :global(.segmented-control)"
+    );
+    // The turn ribbon may not fork it back into a local palette.
+    expect(turnSource).toContain("<ShapeMatrixValueScroller");
+    expect(turnSource).not.toContain("trayColumns");
+    // The 0–15 ratio square is a field, not a ladder, so Theory takes the two
+    // numbers directly and must not grow a palette of its own.
+    expect(theorySource).toContain("<ShapeMatrixRatioEntry");
+    expect(theorySource).not.toContain("<ShapeMatrixValueScroller");
+    expect(theorySource).not.toContain("SegmentedControl");
+    expect(theorySource).toContain("Link ratios");
+    expect(theorySource).toContain("Which ratio should both use?");
+    expect(theorySource).toContain('hand="both"');
+    expect(ratioEntrySource).toContain('onclick={() => nudge("hand", -1)}');
+    expect(ratioEntrySource).toContain('onclick={() => nudge("prop", 1)}');
+    // The indicator tracks the chosen cell on both axes.
+    expect(segmentedSource).toContain(".grid .indicator {");
+    expect(segmentedSource).toContain("--row: {selectedRow}");
+  });
+
+  it("plays a header on its own, with one prop and no hand pickers", () => {
+    // A red or blue header is one hand. Clicking it opens that hand's own
+    // mandala with the other prop hidden, so the pickers that only mean
+    // something for a pair are gone rather than left inert.
+    const gridSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte"
+      ),
+      "utf8"
+    );
+    const drillSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte"
+      ),
+      "utf8"
+    );
+    const shellSource = readFileSync(
+      resolve(APP_ROOT, "components/ShapeMatrixAppShell.svelte"),
+      "utf8"
+    );
+    // The headers become buttons only where a host asked for the behavior.
+    expect(gridSource).toContain("{#if onsolo}");
+    expect(gridSource).toContain('class="head-button"');
+    expect(gridSource).toContain('onsolo("right", rf)');
+    expect(gridSource).toContain('onsolo("left", bf)');
+    // The hero draws only the soloed hand's own paths.
+    expect(drillSource).toMatch(/solo === "right"\s*\?\s*\[\]/);
+    expect(drillSource).toMatch(/solo === "left"\s*\?\s*\[\]/);
+    expect(drillSource).toContain("{#if !solo}");
+    // The quiet prop is the canonical per-hand motion visibility, not a
+    // second way of hiding a prop.
+    expect(shellSource).toContain("new SequenceViewerVisibilityState(true)");
+    expect(shellSource).toContain("setViewerVisibilityContext(motionVisibility)");
+    expect(shellSource).toContain("appState.soloHand");
+  });
+
+  it("shares the view on the press, with no sheet of its own", () => {
+    // Share is the action, not a menu that offers it: one press reaches the
+    // phone's share sheet or the clipboard. The address bar already carries
+    // every setting, the notation included, so there is nothing to choose.
+    const shellSource = readFileSync(
+      resolve(APP_ROOT, "components/ShapeMatrixAppShell.svelte"),
+      "utf8"
+    );
+    const popoverSource = readFileSync(
+      resolve(APP_ROOT, "components/ShapeMatrixTurnPopover.svelte"),
+      "utf8"
+    );
+    const stateSource = readFileSync(
+      resolve(APP_ROOT, "state/shape-matrix-app-state.svelte.ts"),
+      "utf8"
+    );
+    const pageSource = readFileSync(
+      resolve("src/routes/(public)/shape-engine/+page.svelte"),
+      "utf8"
+    );
+    const linkShareSource = readFileSync(
+      resolve("src/lib/shared/share/services/link-share.ts"),
+      "utf8"
+    );
+    // The button acts; nothing opens first.
+    expect(shellSource).toContain("onclick={shareThisView}");
+    expect(shellSource).toContain("appState.shareLink()");
+    expect(shellSource).toContain("shareOrCopyLink({");
+    expect(shellSource).not.toContain("ShapeMatrixShareButton");
+    // Handing a link on has one owner: platform sheet, then clipboard.
+    expect(linkShareSource).toContain("platform.share(payload)");
+    expect(linkShareSource).toContain("copyTextToClipboard(link.url)");
+    // No second clipboard path anywhere in the embeddable app.
+    expect(readTree(APP_ROOT)).not.toContain("navigator.clipboard");
+    // The route host writes the address; the app only asks for it.
+    expect(stateSource).toContain("dependencies.link?.(snapshot())");
+    expect(pageSource).toContain("writeShapeMatrixRouteState(url, snapshot);");
+    expect(shellSource).toContain("{#if appState.canShare}");
+    // The level is a difficulty to whoever opens the link.
+    expect(shellSource).not.toContain("Kinetic Alphabet level");
+    expect(popoverSource).not.toContain("Kinetic Alphabet level");
+  });
+
+  it("opens every value of the level from the corner's own value", () => {
+    // The corner shows the current rows and columns value; pressing a value
+    // opens the level's whole palette, so a far value is one press away.
+    const stepperSource = readFileSync(
+      resolve(APP_ROOT, "components/ShapeMatrixAxisStepper.svelte"),
+      "utf8"
+    );
+    expect(stepperSource).toContain("<Popover.Root bind:open>");
+    expect(stepperSource).toContain("options={choices}");
+    expect(stepperSource).toContain(
+      "appState.setTurnFor(hand, keyToTurnValue(key))"
+    );
+    // Every value of the level, wrapped past six as the compact palette is.
+    expect(stepperSource).toContain(
+      "turns.length > 6 ? Math.ceil(turns.length / 2) : undefined"
+    );
+    // Arrow keys still step in place.
+    expect(stepperSource).toContain(
+      'event.key === "ArrowUp" || event.key === "ArrowRight"'
+    );
   });
 
   it("keeps each elemental button's visible mode and name in its accessible name", () => {

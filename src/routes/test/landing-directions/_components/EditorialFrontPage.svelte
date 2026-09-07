@@ -32,7 +32,7 @@
       label: "Explore",
       entries: [
         {
-          href: "/notation/shape-matrix",
+          href: "/shape-engine",
           title: "The 144 shape matrix",
           copy: "Lorq Nichols charted every even-petaled flower pairing in 2012. TKA draws the table live.",
         },
@@ -89,7 +89,7 @@
         <a class="door-button primary" href="/notation"
           >Explore Flow Arts Notation</a
         >
-        <a class="inline-link" href="/notation/shape-matrix"
+        <a class="inline-link" href="/shape-engine"
           >See the 144 shape matrix</a
         >
       </div>

@@ -34,10 +34,21 @@
     setViewerUrlSessionContext,
   } from "../services/viewer-url-session";
   import {
+    captureT3Slice,
     seedFromT3Slice,
     persistedT3SliceFromStorage,
+    unmountedT3SliceSource,
     type T3SlicePayload,
   } from "../services/viewer-url-slices/t3-slice";
+  import {
+    captureTnSlice,
+    seedFromTnSlice,
+    persistedTnSliceFromStorage,
+    type TnSlicePayload,
+  } from "../services/viewer-url-slices/tn-slice";
+  import { capturePsSlice } from "../services/viewer-url-slices/ps-slice";
+  import { loadTunnelViewState } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-state";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     captureFxSlice,
     seedFromFxSlice,
@@ -171,6 +182,10 @@
      *  page's export once the guest finishes signing in. Receives the live ctx
      *  because the export needs the playback controller + export options. */
     onGatedDownload?: (ctx: OrchestratorContext) => void;
+    /** The sequence's minted short code, when the host has one. Share and
+     *  Copy Link then build `/sequence/<code>` instead of the inline-encoded
+     *  path, so the state params ride on a short, stable identifier. */
+    shortCode?: string | null;
     children: Snippet<[OrchestratorContext]>;
   }
 
@@ -198,6 +213,7 @@
     initialRightVisible,
     initialActiveEffect,
     onGatedDownload,
+    shortCode = null,
     children,
   }: Props = $props();
 
@@ -237,15 +253,18 @@
   /**
    * The `vw` payload shape, default-elided. Both sides of the own-link
    * comparison go through this so a seed built from the visitor's own state is
-   * byte-identical to what their capture would produce.
+   * byte-identical to what their capture would produce. `full` (Share / Copy
+   * Link) emits both fields regardless.
    */
   function viewSlice(
     mode: string,
-    split: { leftPane: string; rightPane: string }
+    split: { leftPane: string; rightPane: string },
+    options: { full?: boolean } = {}
   ): VwSlicePayload | null {
-    const atDefaultMode = mode === "split";
+    const full = options.full === true;
+    const atDefaultMode = !full && mode === "split";
     const atDefaultSplit =
-      split.leftPane === "animation" && split.rightPane === "card";
+      !full && split.leftPane === "animation" && split.rightPane === "card";
     if (atDefaultMode && atDefaultSplit) return null;
     return {
       ...(atDefaultMode ? {} : { mode }),
@@ -296,7 +315,10 @@
   // migration would write the key before any override decision was made.
   const t3Seed =
     t3SeedPayload &&
-    urlSession.isOverride("t3", persistedT3SliceFromStorage(firstUseEnvironment))
+    urlSession.isOverride(
+      "t3",
+      persistedT3SliceFromStorage(firstUseEnvironment)
+    )
       ? seedFromT3Slice(t3SeedPayload)
       : null;
 
@@ -314,6 +336,41 @@
   // Published for viewer-internal hosts whose store is built per pane rather
   // than here — today `Viewer3DCanvas`, which registers the `t3` capture.
   setViewerUrlSessionContext(urlSession);
+
+  // ── Full-snapshot fallbacks (Share / Copy Link only) ─────────────────────
+  // Three slices capture from surfaces that may not be mounted when the user
+  // copies a link: the 3D pane (`t3`), the tunnel (`tn`), Post Studio (`ps`).
+  // The address bar passes their URL seed through untouched, but a shared
+  // link must specify every field, so each gets a stand-in that reports what
+  // that surface WOULD show if opened: the seed this session was built from
+  // (a view-only link), or the sender's own disk/settings (a persistent one).
+  // A live capture from the mounted surface still outranks these.
+  urlSession.registerFullFallback("t3", (options) => {
+    const source = unmountedT3SliceSource(t3Seed, firstUseEnvironment);
+    return source ? captureT3Slice(source, options) : null;
+  });
+  const tnFallbackSeed = urlSession.getSeed("tn") as TnSlicePayload | null;
+  urlSession.registerFullFallback("tn", (options) => {
+    const source =
+      tnFallbackSeed &&
+      urlSession.isOverride("tn", persistedTnSliceFromStorage())
+        ? seedFromTnSlice(tnFallbackSeed)
+        : loadTunnelViewState();
+    return captureTnSlice(source, options);
+  });
+  urlSession.registerFullFallback("ps", (options) => {
+    const propType = getSettings().leftPropType ?? PropType.STAFF;
+    return capturePsSlice(
+      {
+        propType,
+        defaultPropType: propType,
+        audioMode: "original",
+        audioModeTouched: false,
+        notationMirrored: false,
+      },
+      options
+    );
+  });
 
   // AppSettings owns the shared fan appearance. The scene package keeps a
   // legacy default-build adapter for performer inheritance, so synchronize the
@@ -362,6 +419,12 @@
   const exportCoord = createExportCoordinator({
     viewer3DState,
     accessibilityHelper,
+    // Read lazily at export time: viewerVisibility is created further down and
+    // the coordinator is first used after it exists.
+    getMotionVisibility: () => ({
+      left: viewerVisibility.leftMotion,
+      right: viewerVisibility.rightMotion,
+    }),
   });
   let resolvedCardAutoLayout = $state<
     | import("$lib/shared/render/services/container-aware-layout").ResolvedAutoLayout
@@ -407,11 +470,14 @@
     viewerState.setViewerMode(initialViewerMode);
     viewerState.setExportContext(null);
   }
-  // The capture reads the EFFECTIVE (viewport-coerced) mode and split, so a
-  // link records the surface the sender was actually looking at — a 3D pane
-  // coerced to 2D on a small screen shares as 2D.
-  urlSession.registerSlice("vw", () =>
-    viewSlice(viewerState.viewerMode, viewerState.splitConfig)
+  // The capture reads the RAW (pre-coercion) mode and split. The address bar
+  // rewrites within 400 ms of any change, so capturing the viewport-coerced
+  // getters would turn a 3D link into a 2D one the moment it opened on a
+  // folded phone, and `wants3D`'s "unfolding re-enters 3D" promise would not
+  // survive a reload. The recipient's own viewport gate still coerces at
+  // render time, and the own-link comparison above reads raw disk values too.
+  urlSession.registerSlice("vw", (options) =>
+    viewSlice(viewerState.rawViewerMode, viewerState.rawSplitConfig, options)
   );
   // playOnOpen means "open already moving" - it does NOT choose a surface.
   // It used to call enterExport("animation-export", "animation"), which both
@@ -586,11 +652,15 @@
   // EffectOrchestrator3D all inherit it, so nothing downstream can construct a
   // persist:true store while a link override is live.
   const fxSeedPayload = urlSession.getSeed("fx") as FxSlicePayload | null;
+  // The disk side is read as a plain snapshot, NOT through a throwaway
+  // `createEffectsConfigState(persisted, { persist: false })`: that constructor
+  // registers the global "effects" undo domain and runs
+  // `migrateFromVmStorageOnce`, which a persist:true instance skips for a
+  // stored config — a legacy VM-storage entry would make the two sides differ
+  // and turn the visitor's own reloaded link view-only.
   const persistedEffectsConfig = loadPersistedEffectsConfig();
   const persistedFxSlice = persistedEffectsConfig
-    ? captureFxSlice(
-        createEffectsConfigState(persistedEffectsConfig, { persist: false })
-      )
+    ? captureFxSlice({ snapshot: () => persistedEffectsConfig })
     : null;
   const effectsConfigState =
     fxSeedPayload && urlSession.isOverride("fx", persistedFxSlice)
@@ -607,7 +677,9 @@
   // until an unrelated pane switch mounts a canvas. Like CanvasSurface, no
   // teardown: the next mounting surface re-assigns its own context instance.
   getAnimationVisibilityManager().effectsConfigState = effectsConfigState;
-  urlSession.registerSlice("fx", () => captureFxSlice(effectsConfigState));
+  urlSession.registerSlice("fx", (options) =>
+    captureFxSlice(effectsConfigState, options)
+  );
   // Activate a requested effect on mount (QR scan page asks for "trails").
   // setActiveEffect keeps tipEffectMap in sync so the renderer doesn't filter tips.
   if (initialActiveEffect)
@@ -661,7 +733,10 @@
   // stores already hold is not an override, so nothing is borrowed or restored.
   let anRestore: AnSliceSeed | null =
     anSeedPayload && urlSession.isOverride("an", captureAnSlice(anStores))
-      ? { settings: anStores.settings.snapshot(), visibility: anStores.visibility.snapshot() }
+      ? {
+          settings: anStores.settings.snapshot(),
+          visibility: anStores.visibility.snapshot(),
+        }
       : null;
   // Borrow the card store before `an` moves dark mode (see rule 1 above).
   let cdRestore: ImageCompositionSettings | null =
@@ -686,10 +761,12 @@
       )
     );
   }
-  const unregisterCdSlice = urlSession.registerSlice("cd", () =>
-    captureCdSlice(compositionStore, cardStepCount())
+  const unregisterCdSlice = urlSession.registerSlice("cd", (options) =>
+    captureCdSlice(compositionStore, cardStepCount(), options)
   );
-  urlSession.registerSlice("an", () => captureAnSlice(anStores));
+  urlSession.registerSlice("an", (options) =>
+    captureAnSlice(anStores, options)
+  );
   // The visibility manager is a plain class, not runes, so the live-sync effect
   // below cannot see its changes. Its own observer API closes that gap.
   const anVisibilityObserver = () => urlSession.scheduleUrlWrite();
@@ -704,15 +781,16 @@
   const exportOptionsStore = exportCoord.exportOptions;
   const exSeedPayload = urlSession.getSeed("ex") as ExSlicePayload | null;
   let exRestore: ExportOptionsState | null =
-    exSeedPayload && urlSession.isOverride("ex", captureExSlice(exportOptionsStore))
+    exSeedPayload &&
+    urlSession.isOverride("ex", captureExSlice(exportOptionsStore))
       ? exportOptionsStore.snapshot()
       : null;
   if (exRestore) {
     exportOptionsStore.setPersistenceSuspended(true);
     exportOptionsStore.replaceAll(seedFromExSlice(exSeedPayload!));
   }
-  const unregisterExSlice = urlSession.registerSlice("ex", () =>
-    captureExSlice(exportOptionsStore)
+  const unregisterExSlice = urlSession.registerSlice("ex", (options) =>
+    captureExSlice(exportOptionsStore, options)
   );
 
   const scene3DRenderState = createScene3DRenderState();
@@ -956,7 +1034,9 @@
       getBpm: () => playback.bpmLocal,
       getDarkMode: () => imgComp.imgDarkMode,
       getHapticService: () => interactive.hapticService,
-      getStateParams: () => urlSession.captureNowAsParams(),
+      // A copied link pins the recipient to every field, defaults included;
+      // only the live address bar stays on the diff form.
+      getStateParams: () => urlSession.captureNowAsParams({ full: true }),
     },
     {
       getCurrentUrl: () => (browser ? window.location.href : ""),
@@ -964,6 +1044,7 @@
         generateViewerURL(shareSequence, {
           compress: true,
           metadata,
+          shortCode: shortCode ?? undefined,
         }).url,
       getNavigator: () => (typeof navigator === "undefined" ? null : navigator),
       setLocation: (url) => {
@@ -1089,8 +1170,8 @@
      Facebook, email/password, magic link) and renders its own contextual copy
      from the `viewer-signin-*` trigger keys, so the viewer holds no auth copy
      or provider code of its own. Lazy so the scan landing doesn't pay for the
-     auth bundle until a guest actually hits a gate. AuthModal mounts its own
-     GoogleOneTap, which is why the viewer no longer mounts a second one. -->
+     auth bundle until a guest actually hits a gate. Provider sign-in starts
+     only when the person chooses a provider inside that modal. -->
 {#if authQueue.signInSheetOpen}
   {#await import("$lib/shared/auth/components/AuthModal.svelte") then mod}
     <mod.default

@@ -132,12 +132,38 @@ function parseTurnSide(s: string | undefined): TurnValue | null {
 /** Parse "b|r-b|r-..." into one period of per-beat turn values. */
 export function parseTurnUnit(pattern: string): TurnBeat[] {
   const beats: TurnBeat[] = [];
-  for (const tok of pattern.split("-")) {
+  for (const tok of splitTurnBeats(pattern)) {
     const t = tok.trim();
     if (t === "") continue;
     const [b, r] = t.split("|");
     beats.push({ left: parseTurnSide(b), right: parseTurnSide(r) });
   }
+  return beats;
+}
+
+/**
+ * Split beat-delimited turn notation without mistaking a numeric minus sign
+ * for the delimiter. A minus starts a signed value at the beginning of a beat
+ * or immediately after `|`; every other minus starts the next beat.
+ */
+function splitTurnBeats(pattern: string): string[] {
+  const beats: string[] = [];
+  let beat = "";
+
+  for (const character of pattern) {
+    if (
+      character === "-" &&
+      beat.trim() !== "" &&
+      !beat.trimEnd().endsWith("|")
+    ) {
+      beats.push(beat);
+      beat = "";
+      continue;
+    }
+    beat += character;
+  }
+
+  beats.push(beat);
   return beats;
 }
 

@@ -17,6 +17,8 @@
   } from "../camera-preferences.svelte";
   import { CAMERA_DEFAULTS } from "../constants";
   import { normalizeCameraFrameDelta } from "../frame-delta";
+  import { advanceGroundVelocity } from "../ground-velocity";
+  import type { GroundVelocity } from "../ground-velocity";
   import { createInputCapabilities } from "../input-capabilities";
   import { collectCameraColliders } from "../camera-collider-index";
   import { resolveThrelteContextValue } from "../threlte-context-value";
@@ -38,6 +40,15 @@
     onModeChange?: (mode: CameraMode) => void;
     moveSpeed?: number;
     sprintMultiplier?: number;
+    /**
+     * How fast horizontal ground velocity may build toward the commanded
+     * speed, in metres per second squared. Omit for the instant response this
+     * controller has always had; a consumer that wants a body with mass
+     * supplies a real rate.
+     */
+    groundAcceleration?: number;
+    /** Braking rate in m/s^2. Defaults to `groundAcceleration`. */
+    groundDeceleration?: number;
     jumpForce?: number;
     gravity?: number;
     /**
@@ -91,6 +102,18 @@
       mode: CameraMode;
     }) => void;
     onControlReadinessChange?: (ready: boolean) => void;
+    /**
+     * Third-person boom overrides for bodies bigger than a person. A car
+     * wants the camera further back and higher than the 5 m / 1.15 m walking
+     * rig; the wheel-zoom range follows. Omit any of them for the defaults.
+     * They seed the rig when the controller mounts; a host that changes them
+     * re-keys the controller.
+     */
+    thirdPersonDistance?: number;
+    thirdPersonMinDistance?: number;
+    thirdPersonMaxDistance?: number;
+    thirdPersonHeight?: number;
+    thirdPersonLookAtHeight?: number;
   }
 
   const props: Props = $props();
@@ -102,6 +125,12 @@
   const moveSpeed = $derived(props.moveSpeed ?? CAMERA_DEFAULTS.WALK_SPEED);
   const sprintMultiplier = $derived(
     props.sprintMultiplier ?? CAMERA_DEFAULTS.SPRINT_MULTIPLIER
+  );
+  const groundAcceleration = $derived(
+    props.groundAcceleration ?? Number.POSITIVE_INFINITY
+  );
+  const groundDeceleration = $derived(
+    props.groundDeceleration ?? groundAcceleration
   );
   const jumpForce = $derived(props.jumpForce ?? CAMERA_DEFAULTS.JUMP_VELOCITY);
   const gravity = $derived(
@@ -189,6 +218,15 @@
   let isDragging = $state(false);
   let lastPointerPos = { x: 0, y: 0 };
   let verticalVelocity = 0;
+  /**
+   * Horizontal ground velocity in m/s, carried between frames.
+   *
+   * Plain module state rather than `$state`: it changes every frame inside the
+   * render task and nothing renders from it directly, so making it reactive
+   * would invalidate the component 60 times a second for no readers.
+   * `advanceGroundVelocity` owns the model; this only carries it.
+   */
+  let horizontalVelocity: GroundVelocity = { x: 0, z: 0 };
   let noclipEnabled = $state(false);
 
   let crouchHeightOffset = 0;
@@ -240,8 +278,8 @@
   const desiredCamPos = new Vector3();
   const CAMERA_COLLISION_OFFSET = 0.3;
   const MIN_CAMERA_DISTANCE = 0.5;
-  let smoothedCameraDistance = 5.0;
-  let desiredDistance = 5.0;
+  let smoothedCameraDistance = props.thirdPersonDistance ?? 5.0;
+  let desiredDistance = props.thirdPersonDistance ?? 5.0;
   const CAMERA_PULL_IN_SPEED = 10;
   const CAMERA_RECOVERY_SPEED = 3;
 
@@ -257,12 +295,12 @@
   const SETTINGS = {
     lookSensitivity: CAMERA_DEFAULTS.MOUSE_SENSITIVITY,
     thirdPerson: {
-      distance: 5.0,
-      minDistance: 1.5,
-      maxDistance: 10.0,
+      distance: props.thirdPersonDistance ?? 5.0,
+      minDistance: props.thirdPersonMinDistance ?? 1.5,
+      maxDistance: props.thirdPersonMaxDistance ?? 10.0,
       zoomSpeed: 0.5,
-      height: 1.15,
-      lookAtHeight: 0.35,
+      height: props.thirdPersonHeight ?? 1.15,
+      lookAtHeight: props.thirdPersonLookAtHeight ?? 0.35,
       minPitch: -1.2,
       maxPitch: 1.2,
     },
@@ -313,6 +351,7 @@
       if (usePhysics && physicsProvider?.toggleNoclip) {
         noclipEnabled = physicsProvider.toggleNoclip();
         verticalVelocity = 0;
+        horizontalVelocity = { x: 0, z: 0 };
       }
       return;
     }
@@ -678,6 +717,10 @@
     let moveZ: number;
 
     if (isNoclip) {
+      // Noclip is a debug fly. Momentum would fight the operator, so it keeps
+      // the instant response it has always had, and it parks the walking
+      // velocity so stepping back out of noclip does not resume at whatever
+      // speed the body carried when it left the ground.
       moveX =
         (_forward3D.x * forwardInput + _right.x * strafeInput) *
         speed *
@@ -687,23 +730,35 @@
         (_forward3D.z * forwardInput + _right.z * strafeInput) *
         speed *
         frameDelta;
+      const noclipLength = Math.sqrt(moveX * moveX + moveZ * moveZ);
+      if (noclipLength > speed * frameDelta) {
+        const scale = (speed * frameDelta) / noclipLength;
+        moveX *= scale;
+        moveZ *= scale;
+      }
+      horizontalVelocity = { x: 0, z: 0 };
     } else {
-      moveX =
-        (_forward.x * forwardInput + _right.x * strafeInput) *
-        speed *
-        frameDelta;
-      moveY = 0;
-      moveZ =
-        (_forward.z * forwardInput + _right.z * strafeInput) *
-        speed *
-        frameDelta;
-    }
+      // `advanceGroundVelocity` owns why this is a ramp rather than an
+      // assignment. An omitted `groundAcceleration` leaves the rate infinite,
+      // so every consumer that has not opted in keeps the instant response it
+      // has always had.
+      horizontalVelocity = advanceGroundVelocity({
+        current: horizontalVelocity,
+        targetX: (_forward.x * forwardInput + _right.x * strafeInput) * speed,
+        targetZ: (_forward.z * forwardInput + _right.z * strafeInput) * speed,
+        maximumSpeed: speed,
+        acceleration: groundAcceleration,
+        deceleration: groundDeceleration,
+        grounded:
+          usePhysics && physicsProvider
+            ? physicsProvider.isGrounded()
+            : (avatarState.position.y ?? 0) <= 0,
+        deltaSeconds: frameDelta,
+      });
 
-    const moveLen = Math.sqrt(moveX * moveX + moveZ * moveZ);
-    if (moveLen > speed * frameDelta) {
-      const scale = (speed * frameDelta) / moveLen;
-      moveX *= scale;
-      moveZ *= scale;
+      moveX = horizontalVelocity.x * frameDelta;
+      moveY = 0;
+      moveZ = horizontalVelocity.z * frameDelta;
     }
 
     if (usePhysics && physicsProvider) {

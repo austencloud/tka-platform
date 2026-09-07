@@ -14,6 +14,9 @@ interface HarnessOptions {
   generateForSequence: ReturnType<
     typeof getQRCodeGenerator
   >["generateForSequence"];
+  generateForUrl?: ReturnType<typeof getQRCodeGenerator>["generateForUrl"];
+  isAuthenticated?: boolean;
+  qrUrl?: string;
 }
 
 export function createChoreoCardQrStateHarness(options: HarnessOptions) {
@@ -21,7 +24,8 @@ export function createChoreoCardQrStateHarness(options: HarnessOptions) {
     sequence: options.sequence,
     showQRCode: true,
     darkMode: false,
-    isAuthenticated: true,
+    isAuthenticated: options.isAuthenticated ?? true,
+    qrUrl: options.qrUrl,
     leftPropType: options.leftPropType,
     rightPropType: options.rightPropType,
     browseViewMode: undefined,
@@ -29,6 +33,7 @@ export function createChoreoCardQrStateHarness(options: HarnessOptions) {
 
   const generator = {
     generateForSequence: options.generateForSequence,
+    generateForUrl: options.generateForUrl,
   } as ReturnType<typeof getQRCodeGenerator>;
 
   let qrState!: ReturnType<typeof createChoreoCardQrState>;
@@ -47,6 +52,9 @@ export function createChoreoCardQrStateHarness(options: HarnessOptions) {
     },
     setViewMode(browseViewMode: BrowseViewMode | undefined) {
       deps = { ...deps, browseViewMode };
+    },
+    setQrUrl(qrUrl: string | undefined) {
+      deps = { ...deps, qrUrl };
     },
     dispose,
   } as const;

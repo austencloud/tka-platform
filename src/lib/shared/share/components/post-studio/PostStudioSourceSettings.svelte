@@ -1,5 +1,6 @@
 <script lang="ts">
   import AnimationPanel from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
   import type { ExportOptionsStateManager } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -24,6 +25,10 @@
   } = $props();
 
   const composition = getMediaCompositionContext();
+  const shared = getViewerStudioSurfaces();
+  function inspectorDestination(node: HTMLElement) {
+    return { destroy: shared?.requestInspector(node) };
+  }
   const selectedBinding = $derived(composition.selectedBinding);
 
   // The tunnel and mandala controls are the sequence viewer's, unchanged — the
@@ -41,22 +46,28 @@
        the clock they belong to and visible from every inspector page. Showing
        either here as well put one setting in two places. `playbackMode` still
        comes in so the panel's own copy reads the live value. -->
-  <div class="animation-settings">
-    <AnimationPanel
-      layout="sidebar"
-      isExporting={false}
-      isPlaying={composition.isPlaying}
-      bpm={composition.tempoBpm ?? 60}
-      onPlaybackToggle={composition.togglePlayback}
-      onBpmChange={composition.tempoBpm === null
-        ? undefined
-        : composition.setTempoBpm}
-      showTempoControls={false}
-      playbackMode={composition.animationPlaybackMode}
-      showEffectsPlayback={false}
-      {selectedPropType}
-      {onPropChange}
-    />
+  <div
+    class="animation-settings"
+    use:inspectorDestination
+    data-studio-inspector-destination
+  >
+    {#if !shared?.inspectorAvailable}
+      <AnimationPanel
+        layout="sidebar"
+        isExporting={false}
+        isPlaying={composition.isPlaying}
+        bpm={composition.tempoBpm ?? 60}
+        onPlaybackToggle={composition.togglePlayback}
+        onBpmChange={composition.tempoBpm === null
+          ? undefined
+          : composition.setTempoBpm}
+        showTempoControls={false}
+        playbackMode={composition.animationPlaybackMode}
+        showEffectsPlayback={false}
+        {selectedPropType}
+        {onPropChange}
+      />
+    {/if}
   </div>
 {:else if selectedBinding?.renderMode === "choreo-card"}
   <div class="card-settings">
@@ -104,29 +115,7 @@
   }
 
   .animation-settings :global(.export-panel.sidebar) {
-    border-left: 0;
     background: transparent;
-  }
-
-  /* The sequence viewer deliberately centers a narrow settings column. Post
-     Studio already supplies a dedicated inspector region, so its editor uses
-     that whole region and starts at the top like a desktop property panel.
-
-     `margin-block` is the half that actually does it. The shared panel sets
-     `margin: auto 0`, which floated the section in the middle of the rail —
-     at 1920 that left 234px of dead space above the first control and the
-     same again below it. Releasing `max-width` alone never touched it. */
-  .animation-settings :global(.panel-center-inner) {
-    max-width: none;
-    margin-block: 0;
-    align-self: stretch;
-  }
-
-  /* The rail centers itself independently of the section it navigates. Once
-     the section starts at the top, a centered rail leaves an L-shaped hole in
-     the corner between them — both have to agree on the top edge. */
-  .animation-settings :global(.icon-rail) {
-    justify-content: flex-start;
   }
 
   /* Same reasoning as .animation-settings — the rail is the surface. */
@@ -172,20 +161,12 @@
     justify-content: flex-start;
   }
 
-  @container post-studio-animation-settings (min-width: 35rem) {
-    .animation-settings :global(.panel-title),
-    .animation-settings :global(.effects-panel.detail-view > .sb-footer) {
-      display: none;
-    }
-  }
-
   /* The studio chrome steps up at 105rem / 180rem (PostStudio.svelte), but the
      embedded sequence-viewer panels size themselves from the global type and
      touch-target tokens, so at 4K the rails grew and their contents stayed at
      12px / 44px. Redefining the tokens on the wrapper carries the step through
      every chip, label and row inside without forking the shared panel CSS. */
   @container post-studio (min-width: 105rem) {
-    .animation-settings,
     .card-settings,
     .art-settings {
       --font-size-compact: 0.8125rem;
@@ -195,22 +176,11 @@
   }
 
   @container post-studio (min-width: 180rem) {
-    .animation-settings,
     .card-settings,
     .art-settings {
       --font-size-compact: 1.0625rem;
       --font-size-min: 1.25rem;
       --min-touch-target: 3.75rem;
-    }
-
-    /* The icon rail is laid out in px and has no token to ride. */
-    .animation-settings :global(.icon-rail) {
-      width: 12rem;
-    }
-
-    .animation-settings :global(.rail-btn) {
-      height: 4.25rem;
-      font-size: 1.5rem;
     }
   }
 </style>

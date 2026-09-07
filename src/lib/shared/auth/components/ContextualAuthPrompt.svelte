@@ -5,8 +5,9 @@
   } from "$lib/shared/auth/domain/auth-nudge-trigger";
   import { getLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
   import EmailAuthTabs from "./EmailAuthTabs.svelte";
-  import LastUsedBadge from "./LastUsedBadge.svelte";
+  import LastUsedBadge from "$lib/shared/components/LastUsedBadge.svelte";
   import SocialAuthCompact from "./SocialAuthCompact.svelte";
+  import { growFade } from "$lib/shared/transitions/motion";
 
   interface Props {
     content: AuthPromptContent;
@@ -18,6 +19,8 @@
     facebookError?: string | null;
     onClose?: () => void;
     onFacebookAuth?: () => void;
+    encoreOffer?: boolean;
+    onAcceptEncore?: () => void;
   }
 
   let {
@@ -30,10 +33,14 @@
     facebookError = null,
     onClose,
     onFacebookAuth,
+    encoreOffer = false,
+    onAcceptEncore,
   }: Props = $props();
 
   let showEmailAuth = $state(false);
+  let showOtherProviders = $state(false);
   const lastMethod = getLastAuthMethod();
+  const compact = $derived(content.key === "step-cap-guest");
   const lastUsedEmail = $derived(
     lastMethod === "magic-link" || lastMethod === "password"
   );
@@ -44,6 +51,7 @@
     if (!active) return;
     content.key;
     showEmailAuth = false;
+    showOtherProviders = false;
   });
 
   const titleId = $derived(`${idPrefix}-title`);
@@ -57,16 +65,20 @@
 
 <section
   class="contextual-auth-prompt"
+  class:compact
+  class:encore-offer={encoreOffer}
   aria-labelledby={titleId}
   aria-describedby={descriptionId}
 >
   <header class="prompt-header">
-    <div class="brand-lockup">
-      <span class="brand-mark">
-        <img src="/branding/logo.jpg" alt="" width="56" height="56" />
-      </span>
-      <span class="brand-name">Flow Arts Composer</span>
-    </div>
+    {#if !compact}
+      <div class="brand-lockup">
+        <span class="brand-mark">
+          <img src="/branding/logo.jpg" alt="" width="56" height="56" />
+        </span>
+        <span class="brand-name">Flow Arts Composer</span>
+      </div>
+    {/if}
 
     {#if showClose}
       <button
@@ -81,15 +93,41 @@
   </header>
 
   <div class="prompt-copy">
+    {#if compact}
+      <div class="fac-signature">
+        <img src="/branding/logo.jpg" alt="" width="28" height="28" />
+        {#if encoreOffer}<span>One-time encore</span>{/if}
+      </div>
+    {/if}
     <h2 id={titleId}>{content.title}</h2>
     <p id={descriptionId}>{content.body}</p>
   </div>
 
   <div class="auth-methods">
-    {#if inAppBrowser}
+    {#if compact && encoreOffer}
+      <button class="encore-button" type="button" onclick={onAcceptEncore}>
+        I'll make it count
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </button>
+    {:else if compact}
+      <EmailAuthTabs bind:mode compact showMethods={showOtherProviders} />
+      <button
+        class="more-methods"
+        type="button"
+        aria-expanded={showOtherProviders}
+        onclick={() => (showOtherProviders = !showOtherProviders)}
+      >
+        {showOtherProviders ? "Fewer options" : "More sign-in options"}
+      </button>
+      {#if showOtherProviders}
+        <div transition:growFade>
+          <SocialAuthCompact {mode} {onFacebookAuth} />
+        </div>
+      {/if}
+    {:else if inAppBrowser}
       <div class="email-flow">
         <div class="email-divider"><span>Continue by email</span></div>
-        <EmailAuthTabs bind:mode />
+        <EmailAuthTabs bind:mode {compact} />
       </div>
 
       <p class="provider-warning">
@@ -106,7 +144,7 @@
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
           Other sign-in options
         </button>
-        <EmailAuthTabs bind:mode />
+        <EmailAuthTabs bind:mode {compact} />
       </div>
     {:else}
       <div class="method-grid">
@@ -138,15 +176,17 @@
     {/if}
   </div>
 
-  <button class="mode-toggle" type="button" onclick={toggleMode}>
-    {#if mode === "signup"}
-      <span>Already have an account?</span>
-      <strong>Sign in</strong>
-    {:else}
-      <span>New here?</span>
-      <strong>Create an account</strong>
-    {/if}
-  </button>
+  {#if !encoreOffer && (!compact || showOtherProviders)}
+    <button class="mode-toggle" type="button" onclick={toggleMode}>
+      {#if mode === "signup"}
+        <span>Already have an account?</span>
+        <strong>Sign in</strong>
+      {:else}
+        <span>New here?</span>
+        <strong>Create an account</strong>
+      {/if}
+    </button>
+  {/if}
 </section>
 
 <style>
@@ -513,5 +553,125 @@
     .email-method:hover {
       transform: none;
     }
+  }
+
+  .compact {
+    --min-touch-target: 44px;
+    --font-size-min: 0.875rem;
+    width: min(calc(100vw - 2rem), 24rem);
+    padding: 2rem 1.5rem 1rem;
+    border-color: var(--theme-stroke);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.25);
+  }
+
+  .fac-signature {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-height: 28px;
+    margin-bottom: 0.875rem;
+  }
+
+  .fac-signature img {
+    border-radius: 50%;
+  }
+
+  .fac-signature span {
+    color: var(--theme-text-dim);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .encore-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.75rem 1rem;
+    color: var(--theme-panel-bg);
+    background: var(--theme-text);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm, 0.5rem);
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .encore-button:hover {
+    background: color-mix(
+      in srgb,
+      var(--theme-text) 88%,
+      var(--theme-panel-bg)
+    );
+  }
+
+  .encore-button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 3px;
+  }
+
+  .compact .close-button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: transparent;
+    border: 0;
+    color: var(--theme-text-dim);
+  }
+
+  .compact .prompt-copy {
+    min-height: 0;
+    padding: 0 0 1.5rem;
+  }
+
+  .compact h2 {
+    padding-right: 1.75rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+    text-wrap: pretty;
+  }
+
+  .compact .prompt-copy p {
+    min-height: 0;
+    margin-top: 0.625rem;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+
+  .more-methods {
+    display: block;
+    margin: 0.5rem auto 0;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    border: 0;
+    border-radius: var(--radius-sm, 0.5rem);
+    background: transparent;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min);
+    cursor: pointer;
+  }
+
+  .more-methods:hover {
+    color: var(--theme-text);
+    background: var(--theme-card-bg);
+  }
+
+  .more-methods:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .compact .mode-toggle {
+    margin-top: 0.5rem;
+    padding-inline: 0.5rem;
+    flex-wrap: wrap;
+    background: transparent;
+    border: 0;
   }
 </style>

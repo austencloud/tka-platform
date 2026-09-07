@@ -467,7 +467,6 @@
         <PictographContainer
           pictographData={step}
           disableTransitions={true}
-          propRenderContext="editor"
           {leftPropTypeOverride}
           {rightPropTypeOverride}
           {leftColorOverride}

@@ -40,6 +40,8 @@
   import type { FlowFestFireJamSoundscapeSnapshot } from "$lib/features/flow-fest-sim/services/contracts/IFlowFestFireJamSoundscape";
   import {
     FLOW_FEST_GAMEPLAY_JUMP_FORCE,
+    FLOW_FEST_GAMEPLAY_GROUND_ACCELERATION_METERS_PER_SECOND_SQUARED,
+    FLOW_FEST_GAMEPLAY_GROUND_DECELERATION_METERS_PER_SECOND_SQUARED,
     FLOW_FEST_GAMEPLAY_SPRINT_MULTIPLIER,
     FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND,
   } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
@@ -47,7 +49,11 @@
     flowFestEucSpeedKilometresPerHour,
     flowFestEucSpeedMilesPerHour,
   } from "$lib/features/flow-fest-sim/domain/flow-fest-electric-unicycle";
-  import { createFlowFestMobilityState } from "$lib/features/flow-fest-sim/state/flow-fest-mobility-state.svelte";
+  import {
+    createFlowFestMobilityState,
+    type FlowFestMobilityCarRuntime,
+    type FlowFestMobilityRuntimeUpdate,
+  } from "$lib/features/flow-fest-sim/state/flow-fest-mobility-state.svelte";
   import { createFlowFestFieldPositioningState } from "$lib/features/flow-fest-sim/state/flow-fest-field-positioning-state.svelte";
   import {
     parseGeospatialTerrainManifest,
@@ -60,11 +66,18 @@
     createFlowFestProgress,
     getFlowFestObjective,
     restoreFlowFestProgress,
+    isFlowFestArrivalLightPhase,
     isFlowFestCampEstablishedPhase,
     type FlowFestMoment,
     type FlowFestProgressAction,
     type FlowFestProgressState,
   } from "$lib/features/flow-fest-sim/state/flow-fest-progress";
+  import {
+    flowFestDepartureProfile,
+    flowFestDrivingEnergyDrainPercent,
+    type FlowFestLoadout,
+  } from "$lib/features/flow-fest-sim/domain/flow-fest-loadout";
+  import { FLOW_FEST_CAR_CONFIG } from "$lib/features/flow-fest-sim/domain/flow-fest-car";
   import type { FlowFestProductionCollisionSet } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
   import FlowFestGrayboxWalkScene from "../flow-fest-graybox/FlowFestGrayboxWalkScene.svelte";
   import type { FlowFestGrayboxReadyDetails } from "../flow-fest-graybox/flow-fest-graybox-types";
@@ -75,9 +88,13 @@
   } from "../flow-fest-graybox/flow-fest-runtime-contract";
   import FlowFestProductionLayer from "./FlowFestProductionLayer.svelte";
   import FlowFestHud from "./FlowFestHud.svelte";
+  import FlowFestLoadoutPanel from "./FlowFestLoadoutPanel.svelte";
   import {
     createFlowFestCampPlan,
+    FLOW_FEST_DRIVE_IN_SPAWN,
     FLOW_FEST_LOWER_CHECK_IN,
+    flowFestGateQueueCars,
+    isFlowFestGateArrival,
   } from "./flow-fest-camp-plan";
   import {
     FLOW_FEST_ENTRANCE_REFERENCE,
@@ -86,27 +103,60 @@
     type FlowFestEntranceReferenceRequest,
   } from "./flow-fest-entrance-reference";
   import type { FlowFestProductionDressing } from "./flow-fest-production-geometry";
+  import {
+    flowFestViewLinkUrl,
+    flowFestViewPoseChanged,
+    formatFlowFestViewCoordinates,
+    parseFlowFestViewLink,
+    type FlowFestViewPose,
+  } from "./flow-fest-view-link";
   import { getFlowFestVehicleStagePoint } from "./flow-fest-site-fidelity";
   import {
     getFlowFestVisualProfile,
     parseFlowFestGate3ReviewRequest,
     type FlowFestGate3ReviewRequest,
   } from "./flow-fest-visual-system";
+  import {
+    FLOW_FEST_GATE4_MOBILITY_SESSION_KEY as GATE4_MOBILITY_SESSION_KEY,
+    FLOW_FEST_GATE4_SESSION_KEY as GATE4_SESSION_KEY,
+    FLOW_FEST_GATE5_JOURNEY_SESSION_KEY as GATE5_JOURNEY_SESSION_KEY,
+    FLOW_FEST_GATE5_MOBILITY_SESSION_KEY as GATE5_MOBILITY_SESSION_KEY,
+    FLOW_FEST_GATE5_SESSION_KEY as GATE5_SESSION_KEY,
+    FLOW_FEST_RESTART_PARAMETER,
+    FLOW_FEST_SESSION_KEY as SESSION_KEY,
+    clearFlowFestSessionStorage,
+    flowFestUrlWithoutRestart,
+    parseFlowFestRestartRequest,
+  } from "./flow-fest-restart-link";
 
-  const SESSION_KEY = "flow-fest-sim:thursday-session:v1";
   const adaptiveQuality = createAdaptiveQualityState(getQualityTierDetector(), {
     devicePixelRatio: 1,
   });
   setAdaptiveQualityContext(adaptiveQuality);
-  const GATE4_SESSION_KEY = "flow-fest-sim:gate4-fire-jam:v3";
-  const GATE4_MOBILITY_SESSION_KEY = "flow-fest-sim:gate4-euc:v3";
-  const GATE5_SESSION_KEY = "flow-fest-sim:gate5-integrated-world:v1";
-  const GATE5_MOBILITY_SESSION_KEY = "flow-fest-sim:gate5-euc:v1";
-  const GATE5_JOURNEY_SESSION_KEY = "flow-fest-sim:gate5-journey:v1";
   const TERRAIN_MANIFEST_PATH = "/data/flow-fest-sim/terrain.manifest.json";
   const initialSearch = browser
     ? new URLSearchParams(window.location.search)
     : new URLSearchParams();
+
+  /**
+   * `?restart=1` opens on the loadout instead of resuming a parked session.
+   *
+   * This runs during component init, before `onMount` and before anything
+   * reads a session key, so the restore path below finds nothing and builds a
+   * fresh Thursday. The flag is then taken straight back out of the address
+   * bar — raw `replaceState` for the same reason `publishViewpoint` uses it —
+   * because a restart link that survived in the URL would wipe the session
+   * again on every refresh.
+   */
+  if (browser && parseFlowFestRestartRequest(initialSearch)) {
+    clearFlowFestSessionStorage(window.localStorage);
+    initialSearch.delete(FLOW_FEST_RESTART_PARAMETER);
+    window.history.replaceState(
+      window.history.state,
+      "",
+      flowFestUrlWithoutRestart(new URL(window.location.href))
+    );
+  }
   const initialEntranceReference =
     parseFlowFestEntranceReferenceRequest(initialSearch);
   const BRANCHES: Array<{
@@ -152,6 +202,29 @@
     z: FLOW_FEST_LOWER_CHECK_IN.z,
   });
   let listenerYaw = $state(0);
+  const initialViewLink = parseFlowFestViewLink(initialSearch);
+  // The entrance reference cameras plus, when the link carried one, the exact
+  // viewpoint it named. Registering it as a review camera rather than adding a
+  // second teleport path means a shared link arrives through the same code that
+  // places every other camera in this route.
+  const reviewCameras = initialViewLink
+    ? [...FLOW_FEST_ENTRANCE_REVIEW_CAMERAS, initialViewLink]
+    : FLOW_FEST_ENTRANCE_REVIEW_CAMERAS;
+  // Live camera eye, mirrored outside `$state` for the same reason the audio
+  // listener below is: it lands every frame, and nothing renders from it at
+  // that rate. The readout and the URL both refresh from a 4 Hz tick.
+  const viewPose: FlowFestViewPose = {
+    x: FLOW_FEST_LOWER_CHECK_IN.x,
+    y: 13.7,
+    z: FLOW_FEST_LOWER_CHECK_IN.z,
+    yawRadians: 0,
+    pitchRadians: 0,
+    horizontalFovDegrees: 65,
+  };
+  let publishedViewPose: FlowFestViewPose | null = null;
+  let viewPoseReported = false;
+  let viewpointCoordinates = $state("");
+  let viewpointHref = $state("");
   // The audio tick reads its own non-reactive mirror of the listener. Reading
   // `position` inside an effect would re-run the whole audio path at render
   // rate; the field only needs a 20 Hz control tick, and everything smoother
@@ -175,6 +248,12 @@
   let audioProofRevision = -1;
   let audioProofPublishedAt = 0;
   let resetToken = $state(0);
+  /** Whether the last mobility update had the player in the driver's seat. */
+  let carWasDriving = false;
+  /** Driven seconds not yet charged to the energy bar. */
+  let drivingSecondsBanked = 0;
+  let lastDrivingFrameAt: number | null = null;
+  const ENERGY_DRAIN_TICK_SECONDS = 5;
   let cameraToken = $state(0);
   let cameraId = $state<string | null>(null);
   let stageToken = $state(0);
@@ -332,7 +411,25 @@
       : targetDistance
   );
   const ready = $derived(Boolean(terrainReady && productionReady && progress));
-  const timeLabel = $derived(visualProfile.clockLabel);
+  /**
+   * While the arrival light holds, the clock is the departure's arrival
+   * time; the site clock takes over once camp is being made.
+   */
+  const timeLabel = $derived(
+    !gate3Review.enabled &&
+      progress?.loadout &&
+      isFlowFestArrivalLightPhase(progress.phase)
+      ? flowFestDepartureProfile(progress.loadout.departure).clockLabel
+      : visualProfile.clockLabel
+  );
+  const gateQueueCars = $derived(
+    progress?.loadout &&
+      (progress.phase === "drive-in" || progress.phase === "gate-check-in")
+      ? flowFestGateQueueCars(
+          flowFestDepartureProfile(progress.loadout.departure).gateQueueCars
+        )
+      : []
+  );
   const electricUnicycleSpeedMph = $derived(
     flowFestEucSpeedMilesPerHour(mobilityRuntime.dynamics.speedMetersPerSecond)
   );
@@ -447,6 +544,106 @@
     progress = advanceFlowFestProgress(progress, action);
   }
 
+  /**
+   * Leave: the road opens at the west edge with hands on the wheel. The car
+   * is the spawn and the unicycle rides as cargo until the gate.
+   */
+  function depart(loadout: FlowFestLoadout): void {
+    if (!contract || progress?.phase !== "loadout") return;
+    const fingerprint =
+      contract.coordinateContentFingerprint.canonicalPayloadSha256;
+    dispatch({ type: "depart", loadout });
+    mobility.reset(
+      fingerprint,
+      { x: FLOW_FEST_DRIVE_IN_SPAWN.x, z: FLOW_FEST_DRIVE_IN_SPAWN.z },
+      FLOW_FEST_DRIVE_IN_SPAWN.headingRadians,
+      {
+        car: { modelId: loadout.carModelId, paintIndex: loadout.paintIndex },
+        driving: true,
+      }
+    );
+    carWasDriving = true;
+    stagePosition = null;
+    stageAwaitingArrival = false;
+  }
+
+  /** Back to Thursday afternoon: progress, car and wheel all start again. */
+  function startOver(): void {
+    if (gate5Review) {
+      restartIntegratedJourney();
+      return;
+    }
+    if (!contract) return;
+    const fingerprint =
+      contract.coordinateContentFingerprint.canonicalPayloadSha256;
+    const [spawnX, , spawnZ] = contract.spawn.positionWorld;
+    dispatch({ type: "start-over" });
+    mobility.reset(
+      fingerprint,
+      { x: spawnX, z: spawnZ },
+      spawnHeadingFor(contract)
+    );
+    carWasDriving = false;
+    stagePosition = null;
+    stageAwaitingArrival = false;
+    resetToken += 1;
+  }
+
+  /**
+   * Parking inside the gate apron ends the drive in. The phase advances the
+   * moment the driver gets out, so the objective changes with the view.
+   */
+  function handleMobilityUpdate(update: FlowFestMobilityRuntimeUpdate): void {
+    mobility.applyRuntime(update);
+    if (update.car === undefined) return;
+    const car = update.car;
+    bankDrivingTime(car);
+    if (
+      carWasDriving &&
+      car &&
+      !car.driving &&
+      progress?.phase === "drive-in" &&
+      isFlowFestGateArrival(car.position)
+    ) {
+      dispatch({ type: "arrive-at-gate" });
+    }
+    carWasDriving = car?.driving ?? false;
+  }
+
+  /**
+   * Driving costs energy at the rate the loadout screen promised, charged in
+   * driven time: frames in which the car was moving, each capped the way the
+   * car caps a slow frame. A tab left in the background drains nothing,
+   * because nothing was driven.
+   */
+  function bankDrivingTime(car: FlowFestMobilityCarRuntime | null): void {
+    const moving =
+      car?.driving === true && car.dynamics.speedMetersPerSecond !== 0;
+    if (!moving || progress?.phase !== "drive-in") {
+      lastDrivingFrameAt = null;
+      return;
+    }
+    const now = performance.now();
+    if (lastDrivingFrameAt !== null) {
+      drivingSecondsBanked += Math.min(
+        (now - lastDrivingFrameAt) / 1000,
+        FLOW_FEST_CAR_CONFIG.maximumSimulationCatchUpSeconds
+      );
+    }
+    lastDrivingFrameAt = now;
+    (globalThis as Record<string, unknown>).__flowFestEnergyBank = {
+      bankedSeconds: drivingSecondsBanked,
+      lastFrameAt: now,
+    };
+    if (drivingSecondsBanked < ENERGY_DRAIN_TICK_SECONDS) return;
+    const seconds = drivingSecondsBanked;
+    drivingSecondsBanked = 0;
+    dispatch({
+      type: "drain-energy",
+      percent: flowFestDrivingEnergyDrainPercent(seconds),
+    });
+  }
+
   function chooseCamp(branch: FlowFestBranchId): void {
     dispatch({ type: "choose-camp", branch });
   }
@@ -502,6 +699,30 @@
     stagePosition = { x: target.x, z: target.z };
     stageAwaitingArrival = true;
     stageToken += 1;
+  }
+
+  function handleCameraPose(pose: FlowFestViewPose): void {
+    Object.assign(viewPose, pose);
+    viewPoseReported = true;
+  }
+
+  /**
+   * Mirror the live camera into `?cam=&look=&fov=` so the address bar always
+   * describes the frame on screen, and a copied link reopens it.
+   *
+   * Raw `history.replaceState` on purpose, matching `EnvironmentReviewCamera`:
+   * routing this through SvelteKit would republish `page.url`, and anything
+   * reading the query back would re-place the camera at the rounded pose on
+   * every write.
+   */
+  function publishViewpoint(): void {
+    if (!browser || fixedReviewEnabled || !viewPoseReported) return;
+    if (!flowFestViewPoseChanged(publishedViewPose, viewPose)) return;
+    publishedViewPose = { ...viewPose };
+    viewpointCoordinates = formatFlowFestViewCoordinates(viewPose);
+    const url = flowFestViewLinkUrl(new URL(window.location.href), viewPose);
+    viewpointHref = url.href;
+    window.history.replaceState(window.history.state, "", url);
   }
 
   function handlePlayerPosition(nextPosition: {
@@ -603,6 +824,7 @@
       { x: spawnX, z: spawnZ },
       spawnHeadingFor(contract)
     );
+    carWasDriving = false;
     stagePosition = null;
     stageAwaitingArrival = false;
     resetToken += 1;
@@ -664,9 +886,11 @@
     gate6Capture = gate6Review && search.get("capture") === "1";
     const performanceTimer = window.setInterval(refreshGate5Performance, 500);
     const audioTimer = window.setInterval(pumpSiteAudio, 50);
+    const viewpointTimer = window.setInterval(publishViewpoint, 250);
     return () => {
       window.clearInterval(performanceTimer);
       window.clearInterval(audioTimer);
+      window.clearInterval(viewpointTimer);
       mobility.destroy();
       fieldPositioning.destroy();
       fireJamSoundscape.dispose();
@@ -978,6 +1202,14 @@
       sendCamera(reviewCamera.id);
       return;
     }
+    if (initialViewLink) {
+      // An explicit viewpoint outranks the phase-staged cameras below. The
+      // link exists to put someone at one specific spot, and letting the night
+      // composition win would silently discard the coordinates it carried.
+      initialCameraApplied = true;
+      sendCamera(initialViewLink.id);
+      return;
+    }
     if (gate4Review) {
       // The Gate 4 slice starts on the wheel at the fire-jam approach. Reusing
       // the night composition camera here would silently teleport the rider
@@ -1217,13 +1449,15 @@
           {resetToken}
           {cameraToken}
           {cameraId}
-          externalReviewCameras={FLOW_FEST_ENTRANCE_REVIEW_CAMERAS}
+          externalReviewCameras={reviewCameras}
           {stageToken}
           {stagePosition}
           {selectedBranch}
           hostMode="chunked"
           moveSpeedMetersPerSecond={FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND}
           sprintMultiplier={FLOW_FEST_GAMEPLAY_SPRINT_MULTIPLIER}
+          groundAccelerationMetersPerSecondSquared={FLOW_FEST_GAMEPLAY_GROUND_ACCELERATION_METERS_PER_SECOND_SQUARED}
+          groundDecelerationMetersPerSecondSquared={FLOW_FEST_GAMEPLAY_GROUND_DECELERATION_METERS_PER_SECOND_SQUARED}
           jumpForce={FLOW_FEST_GAMEPLAY_JUMP_FORCE}
           enableSprint={true}
           enableJump={true}
@@ -1234,6 +1468,9 @@
           {productionCollision}
           productionCampEstablished={campEstablished}
           productionFestivalActive={festivalActive}
+          {gateQueueCars}
+          playerCharacterId={progress?.loadout?.characterId}
+          inputLocked={progress?.phase === "loadout"}
           electricUnicycleEnabled={!fixedReviewEnabled}
           electricUnicycleRevision={mobility.revision}
           electricUnicycleSnapshot={mobility.snapshot}
@@ -1247,7 +1484,8 @@
             listenerYaw = yaw;
             audioListener.yawRadians = yaw;
           }}
-          onElectricUnicycleChange={(update) => mobility.applyRuntime(update)}
+          onCameraPoseChange={handleCameraPose}
+          onElectricUnicycleChange={handleMobilityUpdate}
           onError={(message) => (error = message)}
         />
         <FlowFestProductionLayer
@@ -1258,6 +1496,7 @@
           {fireJamEnergy}
           playerPosition={position}
           showCampDressing={!entranceReferenceReview.enabled}
+          {gateQueueCars}
           onReady={(details) => {
             productionReady = details;
             productionCollision = details.collision;
@@ -1374,9 +1613,10 @@
       {selectedBranch}
       {position}
       headingRadians={listenerYaw}
+      {viewpointCoordinates}
+      {viewpointHref}
       {targetZone}
       targetDistance={objectiveDistance}
-      currentArea={integratedJourney?.currentArea ?? integratedArea}
       mobility={mobilityRuntime}
       {electricUnicycleSpeedMph}
       {electricUnicycleSpeedKph}
@@ -1395,6 +1635,7 @@
       onToggleSound={() => void toggleSound()}
       onRestart={() =>
         gate5Review ? restartIntegratedJourney() : (resetToken += 1)}
+      onStartOver={startOver}
       onReviewGate={() => stageGate5ReviewArea("lower-gate")}
       onReviewEntrance={() => stageGate5ReviewArea("camp-entrance")}
       onReviewParkingGate={() => stageGate5ReviewArea("parking-gate")}
@@ -1420,6 +1661,14 @@
   {/if}
 
   {#if !fixedReviewEnabled}
+    {#if ready && progress?.phase === "loadout"}
+      <section
+        class="loadout-dock glass-panel themed-scrollbar"
+        aria-label="Pack the car"
+      >
+        <FlowFestLoadoutPanel onDepart={depart} />
+      </section>
+    {/if}
     {#if progress?.phase === "choose-camp"}
       <section
         class="camp-choice glass-panel"
@@ -1491,7 +1740,6 @@
     --action-shadow: 0 0.8rem 2rem rgba(165, 65, 39, 0.28);
     --action-shadow-hover: 0 1rem 2.4rem rgba(165, 65, 39, 0.42);
     --action-focus: #ffe6b0;
-    --sim-ui-scale: 1;
     position: fixed;
     inset: 0;
     min-inline-size: 20rem;
@@ -1541,8 +1789,8 @@
     gap: 0.16rem;
     max-inline-size: min(28rem, calc(100vw - 1.5rem));
     padding: 0.72rem 0.9rem;
-    border-inline-start: 0.2rem solid var(--sim-accent);
-    border-radius: 0.35rem 0.9rem 0.9rem 0.35rem;
+    border: 1px solid var(--sim-stroke);
+    border-radius: 0.9rem;
     background: rgba(7, 13, 10, 0.74);
     box-shadow: 0 0.9rem 2.4rem rgba(2, 7, 4, 0.26);
     pointer-events: none;
@@ -1586,7 +1834,19 @@
     inline-size: min(55rem, calc(100vw - 2rem));
     padding: clamp(1rem, 2vw, 1.5rem);
     border-radius: 1.35rem;
-    transform: translate(-50%, -50%) scale(var(--sim-ui-scale));
+    translate: -50% -50%;
+  }
+
+  .loadout-dock {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    z-index: 45;
+    inline-size: min(64rem, calc(100vw - 1.5rem));
+    max-block-size: calc(100dvh - 1.5rem);
+    overflow: auto;
+    padding: clamp(0.9rem, 2vw, 1.5rem);
+    border-radius: 1.35rem;
+    translate: -50% -50%;
   }
 
   .choice-heading {
@@ -1684,7 +1944,7 @@
     max-inline-size: min(34rem, calc(100vw - 2rem));
     padding: 1rem 1.15rem;
     border-radius: 1.15rem;
-    transform: translate(-50%, -50%) scale(var(--sim-ui-scale));
+    translate: -50% -50%;
   }
 
   .loading-card > div:last-child,
@@ -1758,6 +2018,13 @@
       padding: 0.8rem;
     }
 
+    .loadout-dock {
+      inline-size: calc(100vw - 1rem);
+      max-block-size: calc(100dvh - 1rem);
+      padding: 0.75rem;
+      border-radius: 1rem;
+    }
+
     .choice-grid {
       grid-template-columns: 1fr;
     }
@@ -1795,18 +2062,6 @@
 
     .choice-grid small {
       display: none;
-    }
-  }
-
-  @media (min-width: 1680px) {
-    .festival-page {
-      --sim-ui-scale: 1.12;
-    }
-  }
-
-  @media (min-width: 2600px) {
-    .festival-page {
-      --sim-ui-scale: 1.48;
     }
   }
 

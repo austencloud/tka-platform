@@ -314,3 +314,250 @@ describe("plane axes: leftPlane, rightPlane, stepPlanes, visiblePlanes", () => {
     ]);
   });
 });
+
+describe("per-step changes: stepEffects, stepEfforts, holds", () => {
+  it("defaults every performer to three empty lists", () => {
+    const spec = resolveFilmDirectorSpec(
+      film({ performance: { cast: { count: 2 } } })
+    );
+    for (const performer of spec.scenes[0]!.performance.performers) {
+      expect(performer.stepEffects).toEqual([]);
+      expect(performer.stepEfforts).toEqual([]);
+      expect(performer.holds).toEqual([]);
+    }
+  });
+
+  it("resolves literal step effects and step efforts in the order written", () => {
+    const spec = resolveFilmDirectorSpec(
+      film({
+        performance: {
+          cast: {
+            count: 1,
+            performers: [
+              {
+                id: "performer-1",
+                stepEffects: [
+                  { step: 0, effect: "none" },
+                  { step: 4, effect: "trails" },
+                ],
+                stepEfforts: [{ step: 8, effort: "punch" }],
+              },
+            ],
+          },
+        },
+      })
+    );
+    const performer = spec.scenes[0]!.performance.performers[0]!;
+    expect(performer.stepEffects).toEqual([
+      { step: 0, effect: "none" },
+      { step: 4, effect: "trails" },
+    ]);
+    expect(performer.stepEfforts).toEqual([{ step: 8, effort: "punch" }]);
+  });
+
+  it("resolves a pick on a step entry from the catalog and stays deterministic", () => {
+    const doc = film({
+      performance: {
+        cast: {
+          count: 1,
+          performers: [
+            {
+              id: "performer-1",
+              stepEffects: [{ step: 2, effect: { pick: "any", not: ["fire"] } }],
+            },
+          ],
+        },
+      },
+    });
+    const first = resolveFilmDirectorSpec(doc).scenes[0]!.performance
+      .performers[0]!.stepEffects[0]!;
+    const second = resolveFilmDirectorSpec(doc).scenes[0]!.performance
+      .performers[0]!.stepEffects[0]!;
+    expect(first.effect).not.toBe("fire");
+    expect(second).toEqual(first);
+  });
+
+  it("gives each step entry its own draw rather than one draw reused", () => {
+    const spec = resolveFilmDirectorSpec(
+      film({
+        performance: {
+          cast: {
+            count: 1,
+            performers: [
+              {
+                id: "performer-1",
+                stepEffects: [
+                  { step: 0, effect: { pick: "any" } },
+                  { step: 1, effect: { pick: "any" } },
+                  { step: 2, effect: { pick: "any" } },
+                  { step: 3, effect: { pick: "any" } },
+                  { step: 4, effect: { pick: "any" } },
+                  { step: 5, effect: { pick: "any" } },
+                ],
+              },
+            ],
+          },
+        },
+      })
+    );
+    const drawn = spec.scenes[0]!.performance.performers[0]!.stepEffects.map(
+      (entry) => entry.effect
+    );
+    // Independent streams, not one value copied six times. Six draws from a
+    // 17-value catalog landing on one value would be a collapsed stream.
+    expect(new Set(drawn).size).toBeGreaterThan(1);
+  });
+
+  it("rejects distinct and sameAs on a step entry", () => {
+    for (const value of [{ pick: "distinct" }, { sameAs: "performer-2" }]) {
+      expect(() =>
+        resolveFilmDirectorSpec(
+          film({
+            performance: {
+              cast: {
+                count: 2,
+                performers: [
+                  {
+                    id: "performer-1",
+                    stepEffects: [{ step: 0, effect: value }],
+                  },
+                ],
+              },
+            },
+          })
+        )
+      ).toThrow(
+        /"stepEffect" supports literals, pick:any, oneOf, and not — distinct\/sameAs are performer-scoped\./
+      );
+    }
+  });
+
+  it("rejects two step entries naming the same step", () => {
+    expect(() =>
+      resolveFilmDirectorSpec(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [
+                {
+                  id: "performer-1",
+                  stepEffects: [
+                    { step: 4, effect: "fire" },
+                    { step: 4, effect: "trails" },
+                  ],
+                },
+              ],
+            },
+          },
+        })
+      )
+    ).toThrow(
+      /Scene "s1": performer "performer-1" stepEffects names step 4 twice\./
+    );
+    expect(() =>
+      resolveFilmDirectorSpec(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [
+                {
+                  id: "performer-1",
+                  stepEfforts: [
+                    { step: 0, effort: "dab" },
+                    { step: 0, effort: "punch" },
+                  ],
+                },
+              ],
+            },
+          },
+        })
+      )
+    ).toThrow(
+      /Scene "s1": performer "performer-1" stepEfforts names step 0 twice\./
+    );
+  });
+
+  it("rejects overlapping holds and names both", () => {
+    expect(() =>
+      resolveFilmDirectorSpec(
+        film({
+          performance: {
+            cast: {
+              count: 1,
+              performers: [
+                {
+                  id: "performer-1",
+                  holds: [
+                    { fromStep: 6, steps: 2 },
+                    { fromStep: 4, steps: 4 },
+                  ],
+                },
+              ],
+            },
+          },
+        })
+      )
+    ).toThrow(
+      /Scene "s1": performer "performer-1" holds overlap: step 4 for 4 steps and step 6 for 2 steps\./
+    );
+  });
+
+  it("accepts holds that touch without overlapping, sorted by where they start", () => {
+    const spec = resolveFilmDirectorSpec(
+      film({
+        performance: {
+          cast: {
+            count: 1,
+            performers: [
+              {
+                id: "performer-1",
+                holds: [
+                  { fromStep: 8, steps: 2 },
+                  { fromStep: 4, steps: 4 },
+                ],
+              },
+            ],
+          },
+        },
+      })
+    );
+    expect(spec.scenes[0]!.performance.performers[0]!.holds).toEqual([
+      { fromStep: 4, steps: 4 },
+      { fromStep: 8, steps: 2 },
+    ]);
+  });
+
+  it("replaces cast defaults rather than merging with them", () => {
+    const spec = resolveFilmDirectorSpec(
+      film({
+        performance: {
+          cast: {
+            count: 2,
+            defaults: {
+              stepEffects: [{ step: 0, effect: "goo" }],
+              stepEfforts: [{ step: 0, effort: "glide" }],
+              holds: [{ fromStep: 0, steps: 2 }],
+            },
+            performers: [
+              {
+                id: "performer-1",
+                stepEffects: [{ step: 6, effect: "ink" }],
+                stepEfforts: [{ step: 6, effort: "punch" }],
+                holds: [{ fromStep: 6, steps: 1 }],
+              },
+            ],
+          },
+        },
+      })
+    );
+    const [first, second] = spec.scenes[0]!.performance.performers;
+    expect(first!.stepEffects).toEqual([{ step: 6, effect: "ink" }]);
+    expect(first!.stepEfforts).toEqual([{ step: 6, effort: "punch" }]);
+    expect(first!.holds).toEqual([{ fromStep: 6, steps: 1 }]);
+    expect(second!.stepEffects).toEqual([{ step: 0, effect: "goo" }]);
+    expect(second!.stepEfforts).toEqual([{ step: 0, effort: "glide" }]);
+    expect(second!.holds).toEqual([{ fromStep: 0, steps: 2 }]);
+  });
+});

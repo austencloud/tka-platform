@@ -17,9 +17,35 @@
      *  On mobile the label is always "Share" — the action opens the native share
      *  sheet (shareOrDownloadBlob), so the desktop copy is overridden there. */
     saveLabel?: string;
+    /** Opt-in cloud save. The button only exists when a host supplies this, so
+     *  a surface with no sequence to attach a film to never shows it. */
+    onSaveToCloud?: () => void | Promise<void>;
+    cloudSaveLabel?: string;
   }
 
-  let { blobUrl, onDismiss, onRedownload, saveLabel = "Save Again" }: Props = $props();
+  let {
+    blobUrl,
+    onDismiss,
+    onRedownload,
+    saveLabel = "Save Again",
+    onSaveToCloud,
+    cloudSaveLabel = "Save to sequence",
+  }: Props = $props();
+
+  let cloudSaveState = $state<"idle" | "saving" | "saved">("idle");
+
+  async function saveToCloud() {
+    if (!onSaveToCloud || cloudSaveState !== "idle") return;
+    cloudSaveState = "saving";
+    try {
+      await onSaveToCloud();
+      cloudSaveState = "saved";
+    } catch {
+      // The host owns the error message; this button just becomes available
+      // again so the person can retry.
+      cloudSaveState = "idle";
+    }
+  }
 
   // Mobile shares (native sheet); keep each host's desktop copy otherwise.
   const effectiveSaveLabel = $derived(shareTarget.isMobile ? "Share" : saveLabel);
@@ -125,6 +151,29 @@
       <i class="fas {shareTarget.isMobile ? 'fa-share-nodes' : 'fa-download'}" aria-hidden="true"></i>
       {effectiveSaveLabel}
     </button>
+    {#if onSaveToCloud}
+      <button
+        type="button"
+        class="action-btn secondary"
+        onclick={() => void saveToCloud()}
+        disabled={cloudSaveState !== "idle"}
+        aria-label={cloudSaveLabel}
+      >
+        <i
+          class="fas {cloudSaveState === 'saved'
+            ? 'fa-check'
+            : cloudSaveState === 'saving'
+              ? 'fa-spinner fa-spin'
+              : 'fa-cloud-arrow-up'}"
+          aria-hidden="true"
+        ></i>
+        {cloudSaveState === "saved"
+          ? "Saved"
+          : cloudSaveState === "saving"
+            ? "Saving"
+            : cloudSaveLabel}
+      </button>
+    {/if}
     <button
       type="button"
       class="action-btn secondary"
@@ -253,6 +302,11 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
+  }
+
+  .action-btn:disabled {
+    cursor: default;
+    opacity: 0.7;
     -webkit-tap-highlight-color: transparent;
   }
 

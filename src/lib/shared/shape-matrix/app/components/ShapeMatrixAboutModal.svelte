@@ -2,6 +2,13 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  import {
+    KINETIC_SHAPE_ENGINE_AUTHOR,
+    KINETIC_SHAPE_ENGINE_NAME,
+    ORIGINAL_SHAPE_MATRIX_URL,
+    ORIGINAL_SHAPE_MATRIX_VTG_RATIOS,
+    SPIN_SCIENCE_URL,
+  } from "../shape-engine-identity";
 
   const state = getShapeMatrixAppContext();
 </script>
@@ -9,8 +16,8 @@
 {#snippet header()}
   <ModalHeader
     id="shape-matrix-about-title"
-    title="About Shape Matrix Explorer"
-    subtitle="Lorq’s foundation and what this app adds"
+    title={`About ${KINETIC_SHAPE_ENGINE_NAME}`}
+    subtitle="Vulcan Tech Gospel, Lorq’s matrix, and Austen’s Shape Engine"
     icon="fa-table-cells-large"
     iconColor="#d9901a"
     onClose={state.closeAbout}
@@ -20,49 +27,60 @@
 <BaseModal
   open={state.aboutOpen}
   onclose={state.closeAbout}
-  size="fit"
+  size="xl"
   labelledBy="shape-matrix-about-title"
   {header}
 >
   <div class="about-copy">
     <p>
-      Lorq Nichols created the Shape Matrix and publishes as
-      <a
-        href="http://spinscience.xyz/"
-        target="_blank"
-        rel="noopener noreferrer">Spin Science</a
-      >. His framework pairs one hand's driving style with the other hand's to
-      map a field of shapes.
+      {KINETIC_SHAPE_ENGINE_NAME} is an independent exploration tool by
+      {KINETIC_SHAPE_ENGINE_AUTHOR}. It is part of
+      <a href="/composer">Flow Arts Composer</a>, also available as a standalone
+      app.
     </p>
-    <p>
-      Shape Matrix Explorer is an independently built app based on that
-      foundation. It does not reproduce Nichols' original diagram or present
-      itself as an official Spin Science release. TKA levels, quarter-turn and
-      mixed-axis bands, prop selection, hand/prop relationship derivation,
-      animation, and pictograph readouts are additions made here.
-    </p>
-    <p>
-      <strong>Hands and props.</strong> In the shape detail pane, choose a hand
-      path to see the prop relationship it produces, or choose a prop
-      relationship to find a matching hand path. The paired result stays below
-      the animation. Both controls describe the same shape from a different
-      starting point.
-    </p>
+    <div class="about-columns">
+      <section>
+        <span class="section-kicker">Notation in this app</span>
+        <h2>VTG ratios and TKA turns</h2>
+        <p>
+          Vulcan Tech Gospel (VTG) was developed by Noel Yee and spinners at the
+          Vulcan Lofts in Oakland. The Level Matrix uses TKA turn values. The
+          Ratio Playground uses exact whole-number spin ratios, including the
+          VTG families {ORIGINAL_SHAPE_MATRIX_VTG_RATIOS}. Levels add finer turn
+          increments and more possible paths as they progress. A higher level
+          does not make every pattern harder.
+        </p>
+      </section>
+
+      <section>
+        <span class="section-kicker">Source inspiration</span>
+        <h2>Lorq Nichols’ 144 Shape Matrix</h2>
+        <p>
+          Lorq Nichols, publishing as
+          <a href={SPIN_SCIENCE_URL} target="_blank" rel="noopener noreferrer"
+            >Spin Science</a
+          >, created the original matrix. It pairs twelve driving styles for
+          each hand into 144 combinations. Shape Engine takes inspiration from
+          that row-and-column format.
+        </p>
+        <p>
+          Austen built this app independently, including its prop selection,
+          relationship solving, live animation, and pictograph readouts. It is
+          not an official Spin Science release.
+        </p>
+      </section>
+    </div>
     <div class="source-links">
-      <a
-        href="http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        View the original 144 Shape Matrix
-        <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+      <a href="/guide/ratios">
+        Read ratios in TKA
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </a>
       <a
-        href="http://spinscience.xyz/work/"
+        href={ORIGINAL_SHAPE_MATRIX_URL}
         target="_blank"
         rel="noopener noreferrer"
       >
-        Explore Spin Science
+        View Lorq Nichols’ 144 Shape Matrix
         <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
       </a>
     </div>
@@ -72,16 +90,28 @@
 <style>
   .about-copy {
     display: grid;
-    gap: 1rem;
-    max-width: 42rem;
-    padding: 1.25rem;
+    gap: 1.5rem;
+    padding: clamp(1rem, 2.2vw, 2rem);
     color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
     font-size: 0.98rem;
     line-height: 1.65;
   }
 
+  .about-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1.5rem, 4vw, 4rem);
+  }
+
+  section {
+    display: grid;
+    align-content: start;
+    gap: 0.8rem;
+  }
+
   p {
     margin: 0;
+    max-inline-size: var(--measure-prose, 68ch);
   }
 
   p a {
@@ -89,9 +119,23 @@
     text-underline-offset: 0.2em;
   }
 
-  p strong {
+  h2 {
     color: var(--theme-text, #fff);
-    font-weight: 650;
+  }
+
+  .section-kicker {
+    color: #f4b54c;
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 750;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: -0.25rem 0 0;
+    font-size: clamp(1.2rem, 1.8vw, 1.55rem);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
   }
 
   .source-links {
@@ -127,10 +171,17 @@
     outline-offset: 2px;
   }
 
+  @media (max-width: 52rem) {
+    .about-columns {
+      grid-template-columns: 1fr;
+    }
+  }
+
   @media (max-width: 36rem) {
     .source-links {
       grid-template-columns: 1fr;
     }
+
     .about-copy {
       padding: 1rem;
     }

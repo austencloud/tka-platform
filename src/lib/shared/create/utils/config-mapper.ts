@@ -16,11 +16,18 @@ import type {
   DifficultyLevel,
   GenerationOptions,
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import { DifficultyLevel as DifficultyEnum, PropContinuity } from "$lib/shared/foundation/domain/models/generation/generate-models";
+import {
+  DifficultyLevel as DifficultyEnum,
+  PropContinuity,
+} from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
 import { resolveLoopConfig } from "$lib/shared/create/services/loop-type-utils";
 import type { ReflectionAxis } from "@tka/sequence-engine/loop";
 import type { TurnLanes } from "@tka/sequence-engine/generation";
+import type {
+  GenerationMotionTypeFilter,
+  GenerationStyleAxis,
+} from "$lib/shared/create/domain/generation-style";
 
 /**
  * Map difficulty level number to DifficultyLevel enum
@@ -57,6 +64,31 @@ export function difficultyToLevel(difficulty: DifficultyLevel): number {
 }
 
 /**
+ * Highest generate-UI level currently backed by real pictograph data.
+ *
+ * Level 4 (SKEWED) is a real difficulty already wired through
+ * LEVEL_TO_DIFFICULTY / DIFFICULTY_TO_LEVEL and the generation engine, but
+ * Level 4 pictograph data does not exist yet — nothing may offer it as a
+ * selectable option or build against it. This is the one place that gate
+ * lives: bump it to 4 when the data ships and every UI stepper/selector that
+ * reads it unlocks automatically.
+ */
+export const MAX_AVAILABLE_LEVEL = 3;
+
+/**
+ * Clamp a level number (fresh input, persisted localStorage/Firestore state,
+ * or anything in between) into the range the UI can currently offer. Use
+ * this anywhere a level value re-enters the app from outside the current
+ * session so a value saved before the Level 4 gate existed degrades to the
+ * nearest available level instead of round-tripping into a build request the
+ * generator can't fulfill.
+ */
+export function clampToAvailableLevel(level: number): number {
+  if (!Number.isFinite(level)) return MAX_AVAILABLE_LEVEL;
+  return Math.min(MAX_AVAILABLE_LEVEL, Math.max(1, Math.round(level)));
+}
+
+/**
  * UI Configuration interface for state management
  * This is what the UI components work with directly
  */
@@ -83,9 +115,9 @@ export interface UIGenerationConfig {
   reflectionAxis?: ReflectionAxis;
 
   // 3-axis constraint system (replaces binary propContinuity)
-  constraintPreset: "smooth" | "mixed" | "choppy"; // Prop reversal frequency
-  handPathMode: "smooth" | "mixed" | "choppy"; // Hand path reversal frequency
-  motionTypeFilter: "no-dash" | "prefer-dash" | null; // Dash frequency ("mixed" = null)
+  constraintPreset: GenerationStyleAxis; // Prop reversal frequency
+  handPathMode: GenerationStyleAxis; // Hand path reversal frequency
+  motionTypeFilter: GenerationMotionTypeFilter; // Dash frequency ("mixed" = null)
 
   // Duration rhythm template (applied automatically after generation)
   durationTemplateId: string | null;
@@ -129,7 +161,9 @@ export function uiConfigToGenerationOptions(
 
   // Derive propContinuity from constraintPreset for backwards compat
   const derivedPropContinuity =
-    uiConfig.constraintPreset === "smooth" ? PropContinuity.CONTINUOUS : PropContinuity.RANDOM;
+    uiConfig.constraintPreset === "smooth"
+      ? PropContinuity.CONTINUOUS
+      : PropContinuity.RANDOM;
 
   // When loop is enabled, use the circular generation pipeline; otherwise freeform
   const effectiveMode = uiConfig.loopEnabled ? "circular" : "freeform";
@@ -146,9 +180,7 @@ export function uiConfigToGenerationOptions(
     turnIntensity:
       uiConfig.turnIntensity !== undefined ? uiConfig.turnIntensity : undefined,
     turnPattern: uiConfig.turnPattern ?? undefined,
-    period: period
-      ? (period as GenerationOptions["period"])
-      : undefined,
+    period: period ? (period as GenerationOptions["period"]) : undefined,
     loopType: uiConfig.loopType
       ? (uiConfig.loopType as GenerationOptions["loopType"])
       : undefined,
@@ -187,12 +219,13 @@ export function generationOptionsToUIConfig(
 ): UIGenerationConfig {
   // Derive constraintPreset from propContinuity for backwards compat
   const constraintPreset: UIGenerationConfig["constraintPreset"] =
-    options.constraintPreset ?? (options.propContinuity === "random" ? "mixed" : "smooth");
+    options.constraintPreset ??
+    (options.propContinuity === "random" ? "mixed" : "smooth");
 
   // Map "circular" back to freeform + loopEnabled for the UI
   const isCircular = options.mode === "circular";
   return {
-    mode: isCircular ? "freeform" : (options.mode || "freeform"),
+    mode: isCircular ? "freeform" : options.mode || "freeform",
     loopEnabled: isCircular,
     length: options.length,
     level: difficultyToLevel(options.difficulty),

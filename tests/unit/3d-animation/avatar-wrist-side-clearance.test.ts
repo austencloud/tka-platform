@@ -23,10 +23,16 @@ type SocketTargetProbe = {
     rightHand: { targetPosition: Vector3 } | null;
   };
   calibrateGrips: (state: SkeletonState) => void;
+  stanceYawSmoothedRad: number;
+  leftHandDir: Vector3;
+  rightHandDir: Vector3;
+  leftHandDirValid: boolean;
+  rightHandDirValid: boolean;
   computeSocketTarget: (
     side: "left" | "right",
     chain: BoneChain,
-    gripPoint: Vector3
+    gripPoint: Vector3,
+    staffQuat?: Quaternion
   ) => Vector3;
   applyWristOrientation: (
     side: "left" | "right",
@@ -360,5 +366,121 @@ describe("avatar wrist-side clearance", () => {
     expect(
       Math.abs(animator.leftGripAxisLocal?.dot(longitudinal) ?? 1)
     ).toBeLessThan(0.01);
+  });
+
+  /**
+   * The hug is a WRIST ROTATION, not a second placement pass. These lock the
+   * two halves of that: the socket may only move the wrist around the grip on
+   * a palm-length sphere, and the direction it picks has to be one the roll
+   * about the staff can actually reach.
+   */
+  describe("side-on hug", () => {
+    const SIDE_ON_YAW_RAD = (87 * Math.PI) / 180;
+    /** Mirrors HUG_WRIST_DEVIATION inside the animator. */
+    const MAX_DEVIATION_RAD = (25 * Math.PI) / 180;
+
+    function createHugAnimator(): {
+      animator: SocketTargetProbe;
+      chain: BoneChain;
+      grip: Vector3;
+      palmLength: number;
+      staffQuat: Quaternion;
+    } {
+      const animator = new AvatarAnimator(
+        {} as never,
+        {} as never
+      ) as unknown as SocketTargetProbe;
+      const palmLength = 0.09;
+      const chain = createArmChain();
+      // Elbow behind and outboard of the grip, the way a side-on reach sits.
+      chain.root.position.set(0.22, 0, -0.2);
+      chain.root.updateMatrixWorld(true);
+      animator.leftPalmLocal = new Vector3(palmLength, 0, 0);
+      animator.rightPalmLocal = new Vector3(palmLength, 0, 0);
+      animator.leftPalmWorldLength = palmLength;
+      animator.rightPalmWorldLength = palmLength;
+      // Chest turned side-on: its lateral axis is the audience depth axis.
+      animator._bodyFrame.lateral.set(0, 0, 1);
+      return {
+        animator,
+        chain,
+        grip: new Vector3(0, 1.2, -0.118),
+        palmLength,
+        staffQuat: new Quaternion(),
+      };
+    }
+
+    it("keeps the square stance on the historical medial socket", () => {
+      const { animator, chain, grip, palmLength, staffQuat } =
+        createHugAnimator();
+      animator.stanceYawSmoothedRad = 0;
+
+      const wrist = animator
+        .computeSocketTarget("left", chain, grip, staffQuat)
+        .clone();
+
+      expect(wrist.z).toBeCloseTo(grip.z - palmLength, 6);
+      expect(wrist.x).toBeCloseTo(grip.x, 6);
+      expect(wrist.y).toBeCloseTo(grip.y, 6);
+    });
+
+    it("rotates the wrist around the grip instead of translating the grip", () => {
+      const { animator, chain, grip, palmLength, staffQuat } =
+        createHugAnimator();
+      animator.stanceYawSmoothedRad = SIDE_ON_YAW_RAD;
+
+      const hugWrist = animator
+        .computeSocketTarget("left", chain, grip, staffQuat)
+        .clone();
+
+      // Same palm-length sphere around the SAME authored grip: the hug adds
+      // no depth-lane translation of its own.
+      expect(hugWrist.distanceTo(grip)).toBeCloseTo(palmLength, 6);
+
+      animator.stanceYawSmoothedRad = 0;
+      const squareWrist = animator
+        .computeSocketTarget("left", chain, grip, staffQuat)
+        .clone();
+      expect(hugWrist.distanceTo(squareWrist)).toBeGreaterThan(0.01);
+    });
+
+    it("aims the hand somewhere the roll about the staff can reach", () => {
+      const { animator, chain, grip, staffQuat } = createHugAnimator();
+      animator.stanceYawSmoothedRad = SIDE_ON_YAW_RAD;
+
+      animator.computeSocketTarget("left", chain, grip, staffQuat);
+
+      // The knuckle axis is welded to the shaft, so a goal with any component
+      // along the shaft is unreachable and leaves the palm short of the grip.
+      const staffAxis = new Vector3(0, -1, 0).applyQuaternion(staffQuat);
+      expect(Math.abs(animator.leftHandDir.dot(staffAxis))).toBeLessThan(1e-6);
+      expect(animator.leftHandDirValid).toBe(true);
+    });
+
+    it("keeps the inward rotation inside the wrist deviation budget", () => {
+      const { animator, chain, grip, staffQuat } = createHugAnimator();
+      animator.stanceYawSmoothedRad = SIDE_ON_YAW_RAD;
+
+      animator.computeSocketTarget("left", chain, grip, staffQuat);
+
+      const medialInPlane = animator._bodyFrame.lateral
+        .clone()
+        .projectOnPlane(new Vector3(0, -1, 0).applyQuaternion(staffQuat))
+        .normalize();
+      const deviation = animator.leftHandDir.angleTo(medialInPlane);
+      expect(deviation).toBeGreaterThan(0);
+      expect(deviation).toBeLessThanOrEqual(MAX_DEVIATION_RAD + 1e-6);
+    });
+
+    it("falls back to the medial socket when the hand carries no staff", () => {
+      const { animator, chain, grip, palmLength } = createHugAnimator();
+      animator.stanceYawSmoothedRad = SIDE_ON_YAW_RAD;
+
+      const wrist = animator
+        .computeSocketTarget("left", chain, grip, undefined)
+        .clone();
+
+      expect(wrist.z).toBeCloseTo(grip.z - palmLength, 6);
+    });
   });
 });

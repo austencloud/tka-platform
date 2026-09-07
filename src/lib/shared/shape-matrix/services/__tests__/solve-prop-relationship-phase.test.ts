@@ -24,6 +24,7 @@ import {
   flowerPetals,
   type Flower,
   type FlowerStyle,
+  type RotatingFlower,
 } from "../../domain/flower-signature";
 import type { RotationStyle } from "../../domain/rotation-style";
 import {
@@ -52,7 +53,14 @@ let edges: CsvEdge[];
 let matrices: RotationStyleArchetype[];
 let staffTip: { dx: number; dy: number };
 
-function flower(style: FlowerStyle, turns: number, ori: "in" | "out"): Flower {
+// Every fixture here is a rotating flower: a float has no style to resolve an
+// archetype from, so naming the narrower type keeps `pair.left.style` a
+// FlowerStyle instead of widening to include "float".
+function flower(
+  style: FlowerStyle,
+  turns: number,
+  ori: "in" | "out"
+): RotatingFlower {
   return {
     style,
     turns,
@@ -62,7 +70,10 @@ function flower(style: FlowerStyle, turns: number, ori: "in" | "out"): Flower {
   };
 }
 
-function overlayFor(pair: { left: Flower; right: Flower }): FlowerParityTarget {
+function overlayFor(pair: {
+  left: RotatingFlower;
+  right: RotatingFlower;
+}): FlowerParityTarget {
   const leftArchetype = resolveFlowerArchetype(matrices, pair.left.style);
   const rightArchetype = resolveFlowerArchetype(matrices, pair.right.style);
   const leftSequence = buildFlowerSequence(
@@ -340,4 +351,61 @@ describe("exact flower parity", () => {
       solvePropRelationshipPhase(base, floating, "SS", edges, emptyTarget)
     ).toBeNull();
   });
+
+  it("keeps the exact hand-to-prop graph complete across level bands", () => {
+    const variants = [
+      ["pro", "in"],
+      ["pro", "out"],
+      ["anti", "in"],
+      ["anti", "out"],
+    ] as const;
+    let checkedPairs = 0;
+
+    for (const turns of [0, 0.25, 0.5, 1]) {
+      for (const [leftStyle, leftOri] of variants) {
+        for (const [rightStyle, rightOri] of variants) {
+          const pair = {
+            left: flower(leftStyle, turns, leftOri),
+            right: flower(rightStyle, turns, rightOri),
+          };
+          const target = overlayFor(pair);
+          const graph: Record<string, string[]> = {};
+          for (const handMode of MODE_ORDER) {
+            const base = resolveBase(index, handMode, leftStyle, rightStyle);
+            if (!base) continue;
+            graph[handMode] = [
+              ...new Set(
+                buildExactFlowerPhases(base, pair, edges, target).map(
+                  (phase) => {
+                    const relationship = derivePropRelationship(
+                      phase.sequence,
+                      pair
+                    );
+                    return relationship.kind === "full"
+                      ? relationship.element.familyId
+                      : relationship.kind;
+                  }
+                )
+              ),
+            ];
+          }
+          const targets = Object.values(graph);
+          const edgeCount = targets.reduce(
+            (total, targets) => total + targets.length,
+            0
+          );
+          const branchingHands = targets.filter(
+            (propModes) => propModes.length > 1
+          );
+
+          expect(Object.keys(graph)).toEqual(MODE_ORDER);
+          expect(edgeCount).toBe(turns === 0.25 ? 8 : 6);
+          expect(branchingHands).toHaveLength(turns === 0.25 ? 2 : 0);
+          checkedPairs += 1;
+        }
+      }
+    }
+
+    expect(checkedPairs).toBe(64);
+  }, 180_000);
 });

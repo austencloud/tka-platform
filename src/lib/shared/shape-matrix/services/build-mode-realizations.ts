@@ -44,7 +44,8 @@ export interface ModeRealization {
   source: ShapeMatrixRealizationSource;
 }
 
-function propModeOf(relationship: PropRelationship): VtgMode | null {
+/** The VTG mode the props are in, when they are in one at all. */
+export function propModeOf(relationship: PropRelationship): VtgMode | null {
   if (relationship.kind !== "full") return null;
   return (
     MODE_ORDER.find(

@@ -62,14 +62,14 @@ export const TRANSITION_REVIEW_GATES = [
     title: "2D / 3D ⇄ Post Studio",
     summary: "The studio enters as an intentional workspace change.",
     fromGrade: "D",
-    availability: "pending",
+    availability: "ready",
   },
   {
     id: "export-inspector",
     title: "Export inspector",
     summary: "Opening, closing, and resizing the inspector moves on one clock.",
     fromGrade: "C-",
-    availability: "pending",
+    availability: "ready",
   },
   {
     id: "practice",
@@ -77,7 +77,7 @@ export const TRANSITION_REVIEW_GATES = [
     summary:
       "Practice recomposes the viewer without disturbing playback continuity.",
     fromGrade: "C+",
-    availability: "pending",
+    availability: "ready",
   },
   {
     id: "switchers",
@@ -85,7 +85,7 @@ export const TRANSITION_REVIEW_GATES = [
     summary:
       "Rail and bottom-bar selection feedback agree with the workspace motion.",
     fromGrade: "C",
-    availability: "pending",
+    availability: "ready",
   },
 ] as const satisfies readonly TransitionReviewGate[];
 
@@ -100,7 +100,9 @@ export type TransitionReviewDecisions = Record<
 export const TRANSITION_REVIEW_STORAGE_KEY =
   "tka_sequence_viewer_transition_review_v1";
 
-const REVIEW_GATE_IDS = new Set(TRANSITION_REVIEW_GATES.map((gate) => gate.id));
+const REVIEW_GATE_IDS: Set<string> = new Set(
+  TRANSITION_REVIEW_GATES.map((gate) => gate.id)
+);
 
 export function createEmptyTransitionReviewDecisions(): TransitionReviewDecisions {
   return Object.fromEntries(

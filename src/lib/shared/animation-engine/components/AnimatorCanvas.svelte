@@ -34,12 +34,17 @@ Last audit: 2025-12-27
   import CanvasSurface from "./CanvasSurface.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
+  import { reparentToInspector } from "$lib/shared/sequence-viewer/components/reparent-to-inspector";
   import SequenceProgressBar from "$lib/shared/animation-engine/components/layers/SequenceProgressBar.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { AnimationEngine } from "../services/animation-engine.svelte";
+  import {
+    AnimationEngine,
+    type AdditionalLayerTextureStatus,
+  } from "../services/animation-engine.svelte";
   import {
     getAnimationVisibilityManager,
     type AnimationVisibilityStateManager,
@@ -71,10 +76,12 @@ Last audit: 2025-12-27
     leftProp,
     rightProp,
     additionalLayers = [],
+    preloadAdditionalLayers = [],
     tunnelSpectrum = true,
     tunnelPropColors = null,
     tunnelSelectedLayer = null,
     gridVisible = true,
+    gridOpacity = undefined,
     gridMode = GridMode.DIAMOND,
     backgroundAlpha = 1,
     letter = null,
@@ -99,6 +106,7 @@ Last audit: 2025-12-27
     glyphFrame = "pictograph",
     hidePathLines = false,
     hideProgressBar = false,
+    shareStudioTransport = false,
     hideHeader = false,
     isSeamlesslyLoopable = undefined,
     progressBarVariant = "gradient",
@@ -113,11 +121,14 @@ Last audit: 2025-12-27
     disableContextMenu = false,
     fillContainer = false,
     disassemblyLayout = "stacked",
+    disassemblyTarget = null,
+    onDisassemblyTargetChange = undefined,
     prewarmEffects = undefined,
     showNonRadialPoints = true,
     resizePaused = false,
     onInitialized: onInitializedCallback = undefined,
     onEffectError = undefined,
+    onAdditionalLayerTextureStatusChange = undefined,
     visibilityManagerOverride = undefined,
     effectsConfigState = undefined,
     externalToggleDisassemble = undefined,
@@ -143,10 +154,14 @@ Last audit: 2025-12-27
     leftProp: PropState | null;
     rightProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
+    preloadAdditionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
     tunnelPropColors?: TunnelPropColorPair | null;
     tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
+    /** Optional externally choreographed grid alpha. The Sequence Viewer uses
+     * this when 2D transforms into Tunnel on one reversible timeline. */
+    gridOpacity?: number;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;
     letter?: Letter | null;
@@ -178,6 +193,7 @@ Last audit: 2025-12-27
      *  manager (e.g. the Tunnel art view, which never wants path overlays). */
     hidePathLines?: boolean;
     hideProgressBar?: boolean;
+    shareStudioTransport?: boolean;
     /** Hide the WordHeader slot (portrait-mobile reclaims this vertical space). */
     hideHeader?: boolean;
     isSeamlesslyLoopable?: boolean;
@@ -203,7 +219,11 @@ Last audit: 2025-12-27
     fillContainer?: boolean;
     /** How the combined hero and two isolated canvases share their host while
      *  disassembled. Sidecar is designed for square, fill-mode embeds. */
-    disassemblyLayout?: "stacked" | "sidecar";
+    disassemblyLayout?: "stacked" | "sidecar" | "auto";
+    /** Controlled target for the built-in disassembly state machine. Unlike
+     *  externalToggleDisassemble, this keeps AnimatorCanvas as rendering owner. */
+    disassemblyTarget?: boolean | null;
+    onDisassemblyTargetChange?: (disassembled: boolean) => void;
     /** WebGL overlay effects (today: "fire") to warm at engine startup so the
      *  first switch never freezes. Forwarded to CanvasSurface → AnimationEngine. */
     prewarmEffects?: EffectType[];
@@ -214,6 +234,9 @@ Last audit: 2025-12-27
     onInitialized?: () => void;
     /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
     onEffectError?: (effectName: string, error: Error) => void;
+    onAdditionalLayerTextureStatusChange?: (
+      status: AdditionalLayerTextureStatus
+    ) => void;
     /** Per-instance visibility manager. When provided, this canvas uses its own
      * manager instead of the global singleton. Enables multiple canvases to have
      * independent visibility/effect settings (e.g. landing page with two players). */
@@ -290,6 +313,13 @@ Last audit: 2025-12-27
   const resolvedContextId =
     contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
 
+  const studioSurfaces = getViewerStudioSurfaces();
+  const sharedTransport = $derived(
+    shareStudioTransport ? studioSurfaces : null
+  );
+  function ownTransport(node: HTMLElement) {
+    return { destroy: sharedTransport?.registerTransport(node) };
+  }
   const playbackAdapter = createAnimatorPlaybackAdapter({
     getCurrentStep: () => currentStep,
     getSteps: () => sequenceData?.steps ?? [],
@@ -313,6 +343,8 @@ Last audit: 2025-12-27
     | "disassembled"
     | "reassembling";
   let viewState = $state<ViewState>("assembled");
+  let autoLayoutCandidate = $state<"stacked" | "sidecar">("stacked");
+  let disassemblySessionLayout = $state<"stacked" | "sidecar">("stacked");
   let contentWrapperEl: HTMLDivElement | undefined = $state();
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   let longPressFired = false;
@@ -336,21 +368,70 @@ Last audit: 2025-12-27
   // settled "disassembled" state.
   const splitResizePaused = $derived(viewState !== "disassembled");
 
+  const resolvedDisassemblyLayout = $derived(
+    disassemblyLayout === "auto"
+      ? viewState === "assembled"
+        ? autoLayoutCandidate
+        : disassemblySessionLayout
+      : disassemblyLayout
+  );
+
+  function observeDisassemblyHost(node: HTMLElement) {
+    const update = () => {
+      const { width, height } = node.getBoundingClientRect();
+      if (width <= 0 || height <= 0) return;
+      autoLayoutCandidate = width >= height * 1.15 ? "sidecar" : "stacked";
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return {
+      destroy() {
+        observer.disconnect();
+      },
+    };
+  }
+
+  function beginDisassembly(): void {
+    if (viewState !== "assembled") return;
+    disassemblySessionLayout = autoLayoutCandidate;
+    engine?.pauseResize();
+    viewState = "disassembling";
+  }
+
+  function beginReassembly(): void {
+    if (viewState !== "disassembled") return;
+    engine?.pauseResize();
+    viewState = "reassembling";
+  }
+
   function toggleDisassemble() {
     if (viewState === "assembled") {
-      // Pause ResizeObserver so the CSS width transition doesn't clear the canvas buffer
-      engine?.pauseResize();
-      viewState = "disassembling";
-      // The split view mounts collapsed and fires onBothReady when its engines render.
+      beginDisassembly();
     } else if (viewState === "disassembled") {
-      // Pause ResizeObserver before CSS width transition back to full size
-      engine?.pauseResize();
-      // Collapse the split view (splitExpandRequested flips false); remove it when
-      // its collapse transition ends (onCollapseComplete).
-      viewState = "reassembling";
+      beginReassembly();
     }
     // Ignore during active transitions
   }
+
+  function requestDisassemblyToggle(): void {
+    if (externalToggleDisassemble) {
+      externalToggleDisassemble();
+      return;
+    }
+    if (disassemblyTarget !== null) {
+      onDisassemblyTargetChange?.(!disassemblyTarget);
+      return;
+    }
+    toggleDisassemble();
+  }
+
+  $effect(() => {
+    const target = disassemblyTarget;
+    if (target === null) return;
+    if (target && viewState === "assembled") beginDisassembly();
+    if (!target && viewState === "disassembled") beginReassembly();
+  });
 
   // The split view finished its expand (open) transition: settle into the
   // disassembled state and resume the hero engine's ResizeObserver so it catches
@@ -632,9 +713,10 @@ Last audit: 2025-12-27
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="animation-container"
+  use:observeDisassemblyHost
   data-focused={focused || undefined}
   data-fill={fillContainer || undefined}
-  data-disassembly-layout={disassemblyLayout}
+  data-disassembly-layout={resolvedDisassemblyLayout}
   data-glyph-frame={glyphFrame}
   data-no-progress={hideProgressBar || undefined}
   data-hide-header={hideHeader || undefined}
@@ -680,10 +762,12 @@ Last audit: 2025-12-27
       {leftProp}
       {rightProp}
       {additionalLayers}
+      {preloadAdditionalLayers}
       {tunnelSpectrum}
       {tunnelPropColors}
       {tunnelSelectedLayer}
       {gridVisible}
+      {gridOpacity}
       {gridMode}
       {backgroundAlpha}
       {letter}
@@ -727,6 +811,7 @@ Last audit: 2025-12-27
       {onCanvasReady}
       onInitialized={onInitializedCallback}
       {onEffectError}
+      {onAdditionalLayerTextureStatusChange}
       cornerControl={cornerToggle ? cornerToggleControl : undefined}
     />
 
@@ -739,7 +824,7 @@ Last audit: 2025-12-27
         {gridVisible}
         {gridMode}
         {backgroundAlpha}
-        layout={disassemblyLayout}
+        layout={resolvedDisassemblyLayout}
         {letter}
         {stepData}
         {sequenceData}
@@ -784,11 +869,26 @@ Last audit: 2025-12-27
              on the page. Hosts can still opt out wholesale with
              `hideProgressBar` (embedded previews, showcase players); the user
              cannot switch away their own scrubber. -->
-        <UnifiedTimeline
-          playback={playbackAdapter}
-          visible={!hideProgressBar}
-          hidePlay={hidePlay ?? tapToToggle}
-        />
+        <div
+          class="shared-transport"
+          use:ownTransport
+          data-shared-studio-transport={shareStudioTransport || undefined}
+          use:reparentToInspector={{
+            target: sharedTransport?.transportTarget ?? null,
+            animate: true,
+            onMoving: (moving) =>
+              sharedTransport?.setSurfaceMoving("transport", moving),
+          }}
+        >
+          <UnifiedTimeline
+            playback={sharedTransport?.transportPlayback ?? playbackAdapter}
+            visible={!!sharedTransport?.active || !hideProgressBar}
+            hidePlay={sharedTransport?.transportTarget
+              ? false
+              : (hidePlay ?? tapToToggle)}
+            trailing={sharedTransport?.transportTrailing}
+          />
+        </div>
       {/if}
     </div>
   </div>
@@ -839,8 +939,8 @@ Last audit: 2025-12-27
       {onSaveToLibrary}
       disassembled={externalToggleDisassemble
         ? externalDisassembled
-        : isDisassembledView}
-      onToggleDisassemble={externalToggleDisassemble ?? toggleDisassemble}
+        : (disassemblyTarget ?? isDisassembledView)}
+      onToggleDisassemble={requestDisassemblyToggle}
       captureEffectDiagnostics={() => engine?.captureEffectDiagnostics() ?? {}}
       {onToggle3DView}
       extraItems={extraContextMenuItems}
@@ -1265,6 +1365,17 @@ Last audit: 2025-12-27
     transition:
       max-height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
       opacity 0.2s ease-out;
+  }
+  .shared-transport {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* The live canvas has its own flight while its transport takes another slot.
+     Ancestor clips resume at docking, not midway through that shared flight. */
+  :global([data-surface-flight]) .animation-container,
+  :global([data-surface-flight]) .content-wrapper {
+    overflow: visible;
   }
 
   /* ===========================================

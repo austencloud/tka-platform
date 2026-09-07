@@ -23893,7 +23893,7 @@
       "hiddenMonster": false
     },
     {
-      "file": "routes/(public)/notation/+page.svelte",
+      "file": "routes/(public)/history/+page.svelte",
       "total": 63,
       "scriptLines": 45,
       "templateLines": 18,

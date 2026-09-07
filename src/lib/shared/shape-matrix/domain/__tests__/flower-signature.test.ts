@@ -67,6 +67,8 @@ describe("flower-signature", () => {
   });
 
   it("computes whole petals for the complete reduced-ratio flower", () => {
+    expect(flowerPetals({ style: "pro", turns: -0.25 })).toBe(1);
+    expect(flowerPetals({ style: "anti", turns: -0.25 })).toBe(3);
     expect(flowerPetals({ style: "pro", turns: 0.5 })).toBe(1);
     expect(flowerPetals({ style: "anti", turns: 0.5 })).toBe(3); // triquetra
     expect(flowerPetals({ style: "pro", turns: 3 })).toBe(6);
@@ -104,15 +106,18 @@ describe("flower-signature", () => {
     );
   });
 
-  it("labels the VTG ratio as (2·turns+1):1", () => {
+  it("labels VTG ratios in SpiroAnim's hand-cycle-first order", () => {
+    expect(ratioLabel("fl")).toBe("1:0");
+    expect(ratioLabel(-0.25)).toBe("2:1");
     expect(ratioLabel(0)).toBe("1:1"); // isolation
-    expect(ratioLabel(0.5)).toBe("2:1"); // triquetra when antispin
-    expect(ratioLabel(1)).toBe("3:1");
-    expect(ratioLabel(3)).toBe("7:1");
-    expect(ratioLabel(0.25)).toBe("3:2");
-    expect(ratioLabel(1.25)).toBe("7:2");
-    expect(hybridRatioLabel(1, 0)).toBe("Left 3:1 × Right 1:1");
-    expect(hybridRatioLabel(1, 1)).toBe("3:1");
+    expect(ratioLabel(0.5)).toBe("1:2"); // triquetra when antispin
+    expect(ratioLabel(1)).toBe("1:3");
+    expect(ratioLabel(3)).toBe("1:7");
+    expect(ratioLabel(0.25)).toBe("2:3");
+    expect(ratioLabel(1.25)).toBe("2:7");
+    expect(hybridRatioLabel(1, 0)).toBe("Left 1:3 × Right 1:1");
+    expect(hybridRatioLabel(1, 1)).toBe("1:3");
+    expect(hybridRatioLabel("fl", -0.25)).toBe("Left 1:0 × Right 2:1");
   });
 
   it("adds one orientation-only float axis without pro/anti aliases", () => {
@@ -120,12 +125,13 @@ describe("flower-signature", () => {
     expect(new Set(buildFloatAxis().map((flower) => flower.style))).toEqual(
       new Set(["float"])
     );
-    expect(buildShapeMatrixAxis()).toHaveLength(108);
+    expect(buildShapeMatrixAxis()).toHaveLength(116);
   });
 
   it("formats a deck-compatible turn pattern (integers bare, halves X.5)", () => {
     expect(flowerTurnPattern({ turns: 1 })).toBe("1|1");
     expect(flowerTurnPattern({ turns: 0.5 })).toBe("0.5|0.5");
+    expect(flowerTurnPattern({ turns: -0.25 })).toBe("-0.25|-0.25");
   });
 
   it("builds a stable key and a human label", () => {
@@ -137,6 +143,15 @@ describe("flower-signature", () => {
       petals: 3,
     } as const;
     expect(flowerKey(f)).toBe("anti-0.5-out-box");
-    expect(flowerLabel(f)).toBe("2:1 out box · 3p"); // VTG ratio-only; style read from axis
+    expect(flowerLabel(f)).toBe("1:2 out box · 3p"); // VTG ratio-only; style read from axis
+    expect(
+      flowerLabel({
+        style: "float",
+        turns: "fl",
+        ori: "clock",
+        grid: "diamond",
+        petals: 0,
+      })
+    ).toBe("1:0 clock diamond · 0p");
   });
 });

@@ -434,8 +434,9 @@ export function readFestivalTurnReviewDecisions(
       ...seeded,
       ...Object.fromEntries(
         Object.entries(parsed as Record<string, unknown>).filter(
-          ([id, value]) =>
-            items.some((item) => item.id === id) && isDecisionRecord(value)
+          (entry): entry is [string, FestivalTurnReviewDecisionRecord] =>
+            items.some((item) => item.id === entry[0]) &&
+            isDecisionRecord(entry[1])
         )
       ),
     };

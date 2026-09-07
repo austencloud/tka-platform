@@ -3,8 +3,12 @@ import { describe, expect, it } from "vitest";
 import { GenerationMode } from "../../../src/lib/shared/foundation/domain/models/generation/generate-models";
 import {
   compileSequenceDirective,
+  isIdleSequence,
+  isLibrarySequence,
+  isTransformedSequence,
   resolvePositionRef,
   sequenceDirectiveKey,
+  transformSourceId,
 } from "../../../src/routes/test/film-director/_lib/sequence-language";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
 
@@ -266,5 +270,66 @@ describe("the film schema", () => {
         { id: "lead", sequence: { word: "DJ", startPosition: "beta9" } },
       ])
     ).toThrow(/unknown position "beta9"/);
+  });
+});
+
+describe("derived and library sequences", () => {
+  it("keys a transform chain by its source and its ordered ops", () => {
+    const key = sequenceDirectiveKey({
+      transformOf: "lead",
+      transforms: [
+        { op: "rotate", degrees: 90, direction: "cw" },
+        { op: "swap-hands" },
+      ],
+    });
+    expect(key).toBe(
+      'transformOf:lead:[{"degrees":90,"direction":"cw","op":"rotate"},{"op":"swap-hands"}]'
+    );
+  });
+
+  it("keys the same ops in a different order as a different sequence", () => {
+    const a = sequenceDirectiveKey({
+      transformOf: "lead",
+      transforms: [{ op: "mirror" }, { op: "flip" }],
+    });
+    const b = sequenceDirectiveKey({
+      transformOf: "lead",
+      transforms: [{ op: "flip" }, { op: "mirror" }],
+    });
+    expect(a).not.toBe(b);
+  });
+
+  it("keys a library sequence by its id", () => {
+    expect(sequenceDirectiveKey({ library: "abc-123" })).toBe("library:abc-123");
+  });
+
+  it("names the performer a derived sequence comes from", () => {
+    expect(transformSourceId({ mirrorOf: "lead" })).toBe("lead");
+    expect(
+      transformSourceId({ transformOf: "second", transforms: [{ op: "invert" }] })
+    ).toBe("second");
+    expect(transformSourceId({ source: "demo" })).toBeNull();
+    expect(transformSourceId({ library: "x" })).toBeNull();
+  });
+
+  it("classifies sources", () => {
+    expect(
+      isTransformedSequence({ transformOf: "a", transforms: [{ op: "rewind" }] })
+    ).toBe(true);
+    expect(isTransformedSequence({ mirrorOf: "a" })).toBe(false);
+    expect(isLibrarySequence({ library: "a" })).toBe(true);
+    expect(isLibrarySequence({ word: "AB" })).toBe(false);
+  });
+});
+
+describe("standing and watching", () => {
+  it("keys an idle performer by their idleness", () => {
+    expect(sequenceDirectiveKey({ source: "none" })).toBe("none");
+  });
+
+  it("classifies an idle sequence", () => {
+    expect(isIdleSequence({ source: "none" })).toBe(true);
+    expect(isIdleSequence({ source: "demo" })).toBe(false);
+    expect(isIdleSequence({ word: "AB" })).toBe(false);
   });
 });

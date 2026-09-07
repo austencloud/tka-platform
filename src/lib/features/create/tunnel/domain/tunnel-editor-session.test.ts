@@ -7,7 +7,10 @@ import {
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 import type { TunnelSnapshot } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
-import type { TunnelCreatorDraft } from "./tunnel-creator-draft";
+import {
+  TUNNEL_CREATOR_DRAFT_VERSION,
+  type TunnelCreatorDraft,
+} from "./tunnel-creator-draft";
 import {
   tunnelEditorContentKey,
   tunnelEditorSessionStatus,
@@ -33,7 +36,7 @@ const composition = createTunnelComposition([performer], {
   id: "tunnel-1",
   name: "Saved tunnel",
   formation: DEFAULT_CONFIG,
-  now: () => 10,
+  now: 10,
 });
 const snapshot = {
   version: 2,
@@ -81,7 +84,8 @@ function draft(
   overrides: Partial<TunnelCreatorDraft> = {}
 ): TunnelCreatorDraft {
   return {
-    version: 4,
+    version: TUNNEL_CREATOR_DRAFT_VERSION,
+    workflow: "custom",
     mode: "linked",
     composition: { ...composition, updatedAt: 999 },
     relationship: {

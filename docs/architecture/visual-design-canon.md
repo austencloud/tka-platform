@@ -378,12 +378,20 @@ give the two foundational methods the first row and arrange the three more
 specialized methods beneath them. Narrow phones give the default Construct
 method one full-width tile, followed by the other four methods in a two-column
 grid. This hierarchy is stable: the Last used label never reorders or resizes
-the board.
+the board. That annotation uses the shared `LastUsedBadge` primitive so Create
+and sign-in communicate device-local history the same way.
 
 Each method remains a complete button with one useful description. Its icon,
 restrained whole-surface tint, and full perimeter border carry its tab color.
 The tiles do not use list-row chevrons, blur, decorative edge strips, or
 invented workflow graphics.
+
+On desktop, the chooser uses a deliberately generous front-door scale because
+it presents one focused decision rather than dense workspace chrome. The
+authored band grows fluidly toward 1440px while its title, icons, descriptions,
+and tiles use the desktop baseline defined for this surface. True wide canvases
+may extend the band to 1600px, but the controls do not keep magnifying with the
+viewport.
 
 Height-constrained landscape screens keep the same two-band bento and compact
 its vertical rhythm. The question remains above the choices at every viewport.

@@ -7,6 +7,7 @@ import {
   createDerivedTunnelPerformer,
   createIndependentTunnelPerformer,
   createTunnelComposition,
+  TunnelCompositionSchema,
   primaryTunnelSourceSequenceId,
   resolveTunnelLayerPlans,
   tunnelCompositionCycleSteps,
@@ -75,7 +76,7 @@ function geometricSequence(id: string): SequenceData {
 }
 
 describe("tunnel composition", () => {
-  it("assigns two authored sequences around an eight-arm formation", () => {
+  it("stages one visible instance for each newly authored performer", () => {
     const lead = createIndependentTunnelPerformer(sequence("lead", 8), 0);
     const partner = createIndependentTunnelPerformer(sequence("partner", 8), 1);
     const composition = createTunnelComposition([lead, partner], {
@@ -93,6 +94,29 @@ describe("tunnel composition", () => {
     const plans = resolveTunnelLayerPlans(composition);
 
     expect(lead.label).toBe("Performer 1");
+    expect(plans).toHaveLength(2);
+    expect(plans.map((plan) => plan.sequence.id)).toEqual(["lead", "partner"]);
+    expect(plans.map((plan) => plan.arm)).toEqual([0, 4]);
+  });
+
+  it("materializes every historical arm when migrating a generated cast", () => {
+    const lead = createIndependentTunnelPerformer(sequence("lead", 8), 0);
+    const partner = createIndependentTunnelPerformer(sequence("partner", 8), 1);
+    const composition = createTunnelComposition([lead, partner], {
+      formation: {
+        fold: 8,
+        mirror: false,
+        flip: false,
+        invert: false,
+        echo: false,
+        staggerSteps: 0,
+        speedOverrides: {},
+      },
+      legacyGeneratedStage: true,
+    });
+
+    const plans = resolveTunnelLayerPlans(composition);
+
     expect(plans).toHaveLength(8);
     expect(plans.map((plan) => plan.sequence.id)).toEqual([
       "lead",
@@ -104,6 +128,42 @@ describe("tunnel composition", () => {
       "lead",
       "partner",
     ]);
+  });
+
+  it("preserves a version-one three-person four-arm result exactly", () => {
+    const performers = ["p1", "p2", "p3"].map((id, index) => {
+      const performer = createIndependentTunnelPerformer(
+        sequence(id, 8),
+        index
+      );
+      performer.id = id;
+      return performer;
+    });
+    const parsed = TunnelCompositionSchema.parse({
+      version: 1,
+      id: "oregano",
+      name: "Oregano",
+      performers,
+      formation: {
+        fold: 4,
+        mirror: false,
+        flip: false,
+        invert: false,
+        echo: false,
+        staggerSteps: 0,
+        speedOverrides: {},
+      },
+      createdAt: 1,
+      updatedAt: 1,
+    });
+
+    expect(parsed.version).toBe(2);
+    expect(
+      parsed.stage.instances.map((instance) => instance.performerId)
+    ).toEqual(["p1", "p2", "p3", "p1"]);
+    expect(
+      resolveTunnelLayerPlans(parsed).map((plan) => plan.sequence.id)
+    ).toEqual(["p1", "p2", "p3", "p1"]);
   });
 
   it("resolves a linked performer through its ordered transform recipe", () => {

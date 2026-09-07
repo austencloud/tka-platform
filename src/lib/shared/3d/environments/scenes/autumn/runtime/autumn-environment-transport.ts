@@ -1,4 +1,4 @@
-import { LoadingManager } from "three";
+import { DefaultLoadingManager, LoadingManager } from "three";
 import {
   GLTFLoader,
   type GLTF,
@@ -25,6 +25,18 @@ interface AutumnEnvironmentTransportDependencies {
  * Creates an Autumn-only loader transport. Its dedicated LoadingManager lets a
  * retry abort the 18 MB fetch without cancelling unrelated viewer assets.
  */
+/**
+ * The transport owns its manager so it can abort a scene load, but a private
+ * manager does not inherit the global URL modifier — which is how the desktop
+ * build redirects assets onto its offline bundle. Delegate resolution to the
+ * default manager so this loader sees the same URLs as every other one.
+ */
+function createOwnedManager(): LoadingManager {
+  const manager = new LoadingManager();
+  manager.setURLModifier((url) => DefaultLoadingManager.resolveURL(url));
+  return manager;
+}
+
 export function createAutumnEnvironmentTransport(
   configure: (loader: GLTFLoader) => void,
   dependencies: AutumnEnvironmentTransportDependencies = {}
@@ -40,7 +52,7 @@ export function createAutumnEnvironmentTransport(
       );
     }
 
-    const manager = dependencies.createManager?.() ?? new LoadingManager();
+    const manager = dependencies.createManager?.() ?? createOwnedManager();
     const loader =
       dependencies.createLoader?.(manager) ??
       new GLTFLoader(manager as LoadingManager);

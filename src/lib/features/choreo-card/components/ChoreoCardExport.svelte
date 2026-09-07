@@ -15,6 +15,7 @@
   import { onMount } from "svelte";
   import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
   import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
 
   interface Props {
     sequences: SequenceData[];
@@ -35,6 +36,10 @@
   let hapticService: HapticFeedback;
   let browseLoader: PublicSequencesLoader;
   let isExporting = $state(false);
+  // Set by the takeover's Cancel. Checked between awaited units of work so the
+  // export stops before anything is written or handed to the browser — a
+  // cancelled run leaves no half-built PNG or zip behind.
+  let exportCancelled = $state(false);
   let exportCurrent = $state(0);
   let exportTotal = $state(0);
   let exportStage = $state<"loading" | "rendering" | "zipping">("loading");
@@ -71,6 +76,7 @@
     if (!(await ensureFullAccountForExport())) return;
 
     isExporting = true;
+    exportCancelled = false;
     exportCurrent = 0;
     exportTotal = sequences.length;
     exportStage = "loading";
@@ -111,8 +117,10 @@
         exportStage = "loading";
         exportCurrent = 1;
         const fullSeq = await ensureFullData(sequences[0]);
+        if (exportCancelled) return;
         exportStage = "rendering";
         const blob = await renderer.renderSequenceToBlob(fullSeq, renderOptions);
+        if (exportCancelled) return;
         await downloadBlob(blob, `${sequences[0].word || sequences[0].name || "choreo-card"}.png`);
         hapticService?.trigger("success");
         return;
@@ -124,9 +132,11 @@
       for (let i = 0; i < sequences.length; i++) {
         const seq = sequences[i];
         if (!seq) continue;
+        if (exportCancelled) return;
         exportCurrent = i + 1;
         fullSequences.push(await ensureFullData(seq));
       }
+      if (exportCancelled) return;
 
       exportStage = "rendering";
       const JSZip = (await import("jszip")).default;
@@ -134,25 +144,34 @@
 
       for (let i = 0; i < fullSequences.length; i++) {
         const seq = fullSequences[i]!;
+        if (exportCancelled) return;
         exportCurrent = i + 1;
         const blob = await renderer.renderSequenceToBlob(seq, renderOptions);
         const name = seq.word || seq.name || `card-${i + 1}`;
         zip.file(`${name}.png`, blob);
       }
 
+      if (exportCancelled) return;
       exportStage = "zipping";
       const zipBlob = await zip.generateAsync({ type: "blob" });
+      if (exportCancelled) return;
       await downloadBlob(zipBlob, "choreo-cards.zip");
       hapticService?.trigger("success");
     } catch (error) {
+      if (exportCancelled) return;
       console.warn("[ChoreoCardExport] Export failed:", error);
       hapticService?.trigger("error");
       toast.error("Export failed. Try again.");
     } finally {
       isExporting = false;
+      exportCancelled = false;
       exportCurrent = 0;
       exportTotal = 0;
     }
+  }
+
+  function cancelExport() {
+    exportCancelled = true;
   }
 
   async function downloadBlob(blob: Blob, filename: string) {
@@ -185,27 +204,25 @@
     <span>Export</span>
   </h3>
 
-  {#if isExporting}
-    <div class="progress-container" role="progressbar" aria-valuenow={progressPercent} aria-valuemin={0} aria-valuemax={100}>
-      <div class="progress-label">{progressLabel}</div>
-      <div class="progress-track">
-        <div class="progress-fill" style:width="{progressPercent}%"></div>
-      </div>
-      <div class="progress-percent">{progressPercent}%</div>
-    </div>
-  {:else}
-    <button
-      class="export-btn"
-      onclick={handleExport}
-      disabled={sequences.length === 0}
-      aria-label="Export {sequences.length} sequences as print-ready images"
-      type="button"
-    >
-      <i class="fas fa-file-archive" aria-hidden="true"></i>
-      <span>Export {sequences.length} cards</span>
-    </button>
-  {/if}
+  <button
+    class="export-btn"
+    onclick={handleExport}
+    disabled={sequences.length === 0 || isExporting}
+    aria-label="Export {sequences.length} sequences as print-ready images"
+    type="button"
+  >
+    <i class="fas fa-file-archive" aria-hidden="true"></i>
+    <span>Export {sequences.length} cards</span>
+  </button>
 </div>
+
+<ExportTakeover
+  phase={isExporting ? (exportStage === "zipping" ? "encoding" : "capturing") : "idle"}
+  progress={progressPercent / 100}
+  phaseLabel={progressLabel}
+  onCancel={cancelExport}
+  label="Exporting choreo cards"
+/>
 
 <style>
   .export-section {
@@ -267,39 +284,6 @@
     font-size: 14px;
   }
 
-  /* Progress */
-  .progress-container {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .progress-label {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  .progress-track {
-    height: 6px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--theme-accent, #6366f1);
-    border-radius: 3px;
-    transition: width 150ms ease-out;
-  }
-
-  .progress-percent {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-accent, #6366f1);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-
   /* Responsive */
   @media (max-width: 768px) {
     .export-section {
@@ -318,8 +302,5 @@
       transition: none;
     }
 
-    .progress-fill {
-      transition: none;
-    }
   }
 </style>

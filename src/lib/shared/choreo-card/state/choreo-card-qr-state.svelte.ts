@@ -7,6 +7,7 @@ import type { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
 export interface ChoreoCardQrDeps {
   readonly sequence: SequenceData;
   readonly showQRCode: boolean;
+  readonly qrUrl?: string;
   readonly darkMode: boolean;
   readonly isAuthenticated: boolean;
   readonly leftPropType: PropType | undefined;
@@ -16,6 +17,7 @@ export interface ChoreoCardQrDeps {
 
 export interface ChoreoCardQrServices {
   readonly getGenerator: typeof getQRCodeGenerator;
+  readonly getUrlGenerator?: typeof getQRCodeGenerator;
 }
 
 /** Owns QR minting, stale-result rejection, and the per-card QR cache. */
@@ -36,6 +38,7 @@ export function createChoreoCardQrState(
   const cacheKey = $derived.by(() => {
     const deps = getDeps();
     if (!deps.showQRCode) return "";
+    if (deps.qrUrl) return `url:${deps.darkMode}:${deps.qrUrl}`;
     const sequenceId = deps.sequence.id ?? deps.sequence.word ?? "unknown";
     const authTag = deps.isAuthenticated ? "a" : "g";
     const leftProp = deps.leftPropType ?? "default";
@@ -63,31 +66,41 @@ export function createChoreoCardQrState(
     }
 
     const deps = getDeps();
-    if (!deps.isAuthenticated) {
+    if (!deps.isAuthenticated && !deps.qrUrl) {
       dataUrl = null;
       generating = false;
       return;
     }
 
-    const generator = services.getGenerator();
+    const generator =
+      deps.qrUrl && services.getUrlGenerator
+        ? services.getUrlGenerator()
+        : services.getGenerator();
     if (!generator) {
       generating = false;
       return;
     }
 
-    // Keep the previous theme's QR visible until its replacement arrives. The
-    // pending state is only needed when the reserved cell has no image at all.
+    // Published cards must not retain a previous scan target. Keep the existing
+    // generated-card theme handoff unchanged.
+    if (deps.qrUrl) dataUrl = null;
     generating = true;
-    void generator
-      .generateForSequence(deps.sequence, {
-        size: 200,
-        margin: 1,
-        style: "modern",
-        darkMode: deps.darkMode,
-        leftPropType: deps.leftPropType ? String(deps.leftPropType) : undefined,
-        rightPropType: deps.rightPropType ? String(deps.rightPropType) : undefined,
-        viewMode: encodedViewMode,
-      })
+    const options = {
+      size: 200,
+      margin: 1,
+      style: "modern" as const,
+      darkMode: deps.darkMode,
+      leftPropType: deps.leftPropType ? String(deps.leftPropType) : undefined,
+      rightPropType: deps.rightPropType
+        ? String(deps.rightPropType)
+        : undefined,
+      viewMode: encodedViewMode,
+    };
+    void (
+      deps.qrUrl
+        ? generator.generateForUrl(deps.qrUrl, options)
+        : generator.generateForSequence(deps.sequence, options)
+    )
       .then((result) => {
         cache.set(key, result.dataUrl);
         if (activeKey === key) {
@@ -109,6 +122,9 @@ export function createChoreoCardQrState(
     },
     get pending() {
       return pending;
+    },
+    get settled() {
+      return !cacheKey || (activeKey === cacheKey && !generating);
     },
   } as const;
 }

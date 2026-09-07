@@ -212,12 +212,7 @@
     padding-top: var(--settings-spacing-md, 14px);
     padding-bottom: 2px;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, rgba(18, 18, 28, 0.98)) 90%,
-      transparent
-    );
-    backdrop-filter: blur(14px);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   }
 
   .result {

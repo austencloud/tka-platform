@@ -31,6 +31,7 @@ import {
   type TrailPointConfig,
 } from "../domain/types/trail-point-types";
 import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
+import { recordTunnelFormationTrailCaptures } from "./tunnel-formation-trail-telemetry";
 import { Canvas2DVisibilityFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-visibility-fade-manager";
 import { resolveEffect } from "../domain/types/tip-effect-types";
 
@@ -137,6 +138,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     rightLeft: TailState;
     rightRight: TailState;
   }> = [];
+  private layerTrailCaptureSuppressed: boolean[] = [];
 
   // Per-ring tail recession state. `visibleCount` shrinks from the current
   // leading edge toward 2 while the prop is stationary, so the visible
@@ -577,12 +579,30 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // prop a red tip — so every kaleidoscope copy trails in its own color.
     const additionalLayers = params.additionalLayers;
     const dtMsCapture = Math.max(0, params.deltaTime * 1000);
+    let formationTrailCaptures = 0;
     if (additionalLayers && additionalLayers.length > 0) {
       this.ensureLayerState(additionalLayers.length, leadingEdge);
       for (let i = 0; i < additionalLayers.length; i++) {
         const layer = additionalLayers[i]!;
         const rings = this.layerRings[i]!;
         const tails = this.layerTails[i]!;
+        const captureSuppressed = layer.trailCaptureSuppressed === true;
+        if (this.layerTrailCaptureSuppressed[i] !== captureSuppressed) {
+          rings.leftLeft.length = 0;
+          rings.leftRight.length = 0;
+          rings.rightLeft.length = 0;
+          rings.rightRight.length = 0;
+          tails.leftLeft = createTailState(leadingEdge);
+          tails.leftRight = createTailState(leadingEdge);
+          tails.rightLeft = createTailState(leadingEdge);
+          tails.rightRight = createTailState(leadingEdge);
+        }
+        this.layerTrailCaptureSuppressed[i] = captureSuppressed;
+        const pointsBefore =
+          rings.leftLeft.length +
+          rings.leftRight.length +
+          rings.rightLeft.length +
+          rings.rightRight.length;
         let bL = false,
           bR = false,
           rL = false,
@@ -591,7 +611,8 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
           layer.leftProp &&
           layer.hasLeft &&
           leftCaptureLive &&
-          !leftPropSwapSuppressed
+          !leftPropSwapSuppressed &&
+          !captureSuppressed
         ) {
           const m = this.capturePropTipsInto(
             layer.leftProp,
@@ -611,7 +632,8 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
           layer.rightProp &&
           layer.hasRight &&
           rightCaptureLive &&
-          !rightPropSwapSuppressed
+          !rightPropSwapSuppressed &&
+          !captureSuppressed
         ) {
           const m = this.capturePropTipsInto(
             layer.rightProp,
@@ -658,10 +680,20 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
           dtMsCapture,
           leadingEdge
         );
+        if (layer.formationTransitionActive) {
+          const pointsAfter =
+            rings.leftLeft.length +
+            rings.leftRight.length +
+            rings.rightLeft.length +
+            rings.rightRight.length;
+          formationTrailCaptures += Math.max(0, pointsAfter - pointsBefore);
+        }
       }
+      this.layerTrailCaptureSuppressed.length = additionalLayers.length;
     } else if (this.layerRings.length > 0) {
       this.resetLayerState();
     }
+    recordTunnelFormationTrailCaptures(formationTrailCaptures);
 
     // Advance per-ring tail recession state. Moving frames update the
     // per-ring speed EMA and keep visibleCount at LEADING_EDGE. Stationary
@@ -834,7 +866,9 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       const f =
         (params.additionalLayers?.[i]?.opacity ?? 1) *
         spotlightFactor(selected, i + 1);
-      if (!leftPropSwapSuppressed) {
+      const captureSuppressed =
+        params.additionalLayers?.[i]?.trailCaptureSuppressed === true;
+      if (!leftPropSwapSuppressed && !captureSuppressed) {
         pushTip(
           `L${i}-left-left${leftSuffix}`,
           rings.leftLeft,
@@ -854,7 +888,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
           f
         );
       }
-      if (!rightPropSwapSuppressed) {
+      if (!rightPropSwapSuppressed && !captureSuppressed) {
         pushTip(
           `L${i}-right-left${rightSuffix}`,
           rings.rightLeft,
@@ -1177,6 +1211,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private resetLayerState(): void {
     this.layerRings = [];
     this.layerTails = [];
+    this.layerTrailCaptureSuppressed = [];
   }
 
   /** Returns true if a new point was appended (prop moved enough),

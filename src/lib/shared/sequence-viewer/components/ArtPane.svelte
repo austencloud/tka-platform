@@ -199,7 +199,7 @@
     if (!providedController) controller.active = artType === "tunnel";
   });
   const saveTunnelLabel = $derived(
-    tunnelSaveTarget ? "Save changes" : "Save tunnel"
+    tunnelSaveTarget ? "Save tunnel changes" : "Save tunnel to Visuals"
   );
   const inspectorHost = getOptionalViewerInspectorHostContext();
   const tunnelStage = getOptionalViewerTunnelStageContext();
@@ -607,7 +607,8 @@
         rightPropType: rightPropType ?? "staff",
         leftBuugengFlipped:
           settingsService.settings.leftBuugengFlipped ?? false,
-        rightBuugengFlipped: settingsService.settings.rightBuugengFlipped ?? false,
+        rightBuugengFlipped:
+          settingsService.settings.rightBuugengFlipped ?? false,
         updateSettings: () => {},
       },
       animationSettings,

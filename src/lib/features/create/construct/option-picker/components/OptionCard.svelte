@@ -101,13 +101,25 @@ Receives pre-calculated data, just renders it.
     box-sizing: border-box;
     overflow: hidden;
     box-shadow: var(--option-card-shadow);
-    transition:
-      transform 0.3s ease,
-      filter 0.3s ease,
-      box-shadow 0.3s ease;
+    /* Transform only. `filter` and `box-shadow` tweens re-rasterised the whole
+       card — pictograph SVG included — on every frame of a 300ms hover, on a
+       grid that mounts dozens of these. The lift now animates on the
+       compositor and the brightness cue moved to the veil below. */
+    transition: transform 0.3s ease;
     touch-action: manipulation;
     -webkit-touch-callout: none;
     user-select: none;
+  }
+
+  /* Hover / focus / audition brightness, as a compositor-friendly veil. */
+  .option-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
   }
 
   .option-card:disabled {
@@ -119,8 +131,11 @@ Receives pre-calculated data, just renders it.
     .option-card:hover {
       z-index: 1;
       transform: scale(1.05);
-      filter: brightness(1.05);
       box-shadow: var(--option-card-shadow-hover);
+    }
+
+    .option-card:hover::after {
+      opacity: 0.05;
     }
   }
 
@@ -132,23 +147,27 @@ Receives pre-calculated data, just renders it.
   .option-card:global(.option-audition-active) {
     z-index: 4;
     transform: translateY(-6px) scale(1.08);
-    filter: brightness(1.08);
     box-shadow:
       0 0 0 3px
         color-mix(in srgb, var(--theme-accent, #3b82f6) 70%, transparent),
       0 14px 28px -14px
         color-mix(in srgb, var(--border-primary) 70%, transparent),
       var(--option-card-shadow-hover);
-    transition:
-      transform 320ms cubic-bezier(0.2, 1.55, 0.35, 1),
-      filter 160ms ease,
-      box-shadow 160ms ease;
+    transition: transform 320ms cubic-bezier(0.2, 1.55, 0.35, 1);
+  }
+
+  .option-card:global(.option-audition-active)::after {
+    opacity: 0.08;
+    transition: opacity 160ms ease;
   }
 
   .option-card:focus-visible {
     outline: 2px solid var(--theme-accent, #3b82f6);
     outline-offset: 2px;
-    filter: brightness(1.05);
+  }
+
+  .option-card:focus-visible::after {
+    opacity: 0.05;
   }
 
   /* Continuation indicator - subtle accent border when this option continues the hand path */
@@ -172,9 +191,12 @@ Receives pre-calculated data, just renders it.
       transform: scale(0.97);
     }
 
+    .option-card::after {
+      transition: none;
+    }
+
     .option-card:global(.option-audition-active) {
       transform: none;
-      filter: brightness(1.08);
       transition: none;
     }
   }

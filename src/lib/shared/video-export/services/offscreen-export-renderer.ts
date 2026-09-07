@@ -63,6 +63,14 @@ export interface OffscreenExportInit {
    *  the pre-loaded layer texture colors and the per-frame render coloring. */
   tunnelSpectrum?: boolean;
   tunnelPropColors?: TunnelPropColorPair | null;
+  /**
+   * Viewer Blue/Red motion toggles. The live canvas applies them through
+   * engine.setMotionVisibility (CanvasSurface); the export engine is a fresh
+   * instance, so without these a hand hidden on screen still renders in the
+   * file. Omitted → both visible.
+   */
+  leftMotionVisible?: boolean;
+  rightMotionVisible?: boolean;
 }
 
 /** Synchronous render passes to converge the fluid sim before capture starts. */
@@ -75,6 +83,14 @@ const FLUID_WARMUP_FRAMES = 60;
  */
 const REFERENCE_STEP_MS = 1000 / 60;
 const REFERENCE_STEP_S = 1 / 60;
+
+/**
+ * Virtual-clock span that settles a hidden hand before capture. The per-hand
+ * prop fade managers boot fully visible and ease out over 200ms of render
+ * clock, so a hand hidden at init would otherwise fade out across the first
+ * dozen exported frames.
+ */
+const MOTION_VISIBILITY_SETTLE_MS = 400;
 
 export class OffscreenExportRenderer {
   private handle: OffscreenContextHandle | null = null;
@@ -183,6 +199,25 @@ export class OffscreenExportRenderer {
         init.tunnelSpectrum ?? true,
         init.tunnelPropColors ?? null
       );
+    }
+
+    // Mirror the live canvas's Blue/Red motion toggles. setMotionVisibility only
+    // sets a fade TARGET: the per-hand fade managers start visible and ease out
+    // over the render clock, so render two stationary sub-steps that span the
+    // fade, then wipe the stamps they left and rewind the clock — the same
+    // discard-the-warmup shape as the fluid pass below.
+    const leftMotionVisible = init.leftMotionVisible ?? true;
+    const rightMotionVisible = init.rightMotionVisible ?? true;
+    if (!leftMotionVisible || !rightMotionVisible) {
+      this.handle.engine.setMotionVisibility(
+        leftMotionVisible,
+        rightMotionVisible
+      );
+      this.renderSubStep(0, 0, REFERENCE_STEP_S);
+      this.renderSubStep(0, MOTION_VISIBILITY_SETTLE_MS, REFERENCE_STEP_S);
+      this.handle.context.trailCapturer.clearTrails();
+      this.handle.context.effectManager.trailOverlay?.clearBuffers();
+      this.resetClock();
     }
 
     if (init.needsFluidWarmup) {

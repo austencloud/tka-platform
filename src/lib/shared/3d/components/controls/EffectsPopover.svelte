@@ -4,28 +4,41 @@
   import CascadeBadge from "./CascadeBadge.svelte";
 
   const viewer = getViewer3DContext();
-  const selectedIndex = $derived(viewer.selectedPerformerIndex);
-  const isAllMode = $derived(selectedIndex === null);
+  const scopedPerformers = $derived(viewer.scopedPerformers());
+  const isAllMode = $derived(viewer.isAllPerformersSelected);
+  const isMultiMode = $derived(scopedPerformers.length > 1 && !isAllMode);
 
-  const selected = $derived.by(() => {
-    if (selectedIndex === null) return null;
-    return viewer.performerManager.performers[selectedIndex] ?? null;
-  });
-
-  const isOverridden = $derived(!isAllMode && (selected?.hasOverride.effects ?? false));
-  const overrideCount = $derived(isAllMode ? viewer.overrideCountForCategory("effects") : 0);
+  const isOverridden = $derived(
+    !isAllMode &&
+      scopedPerformers.some((performer) => performer.hasOverride.effects)
+  );
+  const overrideCount = $derived(
+    scopedPerformers.filter((performer) => performer.hasOverride.effects).length
+  );
 </script>
 
 <div class="effects-content">
-  {#if isAllMode && overrideCount > 0}
-    <CascadeBadge mode="overrides" {overrideCount} categoryLabel="effects" onReset={() => viewer.resetAllPerformersEffects()} />
-  {:else if !isAllMode && isOverridden}
-    <CascadeBadge mode="custom" onReset={() => selected?.resetEffects()} />
-  {:else if !isAllMode}
+  {#if (isAllMode || isMultiMode) && overrideCount > 0}
+    <CascadeBadge
+      mode="overrides"
+      {overrideCount}
+      categoryLabel="effects"
+      onReset={() => viewer.resetEffectsScoped()}
+    />
+  {:else if !isAllMode && !isMultiMode && isOverridden}
+    <CascadeBadge mode="custom" onReset={() => viewer.resetEffectsScoped()} />
+  {:else if !isAllMode && !isMultiMode}
     <CascadeBadge mode="default" />
   {/if}
 
-  <EffectsPanel layout="grid" bpm={0} onBpmChange={() => {}} isPlaying={false} onPlaybackToggle={() => {}} showPlayback={false} />
+  <EffectsPanel
+    layout="grid"
+    bpm={0}
+    onBpmChange={() => {}}
+    isPlaying={false}
+    onPlaybackToggle={() => {}}
+    showPlayback={false}
+  />
 </div>
 
 <style>

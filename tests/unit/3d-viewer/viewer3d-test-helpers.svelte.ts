@@ -1,4 +1,5 @@
 import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+import type { ViewerPerformerSelectionController } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import type { SceneEnvironmentId } from "$lib/shared/3d/environments/domain/scene-environment";
 import { Viewer3DUndoManager } from "@austencloud/scene-3d";
 
@@ -21,6 +22,7 @@ export function createViewer3DStateForTest(deps: {
   environmentId?: SceneEnvironmentId;
   firstUseEnvironment?: SceneEnvironmentId;
   persistent?: boolean;
+  performerSelection?: ViewerPerformerSelectionController;
 }): { state: ViewerState; dispose: () => void } {
   let state!: ViewerState;
   const stop = $effect.root(() => {
@@ -35,6 +37,7 @@ export function createViewer3DStateForTest(deps: {
         };
     state = createViewer3DState(seed, {
       firstUseEnvironment: deps.firstUseEnvironment,
+      performerSelection: deps.performerSelection,
     });
   });
   return { state, dispose: stop };

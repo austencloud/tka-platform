@@ -10,12 +10,21 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
+import runpy
+import sys
 
 import bpy
 from mathutils import Vector
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# R5 composes the approved geology scene. The historical matrix remains
+# reproducible through the original invocation below.
+if "--midflank-r5" in sys.argv:
+    runpy.run_path(str(ROOT / "scripts/ember-midflank-lookdev.py"), run_name="__main__")
+    raise SystemExit(0)
+
 SOURCE_BLEND = ROOT / "blender/ember-spatial-directions-r1.blend"
 OUTPUT_BLEND = ROOT / "blender/ember-broken-rift-lookdev-r2.blend"
 SPEC_DIR = ROOT / "docs/superpowers/specs/ember-spatial-directions"

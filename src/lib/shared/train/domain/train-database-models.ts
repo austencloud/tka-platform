@@ -68,7 +68,7 @@ export function normalizeStoredBeatResultsJson(value: string): string {
           return pair;
         }
         const record = pair as Record<string, unknown>;
-        const out = {
+        const out: Record<string, unknown> = {
           ...record,
           left: record.left ?? record.blue,
           right: record.right ?? record.red,

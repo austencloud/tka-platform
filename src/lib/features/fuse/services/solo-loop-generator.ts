@@ -46,6 +46,11 @@ import {
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { startOrientationsForLevel } from "$lib/features/create/generate/domain/level-orientation-policy";
+import {
+  DEFAULT_GENERATION_STYLE,
+  type GenerationMotionTypeFilter,
+  type GenerationStyleAxis,
+} from "$lib/shared/create/domain/generation-style";
 
 export interface GeneratedSoloLoop {
   readonly solo: SoloPropData;
@@ -56,9 +61,9 @@ export interface SoloLoopGenerationRecipe {
   readonly gridMode: GridMode;
   readonly level: TurnLevel;
   readonly maxTurnIntensity: number;
-  readonly constraintPreset: "smooth" | "mixed" | "choppy";
-  readonly handPathMode: "smooth" | "mixed" | "choppy";
-  readonly motionTypeFilter: "no-dash" | "prefer-dash" | null;
+  readonly constraintPreset: GenerationStyleAxis;
+  readonly handPathMode: GenerationStyleAxis;
+  readonly motionTypeFilter: GenerationMotionTypeFilter;
   readonly startLocation: GridLocation | null;
   readonly startOrientation: Orientation | null;
   readonly traversalDirection: SoloLoopTraversalDirection | null;
@@ -71,9 +76,7 @@ export const DEFAULT_SOLO_LOOP_RECIPE: SoloLoopGenerationRecipe = Object.freeze(
     gridMode: GridMode.DIAMOND,
     level: 2,
     maxTurnIntensity: 1,
-    constraintPreset: "mixed",
-    handPathMode: "mixed",
-    motionTypeFilter: null,
+    ...DEFAULT_GENERATION_STYLE,
     startLocation: null,
     startOrientation: null,
     traversalDirection: null,
@@ -770,6 +773,9 @@ export function flowerMatchesRecipe(
   recipe: SoloLoopGenerationRecipe
 ): boolean {
   if (recipe.level === 1) return flower.turns === 0;
+  // FloatFlower.turns is the literal "fl", not a number — a float path has no
+  // turn intensity to compare against a level 2/3 recipe's numeric cap.
+  if (typeof flower.turns !== "number") return false;
   if (flower.turns > recipe.maxTurnIntensity) return false;
   return recipe.level === 3 || Number.isInteger(flower.turns);
 }

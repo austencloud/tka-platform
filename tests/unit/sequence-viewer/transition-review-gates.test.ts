@@ -28,6 +28,10 @@ describe("transition review decisions", () => {
       "stage-tunnel",
       "card-stage",
       "performances",
+      "post-studio",
+      "export-inspector",
+      "practice",
+      "switchers",
     ]);
   });
 

@@ -250,6 +250,15 @@
   {/if}
 
   {#if performerState}
+    <!--
+      @austencloud/scene-3d still speaks its colour-named boundary: the rig
+      reads `avatarState.bluePropState` and renders the effects slot with
+      blue/red names, while the app's instance state has been left/right since
+      the performer-relative migration. Pass the states explicitly, the way
+      LiveSequencePerformer3D does, or the rig sees no prop state, mounts no
+      prop, and the performer stands empty-handed with nothing driving the
+      hands. That was every museum performer from 2026-08-31 until this.
+    -->
     <PerformerRig
       position={{ x: 0, z: 0 }}
       {facingAngle}
@@ -258,8 +267,10 @@
       {showGrid}
       visiblePlanes={new Set([Plane.WALL])}
       gridMode={(resolvedSequence?.gridMode ?? "diamond") as GridMode}
-      leftPropType={toScenePropType(leftPropType)}
-      rightPropType={toScenePropType(rightPropType)}
+      bluePropType={toScenePropType(leftPropType)}
+      redPropType={toScenePropType(rightPropType)}
+      bluePropState={performerState.leftPropState}
+      redPropState={performerState.rightPropState}
       groundOffset={museumGroundOffset}
       enableLocomotion={true}
       enableFootPlanting={true}
@@ -268,10 +279,10 @@
       isPlaying={performerState.isPlaying}
     >
       {#snippet effectsSlot({
-        leftPropState,
-        rightPropState,
-        leftHandPos,
-        rightHandPos,
+        bluePropState: leftPropState,
+        redPropState: rightPropState,
+        blueHandPos: leftHandPos,
+        redHandPos: rightHandPos,
         isPlaying: rigPlaying,
         staffHalfLength,
         effectsParentRef,

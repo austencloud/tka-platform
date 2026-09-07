@@ -49,6 +49,19 @@ beforeEach(() => {
 });
 
 describe("VisualSequenceSaveCoordinator", () => {
+  it("clears progress at the guest limit without stacking an error or success on the auth modal", async () => {
+    const error = new LibraryError("Guest save limit", "GUEST_CAP");
+    const coordinator = new VisualSequenceSaveCoordinator({
+      saveSequence: vi.fn().mockRejectedValue(error),
+    });
+    expect(await coordinator.save(SEQUENCE)).toEqual({
+      status: "failed",
+      error,
+    });
+    expect(removeToast).toHaveBeenCalledWith("toast-id", "programmatic");
+    expect(showToast).toHaveBeenCalledOnce();
+    expect(onGuestSaveSucceeded).not.toHaveBeenCalled();
+  });
   it("saves the sequence with the presentation visible at the click site", async () => {
     const saveSequence = vi.fn().mockResolvedValue({
       sequenceId: "seq-1",

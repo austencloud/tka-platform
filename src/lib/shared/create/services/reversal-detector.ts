@@ -144,29 +144,64 @@ export function detectReversalsForOptions(
   currentSequence: PictographData[],
   options: PictographData[]
 ): PictographWithReversals[] {
-  // If sequence is empty, no reversals possible
-  if (currentSequence.length === 0) {
-    return options.map((option) => ({
-      ...option,
-      leftReversal: false,
-      rightReversal: false,
-    }));
-  }
+  const empty = currentSequence.length === 0;
 
   // Anchor once for the whole option set.
-  const leftAnchor = lastActivePropDir(currentSequence, HandSide.LEFT);
-  const rightAnchor = lastActivePropDir(currentSequence, HandSide.RIGHT);
+  const leftAnchor = empty
+    ? null
+    : lastActivePropDir(currentSequence, HandSide.LEFT);
+  const rightAnchor = empty
+    ? null
+    : lastActivePropDir(currentSequence, HandSide.RIGHT);
 
   return options.map((option) => {
-    if (!option.motions) {
-      return { ...option, leftReversal: false, rightReversal: false };
-    }
-    return {
-      ...option,
-      leftReversal: propFlips(leftAnchor, option.motions.left),
-      rightReversal: propFlips(rightAnchor, option.motions.right),
-    };
+    const leftReversal =
+      empty || !option.motions
+        ? false
+        : propFlips(leftAnchor, option.motions.left);
+    const rightReversal =
+      empty || !option.motions
+        ? false
+        : propFlips(rightAnchor, option.motions.right);
+    return wrapStable(option, leftReversal, rightReversal);
   });
+}
+
+/**
+ * Identity-stable wrapper cache.
+ *
+ * The option picker mounts dozens of cards whose entire derived chain keys off
+ * the `pictograph` prop's object identity. A fresh `{ ...option }` on every
+ * call invalidated all of them even when nothing about the option or its dots
+ * had changed, which cost tens of milliseconds of synchronous recomputation on
+ * the frame that a pick lands. Re-emitting the previous wrapper whenever the
+ * source option and both flags are unchanged keeps those cards untouched.
+ *
+ * Safe because prepared option objects are treated as immutable: a changed
+ * option is always a new object (see `PictographPreparer.prepareBatch`).
+ */
+const stableWrappers = new WeakMap<PictographData, PictographWithReversals>();
+
+function wrapStable(
+  option: PictographData,
+  leftReversal: boolean,
+  rightReversal: boolean
+): PictographWithReversals {
+  const cached = stableWrappers.get(option);
+  if (
+    cached &&
+    cached.leftReversal === leftReversal &&
+    cached.rightReversal === rightReversal
+  ) {
+    return cached;
+  }
+  const wrapper: PictographWithReversals = {
+    ...option,
+    leftReversal,
+    rightReversal,
+  };
+  stableWrappers.set(option, wrapper);
+  return wrapper;
 }
 
 // MODULE-PRIVATE HELPERS (option-preview dot channel — prop rotation only)

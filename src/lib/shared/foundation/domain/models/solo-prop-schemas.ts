@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Plane } from "@tka/tka-types";
 import { firestoreDate } from "$lib/shared/firestore";
 import { HandPathDataSchema } from "./hand-path-schemas";
 
@@ -12,6 +13,7 @@ const SoloPropStepSchema = z
     rotationDirection: z.string(),
     turns: z.union([z.number(), z.literal("fl")]),
     duration: z.number(),
+    plane: z.nativeEnum(Plane).optional(),
   })
   .passthrough();
 

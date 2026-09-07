@@ -5,6 +5,8 @@ import {
   type CollectedTunnel,
 } from "../tunnel-collection-types";
 import { SNAPSHOT_VERSION } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import { DEFAULT_TRAIL_SETTINGS } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -13,6 +15,11 @@ import {
   createIndependentTunnelPerformer,
   createTunnelComposition,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  HandSide,
+  Orientation,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   createTunnelRevision,
   prepareTunnelRevision,
@@ -22,7 +29,7 @@ import {
   needsTunnelPosterRefresh,
 } from "../tunnel-artifact-migration";
 
-const snapshot = {
+const snapshot: CollectedTunnel["snapshot"] = {
   version: SNAPSHOT_VERSION,
   tunnel: {
     config: DEFAULT_CONFIG,
@@ -32,8 +39,9 @@ const snapshot = {
       custom: { left: "#123456", right: "#abcdef" },
     },
     section: "tunnel",
+    presetRecipe: null,
   },
-  effects: { activeEffect: "none" },
+  effects: DEFAULT_EFFECTS_CONFIG,
   effort: "linear",
   paths: {
     pathShape: "arc",
@@ -43,7 +51,7 @@ const snapshot = {
   },
   playback: { bpm: 60, playbackMode: "continuous" },
   props: { leftPropType: "staff", rightPropType: "staff" },
-  trailRender: { mode: "none" },
+  trailRender: DEFAULT_TRAIL_SETTINGS,
 };
 
 const valid = {
@@ -110,6 +118,46 @@ describe("CollectedTunnelSchema", () => {
     expect(parsed.success).toBe(true);
     if (!parsed.success) return;
     expect(parsed.data.composition?.performers[1]).toEqual(partner);
+  });
+
+  it("preserves each hand's exact orientations across the storage boundary", () => {
+    const orientedStep = {
+      id: "step-1",
+      letter: null,
+      startPosition: null,
+      endPosition: null,
+      stepNumber: 1,
+      duration: 1,
+      leftReversal: false,
+      rightReversal: false,
+      isBlank: false,
+      motions: {
+        [HandSide.LEFT]: createMotionData({
+          hand: HandSide.LEFT,
+          startOrientation: Orientation.CLOCK_IN,
+          endOrientation: Orientation.COUNTER_OUT,
+        }),
+        [HandSide.RIGHT]: createMotionData({
+          hand: HandSide.RIGHT,
+          startOrientation: Orientation.CENTER_NE,
+          endOrientation: Orientation.CENTER_SW,
+        }),
+      },
+    };
+
+    const parsed = CollectedTunnelSchema.parse({
+      ...valid,
+      steps: [orientedStep],
+    });
+
+    expect(parsed.steps[0]?.motions[HandSide.LEFT]).toMatchObject({
+      startOrientation: Orientation.CLOCK_IN,
+      endOrientation: Orientation.COUNTER_OUT,
+    });
+    expect(parsed.steps[0]?.motions[HandSide.RIGHT]).toMatchObject({
+      startOrientation: Orientation.CENTER_NE,
+      endOrientation: Orientation.CENTER_SW,
+    });
   });
 
   it("stores choreography transforms in the immutable tunnel revision", async () => {

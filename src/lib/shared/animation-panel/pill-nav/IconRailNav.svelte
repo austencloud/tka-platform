@@ -31,11 +31,16 @@
     activeId,
     onSelect,
     onNavMount,
+    alignment = "center",
+    reservedSlots = 0,
   }: {
     pills: RailPill[];
     activeId: T | null;
     onSelect: (id: T) => void;
     onNavMount?: (el: HTMLElement | null) => void;
+    alignment?: "start" | "center";
+    /** Reserve mode-specific slots without moving the common section buttons. */
+    reservedSlots?: number;
   } = $props();
 
   let navEl: HTMLElement | undefined = $state();
@@ -90,6 +95,9 @@
 
 <div
   class="icon-rail"
+  class:align-start={alignment === "start"}
+  class:reserved-slots={reservedSlots > 0}
+  style:--rail-slots={Math.max(reservedSlots, pills.length)}
   role="tablist"
   aria-orientation="vertical"
   aria-label="Editor sections"
@@ -145,6 +153,18 @@
     justify-content: center;
     padding: 10px 4px;
     gap: 8px;
+  }
+
+  .icon-rail.align-start {
+    justify-content: flex-start;
+  }
+
+  .icon-rail.reserved-slots {
+    display: grid;
+    grid-template-rows: repeat(var(--rail-slots), 56px);
+    align-content: safe center;
+    justify-items: center;
+    overflow-y: auto;
   }
 
   /* Mirrors the 3D viewer rail-chip visual language (ViewerPopover.svelte .rail-chip):

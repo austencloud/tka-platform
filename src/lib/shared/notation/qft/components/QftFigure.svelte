@@ -14,6 +14,7 @@
   import {
     pendulumIndexAt,
     pendulumPosesAt,
+    closedPathSteps,
     pointAt,
     posesAt,
     propIndexAt,
@@ -92,6 +93,9 @@
         ? tracePendulum()
         : tracePath(resolvedKnobs)
   );
+  const pathSteps = $derived(
+    trajectory || pendulum ? 8 : closedPathSteps(resolvedKnobs)
+  );
 
   const trail = $derived(
     samples
@@ -133,8 +137,8 @@
     const { cum } = arc;
     const spans = cum.length - 1;
     if (spans < 1) return 0;
-    const t = ((cursor % 8) + 8) % 8;
-    const x = (t / 8) * spans;
+    const t = ((cursor % pathSteps) + pathSteps) % pathSteps;
+    const x = (t / pathSteps) * spans;
     const i = Math.min(spans - 1, Math.floor(x));
     const a = cum[i] as number;
     const b = cum[i + 1] as number;

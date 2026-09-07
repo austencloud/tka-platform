@@ -124,7 +124,9 @@
                     ? "sidestepping"
                     : maneuver === "crossover"
                       ? "grapevine"
-                      : "walking"
+                      : maneuver === "run"
+                        ? "running"
+                        : "walking"
             }`}
             report={activeReports.get(active) ?? null}
             trail={gaitProbeState.trail(active)}

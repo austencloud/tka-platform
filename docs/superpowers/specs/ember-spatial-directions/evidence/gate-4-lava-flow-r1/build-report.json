@@ -1,0 +1,17 @@
+{
+  "source": "blender\\ember-midflank-production-r5.blend",
+  "preservedMeshes": {
+    "EMBER_Terrain": "080223e1cfb8283021d0c72974dfa209e1c0f65e92274e755ed2af8e7a851585",
+    "EMBER_SimulatorReference": "58a3aecba839d8cd0c73c92537f8342bbaa74ba186a4985c7e9da4362659a3e8"
+  },
+  "sourceTopCells": 2400,
+  "flowVertices": 40260,
+  "flowFaces": 38400,
+  "roundedBoundaryVertices": 3732,
+  "paths": 9,
+  "pathSamples": 1624,
+  "fixedChannelClinkerRemoved": true,
+  "terrainAndBenchUnchanged": true,
+  "surfaceTreatment": "Welded top-only Catmull-Clark skin, two subdivisions; bank vertices meet original terrain. Original scientific reference is retained, not rendered.",
+  "nativeBlendSha256": "99535d4e90422563c4baa4cd76cb671893e2f29e4d287456b4de882cbab2434f"
+}

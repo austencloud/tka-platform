@@ -6,7 +6,7 @@ import { NOTATION_CATALOG } from "$lib/shared/notation/notation-catalog";
 const readSource = (path: string): string =>
   readFileSync(resolve(process.cwd(), path), "utf-8");
 
-const notationRoute = readSource("src/routes/(public)/notation/+page.svelte");
+const notationRoute = readSource("src/routes/(public)/history/+page.svelte");
 // The hub was gated on 2026-07-26 and rebuilt as a chronological catalog on
 // 2026-07-27 (2026-07-26-notation-catalog-design.md). NotationHubDraft.svelte
 // is deleted; the copy contracts that guarded it are replaced by contracts on
@@ -15,10 +15,10 @@ const notationCatalogData = readSource(
   "src/lib/shared/notation/notation-catalog.ts"
 );
 const notationCatalogView = readSource(
-  "src/routes/(public)/notation/_components/archive/PlayableArchive.svelte"
+  "src/routes/(public)/history/_components/archive/PlayableArchive.svelte"
 );
 const vtgChronicleData = readSource(
-  "src/routes/(public)/notation/_components/archive/_lib/vtg-chronicle.svelte.ts"
+  "src/routes/(public)/history/_components/archive/_lib/vtg-chronicle.svelte.ts"
 );
 const rootRedirect = readSource("src/routes/(public)/roots/+page.ts");
 const softwarePage = readSource(
@@ -32,7 +32,7 @@ const screenshotOrchestrator = readSource(
 );
 const screenshotDevices = readSource("tests/screenshots/devices.ts");
 const shapeMatrixDestination = readSource(
-  "src/routes/(public)/notation/shape-matrix/+page.svelte"
+  "src/routes/(public)/shape-engine/+page.svelte"
 );
 const shapeMatrixApp = readSource(
   "src/lib/shared/shape-matrix/app/ShapeMatrixApp.svelte"
@@ -48,7 +48,7 @@ describe("notation catalog", () => {
     expect(notationRoute).not.toContain('from "$app/environment"');
     expect(notationRoute).not.toContain("UnderConstruction");
     expect(notationRoute).not.toContain('content="noindex');
-    expect(sitemap).toMatch(/\{ url: "notation" \}/);
+    expect(sitemap).toMatch(/\{ url: "history" \}/);
   });
 
   it("gives every entry at least one source", () => {
@@ -58,6 +58,8 @@ describe("notation catalog", () => {
         0
       );
       for (const source of entry.sources) {
+        if (entry.id === "lorq" && source.href === entry.explore?.href)
+          continue;
         expect(source.href, `${entry.id} source href`).toMatch(
           /^(https:\/\/|\/)/
         );
@@ -120,7 +122,7 @@ describe("notation catalog", () => {
     expect(markup).not.toContain("—");
   });
 
-  it("keeps the interactive Shape Matrix at the /notation/shape-matrix destination", () => {
+  it("keeps the interactive Shape Engine at the /shape-engine destination", () => {
     expect(shapeMatrixDestination).toContain(
       "$lib/shared/shape-matrix/app/ShapeMatrixApp.svelte"
     );
@@ -204,13 +206,32 @@ describe("notation catalog", () => {
     expect(notationCatalogView).not.toContain("cta-button");
   });
 
+  it("keeps Lorq’s source distinct from Austen’s extension", () => {
+    const lorq = NOTATION_CATALOG.find((entry) => entry.id === "lorq");
+    const tka = NOTATION_CATALOG.find((entry) => entry.id === "tka");
+    expect(lorq?.explore?.href).toBe(
+      "http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/"
+    );
+    expect(
+      NOTATION_CATALOG.filter((entry) =>
+        entry.applications?.some((app) => app.href === "/shape-engine")
+      ).map((entry) => entry.id)
+    ).toEqual(["tka"]);
+    expect(
+      tka?.applications?.find((app) => app.role === "tool")?.description
+    ).toContain("Lorq Nichols");
+  });
+
   it("keeps only substantiated systems and exposes every built destination", () => {
     expect(NOTATION_CATALOG.map((entry) => entry.id)).not.toContain(
       "unit-circle"
     );
     for (const entry of NOTATION_CATALOG.filter((item) => item.explore)) {
-      expect(notationCatalogView).toContain("activeEntry.catalogEntry.explore");
-      expect(entry.explore?.href).toMatch(/^\/notation\//);
+      expect(["original", "explanation", "tool"]).toContain(
+        entry.explore?.kind
+      );
+      if (entry.explore?.kind !== "original")
+        expect(entry.explore?.href).toMatch(/^\/(notation\/|guide)/);
     }
   });
 
@@ -228,20 +249,20 @@ describe("notation catalog", () => {
   });
 });
 
-describe("roots-to-notation route migration", () => {
+describe("roots-to-archive route migration", () => {
   it("keeps a permanent root redirect and public chrome for software history", () => {
-    expect(rootRedirect).toContain('redirect(301, "/notation")');
+    expect(rootRedirect).toContain('redirect(301, "/history")');
     expect(rootRedirect).toContain("export const prerender = false");
     expect(domains).toMatch(/PUBLIC_PATH_PREFIXES[\s\S]*?"\/roots"/);
     expect(rootLayout).toMatch(/MARKETING_EXACT[\s\S]*?"\/roots\/software"/);
   });
 
-  it("keeps Notation in capture registries", () => {
+  it("keeps the history archive in capture registries", () => {
     expect(screenshotOrchestrator).toContain(
-      '{ label: "notation", moduleId: "public", requiresAuth: false }'
+      '{ label: "history", moduleId: "public", requiresAuth: false }'
     );
     expect(screenshotDevices).toMatch(
-      /path: "\/notation",\s*label: "notation",[\s\S]*?waitSelector: "\.playable-viewport \.room-title"/
+      /path: "\/history",\s*label: "history",[\s\S]*?waitSelector: "\.playable-viewport \.room-title"/
     );
   });
 
@@ -252,16 +273,20 @@ describe("roots-to-notation route migration", () => {
     expect(sitemap).toContain('{ url: "roots/software" }');
     expect(sitemap).not.toMatch(/\{ url: "roots",/);
     expect(softwarePage).toMatch(
-      /name:\s*"Notation",\s*item:\s*"https:\/\/tkaflowarts\.com\/notation"/
+      /name:\s*"Flow Arts History",\s*item:\s*"https:\/\/tkaflowarts\.com\/history"/
     );
+    // The source wraps this `<a>` across lines (f13606f440 reformatted it as
+    // an incidental side effect of an unrelated edit further down the file),
+    // which leaves whitespace between the closing quote and `>` once this
+    // raw-source check collapses runs of whitespace to one space.
     expect(softwareCopy).toMatch(
-      /href="\/notation#archive-record-vtg">Notation lineage<\/a\s*>/
+      /href="\/history#archive-record-vtg"\s*>VTG record in the history archive<\/a\s*>/
     );
     expect(componentManifest).not.toContain(
       '"file": "routes/(public)/roots/+page.svelte"'
     );
     expect(componentManifest).toContain(
-      '"file": "routes/(public)/notation/+page.svelte"'
+      '"file": "routes/(public)/history/+page.svelte"'
     );
   });
 });

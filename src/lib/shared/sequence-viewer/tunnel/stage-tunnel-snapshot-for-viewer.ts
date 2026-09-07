@@ -53,6 +53,10 @@ export function stageTunnelSnapshotForViewer(
   dependencies.ensureCustomColorPreference?.();
   dependencies.stageCustomColors?.(snapshot.tunnel.colors.custom);
 
+  // Grid visibility now belongs to the Animator, not the Tunnel mode. Loading
+  // an older saved Tunnel still reproduces that choice, but it does so through
+  // the owner shared by 2D and Tunnel so the next mode switch cannot undo it.
+  visibility.setGridMode(snapshot.tunnel.gridVisible ? "8point" : "none");
   visibility.setEffortPreset(snapshot.effort);
   visibility.setPathPolicy({
     pathShape: snapshot.paths.pathShape,

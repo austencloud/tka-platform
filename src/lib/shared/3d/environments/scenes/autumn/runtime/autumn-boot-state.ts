@@ -26,6 +26,20 @@ export function setAutumnBootAsset(
   return { ...state, [asset]: status };
 }
 
+/**
+ * Delivers a synchronous runtime result after the current Svelte effect flush,
+ * so a parent boot-ledger reset cannot erase the child status on first mount.
+ */
+export function scheduleAutumnBootStatus(
+  report: (status: AutumnBootStatus) => void,
+  status: AutumnBootStatus,
+  isCancelled: () => boolean
+): void {
+  queueMicrotask(() => {
+    if (!isCancelled()) report(status);
+  });
+}
+
 export function getAutumnBootProgress(state: AutumnBootState): number {
   const settled = AUTUMN_BOOT_ASSETS.filter(
     (asset) => state[asset] !== "pending"

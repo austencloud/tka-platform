@@ -40,6 +40,12 @@
     hidden?: boolean;
     embedded?: boolean;
     navigation?: HeaderNavigation;
+    /** A non-word title that outranks `sequence.word` — e.g. a tunnel's own
+     *  name, which is a composition (cast, formation, props) rather than a
+     *  single alphabet word. When set, the header shows this text instead of
+     *  the glyph-rendered word, and word-specific actions (copy, read aloud)
+     *  are disabled: they operate on a TKA word, and this title is not one. */
+    titleOverride?: string | null;
     openAppHref?: string;
     onAccountSignIn?: () => void;
     onAccountOpenApp?: () => void;
@@ -76,6 +82,7 @@
     hidden = false,
     embedded = false,
     navigation,
+    titleOverride = null,
     openAppHref,
     onAccountSignIn,
     onAccountOpenApp,
@@ -124,6 +131,13 @@
   const identityWord = $derived(
     sequence.word || sequence.displayName || sequence.name || "Sequence"
   );
+  const trimmedTitleOverride = $derived(titleOverride?.trim() || "");
+  /** Plain-text title actually shown in the slot: the override when present,
+   *  else the word identity. */
+  const displayTitle = $derived(trimmedTitleOverride || identityWord);
+  /** True only when the slot is showing `sequence.word` itself — gates the
+   *  glyph renderer and the word-specific actions in the menu below. */
+  const isWordTitle = $derived(!trimmedTitleOverride && !!sequence.word);
   const activeWordStepNumber = $derived(
     ctx.editingPane !== "image" &&
       ctx.highlightedStepIndex !== null &&
@@ -381,13 +395,17 @@
         onpointerup={actions.onpointerup}
         onpointercancel={actions.onpointercancel}
         onpointerleave={actions.onpointerleave}
-        aria-haspopup="menu"
-        aria-expanded={actions.isOpen}
-        aria-label={`Current word: ${actions.copyableWord}. Open word actions.`}
-        title={`Word actions for ${actions.copyableWord}`}
+        aria-haspopup={isWordTitle ? "menu" : undefined}
+        aria-expanded={isWordTitle ? actions.isOpen : undefined}
+        aria-label={isWordTitle
+          ? `Current word: ${actions.copyableWord}. Open word actions.`
+          : displayTitle}
+        title={isWordTitle
+          ? `Word actions for ${actions.copyableWord}`
+          : displayTitle}
       >
         <span class="word-display">
-          {#if sequence.word}
+          {#if isWordTitle}
             <WordHeader
               word={sequence.word}
               visible
@@ -396,14 +414,16 @@
               activeStepNumber={activeWordStepNumber}
             />
           {:else}
-            <span class="word-text">{identityWord}</span>
+            <span class="word-text">{displayTitle}</span>
           {/if}
         </span>
-        <i
-          class="fas fa-chevron-down word-disclosure"
-          class:open={actions.isOpen}
-          aria-hidden="true"
-        ></i>
+        {#if isWordTitle}
+          <i
+            class="fas fa-chevron-down word-disclosure"
+            class:open={actions.isOpen}
+            aria-hidden="true"
+          ></i>
+        {/if}
       </button>
 
       {#if actions.copied}
@@ -414,7 +434,8 @@
     {/snippet}
 
     <WordActionMenu
-      word={identityWord}
+      word={isWordTitle ? identityWord : ""}
+      enabled={isWordTitle}
       errorContext={{ module: "sequence-viewer" }}
       trigger={wordTrigger}
     />

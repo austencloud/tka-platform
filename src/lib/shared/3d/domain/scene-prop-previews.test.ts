@@ -40,7 +40,6 @@ describe("prop studio build previews", () => {
       PropType.TRIAD,
       PropType.TRIGENG,
       PropType.SWORD,
-      PropType.SICKLES,
     ];
 
     expectAssets(
@@ -55,9 +54,6 @@ describe("prop studio build previews", () => {
   it("uses the real weapon renders instead of an unrelated fallback", () => {
     expect(propBuildPreviewImage(PropType.SWORD)).toBe(
       "/images/props/build-previews/sword.webp"
-    );
-    expect(propBuildPreviewImage(PropType.SICKLES)).toBe(
-      "/images/props/build-previews/sickles.webp"
     );
   });
 

@@ -19,6 +19,7 @@
     getCompositionRecipe,
     type CompositionRecipe,
   } from "../domain/prop-composition-recipes";
+  import { propTileArtwork, type PropTileArtwork } from "../domain/prop-look";
   import { onMount } from "svelte";
 
   let {
@@ -60,6 +61,31 @@
 
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
 
+  // The tile shows the prop the way the user has chosen to see it: the fan
+  // build, the 3D model capture, or the notation glyph. Settings load lazily;
+  // until they arrive the tile draws the plain glyph rather than guessing a
+  // look and flashing to another one a moment later.
+  const settingsReady = $derived(!useSavedOverrides || getSettings !== null);
+  const lookAppearance = $derived({
+    propLook: getSettings?.().propArtwork ?? null,
+    fanAppearance: getSettings?.().fanAppearance ?? null,
+  });
+  const plainArt = $derived({
+    href: displayInfo.image,
+    styled: false,
+    prelit: false,
+  });
+  const leftArt = $derived(
+    settingsReady
+      ? propTileArtwork(propType, "left", lookAppearance, displayInfo.image)
+      : plainArt
+  );
+  const rightArt = $derived(
+    settingsReady
+      ? propTileArtwork(propType, "right", lookAppearance, displayInfo.image)
+      : plainArt
+  );
+
   // Check for persisted overrides from the Prop Button Lab
   const savedOverrides = $derived(
     getSettings?.().compositionRecipeOverrides ?? {}
@@ -93,56 +119,117 @@
   const imgOffset = -(imgSize / 2);
 </script>
 
+{#snippet propImage(art: PropTileArtwork, red: boolean)}
+  {#if art.crop}
+    <!-- A capture of the whole box: draw only the window that holds the
+         prop, fitted to the glyph square, so a one-sided prop is not half
+         margin. -->
+    <svg
+      x={imgOffset}
+      y={imgOffset}
+      width={imgSize}
+      height={imgSize}
+      viewBox="{art.crop.x} {art.crop.y} {art.crop.width} {art.crop.height}"
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <image
+        class:red-prop={red}
+        class:prelit={red && art.prelit}
+        href={art.href}
+        x="0"
+        y="0"
+        width={art.crop.imageWidth}
+        height={art.crop.imageHeight}
+      />
+    </svg>
+  {:else}
+    <image
+      class:red-prop={red}
+      class:prelit={red && art.prelit}
+      href={art.href}
+      x={imgOffset}
+      y={imgOffset}
+      width={imgSize}
+      height={imgSize}
+    />
+  {/if}
+{/snippet}
+
 {#if neutral}
   <svg
     class="prop-composition-preview neutral"
     class:dark-bg={darkBackground}
+    class:styled={leftArt.styled}
     width={size}
     height={size}
     viewBox="0 0 100 100"
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
   >
-    <g transform={leftTransform}>
-      <image
-        href={displayInfo.image}
-        x={imgOffset}
-        y={imgOffset}
-        width={imgSize}
-        height={imgSize}
-      />
-    </g>
+    {#if leftArt.fill}
+      {@const crop = leftArt.fill}
+      <svg
+        x="4"
+        y="4"
+        width="92"
+        height="92"
+        viewBox="{crop.x} {crop.y} {crop.width} {crop.height}"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <image
+          class="fill-photo"
+          href={leftArt.href}
+          x="0"
+          y="0"
+          width={crop.imageWidth}
+          height={crop.imageHeight}
+        />
+      </svg>
+    {:else}
+      <g transform={leftTransform}>
+        {@render propImage(leftArt, false)}
+      </g>
+    {/if}
   </svg>
 {:else}
   <svg
     class="prop-composition-preview"
     class:dark-bg={darkBackground}
+    class:styled={leftArt.styled}
     width={size}
     height={size}
     viewBox="0 0 100 100"
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
   >
-    <g transform={leftTransform}>
-      <image
-        href={displayInfo.image}
-        x={imgOffset}
-        y={imgOffset}
-        width={imgSize}
-        height={imgSize}
-      />
-    </g>
+    {#if leftArt.fill}
+      {@const crop = leftArt.fill}
+      <svg
+        x="4"
+        y="4"
+        width="92"
+        height="92"
+        viewBox="{crop.x} {crop.y} {crop.width} {crop.height}"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <image
+          class="fill-photo"
+          href={leftArt.href}
+          x="0"
+          y="0"
+          width={crop.imageWidth}
+          height={crop.imageHeight}
+        />
+      </svg>
+    {:else}
+      <g transform={leftTransform}>
+        {@render propImage(leftArt, false)}
+      </g>
 
-    <g transform={rightTransform}>
-      <image
-        class="red-prop"
-        href={displayInfo.image}
-        x={imgOffset}
-        y={imgOffset}
-        width={imgSize}
-        height={imgSize}
-      />
-    </g>
+      <g transform={rightTransform}>
+        {@render propImage(rightArt, true)}
+      </g>
+    {/if}
   </svg>
 {/if}
 
@@ -158,11 +245,28 @@
     filter: hue-rotate(125deg) saturate(1.2);
   }
 
+  /* Rendered previews sit on a near-black ground; screening them onto the
+     tile makes that ground vanish without a cutout. */
+  .fill-photo {
+    mix-blend-mode: screen;
+  }
+
+  /* Model captures are already lit red; a hue shift would ruin them. */
+  .red-prop.prelit {
+    filter: none;
+  }
+
   .prop-composition-preview.dark-bg {
     filter: brightness(1.8) saturate(1.4);
   }
 
   .prop-composition-preview.neutral {
     filter: brightness(0) invert(1);
+  }
+
+  /* A chosen look is shown as itself, never flattened to a silhouette. */
+  .prop-composition-preview.neutral.styled,
+  .prop-composition-preview.dark-bg.styled {
+    filter: none;
   }
 </style>

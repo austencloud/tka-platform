@@ -22,6 +22,7 @@
     showFilter: boolean;
     showTurnControls?: boolean;
     isContinuousOnly: boolean;
+    optionAvailability?: { shownCount: number; hiddenCount: number };
     onToggleContinuous?: (value: boolean) => void;
     level: TurnLevel;
     onLevelChange: (level: TurnLevel) => void;
@@ -41,6 +42,7 @@
     showFilter,
     showTurnControls = true,
     isContinuousOnly,
+    optionAvailability,
     onToggleContinuous,
     level,
     onLevelChange,
@@ -127,6 +129,7 @@
               </div>
 
               <OptionPickerHeader
+                {optionAvailability}
                 layout="compact"
                 {showFilter}
                 {showTurnControls}

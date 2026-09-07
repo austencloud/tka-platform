@@ -160,7 +160,7 @@ export function isValidContentType(value: unknown): value is ContentType {
 /**
  * Every mode a viewer can legitimately be in, including `post-studio` — which
  * `loadViewerMode` refuses to RESTORE but a URL may legitimately REQUEST.
- * Hand-edited garbage (`?vm=lol`) fails here and falls back to defaults.
+ * Hand-edited garbage (`?pane=lol`) fails here and falls back to defaults.
  */
 export function isValidViewerMode(value: unknown): value is ViewerMode {
 	return value === 'split' || value === 'post-studio' || isValidContentType(value);

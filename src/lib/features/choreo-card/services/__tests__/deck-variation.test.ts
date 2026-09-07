@@ -4,6 +4,7 @@ import {
   applyVariationDescriptor,
   applyVariation,
   resolveDeckSequences,
+  parseTurnUnit,
   DEFAULT_VARIATION_CONFIG,
   type Rng,
 } from "../deck-variation";
@@ -99,6 +100,21 @@ describe("applyVariationDescriptor", () => {
     expect(sequence.steps[0]!.motions!.right!.turns).toBe(2);
     expect(sequence.steps[1]!.motions!.left!.turns).toBe(1);
     expect(sequence.steps[1]!.motions!.right!.turns).toBe(2);
+  });
+
+  it("preserves signed turn values while splitting beat patterns", () => {
+    expect(parseTurnUnit("-0.25|-0.25--0.25|0.25")).toEqual([
+      { left: -0.25, right: -0.25 },
+      { left: -0.25, right: 0.25 },
+    ]);
+
+    const { sequence } = applyVariationDescriptor(twoStepSeq(), {
+      turnPattern: "-0.25|-0.25",
+    }, []);
+    expect(sequence.steps[0]!.motions.left.turns).toBe(-0.25);
+    expect(sequence.steps[0]!.motions.right.turns).toBe(-0.25);
+    expect(sequence.steps[1]!.motions.left.turns).toBe(-0.25);
+    expect(sequence.steps[1]!.motions.right.turns).toBe(-0.25);
   });
 
   it("no-op descriptor returns the base sequence content unchanged", () => {

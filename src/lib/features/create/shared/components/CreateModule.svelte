@@ -45,10 +45,7 @@
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { CREATE_TABS } from "$lib/shared/navigation/config/tab-definitions";
-  import {
-    handleCreateFrontDoor,
-    handleSectionChange,
-  } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import { handleSectionChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { setSideBySideLayout } from "$lib/shared/application/state/animation-visibility-state.svelte";
@@ -68,7 +65,6 @@
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import StandardWorkspaceLayout from "./StandardWorkspaceLayout.svelte";
   import CreateFrontDoor from "./CreateFrontDoor.svelte";
-  import CreateShortcutHeader from "./CreateShortcutHeader.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { setCreateModuleContext } from "../context/create-module-context";
@@ -89,10 +85,7 @@
   } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte";
-  import {
-    resolveAccessTier,
-    getMaxSteps,
-  } from "$lib/shared/auth/domain/access-tier";
+  import { resolveAccessTier } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import { isTabAccessible } from "$lib/shared/auth/domain/guest-access-config";
   import { createPanelHeightTracker } from "../state/managers/panel-height-tracker.svelte";
@@ -107,12 +100,10 @@
   import { createConstructTutorialState } from "../../construct/tutorial/state/construct-tutorial-state.svelte";
   import { logConstructOptionApplied } from "../../construct/services/construct-analytics";
   import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
-  import { logCreateFrontDoorReturned } from "../services/create-entry-analytics";
   import {
     createSequenceTransformActionDispatcher,
     type SequenceTransformActionDispatcher,
   } from "../services/sequence-transform-action-dispatcher";
-  import type { SequenceTransformCommandId } from "$lib/shared/create/domain/sequence-action-types";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
 
   const logger = createComponentLogger("CreateModule");
@@ -176,9 +167,6 @@
         isTabAccessible("create", tab.id, accessTier)
     );
   });
-  const activeCreateMethod = $derived(
-    CREATE_TABS.find((tab) => tab.id === navigationState.activeTab) ?? null
-  );
   const lastUsedCreateMode = $derived(
     navigationState.hasRememberedCreateMode
       ? navigationState.currentCreateMode
@@ -190,7 +178,11 @@
   // cap applies silently. (The paid Scribe tier is shelved until there's a plan.)
   function showStepCapGate() {
     if (accessTier === "guest") {
-      authDrawerState.show("signup", "step-cap-guest");
+      authDrawerState.show(
+        "signup",
+        "step-cap-guest",
+        CreateModuleState?.sequenceState.currentSequence?.id
+      );
     }
   }
 
@@ -214,9 +206,6 @@
   const canShowSaveToLibraryPanel = $derived(
     CreateModuleState?.isPersistenceInitialized === true &&
       CreateModuleState.canShowActionButtons()
-  );
-  const canShowHeaderSequenceActions = $derived(
-    CreateModuleState?.canShowSequenceActionsButton() ?? false
   );
 
   setContext("panelState", panelState);
@@ -275,20 +264,6 @@
       requestClearSequence: () => handleClearSequence(),
     },
   });
-
-  async function handleHeaderSequenceAction(
-    action: SequenceTransformCommandId
-  ): Promise<void> {
-    const result = await sequenceTransformActions?.execute(action, {
-      source: "header",
-      targetHand: "both",
-    });
-    if (result?.status === "failed") toast.error(result.message);
-  }
-
-  function handleOpenHeaderSequenceActions(): void {
-    panelState.openSequenceActionsPanel("header");
-  }
 
   let entryTutorialWasActive = false;
   let tutorialWorkspacePrepared = false;
@@ -546,6 +521,12 @@
             navigationState.setActiveTab(loadResult.targetTab);
           }
 
+          // A deep-linked sequence already carries its start position. Bring
+          // Construct's picker state into line with that sequence immediately,
+          // otherwise the workspace asks for a start position the user has
+          // already chosen and hides the available next pictographs.
+          syncConstructWorkspaceUi();
+
           hasDeepLink = true;
         }
 
@@ -684,7 +665,10 @@
     // Enforce tier step cap before adding a new step to the sequence
     const currentSteps =
       CreateModuleState?.sequenceState.getCurrentSteps().length ?? 0;
-    const maxSteps = getMaxSteps(accessTier);
+    const maxSteps = authDrawerState.guestEncore.maxSteps(
+      accessTier,
+      CreateModuleState?.sequenceState.currentSequence?.id
+    );
     if (currentSteps >= maxSteps) {
       showStepCapGate();
       return;
@@ -706,12 +690,6 @@
 
   function handleCreateMethodSelected(methodId: string): void {
     handleSectionChange(methodId);
-  }
-
-  function handleReturnToCreateFrontDoor(trigger: HTMLButtonElement): void {
-    logCreateFrontDoorReturned(navigationState.activeTab);
-    trigger.blur();
-    handleCreateFrontDoor("workspace");
   }
 
   function handleOpenExportPanel() {
@@ -952,29 +930,6 @@
 
 {#snippet workspaceSurface()}
   <div class="create-workspace-source">
-    <nav class="create-method-bar" aria-label="Current creation method">
-      <button
-        type="button"
-        class="all-methods-button"
-        aria-label="Back to Create"
-        onclick={(event) => handleReturnToCreateFrontDoor(event.currentTarget)}
-      >
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>Create</span>
-      </button>
-
-      {#if activeCreateMethod}
-        <span class="method-divider" aria-hidden="true">/</span>
-        <span class="active-method">{activeCreateMethod.label}</span>
-      {/if}
-
-      <CreateShortcutHeader
-        hasSequenceActions={canShowHeaderSequenceActions}
-        onSequenceAction={handleHeaderSequenceAction}
-        onOpenSequenceActions={handleOpenHeaderSequenceActions}
-      />
-    </nav>
-
     <div class="create-workspace-body">
       {#if error}
         <ErrorBanner message={error} onDismiss={clearError} />
@@ -1132,69 +1087,6 @@
     flex-direction: column;
     overflow: hidden;
     container-type: inline-size;
-    container-name: create-module-workspace;
-  }
-
-  .create-method-bar {
-    position: relative;
-    z-index: 1;
-    display: none;
-    flex: 0 0 auto;
-    min-height: var(--min-touch-target, 44px);
-    align-items: center;
-    gap: 8px;
-    padding: 4px clamp(8px, 1.2cqi, 16px);
-    box-sizing: border-box;
-    border-bottom: 1px solid var(--theme-stroke);
-    background: var(--theme-panel-bg);
-  }
-
-  @media (min-width: 1280px) {
-    .create-method-bar {
-      display: flex;
-    }
-  }
-
-  .all-methods-button {
-    min-height: var(--min-touch-target, 44px);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 8px;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 650;
-    cursor: pointer;
-    transition:
-      background-color var(--duration-normal) ease,
-      border-color var(--duration-normal) ease,
-      color var(--duration-normal) ease;
-  }
-
-  .all-methods-button:hover {
-    border-color: var(--theme-stroke);
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-  }
-
-  .all-methods-button:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .method-divider {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 14px);
-  }
-
-  .active-method {
-    min-width: 0;
-    color: var(--theme-text);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
   }
 
   .create-workspace-body {
@@ -1223,11 +1115,5 @@
     margin: 0;
     font-size: var(--font-size-sm, 13px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .all-methods-button {
-      transition: none;
-    }
   }
 </style>

@@ -14,6 +14,10 @@
   import type { PillId } from "$lib/shared/animation-panel/pill-nav/pill-types";
   import { buildPillSpecs } from "$lib/shared/animation-panel/pill-nav/pill-types";
   import IconRailNav from "$lib/shared/animation-panel/pill-nav/IconRailNav.svelte";
+  import {
+    EFFECT_COLORS,
+    effectNavIcon,
+  } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import ScopeBreadcrumb, {
     type BreadcrumbSegment,
   } from "./ScopeBreadcrumb.svelte";
@@ -118,6 +122,13 @@
       : "None"
   );
 
+  // The pill shows the chosen effect itself — its glyph and its color — the
+  // same way the Props pill shows the chosen prop. The wand is the "none" state.
+  const effectsIcon = $derived(effectNavIcon(cell?.effect));
+  const effectsAccent = $derived(
+    cell?.effect ? EFFECT_COLORS[cell.effect] : undefined
+  );
+
   const effortLabel = $derived(cell?.effort ?? "Linear");
   const colorLabel = $derived.by(() => {
     const colors = cell?.layers[0]?.propColors;
@@ -164,9 +175,10 @@
         summary: layersSummary,
       },
       effects: {
-        icon: "fa-wand-magic-sparkles",
+        icon: effectsIcon,
         label: "EFFECTS",
         summary: effectsSummary,
+        accentColor: effectsAccent,
       },
       effort: {
         label: "STYLE",

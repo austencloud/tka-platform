@@ -49,6 +49,7 @@ Delegates ALL logic to services (SRP compliant)
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import type { LevelNumber } from "$lib/shared/domain/curriculum/level-metadata";
+  import { MAX_AVAILABLE_LEVEL } from "$lib/shared/create/utils/config-mapper";
   import { DifficultyLevel as SharedDifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { clampLanesToLevel } from "$lib/shared/create/domain/turn-pattern-data";
@@ -124,8 +125,14 @@ Delegates ALL logic to services (SRP compliant)
   let currentLevel = $derived(
     loopParamProvider?.numberToDifficulty(config.level) ?? null
   );
+  // Level 4 (SKEWED) pictograph data does not exist yet, so a config.level
+  // that predates the gate (old localStorage/Firestore state, a stale prop)
+  // must never surface past MAX_AVAILABLE_LEVEL here.
   let selectedLevel = $derived(
-    Math.min(3, Math.max(1, Number(config.level) || 1)) as LevelNumber
+    Math.min(
+      MAX_AVAILABLE_LEVEL,
+      Math.max(1, Number(config.level) || 1)
+    ) as LevelNumber
   );
   let levelCardLevel = $derived(
     selectedLevel === 1

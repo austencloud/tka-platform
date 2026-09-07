@@ -6,7 +6,7 @@
 // and the render falls back to the main thread (no regression).
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { CompositionDispatcher } from "./composition-dispatcher";
 import { getCompositionDispatcher } from "../get-composition-dispatcher";
 import { getCardAssetBundle } from "./get-card-asset-bundle";
@@ -18,6 +18,8 @@ export interface PrewarmOptions {
   rightPropType: PropType;
   theme: string;
   iconPaths?: string[];
+  /** Seed HAND and hand-path arrow assets instead of the operator's live props. */
+  handPathMode?: boolean;
 }
 
 // Bumped when the worker render contract changes in a way that invalidates a
@@ -34,13 +36,31 @@ export function computeBundleSignature(opts: {
   sequences: SequenceData[];
   leftPropType: PropType;
   rightPropType: PropType;
+  handPathMode?: boolean;
 }): string {
+  const propTypes = resolvePrewarmPropTypes(opts);
   const ids = opts.sequences
     .map((s) => s.id ?? s.word ?? "")
     .filter(Boolean)
     .sort()
     .join(",");
-  return [SEED_SCHEMA, opts.leftPropType, opts.rightPropType, ids].join("|");
+  return [
+    SEED_SCHEMA,
+    propTypes.leftPropType,
+    propTypes.rightPropType,
+    ids,
+  ].join("|");
+}
+
+export function resolvePrewarmPropTypes(
+  opts: Pick<PrewarmOptions, "leftPropType" | "rightPropType" | "handPathMode">
+): { leftPropType: PropType; rightPropType: PropType } {
+  return opts.handPathMode
+    ? { leftPropType: PropType.HAND, rightPropType: PropType.HAND }
+    : {
+        leftPropType: opts.leftPropType,
+        rightPropType: opts.rightPropType,
+      };
 }
 
 /**
@@ -54,6 +74,7 @@ export function prewarmCardPool(opts: PrewarmOptions): void {
 
   const dispatcher = getCompositionDispatcher();
   const signature = computeBundleSignature(opts);
+  const propTypes = resolvePrewarmPropTypes(opts);
   if (dispatcher.getSeededSignature() === signature) return; // already hot
 
   // Reserve the seed SYNCHRONOUSLY — raise the gate (and tear down a stale-deck
@@ -68,8 +89,8 @@ export function prewarmCardPool(opts: PrewarmOptions): void {
       const ok = await CompositionDispatcher.probeWorkerSupport();
       if (!ok) return; // worker unusable → main-thread fallback (finally opens gate)
       const bundle = await getCardAssetBundle(opts.sequences, {
-        leftPropType: opts.leftPropType,
-        rightPropType: opts.rightPropType,
+        leftPropType: propTypes.leftPropType,
+        rightPropType: propTypes.rightPropType,
         theme: opts.theme,
         iconPaths: opts.iconPaths,
       });
@@ -77,7 +98,10 @@ export function prewarmCardPool(opts: PrewarmOptions): void {
       dispatcher.setOverrideBundle(buildOverridePlacementBundle());
       seeded = true;
     } catch (err) {
-      console.warn("[prewarmCardPool] pre-warm failed (main-thread fallback stays):", err);
+      console.warn(
+        "[prewarmCardPool] pre-warm failed (main-thread fallback stays):",
+        err
+      );
     } finally {
       finishSeed(); // open the gate so neither prewarm nor a racer hangs
     }

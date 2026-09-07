@@ -268,7 +268,6 @@ export function createGenerationActionsState(
               handPathMode: options.handPathMode,
               motionTypeFilter: options.motionTypeFilter,
               turnIntensity: options.turnIntensity,
-              turnPattern: options.turnPattern,
               startPosition: options.startPosition?.startPosition ?? null,
               endPosition: options.endPosition?.startPosition ?? null,
               blockedStartPositions: options.blockedStartPositions,

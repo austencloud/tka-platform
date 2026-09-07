@@ -206,7 +206,7 @@ export class CanvasLifecycleManager {
     };
 
     const initResizeServiceFn = (): void => {
-      this._doInitResizeService(containerElement);
+      this._doInitResizeService(containerElement, () => startRenderLoopFn());
     };
 
     const initGlyphTextureLoaderFn = (): void => {
@@ -338,10 +338,20 @@ export class CanvasLifecycleManager {
     );
   }
 
-  private _doInitResizeService(containerElement: HTMLDivElement): void {
+  private _doInitResizeService(
+    containerElement: HTMLDivElement,
+    redraw: () => void
+  ): void {
     if (!this._animationRenderer) return;
+    const renderer = this._animationRenderer;
     this._resizer = new CanvasResizerImpl();
-    this._resizer.initialize(containerElement, this._animationRenderer);
+    this._resizer.initialize(containerElement, {
+      resize: async (size) => {
+        await renderer.resize(size);
+        // Resizing clears the canvas. A paused player has no next frame to repair it.
+        if (this._containerElement === containerElement) redraw();
+      },
+    });
   }
 
   private _doInitGlyphTextureLoader(): void {

@@ -140,7 +140,7 @@ describe("tn slice", () => {
     const slice = captureTnSlice({
       config: { ...DEFAULT_CONFIG, fold: 4, mirror: true, staggerSteps: 2 },
       gridVisible: true,
-      colors: { mode: "custom", custom: { blue: "#123456", red: "#abcdef" } },
+      colors: { mode: "custom", custom: { left: "#123456", right: "#abcdef" } },
       section: "speed",
       presetRecipe: recipe,
     });
@@ -258,5 +258,38 @@ describe("tn slice", () => {
   it("is null for a visitor sitting on the default tunnel view", () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_TUNNEL_VIEW_STATE));
     expect(persistedTnSliceFromStorage()).toBeNull();
+  });
+
+  describe("full snapshot", () => {
+    it("emits every config field, grid, colors and section at defaults, and round-trips", () => {
+      const controller = tunnelController({ getSequence: () => null });
+      const full = captureTnSlice(controller, { full: true });
+      expect(full).not.toBeNull();
+      expect(Object.keys(full!.config!).sort()).toEqual(
+        Object.keys(DEFAULT_CONFIG).sort()
+      );
+      expect(full?.gridVisible).toBe(DEFAULT_TUNNEL_VIEW_STATE.gridVisible);
+      expect(full?.section).toBe(DEFAULT_TUNNEL_VIEW_STATE.section);
+      expect(full?.colors).toEqual(
+        resolveTunnelPropColorState(DEFAULT_TUNNEL_VIEW_STATE.colors)
+      );
+      expect("presetRecipe" in full!).toBe(false);
+
+      const seeded = tunnelController({
+        getSequence: () => null,
+        initialViewState: seedFromTnSlice(full!),
+        persistViewState: false,
+      });
+      expect(captureTnSlice(seeded, { full: true })).toEqual(full);
+      expect(captureTnSlice(seeded)).toBeNull();
+    });
+
+    it("persistedTnSliceFromStorage honours full mode", () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_TUNNEL_VIEW_STATE));
+      expect(persistedTnSliceFromStorage()).toBeNull();
+      expect(persistedTnSliceFromStorage({ full: true })?.config?.fold).toBe(
+        DEFAULT_CONFIG.fold
+      );
+    });
   });
 });

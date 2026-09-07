@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Same-DEM implementation proof; not calibrated eruption or hazard science.",
+  "candidate": "a-breached-rift-bench",
+  "grid": {
+    "columns": 381,
+    "rows": 336,
+    "cellSizeM": 1.0,
+    "xRangeM": [
+      -190.0,
+      190.0
+    ],
+    "zRangeM": [
+      -145.0,
+      190.0
+    ]
+  },
+  "sharedInputs": {
+    "rngSeed": 6301,
+    "ventRuntimeXZ": [
+      -72.0,
+      137.0
+    ],
+    "flows": 8,
+    "lobesPerFlow": 250,
+    "lobeAreaM2": 20.0,
+    "totalVolumeM3": 8000.0,
+    "thicknessRatio": 0.2,
+    "thickeningParameter": 0.25,
+    "lobeExponent": 0.12,
+    "maxSlopeProbability": 0.92,
+    "inertialExponent": 0.25
+  },
+  "implementations": {
+    "flowy": {
+      "commit": "4ce1036d1073d581085c74c569b1d0e95a4ae0bd",
+      "license": "GPL-3.0",
+      "reportedSolverSeconds": 0.007,
+      "measuredWallSeconds": 0.694,
+      "metrics": {
+        "thresholdM": 0.05,
+        "activeCells": 5089,
+        "footprintAreaM2": 5089.0,
+        "volumeAboveThresholdM3": 7995.08,
+        "minimumThicknessM": 0.050133,
+        "medianThicknessM": 1.38104,
+        "meanThicknessM": 1.571051,
+        "maximumThicknessM": 5.00162,
+        "maximumPlanarDistanceFromSourceM": 165.68,
+        "minimumDistanceToStageCenterM": 8.944,
+        "minimumClearanceFromActionEnvelopeM": 4.444,
+        "footprintBoundsXZM": [
+          -75.0,
+          -4.0,
+          21.0,
+          139.0
+        ]
+      }
+    },
+    "mrlavaloba2": {
+      "commit": "cf2cbc8aaabc399c9ae545286b1c710e3c6ffbb9",
+      "license": "Apache-2.0",
+      "reportedSolverSeconds": 8.5,
+      "measuredFirstRunWallSeconds": 27.136,
+      "metrics": {
+        "thresholdM": 0.05,
+        "activeCells": 4865,
+        "footprintAreaM2": 4865.0,
+        "volumeAboveThresholdM3": 7952.317,
+        "minimumThicknessM": 0.05074,
+        "medianThicknessM": 1.46836,
+        "meanThicknessM": 1.634597,
+        "maximumThicknessM": 6.16689,
+        "maximumPlanarDistanceFromSourceM": 160.312,
+        "minimumDistanceToStageCenterM": 10.77,
+        "minimumClearanceFromActionEnvelopeM": 6.27,
+        "footprintBoundsXZM": [
+          -75.0,
+          2.0,
+          17.0,
+          139.0
+        ]
+      }
+    }
+  },
+  "agreement": {
+    "footprintIntersectionCells": 4363,
+    "footprintUnionCells": 5591,
+    "footprintIntersectionOverUnion": 0.780361,
+    "thicknessCorrelationAcrossUnion": 0.757242,
+    "meanAbsoluteGridDifferenceM": 0.028836
+  },
+  "interpretation": [
+    "Both implementations route lava around the northwest mass and toward the bench-side drainage on the same authored DEM.",
+    "Similar footprint area, thickness, and high overlap support the terrain hypothesis independently of the hand-authored concept path.",
+    "The outputs are suitable as footprint/thickness guides, not render meshes and not predictions of a named eruption.",
+    "Flowy is the faster iteration tool; MrLavaLoba2 is the preferred permissively licensed baseline for reproducible preproduction."
+  ],
+  "runtimeCaveats": [
+    "Flowy wall time includes WSL process launch.",
+    "MrLavaLoba2 wall time is a cold first run and includes Numba compilation and file export.",
+    "The timing comparison is directional, not a controlled performance benchmark."
+  ]
+}

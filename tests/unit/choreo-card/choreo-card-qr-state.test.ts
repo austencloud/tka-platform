@@ -22,6 +22,67 @@ function qrResult(label: string): QRCodeResult {
 }
 
 describe("choreo card QR state", () => {
+  it("draws a published code for a guest without minting a new sequence code", async () => {
+    const generateForSequence = vi.fn();
+    const generateForUrl = vi.fn().mockResolvedValue(qrResult("published"));
+    const harness = createChoreoCardQrStateHarness({
+      sequence,
+      leftPropType: PropType.HAND,
+      rightPropType: PropType.HAND,
+      generateForSequence,
+      generateForUrl,
+      isAuthenticated: false,
+      qrUrl: "https://tka.run/DACF4E",
+    });
+    try {
+      flushSync();
+      expect(harness.qrState.settled).toBe(false);
+      await Promise.resolve();
+      flushSync();
+      expect(generateForSequence).not.toHaveBeenCalled();
+      expect(generateForUrl).toHaveBeenCalledWith(
+        "https://tka.run/DACF4E",
+        expect.any(Object)
+      );
+      expect(harness.qrState.dataUrl).toBe(qrResult("published").dataUrl);
+      expect(harness.qrState.settled).toBe(true);
+    } finally {
+      harness.dispose();
+    }
+  });
+
+  it("rejects a late QR from the previous mode and never displays its scan target", async () => {
+    const pending: Array<(result: QRCodeResult) => void> = [];
+    const generateForUrl = vi.fn(
+      () => new Promise<QRCodeResult>((resolve) => pending.push(resolve))
+    );
+    const harness = createChoreoCardQrStateHarness({
+      sequence,
+      leftPropType: PropType.HAND,
+      rightPropType: PropType.HAND,
+      generateForSequence: vi.fn(),
+      generateForUrl,
+      isAuthenticated: false,
+      qrUrl: "https://tka.run/DACF4E",
+    });
+    try {
+      flushSync();
+      harness.setQrUrl("https://tka.run/4C1913");
+      flushSync();
+      pending[1]!(qrResult("second"));
+      await Promise.resolve();
+      pending[0]!(qrResult("first"));
+      await Promise.resolve();
+      expect(harness.qrState.dataUrl).toBe(qrResult("second").dataUrl);
+      harness.setQrUrl("https://tka.run/89E048");
+      flushSync();
+      expect(harness.qrState.dataUrl).toBeNull();
+      expect(harness.qrState.settled).toBe(false);
+    } finally {
+      harness.dispose();
+    }
+  });
+
   it("regenerates the QR with the current props when the viewer prop changes", async () => {
     const generateForSequence = vi
       .fn()

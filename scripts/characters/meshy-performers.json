@@ -1,0 +1,46 @@
+{
+  "purpose": "Meshy-generated festival performers for the avatar bake-off. Each asset is generated in an A-pose, refined with PBR textures, then auto-rigged by Meshy so the rigged GLB can go straight through characters:intake-batch.",
+  "stylePrefix": "photorealistic full-body 3D scan of one real",
+  "aiModel": "meshy-7",
+  "modelType": "standard",
+  "poseMode": "a-pose",
+  "polycount": 30000,
+  "shouldRemesh": true,
+  "textureSize": 2048,
+  "estimatedCreditsPerAsset": 50,
+  "maxCredits": 220,
+  "assets": [
+    {
+      "id": "juniper",
+      "displayName": "Juniper",
+      "description": "athletic feminine silhouette, late twenties; cropped tank top, high-waisted cargo pants, low sneakers",
+      "heightMeters": 1.68,
+      "prompt": "adult woman in her late twenties with dark curly hair tied up in a loose bun, medium brown skin, fitted olive green cropped tank top, sand-colored high-waisted cargo pants with pockets, white low-top canvas sneakers, standing upright in an A-pose with both arms held straight and slightly away from the body, legs slightly apart, facing forward, symmetrical, neutral relaxed expression, realistic anatomy and proportions, everyday casual clothing, complete figure from head to shoes, no props, no base, no background",
+      "texturePrompt": "realistic skin with subtle pores, matte olive cotton tank top, sand cotton twill cargo pants with visible stitching, white canvas sneakers with rubber soles, physically based fabric and skin materials, diffuse albedo without baked lighting"
+    },
+    {
+      "id": "marcus",
+      "displayName": "Marcus",
+      "description": "broad masculine silhouette, early thirties; fitted t-shirt, tapered joggers, running shoes",
+      "heightMeters": 1.83,
+      "prompt": "adult Black man in his early thirties with very dark brown skin, short cropped black hair and a trimmed black beard, fitted charcoal grey crew-neck t-shirt, black tapered jogger pants, dark grey running shoes, standing upright in an A-pose with both arms held straight and slightly away from the body, legs slightly apart, facing forward, symmetrical, neutral relaxed expression, realistic anatomy and proportions, everyday casual clothing, complete figure from head to shoes, no props, no base, no background",
+      "texturePrompt": "very dark brown Black skin with subtle pores, short black hair and trimmed black beard, heathered charcoal cotton t-shirt, black brushed cotton joggers with drawstring, dark grey mesh running shoes with white midsole, physically based fabric and skin materials, diffuse albedo without baked lighting"
+    },
+    {
+      "id": "sol",
+      "displayName": "Sol",
+      "description": "slender masculine silhouette, mid twenties; loose linen shirt, cuffed shorts, slip-on sneakers",
+      "heightMeters": 1.74,
+      "prompt": "slender young adult man in his mid twenties with short bleached blond hair, light skin with freckles, loose oversized cream linen short-sleeve shirt worn open over a white tank top, cuffed navy chino shorts to the knee, grey slip-on sneakers, standing upright in an A-pose with both arms held straight and slightly away from the body, legs slightly apart, facing forward, symmetrical, neutral relaxed expression, realistic anatomy and proportions, everyday casual clothing, complete figure from head to shoes, no props, no base, no background",
+      "texturePrompt": "realistic freckled skin, cream woven linen shirt with visible weave, white cotton tank top, navy cotton chino shorts, grey canvas slip-on sneakers, physically based fabric and skin materials, diffuse albedo without baked lighting"
+    },
+    {
+      "id": "rosa",
+      "displayName": "Rosa",
+      "description": "compact feminine silhouette, mid forties; zip hoodie, leggings, trail shoes",
+      "heightMeters": 1.62,
+      "prompt": "adult woman in her mid forties, female body, no facial hair, shoulder-length wavy dark hair with grey streaks, warm tan skin, unzipped heather maroon zip-up hoodie over a black fitted t-shirt, black athletic leggings, teal and grey trail running shoes, standing upright in an A-pose with both arms held straight and slightly away from the body, legs slightly apart, facing forward, symmetrical, neutral relaxed expression, realistic anatomy and proportions, everyday casual clothing, complete figure from head to shoes, no props, no base, no background",
+      "texturePrompt": "realistic mature skin with fine lines, heathered maroon fleece hoodie with metal zipper, black cotton t-shirt, matte black stretch leggings, teal and grey mesh trail shoes, physically based fabric and skin materials, diffuse albedo without baked lighting"
+    }
+  ]
+}

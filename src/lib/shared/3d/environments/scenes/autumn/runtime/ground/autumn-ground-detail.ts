@@ -13,9 +13,22 @@ interface GroundPathDefinition {
   points: [number, number, number][];
 }
 
-const cabinLane = (groundLayout.paths as GroundPathDefinition[]).find(
-  (path) => path.id === "cabin_lane"
-);
+function toGroundPathPoint(point: number[]): [number, number, number] {
+  const [x, y, z] = point;
+  if (x === undefined || y === undefined || z === undefined) {
+    throw new Error(
+      `Autumn ground layout has a path point missing coordinates: ${JSON.stringify(point)}`
+    );
+  }
+  return [x, y, z];
+}
+
+const groundPaths: GroundPathDefinition[] = groundLayout.paths.map((path) => ({
+  id: path.id,
+  points: path.points.map(toGroundPathPoint),
+}));
+
+const cabinLane = groundPaths.find((path) => path.id === "cabin_lane");
 
 if (!cabinLane) {
   throw new Error("Autumn ground layout is missing the cabin_lane path");
@@ -33,6 +46,32 @@ export const AUTUMN_CABIN_LANE_GLSL = cabinLane.points
     return `lane = max(lane, autumnGroundSegment(point, vec2(${glslNumber(point[0])}, ${glslNumber(point[1])}), vec2(${glslNumber(next[0])}, ${glslNumber(next[1])}), ${glslNumber(point[2])}));`;
   })
   .join("\n            ");
+
+/**
+ * Keep a faint floor signal beneath the authored tree belt, then return to
+ * ordinary full fog before the infinite apron reaches its geometric edge.
+ */
+export const AUTUMN_HORIZON_FOG_FRAGMENT = /* glsl */ `
+  #ifdef USE_FOG
+    #ifdef FOG_EXP2
+      float fogFactor = 1.0 - exp(
+        -fogDensity * fogDensity * vFogDepth * vFogDepth
+      );
+    #else
+      float fogFactor = smoothstep(fogNear, fogFar, vFogDepth);
+    #endif
+    float autumnGroundFogCeiling = mix(
+      0.88,
+      1.0,
+      smoothstep(
+        180.0,
+        650.0,
+        length(vAutumnGroundWorldPosition.xz)
+      )
+    );
+    fogFactor = min(fogFactor, autumnGroundFogCeiling);
+    gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fogFactor);
+  #endif`;
 
 export interface AutumnGroundDetailUniforms {
   detailMap: { value: Texture };
@@ -239,9 +278,15 @@ export function patchAutumnGroundDetailMaterial(
             0.45
           );`
       );
+    if (material.name === "Autumn Fog Apron") {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <fog_fragment>",
+        AUTUMN_HORIZON_FOG_FRAGMENT
+      );
+    }
   };
   material.customProgramCacheKey = () =>
-    `${previousCacheKey.call(material)}|autumn-ground-detail-v6`;
+    `${previousCacheKey.call(material)}|autumn-ground-detail-v7|${material.name}`;
 
   const patch: AutumnGroundDetailPatch = {
     uniforms,

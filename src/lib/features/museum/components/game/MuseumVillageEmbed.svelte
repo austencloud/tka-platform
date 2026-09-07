@@ -15,6 +15,7 @@
 	import VillageDroppedProp from "$lib/features/village/components/VillageDroppedProp.svelte";
 	import { setVillageContext, setVillageVisualContext } from "$lib/features/village/state/village-context";
 	import ForestScene from "$lib/shared/3d/environments/scenes/ForestScene.svelte";
+	import { createDefaultForestFireflyConfig } from "$lib/shared/3d/environments/domain/models/scene-configs/forest-scene-config";
 	import { userProportionsState } from "@austencloud/scene-3d";
 	import {
 		getMuseumVillageManager,
@@ -38,6 +39,13 @@
 	const { centerX, centerZ, cameraPosition, showLabels = true, visible = true }: Props = $props();
 
 	const forestLift = $derived(-userProportionsState.groundY);
+
+	// ForestScene's default path is the complete production world, which mounts
+	// itself at the scene root (scene.add) and sets global fog: it ignores this
+	// group's position and visibility and floods every wing of the museum. An
+	// explicit config selects the bounded composition that renders inside the
+	// group, so the forest stays in the hall and hides when the visitor leaves.
+	const forestConfig = createDefaultForestFireflyConfig();
 
 	// Get or create the persistent village manager
 	const manager = getMuseumVillageManager();
@@ -134,7 +142,7 @@
 <T.Group visible={visible} position.x={centerX} position.z={centerZ}>
 	<!-- Forest environment -->
 	<T.Group position.y={forestLift + 0.05}>
-		<ForestScene variant="firefly" />
+		<ForestScene variant="firefly" config={forestConfig} />
 	</T.Group>
 
 	<!-- Subtle arena edge ring -->

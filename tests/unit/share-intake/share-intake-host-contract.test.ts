@@ -1,7 +1,34 @@
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 
 const read = (path: string) => readFileSync(path, "utf8");
+
+/**
+ * The subset of `paths` whose contents contain `needle`, read through a bounded
+ * pool of concurrent reads.
+ *
+ * The census below is ~8,000 files. Read one at a time with readFileSync that
+ * costs 7.5s on a warm cache, and once it runs behind 1,800 other files in the
+ * suite's single fork it exceeds the 30s timeout — which is exactly how this
+ * test failed the full run while passing in isolation. Overlapping the I/O
+ * keeps the same file set and the same string check at roughly one second.
+ */
+async function filesContaining(
+  paths: string[],
+  needle: string
+): Promise<string[]> {
+  const hits: string[] = [];
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < paths.length) {
+      const path = paths[cursor++];
+      if ((await readFile(path, "utf8")).includes(needle)) hits.push(path);
+    }
+  };
+  await Promise.all(Array.from({ length: 32 }, worker));
+  return hits.sort();
+}
 
 /**
  * Every source file, with forward slashes on every platform.
@@ -47,16 +74,16 @@ describe("share-intake host contract", () => {
     expect(host).toBeLessThan(viewer);
   });
 
-  it("the runner has exactly one caller in the app", () => {
+  it("the runner has exactly one caller in the app", async () => {
     // The single-entry-point invariant. Two callers means someone re-added a
     // route trigger outside the component tree, which is how the share ended
     // up opening a picker on the marketing landing.
-    const callers = sourceFiles()
+    const candidates = sourceFiles()
       .filter((file) => !file.endsWith("share-intake-runner.ts"))
       // Tests name the runner to mock it. The invariant is about SHIPPED
       // callers, so co-located *.test.ts files are not callers.
-      .filter((file) => !file.includes(".test."))
-      .filter((file) => read(file).includes("scheduleIntakeRun"));
+      .filter((file) => !file.includes(".test."));
+    const callers = await filesContaining(candidates, "scheduleIntakeRun");
     expect(callers).toEqual([HOST]);
   }, 30_000);
 

@@ -115,7 +115,7 @@ async function build(propType: PropType): Promise<ShapeMatrixData> {
     return paths;
   };
 
-  // The explorer only displays one turn band per axis. Materializing all 108
+  // The explorer only displays one turn band per axis. Materializing all 116
   // descriptors here made every cold visit pay for paths the user might never
   // open. These maps retain the same geometry owner while computing a flower
   // on first use and sharing that locus between the blue and red axes.

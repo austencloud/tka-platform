@@ -10,7 +10,7 @@ import {
   buildTunnelCompositionLayers,
   type BuiltTunnelLayer,
 } from "./tunnel-layer-builder";
-import { sampleTunnelProps } from "./tunnel-prop-sampling";
+import { sampleTunnelProps, tunnelStepIndexAt } from "./tunnel-prop-sampling";
 import {
   DEFAULT_CONFIG,
   MAX_IMAGES,
@@ -22,7 +22,6 @@ import {
   getPreset,
   imageCount,
   matchPreset,
-  propCount,
   speedFill,
   type SpeedFill,
   type TunnelConfig,
@@ -34,7 +33,6 @@ import {
   savedTunnelPresetRecipe,
   type TunnelPresetRecipe,
 } from "./tunnel-preset-recipe";
-import { performerRing } from "./performer-ring-model";
 import {
   activeTunnelPropColorPair,
   resolveTunnelPropColorState,
@@ -78,7 +76,8 @@ export interface TunnelControllerSources {
   getComposition?: () => TunnelComposition | null | undefined;
   /** Receives the exact baked layer objects used by the animation canvas. */
   onLayersChange?: (layers: readonly BuiltTunnelLayer[]) => void;
-  /** Scoped effort owner for embedded editors. Defaults to the global viewer. */
+  /** Scoped motion-presentation owner for embedded editors. When supplied, its
+   * effort and grid visibility are shared with the Tunnel. */
   visibilityManager?: AnimationVisibilityStateManager;
   /** Embedded editors must not rewrite the viewer's last-used view state. */
   persistViewState?: boolean;
@@ -90,6 +89,9 @@ export interface TunnelControllerSources {
   initialViewState?: TunnelViewState;
   /** A parent-scoped pair shared with another art controller. */
   customColorState?: ViewerCustomColorState;
+  /** Keep a viewer's formation baked while 2D is showing so returning to
+   * Tunnel can reverse the existing reveal instead of rebuilding in public. */
+  prepareWhileInactive?: boolean;
 }
 
 /** Reduced motion caps a dense ring so a heavy kaleidoscope doesn't spin for
@@ -137,10 +139,23 @@ export class TunnelViewController {
    * not saved choreography or presentation state. */
   selectedPerformerId = $state<string | null>(null);
 
-  /** Tunnel-specific grid visibility. The kaleidoscope owns this (the global
-   *  Visual/Display toggles don't reach the self-clocked tunnel). Default off —
-   *  the grid is clutter behind a dense overlay. */
-  gridVisible = $state(false);
+  /**
+   * The grid is one canvas layer, even when Tunnel adds performers to it.
+   * Viewer and creator hosts provide their animation visibility owner so the
+   * 2D and Tunnel controls cannot disagree. Standalone previews keep the
+   * snapshot-local fallback because they have no surrounding animation scope.
+   */
+  #gridVisible = $state(false);
+
+  get gridVisible(): boolean {
+    return this.#gridVisible;
+  }
+
+  set gridVisible(visible: boolean) {
+    if (this.#gridVisible === visible) return;
+    this.#gridVisible = visible;
+    this.#sources.visibilityManager?.setGridMode(visible ? "8point" : "none");
+  }
 
   /** One explicit appearance mode plus the last authored exact pair. Keeping
    * the pair while another mode is active lets authors compare looks without
@@ -198,6 +213,7 @@ export class TunnelViewController {
 
   #sources: TunnelControllerSources;
   #layers = $state<BuiltTunnelLayer[]>([]);
+  #layersReady = $state(false);
   #buildToken = 0;
   buildError = $state<string | null>(null);
 
@@ -239,10 +255,23 @@ export class TunnelViewController {
     this.echo = cfg.echo;
     this.staggerSteps = cfg.staggerSteps;
     this.speedOverrides = { ...cfg.speedOverrides };
-    this.gridVisible = view.gridVisible;
+    this.#gridVisible =
+      sources.visibilityManager?.isGridVisible() ?? view.gridVisible;
     this.colorMode = view.colors.mode;
     this.section = view.section;
     this.presetRecipe = cloneTunnelPresetRecipe(view.presetRecipe);
+
+    if (sources.visibilityManager) {
+      $effect(() => {
+        const syncGridVisibility = () => {
+          this.#gridVisible = sources.visibilityManager!.isGridVisible();
+        };
+        sources.visibilityManager!.registerObserver(syncGridVisibility);
+        syncGridVisibility();
+        return () =>
+          sources.visibilityManager!.unregisterObserver(syncGridVisibility);
+      });
+    }
 
     // Persist the live view state on change.
     if (persistViewState) {
@@ -291,9 +320,12 @@ export class TunnelViewController {
         staggerSteps: 0,
         speedOverrides: {},
       };
-      const on = this.active;
-      if (!on || !seq) {
+      const shouldPrepare = this.#sources.prepareWhileInactive
+        ? true
+        : this.active;
+      if (!shouldPrepare || !seq) {
         this.#layers = [];
+        this.#layersReady = false;
         this.#sources.onLayersChange?.([]);
         this.buildError = null;
         return;
@@ -306,19 +338,23 @@ export class TunnelViewController {
             id: `viewer-${seq.id}`,
             name: seq.name || seq.word || "Untitled sequence",
             formation: spatial,
+            legacyGeneratedStage: true,
           }
         );
       const token = ++this.#buildToken;
+      this.#layersReady = false;
       void buildTunnelCompositionLayers(composition, spatial)
         .then((layers) => {
           if (token !== this.#buildToken) return;
           this.#layers = layers;
+          this.#layersReady = true;
           this.#sources.onLayersChange?.(layers);
           this.buildError = null;
         })
         .catch((error) => {
           if (token !== this.#buildToken) return;
           this.#layers = [];
+          this.#layersReady = false;
           this.#sources.onLayersChange?.([]);
           this.buildError =
             error instanceof Error
@@ -326,6 +362,12 @@ export class TunnelViewController {
               : "The tunnel could not be built.";
         });
     });
+  }
+
+  /** A reveal may start only after every copy has a sampled layer. Otherwise
+   * the completed build joins an already-visible canvas as a one-frame pop. */
+  get layersReady(): boolean {
+    return this.#layersReady;
   }
 
   /** The live config as a plain object (for propCount / persistence / key). */
@@ -341,16 +383,31 @@ export class TunnelViewController {
     };
   }
 
-  /** On-screen prop count for the live config. */
-  propCount = $derived(propCount(this.config));
+  /** On-screen prop count. Formation capacity can be larger than occupancy. */
+  propCount = $derived(this.performerCount * 2);
 
-  /** Number of performers (rendered copies) for the live config. Each performer
-   *  has two hands, so `propCount === performerCount * 2`. */
-  performerCount = $derived(imageCount(this.config));
+  /** Exact number of occupied stage positions. Classic Viewer tunnels retain
+   * their historical behavior and occupy every generated formation arm.
+   * A getter (not a `$derived` field) so it doesn't touch `#sources` during
+   * field initialization; still reactive when read in a template/derived
+   * because it reads the reactive composition and config. */
+  get performerCount(): number {
+    return (
+      this.#sources.getComposition?.()?.stage.instances.length ??
+      imageCount(this.config)
+    );
+  }
+
+  /** Number of positions the current formation recipe makes available. */
+  formationSlotCount = $derived(imageCount(this.config));
 
   /** Number of authored performers that must fit into the current formation. */
   get authoredPerformerCount(): number {
     return this.#sources.getComposition?.()?.performers.length ?? 1;
+  }
+
+  get requiredStageInstanceCount(): number {
+    return this.#sources.getComposition?.()?.stage.instances.length ?? 1;
   }
 
   /** Stable signature (export filename suffix + build dedup). */
@@ -391,7 +448,7 @@ export class TunnelViewController {
   /** Set the whole config (clamped to the live budget). */
   #setConfig(cfg: TunnelConfig): boolean {
     const c = clampConfig(cfg, this.#maxImages());
-    if (imageCount(c) < this.authoredPerformerCount) return false;
+    if (imageCount(c) < this.requiredStageInstanceCount) return false;
     this.fold = c.fold;
     this.mirror = c.mirror;
     this.flip = c.flip;
@@ -438,7 +495,7 @@ export class TunnelViewController {
     next: Partial<Pick<TunnelConfig, "fold" | "mirror" | "flip">>
   ): void {
     const clamped = clampConfig({ ...this.config, ...next }, this.#maxImages());
-    if (imageCount(clamped) < this.authoredPerformerCount) return;
+    if (imageCount(clamped) < this.requiredStageInstanceCount) return;
     this.fold = clamped.fold;
     this.mirror = clamped.mirror;
     this.flip = clamped.flip;
@@ -464,13 +521,26 @@ export class TunnelViewController {
   /** Apply a one-tap speed fill — writes concrete per-performer overrides across
    *  the current copies (the drawer then shows + edits them). */
   applySpeedFill(kind: SpeedFill): void {
-    this.speedOverrides = speedFill(kind, imageCount(this.config));
+    const filled = speedFill(kind, imageCount(this.config));
+    const occupiedArms =
+      this.#sources
+        .getComposition?.()
+        ?.stage.instances.map((instance) => instance.arm) ??
+      Array.from({ length: imageCount(this.config) }, (_, arm) => arm);
+    this.speedOverrides = Object.fromEntries(
+      occupiedArms.flatMap((arm) =>
+        filled[arm] === undefined ? [] : [[arm, filled[arm]!]]
+      )
+    );
   }
-  /** Pin one performer's speed (arm 0 = base "you", 1..n = copies). Setting 1×
-   *  clears the override so the map stays minimal. Immutable update so `$derived`
-   *  consumers re-run. */
-  setPerformerSpeed(arm: number, rate: number): void {
-    if (arm < 0) return;
+  /** Pin one visible stage appearance's speed. The UI addresses rows by their
+   * display order; the override is stored against its actual formation arm. */
+  setPerformerSpeed(layerIndex: number, rate: number): void {
+    if (layerIndex < 0) return;
+    const arm =
+      this.#layers[layerIndex]?.arm ??
+      this.#sources.getComposition?.()?.stage.instances[layerIndex]?.arm ??
+      layerIndex;
     const next = { ...this.speedOverrides };
     if (rate === 1) delete next[arm];
     else next[arm] = rate;
@@ -490,15 +560,10 @@ export class TunnelViewController {
     if (this.#layers.length === 0) {
       return Math.max(1, this.#sources.getSequence()?.steps.length ?? 1);
     }
-    const mods = copyModulators(this.config);
     return tunnelLayerCycleSteps(
-      this.#layers.map((layer, arm) => ({
+      this.#layers.map((layer) => ({
         sequence: layer.sequence,
-        speed:
-          layer.speed *
-          (arm === 0
-            ? effectiveSpeed(this.config, 0)
-            : (mods[arm - 1]?.speed ?? 1)),
+        speed: this.#samplingTimingForLayer(layer).speed,
       }))
     );
   });
@@ -535,19 +600,39 @@ export class TunnelViewController {
       layer.performerId === this.selectedPerformerId ? [arm] : []
     );
   });
-  /** Per-performer speed rows for the Speed drawer, in the same overlay order as
-   *  the Performer Ring: index 0 = the base "you" (locked 1×), 1..n = the copies
-   *  (arm k). Its swatches describe the actual stage props: spectrum hues when
-   *  that authored appearance is active, otherwise the pictograph blue/red pair. */
+  /** Per-appearance speed rows in visible overlay order. */
   speedPerformers = $derived.by(() => {
     const cfg = this.config;
-    const layerCount = Math.max(0, imageCount(cfg) - 1);
+    const composition = this.#sources.getComposition?.() ?? null;
+    const performerLabels = new Map(
+      composition?.performers.map((performer) => [
+        performer.id,
+        performer.label,
+      ]) ?? []
+    );
+    const rows =
+      this.#layers.length > 0
+        ? this.#layers.map((layer) => ({
+            arm: layer.arm,
+            label: layer.performerLabel,
+          }))
+        : composition
+          ? composition.stage.instances.map((instance) => ({
+              arm: instance.arm,
+              label:
+                performerLabels.get(instance.performerId) ?? "Stage appearance",
+            }))
+          : Array.from({ length: imageCount(cfg) }, (_, arm) => ({
+              arm,
+              label: arm === 0 ? "You" : `Copy ${arm}`,
+            }));
+    const layerCount = Math.max(0, rows.length - 1);
     const handColors = getBaseMotionColors();
     const exactColors = this.exactPropColors;
-    return performerRing(cfg).map((_p, i) => ({
+    return rows.map((row, i) => ({
       arm: i,
-      label: this.#layers[i]?.performerLabel ?? (i === 0 ? "You" : `Copy ${i}`),
-      rate: effectiveSpeed(cfg, i),
+      label: row.label,
+      rate: effectiveSpeed(cfg, row.arm),
       leftHex: exactColors
         ? exactColors.left
         : i === 0 || !this.spectrum
@@ -568,8 +653,7 @@ export class TunnelViewController {
   /** True when the live config is a large stack — advisory (a heavy effect may
    *  drop frames on weaker devices); not a hard cap. */
   heavyLoad = $derived(
-    this.active &&
-      propCount(this.config) >= TunnelViewController.LARGE_STACK_PROPS
+    this.active && this.propCount >= TunnelViewController.LARGE_STACK_PROPS
   );
 
   /** Honor the global Effort preset so the sidebar's Effort section shapes the
@@ -592,30 +676,81 @@ export class TunnelViewController {
         left: { ...DEFAULT_PROP_STATE },
         right: { ...DEFAULT_PROP_STATE },
       };
-    const baseSpeed = (layer?.speed ?? 1) * (this.speedOverrides[0] ?? 1);
+    const timing = layer
+      ? this.#samplingTimingForLayer(layer)
+      : { offset: 0, speed: this.speedOverrides[0] ?? 1 };
     return sampleTunnelProps(
       seq,
       currentStep,
       this.#ease,
-      layer?.stepOffset ?? 0,
-      baseSpeed
+      timing.offset,
+      timing.speed
     );
+  }
+
+  /** The performed cell for each authored card at this exact canvas frame. */
+  authoredPerformerStepIndicesAt(currentStep: number): Record<string, number> {
+    const indices: Record<string, number> = {};
+    for (const layer of this.#layers) {
+      // A generated formation copy can be staggered away from its source card.
+      // One card gets one border, so follow that performer's first authored
+      // stage instance rather than flashing several contradictory cells.
+      if (indices[layer.performerId] !== undefined) continue;
+      const timing = this.#samplingTimingForLayer(layer);
+      const index = tunnelStepIndexAt(
+        layer.performerSequence.steps.length,
+        currentStep,
+        timing.offset,
+        timing.speed
+      );
+      if (index !== null) indices[layer.performerId] = index;
+    }
+    return indices;
+  }
+
+  #samplingTimingForLayer(layer: BuiltTunnelLayer): {
+    offset: number;
+    speed: number;
+  } {
+    const arm = layer.arm;
+    if (arm === 0) {
+      return {
+        offset: layer.stepOffset,
+        speed: layer.speed * (this.speedOverrides[0] ?? 1),
+      };
+    }
+    const mod = copyModulators(this.config)[arm - 1] ?? {
+      staggerSteps: 0,
+      speed: 1,
+    };
+    return {
+      offset: layer.stepOffset + mod.staggerSteps,
+      speed: layer.speed * mod.speed,
+    };
   }
 
   /** Per-copy prop states at the live playhead, each shifted by its Stagger +
    *  Speed modulator. 1-indexed fractional currentStep. The modulators align
-   *  index-for-index with the baked layers (same generation order). */
+   *  against each layer's explicit formation arm. */
   additionalLayersAt(currentStep: number): AdditionalLayerProps[] {
     if (!this.active) return [];
-    const mods = copyModulators(this.config);
-    return this.#layers.slice(1).map((layer, i) => {
-      const m = mods[i] ?? { staggerSteps: 0, speed: 1 };
+    return this.preparedAdditionalLayersAt(currentStep);
+  }
+
+  /**
+   * The same sampled copies used by Tunnel, available while 2D is still visible.
+   * The animation engine uses these only to prepare their prop sprites; they do
+   * not join the rendered frame until the shared reveal starts.
+   */
+  preparedAdditionalLayersAt(currentStep: number): AdditionalLayerProps[] {
+    return this.#layers.slice(1).map((layer) => {
+      const timing = this.#samplingTimingForLayer(layer);
       const p = sampleTunnelProps(
         layer.sequence,
         currentStep,
         this.#ease,
-        layer.stepOffset + m.staggerSteps,
-        layer.speed * m.speed
+        timing.offset,
+        timing.speed
       );
       // Every copy inherits the viewer's global prop — a layer carries no explicit
       // per-hand prop type, so the engine falls back to the global prop (the same

@@ -14,10 +14,7 @@
   import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
-  import {
-    resolveAccessTier,
-    getMaxSteps,
-  } from "$lib/shared/auth/domain/access-tier";
+  import { resolveAccessTier } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
@@ -75,7 +72,11 @@
    * We cap when the current paired step count would reach the tier limit.
    */
   function checkStepCap(): boolean {
-    const maxSteps = getMaxSteps(accessTier);
+    const sequenceId = props.tabState.sequenceState?.currentSequence?.id;
+    const maxSteps = authDrawerState.guestEncore.maxSteps(
+      accessTier,
+      sequenceId
+    );
     // Completed steps = min of both hands' step counts (each pair = one step)
     const pairedSteps = Math.min(
       builderState.leftSteps.length,
@@ -83,7 +84,7 @@
     );
     if (pairedSteps >= maxSteps) {
       if (accessTier === "guest") {
-        authDrawerState.show("signup", "step-cap-guest");
+        authDrawerState.show("signup", "step-cap-guest", sequenceId);
       } else {
         toast.info(`Assemble supports up to ${maxSteps} steps.`, 4000);
       }
@@ -172,7 +173,6 @@
       </div>
     </div>
   </div>
-
 </div>
 
 <style>

@@ -20,12 +20,21 @@ export type PerformerHubTab =
  * in the current scope.
  */
 export type PerformerHubEdit =
-  | { performerIndex: number | null; field: "characterId"; value: CharacterId }
-  | { performerIndex: number | null; field: "prop"; value: PropType }
-  | { performerIndex: number | null; field: "propBuild"; value: PropBuild }
-  | { performerIndex: number | null; field: "effort"; value: EffortId }
-  | { performerIndex: number | null; field: "staffLengthCm"; value: number }
-  | { performerIndex: number | null; field: "effect"; value: EffectType };
+  | PerformerHubEditBase<"characterId", CharacterId>
+  | PerformerHubEditBase<"prop", PropType>
+  | PerformerHubEditBase<"propBuild", PropBuild>
+  | PerformerHubEditBase<"effort", EffortId>
+  | PerformerHubEditBase<"staffLengthCm", number>
+  | PerformerHubEditBase<"effect", EffectType>;
+
+type PerformerHubEditBase<Field extends string, Value> = {
+  /** Compatibility primary. null means an All scope for older hosts. */
+  performerIndex: number | null;
+  /** Ordered exact scope for hosts that support arbitrary multi-selection. */
+  performerIndices?: readonly number[];
+  field: Field;
+  value: Value;
+};
 
 /**
  * A host that owns performer state itself.

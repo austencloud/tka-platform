@@ -24,6 +24,7 @@ import type { StartPositionData } from "$lib/shared/foundation/domain/models/sta
 import type { TnDElement } from "$lib/features/choreo-card/domain/tnd-element";
 import type { PreparedSequenceHandoff } from "$lib/shared/animation-engine/domain/chaining-types";
 import { generatePerVisitDemo } from "$lib/shared/landing/data/per-visit-demo";
+import { runAtBackgroundPriority } from "$lib/shared/foundation/utils/background-scheduling";
 
 /** Fraction of hero draws that come from the shape matrix (rest are generated). */
 const DEFAULT_MATRIX_FRACTION = 2 / 3;
@@ -160,26 +161,39 @@ export function createHeroAct(options?: {
 
   /** Kicks off generation of the sequence that will follow `current`,
    *  chained to start where `current`'s CIRCULAR loop ends. `fromProp` is the
-   *  prop the act has just advanced into. */
+   *  prop the act has just advanced into.
+   *
+   *  The draw is deferred to background priority instead of firing synchronously
+   *  off the advance. Nothing waits on it — what it produces is not due until
+   *  the current LOOP finishes a pass (~16 s at the preset's 60 BPM) — so it
+   *  must never compete with the frame rendering the swap the user is watching.
+   *  If it has not landed by the next boundary, `offerSequenceBoundary` already
+   *  loops the current sequence one more pass, which is the correct
+   *  degradation. */
   function prepareNext(fromProp: PropType = currentProp): void {
     if (!current) return;
     const targetProp = nextPropInCycle(fromProp);
     preparedNextProp = targetProp;
     preparedNext = null;
     const chainedStartPosition = current.startPosition ?? null;
-    void drawHeroSequence({
-      propType: targetProp,
-      chainStartPosition: chainedStartPosition,
-    }).then((draw) => {
-      // A dice press mid-generation may have already advanced past this
-      // draw's target prop; only claim it if it's still the one we asked for.
-      if (preparedNextProp === targetProp) {
-        preparedNext = draw;
-      }
+    runAtBackgroundPriority(() => {
+      // A dice press between scheduling and running may have moved the act on;
+      // re-check before spending anything on a draw nobody is waiting for.
+      if (preparedNextProp !== targetProp) return;
+      void drawHeroSequence({
+        propType: targetProp,
+        chainStartPosition: chainedStartPosition,
+      }).then((draw) => {
+        // A dice press mid-generation may have already advanced past this
+        // draw's target prop; only claim it if it's still the one we asked for.
+        if (preparedNextProp === targetProp) {
+          preparedNext = draw;
+        }
+      });
+      // drawHeroSequence never rejects (matrix failures fall back to the
+      // generated draw, which itself falls back to FALLBACK_DEMO), so there's
+      // no separate failure branch to handle here.
     });
-    // drawHeroSequence never rejects (matrix failures fall back to the generated
-    // draw, which itself falls back to FALLBACK_DEMO), so there's no separate
-    // failure branch to handle here.
   }
 
   /** Swaps to the next sequence for a manual dice press: the pre-generated

@@ -2,12 +2,8 @@
   import { onDestroy, onMount } from "svelte";
   import { T, useTask } from "@threlte/core";
   import { Box3, Quaternion, Vector3 } from "three";
-  import type { Object3D, SkinnedMesh } from "three";
-  import {
-    createAvatarServices,
-    GripType,
-    Plane,
-  } from "@austencloud/scene-3d";
+  import type { Mesh, Object3D, SkinnedMesh } from "three";
+  import { createAvatarServices, GripType, Plane } from "@austencloud/scene-3d";
   import type { PropState3D } from "@austencloud/scene-3d";
   import type { StressPoseId } from "./avatar-bakeoff-data";
 
@@ -55,16 +51,24 @@
   let feetOffset = $state(0);
   let services: ReturnType<typeof createAvatarServices> | null = null;
   let settledPose = false;
+  let leftStaff: Mesh | undefined;
+  let rightStaff: Mesh | undefined;
   const leftHandWorld = new Vector3();
   const rightHandWorld = new Vector3();
+  const knuckleWorld = new Vector3();
+  const shaftPinkyAxis = new Vector3(0, -1, 0);
 
   const targets = POSE_TARGETS[pose];
   const leftProp = createPropState(targets.left);
   const rightProp = createPropState(targets.right);
   const propOrientations = {
-    left: leftProp.worldRotation,
-    right: rightProp.worldRotation,
-  };
+    blue: leftProp.worldRotation,
+    red: rightProp.worldRotation,
+  } satisfies NonNullable<
+    Parameters<
+      ReturnType<typeof createAvatarServices>["animator"]["setPropsAndBlend"]
+    >[3]
+  >;
 
   function createPropState(position: [number, number, number]): PropState3D {
     return {
@@ -115,7 +119,8 @@
       await services.skeleton.loadModel(modelUrl);
 
       const loadedRoot = services.skeleton.getRoot();
-      if (!loadedRoot) throw new Error("Skeleton loader returned no scene root.");
+      if (!loadedRoot)
+        throw new Error("Skeleton loader returned no scene root.");
 
       loadedRoot.updateMatrixWorld(true);
       const sourceBounds = new Box3().setFromObject(loadedRoot);
@@ -194,23 +199,38 @@
         services.skeleton.updateMatrices();
       }
 
-      const state = services.skeleton.getState();
-      const leftHand = state.bones.get("LeftHand");
-      const rightHand = state.bones.get("RightHand");
-      if (leftHand && rightHand) {
-        leftHand.getWorldPosition(leftHandWorld);
-        rightHand.getWorldPosition(rightHandWorld);
-        report({
-          leftHandErrorMeters: leftHandWorld.distanceTo(leftProp.worldPosition),
-          rightHandErrorMeters: rightHandWorld.distanceTo(rightProp.worldPosition),
-        });
-      }
       settledPose = true;
     } else {
       services.animator.update(delta);
       services.fingers.update(delta);
       services.skeleton.updateMatrices();
     }
+
+    // The animator supplies the achieved grip, including wrist limits. Keep
+    // these inspection staffs in that grip, as the production performer does,
+    // instead of leaving them floating at an unreachable requested position.
+    const leftPalm = services.animator.getPalmWorldPoint("left", leftHandWorld);
+    const rightPalm = services.animator.getPalmWorldPoint(
+      "right",
+      rightHandWorld
+    );
+    for (const [side, staff, palm] of [
+      ["left", leftStaff, leftPalm],
+      ["right", rightStaff, rightPalm],
+    ] as const) {
+      if (!staff || !palm) continue;
+      staff.position.copy(palm);
+      const axis = services.animator.getKnuckleLineWorld(side, knuckleWorld);
+      if (axis) staff.quaternion.setFromUnitVectors(shaftPinkyAxis, axis);
+    }
+    report({
+      leftHandErrorMeters: leftPalm
+        ? leftPalm.distanceTo(leftProp.worldPosition)
+        : null,
+      rightHandErrorMeters: rightPalm
+        ? rightPalm.distanceTo(rightProp.worldPosition)
+        : null,
+    });
   });
 </script>
 
@@ -219,11 +239,11 @@
     <T is={root} />
   </T.Group>
 
-  <T.Mesh position={targets.left} castShadow>
+  <T.Mesh bind:ref={leftStaff} position={targets.left} castShadow>
     <T.CylinderGeometry args={[0.016, 0.016, 0.92, 16]} />
     <T.MeshStandardMaterial color="#3b82f6" roughness={0.34} />
   </T.Mesh>
-  <T.Mesh position={targets.right} castShadow>
+  <T.Mesh bind:ref={rightStaff} position={targets.right} castShadow>
     <T.CylinderGeometry args={[0.016, 0.016, 0.92, 16]} />
     <T.MeshStandardMaterial color="#ef4444" roughness={0.34} />
   </T.Mesh>

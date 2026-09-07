@@ -47,9 +47,9 @@ export function logKeyboardShortcutHintsShown(
   captureEvent("keyboard_shortcut_hints_shown", { context, surface });
 }
 
-export function logKeyboardShortcutCenterOpened(
+export function logKeyboardShortcutSettingsOpened(
   context: ShortcutContext,
   source: string
 ): void {
-  captureEvent("keyboard_shortcut_center_opened", { context, source });
+  captureEvent("keyboard_shortcut_settings_opened", { context, source });
 }

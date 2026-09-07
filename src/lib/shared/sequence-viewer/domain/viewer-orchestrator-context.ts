@@ -191,6 +191,11 @@ export interface OrchestratorContext {
   isRecording3D: boolean;
   recordingElapsed: number;
   handleStopRecording: () => void;
+  /** Non-null while the render card is up: recording has stopped and the
+   *  offline render is waiting on a quality choice. */
+  pendingFilmRender: { durationSeconds: number } | null;
+  handleConfirmFilmRender: () => void;
+  handleDiscardFilmRender: () => void;
 
   viewerState: ReturnType<typeof createViewerState>;
   viewerVisibility: SequenceViewerVisibilityState;

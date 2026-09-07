@@ -414,6 +414,14 @@
   <!-- CENTER RIGS: 6 total (3 planes × original + mirror), props + grid visible, no character -->
   <!-- Mirrored rigs swap blue/red prop states for a symmetric pattern on each plane.
        Only the original (non-mirror) rigs show the grid to avoid visual clutter. -->
+  <!--
+    @austencloud/scene-3d still speaks its colour-named boundary: PerformerRig
+    reads `avatarState.bluePropState` and renders the effects slot with blue/red
+    names, while the app's instance state has been left/right since the
+    performer-relative migration. Prop states are passed explicitly here, the
+    way LiveSequencePerformer3D does; under the left/right names the rig saw no
+    prop state, mounted no prop and left the acolytes' arms untracked.
+  -->
   {#each visibleCenter as instance, i (instance.id)}
     {@const planeCfg = CENTER_PLANES[i]}
     {#if planeCfg}
@@ -432,15 +440,17 @@
         {tipEffectMap}
         visiblePlanes={new Set([planeCfg.plane])}
         gridMode={"diamond"}
-        leftPropType={toScenePropType(leftPropType)}
-        rightPropType={toScenePropType(rightPropType)}
+        bluePropType={toScenePropType(leftPropType)}
+        redPropType={toScenePropType(rightPropType)}
+        bluePropState={instance.leftPropState}
+        redPropState={instance.rightPropState}
         groundOffset={museumGroundOffset}
       >
         {#snippet effectsSlot({
-          leftPropState,
-          rightPropState,
-          leftHandPos,
-          rightHandPos,
+          bluePropState: leftPropState,
+          redPropState: rightPropState,
+          blueHandPos: leftHandPos,
+          redHandPos: rightHandPos,
           isPlaying: rigPlaying,
           staffHalfLength,
           effectsParentRef,
@@ -480,10 +490,10 @@
           showGrid={false}
           showProps={false}
           showEffects={false}
-          leftPropState={propOverride.left}
-          rightPropState={propOverride.right}
-          leftPropType={toScenePropType(leftPropType)}
-          rightPropType={toScenePropType(rightPropType)}
+          bluePropState={propOverride.left}
+          redPropState={propOverride.right}
+          bluePropType={toScenePropType(leftPropType)}
+          redPropType={toScenePropType(rightPropType)}
           groundOffset={museumGroundOffset}
         />
       {/if}

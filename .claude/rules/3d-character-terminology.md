@@ -1,3 +1,9 @@
+---
+paths:
+  - "src/lib/shared/3d/**/*"
+  - "src/lib/features/stage/**/*"
+---
+
 # 3D Character Terminology — ENFORCED
 
 The 3D product uses two distinct nouns:

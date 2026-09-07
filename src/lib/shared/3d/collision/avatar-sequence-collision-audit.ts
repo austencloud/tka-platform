@@ -1,3 +1,4 @@
+import { Vector3 } from "three";
 import type {
   AvatarPoseDiagnostics,
   CollisionEvent,
@@ -82,6 +83,12 @@ export class AvatarSequenceCollisionAudit {
       appliedReachLeanRad: 0,
       appliedHeadDodgeRad: 0,
       achievedTorsoPitchRad: 0,
+      leftUpperArmLength: 0,
+      leftForearmLength: 0,
+      rightUpperArmLength: 0,
+      rightForearmLength: 0,
+      leftElbowWorld: new Vector3(),
+      rightElbowWorld: new Vector3(),
     }
   ): void {
     this.sampledFrames += 1;

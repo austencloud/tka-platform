@@ -25,6 +25,7 @@ import {
   spotlightFactor,
   tunnelColorFromHex,
   tunnelPropColor,
+  type TunnelLayerSelection,
   type TunnelPropColorPair,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
@@ -149,7 +150,7 @@ export class FrameParameterBuilder {
   private extendedPropColorsLayerCount = -1;
   private extendedPropColorsBaseRef: PropFlameColor[] | null = null;
   private extendedPropColorsSpectrum = true;
-  private extendedPropColorsSelected: number | null = null;
+  private extendedPropColorsSelected: TunnelLayerSelection = null;
   private customPropColorsSignature = "";
   private customPropFlamePair: PropFlameColor[] | null = null;
 
@@ -255,6 +256,7 @@ export class FrameParameterBuilder {
     // on RenderFrameParams for why AnimationRenderLoop needs both.
     fp.trailsSuppressedUntilTextureLoad = trailsSuppressedUntilTextureLoad;
     fp.gridVisible = props.gridVisible ?? true;
+    fp.gridOpacity = props.gridOpacity;
     fp.gridMode = props.gridMode ?? GridMode.DIAMOND;
     fp.letter = props.letter ?? null;
 
@@ -643,7 +645,7 @@ export class FrameParameterBuilder {
     base: PropFlameColor[],
     layerCount: number,
     spectrum: boolean,
-    selectedLayer: number | null
+    selectedLayer: TunnelLayerSelection
   ): PropFlameColor[] {
     if (
       this.extendedPropColors &&

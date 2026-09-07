@@ -2,7 +2,7 @@ import {
   PRESET_VALID_COUNTS,
   createFormationFromPreset,
   type FormationPreset,
-} from "@austencloud/scene-3d";
+} from "@austencloud/scene-3d/worker";
 
 export interface PerformerStagePosition {
   x: number;
@@ -184,7 +184,9 @@ export function getCanonicalStagePositions(
 
   const positions: PerformerStagePosition[] = [];
   for (let cast = 1; cast <= count; cast += 1) {
-    for (const [preset, validCounts] of Object.entries(PRESET_VALID_COUNTS)) {
+    for (const [preset, validCounts] of Object.entries(
+      PRESET_VALID_COUNTS as Record<string, readonly number[]>
+    )) {
       // "custom" is whatever the user dragged; it has no canonical footprint.
       if (preset === "custom" || !validCounts.includes(cast)) continue;
       for (const slot of createFormationFromPreset(

@@ -238,7 +238,7 @@ git log $(git tag -l "v*" --sort=-version:refname | head -1)..HEAD --oneline --n
     );
 
     expect(discovered.length).toBeGreaterThan(40);
-    expect(agentCount).toBe(11);
+    expect(agentCount).toBe(12);
     expect(
       paths.some((path) => path.endsWith("/.agents/skills/fb/SKILL.md"))
     ).toBe(true);
@@ -250,6 +250,9 @@ git log $(git tag -l "v*" --sort=-version:refname | head -1)..HEAD --oneline --n
     ).toBe(true);
     expect(
       paths.some((path) => path.endsWith("/.codex/agents/audit-fixer.toml"))
+    ).toBe(true);
+    expect(
+      paths.some((path) => path.endsWith("/.codex/agents/teacher.toml"))
     ).toBe(true);
 
     const corpus = [...expected.values()]

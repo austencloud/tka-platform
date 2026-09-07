@@ -16,6 +16,7 @@ import type { BackgroundLabSettings } from "$lib/shared/background-builder/domai
 import type { TimeSignatureKey } from "../../foundation/domain/models/time-signature";
 import { normalizeLegacyPropConfig } from "@tka/tka-types";
 import type { FanAppearance } from "../../pictograph/prop/domain/fan-appearance";
+import type { PropLook } from "../../pictograph/prop/domain/prop-look";
 
 /**
  * Prop Preset - A saved prop configuration for quick switching
@@ -39,6 +40,14 @@ export interface AppSettings {
   rightPropType?: PropType; // Prop type held in the performer's right hand
   /** Shared visual build for fan/bigfan across 2D, Tunnel, 3D, and rails. */
   fanAppearance?: FanAppearance;
+  /** How the 2D canvas draws every non-fan prop: flat 3D-model sprite or pictograph. */
+  /**
+   * How the 2D canvas draws props. Named propArtwork (not propLook) on
+   * purpose: an earlier build persisted a "model" default under propLook
+   * into saved settings, and that stale key must not keep overriding the
+   * canonical pictograph artwork.
+   */
+  propArtwork?: PropLook;
   catDogMode?: boolean; // Whether CatDog Mode is enabled in prop type settings
   leftBuugengFlipped?: boolean; // Flip buugeng for blue hand (asymmetric prop)
   rightBuugengFlipped?: boolean; // Flip buugeng for red hand (asymmetric prop)

@@ -1,0 +1,354 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "ember-breached-rift-bench",
+  "gateId": "playable-graybox",
+  "status": "ready-for-review",
+  "blenderVersion": "5.0.1",
+  "commands": {
+    "build": "python scripts/build-ember-geology-graybox.py build",
+    "verify": "python scripts/build-ember-geology-graybox.py verify"
+  },
+  "artifacts": {
+    "scripts/build-ember-geology-graybox.py": {
+      "sha256": "da8ca5440d42bb2f8e9566e85ab6cda5ab4e7cbf8030df2cb0d14ec9fdce0911",
+      "byteLength": 64606
+    },
+    "scripts/build-ember-geology-study.py": {
+      "sha256": "da2d56b94243777b05916a9341907d50e949dbdbf34d89db331c1779b110f011",
+      "byteLength": 38146
+    },
+    "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md": {
+      "sha256": "74d91cef046feb5acdd833de57396fd3b8044b4751b45239fa9eff38950ee870",
+      "byteLength": 29445
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/ember-breached-rift-bench-gate1-1-report.json": {
+      "sha256": "fe78c9e0bafc8fce9ce71f21ed708d176d1ece27894b3f5336a1239ffbaf7556",
+      "byteLength": 8897
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/ember-breached-rift-bench-r2-coordinate-manifest.json": {
+      "sha256": "2de0bc6042d9c8514001b44b59df42d589c4453279248f01051452bb6eb6dffa",
+      "byteLength": 10584
+    },
+    "static/data/ember/review/ember-breached-rift-bench-r2-height.f32": {
+      "sha256": "7e2e36188781d45a9adbb1a5e8a1735d3ba26ce9ae4771aa14b684fc41a22218",
+      "byteLength": 512064
+    },
+    "static/data/ember/review/ember-breached-rift-bench-r2-flowy-thickness.f32": {
+      "sha256": "759cc8a26f71298ad1b4a96f63e920b9b46c77b181b9dee7d429da505598bafd",
+      "byteLength": 512064
+    },
+    "blender/ember-breached-rift-bench-graybox-r2.blend": {
+      "sha256": "a9e2cf4d22dc937cefd114bdd45a3a809581dd81f3552c443c4a23a876b22148",
+      "byteLength": 3938205
+    },
+    "static/models/ember/review/ember-breached-rift-bench-graybox-r2.glb": {
+      "sha256": "fd100392c6ab5a18f39206c7fc21643e139a64440a5947f5579188d7fd44f95c",
+      "byteLength": 6219796
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/ember-breached-rift-bench-r2-gate2-contact-sheet.png": {
+      "sha256": "e8abe8f032279a0f297e655bbcf6e9e7cc5ed41c6f5688def4b187c0326615d1",
+      "byteLength": 2220452
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/11-registered-orbit-strip.png": {
+      "sha256": "76ee6c6e0181a3a660de2f260fc399ea0a20c85571199ccba5343d258e6bc7c7",
+      "byteLength": 1231767
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/00-default-audience.png": {
+      "sha256": "7cf3f3a57a46e5f95d7cc9eaf0535e52ef935c6e028d388a555281410f8c2af0",
+      "byteLength": 986638
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/01-orbit-000.png": {
+      "sha256": "3ac7187a7fffabf668d9ee4cdd2e56c1c47fd3539514ba9971645479fce82c04",
+      "byteLength": 1000331
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/02-orbit-045.png": {
+      "sha256": "8c9011e27795606d9b39151ec42d92f255cfc2900bcb12e683e77a58954cf60f",
+      "byteLength": 1017323
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/03-orbit-090.png": {
+      "sha256": "eb075c00ff02276eb47f0da0f652c7f4052ab050e12a72f29b94bcb9a4b92eb2",
+      "byteLength": 1003552
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/04-orbit-135.png": {
+      "sha256": "4a93308872371ca5860dc63dc78b24b54390aa35264dc85fd04ec7279e407dd1",
+      "byteLength": 997655
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/05-orbit-180.png": {
+      "sha256": "65a459d8cbb3ce2c049623b227ba7a69979ca2809c4a26ff0d8ebcaac7a0016e",
+      "byteLength": 1017660
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/06-orbit-225.png": {
+      "sha256": "ea5af02c1e6579281446e590df6beca4f16eb9f29cb6a86b1ae14b376fcfc55d",
+      "byteLength": 1006051
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/07-orbit-270.png": {
+      "sha256": "8d52a655cac0ac4808569c7b1d1df9a7ed200d3b078f17152c5b8a5c663d9ab1",
+      "byteLength": 1016332
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/08-orbit-315.png": {
+      "sha256": "8c041063e65c6030a809102f8143d09c9f3033a65b2fa324bd26d007a37838a2",
+      "byteLength": 1016346
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/09-north-up-plan.png": {
+      "sha256": "990d16586721be87bea4041a929eab052eb23647c2c7bf4ee3f227c99aebd7ba",
+      "byteLength": 950481
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/10-longitudinal-section.png": {
+      "sha256": "420364bb31b98fb042bcb65011bfeb9f3a56c1506940403f504e8745f05eb1fa",
+      "byteLength": 637932
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/12-director-overview.png": {
+      "sha256": "80544a6d1414724f9e724a838428d1c7a1aa8e1c826e854c693287b22be801d5",
+      "byteLength": 1074482
+    },
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/13-collapse-oblique.png": {
+      "sha256": "fed42751f0d381476f6783d471674fd19796534562e897a1a40d737e61c3e4e8",
+      "byteLength": 1084455
+    }
+  },
+  "checks": {
+    "artifact-digest": {
+      "passed": true,
+      "evidence": "SHA-256 and byte length recorded for 24 Gate 2 artifacts."
+    },
+    "collision": {
+      "passed": true,
+      "evidence": "EMBER_Terrain is the only visible collider in the isolated graybox; no invisible barrier geometry is present."
+    },
+    "route-duration": {
+      "passed": true,
+      "applicable": false,
+      "evidence": "Ember is an orbit backdrop with no authored player route; Austen's recorded Gate 2 exemption substitutes the registered 45-degree orbit set."
+    },
+    "sequence-parity": {
+      "passed": true,
+      "applicable": false,
+      "evidence": "This isolated environment graybox neither selects nor modifies a TKA sequence."
+    },
+    "source-and-manifest-lock": {
+      "passed": true,
+      "evidence": {
+        "terrainOwnerSha256": "da2d56b94243777b05916a9341907d50e949dbdbf34d89db331c1779b110f011",
+        "gate1AmendmentReportSha256": "fe78c9e0bafc8fce9ce71f21ed708d176d1ece27894b3f5336a1239ffbaf7556",
+        "researchContractSha256": "74d91cef046feb5acdd833de57396fd3b8044b4751b45239fa9eff38950ee870",
+        "contractPayloadSha256": "58d9e361ba9fc526604cb0e608e6fa5d682b7a91e2318b187b2b1c5374a54f62"
+      }
+    },
+    "simulator-deposit-owner": {
+      "passed": true,
+      "evidence": {
+        "implementation": "Flowy",
+        "calibration": "r2f-c04-branched-65m2",
+        "sourceSha256": "759cc8a26f71298ad1b4a96f63e920b9b46c77b181b9dee7d429da505598bafd",
+        "activeCellCount": 3558,
+        "activeAreaSquareMeters": 3558.0
+      }
+    },
+    "downhill-drainage": {
+      "passed": true,
+      "evidence": {
+        "pathLengthMeters": 322.840491,
+        "sourceTerrainElevationMeters": 13.65,
+        "terminusTerrainElevationMeters": -1.15,
+        "netDescentMeters": 14.8,
+        "reachesSouthContinuation": true
+      }
+    },
+    "performer-clearance": {
+      "passed": true,
+      "evidence": {
+        "simulatorDepositClearanceBeyondActionEnvelopeMeters": 13.220045,
+        "actionRadiusMeters": 4.5
+      }
+    },
+    "downstream-widening": {
+      "passed": true,
+      "evidence": {
+        "upstreamMedianWidthMeters": 11.0,
+        "downstreamMedianWidthMeters": 14.0,
+        "downstreamWideningRatio": 1.272727
+      }
+    },
+    "fixed-camera-evidence": {
+      "passed": true,
+      "evidence": {
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/00-default-audience.png": [
+          1600,
+          900
+        ],
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/01-orbit-000.png": [
+          1600,
+          900
+        ],
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/02-orbit-045.png": [
+          1600,
+          900
+        ],
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/03-orbit-090.png": [
+          1600,
+          900
+        ],
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/04-orbit-135.png": [
+          1600,
+          900
+        ],
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/05-orbit-180.png": [
+          1600,
+          900
+        ],
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/06-orbit-225.png": [
+          1600,
+          900
+        ],
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/07-orbit-270.png": [
+          1600,
+          900
+        ],
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/08-orbit-315.png": [
+          1600,
+          900
+        ],
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/09-north-up-plan.png": [
+          1400,
+          1000
+        ],
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/10-longitudinal-section.png": [
+          1400,
+          700
+        ],
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/12-director-overview.png": [
+          1600,
+          900
+        ],
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/13-collapse-oblique.png": [
+          1600,
+          900
+        ]
+      }
+    },
+    "blender-source-integrity": {
+      "passed": true,
+      "evidence": {
+        "sceneId": "ember-breached-rift-bench",
+        "blenderVersion": "5.0.1",
+        "blendPath": "blender/ember-breached-rift-bench-graybox-r2.blend",
+        "checks": {
+          "manifest-scene-lock": {
+            "passed": true,
+            "evidence": "2de0bc6042d9c8514001b44b59df42d589c4453279248f01051452bb6eb6dffa"
+          },
+          "root-transform": {
+            "passed": true,
+            "evidence": [
+              1.5707963705062866,
+              0.0,
+              0.0
+            ]
+          },
+          "terrain-identity": {
+            "passed": true,
+            "evidence": {
+              "vertexCount": 128016,
+              "faceCount": 127300,
+              "expectedVertexCount": 128016
+            }
+          },
+          "visible-collision": {
+            "passed": true,
+            "evidence": [
+              "EMBER_Terrain"
+            ]
+          },
+          "lava-footprint": {
+            "passed": true,
+            "evidence": {
+              "vertexCount": 4015,
+              "faceCount": 3558,
+              "expectedActiveCellCount": 3558,
+              "sourceSha256": "759cc8a26f71298ad1b4a96f63e920b9b46c77b181b9dee7d429da505598bafd"
+            }
+          },
+          "review-equivalence-signals": {
+            "passed": true,
+            "evidence": [
+              "EMBER_TalusApron",
+              "EMBER_CollapseGuide",
+              "EMBER_SourceFissure",
+              "EMBER_SourceRampart",
+              "EMBER_PerformerProxy",
+              "EMBER_ActionEnvelope"
+            ]
+          },
+          "registered-cameras": {
+            "passed": true,
+            "evidence": [
+              "EMBER_Camera_default-audience",
+              "EMBER_Camera_orbit-000",
+              "EMBER_Camera_orbit-045",
+              "EMBER_Camera_orbit-090",
+              "EMBER_Camera_orbit-135",
+              "EMBER_Camera_orbit-180",
+              "EMBER_Camera_orbit-225",
+              "EMBER_Camera_orbit-270",
+              "EMBER_Camera_orbit-315",
+              "EMBER_Camera_director-overview",
+              "EMBER_Camera_collapse-oblique"
+            ]
+          },
+          "north-up-plan": {
+            "passed": true,
+            "evidence": [
+              0.0,
+              0.0,
+              3.1415927410125732
+            ]
+          },
+          "section-scene": {
+            "passed": true,
+            "evidence": "Ember Gate 2 R2 Longitudinal Section"
+          }
+        }
+      }
+    },
+    "glb-review-equivalence": {
+      "passed": true,
+      "evidence": [
+        "EMBER_ActionEnvelope",
+        "EMBER_CollapseGuide",
+        "EMBER_LavaSimulatorDeposit",
+        "EMBER_PerformerProxy",
+        "EMBER_SourceFissure",
+        "EMBER_SourceRampart",
+        "EMBER_TalusApron",
+        "EMBER_Terrain",
+        "EMBER_WorldRoot",
+        "EMBER_Camera_default-audience",
+        "EMBER_Camera_orbit-000",
+        "EMBER_Camera_orbit-045",
+        "EMBER_Camera_orbit-090",
+        "EMBER_Camera_orbit-135",
+        "EMBER_Camera_orbit-180",
+        "EMBER_Camera_orbit-225",
+        "EMBER_Camera_orbit-270",
+        "EMBER_Camera_orbit-315",
+        "EMBER_Camera_director-overview",
+        "EMBER_Camera_collapse-oblique",
+        "EMBER_Camera_plan"
+      ]
+    }
+  },
+  "review": {
+    "contactSheet": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/ember-breached-rift-bench-r2-gate2-contact-sheet.png",
+    "orbitStrip": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/11-registered-orbit-strip.png",
+    "cameraCount": 11,
+    "planIsNorthUp": true,
+    "planIncludesSimulatorDeposit": true,
+    "sectionVerticalExaggeration": 4.0
+  },
+  "limitations": [
+    "This is a composition and spatial-causality graybox, not a final geological surface.",
+    "The Flowy calibration is preproduction morphology evidence, not eruption-history or hazard science.",
+    "The visible lava body is generated only from the selected checked-in Flowy thickness raster.",
+    "No production Ember asset, runtime behavior, final material, atmosphere, or Meshy object is changed."
+  ]
+}

@@ -1,3 +1,4 @@
+mod asset_protocol;
 mod oauth_server;
 
 use tauri::Manager;
@@ -11,6 +12,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_http::init())
+        .register_uri_scheme_protocol(asset_protocol::SCHEME, asset_protocol::handle)
         .invoke_handler(tauri::generate_handler![oauth_server::start_oauth_server])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();

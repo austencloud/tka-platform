@@ -29,7 +29,7 @@ export interface StepMotionConfigs {
 
 export function motionDataToConfig3D(
   motion: MotionData,
-  fallbackPlane: Plane = Plane.WALL,
+  fallbackPlane: Plane = Plane.WALL
 ): MotionConfig3D {
   const turns = motion.turns === "fl" ? 0 : (motion.turns as number);
   const plane = motion.plane ?? fallbackPlane;
@@ -51,7 +51,7 @@ export function motionDataToConfig3D(
 export function stepDataToConfigs(
   step: StepData | StartPositionData,
   plane: Plane = Plane.WALL,
-  modeConfig?: PlaneModeConfig,
+  modeConfig?: PlaneModeConfig
 ): StepMotionConfigs {
   const leftMotion = step.motions?.[HandSide.LEFT];
   const rightMotion = step.motions?.[HandSide.RIGHT];
@@ -59,7 +59,7 @@ export function stepDataToConfigs(
   const stepNumber =
     "isStartPosition" in step && step.isStartPosition
       ? 0
-      : (step as StepData).stepNumber ?? 0;
+      : ((step as StepData).stepNumber ?? 0);
 
   // @austencloud/scene-3d still exposes its legacy color-named boundary.
   // Normalize immediately into performer-relative locals.
@@ -72,14 +72,12 @@ export function stepDataToConfigs(
     left: isVisibleMotion(leftMotion)
       ? {
           ...motionDataToConfig3D(leftMotion, leftPlane),
-          ...(modeConfig ? { plane: leftPlane } : {}),
           rotationPlane: rotPlane,
         }
       : null,
     right: isVisibleMotion(rightMotion)
       ? {
           ...motionDataToConfig3D(rightMotion, rightPlane),
-          ...(modeConfig ? { plane: rightPlane } : {}),
           rotationPlane: rotPlane,
         }
       : null,
@@ -90,7 +88,7 @@ export function stepDataToConfigs(
 function deriveStartConfigFromStep(
   step: StepData | StartPositionData,
   plane: Plane,
-  modeConfig?: PlaneModeConfig,
+  modeConfig?: PlaneModeConfig
 ): StepMotionConfigs {
   const leftMotion = step.motions?.[HandSide.LEFT];
   const rightMotion = step.motions?.[HandSide.RIGHT];
@@ -102,7 +100,7 @@ function deriveStartConfigFromStep(
     stepNumber: 0,
     left: isVisibleMotion(leftMotion)
       ? {
-          plane: leftPlane,
+          plane: leftMotion.plane ?? leftPlane,
           startLocation: leftMotion.startLocation,
           endLocation: leftMotion.startLocation,
           motionType: MotionType.STATIC,
@@ -114,7 +112,7 @@ function deriveStartConfigFromStep(
       : null,
     right: isVisibleMotion(rightMotion)
       ? {
-          plane: rightPlane,
+          plane: rightMotion.plane ?? rightPlane,
           startLocation: rightMotion.startLocation,
           endLocation: rightMotion.startLocation,
           motionType: MotionType.STATIC,
@@ -134,7 +132,7 @@ function deriveStartConfigFromStep(
 export function sequenceToMotionConfigs(
   sequence: SequenceData,
   plane: Plane = Plane.WALL,
-  modeConfig?: PlaneModeConfig,
+  modeConfig?: PlaneModeConfig
 ): StepMotionConfigs[] {
   if (!sequence.steps || sequence.steps.length === 0) {
     return [];
@@ -150,7 +148,7 @@ export function sequenceToMotionConfigs(
 export function getStartPositionConfigs(
   sequence: SequenceData,
   plane: Plane = Plane.WALL,
-  modeConfig?: PlaneModeConfig,
+  modeConfig?: PlaneModeConfig
 ): StepMotionConfigs | null {
   if (sequence.startPosition) {
     return stepDataToConfigs(sequence.startPosition, plane, modeConfig);

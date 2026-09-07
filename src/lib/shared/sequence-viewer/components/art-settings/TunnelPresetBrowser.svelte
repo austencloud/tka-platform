@@ -1,7 +1,11 @@
 <script lang="ts">
   import PerformerRing from "../../tunnel/PerformerRing.svelte";
   import type { TunnelViewController } from "../../tunnel/tunnel-view-controller.svelte";
-  import { TUNNEL_PRESETS } from "../../tunnel/tunnel-config";
+  import {
+    TUNNEL_PRESETS,
+    configKey,
+    imageCount,
+  } from "../../tunnel/tunnel-config";
   import { tunnelUserPresets } from "../../tunnel/tunnel-user-presets.svelte";
   import { changeArtSetting, reportArtSetting } from "./art-setting-change";
   import type {
@@ -14,7 +18,14 @@
     dense: boolean;
     onSaveTunnel?: () => void;
     saveTunnelLabel?: string;
-    onCustomize: (source: "custom_card" | "customize_button") => void;
+    onCustomize?: (source: "custom_card" | "customize_button") => void;
+    minimumInstances?: number;
+    showCustomCard?: boolean;
+    showCustomizeButton?: boolean;
+    presetLabel?: string;
+    selectionMode?: "recipe" | "config";
+    formationOnly?: boolean;
+    showUserPresets?: boolean;
     onArtSettingChange?: ArtSettingChangeHandler;
   }
 
@@ -24,6 +35,13 @@
     onSaveTunnel,
     saveTunnelLabel = "Save tunnel",
     onCustomize,
+    minimumInstances = 1,
+    showCustomCard = true,
+    showCustomizeButton = true,
+    presetLabel = "Choose a tunnel preset",
+    selectionMode = "recipe",
+    formationOnly = false,
+    showUserPresets = true,
     onArtSettingChange,
   }: Props = $props();
 
@@ -63,33 +81,86 @@
     );
   }
 
+  const formationKey = (config: typeof controller.config): string =>
+    `${config.fold}:${Number(config.mirror)}:${Number(config.flip)}`;
+  const builtInPresets = $derived(
+    formationOnly
+      ? TUNNEL_PRESETS.filter(
+          (preset, index, presets) =>
+            presets.findIndex(
+              (candidate) =>
+                formationKey(candidate.config) === formationKey(preset.config)
+            ) === index
+        )
+      : TUNNEL_PRESETS
+  );
+
+  function applyBuiltInPreset(id: string): void {
+    const preset = TUNNEL_PRESETS.find((candidate) => candidate.id === id);
+    if (!preset) return;
+    if (!formationOnly) {
+      controller.applyPreset(id);
+      return;
+    }
+    controller.applyConfig(
+      {
+        ...controller.config,
+        fold: preset.config.fold,
+        mirror: preset.config.mirror,
+        flip: preset.config.flip,
+      },
+      null
+    );
+  }
+
   const selectedBuiltInId = $derived(
-    controller.presetRecipe?.kind === "built-in"
-      ? controller.presetRecipe.id
-      : null
+    formationOnly
+      ? (builtInPresets.find(
+          (preset) =>
+            formationKey(preset.config) === formationKey(controller.config)
+        )?.id ?? null)
+      : selectionMode === "config"
+        ? controller.activePresetId
+        : controller.presetRecipe?.kind === "built-in"
+          ? controller.presetRecipe.id
+          : null
   );
   const selectedUserId = $derived(
-    controller.presetRecipe?.kind === "saved" ? controller.presetRecipe.id : null
+    selectionMode === "config"
+      ? (tunnelUserPresets.presets.find(
+          (preset) => configKey(preset.config) === controller.configKey
+        )?.id ?? null)
+      : controller.presetRecipe?.kind === "saved"
+        ? controller.presetRecipe.id
+        : null
   );
-  const isCustom = $derived(controller.presetRecipe === null);
+  const isCustom = $derived(
+    selectionMode === "config"
+      ? selectedBuiltInId === null && selectedUserId === null
+      : controller.presetRecipe === null
+  );
 </script>
 
-{#if !dense}<span class="rt-section-label">Choose a tunnel preset</span>{/if}
+{#if !dense}<span class="rt-section-label">{presetLabel}</span>{/if}
 <div class="preset-grid" role="radiogroup" aria-label="Tunnel preset">
-  {#each TUNNEL_PRESETS as p (p.id)}
+  {#each builtInPresets as p (p.id)}
     <button
       class="preset-card"
       class:active={selectedBuiltInId === p.id}
       type="button"
       role="radio"
       aria-checked={selectedBuiltInId === p.id}
+      disabled={imageCount(p.config) < minimumInstances}
+      title={imageCount(p.config) < minimumInstances
+        ? `Needs at least ${minimumInstances} stage positions`
+        : undefined}
       onclick={() =>
         changeSetting(
           "art_tunnel",
           "preset",
           controller.presetRecipe?.id ?? "custom",
           p.id,
-          () => controller.applyPreset(p.id)
+          () => applyBuiltInPreset(p.id)
         )}
     >
       <PerformerRing config={p.config} size={30} animate={false} />
@@ -97,58 +168,66 @@
     </button>
   {/each}
   <!-- Saved user presets: your personal library, each deletable. -->
-  {#each tunnelUserPresets.presets as up (up.id)}
-    <div class="preset-card-wrap">
-      <button
-        class="preset-card user"
-        class:active={selectedUserId === up.id}
-        type="button"
-        role="radio"
+  {#if showUserPresets}
+    {#each tunnelUserPresets.presets as up (up.id)}
+      <div class="preset-card-wrap">
+        <button
+          class="preset-card user"
+          class:active={selectedUserId === up.id}
+          type="button"
+          role="radio"
           aria-checked={selectedUserId === up.id}
-        onclick={() =>
-          changeSetting(
-            "art_tunnel",
-            "preset_source",
-            controller.presetRecipe?.kind ?? "custom",
-            "saved",
-            () => controller.applyUserPreset(up.id, up.name, up.config)
-          )}
-      >
-        <PerformerRing config={up.config} size={30} animate={false} />
-        <span>{up.name}</span>
-      </button>
-      <button
-        class="preset-del"
-        type="button"
-        aria-label={`Delete preset ${up.name}`}
-        title="Delete preset"
-        onclick={() => {
-          const previousCount = tunnelUserPresets.presets.length;
-          tunnelUserPresets.remove(up.id);
-          reportSetting(
-            "art_tunnel",
-            "saved_preset_count",
-            previousCount,
-            Math.max(0, previousCount - 1)
-          );
-        }}
-      >
-        <i class="fas fa-xmark" aria-hidden="true"></i>
-      </button>
-    </div>
-  {/each}
+          disabled={imageCount(up.config) < minimumInstances}
+          title={imageCount(up.config) < minimumInstances
+            ? `Needs at least ${minimumInstances} stage positions`
+            : undefined}
+          onclick={() =>
+            changeSetting(
+              "art_tunnel",
+              "preset_source",
+              controller.presetRecipe?.kind ?? "custom",
+              "saved",
+              () => controller.applyUserPreset(up.id, up.name, up.config)
+            )}
+        >
+          <PerformerRing config={up.config} size={30} animate={false} />
+          <span>{up.name}</span>
+        </button>
+        <button
+          class="preset-del"
+          type="button"
+          aria-label={`Delete preset ${up.name}`}
+          title="Delete preset"
+          onclick={() => {
+            const previousCount = tunnelUserPresets.presets.length;
+            tunnelUserPresets.remove(up.id);
+            reportSetting(
+              "art_tunnel",
+              "saved_preset_count",
+              previousCount,
+              Math.max(0, previousCount - 1)
+            );
+          }}
+        >
+          <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+    {/each}
+  {/if}
   <!-- Custom card: lit when the config matches no preset; opens the tuner. -->
-  <button
-    class="preset-card"
-    class:active={isCustom}
-    type="button"
-    role="radio"
-    aria-checked={isCustom}
-    onclick={() => onCustomize("custom_card")}
-  >
-    <i class="fas fa-sliders" aria-hidden="true"></i>
-    <span>Custom</span>
-  </button>
+  {#if showCustomCard}
+    <button
+      class="preset-card"
+      class:active={isCustom}
+      type="button"
+      role="radio"
+      aria-checked={isCustom}
+      onclick={() => onCustomize?.("custom_card")}
+    >
+      <i class="fas fa-sliders" aria-hidden="true"></i>
+      <span>Custom</span>
+    </button>
+  {/if}
 </div>
 
 <div class="prim-row">
@@ -177,14 +256,18 @@
   <span class="prim-count">{controller.propCount} props</span>
 </div>
 
-<button
-  class="customize-btn"
-  type="button"
-  onclick={() => onCustomize("customize_button")}
->
-  <i class="fas fa-sliders" aria-hidden="true"></i>
-  {controller.presetRecipe ? `Edit ${controller.presetRecipe.name}` : "Edit configuration"}
-</button>
+{#if showCustomizeButton}
+  <button
+    class="customize-btn"
+    type="button"
+    onclick={() => onCustomize?.("customize_button")}
+  >
+    <i class="fas fa-sliders" aria-hidden="true"></i>
+    {controller.presetRecipe
+      ? `Edit ${controller.presetRecipe.name}`
+      : "Edit configuration"}
+  </button>
+{/if}
 {#if onSaveTunnel}
   <button
     data-save-shortcut
@@ -254,6 +337,10 @@
     border-color: var(--theme-accent, #8b5cf6);
     background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
     color: var(--theme-text, #fff);
+  }
+  .preset-card:disabled {
+    opacity: 0.34;
+    cursor: not-allowed;
   }
   .preset-card:focus-visible {
     outline: 2px solid var(--theme-accent, #8b5cf6);

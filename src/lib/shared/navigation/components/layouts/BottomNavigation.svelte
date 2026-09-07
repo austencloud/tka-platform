@@ -76,12 +76,20 @@
     sections.length * BUTTON_WIDTH + FIXED_BUTTONS_WIDTH
   );
 
-  // A module home is hierarchy, not another tab. Present it together with the
-  // peer sections in one selector so the backing tab never looks selected
-  // while the user is actually standing on the module landing surface.
+  // Create has too many peer methods for the bottom bar, so it always uses the
+  // compact selector. The module home appears in that selector alongside the
+  // methods, preserving the same hierarchy as desktop and the module drawer.
   let shouldUseOverflowSelector = $derived(
     sectionHome !== null ||
-      (availableWidth > 0 && availableWidth < requiredWidth),
+      (availableWidth > 0 && availableWidth < requiredWidth)
+  );
+
+  // The compact selector replaces the per-tab row, so the module's own name
+  // disappears from the bar. Hand it to the popover as its heading.
+  const currentModuleLabel = $derived(
+    MODULE_DEFINITIONS.find(
+      (module) => module.id === navigationState.currentModule
+    )?.label ?? ""
   );
 
   // Handle tap on peek indicator to reveal navigation
@@ -100,6 +108,9 @@
 
   // Determine if navigation sections should be hidden (any modal panel open in side-by-side layout)
   let shouldHideNav = $derived(shouldHideUIForPanels());
+  let shouldHideCenterSelector = $derived(
+    shouldHideNav || sectionHome?.active === true
+  );
 
   function handleSectionClick(section: Section) {
     if (!section.disabled) {
@@ -120,10 +131,7 @@
     try {
       hapticService = getHapticFeedback();
     } catch (error) {
-      console.warn(
-        "BottomNavigation: Failed to resolve HapticFeedback",
-        error
-      );
+      console.warn("BottomNavigation: Failed to resolve HapticFeedback", error);
     }
 
     // Set up ResizeObserver to measure navigation height and width
@@ -196,7 +204,12 @@
 
   <!-- Current Module's Sections - Use overflow selector for modules with >4 tabs -->
   {#if shouldUseOverflowSelector}
-    <div class="sections-overflow" class:hidden={shouldHideNav}>
+    <div
+      class="sections-overflow"
+      class:hidden={shouldHideCenterSelector}
+      inert={shouldHideCenterSelector || undefined}
+      aria-hidden={shouldHideCenterSelector ? "true" : undefined}
+    >
       <TabOverflowSelector
         {sections}
         {currentSection}
@@ -204,6 +217,7 @@
         {sectionHome}
         {onSectionHomeSelect}
         selectorLabel={sectionHome ? "Choose creation method" : "Select tab"}
+        moduleLabel={currentModuleLabel}
       />
     </div>
   {:else}
@@ -616,7 +630,8 @@
 
   /* Single entrance animation - plays once when indicator appears */
   .peek-indicator.animate-entrance i {
-    animation: peek-entrance var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: peek-entrance var(--duration-dramatic)
+      cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
 
   @keyframes peek-entrance {
@@ -629,7 +644,6 @@
       transform: translateY(0);
     }
   }
-
 
   /* High contrast mode */
   @media (prefers-contrast: high) {
@@ -682,6 +696,7 @@
   @media (prefers-reduced-motion: reduce) {
     .bottom-navigation,
     .sections,
+    .sections-overflow,
     .peek-indicator {
       transition: none;
     }

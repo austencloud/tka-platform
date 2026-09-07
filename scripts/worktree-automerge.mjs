@@ -15,7 +15,8 @@
  *     branch is left alone so we never yank it out from under a live session)
  *   - it's ahead of local main (something to merge)
  *   - it merges into local main with no conflicts
- *   - `npm run check` passes in the worktree (the real quality gate)
+ *   - the relevant project gate passes in the worktree; documentation-only
+ *     branches skip the Svelte check
  *
  * Local task completion (run from the primary checkout):
  *   node scripts/worktree-automerge.mjs --finish codex/my-task --route /real-route
@@ -55,6 +56,20 @@ const SKIP_FILE = ".automerge-skip";
 const QUIESCENT_MIN = 30;
 const LOCK_STALE_MIN = 60;
 const MAIN = "main";
+
+function requiresProjectCheck(paths) {
+  return (
+    paths.length === 0 ||
+    paths.some((path) => {
+      const normalized = path.replaceAll("\\", "/");
+      return !(
+        normalized.startsWith("docs/") ||
+        normalized.endsWith(".md") ||
+        normalized.endsWith(".mdx")
+      );
+    })
+  );
+}
 
 const SKIP_CHECKS = process.argv.includes("--skip-checks");
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -261,7 +276,7 @@ function localFinish() {
       );
     }
 
-    if (!SKIP_CHECKS) {
+    if (!SKIP_CHECKS && requiresProjectCheck([...taskPaths])) {
       console.log(`    running \`npm run check\` in ${FINISH_BRANCH} …`);
       if (process.platform === "win32") {
         run(
@@ -275,6 +290,10 @@ function localFinish() {
       } else {
         run("npm", ["run", "check"], { cwd: task.path, stdio: "inherit" });
       }
+    } else if (!SKIP_CHECKS) {
+      console.log(
+        "    skipping `npm run check` for documentation-only changes"
+      );
     }
 
     const mainAfterChecks = git(["-C", primary.path, "rev-parse", "HEAD"]);
@@ -408,7 +427,16 @@ function cheapGateReason(wt, localMainSha) {
   return null; // passed all cheap gates
 }
 
-function runChecks(wt) {
+function runChecks(wt, localMainSha) {
+  const taskPaths = splitNullList(
+    git(["diff", "--name-only", "-z", `${localMainSha}..${wt.head}`])
+  );
+  if (!requiresProjectCheck(taskPaths)) {
+    console.log(
+      `    skipping \`npm run check\` in ${wt.branch} (documentation-only changes)`
+    );
+    return true;
+  }
   console.log(`    running \`npm run check\` in ${wt.branch} …`);
   const res = trySh("npm run check", {
     cwd: wt.path,
@@ -446,7 +474,7 @@ function readinessMain() {
       ready.push(wt);
       continue;
     }
-    if (!runChecks(wt)) {
+    if (!runChecks(wt, localMainSha)) {
       console.log(`  ✗ ${label.padEnd(32)} \`npm run check\` FAILED`);
       continue;
     }

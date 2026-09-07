@@ -25,12 +25,32 @@ export interface ViewerUrlSessionDeps {
 
 export type ViewerUrlSession = ReturnType<typeof createViewerUrlSession>;
 
+/**
+ * Two capture modes, one registration.
+ *
+ * - `full: false` (the address bar): each slice emits only what differs from
+ *   its defaults, so the live URL stays short and an untouched viewer carries
+ *   no state params at all.
+ * - `full: true` (Share / Copy Link): each slice emits every encoded field,
+ *   defaults included. A shared link then pins the recipient to the sender's
+ *   complete state instead of letting an absent field fall through to the
+ *   recipient's own saved value. Seeds merge onto defaults either way, so a
+ *   full payload decodes through the same path a diff does.
+ */
+export interface SliceCaptureOptions {
+  full: boolean;
+}
+export type SliceCapture = (options: SliceCaptureOptions) => unknown | null;
+
+const DIFF: SliceCaptureOptions = { full: false };
+
 export function createViewerUrlSession(
   initialParams: URLSearchParams,
   deps: ViewerUrlSessionDeps
 ) {
   const seeds: SlicePayloads = decodeViewerStateParams(initialParams);
-  const liveCaptures = new Map<SliceId, () => unknown | null>();
+  const liveCaptures = new Map<SliceId, SliceCapture>();
+  const fullFallbacks = new Map<SliceId, SliceCapture>();
   let writeTimer: ReturnType<typeof setTimeout> | null = null;
 
   function getSeed(id: SliceId): unknown | null {
@@ -47,18 +67,41 @@ export function createViewerUrlSession(
     return !deepEqual(seed, persisted);
   }
 
-  function registerSlice(id: SliceId, capture: () => unknown | null): () => void {
+  function registerSlice(id: SliceId, capture: SliceCapture): () => void {
     liveCaptures.set(id, capture);
     return () => {
       if (liveCaptures.get(id) === capture) liveCaptures.delete(id);
     };
   }
 
+  /**
+   * A full-snapshot stand-in for a slice whose surface is not mounted (the
+   * closed 3D pane, the tunnel, Post Studio). The address bar never uses it:
+   * in diff mode an unmounted slice passes its URL seed through verbatim, as
+   * before. In full mode the fallback outranks that pass-through — it can
+   * expand the seed itself, or read what the sender's own disk would load —
+   * and a live capture still outranks the fallback.
+   */
+  function registerFullFallback(id: SliceId, capture: SliceCapture): () => void {
+    fullFallbacks.set(id, capture);
+    return () => {
+      if (fullFallbacks.get(id) === capture) fullFallbacks.delete(id);
+    };
+  }
+
   /** URL seeds pass through verbatim for slices with no mounted surface. */
-  function captureNow(): SlicePayloads {
+  function captureNow(options: SliceCaptureOptions = DIFF): SlicePayloads {
     const merged: SlicePayloads = { ...seeds };
+    if (options.full) {
+      for (const [id, fallback] of fullFallbacks) {
+        if (liveCaptures.has(id)) continue;
+        const value = fallback(options);
+        if (value == null) delete merged[id];
+        else merged[id] = value;
+      }
+    }
     for (const [id, capture] of liveCaptures) {
-      const value = capture();
+      const value = capture(options);
       if (value == null) delete merged[id];
       else merged[id] = value;
     }
@@ -73,9 +116,15 @@ export function createViewerUrlSession(
     }, URL_WRITE_DEBOUNCE_MS);
   }
 
-  /** Synchronous full snapshot as a param patch — used by Share/Copy Link. */
-  function captureNowAsParams(): ViewerUrlParamPatch {
-    return encodeViewerStateParams(captureNow());
+  /**
+   * Synchronous snapshot as a param patch. Share/Copy Link pass
+   * `{ full: true }` so the copied link specifies every field; the address
+   * bar stays on the diff form.
+   */
+  function captureNowAsParams(
+    options: SliceCaptureOptions = DIFF
+  ): ViewerUrlParamPatch {
+    return encodeViewerStateParams(captureNow(options));
   }
 
   function ownedParams(): readonly string[] {
@@ -86,12 +135,14 @@ export function createViewerUrlSession(
     if (writeTimer) clearTimeout(writeTimer);
     writeTimer = null;
     liveCaptures.clear();
+    fullFallbacks.clear();
   }
 
   return {
     getSeed,
     isOverride,
     registerSlice,
+    registerFullFallback,
     captureNow,
     captureNowAsParams,
     scheduleUrlWrite,

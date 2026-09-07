@@ -2,7 +2,10 @@ import type {
   Collected3DScene,
   StoredPerformerSettings,
 } from "./scene-3d-collection-types";
-import { getScene3DEnvironmentId, isGroupSaved } from "./scene-3d-collection-types";
+import {
+  getScene3DEnvironmentId,
+  isGroupSaved,
+} from "./scene-3d-collection-types";
 import type {
   Viewer3DPersistConfig,
   ViewerNavMode,
@@ -18,7 +21,8 @@ export function buildScene3DPersistConfig(
   scene: Collected3DScene
 ): Partial<Viewer3DPersistConfig> {
   const snap = scene.snapshot;
-  const saved = (g: Parameters<typeof isGroupSaved>[1]) => isGroupSaved(snap, g);
+  const saved = (g: Parameters<typeof isGroupSaved>[1]) =>
+    isGroupSaved(snap, g);
 
   const config: Partial<Viewer3DPersistConfig> = {};
 
@@ -31,9 +35,12 @@ export function buildScene3DPersistConfig(
       customLeftPlane: p.customLeftPlane as never,
       customRightPlane: p.customRightPlane as never,
       name: p.name ?? null,
-      ...(p.settings ? { settings: filterPerformerSettings(p.settings, saved) } : {}),
+      ...(p.settings
+        ? { settings: filterPerformerSettings(p.settings, saved) }
+        : {}),
     }));
     config.selectedPerformerIndex = snap.selectedPerformerIndex;
+    config.selectedPerformerIndices = snap.selectedPerformerIndices;
     config.activeFormation = snap.activeFormation as never;
   }
   if (saved("props")) {

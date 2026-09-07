@@ -8,6 +8,7 @@ import {
   extractReleasedSequenceIds,
   findDuplicateRelease,
   isGalleryRelease,
+  isHandPathRelease,
   isLoopRelease,
   isTnDRelease,
 } from "../deck-release-model";
@@ -40,6 +41,7 @@ export function createDeckReleaseState(
   let isLoading = $state(true);
 
   const tndReleases = $derived(releases.filter(isTnDRelease));
+  const handPathReleases = $derived(releases.filter(isHandPathRelease));
   const galleryReleases = $derived(releases.filter(isGalleryRelease));
   const loopReleases = $derived(releases.filter(isLoopRelease));
   const releasedSequenceIds = $derived(extractReleasedSequenceIds(releases));
@@ -172,6 +174,9 @@ export function createDeckReleaseState(
     },
     get galleryReleases() {
       return galleryReleases;
+    },
+    get handPathReleases() {
+      return handPathReleases;
     },
     get loopReleases() {
       return loopReleases;

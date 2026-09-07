@@ -1,12 +1,25 @@
 import type { FlowFestBranchId } from "../../../../routes/test/flow-fest-graybox/flow-fest-runtime-contract";
 import { FLOW_FEST_MASTER_SEED } from "../domain/flow-fest-simulation-contract";
 import type { FlowFestFireJamState } from "../domain/flow-fest-fire-jam";
+import {
+  createFlowFestDefaultLoadout,
+  flowFestDepartureProfile,
+  restoreFlowFestLoadout,
+  type FlowFestLoadout,
+} from "../domain/flow-fest-loadout";
 
-export const FLOW_FEST_SESSION_VERSION = 2 as const;
+/**
+ * Version 3 puts the loadout screen and the drive in front of the gate.
+ * Version 2 sessions started at the gate on foot with no car and no
+ * departure; they cannot be upgraded honestly, so they restart at the loadout.
+ */
+export const FLOW_FEST_SESSION_VERSION = 3 as const;
 
 export type FlowFestMoment = "afternoon" | "golden-hour" | "night" | "dawn";
 
 export type FlowFestProgressPhase =
+  | "loadout"
+  | "drive-in"
   | "gate-check-in"
   | "choose-camp"
   | "camp-arrival"
@@ -20,6 +33,9 @@ export type FlowFestProgressPhase =
   | "morning";
 
 export type FlowFestProgressAction =
+  | { type: "depart"; loadout: FlowFestLoadout }
+  | { type: "arrive-at-gate" }
+  | { type: "drain-energy"; percent: number }
   | { type: "check-in" }
   | { type: "choose-camp"; branch: FlowFestBranchId }
   | { type: "arrive-at-camp" }
@@ -43,6 +59,10 @@ export interface FlowFestProgressState {
   branch: FlowFestBranchId | null;
   fireJamState: FlowFestFireJamState;
   completed: FlowFestProgressPhase[];
+  /** Null only on the loadout screen; fixed once the car leaves. */
+  loadout: FlowFestLoadout | null;
+  /** 0..100. Seeded by the departure, drained by the drive. */
+  energyPercent: number;
 }
 
 export interface FlowFestObjective {
@@ -56,6 +76,8 @@ export interface FlowFestObjective {
 }
 
 const PHASE_ORDER: FlowFestProgressPhase[] = [
+  "loadout",
+  "drive-in",
   "gate-check-in",
   "choose-camp",
   "camp-arrival",
@@ -83,10 +105,66 @@ const CAMP_ESTABLISHED_PHASES = new Set<FlowFestProgressPhase>([
   "morning",
 ]);
 
+/** Phases that still run on the light the car arrived into. */
+const ARRIVAL_LIGHT_PHASES = new Set<FlowFestProgressPhase>([
+  "drive-in",
+  "gate-check-in",
+  "choose-camp",
+  "camp-arrival",
+  "vehicle-settle",
+]);
+
+const BRANCHLESS_PHASES = new Set<FlowFestProgressPhase>([
+  "loadout",
+  "drive-in",
+  "gate-check-in",
+  "choose-camp",
+]);
+
 export function isFlowFestCampEstablishedPhase(
   phase: FlowFestProgressPhase
 ): boolean {
   return CAMP_ESTABLISHED_PHASES.has(phase);
+}
+
+/** The phase the player spends in the driver's seat rather than on foot or the wheel. */
+export function isFlowFestDrivingPhase(phase: FlowFestProgressPhase): boolean {
+  return phase === "drive-in";
+}
+
+/** Phases lit by the light the car arrived into rather than the site clock. */
+export function isFlowFestArrivalLightPhase(
+  phase: FlowFestProgressPhase
+): boolean {
+  return ARRIVAL_LIGHT_PHASES.has(phase);
+}
+
+/**
+ * The light a phase is expected to run under. A late departure arrives into
+ * golden hour, so every phase that would otherwise be afternoon follows it.
+ */
+export function expectedFlowFestMoment(
+  phase: FlowFestProgressPhase,
+  loadout: FlowFestLoadout | null
+): FlowFestMoment {
+  if (phase === "loadout") return "afternoon";
+  if (ARRIVAL_LIGHT_PHASES.has(phase)) {
+    return loadout
+      ? flowFestDepartureProfile(loadout.departure).arrivalMoment
+      : "afternoon";
+  }
+  switch (phase) {
+    case "walk-home":
+    case "make-camp":
+    case "walk-to-festival":
+    case "festival-night":
+      return "golden-hour";
+    case "night-free-roam":
+    case "night-return":
+      return "night";
+    default:
+      return "dawn";
+  }
 }
 
 export function createFlowFestProgress(
@@ -96,11 +174,13 @@ export function createFlowFestProgress(
     version: FLOW_FEST_SESSION_VERSION,
     contractFingerprint,
     masterSeed: FLOW_FEST_MASTER_SEED,
-    phase: "gate-check-in",
+    phase: "loadout",
     moment: "afternoon",
     branch: null,
     fireJamState: "not-started",
     completed: [],
+    loadout: null,
+    energyPercent: 100,
   };
 }
 
@@ -110,6 +190,19 @@ export function advanceFlowFestProgress(
 ): FlowFestProgressState {
   if (action.type === "start-over") {
     return createFlowFestProgress(state.contractFingerprint);
+  }
+  if (action.type === "drain-energy") {
+    if (
+      !state.loadout ||
+      !Number.isFinite(action.percent) ||
+      action.percent <= 0
+    ) {
+      return state;
+    }
+    const energyPercent = Math.max(0, state.energyPercent - action.percent);
+    return energyPercent === state.energyPercent
+      ? state
+      : { ...state, energyPercent };
   }
 
   const transition = transitionFor(state, action);
@@ -143,7 +236,11 @@ export function restoreFlowFestProgress(
     !["not-started", "active", "completed"].includes(
       candidate.fireJamState ?? ""
     ) ||
-    !Array.isArray(candidate.completed)
+    !Array.isArray(candidate.completed) ||
+    typeof candidate.energyPercent !== "number" ||
+    !Number.isFinite(candidate.energyPercent) ||
+    candidate.energyPercent < 0 ||
+    candidate.energyPercent > 100
   ) {
     return null;
   }
@@ -153,6 +250,11 @@ export function restoreFlowFestProgress(
   ) {
     return null;
   }
+  const loadout =
+    candidate.loadout === null
+      ? null
+      : restoreFlowFestLoadout(candidate.loadout);
+  if (candidate.loadout !== null && !loadout) return null;
 
   const phase = candidate.phase as FlowFestProgressPhase;
   const branch = candidate.branch as FlowFestBranchId | null;
@@ -168,13 +270,25 @@ export function restoreFlowFestProgress(
       candidate.moment as FlowFestMoment,
       branch,
       candidate.fireJamState as FlowFestFireJamState,
-      completed
+      completed,
+      loadout
     )
   ) {
     return null;
   }
 
-  return candidate as FlowFestProgressState;
+  return {
+    version: FLOW_FEST_SESSION_VERSION,
+    contractFingerprint,
+    masterSeed: FLOW_FEST_MASTER_SEED,
+    phase,
+    moment: candidate.moment as FlowFestMoment,
+    branch,
+    fireJamState: candidate.fireJamState as FlowFestFireJamState,
+    completed: completed as FlowFestProgressPhase[],
+    loadout,
+    energyPercent: candidate.energyPercent,
+  };
 }
 
 export function getFlowFestObjective(
@@ -183,6 +297,26 @@ export function getFlowFestObjective(
   const progressStep = PHASE_ORDER.indexOf(state.phase) + 1;
   const common = { progressStep, progressTotal: PHASE_ORDER.length };
   switch (state.phase) {
+    case "loadout":
+      return {
+        ...common,
+        eyebrow: "Thursday · before you leave",
+        title: "Pack the car",
+        detail:
+          "Who you are, what you drive, and when you leave. The budget is what it is.",
+        actionLabel: null,
+        targetZoneId: null,
+      };
+    case "drive-in":
+      return {
+        ...common,
+        eyebrow: "W Camden College Corner Rd",
+        title: "Drive to the front gate",
+        detail:
+          "Follow the county road east. The camp entrance is on the left at the bottom of the hill. Take it slow, pull off the road, and get out of the car.",
+        actionLabel: null,
+        targetZoneId: "lower-gate-zone",
+      };
     case "gate-check-in":
       return {
         ...common,
@@ -336,6 +470,18 @@ function transitionFor(
   state: FlowFestProgressState,
   action: FlowFestProgressAction
 ): Partial<FlowFestProgressState> | null {
+  if (state.phase === "loadout" && action.type === "depart") {
+    const profile = flowFestDepartureProfile(action.loadout.departure);
+    return {
+      phase: "drive-in",
+      loadout: { ...action.loadout, props: [...action.loadout.props] },
+      moment: profile.arrivalMoment,
+      energyPercent: profile.startingEnergyPercent,
+    };
+  }
+  if (state.phase === "drive-in" && action.type === "arrive-at-gate") {
+    return { phase: "gate-check-in" };
+  }
   if (state.phase === "gate-check-in" && action.type === "check-in") {
     return { phase: "choose-camp" };
   }
@@ -394,9 +540,11 @@ function isReachableSnapshot(
   moment: FlowFestMoment,
   branch: FlowFestBranchId | null,
   fireJamState: FlowFestFireJamState,
-  completed: unknown[]
+  completed: unknown[],
+  loadout: FlowFestLoadout | null
 ): boolean {
-  const branchRequired = !["gate-check-in", "choose-camp"].includes(phase);
+  if ((phase === "loadout") !== (loadout === null)) return false;
+  const branchRequired = !BRANCHLESS_PHASES.has(phase);
   if (
     (branchRequired && branch === null) ||
     (!branchRequired && branch !== null)
@@ -414,23 +562,11 @@ function isReachableSnapshot(
   ) {
     return false;
   }
-
-  const expectedMoment: Record<FlowFestProgressPhase, FlowFestMoment> = {
-    "gate-check-in": "afternoon",
-    "choose-camp": "afternoon",
-    "camp-arrival": "afternoon",
-    "vehicle-settle": "afternoon",
-    "walk-home": "golden-hour",
-    "make-camp": "golden-hour",
-    "walk-to-festival": "golden-hour",
-    "festival-night": "golden-hour",
-    "night-free-roam": "night",
-    "night-return": "night",
-    morning: "dawn",
-  };
-  if (moment !== expectedMoment[phase]) return false;
+  if (moment !== expectedFlowFestMoment(phase, loadout)) return false;
 
   const prefix: FlowFestProgressPhase[] = [
+    "loadout",
+    "drive-in",
     "gate-check-in",
     "choose-camp",
     "camp-arrival",
@@ -446,13 +582,7 @@ function isReachableSnapshot(
   );
   const phaseIndex = prefix.indexOf(phase);
   const expectedCompleted =
-    phase === "gate-check-in"
-      ? []
-      : phase === "choose-camp"
-        ? ["gate-check-in"]
-        : phaseIndex >= 0
-          ? prefix.slice(0, phaseIndex)
-          : prefix;
+    phaseIndex >= 0 ? prefix.slice(0, phaseIndex) : prefix;
   return (
     completed.length === expectedCompleted.length &&
     completed.every((entry, index) => entry === expectedCompleted[index])
@@ -463,6 +593,11 @@ export function createFlowFestGate4ReviewProgress(
   contractFingerprint: string
 ): FlowFestProgressState {
   let state = createFlowFestProgress(contractFingerprint);
+  state = advanceFlowFestProgress(state, {
+    type: "depart",
+    loadout: createFlowFestDefaultLoadout(),
+  });
+  state = advanceFlowFestProgress(state, { type: "arrive-at-gate" });
   state = advanceFlowFestProgress(state, { type: "check-in" });
   state = advanceFlowFestProgress(state, {
     type: "choose-camp",

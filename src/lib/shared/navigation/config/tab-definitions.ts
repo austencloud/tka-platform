@@ -489,6 +489,16 @@ export const SETTINGS_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
   },
   {
+    id: "keyboard",
+    labelKey: "tab_settings_keyboard",
+    descKey: "tab_desc_settings_keyboard",
+    label: "Keyboard",
+    icon: '<i class="fas fa-keyboard" aria-hidden="true"></i>',
+    description: "Review and change keyboard shortcuts",
+    color: "#a855f7",
+    gradient: "linear-gradient(135deg, #c084fc 0%, #9333ea 100%)",
+  },
+  {
     id: "language",
     labelKey: "tab_settings_language",
     descKey: "tab_desc_settings_language",
@@ -832,6 +842,16 @@ export const TOYS_TABS: Section[] = [
       "Explore shape pairings in an interactive matrix and watch each path traced live",
     color: "#2dd4bf",
     gradient: "linear-gradient(135deg, #5eead4 0%, #2dd4bf 100%)",
+  },
+  {
+    id: "third-order",
+    labelKey: "tab_toys_third_order",
+    descKey: "tab_desc_toys_third_order",
+    label: "Third Order",
+    icon: '<i class="fas fa-atom" aria-hidden="true"></i>',
+    description: "Explore sequences moving inside a larger moving grid",
+    color: "#c084fc",
+    gradient: "linear-gradient(135deg, #60a5fa 0%, #c084fc 50%, #f87171 100%)",
   },
 ];
 

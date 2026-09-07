@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import { getViewer3DContext } from "../context/viewer-3d-context";
   import BottomSheet from "./controls/BottomSheet.svelte";
   import MobileScenePerformerSheet from "./MobileScenePerformerSheet.svelte";
   import MobileSceneEverythingSheet from "./MobileSceneEverythingSheet.svelte";
@@ -15,6 +16,12 @@
     onSettingChange?: ViewerControlSink;
     /** Forwarded to the performer sheet — see PerformerHubDetail's Props. */
     onPerformerEdit?: PerformerEditSink;
+    /** Monotonic request from direct performer selection in the 3D scene. */
+    openPerformerRequest?: number;
+    /** Monotonic request to return the compact canvas to selection. */
+    closePerformerRequest?: number;
+    /** A host editor replaces either compact sheet. */
+    closeSheetsRequest?: number;
     /** Lets a host make room for the active compact sheet without teaching
      *  this shared control surface about the host's surrounding layout. */
     onSheetChange?: (sheet: "performer" | "scene" | null) => void;
@@ -27,15 +34,41 @@
     onStepBackward = () => {},
     onSettingChange,
     onPerformerEdit,
+    openPerformerRequest = 0,
+    closePerformerRequest = 0,
+    closeSheetsRequest = 0,
     onSheetChange,
   }: Props = $props();
 
   type Sheet = "performer" | "everything" | null;
+  const viewer = getViewer3DContext();
   let openSheet = $state<Sheet>(null);
+  let lastOpenPerformerRequest = $state(openPerformerRequest);
+  let lastClosePerformerRequest = $state(closePerformerRequest);
+  let lastCloseSheetsRequest = $state(closeSheetsRequest);
+  $effect(() => {
+    if (closeSheetsRequest === lastCloseSheetsRequest) return;
+    lastCloseSheetsRequest = closeSheetsRequest;
+    openSheet = null;
+  });
 
   function toggle(sheet: Exclude<Sheet, null>) {
     openSheet = openSheet === sheet ? null : sheet;
   }
+
+  $effect(() => {
+    const request = openPerformerRequest;
+    if (request === lastOpenPerformerRequest) return;
+    lastOpenPerformerRequest = request;
+    openSheet = "performer";
+  });
+
+  $effect(() => {
+    const request = closePerformerRequest;
+    if (request === lastClosePerformerRequest) return;
+    lastClosePerformerRequest = request;
+    if (openSheet === "performer") openSheet = null;
+  });
 
   let lastReportedSheet = $state<Sheet>(null);
   $effect(() => {
@@ -88,6 +121,15 @@
   {/if}
 
   <div class="scene-action-row" aria-label="Scene editing">
+    <button
+      class="scene-action"
+      aria-label="Focus avatar"
+      disabled={viewer.performerManager.performers.length === 0}
+      onclick={() => viewer.focusSelectedPerformers()}
+    >
+      <i class="fas fa-crosshairs" aria-hidden="true"></i>
+      <span>Focus</span>
+    </button>
     <button
       class="scene-action"
       class:active={openSheet === "performer"}

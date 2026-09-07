@@ -117,7 +117,12 @@
 <style>
   :global(.drawer-content.fuse-detail-drawer) {
     --min-touch-target: 48px;
-    --sheet-bg: var(--theme-panel-bg, #0f1118);
+    --sheet-bg:
+      linear-gradient(
+        var(--theme-panel-bg, rgba(15, 17, 24, 0.96)),
+        var(--theme-panel-bg, rgba(15, 17, 24, 0.96))
+      ),
+      color-mix(in srgb, var(--theme-text, white) 8%, black);
     --sheet-max-height: min(86dvh, 780px);
     --sheet-border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     --sheet-shadow: 0 -18px 60px rgba(0, 0, 0, 0.42);

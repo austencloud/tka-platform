@@ -23,7 +23,10 @@
   import CompactStageComparison from "./CompactStageComparison.svelte";
   import { VIEWBOX_SIZE } from "$lib/shared/render/core/constants/viewbox";
   import { getPropDimensions } from "$lib/shared/animation-engine/services/IPropTextureLoader";
-  import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+  import {
+    CLUB_TIP_REACH,
+    getTipPointsBaseline,
+  } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
   import {
     getAllPropTypes,
     getPropTypeDisplayInfo,
@@ -36,7 +39,7 @@
   const HAND_ORBIT = 150;
   // The reference: the club's furthest tip. Every regular prop is tuned to sit
   // near this.
-  const CLUB_REACH = 129.335;
+  const CLUB_REACH = CLUB_TIP_REACH;
 
   /** Mirrors resolvePropSvgPath in svg-generator.ts — keep the two in step. */
   function propSvgHref(type: string): string {

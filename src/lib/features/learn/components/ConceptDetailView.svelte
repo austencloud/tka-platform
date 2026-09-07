@@ -15,15 +15,21 @@ Supports two navigation modes:
     ExperienceViewMode,
   } from "../domain/types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import { getConceptExperience } from "../domain/concept-experience-registry";
+  import {
+    getConceptExperience,
+    isConceptExperienceAvailable,
+  } from "../domain/concept-experience-registry";
+  import { getConceptById } from "../domain/concepts";
+  import { getConceptPlaceIdForLesson } from "../domain/concept-place-registry";
   import {
     trackLessonCompleted,
     trackLessonStarted,
   } from "../services/learn-events";
 
-  let { concept, onClose } = $props<{
+  let { concept, onClose, onContinue } = $props<{
     concept: LearnConcept;
     onClose?: () => void;
+    onContinue?: (concept: LearnConcept, conceptPlaceId: string | null) => void;
   }>();
 
   const hapticService = getHapticFeedback();
@@ -102,11 +108,24 @@ Supports two navigation modes:
     }
   }
 
-  function handlePracticeComplete() {
+  function handlePracticeComplete(nextConceptId?: string) {
     // Mark the concept as completed when the experience is finished
     // This explicitly completes rather than just recording one practice attempt
     conceptProgressService.completeConcept(concept.id);
     trackLessonCompleted(concept.id);
+
+    const nextConcept = nextConceptId
+      ? getConceptById(nextConceptId)
+      : undefined;
+    if (
+      nextConcept &&
+      isConceptExperienceAvailable(nextConcept.id) &&
+      onContinue
+    ) {
+      onContinue(nextConcept, getConceptPlaceIdForLesson(nextConcept.id));
+      return;
+    }
+
     // After completing, go back to concept list
     handleClose();
   }
@@ -128,8 +147,11 @@ Supports two navigation modes:
       {#if experience}
         <a
           class="reference-link"
-          href="/guide/level-1/{experience.guideSlug}"
-          aria-label="Read {experience.guideLabel} in the written Guide"
+          href={experience.reference?.href ??
+            `/guide/level-1/${experience.guideSlug}`}
+          aria-label={experience.reference
+            ? `Read the ${experience.reference.label} reference`
+            : `Read ${experience.guideLabel} in the written Guide`}
         >
           <i class="fa-solid fa-book-open" aria-hidden="true"></i>
           <span>Read this topic</span>
@@ -195,8 +217,10 @@ Supports two navigation modes:
     flex-direction: column;
     height: 100%;
     width: 100%;
-    background: var(--background, #000000);
-    color: var(--foreground, #ffffff);
+    /* BackgroundHost owns the application atmosphere. Concept lessons should
+       float above it on theme surfaces instead of replacing it with black. */
+    background: transparent;
+    color: var(--theme-text, var(--foreground, #ffffff));
   }
 
   .header-bar {
@@ -234,7 +258,10 @@ Supports two navigation modes:
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    transition:
+      background var(--duration-normal) var(--ease-out),
+      border-color var(--duration-normal) var(--ease-out),
+      transform var(--duration-normal) var(--ease-out);
   }
 
   .back-button:hover {
@@ -266,7 +293,10 @@ Supports two navigation modes:
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
-    transition: all var(--duration-normal) ease;
+    transition:
+      background var(--duration-normal) var(--ease-out),
+      border-color var(--duration-normal) var(--ease-out),
+      color var(--duration-normal) var(--ease-out);
   }
 
   .reference-link:hover,
@@ -289,7 +319,9 @@ Supports two navigation modes:
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .lesson-loading {

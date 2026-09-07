@@ -244,6 +244,9 @@ export interface SundialLayout {
   wallRects: WallRect[];
   ceilingRects: CeilingRect[];
 
+  /** What the bay owns — its room plus the corridor it draws. The cave composer
+   *  routes terrain queries by THIS, never by `bayBounds`. */
+  bayFootprint: WorldRect[];
   /** Union bbox of the sun bay. The terrain answers only inside it. */
   bayBounds: WorldRect;
 
@@ -580,7 +583,8 @@ export function buildSundialLayout(grid: MuseumGrid): SundialLayout | null {
     );
   }
 
-  const bayBounds = unionRect([shell, ...corridor]);
+  const bayFootprint: WorldRect[] = [shell, ...corridor];
+  const bayBounds = unionRect(bayFootprint);
 
   // ── The mechanism ─────────────────────────────────────────────────────────
 
@@ -680,6 +684,7 @@ export function buildSundialLayout(grid: MuseumGrid): SundialLayout | null {
     floorRects,
     wallRects,
     ceilingRects,
+    bayFootprint,
     bayBounds,
     blockedAt,
     elevationAt,

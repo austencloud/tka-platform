@@ -86,11 +86,14 @@ async function renderCanonicalCell(
   // download before rendering and another after upload.
   if (verifyUpload && pictographCloudCache.isCellKnownAvailable(hash)) return;
 
-  // A new browser does not have the persisted positive set yet. Verify the
-  // deterministic object before spending CPU and upload bandwidth rebuilding
-  // a canonical cell that already exists.
+  // Unknown hashes are expected writer misses. Keep this lookup quiet so a
+  // first-time canonical render goes straight to upload without logging a
+  // browser-visible 404 for the object it is about to create.
   if (verifyUpload) {
-    const stored = await pictographCloudCache.download(hash, { signal });
+    const stored = await pictographCloudCache.download(hash, {
+      probeUnknown: false,
+      signal,
+    });
     throwIfAborted(signal);
     if (stored) return;
   }

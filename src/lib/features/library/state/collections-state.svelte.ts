@@ -1,7 +1,9 @@
-import { authState, getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
+import {
+  authState,
+  getEffectiveUserId,
+} from "$lib/shared/auth/state/auth-state.svelte";
 import { isPreviewReadOnly } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
-import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { isFullAccountUser } from "$lib/shared/auth/domain/access-tier";
 import { toast, showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { LIBRARY_LIMITS } from "$lib/shared/library/data/firestore-paths";
@@ -79,7 +81,10 @@ class CollectionsState {
     // subscription reports it the moment it's created. Fire-and-forget.
     if (!isPreviewReadOnly() && uid === authState.user?.uid) {
       ensureSystemCollections().catch((err) =>
-        console.error("[collections-state] ensureSystemCollections failed:", err)
+        console.error(
+          "[collections-state] ensureSystemCollections failed:",
+          err
+        )
       );
     }
 
@@ -161,6 +166,17 @@ class CollectionsState {
         });
       } else {
         await addSequenceToCollection(collectionId, sequenceId);
+        if (
+          !isFullAccountUser(authState.isAuthenticated, authState.isAnonymous)
+        ) {
+          authDrawerState.offerGuestSaveNudge({
+            message: `Added to "${c.name}". Create a free account to open your collections on any device.`,
+            action: {
+              label: "Create account",
+              onClick: () => authDrawerState.show("signup"),
+            },
+          });
+        }
       }
     } catch {
       // manager already toasted; the subscription stays authoritative.
@@ -431,7 +447,6 @@ class CollectionsState {
       isPublic &&
       !isFullAccountUser(authState.isAuthenticated, authState.isAnonymous)
     ) {
-      toast.info(AUTH_NUDGE_TEXTS["edit-community"]);
       authDrawerState.show("signup", "edit-community");
       return false;
     }
@@ -545,5 +560,7 @@ function membersOf(
     spec.source === "my-library" && uid
       ? candidates.filter((seq) => seq.ownerId === uid)
       : candidates;
-  return new Set(deriveSpecMembers(pool as SequenceData[], spec).map((seq) => seq.id));
+  return new Set(
+    deriveSpecMembers(pool as SequenceData[], spec).map((seq) => seq.id)
+  );
 }

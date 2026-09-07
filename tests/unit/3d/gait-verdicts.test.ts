@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { GaitReport } from "$lib/shared/3d/diagnostics/gait/gait-analysis";
+import { EMPTY_KNEE_ANATOMY } from "$lib/shared/3d/diagnostics/gait/knee-anatomy";
 import { verdictRows } from "$lib/shared/3d/diagnostics/gait/gait-verdicts";
 
 const report: GaitReport = {
@@ -40,6 +41,10 @@ const report: GaitReport = {
   weightShiftAmplitude: 0.08,
   overSupportFraction: 0.8,
   weightShiftAlternates: true,
+  // No frames, so no knees to grade. The gate in `verdictRows` reads this as
+  // unmeasured and reports the anatomy rows without a verdict, which is the
+  // honest answer for a fixture whose numbers were written by hand.
+  anatomy: EMPTY_KNEE_ANATOMY,
 };
 
 describe("maneuver-aware gait verdicts", () => {

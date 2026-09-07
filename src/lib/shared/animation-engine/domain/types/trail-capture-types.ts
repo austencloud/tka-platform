@@ -7,6 +7,14 @@ export interface AdditionalLayerProps {
   /** Presentation envelope for one overlaid performer. The tunnel transition
    *  keeps geometry live while copies bloom in/out on the persistent canvas. */
   opacity?: number;
+  /**
+   * The copy is being composed into or out of its Tunnel formation rather than
+   * performing sequence motion. Its prop remains visible, but this authored
+   * travel must not be recorded as a trail.
+   */
+  trailCaptureSuppressed?: boolean;
+  /** True while this copy is travelling to or from its authored formation. */
+  formationTransitionActive?: boolean;
   /** Per-performer prop type (Performer Set). Absent → the global prop (today). */
   leftPropType?: string;
   rightPropType?: string;

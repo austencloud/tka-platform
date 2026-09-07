@@ -77,8 +77,20 @@ export function pathPoints(paths: SVGPathData[]): Pt[] {
  * reversal of the worst per-point gap. Invariant to where sampling starts and to
  * traversal direction (both trace the same locus) but NOT to spatial rotation —
  * a rotated copy scores far above MATCH_EPS, which is exactly the defect we want
- * to catch. Returns Infinity for empty or unequal-length loops.
+ * to catch. Returns Infinity for empty or open loops, and for sample counts
+ * that are not whole laps of each other.
  */
+/** Drop a sample that repeats its predecessor; lap joints serialize one. */
+function dedupeConsecutive(points: Pt[]): Pt[] {
+  const out: Pt[] = [];
+  for (const point of points) {
+    const prev = out.at(-1);
+    if (prev && Math.hypot(prev.x - point.x, prev.y - point.y) < 1e-6) continue;
+    out.push(point);
+  }
+  return out;
+}
+
 export function loopDistance(a: Pt[], b: Pt[]): number {
   if (!a.length || !b.length) return Infinity;
   const aClosed =
@@ -90,9 +102,30 @@ export function loopDistance(a: Pt[], b: Pt[]): number {
   // The path serializer repeats the first point at the end. Removing that
   // duplicate restores a true cyclic sample set, so a different starting
   // phase or traversal direction can still compare point-for-point.
-  const aLoop = a.slice(0, -1);
-  const bLoop = b.slice(0, -1);
-  if (aLoop.length !== bLoop.length) return Infinity;
+  const aLoop = dedupeConsecutive(a.slice(0, -1));
+  const bLoop = dedupeConsecutive(b.slice(0, -1));
+  if (aLoop.length !== bLoop.length) {
+    // A hand whose orientation cycle is longer than its position cycle
+    // traces its locus more than once before the sequence closes: a whole
+    // or half-turn hand paired with a quarter-turn hand closes on the
+    // eight-step wheel and draws its four-step flower twice. The picture is
+    // the same locus, so compare it lap by lap instead of refusing it.
+    const [short, long] =
+      aLoop.length < bLoop.length ? [aLoop, bLoop] : [bLoop, aLoop];
+    if (long.length % short.length !== 0) return Infinity;
+    const laps = long.length / short.length;
+    let worst = 0;
+    for (let lap = 0; lap < laps; lap += 1) {
+      const chunk = long.slice(lap * short.length, (lap + 1) * short.length);
+      const distance = loopDistance(
+        [...short, short[0]!],
+        [...chunk, chunk[0]!]
+      );
+      if (distance > worst) worst = distance;
+      if (worst > MATCH_EPS) return worst;
+    }
+    return worst;
+  }
   const n = aLoop.length;
   let best = Infinity;
   for (const bv of [bLoop, [...bLoop].reverse()]) {

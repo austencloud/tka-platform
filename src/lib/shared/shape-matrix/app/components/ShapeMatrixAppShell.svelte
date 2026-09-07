@@ -1,23 +1,37 @@
 <script lang="ts">
-  import { tick } from "svelte";
+  import { tick, untrack } from "svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
+  import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
-  import { ratioLabel } from "$lib/shared/shape-matrix/domain/flower-signature";
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
-  import {
-    keyToTurnValue,
-    turnValueToKey,
-    type TurnLevel,
-  } from "$lib/shared/create/services/level-turn-values";
+  import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
+  import { KINETIC_SHAPE_ENGINE_NAME } from "../shape-engine-identity";
+  import { shareOrCopyLink } from "$lib/shared/share/services/link-share";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
+  import { createShapeMatrixAnimationState } from "../state/shape-matrix-animation-state.svelte";
+  import { customizeSection } from "../state/shape-matrix-customize";
+  import { setShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
+  import { setAnimationScopeContext } from "$lib/shared/animation-engine/state/animation-scope-context";
+  import { setAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
+  import { SequenceViewerVisibilityState } from "$lib/shared/sequence-viewer/state/viewer-visibility-state.svelte";
+  import { setViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
+  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import ShapeMatrixCustomizeWorkspace from "./ShapeMatrixCustomizeWorkspace.svelte";
   import ShapeMatrixDetailPane from "./ShapeMatrixDetailPane.svelte";
   import ShapeMatrixMatrixPane from "./ShapeMatrixMatrixPane.svelte";
-  import ShapeMatrixOverflowMenu from "./ShapeMatrixOverflowMenu.svelte";
-  import type { ShapeMatrixAxisTarget } from "../state/shape-matrix-app-state.svelte";
-  import { getPropTypeDisplayInfo } from "$lib/shared/settings/components/tabs/prop-type/prop-type-registry";
+  import ShapeMatrixTurnPopover from "./ShapeMatrixTurnPopover.svelte";
+  import ShapeMatrixSurfaceControl from "./ShapeMatrixSurfaceControl.svelte";
+  import ShapeMatrixTheoryDetail from "./ShapeMatrixTheoryDetail.svelte";
+  import ShapeMatrixTheoryPane from "./ShapeMatrixTheoryPane.svelte";
+  import { runMandalaMorph } from "../services/shape-matrix-mandala-morph";
+  import { runShapeMatrixDetailReveal } from "../services/shape-matrix-reveal";
   import { growFade } from "$lib/shared/transitions/motion";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
 
   interface Props {
     /** Embedded hosts (the Toys tab) get their name from module chrome, so
@@ -27,101 +41,216 @@
 
   const { variant = "standalone" }: Props = $props();
   const appState = getShapeMatrixAppContext();
-  const LEVELS: readonly TurnLevel[] = [1, 2, 3, 4];
-  const LEVEL_DESCRIPTIONS: Record<TurnLevel, { name: string; blurb: string }> =
-    {
-      1: { name: "Base Motions", blurb: "Zero turns" },
-      2: { name: "Whole Turns", blurb: "Adds whole turns" },
-      3: { name: "Half Turns + Float", blurb: "Adds half turns and Float" },
-      4: {
-        name: "Quarter Turns",
-        blurb: "Adds quarter turns",
-      },
-    };
-  const AXIS_OPTIONS = [
-    {
-      value: "left" as const,
-      label: "Left-hand rows",
-      shortLabel: "Left",
-      tone: "blue" as const,
-    },
-    {
-      value: "both" as const,
-      label: "Both axes",
-      shortLabel: "Both",
-      tone: "both" as const,
-    },
-    {
-      value: "right" as const,
-      label: "Right-hand columns",
-      shortLabel: "Right",
-      tone: "red" as const,
-    },
-  ];
+
+  /* Share hands the address on directly, on the press itself: the phone's own
+     share sheet where there is one, the clipboard everywhere else. Both need
+     that gesture, so nothing may await before the call. The app never builds
+     the address; the route host does, through appState.shareLink(). */
+  async function shareThisView(): Promise<void> {
+    const url = appState.shareLink();
+    if (url === null) return;
+    const outcome = await shareOrCopyLink({
+      url,
+      title: KINETIC_SHAPE_ENGINE_NAME,
+    });
+    if (outcome === "copied") toast.success("Link copied");
+    else if (outcome === "failed") toast.error("Could not copy the link");
+  }
+  // The hero's animation state lives here, above both panes, so both surfaces
+  // share one animation scope while their workspaces crossfade.
+  const animationState = setShapeMatrixAnimationContext(
+    createShapeMatrixAnimationState()
+  );
+  setAnimationScopeContext(animationState.scope);
+  setAnimationVisibilityContext(animationState.scope.visibility);
+
+  /* Which hands the canvas draws. The animator already owns per-hand motion
+     visibility for the viewer; the Shape Engine scopes its own instance so a
+     header's solo hides the other prop and its trail through that owner
+     rather than a second mechanism. It follows the solo and nothing else, so
+     the Display page can still change it afterwards. */
+  const motionVisibility = new SequenceViewerVisibilityState(true);
+  setViewerVisibilityContext(motionVisibility);
+  $effect(() => {
+    const solo = appState.soloHand;
+    untrack(() => {
+      motionVisibility.leftMotion = solo !== "right";
+      motionVisibility.rightMotion = solo !== "left";
+    });
+  });
+  setEffectsConfigContext(animationState.scope.effects);
+  import {
+    SHAPE_MATRIX_LEVELS,
+    SHAPE_MATRIX_LEVEL_DESCRIPTIONS,
+  } from "../shape-matrix-levels";
+
+  /* Both surfaces are a grid of pairs with a detail beside it, so the shell
+     runs one layout and swaps what fills the panes. Matrix adds a Kinetic
+     Alphabet difficulty choice; Theory's typed ratios need no second bound. */
+  const theory = $derived(appState.surface === "theory");
+
+  /* The app always mounts on the Matrix and restores its saved or linked
+     surface immediately afterwards, so a deep link into Theory would dissolve
+     one ribbon into the other while the page is still arriving. Chrome does
+     not animate into place on first paint: the restore lands instantly, and
+     every surface change the user makes after that crossfades. */
+  let booted = $state(false);
+  $effect(() => {
+    const frame = requestAnimationFrame(() => {
+      booted = true;
+    });
+    return () => cancelAnimationFrame(frame);
+  });
+  const hasPair = $derived(
+    theory ? appState.theoryPair !== null : appState.selectedPair !== null
+  );
   const LABEL_OPTIONS = [
     { value: "turns" as const, label: "TKA turns", shortLabel: "Turns" },
     { value: "ratios" as const, label: "VTG ratios", shortLabel: "Ratios" },
   ];
-  const turnControlLabel = $derived(
-    appState.labelMode === "ratios" ? "VTG ratio" : "TKA turn"
-  );
-  const turnOptions = $derived([
-    ...(appState.activeAxis === "both" &&
-    appState.leftTurn !== appState.rightTurn
-      ? [
-          {
-            value: "mixed",
-            label: "Mixed axis values",
-            shortLabel: "Mixed",
-            disabled: true,
-          },
-        ]
-      : []),
-    ...appState.availableTurns.map((turn) => {
-      const key = turnValueToKey(turn);
-      const turnLabel =
-        turn === "fl"
-          ? "Float"
-          : appState.labelMode === "ratios"
-            ? `${ratioLabel(turn)} ratio`
-            : `${turn} turn${turn === 1 ? "" : "s"}`;
-      const visible =
-        appState.labelMode === "ratios"
-          ? turn === "fl"
-            ? "Float"
-            : ratioLabel(turn)
-          : turn === "fl"
-            ? "Float"
-            : String(turn);
-      return {
-        value: key,
-        label: turnLabel,
-        shortLabel: visible,
-        tone:
-          appState.activeAxis === "left"
-            ? "blue"
-            : appState.activeAxis === "right"
-              ? "red"
-              : "both",
-      };
-    }),
-  ]);
-  const selectedTurnKey = $derived(
-    appState.activeAxis === "both" && appState.leftTurn !== appState.rightTurn
-      ? "mixed"
-      : turnValueToKey(appState.activeTurn)
-  );
-  const selectedProp = $derived(getPropTypeDisplayInfo(appState.propType));
-  const selectedPropLabel = $derived(selectedProp.label);
-  const compactSelectionSummary = $derived.by(() => {
-    const selected = turnOptions.find(
-      (option) => option.value === selectedTurnKey
-    );
-    return `Level ${appState.level} · ${selected?.label ?? "Mixed axis values"}`;
-  });
+  /* One split for both surfaces. The panes stay where they are while the
+     grid and the detail inside them crossfade, so a split set on one surface
+     is the split on the other. */
   let sizes = $state([1.28, 0.82]);
-  let matrixPaneElement: HTMLDivElement;
+  let gridPaneElement: HTMLDivElement;
   let detailPaneElement: HTMLDivElement;
+  let theoryEditingAxis = $state<"left" | "right" | "both" | null>(null);
+  let workspaceElement: HTMLDivElement;
+
+  $effect(() => {
+    if (!theory) theoryEditingAxis = null;
+  });
+
+  /* Customizing rebalances the split toward the animation. The grid pane
+     leads while a pair is being chosen; once the workspace covers it, the
+     pages inside need only a rail and one sidebar-width column, and the
+     animation is what every change is judged against. So the workspace pane
+     takes what its pages use and never more than 45% of the room, the stage
+     takes the rest, and the split the user had comes back on the way out.
+     The panel group already eases flex shares, so both moves are animated. */
+  const PANE_GAP = 8;
+  const STAGE_MIN = 380;
+  const CUSTOMIZE_MIN = 440;
+  const customizeOpen = $derived(
+    customizeSection(appState, animationState) !== null
+  );
+  let restingSizes: number[] | null = null;
+  let customizeApplied = false;
+
+  function customizeSplit(): number[] | null {
+    if (!workspaceElement) return null;
+    const styles = getComputedStyle(workspaceElement);
+    const width =
+      workspaceElement.clientWidth -
+      parseFloat(styles.paddingLeft) -
+      parseFloat(styles.paddingRight) -
+      PANE_GAP;
+    if (!(width > CUSTOMIZE_MIN + STAGE_MIN)) return null;
+
+    // The workspace has mounted by the time this runs, so its rail and page
+    // are measured rather than guessed from the inspector's breakpoints.
+    const rail = workspaceElement.querySelector<HTMLElement>(
+      ".customize-workspace .icon-rail"
+    );
+    const scroll = workspaceElement.querySelector<HTMLElement>(
+      ".customize-workspace .panel-scroll"
+    );
+    const page = workspaceElement.querySelector<HTMLElement>(
+      ".customize-workspace .panel-center-inner"
+    );
+    const railWidth = rail?.offsetWidth ?? 136;
+    const pageWidth =
+      (page ? parseFloat(getComputedStyle(page).maxWidth) : 0) || 560;
+    const scrollStyles = scroll ? getComputedStyle(scroll) : null;
+    const gutters = scrollStyles
+      ? parseFloat(scrollStyles.paddingLeft) +
+        parseFloat(scrollStyles.paddingRight)
+      : 32;
+    const need = railWidth + pageWidth + gutters;
+
+    const customize = Math.max(
+      CUSTOMIZE_MIN,
+      Math.min(need, width * 0.45, width - STAGE_MIN)
+    );
+    return [customize, width - customize];
+  }
+
+  $effect(() => {
+    const target = customizeOpen;
+    if (target === customizeApplied) return;
+    untrack(() => {
+      if (customizeApplied && restingSizes) sizes = restingSizes;
+      if (target) {
+        restingSizes = [...sizes];
+        const split = customizeSplit();
+        if (split) sizes = split;
+      }
+      customizeApplied = target;
+    });
+  });
+
+  // Compact navigation runs as a shared-element morph between the selected
+  // tile and the hero. Wide layouts show both panes at once, so the same
+  // calls fall through to the plain state mutation.
+  /* A header, on a wide host, changes what the hero plays without leaving
+     the grid; a compact host still has to travel to the detail view, and
+     there is no tile to fly, so it goes there plainly. */
+  function selectSolo(hand: "left" | "right", flower: Flower): void {
+    appState.selectSolo(hand, flower);
+  }
+
+  function selectPair(pair: { left: Flower; right: Flower }): void {
+    if (!appState.compact) {
+      appState.selectPair(pair);
+      return;
+    }
+    runMandalaMorph(appState, () => appState.showDetail(), {
+      before: () => appState.selectPair(pair, { navigate: false }),
+    });
+  }
+  // The morph is a shared-element handoff between the matrix tile and the
+  // matrix hero. Theory tiles do not own that name, so theory navigates
+  // plainly rather than capturing the hidden matrix behind it.
+  function showDetail(): void {
+    if (!appState.compact || theory) {
+      appState.showDetail();
+      return;
+    }
+    runMandalaMorph(appState, () => appState.showDetail());
+  }
+  function showMatrix(): void {
+    if (!appState.compact || theory) {
+      appState.showMatrix();
+      return;
+    }
+    runMandalaMorph(appState, () => appState.showMatrix());
+  }
+
+  function surpriseMe(): void {
+    if (!appState.compact || theory || appState.activeView === "detail") {
+      appState.surpriseMe();
+      return;
+    }
+    runMandalaMorph(appState, () => appState.showDetail(), {
+      before: () => appState.surpriseMe(Math.random, { navigate: false }),
+    });
+  }
+
+  /* The result half of the reveal: the chosen relationship lands, then the
+     hero breathes in. Compact layouts fly the tile to the hero instead, so
+     only the chip beat applies there. Keyed on the roll, never on an edit. */
+  let revealedToken: number | null = null;
+  $effect(() => {
+    const token = appState.revealToken;
+    const previous = revealedToken;
+    revealedToken = token;
+    if (previous === null || previous === token) return;
+    const pane = detailPaneElement;
+    if (!pane) return;
+    void tick().then(() => {
+      runShapeMatrixDetailReveal(pane, { hero: !appState.compact });
+    });
+  });
 
   $effect(() => {
     const request = appState.compactFocusRequest;
@@ -133,7 +262,8 @@
       if (cancelled) return;
       frame = requestAnimationFrame(() => {
         const pane =
-          request.target === "matrix" ? matrixPaneElement : detailPaneElement;
+          request.target === "matrix" ? gridPaneElement : detailPaneElement;
+        if (!pane) return;
         const focusTarget =
           request.target === "matrix"
             ? pane.querySelector<HTMLButtonElement>(
@@ -153,17 +283,78 @@
   });
 </script>
 
-{#snippet matrixPane()}
-  <div
-    class="workspace-pane"
-    bind:this={matrixPaneElement}
-    inert={appState.compact && appState.activeView !== "matrix"}
-    aria-hidden={appState.compact && appState.activeView !== "matrix"}
-  >
-    <ShapeMatrixMatrixPane />
+{#snippet matrixGrid()}
+  <!-- The crossfade lays its sources out as absolutely positioned blocks. Each
+       pane root fills by height, so each source gets one block that is the
+       source's whole box for the root to fill. -->
+  <div class="pane-source">
+    <ShapeMatrixMatrixPane
+      onselect={selectPair}
+      onsolo={selectSolo}
+      onsurprise={surpriseMe}
+    />
   </div>
 {/snippet}
 
+{#snippet theoryGrid()}
+  <div class="pane-source">
+    <ShapeMatrixTheoryPane
+      emphasizedAxis={theoryEditingAxis}
+      onsurprise={surpriseMe}
+    />
+  </div>
+{/snippet}
+
+<!-- One grid pane for both surfaces. The surface changes what the grid is
+     made of, not where it is: the Matrix grid and the Theory grid crossfade
+     inside the pane, and the customize workspace covers the pane once,
+     whichever grid is showing. -->
+{#snippet gridPane()}
+  <div
+    class="workspace-pane"
+    bind:this={gridPaneElement}
+    inert={appState.compact && appState.activeView !== "matrix"}
+    aria-hidden={appState.compact && appState.activeView !== "matrix"}
+  >
+    <DualSourceCrossfade
+      active={theory ? "second" : "first"}
+      duration={booted ? DURATION.normal : 0}
+      first={matrixGrid}
+      second={theoryGrid}
+    />
+    <ShapeMatrixCustomizeWorkspace />
+  </div>
+{/snippet}
+
+<!-- "Surprise me" lives in the recipe bar above the grid. The header keeps a
+     dice only while a compact detail view has hidden that bar. -->
+{#snippet compactSurpriseAction()}
+  <button
+    type="button"
+    class="top-action surprise-action compact"
+    aria-label="Surprise me with a new grid, crossing, and hand relationship"
+    title="Pick a new grid, crossing, and hand relationship"
+    disabled={!theory && !appState.data}
+    onclick={surpriseMe}
+    transition:growFade={{ axis: "x", x: 4 }}
+  >
+    <i class="fas fa-dice" aria-hidden="true"></i>
+  </button>
+{/snippet}
+
+{#snippet matrixDetail()}
+  <div class="pane-source">
+    <ShapeMatrixDetailPane />
+  </div>
+{/snippet}
+
+{#snippet theoryDetail()}
+  <div class="pane-source">
+    <ShapeMatrixTheoryDetail />
+  </div>
+{/snippet}
+
+<!-- One detail pane, the same way: the two details crossfade inside it. -->
 {#snippet detailPane()}
   <div
     class="workspace-pane"
@@ -171,13 +362,20 @@
     inert={appState.compact && appState.activeView !== "detail"}
     aria-hidden={appState.compact && appState.activeView !== "detail"}
   >
-    <ShapeMatrixDetailPane />
+    <DualSourceCrossfade
+      active={theory ? "second" : "first"}
+      duration={booted ? DURATION.normal : 0}
+      first={matrixDetail}
+      second={theoryDetail}
+    />
   </div>
 {/snippet}
 
 <main
   class="shape-app"
+  data-shape-matrix-app
   class:compact-detail={appState.compact && appState.activeView === "detail"}
+  class:theory
 >
   <header class="topbar">
     {#if appState.compact}
@@ -186,110 +384,77 @@
           <button
             type="button"
             class="back-to-matrix"
-            aria-label="Back to the shape matrix"
-            onclick={appState.showMatrix}
+            aria-label={theory
+              ? "Back to the theory matrix"
+              : "Back to the shape matrix"}
+            onclick={showMatrix}
           >
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
-            <span>Matrix</span>
+            <span>{theory ? "Playground" : "Matrix"}</span>
           </button>
-          <span class="selection-summary">{compactSelectionSummary}</span>
         {:else}
-          <strong>Shape Matrix</strong>
+          <strong>{theory ? "Ratio Playground" : "Level Matrix"}</strong>
         {/if}
+        <!-- The compact value editor keeps the grid as the hero. Matrix opens
+             its level and turns; Theory names ratio editing directly and
+             opens both axis ratios together. -->
+        <ShapeMatrixSurfaceControl compact />
+        <ShapeMatrixTurnPopover
+          onratiofocuschange={(hand) => (theoryEditingAxis = hand)}
+        />
       </div>
     {:else if variant === "standalone"}
       <div class="identity">
-        <strong>Shape Matrix Explorer</strong>
-        <span>Built on Lorq Nichols’ Shape Matrix</span>
+        <strong>{KINETIC_SHAPE_ENGINE_NAME}</strong>
       </div>
     {/if}
 
-    {#if !appState.compact || appState.activeView === "matrix"}
-      <div class="matrix-controls">
-        <div class="control-cell level-control">
-          <span class="control-label">Difficulty</span>
-          <LevelSelector
-            value={appState.level}
-            levels={LEVELS}
-            describe={(level) => LEVEL_DESCRIPTIONS[level]}
-            onchange={appState.setLevel}
-            compact={true}
-            ariaLabel="Kinetic Alphabet level"
-          />
+    {#if !appState.compact}
+      <!-- The surface choice outranks everything below it. Matrix adds its
+           difficulty beside that choice; Theory has no parallel setting. -->
+      <div class="header-meta">
+        <div class="surface-control-cell">
+          <ShapeMatrixSurfaceControl />
         </div>
-        <div class="control-cell label-control neutral-accent">
-          <span class="control-label">Notation</span>
-          <SegmentedControl
-            options={LABEL_OPTIONS}
-            value={appState.labelMode}
-            onchange={(mode: MatrixLabelMode) => appState.setLabelMode(mode)}
-            size="sm"
-            density="tight"
-            color="accent"
-            semantics="radiogroup"
-            ariaLabel="Turn label system"
-          />
-        </div>
-        <div class="turn-editor">
-          <div class="control-cell axis-control">
-            <span class="control-label">Apply to</span>
-            <SegmentedControl
-              options={AXIS_OPTIONS}
-              value={appState.activeAxis}
-              onchange={(axis: ShapeMatrixAxisTarget) =>
-                appState.setActiveAxis(axis)}
-              size="sm"
-              density="tight"
-              color="accent"
-              semantics="radiogroup"
-              ariaLabel="Axis edited by the turn control"
-            />
-          </div>
-          <div class="control-cell turn-scroller themed-scrollbar-accent">
-            <span class="control-label">{turnControlLabel}</span>
-            {#if appState.availableTurns.length === 1}
-              <output
-                class="fixed-turn-value"
-                aria-label={`${turnControlLabel}: ${turnOptions[0]?.label ?? "Zero"}`}
-              >
-                {turnOptions[0]?.shortLabel ?? "0"}
-                <span>Only value at Level 1</span>
-              </output>
-            {:else}
-              <div
-                class="turn-control"
-                style="--turn-option-count: {turnOptions.length}"
-              >
-                <SegmentedControl
-                  options={turnOptions}
-                  value={selectedTurnKey}
-                  onchange={(key: string) => {
-                    if (key !== "mixed") appState.setTurn(keyToTurnValue(key));
-                  }}
-                  size="sm"
-                  density="tight"
-                  color="accent"
-                  semantics="radiogroup"
-                  ariaLabel={turnControlLabel}
-                />
-              </div>
-            {/if}
-          </div>
-        </div>
-        {#if !appState.compact}
-          <div class="control-cell prop-control">
-            <span class="control-label">Prop</span>
-            <button
-              class="prop-action"
-              type="button"
-              aria-label={`Choose prop. Current prop: ${selectedPropLabel}`}
-              onclick={appState.openPropPicker}
-            >
-              <img class="selected-prop-icon" src={selectedProp.image} alt="" />
-              <span>{selectedPropLabel}</span>
-              <i class="fas fa-chevron-down disclosure-icon" aria-hidden="true"
-              ></i>
-            </button>
+        {#if !theory}
+          <!-- The wrapper owns the gap as well as the cell width, so removing
+               Difficulty releases one continuous piece of space instead of
+               leaving a final half-rem gap to snap away at teardown. -->
+          <div
+            class="level-presence"
+            transition:growFade={{
+              axis: "x",
+              duration: booted ? DURATION.normal : 0,
+            }}
+          >
+            <div class="control-cell level-control">
+              <span class="control-label">Difficulty</span>
+              <LevelSelector
+                value={appState.level}
+                levels={SHAPE_MATRIX_LEVELS}
+                describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
+                onchange={appState.setLevel}
+                compact={true}
+                ariaLabel="Difficulty level"
+              />
+            </div>
+            <!-- The axis values themselves are edited in the recipe bar above
+                 the grid; the header keeps only the settings that shape the
+                 whole surface. -->
+            <div class="control-cell label-control neutral-accent">
+              <span class="control-label">Notation</span>
+              <SegmentedControl
+                options={LABEL_OPTIONS}
+                value={appState.labelMode}
+                onchange={(mode: MatrixLabelMode) =>
+                  appState.setLabelMode(mode)}
+                size="sm"
+                density="tight"
+                color="accent"
+                semantics="radiogroup"
+                ariaLabel="Turn label system"
+              />
+            </div>
           </div>
         {/if}
       </div>
@@ -297,73 +462,97 @@
 
     <div class="top-actions">
       {#if appState.compact}
-        {#if appState.activeView === "matrix" && appState.selectedPair}
+        {#if appState.activeView === "detail"}
+          {@render compactSurpriseAction()}
+        {/if}
+        {#if appState.activeView === "matrix" && hasPair}
           <button
             type="button"
             class="top-action compact-detail-action"
-            onclick={appState.showDetail}
+            onclick={showDetail}
             transition:growFade={{ axis: "x", x: 4 }}
           >
             <span>Detail</span>
             <i class="fas fa-arrow-right" aria-hidden="true"></i>
           </button>
         {/if}
-        <ShapeMatrixOverflowMenu />
-      {:else}
-        <a
-          class="top-action source-action"
-          href="http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-          <span>Original</span>
-        </a>
+      {/if}
+      <!-- The link to this view. One press: the phone's own share sheet
+           where there is one, the clipboard everywhere else. Only a host with
+           a route has a link at all. -->
+      {#if appState.canShare}
         <button
           class="top-action"
           type="button"
-          aria-label="About the Shape Matrix"
-          onclick={appState.openAbout}
+          aria-label="Share this view"
+          onclick={shareThisView}
         >
-          <i class="fas fa-circle-info" aria-hidden="true"></i>
-          <span>About</span>
+          <i class="fas fa-share-nodes" aria-hidden="true"></i>
+          {#if !appState.compact}<span>Share</span>{/if}
         </button>
       {/if}
+      <button
+        class="top-action"
+        type="button"
+        aria-label={`About ${KINETIC_SHAPE_ENGINE_NAME}`}
+        onclick={appState.openAbout}
+      >
+        <i class="fas fa-circle-info" aria-hidden="true"></i>
+        {#if !appState.compact}<span>About</span>{/if}
+      </button>
     </div>
   </header>
 
-  <div class="workspace">
-    <PanelGroup
-      direction="horizontal"
-      bind:sizes
-      gap={appState.compact ? 0 : 8}
-      panels={[
-        {
-          id: "matrix",
-          content: matrixPane,
-          defaultSize: 1.28,
-          minSize: 440,
-          fixedSize: appState.compact
-            ? appState.activeView === "matrix"
-              ? "100%"
-              : "0px"
-            : undefined,
-          resizable: !appState.compact,
-        },
-        {
-          id: "realization",
-          content: detailPane,
-          defaultSize: 0.82,
-          minSize: 380,
-          fixedSize: appState.compact
-            ? appState.activeView === "detail"
-              ? "100%"
-              : "0px"
-            : undefined,
-        },
-      ]}
-    />
+  <div class="workspace" bind:this={workspaceElement}>
+    <div class="workspace-source">
+      <PanelGroup
+        direction="horizontal"
+        bind:sizes
+        gap={appState.compact ? 0 : 8}
+        panels={[
+          {
+            id: "matrix",
+            content: gridPane,
+            defaultSize: 1.28,
+            minSize: 440,
+            fixedSize: appState.compact
+              ? appState.activeView === "matrix"
+                ? "100%"
+                : "0px"
+              : undefined,
+            resizable: !appState.compact,
+          },
+          {
+            id: "realization",
+            content: detailPane,
+            defaultSize: 0.82,
+            minSize: 380,
+            fixedSize: appState.compact
+              ? appState.activeView === "detail"
+                ? "100%"
+                : "0px"
+              : undefined,
+          },
+        ]}
+      />
+    </div>
   </div>
+
+  <!-- Compact hosts show one pane at a time, so the grid pane that carries
+       the wide prop overlay is off screen whenever the dock is. The canonical
+       prop sheet takes over there; it keeps the picker open across choices
+       the same way, and closes on its handle, backdrop, X or Escape. -->
+  {#if appState.compact}
+    <PropSelectionSheet
+      isOpen={appState.propPickerOpen}
+      selectedPropType={appState.propType}
+      title="Prop"
+      onSelect={(next: PropType) => void appState.setPropType(next)}
+      onOpenChange={(open) => {
+        if (!open) appState.closePropPicker();
+      }}
+    />
+  {/if}
 </main>
 
 <style>
@@ -388,10 +577,17 @@
 
   .topbar {
     display: grid;
-    grid-template-columns: minmax(12rem, 1fr) max-content;
-    grid-template-areas:
-      "identity actions"
-      "controls controls";
+    /* The control pair always gets its full width (an `auto` track let the
+       fr columns bite into it), and the side columns share the slack
+       equally, so the pair sits centred whenever the row has room. The
+       actions column can never shrink below its buttons: a 6rem floor let
+       it, and the About button then left the row on small laptops. The
+       identity column's floor holds the title; its note truncates inside. */
+    grid-template-columns:
+      minmax(11rem, 1fr)
+      max-content
+      minmax(max-content, 1fr);
+    grid-template-areas: "identity meta actions";
     align-items: center;
     gap: 0.3rem 0.8rem;
     padding: 0.3rem 0.75rem 0.45rem;
@@ -402,7 +598,7 @@
   .top-action {
     min-height: var(--min-touch-target, 44px);
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 999px;
+    border-radius: 10px;
     background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
     color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
     text-decoration: none;
@@ -438,20 +634,8 @@
     text-overflow: ellipsis;
   }
 
-  .selected-prop-icon {
-    width: 1.45rem;
-    height: 1.45rem;
-    flex: 0 0 auto;
-    object-fit: contain;
-  }
-
-  .disclosure-icon {
-    flex: 0 0 auto;
-    font-size: 0.62rem;
-    opacity: 0.55;
-  }
-
-  .top-action:hover {
+  .top-action:hover,
+  .top-action.open {
     color: var(--theme-text, #fff);
     border-color: color-mix(
       in srgb,
@@ -470,26 +654,48 @@
     outline-offset: 2px;
   }
 
+  .surprise-action {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 58%,
+      var(--theme-stroke, transparent)
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 13%,
+      var(--theme-card-bg, transparent)
+    );
+    color: var(--theme-text, #fff);
+    font-weight: 750;
+  }
+
+  .surprise-action i {
+    color: var(--theme-accent, #f59e0b);
+  }
+
+  .surprise-action:disabled {
+    border-color: var(--theme-stroke, rgb(255 255 255 / 0.09));
+    background: transparent;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.42));
+    cursor: wait;
+    opacity: 0.6;
+  }
+
+  .surprise-action.compact {
+    width: var(--min-touch-target, 44px);
+    max-width: none;
+    padding: 0;
+  }
+
   .identity {
     grid-area: identity;
-    display: flex;
-    align-items: baseline;
-    gap: 0.65rem;
     min-width: 0;
   }
 
   .identity strong {
-    font-size: 1.05rem;
-    font-weight: 700;
+    font-size: 1.2rem;
+    font-weight: 750;
     letter-spacing: 0.005em;
-    white-space: nowrap;
-  }
-
-  .identity span {
-    overflow: hidden;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.68));
-    font-size: var(--font-size-min, 0.875rem);
-    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
@@ -559,34 +765,22 @@
     outline-offset: 2px;
   }
 
-  .selection-summary {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-min, 0.875rem);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .matrix-controls {
-    grid-area: controls;
-    /* One shared control height for all ribbon cells: a one-line sm
-       SegmentedControl (44px segment + its own padding and border). Cells
-       size to content — fixed cell widths overflowed once the four level
-       tiles outgrew them, and stretched the tiles into full-width swatches
-       in the stacked compact bands. */
+  /* The title-line pair. It carries the ribbon's control height so the two
+     cells match the band below rather than shrinking to the title's line box. */
+  .header-meta {
+    grid-area: meta;
     --ribbon-control-h: 3.25rem;
-    width: fit-content;
-    max-width: 100%;
     display: flex;
     align-items: stretch;
-    /* Centered, not start-justified: the turn control swings from 4 to 14
-       segments across levels, and a left-packed band strands the width
-       reserved for level 4 as a dead field on the right. Centering splits
-       the slack into balanced gutters at every level. */
     justify-self: center;
-    gap: 0.5rem;
+    gap: 0;
     min-width: 0;
+  }
+
+  .surface-control-cell {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
   }
 
   /* The bento cell: a caption row over its control, each cell carrying its
@@ -611,9 +805,35 @@
       color-mix(in srgb, var(--theme-text, #fff) 3.5%, transparent);
   }
 
-  .level-control {
-    grid-area: level;
+  .level-presence {
+    display: flex;
     flex: 0 0 auto;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin-left: 0.5rem;
+  }
+
+  .level-control {
+    /* The three widths track LevelSelector's own 1680/2600 ramp. */
+    min-width: 17.5rem;
+  }
+
+  /* Centre the badges in the cell. */
+  .level-control :global(.level-selector) {
+    width: 100%;
+    justify-content: center;
+  }
+
+  @media (min-width: 1680px) {
+    .level-control {
+      min-width: 19.25rem;
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .level-control {
+      min-width: 22.5rem;
+    }
   }
 
   .control-label {
@@ -645,121 +865,27 @@
     width: 7.5rem;
   }
 
-  .axis-control {
-    flex: 0 0 auto;
-  }
-
-  .axis-control :global(.segmented-control) {
-    width: 9.75rem;
-  }
-
-  .turn-editor {
-    grid-area: turns;
-    display: flex;
-    flex: 0 1 auto;
-    align-items: stretch;
-    gap: 0.5rem;
-    min-width: 0;
-  }
-
-  .turn-scroller {
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow-x: auto;
-    scrollbar-gutter: stable;
-  }
-
-  .turn-control {
-    width: min(100%, calc(var(--turn-option-count, 4) * 3rem));
-    justify-self: start;
-    /* Level changes rewrite the option count, so the control's width is an
-       intentional structural change — ease it instead of snapping. */
-    transition: width var(--transition-normal);
-  }
-
-  .turn-control :global(.segmented-control) {
-    min-width: calc(var(--count) * 3rem);
-  }
-
-  .fixed-turn-value {
-    display: inline-flex;
-    width: fit-content;
-    min-width: 7rem;
-    min-height: var(--ribbon-control-h);
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    padding: 0.35rem 0.75rem;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 8px;
-    background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .fixed-turn-value span {
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 500;
-  }
-
-  .prop-control {
-    flex: 0 0 auto;
-  }
-
-  .prop-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: var(--ribbon-control-h);
-    max-width: 11rem;
-    padding: 0.35rem 0.7rem;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
-    color: var(--theme-text, #fff);
-    cursor: pointer;
-    font: inherit;
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 600;
-    white-space: nowrap;
-    transition:
-      color var(--duration-fast, 150ms) ease,
-      border-color var(--duration-fast, 150ms) ease,
-      background var(--duration-fast, 150ms) ease;
-  }
-
-  .prop-action span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .prop-action:hover {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #f59e0b) 55%,
-      transparent
-    );
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #f59e0b) 8%,
-      transparent
-    );
-  }
-
-  .prop-action:focus-visible {
-    outline: 2px solid var(--theme-accent, #f59e0b);
-    outline-offset: 2px;
-  }
-
   .top-actions {
     grid-area: actions;
     min-width: max-content;
     justify-content: flex-end;
     gap: 0.4rem;
+  }
+
+  /* The narrowest wide hosts (small laptops, just above the compact seam):
+     the title, the Explore-and-Difficulty pair, and About add up to more than
+     the row. About keeps its glyph and aria-label and drops the word until the
+     row can hold it. The height clause keeps this out of the compact tier,
+     whose Detail pill needs its word. */
+  @container shape-matrix-app (75rem <= width < 84.5rem) and (height >= 42rem) {
+    .top-actions .top-action {
+      max-width: none;
+      padding-inline: 0;
+    }
+
+    .top-actions .top-action span {
+      display: none;
+    }
   }
 
   .compact-detail-action {
@@ -784,7 +910,17 @@
     overflow: hidden;
   }
 
+  .workspace-source {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
   .workspace-pane {
+    /* The customize workspace covers the grid pane from here. */
+    position: relative;
     width: 100%;
     height: 100%;
     min-width: 0;
@@ -792,19 +928,30 @@
     overflow: hidden;
   }
 
-  @container shape-matrix-app (max-width: 74.99rem) or (max-height: 41.99rem) {
+  .pane-source {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* The compact seam. ShapeMatrixApp decides `compact` in script from the
+     same two rem bounds, so the markup and this stylesheet always change
+     tiers together, whatever the root font size. Keep the two in step. */
+  @container shape-matrix-app (width < 75rem) or (height < 42rem) {
     .topbar {
-      grid-template-columns: minmax(0, 1fr) auto;
-      grid-template-areas:
-        "context actions"
-        "controls controls";
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-areas: "context meta actions";
       gap: 0.3rem 0.5rem;
       padding: 0.3rem 0.45rem 0.45rem;
     }
 
-    .matrix-controls {
-      grid-area: controls;
-      gap: 0.4rem;
+    .header-meta {
+      gap: 0;
+    }
+
+    .level-presence {
+      margin-left: 0.4rem;
     }
 
     /* Compact hosts trade the captions for canvas; the cells keep their
@@ -817,6 +964,11 @@
       gap: 0;
       padding: 0.25rem 0.35rem;
       border-radius: 10px;
+    }
+
+    /* This tier trades the whole title-line pair for compact chrome. */
+    .level-control {
+      min-width: 0;
     }
 
     .top-actions {
@@ -832,47 +984,28 @@
     }
   }
 
-  /* The 800–1024px band is tall enough for hierarchy but too narrow for four
-     dense tool groups in one ribbon. Give turn selection its own line there;
-     short-wide hosts keep the single-row composition to protect the canvas. */
-  @container shape-matrix-app (max-width: 64rem) and (min-width: 25.01rem) and (min-height: 30.01rem) {
-    .matrix-controls {
-      width: 100%;
-      display: grid;
-      grid-template-columns: max-content 1fr;
-      grid-template-areas:
-        "level labels"
-        "turns turns";
-      justify-items: start;
-    }
-
-    .turn-editor {
-      grid-area: turns;
+  @container shape-matrix-app (max-width: 25rem) {
+    .topbar {
+      gap: 0.3rem;
     }
   }
-
-  @container shape-matrix-app (max-width: 99.99rem) {
-    .identity span {
+  @container shape-matrix-app (max-width: 30rem) {
+    /* The chip already names the surface; a title that truncates to
+       "Sha..." beside it is noise. */
+    .compact-context > strong {
       display: none;
     }
-  }
 
-  /* Wide hosts hold the whole header in one row. The seam sits above the
-     WIDEST ribbon state: level 4's fourteen-segment turn control plus
-     identity and actions measures ~138rem, so 140rem guarantees the row
-     fits with slack. The controls column may shrink to zero so any drift
-     degrades into the turn-scroller's own scroll, never page overflow. */
-  @container shape-matrix-app (min-width: 140rem) {
-    .topbar {
-      grid-template-columns:
-        minmax(max-content, 1fr)
-        minmax(0, max-content)
-        minmax(max-content, 1fr);
-      grid-template-areas: "identity controls actions";
+    /* The back button drops its word for the same reason, and it has one more:
+       the surface control sitting right beside it already says Matrix or
+       Theory, so the word was printed twice. Theory is where the row actually
+       ran out of width, because two ratios are wider than two turn values. */
+    .back-to-matrix {
+      padding-inline: 0.6rem;
     }
 
-    .matrix-controls {
-      min-width: 0;
+    .back-to-matrix span {
+      display: none;
     }
   }
 
@@ -880,60 +1013,217 @@
     .topbar {
       gap: 0.3rem;
     }
-
-    .matrix-controls {
-      width: 100%;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas:
-        "level"
-        "labels"
-        "turns";
-      justify-items: start;
-    }
-
-    .turn-editor {
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-
-    /* The vertical stack has room for captions again, and a first-time
-       phone viewer needs them more than anyone. */
-    .control-label {
-      display: inline;
-    }
-
-    .control-cell {
-      gap: 0.25rem;
-      padding: 0.35rem 0.45rem 0.45rem;
-    }
-
-    .fixed-turn-value span {
-      display: none;
-    }
-
-    .selection-summary {
-      display: none;
-    }
   }
 
   @container shape-matrix-app (min-width: 50.01rem) and (max-height: 30rem) {
     .shape-app:not(.compact-detail) .topbar {
-      grid-template-areas: "controls actions";
       padding-block: 0.3rem;
     }
+  }
 
-    .shape-app:not(.compact-detail) .compact-context {
-      display: none;
+  /* While the tile-to-hero morph runs, the panes must land in place at once:
+     the browser snapshots the new layout the frame it changes, and a pane
+     still sliding open would be captured at zero width. The morph is the
+     continuity cue; PanelGroup keeps owning the geometry. */
+  :global(html.shape-matrix-morph) .workspace :global(.panel-wrapper) {
+    transition: none;
+  }
+
+  /* Two nested shared elements travel together: the stage rectangle (the
+     selected tile's box, or the detail stage with its header band and
+     corner annotations) and, riding on top of it, the mandala. The mandala
+     is excluded from the stage's snapshot because it has its own name, so
+     each is one picture. Both settle without overshoot; a spring would swing
+     the mandala past the square the live canvas is about to paint in. */
+  :global(
+    html.shape-matrix-morph::view-transition-group(shape-matrix-active-stage)
+  ),
+  :global(
+    html.shape-matrix-morph::view-transition-group(shape-matrix-active-mandala)
+  ) {
+    animation-duration: var(--duration-dramatic);
+    animation-timing-function: var(--ease-in-out);
+  }
+  :global(
+    html.shape-matrix-morph::view-transition-old(shape-matrix-active-stage)
+  ),
+  :global(
+    html.shape-matrix-morph::view-transition-new(shape-matrix-active-stage)
+  ),
+  :global(
+    html.shape-matrix-morph::view-transition-old(shape-matrix-active-mandala)
+  ),
+  :global(
+    html.shape-matrix-morph::view-transition-new(shape-matrix-active-mandala)
+  ) {
+    animation-duration: var(--duration-emphasis);
+    animation-timing-function: var(--ease-in-out);
+  }
+  /* The tile and the stage are different rectangles. Each snapshot fills the
+     travelling box for the whole flight instead of keeping its own aspect
+     and leaving the box partly empty. */
+  :global(
+    html.shape-matrix-morph::view-transition-old(shape-matrix-active-stage)
+  ),
+  :global(
+    html.shape-matrix-morph::view-transition-new(shape-matrix-active-stage)
+  ) {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  /* The page under the flight is one snapshot on each side. Left alone the
+     browser holds both at full strength and sums them, so the matrix grid
+     burns through the arriving detail view for the whole flight and then
+     vanishes at teardown. Crossfading them dissolves the grid away instead;
+     `plus-lighter` keeps the parts common to both sides (the top bar) at
+     constant strength through the middle of the fade. */
+  @keyframes -global-shape-matrix-page-in {
+    from {
+      opacity: 0;
     }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes -global-shape-matrix-page-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  :global(html.shape-matrix-morph::view-transition-old(root)),
+  :global(html.shape-matrix-morph::view-transition-new(root)) {
+    mix-blend-mode: plus-lighter;
+  }
+  :global(html.shape-matrix-morph::view-transition-old(root)) {
+    animation: shape-matrix-page-out var(--duration-emphasis) var(--ease-in)
+      both;
+  }
+  :global(html.shape-matrix-morph::view-transition-new(root)) {
+    animation: shape-matrix-page-in var(--duration-emphasis) var(--ease-out)
+      both;
+  }
+
+  /* The three frames around the stage — chips above, carousel below, control
+     bar at the foot — are not in the flying rectangle. Each has its own name,
+     so instead of being painted complete under the flight they settle into
+     their landed positions on a wave that starts while the stage is still
+     arriving and finishes just after it lands. The wave runs outward from the
+     stage: nearest first, and from the side each frame sits on. Only one side
+     of the morph has these frames, so their groups have nothing to
+     interpolate. */
+  @keyframes -global-shape-matrix-settle-in {
+    from {
+      opacity: 0;
+      transform: translateY(var(--settle-from));
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes -global-shape-matrix-settle-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(var(--settle-from));
+    }
+  }
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-modes)),
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-strip)),
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-controls)) {
+    animation: shape-matrix-settle-in var(--duration-emphasis) var(--ease-out)
+      both;
+  }
+  :global(html.shape-matrix-morph::view-transition-old(shape-matrix-modes)),
+  :global(html.shape-matrix-morph::view-transition-old(shape-matrix-strip)),
+  :global(html.shape-matrix-morph::view-transition-old(shape-matrix-controls)) {
+    animation: shape-matrix-settle-out var(--duration-normal) var(--ease-in)
+      both;
+  }
+  /* Above the stage, so it drops in from above. */
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-modes)),
+  :global(html.shape-matrix-morph::view-transition-old(shape-matrix-modes)) {
+    --settle-from: -0.9rem;
+  }
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-strip)) {
+    --settle-from: 1.2rem;
+  }
+  :global(html.shape-matrix-morph::view-transition-old(shape-matrix-strip)) {
+    --settle-from: 1rem;
+  }
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-controls)) {
+    --settle-from: 1.5rem;
+  }
+  :global(html.shape-matrix-morph::view-transition-old(shape-matrix-controls)) {
+    --settle-from: 1rem;
+  }
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-modes)) {
+    animation-delay: calc(var(--duration-dramatic) * 0.45);
+  }
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-strip)) {
+    animation-delay: calc(var(--duration-dramatic) * 0.6);
+  }
+  :global(html.shape-matrix-morph::view-transition-new(shape-matrix-controls)) {
+    animation-delay: calc(var(--duration-dramatic) * 0.72);
   }
 
   @media (prefers-reduced-motion: reduce) {
     .top-action,
-    .prop-action,
-    .back-to-matrix,
-    .turn-control {
+    .back-to-matrix {
       transition: none;
+    }
+
+    /* Without the crossfade there is nothing for the additive blend to sum,
+       and both page snapshots would burn through each other. */
+    :global(html.shape-matrix-morph::view-transition-old(root)),
+    :global(html.shape-matrix-morph::view-transition-new(root)) {
+      mix-blend-mode: normal;
+    }
+
+    :global(html.shape-matrix-morph::view-transition-old(root)),
+    :global(html.shape-matrix-morph::view-transition-new(root)),
+    :global(html.shape-matrix-morph::view-transition-new(shape-matrix-modes)),
+    :global(html.shape-matrix-morph::view-transition-old(shape-matrix-modes)),
+    :global(html.shape-matrix-morph::view-transition-new(shape-matrix-strip)),
+    :global(html.shape-matrix-morph::view-transition-old(shape-matrix-strip)),
+    :global(
+      html.shape-matrix-morph::view-transition-new(shape-matrix-controls)
+    ),
+    :global(
+      html.shape-matrix-morph::view-transition-old(shape-matrix-controls)
+    ) {
+      animation: none;
+    }
+
+    :global(
+      html.shape-matrix-morph::view-transition-group(
+          shape-matrix-active-mandala
+        )
+    ),
+    :global(
+      html.shape-matrix-morph::view-transition-old(shape-matrix-active-mandala)
+    ),
+    :global(
+      html.shape-matrix-morph::view-transition-new(shape-matrix-active-mandala)
+    ),
+    :global(
+      html.shape-matrix-morph::view-transition-group(shape-matrix-active-stage)
+    ),
+    :global(
+      html.shape-matrix-morph::view-transition-old(shape-matrix-active-stage)
+    ),
+    :global(
+      html.shape-matrix-morph::view-transition-new(shape-matrix-active-stage)
+    ) {
+      animation: none;
     }
   }
 </style>

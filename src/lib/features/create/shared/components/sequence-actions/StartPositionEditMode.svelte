@@ -206,7 +206,9 @@
     --prop-cycle-value-gap: 4px;
     --prop-cycle-value-padding: 4px;
 
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* Four orientation targets need 44px each, plus the shared control's
+       padding and gaps, even beside Location in a short landscape panel. */
+    grid-template-columns: minmax(0, 1fr) minmax(190px, 1fr);
     gap: 6px;
   }
 

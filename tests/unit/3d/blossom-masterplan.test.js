@@ -20,7 +20,7 @@ function validateMutation(change) {
 }
 
 describe("Blossom R2.1 adversarial spatial contract", () => {
-  it("records the R2.1 rejection and blocks new production authoring", () => {
+  it("keeps historical visual rejection distinct from authorized authoring", () => {
     const result = validateBlossomMasterplan(plan);
 
     expect(result.valid).toBe(true);
@@ -28,6 +28,10 @@ describe("Blossom R2.1 adversarial spatial contract", () => {
     expect(plan.planId).toBe("blossom-masterplan-r2.1");
     expect(plan.status).toBe("rejected-visual-review");
     expect(plan.approvalGate.productionChangesAllowed).toBe(false);
+    expect(plan.authoringAuthorization.allowed).toBe(true);
+    expect(plan.authoringAuthorization.visualAcceptance).toBe(
+      "pending-user-review"
+    );
     expect(result.measurements.sightlineRayCount).toBe(171);
   });
 
@@ -160,8 +164,9 @@ describe("Blossom R2.1 adversarial spatial contract", () => {
 
   it("rejects cloned hero groves and any return to Meshy trees", () => {
     const repetitionResult = validateMutation((mutated) => {
-      mutated.grove.trees[2].variantSlot = "open-crown-s19";
-      mutated.grove.trees[3].variantSlot = "open-crown-s19";
+      for (const tree of mutated.grove.trees) {
+        tree.variantSlot = "open-crown-s19";
+      }
     });
     const sourceResult = validateMutation((mutated) => {
       mutated.grove.assetPolicy.meshyTreesAllowed = true;

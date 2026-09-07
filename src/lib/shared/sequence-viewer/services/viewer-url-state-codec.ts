@@ -3,7 +3,7 @@
  * for full-state viewer links.
  * Spec: docs/superpowers/specs/2026-08-30-viewer-url-addressable-state-design.md
  *
- * Headline params (`vm`, `split`, `fx`, `cols`) are canonical for their
+ * Headline params (`pane`, `split`, `fx`, `cols`) are canonical for their
  * fields; the compressed `s` blob carries everything else and never
  * duplicates a headline value. `?v=` (sequence identity) is NOT owned here.
  */

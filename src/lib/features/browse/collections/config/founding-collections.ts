@@ -15,6 +15,7 @@ import { sortSequences } from "$lib/shared/browse/services/browse-sorter";
 import {
   CANONICAL_TND_AUTHOR,
   loadCanonicalBookVariations,
+  loadCanonicalTnDBaseSequences,
   loadCanonicalTnDSequences,
 } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -152,7 +153,9 @@ export async function loadFoundingCollectionSequences(
 
   const pool = await (id === "founding_book"
     ? loadCanonicalBookVariations()
-    : loadCanonicalTnDSequences());
+    : id === "founding_tka-1"
+      ? loadCanonicalTnDBaseSequences()
+      : loadCanonicalTnDSequences());
   const members = deriveSpecMembers([...pool], founding.filterSpec);
   const sorted = sortSequences(
     members,

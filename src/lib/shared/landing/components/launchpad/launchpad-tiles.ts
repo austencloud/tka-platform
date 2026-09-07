@@ -103,14 +103,14 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
   // the front doors. Secondary destinations live in the strip.
   {
     id: "notation",
-    href: "/notation",
+    href: "/history",
     heading: "History",
     descriptor: "How flow arts notation developed, 2009 to 2022.",
     span: "2x1",
     color: "#22d3ee",
     icon: "fa-bezier-curve",
     media: "pictograph",
-    morphName: "launchpad-notation",
+    morphName: "launchpad-history",
     chips: [
       { label: "Staves", href: "/notation/staves" },
       { label: "Fans", href: "/notation/fans" },

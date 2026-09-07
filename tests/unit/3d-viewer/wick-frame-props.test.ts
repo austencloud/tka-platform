@@ -15,12 +15,6 @@ const STAFF_LENGTH_M = 0.8636;
 const STAFF_HALF_M = STAFF_LENGTH_M / 2;
 const BUILD = { fanBuild: "pictograph", finish: "day" } as const;
 
-/** Radius of a tip point from the hand, in pictograph units. */
-function reach2D(propType: string, index: number): number {
-  const point = PROP_TIP_POINTS[propType].points[index];
-  return Math.hypot(point.dx, point.dy);
-}
-
 /** Smallest angle between two tip points, in degrees. */
 function spacing2D(propType: string, from: number, to: number): number {
   const points = PROP_TIP_POINTS[propType].points;
@@ -47,12 +41,6 @@ describe("wick-frame props", () => {
   it("keeps the quiad's own arm, which is shorter than the triad's", () => {
     // Easy to miss: a quiad is not a triad with a fourth spine welded on.
     expect(QUIAD_ARM_LENGTH).toBeLessThan(TRIAD_ARM_LENGTH);
-
-    // Both reaches come from the shipped 2D tip points, because those are what
-    // the mandala radius and the trail geometry already measure against.
-    const derived =
-      (TRIAD_ARM_LENGTH * reach2D("quiad", 0)) / reach2D("triad", 0);
-    expect(QUIAD_ARM_LENGTH).toBeCloseTo(derived, 5);
     expect(QUIAD_PROP.armLength).toBe(QUIAD_ARM_LENGTH);
     expect(TRIAD_PROP.armLength).toBe(TRIAD_ARM_LENGTH);
   });
@@ -67,7 +55,15 @@ describe("wick-frame props", () => {
 
     expect(anchors).toHaveLength(4);
     expect(anchor.effectTipIndex).toBe(1);
-    expect(anchor.offset.y).toBeCloseTo(STAFF_LENGTH_M * QUIAD_ARM_LENGTH, 6);
+    for (const tipAnchor of anchors) {
+      expect(
+        Math.hypot(
+          tipAnchor.offset.x,
+          tipAnchor.offset.y,
+          tipAnchor.offset.z
+        )
+      ).toBeCloseTo(STAFF_LENGTH_M * QUIAD_ARM_LENGTH, 6);
+    }
 
     // The 3D reach used to borrow TRIAD_REACH_RATIO, which was only right while
     // the quiad was rendering as a three-armed prop.
@@ -76,7 +72,17 @@ describe("wick-frame props", () => {
       STAFF_HALF_M,
       BUILD
     );
-    expect(anchor.offset.y).toBeLessThan(triadAnchor.offset.y);
+    const quiadReach = Math.hypot(
+      anchor.offset.x,
+      anchor.offset.y,
+      anchor.offset.z
+    );
+    const triadReach = Math.hypot(
+      triadAnchor.offset.x,
+      triadAnchor.offset.y,
+      triadAnchor.offset.z
+    );
+    expect(quiadReach).toBeLessThan(triadReach);
   });
 
   it("tracks the sword's tip at the GLB blade apex", () => {

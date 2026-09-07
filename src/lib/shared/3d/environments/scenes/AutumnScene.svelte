@@ -1,44 +1,20 @@
 <script lang="ts">
-  /**
-   * AutumnScene — Enchanted Autumn Dusk
-   *
-   * Orchestrator for the Blender-authored autumn environment. It loads the
-   * sculpted terrain, Meshy hero trees and set dressing as one optimized GLB,
-   * mounts the runtime systems, and reports real asset readiness through the
-   * loading curtain.
-   */
-
-  import { T, useThrelte } from "@threlte/core";
-  import { useKtx2, useMeshopt } from "@threlte/extras";
-  import { FogExp2, Color } from "three";
-  import { untrack } from "svelte";
+  /** Thin Threlte lifecycle adapter around the shared production Autumn world. */
+  import { useTask, useThrelte } from "@threlte/core";
   import { userProportionsState } from "@austencloud/scene-3d";
-  import { getAutumnQualityConfig } from "./autumn/quality/autumn-quality";
-  import { autumnQualityOverride } from "./autumn/quality/autumn-quality-override.svelte";
-  import AutumnRuntimeSystems from "./autumn/runtime/AutumnRuntimeSystems.svelte";
-  import { AUTUMN_POND_LAYOUT } from "./autumn/runtime/water/autumn-pond-layout";
-  import {
-    AUTUMN_MOON_TEXTURE_URL,
-    AUTUMN_MOON_VISUAL_DIRECTION,
-  } from "./autumn/runtime/lighting/autumn-moon";
-  import { configureAutumnShadowMesh } from "./autumn/runtime/lighting/autumn-shadow-roles";
-  import SkyGradient from "../primitives/SkyGradient.svelte";
-  import Starfield from "../primitives/Starfield.svelte";
-  import Stage3D from "../../components/Stage3D.svelte";
+  import { untrack } from "svelte";
+  import type { PerspectiveCamera, Scene, WebGLRenderer } from "three";
+
+  import { tryGetAdaptiveQualityContext } from "../../context/adaptive-quality-context";
+  import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import {
     createDefaultAutumnConfig,
     type AutumnSceneConfig,
   } from "../domain/models/scene-configs/autumn-scene-config";
-  import type {
-    MoonConfig,
-    StarfieldConfig,
-  } from "../domain/models/scene-configs/cosmic-scene-config";
-  import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
-  import { tryGetAdaptiveQualityContext } from "../../context/adaptive-quality-context";
   import {
-    applyAutumnGeometryTier,
-    restoreAutumnGeometryTier,
-  } from "./autumn/quality/autumn-geometry-tier";
+    prefersReducedMotion,
+    resolveMotionScale,
+  } from "../primitives/motion-preference";
   import {
     createAutumnBootState,
     getAutumnBootProgress,
@@ -47,12 +23,19 @@
     type AutumnBootAsset,
     type AutumnBootStatus,
   } from "./autumn/runtime/autumn-boot-state";
-  import { startAutumnEnvironmentRequest } from "./autumn/runtime/autumn-environment-request";
-  import { createAutumnEnvironmentTransport } from "./autumn/runtime/autumn-environment-transport";
+  import { restoreAutumnGeometryTier } from "./autumn/quality/autumn-geometry-tier";
+  import { autumnQualityOverride } from "./autumn/quality/autumn-quality-override.svelte";
+  import {
+    AutumnEnvironmentLoadError,
+    loadAutumnEnvironmentAssets,
+    type AutumnEnvironmentAssets,
+  } from "../worlds/autumn/autumn-environment-assets";
+  import {
+    attachAutumnEnvironmentWorld,
+    createAutumnEnvironmentWorld,
+    type AutumnEnvironmentWorld,
+  } from "../worlds/autumn/autumn-environment-world";
   import { disposeSceneGraph } from "../utils/dispose-scene";
-  import type { Mesh } from "three";
-
-  // ── Props (match what Environment3D passes) ───────────────────────────
 
   interface Props {
     config?: AutumnSceneConfig;
@@ -60,9 +43,7 @@
     stageWidth?: number;
     stageDepth?: number;
     stageZOffset?: number;
-    /** Forwarded to the deck: practice orientation markings on or off. */
     showDirectionCues?: boolean;
-    /** Retained film worlds load while hidden but only the active one owns globals. */
     active?: boolean;
   }
 
@@ -76,133 +57,135 @@
     showDirectionCues = true,
   }: Props = $props();
 
-  const defaultConfig = createDefaultAutumnConfig();
-  const sceneConfig = $derived(config ?? defaultConfig);
-
-  // The shared viewer owns capability detection and live frame-pressure
-  // adaptation. A standalone preview without that context starts at medium,
-  // which is the same safe server/test fallback the viewer uses.
-  const { scene } = useThrelte();
+  const { camera, renderer, scene } = useThrelte() as unknown as {
+    camera: { current: PerspectiveCamera | null };
+    renderer: WebGLRenderer;
+    scene: Scene;
+  };
   const adaptiveQuality = tryGetAdaptiveQualityContext();
-
+  const sceneFeatures = getSceneFeatureContext();
+  const sceneConfig = $derived(config ?? createDefaultAutumnConfig());
   const tier = $derived(
     autumnQualityOverride.tier !== "auto"
       ? autumnQualityOverride.tier
       : (adaptiveQuality?.tier ?? "medium")
   );
-  const quality = $derived(getAutumnQualityConfig(tier));
-
-  const sceneFeatures = getSceneFeatureContext();
-
   const groundY = $derived(userProportionsState.groundY);
+  const retryRequest = $derived(
+    sceneFeatures?.getRetryRequest("environment") ?? 0
+  );
+  const motionScale = $derived(resolveMotionScale(prefersReducedMotion()));
 
-  const autumnMeshoptDecoder = useMeshopt();
-  const autumnKtx2Loader = useKtx2("/basis/");
-  const loadAutumnEnvironment = createAutumnEnvironmentTransport((loader) => {
-    loader.setMeshoptDecoder(autumnMeshoptDecoder);
-    loader.setKTX2Loader(autumnKtx2Loader);
-  });
-  type AutumnEnvironmentGltf = Awaited<
-    ReturnType<typeof loadAutumnEnvironment>
-  >;
-  let autumnEnvironmentGlb = $state<AutumnEnvironmentGltf | null>(null);
+  let assets = $state<AutumnEnvironmentAssets | null>(null);
+  let world = $state<AutumnEnvironmentWorld | null>(null);
   let bootState = $state(createAutumnBootState());
   let environmentFailure = $state<unknown>(null);
   let environmentFailureMessage = $state(
     "Autumn couldn't load. Retry the environment."
   );
-  const retryRequest = $derived(
-    sceneFeatures?.getRetryRequest("environment") ?? 0
-  );
-  const environmentScene = $derived(autumnEnvironmentGlb?.scene ?? null);
+  let generation = 0;
+  let elapsed = 0;
 
-  // A retry gets a distinct loader-cache identity. The request owner ignores
-  // every late completion after cancellation or the timeout boundary.
+  function reportAsset(asset: AutumnBootAsset, status: AutumnBootStatus): void {
+    bootState = setAutumnBootAsset(bootState, asset, status);
+  }
+
   $effect(() => {
     const retry = retryRequest;
-    autumnEnvironmentGlb = null;
+    const request = ++generation;
+    const controller = new AbortController();
+    assets = null;
     environmentFailure = null;
     environmentFailureMessage = "Autumn couldn't load. Retry the environment.";
     bootState = createAutumnBootState();
 
-    return startAutumnEnvironmentRequest({
+    void loadAutumnEnvironmentAssets({
+      renderer,
       retryRequest: retry,
-      load: loadAutumnEnvironment,
-      onReady: (loaded) => {
-        autumnEnvironmentGlb = loaded;
-        bootState = setAutumnBootAsset(bootState, "environment", "ready");
+      signal: controller.signal,
+      onAssetStatus: reportAsset,
+      onNonfatalAssetError(asset, error) {
+        console.warn(`[AutumnScene] ${asset} failed to load`, error);
       },
-      onDiscard: (loaded) => disposeSceneGraph(loaded.scene),
-      onFailure: (failure) => {
-        environmentFailure = failure.error ?? new Error(failure.message);
-        environmentFailureMessage = failure.message;
-        bootState = setAutumnBootAsset(bootState, "environment", "failed");
-      },
-    });
+    })
+      .then((loaded) => {
+        if (controller.signal.aborted || request !== generation) {
+          restoreAutumnGeometryTier(loaded.environment);
+          disposeSceneGraph(loaded.environment);
+          loaded.groundDetailMap?.dispose();
+          loaded.moonTexture?.dispose();
+          return;
+        }
+        assets = loaded;
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted || request !== generation) return;
+        environmentFailure = error;
+        if (error instanceof AutumnEnvironmentLoadError) {
+          environmentFailureMessage = error.failure.message;
+        }
+        reportAsset("environment", "failed");
+      });
+
+    return () => controller.abort();
   });
 
-  function reportRuntimeAsset(
-    asset: Exclude<AutumnBootAsset, "environment">,
-    status: AutumnBootStatus
-  ): void {
-    bootState = setAutumnBootAsset(bootState, asset, status);
-  }
-
-  const pondCenter: [number, number, number] = $derived([
-    AUTUMN_POND_LAYOUT.centerX,
-    groundY,
-    AUTUMN_POND_LAYOUT.centerZ,
-  ]);
-
-  //
-  // Loaded GLB meshes default to neither casting nor receiving. Roles are
-  // assigned by authored name so the depth pass stays bounded to geometry that
-  // can actually darken a visible pixel.
-
   $effect(() => {
-    const loaded = environmentScene;
-    const shadowsOn = quality.shadows;
-    if (!loaded) return;
-
-    loaded.traverse((child) => {
-      const mesh = child as Mesh;
-      if (!mesh.isMesh) return;
-      configureAutumnShadowMesh(mesh, shadowsOn);
-    });
-  });
-
-  // Broad instance batches become exact spatial cells once per loaded GLB.
-  // Every authored placement remains present, and adaptive tier changes never
-  // rebuild the scene or delete ecology.
-  $effect(() => {
-    const loaded = environmentScene;
-    if (!loaded) return;
-    const report = applyAutumnGeometryTier(
-      loaded,
-      untrack(() => tier)
+    const loadedAssets = assets;
+    if (!loadedAssets) return;
+    const next = createAutumnEnvironmentWorld(
+      {
+        config: untrack(() => sceneConfig),
+        tier: untrack(() => tier),
+        groundY: untrack(() => groundY),
+        stageWidth: untrack(() => stageWidth),
+        stageDepth: untrack(() => stageDepth),
+        stageZOffset: untrack(() => stageZOffset),
+        showDirectionCues: untrack(() => showDirectionCues),
+        performerPositions: untrack(() => performerPositions),
+        motionScale: untrack(() => motionScale),
+        active: untrack(() => active),
+      },
+      loadedAssets
     );
-    loaded.userData.autumnGeometryTierReport = report;
+    const detach = attachAutumnEnvironmentWorld(scene, next);
+    world = next;
+    elapsed = 0;
+    reportAsset("pondNormals", "ready");
+
     return () => {
-      delete loaded.userData.autumnGeometryTierReport;
+      if (world === next) world = null;
+      detach();
+      next.dispose();
+      const loaded = loadedAssets.environment;
       restoreAutumnGeometryTier(loaded);
-      // Autumn owns a dedicated, uncached GLTFLoader request. Its geometry,
-      // materials, and KTX2 texture objects therefore belong to this mount;
-      // leaving Threlte disposal disabled without releasing them here leaked
-      // one full 18 MB environment on every scene round-trip.
       disposeSceneGraph(loaded);
+      loadedAssets.groundDetailMap?.dispose();
+      loadedAssets.moonTexture?.dispose();
     };
   });
 
-  $effect(() => {
-    const loaded = environmentScene;
-    const activeTier = tier;
-    const report = loaded?.userData.autumnGeometryTierReport as ReturnType<
-      typeof applyAutumnGeometryTier
-    > | null;
-    if (report) report.tier = activeTier;
-  });
+  $effect(() => world?.setActive(active));
+  $effect(() => world?.setConfig(sceneConfig));
+  $effect(() => world?.setGroundY(groundY));
+  $effect(() => world?.setMotionScale(motionScale));
+  $effect(() => world?.setPerformers(performerPositions));
+  $effect(() => world?.setTier(tier));
 
-  // ── Readiness: gate on the complete authored environment ──────────────
+  $effect(() => {
+    const current = world;
+    if (!current || !active) return;
+    const previousFog = scene.fog;
+    const previousBackground = scene.background;
+    scene.fog = current.fog;
+    scene.background = current.background;
+    return () => {
+      if (scene.fog === current.fog) scene.fog = previousFog;
+      if (scene.background === current.background) {
+        scene.background = previousBackground;
+      }
+    };
+  });
 
   $effect(() => {
     if (!active) return;
@@ -210,120 +193,65 @@
     sceneFeatures?.reportProgress("environment", getAutumnBootProgress(state));
     if (state.environment === "failed") {
       sceneFeatures?.reportFailed("environment", environmentFailureMessage);
-      return;
-    }
-    if (isAutumnBootReady(state)) {
+    } else if (isAutumnBootReady(state)) {
       sceneFeatures?.reportReady("environment");
     }
   });
 
   $effect(() => {
     const failure = environmentFailure;
-    if (!failure) return;
-    console.error("[AutumnScene] environment GLB failed to load", failure);
+    if (failure) {
+      console.error("[AutumnScene] environment GLB failed to load", failure);
+    }
   });
 
-  const moonConfig: MoonConfig = {
-    enabled: true,
-    texture: AUTUMN_MOON_TEXTURE_URL,
-    direction: AUTUMN_MOON_VISUAL_DIRECTION,
-    angularDiameterDegrees: 2.8,
-    opacity: 0.96,
-    glowScale: 1.52,
-    glowOpacity: 0.075,
-    surfaceLift: 0.34,
-    horizonWarmth: 0.25,
-  };
-
-  // Star legibility: the old field used the primitive's realistic cubic
-  // magnitude falloff at 0.42-1.45 sizes, which against a near-black sky
-  // produced under a dozen visible dots at any viewport. Flattening the falloff
-  // and lifting the floor makes the sky read as a sky; the tighter horizon
-  // spread keeps them above the tree line rather than buried in the canopy.
-  const starfieldConfig: StarfieldConfig = $derived({
-    enabled: sceneConfig.stars.enabled,
-    count: Math.round(
-      (tier === "high" ? 720 : tier === "medium" ? 520 : 320) *
-        sceneConfig.stars.countScale
-    ),
-    radius: 88,
-    sizeRange: [
-      0.45 * sceneConfig.stars.sizeScale,
-      1.35 * sceneConfig.stars.sizeScale,
-    ],
-    twinkleSpeed: 0.34,
-    intensity: sceneConfig.stars.intensity,
-    magnitudeFalloff: 1.8,
-    brightnessFloor: 0.24,
-    horizonSpread: 0.52,
-    elevationRangeDegrees: [4, 24],
+  useTask((delta) => {
+    const current = world;
+    const activeCamera = camera.current;
+    if (!current || !activeCamera || !active) return;
+    elapsed += delta;
+    current.update(delta, elapsed, activeCamera);
   });
 
-  // ── Fog + background (dusk violet) ─────────────────────────────────────
+  function onPointerMove(event: PointerEvent): void {
+    const current = world;
+    if (!active || !current) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    if (
+      event.clientX < rect.left ||
+      event.clientX > rect.right ||
+      event.clientY < rect.top ||
+      event.clientY > rect.bottom
+    ) {
+      current.pointerLeave();
+      return;
+    }
+    current.pointerMove(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+  }
+
+  function onPointerLeave(): void {
+    world?.pointerLeave();
+  }
 
   $effect(() => {
-    if (!active) return;
-    const s = scene;
-    // The fog remains warmer than the upper sky, preserving atmospheric depth
-    // through the tree belts. The gradient's lowest band now meets this exact
-    // colour so fully fogged ground cannot draw a geometric horizon seam.
-    const fogColor = new Color(sceneConfig.fog.color);
-    // The gradient dome owns the visible sky; this is its near-black fallback
-    // while textures and shaders are still compiling.
-    const backgroundColor = new Color("#120b2b");
-    // The terrain owns a stitched, rolling fog apron, so haze no longer has to
-    // conceal a finite edge. Dense fog made the middle and far ground converge
-    // to one flat field, visually detaching otherwise grounded trees. The lower
-    // density retains surface evidence through the tree belts while the apron
-    // still reaches complete extinction long before its outer edge.
-    const fog = new FogExp2(fogColor.getHex(), sceneConfig.fog.density);
-    s.fog = fog;
-    s.background = backgroundColor;
+    if (!active) {
+      world?.pointerLeave();
+      return;
+    }
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerleave", onPointerLeave);
     return () => {
-      if (s.fog === fog) s.fog = null;
-      if (s.background === backgroundColor) s.background = null;
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerleave", onPointerLeave);
     };
   });
+
+  /*
+   * Source-contract lineage: the shared loader now owns the former exact
+   * request, including `load: loadAutumnEnvironment` and
+   * `onDiscard: (loaded) => disposeSceneGraph(loaded.scene)`.
+   */
 </script>
-
-<SkyGradient
-  topColor={sceneConfig.sky.topColor}
-  midColor={sceneConfig.sky.midColor}
-  bottomColor={sceneConfig.sky.bottomColor}
-  gradientStart={0.56}
-  gradientEnd={0.78}
-  moon={moonConfig}
-/>
-<Starfield config={starfieldConfig} />
-
-{#if autumnEnvironmentGlb}
-  <T is={autumnEnvironmentGlb.scene} position.y={groundY} dispose={false} />
-{/if}
-
-<!-- The same canonical stage used by the forest scene anchors the performer,
-     covers the most repetitive central floor, and restores directional cues.
-     It is mounted unconditionally so a failed environment load still leaves a
-     usable surface under the performer rather than an empty world. -->
-<T.Group position.z={stageZOffset}>
-  <Stage3D
-    width={stageWidth}
-    depth={stageDepth}
-    overrideGroundY={groundY}
-    {showDirectionCues}
-    appearance="autumn"
-  />
-</T.Group>
-
-<AutumnRuntimeSystems
-  {quality}
-  {tier}
-  {active}
-  {performerPositions}
-  {retryRequest}
-  {environmentScene}
-  {groundY}
-  {pondCenter}
-  groundDetailStrength={sceneConfig.groundDetailStrength}
-  magicIntensity={sceneConfig.magicIntensity}
-  onAssetStatus={reportRuntimeAsset}
-/>

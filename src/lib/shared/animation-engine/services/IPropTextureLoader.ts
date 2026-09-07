@@ -10,6 +10,7 @@ import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tun
 import type { ISVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
 import type { ITrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
 import { parseFanRenderKey } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+import { parseModelRenderKey } from "$lib/shared/pictograph/prop/domain/prop-look";
 
 /**
  * Prop dimensions
@@ -50,7 +51,9 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   bigfan: { width: 600, height: 566.9 },
 
   // Triad family
-  triad: { width: 248.76, height: 219.09 },
+  // The regular triad is uniformly scaled so every arm reaches the club's
+  // canonical radius without changing its center pivot or proportions.
+  triad: { width: 258.67, height: 227.818 },
   bigtriad: { width: 600, height: 523.5 },
 
   // Hoop family
@@ -73,9 +76,6 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
 
   // Sword
   sword: { width: 572.3, height: 64 },
-
-  // Sickles — one competition kama, with an explicit off-center hand pivot.
-  sickles: { width: 440, height: 260 },
 
   // Energy family (premium cosmetics). Both boxes are padded beyond the prop
   // itself so the blade glow has somewhere to fall off, and both grew that
@@ -168,7 +168,10 @@ export function getPropDimensions(propType: string): PropDimensions {
       ? { width: 600, height: 566.9 }
       : { width: 260, height: 207 };
   }
-  return PROP_DIMENSIONS[normalized] ?? { ...DEFAULT_PROP_DIMENSIONS };
+  // A model sprite is captured into the same box as its pictograph artwork.
+  const modelRenderKey = parseModelRenderKey(normalized);
+  const baseType = modelRenderKey?.propType ?? normalized;
+  return PROP_DIMENSIONS[baseType] ?? { ...DEFAULT_PROP_DIMENSIONS };
 }
 
 /**

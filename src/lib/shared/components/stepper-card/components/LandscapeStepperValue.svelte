@@ -30,7 +30,7 @@ LandscapeStepperValue.svelte - Centered value display for landscape stepper
     text-align: center;
     line-height: 1.2;
 
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    text-shadow: var(--card-value-shadow, 0 1px 3px rgba(0, 0, 0, 0.2));
     pointer-events: none;
     white-space: nowrap;
     z-index: 3;

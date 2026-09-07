@@ -22,6 +22,7 @@ import type {
   TunnelSaveTarget,
 } from "../tunnel/tunnel-composition";
 import type { TunnelSavedCallback } from "../tunnel/tunnel-snapshot";
+import type { ViewerPaneBox } from "./viewer-panel-layout";
 
 export type ViewerPaneSide = "left" | "right";
 
@@ -63,7 +64,8 @@ export interface ViewerSplitPaneProps {
   onPlaybackModeChange?: (mode: "continuous" | "step") => void;
   onSceneReadyChange?: (ready: boolean) => void;
   rerenderTrigger?: number;
-  isExporting?: boolean;
+  /** Force a renderer-handle-capable 3D backend for recording/export. */
+  rendererHandleRequired?: boolean;
   splitConfig?: SplitConfig;
   isLoggedIn?: boolean;
   onVideoUpload?: () => void;
@@ -122,6 +124,8 @@ export interface ViewerMotionSurfaceProps {
   onSaveToLibrary?: () => void | Promise<void>;
   onUnfocusPane: () => void;
   onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
+  /** Force a renderer-handle-capable 3D backend for recording/export. */
+  rendererHandleRequired: boolean;
   onPlaybackToggle?: () => void;
   onSystemPlaybackChange?: ViewerSplitPaneProps["onSystemPlaybackChange"];
   onProgressBarSeek?: (targetStep: number) => void;
@@ -158,6 +162,15 @@ export interface ViewerCompanionSurfaceProps {
   onChoreoCardContextMenu?: (x: number, y: number) => void;
   cardAutoLayoutOverride?: ResolvedAutoLayout | null;
   cardContainSizeMotion?: "focus" | "return" | "restore" | null;
+  /**
+   * The box the Card's pane is heading toward during a structural change.
+   *
+   * Solving the Card against its live container while the pane is still
+   * opening paints it at every intermediate size, so it appears to inflate
+   * from nothing. The destination is already decided before the motion
+   * starts; handing it down lets the Card render at final size throughout.
+   */
+  cardContainMotionBox?: ViewerPaneBox | null;
   onAutoLayoutResolved?: ViewerSplitPaneProps["onAutoLayoutResolved"];
   onPlaybackToggle?: () => void;
   playbackMode?: "continuous" | "step";

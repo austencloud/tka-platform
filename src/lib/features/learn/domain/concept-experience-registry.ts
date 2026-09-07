@@ -4,7 +4,7 @@ import { TKA_CONCEPTS } from "./concepts";
 
 interface ConceptExperienceProps {
   viewMode?: ExperienceViewMode;
-  onComplete?: () => void;
+  onComplete?: (nextConceptId?: string) => void;
   onBack?: () => void;
 }
 
@@ -14,6 +14,7 @@ export interface ConceptExperienceDefinition {
   conceptId: string;
   guideSlug: string;
   guideLabel: string;
+  reference?: { href: string; label: string };
   reviewStatus: "confirmed" | "built";
   load: () => Promise<{ default: ConceptExperienceComponent }>;
 }
@@ -56,6 +57,18 @@ export const CONCEPT_EXPERIENCES = [
       import("../components/interactive/motions/MotionsConceptExperience.svelte"),
   }),
   experience({
+    conceptId: "timing-and-direction",
+    guideSlug: "hand-motions",
+    guideLabel: "Hand Motions",
+    reference: {
+      href: "/timing-and-direction",
+      label: "Timing and Direction",
+    },
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/motions/TimingDirectionConceptExperience.svelte"),
+  }),
+  experience({
     conceptId: "rotation-direction",
     guideSlug: "staff-motions",
     guideLabel: "Staff Motions: Prospin and Antispin",
@@ -64,12 +77,36 @@ export const CONCEPT_EXPERIENCES = [
       import("../components/interactive/rotation/RotationDirectionConceptExperience.svelte"),
   }),
   experience({
+    conceptId: "dual-shifts-alpha-beta",
+    guideSlug: "hm-type1",
+    guideLabel: "Type 1 Dual-Shifts: Alpha and Beta",
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/foundations/DualShiftsConceptExperience.svelte"),
+  }),
+  experience({
+    conceptId: "gamma-motion",
+    guideSlug: "hm-gamma",
+    guideLabel: "Gamma: Quarter-Opp and Quarter-Same",
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/foundations/GammaMotionConceptExperience.svelte"),
+  }),
+  experience({
     conceptId: "staff-positions",
     guideSlug: "staff-positions",
     guideLabel: "Staff Positions and Rotations",
     reviewStatus: "built",
     load: () =>
       import("../components/interactive/staff/StaffConceptExperience.svelte"),
+  }),
+  experience({
+    conceptId: "letter-codex-intro",
+    guideSlug: "codex",
+    guideLabel: "Codex",
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/foundations/PictographAnatomyConceptExperience.svelte"),
   }),
   experience({
     conceptId: "type1-abc-ghi",
@@ -93,10 +130,6 @@ const byConceptId = new Map(
   CONCEPT_EXPERIENCES.map((definition) => [definition.conceptId, definition])
 );
 
-const byGuideSlug = new Map(
-  CONCEPT_EXPERIENCES.map((definition) => [definition.guideSlug, definition])
-);
-
 export function getConceptExperience(
   conceptId: string
 ): ConceptExperienceDefinition | undefined {
@@ -106,7 +139,9 @@ export function getConceptExperience(
 export function getConceptExperienceForGuideSlug(
   guideSlug: string
 ): ConceptExperienceDefinition | undefined {
-  return byGuideSlug.get(guideSlug);
+  // A focused lesson can share its written reference with a broader lesson.
+  // The Guide still opens the first, broader experience for that topic.
+  return CONCEPT_EXPERIENCES.find((entry) => entry.guideSlug === guideSlug);
 }
 
 export function isConceptExperienceAvailable(conceptId: string): boolean {

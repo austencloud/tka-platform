@@ -4,6 +4,7 @@ import {
   Scene3DSnapshotSchema,
   getScene3DEnvironmentId,
   isGroupSaved,
+  scene3DHasFilm,
   type Scene3DSnapshot,
 } from "../scene-3d-collection-types";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -216,5 +217,65 @@ describe("Collected3DSceneSchema", () => {
       expect(result.data.sourceWord).toBe("FΨ");
       expect(result.data.sourceSequenceId).toBe("seq-123");
     }
+  });
+});
+
+describe("Scene3DFilmSchema", () => {
+  const film = {
+    version: 1 as const,
+    recordedAt: 1700000000000,
+    durationSeconds: 12.5,
+    cameraMode: "free" as const,
+    keyframes: [
+      {
+        timestamp: 0,
+        position: [0, 1.6, 5] as [number, number, number],
+        quaternion: [0, 0, 0, 1] as [number, number, number, number],
+        fov: 50,
+      },
+      {
+        timestamp: 12.5,
+        position: [1, 1.6, 4] as [number, number, number],
+        quaternion: [0, 0.1, 0, 0.99] as [number, number, number, number],
+        fov: 50,
+      },
+    ],
+    render: {
+      fps: 60,
+      resolution: 1080,
+      quality: "standard" as const,
+      includeStartPosition: true,
+      includeEndHold: true,
+    },
+    autoSaved: true,
+  };
+
+  const entry = {
+    id: "film-entry",
+    name: "FΨ film",
+    poster: "data:image/webp;base64,xxx",
+    createdAt: 1700000000000,
+    snapshot,
+  };
+
+  it("round-trips an entry carrying a film", () => {
+    const parsed = Collected3DSceneSchema.safeParse({ ...entry, film });
+    expect(parsed.success).toBe(true);
+    expect(scene3DHasFilm({ ...entry, film } as never)).toBe(true);
+  });
+
+  it("rejects a film with no keyframes", () => {
+    const bad = { ...entry, film: { ...film, keyframes: [] } };
+    expect(Collected3DSceneSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects an unknown camera mode", () => {
+    const bad = { ...entry, film: { ...film, cameraMode: "dolly" } };
+    expect(Collected3DSceneSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("treats an entry with no film as look-only", () => {
+    expect(Collected3DSceneSchema.safeParse(entry).success).toBe(true);
+    expect(scene3DHasFilm(entry as never)).toBe(false);
   });
 });

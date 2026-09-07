@@ -208,6 +208,9 @@ export interface AirChimneyLayout {
   wallRects: WallRect[];
   ceilingRects: CeilingRect[];
 
+  /** What the bay owns — its room plus the corridor it draws. The cave composer
+   *  routes terrain queries by THIS, never by `bayBounds`. */
+  bayFootprint: WorldRect[];
   /** Union bbox of the air bay. The terrain answers only inside it. */
   bayBounds: WorldRect;
 
@@ -350,7 +353,12 @@ export function buildAirChimneyLayout(grid: MuseumGrid): AirChimneyLayout | null
   }
 
   // ── Corridor from Earth. Earth and Air both suppress their tile geometry, so
-  // the corridor between them is suppressed too and this module owns it.
+  // the corridor between them is suppressed too and this module owns it — from
+  // Earth's south wall row down to Air's own north wall. Earth's door tiles sit
+  // on that wall row and Earth's interior rects stop one row short of them, so
+  // the band has to start there or the doorway belongs to nobody. (Fire and
+  // Earth own their inbound corridors from the neighbour's wall column the
+  // same way.)
   const eb = earthWing.bounds;
   const ab = airWing.bounds;
   const corridorTxMin = Math.min(eb.x, ab.x) - 2;
@@ -359,7 +367,7 @@ export function buildAirChimneyLayout(grid: MuseumGrid): AirChimneyLayout | null
     grid,
     corridorTxMin,
     corridorTxMax,
-    eb.y + eb.height,
+    eb.y + eb.height - 1,
     ab.y,
     (t) => t === "corridor" || t === "door"
   );
@@ -465,7 +473,8 @@ export function buildAirChimneyLayout(grid: MuseumGrid): AirChimneyLayout | null
     })),
   ];
 
-  const bayBounds = unionRect([shell, ...corridor]);
+  const bayFootprint: WorldRect[] = [shell, ...corridor];
+  const bayBounds = unionRect(bayFootprint);
 
   return {
     air,
@@ -480,6 +489,7 @@ export function buildAirChimneyLayout(grid: MuseumGrid): AirChimneyLayout | null
     floorRects,
     wallRects,
     ceilingRects,
+    bayFootprint,
     bayBounds,
     probes: {
       entry: { x: cx(shell), z: shell.minZ + 1.0 },

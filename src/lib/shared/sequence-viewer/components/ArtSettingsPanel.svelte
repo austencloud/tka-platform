@@ -8,6 +8,7 @@
   import type { ArtSettingsPanelProps } from "./art-settings/art-settings-types";
 
   let {
+    sequence,
     controller,
     mandalaController,
     artType,
@@ -44,6 +45,7 @@
 
 {#if artType === "tunnel"}
   <TunnelArtSettings
+    {sequence}
     {controller}
     {layout}
     {onExport}

@@ -93,9 +93,9 @@
     {#if person.role === "spectator"}
       <Avatar3D
         id={`flow-fest-${person.id}`}
-        characterId={person.avatarId}
-        leftPropState={null}
-        rightPropState={null}
+        avatarId={person.avatarId}
+        bluePropState={null}
+        redPropState={null}
         visible={true}
         isActive={false}
         position={{ x: living.x, y: living.y, z: living.z }}

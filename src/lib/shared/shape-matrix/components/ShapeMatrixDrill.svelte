@@ -34,49 +34,66 @@
   never remounted before its replacement is moving.
 
   The drill owns its own empty state now (pair is nullable): chips disabled,
-  "Pick a cell" hint in the hero, caption line reserved but empty — the panel
-  structure is constant from load, so first selection causes no layout shift.
+  "Pick a cell" hint in the hero. The relationship workspace above the stage
+  owns the hands-to-props explanation, so the animation area does not repeat it.
 -->
 <script lang="ts">
-  import { onDestroy, untrack } from "svelte";
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { onDestroy, tick, untrack } from "svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import MandalaHeroLayer from "./MandalaHeroLayer.svelte";
+  import WordHeader from "$lib/shared/animation-engine/components/layers/WordHeader.svelte";
+  import { levelForTurns } from "$lib/shared/create/services/level-turn-values";
+  import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
+  import { MANDALA_GUIDE_FLOOR_OPACITY } from "$lib/shared/mandala/domain/mandala-overlay-types";
   import ElementChipRow from "./ElementChipRow.svelte";
   import PropRelationshipChipRow from "./PropRelationshipChipRow.svelte";
   import {
     buildModeRealizationCandidates,
     type ModeRealization,
   } from "../services/build-mode-realizations";
-  import {
-    flowerKey,
-    flowerLabel,
-    type Flower,
-  } from "../domain/flower-signature";
+  import { flowerKey, type Flower } from "../domain/flower-signature";
   import type { ShapeMatrixData } from "../services/shape-matrix-flowers";
   import {
     MODE_ORDER,
     type VtgMode,
   } from "../services/shape-matrix-realizations";
   import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
-  import {
-    HERO_TRAIL_PRESET,
-    HERO_TIP_EFFECT_MAP,
-  } from "$lib/shared/landing/data/hero-trail-preset";
+  import { HERO_TRAIL_PRESET } from "$lib/shared/landing/data/hero-trail-preset";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
+  import { growFade } from "$lib/shared/transitions/motion";
+  import { claimedViewTransitionName } from "$lib/shared/transitions/claimed-view-transition-name";
+  import {
+    SHAPE_MATRIX_ACTIVE_STAGE_NAME,
+    SHAPE_MATRIX_CONTROLS_NAME,
+    SHAPE_MATRIX_MODES_NAME,
+    SHAPE_MATRIX_STRIP_NAME,
+  } from "../services/shape-matrix-artwork";
   import { getShapeMatrixTransitionRecorder } from "../debug/shape-matrix-transition-recorder";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
-  import type { ShapeMatrixRelationshipDriver } from "../app/state/shape-matrix-app-state.svelte";
   import { QualityTier } from "$lib/shared/animation-engine/domain/types/quality-types";
   import { resolveRealizationEntryStep } from "../services/realization-phase-handoff";
   import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import AnimationPanel from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
+  import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
+  import { getShapeMatrixAnimationContext } from "../app/context/shape-matrix-animation-context";
+  import { getOptionalShapeMatrixAppContext } from "../app/context/shape-matrix-app-context";
+  import ShapeMatrixCustomizeDock from "./ShapeMatrixCustomizeDock.svelte";
+  import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
+  import { getEscapeLayerManager } from "$lib/shared/keyboard/get-escape-layer-manager";
 
   interface Props {
     /** Nullable: the drill renders its own "Pick a cell" state before any click. */
     pair: { left: Flower; right: Flower } | null;
+    /**
+     * One hand on stage, chosen from its own axis header. The other prop is
+     * not drawn (the shell hides it through the viewer's motion visibility),
+     * and the two relationship rows go with it: a mode is an agreement
+     * between two hands, and there is only one here.
+     */
+    solo?: "left" | "right" | null;
     data: ShapeMatrixData;
     /** Optional composing surface action. The public archive remains a viewer;
      *  pickers can receive the exact realization this drill already built. */
@@ -87,11 +104,27 @@
     selectedPropMode?: VtgMode | null;
     onmodechange?: (mode: VtgMode | null) => void;
     onpropmodechange?: (mode: VtgMode | null) => void;
-    relationshipDriver?: ShapeMatrixRelationshipDriver;
     propType?: PropType;
+    onproptypechange?: (propType: PropType) => void;
+    /**
+     * The prop catalogue lives over the grid pane (a sheet on compact hosts),
+     * never on this stage: the animation, the element relationships and the
+     * carousel all stay put while a prop is chosen against the shape it
+     * traces. The drill only shows the open state on its Props pill.
+     */
+    propPickerOpen?: boolean;
+    onproppickertoggle?: () => void;
+    /**
+     * Shared tile-to-hero transition seam. `claim` makes the cold floor the
+     * owner of the shared view-transition name (the host's compact layout is
+     * showing this pane); `handoff` forces the floor visible while a
+     * shared-element transition captures its snapshot.
+     */
+    mandalaTransition?: { claim: boolean; handoff: boolean };
   }
   let {
     pair,
+    solo = null,
     data,
     onselectRealization,
     selectLabel = "Use this realization",
@@ -99,9 +132,55 @@
     selectedPropMode = $bindable(null),
     onmodechange,
     onpropmodechange,
-    relationshipDriver = "hands",
     propType = PropType.STAFF,
+    onproptypechange,
+    propPickerOpen = false,
+    onproppickertoggle,
+    mandalaTransition = { claim: false, handoff: false },
   }: Props = $props();
+
+  const animationState = getShapeMatrixAnimationContext();
+  const appState = getOptionalShapeMatrixAppContext();
+  let compactSettingsElement = $state<HTMLElement | null>(null);
+  const compactSettingsOpen = $derived(
+    !!appState &&
+      appState.compact &&
+      appState.surface === "matrix" &&
+      appState.activeView === "detail" &&
+      animationState.activeSection !== null
+  );
+
+  function closeCompactSettings(): void {
+    animationState.showRelationships();
+  }
+
+  function onCompactSettingsKeydown(event: KeyboardEvent): void {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeCompactSettings();
+  }
+
+  $effect(() => {
+    if (!compactSettingsOpen) return;
+    const restoreTo = document.activeElement;
+    const unregister = getEscapeLayerManager().register({
+      id: "shape-matrix:compact-settings",
+      canDismiss: () => true,
+      dismiss: closeCompactSettings,
+    });
+    void tick().then(() =>
+      compactSettingsElement
+        ?.querySelector<HTMLButtonElement>("header button")
+        ?.focus({ preventScroll: true })
+    );
+    return () => {
+      unregister();
+      if (restoreTo instanceof HTMLElement && restoreTo.isConnected) {
+        restoreTo.focus({ preventScroll: true });
+      }
+    };
+  });
 
   let animationPlayerModule: ReturnType<typeof importAnimationPlayer> | null =
     null;
@@ -121,14 +200,29 @@
     // The matrix stage is viewed much closer than the landing-page hero. Keep
     // its glow and stroke one tuning step quieter without changing that shared
     // attract-mode preset.
-    glowBlur: HERO_TRAIL_PRESET.glowBlur - 1,
-    lineWidth: HERO_TRAIL_PRESET.lineWidth - 1,
+    glowBlur: HERO_TRAIL_PRESET.glowBlur - 2,
+    lineWidth: HERO_TRAIL_PRESET.lineWidth - 2,
     // The generic player precomputes a full path cache whenever a sequence
     // changes. That is useful for long-lived editors but creates a 150–230 ms
     // main-thread task during rapid matrix exploration. Live capture is the
     // correct owner here: the player is already running continuously.
     usePathCache: false,
   };
+
+  const effectiveTrailSettings = $derived.by(() => {
+    const intent = animationState.scope.effects.trails;
+    void intent.thickness;
+    void intent.brightness;
+    void intent.leftColor;
+    void intent.rightColor;
+    return foldTrailIntentIntoSettings(SHAPE_MATRIX_TRAIL_PRESET, intent);
+  });
+
+  const playbackAction = $derived<ControlDockAction>({
+    icon: animationState.playing ? "fa-pause" : "fa-play",
+    label: animationState.playing ? "Pause" : "Play",
+    onClick: animationState.togglePlaying,
+  });
 
   // Sticky across pair changes by design (spec: "Selection persistence").
   // Realizations are immutable payloads replaced as a unit. Raw state keeps
@@ -143,6 +237,8 @@
   type PlayerSource = "first" | "second";
   interface PlayerLayer {
     key: string;
+    /** The pair this layer plays; a layer for another pair is stale. */
+    pairKey: string;
     realization: ModeRealization;
     paths: MandalaPaths;
     clubTipDx: number;
@@ -210,13 +306,38 @@
     pair ? `${propType}|${flowerKey(pair.left)}|${flowerKey(pair.right)}` : null
   );
 
+  // The live canvas that is visible plays THIS pair. Until then the still
+  // floor is the mandala on stage: a canvas still playing the previous pair
+  // is hidden rather than left under the arriving picture.
+  const livePlayerShowsPair = $derived(
+    visibleSource !== null && getLayer(visibleSource)?.pairKey === pairKey
+  );
+  /**
+   * The frames around the stage take a shared-element name only while a morph
+   * is in flight, and only on the side that owns the detail view: arriving,
+   * they are new-only and settle in; leaving, they are old-only and sink out.
+   * A name held permanently would make each frame a containing block for its
+   * own popovers for no gain.
+   */
+  const morphingFrames = $derived(
+    mandalaTransition.claim && mandalaTransition.handoff
+  );
+
   // The cell's mandala: left hand's flower merged with right hand's flower — the
   // exact merge renderCell uses for the grid tiles, so the hero IS the cell.
   const heroPaths = $derived.by<MandalaPaths | null>(() => {
     if (!pair) return null;
     return {
-      left: data.left.get(flowerKey(pair.left))?.left ?? [],
-      right: data.right.get(flowerKey(pair.right))?.right ?? [],
+      // A solo draws the header's own mandala: the other hand's paths are
+      // left out, so the hero is the artwork that was pressed.
+      left:
+        solo === "right"
+          ? []
+          : (data.left.get(flowerKey(pair.left))?.left ?? []),
+      right:
+        solo === "left"
+          ? []
+          : (data.right.get(flowerKey(pair.right))?.right ?? []),
       purple: [],
     };
   });
@@ -256,28 +377,19 @@
     requestedPropMode: VtgMode | null,
     allowFallback: boolean
   ): ModeRealization | null {
+    const handCandidates = candidates.filter(
+      (candidate) => candidate.mode === requestedMode
+    );
     if (requestedPropMode) {
-      const requested =
-        candidates.find(
-          (candidate) =>
-            candidate.mode === requestedMode &&
-            candidate.propMode === requestedPropMode
-        ) ??
-        candidates.find(
-          (candidate) => candidate.propMode === requestedPropMode
-        );
+      const requested = handCandidates.find(
+        (candidate) => candidate.propMode === requestedPropMode
+      );
       if (requested) return requested;
       return allowFallback
-        ? (candidates.find((candidate) => candidate.mode === requestedMode) ??
-            candidates[0] ??
-            null)
-        : null;
+        ? (handCandidates[0] ?? candidates[0] ?? null)
+        : (handCandidates[0] ?? null);
     }
-    return (
-      candidates.find((candidate) => candidate.mode === requestedMode) ??
-      (allowFallback ? candidates[0] : null) ??
-      null
-    );
+    return handCandidates[0] ?? (allowFallback ? candidates[0] : null) ?? null;
   }
 
   function syncSelection(
@@ -289,10 +401,7 @@
       selectedMode = realization.mode;
       onmodechange?.(realization.mode);
     }
-    if (
-      requestedPropMode !== null &&
-      realization.propMode !== requestedPropMode
-    ) {
+    if (realization.propMode !== requestedPropMode) {
       selectedPropMode = realization.propMode;
       onpropmodechange?.(realization.propMode);
     }
@@ -472,13 +581,48 @@
       !activeReal
   );
   const captionRealization = $derived(visibleRealization ?? activeReal);
-  const captionKey = $derived.by(() => {
-    const visibleLayer = visibleSource ? getLayer(visibleSource) : null;
-    if (visibleLayer) return visibleLayer.key;
-    if (activeReal && pairKey) return realizationKey(activeReal, pairKey);
-    if (buildError || modeMissing) return "error";
-    return pair ? "pending" : "empty";
+
+  // The word header lives in a drill-owned band ABOVE the square, not inside
+  // the player. Inside the player it sits over the top of the frame and the
+  // live canvas letterboxes beneath it, so the still floor's centered square
+  // and the canvas's square disagree by half the header's height. With the
+  // band outside, `.hero-frame` IS the canvas region and MandalaHeroLayer's
+  // inscribed square is the canvas's inscribed square. The band reserves its
+  // height with a ghost header so the frame's geometry is identical before a
+  // realization exists (the shared-element morph snapshots that moment).
+  let wordHeaderVisible = $state(true);
+  let headerDarkMode = $state(true);
+  $effect(() => {
+    const visibility = animationState.scope.visibility;
+    const sync = () => {
+      wordHeaderVisible = visibility.getVisibility("wordHeader");
+      headerDarkMode = visibility.isDarkMode();
+    };
+    sync();
+    visibility.registerObserver(sync);
+    return () => visibility.unregisterObserver(sync);
   });
+  const headerSequence = $derived(captionRealization?.seq ?? null);
+  /* The badge names the level the pair sits on in this engine, one to four.
+     The browse calculator knows three levels and read every quarter-turn pair
+     as level 3. */
+  const headerDifficulty = $derived(
+    headerSequence?.steps?.length && pair
+      ? levelForTurns(pair.left.turns, pair.right.turns)
+      : null
+  );
+  const headerLoopDisplay = $derived.by(() => {
+    if (!headerSequence) return null;
+    const resolver = tryGetLoopDisplayResolver();
+    return resolver ? resolver(headerSequence) : null;
+  });
+  const headerStepNumber = $derived(
+    headerSequence?.steps?.length &&
+      visibleStep >= 1 &&
+      visibleStep < headerSequence.steps.length + 0.99
+      ? Math.floor(visibleStep)
+      : null
+  );
   const visibleStep = $derived(
     visibleSource === "first"
       ? firstStep
@@ -866,6 +1010,7 @@
         const layerKey = realizationKey(realization, key);
         stageLayer({
           key: layerKey,
+          pairKey: key,
           realization,
           paths,
           clubTipDx: data.clubTipDx,
@@ -890,10 +1035,6 @@
     transitionRecorder.destroy();
   });
 
-  function elementName(raw: string): string {
-    return raw.charAt(0).toUpperCase() + raw.slice(1);
-  }
-
   function entryStepFor(realization: ModeRealization, key: string): number {
     const outgoingLayer = visibleSource ? getLayer(visibleSource) : null;
     return resolveRealizationEntryStep({
@@ -916,10 +1057,6 @@
   }
 
   function selectHandMode(mode: VtgMode | null): void {
-    if (selectedPropMode !== null) {
-      selectedPropMode = null;
-      onpropmodechange?.(null);
-    }
     selectMode(mode);
   }
 
@@ -986,10 +1123,22 @@
         style={`--atmosphere-hand: ${layer.realization.element.accentColor}; --atmosphere-prop: ${layer.realization.propRelationship.element?.accentColor ?? layer.realization.element.accentColor}`}
         aria-hidden="true"
       ></div>
-      <div class="player-layer">
+      <!-- Hidden while it still plays the previous pair, and while a
+           shared-element capture is in flight: the still floor is the one
+           mandala on stage until the live canvas for this pair is ready. -->
+      <div
+        class="player-layer"
+        class:offstage={layer.pairKey !== pairKey}
+        class:settling={!livePlayerShowsPair}
+      >
+        <!-- The first mount waits for the tile-to-hero morph to finish. The
+             still floor is the picture that travels; loading the player and
+             building its engine before the new-state capture only delays the
+             morph. Once mounted, keep-alive holds the player through later
+             handoffs. -->
         <LazyMount
           loader={loadAnimationPlayer}
-          active={true}
+          active={!mandalaTransition.handoff}
           debugName="shape matrix animation player"
           placeholder={playerPlaceholder}
           error={source === "first"
@@ -1001,15 +1150,25 @@
             autoPlayDelay: 0,
             chrome: "minimal",
             fill: true,
-            disassemblyLayout: "sidecar",
-            showWordHeader: true,
+            disassemblyLayout: "auto",
+            disassemblyTarget: animationState.disassembled,
+            onDisassemblyTargetChange: animationState.requestDisassembled,
+            // The drill owns the word header band above the square; the
+            // player's own header would push its canvas below the floor.
+            showWordHeader: false,
             beatIndicators: false,
             leftPropType: layer.propType,
             rightPropType: layer.propType,
-            trailSettingsOverride: SHAPE_MATRIX_TRAIL_PRESET,
-            tipEffectMap: HERO_TIP_EFFECT_MAP,
+            trailSettingsOverride: effectiveTrailSettings,
+            tipEffectMap: animationState.scope.effects.tipEffectMap,
+            effectsConfigState: animationState.scope.effects,
+            visibilityManagerOverride: animationState.scope.visibility,
+            externalBpm: animationState.bpm,
+            externalPlaying: animationState.playing,
+            externalPlaybackMode: animationState.playbackMode,
+            onExternalPlayingChange: animationState.setPlaying,
             backgroundAlpha: 0,
-            interactive: false,
+            interactive: true,
             hoverHint: "none",
             // This is a full TKA animation surface. Its canonical canvas menu
             // supplies Disassemble/Reassemble and the shared display controls.
@@ -1048,35 +1207,75 @@
     ? `--hand-el: ${captionRealization.element.accentColor}; --hand-dark: ${captionRealization.element.darkComplement}; --prop-el: ${captionRealization.propRelationship.element?.accentColor ?? captionRealization.element.accentColor}`
     : undefined}
 >
-  <div class="mode-picker">
-    {#if relationshipDriver === "hands"}
-      <ElementChipRow
-        selected={selectedMode}
-        available={availableHandModes}
-        availabilityReady={!building}
-        disabled={!pair}
-        onpick={selectHandMode}
-      />
-    {:else}
-      <PropRelationshipChipRow
-        {realizations}
-        {selectedMode}
-        {selectedPropMode}
-        activePropMode={activeReal?.propMode ?? null}
-        equalRotatingTurns={pair !== null &&
-          pair.left.turns !== "fl" &&
-          pair.right.turns !== "fl" &&
-          pair.left.turns === pair.right.turns}
-        disabled={!pair}
-        {building}
-        ontarget={selectPropMode}
-        onhandpick={(mode) => selectMode(mode)}
-      />
-    {/if}
+  {#if !solo}
+  <div
+    class="mode-picker"
+    data-drill-region="modes"
+    use:claimedViewTransitionName={{
+      name: SHAPE_MATRIX_MODES_NAME,
+      enabled: morphingFrames,
+    }}
+    transition:growFade={{ axis: "y" }}
+  >
+    <ElementChipRow
+      selected={selectedMode}
+      available={availableHandModes}
+      availabilityReady={!building}
+      disabled={!pair}
+      onpick={selectHandMode}
+    />
+    <PropRelationshipChipRow
+      {realizations}
+      {selectedMode}
+      {selectedPropMode}
+      activePropMode={activeReal?.propMode ?? null}
+      disabled={!pair}
+      {building}
+      ontarget={selectPropMode}
+    />
   </div>
+  {/if}
 
-  <div class="media-stage">
-    <div class="hero-stage">
+  <div
+    class="media-stage"
+    inert={compactSettingsOpen}
+    aria-hidden={compactSettingsOpen}
+  >
+    <!-- The stage rectangle is the selected matrix tile's box, arrived. It
+         carries the shared stage name so the whole stage flies between the
+         tile and the detail view; the mandala inside carries its own. -->
+    <div
+      class="hero-stage"
+      data-drill-region="hero"
+      use:claimedViewTransitionName={{
+        name: SHAPE_MATRIX_ACTIVE_STAGE_NAME,
+        enabled: mandalaTransition.claim,
+      }}
+    >
+      <div class="hero-header">
+        <div class="hero-header-ghost" aria-hidden="true">
+          <WordHeader word="A" visible={true} darkMode={headerDarkMode} />
+        </div>
+        {#if headerSequence}
+          <div class="hero-header-live">
+            <WordHeader
+              word={headerSequence.word}
+              visible={wordHeaderVisible}
+              darkMode={headerDarkMode}
+              activeStepNumber={headerStepNumber}
+              difficultyLevel={headerDifficulty}
+              loopComponents={headerLoopDisplay &&
+              headerLoopDisplay.components.size > 0
+                ? headerLoopDisplay.components
+                : null}
+              rotationPeriod={headerLoopDisplay?.rotationPeriod}
+              inversionPeriod={headerLoopDisplay?.inversionPeriod}
+              reflectionAxis={headerLoopDisplay?.reflectionAxis}
+              overlayComponents={headerLoopDisplay?.overlayComponents}
+            />
+          </div>
+        {/if}
+      </div>
       <div class="hero-frame">
         {#if pair && heroPaths}
           <!-- The still mandala is a cold-load floor only. Once the canonical
@@ -1084,9 +1283,11 @@
                rendering owner, including while that canvas is disassembled. -->
           <MandalaHeroLayer
             paths={heroPaths}
-            clubTipDx={data.clubTipDx}
-            opacity={visibleSource ? 0 : 1}
-            glowColor={captionRealization?.element.accentColor}
+            artKey={pairKey ?? ""}
+            tipDx={data.clubTipDx}
+            opacity={livePlayerShowsPair ? 0 : MANDALA_GUIDE_FLOOR_OPACITY}
+            claim={mandalaTransition.claim}
+            handoff={mandalaTransition.handoff}
           />
           <DualSourceCrossfade
             active={visibleSource}
@@ -1115,7 +1316,20 @@
       </div>
     </div>
 
-    <div class="strip-zone" role="group" aria-label="Pictograph timeline">
+    <!-- The carousel is its own card below the canvas box, never part of
+           the rectangle that flies. During the morph it carries its own
+           name and rises in once the stage has landed. -->
+    <div
+      class="strip-zone"
+      data-drill-region="strip"
+      role="group"
+      aria-label="Pictograph timeline"
+      use:claimedViewTransitionName={{
+        name: SHAPE_MATRIX_STRIP_NAME,
+        enabled: morphingFrames,
+      }}
+      transition:growFade={{ axis: "y" }}
+    >
       {#if railRealization && pictographRailReady}
         <LazyMount
           loader={() => import("$lib/shared/timeline/StepStrip.svelte")}
@@ -1128,7 +1342,7 @@
             sequence: railRealization.seq,
             includeStartPosition: false,
             currentStep: visibleStep,
-            bpm: 60,
+            bpm: animationState.bpm,
             density: "compact",
             fillHeight: true,
             anchor: "center",
@@ -1143,80 +1357,98 @@
         />
       {:else if railRealization}
         <p class="quarter-status">
-          Quarter-turn pictograph arrows are in visual calibration.
+          Level 4 pictograph are in visual calibration.
         </p>
       {/if}
     </div>
   </div>
 
-  <!-- The reserved box never changes size. Only the relationship inside it
-       dissolves after the new realization has taken ownership of the stage. -->
-  <div class="caption-stage">
-    <Crossfade key={captionKey} fill duration={DURATION.fast}>
-      <p
-        class="caption"
-        style={captionRealization
-          ? `--el: ${captionRealization.element.accentColor}`
-          : undefined}
-      >
-        {#if buildError || modeMissing}
-          <span class="cap-err"
-            >Could not build this realization. Reload and try again.</span
-          >
-        {:else if captionRealization}
-          <span class="relationship-badge hand-relationship">
-            <span class="relationship-label">Hands</span>
-            <img src={captionRealization.element.iconPath} alt="" />
-            <span class="badge-copy">
-              <strong>{elementName(captionRealization.element.element)}</strong>
-              <small>{captionRealization.element.name}</small>
-            </span>
-          </span>
-          <i class="fas fa-arrow-right derivation-arrow" aria-hidden="true"></i>
-          <span class="sr-only">produces</span>
-          <span class="relationship-badge prop-relationship">
-            <span class="relationship-label">Props</span>
-            {#if captionRealization.propRelationship.kind === "full"}
-              <img
-                src={captionRealization.propRelationship.element.iconPath}
-                alt=""
-              />
-              <span class="badge-copy">
-                <strong
-                  >{elementName(
-                    captionRealization.propRelationship.element.element
-                  )}</strong
-                >
-                <small>{captionRealization.propRelationship.element.name}</small
-                >
-              </span>
-            {:else if captionRealization.propRelationship.kind === "direction-only"}
-              <span class="relationship-dot" aria-hidden="true"></span>
-              <span class="badge-copy">
-                <strong
-                  >{captionRealization.propRelationship.direction === "same"
-                    ? "Same"
-                    : "Opposite"}</strong
-                >
-                <small>Direction only · different rates</small>
-              </span>
-            {:else}
-              <span class="relationship-dot float-dot" aria-hidden="true"
-              ></span>
-              <span class="badge-copy">
-                <strong>Float</strong>
-                <small>No prop rotation</small>
-              </span>
-            {/if}
-          </span>
-        {:else if pair}
-          <span>
-            Blue <span class="cap-blue">{flowerLabel(pair.left)}</span> over red
-            <span class="cap-red">{flowerLabel(pair.right)}</span>
-          </span>
-        {/if}
-      </p>
-    </Crossfade>
+  {#if compactSettingsOpen}
+    <div
+      class="compact-settings"
+      role="dialog"
+      aria-label="Animation settings"
+      tabindex="-1"
+      bind:this={compactSettingsElement}
+      onkeydown={onCompactSettingsKeydown}
+    >
+      <header class="compact-settings-header">
+        <strong>Animation settings</strong>
+        <button
+          type="button"
+          onclick={closeCompactSettings}
+          aria-label="Close settings"
+        >
+          <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
+      </header>
+      <div class="compact-settings-body">
+        <AnimationPanel
+          isExporting={false}
+          layout="bottom"
+          presentation="content"
+          controlledSection={animationState.activeSection}
+          isPlaying={animationState.playing}
+          bpm={animationState.bpm}
+          playbackMode={animationState.playbackMode}
+          onPlaybackToggle={animationState.togglePlaying}
+          onPlaybackModeChange={animationState.setPlaybackMode}
+          onBpmChange={animationState.setBpm}
+          showEffectsPlayback={false}
+          selectedPropType={propType}
+          onPropChange={onproptypechange}
+          sequence={captionRealization?.seq ?? null}
+          showPathShape={false}
+          showMotionVisibility={true}
+          regionLabel="Shape animation settings"
+        />
+      </div>
+    </div>
+  {/if}
+
+  <!-- The control bar is below the stage, not inside it. It settles in as the
+       last frame of the wave rather than arriving complete under the flight.
+       A wide host keeps every ability in the customize workspace over the
+       grid, so its bar is one Customize button and the transport. Compact
+       hosts keep the pill dock: each pill opens its sheet there, and Props
+       routes to the canonical prop sheet. -->
+  <div
+    class="animation-controls"
+    data-drill-region="controls"
+    data-shape-matrix-dock
+    use:claimedViewTransitionName={{
+      name: SHAPE_MATRIX_CONTROLS_NAME,
+      enabled: morphingFrames,
+    }}
+  >
+    {#if appState && !appState.compact}
+      <ShapeMatrixCustomizeDock />
+    {:else}
+      <AnimationPanel
+        isExporting={false}
+        layout="bottom"
+        presentation={appState ? "navigation" : "full"}
+        controlledSection={appState ? animationState.activeSection : undefined}
+        isPlaying={animationState.playing}
+        bpm={animationState.bpm}
+        playbackMode={animationState.playbackMode}
+        onPlaybackToggle={animationState.togglePlaying}
+        onPlaybackModeChange={animationState.setPlaybackMode}
+        onBpmChange={animationState.setBpm}
+        showEffectsPlayback={false}
+        selectedPropType={propType}
+        onPropChange={onproptypechange}
+        onPropPickerRequest={onproppickertoggle}
+        propPickerActive={propPickerOpen}
+        sequence={captionRealization?.seq ?? null}
+        dockTrailingAction={playbackAction}
+        showPathShape={false}
+        showMotionVisibility={true}
+        onActiveSectionChange={animationState.setActiveSection}
+        closeRequest={animationState.closeRequest}
+        regionLabel="Shape animation controls"
+      />
+    {/if}
   </div>
 
   {#if onselectRealization}
@@ -1238,13 +1470,14 @@
   /* Fills whatever height its host gives it: the route's .drill-pane is a
      fixed-height flex box (matched to the matrix stage on wide screens). */
   .drill {
+    position: relative;
     height: 100%;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto auto;
     grid-template-areas:
       "modes"
       "media"
-      "caption"
+      "controls"
       "action";
     min-height: 0;
     gap: 0.8rem;
@@ -1263,31 +1496,40 @@
 
   .mode-picker {
     grid-area: modes;
+    display: grid;
+    gap: 0.45rem;
     min-width: 0;
     min-height: 0;
   }
 
+  /* Two containers, not one frame: the canvas box the tile flies into, and
+     the carousel card under it. Chrome on this wrapper would make the strip
+     read as part of the travelling rectangle. */
   .media-stage {
     grid-area: media;
     min-width: 0;
     min-height: 0;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
-    border-radius: 16px;
-    background: var(--theme-card-bg, #0a0f14);
+    grid-template-areas:
+      "hero"
+      "strip";
   }
 
   /* container-type: size makes cqw/cqh resolve against the animation region,
      so the square can take min(height, width) without measuring in JS. */
   .hero-stage {
+    grid-area: hero;
     position: relative;
     min-height: 0;
     display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     place-items: center;
     container-type: size;
     overflow: hidden;
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    border-radius: 16px;
     background:
       radial-gradient(
         circle at 32% 42%,
@@ -1303,11 +1545,15 @@
   }
 
   .strip-zone {
+    grid-area: strip;
     height: clamp(4.25rem, 13cqh, 6.5rem);
     min-width: 0;
     min-height: 0;
+    /* Its own gap, so a tier that hides the strip leaves no empty track. */
+    margin-top: 0.5rem;
     overflow: hidden;
-    border-top: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    border-radius: 12px;
     background: color-mix(
       in srgb,
       var(--theme-panel-bg, #101721) 74%,
@@ -1337,9 +1583,42 @@
     min-height: 0;
   }
 
+  /* Ghost-sizer: the live header and a hidden one-letter header share one
+     grid cell, so the band keeps its height while no realization exists and
+     the square below never moves when the word arrives. */
+  .hero-header {
+    width: 100%;
+    display: grid;
+    align-items: center;
+  }
+  /* Both wrappers are drill-owned elements, so the scoped child selector
+     matches them (a child component's root would not carry this scope). */
+  .hero-header-ghost,
+  .hero-header-live {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+  .hero-header-ghost {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   .player-layer {
     position: absolute;
     inset: 0;
+  }
+  .player-layer.offstage {
+    visibility: hidden;
+  }
+  /* This layer is empty while the stage flies and for as long as the engine
+     takes to build. It holds at zero and fades up the frame the live player
+     actually shows this pair, so the stage glyph and the step number arrive
+     as the closing beat of the settle wave instead of appearing at once. */
+  .player-layer.settling {
+    opacity: 0;
+  }
+  .player-layer:not(.settling) {
+    transition: opacity var(--duration-emphasis) var(--ease-out);
   }
 
   .lazy-region-state {
@@ -1443,90 +1722,50 @@
     color: var(--theme-text-dim, oklch(0.68 0.02 270));
   }
 
-  .caption-stage {
-    grid-area: caption;
-    height: 3rem;
+  .animation-controls {
+    grid-area: controls;
     min-width: 0;
+    min-height: 0;
   }
-  .caption {
-    width: 100%;
-    height: 100%;
-    margin: 0;
+  .compact-settings {
+    position: absolute;
+    z-index: 8;
+    inset-inline: 0;
+    bottom: 3.65rem;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    height: min(52%, 20rem);
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    border-radius: 14px 14px 0 0;
+    background:
+      linear-gradient(
+        var(--theme-panel-bg, rgb(16 23 33 / 0.96)),
+        var(--theme-panel-bg, rgb(16 23 33 / 0.96))
+      ),
+      var(--theme-bg-deep, #0a0f14);
+    box-shadow: 0 -0.75rem 2rem var(--theme-shadow, rgb(0 0 0 / 0.4));
+  }
+  .compact-settings-header {
+    display: flex;
+    min-height: var(--min-touch-target, 44px);
     align-items: center;
-    gap: 0.45rem;
-    font-size: clamp(var(--font-size-min, 0.875rem), 0.82rem + 0.1vw, 0.98rem);
-    line-height: 1.5;
-    text-align: center;
-    color: var(--theme-text, oklch(0.85 0.02 270));
+    justify-content: space-between;
+    padding-inline: 0.85rem 0.35rem;
+    border-bottom: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    font-size: var(--font-size-min, 0.875rem);
   }
-  .relationship-badge {
-    display: grid;
-    grid-template-columns: auto auto minmax(0, auto);
-    align-items: center;
-    gap: 0.45rem;
-    min-width: 0;
-    min-height: 3rem;
-    justify-content: center;
-    padding: 0.35rem 0.6rem;
-    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
-    border-radius: 12px;
-    background: color-mix(in srgb, currentColor 8%, transparent);
+  .compact-settings-header button {
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    border: 0;
+    background: transparent;
+    color: var(--theme-text, #fff);
+    cursor: pointer;
   }
-  .relationship-badge img {
-    width: 1.65rem;
-    height: 1.65rem;
-    object-fit: contain;
-  }
-  .badge-copy {
-    display: grid;
-    line-height: 1.05;
-    text-align: left;
-  }
-  .badge-copy small {
-    color: var(--theme-text-dim, oklch(0.68 0.015 270));
-    font-size: var(--font-size-compact, 0.75rem);
-    white-space: nowrap;
-  }
-  .relationship-label {
-    color: var(--theme-text-dim, oklch(0.62 0.015 270));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .hand-relationship strong {
-    color: var(--hand-el, var(--theme-text, oklch(0.85 0.02 270)));
-  }
-  .hand-relationship {
-    color: var(--hand-el, var(--theme-text, oklch(0.85 0.02 270)));
-  }
-  .prop-relationship strong {
-    color: var(--prop-el, var(--theme-text, oklch(0.85 0.02 270)));
-  }
-  .prop-relationship {
-    color: var(--prop-el, var(--theme-text, oklch(0.85 0.02 270)));
-  }
-  .relationship-dot {
-    width: 1rem;
-    height: 1rem;
-    flex: 0 0 auto;
-    border-radius: 999px;
-    background: var(--prop-el, var(--theme-accent, #f4b54c));
-    box-shadow: 0 0 10px
-      color-mix(
-        in srgb,
-        var(--prop-el, var(--theme-accent, #f4b54c)) 45%,
-        transparent
-      );
-  }
-  .float-dot {
-    background: var(--theme-text-dim, #b7c0cc);
-  }
-  .derivation-arrow {
-    color: var(--theme-accent, oklch(0.64 0.03 80));
-    font-size: 0.75rem;
+  .compact-settings-body {
+    min-height: 0;
+    overflow: hidden;
   }
   .select-action {
     grid-area: action;
@@ -1539,37 +1778,6 @@
   .select-action :global(.panel-btn) {
     width: 100%;
   }
-  .cap-err {
-    color: var(--semantic-error, #fb8a8a);
-    font-size: var(--font-size-min, 0.875rem);
-  }
-  .cap-blue {
-    color: var(--prop-blue, oklch(0.68 0.14 255));
-  }
-  .cap-red {
-    color: var(--prop-red, oklch(0.68 0.16 25));
-  }
-
-  @container shape-matrix-drill (max-width: 30rem) {
-    .badge-copy small {
-      display: none;
-    }
-
-    .caption {
-      gap: 0.3rem;
-    }
-
-    .relationship-badge {
-      gap: 0.3rem;
-      padding-inline: 0.35rem;
-    }
-
-    .relationship-badge img {
-      width: 1.35rem;
-      height: 1.35rem;
-    }
-  }
-
   /* Phone-height realizations keep the live animation legible. The dedicated
      rail returns as soon as the host has enough width to show it without
      reducing the hero to a thumbnail. */
@@ -1579,7 +1787,7 @@
       grid-template-areas:
         "modes"
         "media"
-        "caption"
+        "controls"
         "action";
     }
 
@@ -1599,7 +1807,7 @@
       grid-template-rows: minmax(0, 1fr) auto;
       grid-template-areas:
         "modes media"
-        "action media";
+        "action controls";
       column-gap: 0.8rem;
       row-gap: 0.55rem;
     }
@@ -1613,12 +1821,12 @@
       display: none;
     }
 
-    .caption-stage {
-      display: none;
-    }
-
     .select-action {
       grid-area: action;
+    }
+
+    .compact-settings {
+      inset-inline-start: calc(18rem + 0.8rem);
     }
   }
 </style>

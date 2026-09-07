@@ -42,7 +42,17 @@ function canonicalTipMap(active: string): TipEffectMap {
 
 const DEFAULT_EFFECTIVE_ACTIVE = effectiveActive(DEFAULT_EFFECTS_CONFIG);
 
-export function captureFxSlice(state: EffectsConfigState): FxSlicePayload | null {
+/**
+ * `full` emits every config key and the active effect even at defaults (the
+ * Share/Copy Link snapshot); the default diff form elides them (address bar).
+ * The canonical tipEffectMap stays implied by `active` in both modes — only an
+ * exotic per-tip map rides in tuning.
+ */
+export function captureFxSlice(
+  state: Pick<EffectsConfigState, "snapshot">,
+  options: { full?: boolean } = {}
+): FxSlicePayload | null {
+  const full = options.full === true;
   const snap = state.snapshot();
   const active = effectiveActive(snap);
   const tuning: Record<string, unknown> = {};
@@ -57,13 +67,13 @@ export function captureFxSlice(state: EffectsConfigState): FxSlicePayload | null
       }
       continue;
     }
-    if (!deepEqual(snap[key], DEFAULT_EFFECTS_CONFIG[key])) {
+    if (full || !deepEqual(snap[key], DEFAULT_EFFECTS_CONFIG[key])) {
       tuning[key] = snap[key];
     }
   }
 
   const payload: FxSlicePayload = {};
-  if (active !== DEFAULT_EFFECTIVE_ACTIVE) {
+  if (full || active !== DEFAULT_EFFECTIVE_ACTIVE) {
     payload.active = active;
   }
   if (Object.keys(tuning).length > 0) payload.tuning = tuning;
@@ -76,6 +86,14 @@ export function seedFromFxSlice(payload: FxSlicePayload): EffectsConfig {
   const active = payload.active ?? DEFAULT_EFFECTIVE_ACTIVE;
   (seed as { activeEffect: unknown }).activeEffect = active;
   seed.tipEffectMap = canonicalTipMap(active);
-  if (payload.tuning) Object.assign(seed, payload.tuning);
+  // Only known config keys are merged. The blob is user-editable JSON, and
+  // `Object.assign` with an own `__proto__` key would re-parent the seed.
+  if (payload.tuning) {
+    for (const key of Object.keys(DEFAULT_EFFECTS_CONFIG)) {
+      if (key in payload.tuning) {
+        (seed as unknown as Record<string, unknown>)[key] = payload.tuning[key];
+      }
+    }
+  }
   return seed;
 }

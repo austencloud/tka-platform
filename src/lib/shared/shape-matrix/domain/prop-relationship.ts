@@ -9,6 +9,7 @@ import {
   mapPositionToAngle,
 } from "$lib/shared/animation-engine/services/angle-calculator";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export type PropDirectionRelationship = "same" | "opp";
 export type PropTimingRelationship = "tog" | "split" | "quarter";
@@ -42,20 +43,43 @@ function timingFromPhase(delta: number): PropTimingRelationship {
 }
 
 /**
+ * The prop timing between two prop bearings, in radians.
+ *
+ * Exported because a surface with no sequence to read bearings off has to
+ * classify the same three cases. The Theory ratios take their bearings from
+ * the QfT knobs rather than from a step's start orientation, and that is the
+ * only difference: the thresholds stay here, in one place.
+ */
+export function propTimingBetween(
+  a: number,
+  b: number
+): PropTimingRelationship {
+  return timingFromPhase(normalizedPhaseDelta(a, b));
+}
+
+/**
  * Classify the props separately from the hands. Direction survives unequal
  * turn rates; timing does not. Float is neither clockwise nor counter-clockwise,
  * so it deliberately returns no VTG direction/timing classification.
  */
 export function derivePropRelationship(
   sequence: SequenceData,
-  pair: { left: Flower; right: Flower }
+  pair: {
+    left: Pick<Flower, "turns">;
+    right: Pick<Flower, "turns">;
+  }
 ): PropRelationship {
   const step = sequence.steps.find(
     (candidate) => candidate.motions.left && candidate.motions.right
   );
   const left = step?.motions.left;
   const right = step?.motions.right;
-  if (!left || !right || pair.left.turns === "fl" || pair.right.turns === "fl") {
+  if (
+    !left ||
+    !right ||
+    pair.left.turns === "fl" ||
+    pair.right.turns === "fl"
+  ) {
     return { kind: "float", direction: null, timing: null, element: null };
   }
   if (
@@ -85,4 +109,27 @@ export function derivePropRelationship(
     throw new Error(`No element for prop relationship ${timing}-${direction}`);
   }
   return { kind: "full", direction, timing, element };
+}
+
+/**
+ * A sequence already carries the two turn values needed to classify its prop
+ * relationship. This adapter keeps ordinary viewers out of the Shape Matrix's
+ * flower-selection model while routing the calculation through the same owner.
+ */
+export function derivePropElementalType(
+  sequence: SequenceData
+): ElementalType | null {
+  const step = sequence.steps.find(
+    (candidate) => candidate.motions.left && candidate.motions.right
+  );
+  const left = step?.motions.left;
+  const right = step?.motions.right;
+  if (!left || !right) return null;
+  const relationship = derivePropRelationship(sequence, {
+    left: { turns: left.turns },
+    right: { turns: right.turns },
+  });
+  return relationship.kind === "full"
+    ? (relationship.element.element as ElementalType)
+    : null;
 }

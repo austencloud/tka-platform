@@ -33,7 +33,7 @@
     "@type": "BreadcrumbList",
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://tkaflowarts.com/" },
-      { "@type": "ListItem", "position": 2, "name": "Notation", "item": "https://tkaflowarts.com/notation" },
+      { "@type": "ListItem", "position": 2, "name": "Flow Arts History", "item": "https://tkaflowarts.com/history" },
       { "@type": "ListItem", "position": 3, "name": "Buugeng", "item": "${URL}" }
     ]
   }
@@ -41,7 +41,7 @@
 </Seo>
 
 <div class="editorial">
-  <a class="back-link" href="/notation">← Flow Arts Notation</a>
+  <a class="back-link" href="/history">← Flow Arts History</a>
 
   <header class="editorial-header">
     <h1 class="page-title">Buugeng Notation</h1>

@@ -16,8 +16,8 @@ const COVERED_OUTPUT = resolve(
   "static/images/props/appearances/fan-fire-covered.svg"
 );
 
-const DISPLAY_PIVOT = [130, 103.5];
-const DISPLAY_SCALE = { across: 417.3, along: 469.4 };
+export const DISPLAY_PIVOT = [130, 103.5];
+export const DISPLAY_SCALE = { across: 417.3, along: 469.4 };
 const WICK_LENGTH = 0.0381;
 const WICK_RADIUS = 0.0135;
 const FRAME_COLOR = "#2E3192";
@@ -47,10 +47,10 @@ function normalize(vector) {
   return length === 0 ? [0, 1] : multiply(vector, 1 / length);
 }
 
-function displayPoint([across, along]) {
+function displayPoint([across, along], fit = 1) {
   return [
-    DISPLAY_PIVOT[0] + along * DISPLAY_SCALE.along,
-    DISPLAY_PIVOT[1] + across * DISPLAY_SCALE.across,
+    DISPLAY_PIVOT[0] + along * DISPLAY_SCALE.along * fit,
+    DISPLAY_PIVOT[1] + across * DISPLAY_SCALE.across * fit,
   ];
 }
 
@@ -58,8 +58,8 @@ function point([x, y]) {
   return `${format(x)} ${format(y)}`;
 }
 
-function physicalPath(points) {
-  return points.map(displayPoint);
+function physicalPath(points, fit = 1) {
+  return points.map((value) => displayPoint(value, fit));
 }
 
 function polylinePath(points) {
@@ -167,7 +167,8 @@ ${bands}
   </g>`;
 }
 
-function coverSvg(geometry) {
+/** The fitted sleeve; `fit` scales it with a host drawn below the fire scale. */
+export function coverSvg(geometry, fit = 1) {
   const [outerWickAcross, outerWickAlong] = geometry.outer_wick_center;
   const [diagonalWickAcross, diagonalWickAlong] = geometry.diagonal_wick_center;
   const centerWickTop = geometry.center_wick_center_y + WICK_LENGTH / 2;
@@ -189,8 +190,8 @@ function coverSvg(geometry) {
     [-outerWickAcross, innerEdgeAlong],
     [-coverEdgeAcross - seamClearance, innerEdgeAlong],
   ]);
-  const outerDisplay = physicalPath(outer);
-  const innerDisplay = physicalPath(inner);
+  const outerDisplay = physicalPath(outer, fit);
+  const innerDisplay = physicalPath(inner, fit);
   const face = polylinePath([...outerDisplay, ...innerDisplay.toReversed()]);
   return `  <g data-fan-cover="" fill="${COVER_COLOR}" stroke="${COVER_SEAM_COLOR}" stroke-linecap="round" stroke-linejoin="round">
     <path data-fan-cover-face="" d="${face} Z" stroke-width="1.2"/>

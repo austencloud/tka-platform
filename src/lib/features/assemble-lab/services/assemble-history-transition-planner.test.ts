@@ -8,7 +8,7 @@ import type { AssembleSnapshot } from "../state/assemble-state-types";
 function snapshot(overrides: Partial<AssembleSnapshot> = {}): AssembleSnapshot {
   return {
     phase: "building",
-    activeHand: "blue",
+    activeHand: "left",
     gridMode: "diamond",
     showCenter: false,
     startPoses: {},
@@ -30,10 +30,10 @@ describe("createAssembleHistoryTransition", () => {
     const from = snapshot();
     const to = snapshot({
       phase: "complete",
-      activeHand: "red",
+      activeHand: "right",
       gridMode: "box",
       showCenter: true,
-      startPoses: { blue: { location: "n", orientation: "in" } },
+      startPoses: { left: { location: "n", orientation: "in" } },
       leftSteps: [
         {
           startPosition: "n",
@@ -51,7 +51,7 @@ describe("createAssembleHistoryTransition", () => {
       selectedStepIndex: 0,
       stepEditMode: "replace",
       document: { id: "after" },
-    } as Partial<AssembleSnapshot>);
+    });
 
     const plan = createAssembleHistoryTransition(
       "redo",

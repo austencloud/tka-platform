@@ -20,14 +20,15 @@
   let { onSettingChange }: Props = $props();
 
   const viewer = getViewer3DContext();
-  const selectedIndex = $derived(viewer.selectedPerformerIndex);
-  const isAllMode = $derived(selectedIndex === null);
-
-  const selected = $derived.by(() => {
-    if (selectedIndex === null) return null;
-    return viewer.performerManager.performers[selectedIndex] ?? null;
-  });
-  const allPerformers = $derived(viewer.performerManager.performers);
+  const selectedIndex = $derived(viewer.primaryPerformerIndex);
+  const isAllMode = $derived(viewer.isAllPerformersSelected);
+  const selected = $derived(
+    selectedIndex === null
+      ? null
+      : (viewer.performerManager.performers[selectedIndex] ?? null)
+  );
+  const scopedPerformers = $derived(viewer.scopedPerformers());
+  const isMultiMode = $derived(scopedPerformers.length > 1 && !isAllMode);
 
   // The full nine-plane catalog, derived from the enum so a new plane can
   // never be missing here. Enum order already groups the fusion planes by
@@ -49,11 +50,11 @@
         : viewer.defaultSettings.customRightPlane;
     const first =
       hand === "left"
-        ? allPerformers[0]?.effectiveLeftPlane
-        : allPerformers[0]?.effectiveRightPlane;
+        ? scopedPerformers[0]?.effectiveLeftPlane
+        : scopedPerformers[0]?.effectiveRightPlane;
     if (!first) return defaultPlane;
 
-    const everyoneMatches = allPerformers.every((performer) =>
+    const everyoneMatches = scopedPerformers.every((performer) =>
       hand === "left"
         ? performer.effectiveLeftPlane === first
         : performer.effectiveRightPlane === first
@@ -62,22 +63,22 @@
   }
 
   const leftPlane = $derived(
-    isAllMode
+    isAllMode || isMultiMode
       ? sharedPlane("left")
       : (selected?.effectiveLeftPlane ?? Plane.WALL)
   );
 
   const rightPlane = $derived(
-    isAllMode
+    isAllMode || isMultiMode
       ? sharedPlane("right")
       : (selected?.effectiveRightPlane ?? Plane.WALL)
   );
 
   const isOverridden = $derived(
-    !isAllMode && (selected?.hasOverride.planes ?? false)
+    !isAllMode && !isMultiMode && (selected?.hasOverride.planes ?? false)
   );
   const overrideCount = $derived(
-    isAllMode ? viewer.overrideCountForCategory("planes") : 0
+    scopedPerformers.filter((performer) => performer.hasOverride.planes).length
   );
 
   function hasHandOnPlane(plane: Plane): boolean {
@@ -89,9 +90,7 @@
   }
 
   const hasStepOverrides = $derived(
-    isAllMode
-      ? allPerformers.some((performer) => performer.hasStepOverrides)
-      : (selected?.hasStepOverrides ?? false)
+    scopedPerformers.some((performer) => performer.hasStepOverrides)
   );
 
   // visiblePlanes is genuinely global scene state (single $state on the
@@ -102,8 +101,8 @@
   // scene), so it must not count there either - otherwise Reset can never
   // reach a state where it disappears again.
   const isPlaneStateNonDefault = $derived(
-    leftPlane !== Plane.WALL ||
-      rightPlane !== Plane.WALL ||
+    leftPlane !== viewer.defaultSettings.customLeftPlane ||
+      rightPlane !== viewer.defaultSettings.customRightPlane ||
       hasStepOverrides ||
       (isAllMode && viewer.visiblePlanes.size > 0)
   );
@@ -142,20 +141,8 @@
 
   function handleResetPlanesClick(e: MouseEvent) {
     e.stopPropagation();
-    if (isAllMode) {
-      viewer.setDefaultHandPlane("left", Plane.WALL);
-      viewer.setDefaultHandPlane("right", Plane.WALL);
-      viewer.resetAllPerformersPlanes();
-      for (const performer of allPerformers) {
-        performer.clearBeatPlaneOverrides();
-      }
-      viewer.hideAllPlanes();
-    } else if (selected) {
-      selected.resetPlanes();
-      for (const p of viewer.scopedPerformers()) {
-        p.clearBeatPlaneOverrides();
-      }
-    }
+    viewer.resetPlanesScoped();
+    if (isAllMode) viewer.hideAllPlanes();
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_planes",
@@ -166,7 +153,7 @@
   }
 
   function resetAllOverrides(): void {
-    viewer.resetAllPerformersPlanes();
+    viewer.resetPlanesScoped();
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_planes",
@@ -177,7 +164,7 @@
   }
 
   function resetSelectedPlanes(): void {
-    selected?.resetPlanes();
+    viewer.resetPlanesScoped();
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_planes",
@@ -202,16 +189,16 @@
 </script>
 
 <div class="planes-popover">
-  {#if isAllMode && overrideCount > 0}
+  {#if (isAllMode || isMultiMode) && overrideCount > 0}
     <CascadeBadge
       mode="overrides"
       {overrideCount}
       categoryLabel="planes"
       onReset={resetAllOverrides}
     />
-  {:else if !isAllMode && isOverridden}
+  {:else if !isAllMode && !isMultiMode && isOverridden}
     <CascadeBadge mode="custom" onReset={resetSelectedPlanes} />
-  {:else if !isAllMode}
+  {:else if !isAllMode && !isMultiMode}
     <CascadeBadge mode="default" />
   {/if}
 

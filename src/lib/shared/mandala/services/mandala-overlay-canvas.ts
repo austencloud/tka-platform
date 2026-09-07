@@ -16,13 +16,11 @@ import type { MandalaOverlayRenderParams } from "../domain/mandala-overlay-types
 import {
 	OVERLAY_WARMUP_FRAMES,
 	OVERLAY_ALPHA_DECAY,
-	PURPLE_STROKE,
 } from "../domain/mandala-constants";
 import { Canvas2DFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-fade-manager";
 import { reducedMotion } from "$lib/shared/transitions/motion";
 import { DURATION } from "$lib/shared/transitions/transitions";
-import { compositeMandalaOverlap } from "./mandala-overlap-compositor";
-import type { PreparedMandalaPath } from "./types";
+import { MandalaOverlapMasks, paintMandalaGuide } from "./mandala-guide-painter";
 
 export class MandalaOverlayCanvas {
 	private canvas: HTMLCanvasElement | null = null;
@@ -36,10 +34,7 @@ export class MandalaOverlayCanvas {
 	// module switch — at `emphasis` the old shape was gone before the eye had
 	// followed it across.
 	private readonly guideFadeManager = new Canvas2DFadeManager(DURATION.dramatic);
-	private leftMaskCanvas: OffscreenCanvas | null = null;
-	private leftMaskCtx: OffscreenCanvasRenderingContext2D | null = null;
-	private rightMaskCanvas: OffscreenCanvas | null = null;
-	private rightMaskCtx: OffscreenCanvasRenderingContext2D | null = null;
+	private readonly overlapMasks = new MandalaOverlapMasks();
 	private width = 0;
 	private height = 0;
 	private dpr = 1;
@@ -227,50 +222,24 @@ export class MandalaOverlayCanvas {
 		// blended for the rest of the transition. This keeps a prop swap cheap
 		// even when the mandala contains many paths.
 		if (!guideMode || guidePathsChanged) {
-			// Clear buffer (full pixel dimensions)
-			bCtx.save();
-			bCtx.setTransform(1, 0, 0, 1, 0, 0);
-			bCtx.clearRect(0, 0, this.width * this.dpr, this.height * this.dpr);
-			bCtx.restore();
-
-			// Apply mandala coordinate transform: translate to center, scale to fit
-			const center = this.width / 2;
-			const { paths, scale } = preparedPaths;
-			const renderProgress = guideMode ? 1 : progress;
-
-			bCtx.save();
-			bCtx.translate(center, center);
-			bCtx.scale(scale, scale);
-
-			// Compensate stroke width for the scale transform so it stays consistent in pixels
-			const adjustedStrokeWidth = config.strokeWidth / scale;
-
-			for (const { path2d, totalLength, color } of paths) {
-				const revealLength =
-					totalLength * Math.max(0, Math.min(1, renderProgress));
-
-				bCtx.strokeStyle = color;
-				bCtx.lineWidth = adjustedStrokeWidth;
-				bCtx.lineCap = "round";
-				bCtx.lineJoin = "round";
-				bCtx.globalAlpha = 1;
-				bCtx.setLineDash(
-					guideMode ? [] : [revealLength, totalLength],
-				);
-				bCtx.lineDashOffset = 0;
-				bCtx.stroke(path2d);
-			}
-
-			bCtx.restore();
-
-			this.paintPurpleOverlap(
-				bCtx,
-				paths,
-				center,
-				scale,
-				adjustedStrokeWidth,
-				renderProgress,
-				guideMode,
+			// One painter for every mandala the product shows: the live guide,
+			// the progressive reveal, and the still images the Shape Matrix
+			// paints through mandala-guide-image.ts.
+			paintMandalaGuide(
+				{
+					context: bCtx,
+					pixelWidth: this.width * this.dpr,
+					pixelHeight: this.height * this.dpr,
+					dpr: this.dpr,
+				},
+				{
+					paths: preparedPaths.paths,
+					scale: preparedPaths.scale,
+					strokeWidth: config.strokeWidth,
+					progress,
+					reveal: !guideMode,
+				},
+				this.overlapMasks,
 			);
 		}
 
@@ -339,10 +308,7 @@ export class MandalaOverlayCanvas {
 		this.previousGuideCtx = null;
 		this.hasPreviousGuideSnapshot = false;
 		this.guideFadeManager.reset();
-		this.leftMaskCanvas = null;
-		this.leftMaskCtx = null;
-		this.rightMaskCanvas = null;
-		this.rightMaskCtx = null;
+		this.overlapMasks.release();
 		this.width = 0;
 		this.height = 0;
 		this.firstLoopComplete = false;
@@ -444,132 +410,6 @@ export class MandalaOverlayCanvas {
 	private resetGuideTransition(): void {
 		this.guideFadeManager.reset();
 		this.hasPreviousGuideSnapshot = false;
-	}
-
-	private paintPurpleOverlap(
-		targetContext: OffscreenCanvasRenderingContext2D,
-		paths: readonly PreparedMandalaPath[],
-		center: number,
-		scale: number,
-		strokeWidth: number,
-		renderProgress: number,
-		guideMode: boolean,
-	): void {
-		const hasLeft = paths.some((path) => path.hand === "left");
-		const hasRight = paths.some((path) => path.hand === "right");
-		if (!hasLeft || !hasRight) return;
-
-		const masks = this.ensureOverlapMasks();
-		if (!masks) return;
-
-		this.paintHandMask(
-			masks.leftContext,
-			paths,
-			"left",
-			center,
-			scale,
-			strokeWidth,
-			renderProgress,
-			guideMode,
-		);
-		this.paintHandMask(
-			masks.rightContext,
-			paths,
-			"right",
-			center,
-			scale,
-			strokeWidth,
-			renderProgress,
-			guideMode,
-		);
-
-		compositeMandalaOverlap({
-			targetContext,
-			overlapMaskContext: masks.leftContext,
-			overlapMaskCanvas: masks.leftCanvas,
-			otherMaskCanvas: masks.rightCanvas,
-			width: masks.leftCanvas.width,
-			height: masks.leftCanvas.height,
-			color: PURPLE_STROKE,
-		});
-	}
-
-	private paintHandMask(
-		context: OffscreenCanvasRenderingContext2D,
-		paths: readonly PreparedMandalaPath[],
-		hand: PreparedMandalaPath["hand"],
-		center: number,
-		scale: number,
-		strokeWidth: number,
-		renderProgress: number,
-		guideMode: boolean,
-	): void {
-		const pixelWidth = this.bufferCanvas?.width ?? 0;
-		const pixelHeight = this.bufferCanvas?.height ?? 0;
-
-		context.setTransform(1, 0, 0, 1, 0, 0);
-		context.clearRect(0, 0, pixelWidth, pixelHeight);
-		context.globalCompositeOperation = "source-over";
-		context.globalAlpha = 1;
-		context.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-		context.translate(center, center);
-		context.scale(scale, scale);
-		context.strokeStyle = "white";
-		context.lineWidth = strokeWidth;
-		context.lineCap = "round";
-		context.lineJoin = "round";
-		context.lineDashOffset = 0;
-
-		for (const path of paths) {
-			if (path.hand !== hand) continue;
-
-			const revealLength =
-				path.totalLength * Math.max(0, Math.min(1, renderProgress));
-			context.setLineDash(
-				guideMode ? [] : [revealLength, path.totalLength],
-			);
-			context.stroke(path.path2d);
-		}
-	}
-
-	private ensureOverlapMasks(): {
-		leftCanvas: OffscreenCanvas;
-		leftContext: OffscreenCanvasRenderingContext2D;
-		rightCanvas: OffscreenCanvas;
-		rightContext: OffscreenCanvasRenderingContext2D;
-	} | null {
-		const width = this.bufferCanvas?.width ?? 0;
-		const height = this.bufferCanvas?.height ?? 0;
-		if (width === 0 || height === 0) return null;
-
-		const masksMatchBuffer =
-			this.leftMaskCanvas?.width === width &&
-			this.leftMaskCanvas?.height === height &&
-			this.rightMaskCanvas?.width === width &&
-			this.rightMaskCanvas?.height === height;
-
-		if (!masksMatchBuffer) {
-			this.leftMaskCanvas = new OffscreenCanvas(width, height);
-			this.leftMaskCtx = this.leftMaskCanvas.getContext("2d");
-			this.rightMaskCanvas = new OffscreenCanvas(width, height);
-			this.rightMaskCtx = this.rightMaskCanvas.getContext("2d");
-		}
-
-		if (
-			!this.leftMaskCanvas ||
-			!this.leftMaskCtx ||
-			!this.rightMaskCanvas ||
-			!this.rightMaskCtx
-		) {
-			return null;
-		}
-
-		return {
-			leftCanvas: this.leftMaskCanvas,
-			leftContext: this.leftMaskCtx,
-			rightCanvas: this.rightMaskCanvas,
-			rightContext: this.rightMaskCtx,
-		};
 	}
 
 	/**

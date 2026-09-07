@@ -339,6 +339,12 @@ export class LibraryRepository {
         id;
     }
 
+    if (
+      data["sequenceKind"] === "hand-path" ||
+      seqData["sequenceKind"] === "hand-path"
+    )
+      word = "";
+
     // Smart date fallbacks for backwards compatibility with older sequences
     // Priority: createdAt → birthday → dateAdded (some sequences only have birthday or dateAdded)
     const createdAt = this.getDateWithFallback(
@@ -799,9 +805,11 @@ export class LibraryRepository {
       name: metadata.name,
       displayName: metadata.displayName,
       word:
-        wordStatus.complete && wordStatus.word.length > 0
-          ? wordStatus.word
-          : (sequence.word ?? ""),
+        sequence.sequenceKind === "hand-path"
+          ? ""
+          : wordStatus.complete && wordStatus.word.length > 0
+            ? wordStatus.word
+            : (sequence.word ?? ""),
       thumbnails,
       tags: metadata.tags,
     };

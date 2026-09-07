@@ -16,6 +16,7 @@ vi.mock("$lib/shared/library/get-library-repository", () => ({
 
 vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
   authState: {
+    effectiveUserId: "owner",
     isAuthenticated: true,
     isFullAccount: true,
   },

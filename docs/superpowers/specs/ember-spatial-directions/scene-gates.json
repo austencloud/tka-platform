@@ -5,7 +5,7 @@
   "domainProofRequired": false,
   "currentGate": 4,
   "authority": {
-    "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/look-development.md",
+    "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
     "roomShellSource": "src/lib/shared/3d/environments/scenes/EmberScene.svelte",
     "planContract": "docs/superpowers/specs/ember-spatial-directions/scene-development.md",
     "museumTrackerItems": [
@@ -27,7 +27,38 @@
       "sDKmB6cUEXLfHgz4DGd4",
       "s3cxnp6hOLBVQR5dDF42",
       "uXmi4z9lL7zCiNq5ULCp",
-      "ahPuPwh34G3FeqvUEHsB"
+      "ahPuPwh34G3FeqvUEHsB",
+      "hMO9hB97M2y1ZVGrxCt3",
+      "gqImqDqgfctdYi1kr6pH",
+      "4UjoQo3gLUdLtkGSiTYN",
+      "ZgRNLK66C9Hz2wMPbOXc",
+      "MLcFRgJSpxKaPo2xlMTH",
+      "EdDA3juqt6NiTDDQpHTR",
+      "anf4rcwDOr4j1LuyOX3l",
+      "xSjtvI2XVvvMdn8pHqwP",
+      "WS9FU4nn2fCSbOn68IeB",
+      "7uoHBfOCOqMmFeKBRh7l",
+      "torsiCoIaMMrkMklUMSq",
+      "lIPwVa2kGFcoQsgICkWI",
+      "BvN1DiylOnfdbrofcwaM",
+      "FZftIaWtEdGTrqXRv9JS",
+      "xFcagbaZTQAq615IbZgT",
+      "lXhTllDFV2Ne1E7foCkS",
+      "Vwm6XTLdDbDfxuoVE7z9",
+      "5P5KVEq04dpHxu9F0ViI",
+      "LfdgqBhR1T31jk77cFhf",
+      "Iur86OmZX40nTqdwgxDq",
+      "Szxybxm6NlLkPyPL6dQt",
+      "1hlrU13Dg8VqdQaLJPib",
+      "3XyhXLyzv8ASNl2fLoCo",
+      "n37Lcgy1czQrqITMnB8f",
+      "HyW3fFQVRHU3Uc0ezeWO",
+      "GLYjYdoqw6cDfzcLAGiq",
+      "CFmmTJ8PS6cLgVDu5l8V",
+      "lp8HMzVZQDgdc508l9DK",
+      "j3ejDU3TZSXpXz7By4mh",
+      "ZlG9TMyWMYzh66WR12D4",
+      "YSugmayi3aen8Zspk9Se"
     ]
   },
   "sequenceFingerprints": [],
@@ -36,21 +67,23 @@
       "id": "C-001",
       "class": "literal",
       "statement": "Viewer3D caps Ember's orbit distance at 25 metres.",
-      "evidence": ["src/lib/shared/3d/camera/Viewer3DCamera.svelte"]
+      "evidence": ["src/lib/shared/3d/components/Viewer3DCamera.svelte"]
     },
     {
       "id": "C-002",
       "class": "invention",
-      "statement": "The Columnar Furnace rises from an offset breached caldera whose collapsed terraces, open travel saddle, embedded stage crust, and through-frame lava channel establish continuous foreground, midground, and far terrain outside the protected 4.5 m action radius.",
+      "statement": "The active R5 Mid-Flank Fire Pilgrimage candidate places the performer on a 12 by 11 m irregular old, cooled lava bench embedded in a continuously inclined compound flank between 131.368 m of upper mountain and 69.916 m of lower-country fall; a small audience standing crescent follows the downslope and lateral contour outside the protected 4.5 m action radius, while a high-source Flowy drainage clears that radius and continues through the south scene boundary.",
       "evidence": [
-        "docs/superpowers/specs/ember-spatial-directions/scene-development.md",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-volcanic-world-production-slice-r8-orbit-board.png"
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/01-north-up-measured-plan.png",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/02-true-scale-midflank-section.png",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/03-runtime-uphill-downhill-proof.png",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/06-performance-ground-detail.png"
       ]
     },
     {
       "id": "C-003",
       "class": "invention",
-      "statement": "Blue-black basalt and rough obsidian dominate the frame; orange is confined to fissures and the banked, crusted river, with restrained mineral ochre as a secondary accent.",
+      "statement": "Reserved Gate 3/4 visual target, not an R5 measured-plan claim: blue-black basalt and rough obsidian dominate the frame; orange is confined to fissures and the banked, crusted river, with restrained mineral ochre as a secondary accent.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/look-development.md"
       ]
@@ -58,32 +91,39 @@
     {
       "id": "C-004",
       "class": "invention",
-      "statement": "Fresh Rift uses young lava crust as Ember's surface base, exposes fractured basalt on scarps, shelters ash in depressions, and confines iron-rich alteration to lava-distance contact zones.",
+      "statement": "Historical surface research reserved for a future Gate 3/4 restart, not accepted R5 geometry: Fresh Rift uses young lava crust as Ember's surface base, exposes fractured basalt on scarps, shelters ash in depressions, and confines iron-rich alteration to lava-distance contact zones.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-surface-target-board.jpg",
         "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/candidate-decisions.md"
       ]
+    },
+    {
+      "id": "C-005",
+      "class": "invention",
+      "statement": "Mid-Flank Fire Pilgrimage R5 is the active correction candidate: one continuous upper massif, one furnace saddle and high source, one small stable performance widening within a 6-10 degree old-flow contact, one gravity-led Flowy drainage, one gradually steepening lower flank, and one explicit off-world downslope exit.",
+      "evidence": [
+        "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/01-north-up-measured-plan.png"
+      ]
+    },
+    {
+      "id": "C-006",
+      "class": "literal",
+      "statement": "In the historical R1 benchmark, Flowy and MrLavaLoba2 produced 78.0 percent footprint intersection-over-union on the shared authored Ember DEM and benchmark parameters.",
+      "evidence": [
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/lava-simulator-comparison-report.json"
+      ]
+    },
+    {
+      "id": "C-007",
+      "class": "invention",
+      "statement": "Reserved Gate 3/4 response, not an R5 measured-terrain claim: the full older-flow contact may read slightly darker and denser than adjacent rubble, and only pre-existing peripheral fractures may carry a restrained low-area ember pulse; the performance surface underfoot remains cooled and non-emissive.",
+      "evidence": [
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/06-performance-ground-detail.png"
+      ]
     }
   ],
   "exemptions": [
-    {
-      "gateId": "measured-plan",
-      "type": "evidence",
-      "name": "vertical-section",
-      "rationale": "Ember is an orbit backdrop with no traversable vertical route; the four-camera composition board proves vertical scale for this gate.",
-      "approvedBy": "Austen",
-      "approvedAt": "2026-08-25T22:44:27.322Z",
-      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
-    },
-    {
-      "gateId": "measured-plan",
-      "type": "evidence",
-      "name": "route-storyboard",
-      "rationale": "Viewer3D supplies a free orbit rather than a player navigation route; the locked camera board covers the intended visual sequence.",
-      "approvedBy": "Austen",
-      "approvedAt": "2026-08-25T22:44:27.322Z",
-      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
-    },
     {
       "gateId": "measured-plan",
       "type": "check",
@@ -96,17 +136,8 @@
     {
       "gateId": "playable-graybox",
       "type": "evidence",
-      "name": "graybox-glb",
-      "rationale": "The Blender topology comparison was the review artifact; runtime GLB proof is deliberately reserved for the approved production-slice gate.",
-      "approvedBy": "Austen",
-      "approvedAt": "2026-08-25T22:44:27.322Z",
-      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
-    },
-    {
-      "gateId": "playable-graybox",
-      "type": "evidence",
       "name": "first-person-walk",
-      "rationale": "Viewer3D is evaluated by orbit cameras rather than first-person navigation; the four-camera contact sheet is the equivalent review proof.",
+      "rationale": "Viewer3D is evaluated by a default audience camera and complete registered orbit rather than first-person navigation; the fixed camera set and continuous orbit capture are the equivalent review proof.",
       "approvedBy": "Austen",
       "approvedAt": "2026-08-25T22:44:27.322Z",
       "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
@@ -266,6 +297,156 @@
         "R8 Gate 4 material evidence"
       ],
       "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/"
+    },
+    {
+      "invalidatedAt": "2026-09-03T18:00:00.000Z",
+      "reopenedGate": 1,
+      "museumTrackerItem": "gqImqDqgfctdYi1kr6pH",
+      "reason": "Austen rejected the accumulated environment as insufficiently realistic and required a bird's-eye, geology-first restart before further production iteration. The restart replaces motif-led terrain and spline-led lava with a measured plan, geological event sequence, and terrain-driven emplacement evidence.",
+      "preserved": [
+        "EmberScene and Environment3D capability ownership",
+        "4.5 m performer action clearance",
+        "25 m Viewer3D orbit contract",
+        "front-stage performer facing",
+        "responsive stage behavior",
+        "Fresh Rift surface research and textures",
+        "Blackglass atmosphere, haze, plume, particle, and lighting systems",
+        "existing Meshy assets when they fit the new geological contacts",
+        "remaining 40 Meshy credits"
+      ],
+      "invalidated": [
+        "previous Gate 1 macro topology selection",
+        "previous Gate 2 graybox",
+        "previous Gate 3 registered visual target as a complete scene target",
+        "R10 production terrain and radial basin composition",
+        "stage-to-terrain transition",
+        "seventeen-point Catmull-Rom ribbon as owner of the lava footprint",
+        "previous landmark arrangement",
+        "all later-gate visual acceptance evidence"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/"
+    },
+    {
+      "invalidatedAt": "2026-09-04T06:14:02.295Z",
+      "reopenedGate": 1,
+      "museumTrackerItem": "WS9FU4nn2fCSbOn68IeB",
+      "auditTrackerItem": "xSjtvI2XVvvMdn8pHqwP",
+      "reason": "The independent Gate 2 audit found that the approved R1 plan encoded a circular performance bowl, a smooth mound instead of an explicit collapse volume, a short simulator footprint that contradicted the authored continuation, south-up unlabeled plan evidence, stale clearance claims, and checkout-unstable manifest digests. Geometry and flow ownership therefore regress to Gate 1.1 before any new graybox.",
+      "preserved": [
+        "Breached Rift Bench Direction A",
+        "one fissure source near runtime XZ (-72, 137)",
+        "one south continuation",
+        "west and northwest dominant mass",
+        "open east and southeast horizon",
+        "380 by 335 m world",
+        "4.5 m performer action envelope",
+        "25 m Viewer3D orbit contract",
+        "Fresh Rift material research",
+        "Blackglass atmosphere systems",
+        "existing Meshy assets and remaining credits"
+      ],
+      "invalidated": [
+        "R1 radial performance bench",
+        "R1 smooth Gaussian scarp",
+        "R1 authored full-flow ribbon",
+        "R1 Gate 1 measurements and visual approval",
+        "R1 Gate 2 Blender source, GLB, manifest, renders, exemptions, and checks",
+        "all later-gate evidence"
+      ],
+      "historicalEvidence": [
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r1/"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/"
+    },
+    {
+      "invalidatedAt": "2026-09-04T08:29:49.084Z",
+      "reopenedGate": 1,
+      "museumTrackerItem": "lIPwVa2kGFcoQsgICkWI",
+      "auditTrackerItem": "torsiCoIaMMrkMklUMSq",
+      "reason": "The R2 adversarial review found that the evidence overstated visual proof, the flow did not read causally from the registered runtime cameras, the quiet area still read as a circular stage, the collapse read as additive geometry instead of missing volume, the lava mesh modified simulator thickness, the GLB lacked runtime-recognized collision metadata, camera contracts were not exact, diagnostic nodes leaked into the review export, source and terminal semantics were ambiguous, and active documentation still pointed at invalidated later-gate work. Austen authorized a complete Gate 1.1 and Gate 2 correction with 'attack it!'.",
+      "preserved": [
+        "Breached Rift Bench as the selected geological direction",
+        "one fissure-fed gravity-legible drainage",
+        "west and northwest dominant mass",
+        "open east and southeast horizon",
+        "380 by 335 m world",
+        "4.5 m performer action envelope",
+        "25 m Viewer3D orbit contract",
+        "Fresh Rift material research for a later gate",
+        "Blackglass atmosphere systems for a later gate",
+        "existing Meshy assets and unspent credits"
+      ],
+      "invalidated": [
+        "R2 Gate 1.1 plan approval and measurements",
+        "R2 additive collapse reading",
+        "R2 circular quiet-area composition",
+        "R2 lava-thickness transforms and false continuation semantics",
+        "R2 camera, collision, diagnostic-export, and portability claims",
+        "R2 Gate 2 Blender source, GLB, manifest, renders, and checks",
+        "all later-gate visual acceptance evidence"
+      ],
+      "historicalEvidence": [
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r2/",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r2/"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/ and docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r3/"
+    },
+    {
+      "invalidatedAt": "2026-09-04T12:43:02.2094003-05:00",
+      "reopenedGate": 1,
+      "museumTrackerItem": "BvN1DiylOnfdbrofcwaM",
+      "reason": "Austen rejected R3 because its technically valid broad-basin composition did not create the experience of standing halfway up a colossal volcanic flank, with consequential ascent above and descent below. R4 replaces the spatial target before any further Blender, runtime, material, or Meshy work.",
+      "preserved": [
+        "380 by 335 m world footprint",
+        "4.5 m performer action envelope",
+        "25 m Viewer3D orbit contract",
+        "Flowy ownership and pinned open-source geology pipeline",
+        "Fresh Rift material research for a later gate",
+        "Blackglass atmosphere systems for a later gate",
+        "existing Meshy assets and unspent credits"
+      ],
+      "invalidated": [
+        "R3 broad-basin and inboard-terminal spatial target",
+        "R3 Gate 1.1 plan and measurements",
+        "R3 Gate 2 Blender source, GLB, manifest, renders, and checks",
+        "all later-gate visual acceptance evidence"
+      ],
+      "historicalEvidence": [
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r3/",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r3/"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/"
+    },
+    {
+      "invalidatedAt": "2026-09-04T14:01:32.7164584-05:00",
+      "reopenedGate": 1,
+      "museumTrackerItem": "Vwm6XTLdDbDfxuoVE7z9",
+      "proposalTrackerItem": "5P5KVEq04dpHxu9F0ViI",
+      "reason": "Austen retained R4's colossal mid-flank composition but rejected its roughly 138 by 66 m near-level ledge as an implausibly lucky clearing between steep drops. Because the correction changes terrain geometry and orbit sightlines, R5 reopens Gate 1.1 before any Blender rebuild.",
+      "preserved": [
+        "380 by 335 m world footprint",
+        "colossal mountain-above and lower-country-below composition",
+        "high furnace-saddle source and south-boundary continuation",
+        "4.5 m performer action envelope",
+        "25 m Viewer3D orbit contract",
+        "Flowy ownership and pinned open-source geology pipeline",
+        "Fresh Rift material research for a later gate",
+        "Blackglass atmosphere systems for a later gate",
+        "existing Meshy assets and unspent credits"
+      ],
+      "invalidated": [
+        "R4 broad near-level contour ledge",
+        "R4 abrupt ledge-to-upper and ledge-to-lower grade breaks",
+        "R4 Gate 1.1 geometry and sightline approval",
+        "R4 Gate 2 Blender source, GLB, manifest, renders, and checks",
+        "all later-gate evidence"
+      ],
+      "historicalEvidence": [
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/"
     }
   ],
   "gates": [
@@ -275,11 +456,19 @@
       "evidence": [
         {
           "kind": "canon-audit",
-          "path": "docs/superpowers/specs/ember-spatial-directions/production-contract.md"
+          "path": "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md"
         },
         {
           "kind": "room-shell",
           "path": "src/lib/shared/3d/environments/scenes/EmberScene.svelte"
+        },
+        {
+          "kind": "source-ledger",
+          "path": "docs/superpowers/specs/ember-spatial-directions/geology-research-source-ledger.md"
+        },
+        {
+          "kind": "measured-reference",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-geology-restart-r1/usgs-mauna-loa-2022-reference-board.png"
         }
       ],
       "checks": [
@@ -291,7 +480,7 @@
         {
           "name": "source-digests",
           "status": "passed",
-          "evidence": "Tracked plan, look-development, runtime shell, and museum tracker sources are named in the authority ledger."
+          "evidence": "The geology source ledger separates measured USGS data, scientific interpretation, production references, exact open-source pins and licenses, Meshy costs, and Ember-authored hypotheses."
         }
       ],
       "approval": null
@@ -302,36 +491,67 @@
       "evidence": [
         {
           "kind": "floor-plan",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/ember-spatial-directions-r1-plan-board.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/01-north-up-measured-plan.png"
+        },
+        {
+          "kind": "vertical-section",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/02-true-scale-midflank-section.png"
+        },
+        {
+          "kind": "route-storyboard",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/03-runtime-uphill-downhill-proof.png"
         },
         {
           "kind": "sightline-study",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/ember-spatial-directions-r1-e-camera-board.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/04-orbit-sightline-study.png"
+        },
+        {
+          "kind": "emplacement-calibration",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/05-flowy-calibration-sweep.png"
+        },
+        {
+          "kind": "performance-ground-detail",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/06-performance-ground-detail.png"
+        },
+        {
+          "kind": "verification-report",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r5/ember-midflank-fire-pilgrimage-r5-gate1-1-report.json"
         }
       ],
       "checks": [
         {
+          "name": "walkability",
+          "status": "passed",
+          "evidence": "Ember remains a Viewer3D orbit environment. R5 limits the locally eased terrain to a 12 by 11 m irregular core; the protected 4.5 m action envelope has 0.205 m relief and 1.286 degree median slope."
+        },
+        {
           "name": "clearance",
           "status": "passed",
-          "evidence": "R1 report records the shared unobstructed 4.5 m action radius."
+          "evidence": "Fresh Flowy calibration r5f-c03-braided-20m2 preserves 7.097 m beyond the protected 4.5 m action envelope."
         },
         {
           "name": "sightlines",
           "status": "passed",
-          "evidence": "Direction E camera board covers hero, oblique, reverse, and plan views."
+          "evidence": "All eight exact-cap orbit samples clear the performer target by 1.764 m or more; the eye remains 25.000 m from target."
         },
         {
           "name": "final-view",
           "status": "passed",
-          "evidence": "Direction E hero view terminates on the fractured far-field gate."
+          "evidence": "The true-scale compound section keeps 131.368 m of upper mountain and 69.916 m of lower-country fall while the surrounding 8-25 m annulus retains a 9.188 degree median slope."
+        },
+        {
+          "name": "artifact-digest",
+          "status": "passed",
+          "evidence": "The canonical R5 Gate 1.1 report records SHA-256 digests for every review image and the fresh little-endian float32 Flowy raster."
         }
       ],
       "approval": {
         "approvedBy": "Austen",
-        "approvedAt": "2026-08-25T22:44:27.322Z",
-        "quote": "Well this is just sick I like how you're doing this please keep it up Get to the next gate on your own",
-        "museumTrackerItem": "C2tvT3lr69ss7EqvYknm",
-        "visualComprehensionConfirmed": true
+        "approvedAt": "2026-09-04T20:15:18.980Z",
+        "quote": "I think I'll trust your judgment and let's pass this game",
+        "museumTrackerItem": "Szxybxm6NlLkPyPL6dQt",
+        "visualComprehensionConfirmed": true,
+        "note": "In context, Austen explicitly passed Gate 1.1 and delegated the final spatial read. The describe-back ritual is transparently waived; no unstated description is attributed to him. Approval covers the measured R5 terrain, hardened-lava bench, and audience relationship, not later materials or ember-response treatment."
       }
     },
     {
@@ -340,35 +560,63 @@
       "evidence": [
         {
           "kind": "blender-source",
-          "path": "blender/ember-spatial-directions-r1.blend"
+          "path": "blender/ember-midflank-fire-pilgrimage-graybox-r5.blend"
         },
         {
           "kind": "coordinate-manifest",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/ember-spatial-directions-r1-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/ember-midflank-fire-pilgrimage-r5-coordinate-manifest.json"
+        },
+        {
+          "kind": "graybox-glb",
+          "path": "static/models/ember/review/ember-midflank-fire-pilgrimage-graybox-r5.glb"
+        },
+        {
+          "kind": "first-person-walk",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/14-continuous-runtime-orbit.webp"
         },
         {
           "kind": "review-contact-sheet",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/ember-spatial-directions-r1-e-camera-board.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/ember-midflank-fire-pilgrimage-r5-gate2-contact-sheet.png"
+        },
+        {
+          "kind": "verification-report",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r5/ember-midflank-fire-pilgrimage-r5-graybox-report.json"
         }
       ],
       "checks": [
         {
           "name": "artifact-digest",
           "status": "passed",
-          "evidence": "R1 report identifies the Blender source, Blender version, cameras, bounds, collections, and render paths."
+          "evidence": "The R5 graybox report records SHA-256 and byte length for every Blender, GLB, raster, still, motion, manifest, and source artifact."
         },
         {
           "name": "collision",
           "status": "passed",
-          "evidence": "All compared directions preserve the shared unobstructed 4.5 m performer action radius."
+          "evidence": "EMBER_Terrain is the sole visible collider and exports tka_camera_collision=true."
+        },
+        {
+          "name": "route-duration",
+          "status": "passed",
+          "evidence": "The orbit-backdrop exemption is fulfilled by a 48-frame continuous exact-camera orbit plus eight registered 45-degree stills."
+        },
+        {
+          "name": "sequence-parity",
+          "status": "passed",
+          "evidence": "The isolated R5 environment graybox does not select or modify a TKA sequence."
+        },
+        {
+          "name": "audience-spatial-contract",
+          "status": "passed",
+          "evidence": "Four human-scale proxies reproduce the approved downslope/lateral standing pockets, at least 5.349 m beyond the action envelope and 14.5 m from active lava."
         }
       ],
       "approval": {
         "approvedBy": "Austen",
-        "approvedAt": "2026-08-25T22:44:27.322Z",
-        "quote": "Well this is just sick I like how you're doing this please keep it up Get to the next gate on your own",
-        "museumTrackerItem": "C2tvT3lr69ss7EqvYknm",
-        "visualComprehensionConfirmed": true
+        "approvedAt": "2026-09-04T20:41:36.000Z",
+        "quote": "This is it brother It's looking good",
+        "museumTrackerItem": "3XyhXLyzv8ASNl2fLoCo",
+        "visualComprehensionConfirmed": true,
+        "note": "Austen explicitly selected the integrated R5 Blender artifact with 'This is it' after being asked whether the central ground reads as a cooled lava bench inside a continuing slope with the small audience downhill rather than another flat stage. Approval locks the Gate 2 spatial artifact and authorizes Gate 3; it does not approve Gate 3 materials, lighting, atmosphere, final silhouette, Gate 4, runtime integration, or Meshy spending."
       }
     },
     {
@@ -377,40 +625,61 @@
       "evidence": [
         {
           "kind": "locked-camera-set",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-surface-target-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/registered-target-report.json",
+          "sha256": "023245d4235641f653a7e13898e40845316deb746a9cb6250f7bbc39185c6725"
         },
         {
           "kind": "visual-target-board",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-surface-target-board.jpg"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/ember-r5-material-target-board.png",
+          "sha256": "bad4d28178743b92498c4906e5efa9e81d9191515ddcef076bf0cb1c039aa155"
         },
         {
           "kind": "material-lighting-brief",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/candidate-decisions.md"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/material-lighting-brief.md",
+          "sha256": "254d180078eca6eee9d49e0b714a9cb04d3041097b50c88c2368ef53ff8c03cf"
+        },
+        {
+          "kind": "registered-orbit-board",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/ember-r5-orbit-board.png",
+          "sha256": "bf8701fedfaeb2a1d494c7bff0f3517b3fdd646b5e965edb74e7b5a1c2e65101"
+        },
+        {
+          "kind": "bench-heat-comparison",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/ember-r5-ember-comparison.png",
+          "sha256": "3f7c227ea392092e0137e0a31cc29d42d04152bcc56e35e95cd567dd4b90509f"
+        },
+        {
+          "kind": "generation-provenance",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/imagegen-provenance.json",
+          "sha256": "b075bbaca6670d41e077cc7e4b661ca2d1be4ed0c172e2407dd386428f6297ce"
+        },
+        {
+          "kind": "illustrative-surface-target",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/paintover-default-audience.png",
+          "sha256": "90bf5a2ac721ba904cfd914c1696dc03671020f647141d37a1403670c317dc29"
         }
       ],
       "checks": [
         {
           "name": "camera-registration",
           "status": "passed",
-          "evidence": "The target report records the same hero, front-right, left, and rear cameras for Fresh Flow Field, Ash-Choked Caldera, Hydrothermal Rift, and the Fresh Rift director synthesis."
+          "evidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/registered-target-report.json",
+          "note": "All eleven native cameras and nine source meshes exactly match the approved source. Generated paintover is illustrative only and does not carry this equality claim."
         },
         {
           "name": "silhouette-read",
           "status": "passed",
-          "evidence": "Sixteen matched renders preserve the R8 silhouette so the review isolates material hierarchy. The decision ledger rejects Ash's graybox regression and Hydrothermal's broad color risk, then recommends Fresh Rift for coherent young lava plus restrained iron contact zones."
-        },
-        {
-          "name": "surface-mask-continuity",
-          "status": "passed",
-          "evidence": "The continuous terrain uses a smooth per-vertex four-family mask rather than hard material islands. The R8 geometry, action clearance, atmosphere, Meshy landmarks, river path, and stage contract remain unchanged."
+          "evidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-midflank-r5/material-lighting-brief.md",
+          "note": "Native orbit and overview inspected: performer visible, slope and lava relationship retained. Close paintover retains the three visible proxies. Wide paintovers with extra markers excluded. Native cell edges, faceted rock and stretched surface detail remain production gaps; final art judgment awaits Austen."
         }
       ],
       "approval": {
         "approvedBy": "Austen",
-        "approvedAt": "2026-08-28T19:09:09.090Z",
-        "quote": "approved, But as you work on it I am curious what the triple A target will be, I'm more than happy to allow you to get in my blender and blend up whatever you feel you want to",
-        "museumTrackerItem": "ahPuPwh34G3FeqvUEHsB",
-        "visualComprehensionConfirmed": true
+        "approvedAt": "2026-09-05T08:59:15.000Z",
+        "quote": "It's phenomenal. finally a competant llm. next phase. or just send it all the way if you want",
+        "museumTrackerItem": "HyW3fFQVRHU3Uc0ezeWO",
+        "visualComprehensionConfirmed": true,
+        "note": "Approval rests on the explicit next-phase/end-to-end instruction, not praise alone. Austen delegated intermediate production judgment. The cold basalt target is selected; no optional glowing-platform treatment or later runtime visual acceptance is attributed to him. Timestamp is the tracker decision creation time, not a claimed message timestamp."
       }
     },
     {
@@ -419,52 +688,76 @@
       "evidence": [
         {
           "kind": "vertical-slice-build",
-          "path": "static/models/ember/ember-production-slice.glb"
+          "path": "static/models/ember/ember-distant-valley-r5.glb"
         },
         {
-          "kind": "editable-source",
-          "path": "blender/ember-volcanic-world-production-slice-r10.blend"
+          "kind": "blender-source",
+          "path": "blender/ember-distant-valley-r5.blend"
         },
         {
-          "kind": "coordinate-manifest",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-report.json"
+          "kind": "lava-motion-correction",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-lava-flow-r2/verification.md"
         },
         {
-          "kind": "review-contact-sheet",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-orbit-board.webp"
+          "kind": "branch-network-amendment",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-tributaries-r1/verification.md"
         },
         {
-          "kind": "adversarial-review-angle",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-audience.png"
+          "kind": "distant-flank-amendment",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-tributaries-r2/verification.md"
+        },
+        {
+          "kind": "geology-stage-amendment",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-geology-stage-r1/verification.md"
+        },
+        {
+          "kind": "distant-valley-amendment",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r1/verification.md"
+        },
+        {
+          "kind": "distant-valley-relief-revision",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r2/verification.md"
+        },
+        {
+          "kind": "connected-downhill-drainage-revision",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r3/verification.md"
+        },
+        {
+          "kind": "near-far-lava-material-parity",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r4/verification.md"
+        },
+        {
+          "kind": "molten-crust-and-temporal-stability",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-distant-valley-r5/verification.md"
+        },
+        {
+          "kind": "interaction-capture",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-midflank-r5/runtime-four-performers.png"
+        },
+        {
+          "kind": "performance-report",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-midflank-r5/runtime-verification.md"
+        },
+        {
+          "kind": "registered-runtime-orbit",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-midflank-r5/ember-r5-runtime-orbit-board.png"
         }
       ],
       "checks": [
         {
-          "name": "artifact-budget",
-          "status": "passed",
-          "evidence": "The R10 report records 197,898 triangles, a 49,345-triangle largest mesh, 6.156 m minimum structural clearance, eleven registered review cameras, 6.181 m lava-bank edge clearance, and the optimized shipping GLB is 4,473,528 bytes."
-        },
-        {
-          "name": "focused-tests",
-          "status": "passed",
-          "evidence": "The Ember production contract, atmosphere look, and ground-detail suites pass 16 tests with one historical todo."
-        },
-        {
-          "name": "typecheck",
-          "status": "passed",
-          "evidence": "svelte-check reports zero errors and zero warnings."
-        },
-        {
           "name": "interaction-state",
-          "status": "pending"
+          "status": "passed",
+          "evidence": "Four-performer playback and Ember-Cosmic-Ember re-entry retained the cast, cleared the outgoing renderer, and did not restore a circular platform. See the runtime verification report."
         },
         {
           "name": "runtime-console",
-          "status": "pending"
+          "status": "passed",
+          "evidence": "No shader or runtime errors observed in the final worker orbit, re-entry, and reduced-motion checks."
         },
         {
           "name": "performance",
-          "status": "pending"
+          "status": "failed",
+          "evidence": "Cold boot occasionally exceeds the 50 ms main-thread input-gap threshold (59.3 ms in the native desktop retest). Warm re-entry passes. See worker-boot.json, scene-reentry.json and runtime-verification.md; no exemption is claimed."
         }
       ],
       "approval": null

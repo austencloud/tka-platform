@@ -867,18 +867,6 @@ export class ImageComposer {
     }
   }
 
-  async composeFromCanvases(): Promise<RenderCanvas> {
-    throw new Error("Not implemented in simple version");
-  }
-
-  applyBackground(canvas: RenderCanvas): RenderCanvas {
-    return canvas;
-  }
-
-  optimizeForExport(canvas: RenderCanvas): RenderCanvas {
-    return canvas;
-  }
-
   private applyPropTypeOverride<
     T extends StepData | PictographData | StartPositionData,
   >(

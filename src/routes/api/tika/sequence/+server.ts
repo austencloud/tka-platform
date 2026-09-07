@@ -16,7 +16,7 @@ import { withRateLimit } from "$lib/server/security/withRateLimit";
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface MotionData {
-  color: string;
+  hand: string;
   startLocation: string;
   endLocation: string;
   motionType: string;

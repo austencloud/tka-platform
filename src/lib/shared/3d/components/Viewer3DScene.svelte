@@ -4,7 +4,6 @@
   import { onMount, onDestroy, tick, type Snippet } from "svelte";
   import {
     PerformerRig,
-    PLANE_MODE_CONFIGS,
     type AvatarGripDiagnostics,
     type AvatarPoseDiagnostics,
     type CollisionEvent,
@@ -38,7 +37,10 @@
   import type { SceneEffectsManager3D } from "../effects/scene-effects/scene-effects-manager-3d";
   import type { QualityTier } from "../effects/types";
   import { resolvePetalEnvironmentProfile } from "../effects/petals/petal-world-art-direction";
-  import { resolvePerformerStepSource } from "../domain/performer-step-timing";
+  import {
+    resolvePerformerStepSource,
+    synchronizePerformerPlayback,
+  } from "../domain/performer-step-timing";
   import {
     getStageCoordinateFrame,
     isRenderable3DEnvironment,
@@ -62,13 +64,19 @@
   import PerformerPickProxy from "./performer-interaction/PerformerPickProxy.svelte";
   import PerformerVisualPickTarget from "./performer-interaction/PerformerVisualPickTarget.svelte";
   import PerformerHoverRing from "./performer-interaction/PerformerHoverRing.svelte";
+  import PerformerMoveHandle from "./performer-interaction/PerformerMoveHandle.svelte";
   import {
     createPerformerPointerInteraction,
     type PerformerPointerInteraction,
   } from "./performer-interaction/performer-pointer-interaction.svelte";
-  import { planUpperBodyStance } from "../collision/upper-body-stance-planner";
+  import { resolvePerformerUpperBodyStance } from "../domain/performer-upper-body-stance";
   import { getAvatarSequenceCollisionAudit } from "../collision/avatar-sequence-collision-audit";
   import { getAvatarGripMotionAudit } from "../diagnostics/avatar-grip-motion-audit";
+  import {
+    resolveViewerBaseLighting,
+    VIEWER_KEY_LIGHT_POSITION,
+    VIEWER_PROTECTED_LIGHTING,
+  } from "../rendering/viewer-lighting-rig";
 
   // Performer layer membership inherits through the nested PerformerRig tree.
   layers();
@@ -83,24 +91,6 @@
     ? getAvatarGripMotionAudit()
     : null;
 
-  function resolveUpperBodyStance(performer: CharacterInstanceState) {
-    const mode = PLANE_MODE_CONFIGS[performer.planeMode];
-    const gridOffset = GRID_OFFSETS[performer.planeMode];
-    return planUpperBodyStance({
-      left: performer.leftPropState
-        ? {
-            x: mode.blueLateralOffset + performer.leftPropState.worldPosition.x,
-            z: gridOffset + performer.leftPropState.worldPosition.z,
-          }
-        : null,
-      right: performer.rightPropState
-        ? {
-            x: mode.redLateralOffset + performer.rightPropState.worldPosition.x,
-            z: gridOffset + performer.rightPropState.worldPosition.z,
-          }
-        : null,
-    });
-  }
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -331,16 +321,15 @@
   // (not CurrentWritable), but camera is a CurrentWritable with .current.
   $effect(() => {
     const cam = camera.current;
-    if (renderer && scene && cam) {
-      viewer3DState.registerThrelteInternals({
-        renderer,
-        scene,
-        camera: cam,
-        runFrame,
-        pauseAutoLoop,
-        resumeAutoLoop,
-      });
-    }
+    if (!renderer || !scene || !cam) return;
+    return viewer3DState.registerThrelteInternals({
+      renderer,
+      scene,
+      camera: cam,
+      runFrame,
+      pauseAutoLoop,
+      resumeAutoLoop,
+    });
   });
 
   // All performers from the manager - the scene renders one rig per entry.
@@ -382,7 +371,7 @@
       protectPerformerTree(sceneEffectsLayerRoot);
     }
 
-    if (viewer3DState.selectedPerformerIndex !== null) {
+    if (viewer3DState.selectedPerformerIndices.length > 0) {
       ringPulsePhase += delta * 3;
     }
     // During offline export, the exporter sets exportCurrentStep on
@@ -398,15 +387,12 @@
     for (const [performerIndex, p] of performerManager.performers
       .slice(0, visiblePerformerCount)
       .entries()) {
-      const performerStep = resolvePerformerStepSource(
+      synchronizePerformerPlayback(
+        p,
         performerSteps?.[performerIndex],
         step,
-        performerStepOffsets[performerIndex] ?? 0,
-        p.totalSteps
+        performerStepOffsets[performerIndex] ?? 0
       );
-      const performerBeat = Math.floor(performerStep);
-      p.goToStep(performerBeat);
-      p.setProgress(performerStep - performerBeat);
     }
 
     // Drive formation transitions. transitionToFormation (called from the
@@ -527,6 +513,9 @@
       backgroundType === BackgroundType.COSMIC ||
       backgroundType === BackgroundType.OCEAN
   );
+  const viewerBaseLighting = $derived(
+    resolveViewerBaseLighting(hasEnvironment, isNightEnvironment)
+  );
 
   const petalEnvironmentProfile = $derived(
     resolvePetalEnvironmentProfile(backgroundType)
@@ -543,9 +532,12 @@
   // A single movable light preserves the selected-performer highlight without
   // invalidating the shader program cache.
   const selectedPerformer = $derived.by(() => {
-    const index = viewer3DState.selectedPerformerIndex;
+    const index = viewer3DState.primaryPerformerIndex;
     return index === null ? null : (performerManager.performers[index] ?? null);
   });
+  const selectedPerformerIndices = $derived(
+    new Set(viewer3DState.selectedPerformerIndices)
+  );
   const selectedPerformerLightPosition = $derived([
     selectedPerformer?.position.x ?? 0,
     stageGroundOffset + 2.5,
@@ -554,24 +546,41 @@
   const performerGroundLevel = $derived(
     userProportionsState.groundY + stageGroundOffset
   );
-  const selectedPerformerRingPosition = $derived([
-    selectedPerformer?.position.x ?? 0,
-    performerGroundLevel + 0.015,
-    selectedPerformer?.position.z ?? 0,
-  ] as [number, number, number]);
-  const selectedPerformerRingColor = $derived.by(() => {
-    const index = viewer3DState.selectedPerformerIndex;
-    return index === null
-      ? 0x6b7280
-      : Number.parseInt(getPerformerColor(index).slice(1), 16);
-  });
-
   const performerCount = $derived(
     Math.min(
       performerManager.performers.length,
       visiblePerformerCount ?? performerManager.performers.length
     )
   );
+  const selectionMoveHandle = $derived.by(() => {
+    const selected = viewer3DState.selectedPerformerIndices.filter(
+      (index) => index >= 0 && index < performerCount
+    );
+    if (selected.length === 0) return null;
+    const positions = selected.flatMap((index) => {
+      const performer = performerManager.performers[index];
+      return performer ? [performer.position] : [];
+    });
+    if (positions.length === 0) return null;
+    const anchorIndex = selected.includes(
+      viewer3DState.primaryPerformerIndex ?? -1
+    )
+      ? (viewer3DState.primaryPerformerIndex ?? selected[0])
+      : selected[0];
+    return {
+      anchorIndex,
+      key: selected.join(":"),
+      selectedCount: positions.length,
+      position: {
+        x:
+          positions.reduce((total, position) => total + position.x, 0) /
+          positions.length,
+        z:
+          positions.reduce((total, position) => total + position.z, 0) /
+          positions.length,
+      },
+    };
+  });
   const environmentPerformerPositions = $derived(
     performerManager.performers
       .slice(0, performerCount)
@@ -669,18 +678,21 @@
 
 <!-- Lighting - reduced when the environment provides its own -->
 <T.AmbientLight
-  intensity={isNightEnvironment ? 0.2 : hasEnvironment ? 0.3 : 0.4}
+  intensity={viewerBaseLighting.ambientIntensity}
 />
 <T.DirectionalLight
-  position={[5, 10, 5]}
-  intensity={isNightEnvironment ? 0.4 : hasEnvironment ? 0.6 : 0.8}
+  position={VIEWER_KEY_LIGHT_POSITION}
+  intensity={viewerBaseLighting.directionalIntensity}
 />
 
 <!-- Stable performer-only lighting for the protected transition pass. -->
-<T.AmbientLight intensity={0.75} layers={PROTECTED_PERFORMER_LAYER} />
+<T.AmbientLight
+  intensity={VIEWER_PROTECTED_LIGHTING.ambientIntensity}
+  layers={PROTECTED_PERFORMER_LAYER}
+/>
 <T.DirectionalLight
-  position={[-4, 9, 7]}
-  intensity={1.1}
+  position={VIEWER_PROTECTED_LIGHTING.directionalPosition}
+  intensity={VIEWER_PROTECTED_LIGHTING.directionalIntensity}
   layers={PROTECTED_PERFORMER_LAYER}
 />
 
@@ -708,43 +720,6 @@
     decay={1.5}
   />
 
-  <!-- One movable selection indicator keeps cast changes from allocating and
-       uploading four hidden geometries for every performer. -->
-  <T.Group
-    position={selectedPerformerRingPosition}
-    rotation={[-Math.PI / 2, 0, 0]}
-    visible={selectedPerformer !== null}
-  >
-    <T.Mesh>
-      <T.RingGeometry args={[0.42, 0.58, 64]} />
-      <T.MeshBasicMaterial
-        color={selectedPerformerRingColor}
-        transparent
-        opacity={ringPulse * 0.9}
-        blending={AdditiveBlending}
-        depthWrite={false}
-      />
-    </T.Mesh>
-    <T.Mesh>
-      <T.RingGeometry args={[0.58, 1.0, 64]} />
-      <T.MeshBasicMaterial
-        color={selectedPerformerRingColor}
-        transparent
-        opacity={ringPulse * 0.3}
-        blending={AdditiveBlending}
-        depthWrite={false}
-      />
-    </T.Mesh>
-    <T.Mesh>
-      <T.CircleGeometry args={[0.42, 64]} />
-      <T.MeshBasicMaterial
-        color={selectedPerformerRingColor}
-        transparent
-        opacity={0.15}
-      />
-    </T.Mesh>
-  </T.Group>
-
   {#each performerManager.renderablePerformers as renderEntry (renderEntry.performer.id)}
     {@const performer = renderEntry.performer}
     {@const i = renderEntry.castIndex}
@@ -768,6 +743,49 @@
           />
         {/if}
       {/if}
+      {#if renderEntry.presencePhase !== "exiting" && selectedPerformerIndices.has(i) && !viewer3DState.isAllPerformersSelected}
+        {@const selectionColor = Number.parseInt(
+          getPerformerColor(i).slice(1),
+          16
+        )}
+        <T.Group
+          position={[
+            performer.position.x,
+            performerGroundLevel + 0.015,
+            performer.position.z,
+          ]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <T.Mesh>
+            <T.RingGeometry args={[0.42, 0.58, 64]} />
+            <T.MeshBasicMaterial
+              color={selectionColor}
+              transparent
+              opacity={ringPulse * 0.9}
+              blending={AdditiveBlending}
+              depthWrite={false}
+            />
+          </T.Mesh>
+          <T.Mesh>
+            <T.RingGeometry args={[0.58, 1.0, 64]} />
+            <T.MeshBasicMaterial
+              color={selectionColor}
+              transparent
+              opacity={ringPulse * 0.3}
+              blending={AdditiveBlending}
+              depthWrite={false}
+            />
+          </T.Mesh>
+          <T.Mesh>
+            <T.CircleGeometry args={[0.42, 64]} />
+            <T.MeshBasicMaterial
+              color={selectionColor}
+              transparent
+              opacity={0.15}
+            />
+          </T.Mesh>
+        </T.Group>
+      {/if}
       {@const performerGridMode = (sequenceData?.gridMode ??
         "diamond") as GridMode}
       {@const performerGridOffset = GRID_OFFSETS[performer.planeMode]}
@@ -790,14 +808,22 @@
          Performer Hub effect selection actually reach the renderer. -->
       {@const perfEffect =
         performer.rawEffect ?? globalTipEffectMap["*"]?.effect ?? "none"}
-      {@const perfTipMap = { "*": { effect: perfEffect } }}
+      <!-- When the two hands run different effects, key the map per prop
+         instead of the wildcard. resolveEffect already reads propIndex, so
+         prop 0 (blue, left) and prop 1 (red, right) each take their own. -->
+      {@const perfTipMap = performer.rawHandEffects
+        ? {
+            "0": { effect: performer.rawHandEffects.left },
+            "1": { effect: performer.rawHandEffects.right },
+          }
+        : { "*": { effect: perfEffect } }}
       {@const performerCurrentStep = resolvePerformerStepSource(
         performerSteps?.[i],
         currentStep,
         performerStepOffsets[i] ?? 0,
         performer.totalSteps
       )}
-      {@const upperBodyStance = resolveUpperBodyStance(performer)}
+      {@const upperBodyStance = resolvePerformerUpperBodyStance(performer)}
       <PerformerVisualPickTarget
         performerIndex={i}
         register={performerInteraction?.registerVisualPickTarget}
@@ -840,7 +866,10 @@
               gaitTimingSample={performer.gaitTimingSample}
               terminalStepPlan={performer.terminalStepPlan}
               stanceYaw={upperBodyStance.yawRad}
+              stanceSegments={upperBodyStance.segments}
               spinePitchOffset={upperBodyStance.pitchRad}
+              blueHandDepthOffset={upperBodyStance.leftDepthOffsetM}
+              redHandDepthOffset={upperBodyStance.rightDepthOffsetM}
               headDodge={true}
               onCollisionEvents={collisionAudit || gripMotionAudit
                 ? (
@@ -878,11 +907,16 @@
                   </T.Group>
                 {/if}
               {/snippet}
+              <!-- PerformerRig's external compatibility API still names the
+                 snippet payload blue/red. Rename at this seam so the
+                 orchestrator receives real prop states; destructuring the
+                 app-side left/right names here left both undefined and
+                 silently disabled every 3D effect. -->
               {#snippet effectsSlot({
-                leftPropState,
-                rightPropState,
-                leftHandPos,
-                rightHandPos,
+                bluePropState: leftPropState,
+                redPropState: rightPropState,
+                blueHandPos: leftHandPos,
+                redHandPos: rightHandPos,
                 isPlaying: rigPlaying,
                 staffHalfLength,
                 effectsParentRef,
@@ -915,7 +949,7 @@
         </CharacterSwapTransition>
       </PerformerVisualPickTarget>
 
-      {#if renderEntry.presencePhase !== "exiting" && viewer3DState.selectedPerformerIndex === null}
+      {#if renderEntry.presencePhase !== "exiting" && viewer3DState.isAllPerformersSelected}
         <T.Mesh
           position={[
             performer.position.x,
@@ -938,12 +972,40 @@
         >
           <PerformerBadge3D
             index={i}
-            selected={viewer3DState.selectedPerformerIndex === i}
-            allMode={viewer3DState.selectedPerformerIndex === null}
+            selected={selectedPerformerIndices.has(i)}
+            allMode={viewer3DState.isAllPerformersSelected}
             registerPickTarget={performerInteraction?.registerPickTarget}
           />
         </T.Group>
       {/if}
     </T.Group>
   {/each}
+
+  {#if performerInteraction && selectionMoveHandle && !hideSceneMarkers && !viewer3DState.performerSelectionMode}
+    {#key selectionMoveHandle.key}
+      <PerformerMoveHandle
+        position={selectionMoveHandle.position}
+        groundY={performerGroundLevel}
+        selectedCount={selectionMoveHandle.selectedCount}
+        dragging={performerInteraction.draggingIndex !== null}
+        onpointerdown={(event) =>
+          performerInteraction?.onMoveHandlePointerDown(
+            event,
+            selectionMoveHandle.anchorIndex
+          )}
+        onpointermove={(event) => {
+          event.stopPropagation();
+          performerInteraction?.onMoveHandlePointerMove(event);
+        }}
+        onpointerup={(event) => {
+          event.stopPropagation();
+          performerInteraction?.onMoveHandlePointerUp(event);
+        }}
+        onpointercancel={(event) => {
+          event.stopPropagation();
+          performerInteraction?.onMoveHandlePointerCancel(event);
+        }}
+      />
+    {/key}
+  {/if}
 </T.Group>

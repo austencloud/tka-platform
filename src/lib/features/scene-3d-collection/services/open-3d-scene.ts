@@ -1,5 +1,8 @@
-import type { Collected3DScene } from "../domain/scene-3d-collection-types";
-import { isGroupSaved } from "../domain/scene-3d-collection-types";
+import type {
+  Collected3DScene,
+  Scene3DFilm,
+} from "../domain/scene-3d-collection-types";
+import { isGroupSaved, Scene3DFilmSchema } from "../domain/scene-3d-collection-types";
 import { buildScene3DPersistConfig } from "../domain/scene-3d-look";
 import {
   clearViewer3DPresetIntent,
@@ -27,6 +30,9 @@ const SCENE_STUDIO_HANDOFF_KEY = "tka_scene_studio_handoff";
 export interface SceneStudioHandoff {
   sequence: SequenceData;
   bpm: number | null;
+  /** Present when the scene was opened to re-render a recorded camera
+   *  performance rather than to compose a fresh shot. */
+  film?: Scene3DFilm;
 }
 
 /**
@@ -145,8 +151,12 @@ export function applyScene3DLookLive(
  * The handoff is one-shot so reopening 3D Studio later returns to its own
  * current source instead of replaying an old Browse action.
  */
-export function openScene3DInStudio(scene: Collected3DScene): void {
+export function openScene3DInStudio(
+  scene: Collected3DScene,
+  options: { includeFilm?: boolean } = {}
+): void {
   applyScene3DLook(scene);
+  const film = options.includeFilm ? scene.film : undefined;
 
   const steps = scene.steps ?? [];
   const sequence: SequenceData = createSequenceData({
@@ -168,6 +178,7 @@ export function openScene3DInStudio(scene: Collected3DScene): void {
             typeof scene.snapshot.bpm === "number"
               ? scene.snapshot.bpm
               : null,
+          ...(film ? { film } : {}),
         } satisfies SceneStudioHandoff)
       );
     } catch {
@@ -176,11 +187,22 @@ export function openScene3DInStudio(scene: Collected3DScene): void {
   }
 
   showToast({
-    message: `Opening "${scene.name}" in 3D Studio`,
+    message: film
+      ? `Opening "${scene.name}" to render`
+      : `Opening "${scene.name}" in 3D Studio`,
     type: "success",
     duration: 4000,
   });
   void handleModuleChange("stage", "scene");
+}
+
+/**
+ * Reopen a saved scene in order to render its recorded camera performance
+ * again. Same handoff as opening the scene, plus the film, so 3D Studio can
+ * replay the exact camera path instead of the current static angle.
+ */
+export function openScene3DFilmInStudio(scene: Collected3DScene): void {
+  openScene3DInStudio(scene, { includeFilm: true });
 }
 
 export function consumeSceneStudioHandoff(): SceneStudioHandoff | null {
@@ -191,9 +213,15 @@ export function consumeSceneStudioHandoff(): SceneStudioHandoff | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<SceneStudioHandoff>;
     if (!parsed.sequence || !Array.isArray(parsed.sequence.steps)) return null;
+    // The film crossed sessionStorage as JSON, so it is parsed rather than
+    // trusted: a shape the renderer cannot use is better dropped than thrown.
+    const film = parsed.film
+      ? Scene3DFilmSchema.safeParse(parsed.film)
+      : null;
     return {
       sequence: parsed.sequence,
       bpm: typeof parsed.bpm === "number" ? parsed.bpm : null,
+      ...(film?.success ? { film: film.data as Scene3DFilm } : {}),
     };
   } catch {
     return null;

@@ -6,6 +6,19 @@ export type SceneControlTool =
   | "presets"
   | "dev";
 
+/**
+ * One rail entry a host contributes, for a surface the viewer itself has no
+ * concept of. Deliberately not a `SceneControlTool`: the inspector's union
+ * stays closed, and the host renders its own panel in the same column. The
+ * Film Director's capability panel is the first, because what it edits — the
+ * film document — exists in no other host.
+ */
+export interface SceneControlHostTool {
+  id: string;
+  label: string;
+  icon: string;
+}
+
 export type SceneControlPresentation = "compact" | "overlay" | "docked";
 
 export interface SceneControlLayout {

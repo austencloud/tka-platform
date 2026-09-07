@@ -233,6 +233,10 @@ export async function drawMatrixRealization(opts?: {
     const cell = cells[Math.floor(random() * cells.length)];
     const mode = MODE_ORDER[Math.floor(random() * MODE_ORDER.length)];
     if (!cell || !mode) continue;
+    // The pool filter caps turns at MAX_TURNS, which already excludes the "fl"
+    // float flowers; this narrows Flower to its rotating variant so the turn
+    // and orientation formatters below see the types they accept.
+    if (cell.left.style === "float" || cell.right.style === "float") continue;
 
     const base = resolveBase(idx, mode, cell.left.style, cell.right.style);
     if (!base) continue;

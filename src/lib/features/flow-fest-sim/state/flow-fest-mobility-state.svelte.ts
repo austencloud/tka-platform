@@ -4,14 +4,40 @@ import {
   type FlowFestElectricUnicycleDynamics,
   type FlowFestElectricUnicycleInput,
 } from "../domain/flow-fest-electric-unicycle";
+import {
+  createFlowFestCarDynamics,
+  type FlowFestCarDynamics,
+} from "../domain/flow-fest-car";
+import type { FlowFestGroundVehicleInput } from "../domain/flow-fest-ground-vehicle";
+import {
+  flowFestParkedCarPaintCount,
+  FLOW_FEST_PARKED_CAR_MODELS,
+} from "../../../../routes/test/flow-fest-sim/flow-fest-parked-car-catalog";
 
 export const FLOW_FEST_MOBILITY_SESSION_KEY =
   "flow-fest-sim:electric-unicycle:v1";
-export const FLOW_FEST_MOBILITY_SNAPSHOT_VERSION = 1 as const;
+/**
+ * Version 2 adds the car. A version-1 snapshot has no car to put the player
+ * in, so it is discarded and the session starts fresh from its spawn.
+ */
+export const FLOW_FEST_MOBILITY_SNAPSHOT_VERSION = 2 as const;
 
 export interface FlowFestMobilityPoint {
   x: number;
   z: number;
+}
+
+/**
+ * The car the player arrived in. While `driving`, `player` and `wheel` ride
+ * with it; once parked it stays where it was left.
+ */
+export interface FlowFestMobilityCarSnapshot {
+  modelId: string;
+  paintIndex: number;
+  x: number;
+  z: number;
+  headingRadians: number;
+  driving: boolean;
 }
 
 export interface FlowFestMobilitySnapshot {
@@ -23,6 +49,37 @@ export interface FlowFestMobilitySnapshot {
   headingRadians: number;
   batteryPercent: number;
   odometerMeters: number;
+  car: FlowFestMobilityCarSnapshot | null;
+}
+
+/**
+ * How the player is travelling on their own legs.
+ *
+ * The mounted half of this state has always reported a mode - Cruise or
+ * Performance - and the on-foot half reported nothing, so the HUD said
+ * "Walking" while the body was sprinting. `sprinting` is the player's own
+ * request, matching how the wheel's modes are also input rather than measured
+ * physics; `speedMetersPerSecond` is the body's real travel, which is what
+ * separates a held Shift from an actual run.
+ */
+export interface FlowFestOnFootMotion {
+  speedMetersPerSecond: number;
+  sprinting: boolean;
+}
+
+export interface FlowFestMobilityCarRuntime {
+  modelId: string;
+  paintIndex: number;
+  driving: boolean;
+  position: FlowFestMobilityPoint;
+  dynamics: FlowFestCarDynamics;
+  input: FlowFestGroundVehicleInput;
+  distanceToDoorMeters: number;
+  canBoard: boolean;
+  canExit: boolean;
+  collisionLimited: boolean;
+  /** Set while the drive refuses to leave the surveyed square. */
+  edgeMessage: string | null;
 }
 
 export interface FlowFestMobilityRuntimeUpdate {
@@ -38,6 +95,15 @@ export interface FlowFestMobilityRuntimeUpdate {
   interactionMessage: string;
   gamepadConnected: boolean;
   collisionLimited: boolean;
+  onFoot: FlowFestOnFootMotion;
+  /** Omitted means unchanged; null means there is no car in this session. */
+  car?: FlowFestMobilityCarRuntime | null;
+}
+
+export interface FlowFestMobilityFreshOptions {
+  car?: { modelId: string; paintIndex: number } | null;
+  /** Start in the driver's seat rather than beside the car. */
+  driving?: boolean;
 }
 
 const EMPTY_INPUT: FlowFestElectricUnicycleInput = {
@@ -51,17 +117,31 @@ const EMPTY_INPUT: FlowFestElectricUnicycleInput = {
 export function createFreshFlowFestMobilitySnapshot(
   contractFingerprint: string,
   spawn: FlowFestMobilityPoint,
-  headingRadians: number
+  headingRadians: number,
+  options: FlowFestMobilityFreshOptions = {}
 ): FlowFestMobilitySnapshot {
+  const heading = wrapFlowFestEucAngle(headingRadians);
   return {
     version: FLOW_FEST_MOBILITY_SNAPSHOT_VERSION,
     contractFingerprint,
-    mounted: true,
+    // Without a car the session begins on the wheel, as it always has. With
+    // one, the wheel is cargo until the player gets out.
+    mounted: !options.car,
     player: { ...spawn },
     wheel: { ...spawn },
-    headingRadians: wrapFlowFestEucAngle(headingRadians),
+    headingRadians: heading,
     batteryPercent: 100,
     odometerMeters: 0,
+    car: options.car
+      ? {
+          modelId: options.car.modelId,
+          paintIndex: options.car.paintIndex,
+          x: spawn.x,
+          z: spawn.z,
+          headingRadians: heading,
+          driving: Boolean(options.driving),
+        }
+      : null,
   };
 }
 
@@ -78,6 +158,46 @@ function isFinitePoint(value: unknown): value is FlowFestMobilityPoint {
   );
 }
 
+function isFiniteHeading(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isFinite(value) &&
+    Math.abs(value) <= Math.PI * 8
+  );
+}
+
+/** Undefined marks a malformed car; null is the honest "no car" value. */
+function restoreCarSnapshot(
+  value: unknown
+): FlowFestMobilityCarSnapshot | null | undefined {
+  if (value === null) return null;
+  if (!value || typeof value !== "object") return undefined;
+  const car = value as Record<string, unknown>;
+  const model = FLOW_FEST_PARKED_CAR_MODELS.find(
+    (entry) => entry.id === car.modelId
+  );
+  if (
+    !model ||
+    typeof car.paintIndex !== "number" ||
+    !Number.isInteger(car.paintIndex) ||
+    car.paintIndex < 0 ||
+    car.paintIndex >= flowFestParkedCarPaintCount(model) ||
+    !isFinitePoint({ x: car.x, z: car.z }) ||
+    !isFiniteHeading(car.headingRadians) ||
+    typeof car.driving !== "boolean"
+  ) {
+    return undefined;
+  }
+  return {
+    modelId: model.id,
+    paintIndex: car.paintIndex,
+    x: car.x as number,
+    z: car.z as number,
+    headingRadians: wrapFlowFestEucAngle(car.headingRadians),
+    driving: car.driving,
+  };
+}
+
 export function restoreFlowFestMobilitySnapshot(
   raw: unknown,
   expectedFingerprint: string
@@ -90,9 +210,7 @@ export function restoreFlowFestMobilitySnapshot(
     typeof candidate.mounted !== "boolean" ||
     !isFinitePoint(candidate.player) ||
     !isFinitePoint(candidate.wheel) ||
-    typeof candidate.headingRadians !== "number" ||
-    !Number.isFinite(candidate.headingRadians) ||
-    Math.abs(candidate.headingRadians) > Math.PI * 8 ||
+    !isFiniteHeading(candidate.headingRadians) ||
     typeof candidate.batteryPercent !== "number" ||
     !Number.isFinite(candidate.batteryPercent) ||
     candidate.batteryPercent < 0 ||
@@ -104,6 +222,10 @@ export function restoreFlowFestMobilitySnapshot(
   ) {
     return null;
   }
+  const car = restoreCarSnapshot(candidate.car);
+  if (car === undefined) return null;
+  // Nobody rides the wheel from the driver's seat.
+  if (car?.driving && candidate.mounted) return null;
 
   return {
     version: FLOW_FEST_MOBILITY_SNAPSHOT_VERSION,
@@ -114,6 +236,7 @@ export function restoreFlowFestMobilitySnapshot(
     headingRadians: wrapFlowFestEucAngle(candidate.headingRadians),
     batteryPercent: candidate.batteryPercent,
     odometerMeters: candidate.odometerMeters,
+    car,
   };
 }
 
@@ -125,6 +248,13 @@ export function mobilityDynamicsFromSnapshot(
     batteryPercent: snapshot.batteryPercent,
     odometerMeters: snapshot.odometerMeters,
   });
+}
+
+/** A restored car is always stationary; only its pose survives a reload. */
+export function mobilityCarDynamicsFromSnapshot(
+  car: FlowFestMobilityCarSnapshot
+): FlowFestCarDynamics {
+  return createFlowFestCarDynamics({ headingRadians: car.headingRadians });
 }
 
 export function createFlowFestMobilityState() {
@@ -144,6 +274,8 @@ export function createFlowFestMobilityState() {
     interactionMessage: "Park wheel",
     gamepadConnected: false,
     collisionLimited: false,
+    onFoot: { speedMetersPerSecond: 0, sprinting: false },
+    car: null,
   });
   let persistenceTimer: ReturnType<typeof setTimeout> | null = null;
   let pageHideAttached = false;
@@ -176,7 +308,8 @@ export function createFlowFestMobilityState() {
     contractFingerprint: string,
     spawn: FlowFestMobilityPoint,
     headingRadians: number,
-    storageKey = FLOW_FEST_MOBILITY_SESSION_KEY
+    storageKey = FLOW_FEST_MOBILITY_SESSION_KEY,
+    options: FlowFestMobilityFreshOptions = {}
   ): void {
     persistenceKey = storageKey;
     let restored: FlowFestMobilitySnapshot | null = null;
@@ -199,7 +332,8 @@ export function createFlowFestMobilityState() {
       createFreshFlowFestMobilitySnapshot(
         contractFingerprint,
         spawn,
-        headingRadians
+        headingRadians,
+        options
       );
     hydrationTarget = { ...snapshot.player };
     hydrated = true;
@@ -214,12 +348,14 @@ export function createFlowFestMobilityState() {
   function reset(
     contractFingerprint: string,
     spawn: FlowFestMobilityPoint,
-    headingRadians: number
+    headingRadians: number,
+    options: FlowFestMobilityFreshOptions = {}
   ): void {
     snapshot = createFreshFlowFestMobilitySnapshot(
       contractFingerprint,
       spawn,
-      headingRadians
+      headingRadians,
+      options
     );
     hydrationTarget = { ...snapshot.player };
     revision += 1;
@@ -237,6 +373,19 @@ export function createFlowFestMobilityState() {
       if (hydrationError > 0.35) return;
       hydrationTarget = null;
     }
+    const car =
+      update.car === undefined
+        ? snapshot.car
+        : update.car === null
+          ? null
+          : {
+              modelId: update.car.modelId,
+              paintIndex: update.car.paintIndex,
+              x: update.car.position.x,
+              z: update.car.position.z,
+              headingRadians: update.car.dynamics.headingRadians,
+              driving: update.car.driving,
+            };
     snapshot = {
       ...snapshot,
       mounted: update.mounted,
@@ -245,6 +394,7 @@ export function createFlowFestMobilityState() {
       headingRadians: update.dynamics.headingRadians,
       batteryPercent: update.dynamics.batteryPercent,
       odometerMeters: update.dynamics.odometerMeters,
+      car,
     };
     persistSoon();
   }

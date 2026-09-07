@@ -1,6 +1,9 @@
 import { createSoloProp } from "./solo-prop-factory";
 import type { SequenceData } from "../domain/models/sequence-data";
-import { HandSide, type HandSide as HandSideValue } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  HandSide,
+  type HandSide as HandSideValue,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SoloPropData } from "../domain/models/solo-prop-data";
 import type { SoloPropStepData } from "../domain/models/solo-prop-step-data";
 import type { StepPairingData } from "../domain/models/step-pairing-data";
@@ -20,7 +23,7 @@ import {
 //   arrowPlacementData, propPlacementData, prefloatRotationDirection
 //
 // Preserved fields (domain data - must survive the round-trip):
-//   prefloatMotionType. When motionType === "float", this records the pro/anti
+//   plane, prefloatMotionType. When motionType === "float", this records the pro/anti
 //   type the motion collapsed from. Without it, letter classification and turn
 //   color cannot distinguish which hand the float belongs to (the float's
 //   own rotationDirection is "noRotation", which destroys the signal).
@@ -46,6 +49,7 @@ function motionToSoloPropStep(
     skewSteps: motion.skewSteps ?? null,
     skewDir: motion.skewDir ?? null,
     duration,
+    ...(motion.plane && { plane: motion.plane }),
     ...(motion.prefloatMotionType && {
       prefloatMotionType: motion.prefloatMotionType,
     }),
@@ -80,7 +84,9 @@ export function extractRightSoloProp(sequence: SequenceData): SoloPropData {
   return extractSoloProp(sequence, HandSide.RIGHT);
 }
 
-export function extractStepPairings(sequence: SequenceData): readonly StepPairingData[] {
+export function extractStepPairings(
+  sequence: SequenceData
+): readonly StepPairingData[] {
   return sequence.steps.map((step) => ({
     letter: step.letter ?? null,
     leftReversal: step.leftReversal,
@@ -96,47 +102,51 @@ function extractSoloProp(
   sequence: SequenceData,
   color: HandSideValue
 ): SoloPropData {
-    // Resolve the authoritative start location and orientation.
-    //
-    // Priority order:
-    // 1. startPosition (the modern, canonical field)
-    // 2. startingPosition (legacy alias - same semantic, different field name)
-    // 3. steps[0] motion (last-resort: read the initial state from the first beat)
-    // 4. Hard default: NORTH / IN - only reached on empty or fully-corrupt data
-    const startPositionMotions =
-      sequence.startPosition?.motions ?? sequence.startingPosition?.motions;
+  // Resolve the authoritative start location and orientation.
+  //
+  // Priority order:
+  // 1. startPosition (the modern, canonical field)
+  // 2. startingPosition (legacy alias - same semantic, different field name)
+  // 3. steps[0] motion (last-resort: read the initial state from the first beat)
+  // 4. Hard default: NORTH / IN - only reached on empty or fully-corrupt data
+  const startPositionMotions =
+    sequence.startPosition?.motions ?? sequence.startingPosition?.motions;
 
-    const startLocationFromPos = startPositionMotions?.[color]?.startLocation;
-    const startOrientationFromPos =
-      startPositionMotions?.[color]?.startOrientation;
+  const startLocationFromPos = startPositionMotions?.[color]?.startLocation;
+  const startOrientationFromPos =
+    startPositionMotions?.[color]?.startOrientation;
 
-    const firstStepMotion = sequence.steps[0]?.motions?.[color];
+  const firstStepMotion = sequence.steps[0]?.motions?.[color];
 
-    const startLocation: GridLocation =
-      startLocationFromPos ??
-      firstStepMotion?.startLocation ??
-      GridLocation.NORTH;
+  const startLocation: GridLocation =
+    startLocationFromPos ??
+    firstStepMotion?.startLocation ??
+    GridLocation.NORTH;
 
-    const startOrientation: Orientation =
-      startOrientationFromPos ??
-      firstStepMotion?.startOrientation ??
-      Orientation.IN;
+  const startOrientation: Orientation =
+    startOrientationFromPos ??
+    firstStepMotion?.startOrientation ??
+    Orientation.IN;
 
-    // Convert each StepData motion into a SoloPropStepData. Duration lives on
-    // StepData (not MotionData), so we inject it per-step here.
-    const steps: SoloPropStepData[] = sequence.steps.map((step) => {
-      const motion = step.motions?.[color];
+  // Convert each StepData motion into a SoloPropStepData. Duration lives on
+  // StepData (not MotionData), so we inject it per-step here.
+  const steps: SoloPropStepData[] = sequence.steps.map((step) => {
+    const motion = step.motions?.[color];
 
-      if (!isVisibleMotion(motion)) {
-        // A hand that is "not really there" (blank beat / assembly gap) is an
-        // invisible placeholder under the both-required Step shape. Decompose
-        // it exactly like the old absent hand: a static placeholder step, so
-        // soloProp content hashes stay byte-identical across the migration.
-        return makePlaceholderStep(startLocation, startOrientation, step.duration);
-      }
+    if (!isVisibleMotion(motion)) {
+      // A hand that is "not really there" (blank beat / assembly gap) is an
+      // invisible placeholder under the both-required Step shape. Decompose
+      // it exactly like the old absent hand: a static placeholder step, so
+      // soloProp content hashes stay byte-identical across the migration.
+      return makePlaceholderStep(
+        startLocation,
+        startOrientation,
+        step.duration
+      );
+    }
 
-      return motionToSoloPropStep(motion, step.duration);
-    });
+    return motionToSoloPropStep(motion, step.duration);
+  });
 
-    return createSoloProp(steps, startLocation, startOrientation);
+  return createSoloProp(steps, startLocation, startOrientation);
 }

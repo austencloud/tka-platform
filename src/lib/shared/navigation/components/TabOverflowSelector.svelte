@@ -15,6 +15,7 @@
     sectionHome = null,
     onSectionHomeSelect = () => {},
     selectorLabel = "Select tab",
+    moduleLabel = "",
   } = $props<{
     sections: Section[];
     currentSection: string;
@@ -22,6 +23,12 @@
     sectionHome?: SectionHomeDestination | null;
     onSectionHomeSelect?: () => void;
     selectorLabel?: string;
+    /**
+     * The module these tabs belong to (e.g. "Create"). Shown as the popover's
+     * heading so a compact layout still says WHERE the tab list came from —
+     * on mobile the module name is otherwise nowhere on screen.
+     */
+    moduleLabel?: string;
   }>();
 
   let popoverElement: HTMLElement | null = null;
@@ -32,7 +39,7 @@
     sectionHome?.active
       ? sectionHome
       : sections.find((section: Section) => section.id === currentSection) ||
-          sections[0],
+          sections[0]
   );
 
   function handleTriggerClick() {
@@ -87,7 +94,7 @@
 <button
   class="tab-picker-trigger"
   popovertarget="tab-overflow-popover"
-  aria-label={selectorLabel}
+  aria-label={`${currentDestination?.label ?? "Select"}. ${selectorLabel}`}
   aria-expanded={isOpen}
   aria-controls="tab-overflow-popover"
   onclick={handleTriggerClick}
@@ -111,7 +118,14 @@
   id="tab-overflow-popover"
   popover="auto"
   class="tab-overflow-popover"
+  aria-labelledby={moduleLabel ? "tab-overflow-popover-heading" : undefined}
 >
+  {#if moduleLabel}
+    <h2 class="popover-heading" id="tab-overflow-popover-heading">
+      {moduleLabel}
+    </h2>
+  {/if}
+
   <div class="tab-grid">
     {#if sectionHome}
       <button
@@ -313,6 +327,17 @@
     scale: 0.95;
   }
 
+  .popover-heading {
+    margin: 0 0 12px;
+    padding: 0 4px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--theme-text-muted, var(--theme-text));
+    opacity: 0.75;
+  }
+
   .tab-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -388,8 +413,7 @@
       var(--theme-stroke)
     );
     box-shadow:
-      0 0 0 2px
-        color-mix(in srgb, var(--section-color) 25%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--section-color) 25%, transparent),
       inset 0 1px 0 0 hsl(0 0% 100% / 0.1);
   }
 

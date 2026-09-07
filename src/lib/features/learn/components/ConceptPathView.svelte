@@ -1,15 +1,7 @@
-<!--
-ConceptPathView - Hero + mini-map focused learning experience
-
-Shows:
-- Progress mini-map with all concepts as dots
-- Hero card for current/next concept
-- Previous/next context
-- Expandable "View all" section
--->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { slide } from "svelte/transition";
+  import { growFade } from "$lib/shared/transitions/motion";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getConceptProgressTracker } from "$lib/features/learn/get-concept-progress-tracker";
   import { getConceptsByCategory } from "../domain/concepts";
   import { getConceptPlace } from "../domain/concept-place-registry";
@@ -26,7 +18,6 @@ Shows:
   import { CAPABILITY_NUDGES } from "$lib/shared/subscription/domain/capability-nudges";
   import PremiumNudge from "$lib/shared/subscription/components/PremiumNudge.svelte";
   import HeroConceptCard from "./HeroConceptCard.svelte";
-  import ConceptContext from "./ConceptContext.svelte";
   import ConceptCard from "./ConceptCard.svelte";
   import CategoryHeader from "./CategoryHeader.svelte";
   import ConceptLevelMap from "./ConceptLevelMap.svelte";
@@ -43,7 +34,7 @@ Shows:
 
   // Progress state
   let progress = $state(conceptProgressService.getProgress());
-  let showAllConcepts = $state(false);
+  let showCourseMap = $state(false);
   let selectedPlaceId = $state("1.1");
   const availableConcepts = getAvailableConcepts();
   const availableConceptIds = new Set(
@@ -68,7 +59,10 @@ Shows:
         new URLSearchParams(window.location.search)
       );
       const place = placeId ? getConceptPlace(placeId) : undefined;
-      if (place?.tkaLevel === 1) selectedPlaceId = place.id;
+      if (place?.tkaLevel === 1) {
+        selectedPlaceId = place.id;
+        showCourseMap = true;
+      }
     };
     syncPlaceFromUrl();
     window.addEventListener("popstate", syncPlaceFromUrl);
@@ -105,15 +99,6 @@ Shows:
   const currentConceptStatus = $derived(
     conceptProgressService.getConceptStatus(currentConcept().id)
   );
-
-  // Previous and next for context
-  const previousConcept = $derived(() => {
-    const current = currentConcept();
-    const index = availableConcepts.findIndex(
-      (concept) => concept.id === current.id
-    );
-    return index > 0 ? availableConcepts[index - 1] : undefined;
-  });
 
   const nextUpConcept = $derived(() => {
     const current = currentConcept();
@@ -194,10 +179,6 @@ Shows:
     });
   }
 
-  function toggleShowAll() {
-    showAllConcepts = !showAllConcepts;
-  }
-
   // Check if journey is complete
   const isJourneyComplete = $derived(
     availableConcepts.length > 0 &&
@@ -209,7 +190,6 @@ Shows:
   <section class="launch-zone" aria-labelledby="course-title">
     <header class="course-intro" style:view-transition-name="launchpad-guide">
       <div>
-        <span class="course-kicker">Learn by doing</span>
         <h1 id="course-title">Interactive TKA lessons</h1>
         <p>
           Start with the grid and build toward reading words. Each lesson gives
@@ -230,13 +210,6 @@ Shows:
           </div>
           <h2>Level 1 Complete!</h2>
           <p>You've completed every interactive lesson currently available.</p>
-          <button
-            class="review-button"
-            onclick={() => (showAllConcepts = true)}
-          >
-            <i class="fa-solid fa-rotate" aria-hidden="true"></i>
-            Review Concepts
-          </button>
         </div>
       {:else}
         <HeroConceptCard
@@ -245,38 +218,21 @@ Shows:
           onStart={handleConceptStart}
         />
 
-        <ConceptContext
-          previousConcept={previousConcept()}
-          nextConcept={nextUpConcept()}
-        />
+        {#if nextUpConcept()}
+          <p class="next-lesson">
+            After this: <span>{nextUpConcept()?.name}</span>
+          </p>
+        {/if}
       {/if}
     </div>
   </section>
 
-  <div class="level-map-slot">
-    <ConceptLevelMap
-      selectedId={selectedPlaceId}
-      onSelect={handlePlaceSelect}
-      onLessonStart={handleConceptStart}
-    />
-  </div>
-
-  <!-- View All Toggle -->
-  <button class="view-all-toggle" onclick={toggleShowAll}>
-    <span
-      >{showAllConcepts
-        ? "Hide available lessons"
-        : "Browse available lessons"}</span
-    >
-    <i
-      class="fa-solid {showAllConcepts ? 'fa-chevron-up' : 'fa-chevron-down'}"
-      aria-hidden="true"
-    ></i>
-  </button>
-
-  <!-- Expandable All Concepts Path -->
-  {#if showAllConcepts}
-    <div class="all-concepts" transition:slide={{ duration: 300 }}>
+  <section class="lesson-library" aria-labelledby="lesson-library-title">
+    <header class="library-heading">
+      <h2 id="lesson-library-title">Available lessons</h2>
+      <span>{availableConcepts.length} lessons · Choose any topic</span>
+    </header>
+    <div class="all-concepts">
       {#each availableCategories as category}
         {@const categoryProgress = getCategoryProgress(category)}
         {@const concepts = getConceptsByCategory(category).filter((concept) =>
@@ -306,6 +262,28 @@ Shows:
         </section>
       {/each}
     </div>
+  </section>
+
+  <div class="map-heading">
+    <PanelButton
+      onclick={() => (showCourseMap = !showCourseMap)}
+      ariaExpanded={showCourseMap}
+    >
+      {showCourseMap ? "Hide course map" : "Explore the course map"}
+      <i
+        class="fa-solid {showCourseMap ? 'fa-chevron-up' : 'fa-chevron-down'}"
+        aria-hidden="true"
+      ></i>
+    </PanelButton>
+  </div>
+  {#if showCourseMap}
+    <div class="level-map-slot" transition:growFade>
+      <ConceptLevelMap
+        selectedId={selectedPlaceId}
+        onSelect={handlePlaceSelect}
+        onLessonStart={handleConceptStart}
+      />
+    </div>
   {/if}
 
   {#if premiumNudgeVisible}
@@ -324,10 +302,9 @@ Shows:
     display: flex;
     flex-direction: column;
     gap: clamp(1rem, 1.5cqw, 1.5rem);
-    padding: 1.5rem;
+    padding: clamp(0.75rem, 2cqw, 1.5rem);
     padding-bottom: 5rem;
     min-height: 100%;
-    overflow-y: auto;
     max-width: min(100%, 110rem);
     margin: 0 auto;
     width: 100%;
@@ -356,16 +333,6 @@ Shows:
 
   .course-intro > div {
     min-width: 0;
-  }
-
-  .course-kicker {
-    display: block;
-    margin-bottom: 0.25rem;
-    color: var(--prop-blue, #60a5fa);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
   }
 
   .course-intro h1 {
@@ -434,6 +401,44 @@ Shows:
     width: 100%;
   }
 
+  .next-lesson {
+    margin: 0;
+    color: var(--theme-text-dim);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .next-lesson span {
+    color: var(--theme-text);
+  }
+
+  .lesson-library {
+    display: grid;
+    gap: 1.75rem;
+    padding-top: 0.75rem;
+  }
+
+  .library-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1rem;
+  }
+  .library-heading h2 {
+    margin: 0;
+    color: var(--theme-text);
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+  .library-heading > span {
+    color: var(--theme-text-dim);
+    font-size: 0.875rem;
+  }
+  .map-heading {
+    padding-top: 0.5rem;
+  }
+
   /* Completion celebration */
   .completion-celebration {
     --achievement-gold: #ffd700;
@@ -483,65 +488,11 @@ Shows:
     margin: 0 0 1.5rem;
   }
 
-  .review-button {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.875rem 1.5rem;
-    min-height: var(--min-touch-target);
-    background: color-mix(in srgb, var(--achievement-gold) 15%, transparent);
-    border: 1px solid
-      color-mix(in srgb, var(--achievement-gold) 30%, transparent);
-    border-radius: 10px;
-    color: var(--achievement-gold);
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .review-button:hover {
-    background: color-mix(in srgb, var(--achievement-gold) 25%, transparent);
-  }
-
-  /* View all toggle */
-  .view-all-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.875rem 1.5rem;
-    min-height: var(--min-touch-target);
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    color: var(--theme-text-dim);
-    font-size: 0.9375rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-    max-width: 300px;
-    margin: 0 auto;
-    width: fit-content;
-  }
-
-  .view-all-toggle:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text);
-  }
-
-  .view-all-toggle i {
-    font-size: 0.75rem;
-    transition: transform var(--duration-normal) ease;
-  }
-
   /* All concepts path */
   .all-concepts {
     display: flex;
     flex-direction: column;
     gap: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--theme-stroke);
   }
 
   /* Bento-style category container using theme system */
@@ -549,18 +500,12 @@ Shows:
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    padding: 1.25rem;
-    background: var(--theme-panel-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 16px;
-    position: relative;
-    overflow: hidden;
   }
 
   .concept-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 0.625rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.875rem;
     padding: 0;
   }
 
@@ -572,19 +517,16 @@ Shows:
     z-index: 100;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .view-all-toggle i,
-    .review-button {
-      transition: none;
-    }
-  }
-
   @container learn-tab (max-width: 620px) {
+    .concept-list {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     .course-intro {
       align-items: stretch;
       flex-direction: column;
       gap: 1rem;
-      padding: 1rem;
+      padding: 0;
     }
 
     .read-guide-link {
@@ -613,6 +555,18 @@ Shows:
     }
   }
 
+  @container learn-tab (min-width: 1100px) {
+    .concept-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @container learn-tab (min-width: 1600px) {
+    .concept-list {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
   @container learn-tab (min-width: 1800px) {
     .concept-path {
       gap: clamp(1.25rem, 1.5cqw, 2rem);
@@ -622,17 +576,6 @@ Shows:
 
     .level-map-slot {
       width: 100%;
-    }
-
-    .all-concepts {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1.25rem;
-      align-items: start;
-    }
-
-    .concept-list {
-      grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
     }
   }
 </style>

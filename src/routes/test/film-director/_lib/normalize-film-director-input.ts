@@ -1,3 +1,5 @@
+import { expandSceneInheritance } from "./expand-scene-inheritance";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -152,6 +154,10 @@ export function normalizeFilmDirectorInput(raw: unknown): unknown {
     }
     return normalizedUnit;
   });
+
+  // Gap 13. Inheritance is the last thing the boundary does, so a child of a
+  // legacy-spelled parent inherits the already-migrated fields.
+  normalized.scenes = expandSceneInheritance(normalized.scenes as unknown[]);
 
   delete normalized.shots;
   return normalized;

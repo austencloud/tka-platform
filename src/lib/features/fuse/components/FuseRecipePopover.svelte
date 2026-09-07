@@ -1,10 +1,9 @@
 <!--
   FuseRecipePopover — a recipe-rail slot whose editor opens in a popover.
 
-  The tile is the app's own BaseCard, the same one the Generate bento uses for
-  Customize, so it carries the ripple, the glossy sheen, the lift on hover and
-  the spring on press for free. bits-ui drives it through BaseCard's
-  `triggerProps` seam rather than a second, flatter card being built here.
+  The trigger is the app's own BaseCard in its quiet instrumentation style.
+  bits-ui drives it through BaseCard's `triggerProps` seam rather than a second
+  card implementation being built here.
 
   Slots whose values are few and ordered (Length, Level, Grid, Pairing) hold
   their control on the card instead — see FuseRecipeRail.
@@ -19,8 +18,6 @@
     destination,
     title,
     summary,
-    color,
-    shadowColor,
     width = "34rem",
     align = "center",
     open = false,
@@ -31,8 +28,6 @@
     destination: FuseRecipeDestination;
     title: string;
     summary: string;
-    color: string;
-    shadowColor: string;
     width?: string;
     align?: "start" | "center" | "end";
     open?: boolean;
@@ -54,8 +49,7 @@
       <BaseCard
         {title}
         currentValue={summary}
-        {color}
-        {shadowColor}
+        appearance="quiet"
         {cardIndex}
         {headerFontSize}
         gridColumnSpan={1}
@@ -73,7 +67,7 @@
       collisionPadding={18}
       class="fuse-recipe-popover"
       aria-labelledby={titleId}
-      style="--popover-width: {width}; --recipe-color: {color}; --recipe-shadow: {shadowColor};"
+      style="--popover-width: {width};"
     >
       <header class="popover-header">
         <div>
@@ -113,16 +107,16 @@
     overflow: hidden;
     border: 1px solid var(--theme-stroke-strong, var(--theme-stroke));
     border-radius: 18px;
+    /* The workspace beneath this editor is animated. Paint the theme wash over
+       an opaque floor so paths never compete with labels or hit targets. */
     background:
       linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
       color-mix(in srgb, var(--theme-text) 8%, black);
-    box-shadow:
-      0 24px 72px var(--theme-shadow),
-      0 0 36px hsl(var(--recipe-shadow) / 16%);
+    box-shadow: 0 24px 72px var(--theme-shadow);
   }
 
   :global(.fuse-recipe-popover[data-state="open"]) {
-    animation: recipe-popover-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    animation: recipe-popover-in var(--duration-fast) var(--ease-out);
   }
 
   .popover-header {
@@ -153,12 +147,8 @@
     font-size: 1.05rem;
   }
 
-  /* The popover is portaled to the body, so it reads --theme-card-bg from the
-     root rather than from the workspace — and at the root that token is a light
-     surface. Filling the close button with it made a white block the loudest
-     thing in a dark panel. It takes the panel's own stroke and a wash of its
-     card colour instead, which keeps it quieter than the settings it sits
-     above and matches the dismiss in the recipe column. */
+  /* The popover is portaled to the body, so the close control uses the panel's
+     own neutral surface instead of inheriting a feature-local accent. */
   .close-popover {
     display: grid;
     place-items: center;
@@ -177,7 +167,7 @@
 
   .close-popover:hover {
     background: color-mix(in srgb, var(--theme-text) 16%, transparent);
-    border-color: hsl(var(--recipe-shadow) / 55%);
+    border-color: var(--theme-stroke-strong, var(--theme-stroke));
   }
 
   .close-popover:focus-visible {

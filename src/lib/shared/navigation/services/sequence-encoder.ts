@@ -119,9 +119,6 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.TRIQUETRA]: "Q",
   [PropType.TRIQUETRA2]: "q",
   [PropType.SWORD]: "W",
-  // A new code is permanent once it reaches a printed card. Y was the last
-  // unclaimed uppercase letter and keeps existing prop bytes unchanged.
-  [PropType.SICKLES]: "Y",
   // Energy pair. Digits, because every letter that reads as "energy", "saber",
   // or "staff" is already spoken for and a short code has one character to give.
   [PropType.ENERGY_SABER]: "3",
@@ -152,6 +149,12 @@ const PROP_TYPE_DECODE: Record<string, PropType> = Object.fromEntries(
 // "R". Decode old short codes / URLs to its base prop, buugeng, so existing
 // links still resolve instead of falling through to a missing prop.
 PROP_TYPE_DECODE["R"] = PropType.BUUGENG;
+
+// Legacy alias: sickles (removed from the codebase 2026-09-06) was encoded "Y".
+// A code is permanent once it reaches a printed card, so decode it to its base
+// prop, sword, instead of letting an existing link fall through to a missing
+// prop.
+PROP_TYPE_DECODE["Y"] = PropType.SWORD;
 
 const INLINE_PREFIX = "s~";
 
@@ -440,7 +443,7 @@ function findMotionMismatch(a: SequenceData, b: SequenceData): string | null {
     "skewDir",
   ];
   for (let i = 0; i < a.steps.length; i++) {
-      for (const color of [HandSide.LEFT, HandSide.RIGHT] as const) {
+    for (const color of [HandSide.LEFT, HandSide.RIGHT] as const) {
       const ma = a.steps[i]?.motions?.[color];
       const mb = b.steps[i]?.motions?.[color];
       if (!ma || !mb) return `step ${i + 1} ${color} motion missing`;
@@ -495,10 +498,11 @@ function encodeSequenceWithFloatFormat(
       (spMotions.left?.propType ?? PropType.STAFF) as PropType
     ] ?? PROP_TYPE_ENCODE[PropType.STAFF];
   const rightPropCode =
-    PROP_TYPE_ENCODE[(spMotions.right?.propType ?? PropType.STAFF) as PropType] ??
-    PROP_TYPE_ENCODE[PropType.STAFF];
+    PROP_TYPE_ENCODE[
+      (spMotions.right?.propType ?? PropType.STAFF) as PropType
+    ] ?? PROP_TYPE_ENCODE[PropType.STAFF];
 
-  const header = `${leftSeed}${rightSeed}${leftPropCode}${rightPropCode}`;
+  const header = `${leftSeed}${rightSeed}${leftPropCode}${rightPropCode}${sequence.sequenceKind === "hand-path" ? "H" : ""}`;
   const encodedStartPosition = encodeBeat(startPositionStep, floatWireFormat);
   const encodedSteps = actualSteps.map((step) =>
     encodeBeat(step, floatWireFormat)
@@ -545,12 +549,7 @@ export function decodeSequence(encoded: string): SequenceData {
     const segs = enc.split(":");
     // Slot order is immutable because these bytes are printed on physical
     // cards: the legacy blue slot is the left hand, and red is the right hand.
-    const left = decodeMotion(
-      segs[0] ?? "",
-      HandSide.LEFT,
-      leftOri,
-      leftProp
-    );
+    const left = decodeMotion(segs[0] ?? "", HandSide.LEFT, leftOri, leftProp);
     const right = decodeMotion(
       segs[1] ?? "",
       HandSide.RIGHT,
@@ -609,7 +608,8 @@ export function decodeSequence(encoded: string): SequenceData {
 
   return {
     id: crypto.randomUUID(),
-    name: "Shared Sequence",
+    name: header[4] === "H" ? "Hand path" : "Shared Sequence",
+    ...(header[4] === "H" && { sequenceKind: "hand-path" as const }),
     word: "",
     steps,
     startingPosition: startPosition,
@@ -706,12 +706,27 @@ export function estimateURLLength(
 
 export function generateViewerURL(
   sequence: SequenceData,
-  options: { compress?: boolean; metadata?: ShareURLMetadata } = {
+  options: {
+    compress?: boolean;
+    metadata?: ShareURLMetadata;
+    /**
+     * A minted short code for this sequence. When present the path is
+     * `/sequence/<code>` — the route resolves it through the short-code
+     * manager — instead of the inline-encoded sequence, so the link stays
+     * short even when it carries a full viewer-state snapshot.
+     */
+    shortCode?: string;
+  } = {
     compress: true,
   }
 ): ShareURLResult {
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const metadataQuery = buildMetadataQuery(options.metadata);
+
+  if (options.shortCode) {
+    const url = `${baseUrl}/sequence/${encodeURIComponent(options.shortCode)}${metadataQuery}`;
+    return { url, length: url.length, compressed: false, savings: 0 };
+  }
 
   if (options.compress) {
     const { encoded, compressed, originalLength, finalLength } =
@@ -761,6 +776,11 @@ export async function encodeSequenceForQR(
   sequence: SequenceData
 ): Promise<string> {
   const flatEncoded = encodeSequence(sequence);
+
+  // Recipe reconstruction predates authored subjects; retain the H header.
+  if (sequence.sequenceKind === "hand-path") {
+    return `${INLINE_PREFIX}${compressForQR(flatEncoded)}`;
+  }
 
   try {
     const { CompositionalEncoder } =

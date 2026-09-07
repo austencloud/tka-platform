@@ -32,3 +32,36 @@ export function resolveActiveFormationIndex(
   }
   return index;
 }
+
+/**
+ * Which set an Arrange ("put them in a line", no count) reshapes.
+ *
+ * Normally the active set. While the playhead is inside the next set's
+ * transition window the cast is already walking into that set, so reshaping
+ * where they came from would rewrite the move; the destination is the target
+ * instead. A pinned selection always wins.
+ */
+export function resolveArrangeTargetIndex(
+  formations: readonly Formation[],
+  selectedFormationId: string | null,
+  beat: number
+): number {
+  const active = resolveActiveFormationIndex(
+    formations,
+    selectedFormationId,
+    beat
+  );
+  if (active < 0) return active;
+  if (selectedFormationId && formations[active]!.id === selectedFormationId) {
+    return active;
+  }
+  const next = formations[active + 1];
+  if (
+    next &&
+    next.transitionBeats > 0 &&
+    beat >= next.atBeat - next.transitionBeats
+  ) {
+    return active + 1;
+  }
+  return active;
+}

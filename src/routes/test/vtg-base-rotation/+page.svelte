@@ -186,7 +186,7 @@
     <p class="sub">
       Pre-baked clips: <strong>one hand (blue)</strong>, <strong>single-end
       (club)</strong>, glowing mandala baked in. One full set per <strong>effort</strong>
-      (easing) — switch with the chips. Rows = all 7 turn values (props:hands).
+      (easing) — switch with the chips. Rows = all 7 turn values (hands:props).
       Columns = <strong>arc → linear → concave</strong>. Only <strong>arc</strong> exists in VTG.
     </p>
   </header>

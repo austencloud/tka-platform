@@ -31,8 +31,17 @@ import {
   resolveFanRenderKey,
   type FanAppearance,
 } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+import {
+  DEFAULT_PROP_LOOK,
+  normalizePropLook,
+  resolvePropRenderKey,
+  type PropLook,
+} from "$lib/shared/pictograph/prop/domain/prop-look";
 
-import type { AnimationEngineProps } from "./animation-engine.svelte";
+import type {
+  AdditionalLayerTextureStatus,
+  AnimationEngineProps,
+} from "./animation-engine.svelte";
 import type { AnimatorState } from "../state/animator-state.svelte";
 
 /** Callback to obtain current frame params. */
@@ -44,6 +53,7 @@ export class PropTypeManager {
   private renderPropTypeLeft: string | null = null;
   private renderPropTypeRight: string | null = null;
   private fanAppearance: FanAppearance = DEFAULT_FAN_APPEARANCE;
+  private propLook: PropLook = DEFAULT_PROP_LOOK;
   trailsSuppressedUntilTextureLoad = false;
 
   // Additional layer texture loading for tunnel mode (indexed by layer)
@@ -122,6 +132,23 @@ export class PropTypeManager {
   }
 
   /**
+   * Render key for the base prop pair. Model sprites are baked in the blue and
+   * red motion colors, so exact tunnel colors fall back to the recolorable
+   * pictograph artwork; additional tunnel layers always use that path.
+   */
+  private baseRenderKey(
+    propType: string,
+    appearance: FanAppearance,
+    look: PropLook,
+    baseColors: TunnelPropColorPair | null = this.currentBaseColors
+  ): string {
+    return resolvePropRenderKey(propType, {
+      fanAppearance: appearance,
+      propLook: baseColors ? "pictograph" : look,
+    });
+  }
+
+  /**
    * Handle prop type changes from overrides (props.leftPropType/rightPropType).
    * Returns true if a texture reload was triggered.
    */
@@ -133,13 +160,28 @@ export class PropTypeManager {
   ): boolean {
     this.latestFrameParamsProvider = getFrameParams;
     const newLeft = props.leftPropType ?? this.propTypeOverrideLeft ?? "staff";
-    const newRight = props.rightPropType ?? this.propTypeOverrideRight ?? "staff";
+    const newRight =
+      props.rightPropType ?? this.propTypeOverrideRight ?? "staff";
     const nextAppearance = normalizeFanAppearance(
       props.fanAppearance ??
         this.settingsService?.currentSettings?.fanAppearance
     );
-    const newLeftRender = resolveFanRenderKey(newLeft, nextAppearance);
-    const newRightRender = resolveFanRenderKey(newRight, nextAppearance);
+    const nextLook = normalizePropLook(
+      this.settingsService?.currentSettings?.propArtwork
+    );
+    const nextBaseColors = props.tunnelPropColors ?? null;
+    const newLeftRender = this.baseRenderKey(
+      newLeft,
+      nextAppearance,
+      nextLook,
+      nextBaseColors
+    );
+    const newRightRender = this.baseRenderKey(
+      newRight,
+      nextAppearance,
+      nextLook,
+      nextBaseColors
+    );
 
     // Check if overrides changed
     if (
@@ -172,6 +214,7 @@ export class PropTypeManager {
       this.renderPropTypeLeft = newLeftRender;
       this.renderPropTypeRight = newRightRender;
       this.fanAppearance = nextAppearance;
+      this.propLook = nextLook;
       state.setLeftPropType(newLeft);
       state.setRightPropType(newRight);
       state.setLegacyPropType(newLeft);
@@ -247,14 +290,20 @@ export class PropTypeManager {
       this.propTypeChangeService?.state.leftPropType ??
       state.currentLeftPropType;
     const settingsRight =
-      this.propTypeChangeService?.state.rightPropType ?? state.currentRightPropType;
-    const settingsLeftRender = resolveFanRenderKey(
-      settingsLeft,
-      settingsAppearance
+      this.propTypeChangeService?.state.rightPropType ??
+      state.currentRightPropType;
+    const settingsLook = normalizePropLook(
+      this.settingsService?.currentSettings?.propArtwork
     );
-    const settingsRightRender = resolveFanRenderKey(
+    const settingsLeftRender = this.baseRenderKey(
+      settingsLeft,
+      settingsAppearance,
+      settingsLook
+    );
+    const settingsRightRender = this.baseRenderKey(
       settingsRight,
-      settingsAppearance
+      settingsAppearance,
+      settingsLook
     );
     const renderAppearanceChanged =
       this.renderPropTypeLeft !== null &&
@@ -297,6 +346,7 @@ export class PropTypeManager {
       this.renderPropTypeLeft = settingsLeftRender;
       this.renderPropTypeRight = settingsRightRender;
       this.fanAppearance = settingsAppearance;
+      this.propLook = settingsLook;
 
       // Invalidate path cache FIRST - it holds pre-computed endpoint positions
       // for the old prop geometry. If the render loop reads stale cache data
@@ -345,7 +395,11 @@ export class PropTypeManager {
     darkMode = false
   ): void {
     this.latestFrameParamsProvider = getFrameParams;
-    const additionalLayers = props.additionalLayers ?? [];
+    const visibleLayers = props.additionalLayers ?? [];
+    const additionalLayers =
+      visibleLayers.length > 0
+        ? visibleLayers
+        : (props.preloadAdditionalLayers ?? []);
     const layerCount = additionalLayers.length;
     const spectrum = props.tunnelSpectrum ?? true;
     const exactColors = props.tunnelPropColors ?? null;
@@ -356,7 +410,7 @@ export class PropTypeManager {
     // Signature of every layer's per-hand prop type. Empty entries fall back to
     // the global prop, so an all-default set yields "|"-joined blanks — a
     // performer swapping a prop changes the signature and re-generates sprites.
-    const propSig = `${this.fanAppearance.build}:${this.fanAppearance.frameColor}:${this.fanAppearance.cover}|${additionalLayers
+    const propSig = `${this.fanAppearance.build}:${this.fanAppearance.frameColor}:${this.fanAppearance.cover}:${this.propLook}|${additionalLayers
       .map((l) => `${l.leftPropType ?? ""}:${l.rightPropType ?? ""}`)
       .join("|")}`;
 
@@ -375,6 +429,7 @@ export class PropTypeManager {
       this.lastLayerPropSig = propSig;
       this.additionalLayerTexturesLoaded = [];
       this.additionalLayerTexturesLoading = [];
+      this.publishAdditionalLayerTextureStatus(props, layerCount);
     }
 
     if (layerCount > 0 && this.animationRenderer) {
@@ -389,16 +444,13 @@ export class PropTypeManager {
         ) {
           this.additionalLayerTexturesLoading[i] = true;
 
-          const { left: leftColor, right: rightColor } = this.additionalLayerColors(
-            i,
-            layerCount,
-            spectrum,
-            exactColors
-          );
+          const { left: leftColor, right: rightColor } =
+            this.additionalLayerColors(i, layerCount, spectrum, exactColors);
           // Each performer's per-hand prop; falls back to the global prop when a
           // layer carries no explicit type (default 1-skin appearance = today).
           const leftPropType = layer.leftPropType ?? state.currentLeftPropType;
-          const rightPropType = layer.rightPropType ?? state.currentRightPropType;
+          const rightPropType =
+            layer.rightPropType ?? state.currentRightPropType;
           const leftRenderType = resolveFanRenderKey(
             leftPropType,
             this.fanAppearance
@@ -419,6 +471,7 @@ export class PropTypeManager {
             .then(() => {
               this.additionalLayerTexturesLoaded[i] = true;
               this.additionalLayerTexturesLoading[i] = false;
+              this.publishAdditionalLayerTextureStatus(props, layerCount);
 
               // Trigger re-render with new layer textures
               this.triggerRenderWithLatestFrame(state);
@@ -426,10 +479,13 @@ export class PropTypeManager {
             .catch((err) => {
               console.error(`Failed to load layer ${i} prop textures:`, err);
               this.additionalLayerTexturesLoading[i] = false;
+              this.publishAdditionalLayerTextureStatus(props, layerCount);
             });
         }
       }
     }
+
+    this.publishAdditionalLayerTextureStatus(props, layerCount);
 
     if (colorSig !== this.lastBasePropColorSig) {
       this.lastBasePropColorSig = colorSig;
@@ -441,6 +497,19 @@ export class PropTypeManager {
         this.triggerRenderWithLatestFrame(state);
       });
     }
+  }
+
+  private publishAdditionalLayerTextureStatus(
+    props: AnimationEngineProps,
+    requested: number
+  ): void {
+    if (!props.onAdditionalLayerTextureStatusChange) return;
+    const status: AdditionalLayerTextureStatus = {
+      requested,
+      loaded: this.additionalLayerTexturesLoaded.filter(Boolean).length,
+      loading: this.additionalLayerTexturesLoading.filter(Boolean).length,
+    };
+    props.onAdditionalLayerTextureStatusChange(status);
   }
 
   /**
@@ -542,8 +611,12 @@ export class PropTypeManager {
     let leftPropType = state.currentLeftPropType;
     let rightPropType = state.currentRightPropType;
     let appearance = this.fanAppearance;
+    let look = this.propLook;
 
-    if (this.propTypeOverrideLeft != null || this.propTypeOverrideRight != null) {
+    if (
+      this.propTypeOverrideLeft != null ||
+      this.propTypeOverrideRight != null
+    ) {
       // Use overrides - bypass settings entirely
       leftPropType = this.propTypeOverrideLeft ?? "staff";
       rightPropType = this.propTypeOverrideRight ?? "staff";
@@ -553,6 +626,7 @@ export class PropTypeManager {
       leftPropType = settings.leftPropType || settings.propType || "staff";
       rightPropType = settings.rightPropType || settings.propType || "staff";
       appearance = normalizeFanAppearance(settings.fanAppearance);
+      look = normalizePropLook(settings.propArtwork);
 
       // Also update engine state to keep it in sync
       state.setLeftPropType(leftPropType);
@@ -561,16 +635,27 @@ export class PropTypeManager {
     }
 
     this.fanAppearance = appearance;
-    const leftRenderType = resolveFanRenderKey(leftPropType, appearance);
-    const rightRenderType = resolveFanRenderKey(rightPropType, appearance);
-    this.renderPropTypeLeft = leftRenderType;
-    this.renderPropTypeRight = rightRenderType;
+    this.propLook = look;
 
     // Pass dark mode state for prop color selection
     // This allows preview isolation - local preview dark mode instead of global
     const effectiveColors =
       colors === undefined ? this.currentBaseColors : colors;
     this.currentBaseColors = effectiveColors;
+    const leftRenderType = this.baseRenderKey(
+      leftPropType,
+      appearance,
+      look,
+      effectiveColors
+    );
+    const rightRenderType = this.baseRenderKey(
+      rightPropType,
+      appearance,
+      look,
+      effectiveColors
+    );
+    this.renderPropTypeLeft = leftRenderType;
+    this.renderPropTypeRight = rightRenderType;
     if (colors !== undefined) {
       this.lastBasePropColorSig = effectiveColors
         ? `${effectiveColors.left}:${effectiveColors.right}`

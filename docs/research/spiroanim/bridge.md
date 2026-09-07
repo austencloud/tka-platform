@@ -105,7 +105,7 @@ app can rot the other's format.
 |---|---|
 | `concept` | `vtg` \| `qtr` \| `8stp` |
 | `reference` | vtg/qtr `^[1-6]-[1-6]$`; 8stp `^[1-8]-(aa\|ae\|ai\|ea\|ee\|ei\|ia\|ie\|ii)$` |
-| `ratio` | `1x1` \| `1x3` \| `1x5` (`x` replaces `:`, which a path segment cannot carry cleanly) |
+| `ratio` | `1x1` \| `1x2` \| `1x3` \| `1x4` \| `1x5` \| `2x3` \| `2x5` (`x` replaces `:`, which a path segment cannot carry cleanly) |
 | `shape` | `diamond` \| `box` |
 | `variant` | `base` \| `anti` (`anti` ⇔ `isAnti: true` in the transcription) |
 | `o<degrees>` | optional pattern orientation: `o-90` \| `o-45` \| `o0` \| `o45` \| `o90` \| `o180`. vtg/qtr only. |
@@ -122,7 +122,48 @@ Five fields address the canonical reading of a cell. The transcription carries
 two further axes the key does not (`quarters` on qtr, `reversePlane` on 8stp);
 his own link builder emits `quarters: 1` / `reversePlane: false`, which is also
 what `cell-catalogue.json` records, so the bridge addresses that reading. The
-1,584 transcription entries collapse to 1,008 addressable keys.
+3,312 transcription entries collapse to 2,160 addressable keys.
+
+### Speed ratios: seven bridged, one excluded
+
+SpiroAnim's ratio picker offers 1:1, 2:1, 1:2, 1:3, 2:3, 1:4, 1:5 and 2:5.
+The original transcription (2026-08-09) captured only 1:1, 1:3 and 1:5. The
+other four TKA-readable ratios were derived on 2026-09-01 by compiling every
+VTG cell at every picker ratio through his own compiler
+(`createDefaultVtgAnimation` → `rootCompile` → `closestPoint`) and reading
+three facts off the output:
+
+1. **Hand paths are identical within a ratio family.** 1:2 lands on the same
+   grid points as 1:1 in every interval; 1:4 and 2:3 match 1:3; 2:5 matches
+   1:5 (72/72 cells each). The ratio only changes how far the prop turns.
+2. **A two-cycle ratio (2:3, 2:5) repeats its 8-interval hand path exactly.**
+   His compiler emits 17 frames for it, and intervals 9–16 reproduce 1–8, so
+   the TKA word is the one-cycle word written twice (8 steps).
+3. **Prop rotation per 45° interval is ±45 · den/num.** In TKA terms, turns
+   per step = (den/num − 1)/2 for both hands: 1:2 → 0.5, 1:4 → 1.5, 2:3 →
+   0.25, 2:5 → 0.75. The 1:1/1:3/1:5 entries already carried 0/1/2 by the
+   same formula, so the derivation is turn substitution on the family entry,
+   not a second transcription.
+
+| Ratio | Family | Turns / step | Steps | Default view |
+|---|---|---|---|---|
+| 1:1 | — | 0 | 4 | 0 |
+| 1:2 | 1:1 | 0.5 | 4 | -90 |
+| 1:3 | — | 1 | 4 | 0 |
+| 1:4 | 1:3 | 1.5 | 4 | -90 |
+| 1:5 | — | 2 | 4 | 0 |
+| 2:3 | 1:3 | 0.25 | 8 | -90 |
+| 2:5 | 1:5 | 0.75 | 8 | -90 |
+
+**2:1 is excluded.** Its prop turns 22.5° per interval, i.e. 45° per 90° hand
+arc — less rotation than a 0-turn pro shift, and not a float either (a float
+is a separate binary state in which the prop holds its absolute angle, not a
+negative turn count). TKA has no reading for it, so the resolver rejects a
+`2x1` key and SpiroAnim's chip reports no cell for it.
+
+TKA's quarter-turn support is real, not an approximation: the resolver writes
+the fractional turns straight into each motion, and the end orientation comes
+from the canonical radial fractional-turn cycle (`orientation.ts`).
 
 **Forward compatibility:** unrecognised dot-separated fields beyond the fifth
 are IGNORED, not rejected. A future SpiroAnim may append an axis without
@@ -139,10 +180,13 @@ facts, all verified by compiling cells inside his own checkout on 2026-08-30:
 
 1. The transcription corpus was captured at pattern orientation **-90**, the
    universal default at capture time (2026-08-09).
-2. His current default is per-ratio, and for every bridged ratio (1:1, 1:3,
-   1:5 — vtg and qtr alike) it is **0**. So a key without an `o` token means
-   "what a SpiroAnim user sees by default," which is 90° clockwise of the raw
-   transcription — not the transcription itself.
+2. His current default is per-ratio (`getDefaultVtgPatternOrientation`): **0**
+   for the odd-denominator one-cycle ratios (1:1, 1:3, 1:5) and **-90** for
+   the even-denominator and two-cycle ratios (1:2, 1:4, 2:3, 2:5), vtg and
+   qtr alike. So a key without an `o` token means "what a SpiroAnim user sees
+   by default" for that ratio: 90° clockwise of the raw transcription for
+   1:3, the raw transcription itself for 1:4. The resolver mirrors that rule
+   in `defaultSpiroAnimOrientation()`.
 3. Each +45° of orientation moves every hand exactly one compass step
    **clockwise** (n → ne → e → …). Both apps label the compass from the same
    screen frame — the transcribed grid points came from his `closestPoint`
@@ -152,14 +196,15 @@ The resolver (`orientation-rotation.ts`) rotates each transcribed step's
 positions clockwise by `(requested − (−90)) / 45` compass steps before the
 dataframe lookup. 45° views land on intercardinal points and resolve against
 the Box dataframe; the resolver's merged Diamond+Box index already covers that
-(proven by the o45 sweep over all 864 vtg/qtr cells). Turns are per-hand
+(proven by the o45 sweep over all 2,016 vtg/qtr cells). Turns are per-hand
 scalars and survive rotation unchanged, so the derived word is
 rotation-invariant. **8stp has no orientation axis:** it never rotates, and an
 `o` token on an 8stp key is treated as a foreign field.
 
-Return links are unaffected: `vtg-qtr-deep-links.json` was generated at
-orientation 0 (byte-verified against a live 0-orientation URL), which matches
-the default view the Composer now renders.
+Return links follow the same rule: `vtg-qtr-deep-links.json` holds each cell
+at its ratio's default orientation — 0 for 1:1/1:3/1:5 (byte-verified against
+a live 0-orientation URL), -90 for the four ratios added on 2026-09-01 — which
+is the default view the Composer renders for a plain key.
 
 ### Return links are vendored, not encoded
 
@@ -180,7 +225,10 @@ guessing one produces links that look right and open the wrong animation.
 Both catalogues are diamond-only and the 8-Step export has no anti variant. A
 cell with no vendored link simply has no link and the route omits the button. A
 vendored value that is not a `https://spiroanim.com/player?` URL is treated as
-a missing entry. Coverage today: 504 of 504 addressable diamond cells.
+a missing entry. Coverage today: 1,080 of 1,080 addressable diamond cells
+(the 576 links for the four ratios added on 2026-09-01 were generated with
+`createVtgPreviewAnimation` / `createQtrPreviewAnimation` at orientation -90
+and the generator was byte-checked against all 432 existing links first).
 
 ### Error behavior
 

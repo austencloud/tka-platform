@@ -19,59 +19,55 @@ import {
   getBlossomRiverSurfaceElevation,
 } from "$lib/shared/3d/environments/scenes/cherry-blossom/blossom-water";
 
-describe("Blossom R2.1 production contract", () => {
-  it("ships the grove phase without unlocking life and atmosphere", () => {
-    // Phase 4 establishes the perimeter grove. Phase 5 is what turns on petals,
-    // koi, and moonlight, so BlossomScene's decorative atmosphere must stay off.
-    expect(getBlossomActiveProductionPhase()).toBe(4);
-    expect(getBlossomActiveProductionPhase()).toBeLessThan(5);
+describe("Blossom lantern garden production contract", () => {
+  it("enables the garden's life and atmosphere", () => {
+    expect(getBlossomActiveProductionPhase()).toBe(5);
   });
 
   it("keeps the validated camera envelope inside the authored terrain", () => {
     const terrain = getBlossomTerrainBounds();
     const camera = getBlossomCameraContract();
 
-    expect(camera.controls.maximumDistance).toBe(82);
-    expect(terrain.minX).toBeLessThanOrEqual(-128);
-    expect(terrain.maxX).toBeGreaterThanOrEqual(128);
-    expect(terrain.minY).toBeLessThanOrEqual(-122);
-    expect(terrain.maxY).toBeGreaterThanOrEqual(142);
+    const reach =
+      camera.controls.maximumDistance *
+        Math.sin((camera.controls.maximumPolarAngleDegrees * Math.PI) / 180) +
+      12;
+    const pan = camera.controls.panTargetBounds;
+    expect(terrain.minX).toBeLessThanOrEqual(pan.minX - reach);
+    expect(terrain.maxX).toBeGreaterThanOrEqual(pan.maxX + reach);
+    expect(terrain.minY).toBeLessThanOrEqual(pan.minY - reach);
+    expect(terrain.maxY).toBeGreaterThanOrEqual(pan.maxY + reach);
   });
 
   it("authors every public and service route from connected 3D centerlines", () => {
     const paths = getBlossomCirculationPaths();
 
-    expect(paths).toHaveLength(14);
+    expect(paths).toHaveLength(2);
     expect(
       paths.filter((path) => path.kind === "primary-accessible")
-    ).toHaveLength(12);
+    ).toHaveLength(1);
     expect(
       paths.filter((path) => path.kind === "restricted-service")
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     for (const path of paths) {
       expect(path.centerline.length).toBeGreaterThanOrEqual(2);
       expect(path.width).toBeGreaterThanOrEqual(2);
     }
   });
 
-  it("runs the water off both ends of the site instead of capping it mid-field", () => {
+  it("contains the closed pond inside the garden", () => {
     const bounds = getBlossomRiverBounds();
     const terrain = getBlossomTerrainBounds();
 
-    // The authored centerline only spans 85 m. Anything at or near that width
-    // means the run-out is gone and the river ends in open ground again.
-    expect(bounds.width).toBeGreaterThan(terrain.maxX - terrain.minX);
-    expect(bounds.depth).toBeGreaterThan(8);
-    expect(getBlossomRiverSurfaceElevation()).toBe(-0.15);
+    expect(bounds.width).toBeLessThan(terrain.maxX - terrain.minX);
+    expect(bounds.depth).toBeGreaterThan(7);
+    expect(getBlossomRiverSurfaceElevation()).toBe(-0.16);
   });
 
   it("carries a resampled bank the pool shader can still measure", () => {
     const outline = getBlossomRiverOutline();
     const shoreline = getBlossomRiverShoreline();
 
-    // Ten authored control points give nine faceted segments per bank. The
-    // resampled course has to be far denser than that for the water's edge to
-    // read as a curve.
     expect(outline.length).toBeGreaterThan(120);
     expect(outline.length % 2).toBe(0);
     // ReflectivePoolShader's shoreline arrays are fixed at 32 segments; a
@@ -99,7 +95,9 @@ describe("Blossom R2.1 production contract", () => {
     // ReflectivePool reconstructs shoreline coordinates as (uv - 0.5) * size,
     // which only matches the outline when it is centred on the origin.
     expect(Math.abs(Math.max(...x) + Math.min(...x))).toBeLessThan(0.001);
-    expect(Math.abs(Math.max(...depth) + Math.min(...depth))).toBeLessThan(0.001);
+    expect(Math.abs(Math.max(...depth) + Math.min(...depth))).toBeLessThan(
+      0.001
+    );
   });
 
   it("keeps stage operations outside the performance envelope", () => {

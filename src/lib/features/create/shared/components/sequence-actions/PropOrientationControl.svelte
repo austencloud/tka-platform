@@ -1,12 +1,3 @@
-<!--
-  PropOrientationControl.svelte
-
-  Picks a prop's starting orientation. There are four of them (eight with
-  interradial), and they all fit on one row, so they are all shown: stepping
-  through a cycle to reach Counter meant three presses and a guess at the order,
-  and hid two of the four choices behind a popover. The tone carries which prop
-  is being set even before anything is selected.
--->
 <script lang="ts">
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
@@ -45,20 +36,47 @@
   interface OrientationOption {
     value: string;
     label: string;
+    name: string;
+    icon: string;
   }
 
   const cardinalOptions: OrientationOption[] = [
-    { value: "in", label: "In" },
-    { value: "out", label: "Out" },
-    { value: "clock", label: "CW" },
-    { value: "counter", label: "CCW" },
+    { value: "in", label: "In", name: "Inward", icon: "fa-compress-alt" },
+    { value: "out", label: "Out", name: "Outward", icon: "fa-expand-alt" },
+    { value: "clock", label: "CW", name: "Clockwise", icon: "fa-rotate-right" },
+    {
+      value: "counter",
+      label: "CCW",
+      name: "Counterclockwise",
+      icon: "fa-rotate-left",
+    },
   ];
 
   const interradialOptions: OrientationOption[] = [
-    { value: "clockIn", label: "CW·In" },
-    { value: "clockOut", label: "CW·Out" },
-    { value: "counterIn", label: "CCW·In" },
-    { value: "counterOut", label: "CCW·Out" },
+    {
+      value: "clockIn",
+      label: "CW·In",
+      name: "Clockwise inward",
+      icon: "fa-rotate-right",
+    },
+    {
+      value: "clockOut",
+      label: "CW·Out",
+      name: "Clockwise outward",
+      icon: "fa-rotate-right",
+    },
+    {
+      value: "counterIn",
+      label: "CCW·In",
+      name: "Counterclockwise inward",
+      icon: "fa-rotate-left",
+    },
+    {
+      value: "counterOut",
+      label: "CCW·Out",
+      name: "Counterclockwise outward",
+      icon: "fa-rotate-left",
+    },
   ];
 
   const allOrientationOptions = $derived(
@@ -75,10 +93,10 @@
       )
       .map((option) => ({
         value: option.value,
-        label: option.label,
+        label: option.name,
         // The label is short and ambiguous on its own — CW could be a rotation
         // direction anywhere. The full name is what a screen reader announces.
-        ariaLabel: `Set ${hand} orientation to ${option.label}`,
+        ariaLabel: `Set ${hand} orientation to ${option.name}`,
         tone,
         disabled,
       }))
@@ -91,20 +109,55 @@
     value={orientation}
     onchange={onOrientationChange}
     color={tone}
-    size="sm"
-    density={compact ? "compact" : "standard"}
+    density="tight"
+    columns={options.length > 4 ? 4 : undefined}
     semantics="radiogroup"
     ariaLabel="{handLabel} start orientation"
     {ghostKind}
-  />
+  >
+    {#snippet optionContent(value)}
+      {@const option = allOrientationOptions.find(
+        (item) => item.value === value
+      )}
+      <span class="orientation-option">
+        <i class="fas {option?.icon}" aria-hidden="true"></i>
+        <span>{option?.label}</span>
+      </span>
+    {/snippet}
+  </SegmentedControl>
 </div>
 
 <style>
-  /* Two to four short words. Sized to them rather than to whatever pane it
-     lands in, so "In / Out" cannot stretch into a progress bar. The cap keeps
-     the four interradial labels inside a narrow drawer. */
   .orientation-control {
-    width: max-content;
-    max-width: 100%;
+    width: 100%;
+    max-width: 24rem;
+    min-width: 0;
+  }
+
+  .orientation-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    line-height: 1.25;
+  }
+
+  .orientation-option i {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  /* Short landscape editors keep the same choices and 44px targets. */
+  .compact .orientation-option {
+    min-height: 28px;
+    gap: 4px;
+  }
+
+  .compact .orientation-option i {
+    font-size: 16px;
   }
 </style>

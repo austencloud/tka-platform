@@ -6,18 +6,20 @@
     TND_ELEMENTS,
     type TnDElement,
   } from "$lib/features/choreo-card/domain/tnd-element";
-  import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { ExperienceViewMode } from "../../../domain/types";
   import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
-  import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
-  import WordSequencePair from "./WordSequencePair.svelte";
+  import LessonStageControls from "../LessonStageControls.svelte";
+  import LearningWordStage from "./LearningWordStage.svelte";
+  import {
+    getLearningLetterTeachingContent,
+    LEARNING_LETTER_TEACHING_CONTENT,
+  } from "./learning-letter-teaching-content";
   import {
     LEARNING_LETTERS_CORE_WORDS,
     LEARNING_LETTERS_SCHEMA_VERSION,
@@ -44,86 +46,54 @@
 
   const haptic = getHapticFeedback();
   const persistence = getExperiencePersistence("words-alpha-beta");
-  const capstoneStepIndex = LEARNING_LETTERS_TOTAL_STEPS - 1;
+  const recapStepIndex = LEARNING_LETTERS_TOTAL_STEPS - 1;
 
   let loadState = $state<LoadState>("loading");
   let loadError = $state<string | null>(null);
   let sequences = $state<readonly SequenceData[]>([]);
   let stepIndex = $state(0);
-  let selectedSequenceId = $state("");
-  let visitedSequenceIds = $state<string[]>([]);
   let shellWidth = $state(0);
+  let direction = $state<-1 | 1>(1);
 
-  // TKAWordGlyph sizes via a px prop, so the big-screen scale step has to be
-  // computed here rather than in the container-query tiers below. Same seams:
-  // 1680 and 2600 (4k-native-layout.md).
+  // TKAWordGlyph receives a pixel height, so only the canonical 1680/2600
+  // big-screen seams can increase the rendered glyph size.
   const glyphScale = $derived(
-    shellWidth >= 2600 ? 1.45 : shellWidth >= 1680 ? 1.15 : 1
+    shellWidth >= 2600 ? 3.25 : shellWidth >= 1680 ? 1.15 : 1
   );
 
-  // The six guide words (lt1-abc-ghi order) resolved from the loaded deck.
   const coreSequences = $derived(
     LEARNING_LETTERS_CORE_WORDS.flatMap((word) => {
       const match = sequences.find((sequence) => sequence.word === word);
       return match ? [match] : [];
     })
   );
-  const activeCoreIndex = $derived(stepIndex - 1);
-  const activeCoreSequence = $derived(coreSequences[activeCoreIndex] ?? null);
-
-  const families = $derived.by((): LearningLettersFamily[] =>
+  const coreFamilies = $derived.by((): LearningLettersFamily[] =>
     TND_ELEMENTS.map((element) => ({
       element,
-      sequences: sequences.filter(
+      sequences: coreSequences.filter(
         (sequence) => sequence.metadata["familyId"] === element.familyId
       ),
     })).filter((family) => family.sequences.length > 0)
   );
+  const activeCoreIndex = $derived(stepIndex - 1);
+  const activeCoreSequence = $derived(coreSequences[activeCoreIndex] ?? null);
   const activeCoreFamily = $derived(
     activeCoreSequence
-      ? (families.find(
+      ? (coreFamilies.find(
           (family) =>
             family.element.familyId === activeCoreSequence.metadata["familyId"]
         ) ?? null)
       : null
   );
-
-  const selectedSequenceIndex = $derived(
-    sequences.findIndex((sequence) => sequence.id === selectedSequenceId)
-  );
-  const selectedSequence = $derived(
-    sequences[selectedSequenceIndex] ?? sequences[0] ?? null
-  );
-  const selectedFamily = $derived(
-    selectedSequence
-      ? (families.find(
-          (family) =>
-            family.element.familyId === selectedSequence.metadata["familyId"]
-        ) ?? null)
+  const activeTeachingContent = $derived(
+    activeCoreSequence
+      ? getLearningLetterTeachingContent(activeCoreSequence.word)
       : null
-  );
-  const visitedIds = $derived(new Set(visitedSequenceIds));
-  const familyOptions = $derived(
-    families.map((family) => {
-      const shortLabel = family.element.name
-        .split("-")
-        .map((part) => part[0])
-        .join("");
-      return {
-        value: family.element.familyId,
-        label: family.element.name,
-        shortLabel,
-        ariaLabel: `${shortLabel} ${family.sequences.length}, ${family.element.name} cards`,
-        count: family.sequences.length,
-        id: `learning-letters-tab-${family.element.familyId}`,
-        controls: `learning-letters-family-${family.element.familyId}`,
-      };
-    })
   );
 
   const announcement = $derived.by(() => {
     if (stepIndex === 0) return "Learning Letters";
-    if (stepIndex === capstoneStepIndex) return "The full deck";
+    if (stepIndex === recapStepIndex) return "Six-word recap";
     const sequence = coreSequences[activeCoreIndex];
     return sequence
       ? `Word ${activeCoreIndex + 1} of ${LEARNING_LETTERS_CORE_WORDS.length}: ${displayWord(sequence)}`
@@ -137,14 +107,6 @@
   function saveProgress(): void {
     persistence.saveStep(stepIndex + 1);
     persistence.savePhaseData("schemaVersion", LEARNING_LETTERS_SCHEMA_VERSION);
-    persistence.savePhaseData("selectedSequenceId", selectedSequenceId);
-    persistence.savePhaseData("visitedSequenceIds", visitedSequenceIds);
-  }
-
-  function markVisited(sequenceId: string): void {
-    if (!visitedIds.has(sequenceId)) {
-      visitedSequenceIds = [...visitedSequenceIds, sequenceId];
-    }
   }
 
   async function loadDeck(): Promise<void> {
@@ -156,22 +118,28 @@
       const missingCore = LEARNING_LETTERS_CORE_WORDS.filter(
         (word) => !wordsInDeck.has(word)
       );
-      if (missingCore.length > 0) {
+      const wordsWithTeachingSlots = new Set<string>(
+        LEARNING_LETTER_TEACHING_CONTENT.map((content) => content.word)
+      );
+      const missingTeachingSlots = loaded
+        .map((sequence) => sequence.word)
+        .filter((word) => !wordsWithTeachingSlots.has(word));
+      if (missingCore.length > 0 || missingTeachingSlots.length > 0) {
+        const details = [
+          missingCore.length > 0 ? `core words: ${missingCore.join(", ")}` : "",
+          missingTeachingSlots.length > 0
+            ? `teaching slots: ${missingTeachingSlots.join(", ")}`
+            : "",
+        ].filter(Boolean);
         throw new Error(
-          `Learning Letters deck is missing core words: ${missingCore.join(", ")}`
+          `Learning Letters deck is missing ${details.join("; ")}`
         );
       }
+
       sequences = loaded;
-      const normalized = normalizeLearningLettersProgress(
-        persistence.load(),
-        loaded.map((sequence) => sequence.id)
-      );
+      const normalized = normalizeLearningLettersProgress(persistence.load());
       stepIndex = normalized.progress.stepIndex;
-      selectedSequenceId = normalized.progress.selectedSequenceId;
-      visitedSequenceIds = normalized.progress.visitedSequenceIds;
       if (normalized.migrated) {
-        // Drop stale keys from rejected builds (e.g. questionIndex) instead
-        // of carrying them alongside the v3 shape forever.
         persistence.reset();
         saveProgress();
       }
@@ -188,26 +156,12 @@
   });
 
   function goToStep(next: number): void {
-    stepIndex = Math.min(capstoneStepIndex, Math.max(0, next));
-    const core = coreSequences[stepIndex - 1];
-    if (core) markVisited(core.id);
+    const clamped = Math.min(recapStepIndex, Math.max(0, next));
+    if (clamped === stepIndex) return;
+    direction = clamped > stepIndex ? 1 : -1;
+    stepIndex = clamped;
     saveProgress();
     haptic?.trigger("selection");
-  }
-
-  function chooseSequence(sequence: SequenceData): void {
-    selectedSequenceId = sequence.id;
-    markVisited(sequence.id);
-    saveProgress();
-    haptic?.trigger("selection");
-  }
-
-  function chooseFamily(familyId: string): void {
-    const family = families.find(
-      (candidate) => candidate.element.familyId === familyId
-    );
-    const first = family?.sequences[0];
-    if (first) chooseSequence(first);
   }
 
   function complete(): void {
@@ -218,8 +172,6 @@
 
   function handleKeydown(event: KeyboardEvent): void {
     if (viewMode !== "step" || loadState !== "ready") return;
-    // The capstone's deck browser owns its own keyboard interaction.
-    if (stepIndex === capstoneStepIndex) return;
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
       event.preventDefault();
       goToStep(stepIndex + 1);
@@ -237,22 +189,6 @@
     onBack?.();
   }
 </script>
-
-{#snippet familyTab(familyId: string)}
-  {@const family = families.find(
-    (candidate) => candidate.element.familyId === familyId
-  )}
-  {@const option = familyOptions.find(
-    (candidate) => candidate.value === familyId
-  )}
-  {#if family && option}
-    <span class="family-tab-content">
-      <img src={family.element.iconPath} alt="" />
-      <span class="tab-name">{option.label}</span>
-      <span class="tab-abbr">{option.shortLabel}</span>
-    </span>
-  {/if}
-{/snippet}
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 <div
@@ -279,191 +215,175 @@
       </PanelButton>
     </section>
   {:else}
-    <main class="lesson-shell" class:capstone={stepIndex === capstoneStepIndex}>
+    <main class="lesson-shell">
       <div class="sr-only" aria-live="polite" aria-atomic="true">
         {announcement}
       </div>
 
-      {#if stepIndex === 0}
-        <section class="intro-step" aria-labelledby="learning-letters-title">
-          <p class="eyebrow">TKA 1</p>
-          <h1 id="learning-letters-title">Learning Letters</h1>
-          <!-- Guide prose, verbatim from the Alpha/Beta Words page
-               (lt1-abc-ghi) — see docs/learn/copy-reviews/words-alpha-beta.md -->
-          <p class="guide-prose">
-            The first words we will learn correspond to VTG’s 1:1 motions.<br />
-            To execute these,
-            <strong><em>you’ll need to use body turns and/or negative space</em
-              ></strong
-            >.
-          </p>
-          <div
-            class="word-preview"
-            role="img"
-            aria-label={`The six words: ${coreSequences.map(displayWord).join(", ")}`}
-          >
-            {#each coreSequences as sequence (sequence.id)}
-              <span class="preview-glyph">
-                <TKAWordGlyph
-                  word={displayWord(sequence)}
-                  height={Math.round(30 * glyphScale)}
-                  darkMode
-                  fitToParent
-                />
-              </span>
-            {/each}
-          </div>
-        </section>
-      {:else if activeCoreSequence && activeCoreFamily}
-        <section
-          class="word-step"
-          aria-label={`Word ${activeCoreIndex + 1} of ${LEARNING_LETTERS_CORE_WORDS.length}: ${displayWord(activeCoreSequence)}`}
-          style:--family-accent={activeCoreFamily.element.accentColor}
-        >
-          <header class="selection-header">
-            <span class="family-identity">
-              <img src={activeCoreFamily.element.iconPath} alt="" />
-              <span>{activeCoreFamily.element.name}</span>
-            </span>
-            <div class="selected-glyph">
-              <TKAWordGlyph
-                word={displayWord(activeCoreSequence)}
-                height={Math.round(40 * glyphScale)}
-                darkMode
-                fitToParent
-              />
-            </div>
-            <span class="sequence-position">
-              Word {activeCoreIndex + 1} / {LEARNING_LETTERS_CORE_WORDS.length}
-            </span>
-          </header>
-          <div class="word-stage">
-            <WordSequencePair sequence={activeCoreSequence} />
-          </div>
-        </section>
-      {:else if selectedSequence && selectedFamily}
-        <section class="capstone-step" aria-labelledby="learning-letters-title">
-          <header class="lesson-header">
-            <div class="title-block">
-              <p class="eyebrow">The full deck</p>
-              <h1 id="learning-letters-title">TKA 1: Learning Letters</h1>
-            </div>
-            <p
-              class="deck-progress"
-              aria-label={`${visitedIds.size} of ${sequences.length} viewed`}
+      <section
+        class="lesson-studio"
+        class:intro-layout={stepIndex === 0}
+        class:word-layout={stepIndex > 0 && stepIndex < recapStepIndex}
+        class:recap-layout={stepIndex === recapStepIndex}
+      >
+        <div class="lesson-content">
+          {#if stepIndex === 0}
+            <section
+              class="intro-step"
+              aria-labelledby="learning-letters-title"
             >
-              <span>{visitedIds.size}</span>
-              <span aria-hidden="true">/</span>
-              <span>{sequences.length}</span>
-              <span class="progress-word" aria-hidden="true">viewed</span>
-            </p>
-          </header>
-
-          <!-- Guide prose, verbatim from the Alpha/Beta Words page
-               (lt1-abc-ghi) — see docs/learn/copy-reviews/words-alpha-beta.md -->
-          <p class="guide-prose practice-prose">
-            <strong
-              >Practice each word once in both directions, then again starting
-              with thumbs out.</strong
-            >
-          </p>
-
-          <div class="deck-browser" aria-label="TKA 1: Learning Letters deck">
-            <div class="family-tabs">
-              <SegmentedControl
-                options={familyOptions}
-                value={selectedFamily.element.familyId}
-                onchange={chooseFamily}
-                color="accent"
-                size="sm"
-                semantics="tabs"
-                ariaLabel="Letter families"
-                optionContent={familyTab}
-              />
-            </div>
-
-            <div
-              class="word-choices"
-              id={`learning-letters-family-${selectedFamily.element.familyId}`}
-              role="tabpanel"
-              aria-labelledby={`learning-letters-tab-${selectedFamily.element.familyId}`}
-              style={`--family-cols: ${selectedFamily.sequences.length}`}
-            >
-              {#each selectedFamily.sequences as sequence (sequence.id)}
-                <div
-                  class="word-choice"
-                  class:selected={sequence.id === selectedSequence.id}
-                >
-                  <ChoreoCardThumbnail
-                    {sequence}
-                    selected={sequence.id === selectedSequence.id}
-                    onPrimaryAction={chooseSequence}
-                    leftPropType={PropType.STAFF}
-                    rightPropType={PropType.STAFF}
-                    eager
-                    allowQR={false}
+              <div class="intro-copy">
+                <p class="chapter-label">TKA 1</p>
+                <h1 id="learning-letters-title">Learning Letters</h1>
+                <!-- Guide prose, verbatim from AlphaBetaWordsPage.svelte. -->
+                <p class="guide-prose">
+                  The first words we will learn correspond to VTG’s 1:1 motions.<br
                   />
-                  <div class="choice-glyph" aria-hidden="true">
-                    <TKAWordGlyph
-                      word={displayWord(sequence)}
-                      height={Math.round(25 * glyphScale)}
-                      darkMode
-                      fitToParent
-                    />
-                  </div>
-                </div>
-              {/each}
-            </div>
-          </div>
+                  To execute these,
+                  <strong
+                    ><em>you’ll need to use body turns and/or negative space</em
+                    ></strong
+                  >.
+                </p>
+              </div>
 
-          <div class="selected-workspace" aria-label="Selected word">
-            <header class="selection-header">
-              <span class="family-identity">
-                <img src={selectedFamily.element.iconPath} alt="" />
-                <span>{selectedFamily.element.name}</span>
-              </span>
-              <div class="selected-glyph">
-                <TKAWordGlyph
-                  word={displayWord(selectedSequence)}
-                  height={Math.round(34 * glyphScale)}
-                  darkMode
-                  fitToParent
+              <div
+                class="family-preview"
+                role="img"
+                aria-label={`The six words: ${coreSequences.map(displayWord).join(", ")}`}
+              >
+                {#each coreFamilies as family (family.element.familyId)}
+                  <section
+                    class="preview-family"
+                    style:--family-accent={family.element.accentColor}
+                    aria-label={family.element.name}
+                  >
+                    <header class="preview-family-heading">
+                      <img src={family.element.iconPath} alt="" />
+                      <span>{family.element.name}</span>
+                    </header>
+                    <div class="word-preview">
+                      {#each family.sequences as sequence (sequence.id)}
+                        <span class="preview-glyph">
+                          <TKAWordGlyph
+                            word={displayWord(sequence)}
+                            height={Math.round(52 * glyphScale)}
+                            darkMode
+                            fitToParent
+                          />
+                        </span>
+                      {/each}
+                    </div>
+                  </section>
+                {/each}
+              </div>
+            </section>
+          {:else if activeCoreSequence && activeCoreFamily}
+            <section
+              class="word-step"
+              aria-label={`Word ${activeCoreIndex + 1} of ${LEARNING_LETTERS_CORE_WORDS.length}: ${displayWord(activeCoreSequence)}`}
+              style:--family-accent={activeCoreFamily.element.accentColor}
+            >
+              <header class="word-header">
+                <Crossfade
+                  key={stepIndex}
+                  mode="swap"
+                  motion="step"
+                  {direction}
+                >
+                  <div class="word-heading-content">
+                    <span class="family-identity">
+                      <img src={activeCoreFamily.element.iconPath} alt="" />
+                      <span>{activeCoreFamily.element.name}</span>
+                    </span>
+                    <span class="sequence-position">
+                      Word {activeCoreIndex + 1} / {LEARNING_LETTERS_CORE_WORDS.length}
+                    </span>
+                  </div>
+                </Crossfade>
+              </header>
+              <div class="word-stage">
+                <LearningWordStage
+                  sequence={activeCoreSequence}
+                  content={activeTeachingContent}
                 />
               </div>
-              <span class="sequence-position">
-                {selectedSequenceIndex + 1} / {sequences.length}
-              </span>
-            </header>
-            <WordSequencePair sequence={selectedSequence} />
-          </div>
-        </section>
-      {/if}
+            </section>
+          {:else}
+            <section
+              class="recap-step"
+              aria-labelledby="learning-letters-title"
+            >
+              <header class="recap-header">
+                <div>
+                  <p class="chapter-label">Lesson recap</p>
+                  <h1 id="learning-letters-title">Six words</h1>
+                </div>
+                <!-- Guide prose, verbatim from AlphaBetaWordsPage.svelte. -->
+                <p class="guide-prose practice-prose">
+                  <strong
+                    >Practice each word once in both directions, then again
+                    starting with thumbs out.</strong
+                  >
+                </p>
+              </header>
 
-      <footer class="lesson-actions">
-        <PanelButton
-          variant="secondary"
-          onclick={handleBack}
-          disabled={stepIndex <= 0}
-        >
-          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-          <span>Previous</span>
-        </PanelButton>
-        <ExperienceProgressIndicator
-          currentStep={stepIndex + 1}
-          totalSteps={LEARNING_LETTERS_TOTAL_STEPS}
-        />
-        {#if stepIndex === capstoneStepIndex}
-          <PanelButton variant="primary" onclick={complete}>
-            <span>Finish lesson</span>
-            <i class="fa-solid fa-check" aria-hidden="true"></i>
-          </PanelButton>
-        {:else}
-          <PanelButton variant="primary" onclick={() => goToStep(stepIndex + 1)}>
-            <span>Next</span>
-            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </PanelButton>
-        {/if}
-      </footer>
+              <div class="recap-families">
+                {#each coreFamilies as family (family.element.familyId)}
+                  <section
+                    class="recap-family"
+                    style:--family-accent={family.element.accentColor}
+                    aria-label={family.element.name}
+                  >
+                    <header class="family-heading">
+                      <span class="family-identity">
+                        <img src={family.element.iconPath} alt="" />
+                        <span>{family.element.name}</span>
+                      </span>
+                      <span>{family.sequences.length} words</span>
+                    </header>
+                    <div class="recap-word-grid">
+                      {#each family.sequences as sequence (sequence.id)}
+                        {@const coreIndex = coreSequences.findIndex(
+                          (candidate) => candidate.id === sequence.id
+                        )}
+                        <button
+                          type="button"
+                          class="recap-word"
+                          aria-label={`Review ${displayWord(sequence)}`}
+                          onclick={() => goToStep(coreIndex + 1)}
+                        >
+                          <TKAWordGlyph
+                            word={displayWord(sequence)}
+                            height={Math.round(44 * glyphScale)}
+                            darkMode
+                            fitToParent
+                          />
+                          <span>Word {coreIndex + 1}</span>
+                        </button>
+                      {/each}
+                    </div>
+                  </section>
+                {/each}
+              </div>
+            </section>
+          {/if}
+        </div>
+
+        <footer class="lesson-transport">
+          <LessonStageControls
+            label={stepIndex === recapStepIndex ? "Finish lesson" : "Next"}
+            currentStep={stepIndex + 1}
+            totalSteps={LEARNING_LETTERS_TOTAL_STEPS}
+            onAction={stepIndex === recapStepIndex
+              ? complete
+              : () => goToStep(stepIndex + 1)}
+            onPrevious={handleBack}
+            previousDisabled={stepIndex <= 0}
+            actionIcon={stepIndex === recapStepIndex ? "check" : "arrow"}
+          />
+        </footer>
+      </section>
     </main>
   {/if}
 </div>
@@ -474,7 +394,7 @@
     width: 100%;
     height: 100%;
     overflow-y: auto;
-    background: var(--theme-bg-deep, var(--background, #07070a));
+    background: transparent;
     color: var(--theme-text, #fff);
     scrollbar-gutter: stable;
     outline: none;
@@ -494,47 +414,47 @@
 
   .lesson-shell {
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    width: min(100%, 118rem);
+    place-items: start center;
+    width: min(100%, 130rem);
     min-height: 100%;
     margin-inline: auto;
     padding: clamp(4.6rem, 5.5cqw, 6rem) clamp(0.75rem, 2.2cqw, 2.5rem)
       clamp(1rem, 2cqw, 2rem);
   }
 
-  .lesson-header,
-  .selection-header,
-  .lesson-actions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+  .lesson-studio {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    width: 100%;
+    height: min(58rem, calc(100dvh - 10rem));
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-lg, 0.75rem);
+    background: color-mix(in srgb, var(--theme-panel-bg) 86%, transparent);
+    backdrop-filter: blur(1.5rem) saturate(1.08);
+    box-shadow: 0 1.5rem 4rem color-mix(in srgb, black 22%, transparent);
   }
 
-  .lesson-header {
-    margin-bottom: clamp(0.5rem, 0.8cqw, 0.9rem);
-  }
-
-  .title-block,
-  .title-block p,
-  .title-block h1 {
+  .lesson-content {
+    display: grid;
     min-width: 0;
-    margin: 0;
+    min-height: 0;
+    overflow: auto;
   }
 
-  .eyebrow {
+  .chapter-label {
     margin: 0;
     color: var(--theme-accent);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 700;
   }
 
   h1 {
-    margin: 0.15rem 0 0 !important;
-    font-size: clamp(1.6rem, 2.1cqw, 2.7rem);
-    line-height: 1.05;
+    margin: 0 !important;
+    font-size: clamp(2.2rem, 2.4cqw, 3.25rem);
+    line-height: 1;
+    text-wrap: balance;
   }
 
   .guide-prose {
@@ -549,101 +469,122 @@
     color: var(--theme-text);
   }
 
-  .intro-step {
-    display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: clamp(0.9rem, 1.4cqw, 1.5rem);
+  .intro-step,
+  .recap-step {
+    width: 100%;
     min-height: 100%;
-    text-align: center;
   }
 
-  .intro-step .guide-prose {
-    max-width: 60ch;
+  .intro-step {
+    display: grid;
+    grid-template-columns: minmax(21rem, 0.82fr) minmax(36rem, 1.18fr);
+  }
+
+  .intro-copy {
+    display: grid;
+    align-content: center;
+    gap: clamp(0.9rem, 1.35cqw, 1.4rem);
+    padding: clamp(2rem, 4cqw, 4.5rem);
+    border-right: 1px solid var(--theme-stroke);
+    background: color-mix(in srgb, var(--theme-card-bg) 72%, transparent);
+  }
+
+  .intro-copy .guide-prose {
+    max-width: 42ch;
+  }
+
+  .family-preview {
+    display: grid;
+    align-content: center;
+    gap: clamp(0.75rem, 1.25cqw, 1.25rem);
+    padding: clamp(1.5rem, 3cqw, 3.5rem);
+  }
+
+  .preview-family {
+    display: grid;
+    grid-template-columns: minmax(9rem, 12rem) minmax(0, 1fr);
+    align-items: center;
+    min-width: 0;
+    min-height: clamp(9rem, 12cqw, 13rem);
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-md, 0.5rem);
+    background: color-mix(
+      in srgb,
+      var(--family-accent, var(--theme-accent)) 9%,
+      var(--theme-card-bg)
+    );
+  }
+
+  .preview-family-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    align-self: stretch;
+    padding: 1rem;
+    border-right: 1px solid var(--theme-stroke);
+    color: var(--theme-text);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 700;
+  }
+
+  .preview-family-heading img {
+    width: 1.5rem;
+    height: 1.5rem;
+    object-fit: contain;
   }
 
   .word-preview {
     display: grid;
-    grid-template-columns: repeat(6, minmax(3.5rem, 6.5rem));
-    justify-content: center;
-    gap: clamp(0.5rem, 1cqw, 1rem);
-    margin-top: clamp(0.5rem, 1cqw, 1rem);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-self: stretch;
+    min-width: 0;
   }
 
   .preview-glyph {
     display: grid;
     place-items: center;
-    height: 3.4rem;
-    padding: 0.4rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-md, 0.5rem);
-    background: var(--theme-card-bg);
+    min-width: 0;
+    min-height: 100%;
+    padding: clamp(0.75rem, 1.4cqw, 1.5rem);
     overflow: hidden;
   }
 
-  .word-step,
-  .deck-browser,
-  .selected-workspace {
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-lg, 0.75rem);
-    background: var(--theme-panel-bg);
+  .preview-glyph + .preview-glyph {
+    border-left: 1px solid var(--theme-stroke);
   }
 
   .word-step {
-    /* Hug the pair and center in the remaining row — no dead band inside
-       the panel (4k-native-layout.md). */
-    align-self: center;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     width: 100%;
-    overflow: hidden;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
   }
 
-  .word-step .selection-header {
-    /* Identity color as data, not a selection bar: the whole header carries a
-       tint of the active family's accent (no-left-edge-accent-bar.md). */
+  .word-header,
+  .family-heading,
+  .word-heading-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .word-header {
+    min-height: 4rem;
+    padding: 0.7rem 1.1rem;
+    border-bottom: 1px solid var(--theme-stroke);
     background: color-mix(
       in srgb,
-      var(--family-accent, var(--theme-accent)) 14%,
+      var(--family-accent, var(--theme-accent)) 12%,
       var(--theme-card-bg)
     );
   }
 
-  .selection-header {
-    min-height: 3.5rem;
-    padding: 0.6rem 0.85rem;
-    border-bottom: 1px solid var(--theme-stroke);
-    background: var(--theme-card-bg);
-  }
-
-  .word-stage {
-    min-width: 0;
-  }
-
-  .deck-progress,
-  .sequence-position {
-    margin: 0;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-sm, 0.875rem);
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-  }
-
-  .deck-progress {
-    display: flex;
-    align-items: baseline;
-    gap: 0.28rem;
-  }
-
-  .deck-progress span:first-child {
-    color: var(--theme-text);
-    font-size: 1.35rem;
-  }
-
-  .deck-progress .progress-word {
-    margin-left: 0.15rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    font-size: 0.7em;
+  .word-heading-content {
+    width: 100%;
   }
 
   .family-identity {
@@ -651,123 +592,138 @@
     align-items: center;
     gap: 0.5rem;
     min-width: 0;
-    color: var(--theme-text-dim);
+    color: var(--theme-text);
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 700;
   }
 
-  .word-step .family-identity {
-    color: var(--theme-text);
-  }
-
-  .family-tab-content img,
   .family-identity img {
     width: 1.25rem;
     height: 1.25rem;
     object-fit: contain;
   }
 
-  .selected-glyph {
-    display: grid;
-    place-items: center;
-    min-width: 4rem;
-    max-width: min(16rem, 42cqw);
+  .sequence-position {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
   }
 
-  /* ── Capstone deck browser ──────────────────────────────────────────────── */
-  .capstone-step {
+  .word-stage {
+    display: grid;
     min-width: 0;
+    min-height: 0;
+  }
+
+  .word-stage :global(.learning-word-stage) {
+    height: 100%;
+  }
+
+  .recap-step {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .recap-header {
+    display: grid;
+    grid-template-columns: minmax(14rem, 0.65fr) minmax(24rem, 1.35fr);
+    align-items: center;
+    gap: clamp(1rem, 3cqw, 3rem);
+    padding: clamp(1.25rem, 2.2cqw, 2.25rem);
+    border-bottom: 1px solid var(--theme-stroke);
+    background: color-mix(in srgb, var(--theme-card-bg) 72%, transparent);
+  }
+
+  .recap-header > div {
+    display: grid;
+    gap: 0.45rem;
   }
 
   .practice-prose {
-    margin-bottom: clamp(0.75rem, 1cqw, 1.15rem);
+    max-width: 68ch;
   }
 
-  .deck-browser {
-    padding: clamp(0.55rem, 0.9cqw, 0.9rem);
-  }
-
-  .family-tabs {
-    max-width: 64rem;
-    margin-inline: auto;
-  }
-
-  .family-tab-content {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-  }
-
-  /* Full family names by default; the two-letter abbreviation is the
-     narrow-container fallback, not the desktop presentation. */
-  .tab-abbr {
-    display: none;
-  }
-
-  .word-choices {
+  .recap-families {
     display: grid;
-    /* Track count follows the active family (3 or 4 cards) so a 3-card
-       family centers as 3 columns instead of sitting in tracks 1-3 of a
-       phantom 4-track grid (4k-native-layout.md: no empty trailing tracks). */
-    grid-template-columns: repeat(
-      var(--family-cols, 4),
-      minmax(0, var(--choice-track, 13.5rem))
-    );
-    justify-content: center;
-    align-items: end;
-    gap: clamp(0.6rem, 1cqw, 1rem);
-    min-height: 12rem;
-    padding: clamp(0.75rem, 1.2cqw, 1.25rem) 0.25rem 0.25rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(0.8rem, 1.2cqw, 1.25rem);
+    min-height: 0;
+    padding: clamp(1rem, 1.8cqw, 2rem);
   }
 
-  .word-choice {
+  .recap-family {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     min-width: 0;
-    padding: 0.28rem;
-    border: 1px solid transparent;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-md, 0.5rem);
+    background: color-mix(
+      in srgb,
+      var(--family-accent, var(--theme-accent)) 6%,
+      var(--theme-card-bg)
+    );
+  }
+
+  .family-heading {
+    min-height: 3.25rem;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid var(--theme-stroke);
     background: transparent;
-    transition:
-      border-color var(--duration-fast) ease,
-      background var(--duration-fast) ease;
   }
 
-  .word-choice.selected {
-    border-color: var(--theme-stroke-strong);
-    background: var(--theme-card-hover-bg);
+  .family-heading > span:last-child {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-xs, 0.75rem);
+    font-weight: 700;
   }
 
-  .word-choice :global(.choreo-card) {
-    aspect-ratio: 0.72;
+  .recap-word-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    gap: clamp(0.5rem, 0.8cqw, 0.8rem);
+    padding: clamp(0.65rem, 1cqw, 1rem);
   }
 
-  .choice-glyph {
+  .recap-word {
     display: grid;
     place-items: center;
-    height: 2.1rem;
-    margin-top: 0.35rem;
-    overflow: hidden;
+    align-content: center;
+    gap: 0.65rem;
+    min-width: 0;
+    min-height: clamp(9rem, 13cqw, 15rem);
+    padding: 0.75rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-md, 0.5rem);
+    background: color-mix(in srgb, var(--theme-panel-bg) 72%, transparent);
+    color: var(--theme-text-dim);
+    font: inherit;
+    font-size: var(--font-size-xs, 0.75rem);
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+      border-color var(--transition-fast),
+      background var(--transition-fast),
+      transform var(--transition-fast);
   }
 
-  .selected-workspace {
-    margin-top: clamp(0.75rem, 1.2cqw, 1.25rem);
-    overflow: hidden;
+  .recap-word:hover {
+    border-color: var(--theme-stroke-strong, var(--theme-accent));
+    background: var(--theme-card-hover-bg);
+    transform: translateY(-2px);
   }
 
-  .lesson-actions {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 1rem;
-    margin-top: clamp(0.75rem, 1.2cqw, 1.25rem);
+  .recap-word:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 
-  .lesson-actions > :global(:first-child) {
-    justify-self: start;
-  }
-
-  .lesson-actions > :global(:last-child) {
-    justify-self: end;
+  .lesson-transport {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--theme-stroke);
+    background: color-mix(in srgb, var(--theme-card-bg) 82%, transparent);
   }
 
   .load-state {
@@ -790,193 +746,198 @@
     font-size: var(--font-size-min, 0.875rem);
   }
 
-  @container learning-letters (max-width: 1120px) {
-    .tab-name {
-      display: none;
-    }
-
-    .tab-abbr {
-      display: inline;
-    }
-  }
-
   @container learning-letters (max-width: 760px) {
     .lesson-shell {
       padding-top: 4.15rem;
       padding-inline: 0.55rem;
     }
 
-    .lesson-header {
-      margin-bottom: 0.5rem;
+    .lesson-studio {
+      height: calc(100dvh - 8.75rem);
     }
 
-    .word-preview {
-      grid-template-columns: repeat(3, minmax(4.5rem, 7rem));
+    .intro-step {
+      grid-template-columns: minmax(0, 1fr);
     }
 
-    .family-tab-content img {
-      width: 1rem;
-      height: 1rem;
+    .intro-copy {
+      gap: 0.75rem;
+      padding: 1.25rem 1rem;
+      border-right: 0;
+      border-bottom: 1px solid var(--theme-stroke);
     }
 
-    .word-choices {
-      grid-template-columns: none;
-      grid-auto-flow: column;
-      grid-auto-columns: minmax(8.5rem, 42cqw);
-      justify-content: start;
-      min-height: 0;
-      padding: 0.7rem 0.25rem 0.45rem;
-      overflow-x: auto;
-      overscroll-behavior-inline: contain;
-      scroll-snap-type: x proximity;
+    .family-preview {
+      padding: 0.75rem;
     }
 
-    .word-choice {
-      scroll-snap-align: start;
+    .preview-family {
+      grid-template-columns: minmax(0, 1fr);
+      min-height: 10rem;
     }
 
-    .selection-header {
-      min-height: 3.1rem;
-      padding: 0.45rem 0.6rem;
+    .preview-family-heading {
+      align-self: auto;
+      min-height: 2.75rem;
+      padding: 0.55rem 0.75rem;
+      border-right: 0;
+      border-bottom: 1px solid var(--theme-stroke);
     }
 
-    .capstone-step .family-identity > span {
-      display: none;
+    .word-header {
+      min-height: 3.4rem;
+      padding: 0.5rem 0.7rem;
     }
 
-    .lesson-actions {
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
+    .recap-header {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.75rem;
+      padding: 1rem;
     }
 
-    .lesson-actions :global(.progress-indicator) {
-      grid-column: 1 / -1;
-      grid-row: 2;
-      justify-self: center;
+    .recap-families {
+      grid-template-columns: minmax(0, 1fr);
+      padding: 0.75rem;
     }
 
-    .lesson-actions :global(.panel-btn) {
-      width: 100%;
+    .recap-word {
+      min-height: 7.5rem;
+      padding: 0.5rem;
+    }
+
+    .lesson-transport {
+      padding: 0.6rem;
     }
   }
 
   @container learning-letters (max-width: 420px) {
     h1 {
-      font-size: 1.45rem;
+      font-size: 1.8rem;
     }
 
-    .deck-progress span:first-child {
-      font-size: 1.1rem;
+    .recap-word-grid {
+      gap: 0.4rem;
+      padding: 0.5rem;
     }
 
-    .family-tab-content {
-      gap: 0;
+    .recap-word {
+      gap: 0.35rem;
+      min-height: 5rem;
     }
 
-    .family-tab-content > span {
-      display: none;
+    .recap-header {
+      gap: 0.35rem;
     }
 
-    .word-choices {
-      grid-auto-columns: minmax(8rem, 46cqw);
+    .recap-header .guide-prose {
+      line-height: 1.35;
+    }
+
+    .recap-family .family-heading {
+      min-height: 2.75rem;
     }
   }
 
-  /* Big-screen seams per 4k-native-layout.md: 1680 catches 4K@200% and
-     1440p@100%; the 2600 tier steps element/type scale for 4K@100% and TVs.
-     A 2200 seam is dead on 4K@200% and is forbidden. */
   @container learning-letters (min-width: 1680px) {
     .lesson-shell {
-      width: min(100%, 132rem);
+      width: min(100%, 150rem);
     }
 
-    .word-choices {
-      --choice-track: 15.5rem;
-    }
-
-    .family-tabs {
-      max-width: 72rem;
-    }
-
-    .word-step {
-      width: min(100%, 110rem);
-      margin-inline: auto;
+    .lesson-studio {
+      height: min(70rem, calc(100dvh - 10rem));
     }
   }
 
   @container learning-letters (min-width: 2600px) {
     .lesson-shell {
-      width: min(100%, 164rem);
-      padding-top: 5.5rem;
+      width: min(100%, 220rem);
     }
 
-    .word-choices {
-      --choice-track: 20rem;
-      gap: 1.4rem;
+    .lesson-studio {
+      height: min(96rem, calc(100dvh - 10rem));
     }
 
-    .choice-glyph {
-      height: 3rem;
-      margin-top: 0.55rem;
+    .recap-families {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: repeat(2, minmax(0, 1fr));
     }
 
-    .family-tabs {
-      max-width: 88rem;
+    .chapter-label {
+      font-size: 1.1rem;
     }
 
-    .family-tab-content img,
+    h1 {
+      font-size: 4rem;
+    }
+
+    .guide-prose {
+      font-size: 1.4rem;
+    }
+
+    .recap-family {
+      grid-template-columns: 18rem minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .family-heading {
+      align-content: center;
+      flex-direction: column;
+      justify-content: center;
+      border-right: 1px solid var(--theme-stroke);
+      border-bottom: 0;
+    }
+
+    .family-identity,
+    .sequence-position {
+      font-size: 1.15rem;
+    }
+
+    .family-heading > span:last-child,
+    .recap-word {
+      font-size: 1rem;
+    }
+
     .family-identity img {
       width: 1.6rem;
       height: 1.6rem;
     }
 
-    h1 {
-      font-size: 3.4rem;
+    .word-header {
+      min-height: 5rem;
+      padding-inline: 1.4rem;
     }
 
-    .eyebrow {
-      font-size: 0.95rem;
+    .recap-word {
+      min-height: 100%;
+    }
+  }
+
+  @media (max-height: 620px) and (min-width: 761px) {
+    .lesson-shell {
+      padding-top: 3.9rem;
+      padding-bottom: 0.5rem;
     }
 
-    .guide-prose {
-      font-size: 1.5rem;
+    .lesson-studio {
+      height: calc(100dvh - 8rem);
     }
 
-    .deck-progress,
-    .sequence-position,
-    .family-identity {
-      font-size: 1.1rem;
+    .intro-copy,
+    .family-preview {
+      padding-block: 1rem;
     }
 
-    .deck-progress span:first-child {
-      font-size: 1.7rem;
+    .preview-family {
+      min-height: 7rem;
     }
 
-    .selection-header {
-      min-height: 4.6rem;
-      padding: 0.85rem 1.2rem;
-    }
-
-    .selected-glyph {
-      min-width: 5rem;
-      max-width: min(22rem, 42cqw);
-    }
-
-    .word-preview {
-      grid-template-columns: repeat(6, minmax(4.5rem, 8.5rem));
-    }
-
-    .preview-glyph {
-      height: 4.6rem;
-    }
-
-    .word-step {
-      width: min(100%, 130rem);
+    .lesson-transport {
+      padding-block: 0.45rem;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .word-choice {
+    .recap-word {
       transition: none;
     }
   }

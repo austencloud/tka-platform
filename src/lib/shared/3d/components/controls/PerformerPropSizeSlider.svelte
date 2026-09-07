@@ -8,10 +8,16 @@
 
   interface Props {
     performer: CharacterInstanceState;
+    mixed?: boolean;
     onSizeChange?: (cm: number) => void;
     onSettingChange?: ViewerControlSink;
   }
-  let { performer, onSizeChange, onSettingChange }: Props = $props();
+  let {
+    performer,
+    mixed = false,
+    onSizeChange,
+    onSettingChange,
+  }: Props = $props();
 
   const currentCm = $derived(performer.settings.staffLengthCm ?? 81);
   const displayInches = $derived(Math.round(currentCm / 2.54));
@@ -38,7 +44,7 @@
 <div class="prop-size">
   <div class="size-header">
     <span class="size-label">Prop size</span>
-    <span class="size-value">{displayInches} in</span>
+    <span class="size-value">{mixed ? "Mixed" : `${displayInches} in`}</span>
   </div>
   <input
     type="range"

@@ -27,7 +27,7 @@
     currentModule,
     currentModuleName,
     currentSection,
-    handleCreateFrontDoor,
+    handleModuleHome,
     handleModuleChange,
     handleSectionChange,
     initializeNavigationHistory,
@@ -58,9 +58,7 @@
   } from "./navigation/domain/types";
   import { navigationState } from "./navigation/state/navigation-state.svelte";
   import { hasOpenDrawers } from "./foundation/ui/drawer/drawer-stack";
-  import { keyboardShortcutState } from "./keyboard/state/keyboard-shortcut-state.svelte";
   import CommandPalette from "./keyboard/components/CommandPalette.svelte";
-  import ShortcutCenter from "./keyboard/components/ShortcutCenter.svelte";
   import KeyboardShortcutCoordinator from "./keyboard/coordinators/KeyboardShortcutCoordinator.svelte";
 
   // My Props drawer - rendered here (outside sidebar) because the sidebar's
@@ -87,20 +85,18 @@
   import ToastContainer from "./toast/components/ToastContainer.svelte";
 
   const sectionHome = $derived.by<SectionHomeDestination | null>(() => {
-    if (currentModule() !== "create") return null;
-
-    const createModule = moduleDefinitions.find(
-      (definition) => definition.id === "create",
+    const moduleId = currentModule();
+    const moduleDefinition = moduleDefinitions.find(
+      (definition) => definition.id === moduleId
     );
+    if (!moduleDefinition?.home) return null;
+
     return {
-      label: "Create",
-      optionLabel: "All methods",
-      ariaLabel: "All creation methods",
-      icon:
-        createModule?.icon ?? '<i class="fas fa-tools" aria-hidden="true"></i>',
-      color: createModule?.color,
-      gradient: createModule?.color,
-      active: navigationState.isCreateFrontDoorOpen,
+      ...moduleDefinition.home,
+      icon: moduleDefinition.home.icon ?? moduleDefinition.icon,
+      color: moduleDefinition.color,
+      gradient: moduleDefinition.color,
+      active: navigationState.isModuleHomeOpen(moduleId),
     };
   });
 
@@ -192,9 +188,7 @@
   }
 
   function handleSectionHomeSelect() {
-    if (currentModule() === "create") {
-      handleCreateFrontDoor("navigation");
-    }
+    handleModuleHome(currentModule(), "navigation");
   }
 
   // 🚀 Prefetch likely next modules when current module changes
@@ -290,6 +284,8 @@
       currentSection={currentSection()}
       modules={moduleDefinitions}
       onModuleChange={handleModuleChange}
+      onModuleHomeSelect={(moduleId) =>
+        handleModuleHome(moduleId, "navigation")}
       onSectionChange={handleSectionChange}
       {isEntryAnimating}
     />
@@ -352,11 +348,11 @@
     currentModuleName={currentModuleName()}
     modules={moduleDefinitions}
     onModuleChange={handleModuleChange}
+    onModuleHomeSelect={(moduleId) => handleModuleHome(moduleId, "navigation")}
   />
   <!-- Keyboard Shortcuts -->
   <KeyboardShortcutCoordinator />
   <CommandPalette />
-  <ShortcutCenter />
   <!-- Toast Notifications -->
   <ToastContainer />
 </div>

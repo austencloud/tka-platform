@@ -11,6 +11,17 @@ import {
 } from "../fan-appearance";
 
 describe("fan appearance", () => {
+  it("defaults to the bare DoodleGrip Fire build", () => {
+    expect(normalizeFanAppearance(undefined)).toEqual({
+      build: "fire",
+      frameColor: "black",
+      cover: "bare",
+    });
+    expect(resolveFanRenderKey("fan", normalizeFanAppearance(null))).toBe(
+      "fan__fire_bare"
+    );
+  });
+
   it("normalizes stale persisted values without changing the default", () => {
     expect(
       normalizeFanAppearance({
@@ -74,7 +85,10 @@ describe("fan appearance", () => {
       "/images/props/appearances/fan-lotus.svg?v=7"
     );
     expect(fanAppearanceArtwork("day")).toBe(
-      "/images/props/appearances/fan-day.svg"
+      "/images/props/appearances/fan-day.svg?v=3"
+    );
+    expect(fanAppearanceArtwork("day", "covered")).toBe(
+      "/images/props/appearances/fan-day-covered.svg?v=3"
     );
     expect(
       fanBuildPreviewOptions(DEFAULT_FAN_APPEARANCE).find(

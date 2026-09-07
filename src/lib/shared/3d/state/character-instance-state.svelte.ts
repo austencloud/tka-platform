@@ -48,8 +48,8 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
 import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
 import { buildForEffect } from "../domain/build-for-effect";
 import { findScenePropFamily } from "../domain/scene-prop-catalog";
-import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PerformerDomainSnapshot } from "../undo/scene-undo-types";
+import { isSeamlesslyLoopable3D } from "../services/sequence-loopability-3d";
 
 // Position Constants (all in meters)
 
@@ -75,53 +75,6 @@ export function derivePlaneModeFromHands(
   if (leftPlane === Plane.WHEEL && rightPlane === Plane.WHEEL)
     return PlaneMode.DUAL_WHEEL;
   return PlaneMode.CUSTOM;
-}
-
-/**
- * Check if a sequence is seamlessly loopable (ends where it starts).
- * Mirrors SequenceLoopabilityChecker logic from the 2D animator.
- */
-function isSeamlesslyLoopable(sequence: SequenceData): boolean {
-  if (!sequence.steps || sequence.steps.length === 0) {
-    return false;
-  }
-
-  const firstStep = sequence.steps[0];
-  const lastStep = sequence.steps[sequence.steps.length - 1];
-
-  if (!firstStep || !lastStep) {
-    return false;
-  }
-
-  // Check if positions match
-  if (firstStep.startPosition !== lastStep.endPosition) {
-    return false;
-  }
-
-  // Check blue prop orientations
-  // invisible placeholder = hand not really there (both-required Step shape)
-  const leftFirst = firstStep.motions?.left;
-  const leftLast = lastStep.motions?.left;
-  if (isVisibleMotion(leftFirst) && isVisibleMotion(leftLast)) {
-    if (leftFirst.startOrientation !== leftLast.endOrientation) {
-      return false;
-    }
-  } else if (isVisibleMotion(leftFirst) || isVisibleMotion(leftLast)) {
-    return false;
-  }
-
-  // Check red prop orientations
-  const rightFirst = firstStep.motions?.right;
-  const rightLast = lastStep.motions?.right;
-  if (isVisibleMotion(rightFirst) && isVisibleMotion(rightLast)) {
-    if (rightFirst.startOrientation !== rightLast.endOrientation) {
-      return false;
-    }
-  } else if (isVisibleMotion(rightFirst) || isVisibleMotion(rightLast)) {
-    return false;
-  }
-
-  return true;
 }
 
 /**
@@ -211,6 +164,7 @@ export function createCharacterInstanceState(
   // effects-config in scope. This state factory deliberately doesn't reach into
   // that context.
   const rawEffect = $derived(_settings.effect);
+  const rawHandEffects = $derived(_settings.handEffects);
   // effectivePlaneMode/BluePlane/RedPlane defined after plane state declarations below
 
   // Override Detection
@@ -259,6 +213,7 @@ export function createCharacterInstanceState(
   // Sequence mode state
   let loadedSequence = $state<SequenceData | null>(null);
   let stepConfigs = $state<StepMotionConfigs[]>([]);
+  let hasStartPose = $state(false);
   let currentStepIndex = $state(0);
   // Persist plane mode and rotation variant across HMR / page reloads
   const PLANE_MODE_KEY = `tka-3d-planeMode-${id}`;
@@ -376,7 +331,7 @@ export function createCharacterInstanceState(
   // Derived state
   const hasSequence = $derived(loadedSequence !== null);
   const isCircular = $derived(
-    loadedSequence ? isSeamlesslyLoopable(loadedSequence) : false
+    loadedSequence ? isSeamlesslyLoopable3D(loadedSequence) : false
   );
   const currentStep = $derived<StepMotionConfigs | null>(
     stepConfigs.length > 0 ? (stepConfigs[currentStepIndex] ?? null) : null
@@ -408,27 +363,27 @@ export function createCharacterInstanceState(
   // configs here may come from a different step than currentStepIndex - this
   // matches how the 2D orchestrator picks a target step inside a phrase.
   // stepConfigs[0] is the start pose, so motion beat N lives at stepConfigs[N].
-  const easedFrame = $derived.by(() => {
+  function resolveEasedFrame(stepIndexAt: number, rawProgress: number) {
     const timeline = effortTimeline;
-    const rawProgress = playback.progress;
+    const step = stepConfigs[stepIndexAt] ?? null;
 
     if (!timeline?.phrases?.length) {
       return {
-        left: activeLeftConfig,
-        right: activeRightConfig,
+        left: step?.left ?? null,
+        right: step?.right ?? null,
         progress: applyEffort(effectiveEffortId, rawProgress),
       };
     }
 
-    const motionStepIndex = Math.max(0, currentStepIndex - 1);
+    const motionStepIndex = Math.max(0, stepIndexAt - 1);
     const currentStep = motionStepIndex + 1 + rawProgress;
     const phrase = findPhraseAtBeat(timeline, currentStep);
 
     if (!phrase) {
       // Gaps between phrases play linearly.
       return {
-        left: activeLeftConfig,
-        right: activeRightConfig,
+        left: step?.left ?? null,
+        right: step?.right ?? null,
         progress: rawProgress,
       };
     }
@@ -446,7 +401,43 @@ export function createCharacterInstanceState(
       right: targetStep?.right ?? null,
       progress: localProgress,
     };
-  });
+  }
+
+  const easedFrame = $derived.by(() =>
+    resolveEasedFrame(currentStepIndex, playback.progress)
+  );
+
+  /**
+   * The prop pair this sequence renders at an arbitrary motion score time,
+   * where 0.00 is the start of beat 1. Runs the same eased-frame resolution
+   * the live frame uses, so a planner sampling the future sees exactly the
+   * geometry the renderer will present when the playhead gets there.
+   */
+  function propStatesAtScoreTime(scoreTime: number) {
+    const motionSteps = Math.max(
+      0,
+      stepConfigs.length - motionStepOffsetValue()
+    );
+    if (motionSteps === 0) return { left: null, right: null };
+    const wrapped = playback.loop
+      ? ((scoreTime % motionSteps) + motionSteps) % motionSteps
+      : Math.max(0, Math.min(motionSteps - 1e-6, scoreTime));
+    const stepIndexAt = Math.min(
+      stepConfigs.length - 1,
+      Math.floor(wrapped) + motionStepOffsetValue()
+    );
+    const frame = resolveEasedFrame(stepIndexAt, wrapped - Math.floor(wrapped));
+    return {
+      left: frame.left ? calculatePropState(frame.left, frame.progress) : null,
+      right: frame.right
+        ? calculatePropState(frame.right, frame.progress)
+        : null,
+    };
+  }
+
+  function motionStepOffsetValue(): number {
+    return hasStartPose ? 1 : 0;
+  }
 
   // Computed prop states
   const leftPropState = $derived(
@@ -458,6 +449,15 @@ export function createCharacterInstanceState(
     easedFrame.right
       ? calculatePropState(easedFrame.right, easedFrame.progress)
       : null
+  );
+
+  /**
+   * Where the playhead sits in motion score time: 0.00 is the start of beat 1
+   * and 7.99 the end of beat 8, matching `phaseOffsetSteps` on the live
+   * performer. One owner, so every consumer samples the same clock.
+   */
+  const scoreTime = $derived(
+    Math.max(0, currentStepIndex - motionStepOffsetValue()) + playback.progress
   );
 
   /**
@@ -482,6 +482,7 @@ export function createCharacterInstanceState(
       modeConfig
     );
     stepConfigs = startConfig ? [startConfig, ...motionConfigs] : motionConfigs;
+    hasStartPose = startConfig !== null;
 
     // DIAG: Dump raw start position and configs
     if (sequence.startPosition) {
@@ -498,7 +499,7 @@ export function createCharacterInstanceState(
     updateVisibilityFromStep(stepConfigs[0]);
 
     // Auto-enable loop for circular sequences
-    if (isSeamlesslyLoopable(sequence)) {
+    if (isSeamlesslyLoopable3D(sequence)) {
       playback.loop = true;
     }
   }
@@ -764,6 +765,7 @@ export function createCharacterInstanceState(
       modeConfig
     );
     stepConfigs = startConfig ? [startConfig, ...motionConfigs] : motionConfigs;
+    hasStartPose = startConfig !== null;
 
     updateVisibilityFromStep(stepConfigs[currentStepIndex] ?? stepConfigs[0]);
   }
@@ -916,10 +918,14 @@ export function createCharacterInstanceState(
     return structuredClone({
       index: -1, // filled by caller if needed
       selectedPerformerIndex: null,
+      characterId,
+      displayName,
+      loadedSequence: $state.snapshot(loadedSequence),
       settings: {
         prop: _settings.prop,
         effortId: _settings.effortId,
         effect: _settings.effect,
+        handEffects: $state.snapshot(_settings.handEffects),
         staffLengthCm: _settings.staffLengthCm,
         propBuild: $state.snapshot(_settings.propBuild),
       },
@@ -933,16 +939,21 @@ export function createCharacterInstanceState(
   }
 
   function restorePerformerSnapshot(snap: PerformerDomainSnapshot): void {
+    characterId = snap.characterId;
+    displayName = snap.displayName;
     _settings = {
       prop: snap.settings.prop,
       effortId: snap.settings.effortId,
       effect: snap.settings.effect,
+      handEffects: snap.settings.handEffects,
       staffLengthCm: snap.settings.staffLengthCm,
       propBuild: snap.settings.propBuild,
     };
     customLeftPlane = snap.planes.customLeftPlane;
     customRightPlane = snap.planes.customRightPlane;
     planeMode = snap.planes.planeMode;
+    if (snap.loadedSequence) loadSequence(snap.loadedSequence);
+    else clearSequence();
     beatPlaneOverrides = new Map(snap.planes.beatPlaneOverrides);
     reconvertWithConfig(getEffectiveModeConfig(effectivePlaneMode));
   }
@@ -951,9 +962,16 @@ export function createCharacterInstanceState(
   // are captured in the entry itself, avoiding the "last registration wins"
   // problem that a shared "performer" domain would have.
 
-  function setEffort(effortId: EffortId): void {
+  function setEffort(
+    effortId: EffortId,
+    options?: { recordUndo?: boolean }
+  ): void {
     const before = $state.snapshot(_settings);
     _settings = { ..._settings, effortId };
+    // A frame-driven write is not a performer choosing an effort. The film
+    // director changes effort at authored steps, every scene, on a loop; one
+    // history entry per step boundary would bury every real edit under them.
+    if (options?.recordUndo === false) return;
     const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("change-effort", `Effort: ${effortId}`, {
       undo: () => {
@@ -1011,7 +1029,7 @@ export function createCharacterInstanceState(
    */
   function setEffect(
     effect: EffectType | null,
-    options?: { equipBuild?: boolean }
+    options?: { equipBuild?: boolean; recordUndo?: boolean }
   ): void {
     const before = $state.snapshot(_settings);
 
@@ -1031,11 +1049,16 @@ export function createCharacterInstanceState(
     _settings = {
       ..._settings,
       effect,
+      // Radio semantics reach both hands: one effect for the performer means
+      // there is no longer a pair, so a stale pair must not survive it.
+      handEffects: null,
       ...(equip?.prop ? { prop: equip.prop } : {}),
       ...(equip?.propBuild
         ? { propBuild: { ...(_settings.propBuild ?? {}), ...equip.propBuild } }
         : {}),
     };
+    // See setEffort: frame-driven writes stay out of the undo history.
+    if (options?.recordUndo === false) return;
     const after = $state.snapshot(_settings);
     const label = equip
       ? `Effect: ${effect ?? "inherit"} (build equipped)`
@@ -1048,6 +1071,39 @@ export function createCharacterInstanceState(
         _settings = after;
       },
     });
+  }
+
+  /**
+   * Give this performer's hands different effects. The renderer already
+   * resolves an effect per prop, so the pair only has to reach the tip map
+   * `Viewer3DScene` builds: prop 0 is the left hand, prop 1 the right.
+   *
+   * `effect` is set to the left hand's value so every consumer that reads one
+   * whole-performer effect (the Performer Hub's selection, the environment
+   * this film picks from its effects) still gets a real answer rather than a
+   * silent "none".
+   */
+  function setHandEffects(
+    left: EffectType,
+    right: EffectType,
+    options?: { recordUndo?: boolean }
+  ): void {
+    const before = $state.snapshot(_settings);
+    _settings = { ..._settings, effect: left, handEffects: { left, right } };
+    if (options?.recordUndo === false) return;
+    const after = $state.snapshot(_settings);
+    sceneUndo.pushSelfRestoringEntry(
+      "toggle-effect",
+      `Effects: ${left} / ${right}`,
+      {
+        undo: () => {
+          _settings = before;
+        },
+        redo: () => {
+          _settings = after;
+        },
+      }
+    );
   }
 
   function setStaffLengthCm(cm: number | null): void {
@@ -1139,7 +1195,7 @@ export function createCharacterInstanceState(
 
   function resetEffects(): void {
     const before = $state.snapshot(_settings);
-    _settings = { ..._settings, effect: null };
+    _settings = { ..._settings, effect: null, handEffects: null };
     const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry(
       "toggle-effect",
@@ -1179,6 +1235,7 @@ export function createCharacterInstanceState(
       propBuild: null,
       effortId: null,
       effect: null,
+      handEffects: null,
       staffLengthCm: _settings.staffLengthCm,
     };
     planeMode = null;
@@ -1281,6 +1338,8 @@ export function createCharacterInstanceState(
       return displayName;
     },
     setDisplayName,
+    captureEditingSnapshot: capturePerformerSnapshot,
+    restoreEditingSnapshot: restorePerformerSnapshot,
 
     // Sequence state
     get hasSequence() {
@@ -1347,6 +1406,23 @@ export function createCharacterInstanceState(
     get totalSteps() {
       return totalSteps;
     },
+    /**
+     * Index of the first motion step in `stepConfigs`. 1 when the loaded
+     * sequence contributed a static start pose at index 0, otherwise 0. Live
+     * phase math is motion-relative and adds this to reach a beat.
+     */
+    get motionStepOffset() {
+      return motionStepOffsetValue();
+    },
+    /** Motion beats in the loaded sequence, excluding any static start pose. */
+    get motionStepCount() {
+      return Math.max(0, stepConfigs.length - motionStepOffsetValue());
+    },
+    /** Playhead in motion score time; 0.00 is the start of beat 1. */
+    get scoreTime() {
+      return scoreTime;
+    },
+    propStatesAtScoreTime,
 
     // Visibility
     get showLeft() {
@@ -1425,6 +1501,7 @@ export function createCharacterInstanceState(
     setEffort,
     setProp,
     setEffect,
+    setHandEffects,
     setStaffLengthCm,
     setPropBuild,
 
@@ -1441,6 +1518,14 @@ export function createCharacterInstanceState(
     /** Per-performer effect override; null = inherit the global default. */
     get rawEffect() {
       return rawEffect;
+    },
+    /**
+     * One effect per hand, or null when both hands take `rawEffect`. Consumers
+     * that build a tip map read this first: a pair keys the map per prop, a
+     * null keys it with the wildcard exactly as it always has.
+     */
+    get rawHandEffects() {
+      return rawHandEffects;
     },
     get effectivePlaneMode() {
       return effectivePlaneMode;

@@ -118,7 +118,7 @@
       </p>
       <p>
         That distinguishes TKA from previous prop systems, in particular from
-        <a href="/notation">VTG</a>, which was built for momentum-based props
+        <a href="/history">VTG</a>, which was built for momentum-based props
         and continuous spinning at a continuous rate. TKA says: spin at whatever
         rate we want, add reversals whenever we want, turn on a dime, hold any
         prop at any of eight orientations at any of nine points, move between

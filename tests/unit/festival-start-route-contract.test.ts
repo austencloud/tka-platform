@@ -13,6 +13,13 @@ describe("festival /start route contract", () => {
     expect(isStandaloneAppSurface("/create/construct")).toBe(false);
   });
 
+  it("treats /tools/* operator pages as standalone surfaces", () => {
+    expect(isStandaloneAppSurface("/tools")).toBe(true);
+    expect(isStandaloneAppSurface("/tools/warm-thumbnails")).toBe(true);
+    expect(isStandaloneAppSurface("/tools/warm-thumbnails/")).toBe(true);
+    expect(isStandaloneAppSurface("/toolsmith")).toBe(false);
+  });
+
   it("guards module restore before it interprets the first URL segment", () => {
     const moduleState = readSource(
       "src/lib/shared/application/state/ui/module-state.ts"

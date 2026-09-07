@@ -34,6 +34,33 @@ type Step = {
 };
 type Cell = { reference: string; word: string; steps: Step[] };
 
+const WALL_PLANE_FLAGGED_CELLS = new Set([
+  "1-AE",
+  "1-AI",
+  "2-AE",
+  "2-AI",
+  "3-EE",
+  "3-EI",
+  "3-IE",
+  "3-II",
+  "4-EE",
+  "4-EI",
+  "4-IE",
+  "4-II",
+  "5-EE",
+  "5-EI",
+  "5-IE",
+  "5-II",
+  "6-EE",
+  "6-EI",
+  "6-IE",
+  "6-II",
+  "7-AE",
+  "7-AI",
+  "8-AE",
+  "8-AI",
+]);
+
 const cells: Cell[] = JSON.parse(
   readFileSync(DATA("eightstep-72-base.json"), "utf8")
 );
@@ -108,7 +135,16 @@ describe("SpiroAnim Eight Step base cells", () => {
         source: "spiroanim-eight-step",
         cell: cell.reference,
         attribution:
-          "8-Step Concepts by Gage DeMello; generated geometry by Ryan Girard (spiroanim)",
+          "8-Step Concepts and handpaths by Gage DeMello; transcribed from Mentive's SpiroAnim (@rbgirard)",
+        ...(WALL_PLANE_FLAGGED_CELLS.has(cell.reference) && {
+          wallPlaneSourceAssessment: {
+            status: "flagged-difficult-or-impossible",
+            source: "Mentive's SpiroAnim 8-Step wall-plane warning",
+            sourceRepository: "https://github.com/rbgirard/spiroanim",
+            sourceCommit: "6bd56cde61c82bd9a047727ceff70d22428113d3",
+            note: "SpiroAnim marks this cell as potentially difficult or impossible in Wall Plane without significant modification.",
+          },
+        }),
       },
       startPosition: {
         letter: null,
@@ -138,6 +174,9 @@ describe("SpiroAnim Eight Step base cells", () => {
       `wrote ${blobs.length} sequence blobs; sample word ${blobs[0]!.word}`
     );
     expect(blobs).toHaveLength(72);
+    expect(
+      blobs.filter((blob) => blob.metadata.wallPlaneSourceAssessment)
+    ).toHaveLength(24);
   });
 });
 
