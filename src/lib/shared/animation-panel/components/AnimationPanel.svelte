@@ -711,12 +711,17 @@
         <PanelSpinner />
       </div>
     {:then mod}
+      <!-- The wide sidebar hands the picker its whole page, so the tiles
+           share the height instead of huddling in the top third of it. The
+           tray and the compact sheet grow with their content and keep the
+           dense grid. -->
       <mod.default
         {selectedPropType}
         onSelect={onPropChange}
         chirality={propChirality}
         variant="inline"
         flat
+        fill={layout === "sidebar"}
       />
     {/await}
   {:else if resolvedPill === "effects"}
@@ -1131,7 +1136,9 @@
     onSelect={handlePillSelect}
     direction={panelDirection}
     {reduceMotion}
-    fillBody={resolvedPill === "display" || resolvedPill === "effects"}
+    fillBody={resolvedPill === "display" ||
+      resolvedPill === "effects" ||
+      resolvedPill === "props"}
     regionLabel="Animation export settings"
     onNavMount={(element) => {
       pillNavEl = element;

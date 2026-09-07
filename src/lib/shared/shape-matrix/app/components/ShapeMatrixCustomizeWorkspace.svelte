@@ -50,8 +50,18 @@
   const section = $derived<PillId | null>(
     animationState.activeSection ?? (appState.propPickerOpen ? "props" : null)
   );
+  /* The pair this surface is playing. A surface with no pair yet shows its
+     empty stage, and there is nothing to customize over it. */
+  const hasPair = $derived(
+    surface === "theory"
+      ? appState.theoryPair !== null
+      : appState.selectedPair !== null
+  );
   const open = $derived(
-    !appState.compact && appState.surface === surface && section !== null
+    !appState.compact &&
+      appState.surface === surface &&
+      section !== null &&
+      hasPair
   );
 
   const theoryEffects = ["trails", ...CANVAS2D_HOSTED_EFFECTS] as const;
@@ -81,6 +91,16 @@
     event.stopPropagation();
     close();
   }
+
+  /* Arriving on a surface that has no pair closes a workspace the other
+     surface left open, rather than parking it until a cell is picked: the
+     grid is what that surface shows first, and the choice to customize is
+     made on a pair, not carried over from one that could not translate. */
+  $effect(() => {
+    if (appState.compact || appState.surface !== surface) return;
+    if (hasPair || section === null) return;
+    close();
+  });
 
   $effect(() => {
     if (!open) return;
