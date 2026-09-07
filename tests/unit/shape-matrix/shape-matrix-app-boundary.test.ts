@@ -444,14 +444,46 @@ describe("Shape Matrix app boundary", () => {
     expect(segmentedSource).toContain("--row: {selectedRow}");
   });
 
-  it("shares one link, in the notation the receiver reads", () => {
-    // The address bar carries every setting; Share copies it with the
-    // notation pinned, so a VTG-raised spinner opens in ratios. The copy is
-    // the shared copy button, not a second clipboard path.
-    const shareSource = readFileSync(
-      resolve(APP_ROOT, "components/ShapeMatrixShareButton.svelte"),
+  it("plays a header on its own, with one prop and no hand pickers", () => {
+    // A red or blue header is one hand. Clicking it opens that hand's own
+    // mandala with the other prop hidden, so the pickers that only mean
+    // something for a pair are gone rather than left inert.
+    const gridSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte"
+      ),
       "utf8"
     );
+    const drillSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte"
+      ),
+      "utf8"
+    );
+    const shellSource = readFileSync(
+      resolve(APP_ROOT, "components/ShapeMatrixAppShell.svelte"),
+      "utf8"
+    );
+    // The headers become buttons only where a host asked for the behavior.
+    expect(gridSource).toContain("{#if onsolo}");
+    expect(gridSource).toContain('class="head-button"');
+    expect(gridSource).toContain('onsolo("right", rf)');
+    expect(gridSource).toContain('onsolo("left", bf)');
+    // The hero draws only the soloed hand's own paths.
+    expect(drillSource).toMatch(/solo === "right"\s*\?\s*\[\]/);
+    expect(drillSource).toMatch(/solo === "left"\s*\?\s*\[\]/);
+    expect(drillSource).toContain("{#if !solo}");
+    // The quiet prop is the canonical per-hand motion visibility, not a
+    // second way of hiding a prop.
+    expect(shellSource).toContain("new SequenceViewerVisibilityState(true)");
+    expect(shellSource).toContain("setViewerVisibilityContext(motionVisibility)");
+    expect(shellSource).toContain("appState.soloHand");
+  });
+
+  it("shares the view on the press, with no sheet of its own", () => {
+    // Share is the action, not a menu that offers it: one press reaches the
+    // phone's share sheet or the clipboard. The address bar already carries
+    // every setting, the notation included, so there is nothing to choose.
     const shellSource = readFileSync(
       resolve(APP_ROOT, "components/ShapeMatrixAppShell.svelte"),
       "utf8"
@@ -468,13 +500,22 @@ describe("Shape Matrix app boundary", () => {
       resolve("src/routes/(public)/shape-engine/+page.svelte"),
       "utf8"
     );
-    expect(shareSource).toContain("appState.shareLink(notation)");
-    expect(shareSource).toContain("<CopyForAIButton");
-    expect(shareSource).not.toContain("navigator.clipboard");
-    // The route host writes the address; the app only asks for it.
-    expect(stateSource).toContain(
-      "dependencies.link?.({ ...snapshot(), labelMode: notation })"
+    const linkShareSource = readFileSync(
+      resolve("src/lib/shared/share/services/link-share.ts"),
+      "utf8"
     );
+    // The button acts; nothing opens first.
+    expect(shellSource).toContain("onclick={shareThisView}");
+    expect(shellSource).toContain("appState.shareLink()");
+    expect(shellSource).toContain("shareOrCopyLink({");
+    expect(shellSource).not.toContain("ShapeMatrixShareButton");
+    // Handing a link on has one owner: platform sheet, then clipboard.
+    expect(linkShareSource).toContain("platform.share(payload)");
+    expect(linkShareSource).toContain("copyTextToClipboard(link.url)");
+    // No second clipboard path anywhere in the embeddable app.
+    expect(readTree(APP_ROOT)).not.toContain("navigator.clipboard");
+    // The route host writes the address; the app only asks for it.
+    expect(stateSource).toContain("dependencies.link?.(snapshot())");
     expect(pageSource).toContain("writeShapeMatrixRouteState(url, snapshot);");
     expect(shellSource).toContain("{#if appState.canShare}");
     // The level is a difficulty to whoever opens the link.

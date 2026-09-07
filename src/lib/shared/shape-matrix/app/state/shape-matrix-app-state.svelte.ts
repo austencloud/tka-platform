@@ -91,6 +91,11 @@ export interface ShapeMatrixAppSnapshot {
   pair: { left: Flower; right: Flower } | null;
   mode: VtgMode | null;
   propMode: VtgMode | null;
+  /**
+   * The one hand on stage, when a row or column header was chosen instead of
+   * a cell: that axis item alone, played by its own prop. Null is the pair.
+   */
+  solo: "left" | "right" | null;
 }
 
 export interface ShapeMatrixAppPersistence {
@@ -295,6 +300,13 @@ export function createShapeMatrixAppState(
     left: initial.pair ? semanticVariant(initial.pair.left) : 0,
     right: initial.pair ? semanticVariant(initial.pair.right) : 2,
   });
+  /* A header choice, not a cell: one hand is on stage and the other is not
+     drawn. The pair underneath is still whole — a realization needs both
+     hands, and every legal one traces this hand's own flower — so soloing is
+     a matter of what is shown, never of what is solved. */
+  let soloHand = $state<"left" | "right" | null>(
+    initial.pair ? initial.solo : null
+  );
   let selectedMode = $state<VtgMode | null>(
     initial.pair ? (initial.mode ?? MODE_ORDER[0] ?? null) : null
   );
@@ -724,12 +736,15 @@ export function createShapeMatrixAppState(
     selectedPropMode = supportsTimedPropRelationship(selectedPair)
       ? snapshot.propMode
       : null;
+    soloHand = selectedPair ? snapshot.solo : null;
   }
 
   function selectPair(
     pair: { left: Flower; right: Flower },
     options: ShapeMatrixSelectPairOptions = {}
   ): void {
+    // A cell is both hands; choosing one leaves any solo behind.
+    soloHand = null;
     selectedPair = pair;
     rememberedVariants = {
       left: semanticVariant(pair.left),
@@ -741,6 +756,35 @@ export function createShapeMatrixAppState(
       activeView = "detail";
       requestCompactFocus("detail");
     }
+    syncState();
+  }
+
+  /**
+   * One axis item alone, from its own header. The other hand keeps whatever
+   * it was already set to (its turn value decides it otherwise), so the pair
+   * stays solvable and returning to a cell resumes where it left off.
+   */
+  function selectSolo(
+    hand: "left" | "right",
+    flower: Flower,
+    options: ShapeMatrixSelectPairOptions = {}
+  ): void {
+    const pair =
+      hand === "left"
+        ? {
+            left: flower,
+            right:
+              selectedPair?.right ??
+              flowerAtTurn(rightTurn, rememberedVariants.right),
+          }
+        : {
+            left:
+              selectedPair?.left ??
+              flowerAtTurn(leftTurn, rememberedVariants.left),
+            right: flower,
+          };
+    selectPair(pair, options);
+    soloHand = hand;
     syncState();
   }
 
@@ -827,6 +871,7 @@ export function createShapeMatrixAppState(
       pair: selectedPair,
       mode: selectedMode,
       propMode: selectedPropMode,
+      solo: soloHand,
     };
   }
 
@@ -834,11 +879,11 @@ export function createShapeMatrixAppState(
     dependencies.syncState(snapshot());
   }
 
-  /* A link to the view on screen, opening in the given notation. The
-     notation is the one setting a sender chooses for the receiver; every
-     other setting is the view itself. Null when the host has no route. */
-  function shareLink(notation: MatrixLabelMode): string | null {
-    return dependencies.link?.({ ...snapshot(), labelMode: notation }) ?? null;
+  /* A link to the view on screen, exactly as it stands — the notation
+     included, so switching the header before copying is what sends the other
+     one. Null when the host has no route. */
+  function shareLink(): string | null {
+    return dependencies.link?.(snapshot()) ?? null;
   }
 
   return {
@@ -899,6 +944,9 @@ export function createShapeMatrixAppState(
     get selectedPropMode() {
       return selectedPropMode;
     },
+    get soloHand() {
+      return soloHand;
+    },
     get data() {
       return data;
     },
@@ -954,6 +1002,7 @@ export function createShapeMatrixAppState(
     selectPair,
     setMode,
     setPropMode,
+    selectSolo,
     showMatrix,
     showDetail,
     setCompact,

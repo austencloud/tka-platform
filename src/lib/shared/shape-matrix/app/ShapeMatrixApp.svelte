@@ -46,6 +46,7 @@
       pair: null,
       mode: null,
       propMode: null,
+      solo: null,
     },
     false
   );

@@ -18,6 +18,7 @@
       <ShapeMatrixDrill
         pair={state.selectedPair}
         data={state.data}
+        solo={state.soloHand}
         selectedMode={state.selectedMode}
         selectedPropMode={state.selectedPropMode}
         onmodechange={state.setMode}

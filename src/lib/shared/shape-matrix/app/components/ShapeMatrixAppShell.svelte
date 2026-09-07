@@ -8,6 +8,8 @@
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
   import { KINETIC_SHAPE_ENGINE_NAME } from "../shape-engine-identity";
+  import { shareOrCopyLink } from "$lib/shared/share/services/link-share";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import { createShapeMatrixAnimationState } from "../state/shape-matrix-animation-state.svelte";
@@ -15,11 +17,12 @@
   import { setShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
   import { setAnimationScopeContext } from "$lib/shared/animation-engine/state/animation-scope-context";
   import { setAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
+  import { SequenceViewerVisibilityState } from "$lib/shared/sequence-viewer/state/viewer-visibility-state.svelte";
+  import { setViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import ShapeMatrixCustomizeWorkspace from "./ShapeMatrixCustomizeWorkspace.svelte";
   import ShapeMatrixDetailPane from "./ShapeMatrixDetailPane.svelte";
   import ShapeMatrixMatrixPane from "./ShapeMatrixMatrixPane.svelte";
-  import ShapeMatrixShareButton from "./ShapeMatrixShareButton.svelte";
   import ShapeMatrixTurnPopover from "./ShapeMatrixTurnPopover.svelte";
   import ShapeMatrixSurfaceControl from "./ShapeMatrixSurfaceControl.svelte";
   import ShapeMatrixTheoryDetail from "./ShapeMatrixTheoryDetail.svelte";
@@ -38,6 +41,21 @@
 
   const { variant = "standalone" }: Props = $props();
   const appState = getShapeMatrixAppContext();
+
+  /* Share hands the address on directly, on the press itself: the phone's own
+     share sheet where there is one, the clipboard everywhere else. Both need
+     that gesture, so nothing may await before the call. The app never builds
+     the address; the route host does, through appState.shareLink(). */
+  async function shareThisView(): Promise<void> {
+    const url = appState.shareLink();
+    if (url === null) return;
+    const outcome = await shareOrCopyLink({
+      url,
+      title: KINETIC_SHAPE_ENGINE_NAME,
+    });
+    if (outcome === "copied") toast.success("Link copied");
+    else if (outcome === "failed") toast.error("Could not copy the link");
+  }
   // The hero's animation state lives here, above both panes, so both surfaces
   // share one animation scope while their workspaces crossfade.
   const animationState = setShapeMatrixAnimationContext(
@@ -45,6 +63,21 @@
   );
   setAnimationScopeContext(animationState.scope);
   setAnimationVisibilityContext(animationState.scope.visibility);
+
+  /* Which hands the canvas draws. The animator already owns per-hand motion
+     visibility for the viewer; the Shape Engine scopes its own instance so a
+     header's solo hides the other prop and its trail through that owner
+     rather than a second mechanism. It follows the solo and nothing else, so
+     the Display page can still change it afterwards. */
+  const motionVisibility = new SequenceViewerVisibilityState(true);
+  setViewerVisibilityContext(motionVisibility);
+  $effect(() => {
+    const solo = appState.soloHand;
+    untrack(() => {
+      motionVisibility.leftMotion = solo !== "right";
+      motionVisibility.rightMotion = solo !== "left";
+    });
+  });
   setEffectsConfigContext(animationState.scope.effects);
   import {
     SHAPE_MATRIX_LEVELS,
@@ -159,6 +192,13 @@
   // Compact navigation runs as a shared-element morph between the selected
   // tile and the hero. Wide layouts show both panes at once, so the same
   // calls fall through to the plain state mutation.
+  /* A header, on a wide host, changes what the hero plays without leaving
+     the grid; a compact host still has to travel to the detail view, and
+     there is no tile to fly, so it goes there plainly. */
+  function selectSolo(hand: "left" | "right", flower: Flower): void {
+    appState.selectSolo(hand, flower);
+  }
+
   function selectPair(pair: { left: Flower; right: Flower }): void {
     if (!appState.compact) {
       appState.selectPair(pair);
@@ -248,7 +288,11 @@
        pane root fills by height, so each source gets one block that is the
        source's whole box for the root to fill. -->
   <div class="pane-source">
-    <ShapeMatrixMatrixPane onselect={selectPair} onsurprise={surpriseMe} />
+    <ShapeMatrixMatrixPane
+      onselect={selectPair}
+      onsolo={selectSolo}
+      onsurprise={surpriseMe}
+    />
   </div>
 {/snippet}
 
@@ -433,23 +477,19 @@
           </button>
         {/if}
       {/if}
-      <!-- The link to this view, in the notation the receiver reads. Only a
-           host with a route has one. -->
+      <!-- The link to this view. One press: the phone's own share sheet
+           where there is one, the clipboard everywhere else. Only a host with
+           a route has a link at all. -->
       {#if appState.canShare}
-        <ShapeMatrixShareButton>
-        {#snippet trigger(props, shareOpen)}
-          <button
-            {...props}
-            class="top-action"
-            class:open={shareOpen}
-            type="button"
-            aria-label="Share this view"
-          >
-            <i class="fas fa-share-nodes" aria-hidden="true"></i>
-            {#if !appState.compact}<span>Share</span>{/if}
-          </button>
-        {/snippet}
-        </ShapeMatrixShareButton>
+        <button
+          class="top-action"
+          type="button"
+          aria-label="Share this view"
+          onclick={shareThisView}
+        >
+          <i class="fas fa-share-nodes" aria-hidden="true"></i>
+          {#if !appState.compact}<span>Share</span>{/if}
+        </button>
       {/if}
       <button
         class="top-action"
