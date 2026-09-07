@@ -221,11 +221,14 @@
 
   /* Space is the same toggle the canvas offers a mouse, reached without one.
      It goes through the app's shortcut registry rather than a listener of our
-     own, so it stands aside for text fields and open dialogs. */
+     own, so it stands aside for text fields and open dialogs. The theory
+     detail is mounted beside this one and binds the same key, so the surface
+     check is what decides which of the two a press reaches. */
   $effect(() =>
     registerShapeMatrixPlaybackShortcut(
+      "matrix",
       () => animationState.togglePlaying(),
-      () => Boolean(pair)
+      () => (!appState || appState.surface === "matrix") && Boolean(pair)
     )
   );
 

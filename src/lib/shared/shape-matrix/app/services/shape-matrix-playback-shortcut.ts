@@ -11,13 +11,20 @@
 import { getKeyboardShortcutManager } from "$lib/shared/keyboard/get-keyboard-shortcut-manager";
 
 /**
- * Register Space for the detail view that is on screen. Returns the
- * unregister function, so an `$effect` can hand it straight back.
+ * Register Space for one detail view. Returns the unregister function, so an
+ * `$effect` can hand it straight back.
  *
- * `condition` is read at press time, which is what lets the surface refuse the
- * key while it has nothing to play.
+ * `surface` names which of the two the caller is. Both are mounted at the same
+ * time -- the Level Matrix drill and the Ratio Playground's theory detail sit
+ * in the same shell -- and the registry keys by id, so a single shared id
+ * meant whichever mounted last silently replaced the other, leaving Space
+ * bound to a surface with nothing on it.
+ *
+ * `condition` is read at press time, which is what lets a surface refuse the
+ * key while it has nothing to play or while it is not the one being looked at.
  */
 export function registerShapeMatrixPlaybackShortcut(
+  surface: "matrix" | "theory",
   toggle: () => void,
   condition: () => boolean
 ): () => void {
@@ -27,7 +34,7 @@ export function registerShapeMatrixPlaybackShortcut(
   if (typeof window === "undefined") return () => {};
 
   return getKeyboardShortcutManager().register({
-    id: "shape-matrix.play-pause",
+    id: `shape-matrix.play-pause.${surface}`,
     label: "Play / Pause",
     description: "Toggle the Shape Engine animation",
     // The manager normalizes the event's key before matching, and " " comes

@@ -274,11 +274,14 @@
    * control, in one place, on both surfaces.
    */
   /* Space is the stage's click, reached without a mouse. Through the app's
-     shortcut registry, so it stands aside for text fields and dialogs. */
+     shortcut registry, so it stands aside for text fields and dialogs. The
+     Level Matrix drill is mounted beside this one and binds the same key, so
+     the surface check is what decides which of the two a press reaches. */
   $effect(() =>
     registerShapeMatrixPlaybackShortcut(
+      "theory",
       () => animationState.togglePlaying(),
-      () => Boolean(pair)
+      () => app.surface === "theory" && Boolean(pair)
     )
   );
 
