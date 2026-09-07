@@ -269,15 +269,15 @@ describe("Shape Matrix app boundary", () => {
       'animation.activeSection ?? (app.propPickerOpen ? "props" : null)'
     );
     expect(customizeSource).toContain("if (app.compact || !surfaceHasPair(app)) return null;");
-    // The dock waits for a pair rather than answering Customize with a
+    // The gear waits for a pair rather than answering Customize with a
     // workspace that closes at once.
-    const dockGateSource = read(
-      "src/lib/shared/shape-matrix/components/ShapeMatrixCustomizeDock.svelte"
+    const stageActionsSource = read(
+      "src/lib/shared/shape-matrix/components/ShapeMatrixStageActions.svelte"
     );
-    expect(dockGateSource).toContain(
+    expect(stageActionsSource).toContain(
       "const hasPair = $derived(surfaceHasPair(appState));"
     );
-    expect(dockGateSource.match(/disabled=\{!hasPair\}/g)).toHaveLength(2);
+    expect(stageActionsSource.match(/disabled=\{!hasPair\}/g)).toHaveLength(1);
     expect(workspaceSource).toContain(
       "customizeSection(appState, animationState)"
     );
@@ -290,34 +290,55 @@ describe("Shape Matrix app boundary", () => {
     expect(workspaceSource).toContain('role="dialog"');
     expect(workspaceSource).toContain('id: "shape-matrix:customize"');
 
-    // A wide host shows every ability in the workspace, so its dock is one
-    // Customize button and the transport; five pills under the animation
-    // listed the rail a second time. Compact hosts keep the pill dock, since
-    // the grid pane is off screen there: each pill opens a sheet, and Props
-    // routes to the canonical prop sheet.
-    const customizeDockSource = read(
-      "src/lib/shared/shape-matrix/components/ShapeMatrixCustomizeDock.svelte"
-    );
+    // A wide host has no control band under the animation at all. The band
+    // used to carry one Customize button and a hand-rolled play button pushed
+    // to the far end of it; the canvas already toggles on a click, so the
+    // transport is the canvas and Customize is a gear in its corner. Compact
+    // hosts keep the AnimationPanel, since the grid pane is off screen there:
+    // each pill opens a sheet, and Props routes to the canonical prop sheet.
     const animationStateSource = read(
       "src/lib/shared/shape-matrix/app/state/shape-matrix-animation-state.svelte.ts"
     );
     expect(drillSource).toMatch(
-      /\{#if appState && !appState\.compact\}\s*<ShapeMatrixCustomizeDock \/>\s*\{:else\}\s*<AnimationPanel/
+      /\{#if !appState \|\| appState\.compact\}[\s\S]*?<AnimationPanel/
     );
+    expect(drillSource).toContain("<ShapeMatrixStageActions />");
+    // The canvas says what a click will do. It owns the four hint styles; the
+    // engine must not answer this with a button of its own.
+    expect(drillSource).toContain('hoverHint: "badge"');
+    expect(drillSource).not.toContain('hoverHint: "none"');
     expect(drillSource).toContain("onPropPickerRequest={onproppickertoggle}");
     expect(theoryDetailSource).toMatch(
-      /\{#if app\.compact\}\s*<AnimationPanel[\s\S]*?\{:else\}\s*<ShapeMatrixCustomizeDock \/>\s*\{\/if\}/
+      /\{#if app\.compact\}\s*<div class="animation-controls"[\s\S]*?<AnimationPanel/
     );
+    expect(theoryDetailSource).toContain("<ShapeMatrixStageActions />");
+    // The theory stage is its own button rather than an AnimatorCanvas, so it
+    // carries the same affordance in its own terms.
+    expect(theoryDetailSource).toContain('class="stage-hint"');
+    // One owner for the key, and it is the app's registry rather than a
+    // listener of this feature's own.
+    const shortcutSource = read(
+      "src/lib/shared/shape-matrix/app/services/shape-matrix-playback-shortcut.ts"
+    );
+    expect(shortcutSource).toContain("getKeyboardShortcutManager().register(");
+    expect(shortcutSource).toContain('id: "shape-matrix.play-pause"');
+    for (const source of [drillSource, theoryDetailSource]) {
+      expect(source).toContain("registerShapeMatrixPlaybackShortcut(");
+      expect(source).not.toContain("window.addEventListener(\"keydown\"");
+    }
     expect(theoryDetailSource).toContain(
       "onPropPickerRequest={app.togglePropPicker}"
     );
     expect(shellSource).toMatch(
       /\{#if appState\.compact\}\s*<PropSelectionSheet/
     );
-    expect(customizeDockSource).toContain("<span>Customize</span>");
-    expect(customizeDockSource).toContain("ariaPressed={open}");
-    expect(customizeDockSource).toContain("animationState.openCustomize()");
-    expect(customizeDockSource).not.toContain("ControlDock");
+    expect(stageActionsSource).toContain("aria-pressed={open}");
+    expect(stageActionsSource).toContain("animationState.openCustomize()");
+    expect(stageActionsSource).not.toContain("ControlDock");
+    // The gear is the settings icon, not a labelled bar button: it sits over
+    // the animation it settles.
+    expect(stageActionsSource).toContain("fa-sliders");
+    expect(stageActionsSource).toContain("position: absolute;");
     // Opening resumes on the page the rail last showed, never on a page this
     // host does not have.
     expect(animationStateSource).toContain("function openCustomize");

@@ -4,7 +4,6 @@
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-  import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
   import { KINETIC_SHAPE_ENGINE_NAME } from "../shape-engine-identity";
@@ -79,11 +78,6 @@
     });
   });
   setEffectsConfigContext(animationState.scope.effects);
-  import {
-    SHAPE_MATRIX_LEVELS,
-    SHAPE_MATRIX_LEVEL_DESCRIPTIONS,
-  } from "../shape-matrix-levels";
-
   /* Both surfaces are a grid of pairs with a detail beside it, so the shell
      runs one layout and swaps what fills the panes. Matrix adds a Kinetic
      Alphabet difficulty choice; Theory's typed ratios need no second bound. */
@@ -410,8 +404,10 @@
     {/if}
 
     {#if !appState.compact}
-      <!-- The surface choice outranks everything below it. Matrix adds its
-           difficulty beside that choice; Theory has no parallel setting. -->
+      <!-- The surface choice outranks everything below it. Difficulty is
+           not here: it reshapes the grid alone, so it stands with the grid
+           (ShapeMatrixDifficultyStrip) where the press and the change are one
+           glance apart. Notation stays, because it re-reads every surface. -->
       <div class="header-meta">
         <div class="surface-control-cell">
           <ShapeMatrixSurfaceControl />
@@ -427,17 +423,6 @@
               duration: booted ? DURATION.normal : 0,
             }}
           >
-            <div class="control-cell level-control">
-              <span class="control-label">Difficulty</span>
-              <LevelSelector
-                value={appState.level}
-                levels={SHAPE_MATRIX_LEVELS}
-                describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
-                onchange={appState.setLevel}
-                compact={true}
-                ariaLabel="Difficulty level"
-              />
-            </div>
             <!-- The axis values themselves are edited in the recipe bar above
                  the grid; the header keeps only the settings that shape the
                  whole surface. -->
@@ -813,29 +798,6 @@
     margin-left: 0.5rem;
   }
 
-  .level-control {
-    /* The three widths track LevelSelector's own 1680/2600 ramp. */
-    min-width: 17.5rem;
-  }
-
-  /* Centre the badges in the cell. */
-  .level-control :global(.level-selector) {
-    width: 100%;
-    justify-content: center;
-  }
-
-  @media (min-width: 1680px) {
-    .level-control {
-      min-width: 19.25rem;
-    }
-  }
-
-  @media (min-width: 2600px) {
-    .level-control {
-      min-width: 22.5rem;
-    }
-  }
-
   .control-label {
     color: var(--theme-text-dim, rgb(255 255 255 / 0.52));
     font-size: var(--font-size-compact, 0.75rem);
@@ -843,15 +805,6 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
-  }
-
-  /* Pin the badge tiles to the shared ribbon height; the selector's own
-     big-screen media ramp would otherwise outgrow the segmented controls. */
-  .level-control :global(.lvl) {
-    flex: 0 0 auto;
-    min-width: var(--min-touch-target, 44px);
-    height: var(--ribbon-control-h);
-    min-height: var(--min-touch-target, 44px);
   }
 
   .label-control {
@@ -964,11 +917,6 @@
       gap: 0;
       padding: 0.25rem 0.35rem;
       border-radius: 10px;
-    }
-
-    /* This tier trades the whole title-line pair for compact chrome. */
-    .level-control {
-      min-width: 0;
     }
 
     .top-actions {

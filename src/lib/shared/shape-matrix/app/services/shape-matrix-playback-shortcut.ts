@@ -1,0 +1,45 @@
+/**
+ * Space toggles the Shape Engine's animation, through the app's own shortcut
+ * manager rather than a listener of this feature's own.
+ *
+ * The canvas already toggles on a click and now says so on hover, so the key
+ * is the same action reached without the mouse. Registering it here keeps the
+ * binding in the one registry that can show it in help, let it be rebound, and
+ * stand aside for a text field or an open dialog — a bare `window` keydown of
+ * our own would do none of that and would fire under the About modal.
+ */
+import { getKeyboardShortcutManager } from "$lib/shared/keyboard/get-keyboard-shortcut-manager";
+
+/**
+ * Register Space for the detail view that is on screen. Returns the
+ * unregister function, so an `$effect` can hand it straight back.
+ *
+ * `condition` is read at press time, which is what lets the surface refuse the
+ * key while it has nothing to play.
+ */
+export function registerShapeMatrixPlaybackShortcut(
+  toggle: () => void,
+  condition: () => boolean
+): () => void {
+  // The embeddable app owns no route and reads no SvelteKit environment
+  // module; that stays with the public host. A server render has no keyboard
+  // to register against either way, so `window` answers the same question.
+  if (typeof window === "undefined") return () => {};
+
+  return getKeyboardShortcutManager().register({
+    id: "shape-matrix.play-pause",
+    label: "Play / Pause",
+    description: "Toggle the Shape Engine animation",
+    key: " ",
+    modifiers: [],
+    scope: "animation",
+    priority: "high",
+    condition,
+    action: (event) => {
+      // Space scrolls the page by default, and the grid behind the stage is a
+      // long column of buttons.
+      event.preventDefault();
+      toggle();
+    },
+  });
+}
