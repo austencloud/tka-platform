@@ -185,6 +185,21 @@ sealing. It is deleted here rather than dressed.
     (-2.478 / -2.477 / -2.534) and the same four light intensities
     (34, 9, 9, 14) as the full walk.
 
+19. **Air and Sun had the same defect, and a test now covers all six wings.**
+    Making the caves selectable in the room picker turned two more wings into
+    reachable black rooms for exactly the same reason: `buildAirChimneyLayout`
+    required `cave-earth` and `buildSundialLayout` required `cave-air`, each
+    only to span the corridor to its neighbour. Both are now optional in the
+    same shape as Fire. Because the failure is silent - no throw, no console
+    entry, just a shell mounted at the world origin - it cannot be caught by
+    looking at the app, so `tests/unit/museum/room-picker-isolation.test.ts`
+    now walks every room the picker offers, builds a grid and terrain for it,
+    runs every authored wing builder both isolated and in the full museum, and
+    asserts each wing's geometry lands at the same offset from its own room's
+    corner in both. `cave-water` is exempt from that last comparison: its
+    isolation deliberately brings three rooms, and the packer is free to
+    arrange them more tightly than the full walk does.
+
 ## Verification
 
 - `tests/unit/museum/earth-root-terrace-terrain.test.ts` (16),
