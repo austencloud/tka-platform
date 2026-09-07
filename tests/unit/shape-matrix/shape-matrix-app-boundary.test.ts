@@ -350,7 +350,11 @@ describe("Shape Matrix app boundary", () => {
     const shortcutSource = read(
       "src/lib/shared/shape-matrix/app/services/shape-matrix-playback-shortcut.ts"
     );
-    expect(shortcutSource).toContain("getKeyboardShortcutManager().register(");
+    expect(shortcutSource).toContain("getKeyboardShortcutManager()");
+    // Registering is not listening. Nothing on a public route or a standalone
+    // embed calls initialize, so the service does it itself.
+    expect(shortcutSource).toContain("manager.initialize();");
+    expect(shortcutSource).toContain("manager.register({");
     // Both detail views are mounted at once, so they cannot share one id:
     // the registry keys by id and the later registration wins outright.
     expect(shortcutSource).toContain(
