@@ -352,6 +352,10 @@ describe("Shape Matrix app boundary", () => {
     );
     expect(shortcutSource).toContain("getKeyboardShortcutManager().register(");
     expect(shortcutSource).toContain('id: "shape-matrix.play-pause"');
+    // The registry matches the normalized key name. A raw " " registers
+    // cleanly, type-checks, and then never fires.
+    expect(shortcutSource).toContain('key: "Space"');
+    expect(shortcutSource).not.toMatch(/key: " ",/);
     for (const source of [drillSource, theoryDetailSource]) {
       expect(source).toContain("registerShapeMatrixPlaybackShortcut(");
       expect(source).not.toContain('window.addEventListener("keydown"');

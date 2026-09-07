@@ -30,7 +30,10 @@ export function registerShapeMatrixPlaybackShortcut(
     id: "shape-matrix.play-pause",
     label: "Play / Pause",
     description: "Toggle the Shape Engine animation",
-    key: " ",
+    // The manager normalizes the event's key before matching, and " " comes
+    // out of that as "Space". Registering the raw character silently never
+    // fires -- every other Space binding in the app carries the same note.
+    key: "Space",
     modifiers: [],
     scope: "animation",
     priority: "high",
