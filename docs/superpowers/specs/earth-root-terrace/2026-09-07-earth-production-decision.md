@@ -171,6 +171,20 @@ sealing. It is deleted here rather than dressed.
     looks down at. Earth passes mossy_rock's own mean diffuse two stops down:
     the same stone as the bed, cut and set.
 
+18. **The Fire wing is optional to the layout.** `buildEarthRootTerraceLayout`
+    required both `cave-earth` and `cave-fire` in the grid and returned `null`
+    without them. Fire is read for exactly one thing: the span of the corridor
+    between the two wings, which both wings suppress and this module owns. The
+    room picker can isolate `cave-earth` alone, and that grid has no such
+    corridor, so the requirement made the isolated room fail in the worst way
+    available - `null` layout, `null` contract, and an origin that collapses to
+    `[0, 0, 0]`, mounting the whole shell at the world origin instead of around
+    the visitor. The room rendered black with no error in the console. Fire is
+    now optional and its absence yields an empty corridor; the full museum is
+    byte-identical, and the isolated room reports the same bed heights
+    (-2.478 / -2.477 / -2.534) and the same four light intensities
+    (34, 9, 9, 14) as the full walk.
+
 ## Verification
 
 - `tests/unit/museum/earth-root-terrace-terrain.test.ts` (16),
@@ -198,6 +212,12 @@ sealing. It is deleted here rather than dressed.
   (1) and `earth-long-terrace-plan.test.ts` (1). All five fail identically on
   `main` with this branch's changes absent, so they are pre-existing and are not
   touched here.
+- Room isolation, added after Austen hit a crash on `/museum`: `?room=cave-earth`
+  now renders the terrace on its own. `window.__earth` reports the same three bed
+  heights and the same four light intensities as the full walk, which is the
+  check that distinguishes a working isolation from a shell mounted at the world
+  origin. `?room=cave-fire` and `?room=cave-water` were used as the controls -
+  both already isolated correctly, which is what localised the fault to Earth.
 
 ## Open
 

@@ -174,7 +174,12 @@ function rect(earth: WorldRect, x0: number, z0: number, x1: number, z1: number):
 export function buildEarthRootTerraceLayout(grid: MuseumGrid): EarthRootTerraceLayout | null {
   const earthWing = grid.wings.find((w) => w.id === EARTH_ROOM_ID);
   const fireWing = grid.wings.find((w) => w.id === FIRE_ROOM_ID);
-  if (!earthWing || !fireWing) return null;
+  // Fire is optional. It is needed only to span the corridor between the two
+  // wings, and the room picker can isolate cave-earth on its own - a grid with
+  // no Fire room has no such corridor to own. Requiring it here returned null,
+  // which left the component with a [0,0,0] origin: the shell mounted at the
+  // world origin, far from the visitor, and the isolated room rendered black.
+  if (!earthWing) return null;
 
   const earth = interiorWorldRect(earthWing.bounds);
   const westDoor = doorSpan(grid, EARTH_ROOM_ID, "west");
@@ -292,16 +297,20 @@ export function buildEarthRootTerraceLayout(grid: MuseumGrid): EarthRootTerraceL
 
   // ── Corridor from the First Fire. Both wings suppress their tile geometry,
   // so the corridor between them is suppressed too and this module owns it.
-  const fb = fireWing.bounds;
   const eb = earthWing.bounds;
-  const corridor = bandRects(
-    grid,
-    fb.x + fb.width - 1,
-    eb.x,
-    Math.min(fb.y, eb.y) - 2,
-    Math.max(fb.y + fb.height, eb.y + eb.height) + 2,
-    (t) => t === "corridor" || t === "door"
-  );
+  const corridor = fireWing
+    ? bandRects(
+        grid,
+        fireWing.bounds.x + fireWing.bounds.width - 1,
+        eb.x,
+        Math.min(fireWing.bounds.y, eb.y) - 2,
+        Math.max(
+          fireWing.bounds.y + fireWing.bounds.height,
+          eb.y + eb.height
+        ) + 2,
+        (t) => t === "corridor" || t === "door"
+      )
+    : [];
 
   // The footprint is the INTERIOR plus the corridor. The south wall row is the
   // Air corridor's first row and Air answers for it (cave-terrain-routing).
