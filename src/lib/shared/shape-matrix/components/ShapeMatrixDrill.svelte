@@ -87,6 +87,13 @@
   interface Props {
     /** Nullable: the drill renders its own "Pick a cell" state before any click. */
     pair: { left: Flower; right: Flower } | null;
+    /**
+     * One hand on stage, chosen from its own axis header. The other prop is
+     * not drawn (the shell hides it through the viewer's motion visibility),
+     * and the two relationship rows go with it: a mode is an agreement
+     * between two hands, and there is only one here.
+     */
+    solo?: "left" | "right" | null;
     data: ShapeMatrixData;
     /** Optional composing surface action. The public archive remains a viewer;
      *  pickers can receive the exact realization this drill already built. */
@@ -117,6 +124,7 @@
   }
   let {
     pair,
+    solo = null,
     data,
     onselectRealization,
     selectLabel = "Use this realization",
@@ -320,8 +328,16 @@
   const heroPaths = $derived.by<MandalaPaths | null>(() => {
     if (!pair) return null;
     return {
-      left: data.left.get(flowerKey(pair.left))?.left ?? [],
-      right: data.right.get(flowerKey(pair.right))?.right ?? [],
+      // A solo draws the header's own mandala: the other hand's paths are
+      // left out, so the hero is the artwork that was pressed.
+      left:
+        solo === "right"
+          ? []
+          : (data.left.get(flowerKey(pair.left))?.left ?? []),
+      right:
+        solo === "left"
+          ? []
+          : (data.right.get(flowerKey(pair.right))?.right ?? []),
       purple: [],
     };
   });
@@ -1191,6 +1207,7 @@
     ? `--hand-el: ${captionRealization.element.accentColor}; --hand-dark: ${captionRealization.element.darkComplement}; --prop-el: ${captionRealization.propRelationship.element?.accentColor ?? captionRealization.element.accentColor}`
     : undefined}
 >
+  {#if !solo}
   <div
     class="mode-picker"
     data-drill-region="modes"
@@ -1217,6 +1234,7 @@
       ontarget={selectPropMode}
     />
   </div>
+  {/if}
 
   <div
     class="media-stage"

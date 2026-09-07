@@ -10,10 +10,12 @@
   interface Props {
     /** The shell owns navigation (and the compact tile-to-hero morph). */
     onselect?: (pair: { left: Flower; right: Flower }) => void;
+    /** A header: that axis item alone, on that hand. */
+    onsolo?: (hand: "left" | "right", flower: Flower) => void;
     /** The shell owns the roll too, for the same compact morph. */
     onsurprise?: () => void;
   }
-  let { onselect, onsurprise }: Props = $props();
+  let { onselect, onsolo, onsurprise }: Props = $props();
 
   const state = getShapeMatrixAppContext();
   const animationState = getShapeMatrixAnimationContext();
@@ -57,6 +59,8 @@
         corner={cornerGuide}
         revealToken={state.revealToken}
         onselect={onselect ?? state.selectPair}
+        onsolo={onsolo ?? state.selectSolo}
+        soloHand={state.soloHand}
       />
     {/if}
   </div>

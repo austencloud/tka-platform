@@ -444,6 +444,42 @@ describe("Shape Matrix app boundary", () => {
     expect(segmentedSource).toContain("--row: {selectedRow}");
   });
 
+  it("plays a header on its own, with one prop and no hand pickers", () => {
+    // A red or blue header is one hand. Clicking it opens that hand's own
+    // mandala with the other prop hidden, so the pickers that only mean
+    // something for a pair are gone rather than left inert.
+    const gridSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte"
+      ),
+      "utf8"
+    );
+    const drillSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte"
+      ),
+      "utf8"
+    );
+    const shellSource = readFileSync(
+      resolve(APP_ROOT, "components/ShapeMatrixAppShell.svelte"),
+      "utf8"
+    );
+    // The headers become buttons only where a host asked for the behavior.
+    expect(gridSource).toContain("{#if onsolo}");
+    expect(gridSource).toContain('class="head-button"');
+    expect(gridSource).toContain('onsolo("right", rf)');
+    expect(gridSource).toContain('onsolo("left", bf)');
+    // The hero draws only the soloed hand's own paths.
+    expect(drillSource).toMatch(/solo === "right"\s*\?\s*\[\]/);
+    expect(drillSource).toMatch(/solo === "left"\s*\?\s*\[\]/);
+    expect(drillSource).toContain("{#if !solo}");
+    // The quiet prop is the canonical per-hand motion visibility, not a
+    // second way of hiding a prop.
+    expect(shellSource).toContain("new SequenceViewerVisibilityState(true)");
+    expect(shellSource).toContain("setViewerVisibilityContext(motionVisibility)");
+    expect(shellSource).toContain("appState.soloHand");
+  });
+
   it("shares one link, in the notation the receiver reads", () => {
     // The address bar carries every setting; Share copies it with the
     // notation pinned, so a VTG-raised spinner opens in ratios. The copy is
